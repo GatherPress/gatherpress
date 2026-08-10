@@ -1,0 +1,4 @@
+Significance: minor
+Type: changed
+
+Rework Block Guard so it is far less obtrusive. The on/off toggle is gone: a guarded block is simply protected in the editor, so clicking it selects the whole block instead of grabbing an inner piece and pulling it out of place. Click the selected block again (or press Enter or Space) to edit inside it, and click away or select the block again to put the guard back on. Guarded blocks show a soft tint while selected, and the List View is never restricted, so inner blocks remain available there whenever you need them.

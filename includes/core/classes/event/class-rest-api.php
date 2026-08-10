@@ -19,8 +19,9 @@ use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Rsvp\Query as Rsvp_Query;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup;
+use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Rsvp\Token;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\User;
@@ -41,7 +42,7 @@ use WP_User;
  *
  * @since 0.34.0
  */
-class Rest_Api {
+final class Rest_Api {
 
 	/**
 	 * Enforces a single instance of this class.
@@ -572,7 +573,7 @@ class Rest_Api {
 			if ( ! empty( $send[ $status ] ) ) {
 				$comment_ids = array_merge(
 					$comment_ids,
-					array_column( $all_responses[ $status ]['records'], 'commentId' )
+					array_column( $all_responses[ $status ]['records'], 'comment_id' )
 				);
 			}
 		}
@@ -730,7 +731,7 @@ class Rest_Api {
 			$status      = $user_record['status'];
 			$guests      = $user_record['guests'];
 
-			if ( in_array( $status, $event->rsvp->statuses, true ) ) {
+			if ( in_array( $status, Status::values(), true ) ) {
 				$success = true;
 			}
 		}
@@ -794,7 +795,7 @@ class Rest_Api {
 		if ( ! empty( $responses[ $status ] ) ) {
 			foreach ( $responses[ $status ]['records'] as $key => $record ) {
 				$args['index'] = $key;
-				$content      .= $rsvp_template->get_block_content( $block_data, $record['commentId'], $args );
+				$content      .= $rsvp_template->get_block_content( $block_data, $record['comment_id'], $args );
 			}
 		}
 

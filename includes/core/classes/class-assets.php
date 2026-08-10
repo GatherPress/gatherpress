@@ -22,7 +22,7 @@ use GatherPress\Core\Traits\Singleton;
  *
  * @since 0.27.0
  */
-class Assets {
+final class Assets {
 
 	/**
 	 * Enforces a single instance of this class.
@@ -101,7 +101,10 @@ class Assets {
 		// Set priority to 11 to not conflict with media modal.
 		add_action( 'admin_footer', array( $this, 'event_communication_modal' ), 11 );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_timezone_shim' ) );
-		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_timezone_shim' ) );
+		// Last priority so that on the frontend this runs after every
+		// block/script that might enqueue wp-date for this request — see
+		// the registered-vs-enqueued check in the callback.
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_timezone_shim' ), PHP_INT_MAX );
 
 		add_filter( 'render_block', array( $this, 'maybe_enqueue_styles' ), 10, 2 );
 		add_filter( 'render_block', array( $this, 'maybe_enqueue_tooltip_assets' ) );
@@ -119,8 +122,23 @@ class Assets {
 	 * block editor's panels and any plugin using `@wordpress/date`.
 	 *
 	 * We can't reach into WP core, but we can append an inline script
-	 * after its `setSettings` call to re-call it with a valid zone. We
-	 * only normalize the zero-offset case; non-zero UTC offsets are
+	 * after its `setSettings` call to re-call it with a valid zone.
+	 *
+	 * In the admin, `wp-date` is registered on essentially every screen
+	 * (block editor panels use it), so we enqueue it ourselves and patch
+	 * it unconditionally there. On the frontend, `wp-date` is *always*
+	 * registered by WordPress core regardless of whether the current
+	 * page uses it — so the same "is it registered" check that works in
+	 * the admin would force `wp-date` (and its `moment` dependency) onto
+	 * every single frontend pageview, including pages with no
+	 * GatherPress block at all. On the frontend we instead check whether
+	 * `wp-date` has actually been *enqueued* by something else for this
+	 * request, and only patch it in that case. The callback is hooked last
+	 * (`PHP_INT_MAX`) on `wp_enqueue_scripts` so that check reflects
+	 * enqueues made by GatherPress's own blocks and other plugins/themes
+	 * earlier in the request.
+	 *
+	 * We only normalize the zero-offset case; non-zero UTC offsets are
 	 * rarer and surface a different warning that users fix by choosing
 	 * an IANA zone in Settings → General.
 	 *
@@ -129,8 +147,18 @@ class Assets {
 	 * @return void
 	 */
 	public function enqueue_timezone_shim(): void {
-		if ( ! wp_script_is( 'wp-date', 'registered' ) ) {
+		$is_admin = is_admin();
+
+		// Admin screens have wp-date registered on essentially every request,
+		// so "registered" is a sufficient signal there. The frontend requires
+		// an actual enqueue by something else, which is what keeps wp-date
+		// (and its moment.js dependency) off pages that don't need it.
+		if ( ! wp_script_is( 'wp-date', $is_admin ? 'registered' : 'enqueued' ) ) {
 			return;
+		}
+
+		if ( $is_admin ) {
+			wp_enqueue_script( 'wp-date' );
 		}
 
 		$script_path = GATHERPRESS_CORE_PATH . '/includes/templates/admin/timezone-shim.js';
@@ -145,7 +173,6 @@ class Assets {
 		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
 		// @codeCoverageIgnoreEnd
 
-		wp_enqueue_script( 'wp-date' );
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reading a plugin-local static file.
 		wp_add_inline_script( 'wp-date', file_get_contents( $script_path ), 'after' );
 	}
@@ -153,9 +180,12 @@ class Assets {
 	/**
 	 * Set initial interactivity state for frontend blocks.
 	 *
-	 * Provides the REST API URL to the gatherpress interactivity store so
-	 * frontend view scripts (RSVP nonce/status requests) can build API URLs
-	 * without relying on window globals.
+	 * Provides the REST API URL and translated UI strings to the gatherpress
+	 * interactivity store so frontend view scripts (RSVP nonce/status requests,
+	 * screen-reader announcements) can use them without relying on window
+	 * globals. Strings are translated here because the Interactivity API
+	 * script-module graph cannot import `@wordpress/i18n` (see
+	 * `notifyRsvpFailure()` in `src/helpers/interactivity.js`).
 	 *
 	 * The state is set on every front-end view rather than only on singular
 	 * event pages: RSVP and other interactive blocks also render in event
@@ -176,7 +206,24 @@ class Assets {
 		wp_interactivity_state(
 			'gatherpress',
 			array(
-				'eventApiUrl' => home_url( 'wp-json/' . $event_rest_api_slug ),
+				'eventApiUrl' => rest_url( $event_rest_api_slug ),
+				'i18n'        => array(
+					'rsvpAttending'         => __( 'Your RSVP was updated. You are attending.', 'gatherpress' ),
+					'rsvpWaitingList'       => __(
+						'Your RSVP was updated. You are on the waiting list.',
+						'gatherpress'
+					),
+					'rsvpNotAttending'      => __( 'Your RSVP was updated. You are not attending.', 'gatherpress' ),
+					/* translators: %d: Number of attendees (singular case). */
+					'attendeeCountSingular' => __( '%d attendee.', 'gatherpress' ),
+					/* translators: %d: Number of attendees (plural case). */
+					'attendeeCountPlural'   => __( '%d attendees.', 'gatherpress' ),
+					'onlineLinkReady'       => __( 'The event link is now available on this page.', 'gatherpress' ),
+					'rsvpFailed'            => __(
+						'Sorry, there was an issue processing your RSVP. Please try again.',
+						'gatherpress'
+					),
+				),
 			)
 		);
 	}
@@ -477,19 +524,22 @@ class Assets {
 	 * Plain `require` is used rather than `require_once`: `require_once` returns `true` (not the array)
 	 * if the same file was already loaded elsewhere in the request, and `(array) true` would corrupt the
 	 * `dependencies` / `version` lookups. A missing file yields an empty array rather than a fatal.
+	 * That was a real regression (#1768), so the `require` carries a `NOSONAR` marker — converting it
+	 * to `require_once` to satisfy `php:S2003` would reintroduce the bug.
 	 *
 	 * @since 0.27.0
+	 * @since 0.35.0 Made public for use from block templates.
 	 *
 	 * @param string  $asset The file name of the asset.
 	 * @param ?string $path  (Optional) The absolute path to the asset file
 	 *                       or null to use the path based on the default naming scheme.
 	 * @return array An array containing asset-related data.
 	 */
-	protected function get_asset_data( string $asset, ?string $path = null ): array {
+	public function get_asset_data( string $asset, ?string $path = null ): array {
 		$path = $path ?? $this->path . sprintf( '%s.asset.php', $asset );
 		if ( empty( $this->asset_data[ $asset ] ) ) {
 			// Loading a WordPress asset metadata file that returns an array, not importing a class.
-			$this->asset_data[ $asset ] = file_exists( $path ) ? require $path : array();
+			$this->asset_data[ $asset ] = file_exists( $path ) ? require $path : array(); // NOSONAR — see #1768.
 		}
 
 		return (array) $this->asset_data[ $asset ];
@@ -573,7 +623,7 @@ class Assets {
 		// Plain include, not include_once: a repeat include_once would return
 		// `true` instead of the asset array if the file was already loaded
 		// (existence is already guaranteed by the file_exists guard above).
-		$asset = include $asset_path;
+		$asset = include $asset_path; // NOSONAR — see comment above.
 
 		// Add AQL as a dependency so our script loads after theirs.
 		$dependencies   = $asset['dependencies'] ?? array();

@@ -29,7 +29,7 @@ use WP_HTML_Tag_Processor;
  *
  * @since 0.33.0
  */
-class General_Block {
+final class General_Block {
 
 	/**
 	 * Enforces a single instance of this class.

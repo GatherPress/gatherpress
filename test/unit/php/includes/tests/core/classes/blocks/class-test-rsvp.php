@@ -104,7 +104,7 @@ class Test_Rsvp extends Base {
 		$user     = $this->mock->user( true )->get();
 		$event    = new Event( $post_id );
 
-		$event->rsvp->save( $user->ID, 'attending' );
+		$save_result = $event->rsvp->save( $user->ID, 'attending' );
 
 		$block = array(
 			'blockName'   => 'gatherpress/rsvp-v2',
@@ -909,8 +909,8 @@ class Test_Rsvp extends Base {
 			)
 		)->get();
 
-		// Set rsvp_mode to per_event_on so that per-event disabling is respected.
-		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
+		// Set rsvp_mode to per_event_enabled so that per-event disabling is respected.
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_enabled' );
 
 		// Explicitly disable RSVP for this event.
 		update_post_meta( $post->ID, 'gatherpress_enable_rsvp', 0 );
@@ -934,7 +934,7 @@ class Test_Rsvp extends Base {
 		delete_post_meta( $post->ID, 'gatherpress_enable_rsvp' );
 
 		// Restore the setting for other tests.
-		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 	}
 
 	/**

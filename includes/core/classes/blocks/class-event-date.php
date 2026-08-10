@@ -24,7 +24,7 @@ use GatherPress\Core\Traits\Singleton;
  *
  * @since 0.33.0
  */
-class Event_Date {
+final class Event_Date {
 
 	/**
 	 * Enforces a single instance of this class.

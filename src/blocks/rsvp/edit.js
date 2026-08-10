@@ -230,7 +230,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 		[ postId, attributes ]
 	);
 
-	const rsvpMode = getFromSettings( 'rsvpMode' ) ?? 'all_on';
+	const rsvpMode = getFromSettings( 'rsvpMode' ) ?? 'enabled';
 
 	const blockProps = useBlockProps( {
 		style: {
@@ -433,7 +433,10 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 						</ToolbarGroup>
 					</BlockControls>
 					<InspectorControls>
-						<PanelBody title={ __( 'RSVP Block Settings', 'gatherpress' ) }>
+						<PanelBody
+							className="gatherpress-rsvp-block-settings"
+							title={ __( 'RSVP Block Settings', 'gatherpress' ) }
+						>
 							<p>
 								{ __(
 									'Select an RSVP status to edit how this block appears for users with that status.',

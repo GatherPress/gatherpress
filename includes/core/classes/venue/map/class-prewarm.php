@@ -40,7 +40,7 @@ use WP_Post;
  *
  * @since 0.34.0
  */
-class Prewarm {
+final class Prewarm {
 
 	/**
 	 * Enforces a single instance of this class.

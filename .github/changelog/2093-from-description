@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Announce the active settings tab and RSVP status view to assistive technology, fix the profile date-time table's broken description reference, and give the RSVP count links accessible names.

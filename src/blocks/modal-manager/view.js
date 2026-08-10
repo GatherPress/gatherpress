@@ -104,6 +104,21 @@ const { actions } = store( 'gatherpress', {
 				}
 			}
 		},
+		/**
+		 * Opens the modal when the Enter or Space key is pressed.
+		 *
+		 * @since 0.35.0
+		 *
+		 * @param {KeyboardEvent} event The keyboard event.
+		 *
+		 * @return {void}
+		 */
+		openModalOnEnter( event ) {
+			if ( 'Enter' === event.key || ' ' === event.key ) {
+				event.preventDefault();
+				actions.openModal( event );
+			}
+		},
 		closeModal( event = null, element = null, findActiveSibling = true ) {
 			if ( event ) {
 				event.preventDefault();
@@ -209,6 +224,21 @@ const { actions } = store( 'gatherpress', {
 				if ( openTrigger ) {
 					openTrigger.focus();
 				}
+			}
+		},
+		/**
+		 * Closes the modal when the Enter or Space key is pressed.
+		 *
+		 * @since 0.35.0
+		 *
+		 * @param {KeyboardEvent} event The keyboard event.
+		 *
+		 * @return {void}
+		 */
+		closeModalOnEnter( event ) {
+			if ( 'Enter' === event.key || ' ' === event.key ) {
+				event.preventDefault();
+				actions.closeModal( event );
 			}
 		},
 	},

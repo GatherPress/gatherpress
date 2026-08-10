@@ -1,0 +1,4 @@
+Significance: minor
+Type: changed
+
+Mount the venue map through the Interactivity API so it works with Query Loop enhanced pagination, and drop React from the frontend map path.

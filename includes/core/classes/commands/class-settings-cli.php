@@ -23,7 +23,7 @@ use WP_CLI;
  * @package GatherPress\Core
  * @since 0.34.0
  */
-class Settings_Cli extends WP_CLI {
+final class Settings_Cli extends WP_CLI {
 
 	/**
 	 * Export GatherPress settings to JSON.
@@ -60,7 +60,7 @@ class Settings_Cli extends WP_CLI {
 
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
 			if ( false === file_put_contents( $file, $json ) ) {
-				static::error(
+				self::error(
 					sprintf(
 						/* translators: %s: File path. */
 						__( 'Failed to write to file: %s', 'gatherpress' ),
@@ -71,7 +71,7 @@ class Settings_Cli extends WP_CLI {
 				return; // @phpstan-ignore deadCode.unreachable
 			}
 
-			static::success(
+			self::success(
 				sprintf(
 					/* translators: %s: File path. */
 					__( 'Settings exported to %s', 'gatherpress' ),
@@ -128,7 +128,7 @@ class Settings_Cli extends WP_CLI {
 		$file = $args[0];
 
 		if ( ! file_exists( $file ) ) {
-			static::error(
+			self::error(
 				sprintf(
 					/* translators: %s: File path. */
 					__( 'File not found: %s', 'gatherpress' ),
@@ -144,7 +144,7 @@ class Settings_Cli extends WP_CLI {
 		$data = json_decode( $json, true );
 
 		if ( ! is_array( $data ) ) {
-			static::error( __( 'Invalid JSON file.', 'gatherpress' ) );
+			self::error( __( 'Invalid JSON file.', 'gatherpress' ) );
 
 			return; // @phpstan-ignore deadCode.unreachable
 		}
@@ -153,18 +153,18 @@ class Settings_Cli extends WP_CLI {
 		$apply    = isset( $assoc_args['apply'] );
 
 		if ( ! $apply ) {
-			static::log( __( 'Dry run — no changes will be applied. Use --apply to import.', 'gatherpress' ) );
+			self::log( __( 'Dry run — no changes will be applied. Use --apply to import.', 'gatherpress' ) );
 
 			$validation = $settings->validate_import( $data );
 
 			if ( ! empty( $validation['warnings'] ) ) {
 				foreach ( $validation['warnings'] as $warning ) {
-					static::warning( $warning );
+					self::warning( $warning );
 				}
 			}
 
 			if ( ! empty( $validation['changes'] ) ) {
-				static::log(
+				self::log(
 					sprintf(
 						/* translators: %s: Comma-separated list of setting keys. */
 						__( 'Would change: %s', 'gatherpress' ),
@@ -172,11 +172,11 @@ class Settings_Cli extends WP_CLI {
 					)
 				);
 			} else {
-				static::log( __( 'No changes would be made.', 'gatherpress' ) );
+				self::log( __( 'No changes would be made.', 'gatherpress' ) );
 			}
 
 			if ( ! empty( $validation['unknown'] ) ) {
-				static::warning(
+				self::warning(
 					sprintf(
 						/* translators: %s: Comma-separated list of unknown keys. */
 						__( 'Unknown keys (would be skipped): %s', 'gatherpress' ),
@@ -192,7 +192,7 @@ class Settings_Cli extends WP_CLI {
 		$result = $settings->import_settings( $data, $mode );
 
 		if ( ! $result['success'] ) {
-			static::error(
+			self::error(
 				! empty( $result['warnings'] )
 					? implode( ' ', $result['warnings'] )
 					: __( 'Import failed.', 'gatherpress' )
@@ -203,12 +203,12 @@ class Settings_Cli extends WP_CLI {
 
 		if ( ! empty( $result['warnings'] ) ) {
 			foreach ( $result['warnings'] as $warning ) {
-				static::warning( $warning );
+				self::warning( $warning );
 			}
 		}
 
 		if ( ! empty( $result['skipped'] ) ) {
-			static::warning(
+			self::warning(
 				sprintf(
 					/* translators: %s: Comma-separated list of skipped keys. */
 					__( 'Skipped unknown keys: %s', 'gatherpress' ),
@@ -217,7 +217,7 @@ class Settings_Cli extends WP_CLI {
 			);
 		}
 
-		static::success(
+		self::success(
 			sprintf(
 				/* translators: %d: Number of imported settings. */
 				__( '%d setting(s) imported successfully.', 'gatherpress' ),

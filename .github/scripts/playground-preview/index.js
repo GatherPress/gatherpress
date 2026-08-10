@@ -241,7 +241,7 @@ function createBlueprint(context, number, zipArtifactUrl, phpVersion, override) 
 				step: 'importWxr',
 				file: {
 					resource: 'url',
-					url: 'https://raw.githubusercontent.com/GatherPress/gatherpress-demo-data/main/GatherPress-demo-data-0.34.0.xml',
+					url: 'https://raw.githubusercontent.com/GatherPress/gatherpress-demo-data/main/GatherPress-demo-data-0.35.0.xml',
 				},
 			},
 			/**
@@ -309,7 +309,7 @@ async function createPreviewLinksComment(github, context, prNumberOverride, file
 	const override = loadBlueprintOverride(overridePath);
 
 	// Retrieve PHP versions from environment variable (JSON string)
-	const phpVersionsEnv = process.env.PHP_VERSIONS || '["8.4","8.2","7.4"]';  // Default to common versions if not set.
+	const phpVersionsEnv = process.env.PHP_VERSIONS || '["8.4","8.2","8.1"]';  // Default to common versions if not set.
 	const phpVersions    = JSON.parse( phpVersionsEnv );  // Parse the JSON string into an array
 
 	// Generate preview links for each PHP version

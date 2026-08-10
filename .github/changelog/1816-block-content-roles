@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+GatherPress blocks now identify user-editable content and content containers for WordPress content-only editing, including dynamic venue details that source their content from post meta.

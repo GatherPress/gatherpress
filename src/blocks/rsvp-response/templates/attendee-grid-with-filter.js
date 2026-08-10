@@ -7,21 +7,21 @@ import { __, _x } from '@wordpress/i18n';
 const attending = _x(
 	'Attending (%d)',
 	'Filter option to view list of confirmed attendees',
-	'gatherpress',
+	'gatherpress'
 );
 
 /* translators: %d is the count of users on the waiting list */
 const waitingList = _x(
 	'Waiting List (%d)',
 	'Filter option to view list of waitlisted attendees',
-	'gatherpress',
+	'gatherpress'
 );
 
 /* translators: %d is the count of users not attending */
 const notAttending = _x(
 	'Not Attending (%d)',
 	'Filter option to view list of declined attendees',
-	'gatherpress',
+	'gatherpress'
 );
 
 const translations = {
@@ -60,7 +60,13 @@ const ATTENDEE_GRID_WITH_FILTER_TEMPLATE = [
 					layout: { type: 'flex', flexWrap: 'nowrap' },
 				},
 				[
-					[ 'gatherpress/icon', { icon: 'groups' } ],
+					[
+						'core/icon',
+						{
+							icon: 'core/people',
+							style: { dimensions: { width: '24px' } },
+						},
+					],
 					[
 						'gatherpress/dropdown',
 						{
@@ -94,8 +100,7 @@ const ATTENDEE_GRID_WITH_FILTER_TEMPLATE = [
 									metadata: {
 										name: translations.notAttending,
 									},
-									className:
-										'gatherpress--is-not-attending',
+									className: 'gatherpress--is-not-attending',
 								},
 							],
 						],
@@ -126,7 +131,7 @@ const ATTENDEE_GRID_WITH_FILTER_TEMPLATE = [
 				name: _x(
 					'Empty RSVP',
 					'Block name displayed in the editor',
-					'gatherpress',
+					'gatherpress'
 				),
 			},
 			className: 'gatherpress-rsvp-response--no-responses',
@@ -140,7 +145,7 @@ const ATTENDEE_GRID_WITH_FILTER_TEMPLATE = [
 						name: _x(
 							'Empty RSVP Text',
 							'Block name displayed in the editor',
-							'gatherpress',
+							'gatherpress'
 						),
 					},
 				},

@@ -9,6 +9,7 @@
     "test/*",
     "*/tests/*",
     "*gatherpress.php",
+    "*uninstall.php",
     "*/class-autoloader.php",
     "*/class-singleton.php",
     "*/requirements-check.php",
@@ -43,6 +44,7 @@
     "src/supports/**/*",
     "src/stores/index.js",
     "src/helpers/urlrewrite.js",
+    "src/leaflet-style.js",
     "src/helpers/interactivity.js",
     "src/blocks/rsvp-response/rsvp-manager.js"
   ]

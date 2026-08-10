@@ -32,7 +32,7 @@ use Throwable;
  *
  * @since 0.34.0
  */
-class OSM extends Base {
+final class OSM extends Base {
 
 	/**
 	 * Default XYZ tile URL template. CartoDB's "light_all" basemap —
@@ -91,20 +91,17 @@ class OSM extends Base {
 	 * unavailable, when the requested density is unsupported, or when the
 	 * retina variant would require a tile zoom past `Map::ZOOM_MAX`.
 	 *
-	 * Return type is intentionally untyped at the PHP signature level for
-	 * PHP 7.4 compatibility (GD returns a `resource` there, not a
-	 * `GdImage`).
-	 *
 	 * @since 0.34.0
 	 *
-	 * @param float $latitude  Venue latitude in decimal degrees.
-	 * @param float $longitude Venue longitude in decimal degrees.
-	 * @param int   $zoom      Map zoom level (already clamped by the orchestrator).
-	 * @param int   $width     Logical pixel width (at density 1).
-	 * @param int   $height    Logical pixel height (at density 1).
-	 * @param int   $density   Pixel-density multiplier. 1 = standard, 2 = retina.
+	 * @param float  $latitude  Venue latitude in decimal degrees.
+	 * @param float  $longitude Venue longitude in decimal degrees.
+	 * @param int    $zoom      Map zoom level (already clamped by the orchestrator).
+	 * @param int    $width     Logical pixel width (at density 1).
+	 * @param int    $height    Logical pixel height (at density 1).
+	 * @param int    $density   Pixel-density multiplier. 1 = standard, 2 = retina.
+	 * @param string $map_type  Map type slug (OSM only renders roadmap tiles).
 	 *
-	 * @return GdImage|resource|null Finished image, or null on failure.
+	 * @return GdImage|null Finished image, or null on failure.
 	 */
 	public function render(
 		float $latitude,
@@ -112,8 +109,10 @@ class OSM extends Base {
 		int $zoom,
 		int $width,
 		int $height,
-		int $density = 1
-	) {
+		int $density = 1,
+		string $map_type = 'roadmap'
+	): ?GdImage {
+		// OSM tiles are roadmap-only; $map_type is accepted for provider parity.
 		// PHP built without the GD extension. Can't simulate in a unit test without making the runtime itself broken.
 		if ( ! function_exists( 'imagecreatetruecolor' ) ) { // @codeCoverageIgnore
 			return null; // @codeCoverageIgnore
@@ -203,13 +202,13 @@ class OSM extends Base {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param GdImage|resource $canvas     Canvas being composited into.
-	 * @param int              $tx         X tile coordinate.
-	 * @param int              $ty         Y tile coordinate.
-	 * @param int              $tile_zoom  OSM zoom level for this tile.
-	 * @param int              $left_pixel World-pixel x-offset of the canvas top-left.
-	 * @param int              $top_pixel  World-pixel y-offset of the canvas top-left.
-	 * @param string           $tiles      URL template (`{z}/{x}/{y}` placeholders).
+	 * @param GdImage $canvas     Canvas being composited into.
+	 * @param int     $tx         X tile coordinate.
+	 * @param int     $ty         Y tile coordinate.
+	 * @param int     $tile_zoom  OSM zoom level for this tile.
+	 * @param int     $left_pixel World-pixel x-offset of the canvas top-left.
+	 * @param int     $top_pixel  World-pixel y-offset of the canvas top-left.
+	 * @param string  $tiles      URL template (`{z}/{x}/{y}` placeholders).
 	 *
 	 * @return void
 	 */
@@ -238,7 +237,7 @@ class OSM extends Base {
 		$dst_y = $ty * self::TILE_SIZE - $top_pixel;
 
 		imagecopy( $canvas, $tile, $dst_x, $dst_y, 0, 0, self::TILE_SIZE, self::TILE_SIZE );
-		imagedestroy( $tile );
+		unset( $tile );
 	}
 
 	/**
@@ -281,9 +280,9 @@ class OSM extends Base {
 	 *
 	 * @param string $bytes Raw PNG bytes from `fetch_tile()`.
 	 *
-	 * @return GdImage|resource|false Decoded image, or false when the bytes don't decode.
+	 * @return GdImage|false Decoded image, or false when the bytes don't decode.
 	 */
-	protected function decode_tile( string $bytes ) {
+	protected function decode_tile( string $bytes ): GdImage|false {
 		try {
 			return imagecreatefromstring( $bytes );
 		} catch ( Throwable $e ) {
@@ -342,10 +341,10 @@ class OSM extends Base {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param GdImage|resource $canvas Destination canvas.
-	 * @param int              $x      Pixel X position (marker center).
-	 * @param int              $y      Pixel Y position (marker center).
-	 * @param float            $scale  Multiplier applied to the marker radii.
+	 * @param GdImage $canvas Destination canvas.
+	 * @param int     $x      Pixel X position (marker center).
+	 * @param int     $y      Pixel Y position (marker center).
+	 * @param float   $scale  Multiplier applied to the marker radii.
 	 *
 	 * @return void
 	 */

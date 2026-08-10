@@ -1163,7 +1163,7 @@ class Test_General_Block extends Base {
 			)
 		);
 
-		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_enabled' );
 		update_post_meta( $post_id, 'gatherpress_enable_rsvp', 0 );
 
 		$block_content = '<div class="gatherpress-rsvp-field-guests">Guests</div>';
@@ -1174,7 +1174,7 @@ class Test_General_Block extends Base {
 		$this->assertSame( '', $result, 'Should return empty string when per-event RSVP is disabled.' );
 
 		delete_post_meta( $post_id, 'gatherpress_enable_rsvp' );
-		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 	}
 
 	/**
@@ -1193,7 +1193,7 @@ class Test_General_Block extends Base {
 			)
 		);
 
-		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_enabled' );
 		update_post_meta( $post_id, 'gatherpress_enable_rsvp', 0 );
 
 		$block_content = '<div class="gatherpress-rsvp-field-anonymous">Anonymous</div>';
@@ -1204,6 +1204,6 @@ class Test_General_Block extends Base {
 		$this->assertSame( '', $result, 'Should return empty string when per-event RSVP is disabled.' );
 
 		delete_post_meta( $post_id, 'gatherpress_enable_rsvp' );
-		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 	}
 }

@@ -39,7 +39,7 @@ class Template extends Endpoint_Type {
 	 *
 	 * @var string
 	 */
-	protected string $plugin_template_dir;
+	protected readonly string $plugin_template_dir;
 
 	/**
 	 * Class constructor.

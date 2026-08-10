@@ -13,9 +13,17 @@ jest.mock( '@wordpress/data', () => ( {
 } ) );
 
 /**
+ * Mock Google Maps API loader
+ */
+jest.mock( '@src/helpers/google-maps-api', () => ( {
+	loadGoogleMapsApi: jest.fn(),
+} ) );
+
+/**
  * Internal dependencies
  */
 import MapEmbed from '@src/components/MapEmbed';
+import { loadGoogleMapsApi } from '@src/helpers/google-maps-api';
 import { select } from '@wordpress/data';
 
 beforeEach( () => {
@@ -85,6 +93,38 @@ test( 'OSM MapEmbed returns a placeholder div when location is set but no coordi
 	} );
 } );
 
+test( 'Google MapEmbed returns a placeholder div when location is set but no coordinates', () => {
+	select.mockImplementation( ( store ) => {
+		if ( 'core' === store ) {
+			return { canUser: jest.fn( () => false ) };
+		}
+		if ( 'core/edit-post' === store ) {
+			return null;
+		}
+		if ( 'core/editor' === store ) {
+			return {
+				getEditorSettings: () => ( {
+					gatherpress: { settings: { mapPlatform: 'google' } },
+				} ),
+			};
+		}
+		return null;
+	} );
+
+	const { container } = render(
+		<MapEmbed
+			location="50 South Fullerton Avenue, Montclair, NJ 07042"
+			googleMapsApiKey="unit-test-key"
+		/>,
+	);
+
+	expect( container.children[ 0 ] ).toBeInTheDocument();
+	expect( container.children[ 0 ].tagName ).toBe( 'DIV' );
+	expect( container.children[ 0 ] ).toHaveStyle( {
+		backgroundColor: 'rgb(224, 224, 224)',
+	} );
+} );
+
 test( 'Google MapEmbed returns address in source when location is set', () => {
 	select.mockImplementation( ( store ) => {
 		if ( 'core' === store ) {
@@ -119,11 +159,11 @@ test( 'Google MapEmbed returns address in source when location is set', () => {
 		'&output=embed',
 	);
 	expect( container.children[ 0 ] ).toHaveStyle(
-		'border: 0px; height: 300px; width: 100%;',
+		'border: 0px; height: 100%; width: 100%;',
 	);
 } );
 
-test( 'Google MapEmbed uses Embed API when googleMapsApiKey prop is set', () => {
+test( 'Google MapEmbed uses the Maps JavaScript API when googleMapsApiKey prop is set', async () => {
 	select.mockImplementation( ( store ) => {
 		if ( 'core' === store ) {
 			return { canUser: jest.fn( () => false ) };
@@ -140,55 +180,46 @@ test( 'Google MapEmbed uses Embed API when googleMapsApiKey prop is set', () => 
 		}
 		return null;
 	} );
-	const { container } = render(
-		<MapEmbed
-			location="Test"
-			latitude="40.8117036"
-			longitude="-74.2187738"
-			zoom={ 15 }
-			type="terrain"
-			googleMapsApiKey="unit-test-key"
-		/>,
-	);
-	const src = container.children[ 0 ].getAttribute( 'src' );
-	expect( src ).toContain( 'https://www.google.com/maps/embed/v1/view?' );
-	expect( src ).toContain( 'key=unit-test-key' );
-	// Maps Embed API only allows roadmap or satellite; terrain maps to roadmap.
-	expect( src ).toContain( 'maptype=roadmap' );
-} );
 
-test( 'Google MapEmbed maps hybrid to satellite for Embed API when key is set', () => {
-	select.mockImplementation( ( store ) => {
-		if ( 'core' === store ) {
-			return { canUser: jest.fn( () => false ) };
-		}
-		if ( 'core/edit-post' === store ) {
-			return null;
-		}
-		if ( 'core/editor' === store ) {
-			return {
-				getEditorSettings: () => ( {
-					gatherpress: { settings: { mapPlatform: 'google' } },
-				} ),
-			};
-		}
-		return null;
+	const mapInstance = {
+		setCenter: jest.fn(),
+		setZoom: jest.fn(),
+		setMapTypeId: jest.fn(),
+	};
+	const maps = {
+		Map: jest.fn( () => mapInstance ),
+		Marker: jest.fn( () => ( {} ) ),
+	};
+	loadGoogleMapsApi.mockResolvedValue( maps );
+
+	let container;
+	await act( async () => {
+		( { container } = render(
+			<MapEmbed
+				location="Test"
+				latitude="40.8117036"
+				longitude="-74.2187738"
+				zoom={ 15 }
+				type="terrain"
+				googleMapsApiKey="unit-test-key"
+			/>,
+		) );
 	} );
-	const { container } = render(
-		<MapEmbed
-			location="Test"
-			latitude="40.8117036"
-			longitude="-74.2187738"
-			zoom={ 15 }
-			type="hybrid"
-			googleMapsApiKey="unit-test-key"
-		/>,
+
+	// The keyed path mounts a JS API map into a div — no iframe.
+	expect( container.children[ 0 ].tagName ).toBe( 'DIV' );
+	expect( loadGoogleMapsApi ).toHaveBeenCalledWith(
+		'unit-test-key',
+		document,
 	);
-	const src = container.children[ 0 ].getAttribute( 'src' );
-	expect( src ).toContain( 'maptype=satellite' );
+	// The JS API honors the full map-type set — terrain stays terrain.
+	expect( maps.Map ).toHaveBeenCalledWith(
+		expect.anything(),
+		expect.objectContaining( { mapTypeId: 'terrain', zoom: 15 } ),
+	);
 } );
 
-test( 'MapEmbed returns address in source when location, zoom, map type, height, and class are set', () => {
+test( 'MapEmbed returns address in source when location, zoom, map type, and class are set', () => {
 	select.mockImplementation( ( store ) => {
 		if ( 'core' === store ) {
 			return { canUser: jest.fn( () => false ) };
@@ -213,7 +244,6 @@ test( 'MapEmbed returns address in source when location, zoom, map type, height,
 			zoom={ 20 }
 			type="satellite"
 			className="unit-test"
-			height={ 100 }
 		/>,
 	);
 	expect( container.children[ 0 ].getAttribute( 'src' ) ).toContain(
@@ -222,7 +252,7 @@ test( 'MapEmbed returns address in source when location, zoom, map type, height,
 	expect( container.children[ 0 ].getAttribute( 'src' ) ).toContain( '&z=20' );
 	expect( container.children[ 0 ].getAttribute( 'src' ) ).toContain( '&t=k' );
 	expect( container.children[ 0 ] ).toHaveStyle(
-		'border: 0px; height: 100px; width: 100%;',
+		'border: 0px; height: 100%; width: 100%;',
 	);
 	expect( container.children[ 0 ] ).toHaveClass( 'unit-test' );
 } );
@@ -250,12 +280,13 @@ test( 'MapEmbed uses default location when admin user is not in post editor and 
 
 	const { container } = render( <MapEmbed /> );
 
-	// Should render a Google Map iframe with the default location.
-	// The component sets location to "660 4th Street #119 San Francisco CA 94107, USA".
-	// Since no coordinates are provided, the URL will use "undefined" for lat/lng.
-	// We just verify that it rendered a map (iframe exists).
+	// Default location is set server-side but coords are still missing — show
+	// the same grey placeholder as the editor until geocode data exists.
 	expect( container.children[ 0 ] ).toBeInTheDocument();
-	expect( container.children[ 0 ].tagName ).toBe( 'IFRAME' );
+	expect( container.children[ 0 ].tagName ).toBe( 'DIV' );
+	expect( container.children[ 0 ] ).toHaveStyle( {
+		backgroundColor: 'rgb(224, 224, 224)',
+	} );
 } );
 
 test( 'MapEmbed returns empty fragment when mapPlatform is invalid', () => {

@@ -45,15 +45,31 @@ function readControlValue( el ) {
  * Test whether a current value satisfies an expected `show_if` value.
  *
  * Scalar expected → string equality. Array expected → membership (OR within
- * the same key). All comparisons coerce to string so checkbox booleans,
- * select strings, and numeric values compare cleanly.
+ * the same key). `{ not: value | [values] }` → negation (matches when the
+ * current value is not among the given). All comparisons coerce to string so
+ * checkbox booleans, select strings, and numeric values compare cleanly.
+ * Mirrors `Settings::evaluate_show_if()` on the server.
  *
- * @param {string|boolean}              current  The control's current value.
- * @param {string|number|boolean|Array} expected The expected value(s) from the show_if declaration.
+ * @param {string|boolean}                     current  The control's current value.
+ * @param {string|number|boolean|Array|Object} expected The expected value(s) from the show_if declaration.
  *
  * @return {boolean} True when the current value satisfies the expectation.
  */
 function matches( current, expected ) {
+	if (
+		expected &&
+		'object' === typeof expected &&
+		! Array.isArray( expected ) &&
+		'not' in expected
+	) {
+		const excluded = ( Array.isArray( expected.not )
+			? expected.not
+			: [ expected.not ]
+		).map( String );
+
+		return ! excluded.includes( String( current ) );
+	}
+
 	if ( Array.isArray( expected ) ) {
 		return expected.map( String ).includes( String( current ) );
 	}

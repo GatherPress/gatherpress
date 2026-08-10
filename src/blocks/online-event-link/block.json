@@ -12,7 +12,8 @@
 	"attributes": {
 		"linkText": {
 			"type": "string",
-			"default": ""
+			"default": "",
+			"role": "content"
 		}
 	},
 	"supports": {

@@ -25,7 +25,13 @@ const TEMPLATE = [
 			},
 		},
 		[
-			[ 'gatherpress/icon', { icon: 'video-alt2' } ],
+			[
+				'core/icon',
+				{
+					icon: 'core/capture-video',
+					style: { dimensions: { width: '24px' } },
+				},
+			],
 			[
 				'gatherpress/online-event-link',
 				{

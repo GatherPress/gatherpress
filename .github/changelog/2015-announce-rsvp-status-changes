@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Announce RSVP status changes, attendee counts, and online event link availability to screen readers.

@@ -26,7 +26,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  *
  * @since 0.34.0
  */
-class Post_Type_Single extends Endpoint {
+final class Post_Type_Single extends Endpoint {
 
 	/**
 	 * Class constructor.

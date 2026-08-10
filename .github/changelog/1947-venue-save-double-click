@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Fixed the venue creation Save button not disabling while the request is in flight, which allowed repeated clicks to create multiple duplicate venue posts.

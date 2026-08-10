@@ -10,7 +10,8 @@ namespace GatherPress\Tests\Core\Event;
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Admin_List;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Event\Setup as Event_Setup;
+use GatherPress\Core\Rsvp;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use WP_Query;
@@ -767,13 +768,16 @@ class Test_Admin_List extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_get_event_counts_with_no_date(): void {
+	public function test_get_event_counts_for_an_event_created_without_dates(): void {
 		$instance = Admin_List::get_instance();
 
 		// Reset cached counts.
 		Utility::set_and_get_hidden_property( $instance, 'event_counts', array() );
 
-		// Create an event without setting any dates.
+		// An event created without dates is seeded with the editor's default,
+		// which is tomorrow, so it counts as upcoming rather than falling out
+		// of both buckets the way a datetime-less event used to (#2054). The
+		// seed runs at shutdown so late-arriving meta wins over it (#2116).
 		$this->mock->post(
 			array(
 				'post_type'   => Event::POST_TYPE,
@@ -781,10 +785,12 @@ class Test_Admin_List extends Base {
 			)
 		)->get();
 
+		Event_Setup::get_instance()->resolve_pending_datetimes();
+
 		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
 
-		$this->assertSame( 0, $counts['upcoming'], 'Event without date should not count as upcoming.' );
-		$this->assertSame( 0, $counts['past'], 'Event without date should not count as past.' );
+		$this->assertSame( 1, $counts['upcoming'], 'Event created without dates should count as upcoming.' );
+		$this->assertSame( 0, $counts['past'], 'Event created without dates should not count as past.' );
 	}
 
 	/**
@@ -1264,6 +1270,11 @@ class Test_Admin_List extends Base {
 
 		$this->assertStringContainsString( 'gatherpress-rsvp-approved', $output, 'Should show approved RSVP count.' );
 		$this->assertStringContainsString( '>1<', $output, 'Should show count of 1.' );
+		$this->assertStringContainsString(
+			'<span class="screen-reader-text"> approved RSVP</span>',
+			$output,
+			'Should append the visually hidden accessible-name suffix.'
+		);
 	}
 
 	/**
@@ -1305,6 +1316,11 @@ class Test_Admin_List extends Base {
 			'Should show unapproved RSVP indicator.'
 		);
 		$this->assertStringContainsString( 'Unapproved RSVPs', $output, 'Should contain title for unapproved.' );
+		$this->assertStringContainsString(
+			'<span class="screen-reader-text"> unapproved RSVP</span>',
+			$output,
+			'Should append the visually hidden accessible-name suffix.'
+		);
 	}
 
 	/**

@@ -1,0 +1,159 @@
+name: Version Bump
+
+# Manually-triggered version bump: runs the release tooling
+# (npm run version:bump), refreshes the lockfile,
+# and opens a `version-X.Y.Z` PR against develop with the Skip Changelog
+# label — replacing the old flow of running the gatherpress-develop WP-CLI
+# command in a local WordPress install (#1827).
+#
+# Prerequisite: the target version must already have a credits file at
+# .github/scripts/release/credits/<version>.json (that lands via a normal PR).
+#
+# The GatherPress Alpha lockstep sync is handed off to that repo's own
+# Version Bump workflow: dispatched automatically when a
+# GATHERPRESS_ALPHA_TOKEN secret (contents + actions write on
+# gatherpress-alpha) is configured here, otherwise the run summary prints
+# the one-liner to trigger it (#1921).
+#
+# The commit is created via the GraphQL API (createCommitOnBranch), so it is
+# GitHub-signed and satisfies develop's signed-commit protection. The version
+# PR is intentionally NOT auto-merged — the release manager reviews the
+# roster and generated output before it lands.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to bump to (X.Y.Z or X.Y.Z-alpha.N / -beta.N / -rc.N)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: version-bump
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    name: Generate version ${{ inputs.version }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate version input
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$ ]]; then
+            echo "::error::'${VERSION}' is not a valid version (X.Y.Z or X.Y.Z-alpha.N/-beta.N/-rc.N)."
+            exit 1
+          fi
+
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Run the version bump
+        env:
+          VERSION: ${{ inputs.version }}
+        run: npm run version:bump -- --version="${VERSION}"
+
+      - name: Refresh package-lock.json
+        # --ignore-scripts: this step only rewrites the lockfile, and the
+        # postinstall (patch-package) would run against an empty node_modules
+        # in CI and fail (the @wordpress/env patch-package hook; see AGENTS.md).
+        run: npm i --package-lock-only --ignore-scripts
+
+      - name: Open the version PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ inputs.version }}
+          REPO: ${{ github.repository }}
+        run: |
+          branch="version-${VERSION}"
+          head_sha=$(git rev-parse HEAD)
+
+          # Branch off develop via the API, then commit every file the bump
+          # touched (version strings, generated credits, lockfile, and any
+          # credits-fold changes) with createCommitOnBranch so GitHub signs
+          # the commit (#1921).
+          gh api "repos/${REPO}/git/refs" \
+            -f ref="refs/heads/${branch}" -f sha="${head_sha}" > /dev/null
+
+          # File contents reach jq via --rawfile (and the accumulated array via
+          # --slurpfile below), never as command-line arguments: Linux caps a
+          # single argv string at 128 KiB (MAX_ARG_STRLEN), and the lockfile's
+          # base64 alone is ~10x that, killing jq with "Argument list too
+          # long" (#2002). rtrimstr drops the trailing newline base64 emits,
+          # which the old command substitution used to strip.
+          additions='[]'
+          while IFS= read -r file; do
+            base64 -w0 "${file}" > /tmp/bump-file.b64
+            additions=$(jq \
+              --arg path "${file}" \
+              --rawfile contents /tmp/bump-file.b64 \
+              '. + [{path: $path, contents: ($contents | rtrimstr("\n"))}]' <<< "${additions}")
+          done < <(git status --porcelain | awk '{print $2}')
+
+          printf '%s' "${additions}" > /tmp/bump-additions.json
+
+          jq -n \
+            --arg query 'mutation ($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }' \
+            --arg repo "${REPO}" \
+            --arg branch "${branch}" \
+            --arg oid "${head_sha}" \
+            --arg headline "Start ${VERSION}" \
+            --slurpfile additions /tmp/bump-additions.json \
+            '{query: $query, variables: {input: {branch: {repositoryNameWithOwner: $repo, branchName: $branch}, expectedHeadOid: $oid, message: {headline: $headline}, fileChanges: {additions: $additions[0]}}}}' \
+            > /tmp/bump-commit.json
+
+          gh api graphql --input /tmp/bump-commit.json > /dev/null
+
+          gh pr create \
+            --base develop \
+            --head "${branch}" \
+            --title "Start ${VERSION}" \
+            --body "Prepares the ${VERSION} version bump. Generated by the Version Bump workflow via \`.github/scripts/release/generate-version.php\` plus \`npm i --package-lock-only\`.
+
+          The companion GatherPress/gatherpress-alpha version PR is handled by that repo's Version Bump workflow — see this run's summary for whether it was dispatched automatically or needs a manual trigger.
+
+          See docs/contributor/release-process.md for the full release train." \
+            --label "Skip Changelog"
+
+      - name: Hand off the gatherpress-alpha version PR
+        env:
+          ALPHA_TOKEN: ${{ secrets.GATHERPRESS_ALPHA_TOKEN }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          if [ -n "${ALPHA_TOKEN}" ]; then
+            GH_TOKEN="${ALPHA_TOKEN}" gh workflow run version-bump.yml \
+              --repo GatherPress/gatherpress-alpha \
+              -f version="${VERSION}"
+
+            echo "Dispatched the gatherpress-alpha Version Bump workflow for ${VERSION} — its version PR opens there shortly." >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "### GatherPress Alpha lockstep sync"
+              echo ""
+              echo "No \`GATHERPRESS_ALPHA_TOKEN\` secret is configured, so trigger the companion version PR yourself:"
+              echo ""
+              echo '```'
+              echo "gh workflow run version-bump.yml --repo GatherPress/gatherpress-alpha -f version=${VERSION}"
+              echo '```'
+              echo ""
+              echo "Or run it from the Actions tab: https://github.com/GatherPress/gatherpress-alpha/actions/workflows/version-bump.yml"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi

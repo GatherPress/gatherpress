@@ -791,7 +791,7 @@ class Test_Rsvp_Response extends Base {
 			)
 		);
 
-		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_enabled' );
 		update_post_meta( $post_id, 'gatherpress_enable_rsvp', 0 );
 
 		$block_content = '<div class="wp-block-gatherpress-rsvp-response">Content</div>';
@@ -805,6 +805,6 @@ class Test_Rsvp_Response extends Base {
 		$this->assertSame( '', $result, 'Should return empty string when per-event RSVP is disabled.' );
 
 		delete_post_meta( $post_id, 'gatherpress_enable_rsvp' );
-		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 	}
 }

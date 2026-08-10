@@ -9,7 +9,7 @@ registry. Companion plugins should hook this (NOT `plugins_loaded`,
 which is too early — the manager singleton may not yet exist)
 and register their providers by calling
 `$registry->register( new My_Map_Provider() )`. Core providers
-(OSM) are already registered by this point.
+(OSM, Google) are already registered by this point.
 
 ## Auto-generated Example
 

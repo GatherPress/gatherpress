@@ -25,7 +25,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  *
  * @since 0.34.0
  */
-class Taxonomy_Feed extends Endpoint {
+final class Taxonomy_Feed extends Endpoint {
 
 	/**
 	 * Class constructor.

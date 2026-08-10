@@ -30,7 +30,7 @@ class Test_Roles extends Base {
 		$instance = Roles::get_instance();
 		$slug     = Utility::invoke_hidden_method( $instance, 'get_slug' );
 
-		$this->assertSame( 'roles', $slug, 'Failed to assert slug is roles.' );
+		$this->assertSame( 'roles_settings', $slug, 'Failed to assert slug is roles_settings.' );
 	}
 
 	/**

@@ -73,12 +73,13 @@ abstract class Base {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param float $latitude  Venue latitude in decimal degrees.
-	 * @param float $longitude Venue longitude in decimal degrees.
-	 * @param int   $zoom      Map zoom level (already clamped by the orchestrator).
-	 * @param int   $width     Logical pixel width (at density 1).
-	 * @param int   $height    Logical pixel height (at density 1).
-	 * @param int   $density   Pixel-density multiplier. 1 = standard, 2 = retina.
+	 * @param float  $latitude  Venue latitude in decimal degrees.
+	 * @param float  $longitude Venue longitude in decimal degrees.
+	 * @param int    $zoom      Map zoom level (already clamped by the orchestrator).
+	 * @param int    $width     Logical pixel width (at density 1).
+	 * @param int    $height    Logical pixel height (at density 1).
+	 * @param int    $density   Pixel-density multiplier. 1 = standard, 2 = retina.
+	 * @param string $map_type  Map type slug — one of `roadmap`, `satellite`, `hybrid`, `terrain`.
 	 *
 	 * @return GdImage|resource|null Finished image, or null on failure.
 	 */
@@ -88,7 +89,8 @@ abstract class Base {
 		int $zoom,
 		int $width,
 		int $height,
-		int $density = 1
+		int $density = 1,
+		string $map_type = 'roadmap'
 	);
 
 	/**

@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Mark write-once properties readonly so immutability is enforced by the type system. No behavior change.

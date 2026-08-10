@@ -103,13 +103,19 @@ final class Setup {
 	/**
 	 * Register the notices GatherPress ships with.
 	 *
+	 * Currently none. The upcoming PHP 8.1 and WordPress 7.0 requirement
+	 * notices lived here through 0.34.1 to warn sites ahead of the bump;
+	 * 0.35.0 raises the floors for real, so the warnings have nothing left
+	 * to warn about. The blocking notices that replace them are constructed
+	 * directly by `requirements-check.php`.
+	 *
+	 * Kept as the registration point for whatever ships next.
+	 *
 	 * @since 0.34.1
 	 *
 	 * @return void
 	 */
 	protected function register_default_notices(): void {
-		$this->add( new Upcoming_Php_Requirement() );
-		$this->add( new Upcoming_Wp_Requirement() );
 	}
 
 	/**

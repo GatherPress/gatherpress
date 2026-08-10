@@ -106,4 +106,92 @@ describe( 'modal-manager openModal', () => {
 				.classList.contains( 'gatherpress--is-visible' )
 		).toBe( true );
 	} );
+
+	it( 'openModalOnEnter opens the modal on Enter or Space key', () => {
+		document.body.innerHTML = `
+			<div class="wp-block-gatherpress-modal-manager">
+				<button type="button">Open</button>
+				<div class="wp-block-gatherpress-modal"></div>
+			</div>
+		`;
+
+		const button = document.querySelector( 'button' );
+		const enterEvent = { key: 'Enter', preventDefault: jest.fn(), target: button };
+		const spaceEvent = { key: ' ', preventDefault: jest.fn(), target: button };
+		const tabEvent = { key: 'Tab', preventDefault: jest.fn(), target: button };
+
+		// Other keys should not open the modal.
+		actions.openModalOnEnter( tabEvent );
+		expect( tabEvent.preventDefault ).not.toHaveBeenCalled();
+		expect(
+			document
+				.querySelector( '.wp-block-gatherpress-modal' )
+				.classList.contains( 'gatherpress--is-visible' )
+		).toBe( false );
+
+		// Enter should open the modal.
+		actions.openModalOnEnter( enterEvent );
+		expect( enterEvent.preventDefault ).toHaveBeenCalled();
+		expect(
+			document
+				.querySelector( '.wp-block-gatherpress-modal' )
+				.classList.contains( 'gatherpress--is-visible' )
+		).toBe( true );
+
+		// Reset visibility.
+		document.querySelector( '.wp-block-gatherpress-modal' ).classList.remove( 'gatherpress--is-visible' );
+
+		// Space should open the modal.
+		actions.openModalOnEnter( spaceEvent );
+		expect( spaceEvent.preventDefault ).toHaveBeenCalled();
+		expect(
+			document
+				.querySelector( '.wp-block-gatherpress-modal' )
+				.classList.contains( 'gatherpress--is-visible' )
+		).toBe( true );
+	} );
+
+	it( 'closeModalOnEnter closes the modal on Enter or Space key', () => {
+		document.body.innerHTML = `
+			<div class="wp-block-gatherpress-modal-manager">
+				<button type="button">Close</button>
+				<div class="wp-block-gatherpress-modal gatherpress--is-visible"></div>
+			</div>
+		`;
+
+		const button = document.querySelector( 'button' );
+		const enterEvent = { key: 'Enter', preventDefault: jest.fn(), target: button };
+		const spaceEvent = { key: ' ', preventDefault: jest.fn(), target: button };
+		const tabEvent = { key: 'Tab', preventDefault: jest.fn(), target: button };
+
+		// Other keys should not close the modal.
+		actions.closeModalOnEnter( tabEvent );
+		expect( tabEvent.preventDefault ).not.toHaveBeenCalled();
+		expect(
+			document
+				.querySelector( '.wp-block-gatherpress-modal' )
+				.classList.contains( 'gatherpress--is-visible' )
+		).toBe( true );
+
+		// Enter should close the modal.
+		actions.closeModalOnEnter( enterEvent );
+		expect( enterEvent.preventDefault ).toHaveBeenCalled();
+		expect(
+			document
+				.querySelector( '.wp-block-gatherpress-modal' )
+				.classList.contains( 'gatherpress--is-visible' )
+		).toBe( false );
+
+		// Reset visibility.
+		document.querySelector( '.wp-block-gatherpress-modal' ).classList.add( 'gatherpress--is-visible' );
+
+		// Space should close the modal.
+		actions.closeModalOnEnter( spaceEvent );
+		expect( spaceEvent.preventDefault ).toHaveBeenCalled();
+		expect(
+			document
+				.querySelector( '.wp-block-gatherpress-modal' )
+				.classList.contains( 'gatherpress--is-visible' )
+		).toBe( false );
+	} );
 } );

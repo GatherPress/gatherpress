@@ -15,7 +15,7 @@
 	],
 	"require": {
 		"pmc/unit-test": "dev-main",
-		"php": ">=7.4"
+		"php": ">=8.1"
 	},
 	"require-dev": {
 		"dealerdirect/phpcodesniffer-composer-installer": "*",
@@ -47,7 +47,8 @@
 		],
 		"changelog:write": [
 			"composer install",
-			"vendor/bin/changelogger write --add-pr-num",
+			"php .github/scripts/add-changelog-pr-nums.php",
+			"vendor/bin/changelogger write",
 			"php .github/scripts/link-changelog-prs.php"
 		]
 	},
@@ -62,7 +63,7 @@
 			"dealerdirect/phpcodesniffer-composer-installer": true
 		},
 		"platform": {
-			"php": "7.4"
+			"php": "8.1"
 		}
 	}
 }

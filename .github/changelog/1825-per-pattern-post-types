@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Starter pattern definitions passed through the `gatherpress_event_starter_patterns` and `gatherpress_venue_starter_patterns` filters may now include a `postTypes` key to register a single pattern against specific post types instead of every post type sharing the support.

@@ -61,3 +61,4 @@ test-report.xml
 .claude
 
 *.zip
+coverage-multisite.xml

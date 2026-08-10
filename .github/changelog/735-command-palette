@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Added an "Add New Venue" entry to the editor command palette, matching the "Add New Event" one core provides.

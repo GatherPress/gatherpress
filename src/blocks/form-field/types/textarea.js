@@ -96,7 +96,7 @@ export default function TextareaField( {
 				style={ getInputStyles( fieldType, attributes ) }
 				name={ fieldName }
 				placeholder={ placeholder }
-				defaultValue={ fieldValue }
+				value={ fieldValue }
 				required={ required }
 				readOnly={ true }
 				tabIndex={ -1 }

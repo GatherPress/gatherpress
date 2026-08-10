@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+The Event Date block supports a new isLink attribute, matching the core Post Date block: toggle "Link to event" in the block settings to render the date as a link to the event.

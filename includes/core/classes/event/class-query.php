@@ -21,7 +21,7 @@ use GatherPress\Core\Shadow_Source;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue\Setup;
-use GatherPress\Core\Venue\Venue;
+use GatherPress\Core\Venue;
 use WP_Post;
 use WP_Query;
 
@@ -32,7 +32,7 @@ use WP_Query;
  *
  * @since 0.34.0
  */
-class Query {
+final class Query {
 
 	/**
 	 * Enforces a single instance of this class.

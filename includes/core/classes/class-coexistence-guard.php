@@ -28,7 +28,7 @@ use GatherPress\Core\Traits\Singleton;
  *
  * @since 0.34.0
  */
-class Coexistence_Guard {
+final class Coexistence_Guard {
 
 	/**
 	 * Enforces a single instance of this class.

@@ -53,7 +53,7 @@ class Test_Credits extends Base {
 		$instance = Credits::get_instance();
 		$slug     = Utility::invoke_hidden_method( $instance, 'get_slug' );
 
-		$this->assertSame( 'credits', $slug, 'Failed to assert slug is credits.' );
+		$this->assertSame( 'credits_settings', $slug, 'Failed to assert slug is credits_settings.' );
 	}
 
 	/**
@@ -96,7 +96,7 @@ class Test_Credits extends Base {
 		$instance = Credits::get_instance();
 		$response = Utility::buffer_and_return(
 			array( $instance, 'settings_section' ),
-			array( 'gatherpress_events' )
+			array( 'gatherpress_events_settings' )
 		);
 
 		$this->assertEmpty( $response, 'Failed to assert no markup was returned.' );
@@ -108,7 +108,7 @@ class Test_Credits extends Base {
 
 		$response = Utility::buffer_and_return(
 			array( $instance, 'settings_section' ),
-			array( 'gatherpress_credits' )
+			array( 'gatherpress_credits_settings' )
 		);
 
 		$this->assertFalse(

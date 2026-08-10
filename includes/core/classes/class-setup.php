@@ -26,7 +26,7 @@ use WP_Site;
  *
  * @since 0.27.0
  */
-class Setup {
+final class Setup {
 
 	/**
 	 * Enforces a single instance of this class.
@@ -36,7 +36,11 @@ class Setup {
 	/**
 	 * Constructor for the Setup class.
 	 *
-	 * Initializes and sets up various components of the plugin.
+	 * Initializes and sets up various components of the plugin. Once this
+	 * constructor completes, `gatherpress.php` fires the
+	 * `gatherpress_loaded` action so subsystems that registered listeners
+	 * during instantiation (e.g. the RSVP `Provider_Registry`'s
+	 * core-provider registration) run with all classes already wired up.
 	 *
 	 * @since 0.27.0
 	 */
@@ -270,7 +274,7 @@ class Setup {
 	 *
 	 * @return void
 	 */
-	public function add_privacy_policy_content() {
+	public function add_privacy_policy_content(): void {
 		$content = '<h2>' .
 			__( 'Inform your visitors about GatherPress\' use of OpenStreetMap services.', 'gatherpress' ) .
 			'</h2>'

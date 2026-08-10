@@ -23,7 +23,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  *
  * @since 0.33.0
  */
-class Form_Field {
+final class Form_Field {
 
 	/**
 	 * Processed form field attributes with defaults applied.
@@ -77,6 +77,8 @@ class Form_Field {
 	 */
 	public function __construct( array $attributes ) {
 		$this->attributes = $this->process_attributes( $attributes );
+
+		$this->maybe_prefill_field_value();
 	}
 
 	/**
@@ -101,6 +103,7 @@ class Form_Field {
 			'label'                  => $raw_attributes['label'] ?? '',
 			'placeholder'            => $raw_attributes['placeholder'] ?? '',
 			'required'               => (bool) ( $raw_attributes['required'] ?? false ),
+			'prefill_current_user'   => (bool) ( $raw_attributes['prefillCurrentUser'] ?? false ),
 			'required_text'          => $raw_attributes['requiredText'] ?? __( '(required)', 'gatherpress' ),
 			'help_text'              => $raw_attributes['helpText'] ?? '',
 			'min_value'              => $raw_attributes['minValue'] ?? null,
@@ -142,6 +145,40 @@ class Form_Field {
 	 */
 	private function get_input_id(): string {
 		return sprintf( 'gatherpress_%s', wp_rand() );
+	}
+
+	/**
+	 * Prefill the field value from the logged-in user.
+	 *
+	 * Applies only when the block's prefill toggle is on and a user is
+	 * logged in: text fields receive the user's display name, email
+	 * fields the account email address — trumping any authored default
+	 * value. Logged-out visitors fall back to the authored default (or
+	 * an empty field). Prefilling the email with the account address
+	 * also makes the account-linked RSVP path the default —
+	 * `Rsvp\Form::prepare_comment_data()` associates a submission with
+	 * the current user only when the submitted email matches their
+	 * account email.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @return void
+	 */
+	private function maybe_prefill_field_value(): void {
+		if (
+			empty( $this->attributes['prefill_current_user'] )
+			|| ! is_user_logged_in()
+		) {
+			return;
+		}
+
+		$user = wp_get_current_user();
+
+		if ( 'email' === $this->attributes['field_type'] ) {
+			$this->attributes['field_value'] = $user->user_email;
+		} elseif ( 'text' === $this->attributes['field_type'] ) {
+			$this->attributes['field_value'] = $user->display_name;
+		}
 	}
 
 	/**

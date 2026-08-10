@@ -81,7 +81,8 @@
 		},
 		"label": {
 			"type": "string",
-			"default": "Dropdown"
+			"default": "Dropdown",
+			"role": "content"
 		},
 		"labelTextColor": {
 			"type": "string",

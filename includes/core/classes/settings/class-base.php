@@ -171,7 +171,7 @@ abstract class Base {
 	 *
 	 * @return mixed|null The value of the property or null if it doesn't exist.
 	 */
-	public function get( string $property ) {
+	public function get( string $property ): mixed {
 		return $this->$property ?? null;
 	}
 

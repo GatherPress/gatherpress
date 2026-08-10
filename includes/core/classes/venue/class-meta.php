@@ -37,7 +37,7 @@ use WP_REST_Request;
  *
  * @since 0.34.0
  */
-class Meta {
+final class Meta {
 
 	/**
 	 * Enforces a single instance of this class.

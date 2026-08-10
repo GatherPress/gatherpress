@@ -246,6 +246,7 @@ Show a field only when one or more controlling fields hold a specific value. Use
 
 - **Scalar value** — string equality after casting. `'map_platform' => 'google'` matches when the controlling field's current value (coerced to string) equals `'google'`.
 - **Array of values** — OR within one key. `'map_platform' => array( 'google', 'mapbox' )` matches when the current value is either.
+- **Negation** — `array( 'not' => value )` or `array( 'not' => array( … ) )` — the inverse: show when the current value is **not** (one of) the given value(s). Useful for "show unless disabled" without enumerating every enabled variant.
 - **Multiple keys** — AND across keys. Every entry in the `show_if` array must be satisfied for the field to be visible.
 
 ```php
@@ -254,6 +255,16 @@ Show a field only when one or more controlling fields hold a specific value. Use
     'venue_map_default_render_mode' => 'interactive',
 ),
 ```
+
+The negation form is what the RSVP settings page uses to hide the mode-dependent fields whenever RSVP Mode is `disabled` — rather than listing `all_on`, `per_event_on`, `per_event_off`, so the intent reads directly and a future mode doesn't silently fall out of the condition:
+
+```php
+'show_if' => array(
+    'rsvp_mode' => array( 'not' => 'disabled' ),
+),
+```
+
+The negation form is available since 0.35.0.
 
 #### Hidden ≠ cleared
 

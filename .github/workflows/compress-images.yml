@@ -17,10 +17,17 @@ on:
 jobs:
   compress-images:
     # Only run on main repo on and PRs that match the main repo.
+    # Skip release-train branches (version-*, release/*, credits/*): a bot
+    # push mid-release races the release manager's own pushes (#1921), and
+    # image changes on those branches are already-optimized copies flowing
+    # between develop and main.
     if: |
       github.repository == 'GatherPress/gatherpress' &&
       (github.event_name != 'pull_request' ||
-       github.event.pull_request.head.repo.full_name == github.repository)
+       (github.event.pull_request.head.repo.full_name == github.repository &&
+        !startsWith(github.head_ref, 'version-') &&
+        !startsWith(github.head_ref, 'release/') &&
+        !startsWith(github.head_ref, 'credits/')))
     name: calibreapp/image-actions
     permissions: write-all
     runs-on: ubuntu-latest

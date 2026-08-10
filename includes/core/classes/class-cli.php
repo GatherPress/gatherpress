@@ -27,7 +27,7 @@ use WP_CLI;
  *
  * @since 0.27.0
  */
-class Cli {
+final class Cli {
 
 	/**
 	 * Enforces a single instance of this class.

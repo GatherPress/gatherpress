@@ -1145,4 +1145,157 @@ class Test_Form_Field extends Base {
 			'Failed to assert fallback inherit color for text field without text color.'
 		);
 	}
+
+	/**
+	 * Create a user with a known display name and email and log them in.
+	 *
+	 * @return int The user ID.
+	 */
+	protected function login_prefill_user(): int {
+		$user_id = $this->factory->user->create(
+			array(
+				'display_name' => 'Jane Attendee',
+				'user_email'   => 'jane@example.test',
+			)
+		);
+
+		wp_set_current_user( $user_id );
+
+		return $user_id;
+	}
+
+	/**
+	 * With the prefill toggle on, a logged-in user's display name fills an
+	 * empty text field and their account email fills an empty email field.
+	 *
+	 * @since 0.35.0
+	 * @covers ::__construct
+	 * @covers ::maybe_prefill_field_value
+	 *
+	 * @return void
+	 */
+	public function test_prefill_fills_text_and_email_for_logged_in_user(): void {
+		$this->login_prefill_user();
+
+		$text_field = new Form_Field(
+			array(
+				'fieldType'          => 'text',
+				'fieldName'          => 'author',
+				'prefillCurrentUser' => true,
+			)
+		);
+
+		$this->assertStringContainsString(
+			'value="Jane Attendee"',
+			$text_field->get_input_attributes(),
+			'A prefill-enabled text field should carry the display name.'
+		);
+
+		$email_field = new Form_Field(
+			array(
+				'fieldType'          => 'email',
+				'fieldName'          => 'email',
+				'prefillCurrentUser' => true,
+			)
+		);
+
+		$this->assertStringContainsString(
+			'value="jane@example.test"',
+			$email_field->get_input_attributes(),
+			'A prefill-enabled email field should carry the account email.'
+		);
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * Logged-out visitors get the authored default value even when the
+	 * toggle is on, and logged-in users get the default when the toggle
+	 * is off.
+	 *
+	 * @since 0.35.0
+	 * @covers ::maybe_prefill_field_value
+	 *
+	 * @return void
+	 */
+	public function test_prefill_skips_logged_out_visitors_and_disabled_toggle(): void {
+		wp_set_current_user( 0 );
+
+		$logged_out = new Form_Field(
+			array(
+				'fieldType'          => 'email',
+				'fieldName'          => 'email',
+				'fieldValue'         => 'default@example.test',
+				'prefillCurrentUser' => true,
+			)
+		);
+
+		$this->assertStringContainsString(
+			'value="default@example.test"',
+			$logged_out->get_input_attributes(),
+			'A logged-out visitor should see the authored default value.'
+		);
+
+		$this->login_prefill_user();
+
+		$toggle_off = new Form_Field(
+			array(
+				'fieldType'  => 'email',
+				'fieldName'  => 'email',
+				'fieldValue' => 'default@example.test',
+			)
+		);
+
+		$this->assertStringContainsString(
+			'value="default@example.test"',
+			$toggle_off->get_input_attributes(),
+			'Without the toggle, a logged-in user still sees the default value.'
+		);
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * For a logged-in user the prefill trumps an authored default value,
+	 * and field types other than text/email are never prefilled.
+	 *
+	 * @since 0.35.0
+	 * @covers ::maybe_prefill_field_value
+	 *
+	 * @return void
+	 */
+	public function test_prefill_trumps_authored_value_and_skips_other_types(): void {
+		$this->login_prefill_user();
+
+		$authored = new Form_Field(
+			array(
+				'fieldType'          => 'text',
+				'fieldName'          => 'author',
+				'fieldValue'         => 'Authored Name',
+				'prefillCurrentUser' => true,
+			)
+		);
+
+		$this->assertStringContainsString(
+			'value="Jane Attendee"',
+			$authored->get_input_attributes(),
+			'For a logged-in user, the prefill overrides the authored default value.'
+		);
+
+		$url_field = new Form_Field(
+			array(
+				'fieldType'          => 'url',
+				'fieldName'          => 'website',
+				'prefillCurrentUser' => true,
+			)
+		);
+
+		$this->assertStringContainsString(
+			'value=""',
+			$url_field->get_input_attributes(),
+			'Field types other than text and email are never prefilled.'
+		);
+
+		wp_set_current_user( 0 );
+	}
 }

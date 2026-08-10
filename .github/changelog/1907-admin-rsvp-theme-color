@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+The admin RSVP badge hover and pending-count states now follow the selected WordPress admin color scheme, with the existing colors as fallbacks.

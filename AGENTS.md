@@ -276,10 +276,15 @@ Apply to PHP PHPDoc blocks and JS JSDoc blocks alike.
         ```
 
     - ❌ Bad: `class Setup {` immediately followed by `\t/**` on the next line.
-- **Prefer `str_contains` / `str_starts_with` / `str_ends_with` over `strpos`**: WordPress ships polyfills for these PHP 8 string helpers back to PHP 7.0, so they're safe under our PHP 7.4 floor. They read better than the `false ===` / `0 ===` dance and SonarCloud flags the legacy form.
+- **Prefer `str_contains` / `str_starts_with` / `str_ends_with` over `strpos`**: native in PHP 8 (the plugin's floor is 8.1). They read better than the `false ===` / `0 ===` dance and SonarCloud flags the legacy form.
     - ✅ Good: `if ( str_contains( $haystack, $needle ) )` / `if ( str_starts_with( $key, 'gatherpress_' ) )` / `if ( ! str_contains( $content, $token ) )`
     - ❌ Bad: `if ( false !== strpos( $haystack, $needle ) )` / `if ( 0 === strpos( $key, 'gatherpress_' ) )` / `if ( false === strpos( $content, $token ) )`
-- **Every `switch` needs a `default` case**: SonarCloud (`php:S131`) flags any switch missing a `default` branch, even when the listed cases cover the expected values. Add `default: break;` with a one-line comment explaining what falls through (e.g. "Field types without extra params render with the base $params.") — that way the reader sees the intent rather than wondering whether a case was forgotten.
+- **Prefer `match` when a `switch` exists only to produce one value.** `match` is an expression, so the assignment appears once instead of in every arm, and it is exhaustive — which retires the `default:`-arm boilerplate `php:S131` otherwise demands. Two things to check before converting, because they are behavior changes rather than style:
+    1. **`match` compares with `===`, `switch` with `==`.** Equivalent when dispatching on strings or enum cases (what we do everywhere today); not equivalent if the subject can be an int compared against string cases.
+    2. **`match` throws `UnhandledMatchError` when nothing matches**, where `switch` silently falls through. Keep a `default =>` arm unless an unmatched value genuinely is a bug worth surfacing.
+    - ✅ Good: `$multiplier = match ( $frequency ) { 'daily' => DAY_IN_SECONDS, ..., default => HOUR_IN_SECONDS };`
+    - ❌ Not a candidate: arms with side effects (`add_filter`), arms assigning *different* targets, arms with intermediate variables, or a `default` that deliberately does nothing. Leave those as `switch` — most of ours are this shape.
+- **Every remaining `switch` needs a `default` case**: SonarCloud (`php:S131`) flags any switch missing a `default` branch, even when the listed cases cover the expected values. Add `default: break;` with a one-line comment explaining what falls through (e.g. "Field types without extra params render with the base $params.") — that way the reader sees the intent rather than wondering whether a case was forgotten.
     - ✅ Good:
 
         ```php
@@ -372,6 +377,23 @@ Apply to PHP PHPDoc blocks and JS JSDoc blocks alike.
         - ❌ Bad: `Event::get_instance()` (doesn't exist for these classes)
     - In tests, always check the class structure before deciding instantiation method
     - Look for `use Singleton;` trait to determine if `::get_instance()` should be used
+- **`readonly` where a property is genuinely write-once** (#1961), which lets the type system enforce immutability instead of convention. The surface is far smaller than it looks — four conditions each disqualify a property, and three of them are invisible in the class itself:
+    1. **It cannot have a default value.** `protected ?WP_Post $event = null;` is out; `readonly` forbids defaults, and dropping the default only works if the constructor always assigns.
+    2. **It must be assigned unconditionally.** `Calendar\Endpoint` assigns inside `if ( $this->is_valid_registration() )`, so on the failing branch the property stays uninitialized forever — PHPStan flags this as `property.uninitializedReadonly`.
+    3. **Nothing may write it from outside the declaring class** — including tests writing to a mock, e.g. `$template->slug = '…';`. That is a fatal `Cannot initialize readonly property … from scope`.
+    4. **The PMC test helpers must not touch it.** `Utility::set_and_get_hidden_property()` writes through reflection, which PHP 8.1 forbids on an initialized readonly property, and `assert_hooks()` re-invokes the constructor on an existing instance — which throws on the *second* assignment. This is what keeps `Settings\Base::$priority` and `Rsvp::$max_attendance_limit` mutable.
+    - Before adding the keyword, grep for external writes with POSIX classes, not `\s` — **BSD grep on macOS silently matches nothing for `\s`**, which will tell you a property is safe when it is not: `grep -rnE -- "->[[:space:]]*prop[[:space:]]*=[^=>]" includes test`.
+- **Classes are `final` by default** (#1961). Extensibility flows through hooks, `post_type_supports`, and the abstract provider bases — not through subclassing concrete classes. A new class gets `final` unless it is deliberately an extension point.
+    - ✅ Good: `final class Token {` — a leaf class nothing extends.
+    - ✅ Good: `abstract class Base {` — the documented extension point for settings pages / RSVP response providers / venue map providers.
+    - ❌ Bad: a plain `class Foo {` that nothing extends and that isn't meant to be extended.
+    - **Four things must stay non-final**, and the reasons are worth knowing before you add the keyword:
+        1. Abstract bases (`Settings\Base`, `Calendar\Endpoint_Type`, `Rsvp\Response\Provider\Base`, `Venue\Map\Provider\Base`).
+        2. Anything actually extended in `includes/` — currently `Calendar\Endpoint` and `Migrate`.
+        3. **Anything mocked in tests.** PHPUnit cannot mock a `final` class, so `createMock( Foo::class )` / `getMockBuilder( Foo::class )` and `final` are mutually exclusive. This is what keeps `Event`, `Settings`, `Template`, and `Endpoint` non-final. Check `grep -rn "createMock\|getMockBuilder" test/unit/php` before finalizing.
+        4. Anything a test subclasses, including anonymous `new class() extends Foo` doubles.
+    - `final` makes PHPStan's inference precise: it can prove a return type is never returned, where before a hypothetical subclass kept the union alive. Expect the analyzer to surface dead types when you add the keyword — fix them rather than widening the signature back.
+    - In a `final` class, use `self::` rather than `static::` — late static binding has no meaning once nothing can subclass, and PHPCS enforces it (`Universal.CodeAnalysis.StaticInFinalClass`).
 
 ### PHP Linting Requirements
 
@@ -575,6 +597,24 @@ A11y rules that fire frequently and have known-good fixes specific to this codeb
     - When marking won't-fix in SonarCloud, paste the rationale: *"ARIA combobox-with-listbox-popup pattern (W3C APG). Native `<input list>`/`<datalist>` are single-line and can't render custom items; `<select multiple>` is for static-options selection, not free-text autocomplete."*
 - **Use `<div role="listbox">` rather than `<ul role="listbox">`** (`jsx-a11y/no-noninteractive-element-to-interactive-role`). The lint rule fires on the implicit-role-of-`<ul>`-being-overridden, not on the listbox role itself. Switching to a `<div>` with `<button role="option">` children (no wrapping `<li role="none">` needed) avoids the rule entirely. CSS targeting class names rather than tags makes this a free swap — verify before touching markup that styles aren't `ul.foo` / `li`-scoped.
 - **Don't slap `role="listbox"` on a plain list of standalone clickable items**. If the children aren't `role="option"` and there's no combobox driving the list (no `aria-controls`/`aria-activedescendant` from an input), the role is incomplete-and-cosmetic — just delete it. A `<ul>`/`<li>`/`<button>` markup is already correct, accessible "list of clickable items," and users navigate with Tab. Don't add ARIA you don't intend to wire up fully.
+
+## Release Process and Branch Model
+
+The full release runbook lives at [`docs/contributor/release-process.md`](docs/contributor/release-process.md). The rules below are the invariants agents must respect in day-to-day work:
+
+- **`develop` is the trunk; `main` is the released state.** All feature/fix PRs target `develop` and get **squash-merged** (branch protection enforces linear history and signed commits). Only release-train PRs target `main` (the develop→main release merge, patch `version-X.Y.N` branches, changelog parity syncs).
+- **Never squash a develop→main release PR** — it must merge with a merge commit or the branch histories permanently diverge. Conversely, PRs into `develop` are always squashed.
+- **Every PR into `develop` needs changelog handling**: either a `.github/changelog/` entry file (Significance/Type header + one-line message; generate one with `composer changelog:add`, or copy the format from entries in git history — the directory is empty right after a release) or the `Skip Changelog` label. Convention: user-visible changes get an entry; docs-only, CI-only, dev-dependency, and version-bump PRs get the label. The gate only enforces on PRs based on `develop`.
+- **Know which release files are generated and which are only patched.** #1827 moved the release tooling into `.github/scripts/release/generate-version.php`, and it changed this materially — the old gatherpress-develop `parts/` pipeline that assembled the readmes is no longer in use, so editing `parts/shared/*.md` there does nothing.
+    - **Fully regenerated, never hand-edit**: `includes/data/credits.php`, and `docs/developer/hooks/` (regenerated by CI — see above).
+    - **Hand-edited, with individual lines patched in place**: `README.md` (only its version badge is rewritten), `readme.txt` (only `Stable tag:` and `Contributors:`), and `SECURITY.md` (only the supported-versions table). Improve the surrounding copy in these like any other file — that is the point of the change. `README.md` says as much in a comment at the top of the file.
+    - **Version strings patched in place**: `gatherpress.php`, `package.json` (refresh the lockfile after with `npm i --package-lock-only`), and gatherpress-alpha's `Version:` header.
+    - Feature-list changes go in `docs/features.md`. The short lists in `README.md` and `readme.txt` are now maintained by hand, so update them there too if they should stay in step.
+- **Distribution has two allowlists**: the GitHub release zip uses `package.json`'s `files` field; the wp.org deploy uses `.distignore`. A new dev/config/tooling file at the repo root must be added to `.distignore` or it ships to wp.org (see #1920 for the precedent).
+- **Patch fixes are born on `develop`** and cherry-picked (`git cherry-pick -x`) to the `version-X.Y.N` branch off `main`. Don't write original fixes on a patch branch unless the bug no longer exists on develop.
+- **After any release, two loop-closing steps are mandatory**: confirm the auto-opened `release/X.Y.Z` rollup PR auto-merged into develop (its commit is API-signed and auto-merge is pre-enabled; intervene only if it's stuck), and cherry-pick that rollup onto `main` for changelog parity. The release workflow refuses to run a stable tag while a `release/*` PR is still open, so an unmerged rollup blocks the next release instead of double-rolling its changelog.
+- **Agents must not push release tags.** A stable tag push deploys to WordPress.org; that call belongs to the release manager.
+- **GatherPress Alpha** (sibling repo/checkout `../gatherpress-alpha`) is version-locked to core and refuses to run on mismatch — every core version bump needs its lockstep sync PR.
 
 ## Known Issues / Technical Debt
 

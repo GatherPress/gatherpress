@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Mark classes that are not extension points as final, and drop return types that only existed for PHP 7.4. No behavior change; extending GatherPress continues to work through hooks, post type supports, and the abstract provider base classes.

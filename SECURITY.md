@@ -6,8 +6,8 @@ We release patches for security vulnerabilities only for the current version:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.34.x  | :white_check_mark: |
-| < 0.34  | :x:                |
+| 0.35.x  | :white_check_mark: |
+| < 0.35  | :x:                |
 
 **We strongly recommend always using the latest stable version of GatherPress.** Security updates are only provided for the current release.
 
@@ -49,7 +49,7 @@ When using GatherPress, we recommend:
 
 1. **Keep Updated**: Always run the latest version of GatherPress
 2. **WordPress Core**: Keep WordPress core updated to the latest version
-3. **PHP Version**: Use a supported PHP version (7.4 or higher recommended)
+3. **PHP Version**: Use a supported PHP version (8.1 or higher recommended)
 4. **Access Control**: Limit administrative access to trusted users only
 5. **Backups**: Maintain regular backups of your WordPress site
 6. **HTTPS**: Always use HTTPS for production sites

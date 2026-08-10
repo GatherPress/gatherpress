@@ -24,7 +24,7 @@ use WP_HTML_Tag_Processor;
  *
  * @since 0.33.0
  */
-class Dropdown {
+final class Dropdown {
 
 	/**
 	 * Enforces a single instance of this class.
@@ -286,6 +286,10 @@ class Dropdown {
 				$tag->set_attribute( 'aria-expanded', 'false' );
 				$tag->set_attribute( 'tabindex', '0' );
 				$tag->set_attribute( 'data-wp-on--click', 'actions.toggleDropdown' );
+				// The trigger is an anchor announced as a button; anchors only
+				// activate on Enter, so Space must be wired up explicitly to
+				// honor the ARIA button pattern.
+				$tag->set_attribute( 'data-wp-on--keydown', 'actions.activateOnSpace' );
 			}
 
 			if ( 'hover' === $open_on ) {

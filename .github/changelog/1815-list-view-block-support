@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Container blocks (Add to Calendar, Modal Content, Online Event, RSVP, RSVP Form, RSVP Response, RSVP Template, Venue) now declare the WordPress 7.0 List View block support, and Block Guard extends to the new inspector List View tab so guarded blocks stay protected there.

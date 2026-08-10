@@ -30,7 +30,7 @@ class Test_Events extends Base {
 		$instance = Events::get_instance();
 		$slug     = Utility::invoke_hidden_method( $instance, 'get_slug' );
 
-		$this->assertSame( 'events', $slug, 'Failed to assert slug is events.' );
+		$this->assertSame( 'events_settings', $slug, 'Failed to assert slug is events_settings.' );
 	}
 
 	/**

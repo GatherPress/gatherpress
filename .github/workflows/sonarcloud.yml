@@ -78,7 +78,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '7.4'
+          php-version: '8.1'
           coverage: xdebug
 
       - name: Composer Install
@@ -132,8 +132,8 @@ jobs:
           npm run test:unit:php
           npm run test:unit:php:multisite
           npm run test:unit:js
-          docker cp $(docker ps -aqf "name=tests-wordpress"):/var/www/html/coverage.xml coverage.xml
-          docker cp $(docker ps -aqf "name=tests-wordpress"):/var/www/html/coverage-multisite.xml coverage-multisite.xml
+          docker cp $(docker ps -aqf "name=wordpress"):/var/www/html/coverage.xml coverage.xml
+          docker cp $(docker ps -aqf "name=wordpress"):/var/www/html/coverage-multisite.xml coverage-multisite.xml
         if: ${{ success() || failure() }}
 
       - name: Fix Code Coverage Paths

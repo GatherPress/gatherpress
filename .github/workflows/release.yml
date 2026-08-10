@@ -32,6 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: read
     outputs:
       version: ${{ steps.context.outputs.version }}
       is_prerelease: ${{ steps.context.outputs.is_prerelease }}
@@ -49,6 +50,25 @@ jobs:
           else
             echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
             echo "Tag ${version} is a stable release."
+          fi
+
+      - name: Abort if a previous rollup PR is still open
+        if: steps.context.outputs.is_prerelease == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          # An unmerged release/* rollup PR means .github/changelog/ still
+          # holds entries that already shipped in a previous release — rolling
+          # them up again would double-list them in this release's changelog
+          # (#1921). Merge (or close) the open rollup PR, fix the tag's
+          # branch, and re-tag.
+          open_rollups=$(gh pr list --repo "${REPO}" --state open \
+            --json headRefName --jq '[.[] | select(.headRefName | startswith("release/"))] | length')
+
+          if [[ "${open_rollups}" != "0" ]]; then
+            echo "::error::An open release/* rollup PR exists — its consumed changelog entries would double-roll into this release. Merge it first, then re-tag."
+            exit 1
           fi
 
   # Always runs: aggregate `.github/changelog/*` into a new [X.Y.Z] section
@@ -75,7 +95,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '7.4'
+          php-version: '8.1'
           tools: composer
 
       - name: Composer install
@@ -89,10 +109,19 @@ jobs:
         env:
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
+          # Stamp each entry with the PR that introduced it. This stands in for
+          # changelogger's own --add-pr-num, which resolves the wrong PR on
+          # stable releases: it walks history with --first-parent, and a stable
+          # tag is cut from main where the release PR is a merge commit, so
+          # every entry ends up credited to the release instead of the work.
+          # See the script's docblock. Must run before the rollup consumes the
+          # entry files.
+          php .github/scripts/add-changelog-pr-nums.php
+
           # --use-version pins the section header to the tag we're releasing,
-          # --release-date defaults to today, --add-pr-num appends [#NNNN] from
-          # merge commit subjects, and --deduplicate=-1 disables looking back
-          # at prior versions (we trust each entry file to be unique-by-author).
+          # --release-date defaults to today, and --deduplicate=-1 disables
+          # looking back at prior versions (we trust each entry file to be
+          # unique-by-author). No --add-pr-num: the step above owns that now.
           #
           # On pre-releases this modifies the ephemeral working dir; the
           # changes never get pushed because the commit step below is gated
@@ -100,9 +129,16 @@ jobs:
           vendor/bin/changelogger write \
             --use-version="${VERSION}" \
             --release-date="$(date +%Y-%m-%d)" \
-            --add-pr-num \
             --deduplicate=-1 \
             --yes
+
+          # The markers above are bare `[#123]`, which render as literal text
+          # in CHANGELOG.md and in the release body extracted from it below.
+          # This turns them into inline links. It mirrors the last step of
+          # `composer changelog:write`; both call sites are needed because
+          # this job runs changelogger directly rather than through the
+          # composer script. Idempotent.
+          php .github/scripts/link-changelog-prs.php
 
       - name: Extract release body from CHANGELOG.md
         id: extract
@@ -147,26 +183,50 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.prepare.outputs.version }}
+          REPO: ${{ github.repository }}
         run: |
           branch="release/${VERSION}"
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Branch off the tag via the API, then create the rollup commit
+          # with createCommitOnBranch so GitHub signs it — develop requires
+          # signed commits, and a signed head is what lets the PR auto-merge
+          # with no admin override (#1921).
+          gh api "repos/${REPO}/git/refs" \
+            -f ref="refs/heads/${branch}" -f sha="${GITHUB_SHA}" > /dev/null
 
-          # Create the branch off the tag, add the rollup commit, and push.
-          git checkout -b "${branch}"
-          git add CHANGELOG.md .github/changelog/
-          git commit -m "Roll up changelog for ${VERSION}"
-          git push origin "${branch}"
+          # File changes from the changelogger run in this working tree:
+          # CHANGELOG.md rewritten, consumed entry files deleted.
+          additions=$(jq -n \
+            --arg path "CHANGELOG.md" \
+            --arg contents "$(base64 -w0 CHANGELOG.md)" \
+            '[{path: $path, contents: $contents}]')
+          deletions=$(git status --porcelain .github/changelog/ \
+            | awk '$1 == "D" {print $2}' | jq -R '{path: .}' | jq -s .)
 
-          # Open a PR back to develop. The release manager merges once the
-          # release has shipped and they've sanity-checked the rendered body.
-          gh pr create \
+          jq -n \
+            --arg query 'mutation ($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }' \
+            --arg repo "${REPO}" \
+            --arg branch "${branch}" \
+            --arg oid "${GITHUB_SHA}" \
+            --arg headline "Roll up changelog for ${VERSION}" \
+            --argjson additions "${additions}" \
+            --argjson deletions "${deletions}" \
+            '{query: $query, variables: {input: {branch: {repositoryNameWithOwner: $repo, branchName: $branch}, expectedHeadOid: $oid, message: {headline: $headline}, fileChanges: {additions: $additions, deletions: $deletions}}}}' \
+            > /tmp/rollup-commit.json
+
+          gh api graphql --input /tmp/rollup-commit.json > /dev/null
+
+          # Open the PR back to develop and let it merge itself once checks
+          # pass (squash keeps develop linear). The release manager still
+          # sanity-checks the rendered release body on the Release itself.
+          pr_url=$(gh pr create \
             --base develop \
             --head "${branch}" \
             --title "Roll up changelog for ${VERSION}" \
-            --body "Automated rollup of \`.github/changelog/*\` entries into \`CHANGELOG.md\` as part of the ${VERSION} release. Merge after confirming the rendered release body at https://github.com/${GITHUB_REPOSITORY}/releases/tag/${VERSION} looks right." \
-            --label "Skip Changelog"
+            --body "Automated rollup of \`.github/changelog/*\` entries into \`CHANGELOG.md\` as part of the ${VERSION} release. Auto-merges once checks pass; the rendered release body lives at https://github.com/${GITHUB_REPOSITORY}/releases/tag/${VERSION}. Remember the changelog parity cherry-pick to main afterward (docs/contributor/release-process.md)." \
+            --label "Skip Changelog")
+
+          gh pr merge --auto --squash "${pr_url}"
 
   # Build the distro zip via wp-scripts plugin-zip (already in package.json).
   # Same artifact for both pre-release and stable paths.
@@ -267,3 +327,188 @@ jobs:
         env:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+
+  # Beta tags only: deploy to wp.org SVN *trunk* (so translate.wordpress.org
+  # picks up the new strings before the stable ships) and create a matching
+  # SVN tag (so the beta appears as a named download in the plugin page's
+  # Advanced-view version dropdown for testers who don't use GitHub) —
+  # #1758. Regular users are unaffected either way: wp.org serves the
+  # version named by trunk's `Stable tag:` line, which this job deliberately
+  # preserves from the existing trunk readme.txt (the beta's own readme.txt
+  # says `Stable tag: X.Y.Z-beta.N`, which must never reach trunk). Note the
+  # new SVN tag may require a release-confirmation click, like any tag.
+  #
+  # This is a custom SVN deploy because 10up/action-wordpress-plugin-deploy
+  # has no trunk-only mode (10up/action-wordpress-plugin-deploy#103,
+  # closed not-planned). The rsync mechanics mirror that action's deploy.sh
+  # so trunk's layout matches what stable deploys produce. Alphas and RCs
+  # are excluded on purpose: the polyglots guidance is to publish *named
+  # beta releases*, not every development build.
+  deploy-wporg-trunk:
+    name: Deploy beta to WordPress.org (trunk + beta tag)
+    needs: [prepare, release]
+    if: |
+      github.repository == 'GatherPress/gatherpress' &&
+      needs.prepare.outputs.is_prerelease == 'true' &&
+      contains(needs.prepare.outputs.version, '-beta.')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout the tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Build production assets
+        run: |
+          npm ci
+          npm run build
+
+      # The GitHub-hosted Ubuntu images no longer ship Subversion, so the
+      # deploy step below dies with `svn: command not found` (exit 127)
+      # without this. The stable path never hit it because
+      # 10up/action-wordpress-plugin-deploy brings its own svn; this
+      # trunk-only job talks to SVN directly.
+      - name: Install Subversion
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends subversion
+          svn --version --quiet
+
+      - name: Deploy to SVN trunk
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          # Set the TRUNK_DEPLOY_DRY_RUN repository variable to "1" to run
+          # everything except the final `svn commit` — inspect the log, then
+          # clear the variable to go live. Recommended for the first beta of
+          # a cycle.
+          DRY_RUN: ${{ vars.TRUNK_DEPLOY_DRY_RUN }}
+        run: |
+          set -euo pipefail
+
+          svn checkout --depth immediates \
+            https://plugins.svn.wordpress.org/gatherpress "${HOME}/svn" > /dev/null
+          svn update --set-depth infinity "${HOME}/svn/trunk" > /dev/null
+
+          # Safety invariant: trunk syncs must never change what wp.org
+          # serves. The served version is trunk's `Stable tag:` line, so:
+          # (1) it must currently be a strict X.Y.Z version — anything else
+          #     (empty, a prerelease, or the literal "trunk", which would
+          #     make wp.org serve trunk directly) aborts the job;
+          # (2) that version must exist as a real SVN tag (the serve target);
+          # (3) after the rsync it is re-pinned and then ASSERTED below —
+          #     a silent sed miss can never reach the commit.
+          current_stable=$(grep -m1 -E '^Stable tag:' "${HOME}/svn/trunk/readme.txt" \
+            | sed -E 's/^Stable tag:[[:space:]]*//' | tr -d '[:space:]')
+
+          if [[ ! "${current_stable}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Trunk's Stable tag is not a plain X.Y.Z version (got '${current_stable:-nothing}'). Aborting rather than risk changing what wp.org serves."
+            exit 1
+          fi
+
+          if ! svn ls "https://plugins.svn.wordpress.org/gatherpress/tags/${current_stable}/" > /dev/null 2>&1; then
+            echo "::error::tags/${current_stable} does not exist in SVN, so trunk's Stable tag does not point at a real release. Aborting."
+            exit 1
+          fi
+          echo "Preserving Stable tag: ${current_stable} (verified tags/${current_stable} exists)"
+
+          # Mirror 10up/action-wordpress-plugin-deploy's rsync into trunk.
+          rsync -rc --exclude-from=.distignore ./ "${HOME}/svn/trunk/" \
+            --delete --delete-excluded
+
+          # Re-pin the Stable tag that rsync just overwrote with the beta's,
+          # then assert the pin took — this is the line that keeps the beta
+          # away from every non-opted-in site, so verify it, don't trust it.
+          sed -i -E "s/^Stable tag:.*/Stable tag: ${current_stable}/" "${HOME}/svn/trunk/readme.txt"
+
+          pinned=$(grep -c -E "^Stable tag: ${current_stable}\$" "${HOME}/svn/trunk/readme.txt" || true)
+          stable_lines=$(grep -c -E '^Stable tag:' "${HOME}/svn/trunk/readme.txt" || true)
+
+          if [[ "${pinned}" != "1" ]] || [[ "${stable_lines}" != "1" ]]; then
+            echo "::error::Post-pin assertion failed: expected exactly one 'Stable tag: ${current_stable}' line, found ${pinned} (of ${stable_lines} Stable tag lines). Not committing."
+            exit 1
+          fi
+
+          cd "${HOME}/svn"
+          svn add . --force > /dev/null
+          svn status | awk '$1 == "!"  {print $2}' | xargs -r svn rm > /dev/null
+
+          echo "=== svn status:"
+          svn status
+          echo "=== final trunk readme.txt header:"
+          head -8 trunk/readme.txt
+
+          if [[ "${DRY_RUN:-}" == "1" ]]; then
+            echo "::notice::TRUNK_DEPLOY_DRY_RUN=1 — skipping the svn commit and the tags/${VERSION} copy. Clear the repository variable to deploy for real."
+            exit 0
+          fi
+
+          if [[ -n "$(svn status)" ]]; then
+            svn commit -m "Sync trunk with ${VERSION} for translation (Stable tag pinned to ${current_stable})" \
+              --username "${SVN_USERNAME}" --password "${SVN_PASSWORD}" --non-interactive > /dev/null
+            echo "Trunk updated to ${VERSION}; wp.org still serves ${current_stable}."
+          else
+            echo "Trunk already matches ${VERSION}; nothing to commit."
+          fi
+
+          # Also tag the beta so it shows up as a named download in the
+          # wp.org Advanced-view version dropdown — some testers find GitHub
+          # intimidating but will happily grab a beta from wp.org. The tag is
+          # a snapshot of the pinned trunk; the version served to regular
+          # sites is still governed solely by trunk's Stable tag line.
+          if svn ls "https://plugins.svn.wordpress.org/gatherpress/tags/${VERSION}/" > /dev/null 2>&1; then
+            echo "tags/${VERSION} already exists in SVN; skipping the tag copy."
+          else
+            svn copy "https://plugins.svn.wordpress.org/gatherpress/trunk" \
+              "https://plugins.svn.wordpress.org/gatherpress/tags/${VERSION}" \
+              -m "Tag ${VERSION} for beta testers" \
+              --username "${SVN_USERNAME}" --password "${SVN_PASSWORD}" --non-interactive > /dev/null
+            echo "Created tags/${VERSION} — it may need a release-confirmation click before it appears for download."
+          fi
+
+  # GatherPress Alpha ships in lockstep (its coexistence guard refuses to run
+  # on a version mismatch), so every core release needs a matching alpha
+  # release. Dispatch that repo's Release workflow when a cross-repo token is
+  # configured; otherwise print the one-liner for the release manager
+  # (#1921). Alpha's workflow refuses to cut a release until its version PR
+  # has merged, so a premature dispatch fails loudly there, not silently.
+  alpha-handoff:
+    name: GatherPress Alpha lockstep handoff
+    needs: [prepare, release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Dispatch or document the alpha release
+        env:
+          ALPHA_TOKEN: ${{ secrets.GATHERPRESS_ALPHA_TOKEN }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          if [ -n "${ALPHA_TOKEN}" ]; then
+            GH_TOKEN="${ALPHA_TOKEN}" gh workflow run release.yml \
+              --repo GatherPress/gatherpress-alpha \
+              -f version="${VERSION}"
+
+            echo "Dispatched the gatherpress-alpha Release workflow for ${VERSION}." >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "### GatherPress Alpha lockstep release"
+              echo ""
+              echo "No \`GATHERPRESS_ALPHA_TOKEN\` secret is configured — cut the matching alpha release with:"
+              echo ""
+              echo '```'
+              echo "gh workflow run release.yml --repo GatherPress/gatherpress-alpha -f version=${VERSION}"
+              echo '```'
+              echo ""
+              echo "(Requires the alpha version PR for ${VERSION} to be merged first — the workflow refuses a mismatched Version header.)"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi

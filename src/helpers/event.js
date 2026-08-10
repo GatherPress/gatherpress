@@ -478,17 +478,17 @@ export function hasOnlineEventTerm( postId = null ) {
  *
  * @param {string} rsvpMode The current RSVP mode setting.
  *
- * @return {boolean} True if the mode is per_event_on or per_event_off.
+ * @return {boolean} True if the mode is per_event_enabled or per_event_disabled.
  */
 export function isPerEventRsvpMode( rsvpMode ) {
-	return 'per_event_on' === rsvpMode || 'per_event_off' === rsvpMode;
+	return 'per_event_enabled' === rsvpMode || 'per_event_disabled' === rsvpMode;
 }
 
 /**
  * Determines whether RSVP is enabled for a specific event.
  *
  * In per-event modes, RSVP is enabled only if the event's enableRsvp flag is true.
- * In all_on mode RSVP is always enabled. In disabled mode it is never enabled.
+ * In enabled mode RSVP is always on. In disabled mode it is never on.
  *
  * @param {string}  rsvpMode   The current RSVP mode setting.
  * @param {boolean} enableRsvp Whether RSVP is enabled for this specific event.

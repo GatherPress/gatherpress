@@ -24,7 +24,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  *
  * @since 0.31.0
  */
-class Validate {
+final class Validate {
 
 	/**
 	 * Validate RSVP status.
@@ -63,7 +63,7 @@ class Validate {
 	 */
 	public static function event_post_id( $param ): bool {
 		return (
-			static::positive_number( $param ) &&
+			self::positive_number( $param ) &&
 			post_type_supports( (string) get_post_type( $param ), 'gatherpress-event-date' )
 		);
 	}

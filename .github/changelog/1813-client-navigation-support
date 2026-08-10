@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Declare Interactivity API support on every block so Query Loops with enhanced pagination no longer flag GatherPress blocks as incompatible (the Leaflet-based venue map remains genuinely incompatible).

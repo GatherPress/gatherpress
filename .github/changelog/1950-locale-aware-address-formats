@@ -1,0 +1,4 @@
+Significance: minor
+Type: changed
+
+Geocoded address labels are now composed through translatable format strings, so each locale's translators control component ordering (e.g. German "Hauptstraße 42, 10115 Berlin") in the editor's address suggestions and the saved address alike. The narrow `gatherpress_geocode_street_line` filter from 0.34.0 is replaced by `gatherpress_formatted_address`, which receives the full label plus every raw address component.

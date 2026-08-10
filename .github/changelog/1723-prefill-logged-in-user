@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Form Field blocks gain a prefill toggle for Text and Email field types: when enabled, a logged-in visitor sees the field pre-populated with their display name or account email. The RSVP form's Name and Email fields enable it by default, so logged-in users no longer retype their own details.

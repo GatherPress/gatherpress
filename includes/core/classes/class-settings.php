@@ -121,7 +121,7 @@ class Settings {
 		Settings\Events::get_instance();
 		Settings\Network::get_instance();
 		Settings\Roles::get_instance();
-		Settings\Rsvp_Settings::get_instance();
+		Settings\Rsvp::get_instance();
 		Settings\Tools::get_instance();
 		Settings\Venues::get_instance();
 	}
@@ -191,7 +191,7 @@ class Settings {
 				sprintf(
 					'edit.php?post_type=%s&page=%s',
 					Event::POST_TYPE,
-					sprintf( 'gatherpress_event_page_%s', Utility::prefix_key( 'venues' ) )
+					sprintf( 'gatherpress_event_page_%s', Utility::prefix_key( 'venues_settings' ) )
 				)
 			),
 		);
@@ -500,12 +500,19 @@ class Settings {
 	 * Evaluate a `show_if` condition against the current saved option values.
 	 *
 	 * Conditions are an associative array of `controlling_field => expected`.
-	 * Multiple keys are combined with AND. A value can be a scalar (equality
-	 * after string casting) or an array (membership, OR within the same key).
+	 * Multiple keys are combined with AND. A value can be:
+	 *
+	 *   - a scalar — equality after string casting;
+	 *   - an array of scalars — membership (OR within the same key);
+	 *   - `array( 'not' => scalar|array )` — negation: matches when the
+	 *     current value is NOT (one of) the given value(s). Useful for
+	 *     "show unless disabled" without listing every enabled variant.
+	 *
 	 * Comparisons cast both sides to string so checkbox booleans, select
 	 * strings, and numeric values all compare cleanly.
 	 *
 	 * @since 0.34.0
+	 * @since 0.35.0 Added the `array( 'not' => … )` negation form.
 	 *
 	 * @param array $conditions Map of controlling option key => expected value(s).
 	 *
@@ -513,19 +520,30 @@ class Settings {
 	 */
 	protected function evaluate_show_if( array $conditions ): bool {
 		foreach ( $conditions as $key => $expected ) {
-			$current = $this->get( (string) $key );
+			$current = (string) $this->get( (string) $key );
 
-			if ( is_array( $expected ) ) {
-				$expected = array_map( 'strval', $expected );
+			// Negation: show when the current value is not among the given.
+			if ( is_array( $expected ) && array_key_exists( 'not', $expected ) ) {
+				$excluded = array_map( 'strval', (array) $expected['not'] );
 
-				if ( ! in_array( (string) $current, $expected, true ) ) {
+				if ( in_array( $current, $excluded, true ) ) {
 					return false;
 				}
 
 				continue;
 			}
 
-			if ( (string) $current !== (string) $expected ) {
+			if ( is_array( $expected ) ) {
+				$expected = array_map( 'strval', $expected );
+
+				if ( ! in_array( $current, $expected, true ) ) {
+					return false;
+				}
+
+				continue;
+			}
+
+			if ( $current !== (string) $expected ) {
 				return false;
 			}
 		}
@@ -637,29 +655,18 @@ class Settings {
 			foreach ( $input as $key => $value ) {
 				$type = $field_type_map[ $key ] ?? 'text';
 
-				switch ( $type ) {
-					case 'checkbox':
-						$sanitized[ $key ] = (bool) $value;
-						break;
-					case 'number':
-						// Preserve empty submissions as '' instead of
-						// coercing to 0 via intval — so a field that
-						// accepts empty (e.g. Width/Height "Auto") can
-						// round-trip blank without silently saving 0.
-						$sanitized[ $key ] = ( '' === $value || null === $value )
-							? ''
-							: intval( $value );
-						break;
-					case 'autocomplete':
-						$sanitized[ $key ] = $this->sanitize_autocomplete( $value );
-						break;
-					case 'password':
-					case 'text':
-					case 'select':
-					default:
-						$sanitized[ $key ] = sanitize_text_field( (string) $value );
-						break;
-				}
+				$sanitized[ $key ] = match ( $type ) {
+					'checkbox' => (bool) $value,
+					// Preserve empty submissions as '' instead of coercing to
+					// 0 via intval — so a field that accepts empty (e.g.
+					// Width/Height "Auto") can round-trip blank without
+					// silently saving 0.
+					'number'       => ( '' === $value || null === $value ) ? '' : intval( $value ),
+					'autocomplete' => $this->sanitize_autocomplete( $value ),
+					// password, text, select and any unrecognized type are
+					// sanitized as plain text.
+					default        => sanitize_text_field( (string) $value ),
+				};
 			}
 
 			// Merge with existing values to preserve settings from other tabs.
@@ -870,7 +877,7 @@ class Settings {
 	 *
 	 * @return mixed The value of the option or its default value.
 	 */
-	public function get( string $option ) {
+	public function get( string $option ): mixed {
 		// Read from the network options table when this is an inherited
 		// option on a multisite subsite, otherwise the local options table.
 		// `get_site_option` returns false on single-site, so the type check
@@ -953,7 +960,7 @@ class Settings {
 	 *
 	 * @return mixed The default value of the option or an empty string if not defined.
 	 */
-	public function get_flat_default( string $option ) {
+	public function get_flat_default( string $option ): mixed {
 		$defaults = $this->get_defaults_map();
 
 		return $defaults[ $option ] ?? '';

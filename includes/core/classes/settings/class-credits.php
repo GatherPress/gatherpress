@@ -24,7 +24,7 @@ use GatherPress\Core\Utility;
  *
  * @since 0.27.0
  */
-class Credits extends Base {
+final class Credits extends Base {
 
 	/**
 	 * Enforces a single instance of this class.
@@ -56,7 +56,7 @@ class Credits extends Base {
 	 * @return string The slug for the credits section.
 	 */
 	protected function get_slug(): string {
-		return 'credits';
+		return 'credits_settings';
 	}
 
 	/**

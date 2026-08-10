@@ -30,7 +30,7 @@ class Test_Venues extends Base {
 		$instance = Venues::get_instance();
 		$slug     = Utility::invoke_hidden_method( $instance, 'get_slug' );
 
-		$this->assertSame( 'venues', $slug, 'Failed to assert slug is venues.' );
+		$this->assertSame( 'venues_settings', $slug, 'Failed to assert slug is venues_settings.' );
 	}
 
 	/**

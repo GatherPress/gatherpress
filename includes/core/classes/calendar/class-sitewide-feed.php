@@ -28,7 +28,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  *
  * @since 0.34.0
  */
-class Sitewide_Feed extends Endpoint {
+final class Sitewide_Feed extends Endpoint {
 
 	/**
 	 * Class constructor.
