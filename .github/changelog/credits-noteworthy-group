@@ -1,4 +1,0 @@
-Significance: patch
-Type: changed
-
-Rename the "team" credits group to "noteworthy", matching how WordPress presents its own release credits, and add the 0.35.0 credits file.
