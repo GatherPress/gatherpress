@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Give the interactive venue map an accessible name and region role, matching the static map variant's labeling.

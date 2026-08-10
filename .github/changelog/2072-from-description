@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Give the permalink-base and RSVP settings fields their accessible labels, which previously rendered empty.

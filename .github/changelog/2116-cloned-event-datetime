@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Stop a duplicated or imported event losing its date. The default seeded for an event saved without one is now decided at shutdown rather than mid-insert, so dates that arrive after the post is created win over it.

@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Fixed bulk actions on the RSVPs screen doing nothing when used from a browser. The list table emitted its own nonce under the same `_wpnonce` name WordPress uses for the bulk form, so the value that reached the handler was the one it did not accept and every Approve, Unapprove, Spam or Delete was silently refused.
