@@ -41,13 +41,7 @@ if ( ! isset( $credits ) ) {
 					true
 				);
 			endforeach;
-			// `team` was renamed to `noteworthy` in 0.35.0. Read both so the
-			// page keeps rendering against an includes/data/credits.php that
-			// was generated before the rename; the fallback can go once
-			// 0.35.0 has shipped and every generated file carries the new key.
-			$gatherpress_noteworthy = $credits['noteworthy'] ?? $credits['team'] ?? array();
-
-			foreach ( $gatherpress_noteworthy as $gatherpress_contributor ) :
+			foreach ( $credits['noteworthy'] as $gatherpress_contributor ) :
 				Utility::render_template(
 					sprintf( '%s/includes/templates/admin/settings/credits/contributor-card.php', GATHERPRESS_CORE_PATH ),
 					array(
