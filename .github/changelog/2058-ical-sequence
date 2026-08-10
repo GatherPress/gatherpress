@@ -1,4 +1,0 @@
-Significance: minor
-Type: fixed
-
-Added `SEQUENCE` and `LAST-MODIFIED` to every VEVENT in the iCal feeds, so calendar clients recognize an edited event as a revision of the entry they already hold instead of keeping the original date.
