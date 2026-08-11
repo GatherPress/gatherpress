@@ -540,7 +540,7 @@ final class Rsvp_Form {
 	 *
 	 * Supports the current radioOptions attribute and the legacy options key.
 	 *
-	 * @since 0.34.0
+	 * @since 0.36.0
 	 *
 	 * @param array<string, mixed> $attributes Form field attributes.
 	 *

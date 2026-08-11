@@ -3,7 +3,7 @@
  * Select Form Field Template.
  *
  * @package GatherPress\Core
- * @since 0.34.0
+ * @since 0.36.0
  */
 
 // Exit if accessed directly.

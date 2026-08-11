@@ -574,7 +574,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_input_attributes for select field.
 	 *
-	 * @since 0.34.0
+	 * @since 0.36.0
 	 * @covers ::get_input_attributes
 	 *
 	 * @return void
@@ -857,17 +857,9 @@ class Test_Form_Field extends Base {
 	}
 
 	/**
-	 * Tests get_template_path falls back to default for non-existing field type.
-	 *
-	 * @since 0.33.0
-	 * @covers ::get_template_path
-	 *
-	 * @return void
-	 */
-	/**
 	 * Tests get_template_path for select field type.
 	 *
-	 * @since 0.34.0
+	 * @since 0.36.0
 	 * @covers ::get_template_path
 	 *
 	 * @return void
@@ -923,7 +915,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests render method.
 	 *
-	 * @since 0.33.0
+	 * @since 0.36.0
 	 * @covers ::render
 	 *
 	 * @return void

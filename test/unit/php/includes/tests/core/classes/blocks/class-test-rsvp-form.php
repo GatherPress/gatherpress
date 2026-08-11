@@ -1773,6 +1773,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests sanitized options from current and legacy field attributes.
 	 *
+	 * @since 0.36.0
 	 * @covers ::get_field_options
 	 */
 	public function test_get_field_options(): void {
@@ -1805,6 +1806,24 @@ class Test_Rsvp_Form extends Base {
 
 		$this->assertSame( array( 'small', 'large' ), $radio_options );
 		$this->assertSame( array( 'First', 'Second' ), $legacy_options );
+
+		$string_options = Utility::invoke_hidden_method(
+			$instance,
+			'get_field_options',
+			array(
+				array(
+					'radioOptions' => array(
+						'Keep Me',
+						array(
+							'label' => 'Object',
+							'value' => 'object',
+						),
+					),
+				),
+			)
+		);
+
+		$this->assertSame( array( 'Keep Me', 'object' ), $string_options );
 
 		$fallback_options = Utility::invoke_hidden_method(
 			$instance,
