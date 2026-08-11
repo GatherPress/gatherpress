@@ -83,6 +83,10 @@
 
 - [`gatherpress_rsvp_comment_query_exclusion`](gatherpress_rsvp_comment_query_exclusion.md) Filters whether RSVP comments should be excluded from a comment query.
 
+## class-rest-api.php
+
+- [`gatherpress_email_subject`](gatherpress_email_subject.md) Filters the event update email subject.
+
 ## class-roles.php
 
 - [`gatherpress_roles`](gatherpress_roles.md) Filter the list of roles for GatherPress.
