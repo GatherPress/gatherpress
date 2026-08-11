@@ -184,6 +184,7 @@ class Test_Rest_Api extends Base {
 			array(
 				'post_id' => $event_id,
 				'message' => 'Unit test',
+				'subject' => 'Custom subject',
 				'send'    => array(
 					'all'           => false,
 					'attending'     => false,
@@ -875,9 +876,10 @@ class Test_Rest_Api extends Base {
 
 		$send    = array( 'all' => true );
 		$message = 'Test message';
+		$subject = 'Test subject';
 
 		// The method should call send_emails internally.
-		$instance->handle_email_send_action( $post_id, $send, $message );
+		$instance->handle_email_send_action( $post_id, $send, $message, $subject );
 
 		// If no exception thrown, test passes.
 		$this->assertTrue( true );
@@ -1697,6 +1699,219 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * `send_emails` honors a custom subject supplied by the caller (#827).
+	 *
+	 * @covers ::send_emails
+	 *
+	 * @return void
+	 */
+	public function test_send_emails_with_custom_subject(): void {
+		$instance = Rest_Api::get_instance();
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => 'Custom Subject Event',
+			)
+		);
+
+		$event = new Event( $post_id );
+		$email = 'recipient@example.test';
+		$event->rsvp->save( $email, 'attending', 0, 0 );
+
+		$captured = array();
+		add_filter(
+			'pre_wp_mail',
+			static function ( $prev, $atts ) use ( &$captured ): bool {
+				$captured = $atts;
+
+				return (bool) $prev;
+			},
+			10,
+			2
+		);
+
+		$result = $instance->send_emails(
+			$post_id,
+			array( 'attending' => true ),
+			'Test message',
+			'Reminder: doors at 7'
+		);
+
+		$this->assertTrue( $result, 'send_emails should return true.' );
+		$this->assertSame(
+			'Reminder: doors at 7',
+			$captured['subject'],
+			'Subject should match the supplied custom value.'
+		);
+		$this->assertStringNotContainsString(
+			'Custom Subject Event',
+			$captured['subject'],
+			'Custom subject should bypass the default title template.'
+		);
+	}
+
+	/**
+	 * `send_emails` falls back to the default `📅 {title}` template when no subject is supplied (#827).
+	 *
+	 * @covers ::send_emails
+	 *
+	 * @return void
+	 */
+	public function test_send_emails_with_default_subject(): void {
+		$instance = Rest_Api::get_instance();
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => 'Default Subject Event',
+			)
+		);
+
+		$event = new Event( $post_id );
+		$email = 'recipient@example.test';
+		$event->rsvp->save( $email, 'attending', 0, 0 );
+
+		$captured = array();
+		add_filter(
+			'pre_wp_mail',
+			static function ( $prev, $atts ) use ( &$captured ): bool {
+				$captured = $atts;
+
+				return (bool) $prev;
+			},
+			10,
+			2
+		);
+
+		$instance->send_emails(
+			$post_id,
+			array( 'attending' => true ),
+			'Test message'
+		);
+
+		$this->assertStringContainsString(
+			'Default Subject Event',
+			$captured['subject'],
+			'Default subject should interpolate the event title.'
+		);
+		$this->assertStringContainsString(
+			'📅',
+			$captured['subject'],
+			'Default subject should keep the calendar emoji prefix.'
+		);
+	}
+
+	/**
+	 * `gatherpress_email_subject` filter lets developers customize the default subject (#827).
+	 *
+	 * @covers ::send_emails
+	 *
+	 * @return void
+	 */
+	public function test_send_emails_subject_filter(): void {
+		$instance = Rest_Api::get_instance();
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => 'Filter Event',
+			)
+		);
+
+		$event = new Event( $post_id );
+		$event->rsvp->save( 'recipient@example.test', 'attending', 0, 0 );
+
+		add_filter(
+			'gatherpress_email_subject',
+			static function ( string $subject ): string {
+				return '[Community] ' . $subject;
+			}
+		);
+
+		$captured = array();
+		add_filter(
+			'pre_wp_mail',
+			static function ( $prev, $atts ) use ( &$captured ): bool {
+				$captured = $atts;
+
+				return (bool) $prev;
+			},
+			10,
+			2
+		);
+
+		$instance->send_emails(
+			$post_id,
+			array( 'attending' => true ),
+			'Test message'
+		);
+
+		$this->assertStringStartsWith(
+			'[Community] ',
+			$captured['subject'],
+			'Filter should prepend the community prefix to the default subject.'
+		);
+		$this->assertStringContainsString(
+			'Filter Event',
+			$captured['subject'],
+			'Filter should preserve the upstream subject value.'
+		);
+	}
+
+	/**
+	 * `gatherpress_email_subject` filter applies to a custom subject too (#827).
+	 *
+	 * @covers ::send_emails
+	 *
+	 * @return void
+	 */
+	public function test_send_emails_subject_filter_with_custom_subject(): void {
+		$instance = Rest_Api::get_instance();
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$event = new Event( $post_id );
+		$event->rsvp->save( 'recipient@example.test', 'attending', 0, 0 );
+
+		add_filter(
+			'gatherpress_email_subject',
+			static function ( string $subject ): string {
+				return $subject . ' [verified]';
+			}
+		);
+
+		$captured = array();
+		add_filter(
+			'pre_wp_mail',
+			static function ( $prev, $atts ) use ( &$captured ): bool {
+				$captured = $atts;
+
+				return (bool) $prev;
+			},
+			10,
+			2
+		);
+
+		$instance->send_emails(
+			$post_id,
+			array( 'attending' => true ),
+			'Test message',
+			'Custom subject'
+		);
+
+		$this->assertSame(
+			'Custom subject [verified]',
+			$captured['subject'],
+			'Filter should apply to the supplied subject as well.'
+		);
+	}
+
+	/**
 	 * Tests send_emails with locale switching for user.
 	 *
 	 * Covers: restore_previous_locale when switched_locale is true.
@@ -2189,6 +2404,7 @@ class Test_Rest_Api extends Base {
 				$event_id,
 				'Test message',
 				wp_get_current_user(),
+				'Test subject',
 			)
 		);
 
