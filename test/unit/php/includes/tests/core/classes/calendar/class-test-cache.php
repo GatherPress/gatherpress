@@ -60,37 +60,37 @@ class Test_Cache extends Base {
 				'type'     => 'action',
 				'name'     => 'save_post',
 				'priority' => 10,
-				'callback' => array( $instance, 'touch_for_post' ),
+				'callback' => array( $instance, 'mark_changed_for_post' ),
 			),
 			array(
 				'type'     => 'action',
 				'name'     => 'deleted_post',
 				'priority' => 10,
-				'callback' => array( $instance, 'touch_for_post' ),
+				'callback' => array( $instance, 'mark_changed_for_post' ),
 			),
 			array(
 				'type'     => 'action',
 				'name'     => 'updated_post_meta',
 				'priority' => 10,
-				'callback' => array( $instance, 'touch_for_meta' ),
+				'callback' => array( $instance, 'mark_changed_for_meta' ),
 			),
 			array(
 				'type'     => 'action',
 				'name'     => 'added_post_meta',
 				'priority' => 10,
-				'callback' => array( $instance, 'touch_for_meta' ),
+				'callback' => array( $instance, 'mark_changed_for_meta' ),
 			),
 			array(
 				'type'     => 'action',
 				'name'     => 'deleted_post_meta',
 				'priority' => 10,
-				'callback' => array( $instance, 'touch_for_meta' ),
+				'callback' => array( $instance, 'mark_changed_for_meta' ),
 			),
 			array(
 				'type'     => 'action',
 				'name'     => 'set_object_terms',
 				'priority' => 10,
-				'callback' => array( $instance, 'touch_for_terms' ),
+				'callback' => array( $instance, 'mark_changed_for_terms' ),
 			),
 		);
 
@@ -120,15 +120,15 @@ class Test_Cache extends Base {
 	}
 
 	/**
-	 * Touching the calendar changes the key namespace, which is what makes
-	 * every cached response unreachable at once.
+	 * Marking the calendar changed moves the key namespace, which is what
+	 * makes every cached response unreachable at once.
 	 *
-	 * @covers ::touch
+	 * @covers ::mark_changed
 	 * @covers ::get_versioned_key
 	 *
 	 * @return void
 	 */
-	public function test_touch_changes_the_versioned_key(): void {
+	public function test_mark_changed_moves_the_versioned_key(): void {
 		$instance = Cache::get_instance();
 		$before   = $instance->get_versioned_key( 'ics:example' );
 
@@ -138,6 +138,43 @@ class Test_Cache extends Base {
 			$before,
 			$instance->get_versioned_key( 'ics:example' ),
 			'A new version stamp should produce a different cache key.'
+		);
+	}
+
+	/**
+	 * The payload is stored as a transient, so it survives a site without a
+	 * persistent object cache, and its name stays inside the option-name limit.
+	 *
+	 * @covers ::remember
+	 * @covers ::get_versioned_key
+	 *
+	 * @return void
+	 */
+	public function test_remember_stores_the_payload_in_a_transient(): void {
+		$instance = Cache::get_instance();
+		$key      = 'ics:' . str_repeat( 'long-scope-', 40 );
+		$renderer = static function (): string {
+			return 'BEGIN:VCALENDAR';
+		};
+
+		$instance->remember( $key, $renderer );
+
+		$name = $instance->get_versioned_key( $key );
+
+		$this->assertSame(
+			'BEGIN:VCALENDAR',
+			get_transient( $name ),
+			'The rendered payload should be readable back as a transient.'
+		);
+		$this->assertStringStartsWith(
+			Cache::TRANSIENT_PREFIX,
+			$name,
+			'Transient names should carry the calendar prefix.'
+		);
+		$this->assertLessThanOrEqual(
+			172,
+			strlen( $name ),
+			'A long scope key must still produce a transient name within the option-name limit.'
 		);
 	}
 
@@ -166,11 +203,11 @@ class Test_Cache extends Base {
 	 * A stamped calendar rebuilds rather than serving the previous payload.
 	 *
 	 * @covers ::remember
-	 * @covers ::touch
+	 * @covers ::mark_changed
 	 *
 	 * @return void
 	 */
-	public function test_remember_rebuilds_after_a_touch(): void {
+	public function test_remember_rebuilds_after_the_calendar_is_marked_changed(): void {
 		$instance = Cache::get_instance();
 		$payload  = 'first';
 		$renderer = static function () use ( &$payload ): string {
@@ -245,17 +282,17 @@ class Test_Cache extends Base {
 	/**
 	 * Saving an event stamps the calendar; saving an unrelated post does not.
 	 *
-	 * @covers ::touch_for_post
+	 * @covers ::mark_changed_for_post
 	 * @covers ::is_calendar_post_type
 	 *
 	 * @return void
 	 */
-	public function test_touch_for_post_only_fires_for_calendar_post_types(): void {
+	public function test_mark_changed_for_post_only_fires_for_calendar_post_types(): void {
 		$instance = Cache::get_instance();
 
 		update_option( Cache::LAST_MODIFIED_OPTION, '2029-01-01 00:00:00', false );
 
-		$instance->touch_for_post( $this->mock->post( array( 'post_type' => 'post' ) )->get()->ID );
+		$instance->mark_changed_for_post( $this->mock->post( array( 'post_type' => 'post' ) )->get()->ID );
 
 		$this->assertSame(
 			'2029-01-01 00:00:00',
@@ -263,7 +300,7 @@ class Test_Cache extends Base {
 			'A regular post should not stamp the calendar.'
 		);
 
-		$instance->touch_for_post( $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID );
+		$instance->mark_changed_for_post( $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID );
 
 		$this->assertNotSame(
 			'2029-01-01 00:00:00',
@@ -275,17 +312,17 @@ class Test_Cache extends Base {
 	/**
 	 * A venue is part of a VEVENT's LOCATION, so venue edits stamp too.
 	 *
-	 * @covers ::touch_for_post
+	 * @covers ::mark_changed_for_post
 	 * @covers ::is_calendar_post_type
 	 *
 	 * @return void
 	 */
-	public function test_touch_for_post_fires_for_venues(): void {
+	public function test_mark_changed_for_post_fires_for_venues(): void {
 		$instance = Cache::get_instance();
 
 		update_option( Cache::LAST_MODIFIED_OPTION, '2029-01-01 00:00:00', false );
 
-		$instance->touch_for_post( $this->mock->post( array( 'post_type' => Venue::POST_TYPE ) )->get()->ID );
+		$instance->mark_changed_for_post( $this->mock->post( array( 'post_type' => Venue::POST_TYPE ) )->get()->ID );
 
 		$this->assertNotSame(
 			'2029-01-01 00:00:00',
@@ -297,17 +334,17 @@ class Test_Cache extends Base {
 	/**
 	 * GatherPress meta stamps the calendar; unrelated meta does not.
 	 *
-	 * @covers ::touch_for_meta
+	 * @covers ::mark_changed_for_meta
 	 *
 	 * @return void
 	 */
-	public function test_touch_for_meta_only_fires_for_gatherpress_keys(): void {
+	public function test_mark_changed_for_meta_only_fires_for_gatherpress_keys(): void {
 		$instance = Cache::get_instance();
 		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
 
 		update_option( Cache::LAST_MODIFIED_OPTION, '2029-01-01 00:00:00', false );
 
-		$instance->touch_for_meta( 1, $event_id, '_edit_lock' );
+		$instance->mark_changed_for_meta( 1, $event_id, '_edit_lock' );
 
 		$this->assertSame(
 			'2029-01-01 00:00:00',
@@ -315,7 +352,7 @@ class Test_Cache extends Base {
 			'Unrelated meta should not stamp the calendar.'
 		);
 
-		$instance->touch_for_meta( 1, $event_id, 'gatherpress_datetime' );
+		$instance->mark_changed_for_meta( 1, $event_id, 'gatherpress_datetime' );
 
 		$this->assertNotSame(
 			'2029-01-01 00:00:00',
@@ -328,17 +365,17 @@ class Test_Cache extends Base {
 	 * Term changes on an event stamp the calendar, but RSVP status changes,
 	 * which travel on the same hook against a comment taxonomy, do not.
 	 *
-	 * @covers ::touch_for_terms
+	 * @covers ::mark_changed_for_terms
 	 *
 	 * @return void
 	 */
-	public function test_touch_for_terms_ignores_comment_taxonomies(): void {
+	public function test_mark_changed_for_terms_ignores_comment_taxonomies(): void {
 		$instance = Cache::get_instance();
 		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
 
 		update_option( Cache::LAST_MODIFIED_OPTION, '2029-01-01 00:00:00', false );
 
-		$instance->touch_for_terms( 1, array(), array(), Status::TAXONOMY );
+		$instance->mark_changed_for_terms( 1, array(), array(), Status::TAXONOMY );
 
 		$this->assertSame(
 			'2029-01-01 00:00:00',
@@ -346,7 +383,7 @@ class Test_Cache extends Base {
 			'An RSVP status change should not invalidate every calendar feed.'
 		);
 
-		$instance->touch_for_terms( $event_id, array(), array(), Venue::TAXONOMY );
+		$instance->mark_changed_for_terms( $event_id, array(), array(), Venue::TAXONOMY );
 
 		$this->assertNotSame(
 			'2029-01-01 00:00:00',
@@ -358,16 +395,16 @@ class Test_Cache extends Base {
 	/**
 	 * An unregistered taxonomy is ignored rather than stamping on a guess.
 	 *
-	 * @covers ::touch_for_terms
+	 * @covers ::mark_changed_for_terms
 	 *
 	 * @return void
 	 */
-	public function test_touch_for_terms_ignores_unknown_taxonomies(): void {
+	public function test_mark_changed_for_terms_ignores_unknown_taxonomies(): void {
 		$instance = Cache::get_instance();
 
 		update_option( Cache::LAST_MODIFIED_OPTION, '2029-01-01 00:00:00', false );
 
-		$instance->touch_for_terms( 1, array(), array(), 'not_a_taxonomy' );
+		$instance->mark_changed_for_terms( 1, array(), array(), 'not_a_taxonomy' );
 
 		$this->assertSame(
 			'2029-01-01 00:00:00',

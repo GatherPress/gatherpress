@@ -9,6 +9,11 @@
  * defines the `Cache` class, which holds the rendered bodies and the timestamp
  * the responses are validated against.
  *
+ * Bodies are stored as transients rather than in the object cache directly, so
+ * the win does not depend on the site having a persistent backend: with one,
+ * transients are object cache entries anyway; without one, they persist in the
+ * options table instead of evaporating at the end of the request.
+ *
  * @package GatherPress\Core\Calendar
  * @since 0.36.0
  */
@@ -23,13 +28,17 @@ use GatherPress\Core\Traits\Singleton;
 /**
  * Caching for the iCalendar responses.
  *
- * Invalidation is by version stamp rather than by deleting keys. Every cache
- * key carries the timestamp of the last calendar-relevant change, so a change
- * is one option write and every stale key is unreachable from that moment,
- * with no need to know which feeds a given event appeared in. The stamp is
- * also what `Last-Modified` reports and what conditional requests validate
- * against, so the HTTP layer and the object cache cannot disagree about how
- * fresh a response is.
+ * Entries are namespaced by version stamp rather than deleted. Every cache key
+ * carries the timestamp of the last calendar-relevant change, so a change is
+ * one option write and every previous key becomes unreachable from that moment,
+ * with no need to know which feeds a given event appeared in. The old entries
+ * are not removed: they are stranded until their expiry passes, at which point
+ * WordPress's own expired-transient cleanup collects them. That trade buys
+ * O(1) invalidation on backends that handle delete-by-pattern badly.
+ *
+ * The stamp is also what `Last-Modified` reports and what conditional requests
+ * validate against, so the HTTP layer and the stored bodies cannot disagree
+ * about how fresh a response is.
  *
  * @since 0.36.0
  */
@@ -41,13 +50,13 @@ final class Cache {
 	use Singleton;
 
 	/**
-	 * Object cache group for rendered calendar payloads.
+	 * Transient name prefix for rendered calendar payloads.
 	 *
 	 * @since 0.36.0
 	 *
 	 * @var string
 	 */
-	const CACHE_GROUP = 'gatherpress_calendar';
+	const TRANSIENT_PREFIX = 'gatherpress_calendar_';
 
 	/**
 	 * Option holding the GMT timestamp of the last calendar-relevant change.
@@ -95,12 +104,12 @@ final class Cache {
 		// Everything a VEVENT is built from: the post itself, its datetimes and
 		// venue meta, its terms, and its deletion. Each one stamps the calendar
 		// rather than reasoning about which feeds it belongs to.
-		add_action( 'save_post', array( $this, 'touch_for_post' ) );
-		add_action( 'deleted_post', array( $this, 'touch_for_post' ) );
-		add_action( 'updated_post_meta', array( $this, 'touch_for_meta' ), 10, 3 );
-		add_action( 'added_post_meta', array( $this, 'touch_for_meta' ), 10, 3 );
-		add_action( 'deleted_post_meta', array( $this, 'touch_for_meta' ), 10, 3 );
-		add_action( 'set_object_terms', array( $this, 'touch_for_terms' ), 10, 4 );
+		add_action( 'save_post', array( $this, 'mark_changed_for_post' ) );
+		add_action( 'deleted_post', array( $this, 'mark_changed_for_post' ) );
+		add_action( 'updated_post_meta', array( $this, 'mark_changed_for_meta' ), 10, 3 );
+		add_action( 'added_post_meta', array( $this, 'mark_changed_for_meta' ), 10, 3 );
+		add_action( 'deleted_post_meta', array( $this, 'mark_changed_for_meta' ), 10, 3 );
+		add_action( 'set_object_terms', array( $this, 'mark_changed_for_terms' ), 10, 4 );
 	}
 
 	/**
@@ -115,7 +124,7 @@ final class Cache {
 		 * Filters how long calendar responses may be reused by clients and caches.
 		 *
 		 * Applies to the `Cache-Control` header on ICS responses and to how long
-		 * a rendered body is kept in the object cache, so the two cannot drift.
+		 * a rendered body is kept server-side, so the two cannot drift.
 		 * Return 0 to send `no-cache` and rebuild on every request.
 		 *
 		 * @since 0.36.0
@@ -151,13 +160,16 @@ final class Cache {
 	}
 
 	/**
-	 * Stamp the calendar as changed, invalidating every cached response.
+	 * Stamp the calendar as changed.
+	 *
+	 * Cached responses are namespaced by this stamp, so a new value moves every
+	 * lookup to a fresh key and strands the old entries until they expire.
 	 *
 	 * @since 0.36.0
 	 *
 	 * @return void
 	 */
-	public function touch(): void {
+	public function mark_changed(): void {
 		update_option( self::LAST_MODIFIED_OPTION, current_time( 'mysql', true ), false );
 	}
 
@@ -179,7 +191,7 @@ final class Cache {
 		}
 
 		$versioned_key = $this->get_versioned_key( $key );
-		$cached        = wp_cache_get( $versioned_key, self::CACHE_GROUP );
+		$cached        = get_transient( $versioned_key );
 
 		if ( is_string( $cached ) ) {
 			return $cached;
@@ -187,7 +199,7 @@ final class Cache {
 
 		$payload = (string) $renderer();
 
-		wp_cache_set( $versioned_key, $payload, self::CACHE_GROUP, $max_age );
+		set_transient( $versioned_key, $payload, $max_age );
 
 		return $payload;
 	}
@@ -195,14 +207,18 @@ final class Cache {
 	/**
 	 * Namespace a cache key with the current calendar version stamp.
 	 *
+	 * The scope key and the stamp are hashed together rather than concatenated
+	 * so the result stays inside the 172-character ceiling on option names, no
+	 * matter how long the caller's key grows.
+	 *
 	 * @since 0.36.0
 	 *
 	 * @param string $key Scope-specific key.
 	 *
-	 * @return string Versioned cache key.
+	 * @return string Versioned transient name.
 	 */
 	public function get_versioned_key( string $key ): string {
-		return sprintf( '%s:%s', md5( $this->get_last_modified() ), $key );
+		return self::TRANSIENT_PREFIX . md5( $this->get_last_modified() . ':' . $key );
 	}
 
 	/**
@@ -214,9 +230,9 @@ final class Cache {
 	 *
 	 * @return void
 	 */
-	public function touch_for_post( $post_id ): void {
+	public function mark_changed_for_post( $post_id ): void {
 		if ( $this->is_calendar_post_type( (string) get_post_type( (int) $post_id ) ) ) {
-			$this->touch();
+			$this->mark_changed();
 		}
 	}
 
@@ -237,12 +253,12 @@ final class Cache {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Required by WP's *_post_meta signature.
 	 */
-	public function touch_for_meta( $meta_id, $post_id, $meta_key = '' ): void {
+	public function mark_changed_for_meta( $meta_id, $post_id, $meta_key = '' ): void {
 		if (
 			str_starts_with( (string) $meta_key, 'gatherpress_' )
 			&& $this->is_calendar_post_type( (string) get_post_type( (int) $post_id ) )
 		) {
-			$this->touch();
+			$this->mark_changed();
 		}
 	}
 
@@ -263,7 +279,7 @@ final class Cache {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Required by WP's set_object_terms signature.
 	 */
-	public function touch_for_terms( $object_id, $terms = array(), $tt_ids = array(), $taxonomy = '' ): void {
+	public function mark_changed_for_terms( $object_id, $terms = array(), $tt_ids = array(), $taxonomy = '' ): void {
 		// Comment taxonomies share this hook: RSVP status changes do not alter
 		// a VEVENT, so they must not invalidate every feed on the site.
 		$taxonomy_object = get_taxonomy( (string) $taxonomy );
@@ -272,7 +288,7 @@ final class Cache {
 			return;
 		}
 
-		$this->touch_for_post( $object_id );
+		$this->mark_changed_for_post( $object_id );
 	}
 
 	/**

@@ -1,4 +1,4 @@
 Significance: minor
 Type: added
 
-Added caching to the iCalendar responses. Feeds and single-event .ics files now send `Cache-Control`, `ETag` and `Last-Modified`, answer conditional requests with `304 Not Modified`, and keep their rendered body in the object cache. Subscribed calendar clients poll several times an hour, so a poll that finds nothing changed now costs a validator instead of a full rebuild. A change to any event, venue, GatherPress meta or event term invalidates every cached calendar, and `gatherpress_calendar_max_age` controls the window (0 disables caching).
+Added caching to the iCalendar responses. Feeds and single-event .ics files now send `Cache-Control`, `ETag` and `Last-Modified`, answer conditional requests with `304 Not Modified`, and keep their rendered body in a transient. Subscribed calendar clients poll several times an hour, so a poll that finds nothing changed now costs a validator instead of a full rebuild. A change to any event, venue, GatherPress meta or event term moves every cached calendar to a fresh key, and `gatherpress_calendar_max_age` controls the window (0 disables caching).
