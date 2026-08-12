@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Venue;
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Setup as Core_Setup;
 use GatherPress\Core\Venue\Map\Setup as Map_Setup;
 use GatherPress\Core\Venue\Meta;
 use GatherPress\Core\Venue\Setup;
@@ -494,6 +495,58 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * Coverage for get_venue_meta on a hybrid event carrying both a physical
+	 * venue term and the online-event sentinel.
+	 *
+	 * The online state must be derived from the event object across every
+	 * assigned term, so `isOnlineEventTerm` is true even when the sentinel is
+	 * not the first term in the list.
+	 *
+	 * @covers ::get_venue_meta
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_meta_hybrid_is_online_true(): void {
+		register_taxonomy_for_object_type( Venue::TAXONOMY, Event::POST_TYPE );
+		Core_Setup::get_instance()->add_online_event_term();
+
+		$this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_name'  => 'hybrid-setup-venue',
+				'post_title' => 'Hybrid Setup Venue',
+			)
+		)->get();
+
+		$event = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+
+		// Attach the physical venue first so the online sentinel is not first.
+		wp_set_post_terms( $event->ID, array( '_hybrid-setup-venue' ), Venue::TAXONOMY );
+		wp_set_post_terms( $event->ID, array( Venue\Setup::ONLINE_EVENT_TERM_SLUG ), Venue::TAXONOMY, true );
+		add_post_meta( $event->ID, 'gatherpress_online_event_link', 'https://example.com/meet' );
+
+		// The link getter only discloses the URL in admin context, so force the
+		// admin screen to surface it through get_venue_meta's onlineEventLink key.
+		set_current_screen( 'edit.php' );
+		$venue_meta = Setup::get_instance()->get_venue_meta( $event->ID, Event::POST_TYPE );
+		set_current_screen( 'front' );
+
+		$this->assertTrue(
+			$venue_meta['isOnlineEventTerm'],
+			'get_venue_meta should report online when the sentinel is present on a hybrid.'
+		);
+		$this->assertSame(
+			'https://example.com/meet',
+			$venue_meta['onlineEventLink'],
+			'get_venue_meta should surface the online link for a hybrid.'
+		);
+	}
+
+	/**
 	 * Coverage for get_venue_meta method with valid JSON venue information.
 	 *
 	 * @covers ::get_venue_meta
@@ -819,6 +872,16 @@ class Test_Setup extends Base {
 			'onlineEventTermIds',
 			$result['gatherpress']['config'],
 			'Failed to assert that onlineEventTermIds is added alongside existing settings.'
+		);
+
+		// Seed the online-event sentinel term so the term-IDs map populates,
+		// exercising the non-null branch of the per-post-type resolver.
+		Core_Setup::get_instance()->add_online_event_term();
+		$seeded = $instance->add_editor_settings( array() );
+
+		$this->assertIsInt(
+			$seeded['gatherpress']['config']['onlineEventTermIds'][ Venue::POST_TYPE ],
+			'Failed to assert that the onlineEventTermIds entry is an int for a seeded venue taxonomy.'
 		);
 	}
 
@@ -1286,8 +1349,13 @@ class Test_Setup extends Base {
 	 */
 	public function test_get_online_event_term_id_returns_id_for_post_type(): void {
 		$instance = Setup::get_instance();
-		$term_id  = $instance->get_online_event_term_id( Venue::POST_TYPE );
-		$default  = $instance->get_online_event_term_id();
+
+		// Seed the online-event sentinel in this test's transaction so the
+		// resolver returns a real term ID, not null from a rolled-back seed.
+		Core_Setup::get_instance()->add_online_event_term();
+
+		$term_id = $instance->get_online_event_term_id( Venue::POST_TYPE );
+		$default = $instance->get_online_event_term_id();
 
 		$this->assertIsInt(
 			$term_id,

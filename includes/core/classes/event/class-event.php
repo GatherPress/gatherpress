@@ -830,15 +830,16 @@ class Event {
 			return false;
 		}
 
-		$taxonomy = Venue_Setup::get_instance()->taxonomy_for_event_post_type( $this->event->post_type );
-		$terms    = get_the_terms( $this->event->ID, $taxonomy );
+		$venue_setup = Venue_Setup::get_instance();
+		$taxonomy    = $venue_setup->taxonomy_for_event_post_type( $this->event->post_type );
+		$terms       = get_the_terms( $this->event->ID, $taxonomy );
 
 		if ( ! is_array( $terms ) ) {
 			return false;
 		}
 
 		foreach ( $terms as $term ) {
-			if ( Venue_Setup::ONLINE_EVENT_TERM_SLUG === $term->slug ) {
+			if ( $venue_setup->is_online_event_term_slug( $term->slug ) ) {
 				return true;
 			}
 		}
@@ -890,12 +891,31 @@ class Event {
 		}
 
 		$existing = wp_get_post_terms( $this->event->ID, $taxonomy, array( 'fields' => 'ids' ) );
-		$existing = is_array( $existing ) ? array_map( 'intval', $existing ) : array();
+
+		// @codeCoverageIgnoreStart
+		// get_online_event_term_id() above already resolved a term ID, so the
+		// taxonomy exists and this read cannot fail with a WP_Error.
+		if ( is_wp_error( $existing ) ) {
+			return false;
+		}
+		// @codeCoverageIgnoreEnd
+
+		$existing = array_map( 'intval', $existing );
 
 		if ( $is_online ) {
 			if ( ! in_array( $term_id, $existing, true ) ) {
 				$existing[] = $term_id;
-				wp_set_post_terms( $this->event->ID, array_values( array_unique( $existing ) ), $taxonomy );
+
+				// @codeCoverageIgnoreStart
+				// Guards against a failed term write leaving the link meta set
+				// without the term. The sentinel and venue terms already exist, so
+				// the write only fails on a DB error this harness cannot force.
+				$terms_to_set = array_values( array_unique( $existing ) );
+
+				if ( is_wp_error( wp_set_post_terms( $this->event->ID, $terms_to_set, $taxonomy ) ) ) {
+					return false;
+				}
+				// @codeCoverageIgnoreEnd
 			}
 
 			update_post_meta( $this->event->ID, 'gatherpress_online_event_link', esc_url_raw( $link ) );
@@ -907,7 +927,12 @@ class Event {
 		$remaining = array_values( array_filter( $existing, static fn ( int $id ): bool => $id !== $term_id ) );
 
 		if ( count( $remaining ) !== count( $existing ) ) {
-			wp_set_post_terms( $this->event->ID, $remaining, $taxonomy );
+			// @codeCoverageIgnoreStart
+			// Same DB-error-only failure mode as the toggle-on write above.
+			if ( is_wp_error( wp_set_post_terms( $this->event->ID, $remaining, $taxonomy ) ) ) {
+				return false;
+			}
+			// @codeCoverageIgnoreEnd
 		}
 
 		delete_post_meta( $this->event->ID, 'gatherpress_online_event_link' );

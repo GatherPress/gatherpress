@@ -492,14 +492,13 @@ final class Setup {
 		$venue = null;
 
 		if ( post_type_supports( $post_type, 'gatherpress-venue' ) ) {
-			$event       = new Core_Event( $post_id );
-			$venue_terms = get_the_terms( $post_id, $this->taxonomy_for_event_post_type( $post_type ) );
-			$venue_slug  = ( is_array( $venue_terms ) && ! empty( $venue_terms ) ) ? $venue_terms[0]->slug : null;
+			$event = new Core_Event( $post_id );
 
-			$venue_meta['isOnlineEventTerm'] = (
-			null !== $venue_slug
-			&& $this->is_online_event_term_slug( $venue_slug )
-			);
+			// Derive the online state from the event object so the sentinel
+			// is detected across every assigned term, not just the first.
+			$is_online = $event->is_online();
+
+			$venue_meta['isOnlineEventTerm'] = $is_online;
 			$venue_meta['onlineEventLink']   = $event->maybe_get_online_event_link();
 
 			$venue_post = $this->get_venue_post_from_event_post_id( $post_id );

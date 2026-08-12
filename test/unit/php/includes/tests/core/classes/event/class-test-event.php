@@ -1058,6 +1058,44 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * Coverage for is_online on an event with a physical venue term but no
+	 * online-event term.
+	 *
+	 * The sentinel is not present, so the term loop must exhaust without a
+	 * match and report false. This is the canonical non-hybrid venue case:
+	 * a real venue is attached but the event is not online.
+	 *
+	 * @covers ::is_online
+	 *
+	 * @return void
+	 */
+	public function test_is_online_returns_false_for_venue_without_online_term(): void {
+		$venue    = $this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_title' => 'Physical Venue',
+				'post_name'  => 'physical-venue',
+			)
+		)->get();
+		$event_id = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get()->ID;
+
+		wp_set_post_terms( $event_id, array( '_physical-venue' ), Venue::TAXONOMY );
+
+		$event = new Event( $event_id );
+
+		$this->assertFalse(
+			$event->is_online(),
+			'is_online should be false when only a physical venue term is attached.'
+		);
+
+		unset( $venue );
+	}
+
+	/**
 	 * Coverage for set_online method adding term and meta on toggle-on.
 	 *
 	 * @covers ::set_online
@@ -1176,6 +1214,82 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * Coverage for set_online bailing on a toggle-off when no sentinel has ever
+	 * been seeded for the venue taxonomy.
+	 *
+	 * With no seeded term the resolved term id is null, so toggle-off has
+	 * nothing to remove and reports failure rather than touching any meta.
+	 *
+	 * @covers ::set_online
+	 *
+	 * @return void
+	 */
+	public function test_set_online_off_bails_when_no_term_seeded(): void {
+		register_taxonomy_for_object_type( Venue::TAXONOMY, Event::POST_TYPE );
+		$event_id = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get()->ID;
+
+		$this->assertFalse(
+			( new Event( $event_id ) )->set_online( false ),
+			'set_online(false) should fail when the venue taxonomy has no sentinel term to remove.'
+		);
+	}
+
+	/**
+	 * Coverage for set_online bailing when seeding the sentinel term fails.
+	 *
+	 * A `pre_insert_term` filter rejecting the online-event term forces
+	 * `add_online_event_term()` to no-op, so the re-resolved term id stays null
+	 * and the toggle-on reports failure without touching the link meta.
+	 *
+	 * @covers ::set_online
+	 *
+	 * @return void
+	 */
+	public function test_set_online_bails_when_term_seeding_fails(): void {
+		register_taxonomy_for_object_type( Venue::TAXONOMY, Event::POST_TYPE );
+
+		// A prior test may have seeded the sentinel; remove it so the seeding
+		// branch below is genuinely exercised rather than short-circuited.
+		$existing = term_exists( Venue\Setup::ONLINE_EVENT_TERM_SLUG, Venue::TAXONOMY );
+
+		if ( $existing ) {
+			wp_delete_term( intval( $existing['term_id'] ), Venue::TAXONOMY );
+		}
+
+		$filter = static function ( $term, $taxonomy, $args ) {
+			if ( Venue\Setup::ONLINE_EVENT_TERM_SLUG === $args['slug'] ) {
+				return new \WP_Error( 'seed_failed', 'Forced seeding failure.' );
+			}
+
+			return $term;
+		};
+
+		add_filter( 'pre_insert_term', $filter, 10, 3 );
+
+		$event_id = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get()->ID;
+
+		$this->assertFalse(
+			( new Event( $event_id ) )->set_online( true, 'https://example.com/meet' ),
+			'set_online(true) should fail when the sentinel term cannot be seeded.'
+		);
+		$this->assertSame(
+			'',
+			get_post_meta( $event_id, 'gatherpress_online_event_link', true ),
+			'The link meta must be untouched when seeding fails.'
+		);
+
+		remove_filter( 'pre_insert_term', $filter );
+	}
+
+	/**
 	 * Coverage for set_online method being idempotent.
 	 *
 	 * @covers ::set_online
@@ -1214,8 +1328,8 @@ class Test_Event extends Base {
 	public function test_set_online_bails_when_no_event(): void {
 		$event = new Event( 0 );
 
-		// Should not error, should not create a term.
-		$event->set_online( true, 'https://example.com/meet' );
+		// Should not error, should not create a term, and should report failure.
+		$this->assertFalse( $event->set_online( true, 'https://example.com/meet' ) );
 
 		$this->assertFalse(
 			get_term_by( 'slug', Venue\Setup::ONLINE_EVENT_TERM_SLUG, Venue::TAXONOMY ) instanceof WP_Term,
