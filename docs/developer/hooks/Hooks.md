@@ -12,6 +12,10 @@
 
 - [`gatherpress_autoloader`](gatherpress_autoloader.md) Filters the registered autoloaders for GatherPress.
 
+## class-cache.php
+
+- [`gatherpress_calendar_max_age`](gatherpress_calendar_max_age.md) Filters how long calendar responses may be reused by clients and caches.
+
 ## class-calendar.php
 
 - [`gatherpress_calendar_url`](gatherpress_calendar_url.md) Filters the calendar URL for a single event.
@@ -134,6 +138,6 @@
 
 - [`gatherpress_loaded`](gatherpress_loaded.md) Fires once GatherPress has finished bootstrapping its core classes.
 
-## index.php
+## network-page.php
 
 - [`gatherpress_settings_section`](gatherpress_settings_section.md) Fires so tabs that render via the GatherPress settings section action
