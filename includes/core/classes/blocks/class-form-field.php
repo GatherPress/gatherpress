@@ -145,7 +145,7 @@ final class Form_Field {
 	 * fall back to the type-derived token; any other stored value is an
 	 * explicit choice and wins.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @param array $raw_attributes Raw block attributes.
 	 *
@@ -158,16 +158,16 @@ final class Form_Field {
 			return $autocomplete;
 		}
 
-		switch ( (string) ( $raw_attributes['fieldType'] ?? 'text' ) ) {
-			case 'email':
-				return 'email';
-			case 'url':
-				return 'url';
-			case 'tel':
-				return 'tel';
-			default:
-				return 'on';
-		}
+		// `match` rather than a switch: this only produces a value, and the
+		// subject is a string on both sides so the `===` comparison is
+		// equivalent. The `default` arm keeps an unrecognized field type from
+		// raising UnhandledMatchError.
+		return match ( (string) ( $raw_attributes['fieldType'] ?? 'text' ) ) {
+			'email' => 'email',
+			'url'   => 'url',
+			'tel'   => 'tel',
+			default => 'on',
+		};
 	}
 
 	/**

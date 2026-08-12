@@ -578,7 +578,7 @@ class Test_Form_Field extends Base {
 	 * is never a deliberate choice, so it falls back to the type-derived
 	 * token; an explicit token wins.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 * @covers ::resolve_autocomplete
 	 * @covers ::get_input_attributes
 	 *
@@ -634,7 +634,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests the aria-describedby association for rendered help text.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 * @covers ::get_input_attributes
 	 *
 	 * @return void

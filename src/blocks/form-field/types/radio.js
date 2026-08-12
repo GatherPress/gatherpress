@@ -45,6 +45,7 @@ export default function RadioField( {
 		requiredText,
 		requiredTextColor,
 		radioOptions = [ { label: '', value: '', id: uuidv4() } ],
+		helpText,
 	} = attributes;
 
 	// Handle label blur to auto-generate field name.
@@ -236,6 +237,9 @@ export default function RadioField( {
 					) ) }
 				</div>
 			</fieldset>
+			{ helpText && (
+				<p className="gatherpress-help-text">{ helpText }</p>
+			) }
 		</div>
 	);
 }
