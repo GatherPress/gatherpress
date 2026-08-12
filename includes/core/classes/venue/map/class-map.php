@@ -278,7 +278,7 @@ final class Map {
 	 * inline. Handler signature: `( int $post_id, int $zoom, int $width,
 	 * int $height, string $map_type )`.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 * @var string
 	 */
 	const GENERATE_CRON_ACTION = 'gatherpress_static_map_generate_run';
@@ -562,7 +562,7 @@ final class Map {
 	 * make venue saves return immediately and let the map render a few
 	 * seconds later via WP-Cron.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @param int $post_id Venue post ID.
 	 *
@@ -581,7 +581,7 @@ final class Map {
 		 * moment later. Particularly useful for bulk venue imports or REST
 		 * integrations that create/update many venues in a tight loop.
 		 *
-		 * @since 0.35.0
+		 * @since 0.36.0
 		 *
 		 * @param bool $async   Whether to defer generation to a cron job. Default false.
 		 * @param int  $post_id Venue post ID.
@@ -597,7 +597,7 @@ final class Map {
 	 * short-circuit filter so a companion plugin can route the fanout
 	 * through Action Scheduler (or any other queue) instead of WP-Cron.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @param int    $post_id  Venue post ID.
 	 * @param int    $zoom     Zoom level.
@@ -629,7 +629,7 @@ final class Map {
 		 * everything else, including falsy values like `false`, `0`, and
 		 * `''`, short-circuits.
 		 *
-		 * @since 0.35.0
+		 * @since 0.36.0
 		 *
 		 * @param mixed  $short_circuit Non-null to suppress the default enqueue.
 		 * @param string $hook          Action hook name fired when the job runs.
@@ -663,7 +663,7 @@ final class Map {
 	 * type re-registered without venue support, or its address edited again
 	 * to something un-geocodable.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @param int    $post_id  Venue post ID.
 	 * @param int    $zoom     Zoom level.
@@ -834,7 +834,7 @@ final class Map {
 	 * and an empty array when the combo could not be produced — the same
 	 * shape the REST handler surfaces as `generation_failed`.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @param int   $post_id The venue post ID.
 	 * @param array $combo   Combo in the {@see Rest_Api::parse_request()}
@@ -1635,7 +1635,7 @@ final class Map {
 	 * should not generate a bogus (0, 0) map off the west coast of Africa.
 	 *
 	 * @since 0.34.0
-	 * @since 0.35.0 Visibility changed to public so the REST layer
+	 * @since 0.36.0 Visibility changed to public so the REST layer
 	 *               ({@see Rest_Api}) applies the same coercion.
 	 *
 	 * @param mixed $raw Raw coordinate from venue information.
@@ -1715,7 +1715,7 @@ final class Map {
 	 * Providers self-guard at render time — Google coerces types it can't
 	 * satisfy to `roadmap` internally, and OSM ignores the type entirely.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @param string $map_type Raw map type from block attrs or REST.
 	 *
