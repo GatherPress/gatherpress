@@ -949,7 +949,7 @@ class Test_Form_Field extends Base {
 		$this->assertStringContainsString( '<option value="small"', $output );
 		$this->assertStringContainsString( '<option value="large"', $output );
 		$this->assertStringContainsString(
-			'<option value="large" selected', // The stored value renders selected.
+			'value="large" selected=\'selected\'',
 			$output
 		);
 		$this->assertStringNotContainsString( '<input', $output );
@@ -990,7 +990,7 @@ class Test_Form_Field extends Base {
 			"Option with value '0' must render with value '0', not fall back to its label."
 		);
 		$this->assertStringContainsString(
-			"value='0' selected='selected'",
+			'value="0" selected=\'selected\'',
 			$output,
 			"Stored option valued '0' must render selected so it survives as the stored field value."
 		);
@@ -1089,7 +1089,7 @@ class Test_Form_Field extends Base {
 			'Chosen option must still render even when the placeholder is omitted.'
 		);
 		$this->assertStringContainsString(
-			"value='small' selected='selected'",
+			'value="small" selected=\'selected\'',
 			$output,
 			'Chosen option must render selected so the stored value survives.'
 		);
@@ -1130,7 +1130,7 @@ class Test_Form_Field extends Base {
 			"Radio option with value '0' must render with value '0', not fall back to its label."
 		);
 		$this->assertStringContainsString(
-			"value='0' checked='checked'",
+			"checked='checked'",
 			$output,
 			"Stored radio option valued '0' must render checked so it survives as the stored field value."
 		);

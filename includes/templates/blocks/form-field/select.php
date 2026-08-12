@@ -62,7 +62,7 @@ if ( ! isset(
 				$gatherpress_option['label'] :
 				$gatherpress_value;
 			?>
-			<option value="<?php echo esc_attr( $gatherpress_value ); ?>" <?php selected( $attributes['field_value'], $gatherpress_value ); ?>>
+			<option value="<?php echo esc_attr( $gatherpress_value ); ?>"<?php selected( $attributes['field_value'], $gatherpress_value ); ?>>
 				<?php echo esc_html( $gatherpress_option['label'] ); ?>
 			</option>
 			<?php
