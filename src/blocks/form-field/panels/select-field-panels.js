@@ -47,6 +47,7 @@ export default function SelectFieldPanels( { attributes, setAttributes } ) {
 		const newOptions = [ ...radioOptions ];
 		newOptions[ index ] = { ...newOptions[ index ], [ field ]: value };
 
+		const previousValue = newOptions[ index ].value;
 		if ( 'label' === field ) {
 			const cleanValue = value
 				.toLowerCase()
@@ -56,7 +57,16 @@ export default function SelectFieldPanels( { attributes, setAttributes } ) {
 			newOptions[ index ].value = cleanValue || value;
 		}
 
-		setAttributes( { radioOptions: newOptions } );
+		// Keep the default selection in step when a label edit regenerates the value.
+		const updates = { radioOptions: newOptions };
+		if (
+			fieldValue === previousValue &&
+			previousValue !== newOptions[ index ].value
+		) {
+			updates.fieldValue = newOptions[ index ].value;
+		}
+
+		setAttributes( updates );
 	};
 
 	const addSelectOption = () => {

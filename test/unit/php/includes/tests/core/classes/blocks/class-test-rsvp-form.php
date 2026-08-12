@@ -634,6 +634,28 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
+	 * Tests that a required select field persists an explicit "0" value.
+	 *
+	 * "0" is a real option value the schema preserves, so required validation
+	 * must not treat it as an empty submit.
+	 *
+	 * @since 0.36.0
+	 * @covers ::sanitize_custom_field_value
+	 */
+	public function test_sanitize_custom_field_value_select_preserves_zero(): void {
+		$instance = Rsvp_Form::get_instance();
+
+		$config = array(
+			'type'     => 'select',
+			'required' => true,
+			'options'  => array( '0', '1' ),
+		);
+
+		$result = $instance->sanitize_custom_field_value( '0', $config );
+		$this->assertSame( '0', $result );
+	}
+
+	/**
 	 * Tests the sanitize_custom_field_value method with checkbox fields.
 	 *
 	 * Verifies that checkbox field sanitization correctly converts
@@ -1049,6 +1071,71 @@ class Test_Rsvp_Form extends Base {
 
 		// Check that built-in fields were not processed.
 		$this->assertEquals( '', get_comment_meta( $comment_id, 'gatherpress_custom_author', true ) );
+
+		// Clean up.
+		remove_filter( 'gatherpress_pre_get_http_input', $filter_callback );
+	}
+
+	/**
+	 * Tests that process_custom_fields_for_form persists an explicit "0" value.
+	 *
+	 * "0" is a falsy string, so the submit path must not drop it via empty().
+	 *
+	 * @since 0.36.0
+	 * @covers ::process_custom_fields_for_form
+	 */
+	public function test_process_custom_fields_for_form_persists_zero_value(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Create an RSVP comment.
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		// Set up form schema with a select field that allows "0".
+		$schemas = array(
+			'form_0' => array(
+				'fields' => array(
+					'custom_select_field' => array(
+						'name'    => 'custom_select_field',
+						'type'    => 'select',
+						'options' => array( '0', '1' ),
+					),
+				),
+			),
+		);
+		add_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', $schemas );
+
+		// Mock POST data using the test filter.
+		$mock_post_data = array(
+			'gatherpress_form_schema_id' => 'form_0',
+			'custom_select_field'        => '0',
+		);
+
+		$filter_callback = function ( $pre_value, $type, $var_name ) use ( $mock_post_data ) {
+			if ( INPUT_POST === $type && isset( $mock_post_data[ $var_name ] ) ) {
+				return $mock_post_data[ $var_name ];
+			}
+			return $pre_value;
+		};
+
+		add_filter( 'gatherpress_pre_get_http_input', $filter_callback, 10, 3 );
+
+		$instance = Rsvp_Form::get_instance();
+		$instance->process_custom_fields_for_form( $comment_id );
+
+		// The "0" value must be stored, not skipped as empty.
+		$this->assertEquals(
+			'0',
+			get_comment_meta( $comment_id, 'gatherpress_custom_custom_select_field', true )
+		);
 
 		// Clean up.
 		remove_filter( 'gatherpress_pre_get_http_input', $filter_callback );

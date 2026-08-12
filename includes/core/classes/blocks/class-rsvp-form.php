@@ -720,7 +720,7 @@ final class Rsvp_Form {
 			}
 
 			$field_value = Utility::get_http_input( INPUT_POST, $field_name, null );
-			if ( empty( $field_value ) ) {
+			if ( '' === $field_value ) {
 				continue;
 			}
 
@@ -745,8 +745,9 @@ final class Rsvp_Form {
 	 * @return mixed|false The sanitized value, or false if sanitization fails.
 	 */
 	public function sanitize_custom_field_value( $value, array $config ): mixed {
-		// Handle required field validation.
-		if ( ! empty( $config['required'] ) && empty( $value ) ) {
+		// Handle required field validation. An explicit "0" is a real option
+		// value (the schema preserves it), not an empty submit.
+		if ( ! empty( $config['required'] ) && ( null === $value || '' === $value ) ) {
 			return false;
 		}
 

@@ -595,8 +595,8 @@ class Test_Form_Field extends Base {
 			'Failed to assert select attributes contain name.'
 		);
 		$this->assertStringNotContainsString(
-			'type="select"',
-			$attributes,
+			' type=',
+			' ' . $attributes,
 			'Failed to assert select attributes do not contain an input type.'
 		);
 	}
@@ -948,7 +948,10 @@ class Test_Form_Field extends Base {
 		$this->assertStringContainsString( 'name="choice"', $output );
 		$this->assertStringContainsString( '<option value="small"', $output );
 		$this->assertStringContainsString( '<option value="large"', $output );
-		$this->assertStringContainsString( "selected='selected'", $output );
+		$this->assertStringContainsString(
+			'<option value="large" selected', // The stored value renders selected.
+			$output
+		);
 		$this->assertStringNotContainsString( '<input', $output );
 	}
 

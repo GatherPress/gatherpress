@@ -269,7 +269,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						setAttributes={ setAttributes }
 					/>
 
-					{ ! [ 'hidden', 'checkbox', 'radio' ].includes( fieldType ) && (
+					{ ! [ 'hidden', 'checkbox', 'radio', 'select' ].includes( fieldType ) && (
 						<>
 							<TextControl
 								label={ __( 'Placeholder', 'gatherpress' ) }

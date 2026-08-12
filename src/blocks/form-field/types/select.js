@@ -62,6 +62,7 @@ export default function SelectField( {
 		const newOptions = [ ...radioOptions ];
 		newOptions[ index ] = { ...newOptions[ index ], [ field ]: value };
 
+		const previousValue = newOptions[ index ].value;
 		if ( 'label' === field ) {
 			const cleanValue = value
 				.toLowerCase()
@@ -71,7 +72,16 @@ export default function SelectField( {
 			newOptions[ index ].value = cleanValue || value;
 		}
 
-		setAttributes( { radioOptions: newOptions } );
+		// Keep the default selection in step when a label edit regenerates the value.
+		const updates = { radioOptions: newOptions };
+		if (
+			fieldValue === previousValue &&
+			previousValue !== newOptions[ index ].value
+		) {
+			updates.fieldValue = newOptions[ index ].value;
+		}
+
+		setAttributes( updates );
 
 		if ( 'label' === field && 0 === index && ! fieldName && value ) {
 			const generatedFieldName = generateFieldName( value );
@@ -81,16 +91,21 @@ export default function SelectField( {
 		}
 	};
 
+	// Select-option rich-text editors, scoped to this block so multiple
+	// select fields on the same page don't collide.
+	const getOptionEditors = () =>
+		Array.from(
+			blockProps?.ref?.current?.querySelectorAll(
+				'.gatherpress-select-options .rich-text',
+			) || [],
+		);
+
 	const addSelectOption = () => {
 		const newOptions = [ ...radioOptions, { label: '', value: '', id: uuidv4() } ];
 		setAttributes( { radioOptions: newOptions } );
 
 		setTimeout( () => {
-			const radioOptionElements = document.querySelectorAll(
-				'.gatherpress-select-option .rich-text',
-			);
-			const lastOption =
-				radioOptionElements[ radioOptionElements.length - 1 ];
+			const lastOption = getOptionEditors().at( -1 );
 			if ( lastOption ) {
 				lastOption.focus();
 			}
@@ -112,11 +127,8 @@ export default function SelectField( {
 		// Focus the previous option after removal and set cursor to end.
 		setTimeout( () => {
 			const targetIndex = Math.max( 0, index - 1 );
-			const radioOptionElements = document.querySelectorAll(
-				'.gatherpress-select-option .rich-text',
-			);
-			if ( radioOptionElements[ targetIndex ] ) {
-				const element = radioOptionElements[ targetIndex ];
+			const element = getOptionEditors()[ targetIndex ];
+			if ( element ) {
 				element.focus();
 
 				// Move cursor to end of text.
