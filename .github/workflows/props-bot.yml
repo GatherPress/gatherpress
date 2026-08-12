@@ -76,14 +76,15 @@ jobs:
         steps:
             # TEMPORARY PATCH: run a locally patched copy of props-bot-action
             # instead of using it directly. The action fails hard on any PR
-            # the what-the-diff app has commented on ("Could not resolve to a
-            # User with the login of 'what-the-diff'"), because its skipUser()
-            # bot list is hardcoded and doesn't include it. Same failure mode
-            # as WordPress/props-bot-action#232, which was fixed by extending
-            # the list (WordPress/props-bot-action#184); a configurable
-            # exclude list is requested in WordPress/props-bot-action#138.
-            # Once either lands upstream, replace these three steps with a
-            # single `uses: WordPress/props-bot-action@trunk` again.
+            # a GitHub App has commented on ("Could not resolve to a User
+            # with the login of '...'"), because its skipUser() bot list is
+            # hardcoded — currently bites what-the-diff and coderabbitai.
+            # Same failure mode as WordPress/props-bot-action#232, which was
+            # fixed by extending the list (WordPress/props-bot-action#184);
+            # a configurable exclude list is requested in
+            # WordPress/props-bot-action#138. Once either lands upstream,
+            # replace these three steps with a single
+            # `uses: WordPress/props-bot-action@trunk` again.
             #
             # This checks out the TRUSTED upstream action repository at trunk,
             # never code from the pull request — important because this
@@ -95,13 +96,16 @@ jobs:
                   ref: trunk
                   path: props-bot-action
 
-            - name: Add what-the-diff to the skipped users
+            - name: Add what-the-diff and coderabbitai to the skipped users
               run: |
                   # Guards fail the job loudly if upstream reshapes the list,
                   # so the patch can't silently stop applying.
                   grep -q "'github-actions'," props-bot-action/dist/index.js
-                  sed -i "s/'github-actions',/'github-actions', 'what-the-diff', 'what-the-diff[bot]',/g" props-bot-action/dist/index.js
-                  grep -q "'what-the-diff'," props-bot-action/dist/index.js
+                  sed -i "s/'github-actions',/'github-actions', 'what-the-diff', 'what-the-diff[bot]', 'coderabbitai', 'coderabbitai[bot]',/g" props-bot-action/dist/index.js
+                  grep -qF "'what-the-diff'," props-bot-action/dist/index.js
+                  grep -qF "'what-the-diff[bot]'," props-bot-action/dist/index.js
+                  grep -qF "'coderabbitai'," props-bot-action/dist/index.js
+                  grep -qF "'coderabbitai[bot]'," props-bot-action/dist/index.js
 
             - name: Gather a list of contributors
               uses: ./props-bot-action
