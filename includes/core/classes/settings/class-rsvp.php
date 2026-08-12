@@ -97,6 +97,7 @@ final class Rsvp extends Base {
 						),
 						'field'       => array(
 							'type'    => 'select',
+							'label'   => __( 'RSVP mode:', 'gatherpress' ),
 							'options' => array(
 								'default' => 'enabled',
 								'items'   => array(
@@ -231,6 +232,7 @@ final class Rsvp extends Base {
 						),
 						'field'       => array(
 							'type'    => 'select',
+							'label'   => __( 'RSVP cleanup:', 'gatherpress' ),
 							'options' => array(
 								'default' => 'disabled',
 								'items'   => array(
@@ -250,6 +252,7 @@ final class Rsvp extends Base {
 						),
 						'field'       => array(
 							'type'    => 'select',
+							'label'   => __( 'Cleanup frequency:', 'gatherpress' ),
 							'options' => array(
 								'default' => 'daily',
 								'items'   => array(
@@ -276,6 +279,7 @@ final class Rsvp extends Base {
 						'field'       => array(
 							'type'    => 'number',
 							'size'    => 'small',
+							'label'   => __( 'Cleanup interval:', 'gatherpress' ),
 							'options' => array(
 								'min'     => 1,
 								'default' => 1,

@@ -12,6 +12,7 @@ use DateTime;
 use DateTimeZone;
 use GatherPress\Core\Event\Event;
 use GatherPress\Core\Setup;
+use GatherPress\Core\Event\Setup as Event_Setup;
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
@@ -105,10 +106,6 @@ class Test_Event extends Base {
 					'timezone'       => 'America/New_York',
 				),
 				'expects' => 'Monday, May 11, 2020 3:00 PM to Tuesday, May 12, 2020 5:00 PM EDT',
-			),
-			array(
-				'params'  => array(),
-				'expects' => '—',
 			),
 			array(
 				'params'  => array(
@@ -312,15 +309,22 @@ class Test_Event extends Base {
 		)->get();
 		$event = new Event( $post->ID );
 
+		// A new event is seeded with the editor's default rather than left
+		// datetime-less, so it always lands in the events table (#2054). The
+		// seed is decided at shutdown, so meta written after the insert wins
+		// over it (#2116).
+		Event_Setup::get_instance()->resolve_pending_datetimes();
+
+		$seeded = $event->get_datetime();
+
+		$this->assertNotEmpty(
+			$seeded['datetime_start'],
+			'Failed to assert that a new event is seeded with a start datetime.'
+		);
 		$this->assertSame(
-			array(
-				'datetime_start'     => '',
-				'datetime_start_gmt' => '',
-				'datetime_end'       => '',
-				'datetime_end_gmt'   => '',
-				'timezone'           => '+00:00',
-			),
-			$event->get_datetime()
+			2 * HOUR_IN_SECONDS,
+			strtotime( $seeded['datetime_end'] ) - strtotime( $seeded['datetime_start'] ),
+			'Failed to assert that the seeded default runs for two hours.'
 		);
 
 		$params = array(
@@ -358,6 +362,58 @@ class Test_Event extends Base {
 		$this->assertSame(
 			'Tue, May 12, 9:00pm GMT+0000',
 			Utility::invoke_hidden_method( $event, 'get_formatted_datetime', array( 'D, F j, g:ia T', 'end', false ) )
+		);
+	}
+
+	/**
+	 * Coverage for get_datetime method with partially missing meta.
+	 *
+	 * Events created before #2054 seeded a default datetime, and events built
+	 * outside the editor, can be missing some of the five datetime meta keys.
+	 * Each absent key is skipped and keeps its empty default rather than
+	 * poisoning the whole array.
+	 *
+	 * @covers ::get_datetime
+	 *
+	 * @return void
+	 */
+	public function test_get_datetime_skips_missing_meta(): void {
+		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$event = new Event( $post->ID );
+
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2020-05-11 15:00:00',
+				'datetime_end'   => '2020-05-12 17:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		delete_post_meta( $post->ID, 'gatherpress_datetime_end' );
+		delete_post_meta( $post->ID, 'gatherpress_datetime_end_gmt' );
+
+		// A fresh instance so the read is not served from datetime_cache.
+		$datetime = ( new Event( $post->ID ) )->get_datetime();
+
+		$this->assertSame(
+			'2020-05-11 15:00:00',
+			$datetime['datetime_start'],
+			'Failed to assert that a present meta key still populates.'
+		);
+		$this->assertSame(
+			'America/New_York',
+			$datetime['timezone'],
+			'Failed to assert that timezone survives a missing datetime key.'
+		);
+		$this->assertSame(
+			'',
+			$datetime['datetime_end'],
+			'Failed to assert that a missing meta key keeps its empty default.'
+		);
+		$this->assertSame(
+			'',
+			$datetime['datetime_end_gmt'],
+			'Failed to assert that a missing gmt meta key keeps its empty default.'
 		);
 	}
 
@@ -1210,6 +1266,26 @@ class Test_Event extends Base {
 		$this->assertFalse(
 			$event->is_same_date(),
 			'Failed to assert event spans multiple days.'
+		);
+	}
+
+	/**
+	 * Coverage for is_same_date method without datetimes.
+	 *
+	 * A post that is not an event resolves to no datetimes at all, so there is
+	 * no date to compare and the answer is false rather than a spurious true
+	 * from two empty strings matching each other.
+	 *
+	 * @covers ::is_same_date
+	 *
+	 * @return void
+	 */
+	public function test_is_same_date_is_false_without_datetimes(): void {
+		$event = new Event( 0 );
+
+		$this->assertFalse(
+			$event->is_same_date(),
+			'Failed to assert that an event with no datetimes is not on the same date.'
 		);
 	}
 

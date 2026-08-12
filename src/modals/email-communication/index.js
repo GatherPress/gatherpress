@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies
  */
-import { __, _x } from '@wordpress/i18n';
+import { __, _x, sprintf } from '@wordpress/i18n';
 import domReady from '@wordpress/dom-ready';
 import { createRoot, useState, useEffect, useRef } from '@wordpress/element';
 import {
@@ -10,6 +10,7 @@ import {
 	Flex,
 	FlexItem,
 	Modal,
+	TextControl,
 	TextareaControl,
 } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
@@ -42,6 +43,7 @@ const EventCommunicationModal = () => {
 	const [ isWaitingListChecked, setWaitingListChecked ] = useState( false );
 	const [ isNotAttendingChecked, setNotAttendingChecked ] = useState( false );
 	const [ buttonDisabled, setButtonDisabled ] = useState( false );
+	const [ subject, setSubject ] = useState( '' );
 	const [ message, setMessage ] = useState( '' );
 	const textareaRef = useRef( null );
 	const sendMessage = () => {
@@ -54,6 +56,7 @@ const EventCommunicationModal = () => {
 				method: 'POST',
 				data: {
 					post_id: select( 'core/editor' ).getCurrentPostId(),
+					subject,
 					message,
 					send: {
 						all: isAllChecked,
@@ -65,6 +68,7 @@ const EventCommunicationModal = () => {
 			} ).then( ( res ) => {
 				if ( res.success ) {
 					closeModal();
+					setSubject( '' );
 					setMessage( '' );
 					setAllChecked( false );
 					setAttendingChecked( false );
@@ -100,6 +104,21 @@ const EventCommunicationModal = () => {
 		}
 	}, [ isOpen ] );
 
+	useEffect( () => {
+		if ( isOpen ) {
+			const title =
+				select( 'core/editor' ).getEditedPostAttribute( 'title' ) ||
+				'';
+			setSubject(
+				sprintf(
+					// translators: %s: event title.
+					_x( '📅 %s', 'Email notification subject with event title', 'gatherpress' ),
+					title,
+				),
+			);
+		}
+	}, [ isOpen ] );
+
 	return (
 		<>
 			{ isOpen && (
@@ -109,6 +128,12 @@ const EventCommunicationModal = () => {
 					shouldCloseOnClickOutside={ false }
 					style={ { maxWidth: '550px' } }
 				>
+					<TextControl
+						label={ __( 'Subject', 'gatherpress' ) }
+						value={ subject }
+						onChange={ ( value ) => setSubject( value ) }
+						style={ { marginBottom: '1rem' } }
+					/>
 					<TextareaControl
 						label={ __( 'Optional message', 'gatherpress' ) }
 						value={ message }

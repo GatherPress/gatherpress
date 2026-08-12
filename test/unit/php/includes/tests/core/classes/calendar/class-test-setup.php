@@ -1320,4 +1320,203 @@ class Test_Setup extends Base {
 			'Should include the second entry attr label.'
 		);
 	}
+
+	/**
+	 * A site that filters the max age to zero opts out of client caching, so
+	 * the response carries the no-store headers instead of validators.
+	 *
+	 * @covers ::send_ics_headers
+	 *
+	 * @return void
+	 */
+	public function test_send_ics_headers_without_caching(): void {
+		add_filter( 'gatherpress_calendar_max_age', '__return_zero' );
+
+		ob_start();
+		Setup::get_instance()->send_ics_headers( 'sample.ics', '"abc123"', '2026-07-31 10:00:00' );
+		$output = ob_get_clean();
+
+		remove_filter( 'gatherpress_calendar_max_age', '__return_zero' );
+		header_remove();
+
+		$this->assertSame(
+			'',
+			$output,
+			'send_ics_headers should not emit body output.'
+		);
+	}
+
+	/**
+	 * Coverage for get_etag.
+	 *
+	 * @covers ::get_etag
+	 *
+	 * @return void
+	 */
+	public function test_get_etag_quotes_a_hash_of_the_body(): void {
+		$instance = Setup::get_instance();
+
+		$this->assertSame(
+			sprintf( '"%s"', md5( 'BEGIN:VCALENDAR' ) ),
+			$instance->get_etag( 'BEGIN:VCALENDAR' ),
+			'The entity tag should be a quoted MD5 of the body.'
+		);
+		$this->assertNotSame(
+			$instance->get_etag( 'BEGIN:VCALENDAR' ),
+			$instance->get_etag( 'BEGIN:VCALENDAR-changed' ),
+			'A changed body should produce a different entity tag.'
+		);
+	}
+
+	/**
+	 * The cache key describes what the request resolved to, so two different
+	 * scopes cannot share one entry and the same scope always agrees with
+	 * itself.
+	 *
+	 * @covers ::get_ics_cache_key
+	 *
+	 * @return void
+	 */
+	public function test_get_ics_cache_key_follows_the_queried_object(): void {
+		$instance = Setup::get_instance();
+		$archive  = $instance->get_ics_cache_key();
+
+		$this->assertStringStartsWith( 'ics:', $archive, 'Cache keys should be namespaced.' );
+		$this->assertSame(
+			$archive,
+			$instance->get_ics_cache_key(),
+			'The same request scope should produce the same key.'
+		);
+
+		$post = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+
+		$this->go_to( get_permalink( $post->ID ) );
+
+		$single = $instance->get_ics_cache_key();
+
+		$this->assertNotSame(
+			$archive,
+			$single,
+			'A single event should not share the archive key.'
+		);
+
+		$term = wp_insert_term( 'Cache Key Topic', 'gatherpress_topic' );
+
+		$this->go_to( get_term_link( (int) $term['term_id'], 'gatherpress_topic' ) );
+
+		$this->assertNotSame(
+			$single,
+			$instance->get_ics_cache_key(),
+			'A term archive should not share the single-event key.'
+		);
+
+		$this->go_to( get_post_type_archive_link( Event::POST_TYPE ) );
+
+		$this->assertNotSame(
+			$single,
+			$instance->get_ics_cache_key(),
+			'A post type archive should not share the single-event key.'
+		);
+	}
+
+	/**
+	 * Coverage for get_ics_body, which renders through the cache.
+	 *
+	 * @covers ::get_ics_body
+	 *
+	 * @return void
+	 */
+	public function test_get_ics_body_renders_a_calendar(): void {
+		$post = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+
+		$this->go_to( get_permalink( $post->ID ) );
+
+		$body = Setup::get_instance()->get_ics_body();
+
+		$this->assertStringContainsString(
+			'BEGIN:VCALENDAR',
+			$body,
+			'The rendered body should be an iCalendar payload.'
+		);
+	}
+
+	/**
+	 * `If-None-Match` is the exact validator, so it answers on its own and
+	 * wins when the client sends a timestamp as well.
+	 *
+	 * @covers ::is_not_modified
+	 *
+	 * @return void
+	 */
+	public function test_is_not_modified_reads_the_entity_tag(): void {
+		$instance      = Setup::get_instance();
+		$etag          = '"abc123"';
+		$last_modified = '2026-07-31 10:00:00';
+
+		$_SERVER['HTTP_IF_NONE_MATCH'] = 'W/"abc123"';
+
+		$this->assertTrue(
+			$instance->is_not_modified( $etag, $last_modified ),
+			'A weakened tag that matches should still count as unmodified.'
+		);
+
+		$_SERVER['HTTP_IF_NONE_MATCH'] = '"nope", W/"abc123"';
+
+		$this->assertTrue(
+			$instance->is_not_modified( $etag, $last_modified ),
+			'A match anywhere in the list should count as unmodified.'
+		);
+
+		$_SERVER['HTTP_IF_NONE_MATCH']     = '"stale"';
+		$_SERVER['HTTP_IF_MODIFIED_SINCE'] = 'Sat, 31 Jul 2027 10:00:00 GMT';
+
+		$this->assertFalse(
+			$instance->is_not_modified( $etag, $last_modified ),
+			'A tag that does not match should answer on its own, ignoring the timestamp.'
+		);
+
+		unset( $_SERVER['HTTP_IF_NONE_MATCH'], $_SERVER['HTTP_IF_MODIFIED_SINCE'] );
+	}
+
+	/**
+	 * Without an entity tag the timestamp decides, and an unreadable or absent
+	 * one falls back to sending the payload.
+	 *
+	 * @covers ::is_not_modified
+	 *
+	 * @return void
+	 */
+	public function test_is_not_modified_reads_the_timestamp(): void {
+		$instance      = Setup::get_instance();
+		$etag          = '"abc123"';
+		$last_modified = '2026-07-31 10:00:00';
+
+		$this->assertFalse(
+			$instance->is_not_modified( $etag, $last_modified ),
+			'A client sending no validators should get the payload.'
+		);
+
+		$_SERVER['HTTP_IF_MODIFIED_SINCE'] = 'Fri, 31 Jul 2026 10:00:00 GMT';
+
+		$this->assertTrue(
+			$instance->is_not_modified( $etag, $last_modified ),
+			'A timestamp at the last change should count as unmodified.'
+		);
+
+		$_SERVER['HTTP_IF_MODIFIED_SINCE'] = 'Thu, 30 Jul 2026 10:00:00 GMT';
+
+		$this->assertFalse(
+			$instance->is_not_modified( $etag, $last_modified ),
+			'A timestamp older than the last change should get the payload.'
+		);
+
+		$_SERVER['HTTP_IF_MODIFIED_SINCE'] = 'not a date';
+
+		$this->assertFalse(
+			$instance->is_not_modified( $etag, $last_modified ),
+			'An unparsable timestamp should get the payload rather than a 304.'
+		);
+
+		unset( $_SERVER['HTTP_IF_MODIFIED_SINCE'] );
+	}
 }

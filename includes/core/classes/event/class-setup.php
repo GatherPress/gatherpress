@@ -14,6 +14,7 @@ namespace GatherPress\Core\Event;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use DateTimeImmutable;
 use Exception;
 use GatherPress\Core\Event;
 use GatherPress\Core\Feed;
@@ -49,6 +50,18 @@ final class Setup {
 	 * @var string
 	 */
 	protected string $archive_title = '';
+
+	/**
+	 * Post IDs awaiting a datetime decision at shutdown.
+	 *
+	 * Keyed by post ID so a post saved more than once in a request is only
+	 * resolved once. See `set_datetimes()` for why the decision is deferred.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @var array<int, bool>
+	 */
+	protected array $pending_datetimes = array();
 
 	/**
 	 * Class constructor.
@@ -744,20 +757,135 @@ final class Setup {
 
 		$data = get_post_meta( $post_id, 'gatherpress_datetime', true );
 
-		if ( empty( $data ) ) {
+		if ( ! empty( $data ) ) {
+			$this->write_datetimes( $post_id, json_decode( (string) $data, true ) ?? array() );
+
 			return;
 		}
 
-		$data = json_decode( (string) $data, true ) ?? array();
+		// Nothing stored yet, but that does not mean nothing is coming. This
+		// hook fires from inside wp_insert_post(), and every caller writes the
+		// meta afterwards: REST does, and so does anything that duplicates or
+		// imports a post. Seeding a default here would win over values that
+		// arrive moments later, because those callers use add_post_meta(),
+		// which appends rather than replaces -- so the seeded row stays first
+		// and a single-value read never sees the real date (#2116).
+		//
+		// Decide at shutdown instead, once the request's meta writes are done.
+		$this->pending_datetimes[ $post_id ] = true;
 
-		$event  = new Event( $post_id );
-		$params = array(
-			'post_id'        => $post_id,
-			'datetime_start' => $data['dateTimeStart'] ?? '',
-			'datetime_end'   => $data['dateTimeEnd'] ?? '',
-			'timezone'       => $data['timezone'] ?? '',
+		add_action( 'shutdown', array( $this, 'resolve_pending_datetimes' ) );
+	}
+
+	/**
+	 * Write the events-table row and datetime meta for a post.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @param int   $post_id The post to write.
+	 * @param array $data    Datetime payload keyed dateTimeStart / dateTimeEnd / timezone.
+	 *
+	 * @return void
+	 */
+	protected function write_datetimes( int $post_id, array $data ): void {
+		$event = new Event( $post_id );
+
+		$event->save_datetimes(
+			array(
+				'post_id'        => $post_id,
+				'datetime_start' => $data['dateTimeStart'] ?? '',
+				'datetime_end'   => $data['dateTimeEnd'] ?? '',
+				'timezone'       => $data['timezone'] ?? '',
+			)
 		);
+	}
 
-		$event->save_datetimes( $params );
+	/**
+	 * Resolve every post that finished its save without a stored datetime.
+	 *
+	 * Runs on shutdown, so the meta `resolve_datetime_payload()` reads is
+	 * whatever the request actually ended up with rather than what existed
+	 * mid-insert.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @return void
+	 */
+	public function resolve_pending_datetimes(): void {
+		$pending                 = $this->pending_datetimes;
+		$this->pending_datetimes = array();
+
+		foreach ( array_keys( $pending ) as $post_id ) {
+			// The post can be gone by shutdown -- a duplicate that failed, or
+			// an insert rolled back after this hook ran.
+			if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
+				continue;
+			}
+
+			$this->write_datetimes( $post_id, $this->resolve_datetime_payload( $post_id ) );
+		}
+	}
+
+	/**
+	 * Decide which datetime a post that saved without one should end up with.
+	 *
+	 * Split out from `resolve_pending_datetimes()` so each outcome can be
+	 * asserted directly rather than through a shutdown run.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @param int $post_id The post to resolve.
+	 *
+	 * @return array{dateTimeStart: string, dateTimeEnd: string, timezone: string} Datetime payload.
+	 */
+	protected function resolve_datetime_payload( int $post_id ): array {
+		$data = get_post_meta( $post_id, 'gatherpress_datetime', true );
+
+		if ( ! empty( $data ) ) {
+			return json_decode( (string) $data, true ) ?? array();
+		}
+
+		// Only the individual keys arrived, which is what copying meta key by
+		// key produces when the JSON blob is filtered out. Rebuild from those
+		// rather than discarding a real date.
+		$start = (string) get_post_meta( $post_id, 'gatherpress_datetime_start', true );
+
+		if ( '' !== $start ) {
+			return array(
+				'dateTimeStart' => $start,
+				'dateTimeEnd'   => (string) get_post_meta( $post_id, 'gatherpress_datetime_end', true ),
+				'timezone'      => (string) get_post_meta( $post_id, 'gatherpress_timezone', true ),
+			);
+		}
+
+		return $this->get_default_datetime();
+	}
+
+	/**
+	 * Default date and time payload for an event that has none stored.
+	 *
+	 * Mirrors the editor's defaults in `src/helpers/datetime.js`: tomorrow at
+	 * 18:00 in the site timezone, running for two hours.
+	 *
+	 * The editor's duration is filterable in JavaScript through
+	 * `gatherpress.durationDefault`, which cannot be read from here. A site
+	 * that filters it only sees a difference for an event saved without the
+	 * date controls ever being touched, since any real edit writes the meta
+	 * from the editor instead.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @return array{dateTimeStart: string, dateTimeEnd: string, timezone: string} Default datetime payload.
+	 */
+	protected function get_default_datetime(): array {
+		$timezone = wp_timezone();
+		$start    = new DateTimeImmutable( 'tomorrow 18:00', $timezone );
+		$end      = $start->modify( '+2 hours' );
+
+		return array(
+			'dateTimeStart' => $start->format( Event::DATETIME_FORMAT ),
+			'dateTimeEnd'   => $end->format( Event::DATETIME_FORMAT ),
+			'timezone'      => wp_timezone_string(),
+		);
 	}
 }

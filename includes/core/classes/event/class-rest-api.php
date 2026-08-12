@@ -71,7 +71,7 @@ final class Rest_Api {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
-		add_action( 'gatherpress_send_emails', array( $this, 'handle_email_send_action' ), 10, 3 );
+		add_action( 'gatherpress_send_emails', array( $this, 'handle_email_send_action' ), 10, 4 );
 		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ) );
 	}
 
@@ -146,6 +146,10 @@ final class Rest_Api {
 						'validate_callback' => array( Validate::class, 'event_post_id' ),
 					),
 					'message' => array(
+						'required'          => false,
+						'validate_callback' => 'sanitize_text_field',
+					),
+					'subject' => array(
 						'required'          => false,
 						'validate_callback' => 'sanitize_text_field',
 					),
@@ -386,8 +390,13 @@ final class Rest_Api {
 		$params   = $request->get_params();
 		$post_id  = intval( $params['post_id'] );
 		$message  = $params['message'] ?? '';
+		$subject  = $params['subject'] ?? '';
 		$send     = $params['send'];
-		$success  = wp_schedule_single_event( time(), 'gatherpress_send_emails', array( $post_id, $send, $message ) );
+		$success  = wp_schedule_single_event(
+			time(),
+			'gatherpress_send_emails',
+			array( $post_id, $send, $message, $subject )
+		);
 		$response = array(
 			'success' => $success,
 		);
@@ -403,15 +412,17 @@ final class Rest_Api {
 	 * as it's intended to be called by an action hook.
 	 *
 	 * @since 0.34.0
+	 * @since 0.36.0 Added `$subject` parameter for #827.
 	 *
 	 * @param int    $post_id Post ID.
 	 * @param array  $send    Members to send the email to.
 	 * @param string $message Optional message to include in the email.
+	 * @param string $subject Optional subject line. Defaults to the existing `📅 {title}` template when empty.
 	 *
 	 * @return void
 	 */
-	public function handle_email_send_action( int $post_id, array $send, string $message ): void {
-		$this->send_emails( $post_id, $send, $message );
+	public function handle_email_send_action( int $post_id, array $send, string $message, string $subject = '' ): void {
+		$this->send_emails( $post_id, $send, $message, $subject );
 	}
 
 	/**
@@ -422,14 +433,16 @@ final class Rest_Api {
 	 * the appropriate subject, body, and headers.
 	 *
 	 * @since 0.34.0
+	 * @since 0.36.0 Added `$subject` parameter for #827.
 	 *
 	 * @param int    $post_id Post ID.
 	 * @param array  $send    Members to send the email to.
 	 * @param string $message Optional message to include in the email.
+	 * @param string $subject Optional subject line. Defaults to the existing `📅 {title}` template when empty.
 	 *
 	 * @return bool True if emails were successfully sent, false otherwise.
 	 */
-	public function send_emails( int $post_id, array $send, string $message ): bool {
+	public function send_emails( int $post_id, array $send, string $message, string $subject = '' ): bool {
 		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
 			return false;
 		}
@@ -440,7 +453,7 @@ final class Rest_Api {
 		$recipients   = $this->get_recipients( $send, $post_id );
 
 		foreach ( $recipients as $recipient ) {
-			$this->send_event_email_to_recipient( $recipient, $post_id, $message, $current_user );
+			$this->send_event_email_to_recipient( $recipient, $post_id, $message, $current_user, $subject );
 		}
 
 		return true;
@@ -456,11 +469,14 @@ final class Rest_Api {
 	 * Restores the editor's user / locale before returning.
 	 *
 	 * @since 0.34.0
+	 * @since 0.36.0 Added `$subject` parameter for #827.
 	 *
 	 * @param array   $recipient    Recipient row from `get_recipients()`.
 	 * @param int     $post_id      Event post ID.
 	 * @param string  $message      Optional editor-supplied message body.
 	 * @param WP_User $current_user Originating editor (restored after locale/user switch).
+	 * @param string  $subject      Optional subject line. Empty falls back to the default template
+	 *                              and is then filtered via `gatherpress_email_subject`.
 	 *
 	 * @return void
 	 */
@@ -468,7 +484,8 @@ final class Rest_Api {
 		array $recipient,
 		int $post_id,
 		string $message,
-		WP_User $current_user
+		WP_User $current_user,
+		string $subject = ''
 	): void {
 		// Check opt-in preference based on recipient type.
 		if ( $recipient['is_user'] ) {
@@ -500,11 +517,23 @@ final class Rest_Api {
 			wp_set_current_user( $recipient['user_id'] );
 		}
 
-		$subject = sprintf(
-			// translators: %s: event title.
-			_x( '📅 %s', 'Email notification subject with event title', 'gatherpress' ),
-			get_the_title( $post_id )
-		);
+		if ( '' === $subject ) {
+			$subject = sprintf(
+				// translators: %s: event title.
+				_x( '📅 %s', 'Email notification subject with event title', 'gatherpress' ),
+				get_the_title( $post_id )
+			);
+		}
+
+		/**
+		 * Filters the event update email subject.
+		 *
+		 * @since 0.36.0
+		 *
+		 * @param string $subject Email subject line.
+		 * @param int    $post_id Event post ID.
+		 */
+		$subject = apply_filters( 'gatherpress_email_subject', $subject, $post_id );
 		$body    = Utility::render_template(
 			sprintf( '%s/includes/templates/admin/emails/event-email.php', GATHERPRESS_CORE_PATH ),
 			array(

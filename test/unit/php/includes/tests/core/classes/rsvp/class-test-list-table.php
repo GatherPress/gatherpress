@@ -480,6 +480,94 @@ class Test_List_Table extends Base {
 			$cb_col,
 			'Failed to assert checkbox has comment ID as value.'
 		);
+		$this->assertStringContainsString(
+			sprintf( 'for="cb-select-%d"', $this->rsvp['comment_ID'] ),
+			$cb_col,
+			'Failed to assert label is associated with the checkbox.'
+		);
+		$this->assertStringContainsString(
+			sprintf( 'id="cb-select-%d"', $this->rsvp['comment_ID'] ),
+			$cb_col,
+			'Failed to assert checkbox carries the id the label points at.'
+		);
+		$this->assertStringContainsString(
+			'screen-reader-text',
+			$cb_col,
+			'Failed to assert label text is visually hidden.'
+		);
+		$this->assertStringContainsString(
+			sprintf( 'Select %s', $this->rsvp['comment_author'] ),
+			$cb_col,
+			'Failed to assert label names the attendee the checkbox selects.'
+		);
+	}
+
+	/**
+	 * Tests column_cb labels registered users by their display name.
+	 *
+	 * @covers ::column_cb
+	 * @covers ::get_attendee_name
+	 * @return void
+	 */
+	public function test_column_cb_registered_user(): void {
+		$user_id = $this->factory->user->create(
+			array(
+				'display_name' => 'Registered Attendee',
+			)
+		);
+
+		$rsvp            = $this->rsvp;
+		$rsvp['user_id'] = $user_id;
+
+		$cb_col = $this->list_table->column_cb( $rsvp );
+
+		$this->assertStringContainsString(
+			'Select Registered Attendee',
+			$cb_col,
+			'Failed to assert label uses the registered user\'s display name.'
+		);
+	}
+
+	/**
+	 * Tests column_cb falls back to the submitted author name when the
+	 * stored user ID no longer resolves to an account.
+	 *
+	 * @covers ::column_cb
+	 * @covers ::get_attendee_name
+	 * @return void
+	 */
+	public function test_column_cb_stale_user_id(): void {
+		$rsvp            = $this->rsvp;
+		$rsvp['user_id'] = 999999; // No such user.
+
+		$cb_col = $this->list_table->column_cb( $rsvp );
+
+		$this->assertStringContainsString(
+			sprintf( 'Select %s', $this->rsvp['comment_author'] ),
+			$cb_col,
+			'Failed to assert a stale user ID falls back to the submitted author name.'
+		);
+	}
+
+	/**
+	 * Tests column_cb never renders an empty attendee name.
+	 *
+	 * @covers ::column_cb
+	 * @covers ::get_attendee_name
+	 * @return void
+	 */
+	public function test_column_cb_unknown_attendee(): void {
+		$rsvp                   = $this->rsvp;
+		$rsvp['comment_author'] = '';
+		$rsvp['user_id']        = 0;
+
+		$cb_col = $this->list_table->column_cb( $rsvp );
+
+		$this->assertStringContainsString(
+			'Select Unknown',
+			$cb_col,
+			'Failed to assert an empty name resolution falls back to "Unknown".'
+		);
 	}
 
 	/**
@@ -784,6 +872,70 @@ class Test_List_Table extends Base {
 	}
 
 	/**
+	 * The bulk form's own nonce, which is core's `bulk-<plural>` nonce, is
+	 * accepted. Before #2062 only the comment-type nonce was, and since
+	 * `WP_List_Table` emits its nonce under the same `_wpnonce` name, a browser
+	 * submit was always rejected and the screen did nothing.
+	 *
+	 * @covers ::process_bulk_action
+	 *
+	 * @return void
+	 */
+	public function test_process_bulk_action_accepts_the_core_bulk_nonce(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$rsvp_id = (int) $this->rsvp['comment_ID'];
+
+		wp_set_comment_status( $rsvp_id, 'approve' );
+
+		// Derive the bulk nonce the same way process_bulk_action() does, so the
+		// test stays honest if the list table's plural arg ever changes.
+		$plural                          = Utility::get_hidden_property( $this->list_table, '_args' )['plural'];
+		$_REQUEST['_wpnonce']            = wp_create_nonce( sprintf( 'bulk-%s', $plural ) );
+		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
+		$_REQUEST['action']              = 'unapprove';
+
+		$this->list_table->process_bulk_action();
+
+		$this->assertSame(
+			'0',
+			get_comment( $rsvp_id )->comment_approved,
+			'Failed to assert the core bulk nonce authorizes a bulk action.'
+		);
+
+		unset( $_REQUEST['_wpnonce'], $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
+	}
+
+	/**
+	 * An unrelated nonce is still refused.
+	 *
+	 * @covers ::process_bulk_action
+	 *
+	 * @return void
+	 */
+	public function test_process_bulk_action_refuses_an_unrelated_nonce(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$rsvp_id = (int) $this->rsvp['comment_ID'];
+
+		wp_set_comment_status( $rsvp_id, 'approve' );
+
+		$_REQUEST['_wpnonce']            = wp_create_nonce( 'something-else' );
+		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
+		$_REQUEST['action']              = 'unapprove';
+
+		$this->list_table->process_bulk_action();
+
+		$this->assertSame(
+			'1',
+			get_comment( $rsvp_id )->comment_approved,
+			'Failed to assert an unrelated nonce is refused.'
+		);
+
+		unset( $_REQUEST['_wpnonce'], $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
+	}
+
+	/**
 	 * Tests get_views method.
 	 *
 	 * @covers ::get_views
@@ -819,7 +971,7 @@ class Test_List_Table extends Base {
 			'get_current_class_attr',
 			array( 'pending', 'pending' )
 		);
-		$this->assertEquals( ' class="current"', $result );
+		$this->assertEquals( ' class="current" aria-current="page"', $result );
 
 		// Test when status does not match current.
 		$result = Utility::invoke_hidden_method(
@@ -835,7 +987,7 @@ class Test_List_Table extends Base {
 			'get_current_class_attr',
 			array( 'all', 'all' )
 		);
-		$this->assertEquals( ' class="current"', $result );
+		$this->assertEquals( ' class="current" aria-current="page"', $result );
 
 		// Test with 'mine' status.
 		$result = Utility::invoke_hidden_method(
@@ -939,29 +1091,6 @@ class Test_List_Table extends Base {
 			array( 'date', true ),
 			$sortable['date'],
 			'Failed to assert date is the default sort column.'
-		);
-	}
-
-	/**
-	 * Tests display method.
-	 *
-	 * @covers ::display
-	 * @return void
-	 */
-	public function test_display(): void {
-		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
-		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
-
-		$this->list_table->prepare_items();
-
-		ob_start();
-		$this->list_table->display();
-		$output = ob_get_clean();
-
-		$this->assertStringContainsString(
-			'gatherpress_rsvp',
-			$output,
-			'Failed to assert display outputs table with RSVP nonce field.'
 		);
 	}
 

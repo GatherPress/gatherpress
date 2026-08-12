@@ -284,12 +284,12 @@ final class Venues extends Base {
 						'field'  => array(
 							'type'    => 'text',
 							'rewrite' => true,
+							'label'   => sprintf(
+								/* translators: %s: Plural post type label, e.g. "Venues". */
+								__( 'Permalink base of %s.', 'gatherpress' ),
+								Utility::post_type_label( 'name', Venue::POST_TYPE )
+							),
 							'options' => array(
-								'label'   => sprintf(
-									/* translators: %s: Plural post type label, e.g. "Venues". */
-									__( 'Permalink base of %s.', 'gatherpress' ),
-									Utility::post_type_label( 'name', Venue::POST_TYPE )
-								),
 								'default' => Setup::get_instance()->get_localized_post_type_slug(),
 							),
 							'preview' => array(

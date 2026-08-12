@@ -371,6 +371,17 @@ jobs:
           npm ci
           npm run build
 
+      # The GitHub-hosted Ubuntu images no longer ship Subversion, so the
+      # deploy step below dies with `svn: command not found` (exit 127)
+      # without this. The stable path never hit it because
+      # 10up/action-wordpress-plugin-deploy brings its own svn; this
+      # trunk-only job talks to SVN directly.
+      - name: Install Subversion
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends subversion
+          svn --version --quiet
+
       - name: Deploy to SVN trunk
         env:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
