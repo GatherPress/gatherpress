@@ -39,12 +39,20 @@ final class Serializer {
 			$user_id = 0;
 			$profile = '';
 			$name    = __( 'Anonymous', 'gatherpress' );
-			$photo   = $state->provider->get_avatar_url( $identity );
+
+			// Every identity-derived value has to be masked here, not just the
+			// display name. The avatar URL embeds a hash of the responder's
+			// email, which is a stable identifier that can be matched against
+			// the same person's non-anonymous responses, and the raw identity
+			// value is the user ID itself.
+			$photo      = self::anonymous_avatar_url();
+			$identifier = 0;
 		} else {
-			$user_id = (int) $state->comment->user_id;
-			$profile = $state->provider->get_url( $identity );
-			$name    = $state->provider->get_display_name( $identity );
-			$photo   = $state->provider->get_avatar_url( $identity );
+			$user_id    = (int) $state->comment->user_id;
+			$profile    = $state->provider->get_url( $identity );
+			$name       = $state->provider->get_display_name( $identity );
+			$photo      = $state->provider->get_avatar_url( $identity );
+			$identifier = $identity->value;
 		}
 
 		$data = array(
@@ -56,8 +64,10 @@ final class Serializer {
 			'anonymous'  => $state->data->anonymous,
 			'timestamp'  => $state->data->timestamp,
 			'provider'   => $state->provider->get_slug(),
-			'identifier' => $identity->value,
-			'role'       => Roles::get_instance()->get_user_role( (int) $state->comment->user_id ),
+			'identifier' => $identifier,
+			// Derived from the masked $user_id rather than the comment's real
+			// one, so an anonymous responder's site role is not disclosed.
+			'role'       => Roles::get_instance()->get_user_role( $user_id ),
 			'comment_id' => (int) $state->comment->comment_ID,
 			'post_id'    => (int) $state->comment->comment_post_ID,
 			'user_id'    => $user_id,
@@ -74,5 +84,20 @@ final class Serializer {
 		}
 
 		return $data;
+	}
+
+	/**
+	 * Get an avatar URL that identifies nobody.
+	 *
+	 * Passing an empty identifier means no email hash is included in the URL,
+	 * and forcing the default keeps a placeholder image rendering where the
+	 * real avatar would have been.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @return string The default avatar URL, or an empty string if avatars are unavailable.
+	 */
+	private static function anonymous_avatar_url(): string {
+		return (string) get_avatar_url( '', array( 'force_default' => true ) );
 	}
 }

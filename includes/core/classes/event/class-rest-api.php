@@ -27,6 +27,7 @@ use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\User;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
+use WP_Post;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
@@ -319,7 +320,7 @@ final class Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'rsvp_status_html' ),
-				'permission_callback' => '__return_true',
+				'permission_callback' => array( $this, 'can_read_event_rsvps' ),
 				'args'                => array(
 					'post_id'       => array(
 						'required'          => true,
@@ -362,7 +363,7 @@ final class Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'rsvp_responses' ),
-				'permission_callback' => '__return_true',
+				'permission_callback' => array( $this, 'can_read_event_rsvps' ),
 				'args'                => array(
 					'post_id' => array(
 						'required'          => true,
@@ -371,6 +372,47 @@ final class Rest_Api {
 				),
 			),
 		);
+	}
+
+	/**
+	 * Permission callback gating read access to an event's RSVP roster.
+	 *
+	 * The RSVP endpoints previously trusted `post_id` and checked only the
+	 * post type, so an anonymous caller could read the attendee list of any
+	 * event regardless of whether they were allowed to see the event itself.
+	 * This restores the visibility rules WordPress applies to the event page:
+	 * a published event's roster is public, but draft, pending, private, and
+	 * trashed events, and password-protected events whose password gate is
+	 * still in effect, are withheld from callers without read access.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param WP_REST_Request $request Contains data from the request.
+	 *
+	 * @return bool True when the caller may read the event's RSVP responses.
+	 */
+	public function can_read_event_rsvps( WP_REST_Request $request ): bool {
+		$post = get_post( (int) $request->get_param( 'post_id' ) );
+
+		if ( ! $post instanceof WP_Post ) {
+			return false;
+		}
+
+		// Anyone who can edit the event sees its roster in every state, which
+		// keeps the access organizers and admins already have to the event.
+		if ( current_user_can( 'edit_post', $post->ID ) ) {
+			return true;
+		}
+
+		// Draft, pending, private, and trashed events expose their roster only
+		// to viewers allowed to read that specific event.
+		if ( 'publish' !== $post->post_status ) {
+			return current_user_can( 'read_post', $post->ID );
+		}
+
+		// A published event's roster is public once any password gate is
+		// satisfied; an unmet password withholds it.
+		return ! post_password_required( $post );
 	}
 
 	/**
