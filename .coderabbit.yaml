@@ -29,14 +29,16 @@ reviews:
         need i18n with the 'gatherpress' text domain. New functions,
         classes, and hooks need complete docblocks with an @since tag that
         resolves to a released tag or the next planned release, never
-        1.0.0 or 'unreleased'. Skip style nits; PHPCS, PHPStan, and PHPMD
-        already run in CI.
+        1.0.0 or 'unreleased'. Flag new or changed code paths that lack
+        PHPUnit coverage under test/unit/php. Skip style nits; PHPCS,
+        PHPStan, and PHPMD already run in CI.
     - path: "src/**"
       instructions: >-
         Block editor JavaScript/React. Follow Gutenberg conventions:
         @wordpress/i18n for strings, @wordpress/data stores for shared
-        state, @wordpress/components where available. Skip style nits;
-        ESLint and stylelint already run in CI.
+        state, @wordpress/components where available. Flag new or changed
+        code paths that lack Jest coverage under test/unit/js. Skip style
+        nits; ESLint and stylelint already run in CI.
     - path: "src/**/view.js"
       instructions: >-
         Interactivity API view scripts are built as ES modules and must not

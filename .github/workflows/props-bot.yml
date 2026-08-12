@@ -102,8 +102,10 @@ jobs:
                   # so the patch can't silently stop applying.
                   grep -q "'github-actions'," props-bot-action/dist/index.js
                   sed -i "s/'github-actions',/'github-actions', 'what-the-diff', 'what-the-diff[bot]', 'coderabbitai', 'coderabbitai[bot]',/g" props-bot-action/dist/index.js
-                  grep -q "'what-the-diff'," props-bot-action/dist/index.js
-                  grep -q "'coderabbitai'," props-bot-action/dist/index.js
+                  grep -qF "'what-the-diff'," props-bot-action/dist/index.js
+                  grep -qF "'what-the-diff[bot]'," props-bot-action/dist/index.js
+                  grep -qF "'coderabbitai'," props-bot-action/dist/index.js
+                  grep -qF "'coderabbitai[bot]'," props-bot-action/dist/index.js
 
             - name: Gather a list of contributors
               uses: ./props-bot-action
