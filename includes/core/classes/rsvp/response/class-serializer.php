@@ -39,12 +39,17 @@ final class Serializer {
 			$user_id = 0;
 			$profile = '';
 			$name    = __( 'Anonymous', 'gatherpress' );
-			$photo   = $state->provider->get_avatar_url( $identity );
+
+			// Mask every identity-derived value, not just the name: the avatar
+			// URL and raw identifier both expose who the responder is.
+			$photo      = self::anonymous_avatar_url();
+			$identifier = 0;
 		} else {
-			$user_id = (int) $state->comment->user_id;
-			$profile = $state->provider->get_url( $identity );
-			$name    = $state->provider->get_display_name( $identity );
-			$photo   = $state->provider->get_avatar_url( $identity );
+			$user_id    = (int) $state->comment->user_id;
+			$profile    = $state->provider->get_url( $identity );
+			$name       = $state->provider->get_display_name( $identity );
+			$photo      = $state->provider->get_avatar_url( $identity );
+			$identifier = $identity->value;
 		}
 
 		$data = array(
@@ -56,8 +61,9 @@ final class Serializer {
 			'anonymous'  => $state->data->anonymous,
 			'timestamp'  => $state->data->timestamp,
 			'provider'   => $state->provider->get_slug(),
-			'identifier' => $identity->value,
-			'role'       => Roles::get_instance()->get_user_role( (int) $state->comment->user_id ),
+			'identifier' => $identifier,
+			// Derived from the masked $user_id so the role is masked too.
+			'role'       => Roles::get_instance()->get_user_role( $user_id ),
 			'comment_id' => (int) $state->comment->comment_ID,
 			'post_id'    => (int) $state->comment->comment_post_ID,
 			'user_id'    => $user_id,
@@ -74,5 +80,16 @@ final class Serializer {
 		}
 
 		return $data;
+	}
+
+	/**
+	 * Get a default avatar URL that carries no identifying email hash.
+	 *
+	 * @since 0.35.1
+	 *
+	 * @return string The default avatar URL, or an empty string if avatars are unavailable.
+	 */
+	private static function anonymous_avatar_url(): string {
+		return (string) get_avatar_url( '', array( 'force_default' => true ) );
 	}
 }

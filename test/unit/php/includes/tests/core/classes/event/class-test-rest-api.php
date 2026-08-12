@@ -22,6 +22,7 @@ use PMC\Unit_Test\Utility;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
+use WP_User;
 
 /**
  * Class Test_Rest_Api.
@@ -1488,15 +1489,140 @@ class Test_Rest_Api extends Base {
 		$token_value = $rsvp_token->get_token();
 		$token_str   = sprintf( '%d_%s', $user_record['comment_id'], $token_value );
 
-		// Create request with token.
+		// Create request with token for the event the token was issued against.
 		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
 		$request->set_param( Token::NAME, $token_str );
+		$request->set_param( 'post_id', $post_id );
 
 		// Call the permission callback.
 		$permission_callback = $route['args']['permission_callback'];
 		$result              = call_user_func( $permission_callback, $request );
 
 		$this->assertTrue( $result, 'Permission callback should return true with valid RSVP token' );
+	}
+
+	/**
+	 * A token issued for one event does not authorize a request against a
+	 * different event.
+	 *
+	 * @covers ::rsvp_route
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_route_permission_token_not_valid_for_other_event(): void {
+		$instance = Rest_Api::get_instance();
+		$route    = Utility::invoke_hidden_method( $instance, 'rsvp_route' );
+
+		$token_event = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$other_event = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'private',
+			)
+		);
+
+		$user_record = ( new Event( $token_event ) )->rsvp->save( 'test@example.com', 'attending' );
+		$rsvp_token  = new Token( $user_record['comment_id'] );
+		$rsvp_token->generate_token();
+		$token_str = sprintf( '%d_%s', $user_record['comment_id'], $rsvp_token->get_token() );
+
+		wp_set_current_user( 0 );
+
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
+		$request->set_param( Token::NAME, $token_str );
+		$request->set_param( 'post_id', $other_event );
+
+		$this->assertFalse(
+			call_user_func( $route['args']['permission_callback'], $request ),
+			'A token for one event must not authorize a request carrying another event id.'
+		);
+	}
+
+	/**
+	 * A logged-in caller may reach the route only for an event they can read:
+	 * a published event yes, a private event they cannot read no.
+	 *
+	 * @covers ::rsvp_route
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_route_permission_logged_in_requires_read_access(): void {
+		$instance = Rest_Api::get_instance();
+		$route    = Utility::invoke_hidden_method( $instance, 'rsvp_route' );
+		$callback = $route['args']['permission_callback'];
+
+		$published = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		$private   = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'private',
+			)
+		);
+
+		$subscriber = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $subscriber );
+
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
+		$request->set_param( 'post_id', $published );
+		$this->assertTrue(
+			call_user_func( $callback, $request ),
+			'A logged-in user may self-RSVP to a published event.'
+		);
+
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
+		$request->set_param( 'post_id', $private );
+		$this->assertFalse(
+			call_user_func( $callback, $request ),
+			'A logged-in user without read access must not reach a private event.'
+		);
+
+		$admin = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $admin );
+		$this->assertTrue(
+			call_user_func( $callback, $request ),
+			'An editor reaches the route for a private event.'
+		);
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * The response-counts reducer keeps per-status counts and drops the
+	 * identifying records.
+	 *
+	 * @covers ::rsvp_response_counts
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_response_counts_strips_records(): void {
+		$instance = Rest_Api::get_instance();
+
+		$responses = array(
+			'all'       => array(
+				'records' => array( array( 'name' => 'A' ) ),
+				'count'   => 3,
+			),
+			'attending' => array(
+				'records' => array( array( 'name' => 'A' ) ),
+				'count'   => 2,
+			),
+		);
+
+		$counts = Utility::invoke_hidden_method( $instance, 'rsvp_response_counts', array( $responses ) );
+
+		$this->assertSame(
+			array(
+				'all'       => array( 'count' => 3 ),
+				'attending' => array( 'count' => 2 ),
+			),
+			$counts,
+			'Only per-status counts survive, with the records dropped.'
+		);
 	}
 
 	/**
@@ -1524,6 +1650,171 @@ class Test_Rest_Api extends Base {
 			$result,
 			'Permission callback should return false when user is not logged in and no token provided'
 		);
+	}
+
+	/**
+	 * A missing or non-existent post is never readable.
+	 *
+	 * @covers ::can_read_event_rsvps
+	 *
+	 * @return void
+	 */
+	public function test_can_read_event_rsvps_missing_post(): void {
+		$instance = Rest_Api::get_instance();
+
+		wp_set_current_user( 0 );
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'post_id', 0 );
+
+		$this->assertFalse(
+			$instance->can_read_event_rsvps( $request ),
+			'A request for a post that does not exist must be denied.'
+		);
+	}
+
+	/**
+	 * A published event with no password exposes its roster publicly.
+	 *
+	 * @covers ::can_read_event_rsvps
+	 *
+	 * @return void
+	 */
+	public function test_can_read_event_rsvps_published_is_public(): void {
+		$instance = Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+
+		wp_set_current_user( 0 );
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'post_id', $post_id );
+
+		$this->assertTrue(
+			$instance->can_read_event_rsvps( $request ),
+			'A published event roster is public.'
+		);
+	}
+
+	/**
+	 * A password-protected event withholds its roster from callers who have
+	 * not satisfied the password gate, but still exposes it to a viewer who
+	 * can edit the event.
+	 *
+	 * @covers ::can_read_event_rsvps
+	 *
+	 * @return void
+	 */
+	public function test_can_read_event_rsvps_password_protected_is_gated(): void {
+		$instance = Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_status'   => 'publish',
+				'post_password' => 'secret',
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'post_id', $post_id );
+
+		wp_set_current_user( 0 );
+		$this->assertFalse(
+			$instance->can_read_event_rsvps( $request ),
+			'An anonymous caller must not read a password-protected event roster.'
+		);
+
+		$admin_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $admin_id );
+		$this->assertTrue(
+			$instance->can_read_event_rsvps( $request ),
+			'A viewer who can edit the event bypasses the password gate.'
+		);
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * Draft, pending, private, and trashed events expose their roster only to
+	 * viewers allowed to read that specific event.
+	 *
+	 * @covers ::can_read_event_rsvps
+	 *
+	 * @return void
+	 */
+	public function test_can_read_event_rsvps_restricted_statuses_require_read_access(): void {
+		$instance = Rest_Api::get_instance();
+
+		foreach ( array( 'draft', 'pending', 'private', 'trash' ) as $status ) {
+			$post_id = $this->factory()->post->create(
+				array(
+					'post_type'   => Event::POST_TYPE,
+					'post_status' => $status,
+				)
+			);
+
+			$request = new WP_REST_Request( 'GET' );
+			$request->set_param( 'post_id', $post_id );
+
+			wp_set_current_user( 0 );
+			$this->assertFalse(
+				$instance->can_read_event_rsvps( $request ),
+				sprintf( 'An anonymous caller must not read the roster of a %s event.', $status )
+			);
+
+			$admin_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
+			wp_set_current_user( $admin_id );
+			$this->assertTrue(
+				$instance->can_read_event_rsvps( $request ),
+				sprintf( 'A viewer with read access sees the roster of a %s event.', $status )
+			);
+		}
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * A viewer who can read a private event but cannot edit it still sees the
+	 * roster, exercising the read_post allow branch independently of edit_post.
+	 *
+	 * @covers ::can_read_event_rsvps
+	 *
+	 * @return void
+	 */
+	public function test_can_read_event_rsvps_read_access_without_edit(): void {
+		$instance = Rest_Api::get_instance();
+
+		$author_id = $this->factory()->user->create( array( 'role' => 'author' ) );
+		$post_id   = $this->factory()->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'private',
+				'post_author' => $author_id,
+			)
+		);
+
+		// A reader who can read private posts but cannot edit this one.
+		$reader_id = $this->factory()->user->create( array( 'role' => 'subscriber' ) );
+		( new WP_User( $reader_id ) )->add_cap( 'read_private_posts' );
+		wp_set_current_user( $reader_id );
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'post_id', $post_id );
+
+		$this->assertFalse(
+			current_user_can( 'edit_post', $post_id ),
+			'The reader must lack edit access so the read_post branch is the one exercised.'
+		);
+		$this->assertTrue(
+			$instance->can_read_event_rsvps( $request ),
+			'A viewer with read access to a private event may read its roster.'
+		);
+
+		wp_set_current_user( 0 );
 	}
 
 	/**

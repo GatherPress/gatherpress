@@ -27,6 +27,7 @@ use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\User;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
+use WP_Post;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
@@ -213,15 +214,18 @@ final class Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'update_rsvp' ),
-				'permission_callback' => static function ( WP_Rest_Request $request ): bool {
-					$unparsed_token = $request->get_param( Token::NAME );
-					$rsvp_token     = Token::from_token_string( $unparsed_token );
+				'permission_callback' => function ( WP_REST_Request $request ): bool {
+					$post_id    = (int) $request->get_param( 'post_id' );
+					$rsvp_token = Token::from_token_string( $request->get_param( Token::NAME ) );
+					$token_post = $rsvp_token ? $rsvp_token->get_post() : null;
 
-					if ( $rsvp_token ) {
+					// A magic-link token authorizes only the event it was issued for.
+					if ( $token_post instanceof WP_Post && $token_post->ID === $post_id ) {
 						return true;
 					}
 
-					return is_user_logged_in();
+					// Otherwise the caller must be logged in and able to read the event.
+					return is_user_logged_in() && $this->can_read_event_rsvps( $request );
 				},
 				'args'                => array(
 					'post_id'    => array(
@@ -319,7 +323,7 @@ final class Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'rsvp_status_html' ),
-				'permission_callback' => '__return_true',
+				'permission_callback' => array( $this, 'can_read_event_rsvps' ),
 				'args'                => array(
 					'post_id'       => array(
 						'required'          => true,
@@ -362,7 +366,7 @@ final class Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'rsvp_responses' ),
-				'permission_callback' => '__return_true',
+				'permission_callback' => array( $this, 'can_read_event_rsvps' ),
 				'args'                => array(
 					'post_id' => array(
 						'required'          => true,
@@ -370,6 +374,60 @@ final class Rest_Api {
 					),
 				),
 			),
+		);
+	}
+
+	/**
+	 * Permission callback gating read access to an event's RSVP roster.
+	 *
+	 * Mirrors the visibility of the event page itself: a published roster is
+	 * public (subject to any password gate), while other statuses require read
+	 * access to the specific event. Editors keep access in every state.
+	 *
+	 * @since 0.35.1
+	 *
+	 * @param WP_REST_Request $request Contains data from the request.
+	 *
+	 * @return bool True when the caller may read the event's RSVP responses.
+	 */
+	public function can_read_event_rsvps( WP_REST_Request $request ): bool {
+		$post = get_post( (int) $request->get_param( 'post_id' ) );
+
+		if ( ! $post instanceof WP_Post ) {
+			return false;
+		}
+
+		// Editors see the roster in every state.
+		if ( current_user_can( 'edit_post', $post->ID ) ) {
+			return true;
+		}
+
+		// Non-published events require read access to the specific event.
+		if ( 'publish' !== $post->post_status ) {
+			return current_user_can( 'read_post', $post->ID );
+		}
+
+		// A published roster is public once any password gate is satisfied.
+		return ! post_password_required( $post );
+	}
+
+	/**
+	 * Reduce an RSVP responses payload to per-status counts.
+	 *
+	 * The public RSVP form endpoint returns totals so the block can refresh
+	 * its counts, but the submitter may be anonymous and has no claim on the
+	 * attendee records, so the identifying `records` arrays are dropped.
+	 *
+	 * @since 0.35.1
+	 *
+	 * @param array $responses The full payload from Rsvp::responses().
+	 *
+	 * @return array The same status keys, each carrying only its count.
+	 */
+	private function rsvp_response_counts( array $responses ): array {
+		return array_map(
+			static fn( array $group ) => array( 'count' => $group['count'] ),
+			$responses
 		);
 	}
 
@@ -924,7 +982,7 @@ final class Rest_Api {
 				'success'    => true,
 				'message'    => $result['message'],
 				'comment_id' => $result['comment_id'],
-				'responses'  => $event->rsvp->responses(),
+				'responses'  => $this->rsvp_response_counts( $event->rsvp->responses() ),
 			);
 			$status   = 200;
 		} else {
