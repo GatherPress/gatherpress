@@ -39,12 +39,28 @@ if ( ! isset(
 	</div>
 	<select<?php echo wp_kses_data( $input_attributes . $input_styles ); ?>>
 		<?php
+		// Emit a disabled placeholder option for required selects so the control
+		// can be empty. Without it the browser auto-selects the first real option
+		// and `required` never fires, silently submitting a default choice. The
+		// empty-value fallback rule below also matches Rsvp_Form::get_field_options()
+		// so the rendered option list agrees with the schema's allowed values.
+		if ( ! empty( $attributes['required'] ) && '' === ( $attributes['field_value'] ?? '' ) ) {
+			?>
+			<option value="" disabled selected>
+				<?php esc_html_e( 'Select an option', 'gatherpress' ); ?>
+			</option>
+			<?php
+		}
+
 		foreach ( $attributes['radio_options'] ?? array() as $gatherpress_option ) {
 			if ( empty( $gatherpress_option['label'] ) ) {
 				continue;
 			}
 
-			$gatherpress_value = ! empty( $gatherpress_option['value'] ) ? $gatherpress_option['value'] : $gatherpress_option['label'];
+			$gatherpress_value = $gatherpress_option['value'] ?? '';
+			$gatherpress_value = '' === $gatherpress_value ?
+				$gatherpress_option['label'] :
+				$gatherpress_value;
 			?>
 			<option value="<?php echo esc_attr( $gatherpress_value ); ?>" <?php selected( $attributes['field_value'], $gatherpress_value ); ?>>
 				<?php echo esc_html( $gatherpress_option['label'] ); ?>
