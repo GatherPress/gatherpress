@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core\Event;
 use DateTime;
 use DateTimeZone;
 use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event\Setup as Event_Setup;
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
@@ -307,7 +308,11 @@ class Test_Event extends Base {
 		$event = new Event( $post->ID );
 
 		// A new event is seeded with the editor's default rather than left
-		// datetime-less, so it always lands in the events table (#2054).
+		// datetime-less, so it always lands in the events table (#2054). The
+		// seed is decided at shutdown, so meta written after the insert wins
+		// over it (#2116).
+		Event_Setup::get_instance()->resolve_pending_datetimes();
+
 		$seeded = $event->get_datetime();
 
 		$this->assertNotEmpty(

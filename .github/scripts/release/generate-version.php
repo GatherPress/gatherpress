@@ -133,7 +133,7 @@ function fold_unreleased_credits( $entry, $credits_file, $version ) {
 	// Already-credited people (any group) don't get re-added.
 	$credited = array_merge(
 		isset( $entry['leads'] ) ? $entry['leads'] : array(),
-		isset( $entry['team'] ) ? $entry['team'] : array(),
+		isset( $entry['noteworthy'] ) ? $entry['noteworthy'] : array(),
 		isset( $entry['contributors'] ) ? $entry['contributors'] : array()
 	);
 	$new      = array_values( array_diff( array_unique( $pending ), $credited ) );
@@ -193,16 +193,16 @@ function generate_credits( $version ) {
 	$data['version'] = $version;
 	$contributors    = array();
 
-	// Fixed group order: leads and team drive readme.txt's Contributors
+	// Fixed group order: leads and noteworthy drive readme.txt's Contributors
 	// line and the credits page ordering regardless of file key order.
-	foreach ( array( 'leads', 'team', 'contributors' ) as $group ) {
+	foreach ( array( 'leads', 'noteworthy', 'contributors' ) as $group ) {
 		$users = isset( $entry[ $group ] ) && is_array( $entry[ $group ] ) ? $entry[ $group ] : array();
 
 		if ( 'contributors' === $group ) {
 			sort( $users );
 		}
 
-		// Only leads + team land in the wp.org plugin header's
+		// Only leads + noteworthy land in the wp.org plugin header's
 		// `Contributors:` line. The contributors group still appears on
 		// the credits page (via $data below), but it gets churn-y as more
 		// people land single-PR contributions, and wp.org's plugin

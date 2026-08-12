@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Label each RSVP list-table row checkbox with the attendee it selects, matching core's list-table pattern.

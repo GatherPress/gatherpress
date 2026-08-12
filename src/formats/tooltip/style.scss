@@ -7,8 +7,8 @@
  * Theme Integration:
  * Themes can customize tooltip colors by setting these CSS custom properties:
  *
- *   --gatherpress--gatherpress-tooltip--text-color: #fff;
- *   --gatherpress--gatherpress-tooltip--background-color: #333;
+ *   --gatherpress--tooltip--text-color: #fff;
+ *   --gatherpress--tooltip--background-color: #333;
  *
  * If not set, tooltips will use WordPress global styles (--wp--preset--color--*)
  * or fall back to colors that provide good contrast.
@@ -20,11 +20,11 @@
 // Priority: 1) Inline styles 2) GatherPress theme vars 3) WP global styles 4) Fallback
 .gatherpress-tooltip {
 	--gatherpress-tooltip-text-color: var(
-		--gatherpress--gatherpress-tooltip--text-color,
+		--gatherpress--tooltip--text-color,
 		var(--wp--preset--color--base, var(--wp--preset--color--background, #fff))
 	);
 	--gatherpress-tooltip-bg-color: var(
-		--gatherpress--gatherpress-tooltip--background-color,
+		--gatherpress--tooltip--background-color,
 		var(--wp--preset--color--contrast, var(--wp--preset--color--primary, #333))
 	);
 	--gatherpress-tooltip-padding: 8px 12px;

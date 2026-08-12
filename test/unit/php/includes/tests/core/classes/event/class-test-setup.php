@@ -519,8 +519,10 @@ class Test_Setup extends Base {
 
 		// An event with no stored datetime gets the default filled in rather
 		// than no row at all, which would leave it invisible to every
-		// upcoming / past query (#2054).
+		// upcoming / past query (#2054). The decision happens at shutdown so
+		// meta arriving after the insert wins over the default (#2116).
 		$instance->set_datetimes( $post_id );
+		$instance->resolve_pending_datetimes();
 		$this->assertNotEmpty(
 			get_post_meta( $post_id, 'gatherpress_datetime_start', true ),
 			'Failed to assert that a missing datetime falls back to the default.'
@@ -1097,6 +1099,8 @@ class Test_Setup extends Base {
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
 
+		Setup::get_instance()->resolve_pending_datetimes();
+
 		$this->assertEmpty(
 			get_post_meta( $post_id, 'gatherpress_datetime', true ),
 			'Failed to assert the seed leaves the editor-owned meta alone.'
@@ -1137,15 +1141,215 @@ class Test_Setup extends Base {
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
 
+		$instance->resolve_pending_datetimes();
+
 		$first = get_post_meta( $post_id, 'gatherpress_datetime_start', true );
 
 		$instance->set_datetimes( $post_id );
+		$instance->resolve_pending_datetimes();
 		$second = get_post_meta( $post_id, 'gatherpress_datetime_start', true );
 
 		$this->assertSame(
 			$first,
 			$second,
 			'Failed to assert that re-saving leaves the seeded default unchanged.'
+		);
+	}
+
+	/**
+	 * A duplicated event keeps the source event's date.
+	 *
+	 * Duplicate and import tooling inserts the post first and copies meta
+	 * afterwards with add_post_meta(), which appends rather than replaces.
+	 * Seeding a default during the insert therefore left a row in front of
+	 * the copied one, and every single-value read returned the seed instead
+	 * of the real date (#2116).
+	 *
+	 * @covers ::set_datetimes
+	 * @covers ::resolve_pending_datetimes
+	 * @covers ::write_datetimes
+	 *
+	 * @return void
+	 */
+	public function test_set_datetimes_keeps_a_duplicated_events_date(): void {
+		$instance = Setup::get_instance();
+		$post_id  = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+
+		// The insert fires set_datetimes with no meta present, exactly as it
+		// does for the duplicate's wp_insert_post() call.
+		$this->assertEmpty(
+			get_post_meta( $post_id, 'gatherpress_datetime_start', true ),
+			'Failed to assert the insert left no seeded row to collide with.'
+		);
+
+		// The duplicate's meta copy lands next.
+		add_post_meta( $post_id, 'gatherpress_datetime_start', '2020-05-11 15:00:00' );
+		add_post_meta( $post_id, 'gatherpress_datetime_end', '2020-05-11 17:00:00' );
+		add_post_meta( $post_id, 'gatherpress_timezone', 'America/New_York' );
+
+		$instance->resolve_pending_datetimes();
+
+		$this->assertSame(
+			array( '2020-05-11 15:00:00' ),
+			get_post_meta( $post_id, 'gatherpress_datetime_start', false ),
+			'Failed to assert the copied date is the only stored value.'
+		);
+		$this->assertSame(
+			'2020-05-11 15:00:00',
+			( new Event( $post_id ) )->get_datetime()['datetime_start'],
+			'Failed to assert the events table took the copied date, not a default.'
+		);
+	}
+
+	/**
+	 * A datetime blob arriving after the insert wins over the default.
+	 *
+	 * The REST controller writes meta once wp_insert_post() has returned, so
+	 * the blob is absent while `set_datetimes()` runs and present by the time
+	 * the deferred resolution reads it.
+	 *
+	 * @covers ::set_datetimes
+	 * @covers ::resolve_pending_datetimes
+	 *
+	 * @return void
+	 */
+	public function test_set_datetimes_prefers_a_late_arriving_blob(): void {
+		$instance = Setup::get_instance();
+		$post_id  = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+
+		update_post_meta(
+			$post_id,
+			'gatherpress_datetime',
+			'{"dateTimeStart":"2021-03-04 09:00:00","dateTimeEnd":"2021-03-04 10:00:00","timezone":"America/New_York"}'
+		);
+
+		$instance->resolve_pending_datetimes();
+
+		$this->assertSame(
+			'2021-03-04 09:00:00',
+			get_post_meta( $post_id, 'gatherpress_datetime_start', true ),
+			'Failed to assert the late blob was used instead of the default.'
+		);
+	}
+
+	/**
+	 * The stored blob wins when resolving a payload.
+	 *
+	 * Invoked directly: xdebug does not trace these branches through the
+	 * shutdown run, since they reach a protected method in the same class.
+	 *
+	 * @covers ::resolve_datetime_payload
+	 *
+	 * @return void
+	 */
+	public function test_resolve_datetime_payload_prefers_the_stored_blob(): void {
+		$post_id = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+
+		update_post_meta(
+			$post_id,
+			'gatherpress_datetime',
+			'{"dateTimeStart":"2022-06-07 08:00:00","dateTimeEnd":"2022-06-07 09:00:00","timezone":"UTC"}'
+		);
+
+		$this->assertSame(
+			'2022-06-07 08:00:00',
+			Utility::invoke_hidden_method(
+				Setup::get_instance(),
+				'resolve_datetime_payload',
+				array( $post_id )
+			)['dateTimeStart'],
+			'Failed to assert the stored blob was preferred.'
+		);
+	}
+
+	/**
+	 * Individual meta keys are rebuilt into a payload when no blob exists.
+	 *
+	 * @covers ::resolve_datetime_payload
+	 *
+	 * @return void
+	 */
+	public function test_resolve_datetime_payload_rebuilds_from_individual_keys(): void {
+		$post_id = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+
+		update_post_meta( $post_id, 'gatherpress_datetime_start', '2023-07-08 10:00:00' );
+		update_post_meta( $post_id, 'gatherpress_datetime_end', '2023-07-08 12:00:00' );
+		update_post_meta( $post_id, 'gatherpress_timezone', 'America/New_York' );
+
+		$this->assertSame(
+			array(
+				'dateTimeStart' => '2023-07-08 10:00:00',
+				'dateTimeEnd'   => '2023-07-08 12:00:00',
+				'timezone'      => 'America/New_York',
+			),
+			Utility::invoke_hidden_method(
+				Setup::get_instance(),
+				'resolve_datetime_payload',
+				array( $post_id )
+			),
+			'Failed to assert the payload was rebuilt from the individual keys.'
+		);
+	}
+
+	/**
+	 * The editor's default is used when nothing at all is stored.
+	 *
+	 * @covers ::resolve_datetime_payload
+	 * @covers ::get_default_datetime
+	 *
+	 * @return void
+	 */
+	public function test_resolve_datetime_payload_falls_back_to_the_default(): void {
+		$post_id = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+
+		$payload = Utility::invoke_hidden_method(
+			Setup::get_instance(),
+			'resolve_datetime_payload',
+			array( $post_id )
+		);
+
+		$this->assertSame(
+			'18:00:00',
+			gmdate( 'H:i:s', (int) strtotime( $payload['dateTimeStart'] ) ),
+			'Failed to assert the default starts at 18:00, matching the editor.'
+		);
+		$this->assertSame(
+			2 * HOUR_IN_SECONDS,
+			strtotime( $payload['dateTimeEnd'] ) - strtotime( $payload['dateTimeStart'] ),
+			'Failed to assert the default runs for two hours, matching the editor.'
+		);
+	}
+
+	/**
+	 * A post deleted before shutdown is skipped rather than resurrected.
+	 *
+	 * @covers ::resolve_pending_datetimes
+	 *
+	 * @return void
+	 */
+	public function test_resolve_pending_datetimes_skips_deleted_posts(): void {
+		$instance = Setup::get_instance();
+		$post_id  = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+
+		wp_delete_post( $post_id, true );
+
+		$instance->resolve_pending_datetimes();
+
+		$this->assertEmpty(
+			get_post_meta( $post_id, 'gatherpress_datetime_start', true ),
+			'Failed to assert a deleted post gained no datetime meta.'
 		);
 	}
 
