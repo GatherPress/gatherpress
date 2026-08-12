@@ -1,0 +1,31 @@
+# CodeRabbit config for GatherPress
+# Reference: https://docs.coderabbit.ai/reference/configuration
+# Defaults already match: chill profile, no poem, auto-review on, drafts skipped.
+
+reviews:
+  path_filters:
+    - "!build/**"
+    - "!vendor/**"
+    - "!node_modules/**"
+    - "!patches/**"
+    - "!**/*.min.js"
+    - "!**/*.map"
+    - "!package-lock.json"
+    - "!composer.lock"
+  path_instructions:
+    - path: "includes/**"
+      instructions: >-
+        WordPress plugin PHP. Focus on output escaping, input sanitization,
+        nonce and capability checks, and correct use of WordPress APIs.
+        User-facing strings need i18n with the 'gatherpress' text domain.
+        Skip style nits; PHPCS, PHPStan, and PHPMD already run in CI.
+    - path: "src/**"
+      instructions: >-
+        Block editor JavaScript/React. Follow Gutenberg conventions:
+        @wordpress/i18n for strings, @wordpress/data stores for shared state,
+        @wordpress/components where available.
+    - path: "test/**"
+      instructions: >-
+        Tests should assert behavior, not implementation details. Flag new
+        code paths in the PR that lack unit (test/unit) or e2e (test/e2e)
+        coverage.
