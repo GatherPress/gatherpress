@@ -60,6 +60,27 @@ class Event {
 	const POST_TYPE = 'gatherpress_event';
 
 	/**
+	 * Capability for reading a specific event.
+	 *
+	 * A meta capability, so it is always paired with the event's post ID and
+	 * resolves through WordPress to the right primitive for the event's status.
+	 *
+	 * @since 0.35.1
+	 * @var string
+	 */
+	const READ_CAPABILITY = 'read_post';
+
+	/**
+	 * Capability for editing a specific event.
+	 *
+	 * A meta capability, so it is always paired with the event's post ID.
+	 *
+	 * @since 0.35.1
+	 * @var string
+	 */
+	const EDIT_CAPABILITY = 'edit_post';
+
+	/**
 	 * Placeholder displayed when no datetime is set.
 	 *
 	 * @since 0.34.0
@@ -165,6 +186,60 @@ class Event {
 			$this->event = get_post( $post_id );
 			$this->rsvp  = new Rsvp( $post_id );
 		}
+	}
+
+	/**
+	 * Whether an event's blocks should render for the current viewer.
+	 *
+	 * Blocks stay off an event nobody is meant to see yet, but an unpublished
+	 * event still renders for viewers allowed to read it, so an organizer
+	 * working on a draft sees the same blocks the published event will show
+	 * rather than empty space, as does the editor previewing that event.
+	 *
+	 * @since 0.35.1
+	 *
+	 * @param int $post_id The event post ID.
+	 *
+	 * @return bool True when the event's blocks should render.
+	 */
+	public static function is_viewable( int $post_id ): bool {
+		// is_preview() is a property of the request, not of a post, so it only
+		// stands in for read access on the post actually being previewed.
+		return (
+			( is_preview() && (int) get_queried_object_id() === $post_id )
+			|| 'publish' === get_post_status( $post_id )
+			|| current_user_can( self::READ_CAPABILITY, $post_id )
+		);
+	}
+
+	/**
+	 * Whether the current viewer may read an event's RSVP responses.
+	 *
+	 * The roster follows the event: a published event's responses are public
+	 * once any password gate is satisfied, anything else is limited to viewers
+	 * allowed to read that event, and whoever can edit it always sees them.
+	 *
+	 * @since 0.35.1
+	 *
+	 * @param int $post_id The event post ID.
+	 *
+	 * @return bool True when the viewer may read the event's RSVP responses.
+	 */
+	public static function can_read_rsvps( int $post_id ): bool {
+		$post = get_post( $post_id );
+
+		// A post that is gone, or one that never takes RSVPs, has no roster.
+		if ( ! $post instanceof WP_Post || ! post_type_supports( $post->post_type, 'gatherpress-rsvp' ) ) {
+			return false;
+		}
+
+		if ( current_user_can( self::EDIT_CAPABILITY, $post->ID ) ) {
+			return true;
+		}
+
+		return 'publish' === $post->post_status
+			? ! post_password_required( $post )
+			: current_user_can( self::READ_CAPABILITY, $post->ID );
 	}
 
 	/**

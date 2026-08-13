@@ -1211,6 +1211,64 @@ class Test_Rsvp extends Base {
 	}
 
 	/**
+	 * A privileged viewer sees unredacted records but never populates the
+	 * capability-agnostic cache, so an anonymous caller can only ever read the
+	 * redacted public variant.
+	 *
+	 * @covers ::responses
+	 *
+	 * @return void
+	 */
+	public function test_responses_skips_cache_for_privileged_viewers(): void {
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		update_post_meta( $event_id, 'gatherpress_enable_anonymous_rsvp', true );
+
+		$user_id = $this->factory->user->create();
+		( new Rsvp( $event_id ) )->save( $user_id, 'attending', 1 );
+
+		// A privileged viewer resolves the real identity behind the anonymous
+		// RSVP, and must not write that unredacted record to the shared cache.
+		$admin_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $admin_id );
+
+		Cache::delete( $event_id );
+		$privileged = ( new Rsvp( $event_id ) )->responses();
+
+		$this->assertTrue(
+			$privileged['attending']['records'][0]['anonymous'],
+			'The RSVP is still flagged anonymous.'
+		);
+		$this->assertNotSame(
+			__( 'Anonymous', 'gatherpress' ),
+			$privileged['attending']['records'][0]['name'],
+			'A privileged viewer sees the real identity behind an anonymous RSVP.'
+		);
+		$this->assertNull(
+			Cache::get( $event_id ),
+			'A privileged viewer must not populate the capability-agnostic cache.'
+		);
+
+		// An unprivileged viewer sees the redacted record and does populate the
+		// cache, but only ever with that public variant.
+		wp_set_current_user( 0 );
+		$public = ( new Rsvp( $event_id ) )->responses();
+
+		$this->assertSame(
+			__( 'Anonymous', 'gatherpress' ),
+			$public['attending']['records'][0]['name'],
+			'An anonymous RSVP is redacted for an unprivileged viewer.'
+		);
+
+		$cached = Cache::get( $event_id );
+		$this->assertIsArray( $cached, 'The public variant is cached for reuse.' );
+		$this->assertSame(
+			__( 'Anonymous', 'gatherpress' ),
+			$cached['attending']['records'][0]['name'],
+			'Only the redacted variant is ever stored in the cache.'
+		);
+	}
+
+	/**
 	 * Process refuses invalid events, a removal round-trips to the
 	 * default response, and providers only resolve for user and email
 	 * identity types.

@@ -103,10 +103,9 @@ final class Rsvp {
 		$post_id        = $block_instance->get_post_id( $block );
 
 		// Validate that the post type supports RSVP.
-		// Only check publish status if not in preview mode.
 		if (
 			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
-			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
+			! Event::is_viewable( $post_id )
 		) {
 			return '';
 		}
