@@ -16,6 +16,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
+use WP_Comment;
 use WP_HTML_Tag_Processor;
 use WP_User;
 
@@ -71,6 +72,7 @@ final class Rsvp_Response {
 		// Priority 11 ensures this runs after transform_block_content which modifies the block structure.
 		add_filter( $render_block_hook, array( $this, 'attach_dropdown_interactivity' ), 11 );
 		add_filter( 'get_avatar_data', array( $this, 'modify_avatar_for_gatherpress_rsvp' ), 10, 2 );
+		add_filter( 'get_comment_author_url', array( $this, 'modify_author_url_for_gatherpress_rsvp' ), 10, 3 );
 		add_filter( 'block_type_metadata', array( $this, 'add_rsvp_to_comment_ancestor' ) );
 	}
 
@@ -261,6 +263,47 @@ final class Rsvp_Response {
 		}
 
 		return $block_content;
+	}
+
+	/**
+	 * Resolve the profile link for the `gatherpress_rsvp` custom comment type.
+	 *
+	 * RSVPs saved through the responses store keep no author URL, so the link
+	 * is resolved from the responder's account the same way the avatar is. A
+	 * responder who asked to stay anonymous is not linked for viewers their
+	 * name is masked from, since the link resolves to the account behind it.
+	 *
+	 * @since 0.35.1
+	 *
+	 * @param string          $url        The comment author's URL.
+	 * @param int|string      $comment_id The comment ID.
+	 * @param WP_Comment|null $comment    The comment object, or null when the comment is gone.
+	 *
+	 * @return string The resolved author URL, or an empty string when withheld.
+	 */
+	public function modify_author_url_for_gatherpress_rsvp( string $url, $comment_id, $comment ): string {
+		if (
+			! $comment instanceof WP_Comment
+			|| Rsvp::COMMENT_TYPE !== $comment->comment_type
+		) {
+			return $url;
+		}
+
+		// The link resolves to the account behind the name, so it is withheld
+		// from anyone the name itself is masked from, and shown to whoever
+		// already sees the responder.
+		if (
+			get_comment_meta( (int) $comment->comment_ID, Rsvp::ANONYMOUS_META_KEY, true )
+			&& ! current_user_can( Rsvp::CAPABILITY )
+		) {
+			return '';
+		}
+
+		if ( ! empty( $url ) || ! intval( $comment->user_id ) ) {
+			return $url;
+		}
+
+		return (string) get_author_posts_url( (int) $comment->user_id );
 	}
 
 	/**
