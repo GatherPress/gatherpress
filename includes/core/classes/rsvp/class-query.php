@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Traits\Singleton;
 use WP_Comment;
 use WP_Comment_Query;
+use WP_REST_Response;
 use WP_Tax_Query;
 
 /**

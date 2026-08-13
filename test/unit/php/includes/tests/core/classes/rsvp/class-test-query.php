@@ -16,6 +16,7 @@ use GatherPress\Tests\Base;
 use stdClass;
 use WP_Comment;
 use WP_Comment_Query;
+use WP_REST_Response;
 
 /**
  * Class Test_Query.
@@ -875,5 +876,156 @@ class Test_Query extends Base {
 
 		// Clean up.
 		delete_transient( Query::COMMENT_TYPES_CACHE_KEY );
+	}
+
+	/**
+	 * Builds an RSVP comment, optionally flagged anonymous.
+	 *
+	 * @param bool $anonymous Whether the responder asked to stay anonymous.
+	 *
+	 * @return WP_Comment The RSVP comment.
+	 */
+	protected function make_rsvp_comment( bool $anonymous ): WP_Comment {
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author'       => 'Real Name',
+				'comment_author_email' => 'real@example.test',
+				'comment_author_url'   => 'https://example.test/real',
+			)
+		);
+
+		if ( $anonymous ) {
+			update_comment_meta( $comment_id, Rsvp::ANONYMOUS_META_KEY, 1 );
+		}
+
+		// WP_Comment::get_instance() skips the `get_comment` filter, so this
+		// returns the stored comment rather than one the mask already touched.
+		return WP_Comment::get_instance( $comment_id );
+	}
+
+	/**
+	 * An anonymous responder's identity is withheld from a viewer who cannot
+	 * edit posts, and the stored comment keeps its real values.
+	 *
+	 * @covers ::mask_anonymous_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_mask_anonymous_rsvp_comment_masks_for_public(): void {
+		$instance = Query::get_instance();
+
+		wp_set_current_user( 0 );
+
+		$comment = $this->make_rsvp_comment( true );
+		$masked  = $instance->mask_anonymous_rsvp_comment( $comment );
+
+		$this->assertSame( __( 'Anonymous', 'gatherpress' ), $masked->comment_author );
+		$this->assertSame( '', $masked->comment_author_email );
+		$this->assertSame( '', $masked->comment_author_url );
+		$this->assertSame(
+			'Real Name',
+			$comment->comment_author,
+			'The mask is applied to a clone, so the original keeps its values.'
+		);
+	}
+
+	/**
+	 * The identity is left alone for anything that is not an anonymous RSVP
+	 * being read by an unprivileged viewer.
+	 *
+	 * @covers ::mask_anonymous_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_mask_anonymous_rsvp_comment_leaves_others_alone(): void {
+		$instance = Query::get_instance();
+
+		wp_set_current_user( 0 );
+
+		$this->assertNull(
+			$instance->mask_anonymous_rsvp_comment( null ),
+			'A value that is not a comment passes through untouched.'
+		);
+
+		$regular = get_comment( $this->factory->comment->create( array( 'comment_author' => 'Real Name' ) ) );
+		$this->assertSame(
+			'Real Name',
+			$instance->mask_anonymous_rsvp_comment( $regular )->comment_author,
+			'A comment that is not an RSVP is never masked.'
+		);
+
+		$named = $this->make_rsvp_comment( false );
+		$this->assertSame(
+			'Real Name',
+			$instance->mask_anonymous_rsvp_comment( $named )->comment_author,
+			'An RSVP that is not anonymous keeps its identity.'
+		);
+
+		$anonymous = $this->make_rsvp_comment( true );
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertSame(
+			'Real Name',
+			$instance->mask_anonymous_rsvp_comment( $anonymous )->comment_author,
+			'A viewer who can edit posts still sees the responder.'
+		);
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * The REST response withholds the author ID for a masked responder, and
+	 * leaves every other response untouched.
+	 *
+	 * @covers ::mask_anonymous_rsvp_rest_author
+	 *
+	 * @return void
+	 */
+	public function test_mask_anonymous_rsvp_rest_author(): void {
+		$instance = Query::get_instance();
+
+		wp_set_current_user( 0 );
+
+		$masked = $instance->mask_anonymous_rsvp_comment( $this->make_rsvp_comment( true ) );
+		$this->assertSame(
+			0,
+			$instance->mask_anonymous_rsvp_rest_author(
+				new WP_REST_Response( array( 'author' => 7 ) ),
+				$masked
+			)->get_data()['author'],
+			'A masked responder has no author ID in the response.'
+		);
+
+		$this->assertArrayNotHasKey(
+			'author',
+			$instance->mask_anonymous_rsvp_rest_author(
+				new WP_REST_Response( array( 'id' => 1 ) ),
+				$masked
+			)->get_data(),
+			'A response without an author field is left as it is.'
+		);
+
+		$this->assertSame(
+			7,
+			$instance->mask_anonymous_rsvp_rest_author(
+				new WP_REST_Response( array( 'author' => 7 ) ),
+				$this->make_rsvp_comment( false )
+			)->get_data()['author'],
+			'An RSVP that is not masked keeps its author ID.'
+		);
+
+		$regular = get_comment(
+			$this->factory->comment->create(
+				array( 'comment_author' => __( 'Anonymous', 'gatherpress' ) )
+			)
+		);
+		$this->assertSame(
+			7,
+			$instance->mask_anonymous_rsvp_rest_author(
+				new WP_REST_Response( array( 'author' => 7 ) ),
+				$regular
+			)->get_data()['author'],
+			'A non-RSVP comment named Anonymous is not treated as masked.'
+		);
 	}
 }
