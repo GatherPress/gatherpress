@@ -1277,11 +1277,29 @@ class Test_Event extends Base {
 		$this->assertFalse( Event::is_viewable( $post_id ), 'The draft is withheld outside a preview.' );
 
 		global $wp_query;
-		$wp_query->is_preview = true;
+		$wp_query->is_preview        = true;
+		$wp_query->queried_object    = get_post( $post_id );
+		$wp_query->queried_object_id = $post_id;
 
-		$this->assertTrue( Event::is_viewable( $post_id ), 'A preview renders the draft.' );
+		$this->assertTrue( Event::is_viewable( $post_id ), 'A preview renders the draft being previewed.' );
 
-		$wp_query->is_preview = false;
+		// Previewing one post does not open every other event: block context
+		// carries a post ID, so an unrelated draft must still be read-checked.
+		$other_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'private',
+			)
+		);
+
+		$this->assertFalse(
+			Event::is_viewable( $other_id ),
+			'A preview of one post does not render a different restricted event.'
+		);
+
+		$wp_query->is_preview        = false;
+		$wp_query->queried_object    = null;
+		$wp_query->queried_object_id = 0;
 	}
 
 	/**
@@ -1301,6 +1319,16 @@ class Test_Event extends Base {
 			Event::can_read_rsvps( $this->factory->post->create() ),
 			'A post type that takes no RSVPs has no roster.'
 		);
+
+		// Exercised on its own: an administrator would clear every capability
+		// check, so only the support guard can deny this.
+		$admin_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $admin_id );
+		$this->assertFalse(
+			Event::can_read_rsvps( $this->factory->post->create() ),
+			'A post type that takes no RSVPs has no roster, whoever is asking.'
+		);
+		wp_set_current_user( 0 );
 
 		$post_id = $this->factory->post->create(
 			array(

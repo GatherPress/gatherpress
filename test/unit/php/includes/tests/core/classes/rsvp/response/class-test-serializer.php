@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core\Rsvp\Response;
 use GatherPress\Core\Rsvp\Response\Data;
 use GatherPress\Core\Rsvp\Response\Identity;
 use GatherPress\Core\Rsvp\Response\Identity_Type;
+use GatherPress\Core\Rsvp\Response\Provider\Email;
 use GatherPress\Core\Rsvp\Response\Provider\User;
 use GatherPress\Core\Rsvp\Response\Serializer;
 use GatherPress\Core\Rsvp\Response\State;
@@ -232,6 +233,57 @@ class Test_Serializer extends Base {
 		$this->assertSame( $user_id, $unmasked['identifier'] );
 		$this->assertSame( get_avatar_url( $user_id ), $unmasked['photo'] );
 		$this->assertSame( Roles::get_instance()->get_user_role( $user_id ), $unmasked['role'] );
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * An email response reports the name it was saved with, and keeps the
+	 * address itself for whoever manages RSVPs.
+	 *
+	 * @covers ::to_array
+	 *
+	 * @return void
+	 */
+	public function test_to_array_withholds_email_identity(): void {
+		$email      = 'guest@example.test';
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author'       => 'Guest Name',
+				'comment_author_email' => $email,
+				'user_id'              => 0,
+			)
+		);
+		$identity   = new Identity( Identity_Type::EMAIL, $email );
+
+		$identity->display_name = 'Guest Name';
+
+		$state = new State(
+			new Data( $identity, Status::ATTENDING, 0, false, '2026-01-02 03:04:05' ),
+			new Email(),
+			get_comment( $comment_id )
+		);
+
+		wp_set_current_user( 0 );
+
+		$public = Serializer::to_array( $state );
+
+		$this->assertSame( 'Guest Name', $public['name'], 'The saved name is reported, not the address.' );
+		$this->assertSame( 0, $public['identifier'], 'The address is withheld from the public.' );
+		$this->assertStringNotContainsString(
+			$email,
+			wp_json_encode( $public ),
+			'The address appears nowhere in a public record.'
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$this->assertSame(
+			$email,
+			Serializer::to_array( $state )['identifier'],
+			'Whoever manages RSVPs still sees the address.'
+		);
 
 		wp_set_current_user( 0 );
 	}

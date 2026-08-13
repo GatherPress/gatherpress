@@ -194,7 +194,7 @@ class Event {
 	 * Blocks stay off an event nobody is meant to see yet, but an unpublished
 	 * event still renders for viewers allowed to read it, so an organizer
 	 * working on a draft sees the same blocks the published event will show
-	 * rather than empty space. The editor's preview always renders.
+	 * rather than empty space, as does the editor previewing that event.
 	 *
 	 * @since 0.35.1
 	 *
@@ -203,8 +203,10 @@ class Event {
 	 * @return bool True when the event's blocks should render.
 	 */
 	public static function is_viewable( int $post_id ): bool {
+		// is_preview() is a property of the request, not of a post, so it only
+		// stands in for read access on the post actually being previewed.
 		return (
-			is_preview()
+			( is_preview() && (int) get_queried_object_id() === $post_id )
 			|| 'publish' === get_post_status( $post_id )
 			|| current_user_can( self::READ_CAPABILITY, $post_id )
 		);

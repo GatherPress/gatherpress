@@ -11,6 +11,7 @@ namespace GatherPress\Core\Rsvp\Response;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Rsvp\Response\Identity_Type;
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Settings\Roles;
 use GatherPress\Core\Utility;
@@ -44,11 +45,17 @@ final class Serializer {
 			$photo      = self::anonymous_avatar_url();
 			$identifier = 0;
 		} else {
-			$user_id    = (int) $state->comment->user_id;
-			$profile    = $state->provider->get_url( $identity );
-			$name       = $state->provider->get_display_name( $identity );
-			$photo      = $state->provider->get_avatar_url( $identity );
-			$identifier = $identity->value;
+			$user_id = (int) $state->comment->user_id;
+			$profile = $state->provider->get_url( $identity );
+			$photo   = $state->provider->get_avatar_url( $identity );
+			$name    = $identity->display_name ?? $state->provider->get_display_name( $identity );
+
+			// An email response carries the responder's address as its
+			// identifier, so that one is only reported to whoever manages
+			// RSVPs. Other identity types are already public in this record.
+			$identifier = Identity_Type::EMAIL === $identity->type && ! current_user_can( Rsvp::CAPABILITY )
+				? 0
+				: $identity->value;
 		}
 
 		$data = array(
