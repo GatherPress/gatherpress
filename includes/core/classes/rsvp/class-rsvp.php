@@ -56,6 +56,14 @@ final class Rsvp {
 	public const COMMENT_TYPE = 'gatherpress_rsvp';
 
 	/**
+	 * Comment meta key flagging a response as anonymous.
+	 *
+	 * @since 0.35.1
+	 * @var string
+	 */
+	public const ANONYMOUS_META_KEY = 'gatherpress_rsvp_anonymous';
+
+	/**
 	 * Default response for calling the save function.
 	 *
 	 * @since 0.35.0
@@ -475,10 +483,16 @@ final class Rsvp {
 	 * @return array An array containing response information grouped by RSVP status.
 	 */
 	public function responses(): array {
-		$cached = Cache::get( $this->event->ID );
+		// Serialized records vary by capability but the cache key does not, so
+		// only the public variant is cached; privileged viewers compute fresh.
+		$can_use_cache = ! current_user_can( self::CAPABILITY );
 
-		if ( is_array( $cached ) ) {
-			return $cached;
+		if ( $can_use_cache ) {
+			$cached = Cache::get( $this->event->ID );
+
+			if ( is_array( $cached ) ) {
+				return $cached;
+			}
 		}
 
 		$retval = array(
@@ -530,7 +544,9 @@ final class Rsvp {
 			$retval[ $status ]['count']   = count( $status_records ) + $guest_count;
 		}
 
-		Cache::set( $this->event->ID, $retval );
+		if ( $can_use_cache ) {
+			Cache::set( $this->event->ID, $retval );
+		}
 
 		return $retval;
 	}

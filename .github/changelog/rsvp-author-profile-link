@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Link the display name in RSVP responses to the responder's profile, except when they are anonymous.

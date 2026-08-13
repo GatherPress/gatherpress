@@ -1,0 +1,4 @@
+Significance: patch
+Type: security
+
+Require read access to an event before serving its RSVP responses. The response endpoints validated that the post was an event but never that the caller could see it, so attendee lists for draft, pending, private, trashed and password-protected events were readable by anyone, and the event blocks made the same assumption from a preview flag that is a property of the request rather than of a post.
