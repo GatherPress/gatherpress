@@ -1214,4 +1214,73 @@ class Test_Event extends Base {
 		$this->assertNull( $event->event, 'Failed to assert event is null for non-event post.' );
 		$this->assertNull( $event->rsvp, 'Failed to assert rsvp is null for non-event post.' );
 	}
+
+	/**
+	 * A published event renders for everyone, while an unpublished one renders
+	 * only for viewers allowed to read it.
+	 *
+	 * @covers ::is_viewable
+	 *
+	 * @return void
+	 */
+	public function test_is_viewable(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+
+		wp_set_current_user( 0 );
+		$this->assertTrue( Event::is_viewable( $post_id ), 'A published event renders for the public.' );
+
+		foreach ( array( 'draft', 'pending', 'private' ) as $status ) {
+			wp_update_post(
+				array(
+					'ID'          => $post_id,
+					'post_status' => $status,
+				)
+			);
+
+			wp_set_current_user( 0 );
+			$this->assertFalse(
+				Event::is_viewable( $post_id ),
+				sprintf( 'A %s event does not render for the public.', $status )
+			);
+
+			wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+			$this->assertTrue(
+				Event::is_viewable( $post_id ),
+				sprintf( 'A %s event renders for a viewer who can read it.', $status )
+			);
+		}
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * The editor's preview renders an event that would otherwise be withheld.
+	 *
+	 * @covers ::is_viewable
+	 *
+	 * @return void
+	 */
+	public function test_is_viewable_in_preview(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'draft',
+			)
+		);
+
+		wp_set_current_user( 0 );
+		$this->assertFalse( Event::is_viewable( $post_id ), 'The draft is withheld outside a preview.' );
+
+		global $wp_query;
+		$wp_query->is_preview = true;
+
+		$this->assertTrue( Event::is_viewable( $post_id ), 'A preview renders the draft.' );
+
+		$wp_query->is_preview = false;
+	}
 }

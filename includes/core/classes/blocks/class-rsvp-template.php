@@ -124,11 +124,12 @@ final class Rsvp_Template {
 		$post_id = (int) $instance->context['postId'];
 		$event   = new Event( $post_id );
 
-		// Only process if the post type supports RSVP.
-		// Only check publish status if not in preview mode.
+		// Only process if the post type supports RSVP. An unpublished event
+		// keeps its responses to viewers allowed to read it, so organizers see
+		// the roster on a draft or private event rather than an empty block.
 		if (
 			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
-			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
+			! Event::is_viewable( $post_id )
 		) {
 			return $block_content;
 		}

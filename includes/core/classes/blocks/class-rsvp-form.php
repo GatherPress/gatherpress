@@ -121,7 +121,7 @@ final class Rsvp_Form {
 
 		if (
 			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' )
-			|| ( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
+			|| ! Event::is_viewable( $post_id )
 			|| ! $rsvp->is_enabled()
 			|| ! $rsvp->allows_open_rsvp()
 		) {

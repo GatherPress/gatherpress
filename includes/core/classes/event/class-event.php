@@ -60,6 +60,17 @@ class Event {
 	const POST_TYPE = 'gatherpress_event';
 
 	/**
+	 * Capability for reading a specific event.
+	 *
+	 * A meta capability, so it is always paired with the event's post ID and
+	 * resolves through WordPress to the right primitive for the event's status.
+	 *
+	 * @since 0.35.1
+	 * @var string
+	 */
+	const READ_CAPABILITY = 'read_post';
+
+	/**
 	 * Placeholder displayed when no datetime is set.
 	 *
 	 * @since 0.34.0
@@ -165,6 +176,28 @@ class Event {
 			$this->event = get_post( $post_id );
 			$this->rsvp  = new Rsvp( $post_id );
 		}
+	}
+
+	/**
+	 * Whether an event's blocks should render for the current viewer.
+	 *
+	 * Blocks stay off an event nobody is meant to see yet, but an unpublished
+	 * event still renders for viewers allowed to read it, so an organizer
+	 * working on a draft sees the same blocks the published event will show
+	 * rather than empty space. The editor's preview always renders.
+	 *
+	 * @since 0.35.1
+	 *
+	 * @param int $post_id The event post ID.
+	 *
+	 * @return bool True when the event's blocks should render.
+	 */
+	public static function is_viewable( int $post_id ): bool {
+		return (
+			is_preview()
+			|| 'publish' === get_post_status( $post_id )
+			|| current_user_can( self::READ_CAPABILITY, $post_id )
+		);
 	}
 
 	/**

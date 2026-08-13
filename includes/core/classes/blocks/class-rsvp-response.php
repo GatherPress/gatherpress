@@ -12,6 +12,7 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
@@ -91,11 +92,12 @@ final class Rsvp_Response {
 		$block_instance = Setup::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
-		// Validate that the post type supports RSVP.
-		// Only check publish status if not in preview mode.
+		// Validate that the post type supports RSVP. An unpublished event keeps
+		// its responses to viewers allowed to read it, so organizers see the
+		// roster on a draft or private event rather than an empty block.
 		if (
 			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
-			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
+			! Event::is_viewable( $post_id )
 		) {
 			return '';
 		}
