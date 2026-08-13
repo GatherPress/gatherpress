@@ -136,14 +136,14 @@ final class Form_Field {
 	 * Resolve the autocomplete token for the field.
 	 *
 	 * WCAG 1.3.5 (Identify Input Purpose) requires the specific token —
-	 * `email`, `url`, `tel` — rather than the generic `on`. The editor
-	 * derives the same defaults when the field type changes (see
-	 * `getDefaultAutocomplete` in `src/blocks/form-field/edit.js`), but
-	 * content saved before that helper existed, consumers constructing this
-	 * class directly, and block.json's `on` default all arrive here as `on`.
-	 * Since no UI offers `on` as a deliberate choice, `on` and absent both
-	 * fall back to the type-derived token; any other stored value is an
-	 * explicit choice and wins.
+	 * `email`, `url`, `tel` — rather than the generic `on`. An empty (or
+	 * absent) value means "infer from the field type": block.json defaults
+	 * the attribute to an empty string, and because the serializer never
+	 * persists an attribute equal to its default, content saved under the
+	 * earlier `on` default also arrives empty and gains inference
+	 * retroactively. Any stored token — including `on`, which the editor
+	 * control offers — is an author choice and wins. Types without an
+	 * unambiguous token fall back to `on`.
 	 *
 	 * @since 0.36.0
 	 *
@@ -152,9 +152,9 @@ final class Form_Field {
 	 * @return string The autocomplete token for the rendered input.
 	 */
 	private function resolve_autocomplete( array $raw_attributes ): string {
-		$autocomplete = (string) ( $raw_attributes['autocomplete'] ?? 'on' );
+		$autocomplete = (string) ( $raw_attributes['autocomplete'] ?? '' );
 
-		if ( 'on' !== $autocomplete ) {
+		if ( '' !== $autocomplete ) {
 			return $autocomplete;
 		}
 

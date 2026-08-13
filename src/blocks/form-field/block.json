@@ -125,7 +125,7 @@
 		},
 		"autocomplete": {
 			"type": "string",
-			"default": "on"
+			"default": ""
 		},
 		"helpText": {
 			"type": "string",

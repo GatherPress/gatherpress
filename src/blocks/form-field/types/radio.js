@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
  */
 import { __ } from '@wordpress/i18n';
 import { RichText } from '@wordpress/block-editor';
+import { useInstanceId } from '@wordpress/compose';
 /**
  * Internal dependencies
  */
@@ -47,6 +48,13 @@ export default function RadioField( {
 		radioOptions = [ { label: '', value: '', id: uuidv4() } ],
 		helpText,
 	} = attributes;
+
+	// Mirrors the frontend template, where the fieldset points
+	// aria-describedby at the help text's id.
+	const helpTextId = useInstanceId(
+		RadioField,
+		'gatherpress-radio-help-text',
+	);
 
 	// Handle label blur to auto-generate field name.
 	const handleLabelBlur = ( labelValue ) => {
@@ -155,7 +163,10 @@ export default function RadioField( {
 			{ /* Mirrors the frontend template: a real fieldset with the
 			legend as its first child names the radio group, and the
 			label wrapper moves inside the legend. */ }
-			<fieldset className="gatherpress-fieldset">
+			<fieldset
+				className="gatherpress-fieldset"
+				aria-describedby={ helpText ? helpTextId : undefined }
+			>
 				<legend style={ getLabelStyles( attributes ) }>
 					<span
 						className="gatherpress-label-wrapper"
@@ -236,10 +247,12 @@ export default function RadioField( {
 						</div>
 					) ) }
 				</div>
+				{ helpText && (
+					<p className="gatherpress-help-text" id={ helpTextId }>
+						{ helpText }
+					</p>
+				) }
 			</fieldset>
-			{ helpText && (
-				<p className="gatherpress-help-text">{ helpText }</p>
-			) }
 		</div>
 	);
 }

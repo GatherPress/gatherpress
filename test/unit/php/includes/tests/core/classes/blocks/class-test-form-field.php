@@ -599,6 +599,13 @@ class Test_Form_Field extends Base {
 			'Failed to assert url fields infer the url token.'
 		);
 
+		$tel_field = new Form_Field( array( 'fieldType' => 'tel' ) );
+		$this->assertStringContainsString(
+			'autocomplete="tel"',
+			$tel_field->get_input_attributes(),
+			'Failed to assert tel fields infer the tel token.'
+		);
+
 		$stored_on = new Form_Field(
 			array(
 				'fieldType'    => 'tel',
@@ -606,9 +613,9 @@ class Test_Form_Field extends Base {
 			)
 		);
 		$this->assertStringContainsString(
-			'autocomplete="tel"',
+			'autocomplete="on"',
 			$stored_on->get_input_attributes(),
-			'Failed to assert a stored generic "on" falls back to the type-derived token.'
+			'Failed to assert a stored "on" is an explicit author choice and wins over inference.'
 		);
 
 		$explicit = new Form_Field(
