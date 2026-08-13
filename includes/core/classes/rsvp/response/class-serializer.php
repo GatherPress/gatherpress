@@ -11,6 +11,7 @@ namespace GatherPress\Core\Rsvp\Response;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Settings\Roles;
 use GatherPress\Core\Utility;
 
@@ -33,9 +34,7 @@ final class Serializer {
 	public static function to_array( State $state ): array {
 		$identity = $state->data->identity;
 
-		if (
-			! current_user_can( 'edit_posts' ) && $state->data->anonymous
-		) {
+		if ( Rsvp::should_mask_identity( $state->comment ) ) {
 			$user_id = 0;
 			$profile = '';
 			$name    = __( 'Anonymous', 'gatherpress' );

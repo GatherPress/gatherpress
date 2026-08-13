@@ -194,12 +194,7 @@ final class Rsvp_Template {
 		// Ensure proper user authentication for anonymity checks.
 		Utility::ensure_user_authentication();
 
-		// Apply anonymization if the RSVP is marked as anonymous AND the current user
-		// doesn't have edit_posts capability. Users with edit_posts can see all real names.
-		if (
-			intval( get_comment_meta( $response_id, 'gatherpress_rsvp_anonymous', true ) ) &&
-			! current_user_can( 'edit_posts' )
-		) {
+		if ( Rsvp::should_mask_identity( $response_id ) ) {
 			$this->anonymize_rsvp_blocks( $parsed_block['innerBlocks'], $response_id );
 		}
 
@@ -247,7 +242,30 @@ final class Rsvp_Template {
 		foreach ( $blocks as &$block ) {
 			// Handle `core/avatar` block.
 			if ( 'core/avatar' === $block['blockName'] ) {
+				// Set `isLink` to 0 to disable linking for the block.
 				$block['attrs']['isLink'] = 0;
+
+				// Core builds the alt text from the comment author, which is the
+				// responder's real name, so render the block and rewrite it.
+				$block_html = ( new WP_Block( $block, array( 'commentId' => $response_id ) ) )
+					->render( array( 'dynamic' => true ) );
+
+				$tag = new WP_HTML_Tag_Processor( $block_html );
+
+				while ( $tag->next_tag( array( 'tag_name' => 'img' ) ) ) {
+					$tag->set_attribute(
+						'alt',
+						esc_attr_x(
+							'Anonymous Avatar',
+							'Alt text for the avatar of users who wish to remain anonymous in RSVP responses.',
+							'gatherpress'
+						)
+					);
+				}
+
+				// Convert to `core/html` so the rewritten markup is what renders.
+				$block['blockName']    = 'core/html';
+				$block['innerContent'] = array( $tag->get_updated_html() );
 			}
 
 			// Handle `core/comment-author-name` block.

@@ -17,6 +17,8 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Traits\Singleton;
 use WP_Comment;
 use WP_Comment_Query;
+use WP_Error;
+use WP_REST_Request;
 use WP_Tax_Query;
 
 /**
@@ -74,6 +76,7 @@ final class Query {
 		add_action( 'pre_get_comments', array( $this, 'exclude_rsvp_from_comment_query' ) );
 		add_filter( 'comments_clauses', array( $this, 'taxonomy_query' ), 10, 2 );
 		add_action( 'wp_insert_comment', array( $this, 'maybe_invalidate_comment_types_cache' ), 10, 2 );
+		add_filter( 'rest_request_before_callbacks', array( $this, 'restrict_rsvp_comment_rest_route' ), 10, 3 );
 	}
 
 	/**
@@ -305,5 +308,40 @@ final class Query {
 
 			$query->query_vars['type__in'] = $current_comment_types_in;
 		}
+	}
+
+	/**
+	 * Withhold RSVP comments from the core single-comment REST route.
+	 *
+	 * The exclusion above only covers `WP_Comment_Query`, and the single-comment
+	 * route resolves its target with `get_comment()` instead, so a masked
+	 * responder remained readable by ID. Those callers get the same response the
+	 * route gives for an unknown comment, so the record is withheld without
+	 * confirming that it exists.
+	 *
+	 * @since 0.35.1
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $handler is required by the filter signature.
+	 *
+	 * @param mixed           $response Result to send to the client, or null to continue.
+	 * @param array           $handler  Route handler for the request.
+	 * @param WP_REST_Request $request  The current request.
+	 *
+	 * @return mixed The unchanged result, or an error when the RSVP is withheld.
+	 */
+	public function restrict_rsvp_comment_rest_route( $response, $handler, WP_REST_Request $request ) {
+		if ( is_wp_error( $response ) || ! str_starts_with( $request->get_route(), '/wp/v2/comments/' ) ) {
+			return $response;
+		}
+
+		if ( ! Rsvp::should_mask_identity( (int) $request['id'] ) ) {
+			return $response;
+		}
+
+		return new WP_Error(
+			'rest_comment_invalid_id',
+			__( 'Invalid comment ID.', 'gatherpress' ),
+			array( 'status' => 404 )
+		);
 	}
 }

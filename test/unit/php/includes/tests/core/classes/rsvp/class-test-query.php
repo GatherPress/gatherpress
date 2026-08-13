@@ -53,6 +53,12 @@ class Test_Query extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'maybe_invalidate_comment_types_cache' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'rest_request_before_callbacks',
+				'priority' => 10,
+				'callback' => array( $instance, 'restrict_rsvp_comment_rest_route' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );

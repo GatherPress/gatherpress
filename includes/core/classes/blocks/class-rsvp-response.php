@@ -296,13 +296,9 @@ final class Rsvp_Response {
 			}
 		}
 
-		if (
-			intval( get_comment_meta( intval( $comment->comment_ID ), 'gatherpress_rsvp_anonymous', true ) ) &&
-			! current_user_can( Rsvp::CAPABILITY )
-		) {
-			// Set the email to empty if the RSVP is marked as anonymous and the current user
-			// does not have permission to edit posts. This ensures the avatar defaults
-			// to a generic or placeholder image for anonymous responses.
+		// An empty email leaves no identifying hash in the URL, so the avatar
+		// falls back to the generic placeholder for a masked responder.
+		if ( Rsvp::should_mask_identity( $comment ) ) {
 			$email = '';
 		}
 

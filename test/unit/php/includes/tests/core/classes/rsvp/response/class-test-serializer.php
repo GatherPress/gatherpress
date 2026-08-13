@@ -15,6 +15,7 @@ use GatherPress\Core\Rsvp\Response\Provider\User;
 use GatherPress\Core\Rsvp\Response\Serializer;
 use GatherPress\Core\Rsvp\Response\State;
 use GatherPress\Core\Rsvp\Response\Status;
+use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Settings\Roles;
 use GatherPress\Tests\Base;
 
@@ -34,8 +35,21 @@ class Test_Serializer extends Base {
 	 * @return State
 	 */
 	protected function make_state( int $user_id, bool $anonymous ): State {
-		$comment_id = $this->factory->comment->create( array( 'user_id' => $user_id ) );
-		$data       = new Data(
+		// A real RSVP always carries the RSVP comment type, and its anonymity
+		// lives in comment meta, so the fixture has to match for the masking
+		// decision to see what it sees in production.
+		$comment_id = $this->factory->comment->create(
+			array(
+				'user_id'      => $user_id,
+				'comment_type' => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		if ( $anonymous ) {
+			update_comment_meta( $comment_id, Rsvp::ANONYMOUS_META_KEY, 1 );
+		}
+
+		$data = new Data(
 			new Identity( Identity_Type::WP_USER_ID, $user_id ),
 			Status::ATTENDING,
 			1,
