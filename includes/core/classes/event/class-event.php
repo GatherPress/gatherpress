@@ -71,6 +71,16 @@ class Event {
 	const READ_CAPABILITY = 'read_post';
 
 	/**
+	 * Capability for editing a specific event.
+	 *
+	 * A meta capability, so it is always paired with the event's post ID.
+	 *
+	 * @since 0.35.1
+	 * @var string
+	 */
+	const EDIT_CAPABILITY = 'edit_post';
+
+	/**
 	 * Placeholder displayed when no datetime is set.
 	 *
 	 * @since 0.34.0
@@ -198,6 +208,36 @@ class Event {
 			|| 'publish' === get_post_status( $post_id )
 			|| current_user_can( self::READ_CAPABILITY, $post_id )
 		);
+	}
+
+	/**
+	 * Whether the current viewer may read an event's RSVP responses.
+	 *
+	 * The roster follows the event: a published event's responses are public
+	 * once any password gate is satisfied, anything else is limited to viewers
+	 * allowed to read that event, and whoever can edit it always sees them.
+	 *
+	 * @since 0.35.1
+	 *
+	 * @param int $post_id The event post ID.
+	 *
+	 * @return bool True when the viewer may read the event's RSVP responses.
+	 */
+	public static function can_read_rsvps( int $post_id ): bool {
+		$post = get_post( $post_id );
+
+		// A post that is gone, or one that never takes RSVPs, has no roster.
+		if ( ! $post instanceof WP_Post || ! post_type_supports( $post->post_type, 'gatherpress-rsvp' ) ) {
+			return false;
+		}
+
+		if ( current_user_can( self::EDIT_CAPABILITY, $post->ID ) ) {
+			return true;
+		}
+
+		return 'publish' === $post->post_status
+			? ! post_password_required( $post )
+			: current_user_can( self::READ_CAPABILITY, $post->ID );
 	}
 
 	/**

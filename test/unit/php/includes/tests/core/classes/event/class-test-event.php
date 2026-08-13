@@ -1283,4 +1283,56 @@ class Test_Event extends Base {
 
 		$wp_query->is_preview = false;
 	}
+
+	/**
+	 * The roster follows the event: public once published, limited to viewers
+	 * who can read it otherwise, and withheld from post types that take no
+	 * RSVPs at all.
+	 *
+	 * @covers ::can_read_rsvps
+	 *
+	 * @return void
+	 */
+	public function test_can_read_rsvps(): void {
+		wp_set_current_user( 0 );
+
+		$this->assertFalse( Event::can_read_rsvps( 0 ), 'A post that does not exist has no roster.' );
+		$this->assertFalse(
+			Event::can_read_rsvps( $this->factory->post->create() ),
+			'A post type that takes no RSVPs has no roster.'
+		);
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		$this->assertTrue( Event::can_read_rsvps( $post_id ), 'A published event roster is public.' );
+
+		wp_update_post(
+			array(
+				'ID'            => $post_id,
+				'post_password' => 'secret',
+			)
+		);
+		$this->assertFalse(
+			Event::can_read_rsvps( $post_id ),
+			'A password-protected event withholds its roster until the gate is satisfied.'
+		);
+
+		wp_update_post(
+			array(
+				'ID'            => $post_id,
+				'post_password' => '',
+				'post_status'   => 'private',
+			)
+		);
+		$this->assertFalse( Event::can_read_rsvps( $post_id ), 'A private event withholds its roster.' );
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertTrue( Event::can_read_rsvps( $post_id ), 'A viewer who can edit the event sees the roster.' );
+
+		wp_set_current_user( 0 );
+	}
 }

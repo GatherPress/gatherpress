@@ -1806,7 +1806,7 @@ class Test_Rest_Api extends Base {
 		$request->set_param( 'post_id', $post_id );
 
 		$this->assertFalse(
-			current_user_can( 'edit_post', $post_id ),
+			current_user_can( Event::EDIT_CAPABILITY, $post_id ),
 			'The reader must lack edit access so the read_post branch is the one exercised.'
 		);
 		$this->assertTrue(

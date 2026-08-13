@@ -139,7 +139,7 @@ final class Rest_Api {
 					// send emails about it. Mirrors the meta auth_callback
 					// model so a non-owner Author can't blast emails about
 					// someone else's event via this route.
-					return current_user_can( 'edit_post', (int) $request['post_id'] );
+					return current_user_can( Event::EDIT_CAPABILITY, (int) $request['post_id'] );
 				},
 				'args'                => array(
 					'post_id' => array(
@@ -391,24 +391,7 @@ final class Rest_Api {
 	 * @return bool True when the caller may read the event's RSVP responses.
 	 */
 	public function can_read_event_rsvps( WP_REST_Request $request ): bool {
-		$post = get_post( (int) $request->get_param( 'post_id' ) );
-
-		if ( ! $post instanceof WP_Post ) {
-			return false;
-		}
-
-		// Editors see the roster in every state.
-		if ( current_user_can( 'edit_post', $post->ID ) ) {
-			return true;
-		}
-
-		// Non-published events require read access to the specific event.
-		if ( 'publish' !== $post->post_status ) {
-			return current_user_can( 'read_post', $post->ID );
-		}
-
-		// A published roster is public once any password gate is satisfied.
-		return ! post_password_required( $post );
+		return Event::can_read_rsvps( (int) $request->get_param( 'post_id' ) );
 	}
 
 	/**
@@ -771,7 +754,7 @@ final class Rest_Api {
 			// RSVP someone else into it. The previous flat `edit_posts`
 			// check would have let any Author manage attendees on any
 			// event, including ones they don't own.
-			if ( current_user_can( 'edit_post', $post_id ) ) {
+			if ( current_user_can( Event::EDIT_CAPABILITY, $post_id ) ) {
 				$is_managing_other = true;
 			} else {
 				$user_id = 0;

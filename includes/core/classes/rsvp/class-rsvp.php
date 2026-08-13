@@ -485,7 +485,7 @@ final class Rsvp {
 	public function responses(): array {
 		// Serialized records vary by capability but the cache key does not, so
 		// only the public variant is cached; privileged viewers compute fresh.
-		$can_use_cache = ! current_user_can( 'edit_posts' );
+		$can_use_cache = ! current_user_can( self::CAPABILITY );
 
 		if ( $can_use_cache ) {
 			$cached = Cache::get( $this->event->ID );
