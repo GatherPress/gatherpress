@@ -300,7 +300,7 @@ final class Rsvp_Response {
 		// falls back to the generic placeholder for an anonymous responder.
 		if (
 			get_comment_meta( (int) $comment->comment_ID, Rsvp::ANONYMOUS_META_KEY, true )
-			&& ! current_user_can( 'edit_posts' )
+			&& ! current_user_can( Rsvp::CAPABILITY )
 		) {
 			$email = '';
 		}

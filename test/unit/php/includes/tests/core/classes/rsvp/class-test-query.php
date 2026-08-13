@@ -1028,4 +1028,36 @@ class Test_Query extends Base {
 			'A non-RSVP comment named Anonymous is not treated as masked.'
 		);
 	}
+
+	/**
+	 * Anonymity yields only to the capability that manages RSVPs, so roles that
+	 * can write posts without moderating them still see a masked responder.
+	 *
+	 * @covers ::mask_anonymous_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_mask_anonymous_rsvp_comment_pivots_on_rsvp_capability(): void {
+		$instance = Query::get_instance();
+		$comment  = $this->make_rsvp_comment( true );
+		$expected = array(
+			'subscriber'    => __( 'Anonymous', 'gatherpress' ),
+			'contributor'   => __( 'Anonymous', 'gatherpress' ),
+			'author'        => __( 'Anonymous', 'gatherpress' ),
+			'editor'        => 'Real Name',
+			'administrator' => 'Real Name',
+		);
+
+		foreach ( $expected as $role => $author ) {
+			wp_set_current_user( $this->factory->user->create( array( 'role' => $role ) ) );
+
+			$this->assertSame(
+				$author,
+				$instance->mask_anonymous_rsvp_comment( $comment )->comment_author,
+				sprintf( 'A %s sees the wrong responder.', $role )
+			);
+		}
+
+		wp_set_current_user( 0 );
+	}
 }

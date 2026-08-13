@@ -329,7 +329,7 @@ final class Query {
 		if (
 			! $comment instanceof WP_Comment
 			|| Rsvp::COMMENT_TYPE !== $comment->comment_type
-			|| current_user_can( 'edit_posts' )
+			|| current_user_can( Rsvp::CAPABILITY )
 			|| ! get_comment_meta( (int) $comment->comment_ID, Rsvp::ANONYMOUS_META_KEY, true )
 		) {
 			return $comment;
@@ -364,12 +364,13 @@ final class Query {
 	public function mask_anonymous_rsvp_rest_author( $response, $comment ) {
 		$data = $response->get_data();
 
-		// The comment reaching this point has already been through the mask
-		// above, so a masked author is what marks the response as withheld.
+		// Re-read the responder's own state rather than the masked output, so
+		// this does not depend on what the mask above happens to write.
 		if (
 			isset( $data['author'] )
 			&& Rsvp::COMMENT_TYPE === $comment->comment_type
-			&& __( 'Anonymous', 'gatherpress' ) === $comment->comment_author
+			&& ! current_user_can( Rsvp::CAPABILITY )
+			&& get_comment_meta( (int) $comment->comment_ID, Rsvp::ANONYMOUS_META_KEY, true )
 		) {
 			$data['author'] = 0;
 			$response->set_data( $data );
