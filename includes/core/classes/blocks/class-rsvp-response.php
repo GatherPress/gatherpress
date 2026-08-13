@@ -293,7 +293,7 @@ final class Rsvp_Response {
 		// from anyone the name itself is masked from, and shown to whoever
 		// already sees the responder.
 		if (
-			get_comment_meta( (int) $comment->comment_ID, Rsvp::ANONYMOUS_META_KEY, true )
+			get_comment_meta( (int) $comment_id, Rsvp::ANONYMOUS_META_KEY, true )
 			&& ! current_user_can( Rsvp::CAPABILITY )
 		) {
 			return '';

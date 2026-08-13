@@ -854,7 +854,11 @@ class Test_Rsvp_Response extends Base {
 		);
 		$this->assertSame(
 			'https://example.test/stored',
-			$instance->modify_author_url_for_gatherpress_rsvp( 'https://example.test/stored', $named->comment_ID, $named ),
+			$instance->modify_author_url_for_gatherpress_rsvp(
+				'https://example.test/stored',
+				$named->comment_ID,
+				$named
+			),
 			'A stored URL is left as it is.'
 		);
 
@@ -875,7 +879,11 @@ class Test_Rsvp_Response extends Base {
 		$regular = get_comment( $this->factory->comment->create() );
 		$this->assertSame(
 			'https://example.test/other',
-			$instance->modify_author_url_for_gatherpress_rsvp( 'https://example.test/other', $regular->comment_ID, $regular ),
+			$instance->modify_author_url_for_gatherpress_rsvp(
+				'https://example.test/other',
+				$regular->comment_ID,
+				$regular
+			),
 			'A comment that is not an RSVP is untouched.'
 		);
 
