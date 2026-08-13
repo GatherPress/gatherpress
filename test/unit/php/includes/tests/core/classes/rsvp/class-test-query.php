@@ -55,9 +55,15 @@ class Test_Query extends Base {
 			),
 			array(
 				'type'     => 'filter',
-				'name'     => 'rest_request_before_callbacks',
+				'name'     => 'get_comment',
 				'priority' => 10,
-				'callback' => array( $instance, 'restrict_rsvp_comment_rest_route' ),
+				'callback' => array( $instance, 'mask_anonymous_rsvp_comment' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'rest_prepare_comment',
+				'priority' => 10,
+				'callback' => array( $instance, 'mask_anonymous_rsvp_rest_author' ),
 			),
 		);
 

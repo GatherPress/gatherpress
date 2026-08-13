@@ -17,8 +17,6 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Traits\Singleton;
 use WP_Comment;
 use WP_Comment_Query;
-use WP_Error;
-use WP_REST_Request;
 use WP_Tax_Query;
 
 /**
@@ -76,7 +74,8 @@ final class Query {
 		add_action( 'pre_get_comments', array( $this, 'exclude_rsvp_from_comment_query' ) );
 		add_filter( 'comments_clauses', array( $this, 'taxonomy_query' ), 10, 2 );
 		add_action( 'wp_insert_comment', array( $this, 'maybe_invalidate_comment_types_cache' ), 10, 2 );
-		add_filter( 'rest_request_before_callbacks', array( $this, 'restrict_rsvp_comment_rest_route' ), 10, 3 );
+		add_filter( 'get_comment', array( $this, 'mask_anonymous_rsvp_comment' ) );
+		add_filter( 'rest_prepare_comment', array( $this, 'mask_anonymous_rsvp_rest_author' ), 10, 2 );
 	}
 
 	/**
@@ -313,35 +312,57 @@ final class Query {
 	/**
 	 * Withhold RSVP comments from the core single-comment REST route.
 	 *
-	 * The exclusion above only covers `WP_Comment_Query`, and the single-comment
-	 * route resolves its target with `get_comment()` instead, so a masked
-	 * responder remained readable by ID. Those callers get the same response the
-	 * route gives for an unknown comment, so the record is withheld without
-	 * confirming that it exists.
+	 * Every reader of a comment goes through `get_comment()`, including the REST
+	 * comments route and the core avatar and comment-author blocks, and most of
+	 * them read `comment_author` straight off the object rather than through a
+	 * display function. Masking the object here is what makes the promise hold
+	 * everywhere at once instead of at each call site.
 	 *
 	 * @since 0.35.1
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $handler is required by the filter signature.
+	 * @param WP_Comment|mixed $comment The comment being read.
 	 *
-	 * @param mixed           $response Result to send to the client, or null to continue.
-	 * @param array           $handler  Route handler for the request.
-	 * @param WP_REST_Request $request  The current request.
-	 *
-	 * @return mixed The unchanged result, or an error when the RSVP is withheld.
+	 * @return WP_Comment|mixed The comment, with the responder's identity masked when required.
 	 */
-	public function restrict_rsvp_comment_rest_route( $response, $handler, WP_REST_Request $request ) {
-		if ( is_wp_error( $response ) || ! str_starts_with( $request->get_route(), '/wp/v2/comments/' ) ) {
-			return $response;
+	public function mask_anonymous_rsvp_comment( $comment ) {
+		if ( ! Rsvp::should_mask_identity( $comment ) ) {
+			return $comment;
 		}
 
-		if ( ! Rsvp::should_mask_identity( (int) $request['id'] ) ) {
-			return $response;
+		// Masked on a clone so the cached comment keeps its real values for
+		// callers that are allowed to see them.
+		$masked                       = clone $comment;
+		$masked->comment_author       = __( 'Anonymous', 'gatherpress' );
+		$masked->comment_author_email = '';
+		$masked->comment_author_url   = '';
+
+		return $masked;
+	}
+
+	/**
+	 * Withhold the responder's user ID from the comments REST response.
+	 *
+	 * The masked comment keeps its real `user_id` because RSVP lookups depend
+	 * on it, and those run for the responder themselves. It only needs to be
+	 * withheld where it reaches the public, and the `author` field is the one
+	 * place that publishes it — left intact it resolves back to the responder
+	 * through the users endpoint.
+	 *
+	 * @since 0.35.1
+	 *
+	 * @param WP_REST_Response $response The response object.
+	 * @param WP_Comment       $comment  The comment being returned.
+	 *
+	 * @return WP_REST_Response The response, with the author withheld when required.
+	 */
+	public function mask_anonymous_rsvp_rest_author( $response, $comment ) {
+		$data = $response->get_data();
+
+		if ( isset( $data['author'] ) && Rsvp::should_mask_identity( $comment ) ) {
+			$data['author'] = 0;
+			$response->set_data( $data );
 		}
 
-		return new WP_Error(
-			'rest_comment_invalid_id',
-			__( 'Invalid comment ID.', 'gatherpress' ),
-			array( 'status' => 404 )
-		);
+		return $response;
 	}
 }

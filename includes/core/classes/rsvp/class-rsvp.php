@@ -148,12 +148,17 @@ final class Rsvp {
 	 * @return bool True when the responder's identity must be masked.
 	 */
 	public static function should_mask_identity( $comment ): bool {
-		$comment = empty( $comment ) ? null : get_comment( $comment );
-		$mask    = (
+		// Resolve an ID, but never re-fetch an object we already hold: this runs
+		// from the `get_comment` filter, and fetching again would recurse.
+		if ( ! $comment instanceof WP_Comment ) {
+			$comment = empty( $comment ) ? null : get_comment( $comment );
+		}
+
+		$mask = (
 			$comment instanceof WP_Comment
 			&& self::COMMENT_TYPE === $comment->comment_type
-			&& (bool) get_comment_meta( (int) $comment->comment_ID, self::ANONYMOUS_META_KEY, true )
 			&& ! current_user_can( 'edit_posts' )
+			&& (bool) get_comment_meta( (int) $comment->comment_ID, self::ANONYMOUS_META_KEY, true )
 		);
 
 		/**
