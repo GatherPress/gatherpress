@@ -1,0 +1,4 @@
+Significance: patch
+Type: security
+
+Keep capability-dependent RSVP records out of the shared response cache. Records are redacted according to who is reading them, but the cache was keyed on the event alone, so responses cached while an organizer viewed their own event were then served to unauthenticated visitors for the lifetime of the entry.

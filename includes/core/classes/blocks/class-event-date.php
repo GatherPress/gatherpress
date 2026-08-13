@@ -16,6 +16,7 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
 
 /**
@@ -84,10 +85,9 @@ final class Event_Date {
 		$post_id        = $block_instance->get_post_id( $block );
 
 		// Validate that the post type supports event_date.
-		// Only check publish status if not in preview mode.
 		if (
 			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ||
-			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
+			! Event::is_viewable( $post_id )
 		) {
 			return '';
 		}

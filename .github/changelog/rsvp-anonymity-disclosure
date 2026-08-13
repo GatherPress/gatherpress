@@ -1,0 +1,4 @@
+Significance: patch
+Type: security
+
+Complete the redaction of RSVP responses marked anonymous. The responder's identity remained recoverable to unauthenticated visitors through the avatar URL's email hash, the raw identifier and site role in the REST response, the alt text the avatar block builds from the comment author, and the comments REST route. Anonymity now yields only to the capability that manages RSVPs, so contributors and authors no longer see through it.

@@ -313,6 +313,13 @@ final class Storage {
 			return null;
 		}
 
+		// Carry the name the response was saved with. Without it a reader falls
+		// back to the provider's display name, which for an email response is
+		// the address itself.
+		if ( ! empty( $comment->comment_author ) ) {
+			$identity->display_name = (string) $comment->comment_author;
+		}
+
 		return $identity;
 	}
 
