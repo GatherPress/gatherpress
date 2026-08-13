@@ -34,7 +34,7 @@ final class Serializer {
 	public static function to_array( State $state ): array {
 		$identity = $state->data->identity;
 
-		if ( Rsvp::should_mask_identity( $state->comment ) ) {
+		if ( $state->data->anonymous && ! current_user_can( 'edit_posts' ) ) {
 			$user_id = 0;
 			$profile = '';
 			$name    = __( 'Anonymous', 'gatherpress' );

@@ -297,8 +297,11 @@ final class Rsvp_Response {
 		}
 
 		// An empty email leaves no identifying hash in the URL, so the avatar
-		// falls back to the generic placeholder for a masked responder.
-		if ( Rsvp::should_mask_identity( $comment ) ) {
+		// falls back to the generic placeholder for an anonymous responder.
+		if (
+			get_comment_meta( (int) $comment->comment_ID, Rsvp::ANONYMOUS_META_KEY, true )
+			&& ! current_user_can( 'edit_posts' )
+		) {
 			$email = '';
 		}
 

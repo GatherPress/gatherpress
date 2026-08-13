@@ -134,51 +134,6 @@ final class Rsvp {
 	}
 
 	/**
-	 * Whether an RSVP responder's identity must be masked for the current viewer.
-	 *
-	 * True when the comment is an RSVP, the responder asked to stay anonymous,
-	 * and the viewer cannot edit posts. Every surface that renders or returns
-	 * RSVP data asks this one question, so the rule lives here rather than
-	 * being repeated per surface.
-	 *
-	 * @since 0.35.1
-	 *
-	 * @param int|WP_Comment|null $comment Comment ID or object for the RSVP.
-	 *
-	 * @return bool True when the responder's identity must be masked.
-	 */
-	public static function should_mask_identity( $comment ): bool {
-		// Resolve an ID, but never re-fetch an object we already hold: this runs
-		// from the `get_comment` filter, and fetching again would recurse.
-		if ( ! $comment instanceof WP_Comment ) {
-			$comment = empty( $comment ) ? null : get_comment( $comment );
-		}
-
-		$mask = (
-			$comment instanceof WP_Comment
-			&& self::COMMENT_TYPE === $comment->comment_type
-			&& ! current_user_can( 'edit_posts' )
-			&& (bool) get_comment_meta( (int) $comment->comment_ID, self::ANONYMOUS_META_KEY, true )
-		);
-
-		/**
-		 * Filters whether an anonymous responder's identity is masked for the current viewer.
-		 *
-		 * Anonymity is a promise made to the public, not to site staff, so the
-		 * default masks the identity for everyone who cannot edit posts. This
-		 * is the single decision behind every surface that renders or returns
-		 * RSVP data — block output, REST payloads, avatars, and the core
-		 * comment routes — so integrations only have to override it once.
-		 *
-		 * @since 0.35.1
-		 *
-		 * @param bool            $mask    True to mask the responder's identity.
-		 * @param WP_Comment|null $comment The RSVP comment, or null when none resolved.
-		 */
-		return (bool) apply_filters( 'gatherpress_rsvp_mask_identity', $mask, $comment );
-	}
-
-	/**
 	 * Get RSVP information for a user and an event.
 	 *
 	 * This method retrieves RSVP information for a specific user and event, including the RSVP entry's ID,
