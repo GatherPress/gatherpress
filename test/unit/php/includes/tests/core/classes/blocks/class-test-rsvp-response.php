@@ -57,12 +57,6 @@ class Test_Rsvp_Response extends Base {
 			),
 			array(
 				'type'     => 'filter',
-				'name'     => 'get_comment_author_url',
-				'priority' => 10,
-				'callback' => array( $instance, 'modify_author_url_for_gatherpress_rsvp' ),
-			),
-			array(
-				'type'     => 'filter',
 				'name'     => 'block_type_metadata',
 				'priority' => 10,
 				'callback' => array( $instance, 'add_rsvp_to_comment_ancestor' ),
@@ -813,80 +807,5 @@ class Test_Rsvp_Response extends Base {
 
 		delete_post_meta( $post_id, 'gatherpress_enable_rsvp' );
 		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
-	}
-
-	/**
-	 * A responder's profile link is resolved from their account when the
-	 * comment carries no URL, and withheld entirely when they are anonymous.
-	 *
-	 * @covers ::modify_author_url_for_gatherpress_rsvp
-	 *
-	 * @return void
-	 */
-	public function test_modify_author_url_for_gatherpress_rsvp(): void {
-		$instance = Rsvp_Response::get_instance();
-		$user_id  = $this->factory->user->create();
-		$post_id  = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
-
-		$make = function ( bool $anonymous ) use ( $user_id, $post_id ) {
-			$comment_id = $this->factory->comment->create(
-				array(
-					'comment_post_ID' => $post_id,
-					'comment_type'    => Rsvp::COMMENT_TYPE,
-					'user_id'         => $user_id,
-				)
-			);
-
-			if ( $anonymous ) {
-				update_comment_meta( $comment_id, Rsvp::ANONYMOUS_META_KEY, 1 );
-			}
-
-			return get_comment( $comment_id );
-		};
-
-		wp_set_current_user( 0 );
-
-		$named = $make( false );
-		$this->assertSame(
-			get_author_posts_url( $user_id ),
-			$instance->modify_author_url_for_gatherpress_rsvp( '', $named->comment_ID, $named ),
-			'A responder with no stored URL resolves to their profile.'
-		);
-		$this->assertSame(
-			'https://example.test/stored',
-			$instance->modify_author_url_for_gatherpress_rsvp(
-				'https://example.test/stored',
-				$named->comment_ID,
-				$named
-			),
-			'A stored URL is left as it is.'
-		);
-
-		$anonymous = $make( true );
-		$this->assertSame(
-			'',
-			$instance->modify_author_url_for_gatherpress_rsvp( '', $anonymous->comment_ID, $anonymous ),
-			'An anonymous responder is never linked.'
-		);
-
-		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
-		$this->assertSame(
-			get_author_posts_url( $user_id ),
-			$instance->modify_author_url_for_gatherpress_rsvp( '', $anonymous->comment_ID, $anonymous ),
-			'A viewer who already sees the responder gets the link too.'
-		);
-
-		$regular = get_comment( $this->factory->comment->create() );
-		$this->assertSame(
-			'https://example.test/other',
-			$instance->modify_author_url_for_gatherpress_rsvp(
-				'https://example.test/other',
-				$regular->comment_ID,
-				$regular
-			),
-			'A comment that is not an RSVP is untouched.'
-		);
-
-		wp_set_current_user( 0 );
 	}
 }

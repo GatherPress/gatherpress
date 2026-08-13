@@ -75,7 +75,7 @@ final class Query {
 		add_action( 'pre_get_comments', array( $this, 'exclude_rsvp_from_comment_query' ) );
 		add_filter( 'comments_clauses', array( $this, 'taxonomy_query' ), 10, 2 );
 		add_action( 'wp_insert_comment', array( $this, 'maybe_invalidate_comment_types_cache' ), 10, 2 );
-		add_filter( 'get_comment', array( $this, 'mask_anonymous_rsvp_comment' ) );
+		add_filter( 'get_comment', array( $this, 'prepare_rsvp_comment' ) );
 		add_filter( 'rest_prepare_comment', array( $this, 'mask_anonymous_rsvp_rest_author' ), 10, 2 );
 	}
 
@@ -311,38 +311,53 @@ final class Query {
 	}
 
 	/**
-	 * Withhold RSVP comments from the core single-comment REST route.
+	 * Prepare an RSVP comment for whoever is reading it.
 	 *
-	 * Every reader of a comment goes through `get_comment()`, including the REST
-	 * comments route and the core avatar and comment-author blocks, and most of
-	 * them read `comment_author` straight off the object rather than through a
-	 * display function. Masking the object here is what makes the promise hold
-	 * everywhere at once instead of at each call site.
+	 * Every reader of a comment goes through `get_comment()`, including the
+	 * REST comments route and the core avatar and comment-author blocks, and
+	 * most of them read the columns straight off the object rather than through
+	 * a display function. Both of the adjustments an RSVP needs therefore
+	 * belong here: the responder's identity is withheld when they asked to stay
+	 * anonymous, and their profile URL is resolved from their account, since
+	 * responses saved through the store leave that column empty.
 	 *
 	 * @since 0.35.1
 	 *
 	 * @param WP_Comment|mixed $comment The comment being read.
 	 *
-	 * @return WP_Comment|mixed The comment, with the responder's identity masked when required.
+	 * @return WP_Comment|mixed The comment, prepared for the current reader.
 	 */
-	public function mask_anonymous_rsvp_comment( $comment ) {
-		if (
-			! $comment instanceof WP_Comment
-			|| Rsvp::COMMENT_TYPE !== $comment->comment_type
-			|| current_user_can( Rsvp::CAPABILITY )
-			|| ! get_comment_meta( (int) $comment->comment_ID, Rsvp::ANONYMOUS_META_KEY, true )
-		) {
+	public function prepare_rsvp_comment( $comment ) {
+		if ( ! $comment instanceof WP_Comment || Rsvp::COMMENT_TYPE !== $comment->comment_type ) {
 			return $comment;
 		}
 
-		// Masked on a clone so the cached comment keeps its real values for
-		// callers that are allowed to see them.
-		$masked                       = clone $comment;
-		$masked->comment_author       = __( 'Anonymous', 'gatherpress' );
-		$masked->comment_author_email = '';
-		$masked->comment_author_url   = '';
+		$withhold = get_comment_meta( (int) $comment->comment_ID, Rsvp::ANONYMOUS_META_KEY, true )
+			&& ! current_user_can( Rsvp::CAPABILITY );
 
-		return $masked;
+		// Only fill a URL the store never wrote, so a response identified by
+		// its URL keeps the one it was saved with.
+		$resolve = ! $withhold
+			&& '' === $comment->comment_author_url
+			&& intval( $comment->user_id );
+
+		if ( ! $withhold && ! $resolve ) {
+			return $comment;
+		}
+
+		// Adjusted on a clone so the cached comment keeps its own values for
+		// readers that are allowed to see them.
+		$prepared = clone $comment;
+
+		if ( $withhold ) {
+			$prepared->comment_author       = __( 'Anonymous', 'gatherpress' );
+			$prepared->comment_author_email = '';
+			$prepared->comment_author_url   = '';
+		} else {
+			$prepared->comment_author_url = (string) get_author_posts_url( (int) $comment->user_id );
+		}
+
+		return $prepared;
 	}
 
 	/**

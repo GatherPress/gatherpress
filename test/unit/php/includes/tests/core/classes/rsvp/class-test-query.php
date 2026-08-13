@@ -58,7 +58,7 @@ class Test_Query extends Base {
 				'type'     => 'filter',
 				'name'     => 'get_comment',
 				'priority' => 10,
-				'callback' => array( $instance, 'mask_anonymous_rsvp_comment' ),
+				'callback' => array( $instance, 'prepare_rsvp_comment' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -908,17 +908,17 @@ class Test_Query extends Base {
 	 * An anonymous responder's identity is withheld from a viewer who cannot
 	 * edit posts, and the stored comment keeps its real values.
 	 *
-	 * @covers ::mask_anonymous_rsvp_comment
+	 * @covers ::prepare_rsvp_comment
 	 *
 	 * @return void
 	 */
-	public function test_mask_anonymous_rsvp_comment_masks_for_public(): void {
+	public function test_prepare_rsvp_comment_withholds_for_public(): void {
 		$instance = Query::get_instance();
 
 		wp_set_current_user( 0 );
 
 		$comment = $this->make_rsvp_comment( true );
-		$masked  = $instance->mask_anonymous_rsvp_comment( $comment );
+		$masked  = $instance->prepare_rsvp_comment( $comment );
 
 		$this->assertSame( __( 'Anonymous', 'gatherpress' ), $masked->comment_author );
 		$this->assertSame( '', $masked->comment_author_email );
@@ -934,31 +934,31 @@ class Test_Query extends Base {
 	 * The identity is left alone for anything that is not an anonymous RSVP
 	 * being read by an unprivileged viewer.
 	 *
-	 * @covers ::mask_anonymous_rsvp_comment
+	 * @covers ::prepare_rsvp_comment
 	 *
 	 * @return void
 	 */
-	public function test_mask_anonymous_rsvp_comment_leaves_others_alone(): void {
+	public function test_prepare_rsvp_comment_leaves_others_alone(): void {
 		$instance = Query::get_instance();
 
 		wp_set_current_user( 0 );
 
 		$this->assertNull(
-			$instance->mask_anonymous_rsvp_comment( null ),
+			$instance->prepare_rsvp_comment( null ),
 			'A value that is not a comment passes through untouched.'
 		);
 
 		$regular = get_comment( $this->factory->comment->create( array( 'comment_author' => 'Real Name' ) ) );
 		$this->assertSame(
 			'Real Name',
-			$instance->mask_anonymous_rsvp_comment( $regular )->comment_author,
+			$instance->prepare_rsvp_comment( $regular )->comment_author,
 			'A comment that is not an RSVP is never masked.'
 		);
 
 		$named = $this->make_rsvp_comment( false );
 		$this->assertSame(
 			'Real Name',
-			$instance->mask_anonymous_rsvp_comment( $named )->comment_author,
+			$instance->prepare_rsvp_comment( $named )->comment_author,
 			'An RSVP that is not anonymous keeps its identity.'
 		);
 
@@ -966,7 +966,7 @@ class Test_Query extends Base {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 		$this->assertSame(
 			'Real Name',
-			$instance->mask_anonymous_rsvp_comment( $anonymous )->comment_author,
+			$instance->prepare_rsvp_comment( $anonymous )->comment_author,
 			'A viewer who can edit posts still sees the responder.'
 		);
 
@@ -986,7 +986,7 @@ class Test_Query extends Base {
 
 		wp_set_current_user( 0 );
 
-		$masked = $instance->mask_anonymous_rsvp_comment( $this->make_rsvp_comment( true ) );
+		$masked = $instance->prepare_rsvp_comment( $this->make_rsvp_comment( true ) );
 		$this->assertSame(
 			0,
 			$instance->mask_anonymous_rsvp_rest_author(
@@ -1033,11 +1033,11 @@ class Test_Query extends Base {
 	 * Anonymity yields only to the capability that manages RSVPs, so roles that
 	 * can write posts without moderating them still see a masked responder.
 	 *
-	 * @covers ::mask_anonymous_rsvp_comment
+	 * @covers ::prepare_rsvp_comment
 	 *
 	 * @return void
 	 */
-	public function test_mask_anonymous_rsvp_comment_pivots_on_rsvp_capability(): void {
+	public function test_prepare_rsvp_comment_pivots_on_rsvp_capability(): void {
 		$instance = Query::get_instance();
 		$comment  = $this->make_rsvp_comment( true );
 		$expected = array(
@@ -1053,10 +1053,93 @@ class Test_Query extends Base {
 
 			$this->assertSame(
 				$author,
-				$instance->mask_anonymous_rsvp_comment( $comment )->comment_author,
+				$instance->prepare_rsvp_comment( $comment )->comment_author,
 				sprintf( 'A %s sees the wrong responder.', $role )
 			);
 		}
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * A response saved through the store carries no author URL, so the
+	 * responder's profile is resolved from their account -- unless a URL was
+	 * already saved with it, or the responder is withheld.
+	 *
+	 * @covers ::prepare_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_prepare_rsvp_comment_resolves_author_url(): void {
+		$instance = Query::get_instance();
+		$user_id  = $this->factory->user->create();
+
+		wp_set_current_user( 0 );
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_type'       => Rsvp::COMMENT_TYPE,
+				'user_id'            => $user_id,
+				'comment_author_url' => '',
+			)
+		);
+		$comment    = WP_Comment::get_instance( $comment_id );
+
+		$this->assertSame(
+			get_author_posts_url( $user_id ),
+			$instance->prepare_rsvp_comment( $comment )->comment_author_url,
+			'An empty author URL resolves to the responder profile.'
+		);
+
+		$saved_id = $this->factory->comment->create(
+			array(
+				'comment_type'       => Rsvp::COMMENT_TYPE,
+				'user_id'            => $user_id,
+				'comment_author_url' => 'https://example.test/saved',
+			)
+		);
+
+		$this->assertSame(
+			'https://example.test/saved',
+			$instance->prepare_rsvp_comment( WP_Comment::get_instance( $saved_id ) )->comment_author_url,
+			'A URL saved with the response is kept, so a URL identity is never rewritten.'
+		);
+
+		$guest_id = $this->factory->comment->create(
+			array(
+				'comment_type'       => Rsvp::COMMENT_TYPE,
+				'user_id'            => 0,
+				'comment_author_url' => '',
+			)
+		);
+
+		$this->assertSame(
+			'',
+			$instance->prepare_rsvp_comment( WP_Comment::get_instance( $guest_id ) )->comment_author_url,
+			'A response with no account behind it resolves to nothing.'
+		);
+
+		$anonymous_id = $this->factory->comment->create(
+			array(
+				'comment_type'       => Rsvp::COMMENT_TYPE,
+				'user_id'            => $user_id,
+				'comment_author_url' => '',
+			)
+		);
+		update_comment_meta( $anonymous_id, Rsvp::ANONYMOUS_META_KEY, 1 );
+
+		$this->assertSame(
+			'',
+			$instance->prepare_rsvp_comment( WP_Comment::get_instance( $anonymous_id ) )->comment_author_url,
+			'A withheld responder is never linked.'
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertSame(
+			get_author_posts_url( $user_id ),
+			$instance->prepare_rsvp_comment( WP_Comment::get_instance( $anonymous_id ) )->comment_author_url,
+			'A reader who already sees the responder gets the link too.'
+		);
 
 		wp_set_current_user( 0 );
 	}
