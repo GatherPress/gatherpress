@@ -574,9 +574,10 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests autocomplete token inference from the field type.
 	 *
-	 * The generic `on` (block.json's default, and the pre-0.35 stored value)
-	 * is never a deliberate choice, so it falls back to the type-derived
-	 * token; an explicit token wins.
+	 * Empty or absent means "infer": email/url/tel derive their specific
+	 * token and other types fall back to the generic `on`. Any stored
+	 * token — including `on`, which the editor control offers — is an
+	 * author choice and wins over inference.
 	 *
 	 * @since 0.36.0
 	 * @covers ::resolve_autocomplete
