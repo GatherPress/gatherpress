@@ -18,6 +18,7 @@ use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use ReflectionClass;
+use WP_Error;
 use WP_Post;
 use WP_Term;
 
@@ -1307,7 +1308,13 @@ class Test_Event extends Base {
 
 		$event = new Event( $event_id );
 		$event->set_online( true, 'https://example.com/meet' );
-		$event->set_online( true, 'https://example.com/meet' );
+		$event->set_online( true );
+
+		$this->assertSame(
+			'https://example.com/meet',
+			get_post_meta( $event_id, 'gatherpress_online_event_link', true ),
+			'Calling set_online(true) without a link should preserve the existing link.'
+		);
 
 		$terms = wp_get_post_terms( $event_id, Venue::TAXONOMY, array( 'fields' => 'slugs' ) );
 

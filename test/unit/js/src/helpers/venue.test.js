@@ -970,6 +970,31 @@ describe( 'useVenueOptions', () => {
 		] );
 	} );
 
+	it( 'keeps post venues whose ID matches online term ID', () => {
+		select.mockReturnValue( {
+			getEditorSettings: () => ( {
+				gatherpress: { config: { onlineEventTermIds: { gatherpress_venue: 42 } } },
+			} ),
+		} );
+		const mockVenues = [ { id: 42, title: { rendered: 'Post Venue' } } ];
+
+		useSelect.mockImplementation( ( callback ) => {
+			const wpSelect = jest.fn( () => ( {
+				getEntityRecord: jest.fn( () => null ),
+				getEntityRecords: jest.fn( () => mockVenues ),
+			} ) );
+			return callback( wpSelect );
+		} );
+
+		const { result } = renderHook( () =>
+			useVenueOptions( '', null, 'postType', 'gatherpress_venue' )
+		);
+
+		expect( result.current.venueOptions ).toEqual( [
+			{ value: 42, label: 'Post Venue' },
+		] );
+	} );
+
 	it( 'handles postType kind with rendered title', () => {
 		const mockVenues = [
 			{ id: 1, title: { rendered: 'Post Venue One' } },

@@ -67,7 +67,7 @@ export function getVenuePostType( eventPostType = '' ) {
  * "not online", the same answer today's REST lookups produce when they
  * come back empty.
  *
- * @since 0.35.0
+ * @since 0.36.0
  *
  * @param {string} [venuePostType='gatherpress_venue'] The venue post type slug.
  *
@@ -343,14 +343,17 @@ export function useVenueOptions(
 		[ kind, name, search, venueId ]
 	);
 
+	// Use the pre-resolved sentinel term ID from editor settings so the filter
+	// compares against a single int instead of string-matching the slug.
+	const onlineTermId = getOnlineEventTermId( venuePostType );
+
 	// Using useMemo will cause a re-render only when the raw venues really change.
 	const venueOptions = useMemo(
 		() => {
-			// Use the pre-resolved sentinel term ID from editor settings so the filter
-			// compares against a single int instead of string-matching the slug.
-			const onlineTermId = getOnlineEventTermId( venuePostType );
 			const isOnline = ( obj ) =>
-				null !== onlineTermId && Number( obj?.id ) === Number( onlineTermId );
+				'taxonomy' === kind &&
+				null !== onlineTermId &&
+				Number( obj?.id ) === Number( onlineTermId );
 
 			// Create a combobox-friendly list as dropdown
 			// from the array of venues (can be ~posts or ~terms).
@@ -385,7 +388,7 @@ export function useVenueOptions(
 		},
 		// Dependency array, every time venue or venues is updated,
 		//  the useMemo callback will be called.
-		[ venue, venues, kind, venuePostType ]
+		[ venue, venues, kind, onlineTermId ]
 	);
 
 	return { venueOptions };

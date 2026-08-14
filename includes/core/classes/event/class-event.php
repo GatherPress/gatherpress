@@ -821,7 +821,7 @@ class Event {
 	 * context. Distinct from {@see self::maybe_get_online_event_link()}, which
 	 * gates link disclosure on attendance and time.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @return bool True if the event has the online-event term, false otherwise.
 	 */
@@ -858,10 +858,11 @@ class Event {
 	 * removed and the link meta is deleted so re-enabling starts blank rather
 	 * than reading a stale URL.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @param bool   $is_online True to mark online, false to mark offline.
-	 * @param string $link      Optional URL for the `gatherpress_online_event_link` meta when online.
+	 * @param string $link      Optional URL for the `gatherpress_online_event_link` meta when online. An empty
+	 *                          value preserves an existing link.
 	 *
 	 * @return bool True when the online status was saved, false otherwise.
 	 */
@@ -906,19 +907,20 @@ class Event {
 			if ( ! in_array( $term_id, $existing, true ) ) {
 				$existing[] = $term_id;
 
-				// @codeCoverageIgnoreStart
-				// Guards against a failed term write leaving the link meta set
-				// without the term. The sentinel and venue terms already exist, so
-				// the write only fails on a DB error this harness cannot force.
 				$terms_to_set = array_values( array_unique( $existing ) );
+				$result       = wp_set_post_terms( $this->event->ID, $terms_to_set, $taxonomy );
 
-				if ( is_wp_error( wp_set_post_terms( $this->event->ID, $terms_to_set, $taxonomy ) ) ) {
+				// @codeCoverageIgnoreStart
+				// The write only fails on a DB error this harness cannot force.
+				if ( is_wp_error( $result ) ) {
 					return false;
 				}
 				// @codeCoverageIgnoreEnd
 			}
 
-			update_post_meta( $this->event->ID, 'gatherpress_online_event_link', esc_url_raw( $link ) );
+			if ( '' !== $link ) {
+				update_post_meta( $this->event->ID, 'gatherpress_online_event_link', esc_url_raw( $link ) );
+			}
 			return true;
 		}
 
@@ -927,9 +929,11 @@ class Event {
 		$remaining = array_values( array_filter( $existing, static fn ( int $id ): bool => $id !== $term_id ) );
 
 		if ( count( $remaining ) !== count( $existing ) ) {
+			$result = wp_set_post_terms( $this->event->ID, $remaining, $taxonomy );
+
 			// @codeCoverageIgnoreStart
-			// Same DB-error-only failure mode as the toggle-on write above.
-			if ( is_wp_error( wp_set_post_terms( $this->event->ID, $remaining, $taxonomy ) ) ) {
+			// The write only fails on a DB error this harness cannot force.
+			if ( is_wp_error( $result ) ) {
 				return false;
 			}
 			// @codeCoverageIgnoreEnd
