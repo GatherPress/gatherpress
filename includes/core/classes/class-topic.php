@@ -59,26 +59,59 @@ final class Topic {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_action( 'init', array( $this, 'register_taxonomy' ) );
+		// Priority 11 so post types registered at default priority 10 are available for get_post_types_by_support().
+		add_action( 'init', array( $this, 'register_taxonomy' ), 11 );
+		add_action( 'registered_post_type', array( $this, 'maybe_attach_to_post_type' ) );
 	}
 
 	/**
-	 * Registers the Topic taxonomy for the Event post type.
+	 * Attach Topics to a post type that declares event-date support.
+	 *
+	 * Companion to the priority-11 sweep in {@see self::register_taxonomy()}:
+	 * that one catches post types already in the registry, this one catches
+	 * the ones registered afterwards, including any registered outside `init`
+	 * altogether.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $post_type The post type that was just registered.
+	 *
+	 * @return void
+	 */
+	public function maybe_attach_to_post_type( string $post_type ): void {
+		if ( ! taxonomy_exists( self::TAXONOMY ) || ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+			return;
+		}
+
+		register_taxonomy_for_object_type( self::TAXONOMY, $post_type );
+	}
+
+	/**
+	 * Registers the Topic taxonomy for every event post type.
 	 *
 	 * Sets up the Topic taxonomy with labels and settings for admin visibility, REST API support,
 	 * and hierarchical structuring. This method ensures Topics are properly integrated within
 	 * WordPress for management and querying.
 	 *
+	 * The taxonomy is attached to every post type declaring `gatherpress-event-date`
+	 * rather than to `gatherpress_event` alone, so a custom event post type is
+	 * taggable with Topics the way it already gets datetimes, RSVPs and venues.
+	 * It registers even when nothing declares that support: the settings screen,
+	 * the calendar feeds and the topic archive all read the taxonomy itself, and
+	 * an empty object-type list still leaves it registered.
+	 *
 	 * @since 0.29.0
+	 * @since TBD Attaches to every post type supporting `gatherpress-event-date`.
 	 *
 	 * @return void
 	 */
 	public function register_taxonomy(): void {
 		$settings     = Settings::get_instance();
 		$rewrite_slug = $settings->get( 'topics_url' );
+		$post_types   = get_post_types_by_support( 'gatherpress-event-date' );
 		register_taxonomy(
 			self::TAXONOMY,
-			Event::POST_TYPE,
+			$post_types,
 			array(
 				'labels'            => array(
 					'name'                       => _x(
@@ -132,8 +165,10 @@ final class Topic {
 		);
 
 		// register_taxonomy() alone never fires `registered_taxonomy_for_object_type`;
-		// this explicit call does, giving extenders a hook for the pairing (#1639).
-		register_taxonomy_for_object_type( self::TAXONOMY, Event::POST_TYPE );
+		// these explicit calls do, giving extenders a hook for each pairing (#1639).
+		foreach ( $post_types as $post_type ) {
+			register_taxonomy_for_object_type( self::TAXONOMY, $post_type );
+		}
 	}
 
 	/**

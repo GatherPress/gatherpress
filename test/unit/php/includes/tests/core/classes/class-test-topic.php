@@ -33,8 +33,14 @@ class Test_Topic extends Base {
 			array(
 				'type'     => 'action',
 				'name'     => 'init',
-				'priority' => 10,
+				'priority' => 11,
 				'callback' => array( $instance, 'register_taxonomy' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'registered_post_type',
+				'priority' => 10,
+				'callback' => array( $instance, 'maybe_attach_to_post_type' ),
 			),
 		);
 
@@ -78,6 +84,140 @@ class Test_Topic extends Base {
 			get_object_taxonomies( Event::POST_TYPE ),
 			'Failed to assert that the topic taxonomy is attached to the event post type.'
 		);
+	}
+
+	/**
+	 * Coverage for register_taxonomy with a custom event post type.
+	 *
+	 * @covers ::register_taxonomy
+	 *
+	 * @return void
+	 */
+	public function test_register_taxonomy_attaches_to_every_event_post_type(): void {
+		$instance  = Topic::get_instance();
+		$post_type = 'shindig';
+
+		register_post_type(
+			$post_type,
+			array(
+				'label'    => 'Test Shindigs',
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
+
+		// Drop the pairing the `registered_post_type` listener just made, so the
+		// sweep is observed doing the work rather than finding it already done.
+		unregister_taxonomy_for_object_type( Topic::TAXONOMY, $post_type );
+
+		$paired   = array();
+		$listener = static function ( $taxonomy, $object_type ) use ( &$paired ): void {
+			$paired[] = array( $taxonomy, $object_type );
+		};
+
+		add_action( 'registered_taxonomy_for_object_type', $listener, 10, 2 );
+
+		$instance->register_taxonomy();
+
+		remove_action( 'registered_taxonomy_for_object_type', $listener );
+
+		$this->assertContains(
+			Topic::TAXONOMY,
+			get_object_taxonomies( $post_type ),
+			'Failed to assert that the topic taxonomy is attached to a custom event post type.'
+		);
+		$this->assertContains(
+			array( Topic::TAXONOMY, $post_type ),
+			$paired,
+			'Failed to assert that the pairing was announced for a custom event post type.'
+		);
+		$this->assertContains(
+			Topic::TAXONOMY,
+			get_object_taxonomies( Event::POST_TYPE ),
+			'Failed to assert that the event post type keeps the topic taxonomy.'
+		);
+
+		unregister_post_type( $post_type );
+	}
+
+	/**
+	 * Coverage for register_taxonomy when nothing declares event-date support.
+	 *
+	 * @covers ::register_taxonomy
+	 *
+	 * @return void
+	 */
+	public function test_register_taxonomy_registers_without_an_event_post_type(): void {
+		$instance   = Topic::get_instance();
+		$post_types = get_post_types_by_support( 'gatherpress-event-date' );
+
+		foreach ( $post_types as $post_type ) {
+			remove_post_type_support( $post_type, 'gatherpress-event-date' );
+		}
+
+		unregister_taxonomy( Topic::TAXONOMY );
+
+		$instance->register_taxonomy();
+
+		foreach ( $post_types as $post_type ) {
+			add_post_type_support( $post_type, 'gatherpress-event-date' );
+		}
+
+		$this->assertTrue(
+			taxonomy_exists( Topic::TAXONOMY ),
+			'Failed to assert that the taxonomy registers with no event post type to attach it to.'
+		);
+
+		// Restore the pairings the settings screen and topic archive rely on.
+		$instance->register_taxonomy();
+	}
+
+	/**
+	 * Coverage for maybe_attach_to_post_type.
+	 *
+	 * @covers ::maybe_attach_to_post_type
+	 *
+	 * @return void
+	 */
+	public function test_maybe_attach_to_post_type(): void {
+		$instance  = Topic::get_instance();
+		$post_type = 'jamboree';
+
+		register_post_type(
+			$post_type,
+			array(
+				'label'  => 'Test Jamborees',
+				'public' => false,
+			)
+		);
+
+		$instance->maybe_attach_to_post_type( $post_type );
+
+		$this->assertNotContains(
+			Topic::TAXONOMY,
+			get_object_taxonomies( $post_type ),
+			'Failed to assert that a post type without event-date support is left alone.'
+		);
+
+		add_post_type_support( $post_type, 'gatherpress-event-date' );
+		$instance->maybe_attach_to_post_type( $post_type );
+
+		$this->assertContains(
+			Topic::TAXONOMY,
+			get_object_taxonomies( $post_type ),
+			'Failed to assert that a late event post type is attached to the topic taxonomy.'
+		);
+
+		unregister_taxonomy( Topic::TAXONOMY );
+		$instance->maybe_attach_to_post_type( $post_type );
+
+		$this->assertFalse(
+			taxonomy_exists( Topic::TAXONOMY ),
+			'Failed to assert that an unregistered taxonomy is not attached to anything.'
+		);
+
+		unregister_post_type( $post_type );
+		$instance->register_taxonomy();
 	}
 
 	/**
