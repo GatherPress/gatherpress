@@ -1,6 +1,5 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/wp-env.json",
-	"core": "WordPress/WordPress#7.0.3",
 	"testsEnvironment": false,
 	"port": 8889,
 	"plugins": [
