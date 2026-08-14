@@ -9,6 +9,18 @@ Pending entries for the next release live as individual files under
 [`.github/changelog/`](.github/changelog/) and get rolled up into a new
 version section by `composer changelog:write` at release time.
 
+## [0.35.1] - 2026-08-13
+### Security
+- Complete the redaction of RSVP responses marked anonymous. The responder's identity remained recoverable to unauthenticated visitors through the avatar URL's email hash, the raw identifier and site role in the REST response, the alt text the avatar block builds from the comment author, and the comments REST route. Anonymity now yields only to the capability that manages RSVPs, so contributors and authors no longer see through it. [#2148](https://github.com/GatherPress/gatherpress/pull/2148)
+- Gate the RSVP update route on access to the event. It returned the full attendee list, recorded an RSVP into events the caller could not read, and disclosed the online-event link to whoever it had just joined. Magic-link tokens now authorize only the event they were issued for. [#2148](https://github.com/GatherPress/gatherpress/pull/2148)
+- Keep capability-dependent RSVP records out of the shared response cache. Records are redacted according to who is reading them, but the cache was keyed on the event alone, so responses cached while an organizer viewed their own event were then served to unauthenticated visitors for the lifetime of the entry. [#2148](https://github.com/GatherPress/gatherpress/pull/2148)
+- Keep email addresses out of public RSVP records. A response saved against an email address published that address as both the display name and the identifier, because reading a response did not carry the name it was saved with. Responses now report that name, and the address is limited to those who manage RSVPs. [#2148](https://github.com/GatherPress/gatherpress/pull/2148)
+- Require read access to an event before serving its RSVP responses. The response endpoints validated that the post was an event but never that the caller could see it, so attendee lists for draft, pending, private, trashed and password-protected events were readable by anyone, and the event blocks made the same assumption from a preview flag that is a property of the request rather than of a post. [#2148](https://github.com/GatherPress/gatherpress/pull/2148)
+
+### Fixed
+- Link the display name in RSVP responses to the responder's profile, except when they are anonymous. [#2148](https://github.com/GatherPress/gatherpress/pull/2148)
+- Show RSVP responses on draft and private events to viewers allowed to read them. [#2148](https://github.com/GatherPress/gatherpress/pull/2148)
+
 ## [0.35.0] - 2026-08-10
 ### Added
 - Added an "Add New Venue" entry to the editor command palette, matching the "Add New Event" one core provides. [#1357](https://github.com/GatherPress/gatherpress/pull/1357)
@@ -499,6 +511,7 @@ Initial public release. Represents 18+ months of pre-1.0 development and ships t
 - Initial unit test suite with code coverage via SonarCloud.
 - Multilingual screenshots and i18n scaffolding.
 
+[0.35.1]: https://github.com/GatherPress/gatherpress/compare/0.35.0...0.35.1
 [0.35.0]: https://github.com/GatherPress/gatherpress/compare/0.34.1...0.35.0
 [0.34.1]: https://github.com/GatherPress/gatherpress/compare/0.34.0...0.34.1
 [0.34.0]: https://github.com/GatherPress/gatherpress/compare/0.33.3...0.34.0
