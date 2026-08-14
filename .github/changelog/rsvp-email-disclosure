@@ -1,4 +1,0 @@
-Significance: patch
-Type: security
-
-Keep email addresses out of public RSVP records. A response saved against an email address published that address as both the display name and the identifier, because reading a response did not carry the name it was saved with. Responses now report that name, and the address is limited to those who manage RSVPs.
