@@ -210,6 +210,38 @@ class Test_Abilities extends Base {
 	}
 
 	/**
+	 * Coverage for can_read_event against a password-protected event.
+	 *
+	 * @covers ::can_read_event
+	 *
+	 * @return void
+	 */
+	public function test_can_read_event_rejects_a_password_protected_event(): void {
+		$instance = Abilities::get_instance();
+		$post     = $this->mock->post(
+			array(
+				'post_type'     => 'gatherpress_event',
+				'post_status'   => 'publish',
+				'post_password' => 'unit-test',
+			)
+		)->get();
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'subscriber' ) ) );
+
+		$this->assertFalse(
+			$instance->can_read_event( array( 'event_id' => $post->ID ) ),
+			'Failed to assert that a password-protected event withholds its RSVP counts.'
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$this->assertTrue(
+			$instance->can_read_event( array( 'event_id' => $post->ID ) ),
+			'Failed to assert that whoever manages the event still reads its RSVP counts.'
+		);
+	}
+
+	/**
 	 * Coverage for get_upcoming_events when nothing is scheduled.
 	 *
 	 * @covers ::get_upcoming_events

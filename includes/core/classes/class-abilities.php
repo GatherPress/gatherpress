@@ -211,7 +211,7 @@ final class Abilities {
 	 *
 	 * @param mixed $input Input passed to the ability.
 	 *
-	 * @return bool True when the event exists, supports event dates, and is readable.
+	 * @return bool True when the event exists, supports event dates, and its RSVPs are readable.
 	 */
 	public function can_read_event( $input = null ): bool {
 		$post_id = is_array( $input ) ? (int) ( $input['event_id'] ?? 0 ) : 0;
@@ -221,7 +221,10 @@ final class Abilities {
 			return false;
 		}
 
-		return current_user_can( 'read_post', $post_id );
+		// The ability reports RSVP counts, so it answers to the same rule the roster
+		// does rather than to read access on the post alone: a published event still
+		// withholds its responses behind a password.
+		return Event::can_read_rsvps( $post_id );
 	}
 
 	/**
