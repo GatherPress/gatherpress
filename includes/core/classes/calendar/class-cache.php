@@ -218,7 +218,7 @@ final class Cache {
 	 * @return string Versioned transient name.
 	 */
 	public function get_versioned_key( string $key ): string {
-		return self::TRANSIENT_PREFIX . md5( $this->get_last_modified() . ':' . $key );
+		return self::TRANSIENT_PREFIX . md5( $this->get_last_modified() . ':' . $key ); // NOSONAR.
 	}
 
 	/**

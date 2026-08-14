@@ -873,7 +873,7 @@ final class Setup {
 			$scope['type'] = (string) $queried_object->name;
 		}
 
-		return sprintf( 'ics:%s', md5( (string) wp_json_encode( $scope ) ) );
+		return sprintf( 'ics:%s', md5( (string) wp_json_encode( $scope ) ) ); // NOSONAR.
 	}
 
 	/**
@@ -886,7 +886,7 @@ final class Setup {
 	 * @return string Quoted entity tag, per RFC 9110.
 	 */
 	public function get_etag( string $body ): string {
-		return sprintf( '"%s"', md5( $body ) );
+		return sprintf( '"%s"', md5( $body ) ); // NOSONAR.
 	}
 
 	/**
