@@ -834,7 +834,7 @@ final class Map {
 	 * and an empty array when the combo could not be produced — the same
 	 * shape the REST handler surfaces as `generation_failed`.
 	 *
-	 * @since 0.36.0
+	 * @since 0.35.0
 	 *
 	 * @param int   $post_id The venue post ID.
 	 * @param array $combo   Combo in the {@see Rest_Api::parse_request()}
@@ -1635,7 +1635,7 @@ final class Map {
 	 * should not generate a bogus (0, 0) map off the west coast of Africa.
 	 *
 	 * @since 0.34.0
-	 * @since 0.36.0 Visibility changed to public so the REST layer
+	 * @since 0.35.0 Visibility changed to public so the REST layer
 	 *               ({@see Rest_Api}) applies the same coercion.
 	 *
 	 * @param mixed $raw Raw coordinate from venue information.
@@ -1715,7 +1715,7 @@ final class Map {
 	 * Providers self-guard at render time — Google coerces types it can't
 	 * satisfy to `roadmap` internally, and OSM ignores the type entirely.
 	 *
-	 * @since 0.36.0
+	 * @since 0.35.0
 	 *
 	 * @param string $map_type Raw map type from block attrs or REST.
 	 *
