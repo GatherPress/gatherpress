@@ -1143,4 +1143,43 @@ class Test_Query extends Base {
 
 		wp_set_current_user( 0 );
 	}
+
+	/**
+	 * A response saved before the store stopped writing an address into the
+	 * display-name column still carries one, so it is withheld on read.
+	 *
+	 * @covers ::prepare_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_prepare_rsvp_comment_withholds_a_stored_address(): void {
+		$instance = Query::get_instance();
+		$email    = 'legacy-row@example.test';
+		$comment  = WP_Comment::get_instance(
+			$this->factory->comment->create(
+				array(
+					'comment_type'         => Rsvp::COMMENT_TYPE,
+					'comment_author'       => $email,
+					'comment_author_email' => $email,
+					'user_id'              => 0,
+				)
+			)
+		);
+
+		wp_set_current_user( 0 );
+		$this->assertSame(
+			__( 'Attendee', 'gatherpress' ),
+			$instance->prepare_rsvp_comment( $comment )->comment_author,
+			'An address standing in for a name is withheld.'
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertSame(
+			$email,
+			$instance->prepare_rsvp_comment( $comment )->comment_author,
+			'Whoever manages RSVPs still sees what was saved.'
+		);
+
+		wp_set_current_user( 0 );
+	}
 }

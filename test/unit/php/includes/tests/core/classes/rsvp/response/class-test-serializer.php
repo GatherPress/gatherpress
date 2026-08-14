@@ -287,4 +287,57 @@ class Test_Serializer extends Base {
 
 		wp_set_current_user( 0 );
 	}
+
+	/**
+	 * A responder identified only by an address has no name to show, so the
+	 * record reports the address to whoever manages RSVPs and a generic label
+	 * to everyone else.
+	 *
+	 * @covers ::to_array
+	 *
+	 * @return void
+	 */
+	public function test_to_array_names_a_responder_with_no_name(): void {
+		$email      = 'no-name-to-show@example.test';
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author'       => '',
+				'comment_author_email' => $email,
+				'user_id'              => 0,
+			)
+		);
+		$state      = new State(
+			new Data(
+				new Identity( Identity_Type::EMAIL, $email ),
+				Status::ATTENDING,
+				0,
+				false,
+				'2026-01-02 03:04:05'
+			),
+			new Email(),
+			get_comment( $comment_id )
+		);
+
+		wp_set_current_user( 0 );
+
+		$public = Serializer::to_array( $state );
+
+		$this->assertSame( __( 'Attendee', 'gatherpress' ), $public['name'] );
+		$this->assertStringNotContainsString(
+			$email,
+			wp_json_encode( $public ),
+			'The address appears nowhere in a public record.'
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$this->assertSame(
+			$email,
+			Serializer::to_array( $state )['name'],
+			'Whoever manages RSVPs sees the address the response was saved with.'
+		);
+
+		wp_set_current_user( 0 );
+	}
 }

@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Improve how RSVP responses resolve the name shown for a responder.

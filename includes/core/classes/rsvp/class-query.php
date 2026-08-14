@@ -332,8 +332,16 @@ final class Query {
 			return $comment;
 		}
 
-		$withhold = get_comment_meta( (int) $comment->comment_ID, Rsvp::ANONYMOUS_META_KEY, true )
-			&& ! current_user_can( Rsvp::CAPABILITY );
+		$manages_rsvps = current_user_can( Rsvp::CAPABILITY );
+		$withhold      = get_comment_meta( (int) $comment->comment_ID, Rsvp::ANONYMOUS_META_KEY, true )
+			&& ! $manages_rsvps;
+
+		// Responses saved before the store stopped writing an address into the
+		// display-name column still carry one, and every reader of a comment
+		// takes the name from there.
+		$withhold_address = ! $withhold
+			&& ! $manages_rsvps
+			&& is_email( $comment->comment_author );
 
 		// Only fill a URL the store never wrote, so a response identified by
 		// its URL keeps the one it was saved with.
@@ -341,7 +349,7 @@ final class Query {
 			&& '' === $comment->comment_author_url
 			&& intval( $comment->user_id );
 
-		if ( ! $withhold && ! $resolve ) {
+		if ( ! $withhold && ! $resolve && ! $withhold_address ) {
 			return $comment;
 		}
 
@@ -353,6 +361,8 @@ final class Query {
 			$prepared->comment_author       = __( 'Anonymous', 'gatherpress' );
 			$prepared->comment_author_email = '';
 			$prepared->comment_author_url   = '';
+		} elseif ( $withhold_address ) {
+			$prepared->comment_author = __( 'Attendee', 'gatherpress' );
 		} else {
 			$prepared->comment_author_url = (string) get_author_posts_url( (int) $comment->user_id );
 		}
