@@ -1,4 +1,0 @@
-Significance: patch
-Type: security
-
-Gate the RSVP update route on access to the event. It returned the full attendee list, recorded an RSVP into events the caller could not read, and disclosed the online-event link to whoever it had just joined. Magic-link tokens now authorize only the event they were issued for.
