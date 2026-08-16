@@ -67,24 +67,30 @@ abstract class Base {
 	 */
 	abstract public static function get_label(): string;
 
+	// phpcs:disable Generic.CodeAnalysis.UnusedFunctionParameter.Found -- overrides read the identity.
 	/**
-	 * Get the best displayable name for an identity.
+	 * Get the display name for an identity.
 	 *
-	 * "Display name" follows WordPress semantics — the best available
-	 * name to show, not necessarily a proper human name. Providers with
-	 * no real name to offer fall back to the identity value itself (the
-	 * email provider returns the address), mirroring how core's
-	 * `WP_User::display_name` falls back to the login or email. This is
-	 * the fallback source for `Identity::$display_name` when a stored
-	 * response carries no explicit author name.
+	 * Providers that can name a responder override this, the way the user
+	 * provider reports an account's display name. The rest inherit nothing to
+	 * show, because an identity that only identifies someone — an address, a
+	 * URL, an external ID — has no name in it, and this answer is stored and
+	 * displayed as one. Callers decide what to show in its place, so that an
+	 * identifier is never presented as a name.
 	 *
 	 * @since 0.35.0
+	 * @since 0.35.2 No longer abstract; providers without a name return an empty string.
 	 *
 	 * @param Identity $identity The identity.
 	 *
-	 * @return string The display name for the identity.
+	 * @return string The display name, or an empty string when there is none to give.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Overrides read the identity.
 	 */
-	abstract public function get_display_name( Identity $identity ): string;
+	public function get_display_name( Identity $identity ): string {
+		return '';
+	}
+	// phpcs:enable Generic.CodeAnalysis.UnusedFunctionParameter.Found
 
 	/**
 	 * Get the avatar URL for an RSVP identity.

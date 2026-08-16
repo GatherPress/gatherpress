@@ -332,8 +332,19 @@ final class Query {
 			return $comment;
 		}
 
-		$withhold = get_comment_meta( (int) $comment->comment_ID, Rsvp::ANONYMOUS_META_KEY, true )
-			&& ! current_user_can( Rsvp::CAPABILITY );
+		$manages_rsvps = current_user_can( Rsvp::CAPABILITY );
+		$withhold      = get_comment_meta( (int) $comment->comment_ID, Rsvp::ANONYMOUS_META_KEY, true )
+			&& ! $manages_rsvps;
+
+		// Responses saved before the store stopped writing an address into the
+		// display-name column still carry one, and every reader takes the name
+		// from there. The equality marks that write, which filled both columns
+		// with the same value; a name that only looks like an address belongs
+		// to an account registered with one.
+		$withhold_address = ! $withhold
+			&& ! $manages_rsvps
+			&& is_email( $comment->comment_author )
+			&& $comment->comment_author === $comment->comment_author_email;
 
 		// Only fill a URL the store never wrote, so a response identified by
 		// its URL keeps the one it was saved with.
@@ -341,7 +352,7 @@ final class Query {
 			&& '' === $comment->comment_author_url
 			&& intval( $comment->user_id );
 
-		if ( ! $withhold && ! $resolve ) {
+		if ( ! $withhold && ! $resolve && ! $withhold_address ) {
 			return $comment;
 		}
 
@@ -354,7 +365,16 @@ final class Query {
 			$prepared->comment_author_email = '';
 			$prepared->comment_author_url   = '';
 		} else {
-			$prepared->comment_author_url = (string) get_author_posts_url( (int) $comment->user_id );
+			// Independent conditions, so a response that matches both gets
+			// both. Branching them apart would drop the URL for any responder
+			// whose stored name is an address.
+			if ( $withhold_address ) {
+				$prepared->comment_author = __( 'Attendee', 'gatherpress' );
+			}
+
+			if ( $resolve ) {
+				$prepared->comment_author_url = (string) get_author_posts_url( (int) $comment->user_id );
+			}
 		}
 
 		return $prepared;
