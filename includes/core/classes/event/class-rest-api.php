@@ -933,12 +933,17 @@ final class Rest_Api {
 			}
 		}
 
-		// Pre-flight: bail with a structured error before processing if open
-		// RSVP is disabled or the event has already passed.
+		// Pre-flight: bail with a structured error before processing if the
+		// event is not viewable, open RSVP is disabled or the event has already passed.
 		$event = new Event( $data['post_id'] );
+		$rsvp  = new Rsvp( $data['post_id'] );
 		$bail  = null;
 
-		if ( ! ( new Rsvp( $data['post_id'] ) )->allows_open_rsvp() ) {
+		if ( ! Event::is_viewable( $data['post_id'] ) ) {
+			$bail = array( __( 'Event not found.', 'gatherpress' ), 404 );
+		} elseif ( ! $rsvp->is_enabled() ) {
+			$bail = array( __( 'RSVP is disabled for this event.', 'gatherpress' ), 403 );
+		} elseif ( ! $rsvp->allows_open_rsvp() ) {
 			$bail = array( __( 'Open RSVP is disabled for this event.', 'gatherpress' ), 403 );
 		} elseif ( $event->has_event_past() ) {
 			$bail = array( __( 'Registration for this event is now closed.', 'gatherpress' ), 400 );
