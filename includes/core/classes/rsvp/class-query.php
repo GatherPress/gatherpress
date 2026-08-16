@@ -337,16 +337,10 @@ final class Query {
 			&& ! $manages_rsvps;
 
 		// Responses saved before the store stopped writing an address into the
-		// display-name column still carry one, and every reader of a comment
-		// takes the name from there. Two conditions, each excluding a case the
-		// other lets through: the equality is what marks the legacy write,
-		// since only an email identity ever filled the address column and it
-		// filled both with the same value, while a display name that merely
-		// looks like an address belongs to an account registered with one and
-		// is core's to publish. The address check then keeps a row whose two
-		// columns happen to match on something that is not an address — not
-		// reachable through this store, but imports and migrations write here
-		// too — from being renamed over nothing.
+		// display-name column still carry one, and every reader takes the name
+		// from there. The equality marks that write, which filled both columns
+		// with the same value; a name that only looks like an address belongs
+		// to an account registered with one.
 		$withhold_address = ! $withhold
 			&& ! $manages_rsvps
 			&& is_email( $comment->comment_author )
