@@ -9,6 +9,18 @@ Pending entries for the next release live as individual files under
 [`.github/changelog/`](.github/changelog/) and get rolled up into a new
 version section by `composer changelog:write` at release time.
 
+## [0.35.2] - 2026-08-16
+### Security
+- Reject open RSVP submissions to events that are not publicly published or that have RSVP disabled. [#2155](https://github.com/GatherPress/gatherpress/pull/2155)
+- Stop an email address standing in for a responder's name. A provider that can only identify a responder reported that identifier as the display name, so a response saved against an address published the address to every reader. Providers without a name now report none, callers show a neutral label in its place, and responses already stored that way are withheld from readers who do not manage RSVPs. [#2152](https://github.com/GatherPress/gatherpress/pull/2152)
+
+### Changed
+- Confirm compatibility with WordPress 7.1. [#2157](https://github.com/GatherPress/gatherpress/pull/2157)
+
+### Fixed
+- Create the venue detail block's cursor-position range from the editor canvas document instead of the admin document. [#2163](https://github.com/GatherPress/gatherpress/pull/2163)
+- Keep the caret in the right place when adding or removing radio options in the editor. The option lookup now starts from the field being edited rather than the whole page, so it works in the iframed editor WordPress 7.1 makes unconditional, and a second radio field on the same post no longer steals the focus. [#2124](https://github.com/GatherPress/gatherpress/pull/2124)
+
 ## [0.35.1] - 2026-08-13
 ### Security
 - Complete the redaction of RSVP responses marked anonymous. The responder's identity remained recoverable to unauthenticated visitors through the avatar URL's email hash, the raw identifier and site role in the REST response, the alt text the avatar block builds from the comment author, and the comments REST route. Anonymity now yields only to the capability that manages RSVPs, so contributors and authors no longer see through it. [#2148](https://github.com/GatherPress/gatherpress/pull/2148)
