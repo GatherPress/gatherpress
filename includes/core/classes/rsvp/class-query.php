@@ -338,10 +338,14 @@ final class Query {
 
 		// Responses saved before the store stopped writing an address into the
 		// display-name column still carry one, and every reader of a comment
-		// takes the name from there.
+		// takes the name from there. That write put the same address in both
+		// columns, so match on their equality rather than on the name merely
+		// looking like an address: display names are an address whenever the
+		// account was registered with one, and core publishes those.
 		$withhold_address = ! $withhold
 			&& ! $manages_rsvps
-			&& is_email( $comment->comment_author );
+			&& '' !== $comment->comment_author_email
+			&& $comment->comment_author === $comment->comment_author_email;
 
 		// Only fill a URL the store never wrote, so a response identified by
 		// its URL keeps the one it was saved with.
@@ -361,10 +365,17 @@ final class Query {
 			$prepared->comment_author       = __( 'Anonymous', 'gatherpress' );
 			$prepared->comment_author_email = '';
 			$prepared->comment_author_url   = '';
-		} elseif ( $withhold_address ) {
-			$prepared->comment_author = __( 'Attendee', 'gatherpress' );
 		} else {
-			$prepared->comment_author_url = (string) get_author_posts_url( (int) $comment->user_id );
+			// Independent conditions, so a response that matches both gets
+			// both. Branching them apart would drop the URL for any responder
+			// whose stored name is an address.
+			if ( $withhold_address ) {
+				$prepared->comment_author = __( 'Attendee', 'gatherpress' );
+			}
+
+			if ( $resolve ) {
+				$prepared->comment_author_url = (string) get_author_posts_url( (int) $comment->user_id );
+			}
 		}
 
 		return $prepared;

@@ -1182,4 +1182,80 @@ class Test_Query extends Base {
 
 		wp_set_current_user( 0 );
 	}
+
+	/**
+	 * An account whose display name is an address keeps it, because that is
+	 * what core publishes for anyone who registered with one.
+	 *
+	 * @covers ::prepare_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_prepare_rsvp_comment_keeps_a_display_name_that_is_an_address(): void {
+		$instance = Query::get_instance();
+		$user_id  = $this->factory->user->create(
+			array(
+				'display_name' => 'login@example.test',
+				'user_email'   => 'account@example.test',
+			)
+		);
+		$comment  = WP_Comment::get_instance(
+			$this->factory->comment->create(
+				array(
+					'comment_type'         => Rsvp::COMMENT_TYPE,
+					'comment_author'       => 'login@example.test',
+					'comment_author_email' => 'account@example.test',
+					'user_id'              => $user_id,
+				)
+			)
+		);
+
+		wp_set_current_user( 0 );
+
+		$this->assertSame(
+			'login@example.test',
+			$instance->prepare_rsvp_comment( $comment )->comment_author,
+			'A name that merely looks like an address is not the legacy write, so it stands.'
+		);
+	}
+
+	/**
+	 * A response that both carries a stored address and lacks a URL gets both
+	 * treatments, because the two conditions are independent.
+	 *
+	 * @covers ::prepare_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_prepare_rsvp_comment_withholds_an_address_and_still_resolves_the_url(): void {
+		$instance = Query::get_instance();
+		$email    = 'both@example.test';
+		$user_id  = $this->factory->user->create( array( 'user_email' => $email ) );
+		$comment  = WP_Comment::get_instance(
+			$this->factory->comment->create(
+				array(
+					'comment_type'         => Rsvp::COMMENT_TYPE,
+					'comment_author'       => $email,
+					'comment_author_email' => $email,
+					'comment_author_url'   => '',
+					'user_id'              => $user_id,
+				)
+			)
+		);
+
+		wp_set_current_user( 0 );
+
+		$prepared = $instance->prepare_rsvp_comment( $comment );
+
+		$this->assertSame(
+			__( 'Attendee', 'gatherpress' ),
+			$prepared->comment_author,
+			'The stored address is still withheld.'
+		);
+		$this->assertSame(
+			get_author_posts_url( $user_id ),
+			$prepared->comment_author_url,
+			'And the link the store never wrote is still resolved.'
+		);
+	}
 }
