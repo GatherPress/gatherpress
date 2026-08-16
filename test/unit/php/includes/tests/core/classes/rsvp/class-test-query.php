@@ -1258,4 +1258,43 @@ class Test_Query extends Base {
 			'And the link the store never wrote is still resolved.'
 		);
 	}
+
+	/**
+	 * Two columns that match on something other than an address are left
+	 * alone, since there is no address to keep back.
+	 *
+	 * @covers ::prepare_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_prepare_rsvp_comment_keeps_matching_columns_that_are_not_an_address(): void {
+		global $wpdb;
+
+		$instance   = Query::get_instance();
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_type'   => Rsvp::COMMENT_TYPE,
+				'comment_author' => 'Bob Smith',
+				'user_id'        => 0,
+			)
+		);
+
+		// Written directly because the comment API sanitizes the address
+		// column; only an import or a migration reaches this shape.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->update(
+			$wpdb->comments,
+			array( 'comment_author_email' => 'Bob Smith' ),
+			array( 'comment_ID' => $comment_id )
+		);
+		clean_comment_cache( $comment_id );
+
+		wp_set_current_user( 0 );
+
+		$this->assertSame(
+			'Bob Smith',
+			$instance->prepare_rsvp_comment( WP_Comment::get_instance( $comment_id ) )->comment_author,
+			'Matching columns holding a name rather than an address are not renamed.'
+		);
+	}
 }
