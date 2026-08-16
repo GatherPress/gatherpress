@@ -1,4 +1,0 @@
-Significance: patch
-Type: security
-
-Stop an email address standing in for a responder's name. A provider that can only identify a responder reported that identifier as the display name, so a response saved against an address published the address to every reader. Providers without a name now report none, callers show a neutral label in its place, and responses already stored that way are withheld from readers who do not manage RSVPs.
