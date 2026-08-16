@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Keep the caret in the right place when adding or removing radio options in the editor. The option lookup now starts from the field being edited rather than the whole page, so it works in the iframed editor WordPress 7.1 makes unconditional, and a second radio field on the same post no longer steals the focus.
