@@ -111,9 +111,15 @@ export default function RadioField( {
 				return;
 			}
 
-			// Move cursor to end of text.
+			// Move cursor to end of text. The canvas can be torn down inside
+			// the timer, which leaves the element without a view to select in.
 			const ownerDocument = element.ownerDocument;
-			const selection = ownerDocument.defaultView.getSelection();
+			const selection = ownerDocument.defaultView?.getSelection();
+
+			if ( ! selection ) {
+				return;
+			}
+
 			const range = ownerDocument.createRange();
 
 			range.selectNodeContents( element );

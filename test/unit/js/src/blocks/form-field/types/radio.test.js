@@ -183,4 +183,42 @@ describe( 'RadioField option focus', () => {
 		expect( remaining ).toHaveLength( 1 );
 		expect( document.activeElement ).toBe( remaining[ 0 ] );
 	} );
+
+	it( 'does not throw when the canvas loses its view before the caret is placed', () => {
+		const { container } = render(
+			<StatefulRadioField
+				fieldName="noView"
+				options={ [
+					{ label: 'One', value: 'one', id: 'a' },
+					{ label: '', value: '', id: 'b' },
+				] }
+			/>,
+		);
+
+		const block = container.querySelector( '.block-noView' );
+
+		fireEvent.keyDown( optionsOf( block )[ 1 ], { key: 'Backspace' } );
+
+		// A browser discards the browsing context when the canvas goes away
+		// (Code Editor switch, device-preview toggle), which leaves the
+		// document without a defaultView while the timer is still pending.
+		const ownerDocument = block.ownerDocument;
+		const view = ownerDocument.defaultView;
+
+		Object.defineProperty( ownerDocument, 'defaultView', {
+			configurable: true,
+			value: null,
+		} );
+
+		expect( () => {
+			act( () => {
+				jest.advanceTimersByTime( 50 );
+			} );
+		} ).not.toThrow();
+
+		Object.defineProperty( ownerDocument, 'defaultView', {
+			configurable: true,
+			value: view,
+		} );
+	} );
 } );
