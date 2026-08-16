@@ -1143,4 +1143,158 @@ class Test_Query extends Base {
 
 		wp_set_current_user( 0 );
 	}
+
+	/**
+	 * A response saved before the store stopped writing an address into the
+	 * display-name column still carries one, so it is withheld on read.
+	 *
+	 * @covers ::prepare_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_prepare_rsvp_comment_withholds_a_stored_address(): void {
+		$instance = Query::get_instance();
+		$email    = 'legacy-row@example.test';
+		$comment  = WP_Comment::get_instance(
+			$this->factory->comment->create(
+				array(
+					'comment_type'         => Rsvp::COMMENT_TYPE,
+					'comment_author'       => $email,
+					'comment_author_email' => $email,
+					'user_id'              => 0,
+				)
+			)
+		);
+
+		wp_set_current_user( 0 );
+		$this->assertSame(
+			__( 'Attendee', 'gatherpress' ),
+			$instance->prepare_rsvp_comment( $comment )->comment_author,
+			'An address standing in for a name is withheld.'
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertSame(
+			$email,
+			$instance->prepare_rsvp_comment( $comment )->comment_author,
+			'Whoever manages RSVPs still sees what was saved.'
+		);
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * An account whose display name is an address keeps it, because that is
+	 * what core publishes for anyone who registered with one.
+	 *
+	 * @covers ::prepare_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_prepare_rsvp_comment_keeps_a_display_name_that_is_an_address(): void {
+		$instance = Query::get_instance();
+		$user_id  = $this->factory->user->create(
+			array(
+				'display_name' => 'login@example.test',
+				'user_email'   => 'account@example.test',
+			)
+		);
+		$comment  = WP_Comment::get_instance(
+			$this->factory->comment->create(
+				array(
+					'comment_type'         => Rsvp::COMMENT_TYPE,
+					'comment_author'       => 'login@example.test',
+					'comment_author_email' => 'account@example.test',
+					'user_id'              => $user_id,
+				)
+			)
+		);
+
+		wp_set_current_user( 0 );
+
+		$this->assertSame(
+			'login@example.test',
+			$instance->prepare_rsvp_comment( $comment )->comment_author,
+			'A name that merely looks like an address is not the legacy write, so it stands.'
+		);
+	}
+
+	/**
+	 * A response that both carries a stored address and lacks a URL gets both
+	 * treatments, because the two conditions are independent.
+	 *
+	 * @covers ::prepare_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_prepare_rsvp_comment_withholds_an_address_and_still_resolves_the_url(): void {
+		$instance = Query::get_instance();
+		$email    = 'both@example.test';
+		$user_id  = $this->factory->user->create( array( 'user_email' => $email ) );
+		$comment  = WP_Comment::get_instance(
+			$this->factory->comment->create(
+				array(
+					'comment_type'         => Rsvp::COMMENT_TYPE,
+					'comment_author'       => $email,
+					'comment_author_email' => $email,
+					'comment_author_url'   => '',
+					'user_id'              => $user_id,
+				)
+			)
+		);
+
+		wp_set_current_user( 0 );
+
+		$prepared = $instance->prepare_rsvp_comment( $comment );
+
+		$this->assertSame(
+			__( 'Attendee', 'gatherpress' ),
+			$prepared->comment_author,
+			'The stored address is still withheld.'
+		);
+		$this->assertSame(
+			get_author_posts_url( $user_id ),
+			$prepared->comment_author_url,
+			'And the link the store never wrote is still resolved.'
+		);
+	}
+
+	/**
+	 * Two columns that match on something other than an address are left
+	 * alone, since there is no address to keep back.
+	 *
+	 * @covers ::prepare_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_prepare_rsvp_comment_keeps_matching_columns_that_are_not_an_address(): void {
+		global $wpdb;
+
+		$instance   = Query::get_instance();
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_type'   => Rsvp::COMMENT_TYPE,
+				'comment_author' => 'Bob Smith',
+				'user_id'        => 0,
+			)
+		);
+
+		// Written directly because the comment API sanitizes the address
+		// column; only an import or a migration reaches this shape.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->update(
+			$wpdb->comments,
+			array( 'comment_author_email' => 'Bob Smith' ),
+			array( 'comment_ID' => $comment_id )
+		);
+		clean_comment_cache( $comment_id );
+
+		wp_set_current_user( 0 );
+
+		$this->assertSame(
+			'Bob Smith',
+			$instance->prepare_rsvp_comment( WP_Comment::get_instance( $comment_id ) )->comment_author,
+			'Matching columns holding a name rather than an address are not renamed.'
+		);
+	}
 }

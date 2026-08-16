@@ -56,6 +56,16 @@ final class Serializer {
 			$identifier = Identity_Type::EMAIL === $identity->type && ! current_user_can( Rsvp::CAPABILITY )
 				? 0
 				: $identity->value;
+
+			// A responder identified only by an address has no name to show, so
+			// the record says what it can: whoever manages RSVPs sees the
+			// address the response was saved with, and everyone else sees that
+			// someone is attending.
+			if ( '' === $name ) {
+				$name = current_user_can( Rsvp::CAPABILITY ) && ! empty( $state->comment->comment_author_email )
+					? (string) $state->comment->comment_author_email
+					: __( 'Attendee', 'gatherpress' );
+			}
 		}
 
 		$data = array(
