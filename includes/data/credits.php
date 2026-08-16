@@ -4,7 +4,7 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 return array (
-  'version' => '0.35.1',
+  'version' => '0.35.2',
   'leads' => 
   array (
     0 => 
@@ -101,6 +101,19 @@ return array (
         96 => '//www.gravatar.com/avatar/2ac9c9ef23e824f4727750a76536392e?s=96&#038;r=g&#038;d=mm',
       ),
     ),
+    5 => 
+    array (
+      'id' => 108511,
+      'name' => 'Mariusz Szatkowski',
+      'link' => 'https://profiles.wordpress.org/motylanogha/',
+      'slug' => 'motylanogha',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/2be80984e145ca2eba53d5c0bd10209b?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/2be80984e145ca2eba53d5c0bd10209b?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/2be80984e145ca2eba53d5c0bd10209b?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
   ),
   'contributors' => 
   array (
@@ -171,19 +184,6 @@ return array (
     ),
     5 => 
     array (
-      'id' => 108511,
-      'name' => 'Mariusz Szatkowski',
-      'link' => 'https://profiles.wordpress.org/motylanogha/',
-      'slug' => 'motylanogha',
-      'avatar_urls' => 
-      array (
-        24 => '//www.gravatar.com/avatar/2be80984e145ca2eba53d5c0bd10209b?s=24&#038;r=g&#038;d=mm',
-        48 => '//www.gravatar.com/avatar/2be80984e145ca2eba53d5c0bd10209b?s=48&#038;r=g&#038;d=mm',
-        96 => '//www.gravatar.com/avatar/2be80984e145ca2eba53d5c0bd10209b?s=96&#038;r=g&#038;d=mm',
-      ),
-    ),
-    6 => 
-    array (
       'id' => 23546338,
       'name' => 'puvaanraaj2001',
       'link' => 'https://profiles.wordpress.org/puvaanraaj2001/',
@@ -193,6 +193,19 @@ return array (
         24 => '//www.gravatar.com/avatar/3b6c0819f1541912fd4f52ac26985e8a?s=24&#038;r=g&#038;d=mm',
         48 => '//www.gravatar.com/avatar/3b6c0819f1541912fd4f52ac26985e8a?s=48&#038;r=g&#038;d=mm',
         96 => '//www.gravatar.com/avatar/3b6c0819f1541912fd4f52ac26985e8a?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    6 => 
+    array (
+      'id' => 14695490,
+      'name' => 'Anton Vanyukov',
+      'link' => 'https://profiles.wordpress.org/vanyukov/',
+      'slug' => 'vanyukov',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/8928045986c8be0950657ed9e07e21d9?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/8928045986c8be0950657ed9e07e21d9?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/8928045986c8be0950657ed9e07e21d9?s=96&#038;r=g&#038;d=mm',
       ),
     ),
     7 => 
