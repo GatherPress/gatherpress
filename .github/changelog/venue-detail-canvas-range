@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Create the venue detail block's cursor-position range from the editor canvas document instead of the admin document.
