@@ -860,6 +860,84 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Data provider of non-public post statuses for RSVP form submission.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public function data_unpublished_event_statuses(): array {
+		return array(
+			'draft event'   => array( 'draft' ),
+			'private event' => array( 'private' ),
+		);
+	}
+
+	/**
+	 * Tests handle_rsvp_form_submission returns 404 for an event that is not published.
+	 *
+	 * @dataProvider data_unpublished_event_statuses
+	 *
+	 * @covers ::handle_rsvp_form_submission
+	 *
+	 * @param string $post_status Non-public post status to submit against.
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_form_submission_unpublished_event( string $post_status ): void {
+		$instance = Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => $post_status,
+			)
+		);
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'comment_post_ID', $post_id );
+		$request->set_param( 'author', 'Test Author' );
+		$request->set_param( 'email', 'test@example.com' );
+
+		$response = $instance->handle_rsvp_form_submission( $request );
+
+		$this->assertEquals( 404, $response->get_status() );
+
+		$data = $response->get_data();
+		$this->assertFalse( $data['success'] );
+		$this->assertStringContainsString( 'not found', $data['message'] );
+	}
+
+	/**
+	 * Tests handle_rsvp_form_submission returns 403 when RSVP is disabled for the event.
+	 *
+	 * @covers ::handle_rsvp_form_submission
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_form_submission_rsvp_disabled(): void {
+		$instance = Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Disable RSVP sitewide so Rsvp::is_enabled() returns false for the event.
+		Settings::get_instance()->set( 'rsvp_mode', 'disabled' );
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'comment_post_ID', $post_id );
+		$request->set_param( 'author', 'Test Author' );
+		$request->set_param( 'email', 'test@example.com' );
+
+		$response = $instance->handle_rsvp_form_submission( $request );
+
+		$this->assertEquals( 403, $response->get_status() );
+
+		$data = $response->get_data();
+		$this->assertFalse( $data['success'] );
+		$this->assertSame( 'RSVP is disabled for this event.', $data['message'] );
+	}
+
+	/**
 	 * Coverage for handle_email_send_action method.
 	 *
 	 * @covers ::handle_email_send_action

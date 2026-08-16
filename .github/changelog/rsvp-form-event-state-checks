@@ -1,0 +1,4 @@
+Significance: patch
+Type: security
+
+Reject open RSVP submissions to events that are not publicly published or that have RSVP disabled.
