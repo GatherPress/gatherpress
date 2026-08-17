@@ -71,6 +71,14 @@ final class Query {
 		add_action( 'pre_get_posts', array( $this, 'prepare_event_query_before_execution' ) );
 		// Priority 9 to run before the upcoming/past adjustments at priority 10.
 		add_filter( 'posts_clauses', array( $this, 'adjust_admin_event_sorting' ), 9, 2 );
+
+		// Filter adjacent post queries to join and sort by event datetime.
+		add_filter( 'get_previous_post_join', array($this, 'gatherpress_adjacent_post_join'), 10, 5 );
+		add_filter( 'get_next_post_join', array($this, 'gatherpress_adjacent_post_join'), 10, 5 );
+		add_filter( 'get_previous_post_where', array($this, 'gatherpress_adjacent_post_where'), 10, 5 );
+		add_filter( 'get_next_post_where', array($this, 'gatherpress_adjacent_post_where'), 10, 5 );
+		add_filter( 'get_previous_post_sort', array($this, 'gatherpress_adjacent_post_sort'), 10, 3 );
+		add_filter( 'get_next_post_sort', array($this, 'gatherpress_adjacent_post_sort'), 10, 3 );
 	}
 
 	/**
@@ -561,5 +569,119 @@ final class Query {
 		// - Upcoming events, without running events.
 		// - Past events, that are still running.
 		return 'datetime_start_gmt';
+	}
+
+	/**
+	 * Join the GatherPress events table for adjacent post queries.
+	 *
+	 * This method modifies the SQL JOIN clause for adjacent post queries (previous and next)
+	 * to include the GatherPress events table.
+	 *
+	 * @see https://developer.wordpress.org/reference/hooks/get_adjacent_post_join/
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string       $join           The JOIN clause in the SQL.
+	 * @param bool         $in_same_term   Whether post should be in the same taxonomy term.
+	 * @param array|string $excluded_terms Array of excluded term IDs. Empty string if none were provided.
+	 * @param string       $taxonomy       Taxonomy. Used to identify the term used when `$in_same_term` is true.
+	 * @param WP_Post      $post           The current post object.
+	 *
+	 * @return string The modified JOIN clause for adjacent post queries.
+	 */
+	public function gatherpress_adjacent_post_join( string $join, bool $in_same_term, array|string $excluded_terms, string $taxonomy, WP_Post $post ): string {
+		if ( ! post_type_supports( $post->post_type, 'gatherpress-event-date' ) ) {
+			return $join;
+		}
+
+		global $wpdb;
+		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+
+		$join .= " INNER JOIN {$table} AS gpe ON p.ID = gpe.post_id";
+
+		return $join;
+	}
+
+	/**
+	 * Modify the WHERE clause to compare by event datetime instead of post_date for adjacent post queries.
+	 *
+	 * This method modifies the SQL WHERE clause for adjacent post queries (previous and next)
+	 * to compare by event datetime instead of the default post_date.
+	 *
+	 * @see https://developer.wordpress.org/reference/hooks/get_adjacent_post_where/
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string       $where          The WHERE clause in the SQL.
+	 * @param bool         $in_same_term   Whether post should be in the same taxonomy term
+	 * @param array|string $excluded_terms Array of excluded term IDs. Empty string if none were provided.
+	 * @param string       $taxonomy       Taxonomy. Used to identify the term used when `$in_same_term` is true.
+	 * @param WP_Post      $post           The current post object.
+	 *
+	 * @return string The modified WHERE clause for adjacent post queries.
+	 */
+	public function gatherpress_adjacent_post_where( string $where, bool $in_same_term, array|string $excluded_terms, string $taxonomy, WP_Post $post ): string {
+		if ( ! post_type_supports( $post->post_type, 'gatherpress-event-date' ) ) {
+			return $where;
+		}
+
+		global $wpdb;
+		$table          = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$current_filter = current_filter();
+		$is_previous    = ( 'get_previous_post_where' === $current_filter );
+
+		// Get the current event's datetime_start_gmt.
+		$current_datetime = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT datetime_start_gmt FROM {$table} WHERE post_id = %d LIMIT 1",
+				$post->ID
+			)
+		);
+
+		if ( ! $current_datetime ) {
+			return $where;
+		}
+
+		// Previous = earlier events (less than), Next = later events (greater than).
+		$op = $is_previous ? '<' : '>';
+
+		// Replace the default post_date comparison with event datetime comparison.
+		// The default WHERE looks like: WHERE p.post_date < '2024-01-01 00:00:00' AND p.post_type = ...
+		$where = preg_replace(
+			"/p\.post_date\s*[<>]\s*'[^']+'/",
+			$wpdb->prepare( "gpe.datetime_start_gmt {$op} %s", $current_datetime ),
+			$where
+		);
+
+		return $where;
+	}
+
+	/**
+	 * Modify the ORDER BY clause to sort by event datetime for adjacent post queries.
+	 *
+	 * This method modifies the SQL ORDER BY clause for adjacent post queries (previous and next)
+	 * to sort by event datetime instead of the default post_date.
+	 *
+	 * @see https://developer.wordpress.org/reference/hooks/get_adjacent_post_sort/
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string  $sort  The ORDER BY clause in the SQL.
+	 * @param WP_Post $post  The current post object.
+	 * @param string  $order Sort order. 'DESC' for previous post, 'ASC' for next.
+	 *
+	 * @return string The modified ORDER BY clause for adjacent post queries.
+	 */
+	public function gatherpress_adjacent_post_sort( string $sort, WP_Post $post, string $order ): string {
+		if ( ! post_type_supports( $post->post_type, 'gatherpress-event-date' ) ) {
+			return $sort;
+		}
+
+		// Replace post_date ordering with event datetime ordering.
+		// Default sort is: ORDER BY p.post_date DESC LIMIT 1
+		// $order is 'DESC' for previous, 'ASC' for next.
+		$sort = "ORDER BY gpe.datetime_start_gmt {$order} LIMIT 1";
+
+		return $sort;
 	}
 }
