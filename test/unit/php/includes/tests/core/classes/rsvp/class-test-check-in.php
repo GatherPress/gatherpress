@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Rsvp\Check_In.
  *
  * @package GatherPress\Core\Rsvp
- * @since 0.35.0
+ * @since 0.36.0
  */
 
 namespace GatherPress\Tests\Core\Rsvp;

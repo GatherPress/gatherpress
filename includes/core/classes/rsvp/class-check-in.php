@@ -8,7 +8,7 @@
  * is the right size.
  *
  * @package GatherPress\Core\Rsvp
- * @since 0.35.0
+ * @since 0.36.0
  */
 
 namespace GatherPress\Core\Rsvp;
@@ -27,7 +27,7 @@ use WP_Comment;
  * no backfill. The timestamp rather than a boolean because arrival times are
  * free to keep and impossible to reconstruct afterwards.
  *
- * @since 0.35.0
+ * @since 0.36.0
  */
 final class Check_In {
 
@@ -39,7 +39,7 @@ final class Check_In {
 	/**
 	 * Comment meta key holding the GMT check-in timestamp.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @var string
 	 */
@@ -50,7 +50,7 @@ final class Check_In {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -61,7 +61,7 @@ final class Check_In {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @return void
 	 */
@@ -75,7 +75,7 @@ final class Check_In {
 	 * Repeating a check-in keeps the first arrival time rather than moving it:
 	 * a second scan at the door is a duplicate, not a later arrival.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @param int $rsvp_id The RSVP comment ID.
 	 *
@@ -97,7 +97,7 @@ final class Check_In {
 		/**
 		 * Fires after an RSVP has been checked in.
 		 *
-		 * @since 0.35.0
+		 * @since 0.36.0
 		 *
 		 * @param int    $rsvp_id   The RSVP comment ID.
 		 * @param string $timestamp The GMT timestamp recorded for the check-in.
@@ -116,7 +116,7 @@ final class Check_In {
 	 * removed rather than kept alongside a flag, so the meta stays the single
 	 * answer to whether someone turned up.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @param int $rsvp_id The RSVP comment ID.
 	 *
@@ -132,7 +132,7 @@ final class Check_In {
 		/**
 		 * Fires after an RSVP's check-in has been cleared.
 		 *
-		 * @since 0.35.0
+		 * @since 0.36.0
 		 *
 		 * @param int $rsvp_id The RSVP comment ID.
 		 *
@@ -146,7 +146,7 @@ final class Check_In {
 	/**
 	 * Whether an RSVP has been checked in.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @param int $rsvp_id The RSVP comment ID.
 	 *
@@ -159,7 +159,7 @@ final class Check_In {
 	/**
 	 * The GMT timestamp an RSVP was checked in.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @param int $rsvp_id The RSVP comment ID.
 	 *
@@ -176,7 +176,7 @@ final class Check_In {
 	 * held or spammed RSVP is not part of the event's audience even if someone
 	 * checked it in before it was moderated.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @param int $post_id The event post ID.
 	 *
@@ -209,7 +209,7 @@ final class Check_In {
 	 * without taking its meta: an orphaned arrival time would otherwise be
 	 * counted against whatever comment ID got reused.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @param int|string $comment_id The deleted comment ID.
 	 *
@@ -222,7 +222,7 @@ final class Check_In {
 	/**
 	 * Whether a comment ID belongs to an RSVP.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @param int $rsvp_id The comment ID to test.
 	 *

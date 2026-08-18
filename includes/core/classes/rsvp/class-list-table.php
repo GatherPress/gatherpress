@@ -492,10 +492,9 @@ final class List_Table extends WP_List_Table {
 				}
 
 				// The stored value is GMT; render it in the site's timezone so
-				// the column reads like the Date column next to it.
-				return esc_html(
-					get_date_from_gmt( $check_in_time, 'Y/m/d \a\t g:i a' )
-				);
+				// the column reads like the Date column next to it. Escaping is
+				// left to the render layer, matching the Date column below.
+				return get_date_from_gmt( $check_in_time, 'Y/m/d \a\t g:i a' );
 			case 'date':
 				return get_comment_date( 'Y/m/d \a\t g:i a', $item['comment_ID'] );
 			case 'type':
