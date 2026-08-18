@@ -45,15 +45,6 @@ final class Abilities {
 	public const CATEGORY = 'gatherpress';
 
 	/**
-	 * Post type support a post must declare before it has a roster to count.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @var string
-	 */
-	public const SUPPORT = 'gatherpress-rsvp';
-
-	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.

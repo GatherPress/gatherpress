@@ -214,7 +214,7 @@ class Test_Abilities extends Base {
 			$post_type,
 			array(
 				'public'   => true,
-				'supports' => array( 'title', Abilities::SUPPORT ),
+				'supports' => array( 'title', 'gatherpress-rsvp' ),
 			)
 		);
 
