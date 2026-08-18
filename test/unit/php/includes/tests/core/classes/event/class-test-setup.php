@@ -1422,6 +1422,33 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * Tests handle_event_archive_redirect returns early when post_type is an array.
+	 *
+	 * Exercises the is_string($post_type) guard, which prevents a PHP "Array to
+	 * string conversion" warning when `get_query_var( 'post_type' )` returns an
+	 * array on a multi-post-type archive query.
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_array_post_type(): void {
+		global $wp_query;
+
+		$instance = Setup::get_instance();
+
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', array( Event::POST_TYPE, 'post' ) );
+
+		$instance->handle_event_archive_redirect();
+
+		$this->assertFalse( $wp_query->is_404(), 'Should not 404 for an array post_type.' );
+		$this->assertEmpty(
+			$wp_query->get( Query::EVENT_QUERY_PARAM ),
+			'Should return early before the archive mode fallback runs.'
+		);
+	}
+
+	/**
 	 * Tests handle_event_archive_redirect serves page when page exists with same slug.
 	 *
 	 * @covers ::handle_event_archive_redirect

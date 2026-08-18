@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Fixed a PHP `Array to string conversion` warning on the event archive redirect handler. The `post_type` query var can come back as an array on multi-post-type archive queries, and casting it directly to a string triggered the warning; the handler now bails when the queried post type isn't a single string.
