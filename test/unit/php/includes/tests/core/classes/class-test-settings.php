@@ -1285,6 +1285,54 @@ class Test_Settings extends Base {
 	}
 
 	/**
+	 * A malformed submission (e.g. a field name suffixed with `[]`) can
+	 * deliver an array value for a scalar-typed field. The default (text)
+	 * arm must not emit a PHP "Array to string conversion" warning, and the
+	 * autocomplete arm must not throw a TypeError from its string-typed
+	 * parameter.
+	 *
+	 * @since 0.35.0
+	 * @covers ::sanitize_page_settings
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_page_settings_handles_array_value_for_scalar_fields(): void {
+		$instance = Settings::get_instance();
+
+		delete_option( 'gatherpress_settings' );
+
+		$field_type_map = array(
+			'text_field'         => 'text',
+			'autocomplete_field' => 'autocomplete',
+		);
+
+		$callback = $instance->sanitize_page_settings( $field_type_map );
+
+		$result = $callback(
+			array(
+				'text_field'         => array( 'unexpected' ),
+				'autocomplete_field' => array( 'unexpected' ),
+			)
+		);
+
+		// Sanitizes to '' — which matches the (unregistered) field's default,
+		// so the strip-defaults pass below removes the key entirely. That's
+		// the same outcome a legitimate empty-string submission would get;
+		// the assertion here is that no "Array" sentinel string survives.
+		$this->assertArrayNotHasKey(
+			'text_field',
+			$result,
+			'Failed to assert an array value for a text field sanitizes away instead of storing "Array".'
+		);
+
+		$this->assertSame(
+			'[]',
+			$result['autocomplete_field'],
+			'Failed to assert an array value for an autocomplete field sanitizes to an empty list.'
+		);
+	}
+
+	/**
 	 * Empty-string submissions for number fields round-trip as '' instead
 	 * of getting coerced to 0 via intval — a field that accepts empty (e.g.
 	 * Width/Height "Auto") would otherwise silently save 0 on every post.

@@ -160,10 +160,14 @@ final class Rest_Api {
 					if ( '' === $value || null === $value ) {
 						return true;
 					}
-					return (bool) preg_match(
-						Map::ASPECT_RATIO_PATTERN,
-						(string) $value
-					);
+					// A malformed request (e.g. `aspect_ratio[]=`) delivers
+					// an array here — reject it instead of letting the
+					// (string) cast below emit an "Array to string
+					// conversion" warning.
+					if ( ! is_string( $value ) ) {
+						return false;
+					}
+					return (bool) preg_match( Map::ASPECT_RATIO_PATTERN, $value );
 				},
 			),
 			'map_type'     => array(
@@ -174,8 +178,15 @@ final class Rest_Api {
 					if ( '' === $value || null === $value ) {
 						return true;
 					}
+					// A malformed request (e.g. `map_type[]=`) delivers an
+					// array here — reject it instead of letting the
+					// (string) cast below emit an "Array to string
+					// conversion" warning.
+					if ( ! is_string( $value ) ) {
+						return false;
+					}
 					return in_array(
-						(string) $value,
+						$value,
 						array( 'roadmap', 'satellite', 'hybrid', 'terrain' ),
 						true
 					);
@@ -208,12 +219,15 @@ final class Rest_Api {
 		$raw_width  = $request['width'] ?? null;
 		$raw_height = $request['height'] ?? null;
 
+		$raw_aspect_ratio = $request['aspect_ratio'] ?? '';
+		$raw_map_type     = $request['map_type'] ?? '';
+
 		return array(
 			'zoom'         => ( null !== $raw_zoom && (int) $raw_zoom > 0 ) ? (int) $raw_zoom : null,
 			'width'        => ( null !== $raw_width && (int) $raw_width >= 0 ) ? (int) $raw_width : null,
 			'height'       => ( null !== $raw_height && (int) $raw_height >= 0 ) ? (int) $raw_height : null,
-			'aspect_ratio' => (string) ( $request['aspect_ratio'] ?? '' ),
-			'map_type'     => (string) ( $request['map_type'] ?? '' ),
+			'aspect_ratio' => is_string( $raw_aspect_ratio ) ? $raw_aspect_ratio : '',
+			'map_type'     => is_string( $raw_map_type ) ? $raw_map_type : '',
 		);
 	}
 

@@ -662,10 +662,16 @@ class Settings {
 					// Width/Height "Auto") can round-trip blank without
 					// silently saving 0.
 					'number'       => ( '' === $value || null === $value ) ? '' : intval( $value ),
-					'autocomplete' => $this->sanitize_autocomplete( $value ),
+					// sanitize_autocomplete() takes a strictly-typed string
+					// argument — a malformed submission delivering an array
+					// here would otherwise throw a TypeError.
+					'autocomplete' => $this->sanitize_autocomplete( is_string( $value ) ? $value : '' ),
 					// password, text, select and any unrecognized type are
-					// sanitized as plain text.
-					default        => sanitize_text_field( (string) $value ),
+					// sanitized as plain text. A malformed submission (e.g.
+					// a field name suffixed with `[]`) can deliver an array
+					// here — is_scalar() guards the (string) cast so that
+					// doesn't emit an "Array to string conversion" warning.
+					default        => sanitize_text_field( is_scalar( $value ) ? (string) $value : '' ),
 				};
 			}
 

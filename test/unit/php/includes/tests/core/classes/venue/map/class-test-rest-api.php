@@ -143,6 +143,10 @@ class Test_Rest_Api extends Base {
 		$this->assertTrue( $aspect_validate( null ) );
 		$this->assertTrue( $aspect_validate( '16/9' ) );
 		$this->assertFalse( $aspect_validate( 'not-a-ratio' ) );
+		$this->assertFalse(
+			$aspect_validate( array( '16/9' ) ),
+			'A malformed request (e.g. aspect_ratio[]=) delivering an array must be rejected, not cast.'
+		);
 
 		$type_validate = $args['map_type']['validate_callback'];
 		$this->assertTrue( $type_validate( '' ) );
@@ -152,6 +156,10 @@ class Test_Rest_Api extends Base {
 		$this->assertTrue( $type_validate( 'hybrid' ) );
 		$this->assertTrue( $type_validate( 'terrain' ) );
 		$this->assertFalse( $type_validate( 'invalid' ) );
+		$this->assertFalse(
+			$type_validate( array( 'roadmap' ) ),
+			'A malformed request (e.g. map_type[]=) delivering an array must be rejected, not cast.'
+		);
 	}
 
 	/**
@@ -203,6 +211,25 @@ class Test_Rest_Api extends Base {
 				'map_type'     => '',
 			),
 			Rest_Api::parse_request( $zero_zoom )
+		);
+
+		// set_param() bypasses validate_callback, so directly exercise
+		// parse_request()'s own is_string() guard against a non-string
+		// value reaching the request (defense in depth for callers other
+		// than the registered REST route).
+		$array_params = new \WP_REST_Request( 'POST', '/test' );
+		$array_params->set_param( 'aspect_ratio', array( '16/9' ) );
+		$array_params->set_param( 'map_type', array( 'hybrid' ) );
+		$this->assertSame(
+			array(
+				'zoom'         => null,
+				'width'        => null,
+				'height'       => null,
+				'aspect_ratio' => '',
+				'map_type'     => '',
+			),
+			Rest_Api::parse_request( $array_params ),
+			'Array-valued aspect_ratio/map_type params must fall back to an empty string.'
 		);
 	}
 

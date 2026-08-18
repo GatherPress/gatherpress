@@ -1,4 +1,4 @@
 Significance: patch
 Type: fixed
 
-Fixed a PHP `Array to string conversion` warning on the event archive redirect handler. The `post_type` query var can come back as an array on multi-post-type archive queries, and casting it directly to a string triggered the warning; the handler now bails when the queried post type isn't a single string.
+Fixed several PHP `Array to string conversion` warnings (and one latent TypeError) triggered when a value that WordPress or a malformed request can legitimately deliver as an array reached an unguarded `(string)` cast: the event archive redirect handler's `post_type` query var, the venue map REST endpoint's `aspect_ratio`/`map_type` params, the settings page sanitizer's scalar fields, and the venue map prewarm job's `aspectRatio` block attribute. Each now guards with `is_string()`/`is_scalar()` before casting, consistent with the existing pattern already used elsewhere in the codebase (`Admin_List::handle_column_sorting()`, `Geocoding`'s Photon property extraction).
