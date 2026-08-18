@@ -62,7 +62,6 @@ final class Setup {
 	 * @throws Exception If there are issues instantiating singleton classes.
 	 */
 	protected function instantiate_classes(): void {
-		Abilities::get_instance();
 		Assets::get_instance();
 		Blocks\Setup::get_instance();
 		Calendar\Setup::get_instance();
