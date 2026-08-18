@@ -638,7 +638,6 @@ final class Query {
 		}
 
 		global $wpdb;
-		$table          = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 		$current_filter = current_filter();
 		$is_previous    = ( 'get_previous_post_where' === $current_filter );
 
