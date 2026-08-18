@@ -48,6 +48,42 @@ class Test_Query extends Base {
 				'priority' => 9,
 				'callback' => array( $instance, 'adjust_admin_event_sorting' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'get_previous_post_join',
+				'priority' => 10,
+				'callback' => array( $instance, 'get_adjacent_post_join' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'get_next_post_join',
+				'priority' => 10,
+				'callback' => array( $instance, 'get_adjacent_post_join' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'get_previous_post_where',
+				'priority' => 10,
+				'callback' => array( $instance, 'get_adjacent_post_where' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'get_next_post_where',
+				'priority' => 10,
+				'callback' => array( $instance, 'get_adjacent_post_where' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'get_previous_post_sort',
+				'priority' => 10,
+				'callback' => array( $instance, 'get_adjacent_post_sort' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'get_next_post_sort',
+				'priority' => 10,
+				'callback' => array( $instance, 'get_adjacent_post_sort' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
