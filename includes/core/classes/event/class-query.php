@@ -73,12 +73,12 @@ final class Query {
 		add_filter( 'posts_clauses', array( $this, 'adjust_admin_event_sorting' ), 9, 2 );
 
 		// Filter adjacent post queries to join and sort by event datetime.
-		add_filter( 'get_previous_post_join', array( $this, 'gatherpress_adjacent_post_join' ), 10, 5 );
-		add_filter( 'get_next_post_join', array( $this, 'gatherpress_adjacent_post_join' ), 10, 5 );
-		add_filter( 'get_previous_post_where', array( $this, 'gatherpress_adjacent_post_where' ), 10, 5 );
-		add_filter( 'get_next_post_where', array( $this, 'gatherpress_adjacent_post_where' ), 10, 5 );
-		add_filter( 'get_previous_post_sort', array( $this, 'gatherpress_adjacent_post_sort' ), 10, 3 );
-		add_filter( 'get_next_post_sort', array( $this, 'gatherpress_adjacent_post_sort' ), 10, 3 );
+		add_filter( 'get_previous_post_join', array( $this, 'get_adjacent_post_join' ), 10, 5 );
+		add_filter( 'get_next_post_join', array( $this, 'get_adjacent_post_join' ), 10, 5 );
+		add_filter( 'get_previous_post_where', array( $this, 'get_adjacent_post_where' ), 10, 5 );
+		add_filter( 'get_next_post_where', array( $this, 'get_adjacent_post_where' ), 10, 5 );
+		add_filter( 'get_previous_post_sort', array( $this, 'get_adjacent_post_sort' ), 10, 3 );
+		add_filter( 'get_next_post_sort', array( $this, 'get_adjacent_post_sort' ), 10, 3 );
 	}
 
 	/**
@@ -589,7 +589,7 @@ final class Query {
 	 *
 	 * @return string The modified JOIN clause for adjacent post queries.
 	 */
-	public function gatherpress_adjacent_post_join(
+	public function get_adjacent_post_join(
 		string $join,
 		bool $in_same_term,
 		array|string $excluded_terms,
@@ -626,7 +626,7 @@ final class Query {
 	 *
 	 * @return string The modified WHERE clause for adjacent post queries.
 	 */
-	public function gatherpress_adjacent_post_where(
+	public function get_adjacent_post_where(
 		string $where,
 		bool $in_same_term,
 		array|string $excluded_terms,
@@ -685,7 +685,7 @@ final class Query {
 	 *
 	 * @return string The modified ORDER BY clause for adjacent post queries.
 	 */
-	public function gatherpress_adjacent_post_sort( string $sort, WP_Post $post, string $order ): string {
+	public function get_adjacent_post_sort( string $sort, WP_Post $post, string $order ): string {
 		if ( ! post_type_supports( $post->post_type, 'gatherpress-event-date' ) ) {
 			return $sort;
 		}
