@@ -73,12 +73,12 @@ final class Query {
 		add_filter( 'posts_clauses', array( $this, 'adjust_admin_event_sorting' ), 9, 2 );
 
 		// Filter adjacent post queries to join and sort by event datetime.
-		add_filter( 'get_previous_post_join', array($this, 'gatherpress_adjacent_post_join'), 10, 5 );
-		add_filter( 'get_next_post_join', array($this, 'gatherpress_adjacent_post_join'), 10, 5 );
-		add_filter( 'get_previous_post_where', array($this, 'gatherpress_adjacent_post_where'), 10, 5 );
-		add_filter( 'get_next_post_where', array($this, 'gatherpress_adjacent_post_where'), 10, 5 );
-		add_filter( 'get_previous_post_sort', array($this, 'gatherpress_adjacent_post_sort'), 10, 3 );
-		add_filter( 'get_next_post_sort', array($this, 'gatherpress_adjacent_post_sort'), 10, 3 );
+		add_filter( 'get_previous_post_join', array( $this, 'gatherpress_adjacent_post_join' ), 10, 5 );
+		add_filter( 'get_next_post_join', array( $this, 'gatherpress_adjacent_post_join' ), 10, 5 );
+		add_filter( 'get_previous_post_where', array( $this, 'gatherpress_adjacent_post_where' ), 10, 5 );
+		add_filter( 'get_next_post_where', array( $this, 'gatherpress_adjacent_post_where' ), 10, 5 );
+		add_filter( 'get_previous_post_sort', array( $this, 'gatherpress_adjacent_post_sort' ), 10, 3 );
+		add_filter( 'get_next_post_sort', array( $this, 'gatherpress_adjacent_post_sort' ), 10, 3 );
 	}
 
 	/**
@@ -589,7 +589,13 @@ final class Query {
 	 *
 	 * @return string The modified JOIN clause for adjacent post queries.
 	 */
-	public function gatherpress_adjacent_post_join( string $join, bool $in_same_term, array|string $excluded_terms, string $taxonomy, WP_Post $post ): string {
+	public function gatherpress_adjacent_post_join(
+		string $join,
+		bool $in_same_term,
+		array|string $excluded_terms,
+		string $taxonomy,
+		WP_Post $post
+	): string {
 		if ( ! post_type_supports( $post->post_type, 'gatherpress-event-date' ) ) {
 			return $join;
 		}
@@ -613,14 +619,20 @@ final class Query {
 	 * @since 0.36.0
 	 *
 	 * @param string       $where          The WHERE clause in the SQL.
-	 * @param bool         $in_same_term   Whether post should be in the same taxonomy term
+	 * @param bool         $in_same_term   Whether post should be in the same taxonomy term.
 	 * @param array|string $excluded_terms Array of excluded term IDs. Empty string if none were provided.
 	 * @param string       $taxonomy       Taxonomy. Used to identify the term used when `$in_same_term` is true.
 	 * @param WP_Post      $post           The current post object.
 	 *
 	 * @return string The modified WHERE clause for adjacent post queries.
 	 */
-	public function gatherpress_adjacent_post_where( string $where, bool $in_same_term, array|string $excluded_terms, string $taxonomy, WP_Post $post ): string {
+	public function gatherpress_adjacent_post_where(
+		string $where,
+		bool $in_same_term,
+		array|string $excluded_terms,
+		string $taxonomy,
+		WP_Post $post
+	): string {
 		if ( ! post_type_supports( $post->post_type, 'gatherpress-event-date' ) ) {
 			return $where;
 		}
@@ -631,12 +643,7 @@ final class Query {
 		$is_previous    = ( 'get_previous_post_where' === $current_filter );
 
 		// Get the current event's datetime_start_gmt.
-		$current_datetime = $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT datetime_start_gmt FROM {$table} WHERE post_id = %d LIMIT 1",
-				$post->ID
-			)
-		);
+		$current_datetime = get_post_meta( $post->ID, 'gatherpress_datetime_start_gmt', true );
 
 		if ( ! $current_datetime ) {
 			return $where;
@@ -644,12 +651,18 @@ final class Query {
 
 		// Previous = earlier events (less than), Next = later events (greater than).
 		$op = $is_previous ? '<' : '>';
+		// It's intended, to not quote the comparison sign.
+		$sql = $wpdb->prepare(
+			'gpe.datetime_start_gmt %1s %s', // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder, Generic.Files.LineLength.TooLong
+			$op,
+			$current_datetime
+		);
 
 		// Replace the default post_date comparison with event datetime comparison.
 		// The default WHERE looks like: WHERE p.post_date < '2024-01-01 00:00:00' AND p.post_type = ...
 		$where = preg_replace(
 			"/p\.post_date\s*[<>]\s*'[^']+'/",
-			$wpdb->prepare( "gpe.datetime_start_gmt {$op} %s", $current_datetime ),
+			$sql,
 			$where
 		);
 
