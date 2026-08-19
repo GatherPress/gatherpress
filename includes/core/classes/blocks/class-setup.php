@@ -77,10 +77,16 @@ final class Setup {
 		$blocks_directory = sprintf( '%1$s/build/blocks/', GATHERPRESS_CORE_PATH );
 		$blocks           = is_dir( $blocks_directory ) ? scandir( $blocks_directory ) : false;
 
-		// The build directory is absent when the plugin is run straight from source.
+		// The build directory is absent when the plugin is run straight from
+		// source. Untestable: the test bootstrap mounts a built plugin, so the
+		// directory always exists and the path is unreachable from a test.
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
+		// @codeCoverageIgnoreStart
 		if ( false === $blocks ) {
 			return;
 		}
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
+		// @codeCoverageIgnoreEnd
 
 		foreach ( array_diff( $blocks, array( '..', '.' ) ) as $block ) {
 			$block_metadata_path = sprintf( '%1$s/build/blocks/%2$s', GATHERPRESS_CORE_PATH, $block );

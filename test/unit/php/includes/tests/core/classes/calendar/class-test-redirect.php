@@ -124,4 +124,27 @@ class Test_Redirect extends Base {
 			'Failed to assert, that the redirect url got merged into allowed_redirect_hosts.'
 		);
 	}
+
+	/**
+	 * A relative or malformed target has no host for wp_parse_url() to report,
+	 * so allowed_redirect_hosts hands the list back untouched.
+	 *
+	 * @covers ::allowed_redirect_hosts
+	 *
+	 * @return void
+	 */
+	public function test_allowed_redirect_hosts_without_host_leaves_list_untouched(): void {
+		$callback = static function () {
+			return '/event/sample-event/google-calendar/';
+		};
+		$instance = new Redirect( 'endpoint-redirect', $callback );
+
+		Utility::set_and_get_hidden_property( $instance, 'url', ( $callback )() );
+
+		$this->assertSame(
+			array( 'apples', 'oranges' ),
+			$instance->allowed_redirect_hosts( array( 'apples', 'oranges' ) ),
+			'Failed to assert, that a hostless redirect url leaves allowed_redirect_hosts unchanged.'
+		);
+	}
 }

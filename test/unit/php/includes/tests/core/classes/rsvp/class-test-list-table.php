@@ -2000,4 +2000,108 @@ class Test_List_Table extends Base {
 			'No term and nothing to infer from renders empty.'
 		);
 	}
+
+	/**
+	 * A screen passed to the constructor is the one the table binds its column
+	 * hooks to, instead of whatever screen the request is currently on.
+	 *
+	 * @covers ::__construct
+	 *
+	 * @return void
+	 */
+	public function test_construct_with_screen(): void {
+		$screen_id  = 'gatherpress_event_page_gatherpress_rsvp';
+		$list_table = new List_Table( array( 'screen' => $screen_id ) );
+
+		$this->assertSame(
+			$screen_id,
+			$list_table->screen->id,
+			'The table adopts the screen named in the constructor arguments.'
+		);
+		$this->assertSame(
+			0,
+			has_filter( sprintf( 'manage_%s_columns', $screen_id ), array( $list_table, 'get_columns' ) ),
+			'The column hooks bind to the screen named in the constructor arguments.'
+		);
+	}
+
+	/**
+	 * A stored per-page preference that is not a positive integer would divide
+	 * the total by a non-positive number, so it falls back to the default.
+	 *
+	 * @covers ::prepare_items
+	 *
+	 * @return void
+	 */
+	public function test_prepare_items_falls_back_to_default_per_page(): void {
+		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+
+		wp_set_current_user( $user_id );
+		update_user_meta( $user_id, sprintf( '%s_per_page', Rsvp::COMMENT_TYPE ), -5 );
+
+		$this->list_table->prepare_items();
+
+		$this->assertSame(
+			List_Table::DEFAULT_PER_PAGE,
+			$this->list_table->get_pagination_arg( 'per_page' ),
+			'A stored preference below one falls back to the default page size.'
+		);
+	}
+
+	/**
+	 * An RSVP row outlives the post it points at, so a deleted event renders the
+	 * stored title as text, or a dash when nothing is left of it.
+	 *
+	 * @covers ::column_default
+	 *
+	 * @return void
+	 */
+	public function test_column_default_event_deleted(): void {
+		$item = $this->rsvp;
+
+		wp_delete_post( $this->event_id, true );
+
+		$item['event_title'] = 'Deleted Event';
+
+		$this->assertSame(
+			'Deleted Event',
+			$this->list_table->column_default( $item, 'event' ),
+			'A deleted event renders the stored title without a link.'
+		);
+
+		$item['event_title'] = '';
+
+		$this->assertSame(
+			'-',
+			$this->list_table->column_default( $item, 'event' ),
+			'A deleted event with no stored title renders a dash.'
+		);
+	}
+
+	/**
+	 * Core stores comment statuses this table has no label for, and a row can
+	 * arrive without the field at all; both render a dash.
+	 *
+	 * @covers ::column_default
+	 *
+	 * @return void
+	 */
+	public function test_column_default_approved_unlabeled_status(): void {
+		$item                     = $this->rsvp;
+		$item['comment_approved'] = 'trash';
+
+		$this->assertSame(
+			'-',
+			$this->list_table->column_default( $item, 'approved' ),
+			'A status the table has no label for renders a dash.'
+		);
+
+		unset( $item['comment_approved'] );
+
+		$this->assertSame(
+			'-',
+			$this->list_table->column_default( $item, 'approved' ),
+			'A row carrying no status at all renders a dash.'
+		);
+	}
 }

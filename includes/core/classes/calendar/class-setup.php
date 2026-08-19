@@ -591,7 +591,9 @@ final class Setup {
 			)
 		);
 
-		// `get_terms()` errors out when the event's post type has no taxonomies at all.
+		// get_object_taxonomies() only yields registered names, so no natural
+		// input reaches this. A `get_terms` filter can still hand back an error,
+		// and iterating one would fatal on the WP_Term-typed helper below.
 		if ( is_wp_error( $terms ) ) {
 			return array();
 		}

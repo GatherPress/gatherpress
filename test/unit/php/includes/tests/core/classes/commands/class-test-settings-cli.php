@@ -446,4 +446,71 @@ class Test_Settings_Cli extends Base {
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
 		unlink( $file );
 	}
+
+	/**
+	 * Coverage for export with a valueless --file flag.
+	 *
+	 * @covers ::export
+	 *
+	 * @return void
+	 */
+	public function test_export_with_valueless_file_flag(): void {
+		$cli = new Settings_Cli();
+
+		// WP-CLI passes boolean true for `--file` with no value.
+		$output = Utility::buffer_and_return(
+			array( $cli, 'export' ),
+			array( array(), array( 'file' => true ) )
+		);
+
+		$this->assertStringContainsString(
+			'The --file option requires a file path.',
+			$output,
+			'Failed to assert valueless --file error.'
+		);
+		$this->assertStringNotContainsString(
+			'Settings exported to',
+			$output,
+			'Failed to assert export was aborted.'
+		);
+	}
+
+	/**
+	 * Coverage for import with an unreadable file.
+	 *
+	 * @covers ::import
+	 *
+	 * @return void
+	 */
+	public function test_import_unreadable_file(): void {
+		$cli  = new Settings_Cli();
+		$file = tempnam( sys_get_temp_dir(), 'gatherpress_test_' );
+
+		$data = array(
+			'version'  => GATHERPRESS_VERSION,
+			'settings' => array( 'map_platform' => 'google' ),
+		);
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+		file_put_contents( $file, wp_json_encode( $data ) );
+
+		// Strip every permission bit so the file still exists but file_get_contents() returns false.
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_chmod
+		chmod( $file, 0000 );
+
+		$output = Utility::buffer_and_return(
+			array( $cli, 'import' ),
+			array( array( $file ), array( 'apply' => true ) )
+		);
+
+		$this->assertStringContainsString( 'Failed to read file', $output, 'Failed to assert unreadable file error.' );
+		$this->assertStringNotContainsString(
+			'imported successfully',
+			$output,
+			'Failed to assert import was aborted.'
+		);
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
+		unlink( $file );
+	}
 }

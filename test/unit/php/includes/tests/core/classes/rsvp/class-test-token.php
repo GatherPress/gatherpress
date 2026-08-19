@@ -1264,4 +1264,28 @@ class Test_Token extends Base {
 		// Clean up filters.
 		remove_all_filters( 'gatherpress_pre_get_http_input' );
 	}
+
+	/**
+	 * Coverage for save_token_to_meta with no comment.
+	 *
+	 * @covers ::save_token_to_meta
+	 *
+	 * @return void
+	 */
+	public function test_save_token_to_meta_without_comment(): void {
+		$token = new Token( 0 );
+
+		$this->assertNull(
+			$token->get_comment(),
+			'A token built from an invalid comment ID holds no comment.'
+		);
+
+		Utility::invoke_hidden_method( $token, 'save_token_to_meta' );
+
+		$this->assertSame(
+			'',
+			$token->get_token(),
+			'Without a comment there is no meta row to write the token to.'
+		);
+	}
 }

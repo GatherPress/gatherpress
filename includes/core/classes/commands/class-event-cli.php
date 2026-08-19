@@ -82,6 +82,8 @@ final class Event_Cli extends WP_CLI {
 					$event_id
 				)
 			);
+
+			return; // @phpstan-ignore deadCode.unreachable
 		}
 
 		$response = $event->rsvp->save( $user_id, $status, $anonymous, $guests );

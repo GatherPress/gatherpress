@@ -516,9 +516,10 @@ class Event {
 		if ( ! empty( $date ) ) {
 			$ts = strtotime( $date );
 
-			// A stored value that validates but will not parse (a legacy all-zero datetime,
-			// for one) has no timestamp to format, so report no datetime at all rather
-			// than falling back to the epoch.
+			// Validate::datetime() accepts what DateTime::createFromFormat() accepts,
+			// which is wider than strtotime(): an overflowing value like
+			// '2030-06-31 25:00:00' passes validation and still has no timestamp to
+			// format, so report no datetime rather than falling back to the epoch.
 			if ( false === $ts ) {
 				return '';
 			}

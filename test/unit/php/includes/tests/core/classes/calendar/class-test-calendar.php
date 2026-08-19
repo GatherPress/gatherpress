@@ -274,6 +274,26 @@ class Test_Calendar extends Base {
 	}
 
 	/**
+	 * Returns an empty string from get_google_destination_url when the
+	 * underlying Event has no post — a Calendar built from a post type that
+	 * does not support `gatherpress-event-date` never resolves one.
+	 *
+	 * @covers ::get_google_destination_url
+	 *
+	 * @return void
+	 */
+	public function test_get_google_destination_url_returns_empty_without_post(): void {
+		$post     = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+		$instance = new Calendar( $post->ID );
+
+		$this->assertSame(
+			'',
+			$instance->get_google_destination_url(),
+			'Google destination URL should be empty when the underlying post cannot be resolved as an event.'
+		);
+	}
+
+	/**
 	 * Coverage for get_yahoo_destination_url with no venue address.
 	 *
 	 * @covers ::get_yahoo_destination_url
@@ -316,6 +336,25 @@ class Test_Calendar extends Base {
 			'in_loc=' . rawurlencode( 'Brooklyn Office, 123 Main; Street, Brooklyn' ),
 			$url,
 			'Yahoo destination URL in_loc should concat venue name and address.'
+		);
+	}
+
+	/**
+	 * Returns an empty string from get_yahoo_destination_url when the
+	 * underlying Event has no post.
+	 *
+	 * @covers ::get_yahoo_destination_url
+	 *
+	 * @return void
+	 */
+	public function test_get_yahoo_destination_url_returns_empty_without_post(): void {
+		$post     = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+		$instance = new Calendar( $post->ID );
+
+		$this->assertSame(
+			'',
+			$instance->get_yahoo_destination_url(),
+			'Yahoo destination URL should be empty when the underlying post cannot be resolved as an event.'
 		);
 	}
 
@@ -478,6 +517,25 @@ class Test_Calendar extends Base {
 	}
 
 	/**
+	 * Coverage for the get_sequence guard when the underlying Event has no
+	 * post: there is no post_modified_gmt to derive a revision from.
+	 *
+	 * @covers ::get_sequence
+	 *
+	 * @return void
+	 */
+	public function test_get_sequence_returns_zero_without_post(): void {
+		$post     = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+		$instance = new Calendar( $post->ID );
+
+		$this->assertSame(
+			0,
+			Utility::invoke_hidden_method( $instance, 'get_sequence' ),
+			'Sequence should be zero when the underlying post cannot be resolved as an event.'
+		);
+	}
+
+	/**
 	 * Coverage for get_sequence clamping: a span wider than the RFC 5545
 	 * integer ceiling saturates instead of overflowing.
 	 *
@@ -512,6 +570,68 @@ class Test_Calendar extends Base {
 
 		$this->assertStringContainsString( 'SUMMARY:Sample Event', $vevent );
 		$this->assertStringContainsString( 'LOCATION:', $vevent );
+	}
+
+	/**
+	 * Returns an empty string from get_ical_event_string when the underlying
+	 * Event has no post, so nothing malformed lands inside a VCALENDAR wrap.
+	 *
+	 * @covers ::get_ical_event_string
+	 *
+	 * @return void
+	 */
+	public function test_get_ical_event_string_returns_empty_without_post(): void {
+		$post     = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+		$instance = new Calendar( $post->ID );
+
+		$this->assertSame(
+			'',
+			$instance->get_ical_event_string(),
+			'VEVENT should be empty when the underlying post cannot be resolved as an event.'
+		);
+	}
+
+	/**
+	 * A post whose post_modified_gmt will not parse still gets the
+	 * RFC-required DTSTAMP, stamped at generation time rather than at the
+	 * Unix epoch.
+	 *
+	 * @covers ::get_ical_event_string
+	 *
+	 * @return void
+	 */
+	public function test_get_ical_event_string_stamps_now_for_unparsable_modified_date(): void {
+		$instance = new Calendar( $this->make_event() );
+
+		$instance->event->event->post_modified_gmt = '9999-99-99 99:99:99';
+
+		$before = time();
+		$vevent = $instance->get_ical_event_string();
+		$after  = time();
+
+		$this->assertSame(
+			1,
+			preg_match( '/DTSTAMP:(\d{8}T\d{6}Z)/', $vevent, $matches ),
+			'VEVENT should still carry a DTSTAMP when post_modified_gmt will not parse.'
+		);
+
+		$stamp = strtotime( $matches[1] );
+
+		$this->assertGreaterThanOrEqual(
+			$before,
+			$stamp,
+			'DTSTAMP should fall back to the generation time, not the Unix epoch.'
+		);
+		$this->assertLessThanOrEqual(
+			$after,
+			$stamp,
+			'DTSTAMP should fall back to the generation time, not a future date.'
+		);
+		$this->assertStringContainsString(
+			sprintf( 'LAST-MODIFIED:%s', $matches[1] ),
+			$vevent,
+			'LAST-MODIFIED should share the fallback stamp with DTSTAMP.'
+		);
 	}
 
 	/**

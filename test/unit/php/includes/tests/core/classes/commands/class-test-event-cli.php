@@ -48,4 +48,40 @@ class Test_Event_Cli extends Base {
 
 		$this->assertSame( $expects, $output, 'Failed to assert output matches.' );
 	}
+
+	/**
+	 * Coverage for rsvp against a post type without RSVP support.
+	 *
+	 * @covers ::rsvp
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_without_rsvp_support(): void {
+		$cli_event  = new Event_Cli();
+		$post       = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+		$user       = $this->mock->user()->get();
+		$assoc_args = array(
+			'event_id' => $post->ID,
+			'user_id'  => $user->ID,
+		);
+
+		$output  = Utility::buffer_and_return(
+			array( $cli_event, 'rsvp' ),
+			array( array(), $assoc_args )
+		);
+		$expects = sprintf(
+			'Error: Event ID "%d" does not exist or does not support RSVPs.',
+			$post->ID
+		);
+
+		$this->assertSame(
+			$expects,
+			trim( $output ),
+			'Failed to assert RSVP support error output matches.'
+		);
+		$this->assertEmpty(
+			get_comments( array( 'post_id' => $post->ID ) ),
+			'Failed to assert no RSVP was saved.'
+		);
+	}
 }

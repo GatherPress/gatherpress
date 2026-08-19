@@ -1395,4 +1395,48 @@ class Test_Rsvp extends Base {
 			'Only user and email identities resolve to core providers.'
 		);
 	}
+
+	/**
+	 * An identity that no registered provider handles records nothing and hands
+	 * back the default save response.
+	 *
+	 * @covers ::save
+	 *
+	 * @return void
+	 */
+	public function test_save_returns_default_when_no_provider_handles_identity(): void {
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$user_id  = $this->factory->user->create();
+		$registry = Provider_Registry::get_instance();
+		$restore  = Utility::get_hidden_property( $registry, 'providers' );
+
+		// Rsvp snapshots the registry when it is constructed, so blanking the
+		// user provider first leaves an identity that resolves to no provider.
+		Utility::set_and_get_hidden_property(
+			$registry,
+			'providers',
+			array_merge( $restore, array( 'user' => null ) )
+		);
+
+		$rsvp = new Rsvp( $event_id );
+
+		Utility::set_and_get_hidden_property( $registry, 'providers', $restore );
+
+		$response = $rsvp->save( $user_id, 'attending' );
+
+		$this->assertSame(
+			'no_status',
+			$response['status'],
+			'An identity without a provider returns the default save response.'
+		);
+		$this->assertSame(
+			0,
+			$response['comment_id'],
+			'No response is recorded for an identity without a provider.'
+		);
+		$this->assertNull(
+			$rsvp->get( $user_id ),
+			'Nothing is stored for an identity without a provider.'
+		);
+	}
 }
