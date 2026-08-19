@@ -2327,6 +2327,8 @@ class Test_Rest_Api extends Base {
 	/**
 	 * Future-event emails include the RSVP Now CTA.
 	 *
+	 * @since 0.36.0
+	 *
 	 * @covers ::send_event_email_to_recipient
 	 *
 	 * @return void
@@ -2389,6 +2391,8 @@ class Test_Rest_Api extends Base {
 
 	/**
 	 * Past-event emails omit the RSVP Now CTA — registration is closed.
+	 *
+	 * @since 0.36.0
 	 *
 	 * @covers ::send_event_email_to_recipient
 	 *
@@ -2458,6 +2462,8 @@ class Test_Rest_Api extends Base {
 
 	/**
 	 * Emails omit the RSVP Now CTA when RSVP is disabled for the event.
+	 *
+	 * @since 0.36.0
 	 *
 	 * @covers ::send_event_email_to_recipient
 	 *
