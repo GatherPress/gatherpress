@@ -78,8 +78,8 @@ final class Modal {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The HTML content of the block.
-	 * @param array  $block         The parsed block data.
+	 * @param string               $block_content The HTML content of the block.
+	 * @param array<string, mixed> $block         The parsed block data.
 	 *
 	 * @return string The modified block content with updated attributes.
 	 */
@@ -112,8 +112,8 @@ final class Modal {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The HTML content of the block.
-	 * @param array  $block         The parsed block data.
+	 * @param string               $block_content The HTML content of the block.
+	 * @param array<string, mixed> $block         The parsed block data.
 	 *
 	 * @return string The updated block content with the applied `z-index` styling.
 	 */
@@ -144,8 +144,8 @@ final class Modal {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The HTML content of the block.
-	 * @param array  $block         The parsed block data.
+	 * @param string               $block_content The HTML content of the block.
+	 * @param array<string, mixed> $block         The parsed block data.
 	 *
 	 * @return string The modified block content. Returns an empty string if the block should be removed.
 	 */
@@ -169,8 +169,8 @@ final class Modal {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The HTML content of the block.
-	 * @param array  $block         The parsed block data.
+	 * @param string               $block_content The HTML content of the block.
+	 * @param array<string, mixed> $block         The parsed block data.
 	 *
 	 * @return string The modified block content. Returns an empty string if the block should be removed.
 	 */

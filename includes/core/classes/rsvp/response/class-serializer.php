@@ -20,6 +20,8 @@ use GatherPress\Core\Utility;
  * Class with methods to serialize RSVP Response objects.
  *
  * @since 0.35.0
+ *
+ * @phpstan-import-type RsvpRecord from Rsvp
  */
 final class Serializer {
 
@@ -30,7 +32,7 @@ final class Serializer {
 	 *
 	 * @param State $state RSVP state.
 	 *
-	 * @return array The RSVP response state as an associative array.
+	 * @return RsvpRecord The RSVP response state as an associative array.
 	 */
 	public static function to_array( State $state ): array {
 		$identity = $state->data->identity;

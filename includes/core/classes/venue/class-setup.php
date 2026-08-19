@@ -150,9 +150,9 @@ final class Setup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $settings The block editor settings array.
+	 * @param array<string, mixed> $settings The block editor settings array.
 	 *
-	 * @return array The modified block editor settings array.
+	 * @return array<string, mixed> The modified block editor settings array.
 	 */
 	public function add_editor_settings( array $settings ): array {
 		if ( ! isset( $settings['gatherpress'] ) ) {
@@ -456,7 +456,24 @@ final class Setup {
 	 * @param int    $post_id   The post ID for which to retrieve venue information.
 	 * @param string $post_type The post type of the provided post ID.
 	 *
-	 * @return array An array containing venue-related information.
+	 * @return array{
+	 *     isOnlineEventTerm: bool,
+	 *     onlineEventLink: string,
+	 *     name?: string,
+	 *     address?: string,
+	 *     city?: string,
+	 *     country?: string,
+	 *     country_code?: string,
+	 *     county?: string,
+	 *     house_number?: string,
+	 *     latitude?: string,
+	 *     longitude?: string,
+	 *     phone?: string,
+	 *     postcode?: string,
+	 *     state?: string,
+	 *     street?: string,
+	 *     website?: string
+	 * } Venue-related information; the venue fields are present only when a venue resolves.
 	 */
 	public function get_venue_meta( int $post_id, string $post_type ): array {
 		$venue_meta = array(

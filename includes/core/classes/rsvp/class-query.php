@@ -87,10 +87,10 @@ final class Query {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array            $clauses       The clauses for the query.
-	 * @param WP_Comment_Query $comment_query Current instance of WP_Comment_Query (passed by reference).
+	 * @param array<string, string> $clauses       The clauses for the query.
+	 * @param WP_Comment_Query      $comment_query Current instance of WP_Comment_Query (passed by reference).
 	 *
-	 * @return array Modified query clauses.
+	 * @return array<string, string> Modified query clauses.
 	 */
 	public function taxonomy_query( array $clauses, WP_Comment_Query $comment_query ): array {
 		global $wpdb;
@@ -114,7 +114,7 @@ final class Query {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $args Arguments for retrieving RSVPs.
+	 * @param array<string, mixed> $args Arguments for retrieving RSVPs.
 	 *
 	 * @return mixed Array of RSVP comments or integer count when count parameter is true.
 	 */
@@ -150,7 +150,7 @@ final class Query {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $args Arguments for retrieving the RSVP.
+	 * @param array<string, mixed> $args Arguments for retrieving the RSVP.
 	 *
 	 * @return WP_Comment|null The RSVP comment or null if not found.
 	 */
@@ -175,7 +175,7 @@ final class Query {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array Array of all comment types in the database.
+	 * @return string[] Array of all comment types in the database.
 	 */
 	protected function get_all_comment_types(): array {
 		$default_types = array( 'comment', 'pingback', 'trackback' );

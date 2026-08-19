@@ -51,7 +51,7 @@ final class Cache {
 	 *
 	 * @param int $post_id The WordPress post ID of the event.
 	 *
-	 * @return array|null The cached RSVP data, or null when no valid cache exists.
+	 * @return array<string, mixed>|null The cached RSVP data, or null when no valid cache exists.
 	 */
 	public static function get( int $post_id ): ?array {
 		$value = get_transient( self::cache_key( $post_id ) );

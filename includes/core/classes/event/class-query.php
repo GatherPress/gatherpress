@@ -112,10 +112,10 @@ final class Query {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param string $event_list_type Type of event list: 'upcoming' or 'past'.
-	 * @param int    $number          Maximum number of events to retrieve.
-	 * @param array  $topics          Array of topic slugs for additional filtering.
-	 * @param array  $venues          Array of venue slugs for additional filtering.
+	 * @param string   $event_list_type Type of event list: 'upcoming' or 'past'.
+	 * @param int      $number          Maximum number of events to retrieve.
+	 * @param string[] $topics          Array of topic slugs for additional filtering.
+	 * @param string[] $venues          Array of venue slugs for additional filtering.
 	 *
 	 * @return WP_Query A WordPress query object containing the list of events.
 	 */
@@ -300,10 +300,10 @@ final class Query {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array    $query_pieces An array containing pieces of the SQL query.
-	 * @param WP_Query $query        The WP_Query instance (passed by reference).
+	 * @param array<string, string> $query_pieces An array containing pieces of the SQL query.
+	 * @param WP_Query              $query        The WP_Query instance (passed by reference).
 	 *
-	 * @return array The modified SQL query pieces with adjusted sorting criteria for upcoming events.
+	 * @return array<string, string> The modified SQL query pieces with adjusted sorting criteria for upcoming events.
 	 */
 	public function adjust_sorting_for_upcoming_events( array $query_pieces, WP_Query $query ): array {
 		$include_unfinished = $query->get( 'include_unfinished' );
@@ -327,10 +327,10 @@ final class Query {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array    $query_pieces An array containing pieces of the SQL query.
-	 * @param WP_Query $query        The WP_Query instance (passed by reference).
+	 * @param array<string, string> $query_pieces An array containing pieces of the SQL query.
+	 * @param WP_Query              $query        The WP_Query instance (passed by reference).
 	 *
-	 * @return array The modified SQL query pieces with adjusted sorting criteria for past events.
+	 * @return array<string, string> The modified SQL query pieces with adjusted sorting criteria for past events.
 	 */
 	public function adjust_sorting_for_past_events( array $query_pieces, WP_Query $query ): array {
 		$include_unfinished = $query->get( 'include_unfinished' );
@@ -355,10 +355,10 @@ final class Query {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array    $query_pieces An array containing pieces of the SQL query.
-	 * @param WP_Query $wp_query     The WP_Query instance (passed by reference).
+	 * @param array<string, string> $query_pieces An array containing pieces of the SQL query.
+	 * @param WP_Query              $wp_query     The WP_Query instance (passed by reference).
 	 *
-	 * @return array The modified SQL query pieces with adjusted sorting criteria.
+	 * @return array<string, string> The modified SQL query pieces with adjusted sorting criteria.
 	 */
 	public function adjust_admin_event_sorting( array $query_pieces, WP_Query $wp_query ): array {
 		if ( ! is_admin() ) {
@@ -423,16 +423,18 @@ final class Query {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array           $pieces   An array of query pieces, including join, where, orderby,
-	 *                                  and more.
-	 * @param string          $type     The type of events to query (options: 'all', 'upcoming', 'past')
-	 *                                  (Default: 'all').
-	 * @param string          $order    The event order ('DESC' for descending or 'ASC' for ascending)
-	 *                                  (Default: 'DESC').
-	 * @param string[]|string $order_by List or singular string of ORDERBY statement(s) (Default: ['datetime']).
-	 * @param bool            $inclusive Whether to include currently running events in the query (Default: true).
+	 * @param array<string, string> $pieces    An array of query pieces, including join, where, orderby,
+	 *                                         and more.
+	 * @param string                $type      The type of events to query (options: 'all', 'upcoming', 'past')
+	 *                                         (Default: 'all').
+	 * @param string                $order     The event order ('DESC' for descending or 'ASC' for ascending)
+	 *                                         (Default: 'DESC').
+	 * @param string[]|string       $order_by  List or singular string of ORDERBY statement(s)
+	 *                                         (Default: ['datetime']).
+	 * @param bool                  $inclusive Whether to include currently running events in the query
+	 *                                         (Default: true).
 	 *
-	 * @return array An array containing adjusted SQL clauses for the Event query.
+	 * @return array<string, string> An array containing adjusted SQL clauses for the Event query.
 	 */
 	public function adjust_event_sql(
 		array $pieces,
@@ -518,9 +520,10 @@ final class Query {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $venues Array of venue slugs to filter by.
+	 * @param string[] $venues Array of venue slugs to filter by.
 	 *
-	 * @return array WP_Query compatible tax_query array.
+	 * @return array{relation: string, ...<int, array{taxonomy: string, field: string, terms: string[]}>}
+	 *               WP_Query compatible tax_query array.
 	 */
 	private function build_venue_tax_query( array $venues ): array {
 		$venue_tax_query = array( 'relation' => 'OR' );

@@ -49,7 +49,7 @@ final class Storage {
 	 *
 	 * @since 0.35.0
 	 *
-	 * @var array
+	 * @var array<string, string>
 	 */
 	private const DEFAULT_SAVE_ARGS = array(
 		'comment_author'       => '',
@@ -433,8 +433,8 @@ final class Storage {
 	 *
 	 * @since 0.35.0
 	 *
-	 * @param array    $args     The current comment data args.
-	 * @param Identity $identity The identity.
+	 * @param array<array<int|string>|int|string> $args     The current comment data args.
+	 * @param Identity                            $identity The identity.
 	 *
 	 * @return array<array<int|string>|int|string> The comment data args including the identity.
 	 */

@@ -595,7 +595,7 @@ final class Shadow_Source {
 	 *
 	 * @param WP_Post $source_post The shadow-source post.
 	 *
-	 * @return array The tax_query clause.
+	 * @return array{taxonomy: string, field: string, terms: string[]} The tax_query clause.
 	 */
 	public function build_tax_query_clause( WP_Post $source_post ): array {
 		return array(

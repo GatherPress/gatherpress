@@ -29,6 +29,18 @@ use WP_HTML_Tag_Processor;
  * including dynamic rendering and form processing.
  *
  * @since 0.33.0
+ *
+ * @phpstan-type FieldConfig array{
+ *     name: string,
+ *     type: string,
+ *     required: bool,
+ *     label: string,
+ *     placeholder: string,
+ *     validation?: string,
+ *     options?: string[],
+ *     max_length?: int
+ * }
+ * @phpstan-type FormSchema array{fields: array<string, FieldConfig>, hash: string}
  */
 final class Rsvp_Form {
 
@@ -51,7 +63,7 @@ final class Rsvp_Form {
 	 * These fields are handled by WordPress core or other parts of the RSVP system.
 	 *
 	 * @since 0.33.0
-	 * @var array
+	 * @var string[]
 	 */
 	const BUILT_IN_FIELDS = array(
 		'author',
@@ -105,8 +117,8 @@ final class Rsvp_Form {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The original block content.
-	 * @param array  $block         The block instance array, used to determine the event.
+	 * @param string               $block_content The original block content.
+	 * @param array<string, mixed> $block         The block instance array, used to determine the event.
 	 *
 	 * @return string The modified block content as a functional RSVP form.
 	 */
@@ -184,8 +196,8 @@ final class Rsvp_Form {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The rendered block content.
-	 * @param array  $block         The block instance array.
+	 * @param string               $block_content The rendered block content.
+	 * @param array<string, mixed> $block         The block instance array.
 	 *
 	 * @return string The modified block content or empty string if block should be hidden.
 	 */
@@ -255,7 +267,7 @@ final class Rsvp_Form {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array $block The block instance array.
+	 * @param array<string, mixed> $block The block instance array.
 	 *
 	 * @return int|null The post ID or null if not found.
 	 */
@@ -442,9 +454,9 @@ final class Rsvp_Form {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array $blocks Array of parsed blocks.
+	 * @param array<int, array<string, mixed>> $blocks Array of parsed blocks.
 	 *
-	 * @return array Array of form schemas keyed by form ID.
+	 * @return array<string, FormSchema> Array of form schemas keyed by form ID.
 	 */
 	private function extract_form_schemas_from_blocks( array $blocks ): array {
 		$schemas = array();
@@ -484,9 +496,9 @@ final class Rsvp_Form {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array $inner_blocks Array of inner blocks.
+	 * @param array<int, array<string, mixed>> $inner_blocks Array of inner blocks.
 	 *
-	 * @return array Array of form field configurations.
+	 * @return array<string, FieldConfig> Array of form field configurations keyed by field name.
 	 */
 	private function extract_form_fields_from_inner_blocks( array $inner_blocks ): array {
 		$fields = array();
@@ -543,8 +555,8 @@ final class Rsvp_Form {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param int   $post_id The post ID.
-	 * @param array $block   The current block being rendered.
+	 * @param int                  $post_id The post ID.
+	 * @param array<string, mixed> $block   The current block being rendered.
 	 *
 	 * @return string The form schema ID (e.g., 'form_0', 'form_2').
 	 */
@@ -568,9 +580,9 @@ final class Rsvp_Form {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array $blocks       Array of parsed blocks.
-	 * @param array $target_block The block we're looking for.
-	 * @param int   $base_index   Base index for nested blocks.
+	 * @param array<int, array<string, mixed>> $blocks       Array of parsed blocks.
+	 * @param array<string, mixed>             $target_block The block we're looking for.
+	 * @param int                              $base_index   Base index for nested blocks.
 	 *
 	 * @return int The index of the form block.
 	 */
@@ -608,8 +620,8 @@ final class Rsvp_Form {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array $block1 First block to compare.
-	 * @param array $block2 Second block to compare.
+	 * @param array<string, mixed> $block1 First block to compare.
+	 * @param array<string, mixed> $block2 Second block to compare.
 	 *
 	 * @return bool True if blocks match.
 	 */
@@ -698,8 +710,9 @@ final class Rsvp_Form {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param mixed $value  The field value to sanitize.
-	 * @param array $config The field configuration from the schema.
+	 * @param mixed                $value  The field value to sanitize.
+	 * @param array<string, mixed> $config The field configuration from the schema.
+	 * @phpstan-param FieldConfig $config
 	 *
 	 * @return mixed|false The sanitized value, or false if sanitization fails.
 	 */
@@ -760,8 +773,8 @@ final class Rsvp_Form {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The block content.
-	 * @param array  $block         The block data.
+	 * @param string               $block_content The block content.
+	 * @param array<string, mixed> $block         The block data.
 	 *
 	 * @return string The processed block content.
 	 */

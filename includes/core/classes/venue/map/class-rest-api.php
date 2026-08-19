@@ -30,7 +30,20 @@ use WP_REST_Server;
  * shape of `Event\Rest_Api` — one class per subsystem owning its whole
  * REST surface.
  *
+ * `aspect_ratio` and `map_type` stay `mixed` because {@see Rest_Api::parse_request()}
+ * guards them with `is_string()` for callers that bypass the route's validation.
+ *
  * @since 0.35.0
+ *
+ * @phpstan-type RegenerateRequestParams array{
+ *     id: int,
+ *     zoom?: int,
+ *     width?: int,
+ *     height?: int,
+ *     aspect_ratio?: mixed,
+ *     map_type?: mixed,
+ *     ensure_only?: bool
+ * }
  */
 final class Rest_Api {
 
@@ -207,6 +220,7 @@ final class Rest_Api {
 	 * @since 0.35.0
 	 *
 	 * @param WP_REST_Request $request The REST request.
+	 * @phpstan-param WP_REST_Request<RegenerateRequestParams> $request
 	 *
 	 * @return array{zoom: int|null, width: int|null, height: int|null, aspect_ratio: string, map_type: string}
 	 */
@@ -243,6 +257,7 @@ final class Rest_Api {
 	 * @since 0.35.0 Moved from `Map::rest_regenerate()`.
 	 *
 	 * @param WP_REST_Request $request The REST request.
+	 * @phpstan-param WP_REST_Request<RegenerateRequestParams> $request
 	 *
 	 * @return WP_REST_Response
 	 */

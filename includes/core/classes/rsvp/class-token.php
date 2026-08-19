@@ -351,7 +351,8 @@ final class Token {
 	 *
 	 * @param string|null $token_string Raw token string in format "commentId_token".
 	 *
-	 * @return array Array with 'comment_id' and 'token' keys, or empty array if invalid.
+	 * @return array{comment_id: int, token: string}|array{} Array with 'comment_id' and 'token' keys, or empty
+	 *                                                        array if invalid.
 	 */
 	public static function parse_token_string( ?string $token_string ): array {
 		if ( empty( $token_string ) ) {
@@ -477,7 +478,7 @@ final class Token {
 	 *
 	 * @param WP_Post|null $post The event post object.
 	 *
-	 * @return array Email data with subject, body, and headers.
+	 * @return array{subject: string, body: string, headers: string[]} Email data with subject, body, and headers.
 	 */
 	private function prepare_email_data( ?WP_Post $post ): array {
 		$title = $post ? get_the_title( $post ) : __( 'this event', 'gatherpress' );

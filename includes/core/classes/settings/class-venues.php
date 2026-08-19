@@ -15,6 +15,7 @@ namespace GatherPress\Core\Settings;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue;
@@ -27,6 +28,8 @@ use GatherPress\Core\Venue\Setup;
  * Handles the "Venues" settings page for GatherPress.
  *
  * @since 0.34.0
+ *
+ * @phpstan-import-type SettingsSection from Settings
  */
 final class Venues extends Base {
 
@@ -80,7 +83,7 @@ final class Venues extends Base {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array An array of sections and options for the Venues settings page.
+	 * @return array<string, SettingsSection> An array of sections and options for the Venues settings page.
 	 */
 	protected function get_sections(): array {
 		return array(

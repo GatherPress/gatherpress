@@ -209,7 +209,7 @@ class Endpoint {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array The rewrite replacement attributes for add_rewrite_rule().
+	 * @return array<string, string> The rewrite replacement attributes for add_rewrite_rule().
 	 */
 	public function get_rewrite_atts(): array {
 		return array(
@@ -253,11 +253,11 @@ class Endpoint {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param string $type_name   The name of the post type or taxonomy to validate.
-	 * @param array  $types       Array of endpoint types to register (redirects/templates).
-	 * @param string $object_type The type of object ('post' or 'taxonomy').
+	 * @param string          $type_name   The name of the post type or taxonomy to validate.
+	 * @param Endpoint_Type[] $types       Array of endpoint types to register (redirects/templates).
+	 * @param string          $object_type The type of object ('post' or 'taxonomy').
 	 *
-	 * @return bool               Returns true if registration is valid, false otherwise.
+	 * @return bool                        Returns true if registration is valid, false otherwise.
 	 */
 	private function is_valid_registration( string $type_name, array $types, string $object_type ): bool {
 		if ( 0 === did_action( 'init' ) ) {

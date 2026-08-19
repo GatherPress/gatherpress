@@ -667,9 +667,9 @@ final class Setup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param string   $block_content The block content.
-	 * @param array    $block         The full block, including name and attributes.
-	 * @param WP_Block $instance      The block instance.
+	 * @param string               $block_content The block content.
+	 * @param array<string, mixed> $block         The full block, including name and attributes.
+	 * @param WP_Block             $instance      The block instance.
 	 *
 	 * @return string The filtered block content with event datetime.
 	 *
@@ -719,10 +719,10 @@ final class Setup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array   $post_states An array of post display states.
-	 * @param WP_Post $post        The current post object.
+	 * @param array<string, string> $post_states An array of post display states.
+	 * @param WP_Post               $post        The current post object.
 	 *
-	 * @return array An updated array of post display states with custom labels if applicable.
+	 * @return array<string, string> An updated array of post display states with custom labels if applicable.
 	 */
 	public function set_event_archive_labels( array $post_states, WP_Post $post ): array {
 		// Retrieve archive page settings.
@@ -791,8 +791,10 @@ final class Setup {
 	 *
 	 * @since 0.35.0
 	 *
-	 * @param int   $post_id The post to write.
-	 * @param array $data    Datetime payload keyed dateTimeStart / dateTimeEnd / timezone.
+	 * @param int                                                                    $post_id The post to write.
+	 * @param array{dateTimeStart?: string, dateTimeEnd?: string, timezone?: string} $data    Datetime payload keyed
+	 *                                                                                        dateTimeStart /
+	 *                                                                                        dateTimeEnd / timezone.
 	 *
 	 * @return void
 	 */
