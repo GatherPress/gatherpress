@@ -353,8 +353,15 @@ final class Rsvp {
 		// #1771 does not apply to this design.
 		$promoted_count = 0;
 
-		for ( $i = 0; $i < $remaining_spots; $i++ ) {
-			$state = $waiting_list[ $i ];
+		// Walk the queue itself rather than counting off free spots: the two are
+		// different quantities, and indexing the list by the spot count either
+		// ran off the end of a short queue or stopped before a long one had
+		// filled the room.
+		foreach ( $waiting_list as $state ) {
+			if ( $remaining_spots <= 0 ) {
+				break;
+			}
+
 			$state = $this->storage->save( Intent::attend( $state ), (int) $state->comment->comment_ID );
 
 			if ( $state instanceof State ) {
