@@ -286,16 +286,23 @@ final class Rsvp {
 		}
 
 		$provider = $this->resolve_provider( $identity );
-		$status   = Status::try_from( $status );
-		$data     = new Data( $identity, $status, $guests, (bool) $anonymous );
-		$intent   = new Intent( $data, $provider );
-		$state    = $this->process( $intent );
 
-		if ( null === $state ) {
+		// No provider handles this identity type, so there is no response to record.
+		if ( null === $provider ) {
 			return self::DEFAULT_SAVE_RESPONSE;
 		}
 
-		Cache::delete( $this->event->ID );
+		$status = Status::try_from( $status );
+		$data   = new Data( $identity, $status, $guests, (bool) $anonymous );
+		$intent = new Intent( $data, $provider );
+		$state  = $this->process( $intent );
+		$event  = $this->event;
+
+		if ( null === $state || null === $event ) {
+			return self::DEFAULT_SAVE_RESPONSE;
+		}
+
+		Cache::delete( $event->ID );
 
 		return Serializer::to_array( $state );
 	}
@@ -521,12 +528,15 @@ final class Rsvp {
 	 * @return array<string, RsvpResponseGroup> Response records and counts keyed by 'all' and each RSVP status.
 	 */
 	public function responses(): array {
+		$post_id = $this->event->ID ?? 0;
+
 		// Serialized records vary by capability but the cache key does not, so
 		// only the public variant is cached; privileged viewers compute fresh.
-		$can_use_cache = ! current_user_can( self::CAPABILITY );
+		// An unresolved event has no cache key of its own, so it computes fresh too.
+		$can_use_cache = 0 < $post_id && ! current_user_can( self::CAPABILITY );
 
 		if ( $can_use_cache ) {
-			$cached = Cache::get( $this->event->ID );
+			$cached = Cache::get( $post_id );
 
 			if ( is_array( $cached ) ) {
 				return $cached;
@@ -583,7 +593,7 @@ final class Rsvp {
 		}
 
 		if ( $can_use_cache ) {
-			Cache::set( $this->event->ID, $retval );
+			Cache::set( $post_id, $retval );
 		}
 
 		return $retval;
@@ -653,7 +663,8 @@ final class Rsvp {
 	 * @return Intent
 	 */
 	private function constrain_rsvp_intent( Intent $intent, ?State $current_response ): Intent {
-		$max_guest_limit = intval( get_post_meta( $this->event->ID, 'gatherpress_max_guest_limit', true ) );
+		$post_id         = $this->event->ID ?? 0;
+		$max_guest_limit = intval( get_post_meta( $post_id, 'gatherpress_max_guest_limit', true ) );
 
 		$guests    = $intent->data->guests;
 		$anonymous = $intent->data->anonymous;
@@ -664,7 +675,7 @@ final class Rsvp {
 		}
 
 		// Check if anonymous RSVP is enabled for this event.
-		$enable_anonymous_rsvp = get_post_meta( $this->event->ID, 'gatherpress_enable_anonymous_rsvp', true );
+		$enable_anonymous_rsvp = get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true );
 		if ( ! $enable_anonymous_rsvp ) {
 			$anonymous = false;
 		}
@@ -719,7 +730,7 @@ final class Rsvp {
 	 * @return Identity|null
 	 */
 	private function resolve_identity( int|string $identifier ): ?Identity {
-		if ( is_email( $identifier ) ) {
+		if ( is_string( $identifier ) && is_email( $identifier ) ) {
 			return new Identity( Identity_Type::EMAIL, $identifier );
 		}
 

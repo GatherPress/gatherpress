@@ -88,11 +88,13 @@ final class Redirect extends Endpoint_Type {
 	 * @return string[]       The updated array of allowed host names, including the redirect target.
 	 */
 	public function allowed_redirect_hosts( array $hosts ): array {
-		return array_merge(
-			$hosts,
-			array(
-				wp_parse_url( $this->url, PHP_URL_HOST ),
-			)
-		);
+		$host = wp_parse_url( $this->url, PHP_URL_HOST );
+
+		// A relative or malformed target has no host to allow, so the list is left untouched.
+		if ( ! is_string( $host ) || '' === $host ) {
+			return $hosts;
+		}
+
+		return array_merge( $hosts, array( $host ) );
 	}
 }

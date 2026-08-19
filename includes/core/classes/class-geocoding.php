@@ -31,6 +31,16 @@ use WP_REST_Server;
  *
  * @since 0.34.0
  *
+ * @phpstan-type StructuredAddress array{
+ *     house_number: string,
+ *     street: string,
+ *     city: string,
+ *     county: string,
+ *     state: string,
+ *     postcode: string,
+ *     country: string,
+ *     country_code: string
+ * }
  * @phpstan-type GeocodeResult array{
  *     latitude: string,
  *     longitude: string,
@@ -669,6 +679,12 @@ final class Geocoding {
 		// `house_number` slot. Treat as miss and refetch so the cache
 		// self-heals after the upgrade.
 		if ( is_array( $cached ) && array_key_exists( 'house_number', $cached ) ) {
+			/**
+			 * Cached payload.
+			 *
+			 * @var GeocodeResult $cached This method is the only writer of the cache key, and entries
+			 *                            predating the structured pieces were ruled out above.
+			 */
 			return $cached;
 		}
 
@@ -970,16 +986,7 @@ final class Geocoding {
 	 *
 	 * @param array<string, mixed> $properties Photon `properties` object.
 	 *
-	 * @return array{
-	 *     house_number: string,
-	 *     street: string,
-	 *     city: string,
-	 *     county: string,
-	 *     state: string,
-	 *     postcode: string,
-	 *     country: string,
-	 *     country_code: string
-	 * }
+	 * @return StructuredAddress
 	 */
 	private function extract_structured_address( array $properties ): array {
 		$pluck = static function ( string $key ) use ( $properties ): string {
@@ -1005,6 +1012,12 @@ final class Geocoding {
 			$structured[ $field ] = $pluck( str_replace( '_', '', $field ) );
 		}
 
+		/**
+		 * Structured-address pieces.
+		 *
+		 * @var StructuredAddress $structured The loop fills one slot per `STRUCTURED_ADDRESS_FIELDS`
+		 *                                    entry, so every key of the shape is present.
+		 */
 		return $structured;
 	}
 

@@ -115,7 +115,8 @@ final class Roles extends Base {
 	public function get_user_roles(): array {
 		$sub_pages = Settings::get_instance()->get_sub_pages();
 
-		return (array) $sub_pages['roles_settings']['sections']['roles']['options'];
+		// The sub-pages array is filterable, so a site can drop the roles section entirely.
+		return $sub_pages['roles_settings']['sections']['roles']['options'] ?? array();
 	}
 
 	/**

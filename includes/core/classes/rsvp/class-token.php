@@ -243,6 +243,11 @@ final class Token {
 	 * @return void
 	 */
 	private function save_token_to_meta(): void {
+		// Without a comment there is no meta row to write the token to.
+		if ( ! $this->comment ) {
+			return;
+		}
+
 		update_comment_meta(
 			(int) $this->comment->comment_ID,
 			$this->get_meta_key(),
@@ -422,6 +427,9 @@ final class Token {
 	 * @param WP_Post|null    $post The post object.
 	 * @param WP_Comment|null $comment The comment object.
 	 * @param string          $token The token string.
+	 *
+	 * @phpstan-assert-if-true !null $post
+	 * @phpstan-assert-if-true !null $comment
 	 *
 	 * @return bool True if all components are available, false otherwise.
 	 */

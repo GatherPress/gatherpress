@@ -25,6 +25,7 @@ use GatherPress\Core\Validate;
 use GatherPress\Core\Venue\Setup;
 use GatherPress\Core\Venue\Venue;
 use WP_Post;
+use WP_Term;
 
 /**
  * Class Event.
@@ -513,15 +514,24 @@ class Event {
 		}
 
 		if ( ! empty( $date ) ) {
-			$ts   = strtotime( $date );
-			$date = wp_date(
+			$ts = strtotime( $date );
+
+			// A stored value that validates but will not parse (a legacy all-zero datetime,
+			// for one) has no timestamp to format, so report no datetime at all rather
+			// than falling back to the epoch.
+			if ( false === $ts ) {
+				return '';
+			}
+
+			// wp_date() only returns false for a non-numeric timestamp, which $ts is not.
+			$date = (string) wp_date(
 				apply_filters( 'gatherpress_datetime_format', $format, $which, $local ),
 				$ts,
 				$tz
 			);
 		}
 
-		return (string) trim( $date );
+		return trim( $date );
 	}
 
 	/**
@@ -637,10 +647,20 @@ class Event {
 			'website'   => '',
 		);
 
+		if ( ! $this->event ) {
+			return $venue_information;
+		}
+
 		$event_post_type = (string) get_post_type( $this->event );
 		$venue_setup     = Setup::get_instance();
 		$taxonomy        = $venue_setup->taxonomy_for_event_post_type( $event_post_type );
-		$venue_terms     = (array) get_the_terms( $this->event, $taxonomy );
+		$venue_terms     = get_the_terms( $this->event, $taxonomy );
+
+		// get_the_terms() hands back false when nothing is assigned and a WP_Error for an
+		// unregistered taxonomy; neither carries venue terms to inspect.
+		if ( ! is_array( $venue_terms ) ) {
+			return $venue_information;
+		}
 
 		// Prefer a real venue term (leading-underscore prefix) so a hybrid
 		// event with both a physical venue and the `online-event` sentinel
@@ -653,10 +673,6 @@ class Event {
 		$fallback = null;
 
 		foreach ( $venue_terms as $candidate ) {
-			if ( ! is_a( $candidate, 'WP_Term' ) ) {
-				continue;
-			}
-
 			if ( $venue_setup->is_venue_term_slug( $candidate->slug ) ) {
 				$term = $candidate;
 				break;
@@ -668,12 +684,12 @@ class Event {
 		$term  = $term ?? $fallback;
 		$venue = null;
 
-		if ( is_a( $term, 'WP_Term' ) ) {
+		if ( $term instanceof WP_Term ) {
 			$venue_information['name'] = $term->name;
 			$venue                     = $venue_setup->get_venue_post_from_term_slug( $term->slug );
 		}
 
-		if ( is_a( $venue, 'WP_Post' ) ) {
+		if ( $venue instanceof WP_Post ) {
 			$venue_information = array_merge( $venue_information, ( new Venue( $venue->ID ) )->get_information() );
 
 			$venue_information['permalink'] = (string) get_permalink( $venue->ID );
@@ -707,22 +723,24 @@ class Event {
 
 		$calendar = new Calendar( $this->event->ID );
 
+		// Each URL getter only reports false when its event post cannot be resolved, and the
+		// calendar was built from the post resolved directly above.
 		return array(
 			'google'  => array(
 				'name' => __( 'Google Calendar', 'gatherpress' ),
-				'link' => $calendar->get_google_url(),
+				'link' => (string) $calendar->get_google_url(),
 			),
 			'ical'    => array(
 				'name'     => __( 'iCal', 'gatherpress' ),
-				'download' => $calendar->get_ical_url(),
+				'download' => (string) $calendar->get_ical_url(),
 			),
 			'outlook' => array(
 				'name'     => __( 'Outlook', 'gatherpress' ),
-				'download' => $calendar->get_outlook_url(),
+				'download' => (string) $calendar->get_outlook_url(),
 			),
 			'yahoo'   => array(
 				'name' => __( 'Yahoo Calendar', 'gatherpress' ),
-				'link' => $calendar->get_yahoo_url(),
+				'link' => (string) $calendar->get_yahoo_url(),
 			),
 		);
 	}
@@ -738,6 +756,10 @@ class Event {
 	 * @return string The calendar event description with the event details link.
 	 */
 	public function get_calendar_description(): string {
+		if ( ! $this->event ) {
+			return '';
+		}
+
 		/* translators: %s: event link. */
 		return sprintf( __( 'For details go to %s', 'gatherpress' ), get_the_permalink( $this->event ) );
 	}
@@ -765,6 +787,12 @@ class Event {
 	 */
 	public function save_datetimes( array $params ): bool {
 		global $wpdb;
+
+		// Nothing to attach the datetimes to when the post ID handed to the constructor
+		// did not resolve to an event.
+		if ( ! $this->event ) {
+			return false;
+		}
 
 		$params = array_merge(
 			array(
@@ -841,7 +869,8 @@ class Event {
 			update_post_meta(
 				$fields['post_id'],
 				$meta_key,
-				sanitize_text_field( $field )
+				// Only the string-valued fields reach here; post_id is skipped above.
+				sanitize_text_field( (string) $field )
 			);
 		}
 
@@ -858,6 +887,10 @@ class Event {
 	 * @return string The online event link if all conditions are met; otherwise, an empty string.
 	 */
 	public function maybe_get_online_event_link(): string {
+		if ( ! $this->event ) {
+			return '';
+		}
+
 		$event_link = (string) get_post_meta( $this->event->ID, 'gatherpress_online_event_link', true );
 
 		/**

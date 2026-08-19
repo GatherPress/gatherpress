@@ -230,8 +230,15 @@ final class Rsvp {
 
 			// str_contains is used here to match BEM modifiers that extend the base class.
 			// For example, 'gatherpress-rsvp--trigger-update__attending' includes the base class as a prefix.
-			if ( $class_attr && str_contains( $class_attr, $rsvp_class ) ) {
-				$classes        = preg_split( '/\s+/', trim( $class_attr ) );
+			// A valueless class attribute reads back as true and carries no classes.
+			if ( is_string( $class_attr ) && str_contains( $class_attr, $rsvp_class ) ) {
+				/**
+				 * Class names split on whitespace.
+				 *
+				 * @var list<string> $classes A literal pattern cannot fail, so preg_split() never returns false.
+				 */
+				$classes = preg_split( '/\s+/', trim( $class_attr ) );
+
 				$statuses       = array( 'attending', 'waiting-list', 'not-attending' );
 				$matched_status = null;
 
@@ -296,8 +303,11 @@ final class Rsvp {
 
 		$tag->next_tag();
 
-		$user_details = ! empty( $tag->get_attribute( 'data-user-details' ) ) ?
-			json_decode( $tag->get_attribute( 'data-user-details' ), true ) :
+		$user_details_attr = $tag->get_attribute( 'data-user-details' );
+
+		// A valueless attribute reads back as true and carries no JSON to decode.
+		$user_details = ( is_string( $user_details_attr ) && ! empty( $user_details_attr ) ) ?
+			json_decode( $user_details_attr, true ) :
 			array();
 
 		while ( $tag->next_tag() ) {

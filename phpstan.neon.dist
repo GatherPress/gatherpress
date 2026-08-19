@@ -20,7 +20,7 @@ parameters:
 
     # the analysis level, from 0 (loose) to 9 (strict)
     # https://phpstan.org/user-guide/rule-levels
-    level: 6
+    level: 8
 
     paths:
         - includes/

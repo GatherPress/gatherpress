@@ -58,6 +58,13 @@ final class Settings_Cli extends WP_CLI {
 		if ( ! empty( $assoc_args['file'] ) ) {
 			$file = $assoc_args['file'];
 
+			// WP-CLI hands back `true` for a bare `--file` with no value, which is not a path to write to.
+			if ( ! is_string( $file ) ) {
+				self::error( __( 'The --file option requires a file path.', 'gatherpress' ) );
+
+				return; // @phpstan-ignore deadCode.unreachable
+			}
+
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
 			if ( false === file_put_contents( $file, $json ) ) {
 				self::error(
@@ -141,6 +148,20 @@ final class Settings_Cli extends WP_CLI {
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
 		$json = file_get_contents( $file );
+
+		// The file exists but can still be unreadable — a directory, or owned by another user.
+		if ( false === $json ) {
+			self::error(
+				sprintf(
+					/* translators: %s: File path. */
+					__( 'Failed to read file: %s', 'gatherpress' ),
+					$file
+				)
+			);
+
+			return; // @phpstan-ignore deadCode.unreachable
+		}
+
 		$data = json_decode( $json, true );
 
 		if ( ! is_array( $data ) ) {
@@ -188,7 +209,10 @@ final class Settings_Cli extends WP_CLI {
 			return;
 		}
 
-		$mode   = $assoc_args['mode'] ?? 'merge';
+		$mode = $assoc_args['mode'] ?? 'merge';
+
+		// A bare `--mode` with no value arrives as `true`; fall back to the documented default.
+		$mode   = is_string( $mode ) ? $mode : 'merge';
 		$result = $settings->import_settings( $data, $mode );
 
 		if ( ! $result['success'] ) {

@@ -1005,7 +1005,16 @@ final class Map {
 		 * @param array<string, array<string, array<string, mixed>>> $descriptors Provider-keyed descriptor map.
 		 * @param int                                                $post_id     Venue post ID.
 		 */
-		return (array) apply_filters( 'gatherpress_static_map_descriptors', $descriptors, $post_id );
+		$filtered = (array) apply_filters( 'gatherpress_static_map_descriptors', $descriptors, $post_id );
+
+		/**
+		 * The filtered descriptor map.
+		 *
+		 * @var ProviderDescriptorMap $filtered Integrators are documented to hand back the descriptor
+		 *                                      shape they were given; anything malformed is dropped
+		 *                                      the next time a descriptor is saved.
+		 */
+		return $filtered;
 	}
 
 	/**
@@ -1443,6 +1452,12 @@ final class Map {
 		string $provider,
 		string $map_type = self::DEFAULT_MAP_TYPE
 	): ?string {
+		// GD has handed back GdImage objects since PHP 8.0, so the `resource` arm of the
+		// provider contract can't occur on the 8.1 floor. Anything else is a failed render.
+		if ( ! $image instanceof GdImage ) {
+			return null; // @codeCoverageIgnore
+		}
+
 		$dirs = wp_get_upload_dir();
 
 		if ( ! empty( $dirs['error'] ) ) {

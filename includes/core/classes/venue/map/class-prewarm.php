@@ -552,7 +552,8 @@ final class Prewarm {
 			return array();
 		}
 
-		$blocks = parse_blocks( $content );
+		// parse_blocks() returns a list; array_values() pins that for the int-keyed walk.
+		$blocks = array_values( parse_blocks( $content ) );
 
 		return $this->walk_blocks_for_combos( $blocks );
 	}

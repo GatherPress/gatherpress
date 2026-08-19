@@ -97,6 +97,12 @@ final class Serializer {
 			$data[ Utility::snake_to_camel( $gatherpress_snake_key ) ] = $data[ $gatherpress_snake_key ];
 		}
 
+		/**
+		 * The completed record.
+		 *
+		 * @var RsvpRecord $data Writing the camelCase aliases in a loop loses the shape, but the
+		 *                       literal above plus those three aliases is the whole contract.
+		 */
 		return $data;
 	}
 

@@ -75,9 +75,14 @@ final class Setup {
 	 */
 	public function register_blocks(): void {
 		$blocks_directory = sprintf( '%1$s/build/blocks/', GATHERPRESS_CORE_PATH );
-		$blocks           = array_diff( scandir( $blocks_directory ), array( '..', '.' ) );
+		$blocks           = is_dir( $blocks_directory ) ? scandir( $blocks_directory ) : false;
 
-		foreach ( $blocks as $block ) {
+		// The build directory is absent when the plugin is run straight from source.
+		if ( false === $blocks ) {
+			return;
+		}
+
+		foreach ( array_diff( $blocks, array( '..', '.' ) ) as $block ) {
 			$block_metadata_path = sprintf( '%1$s/build/blocks/%2$s', GATHERPRESS_CORE_PATH, $block );
 
 			if ( is_dir( $block_metadata_path ) ) {
@@ -308,7 +313,14 @@ final class Setup {
 	public function get_post_id( array $block ): int {
 		$post_id = isset( $block['attrs']['postId'] ) ? intval( $block['attrs']['postId'] ) : 0;
 
-		return $post_id > 0 ? $post_id : get_the_ID();
+		if ( $post_id > 0 ) {
+			return $post_id;
+		}
+
+		// get_the_ID() returns false outside the loop, where 0 signals "no post" to callers.
+		$current_post_id = get_the_ID();
+
+		return false !== $current_post_id ? $current_post_id : 0;
 	}
 
 	/**

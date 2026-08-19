@@ -27,6 +27,7 @@ use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\User;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
+use WP_Comment;
 use WP_Post;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -45,7 +46,7 @@ use WP_User;
  *
  * @phpstan-type RouteDefinition array{route: string, args: array<string, mixed>}
  * @phpstan-type SendOptions array{all: bool, attending: bool, waiting_list: bool, not_attending: bool}
- * @phpstan-type Recipient array{is_user: bool, user_id: int, comment_id: int|string, email: string, name: string}
+ * @phpstan-type Recipient array{is_user: bool, user_id: int, comment_id: int, email: string, name: string}
  */
 final class Rest_Api {
 
@@ -673,6 +674,12 @@ final class Rest_Api {
 		);
 
 		foreach ( $comments as $comment ) {
+			// get_rsvps() is typed loosely enough to return counts, so only comment rows
+			// are turned into recipients.
+			if ( ! $comment instanceof WP_Comment ) {
+				continue;
+			}
+
 			$recipient = $this->build_comment_recipient( $comment );
 
 			if ( null !== $recipient ) {
@@ -694,7 +701,7 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param object $comment RSVP comment row from `Rsvp_Query::get_rsvps()`.
+	 * @param WP_Comment $comment RSVP comment row from `Rsvp_Query::get_rsvps()`.
 	 *
 	 * @return Recipient|null Recipient row, or null when no email is on file.
 	 */
@@ -719,7 +726,7 @@ final class Rest_Api {
 		return array(
 			'is_user'    => (bool) $user_id,
 			'user_id'    => $user_id,
-			'comment_id' => $comment->comment_ID,
+			'comment_id' => (int) $comment->comment_ID,
 			'email'      => $email,
 			'name'       => $name,
 		);
@@ -754,6 +761,10 @@ final class Rest_Api {
 		$anonymous       = intval( $params['anonymous'] ?? 0 );
 		$unparsed_token  = sanitize_text_field( $params['rsvp_token'] ?? '' );
 		$event           = new Event( $post_id );
+
+		// Event only builds its Rsvp for a post type that carries event dates, which is what
+		// the route's post_id validation already requires.
+		$rsvp = $event->rsvp;
 
 		// If managing user is adding someone to an event.
 		$is_managing_other = false;
@@ -800,16 +811,23 @@ final class Rest_Api {
 			}
 		}
 
+		// A magic-link token supplies an email address; every other path supplies a user ID,
+		// so each identifier is checked against the one thing it can be.
 		if (
+			$rsvp &&
 			$user_identifier &&
-			( is_user_member_of_blog( $user_identifier ) || is_email( $user_identifier ) ) &&
+			(
+				is_string( $user_identifier )
+					? is_email( $user_identifier )
+					: is_user_member_of_blog( $user_identifier )
+			) &&
 			! $event->has_event_past()
 		) {
 			if ( 'attending' !== $status ) {
 				$guests = 0;
 			}
 
-			$user_record = $event->rsvp->save( $user_identifier, $status, $anonymous, $guests );
+			$user_record = $rsvp->save( $user_identifier, $status, $anonymous, $guests );
 			$status      = $user_record['status'];
 			$guests      = $user_record['guests'];
 
@@ -824,7 +842,7 @@ final class Rest_Api {
 			'status'      => $status,
 			'guests'      => $guests,
 			'anonymous'   => $anonymous,
-			'responses'   => $event->rsvp->responses(),
+			'responses'   => $rsvp ? $rsvp->responses() : array(),
 			'online_link' => $event->maybe_get_online_event_link(),
 		);
 
@@ -984,7 +1002,7 @@ final class Rest_Api {
 				'success'    => true,
 				'message'    => $result['message'],
 				'comment_id' => $result['comment_id'],
-				'responses'  => $this->rsvp_response_counts( $event->rsvp->responses() ),
+				'responses'  => $this->rsvp_response_counts( $rsvp->responses() ),
 			);
 			$status   = 200;
 		} else {

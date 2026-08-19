@@ -339,7 +339,8 @@ final class Shadow_Source {
 
 		$term = term_exists( $old_term_slug, $taxonomy );
 
-		if ( empty( $term ) ) {
+		// Only a taxonomy-scoped hit comes back as the `term_id` array; anything else means the term is missing.
+		if ( ! is_array( $term ) ) {
 			wp_insert_term(
 				$title,
 				$taxonomy,

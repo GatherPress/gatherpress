@@ -639,8 +639,10 @@ final class Setup {
 		$post_type = $post instanceof WP_Post ? $post->post_type : get_post_type();
 		$post_id   = $post instanceof WP_Post ? $post->ID : get_the_ID();
 
+		// get_the_ID() returns false when there is no post in the loop to date.
 		if (
-			! post_type_supports( (string) $post_type, 'gatherpress-event-date' )
+			false === $post_id
+			|| ! post_type_supports( (string) $post_type, 'gatherpress-event-date' )
 			|| 1 !== intval( $use_event_date )
 		) {
 			return $the_date;
@@ -696,18 +698,24 @@ final class Setup {
 		}
 
 		// Replace the datetime attribute and the displayed date text in the block output.
-		$iso_date      = $event->get_datetime_start( 'c' );
-		$block_content = preg_replace(
+		$iso_date = $event->get_datetime_start( 'c' );
+
+		// A literal pattern cannot fail to compile, so preg_replace() never returns null here.
+		$block_content = (string) preg_replace(
 			'/datetime="[^"]*"/',
 			'datetime="' . esc_attr( $iso_date ) . '"',
 			$block_content
 		);
 
-		return preg_replace(
+		$replaced = preg_replace(
 			'|(<time[^>]*>).*?(</time>)|s',
 			'$1' . esc_html( $display_date ) . '$2',
 			$block_content
 		);
+
+		// A null return means PCRE gave up (e.g. the backtrack limit on very large
+		// markup), so the unmodified block content is served instead.
+		return $replaced ?? $block_content;
 	}
 
 	/**

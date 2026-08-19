@@ -93,7 +93,8 @@ final class Cleanup {
 			$meta_keys = array_keys( get_comment_meta( $rsvp->comment_ID ) );
 
 			foreach ( $meta_keys as $meta_key ) {
-				delete_comment_meta( $rsvp->comment_ID, $meta_key );
+				// A numeric meta key comes back from `array_keys()` as an int.
+				delete_comment_meta( $rsvp->comment_ID, (string) $meta_key );
 			}
 
 			wp_delete_comment( $rsvp->comment_ID, true );

@@ -81,14 +81,19 @@ final class List_Table extends WP_List_Table {
 	public function __construct( $args = array() ) {
 		$this->post_type = ! empty( $args['post_type'] ) ? (string) $args['post_type'] : Event::POST_TYPE;
 
-		parent::__construct(
-			array(
-				'plural'   => __( 'RSVPs', 'gatherpress' ),
-				'singular' => __( 'RSVP', 'gatherpress' ),
-				'ajax'     => false,
-				'screen'   => isset( $args['screen'] ) ? $args['screen'] : null,
-			)
+		$table_args = array(
+			'plural'   => __( 'RSVPs', 'gatherpress' ),
+			'singular' => __( 'RSVP', 'gatherpress' ),
+			'ajax'     => false,
 		);
+
+		// WP_List_Table defaults 'screen' to null, so leaving the key out is the same
+		// as the old explicit null and keeps the array to the shape the parent declares.
+		if ( ! empty( $args['screen'] ) ) {
+			$table_args['screen'] = (string) $args['screen'];
+		}
+
+		parent::__construct( $table_args );
 	}
 
 	/**
@@ -251,8 +256,11 @@ final class List_Table extends WP_List_Table {
 		$user     = get_current_user_id();
 		$option   = sprintf( '%s_per_page', Rsvp::COMMENT_TYPE );
 		$per_page = get_user_meta( $user, $option, true );
+		$per_page = is_numeric( $per_page ) ? (int) $per_page : 0;
 
-		if ( empty( $per_page ) || ! is_numeric( $per_page ) ) {
+		// A stored preference of zero or less would divide the total by a non-positive
+		// number when the page count is calculated below.
+		if ( 1 > $per_page ) {
 			$per_page = self::DEFAULT_PER_PAGE;
 		}
 
@@ -453,14 +461,22 @@ final class List_Table extends WP_List_Table {
 	 * @return string Formatted content for the specified column.
 	 */
 	public function column_default( $item, $column_name ): string {
+		// Rows are comments cast to arrays by get_rsvps(); normalize anything else
+		// the parent hands over, the same way column_cb() does.
+		$item       = (array) $item;
+		$comment_id = (int) ( $item['comment_ID'] ?? 0 );
+
 		// Default fall-through (matches the original switch's `default` arm).
-		$output = isset( $item[ $column_name ] ) ? $item[ $column_name ] : '-';
+		$output = isset( $item[ $column_name ] ) && is_scalar( $item[ $column_name ] )
+			? (string) $item[ $column_name ]
+			: '-';
 
 		switch ( $column_name ) {
 			case 'response':
-				$terms = wp_get_object_terms( $item['comment_ID'], Status::TAXONOMY );
+				$terms = wp_get_object_terms( $comment_id, Status::TAXONOMY );
 
-				if ( empty( $terms ) ) {
+				// An unregistered taxonomy yields WP_Error rather than a term list.
+				if ( is_wp_error( $terms ) || empty( $terms ) ) {
 					return '-';
 				}
 
@@ -473,8 +489,17 @@ final class List_Table extends WP_List_Table {
 
 				break;
 			case 'event':
-				$output = '<a href="' . esc_url( get_permalink( $item['comment_post_ID'] ) ) . '">' .
-					wp_kses_post( $item['event_title'] ) . '</a>';
+				$event_title = is_scalar( $item['event_title'] ?? null ) ? (string) $item['event_title'] : '';
+				$event_link  = get_permalink( (int) ( $item['comment_post_ID'] ?? 0 ) );
+
+				// An RSVP row outlives the post it points at, so a deleted event has
+				// neither a permalink nor a title. Show whatever is left of it.
+				if ( false === $event_link ) {
+					$output = '' !== $event_title ? wp_kses_post( $event_title ) : '-';
+					break;
+				}
+
+				$output = '<a href="' . esc_url( $event_link ) . '">' . wp_kses_post( $event_title ) . '</a>';
 				break;
 			case 'approved':
 				$statuses = array(
@@ -482,19 +507,26 @@ final class List_Table extends WP_List_Table {
 					'0'    => __( 'Pending', 'gatherpress' ),
 					'spam' => __( 'Spam', 'gatherpress' ),
 				);
-				$output   = $statuses[ $item['comment_approved'] ];
+				$approved = is_scalar( $item['comment_approved'] ?? null )
+					? (string) $item['comment_approved']
+					: '';
+
+				// Core stores other values here too ('trash', 'post-trashed'), which
+				// this table has no label for.
+				$output = $statuses[ $approved ] ?? '-';
 				break;
 			case 'date':
-				return get_comment_date( 'Y/m/d \a\t g:i a', $item['comment_ID'] );
+				return get_comment_date( 'Y/m/d \a\t g:i a', $comment_id );
 			case 'type':
-				$terms = wp_get_object_terms( $item['comment_ID'], Provider::TAXONOMY );
+				$terms = wp_get_object_terms( $comment_id, Provider::TAXONOMY );
 
 				// Prefer the authoritative provider term when present, but
 				// fall back to inferring the provider from the comment so
 				// the column is correct for rows that never carried the
 				// term — the open/email front-end form doesn't stamp it,
 				// and RSVPs saved before the term existed predate it.
-				if ( empty( $terms ) ) {
+				// An unregistered taxonomy yields WP_Error rather than a term list.
+				if ( is_wp_error( $terms ) || empty( $terms ) ) {
 					$provider = $this->infer_provider_from_item( $item );
 
 					return $provider ? $provider::get_label() : '';
@@ -757,6 +789,10 @@ final class List_Table extends WP_List_Table {
 		if ( ! current_user_can( Rsvp::CAPABILITY ) ) {
 			return;
 		}
+
+		// Rows are comments cast to arrays by get_rsvps(); normalize anything else
+		// the parent hands over, the same way column_cb() does.
+		$item = (array) $item;
 
 		if ( '1' === $item['comment_approved'] ) {
 			$status = 'approved';

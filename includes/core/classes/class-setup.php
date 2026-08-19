@@ -368,15 +368,9 @@ final class Setup {
 			$taxonomy = Venue\Setup::get_instance()->get_taxonomy( $venue_post_type );
 			$term     = term_exists( $term_slug, $taxonomy );
 
-			if ( ! $term ) {
-				wp_insert_term(
-					$term_name,
-					$taxonomy,
-					array(
-						'slug' => $term_slug,
-					)
-				);
-			} else {
+			// Only a taxonomy-scoped hit comes back as the `term_id` array; anything else means there is
+			// nothing to update in this taxonomy yet.
+			if ( is_array( $term ) ) {
 				wp_update_term(
 					intval( $term['term_id'] ),
 					$taxonomy,
@@ -384,6 +378,14 @@ final class Setup {
 						'name' => $term_name,
 						'slug' => $term_slug,
 					),
+				);
+			} else {
+				wp_insert_term(
+					$term_name,
+					$taxonomy,
+					array(
+						'slug' => $term_slug,
+					)
 				);
 			}
 		}
@@ -515,13 +517,16 @@ final class Setup {
 		 * @param bool $is_alpha_active Whether GatherPress Alpha is active.
 		 */
 		$is_alpha_active = apply_filters( 'gatherpress_is_alpha_active', defined( 'GATHERPRESS_ALPHA_VERSION' ) );
+		$screen          = get_current_screen();
 
 		if (
 			$is_alpha_active ||
+			// Without a screen there is no admin page to attach the notice to.
+			null === $screen ||
 			filter_var( ! current_user_can( 'install_plugins' ), FILTER_VALIDATE_BOOLEAN ) || (
-				! str_contains( get_current_screen()->id, 'plugins' ) &&
-				! str_contains( get_current_screen()->id, 'plugin-install' ) &&
-				! str_contains( get_current_screen()->id, 'gatherpress' )
+				! str_contains( $screen->id, 'plugins' ) &&
+				! str_contains( $screen->id, 'plugin-install' ) &&
+				! str_contains( $screen->id, 'gatherpress' )
 			)
 		) {
 			return;

@@ -456,9 +456,24 @@ final class Query {
 		);
 		$pieces   = array_merge( $defaults, $pieces );
 
-		$table           = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
-		$pieces['join'] .= ' LEFT JOIN ' . esc_sql( $table ) . ' ON ' . esc_sql( $wpdb->posts ) . '.ID='
-						. esc_sql( $table ) . '.post_id';
+		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+
+		/**
+		 * Escaped events table name.
+		 *
+		 * @var string $events_table esc_sql() only returns an array when it is handed one.
+		 */
+		$events_table = esc_sql( $table );
+
+		/**
+		 * Escaped posts table name.
+		 *
+		 * @var string $posts_table esc_sql() only returns an array when it is handed one.
+		 */
+		$posts_table = esc_sql( $wpdb->posts );
+
+		$pieces['join'] .= ' LEFT JOIN ' . $events_table . ' ON ' . $posts_table . '.ID='
+						. $events_table . '.post_id';
 		$order           = strtoupper( $order );
 
 		if ( in_array( $order, array( 'DESC', 'ASC' ), true ) ) {
@@ -468,14 +483,14 @@ final class Query {
 
 			switch ( strtolower( $order_by ) ) {
 				case 'id':
-					$pieces['orderby'] = sprintf( esc_sql( $wpdb->posts ) . '.ID %s', esc_sql( $order ) );
+					$pieces['orderby'] = sprintf( $posts_table . '.ID %s', esc_sql( $order ) );
 					break;
 				case 'title':
-					$pieces['orderby'] = sprintf( esc_sql( $wpdb->posts ) . '.post_name %s', esc_sql( $order ) );
+					$pieces['orderby'] = sprintf( $posts_table . '.post_name %s', esc_sql( $order ) );
 					break;
 				case 'modified':
 					$pieces['orderby'] = sprintf(
-						esc_sql( $wpdb->posts ) . '.post_modified_gmt %s',
+						$posts_table . '.post_modified_gmt %s',
 						esc_sql( $order )
 					);
 					break;
@@ -483,7 +498,7 @@ final class Query {
 					$pieces['orderby'] = esc_sql( 'RAND()' );
 					break;
 				case 'datetime':
-					$pieces['orderby'] = sprintf( esc_sql( $table ) . '.datetime_start_gmt %s', esc_sql( $order ) );
+					$pieces['orderby'] = sprintf( $events_table . '.datetime_start_gmt %s', esc_sql( $order ) );
 					break;
 				default:
 					// Custom column sorting (e.g., rsvps, venue) is handled
@@ -522,8 +537,9 @@ final class Query {
 	 *
 	 * @param string[] $venues Array of venue slugs to filter by.
 	 *
-	 * @return array{relation: string, ...<int, array{taxonomy: string, field: string, terms: string[]}>}
-	 *               WP_Query compatible tax_query array.
+	 * @return array<int|string, string|array{taxonomy: string, field: string, terms: string[]}>
+	 *               WP_Query compatible tax_query array: an `OR` relation under the `relation` key,
+	 *               plus one clause per registered venue taxonomy under integer keys.
 	 */
 	private function build_venue_tax_query( array $venues ): array {
 		$venue_tax_query = array( 'relation' => 'OR' );

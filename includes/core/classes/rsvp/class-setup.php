@@ -414,7 +414,10 @@ final class Setup {
 			)
 		);
 
-		$this->list_table->register_column_options();
+		// The list table only exists when `prepare_rsvp_admin_page()` created it for this screen.
+		if ( $this->list_table instanceof List_Table ) {
+			$this->list_table->register_column_options();
+		}
 	}
 
 	/**
