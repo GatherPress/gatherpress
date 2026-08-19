@@ -263,6 +263,90 @@ class Test_Rsvp extends Base {
 	}
 
 	/**
+	 * Test check waiting list when the free spots outnumber the waiting list.
+	 *
+	 * The promotion loop walked one index per free spot, so a waiting list
+	 * shorter than the number of open spots ran off the end of the array.
+	 *
+	 * @since  0.36.0
+	 * @covers ::check_waiting_list
+	 *
+	 * @return void
+	 */
+	public function test_check_waiting_list_with_more_spots_than_waiting(): void {
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$rsvp     = new Rsvp( $event_id );
+		$user_id  = $this->factory->user->create();
+
+		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 10 );
+
+		// Saving runs the promotion sweep itself, which is where the overrun
+		// used to raise a TypeError rather than returning.
+		$rsvp->save( $user_id, 'waiting_list' );
+
+		$this->assertSame(
+			'attending',
+			$rsvp->get( $user_id )['status'],
+			'The waiting member should have moved to attending'
+		);
+
+		$this->assertEquals(
+			0,
+			$rsvp->check_waiting_list(),
+			'Should report nothing left to promote once the queue is empty'
+		);
+	}
+
+	/**
+	 * Test check waiting list fills every free spot.
+	 *
+	 * The loop compared its index against the shrinking spot count, so it
+	 * stopped early and left seats empty with people still waiting.
+	 *
+	 * @since  0.36.0
+	 * @covers ::check_waiting_list
+	 *
+	 * @return void
+	 */
+	public function test_check_waiting_list_fills_every_free_spot(): void {
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$rsvp     = new Rsvp( $event_id );
+		$user_ids = array();
+
+		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 1 );
+
+		// Five people queue up behind a single seat.
+		for ( $i = 0; $i < 5; $i++ ) {
+			$user_ids[] = $this->factory->user->create();
+		}
+
+		foreach ( $user_ids as $user_id ) {
+			$rsvp->save( $user_id, 'waiting_list' );
+		}
+
+		// Widen the event to three seats, one of which the first promotion took.
+		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 3 );
+
+		$this->assertEquals(
+			2,
+			$rsvp->check_waiting_list(),
+			'Should fill both remaining spots rather than stopping early'
+		);
+
+		$this->assertSame(
+			'attending',
+			$rsvp->get( $user_ids[2] )['status'],
+			'The third in line should have taken the last free spot'
+		);
+
+		$this->assertSame(
+			'waiting_list',
+			$rsvp->get( $user_ids[3] )['status'],
+			'The fourth in line should still be waiting'
+		);
+	}
+
+	/**
 	 * Test check waiting list with limited attendance.
 	 *
 	 * @since  0.34.0
