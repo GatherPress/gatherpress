@@ -33,9 +33,9 @@ final class Utility {
 	 *
 	 * @since 0.27.0
 	 *
-	 * @param string $path      The path to the template file.
-	 * @param array  $variables An array of variables to pass to the template.
-	 * @param bool   $output    Whether to echo the template (true) or return it (false).
+	 * @param string               $path      The path to the template file.
+	 * @param array<string, mixed> $variables An array of variables to pass to the template.
+	 * @param bool                 $output    Whether to echo the template (true) or return it (false).
 	 *
 	 * @return string The rendered template as a string.
 	 */
@@ -308,7 +308,8 @@ final class Utility {
 	 *
 	 * @since 0.27.0
 	 *
-	 * @return array An array of time zones with labels as keys and time zone choices as values.
+	 * @return array<string, array<string, string>> An array of time zones with labels as keys and time zone choices
+	 *                                             as values.
 	 */
 	public static function timezone_choices(): array {
 		// Parse `wp_timezone_choice()` output through WordPress's HTML tag
@@ -382,7 +383,7 @@ final class Utility {
 	 *
 	 * @since 0.29.0
 	 *
-	 * @return array An array of timezone identifiers and UTC offsets.
+	 * @return string[] An array of timezone identifiers and UTC offsets.
 	 */
 	public static function list_timezone_and_utc_offsets(): array {
 		// Get a list of all available timezone identifiers.
@@ -806,9 +807,9 @@ final class Utility {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $blocks A parsed block, typically including `blockName` and `innerBlocks`.
+	 * @param array<string, mixed> $blocks A parsed block, typically including `blockName` and `innerBlocks`.
 	 *
-	 * @return array An array of block names found within the provided block structure.
+	 * @return string[] An array of block names found within the provided block structure.
 	 */
 	public static function get_block_names( array $blocks ): array {
 		$block_names = array();

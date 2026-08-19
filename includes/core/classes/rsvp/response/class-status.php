@@ -62,7 +62,7 @@ enum Status: string {
 	 *
 	 * @since 0.35.0
 	 *
-	 * @return array List of all valid status values.
+	 * @return string[] List of all valid status values.
 	 */
 	public static function values(): array {
 		$values = array();

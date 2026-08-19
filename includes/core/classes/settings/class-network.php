@@ -27,6 +27,9 @@ use GatherPress\Core\Utility;
  * Class Network.
  *
  * @since 0.34.0
+ *
+ * @phpstan-import-type SettingsSubPage from Settings
+ * @phpstan-type NetworkConfig array{enabled: bool, inherited: string[]}
  */
 final class Network {
 
@@ -88,6 +91,7 @@ final class Network {
 	 * @since 0.34.0
 	 *
 	 * @var array|null
+	 * @phpstan-var NetworkConfig|null
 	 */
 	protected static ?array $config_cache = null;
 
@@ -172,7 +176,7 @@ final class Network {
 		$config   = self::get_config();
 		$settings = Settings::get_instance();
 		$locked   = array_filter(
-			(array) ( $config['inherited'] ?? array() ),
+			$config['inherited'],
 			static function ( $option_key ) use ( $settings ): bool {
 				return $settings->is_option_inherited( (string) $option_key );
 			}
@@ -338,7 +342,7 @@ final class Network {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array
+	 * @return array<string, SettingsSubPage>
 	 */
 	protected function get_network_sub_pages(): array {
 		$sub_pages = Settings::get_instance()->get_sub_pages();
@@ -360,7 +364,7 @@ final class Network {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $sub_pages Available sub-pages keyed by slug.
+	 * @param array<string, SettingsSubPage> $sub_pages Available sub-pages keyed by slug.
 	 *
 	 * @return string
 	 */
@@ -470,7 +474,7 @@ final class Network {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $sub_pages Sub-pages from Settings::get_sub_pages().
+	 * @param array<string, SettingsSubPage> $sub_pages Sub-pages from Settings::get_sub_pages().
 	 *
 	 * @return array<string, string>
 	 */
@@ -532,6 +536,7 @@ final class Network {
 	 * @param mixed $input Raw input array.
 	 *
 	 * @return array
+	 * @phpstan-return NetworkConfig
 	 */
 	public function sanitize( $input ): array {
 		$input     = is_array( $input ) ? $input : array();
@@ -560,6 +565,7 @@ final class Network {
 	 * @since 0.34.0
 	 *
 	 * @return array Config with 'enabled' (bool) and 'inherited' (string[]).
+	 * @phpstan-return NetworkConfig
 	 */
 	public static function get_config(): array {
 		// Called twice per field render (via Settings::render_field → get() →
@@ -600,6 +606,7 @@ final class Network {
 	 * @since 0.34.0
 	 *
 	 * @return array
+	 * @phpstan-return NetworkConfig
 	 */
 	public static function get_default_config(): array {
 		return array(

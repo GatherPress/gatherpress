@@ -30,7 +30,7 @@ final class Form_Field {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @var array
+	 * @var array<string, mixed>
 	 */
 	private array $attributes;
 
@@ -73,7 +73,7 @@ final class Form_Field {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array $attributes The block attributes array.
+	 * @param array<string, mixed> $attributes The block attributes array.
 	 */
 	public function __construct( array $attributes ) {
 		$this->attributes = $this->process_attributes( $attributes );
@@ -91,9 +91,9 @@ final class Form_Field {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array $raw_attributes Raw attributes from the block editor.
+	 * @param array<string, mixed> $raw_attributes Raw attributes from the block editor.
 	 *
-	 * @return array Processed attributes with defaults and proper formatting.
+	 * @return array<string, mixed> Processed attributes with defaults and proper formatting.
 	 */
 	private function process_attributes( array $raw_attributes ): array {
 		return array(
@@ -190,9 +190,9 @@ final class Form_Field {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array  $styles   Reference to the styles array to modify.
-	 * @param string $attr_key The attribute key to check in the attributes array.
-	 * @param string $format   The sprintf format string for the CSS property (e.g., 'color:%s').
+	 * @param string[] $styles   Reference to the styles array to modify.
+	 * @param string   $attr_key The attribute key to check in the attributes array.
+	 * @param string   $format   The sprintf format string for the CSS property (e.g., 'color:%s').
 	 *
 	 * @return void
 	 */
@@ -210,7 +210,7 @@ final class Form_Field {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array $styles Array of CSS style declarations (e.g., ['color:red', 'font-size:16px']).
+	 * @param string[] $styles Array of CSS style declarations (e.g., ['color:red', 'font-size:16px']).
 	 *
 	 * @return string Formatted style attribute string or empty string if no styles.
 	 */
@@ -364,7 +364,7 @@ final class Form_Field {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @return array Array of CSS class names for the wrapper element.
+	 * @return string[] Array of CSS class names for the wrapper element.
 	 */
 	public function get_wrapper_classes(): array {
 		$field_type = $this->get_field_type();

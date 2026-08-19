@@ -114,9 +114,9 @@ final class Rsvp_Template {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string   $block_content The original block content.
-	 * @param array    $block         The parsed block data.
-	 * @param WP_Block $instance      The block instance.
+	 * @param string               $block_content The original block content.
+	 * @param array<string, mixed> $block         The parsed block data.
+	 * @param WP_Block             $instance      The block instance.
 	 *
 	 * @return string The dynamically generated block content.
 	 */
@@ -180,9 +180,12 @@ final class Rsvp_Template {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array $parsed_block The parsed block data, typically from a block's JSON structure.
-	 * @param int   $response_id  The ID of the response used to populate the block's context.
-	 * @param array $args         Optional. Additional arguments for rendering. Default empty array.
+	 * @param array<string, mixed>                                  $parsed_block The parsed block data, typically from
+	 *                                                                            a block's JSON structure.
+	 * @param int                                                   $response_id  The ID of the response used to
+	 *                                                                            populate the block's context.
+	 * @param array{limit_enabled?: bool, limit?: int, index?: int} $args         Optional. Additional arguments for
+	 *                                                                            rendering. Default empty array.
 	 *
 	 * @return string The rendered block content wrapped in a `div` with a `data-id` attribute.
 	 */

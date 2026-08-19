@@ -77,8 +77,8 @@ final class Add_To_Calendar {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The original block content.
-	 * @param array  $block         The block instance array, used to determine the event.
+	 * @param string               $block_content The original block content.
+	 * @param array<string, mixed> $block         The block instance array, used to determine the event.
 	 *
 	 * @return string The modified block content with calendar hrefs replaced.
 	 */

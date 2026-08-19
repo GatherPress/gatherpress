@@ -42,6 +42,10 @@ use WP_User;
  * infrastructure.
  *
  * @since 0.34.0
+ *
+ * @phpstan-type RouteDefinition array{route: string, args: array<string, mixed>}
+ * @phpstan-type SendOptions array{all: bool, attending: bool, waiting_list: bool, not_attending: bool}
+ * @phpstan-type Recipient array{is_user: bool, user_id: int, comment_id: int|string, email: string, name: string}
  */
 final class Rest_Api {
 
@@ -106,7 +110,7 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array[] An array of route definitions for GatherPress events.
+	 * @return array<int, RouteDefinition> An array of route definitions for GatherPress events.
 	 */
 	protected function get_event_routes(): array {
 		return array(
@@ -126,7 +130,7 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array The REST route configuration.
+	 * @return RouteDefinition The REST route configuration.
 	 */
 	protected function email_route(): array {
 		return array(
@@ -171,7 +175,7 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array Route configuration array.
+	 * @return RouteDefinition Route configuration array.
 	 */
 	protected function nonce_route(): array {
 		return array(
@@ -206,7 +210,7 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array The REST route configuration.
+	 * @return RouteDefinition The REST route configuration.
 	 */
 	protected function rsvp_route(): array {
 		return array(
@@ -256,7 +260,7 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array The REST route configuration.
+	 * @return RouteDefinition The REST route configuration.
 	 */
 	protected function rsvp_form_route(): array {
 		return array(
@@ -315,7 +319,7 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array The REST route configuration.
+	 * @return RouteDefinition The REST route configuration.
 	 */
 	protected function rsvp_status_html_route(): array {
 		return array(
@@ -358,7 +362,7 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array Route configuration with path, methods, callback and arguments.
+	 * @return RouteDefinition Route configuration with path, methods, callback and arguments.
 	 */
 	protected function rsvp_responses_route(): array {
 		return array(
@@ -387,6 +391,7 @@ final class Rest_Api {
 	 * @since 0.35.1
 	 *
 	 * @param WP_REST_Request $request Contains data from the request.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
 	 * @return bool True when the caller may read the event's RSVP responses.
 	 */
@@ -403,9 +408,10 @@ final class Rest_Api {
 	 *
 	 * @since 0.35.1
 	 *
-	 * @param array $responses The full payload from Rsvp::responses().
+	 * @param array<string, array{records: array<int, array<string, mixed>>, count: int}> $responses Full payload from
+	 *                                                                                               Rsvp::responses().
 	 *
-	 * @return array The same status keys, each carrying only its count.
+	 * @return array<string, array{count: int}> The same status keys, each carrying only its count.
 	 */
 	private function rsvp_response_counts( array $responses ): array {
 		return array_map(
@@ -424,6 +430,7 @@ final class Rest_Api {
 	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request Contains data from the request.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
 	 * @return WP_REST_Response The response indicating the success of the email scheduling process.
 	 */
@@ -459,6 +466,7 @@ final class Rest_Api {
 	 * @param array  $send    Members to send the email to.
 	 * @param string $message Optional message to include in the email.
 	 * @param string $subject Optional subject line. Defaults to the existing `📅 {title}` template when empty.
+	 * @phpstan-param SendOptions $send
 	 *
 	 * @return void
 	 */
@@ -480,6 +488,7 @@ final class Rest_Api {
 	 * @param array  $send    Members to send the email to.
 	 * @param string $message Optional message to include in the email.
 	 * @param string $subject Optional subject line. Defaults to the existing `📅 {title}` template when empty.
+	 * @phpstan-param SendOptions $send
 	 *
 	 * @return bool True if emails were successfully sent, false otherwise.
 	 */
@@ -518,6 +527,7 @@ final class Rest_Api {
 	 * @param WP_User $current_user Originating editor (restored after locale/user switch).
 	 * @param string  $subject      Optional subject line. Empty falls back to the default template
 	 *                              and is then filtered via `gatherpress_email_subject`.
+	 * @phpstan-param Recipient $recipient
 	 *
 	 * @return void
 	 */
@@ -611,8 +621,9 @@ final class Rest_Api {
 	 *
 	 * @param array $send    An array specifying who to send emails to.
 	 * @param int   $post_id The Event Post ID.
+	 * @phpstan-param SendOptions $send
 	 *
-	 * @return array An array containing unified recipient data for both users and non-users.
+	 * @return array<int, Recipient> An array containing unified recipient data for both users and non-users.
 	 */
 	public function get_recipients( array $send, int $post_id ): array {
 		$recipients    = array();
@@ -685,7 +696,7 @@ final class Rest_Api {
 	 *
 	 * @param object $comment RSVP comment row from `Rsvp_Query::get_rsvps()`.
 	 *
-	 * @return array|null Recipient row, or null when no email is on file.
+	 * @return Recipient|null Recipient row, or null when no email is on file.
 	 */
 	protected function build_comment_recipient( $comment ): ?array {
 		$user_id = intval( $comment->user_id );
@@ -724,6 +735,7 @@ final class Rest_Api {
 	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request Contains data from the request.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
 	 * @return WP_REST_Response An instance of WP_REST_Response containing the response data.
 	 */
@@ -833,6 +845,7 @@ final class Rest_Api {
 	 * @param WP_REST_Request $request The REST API request object containing parameters:
 	 *                                 - post_id (int): The ID of the post associated with the RSVP.
 	 *                                 - block_data (string): JSON-encoded block data used to render the RSVP content.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
 	 * @return WP_REST_Response The REST API response containing:
 	 *                          - success (bool): Whether the content was successfully generated.
@@ -889,6 +902,7 @@ final class Rest_Api {
 	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request The REST API request object.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
 	 * @return WP_REST_Response The response indicating success or failure.
 	 */
@@ -993,6 +1007,7 @@ final class Rest_Api {
 	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request REST API request object containing post_id parameter.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
 	 * @return WP_REST_Response Response containing success status and RSVP data.
 	 */

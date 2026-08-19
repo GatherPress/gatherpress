@@ -117,7 +117,7 @@ final class Venue {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $block The full block, including name and attributes.
+	 * @param array<string, mixed> $block The full block, including name and attributes.
 	 *
 	 * @return string Shadow-source post type slug.
 	 */
@@ -139,7 +139,7 @@ final class Venue {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $block The full block, including name and attributes.
+	 * @param array<string, mixed> $block The full block, including name and attributes.
 	 *
 	 * @return WP_Post|null The source post or null if not found.
 	 */

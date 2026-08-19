@@ -270,10 +270,10 @@ final class Cache {
 	 *
 	 * @since 0.36.0
 	 *
-	 * @param int|string $object_id  The object whose terms changed.
-	 * @param array      $terms      Terms set (unused; part of the hook signature).
-	 * @param array      $tt_ids     Term taxonomy IDs (unused; part of the hook signature).
-	 * @param string     $taxonomy   The taxonomy that changed.
+	 * @param int|string        $object_id  The object whose terms changed.
+	 * @param array<int|string> $terms      Terms set (unused; part of the hook signature).
+	 * @param int[]             $tt_ids     Term taxonomy IDs (unused; part of the hook signature).
+	 * @param string            $taxonomy   The taxonomy that changed.
 	 *
 	 * @return void
 	 *

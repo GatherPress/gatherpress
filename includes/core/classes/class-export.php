@@ -168,10 +168,10 @@ final class Export extends Migrate {
 	/**
 	 * Render custom post_meta data into xml markup to be used while WordÜress' native export.
 	 *
-	 * @param  array   $callbacks Associative array with (import & export) callback functions for
-	 *                            the non-existent post_meta entry, named by $key.
-	 * @param string  $key       Name of the custom post_meta, that should be exported.
-	 * @param  WP_Post $post      The currently exported 'gatherpress_event' post.
+	 * @param  array<string, mixed> $callbacks Associative array with (import & export) callback functions for
+	 *                                         the non-existent post_meta entry, named by $key.
+	 * @param string               $key       Name of the custom post_meta, that should be exported.
+	 * @param  WP_Post              $post      The currently exported 'gatherpress_event' post.
 	 *
 	 * @return void
 	 * @since 0.30.0

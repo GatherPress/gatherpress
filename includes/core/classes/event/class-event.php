@@ -32,6 +32,14 @@ use WP_Post;
  * Represents individual events within the GatherPress plugin and provides event-related functionality.
  *
  * @since 0.34.0
+ *
+ * @phpstan-type EventDatetime array{
+ *     datetime_start: string,
+ *     datetime_start_gmt: string,
+ *     datetime_end: string,
+ *     datetime_end_gmt: string,
+ *     timezone: string
+ * }
  */
 class Event {
 
@@ -111,7 +119,7 @@ class Event {
 	 * Non-time PHP DateTime formatting characters
 	 *
 	 * @since 0.34.0
-	 * @var array
+	 * @var string[]
 	 */
 	const PHP_NON_TIME_FORMAT_CHARS = array(
 		'd',
@@ -168,7 +176,7 @@ class Event {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @var array|null
+	 * @var EventDatetime|null
 	 */
 	private ?array $datetime_cache = null;
 
@@ -525,7 +533,7 @@ class Event {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array An associative array detailing the event's schedule and timezone, potentially
+	 * @return EventDatetime An associative array detailing the event's schedule and timezone, potentially
 	 * adjusted for user-specific preferences:
 	 *     - 'datetime_start'     (string) The event start date and time.
 	 *     - 'datetime_start_gmt' (string) The event start date and time in GMT.
@@ -613,12 +621,12 @@ class Event {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array An array containing venue information:
-	 *               - 'address' (string): The address of the venue.
-	 *               - 'name' (string): The name of the venue.
-	 *               - 'permalink' (string): The permalink (URL) of the venue.
-	 *               - 'phone' (string): The phone number of the venue.
-	 *               - 'website' (string): The website URL of the venue.
+	 * @return array<string, string> An array containing venue information:
+	 *                               - 'address' (string): The address of the venue.
+	 *                               - 'name' (string): The name of the venue.
+	 *                               - 'permalink' (string): The permalink (URL) of the venue.
+	 *                               - 'phone' (string): The phone number of the venue.
+	 *                               - 'website' (string): The website URL of the venue.
 	 */
 	public function get_venue_information(): array {
 		$venue_information = array(
@@ -683,7 +691,8 @@ class Event {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array An associative array containing supported calendar links:
+	 * @return array<string, array{name: string, link?: string, download?: string}> An associative array containing
+	 *     supported calendar links:
 	 *     - 'google'  (array) Google Calendar link information with 'name' and 'link' keys.
 	 *     - 'ical'    (array) iCal download link information with 'name' and 'download' keys.
 	 *     - 'outlook' (array) Outlook download link information with 'name' and 'download' keys.
@@ -742,7 +751,7 @@ class Event {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $params {
+	 * @param array{post_id?: int, datetime_start?: string, datetime_end?: string, timezone?: string} $params {
 	 *     An array of arguments used to save event data to the custom event table.
 	 *
 	 *     @type int    $post_id        The event's post ID.

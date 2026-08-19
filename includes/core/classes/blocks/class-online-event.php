@@ -72,9 +72,9 @@ final class Online_Event {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param string|null $block_content The block content.
-	 * @param array|null  $block         The full block, including name and attributes.
-	 * @param WP_Block    $instance      The block instance.
+	 * @param string|null               $block_content The block content.
+	 * @param array<string, mixed>|null $block         The full block, including name and attributes.
+	 * @param WP_Block                  $instance      The block instance.
 	 *
 	 * @return string
 	 */

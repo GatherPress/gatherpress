@@ -74,8 +74,8 @@ final class General_Block {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The HTML content of the block.
-	 * @param array  $block         The parsed block data.
+	 * @param string               $block_content The HTML content of the block.
+	 * @param array<string, mixed> $block         The parsed block data.
 	 *
 	 * @return string The modified block content or an empty string if the block should be removed.
 	 */
@@ -108,8 +108,8 @@ final class General_Block {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The HTML content of the block.
-	 * @param array  $block         The parsed block data.
+	 * @param string               $block_content The HTML content of the block.
+	 * @param array<string, mixed> $block         The parsed block data.
 	 *
 	 * @return string The modified block content or an empty string if the block should be removed.
 	 */
@@ -144,8 +144,8 @@ final class General_Block {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param string $block_content The HTML content of the block.
-	 * @param array  $block         The parsed block data.
+	 * @param string               $block_content The HTML content of the block.
+	 * @param array<string, mixed> $block         The parsed block data.
 	 *
 	 * @return string The modified block content or an empty string if the block should be removed.
 	 */
@@ -184,8 +184,8 @@ final class General_Block {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The HTML content of the block.
-	 * @param array  $block         The parsed block data.
+	 * @param string               $block_content The HTML content of the block.
+	 * @param array<string, mixed> $block         The parsed block data.
 	 *
 	 * @return string The modified block content with submit button functionality.
 	 */
@@ -231,8 +231,8 @@ final class General_Block {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The block content.
-	 * @param array  $block         The block data.
+	 * @param string               $block_content The block content.
+	 * @param array<string, mixed> $block         The block data.
 	 *
 	 * @return string The processed block content.
 	 */
@@ -282,8 +282,8 @@ final class General_Block {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The block content.
-	 * @param array  $block         The block data.
+	 * @param string               $block_content The block content.
+	 * @param array<string, mixed> $block         The block data.
 	 *
 	 * @return string The processed block content.
 	 */
