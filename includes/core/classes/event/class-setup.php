@@ -370,11 +370,20 @@ final class Setup {
 			return;
 		}
 
-		// Bail when not on a post type archive at all, or when the
-		// queried post type doesn't declare event-date support.
-		$post_type = (string) get_query_var( 'post_type' );
+		// `post_type` comes back as an array on multi-post-type archives
+		// (e.g. a combined archive query across several event-supporting
+		// post types); the is_string() guard below keeps that array out of
+		// post_type_supports(), which otherwise emits a PHP "Array to
+		// string conversion" warning when it casts its argument to string.
+		$post_type = get_query_var( 'post_type' );
 
-		if ( ! is_post_type_archive() || ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+		// Bail when not on a post type archive at all, when the queried
+		// post type isn't a single string, or when it doesn't declare
+		// event-date support.
+		if ( ! is_post_type_archive()
+			|| ! is_string( $post_type )
+			|| ! post_type_supports( $post_type, 'gatherpress-event-date' )
+		) {
 			return;
 		}
 
