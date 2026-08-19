@@ -8,6 +8,7 @@
 
 namespace GatherPress\Tests\Core\Event;
 
+use DateTime;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Rest_Api;
 use GatherPress\Core\Rsvp\Response\Status;
@@ -42,12 +43,13 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
-	 * Restore open RSVP to its default disabled state after each test.
+	 * Restore RSVP settings to their defaults after each test.
 	 *
 	 * @return void
 	 */
 	public function tearDown(): void {
 		Settings::get_instance()->set( 'enable_open_rsvp', true );
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 		parent::tearDown();
 	}
 
@@ -2905,6 +2907,211 @@ class Test_Rest_Api extends Base {
 		remove_filter( 'pre_wp_mail', '__return_false' );
 
 		$this->assertTrue( true, 'Helper completed without throwing.' );
+	}
+
+	/**
+	 * Future-event emails include the RSVP Now CTA.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::send_event_email_to_recipient
+	 *
+	 * @return void
+	 */
+	public function test_send_event_email_includes_rsvp_cta_for_future_event(): void {
+		$captured_body = '';
+		$capture_email = static function ( $preempt, $atts ) use ( &$captured_body ) {
+			$captured_body = $atts['message'] ?? '';
+			return true;
+		};
+		add_filter(
+			'pre_wp_mail',
+			$capture_email,
+			10,
+			2
+		);
+
+		$instance = Rest_Api::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$event    = new Event( $event_id );
+		$start    = new DateTime( 'now' );
+		$end      = new DateTime( 'now' );
+
+		$start->modify( '+1 day' );
+		$end->modify( '+1 day +2 hours' );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+				'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			)
+		);
+
+		$user = get_userdata( $this->factory->user->create() );
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'send_event_email_to_recipient',
+			array(
+				array(
+					'is_user'    => true,
+					'user_id'    => $user->ID,
+					'comment_id' => 0,
+					'email'      => $user->user_email,
+					'name'       => $user->display_name,
+				),
+				$event_id,
+				'Upcoming reminder.',
+				wp_get_current_user(),
+			)
+		);
+
+		remove_filter( 'pre_wp_mail', $capture_email );
+
+		$this->assertStringContainsString(
+			'RSVP Now',
+			$captured_body,
+			'Future-event email should include the RSVP Now CTA.'
+		);
+	}
+
+	/**
+	 * Past-event emails omit the RSVP Now CTA — registration is closed.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::send_event_email_to_recipient
+	 *
+	 * @return void
+	 */
+	public function test_send_event_email_omits_rsvp_cta_for_past_event(): void {
+		$captured_body = '';
+		$capture_email = static function ( $preempt, $atts ) use ( &$captured_body ) {
+			$captured_body = $atts['message'] ?? '';
+			return true;
+		};
+		add_filter(
+			'pre_wp_mail',
+			$capture_email,
+			10,
+			2
+		);
+
+		$instance = Rest_Api::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$event    = new Event( $event_id );
+		$start    = new DateTime( 'now' );
+		$end      = new DateTime( 'now' );
+
+		$start->modify( '-2 days' );
+		$end->modify( '-2 days +2 hours' );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+				'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			)
+		);
+
+		$user = get_userdata( $this->factory->user->create() );
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'send_event_email_to_recipient',
+			array(
+				array(
+					'is_user'    => true,
+					'user_id'    => $user->ID,
+					'comment_id' => 0,
+					'email'      => $user->user_email,
+					'name'       => $user->display_name,
+				),
+				$event_id,
+				'Thanks for coming.',
+				wp_get_current_user(),
+			)
+		);
+
+		remove_filter( 'pre_wp_mail', $capture_email );
+
+		$this->assertNotEmpty( $captured_body, 'Past-event email body should still be sent.' );
+		$this->assertStringContainsString(
+			'Thanks for coming.',
+			$captured_body,
+			'Past-event email should still include the custom message.'
+		);
+		$this->assertStringNotContainsString(
+			'RSVP Now',
+			$captured_body,
+			'Past-event email must not include the RSVP Now CTA.'
+		);
+	}
+
+	/**
+	 * Emails omit the RSVP Now CTA when RSVP is disabled for the event.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::send_event_email_to_recipient
+	 *
+	 * @return void
+	 */
+	public function test_send_event_email_omits_rsvp_cta_when_rsvp_disabled(): void {
+		$captured_body = '';
+		$capture_email = static function ( $preempt, $atts ) use ( &$captured_body ) {
+			$captured_body = $atts['message'] ?? '';
+			return true;
+		};
+		add_filter(
+			'pre_wp_mail',
+			$capture_email,
+			10,
+			2
+		);
+
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_enabled' );
+
+		$instance = Rest_Api::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$event    = new Event( $event_id );
+		$start    = new DateTime( 'now' );
+		$end      = new DateTime( 'now' );
+
+		$start->modify( '+1 day' );
+		$end->modify( '+1 day +2 hours' );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+				'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			)
+		);
+		update_post_meta( $event_id, 'gatherpress_enable_rsvp', '0' );
+
+		$user = get_userdata( $this->factory->user->create() );
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'send_event_email_to_recipient',
+			array(
+				array(
+					'is_user'    => true,
+					'user_id'    => $user->ID,
+					'comment_id' => 0,
+					'email'      => $user->user_email,
+					'name'       => $user->display_name,
+				),
+				$event_id,
+				'Event update.',
+				wp_get_current_user(),
+			)
+		);
+
+		remove_filter( 'pre_wp_mail', $capture_email );
+
+		$this->assertNotEmpty( $captured_body, 'Email body should still be sent.' );
+		$this->assertStringNotContainsString(
+			'RSVP Now',
+			$captured_body,
+			'Email must not include the RSVP Now CTA when RSVP is disabled.'
+		);
 	}
 
 	/**
