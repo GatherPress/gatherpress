@@ -69,4 +69,14 @@ if ( ! isset(
 		}
 		?>
 	</select>
+	<?php
+	// Matches the help-text markup the other field templates use, so the
+	// select is not the one type left without it. The <select> picks up the
+	// matching aria-describedby from Form_Field::get_input_attributes().
+	if ( '' !== (string) ( $attributes['help_text'] ?? '' ) ) :
+		?>
+		<p class="gatherpress-help-text" id="<?php echo esc_attr( $attributes['input_id'] . '-help' ); ?>">
+			<?php echo wp_kses_post( $attributes['help_text'] ); ?>
+		</p>
+	<?php endif; ?>
 </div>

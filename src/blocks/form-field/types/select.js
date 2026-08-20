@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
  */
 import { __ } from '@wordpress/i18n';
 import { RichText } from '@wordpress/block-editor';
+
 /**
  * Internal dependencies
  */
@@ -20,21 +21,29 @@ import {
 } from '../helpers';
 
 /**
- * Renders a select field field component for the block editor.
+ * Renders a select field component for the block editor.
+ *
+ * A select shows one option at a time, so the options are only editable while
+ * the block is selected: the field then expands into the list a browser shows
+ * when the control is open, and collapses back to the closed control when
+ * selection moves away. That keeps the canvas showing what the visitor sees
+ * without hiding the options from the author.
  *
  * @param {Object}   props                   - Component props.
  * @param {Object}   props.attributes        - Block attributes object.
  * @param {Function} props.setAttributes     - Function to update block attributes.
  * @param {Object}   props.blockProps        - WordPress block wrapper properties.
  * @param {Function} props.generateFieldName - Function to generate field name from label.
+ * @param {boolean}  props.isSelected        - Whether the block is currently selected.
  *
- * @return {JSX.Element} The select field field component.
+ * @return {JSX.Element} The select field component.
  */
 export default function SelectField( {
 	attributes,
 	setAttributes,
 	blockProps,
 	generateFieldName,
+	isSelected,
 } ) {
 	const {
 		fieldType,
@@ -51,29 +60,33 @@ export default function SelectField( {
 	const handleLabelBlur = ( labelValue ) => {
 		if ( ! fieldName && labelValue ) {
 			const generatedFieldName = generateFieldName( labelValue );
+
 			if ( generatedFieldName ) {
 				setAttributes( { fieldName: generatedFieldName } );
 			}
 		}
 	};
 
-	// Handle radio option changes.
+	// Handle select option changes.
 	const updateSelectOption = ( index, field, value ) => {
 		const newOptions = [ ...radioOptions ];
 		newOptions[ index ] = { ...newOptions[ index ], [ field ]: value };
 
 		const previousValue = newOptions[ index ].value;
+
 		if ( 'label' === field ) {
 			const cleanValue = value
 				.toLowerCase()
 				.split( /[^a-z0-9]+/ ) // Split on non-alphanumeric sequences.
 				.filter( ( part ) => 0 < part.length ) // Remove empty strings.
 				.join( '-' ); // Join with dashes.
+
 			newOptions[ index ].value = cleanValue || value;
 		}
 
 		// Keep the default selection in step when a label edit regenerates the value.
 		const updates = { radioOptions: newOptions };
+
 		if (
 			fieldValue === previousValue &&
 			previousValue !== newOptions[ index ].value
@@ -85,78 +98,116 @@ export default function SelectField( {
 
 		if ( 'label' === field && 0 === index && ! fieldName && value ) {
 			const generatedFieldName = generateFieldName( value );
+
 			if ( generatedFieldName ) {
 				setAttributes( { fieldName: generatedFieldName } );
 			}
 		}
 	};
 
-	// Select-option rich-text editors, scoped to this block so multiple
-	// select fields on the same page don't collide.
-	const getOptionEditors = () =>
-		Array.from(
-			blockProps?.ref?.current?.querySelectorAll(
-				'.gatherpress-select-options .rich-text',
-			) || [],
-		);
+	/**
+	 * Move focus to an option, scoped to the field that was typed in.
+	 *
+	 * The lookup starts from the element that received the keystroke so a
+	 * second select field on the same post cannot take the focus, and the
+	 * range comes from that element's own document because the options
+	 * render inside the editor canvas iframe rather than the admin document.
+	 *
+	 * @param {HTMLElement} scopeElement    - The element the keystroke came from.
+	 * @param {number}      targetIndex     - Index of the option to focus.
+	 * @param {boolean}     placeCaretAtEnd - Whether to put the caret at the end.
+	 *
+	 * @return {void}
+	 */
+	const focusOption = ( scopeElement, targetIndex, placeCaretAtEnd = false ) => {
+		const list = scopeElement?.closest( '.gatherpress-select-options' );
 
-	const addSelectOption = () => {
-		const newOptions = [ ...radioOptions, { label: '', value: '', id: uuidv4() } ];
-		setAttributes( { radioOptions: newOptions } );
+		if ( ! list ) {
+			return;
+		}
 
 		setTimeout( () => {
-			const lastOption = getOptionEditors().at( -1 );
-			if ( lastOption ) {
-				lastOption.focus();
+			const element = list.querySelectorAll(
+				'.gatherpress-select-option .rich-text',
+			)[ targetIndex ];
+
+			if ( ! element ) {
+				return;
 			}
+
+			element.focus();
+
+			if ( ! placeCaretAtEnd ) {
+				return;
+			}
+
+			// Move cursor to end of text. The canvas can be torn down inside
+			// the timer, which leaves the element without a view to select in.
+			const ownerDocument = element.ownerDocument;
+			const selection = ownerDocument.defaultView?.getSelection();
+
+			if ( ! selection ) {
+				return;
+			}
+
+			const range = ownerDocument.createRange();
+
+			range.selectNodeContents( element );
+			range.collapse( false );
+			selection.removeAllRanges();
+			selection.addRange( range );
 		}, 50 );
 	};
 
-	const removeSelectOption = ( index ) => {
+	const addSelectOption = ( scopeElement ) => {
+		const newOptions = [
+			...radioOptions,
+			{ label: '', value: '', id: uuidv4() },
+		];
+
+		setAttributes( { radioOptions: newOptions } );
+
+		focusOption( scopeElement, newOptions.length - 1 );
+	};
+
+	const removeSelectOption = ( scopeElement, index ) => {
 		const optionToRemove = radioOptions[ index ];
 		const newOptions = radioOptions.filter( ( _, i ) => i !== index );
 
 		// Clear fieldValue if removing the selected option.
 		const updates = { radioOptions: newOptions };
+
 		if ( fieldValue === optionToRemove.value ) {
 			updates.fieldValue = '';
 		}
 
 		setAttributes( updates );
 
-		// Focus the previous option after removal and set cursor to end.
-		setTimeout( () => {
-			const targetIndex = Math.max( 0, index - 1 );
-			const element = getOptionEditors()[ targetIndex ];
-			if ( element ) {
-				element.focus();
-
-				// Move cursor to end of text.
-				const range = document.createRange();
-				const selection = getSelection();
-
-				range.selectNodeContents( element );
-				range.collapse( false );
-				selection.removeAllRanges();
-				selection.addRange( range );
-			}
-		}, 50 );
+		focusOption( scopeElement, Math.max( 0, index - 1 ), true );
 	};
 
 	const handleKeyDown = ( event, index ) => {
 		if ( 'Enter' === event.key ) {
 			event.preventDefault();
-			addSelectOption();
+			addSelectOption( event.target );
 		} else if ( 'Backspace' === event.key || 'Delete' === event.key ) {
 			const currentOption = radioOptions[ index ];
 
 			// Only remove if the option is empty and it's not the last remaining option.
 			if ( ! currentOption.label && 1 < radioOptions.length ) {
 				event.preventDefault();
-				removeSelectOption( index );
+				removeSelectOption( event.target, index );
 			}
 		}
 	};
+
+	// Mirror what the rendered field shows when nothing is chosen: a required
+	// select opens on its placeholder, and any other select opens on its first
+	// option, which is what a browser does with no selection.
+	const showPlaceholder = Boolean( required ) && '' === fieldValue;
+	const previewValue = showPlaceholder
+		? ''
+		: fieldValue || radioOptions[ 0 ]?.value || '';
 
 	return (
 		<div
@@ -168,8 +219,8 @@ export default function SelectField( {
 				style={ getLabelWrapperStyles( attributes ) }
 			>
 				<RichText
-					tagName="legend"
-					placeholder={ __( 'Select group title…', 'gatherpress' ) }
+					tagName="label"
+					placeholder={ __( 'Add label…', 'gatherpress' ) }
 					value={ label }
 					onChange={ ( value ) => setAttributes( { label: value } ) }
 					onBlur={ () => handleLabelBlur( label ) }
@@ -195,26 +246,62 @@ export default function SelectField( {
 				) }
 			</div>
 
-			<div className="gatherpress-select-preview" style={ getLabelWrapperStyles( attributes ) }>
-				<select style={ getInputStyles( fieldType, attributes ) } name={ fieldName } value={ fieldValue } disabled={ true } tabIndex={ -1 }>
-					{ radioOptions.map( ( option ) => <option key={ option.id } value={ option.value }>{ option.label }</option> ) }
-				</select>
-				<div className="gatherpress-select-options">
+			{ isSelected ? (
+				<div
+					className="gatherpress-select-options"
+					style={ getInputStyles( fieldType, attributes ) }
+				>
 					{ radioOptions.map( ( option, index ) => (
-						<RichText
+						<div
 							key={ option.id }
-							tagName="label"
-							placeholder={ __( 'Option label…', 'gatherpress' ) }
-							value={ option.label }
-							onChange={ ( value ) => updateSelectOption( index, 'label', value ) }
-							onKeyDown={ ( event ) => handleKeyDown( event, index ) }
-							allowedFormats={ [ 'gatherpress/tooltip' ] }
-							identifier={ `select-option-${ index }` }
-							style={ getOptionStyles( attributes ) }
-						/>
+							className={
+								fieldValue === option.value &&
+								'' !== option.value
+									? 'gatherpress-select-option is-selected'
+									: 'gatherpress-select-option'
+							}
+						>
+							<RichText
+								tagName="span"
+								placeholder={ __(
+									'Option label…',
+									'gatherpress',
+								) }
+								value={ option.label }
+								onChange={ ( value ) =>
+									updateSelectOption( index, 'label', value )
+								}
+								onKeyDown={ ( event ) =>
+									handleKeyDown( event, index )
+								}
+								allowedFormats={ [ 'gatherpress/tooltip' ] }
+								identifier={ `select-option-${ index }` }
+								style={ getOptionStyles( attributes ) }
+							/>
+						</div>
 					) ) }
 				</div>
-			</div>
+			) : (
+				<select
+					style={ getInputStyles( fieldType, attributes ) }
+					name={ fieldName }
+					value={ previewValue }
+					disabled={ true }
+					tabIndex={ -1 }
+					onChange={ () => {} }
+				>
+					{ showPlaceholder && (
+						<option value="">
+							{ __( 'Select an option', 'gatherpress' ) }
+						</option>
+					) }
+					{ radioOptions.map( ( option ) => (
+						<option key={ option.id } value={ option.value }>
+							{ option.label }
+						</option>
+					) ) }
+				</select>
+			) }
 		</div>
 	);
 }

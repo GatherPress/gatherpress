@@ -1,0 +1,37 @@
+// Editor-only chrome for the Select field.
+// A select shows one option at a time, so while the block is selected the
+// field expands into the list a browser shows when the control is open. The
+// styling mirrors that popup rather than the closed control: a bordered
+// sheet of rows, with the default choice marked the way a browser marks it.
+.wp-block-gatherpress-form-field {
+	.gatherpress-select-options {
+		display: flex;
+		flex-direction: column;
+		box-sizing: border-box;
+		border: 1px solid #757575;
+		border-radius: 2px;
+		background: #fff;
+		padding: 0;
+		overflow: hidden;
+	}
+
+	.gatherpress-select-option {
+		padding: 0.35rem 0.75rem;
+
+		// The rows read as one list, so only the gaps between them are drawn.
+		& + .gatherpress-select-option {
+			border-top: 1px solid #f0f0f0;
+		}
+
+		// Matches how a browser marks the option a select opens on.
+		&.is-selected {
+			background: #f0f0f0;
+			font-weight: 600;
+		}
+
+		.rich-text {
+			display: block;
+			min-height: 1.5em;
+		}
+	}
+}

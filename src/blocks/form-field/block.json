@@ -18,7 +18,10 @@
 			"default": ""
 		},
 		"fieldValue": {
-			"type": ["string", "boolean"],
+			"type": [
+				"string",
+				"boolean"
+			],
 			"default": ""
 		},
 		"label": {
@@ -136,6 +139,7 @@
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
 	"style": "file:./style-index.css",
 	"render": "file:./render.php"
 }

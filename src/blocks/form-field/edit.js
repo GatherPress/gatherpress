@@ -33,10 +33,11 @@ import FieldValue from './helpers';
  * @param {Object}   props               The block props.
  * @param {Object}   props.attributes    The block attributes.
  * @param {Function} props.setAttributes Function to set block attributes.
+ * @param {boolean}  props.isSelected    Whether the block is currently selected.
  *
  * @return {JSX.Element} The edit component.
  */
-export default function Edit( { attributes, setAttributes } ) {
+export default function Edit( { attributes, setAttributes, isSelected } ) {
 	const {
 		fieldType,
 		fieldName,
@@ -104,6 +105,7 @@ export default function Edit( { attributes, setAttributes } ) {
 			setAttributes,
 			blockProps,
 			generateFieldName,
+			isSelected,
 		};
 
 		switch ( fieldType ) {
