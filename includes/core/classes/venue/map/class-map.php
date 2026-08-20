@@ -1422,19 +1422,19 @@ final class Map {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param GdImage|resource $image    Finished image from a provider's `render()`.
-	 * @param string           $address  Venue address (slugified for the filename).
-	 * @param int              $zoom     Map zoom level.
-	 * @param int              $width    Output width (at density 1).
-	 * @param int              $height   Output height (at density 1).
-	 * @param int              $density  Pixel-density multiplier. 1 = standard, 2 = retina.
-	 * @param string           $provider Provider slug.
-	 * @param string           $map_type Map type slug.
+	 * @param GdImage $image    Finished image from a provider's `render()`.
+	 * @param string  $address  Venue address (slugified for the filename).
+	 * @param int     $zoom     Map zoom level.
+	 * @param int     $width    Output width (at density 1).
+	 * @param int     $height   Output height (at density 1).
+	 * @param int     $density  Pixel-density multiplier. 1 = standard, 2 = retina.
+	 * @param string  $provider Provider slug.
+	 * @param string  $map_type Map type slug.
 	 *
 	 * @return string|null Public URL of the saved file, or null on failure.
 	 */
 	public function save_image(
-		$image,
+		GdImage $image,
 		string $address,
 		int $zoom,
 		int $width,
