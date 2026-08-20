@@ -16,7 +16,6 @@ import {
 	getInputStyles,
 	getLabelStyles,
 	getLabelWrapperStyles,
-	getOptionStyles,
 	getWrapperClasses,
 } from '../helpers';
 
@@ -202,6 +201,13 @@ export default function SelectField( {
 		}
 	};
 
+	// The expanded list is the same control in its open state, so it takes the
+	// styles the closed select takes — font, colors, border, width — and the
+	// rows carry the padding so the box itself can sit flush against them.
+	const inputStyles = getInputStyles( fieldType, attributes );
+	const { padding: inputPadding, ...boxStyles } = inputStyles;
+	const rowStyles = { paddingInline: inputPadding };
+
 	// Mirror what the rendered field shows when nothing is chosen: a required
 	// select opens on its placeholder, and any other select opens on its first
 	// option, which is what a browser does with no selection.
@@ -250,7 +256,7 @@ export default function SelectField( {
 			{ isSelected ? (
 				<div
 					className="gatherpress-select-options"
-					style={ getInputStyles( fieldType, attributes ) }
+					style={ boxStyles }
 				>
 					{ radioOptions.map( ( option, index ) => (
 						<div
@@ -261,6 +267,7 @@ export default function SelectField( {
 									? 'gatherpress-select-option is-selected'
 									: 'gatherpress-select-option'
 							}
+							style={ rowStyles }
 						>
 							<RichText
 								tagName="span"
@@ -277,14 +284,13 @@ export default function SelectField( {
 								}
 								allowedFormats={ [ 'gatherpress/tooltip' ] }
 								identifier={ `select-option-${ index }` }
-								style={ getOptionStyles( attributes ) }
 							/>
 						</div>
 					) ) }
 				</div>
 			) : (
 				<select
-					style={ getInputStyles( fieldType, attributes ) }
+					style={ inputStyles }
 					name={ fieldName }
 					value={ previewValue }
 					disabled={ true }

@@ -1,22 +1,36 @@
 // Editor-only chrome for the Select field.
 // A select shows one option at a time, so while the block is selected the
 // field expands into the list a browser shows when the control is open. The
-// styling mirrors that popup rather than the closed control: a bordered
-// sheet of rows, with the default choice marked the way a browser marks it.
-.wp-block-gatherpress-form-field {
+// box takes the same inline styles as the closed control, so only the parts
+// a <select> draws for itself are declared here — and the closed control is
+// given the same border so the two states do not change appearance.
+.wp-block-gatherpress-form-field.gatherpress-form-field--select {
+	select,
+	.gatherpress-select-options {
+		border-style: solid;
+		border-width: 1px;
+		border-color: #757575;
+
+		// A <select> is a form control, so it would otherwise take the
+		// browser's control font while the expanded list takes the document
+		// font, and the two states would change size as selection moves. Both
+		// inherit instead, matching how radio options already render here. An
+		// explicit font size set on the field is inline and still wins.
+		font: inherit;
+	}
+
 	.gatherpress-select-options {
 		display: flex;
 		flex-direction: column;
 		box-sizing: border-box;
-		border: 1px solid #757575;
-		border-radius: 2px;
 		background: #fff;
-		padding: 0;
 		overflow: hidden;
 	}
 
 	.gatherpress-select-option {
-		padding: 0.35rem 0.75rem;
+		// The inline style carries the field's own horizontal padding so the
+		// text lines up with the closed control; only the row rhythm is set here.
+		padding-block: 0.35rem;
 
 		// The rows read as one list, so only the gaps between them are drawn.
 		& + .gatherpress-select-option {
