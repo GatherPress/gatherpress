@@ -21,7 +21,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/venue/map/class-map.php:1509](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/map/class-map.php#L1509)
+- [includes/core/classes/venue/map/class-map.php:1523](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/map/class-map.php#L1523)
 ```php
 apply_filters( 'gatherpress_map_zoom', $default )
 ```
