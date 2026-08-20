@@ -73,9 +73,12 @@ export default function SelectField( {
 		}
 
 		// Keep the default selection in step when a label edit regenerates the value.
+		// Guard against '' (no-default sentinel) so editing a blank option's label
+		// does not create an unintended default.
 		const updates = { radioOptions: newOptions };
 		if (
 			fieldValue === previousValue &&
+			'' !== previousValue &&
 			previousValue !== newOptions[ index ].value
 		) {
 			updates.fieldValue = newOptions[ index ].value;
