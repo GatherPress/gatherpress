@@ -144,7 +144,6 @@ final class Rsvp_Form {
 		$schema_form_id = $this->get_form_schema_id( $post_id, $block );
 
 		$block_content = trim( $block_content );
-
 		$block_content = (string) preg_replace( '/^<div\b/', '<form', $block_content );
 		$block_content = (string) preg_replace(
 			'/(<\/div>)$/',
