@@ -25,7 +25,7 @@ import {
 import { getOptionUpdates } from '../helpers';
 
 /**
- * Renders styling and configuration panels for radio button form fields.
+ * Renders styling and configuration panels for select form fields.
  *
  * @param {Object}   props               - Component props.
  * @param {Object}   props.attributes    - Block attributes object.
@@ -33,22 +33,19 @@ import { getOptionUpdates } from '../helpers';
  *
  * @return {JSX.Element} The radio field styling and options panels.
  */
-export default function RadioFieldPanels( { attributes, setAttributes } ) {
+export default function SelectFieldPanels( { attributes, setAttributes } ) {
 	const {
 		radioOptions = [ { label: '', value: '', id: uuidv4() } ],
 		fieldValue,
 		required,
 		labelFontSize,
 		labelLineHeight,
-		optionFontSize,
-		optionLineHeight,
 		labelTextColor,
 		requiredTextColor,
-		optionTextColor,
 	} = attributes;
 
-	// Handle radio option changes
-	const updateRadioOption = ( index, field, value ) => {
+	// Handle select option changes
+	const updateSelectOption = ( index, field, value ) => {
 		setAttributes(
 			getOptionUpdates( {
 				options: radioOptions,
@@ -60,7 +57,7 @@ export default function RadioFieldPanels( { attributes, setAttributes } ) {
 		);
 	};
 
-	const addRadioOption = () => {
+	const addSelectOption = () => {
 		const newOptions = [
 			...radioOptions,
 			{ label: '', value: '', id: uuidv4() },
@@ -69,7 +66,7 @@ export default function RadioFieldPanels( { attributes, setAttributes } ) {
 		setAttributes( { radioOptions: newOptions } );
 	};
 
-	const removeRadioOption = ( index ) => {
+	const removeSelectOption = ( index ) => {
 		const optionToRemove = radioOptions[ index ];
 		const newOptions = radioOptions.filter( ( _, i ) => i !== index );
 
@@ -84,7 +81,7 @@ export default function RadioFieldPanels( { attributes, setAttributes } ) {
 
 	return (
 		<>
-			<PanelBody title={ __( 'Radio Options', 'gatherpress' ) }>
+			<PanelBody title={ __( 'Select Options', 'gatherpress' ) }>
 				{ radioOptions.map( ( option, index ) => (
 					<div key={ option.id }>
 						<Flex
@@ -97,7 +94,7 @@ export default function RadioFieldPanels( { attributes, setAttributes } ) {
 									label={ `${ __( 'Option', 'gatherpress' ) } ${ index + 1 }` }
 									value={ option.label }
 									onChange={ ( value ) =>
-										updateRadioOption( index, 'label', value )
+										updateSelectOption( index, 'label', value )
 									}
 									help={ __(
 										'Label and value for this option.',
@@ -131,7 +128,7 @@ export default function RadioFieldPanels( { attributes, setAttributes } ) {
 									<Button
 										variant="secondary"
 										isDestructive
-										onClick={ () => removeRadioOption( index ) }
+										onClick={ () => removeSelectOption( index ) }
 										style={ {
 											padding: 0,
 											position: 'absolute',
@@ -152,7 +149,7 @@ export default function RadioFieldPanels( { attributes, setAttributes } ) {
 				) ) }
 				<Button
 					variant="secondary"
-					onClick={ addRadioOption }
+					onClick={ addSelectOption }
 					style={ { marginTop: '0.75rem' } }
 				>
 					{ __( 'Add Option', 'gatherpress' ) }
@@ -182,30 +179,6 @@ export default function RadioFieldPanels( { attributes, setAttributes } ) {
 				/>
 			</PanelBody>
 
-			<PanelBody title={ __( 'Option Styles', 'gatherpress' ) }>
-				<BaseControl>
-					<FontSizePicker
-						withReset={ true }
-						size="__unstable-large"
-						onChange={ ( value ) =>
-							setAttributes( { optionFontSize: value } )
-						}
-						value={ optionFontSize }
-					/>
-				</BaseControl>
-
-				<RangeControl
-					label={ __( 'Line Height', 'gatherpress' ) }
-					value={ optionLineHeight }
-					onChange={ ( value ) =>
-						setAttributes( { optionLineHeight: value } )
-					}
-					min={ 1 }
-					max={ 3 }
-					step={ 0.1 }
-				/>
-			</PanelBody>
-
 			<PanelColorSettings
 				title={ __( 'Colors', 'gatherpress' ) }
 				colorSettings={ [
@@ -227,12 +200,6 @@ export default function RadioFieldPanels( { attributes, setAttributes } ) {
 							},
 						]
 						: [] ),
-					{
-						value: optionTextColor,
-						onChange: ( value ) =>
-							setAttributes( { optionTextColor: value } ),
-						label: __( 'Option Text', 'gatherpress' ),
-					},
 				] }
 			/>
 		</>

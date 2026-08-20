@@ -524,7 +524,7 @@ final class Rsvp_Form {
 							break;
 						case 'select':
 						case 'radio':
-							$field_config['options'] = array_map( 'sanitize_text_field', $attrs['options'] ?? array() );
+							$field_config['options'] = $this->get_field_options( $attrs );
 							break;
 						case 'textarea':
 							$field_config['max_length'] = intval( $attrs['maxLength'] ?? 1000 );
@@ -545,6 +545,47 @@ final class Rsvp_Form {
 		}
 
 		return $fields;
+	}
+
+	/**
+	 * Get sanitized options from form field attributes.
+	 *
+	 * Supports the current radioOptions attribute and the legacy options key.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, mixed> $attributes Form field attributes.
+	 *
+	 * @return string[] Sanitized option values.
+	 */
+	private function get_field_options( array $attributes ): array {
+		$options = $attributes['radioOptions'] ?? $attributes['options'] ?? array();
+
+		if ( isset( $attributes['radioOptions'] ) ) {
+			$options = array_map(
+				static function ( $option ): string {
+					if ( ! is_array( $option ) ) {
+						return sanitize_text_field( $option );
+					}
+
+					$value = $option['value'] ?? '';
+					$value = '' === $value ? ( $option['label'] ?? '' ) : $value;
+					return sanitize_text_field( $value );
+				},
+				(array) $options
+			);
+		} else {
+			$options = array_map( 'sanitize_text_field', (array) $options );
+		}
+
+		return array_values(
+			array_filter(
+				$options,
+				static function ( $option ): bool {
+					return '' !== $option;
+				}
+			)
+		);
 	}
 
 	/**
@@ -691,7 +732,7 @@ final class Rsvp_Form {
 			}
 
 			$field_value = Utility::get_http_input( INPUT_POST, $field_name, null );
-			if ( empty( $field_value ) ) {
+			if ( '' === $field_value ) {
 				continue;
 			}
 
@@ -717,8 +758,9 @@ final class Rsvp_Form {
 	 * @return mixed|false The sanitized value, or false if sanitization fails.
 	 */
 	public function sanitize_custom_field_value( $value, array $config ): mixed {
-		// Handle required field validation.
-		if ( ! empty( $config['required'] ) && empty( $value ) ) {
+		// Handle required field validation. An explicit "0" is a real option
+		// value (the schema preserves it), not an empty submit.
+		if ( ! empty( $config['required'] ) && ( null === $value || '' === $value ) ) {
 			return false;
 		}
 
