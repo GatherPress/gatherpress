@@ -66,11 +66,6 @@ abstract class Base {
 	 * combo, etc.). The caller treats null as "skip this combo" — it does
 	 * NOT fall back to another provider.
 	 *
-	 * Return type is intentionally untyped at the PHP signature level so the
-	 * abstract is loadable on PHP 7.4 (where the GD extension returns a
-	 * `resource`, not a `GdImage` — the latter class is 8.0+). PHPStan reads
-	 * the docblock instead.
-	 *
 	 * @since 0.34.0
 	 *
 	 * @param float  $latitude  Venue latitude in decimal degrees.
@@ -81,7 +76,7 @@ abstract class Base {
 	 * @param int    $density   Pixel-density multiplier. 1 = standard, 2 = retina.
 	 * @param string $map_type  Map type slug — one of `roadmap`, `satellite`, `hybrid`, `terrain`.
 	 *
-	 * @return GdImage|resource|null Finished image, or null on failure.
+	 * @return GdImage|null Finished image, or null on failure.
 	 */
 	abstract public function render(
 		float $latitude,
@@ -91,7 +86,7 @@ abstract class Base {
 		int $height,
 		int $density = 1,
 		string $map_type = 'roadmap'
-	);
+	): ?GdImage;
 
 	/**
 	 * Attribution markup the front end MUST display alongside the static
