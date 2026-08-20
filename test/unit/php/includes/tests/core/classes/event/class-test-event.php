@@ -1319,6 +1319,110 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * Branch coverage for the private format_datetime helper.
+	 *
+	 * The format_datetime helper is only reachable through public wrappers,
+	 * which the PMC test framework does not trace into coverage.xml, so each
+	 * branch is invoked directly to record it. Exercises the local-timezone and
+	 * filter path, the GMT path, and the unparsable-datetime bail path.
+	 *
+	 * @since 0.36.0
+	 * @covers ::format_datetime
+	 *
+	 * @return void
+	 */
+	public function test_format_datetime_branches(): void {
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $event_id );
+
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2025-06-15 14:30:00',
+				'datetime_end'   => '2025-06-15 16:30:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		// Local-timezone path with a filter applied.
+		$filtered = 0;
+		$filter   = static function ( $format ) use ( &$filtered ) {
+			++$filtered;
+
+			return $format;
+		};
+		add_filter( 'gatherpress_datetime_format', $filter );
+
+		try {
+			$result = Utility::invoke_hidden_method(
+				$event,
+				'format_datetime',
+				array( 'c', 'start', true, true )
+			);
+		} finally {
+			remove_filter( 'gatherpress_datetime_format', $filter );
+		}
+
+		$this->assertNotSame(
+			0,
+			$filtered,
+			'Failed to assert format_datetime applies the format filter in local time.'
+		);
+		$this->assertMatchesRegularExpression(
+			'/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}-0[45]:00$/',
+			$result,
+			'Failed to assert format_datetime returns a local-time timestamp.'
+		);
+
+		// GMT path with the filter disabled.
+		$result = Utility::invoke_hidden_method(
+			$event,
+			'format_datetime',
+			array( 'c', 'start', false, false )
+		);
+
+		$this->assertMatchesRegularExpression(
+			'/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00$/',
+			$result,
+			'Failed to assert format_datetime returns a GMT timestamp.'
+		);
+
+		// Unparsable stored datetime bails before the filter runs.
+		update_post_meta( $event_id, 'gatherpress_datetime_start_gmt', '2030-06-31 25:00:00' );
+
+		// New instance so it reads the updated meta instead of the cached datetimes.
+		$event = new Event( $event_id );
+
+		$formatted = 0;
+		$counter   = static function ( $format ) use ( &$formatted ) {
+			++$formatted;
+
+			return $format;
+		};
+		add_filter( 'gatherpress_datetime_format', $counter );
+
+		try {
+			$result = Utility::invoke_hidden_method(
+				$event,
+				'format_datetime',
+				array( 'Y-m-d', 'start', false, true )
+			);
+		} finally {
+			remove_filter( 'gatherpress_datetime_format', $counter );
+		}
+
+		$this->assertSame(
+			'',
+			$result,
+			'Failed to assert an unparsable stored datetime reports no datetime at all.'
+		);
+		$this->assertSame(
+			0,
+			$formatted,
+			'Failed to assert an unparsable stored datetime bails before the format filter runs.'
+		);
+	}
+
+	/**
 	 * Coverage for get_calendar_description method.
 	 *
 	 * @covers ::get_calendar_description
