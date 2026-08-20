@@ -483,6 +483,19 @@ describe( 'Form field helper functions', () => {
 			expect( result ).toBeNull();
 		} );
 
+		it( 'returns null for select field type', () => {
+			const attributes = { fieldValue: 'engineering' };
+			const result = FieldValue( {
+				fieldType: 'select',
+				attributes,
+				setAttributes: mockSetAttributes,
+			} );
+
+			// The default is chosen from the option list, so a free-text
+			// control here could name a value no option carries.
+			expect( result ).toBeNull();
+		} );
+
 		it( 'renders TextControl for hidden field type and calls onChange', () => {
 			const attributes = { fieldValue: 'hidden-value' };
 			const result = FieldValue( {

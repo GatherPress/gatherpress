@@ -1,4 +1,4 @@
 Significance: patch
 Type: fixed
 
-Keep a radio field's default selection pointing at the right option after its label is edited, and share one implementation of option editing between the canvas and the inspector for both radio and select. Remove the Option Styles controls from the Select field, which a rendered <option> never applied.
+Keep a radio field's default selection pointing at the right option after its label is edited, and share one implementation of option editing between the canvas and the inspector for both radio and select. Remove the Option Styles controls from the Select field, which a rendered <option> never applied, and drop the free-text Default Value control from Select, whose default is set on the option itself.

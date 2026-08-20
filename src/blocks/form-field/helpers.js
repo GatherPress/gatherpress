@@ -348,7 +348,10 @@ export default function FieldValue( { fieldType, attributes, setAttributes } ) {
 			);
 
 		case 'radio':
-			// Radio buttons handle their values through radioOptions.
+		case 'select':
+			// Both pick their default from the option list, where the choice is
+			// tied to an option that exists. A free-text default could name a
+			// value no option carries, which would select nothing.
 			return null;
 
 		case 'hidden':
