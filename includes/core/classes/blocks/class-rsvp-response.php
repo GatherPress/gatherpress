@@ -142,7 +142,7 @@ final class Rsvp_Response {
 			do {
 				$class_attr = $tag->get_attribute( 'class' );
 
-				// A missing or valueless `class` attribute carries no classes, so both normalize to an empty string.
+				// A valueless attribute reads back as true.
 				$class_attr = is_string( $class_attr ) ? $class_attr : '';
 
 				if ( Utility::has_css_class( $class_attr, 'gatherpress-rsvp-response--no-responses' ) ) {
@@ -211,7 +211,6 @@ final class Rsvp_Response {
 		$tag->next_tag();
 		$counts_attr = $tag->get_attribute( 'data-counts' );
 
-		// A valueless `data-counts` attribute comes back as `true` and holds no JSON to decode.
 		$counts = ! empty( $counts_attr ) && is_string( $counts_attr ) ?
 			json_decode( $counts_attr, true ) :
 			array();
@@ -247,7 +246,6 @@ final class Rsvp_Response {
 				$current_class = $tag->get_attribute( 'class' );
 
 				if (
-					// A valueless `class` attribute comes back as `true` and carries no classes to match.
 					is_string( $current_class ) &&
 					preg_match(
 						'/gatherpress--is-(attending|waiting-list|not-attending)/',

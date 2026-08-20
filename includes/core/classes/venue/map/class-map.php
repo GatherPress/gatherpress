@@ -1452,8 +1452,7 @@ final class Map {
 		string $provider,
 		string $map_type = self::DEFAULT_MAP_TYPE
 	): ?string {
-		// GD has handed back GdImage objects since PHP 8.0, so the `resource` arm of the
-		// provider contract can't occur on the 8.1 floor. Anything else is a failed render.
+		// GD returns GdImage since PHP 8.0, so the contract's `resource` arm is dead on the 8.1 floor.
 		if ( ! $image instanceof GdImage ) {
 			return null; // @codeCoverageIgnore
 		}

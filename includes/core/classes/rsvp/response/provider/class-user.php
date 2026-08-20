@@ -88,7 +88,6 @@ final class User extends Base {
 	 * @return string The author posts URL.
 	 */
 	public function get_url( Identity $identity ): string {
-		// Identity values are typed `string|int`; this provider's is always a WP user ID.
 		return get_author_posts_url( intval( $identity->value ) );
 	}
 }

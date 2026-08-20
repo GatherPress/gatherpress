@@ -118,7 +118,6 @@ final class OSM extends Base {
 			return null; // @codeCoverageIgnore
 		}
 
-		// A canvas needs at least one pixel on each axis, so anything smaller is unrenderable.
 		if ( $width < 1 || $height < 1 ) {
 			return null;
 		}
@@ -157,7 +156,6 @@ final class OSM extends Base {
 		$canvas = imagecreatetruecolor( $canvas_width, $canvas_height );
 
 		// Background: neutral gray so missing tiles blend rather than glaring black.
-		// The canvas above is truecolor, where color allocation has no palette to exhaust.
 		$bg = (int) imagecolorallocate( $canvas, 238, 238, 238 );
 		imagefilledrectangle( $canvas, 0, 0, $canvas_width - 1, $canvas_height - 1, $bg );
 
@@ -355,8 +353,6 @@ final class OSM extends Base {
 	 * @return void
 	 */
 	public function stamp_marker( $canvas, int $x, int $y, float $scale = 1.0 ): void {
-		// Callers hand over the truecolor canvas from render(), where allocation has no
-		// palette to exhaust and so cannot fail.
 		$white = (int) imagecolorallocate( $canvas, 255, 255, 255 );
 		$red   = (int) imagecolorallocate( $canvas, 220, 53, 69 );
 		$dark  = (int) imagecolorallocate( $canvas, 30, 30, 30 );

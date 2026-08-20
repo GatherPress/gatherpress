@@ -91,7 +91,6 @@ $gatherpress_venue       = $gatherpress_event->get_venue_information()['name'];
 			! $gatherpress_event->has_event_past()
 			&& $gatherpress_event->rsvp?->is_enabled()
 		) :
-			// An enabled RSVP proves the event post exists, so the permalink is always a string here.
 			$gatherpress_rsvp_url = (string) get_the_permalink( $event_id );
 			?>
 			<div style="text-align: center; margin-top: 20px;">

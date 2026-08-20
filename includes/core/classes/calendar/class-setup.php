@@ -483,7 +483,7 @@ final class Setup {
 	 * @return array<int,array{url:string,attr:string}>
 	 */
 	protected function collect_singular_event_alternate_links( WP_Post $event, array $args ): array {
-		// `the_title_attribute()` returns nothing for an empty title, so fall back to an empty string.
+		// the_title_attribute() returns nothing for an empty title.
 		$title = the_title_attribute( array( 'echo' => false ) );
 		$title = is_string( $title ) ? $title : '';
 
@@ -491,7 +491,7 @@ final class Setup {
 		$ical_url = $calendar->get_ical_url();
 		$links    = array();
 
-		// `get_ical_url()` is false when the event post can no longer be resolved; skip the download entry then.
+		// False when the event post no longer resolves.
 		if ( false !== $ical_url ) {
 			$links[] = array(
 				'url'  => $ical_url,
@@ -522,7 +522,7 @@ final class Setup {
 	 * @return array<int,array{url:string,attr:string}>
 	 */
 	protected function collect_singular_tax_like_alternate_links( WP_Post $post, array $args ): array {
-		// `the_title_attribute()` returns nothing for an empty title, so fall back to an empty string.
+		// the_title_attribute() returns nothing for an empty title.
 		$title = the_title_attribute( array( 'echo' => false ) );
 		$title = is_string( $title ) ? $title : '';
 
@@ -553,7 +553,7 @@ final class Setup {
 	protected function collect_tax_archive_alternate_links( WP_Term $term, array $args ): array {
 		$href = get_term_feed_link( $term->term_id, $term->taxonomy, self::ICAL_SLUG );
 
-		// `get_term_feed_link()` is false when the term can no longer be resolved; nothing to link to then.
+		// False when the term no longer resolves.
 		if ( false === $href ) {
 			return array();
 		}
@@ -591,9 +591,7 @@ final class Setup {
 			)
 		);
 
-		// get_object_taxonomies() only yields registered names, so no natural
-		// input reaches this. A `get_terms` filter can still hand back an error,
-		// and iterating one would fatal on the WP_Term-typed helper below.
+		// Only a `get_terms` filter can produce this; iterating it would fatal below.
 		if ( is_wp_error( $terms ) ) {
 			return array();
 		}
@@ -638,8 +636,7 @@ final class Setup {
 					ltrim( $term->taxonomy, '_' )
 				);
 
-				// A term whose backing post was deleted resolves to null and keeps `$href` empty,
-				// so the entry is skipped below instead of falling back to the global post.
+				// Without this, get_post_comments_feed_link( null ) falls back to the global post.
 				if ( $post instanceof WP_Post ) {
 					// Feels weird to use a *_comments_* function here, but it delivers clean results
 					// in the form of "domain.tld/event/my-sample-event/feed/ical/".
@@ -766,7 +763,6 @@ final class Setup {
 		$query = Query::get_instance()->get_events_list( $event_list_type, $number, $topics, $venues );
 		while ( $query->have_posts() ) {
 			$query->the_post();
-			// `the_post()` set the global post directly above, so `get_the_ID()` always returns its ID.
 			$calendar = new Calendar( (int) get_the_ID() );
 			$output[] = $calendar->get_ical_event_string();
 		}
@@ -832,9 +828,7 @@ final class Setup {
 		) {
 			$filename = $queried_object->slug;
 		} elseif ( is_post_type_archive() && $queried_object instanceof WP_Post_Type ) {
-			// `rewrite` is `false` when the post type opted out of rewrite
-			// rules — fall back to the default filename in that case rather
-			// than `false['slug']`-ing.
+			// `rewrite` is false when the post type opted out of rewrite rules.
 			$filename = is_array( $queried_object->rewrite ) ? $queried_object->rewrite['slug'] : $filename;
 		} elseif ( is_feed() && ! is_singular() && ! is_tax() ) {
 			$host = wp_parse_url( home_url(), PHP_URL_HOST );

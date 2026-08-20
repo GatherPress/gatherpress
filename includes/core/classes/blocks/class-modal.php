@@ -123,7 +123,7 @@ final class Modal {
 		if ( $tag->next_tag() ) {
 			$z_index = $block['attrs']['zIndex'] ?? 1000;
 
-			// A missing or valueless `style` attribute carries no declarations to preserve.
+			// A valueless attribute reads back as true.
 			$existing_styles       = $tag->get_attribute( 'style' );
 			$existing_styles       = is_string( $existing_styles ) ? $existing_styles : '';
 			$existing_styles_array = explode( ';', rtrim( $existing_styles, ';' ) );

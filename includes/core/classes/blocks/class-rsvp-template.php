@@ -89,7 +89,7 @@ final class Rsvp_Template {
 
 		$blocks_attr = $tag->next_tag() ? $tag->get_attribute( 'data-blocks' ) : null;
 
-		// A valueless `data-blocks` attribute comes back as `true` and holds no JSON to decode.
+		// A valueless attribute reads back as true.
 		if ( ! empty( $blocks_attr ) && is_string( $blocks_attr ) ) {
 			$inner_blocks = (array) json_decode( $blocks_attr, true );
 			$inner_blocks = Utility::get_block_names( $inner_blocks );
@@ -165,8 +165,7 @@ final class Rsvp_Template {
 			JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
 		);
 
-		// Encoding only fails on block data JSON cannot represent; without it there is no template to hand
-		// the front end, so the rendered responses go out on their own.
+		// Without a template there is nothing to hand the front end, so send the responses alone.
 		if ( false === $blocks ) {
 			return $block_content;
 		}

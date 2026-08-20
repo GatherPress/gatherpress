@@ -209,7 +209,6 @@ final class General_Block {
 
 				$content = $processor->get_updated_html();
 
-				// A literal pattern cannot fail to compile, so preg_replace() never returns null here.
 				$content = (string) preg_replace( '/<a\b/', '<button', $content );
 				$content = str_replace( '</a>', '</button>', $content );
 				break;

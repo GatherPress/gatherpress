@@ -104,7 +104,7 @@ abstract class Base {
 	 * @return string|null The avatar URL, or null if the identity has no avatar.
 	 */
 	public function get_avatar_url( Identity $identity ): ?string {
-		// An integer identity value is an ID, never an address, so only strings are worth checking.
+		// An integer identity is an ID, never an address.
 		$is_email = is_string( $identity->value ) && is_email( $identity->value );
 
 		if ( Identity_Type::WP_USER_ID === $identity->type || $is_email ) {
@@ -127,7 +127,6 @@ abstract class Base {
 	 * @return string|null The profile URL, or null if the identity value is not a URL.
 	 */
 	public function get_url( Identity $identity ): ?string {
-		// An integer identity value is an ID, never a URL, so only strings can validate here.
 		if ( is_string( $identity->value ) && false !== filter_var( $identity->value, FILTER_VALIDATE_URL ) ) {
 			return $identity->value;
 		}

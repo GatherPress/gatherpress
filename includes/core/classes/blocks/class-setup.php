@@ -77,9 +77,7 @@ final class Setup {
 		$blocks_directory = sprintf( '%1$s/build/blocks/', GATHERPRESS_CORE_PATH );
 		$blocks           = is_dir( $blocks_directory ) ? scandir( $blocks_directory ) : false;
 
-		// The build directory is absent when the plugin is run straight from
-		// source. Untestable: the test bootstrap mounts a built plugin, so the
-		// directory always exists and the path is unreachable from a test.
+		// Absent when run from source. Untestable: the test bootstrap mounts a built plugin.
 		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
 		// @codeCoverageIgnoreStart
 		if ( false === $blocks ) {
@@ -323,7 +321,6 @@ final class Setup {
 			return $post_id;
 		}
 
-		// get_the_ID() returns false outside the loop, where 0 signals "no post" to callers.
 		$current_post_id = get_the_ID();
 
 		return false !== $current_post_id ? $current_post_id : 0;

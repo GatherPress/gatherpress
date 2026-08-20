@@ -133,8 +133,7 @@ final class Storage {
 		if ( $comment_id ) {
 			$existing = get_comment( $comment_id );
 
-			// The row can be deleted between the lookup that produced $comment_id and this
-			// save, leaving nothing to update.
+			// The row can be deleted between the lookup and this save.
 			if ( ! $existing instanceof WP_Comment ) {
 				return false;
 			}
@@ -196,8 +195,7 @@ final class Storage {
 
 		$comment = get_comment( $comment_id );
 
-		// A comment that no longer resolves, or that does not hydrate into a state, is
-		// reported as a failed save rather than a successful one.
+		// Report a failed save rather than a successful one.
 		if ( ! $comment instanceof WP_Comment ) {
 			return false;
 		}

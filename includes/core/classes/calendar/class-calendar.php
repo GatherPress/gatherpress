@@ -268,7 +268,7 @@ final class Calendar {
 		$modified_gmt   = strtotime( $post->post_modified_gmt );
 
 		if ( false === $modified_gmt ) {
-			// A post whose modified date won't parse still needs the RFC-required DTSTAMP, so stamp it now.
+			// DTSTAMP is required by RFC 5545, so an unparsable date still needs one.
 			$modified_gmt = time();
 		}
 
@@ -283,7 +283,6 @@ final class Calendar {
 			$location .= sprintf( ', %s', $venue['address'] );
 		}
 
-		// The post object was resolved above, so get_permalink() cannot return false here.
 		$permalink   = (string) get_permalink( $post );
 		$summary     = $this->fold_ical_text( $this->escape_ical_text( $post->post_title ) );
 		$description = $this->fold_ical_text( $this->escape_ical_text( $description ) );

@@ -21,7 +21,6 @@ $gatherpress_component_attrs = array(
 	'value' => ! empty( $value ) ? $value : '',
 );
 
-// Both members are plain strings, so wp_json_encode() cannot fail on this array.
 $gatherpress_component_json = (string) wp_json_encode( $gatherpress_component_attrs );
 ?>
 <p>

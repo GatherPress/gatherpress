@@ -23,7 +23,6 @@ $gatherpress_component_attrs = array(
 	'homeUrl' => home_url(),
 );
 
-// Every value in the array is a string, so JSON encoding cannot fail.
 $gatherpress_component_json = (string) wp_json_encode( $gatherpress_component_attrs );
 ?>
 <p>

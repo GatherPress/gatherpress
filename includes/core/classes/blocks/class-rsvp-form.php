@@ -145,7 +145,6 @@ final class Rsvp_Form {
 
 		$block_content = trim( $block_content );
 
-		// Both patterns are literals anchored to one end, so preg_replace() never returns null.
 		$block_content = (string) preg_replace( '/^<div\b/', '<form', $block_content );
 		$block_content = (string) preg_replace(
 			'/(<\/div>)$/',
@@ -222,8 +221,6 @@ final class Rsvp_Form {
 		// Check if this is a success redirect (form was just submitted).
 		$is_success = 'true' === Utility::get_http_input( INPUT_GET, 'gatherpress_rsvp_success' );
 
-		// Block attributes were produced by json_decode() during parsing, so re-encoding
-		// them cannot fail.
 		$visibility_json = (string) wp_json_encode( $visibility );
 
 		// Determine if block should be visible using centralized logic.
@@ -317,7 +314,7 @@ final class Rsvp_Form {
 		while ( $tag->next_tag() ) {
 			$visibility_attr = $tag->get_attribute( 'data-gatherpress-rsvp-form-visibility' );
 
-			// A valueless boolean attribute reads back as true and carries no rule to apply.
+			// A valueless attribute reads back as true.
 			if ( is_string( $visibility_attr ) && '' !== $visibility_attr ) {
 				$this->apply_visibility_rule( $tag, $visibility_attr, $is_success, $is_past );
 			}
@@ -440,8 +437,7 @@ final class Rsvp_Form {
 			return;
 		}
 
-		// Parse blocks and extract schemas for each RSVP Form. parse_blocks() returns a list,
-		// and array_values() pins that so the index-based schema IDs stay integers.
+		// Schema IDs are the list index, so the keys have to stay integers.
 		$blocks  = array_values( parse_blocks( $post->post_content ) );
 		$schemas = $this->extract_form_schemas_from_blocks( $blocks );
 
@@ -477,7 +473,6 @@ final class Rsvp_Form {
 				if ( ! empty( $fields ) ) {
 					$schemas[ $form_id ] = array(
 						'fields' => $fields,
-						// Every field value went through sanitize_*(), so encoding cannot fail.
 						'hash'   => wp_hash( (string) wp_json_encode( $fields ) ),
 					);
 				}
@@ -575,7 +570,6 @@ final class Rsvp_Form {
 			return 'form_0'; // Fallback.
 		}
 
-		// parse_blocks() returns a list; array_values() pins that for the index math below.
 		$blocks     = array_values( parse_blocks( $post->post_content ) );
 		$form_index = $this->find_form_index_in_blocks( $blocks, $block );
 

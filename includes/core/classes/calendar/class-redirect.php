@@ -90,7 +90,7 @@ final class Redirect extends Endpoint_Type {
 	public function allowed_redirect_hosts( array $hosts ): array {
 		$host = wp_parse_url( $this->url, PHP_URL_HOST );
 
-		// A relative or malformed target has no host to allow, so the list is left untouched.
+		// A relative or malformed target has no host to allow.
 		if ( ! is_string( $host ) || '' === $host ) {
 			return $hosts;
 		}
