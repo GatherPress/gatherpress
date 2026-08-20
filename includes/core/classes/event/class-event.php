@@ -157,12 +157,12 @@ class Event {
 	);
 
 	/**
-	 * Event post object.
+	 * The event post.
 	 *
 	 * @since 0.34.0
 	 * @var WP_Post|null
 	 */
-	public ?WP_Post $event = null;
+	public ?WP_Post $post = null;
 
 	/**
 	 * RSVP instance.
@@ -192,8 +192,8 @@ class Event {
 	 */
 	public function __construct( int $post_id ) {
 		if ( post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
-			$this->event = get_post( $post_id );
-			$this->rsvp  = new Rsvp( $post_id );
+			$this->post = get_post( $post_id );
+			$this->rsvp = new Rsvp( $post_id );
 		}
 	}
 
@@ -561,7 +561,7 @@ class Event {
 			'timezone'           => sanitize_text_field( wp_timezone_string() ),
 		);
 
-		if ( ! $this->event ) {
+		if ( ! $this->post ) {
 			return $data;
 		}
 
@@ -570,7 +570,7 @@ class Event {
 		}
 
 		foreach ( array_keys( $data ) as $key ) {
-			$result = get_post_meta( $this->event->ID, Utility::prefix_key( $key ), true );
+			$result = get_post_meta( $this->post->ID, Utility::prefix_key( $key ), true );
 
 			if ( empty( $result ) ) {
 				continue;
@@ -648,14 +648,14 @@ class Event {
 			'website'   => '',
 		);
 
-		if ( ! $this->event ) {
+		if ( ! $this->post ) {
 			return $venue_information;
 		}
 
-		$event_post_type = (string) get_post_type( $this->event );
+		$event_post_type = (string) get_post_type( $this->post );
 		$venue_setup     = Setup::get_instance();
 		$taxonomy        = $venue_setup->taxonomy_for_event_post_type( $event_post_type );
-		$venue_terms     = get_the_terms( $this->event, $taxonomy );
+		$venue_terms     = get_the_terms( $this->post, $taxonomy );
 
 		// get_the_terms() hands back false when nothing is assigned and a WP_Error for an
 		// unregistered taxonomy; neither carries venue terms to inspect.
@@ -718,11 +718,11 @@ class Event {
 	 * @throws Exception If there is an issue while generating calendar links.
 	 */
 	public function get_calendar_links(): array {
-		if ( ! $this->event ) {
+		if ( ! $this->post ) {
 			return array();
 		}
 
-		$calendar = new Calendar( $this->event->ID );
+		$calendar = new Calendar( $this->post->ID );
 
 		// Each URL getter only reports false when its event post cannot be resolved, and the
 		// calendar was built from the post resolved directly above.
@@ -757,12 +757,12 @@ class Event {
 	 * @return string The calendar event description with the event details link.
 	 */
 	public function get_calendar_description(): string {
-		if ( ! $this->event ) {
+		if ( ! $this->post ) {
 			return '';
 		}
 
 		/* translators: %s: event link. */
-		return sprintf( __( 'For details go to %s', 'gatherpress' ), get_the_permalink( $this->event ) );
+		return sprintf( __( 'For details go to %s', 'gatherpress' ), get_the_permalink( $this->post ) );
 	}
 
 	/**
@@ -791,13 +791,13 @@ class Event {
 
 		// Nothing to attach the datetimes to when the post ID handed to the constructor
 		// did not resolve to an event.
-		if ( ! $this->event ) {
+		if ( ! $this->post ) {
 			return false;
 		}
 
 		$params = array_merge(
 			array(
-				'post_id'        => $this->event->ID,
+				'post_id'        => $this->post->ID,
 				'datetime_start' => '',
 				'datetime_end'   => '',
 				'timezone'       => '',
@@ -888,11 +888,11 @@ class Event {
 	 * @return string The online event link if all conditions are met; otherwise, an empty string.
 	 */
 	public function maybe_get_online_event_link(): string {
-		if ( ! $this->event ) {
+		if ( ! $this->post ) {
 			return '';
 		}
 
-		$event_link = (string) get_post_meta( $this->event->ID, 'gatherpress_online_event_link', true );
+		$event_link = (string) get_post_meta( $this->post->ID, 'gatherpress_online_event_link', true );
 
 		/**
 		 * Filters whether to force the display of the online event link.

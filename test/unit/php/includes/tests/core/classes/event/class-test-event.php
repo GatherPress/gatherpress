@@ -37,13 +37,13 @@ class Test_Event extends Base {
 		$post  = $this->mock->post()->get();
 		$event = new Event( $post->ID );
 
-		$this->assertNull( Utility::get_hidden_property( $event, 'event' ) );
+		$this->assertNull( Utility::get_hidden_property( $event, 'post' ) );
 		$this->assertNull( Utility::get_hidden_property( $event, 'rsvp' ) );
 
 		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
 		$event = new Event( $post->ID );
 
-		$this->assertInstanceOf( WP_Post::class, Utility::get_hidden_property( $event, 'event' ) );
+		$this->assertInstanceOf( WP_Post::class, Utility::get_hidden_property( $event, 'post' ) );
 		$this->assertInstanceOf( Rsvp::class, Utility::get_hidden_property( $event, 'rsvp' ) );
 	}
 
@@ -266,7 +266,7 @@ class Test_Event extends Base {
 
 		$post->ID = 0;
 
-		Utility::set_and_get_hidden_property( $event, 'event', $post );
+		Utility::set_and_get_hidden_property( $event, 'post', $post );
 
 		$this->assertFalse(
 			$event->save_datetimes( $params ),
@@ -738,7 +738,7 @@ class Test_Event extends Base {
 
 		$this->assertSame( $expects, $output );
 
-		Utility::set_and_get_hidden_property( $event, 'event', null );
+		Utility::set_and_get_hidden_property( $event, 'post', null );
 
 		$this->assertEmpty(
 			$event->get_calendar_links(),
@@ -1368,7 +1368,7 @@ class Test_Event extends Base {
 		$post_id = $this->mock->post( array( 'post_type' => 'post' ) )->get()->ID;
 		$event   = new Event( $post_id );
 
-		$this->assertNull( $event->event, 'Failed to assert event is null for non-event post.' );
+		$this->assertNull( $event->post, 'Failed to assert post is null for non-event post.' );
 		$this->assertNull( $event->rsvp, 'Failed to assert rsvp is null for non-event post.' );
 	}
 

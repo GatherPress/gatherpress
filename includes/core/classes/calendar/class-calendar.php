@@ -146,7 +146,7 @@ final class Calendar {
 	 * @throws Exception If reading event datetime/venue data fails.
 	 */
 	public function get_google_destination_url(): string {
-		$post = $this->event->event;
+		$post = $this->event->post;
 
 		if ( ! $post ) {
 			return '';
@@ -196,7 +196,7 @@ final class Calendar {
 	 * @throws Exception If reading event datetime/venue data fails.
 	 */
 	public function get_yahoo_destination_url(): string {
-		$post = $this->event->event;
+		$post = $this->event->post;
 
 		if ( ! $post ) {
 			return '';
@@ -253,7 +253,7 @@ final class Calendar {
 	 * @throws Exception If reading event data fails.
 	 */
 	public function get_ical_event_string(): string {
-		$post = $this->event->event;
+		$post = $this->event->post;
 
 		if ( ! $post ) {
 			return '';
@@ -337,7 +337,7 @@ final class Calendar {
 	 * @return int Non-negative revision number for this event.
 	 */
 	private function get_sequence(): int {
-		$post = $this->event->event;
+		$post = $this->event->post;
 
 		if ( ! $post ) {
 			return 0;
@@ -392,7 +392,7 @@ final class Calendar {
 	 * @return string|false              URL of the event's endpoint, or false when the post can't be resolved.
 	 */
 	protected function get_endpoint_url( string $endpoint_slug, ?string $query_var = null ): string|false {
-		$post = $this->event->event;
+		$post = $this->event->post;
 
 		if ( ! $post ) {
 			return false;
