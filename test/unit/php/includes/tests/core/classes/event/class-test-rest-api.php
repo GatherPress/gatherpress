@@ -203,6 +203,118 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Coverage for email_route argument handling.
+	 *
+	 * A sanitizer in the validate_callback slot never sanitizes: the REST server
+	 * only treats an exact `false` return as invalid, so the raw value is used.
+	 *
+	 * @covers ::email_route
+	 *
+	 * @return void
+	 */
+	public function test_email_route_sanitizes_text_params(): void {
+		$instance = Rest_Api::get_instance();
+		$route    = Utility::invoke_hidden_method( $instance, 'email_route' );
+		$args     = $route['args']['args'];
+
+		$this->assertArrayNotHasKey(
+			'validate_callback',
+			$args['message'],
+			'Failed to assert message does not use a sanitizer as a validator.'
+		);
+		$this->assertSame(
+			'sanitize_textarea_field',
+			$args['message']['sanitize_callback'],
+			'Failed to assert message is sanitized with newlines preserved.'
+		);
+		$this->assertArrayNotHasKey(
+			'validate_callback',
+			$args['subject'],
+			'Failed to assert subject does not use a sanitizer as a validator.'
+		);
+		$this->assertSame(
+			'sanitize_text_field',
+			$args['subject']['sanitize_callback'],
+			'Failed to assert subject is sanitized.'
+		);
+	}
+
+	/**
+	 * Coverage for text params sanitized through a dispatched request.
+	 *
+	 * Sanitization only runs on dispatch, so this exercises the registered route
+	 * rather than calling the callback directly, and reads the values back off
+	 * the scheduled event the callback hands to cron.
+	 *
+	 * @covers ::email
+	 *
+	 * @return void
+	 */
+	public function test_email_route_sanitizes_on_dispatch(): void {
+		$captured = array();
+
+		add_filter(
+			'schedule_event',
+			static function ( $event ) use ( &$captured ) {
+				if ( $event && 'gatherpress_send_emails' === $event->hook ) {
+					$captured = $event->args;
+				}
+
+				return $event;
+			}
+		);
+
+		$admin_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		$event_id = $this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_author' => $admin_id,
+			)
+		)->get()->ID;
+
+		wp_set_current_user( $admin_id );
+
+		Rest_Api::get_instance()->register_endpoints();
+
+		$request = new WP_REST_Request(
+			'POST',
+			sprintf( '/%s/event/email', GATHERPRESS_REST_NAMESPACE )
+		);
+
+		$request->set_body_params(
+			array(
+				'post_id' => $event_id,
+				'message' => "First line.\nSecond line.",
+				'subject' => '  Subject <b>with</b> markup  ',
+				'send'    => array(
+					'all'           => false,
+					'attending'     => true,
+					'waiting_list'  => false,
+					'not_attending' => false,
+				),
+			)
+		);
+
+		$response = rest_get_server()->dispatch( $request );
+
+		$this->assertSame(
+			200,
+			$response->get_status(),
+			'Failed to assert the email request was accepted.'
+		);
+		$this->assertSame(
+			"First line.\nSecond line.",
+			$captured[2],
+			'Failed to assert the newline survived sanitization of the message.'
+		);
+		$this->assertSame(
+			'Subject with markup',
+			$captured[3],
+			'Failed to assert the subject was sanitized.'
+		);
+	}
+
+	/**
 	 * Coverage for send_emails method.
 	 *
 	 * @covers ::send_emails

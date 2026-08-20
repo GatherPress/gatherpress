@@ -1,0 +1,6 @@
+Significance: patch
+Type: fixed
+
+Fixed event update emails ignoring each recipient's language. The send modal pre-filled the subject with the sender's rendering of the default template and posted it on every send, so the server-side default, which is composed inside each recipient's locale, never ran. The field now starts empty and shows that default as a placeholder instead.
+
+Also fixed the `message` and `subject` parameters of the email endpoint declaring `sanitize_text_field` as a `validate_callback`. In that slot it never sanitizes, since the REST server only treats an exact `false` return as invalid. They now use `sanitize_callback`, with `sanitize_textarea_field` for the message so line breaks survive to the `nl2br()` in the email template.
