@@ -40,11 +40,8 @@ export default function SelectFieldPanels( { attributes, setAttributes } ) {
 		required,
 		labelFontSize,
 		labelLineHeight,
-		optionFontSize,
-		optionLineHeight,
 		labelTextColor,
 		requiredTextColor,
-		optionTextColor,
 	} = attributes;
 
 	// Handle select option changes
@@ -182,30 +179,6 @@ export default function SelectFieldPanels( { attributes, setAttributes } ) {
 				/>
 			</PanelBody>
 
-			<PanelBody title={ __( 'Option Styles', 'gatherpress' ) }>
-				<BaseControl>
-					<FontSizePicker
-						withReset={ true }
-						size="__unstable-large"
-						onChange={ ( value ) =>
-							setAttributes( { optionFontSize: value } )
-						}
-						value={ optionFontSize }
-					/>
-				</BaseControl>
-
-				<RangeControl
-					label={ __( 'Line Height', 'gatherpress' ) }
-					value={ optionLineHeight }
-					onChange={ ( value ) =>
-						setAttributes( { optionLineHeight: value } )
-					}
-					min={ 1 }
-					max={ 3 }
-					step={ 0.1 }
-				/>
-			</PanelBody>
-
 			<PanelColorSettings
 				title={ __( 'Colors', 'gatherpress' ) }
 				colorSettings={ [
@@ -227,12 +200,6 @@ export default function SelectFieldPanels( { attributes, setAttributes } ) {
 							},
 						]
 						: [] ),
-					{
-						value: optionTextColor,
-						onChange: ( value ) =>
-							setAttributes( { optionTextColor: value } ),
-						label: __( 'Option Text', 'gatherpress' ),
-					},
 				] }
 			/>
 		</>
