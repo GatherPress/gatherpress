@@ -877,10 +877,11 @@ class Event {
 		$term_id     = $venue_setup->get_online_event_term_id( $venue_pt );
 
 		// No resolved term id means the venue taxonomy has no sentinel seeded.
-		// Toggle on: seed it first; toggle off: nothing to remove.
+		// Toggle on: seed it first; toggle off: nothing to remove from terms.
 		if ( null === $term_id ) {
 			if ( ! $is_online ) {
-				return false;
+				delete_post_meta( $this->event->ID, 'gatherpress_online_event_link' );
+				return true;
 			}
 
 			Core_Setup::get_instance()->add_online_event_term();
