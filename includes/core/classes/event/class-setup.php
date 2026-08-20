@@ -698,7 +698,7 @@ final class Setup {
 		}
 
 		// Replace the datetime attribute and the displayed date text in the block output.
-		$iso_date = $event->get_datetime_start( 'c' );
+		$iso_date = $event->get_datetime_start_iso();
 
 		// A literal pattern cannot fail to compile, so preg_replace() never returns null here.
 		$block_content = (string) preg_replace(

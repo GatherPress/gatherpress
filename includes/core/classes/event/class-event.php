@@ -498,6 +498,28 @@ class Event {
 		string $which = 'start',
 		bool $local = true
 	): string {
+		return $this->format_datetime( $format, $which, $local, true );
+	}
+
+	/**
+	 * Format a datetime value.
+	 *
+	 * The machine-readable output passed to this method must not be altered by
+	 * the gatherpress_datetime_format filter, so filter application is opt-in via
+	 * $apply_filter. Display formatting enables it; the ISO accessors do not.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $format       PHP date format.
+	 * @param string $which        Datetime field in event table to format ('start' or 'end').
+	 * @param bool   $local        Whether to format the date in local time (true) or GMT (false).
+	 * @param bool   $apply_filter Whether to pass $format through the gatherpress_datetime_format filter.
+	 *
+	 * @return string The formatted datetime value.
+	 *
+	 * @throws Exception If there is an issue while formatting the datetime value.
+	 */
+	private function format_datetime( string $format, string $which, bool $local, bool $apply_filter ): string {
 		$dt             = $this->get_datetime();
 		$date           = $dt[ sprintf( 'datetime_%s_gmt', $which ) ];
 		$dt['timezone'] = Utility::maybe_convert_utc_offset( $dt['timezone'] );
@@ -524,15 +546,51 @@ class Event {
 				return '';
 			}
 
+			if ( $apply_filter ) {
+				$format = apply_filters( 'gatherpress_datetime_format', $format, $which, $local );
+			}
+
 			// wp_date() only returns false for a non-numeric timestamp, which $ts is not.
-			$date = (string) wp_date(
-				apply_filters( 'gatherpress_datetime_format', $format, $which, $local ),
-				$ts,
-				$tz
-			);
+			$date = (string) wp_date( $format, $ts, $tz );
 		}
 
 		return trim( $date );
+	}
+
+	/**
+	 * Get the ISO 8601 start datetime of the event.
+	 *
+	 * Returns the machine-readable start datetime intended for <time datetime>
+	 * attributes. Unlike get_datetime_start(), the format is not passed through
+	 * the gatherpress_datetime_format filter, so the ISO value cannot be changed
+	 * by display-format customization.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string The ISO 8601 start datetime, or empty string when unset.
+	 *
+	 * @throws Exception If there is an issue formatting the start datetime.
+	 */
+	public function get_datetime_start_iso(): string {
+		return $this->format_datetime( 'c', 'start', true, false );
+	}
+
+	/**
+	 * Get the ISO 8601 end datetime of the event.
+	 *
+	 * Returns the machine-readable end datetime intended for <time datetime>
+	 * attributes. Unlike get_datetime_end(), the format is not passed through
+	 * the gatherpress_datetime_format filter, so the ISO value cannot be changed
+	 * by display-format customization.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string The ISO 8601 end datetime, or empty string when unset.
+	 *
+	 * @throws Exception If there is an issue formatting the end datetime.
+	 */
+	public function get_datetime_end_iso(): string {
+		return $this->format_datetime( 'c', 'end', true, false );
 	}
 
 	/**

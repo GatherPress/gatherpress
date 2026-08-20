@@ -1281,6 +1281,44 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * Machine-readable datetime accessors bypass display-format filters.
+	 *
+	 * @covers ::get_datetime_start_iso
+	 * @covers ::get_datetime_end_iso
+	 */
+	public function test_get_iso_datetime_accessors(): void {
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $event_id );
+
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2025-06-15 14:30:00',
+				'datetime_end'   => '2025-06-15 16:30:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$empty_event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$empty_event    = new Event( $empty_event_id );
+		$this->assertSame( '', $empty_event->get_datetime_start_iso() );
+		$this->assertSame( '', $empty_event->get_datetime_end_iso() );
+
+		$filter = static function (): string {
+			return 'Y-m-d';
+		};
+		add_filter( 'gatherpress_datetime_format', $filter );
+
+		try {
+			$this->assertSame( '2025-06-15', $event->get_datetime_start( 'c' ) );
+			$this->assertSame( '2025-06-15', $event->get_datetime_end( 'c' ) );
+			$this->assertSame( '2025-06-15T14:30:00-04:00', $event->get_datetime_start_iso() );
+			$this->assertSame( '2025-06-15T16:30:00-04:00', $event->get_datetime_end_iso() );
+		} finally {
+			remove_filter( 'gatherpress_datetime_format', $filter );
+		}
+	}
+
+	/**
 	 * Coverage for get_calendar_description method.
 	 *
 	 * @covers ::get_calendar_description
