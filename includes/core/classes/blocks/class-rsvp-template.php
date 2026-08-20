@@ -87,8 +87,11 @@ final class Rsvp_Template {
 	public function ensure_block_styles_loaded( string $block_content ): string {
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
-		if ( $tag->next_tag() && ! empty( $tag->get_attribute( 'data-blocks' ) ) ) {
-			$inner_blocks = (array) json_decode( $tag->get_attribute( 'data-blocks' ), true );
+		$blocks_attr = $tag->next_tag() ? $tag->get_attribute( 'data-blocks' ) : null;
+
+		// A valueless attribute reads back as true.
+		if ( ! empty( $blocks_attr ) && is_string( $blocks_attr ) ) {
+			$inner_blocks = (array) json_decode( $blocks_attr, true );
 			$inner_blocks = Utility::get_block_names( $inner_blocks );
 
 			foreach ( $inner_blocks as $inner_block ) {
@@ -122,7 +125,6 @@ final class Rsvp_Template {
 	 */
 	public function generate_rsvp_template_block( string $block_content, array $block, WP_Block $instance ): string {
 		$post_id = (int) $instance->context['postId'];
-		$event   = new Event( $post_id );
 
 		// Only process if the post type supports RSVP. An unpublished event
 		// keeps its responses to viewers allowed to read it, so organizers see
@@ -134,11 +136,13 @@ final class Rsvp_Template {
 			return $block_content;
 		}
 
-		if ( ! ( new Rsvp( $post_id ) )->is_enabled() ) {
+		$rsvp = new Rsvp( $post_id );
+
+		if ( ! $rsvp->is_enabled() ) {
 			return '';
 		}
 
-		$responses     = $event->rsvp->responses()['attending']['records'];
+		$responses     = $rsvp->responses()['attending']['records'];
 		$block_content = '';
 		$args          = array(
 			'limit_enabled' => isset( $instance->context['gatherpress/rsvpLimitEnabled'] )
@@ -156,10 +160,16 @@ final class Rsvp_Template {
 		}
 
 		// Used for generating a parsed block for calls to API on the front end.
-		$blocks                 = wp_json_encode(
+		$blocks = wp_json_encode(
 			$block,
 			JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
 		);
+
+		// Without a template there is nothing to hand the front end, so send the responses alone.
+		if ( false === $blocks ) {
+			return $block_content;
+		}
+
 		$rsvp_response_template = sprintf(
 			'<div hidden data-wp-interactive="gatherpress"'
 				. ' data-wp-watch="callbacks.renderBlocks"'

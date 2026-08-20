@@ -195,12 +195,16 @@ final class Setup {
 	 * @return void
 	 */
 	public function init_taxonomies( string $taxonomy ): void {
+		$taxonomy_object = get_taxonomy( $taxonomy );
+
 		// Stop if the currently registered taxonomy does not validate.
-		if ( // Stop, if taxonomy is not registered for any event-date supporting post type.
+		if ( // Stop, if the taxonomy is not registered.
+			! $taxonomy_object ||
+			// Stop, if taxonomy is not registered for any event-date supporting post type.
 			! $this->has_post_type_for_taxonomy( $taxonomy ) ||
 			// Stop, if taxonomy is not public.
-			! is_taxonomy_viewable( $taxonomy ) ||
-			false === get_taxonomy( $taxonomy )->rewrite
+			! is_taxonomy_viewable( $taxonomy_object ) ||
+			false === $taxonomy_object->rewrite
 		) {
 			return;
 		}
@@ -400,6 +404,13 @@ final class Setup {
 		$links = array();
 
 		foreach ( get_post_types_by_support( 'gatherpress-event-date' ) as $post_type ) {
+			$feed_link = get_post_type_archive_feed_link( $post_type, self::ICAL_SLUG );
+
+			// A post type registered without an archive has no archive feed to advertise.
+			if ( false === $feed_link ) {
+				continue;
+			}
+
 			$post_type_object = get_post_type_object( $post_type );
 			// The fallback to the bare slug only fires when `get_post_type_object()`
 			// returns null — structurally unreachable here because the loop
@@ -409,10 +420,7 @@ final class Setup {
 				? $post_type_object->labels->name
 				: $post_type; // @codeCoverageIgnore
 			$links[]       = array(
-				'url'  => get_post_type_archive_feed_link(
-					$post_type,
-					self::ICAL_SLUG
-				),
+				'url'  => $feed_link,
 				'attr' => sprintf(
 					$args['posttypetitle'],
 					$args['blogtitle'],
@@ -443,15 +451,17 @@ final class Setup {
 	protected function collect_contextual_alternate_links( array $args ): array {
 		$queried = get_queried_object();
 
-		if ( is_singular() && post_type_supports( $queried->post_type, 'gatherpress-event-date' ) ) {
-			return $this->collect_singular_event_alternate_links( $queried, $args );
+		if ( is_singular() && $queried instanceof WP_Post ) {
+			if ( post_type_supports( $queried->post_type, 'gatherpress-event-date' ) ) {
+				return $this->collect_singular_event_alternate_links( $queried, $args );
+			}
+
+			if ( $this->is_tax_like_type_for_event_supporting_types( $queried->post_type ) ) {
+				return $this->collect_singular_tax_like_alternate_links( $queried, $args );
+			}
 		}
 
-		if ( is_singular() && $this->is_tax_like_type_for_event_supporting_types( $queried->post_type ) ) {
-			return $this->collect_singular_tax_like_alternate_links( $queried, $args );
-		}
-
-		if ( is_tax() && $this->has_post_type_for_taxonomy( $queried->taxonomy ) ) {
+		if ( is_tax() && $queried instanceof WP_Term && $this->has_post_type_for_taxonomy( $queried->taxonomy ) ) {
 			return $this->collect_tax_archive_alternate_links( $queried, $args );
 		}
 
@@ -473,18 +483,26 @@ final class Setup {
 	 * @return array<int,array{url:string,attr:string}>
 	 */
 	protected function collect_singular_event_alternate_links( WP_Post $event, array $args ): array {
+		// the_title_attribute() returns nothing for an empty title.
+		$title = the_title_attribute( array( 'echo' => false ) );
+		$title = is_string( $title ) ? $title : '';
+
 		$calendar = new Calendar( $event->ID );
-		$links    = array(
-			array(
-				'url'  => $calendar->get_ical_url(),
+		$ical_url = $calendar->get_ical_url();
+		$links    = array();
+
+		// False when the event post no longer resolves.
+		if ( false !== $ical_url ) {
+			$links[] = array(
+				'url'  => $ical_url,
 				'attr' => sprintf(
 					$args['singletitle'],
 					$args['blogtitle'],
 					$args['separator'],
-					the_title_attribute( array( 'echo' => false ) )
+					$title
 				),
-			),
-		);
+			);
+		}
 
 		return array_merge( $links, $this->collect_event_term_alternate_links( $event, $args ) );
 	}
@@ -504,6 +522,10 @@ final class Setup {
 	 * @return array<int,array{url:string,attr:string}>
 	 */
 	protected function collect_singular_tax_like_alternate_links( WP_Post $post, array $args ): array {
+		// the_title_attribute() returns nothing for an empty title.
+		$title = the_title_attribute( array( 'echo' => false ) );
+		$title = is_string( $title ) ? $title : '';
+
 		return array(
 			array(
 				'url'  => get_post_comments_feed_link( $post->ID, self::ICAL_SLUG ),
@@ -511,7 +533,7 @@ final class Setup {
 					$args['singletitle'],
 					$args['blogtitle'],
 					$args['separator'],
-					the_title_attribute( array( 'echo' => false ) )
+					$title
 				),
 			),
 		);
@@ -529,17 +551,22 @@ final class Setup {
 	 * @return array<int,array{url:string,attr:string}>
 	 */
 	protected function collect_tax_archive_alternate_links( WP_Term $term, array $args ): array {
-		$tax = get_taxonomy( $term->taxonomy );
+		$href = get_term_feed_link( $term->term_id, $term->taxonomy, self::ICAL_SLUG );
+
+		// False when the term no longer resolves.
+		if ( false === $href ) {
+			return array();
+		}
 
 		return array(
 			array(
-				'url'  => get_term_feed_link( $term->term_id, $term->taxonomy, self::ICAL_SLUG ),
+				'url'  => $href,
 				'attr' => sprintf(
 					$args['taxtitle'],
 					$args['blogtitle'],
 					$args['separator'],
 					$term->name,
-					$tax->labels->singular_name
+					Utility::taxonomy_label( 'singular_name', $term->taxonomy )
 				),
 			),
 		);
@@ -563,6 +590,11 @@ final class Setup {
 				'object_ids' => $event->ID,
 			)
 		);
+
+		// Only a `get_terms` filter can produce this; iterating it would fatal below.
+		if ( is_wp_error( $terms ) ) {
+			return array();
+		}
 
 		$links = array();
 
@@ -603,9 +635,13 @@ final class Setup {
 					$term->slug,
 					ltrim( $term->taxonomy, '_' )
 				);
-				// Feels weird to use a *_comments_* function here, but it delivers clean results
-				// in the form of "domain.tld/event/my-sample-event/feed/ical/".
-				$href = get_post_comments_feed_link( $post->ID, self::ICAL_SLUG );
+
+				// Without this, get_post_comments_feed_link( null ) falls back to the global post.
+				if ( $post instanceof WP_Post ) {
+					// Feels weird to use a *_comments_* function here, but it delivers clean results
+					// in the form of "domain.tld/event/my-sample-event/feed/ical/".
+					$href = get_post_comments_feed_link( $post->ID, self::ICAL_SLUG );
+				}
 			}
 		} else {
 			$href = get_term_feed_link( $term->term_id, $term->taxonomy, self::ICAL_SLUG );
@@ -615,8 +651,6 @@ final class Setup {
 			return array();
 		}
 
-		$tax = get_taxonomy( $term->taxonomy );
-
 		return array(
 			array(
 				'url'  => $href,
@@ -625,7 +659,7 @@ final class Setup {
 					$args['blogtitle'],
 					$args['separator'],
 					$term->name,
-					$tax->labels->singular_name
+					Utility::taxonomy_label( 'singular_name', $term->taxonomy )
 				),
 			),
 		);
@@ -706,21 +740,30 @@ final class Setup {
 		$topics          = array();
 		$venues          = array();
 		$output          = array();
+		$queried_object  = get_queried_object();
 
-		if ( is_singular() && $this->is_tax_like_type_for_event_supporting_types( get_queried_object()->post_type ) ) {
+		if (
+			is_singular() &&
+			$queried_object instanceof WP_Post &&
+			$this->is_tax_like_type_for_event_supporting_types( $queried_object->post_type )
+		) {
 			if ( is_singular( 'gatherpress_venue' ) ) {
-				$venues = array( '_' . get_queried_object()->post_name );
+				$venues = array( '_' . $queried_object->post_name );
 			}
-		} elseif ( is_tax() && $this->has_post_type_for_taxonomy( get_queried_object()->taxonomy ) ) {
+		} elseif (
+			is_tax() &&
+			$queried_object instanceof WP_Term &&
+			$this->has_post_type_for_taxonomy( $queried_object->taxonomy )
+		) {
 			if ( is_tax( 'gatherpress_topic' ) ) {
-				$topics = array( get_queried_object()->slug );
+				$topics = array( $queried_object->slug );
 			}
 		}
 
 		$query = Query::get_instance()->get_events_list( $event_list_type, $number, $topics, $venues );
 		while ( $query->have_posts() ) {
 			$query->the_post();
-			$calendar = new Calendar( get_the_ID() );
+			$calendar = new Calendar( (int) get_the_ID() );
 			$output[] = $calendar->get_ical_event_string();
 		}
 
@@ -769,26 +812,29 @@ final class Setup {
 		$queried_object = get_queried_object();
 		$filename       = 'calendar';
 
-		if ( is_singular() && post_type_supports( $queried_object->post_type, 'gatherpress-event-date' ) ) {
-			$calendar  = new Calendar( $queried_object->ID );
-			$date      = $calendar->event->get_datetime_start( 'Y-m-d' );
-			$post_name = $queried_object->post_name;
-			$filename  = $date . '_' . $post_name;
-		} elseif ( is_singular() && $this->is_tax_like_type_for_event_supporting_types( $queried_object->post_type ) ) {
-			$filename = $queried_object->post_name;
-		} elseif ( is_tax() && $this->has_post_type_for_taxonomy( $queried_object->taxonomy ) ) {
+		if ( is_singular() && $queried_object instanceof WP_Post ) {
+			if ( post_type_supports( $queried_object->post_type, 'gatherpress-event-date' ) ) {
+				$calendar  = new Calendar( $queried_object->ID );
+				$date      = $calendar->event->get_datetime_start( 'Y-m-d' );
+				$post_name = $queried_object->post_name;
+				$filename  = $date . '_' . $post_name;
+			} elseif ( $this->is_tax_like_type_for_event_supporting_types( $queried_object->post_type ) ) {
+				$filename = $queried_object->post_name;
+			}
+		} elseif (
+			is_tax() &&
+			$queried_object instanceof WP_Term &&
+			$this->has_post_type_for_taxonomy( $queried_object->taxonomy )
+		) {
 			$filename = $queried_object->slug;
-		} elseif ( is_post_type_archive() ) {
-			// `$queried_object` is the WP_Post_Type here. `rewrite` is `false`
-			// when the post type opted out of rewrite rules — fall back to the
-			// default filename in that case rather than `false['slug']`-ing.
+		} elseif ( is_post_type_archive() && $queried_object instanceof WP_Post_Type ) {
+			// `rewrite` is false when the post type opted out of rewrite rules.
 			$filename = is_array( $queried_object->rewrite ) ? $queried_object->rewrite['slug'] : $filename;
 		} elseif ( is_feed() && ! is_singular() && ! is_tax() ) {
-			$filename = str_replace(
-				'.',
-				'-',
-				wp_parse_url( home_url(), PHP_URL_HOST )
-			);
+			$host = wp_parse_url( home_url(), PHP_URL_HOST );
+
+			// A site URL without a parsable host keeps the default filename.
+			$filename = is_string( $host ) ? str_replace( '.', '-', $host ) : $filename;
 		}
 
 		return $filename . '.ics';

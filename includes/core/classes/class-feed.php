@@ -160,7 +160,8 @@ final class Feed {
 			return $excerpt;
 		}
 
-		$event = new Event( get_the_ID() );
+		// The support check above already returned when no post is in context, so get_the_ID() is an ID here.
+		$event = new Event( (int) get_the_ID() );
 		$venue = $event->get_venue_information();
 
 		$event_info = $this->get_event_datetime_info( $event );
@@ -185,7 +186,8 @@ final class Feed {
 		// Add the original excerpt if it exists and is different from the content.
 		if ( ! empty( $excerpt ) && get_the_content() !== $excerpt ) {
 			$clean_excerpt = wp_strip_all_tags( $excerpt );
-			$clean_excerpt = preg_replace( '/\s+/', ' ', $clean_excerpt ); // Normalize whitespace.
+			// Normalize whitespace. A literal pattern cannot fail to compile, so preg_replace() never returns null.
+			$clean_excerpt = (string) preg_replace( '/\s+/', ' ', $clean_excerpt );
 			$clean_excerpt = trim( $clean_excerpt );
 
 			if ( ! empty( $clean_excerpt ) ) {
@@ -211,7 +213,8 @@ final class Feed {
 			return $content;
 		}
 
-		$event = new Event( get_the_ID() );
+		// The support check above already returned when no post is in context, so get_the_ID() is an ID here.
+		$event = new Event( (int) get_the_ID() );
 		$venue = $event->get_venue_information();
 
 		$event_info = $this->get_event_datetime_info( $event );
@@ -236,7 +239,8 @@ final class Feed {
 		// For RSS feeds, provide a cleaner version of the content.
 		// Strip out complex HTML and keep only essential information.
 		$clean_content = wp_strip_all_tags( $content );
-		$clean_content = preg_replace( '/\s+/', ' ', $clean_content ); // Normalize whitespace.
+		// Normalize whitespace. A literal pattern cannot fail to compile, so preg_replace() never returns null.
+		$clean_content = (string) preg_replace( '/\s+/', ' ', $clean_content );
 		$clean_content = trim( $clean_content );
 
 		if ( ! empty( $clean_content ) ) {

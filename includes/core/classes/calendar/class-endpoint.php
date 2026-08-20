@@ -52,9 +52,13 @@ class Endpoint {
 	 * a `WP_Post_Type` object for a post type or a `WP_Taxonomy` object for a taxonomy.
 	 * This is used to generate the correct rewrite rules and handle URL matching.
 	 *
+	 * An unregistered object leaves the failed lookup in place — `null` from
+	 * `get_post_type_object()`, `false` from `get_taxonomy()` — and registration
+	 * bails, so the endpoint is never initialized.
+	 *
 	 * @since 0.34.0
 	 *
-	 * @var WP_Post_Type|WP_Taxonomy|null
+	 * @var WP_Post_Type|WP_Taxonomy|false|null
 	 */
 	public $type_object;
 
@@ -192,7 +196,23 @@ class Endpoint {
 	 * @return string The compiled regex pattern.
 	 */
 	protected function get_regex_pattern(): string {
-		$rewrite_base = $this->type_object->rewrite['slug'];
+		/**
+		 * The registered post type or taxonomy object.
+		 *
+		 * @var WP_Post_Type|WP_Taxonomy $type_object Registration resolved the object before the
+		 *                                           endpoint could initialize, and the object-less
+		 *                                           sitewide endpoint overrides this method.
+		 */
+		$type_object = $this->type_object;
+
+		/**
+		 * Rewrite settings of the registered object.
+		 *
+		 * @var array<string, mixed> $rewrite Registration bails on objects with rewrites disabled.
+		 */
+		$rewrite = $type_object->rewrite;
+
+		$rewrite_base = $rewrite['slug'];
 		$slugs        = join( '|', $this->get_slugs() );
 		return sprintf(
 			$this->reg_ex,
@@ -212,9 +232,18 @@ class Endpoint {
 	 * @return array<string, string> The rewrite replacement attributes for add_rewrite_rule().
 	 */
 	public function get_rewrite_atts(): array {
+		/**
+		 * The registered post type or taxonomy object.
+		 *
+		 * @var WP_Post_Type|WP_Taxonomy $type_object Registration resolved the object before the
+		 *                                           endpoint could initialize, and the object-less
+		 *                                           sitewide endpoint overrides this method.
+		 */
+		$type_object = $this->type_object;
+
 		return array(
-			$this->type_object->name => '$matches[1]',
-			$this->query_var         => '$matches[2]',
+			$type_object->name => '$matches[1]',
+			$this->query_var   => '$matches[2]',
 		);
 	}
 

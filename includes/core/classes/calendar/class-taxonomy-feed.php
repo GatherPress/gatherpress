@@ -16,6 +16,8 @@ namespace GatherPress\Core\Calendar;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use WP_Taxonomy;
+
 /**
  * Manages custom feed endpoints for taxonomies in GatherPress.
  *
@@ -73,7 +75,15 @@ final class Taxonomy_Feed extends Endpoint {
 	 * @return bool True if the current request is a valid feed request for the taxonomy archive.
 	 */
 	public function is_valid(): bool {
-		return is_tax( $this->type_object->name ) && is_feed();
+		/**
+		 * The registered taxonomy object.
+		 *
+		 * @var WP_Taxonomy $type_object Registration resolved the object before the
+		 *                               endpoint could initialize.
+		 */
+		$type_object = $this->type_object;
+
+		return is_tax( $type_object->name ) && is_feed();
 	}
 
 	/**
@@ -87,11 +97,19 @@ final class Taxonomy_Feed extends Endpoint {
 	 * @return array<string, string> The rewrite replacement attributes for add_rewrite_rule().
 	 */
 	public function get_rewrite_atts(): array {
+		/**
+		 * The registered taxonomy object.
+		 *
+		 * @var WP_Taxonomy $type_object Registration resolved the object before the
+		 *                               endpoint could initialize.
+		 */
+		$type_object = $this->type_object;
+
 		return array(
-			$this->object_type       => $this->type_object->name,
-			$this->type_object->name => '$matches[1]',
-			'feed'                   => '$matches[2]',
-			$this->query_var         => '$matches[2]',
+			$this->object_type => $type_object->name,
+			$type_object->name => '$matches[1]',
+			'feed'             => '$matches[2]',
+			$this->query_var   => '$matches[2]',
 		);
 	}
 }

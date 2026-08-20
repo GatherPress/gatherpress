@@ -72,7 +72,21 @@ final class Event_Cli extends WP_CLI {
 		$anonymous = ! empty( $assoc_args['anonymous'] ) ? (int) $assoc_args['anonymous'] : 0;
 		$status    = ! empty( $assoc_args['status'] ) ? (string) $assoc_args['status'] : 'attending';
 		$event     = new Event( $event_id );
-		$response  = $event->rsvp->save( $user_id, $status, $anonymous, $guests );
+
+		// Event::$rsvp stays null for a post that isn't an RSVP-capable event, so there is nothing to save.
+		if ( ! $event->rsvp ) {
+			self::error(
+				sprintf(
+					/* translators: %d: event ID. */
+					__( 'Event ID "%d" does not exist or does not support RSVPs.', 'gatherpress' ),
+					$event_id
+				)
+			);
+
+			return; // @phpstan-ignore deadCode.unreachable
+		}
+
+		$response = $event->rsvp->save( $user_id, $status, $anonymous, $guests );
 
 		self::success(
 			sprintf(

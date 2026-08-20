@@ -208,7 +208,7 @@ final class General_Block {
 				$processor->remove_attribute( 'role' );
 
 				$content = $processor->get_updated_html();
-				$content = preg_replace( '/<a\b/', '<button', $content );
+				$content = (string) preg_replace( '/<a\b/', '<button', $content );
 				$content = str_replace( '</a>', '</button>', $content );
 				break;
 			}

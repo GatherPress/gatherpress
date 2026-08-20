@@ -552,7 +552,7 @@ final class Prewarm {
 			return array();
 		}
 
-		$blocks = parse_blocks( $content );
+		$blocks = array_values( parse_blocks( $content ) );
 
 		return $this->walk_blocks_for_combos( $blocks );
 	}

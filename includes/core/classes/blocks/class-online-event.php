@@ -87,8 +87,8 @@ final class Online_Event {
 		// Check if block has a postId override attribute.
 		$post_id = isset( $block['attrs']['postId'] ) ? intval( $block['attrs']['postId'] ) : get_the_ID();
 
-		// Don't render if the event doesn't have the online-event term.
-		if ( ! $this->has_online_event_term( $post_id ) ) {
+		// get_the_ID() is false outside the loop.
+		if ( false === $post_id || ! $this->has_online_event_term( $post_id ) ) {
 			return '';
 		}
 

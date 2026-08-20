@@ -561,4 +561,59 @@ class Test_Storage extends Base {
 		);
 		$this->assertSame( $event_id, (int) $state->comment->comment_post_ID );
 	}
+
+	/**
+	 * A comment that was deleted between the lookup that produced its ID and
+	 * the save reports false instead of updating a row that is no longer there.
+	 *
+	 * @since 0.36.0
+	 * @covers ::save
+	 *
+	 * @return void
+	 */
+	public function test_save_returns_false_when_the_row_to_update_is_gone(): void {
+		list( , $storage ) = $this->make_storage();
+
+		$user_id = $this->factory->user->create();
+		$result  = $storage->save( $this->user_intent( $user_id, Status::ATTENDING ), 999999 );
+
+		$this->assertFalse( $result, 'Updating a comment that no longer exists reports false.' );
+		$this->assertNull(
+			$storage->get( new Identity( Identity_Type::WP_USER_ID, $user_id ) ),
+			'The failed update does not fall through to an insert.'
+		);
+	}
+
+	/**
+	 * A comment that stops resolving after the write lands — deleted here from
+	 * the term hook that fires between the update and the read-back — reports a
+	 * failed save rather than a successful one.
+	 *
+	 * @since 0.36.0
+	 * @covers ::save
+	 *
+	 * @return void
+	 */
+	public function test_save_returns_false_when_the_saved_comment_stops_resolving(): void {
+		list( , $storage ) = $this->make_storage();
+
+		$user_id    = $this->factory->user->create();
+		$state      = $storage->save( $this->user_intent( $user_id, Status::ATTENDING ), null );
+		$comment_id = (int) $state->comment->comment_ID;
+		$vanish     = static function () use ( $comment_id ) {
+			wp_delete_comment( $comment_id, true );
+		};
+
+		add_action( 'set_object_terms', $vanish );
+
+		$result = $storage->save( $this->user_intent( $user_id, Status::NOT_ATTENDING ), $comment_id );
+
+		remove_action( 'set_object_terms', $vanish );
+
+		$this->assertFalse( $result, 'A comment that no longer resolves reports a failed save.' );
+		$this->assertNull(
+			get_comment( $comment_id ),
+			'The comment really is gone by the time the save reads it back.'
+		);
+	}
 }

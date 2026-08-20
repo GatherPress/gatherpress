@@ -121,16 +121,26 @@ final class Export extends Migrate {
 	 * @param  bool   $skip     Whether to skip the current post meta. Default false.
 	 * @param  string $meta_key Current meta key.
 	 * @param  object $meta     Current meta object.
+	 * @phpstan-param object{post_id: int|string} $meta
 	 *
 	 * @return bool             Whether to skip the current post meta. Default false.
 	 */
 	public function extend( bool $skip, string $meta_key, object $meta ): bool {
 		if ( self::POST_META === $meta_key ) {
+			$post_id = (int) $meta->post_id;
+
+			/**
+			 * The post the temporary marker belongs to.
+			 *
+			 * @var WP_Post $post The marker is only ever read while its own post is being exported.
+			 */
+			$post = get_post( $post_id );
+
 			// Echos out xml with pseudo-postmeta.
-			$this->run( get_post( $meta->post_id ) );
+			$this->run( $post );
 
 			// Deletes temporary marker.
-			delete_post_meta( $meta->post_id, self::POST_META );
+			delete_post_meta( $post_id, self::POST_META );
 
 			// Prevent 'normal' export processing for that particular postmeta field,
 			// because it doesn't exist in real and will trigger an error.

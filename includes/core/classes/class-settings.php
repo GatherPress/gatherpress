@@ -771,8 +771,8 @@ class Settings {
 			$sanitized[] = $clean_item;
 		}
 
-		// Re-encode.
-		return wp_json_encode( $sanitized );
+		// Re-encode. Every value ran through a sanitizer that guarantees valid UTF-8, so encoding cannot fail.
+		return (string) wp_json_encode( $sanitized );
 	}
 
 	/**

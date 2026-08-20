@@ -144,8 +144,8 @@ final class Rsvp_Form {
 		$schema_form_id = $this->get_form_schema_id( $post_id, $block );
 
 		$block_content = trim( $block_content );
-		$block_content = preg_replace( '/^<div\b/', '<form', $block_content );
-		$block_content = preg_replace(
+		$block_content = (string) preg_replace( '/^<div\b/', '<form', $block_content );
+		$block_content = (string) preg_replace(
 			'/(<\/div>)$/',
 			'<input type="hidden" name="comment_post_ID" value="' . intval( $post_id ) . '">' .
 			'<input type="hidden" name="' . esc_attr( Rsvp::COMMENT_TYPE ) . '" value="1">' .
@@ -220,15 +220,17 @@ final class Rsvp_Form {
 		// Check if this is a success redirect (form was just submitted).
 		$is_success = 'true' === Utility::get_http_input( INPUT_GET, 'gatherpress_rsvp_success' );
 
+		$visibility_json = (string) wp_json_encode( $visibility );
+
 		// Determine if block should be visible using centralized logic.
-		$should_show = $this->determine_visibility( wp_json_encode( $visibility ), $is_success, $is_past );
+		$should_show = $this->determine_visibility( $visibility_json, $is_success, $is_past );
 
 		// Add the visibility data attribute(s) to the rendered block.
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
 		if ( $tag->next_tag() ) {
 			// Store visibility as JSON.
-			$tag->set_attribute( 'data-gatherpress-rsvp-form-visibility', wp_json_encode( $visibility ) );
+			$tag->set_attribute( 'data-gatherpress-rsvp-form-visibility', $visibility_json );
 
 			// Add event state for frontend JavaScript.
 			if ( $is_past ) {
@@ -311,7 +313,8 @@ final class Rsvp_Form {
 		while ( $tag->next_tag() ) {
 			$visibility_attr = $tag->get_attribute( 'data-gatherpress-rsvp-form-visibility' );
 
-			if ( $visibility_attr ) {
+			// A valueless attribute reads back as true.
+			if ( is_string( $visibility_attr ) && '' !== $visibility_attr ) {
 				$this->apply_visibility_rule( $tag, $visibility_attr, $is_success, $is_past );
 			}
 		}
@@ -433,8 +436,8 @@ final class Rsvp_Form {
 			return;
 		}
 
-		// Parse blocks and extract schemas for each RSVP Form.
-		$blocks  = parse_blocks( $post->post_content );
+		// Schema IDs are the list index, so the keys have to stay integers.
+		$blocks  = array_values( parse_blocks( $post->post_content ) );
 		$schemas = $this->extract_form_schemas_from_blocks( $blocks );
 
 		if ( ! empty( $schemas ) ) {
@@ -469,7 +472,7 @@ final class Rsvp_Form {
 				if ( ! empty( $fields ) ) {
 					$schemas[ $form_id ] = array(
 						'fields' => $fields,
-						'hash'   => wp_hash( wp_json_encode( $fields ) ),
+						'hash'   => wp_hash( (string) wp_json_encode( $fields ) ),
 					);
 				}
 			}
@@ -607,7 +610,7 @@ final class Rsvp_Form {
 			return 'form_0'; // Fallback.
 		}
 
-		$blocks     = parse_blocks( $post->post_content );
+		$blocks     = array_values( parse_blocks( $post->post_content ) );
 		$form_index = $this->find_form_index_in_blocks( $blocks, $block );
 
 		return 'form_' . $form_index;

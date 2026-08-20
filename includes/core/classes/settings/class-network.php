@@ -581,9 +581,17 @@ final class Network {
 
 		// Single-site (no $stored) and multisite-with-corrupt-stored-value
 		// (non-array) both fall back to defaults.
-		self::$config_cache = is_array( $stored )
+		$config = is_array( $stored )
 			? array_merge( $defaults, $stored )
 			: $defaults;
+
+		// A stored array can still hold junk under either key, so coerce both back to shape.
+		self::$config_cache = array(
+			'enabled'   => ! empty( $config['enabled'] ),
+			'inherited' => is_array( $config['inherited'] ?? null )
+				? array_values( array_filter( $config['inherited'], 'is_string' ) )
+				: array(),
+		);
 
 		return self::$config_cache;
 	}

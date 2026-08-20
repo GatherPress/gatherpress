@@ -275,6 +275,36 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * A post that is not an event has nothing to attach datetimes to, so the
+	 * save reports failure and writes no meta.
+	 *
+	 * @since 0.36.0
+	 * @covers ::save_datetimes
+	 *
+	 * @return void
+	 */
+	public function test_save_datetimes_returns_false_without_post(): void {
+		$post_id = $this->mock->post( array( 'post_type' => 'post' ) )->get()->ID;
+		$event   = new Event( $post_id );
+
+		$this->assertFalse(
+			$event->save_datetimes(
+				array(
+					'datetime_start' => '2020-05-11 15:00:00',
+					'datetime_end'   => '2020-05-11 17:00:00',
+					'timezone'       => 'America/New_York',
+				)
+			),
+			'Failed to assert false due to the post not resolving to an event.'
+		);
+		$this->assertSame(
+			'',
+			get_post_meta( $post_id, 'gatherpress_datetime_start', true ),
+			'Failed to assert no datetime meta was written for a non-event post.'
+		);
+	}
+
+	/**
 	 * Coverage for get_datetime method.
 	 *
 	 * @covers ::get_datetime
@@ -591,6 +621,51 @@ class Test_Event extends Base {
 			'500 Hybrid Way',
 			$response['address'],
 			'Hybrid event should surface the physical venue address.'
+		);
+	}
+
+	/**
+	 * A post that is not an event has no venue to report, and must not fall
+	 * through to the venue of whatever post is globally queried.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_venue_information
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_information_returns_empty_shape_without_post(): void {
+		$post_id  = $this->mock->post( array( 'post_type' => 'post' ) )->get()->ID;
+		$venue    = $this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_title' => 'Queried Venue',
+				'post_name'  => 'queried-venue',
+			)
+		)->get();
+		$event_id = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get()->ID;
+
+		update_post_meta( $venue->ID, 'gatherpress_address', '900 Queried Way' );
+		wp_set_post_terms( $event_id, array( '_queried-venue' ), Venue::TAXONOMY );
+
+		// Query the venue-bearing event so any fall-through would surface its venue.
+		$this->go_to( get_permalink( $event_id ) );
+
+		$response = ( new Event( $post_id ) )->get_venue_information();
+
+		$this->assertSame(
+			array(
+				'address'   => '',
+				'name'      => '',
+				'permalink' => '',
+				'phone'     => '',
+				'website'   => '',
+			),
+			$response,
+			'Failed to assert a non-event post reports the empty venue shape.'
 		);
 	}
 
@@ -956,6 +1031,27 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * A post that is not an event never surfaces an online event link, even
+	 * when the meta happens to be present on the post.
+	 *
+	 * @since 0.36.0
+	 * @covers ::maybe_get_online_event_link
+	 *
+	 * @return void
+	 */
+	public function test_maybe_get_online_event_link_returns_empty_without_post(): void {
+		$post_id = $this->mock->post( array( 'post_type' => 'post' ) )->get()->ID;
+
+		update_post_meta( $post_id, 'gatherpress_online_event_link', 'https://unittest.com/video/' );
+
+		$this->assertSame(
+			'',
+			( new Event( $post_id ) )->maybe_get_online_event_link(),
+			'Failed to assert online event link is empty for a non-event post.'
+		);
+	}
+
+	/**
 	 * Coverage for is_same_date method.
 	 *
 	 * @covers ::is_same_date
@@ -1144,6 +1240,47 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * A stored datetime that validates but will not parse reports no datetime
+	 * at all, bailing before the format filter rather than falling back to the
+	 * epoch.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_formatted_datetime
+	 *
+	 * @return void
+	 */
+	public function test_get_formatted_datetime_returns_empty_for_unparsable_value(): void {
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+
+		// Validates as `Y-m-d H:i:s` but has an out-of-range day and hour, so strtotime() rejects it.
+		update_post_meta( $event_id, 'gatherpress_datetime_start_gmt', '2030-06-31 25:00:00' );
+
+		$formatted = 0;
+		$counter   = static function ( $format ) use ( &$formatted ) {
+			++$formatted;
+
+			return $format;
+		};
+
+		add_filter( 'gatherpress_datetime_format', $counter );
+
+		$result = ( new Event( $event_id ) )->get_formatted_datetime( 'Y-m-d', 'start', false );
+
+		remove_filter( 'gatherpress_datetime_format', $counter );
+
+		$this->assertSame(
+			'',
+			$result,
+			'Failed to assert an unparsable stored datetime reports no datetime at all.'
+		);
+		$this->assertSame(
+			0,
+			$formatted,
+			'Failed to assert an unparsable stored datetime bails before the datetime format filter runs.'
+		);
+	}
+
+	/**
 	 * Coverage for get_calendar_description method.
 	 *
 	 * @covers ::get_calendar_description
@@ -1198,6 +1335,26 @@ class Test_Event extends Base {
 		$result = $event->get_calendar_description();
 
 		$this->assertNotEmpty( $result, 'Failed to assert calendar description is not empty even without excerpt.' );
+	}
+
+	/**
+	 * A post that is not an event has no permalink worth pointing a calendar
+	 * client at, so the description is empty rather than pointing at whatever
+	 * post is globally queried.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_calendar_description
+	 *
+	 * @return void
+	 */
+	public function test_get_calendar_description_returns_empty_without_post(): void {
+		$post_id = $this->mock->post( array( 'post_type' => 'post' ) )->get()->ID;
+
+		$this->assertSame(
+			'',
+			( new Event( $post_id ) )->get_calendar_description(),
+			'Failed to assert a non-event post has no calendar description.'
+		);
 	}
 
 	/**

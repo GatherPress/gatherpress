@@ -1510,6 +1510,51 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Test get_recipients skips rows the RSVP query returns that are not comments.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_recipients
+	 *
+	 * @return void
+	 */
+	public function test_get_recipients_skips_non_comment_rows(): void {
+		$instance = Rest_Api::get_instance();
+		$event_id = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+		$event    = new Event( $event_id );
+
+		$event->rsvp->save( 'attendee@example.com', 'attending', 1 );
+
+		// Append an unresolvable row to the RSVP lookup so a non-comment entry
+		// reaches the recipient loop.
+		$injector = static function ( $comments, $query ) {
+			if ( ! empty( $query->query_vars['comment__in'] ) ) {
+				$comments[] = PHP_INT_MAX;
+			}
+
+			return $comments;
+		};
+
+		add_filter( 'the_comments', $injector, 10, 2 );
+
+		$recipients = $instance->get_recipients( array( 'attending' => true ), $event_id );
+
+		remove_filter( 'the_comments', $injector, 10 );
+
+		$this->assertCount(
+			1,
+			$recipients,
+			'Failed to assert the non-comment row was skipped.'
+		);
+		$this->assertSame(
+			'attendee@example.com',
+			$recipients[0]['email'],
+			'Failed to assert the surviving recipient is the real RSVP.'
+		);
+	}
+
+	/**
 	 * Test send_emails with locale switching for user.
 	 *
 	 * @covers ::send_emails

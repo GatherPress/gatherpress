@@ -142,6 +142,9 @@ final class Rsvp_Response {
 			do {
 				$class_attr = $tag->get_attribute( 'class' );
 
+				// A valueless attribute reads back as true.
+				$class_attr = is_string( $class_attr ) ? $class_attr : '';
+
 				if ( Utility::has_css_class( $class_attr, 'gatherpress-rsvp-response--no-responses' ) ) {
 					if ( $has_responses ) {
 						$updated_class  = str_replace(
@@ -206,8 +209,10 @@ final class Rsvp_Response {
 	public function attach_dropdown_interactivity( string $block_content ): string {
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 		$tag->next_tag();
-		$counts = ! empty( $tag->get_attribute( 'data-counts' ) ) ?
-			json_decode( $tag->get_attribute( 'data-counts' ), true ) :
+		$counts_attr = $tag->get_attribute( 'data-counts' );
+
+		$counts = ! empty( $counts_attr ) && is_string( $counts_attr ) ?
+			json_decode( $counts_attr, true ) :
 			array();
 
 		if ( $tag->next_tag(
@@ -241,7 +246,7 @@ final class Rsvp_Response {
 				$current_class = $tag->get_attribute( 'class' );
 
 				if (
-					$current_class &&
+					is_string( $current_class ) &&
 					preg_match(
 						'/gatherpress--is-(attending|waiting-list|not-attending)/',
 						$current_class,

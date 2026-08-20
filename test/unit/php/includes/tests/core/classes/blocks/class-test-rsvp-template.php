@@ -705,4 +705,43 @@ class Test_Rsvp_Template extends Base {
 			'No record degrades to the zero ID a missing commentId key produces.'
 		);
 	}
+
+	/**
+	 * Tests generate_rsvp_template_block with block data JSON cannot represent.
+	 *
+	 * @since 0.36.0
+	 * @covers ::generate_rsvp_template_block
+	 * @return void
+	 */
+	public function test_generate_rsvp_template_block_unencodable_block(): void {
+		$instance = Rsvp_Template::get_instance();
+		$post     = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+
+		$wp_block = new WP_Block(
+			array(),
+			array( 'postId' => $post->ID )
+		);
+
+		// INF has no JSON representation, so encoding the block comes back false.
+		$block  = array(
+			'innerBlocks' => array(),
+			'attrs'       => array( 'gatherpressUnencodable' => INF ),
+		);
+		$result = $instance->generate_rsvp_template_block( '', $block, $wp_block );
+
+		$this->assertSame(
+			'',
+			$result,
+			'Failed to assert an unencodable block renders the responses alone.'
+		);
+		$this->assertStringNotContainsString(
+			'data-block-template=',
+			$result,
+			'Failed to assert an unencodable block is not handed to the front end.'
+		);
+	}
 }

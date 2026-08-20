@@ -57,7 +57,9 @@ final class Utility {
 		ob_start();
 		// Loading PHP template file, not importing a class.
 		require $path; // NOSONAR.
-		return ob_get_clean();
+
+		// The buffer was opened directly above, so ob_get_clean() always returns its contents.
+		return (string) ob_get_clean();
 	}
 
 	/**
@@ -189,7 +191,8 @@ final class Utility {
 	 * @return string The key with the 'gatherpress_' prefix removed.
 	 */
 	public static function unprefix_key( string $key ): string {
-		return preg_replace( '/^gatherpress_/', '', $key );
+		// A literal pattern cannot fail to compile, so preg_replace() never returns null here.
+		return (string) preg_replace( '/^gatherpress_/', '', $key );
 	}
 
 	/**
@@ -466,9 +469,7 @@ final class Utility {
 	 */
 	public static function maybe_convert_utc_offset( string $timezone ): string {
 		// Regex: https://regex101.com/r/wxhjIu/1.
-		preg_match( '/^UTC([+-])(\d+)(.\d+)?$/', $timezone, $matches );
-
-		if ( ! count( $matches ) ) {
+		if ( ! preg_match( '/^UTC([+-])(\d+)(.\d+)?$/', $timezone, $matches ) ) {
 			return $timezone;
 		}
 
@@ -602,7 +603,8 @@ final class Utility {
 	 * @return string The login URL for the event.
 	 */
 	public static function get_login_url( int $post_id = 0 ): string {
-		$permalink = get_the_permalink( $post_id );
+		// A post ID with no permalink (no such post, or no post in context) logs in without a redirect.
+		$permalink = (string) get_the_permalink( $post_id );
 
 		return wp_login_url( $permalink );
 	}
@@ -666,16 +668,23 @@ final class Utility {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string|null $class_string The CSS class string to search in.
-	 * @param string      $target_class The specific class to search for.
+	 * @param string|bool|null $class_string The CSS class string to search in. `WP_HTML_Tag_Processor`
+	 *                                       hands back `true` for a valueless `class` attribute, which
+	 *                                       carries no classes.
+	 * @param string           $target_class The specific class to search for.
 	 *
 	 * @return bool True if the target class is found, false otherwise.
 	 */
-	public static function has_css_class( ?string $class_string, string $target_class ): bool {
-		if ( empty( $class_string ) || empty( $target_class ) ) {
+	public static function has_css_class( string|bool|null $class_string, string $target_class ): bool {
+		if ( ! is_string( $class_string ) || empty( $class_string ) || empty( $target_class ) ) {
 			return false;
 		}
 
+		/**
+		 * Class names split on whitespace.
+		 *
+		 * @var list<string> $classes A literal pattern cannot fail, so preg_split() never returns false.
+		 */
 		$classes = preg_split( '/\s+/', trim( $class_string ) );
 
 		return in_array( $target_class, $classes, true );
