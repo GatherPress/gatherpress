@@ -1452,11 +1452,6 @@ final class Map {
 		string $provider,
 		string $map_type = self::DEFAULT_MAP_TYPE
 	): ?string {
-		// GD returns GdImage since PHP 8.0, so the contract's `resource` arm is dead on the 8.1 floor.
-		if ( ! $image instanceof GdImage ) {
-			return null; // @codeCoverageIgnore
-		}
-
 		$dirs = wp_get_upload_dir();
 
 		if ( ! empty( $dirs['error'] ) ) {
