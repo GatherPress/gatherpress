@@ -15,6 +15,7 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue;
 
@@ -89,7 +90,7 @@ $gatherpress_venue       = $gatherpress_event->get_venue_information()['name'];
 		<?php
 		if (
 			! $gatherpress_event->has_event_past()
-			&& $gatherpress_event->rsvp?->is_enabled()
+			&& ( new Rsvp( $event_id ) )->is_enabled()
 		) :
 			$gatherpress_rsvp_url = (string) get_the_permalink( $event_id );
 			?>

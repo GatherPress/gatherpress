@@ -754,6 +754,26 @@ class Test_Rsvp extends Base {
 	}
 
 	/**
+	 * Coverage for is_enabled method on a post type without RSVP support.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::is_enabled
+	 *
+	 * @return void
+	 */
+	public function test_is_enabled_without_rsvp_support(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => 'post' ) );
+
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
+
+		$this->assertFalse(
+			( new Rsvp( $post_id ) )->is_enabled(),
+			'Should return false for a post type that does not support gatherpress-rsvp.'
+		);
+	}
+
+	/**
 	 * Test save method with email identifier.
 	 *
 	 * @covers ::save

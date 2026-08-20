@@ -111,7 +111,9 @@ final class Rsvp {
 			return '';
 		}
 
-		if ( ! ( new Core_Rsvp( $post_id ) )->is_enabled() ) {
+		$rsvp = new Core_Rsvp( $post_id );
+
+		if ( ! $rsvp->is_enabled() ) {
 			return '';
 		}
 
@@ -146,13 +148,8 @@ final class Rsvp {
 			// Serialize the current inner blocks for the saved status.
 			$serialized_inner_blocks[ $saved_status ] = serialize_blocks( $inner_blocks );
 
-			$user_data = array();
-
-			if ( $event->rsvp ) {
-				$user_identifier = Rsvp_Setup::get_instance()->get_user_identifier();
-
-				$user_data = $event->rsvp->get( $user_identifier ) ?? array();
-			}
+			$user_identifier = Rsvp_Setup::get_instance()->get_user_identifier();
+			$user_data       = $rsvp->get( $user_identifier ) ?? array();
 
 			$filtered_data   = array_intersect_key(
 				$user_data,

@@ -571,15 +571,15 @@ class Test_Rsvp_Template extends Base {
 		$post_id  = $post->ID;
 
 		// Get event and save an RSVP using the proper API.
-		$event   = new Event( $post_id );
+		$rsvp    = new Rsvp( $post_id );
 		$user_id = $this->factory->user->create();
 
 		// Save RSVP using the Event's RSVP system.
-		$event->rsvp->save( $user_id, 'attending', 0, 0 );
+		$rsvp->save( $user_id, 'attending', 0, 0 );
 
 		// Create one more RSVP.
 		$user_id_2 = $this->factory->user->create();
-		$event->rsvp->save( $user_id_2, 'attending', 0, 0 );
+		$rsvp->save( $user_id_2, 'attending', 0, 0 );
 
 		$wp_block = new WP_Block(
 			array(

@@ -165,14 +165,6 @@ class Event {
 	public ?WP_Post $post = null;
 
 	/**
-	 * RSVP instance.
-	 *
-	 * @since 0.34.0
-	 * @var Rsvp|null
-	 */
-	public ?Rsvp $rsvp = null;
-
-	/**
 	 * Cached datetime data.
 	 *
 	 * @since 0.34.0
@@ -193,7 +185,6 @@ class Event {
 	public function __construct( int $post_id ) {
 		if ( post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
 			$this->post = get_post( $post_id );
-			$this->rsvp = new Rsvp( $post_id );
 		}
 	}
 
@@ -910,12 +901,8 @@ class Event {
 		$force_online_event_link = apply_filters( 'gatherpress_force_online_event_link', false );
 
 		if ( ! $force_online_event_link && ! is_admin() ) {
-			if ( ! $this->rsvp ) {
-				return '';
-			}
-
 			$user_identifier = Rsvp_Setup::get_instance()->get_user_identifier();
-			$response        = $this->rsvp->get( $user_identifier );
+			$response        = ( new Rsvp( $this->post->ID ) )->get( $user_identifier );
 
 			if (
 				! isset( $response['status'] ) ||

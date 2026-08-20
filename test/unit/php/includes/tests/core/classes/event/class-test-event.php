@@ -38,13 +38,11 @@ class Test_Event extends Base {
 		$event = new Event( $post->ID );
 
 		$this->assertNull( Utility::get_hidden_property( $event, 'post' ) );
-		$this->assertNull( Utility::get_hidden_property( $event, 'rsvp' ) );
 
 		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
 		$event = new Event( $post->ID );
 
 		$this->assertInstanceOf( WP_Post::class, Utility::get_hidden_property( $event, 'post' ) );
-		$this->assertInstanceOf( Rsvp::class, Utility::get_hidden_property( $event, 'rsvp' ) );
 	}
 
 	/**
@@ -996,7 +994,7 @@ class Test_Event extends Base {
 			'Failed to assert online event link is empty.'
 		);
 
-		$event->rsvp->save( $user_id, 'attending' );
+		( new Rsvp( $event_id ) )->save( $user_id, 'attending' );
 
 		$this->assertSame(
 			$link,
@@ -1020,13 +1018,6 @@ class Test_Event extends Base {
 		$this->assertEmpty(
 			$event->maybe_get_online_event_link(),
 			'Failed to assert online event link is empty.'
-		);
-
-		Utility::set_and_get_hidden_property( $event, 'rsvp', null );
-
-		$this->assertEmpty(
-			$event->maybe_get_online_event_link(),
-			'Failed to assert empty string due to RSVP being set to null.'
 		);
 	}
 
@@ -1369,7 +1360,6 @@ class Test_Event extends Base {
 		$event   = new Event( $post_id );
 
 		$this->assertNull( $event->post, 'Failed to assert post is null for non-event post.' );
-		$this->assertNull( $event->rsvp, 'Failed to assert rsvp is null for non-event post.' );
 	}
 
 	/**

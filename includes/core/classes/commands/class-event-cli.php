@@ -14,7 +14,7 @@ namespace GatherPress\Core\Commands;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp\Rsvp;
 use WP_CLI;
 
 /**
@@ -71,10 +71,9 @@ final class Event_Cli extends WP_CLI {
 		$guests    = ! empty( $assoc_args['guests'] ) ? (int) $assoc_args['guests'] : 0;
 		$anonymous = ! empty( $assoc_args['anonymous'] ) ? (int) $assoc_args['anonymous'] : 0;
 		$status    = ! empty( $assoc_args['status'] ) ? (string) $assoc_args['status'] : 'attending';
-		$event     = new Event( $event_id );
 
-		// Event::$rsvp stays null for a post that isn't an RSVP-capable event, so there is nothing to save.
-		if ( ! $event->rsvp ) {
+		// The error message names this support, so gate on it rather than on event dates.
+		if ( ! post_type_supports( (string) get_post_type( $event_id ), 'gatherpress-rsvp' ) ) {
 			self::error(
 				sprintf(
 					/* translators: %d: event ID. */
@@ -86,7 +85,7 @@ final class Event_Cli extends WP_CLI {
 			return; // @phpstan-ignore deadCode.unreachable
 		}
 
-		$response = $event->rsvp->save( $user_id, $status, $anonymous, $guests );
+		$response = ( new Rsvp( $event_id ) )->save( $user_id, $status, $anonymous, $guests );
 
 		self::success(
 			sprintf(

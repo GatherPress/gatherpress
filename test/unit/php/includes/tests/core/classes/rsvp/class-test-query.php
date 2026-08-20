@@ -88,7 +88,7 @@ class Test_Query extends Base {
 		);
 		$event    = new Event( $post->ID );
 
-		$event->rsvp->save( $user_id, 'attending' );
+		( new Rsvp( $post->ID ) )->save( $user_id, 'attending' );
 
 		$comment_query = new WP_Comment_Query(
 			array(
