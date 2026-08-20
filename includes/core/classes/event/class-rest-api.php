@@ -152,11 +152,11 @@ final class Rest_Api {
 					),
 					'message' => array(
 						'required'          => false,
-						'validate_callback' => 'sanitize_text_field',
+						'sanitize_callback' => 'sanitize_textarea_field',
 					),
 					'subject' => array(
 						'required'          => false,
-						'validate_callback' => 'sanitize_text_field',
+						'sanitize_callback' => 'sanitize_text_field',
 					),
 					'send'    => array(
 						'required'          => true,
