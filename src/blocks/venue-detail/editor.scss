@@ -58,12 +58,6 @@
 		white-space: pre-wrap;
 		overflow-wrap: anywhere;
 
-		&:focus-visible {
-			outline: 1.5px solid var(--wp-admin-theme-color, #007cba);
-			outline-offset: 2px;
-			box-shadow: 0 0 0 1px var(--wp-admin-theme-color, #007cba);
-		}
-
 		&:focus {
 			outline: 1.5px solid var(--wp-admin-theme-color, #007cba);
 			outline-offset: 2px;
