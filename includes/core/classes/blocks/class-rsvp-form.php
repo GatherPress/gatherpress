@@ -572,7 +572,7 @@ final class Rsvp_Form {
 					$value = '' === $value ? ( $option['label'] ?? '' ) : $value;
 					return sanitize_text_field( $value );
 				},
-				$options
+				(array) $options
 			);
 		} else {
 			$options = array_map( 'sanitize_text_field', (array) $options );
