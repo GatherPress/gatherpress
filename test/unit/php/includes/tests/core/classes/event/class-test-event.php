@@ -1215,17 +1215,18 @@ class Test_Event extends Base {
 	}
 
 	/**
-	 * Coverage for set_online bailing on a toggle-off when no sentinel has ever
-	 * been seeded for the venue taxonomy.
+	 * Coverage for set_online clearing stale meta on toggle-off when no sentinel
+	 * has ever been seeded for the venue taxonomy.
 	 *
-	 * With no seeded term the resolved term id is null, so toggle-off has
-	 * nothing to remove and reports failure rather than touching any meta.
+	 * With no seeded term the resolved term id is null, so toggle-off has no
+	 * term to remove but still clears any stale gatherpress_online_event_link
+	 * meta and reports success.
 	 *
 	 * @covers ::set_online
 	 *
 	 * @return void
 	 */
-	public function test_set_online_off_bails_when_no_term_seeded(): void {
+	public function test_set_online_off_clears_meta_when_no_term_seeded(): void {
 		register_taxonomy_for_object_type( Venue::TAXONOMY, Event::POST_TYPE );
 		$event_id = $this->mock->post(
 			array(
@@ -1233,9 +1234,16 @@ class Test_Event extends Base {
 			)
 		)->get()->ID;
 
-		$this->assertFalse(
+		add_post_meta( $event_id, 'gatherpress_online_event_link', 'https://example.com/stale' );
+
+		$this->assertTrue(
 			( new Event( $event_id ) )->set_online( false ),
-			'set_online(false) should fail when the venue taxonomy has no sentinel term to remove.'
+			'set_online(false) should succeed and clear stale meta when the venue taxonomy has no sentinel term.'
+		);
+		$this->assertSame(
+			'',
+			get_post_meta( $event_id, 'gatherpress_online_event_link', true ),
+			'set_online(false) should clear the link meta even when no sentinel term exists.'
 		);
 	}
 
