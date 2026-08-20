@@ -179,6 +179,62 @@ export const getOptionStyles = ( attributes ) => {
  *
  * @return {string} CSS classes for the wrapper
  */
+/**
+ * Build the attribute updates for an edit to one option's label or value.
+ *
+ * Radio and select share an options model, and both the canvas component and
+ * the inspector panel edit it, so this is the one place the rules live: a
+ * label edit regenerates the option's value, and the field's default follows
+ * that value when it was pointing at it.
+ *
+ * @param {Object}   params            - Function params.
+ * @param {Object[]} params.options    - The current options.
+ * @param {number}   params.index      - Index of the option being edited.
+ * @param {string}   params.field      - Which key is being edited, `label` or `value`.
+ * @param {string}   params.value      - The new value for that key.
+ * @param {string}   params.fieldValue - The field's current default value.
+ *
+ * @return {Object} Attribute updates to hand to setAttributes.
+ */
+export const getOptionUpdates = ( {
+	options,
+	index,
+	field,
+	value,
+	fieldValue,
+} ) => {
+	const newOptions = [ ...options ];
+
+	newOptions[ index ] = { ...newOptions[ index ], [ field ]: value };
+
+	const previousValue = newOptions[ index ].value;
+
+	if ( 'label' === field ) {
+		const cleanValue = value
+			.toLowerCase()
+			.split( /[^a-z0-9]+/ ) // Split on non-alphanumeric sequences.
+			.filter( ( part ) => 0 < part.length ) // Remove empty strings.
+			.join( '-' ); // Join with dashes.
+
+		newOptions[ index ].value = cleanValue || value;
+	}
+
+	const updates = { radioOptions: newOptions };
+
+	// Keep the default selection in step when a label edit regenerates the
+	// value. An empty previous value means no default is set, so a label typed
+	// into a blank option must not silently become one.
+	if (
+		fieldValue === previousValue &&
+		'' !== previousValue &&
+		previousValue !== newOptions[ index ].value
+	) {
+		updates.fieldValue = newOptions[ index ].value;
+	}
+
+	return updates;
+};
+
 export const getWrapperClasses = (
 	fieldType,
 	blockProps,

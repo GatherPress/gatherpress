@@ -16,6 +16,7 @@ import {
 	getLabelStyles,
 	getLabelWrapperStyles,
 	getOptionStyles,
+	getOptionUpdates,
 	getWrapperClasses,
 } from '../helpers';
 
@@ -59,22 +60,19 @@ export default function RadioField( {
 
 	// Handle radio option changes.
 	const updateRadioOption = ( index, field, value ) => {
-		const newOptions = [ ...radioOptions ];
-		newOptions[ index ] = { ...newOptions[ index ], [ field ]: value };
-
-		if ( 'label' === field ) {
-			const cleanValue = value
-				.toLowerCase()
-				.split( /[^a-z0-9]+/ ) // Split on non-alphanumeric sequences.
-				.filter( ( part ) => 0 < part.length ) // Remove empty strings.
-				.join( '-' ); // Join with dashes.
-			newOptions[ index ].value = cleanValue || value;
-		}
-
-		setAttributes( { radioOptions: newOptions } );
+		setAttributes(
+			getOptionUpdates( {
+				options: radioOptions,
+				index,
+				field,
+				value,
+				fieldValue,
+			} ),
+		);
 
 		if ( 'label' === field && 0 === index && ! fieldName && value ) {
 			const generatedFieldName = generateFieldName( value );
+
 			if ( generatedFieldName ) {
 				setAttributes( { fieldName: generatedFieldName } );
 			}

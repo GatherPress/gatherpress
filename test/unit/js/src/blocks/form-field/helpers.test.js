@@ -11,6 +11,7 @@ import FieldValue, {
 	getLabelStyles,
 	getLabelWrapperStyles,
 	getOptionStyles,
+	getOptionUpdates,
 	getWrapperClasses,
 } from '@src/blocks/form-field/helpers';
 
@@ -517,5 +518,79 @@ describe( 'Form field helper functions', () => {
 				fieldValue: 'updated text',
 			} );
 		} );
+	} );
+} );
+
+describe( 'getOptionUpdates', () => {
+	const options = [
+		{ label: 'One', value: 'one', id: 'a' },
+		{ label: 'Two', value: 'two', id: 'b' },
+	];
+
+	it( 'regenerates the option value from an edited label', () => {
+		const updates = getOptionUpdates( {
+			options,
+			index: 0,
+			field: 'label',
+			value: 'First Choice',
+			fieldValue: '',
+		} );
+
+		expect( updates.radioOptions[ 0 ].label ).toBe( 'First Choice' );
+		expect( updates.radioOptions[ 0 ].value ).toBe( 'first-choice' );
+	} );
+
+	it( 'moves the default along when the edited option was the default', () => {
+		const updates = getOptionUpdates( {
+			options,
+			index: 0,
+			field: 'label',
+			value: 'Uno',
+			fieldValue: 'one',
+		} );
+
+		// Without this the default would still point at "one", which no
+		// option carries any more, silently losing the selection.
+		expect( updates.fieldValue ).toBe( 'uno' );
+	} );
+
+	it( 'leaves the default alone when another option is edited', () => {
+		const updates = getOptionUpdates( {
+			options,
+			index: 1,
+			field: 'label',
+			value: 'Dos',
+			fieldValue: 'one',
+		} );
+
+		expect( updates.fieldValue ).toBeUndefined();
+	} );
+
+	it( 'does not make a blank option the default when its label is typed', () => {
+		const updates = getOptionUpdates( {
+			options: [ ...options, { label: '', value: '', id: 'c' } ],
+			index: 2,
+			field: 'label',
+			value: 'Three',
+			fieldValue: '',
+		} );
+
+		// An empty field value means no default is set, so it must stay unset.
+		expect( updates.fieldValue ).toBeUndefined();
+	} );
+
+	it( 'does not mutate the options it was given', () => {
+		const original = [ { label: 'One', value: 'one', id: 'a' } ];
+
+		getOptionUpdates( {
+			options: original,
+			index: 0,
+			field: 'label',
+			value: 'Changed',
+			fieldValue: 'one',
+		} );
+
+		expect( original[ 0 ].label ).toBe( 'One' );
+		expect( original[ 0 ].value ).toBe( 'one' );
 	} );
 } );

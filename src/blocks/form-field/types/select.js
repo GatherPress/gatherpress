@@ -16,6 +16,7 @@ import {
 	getInputStyles,
 	getLabelStyles,
 	getLabelWrapperStyles,
+	getOptionUpdates,
 	getWrapperClasses,
 } from '../helpers';
 
@@ -68,35 +69,15 @@ export default function SelectField( {
 
 	// Handle select option changes.
 	const updateSelectOption = ( index, field, value ) => {
-		const newOptions = [ ...radioOptions ];
-		newOptions[ index ] = { ...newOptions[ index ], [ field ]: value };
-
-		const previousValue = newOptions[ index ].value;
-
-		if ( 'label' === field ) {
-			const cleanValue = value
-				.toLowerCase()
-				.split( /[^a-z0-9]+/ ) // Split on non-alphanumeric sequences.
-				.filter( ( part ) => 0 < part.length ) // Remove empty strings.
-				.join( '-' ); // Join with dashes.
-
-			newOptions[ index ].value = cleanValue || value;
-		}
-
-		// Keep the default selection in step when a label edit regenerates the value.
-		// Guard against '' (no-default sentinel) so editing a blank option's label
-		// does not create an unintended default.
-		const updates = { radioOptions: newOptions };
-
-		if (
-			fieldValue === previousValue &&
-			'' !== previousValue &&
-			previousValue !== newOptions[ index ].value
-		) {
-			updates.fieldValue = newOptions[ index ].value;
-		}
-
-		setAttributes( updates );
+		setAttributes(
+			getOptionUpdates( {
+				options: radioOptions,
+				index,
+				field,
+				value,
+				fieldValue,
+			} ),
+		);
 
 		if ( 'label' === field && 0 === index && ! fieldName && value ) {
 			const generatedFieldName = generateFieldName( value );
