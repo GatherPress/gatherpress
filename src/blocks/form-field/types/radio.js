@@ -129,11 +129,16 @@ export default function RadioField( {
 		}, 50 );
 	};
 
-	const addRadioOption = ( scopeElement ) => {
-		const newOptions = [ ...radioOptions, { label: '', value: '', id: uuidv4() } ];
+	const addRadioOption = ( scopeElement, index ) => {
+		// Insert directly after the option Enter was pressed in, the way a
+		// list behaves, rather than appending to the end of the group.
+		const insertAt = index + 1;
+		const newOptions = [ ...radioOptions ];
+
+		newOptions.splice( insertAt, 0, { label: '', value: '', id: uuidv4() } );
 		setAttributes( { radioOptions: newOptions } );
 
-		focusOption( scopeElement, newOptions.length - 1 );
+		focusOption( scopeElement, insertAt );
 	};
 
 	const removeRadioOption = ( scopeElement, index ) => {
@@ -155,7 +160,7 @@ export default function RadioField( {
 	const handleKeyDown = ( event, index ) => {
 		if ( 'Enter' === event.key ) {
 			event.preventDefault();
-			addRadioOption( event.target );
+			addRadioOption( event.target, index );
 		} else if ( 'Backspace' === event.key || 'Delete' === event.key ) {
 			const currentOption = radioOptions[ index ];
 

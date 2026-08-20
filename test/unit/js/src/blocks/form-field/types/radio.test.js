@@ -117,8 +117,13 @@ describe( 'RadioField option focus', () => {
 		expect( firstBlockOptions ).toHaveLength( 3 );
 		expect( optionsOf( secondBlock ) ).toHaveLength( 2 );
 
+		// The new option lands directly after the one Enter was pressed in,
+		// not at the end of the group. The empty one shows its placeholder.
+		expect( firstBlockOptions[ 0 ].textContent ).toBe( 'One' );
+		expect( firstBlockOptions[ 2 ].textContent ).toBe( 'Two' );
+
 		// The caret belongs in the option just created, which is in this block.
-		expect( document.activeElement ).toBe( firstBlockOptions[ 2 ] );
+		expect( document.activeElement ).toBe( firstBlockOptions[ 1 ] );
 		expect( secondBlock.contains( document.activeElement ) ).toBe( false );
 	} );
 

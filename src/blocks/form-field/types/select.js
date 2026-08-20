@@ -159,15 +159,16 @@ export default function SelectField( {
 		}, 50 );
 	};
 
-	const addSelectOption = ( scopeElement ) => {
-		const newOptions = [
-			...radioOptions,
-			{ label: '', value: '', id: uuidv4() },
-		];
+	const addSelectOption = ( scopeElement, index ) => {
+		// Insert directly after the option Enter was pressed in, the way a
+		// list behaves, rather than appending to the end of the list.
+		const insertAt = index + 1;
+		const newOptions = [ ...radioOptions ];
 
+		newOptions.splice( insertAt, 0, { label: '', value: '', id: uuidv4() } );
 		setAttributes( { radioOptions: newOptions } );
 
-		focusOption( scopeElement, newOptions.length - 1 );
+		focusOption( scopeElement, insertAt );
 	};
 
 	const removeSelectOption = ( scopeElement, index ) => {
@@ -189,7 +190,7 @@ export default function SelectField( {
 	const handleKeyDown = ( event, index ) => {
 		if ( 'Enter' === event.key ) {
 			event.preventDefault();
-			addSelectOption( event.target );
+			addSelectOption( event.target, index );
 		} else if ( 'Backspace' === event.key || 'Delete' === event.key ) {
 			const currentOption = radioOptions[ index ];
 
