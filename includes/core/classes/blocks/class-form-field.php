@@ -147,7 +147,7 @@ final class Form_Field {
 	 *
 	 * @since 0.36.0
 	 *
-	 * @param array $raw_attributes Raw block attributes.
+	 * @param array<string, mixed> $raw_attributes Raw block attributes.
 	 *
 	 * @return string The autocomplete token for the rendered input.
 	 */
