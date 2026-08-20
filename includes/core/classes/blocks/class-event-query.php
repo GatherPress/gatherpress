@@ -156,8 +156,8 @@ final class Event_Query {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string|null $pre_render   The pre-rendered content. Default null.
-	 * @param array       $parsed_block The block being rendered.
+	 * @param string|null          $pre_render   The pre-rendered content. Default null.
+	 * @param array<string, mixed> $parsed_block The block being rendered.
 	 *
 	 * @return string|null The pre-rendered content. Default null.
 	 */
@@ -230,7 +230,7 @@ final class Event_Query {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array $attributes Event Query block attributes.
+	 * @param array<string, mixed> $attributes Event Query block attributes.
 	 *
 	 * @return int[] Array of post IDs to exclude.
 	 */
@@ -263,10 +263,12 @@ final class Event_Query {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array    $query Array containing parameters for <code>WP_Query</code> as parsed by the block context.
-	 * @param WP_Block $block Block instance.
+	 * @param array<string, mixed> $query Array containing parameters for <code>WP_Query</code> as parsed by the
+	 *                                    block context.
+	 * @param WP_Block             $block Block instance.
 	 *
-	 * @return array Array containing parameters for <code>WP_Query</code> as parsed by the block context.
+	 * @return array<string, mixed> Array containing parameters for <code>WP_Query</code> as parsed by the block
+	 *                              context.
 	 */
 	public function query_loop_block_query_vars( array $query, WP_Block $block ): array {
 		// Retrieve the query from the passed block context.
@@ -361,10 +363,11 @@ final class Event_Query {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array           $args    Array of arguments for WP_Query.
-	 * @param WP_REST_Request $request The REST API request object.
+	 * @param array<string, mixed> $args    Array of arguments for WP_Query.
+	 * @param WP_REST_Request      $request The REST API request object.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
-	 * @return array Array of arguments for WP_Query.
+	 * @return array<string, mixed> Array of arguments for WP_Query.
 	 */
 	public function rest_query( array $args, WP_REST_Request $request ): array {
 		// When a request explicitly asks for specific events by ID (`include`),
@@ -450,9 +453,9 @@ final class Event_Query {
 	 *
 	 * @see https://developer.wordpress.org/reference/classes/wp_rest_posts_controller/get_collection_params/
 	 *
-	 * @param array $query_params JSON Schema-formatted collection parameters.
+	 * @param array<string, array<string, mixed>> $query_params JSON Schema-formatted collection parameters.
 	 *
-	 * @return array JSON Schema-formatted collection parameters.
+	 * @return array<string, array<string, mixed>> JSON Schema-formatted collection parameters.
 	 */
 	public function rest_collection_params( array $query_params ): array {
 		// Add GatherPress-specific orderby options.
@@ -526,10 +529,10 @@ final class Event_Query {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $query_args  The query arguments being built.
-	 * @param array $block_query The block's query attributes.
+	 * @param array<string, mixed> $query_args  The query arguments being built.
+	 * @param array<string, mixed> $block_query The block's query attributes.
 	 *
-	 * @return array Modified query arguments.
+	 * @return array<string, mixed> Modified query arguments.
 	 */
 	public function aql_query_vars( array $query_args, array $block_query ): array {
 		// Only process if querying GatherPress events.

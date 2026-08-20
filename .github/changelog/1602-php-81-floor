@@ -1,4 +1,0 @@
-Significance: major
-Type: changed
-
-Raised the minimum required PHP version from 7.4 to 8.1.

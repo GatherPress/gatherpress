@@ -597,10 +597,10 @@ final class Setup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array  $emails     Array of email addresses to notify.
-	 * @param string $comment_id The comment ID.
+	 * @param string[] $emails     Array of email addresses to notify.
+	 * @param string   $comment_id The comment ID.
 	 *
-	 * @return array Empty array for RSVP comments, original array otherwise.
+	 * @return string[] Empty array for RSVP comments, original array otherwise.
 	 */
 	public function remove_rsvp_notification_emails( array $emails, string $comment_id ): array {
 		if ( get_comment_type( (int) $comment_id ) !== Rsvp::COMMENT_TYPE ) {

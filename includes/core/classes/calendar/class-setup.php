@@ -38,6 +38,15 @@ use WP_Term;
  * sibling `Calendar` class, instantiated as `new Calendar( $event_id )`.
  *
  * @since 0.34.0
+ *
+ * @phpstan-type LabelArgs array{
+ *   blogtitle: string,
+ *   separator: string,
+ *   singletitle: string,
+ *   feedtitle: string,
+ *   posttypetitle: string,
+ *   taxtitle: string
+ * }
  */
 final class Setup {
 
@@ -55,6 +64,8 @@ final class Setup {
 	 * @since 0.34.0
 	 */
 	public function __construct() {
+		Cache::get_instance();
+
 		$this->setup_hooks();
 	}
 
@@ -231,7 +242,8 @@ final class Setup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array Template descriptor with `file_name` (and optional `dir_path`) keys.
+	 * @return array{file_name: string, dir_path?: string} Template descriptor with `file_name` (and optional
+	 *                                                      `dir_path`) keys.
 	 */
 	public function get_ical_file_template(): array {
 		return array(
@@ -244,7 +256,8 @@ final class Setup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array Template descriptor with `file_name` (and optional `dir_path`) keys.
+	 * @return array{file_name: string, dir_path?: string} Template descriptor with `file_name` (and optional
+	 *                                                      `dir_path`) keys.
 	 */
 	public function get_ical_feed_template(): array {
 		return array(
@@ -322,7 +335,7 @@ final class Setup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array{blogtitle:string,separator:string,singletitle:string,feedtitle:string,posttypetitle:string,taxtitle:string}
+	 * @return LabelArgs
 	 */
 	protected function alternate_link_label_args(): array {
 		return array(
@@ -348,6 +361,7 @@ final class Setup {
 	 * @since 0.34.0
 	 *
 	 * @param array $args Label args from `alternate_link_label_args()`.
+	 * @phpstan-param LabelArgs $args
 	 *
 	 * @return array<int,array{url:string,attr:string}> One-element list.
 	 */
@@ -378,6 +392,7 @@ final class Setup {
 	 * @since 0.34.0
 	 *
 	 * @param array $args Label args from `alternate_link_label_args()`.
+	 * @phpstan-param LabelArgs $args
 	 *
 	 * @return array<int,array{url:string,attr:string}> One entry per event-supporting post type.
 	 */
@@ -421,6 +436,7 @@ final class Setup {
 	 * @since 0.34.0
 	 *
 	 * @param array $args Label args from `alternate_link_label_args()`.
+	 * @phpstan-param LabelArgs $args
 	 *
 	 * @return array<int,array{url:string,attr:string}>
 	 */
@@ -452,6 +468,7 @@ final class Setup {
 	 *
 	 * @param WP_Post $event The queried event post.
 	 * @param array   $args  Label args from `alternate_link_label_args()`.
+	 * @phpstan-param LabelArgs $args
 	 *
 	 * @return array<int,array{url:string,attr:string}>
 	 */
@@ -482,6 +499,7 @@ final class Setup {
 	 *
 	 * @param WP_Post $post The queried shadow-source post (e.g. a venue).
 	 * @param array   $args Label args from `alternate_link_label_args()`.
+	 * @phpstan-param LabelArgs $args
 	 *
 	 * @return array<int,array{url:string,attr:string}>
 	 */
@@ -506,6 +524,7 @@ final class Setup {
 	 *
 	 * @param WP_Term $term The queried taxonomy term.
 	 * @param array   $args Label args from `alternate_link_label_args()`.
+	 * @phpstan-param LabelArgs $args
 	 *
 	 * @return array<int,array{url:string,attr:string}>
 	 */
@@ -533,6 +552,7 @@ final class Setup {
 	 *
 	 * @param WP_Post $event The queried event post.
 	 * @param array   $args  Label args from `alternate_link_label_args()`.
+	 * @phpstan-param LabelArgs $args
 	 *
 	 * @return array<int,array{url:string,attr:string}>
 	 */
@@ -567,6 +587,7 @@ final class Setup {
 	 *
 	 * @param WP_Term $term Term attached to the queried event.
 	 * @param array   $args Label args from `alternate_link_label_args()`.
+	 * @phpstan-param LabelArgs $args
 	 *
 	 * @return array<int,array{url:string,attr:string}> Empty for sentinel terms; otherwise one entry.
 	 */
@@ -778,12 +799,17 @@ final class Setup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param string $filename Generated name of the file.
+	 * @since 0.36.0 Added `$etag` and `$last_modified` for cache validation.
+	 *
+	 * @param string $filename      Generated name of the file.
+	 * @param string $etag          Optional. Entity tag for the body being sent.
+	 * @param string $last_modified Optional. GMT timestamp of the last calendar change.
 	 *
 	 * @return void
 	 */
-	public function send_ics_headers( string $filename ): void {
+	public function send_ics_headers( string $filename, string $etag = '', string $last_modified = '' ): void {
 		$charset = strtolower( get_option( 'blog_charset' ) );
+		$max_age = Cache::get_instance()->get_max_age();
 
 		header( 'Content-Description: File Transfer' );
 
@@ -793,14 +819,137 @@ final class Setup {
 		// Force download in most browsers.
 		header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
 
-		// Avoid browser caching issues.
-		header( 'Cache-Control: no-store, no-cache, must-revalidate' );
-		header( 'Cache-Control: post-check=0, pre-check=0', false );
-		header( 'Pragma: no-cache' );
-		header( 'Expires: 0' );
+		// Subscribed clients poll on their own schedule, several times an hour
+		// in Outlook's and Apple Calendar's defaults, so the response tells them
+		// how long it stays fresh and hands them validators to revalidate with.
+		// A site can opt out entirely by filtering the max age to 0.
+		if ( 0 < $max_age ) {
+			header( sprintf( 'Cache-Control: public, max-age=%d', $max_age ) );
+		} else {
+			header( 'Cache-Control: no-store, no-cache, must-revalidate' );
+			header( 'Pragma: no-cache' );
+			header( 'Expires: 0' );
+		}
+
+		if ( '' !== $etag ) {
+			header( sprintf( 'ETag: %s', $etag ) );
+		}
+
+		if ( '' !== $last_modified ) {
+			$timestamp = (int) strtotime( $last_modified . ' GMT' );
+
+			header( sprintf( 'Last-Modified: %s GMT', gmdate( 'D, d M Y H:i:s', $timestamp ) ) );
+		}
 
 		// Prevent content sniffing which might lead to MIME type mismatch.
 		header( 'X-Content-Type-Options: nosniff' );
+	}
+
+	/**
+	 * Cached iCalendar body for the current request.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string The complete iCal payload.
+	 */
+	public function get_ics_body(): string {
+		$is_feed = is_feed();
+
+		return Cache::get_instance()->remember(
+			$this->get_ics_cache_key(),
+			function () use ( $is_feed ): string {
+				return (string) ( $is_feed ? $this->get_ical_feed() : $this->get_ical_file() );
+			}
+		);
+	}
+
+	/**
+	 * Cache key describing what the current request asks for.
+	 *
+	 * Built from the resolved query rather than the request URI, so unknown
+	 * query parameters cannot fragment the cache into unbounded entries.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string Scope-specific cache key.
+	 */
+	public function get_ics_cache_key(): string {
+		$queried_object = get_queried_object();
+		$scope          = array(
+			'feed'   => is_feed() ? 1 : 0,
+			'paged'  => (int) get_query_var( 'paged' ),
+			'object' => 0,
+			'type'   => '',
+		);
+
+		if ( $queried_object instanceof WP_Post ) {
+			$scope['object'] = (int) $queried_object->ID;
+			$scope['type']   = (string) $queried_object->post_type;
+		} elseif ( $queried_object instanceof WP_Term ) {
+			$scope['object'] = (int) $queried_object->term_id;
+			$scope['type']   = (string) $queried_object->taxonomy;
+		} elseif ( $queried_object instanceof WP_Post_Type ) {
+			$scope['type'] = (string) $queried_object->name;
+		}
+
+		return sprintf( 'ics:%s', md5( (string) wp_json_encode( $scope ) ) ); // NOSONAR.
+	}
+
+	/**
+	 * ETag for an iCalendar body.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $body The rendered iCal payload.
+	 *
+	 * @return string Quoted entity tag, per RFC 9110.
+	 */
+	public function get_etag( string $body ): string {
+		return sprintf( '"%s"', md5( $body ) ); // NOSONAR.
+	}
+
+	/**
+	 * Whether the client already holds this exact response.
+	 *
+	 * `If-None-Match` wins over `If-Modified-Since` when both are present,
+	 * which is what RFC 9110 asks for: the entity tag is exact where the
+	 * timestamp has one-second resolution.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $etag          Current entity tag.
+	 * @param string $last_modified Current GMT modification timestamp.
+	 *
+	 * @return bool True when a 304 is the correct answer.
+	 */
+	public function is_not_modified( string $etag, string $last_modified ): bool {
+		$client_etag = isset( $_SERVER['HTTP_IF_NONE_MATCH'] )
+			? sanitize_text_field( wp_unslash( $_SERVER['HTTP_IF_NONE_MATCH'] ) )
+			: '';
+
+		if ( '' !== $client_etag ) {
+			// A cache may return the tag weakened, and may hold several.
+			foreach ( explode( ',', str_replace( 'W/', '', $client_etag ) ) as $candidate ) {
+				if ( trim( $candidate ) === $etag ) {
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		$client_time = isset( $_SERVER['HTTP_IF_MODIFIED_SINCE'] )
+			? sanitize_text_field( wp_unslash( $_SERVER['HTTP_IF_MODIFIED_SINCE'] ) )
+			: '';
+
+		if ( '' === $client_time ) {
+			return false;
+		}
+
+		$client_timestamp = strtotime( $client_time );
+		$current          = strtotime( $last_modified . ' GMT' );
+
+		return false !== $client_timestamp && false !== $current && $client_timestamp >= $current;
 	}
 
 	/**
@@ -829,21 +978,31 @@ final class Setup {
 		// Prepare the filename.
 		$filename = $this->generate_ics_filename();
 
-		// Send headers for downloading the .ics file.
-		$this->send_ics_headers( $filename );
-
-		// Build the iCalendar content. The body is plain text per RFC 5545
-		// (not HTML), so HTML-sanitizers like `wp_kses_post()` are the wrong
-		// tool here — they would encode `&` into `&amp;` and produce broken
-		// .ics files. The TEXT-property values inside are already escaped at
-		// build time via `Calendar::escape_ical_text()` / sanitized via
+		// Build the iCalendar content before the headers now, because the ETag
+		// is a hash of the body. The body is plain text per RFC 5545 (not
+		// HTML), so HTML-sanitizers like `wp_kses_post()` are the wrong tool
+		// here — they would encode `&` into `&amp;` and produce broken .ics
+		// files. The TEXT-property values inside are already escaped at build
+		// time via `Calendar::escape_ical_text()` / sanitized via
 		// `sanitize_text_field()`.
-		$get_ical_method = ( is_feed() ) ? 'get_ical_feed' : 'get_ical_file';
-		$ics_content     = (string) $this->{$get_ical_method}();
-		$filesize        = strlen( $ics_content );
+		$ics_content   = $this->get_ics_body();
+		$etag          = $this->get_etag( $ics_content );
+		$last_modified = Cache::get_instance()->get_last_modified();
+
+		// A subscribed client that already holds this exact calendar gets a
+		// validator response instead of the payload.
+		if ( $this->is_not_modified( $etag, $last_modified ) ) {
+			ob_end_clean();
+			$this->send_ics_headers( $filename, $etag, $last_modified );
+			status_header( 304 );
+
+			exit();
+		}
+
+		$this->send_ics_headers( $filename, $etag, $last_modified );
 
 		// Send the file size in the header.
-		header( 'Content-Length: ' . $filesize );
+		header( 'Content-Length: ' . strlen( $ics_content ) );
 
 		// End output buffering and clean up.
 		ob_end_clean();

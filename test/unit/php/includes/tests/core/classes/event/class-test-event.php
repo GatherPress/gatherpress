@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core\Event;
 use DateTime;
 use DateTimeZone;
 use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event\Setup as Event_Setup;
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
@@ -307,7 +308,11 @@ class Test_Event extends Base {
 		$event = new Event( $post->ID );
 
 		// A new event is seeded with the editor's default rather than left
-		// datetime-less, so it always lands in the events table (#2054).
+		// datetime-less, so it always lands in the events table (#2054). The
+		// seed is decided at shutdown, so meta written after the insert wins
+		// over it (#2116).
+		Event_Setup::get_instance()->resolve_pending_datetimes();
+
 		$seeded = $event->get_datetime();
 
 		$this->assertNotEmpty(
@@ -1208,5 +1213,154 @@ class Test_Event extends Base {
 
 		$this->assertNull( $event->event, 'Failed to assert event is null for non-event post.' );
 		$this->assertNull( $event->rsvp, 'Failed to assert rsvp is null for non-event post.' );
+	}
+
+	/**
+	 * A published event renders for everyone, while an unpublished one renders
+	 * only for viewers allowed to read it.
+	 *
+	 * @covers ::is_viewable
+	 *
+	 * @return void
+	 */
+	public function test_is_viewable(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+
+		wp_set_current_user( 0 );
+		$this->assertTrue( Event::is_viewable( $post_id ), 'A published event renders for the public.' );
+
+		foreach ( array( 'draft', 'pending', 'private' ) as $status ) {
+			wp_update_post(
+				array(
+					'ID'          => $post_id,
+					'post_status' => $status,
+				)
+			);
+
+			wp_set_current_user( 0 );
+			$this->assertFalse(
+				Event::is_viewable( $post_id ),
+				sprintf( 'A %s event does not render for the public.', $status )
+			);
+
+			wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+			$this->assertTrue(
+				Event::is_viewable( $post_id ),
+				sprintf( 'A %s event renders for a viewer who can read it.', $status )
+			);
+		}
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * The editor's preview renders an event that would otherwise be withheld.
+	 *
+	 * @covers ::is_viewable
+	 *
+	 * @return void
+	 */
+	public function test_is_viewable_in_preview(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'draft',
+			)
+		);
+
+		wp_set_current_user( 0 );
+		$this->assertFalse( Event::is_viewable( $post_id ), 'The draft is withheld outside a preview.' );
+
+		global $wp_query;
+		$wp_query->is_preview        = true;
+		$wp_query->queried_object    = get_post( $post_id );
+		$wp_query->queried_object_id = $post_id;
+
+		$this->assertTrue( Event::is_viewable( $post_id ), 'A preview renders the draft being previewed.' );
+
+		// Previewing one post does not open every other event: block context
+		// carries a post ID, so an unrelated draft must still be read-checked.
+		$other_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'private',
+			)
+		);
+
+		$this->assertFalse(
+			Event::is_viewable( $other_id ),
+			'A preview of one post does not render a different restricted event.'
+		);
+
+		$wp_query->is_preview        = false;
+		$wp_query->queried_object    = null;
+		$wp_query->queried_object_id = 0;
+	}
+
+	/**
+	 * The roster follows the event: public once published, limited to viewers
+	 * who can read it otherwise, and withheld from post types that take no
+	 * RSVPs at all.
+	 *
+	 * @covers ::can_read_rsvps
+	 *
+	 * @return void
+	 */
+	public function test_can_read_rsvps(): void {
+		wp_set_current_user( 0 );
+
+		$this->assertFalse( Event::can_read_rsvps( 0 ), 'A post that does not exist has no roster.' );
+		$this->assertFalse(
+			Event::can_read_rsvps( $this->factory->post->create() ),
+			'A post type that takes no RSVPs has no roster.'
+		);
+
+		// Exercised on its own: an administrator would clear every capability
+		// check, so only the support guard can deny this.
+		$admin_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $admin_id );
+		$this->assertFalse(
+			Event::can_read_rsvps( $this->factory->post->create() ),
+			'A post type that takes no RSVPs has no roster, whoever is asking.'
+		);
+		wp_set_current_user( 0 );
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		$this->assertTrue( Event::can_read_rsvps( $post_id ), 'A published event roster is public.' );
+
+		wp_update_post(
+			array(
+				'ID'            => $post_id,
+				'post_password' => 'secret',
+			)
+		);
+		$this->assertFalse(
+			Event::can_read_rsvps( $post_id ),
+			'A password-protected event withholds its roster until the gate is satisfied.'
+		);
+
+		wp_update_post(
+			array(
+				'ID'            => $post_id,
+				'post_password' => '',
+				'post_status'   => 'private',
+			)
+		);
+		$this->assertFalse( Event::can_read_rsvps( $post_id ), 'A private event withholds its roster.' );
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertTrue( Event::can_read_rsvps( $post_id ), 'A viewer who can edit the event sees the roster.' );
+
+		wp_set_current_user( 0 );
 	}
 }

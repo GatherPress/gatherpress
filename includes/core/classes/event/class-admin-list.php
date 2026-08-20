@@ -125,9 +125,9 @@ final class Admin_List {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $columns An array of sortable columns.
+	 * @param array<string, string|array<int, string|bool>> $columns An array of sortable columns.
 	 *
-	 * @return array An updated array of sortable columns.
+	 * @return array<string, string|array<int, string|bool>> An updated array of sortable columns.
 	 */
 	public function sortable_columns( array $columns ): array {
 		// Add 'datetime' as a sortable column.
@@ -154,9 +154,9 @@ final class Admin_List {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $view_links An array of available list table views.
+	 * @param array<string, string> $view_links An array of available list table views.
 	 *
-	 * @return array Updated list table views.
+	 * @return array<string, string> Updated list table views.
 	 */
 	public function views_edit( array $view_links ): array {
 		$screen = get_current_screen();
@@ -596,9 +596,9 @@ final class Admin_List {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $columns An associative array of column headings.
+	 * @param array<string, string> $columns An associative array of column headings.
 	 *
-	 * @return array An updated array of column headings, including the custom columns.
+	 * @return array<string, string> An updated array of column headings, including the custom columns.
 	 */
 	public function set_custom_columns( array $columns ): array {
 		// Remove the author column.
@@ -686,9 +686,9 @@ final class Admin_List {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $columns An array of column names.
+	 * @param array<string, string> $columns An array of column names.
 	 *
-	 * @return array The modified array of column names without the comments column.
+	 * @return array<string, string> The modified array of column names without the comments column.
 	 */
 	public function remove_comments_column( array $columns ): array {
 		$screen    = function_exists( 'get_current_screen' ) ? get_current_screen() : null;

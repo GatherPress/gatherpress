@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Fixed a brand new event being marked as having unsaved changes before the author edits anything, which made the browser warn about leaving the page and enabled Save draft immediately.

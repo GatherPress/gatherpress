@@ -32,6 +32,14 @@ use WP_Post;
  * Represents individual events within the GatherPress plugin and provides event-related functionality.
  *
  * @since 0.34.0
+ *
+ * @phpstan-type EventDatetime array{
+ *     datetime_start: string,
+ *     datetime_start_gmt: string,
+ *     datetime_end: string,
+ *     datetime_end_gmt: string,
+ *     timezone: string
+ * }
  */
 class Event {
 
@@ -58,6 +66,27 @@ class Event {
 	 * @var string $POST_TYPE
 	 */
 	const POST_TYPE = 'gatherpress_event';
+
+	/**
+	 * Capability for reading a specific event.
+	 *
+	 * A meta capability, so it is always paired with the event's post ID and
+	 * resolves through WordPress to the right primitive for the event's status.
+	 *
+	 * @since 0.35.1
+	 * @var string
+	 */
+	const READ_CAPABILITY = 'read_post';
+
+	/**
+	 * Capability for editing a specific event.
+	 *
+	 * A meta capability, so it is always paired with the event's post ID.
+	 *
+	 * @since 0.35.1
+	 * @var string
+	 */
+	const EDIT_CAPABILITY = 'edit_post';
 
 	/**
 	 * Placeholder displayed when no datetime is set.
@@ -90,7 +119,7 @@ class Event {
 	 * Non-time PHP DateTime formatting characters
 	 *
 	 * @since 0.34.0
-	 * @var array
+	 * @var string[]
 	 */
 	const PHP_NON_TIME_FORMAT_CHARS = array(
 		'd',
@@ -147,7 +176,7 @@ class Event {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @var array|null
+	 * @var EventDatetime|null
 	 */
 	private ?array $datetime_cache = null;
 
@@ -165,6 +194,60 @@ class Event {
 			$this->event = get_post( $post_id );
 			$this->rsvp  = new Rsvp( $post_id );
 		}
+	}
+
+	/**
+	 * Whether an event's blocks should render for the current viewer.
+	 *
+	 * Blocks stay off an event nobody is meant to see yet, but an unpublished
+	 * event still renders for viewers allowed to read it, so an organizer
+	 * working on a draft sees the same blocks the published event will show
+	 * rather than empty space, as does the editor previewing that event.
+	 *
+	 * @since 0.35.1
+	 *
+	 * @param int $post_id The event post ID.
+	 *
+	 * @return bool True when the event's blocks should render.
+	 */
+	public static function is_viewable( int $post_id ): bool {
+		// is_preview() is a property of the request, not of a post, so it only
+		// stands in for read access on the post actually being previewed.
+		return (
+			( is_preview() && (int) get_queried_object_id() === $post_id )
+			|| 'publish' === get_post_status( $post_id )
+			|| current_user_can( self::READ_CAPABILITY, $post_id )
+		);
+	}
+
+	/**
+	 * Whether the current viewer may read an event's RSVP responses.
+	 *
+	 * The roster follows the event: a published event's responses are public
+	 * once any password gate is satisfied, anything else is limited to viewers
+	 * allowed to read that event, and whoever can edit it always sees them.
+	 *
+	 * @since 0.35.1
+	 *
+	 * @param int $post_id The event post ID.
+	 *
+	 * @return bool True when the viewer may read the event's RSVP responses.
+	 */
+	public static function can_read_rsvps( int $post_id ): bool {
+		$post = get_post( $post_id );
+
+		// A post that is gone, or one that never takes RSVPs, has no roster.
+		if ( ! $post instanceof WP_Post || ! post_type_supports( $post->post_type, 'gatherpress-rsvp' ) ) {
+			return false;
+		}
+
+		if ( current_user_can( self::EDIT_CAPABILITY, $post->ID ) ) {
+			return true;
+		}
+
+		return 'publish' === $post->post_status
+			? ! post_password_required( $post )
+			: current_user_can( self::READ_CAPABILITY, $post->ID );
 	}
 
 	/**
@@ -450,7 +533,7 @@ class Event {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array An associative array detailing the event's schedule and timezone, potentially
+	 * @return EventDatetime An associative array detailing the event's schedule and timezone, potentially
 	 * adjusted for user-specific preferences:
 	 *     - 'datetime_start'     (string) The event start date and time.
 	 *     - 'datetime_start_gmt' (string) The event start date and time in GMT.
@@ -538,12 +621,12 @@ class Event {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array An array containing venue information:
-	 *               - 'address' (string): The address of the venue.
-	 *               - 'name' (string): The name of the venue.
-	 *               - 'permalink' (string): The permalink (URL) of the venue.
-	 *               - 'phone' (string): The phone number of the venue.
-	 *               - 'website' (string): The website URL of the venue.
+	 * @return array<string, string> An array containing venue information:
+	 *                               - 'address' (string): The address of the venue.
+	 *                               - 'name' (string): The name of the venue.
+	 *                               - 'permalink' (string): The permalink (URL) of the venue.
+	 *                               - 'phone' (string): The phone number of the venue.
+	 *                               - 'website' (string): The website URL of the venue.
 	 */
 	public function get_venue_information(): array {
 		$venue_information = array(
@@ -608,7 +691,8 @@ class Event {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array An associative array containing supported calendar links:
+	 * @return array<string, array{name: string, link?: string, download?: string}> An associative array containing
+	 *     supported calendar links:
 	 *     - 'google'  (array) Google Calendar link information with 'name' and 'link' keys.
 	 *     - 'ical'    (array) iCal download link information with 'name' and 'download' keys.
 	 *     - 'outlook' (array) Outlook download link information with 'name' and 'download' keys.
@@ -667,7 +751,7 @@ class Event {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $params {
+	 * @param array{post_id?: int, datetime_start?: string, datetime_end?: string, timezone?: string} $params {
 	 *     An array of arguments used to save event data to the custom event table.
 	 *
 	 *     @type int    $post_id        The event's post ID.

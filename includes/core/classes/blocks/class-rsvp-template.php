@@ -114,9 +114,9 @@ final class Rsvp_Template {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string   $block_content The original block content.
-	 * @param array    $block         The parsed block data.
-	 * @param WP_Block $instance      The block instance.
+	 * @param string               $block_content The original block content.
+	 * @param array<string, mixed> $block         The parsed block data.
+	 * @param WP_Block             $instance      The block instance.
 	 *
 	 * @return string The dynamically generated block content.
 	 */
@@ -124,11 +124,12 @@ final class Rsvp_Template {
 		$post_id = (int) $instance->context['postId'];
 		$event   = new Event( $post_id );
 
-		// Only process if the post type supports RSVP.
-		// Only check publish status if not in preview mode.
+		// Only process if the post type supports RSVP. An unpublished event
+		// keeps its responses to viewers allowed to read it, so organizers see
+		// the roster on a draft or private event rather than an empty block.
 		if (
 			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
-			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
+			! Event::is_viewable( $post_id )
 		) {
 			return $block_content;
 		}
@@ -179,9 +180,12 @@ final class Rsvp_Template {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array $parsed_block The parsed block data, typically from a block's JSON structure.
-	 * @param int   $response_id  The ID of the response used to populate the block's context.
-	 * @param array $args         Optional. Additional arguments for rendering. Default empty array.
+	 * @param array<string, mixed>                                  $parsed_block The parsed block data, typically from
+	 *                                                                            a block's JSON structure.
+	 * @param int                                                   $response_id  The ID of the response used to
+	 *                                                                            populate the block's context.
+	 * @param array{limit_enabled?: bool, limit?: int, index?: int} $args         Optional. Additional arguments for
+	 *                                                                            rendering. Default empty array.
 	 *
 	 * @return string The rendered block content wrapped in a `div` with a `data-id` attribute.
 	 */
@@ -193,15 +197,6 @@ final class Rsvp_Template {
 
 		// Ensure proper user authentication for anonymity checks.
 		Utility::ensure_user_authentication();
-
-		// Apply anonymization if the RSVP is marked as anonymous AND the current user
-		// doesn't have edit_posts capability. Users with edit_posts can see all real names.
-		if (
-			intval( get_comment_meta( $response_id, 'gatherpress_rsvp_anonymous', true ) ) &&
-			! current_user_can( 'edit_posts' )
-		) {
-			$this->anonymize_rsvp_blocks( $parsed_block['innerBlocks'], $response_id );
-		}
 
 		// Render the block content with the provided parsed block and response ID.
 		$block_content = (
@@ -227,61 +222,5 @@ final class Rsvp_Template {
 
 		// Wrap the rendered block content in a container div with a unique data ID for the RSVP response.
 		return sprintf( '<div class="%1$s" data-id="rsvp-%2$d">%3$s</div>', $class_name, $response_id, $block_content );
-	}
-
-	/**
-	 * Anonymizes specific RSVP blocks by modifying their attributes and content.
-	 *
-	 * This method processes blocks recursively, updating attributes and content
-	 * to anonymize user information for RSVP responses. Specifically:
-	 * - Disables linking for `core/avatar` blocks by setting `isLink` to 0.
-	 * - Replaces the `core/comment-author-name` block's text with "Anonymous"
-	 *   and converts it into a `core/paragraph` block.
-	 *
-	 * @since 0.33.0
-	 *
-	 * @param array $blocks      The array of blocks to process, passed by reference.
-	 * @param int   $response_id The ID of the response, used for rendering context.
-	 */
-	public function anonymize_rsvp_blocks( array &$blocks, int $response_id ) {
-		foreach ( $blocks as &$block ) {
-			// Handle `core/avatar` block.
-			if ( 'core/avatar' === $block['blockName'] ) {
-				$block['attrs']['isLink'] = 0;
-			}
-
-			// Handle `core/comment-author-name` block.
-			if ( 'core/comment-author-name' === $block['blockName'] ) {
-				// Set `isLink` to 0 to disable linking for the block.
-				$block['attrs']['isLink'] = 0;
-
-				// Render the block with context for commentId.
-				$block_html = ( new WP_Block( $block, array( 'commentId' => $response_id ) ) )
-					->render( array( 'dynamic' => true ) );
-
-				// Process HTML to update text.
-				$tag = new WP_HTML_Tag_Processor( $block_html );
-				$tag->next_tag();
-				$tag->next_token();
-
-				$tag->set_modifiable_text(
-					esc_html_x(
-						'Anonymous',
-						'Label for users who wish to remain anonymous in RSVP responses.',
-						'gatherpress'
-					)
-				);
-				$block_html = $tag->get_updated_html();
-
-				// Convert to `core/paragraph` block.
-				$block['blockName']    = 'core/paragraph';
-				$block['innerContent'] = array( $block_html );
-			}
-
-			// Recursively process inner blocks.
-			if ( ! empty( $block['innerBlocks'] ) ) {
-				$this->anonymize_rsvp_blocks( $block['innerBlocks'], $response_id );
-			}
-		}
 	}
 }

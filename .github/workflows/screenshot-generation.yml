@@ -60,7 +60,12 @@ jobs:
     # Backstop against hangs: with max-parallel 1, a job silently stuck at
     # GitHub's 6h default limit stalls every locale behind it — one hung
     # apt phase turned into ~48h of dead runner time (run 27881952586).
-    timeout-minutes: 40
+    #
+    # 60 so a cold first locale actually fits: the browser download can take
+    # 30 and the apt phase 10, which at the previous 40 left nothing for the
+    # screenshots themselves. Later locales reuse the caches and finish in
+    # well under 10 (run 28679615230 took 6 end to end).
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       max-parallel: 1 # Prevent parallel runs to make use of the caching for node_modules and playwright browsers
@@ -71,12 +76,24 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
+    # Read straight from the lockfile: this runs before npm install, so
+    # node_modules is not available to require() the version from.
+    - name: Resolve the Playwright version
+      id: playwright-version
+      run: |
+        echo "version=$(jq -r '.packages["node_modules/@playwright/test"].version' package-lock.json)" >> "$GITHUB_OUTPUT"
+
+    # Keyed on the Playwright version, not the whole lockfile. Hashing
+    # package-lock.json meant any unrelated dependency bump threw away a
+    # ~400MB browser cache and forced a cold re-download -- a js-yaml
+    # security bump (#2111) is what discarded it most recently, and the
+    # download that followed hung twice.
     - uses: actions/cache@v4
       id: playwright-cache
       with:
         path: |
           ~/.cache/ms-playwright
-        key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+        key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
 
     - name: Setup Node
       uses: actions/setup-node@v4
@@ -110,17 +127,38 @@ jobs:
           ./node_modules
         key: ${{ steps.node_modules-cache.outputs.cache-primary-key }}
 
-    # The browser download and the apt-based system-dependency install are
-    # deliberately separate steps with their own timeouts: the combined
-    # `install --with-deps` hung indefinitely inside its apt phase (after the
-    # browser download had already completed) and every locale job burned
-    # GitHub's 6h limit — see run 27881952586. Step-level timeouts fail fast
-    # AND keep the post-job cache save alive, so the next locale job can hit
-    # the browser cache instead of repeating the download.
+    # playwright-core's bundled yauzl deadlocks unpacking the browser archive
+    # on Node 24.16/24.17: the extract stream never emits `close`, so the
+    # forked oopDownloadBrowserMain.js wedges silently *after* the transfer
+    # reaches 100% (nodejs/node#63487, microsoft/playwright#41133). Playwright
+    # vendored the fix in 1.60.0; 1.58.x never got it.
+    #
+    # .nvmrc pins 24.17.0 (#1962, to dodge a 24.18.0 `wp-scripts build`
+    # corruption), which is squarely in the broken range -- that pin is why
+    # runs 31287296394, 31288339635 and 31313721827 all hung after reaching
+    # 100%. Node 24.18.0 carries the libuv revert, so run the install (and
+    # only the install) on a Node past it, then restore the pinned one before
+    # anything builds.
+    #
+    # The apt phase below stays a separate step with its own timeout: the
+    # combined `install --with-deps` once hung indefinitely inside it and
+    # burned GitHub's 6h limit across every locale (run 27881952586).
+    - name: Use a Node without the extraction deadlock
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24.19.0'
+
     - name: Install Playwright browser
-      timeout-minutes: 10
+      timeout-minutes: 15
       run: npx playwright install chromium
       if: steps.playwright-cache.outputs.cache-hit != 'true'
+
+    - name: Restore the pinned Node
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
+      uses: actions/setup-node@v4
+      with:
+        node-version-file: '.nvmrc'
 
     - name: Install Playwright system dependencies
       timeout-minutes: 10
@@ -235,6 +273,40 @@ jobs:
           sleep 10
         done
         exit 1
+
+    # A screenshot of an error page is still a valid PNG, so the suite
+    # captures it, passes, and auto-merge ships it -- which is exactly what
+    # happened in #2122, where two settings screens came back as WordPress's
+    # "Sorry, you are not allowed to access this page" at 2,203 bytes against
+    # a ~40,000 byte norm. Nothing downstream distinguishes the two.
+    #
+    # Size is a crude but effective proxy: a real full-page screenshot of an
+    # admin screen is tens of KB, and every error/permission page is a few.
+    # Fail here, before the PR exists, rather than reverting from develop.
+    #
+    # git status rather than git diff: a locale whose images are new to the
+    # repo is untracked, and git diff would not list it -- exempting exactly
+    # the case with no baseline to compare against.
+    - name: Sanity-check the regenerated screenshots
+      if: ${{ inputs.update-all || steps.screenshot-tests.outcome == 'failure' }}
+      run: |
+        min_bytes=10000
+        suspect=0
+        while IFS= read -r image; do
+          [ -n "$image" ] || continue
+          size=$(wc -c < "$image")
+          if [ "$size" -lt "$min_bytes" ]; then
+            echo "::error file=${image}::${image} is ${size} bytes, under the ${min_bytes} byte floor -- almost certainly an error page rather than a screenshot."
+            suspect=1
+          else
+            echo "ok: ${image} (${size} bytes)"
+          fi
+        done <<< "$(git status --porcelain -- '${{ inputs.output-path }}/*.png' | awk '$1 != "D" { print $NF }')"
+
+        if [ "$suspect" -ne 0 ]; then
+          echo "::error::Refusing to open a screenshot PR: at least one regenerated image looks like an error page."
+          exit 1
+        fi
 
     - name: Compress Images
       if: ${{ inputs.update-all || steps.screenshot-tests.outcome == 'failure' }}

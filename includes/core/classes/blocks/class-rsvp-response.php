@@ -12,9 +12,11 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
+use WP_Comment;
 use WP_HTML_Tag_Processor;
 use WP_User;
 
@@ -82,8 +84,9 @@ final class Rsvp_Response {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The original HTML content of the block.
-	 * @param array  $block         An associative array containing block data, including `blockName` and attributes.
+	 * @param string               $block_content The original HTML content of the block.
+	 * @param array<string, mixed> $block         An associative array containing block data, including
+	 *                                            `blockName` and attributes.
 	 *
 	 * @return string The modified block content with updated attributes.
 	 */
@@ -91,11 +94,12 @@ final class Rsvp_Response {
 		$block_instance = Setup::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
-		// Validate that the post type supports RSVP.
-		// Only check publish status if not in preview mode.
+		// Validate that the post type supports RSVP. An unpublished event keeps
+		// its responses to viewers allowed to read it, so organizers see the
+		// roster on a draft or private event rather than an empty block.
 		if (
 			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
-			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
+			! Event::is_viewable( $post_id )
 		) {
 			return '';
 		}
@@ -270,10 +274,10 @@ final class Rsvp_Response {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array $args    Array of arguments for the avatar data.
-	 * @param mixed $comment The comment object or other data passed to the filter.
+	 * @param array<string, mixed> $args    Array of arguments for the avatar data.
+	 * @param mixed                $comment The comment object or other data passed to the filter.
 	 *
-	 * @return array Modified array of avatar arguments, including the correct URL for the avatar.
+	 * @return array<string, mixed> Modified array of avatar arguments, including the correct URL for the avatar.
 	 */
 	public function modify_avatar_for_gatherpress_rsvp( array $args, $comment ): array {
 		// Bail when the filter fires for a non-RSVP comment so the body
@@ -296,13 +300,12 @@ final class Rsvp_Response {
 			}
 		}
 
+		// An empty email leaves no identifying hash in the URL, so the avatar
+		// falls back to the generic placeholder for an anonymous responder.
 		if (
-			intval( get_comment_meta( intval( $comment->comment_ID ), 'gatherpress_rsvp_anonymous', true ) ) &&
-			! current_user_can( Rsvp::CAPABILITY )
+			get_comment_meta( (int) $comment->comment_ID, Rsvp::ANONYMOUS_META_KEY, true )
+			&& ! current_user_can( Rsvp::CAPABILITY )
 		) {
-			// Set the email to empty if the RSVP is marked as anonymous and the current user
-			// does not have permission to edit posts. This ensures the avatar defaults
-			// to a generic or placeholder image for anonymous responses.
 			$email = '';
 		}
 
@@ -332,9 +335,9 @@ final class Rsvp_Response {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array $metadata The block metadata for `core/comment-author-name`.
+	 * @param array<string, mixed> $metadata The block metadata for `core/comment-author-name`.
 	 *
-	 * @return array The modified block metadata with the updated ancestor property.
+	 * @return array<string, mixed> The modified block metadata with the updated ancestor property.
 	 */
 	public function add_rsvp_to_comment_ancestor( array $metadata ): array {
 		if ( isset( $metadata['name'] ) && 'core/comment-author-name' === $metadata['name'] ) {

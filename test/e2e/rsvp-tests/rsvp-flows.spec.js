@@ -32,7 +32,7 @@ const { test, expect } = require( '@playwright/test' );
  *
  * ### Option 1: WordPress Playground Blueprint Approach
  * - Use WXR import similar to `.github/scripts/playground-preview/index.js`
- * - Demo data available at: https://raw.githubusercontent.com/GatherPress/gatherpress-demo-data/main/GatherPress-demo-data-0.33.0.xml
+ * - Demo data available at: https://raw.githubusercontent.com/GatherPress/gatherpress-demo-data/main/GatherPress-demo-data-0.35.0.xml
  * - Contains "Christmas 2025" event with complete RSVP block
  * - Challenge: Docker volume mounting in wp-env makes file access difficult
  *

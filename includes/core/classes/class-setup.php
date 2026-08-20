@@ -131,9 +131,9 @@ final class Setup {
 	 *
 	 * @since 0.27.0
 	 *
-	 * @param array $actions An array of existing action links.
+	 * @param array<string, string> $actions An array of existing action links.
 	 *
-	 * @return array An updated array of action links, including the 'Settings' link.
+	 * @return array<string, string> An updated array of action links, including the 'Settings' link.
 	 */
 	public function filter_plugin_action_links( array $actions ): array {
 		$settings = Settings::get_instance();
@@ -312,9 +312,9 @@ final class Setup {
 	 *
 	 * @since 0.27.0
 	 *
-	 * @param array $classes Existing body classes.
+	 * @param string[] $classes Existing body classes.
 	 *
-	 * @return array An updated array of body classes.
+	 * @return string[] An updated array of body classes.
 	 */
 	public function add_gatherpress_body_classes( array $classes ): array {
 		$classes[] = 'gatherpress-enabled';
@@ -331,9 +331,9 @@ final class Setup {
 	 *
 	 * @since 0.27.0
 	 *
-	 * @param array $block_categories Array of registered block categories.
+	 * @param array<int, array<string, string|null>> $block_categories Array of registered block categories.
 	 *
-	 * @return array An updated array of block categories.
+	 * @return array<int, array<string, string|null>> An updated array of block categories.
 	 */
 	public function register_gatherpress_block_category( array $block_categories ): array {
 		$category = array(
@@ -438,9 +438,9 @@ final class Setup {
 	 *
 	 * @since 0.27.0
 	 *
-	 * @param array $tables An array of names of the site tables to be dropped.
+	 * @param string[] $tables An array of names of the site tables to be dropped.
 	 *
-	 * @return array An updated array of table names to be deleted during site deletion.
+	 * @return string[] An updated array of table names to be deleted during site deletion.
 	 */
 	public function on_site_delete( array $tables ): array {
 		global $wpdb;

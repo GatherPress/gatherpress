@@ -93,8 +93,9 @@ final class Rsvp {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The original HTML content of the block.
-	 * @param array  $block         An associative array containing block data, including `blockName` and `attrs`.
+	 * @param string               $block_content The original HTML content of the block.
+	 * @param array<string, mixed> $block         An associative array containing block data, including `blockName`
+	 *                                            and `attrs`.
 	 *
 	 * @return string The updated block content with dynamically rendered inner blocks and attributes.
 	 */
@@ -103,10 +104,9 @@ final class Rsvp {
 		$post_id        = $block_instance->get_post_id( $block );
 
 		// Validate that the post type supports RSVP.
-		// Only check publish status if not in preview mode.
 		if (
 			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
-			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
+			! Event::is_viewable( $post_id )
 		) {
 			return '';
 		}
@@ -343,8 +343,8 @@ final class Rsvp {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The form field block content.
-	 * @param array  $block         The block data including attributes.
+	 * @param string               $block_content The form field block content.
+	 * @param array<string, mixed> $block         The block data including attributes.
 	 *
 	 * @return string The modified block content or empty string if field should be hidden.
 	 */

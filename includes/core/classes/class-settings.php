@@ -24,6 +24,37 @@ use GatherPress\Core\Traits\Singleton;
  * related to event display, roles, and credits.
  *
  * @since 0.27.0
+ *
+ * @phpstan-type SettingsFieldPreview array{template: string, suffix?: string}
+ * @phpstan-type SettingsFieldOptions array{
+ *     default?: bool|int|string,
+ *     items?: array<string, string>,
+ *     min?: int|string,
+ *     max?: int|string,
+ *     type?: string,
+ *     label?: string,
+ *     limit?: int
+ * }
+ * @phpstan-type SettingsField array{
+ *     type?: string,
+ *     label?: string,
+ *     size?: string,
+ *     placeholder?: string,
+ *     allow_empty?: bool,
+ *     rewrite?: bool,
+ *     options?: SettingsFieldOptions,
+ *     preview?: SettingsFieldPreview
+ * }
+ * @phpstan-type SettingsShowIf array<string, scalar|scalar[]|array{not: scalar|scalar[]}>
+ * @phpstan-type SettingsOption array{
+ *     labels: array<string, string>,
+ *     description?: string,
+ *     field: SettingsField,
+ *     show_if?: SettingsShowIf,
+ *     callback?: callable
+ * }
+ * @phpstan-type SettingsSection array{name: string, description?: string, options?: array<string, SettingsOption>}
+ * @phpstan-type SettingsSubPage array{name: string, priority?: int, sections?: array<string, SettingsSection>}
  */
 class Settings {
 
@@ -85,7 +116,7 @@ class Settings {
 	 * Cached flat map of option keys to their default values.
 	 *
 	 * @since 0.34.0
-	 * @var array|null
+	 * @var array<string, bool|int|string>|null
 	 */
 	protected ?array $defaults_cache = null;
 
@@ -160,9 +191,9 @@ class Settings {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $settings The block editor settings array.
+	 * @param array<string, mixed> $settings The block editor settings array.
 	 *
-	 * @return array The modified block editor settings array.
+	 * @return array<string, mixed> The modified block editor settings array.
 	 */
 	public function add_editor_settings( array $settings ): array {
 		if ( ! isset( $settings['gatherpress'] ) ) {
@@ -421,8 +452,8 @@ class Settings {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param string $sub_page Sub-page slug used to scope WP's settings API.
-	 * @param array  $sections Sections array from the sub-page settings.
+	 * @param string                         $sub_page Sub-page slug used to scope WP's settings API.
+	 * @param array<string, SettingsSection> $sections Sections array from the sub-page settings.
 	 *
 	 * @return void
 	 */
@@ -481,6 +512,7 @@ class Settings {
 	 * @since 0.34.0
 	 *
 	 * @param array $option_settings The option settings array.
+	 * @phpstan-param SettingsOption $option_settings
 	 *
 	 * @return string Space-separated class names for the row.
 	 */
@@ -515,6 +547,7 @@ class Settings {
 	 * @since 0.35.0 Added the `array( 'not' => … )` negation form.
 	 *
 	 * @param array $conditions Map of controlling option key => expected value(s).
+	 * @phpstan-param SettingsShowIf $conditions
 	 *
 	 * @return bool True when every key matches the current saved value, false otherwise.
 	 */
@@ -564,6 +597,7 @@ class Settings {
 	 * @since 0.34.0
 	 *
 	 * @param array $conditions Map of controlling option key => expected value(s).
+	 * @phpstan-param SettingsShowIf $conditions
 	 *
 	 * @return void
 	 */
@@ -582,9 +616,9 @@ class Settings {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $sub_pages The sub-pages array from get_sub_pages().
+	 * @param array<string, SettingsSubPage> $sub_pages The sub-pages array from get_sub_pages().
 	 *
-	 * @return array Flat map of option_key => field_type.
+	 * @return array<string, string> Flat map of option_key => field_type.
 	 */
 	protected function build_field_type_map( array $sub_pages ): array {
 		$map        = array();
@@ -642,10 +676,10 @@ class Settings {
 	 * to the same state. Consumers rely on `get_flat_default()` as the
 	 * authoritative source of defaults in both read paths.
 	 *
-	 * @param array  $field_type_map Flat map of option_key => field_type.
-	 * @param string $scope          Storage scope: 'blog' (default) or 'network'.
-	 *                               Determines which option store the closure
-	 *                               reads from when merging with existing values.
+	 * @param array<string, string> $field_type_map Flat map of option_key => field_type.
+	 * @param string                $scope          Storage scope: 'blog' (default) or 'network'.
+	 *                                              Determines which option store the closure
+	 *                                              reads from when merging with existing values.
 	 * @return callable A callback function that sanitizes input based on field types.
 	 */
 	public function sanitize_page_settings( array $field_type_map, string $scope = 'blog' ): callable {
@@ -662,10 +696,16 @@ class Settings {
 					// Width/Height "Auto") can round-trip blank without
 					// silently saving 0.
 					'number'       => ( '' === $value || null === $value ) ? '' : intval( $value ),
-					'autocomplete' => $this->sanitize_autocomplete( $value ),
+					// sanitize_autocomplete() takes a strictly-typed string
+					// argument — a malformed submission delivering an array
+					// here would otherwise throw a TypeError.
+					'autocomplete' => $this->sanitize_autocomplete( is_string( $value ) ? $value : '' ),
 					// password, text, select and any unrecognized type are
-					// sanitized as plain text.
-					default        => sanitize_text_field( (string) $value ),
+					// sanitized as plain text. A malformed submission (e.g.
+					// a field name suffixed with `[]`) can deliver an array
+					// here — is_scalar() guards the (string) cast so that
+					// doesn't emit an "Array to string conversion" warning.
+					default        => sanitize_text_field( is_scalar( $value ) ? (string) $value : '' ),
 				};
 			}
 
@@ -745,6 +785,7 @@ class Settings {
 	 *
 	 * @param string $option          The unique option key for the field.
 	 * @param array  $option_settings The option settings including field config.
+	 * @phpstan-param SettingsOption $option_settings
 	 *
 	 * @return void
 	 */
@@ -923,7 +964,7 @@ class Settings {
 			$config = Settings\Network::get_config();
 
 			if ( ! empty( $config['enabled'] ) ) {
-				$inherited = in_array( $option, (array) ( $config['inherited'] ?? array() ), true );
+				$inherited = in_array( $option, $config['inherited'], true );
 			}
 		}
 
@@ -974,7 +1015,7 @@ class Settings {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array Flat map of option_key => default_value.
+	 * @return array<string, bool|int|string> Flat map of option_key => default_value.
 	 */
 	protected function get_defaults_map(): array {
 		if ( null !== $this->defaults_cache ) {
@@ -1033,7 +1074,7 @@ class Settings {
 	 *
 	 * @since 0.27.0
 	 *
-	 * @return array An array of sub-pages, each with settings and priority information.
+	 * @return array<string, SettingsSubPage> An array of sub-pages, each with settings and priority information.
 	 */
 	public function get_sub_pages(): array {
 		/**
@@ -1065,6 +1106,8 @@ class Settings {
 	 *
 	 * @param array $first  The first sub-page to compare by priority.
 	 * @param array $second The second sub-page to compare by priority.
+	 * @phpstan-param SettingsSubPage $first
+	 * @phpstan-param SettingsSubPage $second
 	 *
 	 * @return int Returns a negative number if the first sub-page has a lower priority,
 	 *             a positive number if the second sub-page has a lower priority,
@@ -1160,7 +1203,7 @@ class Settings {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array List of option keys that affect rewrite rules.
+	 * @return string[] List of option keys that affect rewrite rules.
 	 */
 	protected function get_rewrite_keys(): array {
 		$keys      = array();
@@ -1198,7 +1241,7 @@ class Settings {
 	 * @param string $scope Storage scope: 'blog' (default) or 'network'.
 	 *                      'network' reads the network-wide site option,
 	 *                      used when exporting from Network Admin.
-	 * @return array Export data with version, timestamp, scope, and settings.
+	 * @return array{version: string, exported_at: string, scope: string, settings: array<string, mixed>} Export data.
 	 */
 	public function export_settings( string $scope = 'blog' ): array {
 		return array(
@@ -1216,7 +1259,7 @@ class Settings {
 	 *
 	 * @param string $scope Storage scope: 'blog' or 'network'.
 	 *
-	 * @return array
+	 * @return array<string, mixed> Stored option values keyed by option key.
 	 */
 	protected function read_stored_options( string $scope ): array {
 		if ( 'network' === $scope ) {
@@ -1231,8 +1274,8 @@ class Settings {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param string $scope   Storage scope: 'blog' or 'network'.
-	 * @param array  $options Options array to persist.
+	 * @param string               $scope   Storage scope: 'blog' or 'network'.
+	 * @param array<string, mixed> $options Options array to persist.
 	 *
 	 * @return void
 	 */
@@ -1271,10 +1314,10 @@ class Settings {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array  $data  The parsed import data.
-	 * @param string $scope Storage scope: 'blog' (default) or 'network'.
+	 * @param array<string, mixed> $data  The parsed import data.
+	 * @param string               $scope Storage scope: 'blog' (default) or 'network'.
 	 *
-	 * @return array Validation result with 'valid', 'changes', 'unknown', and 'warnings' keys.
+	 * @return array{valid: bool, changes: string[], unknown: string[], warnings: string[]} Validation result.
 	 */
 	public function validate_import( array $data, string $scope = 'blog' ): array {
 		$result = array(
@@ -1330,11 +1373,11 @@ class Settings {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array  $data  The parsed import data.
-	 * @param string $mode  Import mode: 'merge' or 'replace'.
-	 * @param string $scope Storage scope: 'blog' (default) or 'network'.
+	 * @param array<string, mixed> $data  The parsed import data.
+	 * @param string               $mode  Import mode: 'merge' or 'replace'.
+	 * @param string               $scope Storage scope: 'blog' (default) or 'network'.
 	 *
-	 * @return array Result with 'success', 'imported', 'skipped', and 'warnings' keys.
+	 * @return array{success: bool, imported: string[], skipped: string[], warnings: string[]} Import result.
 	 */
 	public function import_settings( array $data, string $mode = 'merge', string $scope = 'blog' ): array {
 		$result = array(
