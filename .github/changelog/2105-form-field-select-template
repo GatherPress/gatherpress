@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Fixed the Select field type rendering an invalid `<input type="select">` instead of a `<select>`. Added a `select.php` render template, a `select` case in the input attributes builder, and Select to the editor field type dropdown with its own editor component and options panel. Also fixed option extraction for select and radio so editor-authored options are no longer dropped and valid selections like `0` are accepted.

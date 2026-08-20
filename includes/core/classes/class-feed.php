@@ -128,7 +128,7 @@ final class Feed {
 	 *
 	 * @param Event $event The event object.
 	 *
-	 * @return array Array of event information strings.
+	 * @return string[] Array of event information strings.
 	 */
 	private function get_event_datetime_info( Event $event ): array {
 		$event_info       = array();

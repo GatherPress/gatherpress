@@ -162,8 +162,10 @@ final class Cleanup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $old_value The previous RSVP cleanup settings including interval and frequency.
-	 * @param array $new_value The updated RSVP cleanup settings including interval and frequency.
+	 * @param array<string, bool|int|string> $old_value The previous RSVP cleanup settings including interval and
+	 *                                                  frequency.
+	 * @param array<string, bool|int|string> $new_value The updated RSVP cleanup settings including interval and
+	 *                                                  frequency.
 	 *
 	 * @return void
 	 */

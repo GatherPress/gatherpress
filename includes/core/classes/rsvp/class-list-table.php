@@ -72,10 +72,11 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $args Optional. Additional arguments to configure the list table.
-	 *                    Supports 'screen' to specify a particular screen context and
-	 *                    'post_type' to scope the table to one RSVP-supporting post
-	 *                    type (defaults to the event post type).
+	 * @param array{screen?: string|null, post_type?: string} $args Optional. Additional arguments to configure
+	 *                                                             the list table. Supports 'screen' to specify a
+	 *                                                             particular screen context and 'post_type' to
+	 *                                                             scope the table to one RSVP-supporting post
+	 *                                                             type (defaults to the event post type).
 	 */
 	public function __construct( $args = array() ) {
 		$this->post_type = ! empty( $args['post_type'] ) ? (string) $args['post_type'] : Event::POST_TYPE;
@@ -104,7 +105,7 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array Array of column identifiers and their labels.
+	 * @return array<string, string> Array of column identifiers and their labels.
 	 */
 	public function get_columns(): array {
 		return array(
@@ -127,7 +128,7 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array Filtered list of columns that can be hidden.
+	 * @return array<string, string> Filtered list of columns that can be hidden.
 	 */
 	public function get_hideable_columns(): array {
 		$essential_columns = array( 'attendee' );
@@ -179,7 +180,7 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array List of column identifiers that should be hidden from display.
+	 * @return string[] List of column identifiers that should be hidden from display.
 	 */
 	public function get_hidden_columns(): array {
 		$screen = get_current_screen();
@@ -211,7 +212,7 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array Associative array of sortable column identifiers and their configurations.
+	 * @return array<string, array{0: string, 1: bool}> Sortable column identifiers and their configurations.
 	 */
 	protected function get_sortable_columns(): array {
 		return array(
@@ -287,7 +288,7 @@ final class List_Table extends WP_List_Table {
 	 * @param ?int $per_page    Optional. Number of items per page. Default null (uses DEFAULT_PER_PAGE).
 	 * @param int  $page_number Optional. Current page number. Default 1.
 	 *
-	 * @return array Array of RSVP comment data prepared for display.
+	 * @return array<int, array<string, mixed>> Array of RSVP comment data prepared for display.
 	 */
 	private function get_rsvps( ?int $per_page = null, int $page_number = 1 ): array {
 		$rsvp_query = Query::get_instance();
@@ -446,8 +447,8 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param object|array $item        RSVP comment data containing various properties like comment_ID.
-	 * @param string       $column_name The name of the column being rendered.
+	 * @param object|array<string, mixed> $item        RSVP comment data containing various properties like comment_ID.
+	 * @param string                      $column_name The name of the column being rendered.
 	 *
 	 * @return string Formatted content for the specified column.
 	 */
@@ -521,7 +522,7 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * @since 0.35.0
 	 *
-	 * @param array $item Row data (a comment cast to an array).
+	 * @param array<string, mixed> $item Row data (a comment cast to an array).
 	 *
 	 * @return Provider|null The inferred provider, or null when none applies.
 	 */
@@ -551,7 +552,7 @@ final class List_Table extends WP_List_Table {
 	 * @since 0.34.0
 	 * @since 0.35.0 Row checkboxes carry a visually hidden label naming the attendee.
 	 *
-	 * @param array|object $item RSVP comment data containing the comment_ID.
+	 * @param array<string, mixed>|object $item RSVP comment data containing the comment_ID.
 	 *
 	 * @return string HTML markup for the labeled checkbox input element.
 	 */
@@ -585,7 +586,7 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * @since 0.35.0
 	 *
-	 * @param array $item RSVP comment data.
+	 * @param array<string, mixed> $item RSVP comment data.
 	 *
 	 * @return string The attendee's display name.
 	 */
@@ -617,7 +618,7 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $item RSVP comment data for the RSVP entry.
+	 * @param array<string, mixed> $item RSVP comment data for the RSVP entry.
 	 *
 	 * @return string HTML content for the attendee column, including attendee information and action links.
 	 */
@@ -722,7 +723,7 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array An associative array of bulk action identifiers and their labels.
+	 * @return array<string, string> An associative array of bulk action identifiers and their labels.
 	 */
 	public function get_bulk_actions(): array {
 		if ( ! current_user_can( Rsvp::CAPABILITY ) ) {
@@ -747,8 +748,8 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param object|array $item RSVP comment data, either as an object or an associative array.
-	 *                           Contains properties/keys like 'comment_ID' and 'comment_approved'.
+	 * @param object|array<string, mixed> $item RSVP comment data, either as an object or an associative array.
+	 *                                          Contains properties/keys like 'comment_ID' and 'comment_approved'.
 	 *
 	 * @return void The method outputs HTML directly and doesn't return a value.
 	 */
@@ -891,7 +892,7 @@ final class List_Table extends WP_List_Table {
 	 * @since 0.34.0
 	 *
 	 * @global string $post_type
-	 * @return array An array of HTML links for different views.
+	 * @return array<string, string> An array of HTML links for different views, keyed by view slug.
 	 */
 	public function get_views(): array {
 		$rsvp_query   = Query::get_instance();

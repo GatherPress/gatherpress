@@ -38,6 +38,15 @@ use WP_Term;
  * sibling `Calendar` class, instantiated as `new Calendar( $event_id )`.
  *
  * @since 0.34.0
+ *
+ * @phpstan-type LabelArgs array{
+ *   blogtitle: string,
+ *   separator: string,
+ *   singletitle: string,
+ *   feedtitle: string,
+ *   posttypetitle: string,
+ *   taxtitle: string
+ * }
  */
 final class Setup {
 
@@ -233,7 +242,8 @@ final class Setup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array Template descriptor with `file_name` (and optional `dir_path`) keys.
+	 * @return array{file_name: string, dir_path?: string} Template descriptor with `file_name` (and optional
+	 *                                                      `dir_path`) keys.
 	 */
 	public function get_ical_file_template(): array {
 		return array(
@@ -246,7 +256,8 @@ final class Setup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array Template descriptor with `file_name` (and optional `dir_path`) keys.
+	 * @return array{file_name: string, dir_path?: string} Template descriptor with `file_name` (and optional
+	 *                                                      `dir_path`) keys.
 	 */
 	public function get_ical_feed_template(): array {
 		return array(
@@ -324,7 +335,7 @@ final class Setup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array{blogtitle:string,separator:string,singletitle:string,feedtitle:string,posttypetitle:string,taxtitle:string}
+	 * @return LabelArgs
 	 */
 	protected function alternate_link_label_args(): array {
 		return array(
@@ -350,6 +361,7 @@ final class Setup {
 	 * @since 0.34.0
 	 *
 	 * @param array $args Label args from `alternate_link_label_args()`.
+	 * @phpstan-param LabelArgs $args
 	 *
 	 * @return array<int,array{url:string,attr:string}> One-element list.
 	 */
@@ -380,6 +392,7 @@ final class Setup {
 	 * @since 0.34.0
 	 *
 	 * @param array $args Label args from `alternate_link_label_args()`.
+	 * @phpstan-param LabelArgs $args
 	 *
 	 * @return array<int,array{url:string,attr:string}> One entry per event-supporting post type.
 	 */
@@ -423,6 +436,7 @@ final class Setup {
 	 * @since 0.34.0
 	 *
 	 * @param array $args Label args from `alternate_link_label_args()`.
+	 * @phpstan-param LabelArgs $args
 	 *
 	 * @return array<int,array{url:string,attr:string}>
 	 */
@@ -454,6 +468,7 @@ final class Setup {
 	 *
 	 * @param WP_Post $event The queried event post.
 	 * @param array   $args  Label args from `alternate_link_label_args()`.
+	 * @phpstan-param LabelArgs $args
 	 *
 	 * @return array<int,array{url:string,attr:string}>
 	 */
@@ -484,6 +499,7 @@ final class Setup {
 	 *
 	 * @param WP_Post $post The queried shadow-source post (e.g. a venue).
 	 * @param array   $args Label args from `alternate_link_label_args()`.
+	 * @phpstan-param LabelArgs $args
 	 *
 	 * @return array<int,array{url:string,attr:string}>
 	 */
@@ -508,6 +524,7 @@ final class Setup {
 	 *
 	 * @param WP_Term $term The queried taxonomy term.
 	 * @param array   $args Label args from `alternate_link_label_args()`.
+	 * @phpstan-param LabelArgs $args
 	 *
 	 * @return array<int,array{url:string,attr:string}>
 	 */
@@ -535,6 +552,7 @@ final class Setup {
 	 *
 	 * @param WP_Post $event The queried event post.
 	 * @param array   $args  Label args from `alternate_link_label_args()`.
+	 * @phpstan-param LabelArgs $args
 	 *
 	 * @return array<int,array{url:string,attr:string}>
 	 */
@@ -569,6 +587,7 @@ final class Setup {
 	 *
 	 * @param WP_Term $term Term attached to the queried event.
 	 * @param array   $args Label args from `alternate_link_label_args()`.
+	 * @phpstan-param LabelArgs $args
 	 *
 	 * @return array<int,array{url:string,attr:string}> Empty for sentinel terms; otherwise one entry.
 	 */
@@ -873,7 +892,7 @@ final class Setup {
 			$scope['type'] = (string) $queried_object->name;
 		}
 
-		return sprintf( 'ics:%s', md5( (string) wp_json_encode( $scope ) ) );
+		return sprintf( 'ics:%s', md5( (string) wp_json_encode( $scope ) ) ); // NOSONAR.
 	}
 
 	/**
@@ -886,7 +905,7 @@ final class Setup {
 	 * @return string Quoted entity tag, per RFC 9110.
 	 */
 	public function get_etag( string $body ): string {
-		return sprintf( '"%s"', md5( $body ) );
+		return sprintf( '"%s"', md5( $body ) ); // NOSONAR.
 	}
 
 	/**

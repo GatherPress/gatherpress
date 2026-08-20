@@ -142,7 +142,8 @@ class Template extends Endpoint_Type {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array Template preset data including file_name and optional dir_path.
+	 * @return array{file_name: string, dir_path?: string} Template preset data including file_name and optional
+	 *                                                      dir_path.
 	 */
 	protected function get_template_presets(): array {
 		return ( $this->callback )();

@@ -36,6 +36,35 @@ use WP_Post;
  * Manages RSVP functionality for events, including response status tracking and limits.
  *
  * @since 0.34.0
+ *
+ * @phpstan-type RsvpRecord array{
+ *     name: string,
+ *     photo: string|null,
+ *     profile: string|null,
+ *     status: string,
+ *     guests: int,
+ *     anonymous: bool,
+ *     timestamp: string,
+ *     provider: string,
+ *     identifier: int|string,
+ *     role: string,
+ *     comment_id: int,
+ *     post_id: int,
+ *     user_id: int,
+ *     commentId: int,
+ *     postId: int,
+ *     userId: int
+ * }
+ * @phpstan-type RsvpSaveDefault array{
+ *     comment_id: int,
+ *     post_id: int,
+ *     user_id: int,
+ *     timestamp: string,
+ *     status: string,
+ *     guests: int,
+ *     anonymous: int
+ * }
+ * @phpstan-type RsvpResponseGroup array{records: array<int, RsvpRecord>, count: int}
  */
 final class Rsvp {
 
@@ -56,10 +85,18 @@ final class Rsvp {
 	public const COMMENT_TYPE = 'gatherpress_rsvp';
 
 	/**
+	 * Comment meta key flagging a response as anonymous.
+	 *
+	 * @since 0.35.1
+	 * @var string
+	 */
+	public const ANONYMOUS_META_KEY = 'gatherpress_rsvp_anonymous';
+
+	/**
 	 * Default response for calling the save function.
 	 *
 	 * @since 0.35.0
-	 * @var array
+	 * @var RsvpSaveDefault
 	 */
 	private const DEFAULT_SAVE_RESPONSE = array(
 		'comment_id' => 0,
@@ -137,7 +174,7 @@ final class Rsvp {
 	 *
 	 * @param mixed $identifier The identifier of the RSVP.
 	 *
-	 * @return array|null An array containing RSVP information.
+	 * @return RsvpRecord|null An array containing RSVP information.
 	 */
 	public function get( $identifier ): array|null {
 		$identity = $this->resolve_identity( $identifier );
@@ -226,13 +263,15 @@ final class Rsvp {
 	 *                                    Accepts 1 for true (anonymous) and 0 for false (not anonymous). Default 0.
 	 * @param int        $guests          Optional. The number of guests the user plans to bring along. Default 0.
 	 *
-	 * @return array Associative array containing the event ID ('post_id'), user ID ('user_id'),
-	 *               RSVP timestamp ('timestamp'), RSVP status ('status'), number of guests ('guests'),
-	 *               and anonymity flag ('anonymous'). Returns a default array with 'post_id' and 'user_id'
-	 *               set to 0, 'timestamp' to '0000-00-00 00:00:00', 'status' to 'no_status', 'guests' to 0,
-	 *               and 'anonymous' to 0 if the post ID or user identifier is not valid, or if the status
-	 *               is not one of the acceptable values. If the attending limit is reached, 'status' may be
-	 *               automatically set to 'waiting_list', and 'guests' to 0, depending on the context.
+	 * @return RsvpRecord|RsvpSaveDefault Associative array containing the event ID ('post_id'),
+	 *                                    user ID ('user_id'), RSVP timestamp ('timestamp'), RSVP status ('status'),
+	 *                                    number of guests ('guests'), and anonymity flag ('anonymous'). Returns a
+	 *                                    default array with 'post_id' and 'user_id' set to 0, 'timestamp' to
+	 *                                    '0000-00-00 00:00:00', 'status' to 'no_status', 'guests' to 0, and
+	 *                                    'anonymous' to 0 if the post ID or user identifier is not valid, or if the
+	 *                                    status is not one of the acceptable values. If the attending limit is
+	 *                                    reached, 'status' may be automatically set to 'waiting_list', and 'guests'
+	 *                                    to 0, depending on the context.
 	 */
 	public function save(
 		mixed $identifier,
@@ -345,8 +384,15 @@ final class Rsvp {
 		// #1771 does not apply to this design.
 		$promoted_count = 0;
 
-		for ( $i = 0; $i < $remaining_spots; $i++ ) {
-			$state = $waiting_list[ $i ];
+		// Walk the queue itself rather than counting off free spots: the two are
+		// different quantities, and indexing the list by the spot count either
+		// ran off the end of a short queue or stopped before a long one had
+		// filled the room.
+		foreach ( $waiting_list as $state ) {
+			if ( $remaining_spots <= 0 ) {
+				break;
+			}
+
 			$state = $this->storage->save( Intent::attend( $state ), (int) $state->comment->comment_ID );
 
 			if ( $state instanceof State ) {
@@ -472,13 +518,19 @@ final class Rsvp {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array An array containing response information grouped by RSVP status.
+	 * @return array<string, RsvpResponseGroup> Response records and counts keyed by 'all' and each RSVP status.
 	 */
 	public function responses(): array {
-		$cached = Cache::get( $this->event->ID );
+		// Serialized records vary by capability but the cache key does not, so
+		// only the public variant is cached; privileged viewers compute fresh.
+		$can_use_cache = ! current_user_can( self::CAPABILITY );
 
-		if ( is_array( $cached ) ) {
-			return $cached;
+		if ( $can_use_cache ) {
+			$cached = Cache::get( $this->event->ID );
+
+			if ( is_array( $cached ) ) {
+				return $cached;
+			}
 		}
 
 		$retval = array(
@@ -530,7 +582,9 @@ final class Rsvp {
 			$retval[ $status ]['count']   = count( $status_records ) + $guest_count;
 		}
 
-		Cache::set( $this->event->ID, $retval );
+		if ( $can_use_cache ) {
+			Cache::set( $this->event->ID, $retval );
+		}
 
 		return $retval;
 	}
@@ -543,8 +597,10 @@ final class Rsvp {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $first  The first response to compare in the sort.
-	 * @param array $second The second response to compare in the sort.
+	 * @param array<string, mixed> $first  The first response to compare in the sort.
+	 * @param array<string, mixed> $second The second response to compare in the sort.
+	 * @phpstan-param RsvpRecord $first
+	 * @phpstan-param RsvpRecord $second
 	 *
 	 * @return int An integer indicating the sorting order:
 	 *             -1 if $first should come before $second,
@@ -575,8 +631,10 @@ final class Rsvp {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $first  First response to compare in the sort.
-	 * @param array $second Second response to compare in the sort.
+	 * @param array<string, mixed> $first  First response to compare in the sort.
+	 * @param array<string, mixed> $second Second response to compare in the sort.
+	 * @phpstan-param RsvpRecord $first
+	 * @phpstan-param RsvpRecord $second
 	 *
 	 * @return int Returns a negative number if the first response's timestamp is earlier,
 	 *             a positive number if the second response's timestamp is earlier,

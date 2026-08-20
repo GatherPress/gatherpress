@@ -35,7 +35,7 @@ final class Assets {
 	 * This property stores data assets in an array for efficient access and management.
 	 *
 	 * @since 0.27.0
-	 * @var array
+	 * @var array<string, array{dependencies?: string[], version?: string}>
 	 */
 	protected array $asset_data = array();
 
@@ -272,8 +272,8 @@ final class Assets {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The block content.
-	 * @param array  $block         The block settings.
+	 * @param string               $block_content The block content.
+	 * @param array<string, mixed> $block         The block settings.
 	 *
 	 * @return string The block content.
 	 */
@@ -533,7 +533,7 @@ final class Assets {
 	 * @param string  $asset The file name of the asset.
 	 * @param ?string $path  (Optional) The absolute path to the asset file
 	 *                       or null to use the path based on the default naming scheme.
-	 * @return array An array containing asset-related data.
+	 * @return array{dependencies?: string[], version?: string} An array containing asset-related data.
 	 */
 	public function get_asset_data( string $asset, ?string $path = null ): array {
 		$path = $path ?? $this->path . sprintf( '%s.asset.php', $asset );
@@ -560,9 +560,13 @@ final class Assets {
 		}
 
 		if ( empty( $this->block_variation_names ) ) {
+			// scandir() returns false on an unreadable directory, which
+			// file_exists() above does not rule out.
+			$entries = scandir( $variations_directory );
+
 			$this->block_variation_names = array_values(
 				array_diff(
-					scandir( $variations_directory ),
+					false === $entries ? array() : $entries,
 					array( '..', '.' )
 				)
 			);

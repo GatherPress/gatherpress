@@ -370,11 +370,20 @@ final class Setup {
 			return;
 		}
 
-		// Bail when not on a post type archive at all, or when the
-		// queried post type doesn't declare event-date support.
-		$post_type = (string) get_query_var( 'post_type' );
+		// `post_type` comes back as an array on multi-post-type archives
+		// (e.g. a combined archive query across several event-supporting
+		// post types); the is_string() guard below keeps that array out of
+		// post_type_supports(), which otherwise emits a PHP "Array to
+		// string conversion" warning when it casts its argument to string.
+		$post_type = get_query_var( 'post_type' );
 
-		if ( ! is_post_type_archive() || ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+		// Bail when not on a post type archive at all, when the queried
+		// post type isn't a single string, or when it doesn't declare
+		// event-date support.
+		if ( ! is_post_type_archive()
+			|| ! is_string( $post_type )
+			|| ! post_type_supports( $post_type, 'gatherpress-event-date' )
+		) {
 			return;
 		}
 
@@ -658,9 +667,9 @@ final class Setup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param string   $block_content The block content.
-	 * @param array    $block         The full block, including name and attributes.
-	 * @param WP_Block $instance      The block instance.
+	 * @param string               $block_content The block content.
+	 * @param array<string, mixed> $block         The full block, including name and attributes.
+	 * @param WP_Block             $instance      The block instance.
 	 *
 	 * @return string The filtered block content with event datetime.
 	 *
@@ -710,10 +719,10 @@ final class Setup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array   $post_states An array of post display states.
-	 * @param WP_Post $post        The current post object.
+	 * @param array<string, string> $post_states An array of post display states.
+	 * @param WP_Post               $post        The current post object.
 	 *
-	 * @return array An updated array of post display states with custom labels if applicable.
+	 * @return array<string, string> An updated array of post display states with custom labels if applicable.
 	 */
 	public function set_event_archive_labels( array $post_states, WP_Post $post ): array {
 		// Retrieve archive page settings.
@@ -782,8 +791,10 @@ final class Setup {
 	 *
 	 * @since 0.35.0
 	 *
-	 * @param int   $post_id The post to write.
-	 * @param array $data    Datetime payload keyed dateTimeStart / dateTimeEnd / timezone.
+	 * @param int                                                                    $post_id The post to write.
+	 * @param array{dateTimeStart?: string, dateTimeEnd?: string, timezone?: string} $data    Datetime payload keyed
+	 *                                                                                        dateTimeStart /
+	 *                                                                                        dateTimeEnd / timezone.
 	 *
 	 * @return void
 	 */

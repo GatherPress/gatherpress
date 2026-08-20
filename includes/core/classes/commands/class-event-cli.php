@@ -58,8 +58,8 @@ final class Event_Cli extends WP_CLI {
 	 *
 	 * @since 0.29.0
 	 *
-	 * @param array $args       Positional arguments for the script.
-	 * @param array $assoc_args Associative arguments for the script.
+	 * @param string[]                   $args       Positional arguments for the script.
+	 * @param array<string, string|bool> $assoc_args Associative arguments for the script.
 	 *
 	 * @return void
 	 *

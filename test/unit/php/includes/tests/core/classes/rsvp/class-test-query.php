@@ -16,6 +16,7 @@ use GatherPress\Tests\Base;
 use stdClass;
 use WP_Comment;
 use WP_Comment_Query;
+use WP_REST_Response;
 
 /**
  * Class Test_Query.
@@ -52,6 +53,18 @@ class Test_Query extends Base {
 				'name'     => 'wp_insert_comment',
 				'priority' => 10,
 				'callback' => array( $instance, 'maybe_invalidate_comment_types_cache' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'get_comment',
+				'priority' => 10,
+				'callback' => array( $instance, 'prepare_rsvp_comment' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'rest_prepare_comment',
+				'priority' => 10,
+				'callback' => array( $instance, 'mask_anonymous_rsvp_rest_author' ),
 			),
 		);
 
@@ -863,5 +876,425 @@ class Test_Query extends Base {
 
 		// Clean up.
 		delete_transient( Query::COMMENT_TYPES_CACHE_KEY );
+	}
+
+	/**
+	 * Builds an RSVP comment, optionally flagged anonymous.
+	 *
+	 * @param bool $anonymous Whether the responder asked to stay anonymous.
+	 *
+	 * @return WP_Comment The RSVP comment.
+	 */
+	protected function make_rsvp_comment( bool $anonymous ): WP_Comment {
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author'       => 'Real Name',
+				'comment_author_email' => 'real@example.test',
+				'comment_author_url'   => 'https://example.test/real',
+			)
+		);
+
+		if ( $anonymous ) {
+			update_comment_meta( $comment_id, Rsvp::ANONYMOUS_META_KEY, 1 );
+		}
+
+		// WP_Comment::get_instance() skips the `get_comment` filter, so this
+		// returns the stored comment rather than one the mask already touched.
+		return WP_Comment::get_instance( $comment_id );
+	}
+
+	/**
+	 * An anonymous responder's identity is withheld from a viewer who cannot
+	 * edit posts, and the stored comment keeps its real values.
+	 *
+	 * @covers ::prepare_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_prepare_rsvp_comment_withholds_for_public(): void {
+		$instance = Query::get_instance();
+
+		wp_set_current_user( 0 );
+
+		$comment = $this->make_rsvp_comment( true );
+		$masked  = $instance->prepare_rsvp_comment( $comment );
+
+		$this->assertSame( __( 'Anonymous', 'gatherpress' ), $masked->comment_author );
+		$this->assertSame( '', $masked->comment_author_email );
+		$this->assertSame( '', $masked->comment_author_url );
+		$this->assertSame(
+			'Real Name',
+			$comment->comment_author,
+			'The mask is applied to a clone, so the original keeps its values.'
+		);
+	}
+
+	/**
+	 * The identity is left alone for anything that is not an anonymous RSVP
+	 * being read by an unprivileged viewer.
+	 *
+	 * @covers ::prepare_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_prepare_rsvp_comment_leaves_others_alone(): void {
+		$instance = Query::get_instance();
+
+		wp_set_current_user( 0 );
+
+		$this->assertNull(
+			$instance->prepare_rsvp_comment( null ),
+			'A value that is not a comment passes through untouched.'
+		);
+
+		$regular = get_comment( $this->factory->comment->create( array( 'comment_author' => 'Real Name' ) ) );
+		$this->assertSame(
+			'Real Name',
+			$instance->prepare_rsvp_comment( $regular )->comment_author,
+			'A comment that is not an RSVP is never masked.'
+		);
+
+		$named = $this->make_rsvp_comment( false );
+		$this->assertSame(
+			'Real Name',
+			$instance->prepare_rsvp_comment( $named )->comment_author,
+			'An RSVP that is not anonymous keeps its identity.'
+		);
+
+		$anonymous = $this->make_rsvp_comment( true );
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertSame(
+			'Real Name',
+			$instance->prepare_rsvp_comment( $anonymous )->comment_author,
+			'A viewer who can edit posts still sees the responder.'
+		);
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * The REST response withholds the author ID for a masked responder, and
+	 * leaves every other response untouched.
+	 *
+	 * @covers ::mask_anonymous_rsvp_rest_author
+	 *
+	 * @return void
+	 */
+	public function test_mask_anonymous_rsvp_rest_author(): void {
+		$instance = Query::get_instance();
+
+		wp_set_current_user( 0 );
+
+		$masked = $instance->prepare_rsvp_comment( $this->make_rsvp_comment( true ) );
+		$this->assertSame(
+			0,
+			$instance->mask_anonymous_rsvp_rest_author(
+				new WP_REST_Response( array( 'author' => 7 ) ),
+				$masked
+			)->get_data()['author'],
+			'A masked responder has no author ID in the response.'
+		);
+
+		$this->assertArrayNotHasKey(
+			'author',
+			$instance->mask_anonymous_rsvp_rest_author(
+				new WP_REST_Response( array( 'id' => 1 ) ),
+				$masked
+			)->get_data(),
+			'A response without an author field is left as it is.'
+		);
+
+		$this->assertSame(
+			7,
+			$instance->mask_anonymous_rsvp_rest_author(
+				new WP_REST_Response( array( 'author' => 7 ) ),
+				$this->make_rsvp_comment( false )
+			)->get_data()['author'],
+			'An RSVP that is not masked keeps its author ID.'
+		);
+
+		$regular = get_comment(
+			$this->factory->comment->create(
+				array( 'comment_author' => __( 'Anonymous', 'gatherpress' ) )
+			)
+		);
+		$this->assertSame(
+			7,
+			$instance->mask_anonymous_rsvp_rest_author(
+				new WP_REST_Response( array( 'author' => 7 ) ),
+				$regular
+			)->get_data()['author'],
+			'A non-RSVP comment named Anonymous is not treated as masked.'
+		);
+	}
+
+	/**
+	 * Anonymity yields only to the capability that manages RSVPs, so roles that
+	 * can write posts without moderating them still see a masked responder.
+	 *
+	 * @covers ::prepare_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_prepare_rsvp_comment_pivots_on_rsvp_capability(): void {
+		$instance = Query::get_instance();
+		$comment  = $this->make_rsvp_comment( true );
+		$expected = array(
+			'subscriber'    => __( 'Anonymous', 'gatherpress' ),
+			'contributor'   => __( 'Anonymous', 'gatherpress' ),
+			'author'        => __( 'Anonymous', 'gatherpress' ),
+			'editor'        => 'Real Name',
+			'administrator' => 'Real Name',
+		);
+
+		foreach ( $expected as $role => $author ) {
+			wp_set_current_user( $this->factory->user->create( array( 'role' => $role ) ) );
+
+			$this->assertSame(
+				$author,
+				$instance->prepare_rsvp_comment( $comment )->comment_author,
+				sprintf( 'A %s sees the wrong responder.', $role )
+			);
+		}
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * A response saved through the store carries no author URL, so the
+	 * responder's profile is resolved from their account -- unless a URL was
+	 * already saved with it, or the responder is withheld.
+	 *
+	 * @covers ::prepare_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_prepare_rsvp_comment_resolves_author_url(): void {
+		$instance = Query::get_instance();
+		$user_id  = $this->factory->user->create();
+
+		wp_set_current_user( 0 );
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_type'       => Rsvp::COMMENT_TYPE,
+				'user_id'            => $user_id,
+				'comment_author_url' => '',
+			)
+		);
+		$comment    = WP_Comment::get_instance( $comment_id );
+
+		$this->assertSame(
+			get_author_posts_url( $user_id ),
+			$instance->prepare_rsvp_comment( $comment )->comment_author_url,
+			'An empty author URL resolves to the responder profile.'
+		);
+
+		$saved_id = $this->factory->comment->create(
+			array(
+				'comment_type'       => Rsvp::COMMENT_TYPE,
+				'user_id'            => $user_id,
+				'comment_author_url' => 'https://example.test/saved',
+			)
+		);
+
+		$this->assertSame(
+			'https://example.test/saved',
+			$instance->prepare_rsvp_comment( WP_Comment::get_instance( $saved_id ) )->comment_author_url,
+			'A URL saved with the response is kept, so a URL identity is never rewritten.'
+		);
+
+		$guest_id = $this->factory->comment->create(
+			array(
+				'comment_type'       => Rsvp::COMMENT_TYPE,
+				'user_id'            => 0,
+				'comment_author_url' => '',
+			)
+		);
+
+		$this->assertSame(
+			'',
+			$instance->prepare_rsvp_comment( WP_Comment::get_instance( $guest_id ) )->comment_author_url,
+			'A response with no account behind it resolves to nothing.'
+		);
+
+		$anonymous_id = $this->factory->comment->create(
+			array(
+				'comment_type'       => Rsvp::COMMENT_TYPE,
+				'user_id'            => $user_id,
+				'comment_author_url' => '',
+			)
+		);
+		update_comment_meta( $anonymous_id, Rsvp::ANONYMOUS_META_KEY, 1 );
+
+		$this->assertSame(
+			'',
+			$instance->prepare_rsvp_comment( WP_Comment::get_instance( $anonymous_id ) )->comment_author_url,
+			'A withheld responder is never linked.'
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertSame(
+			get_author_posts_url( $user_id ),
+			$instance->prepare_rsvp_comment( WP_Comment::get_instance( $anonymous_id ) )->comment_author_url,
+			'A reader who already sees the responder gets the link too.'
+		);
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * A response saved before the store stopped writing an address into the
+	 * display-name column still carries one, so it is withheld on read.
+	 *
+	 * @covers ::prepare_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_prepare_rsvp_comment_withholds_a_stored_address(): void {
+		$instance = Query::get_instance();
+		$email    = 'legacy-row@example.test';
+		$comment  = WP_Comment::get_instance(
+			$this->factory->comment->create(
+				array(
+					'comment_type'         => Rsvp::COMMENT_TYPE,
+					'comment_author'       => $email,
+					'comment_author_email' => $email,
+					'user_id'              => 0,
+				)
+			)
+		);
+
+		wp_set_current_user( 0 );
+		$this->assertSame(
+			__( 'Attendee', 'gatherpress' ),
+			$instance->prepare_rsvp_comment( $comment )->comment_author,
+			'An address standing in for a name is withheld.'
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertSame(
+			$email,
+			$instance->prepare_rsvp_comment( $comment )->comment_author,
+			'Whoever manages RSVPs still sees what was saved.'
+		);
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * An account whose display name is an address keeps it, because that is
+	 * what core publishes for anyone who registered with one.
+	 *
+	 * @covers ::prepare_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_prepare_rsvp_comment_keeps_a_display_name_that_is_an_address(): void {
+		$instance = Query::get_instance();
+		$user_id  = $this->factory->user->create(
+			array(
+				'display_name' => 'login@example.test',
+				'user_email'   => 'account@example.test',
+			)
+		);
+		$comment  = WP_Comment::get_instance(
+			$this->factory->comment->create(
+				array(
+					'comment_type'         => Rsvp::COMMENT_TYPE,
+					'comment_author'       => 'login@example.test',
+					'comment_author_email' => 'account@example.test',
+					'user_id'              => $user_id,
+				)
+			)
+		);
+
+		wp_set_current_user( 0 );
+
+		$this->assertSame(
+			'login@example.test',
+			$instance->prepare_rsvp_comment( $comment )->comment_author,
+			'A name that merely looks like an address is not the legacy write, so it stands.'
+		);
+	}
+
+	/**
+	 * A response that both carries a stored address and lacks a URL gets both
+	 * treatments, because the two conditions are independent.
+	 *
+	 * @covers ::prepare_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_prepare_rsvp_comment_withholds_an_address_and_still_resolves_the_url(): void {
+		$instance = Query::get_instance();
+		$email    = 'both@example.test';
+		$user_id  = $this->factory->user->create( array( 'user_email' => $email ) );
+		$comment  = WP_Comment::get_instance(
+			$this->factory->comment->create(
+				array(
+					'comment_type'         => Rsvp::COMMENT_TYPE,
+					'comment_author'       => $email,
+					'comment_author_email' => $email,
+					'comment_author_url'   => '',
+					'user_id'              => $user_id,
+				)
+			)
+		);
+
+		wp_set_current_user( 0 );
+
+		$prepared = $instance->prepare_rsvp_comment( $comment );
+
+		$this->assertSame(
+			__( 'Attendee', 'gatherpress' ),
+			$prepared->comment_author,
+			'The stored address is still withheld.'
+		);
+		$this->assertSame(
+			get_author_posts_url( $user_id ),
+			$prepared->comment_author_url,
+			'And the link the store never wrote is still resolved.'
+		);
+	}
+
+	/**
+	 * Two columns that match on something other than an address are left
+	 * alone, since there is no address to keep back.
+	 *
+	 * @covers ::prepare_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_prepare_rsvp_comment_keeps_matching_columns_that_are_not_an_address(): void {
+		global $wpdb;
+
+		$instance   = Query::get_instance();
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_type'   => Rsvp::COMMENT_TYPE,
+				'comment_author' => 'Bob Smith',
+				'user_id'        => 0,
+			)
+		);
+
+		// Written directly because the comment API sanitizes the address
+		// column; only an import or a migration reaches this shape.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->update(
+			$wpdb->comments,
+			array( 'comment_author_email' => 'Bob Smith' ),
+			array( 'comment_ID' => $comment_id )
+		);
+		clean_comment_cache( $comment_id );
+
+		wp_set_current_user( 0 );
+
+		$this->assertSame(
+			'Bob Smith',
+			$instance->prepare_rsvp_comment( WP_Comment::get_instance( $comment_id ) )->comment_author,
+			'Matching columns holding a name rather than an address are not renamed.'
+		);
 	}
 }

@@ -84,7 +84,16 @@ class Test_Storage extends Base {
 		$this->assertTrue( $state->data->anonymous );
 		$this->assertSame( $event_id, (int) $state->comment->comment_post_ID );
 		$this->assertSame( Rsvp::COMMENT_TYPE, $state->comment->comment_type );
-		$this->assertSame( 'Storage Tester', $state->comment->comment_author );
+
+		// The responder asked to stay anonymous, so reading the comment back
+		// masks the author for the public. Storage still recorded the real
+		// name, which a viewer allowed to see it reads unchanged.
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertSame(
+			'Storage Tester',
+			get_comment( (int) $state->comment->comment_ID )->comment_author
+		);
+		wp_set_current_user( 0 );
 
 		$terms = wp_get_object_terms( (int) $state->comment->comment_ID, Status::TAXONOMY );
 		$this->assertSame( 'attending', $terms[0]->slug );
@@ -519,5 +528,37 @@ class Test_Storage extends Base {
 
 		$this->assertInstanceOf( State::class, $found, 'The term-less row resolves when a provider is passed.' );
 		$this->assertSame( $comment_id, (int) $found->comment->comment_ID );
+	}
+
+	/**
+	 * An email response has no name to save, and the provider answers with the
+	 * address, so nothing is stored in the column read as a display name.
+	 *
+	 * @covers ::save
+	 *
+	 * @return void
+	 */
+	public function test_save_never_stores_an_address_as_the_author(): void {
+		list( $event_id, $storage ) = $this->make_storage();
+
+		$email  = 'no-name-given@example.test';
+		$intent = new Intent(
+			new Data( new Identity( Identity_Type::EMAIL, $email ), Status::ATTENDING ),
+			new Email()
+		);
+		$state  = $storage->save( $intent, null );
+
+		$this->assertInstanceOf( State::class, $state );
+		$this->assertSame(
+			'',
+			$state->comment->comment_author,
+			'The address is not stored as the display name.'
+		);
+		$this->assertSame(
+			$email,
+			$state->comment->comment_author_email,
+			'It is still stored where an address belongs.'
+		);
+		$this->assertSame( $event_id, (int) $state->comment->comment_post_ID );
 	}
 }

@@ -43,8 +43,8 @@ final class Settings_Cli extends WP_CLI {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $args       Positional arguments.
-	 * @param array $assoc_args Associative arguments.
+	 * @param string[]                   $args       Positional arguments.
+	 * @param array<string, string|bool> $assoc_args Associative arguments.
 	 *
 	 * @return void
 	 *
@@ -119,8 +119,8 @@ final class Settings_Cli extends WP_CLI {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $args       Positional arguments.
-	 * @param array $assoc_args Associative arguments.
+	 * @param string[]                   $args       Positional arguments.
+	 * @param array<string, string|bool> $assoc_args Associative arguments.
 	 *
 	 * @return void
 	 */

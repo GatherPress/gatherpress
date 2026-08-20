@@ -11,6 +11,8 @@ namespace GatherPress\Core\Rsvp\Response;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Rsvp\Response\Identity_Type;
+use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Settings\Roles;
 use GatherPress\Core\Utility;
 
@@ -18,6 +20,8 @@ use GatherPress\Core\Utility;
  * Class with methods to serialize RSVP Response objects.
  *
  * @since 0.35.0
+ *
+ * @phpstan-import-type RsvpRecord from Rsvp
  */
 final class Serializer {
 
@@ -28,23 +32,42 @@ final class Serializer {
 	 *
 	 * @param State $state RSVP state.
 	 *
-	 * @return array The RSVP response state as an associative array.
+	 * @return RsvpRecord The RSVP response state as an associative array.
 	 */
 	public static function to_array( State $state ): array {
 		$identity = $state->data->identity;
 
-		if (
-			! current_user_can( 'edit_posts' ) && $state->data->anonymous
-		) {
+		if ( $state->data->anonymous && ! current_user_can( Rsvp::CAPABILITY ) ) {
 			$user_id = 0;
 			$profile = '';
 			$name    = __( 'Anonymous', 'gatherpress' );
-			$photo   = $state->provider->get_avatar_url( $identity );
+
+			// Mask every identity-derived value, not just the name: the avatar
+			// URL and raw identifier both expose who the responder is.
+			$photo      = self::anonymous_avatar_url();
+			$identifier = 0;
 		} else {
 			$user_id = (int) $state->comment->user_id;
 			$profile = $state->provider->get_url( $identity );
-			$name    = $state->provider->get_display_name( $identity );
 			$photo   = $state->provider->get_avatar_url( $identity );
+			$name    = $identity->display_name ?? $state->provider->get_display_name( $identity );
+
+			// An email response carries the responder's address as its
+			// identifier, so that one is only reported to whoever manages
+			// RSVPs. Other identity types are already public in this record.
+			$identifier = Identity_Type::EMAIL === $identity->type && ! current_user_can( Rsvp::CAPABILITY )
+				? 0
+				: $identity->value;
+
+			// A responder identified only by an address has no name to show, so
+			// the record says what it can: whoever manages RSVPs sees the
+			// address the response was saved with, and everyone else sees that
+			// someone is attending.
+			if ( '' === $name ) {
+				$name = current_user_can( Rsvp::CAPABILITY ) && ! empty( $state->comment->comment_author_email )
+					? (string) $state->comment->comment_author_email
+					: __( 'Attendee', 'gatherpress' );
+			}
 		}
 
 		$data = array(
@@ -56,8 +79,9 @@ final class Serializer {
 			'anonymous'  => $state->data->anonymous,
 			'timestamp'  => $state->data->timestamp,
 			'provider'   => $state->provider->get_slug(),
-			'identifier' => $identity->value,
-			'role'       => Roles::get_instance()->get_user_role( (int) $state->comment->user_id ),
+			'identifier' => $identifier,
+			// Derived from the masked $user_id so the role is masked too.
+			'role'       => Roles::get_instance()->get_user_role( $user_id ),
 			'comment_id' => (int) $state->comment->comment_ID,
 			'post_id'    => (int) $state->comment->comment_post_ID,
 			'user_id'    => $user_id,
@@ -74,5 +98,16 @@ final class Serializer {
 		}
 
 		return $data;
+	}
+
+	/**
+	 * Get a default avatar URL that carries no identifying email hash.
+	 *
+	 * @since 0.35.1
+	 *
+	 * @return string The default avatar URL, or an empty string if avatars are unavailable.
+	 */
+	private static function anonymous_avatar_url(): string {
+		return (string) get_avatar_url( '', array( 'force_default' => true ) );
 	}
 }

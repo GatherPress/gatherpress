@@ -34,7 +34,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-geocoding.php:233](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-geocoding.php#L233)
+- [includes/core/classes/class-geocoding.php:247](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-geocoding.php#L247)
 ```php
 apply_filters( 'gatherpress_geocode_on_save_enabled', true, $post_id )
 ```

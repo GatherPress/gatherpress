@@ -30,6 +30,20 @@ use WP_REST_Server;
  * Provides REST API endpoints for geocoding and address search.
  *
  * @since 0.34.0
+ *
+ * @phpstan-type GeocodeResult array{
+ *     latitude: string,
+ *     longitude: string,
+ *     error: string|null,
+ *     house_number: string,
+ *     street: string,
+ *     city: string,
+ *     county: string,
+ *     state: string,
+ *     postcode: string,
+ *     country: string,
+ *     country_code: string
+ * }
  */
 final class Geocoding {
 
@@ -398,9 +412,9 @@ final class Geocoding {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $settings The block editor settings array.
+	 * @param array<string, mixed> $settings The block editor settings array.
 	 *
-	 * @return array The modified settings.
+	 * @return array<string, mixed> The modified settings.
 	 */
 	public function add_editor_settings( array $settings ): array {
 		if ( ! isset( $settings['gatherpress'] ) ) {
@@ -582,6 +596,7 @@ final class Geocoding {
 	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request The REST request object.
+	 * @phpstan-param WP_REST_Request<array{address: string}> $request
 	 *
 	 * @return WP_REST_Response|WP_Error Response with coordinates or error.
 	 */
@@ -635,19 +650,7 @@ final class Geocoding {
 	 *
 	 * @param string $address Address string to resolve.
 	 *
-	 * @return array{
-	 *     latitude: string,
-	 *     longitude: string,
-	 *     error: string|null,
-	 *     house_number: string,
-	 *     street: string,
-	 *     city: string,
-	 *     county: string,
-	 *     state: string,
-	 *     postcode: string,
-	 *     country: string,
-	 *     country_code: string
-	 * }|WP_Error Result payload, or WP_Error on Photon HTTP failure.
+	 * @return GeocodeResult|WP_Error Result payload, or WP_Error on Photon HTTP failure.
 	 */
 	public function geocode_to_result( string $address ): array|WP_Error {
 		// Cap oversize input for parity with search_addresses(); protects
@@ -752,7 +755,7 @@ final class Geocoding {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array Result payload with empty fields and an error message.
+	 * @return GeocodeResult Result payload with empty fields and an error message.
 	 */
 	private function build_not_found_payload(): array {
 		return array_merge(
@@ -773,6 +776,7 @@ final class Geocoding {
 	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request The REST request object.
+	 * @phpstan-param WP_REST_Request<array{q: string}> $request
 	 *
 	 * @return WP_REST_Response|WP_Error Suggestions or error.
 	 */
@@ -964,7 +968,7 @@ final class Geocoding {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $properties Photon `properties` object.
+	 * @param array<string, mixed> $properties Photon `properties` object.
 	 *
 	 * @return array{
 	 *     house_number: string,
@@ -1019,7 +1023,7 @@ final class Geocoding {
 	 *               `gatherpress_geocode_street_line` filter was replaced
 	 *               by `gatherpress_formatted_address`.
 	 *
-	 * @param array $properties Photon `properties` object.
+	 * @param array<string, mixed> $properties Photon `properties` object.
 	 *
 	 * @return string Non-empty label or empty string.
 	 */

@@ -602,8 +602,8 @@ final class Prewarm {
 			'height'       => isset( $attrs['height'] )
 				? (int) $attrs['height']
 				: Map::DEFAULT_HEIGHT,
-			'aspect_ratio' => isset( $attrs['aspectRatio'] )
-				? (string) $attrs['aspectRatio']
+			'aspect_ratio' => is_string( $attrs['aspectRatio'] ?? null )
+				? $attrs['aspectRatio']
 				: Map::DEFAULT_ASPECT_RATIO,
 		);
 	}
