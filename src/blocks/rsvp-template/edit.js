@@ -59,6 +59,23 @@ const RsvpTemplatePreview = ( {
 		setActiveRsvpId( commentId );
 	};
 
+	const handleKeyDown = ( event ) => {
+		if ( 'Enter' === event.key ) {
+			event.preventDefault();
+			handleOnClick();
+		} else if ( ' ' === event.key ) {
+			// Prevent scroll on Space; activation fires on keyup per button semantics.
+			event.preventDefault();
+		}
+	};
+
+	const handleKeyUp = ( event ) => {
+		if ( ' ' === event.key ) {
+			event.preventDefault();
+			handleOnClick();
+		}
+	};
+
 	// We have to hide the preview block if the `comment` props points to
 	// the currently active block!
 
@@ -76,7 +93,8 @@ const RsvpTemplatePreview = ( {
 			style={ style }
 			// eslint-disable-next-line jsx-a11y/no-noninteractive-element-to-interactive-role
 			onClick={ handleOnClick }
-			onKeyUp={ handleOnClick }
+			onKeyDown={ handleKeyDown }
+			onKeyUp={ handleKeyUp }
 		/>
 	);
 };
