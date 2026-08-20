@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
  */
 import { __ } from '@wordpress/i18n';
 import { RichText } from '@wordpress/block-editor';
+import { useInstanceId } from '@wordpress/compose';
 /**
  * Internal dependencies
  */
@@ -46,7 +47,15 @@ export default function RadioField( {
 		requiredText,
 		requiredTextColor,
 		radioOptions = [ { label: '', value: '', id: uuidv4() } ],
+		helpText,
 	} = attributes;
+
+	// Mirrors the frontend template, where the fieldset points
+	// aria-describedby at the help text's id.
+	const helpTextId = useInstanceId(
+		RadioField,
+		'gatherpress-radio-help-text',
+	);
 
 	// Handle label blur to auto-generate field name.
 	const handleLabelBlur = ( labelValue ) => {
@@ -175,72 +184,99 @@ export default function RadioField( {
 			{ ...blockProps }
 			className={ getWrapperClasses( fieldType, blockProps ) }
 		>
-			<div
-				className="gatherpress-label-wrapper"
-				style={ getLabelWrapperStyles( attributes ) }
+			{ /* Mirrors the frontend template: a real fieldset with the
+			legend as its first child names the radio group, and the
+			label wrapper moves inside the legend. */ }
+			<fieldset
+				className="gatherpress-fieldset"
+				aria-describedby={ helpText ? helpTextId : undefined }
 			>
-				<RichText
-					tagName="legend"
-					placeholder={ __( 'Radio group title…', 'gatherpress' ) }
-					value={ label }
-					onChange={ ( value ) => setAttributes( { label: value } ) }
-					onBlur={ () => handleLabelBlur( label ) }
-					allowedFormats={ [ 'gatherpress/tooltip' ] }
-					style={ getLabelStyles( attributes ) }
-				/>
-				{ required && (
-					<RichText
-						tagName="span"
-						className="gatherpress-label-required"
-						placeholder={ __( '(required)', 'gatherpress' ) }
-						value={ requiredText }
-						onChange={ ( value ) =>
-							setAttributes( { requiredText: value } )
-						}
-						allowedFormats={ [ 'gatherpress/tooltip' ] }
-						style={ {
-							...( requiredTextColor && {
-								color: requiredTextColor,
-							} ),
-						} }
-					/>
-				) }
-			</div>
-
-			<div
-				className="gatherpress-radio-group"
-				style={ getLabelWrapperStyles( attributes ) }
-			>
-				{ radioOptions.map( ( option, index ) => (
-					<div key={ option.id } className="gatherpress-radio-option">
-						<input
-							style={ getInputStyles( fieldType, attributes ) }
-							type="radio"
-							name={ fieldName }
-							value={ option.value }
-							checked={
-								fieldValue === option.value &&
-								'' !== option.value
-							}
-							disabled={ true }
-							tabIndex={ -1 }
-							autoComplete="off"
-						/>
+				<legend style={ getLabelStyles( attributes ) }>
+					<span
+						className="gatherpress-label-wrapper"
+						style={ getLabelWrapperStyles( attributes ) }
+					>
 						<RichText
-							tagName="label"
-							placeholder={ __( 'Option label…', 'gatherpress' ) }
-							value={ option.label }
+							tagName="span"
+							placeholder={ __(
+								'Radio group title…',
+								'gatherpress',
+							) }
+							value={ label }
 							onChange={ ( value ) =>
-								updateRadioOption( index, 'label', value )
+								setAttributes( { label: value } )
 							}
-							onKeyDown={ ( event ) => handleKeyDown( event, index ) }
+							onBlur={ () => handleLabelBlur( label ) }
 							allowedFormats={ [ 'gatherpress/tooltip' ] }
-							identifier={ `radio-option-${ index }` }
-							style={ getOptionStyles( attributes ) }
 						/>
-					</div>
-				) ) }
-			</div>
+						{ required && (
+							<RichText
+								tagName="span"
+								className="gatherpress-label-required"
+								placeholder={ __( '(required)', 'gatherpress' ) }
+								value={ requiredText }
+								onChange={ ( value ) =>
+									setAttributes( { requiredText: value } )
+								}
+								allowedFormats={ [ 'gatherpress/tooltip' ] }
+								style={ {
+									...( requiredTextColor && {
+										color: requiredTextColor,
+									} ),
+								} }
+							/>
+						) }
+					</span>
+				</legend>
+
+				<div
+					className="gatherpress-radio-group"
+					style={ getLabelWrapperStyles( attributes ) }
+				>
+					{ radioOptions.map( ( option, index ) => (
+						<div
+							key={ option.id }
+							className="gatherpress-radio-option"
+						>
+							<input
+								style={ getInputStyles( fieldType, attributes ) }
+								type="radio"
+								name={ fieldName }
+								value={ option.value }
+								checked={
+									fieldValue === option.value &&
+									'' !== option.value
+								}
+								disabled={ true }
+								tabIndex={ -1 }
+								autoComplete="off"
+							/>
+							<RichText
+								tagName="label"
+								placeholder={ __(
+									'Option label…',
+									'gatherpress',
+								) }
+								value={ option.label }
+								onChange={ ( value ) =>
+									updateRadioOption( index, 'label', value )
+								}
+								onKeyDown={ ( event ) =>
+									handleKeyDown( event, index )
+								}
+								allowedFormats={ [ 'gatherpress/tooltip' ] }
+								identifier={ `radio-option-${ index }` }
+								style={ getOptionStyles( attributes ) }
+							/>
+						</div>
+					) ) }
+				</div>
+				{ helpText && (
+					<p className="gatherpress-help-text" id={ helpTextId }>
+						{ helpText }
+					</p>
+				) }
+			</fieldset>
 		</div>
 	);
 }

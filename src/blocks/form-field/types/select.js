@@ -53,6 +53,7 @@ export default function SelectField( {
 		required,
 		requiredText,
 		requiredTextColor,
+		helpText,
 		radioOptions = [ { label: '', value: '', id: uuidv4() } ],
 	} = attributes;
 
@@ -292,6 +293,9 @@ export default function SelectField( {
 						</option>
 					) ) }
 				</select>
+			) }
+			{ helpText && (
+				<p className="gatherpress-help-text">{ helpText }</p>
 			) }
 		</div>
 	);

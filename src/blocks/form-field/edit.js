@@ -47,6 +47,7 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 		required,
 		prefillCurrentUser,
 		autocomplete,
+		helpText,
 	} = attributes;
 
 	// Handle data attributes for conditional rendering.
@@ -77,6 +78,11 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 	/**
 	 * Get the default autocomplete value based on field type.
 	 *
+	 * Types without an unambiguous token return the empty string — the
+	 * attribute's default — which the server resolves at render time
+	 * (see Form_Field::resolve_autocomplete()). An empty value is "infer
+	 * from the field type"; any stored token is an author choice.
+	 *
 	 * @param {string} value - The field type.
 	 *
 	 * @return {string} The default autocomplete value.
@@ -90,7 +96,7 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 			case 'tel':
 				return 'tel';
 			default:
-				return 'on';
+				return '';
 		}
 	};
 
@@ -219,6 +225,20 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 							'gatherpress',
 						) }
 					/>
+
+					{ 'hidden' !== fieldType && (
+						<TextControl
+							label={ __( 'Help Text', 'gatherpress' ) }
+							value={ helpText }
+							onChange={ ( value ) =>
+								setAttributes( { helpText: value } )
+							}
+							help={ __(
+								'Optional description shown below the field and announced by screen readers.',
+								'gatherpress',
+							) }
+						/>
+					) }
 
 					{ 'hidden' !== fieldType && (
 						<ToggleControl
@@ -359,7 +379,7 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 							help={
 								<>
 									{ __(
-										'Controls browser autocomplete behavior. Use "on", "off", or specific values like "email", "name", etc.',
+										'Controls browser autocomplete behavior. Leave empty to infer from the field type, or enter "on", "off", or specific values like "email", "name", etc.',
 										'gatherpress',
 									) }
 									<br />

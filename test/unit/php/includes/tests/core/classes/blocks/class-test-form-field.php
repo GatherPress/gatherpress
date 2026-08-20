@@ -572,6 +572,116 @@ class Test_Form_Field extends Base {
 	}
 
 	/**
+	 * Tests autocomplete token inference from the field type.
+	 *
+	 * Empty or absent means "infer": email/url/tel derive their specific
+	 * token and other types fall back to the generic `on`. Any stored
+	 * token — including `on`, which the editor control offers — is an
+	 * author choice and wins over inference.
+	 *
+	 * @since 0.36.0
+	 * @covers ::resolve_autocomplete
+	 * @covers ::get_input_attributes
+	 *
+	 * @return void
+	 */
+	public function test_resolve_autocomplete_infers_token_from_field_type(): void {
+		$email_field = new Form_Field( array( 'fieldType' => 'email' ) );
+		$this->assertStringContainsString(
+			'autocomplete="email"',
+			$email_field->get_input_attributes(),
+			'Failed to assert email fields infer the email token.'
+		);
+
+		$url_field = new Form_Field( array( 'fieldType' => 'url' ) );
+		$this->assertStringContainsString(
+			'autocomplete="url"',
+			$url_field->get_input_attributes(),
+			'Failed to assert url fields infer the url token.'
+		);
+
+		$tel_field = new Form_Field( array( 'fieldType' => 'tel' ) );
+		$this->assertStringContainsString(
+			'autocomplete="tel"',
+			$tel_field->get_input_attributes(),
+			'Failed to assert tel fields infer the tel token.'
+		);
+
+		$stored_on = new Form_Field(
+			array(
+				'fieldType'    => 'tel',
+				'autocomplete' => 'on',
+			)
+		);
+		$this->assertStringContainsString(
+			'autocomplete="on"',
+			$stored_on->get_input_attributes(),
+			'Failed to assert a stored "on" is an explicit author choice and wins over inference.'
+		);
+
+		$explicit = new Form_Field(
+			array(
+				'fieldType'    => 'text',
+				'autocomplete' => 'name',
+			)
+		);
+		$this->assertStringContainsString(
+			'autocomplete="name"',
+			$explicit->get_input_attributes(),
+			'Failed to assert an explicit token wins over inference.'
+		);
+
+		$text_field = new Form_Field( array( 'fieldType' => 'text' ) );
+		$this->assertStringContainsString(
+			'autocomplete="on"',
+			$text_field->get_input_attributes(),
+			'Failed to assert types without an unambiguous token keep "on".'
+		);
+	}
+
+	/**
+	 * Tests the aria-describedby association for rendered help text.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_input_attributes
+	 *
+	 * @return void
+	 */
+	public function test_get_input_attributes_help_text_describedby(): void {
+		$with_help  = new Form_Field(
+			array(
+				'fieldType' => 'text',
+				'helpText'  => 'Shown on your badge.',
+			)
+		);
+		$attributes = $with_help->get_input_attributes();
+		$this->assertMatchesRegularExpression(
+			'/aria-describedby="gatherpress_\d+-help"/',
+			$attributes,
+			'Failed to assert help text wires aria-describedby to the help element id.'
+		);
+
+		$without_help = new Form_Field( array( 'fieldType' => 'text' ) );
+		$this->assertStringNotContainsString(
+			'aria-describedby',
+			$without_help->get_input_attributes(),
+			'Failed to assert fields without help text carry no dangling reference.'
+		);
+
+		$radio_with_help = new Form_Field(
+			array(
+				'fieldType' => 'radio',
+				'helpText'  => 'Choose one option.',
+			)
+		);
+		$this->assertStringNotContainsString(
+			'aria-describedby',
+			$radio_with_help->get_input_attributes(),
+			'Failed to assert radio inputs leave the association to the fieldset.'
+		);
+	}
+
+	/**
 	 * Tests get_input_attributes for select field.
 	 *
 	 * @since 0.36.0
