@@ -278,6 +278,7 @@ class Test_Event extends Base {
 	 * A post that is not an event has nothing to attach datetimes to, so the
 	 * save reports failure and writes no meta.
 	 *
+	 * @since 0.36.0
 	 * @covers ::save_datetimes
 	 *
 	 * @return void
@@ -627,6 +628,7 @@ class Test_Event extends Base {
 	 * A post that is not an event has no venue to report, and must not fall
 	 * through to the venue of whatever post is globally queried.
 	 *
+	 * @since 0.36.0
 	 * @covers ::get_venue_information
 	 *
 	 * @return void
@@ -1032,6 +1034,7 @@ class Test_Event extends Base {
 	 * A post that is not an event never surfaces an online event link, even
 	 * when the meta happens to be present on the post.
 	 *
+	 * @since 0.36.0
 	 * @covers ::maybe_get_online_event_link
 	 *
 	 * @return void
@@ -1241,6 +1244,7 @@ class Test_Event extends Base {
 	 * at all, bailing before the format filter rather than falling back to the
 	 * epoch.
 	 *
+	 * @since 0.36.0
 	 * @covers ::get_formatted_datetime
 	 *
 	 * @return void
@@ -1338,6 +1342,7 @@ class Test_Event extends Base {
 	 * client at, so the description is empty rather than pointing at whatever
 	 * post is globally queried.
 	 *
+	 * @since 0.36.0
 	 * @covers ::get_calendar_description
 	 *
 	 * @return void

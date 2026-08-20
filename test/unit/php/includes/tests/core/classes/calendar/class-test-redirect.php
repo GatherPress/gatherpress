@@ -129,6 +129,7 @@ class Test_Redirect extends Base {
 	 * A relative or malformed target has no host for wp_parse_url() to report,
 	 * so allowed_redirect_hosts hands the list back untouched.
 	 *
+	 * @since 0.36.0
 	 * @covers ::allowed_redirect_hosts
 	 *
 	 * @return void

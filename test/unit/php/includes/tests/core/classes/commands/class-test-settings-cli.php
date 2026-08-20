@@ -450,6 +450,7 @@ class Test_Settings_Cli extends Base {
 	/**
 	 * Coverage for export with a valueless --file flag.
 	 *
+	 * @since 0.36.0
 	 * @covers ::export
 	 *
 	 * @return void
@@ -478,6 +479,7 @@ class Test_Settings_Cli extends Base {
 	/**
 	 * Coverage for import with an unreadable file.
 	 *
+	 * @since 0.36.0
 	 * @covers ::import
 	 *
 	 * @return void

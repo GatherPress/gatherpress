@@ -1268,6 +1268,7 @@ class Test_Token extends Base {
 	/**
 	 * Coverage for save_token_to_meta with no comment.
 	 *
+	 * @since 0.36.0
 	 * @covers ::save_token_to_meta
 	 *
 	 * @return void

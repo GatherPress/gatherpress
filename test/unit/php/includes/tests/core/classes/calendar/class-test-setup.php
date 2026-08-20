@@ -937,6 +937,7 @@ class Test_Setup extends Base {
 	 * archive feed to advertise, so it is skipped instead of emitting an entry
 	 * with a false url.
 	 *
+	 * @since 0.36.0
 	 * @covers ::collect_post_type_archive_alternate_links
 	 *
 	 * @return void
@@ -1200,6 +1201,7 @@ class Test_Setup extends Base {
 	 * A term that can no longer be resolved has no feed link, so the tax
 	 * archive collector emits nothing rather than an entry with a false url.
 	 *
+	 * @since 0.36.0
 	 * @covers ::collect_tax_archive_alternate_links
 	 *
 	 * @return void
@@ -1264,6 +1266,7 @@ class Test_Setup extends Base {
 	 * A `get_terms()` error carries no terms to walk, so the collector emits
 	 * nothing rather than iterating the WP_Error object.
 	 *
+	 * @since 0.36.0
 	 * @covers ::collect_event_term_alternate_links
 	 *
 	 * @return void

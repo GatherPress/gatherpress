@@ -675,6 +675,7 @@ class Test_OSM extends Base {
 	 * A canvas needs at least one pixel on each axis, so a zero or negative
 	 * dimension is unrenderable and comes back as null before GD is touched.
 	 *
+	 * @since 0.36.0
 	 * @covers ::render
 	 *
 	 * @return void

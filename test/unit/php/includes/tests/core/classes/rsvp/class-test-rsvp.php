@@ -1400,6 +1400,7 @@ class Test_Rsvp extends Base {
 	 * An identity that no registered provider handles records nothing and hands
 	 * back the default save response.
 	 *
+	 * @since 0.36.0
 	 * @covers ::save
 	 *
 	 * @return void

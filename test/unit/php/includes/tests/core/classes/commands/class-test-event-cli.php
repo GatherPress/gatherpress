@@ -52,6 +52,7 @@ class Test_Event_Cli extends Base {
 	/**
 	 * Coverage for rsvp against a post type without RSVP support.
 	 *
+	 * @since 0.36.0
 	 * @covers ::rsvp
 	 *
 	 * @return void

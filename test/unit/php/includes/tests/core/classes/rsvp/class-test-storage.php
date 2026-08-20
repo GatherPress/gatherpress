@@ -566,6 +566,7 @@ class Test_Storage extends Base {
 	 * A comment that was deleted between the lookup that produced its ID and
 	 * the save reports false instead of updating a row that is no longer there.
 	 *
+	 * @since 0.36.0
 	 * @covers ::save
 	 *
 	 * @return void
@@ -588,6 +589,7 @@ class Test_Storage extends Base {
 	 * the term hook that fires between the update and the read-back — reports a
 	 * failed save rather than a successful one.
 	 *
+	 * @since 0.36.0
 	 * @covers ::save
 	 *
 	 * @return void

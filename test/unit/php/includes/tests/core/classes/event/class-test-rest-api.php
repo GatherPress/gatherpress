@@ -1400,6 +1400,7 @@ class Test_Rest_Api extends Base {
 	/**
 	 * Test get_recipients skips rows the RSVP query returns that are not comments.
 	 *
+	 * @since 0.36.0
 	 * @covers ::get_recipients
 	 *
 	 * @return void

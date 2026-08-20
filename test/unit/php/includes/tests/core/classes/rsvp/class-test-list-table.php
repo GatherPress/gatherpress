@@ -2005,6 +2005,7 @@ class Test_List_Table extends Base {
 	 * A screen passed to the constructor is the one the table binds its column
 	 * hooks to, instead of whatever screen the request is currently on.
 	 *
+	 * @since 0.36.0
 	 * @covers ::__construct
 	 *
 	 * @return void
@@ -2029,6 +2030,7 @@ class Test_List_Table extends Base {
 	 * A stored per-page preference that is not a positive integer would divide
 	 * the total by a non-positive number, so it falls back to the default.
 	 *
+	 * @since 0.36.0
 	 * @covers ::prepare_items
 	 *
 	 * @return void
@@ -2052,6 +2054,7 @@ class Test_List_Table extends Base {
 	 * An RSVP row outlives the post it points at, so a deleted event renders the
 	 * stored title as text, or a dash when nothing is left of it.
 	 *
+	 * @since 0.36.0
 	 * @covers ::column_default
 	 *
 	 * @return void
@@ -2082,6 +2085,7 @@ class Test_List_Table extends Base {
 	 * Core stores comment statuses this table has no label for, and a row can
 	 * arrive without the field at all; both render a dash.
 	 *
+	 * @since 0.36.0
 	 * @covers ::column_default
 	 *
 	 * @return void

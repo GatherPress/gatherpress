@@ -709,6 +709,7 @@ class Test_Rsvp_Template extends Base {
 	/**
 	 * Tests generate_rsvp_template_block with block data JSON cannot represent.
 	 *
+	 * @since 0.36.0
 	 * @covers ::generate_rsvp_template_block
 	 * @return void
 	 */
