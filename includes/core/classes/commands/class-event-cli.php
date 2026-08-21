@@ -14,7 +14,7 @@ namespace GatherPress\Core\Commands;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp;
 use WP_CLI;
 
 /**

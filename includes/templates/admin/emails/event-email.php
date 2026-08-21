@@ -15,7 +15,7 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue;
 
