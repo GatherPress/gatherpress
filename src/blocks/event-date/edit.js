@@ -245,8 +245,14 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const finalDateTimeEnd = dateTimeEnd || fallbackDateTime.clone().add( 1, 'hour' ).format();
 	const finalTimezone = timezone || getTimezone();
 
-	const showStartTime = [ 'start', 'both' ].includes( displayType );
-	const showEndTime = [ 'end', 'both' ].includes( displayType );
+	// An empty displayType means both, matching `Event::get_display_datetime()`
+	// and render.php. block.json defaults the attribute to "both", so only
+	// hand-authored or migrated markup arrives empty, but normalizing it on
+	// both sides is what stops the editor and the frontend disagreeing about
+	// what such a block shows.
+	const effectiveDisplayType = displayType || 'both';
+	const showStartTime = [ 'start', 'both' ].includes( effectiveDisplayType );
+	const showEndTime = [ 'end', 'both' ].includes( effectiveDisplayType );
 
 	const displayedDateTime = displayDateTime(
 		showStartTime ? finalDateTimeStart : null,
@@ -347,7 +353,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				>
 					<RadioControl
 						label={ __( 'Display', 'gatherpress' ) }
-						selected={ displayType }
+						selected={ effectiveDisplayType }
 						options={ [
 							{
 								label: __(
@@ -369,7 +375,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 							setAttributes( { displayType: value } )
 						}
 					/>
-					{ 'both' === displayType && (
+					{ 'both' === effectiveDisplayType && (
 						<TextControl
 							label={ __( 'Separator', 'gatherpress' ) }
 							value={ separator }

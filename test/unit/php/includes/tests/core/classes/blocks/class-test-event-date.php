@@ -422,7 +422,7 @@ class Test_Event_Date extends Base {
 			'The start-only sentence is translated server-side too.'
 		);
 		$this->assertMatchesRegularExpression(
-			'/<span class="gatherpress-event-date__viewer-time"[^>]*\shidden\s*>/',
+			'/<span\s[^>]*class="gatherpress-event-date__viewer-time"[^>]*\shidden\s*>/',
 			$output,
 			'The placeholder should start hidden so no-JS readers see no empty note.'
 		);
@@ -460,14 +460,17 @@ class Test_Event_Date extends Base {
 	}
 
 	/**
-	 * A block showing only the end has no start to convert, so it emits no
-	 * placeholder at all. This is what the editor previews.
+	 * A block showing only the end converts that end.
+	 *
+	 * The end is the only time such a block displays, so it is the one the
+	 * reader needs converting. Mirrors get_display_datetime(), which shows the
+	 * end alone for this display type rather than showing nothing.
 	 *
 	 * @since 0.36.0
 	 *
 	 * @return void
 	 */
-	public function test_render_omits_viewer_time_when_display_type_is_end(): void {
+	public function test_render_viewer_time_converts_end_when_display_type_is_end(): void {
 		$output = $this->render_viewer_time_block(
 			'Viewer Time End Only Unit Test Event',
 			array(
@@ -476,10 +479,23 @@ class Test_Event_Date extends Base {
 			)
 		);
 
-		$this->assertStringNotContainsString(
+		$this->assertStringContainsString(
 			'gatherpress-event-date__viewer-time',
 			$output,
-			'The viewer time placeholder should be absent when the start is not displayed.'
+			'The viewer time placeholder should be rendered for an end-only block.'
+		);
+
+		$context = $this->get_viewer_time_context( $output );
+
+		$this->assertSame(
+			'',
+			$context['startGmt'] ?? null,
+			'The placeholder should carry no start when the block does not display one.'
+		);
+		$this->assertSame(
+			'2030-06-16 00:00:00',
+			$context['endGmt'] ?? null,
+			'The placeholder should carry the GMT end for the browser to convert.'
 		);
 	}
 

@@ -44,22 +44,27 @@ $gatherpress_viewer_time_context = '';
 
 if ( ! empty( $attributes['showViewerTime'] ) ) {
 	// Mirrors get_display_datetime(): the local-time line covers the same parts
-	// of the range the block itself displays, so the two cannot disagree.
-	$gatherpress_display_type = $attributes['displayType'] ?? '';
-	$gatherpress_show_start   = $gatherpress_display_type
-		? in_array( $gatherpress_display_type, array( 'start', 'both' ), true )
-		: true;
-	$gatherpress_show_end     = $gatherpress_display_type
-		? in_array( $gatherpress_display_type, array( 'end', 'both' ), true )
-		: true;
+	// of the range the block itself displays, so the two cannot disagree. An
+	// empty display type reads as both there, and edit.js normalizes it the
+	// same way, so the editor preview and this agree on that input too.
+	$gatherpress_display_type = ! empty( $attributes['displayType'] )
+		? $attributes['displayType']
+		: 'both';
+	$gatherpress_show_start   = in_array( $gatherpress_display_type, array( 'start', 'both' ), true );
+	$gatherpress_show_end     = in_array( $gatherpress_display_type, array( 'end', 'both' ), true );
 
-	$gatherpress_datetime = $gatherpress_event->get_datetime();
+	$gatherpress_datetime  = $gatherpress_event->get_datetime();
+	$gatherpress_start_gmt = $gatherpress_show_start ? ( $gatherpress_datetime['datetime_start_gmt'] ?? '' ) : '';
+	$gatherpress_end_gmt   = $gatherpress_show_end ? ( $gatherpress_datetime['datetime_end_gmt'] ?? '' ) : '';
 
-	if ( $gatherpress_show_start && ! empty( $gatherpress_datetime['datetime_start_gmt'] ) ) {
+	// An end-only block converts its end: that is the only time it displays, so
+	// it is the one the reader needs converting, and get_display_datetime()
+	// shows the end alone there rather than showing nothing.
+	if ( $gatherpress_start_gmt || $gatherpress_end_gmt ) {
 		$gatherpress_viewer_time_context = wp_json_encode(
 			array(
-				'startGmt'      => $gatherpress_datetime['datetime_start_gmt'],
-				'endGmt'        => $gatherpress_show_end ? ( $gatherpress_datetime['datetime_end_gmt'] ?? '' ) : '',
+				'startGmt'      => $gatherpress_start_gmt,
+				'endGmt'        => $gatherpress_end_gmt,
 				'eventTimezone' => $gatherpress_datetime['timezone'] ?? '',
 				// The view script is a module and cannot import `@wordpress/i18n`,
 				// so the sentence it fills in is translated here instead.
@@ -77,6 +82,14 @@ if ( ! empty( $attributes['showViewerTime'] ) ) {
 	<?php echo wp_kses( $gatherpress_display, array( 'a' => array( 'href' => true ) ) ); ?>
 	<?php if ( $gatherpress_viewer_time_context ) : ?>
 		<?php // The `hidden` attribute is the no-JS state; the binding drops it once the browser has a label to show. ?>
-		<span class="gatherpress-event-date__viewer-time" data-wp-interactive="gatherpress" data-wp-context='<?php echo $gatherpress_viewer_time_context; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>' data-wp-text="state.viewerTimeLabel" data-wp-bind--hidden="!state.viewerTimeLabel" hidden></span>
+		<span
+			class="gatherpress-event-date__viewer-time"
+			data-wp-interactive="gatherpress"
+			<?php // Already JSON-encoded with the HTML-escaping flags above; esc_attr() here would double-encode it. ?>
+			data-wp-context='<?php echo $gatherpress_viewer_time_context; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>'
+			data-wp-text="state.viewerTimeLabel"
+			data-wp-bind--hidden="!state.viewerTimeLabel"
+			hidden
+		></span>
 	<?php endif; ?>
 </div>
