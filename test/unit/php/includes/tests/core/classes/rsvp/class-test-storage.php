@@ -17,7 +17,7 @@ use GatherPress\Core\Rsvp\Response\Provider\Email;
 use GatherPress\Core\Rsvp\Response\Provider\User;
 use GatherPress\Core\Rsvp\Response\State;
 use GatherPress\Core\Rsvp\Response\Status;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Storage;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;

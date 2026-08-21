@@ -9,7 +9,7 @@
 namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Shadow_Source;
-use GatherPress\Core\Venue\Venue;
+use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use WP_Post;
 

@@ -18,7 +18,7 @@ namespace GatherPress\Core\Venue\Map;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Venue\Venue;
+use GatherPress\Core\Venue;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
