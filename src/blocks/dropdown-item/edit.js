@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies
  */
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import {
 	useBlockProps,
 	RichText,
@@ -10,6 +10,14 @@ import {
 import { createBlock } from '@wordpress/blocks';
 import { PanelBody } from '@wordpress/components';
 import { dispatch, select } from '@wordpress/data';
+import { useEffect, useState } from '@wordpress/element';
+import apiFetch from '@wordpress/api-fetch';
+
+/**
+ * Internal dependencies
+ */
+import { EVENT_REST_API } from '../../helpers/namespace';
+import { getResolvedLabelPreview, getRsvpFilterKey } from './helpers';
 
 /**
  * Edit Component
@@ -19,12 +27,58 @@ import { dispatch, select } from '@wordpress/data';
  * @param {Function} props.setAttributes     Function to update attributes.
  * @param {string}   props.clientId          Unique ID of the block.
  * @param {Function} props.insertBlocksAfter Function to insert blocks after this block.
+ * @param {Object}   props.context           Block context data.
  *
  * @return {JSX.Element} The rendered edit component.
  */
-const Edit = ( { attributes, setAttributes, clientId, insertBlocksAfter } ) => {
+const Edit = ( {
+	attributes,
+	setAttributes,
+	clientId,
+	insertBlocksAfter,
+	context,
+} ) => {
 	const { text } = attributes;
 	const blockProps = useBlockProps();
+
+	// The RSVP Response filter seeds its labels with a `%d` placeholder that is
+	// only substituted on the front end, so the editor shows the raw token. Keep
+	// the token in the content and surface what it resolves to instead.
+	const rsvpFilterKey = getRsvpFilterKey( attributes.className );
+	const postId = context?.postId ?? null;
+	const [ rsvpCounts, setRsvpCounts ] = useState( null );
+
+	useEffect( () => {
+		if ( ! rsvpFilterKey || ! postId ) {
+			setRsvpCounts( null );
+			return;
+		}
+
+		let ignore = false;
+
+		apiFetch( {
+			path: `${ EVENT_REST_API }/rsvp-responses?post_id=${ postId }`,
+		} )
+			.then( ( response ) => {
+				if ( ! ignore ) {
+					setRsvpCounts( response.data );
+				}
+			} )
+			.catch( () => {
+				if ( ! ignore ) {
+					setRsvpCounts( null );
+				}
+			} );
+
+		return () => {
+			ignore = true;
+		};
+	}, [ rsvpFilterKey, postId ] );
+
+	const rsvpCount = rsvpCounts?.[ rsvpFilterKey ]?.count ?? 0;
+	const resolvedLabel = rsvpFilterKey
+		? getResolvedLabelPreview( text, rsvpCount )
+		: null;
 
 	return (
 		<>
@@ -36,6 +90,22 @@ const Edit = ( { attributes, setAttributes, clientId, insertBlocksAfter } ) => {
 							'gatherpress',
 						) }
 					</p>
+					{ resolvedLabel && (
+						<p>
+							{
+								// translators: %d is the placeholder text to be used in the label.
+								__(
+									'Use %d as a placeholder for the response count.',
+									'gatherpress',
+								)
+							}{ ' ' }
+							{ sprintf(
+								// translators: %s is the label as visitors see it, with the count substituted.
+								__( 'Visitors see “%s”.', 'gatherpress' ),
+								resolvedLabel,
+							) }
+						</p>
+					) }
 				</PanelBody>
 			</InspectorControls>
 			<RichText
