@@ -5,7 +5,9 @@
 
 .gatherpress-event-date__viewer-time {
 	// Reads as a secondary note next to the event's own time rather than a
-	// second competing timestamp.
+	// second competing timestamp. Sized down rather than faded: the span
+	// inherits the theme's text colour, and dimming it would drop text the
+	// theme picked for AA contrast below the 4.5:1 floor (WCAG 1.4.3).
 	margin-inline-start: 0.5em;
-	opacity: 0.75;
+	font-size: 90%;
 }
