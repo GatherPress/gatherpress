@@ -72,12 +72,18 @@ switch ( $gatherpress_field_type ) {
 
 		$gatherpress_target_attr = '_blank' === $gatherpress_link_target ? ' target="_blank" rel="noopener noreferrer"' : '';
 
+		// Warn screen-reader users before the context change of a new tab.
+		$gatherpress_sr_text = '_blank' === $gatherpress_link_target
+			? sprintf( '<span class="screen-reader-text"> %s</span>', esc_html__( '(opens in a new tab)', 'gatherpress' ) )
+			: '';
+
 		printf(
-			'<div %s><a class="gatherpress-venue-detail__url" href="%s"%s>%s</a></div>',
+			'<div %s><a class="gatherpress-venue-detail__url" href="%s"%s>%s%s</a></div>',
 			$gatherpress_wrapper_attributes, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			esc_url( $gatherpress_value ),
 			$gatherpress_target_attr, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-			esc_html( $gatherpress_display_url )
+			esc_html( $gatherpress_display_url ),
+			$gatherpress_sr_text // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built with esc_html__() above.
 		);
 		break;
 

@@ -52,6 +52,15 @@ const { state } = store( 'gatherpress', {
 			const onlineEventLink = state.posts[ postId ]?.onlineEventLink || '';
 			const hasLink = '' !== onlineEventLink;
 
+			// Drop our own "opens in a new tab" warning carried over from a
+			// previous link render. Keeping it through a swap would announce
+			// the warning on plain text, and duplicate it once a link comes
+			// back. A dedicated marker class is used so tooltip or
+			// admin-list screen-reader spans are never touched.
+			currentElement
+				.querySelector( '.gatherpress-new-tab-notice' )
+				?.remove();
+
 			// Preserve the current inner HTML (including tooltip markup)
 			// when we swap the wrapper between <a> and <span>. The HTML
 			// originates from PHP `render.php`, which escapes properly,
@@ -68,15 +77,37 @@ const { state } = store( 'gatherpress', {
 				linkElement.href = onlineEventLink;
 				linkElement.target = '_blank';
 				linkElement.rel = 'noopener noreferrer';
-				linkElement.innerHTML = currentHTML;
+				// Mirror the server-rendered markup in render.php: the
+				// screen-reader warning must survive the client-side swap.
+				// The string travels in the context payload because script
+				// modules cannot import @wordpress/i18n.
+				linkElement.innerHTML =
+					currentHTML +
+					`<span class="screen-reader-text gatherpress-new-tab-notice"> ${ context?.newTabWarning ?? '' }</span>`;
 				currentElement.replaceWith( linkElement );
 			} else if ( ! hasLink && isLink ) {
 				const spanElement = document.createElement( 'span' );
 				spanElement.className = 'gatherpress-online-event__text';
 				spanElement.innerHTML = currentHTML;
 				currentElement.replaceWith( spanElement );
-			} else if ( hasLink && isLink && currentElement.href !== onlineEventLink ) {
-				currentElement.href = onlineEventLink;
+			} else if ( hasLink && isLink ) {
+				// Preserve the warning when the reactive anchor stays an
+				// anchor but the href changes; without it the next
+				// href-only update would leave the link mute for screen
+				// readers.
+				const hadWarning =
+					!! currentElement.querySelector( '.gatherpress-new-tab-notice' );
+
+				if ( currentElement.href !== onlineEventLink ) {
+					currentElement.href = onlineEventLink;
+				}
+
+				if ( ! hadWarning && context?.newTabWarning ) {
+					const sr = document.createElement( 'span' );
+					sr.className = 'screen-reader-text gatherpress-new-tab-notice';
+					sr.textContent = ' ' + context.newTabWarning;
+					currentElement.appendChild( sr );
+				}
 			}
 		},
 	},
