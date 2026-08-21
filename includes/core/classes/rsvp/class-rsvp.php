@@ -414,12 +414,14 @@ final class Rsvp {
 	/**
 	 * Determines whether RSVP is enabled for this event.
 	 *
-	 * Returns false immediately when the sitewide mode is `disabled`.
-	 * Returns true when the mode is `enabled` (every event has RSVP).
-	 * In per-event modes (`per_event_enabled` or `per_event_disabled`), the
-	 * `gatherpress_enable_rsvp` post meta is consulted. An unset meta
-	 * (empty string) falls back to the mode default: `per_event_enabled`
-	 * defaults to enabled, `per_event_disabled` defaults to disabled.
+	 * A post type that does not declare `gatherpress-rsvp` never has RSVP
+	 * enabled, whatever the mode or the meta say. Beyond that: false when the
+	 * sitewide mode is `disabled`, true when the mode is `enabled` (every event
+	 * has RSVP). In per-event modes (`per_event_enabled` or
+	 * `per_event_disabled`), the `gatherpress_enable_rsvp` post meta is
+	 * consulted. An unset meta (empty string) falls back to the mode default:
+	 * `per_event_enabled` defaults to enabled, `per_event_disabled` defaults
+	 * to disabled.
 	 *
 	 * @since 0.35.0
 	 *
@@ -429,7 +431,10 @@ final class Rsvp {
 		$post_id   = $this->post->ID ?? 0;
 		$rsvp_mode = Settings::get_instance()->get( 'rsvp_mode' );
 
-		if ( 'disabled' === $rsvp_mode ) {
+		if (
+			'disabled' === $rsvp_mode
+			|| ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' )
+		) {
 			return false;
 		}
 
