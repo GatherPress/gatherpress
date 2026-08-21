@@ -1,7 +1,7 @@
 /**
  * External dependencies
  */
-import { describe, expect, it, jest } from '@jest/globals';
+import { describe, expect, it } from '@jest/globals';
 
 /**
  * Internal dependencies
@@ -11,19 +11,6 @@ import {
 	getViewerTimeLabel,
 	getViewerTimezone,
 } from '@src/blocks/event-date/viewer-time';
-
-/**
- * Mock WordPress i18n so the assertions read against the untranslated formats.
- */
-jest.mock( '@wordpress/i18n', () => ( {
-	__: jest.fn( ( text ) => text ),
-	sprintf: jest.fn( ( format, ...args ) =>
-		format
-			.replace( '%1$s', args[ 0 ] )
-			.replace( '%2$s', args[ 1 ] )
-			.replace( '%s', args[ 0 ] )
-	),
-} ) );
 
 describe( 'getViewerTimezone', () => {
 	it( 'returns the browser timezone', () => {
@@ -140,6 +127,79 @@ describe( 'getViewerTimeLabel', () => {
 		expect( label ).toContain( 'your time' );
 	} );
 
+	it( 'dates the end when it crosses midnight for the viewer', () => {
+		// 18:00 to 20:00 in New York, which is 23:00 to 01:00 the next day in
+		// London: without the date the end reads as an earlier time than the start.
+		expect(
+			getViewerTimeLabel( {
+				startGmt: '2030-06-15 22:00:00',
+				endGmt: '2030-06-16 00:00:00',
+				eventTimezone: 'America/New_York',
+				viewerTimezone: 'Europe/London',
+				locale: 'en-US',
+			} )
+		).toBe( '11:00 PM to 6/16/2030, 1:00 AM your time' );
+	} );
+
+	it( 'dates the end of a multi-day event', () => {
+		expect(
+			getViewerTimeLabel( {
+				startGmt: '2030-06-15 13:00:00',
+				endGmt: '2030-06-17 21:00:00',
+				eventTimezone: 'America/New_York',
+				viewerTimezone: 'Europe/London',
+				locale: 'en-US',
+			} )
+		).toBe( '2:00 PM to 6/17/2030, 10:00 PM your time' );
+	} );
+
+	it( 'leaves the end undated when it shares the viewer day with the start', () => {
+		// The start carries a date here because the viewer is a day ahead of the
+		// event, but the end still falls on the same viewer day as the start.
+		expect(
+			getViewerTimeLabel( {
+				startGmt: '2030-06-15 22:00:00',
+				endGmt: '2030-06-16 00:00:00',
+				eventTimezone: 'America/New_York',
+				viewerTimezone: 'Asia/Tokyo',
+				locale: 'en-US',
+			} )
+		).toBe( '6/16/2030, 7:00 AM to 9:00 AM your time' );
+	} );
+
+	it( 'says nothing when a manual offset resolves to the viewer timezone', () => {
+		expect(
+			getViewerTimeLabel( {
+				startGmt: '2030-06-15 22:00:00',
+				endGmt: '2030-06-16 00:00:00',
+				eventTimezone: '+05:30',
+				viewerTimezone: 'Asia/Kolkata',
+				locale: 'en-US',
+			} )
+		).toBe( '' );
+	} );
+
+	it( 'still speaks up when the event timezone is one Intl will not take', () => {
+		expect(
+			getViewerTimeLabel( {
+				startGmt: '2030-06-15 22:00:00',
+				eventTimezone: 'Not/AZone',
+				viewerTimezone: 'Europe/Warsaw',
+				locale: 'en-US',
+			} )
+		).toBe( '12:00 AM your time' );
+	} );
+
+	it( 'still speaks up when the event timezone is missing', () => {
+		expect(
+			getViewerTimeLabel( {
+				startGmt: '2030-06-15 22:00:00',
+				viewerTimezone: 'Europe/Warsaw',
+				locale: 'en-US',
+			} )
+		).toBe( '12:00 AM your time' );
+	} );
+
 	it( 'says nothing to a viewer already in the event timezone', () => {
 		expect(
 			getViewerTimeLabel( {
@@ -189,6 +249,31 @@ describe( 'getViewerTimeLabel', () => {
 				locale: 'en-US',
 			} )
 		).toBe( '12:00 AM your time' );
+	} );
+
+	it( 'fills the caller\'s own sentence formats', () => {
+		expect(
+			getViewerTimeLabel( {
+				startGmt: '2030-06-15 16:00:00',
+				endGmt: '2030-06-15 18:00:00',
+				eventTimezone: 'America/New_York',
+				viewerTimezone: 'Europe/Warsaw',
+				locale: 'en-US',
+				rangeFormat: 'u ciebie %1$s do %2$s',
+				singleFormat: 'u ciebie %s',
+			} )
+		).toBe( 'u ciebie 6:00 PM do 8:00 PM' );
+
+		expect(
+			getViewerTimeLabel( {
+				startGmt: '2030-06-15 16:00:00',
+				eventTimezone: 'America/New_York',
+				viewerTimezone: 'Europe/Warsaw',
+				locale: 'en-US',
+				rangeFormat: 'u ciebie %1$s do %2$s',
+				singleFormat: 'u ciebie %s',
+			} )
+		).toBe( 'u ciebie 6:00 PM' );
 	} );
 
 	it( 'says nothing when called with no arguments', () => {

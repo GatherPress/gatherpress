@@ -1,12 +1,7 @@
 /**
- * WordPress dependencies
- */
-import { __, sprintf } from '@wordpress/i18n';
-
-/**
  * Resolve the timezone the browser is running in.
  *
- * @since 0.35.0
+ * @since 0.36.0
  *
  * @return {string} An IANA timezone name, or an empty string when the browser will not say.
  */
@@ -24,9 +19,9 @@ export function getViewerTimezone() {
  *
  * Returns an empty string rather than throwing when the timezone is not one
  * `Intl` accepts. GatherPress allows manual UTC offsets ("+05:30") as an event
- * timezone, and `Intl` only takes IANA names.
+ * timezone, which `Intl` does accept alongside IANA names.
  *
- * @since 0.35.0
+ * @since 0.36.0
  *
  * @param {string} gmt      Datetime in `Y-m-d H:i:s` GMT, as stored in event meta.
  * @param {string} timezone IANA timezone name to render in.
@@ -61,6 +56,51 @@ export function formatInTimezone( gmt, timezone, options, locale ) {
 }
 
 /**
+ * Whether two timezones put the same instant on the same wall clock.
+ *
+ * A site can store its timezone as a manual UTC offset rather than a city, and
+ * `wp_timezone_string()` returns exactly that for an offset-configured site. A
+ * name comparison would then tell every reader their time differs from an event
+ * time they are already reading, so this compares what the two zones resolve to
+ * for the event's own instant instead.
+ *
+ * @since 0.36.0
+ *
+ * @param {string} gmt            Event instant in `Y-m-d H:i:s` GMT.
+ * @param {string} viewerTimezone The reader's timezone.
+ * @param {string} eventTimezone  The event's own timezone.
+ *
+ * @return {boolean} True when both timezones show that instant identically.
+ */
+function isSameZoneAt( gmt, viewerTimezone, eventTimezone ) {
+	if ( viewerTimezone === eventTimezone ) {
+		return true;
+	}
+
+	// A fixed locale keeps the comparison about the two zones rather than about
+	// how the reader's locale happens to punctuate a date.
+	const wallClockOptions = {
+		year: 'numeric',
+		month: 'numeric',
+		day: 'numeric',
+		hour: 'numeric',
+		minute: '2-digit',
+	};
+	const viewerWallClock = formatInTimezone(
+		gmt,
+		viewerTimezone,
+		wallClockOptions,
+		'en-US'
+	);
+
+	return (
+		!! viewerWallClock &&
+		viewerWallClock ===
+			formatInTimezone( gmt, eventTimezone, wallClockOptions, 'en-US' )
+	);
+}
+
+/**
  * Build the "in your timezone" label for an event.
  *
  * Returns an empty string whenever there is nothing worth saying: no start
@@ -69,7 +109,12 @@ export function formatInTimezone( gmt, timezone, options, locale ) {
  * different calendar day for the viewer, which is the case that actually
  * misleads people: an evening event in New York is the next morning in Tokyo.
  *
- * @since 0.35.0
+ * The two sentence formats are passed in rather than translated here: the
+ * frontend consumer is a script module, which cannot import `@wordpress/i18n`,
+ * so it receives them server-translated in the block's `data-wp-context`. The
+ * English defaults are the fallback for a caller that has nothing better.
+ *
+ * @since 0.36.0
  *
  * @param {Object} args                Label inputs.
  * @param {string} args.startGmt       Event start in `Y-m-d H:i:s` GMT.
@@ -77,6 +122,8 @@ export function formatInTimezone( gmt, timezone, options, locale ) {
  * @param {string} args.eventTimezone  The event's own timezone.
  * @param {string} args.viewerTimezone Optional override for the browser timezone, for tests.
  * @param {string} args.locale         Optional BCP 47 locale tag.
+ * @param {string} args.rangeFormat    Translated format taking `%1$s` start and `%2$s` end.
+ * @param {string} args.singleFormat   Translated format taking `%s` start.
  *
  * @return {string} The label, or an empty string when there is nothing to add.
  */
@@ -86,10 +133,12 @@ export function getViewerTimeLabel( {
 	eventTimezone = '',
 	viewerTimezone = undefined,
 	locale = undefined,
+	rangeFormat = '%1$s to %2$s your time',
+	singleFormat = '%s your time',
 } = {} ) {
 	const viewer = viewerTimezone ?? getViewerTimezone();
 
-	if ( ! startGmt || ! viewer || viewer === eventTimezone ) {
+	if ( ! startGmt || ! viewer || isSameZoneAt( startGmt, viewer, eventTimezone ) ) {
 		return '';
 	}
 
@@ -116,22 +165,26 @@ export function getViewerTimeLabel( {
 		)
 		: viewerStart;
 
+	// Mirrors `Event::get_display_datetime()`, which picks `get_time_end()` over
+	// `get_datetime_end()` only while the two ends share a date. Measured in the
+	// viewer's calendar here, because that is the one the label speaks in.
+	const viewerEndDay = endGmt
+		? formatInTimezone( endGmt, viewer, dayOptions, locale )
+		: '';
+	const endSpansDays = !! viewerEndDay && viewerEndDay !== viewerDay;
+
 	const viewerEnd = endGmt
-		? formatInTimezone( endGmt, viewer, timeOptions, locale )
+		? formatInTimezone(
+			endGmt,
+			viewer,
+			endSpansDays ? { ...dayOptions, ...timeOptions } : timeOptions,
+			locale
+		)
 		: '';
 
 	if ( viewerEnd ) {
-		return sprintf(
-			/* translators: 1: event start in the viewer's timezone, 2: event end in the viewer's timezone. */
-			__( '%1$s to %2$s your time', 'gatherpress' ),
-			start,
-			viewerEnd
-		);
+		return rangeFormat.replace( '%1$s', start ).replace( '%2$s', viewerEnd );
 	}
 
-	return sprintf(
-		/* translators: %s: event start in the viewer's timezone. */
-		__( '%s your time', 'gatherpress' ),
-		start
-	);
+	return singleFormat.replace( '%s', start );
 }
