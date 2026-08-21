@@ -1,44 +1,45 @@
 /**
+ * WordPress dependencies
+ */
+import { store, getContext } from '@wordpress/interactivity';
+
+/**
  * Internal dependencies
  */
 import { getViewerTimeLabel } from './viewer-time';
 
-/**
- * Fill in the viewer's local time on every event date that asked for it.
- *
- * The server cannot know the reader's timezone, so `render.php` emits an empty
- * placeholder carrying the event's GMT datetimes and its own timezone, and this
- * fills it once in the browser. The placeholder stays empty and hidden when the
- * reader is already in the event's timezone, which is the common case for a
- * local group and would otherwise be a line of noise on every event.
- *
- * @since 0.35.0
- *
- * @return {void}
- */
-function renderViewerTimes() {
-	const elements = document.querySelectorAll(
-		'.gatherpress-event-date__viewer-time[data-gatherpress-start-gmt]'
-	);
+store( 'gatherpress', {
+	state: {
+		/**
+		 * The event's time as the reader's own browser states it.
+		 *
+		 * The server cannot know the reader's timezone, so `render.php` emits an
+		 * empty placeholder carrying the event's GMT datetimes and its own
+		 * timezone, and this derives the label in the browser. Deriving it from
+		 * the block's context rather than filling the element once on load is
+		 * what lets the label follow a client-side page change, which the
+		 * block's `interactivity` support promises. `render.php` binds the
+		 * placeholder's `hidden` attribute to the negation of this, so the
+		 * reader already in the event's timezone keeps seeing nothing.
+		 *
+		 * This is a script module, so `@wordpress/i18n` must not be imported
+		 * here: the two sentence formats arrive server-translated in the same
+		 * context payload.
+		 *
+		 * @since 0.36.0
+		 *
+		 * @return {string} The label, or an empty string when there is nothing to add.
+		 */
+		get viewerTimeLabel() {
+			const context = getContext();
 
-	elements.forEach( ( element ) => {
-		const label = getViewerTimeLabel( {
-			startGmt: element.dataset.gatherpressStartGmt || '',
-			endGmt: element.dataset.gatherpressEndGmt || '',
-			eventTimezone: element.dataset.gatherpressTimezone || '',
-		} );
-
-		if ( ! label ) {
-			return;
-		}
-
-		element.textContent = label;
-		element.hidden = false;
-	} );
-}
-
-if ( 'loading' === document.readyState ) {
-	document.addEventListener( 'DOMContentLoaded', renderViewerTimes );
-} else {
-	renderViewerTimes();
-}
+			return getViewerTimeLabel( {
+				startGmt: context?.startGmt || '',
+				endGmt: context?.endGmt || '',
+				eventTimezone: context?.eventTimezone || '',
+				rangeFormat: context?.rangeFormat || undefined,
+				singleFormat: context?.singleFormat || undefined,
+			} );
+		},
+	},
+} );

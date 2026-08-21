@@ -312,17 +312,19 @@ class Test_Event_Date extends Base {
 	}
 
 	/**
-	 * The showViewerTime attribute emits the placeholder the view script fills,
-	 * carrying the event's GMT datetimes and its own timezone.
+	 * Render the block for an event fixed at 18:00 to 20:00 New York time.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
-	 * @return void
+	 * @param string $title      Post title, so each test gets its own event.
+	 * @param array  $attributes Block attributes to render with.
+	 *
+	 * @return string The rendered block.
 	 */
-	public function test_render_emits_viewer_time_placeholder(): void {
+	private function render_viewer_time_block( string $title, array $attributes ): string {
 		$event_post = $this->mock->post(
 			array(
-				'post_title' => 'Viewer Time Unit Test Event',
+				'post_title' => $title,
 				'post_type'  => Event::POST_TYPE,
 			)
 		)->get();
@@ -338,7 +340,44 @@ class Test_Event_Date extends Base {
 
 		$this->go_to( get_permalink( $event_post->ID ) );
 
-		$output = do_blocks( '<!-- wp:gatherpress/event-date {"showViewerTime":true} /-->' );
+		return do_blocks(
+			sprintf(
+				'<!-- wp:gatherpress/event-date %s /-->',
+				wp_json_encode( $attributes )
+			)
+		);
+	}
+
+	/**
+	 * Read back the Interactivity API context the placeholder carries.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $output Rendered block.
+	 *
+	 * @return array|null The decoded context, or null when no placeholder was rendered.
+	 */
+	private function get_viewer_time_context( string $output ): ?array {
+		if ( ! preg_match( '/data-wp-context=\'([^\']*)\'/', $output, $matches ) ) {
+			return null;
+		}
+
+		return json_decode( html_entity_decode( $matches[1] ), true );
+	}
+
+	/**
+	 * The showViewerTime attribute emits the placeholder the view module fills,
+	 * carrying the event's GMT datetimes and its own timezone.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	public function test_render_emits_viewer_time_placeholder(): void {
+		$output = $this->render_viewer_time_block(
+			'Viewer Time Unit Test Event',
+			array( 'showViewerTime' => true )
+		);
 
 		$this->assertStringContainsString(
 			'gatherpress-event-date__viewer-time',
@@ -346,24 +385,101 @@ class Test_Event_Date extends Base {
 			'The viewer time placeholder should be rendered when the attribute is set.'
 		);
 		$this->assertStringContainsString(
-			'data-gatherpress-start-gmt="2030-06-15 22:00:00"',
+			'data-wp-interactive="gatherpress"',
 			$output,
+			'The placeholder should join the gatherpress interactivity store.'
+		);
+		$this->assertStringContainsString(
+			'data-wp-text="state.viewerTimeLabel"',
+			$output,
+			'The label should be bound to derived state so it survives a client-side page change.'
+		);
+		$context = $this->get_viewer_time_context( $output );
+
+		$this->assertSame(
+			'2030-06-15 22:00:00',
+			$context['startGmt'] ?? null,
 			'The placeholder should carry the GMT start so the browser can convert it.'
 		);
-		$this->assertStringContainsString(
-			'data-gatherpress-end-gmt="2030-06-16 00:00:00"',
-			$output,
+		$this->assertSame(
+			'2030-06-16 00:00:00',
+			$context['endGmt'] ?? null,
 			'The placeholder should carry the GMT end.'
 		);
-		$this->assertStringContainsString(
-			'data-gatherpress-timezone="America/New_York"',
-			$output,
+		$this->assertSame(
+			'America/New_York',
+			$context['eventTimezone'] ?? null,
 			'The placeholder should carry the event timezone to compare against.'
 		);
-		$this->assertStringContainsString(
-			'hidden',
+		$this->assertSame(
+			'%1$s to %2$s your time',
+			$context['rangeFormat'] ?? null,
+			'The sentence is translated server-side because a script module cannot import @wordpress/i18n.'
+		);
+		$this->assertSame(
+			'%s your time',
+			$context['singleFormat'] ?? null,
+			'The start-only sentence is translated server-side too.'
+		);
+		$this->assertMatchesRegularExpression(
+			'/<span class="gatherpress-event-date__viewer-time"[^>]*\shidden\s*>/',
 			$output,
 			'The placeholder should start hidden so no-JS readers see no empty note.'
+		);
+	}
+
+	/**
+	 * A block showing only the start says only the start in local time too,
+	 * rather than announcing a range the block itself never displays.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	public function test_render_viewer_time_omits_end_when_display_type_is_start(): void {
+		$output = $this->render_viewer_time_block(
+			'Viewer Time Start Only Unit Test Event',
+			array(
+				'showViewerTime' => true,
+				'displayType'    => 'start',
+			)
+		);
+
+		$context = $this->get_viewer_time_context( $output );
+
+		$this->assertSame(
+			'2030-06-15 22:00:00',
+			$context['startGmt'] ?? null,
+			'The placeholder should still carry the GMT start.'
+		);
+		$this->assertSame(
+			'',
+			$context['endGmt'] ?? null,
+			'The placeholder should carry no end when the block does not display one.'
+		);
+	}
+
+	/**
+	 * A block showing only the end has no start to convert, so it emits no
+	 * placeholder at all. This is what the editor previews.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	public function test_render_omits_viewer_time_when_display_type_is_end(): void {
+		$output = $this->render_viewer_time_block(
+			'Viewer Time End Only Unit Test Event',
+			array(
+				'showViewerTime' => true,
+				'displayType'    => 'end',
+			)
+		);
+
+		$this->assertStringNotContainsString(
+			'gatherpress-event-date__viewer-time',
+			$output,
+			'The viewer time placeholder should be absent when the start is not displayed.'
 		);
 	}
 
@@ -371,7 +487,7 @@ class Test_Event_Date extends Base {
 	 * No placeholder without the attribute, so nothing changes for the blocks
 	 * already out there.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @return void
 	 */

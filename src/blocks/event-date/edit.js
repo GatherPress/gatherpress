@@ -264,15 +264,21 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	// would get too.
 	const viewerTimeLabel = showViewerTime
 		? getViewerTimeLabel( {
-			startGmt: createMomentWithTimezone( finalDateTimeStart, finalTimezone )
-				.utc()
-				.format( 'YYYY-MM-DD HH:mm:ss' ),
+			startGmt: showStartTime
+				? createMomentWithTimezone( finalDateTimeStart, finalTimezone )
+					.utc()
+					.format( 'YYYY-MM-DD HH:mm:ss' )
+				: '',
 			endGmt: showEndTime
 				? createMomentWithTimezone( finalDateTimeEnd, finalTimezone )
 					.utc()
 					.format( 'YYYY-MM-DD HH:mm:ss' )
 				: '',
 			eventTimezone: finalTimezone,
+			/* translators: 1: event start in the viewer's timezone, 2: event end in the viewer's timezone. */
+			rangeFormat: __( '%1$s to %2$s your time', 'gatherpress' ),
+			/* translators: %s: event start in the viewer's timezone. */
+			singleFormat: __( '%s your time', 'gatherpress' ),
 		} )
 		: '';
 

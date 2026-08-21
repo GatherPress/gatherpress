@@ -81,9 +81,7 @@
 				"fontSize": true
 			}
 		},
-		"interactivity": {
-			"clientNavigation": true
-		},
+		"interactivity": true,
 		"__experimentalBorder": {
 			"radius": true,
 			"color": true,
@@ -99,7 +97,7 @@
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
-	"viewScript": "file:./view.js",
+	"viewScriptModule": "file:./view.js",
 	"style": "file:./style-index.css",
 	"render": "file:./render.php"
 }
