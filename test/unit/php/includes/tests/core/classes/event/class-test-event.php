@@ -10,9 +10,11 @@ namespace GatherPress\Tests\Core\Event;
 
 use DateTime;
 use DateTimeZone;
+// Deep import on purpose: test_prior_fqn_resolves_to_current_class asserts
+// Event::class equals the real FQN, which the BC alias intentionally is not.
 use GatherPress\Core\Event\Event;
 use GatherPress\Core\Event\Setup as Event_Setup;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;

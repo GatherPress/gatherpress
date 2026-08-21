@@ -16,14 +16,14 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use DateTimeZone;
 use Exception;
-use GatherPress\Core\Calendar\Calendar;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Calendar;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
 use GatherPress\Core\Venue\Setup;
-use GatherPress\Core\Venue\Venue;
+use GatherPress\Core\Venue;
 use WP_Post;
 use WP_Term;
 
