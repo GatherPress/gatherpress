@@ -66,6 +66,9 @@ docs
 wp-cron.sh
 patches
 
+# Generated translations (npm run i18n); only the pot ships.
+languages/map.json
+
 # Miscellaneous and SQL Archives
 behat.yml
 bitbucket-pipelines.yml

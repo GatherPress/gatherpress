@@ -19,6 +19,8 @@
 	"files": [
 		"build",
 		"includes",
+		"languages",
+		"!languages/map.json",
 		"gatherpress.php",
 		"CHANGELOG.md",
 		"SECURITY.md"
@@ -105,6 +107,8 @@
 		"check-engines": "wp-scripts check-engines",
 		"check-licenses": "wp-scripts check-licenses",
 		"format": "wp-scripts format",
+		"i18n": "npm run i18n:pot && node .github/scripts/i18n/build-map.js > languages/map.json && wp i18n make-json languages --use-map=languages/map.json --no-purge",
+		"i18n:pot": "mkdir -p languages && wp i18n make-pot . languages/gatherpress.pot --exclude=node_modules,vendor,build,test,docs,patches,.github,languages --domain=gatherpress",
 		"lint:css": "wp-scripts lint-style",
 		"lint:css:fix": "wp-scripts lint-style --fix",
 		"lint:js": "wp-scripts lint-js",
@@ -117,7 +121,7 @@
 		"lint:phpstan": "vendor/bin/phpstan analyze -vv --memory-limit=2G",
 		"lint:pkg-json": "wp-scripts lint-pkg-json",
 		"packages-update": "wp-scripts packages-update",
-		"plugin-zip": "npm run build && wp-scripts plugin-zip",
+		"plugin-zip": "npm run build && npm run i18n && wp-scripts plugin-zip",
 		"start": "wp-scripts start --experimental-modules",
 		"version:bump": "php .github/scripts/release/generate-version.php",
 		"screenshots:docs": "WP_BASE_URL='http://127.0.0.1:9400/' wp-scripts test-playwright --config .github/scripts/docs-screenshots/playwright.config.ts",

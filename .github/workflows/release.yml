@@ -256,6 +256,14 @@ jobs:
         with:
           ref: ${{ github.ref }}
 
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          # WP-CLI backs `npm run i18n` (make-pot / make-json); it is not on
+          # the ubuntu-latest image, so install it here alongside composer.
+          tools: composer, wp-cli
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -325,16 +333,22 @@ jobs:
         with:
           ref: ${{ github.ref }}
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
         with:
-          node-version-file: .nvmrc
-          cache: npm
+          php-version: '8.1'
+          # WP-CLI backs `npm run i18n` (make-pot / make-json); it is not on
+          # the ubuntu-latest image, so install it here alongside composer.
+          tools: composer, wp-cli
 
       - name: Build production assets
+        # i18n generates languages/gatherpress.pot from src/ references; the
+        # 10up deploy action honors .distignore, which ships the pot but not
+        # the intermediate map.
         run: |
           npm ci
           npm run build
+          npm run i18n
 
       - name: WordPress.org Plugin Deploy
         uses: 10up/action-wordpress-plugin-deploy@stable
@@ -374,6 +388,14 @@ jobs:
         with:
           ref: ${{ github.ref }}
 
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          # WP-CLI backs `npm run i18n` (make-pot / make-json); it is not on
+          # the ubuntu-latest image, so install it here.
+          tools: wp-cli
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -381,9 +403,12 @@ jobs:
           cache: npm
 
       - name: Build production assets
+        # Same rationale as the stable deploy: the pot must exist before
+        # rsync so trunk (and GlotPress, which scans deployed code) sees it.
         run: |
           npm ci
           npm run build
+          npm run i18n
 
       # The GitHub-hosted Ubuntu images no longer ship Subversion, so the
       # deploy step below dies with `svn: command not found` (exit 127)

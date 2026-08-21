@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Ship a src-referenced translation template and correctly named JSON translation files with each release zip, so translators see readable source lines instead of minified build paths.

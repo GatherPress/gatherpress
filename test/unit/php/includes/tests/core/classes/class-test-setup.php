@@ -38,6 +38,12 @@ class Test_Setup extends Base {
 		$hooks    = array(
 			array(
 				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 10,
+				'callback' => array( $instance, 'load_textdomain' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'admin_init',
 				'priority' => 10,
 				'callback' => array( $instance, 'check_plugin_version' ),
@@ -541,6 +547,60 @@ class Test_Setup extends Base {
 		$this->assertTrue(
 			true,
 			'The smash_table method should execute without error.'
+		);
+	}
+
+	/**
+	 * Coverage for load_textdomain method.
+	 *
+	 * Verifies that calling the method registers the plugin's languages
+	 * directory in the text domain registry, so WordPress looks there for
+	 * the shipped pot and locally generated mo files on self-hosted installs.
+	 *
+	 * @covers ::load_textdomain
+	 *
+	 * @return void
+	 */
+	public function test_load_textdomain_registers_domain(): void {
+		global $wp_textdomain_registry;
+
+		$instance = Setup::get_instance();
+
+		$instance->load_textdomain();
+
+		$expected_path = WP_PLUGIN_DIR . '/' . dirname( plugin_basename( GATHERPRESS_CORE_FILE ) ) . '/languages/';
+
+		$this->assertSame(
+			$expected_path,
+			$wp_textdomain_registry->get( 'gatherpress', determine_locale() ),
+			'The gatherpress text domain should point at the plugin languages directory.'
+		);
+	}
+
+	/**
+	 * Coverage for the init wiring of load_textdomain.
+	 *
+	 * Firing init end to end proves the hook registered by setup_hooks is
+	 * what populates the registry, not just that the method works in
+	 * isolation.
+	 *
+	 * @covers ::setup_hooks
+	 * @covers ::load_textdomain
+	 *
+	 * @return void
+	 */
+	public function test_load_textdomain_fires_on_init(): void {
+		global $wp_textdomain_registry;
+
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Testing WordPress core hook.
+		do_action( 'init' );
+
+		$expected_path = WP_PLUGIN_DIR . '/' . dirname( plugin_basename( GATHERPRESS_CORE_FILE ) ) . '/languages/';
+
+		$this->assertSame(
+			$expected_path,
+			$wp_textdomain_registry->get( 'gatherpress', determine_locale() ),
+			'Firing init should register the gatherpress languages directory.'
 		);
 	}
 

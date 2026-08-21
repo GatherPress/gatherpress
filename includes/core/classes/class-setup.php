@@ -95,6 +95,8 @@ final class Setup {
 		register_activation_hook( GATHERPRESS_CORE_FILE, array( $this, 'activate_gatherpress_plugin' ) );
 		register_deactivation_hook( GATHERPRESS_CORE_FILE, array( $this, 'deactivate_gatherpress_plugin' ) );
 
+		add_action( 'init', array( $this, 'load_textdomain' ) );
+
 		add_action( 'admin_init', array( $this, 'check_plugin_version' ) );
 		add_action( 'admin_init', array( $this, 'add_privacy_policy_content' ) );
 		add_action( 'admin_notices', array( $this, 'check_gatherpress_alpha' ) );
@@ -148,6 +150,27 @@ final class Setup {
 					'">' . esc_html__( 'Settings', 'gatherpress' ) . '</a>',
 			),
 			$actions
+		);
+	}
+
+	/**
+	 * Load the plugin text domain.
+	 *
+	 * Registers `languages/` inside the plugin folder as an additional
+	 * translation source. On WordPress.org-hosted installs core already loads
+	 * translations automatically, but self-hosted distributions (the GitHub
+	 * release zip) and tools like Loco Translate rely on this call to find the
+	 * shipped pot and any locally generated mo files.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	public function load_textdomain(): void {
+		load_plugin_textdomain(
+			'gatherpress',
+			false,
+			dirname( plugin_basename( GATHERPRESS_CORE_FILE ) ) . '/languages'
 		);
 	}
 

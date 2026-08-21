@@ -44,6 +44,10 @@ coverage.xml
 .wp-env.override.json
 mu-plugins/
 
+# Generated translations (npm run i18n) #
+#########################################
+languages/
+
 # Playwright #
 ##########
 artifacts/
