@@ -1,4 +1,0 @@
-Significance: patch
-Type: added
-
-Show what the RSVP response filter labels resolve to in the editor, so the raw %d placeholder is explained rather than just displayed.
