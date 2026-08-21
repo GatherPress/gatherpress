@@ -10,7 +10,7 @@ namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\Rsvp;
 use GatherPress\Core\Event;
-use GatherPress\Core\Rsvp\Rsvp as Core_Rsvp;
+use GatherPress\Core\Rsvp as Core_Rsvp;
 use GatherPress\Core\Event\Setup;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
