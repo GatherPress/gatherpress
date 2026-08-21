@@ -37,6 +37,20 @@ jobs:
       version: ${{ steps.context.outputs.version }}
       is_prerelease: ${{ steps.context.outputs.is_prerelease }}
     steps:
+      - name: Reject the cycle marker
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          # `-alpha.0` is the marker set on develop right after a release so
+          # the branch stops advertising the version that just shipped. It is
+          # not a build: nothing should reach the Releases tab or wp.org under
+          # it. Pre-release numbering starts at .1, so no suffix ending in .0
+          # is ever a real build.
+          if [[ "${VERSION}" =~ -(alpha|beta|rc)\.0$ ]]; then
+            echo "::error::'${VERSION}' is a cycle marker, not a release. Delete the tag; pre-releases start at .1."
+            exit 1
+          fi
+
       - name: Classify tag
         id: context
         run: |
