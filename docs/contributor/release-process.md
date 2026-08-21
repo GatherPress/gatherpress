@@ -30,6 +30,12 @@ tracked in [#1921](https://github.com/GatherPress/gatherpress/issues/1921).
   version differs from core's, so every core release (stable or patch) needs
   a matching version sync and release in
   [gatherpress-alpha](https://github.com/GatherPress/gatherpress-alpha).
+  Alpha mirrors this branch model for exactly that reason: its `develop`
+  carries whatever core's `develop` carries and is where pre-releases are
+  tagged, its `main` is the released state. The pairing is one rule — core
+  develop with alpha develop, core main with alpha main — and because the
+  version check is exact string equality, mixing them across branches makes
+  Alpha inert.
 
 ## What gets automated
 
@@ -98,7 +104,7 @@ in-progress release and see what's queued for it, without touching wp.org.
    Copy before deleting, in that order: the alpha.0 bump folded
    `credits/unreleased.json` into that file and emptied it, so deleting
    first drops every contributor who landed work during the window.
-2. `version-X.Y.Z-suffix.N` → gatherpress-alpha `main`: the synced version
+2. `version-X.Y.Z-suffix.N` → gatherpress-alpha `develop`: the synced version
    header (`Skip Changelog` label). Opened by that repo's **Version Bump**
    workflow — core's Version Bump workflow dispatches it automatically when
    the `GATHERPRESS_ALPHA_TOKEN` secret is configured, and otherwise prints
@@ -217,8 +223,11 @@ Every one of these is required; skipping any of them bites the next release:
   not already done, then let the core release workflow's `alpha-handoff` job
   dispatch alpha's release (automatic with the `GATHERPRESS_ALPHA_TOKEN`
   secret; otherwise run the `gh workflow run release.yml` one-liner from the
-  job summary — a manual `git tag X.Y.Z && git push origin X.Y.Z` on alpha's
-  main still works too). Merge alpha's own rollup PR afterward.
+  job summary — a manual `git tag X.Y.Z && git push origin X.Y.Z` on alpha
+  still works too, tagged on the branch that version lives on: `main` for a
+  stable, `develop` for a pre-release). Alpha's release train mirrors core's,
+  so its stable releases also want a develop→main merge before the tag.
+  Merge alpha's own rollup PR afterward.
 - [ ] **Bring the demo data in line with the new version**: follow the
   "Preparing demo-data for a new version of GatherPress" steps in the
   [gatherpress-demo-data README](https://github.com/GatherPress/gatherpress-demo-data#readme)
@@ -239,6 +248,9 @@ Every one of these is required; skipping any of them bites the next release:
 
   The marker lives only until the cycle's first real alpha: `-alpha.1`
   copies its credits file forward and deletes it, per the pre-release flow.
+  Alpha's Version Bump is dispatched by core's, so its `develop` picks up
+  the same marker automatically; both repos' release workflows refuse to
+  build anything from an `-alpha.0` tag.
 
   Known gap: the generator also moves `SECURITY.md`'s supported-versions
   table to `X.Y+1.x`, which overstates support while `X.Y.N` is the released
