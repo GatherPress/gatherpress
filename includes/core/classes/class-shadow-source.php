@@ -25,10 +25,12 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
 use WP_Post;
 use WP_Post_Type;
 use WP_Query;
+use WP_Taxonomy;
 use WP_Term;
 
 /**
@@ -604,5 +606,92 @@ final class Shadow_Source {
 			'field'    => 'slug',
 			'terms'    => array( $this->term_slug_from_post_name( $source_post->post_name ) ),
 		);
+	}
+
+	/**
+	 * Return the source-post IDs whose shadow terms are attached to an
+	 * upcoming or a past event.
+	 *
+	 * Powers the "filter by event activity" query for a shadow-source post
+	 * type (venues, productions, …): given a source post type and whether to
+	 * keep only source posts with upcoming events, it runs a lightweight query
+	 * against the event post types, reads each matching event's terms in the
+	 * source's shadow taxonomy, and resolves those back to source post IDs.
+	 *
+	 * The filter only applies when the source's shadow taxonomy is actually
+	 * registered on an event post type; when it isn't (the taxonomy missing,
+	 * or no event object type), the method returns null and the caller treats
+	 * the filter as inapplicable. An empty array, by contrast, means the
+	 * filter ran and genuinely matched no source posts.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $source_post_type    Shadow-source post type slug to resolve source posts for.
+	 * @param bool   $upcoming_events_only Whether to keep only source posts with upcoming events.
+	 *                                    When false, keeps source posts whose events are all past.
+	 *
+	 * @return int[]|null Source post IDs matching the event activity, an empty
+	 *                    array when nothing matched, or null when the filter
+	 *                    does not apply to this source post type.
+	 */
+	public function get_source_post_ids_by_event_activity(
+		string $source_post_type,
+		bool $upcoming_events_only
+	): ?array {
+		$taxonomy_slug = $this->get_taxonomy( $source_post_type );
+		$taxonomy      = get_taxonomy( $taxonomy_slug );
+
+		if (
+			! $taxonomy instanceof WP_Taxonomy
+			|| ! in_array( Event::POST_TYPE, $taxonomy->object_type, true )
+		) {
+			return null;
+		}
+
+		$args = array(
+			'post_type'               => get_post_types_by_support( 'gatherpress-event-date' ),
+			'fields'                  => 'ids',
+			'no_found_rows'           => true,
+			'posts_per_page'          => -1,
+			'update_post_meta_cache'  => false,
+			'update_post_term_cache'  => true,
+			'gatherpress_event_query' => $upcoming_events_only ? 'upcoming' : 'past',
+		);
+
+		$event_ids = ( new WP_Query( $args ) )->posts;
+
+		if ( empty( $event_ids ) ) {
+			return array();
+		}
+
+		$source_ids = array();
+
+		foreach ( $event_ids as $event_id ) {
+			$object_id = $event_id instanceof WP_Post ? $event_id->ID : (int) $event_id;
+
+			$term_ids = wp_get_object_terms(
+				$object_id,
+				$taxonomy->name,
+				array( 'fields' => 'ids' )
+			);
+
+			if ( is_wp_error( $term_ids ) || empty( $term_ids ) ) {
+				continue;
+			}
+
+			foreach ( (array) $term_ids as $term_id ) {
+				$term = get_term( $term_id, $taxonomy->name );
+
+				if ( $term instanceof WP_Term && $this->is_shadow_term_slug( $term->slug ) ) {
+					$source_post = $this->get_post_from_term_slug( $term->slug, $source_post_type );
+
+					if ( $source_post instanceof WP_Post ) {
+						$source_ids[ $source_post->ID ] = $source_post->ID;
+					}
+				}
+			}
+		}
+
+		return array_values( $source_ids );
 	}
 }

@@ -103,8 +103,8 @@ final class Event_Query {
 	}
 
 	/**
-	 * Register REST hooks for every event-supporting post type that's
-	 * already in the registry by the time we run.
+	 * Register REST hooks for every event- or shadow-source-supporting post
+	 * type that's already in the registry by the time we run.
 	 *
 	 * Companion to the `registered_post_type` listener — that one catches
 	 * post types registered AFTER `Event_Query` is instantiated, this one
@@ -116,13 +116,44 @@ final class Event_Query {
 	 * @return void
 	 */
 	public function register_existing_event_date_post_types(): void {
-		foreach ( get_post_types_by_support( 'gatherpress-event-date' ) as $post_type ) {
+		foreach ( $this->get_query_rest_post_types() as $post_type ) {
 			$this->maybe_register_event_date_rest_hooks( $post_type );
 		}
 	}
 
 	/**
-	 * Register REST hooks when a post type declares gatherpress-event-date support.
+	 * Return the post types whose REST collections accept GatherPress query
+	 * params.
+	 *
+	 * Both event post types (which declare `gatherpress-event-date`) and
+	 * shadow-source post types (venues, productions, … which declare
+	 * `gatherpress-shadow-source`) get the collection filters. Shadow-source
+	 * queries need them so the "filter by event activity" params
+	 * (`has_events_filter`, `upcoming_events_only`) are accepted when a query
+	 * loop lists the source posts themselves.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string[] Post types whose REST collections accept GatherPress query params.
+	 */
+	protected function get_query_rest_post_types(): array {
+		return array_values(
+			array_unique(
+				array_merge(
+					get_post_types_by_support( 'gatherpress-event-date' ),
+					get_post_types_by_support( 'gatherpress-shadow-source' )
+				)
+			)
+		);
+	}
+
+	/**
+	 * Register REST hooks when a post type declares gatherpress-event-date or
+	 * gatherpress-shadow-source support.
+	 *
+	 * Event post types get the full set of GatherPress collection params;
+	 * shadow-source post types get the same filters so a query loop listing
+	 * the source posts can filter by their event activity.
 	 *
 	 * @since 0.34.0
 	 *
@@ -131,7 +162,7 @@ final class Event_Query {
 	 * @return void
 	 */
 	public function maybe_register_event_date_rest_hooks( string $post_type ): void {
-		if ( ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+		if ( ! in_array( $post_type, $this->get_query_rest_post_types(), true ) ) {
 			return;
 		}
 
@@ -320,6 +351,17 @@ final class Event_Query {
 			$query_args['shadow_filter'] = $block_query['shadow_filter'];
 		}
 
+		// Filter source posts by their event activity (upcoming or past). Only
+		// meaningful on a query loop listing shadow-source post types; the
+		// pre_get_posts handler in Event\Query gates on that support.
+		if ( ! empty( $block_query['has_events_filter'] ) ) {
+			$query_args['has_events_filter'] = $block_query['has_events_filter'];
+		}
+
+		if ( isset( $block_query['upcoming_events_only'] ) ) {
+			$query_args['upcoming_events_only'] = $block_query['upcoming_events_only'];
+		}
+
 		// Editor-preview context: lets the REST preview scope to the same
 		// shadow-source post the frontend resolves from the queried object.
 		// Frontend pre_get_posts ignores these; the REST path uses them as a
@@ -410,6 +452,19 @@ final class Event_Query {
 			$custom_args['shadow_filter'] = $shadow_filter;
 		}
 
+		// Source-post activity filtering: passes `has_events_filter` and
+		// `upcoming_events_only` through to the query so a collection listing
+		// shadow-source posts can be scoped to their upcoming or past events.
+		$has_events_filter = $request->get_param( 'has_events_filter' );
+		if ( null !== $has_events_filter ) {
+			$custom_args['has_events_filter'] = $has_events_filter;
+		}
+
+		$upcoming_events_only = $request->get_param( 'upcoming_events_only' );
+		if ( null !== $upcoming_events_only ) {
+			$custom_args['upcoming_events_only'] = $upcoming_events_only;
+		}
+
 		// REST-side context for the editor preview. When the editor's
 		// contextual toggle is on, the block sends the editor's current page
 		// post id and type so the REST query can scope to the same source
@@ -498,6 +553,19 @@ final class Event_Query {
 			'enum'        => array( 0, 1 ),
 		);
 
+		$query_params['has_events_filter'] = array(
+			'description' => __( 'Whether to filter shadow-source posts by their event activity', 'gatherpress' ),
+			'type'        => 'integer',
+			'enum'        => array( 0, 1 ),
+		);
+
+		$query_params['upcoming_events_only'] = array(
+			'description' => __( 'Whether to keep only source posts with upcoming events', 'gatherpress' ),
+			'type'        => 'integer',
+			'enum'        => array( 0, 1 ),
+			'default'     => 1,
+		);
+
 		$query_params['gatherpress_shadow_source_post_id'] = array(
 			'description'       => __(
 				'Editor-side post ID used to scope the venue contextual filter in the REST preview.',
@@ -535,10 +603,13 @@ final class Event_Query {
 	 * @return array<string, mixed> Modified query arguments.
 	 */
 	public function aql_query_vars( array $query_args, array $block_query ): array {
-		// Only process if querying GatherPress events.
+		// Only process if querying GatherPress events or shadow-source posts.
 		$post_type = $block_query['postType'] ?? '';
 
-		if ( ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+		if (
+			! post_type_supports( $post_type, 'gatherpress-event-date' )
+			&& ! post_type_supports( $post_type, 'gatherpress-shadow-source' )
+		) {
 			return $query_args;
 		}
 
@@ -565,6 +636,17 @@ final class Event_Query {
 		// Pass through venue filter setting.
 		if ( ! empty( $block_query['shadow_filter'] ) ) {
 			$query_args['shadow_filter'] = $block_query['shadow_filter'];
+		}
+
+		// Pass through source-post event activity filtering.
+		if ( ! empty( $block_query['has_events_filter'] ) ) {
+			$query_args['has_events_filter'] = $block_query['has_events_filter'];
+		}
+
+		// Pass through the upcoming-only flag; only read when the activity
+		// filter is on, and it defaults to upcoming.
+		if ( isset( $block_query['upcoming_events_only'] ) ) {
+			$query_args['upcoming_events_only'] = $block_query['upcoming_events_only'];
 		}
 
 		return $query_args;

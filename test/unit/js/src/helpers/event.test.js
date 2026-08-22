@@ -31,6 +31,7 @@ import {
 	hasEventPastNotice,
 	isPostTypeSupporting,
 	usePostTypeSupports,
+	hasEventActivityFilterSupport,
 	isEventPostType,
 	isRsvpPostType,
 	hasValidEventId,
@@ -223,6 +224,57 @@ describe( 'usePostTypeSupports', () => {
 		expect(
 			usePostTypeSupports( 'gatherpress-event-date', 'gatherpress_event' )
 		).toBe( true );
+	} );
+} );
+
+/**
+ * Coverage for hasEventActivityFilterSupport.
+ */
+describe( 'hasEventActivityFilterSupport', () => {
+	it( 'returns false when sourcePostType is falsy', () => {
+		expect( hasEventActivityFilterSupport( '' ) ).toBe( false );
+		expect( hasEventActivityFilterSupport( null ) ).toBe( false );
+		expect( hasEventActivityFilterSupport() ).toBe( false );
+	} );
+
+	it( 'returns false when the shadow taxonomy is missing', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return { getTaxonomy: () => undefined };
+			}
+			return {};
+		} );
+
+		expect( hasEventActivityFilterSupport( 'gatherpress_venue' ) ).toBe( false );
+	} );
+
+	it( 'returns true when the shadow taxonomy types include gatherpress_event', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getTaxonomy: ( slug ) =>
+						'_gatherpress_venue' === slug
+							? { types: [ 'gatherpress_event', 'post' ] }
+							: undefined,
+				};
+			}
+			return {};
+		} );
+
+		expect( hasEventActivityFilterSupport( 'gatherpress_venue' ) ).toBe( true );
+	} );
+
+	it( 'returns false when the shadow taxonomy types exclude gatherpress_event', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getTaxonomy: () => ( { types: [ 'post' ] } ),
+				};
+			}
+			return {};
+		} );
+
+		expect( hasEventActivityFilterSupport( 'gatherpress_venue' ) ).toBe( false );
 	} );
 } );
 

@@ -275,6 +275,43 @@ final class Query {
 			}
 		}
 
+		// When the "filter by event activity" toggle is on, restrict the query to
+		// shadow-source posts whose shadow terms sit on an upcoming or past event.
+		// Runs early so the resolved source IDs can still compose with the query
+		// loop's post_type, tax_query, and pagination.
+		if ( 1 === (int) $query->get( 'has_events_filter' ) ) {
+			$post_type = $query->get( 'post_type' );
+
+			if (
+				is_string( $post_type )
+				&& post_type_supports( $post_type, 'gatherpress-shadow-source' )
+			) {
+				// The block writes upcoming_events_only as an integer (0/1), default
+				// on. Coerce the string form too so both gate paths agree.
+				$upcoming = 'upcoming' === $query->get( 'upcoming_events_only', 'upcoming' )
+					|| 1 === (int) $query->get( 'upcoming_events_only' );
+
+				$source_ids = Shadow_Source::get_instance()->get_source_post_ids_by_event_activity(
+					$post_type,
+					$upcoming
+				);
+
+				// Null means the source's shadow taxonomy is not wired onto any
+				// event post type, so the filter does not apply and the query
+				// keeps its own scope. An empty array means the filter ran and
+				// matched nothing, which is a valid result rather than an open
+				// list; pin the query to an impossible ID so it returns empty.
+				if ( null !== $source_ids ) {
+					$query->set(
+						'post__in',
+						! empty( $source_ids )
+							? array_merge( (array) $query->get( 'post__in' ), $source_ids )
+							: array( 0 )
+					);
+				}
+			}
+		}
+
 		switch ( $events_query ) {
 			case 'upcoming':
 				remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_past_events' ) );

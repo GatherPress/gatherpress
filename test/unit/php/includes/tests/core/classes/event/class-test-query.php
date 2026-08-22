@@ -338,6 +338,264 @@ class Test_Query extends Base {
 	}
 
 	/**
+	 * When the "filter by event activity" toggle is on, the query is
+	 * restricted to shadow-source posts whose shadow terms sit on an
+	 * upcoming event.
+	 *
+	 * The resolved source post IDs are merged into `post__in`, so they
+	 * still compose with the query loop's post_type and tax_query.
+	 *
+	 * @since 0.36.0
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_prepare_query_restricts_to_upcoming_source_posts(): void {
+		$instance = Query::get_instance();
+
+		// Two shadow-source posts (venues) with shadow terms.
+		$active_venue   = $this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'active-venue',
+			)
+		)->get();
+		$inactive_venue = $this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'inactive-venue',
+			)
+		)->get();
+
+		// An upcoming event at the active venue.
+		$upcoming_event = $this->mock->post(
+			array( 'post_type' => 'gatherpress_event' )
+		)->get();
+		wp_set_post_terms( $upcoming_event->ID, '_active-venue', Venue::TAXONOMY );
+		$event          = new Event( $upcoming_event->ID );
+		$upcoming_start = new \DateTime( 'tomorrow' );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => $upcoming_start->format( 'Y-m-d H:i:s' ),
+				'datetime_end'   => $upcoming_start->modify( '+1 hour' )->format( 'Y-m-d H:i:s' ),
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		// A past event at the inactive venue.
+		$past_event = $this->mock->post(
+			array( 'post_type' => 'gatherpress_event' )
+		)->get();
+		wp_set_post_terms( $past_event->ID, '_inactive-venue', Venue::TAXONOMY );
+		$event      = new Event( $past_event->ID );
+		$past_start = new \DateTime( 'yesterday' );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => $past_start->modify( '-1 day' )->format( 'Y-m-d H:i:s' ),
+				'datetime_end'   => $past_start->modify( '+1 hour' )->format( 'Y-m-d H:i:s' ),
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$query = new WP_Query();
+		$query->set( 'post_type', Venue::POST_TYPE );
+		$query->set( 'has_events_filter', 1 );
+		$query->set( 'upcoming_events_only', 1 );
+
+		$instance->prepare_event_query_before_execution( $query );
+
+		$this->assertContains(
+			$active_venue->ID,
+			$query->get( 'post__in' ),
+			'A source post with an upcoming event should be kept for the upcoming filter.'
+		);
+		$this->assertNotContains(
+			$inactive_venue->ID,
+			$query->get( 'post__in' ),
+			'A source post with only past events should be dropped for the upcoming filter.'
+		);
+	}
+
+	/**
+	 * Turning the "upcoming events only" toggle off keeps source posts whose
+	 * events are all past, i.e. the archive view.
+	 *
+	 * @since 0.36.0
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_prepare_query_keeps_past_source_posts_when_filter_applied(): void {
+		$instance = Query::get_instance();
+
+		$archived_venue = $this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'archived-venue',
+			)
+		)->get();
+
+		$past_event = $this->mock->post(
+			array( 'post_type' => 'gatherpress_event' )
+		)->get();
+		wp_set_post_terms( $past_event->ID, '_archived-venue', Venue::TAXONOMY );
+		$event      = new Event( $past_event->ID );
+		$past_start = new \DateTime( 'yesterday' );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => $past_start->modify( '-1 day' )->format( 'Y-m-d H:i:s' ),
+				'datetime_end'   => $past_start->modify( '+1 hour' )->format( 'Y-m-d H:i:s' ),
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$query = new WP_Query();
+		$query->set( 'post_type', Venue::POST_TYPE );
+		$query->set( 'has_events_filter', 1 );
+		// The string form covers the AQL path, which writes 'upcoming' as a
+		// literal; both gate forms must coerce to the same result.
+		$query->set( 'upcoming_events_only', 'past' );
+
+		$instance->prepare_event_query_before_execution( $query );
+
+		$this->assertContains(
+			$archived_venue->ID,
+			$query->get( 'post__in' ),
+			'A source post with only past events should be kept when the upcoming-only toggle is off.'
+		);
+	}
+
+	/**
+	 * A shadow-source post with no events attached is not a match for either
+	 * activity state, so the query pins to an impossible ID and returns empty.
+	 *
+	 * @since 0.36.0
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_prepare_query_pins_to_impossible_id_when_no_source_matches(): void {
+		$instance = Query::get_instance();
+
+		$this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'empty-venue',
+			)
+		);
+
+		// No events reference _empty-venue.
+
+		$query = new WP_Query();
+		$query->set( 'post_type', Venue::POST_TYPE );
+		$query->set( 'has_events_filter', 1 );
+		$query->set( 'upcoming_events_only', 1 );
+
+		$instance->prepare_event_query_before_execution( $query );
+
+		$this->assertSame(
+			array( 0 ),
+			$query->get( 'post__in' ),
+			'No matching shadow-source posts should pin the query to an impossible ID.'
+		);
+	}
+
+	/**
+	 * When the queried shadow-source type does not wire its shadow taxonomy
+	 * onto any event post type, the filter is inapplicable: the query keeps
+	 * its own scope instead of pinning to an impossible ID.
+	 *
+	 * @since 0.36.0
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_prepare_query_skips_pin_when_taxonomy_not_wired_to_events(): void {
+		$instance = Query::get_instance();
+
+		$this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'unwired-venue',
+			)
+		);
+
+		unregister_taxonomy_for_object_type( Venue::TAXONOMY, 'gatherpress_event' );
+		$this->assertFalse(
+			is_object_in_taxonomy( 'gatherpress_event', Venue::TAXONOMY ),
+			'Precondition: the venue taxonomy should not tag events for this test.'
+		);
+
+		$query = new WP_Query();
+		$query->set( 'post_type', Venue::POST_TYPE );
+		$query->set( 'has_events_filter', 1 );
+		$query->set( 'upcoming_events_only', 1 );
+
+		$instance->prepare_event_query_before_execution( $query );
+
+		$this->assertSame(
+			'',
+			$query->get( 'post__in' ),
+			'An inapplicable activity filter should leave post__in untouched rather than pinning to an impossible ID.'
+		);
+
+		// Restore the wiring so the setUp baseline does not leak into later tests.
+		register_taxonomy_for_object_type( Venue::TAXONOMY, 'gatherpress_event' );
+	}
+
+	/**
+	 * The activity filter only applies to shadow-source post types; an event
+	 * query with the flag accidentally set is left untouched.
+	 *
+	 * @since 0.36.0
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_prepare_query_ignores_filter_for_non_shadow_source_type(): void {
+		$instance = Query::get_instance();
+
+		$query = new WP_Query();
+		$query->set( 'post_type', 'gatherpress_event' );
+		$query->set( 'has_events_filter', 1 );
+		$query->set( 'upcoming_events_only', 1 );
+
+		$instance->prepare_event_query_before_execution( $query );
+
+		$this->assertSame(
+			'',
+			$query->get( 'post__in' ),
+			'The activity filter should be ignored for a non-shadow-source post type.'
+		);
+	}
+
+	/**
+	 * With the filter toggle off the query keeps whatever it already had — no
+	 * resolution work happens.
+	 *
+	 * @since 0.36.0
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_prepare_query_leaves_query_untouched_when_filter_off(): void {
+		$instance = Query::get_instance();
+
+		$query = new WP_Query();
+		$query->set( 'post_type', Venue::POST_TYPE );
+		$query->set( 'has_events_filter', 0 );
+		$query->set( 'upcoming_events_only', 1 );
+
+		$instance->prepare_event_query_before_execution( $query );
+
+		$this->assertSame(
+			'',
+			$query->get( 'post__in' ),
+			'The query should be untouched when the activity filter is off.'
+		);
+	}
+
+	/**
 	 * Test that prepare_event_query_before_execution resolves pages by pagename.
 	 *
 	 * Covers the get_page_by_path code path when page_id is not set

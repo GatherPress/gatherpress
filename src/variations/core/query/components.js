@@ -19,7 +19,11 @@ import { __, _x, sprintf } from '@wordpress/i18n';
  */
 import EventQueryControls from './slots/query-controls';
 import EventInheritedQueryControls from './slots/inherited-query-controls';
-import { isEventPostType, isPostTypeSupporting } from '../../../helpers/event';
+import {
+	hasEventActivityFilterSupport,
+	isEventPostType,
+	isPostTypeSupporting,
+} from '../../../helpers/event';
 import { isInFSETemplate, usePostTypeLabel } from '../../../helpers/editor';
 
 /**
@@ -437,6 +441,101 @@ export const ShadowSourceFilterControls = ( {
 };
 
 /**
+ * HasEventsFilterControls component
+ *
+ * Lets a query loop that lists shadow-source posts (venues, productions, …)
+ * filter that list by the posts' event activity. Toggle 1 turns the filter on;
+ * Toggle 2 (visible only while Toggle 1 is on) switches between source posts
+ * with upcoming events (default) and source posts whose events are all past.
+ *
+ * @param {Object}   props
+ * @param {Object}   props.attributes    Block attributes.
+ * @param {Function} props.setAttributes Function to update block attributes.
+ *
+ * @return {Element} ToggleControls for the event-activity filter.
+ */
+export const HasEventsFilterControls = ( { attributes, setAttributes } ) => {
+	const {
+		query: {
+			postType,
+			has_events_filter: hasEventsFilter,
+			upcoming_events_only: upcomingEventsOnly,
+		} = {},
+	} = attributes;
+
+	const pluralLabel = usePostTypeLabel(
+		'name',
+		postType,
+		__( 'Events', 'gatherpress' )
+	);
+
+	// A stored 0 intentionally selects the past branch; only an attribute that
+	// was never written defaults to "upcoming".
+	const showUpcoming = upcomingEventsOnly === undefined || !! upcomingEventsOnly;
+
+	return (
+		<>
+			<ToggleControl
+				label={ __( 'Filter by event activity', 'gatherpress' ) }
+				help={ sprintf(
+					/* translators: 1: Plural post type label, e.g. "Venues", 2: Plural noun, "events". */
+					__(
+						'Only shows %1$s that have upcoming or past %2$s attached.',
+						'gatherpress'
+					),
+					pluralLabel,
+					__( 'events', 'gatherpress' )
+				) }
+				checked={ !! hasEventsFilter }
+				onChange={ ( value ) => {
+					setAttributes( {
+						query: {
+							...attributes.query,
+							has_events_filter: value ? 1 : 0,
+							// Preserve any stored sub-filter value so toggling the
+							// activity filter off and back on keeps the user's
+							// past/upcoming choice; only write the default 1 when
+							// nothing was stored yet.
+							upcoming_events_only:
+								value && upcomingEventsOnly === undefined ? 1 : upcomingEventsOnly,
+						},
+					} );
+				} }
+			/>
+			{ !! hasEventsFilter && (
+				<ToggleControl
+					label={
+						showUpcoming
+							? __( 'Upcoming events only', 'gatherpress' )
+							: __( 'Past events only', 'gatherpress' )
+					}
+					help={
+						showUpcoming
+							? __(
+								'Only shows source posts that have at least one upcoming event.',
+								'gatherpress'
+							)
+							: __(
+								'Only shows source posts whose events are all past.',
+								'gatherpress'
+							)
+					}
+					checked={ showUpcoming }
+					onChange={ ( value ) => {
+						setAttributes( {
+							query: {
+								...attributes.query,
+								upcoming_events_only: value ? 1 : 0,
+							},
+						} );
+					} }
+				/>
+			) }
+		</>
+	);
+};
+
+/**
  * EventOffsetControls component
  *
  * Provides a RangeControl for defining the query's result offset,
@@ -632,17 +731,44 @@ export const EventQueryControlsSlotFill = () => {
 						currentPostType !== queryPostType
 					);
 
+				// The activity filter gates on the *queried* post type, opposite
+				// direction from the contextual shadow-source filter above: it
+				// applies when the query loop lists shadow-source posts, not
+				// when the host current post is one. The queried type must also
+				// actually wire its shadow taxonomy onto event post types; an
+				// unwired shadow source would filter nothing. In template context
+				// no concrete host type exists, so the wiring check still runs
+				// against the queried type alone.
+				const queriedIsShadowSource = isPostTypeSupporting(
+					'gatherpress-shadow-source',
+					queryPostType
+				);
+				const queriedWiresEventActivity = hasEventActivityFilterSupport( queryPostType );
+				const showHasEventsFilterControl =
+					queriedIsShadowSource &&
+					queriedWiresEventActivity &&
+					(
+						inTemplateContext ||
+						(
+							queryPostType &&
+							currentPostType &&
+							queryPostType !== currentPostType
+						)
+					);
+
 				return (
 					<>
 						<EventListTypeControls { ...props } />
 						<EventIncludeUnfinishedControls { ...props } />
-
 						{ showExcludeControl && <EventExcludeControls { ...props } /> }
 						{ showShadowSourceFilterControl && (
 							<ShadowSourceFilterControls
 								{ ...props }
 								inTemplateContext={ inTemplateContext }
 							/>
+						) }
+						{ showHasEventsFilterControl && (
+							<HasEventsFilterControls { ...props } />
 						) }
 						<EventCountControls { ...props } />
 						<EventOffsetControls { ...props } />

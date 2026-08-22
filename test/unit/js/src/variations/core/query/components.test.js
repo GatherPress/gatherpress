@@ -2,7 +2,7 @@
  * External dependencies
  */
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 jest.mock( '@wordpress/components', () => ( {
@@ -12,10 +12,16 @@ jest.mock( '@wordpress/components', () => ( {
 	SelectControl: ( { label } ) => (
 		<div data-testid="select-control">{ label }</div>
 	),
-	ToggleControl: ( { label, help } ) => (
+	ToggleControl: ( { label, help, checked, onChange } ) => (
 		<div data-testid="toggle-control">
 			<span>{ label }</span>
 			{ help && <span data-testid="toggle-help">{ help }</span> }
+			<button
+				type="button"
+				aria-label={ label }
+				aria-pressed={ checked ? 'true' : 'false' }
+				onClick={ () => onChange( ! checked ) }
+			/>
 		</div>
 	),
 	__experimentalToggleGroupControl: ( { label, children } ) => (
@@ -85,6 +91,7 @@ jest.mock( '@src/variations/core/query/slots/inherited-query-controls', () => ( 
 jest.mock( '@src/helpers/event', () => ( {
 	isEventPostType: jest.fn(),
 	isPostTypeSupporting: jest.fn(),
+	hasEventActivityFilterSupport: jest.fn(),
 } ) );
 
 jest.mock( '@src/helpers/editor', () => ( {
@@ -96,13 +103,20 @@ jest.mock( '@src/helpers/editor', () => ( {
 /**
  * WordPress dependencies
  */
-import { isEventPostType, isPostTypeSupporting } from '@src/helpers/event';
+import {
+	hasEventActivityFilterSupport,
+	isEventPostType,
+	isPostTypeSupporting,
+} from '@src/helpers/event';
 import { isInFSETemplate } from '@src/helpers/editor';
 
 /**
  * Internal dependencies
  */
-import { EventQueryControlsSlotFill } from '@src/variations/core/query/components';
+import {
+	EventQueryControlsSlotFill,
+	HasEventsFilterControls,
+} from '@src/variations/core/query/components';
 
 const venueToggleLabel = 'Filter by Current Venue';
 const excludeToggleLabel = 'Exclude Current Event';
@@ -115,6 +129,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 	beforeEach( () => {
 		isEventPostType.mockReset();
 		isPostTypeSupporting.mockReset();
+		hasEventActivityFilterSupport.mockReset();
 		isInFSETemplate.mockReset();
 	} );
 
@@ -229,5 +244,360 @@ describe( 'EventQueryControlsSlotFill', () => {
 		expect(
 			screen.queryByText( excludeToggleLabel )
 		).not.toBeInTheDocument();
+	} );
+
+	it( 'shows the event-activity filter when the queried type is a shadow source and differs from the host', () => {
+		mockQueryControlsProps = {
+			...mockQueryControlsProps,
+			context: {
+				postType: 'gatherpress_event',
+			},
+			attributes: {
+				query: {
+					postType: 'gatherpress_venue',
+					inherit: false,
+				},
+			},
+		};
+
+		isEventPostType.mockReturnValue( true );
+		isPostTypeSupporting.mockImplementation(
+			( support, postType ) =>
+				'gatherpress-shadow-source' === support &&
+				'gatherpress_venue' === postType
+		);
+		hasEventActivityFilterSupport.mockImplementation(
+			( postType ) => 'gatherpress_venue' === postType
+		);
+		isInFSETemplate.mockReturnValue( false );
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect(
+			screen.getByText( 'Filter by event activity' )
+		).toBeInTheDocument();
+		expect(
+			screen.queryByText( 'Upcoming events only' )
+		).not.toBeInTheDocument();
+	} );
+
+	it( 'hides the event-activity filter when the queried type is not a shadow source', () => {
+		mockQueryControlsProps = {
+			...mockQueryControlsProps,
+			context: {
+				postType: 'page',
+			},
+			attributes: {
+				query: {
+					postType: 'gatherpress_event',
+					inherit: false,
+				},
+			},
+		};
+
+		isEventPostType.mockReturnValue( false );
+		isPostTypeSupporting.mockReturnValue( false );
+		hasEventActivityFilterSupport.mockReturnValue( true );
+		isInFSETemplate.mockReturnValue( false );
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect(
+			screen.queryByText( 'Filter by event activity' )
+		).not.toBeInTheDocument();
+	} );
+
+	it( 'hides the event-activity filter when the queried shadow source does not wire its taxonomy onto events', () => {
+		mockQueryControlsProps = {
+			...mockQueryControlsProps,
+			context: {
+				postType: 'gatherpress_event',
+			},
+			attributes: {
+				query: {
+					postType: 'gatherpress_venue',
+					inherit: false,
+				},
+			},
+		};
+
+		isEventPostType.mockReturnValue( true );
+		isPostTypeSupporting.mockImplementation(
+			( support, postType ) =>
+				'gatherpress-shadow-source' === support &&
+				'gatherpress_venue' === postType
+		);
+		hasEventActivityFilterSupport.mockReturnValue( false );
+		isInFSETemplate.mockReturnValue( false );
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect(
+			screen.queryByText( 'Filter by event activity' )
+		).not.toBeInTheDocument();
+		expect( hasEventActivityFilterSupport ).toHaveBeenCalledWith(
+			'gatherpress_venue'
+		);
+	} );
+
+	it( 'shows the event-activity filter on a template when the queried type is a wired shadow source', () => {
+		mockQueryControlsProps = {
+			...mockQueryControlsProps,
+			attributes: {
+				query: {
+					postType: 'gatherpress_venue',
+					inherit: false,
+				},
+			},
+		};
+
+		isEventPostType.mockReturnValue( false );
+		isPostTypeSupporting.mockImplementation(
+			( support, postType ) =>
+				'gatherpress-shadow-source' === support &&
+				'gatherpress_venue' === postType
+		);
+		hasEventActivityFilterSupport.mockImplementation(
+			( postType ) => 'gatherpress_venue' === postType
+		);
+		isInFSETemplate.mockReturnValue( true );
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect(
+			screen.getByText( 'Filter by event activity' )
+		).toBeInTheDocument();
+	} );
+
+	it( 'hides the event-activity filter on a template when the queried type is an unwired shadow source', () => {
+		mockQueryControlsProps = {
+			...mockQueryControlsProps,
+			attributes: {
+				query: {
+					postType: 'gatherpress_venue',
+					inherit: false,
+				},
+			},
+		};
+
+		isEventPostType.mockReturnValue( false );
+		isPostTypeSupporting.mockImplementation(
+			( support, postType ) =>
+				'gatherpress-shadow-source' === support &&
+				'gatherpress_venue' === postType
+		);
+		hasEventActivityFilterSupport.mockReturnValue( false );
+		isInFSETemplate.mockReturnValue( true );
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect(
+			screen.queryByText( 'Filter by event activity' )
+		).not.toBeInTheDocument();
+	} );
+
+	it( 'hides the event-activity filter when the queried type matches the host type', () => {
+		mockQueryControlsProps = {
+			...mockQueryControlsProps,
+			context: {
+				postType: 'gatherpress_venue',
+			},
+			attributes: {
+				query: {
+					postType: 'gatherpress_venue',
+					inherit: false,
+				},
+			},
+		};
+
+		isEventPostType.mockReturnValue( false );
+		isPostTypeSupporting.mockReturnValue( true );
+		hasEventActivityFilterSupport.mockReturnValue( true );
+		isInFSETemplate.mockReturnValue( false );
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect(
+			screen.queryByText( 'Filter by event activity' )
+		).not.toBeInTheDocument();
+	} );
+} );
+
+describe( 'HasEventsFilterControls', () => {
+	const activityLabel = 'Filter by event activity';
+	const upcomingLabel = 'Upcoming events only';
+	const pastLabel = 'Past events only';
+	const activityHelp =
+		'Only shows Events that have upcoming or past events attached.';
+	const upcomingHelp =
+		'Only shows source posts that have at least one upcoming event.';
+	const pastHelp = 'Only shows source posts whose events are all past.';
+
+	it( 'renders the activity toggle and hides the sub-filter when the filter is off', () => {
+		const setAttributes = jest.fn();
+
+		render(
+			<HasEventsFilterControls
+				attributes={ {
+					query: {
+						postType: 'gatherpress_venue',
+					},
+				} }
+				setAttributes={ setAttributes }
+			/>
+		);
+
+		expect( screen.getByText( activityLabel ) ).toBeInTheDocument();
+		expect( screen.getByText( activityHelp ) ).toBeInTheDocument();
+		expect( screen.queryByText( upcomingLabel ) ).not.toBeInTheDocument();
+		expect( screen.queryByText( pastLabel ) ).not.toBeInTheDocument();
+	} );
+
+	it( 'writes has_events_filter and defaults upcoming_events_only to on', () => {
+		const setAttributes = jest.fn();
+		const query = {
+			postType: 'gatherpress_venue',
+		};
+
+		render(
+			<HasEventsFilterControls
+				attributes={ { query } }
+				setAttributes={ setAttributes }
+			/>
+		);
+
+		fireEvent.click( screen.getByRole( 'button', { name: activityLabel } ) );
+
+		expect( setAttributes ).toHaveBeenCalledWith( {
+			query: {
+				postType: 'gatherpress_venue',
+				has_events_filter: 1,
+				upcoming_events_only: 1,
+			},
+		} );
+	} );
+
+	it( 'shows the upcoming sub-filter by default when the activity filter is on', () => {
+		render(
+			<HasEventsFilterControls
+				attributes={ {
+					query: {
+						postType: 'gatherpress_venue',
+						has_events_filter: 1,
+					},
+				} }
+				setAttributes={ jest.fn() }
+			/>
+		);
+
+		expect( screen.getByText( upcomingLabel ) ).toBeInTheDocument();
+		expect( screen.getByText( upcomingHelp ) ).toBeInTheDocument();
+		expect( screen.queryByText( pastLabel ) ).not.toBeInTheDocument();
+		expect(
+			screen.getByRole( 'button', { name: upcomingLabel } )
+		).toHaveAttribute( 'aria-pressed', 'true' );
+	} );
+
+	it( 'flips the sub-filter label to past events only when upcoming_events_only is off', () => {
+		render(
+			<HasEventsFilterControls
+				attributes={ {
+					query: {
+						postType: 'gatherpress_venue',
+						has_events_filter: 1,
+						upcoming_events_only: 0,
+					},
+				} }
+				setAttributes={ jest.fn() }
+			/>
+		);
+
+		expect( screen.getByText( pastLabel ) ).toBeInTheDocument();
+		expect( screen.getByText( pastHelp ) ).toBeInTheDocument();
+		expect( screen.queryByText( upcomingLabel ) ).not.toBeInTheDocument();
+		expect(
+			screen.getByRole( 'button', { name: pastLabel } )
+		).toHaveAttribute( 'aria-pressed', 'false' );
+	} );
+
+	it( 'writes upcoming_events_only to 0 when the sub-filter is turned off', () => {
+		const setAttributes = jest.fn();
+
+		render(
+			<HasEventsFilterControls
+				attributes={ {
+					query: {
+						postType: 'gatherpress_venue',
+						has_events_filter: 1,
+						upcoming_events_only: 1,
+					},
+				} }
+				setAttributes={ setAttributes }
+			/>
+		);
+
+		fireEvent.click( screen.getByRole( 'button', { name: upcomingLabel } ) );
+
+		expect( setAttributes ).toHaveBeenCalledWith( {
+			query: {
+				postType: 'gatherpress_venue',
+				has_events_filter: 1,
+				upcoming_events_only: 0,
+			},
+		} );
+	} );
+
+	it( 'writes upcoming_events_only to 1 when the sub-filter is turned back on', () => {
+		const setAttributes = jest.fn();
+
+		render(
+			<HasEventsFilterControls
+				attributes={ {
+					query: {
+						postType: 'gatherpress_venue',
+						has_events_filter: 1,
+						upcoming_events_only: 0,
+					},
+				} }
+				setAttributes={ setAttributes }
+			/>
+		);
+
+		fireEvent.click( screen.getByRole( 'button', { name: pastLabel } ) );
+
+		expect( setAttributes ).toHaveBeenCalledWith( {
+			query: {
+				postType: 'gatherpress_venue',
+				has_events_filter: 1,
+				upcoming_events_only: 1,
+			},
+		} );
+	} );
+
+	it( 'clears has_events_filter and keeps the stored upcoming_events_only when turned off', () => {
+		const setAttributes = jest.fn();
+
+		render(
+			<HasEventsFilterControls
+				attributes={ {
+					query: {
+						postType: 'gatherpress_venue',
+						has_events_filter: 1,
+						upcoming_events_only: 0,
+					},
+				} }
+				setAttributes={ setAttributes }
+			/>
+		);
+
+		fireEvent.click( screen.getByRole( 'button', { name: activityLabel } ) );
+
+		expect( setAttributes ).toHaveBeenCalledWith( {
+			query: {
+				postType: 'gatherpress_venue',
+				has_events_filter: 0,
+				upcoming_events_only: 0,
+			},
+		} );
 	} );
 } );

@@ -220,9 +220,11 @@ class Test_Event_Query extends Base {
 			array( 'shadow_filter', null ),
 			array( 'gatherpress_shadow_source_post_id', null ),
 			array( 'gatherpress_shadow_source_post_type', null ),
+			array( 'has_events_filter', null ),
+			array( 'upcoming_events_only', null ),
 		);
 
-		$request->expects( $this->exactly( 8 ) )
+		$request->expects( $this->exactly( 10 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -300,6 +302,16 @@ class Test_Event_Query extends Base {
 		// Verify exclude_current parameter is registered.
 		$this->assertArrayHasKey( 'exclude_current', $result );
 		$this->assertSame( 'integer', $result['exclude_current']['type'] );
+
+		// Verify the shadow-source activity params are registered (#1906).
+		$this->assertArrayHasKey( 'has_events_filter', $result );
+		$this->assertSame( 'integer', $result['has_events_filter']['type'] );
+		$this->assertSame( array( 0, 1 ), $result['has_events_filter']['enum'] );
+
+		$this->assertArrayHasKey( 'upcoming_events_only', $result );
+		$this->assertSame( 'integer', $result['upcoming_events_only']['type'] );
+		$this->assertSame( array( 0, 1 ), $result['upcoming_events_only']['enum'] );
+		$this->assertSame( 1, $result['upcoming_events_only']['default'], 'Upcoming-only should default to on.' );
 
 		// Verify original orderby enum is preserved and extended.
 		$this->assertContains( 'date', $result['orderby']['enum'] );
@@ -846,9 +858,11 @@ class Test_Event_Query extends Base {
 			array( 'shadow_filter', null ),
 			array( 'gatherpress_shadow_source_post_id', null ),
 			array( 'gatherpress_shadow_source_post_type', null ),
+			array( 'has_events_filter', null ),
+			array( 'upcoming_events_only', null ),
 		);
 
-		$request->expects( $this->exactly( 8 ) )
+		$request->expects( $this->exactly( 10 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -894,9 +908,11 @@ class Test_Event_Query extends Base {
 			array( 'shadow_filter', null ),
 			array( 'gatherpress_shadow_source_post_id', null ),
 			array( 'gatherpress_shadow_source_post_type', null ),
+			array( 'has_events_filter', null ),
+			array( 'upcoming_events_only', null ),
 		);
 
-		$request->expects( $this->exactly( 8 ) )
+		$request->expects( $this->exactly( 10 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -946,9 +962,11 @@ class Test_Event_Query extends Base {
 			array( 'shadow_filter', null ),
 			array( 'gatherpress_shadow_source_post_id', null ),
 			array( 'gatherpress_shadow_source_post_type', null ),
+			array( 'has_events_filter', null ),
+			array( 'upcoming_events_only', null ),
 		);
 
-		$request->expects( $this->exactly( 8 ) )
+		$request->expects( $this->exactly( 10 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -1132,9 +1150,11 @@ class Test_Event_Query extends Base {
 			array( 'shadow_filter', null ),
 			array( 'gatherpress_shadow_source_post_id', null ),
 			array( 'gatherpress_shadow_source_post_type', null ),
+			array( 'has_events_filter', null ),
+			array( 'upcoming_events_only', null ),
 		);
 
-		$request->expects( $this->exactly( 8 ) )
+		$request->expects( $this->exactly( 10 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -1201,9 +1221,11 @@ class Test_Event_Query extends Base {
 			array( 'shadow_filter', 1 ),
 			array( 'gatherpress_shadow_source_post_id', null ),
 			array( 'gatherpress_shadow_source_post_type', null ),
+			array( 'has_events_filter', null ),
+			array( 'upcoming_events_only', null ),
 		);
 
-		$request->expects( $this->exactly( 8 ) )
+		$request->expects( $this->exactly( 10 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -1289,9 +1311,11 @@ class Test_Event_Query extends Base {
 			array( 'shadow_filter', 1 ),
 			array( 'gatherpress_shadow_source_post_id', 42 ),
 			array( 'gatherpress_shadow_source_post_type', 'production' ),
+			array( 'has_events_filter', null ),
+			array( 'upcoming_events_only', null ),
 		);
 
-		$request->expects( $this->exactly( 8 ) )
+		$request->expects( $this->exactly( 10 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -1386,5 +1410,165 @@ class Test_Event_Query extends Base {
 		$result = $instance->aql_query_vars( $query_args, $block_query, false );
 
 		$this->assertSame( 1, $result['shadow_filter'], 'Should pass shadow_filter through to query args.' );
+	}
+
+	/**
+	 * Coverage for maybe_register_event_date_rest_hooks on a shadow-source
+	 * post type — REST filters must also register for post types that declare
+	 * `gatherpress-shadow-source` so venue/production queries accept the new
+	 * `has_events_filter` / `upcoming_events_only` collection params.
+	 *
+	 * @since 0.36.0
+	 * @covers ::maybe_register_event_date_rest_hooks
+	 *
+	 * @return void
+	 */
+	public function test_maybe_register_event_date_rest_hooks_on_shadow_source_post_type(): void {
+		$instance  = Event_Query::get_instance();
+		$post_type = 'gatherpress_venue';
+
+		remove_all_filters( sprintf( 'rest_%s_query', $post_type ) );
+		remove_all_filters( sprintf( 'rest_%s_collection_params', $post_type ) );
+
+		$instance->maybe_register_event_date_rest_hooks( $post_type );
+
+		$this->assertSame(
+			10,
+			has_filter(
+				sprintf( 'rest_%s_query', $post_type ),
+				array( $instance, 'rest_query' )
+			),
+			'Failed to assert rest_query filter is registered for a shadow-source post type.'
+		);
+		$this->assertSame(
+			10,
+			has_filter(
+				sprintf( 'rest_%s_collection_params', $post_type ),
+				array( $instance, 'rest_collection_params' )
+			),
+			'Failed to assert rest_collection_params filter is registered for a shadow-source post type.'
+		);
+	}
+
+	/**
+	 * Passes the shadow-source activity params through rest_query to custom args.
+	 *
+	 * @since 0.36.0
+	 * @covers ::rest_query
+	 *
+	 * @return void
+	 */
+	public function test_rest_query_with_has_events_filter(): void {
+		$instance = Event_Query::get_instance();
+
+		$request = $this->createMock( \WP_REST_Request::class );
+
+		$param_map = array(
+			array( 'include', null ),
+			array( 'gatherpress_event_query', 'upcoming' ),
+			array( 'exclude_current', null ),
+			array( 'include_unfinished', null ),
+			array( 'orderby', null ),
+			array( 'shadow_filter', null ),
+			array( 'gatherpress_shadow_source_post_id', null ),
+			array( 'gatherpress_shadow_source_post_type', null ),
+			array( 'has_events_filter', 1 ),
+			array( 'upcoming_events_only', 0 ),
+		);
+
+		$request->expects( $this->exactly( 10 ) )
+			->method( 'get_param' )
+			->willReturnMap( $param_map );
+
+		$request->expects( $this->once() )
+			->method( 'get_params' )
+			->willReturn( array( 'gatherpress_event_query' => 'upcoming' ) );
+
+		$initial_args = array(
+			'post_type' => Event::POST_TYPE,
+		);
+
+		$result = $instance->rest_query( $initial_args, $request );
+
+		$this->assertSame(
+			1,
+			$result['has_events_filter'],
+			'Should pass has_events_filter through to custom args.'
+		);
+		$this->assertSame(
+			0,
+			$result['upcoming_events_only'],
+			'Should pass upcoming_events_only through to custom args.'
+		);
+	}
+
+	/**
+	 * Passes the shadow-source activity params through
+	 * query_loop_block_query_vars to query args.
+	 *
+	 * @since 0.36.0
+	 * @covers ::query_loop_block_query_vars
+	 *
+	 * @return void
+	 */
+	public function test_query_loop_block_query_vars_with_has_events_filter(): void {
+		$instance = Event_Query::get_instance();
+
+		$query = array( 'posts_per_page' => 10 );
+		$block = $this->createMock( \WP_Block::class );
+
+		$block->context = array(
+			'query' => array(
+				'gatherpress_event_query' => 'upcoming',
+				'has_events_filter'       => 1,
+				'upcoming_events_only'    => 0,
+			),
+		);
+
+		$result = $instance->query_loop_block_query_vars( $query, $block );
+
+		$this->assertSame(
+			1,
+			$result['has_events_filter'],
+			'Should pass has_events_filter through to query args.'
+		);
+		$this->assertSame(
+			0,
+			$result['upcoming_events_only'],
+			'Should pass upcoming_events_only through to query args.'
+		);
+	}
+
+	/**
+	 * Passes the shadow-source activity params through aql_query_vars to
+	 * query args.
+	 *
+	 * @since 0.36.0
+	 * @covers ::aql_query_vars
+	 *
+	 * @return void
+	 */
+	public function test_aql_query_vars_with_has_events_filter(): void {
+		$instance = Event_Query::get_instance();
+
+		$query_args  = array( 'posts_per_page' => 10 );
+		$block_query = array(
+			'postType'             => 'gatherpress_event',
+			'has_events_filter'    => 1,
+			'upcoming_events_only' => 0,
+		);
+
+		$result = $instance->aql_query_vars( $query_args, $block_query, false );
+
+		$this->assertSame(
+			1,
+			$result['has_events_filter'],
+			'Should pass has_events_filter through to query args.'
+		);
+		$this->assertSame(
+			0,
+			$result['upcoming_events_only'],
+			'Should pass upcoming_events_only through to query args.'
+		);
 	}
 }

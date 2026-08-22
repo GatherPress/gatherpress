@@ -103,6 +103,33 @@ export function isEventPostType( postType = null ) {
 }
 
 /**
+ * Checks whether a shadow-source post type's event-activity filter can apply.
+ *
+ * The filter keeps only source posts (venues, productions, …) whose shadow
+ * terms sit on an upcoming or past event. That only works when the source's
+ * shadow taxonomy is actually wired onto an event post type; when it isn't,
+ * the resolving term lookup returns nothing and the filter would always hide
+ * every source post. This resolves the shadow taxonomy (`_<postType>`) and
+ * confirms it lists `gatherpress_event` among its object types so callers can
+ * gate the filter UI to where it is meaningful.
+ *
+ * @since 0.36.0
+ *
+ * @param {string} sourcePostType Shadow-source post type to check.
+ *
+ * @return {boolean} True if the source's shadow taxonomy attaches to events.
+ */
+export function hasEventActivityFilterSupport( sourcePostType ) {
+	if ( ! sourcePostType ) {
+		return false;
+	}
+
+	const taxonomy = select( 'core' ).getTaxonomy( `_${ sourcePostType }` );
+
+	return !! taxonomy?.types?.includes( 'gatherpress_event' );
+}
+
+/**
  * Checks if a post type declares `gatherpress-rsvp` support.
  *
  * Sibling to `isEventPostType()` — used to gate RSVP-only UI (sidebar
