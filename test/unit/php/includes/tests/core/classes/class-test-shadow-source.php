@@ -1295,6 +1295,25 @@ class Test_Shadow_Source extends Base {
 	}
 
 	/**
+	 * Hits the zero-events early-bail in get_source_post_ids_by_event_activity
+	 * (line 664 `return array()`). Unlike the untagged test, the query matches
+	 * **no** events at all, so the empty check fires before any term walk.
+	 *
+	 * @covers ::get_source_post_ids_by_event_activity
+	 *
+	 * @return void
+	 */
+	public function test_get_source_post_ids_by_event_activity_returns_empty_when_no_events(): void {
+		$instance = Shadow_Source::get_instance();
+
+		$this->assertSame(
+			array(),
+			$instance->get_source_post_ids_by_event_activity( Venue::POST_TYPE, true ),
+			'No matching events should resolve to an empty array.'
+		);
+	}
+
+	/**
 	 * Creates an event at the given venue slug with upcoming or past datetime.
 	 *
 	 * @param string $post_name Venue post_name to tag the event with.

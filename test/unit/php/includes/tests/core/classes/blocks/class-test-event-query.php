@@ -1571,4 +1571,43 @@ class Test_Event_Query extends Base {
 			'Should pass upcoming_events_only through to query args.'
 		);
 	}
+
+	/**
+	 * Direct coverage for the protected helper that the xdebug same-class
+	 * gap leaves untraced when it is only called from within its own class.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_query_rest_post_types
+	 *
+	 * @return void
+	 */
+	public function test_get_query_rest_post_types_returns_event_and_shadow_source_types(): void {
+		$instance = Event_Query::get_instance();
+
+		register_post_type(
+			'probe_evt',
+			array(
+				'label'    => 'Probe Event',
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
+		register_post_type(
+			'probe_shadow',
+			array(
+				'label'    => 'Probe Shadow',
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-shadow-source' ),
+			)
+		);
+
+		$types = Utility::invoke_hidden_method( $instance, 'get_query_rest_post_types', array() );
+
+		$this->assertContains( 'probe_evt', $types, 'Event-supporting types should be listed.' );
+		$this->assertContains( 'probe_shadow', $types, 'Shadow-source types should be listed.' );
+		$this->assertNotContains( 'post', $types, 'Unrelated types should not be listed.' );
+
+		unregister_post_type( 'probe_evt' );
+		unregister_post_type( 'probe_shadow' );
+	}
 }
