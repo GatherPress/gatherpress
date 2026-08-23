@@ -64,7 +64,7 @@ $gatherpress_context_json = wp_json_encode(
 	<?php if ( $gatherpress_has_link ) : ?>
 		<a class="gatherpress-online-event__text" href="<?php echo esc_url( $gatherpress_online_event_link ); ?>" target="_blank" rel="noopener noreferrer">
 			<?php echo wp_kses_post( $gatherpress_link_text ); ?>
-			<span class="screen-reader-text"> <?php echo esc_html__( '(opens in a new tab)', 'gatherpress' ); ?></span>
+			<span class="screen-reader-text"> <?php esc_html_e( '(opens in a new tab)', 'gatherpress' ); ?></span>
 		</a>
 	<?php else : ?>
 		<span class="gatherpress-online-event__text">

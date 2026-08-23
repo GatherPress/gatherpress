@@ -1,30 +1,6 @@
 // Import tooltip format styles for frontend display.
 @use "formats/tooltip/style";
 
-// WordPress core screen-reader text pattern (pre-6.8 shape). Used for
-// visually hidden announcements such as the "(opens in a new tab)"
-// warning on links that open a new tab, so screen readers announce it
-// while sighted users see no change. `clip` was removed in WordPress 6.8
-// (make.wordpress.org/core/2025/03/20) but is retained here alongside
-// `clip-path` and `word-wrap` for backwards compatibility with older
-// WordPress and themes that expect the legacy shape.
-/* stylelint-disable property-no-deprecated -- clip + word-wrap are
-   deprecated but retained for legacy compatibility; dropping them breaks
-   older themes and WordPress versions that expect the pre-6.8 shape. */
-.screen-reader-text {
-	border: 0;
-	clip: rect(1px, 1px, 1px, 1px);
-	clip-path: inset(50%);
-	height: 1px;
-	margin: -1px;
-	overflow: hidden;
-	padding: 0;
-	position: absolute;
-	width: 1px;
-	word-wrap: normal !important;
-}
-/* stylelint-enable property-no-deprecated */
-
 .gatherpress--is-visible {
 	display: block !important;
 }
