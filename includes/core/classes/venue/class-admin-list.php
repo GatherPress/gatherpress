@@ -12,7 +12,6 @@ namespace GatherPress\Core\Venue;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Venue\Map\Map;
 
 /**
  * Class Admin_List.
@@ -27,13 +26,23 @@ final class Admin_List {
 	use Singleton;
 
 	/**
+	 * Class constructor.
+	 *
+	 * Registers the admin list table hooks when the singleton is created.
+	 *
+	 * @since 0.36.0
+	 */
+	protected function __construct() {
+		$this->setup_hooks();
+	}
+
+	/**
 	 * Registers admin list table hooks.
 	 *
 	 * @since 0.36.0
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'registered_post_type', array( $this, 'maybe_register_post_type_hooks' ) );
-		add_filter( 'default_hidden_columns', array( $this, 'default_hidden_columns' ), 10, 2 );
 	}
 
 	/**
@@ -54,7 +63,7 @@ final class Admin_List {
 	}
 
 	/**
-	 * Adds Venue columns and removes the author column.
+	 * Adds the Physical details column and removes the author column.
 	 *
 	 * @since 0.36.0
 	 *
@@ -66,30 +75,9 @@ final class Admin_List {
 
 		$insert = array(
 			'physical_details' => __( 'Physical details', 'gatherpress' ),
-			'featured_image'   => __( 'Featured image', 'gatherpress' ),
-			'static_map'       => __( 'Static map', 'gatherpress' ),
 		);
 
 		return array_slice( $columns, 0, 2, true ) + $insert + array_slice( $columns, 2, null, true );
-	}
-
-	/**
-	 * Hides visual columns by default while preserving user preferences.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @param string[] $hidden Screen option hidden columns.
-	 * @param object   $screen Current screen.
-	 * @return string[] Updated hidden columns.
-	 */
-	public function default_hidden_columns( array $hidden, object $screen ): array {
-		$post_type = property_exists( $screen, 'post_type' ) ? (string) $screen->post_type : '';
-
-		if ( ! post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
-			return $hidden;
-		}
-
-		return array_values( array_unique( array_merge( $hidden, array( 'featured_image', 'static_map' ) ) ) );
 	}
 
 	/**
@@ -102,20 +90,8 @@ final class Admin_List {
 	 * @return void
 	 */
 	public function custom_columns( string $column, int $post_id ): void {
-		switch ( $column ) {
-			case 'physical_details':
-				$this->render_physical_details( $post_id );
-				break;
-			case 'featured_image':
-				$thumbnail = get_the_post_thumbnail( $post_id, array( 80, 80 ), array( 'alt' => '' ) );
-				echo empty( $thumbnail ) ? '—' : wp_kses_post( $thumbnail );
-				break;
-			case 'static_map':
-				$this->render_static_map( $post_id );
-				break;
-			default:
-				// Other columns are rendered by WordPress.
-				break;
+		if ( 'physical_details' === $column ) {
+			$this->render_physical_details( $post_id );
 		}
 	}
 
@@ -130,22 +106,32 @@ final class Admin_List {
 	protected function render_physical_details( int $post_id ): void {
 		$information = ( new Venue( $post_id ) )->get_information();
 		$address     = $this->get_address( $information );
-		$details     = array_filter( array( $address, $information['phone'] ) );
+		$website     = $information['website'];
 
-		if ( ! empty( $information['website'] ) ) {
-			$details[] = sprintf(
-				'<a href="%1$s">%2$s</a>',
-				esc_url( $information['website'] ),
-				esc_html( $information['website'] )
-			);
-		}
-
-		if ( empty( $details ) ) {
+		if ( '' === $address && '' === $information['phone'] && '' === $website ) {
 			echo '—';
 			return;
 		}
 
-		echo implode( '<br>', array_map( 'wp_kses_post', $details ) );
+		$details = array();
+
+		if ( '' !== $address ) {
+			$details[] = esc_html( $address );
+		}
+
+		if ( '' !== $information['phone'] ) {
+			$details[] = esc_html( $information['phone'] );
+		}
+
+		if ( '' !== $website ) {
+			$details[] = sprintf(
+				'<a href="%1$s">%2$s</a>',
+				esc_url( $website ),
+				esc_html( $website )
+			);
+		}
+
+		echo wp_kses_post( implode( '<br>', $details ) );
 	}
 
 	/**
@@ -158,7 +144,7 @@ final class Admin_List {
 	 */
 	protected function get_address( array $information ): string {
 		if ( ! empty( $information['address'] ) ) {
-			return esc_html( $information['address'] );
+			return $information['address'];
 		}
 
 		$street   = trim(
@@ -178,41 +164,6 @@ final class Admin_List {
 			)
 		);
 
-		return esc_html(
-			implode( ', ', array_filter( array( $street, $locality, $information['country'] ?? '' ) ) )
-		);
-	}
-
-	/**
-	 * Renders a stored static map image without generating a map.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @param int $post_id Venue post ID.
-	 * @return void
-	 */
-	protected function render_static_map( int $post_id ): void {
-		$descriptor = Map::get_instance()->get_stored_descriptor( $post_id );
-
-		if ( empty( $descriptor['url'] ) ) {
-			echo '—';
-			return;
-		}
-
-		$srcset = '';
-		if ( ! empty( $descriptor['url_2x'] ) ) {
-			$srcset = sprintf(
-				' srcset="%1$s 1x, %2$s 2x"',
-				esc_url( $descriptor['url'] ),
-				esc_url( $descriptor['url_2x'] )
-			);
-		}
-
-		printf(
-			'<img src="%1$s"%2$s width="120" height="80" alt="%3$s" />',
-			esc_url( $descriptor['url'] ),
-			esc_attr( $srcset ),
-			esc_attr( __( 'Static map of venue location', 'gatherpress' ) )
-		);
+		return implode( ', ', array_filter( array( $street, $locality, $information['country'] ?? '' ) ) );
 	}
 }

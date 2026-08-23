@@ -9,16 +9,13 @@
 namespace GatherPress\Tests\Core\Venue;
 
 use GatherPress\Core\Venue\Admin_List;
-use GatherPress\Core\Venue\Map\Map;
 use GatherPress\Core\Venue\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
-use stdClass;
 
 /**
  * Class Test_Admin_List.
  *
- * @group multisite
  * @coversDefaultClass \GatherPress\Core\Venue\Admin_List
  */
 class Test_Admin_List extends Base {
@@ -26,17 +23,23 @@ class Test_Admin_List extends Base {
 	/**
 	 * Tests admin list hooks.
 	 *
+	 * @covers ::__construct
 	 * @covers ::setup_hooks
 	 *
 	 * @return void
 	 */
 	public function test_setup_hooks(): void {
 		$instance = Admin_List::get_instance();
-		$this->assertSame( 10, has_filter( 'default_hidden_columns', array( $instance, 'default_hidden_columns' ) ) );
-		$this->assertSame(
-			10,
-			has_action( 'registered_post_type', array( $instance, 'maybe_register_post_type_hooks' ) )
+		$hooks    = array(
+			array(
+				'type'     => 'action',
+				'name'     => 'registered_post_type',
+				'priority' => 10,
+				'callback' => array( $instance, 'maybe_register_post_type_hooks' ),
+			),
 		);
+
+		$this->assert_hooks( $hooks, $instance );
 	}
 
 	/**
@@ -76,7 +79,7 @@ class Test_Admin_List extends Base {
 	}
 
 	/**
-	 * Removes author and adds Venue columns.
+	 * Removes author and adds the Venue column.
 	 *
 	 * @covers ::set_custom_columns
 	 *
@@ -94,31 +97,8 @@ class Test_Admin_List extends Base {
 
 		$this->assertArrayNotHasKey( 'author', $columns );
 		$this->assertSame( 'Physical details', $columns['physical_details'] );
-		$this->assertSame( 'Featured image', $columns['featured_image'] );
-		$this->assertSame( 'Static map', $columns['static_map'] );
-	}
-
-	/**
-	 * Adds visual columns to default hidden columns only for supported screens.
-	 *
-	 * @covers ::default_hidden_columns
-	 *
-	 * @return void
-	 */
-	public function test_default_hidden_columns(): void {
-		$screen            = new stdClass();
-		$screen->post_type = Venue::POST_TYPE;
-		$hidden            = Admin_List::get_instance()->default_hidden_columns( array( 'date' ), $screen );
-
-		$this->assertContains( 'date', $hidden );
-		$this->assertContains( 'featured_image', $hidden );
-		$this->assertContains( 'static_map', $hidden );
-
-		$screen->post_type = 'post';
-		$this->assertSame(
-			array( 'date' ),
-			Admin_List::get_instance()->default_hidden_columns( array( 'date' ), $screen )
-		);
+		$this->assertArrayNotHasKey( 'featured_image', $columns );
+		$this->assertArrayNotHasKey( 'static_map', $columns );
 	}
 
 	/**
@@ -132,7 +112,7 @@ class Test_Admin_List extends Base {
 	 */
 	public function test_physical_details(): void {
 		$post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
-		add_post_meta( $post_id, 'gatherpress_address', '<Main Street>' );
+		add_post_meta( $post_id, 'gatherpress_address', '5 & 7 Main St' );
 		add_post_meta( $post_id, 'gatherpress_phone', '555-0100' );
 		add_post_meta( $post_id, 'gatherpress_website', 'https://example.com/?x=1' );
 
@@ -140,9 +120,44 @@ class Test_Admin_List extends Base {
 		Admin_List::get_instance()->custom_columns( 'physical_details', $post_id );
 		$output = ob_get_clean();
 
-		$this->assertStringContainsString( '&lt;Main Street&gt;', $output );
+		$this->assertStringContainsString( '5 &amp; 7 Main St', $output );
 		$this->assertStringContainsString( '555-0100', $output );
 		$this->assertStringContainsString( 'href="https://example.com/?x=1"', $output );
+	}
+
+	/**
+	 * Renders nothing for columns this class does not handle.
+	 *
+	 * @covers ::custom_columns
+	 *
+	 * @return void
+	 */
+	public function test_custom_columns_ignores_other_columns(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		ob_start();
+		Admin_List::get_instance()->custom_columns( 'date', $post_id );
+		$this->assertSame( '', ob_get_clean() );
+	}
+
+	/**
+	 * Renders address alone without phone or website.
+	 *
+	 * @covers ::render_physical_details
+	 * @covers ::get_address
+	 *
+	 * @return void
+	 */
+	public function test_physical_details_address_only(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		add_post_meta( $post_id, 'gatherpress_address', '1 Street' );
+
+		ob_start();
+		Admin_List::get_instance()->custom_columns( 'physical_details', $post_id );
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString( '1 Street', $output );
+		$this->assertStringNotContainsString( '<br>', $output );
 	}
 
 	/**
@@ -181,53 +196,96 @@ class Test_Admin_List extends Base {
 	}
 
 	/**
-	 * Renders featured image or dash.
+	 * Directly invokes get_address when the address meta is present.
 	 *
-	 * @covers ::custom_columns
+	 * Xdebug does not reliably trace same-class protected helpers called from a
+	 * public method, so invoke the helper directly to keep it covered.
+	 *
+	 * @covers ::get_address
 	 *
 	 * @return void
 	 */
-	public function test_featured_image(): void {
-		$post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
-		ob_start();
-		Admin_List::get_instance()->custom_columns( 'featured_image', $post_id );
-		$this->assertSame( '—', ob_get_clean() );
+	public function test_get_address_with_address_meta(): void {
+		$information = array_merge(
+			array_fill_keys( array( 'house_number', 'street', 'city', 'state', 'postcode', 'country' ), '' ),
+			array( 'address' => '5 & 7 Main St' )
+		);
+
+		$result = Utility::invoke_hidden_method(
+			Admin_List::get_instance(),
+			'get_address',
+			array( $information )
+		);
+
+		$this->assertSame( '5 & 7 Main St', $result );
 	}
 
 	/**
-	 * Renders stored map or dash.
+	 * Directly invokes get_address for the structured-address fallback.
 	 *
-	 * @covers ::render_static_map
+	 * @covers ::get_address
 	 *
 	 * @return void
 	 */
-	public function test_static_map(): void {
-		$post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
-		ob_start();
-		Admin_List::get_instance()->custom_columns( 'static_map', $post_id );
-		$this->assertSame( '—', ob_get_clean() );
-
-		$map = Map::get_instance();
-		Utility::invoke_hidden_method( $map, 'get_all_descriptors', array( $post_id ) );
-		update_post_meta(
-			$post_id,
-			Map::META_KEY,
-			array(
-				'openstreetmap' => array(
-					'12x1200x800xroad' => array(
-						'url'    => 'https://example.com/map.png',
-						'url_2x' => 'https://example.com/map-2x.png',
-						'hash'   => 'abc',
-						'zoom'   => 12,
-						'width'  => 1200,
-						'height' => 800,
-					),
-				),
-			)
+	public function test_get_address_structured_fallback(): void {
+		$information = array(
+			'address'      => '',
+			'house_number' => '12',
+			'street'       => 'Oak Road',
+			'city'         => 'Boston',
+			'state'        => 'MA',
+			'postcode'     => '02110',
+			'country'      => 'USA',
 		);
-		// Stored descriptor lookup depends on provider defaults; malformed or unmatched entries stay safe.
+
+		$result = Utility::invoke_hidden_method(
+			Admin_List::get_instance(),
+			'get_address',
+			array( $information )
+		);
+
+		$this->assertSame( '12 Oak Road, Boston, MA, 02110, USA', $result );
+	}
+
+	/**
+	 * Directly invokes get_address with no address pieces at all.
+	 *
+	 * @covers ::get_address
+	 *
+	 * @return void
+	 */
+	public function test_get_address_empty(): void {
+		$information = array(
+			'address'      => '',
+			'house_number' => '',
+			'street'       => '',
+			'city'         => '',
+			'state'        => '',
+			'postcode'     => '',
+			'country'      => '',
+		);
+
+		$result = Utility::invoke_hidden_method(
+			Admin_List::get_instance(),
+			'get_address',
+			array( $information )
+		);
+
+		$this->assertSame( '', $result );
+	}
+
+	/**
+	 * Directly invokes render_physical_details when no details exist.
+	 *
+	 * @covers ::render_physical_details
+	 *
+	 * @return void
+	 */
+	public function test_render_physical_details_empty_direct(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
 		ob_start();
-		Admin_List::get_instance()->custom_columns( 'static_map', $post_id );
-		$this->assertNotEmpty( ob_get_clean() );
+		Utility::invoke_hidden_method( Admin_List::get_instance(), 'render_physical_details', array( $post_id ) );
+		$this->assertSame( '—', ob_get_clean() );
 	}
 }
