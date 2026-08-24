@@ -10,16 +10,21 @@ import {
 	getRsvpFilterStatus,
 	resolveRsvpFilterCount,
 } from '../../../../../../../src/blocks/rsvp-response/filters/dropdown-item-count';
-import { RSVP_COUNTS_STORE } from '../../../../../../../src/stores/rsvp-counts';
+import { RSVP_COUNTS_STORE } from '../../../../../../../src/helpers/namespace';
 
 /**
- * Builds a `select` stand-in that answers with the given counts.
+ * Builds a `select` stand-in for the stores the handler reads.
  *
- * @param {Object} counts Counts keyed by status.
+ * @param {Object} counts        Counts keyed by status.
+ * @param {number} currentPostId The post `core/editor` reports as current.
  *
- * @return {Function} A select function for the RSVP counts store.
+ * @return {Function} A select function.
  */
-const selectWith = ( counts ) => ( storeName ) => {
+const selectWith = ( counts, currentPostId = null ) => ( storeName ) => {
+	if ( 'core/editor' === storeName ) {
+		return { getCurrentPostId: () => currentPostId };
+	}
+
 	if ( RSVP_COUNTS_STORE !== storeName ) {
 		throw new Error( `Unexpected store: ${ storeName }` );
 	}
@@ -100,7 +105,18 @@ describe( 'resolveRsvpFilterCount', () => {
 		).toBe( 'Anything (%d)' );
 	} );
 
-	it( 'leaves the placeholder when there is no post context', () => {
+	it( 'falls back to the post being edited when context has no postId', () => {
+		// Block context only carries postId inside a Query Loop.
+		expect(
+			resolveRsvpFilterCount( 'Attending (%d)', {
+				attributes,
+				context: {},
+				select: selectWith( { attending: { count: 3 } }, 42 ),
+			} ),
+		).toBe( 'Attending (3)' );
+	} );
+
+	it( 'leaves the placeholder when no post can be resolved at all', () => {
 		expect(
 			resolveRsvpFilterCount( 'Attending (%d)', {
 				attributes,

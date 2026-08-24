@@ -7,16 +7,7 @@ import apiFetch from '@wordpress/api-fetch';
 /**
  * Internal dependencies
  */
-import { EVENT_REST_API } from '../helpers/namespace';
-
-/**
- * Store name for cached RSVP response counts.
- *
- * @since 0.36.0
- *
- * @type {string}
- */
-export const RSVP_COUNTS_STORE = 'gatherpress/rsvp-counts';
+import { EVENT_REST_API, RSVP_COUNTS_STORE } from '../helpers/namespace';
 
 const DEFAULT_STATE = {
 	counts: {},

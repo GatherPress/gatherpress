@@ -6,7 +6,7 @@ import { addFilter } from '@wordpress/hooks';
 /**
  * Internal dependencies
  */
-import { RSVP_COUNTS_STORE } from '../../../stores/rsvp-counts';
+import { RSVP_COUNTS_STORE } from '../../../helpers/namespace';
 
 /**
  * Maps the classes this block seeds onto its filter items to the response
@@ -68,13 +68,18 @@ export function resolveRsvpFilterCount( text, { attributes, context, select } ) 
 	}
 
 	const status = getRsvpFilterStatus( attributes?.className );
-	const postId = context?.postId ?? null;
+
+	// Block context carries `postId` only inside a Query Loop; the plain post
+	// editor provides none, so fall back to the post being edited. Knowing
+	// which post to count is this handler's problem, not the dropdown item's.
+	const postId =
+		context?.postId ?? select( 'core/editor' )?.getCurrentPostId() ?? null;
 
 	if ( ! status || ! postId ) {
 		return text;
 	}
 
-	const count = select( RSVP_COUNTS_STORE ).getCount( postId, status );
+	const count = select( RSVP_COUNTS_STORE )?.getCount( postId, status ) ?? null;
 
 	return null === count ? text : text.replace( '%d', String( count ) );
 }
