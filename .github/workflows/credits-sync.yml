@@ -115,7 +115,10 @@ jobs:
           # `team` was renamed `noteworthy` in the 0.35.1 credits files; read
           # both so old- and new-format files each contribute a full roster.
           jq -r '[(.leads // [])[], (.team // [])[], (.noteworthy // [])[], (.contributors // [])[]] | .[]' "${newest}" > /tmp/roster.txt
-          jq -r '(.contributors // [])[]' /tmp/unreleased.json >> /tmp/roster.txt
+          # The noteworthy queue (#2136) counts too: a queued promotion is
+          # already being tracked, so the sync must not re-propose the same
+          # person as a plain contributor.
+          jq -r '[(.contributors // [])[], (.noteworthy // [])[]] | .[]' /tmp/unreleased.json >> /tmp/roster.txt
           sort -u /tmp/roster.txt -o /tmp/roster.txt
 
           pending=$(comm -23 /tmp/pending.txt /tmp/roster.txt || true)
