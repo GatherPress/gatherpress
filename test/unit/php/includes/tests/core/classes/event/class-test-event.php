@@ -1118,6 +1118,45 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * Coverage for is_same_date resisting a corrupting datetime format filter.
+	 *
+	 * A filter that ignores its $format argument (returning a fixed
+	 * `Y-m-d H:i`) would previously make a same-day event compare unequal,
+	 * because is_same_date compared filter-passing formatted strings. It now
+	 * compares the unfiltered ISO date portions.
+	 *
+	 * @since 0.36.0
+	 * @covers ::is_same_date
+	 *
+	 * @return void
+	 */
+	public function test_is_same_date_ignores_datetime_format_filter(): void {
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $event_id );
+
+		$start = new DateTime( '2025-06-15 10:00:00' );
+		$end   = new DateTime( '2025-06-15 14:00:00' );
+
+		$event->save_datetimes(
+			array(
+				'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+				'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$filter = static fn () => 'Y-m-d H:i';
+		add_filter( 'gatherpress_datetime_format', $filter );
+
+		$this->assertTrue(
+			$event->is_same_date(),
+			'Failed to assert that a same-day event stays same-day despite a corrupting datetime_format filter.'
+		);
+
+		remove_filter( 'gatherpress_datetime_format', $filter );
+	}
+
+	/**
 	 * Coverage for get_datetime_start method.
 	 *
 	 * @covers ::get_datetime_start
@@ -1237,6 +1276,54 @@ class Test_Event extends Base {
 		$result = $event->get_formatted_datetime( 'end' );
 
 		$this->assertNotEmpty( $result, 'Failed to assert formatted end datetime is not empty.' );
+	}
+
+	/**
+	 * Coverage for get_display_datetime honoring a block-level timezone override.
+	 *
+	 * With the global show_timezone setting off, a block that overrides
+	 * showTimezone to yes must still show the timezone; without any override
+	 * the timezone stays hidden.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_display_datetime
+	 *
+	 * @return void
+	 */
+	public function test_get_display_datetime_timezone_override_with_global_off(): void {
+		update_option(
+			'gatherpress_settings',
+			array(
+				'date_format'   => 'l, F j, Y',
+				'time_format'   => 'g:i A',
+				'show_timezone' => false,
+			)
+		);
+
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $event_id );
+
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2025-06-15 10:00:00',
+				'datetime_end'   => '2025-06-15 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$this->assertStringContainsString(
+			'EDT',
+			$event->get_display_datetime( '', '', '', '', 'yes' ),
+			'Failed to assert the timezone shows when the block overrides the global setting to yes.'
+		);
+
+		$this->assertStringNotContainsString(
+			'EDT',
+			$event->get_display_datetime(),
+			'Failed to assert the timezone stays hidden when the global setting is off and there is no override.'
+		);
+
+		delete_option( 'gatherpress_settings' );
 	}
 
 	/**

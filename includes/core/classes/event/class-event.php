@@ -317,9 +317,9 @@ class Event {
 		$default_separator = $separator ? $separator : __( 'to', 'gatherpress' );
 		$separator         = $start && $end ? $default_separator : false;
 
-		// Add timezone.
+		// Add timezone. A block-level "yes" override wins over the global setting.
 		if ( $show_timezone ? 'yes' === $show_timezone : $timezone ) {
-			$timezone = $this->get_datetime_start( $timezone );
+			$timezone = $this->get_datetime_start( ' T' );
 		} else {
 			$timezone = false;
 		}
@@ -333,29 +333,26 @@ class Event {
 	}
 
 	/**
-	 * Check if the start and end DateTime fall on the same date.
+	 * Check whether the start and end datetimes fall on the same date.
 	 *
-	 * Compares the start and end DateTime objects to determine if they are on the same date.
+	 * Compares the date portion of the unfiltered ISO datetimes, which bypass
+	 * the `gatherpress_datetime_format` filter, so a display-format filter
+	 * that ignores its $format argument cannot make a same-day event compare
+	 * unequal.
 	 *
 	 * @since 0.34.0
 	 *
 	 * @return bool True if start and end are on the same date, false otherwise.
-	 *
-	 * @throws Exception If date comparison fails.
 	 */
 	public function is_same_date(): bool {
-		$datetime_start = $this->get_datetime_start( 'Y-m-d' );
-		$datetime_end   = $this->get_datetime_end( 'Y-m-d' );
+		$datetime_start = $this->get_datetime_start_iso();
+		$datetime_end   = $this->get_datetime_end_iso();
 
 		if ( empty( $datetime_start ) || empty( $datetime_end ) ) {
 			return false;
 		}
 
-		if ( $datetime_start === $datetime_end ) {
-			return true;
-		}
-
-		return false;
+		return substr( $datetime_start, 0, 10 ) === substr( $datetime_end, 0, 10 );
 	}
 
 	/**
