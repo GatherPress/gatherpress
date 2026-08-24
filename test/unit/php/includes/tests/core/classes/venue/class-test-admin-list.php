@@ -116,9 +116,10 @@ class Test_Admin_List extends Base {
 		add_post_meta( $post_id, 'gatherpress_phone', '555-0100' );
 		add_post_meta( $post_id, 'gatherpress_website', 'https://example.com/?x=1' );
 
-		ob_start();
-		Admin_List::get_instance()->custom_columns( 'physical_details', $post_id );
-		$output = ob_get_clean();
+		$output = Utility::buffer_and_return(
+			array( Admin_List::get_instance(), 'custom_columns' ),
+			array( 'physical_details', $post_id )
+		);
 
 		$this->assertStringContainsString( '5 &amp; 7 Main St', $output );
 		$this->assertStringContainsString( '555-0100', $output );
@@ -135,9 +136,13 @@ class Test_Admin_List extends Base {
 	public function test_custom_columns_ignores_other_columns(): void {
 		$post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		ob_start();
-		Admin_List::get_instance()->custom_columns( 'date', $post_id );
-		$this->assertSame( '', ob_get_clean() );
+		$this->assertSame(
+			'',
+			Utility::buffer_and_return(
+				array( Admin_List::get_instance(), 'custom_columns' ),
+				array( 'date', $post_id )
+			)
+		);
 	}
 
 	/**
@@ -152,9 +157,10 @@ class Test_Admin_List extends Base {
 		$post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 		add_post_meta( $post_id, 'gatherpress_address', '1 Street' );
 
-		ob_start();
-		Admin_List::get_instance()->custom_columns( 'physical_details', $post_id );
-		$output = ob_get_clean();
+		$output = Utility::buffer_and_return(
+			array( Admin_List::get_instance(), 'custom_columns' ),
+			array( 'physical_details', $post_id )
+		);
 
 		$this->assertStringContainsString( '1 Street', $output );
 		$this->assertStringNotContainsString( '<br>', $output );
@@ -169,9 +175,13 @@ class Test_Admin_List extends Base {
 	 */
 	public function test_physical_details_empty(): void {
 		$post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
-		ob_start();
-		Admin_List::get_instance()->custom_columns( 'physical_details', $post_id );
-		$this->assertSame( '—', ob_get_clean() );
+		$this->assertSame(
+			'—',
+			Utility::buffer_and_return(
+				array( Admin_List::get_instance(), 'custom_columns' ),
+				array( 'physical_details', $post_id )
+			)
+		);
 	}
 
 	/**
@@ -190,9 +200,13 @@ class Test_Admin_List extends Base {
 		add_post_meta( $post_id, 'gatherpress_postcode', '02110' );
 		add_post_meta( $post_id, 'gatherpress_country', 'USA' );
 
-		ob_start();
-		Admin_List::get_instance()->custom_columns( 'physical_details', $post_id );
-		$this->assertStringContainsString( '12 Oak Road, Boston, MA, 02110, USA', ob_get_clean() );
+		$this->assertStringContainsString(
+			'12 Oak Road, Boston, MA, 02110, USA',
+			Utility::buffer_and_return(
+				array( Admin_List::get_instance(), 'custom_columns' ),
+				array( 'physical_details', $post_id )
+			)
+		);
 	}
 
 	/**
@@ -284,8 +298,13 @@ class Test_Admin_List extends Base {
 	public function test_render_physical_details_empty_direct(): void {
 		$post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		ob_start();
-		Utility::invoke_hidden_method( Admin_List::get_instance(), 'render_physical_details', array( $post_id ) );
-		$this->assertSame( '—', ob_get_clean() );
+		$this->assertSame(
+			'—',
+			Utility::buffer_and_return_hidden_method(
+				Admin_List::get_instance(),
+				'render_physical_details',
+				array( $post_id )
+			)
+		);
 	}
 }
