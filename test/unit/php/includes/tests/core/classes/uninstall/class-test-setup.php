@@ -95,6 +95,15 @@ class Test_Setup extends Test_Base {
 			public bool $ran = false;
 
 			/**
+			 * Opts in; applies() defaults to false so a bare double never runs.
+			 *
+			 * @return bool Always true.
+			 */
+			public function applies(): bool {
+				return true;
+			}
+
+			/**
 			 * Records the per-site pass.
 			 *
 			 * @return void

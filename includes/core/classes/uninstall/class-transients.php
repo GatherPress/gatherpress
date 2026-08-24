@@ -22,6 +22,20 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 final class Transients extends Base {
 
 	/**
+	 * Always applies.
+	 *
+	 * Transients are cache, not data — removing them can never lose
+	 * anything a reinstall would want back, so this task needs no opt-in.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return bool Always true.
+	 */
+	public function applies(): bool {
+		return true;
+	}
+
+	/**
 	 * Wipe plugin-owned transient rows (data + timeout) from the current site.
 	 *
 	 * Covers both the data row (`_transient_gatherpress_<key>`) and its paired

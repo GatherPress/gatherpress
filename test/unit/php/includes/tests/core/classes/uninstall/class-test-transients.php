@@ -20,6 +20,20 @@ use PMC\Unit_Test\Utility;
 class Test_Transients extends Base {
 
 	/**
+	 * The transient task opts in unconditionally.
+	 *
+	 * @covers ::applies
+	 *
+	 * @return void
+	 */
+	public function test_applies_opts_in(): void {
+		$this->assertTrue(
+			( new Transients() )->applies(),
+			'Transients are cache; the wipe is always safe and needs no opt-in setting.'
+		);
+	}
+
+	/**
 	 * Plugin-owned transient rows are wiped on uninstall.
 	 *
 	 * @covers ::uninstall_site

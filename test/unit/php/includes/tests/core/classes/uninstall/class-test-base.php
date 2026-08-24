@@ -91,13 +91,15 @@ class Test_Base extends Base {
 	}
 
 	/**
-	 * Applies defaults to true so a bare task always runs.
+	 * Applies defaults to false so a bare task removes nothing.
+	 *
+	 * Uninstall tasks are destructive; a task must opt in before it runs.
 	 *
 	 * @covers ::applies
 	 *
 	 * @return void
 	 */
-	public function test_applies_defaults_to_true(): void {
+	public function test_applies_defaults_to_false(): void {
 		$task = new class() extends Uninstall_Base {
 
 			/**
@@ -109,9 +111,9 @@ class Test_Base extends Base {
 			}
 		};
 
-		$this->assertTrue(
+		$this->assertFalse(
 			$task->applies(),
-			'A task that does not override applies() should run.'
+			'A task that does not opt in must not run.'
 		);
 	}
 

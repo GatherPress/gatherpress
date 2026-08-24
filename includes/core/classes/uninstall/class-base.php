@@ -28,16 +28,17 @@ abstract class Base {
 	/**
 	 * Whether this task should run at all.
 	 *
-	 * Today every registered task runs unconditionally. The #681 follow-up
-	 * adds destructive tasks (settings, tables, posts) that each hang off
-	 * an opt-in setting, and this is where that check will live.
+	 * False by default: uninstall tasks are destructive, so a task that
+	 * never says otherwise removes nothing. Each subclass opts in — by
+	 * returning true when the cleanup is always safe (caches), or, once
+	 * the #681 follow-up lands, by checking its opt-in setting here.
 	 *
 	 * @since 0.36.0
 	 *
 	 * @return bool True when the task should run.
 	 */
 	public function applies(): bool {
-		return true;
+		return false;
 	}
 
 	/**
