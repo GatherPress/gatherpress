@@ -69,8 +69,8 @@ describe( 'online-event-link updateOnlineEventLink', () => {
 	/**
 	 * Builds the online event link wrapper markup and a fresh render target.
 	 *
-	 * @param {string}   textMarkup Inner HTML of the `.gatherpress-online-event__text` element.
-	 * @param {string}   tagName    Whether the primary element starts as an anchor or a span.
+	 * @param {string} textMarkup Inner HTML of the `.gatherpress-online-event__text` element.
+	 * @param {string} tagName    Whether the primary element starts as an anchor or a span.
 	 * @return {HTMLElement} The wrapper element passed via `getElement().ref`.
 	 */
 	function setupElement( textMarkup, tagName = 'span' ) {
@@ -125,6 +125,26 @@ describe( 'online-event-link updateOnlineEventLink', () => {
 		);
 		// First run must not add a notice or swap the element.
 		expect( element.querySelector( '.gatherpress-new-tab-notice' ) ).toBeNull();
+	} );
+
+	it( 'initializes state to an empty link on a first-run span without touching it', () => {
+		// A fresh span first run must seed the empty link and leave the markup
+		// alone so the server render stays authoritative.
+		const element = setupElement( 'Join', 'span' );
+
+		runCallback( element );
+
+		const text = element.querySelector( '.gatherpress-online-event__text' );
+		expect( text.tagName ).toBe( 'SPAN' );
+		expect( state.posts[ 123 ].onlineEventLink ).toBe( '' );
+		expect( element.querySelector( '.gatherpress-new-tab-notice' ) ).toBeNull();
+	} );
+
+	it( 'returns early when no post id is present in context', () => {
+		// A payload without a post id must bail before any state or DOM work.
+		runCallback( setupElement( 'Join' ), { postId: 0 } );
+
+		expect( state.posts ).toBeUndefined();
 	} );
 
 	it( 'returns early when no online event text element exists', () => {
@@ -208,6 +228,21 @@ describe( 'online-event-link updateOnlineEventLink', () => {
 		expect(
 			link.querySelectorAll( '.gatherpress-new-tab-notice' ).length
 		).toBe( 1 );
+	} );
+
+	it( 'does not append a notice on an existing link when the warning is missing', () => {
+		// On the anchor-stays-anchor path, a payload without newTabWarning
+		// must leave the href in place and add no empty notice span.
+		seedStateLink( 'https://meet.example.test/room' );
+		const element = setupElement( 'Join', 'a' );
+		element.querySelector( 'a' ).href = 'https://meet.example.test/room';
+
+		runCallback( element, { postId: 123 } );
+
+		const link = element.querySelector( '.gatherpress-online-event__text' );
+		expect( link.tagName ).toBe( 'A' );
+		expect( link.href ).toBe( 'https://meet.example.test/room' );
+		expect( link.querySelector( '.gatherpress-new-tab-notice' ) ).toBeNull();
 	} );
 
 	it( 'does not throw when the new-tab warning is missing from context', () => {
