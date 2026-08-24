@@ -22,8 +22,10 @@ $gatherpress_component_attrs = array(
 	'suffix'  => $suffix,
 	'homeUrl' => home_url(),
 );
+
+$gatherpress_component_json = (string) wp_json_encode( $gatherpress_component_attrs );
 ?>
 <p>
 	<strong><?php esc_html_e( 'Preview:', 'gatherpress' ); ?></strong>
-	<span data-gatherpress_component_name="urlrewrite-preview" data-gatherpress_component_attrs="<?php echo esc_attr( htmlspecialchars( wp_json_encode( $gatherpress_component_attrs ), ENT_QUOTES, 'UTF-8' ) ); ?>"></span>
+	<span data-gatherpress_component_name="urlrewrite-preview" data-gatherpress_component_attrs="<?php echo esc_attr( htmlspecialchars( $gatherpress_component_json, ENT_QUOTES, 'UTF-8' ) ); ?>"></span>
 </p>

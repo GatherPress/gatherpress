@@ -55,8 +55,11 @@ export function useBlockInsertion( clientId, insertBlocksAfter ) {
 				const range = selection.getRangeAt( 0 );
 				const textContent = contentElement.textContent || '';
 
-				// Calculate cursor position.
-				const preRange = document.createRange();
+				// Calculate cursor position. The range comes from the
+				// element's own document, since the block renders inside the
+				// editor canvas iframe rather than the admin document.
+				const preRange =
+					contentElement.ownerDocument.createRange();
 				preRange.selectNodeContents( contentElement );
 				preRange.setEnd( range.startContainer, range.startOffset );
 				const cursorPosition = preRange.toString().length;

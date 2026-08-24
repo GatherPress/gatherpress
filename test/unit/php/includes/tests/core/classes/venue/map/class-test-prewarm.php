@@ -11,7 +11,7 @@ namespace GatherPress\Tests\Core\Venue\Map;
 use GatherPress\Core\Venue\Map;
 use GatherPress\Core\Venue\Map\Prewarm;
 use GatherPress\Core\Venue\Setup;
-use GatherPress\Core\Venue\Venue;
+use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
@@ -208,6 +208,30 @@ class Test_Prewarm extends Base {
 		$this->assertSame( Map::DEFAULT_ZOOM, $result['zoom'] );
 		$this->assertSame( 0, $result['width'] );
 		$this->assertSame( Map::DEFAULT_HEIGHT, $result['height'] );
+		$this->assertSame( Map::DEFAULT_ASPECT_RATIO, $result['aspect_ratio'] );
+	}
+
+	/**
+	 * A hand-edited or malformed post_content can carry a non-string
+	 * `aspectRatio` attribute (e.g. `["16/9"]`); the site default must be
+	 * used instead of casting the array and emitting a PHP "Array to
+	 * string conversion" warning.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::extract_block_combo
+	 *
+	 * @return void
+	 */
+	public function test_extract_block_combo_falls_back_to_default_for_non_string_aspect_ratio(): void {
+		$instance = Prewarm::get_instance();
+
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'extract_block_combo',
+			array( array( 'aspectRatio' => array( '16/9' ) ) )
+		);
+
 		$this->assertSame( Map::DEFAULT_ASPECT_RATIO, $result['aspect_ratio'] );
 	}
 

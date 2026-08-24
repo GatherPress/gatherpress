@@ -1,8 +1,8 @@
 diff --git a/node_modules/@wordpress/env/lib/runtime/docker/docker-config.js b/node_modules/@wordpress/env/lib/runtime/docker/docker-config.js
-index 0820bcc..fd22583 100644
+index a6c0f30..718380c 100644
 --- a/node_modules/@wordpress/env/lib/runtime/docker/docker-config.js
 +++ b/node_modules/@wordpress/env/lib/runtime/docker/docker-config.js
-@@ -229,6 +229,8 @@ RUN rm /tmp/composer-setup.php`;
+@@ -223,6 +223,8 @@ RUN rm /tmp/composer-setup.php`;
  	dockerFileContent += `
  USER $HOST_UID:$HOST_GID
  ENV PATH="\${PATH}:/home/$HOST_USERNAME/.composer/vendor/bin"

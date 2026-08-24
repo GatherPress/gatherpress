@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Traits\Singleton;
 use WP_Comment;
 use WP_Comment_Query;
+use WP_REST_Response;
 use WP_Tax_Query;
 
 /**
@@ -74,6 +75,8 @@ final class Query {
 		add_action( 'pre_get_comments', array( $this, 'exclude_rsvp_from_comment_query' ) );
 		add_filter( 'comments_clauses', array( $this, 'taxonomy_query' ), 10, 2 );
 		add_action( 'wp_insert_comment', array( $this, 'maybe_invalidate_comment_types_cache' ), 10, 2 );
+		add_filter( 'get_comment', array( $this, 'prepare_rsvp_comment' ) );
+		add_filter( 'rest_prepare_comment', array( $this, 'mask_anonymous_rsvp_rest_author' ), 10, 2 );
 	}
 
 	/**
@@ -84,10 +87,10 @@ final class Query {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array            $clauses       The clauses for the query.
-	 * @param WP_Comment_Query $comment_query Current instance of WP_Comment_Query (passed by reference).
+	 * @param array<string, string> $clauses       The clauses for the query.
+	 * @param WP_Comment_Query      $comment_query Current instance of WP_Comment_Query (passed by reference).
 	 *
-	 * @return array Modified query clauses.
+	 * @return array<string, string> Modified query clauses.
 	 */
 	public function taxonomy_query( array $clauses, WP_Comment_Query $comment_query ): array {
 		global $wpdb;
@@ -111,7 +114,7 @@ final class Query {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $args Arguments for retrieving RSVPs.
+	 * @param array<string, mixed> $args Arguments for retrieving RSVPs.
 	 *
 	 * @return mixed Array of RSVP comments or integer count when count parameter is true.
 	 */
@@ -147,7 +150,7 @@ final class Query {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $args Arguments for retrieving the RSVP.
+	 * @param array<string, mixed> $args Arguments for retrieving the RSVP.
 	 *
 	 * @return WP_Comment|null The RSVP comment or null if not found.
 	 */
@@ -172,7 +175,7 @@ final class Query {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array Array of all comment types in the database.
+	 * @return string[] Array of all comment types in the database.
 	 */
 	protected function get_all_comment_types(): array {
 		$default_types = array( 'comment', 'pingback', 'trackback' );
@@ -305,5 +308,109 @@ final class Query {
 
 			$query->query_vars['type__in'] = $current_comment_types_in;
 		}
+	}
+
+	/**
+	 * Prepare an RSVP comment for whoever is reading it.
+	 *
+	 * Every reader of a comment goes through `get_comment()`, including the
+	 * REST comments route and the core avatar and comment-author blocks, and
+	 * most of them read the columns straight off the object rather than through
+	 * a display function. Both of the adjustments an RSVP needs therefore
+	 * belong here: the responder's identity is withheld when they asked to stay
+	 * anonymous, and their profile URL is resolved from their account, since
+	 * responses saved through the store leave that column empty.
+	 *
+	 * @since 0.35.1
+	 *
+	 * @param WP_Comment|mixed $comment The comment being read.
+	 *
+	 * @return WP_Comment|mixed The comment, prepared for the current reader.
+	 */
+	public function prepare_rsvp_comment( $comment ) {
+		if ( ! $comment instanceof WP_Comment || Rsvp::COMMENT_TYPE !== $comment->comment_type ) {
+			return $comment;
+		}
+
+		$manages_rsvps = current_user_can( Rsvp::CAPABILITY );
+		$withhold      = get_comment_meta( (int) $comment->comment_ID, Rsvp::ANONYMOUS_META_KEY, true )
+			&& ! $manages_rsvps;
+
+		// Responses saved before the store stopped writing an address into the
+		// display-name column still carry one, and every reader takes the name
+		// from there. The equality marks that write, which filled both columns
+		// with the same value; a name that only looks like an address belongs
+		// to an account registered with one.
+		$withhold_address = ! $withhold
+			&& ! $manages_rsvps
+			&& is_email( $comment->comment_author )
+			&& $comment->comment_author === $comment->comment_author_email;
+
+		// Only fill a URL the store never wrote, so a response identified by
+		// its URL keeps the one it was saved with.
+		$resolve = ! $withhold
+			&& '' === $comment->comment_author_url
+			&& intval( $comment->user_id );
+
+		if ( ! $withhold && ! $resolve && ! $withhold_address ) {
+			return $comment;
+		}
+
+		// Adjusted on a clone so the cached comment keeps its own values for
+		// readers that are allowed to see them.
+		$prepared = clone $comment;
+
+		if ( $withhold ) {
+			$prepared->comment_author       = __( 'Anonymous', 'gatherpress' );
+			$prepared->comment_author_email = '';
+			$prepared->comment_author_url   = '';
+		} else {
+			// Independent conditions, so a response that matches both gets
+			// both. Branching them apart would drop the URL for any responder
+			// whose stored name is an address.
+			if ( $withhold_address ) {
+				$prepared->comment_author = __( 'Attendee', 'gatherpress' );
+			}
+
+			if ( $resolve ) {
+				$prepared->comment_author_url = (string) get_author_posts_url( (int) $comment->user_id );
+			}
+		}
+
+		return $prepared;
+	}
+
+	/**
+	 * Withhold the responder's user ID from the comments REST response.
+	 *
+	 * The masked comment keeps its real `user_id` because RSVP lookups depend
+	 * on it, and those run for the responder themselves. It only needs to be
+	 * withheld where it reaches the public, and the `author` field is the one
+	 * place that publishes it — left intact it resolves back to the responder
+	 * through the users endpoint.
+	 *
+	 * @since 0.35.1
+	 *
+	 * @param WP_REST_Response $response The response object.
+	 * @param WP_Comment       $comment  The comment being returned.
+	 *
+	 * @return WP_REST_Response The response, with the author withheld when required.
+	 */
+	public function mask_anonymous_rsvp_rest_author( $response, $comment ) {
+		$data = $response->get_data();
+
+		// Re-read the responder's own state rather than the masked output, so
+		// this does not depend on what the mask above happens to write.
+		if (
+			isset( $data['author'] )
+			&& Rsvp::COMMENT_TYPE === $comment->comment_type
+			&& ! current_user_can( Rsvp::CAPABILITY )
+			&& get_comment_meta( (int) $comment->comment_ID, Rsvp::ANONYMOUS_META_KEY, true )
+		) {
+			$data['author'] = 0;
+			$response->set_data( $data );
+		}
+
+		return $response;
 	}
 }

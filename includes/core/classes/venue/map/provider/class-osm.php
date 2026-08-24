@@ -88,8 +88,8 @@ final class OSM extends Base {
 	/**
 	 * Composite OSM tiles around the venue, stamp a marker at the canvas
 	 * center, and return the finished GD image. Returns null when GD is
-	 * unavailable, when the requested density is unsupported, or when the
-	 * retina variant would require a tile zoom past `Map::ZOOM_MAX`.
+	 * unavailable, when the requested dimensions are not positive, or when
+	 * the retina variant would require a tile zoom past `Map::ZOOM_MAX`.
 	 *
 	 * @since 0.34.0
 	 *
@@ -116,6 +116,10 @@ final class OSM extends Base {
 		// PHP built without the GD extension. Can't simulate in a unit test without making the runtime itself broken.
 		if ( ! function_exists( 'imagecreatetruecolor' ) ) { // @codeCoverageIgnore
 			return null; // @codeCoverageIgnore
+		}
+
+		if ( $width < 1 || $height < 1 ) {
+			return null;
 		}
 
 		// Coerce unsupported densities back to 1. Allowing, say, density=3
@@ -152,7 +156,7 @@ final class OSM extends Base {
 		$canvas = imagecreatetruecolor( $canvas_width, $canvas_height );
 
 		// Background: neutral gray so missing tiles blend rather than glaring black.
-		$bg = imagecolorallocate( $canvas, 238, 238, 238 );
+		$bg = (int) imagecolorallocate( $canvas, 238, 238, 238 );
 		imagefilledrectangle( $canvas, 0, 0, $canvas_width - 1, $canvas_height - 1, $bg );
 
 		$tiles = $this->get_tile_url_template();
@@ -349,9 +353,9 @@ final class OSM extends Base {
 	 * @return void
 	 */
 	public function stamp_marker( $canvas, int $x, int $y, float $scale = 1.0 ): void {
-		$white = imagecolorallocate( $canvas, 255, 255, 255 );
-		$red   = imagecolorallocate( $canvas, 220, 53, 69 );
-		$dark  = imagecolorallocate( $canvas, 30, 30, 30 );
+		$white = (int) imagecolorallocate( $canvas, 255, 255, 255 );
+		$red   = (int) imagecolorallocate( $canvas, 220, 53, 69 );
+		$dark  = (int) imagecolorallocate( $canvas, 30, 30, 30 );
 
 		$outer = max( 1, (int) round( 20 * $scale ) );
 		$inner = max( 1, (int) round( 16 * $scale ) );

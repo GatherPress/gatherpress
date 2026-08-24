@@ -23,6 +23,9 @@ use GatherPress\Core\Traits\Singleton;
  * Handles the "Roles" settings page for GatherPress.
  *
  * @since 0.34.0
+ *
+ * @phpstan-import-type SettingsOption from Settings
+ * @phpstan-import-type SettingsSection from Settings
  */
 final class Roles extends Base {
 
@@ -58,7 +61,7 @@ final class Roles extends Base {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array An array of sections and their settings.
+	 * @return array<string, SettingsSection> An array of sections and their settings.
 	 */
 	protected function get_sections(): array {
 		$roles = array(
@@ -107,12 +110,13 @@ final class Roles extends Base {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array An array containing user roles and their corresponding settings.
+	 * @return array<string, SettingsOption> An array containing user roles and their corresponding settings.
 	 */
 	public function get_user_roles(): array {
 		$sub_pages = Settings::get_instance()->get_sub_pages();
 
-		return (array) $sub_pages['roles_settings']['sections']['roles']['options'];
+		// The sub-pages array is filterable, so a site can drop the roles section entirely.
+		return $sub_pages['roles_settings']['sections']['roles']['options'] ?? array();
 	}
 
 	/**

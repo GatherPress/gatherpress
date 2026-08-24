@@ -340,144 +340,6 @@ class Test_Rsvp_Template extends Base {
 	}
 
 	/**
-	 * Tests anonymize_rsvp_blocks with core/avatar block.
-	 *
-	 * @covers ::anonymize_rsvp_blocks
-	 * @return void
-	 */
-	public function test_anonymize_rsvp_blocks_avatar(): void {
-		$instance   = Rsvp_Template::get_instance();
-		$post_id    = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_status' => 'publish',
-			)
-		);
-		$comment_id = $this->factory->comment->create(
-			array(
-				'comment_post_ID' => $post_id,
-				'comment_type'    => Rsvp::COMMENT_TYPE,
-			)
-		);
-
-		$blocks = array(
-			array(
-				'blockName'    => 'core/avatar',
-				'attrs'        => array( 'isLink' => 1 ),
-				'innerBlocks'  => array(),
-				'innerHTML'    => '',
-				'innerContent' => array(),
-			),
-		);
-
-		$instance->anonymize_rsvp_blocks( $blocks, $comment_id );
-
-		$this->assertSame(
-			0,
-			$blocks[0]['attrs']['isLink'],
-			'Failed to assert avatar isLink is set to 0.'
-		);
-	}
-
-	/**
-	 * Tests anonymize_rsvp_blocks with core/comment-author-name block.
-	 *
-	 * @covers ::anonymize_rsvp_blocks
-	 * @return void
-	 */
-	public function test_anonymize_rsvp_blocks_author_name(): void {
-		$instance   = Rsvp_Template::get_instance();
-		$post_id    = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_status' => 'publish',
-			)
-		);
-		$comment_id = $this->factory->comment->create(
-			array(
-				'comment_post_ID' => $post_id,
-				'comment_type'    => Rsvp::COMMENT_TYPE,
-			)
-		);
-
-		$blocks = array(
-			array(
-				'blockName'    => 'core/comment-author-name',
-				'attrs'        => array( 'isLink' => 1 ),
-				'innerBlocks'  => array(),
-				'innerHTML'    => '',
-				'innerContent' => array(),
-			),
-		);
-
-		$instance->anonymize_rsvp_blocks( $blocks, $comment_id );
-
-		$this->assertSame(
-			'core/paragraph',
-			$blocks[0]['blockName'],
-			'Failed to assert author name block converted to paragraph.'
-		);
-		$this->assertSame(
-			0,
-			$blocks[0]['attrs']['isLink'],
-			'Failed to assert author name isLink is set to 0.'
-		);
-		$this->assertStringContainsString(
-			'Anonymous',
-			$blocks[0]['innerContent'][0],
-			'Failed to assert author name replaced with Anonymous.'
-		);
-	}
-
-	/**
-	 * Tests anonymize_rsvp_blocks with nested blocks.
-	 *
-	 * @covers ::anonymize_rsvp_blocks
-	 * @return void
-	 */
-	public function test_anonymize_rsvp_blocks_nested(): void {
-		$instance   = Rsvp_Template::get_instance();
-		$post_id    = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_status' => 'publish',
-			)
-		);
-		$comment_id = $this->factory->comment->create(
-			array(
-				'comment_post_ID' => $post_id,
-				'comment_type'    => Rsvp::COMMENT_TYPE,
-			)
-		);
-
-		$blocks = array(
-			array(
-				'blockName'    => 'core/group',
-				'attrs'        => array(),
-				'innerBlocks'  => array(
-					array(
-						'blockName'    => 'core/avatar',
-						'attrs'        => array( 'isLink' => 1 ),
-						'innerBlocks'  => array(),
-						'innerHTML'    => '',
-						'innerContent' => array(),
-					),
-				),
-				'innerHTML'    => '',
-				'innerContent' => array(),
-			),
-		);
-
-		$instance->anonymize_rsvp_blocks( $blocks, $comment_id );
-
-		$this->assertSame(
-			0,
-			$blocks[0]['innerBlocks'][0]['attrs']['isLink'],
-			'Failed to assert nested avatar isLink is set to 0.'
-		);
-	}
-
-	/**
 	 * Tests get_block_content with anonymous RSVP.
 	 *
 	 * @covers ::get_block_content
@@ -709,15 +571,15 @@ class Test_Rsvp_Template extends Base {
 		$post_id  = $post->ID;
 
 		// Get event and save an RSVP using the proper API.
-		$event   = new Event( $post_id );
+		$rsvp    = new Rsvp( $post_id );
 		$user_id = $this->factory->user->create();
 
 		// Save RSVP using the Event's RSVP system.
-		$event->rsvp->save( $user_id, 'attending', 0, 0 );
+		$rsvp->save( $user_id, 'attending', 0, 0 );
 
 		// Create one more RSVP.
 		$user_id_2 = $this->factory->user->create();
-		$event->rsvp->save( $user_id_2, 'attending', 0, 0 );
+		$rsvp->save( $user_id_2, 'attending', 0, 0 );
 
 		$wp_block = new WP_Block(
 			array(
@@ -841,6 +703,45 @@ class Test_Rsvp_Template extends Base {
 			'data-id="rsvp-0"',
 			$result,
 			'No record degrades to the zero ID a missing commentId key produces.'
+		);
+	}
+
+	/**
+	 * Tests generate_rsvp_template_block with block data JSON cannot represent.
+	 *
+	 * @since 0.36.0
+	 * @covers ::generate_rsvp_template_block
+	 * @return void
+	 */
+	public function test_generate_rsvp_template_block_unencodable_block(): void {
+		$instance = Rsvp_Template::get_instance();
+		$post     = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+
+		$wp_block = new WP_Block(
+			array(),
+			array( 'postId' => $post->ID )
+		);
+
+		// INF has no JSON representation, so encoding the block comes back false.
+		$block  = array(
+			'innerBlocks' => array(),
+			'attrs'       => array( 'gatherpressUnencodable' => INF ),
+		);
+		$result = $instance->generate_rsvp_template_block( '', $block, $wp_block );
+
+		$this->assertSame(
+			'',
+			$result,
+			'Failed to assert an unencodable block renders the responses alone.'
+		);
+		$this->assertStringNotContainsString(
+			'data-block-template=',
+			$result,
+			'Failed to assert an unencodable block is not handed to the front end.'
 		);
 	}
 }

@@ -9,10 +9,11 @@
 namespace GatherPress\Tests\Core\Calendar;
 
 use GatherPress\Core\Calendar\Setup;
-use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
+use WP_Error;
 
 /**
  * Class Test_Setup.
@@ -932,6 +933,57 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * An event-supporting post type registered without an archive has no
+	 * archive feed to advertise, so it is skipped instead of emitting an entry
+	 * with a false url.
+	 *
+	 * @since 0.36.0
+	 * @covers ::collect_post_type_archive_alternate_links
+	 *
+	 * @return void
+	 */
+	public function test_collect_post_type_archive_alternate_links_skips_post_type_without_archive(): void {
+		register_post_type(
+			'gatherpress_noarch',
+			array(
+				'public'      => true,
+				'has_archive' => false,
+				'supports'    => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
+
+		$instance   = Setup::get_instance();
+		$args       = Utility::invoke_hidden_method( $instance, 'alternate_link_label_args' );
+		$supporting = get_post_types_by_support( 'gatherpress-event-date' );
+		$links      = Utility::invoke_hidden_method(
+			$instance,
+			'collect_post_type_archive_alternate_links',
+			array( $args )
+		);
+
+		unregister_post_type( 'gatherpress_noarch' );
+
+		$this->assertContains(
+			'gatherpress_noarch',
+			$supporting,
+			'The archive-less post type should be among the event-supporting post types.'
+		);
+		$this->assertCount(
+			count( $supporting ) - 1,
+			$links,
+			'The archive-less post type should be skipped, leaving one entry per remaining post type.'
+		);
+
+		foreach ( $links as $link ) {
+			$this->assertStringNotContainsString(
+				'gatherpress_noarch',
+				$link['url'],
+				'No alternate link should point at the archive-less post type.'
+			);
+		}
+	}
+
+	/**
 	 * Coverage for collect_contextual_alternate_links — returns the singular-event
 	 * branch when on an event permalink.
 	 *
@@ -1146,6 +1198,38 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * A term that can no longer be resolved has no feed link, so the tax
+	 * archive collector emits nothing rather than an entry with a false url.
+	 *
+	 * @since 0.36.0
+	 * @covers ::collect_tax_archive_alternate_links
+	 *
+	 * @return void
+	 */
+	public function test_collect_tax_archive_alternate_links_skips_unresolvable_term(): void {
+		$term_id = $this->factory->term->create(
+			array( 'taxonomy' => 'gatherpress_topic' )
+		);
+		$term    = get_term( $term_id, 'gatherpress_topic' );
+
+		wp_delete_term( $term_id, 'gatherpress_topic' );
+
+		$instance = Setup::get_instance();
+		$args     = Utility::invoke_hidden_method( $instance, 'alternate_link_label_args' );
+		$links    = Utility::invoke_hidden_method(
+			$instance,
+			'collect_tax_archive_alternate_links',
+			array( $term, $args )
+		);
+
+		$this->assertSame(
+			array(),
+			$links,
+			'A deleted term should produce no alternate-link entries.'
+		);
+	}
+
+	/**
 	 * Coverage for collect_event_term_alternate_links — walks the event's
 	 * related terms and returns one entry per resolvable term.
 	 *
@@ -1175,6 +1259,48 @@ class Test_Setup extends Base {
 			'iCal Feed',
 			$links[0]['attr'],
 			'Term entry attr should be formatted with the taxtitle template.'
+		);
+	}
+
+	/**
+	 * A `get_terms()` error carries no terms to walk, so the collector emits
+	 * nothing rather than iterating the WP_Error object.
+	 *
+	 * @since 0.36.0
+	 * @covers ::collect_event_term_alternate_links
+	 *
+	 * @return void
+	 */
+	public function test_collect_event_term_alternate_links_returns_empty_on_term_error(): void {
+		$event_id = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+		$topic_id = $this->factory->term->create(
+			array( 'taxonomy' => 'gatherpress_topic' )
+		);
+		wp_set_post_terms( $event_id, array( $topic_id ), 'gatherpress_topic' );
+
+		$error = static function () {
+			return new WP_Error( 'invalid_taxonomy', 'Invalid taxonomy.' );
+		};
+
+		$instance = Setup::get_instance();
+		$args     = Utility::invoke_hidden_method( $instance, 'alternate_link_label_args' );
+
+		add_filter( 'get_terms', $error );
+
+		$links = Utility::invoke_hidden_method(
+			$instance,
+			'collect_event_term_alternate_links',
+			array( get_post( $event_id ), $args )
+		);
+
+		remove_filter( 'get_terms', $error );
+
+		$this->assertSame(
+			array(),
+			$links,
+			'An errored term query should produce no alternate-link entries.'
 		);
 	}
 

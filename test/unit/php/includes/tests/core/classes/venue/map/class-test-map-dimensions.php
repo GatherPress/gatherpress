@@ -18,7 +18,7 @@ namespace GatherPress\Tests\Core\Venue\Map;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Venue\Map;
 use GatherPress\Core\Venue\Map\Dimensions;
-use GatherPress\Core\Venue\Venue;
+use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 
 /**

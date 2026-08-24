@@ -38,7 +38,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-feed.php:289](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-feed.php#L289)
+- [includes/core/classes/class-feed.php:293](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-feed.php#L293)
 ```php
 apply_filters( 'gatherpress_event_feed_excerpt', $excerpt )
 ```

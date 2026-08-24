@@ -16,6 +16,8 @@ namespace GatherPress\Core\Calendar;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use WP_Post_Type;
+
 /**
  * Manages custom feed endpoints for post types in GatherPress.
  *
@@ -73,7 +75,15 @@ final class Post_Type_Feed extends Endpoint {
 	 * @return bool True if the current request is a valid feed request for the post type archive.
 	 */
 	public function is_valid(): bool {
-		return is_post_type_archive( $this->type_object->name ) && is_feed();
+		/**
+		 * The registered post type object.
+		 *
+		 * @var WP_Post_Type $type_object Registration resolved the object before the
+		 *                                endpoint could initialize.
+		 */
+		$type_object = $this->type_object;
+
+		return is_post_type_archive( $type_object->name ) && is_feed();
 	}
 
 	/**
@@ -84,11 +94,19 @@ final class Post_Type_Feed extends Endpoint {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array The rewrite replacement attributes for add_rewrite_rule().
+	 * @return array<string, string> The rewrite replacement attributes for add_rewrite_rule().
 	 */
 	public function get_rewrite_atts(): array {
+		/**
+		 * The registered post type object.
+		 *
+		 * @var WP_Post_Type $type_object Registration resolved the object before the
+		 *                                endpoint could initialize.
+		 */
+		$type_object = $this->type_object;
+
 		return array(
-			$this->object_type => $this->type_object->name,
+			$this->object_type => $type_object->name,
 			'feed'             => '$matches[1]',
 			$this->query_var   => '$matches[1]',
 		);

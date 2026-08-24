@@ -243,6 +243,11 @@ final class Token {
 	 * @return void
 	 */
 	private function save_token_to_meta(): void {
+		// Without a comment there is no meta row to write the token to.
+		if ( ! $this->comment ) {
+			return;
+		}
+
 		update_comment_meta(
 			(int) $this->comment->comment_ID,
 			$this->get_meta_key(),
@@ -351,7 +356,8 @@ final class Token {
 	 *
 	 * @param string|null $token_string Raw token string in format "commentId_token".
 	 *
-	 * @return array Array with 'comment_id' and 'token' keys, or empty array if invalid.
+	 * @return array{comment_id: int, token: string}|array{} Array with 'comment_id' and 'token' keys, or empty
+	 *                                                        array if invalid.
 	 */
 	public static function parse_token_string( ?string $token_string ): array {
 		if ( empty( $token_string ) ) {
@@ -422,6 +428,9 @@ final class Token {
 	 * @param WP_Comment|null $comment The comment object.
 	 * @param string          $token The token string.
 	 *
+	 * @phpstan-assert-if-true !null $post
+	 * @phpstan-assert-if-true !null $comment
+	 *
 	 * @return bool True if all components are available, false otherwise.
 	 */
 	private function has_required_url_components( ?WP_Post $post, ?WP_Comment $comment, string $token ): bool {
@@ -477,7 +486,7 @@ final class Token {
 	 *
 	 * @param WP_Post|null $post The event post object.
 	 *
-	 * @return array Email data with subject, body, and headers.
+	 * @return array{subject: string, body: string, headers: string[]} Email data with subject, body, and headers.
 	 */
 	private function prepare_email_data( ?WP_Post $post ): array {
 		$title = $post ? get_the_title( $post ) : __( 'this event', 'gatherpress' );
