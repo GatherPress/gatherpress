@@ -142,7 +142,17 @@ final class Add_To_Calendar {
 		return (string) preg_replace_callback(
 			'/(<a\b[^>]*?target=["\']_blank["\'][^>]*>)(.*?)(<\/a>)/is',
 			static function ( array $matches ): string {
-				if ( str_contains( $matches[0], 'gatherpress-new-tab-notice' ) ) {
+				// Only skip when the marker is present as the exact class
+				// attribute this plugin injects, not as arbitrary text anywhere
+				// in the anchor HTML. A calendar URL, visible link text, or
+				// nested non-class attribute carrying the marker text must not
+				// suppress the required warning.
+				if (
+					str_contains(
+						$matches[2],
+						'class="screen-reader-text gatherpress-new-tab-notice"'
+					)
+				) {
 					return $matches[0];
 				}
 

@@ -206,6 +206,70 @@ class Test_Add_To_Calendar extends Base {
 	}
 
 	/**
+	 * Test the notice is still injected when the marker text appears in the href.
+	 *
+	 * The idempotency check must only match the marker as a class token in the
+	 * anchor content, never arbitrary text in the anchor HTML. A calendar URL
+	 * carrying the marker text (e.g. a query string) used to suppress the
+	 * required warning.
+	 *
+	 * @covers ::inject_new_tab_notices
+	 *
+	 * @return void
+	 */
+	public function test_inject_new_tab_notices_marker_text_in_href_does_not_skip_notice(): void {
+		$instance = Add_To_Calendar::get_instance();
+		$content  = '<a href="https://example.test/?text=gatherpress-new-tab-notice" target="_blank">Google</a>';
+
+		$result = $instance->inject_new_tab_notices( $content );
+
+		$this->assertStringContainsString(
+			'(opens in a new tab)',
+			$result,
+			'An anchor whose href carries the marker text must still receive the notice.'
+		);
+		// The notice span must appear exactly once: the href occurrence is raw
+		// URL text, not the injected class token.
+		$this->assertSame(
+			1,
+			substr_count( $result, 'class="screen-reader-text gatherpress-new-tab-notice"' ),
+			'Exactly one notice span must be injected when the marker text sits in the href.'
+		);
+	}
+
+	/**
+	 * Test the notice is still injected when the marker text appears in link text.
+	 *
+	 * The idempotency check must only match the marker as the exact class
+	 * attribute this plugin injects, never arbitrary text in the anchor HTML.
+	 * Visible link text carrying the marker text used to suppress the required
+	 * warning.
+	 *
+	 * @covers ::inject_new_tab_notices
+	 *
+	 * @return void
+	 */
+	public function test_inject_new_tab_notices_marker_text_in_link_text_does_not_skip_notice(): void {
+		$instance = Add_To_Calendar::get_instance();
+		$content  = '<a href="https://example.test" target="_blank">gatherpress-new-tab-notice</a>';
+
+		$result = $instance->inject_new_tab_notices( $content );
+
+		$this->assertStringContainsString(
+			'(opens in a new tab)',
+			$result,
+			'An anchor whose visible link text reads the marker must still receive the notice.'
+		);
+		// The notice span must appear exactly once: the link-text occurrence is
+		// raw visible text, not the injected class attribute.
+		$this->assertSame(
+			1,
+			substr_count( $result, 'class="screen-reader-text gatherpress-new-tab-notice"' ),
+			'Exactly one notice span must be injected when the marker text sits in the link text.'
+		);
+	}
+
+	/**
 	 * Test the new-tab notice is not injected twice into the same anchor.
 	 *
 	 * Verifies the transform is idempotent: an anchor that already carries the
