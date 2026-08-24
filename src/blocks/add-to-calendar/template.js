@@ -40,7 +40,7 @@ const TEMPLATE = [
 					[
 						'gatherpress/dropdown-item',
 						{
-							text: `<a href="#gatherpress-google-calendar" rel="noreferrer noopener nofollow" target="_blank">${ __( 'Google Calendar', 'gatherpress' ) }<span class="screen-reader-text"> ${ __( '(opens in a new tab)', 'gatherpress' ) }</span></a>`,
+							text: `<a href="#gatherpress-google-calendar" rel="noreferrer noopener nofollow" target="_blank">${ __( 'Google Calendar', 'gatherpress' ) }</a>`,
 							metadata: {
 								name: __( 'Google Calendar', 'gatherpress' ),
 							},
@@ -67,7 +67,7 @@ const TEMPLATE = [
 					[
 						'gatherpress/dropdown-item',
 						{
-							text: `<a href="#gatherpress-yahoo-calendar" rel="noreferrer noopener nofollow" target="_blank">${ __( 'Yahoo Calendar', 'gatherpress' ) }<span class="screen-reader-text"> ${ __( '(opens in a new tab)', 'gatherpress' ) }</span></a>`,
+							text: `<a href="#gatherpress-yahoo-calendar" rel="noreferrer noopener nofollow" target="_blank">${ __( 'Yahoo Calendar', 'gatherpress' ) }</a>`,
 							metadata: {
 								name: __( 'Yahoo Calendar', 'gatherpress' ),
 							},

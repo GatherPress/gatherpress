@@ -91,18 +91,15 @@ const { state } = store( 'gatherpress', {
 				spanElement.innerHTML = currentHTML;
 				currentElement.replaceWith( spanElement );
 			} else if ( hasLink && isLink ) {
-				// Preserve the warning when the reactive anchor stays an
-				// anchor but the href changes; without it the next
-				// href-only update would leave the link mute for screen
-				// readers.
-				const hadWarning =
-					!! currentElement.querySelector( '.gatherpress-new-tab-notice' );
-
+				// Keep the warning when the reactive anchor stays an
+				// anchor but the href changes; the notice was already
+				// dropped above, so appending unconditionally is
+				// idempotent.
 				if ( currentElement.href !== onlineEventLink ) {
 					currentElement.href = onlineEventLink;
 				}
 
-				if ( ! hadWarning && context?.newTabWarning ) {
+				if ( context?.newTabWarning ) {
 					const sr = document.createElement( 'span' );
 					sr.className = 'screen-reader-text gatherpress-new-tab-notice';
 					sr.textContent = ' ' + context.newTabWarning;

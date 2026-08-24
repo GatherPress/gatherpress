@@ -65,6 +65,7 @@ final class Add_To_Calendar {
 		$render_block_hook = sprintf( 'render_block_%s', self::BLOCK_NAME );
 
 		add_filter( $render_block_hook, array( $this, 'replace_calendar_placeholders' ), 10, 2 );
+		add_filter( $render_block_hook, array( $this, 'inject_new_tab_notices' ), 11 );
 	}
 
 	/**
@@ -120,5 +121,39 @@ final class Add_To_Calendar {
 		}
 
 		return $tag->get_updated_html();
+	}
+
+	/**
+	 * Inject a screen-reader new-tab notice into each targeted _blank link.
+	 *
+	 * Walks the block content and appends a visually hidden "( opens in a new
+	 * tab )" warning to every anchor that opens in a new tab, so screen-reader
+	 * users get the same cue sighted users see. Anchors that already carry the
+	 * marker class are left untouched, keeping the transform idempotent when
+	 * the filter runs more than once against the same content.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $block_content The block content to parse.
+	 *
+	 * @return string The block content with new-tab notices injected.
+	 */
+	public function inject_new_tab_notices( string $block_content ): string {
+		return (string) preg_replace_callback(
+			'/(<a\b[^>]*?target=["\']_blank["\'][^>]*>)(.*?)(<\/a>)/is',
+			static function ( array $matches ): string {
+				if ( str_contains( $matches[0], 'gatherpress-new-tab-notice' ) ) {
+					return $matches[0];
+				}
+
+				$notice = sprintf(
+					'<span class="screen-reader-text gatherpress-new-tab-notice"> %1$s</span>',
+					esc_html__( '(opens in a new tab)', 'gatherpress' )
+				);
+
+				return $matches[1] . $matches[2] . $notice . $matches[3];
+			},
+			$block_content
+		);
 	}
 }
