@@ -293,4 +293,78 @@ class Test_Add_To_Calendar extends Base {
 			'Notice must not be injected more than once into the same anchor.'
 		);
 	}
+
+	/**
+	 * Test the notice is injected into an unquoted target="_blank" anchor.
+	 *
+	 * The bare target=_blank form is valid HTML that a text-substring regex
+	 * misses because it looks for quoted `_blank`. The tag parser matches the
+	 * underlying attribute value regardless of quoting.
+	 *
+	 * @covers ::inject_new_tab_notices
+	 *
+	 * @return void
+	 */
+	public function test_inject_new_tab_notices_matches_unquoted_blank_target(): void {
+		$instance = Add_To_Calendar::get_instance();
+		$content  = '<a href="https://example.test" target=_blank>Google</a>';
+
+		$result = $instance->inject_new_tab_notices( $content );
+
+		$this->assertStringContainsString(
+			'(opens in a new tab)',
+			$result,
+			'An anchor with an unquoted target=_blank must receive the notice.'
+		);
+	}
+
+	/**
+	 * Test an attribute value that only mimics _blank is not a new-tab link.
+	 *
+	 * Reported as a regex false positive: `data-x='target="_blank"'` matched
+	 * the pattern even though the anchor never targets a new tab. The tag
+	 * parser reads the real target attribute, so this anchor stays untouched.
+	 *
+	 * @covers ::inject_new_tab_notices
+	 *
+	 * @return void
+	 */
+	public function test_inject_new_tab_notices_ignores_mimic_blank_in_other_attribute(): void {
+		$instance = Add_To_Calendar::get_instance();
+		$content  = '<a href="https://example.test" data-x=\'target="_blank"\'>Google</a>';
+
+		$result = $instance->inject_new_tab_notices( $content );
+
+		$this->assertStringNotContainsString(
+			'gatherpress-new-tab-notice',
+			$result,
+			'An anchor that only carries the marker text in a non-target attribute must not get the notice.'
+		);
+	}
+
+	/**
+	 * Test the notice is not duplicated when the existing marker class is
+	 * reordered or single-quoted.
+	 *
+	 * The idempotency check runs through the class list rather than comparing
+	 * one canonical class attribute, so any quoting or ordering a theme or a
+	 * prior pass produced still suppresses a second injection.
+	 *
+	 * @covers ::inject_new_tab_notices
+	 *
+	 * @return void
+	 */
+	public function test_inject_new_tab_notices_is_idempotent_across_class_variants(): void {
+		$instance = Add_To_Calendar::get_instance();
+		$content  = '<a href="https://example.test" target="_blank">Google' .
+			"<span class='gatherpress-new-tab-notice screen-reader-text'> (opens in a new tab)</span></a>";
+
+		$result = $instance->inject_new_tab_notices( $content );
+
+		$this->assertSame(
+			1,
+			substr_count( $result, 'gatherpress-new-tab-notice' ),
+			'Notice must not be injected a second time when the marker span is single-quoted or reordered.'
+		);
+	}
 }

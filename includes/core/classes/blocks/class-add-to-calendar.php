@@ -65,6 +65,9 @@ final class Add_To_Calendar {
 		$render_block_hook = sprintf( 'render_block_%s', self::BLOCK_NAME );
 
 		add_filter( $render_block_hook, array( $this, 'replace_calendar_placeholders' ), 10, 2 );
+		// Priority 11 so the notice is injected after replace_calendar_placeholders
+		// (priority 10) has built the final per-service hrefs onto the anchors,
+		// and after any third-party render filter at the default priority.
 		add_filter( $render_block_hook, array( $this, 'inject_new_tab_notices' ), 11 );
 	}
 
@@ -132,6 +135,17 @@ final class Add_To_Calendar {
 	 * marker class are left untouched, keeping the transform idempotent when
 	 * the filter runs more than once against the same content.
 	 *
+	 * Uses WP_HTML_Tag_Processor rather than a regex so the tag parser owns
+	 * every decision: a target only counts when it is the actual target
+	 * attribute (not text inside another attribute), unquoted target=_blank is
+	 * matched, and the existing-notice check runs through has_class so any
+	 * quoting or class order on this or the injected span is honored.
+	 *
+	 * The processor cannot insert markup (attributes and plain text only), so
+	 * the parser records its decisions as temporary data-* markers with known,
+	 * uniform quoting and a second pass does the single splice at each marked
+	 * anchor's closing tag.
+	 *
 	 * @since 0.36.0
 	 *
 	 * @param string $block_content The block content to parse.
@@ -139,31 +153,65 @@ final class Add_To_Calendar {
 	 * @return string The block content with new-tab notices injected.
 	 */
 	public function inject_new_tab_notices( string $block_content ): string {
-		return (string) preg_replace_callback(
-			'/(<a\b[^>]*?target=["\']_blank["\'][^>]*>)(.*?)(<\/a>)/is',
-			static function ( array $matches ): string {
-				// Only skip when the marker is present as the exact class
-				// attribute this plugin injects, not as arbitrary text anywhere
-				// in the anchor HTML. A calendar URL, visible link text, or
-				// nested non-class attribute carrying the marker text must not
-				// suppress the required warning.
-				if (
-					str_contains(
-						$matches[2],
-						'class="screen-reader-text gatherpress-new-tab-notice"'
-					)
-				) {
-					return $matches[0];
+		$processor = new WP_HTML_Tag_Processor( $block_content );
+		$inside    = false;
+
+		// First pass: the parser makes every decision, recorded as temporary
+		// markers written with known, uniform quoting.
+		while ( $processor->next_tag( array( 'tag_closers' => 'visit' ) ) ) {
+			if ( 'A' === $processor->get_tag() ) {
+				if ( $processor->is_tag_closer() ) {
+					$inside = false;
+				} elseif ( '_blank' === $processor->get_attribute( 'target' ) ) {
+					$inside = true;
+					$processor->set_attribute( 'data-gatherpress-new-tab', '1' );
 				}
 
-				$notice = sprintf(
-					'<span class="screen-reader-text gatherpress-new-tab-notice"> %1$s</span>',
-					esc_html__( '(opens in a new tab)', 'gatherpress' )
-				);
+				continue;
+			}
 
-				return $matches[1] . $matches[2] . $notice . $matches[3];
-			},
-			$block_content
+			if (
+				$inside
+				&& 'SPAN' === $processor->get_tag()
+				&& ! $processor->is_tag_closer()
+				&& $processor->has_class( 'gatherpress-new-tab-notice' )
+			) {
+				$processor->set_attribute( 'data-gatherpress-has-notice', '1' );
+			}
+		}
+
+		$html = $processor->get_updated_html();
+
+		// Second pass: pure splicing on the markers the parser wrote. Anchors
+		// cannot nest, so the next </a> after a marked opener closes it.
+		$marker = ' data-gatherpress-new-tab="1"';
+		$notice = sprintf(
+			'<span class="screen-reader-text gatherpress-new-tab-notice"> %1$s</span>',
+			esc_html__( '(opens in a new tab)', 'gatherpress' )
+		);
+
+		$offset   = 0;
+		$position = strpos( $html, $marker, $offset );
+
+		while ( false !== $position ) {
+			$close = stripos( $html, '</a>', $position );
+
+			if ( false !== $close ) {
+				$range = substr( $html, $position, $close - $position );
+
+				if ( ! str_contains( $range, 'data-gatherpress-has-notice' ) ) {
+					$html = substr_replace( $html, $notice, $close, 0 );
+				}
+			}
+
+			$offset   = $position + 1;
+			$position = strpos( $html, $marker, $offset );
+		}
+
+		return str_replace(
+			array( $marker, ' data-gatherpress-has-notice="1"' ),
+			'',
+			$html
 		);
 	}
 }
