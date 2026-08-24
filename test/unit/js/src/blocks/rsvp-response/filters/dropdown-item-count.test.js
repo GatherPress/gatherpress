@@ -9,8 +9,8 @@ import { describe, expect, it } from '@jest/globals';
 import {
 	getRsvpFilterStatus,
 	resolveRsvpFilterCount,
-} from '../../../../../../../src/blocks/rsvp-response/filters/dropdown-item-count';
-import { RSVP_COUNTS_STORE } from '../../../../../../../src/helpers/namespace';
+} from '@src/blocks/rsvp-response/filters/dropdown-item-count';
+import { RSVP_COUNTS_STORE } from '@src/helpers/namespace';
 
 /**
  * Builds a `select` stand-in for the stores the handler reads.
