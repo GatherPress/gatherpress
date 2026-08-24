@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Setup;
+use GatherPress\Core\Settings;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
@@ -26,6 +27,8 @@ use GatherPress\Core\Utility;
  * Handles the "Events" settings page for GatherPress.
  *
  * @since 0.34.0
+ *
+ * @phpstan-import-type SettingsSection from Settings
  */
 final class Events extends Base {
 
@@ -75,7 +78,7 @@ final class Events extends Base {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array An array of sections and options for the Events settings page.
+	 * @return array<string, SettingsSection> An array of sections and options for the Events settings page.
 	 */
 	protected function get_sections(): array {
 		return array(
@@ -296,12 +299,12 @@ final class Events extends Base {
 						'field'  => array(
 							'type'    => 'text',
 							'rewrite' => true,
+							'label'   => sprintf(
+								/* translators: %s: Plural post type label, e.g. "Events". */
+								__( 'Permalink base of %s.', 'gatherpress' ),
+								Utility::post_type_label( 'name', Event::POST_TYPE )
+							),
 							'options' => array(
-								'label'   => sprintf(
-									/* translators: %s: Plural post type label, e.g. "Events". */
-									__( 'Permalink base of %s.', 'gatherpress' ),
-									Utility::post_type_label( 'name', Event::POST_TYPE )
-								),
 								'default' => Setup::get_localized_post_type_slug(),
 							),
 							'preview' => array(
@@ -321,12 +324,12 @@ final class Events extends Base {
 						'field'  => array(
 							'type'    => 'text',
 							'rewrite' => true,
+							'label'   => sprintf(
+								/* translators: %s: Plural taxonomy label, e.g. "Topics". */
+								__( 'Permalink base of %s.', 'gatherpress' ),
+								Utility::taxonomy_label( 'name', Topic::TAXONOMY )
+							),
 							'options' => array(
-								'label'   => sprintf(
-									/* translators: %s: Plural taxonomy label, e.g. "Topics". */
-									__( 'Permalink base of %s.', 'gatherpress' ),
-									Utility::taxonomy_label( 'name', Topic::TAXONOMY )
-								),
 								'default' => Topic::get_localized_taxonomy_slug(),
 							),
 							'preview' => array(

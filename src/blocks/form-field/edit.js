@@ -17,11 +17,13 @@ import {
  */
 import DefaultField from './types/default';
 import RadioField from './types/radio';
+import SelectField from './types/select';
 import CheckboxField from './types/checkbox';
 import TextareaField from './types/textarea';
 import HiddenField from './types/hidden';
 import DefaultFieldPanels from './panels/default-field-panels';
 import RadioFieldPanels from './panels/radio-field-panels';
+import SelectFieldPanels from './panels/select-field-panels';
 import CheckboxFieldPanels from './panels/checkbox-field-panels';
 import FieldValue from './helpers';
 
@@ -31,10 +33,11 @@ import FieldValue from './helpers';
  * @param {Object}   props               The block props.
  * @param {Object}   props.attributes    The block attributes.
  * @param {Function} props.setAttributes Function to set block attributes.
+ * @param {boolean}  props.isSelected    Whether the block is currently selected.
  *
  * @return {JSX.Element} The edit component.
  */
-export default function Edit( { attributes, setAttributes } ) {
+export default function Edit( { attributes, setAttributes, isSelected } ) {
 	const {
 		fieldType,
 		fieldName,
@@ -44,6 +47,7 @@ export default function Edit( { attributes, setAttributes } ) {
 		required,
 		prefillCurrentUser,
 		autocomplete,
+		helpText,
 	} = attributes;
 
 	// Handle data attributes for conditional rendering.
@@ -74,6 +78,11 @@ export default function Edit( { attributes, setAttributes } ) {
 	/**
 	 * Get the default autocomplete value based on field type.
 	 *
+	 * Types without an unambiguous token return the empty string — the
+	 * attribute's default — which the server resolves at render time
+	 * (see Form_Field::resolve_autocomplete()). An empty value is "infer
+	 * from the field type"; any stored token is an author choice.
+	 *
 	 * @param {string} value - The field type.
 	 *
 	 * @return {string} The default autocomplete value.
@@ -87,7 +96,7 @@ export default function Edit( { attributes, setAttributes } ) {
 			case 'tel':
 				return 'tel';
 			default:
-				return 'on';
+				return '';
 		}
 	};
 
@@ -102,11 +111,14 @@ export default function Edit( { attributes, setAttributes } ) {
 			setAttributes,
 			blockProps,
 			generateFieldName,
+			isSelected,
 		};
 
 		switch ( fieldType ) {
 			case 'radio':
 				return <RadioField { ...commonProps } />;
+			case 'select':
+				return <SelectField { ...commonProps } />;
 			case 'checkbox':
 				return <CheckboxField { ...commonProps } />;
 			case 'textarea':
@@ -129,6 +141,8 @@ export default function Edit( { attributes, setAttributes } ) {
 		switch ( fieldType ) {
 			case 'radio':
 				return <RadioFieldPanels { ...commonProps } />;
+			case 'select':
+				return <SelectFieldPanels { ...commonProps } />;
 			case 'checkbox':
 				return <CheckboxFieldPanels { ...commonProps } />;
 			case 'hidden':
@@ -175,6 +189,10 @@ export default function Edit( { attributes, setAttributes } ) {
 								value: 'radio',
 							},
 							{
+								label: __( 'Select', 'gatherpress' ),
+								value: 'select',
+							},
+							{
 								label: __( 'Hidden', 'gatherpress' ),
 								value: 'hidden',
 							},
@@ -207,6 +225,20 @@ export default function Edit( { attributes, setAttributes } ) {
 							'gatherpress',
 						) }
 					/>
+
+					{ 'hidden' !== fieldType && (
+						<TextControl
+							label={ __( 'Help Text', 'gatherpress' ) }
+							value={ helpText }
+							onChange={ ( value ) =>
+								setAttributes( { helpText: value } )
+							}
+							help={ __(
+								'Optional description shown below the field and announced by screen readers.',
+								'gatherpress',
+							) }
+						/>
+					) }
 
 					{ 'hidden' !== fieldType && (
 						<ToggleControl
@@ -259,7 +291,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						setAttributes={ setAttributes }
 					/>
 
-					{ ! [ 'hidden', 'checkbox', 'radio' ].includes( fieldType ) && (
+					{ ! [ 'hidden', 'checkbox', 'radio', 'select' ].includes( fieldType ) && (
 						<>
 							<TextControl
 								label={ __( 'Placeholder', 'gatherpress' ) }
@@ -347,7 +379,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							help={
 								<>
 									{ __(
-										'Controls browser autocomplete behavior. Use "on", "off", or specific values like "email", "name", etc.',
+										'Controls browser autocomplete behavior. Leave empty to infer from the field type, or enter "on", "off", or specific values like "email", "name", etc.',
 										'gatherpress',
 									) }
 									<br />

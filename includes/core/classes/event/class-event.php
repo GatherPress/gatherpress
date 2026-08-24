@@ -16,15 +16,16 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use DateTimeZone;
 use Exception;
-use GatherPress\Core\Calendar\Calendar;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Calendar;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
 use GatherPress\Core\Venue\Setup;
-use GatherPress\Core\Venue\Venue;
+use GatherPress\Core\Venue;
 use WP_Post;
+use WP_Term;
 
 /**
  * Class Event.
@@ -32,6 +33,14 @@ use WP_Post;
  * Represents individual events within the GatherPress plugin and provides event-related functionality.
  *
  * @since 0.34.0
+ *
+ * @phpstan-type EventDatetime array{
+ *     datetime_start: string,
+ *     datetime_start_gmt: string,
+ *     datetime_end: string,
+ *     datetime_end_gmt: string,
+ *     timezone: string
+ * }
  */
 class Event {
 
@@ -58,6 +67,27 @@ class Event {
 	 * @var string $POST_TYPE
 	 */
 	const POST_TYPE = 'gatherpress_event';
+
+	/**
+	 * Capability for reading a specific event.
+	 *
+	 * A meta capability, so it is always paired with the event's post ID and
+	 * resolves through WordPress to the right primitive for the event's status.
+	 *
+	 * @since 0.35.1
+	 * @var string
+	 */
+	const READ_CAPABILITY = 'read_post';
+
+	/**
+	 * Capability for editing a specific event.
+	 *
+	 * A meta capability, so it is always paired with the event's post ID.
+	 *
+	 * @since 0.35.1
+	 * @var string
+	 */
+	const EDIT_CAPABILITY = 'edit_post';
 
 	/**
 	 * Placeholder displayed when no datetime is set.
@@ -90,7 +120,7 @@ class Event {
 	 * Non-time PHP DateTime formatting characters
 	 *
 	 * @since 0.34.0
-	 * @var array
+	 * @var string[]
 	 */
 	const PHP_NON_TIME_FORMAT_CHARS = array(
 		'd',
@@ -127,27 +157,19 @@ class Event {
 	);
 
 	/**
-	 * Event post object.
+	 * The event post.
 	 *
 	 * @since 0.34.0
 	 * @var WP_Post|null
 	 */
-	public ?WP_Post $event = null;
-
-	/**
-	 * RSVP instance.
-	 *
-	 * @since 0.34.0
-	 * @var Rsvp|null
-	 */
-	public ?Rsvp $rsvp = null;
+	public ?WP_Post $post = null;
 
 	/**
 	 * Cached datetime data.
 	 *
 	 * @since 0.34.0
 	 *
-	 * @var array|null
+	 * @var EventDatetime|null
 	 */
 	private ?array $datetime_cache = null;
 
@@ -162,9 +184,62 @@ class Event {
 	 */
 	public function __construct( int $post_id ) {
 		if ( post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
-			$this->event = get_post( $post_id );
-			$this->rsvp  = new Rsvp( $post_id );
+			$this->post = get_post( $post_id );
 		}
+	}
+
+	/**
+	 * Whether an event's blocks should render for the current viewer.
+	 *
+	 * Blocks stay off an event nobody is meant to see yet, but an unpublished
+	 * event still renders for viewers allowed to read it, so an organizer
+	 * working on a draft sees the same blocks the published event will show
+	 * rather than empty space, as does the editor previewing that event.
+	 *
+	 * @since 0.35.1
+	 *
+	 * @param int $post_id The event post ID.
+	 *
+	 * @return bool True when the event's blocks should render.
+	 */
+	public static function is_viewable( int $post_id ): bool {
+		// is_preview() is a property of the request, not of a post, so it only
+		// stands in for read access on the post actually being previewed.
+		return (
+			( is_preview() && (int) get_queried_object_id() === $post_id )
+			|| 'publish' === get_post_status( $post_id )
+			|| current_user_can( self::READ_CAPABILITY, $post_id )
+		);
+	}
+
+	/**
+	 * Whether the current viewer may read an event's RSVP responses.
+	 *
+	 * The roster follows the event: a published event's responses are public
+	 * once any password gate is satisfied, anything else is limited to viewers
+	 * allowed to read that event, and whoever can edit it always sees them.
+	 *
+	 * @since 0.35.1
+	 *
+	 * @param int $post_id The event post ID.
+	 *
+	 * @return bool True when the viewer may read the event's RSVP responses.
+	 */
+	public static function can_read_rsvps( int $post_id ): bool {
+		$post = get_post( $post_id );
+
+		// A post that is gone, or one that never takes RSVPs, has no roster.
+		if ( ! $post instanceof WP_Post || ! post_type_supports( $post->post_type, 'gatherpress-rsvp' ) ) {
+			return false;
+		}
+
+		if ( current_user_can( self::EDIT_CAPABILITY, $post->ID ) ) {
+			return true;
+		}
+
+		return 'publish' === $post->post_status
+			? ! post_password_required( $post )
+			: current_user_can( self::READ_CAPABILITY, $post->ID );
 	}
 
 	/**
@@ -430,15 +505,25 @@ class Event {
 		}
 
 		if ( ! empty( $date ) ) {
-			$ts   = strtotime( $date );
-			$date = wp_date(
+			$ts = strtotime( $date );
+
+			// Validate::datetime() accepts what DateTime::createFromFormat() accepts,
+			// which is wider than strtotime(): an overflowing value like
+			// '2030-06-31 25:00:00' passes validation and still has no timestamp to
+			// format, so report no datetime rather than falling back to the epoch.
+			if ( false === $ts ) {
+				return '';
+			}
+
+			// wp_date() only returns false for a non-numeric timestamp, which $ts is not.
+			$date = (string) wp_date(
 				apply_filters( 'gatherpress_datetime_format', $format, $which, $local ),
 				$ts,
 				$tz
 			);
 		}
 
-		return (string) trim( $date );
+		return trim( $date );
 	}
 
 	/**
@@ -450,7 +535,7 @@ class Event {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array An associative array detailing the event's schedule and timezone, potentially
+	 * @return EventDatetime An associative array detailing the event's schedule and timezone, potentially
 	 * adjusted for user-specific preferences:
 	 *     - 'datetime_start'     (string) The event start date and time.
 	 *     - 'datetime_start_gmt' (string) The event start date and time in GMT.
@@ -467,7 +552,7 @@ class Event {
 			'timezone'           => sanitize_text_field( wp_timezone_string() ),
 		);
 
-		if ( ! $this->event ) {
+		if ( ! $this->post ) {
 			return $data;
 		}
 
@@ -476,7 +561,7 @@ class Event {
 		}
 
 		foreach ( array_keys( $data ) as $key ) {
-			$result = get_post_meta( $this->event->ID, Utility::prefix_key( $key ), true );
+			$result = get_post_meta( $this->post->ID, Utility::prefix_key( $key ), true );
 
 			if ( empty( $result ) ) {
 				continue;
@@ -538,12 +623,12 @@ class Event {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array An array containing venue information:
-	 *               - 'address' (string): The address of the venue.
-	 *               - 'name' (string): The name of the venue.
-	 *               - 'permalink' (string): The permalink (URL) of the venue.
-	 *               - 'phone' (string): The phone number of the venue.
-	 *               - 'website' (string): The website URL of the venue.
+	 * @return array<string, string> An array containing venue information:
+	 *                               - 'address' (string): The address of the venue.
+	 *                               - 'name' (string): The name of the venue.
+	 *                               - 'permalink' (string): The permalink (URL) of the venue.
+	 *                               - 'phone' (string): The phone number of the venue.
+	 *                               - 'website' (string): The website URL of the venue.
 	 */
 	public function get_venue_information(): array {
 		$venue_information = array(
@@ -554,10 +639,20 @@ class Event {
 			'website'   => '',
 		);
 
-		$event_post_type = (string) get_post_type( $this->event );
+		if ( ! $this->post ) {
+			return $venue_information;
+		}
+
+		$event_post_type = (string) get_post_type( $this->post );
 		$venue_setup     = Setup::get_instance();
 		$taxonomy        = $venue_setup->taxonomy_for_event_post_type( $event_post_type );
-		$venue_terms     = (array) get_the_terms( $this->event, $taxonomy );
+		$venue_terms     = get_the_terms( $this->post, $taxonomy );
+
+		// get_the_terms() hands back false when nothing is assigned and a WP_Error for an
+		// unregistered taxonomy; neither carries venue terms to inspect.
+		if ( ! is_array( $venue_terms ) ) {
+			return $venue_information;
+		}
 
 		// Prefer a real venue term (leading-underscore prefix) so a hybrid
 		// event with both a physical venue and the `online-event` sentinel
@@ -570,10 +665,6 @@ class Event {
 		$fallback = null;
 
 		foreach ( $venue_terms as $candidate ) {
-			if ( ! is_a( $candidate, 'WP_Term' ) ) {
-				continue;
-			}
-
 			if ( $venue_setup->is_venue_term_slug( $candidate->slug ) ) {
 				$term = $candidate;
 				break;
@@ -585,12 +676,12 @@ class Event {
 		$term  = $term ?? $fallback;
 		$venue = null;
 
-		if ( is_a( $term, 'WP_Term' ) ) {
+		if ( $term instanceof WP_Term ) {
 			$venue_information['name'] = $term->name;
 			$venue                     = $venue_setup->get_venue_post_from_term_slug( $term->slug );
 		}
 
-		if ( is_a( $venue, 'WP_Post' ) ) {
+		if ( $venue instanceof WP_Post ) {
 			$venue_information = array_merge( $venue_information, ( new Venue( $venue->ID ) )->get_information() );
 
 			$venue_information['permalink'] = (string) get_permalink( $venue->ID );
@@ -608,7 +699,8 @@ class Event {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array An associative array containing supported calendar links:
+	 * @return array<string, array{name: string, link?: string, download?: string}> An associative array containing
+	 *     supported calendar links:
 	 *     - 'google'  (array) Google Calendar link information with 'name' and 'link' keys.
 	 *     - 'ical'    (array) iCal download link information with 'name' and 'download' keys.
 	 *     - 'outlook' (array) Outlook download link information with 'name' and 'download' keys.
@@ -617,28 +709,30 @@ class Event {
 	 * @throws Exception If there is an issue while generating calendar links.
 	 */
 	public function get_calendar_links(): array {
-		if ( ! $this->event ) {
+		if ( ! $this->post ) {
 			return array();
 		}
 
-		$calendar = new Calendar( $this->event->ID );
+		$calendar = new Calendar( $this->post->ID );
 
+		// Each URL getter only reports false when its event post cannot be resolved, and the
+		// calendar was built from the post resolved directly above.
 		return array(
 			'google'  => array(
 				'name' => __( 'Google Calendar', 'gatherpress' ),
-				'link' => $calendar->get_google_url(),
+				'link' => (string) $calendar->get_google_url(),
 			),
 			'ical'    => array(
 				'name'     => __( 'iCal', 'gatherpress' ),
-				'download' => $calendar->get_ical_url(),
+				'download' => (string) $calendar->get_ical_url(),
 			),
 			'outlook' => array(
 				'name'     => __( 'Outlook', 'gatherpress' ),
-				'download' => $calendar->get_outlook_url(),
+				'download' => (string) $calendar->get_outlook_url(),
 			),
 			'yahoo'   => array(
 				'name' => __( 'Yahoo Calendar', 'gatherpress' ),
-				'link' => $calendar->get_yahoo_url(),
+				'link' => (string) $calendar->get_yahoo_url(),
 			),
 		);
 	}
@@ -654,8 +748,12 @@ class Event {
 	 * @return string The calendar event description with the event details link.
 	 */
 	public function get_calendar_description(): string {
+		if ( ! $this->post ) {
+			return '';
+		}
+
 		/* translators: %s: event link. */
-		return sprintf( __( 'For details go to %s', 'gatherpress' ), get_the_permalink( $this->event ) );
+		return sprintf( __( 'For details go to %s', 'gatherpress' ), get_the_permalink( $this->post ) );
 	}
 
 	/**
@@ -667,7 +765,7 @@ class Event {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $params {
+	 * @param array{post_id?: int, datetime_start?: string, datetime_end?: string, timezone?: string} $params {
 	 *     An array of arguments used to save event data to the custom event table.
 	 *
 	 *     @type int    $post_id        The event's post ID.
@@ -682,9 +780,15 @@ class Event {
 	public function save_datetimes( array $params ): bool {
 		global $wpdb;
 
+		// Nothing to attach the datetimes to when the post ID handed to the constructor
+		// did not resolve to an event.
+		if ( ! $this->post ) {
+			return false;
+		}
+
 		$params = array_merge(
 			array(
-				'post_id'        => $this->event->ID,
+				'post_id'        => $this->post->ID,
 				'datetime_start' => '',
 				'datetime_end'   => '',
 				'timezone'       => '',
@@ -757,7 +861,8 @@ class Event {
 			update_post_meta(
 				$fields['post_id'],
 				$meta_key,
-				sanitize_text_field( $field )
+				// Only the string-valued fields reach here; post_id is skipped above.
+				sanitize_text_field( (string) $field )
 			);
 		}
 
@@ -774,7 +879,11 @@ class Event {
 	 * @return string The online event link if all conditions are met; otherwise, an empty string.
 	 */
 	public function maybe_get_online_event_link(): string {
-		$event_link = (string) get_post_meta( $this->event->ID, 'gatherpress_online_event_link', true );
+		if ( ! $this->post ) {
+			return '';
+		}
+
+		$event_link = (string) get_post_meta( $this->post->ID, 'gatherpress_online_event_link', true );
 
 		/**
 		 * Filters whether to force the display of the online event link.
@@ -792,12 +901,8 @@ class Event {
 		$force_online_event_link = apply_filters( 'gatherpress_force_online_event_link', false );
 
 		if ( ! $force_online_event_link && ! is_admin() ) {
-			if ( ! $this->rsvp ) {
-				return '';
-			}
-
 			$user_identifier = Rsvp_Setup::get_instance()->get_user_identifier();
-			$response        = $this->rsvp->get( $user_identifier );
+			$response        = ( new Rsvp( $this->post->ID ) )->get( $user_identifier );
 
 			if (
 				! isset( $response['status'] ) ||

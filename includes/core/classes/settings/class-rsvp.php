@@ -15,6 +15,7 @@ namespace GatherPress\Core\Settings;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 
@@ -24,6 +25,8 @@ use GatherPress\Core\Utility;
  * Handles the "RSVP" settings page for GatherPress.
  *
  * @since 0.34.0
+ *
+ * @phpstan-import-type SettingsSection from Settings
  */
 final class Rsvp extends Base {
 
@@ -70,7 +73,7 @@ final class Rsvp extends Base {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array An array of sections and options for the RSVP settings page.
+	 * @return array<string, SettingsSection> An array of sections and options for the RSVP settings page.
 	 */
 	protected function get_sections(): array {
 		return array(
@@ -97,6 +100,7 @@ final class Rsvp extends Base {
 						),
 						'field'       => array(
 							'type'    => 'select',
+							'label'   => __( 'RSVP mode:', 'gatherpress' ),
 							'options' => array(
 								'default' => 'enabled',
 								'items'   => array(
@@ -231,6 +235,7 @@ final class Rsvp extends Base {
 						),
 						'field'       => array(
 							'type'    => 'select',
+							'label'   => __( 'RSVP cleanup:', 'gatherpress' ),
 							'options' => array(
 								'default' => 'disabled',
 								'items'   => array(
@@ -250,6 +255,7 @@ final class Rsvp extends Base {
 						),
 						'field'       => array(
 							'type'    => 'select',
+							'label'   => __( 'Cleanup frequency:', 'gatherpress' ),
 							'options' => array(
 								'default' => 'daily',
 								'items'   => array(
@@ -270,12 +276,13 @@ final class Rsvp extends Base {
 							'name' => __( 'Cleanup Interval', 'gatherpress' ),
 						),
 						'description' => __(
-							'The number of days, months, or years between each cleanup run.',
+							'Multiplies the Cleanup Frequency. Daily with an interval of 3 runs every 3 days.',
 							'gatherpress'
 						),
 						'field'       => array(
 							'type'    => 'number',
 							'size'    => 'small',
+							'label'   => __( 'Cleanup interval:', 'gatherpress' ),
 							'options' => array(
 								'min'     => 1,
 								'default' => 1,

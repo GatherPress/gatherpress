@@ -156,8 +156,16 @@ test.describe( 'Screenshots for the wordpress.org/plugins repository', () => {
     }) => {
         await admin.visitAdminPage(
             'edit.php',
-            'post_type=gatherpress_event&page=gatherpress_events'
+            'post_type=gatherpress_event&page=gatherpress_events_settings'
         );
+
+        // Assert the tab actually loaded before capturing. A permission page
+        // is still a valid PNG, so without this the suite screenshots the
+        // error and reports success (#2122). Matched on the href rather than
+        // the tab label so it holds across all eight locales.
+        await expect(
+            page.locator( 'a.nav-tab-active[href*="page=gatherpress_events_settings"]' )
+        ).toBeVisible();
 
         // Wait for 2 seconds
         await page.waitForTimeout(2000);
@@ -175,8 +183,16 @@ test.describe( 'Screenshots for the wordpress.org/plugins repository', () => {
     }) => {
         await admin.visitAdminPage(
             'edit.php',
-            'post_type=gatherpress_event&page=gatherpress_roles'
+            'post_type=gatherpress_event&page=gatherpress_roles_settings'
         );
+
+        // Assert the tab actually loaded before capturing. A permission page
+        // is still a valid PNG, so without this the suite screenshots the
+        // error and reports success (#2122). Matched on the href rather than
+        // the tab label so it holds across all eight locales.
+        await expect(
+            page.locator( 'a.nav-tab-active[href*="page=gatherpress_roles_settings"]' )
+        ).toBeVisible();
 
         // Wait for 2 seconds
         await page.waitForTimeout(2000);

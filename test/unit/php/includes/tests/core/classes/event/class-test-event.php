@@ -10,8 +10,11 @@ namespace GatherPress\Tests\Core\Event;
 
 use DateTime;
 use DateTimeZone;
+// Deep import on purpose: test_prior_fqn_resolves_to_current_class asserts
+// Event::class equals the real FQN, which the BC alias intentionally is not.
 use GatherPress\Core\Event\Event;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Event\Setup as Event_Setup;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -36,14 +39,12 @@ class Test_Event extends Base {
 		$post  = $this->mock->post()->get();
 		$event = new Event( $post->ID );
 
-		$this->assertNull( Utility::get_hidden_property( $event, 'event' ) );
-		$this->assertNull( Utility::get_hidden_property( $event, 'rsvp' ) );
+		$this->assertNull( Utility::get_hidden_property( $event, 'post' ) );
 
 		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
 		$event = new Event( $post->ID );
 
-		$this->assertInstanceOf( WP_Post::class, Utility::get_hidden_property( $event, 'event' ) );
-		$this->assertInstanceOf( Rsvp::class, Utility::get_hidden_property( $event, 'rsvp' ) );
+		$this->assertInstanceOf( WP_Post::class, Utility::get_hidden_property( $event, 'post' ) );
 	}
 
 	/**
@@ -103,10 +104,6 @@ class Test_Event extends Base {
 					'timezone'       => 'America/New_York',
 				),
 				'expects' => 'Monday, May 11, 2020 3:00 PM to Tuesday, May 12, 2020 5:00 PM EDT',
-			),
-			array(
-				'params'  => array(),
-				'expects' => '—',
 			),
 			array(
 				'params'  => array(
@@ -269,11 +266,41 @@ class Test_Event extends Base {
 
 		$post->ID = 0;
 
-		Utility::set_and_get_hidden_property( $event, 'event', $post );
+		Utility::set_and_get_hidden_property( $event, 'post', $post );
 
 		$this->assertFalse(
 			$event->save_datetimes( $params ),
 			'Failed to assert false due to post ID less than 1.'
+		);
+	}
+
+	/**
+	 * A post that is not an event has nothing to attach datetimes to, so the
+	 * save reports failure and writes no meta.
+	 *
+	 * @since 0.36.0
+	 * @covers ::save_datetimes
+	 *
+	 * @return void
+	 */
+	public function test_save_datetimes_returns_false_without_post(): void {
+		$post_id = $this->mock->post( array( 'post_type' => 'post' ) )->get()->ID;
+		$event   = new Event( $post_id );
+
+		$this->assertFalse(
+			$event->save_datetimes(
+				array(
+					'datetime_start' => '2020-05-11 15:00:00',
+					'datetime_end'   => '2020-05-11 17:00:00',
+					'timezone'       => 'America/New_York',
+				)
+			),
+			'Failed to assert false due to the post not resolving to an event.'
+		);
+		$this->assertSame(
+			'',
+			get_post_meta( $post_id, 'gatherpress_datetime_start', true ),
+			'Failed to assert no datetime meta was written for a non-event post.'
 		);
 	}
 
@@ -310,15 +337,22 @@ class Test_Event extends Base {
 		)->get();
 		$event = new Event( $post->ID );
 
+		// A new event is seeded with the editor's default rather than left
+		// datetime-less, so it always lands in the events table (#2054). The
+		// seed is decided at shutdown, so meta written after the insert wins
+		// over it (#2116).
+		Event_Setup::get_instance()->resolve_pending_datetimes();
+
+		$seeded = $event->get_datetime();
+
+		$this->assertNotEmpty(
+			$seeded['datetime_start'],
+			'Failed to assert that a new event is seeded with a start datetime.'
+		);
 		$this->assertSame(
-			array(
-				'datetime_start'     => '',
-				'datetime_start_gmt' => '',
-				'datetime_end'       => '',
-				'datetime_end_gmt'   => '',
-				'timezone'           => '+00:00',
-			),
-			$event->get_datetime()
+			2 * HOUR_IN_SECONDS,
+			strtotime( $seeded['datetime_end'] ) - strtotime( $seeded['datetime_start'] ),
+			'Failed to assert that the seeded default runs for two hours.'
 		);
 
 		$params = array(
@@ -356,6 +390,58 @@ class Test_Event extends Base {
 		$this->assertSame(
 			'Tue, May 12, 9:00pm GMT+0000',
 			Utility::invoke_hidden_method( $event, 'get_formatted_datetime', array( 'D, F j, g:ia T', 'end', false ) )
+		);
+	}
+
+	/**
+	 * Coverage for get_datetime method with partially missing meta.
+	 *
+	 * Events created before #2054 seeded a default datetime, and events built
+	 * outside the editor, can be missing some of the five datetime meta keys.
+	 * Each absent key is skipped and keeps its empty default rather than
+	 * poisoning the whole array.
+	 *
+	 * @covers ::get_datetime
+	 *
+	 * @return void
+	 */
+	public function test_get_datetime_skips_missing_meta(): void {
+		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$event = new Event( $post->ID );
+
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2020-05-11 15:00:00',
+				'datetime_end'   => '2020-05-12 17:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		delete_post_meta( $post->ID, 'gatherpress_datetime_end' );
+		delete_post_meta( $post->ID, 'gatherpress_datetime_end_gmt' );
+
+		// A fresh instance so the read is not served from datetime_cache.
+		$datetime = ( new Event( $post->ID ) )->get_datetime();
+
+		$this->assertSame(
+			'2020-05-11 15:00:00',
+			$datetime['datetime_start'],
+			'Failed to assert that a present meta key still populates.'
+		);
+		$this->assertSame(
+			'America/New_York',
+			$datetime['timezone'],
+			'Failed to assert that timezone survives a missing datetime key.'
+		);
+		$this->assertSame(
+			'',
+			$datetime['datetime_end'],
+			'Failed to assert that a missing meta key keeps its empty default.'
+		);
+		$this->assertSame(
+			'',
+			$datetime['datetime_end_gmt'],
+			'Failed to assert that a missing gmt meta key keeps its empty default.'
 		);
 	}
 
@@ -539,6 +625,51 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * A post that is not an event has no venue to report, and must not fall
+	 * through to the venue of whatever post is globally queried.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_venue_information
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_information_returns_empty_shape_without_post(): void {
+		$post_id  = $this->mock->post( array( 'post_type' => 'post' ) )->get()->ID;
+		$venue    = $this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_title' => 'Queried Venue',
+				'post_name'  => 'queried-venue',
+			)
+		)->get();
+		$event_id = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get()->ID;
+
+		update_post_meta( $venue->ID, 'gatherpress_address', '900 Queried Way' );
+		wp_set_post_terms( $event_id, array( '_queried-venue' ), Venue::TAXONOMY );
+
+		// Query the venue-bearing event so any fall-through would surface its venue.
+		$this->go_to( get_permalink( $event_id ) );
+
+		$response = ( new Event( $post_id ) )->get_venue_information();
+
+		$this->assertSame(
+			array(
+				'address'   => '',
+				'name'      => '',
+				'permalink' => '',
+				'phone'     => '',
+				'website'   => '',
+			),
+			$response,
+			'Failed to assert a non-event post reports the empty venue shape.'
+		);
+	}
+
+	/**
 	 * Coverage for get_calendar_links method.
 	 *
 	 * @covers ::get_calendar_links
@@ -607,7 +738,7 @@ class Test_Event extends Base {
 
 		$this->assertSame( $expects, $output );
 
-		Utility::set_and_get_hidden_property( $event, 'event', null );
+		Utility::set_and_get_hidden_property( $event, 'post', null );
 
 		$this->assertEmpty(
 			$event->get_calendar_links(),
@@ -865,7 +996,7 @@ class Test_Event extends Base {
 			'Failed to assert online event link is empty.'
 		);
 
-		$event->rsvp->save( $user_id, 'attending' );
+		( new Rsvp( $event_id ) )->save( $user_id, 'attending' );
 
 		$this->assertSame(
 			$link,
@@ -890,12 +1021,26 @@ class Test_Event extends Base {
 			$event->maybe_get_online_event_link(),
 			'Failed to assert online event link is empty.'
 		);
+	}
 
-		Utility::set_and_get_hidden_property( $event, 'rsvp', null );
+	/**
+	 * A post that is not an event never surfaces an online event link, even
+	 * when the meta happens to be present on the post.
+	 *
+	 * @since 0.36.0
+	 * @covers ::maybe_get_online_event_link
+	 *
+	 * @return void
+	 */
+	public function test_maybe_get_online_event_link_returns_empty_without_post(): void {
+		$post_id = $this->mock->post( array( 'post_type' => 'post' ) )->get()->ID;
 
-		$this->assertEmpty(
-			$event->maybe_get_online_event_link(),
-			'Failed to assert empty string due to RSVP being set to null.'
+		update_post_meta( $post_id, 'gatherpress_online_event_link', 'https://unittest.com/video/' );
+
+		$this->assertSame(
+			'',
+			( new Event( $post_id ) )->maybe_get_online_event_link(),
+			'Failed to assert online event link is empty for a non-event post.'
 		);
 	}
 
@@ -942,6 +1087,26 @@ class Test_Event extends Base {
 		$this->assertFalse(
 			$event->is_same_date(),
 			'Failed to assert event spans multiple days.'
+		);
+	}
+
+	/**
+	 * Coverage for is_same_date method without datetimes.
+	 *
+	 * A post that is not an event resolves to no datetimes at all, so there is
+	 * no date to compare and the answer is false rather than a spurious true
+	 * from two empty strings matching each other.
+	 *
+	 * @covers ::is_same_date
+	 *
+	 * @return void
+	 */
+	public function test_is_same_date_is_false_without_datetimes(): void {
+		$event = new Event( 0 );
+
+		$this->assertFalse(
+			$event->is_same_date(),
+			'Failed to assert that an event with no datetimes is not on the same date.'
 		);
 	}
 
@@ -1068,6 +1233,47 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * A stored datetime that validates but will not parse reports no datetime
+	 * at all, bailing before the format filter rather than falling back to the
+	 * epoch.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_formatted_datetime
+	 *
+	 * @return void
+	 */
+	public function test_get_formatted_datetime_returns_empty_for_unparsable_value(): void {
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+
+		// Validates as `Y-m-d H:i:s` but has an out-of-range day and hour, so strtotime() rejects it.
+		update_post_meta( $event_id, 'gatherpress_datetime_start_gmt', '2030-06-31 25:00:00' );
+
+		$formatted = 0;
+		$counter   = static function ( $format ) use ( &$formatted ) {
+			++$formatted;
+
+			return $format;
+		};
+
+		add_filter( 'gatherpress_datetime_format', $counter );
+
+		$result = ( new Event( $event_id ) )->get_formatted_datetime( 'Y-m-d', 'start', false );
+
+		remove_filter( 'gatherpress_datetime_format', $counter );
+
+		$this->assertSame(
+			'',
+			$result,
+			'Failed to assert an unparsable stored datetime reports no datetime at all.'
+		);
+		$this->assertSame(
+			0,
+			$formatted,
+			'Failed to assert an unparsable stored datetime bails before the datetime format filter runs.'
+		);
+	}
+
+	/**
 	 * Coverage for get_calendar_description method.
 	 *
 	 * @covers ::get_calendar_description
@@ -1125,6 +1331,26 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * A post that is not an event has no permalink worth pointing a calendar
+	 * client at, so the description is empty rather than pointing at whatever
+	 * post is globally queried.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_calendar_description
+	 *
+	 * @return void
+	 */
+	public function test_get_calendar_description_returns_empty_without_post(): void {
+		$post_id = $this->mock->post( array( 'post_type' => 'post' ) )->get()->ID;
+
+		$this->assertSame(
+			'',
+			( new Event( $post_id ) )->get_calendar_description(),
+			'Failed to assert a non-event post has no calendar description.'
+		);
+	}
+
+	/**
 	 * Coverage for __construct with non-event post type.
 	 *
 	 * @covers ::__construct
@@ -1135,7 +1361,155 @@ class Test_Event extends Base {
 		$post_id = $this->mock->post( array( 'post_type' => 'post' ) )->get()->ID;
 		$event   = new Event( $post_id );
 
-		$this->assertNull( $event->event, 'Failed to assert event is null for non-event post.' );
-		$this->assertNull( $event->rsvp, 'Failed to assert rsvp is null for non-event post.' );
+		$this->assertNull( $event->post, 'Failed to assert post is null for non-event post.' );
+	}
+
+	/**
+	 * A published event renders for everyone, while an unpublished one renders
+	 * only for viewers allowed to read it.
+	 *
+	 * @covers ::is_viewable
+	 *
+	 * @return void
+	 */
+	public function test_is_viewable(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+
+		wp_set_current_user( 0 );
+		$this->assertTrue( Event::is_viewable( $post_id ), 'A published event renders for the public.' );
+
+		foreach ( array( 'draft', 'pending', 'private' ) as $status ) {
+			wp_update_post(
+				array(
+					'ID'          => $post_id,
+					'post_status' => $status,
+				)
+			);
+
+			wp_set_current_user( 0 );
+			$this->assertFalse(
+				Event::is_viewable( $post_id ),
+				sprintf( 'A %s event does not render for the public.', $status )
+			);
+
+			wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+			$this->assertTrue(
+				Event::is_viewable( $post_id ),
+				sprintf( 'A %s event renders for a viewer who can read it.', $status )
+			);
+		}
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * The editor's preview renders an event that would otherwise be withheld.
+	 *
+	 * @covers ::is_viewable
+	 *
+	 * @return void
+	 */
+	public function test_is_viewable_in_preview(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'draft',
+			)
+		);
+
+		wp_set_current_user( 0 );
+		$this->assertFalse( Event::is_viewable( $post_id ), 'The draft is withheld outside a preview.' );
+
+		global $wp_query;
+		$wp_query->is_preview        = true;
+		$wp_query->queried_object    = get_post( $post_id );
+		$wp_query->queried_object_id = $post_id;
+
+		$this->assertTrue( Event::is_viewable( $post_id ), 'A preview renders the draft being previewed.' );
+
+		// Previewing one post does not open every other event: block context
+		// carries a post ID, so an unrelated draft must still be read-checked.
+		$other_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'private',
+			)
+		);
+
+		$this->assertFalse(
+			Event::is_viewable( $other_id ),
+			'A preview of one post does not render a different restricted event.'
+		);
+
+		$wp_query->is_preview        = false;
+		$wp_query->queried_object    = null;
+		$wp_query->queried_object_id = 0;
+	}
+
+	/**
+	 * The roster follows the event: public once published, limited to viewers
+	 * who can read it otherwise, and withheld from post types that take no
+	 * RSVPs at all.
+	 *
+	 * @covers ::can_read_rsvps
+	 *
+	 * @return void
+	 */
+	public function test_can_read_rsvps(): void {
+		wp_set_current_user( 0 );
+
+		$this->assertFalse( Event::can_read_rsvps( 0 ), 'A post that does not exist has no roster.' );
+		$this->assertFalse(
+			Event::can_read_rsvps( $this->factory->post->create() ),
+			'A post type that takes no RSVPs has no roster.'
+		);
+
+		// Exercised on its own: an administrator would clear every capability
+		// check, so only the support guard can deny this.
+		$admin_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $admin_id );
+		$this->assertFalse(
+			Event::can_read_rsvps( $this->factory->post->create() ),
+			'A post type that takes no RSVPs has no roster, whoever is asking.'
+		);
+		wp_set_current_user( 0 );
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		$this->assertTrue( Event::can_read_rsvps( $post_id ), 'A published event roster is public.' );
+
+		wp_update_post(
+			array(
+				'ID'            => $post_id,
+				'post_password' => 'secret',
+			)
+		);
+		$this->assertFalse(
+			Event::can_read_rsvps( $post_id ),
+			'A password-protected event withholds its roster until the gate is satisfied.'
+		);
+
+		wp_update_post(
+			array(
+				'ID'            => $post_id,
+				'post_password' => '',
+				'post_status'   => 'private',
+			)
+		);
+		$this->assertFalse( Event::can_read_rsvps( $post_id ), 'A private event withholds its roster.' );
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertTrue( Event::can_read_rsvps( $post_id ), 'A viewer who can edit the event sees the roster.' );
+
+		wp_set_current_user( 0 );
 	}
 }

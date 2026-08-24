@@ -37,6 +37,17 @@ use GatherPress\Core\Event;
 final class Calendar {
 
 	/**
+	 * Epoch the VEVENT `SEQUENCE` counts from, as a Unix timestamp.
+	 *
+	 * 2020-01-01 00:00:00 UTC. See `get_sequence()` for why the sequence is
+	 * measured from an epoch rather than being a raw timestamp.
+	 *
+	 * @since 0.35.0
+	 * @var int
+	 */
+	private const SEQUENCE_EPOCH = 1577836800;
+
+	/**
 	 * Event this Calendar instance wraps.
 	 *
 	 * @since 0.34.0
@@ -130,11 +141,17 @@ final class Calendar {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return string The Google Calendar add-event URL.
+	 * @return string The Google Calendar add-event URL, or an empty string when the event post can't be resolved.
 	 *
 	 * @throws Exception If reading event datetime/venue data fails.
 	 */
 	public function get_google_destination_url(): string {
+		$post = $this->event->post;
+
+		if ( ! $post ) {
+			return '';
+		}
+
 		$date_start  = $this->event->get_formatted_datetime( 'Ymd', 'start', false );
 		$time_start  = $this->event->get_formatted_datetime( 'His', 'start', false );
 		$date_end    = $this->event->get_formatted_datetime( 'Ymd', 'end', false );
@@ -150,7 +167,7 @@ final class Calendar {
 
 		$params = array(
 			'action'   => 'TEMPLATE',
-			'text'     => sanitize_text_field( $this->event->event->post_title ),
+			'text'     => sanitize_text_field( $post->post_title ),
 			'dates'    => sanitize_text_field( $datetime ),
 			'details'  => sanitize_text_field( $description ),
 			'location' => sanitize_text_field( $location ),
@@ -174,11 +191,17 @@ final class Calendar {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return string The Yahoo! Calendar add-event URL.
+	 * @return string The Yahoo! Calendar add-event URL, or an empty string when the event post can't be resolved.
 	 *
 	 * @throws Exception If reading event datetime/venue data fails.
 	 */
 	public function get_yahoo_destination_url(): string {
+		$post = $this->event->post;
+
+		if ( ! $post ) {
+			return '';
+		}
+
 		$date_start     = $this->event->get_formatted_datetime( 'Ymd', 'start', false );
 		$time_start     = $this->event->get_formatted_datetime( 'His', 'start', false );
 		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
@@ -203,7 +226,7 @@ final class Calendar {
 			'v'      => '60',
 			'view'   => 'd',
 			'type'   => '20',
-			'title'  => sanitize_text_field( $this->event->event->post_title ),
+			'title'  => sanitize_text_field( $post->post_title ),
 			'st'     => sanitize_text_field( $datetime_start ),
 			'dur'    => sanitize_text_field( (string) $hours . (string) $minutes ),
 			'desc'   => sanitize_text_field( $description ),
@@ -225,19 +248,33 @@ final class Calendar {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return string The VEVENT block.
+	 * @return string The VEVENT block, or an empty string when the event post can't be resolved.
 	 *
 	 * @throws Exception If reading event data fails.
 	 */
 	public function get_ical_event_string(): string {
+		$post = $this->event->post;
+
+		if ( ! $post ) {
+			return '';
+		}
+
 		$date_start     = $this->event->get_formatted_datetime( 'Ymd', 'start', false );
 		$time_start     = $this->event->get_formatted_datetime( 'His', 'start', false );
 		$date_end       = $this->event->get_formatted_datetime( 'Ymd', 'end', false );
 		$time_end       = $this->event->get_formatted_datetime( 'His', 'end', false );
 		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
 		$datetime_end   = sprintf( '%sT%sZ', $date_end, $time_end );
-		$modified_date  = strtotime( $this->event->event->post_modified );
-		$datetime_stamp = sprintf( '%sT%sZ', gmdate( 'Ymd', $modified_date ), gmdate( 'His', $modified_date ) );
+		$modified_gmt   = strtotime( $post->post_modified_gmt );
+
+		if ( false === $modified_gmt ) {
+			// DTSTAMP is required by RFC 5545, so an unparsable date still needs one.
+			$modified_gmt = time();
+		}
+
+		$datetime_stamp = sprintf( '%sT%sZ', gmdate( 'Ymd', $modified_gmt ), gmdate( 'His', $modified_gmt ) );
+		$last_modified  = $datetime_stamp;
+		$sequence       = $this->get_sequence();
 		$venue          = $this->event->get_venue_information();
 		$location       = $venue['name'];
 		$description    = $this->event->get_calendar_description();
@@ -246,24 +283,75 @@ final class Calendar {
 			$location .= sprintf( ', %s', $venue['address'] );
 		}
 
-		$summary     = $this->fold_ical_text( $this->escape_ical_text( $this->event->event->post_title ) );
+		$permalink   = (string) get_permalink( $post );
+		$summary     = $this->fold_ical_text( $this->escape_ical_text( $post->post_title ) );
 		$description = $this->fold_ical_text( $this->escape_ical_text( $description ) );
 		$location    = $this->fold_ical_text( $this->escape_ical_text( $location ) );
 
 		$args = array(
 			'BEGIN:VEVENT',
-			sprintf( 'URL:%s', esc_url_raw( get_permalink( $this->event->event->ID ) ) ),
+			sprintf( 'URL:%s', esc_url_raw( $permalink ) ),
 			sprintf( 'DTSTART:%s', sanitize_text_field( $datetime_start ) ),
 			sprintf( 'DTEND:%s', sanitize_text_field( $datetime_end ) ),
 			sprintf( 'DTSTAMP:%s', sanitize_text_field( $datetime_stamp ) ),
+			sprintf( 'LAST-MODIFIED:%s', sanitize_text_field( $last_modified ) ),
+			sprintf( 'SEQUENCE:%d', $sequence ),
 			sprintf( 'SUMMARY:%s', $summary ),
 			sprintf( 'DESCRIPTION:%s', $description ),
 			sprintf( 'LOCATION:%s', $location ),
-			'UID:gatherpress_' . intval( $this->event->event->ID ),
+			'UID:gatherpress_' . intval( $post->ID ),
 			'END:VEVENT',
 		);
 
 		return implode( "\r\n", $args );
+	}
+
+	/**
+	 * Revision number for this event's VEVENT, per RFC 5545 §3.8.7.4.
+	 *
+	 * Clients only treat an incoming VEVENT as a revision of one they already
+	 * hold when its `SEQUENCE` is higher than the stored value. GatherPress
+	 * emits a stable `UID`, so without a sequence an edited event keeps
+	 * showing its original date in a subscribed calendar.
+	 *
+	 * The value is seconds since `SEQUENCE_EPOCH`, read from
+	 * `post_modified_gmt`. That field only moves forward, so the sequence is
+	 * strictly monotonic per event, which is the only thing the property
+	 * requires. It emits around 2.1e8 today and reaches the RFC's INTEGER
+	 * ceiling of 2147483647 in 2088.
+	 *
+	 * Neither obvious alternative works. The gap between creation and
+	 * modification shrinks whenever `post_date_gmt` is corrected forward, and
+	 * a sequence that moves backwards is one clients may ignore. A raw
+	 * timestamp is monotonic but hits the same ceiling in January 2038; the
+	 * epoch is what buys the other sixty years at the same resolution.
+	 *
+	 * The clamp guards against corrupt data, not ordinary growth. Saturating
+	 * it would freeze the event in subscribers' calendars, since every later
+	 * revision would repeat the ceiling and be ignored, so it should only ever
+	 * catch something like an import writing a year-3000 date. Emitting an
+	 * out-of-range INTEGER instead risks clients rejecting the whole VEVENT.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @return int Non-negative revision number for this event.
+	 */
+	private function get_sequence(): int {
+		$post = $this->event->post;
+
+		if ( ! $post ) {
+			return 0;
+		}
+
+		$modified = strtotime( $post->post_modified_gmt );
+
+		if ( false === $modified ) {
+			return 0;
+		}
+
+		// Floor at zero for anything modified before the epoch; clamp at the
+		// RFC ceiling for dates far enough out to be data corruption.
+		return min( max( 0, $modified - self::SEQUENCE_EPOCH ), 2147483647 );
 	}
 
 	/**
@@ -304,7 +392,7 @@ final class Calendar {
 	 * @return string|false              URL of the event's endpoint, or false when the post can't be resolved.
 	 */
 	protected function get_endpoint_url( string $endpoint_slug, ?string $query_var = null ): string|false {
-		$post = $this->event->event;
+		$post = $this->event->post;
 
 		if ( ! $post ) {
 			return false;

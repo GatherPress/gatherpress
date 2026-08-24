@@ -8,9 +8,9 @@
 
 namespace GatherPress\Tests\Core\Calendar;
 
-use GatherPress\Core\Calendar\Calendar;
+use GatherPress\Core\Calendar;
 use GatherPress\Core\Calendar\Setup;
-use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -83,12 +83,12 @@ class Test_Calendar extends Base {
 		);
 		$this->assertInstanceOf(
 			WP_Post::class,
-			$instance->event->event,
+			$instance->event->post,
 			'Composed Event should resolve to a real WP_Post.'
 		);
 		$this->assertSame(
 			$event_id,
-			$instance->event->event->ID,
+			$instance->event->post->ID,
 			'Composed Event should wrap the requested post id.'
 		);
 	}
@@ -274,6 +274,27 @@ class Test_Calendar extends Base {
 	}
 
 	/**
+	 * Returns an empty string from get_google_destination_url when the
+	 * underlying Event has no post — a Calendar built from a post type that
+	 * does not support `gatherpress-event-date` never resolves one.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_google_destination_url
+	 *
+	 * @return void
+	 */
+	public function test_get_google_destination_url_returns_empty_without_post(): void {
+		$post     = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+		$instance = new Calendar( $post->ID );
+
+		$this->assertSame(
+			'',
+			$instance->get_google_destination_url(),
+			'Google destination URL should be empty when the underlying post cannot be resolved as an event.'
+		);
+	}
+
+	/**
 	 * Coverage for get_yahoo_destination_url with no venue address.
 	 *
 	 * @covers ::get_yahoo_destination_url
@@ -320,6 +341,26 @@ class Test_Calendar extends Base {
 	}
 
 	/**
+	 * Returns an empty string from get_yahoo_destination_url when the
+	 * underlying Event has no post.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_yahoo_destination_url
+	 *
+	 * @return void
+	 */
+	public function test_get_yahoo_destination_url_returns_empty_without_post(): void {
+		$post     = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+		$instance = new Calendar( $post->ID );
+
+		$this->assertSame(
+			'',
+			$instance->get_yahoo_destination_url(),
+			'Yahoo destination URL should be empty when the underlying post cannot be resolved as an event.'
+		);
+	}
+
+	/**
 	 * Coverage for get_ical_event_string — builds a complete VEVENT block,
 	 * properly escapes RFC 5545 special chars in LOCATION (comma, semicolon),
 	 * and includes all expected lines.
@@ -349,6 +390,175 @@ class Test_Calendar extends Base {
 	}
 
 	/**
+	 * Coverage for get_ical_event_string: SEQUENCE is post_modified_gmt as seconds
+	 * Unix timestamp, and DTSTAMP and LAST-MODIFIED both report that GMT time.
+	 *
+	 * @covers ::get_ical_event_string
+	 * @covers ::get_sequence
+	 *
+	 * @return void
+	 */
+	public function test_get_ical_event_string_sequence_and_last_modified(): void {
+		$instance = new Calendar( $this->make_event() );
+
+		$instance->event->post->post_modified_gmt = '2030-01-01 10:00:00';
+
+		$vevent = $instance->get_ical_event_string();
+
+		$this->assertStringContainsString(
+			sprintf( 'SEQUENCE:%d', strtotime( '2030-01-01 10:00:00' ) - 1577836800 ),
+			$vevent,
+			'SEQUENCE should be seconds since the 2020 epoch, taken from post_modified_gmt.'
+		);
+		$this->assertStringContainsString(
+			'LAST-MODIFIED:20300101T100000Z',
+			$vevent,
+			'LAST-MODIFIED should report post_modified_gmt in UTC form.'
+		);
+		$this->assertStringContainsString(
+			'DTSTAMP:20300101T100000Z',
+			$vevent,
+			'DTSTAMP shares the post_modified_gmt derivation with LAST-MODIFIED.'
+		);
+
+		$instance->event->post->post_modified_gmt = '2030-01-01 11:00:00';
+
+		$this->assertStringContainsString(
+			sprintf( 'SEQUENCE:%d', strtotime( '2030-01-01 11:00:00' ) - 1577836800 ),
+			$instance->get_ical_event_string(),
+			'A later modification should raise the sequence a client can compare against.'
+		);
+	}
+
+	/**
+	 * Regression coverage for DTSTAMP on a non-UTC site: it must derive from
+	 * post_modified_gmt, not the site-local post_modified, so it does not drift
+	 * by the UTC offset.
+	 *
+	 * @covers ::get_ical_event_string
+	 *
+	 * @return void
+	 */
+	public function test_get_ical_event_string_dtstamp_uses_gmt_on_non_utc_site(): void {
+		$original_tz = get_option( 'timezone_string' );
+		update_option( 'timezone_string', 'America/New_York' );
+
+		$instance = new Calendar( $this->make_event() );
+
+		// Site-local modification time and its GMT counterpart differ by the offset.
+		$instance->event->post->post_modified     = '2030-01-01 05:00:00';
+		$instance->event->post->post_modified_gmt = '2030-01-01 10:00:00';
+
+		$vevent = $instance->get_ical_event_string();
+
+		$this->assertStringContainsString(
+			'DTSTAMP:20300101T100000Z',
+			$vevent,
+			'DTSTAMP must come from post_modified_gmt, not the site-local post_modified.'
+		);
+		$this->assertStringNotContainsString(
+			'DTSTAMP:20300101T050000Z',
+			$vevent,
+			'DTSTAMP must not use the site-local time on a non-UTC site.'
+		);
+
+		if ( false === $original_tz ) {
+			delete_option( 'timezone_string' );
+		} else {
+			update_option( 'timezone_string', $original_tz );
+		}
+	}
+
+	/**
+	 * Coverage for get_sequence: the value is post_modified_gmt as epoch-offset
+	 * timestamp, so a later modification yields a higher revision.
+	 *
+	 * @covers ::get_sequence
+	 *
+	 * @return void
+	 */
+	public function test_get_sequence_grows_when_event_is_edited(): void {
+		$event_id = $this->make_event();
+		$instance = new Calendar( $event_id );
+
+		$instance->event->post->post_modified_gmt = '2030-01-01 11:00:00';
+
+		$this->assertSame(
+			strtotime( '2030-01-01 11:00:00' ) - 1577836800,
+			Utility::invoke_hidden_method( $instance, 'get_sequence' ),
+			'Sequence should be seconds since the 2020 epoch, taken from post_modified_gmt.'
+		);
+
+		$instance->event->post->post_modified_gmt = '2030-01-01 12:00:00';
+
+		$this->assertSame(
+			strtotime( '2030-01-01 12:00:00' ) - 1577836800,
+			Utility::invoke_hidden_method( $instance, 'get_sequence' ),
+			'A later modification should raise the sequence.'
+		);
+	}
+
+	/**
+	 * Coverage for the get_sequence guard: an unparsable modification date
+	 * yields zero rather than a warning or a negative value.
+	 *
+	 * @covers ::get_sequence
+	 *
+	 * @return void
+	 */
+	public function test_get_sequence_returns_zero_for_unparsable_date(): void {
+		$instance = new Calendar( $this->make_event() );
+
+		$instance->event->post->post_modified_gmt = 'not a date';
+
+		$this->assertSame(
+			0,
+			Utility::invoke_hidden_method( $instance, 'get_sequence' ),
+			'An unparsable modification date should fall back to zero.'
+		);
+	}
+
+	/**
+	 * Coverage for the get_sequence guard when the underlying Event has no
+	 * post: there is no post_modified_gmt to derive a revision from.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_sequence
+	 *
+	 * @return void
+	 */
+	public function test_get_sequence_returns_zero_without_post(): void {
+		$post     = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+		$instance = new Calendar( $post->ID );
+
+		$this->assertSame(
+			0,
+			Utility::invoke_hidden_method( $instance, 'get_sequence' ),
+			'Sequence should be zero when the underlying post cannot be resolved as an event.'
+		);
+	}
+
+	/**
+	 * Coverage for get_sequence clamping: a span wider than the RFC 5545
+	 * integer ceiling saturates instead of overflowing.
+	 *
+	 * @covers ::get_sequence
+	 *
+	 * @return void
+	 */
+	public function test_get_sequence_clamps_to_rfc_integer_ceiling(): void {
+		$instance = new Calendar( $this->make_event() );
+
+		$instance->event->post->post_modified_gmt = '2100-01-01 00:00:00';
+
+		$this->assertSame(
+			2147483647,
+			Utility::invoke_hidden_method( $instance, 'get_sequence' ),
+			'Sequence should clamp to the RFC 5545 integer maximum.'
+		);
+	}
+
+	/**
 	 * Coverage for get_ical_event_string when no venue is attached — the
 	 * empty-address branch leaves location as just the venue name (which is
 	 * also empty here).
@@ -363,6 +573,70 @@ class Test_Calendar extends Base {
 
 		$this->assertStringContainsString( 'SUMMARY:Sample Event', $vevent );
 		$this->assertStringContainsString( 'LOCATION:', $vevent );
+	}
+
+	/**
+	 * Returns an empty string from get_ical_event_string when the underlying
+	 * Event has no post, so nothing malformed lands inside a VCALENDAR wrap.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_ical_event_string
+	 *
+	 * @return void
+	 */
+	public function test_get_ical_event_string_returns_empty_without_post(): void {
+		$post     = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+		$instance = new Calendar( $post->ID );
+
+		$this->assertSame(
+			'',
+			$instance->get_ical_event_string(),
+			'VEVENT should be empty when the underlying post cannot be resolved as an event.'
+		);
+	}
+
+	/**
+	 * A post whose post_modified_gmt will not parse still gets the
+	 * RFC-required DTSTAMP, stamped at generation time rather than at the
+	 * Unix epoch.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_ical_event_string
+	 *
+	 * @return void
+	 */
+	public function test_get_ical_event_string_stamps_now_for_unparsable_modified_date(): void {
+		$instance = new Calendar( $this->make_event() );
+
+		$instance->event->post->post_modified_gmt = '9999-99-99 99:99:99';
+
+		$before = time();
+		$vevent = $instance->get_ical_event_string();
+		$after  = time();
+
+		$this->assertSame(
+			1,
+			preg_match( '/DTSTAMP:(\d{8}T\d{6}Z)/', $vevent, $matches ),
+			'VEVENT should still carry a DTSTAMP when post_modified_gmt will not parse.'
+		);
+
+		$stamp = strtotime( $matches[1] );
+
+		$this->assertGreaterThanOrEqual(
+			$before,
+			$stamp,
+			'DTSTAMP should fall back to the generation time, not the Unix epoch.'
+		);
+		$this->assertLessThanOrEqual(
+			$after,
+			$stamp,
+			'DTSTAMP should fall back to the generation time, not a future date.'
+		);
+		$this->assertStringContainsString(
+			sprintf( 'LAST-MODIFIED:%s', $matches[1] ),
+			$vevent,
+			'LAST-MODIFIED should share the fallback stamp with DTSTAMP.'
+		);
 	}
 
 	/**

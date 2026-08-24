@@ -39,6 +39,7 @@ export default function CheckboxField( {
 		required,
 		requiredText,
 		requiredTextColor,
+		helpText,
 	} = attributes;
 
 	// Handle label blur to auto-generate field name.
@@ -97,6 +98,9 @@ export default function CheckboxField( {
 					/>
 				) }
 			</div>
+			{ helpText && (
+				<p className="gatherpress-help-text">{ helpText }</p>
+			) }
 		</div>
 	);
 }

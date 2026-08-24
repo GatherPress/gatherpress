@@ -9,10 +9,11 @@
 namespace GatherPress\Tests\Core\Calendar;
 
 use GatherPress\Core\Calendar\Setup;
-use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
+use WP_Error;
 
 /**
  * Class Test_Setup.
@@ -932,6 +933,57 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * An event-supporting post type registered without an archive has no
+	 * archive feed to advertise, so it is skipped instead of emitting an entry
+	 * with a false url.
+	 *
+	 * @since 0.36.0
+	 * @covers ::collect_post_type_archive_alternate_links
+	 *
+	 * @return void
+	 */
+	public function test_collect_post_type_archive_alternate_links_skips_post_type_without_archive(): void {
+		register_post_type(
+			'gatherpress_noarch',
+			array(
+				'public'      => true,
+				'has_archive' => false,
+				'supports'    => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
+
+		$instance   = Setup::get_instance();
+		$args       = Utility::invoke_hidden_method( $instance, 'alternate_link_label_args' );
+		$supporting = get_post_types_by_support( 'gatherpress-event-date' );
+		$links      = Utility::invoke_hidden_method(
+			$instance,
+			'collect_post_type_archive_alternate_links',
+			array( $args )
+		);
+
+		unregister_post_type( 'gatherpress_noarch' );
+
+		$this->assertContains(
+			'gatherpress_noarch',
+			$supporting,
+			'The archive-less post type should be among the event-supporting post types.'
+		);
+		$this->assertCount(
+			count( $supporting ) - 1,
+			$links,
+			'The archive-less post type should be skipped, leaving one entry per remaining post type.'
+		);
+
+		foreach ( $links as $link ) {
+			$this->assertStringNotContainsString(
+				'gatherpress_noarch',
+				$link['url'],
+				'No alternate link should point at the archive-less post type.'
+			);
+		}
+	}
+
+	/**
 	 * Coverage for collect_contextual_alternate_links — returns the singular-event
 	 * branch when on an event permalink.
 	 *
@@ -1146,6 +1198,38 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * A term that can no longer be resolved has no feed link, so the tax
+	 * archive collector emits nothing rather than an entry with a false url.
+	 *
+	 * @since 0.36.0
+	 * @covers ::collect_tax_archive_alternate_links
+	 *
+	 * @return void
+	 */
+	public function test_collect_tax_archive_alternate_links_skips_unresolvable_term(): void {
+		$term_id = $this->factory->term->create(
+			array( 'taxonomy' => 'gatherpress_topic' )
+		);
+		$term    = get_term( $term_id, 'gatherpress_topic' );
+
+		wp_delete_term( $term_id, 'gatherpress_topic' );
+
+		$instance = Setup::get_instance();
+		$args     = Utility::invoke_hidden_method( $instance, 'alternate_link_label_args' );
+		$links    = Utility::invoke_hidden_method(
+			$instance,
+			'collect_tax_archive_alternate_links',
+			array( $term, $args )
+		);
+
+		$this->assertSame(
+			array(),
+			$links,
+			'A deleted term should produce no alternate-link entries.'
+		);
+	}
+
+	/**
 	 * Coverage for collect_event_term_alternate_links — walks the event's
 	 * related terms and returns one entry per resolvable term.
 	 *
@@ -1175,6 +1259,48 @@ class Test_Setup extends Base {
 			'iCal Feed',
 			$links[0]['attr'],
 			'Term entry attr should be formatted with the taxtitle template.'
+		);
+	}
+
+	/**
+	 * A `get_terms()` error carries no terms to walk, so the collector emits
+	 * nothing rather than iterating the WP_Error object.
+	 *
+	 * @since 0.36.0
+	 * @covers ::collect_event_term_alternate_links
+	 *
+	 * @return void
+	 */
+	public function test_collect_event_term_alternate_links_returns_empty_on_term_error(): void {
+		$event_id = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+		$topic_id = $this->factory->term->create(
+			array( 'taxonomy' => 'gatherpress_topic' )
+		);
+		wp_set_post_terms( $event_id, array( $topic_id ), 'gatherpress_topic' );
+
+		$error = static function () {
+			return new WP_Error( 'invalid_taxonomy', 'Invalid taxonomy.' );
+		};
+
+		$instance = Setup::get_instance();
+		$args     = Utility::invoke_hidden_method( $instance, 'alternate_link_label_args' );
+
+		add_filter( 'get_terms', $error );
+
+		$links = Utility::invoke_hidden_method(
+			$instance,
+			'collect_event_term_alternate_links',
+			array( get_post( $event_id ), $args )
+		);
+
+		remove_filter( 'get_terms', $error );
+
+		$this->assertSame(
+			array(),
+			$links,
+			'An errored term query should produce no alternate-link entries.'
 		);
 	}
 
@@ -1319,5 +1445,204 @@ class Test_Setup extends Base {
 			$out,
 			'Should include the second entry attr label.'
 		);
+	}
+
+	/**
+	 * A site that filters the max age to zero opts out of client caching, so
+	 * the response carries the no-store headers instead of validators.
+	 *
+	 * @covers ::send_ics_headers
+	 *
+	 * @return void
+	 */
+	public function test_send_ics_headers_without_caching(): void {
+		add_filter( 'gatherpress_calendar_max_age', '__return_zero' );
+
+		ob_start();
+		Setup::get_instance()->send_ics_headers( 'sample.ics', '"abc123"', '2026-07-31 10:00:00' );
+		$output = ob_get_clean();
+
+		remove_filter( 'gatherpress_calendar_max_age', '__return_zero' );
+		header_remove();
+
+		$this->assertSame(
+			'',
+			$output,
+			'send_ics_headers should not emit body output.'
+		);
+	}
+
+	/**
+	 * Coverage for get_etag.
+	 *
+	 * @covers ::get_etag
+	 *
+	 * @return void
+	 */
+	public function test_get_etag_quotes_a_hash_of_the_body(): void {
+		$instance = Setup::get_instance();
+
+		$this->assertSame(
+			sprintf( '"%s"', md5( 'BEGIN:VCALENDAR' ) ),
+			$instance->get_etag( 'BEGIN:VCALENDAR' ),
+			'The entity tag should be a quoted MD5 of the body.'
+		);
+		$this->assertNotSame(
+			$instance->get_etag( 'BEGIN:VCALENDAR' ),
+			$instance->get_etag( 'BEGIN:VCALENDAR-changed' ),
+			'A changed body should produce a different entity tag.'
+		);
+	}
+
+	/**
+	 * The cache key describes what the request resolved to, so two different
+	 * scopes cannot share one entry and the same scope always agrees with
+	 * itself.
+	 *
+	 * @covers ::get_ics_cache_key
+	 *
+	 * @return void
+	 */
+	public function test_get_ics_cache_key_follows_the_queried_object(): void {
+		$instance = Setup::get_instance();
+		$archive  = $instance->get_ics_cache_key();
+
+		$this->assertStringStartsWith( 'ics:', $archive, 'Cache keys should be namespaced.' );
+		$this->assertSame(
+			$archive,
+			$instance->get_ics_cache_key(),
+			'The same request scope should produce the same key.'
+		);
+
+		$post = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+
+		$this->go_to( get_permalink( $post->ID ) );
+
+		$single = $instance->get_ics_cache_key();
+
+		$this->assertNotSame(
+			$archive,
+			$single,
+			'A single event should not share the archive key.'
+		);
+
+		$term = wp_insert_term( 'Cache Key Topic', 'gatherpress_topic' );
+
+		$this->go_to( get_term_link( (int) $term['term_id'], 'gatherpress_topic' ) );
+
+		$this->assertNotSame(
+			$single,
+			$instance->get_ics_cache_key(),
+			'A term archive should not share the single-event key.'
+		);
+
+		$this->go_to( get_post_type_archive_link( Event::POST_TYPE ) );
+
+		$this->assertNotSame(
+			$single,
+			$instance->get_ics_cache_key(),
+			'A post type archive should not share the single-event key.'
+		);
+	}
+
+	/**
+	 * Coverage for get_ics_body, which renders through the cache.
+	 *
+	 * @covers ::get_ics_body
+	 *
+	 * @return void
+	 */
+	public function test_get_ics_body_renders_a_calendar(): void {
+		$post = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+
+		$this->go_to( get_permalink( $post->ID ) );
+
+		$body = Setup::get_instance()->get_ics_body();
+
+		$this->assertStringContainsString(
+			'BEGIN:VCALENDAR',
+			$body,
+			'The rendered body should be an iCalendar payload.'
+		);
+	}
+
+	/**
+	 * `If-None-Match` is the exact validator, so it answers on its own and
+	 * wins when the client sends a timestamp as well.
+	 *
+	 * @covers ::is_not_modified
+	 *
+	 * @return void
+	 */
+	public function test_is_not_modified_reads_the_entity_tag(): void {
+		$instance      = Setup::get_instance();
+		$etag          = '"abc123"';
+		$last_modified = '2026-07-31 10:00:00';
+
+		$_SERVER['HTTP_IF_NONE_MATCH'] = 'W/"abc123"';
+
+		$this->assertTrue(
+			$instance->is_not_modified( $etag, $last_modified ),
+			'A weakened tag that matches should still count as unmodified.'
+		);
+
+		$_SERVER['HTTP_IF_NONE_MATCH'] = '"nope", W/"abc123"';
+
+		$this->assertTrue(
+			$instance->is_not_modified( $etag, $last_modified ),
+			'A match anywhere in the list should count as unmodified.'
+		);
+
+		$_SERVER['HTTP_IF_NONE_MATCH']     = '"stale"';
+		$_SERVER['HTTP_IF_MODIFIED_SINCE'] = 'Sat, 31 Jul 2027 10:00:00 GMT';
+
+		$this->assertFalse(
+			$instance->is_not_modified( $etag, $last_modified ),
+			'A tag that does not match should answer on its own, ignoring the timestamp.'
+		);
+
+		unset( $_SERVER['HTTP_IF_NONE_MATCH'], $_SERVER['HTTP_IF_MODIFIED_SINCE'] );
+	}
+
+	/**
+	 * Without an entity tag the timestamp decides, and an unreadable or absent
+	 * one falls back to sending the payload.
+	 *
+	 * @covers ::is_not_modified
+	 *
+	 * @return void
+	 */
+	public function test_is_not_modified_reads_the_timestamp(): void {
+		$instance      = Setup::get_instance();
+		$etag          = '"abc123"';
+		$last_modified = '2026-07-31 10:00:00';
+
+		$this->assertFalse(
+			$instance->is_not_modified( $etag, $last_modified ),
+			'A client sending no validators should get the payload.'
+		);
+
+		$_SERVER['HTTP_IF_MODIFIED_SINCE'] = 'Fri, 31 Jul 2026 10:00:00 GMT';
+
+		$this->assertTrue(
+			$instance->is_not_modified( $etag, $last_modified ),
+			'A timestamp at the last change should count as unmodified.'
+		);
+
+		$_SERVER['HTTP_IF_MODIFIED_SINCE'] = 'Thu, 30 Jul 2026 10:00:00 GMT';
+
+		$this->assertFalse(
+			$instance->is_not_modified( $etag, $last_modified ),
+			'A timestamp older than the last change should get the payload.'
+		);
+
+		$_SERVER['HTTP_IF_MODIFIED_SINCE'] = 'not a date';
+
+		$this->assertFalse(
+			$instance->is_not_modified( $etag, $last_modified ),
+			'An unparsable timestamp should get the payload rather than a 304.'
+		);
+
+		unset( $_SERVER['HTTP_IF_MODIFIED_SINCE'] );
 	}
 }

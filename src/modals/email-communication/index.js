@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies
  */
-import { __, _x } from '@wordpress/i18n';
+import { __, _x, sprintf } from '@wordpress/i18n';
 import domReady from '@wordpress/dom-ready';
 import { createRoot, useState, useEffect, useRef } from '@wordpress/element';
 import {
@@ -10,6 +10,7 @@ import {
 	Flex,
 	FlexItem,
 	Modal,
+	TextControl,
 	TextareaControl,
 } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
@@ -37,11 +38,26 @@ const EventCommunicationModal = () => {
 		isSaving: wpSelect( 'gatherpress/email-modal' ).isSaving(),
 	} ), [] );
 	const { closeModal } = useDispatch( 'gatherpress/email-modal' );
+
+	// Shown as a placeholder only. Leaving the field empty lets the server
+	// compose the default subject once per recipient, inside that recipient's
+	// locale, which a pre-filled value would override with the sender's.
+	const postTitle = useSelect(
+		( wpSelect ) =>
+			wpSelect( 'core/editor' ).getEditedPostAttribute( 'title' ) || '',
+		[],
+	);
+	const defaultSubject = sprintf(
+		// translators: %s: event title.
+		_x( '📅 %s', 'Email notification subject with event title', 'gatherpress' ),
+		postTitle,
+	);
 	const [ isAllChecked, setAllChecked ] = useState( false );
 	const [ isAttendingChecked, setAttendingChecked ] = useState( false );
 	const [ isWaitingListChecked, setWaitingListChecked ] = useState( false );
 	const [ isNotAttendingChecked, setNotAttendingChecked ] = useState( false );
 	const [ buttonDisabled, setButtonDisabled ] = useState( false );
+	const [ subject, setSubject ] = useState( '' );
 	const [ message, setMessage ] = useState( '' );
 	const textareaRef = useRef( null );
 	const sendMessage = () => {
@@ -54,6 +70,7 @@ const EventCommunicationModal = () => {
 				method: 'POST',
 				data: {
 					post_id: select( 'core/editor' ).getCurrentPostId(),
+					subject,
 					message,
 					send: {
 						all: isAllChecked,
@@ -65,6 +82,7 @@ const EventCommunicationModal = () => {
 			} ).then( ( res ) => {
 				if ( res.success ) {
 					closeModal();
+					setSubject( '' );
 					setMessage( '' );
 					setAllChecked( false );
 					setAttendingChecked( false );
@@ -109,6 +127,13 @@ const EventCommunicationModal = () => {
 					shouldCloseOnClickOutside={ false }
 					style={ { maxWidth: '550px' } }
 				>
+					<TextControl
+						label={ __( 'Subject', 'gatherpress' ) }
+						value={ subject }
+						placeholder={ defaultSubject }
+						onChange={ ( value ) => setSubject( value ) }
+						style={ { marginBottom: '1rem' } }
+					/>
 					<TextareaControl
 						label={ __( 'Optional message', 'gatherpress' ) }
 						value={ message }

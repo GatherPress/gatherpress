@@ -429,6 +429,11 @@ class Test_Dropdown extends Base {
 			'Click trigger should have toggle action'
 		);
 		$this->assertStringContainsString(
+			'data-wp-on--keydown="actions.activateOnSpace"',
+			$result,
+			'Click trigger should activate on Space to honor its role="button" keyboard contract'
+		);
+		$this->assertStringContainsString(
 			'aria-expanded="false"',
 			$result,
 			'Click trigger should have initial expanded state'
@@ -463,6 +468,11 @@ class Test_Dropdown extends Base {
 			'data-wp-on--click="actions.toggleDropdown"',
 			$result,
 			'Hover trigger should not have toggle action'
+		);
+		$this->assertStringNotContainsString(
+			'data-wp-on--keydown',
+			$result,
+			'Hover trigger should not have the Space handler (it has no click toggle to mirror)'
 		);
 	}
 

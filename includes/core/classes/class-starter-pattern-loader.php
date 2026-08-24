@@ -81,10 +81,11 @@ final class Starter_Pattern_Loader {
 	 *
 	 * @since 0.35.0
 	 *
-	 * @param array $patterns   Pattern definitions (`name`, `title`,
-	 *                          `description`, `content`, optional `postTypes`).
-	 * @param array $post_types Default post type slugs for definitions
-	 *                          without their own `postTypes` key.
+	 * @param array<int, mixed> $patterns   Pattern definitions (`name`, `title`,
+	 *                                      `description`, `content`, optional `postTypes`).
+	 *                                      Filter output, so non-array entries are tolerated.
+	 * @param string[]          $post_types Default post type slugs for definitions
+	 *                                      without their own `postTypes` key.
 	 * @return void
 	 */
 	public static function register( array $patterns, array $post_types ): void {

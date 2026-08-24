@@ -15,6 +15,7 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue;
 
@@ -85,12 +86,20 @@ $gatherpress_venue       = $gatherpress_event->get_venue_information()['name'];
 			</p>
 		<?php endif; ?>
 
-		<!-- RSVP Button -->
-		<div style="text-align: center; margin-top: 20px;">
-			<a href="<?php echo esc_url( get_the_permalink( $event_id ) ); ?>" style="background-color: #007bff; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">
-				<?php esc_html_e( 'RSVP Now', 'gatherpress' ); ?>
-			</a>
-		</div>
+		<!-- RSVP Button: only when registration is still open. -->
+		<?php
+		if (
+			! $gatherpress_event->has_event_past()
+			&& ( new Rsvp( $event_id ) )->is_enabled()
+		) :
+			$gatherpress_rsvp_url = (string) get_the_permalink( $event_id );
+			?>
+			<div style="text-align: center; margin-top: 20px;">
+				<a href="<?php echo esc_url( $gatherpress_rsvp_url ); ?>" style="background-color: #0a58ca; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 16px;">
+					<?php esc_html_e( 'RSVP Now', 'gatherpress' ); ?>
+				</a>
+			</div>
+		<?php endif; ?>
 
 		<!-- Excerpt -->
 		<p style="text-align: left;"><?php echo esc_html( get_the_excerpt( $event_id ) ); ?></p>

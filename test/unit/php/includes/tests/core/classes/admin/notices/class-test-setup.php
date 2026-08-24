@@ -10,7 +10,6 @@ namespace GatherPress\Tests\Core\Admin\Notices;
 
 use GatherPress\Core\Admin\Notices\Base;
 use GatherPress\Core\Admin\Notices\Setup;
-use GatherPress\Core\Admin\Notices\Upcoming_Php_Requirement;
 use GatherPress\Tests\Base as Test_Base;
 use PMC\Unit_Test\Utility;
 
@@ -130,10 +129,10 @@ class Test_Setup extends Test_Base {
 		$instance = Setup::get_instance();
 		$original = $this->swap_notices( $instance, array() );
 
-		$instance->add( new Upcoming_Php_Requirement() );
+		$instance->add( $this->make_persistent_notice() );
 
 		$this->assertArrayHasKey(
-			'gatherpress_upcoming_php_requirement',
+			'gatherpress_test',
 			$instance->get_notices(),
 			'Failed to assert that the notice was registered under its slug.'
 		);
@@ -148,6 +147,11 @@ class Test_Setup extends Test_Base {
 	 * coverage collection starts, so the registration is invoked again here
 	 * from an empty slate.
 	 *
+	 * GatherPress ships no default notices as of 0.35.0. The upcoming PHP and
+	 * WordPress requirement notices were removed once those versions became
+	 * hard requirements, so the method is an empty registration point until
+	 * something else needs it.
+	 *
 	 * @covers ::register_default_notices
 	 *
 	 * @return void
@@ -158,17 +162,10 @@ class Test_Setup extends Test_Base {
 
 		Utility::invoke_hidden_method( $instance, 'register_default_notices' );
 
-		$notices = $instance->get_notices();
-
-		$this->assertArrayHasKey(
-			'gatherpress_upcoming_php_requirement',
-			$notices,
-			'Failed to assert that the PHP requirement notice was registered.'
-		);
-		$this->assertArrayHasKey(
-			'gatherpress_upcoming_wp_requirement',
-			$notices,
-			'Failed to assert that the WordPress requirement notice was registered.'
+		$this->assertSame(
+			array(),
+			$instance->get_notices(),
+			'Failed to assert that no default notices are registered.'
 		);
 
 		$this->swap_notices( $instance, $original );

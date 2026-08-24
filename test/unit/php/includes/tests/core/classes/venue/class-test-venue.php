@@ -13,6 +13,8 @@
 namespace GatherPress\Tests\Core\Venue;
 
 use GatherPress\Core\Venue\Meta;
+// Deep import on purpose: test_prior_fqn_resolves_to_current_class asserts
+// Venue::class equals the real FQN, which the BC alias intentionally is not.
 use GatherPress\Core\Venue\Venue;
 use GatherPress\Tests\Base;
 use ReflectionClass;

@@ -19,6 +19,7 @@ use GatherPress\Core\Venue\Setup;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
+use GdImage;
 
 /**
  * Class Test_Map.
@@ -3024,7 +3025,7 @@ class Test_Map extends Base {
 				int $height,
 				int $density = 1,
 				string $map_type = 'roadmap'
-			) {
+			): ?GdImage {
 				return null;
 			}
 		};

@@ -552,7 +552,7 @@ final class Prewarm {
 			return array();
 		}
 
-		$blocks = parse_blocks( $content );
+		$blocks = array_values( parse_blocks( $content ) );
 
 		return $this->walk_blocks_for_combos( $blocks );
 	}
@@ -602,8 +602,8 @@ final class Prewarm {
 			'height'       => isset( $attrs['height'] )
 				? (int) $attrs['height']
 				: Map::DEFAULT_HEIGHT,
-			'aspect_ratio' => isset( $attrs['aspectRatio'] )
-				? (string) $attrs['aspectRatio']
+			'aspect_ratio' => is_string( $attrs['aspectRatio'] ?? null )
+				? $attrs['aspectRatio']
 				: Map::DEFAULT_ASPECT_RATIO,
 		);
 	}

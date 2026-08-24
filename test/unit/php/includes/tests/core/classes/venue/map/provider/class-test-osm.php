@@ -670,4 +670,27 @@ class Test_OSM extends Base {
 		$this->assertInstanceOf( GdImage::class, $canvas );
 		unset( $canvas );
 	}
+
+	/**
+	 * A canvas needs at least one pixel on each axis, so a zero or negative
+	 * dimension is unrenderable and comes back as null before GD is touched.
+	 *
+	 * @since 0.36.0
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_render_returns_null_for_non_positive_dimensions(): void {
+		$provider = new OSM();
+
+		$this->assertNull(
+			$provider->render( 40.7128, -74.0060, 12, 0, 240 ),
+			'A zero width is unrenderable.'
+		);
+
+		$this->assertNull(
+			$provider->render( 40.7128, -74.0060, 12, 320, -1 ),
+			'A negative height is unrenderable.'
+		);
+	}
 }

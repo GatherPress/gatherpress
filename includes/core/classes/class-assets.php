@@ -35,7 +35,7 @@ final class Assets {
 	 * This property stores data assets in an array for efficient access and management.
 	 *
 	 * @since 0.27.0
-	 * @var array
+	 * @var array<string, array{dependencies: string[], version: string}>
 	 */
 	protected array $asset_data = array();
 
@@ -174,7 +174,18 @@ final class Assets {
 		// @codeCoverageIgnoreEnd
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reading a plugin-local static file.
-		wp_add_inline_script( 'wp-date', file_get_contents( $script_path ), 'after' );
+		$script = file_get_contents( $script_path );
+
+		// file_exists() above does not rule out an unreadable file.
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
+		// @codeCoverageIgnoreStart
+		if ( false === $script ) {
+			return;
+		}
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
+		// @codeCoverageIgnoreEnd
+
+		wp_add_inline_script( 'wp-date', $script, 'after' );
 	}
 
 	/**
@@ -272,8 +283,8 @@ final class Assets {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The block content.
-	 * @param array  $block         The block settings.
+	 * @param string               $block_content The block content.
+	 * @param array<string, mixed> $block         The block settings.
 	 *
 	 * @return string The block content.
 	 */
@@ -533,16 +544,27 @@ final class Assets {
 	 * @param string  $asset The file name of the asset.
 	 * @param ?string $path  (Optional) The absolute path to the asset file
 	 *                       or null to use the path based on the default naming scheme.
-	 * @return array An array containing asset-related data.
+	 * @return array{dependencies: string[], version: string} An array containing asset-related data.
 	 */
 	public function get_asset_data( string $asset, ?string $path = null ): array {
 		$path = $path ?? $this->path . sprintf( '%s.asset.php', $asset );
 		if ( empty( $this->asset_data[ $asset ] ) ) {
 			// Loading a WordPress asset metadata file that returns an array, not importing a class.
-			$this->asset_data[ $asset ] = file_exists( $path ) ? require $path : array(); // NOSONAR — see #1768.
+			$data = file_exists( $path ) ? require $path : array(); // NOSONAR — see #1768.
+
+			// Callers read both keys unguarded, so a missing or partial
+			// metadata file resolves to defaults rather than to a warning.
+			$data         = is_array( $data ) ? $data : array();
+			$dependencies = $data['dependencies'] ?? null;
+			$version      = $data['version'] ?? null;
+
+			$this->asset_data[ $asset ] = array(
+				'dependencies' => is_array( $dependencies ) ? $dependencies : array(),
+				'version'      => is_string( $version ) ? $version : GATHERPRESS_VERSION,
+			);
 		}
 
-		return (array) $this->asset_data[ $asset ];
+		return $this->asset_data[ $asset ];
 	}
 
 	/**
@@ -560,9 +582,13 @@ final class Assets {
 		}
 
 		if ( empty( $this->block_variation_names ) ) {
+			// scandir() returns false on an unreadable directory, which
+			// file_exists() above does not rule out.
+			$entries = scandir( $variations_directory );
+
 			$this->block_variation_names = array_values(
 				array_diff(
-					scandir( $variations_directory ),
+					false === $entries ? array() : $entries,
 					array( '..', '.' )
 				)
 			);

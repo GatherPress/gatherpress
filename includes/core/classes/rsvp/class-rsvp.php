@@ -36,6 +36,35 @@ use WP_Post;
  * Manages RSVP functionality for events, including response status tracking and limits.
  *
  * @since 0.34.0
+ *
+ * @phpstan-type RsvpRecord array{
+ *     name: string,
+ *     photo: string|null,
+ *     profile: string|null,
+ *     status: string,
+ *     guests: int,
+ *     anonymous: bool,
+ *     timestamp: string,
+ *     provider: string,
+ *     identifier: int|string,
+ *     role: string,
+ *     comment_id: int,
+ *     post_id: int,
+ *     user_id: int,
+ *     commentId: int,
+ *     postId: int,
+ *     userId: int
+ * }
+ * @phpstan-type RsvpSaveDefault array{
+ *     comment_id: int,
+ *     post_id: int,
+ *     user_id: int,
+ *     timestamp: string,
+ *     status: string,
+ *     guests: int,
+ *     anonymous: int
+ * }
+ * @phpstan-type RsvpResponseGroup array{records: array<int, RsvpRecord>, count: int}
  */
 final class Rsvp {
 
@@ -56,10 +85,18 @@ final class Rsvp {
 	public const COMMENT_TYPE = 'gatherpress_rsvp';
 
 	/**
+	 * Comment meta key flagging a response as anonymous.
+	 *
+	 * @since 0.35.1
+	 * @var string
+	 */
+	public const ANONYMOUS_META_KEY = 'gatherpress_rsvp_anonymous';
+
+	/**
 	 * Default response for calling the save function.
 	 *
 	 * @since 0.35.0
-	 * @var array
+	 * @var RsvpSaveDefault
 	 */
 	private const DEFAULT_SAVE_RESPONSE = array(
 		'comment_id' => 0,
@@ -85,7 +122,7 @@ final class Rsvp {
 	 * @since 0.34.0
 	 * @var WP_Post|null Null when the instance wraps an invalid post ID.
 	 */
-	protected readonly ?WP_Post $event;
+	protected readonly ?WP_Post $post;
 
 	/**
 	 * Storage for RSVP Responses for this event.
@@ -119,7 +156,7 @@ final class Rsvp {
 	 * @param int $post_id The event post ID.
 	 */
 	public function __construct( int $post_id ) {
-		$this->event                = get_post( $post_id );
+		$this->post                 = get_post( $post_id );
 		$this->storage              = new Storage( $post_id );
 		$this->max_attendance_limit = (int) get_post_meta( $post_id, 'gatherpress_max_attendance_limit', true );
 		$this->providers            = Provider_Registry::get_instance()->get_all();
@@ -137,7 +174,7 @@ final class Rsvp {
 	 *
 	 * @param mixed $identifier The identifier of the RSVP.
 	 *
-	 * @return array|null An array containing RSVP information.
+	 * @return RsvpRecord|null An array containing RSVP information.
 	 */
 	public function get( $identifier ): array|null {
 		$identity = $this->resolve_identity( $identifier );
@@ -189,7 +226,7 @@ final class Rsvp {
 	 * @return void
 	 */
 	public function initialize_enabled(): void {
-		$post_id   = $this->event->ID ?? 0;
+		$post_id   = $this->post->ID ?? 0;
 		$rsvp_mode = Settings::get_instance()->get( 'rsvp_mode' );
 
 		if ( 'disabled' === $rsvp_mode ) {
@@ -226,13 +263,15 @@ final class Rsvp {
 	 *                                    Accepts 1 for true (anonymous) and 0 for false (not anonymous). Default 0.
 	 * @param int        $guests          Optional. The number of guests the user plans to bring along. Default 0.
 	 *
-	 * @return array Associative array containing the event ID ('post_id'), user ID ('user_id'),
-	 *               RSVP timestamp ('timestamp'), RSVP status ('status'), number of guests ('guests'),
-	 *               and anonymity flag ('anonymous'). Returns a default array with 'post_id' and 'user_id'
-	 *               set to 0, 'timestamp' to '0000-00-00 00:00:00', 'status' to 'no_status', 'guests' to 0,
-	 *               and 'anonymous' to 0 if the post ID or user identifier is not valid, or if the status
-	 *               is not one of the acceptable values. If the attending limit is reached, 'status' may be
-	 *               automatically set to 'waiting_list', and 'guests' to 0, depending on the context.
+	 * @return RsvpRecord|RsvpSaveDefault Associative array containing the event ID ('post_id'),
+	 *                                    user ID ('user_id'), RSVP timestamp ('timestamp'), RSVP status ('status'),
+	 *                                    number of guests ('guests'), and anonymity flag ('anonymous'). Returns a
+	 *                                    default array with 'post_id' and 'user_id' set to 0, 'timestamp' to
+	 *                                    '0000-00-00 00:00:00', 'status' to 'no_status', 'guests' to 0, and
+	 *                                    'anonymous' to 0 if the post ID or user identifier is not valid, or if the
+	 *                                    status is not one of the acceptable values. If the attending limit is
+	 *                                    reached, 'status' may be automatically set to 'waiting_list', and 'guests'
+	 *                                    to 0, depending on the context.
 	 */
 	public function save(
 		mixed $identifier,
@@ -247,16 +286,23 @@ final class Rsvp {
 		}
 
 		$provider = $this->resolve_provider( $identity );
-		$status   = Status::try_from( $status );
-		$data     = new Data( $identity, $status, $guests, (bool) $anonymous );
-		$intent   = new Intent( $data, $provider );
-		$state    = $this->process( $intent );
 
-		if ( null === $state ) {
+		// No provider handles this identity type, so there is no response to record.
+		if ( null === $provider ) {
 			return self::DEFAULT_SAVE_RESPONSE;
 		}
 
-		Cache::delete( $this->event->ID );
+		$status = Status::try_from( $status );
+		$data   = new Data( $identity, $status, $guests, (bool) $anonymous );
+		$intent = new Intent( $data, $provider );
+		$state  = $this->process( $intent );
+		$post   = $this->post;
+
+		if ( null === $state || null === $post ) {
+			return self::DEFAULT_SAVE_RESPONSE;
+		}
+
+		Cache::delete( $post->ID );
 
 		return Serializer::to_array( $state );
 	}
@@ -272,7 +318,7 @@ final class Rsvp {
 	 */
 	public function process( Intent $intent ): State|null {
 		// If no valid event or RSVP is disabled for this event return empty default response.
-		if ( 1 > ( $this->event->ID ?? 0 ) || ! $this->is_enabled() ) {
+		if ( 1 > ( $this->post->ID ?? 0 ) || ! $this->is_enabled() ) {
 			return null;
 		}
 
@@ -345,8 +391,15 @@ final class Rsvp {
 		// #1771 does not apply to this design.
 		$promoted_count = 0;
 
-		for ( $i = 0; $i < $remaining_spots; $i++ ) {
-			$state = $waiting_list[ $i ];
+		// Walk the queue itself rather than counting off free spots: the two are
+		// different quantities, and indexing the list by the spot count either
+		// ran off the end of a short queue or stopped before a long one had
+		// filled the room.
+		foreach ( $waiting_list as $state ) {
+			if ( $remaining_spots <= 0 ) {
+				break;
+			}
+
 			$state = $this->storage->save( Intent::attend( $state ), (int) $state->comment->comment_ID );
 
 			if ( $state instanceof State ) {
@@ -361,22 +414,27 @@ final class Rsvp {
 	/**
 	 * Determines whether RSVP is enabled for this event.
 	 *
-	 * Returns false immediately when the sitewide mode is `disabled`.
-	 * Returns true when the mode is `enabled` (every event has RSVP).
-	 * In per-event modes (`per_event_enabled` or `per_event_disabled`), the
-	 * `gatherpress_enable_rsvp` post meta is consulted. An unset meta
-	 * (empty string) falls back to the mode default: `per_event_enabled`
-	 * defaults to enabled, `per_event_disabled` defaults to disabled.
+	 * A post type that does not declare `gatherpress-rsvp` never has RSVP
+	 * enabled, whatever the mode or the meta say. Beyond that: false when the
+	 * sitewide mode is `disabled`, true when the mode is `enabled` (every event
+	 * has RSVP). In per-event modes (`per_event_enabled` or
+	 * `per_event_disabled`), the `gatherpress_enable_rsvp` post meta is
+	 * consulted. An unset meta (empty string) falls back to the mode default:
+	 * `per_event_enabled` defaults to enabled, `per_event_disabled` defaults
+	 * to disabled.
 	 *
 	 * @since 0.35.0
 	 *
 	 * @return bool True if RSVP is enabled for this event, false otherwise.
 	 */
 	public function is_enabled(): bool {
-		$post_id   = $this->event->ID ?? 0;
+		$post_id   = $this->post->ID ?? 0;
 		$rsvp_mode = Settings::get_instance()->get( 'rsvp_mode' );
 
-		if ( 'disabled' === $rsvp_mode ) {
+		if (
+			'disabled' === $rsvp_mode
+			|| ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' )
+		) {
 			return false;
 		}
 
@@ -406,7 +464,7 @@ final class Rsvp {
 	 * @return bool True if Open RSVP is enabled for this event, false otherwise.
 	 */
 	public function allows_open_rsvp(): bool {
-		$post_id = $this->event->ID ?? 0;
+		$post_id = $this->post->ID ?? 0;
 
 		// Sitewide gate: if open RSVP is globally disabled, always return false.
 		if ( ! Settings::get_instance()->get( 'enable_open_rsvp' ) ) {
@@ -472,13 +530,22 @@ final class Rsvp {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array An array containing response information grouped by RSVP status.
+	 * @return array<string, RsvpResponseGroup> Response records and counts keyed by 'all' and each RSVP status.
 	 */
 	public function responses(): array {
-		$cached = Cache::get( $this->event->ID );
+		$post_id = $this->post->ID ?? 0;
 
-		if ( is_array( $cached ) ) {
-			return $cached;
+		// Serialized records vary by capability but the cache key does not, so
+		// only the public variant is cached; privileged viewers compute fresh.
+		// An unresolved event has no cache key of its own, so it computes fresh too.
+		$can_use_cache = 0 < $post_id && ! current_user_can( self::CAPABILITY );
+
+		if ( $can_use_cache ) {
+			$cached = Cache::get( $post_id );
+
+			if ( is_array( $cached ) ) {
+				return $cached;
+			}
 		}
 
 		$retval = array(
@@ -530,7 +597,9 @@ final class Rsvp {
 			$retval[ $status ]['count']   = count( $status_records ) + $guest_count;
 		}
 
-		Cache::set( $this->event->ID, $retval );
+		if ( $can_use_cache ) {
+			Cache::set( $post_id, $retval );
+		}
 
 		return $retval;
 	}
@@ -543,8 +612,10 @@ final class Rsvp {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $first  The first response to compare in the sort.
-	 * @param array $second The second response to compare in the sort.
+	 * @param array<string, mixed> $first  The first response to compare in the sort.
+	 * @param array<string, mixed> $second The second response to compare in the sort.
+	 * @phpstan-param RsvpRecord $first
+	 * @phpstan-param RsvpRecord $second
 	 *
 	 * @return int An integer indicating the sorting order:
 	 *             -1 if $first should come before $second,
@@ -575,8 +646,10 @@ final class Rsvp {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $first  First response to compare in the sort.
-	 * @param array $second Second response to compare in the sort.
+	 * @param array<string, mixed> $first  First response to compare in the sort.
+	 * @param array<string, mixed> $second Second response to compare in the sort.
+	 * @phpstan-param RsvpRecord $first
+	 * @phpstan-param RsvpRecord $second
 	 *
 	 * @return int Returns a negative number if the first response's timestamp is earlier,
 	 *             a positive number if the second response's timestamp is earlier,
@@ -595,7 +668,8 @@ final class Rsvp {
 	 * @return Intent
 	 */
 	private function constrain_rsvp_intent( Intent $intent, ?State $current_response ): Intent {
-		$max_guest_limit = intval( get_post_meta( $this->event->ID, 'gatherpress_max_guest_limit', true ) );
+		$post_id         = $this->post->ID ?? 0;
+		$max_guest_limit = intval( get_post_meta( $post_id, 'gatherpress_max_guest_limit', true ) );
 
 		$guests    = $intent->data->guests;
 		$anonymous = $intent->data->anonymous;
@@ -606,7 +680,7 @@ final class Rsvp {
 		}
 
 		// Check if anonymous RSVP is enabled for this event.
-		$enable_anonymous_rsvp = get_post_meta( $this->event->ID, 'gatherpress_enable_anonymous_rsvp', true );
+		$enable_anonymous_rsvp = get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true );
 		if ( ! $enable_anonymous_rsvp ) {
 			$anonymous = false;
 		}
@@ -661,7 +735,7 @@ final class Rsvp {
 	 * @return Identity|null
 	 */
 	private function resolve_identity( int|string $identifier ): ?Identity {
-		if ( is_email( $identifier ) ) {
+		if ( is_string( $identifier ) && is_email( $identifier ) ) {
 			return new Identity( Identity_Type::EMAIL, $identifier );
 		}
 

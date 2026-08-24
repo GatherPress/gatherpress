@@ -100,8 +100,8 @@ final class Dropdown {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The original block content.
-	 * @param array  $block         The parsed block data containing block attributes.
+	 * @param string               $block_content The original block content.
+	 * @param array<string, mixed> $block         The parsed block data containing block attributes.
 	 *
 	 * @return string The modified block content with inline styles.
 	 */
@@ -183,8 +183,8 @@ final class Dropdown {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The original block content.
-	 * @param array  $block         The parsed block data.
+	 * @param string               $block_content The original block content.
+	 * @param array<string, mixed> $block         The parsed block data.
 	 *
 	 * @return string The modified block content with select mode attributes.
 	 */
@@ -251,8 +251,8 @@ final class Dropdown {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The HTML content of the block.
-	 * @param array  $block         The parsed block data.
+	 * @param string               $block_content The HTML content of the block.
+	 * @param array<string, mixed> $block         The parsed block data.
 	 *
 	 * @return string The modified block content with updated attributes.
 	 */
@@ -286,6 +286,10 @@ final class Dropdown {
 				$tag->set_attribute( 'aria-expanded', 'false' );
 				$tag->set_attribute( 'tabindex', '0' );
 				$tag->set_attribute( 'data-wp-on--click', 'actions.toggleDropdown' );
+				// The trigger is an anchor announced as a button; anchors only
+				// activate on Enter, so Space must be wired up explicitly to
+				// honor the ARIA button pattern.
+				$tag->set_attribute( 'data-wp-on--keydown', 'actions.activateOnSpace' );
 			}
 
 			if ( 'hover' === $open_on ) {

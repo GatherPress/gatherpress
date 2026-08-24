@@ -15,12 +15,17 @@ namespace GatherPress\Core\Settings;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Settings;
+
 /**
  * Class Base.
  *
  * This class provides a foundation for creating settings pages in GatherPress.
  *
  * @since 0.27.0
+ *
+ * @phpstan-import-type SettingsSection from Settings
+ * @phpstan-import-type SettingsSubPage from Settings
  */
 abstract class Base {
 
@@ -51,7 +56,7 @@ abstract class Base {
 	/**
 	 * An array of sections to be displayed on the settings page.
 	 *
-	 * @var array
+	 * @var array<string, SettingsSection>
 	 * @since 0.27.0
 	 */
 	protected array $sections;
@@ -106,7 +111,7 @@ abstract class Base {
 	 *
 	 * @since 0.27.0
 	 *
-	 * @return array
+	 * @return array<string, SettingsSection>
 	 */
 	protected function get_sections(): array {
 		return array();
@@ -149,9 +154,9 @@ abstract class Base {
 	 *
 	 * @since 0.27.0
 	 *
-	 * @param array $sub_pages An array of sub-pages for GatherPress.
+	 * @param array<string, SettingsSubPage> $sub_pages An array of sub-pages for GatherPress.
 	 *
-	 * @return array Modified array with the sub-page added.
+	 * @return array<string, SettingsSubPage> Modified array with the sub-page added.
 	 */
 	public function set_sub_page( array $sub_pages ): array {
 		$sub_pages[ $this->slug ] = $this->page();
@@ -182,7 +187,7 @@ abstract class Base {
 	 *
 	 * @since 0.27.0
 	 *
-	 * @return array An array representing the settings page.
+	 * @return SettingsSubPage An array representing the settings page.
 	 */
 	public function page(): array {
 		return array(

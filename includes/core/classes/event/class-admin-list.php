@@ -125,9 +125,9 @@ final class Admin_List {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $columns An array of sortable columns.
+	 * @param array<string, string|array<int, string|bool>> $columns An array of sortable columns.
 	 *
-	 * @return array An updated array of sortable columns.
+	 * @return array<string, string|array<int, string|bool>> An updated array of sortable columns.
 	 */
 	public function sortable_columns( array $columns ): array {
 		// Add 'datetime' as a sortable column.
@@ -154,9 +154,9 @@ final class Admin_List {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $view_links An array of available list table views.
+	 * @param array<string, string> $view_links An array of available list table views.
 	 *
-	 * @return array Updated list table views.
+	 * @return array<string, string> Updated list table views.
 	 */
 	public function views_edit( array $view_links ): array {
 		$screen = get_current_screen();
@@ -546,12 +546,17 @@ final class Admin_List {
 				admin_url( 'edit.php' )
 			);
 
-			// Display approved RSVP count with rounded box.
+			// Display approved RSVP count with rounded box. The visually
+			// hidden suffix turns the bare number into an accessible link
+			// name ("3 approved RSVPs") — a link named only "3" is
+			// meaningless in a screen-reader link list.
 			echo '<span class="gatherpress-rsvp-container">';
 			printf(
-				'<a href="%s" class="gatherpress-rsvp-approved"><span class="gatherpress-rsvp-icon">%d</span></a>',
+				'<a href="%s" class="gatherpress-rsvp-approved"><span class="gatherpress-rsvp-icon">%d</span>' .
+				'<span class="screen-reader-text"> %s</span></a>',
 				esc_url( $approved_rsvp_url ),
-				(int) $approved_rsvps
+				(int) $approved_rsvps,
+				esc_html( _n( 'approved RSVP', 'approved RSVPs', (int) $approved_rsvps, 'gatherpress' ) )
 			);
 
 			// Show unapproved RSVPs indicator if there are any unapproved.
@@ -566,11 +571,16 @@ final class Admin_List {
 					admin_url( 'edit.php' )
 				);
 
+				// Visually hidden text rather than only the title attribute:
+				// assistive technology exposes title inconsistently, and once
+				// the link has text content the name comes from the content.
 				printf(
-					'<a href="%s" class="gatherpress-rsvp-pending" title="%s">%d</a>',
+					'<a href="%s" class="gatherpress-rsvp-pending" title="%s">%d' .
+					'<span class="screen-reader-text"> %s</span></a>',
 					esc_url( $unapproved_rsvp_url ),
 					esc_attr( __( 'Unapproved RSVPs', 'gatherpress' ) ),
-					(int) $unapproved_rsvps
+					(int) $unapproved_rsvps,
+					esc_html( _n( 'unapproved RSVP', 'unapproved RSVPs', (int) $unapproved_rsvps, 'gatherpress' ) )
 				);
 			}
 
@@ -586,9 +596,9 @@ final class Admin_List {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $columns An associative array of column headings.
+	 * @param array<string, string> $columns An associative array of column headings.
 	 *
-	 * @return array An updated array of column headings, including the custom columns.
+	 * @return array<string, string> An updated array of column headings, including the custom columns.
 	 */
 	public function set_custom_columns( array $columns ): array {
 		// Remove the author column.
@@ -676,9 +686,9 @@ final class Admin_List {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $columns An array of column names.
+	 * @param array<string, string> $columns An array of column names.
 	 *
-	 * @return array The modified array of column names without the comments column.
+	 * @return array<string, string> The modified array of column names without the comments column.
 	 */
 	public function remove_comments_column( array $columns ): array {
 		$screen    = function_exists( 'get_current_screen' ) ? get_current_screen() : null;

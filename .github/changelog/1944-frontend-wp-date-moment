@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Stop loading wp-date and moment.js on every front-end page; the timezone shim now only applies when something else already enqueued wp-date.

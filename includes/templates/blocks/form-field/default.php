@@ -38,4 +38,9 @@ if ( ! isset(
 		?>
 	</div>
 	<input<?php echo wp_kses_data( $input_attributes . $input_styles ); ?> />
+	<?php if ( '' !== (string) $attributes['help_text'] ) : ?>
+		<p class="gatherpress-help-text" id="<?php echo esc_attr( $attributes['input_id'] . '-help' ); ?>">
+			<?php echo wp_kses_post( $attributes['help_text'] ); ?>
+		</p>
+	<?php endif; ?>
 </div>

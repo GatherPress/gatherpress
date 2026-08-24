@@ -30,6 +30,12 @@ tracked in [#1921](https://github.com/GatherPress/gatherpress/issues/1921).
   version differs from core's, so every core release (stable or patch) needs
   a matching version sync and release in
   [gatherpress-alpha](https://github.com/GatherPress/gatherpress-alpha).
+  Alpha mirrors this branch model for exactly that reason: its `develop`
+  carries whatever core's `develop` carries and is where pre-releases are
+  tagged, its `main` is the released state. The pairing is one rule — core
+  develop with alpha develop, core main with alpha main — and because the
+  version check is exact string equality, mixing them across branches makes
+  Alpha inert.
 
 ## What gets automated
 
@@ -91,7 +97,14 @@ in-progress release and see what's queued for it, without touching wp.org.
    PR to `develop`. Usually the leads/team roster copied forward; new
    contributors accumulate in `credits/unreleased.json` and the bump folds
    them in automatically.
-2. `version-X.Y.Z-suffix.N` → gatherpress-alpha `main`: the synced version
+
+   **On the cycle's first alpha**, copy forward from the `-alpha.0` marker
+   file and delete it in the same PR. The marker only exists between one
+   release and the next, so it should not outlive the cycle it opened.
+   Copy before deleting, in that order: the alpha.0 bump folded
+   `credits/unreleased.json` into that file and emptied it, so deleting
+   first drops every contributor who landed work during the window.
+2. `version-X.Y.Z-suffix.N` → gatherpress-alpha `develop`: the synced version
    header (`Skip Changelog` label). Opened by that repo's **Version Bump**
    workflow — core's Version Bump workflow dispatches it automatically when
    the `GATHERPRESS_ALPHA_TOKEN` secret is configured, and otherwise prints
@@ -210,12 +223,39 @@ Every one of these is required; skipping any of them bites the next release:
   not already done, then let the core release workflow's `alpha-handoff` job
   dispatch alpha's release (automatic with the `GATHERPRESS_ALPHA_TOKEN`
   secret; otherwise run the `gh workflow run release.yml` one-liner from the
-  job summary — a manual `git tag X.Y.Z && git push origin X.Y.Z` on alpha's
-  main still works too). Merge alpha's own rollup PR afterward.
+  job summary — a manual `git tag X.Y.Z && git push origin X.Y.Z` on alpha
+  still works too, tagged on the branch that version lives on: `main` for a
+  stable, `develop` for a pre-release). Alpha's release train mirrors core's,
+  so its stable releases also want a develop→main merge before the tag.
+  Merge alpha's own rollup PR afterward.
 - [ ] **Bring the demo data in line with the new version**: follow the
   "Preparing demo-data for a new version of GatherPress" steps in the
   [gatherpress-demo-data README](https://github.com/GatherPress/gatherpress-demo-data#readme)
   so the Playground demo content matches the release.
+- [ ] **Open the next cycle** (minor and major releases only, not patches):
+  bump develop to `X.Y+1.0-alpha.0` via the **Version Bump** workflow and
+  merge its PR. Add the `credits/X.Y+1.0-alpha.0.json` file first — the
+  workflow refuses a version with no credits file — seeded from the most
+  recent release's file, which for a line that took patches means the
+  `X.Y.N` file that landed on main rather than the `X.Y.0` one on develop.
+
+  This is a marker, not a release. Nothing is tagged, and only tags deploy,
+  so merging it ships nothing. What it buys is that develop stops
+  advertising the version that just went out: before this step develop's
+  headers and README badge still read `X.Y.0` while the branch holds
+  `X.Y+1` work, which is what
+  [#2166](https://github.com/GatherPress/gatherpress/issues/2166) reported.
+
+  The marker lives only until the cycle's first real alpha: `-alpha.1`
+  copies its credits file forward and deletes it, per the pre-release flow.
+  Alpha's Version Bump is dispatched by core's, so its `develop` picks up
+  the same marker automatically; both repos' release workflows refuse to
+  build anything from an `-alpha.0` tag.
+
+  Known gap: the generator also moves `SECURITY.md`'s supported-versions
+  table to `X.Y+1.x`, which overstates support while `X.Y.N` is the released
+  line. Correct that row by hand until `patch_security_table()` learns to
+  skip pre-release versions.
 - [ ] **Delete the spent branches**: `version-X.Y.Z` (core and alpha) and the
   credits-file PR branch. The `release/X.Y.Z` branches go when their PRs merge.
 
@@ -254,7 +294,9 @@ on to the next minor.
    into develop promptly — because the fixes originated on develop, the
    rollup deletes those same entry files there, so the next minor's
    changelog won't re-list them — then parity-sync main, release alpha at
-   `X.Y.1`, delete spent branches.
+   `X.Y.1`, delete spent branches. Skip the "open the next cycle" step:
+   develop is already on `X.Y+1.0-alpha.N` and a patch doesn't start a new
+   line.
 
 Because every patch commit on main is a content-identical cherry-pick of a
 develop commit, the next minor's develop→main release merge auto-resolves
@@ -393,7 +435,8 @@ that no job ends up with broader scopes than it needs.
 
 - **Stable**: `0.34.0`, `0.35.0`, `1.0.0`. Three numeric components, no suffix. These ship to wp.org and are tagged on `main`.
 - **Patch**: `0.34.1`. Same shape as stable; cut from a `version-X.Y.1` branch off `main` per the patch flow.
-- **Alpha**: `0.34.0-alpha.1`, `0.34.0-alpha.2`. Use for early in-cycle builds; tagged on `develop`.
+- **Cycle marker**: `0.36.0-alpha.0`. Never tagged, never released. Set on `develop` immediately after a stable ships so the branch names the line being worked on instead of the one that just went out, and retired when `-alpha.1` supersedes it. The `.0` is what distinguishes it from a real build.
+- **Alpha**: `0.34.0-alpha.1`, `0.34.0-alpha.2`. Use for early in-cycle builds; tagged on `develop`. Numbering starts at `.1` because `.0` is the cycle marker above.
 - **Beta**: `0.34.0-beta.1`. Use for feature-complete in-cycle builds where the team is still smoke-testing; tagged on `develop`.
 - **Release candidate**: `0.34.0-rc.1`. Use for "we believe this is shippable, last call for showstoppers"; tagged on `develop`.
 

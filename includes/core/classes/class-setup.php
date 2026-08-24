@@ -131,9 +131,9 @@ final class Setup {
 	 *
 	 * @since 0.27.0
 	 *
-	 * @param array $actions An array of existing action links.
+	 * @param array<string, string> $actions An array of existing action links.
 	 *
-	 * @return array An updated array of action links, including the 'Settings' link.
+	 * @return array<string, string> An updated array of action links, including the 'Settings' link.
 	 */
 	public function filter_plugin_action_links( array $actions ): array {
 		$settings = Settings::get_instance();
@@ -312,9 +312,9 @@ final class Setup {
 	 *
 	 * @since 0.27.0
 	 *
-	 * @param array $classes Existing body classes.
+	 * @param string[] $classes Existing body classes.
 	 *
-	 * @return array An updated array of body classes.
+	 * @return string[] An updated array of body classes.
 	 */
 	public function add_gatherpress_body_classes( array $classes ): array {
 		$classes[] = 'gatherpress-enabled';
@@ -331,9 +331,9 @@ final class Setup {
 	 *
 	 * @since 0.27.0
 	 *
-	 * @param array $block_categories Array of registered block categories.
+	 * @param array<int, array<string, string|null>> $block_categories Array of registered block categories.
 	 *
-	 * @return array An updated array of block categories.
+	 * @return array<int, array<string, string|null>> An updated array of block categories.
 	 */
 	public function register_gatherpress_block_category( array $block_categories ): array {
 		$category = array(
@@ -368,15 +368,9 @@ final class Setup {
 			$taxonomy = Venue\Setup::get_instance()->get_taxonomy( $venue_post_type );
 			$term     = term_exists( $term_slug, $taxonomy );
 
-			if ( ! $term ) {
-				wp_insert_term(
-					$term_name,
-					$taxonomy,
-					array(
-						'slug' => $term_slug,
-					)
-				);
-			} else {
+			// Only a taxonomy-scoped hit comes back as the `term_id` array; anything else means there is
+			// nothing to update in this taxonomy yet.
+			if ( is_array( $term ) ) {
 				wp_update_term(
 					intval( $term['term_id'] ),
 					$taxonomy,
@@ -384,6 +378,14 @@ final class Setup {
 						'name' => $term_name,
 						'slug' => $term_slug,
 					),
+				);
+			} else {
+				wp_insert_term(
+					$term_name,
+					$taxonomy,
+					array(
+						'slug' => $term_slug,
+					)
 				);
 			}
 		}
@@ -438,9 +440,9 @@ final class Setup {
 	 *
 	 * @since 0.27.0
 	 *
-	 * @param array $tables An array of names of the site tables to be dropped.
+	 * @param string[] $tables An array of names of the site tables to be dropped.
 	 *
-	 * @return array An updated array of table names to be deleted during site deletion.
+	 * @return string[] An updated array of table names to be deleted during site deletion.
 	 */
 	public function on_site_delete( array $tables ): array {
 		global $wpdb;
@@ -515,13 +517,16 @@ final class Setup {
 		 * @param bool $is_alpha_active Whether GatherPress Alpha is active.
 		 */
 		$is_alpha_active = apply_filters( 'gatherpress_is_alpha_active', defined( 'GATHERPRESS_ALPHA_VERSION' ) );
+		$screen          = get_current_screen();
 
 		if (
 			$is_alpha_active ||
+			// Without a screen there is no admin page to attach the notice to.
+			null === $screen ||
 			filter_var( ! current_user_can( 'install_plugins' ), FILTER_VALIDATE_BOOLEAN ) || (
-				! str_contains( get_current_screen()->id, 'plugins' ) &&
-				! str_contains( get_current_screen()->id, 'plugin-install' ) &&
-				! str_contains( get_current_screen()->id, 'gatherpress' )
+				! str_contains( $screen->id, 'plugins' ) &&
+				! str_contains( $screen->id, 'plugin-install' ) &&
+				! str_contains( $screen->id, 'gatherpress' )
 			)
 		) {
 			return;

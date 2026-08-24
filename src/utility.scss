@@ -35,6 +35,21 @@
 	}
 }
 
+// Respect a reduced-motion preference without losing the loading state.
+// The pulse repeats indefinitely while a request is in flight, and
+// continuous looping animation is a common trigger for people who set the
+// preference. Stopping it outright would leave the control looking
+// completely idle, so a static dim stands in: the element still reads as
+// busy, it just no longer pulses. 0.7 is deliberately milder than the 0.4
+// trough the animation already passes through, so the dimmed state costs
+// no more contrast than the original.
+@media (prefers-reduced-motion: reduce) {
+	.gatherpress--is-loading {
+		animation: none;
+		opacity: 0.7;
+	}
+}
+
 // Event Query variation overrides.
 .gatherpress-event-query {
 	.wp-block-media-text {

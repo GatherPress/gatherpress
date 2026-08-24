@@ -15,6 +15,7 @@ namespace GatherPress\Core\Settings;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue;
@@ -27,6 +28,8 @@ use GatherPress\Core\Venue\Setup;
  * Handles the "Venues" settings page for GatherPress.
  *
  * @since 0.34.0
+ *
+ * @phpstan-import-type SettingsSection from Settings
  */
 final class Venues extends Base {
 
@@ -80,7 +83,7 @@ final class Venues extends Base {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array An array of sections and options for the Venues settings page.
+	 * @return array<string, SettingsSection> An array of sections and options for the Venues settings page.
 	 */
 	protected function get_sections(): array {
 		return array(
@@ -284,12 +287,12 @@ final class Venues extends Base {
 						'field'  => array(
 							'type'    => 'text',
 							'rewrite' => true,
+							'label'   => sprintf(
+								/* translators: %s: Plural post type label, e.g. "Venues". */
+								__( 'Permalink base of %s.', 'gatherpress' ),
+								Utility::post_type_label( 'name', Venue::POST_TYPE )
+							),
 							'options' => array(
-								'label'   => sprintf(
-									/* translators: %s: Plural post type label, e.g. "Venues". */
-									__( 'Permalink base of %s.', 'gatherpress' ),
-									Utility::post_type_label( 'name', Venue::POST_TYPE )
-								),
 								'default' => Setup::get_instance()->get_localized_post_type_slug(),
 							),
 							'preview' => array(

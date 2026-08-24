@@ -480,6 +480,94 @@ class Test_List_Table extends Base {
 			$cb_col,
 			'Failed to assert checkbox has comment ID as value.'
 		);
+		$this->assertStringContainsString(
+			sprintf( 'for="cb-select-%d"', $this->rsvp['comment_ID'] ),
+			$cb_col,
+			'Failed to assert label is associated with the checkbox.'
+		);
+		$this->assertStringContainsString(
+			sprintf( 'id="cb-select-%d"', $this->rsvp['comment_ID'] ),
+			$cb_col,
+			'Failed to assert checkbox carries the id the label points at.'
+		);
+		$this->assertStringContainsString(
+			'screen-reader-text',
+			$cb_col,
+			'Failed to assert label text is visually hidden.'
+		);
+		$this->assertStringContainsString(
+			sprintf( 'Select %s', $this->rsvp['comment_author'] ),
+			$cb_col,
+			'Failed to assert label names the attendee the checkbox selects.'
+		);
+	}
+
+	/**
+	 * Tests column_cb labels registered users by their display name.
+	 *
+	 * @covers ::column_cb
+	 * @covers ::get_attendee_name
+	 * @return void
+	 */
+	public function test_column_cb_registered_user(): void {
+		$user_id = $this->factory->user->create(
+			array(
+				'display_name' => 'Registered Attendee',
+			)
+		);
+
+		$rsvp            = $this->rsvp;
+		$rsvp['user_id'] = $user_id;
+
+		$cb_col = $this->list_table->column_cb( $rsvp );
+
+		$this->assertStringContainsString(
+			'Select Registered Attendee',
+			$cb_col,
+			'Failed to assert label uses the registered user\'s display name.'
+		);
+	}
+
+	/**
+	 * Tests column_cb falls back to the submitted author name when the
+	 * stored user ID no longer resolves to an account.
+	 *
+	 * @covers ::column_cb
+	 * @covers ::get_attendee_name
+	 * @return void
+	 */
+	public function test_column_cb_stale_user_id(): void {
+		$rsvp            = $this->rsvp;
+		$rsvp['user_id'] = 999999; // No such user.
+
+		$cb_col = $this->list_table->column_cb( $rsvp );
+
+		$this->assertStringContainsString(
+			sprintf( 'Select %s', $this->rsvp['comment_author'] ),
+			$cb_col,
+			'Failed to assert a stale user ID falls back to the submitted author name.'
+		);
+	}
+
+	/**
+	 * Tests column_cb never renders an empty attendee name.
+	 *
+	 * @covers ::column_cb
+	 * @covers ::get_attendee_name
+	 * @return void
+	 */
+	public function test_column_cb_unknown_attendee(): void {
+		$rsvp                   = $this->rsvp;
+		$rsvp['comment_author'] = '';
+		$rsvp['user_id']        = 0;
+
+		$cb_col = $this->list_table->column_cb( $rsvp );
+
+		$this->assertStringContainsString(
+			'Select Unknown',
+			$cb_col,
+			'Failed to assert an empty name resolution falls back to "Unknown".'
+		);
 	}
 
 	/**
@@ -784,6 +872,70 @@ class Test_List_Table extends Base {
 	}
 
 	/**
+	 * The bulk form's own nonce, which is core's `bulk-<plural>` nonce, is
+	 * accepted. Before #2062 only the comment-type nonce was, and since
+	 * `WP_List_Table` emits its nonce under the same `_wpnonce` name, a browser
+	 * submit was always rejected and the screen did nothing.
+	 *
+	 * @covers ::process_bulk_action
+	 *
+	 * @return void
+	 */
+	public function test_process_bulk_action_accepts_the_core_bulk_nonce(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$rsvp_id = (int) $this->rsvp['comment_ID'];
+
+		wp_set_comment_status( $rsvp_id, 'approve' );
+
+		// Derive the bulk nonce the same way process_bulk_action() does, so the
+		// test stays honest if the list table's plural arg ever changes.
+		$plural                          = Utility::get_hidden_property( $this->list_table, '_args' )['plural'];
+		$_REQUEST['_wpnonce']            = wp_create_nonce( sprintf( 'bulk-%s', $plural ) );
+		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
+		$_REQUEST['action']              = 'unapprove';
+
+		$this->list_table->process_bulk_action();
+
+		$this->assertSame(
+			'0',
+			get_comment( $rsvp_id )->comment_approved,
+			'Failed to assert the core bulk nonce authorizes a bulk action.'
+		);
+
+		unset( $_REQUEST['_wpnonce'], $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
+	}
+
+	/**
+	 * An unrelated nonce is still refused.
+	 *
+	 * @covers ::process_bulk_action
+	 *
+	 * @return void
+	 */
+	public function test_process_bulk_action_refuses_an_unrelated_nonce(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$rsvp_id = (int) $this->rsvp['comment_ID'];
+
+		wp_set_comment_status( $rsvp_id, 'approve' );
+
+		$_REQUEST['_wpnonce']            = wp_create_nonce( 'something-else' );
+		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
+		$_REQUEST['action']              = 'unapprove';
+
+		$this->list_table->process_bulk_action();
+
+		$this->assertSame(
+			'1',
+			get_comment( $rsvp_id )->comment_approved,
+			'Failed to assert an unrelated nonce is refused.'
+		);
+
+		unset( $_REQUEST['_wpnonce'], $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
+	}
+
+	/**
 	 * Tests get_views method.
 	 *
 	 * @covers ::get_views
@@ -819,7 +971,7 @@ class Test_List_Table extends Base {
 			'get_current_class_attr',
 			array( 'pending', 'pending' )
 		);
-		$this->assertEquals( ' class="current"', $result );
+		$this->assertEquals( ' class="current" aria-current="page"', $result );
 
 		// Test when status does not match current.
 		$result = Utility::invoke_hidden_method(
@@ -835,7 +987,7 @@ class Test_List_Table extends Base {
 			'get_current_class_attr',
 			array( 'all', 'all' )
 		);
-		$this->assertEquals( ' class="current"', $result );
+		$this->assertEquals( ' class="current" aria-current="page"', $result );
 
 		// Test with 'mine' status.
 		$result = Utility::invoke_hidden_method(
@@ -939,29 +1091,6 @@ class Test_List_Table extends Base {
 			array( 'date', true ),
 			$sortable['date'],
 			'Failed to assert date is the default sort column.'
-		);
-	}
-
-	/**
-	 * Tests display method.
-	 *
-	 * @covers ::display
-	 * @return void
-	 */
-	public function test_display(): void {
-		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
-		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
-
-		$this->list_table->prepare_items();
-
-		ob_start();
-		$this->list_table->display();
-		$output = ob_get_clean();
-
-		$this->assertStringContainsString(
-			'gatherpress_rsvp',
-			$output,
-			'Failed to assert display outputs table with RSVP nonce field.'
 		);
 	}
 
@@ -1869,6 +1998,114 @@ class Test_List_Table extends Base {
 				'type'
 			),
 			'No term and nothing to infer from renders empty.'
+		);
+	}
+
+	/**
+	 * A screen passed to the constructor is the one the table binds its column
+	 * hooks to, instead of whatever screen the request is currently on.
+	 *
+	 * @since 0.36.0
+	 * @covers ::__construct
+	 *
+	 * @return void
+	 */
+	public function test_construct_with_screen(): void {
+		$screen_id  = 'gatherpress_event_page_gatherpress_rsvp';
+		$list_table = new List_Table( array( 'screen' => $screen_id ) );
+
+		$this->assertSame(
+			$screen_id,
+			$list_table->screen->id,
+			'The table adopts the screen named in the constructor arguments.'
+		);
+		$this->assertSame(
+			0,
+			has_filter( sprintf( 'manage_%s_columns', $screen_id ), array( $list_table, 'get_columns' ) ),
+			'The column hooks bind to the screen named in the constructor arguments.'
+		);
+	}
+
+	/**
+	 * A stored per-page preference that is not a positive integer would divide
+	 * the total by a non-positive number, so it falls back to the default.
+	 *
+	 * @since 0.36.0
+	 * @covers ::prepare_items
+	 *
+	 * @return void
+	 */
+	public function test_prepare_items_falls_back_to_default_per_page(): void {
+		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+
+		wp_set_current_user( $user_id );
+		update_user_meta( $user_id, sprintf( '%s_per_page', Rsvp::COMMENT_TYPE ), -5 );
+
+		$this->list_table->prepare_items();
+
+		$this->assertSame(
+			List_Table::DEFAULT_PER_PAGE,
+			$this->list_table->get_pagination_arg( 'per_page' ),
+			'A stored preference below one falls back to the default page size.'
+		);
+	}
+
+	/**
+	 * An RSVP row outlives the post it points at, so a deleted event renders the
+	 * stored title as text, or a dash when nothing is left of it.
+	 *
+	 * @since 0.36.0
+	 * @covers ::column_default
+	 *
+	 * @return void
+	 */
+	public function test_column_default_event_deleted(): void {
+		$item = $this->rsvp;
+
+		wp_delete_post( $this->event_id, true );
+
+		$item['event_title'] = 'Deleted Event';
+
+		$this->assertSame(
+			'Deleted Event',
+			$this->list_table->column_default( $item, 'event' ),
+			'A deleted event renders the stored title without a link.'
+		);
+
+		$item['event_title'] = '';
+
+		$this->assertSame(
+			'-',
+			$this->list_table->column_default( $item, 'event' ),
+			'A deleted event with no stored title renders a dash.'
+		);
+	}
+
+	/**
+	 * Core stores comment statuses this table has no label for, and a row can
+	 * arrive without the field at all; both render a dash.
+	 *
+	 * @since 0.36.0
+	 * @covers ::column_default
+	 *
+	 * @return void
+	 */
+	public function test_column_default_approved_unlabeled_status(): void {
+		$item                     = $this->rsvp;
+		$item['comment_approved'] = 'trash';
+
+		$this->assertSame(
+			'-',
+			$this->list_table->column_default( $item, 'approved' ),
+			'A status the table has no label for renders a dash.'
+		);
+
+		unset( $item['comment_approved'] );
+
+		$this->assertSame(
+			'-',
+			$this->list_table->column_default( $item, 'approved' ),
+			'A row carrying no status at all renders a dash.'
 		);
 	}
 }

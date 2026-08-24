@@ -77,9 +77,9 @@ final class Import extends Migrate {
 	 *
 	 * @see https://github.com/WordPress/wordpress-importer/blob/71bdd41a2aa2c6a0967995ee48021037b39a1097/src/class-wp-import.php#L631
 	 *
-	 * @param  array $post_data_raw The result of 'wp_import_post_data_raw'.
+	 * @param  array<string, mixed> $post_data_raw The result of 'wp_import_post_data_raw'.
 	 *
-	 * @return array                Returns the unchanged result of 'wp_import_post_data_raw'.
+	 * @return array<string, mixed>                Returns the unchanged result of 'wp_import_post_data_raw'.
 	 */
 	public function prepare( array $post_data_raw ): array {
 		if ( $this->validate( $post_data_raw ) ) {
@@ -99,10 +99,10 @@ final class Import extends Migrate {
 	/**
 	 * Checks if the currently imported post is of type 'gatherpress_event'.
 	 *
-	 * @param  array $post_data_raw The result of 'wp_import_post_data_raw'.
+	 * @param  array<string, mixed> $post_data_raw The result of 'wp_import_post_data_raw'.
 	 *
-	 * @return bool                 True, when the currently imported post is of type 'gatherpress_event',
-	 *                              false otherwise.
+	 * @return bool                                True, when the currently imported post is of type
+	 *                                             'gatherpress_event', false otherwise.
 	 */
 	protected function validate( array $post_data_raw ): bool {
 		return ( isset( $post_data_raw['post_type'] ) && Event::POST_TYPE === $post_data_raw['post_type'] );

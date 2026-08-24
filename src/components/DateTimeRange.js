@@ -50,11 +50,12 @@ const DateTimeRange = () => {
 		dateTimeMetaData = {};
 	}
 
-	const { dateTimeStart, dateTimeEnd, timezone } = useSelect(
+	const { dateTimeStart, dateTimeEnd, timezone, isCleanNewPost } = useSelect(
 		( select ) => ( {
 			dateTimeStart: select( 'gatherpress/datetime' ).getDateTimeStart(),
 			dateTimeEnd: select( 'gatherpress/datetime' ).getDateTimeEnd(),
 			timezone: select( 'gatherpress/datetime' ).getTimezone(),
+			isCleanNewPost: select( 'core/editor' ).isCleanNewPost(),
 		} ),
 		[],
 	);
@@ -64,6 +65,18 @@ const DateTimeRange = () => {
 	const matchedDuration = useMatchedDuration();
 
 	useEffect( () => {
+		// Don't write meta into an untouched new post. The store already holds
+		// the defaults while the stored meta is empty, so this effect's first
+		// run would be a real edit and the editor would report unsaved changes
+		// before the author typed anything (#2054).
+		//
+		// Nothing is lost by waiting: `Event\Setup::set_datetimes()` fills the
+		// same defaults server side when the meta is absent at save time. Any
+		// real edit clears `isCleanNewPost`, and this effect runs from then on.
+		if ( isCleanNewPost ) {
+			return;
+		}
+
 		const payload = JSON.stringify( {
 			...dateTimeMetaData,
 			dateTimeStart: createMomentWithTimezone( dateTimeStart, timezone )
@@ -81,6 +94,7 @@ const DateTimeRange = () => {
 		timezone,
 		dateTimeMetaData,
 		editPost,
+		isCleanNewPost,
 	] );
 
 	return (
