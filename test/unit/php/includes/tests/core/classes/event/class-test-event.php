@@ -171,10 +171,16 @@ class Test_Event extends Base {
 
 		$parts = $event->get_display_datetime_parts( '', '', '', 'UNTIL', 'yes' );
 
-		$this->assertSame( 'Monday, May 11, 2020 3:00 PM EDT', $parts['start'] );
+		// parts['start'] is the formatted date/time without the timezone suffix;
+		// the timezone lives in its own 'timezone' part so the template can wrap
+		// each segment in a machine-readable <time> tag without nesting the
+		// timezone string inside the start <time> element.
+		$this->assertSame( 'Monday, May 11, 2020 3:00 PM', $parts['start'] );
 		$this->assertSame( 'UNTIL', $parts['separator'] );
 		$this->assertSame( '5:00 PM', $parts['end'] );
 		$this->assertSame( 'EDT', $parts['timezone'] );
+		// get_display_datetime() joins the non-empty parts and is what callers
+		// that want a single human-readable string consume.
 		$this->assertSame(
 			'Monday, May 11, 2020 3:00 PM UNTIL 5:00 PM EDT',
 			$event->get_display_datetime( '', '', '', 'UNTIL', 'yes' )
