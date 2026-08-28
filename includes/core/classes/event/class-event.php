@@ -278,58 +278,76 @@ class Event {
 		string $separator = '',
 		string $show_timezone = ''
 	): string {
+		$parts = array_filter(
+			$this->get_display_datetime_parts(
+				$type,
+				$start_format,
+				$end_format,
+				$separator,
+				$show_timezone
+			)
+		);
+
+		return $parts ? implode( ' ', $parts ) : self::DATETIME_PLACEHOLDER;
+	}
+
+	/**
+	 * Gets raw formatted datetime parts for display.
+	 *
+	 * @since 0.34.0
+	 *
+	 * @param string $type          Display type: 'start', 'end', or 'both'.
+	 * @param string $start_format  PHP display format for start date/time.
+	 * @param string $end_format    PHP display format for end date/time.
+	 * @param string $separator     Separator between start and end dates.
+	 * @param string $show_timezone Show timezone.
+	 *
+	 * @return array<string, string|false> Raw datetime parts.
+	 *
+	 * @throws Exception If date/time formatting fails or settings cannot be retrieved.
+	 */
+	public function get_display_datetime_parts(
+		string $type = '',
+		string $start_format = '',
+		string $end_format = '',
+		string $separator = '',
+		string $show_timezone = ''
+	): array {
 		$settings    = Settings::get_instance();
-		$date_format = apply_filters(
-			'gatherpress_date_format',
-			$settings->get( 'date_format' )
-		);
-		$time_format = apply_filters(
-			'gatherpress_time_format',
-			$settings->get( 'time_format' )
-		);
+		$date_format = apply_filters( 'gatherpress_date_format', $settings->get( 'date_format' ) );
+		$time_format = apply_filters( 'gatherpress_time_format', $settings->get( 'time_format' ) );
 		$timezone    = $settings->get( 'show_timezone' ) ? ' T' : '';
+		$show_start  = $type ? in_array( $type, array( 'start', 'both' ), true ) : true;
+		$show_end    = $type ? in_array( $type, array( 'end', 'both' ), true ) : true;
 
-		$show_start = $type
-			? in_array( $type, array( 'start', 'both' ), true )
-			: true;
-
-		$show_end = $type
-			? in_array( $type, array( 'end', 'both' ), true )
-			: true;
-
-		// Set start date/time.
 		$start_datetime_format = $start_format ? $start_format : "{$date_format} {$time_format}";
 		$start                 = $show_start ? $this->get_datetime_start( $start_datetime_format ) : false;
 
-		// Set end date/time.
 		if ( $show_end ) {
 			$end_time_format     = $end_format ? $end_format : $time_format;
 			$end_datetime_format = $end_format ? $end_format : "{$date_format} {$time_format}";
-
-			$end = $show_start && $this->is_same_date()
+			$end                 = $show_start && $this->is_same_date()
 				? $this->get_time_end( $end_time_format )
 				: $this->get_datetime_end( $end_datetime_format );
 		} else {
 			$end = false;
 		}
 
-		// Add separator if there's both start and end date/time.
 		$default_separator = $separator ? $separator : __( 'to', 'gatherpress' );
 		$separator         = $start && $end ? $default_separator : false;
 
-		// Add timezone. A block-level "yes" override wins over the global setting.
 		if ( $show_timezone ? 'yes' === $show_timezone : $timezone ) {
 			$timezone = $this->get_datetime_start( ' T' );
 		} else {
 			$timezone = false;
 		}
 
-		$parts = array_filter(
-			array( $start, $separator, $end, $timezone )
+		return array(
+			'start'     => $start,
+			'separator' => $separator,
+			'end'       => $end,
+			'timezone'  => $timezone,
 		);
-
-		// Stick the parts back together.
-		return $parts ? implode( ' ', $parts ) : self::DATETIME_PLACEHOLDER;
 	}
 
 	/**

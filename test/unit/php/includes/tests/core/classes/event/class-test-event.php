@@ -143,6 +143,47 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * Covers raw parts returned for a same-day event.
+	 *
+	 * @covers ::get_display_datetime_parts
+	 *
+	 * @return void
+	 */
+	public function test_get_display_datetime_parts(): void {
+		update_option(
+			'gatherpress_settings',
+			array(
+				'date_format'   => 'l, F j, Y',
+				'time_format'   => 'g:i A',
+				'show_timezone' => false,
+			)
+		);
+
+		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$event = new Event( $post->ID );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2020-05-11 15:00:00',
+				'datetime_end'   => '2020-05-11 17:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$parts = $event->get_display_datetime_parts( '', '', '', 'UNTIL', 'yes' );
+
+		$this->assertSame( 'Monday, May 11, 2020 3:00 PM EDT', $parts['start'] );
+		$this->assertSame( 'UNTIL', $parts['separator'] );
+		$this->assertSame( '5:00 PM', $parts['end'] );
+		$this->assertSame( 'EDT', $parts['timezone'] );
+		$this->assertSame(
+			'Monday, May 11, 2020 3:00 PM UNTIL 5:00 PM EDT',
+			$event->get_display_datetime( '', '', '', 'UNTIL', 'yes' )
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
 	 * Coverage for get_display_datetime method.
 	 *
 	 * @param array  $params   Parameters for datetimes.
