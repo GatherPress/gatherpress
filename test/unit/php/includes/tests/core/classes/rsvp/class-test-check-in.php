@@ -12,6 +12,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Check_In;
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Check_In.
@@ -55,11 +56,7 @@ class Test_Check_In extends Base {
 	 * @return void
 	 */
 	public function test_construct_builds_the_instance(): void {
-		$reflection = new \ReflectionClass( Check_In::class );
-		$property   = $reflection->getProperty( 'instance' );
-
-		$property->setAccessible( true );
-		$property->setValue( null, null );
+		Utility::set_and_get_hidden_static_property( Check_In::class, 'instance', null );
 
 		$this->assertInstanceOf(
 			Check_In::class,
