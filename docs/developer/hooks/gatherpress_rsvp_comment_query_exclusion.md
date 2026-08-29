@@ -38,7 +38,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/rsvp/class-query.php:271](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/rsvp/class-query.php#L271)
+- [includes/core/classes/rsvp/class-query.php:274](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/rsvp/class-query.php#L274)
 ```php
 apply_filters( 'gatherpress_rsvp_comment_query_exclusion', true, $query )
 ```

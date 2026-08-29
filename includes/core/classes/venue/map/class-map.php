@@ -49,6 +49,13 @@ use WP_Post;
  * @phpstan-type Descriptor array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}
  * @phpstan-type DescriptorMap array<string, Descriptor>
  * @phpstan-type ProviderDescriptorMap array<string, DescriptorMap>
+ * @phpstan-type ComboRequest array{
+ *     zoom?: int|null,
+ *     width?: int|null,
+ *     height?: int|null,
+ *     aspect_ratio?: string,
+ *     map_type?: string
+ * }
  */
 final class Map {
 
@@ -350,9 +357,9 @@ final class Map {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $metadata Parsed `block.json` metadata for the block being registered.
+	 * @param array<string, mixed> $metadata Parsed `block.json` metadata for the block being registered.
 	 *
-	 * @return array The metadata array, potentially with updated attribute defaults.
+	 * @return array<string, mixed> The metadata array, potentially with updated attribute defaults.
 	 */
 	public function apply_block_attribute_defaults( array $metadata ): array {
 		if ( 'gatherpress/venue-map' !== ( $metadata['name'] ?? '' ) ) {
@@ -558,11 +565,11 @@ final class Map {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param int        $post_id     The venue post ID.
-	 * @param array|null $extra_combo Optional extra combo to include, in the
-	 *                                {@see Rest_Api::parse_request()} shape:
-	 *                                `zoom`, `width` (0 = auto), `height`
-	 *                                (0 = auto), `aspect_ratio`, `map_type`.
+	 * @param int               $post_id     The venue post ID.
+	 * @param ComboRequest|null $extra_combo Optional extra combo to include, in the
+	 *                                       {@see Rest_Api::parse_request()} shape:
+	 *                                       `zoom`, `width` (0 = auto), `height`
+	 *                                       (0 = auto), `aspect_ratio`, `map_type`.
 	 *
 	 * @return ProviderDescriptorMap
 	 */
@@ -665,10 +672,11 @@ final class Map {
 	 *
 	 * @since 0.35.0
 	 *
-	 * @param int   $post_id The venue post ID.
-	 * @param array $combo   Combo in the {@see Rest_Api::parse_request()}
-	 *                       shape: `zoom`, `width` (0 = auto), `height`
-	 *                       (0 = auto), `aspect_ratio`, `map_type`.
+	 * @param int                  $post_id The venue post ID.
+	 * @param array<string, mixed> $combo   Combo in the {@see Rest_Api::parse_request()}
+	 *                                      shape: `zoom`, `width` (0 = auto), `height`
+	 *                                      (0 = auto), `aspect_ratio`, `map_type`.
+	 * @phpstan-param ComboRequest $combo
 	 *
 	 * @return ProviderDescriptorMap
 	 */
@@ -997,7 +1005,16 @@ final class Map {
 		 * @param array<string, array<string, array<string, mixed>>> $descriptors Provider-keyed descriptor map.
 		 * @param int                                                $post_id     Venue post ID.
 		 */
-		return (array) apply_filters( 'gatherpress_static_map_descriptors', $descriptors, $post_id );
+		$filtered = (array) apply_filters( 'gatherpress_static_map_descriptors', $descriptors, $post_id );
+
+		/**
+		 * The filtered descriptor map.
+		 *
+		 * @var ProviderDescriptorMap $filtered Integrators are documented to hand back the descriptor
+		 *                                      shape they were given; anything malformed is dropped
+		 *                                      the next time a descriptor is saved.
+		 */
+		return $filtered;
 	}
 
 	/**
@@ -1095,12 +1112,12 @@ final class Map {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param int    $post_id Venue post ID.
-	 * @param array  $info    Parsed venue information.
-	 * @param int    $zoom     Zoom level to render at.
-	 * @param int    $width    Pixel width of the PNG.
-	 * @param int    $height   Pixel height of the PNG.
-	 * @param string $map_type Map type slug for the render.
+	 * @param int                   $post_id  Venue post ID.
+	 * @param array<string, string> $info     Parsed venue information.
+	 * @param int                   $zoom     Zoom level to render at.
+	 * @param int                   $width    Pixel width of the PNG.
+	 * @param int                   $height   Pixel height of the PNG.
+	 * @param string                $map_type Map type slug for the render.
 	 *
 	 * @return array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}|null
 	 */
@@ -1274,12 +1291,12 @@ final class Map {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array  $info     Parsed venue information.
-	 * @param int    $zoom     Map zoom level.
-	 * @param int    $width    Output width.
-	 * @param int    $height   Output height.
-	 * @param string $provider Provider slug (e.g. `osm`).
-	 * @param string $map_type Map type slug.
+	 * @param array<string, string> $info     Parsed venue information.
+	 * @param int                   $zoom     Map zoom level.
+	 * @param int                   $width    Output width.
+	 * @param int                   $height   Output height.
+	 * @param string                $provider Provider slug (e.g. `osm`).
+	 * @param string                $map_type Map type slug.
 	 *
 	 * @return string MD5 hex digest.
 	 */
@@ -1414,19 +1431,19 @@ final class Map {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param GdImage|resource $image    Finished image from a provider's `render()`.
-	 * @param string           $address  Venue address (slugified for the filename).
-	 * @param int              $zoom     Map zoom level.
-	 * @param int              $width    Output width (at density 1).
-	 * @param int              $height   Output height (at density 1).
-	 * @param int              $density  Pixel-density multiplier. 1 = standard, 2 = retina.
-	 * @param string           $provider Provider slug.
-	 * @param string           $map_type Map type slug.
+	 * @param GdImage $image    Finished image from a provider's `render()`.
+	 * @param string  $address  Venue address (slugified for the filename).
+	 * @param int     $zoom     Map zoom level.
+	 * @param int     $width    Output width (at density 1).
+	 * @param int     $height   Output height (at density 1).
+	 * @param int     $density  Pixel-density multiplier. 1 = standard, 2 = retina.
+	 * @param string  $provider Provider slug.
+	 * @param string  $map_type Map type slug.
 	 *
 	 * @return string|null Public URL of the saved file, or null on failure.
 	 */
 	public function save_image(
-		$image,
+		GdImage $image,
 		string $address,
 		int $zoom,
 		int $width,

@@ -9,7 +9,8 @@ import {
 } from '@wordpress/block-editor';
 import { createBlock } from '@wordpress/blocks';
 import { PanelBody } from '@wordpress/components';
-import { dispatch, select } from '@wordpress/data';
+import { dispatch, select, useSelect } from '@wordpress/data';
+import { applyFilters } from '@wordpress/hooks';
 
 /**
  * Edit Component
@@ -19,12 +20,56 @@ import { dispatch, select } from '@wordpress/data';
  * @param {Function} props.setAttributes     Function to update attributes.
  * @param {string}   props.clientId          Unique ID of the block.
  * @param {Function} props.insertBlocksAfter Function to insert blocks after this block.
+ * @param {boolean}  props.isSelected        Whether the block is selected.
+ * @param {Object}   props.context           Block context data.
  *
  * @return {JSX.Element} The rendered edit component.
  */
-const Edit = ( { attributes, setAttributes, clientId, insertBlocksAfter } ) => {
+const Edit = ( {
+	attributes,
+	setAttributes,
+	clientId,
+	insertBlocksAfter,
+	isSelected,
+	context,
+} ) => {
 	const { text } = attributes;
 	const blockProps = useBlockProps();
+
+	/**
+	 * Filters the text a dropdown item displays in the editor canvas.
+	 *
+	 * A dropdown item's text can carry placeholders that only resolve at
+	 * render time, which leaves the author looking at a raw token. This
+	 * filter lets whatever owns a placeholder resolve it for display while
+	 * the stored attribute keeps the token untouched.
+	 *
+	 * The item itself knows nothing about any particular placeholder. It
+	 * passes its own attributes, its post context, and `select` so a handler
+	 * can subscribe to its own store; the `useSelect` wrapper is what makes
+	 * the result re-render once that store resolves.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param {string} text    The item's stored text, markup included.
+	 * @param {Object} details Block attributes, block context, and `select`.
+	 *
+	 * @return {string} The text to display in the canvas.
+	 */
+	const displayText = useSelect(
+		( selectStore ) =>
+			applyFilters( 'gatherpress.dropdownItemText', text, {
+				attributes,
+				context,
+				select: selectStore,
+			} ),
+		[ text, attributes, context ],
+	);
+
+	// Show the stored text while editing so the author can see and keep any
+	// placeholder, and the resolved text when they step away so the item
+	// reads the way visitors will see it.
+	const richTextValue = isSelected ? text : displayText;
 
 	return (
 		<>
@@ -41,7 +86,7 @@ const Edit = ( { attributes, setAttributes, clientId, insertBlocksAfter } ) => {
 			<RichText
 				{ ...blockProps }
 				tagName="div"
-				value={ text }
+				value={ richTextValue }
 				onChange={ ( value ) => {
 					// Parse the content and clean it up.
 					const parser = new DOMParser();

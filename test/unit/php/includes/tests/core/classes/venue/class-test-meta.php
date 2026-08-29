@@ -9,7 +9,7 @@
 namespace GatherPress\Tests\Core\Venue;
 
 use GatherPress\Core\Venue\Meta;
-use GatherPress\Core\Venue\Venue;
+use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 

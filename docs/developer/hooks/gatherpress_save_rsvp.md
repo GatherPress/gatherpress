@@ -18,7 +18,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/rsvp/class-storage.php:154](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/rsvp/class-storage.php#L154)
+- [includes/core/classes/rsvp/class-storage.php:161](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/rsvp/class-storage.php#L161)
 ```php
 apply_filters( 'gatherpress_save_rsvp', $args )
 ```

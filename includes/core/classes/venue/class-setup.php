@@ -19,7 +19,7 @@ namespace GatherPress\Core\Venue;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Shadow_Source;
 use GatherPress\Core\Starter_Pattern_Loader;
@@ -76,6 +76,7 @@ final class Setup {
 	 * @return void
 	 */
 	protected function instantiate_classes(): void {
+		Admin_List::get_instance();
 		Map_Setup::get_instance();
 		Meta::get_instance();
 	}
@@ -150,9 +151,9 @@ final class Setup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $settings The block editor settings array.
+	 * @param array<string, mixed> $settings The block editor settings array.
 	 *
-	 * @return array The modified block editor settings array.
+	 * @return array<string, mixed> The modified block editor settings array.
 	 */
 	public function add_editor_settings( array $settings ): array {
 		if ( ! isset( $settings['gatherpress'] ) ) {
@@ -456,7 +457,24 @@ final class Setup {
 	 * @param int    $post_id   The post ID for which to retrieve venue information.
 	 * @param string $post_type The post type of the provided post ID.
 	 *
-	 * @return array An array containing venue-related information.
+	 * @return array{
+	 *     isOnlineEventTerm: bool,
+	 *     onlineEventLink: string,
+	 *     name?: string,
+	 *     address?: string,
+	 *     city?: string,
+	 *     country?: string,
+	 *     country_code?: string,
+	 *     county?: string,
+	 *     house_number?: string,
+	 *     latitude?: string,
+	 *     longitude?: string,
+	 *     phone?: string,
+	 *     postcode?: string,
+	 *     state?: string,
+	 *     street?: string,
+	 *     website?: string
+	 * } Venue-related information; the venue fields are present only when a venue resolves.
 	 */
 	public function get_venue_meta( int $post_id, string $post_type ): array {
 		$venue_meta = array(

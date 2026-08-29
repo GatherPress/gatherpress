@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Raise static analysis to PHPStan level 8 and fix the nullability defects it surfaced, including calendar feed links for deleted venue terms, RSVP admin rows for deleted events, and several paths that could fatal on an unresolvable event.

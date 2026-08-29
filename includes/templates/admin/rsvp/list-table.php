@@ -41,10 +41,13 @@ $rsvp_table->prepare_items();
 	</h1>
 
 	<?php
-	if ( $gatherpress_post_id ) {
+	// A request can name a post that no longer exists, in which case there is no link to render.
+	$gatherpress_event_link = $gatherpress_post_id ? get_permalink( $gatherpress_post_id ) : false;
+
+	if ( $gatherpress_event_link ) {
 		printf(
 			'<a href="%1$s" class="comments-view-item-link">%2$s</a>',
-			esc_url( get_permalink( $gatherpress_post_id ) ),
+			esc_url( $gatherpress_event_link ),
 			esc_html(
 				sprintf(
 					/* translators: %s: Singular post type label, e.g. "Event". */

@@ -79,7 +79,9 @@ class Test_Providers extends Base {
 	public function test_email_provider_display_name(): void {
 		$identity = new Identity( Identity_Type::EMAIL, 'display@example.test' );
 
-		$this->assertSame( 'display@example.test', ( new Email() )->get_display_name( $identity ) );
+		// The answer is stored and displayed as a name, and an address names
+		// nobody, so the provider reports that it has none to give.
+		$this->assertSame( '', ( new Email() )->get_display_name( $identity ) );
 	}
 
 	/**

@@ -27,6 +27,8 @@ use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\User;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
+use WP_Comment;
+use WP_Post;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
@@ -41,6 +43,10 @@ use WP_User;
  * infrastructure.
  *
  * @since 0.34.0
+ *
+ * @phpstan-type RouteDefinition array{route: string, args: array<string, mixed>}
+ * @phpstan-type SendOptions array{all: bool, attending: bool, waiting_list: bool, not_attending: bool}
+ * @phpstan-type Recipient array{is_user: bool, user_id: int, comment_id: int, email: string, name: string}
  */
 final class Rest_Api {
 
@@ -71,7 +77,7 @@ final class Rest_Api {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
-		add_action( 'gatherpress_send_emails', array( $this, 'handle_email_send_action' ), 10, 3 );
+		add_action( 'gatherpress_send_emails', array( $this, 'handle_email_send_action' ), 10, 4 );
 		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ) );
 	}
 
@@ -105,7 +111,7 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array[] An array of route definitions for GatherPress events.
+	 * @return array<int, RouteDefinition> An array of route definitions for GatherPress events.
 	 */
 	protected function get_event_routes(): array {
 		return array(
@@ -125,7 +131,7 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array The REST route configuration.
+	 * @return RouteDefinition The REST route configuration.
 	 */
 	protected function email_route(): array {
 		return array(
@@ -138,7 +144,7 @@ final class Rest_Api {
 					// send emails about it. Mirrors the meta auth_callback
 					// model so a non-owner Author can't blast emails about
 					// someone else's event via this route.
-					return current_user_can( 'edit_post', (int) $request['post_id'] );
+					return current_user_can( Event::EDIT_CAPABILITY, (int) $request['post_id'] );
 				},
 				'args'                => array(
 					'post_id' => array(
@@ -147,7 +153,11 @@ final class Rest_Api {
 					),
 					'message' => array(
 						'required'          => false,
-						'validate_callback' => 'sanitize_text_field',
+						'sanitize_callback' => 'sanitize_textarea_field',
+					),
+					'subject' => array(
+						'required'          => false,
+						'sanitize_callback' => 'sanitize_text_field',
 					),
 					'send'    => array(
 						'required'          => true,
@@ -166,7 +176,7 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array Route configuration array.
+	 * @return RouteDefinition Route configuration array.
 	 */
 	protected function nonce_route(): array {
 		return array(
@@ -201,7 +211,7 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array The REST route configuration.
+	 * @return RouteDefinition The REST route configuration.
 	 */
 	protected function rsvp_route(): array {
 		return array(
@@ -209,15 +219,18 @@ final class Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'update_rsvp' ),
-				'permission_callback' => static function ( WP_Rest_Request $request ): bool {
-					$unparsed_token = $request->get_param( Token::NAME );
-					$rsvp_token     = Token::from_token_string( $unparsed_token );
+				'permission_callback' => function ( WP_REST_Request $request ): bool {
+					$post_id    = (int) $request->get_param( 'post_id' );
+					$rsvp_token = Token::from_token_string( $request->get_param( Token::NAME ) );
+					$token_post = $rsvp_token ? $rsvp_token->get_post() : null;
 
-					if ( $rsvp_token ) {
+					// A magic-link token authorizes only the event it was issued for.
+					if ( $token_post instanceof WP_Post && $token_post->ID === $post_id ) {
 						return true;
 					}
 
-					return is_user_logged_in();
+					// Otherwise the caller must be logged in and able to read the event.
+					return is_user_logged_in() && $this->can_read_event_rsvps( $request );
 				},
 				'args'                => array(
 					'post_id'    => array(
@@ -248,7 +261,7 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array The REST route configuration.
+	 * @return RouteDefinition The REST route configuration.
 	 */
 	protected function rsvp_form_route(): array {
 		return array(
@@ -307,7 +320,7 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array The REST route configuration.
+	 * @return RouteDefinition The REST route configuration.
 	 */
 	protected function rsvp_status_html_route(): array {
 		return array(
@@ -315,7 +328,7 @@ final class Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'rsvp_status_html' ),
-				'permission_callback' => '__return_true',
+				'permission_callback' => array( $this, 'can_read_event_rsvps' ),
 				'args'                => array(
 					'post_id'       => array(
 						'required'          => true,
@@ -350,7 +363,7 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array Route configuration with path, methods, callback and arguments.
+	 * @return RouteDefinition Route configuration with path, methods, callback and arguments.
 	 */
 	protected function rsvp_responses_route(): array {
 		return array(
@@ -358,7 +371,7 @@ final class Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'rsvp_responses' ),
-				'permission_callback' => '__return_true',
+				'permission_callback' => array( $this, 'can_read_event_rsvps' ),
 				'args'                => array(
 					'post_id' => array(
 						'required'          => true,
@@ -366,6 +379,45 @@ final class Rest_Api {
 					),
 				),
 			),
+		);
+	}
+
+	/**
+	 * Permission callback gating read access to an event's RSVP roster.
+	 *
+	 * Mirrors the visibility of the event page itself: a published roster is
+	 * public (subject to any password gate), while other statuses require read
+	 * access to the specific event. Editors keep access in every state.
+	 *
+	 * @since 0.35.1
+	 *
+	 * @param WP_REST_Request $request Contains data from the request.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
+	 *
+	 * @return bool True when the caller may read the event's RSVP responses.
+	 */
+	public function can_read_event_rsvps( WP_REST_Request $request ): bool {
+		return Event::can_read_rsvps( (int) $request->get_param( 'post_id' ) );
+	}
+
+	/**
+	 * Reduce an RSVP responses payload to per-status counts.
+	 *
+	 * The public RSVP form endpoint returns totals so the block can refresh
+	 * its counts, but the submitter may be anonymous and has no claim on the
+	 * attendee records, so the identifying `records` arrays are dropped.
+	 *
+	 * @since 0.35.1
+	 *
+	 * @param array<string, array{records: array<int, array<string, mixed>>, count: int}> $responses Full payload from
+	 *                                                                                               Rsvp::responses().
+	 *
+	 * @return array<string, array{count: int}> The same status keys, each carrying only its count.
+	 */
+	private function rsvp_response_counts( array $responses ): array {
+		return array_map(
+			static fn( array $group ) => array( 'count' => $group['count'] ),
+			$responses
 		);
 	}
 
@@ -379,6 +431,7 @@ final class Rest_Api {
 	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request Contains data from the request.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
 	 * @return WP_REST_Response The response indicating the success of the email scheduling process.
 	 */
@@ -386,8 +439,13 @@ final class Rest_Api {
 		$params   = $request->get_params();
 		$post_id  = intval( $params['post_id'] );
 		$message  = $params['message'] ?? '';
+		$subject  = $params['subject'] ?? '';
 		$send     = $params['send'];
-		$success  = wp_schedule_single_event( time(), 'gatherpress_send_emails', array( $post_id, $send, $message ) );
+		$success  = wp_schedule_single_event(
+			time(),
+			'gatherpress_send_emails',
+			array( $post_id, $send, $message, $subject )
+		);
 		$response = array(
 			'success' => $success,
 		);
@@ -403,15 +461,18 @@ final class Rest_Api {
 	 * as it's intended to be called by an action hook.
 	 *
 	 * @since 0.34.0
+	 * @since 0.36.0 Added `$subject` parameter for #827.
 	 *
 	 * @param int    $post_id Post ID.
 	 * @param array  $send    Members to send the email to.
 	 * @param string $message Optional message to include in the email.
+	 * @param string $subject Optional subject line. Defaults to the existing `📅 {title}` template when empty.
+	 * @phpstan-param SendOptions $send
 	 *
 	 * @return void
 	 */
-	public function handle_email_send_action( int $post_id, array $send, string $message ): void {
-		$this->send_emails( $post_id, $send, $message );
+	public function handle_email_send_action( int $post_id, array $send, string $message, string $subject = '' ): void {
+		$this->send_emails( $post_id, $send, $message, $subject );
 	}
 
 	/**
@@ -422,14 +483,17 @@ final class Rest_Api {
 	 * the appropriate subject, body, and headers.
 	 *
 	 * @since 0.34.0
+	 * @since 0.36.0 Added `$subject` parameter for #827.
 	 *
 	 * @param int    $post_id Post ID.
 	 * @param array  $send    Members to send the email to.
 	 * @param string $message Optional message to include in the email.
+	 * @param string $subject Optional subject line. Defaults to the existing `📅 {title}` template when empty.
+	 * @phpstan-param SendOptions $send
 	 *
 	 * @return bool True if emails were successfully sent, false otherwise.
 	 */
-	public function send_emails( int $post_id, array $send, string $message ): bool {
+	public function send_emails( int $post_id, array $send, string $message, string $subject = '' ): bool {
 		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
 			return false;
 		}
@@ -440,7 +504,7 @@ final class Rest_Api {
 		$recipients   = $this->get_recipients( $send, $post_id );
 
 		foreach ( $recipients as $recipient ) {
-			$this->send_event_email_to_recipient( $recipient, $post_id, $message, $current_user );
+			$this->send_event_email_to_recipient( $recipient, $post_id, $message, $current_user, $subject );
 		}
 
 		return true;
@@ -456,11 +520,15 @@ final class Rest_Api {
 	 * Restores the editor's user / locale before returning.
 	 *
 	 * @since 0.34.0
+	 * @since 0.36.0 Added `$subject` parameter for #827.
 	 *
 	 * @param array   $recipient    Recipient row from `get_recipients()`.
 	 * @param int     $post_id      Event post ID.
 	 * @param string  $message      Optional editor-supplied message body.
 	 * @param WP_User $current_user Originating editor (restored after locale/user switch).
+	 * @param string  $subject      Optional subject line. Empty falls back to the default template
+	 *                              and is then filtered via `gatherpress_email_subject`.
+	 * @phpstan-param Recipient $recipient
 	 *
 	 * @return void
 	 */
@@ -468,7 +536,8 @@ final class Rest_Api {
 		array $recipient,
 		int $post_id,
 		string $message,
-		WP_User $current_user
+		WP_User $current_user,
+		string $subject = ''
 	): void {
 		// Check opt-in preference based on recipient type.
 		if ( $recipient['is_user'] ) {
@@ -500,11 +569,23 @@ final class Rest_Api {
 			wp_set_current_user( $recipient['user_id'] );
 		}
 
-		$subject = sprintf(
-			// translators: %s: event title.
-			_x( '📅 %s', 'Email notification subject with event title', 'gatherpress' ),
-			get_the_title( $post_id )
-		);
+		if ( '' === $subject ) {
+			$subject = sprintf(
+				// translators: %s: event title.
+				_x( '📅 %s', 'Email notification subject with event title', 'gatherpress' ),
+				get_the_title( $post_id )
+			);
+		}
+
+		/**
+		 * Filters the event update email subject.
+		 *
+		 * @since 0.36.0
+		 *
+		 * @param string $subject Email subject line.
+		 * @param int    $post_id Event post ID.
+		 */
+		$subject = apply_filters( 'gatherpress_email_subject', $subject, $post_id );
 		$body    = Utility::render_template(
 			sprintf( '%s/includes/templates/admin/emails/event-email.php', GATHERPRESS_CORE_PATH ),
 			array(
@@ -541,8 +622,9 @@ final class Rest_Api {
 	 *
 	 * @param array $send    An array specifying who to send emails to.
 	 * @param int   $post_id The Event Post ID.
+	 * @phpstan-param SendOptions $send
 	 *
-	 * @return array An array containing unified recipient data for both users and non-users.
+	 * @return array<int, Recipient> An array containing unified recipient data for both users and non-users.
 	 */
 	public function get_recipients( array $send, int $post_id ): array {
 		$recipients    = array();
@@ -592,6 +674,12 @@ final class Rest_Api {
 		);
 
 		foreach ( $comments as $comment ) {
+			// get_rsvps() is typed loosely enough to return counts, so only comment rows
+			// are turned into recipients.
+			if ( ! $comment instanceof WP_Comment ) {
+				continue;
+			}
+
 			$recipient = $this->build_comment_recipient( $comment );
 
 			if ( null !== $recipient ) {
@@ -613,9 +701,9 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param object $comment RSVP comment row from `Rsvp_Query::get_rsvps()`.
+	 * @param WP_Comment $comment RSVP comment row from `Rsvp_Query::get_rsvps()`.
 	 *
-	 * @return array|null Recipient row, or null when no email is on file.
+	 * @return Recipient|null Recipient row, or null when no email is on file.
 	 */
 	protected function build_comment_recipient( $comment ): ?array {
 		$user_id = intval( $comment->user_id );
@@ -638,7 +726,7 @@ final class Rest_Api {
 		return array(
 			'is_user'    => (bool) $user_id,
 			'user_id'    => $user_id,
-			'comment_id' => $comment->comment_ID,
+			'comment_id' => (int) $comment->comment_ID,
 			'email'      => $email,
 			'name'       => $name,
 		);
@@ -654,6 +742,7 @@ final class Rest_Api {
 	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request Contains data from the request.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
 	 * @return WP_REST_Response An instance of WP_REST_Response containing the response data.
 	 */
@@ -672,6 +761,7 @@ final class Rest_Api {
 		$anonymous       = intval( $params['anonymous'] ?? 0 );
 		$unparsed_token  = sanitize_text_field( $params['rsvp_token'] ?? '' );
 		$event           = new Event( $post_id );
+		$rsvp            = new Rsvp( $post_id );
 
 		// If managing user is adding someone to an event.
 		$is_managing_other = false;
@@ -684,7 +774,7 @@ final class Rest_Api {
 			// RSVP someone else into it. The previous flat `edit_posts`
 			// check would have let any Author manage attendees on any
 			// event, including ones they don't own.
-			if ( current_user_can( 'edit_post', $post_id ) ) {
+			if ( current_user_can( Event::EDIT_CAPABILITY, $post_id ) ) {
 				$is_managing_other = true;
 			} else {
 				$user_id = 0;
@@ -718,16 +808,22 @@ final class Rest_Api {
 			}
 		}
 
+		// A magic-link token supplies an email address; every other path supplies a user ID,
+		// so each identifier is checked against the one thing it can be.
 		if (
 			$user_identifier &&
-			( is_user_member_of_blog( $user_identifier ) || is_email( $user_identifier ) ) &&
+			(
+				is_string( $user_identifier )
+					? is_email( $user_identifier )
+					: is_user_member_of_blog( $user_identifier )
+			) &&
 			! $event->has_event_past()
 		) {
 			if ( 'attending' !== $status ) {
 				$guests = 0;
 			}
 
-			$user_record = $event->rsvp->save( $user_identifier, $status, $anonymous, $guests );
+			$user_record = $rsvp->save( $user_identifier, $status, $anonymous, $guests );
 			$status      = $user_record['status'];
 			$guests      = $user_record['guests'];
 
@@ -742,7 +838,7 @@ final class Rest_Api {
 			'status'      => $status,
 			'guests'      => $guests,
 			'anonymous'   => $anonymous,
-			'responses'   => $event->rsvp->responses(),
+			'responses'   => $rsvp->responses(),
 			'online_link' => $event->maybe_get_online_event_link(),
 		);
 
@@ -763,6 +859,7 @@ final class Rest_Api {
 	 * @param WP_REST_Request $request The REST API request object containing parameters:
 	 *                                 - post_id (int): The ID of the post associated with the RSVP.
 	 *                                 - block_data (string): JSON-encoded block data used to render the RSVP content.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
 	 * @return WP_REST_Response The REST API response containing:
 	 *                          - success (bool): Whether the content was successfully generated.
@@ -819,6 +916,7 @@ final class Rest_Api {
 	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request The REST API request object.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
 	 * @return WP_REST_Response The response indicating success or failure.
 	 */
@@ -863,12 +961,17 @@ final class Rest_Api {
 			}
 		}
 
-		// Pre-flight: bail with a structured error before processing if open
-		// RSVP is disabled or the event has already passed.
+		// Pre-flight: bail with a structured error before processing if the
+		// event is not viewable, open RSVP is disabled or the event has already passed.
 		$event = new Event( $data['post_id'] );
+		$rsvp  = new Rsvp( $data['post_id'] );
 		$bail  = null;
 
-		if ( ! ( new Rsvp( $data['post_id'] ) )->allows_open_rsvp() ) {
+		if ( ! Event::is_viewable( $data['post_id'] ) ) {
+			$bail = array( __( 'Event not found.', 'gatherpress' ), 404 );
+		} elseif ( ! $rsvp->is_enabled() ) {
+			$bail = array( __( 'RSVP is disabled for this event.', 'gatherpress' ), 403 );
+		} elseif ( ! $rsvp->allows_open_rsvp() ) {
 			$bail = array( __( 'Open RSVP is disabled for this event.', 'gatherpress' ), 403 );
 		} elseif ( $event->has_event_past() ) {
 			$bail = array( __( 'Registration for this event is now closed.', 'gatherpress' ), 400 );
@@ -895,7 +998,7 @@ final class Rest_Api {
 				'success'    => true,
 				'message'    => $result['message'],
 				'comment_id' => $result['comment_id'],
-				'responses'  => $event->rsvp->responses(),
+				'responses'  => $this->rsvp_response_counts( $rsvp->responses() ),
 			);
 			$status   = 200;
 		} else {
@@ -918,6 +1021,7 @@ final class Rest_Api {
 	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request REST API request object containing post_id parameter.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
 	 * @return WP_REST_Response Response containing success status and RSVP data.
 	 */

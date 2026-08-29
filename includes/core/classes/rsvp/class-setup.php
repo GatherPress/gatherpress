@@ -78,6 +78,7 @@ final class Setup {
 	 * @return void
 	 */
 	protected function instantiate_classes(): void {
+		Abilities::get_instance();
 		Check_In::get_instance();
 		Cleanup::get_instance();
 		Form::get_instance();
@@ -415,7 +416,10 @@ final class Setup {
 			)
 		);
 
-		$this->list_table->register_column_options();
+		// The list table only exists when `prepare_rsvp_admin_page()` created it for this screen.
+		if ( $this->list_table instanceof List_Table ) {
+			$this->list_table->register_column_options();
+		}
 	}
 
 	/**
@@ -598,10 +602,10 @@ final class Setup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array  $emails     Array of email addresses to notify.
-	 * @param string $comment_id The comment ID.
+	 * @param string[] $emails     Array of email addresses to notify.
+	 * @param string   $comment_id The comment ID.
 	 *
-	 * @return array Empty array for RSVP comments, original array otherwise.
+	 * @return string[] Empty array for RSVP comments, original array otherwise.
 	 */
 	public function remove_rsvp_notification_emails( array $emails, string $comment_id ): array {
 		if ( get_comment_type( (int) $comment_id ) !== Rsvp::COMMENT_TYPE ) {

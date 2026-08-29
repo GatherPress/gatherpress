@@ -93,7 +93,8 @@ final class Cleanup {
 			$meta_keys = array_keys( get_comment_meta( $rsvp->comment_ID ) );
 
 			foreach ( $meta_keys as $meta_key ) {
-				delete_comment_meta( $rsvp->comment_ID, $meta_key );
+				// A numeric meta key comes back from `array_keys()` as an int.
+				delete_comment_meta( $rsvp->comment_ID, (string) $meta_key );
 			}
 
 			wp_delete_comment( $rsvp->comment_ID, true );
@@ -162,8 +163,10 @@ final class Cleanup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $old_value The previous RSVP cleanup settings including interval and frequency.
-	 * @param array $new_value The updated RSVP cleanup settings including interval and frequency.
+	 * @param array<string, bool|int|string> $old_value The previous RSVP cleanup settings including interval and
+	 *                                                  frequency.
+	 * @param array<string, bool|int|string> $new_value The updated RSVP cleanup settings including interval and
+	 *                                                  frequency.
 	 *
 	 * @return void
 	 */
