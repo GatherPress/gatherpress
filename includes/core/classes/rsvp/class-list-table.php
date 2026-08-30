@@ -44,7 +44,6 @@ final class List_Table extends WP_List_Table {
 	 */
 	const DEFAULT_PER_PAGE = 20;
 
-
 	/**
 	 * HTML template for status view links with count badge.
 	 *
@@ -183,7 +182,7 @@ final class List_Table extends WP_List_Table {
 			);
 		}
 
-		$markup = sprintf(
+		printf(
 			'<div class="alignleft actions gatherpress-rsvp-filters"' .
 			' data-post-types="%1$s" data-post-id="%2$s" data-label="%3$s"' .
 			' data-statuses="%4$s" data-selected="%5$s">%6$s%7$s%8$s</div>',
@@ -192,16 +191,15 @@ final class List_Table extends WP_List_Table {
 			esc_attr__( 'Filter by event', 'gatherpress' ),
 			esc_attr( (string) wp_json_encode( $statuses ) ),
 			esc_attr( implode( ',', $responses ) ),
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in the method.
 			$this->render_event_field(),
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in the method.
 			$this->render_response_toggle( $responses ),
 			sprintf(
 				'<button type="button" class="components-button is-secondary">%s</button>',
 				esc_html__( 'Filter', 'gatherpress' )
 			)
 		);
-
-		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped as each part is built.
-		echo $markup;
 	}
 
 	/**
