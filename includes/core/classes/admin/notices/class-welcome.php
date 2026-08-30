@@ -149,7 +149,7 @@ final class Welcome extends Base {
 	 * @return bool True on the plugins screen or a GatherPress screen.
 	 */
 	protected function is_supported_screen(): bool {
-		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		$screen = get_current_screen();
 
 		if ( ! $screen instanceof WP_Screen ) {
 			return false;
