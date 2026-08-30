@@ -44,7 +44,6 @@ class Test_Welcome extends Unit_Test_Base {
 	 * @return void
 	 */
 	public function tear_down(): void {
-		delete_option( Welcome::OPTION_ACTIVATED );
 		delete_option( Base::OPTION_NAME );
 
 		parent::tear_down();
@@ -113,42 +112,7 @@ class Test_Welcome extends Unit_Test_Base {
 	}
 
 	/**
-	 * The activation record is declared so uninstall can find it.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @covers ::get_options
-	 *
-	 * @return void
-	 */
-	public function test_declares_the_option_it_owns(): void {
-		$this->assertSame(
-			array( Welcome::OPTION_ACTIVATED ),
-			$this->notice->get_options(),
-			'Failed to assert the activation record is declared for uninstall.'
-		);
-	}
-
-	/**
-	 * A site that has never activated GatherPress gets no welcome.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @covers ::applies
-	 *
-	 * @return void
-	 */
-	public function test_does_not_apply_without_an_activation(): void {
-		set_current_screen( 'plugins' );
-
-		$this->assertFalse(
-			$this->notice->applies(),
-			'Failed to assert the welcome waits for an activation.'
-		);
-	}
-
-	/**
-	 * Activation plus the plugins screen is what the welcome is for.
+	 * The plugins screen is where activation lands, so it shows there.
 	 *
 	 * @since 0.36.0
 	 *
@@ -157,8 +121,7 @@ class Test_Welcome extends Unit_Test_Base {
 	 *
 	 * @return void
 	 */
-	public function test_applies_on_the_plugins_screen_after_activation(): void {
-		update_option( Welcome::OPTION_ACTIVATED, true );
+	public function test_applies_on_the_plugins_screen(): void {
 		set_current_screen( 'plugins' );
 
 		$this->assertTrue(
@@ -177,7 +140,6 @@ class Test_Welcome extends Unit_Test_Base {
 	 * @return void
 	 */
 	public function test_applies_on_a_gatherpress_screen(): void {
-		update_option( Welcome::OPTION_ACTIVATED, true );
 		set_current_screen( 'edit-gatherpress_event' );
 
 		$this->assertTrue(
@@ -196,7 +158,6 @@ class Test_Welcome extends Unit_Test_Base {
 	 * @return void
 	 */
 	public function test_does_not_apply_elsewhere_in_the_admin(): void {
-		update_option( Welcome::OPTION_ACTIVATED, true );
 		set_current_screen( 'edit-post' );
 
 		$this->assertFalse(
@@ -215,7 +176,6 @@ class Test_Welcome extends Unit_Test_Base {
 	 * @return void
 	 */
 	public function test_does_not_apply_without_a_screen(): void {
-		update_option( Welcome::OPTION_ACTIVATED, true );
 
 		$this->assertFalse(
 			Utility::invoke_hidden_method( $this->notice, 'is_supported_screen' ),
@@ -233,7 +193,6 @@ class Test_Welcome extends Unit_Test_Base {
 	 * @return void
 	 */
 	public function test_renders_as_a_card(): void {
-		update_option( Welcome::OPTION_ACTIVATED, true );
 		set_current_screen( 'plugins' );
 
 		$notice = $this->notice;

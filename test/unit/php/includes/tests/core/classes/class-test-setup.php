@@ -11,7 +11,6 @@ namespace GatherPress\Tests\Core;
 use GatherPress\Core\Assets;
 use GatherPress\Core\Event;
 use GatherPress\Core\Settings;
-use GatherPress\Core\Admin\Notices\Welcome;
 use GatherPress\Core\Setup;
 use GatherPress\Core\Utility as GatherPress_Utility;
 use GatherPress\Core\Venue;
@@ -291,31 +290,6 @@ class Test_Setup extends Base {
 			get_option( 'rewrite_rules' ),
 			'Failed to assert that rewrite_rules option was deleted.'
 		);
-	}
-
-	/**
-	 * Activation records that this site has installed GatherPress.
-	 *
-	 * The welcome notice reads this, so without it someone who has had the
-	 * plugin for a year would be told they had just installed it.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @covers ::activate_gatherpress_plugin
-	 *
-	 * @return void
-	 */
-	public function test_activate_gatherpress_plugin_records_the_activation(): void {
-		delete_option( Welcome::OPTION_ACTIVATED );
-
-		Setup::get_instance()->activate_gatherpress_plugin( false );
-
-		$this->assertNotEmpty(
-			get_option( Welcome::OPTION_ACTIVATED ),
-			'Failed to assert the activation was recorded.'
-		);
-
-		delete_option( Welcome::OPTION_ACTIVATED );
 	}
 
 	/**

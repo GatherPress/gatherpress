@@ -10,7 +10,6 @@ namespace GatherPress\Tests\Core\Uninstall;
 
 use GatherPress\Core\Admin\Notices\Base as Notice;
 use GatherPress\Core\Admin\Notices\Setup as Notices_Setup;
-use GatherPress\Core\Admin\Notices\Welcome;
 use GatherPress\Core\Uninstall\Notices;
 use GatherPress\Tests\Base as Unit_Test_Base;
 use PMC\Unit_Test\Utility;
@@ -42,11 +41,7 @@ class Test_Notices extends Unit_Test_Base {
 	}
 
 	/**
-	 * Uninstalling removes the shared record and whatever notices own.
-	 *
-	 * The activation record is not named here: it is read from the notice
-	 * that owns it, so a future notice with its own state is cleaned up
-	 * without touching this task.
+	 * Uninstalling removes the shared dismissal record.
 	 *
 	 * @since 0.36.0
 	 *
@@ -56,18 +51,12 @@ class Test_Notices extends Unit_Test_Base {
 	 */
 	public function test_uninstall_site_removes_the_notice_options(): void {
 		update_option( Notice::OPTION_NAME, array( 'gatherpress_welcome' => time() ) );
-		update_option( Welcome::OPTION_ACTIVATED, true );
 
 		Utility::invoke_hidden_method( new Notices(), 'uninstall_site' );
 
 		$this->assertFalse(
 			get_option( Notice::OPTION_NAME, false ),
 			'Failed to assert the dismissal record was removed.'
-		);
-
-		$this->assertFalse(
-			get_option( Welcome::OPTION_ACTIVATED, false ),
-			'Failed to assert the activation record was removed.'
 		);
 	}
 

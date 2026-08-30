@@ -36,18 +36,6 @@ use WP_Screen;
 final class Welcome extends Base {
 
 	/**
-	 * Option recording that GatherPress has been activated on this site.
-	 *
-	 * Set by `Setup::activate_gatherpress_plugin()`, which already loops the
-	 * network's sites, so the record is per-site and a network activation
-	 * welcomes each site rather than only the one the admin happened to be on.
-	 *
-	 * @since 0.36.0
-	 * @var string
-	 */
-	const OPTION_ACTIVATED = 'gatherpress_activated';
-
-	/**
 	 * Unique slug identifying this notice.
 	 *
 	 * @since 0.36.0
@@ -116,29 +104,22 @@ final class Welcome extends Base {
 	}
 
 	/**
-	 * Options this notice owns.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @return string[] Option names.
-	 */
-	public function get_options(): array {
-		return array( self::OPTION_ACTIVATED );
-	}
-
-	/**
-	 * Whether this site has activated GatherPress and is on a screen for it.
+	 * Whether this is a screen the welcome belongs on.
 	 *
 	 * Scoped to the plugins screen, where activation lands, and to GatherPress
 	 * screens, so someone who navigated straight to Events still finds it.
 	 * Everywhere else in the admin it would be someone else's screen.
+	 *
+	 * Deliberately not gated on an activation flag. Recording one would mean
+	 * an option write per site on activation, which is a lot of writes on a
+	 * large network for a banner someone dismisses once.
 	 *
 	 * @since 0.36.0
 	 *
 	 * @return bool True when the welcome should apply.
 	 */
 	public function applies(): bool {
-		return (bool) get_option( self::OPTION_ACTIVATED ) && $this->is_supported_screen();
+		return $this->is_supported_screen();
 	}
 
 	/**
@@ -183,7 +164,7 @@ final class Welcome extends Base {
 	 * @return string The translated headline.
 	 */
 	public function get_headline(): string {
-		return esc_html__( 'You have successfully installed GatherPress!', 'gatherpress' );
+		return esc_html__( 'Welcome to GatherPress!', 'gatherpress' );
 	}
 
 	/**
