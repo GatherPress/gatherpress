@@ -131,6 +131,19 @@
 // `.wp-core-ui .tablenav input[type="text"]` sets a 32px min-height that
 // outranks a two-class selector, which left the input overhanging the
 // bottom border of its own frame.
+// Core hides `.tablenav.top .actions` below 783px, so the filter is rendered
+// into both tablenavs and each is shown at exactly one width: the top copy on
+// desktop, the bottom copy on mobile. Without this the two would both show on
+// phones, and both again on desktop.
+@media screen and (min-width: 783px) {
+	// `.wp-core-ui` included so this outranks the `display: inline-flex` on
+	// the block below, which matches at the same three-class specificity and
+	// would otherwise win on source order.
+	.wp-core-ui .tablenav.bottom .gatherpress-rsvp-event-filter {
+		display: none;
+	}
+}
+
 .wp-core-ui .tablenav .gatherpress-rsvp-event-filter {
 	display: inline-flex;
 	align-items: flex-start;

@@ -157,6 +157,11 @@ final class List_Table extends WP_List_Table {
 	 * submit rather than posting this form, so the chosen event lands in the
 	 * URL as `post_id` and survives pagination, sorting and a refresh.
 	 *
+	 * Rendered into both tablenavs because core hides `.tablenav.top .actions`
+	 * below 783px, which took the filter with it on phones. The stylesheet
+	 * hides whichever copy is not wanted, so exactly one is ever visible:
+	 * the top one on desktop, the bottom one on mobile.
+	 *
 	 * Nothing renders without JavaScript, where the screen keeps working as
 	 * it always has: unfiltered, or filtered by a `post_id` already in the URL.
 	 *
@@ -167,15 +172,9 @@ final class List_Table extends WP_List_Table {
 	 * @return void
 	 */
 	protected function extra_tablenav( $which ): void {
-		// One filter per screen; the bottom tablenav repeats the bulk actions
-		// but a second copy of the filter would be noise.
-		if ( 'top' !== $which ) {
-			return;
-		}
-
 		printf(
 			'<div class="alignleft actions">' .
-			'<div id="gatherpress-rsvp-event-filter" data-post-types="%1$s" data-post-id="%2$s" data-label="%3$s"></div>' .
+			'<div class="gatherpress-rsvp-event-filter-mount" data-post-types="%1$s" data-post-id="%2$s" data-label="%3$s"></div>' .
 			'</div>',
 			esc_attr( implode( ',', get_post_types_by_support( 'gatherpress-event-date' ) ) ),
 			esc_attr( (string) $this->get_filtered_post_id() ),

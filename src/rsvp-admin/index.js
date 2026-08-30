@@ -22,21 +22,24 @@ import EventFilter from './event-filter';
  * @return {void}
  */
 function mountEventFilter() {
-	const root = document.getElementById( 'gatherpress-rsvp-event-filter' );
-
-	if ( ! root ) {
-		return;
-	}
-
-	const { postTypes = [], postId = '', label = '' } = root.dataset;
-
-	createRoot( root ).render(
-		<EventFilter
-			postTypes={ postTypes ? postTypes.split( ',' ) : [] }
-			initialPostId={ postId ? parseInt( postId, 10 ) : null }
-			label={ label || __( 'Filter by event', 'gatherpress' ) }
-		/>
+	// One mount per tablenav. The list table renders both because core hides
+	// the top one below 783px; the stylesheet leaves exactly one visible, so
+	// the two roots never compete for the same screen.
+	const roots = document.querySelectorAll(
+		'.gatherpress-rsvp-event-filter-mount'
 	);
+
+	roots.forEach( ( root ) => {
+		const { postTypes = '', postId = '', label = '' } = root.dataset;
+
+		createRoot( root ).render(
+			<EventFilter
+				postTypes={ postTypes ? postTypes.split( ',' ) : [] }
+				initialPostId={ postId ? parseInt( postId, 10 ) : null }
+				label={ label || __( 'Filter by event', 'gatherpress' ) }
+			/>
+		);
+	} );
 }
 
 domReady( mountEventFilter );
