@@ -155,13 +155,7 @@ final class Welcome extends Base {
 			return false;
 		}
 
-		// The post type checks rather than a slug match, so a companion
-		// plugin's own event or venue post type counts as a GatherPress
-		// screen too.
-		return 'plugins' === $screen->id
-			|| str_contains( $screen->id, 'gatherpress' )
-			|| post_type_supports( $screen->post_type, 'gatherpress-event-date' )
-			|| post_type_supports( $screen->post_type, 'gatherpress-venue-information' );
+		return 'plugins' === $screen->id || str_contains( $screen->id, 'gatherpress' );
 	}
 
 	/**
