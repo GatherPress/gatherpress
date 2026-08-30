@@ -239,35 +239,47 @@
 	}
 }
 
-// The response dropdown's popover. It renders through a portal at the end of
-// the body rather than next to its toggle, so it is styled from the root and
-// needs its own surface: admin screens give it no background, which left the
-// checkboxes floating transparently over the table.
-.gatherpress-rsvp-response-filter__popover {
-	.components-popover__content {
-		background: #fff;
-		border: 1px solid #c3c4c7;
-		border-radius: 4px;
-		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-		min-width: 200px;
-		padding: 12px;
-	}
+// The response dropdown's popover. Scoped under the same ancestors as the
+// controls above for two reasons: it renders inline now (so tab can leave
+// it), which puts it inside `.gatherpress-rsvp-filters` and in reach of the
+// `margin-bottom: 0` reset there, and core zeroes the content padding
+// whenever a menu group is present, via
+// `.components-popover__content:has(.components-menu-group)`. Both outrank a
+// two-class selector, so the popover is styled from the same depth.
+.wp-core-ui .tablenav .gatherpress-rsvp-filters {
 
-	// Checkboxes need room to breathe, and the labels must not wrap the way
-	// they do at the component's default width.
-	.components-base-control {
-		margin-bottom: 10px;
-	}
+	.gatherpress-rsvp-response-filter__popover {
 
-	.components-base-control:last-child {
-		margin-bottom: 0;
-	}
+		.components-popover__content {
+			background: #fff;
+			border: 1px solid #c3c4c7;
+			border-radius: 4px;
+			box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+			min-width: 200px;
+		}
 
-	.components-checkbox-control__label {
-		white-space: nowrap;
-	}
+		// Core hands spacing to the menu group once one exists, so the
+		// padding lives here rather than on the content wrapper.
+		.components-menu-group {
+			padding: 12px;
+		}
 
-	.components-menu-group__label {
-		margin-bottom: 8px;
+		.components-menu-group__label {
+			margin-bottom: 10px;
+		}
+
+		// Checkboxes need room between them; without this they stack flush
+		// at 16px each and read as one block.
+		.components-base-control {
+			margin-bottom: 12px;
+		}
+
+		.components-base-control:last-child {
+			margin-bottom: 0;
+		}
+
+		.components-checkbox-control__label {
+			white-space: nowrap;
+		}
 	}
 }
