@@ -80,7 +80,7 @@ $rsvp_table->prepare_items();
 
 		<?php /* Searching from a filtered screen keeps the filter, rather than widening the list. */ ?>
 		<?php if ( ! empty( $post_id ) ) : ?>
-			<input type="hidden" name="post_id" value="<?php echo esc_attr( (string) $post_id ); ?>" />
+			<input type="hidden" name="post_id" value="<?php echo absint( $post_id ); ?>" />
 		<?php endif; ?>
 
 		<?php if ( ! empty( $responses ) ) : ?>
