@@ -66,6 +66,11 @@ module.exports = [
 				'style.scss',
 			),
 			profile: path.resolve( process.cwd(), 'src/profile', 'index.js' ),
+			rsvp_admin: path.resolve(
+				process.cwd(),
+				'src/rsvp-admin',
+				'index.js'
+			),
 			profile_style: path.resolve(
 				process.cwd(),
 				'src/profile',

@@ -1142,7 +1142,6 @@ class Test_Setup extends Base {
 		// Set up request parameters.
 		$_REQUEST['s']      = 'test search'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$_REQUEST['status'] = 'attending'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$_REQUEST['event']  = '123'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 		$instance = Setup::get_instance();
 
@@ -1154,7 +1153,7 @@ class Test_Setup extends Base {
 		$this->assertNotEmpty( $output );
 
 		// Clean up.
-		unset( $_REQUEST['s'], $_REQUEST['status'], $_REQUEST['event'] );
+		unset( $_REQUEST['s'], $_REQUEST['status'] );
 		wp_set_current_user( 0 );
 	}
 
@@ -1533,5 +1532,57 @@ class Test_Setup extends Base {
 		);
 
 		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
+	}
+
+	/**
+	 * The RSVP screen loads the filter script and the components stylesheet.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::enqueue_rsvp_admin_assets
+	 *
+	 * @return void
+	 */
+	public function test_enqueue_rsvp_admin_assets(): void {
+		Utility::invoke_hidden_method( Setup::get_instance(), 'enqueue_rsvp_admin_assets' );
+
+		$this->assertTrue(
+			wp_script_is( 'gatherpress-rsvp-admin', 'enqueued' ),
+			'Failed to assert the RSVP screen enqueues its filter script.'
+		);
+
+		// Admin screens do not load the components stylesheet by default.
+		$this->assertTrue(
+			wp_style_is( 'wp-components', 'enqueued' ),
+			'Failed to assert the components stylesheet is enqueued.'
+		);
+	}
+
+	/**
+	 * Opening the RSVP screen loads the filter assets.
+	 *
+	 * Runs the screen's own `load-` callback rather than the enqueue method
+	 * directly, so a callback that stops being called is caught too.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::prepare_rsvp_admin_page
+	 *
+	 * @return void
+	 */
+	public function test_prepare_rsvp_admin_page_loads_the_filter_assets(): void {
+		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
+
+		Setup::get_instance()->prepare_rsvp_admin_page();
+
+		$this->assertTrue(
+			wp_script_is( 'gatherpress-rsvp-admin', 'enqueued' ),
+			'Failed to assert opening the screen enqueues its filter script.'
+		);
+
+		$this->assertTrue(
+			wp_style_is( 'wp-components', 'enqueued' ),
+			'Failed to assert opening the screen enqueues the components stylesheet.'
+		);
 	}
 }
