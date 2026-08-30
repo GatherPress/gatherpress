@@ -139,10 +139,12 @@
 
 	// The field, matched to the bulk actions `select`.
 	.components-combobox-control__suggestions-container {
+		align-items: center;
 		background: #fff;
 		border: 1px solid #8c8f94;
 		border-radius: 3px;
 		box-shadow: none;
+		display: flex;
 		height: 32px;
 		min-height: 32px;
 		width: 200px;
@@ -153,22 +155,57 @@
 		box-shadow: 0 0 0 1px #3582c4;
 	}
 
-	// The inner input carries its own chrome, which would double up inside
-	// the container above.
+	// Collapse the component's own heights so nothing inside is taller than
+	// the frame; the container above is what sets the height now.
+	//
+	// The suggestions list is the container's other direct child and is
+	// deliberately excluded: it drops below the field, so constraining it to
+	// the field's height would squash the dropdown into the input.
+	.components-combobox-control__suggestions-container
+		> *:not(.components-form-token-field__suggestions-list),
+	.components-flex-block,
 	.components-form-token-field__input-container,
+	.components-form-token-field__input,
 	.components-combobox-control__input {
 		background: transparent;
 		border: 0;
 		box-shadow: none;
-		font-size: 14px;
-		line-height: 2;
+		height: 100%;
 		margin: 0;
-		min-height: 30px;
+		min-height: 0;
+	}
+
+	.components-form-token-field__input,
+	.components-combobox-control__input {
+		font-size: 14px;
 		padding: 0 8px;
 	}
 
+	// The dropdown. It renders as the container's second child rather than a
+	// portal, so on this screen it would otherwise sit transparent over the
+	// table beneath it.
+	.components-form-token-field__suggestions-list {
+		background: #fff;
+		border: 1px solid #8c8f94;
+		border-top: 0;
+		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+		max-height: 240px;
+		z-index: 10;
+	}
+
+	// The reset control, centered against the frame rather than the 40px
+	// box it was drawn for.
+	.components-combobox-control__suggestions-container .components-button {
+		align-self: center;
+		height: 24px;
+		min-height: 24px;
+		min-width: 24px;
+		padding: 0;
+		width: 24px;
+	}
+
 	// The Filter button, matched to Apply.
-	.components-button {
+	> .components-button {
 		height: 32px;
 		line-height: 2.3077;
 		min-height: 32px;
