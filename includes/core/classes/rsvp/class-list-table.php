@@ -172,14 +172,84 @@ final class List_Table extends WP_List_Table {
 	 * @return void
 	 */
 	protected function extra_tablenav( $which ): void {
+		$statuses = array();
+
+		foreach ( Status::filterable() as $status ) {
+			$statuses[] = array(
+				'value' => $status->value,
+				'label' => $status->label(),
+			);
+		}
+
 		printf(
 			'<div class="alignleft actions">' .
-			'<div class="gatherpress-rsvp-event-filter-mount" data-post-types="%1$s" data-post-id="%2$s" data-label="%3$s"></div>' .
+			'<div class="gatherpress-rsvp-filters-mount" data-post-types="%1$s" data-post-id="%2$s" data-label="%3$s" data-statuses="%4$s" data-selected="%5$s"></div>' .
 			'</div>',
 			esc_attr( implode( ',', get_post_types_by_support( 'gatherpress-event-date' ) ) ),
 			esc_attr( (string) $this->get_filtered_post_id() ),
-			esc_attr__( 'Filter by event', 'gatherpress' )
+			esc_attr__( 'Filter by event', 'gatherpress' ),
+			esc_attr( (string) wp_json_encode( $statuses ) ),
+			esc_attr( implode( ',', $this->get_filtered_responses() ) )
 		);
+	}
+
+	/**
+	 * Adds the response filter to a comment query, when one is requested.
+	 *
+	 * The status lives in a hidden comment taxonomy, and `Rsvp\Query`'s
+	 * `comments_clauses` filter grafts `tax_query` support into
+	 * `WP_Comment_Query`, which has none natively. Several statuses read as
+	 * `IN`, so ticking two boxes widens the result rather than narrowing it
+	 * to nothing.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, mixed> $args The comment query arguments.
+	 *
+	 * @return array<string, mixed> The arguments, filtered when a response was requested.
+	 */
+	protected function add_response_filter( array $args ): array {
+		$responses = $this->get_filtered_responses();
+
+		if ( empty( $responses ) ) {
+			return $args;
+		}
+
+		$args['tax_query'] = array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+			array(
+				'taxonomy' => Status::TAXONOMY,
+				'field'    => 'slug',
+				'terms'    => $responses,
+			),
+		);
+
+		return $args;
+	}
+
+	/**
+	 * The response statuses the current request is filtered to.
+	 *
+	 * Unknown values are dropped rather than passed to the query, so a
+	 * hand-edited URL cannot widen the filter to arbitrary terms.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string[] Status slugs, empty when unfiltered.
+	 */
+	protected function get_filtered_responses(): array {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( empty( $_REQUEST['response'] ) || ! is_string( $_REQUEST['response'] ) ) {
+			return array();
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$requested = explode( ',', sanitize_text_field( wp_unslash( $_REQUEST['response'] ) ) );
+		$allowed   = array_map(
+			static fn( Status $status ): string => $status->value,
+			Status::filterable()
+		);
+
+		return array_values( array_intersect( $requested, $allowed ) );
 	}
 
 	/**
@@ -429,7 +499,7 @@ final class List_Table extends WP_List_Table {
 		$args['orderby'] = $orderby;
 		$args['order']   = $order;
 
-		$items = $rsvp_query->get_rsvps( $args );
+		$items = $rsvp_query->get_rsvps( $this->add_response_filter( $args ) );
 
 		return array_map(
 			static function ( $item ): array {
@@ -493,7 +563,7 @@ final class List_Table extends WP_List_Table {
 			}
 		}
 
-		return $rsvp_query->get_rsvps( $args );
+		return $rsvp_query->get_rsvps( $this->add_response_filter( $args ) );
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
@@ -535,12 +605,8 @@ final class List_Table extends WP_List_Table {
 					return '-';
 				}
 
-				$output = match ( $terms[0]->slug ) {
-					'attending'     => __( 'Attending', 'gatherpress' ),
-					'not_attending' => __( 'Not Attending', 'gatherpress' ),
-					'waiting_list'  => __( 'Waiting List', 'gatherpress' ),
-					default         => '-',
-				};
+				$status = Status::tryFrom( $terms[0]->slug );
+				$output = ( $status && Status::NO_STATUS !== $status ) ? $status->label() : '-';
 
 				break;
 			case 'event':
@@ -1021,12 +1087,24 @@ final class List_Table extends WP_List_Table {
 			$base_url_args['post_id'] = $post_id;
 		}
 
+		// Preserve the response filter too, so switching view keeps it rather
+		// than silently widening the list back out.
+		$responses = $this->get_filtered_responses();
+
+		if ( ! empty( $responses ) ) {
+			$base_url_args['response'] = implode( ',', $responses );
+		}
+
 		$base_url = add_query_arg( $base_url_args, admin_url( 'edit.php' ) );
 
-		// Base args for count queries, scoped to this table's post type.
-		$count_base_args = array(
-			'count'     => true,
-			'post_type' => $this->post_type,
+		// Base args for count queries, scoped to this table's post type. The
+		// response filter applies here as well: a view counting every RSVP
+		// while the table below shows a filtered subset reads as a bug.
+		$count_base_args = $this->add_response_filter(
+			array(
+				'count'     => true,
+				'post_type' => $this->post_type,
+			)
 		);
 
 		if ( $post_id ) {

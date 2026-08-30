@@ -73,4 +73,41 @@ enum Status: string {
 
 		return $values;
 	}
+
+	/**
+	 * The human-readable name for this status.
+	 *
+	 * Lives here rather than at each display site so the admin list table's
+	 * Response column and its filter cannot drift apart, and so a new case
+	 * arrives with its label attached.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string The translated label.
+	 */
+	public function label(): string {
+		return match ( $this ) {
+			self::ATTENDING     => __( 'Attending', 'gatherpress' ),
+			self::NOT_ATTENDING => __( 'Not Attending', 'gatherpress' ),
+			self::WAITING_LIST  => __( 'Waiting List', 'gatherpress' ),
+			self::NO_STATUS     => __( 'No Response', 'gatherpress' ),
+		};
+	}
+
+	/**
+	 * The statuses worth offering as a filter.
+	 *
+	 * `NO_STATUS` is excluded: it is the absence of a response rather than
+	 * one, so it carries no term to filter on.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return self[] The filterable cases.
+	 */
+	public static function filterable(): array {
+		return array_filter(
+			self::cases(),
+			static fn( self $case ): bool => self::NO_STATUS !== $case
+		);
+	}
 }

@@ -139,12 +139,12 @@
 	// `.wp-core-ui` included so this outranks the `display: inline-flex` on
 	// the block below, which matches at the same three-class specificity and
 	// would otherwise win on source order.
-	.wp-core-ui .tablenav.bottom .gatherpress-rsvp-event-filter {
+	.wp-core-ui .tablenav.bottom .gatherpress-rsvp-filters {
 		display: none;
 	}
 }
 
-.wp-core-ui .tablenav .gatherpress-rsvp-event-filter {
+.wp-core-ui .tablenav .gatherpress-rsvp-filters {
 	display: inline-flex;
 	align-items: flex-start;
 	gap: 4px;
@@ -228,5 +228,46 @@
 		line-height: 2.3077;
 		min-height: 32px;
 		padding: 0 10px;
+	}
+
+	// The response dropdown's toggle, sized like every other control here.
+	.gatherpress-rsvp-response-filter .components-button {
+		height: 32px;
+		line-height: 2.3077;
+		min-height: 32px;
+		padding: 0 10px;
+	}
+}
+
+// The response dropdown's popover. It renders through a portal at the end of
+// the body rather than next to its toggle, so it is styled from the root and
+// needs its own surface: admin screens give it no background, which left the
+// checkboxes floating transparently over the table.
+.gatherpress-rsvp-response-filter__popover {
+	.components-popover__content {
+		background: #fff;
+		border: 1px solid #c3c4c7;
+		border-radius: 4px;
+		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+		min-width: 200px;
+		padding: 12px;
+	}
+
+	// Checkboxes need room to breathe, and the labels must not wrap the way
+	// they do at the component's default width.
+	.components-base-control {
+		margin-bottom: 10px;
+	}
+
+	.components-base-control:last-child {
+		margin-bottom: 0;
+	}
+
+	.components-checkbox-control__label {
+		white-space: nowrap;
+	}
+
+	.components-menu-group__label {
+		margin-bottom: 8px;
 	}
 }
