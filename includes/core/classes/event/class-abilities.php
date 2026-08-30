@@ -23,6 +23,8 @@ use GatherPress\Core\Traits\Singleton;
  * Registers the event abilities with the WordPress Abilities API.
  *
  * @since 0.36.0
+ *
+ * @phpstan-type EventUpcomingEvent array{id:int, title:string, url:string, start:string, end:string, timezone:string}
  */
 final class Abilities {
 
@@ -169,7 +171,7 @@ final class Abilities {
 	 *
 	 * @param mixed $input Input passed to the ability.
 	 *
-	 * @return array[] Upcoming events, soonest first.
+	 * @return array<int, EventUpcomingEvent> Upcoming events, soonest first.
 	 */
 	public function get_upcoming_events( $input = null ): array {
 		$count  = is_array( $input ) ? (int) ( $input['count'] ?? 5 ) : 5;
@@ -178,7 +180,10 @@ final class Abilities {
 
 		// The event query runs with `fields => ids`, so these are post IDs.
 		foreach ( Query::get_instance()->get_upcoming_events( $count )->posts as $post_id ) {
-			$post_id  = (int) $post_id;
+			if ( ! is_int( $post_id ) ) {
+				continue;
+			}
+
 			$datetime = ( new Event( $post_id ) )->get_datetime();
 
 			$events[] = array(
