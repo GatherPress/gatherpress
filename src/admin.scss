@@ -126,7 +126,12 @@
 // actions, so it is sized to match them rather than the editor: WordPress
 // admin uses 32px controls where `@wordpress/components` ships 40px, and
 // the component's field is grey where the admin's are white.
-.gatherpress-rsvp-event-filter {
+//
+// Scoped under `.wp-core-ui .tablenav` deliberately: core's own
+// `.wp-core-ui .tablenav input[type="text"]` sets a 32px min-height that
+// outranks a two-class selector, which left the input overhanging the
+// bottom border of its own frame.
+.wp-core-ui .tablenav .gatherpress-rsvp-event-filter {
 	display: inline-flex;
 	align-items: flex-start;
 	gap: 4px;
