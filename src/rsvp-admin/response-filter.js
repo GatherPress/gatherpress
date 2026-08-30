@@ -8,7 +8,7 @@ import {
 	MenuGroup,
 } from '@wordpress/components';
 import { funnel } from '@wordpress/icons';
-import { __, sprintf, _n } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 
 /**
  * Builds the toggle's accessible name.
@@ -42,12 +42,7 @@ export function getResponseLabel( statuses, selected ) {
 
 	return sprintf(
 		/* translators: %d: number of selected RSVP responses. */
-		_n(
-			'Filter by response: %d selected',
-			'Filter by response: %d selected',
-			selected.length,
-			'gatherpress'
-		),
+		__( 'Filter by response: %d selected', 'gatherpress' ),
 		selected.length
 	);
 }
