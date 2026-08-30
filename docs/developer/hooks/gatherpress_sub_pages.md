@@ -28,7 +28,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-settings.php:1092](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-settings.php#L1092)
+- [includes/core/classes/class-settings.php:1096](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-settings.php#L1096)
 ```php
 apply_filters( 'gatherpress_sub_pages', array() )
 ```
