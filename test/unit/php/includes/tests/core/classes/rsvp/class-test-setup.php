@@ -1557,4 +1557,32 @@ class Test_Setup extends Base {
 			'Failed to assert the components stylesheet is enqueued.'
 		);
 	}
+
+	/**
+	 * Opening the RSVP screen loads the filter assets.
+	 *
+	 * Runs the screen's own `load-` callback rather than the enqueue method
+	 * directly, so a callback that stops being called is caught too.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::prepare_rsvp_admin_page
+	 *
+	 * @return void
+	 */
+	public function test_prepare_rsvp_admin_page_loads_the_filter_assets(): void {
+		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
+
+		Setup::get_instance()->prepare_rsvp_admin_page();
+
+		$this->assertTrue(
+			wp_script_is( 'gatherpress-rsvp-admin', 'enqueued' ),
+			'Failed to assert opening the screen enqueues its filter script.'
+		);
+
+		$this->assertTrue(
+			wp_style_is( 'wp-components', 'enqueued' ),
+			'Failed to assert opening the screen enqueues the components stylesheet.'
+		);
+	}
 }

@@ -11,7 +11,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Utility;
 
-if ( ! isset( $rsvp_table, $search_term, $status ) ) {
+if ( ! isset( $rsvp_table, $search_term, $status, $post_id, $responses ) ) {
 	return;
 }
 
@@ -76,6 +76,15 @@ $rsvp_table->prepare_items();
 
 		<?php if ( ! empty( $status ) ) : ?>
 			<input type="hidden" name="status" value="<?php echo esc_attr( $status ); ?>" />
+		<?php endif; ?>
+
+		<?php /* Searching from a filtered screen keeps the filter, rather than widening the list. */ ?>
+		<?php if ( ! empty( $post_id ) ) : ?>
+			<input type="hidden" name="post_id" value="<?php echo esc_attr( (string) $post_id ); ?>" />
+		<?php endif; ?>
+
+		<?php if ( ! empty( $responses ) ) : ?>
+			<input type="hidden" name="response" value="<?php echo esc_attr( implode( ',', $responses ) ); ?>" />
 		<?php endif; ?>
 	</form>
 

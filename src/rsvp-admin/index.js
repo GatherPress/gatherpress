@@ -11,10 +11,10 @@ import { __ } from '@wordpress/i18n';
 import Filters from './filters';
 
 /**
- * Mount the RSVP screen's filters.
+ * Take over the RSVP screen's filters.
  *
- * `List_Table::extra_tablenav()` prints one mount per tablenav, and the
- * stylesheet leaves exactly one visible.
+ * `List_Table::extra_tablenav()` writes the controls, so the row is complete
+ * before this runs; this replaces them with the same controls wired up.
  *
  * @since 0.36.0
  *
@@ -22,7 +22,7 @@ import Filters from './filters';
  */
 function mountFilters() {
 	document
-		.querySelectorAll( '.gatherpress-rsvp-filters-mount' )
+		.querySelectorAll( '.gatherpress-rsvp-filters' )
 		.forEach( ( root ) => {
 			const {
 				postTypes = '',

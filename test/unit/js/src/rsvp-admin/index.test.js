@@ -37,7 +37,7 @@ const mountAll = async () => {
 	Object.entries( MOUNTS ).forEach( ( [ name, dataset ] ) => {
 		const node = document.createElement( 'div' );
 
-		node.className = 'gatherpress-rsvp-filters-mount';
+		node.className = 'gatherpress-rsvp-filters';
 		Object.assign( node.dataset, dataset );
 		document.body.appendChild( node );
 

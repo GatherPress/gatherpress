@@ -480,6 +480,8 @@ final class Setup {
 				'rsvp_table'  => $rsvp_table,
 				'search_term' => $search_term,
 				'status'      => $status,
+				'post_id'     => $rsvp_table->get_filtered_post_id(),
+				'responses'   => $rsvp_table->get_filtered_responses(),
 			),
 			true
 		);

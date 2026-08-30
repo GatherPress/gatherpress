@@ -83,7 +83,7 @@ export default function Filters( {
 	};
 
 	return (
-		<div className="gatherpress-rsvp-filters">
+		<>
 			<EventSelect
 				label={ eventLabel }
 				hideLabelFromVision
@@ -101,6 +101,6 @@ export default function Filters( {
 			<Button variant="secondary" onClick={ applyFilters }>
 				{ __( 'Filter', 'gatherpress' ) }
 			</Button>
-		</div>
+		</>
 	);
 }

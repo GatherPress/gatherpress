@@ -20,6 +20,7 @@ use PMC\Unit_Test\Utility;
 use stdClass;
 use WP;
 use WP_Block;
+use WP_Block_Editor_Context;
 use WP_Block_Patterns_Registry;
 use WP_REST_Request;
 
@@ -2229,5 +2230,29 @@ class Test_Setup extends Base {
 		remove_filter( 'gatherpress_event_archive_mode', $mode_filter );
 
 		$this->assertTrue( $wp_query->is_404() );
+	}
+
+	/**
+	 * The editor is told which post types are events.
+	 *
+	 * Applies the real filter rather than asserting the callback is hooked,
+	 * because several classes add to the same config array and one assigning
+	 * over it rather than merging would leave this key registered but absent.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::add_editor_settings
+	 *
+	 * @return void
+	 */
+	public function test_add_editor_settings_reaches_the_editor(): void {
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core's filter, not ours.
+		$settings = apply_filters( 'block_editor_settings_all', array(), new WP_Block_Editor_Context() );
+
+		$this->assertContains(
+			Event::POST_TYPE,
+			$settings['gatherpress']['config']['eventPostTypes'],
+			'Failed to assert the event post type reaches the editor settings.'
+		);
 	}
 }

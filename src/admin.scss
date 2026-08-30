@@ -127,16 +127,21 @@
 // `.wp-core-ui .tablenav` throughout because core's own rules at that depth
 // outrank a two-class selector.
 
-// Core hides `.tablenav.top .actions` below 783px, so both tablenavs carry the
-// filters and each shows at one width. `.wp-core-ui` outranks the
-// `display: inline-flex` below, which would otherwise win on source order.
-@media screen and (width >= 783px) {
-	.wp-core-ui .tablenav.bottom .gatherpress-rsvp-filters {
-		display: none;
+// Core stacks the tablenav below 783px and hides `.tablenav.top .actions`
+// with it, so the filters drop onto their own row under the bulk actions
+// rather than crowding beside them.
+@media screen and (width <= 782px) {
+	.wp-core-ui .tablenav.top .gatherpress-rsvp-filters {
+		clear: both;
+		float: none;
+		margin-top: 8px;
+		width: 100%;
 	}
 }
 
-.wp-core-ui .tablenav .gatherpress-rsvp-filters {
+// Scoped to `.tablenav.top` so it outranks core's `.tablenav.top .actions`,
+// which hides the whole group below 783px and took the filters with it.
+.wp-core-ui .tablenav.top .gatherpress-rsvp-filters {
 	display: inline-flex;
 	align-items: flex-start;
 	gap: 4px;
@@ -188,6 +193,13 @@
 	.components-combobox-control__input {
 		font-size: 14px;
 		padding: 0;
+	}
+
+	// Before script takes over there is no flex row to inset the field, so
+	// the written markup carries the same 8px itself. The wrapper is gone
+	// once the enhanced control replaces it.
+	.gatherpress-rsvp-filters__event .components-combobox-control__input {
+		padding: 0 8px;
 	}
 
 	// Renders inline rather than through a portal, so it needs its own

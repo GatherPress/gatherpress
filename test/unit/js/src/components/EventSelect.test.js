@@ -6,6 +6,12 @@ import { act, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 /**
+ * WordPress dependencies
+ */
+import { dispatch } from '@wordpress/data';
+import { store as coreStore } from '@wordpress/core-data';
+
+/**
  * Internal dependencies
  */
 import EventSelect, {
@@ -111,6 +117,30 @@ describe( 'toEventOptions', () => {
 } );
 
 describe( 'EventSelect', () => {
+	const POST_TYPE = 'gatherpress_event';
+
+	/**
+	 * Puts an event in the data store so the picker can resolve it.
+	 *
+	 * @param {number} id    Post ID.
+	 * @param {string} title Rendered title.
+	 *
+	 * @return {void}
+	 */
+	const seedEvent = ( id, title ) => {
+		dispatch( coreStore ).addEntities( [
+			{
+				kind: 'postType',
+				name: POST_TYPE,
+				baseURL: `/wp/v2/${ POST_TYPE }`,
+				key: 'id',
+			},
+		] );
+		dispatch( coreStore ).receiveEntityRecords( 'postType', POST_TYPE, [
+			{ id, title: { rendered: title } },
+		] );
+	};
+
 	/**
 	 * Renders and lets React settle.
 	 *
@@ -151,17 +181,20 @@ describe( 'EventSelect', () => {
 		expect( screen.getByLabelText( 'Event' ) ).toBeVisible();
 	} );
 
-	it( 'looks up the selected event so it can be named', async () => {
-		// The selection arrives as a bare ID, with no label attached.
+	it( 'names the selected event rather than leaving the box empty', async () => {
+		// The selection arrives as a bare ID, so the label has to be looked
+		// up; a filtered screen would otherwise show an empty control.
+		seedEvent( 11, 'Summer Picnic' );
+
 		await renderSettled(
 			<EventSelect
-				postTypes={ [ 'gatherpress_event' ] }
+				postTypes={ [ POST_TYPE ] }
 				value={ 11 }
 				onChange={ () => {} }
 			/>
 		);
 
-		expect( screen.getByRole( 'combobox' ) ).toBeInTheDocument();
+		expect( screen.getByRole( 'combobox' ) ).toHaveValue( 'Summer Picnic' );
 	} );
 
 	it( 'hides the label from view when asked', async () => {

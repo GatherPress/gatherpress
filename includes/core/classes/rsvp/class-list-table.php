@@ -44,6 +44,7 @@ final class List_Table extends WP_List_Table {
 	 */
 	const DEFAULT_PER_PAGE = 20;
 
+
 	/**
 	 * HTML template for status view links with count badge.
 	 *
@@ -151,21 +152,27 @@ final class List_Table extends WP_List_Table {
 	/**
 	 * Renders the filter controls beside the bulk actions.
 	 *
-	 * Only a mount point; the controls are React. Printed into both tablenavs
-	 * because core hides `.tablenav.top .actions` below 783px, and the
-	 * stylesheet shows exactly one.
+	 * The controls are written here so the row is complete on the first paint;
+	 * script attaches the searching and multiple selection to them afterwards.
+	 *
+	 * Top only. Core hides `.tablenav.top .actions` below 783px, which the
+	 * stylesheet undoes, rather than printing a second copy that would show
+	 * beside the first.
 	 *
 	 * @since 0.36.0
 	 *
 	 * @param string $which Which tablenav is being rendered, 'top' or 'bottom'.
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Required by WP_List_Table::extra_tablenav(); both
-	 * tablenavs render the same mount, and the stylesheet decides which one is shown.
 	 */
 	protected function extra_tablenav( $which ): void {
-		$statuses = array();
+		if ( 'top' !== $which ) {
+			return;
+		}
+
+		$statuses  = array();
+		$responses = $this->get_filtered_responses();
+		$post_id   = $this->get_filtered_post_id();
 
 		foreach ( Status::filterable() as $status ) {
 			$statuses[] = array(
@@ -174,17 +181,105 @@ final class List_Table extends WP_List_Table {
 			);
 		}
 
-		printf(
-			'<div class="alignleft actions">' .
-			'<div class="gatherpress-rsvp-filters-mount"' .
+		$markup = sprintf(
+			'<div class="alignleft actions gatherpress-rsvp-filters"' .
 			' data-post-types="%1$s" data-post-id="%2$s" data-label="%3$s"' .
-			' data-statuses="%4$s" data-selected="%5$s"></div>' .
-			'</div>',
+			' data-statuses="%4$s" data-selected="%5$s">%6$s%7$s%8$s</div>',
 			esc_attr( implode( ',', get_post_types_by_support( 'gatherpress-event-date' ) ) ),
-			esc_attr( (string) $this->get_filtered_post_id() ),
+			esc_attr( (string) $post_id ),
 			esc_attr__( 'Filter by event', 'gatherpress' ),
 			esc_attr( (string) wp_json_encode( $statuses ) ),
-			esc_attr( implode( ',', $this->get_filtered_responses() ) )
+			esc_attr( implode( ',', $responses ) ),
+			$this->render_event_field(),
+			$this->render_response_toggle( $responses ),
+			sprintf(
+				'<button type="button" class="components-button is-secondary">%s</button>',
+				esc_html__( 'Filter', 'gatherpress' )
+			)
+		);
+
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped as each part is built.
+		echo $markup;
+	}
+
+	/**
+	 * The event field, before script makes it searchable.
+	 *
+	 * Left empty: `data-post-id` already carries the selection, and the
+	 * script resolves its title along with everything else it lists.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string The field markup.
+	 */
+	protected function render_event_field(): string {
+		return sprintf(
+			'<div class="gatherpress-rsvp-filters__event">' .
+			'<label class="screen-reader-text" for="gatherpress-rsvp-event">%s</label>' .
+			'<div class="components-combobox-control__suggestions-container">' .
+			'<input type="text" id="gatherpress-rsvp-event" class="components-combobox-control__input"' .
+			' autocomplete="off" />' .
+			'</div></div>',
+			esc_html__( 'Filter by event', 'gatherpress' )
+		);
+	}
+
+	/**
+	 * The response toggle, before script gives it a dropdown.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string[] $responses The responses the request is filtered to.
+	 *
+	 * @return string The toggle markup.
+	 */
+	protected function render_response_toggle( array $responses ): string {
+		return sprintf(
+			'<div class="gatherpress-rsvp-response-filter">' .
+			'<button type="button" class="components-button is-secondary has-icon%1$s" aria-label="%2$s">' .
+			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"' .
+			' aria-hidden="true" focusable="false">' .
+			'<path d="M10 17.5H14V16H10V17.5ZM6 6V7.5H18V6H6ZM8 12.5H16V11H8V12.5Z"></path></svg>%3$s' .
+			'</button></div>',
+			$responses ? ' has-text' : '',
+			esc_attr( $this->get_response_label( $responses ) ),
+			$responses ? esc_html( (string) count( $responses ) ) : ''
+		);
+	}
+
+	/**
+	 * The response toggle's accessible name.
+	 *
+	 * The control is an icon, so this is its announced name and its tooltip.
+	 * Mirrors `getResponseLabel()` in the script that takes the toggle over.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string[] $responses The responses the request is filtered to.
+	 *
+	 * @return string The label.
+	 */
+	protected function get_response_label( array $responses ): string {
+		if ( empty( $responses ) ) {
+			return __( 'Filter by response: all', 'gatherpress' );
+		}
+
+		if ( 1 === count( $responses ) ) {
+			$status = Status::tryFrom( $responses[0] );
+
+			return $status
+				? sprintf(
+					/* translators: %s: the selected response, e.g. Attending. */
+					__( 'Filter by response: %s', 'gatherpress' ),
+					$status->label()
+				)
+				: __( 'Filter by response', 'gatherpress' );
+		}
+
+		return sprintf(
+			/* translators: %d: how many responses are selected. */
+			__( 'Filter by response: %d selected', 'gatherpress' ),
+			count( $responses )
 		);
 	}
 
@@ -228,7 +323,7 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * @return string[] Status slugs, empty when unfiltered.
 	 */
-	protected function get_filtered_responses(): array {
+	public function get_filtered_responses(): array {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( empty( $_REQUEST['response'] ) || ! is_string( $_REQUEST['response'] ) ) {
 			return array();
@@ -247,13 +342,21 @@ final class List_Table extends WP_List_Table {
 	/**
 	 * The event ID the current request is filtered to, if any.
 	 *
+	 * A non-scalar reads as unfiltered: `post_id[]=9` would otherwise cast to
+	 * 1 and filter the screen to whichever post holds that ID.
+	 *
 	 * @since 0.36.0
 	 *
 	 * @return int The event post ID, or 0 when unfiltered.
 	 */
-	protected function get_filtered_post_id(): int {
+	public function get_filtered_post_id(): int {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		return intval( $_REQUEST['post_id'] ?? 0 );
+		if ( ! isset( $_REQUEST['post_id'] ) || ! is_scalar( $_REQUEST['post_id'] ) ) {
+			return 0;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		return absint( wp_unslash( $_REQUEST['post_id'] ) );
 	}
 
 	/**
