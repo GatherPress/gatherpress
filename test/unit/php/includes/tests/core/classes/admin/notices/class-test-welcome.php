@@ -86,6 +86,7 @@ class Test_Welcome extends Unit_Test_Base {
 		);
 	}
 
+
 	/**
 	 * The card declares the content the notices API renders.
 	 *

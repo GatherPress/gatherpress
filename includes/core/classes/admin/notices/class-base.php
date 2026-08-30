@@ -350,7 +350,7 @@ abstract class Base {
 		$this->emit( $message, ! $is_card );
 
 		if ( $is_card ) {
-			remove_filter( 'wp_kses_allowed_html', array( $this, 'allow_mark_markup' ), 10 );
+			remove_filter( 'wp_kses_allowed_html', array( $this, 'allow_mark_markup' ) );
 		}
 	}
 

@@ -16,6 +16,7 @@ namespace GatherPress\Core\Admin\Notices;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
+use WP_Post_Type;
 use WP_Screen;
 
 /**
@@ -97,15 +98,21 @@ final class Welcome extends Base {
 	/**
 	 * Capability required to see the notice.
 	 *
-	 * The call to action creates an event, so someone who cannot do that has
-	 * nothing to act on.
+	 * The call to action creates an event, so this is the event post type's
+	 * own create capability rather than a fixed one: a companion plugin that
+	 * gives events their own capabilities should not leave the welcome
+	 * offering something the reader cannot do.
 	 *
 	 * @since 0.36.0
 	 *
 	 * @return string The capability.
 	 */
 	public function get_capability(): string {
-		return 'edit_posts';
+		$post_type = get_post_type_object( Event::POST_TYPE );
+
+		return $post_type instanceof WP_Post_Type
+			? (string) $post_type->cap->create_posts
+			: 'edit_posts';
 	}
 
 	/**
@@ -153,8 +160,8 @@ final class Welcome extends Base {
 		// screen too.
 		return 'plugins' === $screen->id
 			|| str_contains( $screen->id, 'gatherpress' )
-			|| post_type_supports( (string) $screen->post_type, 'gatherpress-event-date' )
-			|| post_type_supports( (string) $screen->post_type, 'gatherpress-venue-information' );
+			|| post_type_supports( $screen->post_type, 'gatherpress-event-date' )
+			|| post_type_supports( $screen->post_type, 'gatherpress-venue-information' );
 	}
 
 	/**
@@ -207,6 +214,6 @@ final class Welcome extends Base {
 	 * @return string The translated label.
 	 */
 	public function get_action_label(): string {
-		return esc_html__( 'Create your first event', 'gatherpress' );
+		return esc_html__( 'Create an event', 'gatherpress' );
 	}
 }
