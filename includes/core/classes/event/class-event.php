@@ -333,9 +333,11 @@ class Event {
 			$end = false;
 		}
 
+		// Add separator if there's both start and end date/time.
 		$default_separator = $separator ? $separator : __( 'to', 'gatherpress' );
 		$separator         = $start && $end ? $default_separator : false;
 
+		// Add timezone.
 		if ( $show_timezone ? 'yes' === $show_timezone : $timezone ) {
 			$timezone = $this->get_datetime_start( ' T' );
 		} else {
@@ -562,6 +564,17 @@ class Event {
 			}
 
 			if ( $apply_filter ) {
+				/**
+				 * Filters the PHP date format used to render an event datetime.
+				 *
+				 * @since 0.34.0
+				 *
+				 * @param string $format PHP date format.
+				 * @param string $which  Datetime field, 'start' or 'end'.
+				 * @param bool   $local  True for local time, false for GMT.
+				 *
+				 * @return string PHP date format.
+				 */
 				$format = apply_filters( 'gatherpress_datetime_format', $format, $which, $local );
 			}
 

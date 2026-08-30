@@ -262,7 +262,7 @@ class Test_Event_Date extends Base {
 	 * Mirrors core/post-date's isLink behavior: the datetime output is
 	 * wrapped in a link to the event.
 	 *
-	 * @since 0.36.0
+	 * @since 0.35.0
 	 *
 	 * @return void
 	 */
@@ -288,7 +288,7 @@ class Test_Event_Date extends Base {
 	/**
 	 * Coverage for the rendered block without the isLink attribute.
 	 *
-	 * @since 0.36.0
+	 * @since 0.35.0
 	 *
 	 * @return void
 	 */

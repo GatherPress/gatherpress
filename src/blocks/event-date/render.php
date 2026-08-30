@@ -31,22 +31,22 @@ $gatherpress_render_part = static function ( $human, $iso ): string {
 	}
 
 	return empty( $iso )
-		? esc_html( $human )
-		: sprintf( '<time datetime="%s">%s</time>', esc_attr( $iso ), esc_html( $human ) );
+		? $human
+		: sprintf( '<time datetime="%s">%s</time>', esc_attr( $iso ), $human );
 };
 
 $gatherpress_output_parts = array_filter(
 	array(
 		$gatherpress_render_part( $gatherpress_parts['start'], $gatherpress_event->get_datetime_start_iso() ),
-		esc_html( $gatherpress_parts['separator'] ),
+		$gatherpress_parts['separator'],
 		$gatherpress_render_part( $gatherpress_parts['end'], $gatherpress_event->get_datetime_end_iso() ),
-		esc_html( $gatherpress_parts['timezone'] ),
+		$gatherpress_parts['timezone'],
 	)
 );
 
 $gatherpress_display = $gatherpress_output_parts
 	? implode( ' ', $gatherpress_output_parts )
-	: esc_html( Event::DATETIME_PLACEHOLDER );
+	: Event::DATETIME_PLACEHOLDER;
 
 if ( ! empty( $attributes['isLink'] ) ) {
 	$gatherpress_display = sprintf(
