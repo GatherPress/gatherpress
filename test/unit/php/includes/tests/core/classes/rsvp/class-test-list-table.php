@@ -2305,6 +2305,32 @@ class Test_List_Table extends Base {
 	}
 
 	/**
+	 * The bottom tablenav renders nothing.
+	 *
+	 * A second copy carries the same controls and would show beside the first
+	 * below 783px, where the stylesheet keeps the top group visible.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::extra_tablenav
+	 *
+	 * @return void
+	 */
+	public function test_extra_tablenav_renders_once(): void {
+		$list_table = $this->list_table;
+
+		$this->assertSame(
+			'',
+			Utility::buffer_and_return(
+				static function () use ( $list_table ): void {
+					Utility::invoke_hidden_method( $list_table, 'extra_tablenav', array( 'bottom' ) );
+				}
+			),
+			'Failed to assert the bottom tablenav renders nothing.'
+		);
+	}
+
+	/**
 	 * The written event field is an empty, labelled text box.
 	 *
 	 * The selection's title is left to the script, which resolves it along

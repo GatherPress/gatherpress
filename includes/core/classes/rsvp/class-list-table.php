@@ -155,22 +155,23 @@ final class List_Table extends WP_List_Table {
 	 * The controls are written here so the row is complete on the first paint;
 	 * script attaches the searching and multiple selection to them afterwards.
 	 *
-	 * Written into both tablenavs because core hides `.tablenav.top .actions`
-	 * below 783px, bulk actions included, so the group a reader sees on a
-	 * phone is the bottom one. The stylesheet shows whichever tablenav is
-	 * carrying the bulk actions, so exactly one is ever visible.
+	 * Top only, at every width. Core hides `.tablenav.top .actions` below
+	 * 783px, which the stylesheet undoes for this group: a second copy in the
+	 * bottom tablenav would show beside the first, and the bottom tablenav is
+	 * not rendered at all for an empty list, which is precisely when a filter
+	 * has to stay reachable to undo it.
 	 *
 	 * @since 0.36.0
 	 *
 	 * @param string $which Which tablenav is being rendered, 'top' or 'bottom'.
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Required by
-	 * WP_List_Table::extra_tablenav(); both tablenavs render the same controls,
-	 * and the stylesheet decides which one is shown.
 	 */
 	protected function extra_tablenav( $which ): void {
+		if ( 'top' !== $which ) {
+			return;
+		}
+
 		$statuses  = array();
 		$responses = $this->get_filtered_responses();
 		$post_id   = $this->get_filtered_post_id();
