@@ -74,7 +74,7 @@ switch ( $gatherpress_field_type ) {
 
 		// Warn screen-reader users before the context change of a new tab.
 		$gatherpress_sr_text = '_blank' === $gatherpress_link_target
-			? sprintf( '<span class="screen-reader-text"> %s</span>', esc_html__( '(opens in a new tab)', 'gatherpress' ) )
+			? sprintf( '<span class="screen-reader-text">%s</span>', esc_html__( ' (opens in a new tab)', 'gatherpress' ) )
 			: '';
 
 		printf(

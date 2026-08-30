@@ -83,7 +83,7 @@ const { state } = store( 'gatherpress', {
 				// modules cannot import @wordpress/i18n.
 				linkElement.innerHTML =
 					currentHTML +
-					`<span class="screen-reader-text gatherpress-new-tab-notice"> ${ context?.newTabWarning ?? '' }</span>`;
+					`<span class="screen-reader-text gatherpress-new-tab-notice">${ context?.newTabWarning ?? '' }</span>`;
 				currentElement.replaceWith( linkElement );
 			} else if ( ! hasLink && isLink ) {
 				const spanElement = document.createElement( 'span' );
@@ -102,7 +102,7 @@ const { state } = store( 'gatherpress', {
 				if ( context?.newTabWarning ) {
 					const sr = document.createElement( 'span' );
 					sr.className = 'screen-reader-text gatherpress-new-tab-notice';
-					sr.textContent = ' ' + context.newTabWarning;
+					sr.textContent = context.newTabWarning;
 					currentElement.appendChild( sr );
 				}
 			}

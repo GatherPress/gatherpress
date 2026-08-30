@@ -273,8 +273,8 @@ if ( '' !== $gatherpress_static_map_url ) {
 	// a new tab" rather than leading with the warning.
 	if ( '' !== $gatherpress_href && '_blank' === $gatherpress_target ) {
 		printf(
-			'<span class="screen-reader-text"> %s</span>',
-			esc_html__( '(opens in a new tab)', 'gatherpress' )
+			'<span class="screen-reader-text">%s</span>',
+			esc_html__( ' (opens in a new tab)', 'gatherpress' )
 		);
 	}
 

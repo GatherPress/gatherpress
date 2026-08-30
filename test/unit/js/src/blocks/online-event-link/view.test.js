@@ -53,7 +53,7 @@ import '@src/blocks/online-event-link/view';
  * context payload from `render.php` so the client-side swap behaves like the
  * server render.
  */
-const NEW_TAB_WARNING = '(opens in a new tab)';
+const NEW_TAB_WARNING = ' (opens in a new tab)';
 
 describe( 'online-event-link updateOnlineEventLink', () => {
 	let state;
@@ -161,7 +161,7 @@ describe( 'online-event-link updateOnlineEventLink', () => {
 		seedStateLink( 'https://meet.example.test/room' );
 		// A stale notice (from a prior VM render) rides along in the span.
 		const element = setupElement(
-			`Join<span class="screen-reader-text gatherpress-new-tab-notice"> ${ NEW_TAB_WARNING }</span>`
+			`Join<span class="screen-reader-text gatherpress-new-tab-notice">${ NEW_TAB_WARNING }</span>`
 		);
 
 		runCallback( element );
@@ -181,7 +181,7 @@ describe( 'online-event-link updateOnlineEventLink', () => {
 	it( 'swaps a link to plain text and drops the notice', () => {
 		// An anchor is present but state no longer has a link.
 		const element = setupElement(
-			`Join<span class="screen-reader-text gatherpress-new-tab-notice"> ${ NEW_TAB_WARNING }</span>`,
+			`Join<span class="screen-reader-text gatherpress-new-tab-notice">${ NEW_TAB_WARNING }</span>`,
 			'a'
 		);
 
@@ -196,7 +196,7 @@ describe( 'online-event-link updateOnlineEventLink', () => {
 
 	it( 'updates the href and keeps a single notice when the target link changes', () => {
 		const element = setupElement(
-			`Join<span class="screen-reader-text gatherpress-new-tab-notice"> ${ NEW_TAB_WARNING }</span>`,
+			`Join<span class="screen-reader-text gatherpress-new-tab-notice">${ NEW_TAB_WARNING }</span>`,
 			'a'
 		);
 		element.querySelector( 'a' ).href = 'https://meet.example.test/old';
@@ -214,7 +214,7 @@ describe( 'online-event-link updateOnlineEventLink', () => {
 
 	it( 'keeps a single notice across repeated updates to the same href', () => {
 		const element = setupElement(
-			`Join<span class="screen-reader-text gatherpress-new-tab-notice"> ${ NEW_TAB_WARNING }</span>`,
+			`Join<span class="screen-reader-text gatherpress-new-tab-notice">${ NEW_TAB_WARNING }</span>`,
 			'a'
 		);
 		element.querySelector( 'a' ).href = 'https://meet.example.test/room';

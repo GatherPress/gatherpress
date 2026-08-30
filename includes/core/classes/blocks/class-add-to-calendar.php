@@ -186,8 +186,8 @@ final class Add_To_Calendar {
 		// cannot nest, so the next </a> after a marked opener closes it.
 		$marker = ' data-gatherpress-new-tab="1"';
 		$notice = sprintf(
-			'<span class="screen-reader-text gatherpress-new-tab-notice"> %1$s</span>',
-			esc_html__( '(opens in a new tab)', 'gatherpress' )
+			'<span class="screen-reader-text gatherpress-new-tab-notice">%1$s</span>',
+			esc_html__( ' (opens in a new tab)', 'gatherpress' )
 		);
 
 		$offset   = 0;
