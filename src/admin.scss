@@ -182,10 +182,12 @@
 		min-height: 0;
 	}
 
+	// The component's own flex row already insets the field by 8px, which
+	// lands the text where core's `select` puts its own.
 	.components-form-token-field__input,
 	.components-combobox-control__input {
 		font-size: 14px;
-		padding: 0 8px;
+		padding: 0;
 	}
 
 	// Renders inline rather than through a portal, so it needs its own
