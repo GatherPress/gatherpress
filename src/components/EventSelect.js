@@ -39,6 +39,13 @@ export function buildEventQuery( search ) {
 	return {
 		context: 'edit',
 		status: 'any',
+		// `Blocks\Event_Query::rest_query()` applies an upcoming/past filter to
+		// every event collection request, and an absent parameter reads as
+		// upcoming. Picking an event to inspect its RSVPs is mostly a question
+		// about an event that already happened, so a picker limited to
+		// upcoming ones is close to useless: on a site with 20-odd events it
+		// offered 3.
+		gatherpress_event_query: 'all',
 		per_page: PER_PAGE,
 		search,
 		orderby: search ? 'relevance' : 'date',

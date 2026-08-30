@@ -31,6 +31,12 @@ describe( 'buildEventQuery', () => {
 		} );
 	} );
 
+	it( 'asks for past events as well as upcoming', () => {
+		// The event collection endpoint filters to upcoming when this is
+		// absent, and RSVPs are mostly looked up after the event.
+		expect( buildEventQuery( '' ).gatherpress_event_query ).toBe( 'all' );
+	} );
+
 	it( 'caps the result count so a large site stays usable', () => {
 		expect( buildEventQuery( '' ).per_page ).toBe( 10 );
 	} );
