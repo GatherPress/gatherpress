@@ -103,6 +103,14 @@ export default function ResponseFilter( { statuses, selected, onChange } ) {
 					// classic list table page does not provide, so it is
 					// skipped rather than left half-finished.
 					animate: false,
+					// Rendered in place rather than portaled to the end of the
+					// body. Portaled, its last checkbox became the last
+					// focusable element on the page and tabbing forward left
+					// the document; inline, tab continues to the Filter button
+					// beside it. `constrainTabbing` is the other way to stop
+					// the leak but it trapped focus on one checkbox and
+					// swallowed Escape, leaving no way out at all.
+					inline: true,
 				} }
 				renderToggle={ ( { isOpen, onToggle } ) => (
 					<Button
