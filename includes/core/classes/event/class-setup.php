@@ -124,10 +124,8 @@ final class Setup {
 	/**
 	 * Adds GatherPress event configuration to the block editor settings.
 	 *
-	 * Exposes the event post types under
-	 * settings['gatherpress']['config']['eventPostTypes'] so the editor can
-	 * search events without hardcoding a post type slug, the same way
-	 * `Venue\Setup` exposes its venue post type map.
+	 * Exposes the event post types so the editor can search events without
+	 * hardcoding a post type slug.
 	 *
 	 * @since 0.36.0
 	 *

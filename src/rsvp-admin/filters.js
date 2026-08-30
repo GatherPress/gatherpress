@@ -15,11 +15,8 @@ import ResponseFilter from './response-filter';
 /**
  * Builds the URL one filter submission navigates to.
  *
- * An empty value drops its parameter rather than sending it blank, so clearing
- * a control and applying is how a filter is removed. Paging resets because the
- * current page rarely exists in the narrowed result. `event` is the list
- * table's older name for the event filter and is dropped so the two cannot
- * disagree about which event is selected.
+ * An empty value drops its parameter, which is how a filter is removed. Paging
+ * resets, and `event` is dropped so it cannot disagree with `post_id`.
  *
  * @since 0.36.0
  *
@@ -53,14 +50,9 @@ export function buildFilterUrl( href, postId, responses ) {
 /**
  * The RSVP screen's filters.
  *
- * Both controls sit behind one Filter button rather than one each: they narrow
- * the same list, and two buttons would leave the reader deciding which applies
- * what. Everything is composed into a single navigation.
- *
- * Submitting navigates rather than posting the surrounding form. The table is
- * wrapped in a POST form for bulk actions, and filtering through it would
- * apply the filter via `$_REQUEST` while leaving the URL unchanged, losing it
- * on refresh and on every pagination link.
+ * Both controls compose into one Filter button. Submitting navigates rather
+ * than posting the surrounding bulk-actions form, which would leave the URL
+ * unchanged and lose the filter on refresh and pagination.
  *
  * @since 0.36.0
  *

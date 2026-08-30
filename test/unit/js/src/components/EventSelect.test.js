@@ -25,8 +25,6 @@ const event = ( id, title ) => ( { id, title: { rendered: title } } );
 
 describe( 'buildEventQuery', () => {
 	it( 'requests unpublished events, which is what an organizer filters by', () => {
-		// The default `view` context returns published posts only, which hid
-		// drafts the RSVP screen exists to filter.
 		expect( buildEventQuery( '' ) ).toMatchObject( {
 			context: 'edit',
 			status: 'any',
@@ -34,8 +32,7 @@ describe( 'buildEventQuery', () => {
 	} );
 
 	it( 'asks for past events as well as upcoming', () => {
-		// The event collection endpoint filters to upcoming when this is
-		// absent, and RSVPs are mostly looked up after the event.
+		// The endpoint filters to upcoming when this is absent.
 		expect( buildEventQuery( '' ).gatherpress_event_query ).toBe( 'all' );
 	} );
 
@@ -48,8 +45,7 @@ describe( 'buildEventQuery', () => {
 	} );
 
 	it( 'orders by date when there is no search term', () => {
-		// `relevance` needs something to be relevant to; without a term the
-		// most recent events are the useful default.
+		// `relevance` needs something to be relevant to.
 		expect( buildEventQuery( '' ).orderby ).toBe( 'date' );
 	} );
 
@@ -82,7 +78,6 @@ describe( 'toEventOptions', () => {
 	} );
 
 	it( 'keeps the selected event in the list when the search excludes it', () => {
-		// Otherwise the control renders blank over a real selection.
 		expect(
 			toEventOptions(
 				[ event( 2, 'Autumn Walk' ) ],
@@ -119,9 +114,8 @@ describe( 'EventSelect', () => {
 	/**
 	 * Renders and lets React settle.
 	 *
-	 * The control resolves its options through the data store after the first
-	 * paint. Unwaited, that update lands outside `act()` and the suite treats
-	 * React's warning as a failure.
+	 * The control resolves its options after the first paint; unwaited, that
+	 * update lands outside `act()`.
 	 *
 	 * @param {JSX.Element} ui The element to render.
 	 *
@@ -134,7 +128,6 @@ describe( 'EventSelect', () => {
 	};
 
 	it( 'accepts a single post type as a bare string', async () => {
-		// Callers that know their one post type should not have to wrap it.
 		await renderSettled(
 			<EventSelect
 				postTypes="gatherpress_event"
@@ -159,8 +152,7 @@ describe( 'EventSelect', () => {
 	} );
 
 	it( 'looks up the selected event so it can be named', async () => {
-		// The selection arrives as a bare ID, and the label for it is only
-		// in the search results when the search happens to include it.
+		// The selection arrives as a bare ID, with no label attached.
 		await renderSettled(
 			<EventSelect
 				postTypes={ [ 'gatherpress_event' ] }

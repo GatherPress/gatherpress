@@ -398,11 +398,10 @@ final class Setup {
 	}
 
 	/**
-	 * Loads the scripts the RSVP screen's event filter needs.
+	 * Loads the scripts the RSVP screen's filters need.
 	 *
-	 * Enqueued from the screen's own `load-` action rather than the shared
-	 * `admin_enqueue_scripts` handler, because the hook suffix varies per
-	 * supporting post type and this is the one place that already knows it.
+	 * Enqueued from the screen's own `load-` action, because the hook suffix
+	 * varies per supporting post type and this is where it is known.
 	 *
 	 * @since 0.36.0
 	 *
@@ -421,8 +420,7 @@ final class Setup {
 
 		wp_set_script_translations( 'gatherpress-rsvp-admin', 'gatherpress' );
 
-		// The combobox is a `@wordpress/components` control, so it needs the
-		// package's stylesheet, which admin screens do not load by default.
+		// Admin screens do not load the components stylesheet by default.
 		wp_enqueue_style( 'wp-components' );
 	}
 

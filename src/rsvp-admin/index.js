@@ -13,11 +13,8 @@ import Filters from './filters';
 /**
  * Mount the RSVP screen's filters.
  *
- * The screen is a classic `WP_List_Table` page, so the filters are React roots
- * in the tablenav rather than block-editor controls. `List_Table::extra_tablenav()`
- * prints one mount per tablenav; core hides the top one below 783px, and the
- * stylesheet leaves exactly one visible, so the roots never disagree in front
- * of anyone.
+ * `List_Table::extra_tablenav()` prints one mount per tablenav, and the
+ * stylesheet leaves exactly one visible.
  *
  * @since 0.36.0
  *

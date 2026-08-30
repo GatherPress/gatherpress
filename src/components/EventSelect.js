@@ -12,9 +12,7 @@ import { __ } from '@wordpress/i18n';
 /**
  * How many events one search returns.
  *
- * Small on purpose. The control exists because a site with hundreds of events
- * cannot use a select, so fetching them all would reintroduce the problem it
- * was built to solve.
+ * Small on purpose: fetching them all is the problem this control solves.
  *
  * @since 0.36.0
  *
@@ -25,7 +23,7 @@ const PER_PAGE = 10;
 /**
  * Stands in for a post type that has not resolved yet.
  *
- * Shared so an unresolved type keeps the same reference between renders.
+ * Shared so an unresolved type keeps its reference between renders.
  *
  * @since 0.36.0
  *
@@ -43,19 +41,13 @@ const EMPTY_RECORDS = [];
  * @return {Object} The query for `getEntityRecords`.
  */
 export function buildEventQuery( search ) {
-	// `edit` context with every status, because the events worth picking are
-	// routinely not published: an organizer filters RSVPs on a draft they are
-	// still building. The default `view` context returns published posts only,
-	// which hid exactly the events this control exists to find.
+	// The default `view` context returns published posts only, which hides
+	// the drafts an organizer is filtering RSVPs on.
 	return {
 		context: 'edit',
 		status: 'any',
-		// `Blocks\Event_Query::rest_query()` applies an upcoming/past filter to
-		// every event collection request, and an absent parameter reads as
-		// upcoming. Picking an event to inspect its RSVPs is mostly a question
-		// about an event that already happened, so a picker limited to
-		// upcoming ones is close to useless: on a site with 20-odd events it
-		// offered 3.
+		// `Blocks\Event_Query::rest_query()` reads an absent parameter as
+		// upcoming, and RSVPs are mostly looked up after the event.
 		gatherpress_event_query: 'all',
 		per_page: PER_PAGE,
 		search,
@@ -103,9 +95,7 @@ export function toEventOptions( events, selected ) {
  * @return {{eventOptions: Object[]}} Combobox options.
  */
 export function useEventOptions( search, eventId, postTypes ) {
-	// A single request cannot span post types, so searching more than one
-	// means one query each. Sites have one event post type unless a
-	// companion plugin adds another, so this is one request in practice.
+	// A request cannot span post types, so each one is a query.
 	const types = useMemo(
 		() =>
 			( Array.isArray( postTypes ) ? postTypes : [ postTypes ] ).filter(
@@ -114,10 +104,8 @@ export function useEventOptions( search, eventId, postTypes ) {
 		[ postTypes ]
 	);
 
-	// `useSelect` bails out of a re-render by comparing what the mapping
-	// returned, so a freshly built array defeats it: every unrelated store
-	// change would re-render both pickers on the screen. The per-type record
-	// arrays are stable references, so flattening is cached against them.
+	// `useSelect` bails out by comparing what the mapping returned, so a
+	// freshly built array would re-render on every unrelated store change.
 	const flattened = useRef( { lists: [], events: [] } );
 
 	/**
@@ -156,8 +144,8 @@ export function useEventOptions( search, eventId, postTypes ) {
 							EMPTY_RECORDS
 					)
 				),
-				// The selected event's own post type is not known here, so
-				// ask each candidate; at most one answers.
+				// The selection's post type is unknown, so ask each; at most
+				// one answers.
 				selected: types
 					.map( ( type ) =>
 						eventId
@@ -188,10 +176,8 @@ export function useEventOptions( search, eventId, postTypes ) {
 /**
  * A searchable event picker.
  *
- * Shared by the RSVP admin screen's event filter and the Post ID Override
- * block support, which are the same question asked twice: pick an event, get
- * its ID. `ComboboxControl` carries the ARIA combobox-with-listbox behavior,
- * so the pattern lives in one place rather than being rebuilt per surface.
+ * Shared by the RSVP screen's event filter and the Post ID Override block
+ * support, so the ARIA combobox behavior lives in one place.
  *
  * @since 0.36.0
  *

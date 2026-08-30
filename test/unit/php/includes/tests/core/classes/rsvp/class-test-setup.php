@@ -1552,8 +1552,7 @@ class Test_Setup extends Base {
 			'Failed to assert the RSVP screen enqueues its filter script.'
 		);
 
-		// The combobox is a `@wordpress/components` control, and admin screens
-		// do not load that package's stylesheet by default.
+		// Admin screens do not load the components stylesheet by default.
 		$this->assertTrue(
 			wp_style_is( 'wp-components', 'enqueued' ),
 			'Failed to assert the components stylesheet is enqueued.'

@@ -18,8 +18,7 @@ const STATUSES = [
 ];
 
 describe( 'getResponseLabel', () => {
-	// The toggle is an icon, so this string is its accessible name and
-	// tooltip rather than visible text.
+	// The toggle is an icon, so this is its accessible name and tooltip.
 	it( 'reads as unfiltered when nothing is selected', () => {
 		expect( getResponseLabel( STATUSES, [] ) ).toBe(
 			'Filter by response: all'
@@ -39,8 +38,7 @@ describe( 'getResponseLabel', () => {
 	} );
 
 	it( 'still announces the control for an unknown value', () => {
-		// A hand-edited URL can name a status the list does not carry; the
-		// button must not end up without a name.
+		// A hand-edited URL can name a status the list does not carry.
 		expect( getResponseLabel( STATUSES, [ 'invented' ] ) ).toBe(
 			'Filter by response'
 		);

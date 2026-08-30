@@ -149,21 +149,11 @@ final class List_Table extends WP_List_Table {
 	}
 
 	/**
-	 * Renders the event filter beside the bulk actions.
+	 * Renders the filter controls beside the bulk actions.
 	 *
-	 * Core's own list tables put their filters here, so the RSVP screen reads
-	 * the same way rather than growing an extra row above the table. The
-	 * markup is only a mount point: the picker is React, and it navigates on
-	 * submit rather than posting this form, so the chosen event lands in the
-	 * URL as `post_id` and survives pagination, sorting and a refresh.
-	 *
-	 * Rendered into both tablenavs because core hides `.tablenav.top .actions`
-	 * below 783px, which took the filter with it on phones. The stylesheet
-	 * hides whichever copy is not wanted, so exactly one is ever visible:
-	 * the top one on desktop, the bottom one on mobile.
-	 *
-	 * Nothing renders without JavaScript, where the screen keeps working as
-	 * it always has: unfiltered, or filtered by a `post_id` already in the URL.
+	 * Only a mount point; the controls are React. Printed into both tablenavs
+	 * because core hides `.tablenav.top .actions` below 783px, and the
+	 * stylesheet shows exactly one.
 	 *
 	 * @since 0.36.0
 	 *
@@ -201,11 +191,8 @@ final class List_Table extends WP_List_Table {
 	/**
 	 * Adds the response filter to a comment query, when one is requested.
 	 *
-	 * The status lives in a hidden comment taxonomy, and `Rsvp\Query`'s
-	 * `comments_clauses` filter grafts `tax_query` support into
-	 * `WP_Comment_Query`, which has none natively. Several statuses read as
-	 * `IN`, so ticking two boxes widens the result rather than narrowing it
-	 * to nothing.
+	 * `WP_Comment_Query` has no native `tax_query`; `Rsvp\Query` grafts one on
+	 * via `comments_clauses`.
 	 *
 	 * @since 0.36.0
 	 *
@@ -234,8 +221,8 @@ final class List_Table extends WP_List_Table {
 	/**
 	 * The response statuses the current request is filtered to.
 	 *
-	 * Unknown values are dropped rather than passed to the query, so a
-	 * hand-edited URL cannot widen the filter to arbitrary terms.
+	 * Unknown values are dropped so a hand-edited URL cannot query arbitrary
+	 * terms.
 	 *
 	 * @since 0.36.0
 	 *
@@ -1092,8 +1079,7 @@ final class List_Table extends WP_List_Table {
 			$base_url_args['post_id'] = $post_id;
 		}
 
-		// Preserve the response filter too, so switching view keeps it rather
-		// than silently widening the list back out.
+		// Switching view keeps the response filter rather than widening the list.
 		$responses = $this->get_filtered_responses();
 
 		if ( ! empty( $responses ) ) {
@@ -1102,9 +1088,8 @@ final class List_Table extends WP_List_Table {
 
 		$base_url = add_query_arg( $base_url_args, admin_url( 'edit.php' ) );
 
-		// Base args for count queries, scoped to this table's post type. The
-		// response filter applies here as well: a view counting every RSVP
-		// while the table below shows a filtered subset reads as a bug.
+		// The response filter applies to the counts too, so the views agree
+		// with the table below them.
 		$count_base_args = $this->add_response_filter(
 			array(
 				'count'     => true,

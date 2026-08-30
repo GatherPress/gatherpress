@@ -122,22 +122,14 @@
 	order: 0;
 }
 
-// RSVP screen filters. They sit in the top tablenav beside the bulk actions,
-// so they are sized to match those rather than the editor: WordPress admin
-// uses 32px controls where `@wordpress/components` ships 40px, and the
-// component's field is grey where the admin's are white.
+// RSVP screen filters, sized to the bulk actions beside them: admin uses 32px
+// controls where `@wordpress/components` ships 40px. Scoped under
+// `.wp-core-ui .tablenav` throughout because core's own rules at that depth
+// outrank a two-class selector.
 
-// The whole block is scoped under `.wp-core-ui .tablenav` deliberately. Core's
-// `.wp-core-ui .tablenav input[type="text"]` sets a 32px min-height that
-// outranks a two-class selector, which left the input overhanging the bottom
-// border of its own frame, and the popover rules need the same depth for the
-// reasons noted where they appear.
-
-// Core hides `.tablenav.top .actions` below 783px, so the filters render into
-// both tablenavs and each shows at exactly one width: the top copy on desktop,
-// the bottom copy on mobile. `.wp-core-ui` is included so this outranks the
-// `display: inline-flex` below, which matches at the same specificity and
-// would otherwise win on source order.
+// Core hides `.tablenav.top .actions` below 783px, so both tablenavs carry the
+// filters and each shows at one width. `.wp-core-ui` outranks the
+// `display: inline-flex` below, which would otherwise win on source order.
 @media screen and (width >= 783px) {
 	.wp-core-ui .tablenav.bottom .gatherpress-rsvp-filters {
 		display: none;
@@ -173,11 +165,8 @@
 		box-shadow: 0 0 0 1px #3582c4;
 	}
 
-	// Collapse the component's own heights so nothing inside is taller than
-	// the frame; the container above sets the height now. The suggestions
-	// list is the container's other direct child and is deliberately
-	// excluded: it drops below the field, so constraining it to the field's
-	// height would squash the dropdown into the input.
+	// The container sets the height now. The suggestions list is excluded
+	// because it drops below the field rather than sitting inside it.
 	.components-combobox-control__suggestions-container
 		> *:not(.components-form-token-field__suggestions-list),
 	.components-flex-block,
@@ -198,9 +187,8 @@
 		padding: 0 8px;
 	}
 
-	// The event dropdown renders as the container's second child rather than
-	// through a portal, so on this screen it would otherwise sit transparent
-	// over the table beneath it.
+	// Renders inline rather than through a portal, so it needs its own
+	// background over the table beneath.
 	.components-form-token-field__suggestions-list {
 		background: #fff;
 		border: 1px solid #8c8f94;
@@ -210,8 +198,7 @@
 		z-index: 10;
 	}
 
-	// The event field's reset control, centered against the frame rather than
-	// the 40px box it was drawn for.
+	// The reset control, centered against the 32px frame.
 	.components-combobox-control__suggestions-container .components-button {
 		align-self: center;
 		height: 24px;
@@ -230,11 +217,8 @@
 		padding: 0 10px;
 	}
 
-	// The response popover renders inline now, so tab can leave it, which
-	// puts it inside this scope and in reach of the `margin-bottom: 0` reset
-	// above. Core also zeroes the content padding whenever a menu group is
-	// present, via `.components-popover__content:has(.components-menu-group)`.
-	// Both outrank a two-class selector, hence styling it from here.
+	// The popover renders inline so tab can leave it, which puts it in reach
+	// of the reset above and of core's `:has(.components-menu-group)` rule.
 	.gatherpress-rsvp-response-filter__popover {
 		.components-popover__content {
 			background: #fff;
@@ -244,8 +228,7 @@
 			min-width: 200px;
 		}
 
-		// Core hands spacing to the menu group once one exists, so the
-		// padding lives there rather than on the content wrapper.
+		// Core zeroes the content padding when a menu group is present.
 		.components-menu-group {
 			padding: 12px;
 		}
@@ -254,8 +237,7 @@
 			margin-bottom: 10px;
 		}
 
-		// Without this the checkboxes stack flush at 16px each and read as
-		// one block.
+		// Otherwise the checkboxes stack flush and read as one block.
 		.components-base-control {
 			margin-bottom: 12px;
 		}

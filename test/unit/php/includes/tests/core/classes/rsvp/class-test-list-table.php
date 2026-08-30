@@ -2195,8 +2195,7 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_filtered_responses_ignores_a_non_string(): void {
-		// PHP turns `response[]=attending` into an array, which explode()
-		// cannot take.
+		// `response[]=attending` arrives as an array, which explode() rejects.
 		$_REQUEST['response'] = array( Status::ATTENDING->value );
 
 		$this->assertSame(
@@ -2300,8 +2299,6 @@ class Test_List_Table extends Base {
 			array( array( 'number' => 20 ) )
 		);
 
-		// Several statuses read as `IN`, so ticking two boxes widens the
-		// result rather than narrowing it to nothing.
 		$this->assertSame(
 			array(
 				array(
@@ -2376,8 +2373,6 @@ class Test_List_Table extends Base {
 			}
 		);
 
-		// Arriving already filtered should show what is filtered, rather than
-		// empty controls over a narrowed table.
 		$this->assertStringContainsString(
 			sprintf( 'data-post-id="%d"', $this->event_id ),
 			$output,

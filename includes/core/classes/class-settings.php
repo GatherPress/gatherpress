@@ -210,11 +210,8 @@ class Settings {
 
 		$settings['gatherpress']['settings'] = $gatherpress_settings;
 
-		// Infrastructure config values (not user-configurable). Merged into
-		// whatever is already there rather than assigned: other classes hook
-		// this same filter to add their own config keys, and several of them
-		// run before this one, so a wholesale assignment silently dropped
-		// their values.
+		// Merged rather than assigned: other classes hook this filter first,
+		// and assigning dropped their config keys.
 		$settings['gatherpress']['config'] = array_merge(
 			$settings['gatherpress']['config'] ?? array(),
 			array(

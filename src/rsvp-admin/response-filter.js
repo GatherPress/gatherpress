@@ -13,9 +13,8 @@ import { __, sprintf, _n } from '@wordpress/i18n';
 /**
  * Builds the toggle's accessible name.
  *
- * The control is an icon, so this is what a screen reader announces and what
- * the tooltip shows. It names the current selection rather than the action,
- * because the selection is the part that is otherwise invisible.
+ * The control is an icon, so this is its announced name and its tooltip. It
+ * names the current selection, which is otherwise invisible.
  *
  * @since 0.36.0
  *
@@ -72,13 +71,8 @@ export function toggleResponse( selected, value ) {
 /**
  * The RSVP screen's response filter.
  *
- * A checkbox dropdown rather than a row of toggles: the tablenav already
- * carries the bulk actions and the event picker, and this keeps a constant
- * width however many statuses are selected, so a fourth status can be added
- * without the row reflowing.
- *
- * Selecting nothing means every response, which is also the unfiltered state,
- * so clearing the boxes and applying returns the full list.
+ * A checkbox dropdown rather than a row of toggles, so the tablenav keeps a
+ * constant width. Selecting nothing means every response.
  *
  * @since 0.36.0
  *
@@ -97,19 +91,11 @@ export default function ResponseFilter( { statuses, selected, onChange } ) {
 				popoverProps={ {
 					className: 'gatherpress-rsvp-response-filter__popover',
 					placement: 'bottom-start',
-					// The fade-in never resolves on this screen: the popover
-					// settles at opacity 0.266 and the table shows through it.
-					// The animation needs the editor's motion context, which a
-					// classic list table page does not provide, so it is
-					// skipped rather than left half-finished.
+					// The fade needs the editor's motion context, and without
+					// it the popover sticks at opacity 0.266.
 					animate: false,
-					// Rendered in place rather than portaled to the end of the
-					// body. Portaled, its last checkbox became the last
-					// focusable element on the page and tabbing forward left
-					// the document; inline, tab continues to the Filter button
-					// beside it. `constrainTabbing` is the other way to stop
-					// the leak but it trapped focus on one checkbox and
-					// swallowed Escape, leaving no way out at all.
+					// Portaled to the body, the last checkbox ends the page's
+					// tab order; inline, tab continues to the Filter button.
 					inline: true,
 				} }
 				renderToggle={ ( { isOpen, onToggle } ) => (
@@ -120,8 +106,7 @@ export default function ResponseFilter( { statuses, selected, onChange } ) {
 						showTooltip
 						onClick={ onToggle }
 						aria-expanded={ isOpen }
-						// An icon alone cannot show that a filter is active,
-						// so the count rides along beside it.
+						// An icon alone cannot show a filter is active.
 						text={
 							selected.length ? String( selected.length ) : undefined
 						}

@@ -29,7 +29,6 @@ describe( 'buildFilterUrl', () => {
 	} );
 
 	it( 'omits an empty event rather than sending it blank', () => {
-		// Clearing a control and applying is how a filter is removed.
 		expect( buildFilterUrl( SCREEN, null, [] ) ).not.toContain( 'post_id' );
 	} );
 
@@ -49,8 +48,7 @@ describe( 'buildFilterUrl', () => {
 	} );
 
 	it( 'drops the list table’s older event parameter', () => {
-		// `event` and `post_id` name the same filter; leaving both would let
-		// them disagree about which event is selected.
+		// `event` and `post_id` name the same filter and could disagree.
 		expect(
 			buildFilterUrl( `${ SCREEN }&event=99`, 11, [] )
 		).not.toContain( 'event=99' );

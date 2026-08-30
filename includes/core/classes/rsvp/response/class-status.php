@@ -77,9 +77,8 @@ enum Status: string {
 	/**
 	 * The human-readable name for this status.
 	 *
-	 * Lives here rather than at each display site so the admin list table's
-	 * Response column and its filter cannot drift apart, and so a new case
-	 * arrives with its label attached.
+	 * Lives on the enum so the list table's Response column and its filter
+	 * cannot drift apart.
 	 *
 	 * @since 0.36.0
 	 *
@@ -98,8 +97,7 @@ enum Status: string {
 	/**
 	 * The statuses worth offering as a filter.
 	 *
-	 * `NO_STATUS` is excluded: it is the absence of a response rather than
-	 * one, so it carries no term to filter on.
+	 * `NO_STATUS` carries no term, so it is excluded.
 	 *
 	 * @since 0.36.0
 	 *

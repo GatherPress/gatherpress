@@ -12,7 +12,6 @@ const STATUSES = JSON.stringify( [
 ] );
 
 const MOUNTS = {
-	// Everything the list table can hand over.
 	full: {
 		postTypes: 'gatherpress_event',
 		postId: '11',
@@ -20,10 +19,7 @@ const MOUNTS = {
 		statuses: STATUSES,
 		selected: 'attending',
 	},
-	// Nothing at all, which is what an unfiltered first visit prints.
 	bare: {},
-	// A truncated payload, which should cost the response filter its options
-	// rather than take the screen's filters down with it.
 	malformed: { postTypes: 'gatherpress_event', statuses: '{"attending"' },
 };
 
@@ -32,11 +28,8 @@ const nodes = {};
 /**
  * Runs the entry point once against every mount point.
  *
- * The module mounts on import rather than exporting anything: it is the
- * screen's entry point, and `domReady` fires straight away because jsdom is
- * already complete. It is imported once, with every case present, because
- * resetting the registry to import it again would load a second copy of React
- * whose pending work `act` cannot flush.
+ * The module mounts on import. Imported once with every case present, because
+ * resetting the registry loads a second React whose work `act` cannot flush.
  *
  * @return {Promise<void>} Resolves once React has settled.
  */
@@ -87,8 +80,7 @@ describe( 'rsvp-admin entry point', () => {
 	} );
 
 	it( 'mounts every mount point on the screen', () => {
-		// `extra_tablenav()` prints one above the table and one below it, so
-		// mounting only the first would leave the other tablenav bare.
+		// `extra_tablenav()` prints one above the table and one below it.
 		expect( screen.getAllByRole( 'button', { name: 'Filter' } ) ).toHaveLength(
 			Object.keys( MOUNTS ).length
 		);

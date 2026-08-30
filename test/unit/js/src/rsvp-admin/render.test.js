@@ -20,10 +20,8 @@ const STATUSES = [
 /**
  * Renders and lets React settle.
  *
- * Both components update state after the first paint: the popover measures and
- * positions itself, and the event picker resolves through the data store.
- * Unwaited, those land outside `act()` and the suite treats React's warning as
- * a failure.
+ * The popover positions itself and the picker resolves after the first paint;
+ * unwaited, those land outside `act()`.
  *
  * @param {JSX.Element} ui The element to render.
  *
@@ -64,7 +62,6 @@ describe( 'ResponseFilter', () => {
 	} );
 
 	it( 'shows the count beside the icon once filtered', async () => {
-		// The icon alone cannot show that a filter is active.
 		await renderSettled(
 			<ResponseFilter
 				statuses={ STATUSES }
@@ -143,11 +140,9 @@ describe( 'Filters', () => {
 	/**
 	 * Presses Filter and acknowledges jsdom's refusal to navigate.
 	 *
-	 * The component assigns `window.location.href`. jsdom cannot follow that
-	 * and reports it through `console.error`, which this suite otherwise
-	 * fails on, and its `location` is neither deletable nor redefinable, so
-	 * the assignment cannot be captured. The URL itself is covered directly
-	 * in `filters.test.js`; this only drives the handler.
+	 * jsdom reports the `location.href` assignment through `console.error`,
+	 * and its `location` cannot be stubbed. The URL is covered in
+	 * `filters.test.js`; this only drives the handler.
 	 *
 	 * @return {Promise<void>} Resolves once React has settled.
 	 */
@@ -172,8 +167,6 @@ describe( 'Filters', () => {
 	it( 'reflects an event carried in from the request', async () => {
 		await renderSettled( <Filters { ...defaults } initialPostId={ 11 } /> );
 
-		// Arriving already filtered should show which event, not an empty box
-		// over a filtered table.
 		expect( screen.getByLabelText( 'Filter by event' ) ).toBeInTheDocument();
 	} );
 
@@ -199,7 +192,6 @@ describe( 'Filters', () => {
 		await clickSettled( screen.getByLabelText( 'Filter by response: all' ) );
 		await clickSettled( screen.getByLabelText( 'Not Attending' ) );
 
-		// The toggle reflects the pick before it is submitted.
 		expect(
 			screen.getByLabelText( 'Filter by response: Not Attending' )
 		).toBeInTheDocument();

@@ -188,8 +188,7 @@ final class Abilities {
 		/**
 		 * Upcoming event IDs.
 		 *
-		 * @var int[] $post_ids The query runs with `fields => ids`, which
-		 *                      `WP_Query::$posts` is typed too widely to say.
+		 * @var int[] $post_ids The query runs with `fields => ids`.
 		 */
 		$post_ids = Query::get_instance()->get_upcoming_events( $count )->posts;
 
