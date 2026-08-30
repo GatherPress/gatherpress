@@ -2,7 +2,7 @@
  * WordPress dependencies
  */
 import { ComboboxControl } from '@wordpress/components';
-import { useMemo, useState } from '@wordpress/element';
+import { useMemo, useRef, useState } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 import { useDebounce } from '@wordpress/compose';
 import { store as coreStore } from '@wordpress/core-data';
@@ -21,6 +21,17 @@ import { __ } from '@wordpress/i18n';
  * @type {number}
  */
 const PER_PAGE = 10;
+
+/**
+ * Stands in for a post type that has not resolved yet.
+ *
+ * Shared so an unresolved type keeps the same reference between renders.
+ *
+ * @since 0.36.0
+ *
+ * @type {Object[]}
+ */
+const EMPTY_RECORDS = [];
 
 /**
  * Builds the entity query one event search issues.
@@ -103,6 +114,34 @@ export function useEventOptions( search, eventId, postTypes ) {
 		[ postTypes ]
 	);
 
+	// `useSelect` bails out of a re-render by comparing what the mapping
+	// returned, so a freshly built array defeats it: every unrelated store
+	// change would re-render both pickers on the screen. The per-type record
+	// arrays are stable references, so flattening is cached against them.
+	const flattened = useRef( { lists: [], events: [] } );
+
+	/**
+	 * Flattens per-type records, reusing the previous array when unchanged.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param {Object[][]} lists Records for each searched post type.
+	 *
+	 * @return {Object[]} All records, flat.
+	 */
+	const flattenRecords = ( lists ) => {
+		const previous = flattened.current;
+		const unchanged =
+			previous.lists.length === lists.length &&
+			previous.lists.every( ( list, index ) => list === lists[ index ] );
+
+		if ( ! unchanged ) {
+			flattened.current = { lists, events: lists.flat() };
+		}
+
+		return flattened.current.events;
+	};
+
 	const { events, selected, isResolving } = useSelect(
 		( wpSelect ) => {
 			const { getEntityRecord, getEntityRecords, isResolving: resolving } =
@@ -110,9 +149,12 @@ export function useEventOptions( search, eventId, postTypes ) {
 			const query = buildEventQuery( search );
 
 			return {
-				events: types.flatMap(
-					( type ) =>
-						getEntityRecords( 'postType', type, query ) ?? []
+				events: flattenRecords(
+					types.map(
+						( type ) =>
+							getEntityRecords( 'postType', type, query ) ??
+							EMPTY_RECORDS
+					)
 				),
 				// The selected event's own post type is not known here, so
 				// ask each candidate; at most one answers.

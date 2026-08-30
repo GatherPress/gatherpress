@@ -86,6 +86,7 @@ enum Status: string {
 	 * @return string The translated label.
 	 */
 	public function label(): string {
+		// phpcs:ignore PHPCompatibility.Variables.ForbiddenThisUseContexts.OutsideObjectContext -- Enum instance methods have $this; the sniff reads this enum's first non-static method as a plain function.
 		return match ( $this ) {
 			self::ATTENDING     => __( 'Attending', 'gatherpress' ),
 			self::NOT_ATTENDING => __( 'Not Attending', 'gatherpress' ),
@@ -107,7 +108,7 @@ enum Status: string {
 	public static function filterable(): array {
 		return array_filter(
 			self::cases(),
-			static fn( self $case ): bool => self::NO_STATUS !== $case
+			static fn( self $status ): bool => self::NO_STATUS !== $status
 		);
 	}
 }

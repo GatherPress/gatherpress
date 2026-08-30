@@ -13,6 +13,44 @@ import EventSelect from '../components/EventSelect';
 import ResponseFilter from './response-filter';
 
 /**
+ * Builds the URL one filter submission navigates to.
+ *
+ * An empty value drops its parameter rather than sending it blank, so clearing
+ * a control and applying is how a filter is removed. Paging resets because the
+ * current page rarely exists in the narrowed result. `event` is the list
+ * table's older name for the event filter and is dropped so the two cannot
+ * disagree about which event is selected.
+ *
+ * @since 0.36.0
+ *
+ * @param {string}      href      The current URL.
+ * @param {number|null} postId    Selected event ID, if any.
+ * @param {string[]}    responses Selected response statuses.
+ *
+ * @return {string} The URL to navigate to.
+ */
+export function buildFilterUrl( href, postId, responses ) {
+	const base = removeQueryArgs(
+		href,
+		'event',
+		'post_id',
+		'response',
+		'paged'
+	);
+	const args = {};
+
+	if ( postId ) {
+		args.post_id = postId;
+	}
+
+	if ( responses.length ) {
+		args.response = responses.join( ',' );
+	}
+
+	return Object.keys( args ).length ? addQueryArgs( base, args ) : base;
+}
+
+/**
  * The RSVP screen's filters.
  *
  * Both controls sit behind one Filter button rather than one each: they narrow
@@ -48,33 +86,14 @@ export default function Filters( {
 	/**
 	 * Reload the screen with both filters applied.
 	 *
-	 * An empty value drops its parameter rather than sending it blank, so
-	 * clearing a control and applying is how the filter is removed. Paging
-	 * resets because the current page rarely exists in the narrowed result.
-	 *
 	 * @return {void}
 	 */
 	const applyFilters = () => {
-		const base = removeQueryArgs(
+		window.location.href = buildFilterUrl(
 			window.location.href,
-			'event',
-			'post_id',
-			'response',
-			'paged'
+			postId,
+			responses
 		);
-		const args = {};
-
-		if ( postId ) {
-			args.post_id = postId;
-		}
-
-		if ( responses.length ) {
-			args.response = responses.join( ',' );
-		}
-
-		window.location.href = Object.keys( args ).length
-			? addQueryArgs( base, args )
-			: base;
 	};
 
 	return (

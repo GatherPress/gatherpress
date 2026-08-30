@@ -170,6 +170,9 @@ final class List_Table extends WP_List_Table {
 	 * @param string $which Which tablenav is being rendered, 'top' or 'bottom'.
 	 *
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Required by WP_List_Table::extra_tablenav(); both
+	 * tablenavs render the same mount, and the stylesheet decides which one is shown.
 	 */
 	protected function extra_tablenav( $which ): void {
 		$statuses = array();
@@ -183,7 +186,9 @@ final class List_Table extends WP_List_Table {
 
 		printf(
 			'<div class="alignleft actions">' .
-			'<div class="gatherpress-rsvp-filters-mount" data-post-types="%1$s" data-post-id="%2$s" data-label="%3$s" data-statuses="%4$s" data-selected="%5$s"></div>' .
+			'<div class="gatherpress-rsvp-filters-mount"' .
+			' data-post-types="%1$s" data-post-id="%2$s" data-label="%3$s"' .
+			' data-statuses="%4$s" data-selected="%5$s"></div>' .
 			'</div>',
 			esc_attr( implode( ',', get_post_types_by_support( 'gatherpress-event-date' ) ) ),
 			esc_attr( (string) $this->get_filtered_post_id() ),

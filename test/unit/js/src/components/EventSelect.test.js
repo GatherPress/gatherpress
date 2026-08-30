@@ -2,11 +2,13 @@
  * External dependencies
  */
 import { describe, expect, it } from '@jest/globals';
+import { act, render, screen } from '@testing-library/react';
+import '@testing-library/jest-dom';
 
 /**
  * Internal dependencies
  */
-import {
+import EventSelect, {
 	buildEventQuery,
 	toEventOptions,
 } from '@src/components/EventSelect';
@@ -110,5 +112,77 @@ describe( 'toEventOptions', () => {
 		expect( toEventOptions( [], event( 9, 'Winter Social' ) ) ).toEqual( [
 			{ value: 9, label: 'Winter Social' },
 		] );
+	} );
+} );
+
+describe( 'EventSelect', () => {
+	/**
+	 * Renders and lets React settle.
+	 *
+	 * The control resolves its options through the data store after the first
+	 * paint. Unwaited, that update lands outside `act()` and the suite treats
+	 * React's warning as a failure.
+	 *
+	 * @param {JSX.Element} ui The element to render.
+	 *
+	 * @return {Promise<void>} Resolves once React has settled.
+	 */
+	const renderSettled = async ( ui ) => {
+		await act( async () => {
+			render( ui );
+		} );
+	};
+
+	it( 'accepts a single post type as a bare string', async () => {
+		// Callers that know their one post type should not have to wrap it.
+		await renderSettled(
+			<EventSelect
+				postTypes="gatherpress_event"
+				value={ null }
+				onChange={ () => {} }
+			/>
+		);
+
+		expect( screen.getByRole( 'combobox' ) ).toBeInTheDocument();
+	} );
+
+	it( 'labels itself when the caller supplies no label', async () => {
+		await renderSettled(
+			<EventSelect
+				postTypes={ [ 'gatherpress_event' ] }
+				value={ null }
+				onChange={ () => {} }
+			/>
+		);
+
+		expect( screen.getByLabelText( 'Event' ) ).toBeVisible();
+	} );
+
+	it( 'looks up the selected event so it can be named', async () => {
+		// The selection arrives as a bare ID, and the label for it is only
+		// in the search results when the search happens to include it.
+		await renderSettled(
+			<EventSelect
+				postTypes={ [ 'gatherpress_event' ] }
+				value={ 11 }
+				onChange={ () => {} }
+			/>
+		);
+
+		expect( screen.getByRole( 'combobox' ) ).toBeInTheDocument();
+	} );
+
+	it( 'hides the label from view when asked', async () => {
+		await renderSettled(
+			<EventSelect
+				postTypes={ [ 'gatherpress_event' ] }
+				label="Filter by event"
+				hideLabelFromVision
+				value={ null }
+				onChange={ () => {} }
+			/>
+		);
+
+		expect( screen.getByLabelText( 'Filter by event' ) ).toBeInTheDocument();
 	} );
 } );
