@@ -78,6 +78,7 @@ final class Setup {
 	 * @return void
 	 */
 	protected function instantiate_classes(): void {
+		Abilities::get_instance();
 		Cleanup::get_instance();
 		Form::get_instance();
 		Query::get_instance();
