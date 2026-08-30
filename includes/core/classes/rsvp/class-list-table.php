@@ -253,7 +253,7 @@ final class List_Table extends WP_List_Table {
 	 */
 	protected function get_filtered_post_id(): int {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		return empty( $_REQUEST['post_id'] ) ? 0 : intval( $_REQUEST['post_id'] );
+		return intval( $_REQUEST['post_id'] ?? 0 );
 	}
 
 	/**
