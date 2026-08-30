@@ -1534,4 +1534,29 @@ class Test_Setup extends Base {
 
 		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 	}
+
+	/**
+	 * The RSVP screen loads the filter script and the components stylesheet.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::enqueue_rsvp_admin_assets
+	 *
+	 * @return void
+	 */
+	public function test_enqueue_rsvp_admin_assets(): void {
+		Utility::invoke_hidden_method( Setup::get_instance(), 'enqueue_rsvp_admin_assets' );
+
+		$this->assertTrue(
+			wp_script_is( 'gatherpress-rsvp-admin', 'enqueued' ),
+			'Failed to assert the RSVP screen enqueues its filter script.'
+		);
+
+		// The combobox is a `@wordpress/components` control, and admin screens
+		// do not load that package's stylesheet by default.
+		$this->assertTrue(
+			wp_style_is( 'wp-components', 'enqueued' ),
+			'Failed to assert the components stylesheet is enqueued.'
+		);
+	}
 }
