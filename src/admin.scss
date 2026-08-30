@@ -201,6 +201,12 @@
 		z-index: 10;
 	}
 
+	// The option text lines up with the field's own text above it, which the
+	// component's wider default padding does not.
+	.components-form-token-field__suggestion {
+		padding: 8px;
+	}
+
 	// The reset control, centered against the 32px frame.
 	.components-combobox-control__suggestions-container .components-button {
 		align-self: center;
