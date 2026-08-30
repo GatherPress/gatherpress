@@ -127,11 +127,23 @@
 // `.wp-core-ui .tablenav` throughout because core's own rules at that depth
 // outrank a two-class selector.
 
-// Core stacks the tablenav below 783px and hides `.tablenav.top .actions`
-// with it, so the filters drop onto their own row under the bulk actions
-// rather than crowding beside them.
+// The filters follow the bulk actions, which move between tablenavs: core
+// hides `.tablenav.top .actions` below 783px, so the group a reader sees on a
+// phone is the bottom one. Both tablenavs carry the filters and exactly one
+// shows, hidden explicitly at each width rather than left to source order.
+@media screen and (width >= 783px) {
+	.wp-core-ui .tablenav.bottom .gatherpress-rsvp-filters {
+		display: none;
+	}
+}
+
 @media screen and (width <= 782px) {
 	.wp-core-ui .tablenav.top .gatherpress-rsvp-filters {
+		display: none;
+	}
+
+	// Onto their own row, under the bulk actions rather than beside them.
+	.wp-core-ui .tablenav.bottom .gatherpress-rsvp-filters {
 		clear: both;
 		float: none;
 		margin-top: 8px;
@@ -139,9 +151,7 @@
 	}
 }
 
-// Scoped to `.tablenav.top` so it outranks core's `.tablenav.top .actions`,
-// which hides the whole group below 783px and took the filters with it.
-.wp-core-ui .tablenav.top .gatherpress-rsvp-filters {
+.wp-core-ui .tablenav .gatherpress-rsvp-filters {
 	display: inline-flex;
 	align-items: flex-start;
 	gap: 4px;
