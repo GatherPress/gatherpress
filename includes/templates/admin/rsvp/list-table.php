@@ -11,7 +11,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Utility;
 
-if ( ! isset( $rsvp_table, $search_term, $status, $event ) ) {
+if ( ! isset( $rsvp_table, $search_term, $status ) ) {
 	return;
 }
 
@@ -76,10 +76,6 @@ $rsvp_table->prepare_items();
 
 		<?php if ( ! empty( $status ) ) : ?>
 			<input type="hidden" name="status" value="<?php echo esc_attr( $status ); ?>" />
-		<?php endif; ?>
-
-		<?php if ( ! empty( $event ) ) : ?>
-			<input type="hidden" name="event" value="<?php echo esc_attr( $event ); ?>" />
 		<?php endif; ?>
 	</form>
 

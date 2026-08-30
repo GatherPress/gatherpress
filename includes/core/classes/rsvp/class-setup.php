@@ -473,7 +473,6 @@ final class Setup {
 		$rsvp_table  = $this->list_table ?? new List_Table();
 		$search_term = isset( $_REQUEST['s'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['s'] ) ) : '';
 		$status      = isset( $_REQUEST['status'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['status'] ) ) : '';
-		$event       = isset( $_REQUEST['event'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['event'] ) ) : '';
 
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/rsvp/list-table.php', GATHERPRESS_CORE_PATH ),
@@ -481,7 +480,6 @@ final class Setup {
 				'rsvp_table'  => $rsvp_table,
 				'search_term' => $search_term,
 				'status'      => $status,
-				'event'       => $event,
 			),
 			true
 		);

@@ -47,13 +47,6 @@ describe( 'buildFilterUrl', () => {
 		);
 	} );
 
-	it( 'drops the list table’s older event parameter', () => {
-		// `event` and `post_id` name the same filter and could disagree.
-		expect(
-			buildFilterUrl( `${ SCREEN }&event=99`, 11, [] )
-		).not.toContain( 'event=99' );
-	} );
-
 	it( 'resets paging, which rarely survives a narrower result', () => {
 		expect( buildFilterUrl( `${ SCREEN }&paged=4`, 11, [] ) ).not.toContain(
 			'paged'

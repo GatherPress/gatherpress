@@ -1142,7 +1142,6 @@ class Test_Setup extends Base {
 		// Set up request parameters.
 		$_REQUEST['s']      = 'test search'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$_REQUEST['status'] = 'attending'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$_REQUEST['event']  = '123'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 		$instance = Setup::get_instance();
 
@@ -1154,7 +1153,7 @@ class Test_Setup extends Base {
 		$this->assertNotEmpty( $output );
 
 		// Clean up.
-		unset( $_REQUEST['s'], $_REQUEST['status'], $_REQUEST['event'] );
+		unset( $_REQUEST['s'], $_REQUEST['status'] );
 		wp_set_current_user( 0 );
 	}
 

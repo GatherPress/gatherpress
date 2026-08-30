@@ -252,17 +252,8 @@ final class List_Table extends WP_List_Table {
 	 * @return int The event post ID, or 0 when unfiltered.
 	 */
 	protected function get_filtered_post_id(): int {
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended
-		if ( ! empty( $_REQUEST['post_id'] ) ) {
-			return intval( $_REQUEST['post_id'] );
-		}
-
-		if ( ! empty( $_REQUEST['event'] ) ) {
-			return intval( $_REQUEST['event'] );
-		}
-		// phpcs:enable WordPress.Security.NonceVerification.Recommended
-
-		return 0;
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		return empty( $_REQUEST['post_id'] ) ? 0 : intval( $_REQUEST['post_id'] );
 	}
 
 	/**
@@ -462,10 +453,10 @@ final class List_Table extends WP_List_Table {
 			$args['user_id'] = intval( $_REQUEST['user_id'] );
 		}
 
-		if ( isset( $_REQUEST['post_id'] ) && ! empty( $_REQUEST['post_id'] ) ) {
-			$args['post_id'] = intval( $_REQUEST['post_id'] );
-		} elseif ( isset( $_REQUEST['event'] ) && ! empty( $_REQUEST['event'] ) ) {
-			$args['post_id'] = intval( $_REQUEST['event'] );
+		$post_id = $this->get_filtered_post_id();
+
+		if ( $post_id ) {
+			$args['post_id'] = $post_id;
 		}
 
 		if (
@@ -534,10 +525,10 @@ final class List_Table extends WP_List_Table {
 			$args['search'] = $search_term;
 		}
 
-		if ( isset( $_REQUEST['post_id'] ) && ! empty( $_REQUEST['post_id'] ) ) {
-			$args['post_id'] = intval( $_REQUEST['post_id'] );
-		} elseif ( isset( $_REQUEST['event'] ) && ! empty( $_REQUEST['event'] ) ) {
-			$args['post_id'] = intval( $_REQUEST['event'] );
+		$post_id = $this->get_filtered_post_id();
+
+		if ( $post_id ) {
+			$args['post_id'] = $post_id;
 		}
 
 		if (
@@ -1048,14 +1039,9 @@ final class List_Table extends WP_List_Table {
 		$status_links = array();
 		$current      = 'all';
 
-		// Check for post_id filter.
-		$post_id = 0;
+		$post_id = $this->get_filtered_post_id();
 
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- View state only, no data modification.
-		if ( isset( $_REQUEST['post_id'] ) && ! empty( $_REQUEST['post_id'] ) ) {
-			$post_id = intval( $_REQUEST['post_id'] );
-		}
-
 		// Check for current view status (doesn't require nonce).
 		if ( isset( $_REQUEST['user_id'] ) ) {
 			$user_id = absint( $_REQUEST['user_id'] );

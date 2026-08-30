@@ -15,8 +15,8 @@ import ResponseFilter from './response-filter';
 /**
  * Builds the URL one filter submission navigates to.
  *
- * An empty value drops its parameter, which is how a filter is removed. Paging
- * resets, and `event` is dropped so it cannot disagree with `post_id`.
+ * An empty value drops its parameter, which is how a filter is removed, and
+ * paging resets because the current page rarely exists in the narrower result.
  *
  * @since 0.36.0
  *
@@ -27,13 +27,7 @@ import ResponseFilter from './response-filter';
  * @return {string} The URL to navigate to.
  */
 export function buildFilterUrl( href, postId, responses ) {
-	const base = removeQueryArgs(
-		href,
-		'event',
-		'post_id',
-		'response',
-		'paged'
-	);
+	const base = removeQueryArgs( href, 'post_id', 'response', 'paged' );
 	const args = {};
 
 	if ( postId ) {

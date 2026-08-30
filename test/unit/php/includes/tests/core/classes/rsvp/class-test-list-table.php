@@ -1537,29 +1537,6 @@ class Test_List_Table extends Base {
 	}
 
 	/**
-	 * Tests prepare_items with event filter.
-	 *
-	 * @covers ::prepare_items
-	 * @covers ::get_rsvps
-	 * @return void
-	 */
-	public function test_prepare_items_with_event_filter(): void {
-		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
-		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
-
-		$_REQUEST['event'] = $this->event_id;
-
-		$this->list_table->prepare_items();
-
-		$this->assertIsArray(
-			$this->list_table->items,
-			'Failed to assert items is an array after prepare_items with event filter.'
-		);
-
-		unset( $_REQUEST['event'] );
-	}
-
-	/**
 	 * Tests prepare_items with approved status filter.
 	 *
 	 * @covers ::prepare_items
@@ -1764,28 +1741,6 @@ class Test_List_Table extends Base {
 		);
 
 		unset( $_REQUEST['post_id'] );
-	}
-
-	/**
-	 * Tests get_rsvp_count with event filter.
-	 *
-	 * @covers ::get_rsvp_count
-	 * @return void
-	 */
-	public function test_get_rsvp_count_with_event_filter(): void {
-		$_REQUEST['event'] = $this->event_id;
-
-		$count = Utility::invoke_hidden_method(
-			$this->list_table,
-			'get_rsvp_count'
-		);
-
-		$this->assertIsInt(
-			$count,
-			'Failed to assert get_rsvp_count returns an integer with event filter.'
-		);
-
-		unset( $_REQUEST['event'] );
 	}
 
 	/**
@@ -2145,27 +2100,6 @@ class Test_List_Table extends Base {
 		);
 
 		unset( $_REQUEST['post_id'] );
-	}
-
-	/**
-	 * The table's own event links carry `event` instead, and still filter.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @covers ::get_filtered_post_id
-	 *
-	 * @return void
-	 */
-	public function test_get_filtered_post_id_falls_back_to_event(): void {
-		$_REQUEST['event'] = (string) $this->event_id;
-
-		$this->assertSame(
-			$this->event_id,
-			Utility::invoke_hidden_method( $this->list_table, 'get_filtered_post_id' ),
-			'Failed to assert the older event parameter still filters.'
-		);
-
-		unset( $_REQUEST['event'] );
 	}
 
 	/**
