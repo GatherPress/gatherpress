@@ -2331,7 +2331,7 @@ class Test_List_Table extends Base {
 	}
 
 	/**
-	 * The written event field is an empty, labelled text box.
+	 * The written event field is an empty, labeled text box.
 	 *
 	 * The selection's title is left to the script, which resolves it along
 	 * with everything else it lists rather than costing a query here.
