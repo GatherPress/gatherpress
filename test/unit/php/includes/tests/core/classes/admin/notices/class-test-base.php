@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Admin\Notices;
 
 use GatherPress\Core\Admin\Notices\Base;
+use GatherPress\Core\Admin\Notices\Missing_Build;
 use GatherPress\Tests\Base as Unit_Test_Base;
 use PMC\Unit_Test\Utility;
 
@@ -123,6 +124,33 @@ class Test_Base extends Unit_Test_Base {
 			 */
 			public function applies(): bool {
 				return $this->args['applies'] ?? parent::applies();
+			}
+
+			/**
+			 * The notice's headline, when it renders as a card.
+			 *
+			 * @return string The headline, or an empty string.
+			 */
+			public function get_headline(): string {
+				return $this->args['headline'] ?? parent::get_headline();
+			}
+
+			/**
+			 * Where the card's call to action goes.
+			 *
+			 * @return string A URL, or an empty string.
+			 */
+			public function get_action_url(): string {
+				return $this->args['action_url'] ?? parent::get_action_url();
+			}
+
+			/**
+			 * What the card's call to action reads.
+			 *
+			 * @return string The label, or an empty string.
+			 */
+			public function get_action_label(): string {
+				return $this->args['action_label'] ?? parent::get_action_label();
 			}
 		};
 	}
@@ -436,6 +464,160 @@ class Test_Base extends Unit_Test_Base {
 			'gatherpress_dismiss_notice=gatherpress_test',
 			$output,
 			'Failed to assert that a persistent notice offered a dismissal link.'
+		);
+	}
+
+	/**
+	 * A notice is a plain paragraph unless it says otherwise.
+	 *
+	 * Asserted on a concrete notice rather than the test double, which
+	 * overrides all three and so never reaches these.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_headline
+	 * @covers ::get_action_url
+	 * @covers ::get_action_label
+	 * @covers ::get_options
+	 *
+	 * @return void
+	 */
+	public function test_card_hooks_default_to_off(): void {
+		$notice = new Missing_Build();
+
+		$this->assertSame( '', $notice->get_headline(), 'Failed to assert notices are plain by default.' );
+		$this->assertSame( '', $notice->get_action_url(), 'Failed to assert there is no default action URL.' );
+		$this->assertSame( '', $notice->get_action_label(), 'Failed to assert there is no default action label.' );
+
+		// A notice that keeps no state of its own leaves uninstall nothing
+		// extra to remove.
+		$this->assertSame( array(), $notice->get_options(), 'Failed to assert notices own no options by default.' );
+	}
+
+	/**
+	 * A headline turns the notice into a card.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::render
+	 * @covers ::build_card
+	 * @covers ::get_mark
+	 * @covers ::emit
+	 *
+	 * @return void
+	 */
+	public function test_render_builds_a_card_when_a_headline_is_set(): void {
+		$notice = $this->make_notice(
+			array(
+				'headline'     => 'Welcome aboard',
+				'action_url'   => 'https://example.test/start',
+				'action_label' => 'Get started',
+			)
+		);
+
+		$output = Utility::buffer_and_return( array( $notice, 'render' ) );
+
+		$this->assertStringContainsString(
+			'Welcome aboard',
+			$output,
+			'Failed to assert the headline rendered.'
+		);
+		$this->assertStringContainsString(
+			'<svg',
+			$output,
+			'Failed to assert the mark survived wp_kses_post().'
+		);
+		$this->assertStringContainsString(
+			'button button-primary',
+			$output,
+			'Failed to assert the call to action rendered.'
+		);
+		$this->assertStringContainsString(
+			'https://example.test/start',
+			$output,
+			'Failed to assert the call to action links where it was told.'
+		);
+	}
+
+	/**
+	 * A card without both halves of a call to action renders neither.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::build_card
+	 *
+	 * @return void
+	 */
+	public function test_card_omits_an_incomplete_call_to_action(): void {
+		$notice = $this->make_notice(
+			array(
+				'headline'   => 'Welcome aboard',
+				'action_url' => 'https://example.test/start',
+			)
+		);
+
+		$this->assertStringNotContainsString(
+			'button-primary',
+			Utility::buffer_and_return( array( $notice, 'render' ) ),
+			'Failed to assert a URL with no label renders no button.'
+		);
+	}
+
+	/**
+	 * A persistent card carries the dismiss control.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::build_card
+	 *
+	 * @return void
+	 */
+	public function test_card_carries_a_dismiss_control_when_persistent(): void {
+		$card  = $this->make_notice( array( 'headline' => 'Welcome aboard' ) );
+		$stuck = $this->make_notice(
+			array(
+				'headline'   => 'Welcome aboard',
+				'persistent' => true,
+			)
+		);
+
+		$this->assertStringNotContainsString(
+			'notice-dismiss',
+			Utility::buffer_and_return( array( $card, 'render' ) ),
+			'Failed to assert a card that cannot be dismissed has no dismiss control.'
+		);
+
+		$this->assertStringContainsString(
+			'notice-dismiss',
+			Utility::buffer_and_return( array( $stuck, 'render' ) ),
+			'Failed to assert a persistent card has a dismiss control.'
+		);
+	}
+
+	/**
+	 * The mark's markup is allowed through only in the post context.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::allow_mark_markup
+	 *
+	 * @return void
+	 */
+	public function test_allow_mark_markup_is_scoped_to_the_post_context(): void {
+		$notice = $this->make_notice();
+
+		$this->assertArrayHasKey(
+			'svg',
+			$notice->allow_mark_markup( array(), 'post' ),
+			'Failed to assert svg is permitted in the post context.'
+		);
+
+		// Widening the allowlist anywhere else would outlive the one call it
+		// is added for.
+		$this->assertSame(
+			array(),
+			$notice->allow_mark_markup( array(), 'data' ),
+			'Failed to assert other contexts are left alone.'
 		);
 	}
 }

@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
 use GatherPress\Core\Admin\Notices\Setup as Notices_Setup;
+use GatherPress\Core\Admin\Notices\Welcome;
 use GatherPress\Core\Traits\Singleton;
 use WP_Site;
 
@@ -181,10 +182,12 @@ final class Setup {
 			foreach ( $site_ids as $site_id ) {
 				switch_to_blog( $site_id );
 				$this->create_tables();
+				update_option( Welcome::OPTION_ACTIVATED, true );
 				restore_current_blog();
 			}
 		} else {
 			$this->create_tables();
+			update_option( Welcome::OPTION_ACTIVATED, true );
 		}
 	}
 
