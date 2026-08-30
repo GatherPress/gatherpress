@@ -150,6 +150,12 @@ class Test_Setup extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'set_event_archive_labels' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'block_editor_settings_all',
+				'priority' => 10,
+				'callback' => array( $instance, 'add_editor_settings' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
@@ -404,6 +410,63 @@ class Test_Setup extends Base {
 		foreach ( $supported as $post_type ) {
 			add_post_type_support( $post_type, 'gatherpress-event-date' );
 		}
+	}
+
+	/**
+	 * Coverage for add_editor_settings method.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::add_editor_settings
+	 *
+	 * @return void
+	 */
+	public function test_add_editor_settings_exposes_event_post_types(): void {
+		$instance = Setup::get_instance();
+		$settings = $instance->add_editor_settings( array() );
+
+		$this->assertContains(
+			Event::POST_TYPE,
+			$settings['gatherpress']['config']['eventPostTypes'],
+			'Failed to assert the event post type is exposed to the editor.'
+		);
+		$this->assertSame(
+			array_values( $settings['gatherpress']['config']['eventPostTypes'] ),
+			$settings['gatherpress']['config']['eventPostTypes'],
+			'Failed to assert the post type list is a JSON array rather than an object.'
+		);
+	}
+
+	/**
+	 * Coverage for add_editor_settings method preserving existing settings.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::add_editor_settings
+	 *
+	 * @return void
+	 */
+	public function test_add_editor_settings_preserves_existing_config(): void {
+		$instance = Setup::get_instance();
+		$settings = $instance->add_editor_settings(
+			array(
+				'unrelated'   => 'kept',
+				'gatherpress' => array(
+					'config' => array( 'venuePostTypes' => array( 'gatherpress_venue' ) ),
+				),
+			)
+		);
+
+		$this->assertSame(
+			'kept',
+			$settings['unrelated'],
+			'Failed to assert unrelated editor settings survive.'
+		);
+		$this->assertSame(
+			array( 'gatherpress_venue' ),
+			$settings['gatherpress']['config']['venuePostTypes'],
+			'Failed to assert a sibling config key survives.'
+		);
 	}
 
 	/**

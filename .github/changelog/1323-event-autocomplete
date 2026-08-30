@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Add a searchable event picker to the RSVP admin screen, and use the same control for the Post ID Override on blocks instead of a raw number field.

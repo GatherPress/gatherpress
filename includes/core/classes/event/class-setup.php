@@ -118,6 +118,37 @@ final class Setup {
 		add_filter( 'the_time', array( $this, 'get_the_event_date' ) );
 		add_filter( 'render_block_core/post-date', array( $this, 'render_event_post_date_block' ), 10, 3 );
 		add_filter( 'display_post_states', array( $this, 'set_event_archive_labels' ), 10, 2 );
+		add_filter( 'block_editor_settings_all', array( $this, 'add_editor_settings' ) );
+	}
+
+	/**
+	 * Adds GatherPress event configuration to the block editor settings.
+	 *
+	 * Exposes the event post types under
+	 * settings['gatherpress']['config']['eventPostTypes'] so the editor can
+	 * search events without hardcoding a post type slug, the same way
+	 * `Venue\Setup` exposes its venue post type map.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, mixed> $settings The block editor settings array.
+	 *
+	 * @return array<string, mixed> The modified block editor settings array.
+	 */
+	public function add_editor_settings( array $settings ): array {
+		if ( ! isset( $settings['gatherpress'] ) ) {
+			$settings['gatherpress'] = array();
+		}
+
+		if ( ! isset( $settings['gatherpress']['config'] ) ) {
+			$settings['gatherpress']['config'] = array();
+		}
+
+		$settings['gatherpress']['config']['eventPostTypes'] = array_values(
+			get_post_types_by_support( 'gatherpress-event-date' )
+		);
+
+		return $settings;
 	}
 
 	/**

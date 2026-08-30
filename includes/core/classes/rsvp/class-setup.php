@@ -14,6 +14,7 @@ namespace GatherPress\Core\Rsvp;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Assets;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
 use GatherPress\Core\Rsvp\Response\Provider_Registry;
@@ -393,6 +394,36 @@ final class Setup {
 		$this->list_table = new List_Table( array( 'post_type' => $screen_post_type ) );
 
 		$this->setup_rsvp_list_table_screen_options();
+		$this->enqueue_rsvp_admin_assets();
+	}
+
+	/**
+	 * Loads the scripts the RSVP screen's event filter needs.
+	 *
+	 * Enqueued from the screen's own `load-` action rather than the shared
+	 * `admin_enqueue_scripts` handler, because the hook suffix varies per
+	 * supporting post type and this is the one place that already knows it.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	protected function enqueue_rsvp_admin_assets(): void {
+		$asset = Assets::get_instance()->get_asset_data( 'rsvp_admin' );
+
+		wp_enqueue_script(
+			'gatherpress-rsvp-admin',
+			GATHERPRESS_CORE_URL . 'build/rsvp_admin.js',
+			$asset['dependencies'],
+			$asset['version'],
+			true
+		);
+
+		wp_set_script_translations( 'gatherpress-rsvp-admin', 'gatherpress' );
+
+		// The combobox is a `@wordpress/components` control, so it needs the
+		// package's stylesheet, which admin screens do not load by default.
+		wp_enqueue_style( 'wp-components' );
 	}
 
 	/**

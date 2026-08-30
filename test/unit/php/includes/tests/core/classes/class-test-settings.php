@@ -160,6 +160,41 @@ class Test_Settings extends Base {
 	}
 
 	/**
+	 * Config keys added by other classes survive this filter.
+	 *
+	 * Several classes hook `block_editor_settings_all` to add their own
+	 * config, and this one runs after some of them. A wholesale assignment
+	 * here silently dropped their values.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::add_editor_settings
+	 *
+	 * @return void
+	 */
+	public function test_add_editor_settings_preserves_config_from_other_callbacks(): void {
+		$instance = Settings::get_instance();
+		$settings = $instance->add_editor_settings(
+			array(
+				'gatherpress' => array(
+					'config' => array( 'setByAnotherCallback' => 'kept' ),
+				),
+			)
+		);
+
+		$this->assertSame(
+			'kept',
+			$settings['gatherpress']['config']['setByAnotherCallback'],
+			'Failed to assert a config key added by an earlier callback survives.'
+		);
+		$this->assertArrayHasKey(
+			'pluginUrl',
+			$settings['gatherpress']['config'],
+			'Failed to assert this callback still adds its own config keys.'
+		);
+	}
+
+	/**
 	 * Coverage for add_editor_settings method.
 	 *
 	 * @covers ::add_editor_settings

@@ -149,6 +149,62 @@ final class List_Table extends WP_List_Table {
 	}
 
 	/**
+	 * Renders the event filter beside the bulk actions.
+	 *
+	 * Core's own list tables put their filters here, so the RSVP screen reads
+	 * the same way rather than growing an extra row above the table. The
+	 * markup is only a mount point: the picker is React, and it navigates on
+	 * submit rather than posting this form, so the chosen event lands in the
+	 * URL as `post_id` and survives pagination, sorting and a refresh.
+	 *
+	 * Nothing renders without JavaScript, where the screen keeps working as
+	 * it always has: unfiltered, or filtered by a `post_id` already in the URL.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $which Which tablenav is being rendered, 'top' or 'bottom'.
+	 *
+	 * @return void
+	 */
+	protected function extra_tablenav( $which ): void {
+		// One filter per screen; the bottom tablenav repeats the bulk actions
+		// but a second copy of the filter would be noise.
+		if ( 'top' !== $which ) {
+			return;
+		}
+
+		printf(
+			'<div class="alignleft actions">' .
+			'<div id="gatherpress-rsvp-event-filter" data-post-types="%1$s" data-post-id="%2$s" data-label="%3$s"></div>' .
+			'</div>',
+			esc_attr( implode( ',', get_post_types_by_support( 'gatherpress-event-date' ) ) ),
+			esc_attr( (string) $this->get_filtered_post_id() ),
+			esc_attr__( 'Filter by event', 'gatherpress' )
+		);
+	}
+
+	/**
+	 * The event ID the current request is filtered to, if any.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return int The event post ID, or 0 when unfiltered.
+	 */
+	protected function get_filtered_post_id(): int {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		if ( ! empty( $_REQUEST['post_id'] ) ) {
+			return intval( $_REQUEST['post_id'] );
+		}
+
+		if ( ! empty( $_REQUEST['event'] ) ) {
+			return intval( $_REQUEST['event'] );
+		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+		return 0;
+	}
+
+	/**
 	 * Registers column management functionality for the Screen Options panel.
 	 *
 	 * Sets up the necessary hooks to enable column visibility options in the Screen Options
