@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\Uninstall;
 
 use GatherPress\Core\Uninstall\Base;
 use GatherPress\Core\Uninstall\Setup;
+use GatherPress\Core\Uninstall\Notices;
 use GatherPress\Core\Uninstall\Transients;
 use GatherPress\Tests\Base as Test_Base;
 
@@ -21,7 +22,7 @@ use GatherPress\Tests\Base as Test_Base;
 class Test_Setup extends Test_Base {
 
 	/**
-	 * The registry ships with the transient wipe registered.
+	 * The registry ships with the always-safe cleanups registered.
 	 *
 	 * @covers ::__construct
 	 * @covers ::register_default_tasks
@@ -30,13 +31,19 @@ class Test_Setup extends Test_Base {
 	 * @return void
 	 */
 	public function test_registers_default_tasks(): void {
-		$tasks = Setup::get_instance()->get_tasks();
+		$tasks   = Setup::get_instance()->get_tasks();
+		$classes = array_map( 'get_class', $tasks );
 
 		$this->assertNotEmpty( $tasks, 'The registry should ship with tasks.' );
-		$this->assertInstanceOf(
+		$this->assertContains(
 			Transients::class,
-			$tasks[0],
-			'The transient wipe should be the first registered task.'
+			$classes,
+			'The transient wipe should be registered.'
+		);
+		$this->assertContains(
+			Notices::class,
+			$classes,
+			'The notice cleanup should be registered.'
 		);
 	}
 

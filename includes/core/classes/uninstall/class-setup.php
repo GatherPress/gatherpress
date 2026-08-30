@@ -60,6 +60,7 @@ final class Setup {
 	 * @return void
 	 */
 	protected function register_default_tasks(): void {
+		$this->add( new Notices() );
 		$this->add( new Transients() );
 	}
 
