@@ -21,7 +21,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-settings.php:248](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-settings.php#L248)
+- [includes/core/classes/class-settings.php:252](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-settings.php#L252)
 ```php
 apply_filters( 'gatherpress_interactive_map_tile_url', self::MAP_TILE_URL )
 ```
