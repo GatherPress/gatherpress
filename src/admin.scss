@@ -151,8 +151,8 @@
 	.components-combobox-control__suggestions-container {
 		align-items: center;
 		background: #fff;
-		border: 1px solid #8c8f94;
-		border-radius: 3px;
+		border: 1px solid #949494;
+		border-radius: 2px;
 		box-shadow: none;
 		display: flex;
 		height: 32px;
@@ -161,8 +161,9 @@
 	}
 
 	.components-combobox-control__suggestions-container:focus-within {
-		border-color: #3582c4;
-		box-shadow: 0 0 0 1px #3582c4;
+		border-color: var(--wp-admin-theme-color, #3858e9);
+		box-shadow: 0 0 0 var(--wp-admin-border-width-focus, 1.5px)
+			var(--wp-admin-theme-color, #3858e9);
 	}
 
 	// The container sets the height now. The suggestions list is excluded
@@ -191,9 +192,9 @@
 	// background over the table beneath.
 	.components-form-token-field__suggestions-list {
 		background: #fff;
-		border: 1px solid #8c8f94;
+		border: 1px solid #949494;
 		border-top: 0;
-		box-shadow: 0 2px 6px rgb(0 0 0 / 5%);
+		box-shadow: 0 2px 6px rgb(0 0 0 / 8%);
 		max-height: 240px;
 		z-index: 10;
 	}
