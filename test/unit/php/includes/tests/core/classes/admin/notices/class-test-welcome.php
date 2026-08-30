@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Admin\Notices;
 
 use GatherPress\Core\Admin\Notices\Base;
+use GatherPress\Core\Event;
 use GatherPress\Core\Admin\Notices\Welcome;
 use GatherPress\Tests\Base as Unit_Test_Base;
 use PMC\Unit_Test\Utility;
@@ -83,6 +84,34 @@ class Test_Welcome extends Unit_Test_Base {
 			$this->notice->get_capability(),
 			'Failed to assert the notice is gated on the capability its action needs.'
 		);
+	}
+
+	/**
+	 * The capability is read from the event post type, not hardcoded.
+	 *
+	 * Asserting `edit_posts` alone cannot tell the two apart, since that is
+	 * what the event post type resolves to today. Changing the post type's
+	 * own capability is what proves where the value comes from.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_capability
+	 *
+	 * @return void
+	 */
+	public function test_capability_follows_the_event_post_type(): void {
+		$post_type = get_post_type_object( Event::POST_TYPE );
+		$original  = $post_type->cap->create_posts;
+
+		$post_type->cap->create_posts = 'gatherpress_manage_events';
+
+		$this->assertSame(
+			'gatherpress_manage_events',
+			$this->notice->get_capability(),
+			'Failed to assert the capability follows the event post type.'
+		);
+
+		$post_type->cap->create_posts = $original;
 	}
 
 
