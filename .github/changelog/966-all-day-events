@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Add an all day toggle to events, which stores a real full-day span and renders the date without a time.

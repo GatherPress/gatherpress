@@ -195,6 +195,35 @@ class Test_Settings extends Base {
 	}
 
 	/**
+	 * The editor is handed the same time characters PHP formats with.
+	 *
+	 * `removeTimePHPFormatChars()` strips an all-day format with this list,
+	 * and `Utility::remove_time_format_chars()` strips the same format on
+	 * the server. The preview and the rendered event agree only while the
+	 * two read the same list.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::add_editor_settings
+	 *
+	 * @return void
+	 */
+	public function test_add_editor_settings_sends_the_time_format_chars(): void {
+		$settings = Settings::get_instance()->add_editor_settings( array() );
+
+		$this->assertSame(
+			GatherPress_Utility::time_format_chars(),
+			$settings['gatherpress']['config']['timeFormatChars'],
+			'Failed to assert the editor is sent the time formatting characters.'
+		);
+		$this->assertSame(
+			GatherPress_Utility::non_time_format_chars(),
+			$settings['gatherpress']['config']['nonTimeFormatChars'],
+			'Failed to assert the editor is sent the non-time formatting characters.'
+		);
+	}
+
+	/**
 	 * Coverage for add_editor_settings method.
 	 *
 	 * @covers ::add_editor_settings

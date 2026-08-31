@@ -377,4 +377,55 @@ class Test_Meta extends Base {
 		$this->assertIsArray( $filtered_meta );
 		$this->assertEmpty( $filtered_meta );
 	}
+
+	/**
+	 * The all-day flag is registered with the rest of the event-date band.
+	 *
+	 * Every post type supporting `gatherpress-event-date` gets it, not only
+	 * the canonical event post type.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::register_event_date_meta
+	 *
+	 * @return void
+	 */
+	public function test_registers_the_all_day_meta(): void {
+		unregister_post_meta( Event::POST_TYPE, 'gatherpress_is_all_day' );
+		unregister_post_meta( Event::POST_TYPE, 'gatherpress_show_timezone' );
+
+		Meta::get_instance()->register( Event::POST_TYPE );
+
+		$meta = get_registered_meta_keys( 'post', Event::POST_TYPE );
+
+		$this->assertArrayHasKey(
+			'gatherpress_is_all_day',
+			$meta,
+			'Failed to assert the all-day flag is registered.'
+		);
+
+		$this->assertFalse(
+			$meta['gatherpress_is_all_day']['default'],
+			'Failed to assert an event is timed by default.'
+		);
+
+		// Writable, unlike the datetime keys derived from gatherpress_datetime.
+		$this->assertSame(
+			'boolean',
+			$meta['gatherpress_is_all_day']['type'],
+			'Failed to assert the flag is a boolean.'
+		);
+
+		$this->assertArrayHasKey(
+			'gatherpress_show_timezone',
+			$meta,
+			'Failed to assert the timezone preference is registered.'
+		);
+
+		$this->assertSame(
+			'',
+			$meta['gatherpress_show_timezone']['default'],
+			'Failed to assert an event leaves the timezone to the block by default.'
+		);
+	}
 }
