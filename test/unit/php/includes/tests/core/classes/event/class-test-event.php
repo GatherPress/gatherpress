@@ -1861,6 +1861,91 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * A one-day all-day event does not repeat its date as an end.
+	 *
+	 * The end of a same-day event renders through `get_time_end()`, which
+	 * strips every non-time character out of the format it is handed, the
+	 * separating comma included. A date-only end format is left with nothing
+	 * to render, so the date is not said twice.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_display_datetime
+	 * @covers ::get_display_formats
+	 * @covers ::get_display_end
+	 *
+	 * @return void
+	 */
+	public function test_get_display_datetime_for_an_all_day_event_with_an_end_format(): void {
+		update_option(
+			'gatherpress_settings',
+			array(
+				'date_format'   => 'F j, Y',
+				'time_format'   => 'g:i a',
+				'show_timezone' => false,
+			)
+		);
+
+		$post = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+
+		update_post_meta( $post->ID, 'gatherpress_is_all_day', true );
+
+		( new Event( $post->ID ) )->save_datetimes(
+			array(
+				'post_id'        => $post->ID,
+				'datetime_start' => '2026-08-29 09:00:00',
+				'datetime_end'   => '2026-08-29 17:00:00',
+				'timezone'       => 'UTC',
+			)
+		);
+
+		$this->assertSame(
+			'August 29, 2026',
+			( new Event( $post->ID ) )->get_display_datetime( '', '', 'F j, Y' ),
+			'Failed to assert a one-day all-day event does not repeat its date.'
+		);
+	}
+
+	/**
+	 * A multi-day all-day event still honors a block's end format.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_display_end
+	 *
+	 * @return void
+	 */
+	public function test_get_display_datetime_for_a_multi_day_all_day_event_with_an_end_format(): void {
+		update_option(
+			'gatherpress_settings',
+			array(
+				'date_format'   => 'F j, Y',
+				'time_format'   => 'g:i a',
+				'show_timezone' => false,
+			)
+		);
+
+		$post = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+
+		update_post_meta( $post->ID, 'gatherpress_is_all_day', true );
+
+		( new Event( $post->ID ) )->save_datetimes(
+			array(
+				'post_id'        => $post->ID,
+				'datetime_start' => '2026-08-29 09:00:00',
+				'datetime_end'   => '2026-08-31 17:00:00',
+				'timezone'       => 'UTC',
+			)
+		);
+
+		$this->assertSame(
+			'August 29, 2026 to Aug 31',
+			( new Event( $post->ID ) )->get_display_datetime( '', '', 'M j' ),
+			'Failed to assert a multi-day all-day event uses the end format it was given.'
+		);
+	}
+
+	/**
 	 * An all-day event spanning days still says when it ends.
 	 *
 	 * @since 0.36.0
