@@ -35,6 +35,7 @@ import {
 	getUtcOffset,
 	isManualOffset,
 	removeNonTimePHPFormatChars,
+	removeTimePHPFormatChars,
 } from '../../helpers/datetime';
 import DateTimeRange from '../../components/DateTimeRange';
 import { getFromSettings } from '../../helpers/editor-settings';
@@ -77,6 +78,14 @@ const displayDateTime = (
 	// The site keeps its date and time formats separately, so an all-day
 	// event simply uses the date one. Mirrors `Event::get_display_formats()`.
 	const fullFormat = isAllDay ? dateFormat : `${ dateFormat } ${ timeFormat }`;
+
+	// Wanting a time on the face of it means the event is not all day, so a
+	// format saved on the block loses its time rather than printing the
+	// day's boundary as though someone chose it.
+	if ( isAllDay ) {
+		startFormat = removeTimePHPFormatChars( startFormat );
+		endFormat = removeTimePHPFormatChars( endFormat );
+	}
 
 	timezone = getTimezone( timezone );
 	let sameStartEndDay = false;

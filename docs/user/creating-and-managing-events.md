@@ -48,7 +48,7 @@ All day makes an event cover whole days instead of a span of hours. Turning it o
 
 * Turns the start and end pickers into date pickers, and replaces the Duration control with an end date.
 * Stores the event as running from the start of the first day to the end of the last one, so it still sorts and filters alongside every other event.
-* Shows the date without a time, using the date format from settings. A format you have set explicitly on the Event Date block is still used as written.
+* Shows the date without a time, using the date format from settings. A format saved on the Event Date block keeps its date and loses its time: wanting a time means the event is not all day.
 
 Leave the end date on the same day for a one-day event, or set a later one to span several days.
 

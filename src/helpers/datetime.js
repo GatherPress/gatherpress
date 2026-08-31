@@ -851,6 +851,63 @@ export function removeNonTimePHPFormatChars( format ) {
 }
 
 /**
+ * Time and timezone PHP DateTime formatting characters.
+ *
+ * The complement of `phpNonTimeFormatChars`, less the separators. An
+ * all-day date is floating, so the zone goes with the time.
+ *
+ * @since 0.36.0
+ *
+ * @type {Array}
+ */
+export const phpTimeFormatChars = [
+	'a',
+	'A',
+	'B',
+	'g',
+	'G',
+	'h',
+	'H',
+	'i',
+	's',
+	'u',
+	'v',
+	'e',
+	'I',
+	'O',
+	'P',
+	'p',
+	'T',
+	'Z',
+	'c',
+	'r',
+	'U',
+];
+
+/**
+ * Strip the time out of a PHP format string.
+ *
+ * Leaves the date behind, along with whatever separated it from the time:
+ * 'F j, Y g:i a' keeps 'F j, Y'. A format that was only ever a time has
+ * nothing left to render, so it reports none rather than the punctuation
+ * between the parts it lost. Mirrors `Event::remove_time_format_chars()`.
+ *
+ * @since 0.36.0
+ *
+ * @param {string} format - The PHP datetime format.
+ *
+ * @return {string} The format without its time, or an empty string when no
+ *                  date survives it.
+ */
+export function removeTimePHPFormatChars( format ) {
+	return format
+		.split( '' )
+		.filter( ( char ) => ! phpTimeFormatChars.includes( char ) )
+		.join( '' )
+		.replace( /^[\s:,\-/.]+|[\s:,\-/.]+$/g, '' );
+}
+
+/**
  * Moment format for an all-day event's date, with no time.
  *
  * @since 0.36.0

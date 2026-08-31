@@ -94,6 +94,7 @@ import {
 	maybeConvertUtcOffsetForDisplay,
 	maybeConvertUtcOffsetForSelect,
 	removeNonTimePHPFormatChars,
+	removeTimePHPFormatChars,
 	updateDateTimeEnd,
 	updateDateTimeStart,
 	useMatchedDuration,
@@ -1184,5 +1185,27 @@ describe( 'all-day helpers', () => {
 				'2026-09-04 09:30:00'
 			);
 		} );
+	} );
+} );
+
+describe( 'removeTimePHPFormatChars', () => {
+	test( 'keeps the date and drops the time', () => {
+		expect( removeTimePHPFormatChars( 'F j, Y g:i a' ) ).toBe( 'F j, Y' );
+	} );
+
+	test( 'reports nothing for a format that is only a time', () => {
+		expect( removeTimePHPFormatChars( 'g:i a' ) ).toBe( '' );
+	} );
+
+	test( 'drops the timezone with the time', () => {
+		expect( removeTimePHPFormatChars( 'F j, Y T' ) ).toBe( 'F j, Y' );
+	} );
+
+	test( 'leaves a date-only format alone', () => {
+		expect( removeTimePHPFormatChars( 'M j' ) ).toBe( 'M j' );
+	} );
+
+	test( 'handles an empty format', () => {
+		expect( removeTimePHPFormatChars( '' ) ).toBe( '' );
 	} );
 } );

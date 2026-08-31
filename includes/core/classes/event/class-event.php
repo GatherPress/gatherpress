@@ -157,6 +157,39 @@ class Event {
 	);
 
 	/**
+	 * Time and timezone PHP DateTime formatting characters.
+	 *
+	 * The complement of `PHP_NON_TIME_FORMAT_CHARS`, less the separators.
+	 * An all-day date is floating, so the zone goes with the time.
+	 *
+	 * @since 0.36.0
+	 * @var string[]
+	 */
+	const PHP_TIME_FORMAT_CHARS = array(
+		'a',
+		'A',
+		'B',
+		'g',
+		'G',
+		'h',
+		'H',
+		'i',
+		's',
+		'u',
+		'v',
+		'e',
+		'I',
+		'O',
+		'P',
+		'p',
+		'T',
+		'Z',
+		'c',
+		'r',
+		'U',
+	);
+
+	/**
 	 * The event post.
 	 *
 	 * @since 0.34.0
@@ -633,12 +666,34 @@ class Event {
 	}
 
 	/**
+	 * Strip the time out of a display format.
+	 *
+	 * Leaves the date behind, along with whatever separated it from the
+	 * time: 'F j, Y g:i a' keeps 'F j, Y'. A format that was only ever a
+	 * time has nothing left to render, so it reports none rather than the
+	 * punctuation between the parts it lost.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $format A PHP date format.
+	 *
+	 * @return string The format without its time, or an empty string when
+	 *                no date survives it.
+	 */
+	protected function remove_time_format_chars( string $format ): string {
+		return trim(
+			str_replace( static::PHP_TIME_FORMAT_CHARS, '', $format ),
+			" \t\n\r\0\x0B:,-/."
+		);
+	}
+
+	/**
 	 * Resolve the formats one rendered datetime range is built from.
 	 *
 	 * The site keeps its date and time formats separately, so an all-day
-	 * event simply uses the date one and never reaches for the time. A format
-	 * set explicitly on the block is left alone: whoever typed it said what
-	 * they wanted this event to read as.
+	 * event simply uses the date one and never reaches for the time. A
+	 * format set explicitly on the block keeps its date and loses its time,
+	 * since wanting a time means the event is not all day.
 	 *
 	 * @since 0.36.0
 	 *
@@ -656,11 +711,18 @@ class Event {
 		string $time_format
 	): array {
 		if ( $this->is_all_day() ) {
+			// Wanting a time on the face of it means the event is not all
+			// day, so a format saved on the block loses its time rather than
+			// printing the day's boundary as though someone chose it.
+			$start = $this->remove_time_format_chars( $start_format );
+			$end   = $this->remove_time_format_chars( $end_format );
+
 			return array(
-				'start'    => $start_format ? $start_format : $date_format,
-				'end'      => $end_format ? $end_format : $date_format,
-				// Nothing follows the start date of a one-day event.
-				'end_time' => $end_format,
+				'start'    => $start ? $start : $date_format,
+				'end'      => $end ? $end : $date_format,
+				// Nothing follows the start date of a one-day event: it has
+				// no end time, and its end date has already been said.
+				'end_time' => '',
 			);
 		}
 

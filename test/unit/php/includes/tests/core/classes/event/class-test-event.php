@@ -1863,10 +1863,9 @@ class Test_Event extends Base {
 	/**
 	 * A one-day all-day event does not repeat its date as an end.
 	 *
-	 * The end of a same-day event renders through `get_time_end()`, which
-	 * strips every non-time character out of the format it is handed, the
-	 * separating comma included. A date-only end format is left with nothing
-	 * to render, so the date is not said twice.
+	 * There is no end time to render and the end date is the start date,
+	 * which has already been said, so nothing follows it whatever format
+	 * the block saved.
 	 *
 	 * @since 0.36.0
 	 *
@@ -1942,6 +1941,150 @@ class Test_Event extends Base {
 			'August 29, 2026 to Aug 31',
 			( new Event( $post->ID ) )->get_display_datetime( '', '', 'M j' ),
 			'Failed to assert a multi-day all-day event uses the end format it was given.'
+		);
+	}
+
+	/**
+	 * An all-day event drops the time out of the formats it is given.
+	 *
+	 * Wanting a time on the face of it means the event is not all day. A
+	 * format saved on the block before the toggle was flipped keeps its
+	 * date and loses its time, rather than printing 12:00 am and 11:59 pm
+	 * as though someone had chosen them.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_display_datetime
+	 * @covers ::get_display_formats
+	 * @covers ::remove_time_format_chars
+	 *
+	 * @dataProvider data_all_day_display_formats
+	 *
+	 * @param string $start_format The format the block saved for the start.
+	 * @param string $end_format   The format the block saved for the end.
+	 * @param string $datetime_end When the event ends.
+	 * @param string $expected     What the event should render as.
+	 *
+	 * @return void
+	 */
+	public function test_get_display_datetime_strips_time_from_all_day_formats(
+		string $start_format,
+		string $end_format,
+		string $datetime_end,
+		string $expected
+	): void {
+		update_option(
+			'gatherpress_settings',
+			array(
+				'date_format'   => 'F j, Y',
+				'time_format'   => 'g:i a',
+				'show_timezone' => false,
+			)
+		);
+
+		$post = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+
+		update_post_meta( $post->ID, 'gatherpress_is_all_day', true );
+
+		( new Event( $post->ID ) )->save_datetimes(
+			array(
+				'post_id'        => $post->ID,
+				'datetime_start' => '2026-08-29 09:00:00',
+				'datetime_end'   => $datetime_end,
+				'timezone'       => 'UTC',
+			)
+		);
+
+		$this->assertSame(
+			$expected,
+			( new Event( $post->ID ) )->get_display_datetime( '', $start_format, $end_format ),
+			'Failed to assert an all-day event renders no time.'
+		);
+	}
+
+	/**
+	 * Data provider for all-day display formats.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return array[]
+	 */
+	public function data_all_day_display_formats(): array {
+		return array(
+			'a start format carrying a time keeps only its date' => array(
+				'F j, Y g:i a',
+				'',
+				'2026-08-29 17:00:00',
+				'August 29, 2026',
+			),
+			'a start format that is only a time falls back to the site format' => array(
+				'g:i a',
+				'',
+				'2026-08-29 17:00:00',
+				'August 29, 2026',
+			),
+			'a one-day end format carrying a time renders nothing' => array(
+				'',
+				'g:i a',
+				'2026-08-29 17:00:00',
+				'August 29, 2026',
+			),
+			'a multi-day end format keeps only its date'  => array(
+				'',
+				'M j g:i a',
+				'2026-08-31 17:00:00',
+				'August 29, 2026 to Aug 31',
+			),
+			'a multi-day end format that is only a time falls back' => array(
+				'',
+				'g:i a',
+				'2026-08-31 17:00:00',
+				'August 29, 2026 to August 31, 2026',
+			),
+			'a start format naming the timezone loses it' => array(
+				'F j, Y T',
+				'',
+				'2026-08-29 17:00:00',
+				'August 29, 2026',
+			),
+		);
+	}
+
+	/**
+	 * A timed event still uses the formats it was given, time and all.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_display_datetime
+	 * @covers ::get_display_formats
+	 *
+	 * @return void
+	 */
+	public function test_get_display_datetime_keeps_time_for_a_timed_event(): void {
+		update_option(
+			'gatherpress_settings',
+			array(
+				'date_format'   => 'F j, Y',
+				'time_format'   => 'g:i a',
+				'show_timezone' => false,
+			)
+		);
+
+		$post = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+
+		( new Event( $post->ID ) )->save_datetimes(
+			array(
+				'post_id'        => $post->ID,
+				'datetime_start' => '2026-08-29 09:00:00',
+				'datetime_end'   => '2026-08-29 17:00:00',
+				'timezone'       => 'UTC',
+			)
+		);
+
+		$this->assertSame(
+			'August 29, 2026 9:00 am to 5:00 pm',
+			( new Event( $post->ID ) )->get_display_datetime( '', 'F j, Y g:i a', 'g:i a' ),
+			'Failed to assert a timed event keeps the time in its formats.'
 		);
 	}
 
