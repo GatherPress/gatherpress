@@ -469,6 +469,44 @@ class Event {
 	}
 
 	/**
+	 * Convert a datetime to the one format everything downstream reads.
+	 *
+	 * `get_gmt_datetime()` accepts anything `date_create()` understands, so a
+	 * caller is not limited to `self::DATETIME_FORMAT`. `get_datetime()` is:
+	 * it validates what it reads back and discards a value in any other
+	 * shape, so a datetime written as `2026-08-29T09:00:00` would be stored
+	 * and then silently lost.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string       $datetime Any datetime `date_create()` understands.
+	 * @param DateTimeZone $timezone The zone to read the datetime in.
+	 *
+	 * @return string The datetime in `self::DATETIME_FORMAT`, or an empty
+	 *                string when it cannot be read as one.
+	 */
+	protected function normalize_datetime( string $datetime, DateTimeZone $timezone ): string {
+		// An empty string parses to the current time rather than failing, so
+		// nothing would become now.
+		if ( '' === trim( $datetime ) ) {
+			return '';
+		}
+
+		$parsed = date_create( $datetime, $timezone );
+
+		// A MySQL zero date parses to a negative year instead of failing.
+		if ( false === $parsed || 1 > (int) $parsed->format( 'Y' ) ) {
+			return '';
+		}
+
+		// A datetime carrying its own offset is read in that offset, so it is
+		// moved into the event's zone before being stored as its local time.
+		// Otherwise the local column and the GMT one derived from it would
+		// describe different moments.
+		return $parsed->setTimezone( $timezone )->format( self::DATETIME_FORMAT );
+	}
+
+	/**
 	 * Snap a datetime to the beginning or the end of its own day.
 	 *
 	 * An all-day event stores a span that really covers the day rather than
@@ -477,22 +515,24 @@ class Event {
 	 *
 	 * @since 0.36.0
 	 *
-	 * @param string $datetime The datetime, in `Y-m-d H:i:s`.
+	 * Takes a datetime already through `normalize_datetime()`, so the date is
+	 * known to be the first ten characters rather than having to be found.
+	 *
+	 * @param string $datetime The datetime, in `self::DATETIME_FORMAT`.
 	 * @param string $which    Which boundary, 'start' or 'end'.
 	 *
-	 * @return string The snapped datetime, or the original when it has no date.
+	 * @return string The snapped datetime, or an empty string given one.
 	 */
-	public static function to_day_boundary( string $datetime, string $which ): string {
-		$date = substr( trim( $datetime ), 0, 10 );
-		$time = 'start' === $which ? '00:00:00' : '23:59:59';
-
-		// Anything that is not a date to begin with is left alone rather than
-		// turned into midnight on a day nobody chose.
-		if ( ! Validate::datetime( sprintf( '%s %s', $date, $time ) ) ) {
+	protected static function to_day_boundary( string $datetime, string $which ): string {
+		if ( '' === $datetime ) {
 			return $datetime;
 		}
 
-		return sprintf( '%s %s', $date, $time );
+		return sprintf(
+			'%s %s',
+			substr( $datetime, 0, 10 ),
+			'start' === $which ? '00:00:00' : '23:59:59'
+		);
 	}
 
 	/**
@@ -989,9 +1029,16 @@ class Event {
 		$fields['timezone'] = ( ! empty( $fields['timezone'] ) ) ? $fields['timezone'] : wp_timezone_string();
 		$timezone           = new DateTimeZone( Utility::normalize_timezone_string( (string) $fields['timezone'] ) );
 
+		// Everything downstream reads a datetime in one format: the day
+		// boundaries slice the date off the front, and `get_datetime()` drops
+		// a stored value that does not match it. So whatever a caller wrote
+		// is converted once, here, rather than parsed again at each step.
+		$fields['datetime_start'] = $this->normalize_datetime( (string) $fields['datetime_start'], $timezone );
+		$fields['datetime_end']   = $this->normalize_datetime( (string) $fields['datetime_end'], $timezone );
+
 		if ( $this->is_all_day() ) {
-			$fields['datetime_start'] = self::to_day_boundary( (string) $fields['datetime_start'], 'start' );
-			$fields['datetime_end']   = self::to_day_boundary( (string) $fields['datetime_end'], 'end' );
+			$fields['datetime_start'] = self::to_day_boundary( $fields['datetime_start'], 'start' );
+			$fields['datetime_end']   = self::to_day_boundary( $fields['datetime_end'], 'end' );
 		}
 
 		$fields['datetime_start_gmt'] = $this->get_gmt_datetime( (string) $fields['datetime_start'], $timezone );

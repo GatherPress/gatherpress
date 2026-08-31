@@ -1562,47 +1562,153 @@ class Test_Event extends Base {
 	 * @return void
 	 */
 	public function test_to_day_boundary(): void {
+		$event = new Event( $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get()->ID );
+
 		$this->assertSame(
 			'2026-08-29 00:00:00',
-			Event::to_day_boundary( '2026-08-29 14:30:00', 'start' ),
+			Utility::invoke_hidden_method( $event, 'to_day_boundary', array( '2026-08-29 14:30:00', 'start' ) ),
 			'Failed to assert a start snaps to the beginning of its day.'
 		);
 
 		$this->assertSame(
 			'2026-08-29 23:59:59',
-			Event::to_day_boundary( '2026-08-29 14:30:00', 'end' ),
+			Utility::invoke_hidden_method( $event, 'to_day_boundary', array( '2026-08-29 14:30:00', 'end' ) ),
 			'Failed to assert an end snaps to the end of its day.'
 		);
 
 		// A multi-day event keeps each end on its own day.
 		$this->assertSame(
 			'2026-08-31 23:59:59',
-			Event::to_day_boundary( '2026-08-31 09:00:00', 'end' ),
+			Utility::invoke_hidden_method( $event, 'to_day_boundary', array( '2026-08-31 09:00:00', 'end' ) ),
 			'Failed to assert each boundary belongs to its own date.'
-		);
-	}
-
-	/**
-	 * Something that is not a date is left as it was.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @covers ::to_day_boundary
-	 *
-	 * @return void
-	 */
-	public function test_to_day_boundary_leaves_a_non_date_alone(): void {
-		// Turning this into midnight would invent a day nobody chose.
-		$this->assertSame(
-			'not-a-date',
-			Event::to_day_boundary( 'not-a-date', 'start' ),
-			'Failed to assert a non-date is left alone.'
 		);
 
 		$this->assertSame(
 			'',
-			Event::to_day_boundary( '', 'start' ),
-			'Failed to assert an empty value is left alone.'
+			Utility::invoke_hidden_method( $event, 'to_day_boundary', array( '', 'start' ) ),
+			'Failed to assert nothing is snapped into a day nobody chose.'
+		);
+	}
+
+	/**
+	 * Every shape the save path accepts converts to the one format.
+	 *
+	 * `get_gmt_datetime()` takes anything `date_create()` understands, but
+	 * `get_datetime()` discards what it reads back in any other shape, so the
+	 * conversion happens once on the way in.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @dataProvider data_normalize_datetime
+	 *
+	 * @covers ::normalize_datetime
+	 *
+	 * @param string $datetime The datetime a caller wrote.
+	 * @param string $expects  What it is stored as.
+	 * @param string $message  What the case is proving.
+	 *
+	 * @return void
+	 */
+	public function test_normalize_datetime( string $datetime, string $expects, string $message ): void {
+		$event = new Event( $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get()->ID );
+
+		$this->assertSame(
+			$expects,
+			Utility::invoke_hidden_method(
+				$event,
+				'normalize_datetime',
+				array( $datetime, new DateTimeZone( 'UTC' ) )
+			),
+			$message
+		);
+	}
+
+	/**
+	 * Data provider for datetime conversion.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return array<string, array<int, string>> Cases.
+	 */
+	public function data_normalize_datetime(): array {
+		return array(
+			'already in the format'  => array(
+				'2026-08-29 14:30:00',
+				'2026-08-29 14:30:00',
+				'A datetime already in the format should be left as it is.',
+			),
+			'iso 8601'               => array(
+				'2026-08-29T09:00:00',
+				'2026-08-29 09:00:00',
+				'An ISO datetime should convert.',
+			),
+			'iso 8601 in zulu'       => array(
+				'2026-08-29T09:00:00Z',
+				'2026-08-29 09:00:00',
+				'A Zulu datetime should convert.',
+			),
+			'carrying an offset'     => array(
+				// Read in +09:00, then moved into the event's zone, so the
+				// local column and the GMT one derived from it agree.
+				'2026-08-29T23:00:00+09:00',
+				'2026-08-29 14:00:00',
+				'An offset datetime should be moved into the event timezone.',
+			),
+			'no seconds'             => array(
+				'2026-08-29 09:00',
+				'2026-08-29 09:00:00',
+				'A datetime with no seconds should gain them.',
+			),
+			'date only'              => array(
+				'2026-08-29',
+				'2026-08-29 00:00:00',
+				'A bare date should become the start of that day.',
+			),
+			'slashes, month first'   => array(
+				'08/29/2026 9:00 am',
+				'2026-08-29 09:00:00',
+				'A slashed date should convert.',
+			),
+			'written out'            => array(
+				'29 August 2026 9:00am',
+				'2026-08-29 09:00:00',
+				'A written-out date should convert.',
+			),
+			'a day that rolls over'  => array(
+				// PHP's own behavior, and what the rest of the class already
+				// tolerates rather than something introduced here.
+				'2026-02-30 09:00:00',
+				'2026-03-02 09:00:00',
+				'A day past the end of its month should roll over.',
+			),
+			'an hour that cannot be' => array(
+				'2026-08-29 25:00:00',
+				'',
+				'An impossible hour should become nothing.',
+			),
+			'not a datetime'         => array(
+				'not-a-date',
+				'',
+				'A non-date should become nothing.',
+			),
+			'empty'                  => array(
+				// Parses to the current time rather than failing, so this is
+				// caught before it is read.
+				'',
+				'',
+				'An empty value should become nothing rather than now.',
+			),
+			'whitespace'             => array(
+				'   ',
+				'',
+				'Whitespace should become nothing rather than now.',
+			),
+			'a mysql zero date'      => array(
+				// Parses to a negative year instead of failing.
+				'0000-00-00 00:00:00',
+				'',
+				'A zero date should become nothing.',
+			),
 		);
 	}
 
