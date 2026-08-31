@@ -13,9 +13,9 @@
 
 namespace GatherPress\Tests\Core\Venue\Map;
 
-use GatherPress\Core\Venue\Map\Map;
+use GatherPress\Core\Venue\Map;
 use GatherPress\Core\Venue\Map\Rest_Api;
-use GatherPress\Core\Venue\Venue;
+use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 
 /**

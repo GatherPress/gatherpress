@@ -14,7 +14,7 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
 
 /**
@@ -210,21 +210,27 @@ class Settings {
 
 		$settings['gatherpress']['settings'] = $gatherpress_settings;
 
-		// Infrastructure config values (not user-configurable).
-		$settings['gatherpress']['config'] = array(
-			'timezoneChoices'       => Utility::timezone_choices(),
-			'siteTimezone'          => Utility::get_system_timezone(),
-			'pluginUrl'             => GATHERPRESS_CORE_URL,
-			'homeUrl'               => get_home_url(),
-			'mapTileUrl'            => self::get_map_tile_url(),
-			'mapTileAttribution'    => self::get_map_tile_attribution(),
-			'venuesMapsSettingsUrl' => admin_url(
-				sprintf(
-					'edit.php?post_type=%s&page=%s',
-					Event::POST_TYPE,
-					sprintf( 'gatherpress_event_page_%s', Utility::prefix_key( 'venues_settings' ) )
-				)
-			),
+		// Merged rather than assigned: other classes hook this filter first,
+		// and assigning dropped their config keys.
+		$settings['gatherpress']['config'] = array_merge(
+			$settings['gatherpress']['config'] ?? array(),
+			array(
+				'nonTimeFormatChars'    => Utility::non_time_format_chars(),
+				'timeFormatChars'       => Utility::time_format_chars(),
+				'timezoneChoices'       => Utility::timezone_choices(),
+				'siteTimezone'          => Utility::get_system_timezone(),
+				'pluginUrl'             => GATHERPRESS_CORE_URL,
+				'homeUrl'               => get_home_url(),
+				'mapTileUrl'            => self::get_map_tile_url(),
+				'mapTileAttribution'    => self::get_map_tile_attribution(),
+				'venuesMapsSettingsUrl' => admin_url(
+					sprintf(
+						'edit.php?post_type=%s&page=%s',
+						Event::POST_TYPE,
+						sprintf( 'gatherpress_event_page_%s', Utility::prefix_key( 'venues_settings' ) )
+					)
+				),
+			)
 		);
 
 		return $settings;

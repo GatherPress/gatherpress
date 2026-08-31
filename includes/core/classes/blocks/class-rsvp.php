@@ -15,7 +15,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Blocks\Form_Field;
 use GatherPress\Core\Blocks\General_Block;
 use GatherPress\Core\Event;
-use GatherPress\Core\Rsvp\Rsvp as Core_Rsvp;
+use GatherPress\Core\Rsvp as Core_Rsvp;
 use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
@@ -111,7 +111,9 @@ final class Rsvp {
 			return '';
 		}
 
-		if ( ! ( new Core_Rsvp( $post_id ) )->is_enabled() ) {
+		$rsvp = new Core_Rsvp( $post_id );
+
+		if ( ! $rsvp->is_enabled() ) {
 			return '';
 		}
 
@@ -146,13 +148,8 @@ final class Rsvp {
 			// Serialize the current inner blocks for the saved status.
 			$serialized_inner_blocks[ $saved_status ] = serialize_blocks( $inner_blocks );
 
-			$user_data = array();
-
-			if ( $event->rsvp ) {
-				$user_identifier = Rsvp_Setup::get_instance()->get_user_identifier();
-
-				$user_data = $event->rsvp->get( $user_identifier ) ?? array();
-			}
+			$user_identifier = Rsvp_Setup::get_instance()->get_user_identifier();
+			$user_data       = $rsvp->get( $user_identifier ) ?? array();
 
 			$filtered_data   = array_intersect_key(
 				$user_data,

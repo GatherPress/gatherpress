@@ -761,10 +761,7 @@ final class Rest_Api {
 		$anonymous       = intval( $params['anonymous'] ?? 0 );
 		$unparsed_token  = sanitize_text_field( $params['rsvp_token'] ?? '' );
 		$event           = new Event( $post_id );
-
-		// Event only builds its Rsvp for a post type that carries event dates, which is what
-		// the route's post_id validation already requires.
-		$rsvp = $event->rsvp;
+		$rsvp            = new Rsvp( $post_id );
 
 		// If managing user is adding someone to an event.
 		$is_managing_other = false;
@@ -814,7 +811,6 @@ final class Rest_Api {
 		// A magic-link token supplies an email address; every other path supplies a user ID,
 		// so each identifier is checked against the one thing it can be.
 		if (
-			$rsvp &&
 			$user_identifier &&
 			(
 				is_string( $user_identifier )
@@ -842,7 +838,7 @@ final class Rest_Api {
 			'status'      => $status,
 			'guests'      => $guests,
 			'anonymous'   => $anonymous,
-			'responses'   => $rsvp ? $rsvp->responses() : array(),
+			'responses'   => $rsvp->responses(),
 			'online_link' => $event->maybe_get_online_event_link(),
 		);
 

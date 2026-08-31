@@ -122,7 +122,7 @@ final class Rsvp {
 	 * @since 0.34.0
 	 * @var WP_Post|null Null when the instance wraps an invalid post ID.
 	 */
-	protected readonly ?WP_Post $event;
+	protected readonly ?WP_Post $post;
 
 	/**
 	 * Storage for RSVP Responses for this event.
@@ -156,7 +156,7 @@ final class Rsvp {
 	 * @param int $post_id The event post ID.
 	 */
 	public function __construct( int $post_id ) {
-		$this->event                = get_post( $post_id );
+		$this->post                 = get_post( $post_id );
 		$this->storage              = new Storage( $post_id );
 		$this->max_attendance_limit = (int) get_post_meta( $post_id, 'gatherpress_max_attendance_limit', true );
 		$this->providers            = Provider_Registry::get_instance()->get_all();
@@ -226,7 +226,7 @@ final class Rsvp {
 	 * @return void
 	 */
 	public function initialize_enabled(): void {
-		$post_id   = $this->event->ID ?? 0;
+		$post_id   = $this->post->ID ?? 0;
 		$rsvp_mode = Settings::get_instance()->get( 'rsvp_mode' );
 
 		if ( 'disabled' === $rsvp_mode ) {
@@ -296,13 +296,13 @@ final class Rsvp {
 		$data   = new Data( $identity, $status, $guests, (bool) $anonymous );
 		$intent = new Intent( $data, $provider );
 		$state  = $this->process( $intent );
-		$event  = $this->event;
+		$post   = $this->post;
 
-		if ( null === $state || null === $event ) {
+		if ( null === $state || null === $post ) {
 			return self::DEFAULT_SAVE_RESPONSE;
 		}
 
-		Cache::delete( $event->ID );
+		Cache::delete( $post->ID );
 
 		return Serializer::to_array( $state );
 	}
@@ -318,7 +318,7 @@ final class Rsvp {
 	 */
 	public function process( Intent $intent ): State|null {
 		// If no valid event or RSVP is disabled for this event return empty default response.
-		if ( 1 > ( $this->event->ID ?? 0 ) || ! $this->is_enabled() ) {
+		if ( 1 > ( $this->post->ID ?? 0 ) || ! $this->is_enabled() ) {
 			return null;
 		}
 
@@ -414,22 +414,27 @@ final class Rsvp {
 	/**
 	 * Determines whether RSVP is enabled for this event.
 	 *
-	 * Returns false immediately when the sitewide mode is `disabled`.
-	 * Returns true when the mode is `enabled` (every event has RSVP).
-	 * In per-event modes (`per_event_enabled` or `per_event_disabled`), the
-	 * `gatherpress_enable_rsvp` post meta is consulted. An unset meta
-	 * (empty string) falls back to the mode default: `per_event_enabled`
-	 * defaults to enabled, `per_event_disabled` defaults to disabled.
+	 * A post type that does not declare `gatherpress-rsvp` never has RSVP
+	 * enabled, whatever the mode or the meta say. Beyond that: false when the
+	 * sitewide mode is `disabled`, true when the mode is `enabled` (every event
+	 * has RSVP). In per-event modes (`per_event_enabled` or
+	 * `per_event_disabled`), the `gatherpress_enable_rsvp` post meta is
+	 * consulted. An unset meta (empty string) falls back to the mode default:
+	 * `per_event_enabled` defaults to enabled, `per_event_disabled` defaults
+	 * to disabled.
 	 *
 	 * @since 0.35.0
 	 *
 	 * @return bool True if RSVP is enabled for this event, false otherwise.
 	 */
 	public function is_enabled(): bool {
-		$post_id   = $this->event->ID ?? 0;
+		$post_id   = $this->post->ID ?? 0;
 		$rsvp_mode = Settings::get_instance()->get( 'rsvp_mode' );
 
-		if ( 'disabled' === $rsvp_mode ) {
+		if (
+			'disabled' === $rsvp_mode
+			|| ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' )
+		) {
 			return false;
 		}
 
@@ -459,7 +464,7 @@ final class Rsvp {
 	 * @return bool True if Open RSVP is enabled for this event, false otherwise.
 	 */
 	public function allows_open_rsvp(): bool {
-		$post_id = $this->event->ID ?? 0;
+		$post_id = $this->post->ID ?? 0;
 
 		// Sitewide gate: if open RSVP is globally disabled, always return false.
 		if ( ! Settings::get_instance()->get( 'enable_open_rsvp' ) ) {
@@ -528,7 +533,7 @@ final class Rsvp {
 	 * @return array<string, RsvpResponseGroup> Response records and counts keyed by 'all' and each RSVP status.
 	 */
 	public function responses(): array {
-		$post_id = $this->event->ID ?? 0;
+		$post_id = $this->post->ID ?? 0;
 
 		// Serialized records vary by capability but the cache key does not, so
 		// only the public variant is cached; privileged viewers compute fresh.
@@ -663,7 +668,7 @@ final class Rsvp {
 	 * @return Intent
 	 */
 	private function constrain_rsvp_intent( Intent $intent, ?State $current_response ): Intent {
-		$post_id         = $this->event->ID ?? 0;
+		$post_id         = $this->post->ID ?? 0;
 		$max_guest_limit = intval( get_post_meta( $post_id, 'gatherpress_max_guest_limit', true ) );
 
 		$guests    = $intent->data->guests;

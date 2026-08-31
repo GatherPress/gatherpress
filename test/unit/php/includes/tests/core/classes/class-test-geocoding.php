@@ -11,7 +11,7 @@ namespace GatherPress\Tests\Core;
 use GatherPress\Core\Geocoding;
 use GatherPress\Core\Utility as GP_Utility;
 use GatherPress\Core\Venue\Meta as Venue_Meta;
-use GatherPress\Core\Venue\Venue;
+use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Mocks\Http;
 use PMC\Unit_Test\Utility;

@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Raise the color contrast of the RSVP buttons in event notification and token confirmation emails to pass WCAG AA, and let the success heading in the standard RSVP form inherit the theme's heading color instead of a hardcoded green that failed contrast on white backgrounds.

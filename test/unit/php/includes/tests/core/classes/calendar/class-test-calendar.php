@@ -8,9 +8,9 @@
 
 namespace GatherPress\Tests\Core\Calendar;
 
-use GatherPress\Core\Calendar\Calendar;
+use GatherPress\Core\Calendar;
 use GatherPress\Core\Calendar\Setup;
-use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -83,12 +83,12 @@ class Test_Calendar extends Base {
 		);
 		$this->assertInstanceOf(
 			WP_Post::class,
-			$instance->event->event,
+			$instance->event->post,
 			'Composed Event should resolve to a real WP_Post.'
 		);
 		$this->assertSame(
 			$event_id,
-			$instance->event->event->ID,
+			$instance->event->post->ID,
 			'Composed Event should wrap the requested post id.'
 		);
 	}
@@ -401,7 +401,7 @@ class Test_Calendar extends Base {
 	public function test_get_ical_event_string_sequence_and_last_modified(): void {
 		$instance = new Calendar( $this->make_event() );
 
-		$instance->event->event->post_modified_gmt = '2030-01-01 10:00:00';
+		$instance->event->post->post_modified_gmt = '2030-01-01 10:00:00';
 
 		$vevent = $instance->get_ical_event_string();
 
@@ -421,7 +421,7 @@ class Test_Calendar extends Base {
 			'DTSTAMP shares the post_modified_gmt derivation with LAST-MODIFIED.'
 		);
 
-		$instance->event->event->post_modified_gmt = '2030-01-01 11:00:00';
+		$instance->event->post->post_modified_gmt = '2030-01-01 11:00:00';
 
 		$this->assertStringContainsString(
 			sprintf( 'SEQUENCE:%d', strtotime( '2030-01-01 11:00:00' ) - 1577836800 ),
@@ -446,8 +446,8 @@ class Test_Calendar extends Base {
 		$instance = new Calendar( $this->make_event() );
 
 		// Site-local modification time and its GMT counterpart differ by the offset.
-		$instance->event->event->post_modified     = '2030-01-01 05:00:00';
-		$instance->event->event->post_modified_gmt = '2030-01-01 10:00:00';
+		$instance->event->post->post_modified     = '2030-01-01 05:00:00';
+		$instance->event->post->post_modified_gmt = '2030-01-01 10:00:00';
 
 		$vevent = $instance->get_ical_event_string();
 
@@ -481,7 +481,7 @@ class Test_Calendar extends Base {
 		$event_id = $this->make_event();
 		$instance = new Calendar( $event_id );
 
-		$instance->event->event->post_modified_gmt = '2030-01-01 11:00:00';
+		$instance->event->post->post_modified_gmt = '2030-01-01 11:00:00';
 
 		$this->assertSame(
 			strtotime( '2030-01-01 11:00:00' ) - 1577836800,
@@ -489,7 +489,7 @@ class Test_Calendar extends Base {
 			'Sequence should be seconds since the 2020 epoch, taken from post_modified_gmt.'
 		);
 
-		$instance->event->event->post_modified_gmt = '2030-01-01 12:00:00';
+		$instance->event->post->post_modified_gmt = '2030-01-01 12:00:00';
 
 		$this->assertSame(
 			strtotime( '2030-01-01 12:00:00' ) - 1577836800,
@@ -509,7 +509,7 @@ class Test_Calendar extends Base {
 	public function test_get_sequence_returns_zero_for_unparsable_date(): void {
 		$instance = new Calendar( $this->make_event() );
 
-		$instance->event->event->post_modified_gmt = 'not a date';
+		$instance->event->post->post_modified_gmt = 'not a date';
 
 		$this->assertSame(
 			0,
@@ -549,7 +549,7 @@ class Test_Calendar extends Base {
 	public function test_get_sequence_clamps_to_rfc_integer_ceiling(): void {
 		$instance = new Calendar( $this->make_event() );
 
-		$instance->event->event->post_modified_gmt = '2100-01-01 00:00:00';
+		$instance->event->post->post_modified_gmt = '2100-01-01 00:00:00';
 
 		$this->assertSame(
 			2147483647,
@@ -608,7 +608,7 @@ class Test_Calendar extends Base {
 	public function test_get_ical_event_string_stamps_now_for_unparsable_modified_date(): void {
 		$instance = new Calendar( $this->make_event() );
 
-		$instance->event->event->post_modified_gmt = '9999-99-99 99:99:99';
+		$instance->event->post->post_modified_gmt = '9999-99-99 99:99:99';
 
 		$before = time();
 		$vevent = $instance->get_ical_event_string();

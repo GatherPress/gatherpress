@@ -27,7 +27,7 @@
 ## class-event.php
 
 - [`gatherpress_date_format`](gatherpress_date_format.md)
-- [`gatherpress_datetime_format`](gatherpress_datetime_format.md)
+- [`gatherpress_datetime_format`](gatherpress_datetime_format.md) Filters the format an event's datetime is rendered with.
 - [`gatherpress_force_online_event_link`](gatherpress_force_online_event_link.md) Filters whether to force the display of the online event link.
 - [`gatherpress_time_format`](gatherpress_time_format.md)
 - [`gatherpress_timezone`](gatherpress_timezone.md)

@@ -149,6 +149,217 @@ final class List_Table extends WP_List_Table {
 	}
 
 	/**
+	 * Renders the filter controls beside the bulk actions.
+	 *
+	 * The controls are written here so the row is complete on the first paint;
+	 * script attaches the searching and multiple selection to them afterwards.
+	 *
+	 * Top only, at every width. Core hides `.tablenav.top .actions` below
+	 * 783px, which the stylesheet undoes for this group: a second copy in the
+	 * bottom tablenav would show beside the first, and the bottom tablenav is
+	 * not rendered at all for an empty list, which is precisely when a filter
+	 * has to stay reachable to undo it.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $which Which tablenav is being rendered, 'top' or 'bottom'.
+	 *
+	 * @return void
+	 */
+	protected function extra_tablenav( $which ): void {
+		if ( 'top' !== $which ) {
+			return;
+		}
+
+		$statuses  = array();
+		$responses = $this->get_filtered_responses();
+		$post_id   = $this->get_filtered_post_id();
+
+		foreach ( Status::filterable() as $status ) {
+			$statuses[] = array(
+				'value' => $status->value,
+				'label' => $status->label(),
+			);
+		}
+
+		printf(
+			'<div class="alignleft actions gatherpress-rsvp-filters"' .
+			' data-post-types="%1$s" data-post-id="%2$s" data-label="%3$s"' .
+			' data-statuses="%4$s" data-selected="%5$s">%6$s%7$s%8$s</div>',
+			esc_attr( implode( ',', get_post_types_by_support( 'gatherpress-event-date' ) ) ),
+			absint( $post_id ),
+			esc_attr__( 'Filter by event', 'gatherpress' ),
+			esc_attr( (string) wp_json_encode( $statuses ) ),
+			esc_attr( implode( ',', $responses ) ),
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in the method.
+			$this->render_event_field(),
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in the method.
+			$this->render_response_toggle( $responses ),
+			sprintf(
+				'<button type="button" class="components-button is-secondary">%s</button>',
+				esc_html__( 'Filter', 'gatherpress' )
+			)
+		);
+	}
+
+	/**
+	 * The event field, before script makes it searchable.
+	 *
+	 * Left empty: `data-post-id` already carries the selection, and the
+	 * script resolves its title along with everything else it lists.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string The field markup.
+	 */
+	protected function render_event_field(): string {
+		return sprintf(
+			'<div class="gatherpress-rsvp-filters__event">' .
+			'<label class="screen-reader-text" for="gatherpress-rsvp-event">%s</label>' .
+			'<div class="components-combobox-control__suggestions-container">' .
+			'<input type="text" id="gatherpress-rsvp-event" class="components-combobox-control__input"' .
+			' autocomplete="off" />' .
+			'</div></div>',
+			esc_html__( 'Filter by event', 'gatherpress' )
+		);
+	}
+
+	/**
+	 * The response toggle, before script gives it a dropdown.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string[] $responses The responses the request is filtered to.
+	 *
+	 * @return string The toggle markup.
+	 */
+	protected function render_response_toggle( array $responses ): string {
+		return sprintf(
+			'<div class="gatherpress-rsvp-response-filter">' .
+			'<button type="button" class="components-button is-secondary has-icon%1$s" aria-label="%2$s">' .
+			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"' .
+			' aria-hidden="true" focusable="false">' .
+			'<path d="M10 17.5H14V16H10V17.5ZM6 6V7.5H18V6H6ZM8 12.5H16V11H8V12.5Z"></path></svg>%3$s' .
+			'</button></div>',
+			$responses ? ' has-text' : '',
+			esc_attr( $this->get_response_label( $responses ) ),
+			$responses ? absint( count( $responses ) ) : ''
+		);
+	}
+
+	/**
+	 * The response toggle's accessible name.
+	 *
+	 * The control is an icon, so this is its announced name and its tooltip.
+	 * Mirrors `getResponseLabel()` in the script that takes the toggle over.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string[] $responses The responses the request is filtered to.
+	 *
+	 * @return string The label.
+	 */
+	protected function get_response_label( array $responses ): string {
+		if ( empty( $responses ) ) {
+			return __( 'Filter by response: all', 'gatherpress' );
+		}
+
+		if ( 1 === count( $responses ) ) {
+			$status = Status::tryFrom( $responses[0] );
+
+			return $status
+				? sprintf(
+					/* translators: %s: the selected response, e.g. Attending. */
+					__( 'Filter by response: %s', 'gatherpress' ),
+					$status->label()
+				)
+				: __( 'Filter by response', 'gatherpress' );
+		}
+
+		return sprintf(
+			/* translators: %d: how many responses are selected. */
+			__( 'Filter by response: %d selected', 'gatherpress' ),
+			count( $responses )
+		);
+	}
+
+	/**
+	 * Adds the response filter to a comment query, when one is requested.
+	 *
+	 * `WP_Comment_Query` has no native `tax_query`; `Rsvp\Query` grafts one on
+	 * via `comments_clauses`.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, mixed> $args The comment query arguments.
+	 *
+	 * @return array<string, mixed> The arguments, filtered when a response was requested.
+	 */
+	protected function add_response_filter( array $args ): array {
+		$responses = $this->get_filtered_responses();
+
+		if ( empty( $responses ) ) {
+			return $args;
+		}
+
+		$args['tax_query'] = array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+			array(
+				'taxonomy' => Status::TAXONOMY,
+				'field'    => 'slug',
+				'terms'    => $responses,
+			),
+		);
+
+		return $args;
+	}
+
+	/**
+	 * The response statuses the current request is filtered to.
+	 *
+	 * Unknown values are dropped so a hand-edited URL cannot query arbitrary
+	 * terms.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string[] Status slugs, empty when unfiltered.
+	 */
+	public function get_filtered_responses(): array {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( empty( $_REQUEST['response'] ) || ! is_string( $_REQUEST['response'] ) ) {
+			return array();
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$requested = explode( ',', sanitize_text_field( wp_unslash( $_REQUEST['response'] ) ) );
+		$allowed   = array_map(
+			static fn( Status $status ): string => $status->value,
+			Status::filterable()
+		);
+
+		return array_values( array_intersect( $requested, $allowed ) );
+	}
+
+	/**
+	 * The event ID the current request is filtered to, if any.
+	 *
+	 * A non-scalar reads as unfiltered: `post_id[]=9` would otherwise cast to
+	 * 1 and filter the screen to whichever post holds that ID.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return int The event post ID, or 0 when unfiltered.
+	 */
+	public function get_filtered_post_id(): int {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! isset( $_REQUEST['post_id'] ) || ! is_scalar( $_REQUEST['post_id'] ) ) {
+			return 0;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		return absint( wp_unslash( $_REQUEST['post_id'] ) );
+	}
+
+	/**
 	 * Registers column management functionality for the Screen Options panel.
 	 *
 	 * Sets up the necessary hooks to enable column visibility options in the Screen Options
@@ -345,10 +556,10 @@ final class List_Table extends WP_List_Table {
 			$args['user_id'] = intval( $_REQUEST['user_id'] );
 		}
 
-		if ( isset( $_REQUEST['post_id'] ) && ! empty( $_REQUEST['post_id'] ) ) {
-			$args['post_id'] = intval( $_REQUEST['post_id'] );
-		} elseif ( isset( $_REQUEST['event'] ) && ! empty( $_REQUEST['event'] ) ) {
-			$args['post_id'] = intval( $_REQUEST['event'] );
+		$post_id = $this->get_filtered_post_id();
+
+		if ( $post_id ) {
+			$args['post_id'] = $post_id;
 		}
 
 		if (
@@ -374,7 +585,7 @@ final class List_Table extends WP_List_Table {
 		$args['orderby'] = $orderby;
 		$args['order']   = $order;
 
-		$items = $rsvp_query->get_rsvps( $args );
+		$items = $rsvp_query->get_rsvps( $this->add_response_filter( $args ) );
 
 		return array_map(
 			static function ( $item ): array {
@@ -417,10 +628,10 @@ final class List_Table extends WP_List_Table {
 			$args['search'] = $search_term;
 		}
 
-		if ( isset( $_REQUEST['post_id'] ) && ! empty( $_REQUEST['post_id'] ) ) {
-			$args['post_id'] = intval( $_REQUEST['post_id'] );
-		} elseif ( isset( $_REQUEST['event'] ) && ! empty( $_REQUEST['event'] ) ) {
-			$args['post_id'] = intval( $_REQUEST['event'] );
+		$post_id = $this->get_filtered_post_id();
+
+		if ( $post_id ) {
+			$args['post_id'] = $post_id;
 		}
 
 		if (
@@ -438,7 +649,7 @@ final class List_Table extends WP_List_Table {
 			}
 		}
 
-		return $rsvp_query->get_rsvps( $args );
+		return $rsvp_query->get_rsvps( $this->add_response_filter( $args ) );
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
@@ -480,12 +691,8 @@ final class List_Table extends WP_List_Table {
 					return '-';
 				}
 
-				$output = match ( $terms[0]->slug ) {
-					'attending'     => __( 'Attending', 'gatherpress' ),
-					'not_attending' => __( 'Not Attending', 'gatherpress' ),
-					'waiting_list'  => __( 'Waiting List', 'gatherpress' ),
-					default         => '-',
-				};
+				$status = Status::tryFrom( $terms[0]->slug );
+				$output = ( $status && Status::NO_STATUS !== $status ) ? $status->label() : '-';
 
 				break;
 			case 'event':
@@ -935,14 +1142,9 @@ final class List_Table extends WP_List_Table {
 		$status_links = array();
 		$current      = 'all';
 
-		// Check for post_id filter.
-		$post_id = 0;
+		$post_id = $this->get_filtered_post_id();
 
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- View state only, no data modification.
-		if ( isset( $_REQUEST['post_id'] ) && ! empty( $_REQUEST['post_id'] ) ) {
-			$post_id = intval( $_REQUEST['post_id'] );
-		}
-
 		// Check for current view status (doesn't require nonce).
 		if ( isset( $_REQUEST['user_id'] ) ) {
 			$user_id = absint( $_REQUEST['user_id'] );
@@ -966,12 +1168,22 @@ final class List_Table extends WP_List_Table {
 			$base_url_args['post_id'] = $post_id;
 		}
 
+		// Switching view keeps the response filter rather than widening the list.
+		$responses = $this->get_filtered_responses();
+
+		if ( ! empty( $responses ) ) {
+			$base_url_args['response'] = implode( ',', $responses );
+		}
+
 		$base_url = add_query_arg( $base_url_args, admin_url( 'edit.php' ) );
 
-		// Base args for count queries, scoped to this table's post type.
-		$count_base_args = array(
-			'count'     => true,
-			'post_type' => $this->post_type,
+		// The response filter applies to the counts too, so the views agree
+		// with the table below them.
+		$count_base_args = $this->add_response_filter(
+			array(
+				'count'     => true,
+				'post_type' => $this->post_type,
+			)
 		);
 
 		if ( $post_id ) {

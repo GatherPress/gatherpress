@@ -340,8 +340,8 @@ class Test_Rest_Api extends Base {
 			'not_attending' => false,
 		);
 
-		$event = new Event( $event_id );
-		$event->rsvp->save( $user_id, 'attending' );
+		$rsvp = new Rsvp( $event_id );
+		$rsvp->save( $user_id, 'attending' );
 
 		$this->assertFalse(
 			$instance->send_emails( $post_id, $send, $message ),
@@ -429,17 +429,17 @@ class Test_Rest_Api extends Base {
 		$event_id = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
-		$event    = new Event( $event_id );
+		$rsvp     = new Rsvp( $event_id );
 
 		// Create users and save RSVPs using the RSVP system.
 		$attending_user_id     = $this->factory->user->create();
 		$not_attending_user_id = $this->factory->user->create();
 
-		$event->rsvp->save( $attending_user_id, 'attending' );
-		$event->rsvp->save( $not_attending_user_id, 'not_attending' );
+		$rsvp->save( $attending_user_id, 'attending' );
+		$rsvp->save( $not_attending_user_id, 'not_attending' );
 
 		// Create anonymous attending RSVP.
-		$event->rsvp->save( 'attendee@example.com', 'attending', 1 );
+		$rsvp->save( 'attendee@example.com', 'attending', 1 );
 
 		$send = array(
 			'all'           => false,
@@ -496,10 +496,10 @@ class Test_Rest_Api extends Base {
 		$event_id = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
-		$event    = new Event( $event_id );
+		$rsvp     = new Rsvp( $event_id );
 
 		// Force no attendance so responses remain on waiting list.
-		Utility::set_and_get_hidden_property( $event->rsvp, 'max_attendance_limit', -1 );
+		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', -1 );
 
 		// Create user RSVP.
 		$user_id = $this->factory->user->create(
@@ -508,7 +508,7 @@ class Test_Rest_Api extends Base {
 				'display_name' => 'User Name',
 			)
 		);
-		$event->rsvp->save( $user_id, 'waiting_list' );
+		$rsvp->save( $user_id, 'waiting_list' );
 
 		// Create anonymous RSVP using wp_insert_comment for better control.
 		$comment_id = wp_insert_comment(
@@ -522,7 +522,7 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		$event->rsvp->save( 'anonymous@example.com', 'waiting_list' );
+		$rsvp->save( 'anonymous@example.com', 'waiting_list' );
 
 		$send = array(
 			'all'           => false,
@@ -755,8 +755,8 @@ class Test_Rest_Api extends Base {
 		// Approve the comment since rsvp->get() now only finds approved comments.
 		wp_set_comment_status( $data['comment_id'], 'approve' );
 
-		$event     = new Event( $post_id );
-		$rsvp_data = $event->rsvp->get( 'test@example.com' );
+		$rsvp      = new Rsvp( $post_id );
+		$rsvp_data = $rsvp->get( 'test@example.com' );
 
 		$this->assertNotEmpty( $rsvp_data['comment_id'] );
 
@@ -865,8 +865,8 @@ class Test_Rest_Api extends Base {
 		// Approve the comment since rsvp->get() now only finds approved comments.
 		wp_set_comment_status( $data['comment_id'], 'approve' );
 
-		$event     = new Event( $post_id );
-		$rsvp_data = $event->rsvp->get( $user_id );
+		$rsvp      = new Rsvp( $post_id );
+		$rsvp_data = $rsvp->get( $user_id );
 		$this->assertNotEmpty( $rsvp_data['comment_id'] );
 		$this->assertEquals( $user_id, $rsvp_data['user_id'] );
 	}
@@ -1095,8 +1095,8 @@ class Test_Rest_Api extends Base {
 
 		// Create an RSVP.
 		$user_id = $this->factory()->user->create();
-		$event   = new Event( $post_id );
-		$event->rsvp->save( $user_id, 'attending', 0, 1 );
+		$rsvp    = new Rsvp( $post_id );
+		$rsvp->save( $user_id, 'attending', 0, 1 );
 
 		$request = new WP_REST_Request( 'GET' );
 		$request->set_param( 'post_id', $post_id );
@@ -1147,8 +1147,8 @@ class Test_Rest_Api extends Base {
 
 		// Create an approved RSVP.
 		$user_id     = $this->factory()->user->create();
-		$event       = new Event( $post_id );
-		$user_record = $event->rsvp->save( $user_id, 'attending', 0, 1 );
+		$rsvp        = new Rsvp( $post_id );
+		$user_record = $rsvp->save( $user_id, 'attending', 0, 1 );
 
 		// Approve the comment.
 		wp_set_comment_status( $user_record['comment_id'], 'approve' );
@@ -1291,7 +1291,7 @@ class Test_Rest_Api extends Base {
 
 		// Create an RSVP with email.
 		$email       = 'test@example.com';
-		$user_record = $event->rsvp->save( $email, 'attending', 0, 0 );
+		$user_record = ( new Rsvp( $post_id ) )->save( $email, 'attending', 0, 0 );
 
 		// Generate token.
 		$rsvp_token = new Token( $user_record['comment_id'] );
@@ -1380,8 +1380,8 @@ class Test_Rest_Api extends Base {
 		// User opts out of event updates.
 		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', 0 );
 
-		$event = new Event( $event_id );
-		$event->rsvp->save( $user_id, 'attending' );
+		$rsvp = new Rsvp( $event_id );
+		$rsvp->save( $user_id, 'attending' );
 
 		$send = array(
 			'attending' => true,
@@ -1522,9 +1522,9 @@ class Test_Rest_Api extends Base {
 		$event_id = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
-		$event    = new Event( $event_id );
+		$rsvp     = new Rsvp( $event_id );
 
-		$event->rsvp->save( 'attendee@example.com', 'attending', 1 );
+		$rsvp->save( 'attendee@example.com', 'attending', 1 );
 
 		// Append an unresolvable row to the RSVP lookup so a non-comment entry
 		// reaches the recipient loop.
@@ -1571,8 +1571,8 @@ class Test_Rest_Api extends Base {
 		// Opt in to updates.
 		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', 1 );
 
-		$event = new Event( $event_id );
-		$event->rsvp->save( $user_id, 'attending' );
+		$rsvp = new Rsvp( $event_id );
+		$rsvp->save( $user_id, 'attending' );
 
 		$send = array(
 			'attending' => true,
@@ -1717,8 +1717,8 @@ class Test_Rest_Api extends Base {
 
 		// Create a valid RSVP token.
 		$email       = 'test@example.com';
-		$event       = new Event( $post_id );
-		$user_record = $event->rsvp->save( $email, 'attending', 0, 0 );
+		$rsvp        = new Rsvp( $post_id );
+		$user_record = $rsvp->save( $email, 'attending', 0, 0 );
 
 		// Generate token.
 		$rsvp_token = new Token( $user_record['comment_id'] );
@@ -1758,7 +1758,7 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		$user_record = ( new Event( $token_event ) )->rsvp->save( 'test@example.com', 'attending' );
+		$user_record = ( new Rsvp( $token_event ) )->save( 'test@example.com', 'attending' );
 		$rsvp_token  = new Token( $user_record['comment_id'] );
 		$rsvp_token->generate_token();
 		$token_str = sprintf( '%d_%s', $user_record['comment_id'], $rsvp_token->get_token() );
@@ -2199,11 +2199,11 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		$event = new Event( $post_id );
+		$rsvp = new Rsvp( $post_id );
 
 		// Create non-user RSVP using email address.
 		$email   = 'nonuser@example.com';
-		$comment = $event->rsvp->save( $email, 'attending', 0, 0 );
+		$comment = $rsvp->save( $email, 'attending', 0, 0 );
 
 		// Set opt-in to '0' (opted out).
 		update_comment_meta( $comment['comment_id'], 'gatherpress_event_updates_opt_in', '0' );
@@ -2243,9 +2243,9 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		$event = new Event( $post_id );
+		$rsvp  = new Rsvp( $post_id );
 		$email = 'recipient@example.test';
-		$event->rsvp->save( $email, 'attending', 0, 0 );
+		$rsvp->save( $email, 'attending', 0, 0 );
 
 		$captured = array();
 		add_filter(
@@ -2296,9 +2296,9 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		$event = new Event( $post_id );
+		$rsvp  = new Rsvp( $post_id );
 		$email = 'recipient@example.test';
-		$event->rsvp->save( $email, 'attending', 0, 0 );
+		$rsvp->save( $email, 'attending', 0, 0 );
 
 		$captured = array();
 		add_filter(
@@ -2347,8 +2347,8 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		$event = new Event( $post_id );
-		$event->rsvp->save( 'recipient@example.test', 'attending', 0, 0 );
+		$rsvp = new Rsvp( $post_id );
+		$rsvp->save( 'recipient@example.test', 'attending', 0, 0 );
 
 		add_filter(
 			'gatherpress_email_subject',
@@ -2403,8 +2403,8 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		$event = new Event( $post_id );
-		$event->rsvp->save( 'recipient@example.test', 'attending', 0, 0 );
+		$rsvp = new Rsvp( $post_id );
+		$rsvp->save( 'recipient@example.test', 'attending', 0, 0 );
 
 		add_filter(
 			'gatherpress_email_subject',
@@ -2467,10 +2467,10 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		$event = new Event( $post_id );
+		$rsvp = new Rsvp( $post_id );
 
 		// Create RSVP for the user.
-		$event->rsvp->save( $user_id, 'attending' );
+		$rsvp->save( $user_id, 'attending' );
 
 		$send = array( 'attending' => true );
 
@@ -2507,11 +2507,11 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		$event = new Event( $post_id );
+		$rsvp = new Rsvp( $post_id );
 
 		// Create RSVP with valid email first.
 		$email   = 'test@example.com';
-		$comment = $event->rsvp->save( $email, 'attending', 0, 0 );
+		$comment = $rsvp->save( $email, 'attending', 0, 0 );
 
 		// Now remove the email to test the skip logic.
 		wp_update_comment(

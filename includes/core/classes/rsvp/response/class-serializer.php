@@ -12,7 +12,7 @@ namespace GatherPress\Core\Rsvp\Response;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Rsvp\Response\Identity_Type;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Settings\Roles;
 use GatherPress\Core\Utility;
 
