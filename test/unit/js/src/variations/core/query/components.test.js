@@ -431,7 +431,8 @@ describe( 'HasEventsFilterControls', () => {
 		'Only shows Events that have upcoming or past events attached.';
 	const upcomingHelp =
 		'Only shows source posts that have at least one upcoming event.';
-	const pastHelp = 'Only shows source posts whose events are all past.';
+	const pastHelp =
+		'Only shows source posts that have at least one past event.';
 
 	it( 'renders the activity toggle and hides the sub-filter when the filter is off', () => {
 		const setAttributes = jest.fn();

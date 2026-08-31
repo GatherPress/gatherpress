@@ -631,7 +631,8 @@ final class Shadow_Source {
 	 *
 	 * @param string $source_post_type    Shadow-source post type slug to resolve source posts for.
 	 * @param bool   $upcoming_events_only Whether to keep only source posts with upcoming events.
-	 *                                    When false, keeps source posts whose events are all past.
+	 *                                    When false, keeps source posts that have at
+	 *                                    least one past event.
 	 *
 	 * @return int[]|null Source post IDs matching the event activity, an empty
 	 *                    array when nothing matched, or null when the filter

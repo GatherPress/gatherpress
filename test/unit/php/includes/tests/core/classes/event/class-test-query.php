@@ -2250,6 +2250,41 @@ class Test_Query extends Base {
 	}
 
 	/**
+	 * A source post carrying both a past and an upcoming event resolves for
+	 * both branches. The past branch matches any source post with at least one
+	 * past event, not only those whose events are all past.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_active_shadow_term_slugs
+	 *
+	 * @return void
+	 */
+	public function test_get_active_shadow_term_slugs_matches_mixed_activity_both_ways(): void {
+		$this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'slugs-mixed-venue',
+			)
+		)->get();
+
+		$this->create_activity_event( '_slugs-mixed-venue', 'upcoming' );
+		$this->create_activity_event( '_slugs-mixed-venue', 'past' );
+
+		$instance = Query::get_instance();
+
+		$this->assertContains(
+			'_slugs-mixed-venue',
+			$instance->get_active_shadow_term_slugs( Venue::TAXONOMY, true ),
+			'A source post with an upcoming event should resolve for the upcoming branch.'
+		);
+		$this->assertContains(
+			'_slugs-mixed-venue',
+			$instance->get_active_shadow_term_slugs( Venue::TAXONOMY, false ),
+			'The past branch should match a source post with at least one past event.'
+		);
+	}
+
+	/**
 	 * Creates an event tagged with the given venue taxonomy term slug and an
 	 * upcoming or past datetime.
 	 *

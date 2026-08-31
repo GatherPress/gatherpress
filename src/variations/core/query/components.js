@@ -446,7 +446,8 @@ export const ShadowSourceFilterControls = ( {
  * Lets a query loop that lists shadow-source posts (venues, productions, …)
  * filter that list by the posts' event activity. Toggle 1 turns the filter on;
  * Toggle 2 (visible only while Toggle 1 is on) switches between source posts
- * with upcoming events (default) and source posts whose events are all past.
+ * with upcoming events (default) and source posts that have at least one past
+ * event.
  *
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
@@ -516,7 +517,7 @@ export const HasEventsFilterControls = ( { attributes, setAttributes } ) => {
 								'gatherpress'
 							)
 							: __(
-								'Only shows source posts whose events are all past.',
+								'Only shows source posts that have at least one past event.',
 								'gatherpress'
 							)
 					}
