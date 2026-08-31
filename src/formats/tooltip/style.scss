@@ -76,9 +76,16 @@
 		box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
 	}
 
-	// Show tooltip on hover/focus.
+	// Focus affordance for keyboard navigation.
+	&:focus-visible {
+		outline: 2px solid currentcolor;
+		outline-offset: 2px;
+	}
+
+	// Show tooltip on hover, focus, or active state (touch toggle).
 	&:hover,
-	&:focus {
+	&:focus,
+	&.gatherpress-tooltip--is-active {
 		&::before,
 		&::after {
 			opacity: 1;
