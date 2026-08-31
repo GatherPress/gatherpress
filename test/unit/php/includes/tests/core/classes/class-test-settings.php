@@ -8,7 +8,6 @@
 
 namespace GatherPress\Tests\Core;
 
-use GatherPress\Core\Event;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Settings\Credits;
 use GatherPress\Core\Settings\Events;
@@ -199,9 +198,9 @@ class Test_Settings extends Base {
 	 * The editor is handed the same time characters PHP formats with.
 	 *
 	 * `removeTimePHPFormatChars()` strips an all-day format with this list,
-	 * and `Event::remove_time_format_chars()` strips the same format with
-	 * the constant. The preview and the rendered event agree only while the
-	 * two are the same list.
+	 * and `Utility::remove_time_format_chars()` strips the same format on
+	 * the server. The preview and the rendered event agree only while the
+	 * two read the same list.
 	 *
 	 * @since 0.36.0
 	 *
@@ -213,9 +212,14 @@ class Test_Settings extends Base {
 		$settings = Settings::get_instance()->add_editor_settings( array() );
 
 		$this->assertSame(
-			Event::PHP_TIME_FORMAT_CHARS,
+			GatherPress_Utility::time_format_chars(),
 			$settings['gatherpress']['config']['timeFormatChars'],
 			'Failed to assert the editor is sent the time formatting characters.'
+		);
+		$this->assertSame(
+			GatherPress_Utility::non_time_format_chars(),
+			$settings['gatherpress']['config']['nonTimeFormatChars'],
+			'Failed to assert the editor is sent the non-time formatting characters.'
 		);
 	}
 

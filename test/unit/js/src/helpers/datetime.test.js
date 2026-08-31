@@ -847,6 +847,27 @@ describe( 'validateDateTimeEnd', () => {
  * Coverage for removeNonTimePHPFormatChars.
  */
 describe( 'removeNonTimePHPFormatChars', () => {
+	// The list PHP sends, from `Utility::non_time_format_chars()`.
+	const nonTimeChars = [
+		'd', 'D', 'j', 'l', 'N', 'S', 'w', 'z', 'W', 'F', 'm', 'M', 'n',
+		't', 'L', 'o', 'X', 'x', 'Y', 'y', 'e', 'I', 'O', 'P', 'p', 'T',
+		'Z', 'c', 'r', 'U', ',',
+	];
+
+	beforeEach( () => {
+		getFromConfig.mockImplementation( ( key ) =>
+			'nonTimeFormatChars' === key ? nonTimeChars : undefined
+		);
+	} );
+
+	test( 'leaves the format alone when the editor sent no list', () => {
+		getFromConfig.mockReturnValue( undefined );
+
+		expect( removeNonTimePHPFormatChars( 'F j, Y g:i a' ) ).toBe(
+			'F j, Y g:i a'
+		);
+	} );
+
 	test( 'removes non-time format characters from PHP datetime format', () => {
 		// Format with both date and time characters.
 		const format = 'Y-m-d H:i:s';

@@ -791,50 +791,11 @@ export function dateTimePreview() {
 }
 
 /**
- * Non-time PHP Date format characters
- *
- * @since 0.27.0
- *
- * @see https://www.php.net/manual/en/datetime.format.php
- *
- * @type {Array}
- */
-export const phpNonTimeFormatChars = [
-	'd',
-	'D',
-	'j',
-	'l',
-	'N',
-	'S',
-	'w',
-	'z',
-	'W',
-	'F',
-	'm',
-	'M',
-	'n',
-	't',
-	'L',
-	'o',
-	'X',
-	'x',
-	'Y',
-	'y',
-	'e',
-	'I',
-	'O',
-	'P',
-	'p',
-	'T',
-	'Z',
-	'c',
-	'r',
-	'U',
-	',',
-];
-
-/**
  * Remove non-time characters from PHP format string
+ *
+ * The characters come from `Utility::non_time_format_chars()` through the
+ * editor settings, so this strips a format the same way PHP does. Without
+ * them the format is left alone.
  *
  * @since 0.27.0
  *
@@ -843,9 +804,11 @@ export const phpNonTimeFormatChars = [
  * @return {string} The PHP time-only format.
  */
 export function removeNonTimePHPFormatChars( format ) {
+	const nonTimeChars = getFromConfig( 'nonTimeFormatChars' ) || [];
+
 	return format
 		.split( '' )
-		.filter( ( char ) => ! phpNonTimeFormatChars.includes( char ) )
+		.filter( ( char ) => ! nonTimeChars.includes( char ) )
 		.join( '' )
 		.trim();
 }
@@ -858,7 +821,7 @@ export function removeNonTimePHPFormatChars( format ) {
  * nothing left to render, so it reports none rather than the punctuation
  * between the parts it lost.
  *
- * The characters come from `Event::PHP_TIME_FORMAT_CHARS` through the
+ * The characters come from `Utility::time_format_chars()` through the
  * editor settings, so the two sides of `Event::get_display_formats()` read
  * one list. Without them the format is left alone: the front end still
  * renders the event correctly, and only the preview shows a time it should

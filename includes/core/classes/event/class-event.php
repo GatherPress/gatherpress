@@ -116,78 +116,7 @@ class Event {
 	 */
 	const TEMPLATE_PATTERN = 'gatherpress/event-template';
 
-	/**
-	 * Non-time PHP DateTime formatting characters
-	 *
-	 * @since 0.34.0
-	 * @var string[]
-	 */
-	const PHP_NON_TIME_FORMAT_CHARS = array(
-		'd',
-		'D',
-		'j',
-		'l',
-		'N',
-		'S',
-		'w',
-		'z',
-		'W',
-		'F',
-		'm',
-		'M',
-		'n',
-		't',
-		'L',
-		'o',
-		'X',
-		'x',
-		'Y',
-		'y',
-		'e',
-		'I',
-		'O',
-		'P',
-		'p',
-		'T',
-		'Z',
-		'c',
-		'r',
-		'U',
-		',',
-	);
 
-	/**
-	 * Time and timezone PHP DateTime formatting characters.
-	 *
-	 * The complement of `PHP_NON_TIME_FORMAT_CHARS`, less the separators.
-	 * An all-day date is floating, so the zone goes with the time.
-	 *
-	 * @since 0.36.0
-	 * @var string[]
-	 */
-	const PHP_TIME_FORMAT_CHARS = array(
-		'a',
-		'A',
-		'B',
-		'g',
-		'G',
-		'h',
-		'H',
-		'i',
-		's',
-		'u',
-		'v',
-		'e',
-		'I',
-		'O',
-		'P',
-		'p',
-		'T',
-		'Z',
-		'c',
-		'r',
-		'U',
-	);
 
 	/**
 	 * The event post.
@@ -497,11 +426,7 @@ class Event {
 	 */
 	public function get_time_end( string $format = '' ): string {
 		return $this->get_datetime_end(
-			str_replace(
-				static::PHP_NON_TIME_FORMAT_CHARS,
-				'',
-				$format ? $format : 'g:i a'
-			)
+			Utility::remove_non_time_format_chars( $format ? $format : 'g:i a' )
 		);
 	}
 
@@ -666,28 +591,6 @@ class Event {
 	}
 
 	/**
-	 * Strip the time out of a display format.
-	 *
-	 * Leaves the date behind, along with whatever separated it from the
-	 * time: 'F j, Y g:i a' keeps 'F j, Y'. A format that was only ever a
-	 * time has nothing left to render, so it reports none rather than the
-	 * punctuation between the parts it lost.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @param string $format A PHP date format.
-	 *
-	 * @return string The format without its time, or an empty string when
-	 *                no date survives it.
-	 */
-	protected function remove_time_format_chars( string $format ): string {
-		return trim(
-			str_replace( static::PHP_TIME_FORMAT_CHARS, '', $format ),
-			" \t\n\r\0\x0B:,-/."
-		);
-	}
-
-	/**
 	 * Resolve the formats one rendered datetime range is built from.
 	 *
 	 * The site keeps its date and time formats separately, so an all-day
@@ -714,8 +617,8 @@ class Event {
 			// Wanting a time on the face of it means the event is not all
 			// day, so a format saved on the block loses its time rather than
 			// printing the day's boundary as though someone chose it.
-			$start = $this->remove_time_format_chars( $start_format );
-			$end   = $this->remove_time_format_chars( $end_format );
+			$start = Utility::remove_time_format_chars( $start_format );
+			$end   = Utility::remove_time_format_chars( $end_format );
 
 			return array(
 				'start'    => $start ? $start : $date_format,
