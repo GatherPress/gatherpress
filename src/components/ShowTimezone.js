@@ -45,17 +45,13 @@ const ShowTimezone = () => {
 				__next40pxDefaultSize
 				label={ __( 'Append time zone', 'gatherpress' ) }
 				value={ preference }
-				options={ [
-					{ label: __( 'Default', 'gatherpress' ), value: '' },
-					{ label: __( 'Always', 'gatherpress' ), value: 'always' },
-					{ label: __( 'Never', 'gatherpress' ), value: 'never' },
-				] }
-				help={ __(
-					'Overrides the Event Date block and the site setting for this event.',
-					'gatherpress'
-				) }
 				onChange={ updatePreference }
-			/>
+				__nexthasnomarginbottom
+			>
+				<option value="">{ __( 'Default', 'gatherpress' ) }</option>
+				<option value="always">{ __( 'Always', 'gatherpress' ) }</option>
+				<option value="never">{ __( 'Never', 'gatherpress' ) }</option>
+			</SelectControl>
 		</PanelRow>
 	);
 };
