@@ -1512,4 +1512,368 @@ class Test_Event extends Base {
 
 		wp_set_current_user( 0 );
 	}
+
+	/**
+	 * An event is not all day unless it says so.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::is_all_day
+	 *
+	 * @return void
+	 */
+	public function test_is_all_day(): void {
+		$post  = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+		$event = new Event( $post->ID );
+
+		$this->assertFalse( $event->is_all_day(), 'Failed to assert an event is timed by default.' );
+
+		update_post_meta( $post->ID, 'gatherpress_is_all_day', true );
+
+		$this->assertTrue(
+			( new Event( $post->ID ) )->is_all_day(),
+			'Failed to assert the meta makes an event all day.'
+		);
+	}
+
+	/**
+	 * A post ID that is not an event is not an all-day one either.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::is_all_day
+	 *
+	 * @return void
+	 */
+	public function test_is_all_day_without_a_post(): void {
+		$this->assertFalse(
+			( new Event( 0 ) )->is_all_day(),
+			'Failed to assert a missing post is not all day.'
+		);
+	}
+
+	/**
+	 * A datetime snaps to the beginning or the end of its own day.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::to_day_boundary
+	 *
+	 * @return void
+	 */
+	public function test_to_day_boundary(): void {
+		$this->assertSame(
+			'2026-08-29 00:00:00',
+			Event::to_day_boundary( '2026-08-29 14:30:00', 'start' ),
+			'Failed to assert a start snaps to the beginning of its day.'
+		);
+
+		$this->assertSame(
+			'2026-08-29 23:59:59',
+			Event::to_day_boundary( '2026-08-29 14:30:00', 'end' ),
+			'Failed to assert an end snaps to the end of its day.'
+		);
+
+		// A multi-day event keeps each end on its own day.
+		$this->assertSame(
+			'2026-08-31 23:59:59',
+			Event::to_day_boundary( '2026-08-31 09:00:00', 'end' ),
+			'Failed to assert each boundary belongs to its own date.'
+		);
+	}
+
+	/**
+	 * Something that is not a date is left as it was.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::to_day_boundary
+	 *
+	 * @return void
+	 */
+	public function test_to_day_boundary_leaves_a_non_date_alone(): void {
+		// Turning this into midnight would invent a day nobody chose.
+		$this->assertSame(
+			'not-a-date',
+			Event::to_day_boundary( 'not-a-date', 'start' ),
+			'Failed to assert a non-date is left alone.'
+		);
+
+		$this->assertSame(
+			'',
+			Event::to_day_boundary( '', 'start' ),
+			'Failed to assert an empty value is left alone.'
+		);
+	}
+
+	/**
+	 * Saving an all-day event stores a span that covers the day.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::save_datetimes
+	 *
+	 * @return void
+	 */
+	public function test_save_datetimes_snaps_an_all_day_event(): void {
+		$post = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+
+		update_post_meta( $post->ID, 'gatherpress_is_all_day', true );
+
+		( new Event( $post->ID ) )->save_datetimes(
+			array(
+				'post_id'        => $post->ID,
+				'datetime_start' => '2026-08-29 18:00:00',
+				'datetime_end'   => '2026-08-29 20:00:00',
+				'timezone'       => 'UTC',
+			)
+		);
+
+		$datetime = ( new Event( $post->ID ) )->get_datetime();
+
+		$this->assertSame(
+			'2026-08-29 00:00:00',
+			$datetime['datetime_start'],
+			'Failed to assert an all-day event starts at the beginning of its day.'
+		);
+
+		$this->assertSame(
+			'2026-08-29 23:59:59',
+			$datetime['datetime_end'],
+			'Failed to assert an all-day event ends at the end of its day.'
+		);
+	}
+
+	/**
+	 * A timed event keeps the times it was given.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::save_datetimes
+	 *
+	 * @return void
+	 */
+	public function test_save_datetimes_leaves_a_timed_event_alone(): void {
+		$post = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+
+		( new Event( $post->ID ) )->save_datetimes(
+			array(
+				'post_id'        => $post->ID,
+				'datetime_start' => '2026-08-29 18:00:00',
+				'datetime_end'   => '2026-08-29 20:00:00',
+				'timezone'       => 'UTC',
+			)
+		);
+
+		$this->assertSame(
+			'2026-08-29 18:00:00',
+			( new Event( $post->ID ) )->get_datetime()['datetime_start'],
+			'Failed to assert a timed event keeps its time.'
+		);
+	}
+
+	/**
+	 * An all-day event renders its date and nothing else.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_display_datetime
+	 * @covers ::get_display_formats
+	 * @covers ::get_display_end
+	 *
+	 * @return void
+	 */
+	public function test_get_display_datetime_for_an_all_day_event(): void {
+		update_option(
+			'gatherpress_settings',
+			array(
+				'date_format'   => 'F j, Y',
+				'time_format'   => 'g:i a',
+				'show_timezone' => false,
+			)
+		);
+
+		$post = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+
+		( new Event( $post->ID ) )->save_datetimes(
+			array(
+				'post_id'        => $post->ID,
+				'datetime_start' => '2026-08-29 18:00:00',
+				'datetime_end'   => '2026-08-29 20:00:00',
+				'timezone'       => 'UTC',
+			)
+		);
+
+		$this->assertSame(
+			'August 29, 2026 6:00 pm to 8:00 pm',
+			( new Event( $post->ID ) )->get_display_datetime(),
+			'Failed to assert a timed event renders its times.'
+		);
+
+		update_post_meta( $post->ID, 'gatherpress_is_all_day', true );
+
+		// The end and the separator before it go with the time.
+		$this->assertSame(
+			'August 29, 2026',
+			( new Event( $post->ID ) )->get_display_datetime(),
+			'Failed to assert an all-day event renders only its date.'
+		);
+	}
+
+	/**
+	 * An all-day event spanning days still says when it ends.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_display_end
+	 *
+	 * @return void
+	 */
+	public function test_get_display_datetime_for_a_multi_day_all_day_event(): void {
+		update_option(
+			'gatherpress_settings',
+			array(
+				'date_format'   => 'F j, Y',
+				'time_format'   => 'g:i a',
+				'show_timezone' => false,
+			)
+		);
+
+		$post = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+
+		update_post_meta( $post->ID, 'gatherpress_is_all_day', true );
+
+		( new Event( $post->ID ) )->save_datetimes(
+			array(
+				'post_id'        => $post->ID,
+				'datetime_start' => '2026-08-29 09:00:00',
+				'datetime_end'   => '2026-08-31 17:00:00',
+				'timezone'       => 'UTC',
+			)
+		);
+
+		$this->assertSame(
+			'August 29, 2026 to August 31, 2026',
+			( new Event( $post->ID ) )->get_display_datetime(),
+			'Failed to assert a multi-day all-day event names the day it ends on.'
+		);
+	}
+
+	/**
+	 * An all-day event's date does not move between timezones.
+	 *
+	 * The day is floating, the way a calendar's date value is: converting the
+	 * stored GMT would land the day before or after depending on which side
+	 * of the meridian the event sits.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_formatted_all_day
+	 * @covers ::get_formatted_datetime
+	 *
+	 * @return void
+	 */
+	public function test_an_all_day_date_does_not_shift_across_timezones(): void {
+		update_option(
+			'gatherpress_settings',
+			array(
+				'date_format'   => 'F j, Y',
+				'time_format'   => 'g:i a',
+				'show_timezone' => false,
+			)
+		);
+
+		$post = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+
+		update_post_meta( $post->ID, 'gatherpress_is_all_day', true );
+
+		// Tokyo is the case that breaks under conversion: a local midnight
+		// start is the previous day in GMT.
+		foreach ( array( 'UTC', 'America/New_York', 'Asia/Tokyo' ) as $timezone ) {
+			( new Event( $post->ID ) )->save_datetimes(
+				array(
+					'post_id'        => $post->ID,
+					'datetime_start' => '2026-08-29 09:00:00',
+					'datetime_end'   => '2026-08-29 17:00:00',
+					'timezone'       => $timezone,
+				)
+			);
+
+			$event = new Event( $post->ID );
+
+			$this->assertSame(
+				'August 29, 2026',
+				$event->get_display_datetime(),
+				sprintf( 'Failed to assert the date holds in %s.', $timezone )
+			);
+
+			$this->assertSame(
+				'August 29, 2026',
+				$event->get_formatted_datetime( 'F j, Y', 'start', false ),
+				sprintf( 'Failed to assert the date holds rendered as GMT in %s.', $timezone )
+			);
+		}
+	}
+
+	/**
+	 * An all-day event with no stored datetime renders nothing.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_formatted_all_day
+	 *
+	 * @return void
+	 */
+	public function test_get_formatted_all_day_without_a_datetime(): void {
+		$post = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+
+		update_post_meta( $post->ID, 'gatherpress_is_all_day', true );
+
+		$this->assertSame(
+			'',
+			( new Event( $post->ID ) )->get_formatted_datetime( 'F j, Y', 'start' ),
+			'Failed to assert an event with no datetime renders nothing.'
+		);
+	}
+
+	/**
+	 * An unusable timezone still renders the day it was stored for.
+	 *
+	 * `get_datetime()` discards a stored timezone that does not validate, so
+	 * the only way an unusable one reaches here is the `gatherpress_timezone`
+	 * filter, which anything can set.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_formatted_all_day
+	 *
+	 * @return void
+	 */
+	public function test_get_formatted_all_day_with_an_unusable_timezone(): void {
+		$post     = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+		$unusable = static fn(): string => 'Not/AZone';
+
+		update_post_meta( $post->ID, 'gatherpress_is_all_day', true );
+
+		( new Event( $post->ID ) )->save_datetimes(
+			array(
+				'post_id'        => $post->ID,
+				'datetime_start' => '2026-08-29 09:00:00',
+				'datetime_end'   => '2026-08-29 17:00:00',
+				'timezone'       => 'UTC',
+			)
+		);
+
+		add_filter( 'gatherpress_timezone', $unusable );
+
+		$formatted = ( new Event( $post->ID ) )->get_formatted_datetime( 'F j, Y', 'start' );
+
+		remove_filter( 'gatherpress_timezone', $unusable );
+
+		$this->assertSame(
+			'August 29, 2026',
+			$formatted,
+			'Failed to assert the date survives a timezone that cannot be used.'
+		);
+	}
 }

@@ -97,8 +97,13 @@ import {
 	updateDateTimeEnd,
 	updateDateTimeStart,
 	useMatchedDuration,
+	dateLabelFormat,
+	getTimeOfDay,
+	toDayEnd,
+	toDayStart,
 	validateDateTimeEnd,
 	validateDateTimeStart,
+	withTimeOfDay,
 } from '@src/helpers/datetime';
 
 /**
@@ -1110,5 +1115,74 @@ describe( 'getDefaultDuration', () => {
 		);
 
 		expect( getDefaultDuration() ).toBe( 2 );
+	} );
+} );
+
+describe( 'all-day helpers', () => {
+	describe( 'dateLabelFormat', () => {
+		test( 'is the date format with no time in it', () => {
+			// The site keeps its date and time formats separately, so an
+			// all-day event simply uses the date one.
+			getFromSettings.mockImplementation( ( key ) =>
+				( { dateFormat: 'F j, Y', timeFormat: 'g:i a' } )[ key ]
+			);
+
+			expect( dateLabelFormat() ).toBe( 'MMMM D, YYYY' );
+		} );
+	} );
+
+	describe( 'toDayStart', () => {
+		test( 'snaps to the beginning of the day', () => {
+			expect( toDayStart( '2026-08-29 14:30:00' ) ).toBe(
+				'2026-08-29 00:00:00'
+			);
+		} );
+
+		test( 'leaves a datetime already at the beginning alone', () => {
+			expect( toDayStart( '2026-08-29 00:00:00' ) ).toBe(
+				'2026-08-29 00:00:00'
+			);
+		} );
+	} );
+
+	describe( 'toDayEnd', () => {
+		test( 'snaps to the end of the day', () => {
+			expect( toDayEnd( '2026-08-29 14:30:00' ) ).toBe(
+				'2026-08-29 23:59:59'
+			);
+		} );
+
+		test( 'keeps each end on its own day', () => {
+			// A multi-day event ends on the last day, not the first.
+			expect( toDayEnd( '2026-08-31 09:00:00' ) ).toBe(
+				'2026-08-31 23:59:59'
+			);
+		} );
+	} );
+
+	describe( 'getTimeOfDay', () => {
+		test( 'reads the time out of a datetime', () => {
+			expect( getTimeOfDay( '2026-08-29 14:30:15' ) ).toBe( '14:30:15' );
+		} );
+
+		test( 'reads midnight as midnight', () => {
+			expect( getTimeOfDay( '2026-08-29 00:00:00' ) ).toBe( '00:00:00' );
+		} );
+	} );
+
+	describe( 'withTimeOfDay', () => {
+		test( 'puts a time onto the datetime own date', () => {
+			expect( withTimeOfDay( '2026-08-29 00:00:00', '18:00:00' ) ).toBe(
+				'2026-08-29 18:00:00'
+			);
+		} );
+
+		test( 'keeps the date that is selected now', () => {
+			// Restoring a remembered time must not also undo a date the
+			// author changed while the event was all day.
+			expect( withTimeOfDay( '2026-09-04 00:00:00', '09:30:00' ) ).toBe(
+				'2026-09-04 09:30:00'
+			);
+		} );
 	} );
 } );

@@ -530,9 +530,12 @@ class Event {
 			: 'GMT+0000';
 		$tz   = new DateTimeZone( $zone );
 
+		/** This filter is documented in includes/core/classes/event/class-event.php */
+		$format = apply_filters( 'gatherpress_datetime_format', $format, $which, $local );
+
 		return trim(
 			(string) wp_date(
-				apply_filters( 'gatherpress_datetime_format', $format, $which, $local ),
+				$format,
 				( new DateTimeImmutable( $date, $tz ) )->getTimestamp(),
 				$tz
 			)
@@ -667,9 +670,24 @@ class Event {
 				return '';
 			}
 
+			/**
+			 * Filters the format an event's datetime is rendered with.
+			 *
+			 * Applies to every context an event date is shown in, since they
+			 * all format through this method: the singular event, an archive,
+			 * the Event Date block and a query loop alike.
+			 *
+			 * @since 0.34.0
+			 *
+			 * @param string $format The PHP date format.
+			 * @param string $which  Which datetime is being formatted, 'start' or 'end'.
+			 * @param bool   $local  Whether the datetime is rendered in local time rather than GMT.
+			 */
+			$format = apply_filters( 'gatherpress_datetime_format', $format, $which, $local );
+
 			// wp_date() only returns false for a non-numeric timestamp, which $ts is not.
 			$date = (string) wp_date(
-				apply_filters( 'gatherpress_datetime_format', $format, $which, $local ),
+				$format,
 				$ts,
 				$tz
 			);
