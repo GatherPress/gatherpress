@@ -2433,4 +2433,117 @@ class Test_Event extends Base {
 			),
 		);
 	}
+
+	/**
+	 * Coverage for get_status, is_cancelled, and is_postponed methods.
+	 *
+	 * @covers ::get_status
+	 * @covers ::is_cancelled
+	 * @covers ::is_postponed
+	 *
+	 * @return void
+	 */
+	public function test_get_status(): void {
+		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$event = new Event( $post->ID );
+
+		// Default status is scheduled.
+		$this->assertSame( Event::STATUS_SCHEDULED, $event->get_status() );
+		$this->assertFalse( $event->is_cancelled() );
+		$this->assertFalse( $event->is_postponed() );
+
+		// Set cancelled status.
+		update_post_meta( $post->ID, 'gatherpress_status', 'cancelled' );
+		$this->assertSame( Event::STATUS_CANCELLED, $event->get_status() );
+		$this->assertTrue( $event->is_cancelled() );
+		$this->assertFalse( $event->is_postponed() );
+
+		// Set postponed status.
+		update_post_meta( $post->ID, 'gatherpress_status', 'postponed' );
+		$this->assertSame( Event::STATUS_POSTPONED, $event->get_status() );
+		$this->assertFalse( $event->is_cancelled() );
+		$this->assertTrue( $event->is_postponed() );
+
+		// Invalid status falls back to scheduled.
+		update_post_meta( $post->ID, 'gatherpress_status', 'invalid-status' );
+		$this->assertSame( Event::STATUS_SCHEDULED, $event->get_status() );
+	}
+
+	/**
+	 * Coverage for get_status_label method.
+	 *
+	 * @covers ::get_status_label
+	 *
+	 * @return void
+	 */
+	public function test_get_status_label(): void {
+		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$event = new Event( $post->ID );
+
+		$this->assertSame( 'Scheduled', $event->get_status_label() );
+
+		update_post_meta( $post->ID, 'gatherpress_status', 'cancelled' );
+		$this->assertSame( 'Cancelled', $event->get_status_label() );
+
+		update_post_meta( $post->ID, 'gatherpress_status', 'postponed' );
+		$this->assertSame( 'Postponed', $event->get_status_label() );
+
+		update_post_meta( $post->ID, 'gatherpress_status', 'rescheduled' );
+		$this->assertSame( 'Rescheduled', $event->get_status_label() );
+
+		update_post_meta( $post->ID, 'gatherpress_status', 'moved-online' );
+		$this->assertSame( 'Moved online', $event->get_status_label() );
+	}
+
+	/**
+	 * Coverage for get_schema_event_status method.
+	 *
+	 * @covers ::get_schema_event_status
+	 *
+	 * @return void
+	 */
+	public function test_get_schema_event_status(): void {
+		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$event = new Event( $post->ID );
+
+		$this->assertSame( 'EventScheduled', $event->get_schema_event_status() );
+
+		update_post_meta( $post->ID, 'gatherpress_status', 'cancelled' );
+		$this->assertSame( 'EventCancelled', $event->get_schema_event_status() );
+
+		update_post_meta( $post->ID, 'gatherpress_status', 'postponed' );
+		$this->assertSame( 'EventPostponed', $event->get_schema_event_status() );
+
+		update_post_meta( $post->ID, 'gatherpress_status', 'rescheduled' );
+		$this->assertSame( 'EventRescheduled', $event->get_schema_event_status() );
+
+		update_post_meta( $post->ID, 'gatherpress_status', 'moved-online' );
+		$this->assertSame( 'EventMovedOnline', $event->get_schema_event_status() );
+	}
+
+	/**
+	 * Coverage for get_ical_status method.
+	 *
+	 * @covers ::get_ical_status
+	 *
+	 * @return void
+	 */
+	public function test_get_ical_status(): void {
+		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$event = new Event( $post->ID );
+
+		$this->assertSame( 'CONFIRMED', $event->get_ical_status() );
+
+		update_post_meta( $post->ID, 'gatherpress_status', 'cancelled' );
+		$this->assertSame( 'CANCELLED', $event->get_ical_status() );
+
+		update_post_meta( $post->ID, 'gatherpress_status', 'postponed' );
+		$this->assertSame( 'TENTATIVE', $event->get_ical_status() );
+
+		update_post_meta( $post->ID, 'gatherpress_status', 'rescheduled' );
+		$this->assertSame( 'TENTATIVE', $event->get_ical_status() );
+
+		update_post_meta( $post->ID, 'gatherpress_status', 'moved-online' );
+		$this->assertSame( 'CONFIRMED', $event->get_ical_status() );
+	}
 }

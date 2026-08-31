@@ -116,6 +116,60 @@ class Event {
 	 */
 	const TEMPLATE_PATTERN = 'gatherpress/event-template';
 
+	/**
+	 * Status constant for scheduled event.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const STATUS_SCHEDULED = 'scheduled';
+
+	/**
+	 * Status constant for cancelled event.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const STATUS_CANCELLED = 'cancelled';
+
+	/**
+	 * Status constant for postponed event.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const STATUS_POSTPONED = 'postponed';
+
+	/**
+	 * Status constant for rescheduled event.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const STATUS_RESCHEDULED = 'rescheduled';
+
+	/**
+	 * Status constant for event moved online.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const STATUS_MOVED_ONLINE = 'moved-online';
+
+	/**
+	 * List of all supported event status slugs.
+	 *
+	 * @since 0.36.0
+	 * @var string[]
+	 */
+	const STATUSES = array(
+		self::STATUS_SCHEDULED,
+		self::STATUS_CANCELLED,
+		self::STATUS_POSTPONED,
+		self::STATUS_RESCHEDULED,
+		self::STATUS_MOVED_ONLINE,
+	);
+
 
 
 	/**
@@ -587,6 +641,110 @@ class Event {
 		}
 
 		return (bool) get_post_meta( $this->post->ID, 'gatherpress_is_all_day', true );
+	}
+
+	/**
+	 * Returns the event operational status.
+	 *
+	 * Defaults to 'scheduled' if no custom status has been set.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string The event status slug.
+	 */
+	public function get_status(): string {
+		if ( ! $this->post ) {
+			return self::STATUS_SCHEDULED;
+		}
+
+		$status = (string) get_post_meta( $this->post->ID, 'gatherpress_status', true );
+
+		return in_array( $status, self::STATUSES, true ) ? $status : self::STATUS_SCHEDULED;
+	}
+
+	/**
+	 * Whether this event is cancelled.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return bool True when the event is cancelled.
+	 */
+	public function is_cancelled(): bool {
+		return self::STATUS_CANCELLED === $this->get_status();
+	}
+
+	/**
+	 * Whether this event is postponed.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return bool True when the event is postponed.
+	 */
+	public function is_postponed(): bool {
+		return self::STATUS_POSTPONED === $this->get_status();
+	}
+
+	/**
+	 * Returns the human-readable translated label for the current status.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string Localized status label.
+	 */
+	public function get_status_label(): string {
+		$labels = array(
+			self::STATUS_SCHEDULED    => __( 'Scheduled', 'gatherpress' ),
+			self::STATUS_CANCELLED    => __( 'Cancelled', 'gatherpress' ),
+			self::STATUS_POSTPONED    => __( 'Postponed', 'gatherpress' ),
+			self::STATUS_RESCHEDULED  => __( 'Rescheduled', 'gatherpress' ),
+			self::STATUS_MOVED_ONLINE => __( 'Moved online', 'gatherpress' ),
+		);
+
+		$status = $this->get_status();
+
+		return $labels[ $status ] ?? __( 'Scheduled', 'gatherpress' );
+	}
+
+	/**
+	 * Returns the Schema.org EventStatusType value for JSON-LD / structured data.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string The Schema.org EventStatusType (e.g. 'EventScheduled', 'EventCancelled').
+	 */
+	public function get_schema_event_status(): string {
+		$schema_map = array(
+			self::STATUS_SCHEDULED    => 'EventScheduled',
+			self::STATUS_CANCELLED    => 'EventCancelled',
+			self::STATUS_POSTPONED    => 'EventPostponed',
+			self::STATUS_RESCHEDULED  => 'EventRescheduled',
+			self::STATUS_MOVED_ONLINE => 'EventMovedOnline',
+		);
+
+		$status = $this->get_status();
+
+		return $schema_map[ $status ] ?? 'EventScheduled';
+	}
+
+	/**
+	 * Returns the RFC 5545 STATUS property value for iCalendar exports.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string 'CONFIRMED', 'CANCELLED', or 'TENTATIVE'.
+	 */
+	public function get_ical_status(): string {
+		switch ( $this->get_status() ) {
+			case self::STATUS_CANCELLED:
+				return 'CANCELLED';
+			case self::STATUS_POSTPONED:
+			case self::STATUS_RESCHEDULED:
+				return 'TENTATIVE';
+			case self::STATUS_MOVED_ONLINE:
+			case self::STATUS_SCHEDULED:
+			default:
+				return 'CONFIRMED';
+		}
 	}
 
 	/**

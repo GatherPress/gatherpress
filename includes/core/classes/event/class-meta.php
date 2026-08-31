@@ -176,6 +176,22 @@ final class Meta {
 				'type'              => 'string',
 				'default'           => '',
 			),
+			// The event's operational status: 'scheduled', 'cancelled',
+			// 'postponed', 'rescheduled', 'moved-online'.
+			'gatherpress_status'             => array(
+				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
+				'sanitize_callback' => 'sanitize_key',
+				'show_in_rest'      => array(
+					'schema' => array(
+						'type'    => 'string',
+						'enum'    => array( 'scheduled', 'cancelled', 'postponed', 'rescheduled', 'moved-online' ),
+						'default' => 'scheduled',
+					),
+				),
+				'single'            => true,
+				'type'              => 'string',
+				'default'           => 'scheduled',
+			),
 		);
 
 		foreach ( $event_date_meta as $meta_key => $args ) {

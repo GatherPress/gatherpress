@@ -1,0 +1,83 @@
+.wp-block-gatherpress-event-status {
+	display: inline-flex;
+	align-items: center;
+
+	.gatherpress-event-status__badge {
+		display: inline-block;
+		padding: 0.25em 0.6em;
+		font-size: 0.85em;
+		font-weight: 600;
+		line-height: 1;
+		border-radius: 4px;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	&.gatherpress-event-status--is-scheduled .gatherpress-event-status__badge {
+		background-color: #e6f4ea;
+		color: #137333;
+	}
+
+	&.gatherpress-event-status--is-cancelled .gatherpress-event-status__badge {
+		background-color: #fce8e6;
+		color: #c5221f;
+	}
+
+	&.gatherpress-event-status--is-postponed .gatherpress-event-status__badge {
+		background-color: #fef7e0;
+		color: #b06000;
+	}
+
+	&.gatherpress-event-status--is-rescheduled .gatherpress-event-status__badge {
+		background-color: #e8f0fe;
+		color: #1a73e8;
+	}
+
+	&.gatherpress-event-status--is-moved-online .gatherpress-event-status__badge {
+		background-color: #f3e8fd;
+		color: #7627bb;
+	}
+
+	&.is-style-notice {
+		display: block;
+		width: 100%;
+		padding: 0.75rem 1rem;
+		border-left: 4px solid;
+		border-radius: 4px;
+
+		.gatherpress-event-status__badge {
+			display: block;
+			padding: 0;
+			font-size: 1em;
+			font-weight: 700;
+			text-transform: none;
+			letter-spacing: normal;
+			background: transparent !important;
+			color: inherit !important;
+		}
+
+		&.gatherpress-event-status--is-cancelled {
+			background-color: #fce8e6;
+			border-color: #c5221f;
+			color: #c5221f;
+		}
+
+		&.gatherpress-event-status--is-postponed {
+			background-color: #fef7e0;
+			border-color: #b06000;
+			color: #b06000;
+		}
+
+		&.gatherpress-event-status--is-rescheduled {
+			background-color: #e8f0fe;
+			border-color: #1a73e8;
+			color: #1a73e8;
+		}
+
+		&.gatherpress-event-status--is-moved-online {
+			background-color: #f3e8fd;
+			border-color: #7627bb;
+			color: #7627bb;
+		}
+	}
+}
