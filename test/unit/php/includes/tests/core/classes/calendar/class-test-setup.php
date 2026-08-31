@@ -46,6 +46,18 @@ class Test_Setup extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'alternate_links' ),
 			),
+			array(
+				'type'     => 'action',
+				'name'     => 'template_redirect',
+				'priority' => 0,
+				'callback' => array( $instance, 'maybe_handle_content_negotiation' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'wp_headers',
+				'priority' => 10,
+				'callback' => array( $instance, 'filter_wp_headers' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
@@ -1644,5 +1656,189 @@ class Test_Setup extends Base {
 		);
 
 		unset( $_SERVER['HTTP_IF_MODIFIED_SINCE'] );
+	}
+
+	/**
+	 * Coverage for is_calendar_negotiated with various Accept headers.
+	 *
+	 * @covers ::is_calendar_negotiated
+	 *
+	 * @return void
+	 */
+	public function test_is_calendar_negotiated(): void {
+		$instance = Setup::get_instance();
+
+		// Empty / null.
+		$this->assertFalse( $instance->is_calendar_negotiated( '' ) );
+		$this->assertFalse( $instance->is_calendar_negotiated( null ) );
+
+		// Standard browser headers without text/calendar.
+		$this->assertFalse(
+			$instance->is_calendar_negotiated(
+				'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+			)
+		);
+		$this->assertFalse( $instance->is_calendar_negotiated( '*/*' ) );
+		$this->assertFalse( $instance->is_calendar_negotiated( 'application/json' ) );
+
+		// Direct calendar accept.
+		$this->assertTrue( $instance->is_calendar_negotiated( 'text/calendar' ) );
+		$this->assertTrue( $instance->is_calendar_negotiated( 'TEXT/CALENDAR' ) );
+
+		// Quality factor comparisons.
+		$this->assertTrue( $instance->is_calendar_negotiated( 'text/calendar;q=0.9, text/html;q=0.8' ) );
+		$this->assertTrue( $instance->is_calendar_negotiated( 'text/html;q=0.8, text/calendar;q=0.9' ) );
+		$this->assertTrue( $instance->is_calendar_negotiated( 'text/calendar, text/html' ) );
+
+		// Lower quality factor than HTML should not negotiate calendar.
+		$this->assertFalse(
+			$instance->is_calendar_negotiated(
+				'text/html,application/xhtml+xml,application/xml;q=0.9,text/calendar;q=0.5'
+			)
+		);
+
+		// Server global fallback.
+		$_SERVER['HTTP_ACCEPT'] = 'text/calendar';
+		$this->assertTrue( $instance->is_calendar_negotiated() );
+		unset( $_SERVER['HTTP_ACCEPT'] );
+	}
+
+	/**
+	 * Coverage for get_calendar_url_for_request and is_event_related_request.
+	 *
+	 * @covers ::get_calendar_url_for_request
+	 * @covers ::is_event_related_request
+	 *
+	 * @return void
+	 */
+	public function test_get_calendar_url_for_request_and_is_event_related(): void {
+		$instance   = Setup::get_instance();
+		$event_post = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+
+		$wp_query = $GLOBALS['wp_query'];
+		$wp_query->init();
+		$wp_query->queried_object    = $event_post;
+		$wp_query->is_singular       = true;
+		$wp_query->is_single         = true;
+		$wp_query->queried_object_id = $event_post->ID;
+
+		$calendar_url = $instance->get_calendar_url_for_request();
+		$this->assertIsString( $calendar_url );
+		$this->assertStringContainsString( 'ical', $calendar_url );
+		$this->assertTrue( $instance->is_event_related_request() );
+
+		// Venue shadow source post.
+		$venue_post = $this->mock->post( array( 'post_type' => Venue::POST_TYPE ) )->get();
+		$wp_query->init();
+		$wp_query->queried_object    = $venue_post;
+		$wp_query->is_singular       = true;
+		$wp_query->is_single         = true;
+		$wp_query->queried_object_id = $venue_post->ID;
+
+		$venue_url = $instance->get_calendar_url_for_request();
+		$this->assertIsString( $venue_url );
+		$this->assertTrue( $instance->is_event_related_request() );
+
+		// Event post type archive.
+		$wp_query->init();
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+
+		$archive_url = $instance->get_calendar_url_for_request();
+		$this->assertIsString( $archive_url );
+		$this->assertTrue( $instance->is_event_related_request() );
+
+		// Front page / home.
+		$wp_query->init();
+		$wp_query->is_front_page = true;
+		$wp_query->is_home       = true;
+
+		$home_url = $instance->get_calendar_url_for_request();
+		$this->assertIsString( $home_url );
+		$this->assertTrue( $instance->is_event_related_request() );
+
+		// Non-event singular post.
+		$regular_post = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+		$wp_query->init();
+		$wp_query->queried_object    = $regular_post;
+		$wp_query->is_singular       = true;
+		$wp_query->is_single         = true;
+		$wp_query->queried_object_id = $regular_post->ID;
+
+		$this->assertFalse( $instance->get_calendar_url_for_request() );
+		$this->assertFalse( $instance->is_event_related_request() );
+	}
+
+	/**
+	 * Coverage for filter_wp_headers method.
+	 *
+	 * @covers ::filter_wp_headers
+	 *
+	 * @return void
+	 */
+	public function test_filter_wp_headers(): void {
+		$instance   = Setup::get_instance();
+		$event_post = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+
+		$wp_query = $GLOBALS['wp_query'];
+		$wp_query->init();
+		$wp_query->queried_object    = $event_post;
+		$wp_query->is_singular       = true;
+		$wp_query->is_single         = true;
+		$wp_query->queried_object_id = $event_post->ID;
+
+		// When no Vary header is present.
+		$headers = $instance->filter_wp_headers( array( 'Content-Type' => 'text/html' ) );
+		$this->assertSame( 'Accept', $headers['Vary'] );
+
+		// When an existing Vary header is present without Accept.
+		$headers = $instance->filter_wp_headers( array( 'Vary' => 'User-Agent' ) );
+		$this->assertSame( 'User-Agent, Accept', $headers['Vary'] );
+
+		// When Vary already includes Accept.
+		$headers = $instance->filter_wp_headers( array( 'Vary' => 'Accept, Cookie' ) );
+		$this->assertSame( 'Accept, Cookie', $headers['Vary'] );
+
+		// For a non-event page, headers are unchanged.
+		$regular_post = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+		$wp_query->init();
+		$wp_query->queried_object    = $regular_post;
+		$wp_query->is_singular       = true;
+		$wp_query->is_single         = true;
+		$wp_query->queried_object_id = $regular_post->ID;
+
+		$headers = $instance->filter_wp_headers( array( 'Content-Type' => 'text/html' ) );
+		$this->assertArrayNotHasKey( 'Vary', $headers );
+	}
+
+	/**
+	 * Coverage for maybe_handle_content_negotiation.
+	 *
+	 * @covers ::maybe_handle_content_negotiation
+	 *
+	 * @return void
+	 */
+	public function test_maybe_handle_content_negotiation(): void {
+		$instance   = Setup::get_instance();
+		$event_post = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+
+		$wp_query = $GLOBALS['wp_query'];
+		$wp_query->init();
+		$wp_query->queried_object    = $event_post;
+		$wp_query->is_singular       = true;
+		$wp_query->is_single         = true;
+		$wp_query->queried_object_id = $event_post->ID;
+
+		// When Accept header does not request calendar, nothing happens.
+		$_SERVER['HTTP_ACCEPT'] = 'text/html';
+		$instance->maybe_handle_content_negotiation();
+
+		// When Accept header requests calendar, allowed_redirect_hosts filter is attached.
+		$_SERVER['HTTP_ACCEPT'] = 'text/calendar';
+		$_SERVER['REQUEST_URI'] = '/event/test-event/';
+
+		$instance->maybe_handle_content_negotiation();
+
+		unset( $_SERVER['HTTP_ACCEPT'], $_SERVER['REQUEST_URI'] );
 	}
 }

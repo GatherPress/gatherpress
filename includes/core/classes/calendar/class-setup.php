@@ -89,6 +89,8 @@ final class Setup {
 		// validity check and never registered its rewrite rule.
 		add_action( 'init', array( $this, 'register_endpoints' ), PHP_INT_MAX );
 		add_action( 'wp_head', array( $this, 'alternate_links' ) );
+		add_action( 'template_redirect', array( $this, 'maybe_handle_content_negotiation' ), 0 );
+		add_filter( 'wp_headers', array( $this, 'filter_wp_headers' ) );
 	}
 
 	/**
@@ -1096,5 +1098,191 @@ final class Setup {
 	protected function is_tax_like_type_for_event_supporting_types( string $post_type ): bool {
 		return post_type_supports( $post_type, 'gatherpress-shadow-source' ) &&
 			$this->has_post_type_for_taxonomy( Shadow_Source::get_instance()->get_taxonomy( $post_type ) );
+	}
+
+	/**
+	 * Determine whether the client's `Accept` HTTP header prefers `text/calendar`.
+	 *
+	 * Implements RFC 7231 / RFC 9110 content negotiation by parsing comma-separated
+	 * media ranges and their quality factor (`q=`) weights. Returns `true` if
+	 * `text/calendar` is requested with an explicit quality weight equal to or
+	 * higher than standard HTML formats (`text/html`, `application/xhtml+xml`).
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string|null $accept_header Optional raw Accept header. Defaults to `$_SERVER['HTTP_ACCEPT']`.
+	 *
+	 * @return bool True if text/calendar is negotiated/preferred, false otherwise.
+	 */
+	public function is_calendar_negotiated( ?string $accept_header = null ): bool {
+		if ( null === $accept_header ) {
+			$accept_header = isset( $_SERVER['HTTP_ACCEPT'] ) && is_string( $_SERVER['HTTP_ACCEPT'] )
+				? sanitize_text_field( wp_unslash( $_SERVER['HTTP_ACCEPT'] ) )
+				: '';
+		}
+
+		if ( '' === $accept_header || false === stripos( $accept_header, 'text/calendar' ) ) {
+			return false;
+		}
+
+		$calendar_q = 0.0;
+		$html_q     = 0.0;
+
+		$ranges = explode( ',', $accept_header );
+		foreach ( $ranges as $range ) {
+			$parts = explode( ';', trim( $range ) );
+			$mime  = strtolower( trim( $parts[0] ) );
+			$q     = 1.0;
+
+			if ( count( $parts ) > 1 ) {
+				foreach ( array_slice( $parts, 1 ) as $param ) {
+					$param_parts = explode( '=', trim( $param ), 2 );
+					if ( 2 === count( $param_parts ) && 'q' === strtolower( trim( $param_parts[0] ) ) ) {
+						$q = (float) trim( $param_parts[1] );
+						break;
+					}
+				}
+			}
+
+			if ( 'text/calendar' === $mime ) {
+				$calendar_q = max( $calendar_q, $q );
+			} elseif ( 'text/html' === $mime || 'application/xhtml+xml' === $mime ) {
+				$html_q = max( $html_q, $q );
+			}
+		}
+
+		return $calendar_q > 0.0 && $calendar_q >= $html_q;
+	}
+
+	/**
+	 * Resolve the canonical calendar feed URL for the current query context.
+	 *
+	 * Dispatches across singular events, shadow-source posts (venues),
+	 * event-bearing taxonomy archives, event post-type archives, and the sitewide feed.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string|false Calendar feed or download URL, or false if not an event-related request.
+	 */
+	public function get_calendar_url_for_request() {
+		$queried = get_queried_object();
+
+		if ( is_singular() && $queried instanceof WP_Post ) {
+			if ( post_type_supports( $queried->post_type, 'gatherpress-event-date' ) ) {
+				$calendar = new Calendar( $queried->ID );
+				return $calendar->get_ical_url();
+			}
+
+			if ( $this->is_tax_like_type_for_event_supporting_types( $queried->post_type ) ) {
+				return get_post_comments_feed_link( $queried->ID, self::ICAL_SLUG );
+			}
+		}
+
+		if ( is_tax() && $queried instanceof WP_Term && $this->has_post_type_for_taxonomy( $queried->taxonomy ) ) {
+			return get_term_feed_link( $queried->term_id, $queried->taxonomy, self::ICAL_SLUG );
+		}
+
+		if ( is_post_type_archive() ) {
+			$post_type = get_query_var( 'post_type' );
+			if ( is_array( $post_type ) ) {
+				$post_type = reset( $post_type );
+			}
+			if ( is_string( $post_type ) && post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+				return get_post_type_archive_feed_link( $post_type, self::ICAL_SLUG );
+			}
+		}
+
+		if ( is_front_page() || is_home() ) {
+			return get_feed_link( self::ICAL_SLUG );
+		}
+
+		return false;
+	}
+
+	/**
+	 * Check whether the current request is for an event-related view.
+	 *
+	 * Used to determine if the `Vary: Accept` HTTP header should be attached.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return bool
+	 */
+	public function is_event_related_request(): bool {
+		return false !== $this->get_calendar_url_for_request();
+	}
+
+	/**
+	 * Handle HTTP Content Negotiation for `Accept: text/calendar` requests.
+	 *
+	 * If the client requests `text/calendar` on an event-supporting URL,
+	 * safely redirect to the corresponding ICS calendar feed/download URL.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	public function maybe_handle_content_negotiation(): void {
+		if ( ! $this->is_calendar_negotiated() ) {
+			return;
+		}
+
+		$calendar_url = $this->get_calendar_url_for_request();
+
+		if ( ! is_string( $calendar_url ) || '' === $calendar_url ) {
+			return;
+		}
+
+		// Avoid redirect loops if the request is already for the target URL.
+		$current_url = isset( $_SERVER['REQUEST_URI'] ) && is_string( $_SERVER['REQUEST_URI'] )
+			? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) )
+			: '';
+
+		if ( '' !== $current_url && false !== strpos( $calendar_url, $current_url ) ) {
+			return;
+		}
+
+		// Ensure the redirect target host is permitted.
+		add_filter(
+			'allowed_redirect_hosts',
+			function ( array $hosts ) use ( $calendar_url ): array {
+				$host = wp_parse_url( $calendar_url, PHP_URL_HOST );
+				if ( is_string( $host ) && '' !== $host && ! in_array( $host, $hosts, true ) ) {
+					$hosts[] = $host;
+				}
+				return $hosts;
+			}
+		);
+
+		header( 'Vary: Accept' );
+		wp_safe_redirect( $calendar_url, 302 );
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation.
+		// @codeCoverageIgnoreStart
+		exit;
+		// @codeCoverageIgnoreEnd
+	}
+
+	/**
+	 * Add `Vary: Accept` header for event-related HTML views so downstream caches
+	 * (proxies, CDNs) differentiate responses based on the Accept header.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, string> $headers Associative array of HTTP headers to be sent.
+	 *
+	 * @return array<string, string> Updated HTTP headers array.
+	 */
+	public function filter_wp_headers( array $headers ): array {
+		if ( $this->is_event_related_request() ) {
+			if ( isset( $headers['Vary'] ) ) {
+				if ( false === stripos( $headers['Vary'], 'Accept' ) ) {
+					$headers['Vary'] .= ', Accept';
+				}
+			} else {
+				$headers['Vary'] = 'Accept';
+			}
+		}
+
+		return $headers;
 	}
 }
