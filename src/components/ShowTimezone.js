@@ -45,6 +45,10 @@ const ShowTimezone = () => {
 			label={ __( 'Append time zone', 'gatherpress' ) }
 			value={ preference }
 			onChange={ updatePreference }
+			help={ __(
+				'Overrides the Event Date block and the site setting for this event.',
+				'gatherpress'
+			) }
 			__nexthasnomarginbottom
 		>
 			<option value="">{ __( 'Default', 'gatherpress' ) }</option>
