@@ -6,6 +6,29 @@ import { SelectControl } from '@wordpress/components';
 import { useCallback } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
 
+const STATUS_DESCRIPTIONS = {
+	scheduled: __(
+		'Event is planned and confirmed to take place.',
+		'gatherpress'
+	),
+	cancelled: __(
+		'Event will not take place. Calendar feeds will mark it as cancelled.',
+		'gatherpress'
+	),
+	postponed: __(
+		'Event is delayed to a future unconfirmed date.',
+		'gatherpress'
+	),
+	rescheduled: __(
+		'Event date and time have been changed.',
+		'gatherpress'
+	),
+	'moved-online': __(
+		'Event venue has changed to an online meeting.',
+		'gatherpress'
+	),
+};
+
 /**
  * EventStatus component.
  *
@@ -40,11 +63,8 @@ const EventStatus = () => {
 			label={ __( 'Event status', 'gatherpress' ) }
 			value={ status }
 			onChange={ updateStatus }
-			help={ __(
-				'Set the operational status of the event.',
-				'gatherpress'
-			) }
-			__nexthasnomarginbottom
+			help={ STATUS_DESCRIPTIONS[ status ] || STATUS_DESCRIPTIONS.scheduled }
+			__nextHasNoMarginBottom
 		>
 			<option value="scheduled">{ __( 'Scheduled', 'gatherpress' ) }</option>
 			<option value="cancelled">{ __( 'Cancelled', 'gatherpress' ) }</option>

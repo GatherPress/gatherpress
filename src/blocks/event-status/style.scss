@@ -1,59 +1,157 @@
-.wp-block-gatherpress-event-status {
+@keyframes gatherpress-pulse {
+	0% {
+		transform: scale(0.95);
+		box-shadow: 0 0 0 0 rgb(197 34 31 / 40%);
+	}
+
+	70% {
+		transform: scale(1);
+		box-shadow: 0 0 0 5px rgb(197 34 31 / 0%);
+	}
+
+	100% {
+		transform: scale(0.95);
+		box-shadow: 0 0 0 0 rgb(197 34 31 / 0%);
+	}
+}
+
+@keyframes gatherpress-pulse-warning {
+	0% {
+		transform: scale(0.95);
+		box-shadow: 0 0 0 0 rgb(176 96 0 / 40%);
+	}
+
+	70% {
+		transform: scale(1);
+		box-shadow: 0 0 0 5px rgb(176 96 0 / 0%);
+	}
+
+	100% {
+		transform: scale(0.95);
+		box-shadow: 0 0 0 0 rgb(176 96 0 / 0%);
+	}
+}
+
+@keyframes gatherpress-pulse-info {
+	0% {
+		transform: scale(0.95);
+		box-shadow: 0 0 0 0 rgb(118 39 187 / 40%);
+	}
+
+	70% {
+		transform: scale(1);
+		box-shadow: 0 0 0 5px rgb(118 39 187 / 0%);
+	}
+
+	100% {
+		transform: scale(0.95);
+		box-shadow: 0 0 0 0 rgb(118 39 187 / 0%);
+	}
+}
+
+.wp-block-gatherpress-event-status,
+.gatherpress-event-status-preview {
 	display: inline-flex;
 	align-items: center;
 
 	.gatherpress-event-status__badge {
-		display: inline-block;
-		padding: 0.25em 0.6em;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45em;
+		padding: 0.3em 0.75em;
 		font-size: 0.85em;
 		font-weight: 600;
-		line-height: 1;
-		border-radius: 4px;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
+		line-height: 1.2;
+		border-radius: 999px;
+		letter-spacing: 0.03em;
+		border: 1px solid transparent;
+		transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+
+		&::before {
+			content: "";
+			display: inline-block;
+			width: 0.5em;
+			height: 0.5em;
+			border-radius: 50%;
+		}
+
+		&:hover {
+			transform: translateY(-1px);
+			box-shadow: 0 2px 6px rgb(0 0 0 / 8%);
+		}
 	}
 
 	&.gatherpress-event-status--is-scheduled .gatherpress-event-status__badge {
 		background-color: #e6f4ea;
+		border-color: #ceead6;
 		color: #137333;
+
+		&::before {
+			background-color: #137333;
+		}
 	}
 
 	&.gatherpress-event-status--is-cancelled .gatherpress-event-status__badge {
 		background-color: #fce8e6;
+		border-color: #fad2cf;
 		color: #c5221f;
+
+		&::before {
+			background-color: #c5221f;
+			animation: gatherpress-pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+		}
 	}
 
 	&.gatherpress-event-status--is-postponed .gatherpress-event-status__badge {
 		background-color: #fef7e0;
+		border-color: #feefc3;
 		color: #b06000;
+
+		&::before {
+			background-color: #b06000;
+			animation: gatherpress-pulse-warning 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+		}
 	}
 
 	&.gatherpress-event-status--is-rescheduled .gatherpress-event-status__badge {
 		background-color: #e8f0fe;
+		border-color: #d2e3fc;
 		color: #1a73e8;
+
+		&::before {
+			background-color: #1a73e8;
+		}
 	}
 
 	&.gatherpress-event-status--is-moved-online .gatherpress-event-status__badge {
 		background-color: #f3e8fd;
+		border-color: #e9d2fd;
 		color: #7627bb;
+
+		&::before {
+			background-color: #7627bb;
+			animation: gatherpress-pulse-info 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+		}
 	}
 
 	&.is-style-notice {
 		display: block;
 		width: 100%;
-		padding: 0.75rem 1rem;
+		padding: 0.85rem 1.15rem;
 		border-left: 4px solid;
-		border-radius: 4px;
+		border-radius: 6px;
+		transition: border-color 0.2s ease, background-color 0.2s ease;
 
 		.gatherpress-event-status__badge {
-			display: block;
+			display: inline-flex;
 			padding: 0;
-			font-size: 1em;
+			font-size: 1.05em;
 			font-weight: 700;
-			text-transform: none;
-			letter-spacing: normal;
+			border: none;
 			background: transparent !important;
 			color: inherit !important;
+			box-shadow: none !important;
+			transform: none !important;
 		}
 
 		&.gatherpress-event-status--is-cancelled {
@@ -78,6 +176,19 @@
 			background-color: #f3e8fd;
 			border-color: #7627bb;
 			color: #7627bb;
+		}
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.wp-block-gatherpress-event-status,
+	.gatherpress-event-status-preview {
+		.gatherpress-event-status__badge {
+			transition: none;
+
+			&::before {
+				animation: none !important;
+			}
 		}
 	}
 }
