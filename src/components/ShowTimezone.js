@@ -2,7 +2,7 @@
  * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
-import { PanelRow, SelectControl } from '@wordpress/components';
+import { SelectControl } from '@wordpress/components';
 import { useCallback } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
 
@@ -40,19 +40,17 @@ const ShowTimezone = () => {
 	);
 
 	return (
-		<PanelRow>
-			<SelectControl
-				__next40pxDefaultSize
-				label={ __( 'Append time zone', 'gatherpress' ) }
-				value={ preference }
-				onChange={ updatePreference }
-				__nexthasnomarginbottom
-			>
-				<option value="">{ __( 'Default', 'gatherpress' ) }</option>
-				<option value="always">{ __( 'Always', 'gatherpress' ) }</option>
-				<option value="never">{ __( 'Never', 'gatherpress' ) }</option>
-			</SelectControl>
-		</PanelRow>
+		<SelectControl
+			__next40pxDefaultSize
+			label={ __( 'Append time zone', 'gatherpress' ) }
+			value={ preference }
+			onChange={ updatePreference }
+			__nexthasnomarginbottom
+		>
+			<option value="">{ __( 'Default', 'gatherpress' ) }</option>
+			<option value="always">{ __( 'Always', 'gatherpress' ) }</option>
+			<option value="never">{ __( 'Never', 'gatherpress' ) }</option>
+		</SelectControl>
 	);
 };
 
