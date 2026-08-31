@@ -26,6 +26,7 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Query as Event_Query;
 use GatherPress\Core\Traits\Singleton;
 use WP_Post;
 use WP_Post_Type;
@@ -614,9 +615,11 @@ final class Shadow_Source {
 	 *
 	 * Powers the "filter by event activity" query for a shadow-source post
 	 * type (venues, productions, …): given a source post type and whether to
-	 * keep only source posts with upcoming events, it runs a lightweight query
-	 * against the event post types, reads each matching event's terms in the
-	 * source's shadow taxonomy, and resolves those back to source post IDs.
+	 * keep only source posts with upcoming events, it asks
+	 * {@see Event_Query::get_active_shadow_term_slugs()} for the shadow term
+	 * slugs sitting on matching events and resolves those slugs back to source
+	 * posts. Two queries, both bounded by the number of source posts rather
+	 * than by the size of the event table.
 	 *
 	 * The filter only applies when the source's shadow taxonomy is actually
 	 * registered on an event post type; when it isn't (the taxonomy missing,
@@ -648,50 +651,36 @@ final class Shadow_Source {
 			return null;
 		}
 
-		$args = array(
-			'post_type'               => get_post_types_by_support( 'gatherpress-event-date' ),
-			'fields'                  => 'ids',
-			'no_found_rows'           => true,
-			'posts_per_page'          => -1,
-			'update_post_meta_cache'  => false,
-			'update_post_term_cache'  => true,
-			'gatherpress_event_query' => $upcoming_events_only ? 'upcoming' : 'past',
+		$slugs = Event_Query::get_instance()->get_active_shadow_term_slugs(
+			$taxonomy->name,
+			$upcoming_events_only
 		);
 
-		$event_ids = ( new WP_Query( $args ) )->posts;
-
-		if ( empty( $event_ids ) ) {
+		if ( empty( $slugs ) ) {
 			return array();
 		}
 
-		$source_ids = array();
+		// Shadow term slugs are the source post_name with a leading underscore,
+		// so one post_name__in lookup resolves every match at once.
+		$post_names = array_map(
+			static function ( string $slug ): string {
+				return ltrim( $slug, '_' );
+			},
+			$slugs
+		);
 
-		foreach ( $event_ids as $event_id ) {
-			$object_id = $event_id instanceof WP_Post ? $event_id->ID : (int) $event_id;
+		$source_ids = get_posts(
+			array(
+				'post_type'              => $source_post_type,
+				'post_name__in'          => $post_names,
+				'fields'                 => 'ids',
+				'posts_per_page'         => count( $post_names ),
+				'no_found_rows'          => true,
+				'update_post_meta_cache' => false,
+				'update_post_term_cache' => false,
+			)
+		);
 
-			$term_ids = wp_get_object_terms(
-				$object_id,
-				$taxonomy->name,
-				array( 'fields' => 'ids' )
-			);
-
-			if ( is_wp_error( $term_ids ) || empty( $term_ids ) ) {
-				continue;
-			}
-
-			foreach ( (array) $term_ids as $term_id ) {
-				$term = get_term( $term_id, $taxonomy->name );
-
-				if ( $term instanceof WP_Term && $this->is_shadow_term_slug( $term->slug ) ) {
-					$source_post = $this->get_post_from_term_slug( $term->slug, $source_post_type );
-
-					if ( $source_post instanceof WP_Post ) {
-						$source_ids[ $source_post->ID ] = $source_post->ID;
-					}
-				}
-			}
-		}
-
-		return array_values( $source_ids );
+		return array_map( 'intval', $source_ids );
 	}
 }

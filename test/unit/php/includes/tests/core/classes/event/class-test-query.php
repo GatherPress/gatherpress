@@ -1995,4 +1995,306 @@ class Test_Query extends Base {
 
 		wp_delete_post( $venue_post_id, true );
 	}
+
+	/**
+	 * Resolves the shadow term slug of a source post that carries an upcoming
+	 * event, using the single indexed join rather than a per-event walk.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_active_shadow_term_slugs
+	 *
+	 * @return void
+	 */
+	public function test_get_active_shadow_term_slugs_matches_upcoming(): void {
+		$this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'slugs-upcoming-venue',
+			)
+		)->get();
+
+		$this->create_activity_event( '_slugs-upcoming-venue', 'upcoming' );
+
+		$slugs = Query::get_instance()->get_active_shadow_term_slugs( Venue::TAXONOMY, true );
+
+		$this->assertContains(
+			'_slugs-upcoming-venue',
+			$slugs,
+			'A shadow term on an upcoming event should resolve for the upcoming branch.'
+		);
+	}
+
+	/**
+	 * Resolves the shadow term slug of a source post whose events are past, and
+	 * keeps upcoming-only slugs out of that result.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_active_shadow_term_slugs
+	 *
+	 * @return void
+	 */
+	public function test_get_active_shadow_term_slugs_matches_past(): void {
+		$this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'slugs-past-venue',
+			)
+		)->get();
+		$this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'slugs-future-venue',
+			)
+		)->get();
+
+		$this->create_activity_event( '_slugs-past-venue', 'past' );
+		$this->create_activity_event( '_slugs-future-venue', 'upcoming' );
+
+		$slugs = Query::get_instance()->get_active_shadow_term_slugs( Venue::TAXONOMY, false );
+
+		$this->assertContains(
+			'_slugs-past-venue',
+			$slugs,
+			'A shadow term on a past event should resolve for the past branch.'
+		);
+		$this->assertNotContains(
+			'_slugs-future-venue',
+			$slugs,
+			'A shadow term on an upcoming event should not resolve for the past branch.'
+		);
+	}
+
+	/**
+	 * Sentinel terms carry no leading underscore, so the SQL LIKE clause keeps
+	 * them out of the resolved slugs.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_active_shadow_term_slugs
+	 *
+	 * @return void
+	 */
+	public function test_get_active_shadow_term_slugs_excludes_sentinel_terms(): void {
+		$this->create_activity_event( 'online-event', 'upcoming' );
+
+		$slugs = Query::get_instance()->get_active_shadow_term_slugs( Venue::TAXONOMY, true );
+
+		$this->assertNotContains(
+			'online-event',
+			$slugs,
+			'A sentinel term should never resolve as a shadow term slug.'
+		);
+	}
+
+	/**
+	 * An event that is private resolves only for a user who can read private
+	 * posts, which is the status branch the query builds at runtime.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_active_shadow_term_slugs
+	 *
+	 * @return void
+	 */
+	public function test_get_active_shadow_term_slugs_includes_private_events_for_privileged_user(): void {
+		$this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'slugs-private-venue',
+			)
+		)->get();
+
+		$this->create_activity_event( '_slugs-private-venue', 'upcoming', 'private' );
+
+		$instance = Query::get_instance();
+
+		wp_set_current_user( 0 );
+
+		$this->assertNotContains(
+			'_slugs-private-venue',
+			$instance->get_active_shadow_term_slugs( Venue::TAXONOMY, true ),
+			'A private event should not resolve for a user without read_private_posts.'
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$this->assertContains(
+			'_slugs-private-venue',
+			$instance->get_active_shadow_term_slugs( Venue::TAXONOMY, true ),
+			'A private event should resolve for a user with read_private_posts.'
+		);
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * With no post type declaring event-date support there is nothing to join
+	 * against, so the query bails before building an empty IN () list.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_active_shadow_term_slugs
+	 *
+	 * @return void
+	 */
+	public function test_get_active_shadow_term_slugs_bails_without_event_post_types(): void {
+		$this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'slugs-unsupported-venue',
+			)
+		)->get();
+
+		$this->create_activity_event( '_slugs-unsupported-venue', 'upcoming' );
+
+		$event_post_types = get_post_types_by_support( 'gatherpress-event-date' );
+
+		foreach ( $event_post_types as $event_post_type ) {
+			remove_post_type_support( $event_post_type, 'gatherpress-event-date' );
+		}
+
+		$slugs = Query::get_instance()->get_active_shadow_term_slugs( Venue::TAXONOMY, true );
+
+		// Restore the support before asserting so a failure does not leak into
+		// the rest of the suite.
+		foreach ( $event_post_types as $event_post_type ) {
+			add_post_type_support( $event_post_type, 'gatherpress-event-date' );
+		}
+
+		$this->assertSame(
+			array(),
+			$slugs,
+			'No event post type should short-circuit to an empty slug list.'
+		);
+	}
+
+	/**
+	 * A post__in the query already carries is a narrower scope, so the activity
+	 * filter intersects with it rather than widening the result set.
+	 *
+	 * @since 0.36.0
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_prepare_query_intersects_existing_post_in(): void {
+		$instance = Query::get_instance();
+
+		$active_venue = $this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'intersect-active-venue',
+			)
+		)->get();
+		$other_venue  = $this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'intersect-other-venue',
+			)
+		)->get();
+
+		$this->create_activity_event( '_intersect-active-venue', 'upcoming' );
+
+		$query = new WP_Query();
+		$query->set( 'post_type', Venue::POST_TYPE );
+		$query->set( 'has_events_filter', 1 );
+		$query->set( 'upcoming_events_only', 1 );
+		$query->set( 'post__in', array( $active_venue->ID, $other_venue->ID ) );
+
+		$instance->prepare_event_query_before_execution( $query );
+
+		$this->assertSame(
+			array( $active_venue->ID ),
+			$query->get( 'post__in' ),
+			'The activity filter should narrow an existing post__in, not widen it.'
+		);
+	}
+
+	/**
+	 * When the existing post__in shares no IDs with the resolved source posts
+	 * the query pins to an impossible ID rather than falling open.
+	 *
+	 * @since 0.36.0
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_prepare_query_pins_empty_intersection_to_impossible_id(): void {
+		$instance = Query::get_instance();
+
+		$this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'disjoint-active-venue',
+			)
+		)->get();
+		$unrelated_venue = $this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'disjoint-unrelated-venue',
+			)
+		)->get();
+
+		$this->create_activity_event( '_disjoint-active-venue', 'upcoming' );
+
+		$query = new WP_Query();
+		$query->set( 'post_type', Venue::POST_TYPE );
+		$query->set( 'has_events_filter', 1 );
+		$query->set( 'upcoming_events_only', 1 );
+		$query->set( 'post__in', array( $unrelated_venue->ID ) );
+
+		$instance->prepare_event_query_before_execution( $query );
+
+		$this->assertSame(
+			array( 0 ),
+			$query->get( 'post__in' ),
+			'An empty intersection should pin post__in to an impossible ID.'
+		);
+	}
+
+	/**
+	 * Creates an event tagged with the given venue taxonomy term slug and an
+	 * upcoming or past datetime.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $term_slug   Venue taxonomy term slug to tag the event with.
+	 * @param string $state       'upcoming' or 'past'.
+	 * @param string $post_status Post status for the event.
+	 *
+	 * @return int Event post ID.
+	 */
+	protected function create_activity_event(
+		string $term_slug,
+		string $state,
+		string $post_status = 'publish'
+	): int {
+		$event_post = $this->mock->post(
+			array(
+				'post_type'   => 'gatherpress_event',
+				'post_status' => $post_status,
+			)
+		)->get();
+
+		wp_set_post_terms( $event_post->ID, $term_slug, Venue::TAXONOMY );
+
+		$event = new Event( $event_post->ID );
+
+		if ( 'upcoming' === $state ) {
+			$date   = new DateTime( 'tomorrow' );
+			$params = array(
+				'datetime_start' => $date->format( 'Y-m-d H:i:s' ),
+				'datetime_end'   => $date->modify( '+1 hour' )->format( 'Y-m-d H:i:s' ),
+				'timezone'       => 'America/New_York',
+			);
+		} else {
+			$date   = new DateTime( 'yesterday' );
+			$params = array(
+				'datetime_start' => $date->modify( '-1 day' )->format( 'Y-m-d H:i:s' ),
+				'datetime_end'   => $date->modify( '+1 hour' )->format( 'Y-m-d H:i:s' ),
+				'timezone'       => 'America/New_York',
+			);
+		}
+
+		$event->save_datetimes( $params );
+
+		return $event_post->ID;
+	}
 }
