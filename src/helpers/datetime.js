@@ -849,3 +849,72 @@ export function removeNonTimePHPFormatChars( format ) {
 		.join( '' )
 		.trim();
 }
+
+/**
+ * Moment format for an all-day event's date, with no time.
+ *
+ * @since 0.36.0
+ *
+ * @return {string} The moment format.
+ */
+export function dateLabelFormat() {
+	return convertPHPToMomentFormat( getFromSettings( 'dateFormat' ) );
+}
+
+/**
+ * Snap a datetime to the beginning of its own day.
+ *
+ * Mirrors `Event::to_day_boundary()`, which enforces the same on save.
+ *
+ * @since 0.36.0
+ *
+ * @param {string} dateTime - The datetime, in the database format.
+ *
+ * @return {string} The datetime at the start of its day.
+ */
+export function toDayStart( dateTime ) {
+	return moment( dateTime ).startOf( 'day' ).format( dateTimeDatabaseFormat );
+}
+
+/**
+ * Snap a datetime to the end of its own day.
+ *
+ * @since 0.36.0
+ *
+ * @param {string} dateTime - The datetime, in the database format.
+ *
+ * @return {string} The datetime at the end of its day.
+ */
+export function toDayEnd( dateTime ) {
+	return moment( dateTime ).endOf( 'day' ).format( dateTimeDatabaseFormat );
+}
+
+/**
+ * The time of day from a datetime.
+ *
+ * @since 0.36.0
+ *
+ * @param {string} dateTime - The datetime, in the database format.
+ *
+ * @return {string} The time, as `HH:mm:ss`.
+ */
+export function getTimeOfDay( dateTime ) {
+	return moment( dateTime ).format( 'HH:mm:ss' );
+}
+
+/**
+ * Put a time of day onto a datetime's own date.
+ *
+ * Keeps the date that is currently selected, so restoring a remembered time
+ * does not also undo a date the author changed in the meantime.
+ *
+ * @since 0.36.0
+ *
+ * @param {string} dateTime - The datetime whose date to keep.
+ * @param {string} time     - The time of day, as `HH:mm:ss`.
+ *
+ * @return {string} The datetime, in the database format.
+ */
+export function withTimeOfDay( dateTime, time ) {
+	return `${ moment( dateTime ).format( 'YYYY-MM-DD' ) } ${ time }`;
+}

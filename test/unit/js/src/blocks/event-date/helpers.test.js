@@ -257,6 +257,7 @@ describe( 'resolveEventDateData', () => {
 				dateTimeStart: undefined,
 				dateTimeEnd: undefined,
 				timezone: undefined,
+				isAllDay: false,
 				isLoading: true,
 				isValidEvent: false,
 			} );
@@ -279,6 +280,7 @@ describe( 'resolveEventDateData', () => {
 				dateTimeStart: undefined,
 				dateTimeEnd: undefined,
 				timezone: undefined,
+				isAllDay: false,
 				isLoading: false,
 				isValidEvent: false,
 			} );

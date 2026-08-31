@@ -14,6 +14,7 @@ namespace GatherPress\Core\Event;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use DateTimeImmutable;
 use DateTimeZone;
 use Exception;
 use GatherPress\Core\Calendar;
@@ -288,27 +289,26 @@ class Event {
 			? in_array( $type, array( 'end', 'both' ), true )
 			: true;
 
-		// Set start date/time.
-		$start_datetime_format = $start_format ? $start_format : "{$date_format} {$time_format}";
-		$start                 = $show_start ? $this->get_datetime_start( $start_datetime_format ) : false;
+		$formats = $this->get_display_formats(
+			$start_format,
+			$end_format,
+			$date_format,
+			$time_format
+		);
 
-		// Set end date/time.
-		if ( $show_end ) {
-			$end_time_format     = $end_format ? $end_format : $time_format;
-			$end_datetime_format = $end_format ? $end_format : "{$date_format} {$time_format}";
-
-			$end = $show_start && $this->is_same_date()
-				? $this->get_time_end( $end_time_format )
-				: $this->get_datetime_end( $end_datetime_format );
-		} else {
-			$end = false;
-		}
+		$start = $show_start ? $this->get_datetime_start( $formats['start'] ) : false;
+		$end   = $show_end
+			? $this->get_display_end( $formats, $show_start && $this->is_same_date() )
+			: false;
 
 		// Add separator if there's both start and end date/time.
 		$default_separator = $separator ? $separator : __( 'to', 'gatherpress' );
 		$separator         = $start && $end ? $default_separator : false;
 
-		// Add timezone.
+		// Add timezone. Not special-cased for an all-day event: the date is
+		// anchored to the event's zone, and with no time to infer it from,
+		// naming the zone is the only thing that says which day's 24 hours
+		// this is. The existing setting decides, as it does for any event.
 		if ( $show_timezone ? 'yes' === $show_timezone : $timezone ) {
 			$timezone = $this->get_datetime_start( $timezone );
 		} else {
@@ -469,6 +469,153 @@ class Event {
 	}
 
 	/**
+	 * Snap a datetime to the beginning or the end of its own day.
+	 *
+	 * An all-day event stores a span that really covers the day rather than
+	 * hiding a time that is still 3pm underneath, so exports, duration and
+	 * date queries stay correct.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $datetime The datetime, in `Y-m-d H:i:s`.
+	 * @param string $which    Which boundary, 'start' or 'end'.
+	 *
+	 * @return string The snapped datetime, or the original when it has no date.
+	 */
+	public static function to_day_boundary( string $datetime, string $which ): string {
+		$date = substr( trim( $datetime ), 0, 10 );
+		$time = 'start' === $which ? '00:00:00' : '23:59:59';
+
+		// Anything that is not a date to begin with is left alone rather than
+		// turned into midnight on a day nobody chose.
+		if ( ! Validate::datetime( sprintf( '%s %s', $date, $time ) ) ) {
+			return $datetime;
+		}
+
+		return sprintf( '%s %s', $date, $time );
+	}
+
+	/**
+	 * Format an all-day event's datetime.
+	 *
+	 * An all-day event carries no timezone, the way a calendar's date value
+	 * does: August 29 is August 29 in Tokyo and in Los Angeles. Converting the
+	 * stored GMT would land the day before or after depending on which side of
+	 * the meridian the event sits, so the local column is read and both parsed
+	 * and rendered in the event's own zone. The date therefore never moves,
+	 * and a format asking for the zone still names the one the day belongs to
+	 * rather than GMT.
+	 *
+	 * The GMT columns stay a real instant, because ordering upcoming against
+	 * past genuinely wants one.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string               $format The PHP date format.
+	 * @param string               $which  Which datetime to format, 'start' or 'end'.
+	 * @param bool                 $local  Whether the datetime is being rendered in local time.
+	 * @param array<string, mixed> $dt     The event's datetime data.
+	 *
+	 * @return string The formatted datetime.
+	 */
+	protected function get_formatted_all_day( string $format, string $which, bool $local, array $dt ): string {
+		$date = (string) $dt[ sprintf( 'datetime_%s', $which ) ];
+
+		if ( empty( $date ) ) {
+			return '';
+		}
+
+		$zone = in_array( $dt['timezone'], Utility::list_timezone_and_utc_offsets(), true )
+			? Utility::normalize_timezone_string( (string) $dt['timezone'] )
+			: 'GMT+0000';
+		$tz   = new DateTimeZone( $zone );
+
+		return trim(
+			(string) wp_date(
+				apply_filters( 'gatherpress_datetime_format', $format, $which, $local ),
+				( new DateTimeImmutable( $date, $tz ) )->getTimestamp(),
+				$tz
+			)
+		);
+	}
+
+	/**
+	 * Whether this event runs for whole days rather than at a time.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return bool True when the event is all day.
+	 */
+	public function is_all_day(): bool {
+		if ( ! $this->post ) {
+			return false;
+		}
+
+		return (bool) get_post_meta( $this->post->ID, 'gatherpress_is_all_day', true );
+	}
+
+	/**
+	 * Resolve the formats one rendered datetime range is built from.
+	 *
+	 * The site keeps its date and time formats separately, so an all-day
+	 * event simply uses the date one and never reaches for the time. A format
+	 * set explicitly on the block is left alone: whoever typed it said what
+	 * they wanted this event to read as.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $start_format Explicit start format, or an empty string.
+	 * @param string $end_format   Explicit end format, or an empty string.
+	 * @param string $date_format  The site's date format.
+	 * @param string $time_format  The site's time format.
+	 *
+	 * @return array{start: string, end: string, end_time: string} The formats to render with.
+	 */
+	protected function get_display_formats(
+		string $start_format,
+		string $end_format,
+		string $date_format,
+		string $time_format
+	): array {
+		if ( $this->is_all_day() ) {
+			return array(
+				'start'    => $start_format ? $start_format : $date_format,
+				'end'      => $end_format ? $end_format : $date_format,
+				// Nothing follows the start date of a one-day event.
+				'end_time' => $end_format,
+			);
+		}
+
+		return array(
+			'start'    => $start_format ? $start_format : "{$date_format} {$time_format}",
+			'end'      => $end_format ? $end_format : "{$date_format} {$time_format}",
+			'end_time' => $end_format ? $end_format : $time_format,
+		);
+	}
+
+	/**
+	 * The end of a rendered datetime range.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array{start: string, end: string, end_time: string} $formats   The formats to render with.
+	 * @param bool                                                $same_date Whether the event starts and ends
+	 *                                                                       on the same day.
+	 *
+	 * @return string|false The rendered end, or false when there is nothing to add.
+	 */
+	protected function get_display_end( array $formats, bool $same_date ) {
+		if ( ! $same_date ) {
+			return $this->get_datetime_end( $formats['end'] );
+		}
+
+		// An all-day event has no end time, and its date has already been said.
+		return '' === $formats['end_time']
+			? false
+			: $this->get_time_end( $formats['end_time'] );
+	}
+
+	/**
 	 * Format a datetime value for display.
 	 *
 	 * This method takes a datetime value from the event table, formats it according to the specified PHP date format,
@@ -490,9 +637,14 @@ class Event {
 		bool $local = true
 	): string {
 		$dt             = $this->get_datetime();
-		$date           = $dt[ sprintf( 'datetime_%s_gmt', $which ) ];
 		$dt['timezone'] = Utility::maybe_convert_utc_offset( $dt['timezone'] );
 		$tz             = null;
+
+		if ( $this->is_all_day() ) {
+			return $this->get_formatted_all_day( $format, $which, $local, $dt );
+		}
+
+		$date = $dt[ sprintf( 'datetime_%s_gmt', $which ) ];
 
 		if (
 			true === $local
@@ -818,6 +970,11 @@ class Event {
 
 		$fields['timezone'] = ( ! empty( $fields['timezone'] ) ) ? $fields['timezone'] : wp_timezone_string();
 		$timezone           = new DateTimeZone( Utility::normalize_timezone_string( (string) $fields['timezone'] ) );
+
+		if ( $this->is_all_day() ) {
+			$fields['datetime_start'] = self::to_day_boundary( (string) $fields['datetime_start'], 'start' );
+			$fields['datetime_end']   = self::to_day_boundary( (string) $fields['datetime_end'], 'end' );
+		}
 
 		$fields['datetime_start_gmt'] = $this->get_gmt_datetime( (string) $fields['datetime_start'], $timezone );
 		$fields['datetime_end_gmt']   = $this->get_gmt_datetime( (string) $fields['datetime_end'], $timezone );

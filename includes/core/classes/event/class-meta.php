@@ -157,6 +157,14 @@ final class Meta {
 				'single'            => true,
 				'type'              => 'string',
 			),
+			'gatherpress_is_all_day'         => array(
+				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'boolean',
+				'default'           => false,
+			),
 		);
 
 		foreach ( $event_date_meta as $meta_key => $args ) {

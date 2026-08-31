@@ -24,6 +24,7 @@ import {
 	ToolbarGroup,
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
+import { useEffect, useRef } from '@wordpress/element';
 
 /**
  * Internal dependencies
@@ -48,13 +49,14 @@ import { resolveEventDateData } from './helpers';
 /**
  * Similar to get_display_datetime method in class-event.php.
  *
- * @param {string} dateTimeStart
- * @param {string} dateTimeEnd
- * @param {string} timezone
- * @param {string} startFormat
- * @param {string} endFormat
- * @param {string} separator
- * @param {string} showTimezone
+ * @param {string}  dateTimeStart
+ * @param {string}  dateTimeEnd
+ * @param {string}  timezone
+ * @param {string}  startFormat
+ * @param {string}  endFormat
+ * @param {string}  separator
+ * @param {string}  showTimezone
+ * @param {boolean} isAllDay
  *
  * @return {string} Displayed date.
  */
@@ -65,12 +67,15 @@ const displayDateTime = (
 	startFormat,
 	endFormat,
 	separator,
-	showTimezone
+	showTimezone,
+	isAllDay = false
 ) => {
 	const dateFormat = getFromSettings( 'dateFormat' );
 	const timeFormat = getFromSettings( 'timeFormat' );
 	const globalShowTimezone = getFromSettings( 'showTimezone' );
-	const fullFormat = `${ dateFormat } ${ timeFormat }`;
+	// The site keeps its date and time formats separately, so an all-day
+	// event simply uses the date one. Mirrors `Event::get_display_formats()`.
+	const fullFormat = isAllDay ? dateFormat : `${ dateFormat } ${ timeFormat }`;
 
 	timezone = getTimezone( timezone );
 	let sameStartEndDay = false;
@@ -100,8 +105,11 @@ const displayDateTime = (
 		endFormat = endFormat || fullFormat;
 
 		// Remove non-time characters from PHP date format if start and end
-		// are on the same day.
-		endFormat = sameStartEndDay ? removeNonTimePHPFormatChars( endFormat ) : endFormat;
+		// are on the same day. An all-day event has no time left to show, so
+		// its end drops out entirely.
+		if ( sameStartEndDay ) {
+			endFormat = isAllDay ? '' : removeNonTimePHPFormatChars( endFormat );
+		}
 
 		// There may be no valid PHP date/time chars left after the removal.
 		if ( ! endFormat ) {
@@ -213,10 +221,23 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const contextPostType = context?.postType;
 	const contextQueryId = context?.queryId;
 
-	const { dateTimeStart, dateTimeEnd, timezone, isLoading, isValidEvent } = useSelect(
+	const { dateTimeStart, dateTimeEnd, timezone, isAllDay, isLoading, isValidEvent } = useSelect(
 		( select ) => resolveEventDateData( select, contextPostType, contextQueryId, postId, hasExplicitOverride ),
 		[ postId, contextPostType, contextQueryId, hasExplicitOverride ]
 	);
+
+	// Turning an event all day almost always means not wanting the zone
+	// appended to a bare date, so the toggle follows. It is only set on the
+	// way in, so turning it back on afterwards sticks.
+	const wasAllDay = useRef( isAllDay );
+
+	useEffect( () => {
+		if ( isAllDay && ! wasAllDay.current && 'no' !== showTimezone ) {
+			setAttributes( { showTimezone: 'no' } );
+		}
+
+		wasAllDay.current = isAllDay;
+	}, [ isAllDay, showTimezone, setAttributes ] );
 
 	const blockProps = useBlockProps( {
 		style: {
@@ -246,6 +267,12 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const showStartTime = [ 'start', 'both' ].includes( displayType );
 	const showEndTime = [ 'end', 'both' ].includes( displayType );
 
+	// What the format fields fall back to, which is the date alone once the
+	// event is all day.
+	const formatPlaceholder = isAllDay
+		? dateFormat
+		: `${ dateFormat } ${ timeFormat }`;
+
 	const displayedDateTime = displayDateTime(
 		showStartTime ? finalDateTimeStart : null,
 		showEndTime ? finalDateTimeEnd : null,
@@ -253,7 +280,8 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		startDateFormat,
 		endDateFormat,
 		separator,
-		showTimezone
+		showTimezone,
+		isAllDay
 	);
 
 	return (
@@ -352,7 +380,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						<TextControl
 							label={ __( 'Start date format', 'gatherpress' ) }
 							value={ startDateFormat }
-							placeholder={ `${ dateFormat } ${ timeFormat }` }
+							placeholder={ formatPlaceholder }
 							onChange={ ( value ) =>
 								setAttributes( { startDateFormat: value } )
 							}
@@ -362,7 +390,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						<TextControl
 							label={ __( 'End date format', 'gatherpress' ) }
 							value={ endDateFormat }
-							placeholder={ `${ dateFormat } ${ timeFormat }` }
+							placeholder={ formatPlaceholder }
 							onChange={ ( value ) =>
 								setAttributes( { endDateFormat: value } )
 							}

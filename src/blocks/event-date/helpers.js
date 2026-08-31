@@ -36,7 +36,7 @@ export function resolveEventDateData( select, contextPostType, contextQueryId, p
 		.getPostType( editorPostType )?.supports?.[ 'gatherpress-event-date' ];
 
 	if ( ! postId ) {
-		return { dateTimeStart: undefined, dateTimeEnd: undefined, timezone: undefined, isLoading: false, isValidEvent: false };
+		return { dateTimeStart: undefined, dateTimeEnd: undefined, timezone: undefined, isAllDay: false, isLoading: false, isValidEvent: false };
 	}
 
 	// When editing an event directly (not inside a query loop), use the
@@ -62,6 +62,12 @@ export function resolveEventDateData( select, contextPostType, contextQueryId, p
 			dateTimeStart: datetimeStore.getDateTimeStart(),
 			dateTimeEnd: datetimeStore.getDateTimeEnd(),
 			timezone: datetimeStore.getTimezone(),
+			// From the edited post's meta so the preview follows the toggle
+			// as it is flipped, rather than after a save.
+			isAllDay: Boolean(
+				select( 'core/editor' )?.getEditedPostAttribute?.( 'meta' )
+					?.gatherpress_is_all_day
+			),
 			isLoading: false,
 			isValidEvent: true,
 		};
@@ -73,13 +79,14 @@ export function resolveEventDateData( select, contextPostType, contextQueryId, p
 	if ( hasExplicitOverride && ! supportsEventDate ) {
 		const overridePost = findEventPostById( select, postId );
 		if ( ! overridePost ) {
-			return { dateTimeStart: undefined, dateTimeEnd: undefined, timezone: undefined, isLoading: false, isValidEvent: false };
+			return { dateTimeStart: undefined, dateTimeEnd: undefined, timezone: undefined, isAllDay: false, isLoading: false, isValidEvent: false };
 		}
 		const overrideMeta = overridePost.meta;
 		return {
 			dateTimeStart: overrideMeta?.gatherpress_datetime_start,
 			dateTimeEnd: overrideMeta?.gatherpress_datetime_end,
 			timezone: overrideMeta?.gatherpress_timezone,
+			isAllDay: Boolean( overrideMeta?.gatherpress_is_all_day ),
 			isLoading: false,
 			isValidEvent: true,
 		};
@@ -89,7 +96,7 @@ export function resolveEventDateData( select, contextPostType, contextQueryId, p
 	// doesn't support event-date we never call getEntityRecord, so its
 	// resolver never fires and hasFinishedResolution would stay false forever.
 	if ( ! supportsEventDate ) {
-		return { dateTimeStart: undefined, dateTimeEnd: undefined, timezone: undefined, isLoading: false, isValidEvent: false };
+		return { dateTimeStart: undefined, dateTimeEnd: undefined, timezone: undefined, isAllDay: false, isLoading: false, isValidEvent: false };
 	}
 
 	// For Query Loop and override contexts, fetch from entity record.
@@ -99,7 +106,7 @@ export function resolveEventDateData( select, contextPostType, contextQueryId, p
 	);
 
 	if ( ! hasResolved ) {
-		return { dateTimeStart: undefined, dateTimeEnd: undefined, timezone: undefined, isLoading: true, isValidEvent: false };
+		return { dateTimeStart: undefined, dateTimeEnd: undefined, timezone: undefined, isAllDay: false, isLoading: true, isValidEvent: false };
 	}
 
 	const post = select( 'core' ).getEntityRecord( 'postType', postType, postId );
@@ -109,6 +116,7 @@ export function resolveEventDateData( select, contextPostType, contextQueryId, p
 		dateTimeStart: meta?.gatherpress_datetime_start,
 		dateTimeEnd: meta?.gatherpress_datetime_end,
 		timezone: meta?.gatherpress_timezone,
+		isAllDay: Boolean( meta?.gatherpress_is_all_day ),
 		isLoading: false,
 		isValidEvent: !! post && 'publish' === post?.status,
 	};

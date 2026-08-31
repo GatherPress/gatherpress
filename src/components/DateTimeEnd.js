@@ -4,6 +4,7 @@
 import {
 	Button,
 	DateTimePicker,
+	DatePicker,
 	Dropdown,
 	Flex,
 	FlexItem,
@@ -21,6 +22,8 @@ import { hasEventPastNotice } from '../helpers/event';
 import {
 	createMomentWithTimezone,
 	dateTimeDatabaseFormat,
+	dateLabelFormat,
+	toDayEnd,
 	dateTimeLabelFormat,
 	getTimezone,
 	updateDateTimeEnd,
@@ -40,9 +43,14 @@ import { getSettings } from '@wordpress/date';
  * @return {JSX.Element} The rendered React component.
  */
 const DateTimeEnd = () => {
-	const { dateTimeEnd } = useSelect(
+	// An all-day event has no time to pick, and shows only its date.
+	const { dateTimeEnd, isAllDay } = useSelect(
 		( select ) => ( {
 			dateTimeEnd: select( 'gatherpress/datetime' ).getDateTimeEnd(),
+			isAllDay: Boolean(
+				select( 'core/editor' ).getEditedPostAttribute( 'meta' )
+					?.gatherpress_is_all_day,
+			),
 		} ),
 		[],
 	);
@@ -87,23 +95,38 @@ const DateTimeEnd = () => {
 								aria-expanded={ isOpen }
 								variant="link"
 							>
-								{ createMomentWithTimezone( dateTimeEnd, getTimezone() )
-									.format( dateTimeLabelFormat() ) }
+								{ createMomentWithTimezone( dateTimeEnd, getTimezone() ).format(
+									isAllDay ? dateLabelFormat() : dateTimeLabelFormat(),
+								) }
 							</Button>
 						) }
 						renderContent={ () => (
-							<DateTimePicker
-								currentDate={ dateTimeEnd }
-								onChange={ ( date ) =>
-									updateDateTimeEnd(
-										date,
-										setDateTimeEnd,
-										setDateTimeStart,
-									)
-								}
-								is12Hour={ is12HourTime }
-								startOfWeek={ getStartOfWeek() }
-							/>
+							isAllDay ? (
+								<DatePicker
+									currentDate={ dateTimeEnd }
+									onChange={ ( date ) =>
+										updateDateTimeEnd(
+											toDayEnd( date ),
+											setDateTimeEnd,
+											setDateTimeStart,
+										)
+									}
+									startOfWeek={ getStartOfWeek() }
+								/>
+							) : (
+								<DateTimePicker
+									currentDate={ dateTimeEnd }
+									onChange={ ( date ) =>
+										updateDateTimeEnd(
+											date,
+											setDateTimeEnd,
+											setDateTimeStart,
+										)
+									}
+									is12Hour={ is12HourTime }
+									startOfWeek={ getStartOfWeek() }
+								/>
+							)
 						) }
 					/>
 				</FlexItem>
