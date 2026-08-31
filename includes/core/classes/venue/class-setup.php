@@ -388,7 +388,7 @@ final class Setup {
 		 * is in scope.
 		 *
 		 * @since 0.27.0
-		 * @since 0.36.0 Definitions may include a `postTypes` key to
+		 * @since 0.35.0 Definitions may include a `postTypes` key to
 		 *               narrow a single pattern's registration.
 		 *
 		 * @param array $patterns   Pattern definitions loaded from the
