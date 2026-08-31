@@ -84,6 +84,7 @@ final class Setup {
 	 * @return void
 	 */
 	protected function instantiate_classes(): void {
+		Admin_List::get_instance();
 		Map_Setup::get_instance();
 		Meta::get_instance();
 	}

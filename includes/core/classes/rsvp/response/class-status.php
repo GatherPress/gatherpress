@@ -73,4 +73,40 @@ enum Status: string {
 
 		return $values;
 	}
+
+	/**
+	 * The human-readable name for this status.
+	 *
+	 * Lives on the enum so the list table's Response column and its filter
+	 * cannot drift apart.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string The translated label.
+	 */
+	public function label(): string {
+		// phpcs:ignore PHPCompatibility.Variables.ForbiddenThisUseContexts.OutsideObjectContext -- Enum instance methods have $this; the sniff reads this enum's first non-static method as a plain function.
+		return match ( $this ) {
+			self::ATTENDING     => __( 'Attending', 'gatherpress' ),
+			self::NOT_ATTENDING => __( 'Not Attending', 'gatherpress' ),
+			self::WAITING_LIST  => __( 'Waiting List', 'gatherpress' ),
+			self::NO_STATUS     => __( 'No Response', 'gatherpress' ),
+		};
+	}
+
+	/**
+	 * The statuses worth offering as a filter.
+	 *
+	 * `NO_STATUS` carries no term, so it is excluded.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return self[] The filterable cases.
+	 */
+	public static function filterable(): array {
+		return array_filter(
+			self::cases(),
+			static fn( self $status ): bool => self::NO_STATUS !== $status
+		);
+	}
 }
