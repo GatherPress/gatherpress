@@ -14,7 +14,6 @@ namespace GatherPress\Core\Event;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use DateTimeImmutable;
 use DateTimeZone;
 use Exception;
 use GatherPress\Core\Calendar;
@@ -575,16 +574,21 @@ class Event {
 			: 'GMT+0000';
 		$tz   = new DateTimeZone( $zone );
 
+		// `Validate::datetime()` accepts what `DateTime::createFromFormat()`
+		// accepts, which is wider than this: an overflowing value like
+		// '2030-06-31 25:00:00' is stored and read back, and constructing a
+		// date from it throws. Report no datetime rather than dying, matching
+		// what the timed path does with the same value.
+		$parsed = date_create( $date, $tz );
+
+		if ( false === $parsed ) {
+			return '';
+		}
+
 		/** This filter is documented in includes/core/classes/event/class-event.php */
 		$format = apply_filters( 'gatherpress_datetime_format', $format, $which, $local );
 
-		return trim(
-			(string) wp_date(
-				$format,
-				( new DateTimeImmutable( $date, $tz ) )->getTimestamp(),
-				$tz
-			)
-		);
+		return trim( (string) wp_date( $format, $parsed->getTimestamp(), $tz ) );
 	}
 
 	/**

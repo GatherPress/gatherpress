@@ -1977,6 +1977,35 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * An overflowing datetime renders nothing rather than dying.
+	 *
+	 * `Validate::datetime()` accepts what `DateTime::createFromFormat()`
+	 * accepts, which is wider than a real date, so a value like June 31st at
+	 * 25:00 survives `get_datetime()`. Constructing a date from it throws.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_formatted_all_day
+	 *
+	 * @return void
+	 */
+	public function test_get_formatted_all_day_with_an_overflowing_datetime(): void {
+		$post = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+
+		update_post_meta( $post->ID, 'gatherpress_is_all_day', true );
+
+		// Written straight to meta: `save_datetimes()` would convert it, and
+		// the point is what happens to a value that never went through it.
+		update_post_meta( $post->ID, 'gatherpress_datetime_start', '2030-06-31 25:00:00' );
+
+		$this->assertSame(
+			'',
+			( new Event( $post->ID ) )->get_formatted_datetime( 'F j, Y', 'start' ),
+			'Failed to assert an overflowing datetime renders nothing.'
+		);
+	}
+
+	/**
 	 * An unusable timezone still renders the day it was stored for.
 	 *
 	 * `get_datetime()` discards a stored timezone that does not validate, so
