@@ -515,22 +515,27 @@ class Event {
 	 *
 	 * @since 0.36.0
 	 *
-	 * Takes a datetime already through `normalize_datetime()`, so the date is
-	 * known to be the first ten characters rather than having to be found.
+	 * Finds the date rather than assuming where it sits, so the method holds
+	 * on its own instead of depending on having been handed something
+	 * `normalize_datetime()` had already been through.
 	 *
-	 * @param string $datetime The datetime, in `self::DATETIME_FORMAT`.
+	 * @param string $datetime Any datetime `date_create()` understands.
 	 * @param string $which    Which boundary, 'start' or 'end'.
 	 *
-	 * @return string The snapped datetime, or an empty string given one.
+	 * @return string The snapped datetime, or an empty string when there is
+	 *                no date to snap.
 	 */
 	protected static function to_day_boundary( string $datetime, string $which ): string {
-		if ( '' === $datetime ) {
-			return $datetime;
+		// An empty string parses to the current time rather than failing.
+		$parsed = '' === trim( $datetime ) ? false : date_create( $datetime );
+
+		if ( false === $parsed ) {
+			return '';
 		}
 
 		return sprintf(
 			'%s %s',
-			substr( $datetime, 0, 10 ),
+			$parsed->format( 'Y-m-d' ),
 			'start' === $which ? '00:00:00' : '23:59:59'
 		);
 	}

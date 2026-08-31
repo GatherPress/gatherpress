@@ -1591,6 +1591,40 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * Snapping holds on its own, without a caller having converted first.
+	 *
+	 * The method finds the date rather than assuming where it sits, so it
+	 * cannot silently slice ten characters off something in another shape.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::to_day_boundary
+	 *
+	 * @return void
+	 */
+	public function test_to_day_boundary_does_not_assume_a_format(): void {
+		$event = new Event( $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get()->ID );
+
+		$this->assertSame(
+			'2026-08-29 00:00:00',
+			Utility::invoke_hidden_method( $event, 'to_day_boundary', array( '2026-08-29T09:00:00', 'start' ) ),
+			'Failed to assert an ISO datetime snaps.'
+		);
+
+		$this->assertSame(
+			'2026-08-29 23:59:59',
+			Utility::invoke_hidden_method( $event, 'to_day_boundary', array( '29 August 2026 9:00am', 'end' ) ),
+			'Failed to assert a written-out date snaps.'
+		);
+
+		$this->assertSame(
+			'',
+			Utility::invoke_hidden_method( $event, 'to_day_boundary', array( 'not-a-date', 'start' ) ),
+			'Failed to assert a non-date snaps to nothing.'
+		);
+	}
+
+	/**
 	 * Every shape the save path accepts converts to the one format.
 	 *
 	 * `get_gmt_datetime()` takes anything `date_create()` understands, but
