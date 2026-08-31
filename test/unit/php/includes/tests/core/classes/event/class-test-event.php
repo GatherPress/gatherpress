@@ -2722,4 +2722,135 @@ class Test_Event extends Base {
 			),
 		);
 	}
+
+	/**
+	 * An event that refuses its timezone returns no timezone part.
+	 *
+	 * The block template consumes the parts array rather than the joined
+	 * string, so the refusal has to be visible there too. Invoked directly
+	 * because get_display_datetime() reaches this method inside the class,
+	 * which the PMC test framework does not trace into coverage.xml.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_display_datetime_parts
+	 *
+	 * @return void
+	 */
+	public function test_get_display_datetime_parts_omits_a_refused_timezone(): void {
+		update_option(
+			'gatherpress_settings',
+			array(
+				'date_format'   => 'F j, Y',
+				'time_format'   => 'g:i a',
+				'show_timezone' => true,
+			)
+		);
+
+		$post = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+
+		update_post_meta( $post->ID, 'gatherpress_show_timezone', 'never' );
+
+		( new Event( $post->ID ) )->save_datetimes(
+			array(
+				'datetime_start' => '2026-08-29 09:00:00',
+				'datetime_end'   => '2026-08-29 17:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		// 'yes' is what a block asking for the timezone sends: the event still
+		// overrules it.
+		$parts = ( new Event( $post->ID ) )->get_display_datetime_parts( '', '', '', '', 'yes' );
+
+		$this->assertFalse(
+			$parts['timezone'],
+			'Failed to assert an event that refuses its timezone returns no timezone part.'
+		);
+		$this->assertSame(
+			'August 29, 2026 9:00 am',
+			$parts['start'],
+			'Failed to assert the start part still renders.'
+		);
+		$this->assertSame(
+			'5:00 pm',
+			$parts['end'],
+			'Failed to assert the end part still renders.'
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * An all-day event formats through the all-day branch of format_datetime.
+	 *
+	 * The helper hands an all-day event to get_formatted_all_day() and
+	 * passes on whether the display-format filter applies. Invoked directly for
+	 * the same tracing reason as test_format_datetime_branches().
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::format_datetime
+	 *
+	 * @return void
+	 */
+	public function test_format_datetime_routes_an_all_day_event(): void {
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+
+		update_post_meta( $event_id, 'gatherpress_is_all_day', true );
+
+		( new Event( $event_id ) )->save_datetimes(
+			array(
+				'datetime_start' => '2026-08-29 09:00:00',
+				'datetime_end'   => '2026-08-29 17:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$event = new Event( $event_id );
+
+		$this->assertSame(
+			'August 29, 2026',
+			Utility::invoke_hidden_method(
+				$event,
+				'format_datetime',
+				array( 'F j, Y', 'start', true, false )
+			),
+			'Failed to assert an all-day event formats as the day it falls on.'
+		);
+
+		$filter = static function (): string {
+			return 'Y-m-d';
+		};
+
+		add_filter( 'gatherpress_datetime_format', $filter );
+
+		try {
+			$this->assertSame(
+				'2026-08-29',
+				Utility::invoke_hidden_method(
+					$event,
+					'format_datetime',
+					array( 'F j, Y', 'start', true, true )
+				),
+				'Failed to assert an all-day event applies the display-format filter when asked.'
+			);
+			$this->assertSame(
+				'August 29, 2026',
+				Utility::invoke_hidden_method(
+					$event,
+					'format_datetime',
+					array( 'F j, Y', 'start', true, false )
+				),
+				'Failed to assert an all-day event skips the filter when it is not asked for.'
+			);
+			$this->assertSame(
+				'2026-08-29T00:00:00-04:00',
+				$event->get_datetime_start_iso(),
+				'Failed to assert the ISO start of an all-day event ignores the display filter.'
+			);
+		} finally {
+			remove_filter( 'gatherpress_datetime_format', $filter );
+		}
+	}
 }
