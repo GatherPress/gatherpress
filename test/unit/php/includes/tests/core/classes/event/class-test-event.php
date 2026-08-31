@@ -2334,7 +2334,8 @@ class Test_Event extends Base {
 	 *
 	 * A block in a site template renders every event, so it cannot answer
 	 * this per event -- and an event rendered by such a template has no block
-	 * of its own to configure.
+	 * of its own to configure. Always and never overrule the block. Saying
+	 * nothing leaves the block to it, all day or not.
 	 *
 	 * @since 0.36.0
 	 *
@@ -2406,12 +2407,17 @@ class Test_Event extends Base {
 				false,
 				'A timed event that refuses should not name its timezone.',
 			),
+			'timed, always'         => array(
+				false,
+				'always',
+				true,
+				'A timed event that insists should name its timezone.',
+			),
 			'all day, nothing said' => array(
-				// A bare date has no time for a zone to qualify.
 				true,
 				'',
-				false,
-				'An all-day event should not name its timezone by default.',
+				true,
+				'An all-day event that says nothing should leave it to the block.',
 			),
 			'all day, always'       => array(
 				true,

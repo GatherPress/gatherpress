@@ -138,15 +138,14 @@ const displayDateTime = (
 		parts.push( createMomentWithTimezone( dateTimeEnd, timezone ).format( endFormat ) );
 	}
 
-	// Add timezone, event first. Mirrors `Event::get_display_datetime()`: the
-	// event overrides the block, and an all-day event that has not said
-	// otherwise shows none.
+	// Add timezone, event first. Mirrors `Event::get_display_datetime()`: an
+	// event that says either way is answered before the block is asked, and
+	// saying nothing leaves the block to it.
 	const namesTimezone =
 		'never' === timezonePreference
 			? false
 			: 'always' === timezonePreference ||
-				( ! isAllDay &&
-					( showTimezone ? 'yes' === showTimezone : globalShowTimezone ) );
+				( showTimezone ? 'yes' === showTimezone : globalShowTimezone );
 
 	if ( namesTimezone ) {
 		if ( isManualOffset( timezone ) ) {

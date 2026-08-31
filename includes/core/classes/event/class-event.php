@@ -267,13 +267,12 @@ class Event {
 		$separator         = $start && $end ? $default_separator : false;
 
 		// Add timezone, event first. A block in a site template renders every
-		// event, so it cannot know which of them are all day or which want
-		// their zone named; only the event can say. An all-day event that has
-		// not said otherwise shows none, since a bare date has no time for a
-		// zone to qualify.
+		// event and cannot know which of them want their zone named, so an
+		// event that says either way is answered before the block is asked.
+		// Saying nothing leaves it to the block, whatever kind of event it is.
 		$preference = $this->get_timezone_preference();
 
-		if ( 'never' === $preference || ( '' === $preference && $this->is_all_day() ) ) {
+		if ( 'never' === $preference ) {
 			$timezone = false;
 		} elseif ( 'always' === $preference || ( $show_timezone ? 'yes' === $show_timezone : $timezone ) ) {
 			$timezone = $this->get_datetime_start( $timezone ? $timezone : ' T' );

@@ -60,11 +60,11 @@ Turning All day back off restores the times the event had before, on whichever d
 
 Append time zone decides whether the event's timezone is printed after the date:
 
-* Default follows the Event Date block, or the site setting when the block does not say.
-* Always prints it.
-* Never leaves it off.
+* Always prints it, overruling the Event Date block.
+* Never leaves it off, overruling the Event Date block.
+* Default gives the event no say, so the block decides, falling back to the site setting when the block does not say either.
 
-The setting lives on the event rather than the block, so it still applies where the event date comes from a site template and there is no Event Date block in the post to configure.
+The setting lives on the event rather than the block, so Always and Never still apply where the event date comes from a site template and there is no Event Date block in the post to configure.
 
 Turning on All day moves the setting from Default to Never, since a bare date has no time for a timezone to qualify. Turning it back off returns it to Default. Always is left alone in both directions.
 
