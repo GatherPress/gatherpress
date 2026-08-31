@@ -813,4 +813,161 @@ class Test_Calendar extends Base {
 		$this->assertIsString( $url );
 		$this->assertNotEmpty( $url );
 	}
+
+	/**
+	 * Build an all-day event with local datetimes, specified timezone, and all-day meta.
+	 *
+	 * @param string $timezone   The timezone string.
+	 * @param string $start_date The start date in Y-m-d format.
+	 * @param string $end_date   The end date in Y-m-d format.
+	 *
+	 * @return int The event post ID.
+	 */
+	private function make_all_day_event(
+		string $timezone = 'Asia/Tokyo',
+		string $start_date = '2030-06-15',
+		string $end_date = '2030-06-15'
+	): int {
+		$event_id = $this->mock->post(
+			array(
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => 'All Day Event',
+				'post_name'  => 'all-day-event',
+			)
+		)->get()->ID;
+
+		$event = new Event( $event_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => "{$start_date} 00:00:00",
+				'datetime_end'   => "{$end_date} 23:59:59",
+				'timezone'       => $timezone,
+			)
+		);
+		update_post_meta( $event_id, 'gatherpress_is_all_day', 1 );
+
+		return $event_id;
+	}
+
+	/**
+	 * Coverage for get_google_destination_url with an all-day event.
+	 *
+	 * All-day events must serialize as floating dates with exclusive end date (YYYYMMDD/YYYYMMDD)
+	 * and no time/UTC offset component.
+	 *
+	 * @since 0.36.0
+	 * @ticket 2225
+	 * @covers ::get_google_destination_url
+	 *
+	 * @return void
+	 */
+	public function test_get_google_destination_url_with_all_day_event(): void {
+		$event_id = $this->make_all_day_event( 'Asia/Tokyo', '2030-06-15', '2030-06-15' );
+		$instance = new Calendar( $event_id );
+		$url      = $instance->get_google_destination_url();
+
+		$this->assertStringContainsString(
+			'dates=20300615%2F20300616',
+			$url,
+			'Google destination URL for a 1-day all-day event should use floating dates with exclusive end date.'
+		);
+
+		$multi_day_id = $this->make_all_day_event( 'Asia/Tokyo', '2030-06-15', '2030-06-17' );
+		$multi_inst   = new Calendar( $multi_day_id );
+		$multi_url    = $multi_inst->get_google_destination_url();
+
+		$this->assertStringContainsString(
+			'dates=20300615%2F20300618',
+			$multi_url,
+			'Google destination URL for a multi-day all-day event should use floating dates with exclusive end date.'
+		);
+	}
+
+	/**
+	 * Coverage for get_yahoo_destination_url with an all-day event.
+	 *
+	 * All-day events serialize start date as YYYYMMDD and duration as whole-day hours (2400 per day).
+	 *
+	 * @since 0.36.0
+	 * @ticket 2225
+	 * @covers ::get_yahoo_destination_url
+	 *
+	 * @return void
+	 */
+	public function test_get_yahoo_destination_url_with_all_day_event(): void {
+		$event_id = $this->make_all_day_event( 'Asia/Tokyo', '2030-06-15', '2030-06-15' );
+		$instance = new Calendar( $event_id );
+		$url      = $instance->get_yahoo_destination_url();
+
+		$this->assertStringContainsString(
+			'st=20300615',
+			$url,
+			'Yahoo destination URL should use Ymd start date for all-day events.'
+		);
+		$this->assertStringContainsString(
+			'dur=2400',
+			$url,
+			'Yahoo destination URL should use 2400 duration for a 1-day all-day event.'
+		);
+
+		$multi_day_id = $this->make_all_day_event( 'Asia/Tokyo', '2030-06-15', '2030-06-16' );
+		$multi_inst   = new Calendar( $multi_day_id );
+		$multi_url    = $multi_inst->get_yahoo_destination_url();
+
+		$this->assertStringContainsString(
+			'dur=4800',
+			$multi_url,
+			'Yahoo destination URL should use 4800 duration for a 2-day all-day event.'
+		);
+	}
+
+	/**
+	 * Coverage for get_ical_event_string with an all-day event.
+	 *
+	 * Per RFC 5545 §3.6.1, all-day events must use DTSTART;VALUE=DATE and DTEND;VALUE=DATE
+	 * with exclusive end date in local time without UTC offset drift.
+	 *
+	 * @since 0.36.0
+	 * @ticket 2225
+	 * @covers ::get_ical_event_string
+	 *
+	 * @return void
+	 */
+	public function test_get_ical_event_string_with_all_day_event(): void {
+		// Non-UTC timezone (Asia/Tokyo is UTC+9) where GMT start would fall on the previous day.
+		$event_id = $this->make_all_day_event( 'Asia/Tokyo', '2030-06-15', '2030-06-15' );
+		$instance = new Calendar( $event_id );
+		$vevent   = $instance->get_ical_event_string();
+
+		$this->assertStringContainsString(
+			'DTSTART;VALUE=DATE:20300615',
+			$vevent,
+			'iCal VEVENT for all-day event must use DTSTART;VALUE=DATE in local date.'
+		);
+		$this->assertStringContainsString(
+			'DTEND;VALUE=DATE:20300616',
+			$vevent,
+			'iCal VEVENT for all-day event must use DTEND;VALUE=DATE with exclusive end date.'
+		);
+		$this->assertStringNotContainsString(
+			'DTSTART:20300614',
+			$vevent,
+			'iCal all-day date must not drift to previous day due to GMT offset.'
+		);
+
+		// Multi-day all-day event.
+		$multi_day_id = $this->make_all_day_event( 'Asia/Tokyo', '2030-06-15', '2030-06-17' );
+		$multi_inst   = new Calendar( $multi_day_id );
+		$multi_vevent = $multi_inst->get_ical_event_string();
+
+		$this->assertStringContainsString(
+			'DTSTART;VALUE=DATE:20300615',
+			$multi_vevent
+		);
+		$this->assertStringContainsString(
+			'DTEND;VALUE=DATE:20300618',
+			$multi_vevent,
+			'Multi-day all-day event must have DTEND on the day after the last day.'
+		);
+	}
 }

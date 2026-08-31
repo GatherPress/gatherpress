@@ -152,11 +152,19 @@ final class Calendar {
 			return '';
 		}
 
-		$date_start  = $this->event->get_formatted_datetime( 'Ymd', 'start', false );
-		$time_start  = $this->event->get_formatted_datetime( 'His', 'start', false );
-		$date_end    = $this->event->get_formatted_datetime( 'Ymd', 'end', false );
-		$time_end    = $this->event->get_formatted_datetime( 'His', 'end', false );
-		$datetime    = sprintf( '%sT%sZ/%sT%sZ', $date_start, $time_start, $date_end, $time_end );
+		if ( $this->event->is_all_day() ) {
+			$date_start   = $this->event->get_formatted_datetime( 'Ymd', 'start' );
+			$end_date_str = $this->event->get_formatted_datetime( 'Y-m-d', 'end' );
+			$date_end     = gmdate( 'Ymd', (int) strtotime( $end_date_str . ' +1 day' ) );
+			$datetime     = sprintf( '%s/%s', $date_start, $date_end );
+		} else {
+			$date_start = $this->event->get_formatted_datetime( 'Ymd', 'start', false );
+			$time_start = $this->event->get_formatted_datetime( 'His', 'start', false );
+			$date_end   = $this->event->get_formatted_datetime( 'Ymd', 'end', false );
+			$time_end   = $this->event->get_formatted_datetime( 'His', 'end', false );
+			$datetime   = sprintf( '%sT%sZ/%sT%sZ', $date_start, $time_start, $date_end, $time_end );
+		}
+
 		$venue       = $this->event->get_venue_information();
 		$location    = $venue['name'];
 		$description = $this->event->get_calendar_description();
@@ -202,18 +210,30 @@ final class Calendar {
 			return '';
 		}
 
-		$date_start     = $this->event->get_formatted_datetime( 'Ymd', 'start', false );
-		$time_start     = $this->event->get_formatted_datetime( 'His', 'start', false );
-		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
+		if ( $this->event->is_all_day() ) {
+			$date_start     = $this->event->get_formatted_datetime( 'Ymd', 'start' );
+			$datetime_start = $date_start;
+			$start_ymd      = $this->event->get_formatted_datetime( 'Y-m-d', 'start' );
+			$end_ymd        = $this->event->get_formatted_datetime( 'Y-m-d', 'end' );
+			$diff_seconds   = (int) strtotime( $end_ymd ) - (int) strtotime( $start_ymd );
+			$days           = max( 1, (int) round( $diff_seconds / 86400 ) + 1 );
+			$hours          = str_pad( (string) ( $days * 24 ), 2, '0', STR_PAD_LEFT );
+			$minutes        = '00';
+		} else {
+			$date_start     = $this->event->get_formatted_datetime( 'Ymd', 'start', false );
+			$time_start     = $this->event->get_formatted_datetime( 'His', 'start', false );
+			$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
 
-		// Figure out duration of event in hours and minutes: hhmm format.
-		$diff_start  = $this->event->get_formatted_datetime( $this->event::DATETIME_FORMAT, 'start', false );
-		$diff_end    = $this->event->get_formatted_datetime( $this->event::DATETIME_FORMAT, 'end', false );
-		$duration    = ( ( strtotime( $diff_end ) - strtotime( $diff_start ) ) / 60 / 60 );
-		$full        = intval( $duration );
-		$fraction    = ( $duration - $full );
-		$hours       = str_pad( strval( $duration ), 2, '0', STR_PAD_LEFT );
-		$minutes     = str_pad( strval( $fraction * 60 ), 2, '0', STR_PAD_LEFT );
+			// Figure out duration of event in hours and minutes: hhmm format.
+			$diff_start = $this->event->get_formatted_datetime( $this->event::DATETIME_FORMAT, 'start', false );
+			$diff_end   = $this->event->get_formatted_datetime( $this->event::DATETIME_FORMAT, 'end', false );
+			$duration   = ( ( strtotime( $diff_end ) - strtotime( $diff_start ) ) / 60 / 60 );
+			$full       = intval( $duration );
+			$fraction   = ( $duration - $full );
+			$hours      = str_pad( strval( $duration ), 2, '0', STR_PAD_LEFT );
+			$minutes    = str_pad( strval( $fraction * 60 ), 2, '0', STR_PAD_LEFT );
+		}
+
 		$venue       = $this->event->get_venue_information();
 		$location    = $venue['name'];
 		$description = $this->event->get_calendar_description();
@@ -259,13 +279,24 @@ final class Calendar {
 			return '';
 		}
 
-		$date_start     = $this->event->get_formatted_datetime( 'Ymd', 'start', false );
-		$time_start     = $this->event->get_formatted_datetime( 'His', 'start', false );
-		$date_end       = $this->event->get_formatted_datetime( 'Ymd', 'end', false );
-		$time_end       = $this->event->get_formatted_datetime( 'His', 'end', false );
-		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
-		$datetime_end   = sprintf( '%sT%sZ', $date_end, $time_end );
-		$modified_gmt   = strtotime( $post->post_modified_gmt );
+		if ( $this->event->is_all_day() ) {
+			$date_start   = $this->event->get_formatted_datetime( 'Ymd', 'start' );
+			$end_date_str = $this->event->get_formatted_datetime( 'Y-m-d', 'end' );
+			$date_end     = gmdate( 'Ymd', (int) strtotime( $end_date_str . ' +1 day' ) );
+			$dtstart_line = sprintf( 'DTSTART;VALUE=DATE:%s', sanitize_text_field( $date_start ) );
+			$dtend_line   = sprintf( 'DTEND;VALUE=DATE:%s', sanitize_text_field( $date_end ) );
+		} else {
+			$date_start     = $this->event->get_formatted_datetime( 'Ymd', 'start', false );
+			$time_start     = $this->event->get_formatted_datetime( 'His', 'start', false );
+			$date_end       = $this->event->get_formatted_datetime( 'Ymd', 'end', false );
+			$time_end       = $this->event->get_formatted_datetime( 'His', 'end', false );
+			$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
+			$datetime_end   = sprintf( '%sT%sZ', $date_end, $time_end );
+			$dtstart_line   = sprintf( 'DTSTART:%s', sanitize_text_field( $datetime_start ) );
+			$dtend_line     = sprintf( 'DTEND:%s', sanitize_text_field( $datetime_end ) );
+		}
+
+		$modified_gmt = strtotime( $post->post_modified_gmt );
 
 		if ( false === $modified_gmt ) {
 			// DTSTAMP is required by RFC 5545, so an unparsable date still needs one.
@@ -291,8 +322,8 @@ final class Calendar {
 		$args = array(
 			'BEGIN:VEVENT',
 			sprintf( 'URL:%s', esc_url_raw( $permalink ) ),
-			sprintf( 'DTSTART:%s', sanitize_text_field( $datetime_start ) ),
-			sprintf( 'DTEND:%s', sanitize_text_field( $datetime_end ) ),
+			$dtstart_line,
+			$dtend_line,
 			sprintf( 'DTSTAMP:%s', sanitize_text_field( $datetime_stamp ) ),
 			sprintf( 'LAST-MODIFIED:%s', sanitize_text_field( $last_modified ) ),
 			sprintf( 'SEQUENCE:%d', $sequence ),
