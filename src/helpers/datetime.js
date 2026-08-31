@@ -14,7 +14,7 @@ import { select, useSelect } from '@wordpress/data';
 /**
  * Internal dependencies
  */
-import { getFromSettings } from './editor-settings';
+import { getFromConfig, getFromSettings } from './editor-settings';
 import { enableSave } from './editor';
 import DateTimePreview from '../components/DateTimePreview';
 
@@ -851,46 +851,18 @@ export function removeNonTimePHPFormatChars( format ) {
 }
 
 /**
- * Time and timezone PHP DateTime formatting characters.
- *
- * The complement of `phpNonTimeFormatChars`, less the separators. An
- * all-day date is floating, so the zone goes with the time.
- *
- * @since 0.36.0
- *
- * @type {Array}
- */
-export const phpTimeFormatChars = [
-	'a',
-	'A',
-	'B',
-	'g',
-	'G',
-	'h',
-	'H',
-	'i',
-	's',
-	'u',
-	'v',
-	'e',
-	'I',
-	'O',
-	'P',
-	'p',
-	'T',
-	'Z',
-	'c',
-	'r',
-	'U',
-];
-
-/**
  * Strip the time out of a PHP format string.
  *
  * Leaves the date behind, along with whatever separated it from the time:
  * 'F j, Y g:i a' keeps 'F j, Y'. A format that was only ever a time has
  * nothing left to render, so it reports none rather than the punctuation
- * between the parts it lost. Mirrors `Event::remove_time_format_chars()`.
+ * between the parts it lost.
+ *
+ * The characters come from `Event::PHP_TIME_FORMAT_CHARS` through the
+ * editor settings, so the two sides of `Event::get_display_formats()` read
+ * one list. Without them the format is left alone: the front end still
+ * renders the event correctly, and only the preview shows a time it should
+ * not.
  *
  * @since 0.36.0
  *
@@ -900,9 +872,11 @@ export const phpTimeFormatChars = [
  *                  date survives it.
  */
 export function removeTimePHPFormatChars( format ) {
+	const timeChars = getFromConfig( 'timeFormatChars' ) || [];
+
 	return format
 		.split( '' )
-		.filter( ( char ) => ! phpTimeFormatChars.includes( char ) )
+		.filter( ( char ) => ! timeChars.includes( char ) )
 		.join( '' )
 		.replace( /^[\s:,\-/.]+|[\s:,\-/.]+$/g, '' );
 }

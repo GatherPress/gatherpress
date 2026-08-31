@@ -8,6 +8,7 @@
 
 namespace GatherPress\Tests\Core;
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Settings\Credits;
 use GatherPress\Core\Settings\Events;
@@ -191,6 +192,30 @@ class Test_Settings extends Base {
 			'pluginUrl',
 			$settings['gatherpress']['config'],
 			'Failed to assert this callback still adds its own config keys.'
+		);
+	}
+
+	/**
+	 * The editor is handed the same time characters PHP formats with.
+	 *
+	 * `removeTimePHPFormatChars()` strips an all-day format with this list,
+	 * and `Event::remove_time_format_chars()` strips the same format with
+	 * the constant. The preview and the rendered event agree only while the
+	 * two are the same list.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::add_editor_settings
+	 *
+	 * @return void
+	 */
+	public function test_add_editor_settings_sends_the_time_format_chars(): void {
+		$settings = Settings::get_instance()->add_editor_settings( array() );
+
+		$this->assertSame(
+			Event::PHP_TIME_FORMAT_CHARS,
+			$settings['gatherpress']['config']['timeFormatChars'],
+			'Failed to assert the editor is sent the time formatting characters.'
 		);
 	}
 

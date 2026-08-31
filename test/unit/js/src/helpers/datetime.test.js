@@ -64,10 +64,11 @@ jest.mock( '@wordpress/core-data', () => ( {
 /**
  * Internal dependencies
  */
-import { getFromSettings } from '@src/helpers/editor-settings';
+import { getFromConfig, getFromSettings } from '@src/helpers/editor-settings';
 
 jest.mock( '@src/helpers/editor-settings', () => ( {
 	getFromSettings: jest.fn(),
+	getFromConfig: jest.fn(),
 } ) );
 
 jest.mock( '@src/helpers/editor', () => ( {
@@ -1189,6 +1190,24 @@ describe( 'all-day helpers', () => {
 } );
 
 describe( 'removeTimePHPFormatChars', () => {
+	// The list PHP sends, from `Event::PHP_TIME_FORMAT_CHARS`.
+	const timeChars = [
+		'a', 'A', 'B', 'g', 'G', 'h', 'H', 'i', 's', 'u', 'v',
+		'e', 'I', 'O', 'P', 'p', 'T', 'Z', 'c', 'r', 'U',
+	];
+
+	beforeEach( () => {
+		getFromConfig.mockImplementation( ( key ) =>
+			'timeFormatChars' === key ? timeChars : undefined
+		);
+	} );
+
+	test( 'leaves the format alone when the editor sent no list', () => {
+		getFromConfig.mockReturnValue( undefined );
+
+		expect( removeTimePHPFormatChars( 'F j, Y g:i a' ) ).toBe( 'F j, Y g:i a' );
+	} );
+
 	test( 'keeps the date and drops the time', () => {
 		expect( removeTimePHPFormatChars( 'F j, Y g:i a' ) ).toBe( 'F j, Y' );
 	} );

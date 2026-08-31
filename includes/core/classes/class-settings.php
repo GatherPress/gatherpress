@@ -215,6 +215,7 @@ class Settings {
 		$settings['gatherpress']['config'] = array_merge(
 			$settings['gatherpress']['config'] ?? array(),
 			array(
+				'timeFormatChars'       => Event::PHP_TIME_FORMAT_CHARS,
 				'timezoneChoices'       => Utility::timezone_choices(),
 				'siteTimezone'          => Utility::get_system_timezone(),
 				'pluginUrl'             => GATHERPRESS_CORE_URL,
