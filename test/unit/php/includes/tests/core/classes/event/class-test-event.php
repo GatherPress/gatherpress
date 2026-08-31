@@ -2045,4 +2045,158 @@ class Test_Event extends Base {
 			'Failed to assert the date survives a timezone that cannot be used.'
 		);
 	}
+
+	/**
+	 * An event says whether it names its timezone, or leaves it to the block.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_timezone_preference
+	 *
+	 * @return void
+	 */
+	public function test_get_timezone_preference(): void {
+		$post = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+
+		$this->assertSame(
+			'',
+			( new Event( $post->ID ) )->get_timezone_preference(),
+			'Failed to assert an event leaves the timezone to the block by default.'
+		);
+
+		foreach ( array( 'always', 'never' ) as $preference ) {
+			update_post_meta( $post->ID, 'gatherpress_show_timezone', $preference );
+
+			$this->assertSame(
+				$preference,
+				( new Event( $post->ID ) )->get_timezone_preference(),
+				sprintf( 'Failed to assert an event can say %s.', $preference )
+			);
+		}
+
+		// Anything else is not an answer, so the block decides.
+		update_post_meta( $post->ID, 'gatherpress_show_timezone', 'sometimes' );
+
+		$this->assertSame(
+			'',
+			( new Event( $post->ID ) )->get_timezone_preference(),
+			'Failed to assert an unknown preference falls back to the block.'
+		);
+	}
+
+	/**
+	 * A post ID that is not an event has no preference.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_timezone_preference
+	 *
+	 * @return void
+	 */
+	public function test_get_timezone_preference_without_a_post(): void {
+		$this->assertSame(
+			'',
+			( new Event( 0 ) )->get_timezone_preference(),
+			'Failed to assert a missing post has no preference.'
+		);
+	}
+
+	/**
+	 * The event decides about its timezone before the block does.
+	 *
+	 * A block in a site template renders every event, so it cannot answer
+	 * this per event -- and an event rendered by such a template has no block
+	 * of its own to configure.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @dataProvider data_timezone_precedence
+	 *
+	 * @covers ::get_display_datetime
+	 *
+	 * @param bool   $all_day    Whether the event is all day.
+	 * @param string $preference What the event says about its timezone.
+	 * @param bool   $expects    Whether the timezone should be named.
+	 * @param string $message    What the case is proving.
+	 *
+	 * @return void
+	 */
+	public function test_timezone_precedence(
+		bool $all_day,
+		string $preference,
+		bool $expects,
+		string $message
+	): void {
+		update_option(
+			'gatherpress_settings',
+			array(
+				'date_format'   => 'F j, Y',
+				'time_format'   => 'g:i a',
+				'show_timezone' => true,
+			)
+		);
+
+		$post = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+
+		update_post_meta( $post->ID, 'gatherpress_is_all_day', $all_day );
+		update_post_meta( $post->ID, 'gatherpress_show_timezone', $preference );
+
+		( new Event( $post->ID ) )->save_datetimes(
+			array(
+				'post_id'        => $post->ID,
+				'datetime_start' => '2026-08-29 09:00:00',
+				'datetime_end'   => '2026-08-29 17:00:00',
+				'timezone'       => 'UTC',
+			)
+		);
+
+		$this->assertSame(
+			$expects,
+			str_contains( ( new Event( $post->ID ) )->get_display_datetime(), 'UTC' ),
+			$message
+		);
+	}
+
+	/**
+	 * Data provider for timezone precedence.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return array<string, array<int, bool|string>> Cases.
+	 */
+	public function data_timezone_precedence(): array {
+		return array(
+			'timed, nothing said'   => array(
+				false,
+				'',
+				true,
+				'A timed event should follow the site setting.',
+			),
+			'timed, never'          => array(
+				false,
+				'never',
+				false,
+				'A timed event that refuses should not name its timezone.',
+			),
+			'all day, nothing said' => array(
+				// A bare date has no time for a zone to qualify.
+				true,
+				'',
+				false,
+				'An all-day event should not name its timezone by default.',
+			),
+			'all day, always'       => array(
+				true,
+				'always',
+				true,
+				'An all-day event that insists should name its timezone.',
+			),
+			'all day, never'        => array(
+				true,
+				'never',
+				false,
+				'An all-day event that refuses should not name its timezone.',
+			),
+		);
+	}
 }

@@ -392,6 +392,7 @@ class Test_Meta extends Base {
 	 */
 	public function test_registers_the_all_day_meta(): void {
 		unregister_post_meta( Event::POST_TYPE, 'gatherpress_is_all_day' );
+		unregister_post_meta( Event::POST_TYPE, 'gatherpress_show_timezone' );
 
 		Meta::get_instance()->register( Event::POST_TYPE );
 
@@ -413,6 +414,18 @@ class Test_Meta extends Base {
 			'boolean',
 			$meta['gatherpress_is_all_day']['type'],
 			'Failed to assert the flag is a boolean.'
+		);
+
+		$this->assertArrayHasKey(
+			'gatherpress_show_timezone',
+			$meta,
+			'Failed to assert the timezone preference is registered.'
+		);
+
+		$this->assertSame(
+			'',
+			$meta['gatherpress_show_timezone']['default'],
+			'Failed to assert an event leaves the timezone to the block by default.'
 		);
 	}
 }

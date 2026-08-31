@@ -81,7 +81,9 @@ const DateTimeEnd = () => {
 				<FlexItem>
 					<h3 style={ { marginBottom: 0 } }>
 						<label htmlFor="gatherpress-datetime-end">
-							{ __( 'Date & time end', 'gatherpress' ) }
+							{ isAllDay
+								? __( 'Date end', 'gatherpress' )
+								: __( 'Date & time end', 'gatherpress' ) }
 						</label>
 					</h3>
 				</FlexItem>

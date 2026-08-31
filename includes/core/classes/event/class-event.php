@@ -304,12 +304,17 @@ class Event {
 		$default_separator = $separator ? $separator : __( 'to', 'gatherpress' );
 		$separator         = $start && $end ? $default_separator : false;
 
-		// Add timezone. Not special-cased for an all-day event: the date is
-		// anchored to the event's zone, and with no time to infer it from,
-		// naming the zone is the only thing that says which day's 24 hours
-		// this is. The existing setting decides, as it does for any event.
-		if ( $show_timezone ? 'yes' === $show_timezone : $timezone ) {
-			$timezone = $this->get_datetime_start( $timezone );
+		// Add timezone, event first. A block in a site template renders every
+		// event, so it cannot know which of them are all day or which want
+		// their zone named; only the event can say. An all-day event that has
+		// not said otherwise shows none, since a bare date has no time for a
+		// zone to qualify.
+		$preference = $this->get_timezone_preference();
+
+		if ( 'never' === $preference || ( '' === $preference && $this->is_all_day() ) ) {
+			$timezone = false;
+		} elseif ( 'always' === $preference || ( $show_timezone ? 'yes' === $show_timezone : $timezone ) ) {
+			$timezone = $this->get_datetime_start( $timezone ? $timezone : ' T' );
 		} else {
 			$timezone = false;
 		}
@@ -589,6 +594,27 @@ class Event {
 		$format = apply_filters( 'gatherpress_datetime_format', $format, $which, $local );
 
 		return trim( (string) wp_date( $format, $parsed->getTimestamp(), $tz ) );
+	}
+
+	/**
+	 * What this event says about showing its timezone.
+	 *
+	 * Overrides the block and the site setting, because a block in a site
+	 * template renders every event and cannot answer this per event.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string 'always', 'never', or an empty string to leave it to the
+	 *                block and the site setting.
+	 */
+	public function get_timezone_preference(): string {
+		if ( ! $this->post ) {
+			return '';
+		}
+
+		$preference = (string) get_post_meta( $this->post->ID, 'gatherpress_show_timezone', true );
+
+		return in_array( $preference, array( 'always', 'never' ), true ) ? $preference : '';
 	}
 
 	/**

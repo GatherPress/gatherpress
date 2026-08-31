@@ -24,7 +24,6 @@ import {
 	ToolbarGroup,
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
-import { useEffect, useRef } from '@wordpress/element';
 
 /**
  * Internal dependencies
@@ -57,6 +56,7 @@ import { resolveEventDateData } from './helpers';
  * @param {string}  separator
  * @param {string}  showTimezone
  * @param {boolean} isAllDay
+ * @param {string}  timezonePreference
  *
  * @return {string} Displayed date.
  */
@@ -68,7 +68,8 @@ const displayDateTime = (
 	endFormat,
 	separator,
 	showTimezone,
-	isAllDay = false
+	isAllDay = false,
+	timezonePreference = ''
 ) => {
 	const dateFormat = getFromSettings( 'dateFormat' );
 	const timeFormat = getFromSettings( 'timeFormat' );
@@ -128,8 +129,17 @@ const displayDateTime = (
 		parts.push( createMomentWithTimezone( dateTimeEnd, timezone ).format( endFormat ) );
 	}
 
-	// Add timezone.
-	if ( showTimezone ? 'yes' === showTimezone : globalShowTimezone ) {
+	// Add timezone, event first. Mirrors `Event::get_display_datetime()`: the
+	// event overrides the block, and an all-day event that has not said
+	// otherwise shows none.
+	const namesTimezone =
+		'never' === timezonePreference
+			? false
+			: 'always' === timezonePreference ||
+				( ! isAllDay &&
+					( showTimezone ? 'yes' === showTimezone : globalShowTimezone ) );
+
+	if ( namesTimezone ) {
 		if ( isManualOffset( timezone ) ) {
 			// For manual offsets, display them as GMT+/-offset.
 			// Convert +05:30 to GMT+0530, -04:30 to GMT-0430, +00:00 to GMT+0000.
@@ -221,23 +231,18 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const contextPostType = context?.postType;
 	const contextQueryId = context?.queryId;
 
-	const { dateTimeStart, dateTimeEnd, timezone, isAllDay, isLoading, isValidEvent } = useSelect(
+	const {
+		dateTimeStart,
+		dateTimeEnd,
+		timezone,
+		isAllDay,
+		timezonePreference,
+		isLoading,
+		isValidEvent,
+	} = useSelect(
 		( select ) => resolveEventDateData( select, contextPostType, contextQueryId, postId, hasExplicitOverride ),
 		[ postId, contextPostType, contextQueryId, hasExplicitOverride ]
 	);
-
-	// Turning an event all day almost always means not wanting the zone
-	// appended to a bare date, so the toggle follows. It is only set on the
-	// way in, so turning it back on afterwards sticks.
-	const wasAllDay = useRef( isAllDay );
-
-	useEffect( () => {
-		if ( isAllDay && ! wasAllDay.current && 'no' !== showTimezone ) {
-			setAttributes( { showTimezone: 'no' } );
-		}
-
-		wasAllDay.current = isAllDay;
-	}, [ isAllDay, showTimezone, setAttributes ] );
 
 	const blockProps = useBlockProps( {
 		style: {
@@ -281,7 +286,8 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		endDateFormat,
 		separator,
 		showTimezone,
-		isAllDay
+		isAllDay,
+		timezonePreference
 	);
 
 	return (

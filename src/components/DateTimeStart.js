@@ -95,7 +95,9 @@ const DateTimeStart = () => {
 				<FlexItem>
 					<h3 style={ { marginBottom: 0 } }>
 						<label htmlFor="gatherpress-datetime-start">
-							{ __( 'Date & time start', 'gatherpress' ) }
+							{ isAllDay
+								? __( 'Date start', 'gatherpress' )
+								: __( 'Date & time start', 'gatherpress' ) }
 						</label>
 					</h3>
 				</FlexItem>

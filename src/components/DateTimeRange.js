@@ -13,6 +13,7 @@ import {
 	useMatchedDuration,
 } from '../helpers/datetime';
 import AllDay from '../components/AllDay';
+import ShowTimezone from '../components/ShowTimezone';
 import DateTimeStart from '../components/DateTimeStart';
 import DateTimeEnd from '../components/DateTimeEnd';
 import Timezone from './Timezone';
@@ -113,10 +114,13 @@ const DateTimeRange = () => {
 				{ matchedDuration && ! isAllDay ? <Duration /> : <DateTimeEnd /> }
 			</section>
 			<section>
+				<AllDay />
+			</section>
+			<section>
 				<Timezone />
 			</section>
 			<section>
-				<AllDay />
+				<ShowTimezone />
 			</section>
 		</>
 	);

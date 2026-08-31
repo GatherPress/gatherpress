@@ -43,14 +43,14 @@ const AllDay = () => {
 		'gatherpress/datetime'
 	);
 
-	const isAllDay = useSelect(
-		( select ) =>
-			Boolean(
-				select( 'core/editor' ).getEditedPostAttribute( 'meta' )
-					?.gatherpress_is_all_day
-			),
-		[]
-	);
+	const { isAllDay, timezonePreference } = useSelect( ( select ) => {
+		const meta = select( 'core/editor' ).getEditedPostAttribute( 'meta' );
+
+		return {
+			isAllDay: Boolean( meta?.gatherpress_is_all_day ),
+			timezonePreference: meta?.gatherpress_show_timezone || '',
+		};
+	}, [] );
 
 	const { dateTimeStart, dateTimeEnd } = useSelect(
 		( select ) => ( {
@@ -69,7 +69,18 @@ const AllDay = () => {
 
 	const updateAllDay = useCallback(
 		( value ) => {
-			editPost( { meta: { gatherpress_is_all_day: Boolean( value ) } } );
+			const meta = { gatherpress_is_all_day: Boolean( value ) };
+
+			// A bare date has no time for a zone to qualify, so the event
+			// stops naming one. Only moved when it has not been set
+			// deliberately, and only back again when this is what set it.
+			if ( value && '' === timezonePreference ) {
+				meta.gatherpress_show_timezone = 'never';
+			} else if ( ! value && 'never' === timezonePreference ) {
+				meta.gatherpress_show_timezone = '';
+			}
+
+			editPost( { meta } );
 
 			if ( value ) {
 				previous.current = {
@@ -95,6 +106,7 @@ const AllDay = () => {
 			setDateTimeEnd,
 			dateTimeStart,
 			dateTimeEnd,
+			timezonePreference,
 		]
 	);
 

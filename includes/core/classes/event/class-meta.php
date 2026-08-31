@@ -165,6 +165,17 @@ final class Meta {
 				'type'              => 'boolean',
 				'default'           => false,
 			),
+			// Whether this event overrides where its timezone is shown:
+			// 'always', 'never', or an empty string to leave it to the block
+			// and the site setting.
+			'gatherpress_show_timezone'      => array(
+				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
+				'sanitize_callback' => 'sanitize_key',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+				'default'           => '',
+			),
 		);
 
 		foreach ( $event_date_meta as $meta_key => $args ) {
