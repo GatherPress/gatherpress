@@ -1440,6 +1440,19 @@ class Test_Event extends Base {
 			$this->assertSame( '2025-06-15', $event->get_datetime_end( 'c' ) );
 			$this->assertSame( '2025-06-15T14:30:00-04:00', $event->get_datetime_start_iso() );
 			$this->assertSame( '2025-06-15T16:30:00-04:00', $event->get_datetime_end_iso() );
+
+			$all_day_event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+			update_post_meta( $all_day_event_id, 'gatherpress_is_all_day', true );
+			$all_day_event = new Event( $all_day_event_id );
+			$all_day_event->save_datetimes(
+				array(
+					'datetime_start' => '2025-06-15 14:30:00',
+					'datetime_end'   => '2025-06-15 16:30:00',
+					'timezone'       => 'America/New_York',
+				)
+			);
+			$this->assertSame( '2025-06-15T00:00:00-04:00', $all_day_event->get_datetime_start_iso() );
+			$this->assertSame( '2025-06-15T23:59:59-04:00', $all_day_event->get_datetime_end_iso() );
 		} finally {
 			remove_filter( 'gatherpress_datetime_format', $filter );
 		}
@@ -2232,7 +2245,7 @@ class Test_Event extends Base {
 	 *
 	 * @covers ::get_display_datetime
 	 * @covers ::get_display_formats
-	 * @covers ::remove_time_format_chars
+	 * @covers \GatherPress\Core\Utility::remove_time_format_chars
 	 *
 	 * @dataProvider data_all_day_display_formats
 	 *

@@ -539,12 +539,19 @@ class Event {
 	 *
 	 * @param string               $format The PHP date format.
 	 * @param string               $which  Which datetime to format, 'start' or 'end'.
-	 * @param bool                 $local  Whether the datetime is being rendered in local time.
-	 * @param array<string, mixed> $dt     The event's datetime data.
+	 * @param bool                 $local        Whether the datetime is being rendered in local time.
+	 * @param array<string, mixed> $dt           The event's datetime data.
+	 * @param bool                 $apply_filter Whether to pass $format through the gatherpress_datetime_format filter.
 	 *
 	 * @return string The formatted datetime.
 	 */
-	protected function get_formatted_all_day( string $format, string $which, bool $local, array $dt ): string {
+	protected function get_formatted_all_day(
+		string $format,
+		string $which,
+		bool $local,
+		array $dt,
+		bool $apply_filter
+	): string {
 		$date = (string) $dt[ sprintf( 'datetime_%s', $which ) ];
 
 		if ( empty( $date ) ) {
@@ -567,8 +574,10 @@ class Event {
 			return '';
 		}
 
-		/** This filter is documented in includes/core/classes/event/class-event.php */
-		$format = apply_filters( 'gatherpress_datetime_format', $format, $which, $local );
+		if ( $apply_filter ) {
+			/** This filter is documented in includes/core/classes/event/class-event.php */
+			$format = apply_filters( 'gatherpress_datetime_format', $format, $which, $local );
+		}
 
 		return trim( (string) wp_date( $format, $parsed->getTimestamp(), $tz ) );
 	}
@@ -725,7 +734,7 @@ class Event {
 		$tz             = null;
 
 		if ( $this->is_all_day() ) {
-			return $this->get_formatted_all_day( $format, $which, $local, $dt );
+			return $this->get_formatted_all_day( $format, $which, $local, $dt, $apply_filter );
 		}
 
 		$date = $dt[ sprintf( 'datetime_%s_gmt', $which ) ];
