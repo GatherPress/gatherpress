@@ -1776,7 +1776,7 @@ class Test_Query extends Base {
 
 	/**
 	 * Test that join query remains unchanged when the post type does not support 'gatherpress-event-date'.
-	 * 
+	 *
 	 * @covers ::get_adjacent_post_join
 	 *
 	 * @return void
@@ -1795,7 +1795,7 @@ class Test_Query extends Base {
 		$result = $this->instance->get_adjacent_post_join(
 			$initial_join,
 			false,
-			[],
+			array(),
 			'category',
 			$post
 		);
@@ -1805,7 +1805,7 @@ class Test_Query extends Base {
 
 	/**
 	 * Test that join query is properly appended when the post type supports 'gatherpress-event-date'.
-	 * 
+	 *
 	 * @covers ::get_adjacent_post_join
 	 *
 	 * @return void
@@ -1841,7 +1841,7 @@ class Test_Query extends Base {
 
 	/**
 	 * Test that the join clause appends correctly to an existing non-empty join string.
-	 * 
+	 *
 	 * @covers ::get_adjacent_post_join
 	 *
 	 * @return void
@@ -1859,13 +1859,13 @@ class Test_Query extends Base {
 		add_post_type_support( 'gatherpress_event', 'gatherpress-event-date' );
 
 		$expected_table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
-		$initial_join   = ' INNER JOIN other_table AS ot ON p.ID = ot.post_id';
+		$initial_join   = ' INNER JOIN other_table AS otta ON p.ID = otta.post_id';
 		$expected_join  = $initial_join . " INNER JOIN {$expected_table} AS gpe ON p.ID = gpe.post_id";
 
 		$result = $this->instance->get_adjacent_post_join(
 			$initial_join,
 			true,
-			[ 1, 2, 3 ],
+			array( 1, 2, 3 ),
 			'event_category',
 			$post
 		);
