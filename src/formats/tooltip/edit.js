@@ -154,8 +154,10 @@ function TooltipPopover( {
 											minWidth: '120px',
 										} }
 									>
-										{ /* translators: Button label to toggle text color selection in the tooltip popover. */ }
-										{ __( 'Text Color', 'gatherpress' ) }
+										{
+											/* translators: Button label to toggle text color selection in the tooltip popover. */
+											__( 'Text Color', 'gatherpress' )
+										}
 									</Button>
 								</FlexItem>
 								<FlexItem>
@@ -173,8 +175,10 @@ function TooltipPopover( {
 											minWidth: '120px',
 										} }
 									>
-										{ /* translators: Button label to toggle background color selection in the tooltip popover. */ }
-										{ __( 'Background', 'gatherpress' ) }
+										{
+											/* translators: Button label to toggle background color selection in the tooltip popover. */
+											__( 'Background', 'gatherpress' )
+										}
 									</Button>
 								</FlexItem>
 							</Flex>
@@ -206,8 +210,10 @@ function TooltipPopover( {
 				<FlexItem>
 					<div className="gatherpress-tooltip-popover__preview">
 						<span className="gatherpress-tooltip-popover__preview-label">
-							{ /* translators: Label preceding the live preview box in the tooltip popover. */ }
-							{ __( 'Preview:', 'gatherpress' ) }
+							{
+								/* translators: Label preceding the live preview box in the tooltip popover. */
+								__( 'Preview:', 'gatherpress' )
+							}
 						</span>
 						<span
 							className="gatherpress-tooltip gatherpress-tooltip--preview"
@@ -225,12 +231,10 @@ function TooltipPopover( {
 								)
 							}
 						>
-							{ /* translators: Label text shown on the preview button demonstrating the tooltip hover interaction. */ }
-							{ _x(
-								'Hover me',
-								'tooltip preview button label',
-								'gatherpress'
-							) }
+							{
+								/* translators: Label text shown on the preview button demonstrating the tooltip hover interaction. */
+								_x( 'Hover me', 'tooltip preview button label', 'gatherpress' )
+							}
 						</span>
 					</div>
 				</FlexItem>
@@ -244,21 +248,27 @@ function TooltipPopover( {
 									onClick={ removeTooltip }
 									isDestructive
 								>
-									{ /* translators: Button label to remove tooltip formatting from selected text. */ }
-									{ __( 'Remove', 'gatherpress' ) }
+									{
+										/* translators: Button label to remove tooltip formatting from selected text. */
+										__( 'Remove', 'gatherpress' )
+									}
 								</Button>
 							</FlexItem>
 						) }
 						<FlexItem>
 							<Button variant="secondary" onClick={ onClose }>
-								{ /* translators: Button label to close the tooltip popover without applying changes. */ }
-								{ __( 'Cancel', 'gatherpress' ) }
+								{
+									/* translators: Button label to close the tooltip popover without applying changes. */
+									__( 'Cancel', 'gatherpress' )
+								}
 							</Button>
 						</FlexItem>
 						<FlexItem>
 							<Button variant="primary" onClick={ applyTooltip }>
-								{ /* translators: Button label to save and apply tooltip formatting to selected text. */ }
-								{ __( 'Apply', 'gatherpress' ) }
+								{
+									/* translators: Button label to save and apply tooltip formatting to selected text. */
+									__( 'Apply', 'gatherpress' )
+								}
 							</Button>
 						</FlexItem>
 					</Flex>
