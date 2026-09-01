@@ -2051,4 +2051,86 @@ class Test_Query extends Base {
 		$this->assertSame( $expected_where, $result );
 	}
 
+	/**
+	 * Test that sort clause remains unchanged when the post type does not support 'gatherpress-event-date'.
+	 *
+	 * @covers ::get_adjacent_post_sort
+	 *
+	 * @return void
+	 */
+	public function test_returns_original_sort_when_post_type_not_supported(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => 'post',
+			)
+		);
+		$post    = get_post( $post_id );
+
+		$initial_sort = 'ORDER BY p.post_date DESC LIMIT 1';
+
+		$instance = Query::get_instance();
+		$result   = $instance->get_adjacent_post_sort(
+			$initial_sort,
+			$post,
+			'DESC'
+		);
+
+		$this->assertSame( $initial_sort, $result );
+	}
+
+	/**
+	 * Test that sort clause orders by event datetime DESC for previous post query.
+	 *
+	 * @covers ::get_adjacent_post_sort
+	 *
+	 * @return void
+	 */
+	public function test_returns_event_datetime_sort_desc_when_post_type_supported(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+			)
+		);
+		$post    = get_post( $post_id );
+
+		$initial_sort  = 'ORDER BY p.post_date DESC LIMIT 1';
+		$expected_sort = 'ORDER BY gpe.datetime_start_gmt DESC LIMIT 1';
+
+		$instance = Query::get_instance();
+		$result   = $instance->get_adjacent_post_sort(
+			$initial_sort,
+			$post,
+			'DESC'
+		);
+
+		$this->assertSame( $expected_sort, $result );
+	}
+
+	/**
+	 * Test that sort clause orders by event datetime ASC for next post query.
+	 *
+	 * @covers ::get_adjacent_post_sort
+	 *
+	 * @return void
+	 */
+	public function test_returns_event_datetime_sort_asc_when_post_type_supported(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+			)
+		);
+		$post    = get_post( $post_id );
+
+		$initial_sort  = 'ORDER BY p.post_date ASC LIMIT 1';
+		$expected_sort = 'ORDER BY gpe.datetime_start_gmt ASC LIMIT 1';
+
+		$instance = Query::get_instance();
+		$result   = $instance->get_adjacent_post_sort(
+			$initial_sort,
+			$post,
+			'ASC'
+		);
+
+		$this->assertSame( $expected_sort, $result );
+	}
 }
