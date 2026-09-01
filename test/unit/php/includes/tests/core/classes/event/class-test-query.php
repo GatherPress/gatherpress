@@ -1785,7 +1785,6 @@ class Test_Query extends Base {
 		$post_id = $this->factory->post->create(
 			array(
 				'post_type' => 'post',
-				'post_name' => 'skip-join',
 			)
 		);
 		$post    = get_post( $post_id );
@@ -1816,14 +1815,10 @@ class Test_Query extends Base {
 
 		$post_id = $this->factory->post->create(
 			array(
-				'post_type' => 'post',
-				'post_name' => 'skip-join',
+				'post_type' => 'gatherpress_event',
 			)
 		);
 		$post    = get_post( $post_id );
-
-		// Enable feature support
-		add_post_type_support( 'post', 'gatherpress-event-date' );
 
 		$expected_table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 		$initial_join   = '';
@@ -1857,8 +1852,6 @@ class Test_Query extends Base {
 			)
 		);
 		$post    = get_post( $post_id );
-
-		add_post_type_support( 'gatherpress_event', 'gatherpress-event-date' );
 
 		$expected_table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 		$initial_join   = ' INNER JOIN other_table AS otta ON p.ID = otta.post_id';
