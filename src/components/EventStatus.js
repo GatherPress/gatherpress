@@ -33,7 +33,12 @@ const STATUS_DESCRIPTIONS = {
  * EventStatus component.
  *
  * Operational status of an event ('scheduled', 'cancelled', 'postponed',
- * 'rescheduled', 'moved-online'), stored as the `gatherpress_status` post meta.
+ * 'rescheduled', 'moved-online').
+ *
+ * Stored in the `_gatherpress_event_status` taxonomy so events can be filtered
+ * by status, and read and written here as a plain slug through the
+ * `gatherpress_status` REST field, so this stays a SelectControl rather than a
+ * term-id round trip.
  *
  * @since 0.36.0
  *
@@ -44,14 +49,15 @@ const EventStatus = () => {
 
 	const status = useSelect(
 		( select ) =>
-			select( 'core/editor' ).getEditedPostAttribute( 'meta' )
-				?.gatherpress_status || 'scheduled',
+			select( 'core/editor' ).getEditedPostAttribute(
+				'gatherpress_status'
+			) || 'scheduled',
 		[]
 	);
 
 	const updateStatus = useCallback(
 		( value ) => {
-			editPost( { meta: { gatherpress_status: value } } );
+			editPost( { gatherpress_status: value } );
 			unlockPostSaving();
 		},
 		[ editPost, unlockPostSaving ]

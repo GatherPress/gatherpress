@@ -2453,20 +2453,75 @@ class Test_Event extends Base {
 		$this->assertFalse( $event->is_postponed() );
 
 		// Set cancelled status.
-		update_post_meta( $post->ID, 'gatherpress_status', 'cancelled' );
+		$event->set_status( 'cancelled' );
 		$this->assertSame( Event::STATUS_CANCELLED, $event->get_status() );
 		$this->assertTrue( $event->is_cancelled() );
 		$this->assertFalse( $event->is_postponed() );
 
 		// Set postponed status.
-		update_post_meta( $post->ID, 'gatherpress_status', 'postponed' );
+		$event->set_status( 'postponed' );
 		$this->assertSame( Event::STATUS_POSTPONED, $event->get_status() );
 		$this->assertFalse( $event->is_cancelled() );
 		$this->assertTrue( $event->is_postponed() );
 
 		// Invalid status falls back to scheduled.
-		update_post_meta( $post->ID, 'gatherpress_status', 'invalid-status' );
+		wp_set_object_terms( $post->ID, 'invalid-status', Event::TAXONOMY_STATUS );
 		$this->assertSame( Event::STATUS_SCHEDULED, $event->get_status() );
+	}
+
+	/**
+	 * Coverage for set_status method.
+	 *
+	 * @covers ::set_status
+	 * @covers ::get_status
+	 *
+	 * @return void
+	 */
+	public function test_set_status(): void {
+		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$event = new Event( $post->ID );
+
+		$this->assertTrue(
+			$event->set_status( Event::STATUS_CANCELLED ),
+			'Failed to assert a valid status is stored.'
+		);
+		$this->assertSame(
+			Event::STATUS_CANCELLED,
+			$event->get_status(),
+			'Failed to assert the stored status reads back.'
+		);
+
+		// A second status replaces the first rather than adding to it, which is
+		// what keeps the statuses mutually exclusive.
+		$event->set_status( Event::STATUS_POSTPONED );
+
+		$terms = wp_get_object_terms( $post->ID, Event::TAXONOMY_STATUS, array( 'fields' => 'slugs' ) );
+
+		$this->assertSame(
+			array( Event::STATUS_POSTPONED ),
+			$terms,
+			'Failed to assert a new status replaces the previous term.'
+		);
+
+		$this->assertFalse(
+			$event->set_status( 'not-a-status' ),
+			'Failed to assert an unknown status is refused.'
+		);
+		$this->assertSame(
+			Event::STATUS_POSTPONED,
+			$event->get_status(),
+			'Failed to assert a refused status leaves the stored one alone.'
+		);
+
+		// A post that is not an event never gets a post assigned in the
+		// constructor, so it has no status to set. Event( 0 ) would not do here:
+		// get_post_type( 0 ) falls back to the global post, which this test has.
+		$non_event = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+
+		$this->assertFalse(
+			( new Event( $non_event->ID ) )->set_status( Event::STATUS_CANCELLED ),
+			'Failed to assert a post that is not an event refuses a status.'
+		);
 	}
 
 	/**
@@ -2499,16 +2554,16 @@ class Test_Event extends Base {
 
 		$this->assertSame( 'Scheduled', $event->get_status_label() );
 
-		update_post_meta( $post->ID, 'gatherpress_status', 'cancelled' );
+		$event->set_status( 'cancelled' );
 		$this->assertSame( 'Cancelled', $event->get_status_label() );
 
-		update_post_meta( $post->ID, 'gatherpress_status', 'postponed' );
+		$event->set_status( 'postponed' );
 		$this->assertSame( 'Postponed', $event->get_status_label() );
 
-		update_post_meta( $post->ID, 'gatherpress_status', 'rescheduled' );
+		$event->set_status( 'rescheduled' );
 		$this->assertSame( 'Rescheduled', $event->get_status_label() );
 
-		update_post_meta( $post->ID, 'gatherpress_status', 'moved-online' );
+		$event->set_status( 'moved-online' );
 		$this->assertSame( 'Moved online', $event->get_status_label() );
 	}
 
@@ -2525,16 +2580,16 @@ class Test_Event extends Base {
 
 		$this->assertSame( 'EventScheduled', $event->get_schema_event_status() );
 
-		update_post_meta( $post->ID, 'gatherpress_status', 'cancelled' );
+		$event->set_status( 'cancelled' );
 		$this->assertSame( 'EventCancelled', $event->get_schema_event_status() );
 
-		update_post_meta( $post->ID, 'gatherpress_status', 'postponed' );
+		$event->set_status( 'postponed' );
 		$this->assertSame( 'EventPostponed', $event->get_schema_event_status() );
 
-		update_post_meta( $post->ID, 'gatherpress_status', 'rescheduled' );
+		$event->set_status( 'rescheduled' );
 		$this->assertSame( 'EventRescheduled', $event->get_schema_event_status() );
 
-		update_post_meta( $post->ID, 'gatherpress_status', 'moved-online' );
+		$event->set_status( 'moved-online' );
 		$this->assertSame( 'EventMovedOnline', $event->get_schema_event_status() );
 	}
 
@@ -2551,16 +2606,16 @@ class Test_Event extends Base {
 
 		$this->assertSame( 'CONFIRMED', $event->get_ical_status() );
 
-		update_post_meta( $post->ID, 'gatherpress_status', 'cancelled' );
+		$event->set_status( 'cancelled' );
 		$this->assertSame( 'CANCELLED', $event->get_ical_status() );
 
-		update_post_meta( $post->ID, 'gatherpress_status', 'postponed' );
+		$event->set_status( 'postponed' );
 		$this->assertSame( 'TENTATIVE', $event->get_ical_status() );
 
-		update_post_meta( $post->ID, 'gatherpress_status', 'rescheduled' );
+		$event->set_status( 'rescheduled' );
 		$this->assertSame( 'TENTATIVE', $event->get_ical_status() );
 
-		update_post_meta( $post->ID, 'gatherpress_status', 'moved-online' );
+		$event->set_status( 'moved-online' );
 		$this->assertSame( 'CONFIRMED', $event->get_ical_status() );
 	}
 }

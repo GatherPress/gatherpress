@@ -72,6 +72,12 @@ class Test_Rest_Api extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'rest_api_init',
+				'priority' => 10,
+				'callback' => array( $instance, 'register_status_field' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'gatherpress_send_emails',
 				'priority' => 10,
 				'callback' => array( $instance, 'handle_email_send_action' ),
@@ -85,6 +91,83 @@ class Test_Rest_Api extends Base {
 		);
 
 		$this->assert_hooks( $hooks, $instance );
+	}
+
+	/**
+	 * Coverage for register_status_field method.
+	 *
+	 * @covers ::register_status_field
+	 *
+	 * @return void
+	 */
+	public function test_register_status_field(): void {
+		// WordPress core's own registry for register_rest_field(); the prefix
+		// sniff cannot tell a core global from a plugin one.
+		// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+		global $wp_rest_additional_fields;
+		// phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+
+		$instance = Rest_Api::get_instance();
+
+		$instance->register_status_field();
+
+		$this->assertArrayHasKey(
+			'gatherpress_status',
+			$wp_rest_additional_fields[ Event::POST_TYPE ],
+			'Failed to assert the status field is registered on the event post type.'
+		);
+
+		$field = $wp_rest_additional_fields[ Event::POST_TYPE ]['gatherpress_status'];
+		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$event = new Event( $post->ID );
+
+		$this->assertSame(
+			Event::STATUS_SCHEDULED,
+			call_user_func( $field['get_callback'], array( 'id' => $post->ID ) ),
+			'Failed to assert an untouched event reads as scheduled.'
+		);
+
+		// An editor of the event may set the status.
+		$this->mock->user( 'admin' );
+
+		call_user_func( $field['update_callback'], Event::STATUS_CANCELLED, $post );
+
+		$this->assertSame(
+			Event::STATUS_CANCELLED,
+			$event->get_status(),
+			'Failed to assert the update callback stores the status.'
+		);
+		$this->assertSame(
+			Event::STATUS_CANCELLED,
+			call_user_func( $field['get_callback'], array( 'id' => $post->ID ) ),
+			'Failed to assert the get callback reads the stored status.'
+		);
+
+		// A visitor with no editing rights may not.
+		$this->mock->user( 'subscriber' );
+
+		$error = call_user_func( $field['update_callback'], Event::STATUS_POSTPONED, $post );
+
+		$this->assertWPError(
+			$error,
+			'Failed to assert a user who cannot edit the event is refused.'
+		);
+		$this->assertSame(
+			'gatherpress_status_forbidden',
+			$error->get_error_code(),
+			'Failed to assert the refusal names the status permission.'
+		);
+		$this->assertSame(
+			Event::STATUS_CANCELLED,
+			$event->get_status(),
+			'Failed to assert a refused update leaves the status alone.'
+		);
+
+		$this->assertSame(
+			Event::STATUSES,
+			$field['schema']['enum'],
+			'Failed to assert the schema advertises the supported statuses.'
+		);
 	}
 
 	/**

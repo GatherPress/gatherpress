@@ -40,8 +40,9 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		( select ) => {
 			if ( ! postId ) {
 				return (
-					select( 'core/editor' )?.getEditedPostAttribute( 'meta' )
-						?.gatherpress_status || 'scheduled'
+					select( 'core/editor' )?.getEditedPostAttribute(
+						'gatherpress_status'
+					) || 'scheduled'
 				);
 			}
 
@@ -51,7 +52,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				postId
 			);
 
-			return post?.meta?.gatherpress_status || 'scheduled';
+			return post?.gatherpress_status || 'scheduled';
 		},
 		[ postId, context.postType ]
 	);

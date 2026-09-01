@@ -170,6 +170,19 @@ class Event {
 		self::STATUS_MOVED_ONLINE,
 	);
 
+	/**
+	 * Taxonomy that stores the event's operational status.
+	 *
+	 * Hidden and not publicly queryable: it is a query surface, not a
+	 * classification a visitor browses. Statuses are mutually exclusive, so a
+	 * single term is set with wp_set_object_terms(), which replaces rather
+	 * than appends.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const TAXONOMY_STATUS = '_gatherpress_event_status';
+
 
 
 	/**
@@ -657,9 +670,39 @@ class Event {
 			return self::STATUS_SCHEDULED;
 		}
 
-		$status = (string) get_post_meta( $this->post->ID, 'gatherpress_status', true );
+		// An event carries the default term from register_taxonomy() once it has
+		// been saved, but one stored before this taxonomy existed carries none,
+		// and default_term only applies on insert. No term means scheduled.
+		$terms = get_the_terms( $this->post->ID, self::TAXONOMY_STATUS );
+
+		if ( ! is_array( $terms ) || empty( $terms ) ) {
+			return self::STATUS_SCHEDULED;
+		}
+
+		$status = (string) $terms[0]->slug;
 
 		return in_array( $status, self::STATUSES, true ) ? $status : self::STATUS_SCHEDULED;
+	}
+
+	/**
+	 * Sets the event operational status.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $status One of the slugs in self::STATUSES.
+	 *
+	 * @return bool True when the status was stored.
+	 */
+	public function set_status( string $status ): bool {
+		if ( ! $this->post || ! in_array( $status, self::STATUSES, true ) ) {
+			return false;
+		}
+
+		// A plain string replaces every term in the taxonomy, which is what
+		// enforces the statuses being mutually exclusive.
+		$result = wp_set_object_terms( $this->post->ID, $status, self::TAXONOMY_STATUS );
+
+		return ! is_wp_error( $result );
 	}
 
 	/**

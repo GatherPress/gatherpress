@@ -50,7 +50,7 @@ describe( 'EventStatus block Edit component', () => {
 	it( 'renders the status badge with scheduled status', () => {
 		useSelect.mockImplementation( ( callback ) =>
 			callback( () => ( {
-				getEditedPostAttribute: () => ( { gatherpress_status: 'scheduled' } ),
+				getEditedPostAttribute: () => 'scheduled',
 			} ) )
 		);
 
@@ -68,7 +68,7 @@ describe( 'EventStatus block Edit component', () => {
 	it( 'renders the status badge with cancelled status', () => {
 		useSelect.mockImplementation( ( callback ) =>
 			callback( () => ( {
-				getEditedPostAttribute: () => ( { gatherpress_status: 'cancelled' } ),
+				getEditedPostAttribute: () => 'cancelled',
 			} ) )
 		);
 
@@ -89,7 +89,7 @@ describe( 'EventStatus block Edit component', () => {
 				if ( 'core' === store ) {
 					return {
 						getEntityRecord: () => ( {
-							meta: { gatherpress_status: 'postponed' },
+							gatherpress_status: 'postponed',
 						} ),
 					};
 				}
@@ -111,7 +111,7 @@ describe( 'EventStatus block Edit component', () => {
 	it( 'updates hideScheduled attribute when toggle is clicked', () => {
 		useSelect.mockImplementation( ( callback ) =>
 			callback( () => ( {
-				getEditedPostAttribute: () => ( { gatherpress_status: 'scheduled' } ),
+				getEditedPostAttribute: () => 'scheduled',
 			} ) )
 		);
 

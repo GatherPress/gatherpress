@@ -50,7 +50,7 @@ describe( 'EventStatus component', () => {
 	it( 'renders with default scheduled status', () => {
 		useSelect.mockImplementation( ( callback ) =>
 			callback( () => ( {
-				getEditedPostAttribute: () => ( {} ),
+				getEditedPostAttribute: () => undefined,
 			} ) )
 		);
 
@@ -64,9 +64,7 @@ describe( 'EventStatus component', () => {
 	it( 'renders with stored cancelled status', () => {
 		useSelect.mockImplementation( ( callback ) =>
 			callback( () => ( {
-				getEditedPostAttribute: () => ( {
-					gatherpress_status: 'cancelled',
-				} ),
+				getEditedPostAttribute: () => 'cancelled',
 			} ) )
 		);
 
@@ -79,9 +77,7 @@ describe( 'EventStatus component', () => {
 	it( 'dispatches editPost and unlockPostSaving on status change', () => {
 		useSelect.mockImplementation( ( callback ) =>
 			callback( () => ( {
-				getEditedPostAttribute: () => ( {
-					gatherpress_status: 'scheduled',
-				} ),
+				getEditedPostAttribute: () => 'scheduled',
 			} ) )
 		);
 
@@ -91,7 +87,7 @@ describe( 'EventStatus component', () => {
 		fireEvent.change( select, { target: { value: 'postponed' } } );
 
 		expect( mockEditPost ).toHaveBeenCalledWith( {
-			meta: { gatherpress_status: 'postponed' },
+			gatherpress_status: 'postponed',
 		} );
 		expect( mockUnlockPostSaving ).toHaveBeenCalledTimes( 1 );
 	} );
