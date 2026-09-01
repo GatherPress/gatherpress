@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Added an INNER_JOIN for the typical adjacent queries made by WP core, and add an ORDERBY for the event-date. So the normal core/post-navigation-link blocks follow the event-date, instead of the publication date.
