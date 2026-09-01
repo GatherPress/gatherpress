@@ -1773,4 +1773,103 @@ class Test_Query extends Base {
 
 		wp_delete_post( $venue_post_id, true );
 	}
+
+	/**
+	 * Test that join query remains unchanged when the post type does not support 'gatherpress-event-date'.
+	 * 
+	 * @covers ::get_adjacent_post_join
+	 *
+	 * @return void
+	 */
+	public function test_returns_original_join_when_post_type_not_supported(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => 'post',
+				'post_name' => 'skip-join',
+			)
+		);
+		$post    = get_post( $post_id );
+
+		$initial_join = ' INNER JOIN wp_term_relationships ON (wp_posts.ID = wp_term_relationships.object_id)';
+
+		$result = $this->instance->get_adjacent_post_join(
+			$initial_join,
+			false,
+			[],
+			'category',
+			$post
+		);
+
+		$this->assertSame( $initial_join, $result );
+	}
+
+	/**
+	 * Test that join query is properly appended when the post type supports 'gatherpress-event-date'.
+	 * 
+	 * @covers ::get_adjacent_post_join
+	 *
+	 * @return void
+	 */
+	public function test_appends_event_table_join_when_post_type_supported(): void {
+		global $wpdb;
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => 'post',
+				'post_name' => 'skip-join',
+			)
+		);
+		$post    = get_post( $post_id );
+
+		// Enable feature support
+		add_post_type_support( 'post', 'gatherpress-event-date' );
+
+		$expected_table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$initial_join   = '';
+		$expected_join  = " INNER JOIN {$expected_table} AS gpe ON p.ID = gpe.post_id";
+
+		$result = $this->instance->get_adjacent_post_join(
+			$initial_join,
+			false,
+			'',
+			'',
+			$post
+		);
+
+		$this->assertSame( $expected_join, $result );
+	}
+
+	/**
+	 * Test that the join clause appends correctly to an existing non-empty join string.
+	 * 
+	 * @covers ::get_adjacent_post_join
+	 *
+	 * @return void
+	 */
+	public function test_appends_to_existing_join_string(): void {
+		global $wpdb;
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+			)
+		);
+		$post    = get_post( $post_id );
+
+		add_post_type_support( 'gatherpress_event', 'gatherpress-event-date' );
+
+		$expected_table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$initial_join   = ' INNER JOIN other_table AS ot ON p.ID = ot.post_id';
+		$expected_join  = $initial_join . " INNER JOIN {$expected_table} AS gpe ON p.ID = gpe.post_id";
+
+		$result = $this->instance->get_adjacent_post_join(
+			$initial_join,
+			true,
+			[ 1, 2, 3 ],
+			'event_category',
+			$post
+		);
+
+		$this->assertSame( $expected_join, $result );
+	}
 }
