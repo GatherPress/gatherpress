@@ -2470,6 +2470,23 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * Coverage for get_status method with no backing post.
+	 *
+	 * @covers ::get_status
+	 *
+	 * @return void
+	 */
+	public function test_get_status_without_post(): void {
+		$event = new Event( 0 );
+
+		$this->assertSame(
+			Event::STATUS_SCHEDULED,
+			$event->get_status(),
+			'Failed to assert an event with no post reports the scheduled status.'
+		);
+	}
+
+	/**
 	 * Coverage for get_status_label method.
 	 *
 	 * @covers ::get_status_label
