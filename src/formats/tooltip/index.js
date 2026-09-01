@@ -20,6 +20,7 @@ import './style.scss';
  * @since 0.34.0
  */
 registerFormatType( FORMAT_NAME, {
+	/* translators: Title and accessible label for the inline tooltip formatting option. */
 	title: __( 'Tooltip', 'gatherpress' ),
 	tagName: 'span',
 	className: 'gatherpress-tooltip',
