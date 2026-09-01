@@ -1868,4 +1868,187 @@ class Test_Query extends Base {
 
 		$this->assertSame( $expected_join, $result );
 	}
+
+	/**
+	 * Test that WHERE clause remains unchanged when the post type does not support 'gatherpress-event-date'.
+	 *
+	 * @covers ::get_adjacent_post_where
+	 *
+	 * @return void
+	 */
+	public function test_returns_original_where_when_post_type_not_supported(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => 'post',
+			)
+		);
+		$post    = get_post( $post_id );
+
+		update_post_meta( $post_id, 'gatherpress_datetime_start_gmt', '2024-06-15 10:00:00' );
+
+		$initial_where = "WHERE p.post_date < '2024-06-15 10:00:00' AND p.post_type = 'post'";
+
+		$instance = Query::get_instance();
+		$result   = $instance->get_adjacent_post_where(
+			$initial_where,
+			false,
+			array(),
+			'',
+			$post
+		);
+
+		$this->assertSame( $initial_where, $result );
+	}
+
+	/**
+	 * Test that WHERE clause remains unchanged when the post has no 'gatherpress_datetime_start_gmt' meta.
+	 *
+	 * @covers ::get_adjacent_post_where
+	 *
+	 * @return void
+	 */
+	public function test_returns_original_where_when_post_datetime_meta_missing(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+			)
+		);
+		$post    = get_post( $post_id );
+
+		$initial_where = "WHERE p.post_date < '2024-06-15 10:00:00' AND p.post_type = 'gatherpress_event'";
+
+		$instance = Query::get_instance();
+		$result   = $instance->get_adjacent_post_where(
+			$initial_where,
+			false,
+			array(),
+			'',
+			$post
+		);
+
+		$this->assertSame( $initial_where, $result );
+	}
+
+	/**
+	 * Test that WHERE clause replaces post_date comparison with '<' for previous post query.
+	 *
+	 * @covers ::get_adjacent_post_where
+	 *
+	 * @return void
+	 */
+	public function test_replaces_post_date_with_datetime_start_gmt_for_previous_post(): void {
+		global $wp_current_filter;
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+			)
+		);
+		$post    = get_post( $post_id );
+
+		$datetime = '2024-06-15 10:00:00';
+		update_post_meta( $post_id, 'gatherpress_datetime_start_gmt', $datetime );
+
+		// Simulate get_previous_post_where filter.
+		$wp_current_filter[] = 'get_previous_post_where';
+
+		$initial_where  = "WHERE p.post_date < '2024-01-01 00:00:00' AND p.post_type = 'gatherpress_event' AND p.post_status = 'publish'";
+		$expected_where = "WHERE gpe.datetime_start_gmt < '{$datetime}' AND p.post_type = 'gatherpress_event' AND p.post_status = 'publish'";
+
+		$instance = Query::get_instance();
+		$result   = $instance->get_adjacent_post_where(
+			$initial_where,
+			false,
+			'',
+			'',
+			$post
+		);
+
+		// Clean up simulated filter.
+		array_pop( $wp_current_filter );
+
+		$this->assertSame( $expected_where, $result );
+	}
+
+	/**
+	 * Test that WHERE clause replaces post_date comparison with '>' for next post query.
+	 *
+	 * @covers ::get_adjacent_post_where
+	 *
+	 * @return void
+	 */
+	public function test_replaces_post_date_with_datetime_start_gmt_for_next_post(): void {
+		global $wp_current_filter;
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+			)
+		);
+		$post    = get_post( $post_id );
+
+		$datetime = '2024-06-15 10:00:00';
+		update_post_meta( $post_id, 'gatherpress_datetime_start_gmt', $datetime );
+
+		// Simulate get_next_post_where filter.
+		$wp_current_filter[] = 'get_next_post_where';
+
+		$initial_where  = "WHERE p.post_date > '2024-01-01 00:00:00' AND p.post_type = 'gatherpress_event' AND p.post_status = 'publish'";
+		$expected_where = "WHERE gpe.datetime_start_gmt > '{$datetime}' AND p.post_type = 'gatherpress_event' AND p.post_status = 'publish'";
+
+		$instance = Query::get_instance();
+		$result   = $instance->get_adjacent_post_where(
+			$initial_where,
+			false,
+			'',
+			'',
+			$post
+		);
+
+		// Clean up simulated filter.
+		array_pop( $wp_current_filter );
+
+		$this->assertSame( $expected_where, $result );
+	}
+
+	/**
+	 * Test that WHERE clause handles spacing differences around the comparison operator.
+	 *
+	 * @covers ::get_adjacent_post_where
+	 *
+	 * @return void
+	 */
+	public function test_replaces_post_date_with_varied_spacing(): void {
+		global $wp_current_filter;
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+			)
+		);
+		$post    = get_post( $post_id );
+
+		$datetime = '2024-06-15 10:00:00';
+		update_post_meta( $post_id, 'gatherpress_datetime_start_gmt', $datetime );
+
+		$wp_current_filter[] = 'get_previous_post_where';
+
+		// No spaces around operator: p.post_date<'...'
+		$initial_where  = "WHERE p.post_date < '2024-01-01 00:00:00' AND p.post_type = 'gatherpress_event'";
+		$expected_where = "WHERE gpe.datetime_start_gmt < '{$datetime}' AND p.post_type = 'gatherpress_event'";
+
+		$instance = Query::get_instance();
+		$result   = $instance->get_adjacent_post_where(
+			$initial_where,
+			false,
+			'',
+			'',
+			$post
+		);
+
+		array_pop( $wp_current_filter );
+
+		$this->assertSame( $expected_where, $result );
+	}
+
 }
