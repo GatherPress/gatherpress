@@ -582,12 +582,14 @@ final class Query {
 	 * @since 0.36.0
 	 *
 	 * @param string       $join           The JOIN clause in the SQL.
-	 * @param bool         $in_same_term   Whether post should be in the same taxonomy term.
-	 * @param array|string $excluded_terms Array of excluded term IDs. Empty string if none were provided.
-	 * @param string       $taxonomy       Taxonomy. Used to identify the term used when `$in_same_term` is true.
+	 * @param bool         $in_same_term   Whether post should be in the same taxonomy term (unused; part of the hook signature).
+	 * @param array|string $excluded_terms Array of excluded term IDs. Empty string if none were provided (unused; part of the hook signature).
+	 * @param string       $taxonomy       Taxonomy. Used to identify the term used when `$in_same_term` is true (unused; part of the hook signature).
 	 * @param WP_Post      $post           The current post object.
 	 *
 	 * @return string The modified JOIN clause for adjacent post queries.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Required by WP's get_{$adjacent}_post_join hook signature.
 	 */
 	public function get_adjacent_post_join(
 		string $join,
@@ -619,12 +621,14 @@ final class Query {
 	 * @since 0.36.0
 	 *
 	 * @param string       $where          The WHERE clause in the SQL.
-	 * @param bool         $in_same_term   Whether post should be in the same taxonomy term.
-	 * @param array|string $excluded_terms Array of excluded term IDs. Empty string if none were provided.
-	 * @param string       $taxonomy       Taxonomy. Used to identify the term used when `$in_same_term` is true.
+	 * @param bool         $in_same_term   Whether post should be in the same taxonomy term (unused; part of the hook signature).
+	 * @param array|string $excluded_terms Array of excluded term IDs. Empty string if none were provided (unused; part of the hook signature).
+	 * @param string       $taxonomy       Taxonomy. Used to identify the term used when `$in_same_term` is true (unused; part of the hook signature).
 	 * @param WP_Post      $post           The current post object.
 	 *
 	 * @return string The modified WHERE clause for adjacent post queries.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Required by WP's get_{$adjacent}_post_where hook signature.
 	 */
 	public function get_adjacent_post_where(
 		string $where,
