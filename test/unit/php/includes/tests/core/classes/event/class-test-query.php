@@ -1792,7 +1792,8 @@ class Test_Query extends Base {
 
 		$initial_join = ' INNER JOIN wp_term_relationships ON (wp_posts.ID = wp_term_relationships.object_id)';
 
-		$result = $this->instance->get_adjacent_post_join(
+		$instance = Query::get_instance();
+		$result   = $instance->get_adjacent_post_join(
 			$initial_join,
 			false,
 			array(),
@@ -1828,7 +1829,8 @@ class Test_Query extends Base {
 		$initial_join   = '';
 		$expected_join  = " INNER JOIN {$expected_table} AS gpe ON p.ID = gpe.post_id";
 
-		$result = $this->instance->get_adjacent_post_join(
+		$instance = Query::get_instance();
+		$result   = $instance->get_adjacent_post_join(
 			$initial_join,
 			false,
 			'',
@@ -1862,7 +1864,8 @@ class Test_Query extends Base {
 		$initial_join   = ' INNER JOIN other_table AS otta ON p.ID = otta.post_id';
 		$expected_join  = $initial_join . " INNER JOIN {$expected_table} AS gpe ON p.ID = gpe.post_id";
 
-		$result = $this->instance->get_adjacent_post_join(
+		$instance = Query::get_instance();
+		$result   = $instance->get_adjacent_post_join(
 			$initial_join,
 			true,
 			array( 1, 2, 3 ),
