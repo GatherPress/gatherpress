@@ -629,24 +629,22 @@ final class Setup {
 		$shadow_source = Shadow_Source::get_instance();
 		$href          = '';
 
-		if ( $shadow_source->is_shadow_term_slug( $term->taxonomy ) ) {
-			// Skip sentinel shadow terms like `online-event` whose slug does
-			// not start with `_` — no backing post means no feed to link to.
-			if ( $shadow_source->is_shadow_term_slug( $term->slug ) ) {
-				$post = $shadow_source->get_post_from_term_slug(
-					$term->slug,
-					ltrim( $term->taxonomy, '_' )
-				);
-
-				// Without this, get_post_comments_feed_link( null ) falls back to the global post.
-				if ( $post instanceof WP_Post ) {
-					// Feels weird to use a *_comments_* function here, but it delivers clean results
-					// in the form of "domain.tld/event/my-sample-event/feed/ical/".
-					$href = get_post_comments_feed_link( $post->ID, self::ICAL_SLUG );
-				}
-			}
-		} else {
+		if ( ! $shadow_source->is_shadow_term_slug( $term->taxonomy ) ) {
 			$href = get_term_feed_link( $term->term_id, $term->taxonomy, self::ICAL_SLUG );
+		} elseif ( $shadow_source->is_shadow_term_slug( $term->slug ) ) {
+			// Skip sentinel shadow terms like `online-event` whose slug does
+			// not start with `_` - no backing post means no feed to link to.
+			$post = $shadow_source->get_post_from_term_slug(
+				$term->slug,
+				ltrim( $term->taxonomy, '_' )
+			);
+
+			// Without this, get_post_comments_feed_link( null ) falls back to the global post.
+			if ( $post instanceof WP_Post ) {
+				// Feels weird to use a *_comments_* function here, but it delivers clean results
+				// in the form of "domain.tld/event/my-sample-event/feed/ical/".
+				$href = get_post_comments_feed_link( $post->ID, self::ICAL_SLUG );
+			}
 		}
 
 		if ( empty( $href ) ) {
@@ -745,21 +743,17 @@ final class Setup {
 		$queried_object  = get_queried_object();
 
 		if (
-			is_singular() &&
+			is_singular( 'gatherpress_venue' ) &&
 			$queried_object instanceof WP_Post &&
 			$this->is_tax_like_type_for_event_supporting_types( $queried_object->post_type )
 		) {
-			if ( is_singular( 'gatherpress_venue' ) ) {
-				$venues = array( '_' . $queried_object->post_name );
-			}
+			$venues = array( '_' . $queried_object->post_name );
 		} elseif (
-			is_tax() &&
+			is_tax( 'gatherpress_topic' ) &&
 			$queried_object instanceof WP_Term &&
 			$this->has_post_type_for_taxonomy( $queried_object->taxonomy )
 		) {
-			if ( is_tax( 'gatherpress_topic' ) ) {
-				$topics = array( $queried_object->slug );
-			}
+			$topics = array( $queried_object->slug );
 		}
 
 		$query = Query::get_instance()->get_events_list( $event_list_type, $number, $topics, $venues );
@@ -977,13 +971,8 @@ final class Setup {
 
 		if ( '' !== $client_etag ) {
 			// A cache may return the tag weakened, and may hold several.
-			foreach ( explode( ',', str_replace( 'W/', '', $client_etag ) ) as $candidate ) {
-				if ( trim( $candidate ) === $etag ) {
-					return true;
-				}
-			}
-
-			return false;
+			$tags = array_map( 'trim', explode( ',', str_replace( 'W/', '', $client_etag ) ) );
+			return in_array( $etag, $tags, true );
 		}
 
 		$client_time = isset( $_SERVER['HTTP_IF_MODIFIED_SINCE'] )
@@ -1128,21 +1117,9 @@ final class Setup {
 		$calendar_q = 0.0;
 		$html_q     = 0.0;
 
-		$ranges = explode( ',', $accept_header );
-		foreach ( $ranges as $range ) {
-			$parts = explode( ';', trim( $range ) );
-			$mime  = strtolower( trim( $parts[0] ) );
-			$q     = 1.0;
-
-			if ( count( $parts ) > 1 ) {
-				foreach ( array_slice( $parts, 1 ) as $param ) {
-					$param_parts = explode( '=', trim( $param ), 2 );
-					if ( 2 === count( $param_parts ) && 'q' === strtolower( trim( $param_parts[0] ) ) ) {
-						$q = (float) trim( $param_parts[1] );
-						break;
-					}
-				}
-			}
+		foreach ( explode( ',', $accept_header ) as $range ) {
+			$q    = preg_match( '/;\s*q=([0-9.]+)/i', $range, $m ) ? (float) $m[1] : 1.0;
+			$mime = strtolower( trim( explode( ';', $range, 2 )[0] ) );
 
 			if ( 'text/calendar' === $mime ) {
 				$calendar_q = max( $calendar_q, $q );
@@ -1169,8 +1146,7 @@ final class Setup {
 
 		if ( is_singular() && $queried instanceof WP_Post ) {
 			if ( post_type_supports( $queried->post_type, 'gatherpress-event-date' ) ) {
-				$calendar = new Calendar( $queried->ID );
-				return $calendar->get_ical_url();
+				return ( new Calendar( $queried->ID ) )->get_ical_url();
 			}
 
 			if ( $this->is_tax_like_type_for_event_supporting_types( $queried->post_type ) ) {
@@ -1184,19 +1160,13 @@ final class Setup {
 
 		if ( is_post_type_archive() ) {
 			$post_type = get_query_var( 'post_type' );
-			if ( is_array( $post_type ) ) {
-				$post_type = reset( $post_type );
-			}
+			$post_type = is_array( $post_type ) ? reset( $post_type ) : $post_type;
 			if ( is_string( $post_type ) && post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
 				return get_post_type_archive_feed_link( $post_type, self::ICAL_SLUG );
 			}
 		}
 
-		if ( is_front_page() || is_home() ) {
-			return get_feed_link( self::ICAL_SLUG );
-		}
-
-		return false;
+		return ( is_front_page() || is_home() ) ? get_feed_link( self::ICAL_SLUG ) : false;
 	}
 
 	/**
@@ -1274,13 +1244,10 @@ final class Setup {
 	 */
 	public function filter_wp_headers( array $headers ): array {
 		if ( $this->is_event_related_request() ) {
-			if ( isset( $headers['Vary'] ) ) {
-				if ( false === stripos( $headers['Vary'], 'Accept' ) ) {
-					$headers['Vary'] .= ', Accept';
-				}
-			} else {
-				$headers['Vary'] = 'Accept';
-			}
+			$vary            = $headers['Vary'] ?? '';
+			$headers['Vary'] = empty( $vary )
+				? 'Accept'
+				: ( false === stripos( $vary, 'Accept' ) ? $vary . ', Accept' : $vary );
 		}
 
 		return $headers;
