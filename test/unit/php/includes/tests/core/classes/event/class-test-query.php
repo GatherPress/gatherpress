@@ -1950,9 +1950,12 @@ class Test_Query extends Base {
 		update_post_meta( $post_id, 'gatherpress_datetime_start_gmt', $datetime );
 
 		// Simulate get_previous_post_where filter.
-		$wp_current_filter[] = 'get_previous_post_where';
+		// Temporarily replace the global wp_current_filter.
+		$wp_current_filter[] = 'get_previous_post_where'; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited, Generic.Files.LineLength.TooLong -- Testing requires global manipulation.
 
-		$initial_where  = "WHERE p.post_date < '2024-01-01 00:00:00' AND p.post_type = 'gatherpress_event' AND p.post_status = 'publish'";
+		// phpcs:ignore Generic.Files.LineLength.TooLong
+		$initial_where = "WHERE p.post_date < '2024-01-01 00:00:00' AND p.post_type = 'gatherpress_event' AND p.post_status = 'publish'";
+		// phpcs:ignore Generic.Files.LineLength.TooLong
 		$expected_where = "WHERE gpe.datetime_start_gmt < '{$datetime}' AND p.post_type = 'gatherpress_event' AND p.post_status = 'publish'";
 
 		$instance = Query::get_instance();
@@ -1991,9 +1994,12 @@ class Test_Query extends Base {
 		update_post_meta( $post_id, 'gatherpress_datetime_start_gmt', $datetime );
 
 		// Simulate get_next_post_where filter.
-		$wp_current_filter[] = 'get_next_post_where';
+		// Temporarily replace the global wp_current_filter.
+		$wp_current_filter[] = 'get_next_post_where'; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited, Generic.Files.LineLength.TooLong -- Testing requires global manipulation.
 
-		$initial_where  = "WHERE p.post_date > '2024-01-01 00:00:00' AND p.post_type = 'gatherpress_event' AND p.post_status = 'publish'";
+		// phpcs:ignore Generic.Files.LineLength.TooLong
+		$initial_where = "WHERE p.post_date > '2024-01-01 00:00:00' AND p.post_type = 'gatherpress_event' AND p.post_status = 'publish'";
+		// phpcs:ignore Generic.Files.LineLength.TooLong
 		$expected_where = "WHERE gpe.datetime_start_gmt > '{$datetime}' AND p.post_type = 'gatherpress_event' AND p.post_status = 'publish'";
 
 		$instance = Query::get_instance();
@@ -2031,9 +2037,10 @@ class Test_Query extends Base {
 		$datetime = '2024-06-15 10:00:00';
 		update_post_meta( $post_id, 'gatherpress_datetime_start_gmt', $datetime );
 
-		$wp_current_filter[] = 'get_previous_post_where';
+		// Simulate get_next_post_where filter.
+		// Temporarily replace the global wp_current_filter.
+		$wp_current_filter[] = 'get_previous_post_where'; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited, Generic.Files.LineLength.TooLong -- Testing requires global manipulation.
 
-		// No spaces around operator: p.post_date<'...'
 		$initial_where  = "WHERE p.post_date < '2024-01-01 00:00:00' AND p.post_type = 'gatherpress_event'";
 		$expected_where = "WHERE gpe.datetime_start_gmt < '{$datetime}' AND p.post_type = 'gatherpress_event'";
 
