@@ -89,6 +89,7 @@ class Test_Setup extends Base {
 			'gatherpress/dropdown',
 			'gatherpress/dropdown-item',
 			'gatherpress/event-date',
+			'gatherpress/event-status',
 			'gatherpress/form-field',
 			'gatherpress/modal',
 			'gatherpress/modal-content',
