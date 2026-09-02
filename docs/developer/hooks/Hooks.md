@@ -63,6 +63,8 @@
 - [`gatherpress_map_zoom`](gatherpress_map_zoom.md) Filter the zoom level used when rendering the static venue map.
 - [`gatherpress_static_map_descriptors`](gatherpress_static_map_descriptors.md) Filters the parsed descriptor map for a venue.
 - [`gatherpress_static_map_generate_2x`](gatherpress_static_map_generate_2x.md) Filter whether to generate the retina (2×) static-map variant.
+- [`gatherpress_static_map_generate_async`](gatherpress_static_map_generate_async.md) Filters whether venue-save-triggered static-map generation runs
+- [`gatherpress_static_map_generate_pre_enqueue_job`](gatherpress_static_map_generate_pre_enqueue_job.md) Filter the async static-map generation enqueue call to take over
 
 ## class-migrate.php
 
