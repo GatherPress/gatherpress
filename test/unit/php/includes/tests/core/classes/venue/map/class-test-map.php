@@ -826,7 +826,14 @@ class Test_Map extends Base {
 
 		$instance->process_generate_job( $post_id, 15, 800, 400, 'roadmap' );
 
-		$this->assertNull( $instance->get_stored_descriptor( $post_id ) );
+		// Asserting the whole map rather than get_stored_descriptor(), which
+		// only reads the active provider's default combo and would miss a
+		// regression that wrote the job's own (15, 800, 400) combo.
+		$this->assertSame(
+			array(),
+			$instance->get_all_descriptors( $post_id ),
+			'A deleted venue should not gain a descriptor under any provider.'
+		);
 	}
 
 	/**
@@ -847,13 +854,19 @@ class Test_Map extends Base {
 
 		wp_trash_post( $post_id );
 
+		// Setting the venue meta above already generated the default combo
+		// synchronously, so the map is not empty here. Snapshotting it keeps
+		// the assertion provider- and combo-agnostic: the handler must leave
+		// the stored state byte-for-byte unchanged.
+		$before = $instance->get_all_descriptors( $post_id );
+
 		$instance->process_generate_job( $post_id, 15, 800, 400, 'roadmap' );
 
 		$this->assertSame( 'trash', get_post_status( $post_id ), 'Sanity: the venue should be trashed.' );
-		$this->assertArrayNotHasKey(
-			'15x800x400xroadmap',
-			$instance->get_all_descriptors( $post_id )['osm'] ?? array(),
-			'A trashed venue should not gain a descriptor for the job combo.'
+		$this->assertSame(
+			$before,
+			$instance->get_all_descriptors( $post_id ),
+			'A trashed venue should not gain a descriptor under any provider.'
 		);
 	}
 
