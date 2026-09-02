@@ -8,8 +8,10 @@
 
 namespace GatherPress\Tests\Core\Calendar;
 
+use GatherPress\Core\Calendar\Calendar;
 use GatherPress\Core\Calendar\Setup;
 use GatherPress\Core\Event;
+use GatherPress\Core\Topic;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -1812,13 +1814,13 @@ class Test_Setup extends Base {
 	}
 
 	/**
-	 * Coverage for maybe_handle_content_negotiation.
+	 * Coverage for get_negotiated_redirect_url.
 	 *
-	 * @covers ::maybe_handle_content_negotiation
+	 * @covers ::get_negotiated_redirect_url
 	 *
 	 * @return void
 	 */
-	public function test_maybe_handle_content_negotiation(): void {
+	public function test_get_negotiated_redirect_url(): void {
 		$instance   = Setup::get_instance();
 		$event_post = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
 
@@ -1829,16 +1831,169 @@ class Test_Setup extends Base {
 		$wp_query->is_single         = true;
 		$wp_query->queried_object_id = $event_post->ID;
 
-		// When Accept header does not request calendar, nothing happens.
-		$_SERVER['HTTP_ACCEPT'] = 'text/html';
-		$instance->maybe_handle_content_negotiation();
+		$expected = ( new Calendar( $event_post->ID ) )->get_ical_url();
 
-		// When Accept header requests calendar, allowed_redirect_hosts filter is attached.
+		// An HTML request is left alone.
+		$_SERVER['HTTP_ACCEPT'] = 'text/html';
+
+		$this->assertFalse(
+			$instance->get_negotiated_redirect_url(),
+			'Failed to assert an HTML request is not redirected.'
+		);
+
+		// A calendar request on the event page is redirected to its feed. This
+		// is the case the shipped substring guard refused, because the event
+		// permalink is a substring of its own calendar URL.
 		$_SERVER['HTTP_ACCEPT'] = 'text/calendar';
 		$_SERVER['REQUEST_URI'] = '/event/test-event/';
 
-		$instance->maybe_handle_content_negotiation();
+		$this->assertSame(
+			$expected,
+			$instance->get_negotiated_redirect_url(),
+			'Failed to assert a negotiated event request resolves to its calendar URL.'
+		);
+
+		// The same request already on the calendar endpoint is left alone, so
+		// the redirect cannot loop.
+		$wp_query->set( Setup::QUERY_VAR, Setup::ICAL_SLUG );
+
+		$this->assertFalse(
+			$instance->get_negotiated_redirect_url(),
+			'Failed to assert a request already on the calendar endpoint is not redirected again.'
+		);
+
+		$wp_query->set( Setup::QUERY_VAR, '' );
 
 		unset( $_SERVER['HTTP_ACCEPT'], $_SERVER['REQUEST_URI'] );
+	}
+
+	/**
+	 * Coverage for maybe_handle_content_negotiation leaving a request alone.
+	 *
+	 * The redirecting branch ends in exit() and is marked
+	 *
+	 * @codeCoverageIgnore in the source; this pins the bail.
+	 *
+	 * @covers ::maybe_handle_content_negotiation
+	 *
+	 * @return void
+	 */
+	public function test_maybe_handle_content_negotiation_ignores_html_requests(): void {
+		$instance = Setup::get_instance();
+
+		$_SERVER['HTTP_ACCEPT'] = 'text/html';
+
+		$instance->maybe_handle_content_negotiation();
+
+		$this->assertFalse(
+			$instance->get_negotiated_redirect_url(),
+			'Failed to assert an HTML request is left alone by the handler.'
+		);
+
+		unset( $_SERVER['HTTP_ACCEPT'] );
+	}
+
+	/**
+	 * Coverage for get_negotiated_redirect_url on a request with no calendar.
+	 *
+	 * @covers ::get_negotiated_redirect_url
+	 * @covers ::get_calendar_url_for_request
+	 *
+	 * @return void
+	 */
+	public function test_get_negotiated_redirect_url_without_a_calendar_target(): void {
+		$instance = Setup::get_instance();
+		$post     = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+
+		$wp_query = $GLOBALS['wp_query'];
+		$wp_query->init();
+		$wp_query->queried_object    = $post;
+		$wp_query->is_singular       = true;
+		$wp_query->is_single         = true;
+		$wp_query->queried_object_id = $post->ID;
+
+		$_SERVER['HTTP_ACCEPT'] = 'text/calendar';
+
+		$this->assertFalse(
+			$instance->get_negotiated_redirect_url(),
+			'Failed to assert a post with no calendar representation is left alone.'
+		);
+
+		unset( $_SERVER['HTTP_ACCEPT'] );
+	}
+
+	/**
+	 * Coverage for get_calendar_url_for_request across archive contexts.
+	 *
+	 * @covers ::get_calendar_url_for_request
+	 *
+	 * @return void
+	 */
+	public function test_get_calendar_url_for_request_archive_contexts(): void {
+		$instance = Setup::get_instance();
+		$wp_query = $GLOBALS['wp_query'];
+
+		// An event post type archive resolves to that archive's feed.
+		$wp_query->init();
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+
+		$this->assertSame(
+			get_post_type_archive_feed_link( Event::POST_TYPE, Setup::ICAL_SLUG ),
+			$instance->get_calendar_url_for_request(),
+			'Failed to assert an event archive resolves to its calendar feed.'
+		);
+
+		// An event topic term archive resolves to that term's feed.
+		$term = $this->factory->term->create_and_get( array( 'taxonomy' => Topic::TAXONOMY ) );
+
+		$wp_query->init();
+		$wp_query->is_tax            = true;
+		$wp_query->queried_object    = $term;
+		$wp_query->queried_object_id = $term->term_id;
+
+		$this->assertSame(
+			get_term_feed_link( $term->term_id, Topic::TAXONOMY, Setup::ICAL_SLUG ),
+			$instance->get_calendar_url_for_request(),
+			'Failed to assert an event topic archive resolves to its calendar feed.'
+		);
+
+		$wp_query->init();
+	}
+
+	/**
+	 * Coverage for is_calendar_negotiated with media ranges.
+	 *
+	 * @covers ::is_calendar_negotiated
+	 * @covers ::accept_quality
+	 *
+	 * @return void
+	 */
+	public function test_is_calendar_negotiated_respects_media_ranges(): void {
+		$instance = Setup::get_instance();
+
+		$this->assertTrue(
+			$instance->is_calendar_negotiated( 'text/calendar' ),
+			'Failed to assert a bare calendar request negotiates.'
+		);
+
+		// A browser ranking HTML above everything else must keep its HTML.
+		$this->assertFalse(
+			$instance->is_calendar_negotiated( 'text/html,application/xhtml+xml,text/calendar;q=0.1' ),
+			'Failed to assert a browser Accept header does not negotiate calendar.'
+		);
+
+		// `*/*` stands in for text/html here, so the client ranks HTML at 0.9
+		// and the calendar at 0.5. Matching literal types only read this as
+		// calendar-preferred and redirected against the client's wishes.
+		$this->assertFalse(
+			$instance->is_calendar_negotiated( 'text/calendar;q=0.5, */*;q=0.9' ),
+			'Failed to assert a wildcard media range outranking the calendar is honoured.'
+		);
+
+		$this->assertTrue(
+			$instance->is_calendar_negotiated( 'text/calendar;q=0.9, */*;q=0.5' ),
+			'Failed to assert the calendar still wins when it outranks the wildcard.'
+		);
 	}
 }

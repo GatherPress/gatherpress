@@ -1114,21 +1114,54 @@ final class Setup {
 			return false;
 		}
 
-		$calendar_q = 0.0;
-		$html_q     = 0.0;
+		$ranges = array();
 
 		foreach ( explode( ',', $accept_header ) as $range ) {
 			$q    = preg_match( '/;\s*q=([0-9.]+)/i', $range, $m ) ? (float) $m[1] : 1.0;
 			$mime = strtolower( trim( explode( ';', $range, 2 )[0] ) );
 
-			if ( 'text/calendar' === $mime ) {
-				$calendar_q = max( $calendar_q, $q );
-			} elseif ( 'text/html' === $mime || 'application/xhtml+xml' === $mime ) {
-				$html_q = max( $html_q, $q );
+			if ( '' !== $mime ) {
+				$ranges[ $mime ] = max( $ranges[ $mime ] ?? 0.0, $q );
 			}
 		}
 
+		$calendar_q = $this->accept_quality( $ranges, 'text/calendar' );
+		$html_q     = max(
+			$this->accept_quality( $ranges, 'text/html' ),
+			$this->accept_quality( $ranges, 'application/xhtml+xml' )
+		);
+
 		return $calendar_q > 0.0 && $calendar_q >= $html_q;
+	}
+
+	/**
+	 * Quality value a parsed Accept header assigns to one media type.
+	 *
+	 * RFC 9110 section 12.5.1 ranks media ranges by precision, so the most
+	 * specific range that covers the type wins rather than the highest one.
+	 * Against an Accept of `text/calendar;q=0.5` plus a catch-all wildcard at
+	 * `q=0.9`, the calendar scores 0.5 from its own entry, while HTML, which
+	 * has no entry of its own, scores 0.9 from the wildcard. Taking the maximum
+	 * for both would tie them and redirect a client that asked for the
+	 * opposite.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, float> $ranges Parsed `media/range => quality` pairs.
+	 * @param string               $mime   Media type to score, e.g. `text/html`.
+	 *
+	 * @return float The quality value, 0.0 when nothing covers the type.
+	 */
+	protected function accept_quality( array $ranges, string $mime ): float {
+		$type = strtok( $mime, '/' );
+
+		foreach ( array( $mime, $type . '/*', '*/*' ) as $candidate ) {
+			if ( isset( $ranges[ $candidate ] ) ) {
+				return $ranges[ $candidate ];
+			}
+		}
+
+		return 0.0;
 	}
 
 	/**
@@ -1193,43 +1226,59 @@ final class Setup {
 	 * @return void
 	 */
 	public function maybe_handle_content_negotiation(): void {
-		if ( ! $this->is_calendar_negotiated() ) {
+		$calendar_url = $this->get_negotiated_redirect_url();
+
+		if ( false === $calendar_url ) {
 			return;
+		}
+
+		// The decision is covered through get_negotiated_redirect_url(); what
+		// remains here is the side effect, which ends in exit() and so cannot be
+		// exercised without ending the test run.
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation.
+		// @codeCoverageIgnoreStart
+		header( 'Vary: Accept' );
+		wp_safe_redirect( $calendar_url, 302 );
+		exit;
+		// @codeCoverageIgnoreEnd
+	}
+
+	/**
+	 * Resolve where an `Accept: text/calendar` request should be redirected.
+	 *
+	 * Split out from maybe_handle_content_negotiation() so the decision is
+	 * testable on its own: that method ends in exit(), which is why the
+	 * redirect-loop guard below shipped inverted and unnoticed.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string|false The calendar URL to redirect to, or false to leave
+	 *                      the request alone.
+	 */
+	public function get_negotiated_redirect_url() {
+		if ( ! $this->is_calendar_negotiated() ) {
+			return false;
+		}
+
+		// The request is already a calendar representation, so there is nothing
+		// to negotiate and redirecting would point it at itself. Both endpoint
+		// shapes are covered: the feed links carry is_feed(), and the single
+		// rewrite endpoint (/event/my-event/ical/) carries the query var.
+		//
+		// This replaces a substring test between the target and REQUEST_URI.
+		// Every target is the requested URL plus a suffix, so that test matched
+		// on every request and disabled negotiation entirely.
+		if ( is_feed() || '' !== (string) get_query_var( self::QUERY_VAR ) ) {
+			return false;
 		}
 
 		$calendar_url = $this->get_calendar_url_for_request();
 
 		if ( ! is_string( $calendar_url ) || '' === $calendar_url ) {
-			return;
+			return false;
 		}
 
-		// Avoid redirect loops if the request is already for the target URL.
-		$current_url = isset( $_SERVER['REQUEST_URI'] ) && is_string( $_SERVER['REQUEST_URI'] )
-			? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) )
-			: '';
-
-		if ( '' !== $current_url && false !== strpos( $calendar_url, $current_url ) ) {
-			return;
-		}
-
-		// Ensure the redirect target host is permitted.
-		add_filter(
-			'allowed_redirect_hosts',
-			function ( array $hosts ) use ( $calendar_url ): array {
-				$host = wp_parse_url( $calendar_url, PHP_URL_HOST );
-				if ( is_string( $host ) && '' !== $host && ! in_array( $host, $hosts, true ) ) {
-					$hosts[] = $host;
-				}
-				return $hosts;
-			}
-		);
-
-		header( 'Vary: Accept' );
-		wp_safe_redirect( $calendar_url, 302 );
-		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation.
-		// @codeCoverageIgnoreStart
-		exit;
-		// @codeCoverageIgnoreEnd
+		return $calendar_url;
 	}
 
 	/**
