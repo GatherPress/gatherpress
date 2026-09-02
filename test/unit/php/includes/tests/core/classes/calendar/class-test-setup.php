@@ -1988,7 +1988,7 @@ class Test_Setup extends Base {
 		// calendar-preferred and redirected against the client's wishes.
 		$this->assertFalse(
 			$instance->is_calendar_negotiated( 'text/calendar;q=0.5, */*;q=0.9' ),
-			'Failed to assert a wildcard media range outranking the calendar is honoured.'
+			'Failed to assert a wildcard media range outranking the calendar is honored.'
 		);
 
 		$this->assertTrue(
