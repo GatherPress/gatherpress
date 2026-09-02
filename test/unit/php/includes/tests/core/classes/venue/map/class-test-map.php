@@ -807,6 +807,57 @@ class Test_Map extends Base {
 	}
 
 	/**
+	 * The cron handler is a no-op when the venue post no longer exists at
+	 * run time, so `get_post_status()` returns false.
+	 *
+	 * @covers ::process_generate_job
+	 *
+	 * @return void
+	 */
+	public function test_process_generate_job_bails_for_missing_post(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		update_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop, Cupertino, CA' );
+		update_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
+		update_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
+
+		wp_delete_post( $post_id, true );
+
+		$instance->process_generate_job( $post_id, 15, 800, 400, 'roadmap' );
+
+		$this->assertNull( $instance->get_stored_descriptor( $post_id ) );
+	}
+
+	/**
+	 * The cron handler is a no-op when the venue has been trashed between
+	 * the scheduling save and the cron tick.
+	 *
+	 * @covers ::process_generate_job
+	 *
+	 * @return void
+	 */
+	public function test_process_generate_job_bails_for_trashed_post(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		update_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop, Cupertino, CA' );
+		update_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
+		update_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
+
+		wp_trash_post( $post_id );
+
+		$instance->process_generate_job( $post_id, 15, 800, 400, 'roadmap' );
+
+		$this->assertSame( 'trash', get_post_status( $post_id ), 'Sanity: the venue should be trashed.' );
+		$this->assertArrayNotHasKey(
+			'15x800x400xroadmap',
+			$instance->get_all_descriptors( $post_id )['osm'] ?? array(),
+			'A trashed venue should not gain a descriptor for the job combo.'
+		);
+	}
+
+	/**
 	 * Clears the descriptor meta for the venue but leaves the PNG on disk
 	 * — the file may be shared with another venue at the same address, so
 	 * on-delete cleanup is deferred to a future GC pass.
