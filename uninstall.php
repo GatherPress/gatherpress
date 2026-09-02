@@ -11,10 +11,10 @@
  *
  * The actual work lives in the `GatherPress\Core\Uninstall` namespace:
  * an abstract Base that owns the multisite fan-out, one small class per
- * cleanup concern, and a Setup registry that runs them. Today the only
- * task is the transient wipe; the #681 follow-up registers its
- * settings-gated tasks (options, tables, posts, terms, comments, cron)
- * on the same shape.
+ * cleanup concern, and a Setup registry that runs them. Today those are
+ * the transient wipe and the admin notice bookkeeping; the #681 follow-up
+ * registers its settings-gated tasks (options, tables, posts, terms,
+ * comments, cron) on the same shape.
  *
  * @since 0.36.0
  *

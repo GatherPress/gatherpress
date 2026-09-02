@@ -4,6 +4,7 @@
 import {
 	Button,
 	DateTimePicker,
+	DatePicker,
 	Dropdown,
 	Flex,
 	FlexItem,
@@ -21,6 +22,8 @@ import { hasEventPastNotice } from '../helpers/event';
 import {
 	createMomentWithTimezone,
 	dateTimeDatabaseFormat,
+	dateLabelFormat,
+	toDayStart,
 	dateTimeLabelFormat,
 	dateTimeOffset,
 	getTimezone,
@@ -44,6 +47,15 @@ import { getSettings } from '@wordpress/date';
 const DateTimeStart = () => {
 	const dateTimeStart = useSelect(
 		( select ) => select( 'gatherpress/datetime' ).getDateTimeStart(),
+		[],
+	);
+	// An all-day event has no time to pick, and shows only its date.
+	const isAllDay = useSelect(
+		( select ) =>
+			Boolean(
+				select( 'core/editor' ).getEditedPostAttribute( 'meta' )
+					?.gatherpress_is_all_day
+			),
 		[],
 	);
 	// Use the memoized matched-preset hook so the gating below only fires
@@ -83,7 +95,9 @@ const DateTimeStart = () => {
 				<FlexItem>
 					<h3 style={ { marginBottom: 0 } }>
 						<label htmlFor="gatherpress-datetime-start">
-							{ __( 'Date & time start', 'gatherpress' ) }
+							{ isAllDay
+								? __( 'Date start', 'gatherpress' )
+								: __( 'Date & time start', 'gatherpress' ) }
 						</label>
 					</h3>
 				</FlexItem>
@@ -97,23 +111,38 @@ const DateTimeStart = () => {
 								aria-expanded={ isOpen }
 								variant="link"
 							>
-								{ createMomentWithTimezone( dateTimeStart, getTimezone() )
-									.format( dateTimeLabelFormat() ) }
+								{ createMomentWithTimezone( dateTimeStart, getTimezone() ).format(
+									isAllDay ? dateLabelFormat() : dateTimeLabelFormat(),
+								) }
 							</Button>
 						) }
 						renderContent={ () => (
-							<DateTimePicker
-								currentDate={ dateTimeStart }
-								onChange={ ( date ) => {
-									updateDateTimeStart(
-										date,
-										setDateTimeStart,
-										setDateTimeEnd,
-									);
-								} }
-								is12Hour={ is12HourTime }
-								startOfWeek={ getStartOfWeek() }
-							/>
+							isAllDay ? (
+								<DatePicker
+									currentDate={ dateTimeStart }
+									onChange={ ( date ) => {
+										updateDateTimeStart(
+											toDayStart( date ),
+											setDateTimeStart,
+											setDateTimeEnd,
+										);
+									} }
+									startOfWeek={ getStartOfWeek() }
+								/>
+							) : (
+								<DateTimePicker
+									currentDate={ dateTimeStart }
+									onChange={ ( date ) => {
+										updateDateTimeStart(
+											date,
+											setDateTimeStart,
+											setDateTimeEnd,
+										);
+									} }
+									is12Hour={ is12HourTime }
+									startOfWeek={ getStartOfWeek() }
+								/>
+							)
 						) }
 					/>
 				</FlexItem>

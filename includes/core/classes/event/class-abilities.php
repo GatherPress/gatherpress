@@ -24,7 +24,14 @@ use GatherPress\Core\Traits\Singleton;
  *
  * @since 0.36.0
  *
- * @phpstan-type EventUpcomingEvent array{id:int, title:string, url:string, start:string, end:string, timezone:string}
+ * @phpstan-type UpcomingEvent array{
+ *     id: int,
+ *     title: string,
+ *     url: string,
+ *     start: string,
+ *     end: string,
+ *     timezone: string
+ * }
  */
 final class Abilities {
 
@@ -171,19 +178,21 @@ final class Abilities {
 	 *
 	 * @param mixed $input Input passed to the ability.
 	 *
-	 * @return array<int, EventUpcomingEvent> Upcoming events, soonest first.
+	 * @return UpcomingEvent[] Upcoming events, soonest first.
 	 */
 	public function get_upcoming_events( $input = null ): array {
 		$count  = is_array( $input ) ? (int) ( $input['count'] ?? 5 ) : 5;
 		$count  = min( max( $count, 1 ), self::MAX_EVENTS );
 		$events = array();
 
-		// The event query runs with `fields => ids`, so these are post IDs.
-		foreach ( Query::get_instance()->get_upcoming_events( $count )->posts as $post_id ) {
-			if ( ! is_int( $post_id ) ) {
-				continue;
-			}
+		/**
+		 * Upcoming event IDs.
+		 *
+		 * @var int[] $post_ids The query runs with `fields => ids`.
+		 */
+		$post_ids = Query::get_instance()->get_upcoming_events( $count )->posts;
 
+		foreach ( $post_ids as $post_id ) {
 			$datetime = ( new Event( $post_id ) )->get_datetime();
 
 			$events[] = array(

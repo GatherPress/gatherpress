@@ -1,0 +1,194 @@
+<?php
+/**
+ * Notice welcoming someone who has just activated GatherPress.
+ *
+ * Unlike the requirement notices, this one renders after the requirements
+ * gate, so it is ordinary modern PHP rather than the 7.4 subset described in
+ * class-base.php.
+ *
+ * @package GatherPress\Core\Admin\Notices
+ * @since 0.36.0
+ */
+
+namespace GatherPress\Core\Admin\Notices;
+
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
+use GatherPress\Core\Event;
+use WP_Post_Type;
+use WP_Screen;
+
+/**
+ * Class Welcome.
+ *
+ * Activating a plugin drops you back on the plugins screen with nothing to go
+ * on. This is the one moment GatherPress has someone's attention, so it says
+ * what the plugin is for and offers a single thing to do next.
+ *
+ * Promotional rather than a configuration step: no wizard, no redirect. An
+ * activation redirect is discouraged on WordPress.org and breaks activating
+ * several plugins at once, since the first to hijack the flow leaves the rest
+ * half-finished.
+ *
+ * @since 0.36.0
+ */
+final class Welcome extends Base {
+
+	/**
+	 * Unique slug identifying this notice.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string The slug.
+	 */
+	public function get_slug(): string {
+		return 'gatherpress_welcome';
+	}
+
+	/**
+	 * The notice's type.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string One of the TYPE_* constants.
+	 */
+	public function get_type(): string {
+		return self::TYPE_INFO;
+	}
+
+	/**
+	 * Whether the notice can be closed for the current page view.
+	 *
+	 * False because the card renders its own close control, which records the
+	 * dismissal rather than hiding the notice until the next page load. The
+	 * native one would sit beside it and look like a second, weaker X.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return bool Always false.
+	 */
+	public function is_dismissible(): bool {
+		return false;
+	}
+
+	/**
+	 * Whether dismissing the notice is remembered across page loads.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return bool Always true.
+	 */
+	public function is_persistent(): bool {
+		return true;
+	}
+
+	/**
+	 * Capability required to see the notice.
+	 *
+	 * The call to action creates an event, so this is the event post type's
+	 * own create capability rather than a fixed one: a companion plugin that
+	 * gives events their own capabilities should not leave the welcome
+	 * offering something the reader cannot do.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string The capability.
+	 */
+	public function get_capability(): string {
+		$post_type = get_post_type_object( Event::POST_TYPE );
+
+		return $post_type instanceof WP_Post_Type
+			? (string) $post_type->cap->create_posts
+			: 'edit_posts';
+	}
+
+	/**
+	 * Whether this is a screen the welcome belongs on.
+	 *
+	 * Scoped to the plugins screen, where activation lands, and to GatherPress
+	 * screens, so someone who navigated straight to Events still finds it.
+	 * Everywhere else in the admin it would be someone else's screen.
+	 *
+	 * Deliberately not gated on an activation flag. Recording one would mean
+	 * an option write per site on activation, which is a lot of writes on a
+	 * large network for a banner someone dismisses once.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return bool True when the welcome should apply.
+	 */
+	public function applies(): bool {
+		return $this->is_supported_screen();
+	}
+
+	/**
+	 * Whether the current screen is one this notice belongs on.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return bool True on the plugins screen or a GatherPress screen.
+	 */
+	protected function is_supported_screen(): bool {
+		$screen = get_current_screen();
+
+		if ( ! $screen instanceof WP_Screen ) {
+			return false;
+		}
+
+		return 'plugins' === $screen->id || str_contains( $screen->id, 'gatherpress' );
+	}
+
+	/**
+	 * The notice's message.
+	 *
+	 * One sentence on what GatherPress is for. Deliberately not a feature
+	 * list: someone who has just activated it has not asked for one yet.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string The translated message.
+	 */
+	public function get_message(): string {
+		return esc_html__(
+			'GatherPress brings event management to WordPress, built by and for the communities that use it.',
+			'gatherpress'
+		);
+	}
+
+	/**
+	 * The headline confirming the install.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string The translated headline.
+	 */
+	public function get_headline(): string {
+		return esc_html__( 'Welcome to GatherPress!', 'gatherpress' );
+	}
+
+	/**
+	 * Where the call to action goes.
+	 *
+	 * Creating an event is the thing GatherPress exists to do, and it teaches
+	 * more about the plugin than any amount of reading would.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string The admin URL for a new event.
+	 */
+	public function get_action_url(): string {
+		return admin_url( sprintf( 'post-new.php?post_type=%s', Event::POST_TYPE ) );
+	}
+
+	/**
+	 * What the call to action reads.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string The translated label.
+	 */
+	public function get_action_label(): string {
+		return esc_html__( 'Create an event', 'gatherpress' );
+	}
+}
