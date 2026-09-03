@@ -116,7 +116,7 @@ class Test_Check_In extends Base {
 			'A fresh RSVP should not be checked in.'
 		);
 		$this->assertFalse(
-			has_term( Check_In::TERM, Check_In::TAXONOMY, $rsvp['rsvp_id'] ),
+			true === is_object_in_term( $rsvp['rsvp_id'], Check_In::TAXONOMY, Check_In::TERM ),
 			'A fresh RSVP should not have the check-in taxonomy term.'
 		);
 		$this->assertSame(
@@ -133,7 +133,7 @@ class Test_Check_In extends Base {
 			'The RSVP should read as checked in afterwards.'
 		);
 		$this->assertTrue(
-			has_term( Check_In::TERM, Check_In::TAXONOMY, $rsvp['rsvp_id'] ),
+			true === is_object_in_term( $rsvp['rsvp_id'], Check_In::TAXONOMY, Check_In::TERM ),
 			'The RSVP should have the check-in taxonomy term.'
 		);
 		$this->assertNotEmpty(
@@ -191,7 +191,7 @@ class Test_Check_In extends Base {
 			'The RSVP should no longer read as checked in.'
 		);
 		$this->assertFalse(
-			has_term( Check_In::TERM, Check_In::TAXONOMY, $rsvp['rsvp_id'] ),
+			true === is_object_in_term( $rsvp['rsvp_id'], Check_In::TAXONOMY, Check_In::TERM ),
 			'The check-in taxonomy term should be removed.'
 		);
 	}
@@ -297,7 +297,7 @@ class Test_Check_In extends Base {
 			'Deleting an RSVP should take its arrival time with it.'
 		);
 		$this->assertFalse(
-			has_term( Check_In::TERM, Check_In::TAXONOMY, $rsvp['rsvp_id'] ),
+			true === is_object_in_term( $rsvp['rsvp_id'], Check_In::TAXONOMY, Check_In::TERM ),
 			'Deleting an RSVP should remove its check-in term.'
 		);
 	}
