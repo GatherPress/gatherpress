@@ -111,19 +111,27 @@ export function closeAllTooltips() {
  * @param {MouseEvent|TouchEvent} event The click or tap event.
  */
 export function handleDocumentClick( event ) {
-	const target = event?.target instanceof Element ? event.target : null;
-	const tooltip = target
+	const rawTarget = event?.target instanceof Node ? event.target : null;
+	const target = rawTarget instanceof Element ? rawTarget : rawTarget?.parentElement;
+	const tooltip = target?.closest
 		? target.closest( '.gatherpress-tooltip[data-gatherpress-tooltip]' )
 		: null;
 
 	if ( tooltip ) {
 		initTooltip( tooltip );
-		const isCurrentlyActive = tooltip.classList.contains(
-			'gatherpress-tooltip--is-active'
-		);
+		const doc = tooltip.ownerDocument;
+		const isCurrentlyActive =
+			tooltip.classList.contains( 'gatherpress-tooltip--is-active' ) ||
+			( doc?.activeElement === tooltip &&
+				! tooltip.classList.contains( 'gatherpress-tooltip--is-dismissed' ) );
+
 		closeAllTooltips();
+
 		if ( ! isCurrentlyActive ) {
+			tooltip.classList.remove( 'gatherpress-tooltip--is-dismissed' );
 			tooltip.classList.add( 'gatherpress-tooltip--is-active' );
+		} else {
+			tooltip.classList.add( 'gatherpress-tooltip--is-dismissed' );
 		}
 	} else {
 		closeAllTooltips();
@@ -137,7 +145,62 @@ export function handleDocumentClick( event ) {
  */
 export function handleDocumentKeyDown( event ) {
 	if ( 'Escape' === event?.key ) {
+		const doc =
+			event?.target?.ownerDocument ||
+			( 'undefined' !== typeof document ? document : null );
+		const rawActive =
+			doc?.activeElement instanceof Node
+				? doc.activeElement
+				: null;
+		const activeEl = rawActive instanceof Element ? rawActive : rawActive?.parentElement;
+		const tooltip = activeEl?.closest
+			? activeEl.closest( '.gatherpress-tooltip[data-gatherpress-tooltip]' )
+			: null;
+
+		if ( tooltip ) {
+			tooltip.classList.add( 'gatherpress-tooltip--is-dismissed' );
+			tooltip.classList.remove( 'gatherpress-tooltip--is-active' );
+		}
 		closeAllTooltips();
+	}
+}
+
+/**
+ * Handle focusout to clear dismissed state once focus moves away.
+ *
+ * @param {FocusEvent} event The focusout event.
+ */
+export function handleFocusOut( event ) {
+	const rawTarget = event?.target instanceof Node ? event.target : null;
+	const target = rawTarget instanceof Element ? rawTarget : rawTarget?.parentElement;
+	const tooltip = target?.closest
+		? target.closest( '.gatherpress-tooltip[data-gatherpress-tooltip]' )
+		: null;
+
+	if ( tooltip ) {
+		tooltip.classList.remove( 'gatherpress-tooltip--is-dismissed' );
+		tooltip.classList.remove( 'gatherpress-tooltip--is-active' );
+	}
+}
+
+/**
+ * Handle mouseleave to clear dismissed state once pointer leaves, unless currently focused.
+ *
+ * @param {MouseEvent} event The mouseleave event.
+ */
+export function handleMouseLeave( event ) {
+	const rawTarget = event?.target instanceof Node ? event.target : null;
+	const target = rawTarget instanceof Element ? rawTarget : rawTarget?.parentElement;
+	const tooltip = target?.closest
+		? target.closest( '.gatherpress-tooltip[data-gatherpress-tooltip]' )
+		: null;
+
+	const doc = tooltip?.ownerDocument;
+	if (
+		tooltip &&
+		( ! doc || doc.activeElement !== tooltip )
+	) {
+		tooltip.classList.remove( 'gatherpress-tooltip--is-dismissed' );
 	}
 }
 
@@ -147,8 +210,9 @@ export function handleDocumentKeyDown( event ) {
  * @param {FocusEvent|MouseEvent} event The event.
  */
 export function handleLazyInit( event ) {
-	const target = event?.target instanceof Element ? event.target : null;
-	const tooltip = target
+	const rawTarget = event?.target instanceof Node ? event.target : null;
+	const target = rawTarget instanceof Element ? rawTarget : rawTarget?.parentElement;
+	const tooltip = target?.closest
 		? target.closest( '.gatherpress-tooltip[data-gatherpress-tooltip]' )
 		: null;
 	if ( tooltip ) {
@@ -168,6 +232,8 @@ export function bindTooltipEvents() {
 	document.addEventListener( 'keydown', handleDocumentKeyDown );
 	document.addEventListener( 'focusin', handleLazyInit, true );
 	document.addEventListener( 'mouseenter', handleLazyInit, true );
+	document.addEventListener( 'focusout', handleFocusOut, true );
+	document.addEventListener( 'mouseleave', handleMouseLeave, true );
 
 	if ( 'undefined' !== typeof MutationObserver && document.body ) {
 		const observer = new MutationObserver( ( mutations ) => {

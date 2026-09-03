@@ -19,6 +19,8 @@ import {
 	closeAllTooltips,
 	handleDocumentClick,
 	handleDocumentKeyDown,
+	handleFocusOut,
+	handleMouseLeave,
 	handleLazyInit,
 	bindTooltipEvents,
 } from '@src/formats/tooltip/view';
@@ -262,6 +264,24 @@ describe( 'Tooltip view', () => {
 			).toBe( false );
 		} );
 
+		it( 'marks focused tooltip as dismissed when Escape key is pressed', () => {
+			const el = document.createElement( 'span' );
+			el.className = 'gatherpress-tooltip gatherpress-tooltip--is-active';
+			el.setAttribute( 'data-gatherpress-tooltip', 'Dismiss me' );
+			el.setAttribute( 'tabindex', '0' );
+			document.body.appendChild( el );
+			el.focus();
+
+			handleDocumentKeyDown( { key: 'Escape' } );
+
+			expect(
+				el.classList.contains( 'gatherpress-tooltip--is-dismissed' )
+			).toBe( true );
+			expect(
+				el.classList.contains( 'gatherpress-tooltip--is-active' )
+			).toBe( false );
+		} );
+
 		it( 'does nothing when other keys are pressed', () => {
 			const el = document.createElement( 'span' );
 			el.className = 'gatherpress-tooltip gatherpress-tooltip--is-active';
@@ -272,6 +292,71 @@ describe( 'Tooltip view', () => {
 			expect(
 				el.classList.contains( 'gatherpress-tooltip--is-active' )
 			).toBe( true );
+		} );
+	} );
+
+	describe( 'handleFocusOut function', () => {
+		it( 'removes dismissed and active classes when focus leaves tooltip', () => {
+			const el = document.createElement( 'span' );
+			el.className =
+				'gatherpress-tooltip gatherpress-tooltip--is-dismissed gatherpress-tooltip--is-active';
+			el.setAttribute( 'data-gatherpress-tooltip', 'Focus out test' );
+			document.body.appendChild( el );
+
+			handleFocusOut( { target: el } );
+
+			expect(
+				el.classList.contains( 'gatherpress-tooltip--is-dismissed' )
+			).toBe( false );
+			expect(
+				el.classList.contains( 'gatherpress-tooltip--is-active' )
+			).toBe( false );
+		} );
+
+		it( 'does nothing when event target is not inside a tooltip', () => {
+			const outside = document.createElement( 'div' );
+			document.body.appendChild( outside );
+
+			expect( () => handleFocusOut( { target: outside } ) ).not.toThrow();
+		} );
+	} );
+
+	describe( 'handleMouseLeave function', () => {
+		it( 'removes dismissed class when pointer leaves and tooltip is not activeElement', () => {
+			const el = document.createElement( 'span' );
+			el.className =
+				'gatherpress-tooltip gatherpress-tooltip--is-dismissed';
+			el.setAttribute( 'data-gatherpress-tooltip', 'Mouse leave test' );
+			document.body.appendChild( el );
+
+			handleMouseLeave( { target: el } );
+
+			expect(
+				el.classList.contains( 'gatherpress-tooltip--is-dismissed' )
+			).toBe( false );
+		} );
+
+		it( 'keeps dismissed class if tooltip is still focused when mouse leaves', () => {
+			const el = document.createElement( 'span' );
+			el.className =
+				'gatherpress-tooltip gatherpress-tooltip--is-dismissed';
+			el.setAttribute( 'data-gatherpress-tooltip', 'Focused leave' );
+			el.setAttribute( 'tabindex', '0' );
+			document.body.appendChild( el );
+			el.focus();
+
+			handleMouseLeave( { target: el } );
+
+			expect(
+				el.classList.contains( 'gatherpress-tooltip--is-dismissed' )
+			).toBe( true );
+		} );
+
+		it( 'does nothing when event target is not inside a tooltip', () => {
+			const outside = document.createElement( 'div' );
+			document.body.appendChild( outside );
+
+			expect( () => handleMouseLeave( { target: outside } ) ).not.toThrow();
 		} );
 	} );
 
@@ -325,6 +410,16 @@ describe( 'Tooltip view', () => {
 			);
 			expect( mockAddEventListener ).toHaveBeenCalledWith(
 				'mouseenter',
+				expect.any( Function ),
+				true
+			);
+			expect( mockAddEventListener ).toHaveBeenCalledWith(
+				'focusout',
+				expect.any( Function ),
+				true
+			);
+			expect( mockAddEventListener ).toHaveBeenCalledWith(
+				'mouseleave',
 				expect.any( Function ),
 				true
 			);

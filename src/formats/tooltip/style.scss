@@ -36,7 +36,12 @@
 
 	position: relative;
 	border-bottom: 1px dotted currentcolor;
-	cursor: help;
+	cursor: pointer;
+	touch-action: manipulation;
+
+	@media (hover: hover) {
+		cursor: help;
+	}
 
 	// Tooltip bubble (using ::after for content).
 	&::before,
@@ -82,9 +87,9 @@
 		outline-offset: 2px;
 	}
 
-	// Show tooltip on hover, focus, or active state (touch toggle).
-	&:hover,
-	&:focus,
+	// Show tooltip on hover, focus, or active state (touch toggle), unless explicitly dismissed.
+	&:hover:not(.gatherpress-tooltip--is-dismissed),
+	&:focus:not(.gatherpress-tooltip--is-dismissed),
 	&.gatherpress-tooltip--is-active {
 		&::before,
 		&::after {
