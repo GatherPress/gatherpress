@@ -915,19 +915,14 @@ class Test_Calendar extends Base {
 			'Yahoo destination URL should use Ymd start date for all-day events.'
 		);
 		$this->assertStringContainsString(
-			'et=20300615',
+			'dur=allday',
 			$url,
-			'Yahoo destination URL should end a one-day all-day event on its own day.'
-		);
-		$this->assertStringContainsString(
-			'allday=true',
-			$url,
-			'Yahoo destination URL should mark an all-day event as one.'
+			'Yahoo destination URL should mark a one-day event all day with dur.'
 		);
 		$this->assertStringNotContainsString(
-			'dur=',
+			'et=',
 			$url,
-			'Yahoo destination URL should not send a duration for an all-day event.'
+			'Yahoo destination URL should send no end date, which would make it ignore dur.'
 		);
 
 		$multi_day_id = $this->make_all_day_event( 'Asia/Tokyo', '2030-06-15', '2030-06-16' );
@@ -940,14 +935,14 @@ class Test_Calendar extends Base {
 			'Yahoo destination URL should start a multi-day all-day event on its first day.'
 		);
 		$this->assertStringContainsString(
-			'et=20300616',
+			'et=20300617',
 			$multi_url,
-			'Yahoo destination URL should end a multi-day all-day event on its last day.'
+			'Yahoo destination URL should end a multi-day all-day event the day after its last.'
 		);
-		$this->assertStringContainsString(
-			'allday=true',
+		$this->assertStringNotContainsString(
+			'dur=',
 			$multi_url,
-			'Yahoo destination URL should mark a multi-day all-day event as one.'
+			'Yahoo destination URL should send no duration alongside an end date.'
 		);
 	}
 

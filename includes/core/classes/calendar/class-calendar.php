@@ -211,15 +211,28 @@ final class Calendar {
 		}
 
 		if ( $this->event->is_all_day() ) {
-			// Yahoo takes two plain dates and its own flag, not a duration.
-			// `dur` is an `hhmm` field, and a single all-day event already
-			// needs more hours than the two digits hold. Local dates, since
-			// an all-day date is floating and must not shift with the zone.
-			$timing = array(
-				'st'     => $this->event->get_formatted_datetime( 'Ymd', 'start' ),
-				'et'     => $this->event->get_formatted_datetime( 'Ymd', 'end' ),
-				'allday' => 'true',
-			);
+			// Yahoo has two shapes for this and they cannot be combined: it
+			// ignores `dur` the moment `et` is present. A single day says
+			// `dur=allday` and sends no end at all; a span sends the end and
+			// no duration. That end is exclusive, so it names the day after
+			// the last one, as `DTEND` does in the feed above.
+			//
+			// Local dates throughout, an all-day date being floating.
+			$date_start = $this->event->get_formatted_datetime( 'Ymd', 'start' );
+
+			if ( $this->event->is_same_date() ) {
+				$timing = array(
+					'st'  => $date_start,
+					'dur' => 'allday',
+				);
+			} else {
+				$end_date = $this->event->get_formatted_datetime( 'Y-m-d', 'end' );
+
+				$timing = array(
+					'st' => $date_start,
+					'et' => gmdate( 'Ymd', (int) strtotime( $end_date . ' +1 day' ) ),
+				);
+			}
 		} else {
 			$date_start = $this->event->get_formatted_datetime( 'Ymd', 'start', false );
 			$time_start = $this->event->get_formatted_datetime( 'His', 'start', false );
