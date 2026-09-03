@@ -114,13 +114,14 @@ final class List_Table extends WP_List_Table {
 	 */
 	public function get_columns(): array {
 		return array(
-			'cb'       => '<input type="checkbox" />',
-			'attendee' => __( 'Attendee', 'gatherpress' ),
-			'response' => __( 'Response', 'gatherpress' ),
-			'type'     => __( 'Type', 'gatherpress' ),
-			'event'    => Utility::post_type_label( 'singular_name', $this->post_type ),
-			'approved' => __( 'Status', 'gatherpress' ),
-			'date'     => __( 'Date', 'gatherpress' ),
+			'cb'         => '<input type="checkbox" />',
+			'attendee'   => __( 'Attendee', 'gatherpress' ),
+			'response'   => __( 'Response', 'gatherpress' ),
+			'type'       => __( 'Type', 'gatherpress' ),
+			'event'      => Utility::post_type_label( 'singular_name', $this->post_type ),
+			'approved'   => __( 'Status', 'gatherpress' ),
+			'checked_in' => __( 'Checked in', 'gatherpress' ),
+			'date'       => __( 'Date', 'gatherpress' ),
 		);
 	}
 
@@ -722,6 +723,17 @@ final class List_Table extends WP_List_Table {
 				// this table has no label for.
 				$output = $statuses[ $approved ] ?? '-';
 				break;
+			case 'checked_in':
+				$check_in_time = Check_In::get_instance()->get_check_in_time( (int) $item['comment_ID'] );
+
+				if ( '' === $check_in_time ) {
+					return '-';
+				}
+
+				// The stored value is GMT; render it in the site's timezone so
+				// the column reads like the Date column next to it. Escaping is
+				// left to the render layer, matching the Date column below.
+				return get_date_from_gmt( $check_in_time, 'Y/m/d \a\t g:i a' );
 			case 'date':
 				return get_comment_date( 'Y/m/d \a\t g:i a', $comment_id );
 			case 'type':
@@ -864,34 +876,45 @@ final class List_Table extends WP_List_Table {
 	public function column_attendee( array $item ): string {
 		// Use current URL to preserve all filtering parameters.
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		$current_url = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
-		$nonce       = wp_create_nonce( Rsvp::COMMENT_TYPE );
-		$actions     = array();
-		$is_approved = ( '1' === $item['comment_approved'] );
-		$is_spam     = ( 'spam' === $item['comment_approved'] );
+		$current_url   = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
+		$nonce         = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$actions       = array();
+		$is_approved   = ( '1' === $item['comment_approved'] );
+		$is_spam       = ( 'spam' === $item['comment_approved'] );
+		$is_checked_in = Check_In::get_instance()->is_checked_in( (int) $item['comment_ID'] );
 
 		$action_definitions = array(
-			'approve'   => array(
+			'approve'        => array(
 				'condition' => ! $is_approved && ! $is_spam,
 				'label'     => __( 'Approve', 'gatherpress' ),
 				'action'    => 'approve',
 			),
-			'unapprove' => array(
+			'unapprove'      => array(
 				'condition' => $is_approved,
 				'label'     => __( 'Unapprove', 'gatherpress' ),
 				'action'    => 'unapprove',
 			),
-			'spam'      => array(
+			'check_in'       => array(
+				'condition' => $is_approved && ! $is_checked_in,
+				'label'     => __( 'Check in', 'gatherpress' ),
+				'action'    => 'check_in',
+			),
+			'clear_check_in' => array(
+				'condition' => $is_approved && $is_checked_in,
+				'label'     => __( 'Clear check-in', 'gatherpress' ),
+				'action'    => 'clear_check_in',
+			),
+			'spam'           => array(
 				'condition' => ! $is_spam,
 				'label'     => __( 'Spam', 'gatherpress' ),
 				'action'    => 'spam',
 			),
-			'not-spam'  => array(
+			'not-spam'       => array(
 				'condition' => $is_spam,
 				'label'     => __( 'Not Spam', 'gatherpress' ),
 				'action'    => 'unspam',
 			),
-			'delete'    => array(
+			'delete'         => array(
 				'condition'    => true,
 				'label'        => __( 'Delete', 'gatherpress' ),
 				'action'       => 'delete',
@@ -970,11 +993,13 @@ final class List_Table extends WP_List_Table {
 		}
 
 		return array(
-			'approve'   => __( 'Approve', 'gatherpress' ),
-			'unapprove' => __( 'Unapprove', 'gatherpress' ),
-			'spam'      => __( 'Mark as Spam', 'gatherpress' ),
-			'unspam'    => __( 'Not Spam', 'gatherpress' ),
-			'delete'    => __( 'Delete', 'gatherpress' ),
+			'approve'        => __( 'Approve', 'gatherpress' ),
+			'unapprove'      => __( 'Unapprove', 'gatherpress' ),
+			'check_in'       => __( 'Check in', 'gatherpress' ),
+			'clear_check_in' => __( 'Clear check-in', 'gatherpress' ),
+			'spam'           => __( 'Mark as Spam', 'gatherpress' ),
+			'unspam'         => __( 'Not Spam', 'gatherpress' ),
+			'delete'         => __( 'Delete', 'gatherpress' ),
 		);
 	}
 
@@ -1094,6 +1119,18 @@ final class List_Table extends WP_List_Table {
 		if ( 'delete' === $current_action ) {
 			foreach ( $rsvp_ids as $rsvp_id ) {
 				wp_delete_comment( $rsvp_id, true );
+			}
+		} elseif ( 'check_in' === $current_action || 'clear_check_in' === $current_action ) {
+			$check_in = Check_In::get_instance();
+
+			foreach ( $rsvp_ids as $rsvp_id ) {
+				if ( 'check_in' === $current_action ) {
+					$check_in->check_in( $rsvp_id );
+
+					continue;
+				}
+
+				$check_in->clear( $rsvp_id );
 			}
 		} elseif ( isset( $action_status_map[ $current_action ] ) ) {
 			$status = $action_status_map[ $current_action ];

@@ -80,6 +80,7 @@ final class Setup {
 	 */
 	protected function instantiate_classes(): void {
 		Abilities::get_instance();
+		Check_In::get_instance();
 		Cleanup::get_instance();
 		Form::get_instance();
 		Query::get_instance();
@@ -159,6 +160,22 @@ final class Setup {
 
 		register_taxonomy(
 			Provider::TAXONOMY,
+			'comment',
+			array(
+				'labels'             => array(),
+				'hierarchical'       => false,
+				'public'             => true,
+				'show_ui'            => false,
+				'show_admin_column'  => false,
+				'query_var'          => true,
+				'publicly_queryable' => false,
+				'rewrite'            => false,
+				'show_in_rest'       => true,
+			)
+		);
+
+		register_taxonomy(
+			Check_In::TAXONOMY,
 			'comment',
 			array(
 				'labels'             => array(),
