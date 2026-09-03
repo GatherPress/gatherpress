@@ -22,8 +22,9 @@ use WP_Comment;
 /**
  * Records which RSVPs actually turned up.
  *
- * State lives in a single comment meta key holding the GMT timestamp of the
- * check-in, so an absent value means "not checked in" and existing RSVPs need
+ * Check-in state is tracked via a taxonomy term on the RSVP comment for fast
+ * queries, paired with a comment meta key holding the GMT timestamp of the
+ * check-in. An absent value means "not checked in", so existing RSVPs need
  * no backfill. The timestamp rather than a boolean because arrival times are
  * free to keep and impossible to reconstruct afterwards.
  *
