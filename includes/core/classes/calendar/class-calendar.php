@@ -211,26 +211,23 @@ final class Calendar {
 		}
 
 		if ( $this->event->is_all_day() ) {
-			// Yahoo has two shapes for this and they cannot be combined: it
-			// ignores `dur` the moment `et` is present. A single day says
-			// `dur=allday` and sends no end at all; a span sends the end and
-			// no duration. That end is exclusive, so it names the day after
-			// the last one, as `DTEND` does in the feed above.
-			//
-			// Local dates throughout, an all-day date being floating.
-			$date_start = $this->event->get_formatted_datetime( 'Ymd', 'start' );
-
+			// `dur=allday` is the only thing that switches Yahoo's all-day
+			// toggle on, and it is ignored the moment `et` is present, so a
+			// span cannot be flagged all day at all. A single day sends the
+			// flag and no end. A span goes out as the timed stretch it is
+			// stored as, midnight to 23:59:59 in the event's own zone: that
+			// opens showing the first and last days and covers them all, which
+			// a bare end date does not, since the composer reads it as
+			// midnight and drops the last day. (Verified in the composer.)
 			if ( $this->event->is_same_date() ) {
 				$timing = array(
-					'st'  => $date_start,
+					'st'  => $this->event->get_formatted_datetime( 'Ymd', 'start' ),
 					'dur' => 'allday',
 				);
 			} else {
-				$end_date = $this->event->get_formatted_datetime( 'Y-m-d', 'end' );
-
 				$timing = array(
-					'st' => $date_start,
-					'et' => gmdate( 'Ymd', (int) strtotime( $end_date . ' +1 day' ) ),
+					'st' => $this->event->get_formatted_datetime( 'Ymd\THis', 'start' ),
+					'et' => $this->event->get_formatted_datetime( 'Ymd\THis', 'end' ),
 				);
 			}
 		} else {

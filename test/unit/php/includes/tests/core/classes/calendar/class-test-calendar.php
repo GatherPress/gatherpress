@@ -981,15 +981,18 @@ class Test_Calendar extends Base {
 		$multi_inst   = new Calendar( $multi_day_id );
 		$multi_url    = $multi_inst->get_yahoo_destination_url();
 
+		// A span goes out as the timed stretch it is stored as. Yahoo cannot
+		// flag it all day, and a bare end date is read as midnight, which
+		// drops the last day; this opens as the 15th through the 16th.
 		$this->assertStringContainsString(
-			'st=20300615',
+			'st=20300615T000000',
 			$multi_url,
-			'Yahoo destination URL should start a multi-day all-day event on its first day.'
+			'Yahoo destination URL should start a multi-day all-day event at midnight on its first day.'
 		);
 		$this->assertStringContainsString(
-			'et=20300617',
+			'et=20300616T235959',
 			$multi_url,
-			'Yahoo destination URL should end a multi-day all-day event the day after its last.'
+			'Yahoo destination URL should end a multi-day all-day event at the end of its last day.'
 		);
 		$this->assertStringNotContainsString(
 			'dur=',
