@@ -232,7 +232,7 @@ describe( 'usePostTypeSupports', () => {
 } );
 
 /**
- * Mock a `core` data store that recognises the venue as a shadow source and
+ * Mock a `core` data store that recognizes the venue as a shadow source and
  * lists the event post types supplied. Defaults to wiring `_gatherpress_venue`
  * onto the supplied event post types so the wiring branch is reachable.
  *
@@ -272,6 +272,28 @@ describe( 'hasEventActivityFilterSupport', () => {
 		expect( hasEventActivityFilterSupport( '' ) ).toBe( false );
 		expect( hasEventActivityFilterSupport( null ) ).toBe( false );
 		expect( hasEventActivityFilterSupport() ).toBe( false );
+	} );
+
+	it( 'returns false when the source post type lacks shadow-source support', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getPostType: () => ( {
+						supports: { 'gatherpress-shadow-source': false },
+					} ),
+					getTaxonomy: () => ( { types: [ 'gatherpress_event', 'post' ] } ),
+					getPostTypes: () => [
+						{
+							slug: 'gatherpress_event',
+							supports: { 'gatherpress-event-date': true },
+						},
+					],
+				};
+			}
+			return {};
+		} );
+
+		expect( hasEventActivityFilterSupport( 'gatherpress_venue' ) ).toBe( false );
 	} );
 
 	it( 'returns false when the shadow taxonomy is missing', () => {
@@ -314,6 +336,28 @@ describe( 'hasEventActivityFilterSupport', () => {
 						{
 							slug: 'gatherpress_event',
 							supports: { 'gatherpress-event-date': true },
+						},
+					],
+				};
+			}
+			return {};
+		} );
+
+		expect( hasEventActivityFilterSupport( 'gatherpress_venue' ) ).toBe( false );
+	} );
+
+	it( 'returns false when no event-supporting post type is registered', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getPostType: () => ( {
+						supports: { 'gatherpress-shadow-source': true },
+					} ),
+					getTaxonomy: () => ( { types: [ 'gatherpress_event', 'post' ] } ),
+					getPostTypes: () => [
+						{
+							slug: 'gatherpress_event',
+							supports: {},
 						},
 					],
 				};

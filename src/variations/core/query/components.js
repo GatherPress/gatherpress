@@ -731,12 +731,7 @@ const QueryControlsContent = ( {
 			!! queryPostType &&
 			currentPostType !== queryPostType );
 	const showHasEventsFilterControl =
-		queriedIsShadowSource &&
-		queriedWiresEventActivity &&
-		( inTemplateContext ||
-			( !! queryPostType &&
-				!! currentPostType &&
-				queryPostType !== currentPostType ) );
+		queriedIsShadowSource && queriedWiresEventActivity && !! queryPostType;
 
 	return (
 		<>

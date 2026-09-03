@@ -396,7 +396,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 		).not.toBeInTheDocument();
 	} );
 
-	it( 'hides the event-activity filter when the queried type matches the host type', () => {
+	it( 'shows the event-activity filter when the queried type matches the host type', () => {
 		mockQueryControlsProps = {
 			...mockQueryControlsProps,
 			context: {
@@ -405,6 +405,61 @@ describe( 'EventQueryControlsSlotFill', () => {
 			attributes: {
 				query: {
 					postType: 'gatherpress_venue',
+					inherit: false,
+				},
+			},
+		};
+
+		isEventPostType.mockReturnValue( false );
+		usePostTypeSupports.mockReturnValue( true );
+		useHasEventActivityFilterSupport.mockReturnValue( true );
+		isInFSETemplate.mockReturnValue( false );
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect(
+			screen.getByText( 'Filter by event activity' )
+		).toBeInTheDocument();
+	} );
+
+	it( 'shows the event-activity filter when the host has no post type context', () => {
+		mockQueryControlsProps = {
+			...mockQueryControlsProps,
+			context: {},
+			attributes: {
+				query: {
+					postType: 'gatherpress_venue',
+					inherit: false,
+				},
+			},
+		};
+
+		isEventPostType.mockReturnValue( false );
+		usePostTypeSupports.mockImplementation(
+			( support, postType ) =>
+				'gatherpress-shadow-source' === support &&
+				'gatherpress_venue' === postType
+		);
+		useHasEventActivityFilterSupport.mockImplementation(
+			( postType ) => 'gatherpress_venue' === postType
+		);
+		isInFSETemplate.mockReturnValue( false );
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect(
+			screen.getByText( 'Filter by event activity' )
+		).toBeInTheDocument();
+	} );
+
+	it( 'hides the event-activity filter when the query has no post type set', () => {
+		mockQueryControlsProps = {
+			...mockQueryControlsProps,
+			context: {
+				postType: 'gatherpress_venue',
+			},
+			attributes: {
+				query: {
 					inherit: false,
 				},
 			},
