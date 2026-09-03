@@ -340,4 +340,34 @@ describe( 'QueryPosttypeObserver auto-transform', () => {
 
 		expect( setAttributes ).not.toHaveBeenCalled();
 	} );
+
+	it( 'transforms a shadow-source Query Loop without applying event-only defaults (#1906)', () => {
+		// Shadow-source post types (e.g. `gatherpress_venue`) declare only
+		// gatherpress-shadow-source support, so the observer must namespace
+		// the block but must NOT write the event-only defaults
+		// (gatherpress_event_query, include_unfinished, orderBy: 'datetime')
+		// that would later be stripped by the panel cleanup effect.
+		usePostTypeSupports.mockImplementation( ( support, postType ) => {
+			if ( 'gatherpress-event-date' === support ) {
+				return false;
+			}
+			if (
+				'gatherpress-shadow-source' === support &&
+				'gatherpress_venue' === postType
+			) {
+				return true;
+			}
+			return false;
+		} );
+
+		const setAttributes = renderQuery( { postType: 'gatherpress_venue' } );
+
+		expect( setAttributes ).toHaveBeenCalledTimes( 1 );
+		const next = setAttributes.mock.calls[ 0 ][ 0 ];
+		expect( next.namespace ).toBe( 'gatherpress-event-query' );
+		expect( next.query ).toEqual( {
+			postType: 'gatherpress_venue',
+			inherit: false,
+		} );
+	} );
 } );

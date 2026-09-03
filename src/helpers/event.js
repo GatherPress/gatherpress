@@ -105,28 +105,115 @@ export function isEventPostType( postType = null ) {
 /**
  * Checks whether a shadow-source post type's event-activity filter can apply.
  *
- * The filter keeps only source posts (venues, productions, …) whose shadow
- * terms sit on an upcoming or past event. That only works when the source's
- * shadow taxonomy is actually wired onto an event post type; when it isn't,
- * the resolving term lookup returns nothing and the filter would always hide
- * every source post. This resolves the shadow taxonomy (`_<postType>`) and
- * confirms it lists `gatherpress_event` among its object types so callers can
- * gate the filter UI to where it is meaningful.
+ * The filter keeps only source posts (venues, productions, etc.) whose
+ * shadow terms sit on an upcoming or past event. It is meaningful only when
+ * the source post type declares `gatherpress-shadow-source` support, its
+ * shadow taxonomy (`_<postType>`) is registered, and that taxonomy is
+ * attached to at least one post type declaring `gatherpress-event-date`
+ * support; if any of those is missing, the resolving term lookup returns
+ * nothing and the filter would always hide every source post. Callers use
+ * this helper to gate activity-filter UI and defaults.
+ *
+ * Reads post-type and taxonomy registries synchronously. In React
+ * components whose output drives rendering, use
+ * `useHasEventActivityFilterSupport` so the gate updates once the registry
+ * data arrives.
  *
  * @since 0.36.0
  *
  * @param {string} sourcePostType Shadow-source post type to check.
  *
- * @return {boolean} True if the source's shadow taxonomy attaches to events.
+ * @return {boolean} True if the source's shadow taxonomy attaches to an
+ *                   event-supporting post type.
  */
 export function hasEventActivityFilterSupport( sourcePostType ) {
 	if ( ! sourcePostType ) {
 		return false;
 	}
 
-	const taxonomy = select( 'core' ).getTaxonomy( `_${ sourcePostType }` );
+	const sourcePostTypeObject = select( 'core' ).getPostType( sourcePostType );
+	if ( ! sourcePostTypeObject?.supports?.[ 'gatherpress-shadow-source' ] ) {
+		return false;
+	}
 
-	return !! taxonomy?.types?.includes( 'gatherpress_event' );
+	const taxonomy = select( 'core' ).getTaxonomy( `_${ sourcePostType }` );
+	if ( ! taxonomy?.types?.length ) {
+		return false;
+	}
+
+	const eventPostTypes = select( 'core' )
+		.getPostTypes( { per_page: -1, context: 'edit' } )
+		?.filter( ( type ) => type?.supports?.[ 'gatherpress-event-date' ] )
+		.map( ( type ) => type.slug );
+
+	if ( ! Array.isArray( eventPostTypes ) || 0 === eventPostTypes.length ) {
+		return false;
+	}
+
+	return eventPostTypes.some( ( slug ) => taxonomy.types.includes( slug ) );
+}
+
+/**
+ * Reactive variant of `hasEventActivityFilterSupport` for use in React
+ * components.
+ *
+ * The non-reactive version reads `getPostType`, `getTaxonomy`, and
+ * `getPostTypes` synchronously — on the first render the registry often
+ * hasn't hydrated yet, so the gate resolves to `false` and the component
+ * never re-renders once the data lands. This hook subscribes via
+ * `useSelect` so consumers re-render the moment the wiring data becomes
+ * known.
+ *
+ * @since 0.36.0
+ *
+ * @param {string} sourcePostType Shadow-source post type to check.
+ *
+ * @return {boolean} True if the source's shadow taxonomy attaches to an
+ *                   event-supporting post type.
+ */
+export function useHasEventActivityFilterSupport( sourcePostType ) {
+	return useSelect(
+		( wpSelect ) => {
+			if ( ! sourcePostType ) {
+				return false;
+			}
+
+			const sourcePostTypeObject = wpSelect( 'core' ).getPostType(
+				sourcePostType
+			);
+			if (
+				! sourcePostTypeObject?.supports?.[ 'gatherpress-shadow-source' ]
+			) {
+				return false;
+			}
+
+			const taxonomy = wpSelect( 'core' ).getTaxonomy(
+				`_${ sourcePostType }`
+			);
+			if ( ! taxonomy?.types?.length ) {
+				return false;
+			}
+
+			const eventPostTypes = wpSelect( 'core' )
+				.getPostTypes( { per_page: -1, context: 'edit' } )
+				?.filter(
+					( type ) => type?.supports?.[ 'gatherpress-event-date' ]
+				)
+				.map( ( type ) => type.slug );
+
+			if (
+				! Array.isArray( eventPostTypes ) ||
+				0 === eventPostTypes.length
+			) {
+				return false;
+			}
+
+			return eventPostTypes.some( ( slug ) =>
+				taxonomy.types.includes( slug )
+			);
+		},
+		[ sourcePostType ]
+	);
 }
 
 /**

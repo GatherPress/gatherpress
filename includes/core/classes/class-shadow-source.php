@@ -25,7 +25,6 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Event;
 use GatherPress\Core\Event\Query as Event_Query;
 use GatherPress\Core\Traits\Singleton;
 use WP_Post;
@@ -616,10 +615,10 @@ final class Shadow_Source {
 	 * Powers the "filter by event activity" query for a shadow-source post
 	 * type (venues, productions, …): given a source post type and whether to
 	 * keep only source posts with upcoming events, it asks
-	 * {@see Event_Query::get_active_shadow_term_slugs()} for the shadow term
-	 * slugs sitting on matching events and resolves those slugs back to source
-	 * posts. Two queries, both bounded by the number of source posts rather
-	 * than by the size of the event table.
+	 * {@see \GatherPress\Core\Event\Query::get_active_shadow_term_slugs()} for the
+	 * shadow term slugs sitting on matching events and resolves those slugs back
+	 * to source posts. The inner query returns distinct term slugs and the outer
+	 * lookup returns at most one post per slug, so both result sets stay small.
 	 *
 	 * The filter only applies when the source's shadow taxonomy is actually
 	 * registered on an event post type; when it isn't (the taxonomy missing,
@@ -645,9 +644,11 @@ final class Shadow_Source {
 		$taxonomy_slug = $this->get_taxonomy( $source_post_type );
 		$taxonomy      = get_taxonomy( $taxonomy_slug );
 
+		$event_post_types = get_post_types_by_support( 'gatherpress-event-date' );
+
 		if (
 			! $taxonomy instanceof WP_Taxonomy
-			|| ! in_array( Event::POST_TYPE, $taxonomy->object_type, true )
+			|| empty( array_intersect( $event_post_types, $taxonomy->object_type ) )
 		) {
 			return null;
 		}
@@ -661,11 +662,14 @@ final class Shadow_Source {
 			return array();
 		}
 
-		// Shadow term slugs are the source post_name with a leading underscore,
-		// so one post_name__in lookup resolves every match at once.
+		// Shadow term slugs are the source post_name with exactly one leading
+		// underscore, so strip one prefix and run a single post_name__in lookup
+		// for the whole batch. ltrim( $slug, '_' ) would also strip a
+		// post_name that itself starts with an underscore, silently dropping
+		// those source posts from the activity filter.
 		$post_names = array_map(
 			static function ( string $slug ): string {
-				return ltrim( $slug, '_' );
+				return str_starts_with( $slug, '_' ) ? substr( $slug, 1 ) : $slug;
 			},
 			$slugs
 		);

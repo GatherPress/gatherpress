@@ -40,10 +40,10 @@ const isEventQueryLoop = ( props ) => {
 /**
  * Auto-transforms a plain `core/query` block into the GatherPress "Event
  * Query" variation when the user selects any post type that declares
- * `gatherpress-event-date` support. Reactive so the transform fires on
- * first selection of a custom event-supporting post type, not only after
- * routing through `gatherpress_event` first (#1608). Skips blocks that
- * already carry a namespace so other variations (e.g. AQL) aren't hijacked.
+ * `gatherpress-event-date` or `gatherpress-shadow-source` support. Reactive so
+ * the transform fires on first selection of a custom supported post type, not
+ * only after routing through `gatherpress_event` first (#1608). Skips blocks
+ * that already carry a namespace so other variations (e.g. AQL) aren't hijacked.
  *
  * @param {Object}   props
  * @param {Object}   props.attributes    - Block attributes.
@@ -58,25 +58,41 @@ const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
 		'gatherpress-event-date',
 		postType
 	);
+	const supportsShadowSource = usePostTypeSupports(
+		'gatherpress-shadow-source',
+		postType
+	);
+	const supportsGatherPressQuery = supportsEventDate || supportsShadowSource;
 	useEffect( () => {
 		// Only auto-transform blocks without a namespace set.
 		// Blocks with an existing namespace (e.g., 'advanced-query-loop') should not be overwritten.
-		if ( supportsEventDate && ! namespace ) {
+		if ( supportsGatherPressQuery && ! namespace ) {
 			const newAttributes = {
 				...attributes,
 				namespace: NAME,
 				query: {
 					...attributes.query,
-					gatherpress_event_query: 'upcoming',
-					include_unfinished: 1,
-					order: 'asc',
-					orderBy: 'datetime',
+					...( supportsEventDate
+						? {
+							gatherpress_event_query: 'upcoming',
+							include_unfinished: 1,
+							order: 'asc',
+							orderBy: 'datetime',
+						}
+						: {} ),
 					inherit: false,
 				},
 			};
 			setAttributes( newAttributes );
 		}
-	}, [ supportsEventDate, namespace, attributes, setAttributes ] );
+	}, [
+		supportsGatherPressQuery,
+		supportsEventDate,
+		supportsShadowSource,
+		namespace,
+		attributes,
+		setAttributes,
+	] );
 };
 
 /**
@@ -87,10 +103,10 @@ const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
  * has early-return paths for non-query blocks where we don't want to read
  * supports at all.
  *
- * Hides itself when the queried post type doesn't support
- * `gatherpress-event-date`, so changing a loop's post type away from events
- * (without removing the variation) collapses the now-irrelevant panel
- * instead of leaving stale event-only controls visible.
+ * Shows the panel whenever the queried post type declares
+ * `gatherpress-event-date` or `gatherpress-shadow-source` support so the
+ * activity-filter controls (visible on shadow-source loops) have a host.
+ * For unrelated post types the panel collapses to nothing.
  *
  * @param {Object} props - Block props passed through from the HOC.
  *
@@ -103,6 +119,10 @@ export const EventQueryControlsPanel = ( props ) => {
 	const queryPostType = props.attributes?.query?.postType;
 	const queryPostTypeSupportsEvents = usePostTypeSupports(
 		'gatherpress-event-date',
+		queryPostType
+	);
+	const queryPostTypeSupportsShadowSource = usePostTypeSupports(
+		'gatherpress-shadow-source',
 		queryPostType
 	);
 
@@ -201,7 +221,12 @@ export const EventQueryControlsPanel = ( props ) => {
 		__( 'Event', 'gatherpress' )
 	);
 
-	if ( ! queryPostTypeSupportsEvents ) {
+	// The panel stays open when the queried post type declares either
+	// event-date or shadow-source support. The inner SlotFill renders
+	// event-only controls only for event-date support, activity controls
+	// only for shadow-source support, and nothing otherwise. For unrelated
+	// post types the inner content is empty so we collapse the whole panel.
+	if ( ! queryPostTypeSupportsEvents && ! queryPostTypeSupportsShadowSource ) {
 		return null;
 	}
 

@@ -90,8 +90,8 @@ jest.mock( '@src/variations/core/query/slots/inherited-query-controls', () => ( 
 
 jest.mock( '@src/helpers/event', () => ( {
 	isEventPostType: jest.fn(),
-	isPostTypeSupporting: jest.fn(),
-	hasEventActivityFilterSupport: jest.fn(),
+	usePostTypeSupports: jest.fn(),
+	useHasEventActivityFilterSupport: jest.fn(),
 } ) );
 
 jest.mock( '@src/helpers/editor', () => ( {
@@ -104,11 +104,11 @@ jest.mock( '@src/helpers/editor', () => ( {
  * WordPress dependencies
  */
 import {
-	hasEventActivityFilterSupport,
 	isEventPostType,
-	isPostTypeSupporting,
+	useHasEventActivityFilterSupport,
+	usePostTypeSupports,
 } from '@src/helpers/event';
-import { isInFSETemplate } from '@src/helpers/editor';
+import { isInFSETemplate, usePostTypeLabel } from '@src/helpers/editor';
 
 /**
  * Internal dependencies
@@ -128,14 +128,14 @@ const templateHelp =
 describe( 'EventQueryControlsSlotFill', () => {
 	beforeEach( () => {
 		isEventPostType.mockReset();
-		isPostTypeSupporting.mockReset();
-		hasEventActivityFilterSupport.mockReset();
+		usePostTypeSupports.mockReset();
+		useHasEventActivityFilterSupport.mockReset();
 		isInFSETemplate.mockReset();
 	} );
 
 	it( 'hides the venue filter toggle on a regular non-venue, non-template host', () => {
 		isEventPostType.mockReturnValue( true );
-		isPostTypeSupporting.mockReturnValue( false );
+		usePostTypeSupports.mockReturnValue( false );
 		isInFSETemplate.mockReturnValue( false );
 
 		render( <EventQueryControlsSlotFill /> );
@@ -143,7 +143,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 		expect(
 			screen.queryByText( venueToggleLabel )
 		).not.toBeInTheDocument();
-		expect( isPostTypeSupporting ).toHaveBeenCalledWith(
+		expect( usePostTypeSupports ).toHaveBeenCalledWith(
 			'gatherpress-shadow-source',
 			'gatherpress_event'
 		);
@@ -164,7 +164,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 		};
 
 		isEventPostType.mockReturnValue( false );
-		isPostTypeSupporting.mockReturnValue( true );
+		usePostTypeSupports.mockReturnValue( true );
 		isInFSETemplate.mockReturnValue( false );
 
 		render( <EventQueryControlsSlotFill /> );
@@ -176,7 +176,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 
 	it( 'shows the venue filter toggle with template copy on a template / template part', () => {
 		isEventPostType.mockReturnValue( false );
-		isPostTypeSupporting.mockReturnValue( false );
+		usePostTypeSupports.mockReturnValue( false );
 		isInFSETemplate.mockReturnValue( true );
 
 		render( <EventQueryControlsSlotFill /> );
@@ -188,7 +188,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 
 	it( 'still gates the exclude-current-event toggle on the existing isEventPostType check', () => {
 		isEventPostType.mockReturnValue( false );
-		isPostTypeSupporting.mockReturnValue( true );
+		usePostTypeSupports.mockReturnValue( true );
 		isInFSETemplate.mockReturnValue( false );
 
 		render( <EventQueryControlsSlotFill /> );
@@ -213,7 +213,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 		};
 
 		isEventPostType.mockReturnValue( true );
-		isPostTypeSupporting.mockReturnValue( true );
+		usePostTypeSupports.mockReturnValue( true );
 		isInFSETemplate.mockReturnValue( false );
 
 		render( <EventQueryControlsSlotFill /> );
@@ -236,7 +236,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 		};
 
 		isEventPostType.mockReturnValue( true );
-		isPostTypeSupporting.mockReturnValue( true );
+		usePostTypeSupports.mockReturnValue( true );
 		isInFSETemplate.mockReturnValue( false );
 
 		render( <EventQueryControlsSlotFill /> );
@@ -261,12 +261,12 @@ describe( 'EventQueryControlsSlotFill', () => {
 		};
 
 		isEventPostType.mockReturnValue( true );
-		isPostTypeSupporting.mockImplementation(
+		usePostTypeSupports.mockImplementation(
 			( support, postType ) =>
 				'gatherpress-shadow-source' === support &&
 				'gatherpress_venue' === postType
 		);
-		hasEventActivityFilterSupport.mockImplementation(
+		useHasEventActivityFilterSupport.mockImplementation(
 			( postType ) => 'gatherpress_venue' === postType
 		);
 		isInFSETemplate.mockReturnValue( false );
@@ -296,8 +296,8 @@ describe( 'EventQueryControlsSlotFill', () => {
 		};
 
 		isEventPostType.mockReturnValue( false );
-		isPostTypeSupporting.mockReturnValue( false );
-		hasEventActivityFilterSupport.mockReturnValue( true );
+		usePostTypeSupports.mockReturnValue( false );
+		useHasEventActivityFilterSupport.mockReturnValue( true );
 		isInFSETemplate.mockReturnValue( false );
 
 		render( <EventQueryControlsSlotFill /> );
@@ -322,12 +322,12 @@ describe( 'EventQueryControlsSlotFill', () => {
 		};
 
 		isEventPostType.mockReturnValue( true );
-		isPostTypeSupporting.mockImplementation(
+		usePostTypeSupports.mockImplementation(
 			( support, postType ) =>
 				'gatherpress-shadow-source' === support &&
 				'gatherpress_venue' === postType
 		);
-		hasEventActivityFilterSupport.mockReturnValue( false );
+		useHasEventActivityFilterSupport.mockReturnValue( false );
 		isInFSETemplate.mockReturnValue( false );
 
 		render( <EventQueryControlsSlotFill /> );
@@ -335,7 +335,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 		expect(
 			screen.queryByText( 'Filter by event activity' )
 		).not.toBeInTheDocument();
-		expect( hasEventActivityFilterSupport ).toHaveBeenCalledWith(
+		expect( useHasEventActivityFilterSupport ).toHaveBeenCalledWith(
 			'gatherpress_venue'
 		);
 	} );
@@ -352,12 +352,12 @@ describe( 'EventQueryControlsSlotFill', () => {
 		};
 
 		isEventPostType.mockReturnValue( false );
-		isPostTypeSupporting.mockImplementation(
+		usePostTypeSupports.mockImplementation(
 			( support, postType ) =>
 				'gatherpress-shadow-source' === support &&
 				'gatherpress_venue' === postType
 		);
-		hasEventActivityFilterSupport.mockImplementation(
+		useHasEventActivityFilterSupport.mockImplementation(
 			( postType ) => 'gatherpress_venue' === postType
 		);
 		isInFSETemplate.mockReturnValue( true );
@@ -381,12 +381,12 @@ describe( 'EventQueryControlsSlotFill', () => {
 		};
 
 		isEventPostType.mockReturnValue( false );
-		isPostTypeSupporting.mockImplementation(
+		usePostTypeSupports.mockImplementation(
 			( support, postType ) =>
 				'gatherpress-shadow-source' === support &&
 				'gatherpress_venue' === postType
 		);
-		hasEventActivityFilterSupport.mockReturnValue( false );
+		useHasEventActivityFilterSupport.mockReturnValue( false );
 		isInFSETemplate.mockReturnValue( true );
 
 		render( <EventQueryControlsSlotFill /> );
@@ -411,8 +411,8 @@ describe( 'EventQueryControlsSlotFill', () => {
 		};
 
 		isEventPostType.mockReturnValue( false );
-		isPostTypeSupporting.mockReturnValue( true );
-		hasEventActivityFilterSupport.mockReturnValue( true );
+		usePostTypeSupports.mockReturnValue( true );
+		useHasEventActivityFilterSupport.mockReturnValue( true );
 		isInFSETemplate.mockReturnValue( false );
 
 		render( <EventQueryControlsSlotFill /> );
@@ -424,6 +424,11 @@ describe( 'EventQueryControlsSlotFill', () => {
 } );
 
 describe( 'HasEventsFilterControls', () => {
+	beforeEach( () => {
+		usePostTypeLabel.mockReset();
+		usePostTypeLabel.mockImplementation( ( key, postType, fallback ) => fallback );
+	} );
+
 	const activityLabel = 'Filter by event activity';
 	const upcomingLabel = 'Upcoming events only';
 	const pastLabel = 'Past events only';
@@ -452,6 +457,25 @@ describe( 'HasEventsFilterControls', () => {
 		expect( screen.getByText( activityHelp ) ).toBeInTheDocument();
 		expect( screen.queryByText( upcomingLabel ) ).not.toBeInTheDocument();
 		expect( screen.queryByText( pastLabel ) ).not.toBeInTheDocument();
+	} );
+
+	it( 'uses selected post type plural label in activity help', () => {
+		usePostTypeLabel.mockReturnValue( 'Productions' );
+
+		render(
+			<HasEventsFilterControls
+				attributes={ {
+					query: { postType: 'production', has_events_filter: 1 },
+				} }
+				setAttributes={ jest.fn() }
+			/>
+		);
+
+		expect(
+			screen.getByText(
+				'Only shows Productions that have upcoming or past events attached.'
+			)
+		).toBeInTheDocument();
 	} );
 
 	it( 'writes has_events_filter and defaults upcoming_events_only to on', () => {

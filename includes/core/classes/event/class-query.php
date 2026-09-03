@@ -286,10 +286,11 @@ final class Query {
 				is_string( $post_type )
 				&& post_type_supports( $post_type, 'gatherpress-shadow-source' )
 			) {
-				// The block writes upcoming_events_only as an integer (0/1), default
-				// on. Coerce the string form too so both gate paths agree.
-				$upcoming = 'upcoming' === $query->get( 'upcoming_events_only', 'upcoming' )
-					|| 1 === (int) $query->get( 'upcoming_events_only' );
+				// The block normally writes upcoming_events_only as an integer (0/1),
+				// but AQL can pass the literal strings 'upcoming' or 'past'. Default
+				// on when the attribute is absent.
+				$upcoming_value = $query->get( 'upcoming_events_only', 1 );
+				$upcoming       = 'upcoming' === $upcoming_value || 1 === (int) $upcoming_value;
 
 				$source_ids = Shadow_Source::get_instance()->get_source_post_ids_by_event_activity(
 					$post_type,
@@ -661,10 +662,15 @@ final class Query {
 			return array();
 		}
 
-		$statuses = array( 'publish' );
+		$private_event_post_types = array();
 
-		if ( current_user_can( 'read_private_posts' ) ) {
-			$statuses[] = 'private';
+		foreach ( $event_post_types as $event_post_type ) {
+			$post_type_object   = get_post_type_object( $event_post_type );
+			$private_capability = $post_type_object->cap->read_private_posts ?? 'read_private_posts';
+
+			if ( current_user_can( $private_capability ) ) {
+				$private_event_post_types[] = $event_post_type;
+			}
 		}
 
 		// Same column and clock the posts_clauses filters use, so this query and
@@ -674,7 +680,22 @@ final class Query {
 		$table   = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 
 		$post_type_placeholders = implode( ', ', array_fill( 0, count( $event_post_types ), '%s' ) );
-		$status_placeholders    = implode( ', ', array_fill( 0, count( $statuses ), '%s' ) );
+		$private_type_condition = '';
+		$status_args            = array( 'publish' );
+
+		if ( ! empty( $private_event_post_types ) ) {
+			$private_type_placeholders = implode(
+				', ',
+				array_fill( 0, count( $private_event_post_types ), '%s' )
+			);
+			$private_type_condition    = ' OR ( p.post_status = %s AND p.post_type IN ('
+				. $private_type_placeholders . ') )';
+			$status_args               = array_merge(
+				$status_args,
+				array( 'private' ),
+				$private_event_post_types
+			);
+		}
 
 		// Only the generated placeholder runs are interpolated; every value is
 		// still bound through prepare() below.
@@ -686,7 +707,9 @@ final class Query {
 			. ' INNER JOIN %i AS p ON p.ID = tr.object_id'
 			. ' WHERE tt.taxonomy = %s'
 			. ' AND p.post_type IN (' . $post_type_placeholders . ')'
-			. ' AND p.post_status IN (' . $status_placeholders . ')'
+			. ' AND ( p.post_status = %s'
+			. $private_type_condition
+			. ' )'
 			. ' AND t.slug LIKE %s';
 
 		// Two literal fragments rather than an interpolated operator.
@@ -706,7 +729,7 @@ final class Query {
 				$taxonomy,
 			),
 			array_values( $event_post_types ),
-			$statuses,
+			$status_args,
 			array(
 				$wpdb->esc_like( '_' ) . '%',
 				$column,
