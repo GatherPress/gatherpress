@@ -100,6 +100,12 @@ class Test_Setup extends Base {
 			array(
 				'type'     => 'action',
 				'name'     => 'init',
+				'priority' => 10,
+				'callback' => array( $instance, 'register_status_taxonomy' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'init',
 				'priority' => 11,
 				'callback' => array( $instance, 'register_starter_pattern' ),
 			),
@@ -467,6 +473,51 @@ class Test_Setup extends Base {
 			array( 'gatherpress_venue' ),
 			$settings['gatherpress']['config']['venuePostTypes'],
 			'Failed to assert a sibling config key survives.'
+		);
+	}
+
+	/**
+	 * Coverage for register_status_taxonomy method.
+	 *
+	 * @covers ::register_status_taxonomy
+	 *
+	 * @return void
+	 */
+	public function test_register_status_taxonomy(): void {
+		$instance = Setup::get_instance();
+
+		unregister_taxonomy( Event::TAXONOMY_STATUS );
+
+		$this->assertFalse(
+			taxonomy_exists( Event::TAXONOMY_STATUS ),
+			'Failed to assert the status taxonomy is unregistered to begin with.'
+		);
+
+		$instance->register_status_taxonomy();
+
+		$this->assertTrue(
+			taxonomy_exists( Event::TAXONOMY_STATUS ),
+			'Failed to assert the status taxonomy is registered.'
+		);
+
+		$taxonomy = get_taxonomy( Event::TAXONOMY_STATUS );
+
+		$this->assertFalse(
+			$taxonomy->public,
+			'Failed to assert the status taxonomy is not public.'
+		);
+		$this->assertFalse(
+			$taxonomy->publicly_queryable,
+			'Failed to assert the status taxonomy is not publicly queryable.'
+		);
+		$this->assertFalse(
+			$taxonomy->show_in_rest,
+			'Failed to assert the status taxonomy stays out of REST.'
+		);
+		$this->assertContains(
+			Event::POST_TYPE,
+			$taxonomy->object_type,
+			'Failed to assert the status taxonomy applies to events.'
 		);
 	}
 

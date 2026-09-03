@@ -1,4 +1,10 @@
 .wp-block-gatherpress-event-date {
 	// This block has customizable padding, border-box makes that more predictable.
 	box-sizing: border-box;
+
+	&.gatherpress-event-date--is-cancelled,
+	&.gatherpress-event-date--is-postponed {
+		text-decoration: line-through;
+		opacity: 0.7;
+	}
 }

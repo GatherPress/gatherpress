@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Add event operational status support: scheduled, cancelled, postponed, rescheduled, and moved online.

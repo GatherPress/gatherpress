@@ -1,0 +1,53 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "gatherpress/event-status",
+	"version": "1.0.0",
+	"title": "Event Status",
+	"category": "gatherpress",
+	"icon": "info-outline",
+	"description": "Display the operational status of an event (e.g. Cancelled, Postponed).",
+	"usesContext": [ "postId", "postType", "queryId" ],
+	"attributes": {
+		"postId": {
+			"type": "number"
+		},
+		"hideScheduled": {
+			"type": "boolean",
+			"default": true
+		}
+	},
+	"styles": [
+		{ "name": "badge", "label": "Badge", "isDefault": true },
+		{ "name": "notice", "label": "Notice" }
+	],
+	"supports": {
+		"contentRole": true,
+		"gatherpress": {
+			"blockGuard": true,
+			"postIdOverride": true
+		},
+		"html": false,
+		"color": {
+			"gradients": true,
+			"text": true,
+			"background": true
+		},
+		"spacing": {
+			"margin": true,
+			"padding": true
+		},
+		"typography": {
+			"fontSize": true,
+			"lineHeight": true,
+			"__experimentalFontWeight": true
+		},
+		"interactivity": {
+			"clientNavigation": true
+		},
+		"listView": true
+	},
+	"textdomain": "gatherpress",
+	"editorScript": "file:./index.js",
+	"style": "file:./style.css"
+}

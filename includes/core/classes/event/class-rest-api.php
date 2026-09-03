@@ -28,6 +28,7 @@ use GatherPress\Core\User;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
 use WP_Comment;
+use WP_Error;
 use WP_Post;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -77,8 +78,52 @@ final class Rest_Api {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
+		add_action( 'rest_api_init', array( $this, 'register_status_field' ) );
 		add_action( 'gatherpress_send_emails', array( $this, 'handle_email_send_action' ), 10, 4 );
 		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ) );
+	}
+
+	/**
+	 * Registers the event status as a REST field on the event post type.
+	 *
+	 * The status lives in the _gatherpress_event_status taxonomy so events can
+	 * be filtered by it, but a taxonomy reaches the block editor as an array of
+	 * term ids. This field keeps the editor's contract a plain slug, so the
+	 * status panel stays a SelectControl and the taxonomy stays an
+	 * implementation detail with a single write path through Event::set_status().
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	public function register_status_field(): void {
+		register_rest_field(
+			Event::POST_TYPE,
+			'gatherpress_status',
+			array(
+				'get_callback'    => static function ( array $post ): string {
+					return ( new Event( (int) $post['id'] ) )->get_status();
+				},
+				'update_callback' => static function ( $value, WP_Post $post ) {
+					if ( ! current_user_can( 'edit_post', $post->ID ) ) {
+						return new WP_Error(
+							'gatherpress_status_forbidden',
+							__( 'Sorry, you are not allowed to set the status of this event.', 'gatherpress' ),
+							array( 'status' => rest_authorization_required_code() )
+						);
+					}
+
+					( new Event( $post->ID ) )->set_status( sanitize_key( (string) $value ) );
+				},
+				'schema'          => array(
+					'description' => __( 'The operational status of the event.', 'gatherpress' ),
+					'type'        => 'string',
+					'enum'        => Event::STATUSES,
+					'default'     => Event::STATUS_SCHEDULED,
+					'context'     => array( 'view', 'edit' ),
+				),
+			)
+		);
 	}
 
 	/**

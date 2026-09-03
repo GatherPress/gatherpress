@@ -108,6 +108,7 @@ final class Setup {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_post_type' ) );
+		add_action( 'init', array( $this, 'register_status_taxonomy' ) );
 		// Priority 11 so post types registered at default priority 10 are available for get_post_types_by_support().
 		add_action( 'init', array( $this, 'register_starter_pattern' ), 11 );
 		add_action( 'template_redirect', array( $this, 'handle_event_archive_redirect' ) );
@@ -119,6 +120,45 @@ final class Setup {
 		add_filter( 'render_block_core/post-date', array( $this, 'render_event_post_date_block' ), 10, 3 );
 		add_filter( 'display_post_states', array( $this, 'set_event_archive_labels' ), 10, 2 );
 		add_filter( 'block_editor_settings_all', array( $this, 'add_editor_settings' ) );
+	}
+
+	/**
+	 * Registers the taxonomy holding an event's operational status.
+	 *
+	 * Hidden the way the RSVP taxonomies are: there is no useful
+	 * /event-status/cancelled/ archive, the taxonomy exists so events can be
+	 * filtered by status through tax_query the same way Event\Query already
+	 * filters by Topic and Venue. Kept out of REST on purpose: the editor writes
+	 * the status through the gatherpress_status REST field registered in
+	 * Event\Rest_Api, so there is exactly one write path and no term-id round
+	 * trip in the block editor.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	public function register_status_taxonomy(): void {
+		register_taxonomy(
+			Event::TAXONOMY_STATUS,
+			Event::POST_TYPE,
+			array(
+				'labels'             => array(),
+				'hierarchical'       => false,
+				'public'             => false,
+				'show_ui'            => false,
+				'show_admin_column'  => false,
+				'query_var'          => false,
+				'publicly_queryable' => false,
+				'rewrite'            => false,
+				'show_in_rest'       => false,
+				// Every saved event carries a status term, so filtering for one is
+				// an IN query rather than a NOT EXISTS.
+				'default_term'       => array(
+					'name' => 'Scheduled',
+					'slug' => Event::STATUS_SCHEDULED,
+				),
+			)
+		);
 	}
 
 	/**

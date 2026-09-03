@@ -106,6 +106,7 @@ final class Setup {
 		Dropdown_Item::get_instance();
 		Event_Date::get_instance();
 		Event_Query::get_instance();
+		Event_Status::get_instance();
 		General_Block::get_instance();
 		Modal::get_instance();
 		Modal_Manager::get_instance();
