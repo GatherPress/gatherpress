@@ -192,7 +192,7 @@ final class Calendar {
 	 * Off-site destination URL for the Yahoo! Calendar redirect.
 	 *
 	 * Opens Yahoo! Calendar's event-creation form pre-filled with this
-	 * event's title, start time, duration, location, and description.
+	 * event's title, start and end time, location, and description.
 	 * Called from `Calendar\Setup::queried_event_yahoo_url()` to produce
 	 * the 302 target for the `/event/<slug>/yahoo-calendar/` endpoint —
 	 * front-end code should use `get_yahoo_url()` (the on-site URL) instead.
@@ -234,21 +234,15 @@ final class Calendar {
 				);
 			}
 		} else {
-			$date_start = $this->event->get_formatted_datetime( 'Ymd', 'start', false );
-			$time_start = $this->event->get_formatted_datetime( 'His', 'start', false );
-
-			// Figure out duration of event in hours and minutes: hhmm format.
-			$diff_start = $this->event->get_formatted_datetime( $this->event::DATETIME_FORMAT, 'start', false );
-			$diff_end   = $this->event->get_formatted_datetime( $this->event::DATETIME_FORMAT, 'end', false );
-			$duration   = ( ( strtotime( $diff_end ) - strtotime( $diff_start ) ) / 60 / 60 );
-			$full       = intval( $duration );
-			$fraction   = ( $duration - $full );
-			$hours      = str_pad( strval( $duration ), 2, '0', STR_PAD_LEFT );
-			$minutes    = str_pad( strval( $fraction * 60 ), 2, '0', STR_PAD_LEFT );
-
+			// Yahoo has no timezone parameter and does not honor a trailing
+			// Z: whatever it is handed is shown verbatim as local wall-clock
+			// time. So the event's own local time goes out, right for anyone
+			// in its zone and the closest available for anyone else. The end
+			// is sent rather than a duration: `dur` is an `hhmm` field that
+			// tops out at 99 hours, and Yahoo ignores it once `et` is present.
 			$timing = array(
-				'st'  => sprintf( '%sT%sZ', $date_start, $time_start ),
-				'dur' => $hours . $minutes,
+				'st' => $this->event->get_formatted_datetime( 'Ymd\THis', 'start' ),
+				'et' => $this->event->get_formatted_datetime( 'Ymd\THis', 'end' ),
 			);
 		}
 

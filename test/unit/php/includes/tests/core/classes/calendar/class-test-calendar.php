@@ -315,20 +315,72 @@ class Test_Calendar extends Base {
 			$url,
 			'Yahoo destination URL should include the event title.'
 		);
+		// 14:30 New York, sent as New York wall-clock with no Z: Yahoo has no
+		// timezone parameter and shows the value verbatim as local time.
 		$this->assertStringContainsString(
-			'st=20300615',
+			'st=20300615T143000',
 			$url,
-			'Yahoo destination URL should include the event start date in Ymd format.'
+			'Yahoo destination URL should send the start in the event\'s own local time.'
 		);
 		$this->assertStringContainsString(
+			'et=20300615T163000',
+			$url,
+			'Yahoo destination URL should send the end in the event\'s own local time.'
+		);
+		$this->assertStringNotContainsString(
+			'Z',
+			(string) wp_parse_url( $url, PHP_URL_QUERY ),
+			'Yahoo destination URL should not carry a Z suffix, which Yahoo does not honor.'
+		);
+		$this->assertStringNotContainsString(
 			'dur=',
 			$url,
-			'Yahoo destination URL should send a duration for a timed event.'
+			'Yahoo destination URL should send an end rather than a duration.'
 		);
 		$this->assertStringNotContainsString(
 			'allday',
 			$url,
 			'Yahoo destination URL should not mark a timed event as all day.'
+		);
+	}
+
+	/**
+	 * A fractional-hour event no longer falls apart in the Yahoo URL.
+	 *
+	 * The duration used to be built by padding the float, so ninety minutes
+	 * went out as `dur=1.530`. Sending the end instead has no such field.
+	 *
+	 * @covers ::get_yahoo_destination_url
+	 *
+	 * @return void
+	 */
+	public function test_get_yahoo_destination_url_with_fractional_hours(): void {
+		$event_id = $this->mock->post(
+			array(
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => 'Ninety Minutes',
+			)
+		)->get()->ID;
+
+		( new Event( $event_id ) )->save_datetimes(
+			array(
+				'datetime_start' => '2030-06-15 19:00:00',
+				'datetime_end'   => '2030-06-15 20:30:00',
+				'timezone'       => 'Asia/Tokyo',
+			)
+		);
+
+		$url = ( new Calendar( $event_id ) )->get_yahoo_destination_url();
+
+		$this->assertStringContainsString(
+			'st=20300615T190000',
+			$url,
+			'Yahoo destination URL should send Tokyo wall-clock time, not GMT.'
+		);
+		$this->assertStringContainsString(
+			'et=20300615T203000',
+			$url,
+			'Yahoo destination URL should end ninety minutes later, in the same zone.'
 		);
 	}
 
