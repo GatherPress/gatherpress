@@ -14,6 +14,7 @@ namespace GatherPress\Core\Rsvp;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Assets;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
 use GatherPress\Core\Rsvp\Response\Provider_Registry;
@@ -394,6 +395,34 @@ final class Setup {
 		$this->list_table = new List_Table( array( 'post_type' => $screen_post_type ) );
 
 		$this->setup_rsvp_list_table_screen_options();
+		$this->enqueue_rsvp_admin_assets();
+	}
+
+	/**
+	 * Loads the scripts the RSVP screen's filters need.
+	 *
+	 * Enqueued from the screen's own `load-` action, because the hook suffix
+	 * varies per supporting post type and this is where it is known.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	protected function enqueue_rsvp_admin_assets(): void {
+		$asset = Assets::get_instance()->get_asset_data( 'rsvp_admin' );
+
+		wp_enqueue_script(
+			'gatherpress-rsvp-admin',
+			GATHERPRESS_CORE_URL . 'build/rsvp_admin.js',
+			$asset['dependencies'],
+			$asset['version'],
+			true
+		);
+
+		wp_set_script_translations( 'gatherpress-rsvp-admin', 'gatherpress' );
+
+		// Admin screens do not load the components stylesheet by default.
+		wp_enqueue_style( 'wp-components' );
 	}
 
 	/**
@@ -445,7 +474,6 @@ final class Setup {
 		$rsvp_table  = $this->list_table ?? new List_Table();
 		$search_term = isset( $_REQUEST['s'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['s'] ) ) : '';
 		$status      = isset( $_REQUEST['status'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['status'] ) ) : '';
-		$event       = isset( $_REQUEST['event'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['event'] ) ) : '';
 
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/rsvp/list-table.php', GATHERPRESS_CORE_PATH ),
@@ -453,7 +481,8 @@ final class Setup {
 				'rsvp_table'  => $rsvp_table,
 				'search_term' => $search_term,
 				'status'      => $status,
-				'event'       => $event,
+				'post_id'     => $rsvp_table->get_filtered_post_id(),
+				'responses'   => $rsvp_table->get_filtered_responses(),
 			),
 			true
 		);

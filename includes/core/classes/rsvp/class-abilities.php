@@ -182,7 +182,7 @@ final class Abilities {
 		}
 
 		foreach ( ( new Rsvp( $post_id ) )->responses() as $status => $response ) {
-			$counts[ $status ] = (int) ( $response['count'] ?? 0 );
+			$counts[ $status ] = (int) $response['count'];
 		}
 
 		return $counts;

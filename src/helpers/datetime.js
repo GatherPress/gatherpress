@@ -14,7 +14,7 @@ import { select, useSelect } from '@wordpress/data';
 /**
  * Internal dependencies
  */
-import { getFromSettings } from './editor-settings';
+import { getFromConfig, getFromSettings } from './editor-settings';
 import { enableSave } from './editor';
 import DateTimePreview from '../components/DateTimePreview';
 
@@ -791,50 +791,11 @@ export function dateTimePreview() {
 }
 
 /**
- * Non-time PHP Date format characters
- *
- * @since 0.27.0
- *
- * @see https://www.php.net/manual/en/datetime.format.php
- *
- * @type {Array}
- */
-export const phpNonTimeFormatChars = [
-	'd',
-	'D',
-	'j',
-	'l',
-	'N',
-	'S',
-	'w',
-	'z',
-	'W',
-	'F',
-	'm',
-	'M',
-	'n',
-	't',
-	'L',
-	'o',
-	'X',
-	'x',
-	'Y',
-	'y',
-	'e',
-	'I',
-	'O',
-	'P',
-	'p',
-	'T',
-	'Z',
-	'c',
-	'r',
-	'U',
-	',',
-];
-
-/**
  * Remove non-time characters from PHP format string
+ *
+ * The characters come from `Utility::non_time_format_chars()` through the
+ * editor settings, so this strips a format the same way PHP does. Without
+ * them the format is left alone.
  *
  * @since 0.27.0
  *
@@ -843,9 +804,111 @@ export const phpNonTimeFormatChars = [
  * @return {string} The PHP time-only format.
  */
 export function removeNonTimePHPFormatChars( format ) {
+	const nonTimeChars = getFromConfig( 'nonTimeFormatChars' ) || [];
+
 	return format
 		.split( '' )
-		.filter( ( char ) => ! phpNonTimeFormatChars.includes( char ) )
+		.filter( ( char ) => ! nonTimeChars.includes( char ) )
 		.join( '' )
 		.trim();
+}
+
+/**
+ * Strip the time out of a PHP format string.
+ *
+ * Leaves the date behind, along with whatever separated it from the time:
+ * 'F j, Y g:i a' keeps 'F j, Y'. A format that was only ever a time has
+ * nothing left to render, so it reports none rather than the punctuation
+ * between the parts it lost.
+ *
+ * The characters come from `Utility::time_format_chars()` through the
+ * editor settings, so the two sides of `Event::get_display_formats()` read
+ * one list. Without them the format is left alone: the front end still
+ * renders the event correctly, and only the preview shows a time it should
+ * not.
+ *
+ * @since 0.36.0
+ *
+ * @param {string} format - The PHP datetime format.
+ *
+ * @return {string} The format without its time, or an empty string when no
+ *                  date survives it.
+ */
+export function removeTimePHPFormatChars( format ) {
+	const timeChars = getFromConfig( 'timeFormatChars' ) || [];
+
+	return format
+		.split( '' )
+		.filter( ( char ) => ! timeChars.includes( char ) )
+		.join( '' )
+		.replace( /^[\s:,\-/.]+|[\s:,\-/.]+$/g, '' );
+}
+
+/**
+ * Moment format for an all-day event's date, with no time.
+ *
+ * @since 0.36.0
+ *
+ * @return {string} The moment format.
+ */
+export function dateLabelFormat() {
+	return convertPHPToMomentFormat( getFromSettings( 'dateFormat' ) );
+}
+
+/**
+ * Snap a datetime to the beginning of its own day.
+ *
+ * Mirrors `Event::to_day_boundary()`, which enforces the same on save.
+ *
+ * @since 0.36.0
+ *
+ * @param {string} dateTime - The datetime, in the database format.
+ *
+ * @return {string} The datetime at the start of its day.
+ */
+export function toDayStart( dateTime ) {
+	return moment( dateTime ).startOf( 'day' ).format( dateTimeDatabaseFormat );
+}
+
+/**
+ * Snap a datetime to the end of its own day.
+ *
+ * @since 0.36.0
+ *
+ * @param {string} dateTime - The datetime, in the database format.
+ *
+ * @return {string} The datetime at the end of its day.
+ */
+export function toDayEnd( dateTime ) {
+	return moment( dateTime ).endOf( 'day' ).format( dateTimeDatabaseFormat );
+}
+
+/**
+ * The time of day from a datetime.
+ *
+ * @since 0.36.0
+ *
+ * @param {string} dateTime - The datetime, in the database format.
+ *
+ * @return {string} The time, as `HH:mm:ss`.
+ */
+export function getTimeOfDay( dateTime ) {
+	return moment( dateTime ).format( 'HH:mm:ss' );
+}
+
+/**
+ * Put a time of day onto a datetime's own date.
+ *
+ * Keeps the date that is currently selected, so restoring a remembered time
+ * does not also undo a date the author changed in the meantime.
+ *
+ * @since 0.36.0
+ *
+ * @param {string} dateTime - The datetime whose date to keep.
+ * @param {string} time     - The time of day, as `HH:mm:ss`.
+ *
+ * @return {string} The datetime, in the database format.
+ */
+export function withTimeOfDay( dateTime, time ) {
+	return `${ moment( dateTime ).format( 'YYYY-MM-DD' ) } ${ time }`;
 }

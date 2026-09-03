@@ -2,7 +2,7 @@
  * WordPress dependencies
  */
 import { useState, useCallback } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
+import { __, _x } from '@wordpress/i18n';
 import {
 	RichTextToolbarButton,
 	useCachedTruthy,
@@ -61,6 +61,7 @@ function TooltipPopover( {
 		editableContentElement: contentRef.current,
 		settings: {
 			name: FORMAT_NAME,
+			/* translators: Title and label for the inline tooltip formatting option. */
 			title: __( 'Tooltip', 'gatherpress' ),
 			tagName: 'span',
 			className: 'gatherpress-tooltip',
@@ -125,9 +126,11 @@ function TooltipPopover( {
 			>
 				<FlexItem>
 					<TextControl
+						/* translators: Label for the input field where users enter custom tooltip text. */
 						label={ __( 'Tooltip Text', 'gatherpress' ) }
 						value={ tooltipText }
 						onChange={ setTooltipText }
+						/* translators: Placeholder text shown in the tooltip text input field. */
 						placeholder={ __( 'Enter tooltip text…', 'gatherpress' ) }
 					/>
 				</FlexItem>
@@ -151,7 +154,10 @@ function TooltipPopover( {
 											minWidth: '120px',
 										} }
 									>
-										{ __( 'Text Color', 'gatherpress' ) }
+										{
+											/* translators: Button label to toggle text color selection in the tooltip popover. */
+											__( 'Text Color', 'gatherpress' )
+										}
 									</Button>
 								</FlexItem>
 								<FlexItem>
@@ -169,7 +175,10 @@ function TooltipPopover( {
 											minWidth: '120px',
 										} }
 									>
-										{ __( 'Background', 'gatherpress' ) }
+										{
+											/* translators: Button label to toggle background color selection in the tooltip popover. */
+											__( 'Background', 'gatherpress' )
+										}
 									</Button>
 								</FlexItem>
 							</Flex>
@@ -201,7 +210,10 @@ function TooltipPopover( {
 				<FlexItem>
 					<div className="gatherpress-tooltip-popover__preview">
 						<span className="gatherpress-tooltip-popover__preview-label">
-							{ __( 'Preview:', 'gatherpress' ) }
+							{
+								/* translators: Label preceding the live preview box in the tooltip popover. */
+								__( 'Preview:', 'gatherpress' )
+							}
 						</span>
 						<span
 							className="gatherpress-tooltip gatherpress-tooltip--preview"
@@ -211,10 +223,18 @@ function TooltipPopover( {
 							} }
 							data-gatherpress-tooltip={
 								tooltipText ||
-								__( 'Sample tooltip', 'gatherpress' )
+								/* translators: Default sample text shown inside the preview tooltip when no custom text is entered. */
+								_x(
+									'Sample tooltip',
+									'tooltip preview content',
+									'gatherpress'
+								)
 							}
 						>
-							{ __( 'Hover me', 'gatherpress' ) }
+							{
+								/* translators: Label text shown on the preview button demonstrating the tooltip hover interaction. */
+								_x( 'Hover me', 'tooltip preview button label', 'gatherpress' )
+							}
 						</span>
 					</div>
 				</FlexItem>
@@ -228,18 +248,27 @@ function TooltipPopover( {
 									onClick={ removeTooltip }
 									isDestructive
 								>
-									{ __( 'Remove', 'gatherpress' ) }
+									{
+										/* translators: Button label to remove tooltip formatting from selected text. */
+										__( 'Remove', 'gatherpress' )
+									}
 								</Button>
 							</FlexItem>
 						) }
 						<FlexItem>
 							<Button variant="secondary" onClick={ onClose }>
-								{ __( 'Cancel', 'gatherpress' ) }
+								{
+									/* translators: Button label to close the tooltip popover without applying changes. */
+									__( 'Cancel', 'gatherpress' )
+								}
 							</Button>
 						</FlexItem>
 						<FlexItem>
 							<Button variant="primary" onClick={ applyTooltip }>
-								{ __( 'Apply', 'gatherpress' ) }
+								{
+									/* translators: Button label to save and apply tooltip formatting to selected text. */
+									__( 'Apply', 'gatherpress' )
+								}
 							</Button>
 						</FlexItem>
 					</Flex>
@@ -290,6 +319,7 @@ export function TooltipEdit( { value, onChange, isActive, contentRef } ) {
 		<>
 			<RichTextToolbarButton
 				icon={ comment }
+				/* translators: Title and accessible label for the toolbar button that opens tooltip settings. */
 				title={ __( 'Tooltip', 'gatherpress' ) }
 				onClick={ togglePopover }
 				isActive={ isActive }

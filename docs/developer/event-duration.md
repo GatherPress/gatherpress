@@ -16,6 +16,10 @@ When the editor shows the event date and time, it renders either the
 matches one of the duration options; picking "Set an end time…" switches to the
 absolute picker.
 
+An all-day event has no length in hours, so the Duration select is hidden while
+the **All day** toggle is on and the end date picker takes its place. Both
+filters still run; their result is simply not shown for that event.
+
 ## `gatherpress.durationOptions`
 
 Filters the array of duration presets shown in the Duration select.
@@ -35,7 +39,7 @@ addFilter(
 	( options ) => [
 		{ label: '3 hours', value: 3 },
 		{ label: '6 hours', value: 6 },
-		{ label: 'All day', value: 24 },
+		{ label: '12 hours', value: 12 },
 		// Keep a "Set an end time…" entry if you still want the absolute
 		// end-time picker to be reachable.
 		{ label: 'Set an end time…', value: false },

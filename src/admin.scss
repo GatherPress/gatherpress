@@ -121,3 +121,153 @@
 .block-editor-block-inspector [role="tabpanel"] .gatherpress-rsvp-block-settings {
 	order: 0;
 }
+
+// RSVP screen filters, sized to the bulk actions beside them: admin uses 32px
+// controls where `@wordpress/components` ships 40px. Scoped under
+// `.wp-core-ui .tablenav` throughout because core's own rules at that depth
+// outrank a two-class selector.
+
+// Core gives the tablenav a fixed 32px and 4px beneath it, which the filters
+// fill exactly. Below 783px they are the only row in it, so without this they
+// sit tight against the table.
+@media screen and (width <= 782px) {
+	.wp-core-ui .tablenav.top:has(.gatherpress-rsvp-filters) {
+		margin-bottom: 16px;
+	}
+}
+
+// Scoped to `.tablenav.top` so it outranks core's `.tablenav.top .actions`,
+// which hides that whole group below 783px and took the filters with it. The
+// filters have to survive every width: they are the only way back from a
+// filter that matched nothing.
+.wp-core-ui .tablenav.top .gatherpress-rsvp-filters {
+	display: inline-flex;
+	align-items: flex-start;
+	gap: 4px;
+	vertical-align: top;
+
+	.components-base-control,
+	.components-base-control__field {
+		margin-bottom: 0;
+	}
+
+	// The event field, matched to the bulk actions `select`.
+	.components-combobox-control__suggestions-container {
+		align-items: center;
+		background: #fff;
+		border: 1px solid #949494;
+		border-radius: 2px;
+		box-shadow: none;
+		display: flex;
+		height: 32px;
+		min-height: 32px;
+		width: 200px;
+	}
+
+	.components-combobox-control__suggestions-container:focus-within {
+		border-color: var(--wp-admin-theme-color, #3858e9);
+		box-shadow: 0 0 0 var(--wp-admin-border-width-focus, 1.5px)
+			var(--wp-admin-theme-color, #3858e9);
+	}
+
+	// The container sets the height now. The suggestions list is excluded
+	// because it drops below the field rather than sitting inside it.
+	.components-combobox-control__suggestions-container
+		> *:not(.components-form-token-field__suggestions-list),
+	.components-flex-block,
+	.components-form-token-field__input-container,
+	.components-form-token-field__input,
+	.components-combobox-control__input {
+		background: transparent;
+		border: 0;
+		box-shadow: none;
+		height: 100%;
+		margin: 0;
+		min-height: 0;
+	}
+
+	// The component's own flex row already insets the field by 8px, which
+	// lands the text where core's `select` puts its own.
+	.components-form-token-field__input,
+	.components-combobox-control__input {
+		font-size: 14px;
+		padding: 0;
+	}
+
+	// Before script takes over there is no flex row to inset the field, so
+	// the written markup carries the same 8px itself. The wrapper is gone
+	// once the enhanced control replaces it.
+	.gatherpress-rsvp-filters__event .components-combobox-control__input {
+		padding: 0 8px;
+	}
+
+	// Renders inline rather than through a portal, so it needs its own
+	// background over the table beneath.
+	.components-form-token-field__suggestions-list {
+		background: #fff;
+		border: 1px solid #949494;
+		border-top: 0;
+		box-shadow: 0 2px 6px rgb(0 0 0 / 8%);
+		max-height: 240px;
+		z-index: 10;
+	}
+
+	// The option text lines up with the field's own text above it, which the
+	// component's wider default padding does not.
+	.components-form-token-field__suggestion {
+		padding: 8px;
+	}
+
+	// The reset control, centered against the 32px frame.
+	.components-combobox-control__suggestions-container .components-button {
+		align-self: center;
+		height: 24px;
+		min-height: 24px;
+		min-width: 24px;
+		padding: 0;
+		width: 24px;
+	}
+
+	// The Filter button and the response toggle, matched to Apply.
+	> .components-button,
+	.gatherpress-rsvp-response-filter .components-button {
+		height: 32px;
+		line-height: 2.3077;
+		min-height: 32px;
+		padding: 0 10px;
+	}
+
+	// The popover renders inline so tab can leave it, which puts it in reach
+	// of the reset above and of core's `:has(.components-menu-group)` rule.
+	.gatherpress-rsvp-response-filter__popover {
+		.components-popover__content {
+			background: #fff;
+			border: 1px solid #c3c4c7;
+			border-radius: 4px;
+			box-shadow: 0 2px 6px rgb(0 0 0 / 8%);
+			min-width: 200px;
+		}
+
+		// Core zeroes the content padding when a menu group is present.
+		.components-menu-group {
+			padding: 12px;
+		}
+
+		.components-menu-group__label {
+			margin-bottom: 10px;
+		}
+
+		// Otherwise the checkboxes stack flush and read as one block.
+		.components-base-control {
+			margin-bottom: 12px;
+		}
+
+		.components-base-control:last-child {
+			margin-bottom: 0;
+		}
+
+		.components-checkbox-control__label {
+			white-space: nowrap;
+		}
+	}
+}
