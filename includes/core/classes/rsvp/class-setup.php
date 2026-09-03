@@ -173,6 +173,22 @@ final class Setup {
 				'show_in_rest'       => true,
 			)
 		);
+
+		register_taxonomy(
+			Check_In::TAXONOMY,
+			'comment',
+			array(
+				'labels'             => array(),
+				'hierarchical'       => false,
+				'public'             => true,
+				'show_ui'            => false,
+				'show_admin_column'  => false,
+				'query_var'          => true,
+				'publicly_queryable' => false,
+				'rewrite'            => false,
+				'show_in_rest'       => true,
+			)
+		);
 	}
 
 	/**

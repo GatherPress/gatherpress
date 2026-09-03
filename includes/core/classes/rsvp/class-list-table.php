@@ -876,34 +876,45 @@ final class List_Table extends WP_List_Table {
 	public function column_attendee( array $item ): string {
 		// Use current URL to preserve all filtering parameters.
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		$current_url = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
-		$nonce       = wp_create_nonce( Rsvp::COMMENT_TYPE );
-		$actions     = array();
-		$is_approved = ( '1' === $item['comment_approved'] );
-		$is_spam     = ( 'spam' === $item['comment_approved'] );
+		$current_url   = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
+		$nonce         = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$actions       = array();
+		$is_approved   = ( '1' === $item['comment_approved'] );
+		$is_spam       = ( 'spam' === $item['comment_approved'] );
+		$is_checked_in = Check_In::get_instance()->is_checked_in( (int) $item['comment_ID'] );
 
 		$action_definitions = array(
-			'approve'   => array(
+			'approve'        => array(
 				'condition' => ! $is_approved && ! $is_spam,
 				'label'     => __( 'Approve', 'gatherpress' ),
 				'action'    => 'approve',
 			),
-			'unapprove' => array(
+			'unapprove'      => array(
 				'condition' => $is_approved,
 				'label'     => __( 'Unapprove', 'gatherpress' ),
 				'action'    => 'unapprove',
 			),
-			'spam'      => array(
+			'check_in'       => array(
+				'condition' => $is_approved && ! $is_checked_in,
+				'label'     => __( 'Check in', 'gatherpress' ),
+				'action'    => 'check_in',
+			),
+			'clear_check_in' => array(
+				'condition' => $is_approved && $is_checked_in,
+				'label'     => __( 'Clear check-in', 'gatherpress' ),
+				'action'    => 'clear_check_in',
+			),
+			'spam'           => array(
 				'condition' => ! $is_spam,
 				'label'     => __( 'Spam', 'gatherpress' ),
 				'action'    => 'spam',
 			),
-			'not-spam'  => array(
+			'not-spam'       => array(
 				'condition' => $is_spam,
 				'label'     => __( 'Not Spam', 'gatherpress' ),
 				'action'    => 'unspam',
 			),
-			'delete'    => array(
+			'delete'         => array(
 				'condition'    => true,
 				'label'        => __( 'Delete', 'gatherpress' ),
 				'action'       => 'delete',

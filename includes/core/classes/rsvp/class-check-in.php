@@ -37,13 +37,31 @@ final class Check_In {
 	use Singleton;
 
 	/**
+	 * Taxonomy for tracking RSVP check-in state.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @var string
+	 */
+	public const TAXONOMY = '_gatherpress_rsvp_checkin';
+
+	/**
+	 * Term slug for checked-in status.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @var string
+	 */
+	public const TERM = 'checked-in';
+
+	/**
 	 * Comment meta key holding the GMT check-in timestamp.
 	 *
 	 * @since 0.36.0
 	 *
 	 * @var string
 	 */
-	const META_KEY = 'gatherpress_checked_in';
+	public const META_KEY = 'gatherpress_checked_in';
 
 	/**
 	 * Class constructor.
@@ -90,6 +108,8 @@ final class Check_In {
 			return true;
 		}
 
+		wp_set_object_terms( $rsvp_id, self::TERM, self::TAXONOMY );
+
 		$timestamp = current_time( 'mysql', true );
 
 		update_comment_meta( $rsvp_id, self::META_KEY, $timestamp );
@@ -127,6 +147,7 @@ final class Check_In {
 			return false;
 		}
 
+		wp_remove_object_terms( $rsvp_id, self::TERM, self::TAXONOMY );
 		delete_comment_meta( $rsvp_id, self::META_KEY );
 
 		/**
@@ -150,10 +171,10 @@ final class Check_In {
 	 *
 	 * @param int $rsvp_id The RSVP comment ID.
 	 *
-	 * @return bool True when a check-in time is recorded.
+	 * @return bool True when a check-in term is assigned.
 	 */
 	public function is_checked_in( int $rsvp_id ): bool {
-		return '' !== (string) get_comment_meta( $rsvp_id, self::META_KEY, true );
+		return true === is_object_in_term( $rsvp_id, self::TAXONOMY, self::TERM );
 	}
 
 	/**
@@ -185,14 +206,15 @@ final class Check_In {
 	public function count_checked_in( int $post_id ): int {
 		$count = get_comments(
 			array(
-				'post_id'    => $post_id,
-				'type'       => Rsvp::COMMENT_TYPE,
-				'status'     => 'approve',
-				'count'      => true,
-				'meta_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+				'post_id'   => $post_id,
+				'type'      => Rsvp::COMMENT_TYPE,
+				'status'    => 'approve',
+				'count'     => true,
+				'tax_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 					array(
-						'key'     => self::META_KEY,
-						'compare' => 'EXISTS',
+						'taxonomy' => self::TAXONOMY,
+						'field'    => 'slug',
+						'terms'    => self::TERM,
 					),
 				),
 			)
@@ -216,6 +238,7 @@ final class Check_In {
 	 * @return void
 	 */
 	public function delete_check_in( $comment_id ): void {
+		wp_remove_object_terms( (int) $comment_id, self::TERM, self::TAXONOMY );
 		delete_comment_meta( (int) $comment_id, self::META_KEY );
 	}
 

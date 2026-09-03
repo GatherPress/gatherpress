@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core\Rsvp;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Check_In;
 use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp\Setup;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
@@ -20,6 +21,16 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Rsvp\Check_In
  */
 class Test_Check_In extends Base {
+
+	/**
+	 * Set up the test environment before each test.
+	 *
+	 * @return void
+	 */
+	public function setUp(): void {
+		parent::setUp();
+		Setup::get_instance()->register_taxonomy();
+	}
 
 	/**
 	 * Create an event and an approved RSVP against it.
@@ -104,6 +115,10 @@ class Test_Check_In extends Base {
 			$instance->is_checked_in( $rsvp['rsvp_id'] ),
 			'A fresh RSVP should not be checked in.'
 		);
+		$this->assertFalse(
+			has_term( Check_In::TERM, Check_In::TAXONOMY, $rsvp['rsvp_id'] ),
+			'A fresh RSVP should not have the check-in taxonomy term.'
+		);
 		$this->assertSame(
 			'',
 			$instance->get_check_in_time( $rsvp['rsvp_id'] ),
@@ -116,6 +131,10 @@ class Test_Check_In extends Base {
 		$this->assertTrue(
 			$instance->is_checked_in( $rsvp['rsvp_id'] ),
 			'The RSVP should read as checked in afterwards.'
+		);
+		$this->assertTrue(
+			has_term( Check_In::TERM, Check_In::TAXONOMY, $rsvp['rsvp_id'] ),
+			'The RSVP should have the check-in taxonomy term.'
 		);
 		$this->assertNotEmpty(
 			$instance->get_check_in_time( $rsvp['rsvp_id'] ),
@@ -170,6 +189,10 @@ class Test_Check_In extends Base {
 		$this->assertFalse(
 			$instance->is_checked_in( $rsvp['rsvp_id'] ),
 			'The RSVP should no longer read as checked in.'
+		);
+		$this->assertFalse(
+			has_term( Check_In::TERM, Check_In::TAXONOMY, $rsvp['rsvp_id'] ),
+			'The check-in taxonomy term should be removed.'
 		);
 	}
 
@@ -272,6 +295,10 @@ class Test_Check_In extends Base {
 		$this->assertFalse(
 			$instance->is_checked_in( $rsvp['rsvp_id'] ),
 			'Deleting an RSVP should take its arrival time with it.'
+		);
+		$this->assertFalse(
+			has_term( Check_In::TERM, Check_In::TAXONOMY, $rsvp['rsvp_id'] ),
+			'Deleting an RSVP should remove its check-in term.'
 		);
 	}
 

@@ -631,6 +631,27 @@ class Test_List_Table extends Base {
 			$attendee_col,
 			'Failed to assert attendee column does not contain Approve action for approved RSVP.'
 		);
+		$this->assertStringContainsString(
+			'>Check in<',
+			$attendee_col,
+			'Failed to assert attendee column contains Check in action for approved, not checked-in RSVP.'
+		);
+
+		Check_In::get_instance()->check_in( (int) $this->rsvp['comment_ID'] );
+		$attendee_col = $this->list_table->column_attendee( $this->rsvp );
+
+		$this->assertStringContainsString(
+			'>Clear check-in<',
+			$attendee_col,
+			'Failed to assert attendee column contains Clear check-in action for approved, checked-in RSVP.'
+		);
+		$this->assertStringNotContainsString(
+			'>Check in<',
+			$attendee_col,
+			'Failed to assert attendee column does not contain Check in action for already checked-in RSVP.'
+		);
+
+		Check_In::get_instance()->clear( (int) $this->rsvp['comment_ID'] );
 	}
 
 	/**
@@ -647,6 +668,16 @@ class Test_List_Table extends Base {
 			'>Approve<',
 			$attendee_col,
 			'Failed to assert attendee column contains Approve action for pending RSVP.'
+		);
+		$this->assertStringNotContainsString(
+			'>Check in<',
+			$attendee_col,
+			'Failed to assert attendee column does not contain Check in action for pending RSVP.'
+		);
+		$this->assertStringNotContainsString(
+			'>Clear check-in<',
+			$attendee_col,
+			'Failed to assert attendee column does not contain Clear check-in action for pending RSVP.'
 		);
 	}
 
@@ -669,6 +700,16 @@ class Test_List_Table extends Base {
 			'>Spam<',
 			$attendee_col,
 			'Failed to assert attendee column does not contain Spam action for spam RSVP.'
+		);
+		$this->assertStringNotContainsString(
+			'>Check in<',
+			$attendee_col,
+			'Failed to assert attendee column does not contain Check in action for spam RSVP.'
+		);
+		$this->assertStringNotContainsString(
+			'>Clear check-in<',
+			$attendee_col,
+			'Failed to assert attendee column does not contain Clear check-in action for spam RSVP.'
 		);
 	}
 
