@@ -211,18 +211,18 @@ final class Calendar {
 		}
 
 		if ( $this->event->is_all_day() ) {
-			$date_start     = $this->event->get_formatted_datetime( 'Ymd', 'start' );
-			$datetime_start = $date_start;
-			$start_ymd      = $this->event->get_formatted_datetime( 'Y-m-d', 'start' );
-			$end_ymd        = $this->event->get_formatted_datetime( 'Y-m-d', 'end' );
-			$diff_seconds   = (int) strtotime( $end_ymd ) - (int) strtotime( $start_ymd );
-			$days           = max( 1, (int) round( $diff_seconds / 86400 ) + 1 );
-			$hours          = str_pad( (string) ( $days * 24 ), 2, '0', STR_PAD_LEFT );
-			$minutes        = '00';
+			// Yahoo takes two plain dates and its own flag, not a duration.
+			// `dur` is an `hhmm` field, and a single all-day event already
+			// needs more hours than the two digits hold. Local dates, since
+			// an all-day date is floating and must not shift with the zone.
+			$timing = array(
+				'st'     => $this->event->get_formatted_datetime( 'Ymd', 'start' ),
+				'et'     => $this->event->get_formatted_datetime( 'Ymd', 'end' ),
+				'allday' => 'true',
+			);
 		} else {
-			$date_start     = $this->event->get_formatted_datetime( 'Ymd', 'start', false );
-			$time_start     = $this->event->get_formatted_datetime( 'His', 'start', false );
-			$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
+			$date_start = $this->event->get_formatted_datetime( 'Ymd', 'start', false );
+			$time_start = $this->event->get_formatted_datetime( 'His', 'start', false );
 
 			// Figure out duration of event in hours and minutes: hhmm format.
 			$diff_start = $this->event->get_formatted_datetime( $this->event::DATETIME_FORMAT, 'start', false );
@@ -232,6 +232,11 @@ final class Calendar {
 			$fraction   = ( $duration - $full );
 			$hours      = str_pad( strval( $duration ), 2, '0', STR_PAD_LEFT );
 			$minutes    = str_pad( strval( $fraction * 60 ), 2, '0', STR_PAD_LEFT );
+
+			$timing = array(
+				'st'  => sprintf( '%sT%sZ', $date_start, $time_start ),
+				'dur' => $hours . $minutes,
+			);
 		}
 
 		$venue       = $this->event->get_venue_information();
@@ -242,15 +247,18 @@ final class Calendar {
 			$location .= sprintf( ', %s', $venue['address'] );
 		}
 
-		$params = array(
-			'v'      => '60',
-			'view'   => 'd',
-			'type'   => '20',
-			'title'  => sanitize_text_field( $post->post_title ),
-			'st'     => sanitize_text_field( $datetime_start ),
-			'dur'    => sanitize_text_field( (string) $hours . (string) $minutes ),
-			'desc'   => sanitize_text_field( $description ),
-			'in_loc' => sanitize_text_field( $location ),
+		$params = array_merge(
+			array(
+				'v'     => '60',
+				'view'  => 'd',
+				'type'  => '20',
+				'title' => sanitize_text_field( $post->post_title ),
+			),
+			array_map( 'sanitize_text_field', $timing ),
+			array(
+				'desc'   => sanitize_text_field( $description ),
+				'in_loc' => sanitize_text_field( $location ),
+			)
 		);
 
 		return add_query_arg(
