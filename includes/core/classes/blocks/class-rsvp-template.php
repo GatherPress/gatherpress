@@ -173,11 +173,45 @@ final class Rsvp_Template {
 		$rsvp_response_template = sprintf(
 			'<div hidden data-wp-interactive="gatherpress"'
 				. ' data-wp-watch="callbacks.renderBlocks"'
-				. ' data-block-template="%s"></div>',
-			esc_attr( $blocks )
+				. ' data-block-template="%1$s"'
+				. ' data-block-signature="%2$s"></div>',
+			esc_attr( $blocks ),
+			esc_attr( self::sign_template( $blocks ) )
 		);
 
 		return $block_content . $rsvp_response_template;
+	}
+
+	/**
+	 * Signature for a template this class emitted.
+	 *
+	 * The front end hands the template back to the REST endpoint verbatim, so
+	 * the endpoint only renders what this class wrote in the first place. The
+	 * key is the site's nonce salt: stable for the site, the same for every
+	 * visitor, and not derived from anything a request can influence.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $template The JSON-encoded parsed block.
+	 *
+	 * @return string The signature.
+	 */
+	public static function sign_template( string $template ): string {
+		return hash_hmac( 'sha256', $template, wp_salt( 'nonce' ) );
+	}
+
+	/**
+	 * Whether a template and signature pair came from this class.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $template  The JSON-encoded parsed block.
+	 * @param string $signature The signature that accompanied it.
+	 *
+	 * @return bool True when the signature matches the template.
+	 */
+	public static function verify_template( string $template, string $signature ): bool {
+		return hash_equals( self::sign_template( $template ), $signature );
 	}
 
 	/**
