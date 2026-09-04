@@ -12,6 +12,7 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue\Setup;
 use WP_Block;
@@ -144,10 +145,12 @@ final class Online_Event {
 	private function can_view_post( int $post_id ): bool {
 		$post = get_post( $post_id );
 
+		// Event::is_viewable() does not ask about a password, and a direct
+		// visit to a protected event shows the form rather than the content.
 		return $post instanceof WP_Post
 			&& post_type_supports( $post->post_type, 'gatherpress-event-date' )
-			&& ! post_password_required( $post )
-			&& ( is_post_publicly_viewable( $post ) || current_user_can( 'read_post', $post->ID ) );
+			&& Event::is_viewable( $post->ID )
+			&& ! post_password_required( $post );
 	}
 
 	/**

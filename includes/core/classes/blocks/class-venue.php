@@ -14,6 +14,7 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Shadow_Source;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue as Venue_Core;
@@ -162,7 +163,10 @@ final class Venue {
 				$selected instanceof WP_Post
 				&& $source_post_type === $selected->post_type
 				&& ! post_password_required( $selected )
-				&& ( is_post_publicly_viewable( $selected ) || current_user_can( 'read_post', $selected->ID ) )
+				&& (
+					is_post_publicly_viewable( $selected )
+					|| current_user_can( Event::READ_CAPABILITY, $selected->ID )
+				)
 			) {
 				$source_post = $selected;
 			}
