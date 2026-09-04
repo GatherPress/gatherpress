@@ -9,6 +9,10 @@ Pending entries for the next release live as individual files under
 [`.github/changelog/`](.github/changelog/) and get rolled up into a new
 version section by `composer changelog:write` at release time.
 
+## [0.35.3] - 2026-09-04
+### Security
+- Fix an information disclosure in the RSVP status endpoint. A request could supply its own block tree and, through the venue and online-event blocks, read private, draft, trashed, and revision content without logging in. The endpoint now renders only the template the server emitted, and both blocks resolve a selected or overridden post on the same terms as a direct visit. [#2243](https://github.com/GatherPress/gatherpress/pull/2243)
+
 ## [0.35.2] - 2026-08-16
 ### Security
 - Reject open RSVP submissions to events that are not publicly published or that have RSVP disabled. [#2155](https://github.com/GatherPress/gatherpress/pull/2155)
@@ -523,6 +527,7 @@ Initial public release. Represents 18+ months of pre-1.0 development and ships t
 - Initial unit test suite with code coverage via SonarCloud.
 - Multilingual screenshots and i18n scaffolding.
 
+[0.35.3]: https://github.com/GatherPress/gatherpress/compare/0.35.2...0.35.3
 [0.35.2]: https://github.com/GatherPress/gatherpress/compare/0.35.1...0.35.2
 [0.35.1]: https://github.com/GatherPress/gatherpress/compare/0.35.0...0.35.1
 [0.35.0]: https://github.com/GatherPress/gatherpress/compare/0.34.1...0.35.0
