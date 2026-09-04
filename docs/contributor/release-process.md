@@ -314,8 +314,11 @@ on to the next minor.
     changelog entry files along. Expect a conflict wherever `develop` has
     since touched the same lines (a docblock, a test's neighbor); resolve
     to the fix's own lines only, never to `develop`-only additions, and
-    check the result with `git range-diff <develop sha>^..<develop sha>
-    <main sha>^..<main sha>`.
+    check the result is still the same patch:
+
+    ```bash
+    git range-diff DEVELOP_SHA^..DEVELOP_SHA MAIN_SHA^..MAIN_SHA
+    ```
 
     **The tag runs whatever `.github/workflows/release.yml` is on `main`.**
     If `develop` changed the release workflow since the last release merge,
