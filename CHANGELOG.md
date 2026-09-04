@@ -10,6 +10,8 @@ Pending entries for the next release live as individual files under
 version section by `composer changelog:write` at release time.
 
 ## [0.35.3] - 2026-09-04
+
+## [0.35.3] - 2026-09-04
 ### Security
 - Fix an information disclosure in the RSVP status endpoint. A request could supply its own block tree and, through the venue and online-event blocks, read private, draft, trashed, and revision content without logging in. The endpoint now renders only the template the server emitted, and both blocks resolve a selected or overridden post on the same terms as a direct visit. [#2243](https://github.com/GatherPress/gatherpress/pull/2243)
 
