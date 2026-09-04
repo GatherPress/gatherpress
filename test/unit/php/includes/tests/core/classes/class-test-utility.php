@@ -1458,4 +1458,155 @@ class Test_Utility extends Base {
 			Utility::get_block_names( $blocks )
 		);
 	}
+
+	/**
+	 * What each character list claims, and what they share.
+	 *
+	 * The two are not a partition. A timezone is neither a date nor a time,
+	 * so both strips drop it: `remove_non_time_format_chars()` because a
+	 * zone is not a time, and `remove_time_format_chars()` because an
+	 * all-day date is floating and has no zone to name. The characters that
+	 * stand for a whole datetime go the same way.
+	 *
+	 * Between them the two lists account for every character PHP's `date()`
+	 * gives a meaning to, so nothing survives both strips by being unknown
+	 * to either.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::time_format_chars
+	 * @covers ::non_time_format_chars
+	 *
+	 * @return void
+	 */
+	public function test_format_char_lists_claim_the_right_characters(): void {
+		$time     = Utility::time_format_chars();
+		$non_time = Utility::non_time_format_chars();
+
+		$dates = str_split( 'dDjlNSwzWFmMntLoXxYy' );
+		$times = str_split( 'aABgGhHisuv' );
+		$both  = str_split( 'eIOPpTZcrU' );
+
+		$this->assertSame(
+			$dates,
+			array_values( array_intersect( $non_time, $dates ) ),
+			'Failed to assert the date characters are stripped to leave a time.'
+		);
+		$this->assertSame(
+			array(),
+			array_intersect( $time, $dates ),
+			'Failed to assert a date character is never stripped from an all-day format.'
+		);
+
+		$this->assertSame(
+			$times,
+			array_values( array_intersect( $time, $times ) ),
+			'Failed to assert the time characters are stripped to leave a date.'
+		);
+		$this->assertSame(
+			array(),
+			array_intersect( $non_time, $times ),
+			'Failed to assert a time character is never stripped to leave a time.'
+		);
+
+		$this->assertSame(
+			array(),
+			array_diff( $both, $time ),
+			'Failed to assert a zone is dropped from an all-day format.'
+		);
+		$this->assertSame(
+			array(),
+			array_diff( $both, $non_time ),
+			'Failed to assert a zone is dropped when only the time is wanted.'
+		);
+
+		$this->assertSame(
+			array(),
+			array_diff(
+				array_merge( $dates, $times, $both ),
+				array_merge( $time, $non_time )
+			),
+			'Failed to assert every formatting character is accounted for.'
+		);
+	}
+
+	/**
+	 * Stripping the time leaves the date behind.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::remove_time_format_chars
+	 *
+	 * @dataProvider data_remove_time_format_chars
+	 *
+	 * @param string $format   The format to strip.
+	 * @param string $expected What should be left.
+	 *
+	 * @return void
+	 */
+	public function test_remove_time_format_chars( string $format, string $expected ): void {
+		$this->assertSame(
+			$expected,
+			Utility::remove_time_format_chars( $format ),
+			'Failed to assert the time was stripped out of the format.'
+		);
+	}
+
+	/**
+	 * Data provider for remove_time_format_chars.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return array[]
+	 */
+	public function data_remove_time_format_chars(): array {
+		return array(
+			'a date and a time keeps the date' => array( 'F j, Y g:i a', 'F j, Y' ),
+			'only a time keeps nothing'        => array( 'g:i a', '' ),
+			'only a date is left alone'        => array( 'M j', 'M j' ),
+			'the timezone goes with the time'  => array( 'F j, Y T', 'F j, Y' ),
+			'an empty format stays empty'      => array( '', '' ),
+			'a dash separator is trimmed off'  => array( 'Y-m-d H:i', 'Y-m-d' ),
+			'a slash separator is trimmed off' => array( 'd/m/Y H:i', 'd/m/Y' ),
+			'punctuation alone keeps nothing'  => array( ':', '' ),
+		);
+	}
+
+	/**
+	 * Stripping everything but the time leaves the time behind.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::remove_non_time_format_chars
+	 *
+	 * @dataProvider data_remove_non_time_format_chars
+	 *
+	 * @param string $format   The format to strip.
+	 * @param string $expected What should be left.
+	 *
+	 * @return void
+	 */
+	public function test_remove_non_time_format_chars( string $format, string $expected ): void {
+		$this->assertSame(
+			$expected,
+			Utility::remove_non_time_format_chars( $format ),
+			'Failed to assert everything but the time was stripped out.'
+		);
+	}
+
+	/**
+	 * Data provider for remove_non_time_format_chars.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return array[]
+	 */
+	public function data_remove_non_time_format_chars(): array {
+		return array(
+			'a date and a time keeps the time' => array( 'F j, Y g:i a', 'g:i a' ),
+			'only a date keeps nothing'        => array( 'F j, Y', '' ),
+			'only a time is left alone'        => array( 'g:i a', 'g:i a' ),
+			'an empty format stays empty'      => array( '', '' ),
+		);
+	}
 }

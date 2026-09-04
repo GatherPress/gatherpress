@@ -304,6 +304,135 @@ final class Utility {
 	}
 
 	/**
+	 * The PHP DateTime formatting characters that denote a time.
+	 *
+	 * The complement of `non_time_format_chars()`, less the separators. The
+	 * timezone characters are here too: a floating date has no zone to
+	 * name, so the zone goes with the time.
+	 *
+	 * Shared with the editor through `Settings::add_editor_settings()`, so
+	 * the block preview strips a format the same way the rendered event
+	 * does.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string[] The formatting characters.
+	 */
+	public static function time_format_chars(): array {
+		return array(
+			'a',
+			'A',
+			'B',
+			'g',
+			'G',
+			'h',
+			'H',
+			'i',
+			's',
+			'u',
+			'v',
+			'e',
+			'I',
+			'O',
+			'P',
+			'p',
+			'T',
+			'Z',
+			'c',
+			'r',
+			'U',
+		);
+	}
+
+	/**
+	 * The PHP DateTime formatting characters that do not denote a time.
+	 *
+	 * The date, the timezone and the separating comma, so that stripping
+	 * them from a format leaves the time alone.
+	 *
+	 * Shared with the editor through `Settings::add_editor_settings()`, so
+	 * the block preview strips a format the same way the rendered event
+	 * does.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string[] The formatting characters.
+	 */
+	public static function non_time_format_chars(): array {
+		return array(
+			'd',
+			'D',
+			'j',
+			'l',
+			'N',
+			'S',
+			'w',
+			'z',
+			'W',
+			'F',
+			'm',
+			'M',
+			'n',
+			't',
+			'L',
+			'o',
+			'X',
+			'x',
+			'Y',
+			'y',
+			'e',
+			'I',
+			'O',
+			'P',
+			'p',
+			'T',
+			'Z',
+			'c',
+			'r',
+			'U',
+			',',
+		);
+	}
+
+	/**
+	 * Strip everything but the time out of a display format.
+	 *
+	 * The inverse of `remove_time_format_chars()`: 'F j, Y g:i a' keeps
+	 * 'g:i a'.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $format A PHP date format.
+	 *
+	 * @return string The time-only format.
+	 */
+	public static function remove_non_time_format_chars( string $format ): string {
+		return trim( str_replace( self::non_time_format_chars(), '', $format ) );
+	}
+
+	/**
+	 * Strip the time out of a display format.
+	 *
+	 * Leaves the date behind, along with whatever separated it from the
+	 * time: 'F j, Y g:i a' keeps 'F j, Y'. A format that was only ever a
+	 * time has nothing left to render, so it reports none rather than the
+	 * punctuation between the parts it lost.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $format A PHP date format.
+	 *
+	 * @return string The format without its time, or an empty string when
+	 *                no date survives it.
+	 */
+	public static function remove_time_format_chars( string $format ): string {
+		return trim(
+			str_replace( self::time_format_chars(), '', $format ),
+			" \t\n\r\0\x0B:,-/."
+		);
+	}
+
+	/**
 	 * Retrieve an array of time zone choices.
 	 *
 	 * This method converts the Time Zone markup returned by WordPress into an associative array

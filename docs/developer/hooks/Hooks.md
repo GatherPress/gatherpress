@@ -27,7 +27,7 @@
 ## class-event.php
 
 - [`gatherpress_date_format`](gatherpress_date_format.md)
-- [`gatherpress_datetime_format`](gatherpress_datetime_format.md)
+- [`gatherpress_datetime_format`](gatherpress_datetime_format.md) Filters the format an event's datetime is rendered with.
 - [`gatherpress_force_online_event_link`](gatherpress_force_online_event_link.md) Filters whether to force the display of the online event link.
 - [`gatherpress_time_format`](gatherpress_time_format.md)
 - [`gatherpress_timezone`](gatherpress_timezone.md)
@@ -63,6 +63,8 @@
 - [`gatherpress_map_zoom`](gatherpress_map_zoom.md) Filter the zoom level used when rendering the static venue map.
 - [`gatherpress_static_map_descriptors`](gatherpress_static_map_descriptors.md) Filters the parsed descriptor map for a venue.
 - [`gatherpress_static_map_generate_2x`](gatherpress_static_map_generate_2x.md) Filter whether to generate the retina (2×) static-map variant.
+- [`gatherpress_static_map_generate_async`](gatherpress_static_map_generate_async.md) Filters whether venue-save-triggered static-map generation runs
+- [`gatherpress_static_map_generate_pre_enqueue_job`](gatherpress_static_map_generate_pre_enqueue_job.md) Filter the async static-map generation enqueue call to take over
 
 ## class-migrate.php
 
@@ -138,6 +140,6 @@
 
 - [`gatherpress_loaded`](gatherpress_loaded.md) Fires once GatherPress has finished bootstrapping its core classes.
 
-## network-page.php
+## index.php
 
 - [`gatherpress_settings_section`](gatherpress_settings_section.md) Fires so tabs that render via the GatherPress settings section action

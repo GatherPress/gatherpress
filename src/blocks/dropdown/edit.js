@@ -31,6 +31,7 @@ import {
 import { __, sprintf } from '@wordpress/i18n';
 import { useState, useEffect } from '@wordpress/element';
 import { dispatch, select, useSelect } from '@wordpress/data';
+import { applyFilters } from '@wordpress/hooks';
 
 /**
  * Internal dependencies
@@ -53,10 +54,11 @@ import {
  * @param {Object}   props.attributes    The attributes for the block.
  * @param {Function} props.setAttributes A function to update block attributes.
  * @param {string}   props.clientId      The unique identifier for the block instance.
+ * @param {Object}   props.context       Block context data.
  *
  * @return {JSX.Element} The rendered edit interface for the block.
  */
-const Edit = ( { attributes, setAttributes, clientId } ) => {
+const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	const blockProps = useBlockProps();
 	const [ isExpanded, setIsExpanded ] = useState( false );
 	const {
@@ -229,6 +231,32 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 	const handleToggle = () => {
 		setIsExpanded( ( prev ) => ! prev );
 	};
+
+	// In select mode the trigger mirrors the selected item, so display that
+	// item's text through the same filter the items themselves use — its
+	// placeholders resolve the same way theirs do. The stored label keeps
+	// the raw text; only the canvas display changes.
+	const selectedItem = actAsSelect ? innerBlocks[ selectedIndex ] : null;
+	const triggerLabel = useSelect(
+		( selectStore ) => {
+			if ( ! selectedItem ) {
+				return label;
+			}
+
+			const filtered = applyFilters(
+				'gatherpress.dropdownItemText',
+				label,
+				{
+					attributes: selectedItem.attributes,
+					context,
+					select: selectStore,
+				},
+			);
+
+			return filtered;
+		},
+		[ selectedItem, label, context ],
+	);
 
 	return (
 		<div { ...blockProps }>
@@ -453,7 +481,7 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 						color: labelTextColor,
 					} }
 				>
-					{ label }
+					{ triggerLabel }
 				</a>
 			) : (
 				// Use RichText when actAsSelect is disabled.
