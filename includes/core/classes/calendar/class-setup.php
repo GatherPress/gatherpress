@@ -91,7 +91,7 @@ final class Setup {
 		// validity check and never registered its rewrite rule.
 		add_action( 'init', array( $this, 'register_endpoints' ), PHP_INT_MAX );
 		add_action( 'wp_head', array( $this, 'alternate_links' ) );
-		// PHP_INT_MIN so the calendar redirect runs before redirect_canonical() or any theme's template_redirect handler.
+		// PHP_INT_MIN so the calendar redirect runs before redirect_canonical() and any theme's own handler.
 		add_action( 'template_redirect', array( $this, 'maybe_handle_content_negotiation' ), PHP_INT_MIN );
 		add_filter( 'wp_headers', array( $this, 'filter_wp_headers' ) );
 	}
