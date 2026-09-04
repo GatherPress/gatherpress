@@ -1,4 +1,4 @@
 Significance: patch
-Type: fixed
+Type: security
 
-Render RSVP status responses from the template the server emitted, and resolve venue and online-event source posts with the same visibility rules as a direct visit.
+Fix an information disclosure in the RSVP status endpoint. A request could supply its own block tree and, through the venue and online-event blocks, read private, draft, trashed, and revision content without logging in. The endpoint now renders only the template the server emitted, and both blocks resolve a selected or overridden post on the same terms as a direct visit.
