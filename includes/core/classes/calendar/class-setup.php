@@ -22,8 +22,10 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event\Query;
 use GatherPress\Core\Shadow_Source;
+use GatherPress\Core\Topic;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
+use GatherPress\Core\Venue;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
 use WP_Post;
 use WP_Post_Type;
@@ -743,13 +745,13 @@ final class Setup {
 		$queried_object  = get_queried_object();
 
 		if (
-			is_singular( 'gatherpress_venue' ) &&
+			is_singular( Venue::POST_TYPE ) &&
 			$queried_object instanceof WP_Post &&
 			$this->is_tax_like_type_for_event_supporting_types( $queried_object->post_type )
 		) {
 			$venues = array( '_' . $queried_object->post_name );
 		} elseif (
-			is_tax( 'gatherpress_topic' ) &&
+			is_tax( Topic::TAXONOMY ) &&
 			$queried_object instanceof WP_Term &&
 			$this->has_post_type_for_taxonomy( $queried_object->taxonomy )
 		) {
