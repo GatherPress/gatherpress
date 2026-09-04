@@ -133,18 +133,20 @@ final class Online_Event {
 	}
 
 	/**
-	 * Whether the current viewer could open a post directly.
+	 * Whether the current viewer could open an event directly.
 	 *
 	 * @since 0.36.0
 	 *
 	 * @param int $post_id The post to check.
 	 *
-	 * @return bool True when the post is publicly viewable or the viewer can read it.
+	 * @return bool True for an event the viewer could open, password included.
 	 */
 	private function can_view_post( int $post_id ): bool {
 		$post = get_post( $post_id );
 
 		return $post instanceof WP_Post
+			&& post_type_supports( $post->post_type, 'gatherpress-event-date' )
+			&& ! post_password_required( $post )
 			&& ( is_post_publicly_viewable( $post ) || current_user_can( 'read_post', $post->ID ) );
 	}
 

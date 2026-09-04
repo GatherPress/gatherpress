@@ -715,4 +715,61 @@ class Test_Online_Event extends Base {
 
 		wp_set_current_user( 0 );
 	}
+
+	/**
+	 * A password-protected event is not an override target without the password.
+	 *
+	 * `is_post_publicly_viewable()` says yes to a published post with a
+	 * password; a direct visit would show the form instead of the content.
+	 *
+	 * @covers ::render_block
+	 * @covers ::can_view_post
+	 *
+	 * @return void
+	 */
+	public function test_override_respects_a_post_password(): void {
+		$instance = Online_Event::get_instance();
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		);
+
+		$term = term_exists( 'online-event', Venue::TAXONOMY );
+		if ( ! $term ) {
+			$term = wp_insert_term( 'Online Event', Venue::TAXONOMY, array( 'slug' => 'online-event' ) );
+		}
+		wp_set_object_terms( $event_id, (int) ( is_array( $term ) ? $term['term_id'] : $term ), Venue::TAXONOMY );
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/online-event',
+				'attrs'        => array( 'postId' => $event_id ),
+				'innerBlocks'  => array(
+					array(
+						'blockName'    => 'core/paragraph',
+						'attrs'        => array(),
+						'innerBlocks'  => array(),
+						'innerHTML'    => '<p>Inner content</p>',
+						'innerContent' => array( '<p>Inner content</p>' ),
+					),
+				),
+				'innerHTML'    => '',
+				'innerContent' => array( null ),
+			)
+		);
+
+		wp_set_current_user( 0 );
+
+		$this->assertSame(
+			'',
+			$instance->render_block(
+				'<div>x</div>',
+				array( 'attrs' => array( 'postId' => $event_id ) ),
+				$block_instance
+			),
+			'Failed to assert a password-protected override renders nothing without the password.'
+		);
+	}
 }

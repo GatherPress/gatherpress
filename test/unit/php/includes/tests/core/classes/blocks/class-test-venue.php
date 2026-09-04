@@ -1124,12 +1124,12 @@ class Test_Venue extends Base {
 	 */
 	public function data_selected_source_visibility(): array {
 		return array(
-			'published venue'         => array(
+			'published venue'          => array(
 				array( 'post_type' => 'gatherpress_venue' ),
 				'gatherpress_venue',
 				true,
 			),
-			'private venue'           => array(
+			'private venue'            => array(
 				array(
 					'post_type'   => 'gatherpress_venue',
 					'post_status' => 'private',
@@ -1137,7 +1137,7 @@ class Test_Venue extends Base {
 				'gatherpress_venue',
 				false,
 			),
-			'draft venue'             => array(
+			'draft venue'              => array(
 				array(
 					'post_type'   => 'gatherpress_venue',
 					'post_status' => 'draft',
@@ -1145,7 +1145,7 @@ class Test_Venue extends Base {
 				'gatherpress_venue',
 				false,
 			),
-			'trashed venue'           => array(
+			'trashed venue'            => array(
 				array(
 					'post_type'   => 'gatherpress_venue',
 					'post_status' => 'trash',
@@ -1153,7 +1153,7 @@ class Test_Venue extends Base {
 				'gatherpress_venue',
 				false,
 			),
-			'a type that is no venue' => array(
+			'a type that is no venue'  => array(
 				array(
 					'post_type'   => 'post',
 					'post_status' => 'private',
@@ -1161,7 +1161,15 @@ class Test_Venue extends Base {
 				'post',
 				false,
 			),
-			'a revision'              => array( array( 'post_type' => 'gatherpress_venue' ), 'revision', false ),
+			'a revision'               => array( array( 'post_type' => 'gatherpress_venue' ), 'revision', false ),
+			'password-protected venue' => array(
+				array(
+					'post_type'     => 'gatherpress_venue',
+					'post_password' => 'secret',
+				),
+				'gatherpress_venue',
+				false,
+			),
 		);
 	}
 

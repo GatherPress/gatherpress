@@ -161,6 +161,7 @@ final class Venue {
 			if (
 				$selected instanceof WP_Post
 				&& $source_post_type === $selected->post_type
+				&& ! post_password_required( $selected )
 				&& ( is_post_publicly_viewable( $selected ) || current_user_can( 'read_post', $selected->ID ) )
 			) {
 				$source_post = $selected;
