@@ -22,8 +22,10 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event\Query;
 use GatherPress\Core\Shadow_Source;
+use GatherPress\Core\Topic;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
+use GatherPress\Core\Venue;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
 use WP_Post;
 use WP_Post_Type;
@@ -89,6 +91,9 @@ final class Setup {
 		// validity check and never registered its rewrite rule.
 		add_action( 'init', array( $this, 'register_endpoints' ), PHP_INT_MAX );
 		add_action( 'wp_head', array( $this, 'alternate_links' ) );
+		// PHP_INT_MIN so the calendar redirect runs before redirect_canonical() and any theme's own handler.
+		add_action( 'template_redirect', array( $this, 'maybe_handle_content_negotiation' ), PHP_INT_MIN );
+		add_filter( 'wp_headers', array( $this, 'filter_wp_headers' ) );
 	}
 
 	/**
@@ -627,24 +632,22 @@ final class Setup {
 		$shadow_source = Shadow_Source::get_instance();
 		$href          = '';
 
-		if ( $shadow_source->is_shadow_term_slug( $term->taxonomy ) ) {
-			// Skip sentinel shadow terms like `online-event` whose slug does
-			// not start with `_` — no backing post means no feed to link to.
-			if ( $shadow_source->is_shadow_term_slug( $term->slug ) ) {
-				$post = $shadow_source->get_post_from_term_slug(
-					$term->slug,
-					ltrim( $term->taxonomy, '_' )
-				);
-
-				// Without this, get_post_comments_feed_link( null ) falls back to the global post.
-				if ( $post instanceof WP_Post ) {
-					// Feels weird to use a *_comments_* function here, but it delivers clean results
-					// in the form of "domain.tld/event/my-sample-event/feed/ical/".
-					$href = get_post_comments_feed_link( $post->ID, self::ICAL_SLUG );
-				}
-			}
-		} else {
+		if ( ! $shadow_source->is_shadow_term_slug( $term->taxonomy ) ) {
 			$href = get_term_feed_link( $term->term_id, $term->taxonomy, self::ICAL_SLUG );
+		} elseif ( $shadow_source->is_shadow_term_slug( $term->slug ) ) {
+			// Skip sentinel shadow terms like `online-event` whose slug does
+			// not start with `_` - no backing post means no feed to link to.
+			$post = $shadow_source->get_post_from_term_slug(
+				$term->slug,
+				ltrim( $term->taxonomy, '_' )
+			);
+
+			// Without this, get_post_comments_feed_link( null ) falls back to the global post.
+			if ( $post instanceof WP_Post ) {
+				// Feels weird to use a *_comments_* function here, but it delivers clean results
+				// in the form of "domain.tld/event/my-sample-event/feed/ical/".
+				$href = get_post_comments_feed_link( $post->ID, self::ICAL_SLUG );
+			}
 		}
 
 		if ( empty( $href ) ) {
@@ -743,21 +746,17 @@ final class Setup {
 		$queried_object  = get_queried_object();
 
 		if (
-			is_singular() &&
+			is_singular( Venue::POST_TYPE ) &&
 			$queried_object instanceof WP_Post &&
 			$this->is_tax_like_type_for_event_supporting_types( $queried_object->post_type )
 		) {
-			if ( is_singular( 'gatherpress_venue' ) ) {
-				$venues = array( '_' . $queried_object->post_name );
-			}
+			$venues = array( '_' . $queried_object->post_name );
 		} elseif (
-			is_tax() &&
+			is_tax( Topic::TAXONOMY ) &&
 			$queried_object instanceof WP_Term &&
 			$this->has_post_type_for_taxonomy( $queried_object->taxonomy )
 		) {
-			if ( is_tax( 'gatherpress_topic' ) ) {
-				$topics = array( $queried_object->slug );
-			}
+			$topics = array( $queried_object->slug );
 		}
 
 		$query = Query::get_instance()->get_events_list( $event_list_type, $number, $topics, $venues );
@@ -975,13 +974,8 @@ final class Setup {
 
 		if ( '' !== $client_etag ) {
 			// A cache may return the tag weakened, and may hold several.
-			foreach ( explode( ',', str_replace( 'W/', '', $client_etag ) ) as $candidate ) {
-				if ( trim( $candidate ) === $etag ) {
-					return true;
-				}
-			}
-
-			return false;
+			$tags = array_map( 'trim', explode( ',', str_replace( 'W/', '', $client_etag ) ) );
+			return in_array( $etag, $tags, true );
 		}
 
 		$client_time = isset( $_SERVER['HTTP_IF_MODIFIED_SINCE'] )
@@ -1096,5 +1090,235 @@ final class Setup {
 	protected function is_tax_like_type_for_event_supporting_types( string $post_type ): bool {
 		return post_type_supports( $post_type, 'gatherpress-shadow-source' ) &&
 			$this->has_post_type_for_taxonomy( Shadow_Source::get_instance()->get_taxonomy( $post_type ) );
+	}
+
+	/**
+	 * Determine whether the client's `Accept` HTTP header prefers `text/calendar`.
+	 *
+	 * Implements RFC 7231 / RFC 9110 content negotiation by parsing comma-separated
+	 * media ranges and their quality factor (`q=`) weights. Returns `true` if
+	 * `text/calendar` is requested with an explicit quality weight equal to or
+	 * higher than standard HTML formats (`text/html`, `application/xhtml+xml`).
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string|null $accept_header Optional raw Accept header. Defaults to `$_SERVER['HTTP_ACCEPT']`.
+	 *
+	 * @return bool True if text/calendar is negotiated/preferred, false otherwise.
+	 */
+	public function is_calendar_negotiated( ?string $accept_header = null ): bool {
+		if ( null === $accept_header ) {
+			$accept_header = isset( $_SERVER['HTTP_ACCEPT'] ) && is_string( $_SERVER['HTTP_ACCEPT'] )
+				? sanitize_text_field( wp_unslash( $_SERVER['HTTP_ACCEPT'] ) )
+				: '';
+		}
+
+		if ( '' === $accept_header ) {
+			return false;
+		}
+
+		$ranges = array();
+
+		foreach ( explode( ',', $accept_header ) as $range ) {
+			$q    = preg_match( '/;\s*q=([0-9.]+)/i', $range, $m ) ? (float) $m[1] : 1.0;
+			$mime = strtolower( trim( explode( ';', $range, 2 )[0] ) );
+
+			if ( '' !== $mime ) {
+				$ranges[ $mime ] = max( $ranges[ $mime ] ?? 0.0, $q );
+			}
+		}
+
+		// Only the exact media type counts for the calendar. A wildcard stands
+		// in for HTML below, but it must not stand in here: `text/calendar+json,
+		// */*` asks for a different type, and the wildcard's quality would
+		// otherwise carry the calendar past HTML and redirect a client that
+		// never asked for it.
+		if ( ! isset( $ranges['text/calendar'] ) ) {
+			return false;
+		}
+
+		$calendar_q = $ranges['text/calendar'];
+		$html_q     = max(
+			$this->accept_quality( $ranges, 'text/html' ),
+			$this->accept_quality( $ranges, 'application/xhtml+xml' )
+		);
+
+		return $calendar_q > 0.0 && $calendar_q >= $html_q;
+	}
+
+	/**
+	 * Quality value a parsed Accept header assigns to one media type.
+	 *
+	 * RFC 9110 section 12.5.1 ranks media ranges by precision, so the most
+	 * specific range that covers the type wins rather than the highest one.
+	 * Against an Accept of `text/calendar;q=0.5` plus a catch-all wildcard at
+	 * `q=0.9`, the calendar scores 0.5 from its own entry, while HTML, which
+	 * has no entry of its own, scores 0.9 from the wildcard. Taking the maximum
+	 * for both would tie them and redirect a client that asked for the
+	 * opposite.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, float> $ranges Parsed `media/range => quality` pairs.
+	 * @param string               $mime   Media type to score, e.g. `text/html`.
+	 *
+	 * @return float The quality value, 0.0 when nothing covers the type.
+	 */
+	protected function accept_quality( array $ranges, string $mime ): float {
+		$type = strtok( $mime, '/' );
+
+		foreach ( array( $mime, $type . '/*', '*/*' ) as $candidate ) {
+			if ( isset( $ranges[ $candidate ] ) ) {
+				return $ranges[ $candidate ];
+			}
+		}
+
+		return 0.0;
+	}
+
+	/**
+	 * Resolve the canonical calendar feed URL for the current query context.
+	 *
+	 * Dispatches across singular events, shadow-source posts (venues),
+	 * event-bearing taxonomy archives, event post-type archives, and the sitewide feed.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string|false Calendar feed or download URL, or false if not an event-related request.
+	 */
+	public function get_calendar_url_for_request() {
+		$queried = get_queried_object();
+
+		if ( is_singular() && $queried instanceof WP_Post ) {
+			if ( post_type_supports( $queried->post_type, 'gatherpress-event-date' ) ) {
+				return ( new Calendar( $queried->ID ) )->get_ical_url();
+			}
+
+			if ( $this->is_tax_like_type_for_event_supporting_types( $queried->post_type ) ) {
+				return get_post_comments_feed_link( $queried->ID, self::ICAL_SLUG );
+			}
+		}
+
+		if ( is_tax() && $queried instanceof WP_Term && $this->has_post_type_for_taxonomy( $queried->taxonomy ) ) {
+			return get_term_feed_link( $queried->term_id, $queried->taxonomy, self::ICAL_SLUG );
+		}
+
+		if ( is_post_type_archive() ) {
+			$post_type = get_query_var( 'post_type' );
+			$post_type = is_array( $post_type ) ? reset( $post_type ) : $post_type;
+			if ( is_string( $post_type ) && post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+				return get_post_type_archive_feed_link( $post_type, self::ICAL_SLUG );
+			}
+		}
+
+		return ( is_front_page() || is_home() ) ? get_feed_link( self::ICAL_SLUG ) : false;
+	}
+
+	/**
+	 * Check whether the current request is for an event-related view.
+	 *
+	 * Used to determine if the `Vary: Accept` HTTP header should be attached.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return bool
+	 */
+	public function is_event_related_request(): bool {
+		return false !== $this->get_calendar_url_for_request();
+	}
+
+	/**
+	 * Handle HTTP Content Negotiation for `Accept: text/calendar` requests.
+	 *
+	 * If the client requests `text/calendar` on an event-supporting URL,
+	 * safely redirect to the corresponding ICS calendar feed/download URL.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	public function maybe_handle_content_negotiation(): void {
+		$calendar_url = $this->get_negotiated_redirect_url();
+
+		if ( false === $calendar_url ) {
+			return;
+		}
+
+		// `Vary: Accept` is already on this response: filter_wp_headers() adds
+		// it for every request that resolves a calendar URL, and that is the
+		// same test the redirect target came from. Setting it again here would
+		// replace whatever else the header had gathered by then.
+		//
+		// The decision is covered through get_negotiated_redirect_url(); what
+		// remains here is the side effect, which ends in exit() and so cannot be
+		// exercised without ending the test run.
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation.
+		// @codeCoverageIgnoreStart
+		wp_safe_redirect( $calendar_url, 302 );
+		exit;
+		// @codeCoverageIgnoreEnd
+	}
+
+	/**
+	 * Resolve where an `Accept: text/calendar` request should be redirected.
+	 *
+	 * Split out from maybe_handle_content_negotiation() so the decision is
+	 * testable on its own: that method ends in exit(), which is why the
+	 * redirect-loop guard below shipped inverted and unnoticed.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string|false The calendar URL to redirect to, or false to leave
+	 *                      the request alone.
+	 */
+	public function get_negotiated_redirect_url() {
+		if ( ! $this->is_calendar_negotiated() ) {
+			return false;
+		}
+
+		// The request is already a calendar representation, so there is nothing
+		// to negotiate and redirecting would point it at itself. Both endpoint
+		// shapes are covered: the feed links carry is_feed(), and the single
+		// rewrite endpoint (/event/my-event/ical/) carries the query var.
+		//
+		// This replaces a substring test between the target and REQUEST_URI.
+		// Every target is the requested URL plus a suffix, so that test matched
+		// on every request and disabled negotiation entirely.
+		if ( is_feed() || '' !== (string) get_query_var( self::QUERY_VAR ) ) {
+			return false;
+		}
+
+		$calendar_url = $this->get_calendar_url_for_request();
+
+		if ( ! is_string( $calendar_url ) || '' === $calendar_url ) {
+			return false;
+		}
+
+		return $calendar_url;
+	}
+
+	/**
+	 * Add `Vary: Accept` header for event-related HTML views so downstream caches
+	 * (proxies, CDNs) differentiate responses based on the Accept header.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, string> $headers Associative array of HTTP headers to be sent.
+	 *
+	 * @return array<string, string> Updated HTTP headers array.
+	 */
+	public function filter_wp_headers( array $headers ): array {
+		if ( $this->is_event_related_request() ) {
+			// Field names, not substrings: `Accept-Encoding` is not `Accept`.
+			$fields = array_filter( array_map( 'trim', explode( ',', (string) ( $headers['Vary'] ?? '' ) ) ) );
+
+			if ( ! in_array( 'accept', array_map( 'strtolower', $fields ), true ) ) {
+				$fields[] = 'Accept';
+			}
+
+			$headers['Vary'] = implode( ', ', $fields );
+		}
+
+		return $headers;
 	}
 }
