@@ -150,12 +150,12 @@ final class Venue {
 
 		// Check for a manually selected source post in block attributes. The
 		// selection is honored on the same terms a direct visit would be: the
-		// type has to be one that acts as a venue, and the post has to be one
-		// the viewer could open.
+		// type has to be a shadow source, which venues and any companion type
+		// declare, and the post has to be one the viewer could open.
 		if (
 			isset( $block['attrs']['selectedPostId'] )
 			&& is_int( $block['attrs']['selectedPostId'] )
-			&& post_type_supports( $source_post_type, 'gatherpress-venue-information' )
+			&& post_type_supports( $source_post_type, 'gatherpress-shadow-source' )
 		) {
 			$selected = get_post( $block['attrs']['selectedPostId'] );
 
