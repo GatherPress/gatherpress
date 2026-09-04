@@ -298,7 +298,8 @@ Every one of these is required; skipping any of them bites the next release:
 on to the next minor.
 
 1. **Fixes land on develop first** via normal PRs (with changelog entry
-   files), milestoned `X.Y.1`. Only fix directly on the patch branch when
+   files), milestoned `X.Y.1`. Create that milestone when the first patch
+   fix appears; it does not exist until someone makes it. Only fix directly on the patch branch when
    the bug doesn't exist on develop anymore.
 2. **Cut the patch branch from main** — this is why the changelog parity
    step above matters; main must start with a clean `.github/changelog/`:
@@ -310,10 +311,30 @@ on to the next minor.
     ```
 
     The `-x` records the source commit; the cherry-picks bring their
-    changelog entry files along.
+    changelog entry files along. Expect a conflict wherever `develop` has
+    since touched the same lines (a docblock, a test's neighbour); resolve
+    to the fix's own lines only, never to `develop`-only additions, and
+    check the result with `git range-diff <develop sha>^..<develop sha>
+    <main sha>^..<main sha>`.
+
+    **The tag runs whatever `.github/workflows/release.yml` is on `main`.**
+    If `develop` changed the release workflow since the last release merge,
+    cherry-pick those commits onto the patch branch too, or the patch ships
+    with the old behaviour (0.35.3 shipped a changelog one release behind
+    for exactly this reason).
+
+    Add files by path when committing on a patch branch. `git add -A`
+    sweeps in anything untracked that happens to be in the working tree; an
+    editor swap file rode into 0.35.3 that way and needed two PRs to take
+    back out.
 3. **Version bump on the patch branch**: add the `X.Y.1` credits file (copy
    the `X.Y.0` file forward, appending any new contributors) +
    `npm run version:bump -- --version=X.Y.1` + lockfile refresh.
+   Run locally, the bump also rewrites the Version header in a sibling
+   `../gatherpress-alpha` checkout **on whichever branch it has checked
+   out**. For a patch that must be alpha's `main`; if alpha is on
+   `develop`, revert that file there and open alpha's `version-X.Y.1` PR
+   against `main` by hand (it is a one-line header change).
 4. **PR `version-X.Y.1` → main, merge, tag `X.Y.1` on main.** The workflow
    ships it exactly like a stable release (it is one), and opens
    `release/X.Y.1` → develop.
@@ -392,6 +413,16 @@ that the workflow still calls it. This exact gap shipped in 0.34.0 and
 0.34.1: the script was added in #1900 and wired into `composer
 changelog:write`, but the rollup job calls `vendor/bin/changelogger` directly
 and was never updated to match (#2035).
+
+### The merge button is disabled for an admin
+
+`develop`'s protection rule has "Do not allow bypassing the above settings"
+on, so admins are held to the same rules. A review in the **Changes
+requested** state blocks the merge even with zero required approvals, and
+"dismiss stale reviews on push" only clears *approvals*, never change
+requests. Either the reviewer re-reviews, or dismiss that review from the
+PR page with a note pointing at the commit that addressed it. Toggling the
+bypass setting works too but changes the standing policy.
 
 ### The release merge PR can't be merged with a merge commit
 
