@@ -27,7 +27,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/event/class-rest-api.php:588](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-rest-api.php#L588)
+- [includes/core/classes/event/class-rest-api.php:592](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-rest-api.php#L592)
 ```php
 apply_filters( 'gatherpress_email_subject', $subject, $post_id )
 ```
