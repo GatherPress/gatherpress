@@ -24,6 +24,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 use WP_User;
+use GatherPress\Core\Blocks\Rsvp_Template;
 
 /**
  * Class Test_Rest_Api.
@@ -1161,6 +1162,10 @@ class Test_Rest_Api extends Base {
 		$request->set_param( 'post_id', $post_id );
 		$request->set_param( 'status', 'attending' );
 		$request->set_param( 'block_data', wp_json_encode( $block_data ) );
+		$request->set_param(
+			'block_signature',
+			Rsvp_Template::sign_template( (string) wp_json_encode( $block_data ) )
+		);
 		$request->set_param( 'limit_enabled', false );
 		$request->set_param( 'limit', 10 );
 
@@ -1195,6 +1200,10 @@ class Test_Rest_Api extends Base {
 		$request->set_param( 'post_id', $post_id );
 		$request->set_param( 'status', 'attending' );
 		$request->set_param( 'block_data', wp_json_encode( $block_data ) );
+		$request->set_param(
+			'block_signature',
+			Rsvp_Template::sign_template( (string) wp_json_encode( $block_data ) )
+		);
 
 		$response = $instance->rsvp_status_html( $request );
 		$data     = $response->get_data();
@@ -2159,6 +2168,7 @@ class Test_Rest_Api extends Base {
 		$this->assertArrayHasKey( 'route', $route );
 		$this->assertArrayHasKey( 'args', $route );
 		$this->assertEquals( 'rsvp-status-html', $route['route'] );
+		$this->assertArrayHasKey( 'block_signature', $route['args']['args'] );
 		$this->assertArrayHasKey( 'methods', $route['args'] );
 		$this->assertArrayHasKey( 'callback', $route['args'] );
 		$this->assertArrayHasKey( 'permission_callback', $route['args'] );
@@ -2628,6 +2638,10 @@ class Test_Rest_Api extends Base {
 		$request->set_param( 'post_id', $post_id );
 		$request->set_param( 'status', 'attending' );
 		$request->set_param( 'block_data', wp_json_encode( array() ) );
+		$request->set_param(
+			'block_signature',
+			Rsvp_Template::sign_template( (string) wp_json_encode( array() ) )
+		);
 
 		// Check that nocache_headers is called by verifying headers are sent.
 		$response = $instance->rsvp_status_html( $request );
@@ -3400,5 +3414,56 @@ class Test_Rest_Api extends Base {
 		);
 
 		$this->assertNull( $recipient );
+	}
+
+	/**
+	 * The endpoint renders only a template the server emitted.
+	 *
+	 * @covers ::rsvp_status_html
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_status_html_renders_only_an_emitted_template(): void {
+		$instance = Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$template = (string) wp_json_encode( array( 'blockName' => 'gatherpress/rsvp-template' ) );
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'status', 'attending' );
+		$request->set_param( 'block_data', $template );
+		$request->set_param( 'block_signature', str_repeat( '0', 64 ) );
+
+		$response = $instance->rsvp_status_html( $request );
+
+		$this->assertSame( 403, $response->get_status(), 'Failed to assert a wrong signature is refused.' );
+		$this->assertFalse( $response->get_data()['success'] );
+
+		// A signature for one template does not carry over to another.
+		$request->set_param( 'block_signature', Rsvp_Template::sign_template( $template ) );
+		$request->set_param(
+			'block_data',
+			(string) wp_json_encode(
+				array(
+					'blockName' => 'gatherpress/rsvp-template',
+					'attrs'     => array( 'x' => 1 ),
+				)
+			)
+		);
+
+		$this->assertSame(
+			403,
+			$instance->rsvp_status_html( $request )->get_status(),
+			'Failed to assert an altered template is refused.'
+		);
+
+		// The pair the server produced is accepted.
+		$request->set_param( 'block_data', $template );
+
+		$this->assertSame(
+			200,
+			$instance->rsvp_status_html( $request )->get_status(),
+			'Failed to assert the emitted pair is accepted.'
+		);
 	}
 }

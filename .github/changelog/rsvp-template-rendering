@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Render RSVP status responses from the template the server emitted, and resolve venue and online-event source posts with the same visibility rules as a direct visit.

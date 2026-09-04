@@ -656,4 +656,63 @@ class Test_Online_Event extends Base {
 			'Should render content using get_the_ID() when no postId override is set.'
 		);
 	}
+
+	/**
+	 * An override is honored only when the viewer could open that event.
+	 *
+	 * @covers ::render_block
+	 * @covers ::can_view_post
+	 *
+	 * @return void
+	 */
+	public function test_override_follows_visibility(): void {
+		$instance = Online_Event::get_instance();
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'private',
+			)
+		);
+
+		$term = term_exists( 'online-event', Venue::TAXONOMY );
+		if ( ! $term ) {
+			$term = wp_insert_term( 'Online Event', Venue::TAXONOMY, array( 'slug' => 'online-event' ) );
+		}
+		wp_set_object_terms( $event_id, (int) ( is_array( $term ) ? $term['term_id'] : $term ), Venue::TAXONOMY );
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/online-event',
+				'attrs'        => array( 'postId' => $event_id ),
+				'innerBlocks'  => array(
+					array(
+						'blockName'    => 'core/paragraph',
+						'attrs'        => array(),
+						'innerBlocks'  => array(),
+						'innerHTML'    => '<p>Inner content</p>',
+						'innerContent' => array( '<p>Inner content</p>' ),
+					),
+				),
+				'innerHTML'    => '',
+				'innerContent' => array( null ),
+			)
+		);
+		$block          = array( 'attrs' => array( 'postId' => $event_id ) );
+
+		wp_set_current_user( 0 );
+		$this->assertSame(
+			'',
+			$instance->render_block( '<div>x</div>', $block, $block_instance ),
+			'Failed to assert a private override renders nothing for an anonymous viewer.'
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertStringContainsString(
+			'Inner content',
+			$instance->render_block( '<div>x</div>', $block, $block_instance ),
+			'Failed to assert a reader still gets the override.'
+		);
+
+		wp_set_current_user( 0 );
+	}
 }

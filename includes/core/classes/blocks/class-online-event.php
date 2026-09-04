@@ -15,6 +15,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue\Setup;
 use WP_Block;
+use WP_Post;
 
 /**
  * Class responsible for managing the "Online Event" block and its functionality,
@@ -92,6 +93,11 @@ final class Online_Event {
 			return '';
 		}
 
+		// An override is honored on the same terms a direct visit would be.
+		if ( isset( $block['attrs']['postId'] ) && ! $this->can_view_post( $post_id ) ) {
+			return '';
+		}
+
 		// No override → render as-is. With override → re-render inner blocks
 		// with the override postId as context. One return either way.
 		return isset( $block['attrs']['postId'] )
@@ -124,6 +130,22 @@ final class Online_Event {
 		}
 
 		return in_array( 'online-event', wp_list_pluck( $venue_terms, 'slug' ), true );
+	}
+
+	/**
+	 * Whether the current viewer could open a post directly.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param int $post_id The post to check.
+	 *
+	 * @return bool True when the post is publicly viewable or the viewer can read it.
+	 */
+	private function can_view_post( int $post_id ): bool {
+		$post = get_post( $post_id );
+
+		return $post instanceof WP_Post
+			&& ( is_post_publicly_viewable( $post ) || current_user_can( 'read_post', $post->ID ) );
 	}
 
 	/**

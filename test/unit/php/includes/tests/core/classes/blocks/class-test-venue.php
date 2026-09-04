@@ -1063,4 +1063,149 @@ class Test_Venue extends Base {
 
 		$this->assertSame( '', trim( $output ), 'No source post should render nothing at all.' );
 	}
+
+	/**
+	 * A selected source renders only when the viewer could open it directly.
+	 *
+	 * @covers ::render_inner_blocks
+	 * @covers ::get_source_post
+	 *
+	 * @dataProvider data_selected_source_visibility
+	 *
+	 * @param array<string, mixed> $post_args Arguments for the selected post.
+	 * @param string               $type      The sourcePostType the block names.
+	 * @param bool                 $expected  Whether an anonymous viewer gets the inner blocks.
+	 *
+	 * @return void
+	 */
+	public function test_selected_source_follows_visibility( array $post_args, string $type, bool $expected ): void {
+		wp_set_current_user( 0 );
+
+		$selected_id = $this->factory->post->create( $post_args );
+
+		if ( 'revision' === $type ) {
+			$selected_id = (int) wp_save_post_revision( $selected_id );
+		}
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue',
+				'attrs'        => array(
+					'selectedPostId' => $selected_id,
+					'sourcePostType' => $type,
+				),
+				'innerBlocks'  => array(
+					array(
+						'blockName'    => 'core/paragraph',
+						'attrs'        => array(),
+						'innerBlocks'  => array(),
+						'innerHTML'    => '<p>Inner content</p>',
+						'innerContent' => array( '<p>Inner content</p>' ),
+					),
+				),
+				'innerHTML'    => '',
+				'innerContent' => array( null ),
+			)
+		);
+
+		$result = Venue_Block::get_instance()->render_inner_blocks( $block_instance );
+
+		if ( $expected ) {
+			$this->assertStringContainsString( 'Inner content', (string) $result );
+		} else {
+			$this->assertNull( $result );
+		}
+	}
+
+	/**
+	 * Data provider for selected source visibility.
+	 *
+	 * @return array<string, array{0: array<string, mixed>, 1: string, 2: bool}>
+	 */
+	public function data_selected_source_visibility(): array {
+		return array(
+			'published venue'         => array(
+				array( 'post_type' => 'gatherpress_venue' ),
+				'gatherpress_venue',
+				true,
+			),
+			'private venue'           => array(
+				array(
+					'post_type'   => 'gatherpress_venue',
+					'post_status' => 'private',
+				),
+				'gatherpress_venue',
+				false,
+			),
+			'draft venue'             => array(
+				array(
+					'post_type'   => 'gatherpress_venue',
+					'post_status' => 'draft',
+				),
+				'gatherpress_venue',
+				false,
+			),
+			'trashed venue'           => array(
+				array(
+					'post_type'   => 'gatherpress_venue',
+					'post_status' => 'trash',
+				),
+				'gatherpress_venue',
+				false,
+			),
+			'a type that is no venue' => array(
+				array(
+					'post_type'   => 'post',
+					'post_status' => 'private',
+				),
+				'post',
+				false,
+			),
+			'a revision'              => array( array( 'post_type' => 'gatherpress_venue' ), 'revision', false ),
+		);
+	}
+
+	/**
+	 * A viewer who could open the selected source gets it.
+	 *
+	 * @covers ::get_source_post
+	 *
+	 * @return void
+	 */
+	public function test_selected_private_source_renders_for_a_reader(): void {
+		$admin       = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		$selected_id = $this->factory->post->create(
+			array(
+				'post_type'   => 'gatherpress_venue',
+				'post_status' => 'private',
+			)
+		);
+
+		wp_set_current_user( $admin );
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue',
+				'attrs'        => array( 'selectedPostId' => $selected_id ),
+				'innerBlocks'  => array(
+					array(
+						'blockName'    => 'core/paragraph',
+						'attrs'        => array(),
+						'innerBlocks'  => array(),
+						'innerHTML'    => '<p>Inner content</p>',
+						'innerContent' => array( '<p>Inner content</p>' ),
+					),
+				),
+				'innerHTML'    => '',
+				'innerContent' => array( null ),
+			)
+		);
+
+		$this->assertStringContainsString(
+			'Inner content',
+			(string) Venue_Block::get_instance()->render_inner_blocks( $block_instance )
+		);
+
+		wp_set_current_user( 0 );
+	}
 }

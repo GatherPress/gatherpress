@@ -203,6 +203,11 @@ class Test_Rsvp_Template extends Base {
 			$result,
 			'Failed to assert published event with no responses contains block template data attribute.'
 		);
+		$this->assertStringContainsString(
+			'data-block-signature=',
+			$result,
+			'Failed to assert the template is emitted with its signature.'
+		);
 		// Should not contain any response content (data-id="rsvp-").
 		$this->assertStringNotContainsString(
 			'data-id="rsvp-',
@@ -743,5 +748,30 @@ class Test_Rsvp_Template extends Base {
 			$result,
 			'Failed to assert an unencodable block is not handed to the front end.'
 		);
+	}
+
+	/**
+	 * A template verifies against its own signature and nothing else.
+	 *
+	 * @covers ::sign_template
+	 * @covers ::verify_template
+	 *
+	 * @return void
+	 */
+	public function test_sign_and_verify_template(): void {
+		$template  = '{"blockName":"gatherpress/rsvp-template","attrs":{},"innerBlocks":[]}';
+		$signature = Rsvp_Template::sign_template( $template );
+
+		$this->assertMatchesRegularExpression( '/^[a-f0-9]{64}$/', $signature );
+		$this->assertTrue( Rsvp_Template::verify_template( $template, $signature ) );
+		$this->assertFalse(
+			Rsvp_Template::verify_template( $template . ' ', $signature ),
+			'Failed to assert a changed template does not verify.'
+		);
+		$this->assertFalse(
+			Rsvp_Template::verify_template( $template, strrev( $signature ) ),
+			'Failed to assert a changed signature does not verify.'
+		);
+		$this->assertFalse( Rsvp_Template::verify_template( $template, '' ) );
 	}
 }
