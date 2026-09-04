@@ -2192,7 +2192,7 @@ class Test_Query extends Base {
 	 *
 	 * New events default to 6:00 PM the next day, so identical starts are
 	 * common. A strict comparison alone would leave each of them with no
-	 * neighbours; the ID tiebreak core uses for publish dates applies here.
+	 * neighbors; the ID tiebreak core uses for publish dates applies here.
 	 *
 	 * @covers ::get_adjacent_post_where
 	 * @covers ::get_adjacent_post_sort
@@ -2222,7 +2222,7 @@ class Test_Query extends Base {
 	/**
 	 * A post without an event start keeps core's navigation, in all three clauses.
 	 *
-	 * From an undated event the neighbours are found by publish date, as core
+	 * From an undated event the neighbors are found by publish date, as core
 	 * would. Switching the join and sort to the events table while the WHERE
 	 * still compared the publish date would answer with the wrong post.
 	 *
@@ -2270,7 +2270,7 @@ class Test_Query extends Base {
 		$this->assertSame(
 			'ORDER BY gpe.datetime_start_gmt ASC, p.ID ASC LIMIT 1',
 			Query::get_instance()->get_adjacent_post_sort( '', $post, 'asc' ),
-			'Failed to assert a lower-case order is normalised.'
+			'Failed to assert a lower-case order is normalized.'
 		);
 		$this->assertSame(
 			'ORDER BY gpe.datetime_start_gmt DESC, p.ID DESC LIMIT 1',
