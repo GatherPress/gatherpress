@@ -321,23 +321,27 @@ final class Rest_Api {
 				'callback'            => array( $this, 'rsvp_status_html' ),
 				'permission_callback' => array( $this, 'can_read_event_rsvps' ),
 				'args'                => array(
-					'post_id'       => array(
+					'post_id'         => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'event_post_id' ),
 					),
-					'status'        => array(
+					'status'          => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'rsvp_status' ),
 					),
-					'block_data'    => array(
+					'block_data'      => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'block_data' ),
 					),
-					'limit_enabled' => array(
+					'block_signature' => array(
+						'required'          => true,
+						'validate_callback' => array( Validate::class, 'block_signature' ),
+					),
+					'limit_enabled'   => array(
 						'required'          => false,
 						'validate_callback' => array( Validate::class, 'boolean' ),
 					),
-					'limit'         => array(
+					'limit'           => array(
 						'required'          => false,
 						'validate_callback' => array( Validate::class, 'positive_number' ),
 					),
@@ -804,6 +808,7 @@ final class Rest_Api {
 	 * @param WP_REST_Request $request The REST API request object containing parameters:
 	 *                                 - post_id (int): The ID of the post associated with the RSVP.
 	 *                                 - block_data (string): JSON-encoded block data used to render the RSVP content.
+	 *                                 - block_signature (string): Signature emitted alongside block_data.
 	 *
 	 * @return WP_REST_Response The REST API response containing:
 	 *                          - success (bool): Whether the content was successfully generated.
@@ -820,13 +825,31 @@ final class Rest_Api {
 
 		$rsvp_template = Rsvp_Template::get_instance();
 		$params        = $request->get_params();
-		$post_id       = intval( $params['post_id'] );
-		$status        = $params['status'];
-		$block_data    = $params['block_data'];
-		$block_data    = json_decode( $block_data, true );
-		$rsvp          = new Rsvp( $post_id );
-		$responses     = $rsvp->responses();
-		$content       = '';
+
+		// Only a template the server emitted is rendered. The block tree is
+		// handed back verbatim from the markup Rsvp_Template wrote, and it is
+		// that markup, not the request, which decides what gets rendered.
+		$emitted = Rsvp_Template::verify_template(
+			(string) $params['block_data'],
+			(string) $params['block_signature']
+		);
+
+		if ( ! $emitted ) {
+			return new WP_REST_Response(
+				array(
+					'success' => false,
+					'content' => '',
+				),
+				403
+			);
+		}
+
+		$post_id    = intval( $params['post_id'] );
+		$status     = $params['status'];
+		$block_data = json_decode( $params['block_data'], true );
+		$rsvp       = new Rsvp( $post_id );
+		$responses  = $rsvp->responses();
+		$content    = '';
 		// @todo set this up...
 		$args = array(
 			'limit_enabled' => (bool) $params['limit_enabled'],
