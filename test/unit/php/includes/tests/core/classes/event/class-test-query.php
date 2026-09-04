@@ -48,6 +48,42 @@ class Test_Query extends Base {
 				'priority' => 9,
 				'callback' => array( $instance, 'adjust_admin_event_sorting' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'get_previous_post_join',
+				'priority' => 10,
+				'callback' => array( $instance, 'get_adjacent_post_join' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'get_next_post_join',
+				'priority' => 10,
+				'callback' => array( $instance, 'get_adjacent_post_join' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'get_previous_post_where',
+				'priority' => 10,
+				'callback' => array( $instance, 'get_adjacent_post_where' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'get_next_post_where',
+				'priority' => 10,
+				'callback' => array( $instance, 'get_adjacent_post_where' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'get_previous_post_sort',
+				'priority' => 10,
+				'callback' => array( $instance, 'get_adjacent_post_sort' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'get_next_post_sort',
+				'priority' => 10,
+				'callback' => array( $instance, 'get_adjacent_post_sort' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
@@ -1736,5 +1772,510 @@ class Test_Query extends Base {
 		$this->assertFalse( $set_called_with_tax_query, 'tax_query should not be set when shadow_filter is empty.' );
 
 		wp_delete_post( $venue_post_id, true );
+	}
+
+	/**
+	 * Test that join query remains unchanged when the post type does not support 'gatherpress-event-date'.
+	 *
+	 * @covers ::get_adjacent_post_join
+	 *
+	 * @return void
+	 */
+	public function test_returns_original_join_when_post_type_not_supported(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => 'post',
+			)
+		);
+		$post    = get_post( $post_id );
+
+		$initial_join = ' INNER JOIN wp_term_relationships ON (wp_posts.ID = wp_term_relationships.object_id)';
+
+		$instance = Query::get_instance();
+		$result   = $instance->get_adjacent_post_join(
+			$initial_join,
+			false,
+			array(),
+			'category',
+			$post
+		);
+
+		$this->assertSame( $initial_join, $result );
+	}
+
+	/**
+	 * Test that join query is properly appended when the post type supports 'gatherpress-event-date'.
+	 *
+	 * @covers ::get_adjacent_post_join
+	 *
+	 * @return void
+	 */
+	public function test_appends_event_table_join_when_post_type_supported(): void {
+		global $wpdb;
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+			)
+		);
+		$post    = get_post( $post_id );
+
+		// The filters only switch to the events table once a start exists.
+		update_post_meta( $post_id, 'gatherpress_datetime_start_gmt', '2024-06-15 10:00:00' );
+
+		$expected_table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$initial_join   = '';
+		$expected_join  = " INNER JOIN `{$expected_table}` AS gpe ON p.ID = gpe.post_id";
+
+		$instance = Query::get_instance();
+		$result   = $instance->get_adjacent_post_join(
+			$initial_join,
+			false,
+			'',
+			'',
+			$post
+		);
+
+		$this->assertSame( $expected_join, $result );
+	}
+
+	/**
+	 * Test that the join clause appends correctly to an existing non-empty join string.
+	 *
+	 * @covers ::get_adjacent_post_join
+	 *
+	 * @return void
+	 */
+	public function test_appends_to_existing_join_string(): void {
+		global $wpdb;
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+			)
+		);
+		$post    = get_post( $post_id );
+
+		// The filters only switch to the events table once a start exists.
+		update_post_meta( $post_id, 'gatherpress_datetime_start_gmt', '2024-06-15 10:00:00' );
+
+		$expected_table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$initial_join   = ' INNER JOIN other_table AS otta ON p.ID = otta.post_id';
+		$expected_join  = $initial_join . " INNER JOIN `{$expected_table}` AS gpe ON p.ID = gpe.post_id";
+
+		$instance = Query::get_instance();
+		$result   = $instance->get_adjacent_post_join(
+			$initial_join,
+			true,
+			array( 1, 2, 3 ),
+			'event_category',
+			$post
+		);
+
+		$this->assertSame( $expected_join, $result );
+	}
+
+	/**
+	 * Test that WHERE clause remains unchanged when the post type does not support 'gatherpress-event-date'.
+	 *
+	 * @covers ::get_adjacent_post_where
+	 *
+	 * @return void
+	 */
+	public function test_returns_original_where_when_post_type_not_supported(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => 'post',
+			)
+		);
+		$post    = get_post( $post_id );
+
+		update_post_meta( $post_id, 'gatherpress_datetime_start_gmt', '2024-06-15 10:00:00' );
+
+		$initial_where = "WHERE p.post_date < '2024-06-15 10:00:00' AND p.post_type = 'post'";
+
+		$instance = Query::get_instance();
+		$result   = $instance->get_adjacent_post_where(
+			$initial_where,
+			false,
+			array(),
+			'',
+			$post
+		);
+
+		$this->assertSame( $initial_where, $result );
+	}
+
+
+	/**
+	 * Test that WHERE clause replaces post_date comparison with '<' for previous post query.
+	 *
+	 * @covers ::get_adjacent_post_where
+	 *
+	 * @return void
+	 */
+	public function test_replaces_post_date_with_datetime_start_gmt_for_previous_post(): void {
+		global $wp_current_filter;
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+			)
+		);
+		$post    = get_post( $post_id );
+
+		$datetime = '2024-06-15 10:00:00';
+		update_post_meta( $post_id, 'gatherpress_datetime_start_gmt', $datetime );
+
+		// Simulate get_previous_post_where filter.
+		// Temporarily replace the global wp_current_filter.
+		$wp_current_filter[] = 'get_previous_post_where'; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited, Generic.Files.LineLength.TooLong -- Testing requires global manipulation.
+
+		// phpcs:ignore Generic.Files.LineLength.TooLong
+		$initial_where = "WHERE (p.post_date < '2024-01-01 00:00:00' OR (p.post_date = '2024-01-01 00:00:00' AND p.ID < {$post_id})) AND p.post_type = 'gatherpress_event' AND p.post_status = 'publish'";
+		// phpcs:ignore Generic.Files.LineLength.TooLong
+		$expected_where = "WHERE (gpe.datetime_start_gmt < '{$datetime}' OR (gpe.datetime_start_gmt = '{$datetime}' AND p.ID < {$post_id})) AND p.post_type = 'gatherpress_event' AND p.post_status = 'publish'";
+
+		$instance = Query::get_instance();
+		$result   = $instance->get_adjacent_post_where(
+			$initial_where,
+			false,
+			'',
+			'',
+			$post
+		);
+
+		// Clean up simulated filter.
+		array_pop( $wp_current_filter );
+
+		$this->assertSame( $expected_where, $result );
+	}
+
+	/**
+	 * Test that WHERE clause replaces post_date comparison with '>' for next post query.
+	 *
+	 * @covers ::get_adjacent_post_where
+	 *
+	 * @return void
+	 */
+	public function test_replaces_post_date_with_datetime_start_gmt_for_next_post(): void {
+		global $wp_current_filter;
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+			)
+		);
+		$post    = get_post( $post_id );
+
+		$datetime = '2024-06-15 10:00:00';
+		update_post_meta( $post_id, 'gatherpress_datetime_start_gmt', $datetime );
+
+		// Simulate get_next_post_where filter.
+		// Temporarily replace the global wp_current_filter.
+		$wp_current_filter[] = 'get_next_post_where'; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited, Generic.Files.LineLength.TooLong -- Testing requires global manipulation.
+
+		// phpcs:ignore Generic.Files.LineLength.TooLong
+		$initial_where = "WHERE (p.post_date > '2024-01-01 00:00:00' OR (p.post_date = '2024-01-01 00:00:00' AND p.ID > {$post_id})) AND p.post_type = 'gatherpress_event' AND p.post_status = 'publish'";
+		// phpcs:ignore Generic.Files.LineLength.TooLong
+		$expected_where = "WHERE (gpe.datetime_start_gmt > '{$datetime}' OR (gpe.datetime_start_gmt = '{$datetime}' AND p.ID > {$post_id})) AND p.post_type = 'gatherpress_event' AND p.post_status = 'publish'";
+
+		$instance = Query::get_instance();
+		$result   = $instance->get_adjacent_post_where(
+			$initial_where,
+			false,
+			'',
+			'',
+			$post
+		);
+
+		// Clean up simulated filter.
+		array_pop( $wp_current_filter );
+
+		$this->assertSame( $expected_where, $result );
+	}
+
+	/**
+	 * Test that WHERE clause handles spacing differences around the comparison operator.
+	 *
+	 * @covers ::get_adjacent_post_where
+	 *
+	 * @return void
+	 */
+	public function test_replaces_post_date_with_varied_spacing(): void {
+		global $wp_current_filter;
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+			)
+		);
+		$post    = get_post( $post_id );
+
+		$datetime = '2024-06-15 10:00:00';
+		update_post_meta( $post_id, 'gatherpress_datetime_start_gmt', $datetime );
+
+		// Simulate get_next_post_where filter.
+		// Temporarily replace the global wp_current_filter.
+		$wp_current_filter[] = 'get_previous_post_where'; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited, Generic.Files.LineLength.TooLong -- Testing requires global manipulation.
+
+		// phpcs:ignore Generic.Files.LineLength.TooLong
+		$initial_where = "WHERE (p.post_date<'2024-01-01 00:00:00' OR (p.post_date='2024-01-01 00:00:00' AND p.ID<{$post_id})) AND p.post_type = 'gatherpress_event'";
+		// phpcs:ignore Generic.Files.LineLength.TooLong
+		$expected_where = "WHERE (gpe.datetime_start_gmt < '{$datetime}' OR (gpe.datetime_start_gmt = '{$datetime}' AND p.ID < {$post_id})) AND p.post_type = 'gatherpress_event'";
+
+		$instance = Query::get_instance();
+		$result   = $instance->get_adjacent_post_where(
+			$initial_where,
+			false,
+			'',
+			'',
+			$post
+		);
+
+		array_pop( $wp_current_filter );
+
+		$this->assertSame( $expected_where, $result );
+	}
+
+	/**
+	 * Test that sort clause remains unchanged when the post type does not support 'gatherpress-event-date'.
+	 *
+	 * @covers ::get_adjacent_post_sort
+	 *
+	 * @return void
+	 */
+	public function test_returns_original_sort_when_post_type_not_supported(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => 'post',
+			)
+		);
+		$post    = get_post( $post_id );
+
+		$initial_sort = 'ORDER BY p.post_date DESC LIMIT 1';
+
+		$instance = Query::get_instance();
+		$result   = $instance->get_adjacent_post_sort(
+			$initial_sort,
+			$post,
+			'DESC'
+		);
+
+		$this->assertSame( $initial_sort, $result );
+	}
+
+	/**
+	 * Test that sort clause orders by event datetime DESC for previous post query.
+	 *
+	 * @covers ::get_adjacent_post_sort
+	 *
+	 * @return void
+	 */
+	public function test_returns_event_datetime_sort_desc_when_post_type_supported(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+			)
+		);
+		$post    = get_post( $post_id );
+
+		// The filters only switch to the events table once a start exists.
+		update_post_meta( $post_id, 'gatherpress_datetime_start_gmt', '2024-06-15 10:00:00' );
+
+		$initial_sort  = 'ORDER BY p.post_date DESC LIMIT 1';
+		$expected_sort = 'ORDER BY gpe.datetime_start_gmt DESC, p.ID DESC LIMIT 1';
+
+		$instance = Query::get_instance();
+		$result   = $instance->get_adjacent_post_sort(
+			$initial_sort,
+			$post,
+			'DESC'
+		);
+
+		$this->assertSame( $expected_sort, $result );
+	}
+
+	/**
+	 * Test that sort clause orders by event datetime ASC for next post query.
+	 *
+	 * @covers ::get_adjacent_post_sort
+	 *
+	 * @return void
+	 */
+	public function test_returns_event_datetime_sort_asc_when_post_type_supported(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+			)
+		);
+		$post    = get_post( $post_id );
+
+		// The filters only switch to the events table once a start exists.
+		update_post_meta( $post_id, 'gatherpress_datetime_start_gmt', '2024-06-15 10:00:00' );
+
+		$initial_sort  = 'ORDER BY p.post_date ASC LIMIT 1';
+		$expected_sort = 'ORDER BY gpe.datetime_start_gmt ASC, p.ID ASC LIMIT 1';
+
+		$instance = Query::get_instance();
+		$result   = $instance->get_adjacent_post_sort(
+			$initial_sort,
+			$post,
+			'ASC'
+		);
+
+		$this->assertSame( $expected_sort, $result );
+	}
+
+	/**
+	 * Create a published event that starts at the given UTC datetime.
+	 *
+	 * @param string $start      Event start, `Y-m-d H:i:s` in UTC.
+	 * @param string $post_date  Publish date, in the past so the post publishes, and
+	 *                           deliberately unrelated to the start.
+	 *
+	 * @return int The event ID.
+	 */
+	private function make_dated_event( string $start, string $post_date ): int {
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+				'post_date' => $post_date,
+			)
+		);
+
+		( new Event( $event_id ) )->save_datetimes(
+			array(
+				'post_id'        => $event_id,
+				'datetime_start' => $start,
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( $start ) + HOUR_IN_SECONDS ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		return $event_id;
+	}
+
+	/**
+	 * Previous and next follow the event start, not the publish date.
+	 *
+	 * The publish order is the reverse of the event order, so a navigation
+	 * that still followed `post_date` would point the other way.
+	 *
+	 * @covers ::get_adjacent_post_join
+	 * @covers ::get_adjacent_post_where
+	 * @covers ::get_adjacent_post_sort
+	 *
+	 * @return void
+	 */
+	public function test_adjacent_events_follow_the_event_start(): void {
+		$earliest = $this->make_dated_event( '2030-01-10 18:00:00', '2020-03-03 00:00:00' );
+		$middle   = $this->make_dated_event( '2030-02-10 18:00:00', '2020-02-02 00:00:00' );
+		$latest   = $this->make_dated_event( '2030-03-10 18:00:00', '2020-01-01 00:00:00' );
+
+		$this->go_to( get_permalink( $middle ) );
+
+		$this->assertSame(
+			$earliest,
+			get_previous_post()->ID,
+			'Failed to assert the previous event is the one that starts before this one.'
+		);
+		$this->assertSame(
+			$latest,
+			get_next_post()->ID,
+			'Failed to assert the next event is the one that starts after this one.'
+		);
+	}
+
+	/**
+	 * Events that start at the same moment can still reach each other.
+	 *
+	 * New events default to 6:00 PM the next day, so identical starts are
+	 * common. A strict comparison alone would leave each of them with no
+	 * neighbors; the ID tiebreak core uses for publish dates applies here.
+	 *
+	 * @covers ::get_adjacent_post_where
+	 * @covers ::get_adjacent_post_sort
+	 *
+	 * @return void
+	 */
+	public function test_adjacent_events_break_a_tie_on_id(): void {
+		$first  = $this->make_dated_event( '2030-06-01 18:00:00', '2020-01-01 00:00:00' );
+		$second = $this->make_dated_event( '2030-06-01 18:00:00', '2020-01-01 00:00:00' );
+		$third  = $this->make_dated_event( '2030-06-01 18:00:00', '2020-01-01 00:00:00' );
+
+		$this->go_to( get_permalink( $second ) );
+
+		$this->assertSame(
+			$first,
+			get_previous_post()->ID,
+			'Failed to assert the earlier ID is the previous event on a tied start.'
+		);
+		$this->assertSame(
+			$third,
+			get_next_post()->ID,
+			'Failed to assert the later ID is the next event on a tied start.'
+		);
+	}
+
+
+	/**
+	 * A post without an event start keeps core's navigation, in all three clauses.
+	 *
+	 * From an undated event the neighbors are found by publish date, as core
+	 * would. Switching the join and sort to the events table while the WHERE
+	 * still compared the publish date would answer with the wrong post.
+	 *
+	 * @covers ::get_adjacent_post_join
+	 * @covers ::get_adjacent_post_where
+	 * @covers ::get_adjacent_post_sort
+	 * @covers ::follows_event_datetime
+	 *
+	 * @return void
+	 */
+	public function test_undated_event_keeps_core_navigation(): void {
+		$older_by_publish = $this->make_dated_event( '2030-03-10 18:00:00', '2020-01-01 00:00:00' );
+		$undated          = $this->factory->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+				'post_date' => '2020-02-02 00:00:00',
+			)
+		);
+		$newer_by_publish = $this->make_dated_event( '2030-01-10 18:00:00', '2020-03-03 00:00:00' );
+
+		$this->go_to( get_permalink( $undated ) );
+
+		$this->assertSame(
+			$older_by_publish,
+			get_previous_post()->ID,
+			'Failed to assert core publish-date order is kept.'
+		);
+		$this->assertSame(
+			$newer_by_publish,
+			get_next_post()->ID,
+			'Failed to assert core publish-date order is kept.'
+		);
+	}
+
+	/**
+	 * The sort order is allowed through by name, never interpolated raw.
+	 *
+	 * @covers ::get_adjacent_post_sort
+	 *
+	 * @return void
+	 */
+	public function test_adjacent_sort_only_accepts_a_known_order(): void {
+		$post = get_post( $this->make_dated_event( '2030-06-01 18:00:00', '2020-01-01 00:00:00' ) );
+
+		$this->assertSame(
+			'ORDER BY gpe.datetime_start_gmt ASC, p.ID ASC LIMIT 1',
+			Query::get_instance()->get_adjacent_post_sort( '', $post, 'asc' ),
+			'Failed to assert a lower-case order is normalized.'
+		);
+		$this->assertSame(
+			'ORDER BY gpe.datetime_start_gmt DESC, p.ID DESC LIMIT 1',
+			Query::get_instance()->get_adjacent_post_sort( '', $post, 'DESC; DROP TABLE wp_posts' ),
+			'Failed to assert anything that is not ASC falls back to DESC.'
+		);
 	}
 }
