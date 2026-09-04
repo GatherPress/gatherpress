@@ -34,7 +34,62 @@ if ( ! empty( $attributes['isLink'] ) ) {
 		$gatherpress_display
 	);
 }
+
+// The reader's timezone is only knowable in the browser, so this emits an empty
+// placeholder carrying the event's GMT datetimes and its own timezone for the
+// view module to fill. It stays hidden for a reader already in the event's
+// timezone, and for a reader without JavaScript, where an unconverted second
+// copy of the same time would be worse than nothing.
+$gatherpress_viewer_time_context = '';
+
+if ( ! empty( $attributes['showViewerTime'] ) ) {
+	// Mirrors get_display_datetime(): the local-time line covers the same parts
+	// of the range the block itself displays, so the two cannot disagree. An
+	// empty display type reads as both there, and edit.js normalizes it the
+	// same way, so the editor preview and this agree on that input too.
+	$gatherpress_display_type = ! empty( $attributes['displayType'] )
+		? $attributes['displayType']
+		: 'both';
+	$gatherpress_show_start   = in_array( $gatherpress_display_type, array( 'start', 'both' ), true );
+	$gatherpress_show_end     = in_array( $gatherpress_display_type, array( 'end', 'both' ), true );
+
+	$gatherpress_datetime  = $gatherpress_event->get_datetime();
+	$gatherpress_start_gmt = $gatherpress_show_start ? ( $gatherpress_datetime['datetime_start_gmt'] ?? '' ) : '';
+	$gatherpress_end_gmt   = $gatherpress_show_end ? ( $gatherpress_datetime['datetime_end_gmt'] ?? '' ) : '';
+
+	// An end-only block converts its end: that is the only time it displays, so
+	// it is the one the reader needs converting, and get_display_datetime()
+	// shows the end alone there rather than showing nothing.
+	if ( $gatherpress_start_gmt || $gatherpress_end_gmt ) {
+		$gatherpress_viewer_time_context = wp_json_encode(
+			array(
+				'startGmt'      => $gatherpress_start_gmt,
+				'endGmt'        => $gatherpress_end_gmt,
+				'eventTimezone' => $gatherpress_datetime['timezone'] ?? '',
+				// The view script is a module and cannot import `@wordpress/i18n`,
+				// so the sentence it fills in is translated here instead.
+				/* translators: 1: event start in the viewer's timezone, 2: event end in the viewer's timezone. */
+				'rangeFormat'   => __( '%1$s to %2$s your time', 'gatherpress' ),
+				/* translators: %s: event start in the viewer's timezone. */
+				'singleFormat'  => __( '%s your time', 'gatherpress' ),
+			),
+			JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
+		);
+	}
+}
 ?>
 <div <?php echo wp_kses_data( get_block_wrapper_attributes() ); ?>>
 	<?php echo wp_kses( $gatherpress_display, array( 'a' => array( 'href' => true ) ) ); ?>
+	<?php if ( $gatherpress_viewer_time_context ) : ?>
+		<?php // The `hidden` attribute is the no-JS state; the binding drops it once the browser has a label to show. ?>
+		<span
+			class="gatherpress-event-date__viewer-time"
+			data-wp-interactive="gatherpress"
+			<?php // Already JSON-encoded with the HTML-escaping flags above; esc_attr() here would double-encode it. ?>
+			data-wp-context='<?php echo $gatherpress_viewer_time_context; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>'
+			data-wp-text="state.viewerTimeLabel"
+			data-wp-bind--hidden="!state.viewerTimeLabel"
+			hidden
+		></span>
+	<?php endif; ?>
 </div>

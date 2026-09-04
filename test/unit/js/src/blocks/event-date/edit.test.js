@@ -154,3 +154,18 @@ describe( 'Event Date Edit isLink', () => {
 		expect( setAttributes ).toHaveBeenCalledWith( { isLink: false } );
 	} );
 } );
+
+describe( 'Event Date Edit displayType', () => {
+	it( 'reads an empty displayType as both, the way render.php does', () => {
+		// Unreachable through the UI, since block.json defaults displayType to
+		// "both", but hand-authored and migrated markup can carry the empty
+		// string. `Event::get_display_datetime()` renders a full range for it,
+		// so the editor has to preview one or the author is shown something no
+		// reader will get.
+		const { container } = renderEdit( { displayType: '' } );
+
+		expect( container.textContent ).toContain(
+			'2026-08-01 18:00 to 2026-08-01 20:00'
+		);
+	} );
+} );

@@ -45,6 +45,7 @@ import {
 } from '../../helpers/event';
 import { isInFSETemplate } from '../../helpers/editor';
 import { resolveEventDateData } from './helpers';
+import { getViewerTimeLabel } from './viewer-time';
 
 /**
  * Similar to get_display_datetime method in class-event.php.
@@ -226,6 +227,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		endDateFormat,
 		separator,
 		showTimezone,
+		showViewerTime,
 	} = attributes;
 
 	const dateFormat = getFromSettings( 'dateFormat' );
@@ -277,8 +279,14 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const finalDateTimeEnd = dateTimeEnd || fallbackDateTime.clone().add( 1, 'hour' ).format();
 	const finalTimezone = timezone || getTimezone();
 
-	const showStartTime = [ 'start', 'both' ].includes( displayType );
-	const showEndTime = [ 'end', 'both' ].includes( displayType );
+	// An empty displayType means both, matching `Event::get_display_datetime()`
+	// and render.php. block.json defaults the attribute to "both", so only
+	// hand-authored or migrated markup arrives empty, but normalizing it on
+	// both sides is what stops the editor and the frontend disagreeing about
+	// what such a block shows.
+	const effectiveDisplayType = displayType || 'both';
+	const showStartTime = [ 'start', 'both' ].includes( effectiveDisplayType );
+	const showEndTime = [ 'end', 'both' ].includes( effectiveDisplayType );
 
 	// What the format fields fall back to, which is the date alone once the
 	// event is all day.
@@ -297,6 +305,30 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		isAllDay,
 		timezonePreference
 	);
+
+	// Same label the frontend renders, so the toggle previews its own effect
+	// rather than changing something the author cannot see. Empty when the
+	// author is already in the event's timezone, which is what a reader there
+	// would get too.
+	const viewerTimeLabel = showViewerTime
+		? getViewerTimeLabel( {
+			startGmt: showStartTime
+				? createMomentWithTimezone( finalDateTimeStart, finalTimezone )
+					.utc()
+					.format( 'YYYY-MM-DD HH:mm:ss' )
+				: '',
+			endGmt: showEndTime
+				? createMomentWithTimezone( finalDateTimeEnd, finalTimezone )
+					.utc()
+					.format( 'YYYY-MM-DD HH:mm:ss' )
+				: '',
+			eventTimezone: finalTimezone,
+			/* translators: 1: event start in the viewer's timezone, 2: event end in the viewer's timezone. */
+			rangeFormat: __( '%1$s to %2$s your time', 'gatherpress' ),
+			/* translators: %s: event start in the viewer's timezone. */
+			singleFormat: __( '%s your time', 'gatherpress' ),
+		} )
+		: '';
 
 	return (
 		<div { ...blockProps }>
@@ -342,6 +374,11 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 			) : (
 				displayedDateTime
 			) }
+			{ !! viewerTimeLabel && (
+				<span className="gatherpress-event-date__viewer-time">
+					{ viewerTimeLabel }
+				</span>
+			) }
 			{ isEventPostType() && (
 				<InspectorControls>
 					<PanelBody>
@@ -358,7 +395,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				>
 					<RadioControl
 						label={ __( 'Display', 'gatherpress' ) }
-						selected={ displayType }
+						selected={ effectiveDisplayType }
 						options={ [
 							{
 								label: __(
@@ -380,7 +417,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 							setAttributes( { displayType: value } )
 						}
 					/>
-					{ 'both' === displayType && (
+					{ 'both' === effectiveDisplayType && (
 						<TextControl
 							label={ __( 'Separator', 'gatherpress' ) }
 							value={ separator }
@@ -433,6 +470,17 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 							setAttributes( {
 								showTimezone: value ? 'yes' : 'no',
 							} )
+						}
+					/>
+					<ToggleControl
+						label={ __( 'Show the reader their local time', 'gatherpress' ) }
+						help={ __(
+							'Adds the event time converted to each reader\u2019s own timezone. Readers already in the event\u2019s timezone see nothing extra.',
+							'gatherpress'
+						) }
+						checked={ !! showViewerTime }
+						onChange={ ( value ) =>
+							setAttributes( { showViewerTime: value } )
 						}
 					/>
 					<ToggleControl
