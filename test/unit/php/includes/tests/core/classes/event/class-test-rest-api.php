@@ -1155,7 +1155,9 @@ class Test_Rest_Api extends Base {
 		wp_set_comment_status( $user_record['comment_id'], 'approve' );
 
 		$block_data = array(
-			'blockName' => 'gatherpress/rsvp-template',
+			'blockName'   => 'gatherpress/rsvp-template',
+			'attrs'       => array(),
+			'innerBlocks' => array(),
 		);
 
 		$request = new WP_REST_Request( 'POST' );
@@ -1193,7 +1195,9 @@ class Test_Rest_Api extends Base {
 		);
 
 		$block_data = array(
-			'blockName' => 'gatherpress/rsvp-template',
+			'blockName'   => 'gatherpress/rsvp-template',
+			'attrs'       => array(),
+			'innerBlocks' => array(),
 		);
 
 		$request = new WP_REST_Request( 'POST' );
@@ -3426,7 +3430,13 @@ class Test_Rest_Api extends Base {
 	public function test_rsvp_status_html_renders_only_an_emitted_template(): void {
 		$instance = Rest_Api::get_instance();
 		$post_id  = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
-		$template = (string) wp_json_encode( array( 'blockName' => 'gatherpress/rsvp-template' ) );
+		$template = (string) wp_json_encode(
+			array(
+				'blockName'   => 'gatherpress/rsvp-template',
+				'attrs'       => array(),
+				'innerBlocks' => array(),
+			)
+		);
 
 		$request = new WP_REST_Request( 'POST' );
 		$request->set_param( 'post_id', $post_id );
@@ -3445,8 +3455,9 @@ class Test_Rest_Api extends Base {
 			'block_data',
 			(string) wp_json_encode(
 				array(
-					'blockName' => 'gatherpress/rsvp-template',
-					'attrs'     => array( 'x' => 1 ),
+					'blockName'   => 'gatherpress/rsvp-template',
+					'attrs'       => array( 'x' => 1 ),
+					'innerBlocks' => array(),
 				)
 			)
 		);
@@ -3464,6 +3475,83 @@ class Test_Rest_Api extends Base {
 			200,
 			$instance->rsvp_status_html( $request )->get_status(),
 			'Failed to assert the emitted pair is accepted.'
+		);
+	}
+
+	/**
+	 * The route itself refuses a request without a usable signature.
+	 *
+	 * The handler tests call the callback directly and so skip the argument
+	 * validation the route registers. This one goes through the server.
+	 *
+	 * @covers ::rsvp_status_html_route
+	 * @covers ::rsvp_status_html
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_status_html_route_requires_a_signed_template(): void {
+		Rest_Api::get_instance()->register_endpoints();
+
+		$post_id  = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$template = (string) wp_json_encode(
+			array(
+				'blockName'   => 'gatherpress/rsvp-template',
+				'attrs'       => array(),
+				'innerBlocks' => array(),
+			)
+		);
+		$route    = sprintf( '/%s/event/rsvp-status-html', GATHERPRESS_REST_NAMESPACE );
+
+		$request = new WP_REST_Request( 'POST', $route );
+		$request->set_body_params(
+			array(
+				'post_id'    => $post_id,
+				'status'     => 'attending',
+				'block_data' => $template,
+			)
+		);
+
+		$this->assertSame(
+			400,
+			rest_do_request( $request )->get_status(),
+			'Failed to assert a missing signature is refused by the route.'
+		);
+
+		$request->set_param( 'block_signature', 'not-a-signature' );
+		$this->assertSame(
+			400,
+			rest_do_request( $request )->get_status(),
+			'Failed to assert a malformed signature is refused by the route.'
+		);
+
+		$request->set_param( 'block_signature', str_repeat( '0', 64 ) );
+		$this->assertSame(
+			403,
+			rest_do_request( $request )->get_status(),
+			'Failed to assert a wrong signature is refused by the handler.'
+		);
+
+		$request->set_param( 'block_signature', Rsvp_Template::sign_template( $template ) );
+		$this->assertSame(
+			200,
+			rest_do_request( $request )->get_status(),
+			'Failed to assert the emitted pair passes the route.'
+		);
+
+		$request->set_param(
+			'block_data',
+			(string) wp_json_encode(
+				array(
+					'blockName'   => 'core/paragraph',
+					'attrs'       => array(),
+					'innerBlocks' => array(),
+				)
+			)
+		);
+		$this->assertSame(
+			400,
+			rest_do_request( $request )->get_status(),
+			'Failed to assert a root that is not the RSVP template is refused by the route.'
 		);
 	}
 }

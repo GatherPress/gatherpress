@@ -772,4 +772,71 @@ class Test_Online_Event extends Base {
 			'Failed to assert a password-protected override renders nothing without the password.'
 		);
 	}
+
+	/**
+	 * An override target has to be an event, not merely a type that can be online.
+	 *
+	 * A post type can declare `gatherpress-online-event` without
+	 * `gatherpress-event-date`; the term check passes for it, and only the
+	 * event-support check in `can_view_post()` keeps it out.
+	 *
+	 * @covers ::render_block
+	 * @covers ::can_view_post
+	 *
+	 * @return void
+	 */
+	public function test_override_requires_an_event_post_type(): void {
+		$type = 'gp_test_online_only';
+		register_post_type(
+			$type,
+			array(
+				'public'   => true,
+				'supports' => array( 'title', 'gatherpress-online-event' ),
+			)
+		);
+
+		$post_id = $this->factory->post->create( array( 'post_type' => $type ) );
+		$term    = term_exists( 'online-event', Venue::TAXONOMY );
+		if ( ! $term ) {
+			$term = wp_insert_term( 'Online Event', Venue::TAXONOMY, array( 'slug' => 'online-event' ) );
+		}
+		wp_set_object_terms( $post_id, (int) ( is_array( $term ) ? $term['term_id'] : $term ), Venue::TAXONOMY );
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/online-event',
+				'attrs'        => array( 'postId' => $post_id ),
+				'innerBlocks'  => array(
+					array(
+						'blockName'    => 'core/paragraph',
+						'attrs'        => array(),
+						'innerBlocks'  => array(),
+						'innerHTML'    => '<p>Inner content</p>',
+						'innerContent' => array( '<p>Inner content</p>' ),
+					),
+				),
+				'innerHTML'    => '',
+				'innerContent' => array( null ),
+			)
+		);
+		$block          = array( 'attrs' => array( 'postId' => $post_id ) );
+		$instance       = Online_Event::get_instance();
+
+		$this->assertSame(
+			'',
+			$instance->render_block( '<div>x</div>', $block, $block_instance ),
+			'Failed to assert a post type without event support is refused as an override.'
+		);
+
+		// The same post is accepted once its type is an event type.
+		add_post_type_support( $type, 'gatherpress-event-date' );
+
+		$this->assertStringContainsString(
+			'Inner content',
+			$instance->render_block( '<div>x</div>', $block, $block_instance ),
+			'Failed to assert the override renders once the type supports events.'
+		);
+
+		unregister_post_type( $type );
+	}
 }
