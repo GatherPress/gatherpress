@@ -312,7 +312,7 @@ on to the next minor.
 
     The `-x` records the source commit; the cherry-picks bring their
     changelog entry files along. Expect a conflict wherever `develop` has
-    since touched the same lines (a docblock, a test's neighbour); resolve
+    since touched the same lines (a docblock, a test's neighbor); resolve
     to the fix's own lines only, never to `develop`-only additions, and
     check the result with `git range-diff <develop sha>^..<develop sha>
     <main sha>^..<main sha>`.
@@ -320,7 +320,7 @@ on to the next minor.
     **The tag runs whatever `.github/workflows/release.yml` is on `main`.**
     If `develop` changed the release workflow since the last release merge,
     cherry-pick those commits onto the patch branch too, or the patch ships
-    with the old behaviour (0.35.3 shipped a changelog one release behind
+    with the old behavior (0.35.3 shipped a changelog one release behind
     for exactly this reason).
 
     Add files by path when committing on a patch branch. `git add -A`
