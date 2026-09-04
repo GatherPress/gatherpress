@@ -1112,7 +1112,7 @@ final class Setup {
 				: '';
 		}
 
-		if ( '' === $accept_header || false === stripos( $accept_header, 'text/calendar' ) ) {
+		if ( '' === $accept_header ) {
 			return false;
 		}
 
@@ -1127,7 +1127,16 @@ final class Setup {
 			}
 		}
 
-		$calendar_q = $this->accept_quality( $ranges, 'text/calendar' );
+		// Only the exact media type counts for the calendar. A wildcard stands
+		// in for HTML below, but it must not stand in here: `text/calendar+json,
+		// */*` asks for a different type, and the wildcard's quality would
+		// otherwise carry the calendar past HTML and redirect a client that
+		// never asked for it.
+		if ( ! isset( $ranges['text/calendar'] ) ) {
+			return false;
+		}
+
+		$calendar_q = $ranges['text/calendar'];
 		$html_q     = max(
 			$this->accept_quality( $ranges, 'text/html' ),
 			$this->accept_quality( $ranges, 'application/xhtml+xml' )
@@ -1234,12 +1243,16 @@ final class Setup {
 			return;
 		}
 
+		// `Vary: Accept` is already on this response: filter_wp_headers() adds
+		// it for every request that resolves a calendar URL, and that is the
+		// same test the redirect target came from. Setting it again here would
+		// replace whatever else the header had gathered by then.
+		//
 		// The decision is covered through get_negotiated_redirect_url(); what
 		// remains here is the side effect, which ends in exit() and so cannot be
 		// exercised without ending the test run.
 		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation.
 		// @codeCoverageIgnoreStart
-		header( 'Vary: Accept' );
 		wp_safe_redirect( $calendar_url, 302 );
 		exit;
 		// @codeCoverageIgnoreEnd
@@ -1295,10 +1308,14 @@ final class Setup {
 	 */
 	public function filter_wp_headers( array $headers ): array {
 		if ( $this->is_event_related_request() ) {
-			$vary            = $headers['Vary'] ?? '';
-			$headers['Vary'] = empty( $vary )
-				? 'Accept'
-				: ( false === stripos( $vary, 'Accept' ) ? $vary . ', Accept' : $vary );
+			// Field names, not substrings: `Accept-Encoding` is not `Accept`.
+			$fields = array_filter( array_map( 'trim', explode( ',', (string) ( $headers['Vary'] ?? '' ) ) ) );
+
+			if ( ! in_array( 'accept', array_map( 'strtolower', $fields ), true ) ) {
+				$fields[] = 'Accept';
+			}
+
+			$headers['Vary'] = implode( ', ', $fields );
 		}
 
 		return $headers;

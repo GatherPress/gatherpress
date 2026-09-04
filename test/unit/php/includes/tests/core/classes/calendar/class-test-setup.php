@@ -1801,6 +1801,14 @@ class Test_Setup extends Base {
 		$headers = $instance->filter_wp_headers( array( 'Vary' => 'Accept, Cookie' ) );
 		$this->assertSame( 'Accept, Cookie', $headers['Vary'] );
 
+		// Field names are compared as tokens: Accept-Encoding is not Accept.
+		$headers = $instance->filter_wp_headers( array( 'Vary' => 'Accept-Encoding' ) );
+		$this->assertSame( 'Accept-Encoding, Accept', $headers['Vary'] );
+
+		// And the comparison is case-insensitive, as header field names are.
+		$headers = $instance->filter_wp_headers( array( 'Vary' => 'accept, Cookie' ) );
+		$this->assertSame( 'accept, Cookie', $headers['Vary'] );
+
 		// For a non-event page, headers are unchanged.
 		$regular_post = $this->mock->post( array( 'post_type' => 'post' ) )->get();
 		$wp_query->init();
@@ -1994,6 +2002,24 @@ class Test_Setup extends Base {
 		$this->assertTrue(
 			$instance->is_calendar_negotiated( 'text/calendar;q=0.9, */*;q=0.5' ),
 			'Failed to assert the calendar still wins when it outranks the wildcard.'
+		);
+
+		// The wildcard stands in for HTML, never for the calendar. This client
+		// asked for a different type; the substring `text/calendar` in it and
+		// the wildcard's quality must not combine into a redirect.
+		$this->assertFalse(
+			$instance->is_calendar_negotiated( 'text/calendar+json, */*;q=0.9' ),
+			'Failed to assert a media type that merely starts with text/calendar does not negotiate.'
+		);
+		$this->assertFalse(
+			$instance->is_calendar_negotiated( 'text/*' ),
+			'Failed to assert a type wildcard does not negotiate the calendar.'
+		);
+
+		// Equal quality goes to the calendar, since the client listed it.
+		$this->assertTrue(
+			$instance->is_calendar_negotiated( 'text/html, text/calendar' ),
+			'Failed to assert an equally ranked calendar negotiates.'
 		);
 	}
 }
