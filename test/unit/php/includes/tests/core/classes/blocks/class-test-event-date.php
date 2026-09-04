@@ -310,4 +310,198 @@ class Test_Event_Date extends Base {
 			'The datetime should not be linked when isLink is not set.'
 		);
 	}
+
+	/**
+	 * Parity between the rendered block text and Event::get_display_datetime().
+	 *
+	 * Strips the <time>/<a> markup out of the block render and asserts the
+	 * remaining text matches get_display_datetime() invoked with the same
+	 * attribute args. Locks the block render to the Event class so the two
+	 * display-logic copies cannot silently drift.
+	 *
+	 * Covers the timezone override case (block showTimezone=yes with the global
+	 * setting off) that previously diverged between the two.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	public function test_render_matches_get_display_datetime(): void {
+		update_option(
+			'gatherpress_settings',
+			array(
+				'date_format'   => 'l, F j, Y',
+				'time_format'   => 'g:i A',
+				'show_timezone' => false,
+			)
+		);
+
+		$event_post = $this->mock->post(
+			array(
+				'post_title' => 'Parity Unit Test Event',
+				'post_type'  => Event::POST_TYPE,
+			)
+		)->get();
+		$event      = new Event( $event_post->ID );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2020-05-11 15:00:00',
+				'datetime_end'   => '2020-05-11 17:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$this->go_to( get_permalink( $event_post->ID ) );
+
+		$combinations = array(
+			'both, no override'  => array(
+				array( 'displayType' => 'both' ),
+				array( 'both' ),
+			),
+			'both, override yes' => array(
+				array(
+					'displayType'  => 'both',
+					'showTimezone' => 'yes',
+				),
+				array( 'both', '', '', '', 'yes' ),
+			),
+			'both, override no'  => array(
+				array(
+					'displayType'  => 'both',
+					'showTimezone' => 'no',
+				),
+				array( 'both', '', '', '', 'no' ),
+			),
+			'start only'         => array(
+				array( 'displayType' => 'start' ),
+				array( 'start' ),
+			),
+			'end only'           => array(
+				array( 'displayType' => 'end' ),
+				array( 'end' ),
+			),
+			'linked'             => array(
+				array(
+					'displayType' => 'both',
+					'isLink'      => true,
+				),
+				array( 'both' ),
+			),
+			'custom separator'   => array(
+				array(
+					'displayType' => 'both',
+					'separator'   => ' — ',
+				),
+				array( 'both', '', '', ' — ' ),
+			),
+		);
+
+		foreach ( $combinations as $label => $data ) {
+			list( $attributes, $method_args ) = $data;
+			$block                            = sprintf(
+				'<!-- wp:gatherpress/event-date %s /-->',
+				wp_json_encode( $attributes )
+			);
+			$render                           = do_blocks( $block );
+
+			// Strip <time>/<a> markup to compare the human text only.
+			$rendered_text = trim( wp_strip_all_tags( $render ) );
+
+			$expected = $event->get_display_datetime(
+				$method_args[0] ?? '',
+				$method_args[1] ?? '',
+				$method_args[2] ?? '',
+				$method_args[3] ?? '',
+				$method_args[4] ?? ''
+			);
+
+			$this->assertSame(
+				$expected,
+				$rendered_text,
+				sprintf( 'Block text should match get_display_datetime for "%s".', $label )
+			);
+		}
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Coverage for the machine-readable <time datetime> output.
+	 *
+	 * Asserts a <time datetime="..."> element is emitted for every shown
+	 * endpoint and that the datetime attribute holds the full unfiltered ISO
+	 * value, while the no-datetime placeholder emits none.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	public function test_render_emits_machine_readable_time_elements(): void {
+		update_option(
+			'gatherpress_settings',
+			array(
+				'date_format'   => 'l, F j, Y',
+				'time_format'   => 'g:i A',
+				'show_timezone' => true,
+			)
+		);
+
+		$event_post = $this->mock->post(
+			array(
+				'post_title' => 'Machine Readable Unit Test Event',
+				'post_type'  => Event::POST_TYPE,
+			)
+		)->get();
+		$event      = new Event( $event_post->ID );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2020-05-11 15:00:00',
+				'datetime_end'   => '2020-05-11 17:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$this->go_to( get_permalink( $event_post->ID ) );
+
+		$render = do_blocks( '<!-- wp:gatherpress/event-date {"displayType":"both"} /-->' );
+
+		$this->assertStringContainsString(
+			sprintf( '<time datetime="%s">', esc_attr( $event->get_datetime_start_iso() ) ),
+			$render,
+			'Start datetime should be wrapped in a time element with an ISO datetime attribute.'
+		);
+		$this->assertStringContainsString(
+			sprintf( '<time datetime="%s">', esc_attr( $event->get_datetime_end_iso() ) ),
+			$render,
+			'End datetime should be wrapped in a time element with an ISO datetime attribute.'
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Coverage for the no-datetime placeholder.
+	 *
+	 * An event without saved datetimes renders the em-dash placeholder with no
+	 * <time datetime> element.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	public function test_render_placeholder_has_no_time_element(): void {
+		$event_post = $this->mock->post(
+			array(
+				'post_title' => 'No Date Unit Test Event',
+				'post_type'  => Event::POST_TYPE,
+			)
+		)->get();
+
+		$this->go_to( get_permalink( $event_post->ID ) );
+
+		$render = do_blocks( '<!-- wp:gatherpress/event-date /-->' );
+
+		$this->assertStringContainsString( esc_html( Event::DATETIME_PLACEHOLDER ), $render );
+		$this->assertStringNotContainsString( '<time ', $render );
+	}
 }

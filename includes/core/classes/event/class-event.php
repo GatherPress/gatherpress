@@ -231,24 +231,47 @@ class Event {
 		string $separator = '',
 		string $show_timezone = ''
 	): string {
+		$parts = array_filter(
+			$this->get_display_datetime_parts(
+				$type,
+				$start_format,
+				$end_format,
+				$separator,
+				$show_timezone
+			)
+		);
+
+		return $parts ? implode( ' ', $parts ) : self::DATETIME_PLACEHOLDER;
+	}
+
+	/**
+	 * Gets raw formatted datetime parts for display.
+	 *
+	 * @since 0.34.0
+	 *
+	 * @param string $type          Display type: 'start', 'end', or 'both'.
+	 * @param string $start_format  PHP display format for start date/time.
+	 * @param string $end_format    PHP display format for end date/time.
+	 * @param string $separator     Separator between start and end dates.
+	 * @param string $show_timezone Show timezone.
+	 *
+	 * @return array<string, string|false> Raw datetime parts.
+	 *
+	 * @throws Exception If date/time formatting fails or settings cannot be retrieved.
+	 */
+	public function get_display_datetime_parts(
+		string $type = '',
+		string $start_format = '',
+		string $end_format = '',
+		string $separator = '',
+		string $show_timezone = ''
+	): array {
 		$settings    = Settings::get_instance();
-		$date_format = apply_filters(
-			'gatherpress_date_format',
-			$settings->get( 'date_format' )
-		);
-		$time_format = apply_filters(
-			'gatherpress_time_format',
-			$settings->get( 'time_format' )
-		);
+		$date_format = apply_filters( 'gatherpress_date_format', $settings->get( 'date_format' ) );
+		$time_format = apply_filters( 'gatherpress_time_format', $settings->get( 'time_format' ) );
 		$timezone    = $settings->get( 'show_timezone' ) ? ' T' : '';
-
-		$show_start = $type
-			? in_array( $type, array( 'start', 'both' ), true )
-			: true;
-
-		$show_end = $type
-			? in_array( $type, array( 'end', 'both' ), true )
-			: true;
+		$show_start  = $type ? in_array( $type, array( 'start', 'both' ), true ) : true;
+		$show_end    = $type ? in_array( $type, array( 'end', 'both' ), true ) : true;
 
 		$formats = $this->get_display_formats(
 			$start_format,
@@ -280,38 +303,35 @@ class Event {
 			$timezone = false;
 		}
 
-		$parts = array_filter(
-			array( $start, $separator, $end, $timezone )
+		return array(
+			'start'     => $start,
+			'separator' => $separator,
+			'end'       => $end,
+			'timezone'  => $timezone,
 		);
-
-		// Stick the parts back together.
-		return $parts ? implode( ' ', $parts ) : self::DATETIME_PLACEHOLDER;
 	}
 
 	/**
-	 * Check if the start and end DateTime fall on the same date.
+	 * Check whether the start and end datetimes fall on the same date.
 	 *
-	 * Compares the start and end DateTime objects to determine if they are on the same date.
+	 * Compares the date portion of the unfiltered ISO datetimes, which bypass
+	 * the `gatherpress_datetime_format` filter, so a display-format filter
+	 * that ignores its $format argument cannot make a same-day event compare
+	 * unequal.
 	 *
 	 * @since 0.34.0
 	 *
 	 * @return bool True if start and end are on the same date, false otherwise.
-	 *
-	 * @throws Exception If date comparison fails.
 	 */
 	public function is_same_date(): bool {
-		$datetime_start = $this->get_datetime_start( 'Y-m-d' );
-		$datetime_end   = $this->get_datetime_end( 'Y-m-d' );
+		$datetime_start = $this->get_datetime_start_iso();
+		$datetime_end   = $this->get_datetime_end_iso();
 
 		if ( empty( $datetime_start ) || empty( $datetime_end ) ) {
 			return false;
 		}
 
-		if ( $datetime_start === $datetime_end ) {
-			return true;
-		}
-
-		return false;
+		return substr( $datetime_start, 0, 10 ) === substr( $datetime_end, 0, 10 );
 	}
 
 	/**
@@ -519,12 +539,19 @@ class Event {
 	 *
 	 * @param string               $format The PHP date format.
 	 * @param string               $which  Which datetime to format, 'start' or 'end'.
-	 * @param bool                 $local  Whether the datetime is being rendered in local time.
-	 * @param array<string, mixed> $dt     The event's datetime data.
+	 * @param bool                 $local        Whether the datetime is being rendered in local time.
+	 * @param array<string, mixed> $dt           The event's datetime data.
+	 * @param bool                 $apply_filter Whether to pass $format through the gatherpress_datetime_format filter.
 	 *
 	 * @return string The formatted datetime.
 	 */
-	protected function get_formatted_all_day( string $format, string $which, bool $local, array $dt ): string {
+	protected function get_formatted_all_day(
+		string $format,
+		string $which,
+		bool $local,
+		array $dt,
+		bool $apply_filter
+	): string {
 		$date = (string) $dt[ sprintf( 'datetime_%s', $which ) ];
 
 		if ( empty( $date ) ) {
@@ -547,8 +574,10 @@ class Event {
 			return '';
 		}
 
-		/** This filter is documented in includes/core/classes/event/class-event.php */
-		$format = apply_filters( 'gatherpress_datetime_format', $format, $which, $local );
+		if ( $apply_filter ) {
+			/** This filter is documented in includes/core/classes/event/class-event.php */
+			$format = apply_filters( 'gatherpress_datetime_format', $format, $which, $local );
+		}
 
 		return trim( (string) wp_date( $format, $parsed->getTimestamp(), $tz ) );
 	}
@@ -678,12 +707,34 @@ class Event {
 		string $which = 'start',
 		bool $local = true
 	): string {
+		return $this->format_datetime( $format, $which, $local, true );
+	}
+
+	/**
+	 * Format a datetime value.
+	 *
+	 * The machine-readable output passed to this method must not be altered by
+	 * the gatherpress_datetime_format filter, so filter application is opt-in via
+	 * $apply_filter. Display formatting enables it; the ISO accessors do not.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $format       PHP date format.
+	 * @param string $which        Datetime field in event table to format ('start' or 'end').
+	 * @param bool   $local        Whether to format the date in local time (true) or GMT (false).
+	 * @param bool   $apply_filter Whether to pass $format through the gatherpress_datetime_format filter.
+	 *
+	 * @return string The formatted datetime value.
+	 *
+	 * @throws Exception If there is an issue while formatting the datetime value.
+	 */
+	private function format_datetime( string $format, string $which, bool $local, bool $apply_filter ): string {
 		$dt             = $this->get_datetime();
 		$dt['timezone'] = Utility::maybe_convert_utc_offset( $dt['timezone'] );
 		$tz             = null;
 
 		if ( $this->is_all_day() ) {
-			return $this->get_formatted_all_day( $format, $which, $local, $dt );
+			return $this->get_formatted_all_day( $format, $which, $local, $dt, $apply_filter );
 		}
 
 		$date = $dt[ sprintf( 'datetime_%s_gmt', $which ) ];
@@ -709,30 +760,62 @@ class Event {
 				return '';
 			}
 
-			/**
-			 * Filters the format an event's datetime is rendered with.
-			 *
-			 * Applies to every context an event date is shown in, since they
-			 * all format through this method: the singular event, an archive,
-			 * the Event Date block and a query loop alike.
-			 *
-			 * @since 0.34.0
-			 *
-			 * @param string $format The PHP date format.
-			 * @param string $which  Which datetime is being formatted, 'start' or 'end'.
-			 * @param bool   $local  Whether the datetime is rendered in local time rather than GMT.
-			 */
-			$format = apply_filters( 'gatherpress_datetime_format', $format, $which, $local );
+			if ( $apply_filter ) {
+				/**
+				 * Filters the PHP date format used to render an event datetime.
+				 *
+				 * @since 0.34.0
+				 *
+				 * @param string $format PHP date format.
+				 * @param string $which  Datetime field, 'start' or 'end'.
+				 * @param bool   $local  True for local time, false for GMT.
+				 *
+				 * @return string PHP date format.
+				 */
+				$format = apply_filters( 'gatherpress_datetime_format', $format, $which, $local );
+			}
 
 			// wp_date() only returns false for a non-numeric timestamp, which $ts is not.
-			$date = (string) wp_date(
-				$format,
-				$ts,
-				$tz
-			);
+			$date = (string) wp_date( $format, $ts, $tz );
 		}
 
 		return trim( $date );
+	}
+
+	/**
+	 * Get the ISO 8601 start datetime of the event.
+	 *
+	 * Returns the machine-readable start datetime intended for <time datetime>
+	 * attributes. Unlike get_datetime_start(), the format is not passed through
+	 * the gatherpress_datetime_format filter, so the ISO value cannot be changed
+	 * by display-format customization.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string The ISO 8601 start datetime, or empty string when unset.
+	 *
+	 * @throws Exception If there is an issue formatting the start datetime.
+	 */
+	public function get_datetime_start_iso(): string {
+		return $this->format_datetime( 'c', 'start', true, false );
+	}
+
+	/**
+	 * Get the ISO 8601 end datetime of the event.
+	 *
+	 * Returns the machine-readable end datetime intended for <time datetime>
+	 * attributes. Unlike get_datetime_end(), the format is not passed through
+	 * the gatherpress_datetime_format filter, so the ISO value cannot be changed
+	 * by display-format customization.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string The ISO 8601 end datetime, or empty string when unset.
+	 *
+	 * @throws Exception If there is an issue formatting the end datetime.
+	 */
+	public function get_datetime_end_iso(): string {
+		return $this->format_datetime( 'c', 'end', true, false );
 	}
 
 	/**
