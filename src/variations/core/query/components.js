@@ -703,10 +703,23 @@ const QueryControlsContent = ( {
 } ) => {
 	const queryPostType = blockProps.attributes?.query?.postType;
 	const currentPostType = blockProps?.context?.postType;
-	const isEventContext = usePostTypeSupports(
+	// The five event controls below apply to whatever post type the Query Loop
+	// is actually listing, not to whatever post the editor is currently
+	// viewing. A Query Loop placed on a page/template and pointing at the
+	// `gatherpress_event` post type should still expose list type, unfinished
+	// toggle, per-page, offset, and ordering — those are the loop's controls,
+	// not the host page's. Host-context checks stay only where the semantics
+	// genuinely depend on the host (Exclude Current Event compares host to
+	// queried; Filter by Current Source is gated on the host being a shadow
+	// source).
+	const queriedSupportsEventDate = usePostTypeSupports(
 		'gatherpress-event-date',
-		currentPostType
+		queryPostType
 	);
+	// Guard on an unset queried type: `usePostTypeSupports` falls back to the
+	// host editor post type when its argument is missing, which would silently
+	// re-introduce host-based gating. An untyped query gets no controls.
+	const isEventQuery = !! queryPostType && queriedSupportsEventDate;
 	const isShadowSourceContext = usePostTypeSupports(
 		'gatherpress-shadow-source',
 		currentPostType
@@ -720,7 +733,7 @@ const QueryControlsContent = ( {
 	);
 
 	const showExcludeControl =
-		isEventContext &&
+		isEventQuery &&
 		!! currentPostType &&
 		!! queryPostType &&
 		currentPostType === queryPostType;
@@ -735,8 +748,8 @@ const QueryControlsContent = ( {
 
 	return (
 		<>
-			{ isEventContext && <EventListTypeControls { ...blockProps } /> }
-			{ isEventContext && (
+			{ isEventQuery && <EventListTypeControls { ...blockProps } /> }
+			{ isEventQuery && (
 				<EventIncludeUnfinishedControls { ...blockProps } />
 			) }
 			{ showExcludeControl && (
@@ -751,9 +764,9 @@ const QueryControlsContent = ( {
 			{ showHasEventsFilterControl && (
 				<HasEventsFilterControls { ...blockProps } />
 			) }
-			{ isEventContext && <EventCountControls { ...blockProps } /> }
-			{ isEventContext && <EventOffsetControls { ...blockProps } /> }
-			{ isEventContext && <EventOrderControls { ...blockProps } /> }
+			{ isEventQuery && <EventCountControls { ...blockProps } /> }
+			{ isEventQuery && <EventOffsetControls { ...blockProps } /> }
+			{ isEventQuery && <EventOrderControls { ...blockProps } /> }
 		</>
 	);
 };

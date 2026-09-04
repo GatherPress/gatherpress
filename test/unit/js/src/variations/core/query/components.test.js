@@ -127,6 +127,21 @@ const templateHelp =
 
 describe( 'EventQueryControlsSlotFill', () => {
 	beforeEach( () => {
+		// Reset the shared fill props so each test starts from the
+		// documented default (host === queried === gatherpress_event). Tests
+		// that exercise a different host/queried pair set these locally.
+		mockQueryControlsProps = {
+			context: {
+				postType: 'gatherpress_event',
+			},
+			attributes: {
+				query: {
+					postType: 'gatherpress_event',
+					inherit: false,
+				},
+			},
+			setAttributes: jest.fn(),
+		};
 		isEventPostType.mockReset();
 		usePostTypeSupports.mockReset();
 		useHasEventActivityFilterSupport.mockReset();
@@ -186,15 +201,148 @@ describe( 'EventQueryControlsSlotFill', () => {
 		expect( screen.queryByText( venueHelp ) ).not.toBeInTheDocument();
 	} );
 
-	it( 'still gates the exclude-current-event toggle on the existing isEventPostType check', () => {
-		isEventPostType.mockReturnValue( false );
+	it( 'still gates the exclude-current-event toggle on host context (only when the host is an event post type)', () => {
+		// The host (`gatherpress_event` in the default mockQueryControlsProps)
+		// is a real event post type and the queried type matches, so
+		// exclude-current-event must appear. The previous version of this
+		// test used isEventPostType(false) to exercise the "host is not an
+		// event" path, but the actual semantic for that path is now the
+		// queried-type support check
+		// (`usePostTypeSupports('gatherpress-event-date', queryPostType)`).
+		// Keep the assertion focused on the host-must-equal-queried rule
+		// here; the new "host is not an event" branch is covered separately
+		// by the "hides the exclude-current-event toggle when the host is
+		// not an event post type" test below.
+		isEventPostType.mockReturnValue( true );
 		usePostTypeSupports.mockReturnValue( true );
+		useHasEventActivityFilterSupport.mockReturnValue( false );
+		isInFSETemplate.mockReturnValue( false );
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect(
+			screen.getByText( excludeToggleLabel )
+		).toBeInTheDocument();
+	} );
+
+	it( 'hides the exclude-current-event toggle when the host is not an event post type', () => {
+		// The queried type is `gatherpress_event` (an event post type) so the
+		// event controls render, but the host is a page — exclude-current
+		// must stay hidden because it requires the host to be an event post
+		// type too (host === queried).
+		mockQueryControlsProps = {
+			...mockQueryControlsProps,
+			context: {
+				postType: 'page',
+			},
+			attributes: {
+				query: {
+					postType: 'gatherpress_event',
+					inherit: false,
+				},
+			},
+		};
+
+		isEventPostType.mockReturnValue( false );
+		usePostTypeSupports.mockImplementation(
+			( support, postType ) =>
+				'gatherpress-event-date' === support &&
+				'gatherpress_event' === postType
+		);
+		useHasEventActivityFilterSupport.mockReturnValue( false );
 		isInFSETemplate.mockReturnValue( false );
 
 		render( <EventQueryControlsSlotFill /> );
 
 		expect(
 			screen.queryByText( excludeToggleLabel )
+		).not.toBeInTheDocument();
+	} );
+
+	it( 'renders the event controls when the queried post type is an event but the host is a page', () => {
+		// Regression test for carstingaxion's Sept 4 report: the panel
+		// "Event Query settings" was empty when querying the Events post
+		// type from a non-event host. The event controls (List Type,
+		// Include Unfinished, Per Page, Offset, Order) belong to whatever
+		// post type the Query Loop is listing, not to the host.
+		mockQueryControlsProps = {
+			...mockQueryControlsProps,
+			context: {
+				postType: 'page',
+			},
+			attributes: {
+				query: {
+					postType: 'gatherpress_event',
+					inherit: false,
+				},
+			},
+		};
+
+		isEventPostType.mockReturnValue( false );
+		usePostTypeSupports.mockImplementation(
+			( support, postType ) =>
+				'gatherpress-event-date' === support &&
+				'gatherpress_event' === postType
+		);
+		useHasEventActivityFilterSupport.mockReturnValue( false );
+		isInFSETemplate.mockReturnValue( false );
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect( screen.getByText( 'Event List Type' ) ).toBeInTheDocument();
+		expect(
+			screen.getByText( 'Include Unfinished Events' )
+		).toBeInTheDocument();
+		expect( screen.getByText( 'Events Per Page' ) ).toBeInTheDocument();
+		expect( screen.getByText( 'Event Offset' ) ).toBeInTheDocument();
+		expect( screen.getByText( 'Order Events by' ) ).toBeInTheDocument();
+	} );
+
+	it( 'hides the event controls when the queried post type is a shadow source (not an event)', () => {
+		// When the query lists shadow-source posts (e.g. venues) the event
+		// controls are not the right thing to show. Only the activity
+		// filter and the host-equal-queried exclude toggle apply, both of
+		// which are hidden in this scenario.
+		mockQueryControlsProps = {
+			...mockQueryControlsProps,
+			context: {
+				postType: 'page',
+			},
+			attributes: {
+				query: {
+					postType: 'gatherpress_venue',
+					inherit: false,
+				},
+			},
+		};
+
+		isEventPostType.mockReturnValue( false );
+		usePostTypeSupports.mockImplementation(
+			( support, postType ) =>
+				'gatherpress-shadow-source' === support &&
+				'gatherpress_venue' === postType
+		);
+		useHasEventActivityFilterSupport.mockImplementation(
+			( postType ) => 'gatherpress_venue' === postType
+		);
+		isInFSETemplate.mockReturnValue( false );
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect(
+			screen.queryByText( 'Event List Type' )
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByText( 'Include Unfinished Events' )
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByText( 'Events Per Page' )
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByText( 'Event Offset' )
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByText( 'Order Events by' )
 		).not.toBeInTheDocument();
 	} );
 
@@ -452,7 +600,10 @@ describe( 'EventQueryControlsSlotFill', () => {
 		).toBeInTheDocument();
 	} );
 
-	it( 'hides the event-activity filter when the query has no post type set', () => {
+	it( 'hides the event controls when the query has no post type set', () => {
+		// The host is an event post type, but `usePostTypeSupports` must not
+		// fall back to it for an unset queried type — an untyped query gets
+		// no event controls even though the host would satisfy the check.
 		mockQueryControlsProps = {
 			...mockQueryControlsProps,
 			context: {
@@ -466,7 +617,11 @@ describe( 'EventQueryControlsSlotFill', () => {
 		};
 
 		isEventPostType.mockReturnValue( false );
-		usePostTypeSupports.mockReturnValue( true );
+		usePostTypeSupports.mockImplementation(
+			( support, postType ) =>
+				'gatherpress-event-date' === support &&
+				'gatherpress_venue' === postType
+		);
 		useHasEventActivityFilterSupport.mockReturnValue( true );
 		isInFSETemplate.mockReturnValue( false );
 
@@ -474,6 +629,12 @@ describe( 'EventQueryControlsSlotFill', () => {
 
 		expect(
 			screen.queryByText( 'Filter by event activity' )
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByText( 'Event List Type' )
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByText( 'Events Per Page' )
 		).not.toBeInTheDocument();
 	} );
 } );
