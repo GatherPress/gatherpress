@@ -74,6 +74,7 @@ function TooltipPopover( {
 			// This allows theme CSS custom properties to control the default appearance.
 			const attributes = {
 				'data-gatherpress-tooltip': tooltipText,
+				tabindex: '0',
 			};
 
 			// Only store color if it differs from the default.

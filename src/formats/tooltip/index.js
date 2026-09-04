@@ -28,6 +28,7 @@ registerFormatType( FORMAT_NAME, {
 		'data-gatherpress-tooltip': 'data-gatherpress-tooltip',
 		'data-gatherpress-tooltip-text-color': 'data-gatherpress-tooltip-text-color',
 		'data-gatherpress-tooltip-bg-color': 'data-gatherpress-tooltip-bg-color',
+		tabindex: 'tabindex',
 	},
 	edit: TooltipEdit,
 } );
