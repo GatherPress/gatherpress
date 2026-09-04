@@ -91,7 +91,13 @@ final class Setup {
 		// validity check and never registered its rewrite rule.
 		add_action( 'init', array( $this, 'register_endpoints' ), PHP_INT_MAX );
 		add_action( 'wp_head', array( $this, 'alternate_links' ) );
-		add_action( 'template_redirect', array( $this, 'maybe_handle_content_negotiation' ), 0 );
+		// PHP_INT_MIN so a client asking for text/calendar is answered before
+		// anything else acts on the request: core's redirect_canonical() runs
+		// at 10, and themes and plugins commonly use template_redirect to
+		// redirect, gate access, or send output. Each of those would either
+		// send the client somewhere else first or make the redirect here a
+		// headers-already-sent failure.
+		add_action( 'template_redirect', array( $this, 'maybe_handle_content_negotiation' ), PHP_INT_MIN );
 		add_filter( 'wp_headers', array( $this, 'filter_wp_headers' ) );
 	}
 

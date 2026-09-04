@@ -51,7 +51,7 @@ class Test_Setup extends Base {
 			array(
 				'type'     => 'action',
 				'name'     => 'template_redirect',
-				'priority' => 0,
+				'priority' => PHP_INT_MIN,
 				'callback' => array( $instance, 'maybe_handle_content_negotiation' ),
 			),
 			array(
