@@ -601,16 +601,14 @@ final class Query {
 		string $taxonomy,
 		WP_Post $post
 	): string {
-		if ( ! post_type_supports( $post->post_type, 'gatherpress-event-date' ) ) {
+		if ( ! $this->follows_event_datetime( $post ) ) {
 			return $join;
 		}
 
 		global $wpdb;
 		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 
-		$join .= " INNER JOIN {$table} AS gpe ON p.ID = gpe.post_id";
-
-		return $join;
+		return $join . $wpdb->prepare( ' INNER JOIN %i AS gpe ON p.ID = gpe.post_id', $table );
 	}
 
 	/**
@@ -643,39 +641,60 @@ final class Query {
 		string $taxonomy,
 		WP_Post $post
 	): string {
-		if ( ! post_type_supports( $post->post_type, 'gatherpress-event-date' ) ) {
+		if ( ! $this->follows_event_datetime( $post ) ) {
 			return $where;
 		}
 
 		global $wpdb;
-		$current_filter = current_filter();
-		$is_previous    = ( 'get_previous_post_where' === $current_filter );
+		// One event is read through its own API; the candidates come from
+		// the joined events table.
+		$current = ( new Event( $post->ID ) )->get_datetime()['datetime_start_gmt'];
 
-		// Get the current event's datetime_start_gmt.
-		$current_datetime = get_post_meta( $post->ID, 'gatherpress_datetime_start_gmt', true );
-
-		if ( ! $current_datetime ) {
-			return $where;
+		// Core compares the publish date and, since 6.9, breaks a tie on ID.
+		// Swap the date for the event start and keep the tiebreak, so events
+		// that start at the same moment can still reach each other.
+		if ( 'get_previous_post_where' === current_filter() ) {
+			$comparison = $wpdb->prepare(
+				'(gpe.datetime_start_gmt < %s OR (gpe.datetime_start_gmt = %s AND p.ID < %d))',
+				$current,
+				$current,
+				$post->ID
+			);
+		} else {
+			$comparison = $wpdb->prepare(
+				'(gpe.datetime_start_gmt > %s OR (gpe.datetime_start_gmt = %s AND p.ID > %d))',
+				$current,
+				$current,
+				$post->ID
+			);
 		}
 
-		// Previous = earlier events (less than), Next = later events (greater than).
-		$op = $is_previous ? '<' : '>';
-		// It's intended, to not quote the comparison sign.
-		$sql = $wpdb->prepare(
-			'gpe.datetime_start_gmt %1s %s', // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder, Generic.Files.LineLength.TooLong
-			$op,
-			$current_datetime
+		return (string) preg_replace(
+			"/\(p\.post_date\s*[<>]\s*'[^']*' OR \(p\.post_date\s*=\s*'[^']*' AND p\.ID\s*[<>]\s*\d+\)\)/",
+			$comparison,
+			$where,
+			1
 		);
+	}
 
-		// Replace the default post_date comparison with event datetime comparison.
-		// The default WHERE looks like: WHERE p.post_date < '2024-01-01 00:00:00' AND p.post_type = ...
-		$where = preg_replace(
-			"/p\.post_date\s*[<>]\s*'[^']+'/",
-			$sql,
-			$where
-		);
-
-		return (string) $where;
+	/**
+	 * Whether an adjacent-post query for this post follows the event start.
+	 *
+	 * All three adjacent-post filters read this, so they switch together. A
+	 * post with no event start yet, such as one on a post type that gained
+	 * event support after it already had posts, keeps core's publish-date
+	 * navigation throughout, rather than joining and sorting on a column its
+	 * WHERE clause never compares.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param WP_Post $post The post being navigated from.
+	 *
+	 * @return bool Whether to join, compare, and sort by the event start.
+	 */
+	protected function follows_event_datetime( WP_Post $post ): bool {
+		return post_type_supports( $post->post_type, 'gatherpress-event-date' )
+			&& '' !== ( new Event( $post->ID ) )->get_datetime()['datetime_start_gmt'];
 	}
 
 	/**
@@ -695,15 +714,14 @@ final class Query {
 	 * @return string The modified ORDER BY clause for adjacent post queries.
 	 */
 	public function get_adjacent_post_sort( string $sort, WP_Post $post, string $order ): string {
-		if ( ! post_type_supports( $post->post_type, 'gatherpress-event-date' ) ) {
+		if ( ! $this->follows_event_datetime( $post ) ) {
 			return $sort;
 		}
 
-		// Replace post_date ordering with event datetime ordering.
-		// Default sort is: ORDER BY p.post_date DESC LIMIT 1
-		// $order is 'DESC' for previous, 'ASC' for next.
-		$sort = "ORDER BY gpe.datetime_start_gmt {$order} LIMIT 1";
+		// Core hands over 'DESC' for previous and 'ASC' for next. A keyword
+		// has no prepare() placeholder, so it is allowed through by name.
+		$order = 'ASC' === strtoupper( $order ) ? 'ASC' : 'DESC';
 
-		return $sort;
+		return "ORDER BY gpe.datetime_start_gmt {$order}, p.ID {$order} LIMIT 1";
 	}
 }
