@@ -155,6 +155,7 @@ Testers downloading the pre-release zip see the same changelog body they'd see a
 
 - [ ] All issues in the release's milestone are closed or moved.
 - [ ] Queued `.github/changelog/` entries read correctly (skim, fix anything off).
+- [ ] Rehearse the rollup in a throwaway tree so the tag run cannot fail on the changelog: `git worktree add /tmp/rollup main && cd /tmp/rollup && ../<repo>/vendor/bin/changelogger write --use-version=X.Y.Z --yes`, then check `CHANGELOG.md` has the new `## [X.Y.Z]` section and its `[X.Y.Z]:` link, and discard the worktree. This catches a missing link line under the previous version's heading, which the parser refuses (see Troubleshooting).
 - [ ] Credits file for `X.Y.Z` added at `.github/scripts/release/credits/X.Y.Z.json` — by convention a copy of the latest pre-release file, roster corrections applied to the pre-release file first.
 - [ ] `npm run version:bump -- --version=X.Y.Z` (or the Version Bump workflow) + `npm i --package-lock-only`; version PRs opened and merged in order: credits file, alpha sync, core `version-X.Y.Z` → develop.
 
@@ -193,7 +194,7 @@ git push origin X.Y.Z
 1. Detects the tag is stable (no `-alpha.` / `-beta.` / `-rc.` suffix).
 2. Aggregates every entry file in `.github/changelog/` into a new `## [X.Y.Z] - YYYY-MM-DD` section at the top of `CHANGELOG.md`, appending `[#NNNN]` PR references, and **deletes** the entry files (dotfiles like `.gitkeep` survive, which is why the directory persists in git).
 3. Commits that rollup to a new `release/X.Y.Z` branch and **opens an auto-PR back to `develop`** (with the `Skip Changelog` label).
-4. Builds `gatherpress.X.Y.Z.zip`.
+4. Builds `gatherpress.X.Y.Z.zip` with the rolled-up `CHANGELOG.md` from step 2 in it. The tag commit's own copy predates the rollup, so the build and the wp.org deploy take the rolled file from the rollup job rather than the checkout; before this, every shipped changelog was one release behind.
 5. Creates a GitHub **Release** with the zip attached, marked as **latest**, with the `[X.Y.Z]` section as the body.
 6. Deploys to wordpress.org via the `10up/action-wordpress-plugin-deploy` action using the `SVN_USERNAME` / `SVN_PASSWORD` secrets.
 
@@ -326,6 +327,20 @@ vendor/bin/changelogger write \
   --deduplicate=-1 \
   --yes
 ```
+
+### "Heading seems to have a linked version, but link was not found"
+
+The rollup job fails before anything ships, with changelogger naming the
+previous release's heading (`## [X.Y.Z-1] - ...`). That heading has no
+matching `[X.Y.Z-1]: https://github.com/GatherPress/gatherpress/compare/...`
+line at the bottom of `CHANGELOG.md`; changelogger validates the heading it
+is about to push down, so a rollup that wrote a heading without its link
+only fails on the *next* release. The 0.35.2 rollup did this and 0.35.3's
+first tag run caught it.
+
+Add the missing link line on `main` (PR, merge commit) and on `develop`
+(PR, squash) so parity holds, then delete and re-push the tag. The
+pre-flight rehearsal above catches it before tagging.
 
 ### The changelog contains entries from the previous release
 
