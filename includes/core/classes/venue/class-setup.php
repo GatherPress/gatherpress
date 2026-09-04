@@ -19,7 +19,7 @@ namespace GatherPress\Core\Venue;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Event;
+use GatherPress\Core\Event\Event as Core_Event;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Shadow_Source;
 use GatherPress\Core\Starter_Pattern_Loader;
@@ -48,6 +48,14 @@ final class Setup {
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
+
+	/**
+	 * Slug of the sentinel term used to mark an event as online.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const ONLINE_EVENT_TERM_SLUG = 'online-event';
 
 	/**
 	 * Class constructor.
@@ -165,6 +173,23 @@ final class Setup {
 		}
 
 		$settings['gatherpress']['config']['venuePostTypes'] = $this->get_venue_post_type_map();
+
+		// Pre-resolve the online-event sentinel term ID per venue post type so
+		// the editor JS can compare against a single int instead of running a
+		// taxonomy REST lookup on every block render. Entries are omitted when
+		// the term is not seeded yet on this site — JS callers fall back to
+		// the existing "no term found" path in that case.
+		$online_term_ids = array();
+
+		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $venue_post_type ) {
+			$id = $this->get_online_event_term_id( $venue_post_type );
+
+			if ( null !== $id ) {
+				$online_term_ids[ $venue_post_type ] = $id;
+			}
+		}
+
+		$settings['gatherpress']['config']['onlineEventTermIds'] = $online_term_ids;
 
 		return $settings;
 	}
@@ -485,11 +510,13 @@ final class Setup {
 		$venue = null;
 
 		if ( post_type_supports( $post_type, 'gatherpress-venue' ) ) {
-			$event       = new Event( $post_id );
-			$venue_terms = get_the_terms( $post_id, $this->taxonomy_for_event_post_type( $post_type ) );
-			$venue_slug  = ( is_array( $venue_terms ) && ! empty( $venue_terms ) ) ? $venue_terms[0]->slug : null;
+			$event = new Core_Event( $post_id );
 
-			$venue_meta['isOnlineEventTerm'] = ( 'online-event' === $venue_slug );
+			// Derive the online state from the event object so the sentinel
+			// is detected across every assigned term, not just the first.
+			$is_online = $event->is_online();
+
+			$venue_meta['isOnlineEventTerm'] = $is_online;
 			$venue_meta['onlineEventLink']   = $event->maybe_get_online_event_link();
 
 			$venue_post = $this->get_venue_post_from_event_post_id( $post_id );
@@ -587,6 +614,54 @@ final class Setup {
 	 */
 	public function is_venue_term_slug( string $slug ): bool {
 		return Shadow_Source::get_instance()->is_shadow_term_slug( $slug );
+	}
+
+	/**
+	 * Returns true when `$slug` is the online-event sentinel term slug.
+	 *
+	 * Symmetric with {@see self::is_venue_term_slug()}: that predicate matches
+	 * shadow-source venue term slugs (which start with an underscore), this one
+	 * matches the lone sentinel that lives in the same taxonomy but is not a
+	 * shadow. Centralizing the slug lets the editor and any third-party code
+	 * test for the sentinel without restating the string.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $slug The term slug to test.
+	 *
+	 * @return bool
+	 */
+	public function is_online_event_term_slug( string $slug ): bool {
+		return self::ONLINE_EVENT_TERM_SLUG === $slug;
+	}
+
+	/**
+	 * Resolve the term ID of the online-event sentinel in a venue taxonomy.
+	 *
+	 * Returns null when the term has not been seeded. Callers that need
+	 * to assign it (e.g. {@see Core_Event::set_online()}) handle the null branch by
+	 * running {@see \GatherPress\Core\Setup::add_online_event_term()} first.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $venue_post_type The venue post type whose taxonomy should be
+	 *                                queried. Defaults to {@see Venue::POST_TYPE}
+	 *                                when empty so callers that already know
+	 *                                the default need not pass it explicitly.
+	 *
+	 * @return int|null Term ID, or null if the term isn't seeded yet.
+	 */
+	public function get_online_event_term_id( string $venue_post_type = '' ): ?int {
+		if ( ! $venue_post_type ) {
+			$venue_post_type = Venue::POST_TYPE;
+		}
+
+		// `term_exists()` returns `array{term_id, term_taxonomy_id}` when the term
+		// is registered, `null` otherwise. Use it instead of `get_term_by()` so
+		// we don't depend on `get_term_by()`'s taxonomy-registered cache state.
+		$existing = term_exists( self::ONLINE_EVENT_TERM_SLUG, $this->get_taxonomy( $venue_post_type ) );
+
+		return is_array( $existing ) ? (int) $existing['term_id'] : null;
 	}
 
 	/**

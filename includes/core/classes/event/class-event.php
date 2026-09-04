@@ -19,6 +19,7 @@ use Exception;
 use GatherPress\Core\Calendar;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
+use GatherPress\Core\Setup as Core_Setup;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
@@ -1135,5 +1136,125 @@ class Event {
 		}
 
 		return $event_link;
+	}
+
+	/**
+	 * Whether this event is marked online.
+	 *
+	 * Unconditional online-status check: returns true whenever the event
+	 * carries the `online-event` sentinel term in its venue taxonomy, no
+	 * matter the current user's RSVP status, the event's time, or the admin
+	 * context. Distinct from {@see self::maybe_get_online_event_link()}, which
+	 * gates link disclosure on attendance and time.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return bool True if the event has the online-event term, false otherwise.
+	 */
+	public function is_online(): bool {
+		if ( ! $this->post ) {
+			return false;
+		}
+
+		$taxonomy = Setup::get_instance()->taxonomy_for_event_post_type( $this->post->post_type );
+
+		return has_term( Setup::ONLINE_EVENT_TERM_SLUG, $taxonomy, $this->post );
+	}
+
+	/**
+	 * Mark this event as online or offline and persist the link.
+	 *
+	 * Owns the term-plus-meta pairing so callers do not have to coordinate
+	 * the two writes themselves. Toggle on: the sentinel term is ensured to
+	 * exist in the right venue taxonomy (idempotent with plugin activation)
+	 * and its term ID is appended without removing existing venue terms, so
+	 * hybrid events keep their venue. Toggle off: the sentinel term is
+	 * removed and the link meta is deleted so re-enabling starts blank rather
+	 * than reading a stale URL.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param bool   $is_online True to mark online, false to mark offline.
+	 * @param string $link      Optional URL for the `gatherpress_online_event_link` meta when online. An empty
+	 *                          value preserves an existing link.
+	 *
+	 * @return bool True when the online status was saved, false otherwise.
+	 */
+	public function set_online( bool $is_online, string $link = '' ): bool {
+		if ( ! $this->post ) {
+			return false;
+		}
+
+		$venue_setup = Setup::get_instance();
+		$venue_pt    = $venue_setup->get_venue_post_type( $this->post->post_type );
+		$taxonomy    = $venue_setup->taxonomy_for_event_post_type( $this->post->post_type );
+		$term_id     = $venue_setup->get_online_event_term_id( $venue_pt );
+
+		// No resolved term id means the venue taxonomy has no sentinel seeded.
+		// Toggle on: seed it first; toggle off: nothing to remove from terms.
+		if ( null === $term_id ) {
+			if ( ! $is_online ) {
+				delete_post_meta( $this->post->ID, 'gatherpress_online_event_link' );
+				return true;
+			}
+
+			Core_Setup::get_instance()->add_online_event_term();
+			$term_id = $venue_setup->get_online_event_term_id( $venue_pt );
+
+			if ( null === $term_id ) {
+				return false;
+			}
+		}
+
+		$existing = wp_get_post_terms( $this->post->ID, $taxonomy, array( 'fields' => 'ids' ) );
+
+		// @codeCoverageIgnoreStart
+		// get_online_event_term_id() above already resolved a term ID, so the
+		// taxonomy exists and this read cannot fail with a WP_Error.
+		if ( is_wp_error( $existing ) ) {
+			return false;
+		}
+		// @codeCoverageIgnoreEnd
+
+		$existing = array_map( 'intval', $existing );
+
+		if ( $is_online ) {
+			if ( ! in_array( $term_id, $existing, true ) ) {
+				$existing[] = $term_id;
+
+				$terms_to_set = array_values( array_unique( $existing ) );
+				$result       = wp_set_post_terms( $this->post->ID, $terms_to_set, $taxonomy );
+
+				// @codeCoverageIgnoreStart
+				// The write only fails on a DB error this harness cannot force.
+				if ( is_wp_error( $result ) ) {
+					return false;
+				}
+				// @codeCoverageIgnoreEnd
+			}
+
+			if ( '' !== $link ) {
+				update_post_meta( $this->post->ID, 'gatherpress_online_event_link', esc_url_raw( $link ) );
+			}
+			return true;
+		}
+
+		// Toggle off: drop the sentinel from the term list (preserve venue terms)
+		// and clear the link meta so re-enabling starts blank.
+		$remaining = array_values( array_filter( $existing, static fn ( int $id ): bool => $id !== $term_id ) );
+
+		if ( count( $remaining ) !== count( $existing ) ) {
+			$result = wp_set_post_terms( $this->post->ID, $remaining, $taxonomy );
+
+			// @codeCoverageIgnoreStart
+			// The write only fails on a DB error this harness cannot force.
+			if ( is_wp_error( $result ) ) {
+				return false;
+			}
+			// @codeCoverageIgnoreEnd
+		}
+
+		delete_post_meta( $this->post->ID, 'gatherpress_online_event_link' );
+		return true;
 	}
 }

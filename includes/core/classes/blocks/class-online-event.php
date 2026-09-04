@@ -123,7 +123,14 @@ final class Online_Event {
 			return false;
 		}
 
-		return in_array( 'online-event', wp_list_pluck( $venue_terms, 'slug' ), true );
+		return ! empty(
+			array_filter(
+				$venue_terms,
+				static function ( $term ): bool {
+					return Setup::get_instance()->is_online_event_term_slug( $term->slug );
+				}
+			)
+		);
 	}
 
 	/**
