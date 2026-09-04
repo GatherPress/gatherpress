@@ -523,6 +523,7 @@ Initial public release. Represents 18+ months of pre-1.0 development and ships t
 - Initial unit test suite with code coverage via SonarCloud.
 - Multilingual screenshots and i18n scaffolding.
 
+[0.35.2]: https://github.com/GatherPress/gatherpress/compare/0.35.1...0.35.2
 [0.35.1]: https://github.com/GatherPress/gatherpress/compare/0.35.0...0.35.1
 [0.35.0]: https://github.com/GatherPress/gatherpress/compare/0.34.1...0.35.0
 [0.34.1]: https://github.com/GatherPress/gatherpress/compare/0.34.0...0.34.1
