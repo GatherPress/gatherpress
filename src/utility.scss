@@ -1,5 +1,24 @@
 // Import tooltip format styles for frontend display.
 @use "formats/tooltip/style";
+// Hide screen-reader text anywhere inside a GatherPress block, so no block
+// has to style it itself. Core ships `.screen-reader-text` in the
+// block-library stylesheet and most themes carry it, but neither is
+// guaranteed, and without it these notes render as visible text.
+// Declarations mirror core's, with `overflow-wrap` standing in for its legacy
+// `word-wrap` alias. No `:focus` counterpart: nothing hidden this way is
+// focusable, and adding one would fight a theme's own skip-link styling.
+[class*="wp-block-gatherpress-"] .screen-reader-text {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	border: 0;
+	overflow: hidden;
+	clip-path: inset(50%);
+	overflow-wrap: normal !important;
+	word-break: normal !important;
+}
 
 .gatherpress--is-visible {
 	display: block !important;

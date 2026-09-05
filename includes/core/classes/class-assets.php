@@ -107,6 +107,7 @@ final class Assets {
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_timezone_shim' ), PHP_INT_MAX );
 
 		add_filter( 'render_block', array( $this, 'maybe_enqueue_styles' ), 10, 2 );
+		add_filter( 'render_block', array( $this, 'maybe_enqueue_new_tab_notice' ), 10, 2 );
 		add_filter( 'render_block', array( $this, 'maybe_enqueue_tooltip_assets' ) );
 	}
 
@@ -276,6 +277,39 @@ final class Assets {
 		if ( is_admin() ) {
 			wp_enqueue_style( 'gatherpress-utility-style' );
 		}
+	}
+
+	/**
+	 * Load the new-tab notice script when a GatherPress block is on the page.
+	 *
+	 * PHP announces the links it renders. The script covers links a block
+	 * creates or retargets afterwards, so no block has to handle this itself.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string              $block_content Rendered block markup.
+	 * @param array<string,mixed> $block         Parsed block.
+	 *
+	 * @return string The block content, unchanged.
+	 */
+	public function maybe_enqueue_new_tab_notice( string $block_content, array $block ): string {
+		if ( ! str_starts_with( (string) ( $block['blockName'] ?? '' ), 'gatherpress/' ) ) {
+			return $block_content;
+		}
+
+		$asset = $this->get_asset_data( 'new_tab_notice' );
+
+		wp_enqueue_script(
+			'gatherpress-new-tab-notice',
+			$this->build . 'new_tab_notice.js',
+			$asset['dependencies'],
+			$asset['version'],
+			true
+		);
+
+		wp_set_script_translations( 'gatherpress-new-tab-notice', 'gatherpress' );
+
+		return $block_content;
 	}
 
 	/**

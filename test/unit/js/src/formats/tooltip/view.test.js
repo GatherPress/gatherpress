@@ -118,19 +118,62 @@ describe( 'Tooltip view', () => {
 			const srSpan = el.querySelector( '.screen-reader-text' );
 			expect( srSpan ).not.toBeNull();
 			expect( srSpan.textContent ).toBe( ' (Accessible note)' );
+			expect( srSpan.className ).toBe(
+				'screen-reader-text gatherpress-tooltip-notice'
+			);
 		} );
 
 		it( 'does not inject duplicate .screen-reader-text span if already present', () => {
 			const el = document.createElement( 'span' );
 			el.setAttribute( 'data-gatherpress-tooltip', 'Accessible note' );
 			const existing = document.createElement( 'span' );
-			existing.className = 'screen-reader-text';
+			existing.className =
+				'screen-reader-text gatherpress-tooltip-notice';
 			existing.textContent = ' (Accessible note)';
 			el.appendChild( existing );
 
 			initTooltip( el );
 
 			expect( el.querySelectorAll( '.screen-reader-text' ).length ).toBe( 1 );
+		} );
+
+		it( 'does not borrow a nested tooltip\'s text', () => {
+			const el = document.createElement( 'span' );
+			el.className = 'gatherpress-tooltip';
+			el.setAttribute( 'data-gatherpress-tooltip', 'Outer note' );
+
+			const inner = document.createElement( 'span' );
+			inner.className = 'gatherpress-tooltip';
+			inner.setAttribute( 'data-gatherpress-tooltip', 'Inner note' );
+			const innerSr = document.createElement( 'span' );
+			innerSr.className = 'screen-reader-text gatherpress-tooltip-notice';
+			innerSr.textContent = ' (Inner note)';
+			inner.appendChild( innerSr );
+			el.appendChild( inner );
+
+			initTooltip( el );
+
+			const own = el.querySelector( ':scope > .gatherpress-tooltip-notice' );
+			expect( own ).not.toBeNull();
+			expect( own.textContent ).toBe( ' (Outer note)' );
+		} );
+
+		it( 'still speaks when another feature left screen-reader text behind', () => {
+			const el = document.createElement( 'span' );
+			el.setAttribute( 'data-gatherpress-tooltip', 'Accessible note' );
+
+			// Not ours. Without a marker class this would read as an existing
+			// tooltip and the note would never be announced.
+			const other = document.createElement( 'span' );
+			other.className = 'screen-reader-text gatherpress-new-tab-notice';
+			other.textContent = '(opens in a new tab)';
+			el.appendChild( other );
+
+			initTooltip( el );
+
+			const srSpan = el.querySelector( '.gatherpress-tooltip-notice' );
+			expect( srSpan ).not.toBeNull();
+			expect( srSpan.textContent ).toBe( ' (Accessible note)' );
 		} );
 	} );
 

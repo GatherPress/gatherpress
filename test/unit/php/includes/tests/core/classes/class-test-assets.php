@@ -98,6 +98,12 @@ class Test_Assets extends Base {
 				'callback' => array( $instance, 'maybe_enqueue_styles' ),
 			),
 			array(
+				'type'     => 'filter',
+				'name'     => 'render_block',
+				'priority' => 10,
+				'callback' => array( $instance, 'maybe_enqueue_new_tab_notice' ),
+			),
+			array(
 				'type'          => 'filter',
 				'name'          => 'render_block',
 				'priority'      => 10,
@@ -1315,5 +1321,69 @@ class Test_Assets extends Base {
 
 		// Verify the final result matches the cached data after array_filter.
 		$this->assertSame( array_filter( $cache_after_second ), $second_result );
+	}
+
+	/**
+	 * The notice script loads once when a GatherPress block renders.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::maybe_enqueue_new_tab_notice
+	 *
+	 * @return void
+	 */
+	public function test_maybe_enqueue_new_tab_notice(): void {
+		$instance = Assets::get_instance();
+		$content  = '<a href="/x" target="_blank">Site</a>';
+
+		wp_dequeue_script( 'gatherpress-new-tab-notice' );
+
+		$this->assertSame(
+			$content,
+			$instance->maybe_enqueue_new_tab_notice( $content, array( 'blockName' => 'gatherpress/venue-detail' ) ),
+			'Failed to assert the block content is returned unchanged.'
+		);
+		$this->assertTrue(
+			wp_script_is( 'gatherpress-new-tab-notice', 'enqueued' ),
+			'Failed to assert the new-tab notice script is enqueued.'
+		);
+
+		$this->assertContains(
+			'wp-i18n',
+			wp_scripts()->registered['gatherpress-new-tab-notice']->deps,
+			'Failed to assert the script can translate its own string.'
+		);
+	}
+
+	/**
+	 * Blocks from other plugins do not pull the script in.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::maybe_enqueue_new_tab_notice
+	 *
+	 * @return void
+	 */
+	public function test_maybe_enqueue_new_tab_notice_ignores_other_blocks(): void {
+		$instance = Assets::get_instance();
+		$content  = '<a href="/x" target="_blank">Site</a>';
+
+		wp_dequeue_script( 'gatherpress-new-tab-notice' );
+
+		$this->assertSame(
+			$content,
+			$instance->maybe_enqueue_new_tab_notice( $content, array( 'blockName' => 'core/paragraph' ) ),
+			'Failed to assert the block content is returned unchanged.'
+		);
+		$this->assertFalse(
+			wp_script_is( 'gatherpress-new-tab-notice', 'enqueued' ),
+			'Failed to assert a non-GatherPress block does not enqueue the script.'
+		);
+
+		$this->assertSame(
+			$content,
+			$instance->maybe_enqueue_new_tab_notice( $content, array() ),
+			'Failed to assert a block with no name is returned unchanged.'
+		);
 	}
 }
