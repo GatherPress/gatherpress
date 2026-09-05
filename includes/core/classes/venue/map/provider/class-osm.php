@@ -18,6 +18,7 @@ namespace GatherPress\Core\Venue\Map\Provider;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Settings;
 use GatherPress\Core\Venue\Map;
 use GdImage;
 use Throwable;
@@ -384,7 +385,9 @@ final class OSM extends Base {
 		 *
 		 * @param string $template Tile URL with `{z}`, `{x}`, `{y}` placeholders.
 		 */
-		return (string) apply_filters( 'gatherpress_static_map_tile_url', self::DEFAULT_TILE_URL );
+		return Settings::add_map_tile_key(
+			(string) apply_filters( 'gatherpress_static_map_tile_url', self::DEFAULT_TILE_URL )
+		);
 	}
 
 	/**

@@ -3318,4 +3318,151 @@ class Test_Settings extends Base {
 
 		delete_option( Settings::OPTION_NAME );
 	}
+
+	/**
+	 * Data provider for tile URLs handed to add_map_tile_key.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return array<string, array<int, string>>
+	 */
+	public function data_map_tile_keys(): array {
+		return array(
+			'the Leaflet basemap gets the key'   => array(
+				'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+				'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?key=abc123',
+			),
+			'the compositor host gets it too'    => array(
+				'https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png',
+				'https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png?key=abc123',
+			),
+			'an existing key is left alone'      => array(
+				'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?key=existing',
+				'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?key=existing',
+			),
+			'another query argument is kept'     => array(
+				'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?foo=bar',
+				'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?foo=bar&key=abc123',
+			),
+			'a host that wants no key is spared' => array(
+				'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+				'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+			),
+			'a lookalike host gets nothing'      => array(
+				'https://attacker-cartocdn.com/light_all/{z}/{x}/{y}.png',
+				'https://attacker-cartocdn.com/light_all/{z}/{x}/{y}.png',
+			),
+			'a lookalike subdomain too'          => array(
+				'https://basemaps.cartocdn.com.evil.test/light_all/{z}/{x}/{y}.png',
+				'https://basemaps.cartocdn.com.evil.test/light_all/{z}/{x}/{y}.png',
+			),
+			'another key argument is not ours'   => array(
+				'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?api_key=old',
+				'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?api_key=old&key=abc123',
+			),
+		);
+	}
+
+	/**
+	 * Coverage for add_map_tile_key.
+	 *
+	 * CARTO began enforcing keys on its basemaps in August 2026. Without one
+	 * every tile comes back stamped "API KEY REQUIRED", so the configured key
+	 * rides along on both the Leaflet basemap and the server-side compositor.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::add_map_tile_key
+	 *
+	 * @dataProvider data_map_tile_keys
+	 *
+	 * @param string $url      Tile URL template.
+	 * @param string $expected Template after the key is applied.
+	 *
+	 * @return void
+	 */
+	public function test_add_map_tile_key( string $url, string $expected ): void {
+		$instance = Settings::get_instance();
+
+		$instance->set( 'carto_api_key', 'abc123' );
+
+		$this->assertSame(
+			$expected,
+			Settings::add_map_tile_key( $url ),
+			'Failed to assert the CARTO key is applied to the tile URL.'
+		);
+
+		$instance->set( 'carto_api_key', '' );
+	}
+
+	/**
+	 * Without a key the tile URL is untouched.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::add_map_tile_key
+	 * @covers ::get_map_tile_url
+	 *
+	 * @return void
+	 */
+	public function test_add_map_tile_key_without_a_key(): void {
+		$instance = Settings::get_instance();
+
+		$instance->set( 'carto_api_key', '' );
+
+		$this->assertSame(
+			Settings::MAP_TILE_URL,
+			Settings::get_map_tile_url(),
+			'Failed to assert the tile URL is unchanged without a key.'
+		);
+	}
+
+	/**
+	 * The key is url-encoded on its way into the query string.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::add_map_tile_key
+	 *
+	 * @return void
+	 */
+	public function test_add_map_tile_key_encodes_the_key(): void {
+		$instance = Settings::get_instance();
+
+		$instance->set( 'carto_api_key', 'a b&c' );
+
+		$this->assertStringEndsWith(
+			'?key=a%20b%26c',
+			Settings::add_map_tile_key( 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png' ),
+			'Failed to assert the key is encoded.'
+		);
+
+		$instance->set( 'carto_api_key', '' );
+	}
+
+	/**
+	 * The Leaflet basemap URL carries the key.
+	 *
+	 * Covers the call site rather than the helper, so dropping the wrapper
+	 * call is caught.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_map_tile_url
+	 *
+	 * @return void
+	 */
+	public function test_get_map_tile_url_carries_the_key(): void {
+		$instance = Settings::get_instance();
+
+		$instance->set( 'carto_api_key', 'abc123' );
+
+		$this->assertSame(
+			Settings::MAP_TILE_URL . '?key=abc123',
+			Settings::get_map_tile_url(),
+			'Failed to assert the Leaflet basemap URL carries the key.'
+		);
+
+		$instance->set( 'carto_api_key', '' );
+	}
 }

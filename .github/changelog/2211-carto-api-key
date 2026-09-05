@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+A CARTO API key setting for OpenStreetMap venue maps. Without a key, map tiles are watermarked.

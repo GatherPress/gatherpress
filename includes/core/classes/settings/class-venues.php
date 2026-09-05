@@ -114,6 +114,37 @@ final class Venues extends Base {
 							),
 						),
 					),
+					'carto_api_key'                  => array(
+						'labels'      => array(
+							'name' => __( 'CARTO API Key', 'gatherpress' ),
+						),
+						'description' => wp_kses(
+							sprintf(
+								// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string for the full key guidance sentence.
+								/* translators: %s: link to CARTO's free basemap key request form. */
+								__( 'Required. Without a key, map tiles are watermarked. Free up to 5 million tiles a month. %s.', 'gatherpress' ),
+								// phpcs:enable Generic.Files.LineLength.TooLong
+								'<a href="https://carto.com/basemaps/apikey/"'
+								. ' target="_blank" rel="noopener noreferrer">'
+								. __( 'Request a free key', 'gatherpress' ) . '</a>'
+							),
+							array(
+								'a' => array(
+									'href'   => array(),
+									'target' => array(),
+									'rel'    => array(),
+								),
+							)
+						),
+						'field'       => array(
+							'label' => __( 'CARTO API key:', 'gatherpress' ),
+							'type'  => 'text',
+							'size'  => 'regular',
+						),
+						'show_if'     => array(
+							'map_platform' => 'osm',
+						),
+					),
 					'google_maps_api_key'            => array(
 						'labels'      => array(
 							'name' => __( 'Google Maps API Key', 'gatherpress' ),

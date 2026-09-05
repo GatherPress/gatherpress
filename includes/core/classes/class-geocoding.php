@@ -71,6 +71,17 @@ final class Geocoding {
 	const PHOTON_API_URL = 'https://photon.komoot.io/api';
 
 	/**
+	 * Languages the public Photon API accepts.
+	 *
+	 * Anything else is rejected with HTTP 400, which takes autocomplete and
+	 * save-time geocoding down with it.
+	 *
+	 * @since 0.36.0
+	 * @var string[]
+	 */
+	private const PHOTON_LANGUAGES = array( 'default', 'de', 'en', 'fr' );
+
+	/**
 	 * Minimum trimmed query length before calling Photon for search.
 	 *
 	 * This value is the single source of truth: it is also exposed to the block
@@ -1266,10 +1277,27 @@ final class Geocoding {
 	 * @return string Language code (e.g., 'en', 'de').
 	 */
 	private function get_language_code(): string {
-		$locale = get_locale();
-
 		// Convert 'en_US' to 'en'.
-		return explode( '_', $locale )[0];
+		$language = explode( '_', get_locale() )[0];
+
+		/**
+		 * Filters the languages the geocoder is willing to be asked for.
+		 *
+		 * Widen this when `gatherpress_photon_api_url` points at a Photon
+		 * instance that serves more languages than the public one, so a site
+		 * gets results named in its own locale instead of falling back.
+		 *
+		 * @since 0.36.0
+		 *
+		 * @param string[] $languages Language codes the geocoder accepts.
+		 *
+		 * @return string[]
+		 */
+		$languages = (array) apply_filters( 'gatherpress_geocode_languages', self::PHOTON_LANGUAGES );
+
+		// `default` asks Photon for each result's own local-language name,
+		// which is the closest thing to correct for a locale it cannot serve.
+		return in_array( $language, $languages, true ) ? $language : 'default';
 	}
 
 	/**
