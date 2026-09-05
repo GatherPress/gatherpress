@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\Admin\Notices;
 
 use GatherPress\Core\Admin\Notices\Base;
 use GatherPress\Core\Admin\Notices\Missing_Build;
+use GatherPress\Core\Admin\Notices\Welcome;
 use GatherPress\Tests\Base as Unit_Test_Base;
 use PMC\Unit_Test\Utility;
 
@@ -619,5 +620,72 @@ class Test_Base extends Unit_Test_Base {
 			$notice->allow_mark_markup( array(), 'data' ),
 			'Failed to assert other contexts are left alone.'
 		);
+	}
+
+	/**
+	 * The dismiss link is absolute, so the browser cannot resolve it twice.
+	 *
+	 * `add_query_arg()` with no URL falls back to REQUEST_URI, a path. The
+	 * browser resolved that against the current directory, turning
+	 * /wp-admin/edit.php into /wp-admin/wp-admin/edit.php, so the dismissal
+	 * never ran and the notice came back (#2233).
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_dismiss_url
+	 *
+	 * @return void
+	 */
+	public function test_get_dismiss_url_is_absolute(): void {
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- stashing the test runner's own value to restore it.
+		$original = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : null;
+
+		$_SERVER['REQUEST_URI'] = '/wp-admin/edit.php?post_type=gatherpress_event';
+
+		$url = html_entity_decode( ( new Welcome() )->get_dismiss_url() );
+
+		$this->assertStringStartsWith(
+			admin_url( 'edit.php' ),
+			$url,
+			'Failed to assert the dismiss URL is absolute.'
+		);
+		$this->assertStringNotContainsString(
+			'wp-admin/wp-admin',
+			$url,
+			'Failed to assert the admin path is not doubled.'
+		);
+		$this->assertStringContainsString(
+			'post_type=gatherpress_event',
+			$url,
+			'Failed to assert the current screen is preserved.'
+		);
+		$this->assertStringContainsString(
+			'gatherpress_dismiss_notice=gatherpress_welcome',
+			$url,
+			'Failed to assert the dismissal argument is present.'
+		);
+
+		// WP-CLI and cron have no REQUEST_URI at all; the URL still has to be
+		// a usable admin URL rather than a bare nonce on nothing.
+		unset( $_SERVER['REQUEST_URI'] );
+
+		$url = html_entity_decode( ( new Welcome() )->get_dismiss_url() );
+
+		$this->assertStringStartsWith(
+			admin_url(),
+			$url,
+			'Failed to assert the dismiss URL is absolute without a request.'
+		);
+		$this->assertStringContainsString(
+			'gatherpress_dismiss_notice=gatherpress_welcome',
+			$url,
+			'Failed to assert the dismissal argument survives without a request.'
+		);
+
+		if ( null === $original ) {
+			unset( $_SERVER['REQUEST_URI'] );
+		} else {
+			$_SERVER['REQUEST_URI'] = $original;
+		}
 	}
 }
