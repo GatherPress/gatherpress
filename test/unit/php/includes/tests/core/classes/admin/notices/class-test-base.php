@@ -665,6 +665,23 @@ class Test_Base extends Unit_Test_Base {
 			'Failed to assert the dismissal argument is present.'
 		);
 
+		// WP-CLI and cron have no REQUEST_URI at all; the URL still has to be
+		// a usable admin URL rather than a bare nonce on nothing.
+		unset( $_SERVER['REQUEST_URI'] );
+
+		$url = html_entity_decode( ( new Welcome() )->get_dismiss_url() );
+
+		$this->assertStringStartsWith(
+			admin_url(),
+			$url,
+			'Failed to assert the dismiss URL is absolute without a request.'
+		);
+		$this->assertStringContainsString(
+			'gatherpress_dismiss_notice=gatherpress_welcome',
+			$url,
+			'Failed to assert the dismissal argument survives without a request.'
+		);
+
 		if ( null === $original ) {
 			unset( $_SERVER['REQUEST_URI'] );
 		} else {
