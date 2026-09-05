@@ -3,6 +3,11 @@
  */
 import { describe, expect, it, beforeEach, jest } from '@jest/globals';
 
+/**
+ * Internal dependencies
+ */
+import { initTooltips } from '@src/formats/tooltip/view';
+
 const NOTICE_CLASS = 'gatherpress-new-tab-notice';
 const NOTICE_TEXT = '(opens in a new tab)';
 
@@ -167,6 +172,49 @@ describe( 'new-tab notice', () => {
 		expect( link.lastElementChild.className ).toBe(
 			`screen-reader-text ${ NOTICE_CLASS }`
 		);
+	} );
+
+	it( 'leaves the tooltip inside a link to its own text', async () => {
+		document.body.innerHTML =
+			'<div class="wp-block-gatherpress-online-event-link">' +
+			'<a href="/x" target="_blank">Join' +
+			'<span class="gatherpress-tooltip" data-gatherpress-tooltip="Opens Zoom">' +
+			'</span></a></div>';
+
+		load();
+
+		await settle();
+		initTooltips();
+
+		const link = document.querySelector( 'a' );
+		const tooltip = document.querySelector( '.gatherpress-tooltip' );
+
+		expect( link.querySelectorAll( `.${ NOTICE_CLASS }` ) ).toHaveLength( 1 );
+		expect(
+			tooltip.querySelectorAll( ':scope > .screen-reader-text' )
+		).toHaveLength( 1 );
+		expect( tooltip.querySelector( `.${ NOTICE_CLASS }` ) ).toBeNull();
+	} );
+
+	it( 'leaves a tooltip wrapping a link to its own text', async () => {
+		document.body.innerHTML =
+			'<div class="wp-block-gatherpress-venue-detail">' +
+			'<span class="gatherpress-tooltip" data-gatherpress-tooltip="Our venue">' +
+			'<a href="/x" target="_blank">Venue</a></span></div>';
+
+		load();
+
+		await settle();
+		initTooltips();
+
+		const tooltip = document.querySelector( '.gatherpress-tooltip' );
+
+		expect(
+			document.querySelector( 'a' ).querySelectorAll( `.${ NOTICE_CLASS }` )
+		).toHaveLength( 1 );
+		expect(
+			tooltip.querySelector( ':scope > .screen-reader-text' ).textContent
+		).toContain( 'Our venue' );
 	} );
 
 	it( 'stands down when the page has no GatherPress blocks', () => {
