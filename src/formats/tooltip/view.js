@@ -9,6 +9,13 @@
  */
 
 /**
+ * Marks the span holding the tooltip text for screen readers.
+ *
+ * @type {string}
+ */
+const NOTICE_CLASS = 'gatherpress-tooltip-notice';
+
+/**
  * Initialize a single tooltip element.
  *
  * @param {HTMLElement|Object} tooltip The tooltip element.
@@ -60,12 +67,15 @@ export function initTooltip( tooltip ) {
 		'function' === typeof tooltip.appendChild &&
 		'undefined' !== typeof document
 	) {
+		// Found by its own class rather than by position, so another
+		// feature's screen-reader text inside the same element is never
+		// mistaken for this one.
 		const existingSrText = tooltip.querySelector(
-			':scope > .screen-reader-text'
+			`.${ NOTICE_CLASS }`
 		);
 		if ( ! existingSrText ) {
 			const srText = document.createElement( 'span' );
-			srText.className = 'screen-reader-text';
+			srText.className = `screen-reader-text ${ NOTICE_CLASS }`;
 			srText.textContent = ` (${ tooltipText })`;
 			tooltip.appendChild( srText );
 		}
