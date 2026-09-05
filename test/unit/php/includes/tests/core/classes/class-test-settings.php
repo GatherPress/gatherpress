@@ -3348,6 +3348,18 @@ class Test_Settings extends Base {
 				'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
 				'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
 			),
+			'a lookalike host gets nothing'      => array(
+				'https://attacker-cartocdn.com/light_all/{z}/{x}/{y}.png',
+				'https://attacker-cartocdn.com/light_all/{z}/{x}/{y}.png',
+			),
+			'a lookalike subdomain too'          => array(
+				'https://basemaps.cartocdn.com.evil.test/light_all/{z}/{x}/{y}.png',
+				'https://basemaps.cartocdn.com.evil.test/light_all/{z}/{x}/{y}.png',
+			),
+			'another key argument is not ours'   => array(
+				'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?api_key=old',
+				'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?api_key=old&key=abc123',
+			),
 		);
 	}
 
@@ -3423,6 +3435,32 @@ class Test_Settings extends Base {
 			'?key=a%20b%26c',
 			Settings::add_map_tile_key( 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png' ),
 			'Failed to assert the key is encoded.'
+		);
+
+		$instance->set( 'carto_api_key', '' );
+	}
+
+	/**
+	 * The Leaflet basemap URL carries the key.
+	 *
+	 * Covers the call site rather than the helper, so dropping the wrapper
+	 * call is caught.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_map_tile_url
+	 *
+	 * @return void
+	 */
+	public function test_get_map_tile_url_carries_the_key(): void {
+		$instance = Settings::get_instance();
+
+		$instance->set( 'carto_api_key', 'abc123' );
+
+		$this->assertSame(
+			Settings::MAP_TILE_URL . '?key=abc123',
+			Settings::get_map_tile_url(),
+			'Failed to assert the Leaflet basemap URL carries the key.'
 		);
 
 		$instance->set( 'carto_api_key', '' );

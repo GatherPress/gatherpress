@@ -83,6 +83,24 @@ class Settings {
 	const MAP_TILE_URL = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
 
 	/**
+	 * Hosts the CARTO key may be sent to.
+	 *
+	 * The tile URL is filterable, so the key is only ever attached to hosts
+	 * known to be CARTO's. A site pointing its tiles elsewhere does not hand
+	 * its key to that host.
+	 *
+	 * @since 0.36.0
+	 * @var string[]
+	 */
+	private const CARTO_TILE_HOSTS = array(
+		'basemaps.cartocdn.com',
+		'cartodb-basemaps-a.global.ssl.fastly.net',
+		'cartodb-basemaps-b.global.ssl.fastly.net',
+		'cartodb-basemaps-c.global.ssl.fastly.net',
+		'cartodb-basemaps-d.global.ssl.fastly.net',
+	);
+
+	/**
 	 * URL used in the default map attribution credit to OpenStreetMap.
 	 *
 	 * @since 0.34.0
@@ -276,11 +294,16 @@ class Settings {
 			return $url;
 		}
 
-		$is_carto = str_contains( $url, 'cartocdn.com' ) || str_contains( $url, 'cartodb-basemaps' );
+		// `{s}` stands in for a subdomain, so it is resolved before the host
+		// is read; a bare placeholder does not parse as one.
+		$host = (string) wp_parse_url( str_replace( '{s}', 'a', $url ), PHP_URL_HOST );
 
-		// Left alone when the URL already names a key, or when it has been
-		// filtered to a host that does not want one.
-		if ( ! $is_carto || str_contains( $url, 'key=' ) ) {
+		$is_carto = in_array( $host, self::CARTO_TILE_HOSTS, true )
+			|| str_ends_with( $host, '.basemaps.cartocdn.com' );
+
+		// Matched at a parameter boundary, so `api_key=` is not mistaken for
+		// a key that is already there.
+		if ( ! $is_carto || 1 === preg_match( '/[?&]key=/', $url ) ) {
 			return $url;
 		}
 

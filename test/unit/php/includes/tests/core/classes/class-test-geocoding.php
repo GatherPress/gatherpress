@@ -503,8 +503,6 @@ class Test_Geocoding extends Base {
 			Utility::invoke_hidden_method( $instance, 'get_language_code' ),
 			'Failed to assert the language sent to the geocoder.'
 		);
-
-		remove_all_filters( 'locale' );
 	}
 
 	/**
@@ -539,9 +537,6 @@ class Test_Geocoding extends Base {
 			Utility::invoke_hidden_method( $instance, 'get_language_code' ),
 			'Failed to assert a filtered language is sent through.'
 		);
-
-		remove_all_filters( 'locale' );
-		remove_all_filters( 'gatherpress_geocode_languages' );
 	}
 
 	/**
