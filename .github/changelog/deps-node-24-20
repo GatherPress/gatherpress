@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Node 24.20.0, every in-range package update, and a trimmed set of npm overrides. Jest now handles the ESM-only packages @wordpress/core-data pulls in. The unreachable 400 branch in the RSVP comment preprocessor is gone: is_enabled() already answers 403 for any post type without RSVP support.
