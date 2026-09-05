@@ -33,6 +33,19 @@ const announce = ( link ) => {
 };
 
 /**
+ * Whether a link opens in a new tab.
+ *
+ * Target keywords beginning with an underscore are case-insensitive, so
+ * `_BLANK` opens a new tab just as `_blank` does.
+ *
+ * @param {Element} link The link to check.
+ *
+ * @return {boolean} True when the link opens in a new tab.
+ */
+const opensNewTab = ( link ) =>
+	'_blank' === ( link.getAttribute( 'target' ) || '' ).toLowerCase();
+
+/**
  * Announce every new-tab link inside an element, and the element itself.
  *
  * @param {Element} root The element to search.
@@ -40,9 +53,13 @@ const announce = ( link ) => {
  * @return {void}
  */
 const announceWithin = ( root ) => {
-	root.querySelectorAll?.( 'a[target="_blank"]' ).forEach( announce );
+	root.querySelectorAll?.( 'a[target]' ).forEach( ( link ) => {
+		if ( opensNewTab( link ) ) {
+			announce( link );
+		}
+	} );
 
-	if ( 'A' === root.tagName && '_blank' === root.getAttribute( 'target' ) ) {
+	if ( 'A' === root.tagName && opensNewTab( root ) ) {
 		announce( root );
 	}
 };

@@ -387,7 +387,9 @@ final class Setup {
 			return $block_content;
 		}
 
-		if ( ! str_contains( $block_content, '_blank' ) ) {
+		// Target keywords beginning with an underscore are case-insensitive,
+		// so `_BLANK` opens a new tab just as `_blank` does.
+		if ( false === stripos( $block_content, '_blank' ) ) {
 			return $block_content;
 		}
 
@@ -396,10 +398,21 @@ final class Setup {
 
 		// The parser decides which anchors qualify, so attribute order and
 		// quoting are its problem rather than a regex's.
-		while ( $processor->next_tag( array( 'tag_name' => 'a' ) ) ) {
-			if ( '_blank' === $processor->get_attribute( 'target' ) ) {
+		while ( $processor->next_tag() ) {
+			if (
+				'A' === $processor->get_tag()
+				&& '_blank' === strtolower( (string) $processor->get_attribute( 'target' ) )
+			) {
 				$processor->set_attribute( self::NEW_TAB_ATTRIBUTE, '1' );
 				$found = true;
+
+				continue;
+			}
+
+			// Authored content could already carry the marker, which would
+			// send the splice below to the wrong element.
+			if ( null !== $processor->get_attribute( self::NEW_TAB_ATTRIBUTE ) ) {
+				$processor->remove_attribute( self::NEW_TAB_ATTRIBUTE );
 			}
 		}
 

@@ -67,11 +67,11 @@ export function initTooltip( tooltip ) {
 		'function' === typeof tooltip.appendChild &&
 		'undefined' !== typeof document
 	) {
-		// Found by its own class rather than by position, so another
-		// feature's screen-reader text inside the same element is never
-		// mistaken for this one.
+		// Its own class so another feature's screen-reader text is never
+		// mistaken for this one, and a direct child so a nested tooltip's
+		// text is not either.
 		const existingSrText = tooltip.querySelector(
-			`.${ NOTICE_CLASS }`
+			`:scope > .${ NOTICE_CLASS }`
 		);
 		if ( ! existingSrText ) {
 			const srText = document.createElement( 'span' );

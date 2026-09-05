@@ -871,6 +871,14 @@ class Test_Setup extends Base {
 				'<a href="/x" target="_blank">Site',
 				0,
 			),
+			'an uppercase target still counts'    => array(
+				'<a href="/x" target="_BLANK">Site</a>',
+				1,
+			),
+			'a mixed-case target still counts'    => array(
+				'<a href="/x" target="_Blank">Site</a>',
+				1,
+			),
 		);
 	}
 
@@ -1050,6 +1058,48 @@ class Test_Setup extends Base {
 			sprintf( '<span class="screen-reader-text %s">(opens in a new tab)</span></a>', Setup::NEW_TAB_CLASS ),
 			$result,
 			'Failed to assert the notice is the last thing inside the link.'
+		);
+	}
+
+	/**
+	 * A marker left in authored content does not misplace a notice.
+	 *
+	 * The marker is private to the two passes below, but nothing stops a
+	 * block's content carrying the same attribute. It is cleared from
+	 * anything that is not a qualifying link so the splice cannot land on
+	 * the wrong element.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::announce_new_tab_links
+	 * @covers ::insert_new_tab_notices
+	 *
+	 * @return void
+	 */
+	public function test_announce_new_tab_links_ignores_a_marker_in_the_content(): void {
+		$instance = Setup::get_instance();
+		$result   = $instance->announce_new_tab_links(
+			sprintf(
+				'<a href="/same" %s="1">Same tab</a><a href="/new" target="_blank">New tab</a>',
+				Setup::NEW_TAB_ATTRIBUTE
+			),
+			array( 'blockName' => 'gatherpress/venue-detail' )
+		);
+
+		$this->assertSame(
+			1,
+			substr_count( $result, Setup::NEW_TAB_CLASS ),
+			'Failed to assert only the new-tab link is announced.'
+		);
+		$this->assertStringContainsString(
+			'New tab<span',
+			$result,
+			'Failed to assert the notice landed on the new-tab link.'
+		);
+		$this->assertStringNotContainsString(
+			Setup::NEW_TAB_ATTRIBUTE,
+			$result,
+			'Failed to assert no marker attribute survives.'
 		);
 	}
 }

@@ -217,6 +217,65 @@ describe( 'new-tab notice', () => {
 		).toContain( 'Our venue' );
 	} );
 
+	it( 'announces an uppercase target', async () => {
+		document.body.innerHTML =
+			'<div class="wp-block-gatherpress-venue-detail">' +
+			'<a href="/x" target="_BLANK">Site</a></div>';
+
+		load();
+
+		expect( document.querySelector( `.${ NOTICE_CLASS }` ) ).not.toBeNull();
+
+		const block = document.querySelector( '.wp-block-gatherpress-venue-detail' );
+		const later = document.createElement( 'a' );
+
+		later.href = '/y';
+		later.setAttribute( 'target', '_Blank' );
+		later.textContent = 'Later';
+		block.appendChild( later );
+
+		await settle();
+
+		expect( later.querySelector( `.${ NOTICE_CLASS }` ) ).not.toBeNull();
+	} );
+
+	it( 'leaves a link that names another target alone', async () => {
+		document.body.innerHTML =
+			'<div class="wp-block-gatherpress-venue-detail">' +
+			'<a href="/x" target="_self">Site</a></div>';
+
+		load();
+
+		expect( document.querySelector( `.${ NOTICE_CLASS }` ) ).toBeNull();
+
+		const block = document.querySelector( '.wp-block-gatherpress-venue-detail' );
+		const later = document.createElement( 'a' );
+
+		later.href = '/y';
+		later.target = 'namedwindow';
+		later.textContent = 'Later';
+		block.appendChild( later );
+
+		await settle();
+
+		expect( document.querySelector( `.${ NOTICE_CLASS }` ) ).toBeNull();
+	} );
+
+	it( 'copes with text added to a block', async () => {
+		document.body.innerHTML =
+			'<div class="wp-block-gatherpress-venue-detail">Venue</div>';
+
+		load();
+
+		const block = document.querySelector( '.wp-block-gatherpress-venue-detail' );
+
+		block.appendChild( document.createTextNode( ' open daily' ) );
+
+		await settle();
+
+		expect( block.textContent ).toContain( 'open daily' );
+	} );
+
 	it( 'stands down when the page has no GatherPress blocks', () => {
 		document.body.innerHTML = '<a href="/x" target="_blank">Site</a>';
 
