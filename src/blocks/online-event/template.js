@@ -38,7 +38,7 @@ const TEMPLATE = [
 					linkText: sprintf(
 						/* translators: %1$s: tooltip text, %2$s: label text */
 						'<span class="gatherpress-tooltip" data-gatherpress-tooltip="%1$s">%2$s</span>',
-						__( 'Link available for attendees only.', 'gatherpress' ),
+						__( 'link available for attendees only', 'gatherpress' ),
 						__( 'Online event', 'gatherpress' )
 					),
 				},

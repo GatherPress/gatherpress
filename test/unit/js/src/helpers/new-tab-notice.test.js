@@ -9,7 +9,7 @@ import { describe, expect, it, beforeEach, jest } from '@jest/globals';
 import { initTooltips } from '@src/formats/tooltip/view';
 
 const NOTICE_CLASS = 'gatherpress-new-tab-notice';
-const NOTICE_TEXT = '(opens in a new tab)';
+const NOTICE_TEXT = ' (opens in a new tab)';
 
 /**
  * Load the script fresh against the current DOM.

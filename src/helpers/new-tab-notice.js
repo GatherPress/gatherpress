@@ -28,7 +28,9 @@ const announce = ( link ) => {
 	const notice = document.createElement( 'span' );
 
 	notice.className = `screen-reader-text ${ NOTICE_CLASS }`;
-	notice.textContent = __( '(opens in a new tab)', 'gatherpress' );
+	// The space is outside the string, as core does it, so the label and the
+	// notice cannot run together in the accessible name.
+	notice.textContent = ` ${ __( '(opens in a new tab)', 'gatherpress' ) }`;
 	link.appendChild( notice );
 };
 

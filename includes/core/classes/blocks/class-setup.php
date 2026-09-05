@@ -438,8 +438,11 @@ final class Setup {
 	 */
 	private function insert_new_tab_notices( string $html ): string {
 		$marker = sprintf( ' %s="1"', self::NEW_TAB_ATTRIBUTE );
+		// The space sits in the markup rather than the string, as core does, so
+		// the label and the notice cannot run together in the accessible name
+		// and translators have no leading whitespace to preserve.
 		$notice = sprintf(
-			'<span class="screen-reader-text %1$s">%2$s</span>',
+			'<span class="screen-reader-text %1$s"> %2$s</span>',
 			esc_attr( self::NEW_TAB_CLASS ),
 			esc_html__( '(opens in a new tab)', 'gatherpress' )
 		);

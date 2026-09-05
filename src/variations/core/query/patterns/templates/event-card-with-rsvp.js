@@ -140,7 +140,7 @@ const EVENT_CARD_WITH_RSVP_TEMPLATE = [
 										'gatherpress/online-event-link',
 										{
 											linkText: `<span class="gatherpress-tooltip" data-gatherpress-tooltip="${ __(
-												'Link available for attendees only.',
+												'link available for attendees only',
 												'gatherpress'
 											) }">${ __(
 												'Online event',

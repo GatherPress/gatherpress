@@ -937,7 +937,7 @@ class Test_Setup extends Base {
 		);
 
 		$expected = sprintf(
-			'<a href="/x" target="_blank">Site<span class="screen-reader-text %s">%s</span></a>',
+			'<a href="/x" target="_blank">Site<span class="screen-reader-text %s"> %s</span></a>',
 			Setup::NEW_TAB_CLASS,
 			'(opens in a new tab)'
 		);
@@ -1055,7 +1055,7 @@ class Test_Setup extends Base {
 			'Failed to assert a link carrying a tooltip is still announced.'
 		);
 		$this->assertStringEndsWith(
-			sprintf( '<span class="screen-reader-text %s">(opens in a new tab)</span></a>', Setup::NEW_TAB_CLASS ),
+			sprintf( '<span class="screen-reader-text %s"> (opens in a new tab)</span></a>', Setup::NEW_TAB_CLASS ),
 			$result,
 			'Failed to assert the notice is the last thing inside the link.'
 		);
