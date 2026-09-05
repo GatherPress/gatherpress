@@ -126,7 +126,7 @@ final class Venues extends Base {
 								// phpcs:enable Generic.Files.LineLength.TooLong
 								'<a href="https://carto.com/basemaps/apikey/"'
 								. ' target="_blank" rel="noopener noreferrer">'
-								. esc_html__( 'Request a free key', 'gatherpress' ) . '</a>'
+								. __( 'Request a free key', 'gatherpress' ) . '</a>'
 							),
 							array(
 								'a' => array(
