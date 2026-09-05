@@ -143,6 +143,32 @@ describe( 'new-tab notice', () => {
 		expect( document.querySelector( `.${ NOTICE_CLASS }` ) ).not.toBeNull();
 	} );
 
+	it( 'looks past other screen-reader text in the link', async () => {
+		document.body.innerHTML =
+			'<div class="wp-block-gatherpress-online-event-link">' +
+			'<span class="gatherpress-online-event__text">Join</span></div>';
+
+		load();
+
+		const block = document.querySelector( '.wp-block-gatherpress-online-event-link' );
+		const link = document.createElement( 'a' );
+
+		// A tooltip puts its own screen-reader text inside the link.
+		link.href = 'https://example.com/meet';
+		link.target = '_blank';
+		link.innerHTML =
+			'Join<span class="gatherpress-tooltip">' +
+			'<span class="screen-reader-text">Opens Zoom</span></span>';
+		block.replaceChild( link, block.firstElementChild );
+
+		await settle();
+
+		expect( link.querySelectorAll( `.${ NOTICE_CLASS }` ) ).toHaveLength( 1 );
+		expect( link.lastElementChild.className ).toBe(
+			`screen-reader-text ${ NOTICE_CLASS }`
+		);
+	} );
+
 	it( 'stands down when the page has no GatherPress blocks', () => {
 		document.body.innerHTML = '<a href="/x" target="_blank">Site</a>';
 

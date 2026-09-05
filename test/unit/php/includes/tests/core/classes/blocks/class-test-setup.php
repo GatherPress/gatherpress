@@ -1017,4 +1017,39 @@ class Test_Setup extends Base {
 			'Failed to assert both links carry exactly one notice.'
 		);
 	}
+
+	/**
+	 * Other screen-reader text in the link does not count as a notice.
+	 *
+	 * The tooltip format puts its own `.screen-reader-text` inside the trigger,
+	 * which can sit inside a link. The marker class is what tells our notice
+	 * apart, so the guard against announcing twice does not mistake a tooltip
+	 * for one and leave the link silent.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::announce_new_tab_links
+	 * @covers ::insert_new_tab_notices
+	 *
+	 * @return void
+	 */
+	public function test_announce_new_tab_links_looks_past_other_screen_reader_text(): void {
+		$instance = Setup::get_instance();
+		$result   = $instance->announce_new_tab_links(
+			'<a href="/x" target="_blank">Join<span class="gatherpress-tooltip">'
+			. '<span class="screen-reader-text">Opens Zoom</span></span></a>',
+			array( 'blockName' => 'gatherpress/online-event-link' )
+		);
+
+		$this->assertSame(
+			1,
+			substr_count( $result, Setup::NEW_TAB_CLASS ),
+			'Failed to assert a link carrying a tooltip is still announced.'
+		);
+		$this->assertStringEndsWith(
+			sprintf( '<span class="screen-reader-text %s">(opens in a new tab)</span></a>', Setup::NEW_TAB_CLASS ),
+			$result,
+			'Failed to assert the notice is the last thing inside the link.'
+		);
+	}
 }
