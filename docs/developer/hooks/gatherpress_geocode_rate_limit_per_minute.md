@@ -33,7 +33,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-geocoding.php:560](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-geocoding.php#L560)
+- [includes/core/classes/class-geocoding.php:571](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-geocoding.php#L571)
 ```php
 apply_filters(
 			'gatherpress_geocode_rate_limit_per_minute',
