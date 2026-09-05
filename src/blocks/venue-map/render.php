@@ -268,6 +268,16 @@ if ( '' !== $gatherpress_static_map_url ) {
 		);
 	}
 
+	// Warn screen-reader users before the context change of a new tab. It
+	// follows the image so the link's accessible name reads "map, opens in
+	// a new tab" rather than leading with the warning.
+	if ( '' !== $gatherpress_href && '_blank' === $gatherpress_target ) {
+		printf(
+			'<span class="screen-reader-text">%s</span>',
+			esc_html__( ' (opens in a new tab)', 'gatherpress' )
+		);
+	}
+
 	if ( '' !== $gatherpress_href ) {
 		echo '</a>';
 	}

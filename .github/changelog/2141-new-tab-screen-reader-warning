@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Links that open in a new tab now include a visually hidden "(opens in a new tab)" warning so screen readers announce the context change before it happens, covering the online event link, the Google and Yahoo calendar options, venue website links, and linked static maps (WCAG 3.2.5).
