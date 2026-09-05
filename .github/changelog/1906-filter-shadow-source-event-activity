@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Added the ability to filter a Query Loop of shadow-source posts (venues, productions, seasons) by whether those sources have upcoming or past events attached. A "Filter by event activity" toggle in the GatherPress query panel limits the list to sources carrying at least one event term, and an "Upcoming events only" toggle (on by default) narrows it to sources with upcoming events, or off to sources whose events are all past for an archive view. Supported over the REST API for editor previews.

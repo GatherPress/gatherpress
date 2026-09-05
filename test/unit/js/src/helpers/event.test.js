@@ -1,7 +1,7 @@
 /**
  * External dependencies
  */
-import { describe, expect, jest, it, beforeEach } from '@jest/globals';
+import { describe, expect, jest, it, beforeEach, afterEach } from '@jest/globals';
 import moment from 'moment';
 import 'moment-timezone';
 
@@ -23,6 +23,10 @@ jest.mock( '@wordpress/core-data', () => ( {
 	store: {},
 } ) );
 
+afterEach( () => {
+	jest.clearAllMocks();
+} );
+
 /**
  * Internal dependencies
  */
@@ -31,6 +35,7 @@ import {
 	hasEventPastNotice,
 	isPostTypeSupporting,
 	usePostTypeSupports,
+	hasEventActivityFilterSupport,
 	isEventPostType,
 	isRsvpPostType,
 	hasValidEventId,
@@ -223,6 +228,268 @@ describe( 'usePostTypeSupports', () => {
 		expect(
 			usePostTypeSupports( 'gatherpress-event-date', 'gatherpress_event' )
 		).toBe( true );
+	} );
+} );
+
+/**
+ * Mock a `core` data store that recognizes the venue as a shadow source and
+ * lists the event post types supplied. Defaults to wiring `_gatherpress_venue`
+ * onto the supplied event post types so the wiring branch is reachable.
+ *
+ * @param {string[]} eventSlugs Event-date post type slugs.
+ *
+ * @return {Object} Core-data selector mock.
+ */
+function mockShadowSourceCore( eventSlugs ) {
+	return {
+		getPostType: ( slug ) => {
+			if ( 'gatherpress_venue' === slug ) {
+				return {
+					supports: { 'gatherpress-shadow-source': true },
+				};
+			}
+			return { supports: {} };
+		},
+		getTaxonomy: ( slug ) => {
+			if ( `_${ 'gatherpress_venue' }` === slug ) {
+				return { types: [ ...eventSlugs, 'post' ] };
+			}
+			return undefined;
+		},
+		getPostTypes: () =>
+			eventSlugs.map( ( slug ) => ( {
+				slug,
+				supports: { 'gatherpress-event-date': true },
+			} ) ),
+	};
+}
+
+/**
+ * Coverage for hasEventActivityFilterSupport.
+ */
+describe( 'hasEventActivityFilterSupport', () => {
+	it( 'returns false when sourcePostType is falsy', () => {
+		expect( hasEventActivityFilterSupport( '' ) ).toBe( false );
+		expect( hasEventActivityFilterSupport( null ) ).toBe( false );
+		expect( hasEventActivityFilterSupport() ).toBe( false );
+	} );
+
+	it( 'returns false when the source post type lacks shadow-source support', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getPostType: () => ( {
+						supports: { 'gatherpress-shadow-source': false },
+					} ),
+					getTaxonomy: () => ( { types: [ 'gatherpress_event', 'post' ] } ),
+					getPostTypes: () => [
+						{
+							slug: 'gatherpress_event',
+							supports: { 'gatherpress-event-date': true },
+						},
+					],
+				};
+			}
+			return {};
+		} );
+
+		expect( hasEventActivityFilterSupport( 'gatherpress_venue' ) ).toBe( false );
+	} );
+
+	it( 'returns false when the shadow taxonomy is missing', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getPostType: () => ( {
+						supports: { 'gatherpress-shadow-source': true },
+					} ),
+					getTaxonomy: () => undefined,
+					getPostTypes: () => [],
+				};
+			}
+			return {};
+		} );
+
+		expect( hasEventActivityFilterSupport( 'gatherpress_venue' ) ).toBe( false );
+	} );
+
+	it( 'returns true when the shadow taxonomy types include gatherpress_event', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return mockShadowSourceCore( [ 'gatherpress_event' ] );
+			}
+			return {};
+		} );
+
+		expect( hasEventActivityFilterSupport( 'gatherpress_venue' ) ).toBe( true );
+	} );
+
+	it( 'returns false when the shadow taxonomy types exclude gatherpress_event', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getPostType: () => ( {
+						supports: { 'gatherpress-shadow-source': true },
+					} ),
+					getTaxonomy: () => ( { types: [ 'post' ] } ),
+					getPostTypes: () => [
+						{
+							slug: 'gatherpress_event',
+							supports: { 'gatherpress-event-date': true },
+						},
+					],
+				};
+			}
+			return {};
+		} );
+
+		expect( hasEventActivityFilterSupport( 'gatherpress_venue' ) ).toBe( false );
+	} );
+
+	it( 'returns false when no event-supporting post type is registered', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getPostType: () => ( {
+						supports: { 'gatherpress-shadow-source': true },
+					} ),
+					getTaxonomy: () => ( { types: [ 'gatherpress_event', 'post' ] } ),
+					getPostTypes: () => [
+						{
+							slug: 'gatherpress_event',
+							supports: {},
+						},
+					],
+				};
+			}
+			return {};
+		} );
+
+		expect( hasEventActivityFilterSupport( 'gatherpress_venue' ) ).toBe( false );
+	} );
+} );
+
+/**
+ * Coverage for useHasEventActivityFilterSupport — the reactive variant.
+ */
+describe( 'useHasEventActivityFilterSupport', () => {
+	let useHasEventActivityFilterSupport;
+
+	beforeEach( async () => {
+		( { useHasEventActivityFilterSupport } = await import(
+			'@src/helpers/event'
+		) );
+	} );
+
+	it( 'returns false when sourcePostType is falsy', () => {
+		expect( useHasEventActivityFilterSupport( '' ) ).toBe( false );
+		expect( useHasEventActivityFilterSupport( null ) ).toBe( false );
+		expect( useHasEventActivityFilterSupport() ).toBe( false );
+	} );
+
+	it( 'returns false when the source post type lacks shadow-source support', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getPostType: () => ( {
+						supports: { 'gatherpress-shadow-source': false },
+					} ),
+				};
+			}
+			return {};
+		} );
+
+		expect(
+			useHasEventActivityFilterSupport( 'gatherpress_venue' )
+		).toBe( false );
+	} );
+
+	it( 'returns false when the shadow taxonomy is missing', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getPostType: () => ( {
+						supports: { 'gatherpress-shadow-source': true },
+					} ),
+					getTaxonomy: () => undefined,
+				};
+			}
+			return {};
+		} );
+
+		expect(
+			useHasEventActivityFilterSupport( 'gatherpress_venue' )
+		).toBe( false );
+	} );
+
+	it( 'returns false when the shadow taxonomy tags no post types', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getPostType: () => ( {
+						supports: { 'gatherpress-shadow-source': true },
+					} ),
+					getTaxonomy: () => ( { types: [] } ),
+				};
+			}
+			return {};
+		} );
+
+		expect(
+			useHasEventActivityFilterSupport( 'gatherpress_venue' )
+		).toBe( false );
+	} );
+
+	it( 'returns true when the shadow taxonomy types include an event-date post type', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return mockShadowSourceCore( [ 'gatherpress_event' ] );
+			}
+			return {};
+		} );
+
+		expect(
+			useHasEventActivityFilterSupport( 'gatherpress_venue' )
+		).toBe( true );
+	} );
+
+	it( 'returns false when no event-supporting post type is registered', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getPostType: () => ( {
+						supports: { 'gatherpress-shadow-source': true },
+					} ),
+					getTaxonomy: () => ( { types: [ 'post' ] } ),
+					getPostTypes: () => [
+						{
+							slug: 'gatherpress_event',
+							supports: {},
+						},
+					],
+				};
+			}
+			return {};
+		} );
+
+		expect(
+			useHasEventActivityFilterSupport( 'gatherpress_venue' )
+		).toBe( false );
+	} );
+
+	it( 'subscribes via useSelect so the gate is reactive', () => {
+		const { useSelect } = require( '@wordpress/data' );
+		useSelect.mockClear();
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return mockShadowSourceCore( [ 'gatherpress_event' ] );
+			}
+			return {};
+		} );
+
+		useHasEventActivityFilterSupport( 'gatherpress_venue' );
+
+		expect( useSelect ).toHaveBeenCalledTimes( 1 );
 	} );
 } );
 

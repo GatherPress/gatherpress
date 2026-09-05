@@ -283,6 +283,54 @@ final class Query {
 			}
 		}
 
+		// When the "filter by event activity" toggle is on, restrict the query to
+		// shadow-source posts whose shadow terms sit on an upcoming or past event.
+		// Runs early so the resolved source IDs can still compose with the query
+		// loop's post_type, tax_query, and pagination.
+		if ( 1 === (int) $query->get( 'has_events_filter' ) ) {
+			$post_type = $query->get( 'post_type' );
+
+			if (
+				is_string( $post_type )
+				&& post_type_supports( $post_type, 'gatherpress-shadow-source' )
+			) {
+				// The block normally writes upcoming_events_only as an integer (0/1),
+				// but AQL can pass the literal strings 'upcoming' or 'past'. Default
+				// on when the attribute is absent.
+				$upcoming_value = $query->get( 'upcoming_events_only', 1 );
+				$upcoming       = 'upcoming' === $upcoming_value || 1 === (int) $upcoming_value;
+
+				$source_ids = Shadow_Source::get_instance()->get_source_post_ids_by_event_activity(
+					$post_type,
+					$upcoming
+				);
+
+				// Null means the source's shadow taxonomy is not wired onto any
+				// event post type, so the filter does not apply and the query
+				// keeps its own scope.
+				if ( null !== $source_ids ) {
+					// A post__in the query already carries is a narrower scope the
+					// caller asked for, so intersect rather than merge -- merging
+					// would widen the result set and make the filter add posts
+					// instead of removing them. WP_Query::get() returns '' for an
+					// unset var, so only treat an actual array as a prior scope.
+					$existing_post_in = $query->get( 'post__in' );
+					$existing_post_in = is_array( $existing_post_in )
+						? array_map( 'intval', $existing_post_in )
+						: array();
+
+					if ( ! empty( $existing_post_in ) ) {
+						$source_ids = array_values( array_intersect( $existing_post_in, $source_ids ) );
+					}
+
+					// An empty result means the filter ran and matched nothing,
+					// which is a valid answer rather than an open list; pin the
+					// query to an impossible ID so it returns empty.
+					$query->set( 'post__in', ! empty( $source_ids ) ? $source_ids : array( 0 ) );
+				}
+			}
+		}
+
 		switch ( $events_query ) {
 			case 'upcoming':
 				remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_past_events' ) );
@@ -588,6 +636,131 @@ final class Query {
 		// - Upcoming events, without running events.
 		// - Past events, that are still running.
 		return 'datetime_start_gmt';
+	}
+
+	/**
+	 * Return the shadow term slugs that sit on an upcoming or a past event.
+	 *
+	 * Answers "which shadow-source posts have event activity?" in a single
+	 * indexed query. The join runs from the term relationships straight into
+	 * the events table, so the result set is bounded by the number of source
+	 * posts that carry events rather than by the size of the event table --
+	 * no event rows are ever materialized in PHP.
+	 *
+	 * Sentinel terms are excluded in SQL: real shadow term slugs always carry
+	 * the leading underscore that {@see Shadow_Source::term_slug_from_post_name()}
+	 * adds, while sentinels such as the venue subsystem's `online-event`
+	 * deliberately do not.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $taxonomy Shadow taxonomy to read term slugs from.
+	 * @param bool   $upcoming Whether to match upcoming events rather than past ones.
+	 *
+	 * @return string[] Distinct shadow term slugs, empty when nothing matched.
+	 */
+	public function get_active_shadow_term_slugs( string $taxonomy, bool $upcoming ): array {
+		global $wpdb;
+
+		$event_post_types = get_post_types_by_support( 'gatherpress-event-date' );
+
+		// An empty IN () list is invalid SQL, and with no event post type
+		// registered there is nothing the filter could match anyway.
+		if ( empty( $event_post_types ) ) {
+			return array();
+		}
+
+		$private_event_post_types = array();
+
+		foreach ( $event_post_types as $event_post_type ) {
+			$post_type_object   = get_post_type_object( $event_post_type );
+			$private_capability = $post_type_object->cap->read_private_posts ?? 'read_private_posts';
+
+			if ( current_user_can( $private_capability ) ) {
+				$private_event_post_types[] = $event_post_type;
+			}
+		}
+
+		// Same column and clock the posts_clauses filters use, so this query and
+		// a regular upcoming/past event query always agree on the boundary.
+		$column  = $this->get_datetime_comparison_column( $upcoming ? 'upcoming' : 'past', $upcoming );
+		$current = gmdate( Event::DATETIME_FORMAT, time() );
+		$table   = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+
+		$post_type_placeholders = implode( ', ', array_fill( 0, count( $event_post_types ), '%s' ) );
+		$private_type_condition = '';
+		$status_args            = array( 'publish' );
+
+		if ( ! empty( $private_event_post_types ) ) {
+			$private_type_placeholders = implode(
+				', ',
+				array_fill( 0, count( $private_event_post_types ), '%s' )
+			);
+			$private_type_condition    = ' OR ( p.post_status = %s AND p.post_type IN ('
+				. $private_type_placeholders . ') )';
+			$status_args               = array_merge(
+				$status_args,
+				array( 'private' ),
+				$private_event_post_types
+			);
+		}
+
+		// Only the generated placeholder runs are interpolated; every value is
+		// still bound through prepare() below.
+		$sql = 'SELECT DISTINCT t.slug'
+			. ' FROM %i AS tr'
+			. ' INNER JOIN %i AS tt ON tt.term_taxonomy_id = tr.term_taxonomy_id'
+			. ' INNER JOIN %i AS t ON t.term_id = tt.term_id'
+			. ' INNER JOIN %i AS e ON e.post_id = tr.object_id'
+			. ' INNER JOIN %i AS p ON p.ID = tr.object_id'
+			. ' WHERE tt.taxonomy = %s'
+			. ' AND p.post_type IN (' . $post_type_placeholders . ')'
+			. ' AND ( p.post_status = %s'
+			. $private_type_condition
+			. ' )'
+			. ' AND t.slug LIKE %s';
+
+		// Two literal fragments rather than an interpolated operator.
+		if ( $upcoming ) {
+			$sql .= ' AND e.%i >= %s';
+		} else {
+			$sql .= ' AND e.%i < %s';
+		}
+
+		$args = array_merge(
+			array(
+				$wpdb->term_relationships,
+				$wpdb->term_taxonomy,
+				$wpdb->terms,
+				$table,
+				$wpdb->posts,
+				$taxonomy,
+			),
+			array_values( $event_post_types ),
+			$status_args,
+			array(
+				$wpdb->esc_like( '_' ) . '%',
+				$column,
+				$current,
+			)
+		);
+
+		// $sql is assembled from literals above: only the generated placeholder
+		// runs are interpolated, and every value is bound by prepare(). The
+		// identifier placeholders use the %i form phpcs does not yet recognize.
+		// The result is time-relative, so a persistent cache would go stale as
+		// events cross the upcoming/past boundary.
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:disable WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching
+		$slugs = $wpdb->get_col( $wpdb->prepare( $sql, $args ) );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:enable WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
+		// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared
+
+		return array_map( 'strval', (array) $slugs );
 	}
 
 	/**
