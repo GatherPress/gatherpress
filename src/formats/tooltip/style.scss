@@ -18,6 +18,8 @@
 
 // CSS custom properties with theme-aware defaults.
 // Priority: 1) Inline styles 2) GatherPress theme vars 3) WP global styles 4) Fallback
+@use "../../blocks/mixins" as mixins;
+
 .gatherpress-tooltip {
 	--gatherpress-tooltip-text-color: var(
 		--gatherpress--tooltip--text-color,
@@ -89,16 +91,7 @@
 	// Declarations match core's `.screen-reader-text`, with `overflow-wrap`
 	// standing in for its legacy `word-wrap` alias.
 	> .screen-reader-text {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		margin: -1px;
-		padding: 0;
-		border: 0;
-		overflow: hidden;
-		clip-path: inset(50%);
-		overflow-wrap: normal !important;
-		word-break: normal !important;
+		@include mixins.screen-reader-text;
 	}
 
 	// Focus affordance for keyboard navigation.

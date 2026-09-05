@@ -87,6 +87,11 @@ module.exports = [
 				'src/formats/tooltip',
 				'view.js'
 			),
+			new_tab_notice: path.resolve(
+				process.cwd(),
+				'src/helpers',
+				'new-tab-notice.js'
+			),
 			'integrations/aql/index': path.resolve(
 				process.cwd(),
 				'src/integrations/aql',

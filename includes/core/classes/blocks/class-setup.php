@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
 use WP_Block_Template;
+use WP_HTML_Tag_Processor;
 use WP_Post;
 
 /**
@@ -31,6 +32,22 @@ final class Setup {
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
+
+	/**
+	 * Attribute used to carry the parser's decisions to the splice.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const NEW_TAB_ATTRIBUTE = 'data-gatherpress-new-tab';
+
+	/**
+	 * Class on the injected notice, also read by online-event-link's view.js.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const NEW_TAB_CLASS = 'gatherpress-new-tab-notice';
 
 	/**
 	 * Class constructor.
@@ -62,6 +79,7 @@ final class Setup {
 		// Run on priority 9 to allow extenders to use the hooks with the default of 10.
 		add_filter( 'hooked_block_types', array( $this, 'hook_blocks_into_patterns' ), 9, 4 );
 		add_filter( 'hooked_block_core/paragraph', array( $this, 'modify_hooked_blocks_in_patterns' ), 9, 5 );
+		add_filter( 'render_block', array( $this, 'announce_new_tab_links' ), 10, 2 );
 	}
 
 	/**
@@ -348,5 +366,94 @@ final class Setup {
 			);
 		}
 		return $args;
+	}
+
+	/**
+	 * Announce GatherPress links that open in a new tab to screen readers.
+	 *
+	 * Sighted users get a visual cue from the new tab itself; screen-reader
+	 * users get nothing unless the link says so. One filter covers every
+	 * GatherPress block rather than each template repeating the markup.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string              $block_content Rendered block markup.
+	 * @param array<string,mixed> $block         Parsed block.
+	 *
+	 * @return string Markup with a notice inside each new-tab link.
+	 */
+	public function announce_new_tab_links( string $block_content, array $block ): string {
+		if ( ! str_starts_with( (string) ( $block['blockName'] ?? '' ), 'gatherpress/' ) ) {
+			return $block_content;
+		}
+
+		if ( ! str_contains( $block_content, '_blank' ) ) {
+			return $block_content;
+		}
+
+		$processor = new WP_HTML_Tag_Processor( $block_content );
+		$found     = false;
+
+		// The parser decides which anchors qualify, so attribute order and
+		// quoting are its problem rather than a regex's.
+		while ( $processor->next_tag( array( 'tag_name' => 'a' ) ) ) {
+			if ( '_blank' === $processor->get_attribute( 'target' ) ) {
+				$processor->set_attribute( self::NEW_TAB_ATTRIBUTE, '1' );
+				$found = true;
+			}
+		}
+
+		if ( ! $found ) {
+			return $block_content;
+		}
+
+		return $this->insert_new_tab_notices( $processor->get_updated_html() );
+	}
+
+	/**
+	 * Splice a notice in before each marked anchor's closing tag.
+	 *
+	 * WP_HTML_Tag_Processor sets attributes but cannot insert markup, so the
+	 * marked anchors are closed by hand. Anchors cannot nest, so the next
+	 * `</a>` closes the marked one.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $html Markup carrying the marker attribute.
+	 *
+	 * @return string Markup with the notices in place and the markers gone.
+	 */
+	private function insert_new_tab_notices( string $html ): string {
+		$marker = sprintf( ' %s="1"', self::NEW_TAB_ATTRIBUTE );
+		$notice = sprintf(
+			'<span class="screen-reader-text %1$s">%2$s</span>',
+			esc_attr( self::NEW_TAB_CLASS ),
+			esc_html__( '(opens in a new tab)', 'gatherpress' )
+		);
+
+		$output = '';
+		$offset = 0;
+
+		$marked = strpos( $html, $marker );
+
+		while ( false !== $marked ) {
+			$close = strpos( $html, '</a>', $marked );
+
+			if ( false === $close ) {
+				break;
+			}
+
+			$output .= substr( $html, $offset, $close - $offset );
+
+			// Leave an anchor alone when it is already announced.
+			if ( ! str_contains( substr( $html, $marked, $close - $marked ), self::NEW_TAB_CLASS ) ) {
+				$output .= $notice;
+			}
+
+			$offset = $close;
+			$marked = strpos( $html, $marker, $offset );
+		}
+
+		return str_replace( $marker, '', $output . substr( $html, $offset ) );
 	}
 }

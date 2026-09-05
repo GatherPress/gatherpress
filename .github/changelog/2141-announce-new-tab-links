@@ -1,0 +1,4 @@
+Significance: patch
+Type: added
+
+Links that open in a new tab now say so to screen-reader users. One filter covers every GatherPress block, so blocks added later are announced without doing anything.

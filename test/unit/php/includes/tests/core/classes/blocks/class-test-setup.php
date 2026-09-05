@@ -70,6 +70,12 @@ class Test_Setup extends Base {
 				'priority' => 9,
 				'callback' => array( $instance, 'modify_hooked_blocks_in_patterns' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'render_block',
+				'priority' => 10,
+				'callback' => array( $instance, 'announce_new_tab_links' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
@@ -818,5 +824,197 @@ class Test_Setup extends Base {
 		);
 
 		$this->assertSame( $args, $result );
+	}
+
+	/**
+	 * Data provider for new-tab announcements.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return array<string, array<int, mixed>>
+	 */
+	public function data_new_tab_links(): array {
+		return array(
+			'a new-tab link is announced'         => array(
+				'<a href="/x" target="_blank">Site</a>',
+				1,
+			),
+			'a same-tab link is left alone'       => array(
+				'<a href="/x">Site</a>',
+				0,
+			),
+			'an unquoted target still counts'     => array(
+				'<a href="/x" target=_blank>Site</a>',
+				1,
+			),
+			'attribute order does not matter'     => array(
+				'<a target="_blank" rel="noopener" href="/x">Site</a>',
+				1,
+			),
+			'only the new-tab link is announced'  => array(
+				'<a href="/a" target="_blank">A</a><a href="/b">B</a>',
+				1,
+			),
+			'every new-tab link is announced'     => array(
+				'<a href="/a" target="_blank">A</a><a href="/b" target="_blank">B</a>',
+				2,
+			),
+			'the word in link text is not a tag'  => array(
+				'<a href="/x">say _blank</a>',
+				0,
+			),
+			'a link wrapping only an image'       => array(
+				'<a href="/x" target="_blank"><img src="/m.png" alt="Map"></a>',
+				1,
+			),
+			'an unclosed anchor is left as it is' => array(
+				'<a href="/x" target="_blank">Site',
+				0,
+			),
+		);
+	}
+
+	/**
+	 * Coverage for announce_new_tab_links.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::announce_new_tab_links
+	 * @covers ::insert_new_tab_notices
+	 *
+	 * @dataProvider data_new_tab_links
+	 *
+	 * @param string $content  Markup handed to the filter.
+	 * @param int    $expected Number of notices expected.
+	 *
+	 * @return void
+	 */
+	public function test_announce_new_tab_links( string $content, int $expected ): void {
+		$instance = Setup::get_instance();
+		$result   = $instance->announce_new_tab_links(
+			$content,
+			array( 'blockName' => 'gatherpress/venue-detail' )
+		);
+
+		$this->assertSame(
+			$expected,
+			substr_count( $result, Setup::NEW_TAB_CLASS ),
+			'Failed to assert the expected number of new-tab notices.'
+		);
+		$this->assertStringNotContainsString(
+			Setup::NEW_TAB_ATTRIBUTE,
+			$result,
+			'Failed to assert the marker attribute was removed.'
+		);
+	}
+
+	/**
+	 * The notice sits inside the link, after its text.
+	 *
+	 * A link's accessible name is its text content, so the notice has to be a
+	 * child of the anchor and follow the label rather than lead it.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::announce_new_tab_links
+	 * @covers ::insert_new_tab_notices
+	 *
+	 * @return void
+	 */
+	public function test_announce_new_tab_links_places_the_notice_inside_the_link(): void {
+		$instance = Setup::get_instance();
+		$result   = $instance->announce_new_tab_links(
+			'<a href="/x" target="_blank">Site</a>',
+			array( 'blockName' => 'gatherpress/venue-detail' )
+		);
+
+		$expected = sprintf(
+			'<a href="/x" target="_blank">Site<span class="screen-reader-text %s">%s</span></a>',
+			Setup::NEW_TAB_CLASS,
+			'(opens in a new tab)'
+		);
+
+		$this->assertSame(
+			$expected,
+			$result,
+			'Failed to assert the notice follows the link text inside the anchor.'
+		);
+	}
+
+	/**
+	 * Blocks from other plugins are never touched.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::announce_new_tab_links
+	 *
+	 * @return void
+	 */
+	public function test_announce_new_tab_links_ignores_other_blocks(): void {
+		$instance = Setup::get_instance();
+		$content  = '<a href="/x" target="_blank">Site</a>';
+
+		foreach ( array( 'core/paragraph', 'acme/thing', '' ) as $block_name ) {
+			$this->assertSame(
+				$content,
+				$instance->announce_new_tab_links( $content, array( 'blockName' => $block_name ) ),
+				'Failed to assert a non-GatherPress block is left alone.'
+			);
+		}
+
+		$this->assertSame(
+			$content,
+			$instance->announce_new_tab_links( $content, array() ),
+			'Failed to assert a block with no name is left alone.'
+		);
+	}
+
+	/**
+	 * Running twice does not announce twice.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::announce_new_tab_links
+	 * @covers ::insert_new_tab_notices
+	 *
+	 * @return void
+	 */
+	public function test_announce_new_tab_links_is_idempotent(): void {
+		$instance = Setup::get_instance();
+		$block    = array( 'blockName' => 'gatherpress/venue-detail' );
+		$once     = $instance->announce_new_tab_links( '<a href="/x" target="_blank">Site</a>', $block );
+		$twice    = $instance->announce_new_tab_links( $once, $block );
+
+		$this->assertSame(
+			$once,
+			$twice,
+			'Failed to assert a second pass leaves the markup unchanged.'
+		);
+	}
+
+	/**
+	 * A second link is still announced when the first already carries a notice.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::announce_new_tab_links
+	 * @covers ::insert_new_tab_notices
+	 *
+	 * @return void
+	 */
+	public function test_announce_new_tab_links_announces_a_link_added_beside_an_announced_one(): void {
+		$instance = Setup::get_instance();
+		$block    = array( 'blockName' => 'gatherpress/venue-detail' );
+		$first    = $instance->announce_new_tab_links( '<a href="/a" target="_blank">A</a>', $block );
+		$result   = $instance->announce_new_tab_links(
+			$first . '<a href="/b" target="_blank">B</a>',
+			$block
+		);
+
+		$this->assertSame(
+			2,
+			substr_count( $result, Setup::NEW_TAB_CLASS ),
+			'Failed to assert both links carry exactly one notice.'
+		);
 	}
 }

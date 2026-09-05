@@ -1,5 +1,15 @@
 // Import tooltip format styles for frontend display.
 @use "formats/tooltip/style";
+@use "blocks/mixins" as mixins;
+
+// Hide screen-reader text inside GatherPress blocks. Core defines this in the
+// block-library stylesheet and most themes carry it, but neither is
+// guaranteed. Scoped to our blocks so it never overrides a theme elsewhere.
+// No `:focus` counterpart: nothing we hide this way is focusable, and adding
+// one would fight a theme's own skip-link styling.
+[class*="wp-block-gatherpress-"] .screen-reader-text {
+	@include mixins.screen-reader-text;
+}
 
 .gatherpress--is-visible {
 	display: block !important;
