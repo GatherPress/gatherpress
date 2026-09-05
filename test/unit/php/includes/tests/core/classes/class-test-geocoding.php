@@ -495,8 +495,7 @@ class Test_Geocoding extends Base {
 			'locale',
 			static function () use ( $locale ) {
 				return $locale;
-			},
-			20
+			}
 		);
 
 		$this->assertSame(
@@ -524,8 +523,7 @@ class Test_Geocoding extends Base {
 			'locale',
 			static function () {
 				return 'ja_JP';
-			},
-			20
+			}
 		);
 		add_filter(
 			'gatherpress_geocode_languages',
