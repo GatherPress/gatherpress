@@ -36,14 +36,18 @@ const renderSettled = async ( ui ) => {
 /**
  * Clicks and lets React settle, for the same reason.
  *
+ * Opening the dropdown is deliberately not wrapped in an awaited `act()`:
+ * since @wordpress/components 32.6 the popover keeps a positioning loop
+ * running while it is open, so awaiting `act()` never resolves and the test
+ * times out. Callers await a `findBy*` query for what the click revealed,
+ * which is what React Testing Library recommends anyway.
+ *
  * @param {HTMLElement} element The element to click.
  *
  * @return {Promise<void>} Resolves once React has settled.
  */
 const clickSettled = async ( element ) => {
-	await act( async () => {
-		fireEvent.click( element );
-	} );
+	fireEvent.click( element );
 };
 
 describe( 'ResponseFilter', () => {
@@ -86,7 +90,13 @@ describe( 'ResponseFilter', () => {
 
 		await clickSettled( screen.getByLabelText( 'Filter by response: all' ) );
 
-		STATUSES.forEach( ( status ) => {
+		// One await for the popover to mount, then the rest synchronously: a
+		// findBy* per status spends its own timeout each and blows the budget.
+		expect(
+			await screen.findByLabelText( STATUSES[ 0 ].label )
+		).toBeInTheDocument();
+
+		STATUSES.slice( 1 ).forEach( ( status ) => {
 			expect( screen.getByLabelText( status.label ) ).toBeInTheDocument();
 		} );
 	} );
@@ -103,7 +113,7 @@ describe( 'ResponseFilter', () => {
 		);
 
 		await clickSettled( screen.getByLabelText( 'Filter by response: all' ) );
-		await clickSettled( screen.getByLabelText( 'Waiting List' ) );
+		await clickSettled( await screen.findByLabelText( 'Waiting List' ) );
 
 		expect( onChange ).toHaveBeenCalledWith( [ 'waiting_list' ] );
 	} );
@@ -122,7 +132,7 @@ describe( 'ResponseFilter', () => {
 		await clickSettled(
 			screen.getByLabelText( 'Filter by response: 2 selected' )
 		);
-		await clickSettled( screen.getByLabelText( 'Attending' ) );
+		await clickSettled( await screen.findByLabelText( 'Attending' ) );
 
 		expect( onChange ).toHaveBeenCalledWith( [ 'waiting_list' ] );
 	} );
@@ -190,7 +200,7 @@ describe( 'Filters', () => {
 		await renderSettled( <Filters { ...defaults } /> );
 
 		await clickSettled( screen.getByLabelText( 'Filter by response: all' ) );
-		await clickSettled( screen.getByLabelText( 'Not Attending' ) );
+		await clickSettled( await screen.findByLabelText( 'Not Attending' ) );
 
 		expect(
 			screen.getByLabelText( 'Filter by response: Not Attending' )
