@@ -18,7 +18,6 @@
 
 // CSS custom properties with theme-aware defaults.
 // Priority: 1) Inline styles 2) GatherPress theme vars 3) WP global styles 4) Fallback
-@use "../../blocks/mixins" as mixins;
 
 .gatherpress-tooltip {
 	--gatherpress-tooltip-text-color: var(
@@ -83,16 +82,6 @@
 		box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
 	}
 
-	// The text `view.js` appends for screen readers. Core ships this rule
-	// through the block-library stylesheet and themes are required to carry
-	// it too, but the span sits inside the trigger, so if it ever rendered it
-	// would land mid-sentence. Scoped to this element rather than declared
-	// globally, so it never overrides what a theme or core defined.
-	// Declarations match core's `.screen-reader-text`, with `overflow-wrap`
-	// standing in for its legacy `word-wrap` alias.
-	> .screen-reader-text {
-		@include mixins.screen-reader-text;
-	}
 
 	// Focus affordance for keyboard navigation.
 	&:focus-visible {

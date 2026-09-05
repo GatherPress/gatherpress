@@ -15,20 +15,3 @@
 		@content;
 	}
 }
-
-// Core ships `.screen-reader-text` in the block-library stylesheet and most
-// themes carry it, but neither is guaranteed on a given front end. Mirrors
-// core's declarations, with `overflow-wrap` standing in for its legacy
-// `word-wrap` alias.
-@mixin screen-reader-text {
-	position: absolute;
-	width: 1px;
-	height: 1px;
-	margin: -1px;
-	padding: 0;
-	border: 0;
-	overflow: hidden;
-	clip-path: inset(50%);
-	overflow-wrap: normal !important;
-	word-break: normal !important;
-}

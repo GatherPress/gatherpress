@@ -12,13 +12,9 @@ const NOTICE_TEXT = '(opens in a new tab)';
  * The module wires itself up on load, so each case builds its markup first
  * and then imports, the way the browser runs it after the page is parsed.
  *
- * @param {Object|undefined} config Value for the global PHP writes.
- *
  * @return {void}
  */
-const load = ( config ) => {
-	window.gatherPressNewTabNotice = config;
-
+const load = () => {
 	jest.isolateModules( () => {
 		require( '@src/helpers/new-tab-notice' );
 	} );
@@ -31,16 +27,9 @@ const load = ( config ) => {
  */
 const settle = () => new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
 
-const config = {
-	blockPrefix: 'wp-block-gatherpress-',
-	noticeClass: NOTICE_CLASS,
-	noticeText: NOTICE_TEXT,
-};
-
 describe( 'new-tab notice', () => {
 	beforeEach( () => {
 		document.body.innerHTML = '';
-		delete window.gatherPressNewTabNotice;
 	} );
 
 	it( 'announces a link that is already on the page', () => {
@@ -48,7 +37,7 @@ describe( 'new-tab notice', () => {
 			'<div class="wp-block-gatherpress-venue-detail">' +
 			'<a href="/x" target="_blank">Site</a></div>';
 
-		load( config );
+		load();
 
 		const notice = document.querySelector( `.${ NOTICE_CLASS }` );
 
@@ -63,7 +52,7 @@ describe( 'new-tab notice', () => {
 			'<div class="wp-block-gatherpress-venue-detail">' +
 			'<a href="/x">Site</a></div>';
 
-		load( config );
+		load();
 
 		expect( document.querySelector( `.${ NOTICE_CLASS }` ) ).toBeNull();
 	} );
@@ -72,7 +61,7 @@ describe( 'new-tab notice', () => {
 		document.body.innerHTML =
 			'<div class="wp-block-paragraph"><a href="/x" target="_blank">Other</a></div>';
 
-		load( config );
+		load();
 
 		expect( document.querySelector( `.${ NOTICE_CLASS }` ) ).toBeNull();
 	} );
@@ -82,7 +71,7 @@ describe( 'new-tab notice', () => {
 			'<div class="wp-block-gatherpress-online-event-link">' +
 			'<span class="gatherpress-online-event__text">Online event</span></div>';
 
-		load( config );
+		load();
 
 		const block = document.querySelector( '.wp-block-gatherpress-online-event-link' );
 		const link = document.createElement( 'a' );
@@ -102,7 +91,7 @@ describe( 'new-tab notice', () => {
 			'<div class="wp-block-gatherpress-venue-detail">' +
 			'<a href="/x">Site</a></div>';
 
-		load( config );
+		load();
 
 		const link = document.querySelector( 'a' );
 
@@ -122,7 +111,7 @@ describe( 'new-tab notice', () => {
 			`<span class="screen-reader-text ${ NOTICE_CLASS }">${ NOTICE_TEXT }</span>` +
 			'</a></div>';
 
-		load( config );
+		load();
 
 		const link = document.querySelector( 'a' );
 
@@ -131,17 +120,6 @@ describe( 'new-tab notice', () => {
 		await settle();
 
 		expect( link.querySelectorAll( `.${ NOTICE_CLASS }` ) ).toHaveLength( 1 );
-	} );
-
-	it( 'stands down when PHP wrote no configuration', () => {
-		document.body.innerHTML =
-			'<div class="wp-block-gatherpress-venue-detail">' +
-			'<a href="/x" target="_blank">Site</a></div>';
-
-		load( undefined );
-
-		expect( document.querySelector( '.undefined' ) ).toBeNull();
-		expect( document.querySelector( 'a' ).children ).toHaveLength( 0 );
 	} );
 
 	it( 'waits for the document when the script runs during parsing', async () => {
@@ -153,7 +131,7 @@ describe( 'new-tab notice', () => {
 			'<div class="wp-block-gatherpress-venue-detail">' +
 			'<a href="/x" target="_blank">Site</a></div>';
 
-		load( config );
+		load();
 
 		expect( document.querySelector( `.${ NOTICE_CLASS }` ) ).toBeNull();
 
@@ -168,7 +146,7 @@ describe( 'new-tab notice', () => {
 	it( 'stands down when the page has no GatherPress blocks', () => {
 		document.body.innerHTML = '<a href="/x" target="_blank">Site</a>';
 
-		load( config );
+		load();
 
 		expect( document.querySelector( `.${ NOTICE_CLASS }` ) ).toBeNull();
 	} );

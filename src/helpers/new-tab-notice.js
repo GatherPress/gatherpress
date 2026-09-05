@@ -1,35 +1,39 @@
 /**
+ * WordPress dependencies
+ */
+import { __ } from '@wordpress/i18n';
+
+/**
  * Announce GatherPress links that open in a new tab.
  *
- * PHP adds the notice when a block renders. This covers links that appear
- * or change afterwards, so a block that swaps a span for a link at runtime
- * gets the same treatment without knowing this exists.
+ * PHP adds the notice when a block renders. This covers links that appear or
+ * change afterwards, so a block that swaps a span for a link at runtime gets
+ * the same treatment without knowing this exists.
  */
-
-const { blockPrefix, noticeClass, noticeText } =
-	window.gatherPressNewTabNotice || {};
+const BLOCK_SELECTOR = '[class*="wp-block-gatherpress-"]';
+const NOTICE_CLASS = 'gatherpress-new-tab-notice';
 
 /**
  * Add the notice to a link that opens in a new tab and lacks one.
  *
- * @param {HTMLAnchorElement} link The link to announce.
+ * @param {Element} link The link to announce.
  *
  * @return {void}
  */
 const announce = ( link ) => {
-	if ( link.querySelector( `.${ noticeClass }` ) ) {
+	if ( link.querySelector( `.${ NOTICE_CLASS }` ) ) {
 		return;
 	}
 
 	const notice = document.createElement( 'span' );
 
-	notice.className = `screen-reader-text ${ noticeClass }`;
-	notice.textContent = noticeText;
+	notice.className = `screen-reader-text ${ NOTICE_CLASS }`;
+	notice.textContent = __( '(opens in a new tab)', 'gatherpress' );
 	link.appendChild( notice );
 };
 
 /**
- * Announce every new-tab link inside a root element.
+ * Announce every new-tab link inside an element, and the element itself.
  *
  * @param {Element} root The element to search.
  *
@@ -44,16 +48,12 @@ const announceWithin = ( root ) => {
 };
 
 /**
- * Watch GatherPress blocks for links added or changed after render.
+ * Watch GatherPress blocks for links added or retargeted after render.
  *
  * @return {void}
  */
 const start = () => {
-	if ( ! noticeClass || ! noticeText ) {
-		return;
-	}
-
-	const blocks = document.querySelectorAll( `[class*="${ blockPrefix }"]` );
+	const blocks = document.querySelectorAll( BLOCK_SELECTOR );
 
 	if ( ! blocks.length ) {
 		return;

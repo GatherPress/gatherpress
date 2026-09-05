@@ -12,7 +12,6 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Error;
-use GatherPress\Core\Blocks\Setup as Blocks_Setup;
 use GatherPress\Core\Traits\Singleton;
 
 /**
@@ -298,32 +297,17 @@ final class Assets {
 			return $block_content;
 		}
 
-		// wp_localize_script() concatenates, so a second call would print the
-		// configuration twice. The enqueue itself is the guard.
-		if ( wp_script_is( 'gatherpress-new-tab-notice', 'enqueued' ) ) {
-			return $block_content;
-		}
-
 		$asset = $this->get_asset_data( 'new_tab_notice' );
 
 		wp_enqueue_script(
 			'gatherpress-new-tab-notice',
 			$this->build . 'new_tab_notice.js',
-			array(),
+			$asset['dependencies'],
 			$asset['version'],
 			true
 		);
 
-		// PHP owns the string and the class so both sides cannot drift.
-		wp_localize_script(
-			'gatherpress-new-tab-notice',
-			'gatherPressNewTabNotice',
-			array(
-				'blockPrefix' => 'wp-block-gatherpress-',
-				'noticeClass' => Blocks_Setup::NEW_TAB_CLASS,
-				'noticeText'  => __( '(opens in a new tab)', 'gatherpress' ),
-			)
-		);
+		wp_set_script_translations( 'gatherpress-new-tab-notice', 'gatherpress' );
 
 		return $block_content;
 	}

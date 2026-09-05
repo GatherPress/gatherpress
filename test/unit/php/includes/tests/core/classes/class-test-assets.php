@@ -9,7 +9,6 @@
 namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Assets;
-use GatherPress\Core\Blocks\Setup as Blocks_Setup;
 use GatherPress\Core\Event;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -1349,17 +1348,10 @@ class Test_Assets extends Base {
 			'Failed to assert the new-tab notice script is enqueued.'
 		);
 
-		$data = wp_scripts()->get_data( 'gatherpress-new-tab-notice', 'data' );
-
-		$this->assertStringContainsString(
-			'gatherPressNewTabNotice',
-			(string) $data,
-			'Failed to assert PHP handed the script its configuration.'
-		);
-		$this->assertStringContainsString(
-			Blocks_Setup::NEW_TAB_CLASS,
-			(string) $data,
-			'Failed to assert the notice class travels from PHP to the script.'
+		$this->assertContains(
+			'wp-i18n',
+			wp_scripts()->registered['gatherpress-new-tab-notice']->deps,
+			'Failed to assert the script can translate its own string.'
 		);
 	}
 
@@ -1392,34 +1384,6 @@ class Test_Assets extends Base {
 			$content,
 			$instance->maybe_enqueue_new_tab_notice( $content, array() ),
 			'Failed to assert a block with no name is returned unchanged.'
-		);
-	}
-
-	/**
-	 * A second GatherPress block does not enqueue the script again.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @covers ::maybe_enqueue_new_tab_notice
-	 *
-	 * @return void
-	 */
-	public function test_maybe_enqueue_new_tab_notice_early_return(): void {
-		$instance = Assets::get_instance();
-		$content  = '<a href="/x" target="_blank">Site</a>';
-		$block    = array( 'blockName' => 'gatherpress/venue-detail' );
-
-		wp_dequeue_script( 'gatherpress-new-tab-notice' );
-
-		$instance->maybe_enqueue_new_tab_notice( $content, $block );
-		$instance->maybe_enqueue_new_tab_notice( $content, $block );
-
-		$data = (string) wp_scripts()->get_data( 'gatherpress-new-tab-notice', 'data' );
-
-		$this->assertSame(
-			1,
-			substr_count( $data, 'gatherPressNewTabNotice' ),
-			'Failed to assert a second GatherPress block does not localize the script again.'
 		);
 	}
 }

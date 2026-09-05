@@ -42,7 +42,7 @@ final class Setup {
 	const NEW_TAB_ATTRIBUTE = 'data-gatherpress-new-tab';
 
 	/**
-	 * Class on the injected notice, also read by online-event-link's view.js.
+	 * Class on the injected notice, mirrored by the front-end script.
 	 *
 	 * @since 0.36.0
 	 * @var string
