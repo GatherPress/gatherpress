@@ -253,7 +253,40 @@ class Settings {
 		 */
 		$filtered = (string) apply_filters( 'gatherpress_interactive_map_tile_url', self::MAP_TILE_URL );
 
-		return '' !== $filtered ? $filtered : self::MAP_TILE_URL;
+		return self::add_map_tile_key( '' !== $filtered ? $filtered : self::MAP_TILE_URL );
+	}
+
+	/**
+	 * Append the configured CARTO key to a tile URL.
+	 *
+	 * CARTO began enforcing keys on its basemaps in August 2026. Without one
+	 * every tile comes back stamped "API KEY REQUIRED", so both the Leaflet
+	 * basemap and the server-side compositor carry the key.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $url Tile URL template.
+	 *
+	 * @return string The template, with the key appended when there is one.
+	 */
+	public static function add_map_tile_key( string $url ): string {
+		$key = trim( (string) self::get_instance()->get( 'carto_api_key' ) );
+
+		if ( '' === $key ) {
+			return $url;
+		}
+
+		$is_carto = str_contains( $url, 'cartocdn.com' ) || str_contains( $url, 'cartodb-basemaps' );
+
+		// Left alone when the URL already names a key, or when it has been
+		// filtered to a host that does not want one.
+		if ( ! $is_carto || str_contains( $url, 'key=' ) ) {
+			return $url;
+		}
+
+		// Concatenated rather than added with add_query_arg(), which cannot
+		// parse the `{s}` subdomain placeholder as a host.
+		return $url . ( str_contains( $url, '?' ) ? '&' : '?' ) . 'key=' . rawurlencode( $key );
 	}
 
 	/**

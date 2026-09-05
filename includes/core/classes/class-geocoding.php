@@ -1281,18 +1281,19 @@ final class Geocoding {
 		$language = explode( '_', get_locale() )[0];
 
 		/**
-		 * Filters the language sent to the geocoding provider.
+		 * Filters the languages the geocoder is willing to be asked for.
 		 *
-		 * Photon serves a short list; a site pointing
-		 * `gatherpress_photon_api_url` at another instance may serve more.
+		 * Widen this when `gatherpress_photon_api_url` points at a Photon
+		 * instance that serves more languages than the public one, so a site
+		 * gets results named in its own locale instead of falling back.
 		 *
 		 * @since 0.36.0
 		 *
-		 * @param string[] $languages Accepted language codes.
+		 * @param string[] $languages Language codes the geocoder accepts.
 		 *
 		 * @return string[]
 		 */
-		$languages = (array) apply_filters( 'gatherpress_geocoding_languages', self::PHOTON_LANGUAGES );
+		$languages = (array) apply_filters( 'gatherpress_geocode_languages', self::PHOTON_LANGUAGES );
 
 		// `default` asks Photon for each result's own local-language name,
 		// which is the closest thing to correct for a locale it cannot serve.

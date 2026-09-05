@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+A CARTO API key setting for OpenStreetMap venue maps. CARTO began requiring one in August 2026, and without it map tiles arrive stamped "API KEY REQUIRED". Keys are free for up to 5 million tiles a month.
