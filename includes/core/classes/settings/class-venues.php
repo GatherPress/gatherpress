@@ -120,9 +120,9 @@ final class Venues extends Base {
 						),
 						'description' => wp_kses(
 							sprintf(
-								// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string for the full API key guidance sentence.
+								// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string for the full key guidance sentence.
 								/* translators: %s: link to CARTO's free basemap key request form. */
-								__( 'Required. CARTO began enforcing keys on its basemaps in August 2026; without one, tiles arrive stamped "API KEY REQUIRED". Keys are free for up to 5 million tiles a month. %s', 'gatherpress' ),
+								__( 'Required. Without a key, map tiles are watermarked. Free up to 5 million tiles a month. %s.', 'gatherpress' ),
 								// phpcs:enable Generic.Files.LineLength.TooLong
 								'<a href="https://carto.com/basemaps/apikey/"'
 								. ' target="_blank" rel="noopener noreferrer">'
