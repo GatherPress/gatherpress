@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Dismiss the welcome notice for good: the dismiss link was relative, so the browser resolved it against the current directory and the dismissal never ran. The notice icon and headline now follow the admin color scheme instead of a hardcoded blue.
