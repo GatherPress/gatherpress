@@ -171,9 +171,9 @@ final class Admin_List {
 		$post_type = $screen->post_type;
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$current_view = isset( $_GET['gatherpress_event_query'] )
+		$current_view = isset( $_GET[ Query::EVENT_QUERY_PARAM ] )
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			? sanitize_text_field( wp_unslash( $_GET['gatherpress_event_query'] ) )
+			? sanitize_text_field( wp_unslash( $_GET[ Query::EVENT_QUERY_PARAM ] ) )
 			: '';
 
 		$counts    = $this->get_event_counts( $post_type );
@@ -190,10 +190,10 @@ final class Admin_List {
 				'<a href="%s"%s>%s <span class="count">(%s)</span></a>',
 				add_query_arg(
 					array(
-						'gatherpress_event_query' => $key,
-						'post_type'               => $post_type,
-						'order'                   => 'upcoming' === $key ? 'asc' : 'desc',
-						'orderby'                 => 'datetime',
+						Query::EVENT_QUERY_PARAM => $key,
+						'post_type'              => $post_type,
+						'order'                  => 'upcoming' === $key ? 'asc' : 'desc',
+						'orderby'                => 'datetime',
 					),
 					$base_url
 				),
@@ -335,7 +335,7 @@ final class Admin_List {
 	 * @return string[] Updated list of allowed query variables.
 	 */
 	public function query_vars( array $query_vars ): array {
-		$query_vars[] = 'gatherpress_event_query';
+		$query_vars[] = Query::EVENT_QUERY_PARAM;
 		$query_vars[] = Query::EVENT_DATE_QUERY_PARAM;
 		return $query_vars;
 	}
