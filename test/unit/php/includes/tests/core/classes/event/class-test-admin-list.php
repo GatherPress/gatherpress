@@ -2337,7 +2337,7 @@ class Test_Admin_List extends Base {
 	}
 
 	/**
-	 * Coverage for render_taxonomy_filter method labelling a flat taxonomy.
+	 * Coverage for render_taxonomy_filter method labeling a flat taxonomy.
 	 *
 	 * @covers ::render_taxonomy_filter
 	 *
