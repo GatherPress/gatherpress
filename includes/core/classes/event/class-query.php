@@ -48,6 +48,17 @@ final class Query {
 	const EVENT_QUERY_PARAM = 'gatherpress_event_query';
 
 	/**
+	 * Query parameter name for filtering the admin list by event month.
+	 *
+	 * Holds a `YYYYMM` value, the same shape WordPress core's `m` parameter
+	 * uses for publish dates.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const EVENT_DATE_QUERY_PARAM = 'gatherpress_event_date';
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -413,6 +424,53 @@ final class Query {
 			$wp_query->get( 'order' ),
 			$wp_query->get( 'orderby' ),
 			$inclusive
+		);
+
+		return $this->adjust_event_month_sql(
+			$query_pieces,
+			(string) $wp_query->get( self::EVENT_DATE_QUERY_PARAM )
+		);
+	}
+
+	/**
+	 * Narrow the admin event list to a single month of event dates.
+	 *
+	 * The companion to WordPress core's `m` parameter, which buckets the same
+	 * list by publish date. `$month` takes core's `YYYYMM` shape; any other
+	 * value leaves the clauses untouched, so a hand-edited URL degrades to an
+	 * unfiltered list rather than an empty one.
+	 *
+	 * Compares against `datetime_start` rather than `datetime_start_gmt` so an
+	 * event falls in the month the list table displays for it, which is
+	 * rendered in the event's own timezone. Events with no row in the events
+	 * table have no event date to bucket and drop out of every month.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, string> $query_pieces An array containing pieces of the SQL query.
+	 * @param string                $month        Month to filter by, as `YYYYMM`.
+	 *
+	 * @return array<string, string> The query pieces, with the month condition appended when $month is valid.
+	 */
+	protected function adjust_event_month_sql( array $query_pieces, string $month ): array {
+		global $wpdb;
+
+		if ( 1 !== preg_match( '/^(\d{4})(0[1-9]|1[0-2])$/', $month, $matches ) ) {
+			return $query_pieces;
+		}
+
+		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+
+		// YEAR()/MONTH() rather than a datetime range, matching how core
+		// resolves its own `m` parameter in WP_Query.
+		$query_pieces['where'] .= $wpdb->prepare(
+			' AND YEAR(%i.%i) = %d AND MONTH(%i.%i) = %d',
+			$table,
+			'datetime_start',
+			(int) $matches[1],
+			$table,
+			'datetime_start',
+			(int) $matches[2]
 		);
 
 		return $query_pieces;
