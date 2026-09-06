@@ -12,6 +12,7 @@
 namespace GatherPress\Core;
 
 use DateTime;
+use GatherPress\Core\Blocks\Rsvp_Template;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
@@ -251,8 +252,24 @@ final class Validate {
 		// `innerBlocks` arrays).
 		return null !== $decoded
 			&& isset( $decoded['blockName'], $decoded['attrs'], $decoded['innerBlocks'] )
-			&& is_string( $decoded['blockName'] )
+			&& Rsvp_Template::BLOCK_NAME === $decoded['blockName']
 			&& is_array( $decoded['attrs'] )
 			&& is_array( $decoded['innerBlocks'] );
+	}
+
+	/**
+	 * Validate the shape of a template signature.
+	 *
+	 * Whether it matches the template is decided by the endpoint; this only
+	 * rules out values that could never be one.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param mixed $param The value to validate.
+	 *
+	 * @return bool True for a 64-character hex string.
+	 */
+	public static function block_signature( $param ): bool {
+		return is_string( $param ) && 1 === preg_match( '/^[a-f0-9]{64}$/', $param );
 	}
 }

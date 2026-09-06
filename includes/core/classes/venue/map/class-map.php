@@ -280,6 +280,17 @@ final class Map {
 	const UPLOADS_SUBDIR = 'gatherpress/static-maps';
 
 	/**
+	 * Cron action fired to generate a single (venue, combo) static map when
+	 * {@see self::maybe_generate()} defers to WP-Cron instead of rendering
+	 * inline. Handler signature: `( int $post_id, int $zoom, int $width,
+	 * int $height, string $map_type )`.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const GENERATE_CRON_ACTION = 'gatherpress_static_map_generate_run';
+
+	/**
 	 * Class constructor — wires hooks.
 	 *
 	 * @since 0.34.0
@@ -308,6 +319,7 @@ final class Map {
 		// React to provider changes so a `map_platform` switch schedules
 		// the same prewarm pass that runs on theme switches.
 		add_action( 'update_option_gatherpress_settings', array( $this, 'maybe_handle_settings_change' ), 10, 2 );
+		add_action( self::GENERATE_CRON_ACTION, array( $this, 'process_generate_job' ), 10, 5 );
 	}
 
 	/**
@@ -517,16 +529,175 @@ final class Map {
 			);
 		}
 
+		$async = $this->should_generate_async( $post_id );
+
 		foreach ( $combos as $combo ) {
+			$map_type = $this->normalize_map_type( (string) $combo['map_type'] );
+
+			if ( $async ) {
+				$this->schedule_combo_generation(
+					$post_id,
+					$combo['zoom'],
+					$combo['width'],
+					$combo['height'],
+					$map_type
+				);
+				continue;
+			}
+
 			$this->ensure_descriptor_for_combo(
 				$post_id,
 				$info,
 				$combo['zoom'],
 				$combo['width'],
 				$combo['height'],
-				$this->normalize_map_type( (string) $combo['map_type'] )
+				$map_type
 			);
 		}
+	}
+
+	/**
+	 * Whether {@see self::maybe_generate()} should defer static-map
+	 * generation to a WP-Cron job instead of rendering inline on the
+	 * triggering `wp_after_insert_post` call.
+	 *
+	 * Default false: a venue save keeps returning with a freshly rendered
+	 * map, matching every release before this filter existed. Sites that
+	 * feel the synchronous tile-fetch-and-composite cost — bulk venue
+	 * imports, a REST integration that creates/updates many venues in a
+	 * tight loop, or simply a slow upstream tile host — can opt in here to
+	 * make venue saves return immediately and let the map render a few
+	 * seconds later via WP-Cron.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param int $post_id Venue post ID.
+	 *
+	 * @return bool
+	 */
+	protected function should_generate_async( int $post_id ): bool {
+		/**
+		 * Filters whether venue-save-triggered static-map generation runs
+		 * asynchronously via WP-Cron instead of blocking the save request.
+		 *
+		 * Enabling this trades an immediate map (visible the instant the
+		 * save request returns) for a fast save request: the actual
+		 * tile-fetch-and-composite work — which can take several seconds
+		 * per (zoom, width, height, map_type) combo, twice over when the
+		 * retina variant also renders — moves to a WP-Cron job scheduled a
+		 * moment later. Particularly useful for bulk venue imports or REST
+		 * integrations that create/update many venues in a tight loop.
+		 *
+		 * @since 0.36.0
+		 *
+		 * @param bool $async   Whether to defer generation to a cron job. Default false.
+		 * @param int  $post_id Venue post ID.
+		 */
+		return (bool) apply_filters( 'gatherpress_static_map_generate_async', false, $post_id );
+	}
+
+	/**
+	 * Schedule a single (venue, combo) static-map generation job, deduped
+	 * via `wp_next_scheduled()`.
+	 *
+	 * Mirrors {@see Prewarm::enqueue_warm_job()}'s shape, including the
+	 * short-circuit filter so a companion plugin can route the fanout
+	 * through Action Scheduler (or any other queue) instead of WP-Cron.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param int    $post_id  Venue post ID.
+	 * @param int    $zoom     Zoom level.
+	 * @param int    $width    Pixel width.
+	 * @param int    $height   Pixel height.
+	 * @param string $map_type Map type slug.
+	 *
+	 * @return void
+	 */
+	protected function schedule_combo_generation(
+		int $post_id,
+		int $zoom,
+		int $width,
+		int $height,
+		string $map_type
+	): void {
+		$args = array( $post_id, $zoom, $width, $height, $map_type );
+
+		/**
+		 * Filter the async static-map generation enqueue call to take over
+		 * scheduling.
+		 *
+		 * Return any non-null value from this filter to suppress both the
+		 * WP-Cron dedup check below and the `wp_schedule_single_event()`
+		 * call — a companion plugin that hooks this filter owns the full
+		 * scheduling path end-to-end (including its own dedup, since the
+		 * fanout by-passes `wp_next_scheduled()`). Mirrors the core `pre_*`
+		 * filter convention: `null` means "pass through to the default";
+		 * everything else, including falsy values like `false`, `0`, and
+		 * `''`, short-circuits.
+		 *
+		 * @since 0.36.0
+		 *
+		 * @param mixed  $short_circuit Non-null to suppress the default enqueue.
+		 * @param string $hook          Action hook name fired when the job runs.
+		 * @param array  $args          Args passed to the action hook when the job runs:
+		 *                              `array( $post_id, $zoom, $width, $height, $map_type )`.
+		 */
+		$short_circuit = apply_filters(
+			'gatherpress_static_map_generate_pre_enqueue_job',
+			null,
+			self::GENERATE_CRON_ACTION,
+			$args
+		);
+
+		if ( null !== $short_circuit ) {
+			return;
+		}
+
+		if ( false !== wp_next_scheduled( self::GENERATE_CRON_ACTION, $args ) ) {
+			return;
+		}
+
+		wp_schedule_single_event( time() + 1, self::GENERATE_CRON_ACTION, $args );
+	}
+
+	/**
+	 * Cron handler — generates the static map for a single (venue, combo)
+	 * job scheduled by {@see self::schedule_combo_generation()}.
+	 *
+	 * Re-validates the post's type and coordinates at run time: between the
+	 * scheduling save and the cron tick, the venue can be trashed, its post
+	 * type re-registered without venue support, or its address edited again
+	 * to something un-geocodable.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param int    $post_id  Venue post ID.
+	 * @param int    $zoom     Zoom level.
+	 * @param int    $width    Pixel width.
+	 * @param int    $height   Pixel height.
+	 * @param string $map_type Map type slug.
+	 *
+	 * @return void
+	 */
+	public function process_generate_job( int $post_id, int $zoom, int $width, int $height, string $map_type ): void {
+		$status = get_post_status( $post_id );
+		if ( false === $status || 'trash' === $status ) {
+			return;
+		}
+
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-venue-information' ) ) {
+			return;
+		}
+
+		$info = ( new Venue( $post_id ) )->get_information();
+
+		if ( null === $this->parse_coord( $info['latitude'] ) ||
+			null === $this->parse_coord( $info['longitude'] ) ) {
+			return;
+		}
+
+		$this->ensure_descriptor_for_combo( $post_id, $info, $zoom, $width, $height, $map_type );
 	}
 
 	/**

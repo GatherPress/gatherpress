@@ -1956,7 +1956,7 @@ class Test_Event extends Base {
 	 *
 	 * @covers ::get_display_datetime
 	 * @covers ::get_display_formats
-	 * @covers ::remove_time_format_chars
+	 * @covers \GatherPress\Core\Utility::remove_time_format_chars
 	 *
 	 * @dataProvider data_all_day_display_formats
 	 *

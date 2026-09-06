@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Add translator comments and contexts for all translatable strings in the inline tooltip format component.

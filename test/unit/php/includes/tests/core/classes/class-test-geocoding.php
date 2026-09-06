@@ -452,37 +452,91 @@ class Test_Geocoding extends Base {
 	}
 
 	/**
+	 * Data provider for language codes.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return array<string, array<int, string>>
+	 */
+	public function data_language_codes(): array {
+		return array(
+			'a language Photon serves'          => array( 'en_US', 'en' ),
+			'another language Photon serves'    => array( 'de_DE', 'de' ),
+			'French'                            => array( 'fr_FR', 'fr' ),
+			'a regional variant still resolves' => array( 'de_AT', 'de' ),
+			'Japanese falls back'               => array( 'ja', 'default' ),
+			'Chinese falls back'                => array( 'zh_CN', 'default' ),
+			'Korean falls back'                 => array( 'ko_KR', 'default' ),
+		);
+	}
+
+	/**
 	 * Coverage for get_language_code method.
+	 *
+	 * Photon answers HTTP 400 for a language it does not serve, which takes
+	 * address autocomplete and save-time geocoding with it. A locale it cannot
+	 * serve falls back to `default` rather than being sent as-is.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_language_code
+	 *
+	 * @dataProvider data_language_codes
+	 *
+	 * @param string $locale   WordPress locale.
+	 * @param string $expected Language sent to the geocoder.
+	 *
+	 * @return void
+	 */
+	public function test_get_language_code( string $locale, string $expected ): void {
+		$instance = Geocoding::get_instance();
+
+		add_filter(
+			'locale',
+			static function () use ( $locale ) {
+				return $locale;
+			}
+		);
+
+		$this->assertSame(
+			$expected,
+			Utility::invoke_hidden_method( $instance, 'get_language_code' ),
+			'Failed to assert the language sent to the geocoder.'
+		);
+	}
+
+	/**
+	 * A Photon instance serving more languages can say so.
+	 *
+	 * @since 0.36.0
 	 *
 	 * @covers ::get_language_code
 	 *
 	 * @return void
 	 */
-	public function test_get_language_code(): void {
+	public function test_get_language_code_respects_the_filter(): void {
 		$instance = Geocoding::get_instance();
 
-		// Test with en_US locale.
 		add_filter(
 			'locale',
 			static function () {
-				return 'en_US';
+				return 'ja_JP';
+			}
+		);
+		add_filter(
+			'gatherpress_geocode_languages',
+			static function ( $languages ) {
+				$languages[] = 'ja';
+
+				return $languages;
 			}
 		);
 
-		$language_code = Utility::invoke_hidden_method( $instance, 'get_language_code' );
-		$this->assertEquals( 'en', $language_code, 'Failed to assert language code is en.' );
-
-		// Test with de_DE locale.
-		add_filter(
-			'locale',
-			static function () {
-				return 'de_DE';
-			},
-			20
+		$this->assertSame(
+			'ja',
+			Utility::invoke_hidden_method( $instance, 'get_language_code' ),
+			'Failed to assert a filtered language is sent through.'
 		);
-
-		$language_code = Utility::invoke_hidden_method( $instance, 'get_language_code' );
-		$this->assertEquals( 'de', $language_code, 'Failed to assert language code is de.' );
 	}
 
 	/**

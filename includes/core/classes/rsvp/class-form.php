@@ -155,8 +155,8 @@ final class Form {
 		$email   = Utility::get_http_input( INPUT_POST, 'email', 'sanitize_email' );
 		$post_id = intval( $comment_data['comment_post_ID'] );
 
-		// Check sitewide/per-event RSVP setting before any post-type check so that
-		// globally-disabled mode returns the correct 403 rather than a misleading 400.
+		// is_enabled() is false for any post type without gatherpress-rsvp
+		// support, so a non-event ID answers 403 here like a disabled event.
 		if ( ! ( new Rsvp( $post_id ) )->is_enabled() ) {
 			wp_die(
 				esc_html__( 'RSVP is disabled for this event.', 'gatherpress' ),
@@ -170,15 +170,6 @@ final class Form {
 				esc_html__( 'Open RSVP is disabled for this site.', 'gatherpress' ),
 				esc_html__( 'Open RSVP Disabled', 'gatherpress' ),
 				403
-			);
-		}
-
-		// Validate that the post supports RSVP.
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
-			wp_die(
-				esc_html__( 'Invalid event ID.', 'gatherpress' ),
-				esc_html__( 'Invalid Request', 'gatherpress' ),
-				400
 			);
 		}
 

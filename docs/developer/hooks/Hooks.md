@@ -43,6 +43,7 @@
 - [`gatherpress_async_geocode_failed`](gatherpress_async_geocode_failed.md) Fires when the async geocode handler exits because Photon
 - [`gatherpress_async_geocode_pre_enqueue_job`](gatherpress_async_geocode_pre_enqueue_job.md) Filter the geocode enqueue call to take over scheduling.
 - [`gatherpress_formatted_address`](gatherpress_formatted_address.md) Filters the one-line address label minted from a geocoder result.
+- [`gatherpress_geocode_languages`](gatherpress_geocode_languages.md) Filters the languages the geocoder is willing to be asked for.
 - [`gatherpress_geocode_on_save_enabled`](gatherpress_geocode_on_save_enabled.md) Filters whether the async geocode should run on venue save.
 - [`gatherpress_geocode_rate_limit_enabled`](gatherpress_geocode_rate_limit_enabled.md) Filter whether the geocode REST rate limit is enforced.
 - [`gatherpress_geocode_rate_limit_per_minute`](gatherpress_geocode_rate_limit_per_minute.md) Filter the per-user requests-per-minute ceiling for the
@@ -63,6 +64,8 @@
 - [`gatherpress_map_zoom`](gatherpress_map_zoom.md) Filter the zoom level used when rendering the static venue map.
 - [`gatherpress_static_map_descriptors`](gatherpress_static_map_descriptors.md) Filters the parsed descriptor map for a venue.
 - [`gatherpress_static_map_generate_2x`](gatherpress_static_map_generate_2x.md) Filter whether to generate the retina (2×) static-map variant.
+- [`gatherpress_static_map_generate_async`](gatherpress_static_map_generate_async.md) Filters whether venue-save-triggered static-map generation runs
+- [`gatherpress_static_map_generate_pre_enqueue_job`](gatherpress_static_map_generate_pre_enqueue_job.md) Filter the async static-map generation enqueue call to take over
 
 ## class-migrate.php
 
@@ -138,6 +141,6 @@
 
 - [`gatherpress_loaded`](gatherpress_loaded.md) Fires once GatherPress has finished bootstrapping its core classes.
 
-## network-page.php
+## index.php
 
 - [`gatherpress_settings_section`](gatherpress_settings_section.md) Fires so tabs that render via the GatherPress settings section action

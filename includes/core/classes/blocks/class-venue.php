@@ -14,6 +14,7 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Shadow_Source;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue as Venue_Core;
@@ -147,11 +148,26 @@ final class Venue {
 		$source_post_type = $this->get_source_post_type( $block );
 		$source_post      = null;
 
-		// Check for a manually selected source post in block attributes.
-		if ( isset( $block['attrs']['selectedPostId'] ) && is_int( $block['attrs']['selectedPostId'] ) ) {
+		// Check for a manually selected source post in block attributes. The
+		// selection is honored on the same terms a direct visit would be: the
+		// type has to be a shadow source, which venues and any companion type
+		// declare, and the post has to be one the viewer could open.
+		if (
+			isset( $block['attrs']['selectedPostId'] )
+			&& is_int( $block['attrs']['selectedPostId'] )
+			&& post_type_supports( $source_post_type, 'gatherpress-shadow-source' )
+		) {
 			$selected = get_post( $block['attrs']['selectedPostId'] );
 
-			if ( $selected instanceof WP_Post && $source_post_type === $selected->post_type ) {
+			if (
+				$selected instanceof WP_Post
+				&& $source_post_type === $selected->post_type
+				&& ! post_password_required( $selected )
+				&& (
+					is_post_publicly_viewable( $selected )
+					|| current_user_can( Event::READ_CAPABILITY, $selected->ID )
+				)
+			) {
 				$source_post = $selected;
 			}
 		}
