@@ -445,10 +445,14 @@ final class Query {
 	 * value leaves the clauses untouched, so a hand-edited URL degrades to an
 	 * unfiltered list rather than an empty one.
 	 *
-	 * Compares against `datetime_start` rather than `datetime_start_gmt` so an
+	 * An event belongs to a month when it overlaps it, so one running from
+	 * May 30 to June 2 answers to both. Filtering on the start alone would
+	 * hide a running event from the month it is actually happening in.
+	 *
+	 * Compares the local columns rather than their `_gmt` counterparts so an
 	 * event falls in the month the list table displays for it, which is
 	 * rendered in the event's own timezone. Events with no row in the events
-	 * table have no event date to bucket and drop out of every month.
+	 * table have no dates to overlap with and drop out of every month.
 	 *
 	 * @since 0.36.0
 	 *
@@ -465,17 +469,22 @@ final class Query {
 		}
 
 		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$year  = (int) $matches[1];
+		$month = (int) $matches[2];
 
-		// YEAR()/MONTH() rather than a datetime range, matching how core
-		// resolves its own `m` parameter in WP_Query.
+		// `t` resolves to the last day of the month, so the window closes on
+		// the final second rather than opening the next month's first.
+		$opens  = sprintf( '%04d-%02d-01 00:00:00', $year, $month );
+		$closes = gmdate( 'Y-m-t 23:59:59', (int) gmmktime( 0, 0, 0, $month, 1, $year ) );
+
 		$query_pieces['where'] .= $wpdb->prepare(
-			' AND YEAR(%i.%i) = %d AND MONTH(%i.%i) = %d',
+			' AND %i.%i <= %s AND %i.%i >= %s',
 			$table,
 			'datetime_start',
-			(int) $matches[1],
+			$closes,
 			$table,
-			'datetime_start',
-			(int) $matches[2]
+			'datetime_end',
+			$opens
 		);
 
 		return $query_pieces;

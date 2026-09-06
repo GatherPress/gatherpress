@@ -2275,9 +2275,6 @@ class Test_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_topic_filter_narrows_the_admin_list(): void {
-		$this->mock->user( true, 'admin' );
-		set_current_screen( 'edit-gatherpress_event' );
-
 		$term_id = $this->factory->term->create(
 			array(
 				'taxonomy' => Topic::TAXONOMY,
@@ -2290,6 +2287,11 @@ class Test_Admin_List extends Base {
 		$other  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
 
 		wp_set_object_terms( $tagged, array( (int) $term_id ), Topic::TAXONOMY );
+
+		// Creating posts clears the current screen, so the admin list context
+		// only holds once the fixtures are in place.
+		$this->mock->user( true, 'admin' );
+		set_current_screen( 'edit-gatherpress_event' );
 
 		$query = new WP_Query(
 			array(
