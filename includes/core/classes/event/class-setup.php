@@ -120,6 +120,7 @@ final class Setup {
 		add_filter( 'render_block_core/post-date', array( $this, 'render_event_post_date_block' ), 10, 3 );
 		add_filter( 'display_post_states', array( $this, 'set_event_archive_labels' ), 10, 2 );
 		add_filter( 'block_editor_settings_all', array( $this, 'add_editor_settings' ) );
+		add_filter( 'post_class', array( $this, 'add_status_post_class' ), 10, 3 );
 	}
 
 	/**
@@ -159,6 +160,37 @@ final class Setup {
 				),
 			)
 		);
+	}
+
+	/**
+	 * Adds the event status class to post classes.
+	 *
+	 * WordPress core automatically adds taxonomy terms to post classes for
+	 * public taxonomies, but gatherpress_event_status is non-public. Injecting
+	 * it here makes status classes available across query loops, archives,
+	 * and singular views.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string[] $classes     An array of post class names.
+	 * @param string[] $css_classes An array of additional class names added to the post.
+	 * @param int      $post_id     The post ID.
+	 *
+	 * @return string[] Filtered array of post class names.
+	 */
+	public function add_status_post_class( array $classes, array $css_classes, int $post_id ): array {
+		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
+			return $classes;
+		}
+
+		$event  = new Event( $post_id );
+		$status = $event->get_status();
+
+		if ( Event::STATUS_SCHEDULED !== $status ) {
+			$classes[] = sprintf( 'gatherpress-event-status--is-%s', sanitize_html_class( $status ) );
+		}
+
+		return $classes;
 	}
 
 	/**

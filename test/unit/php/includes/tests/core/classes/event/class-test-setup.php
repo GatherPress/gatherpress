@@ -2306,4 +2306,31 @@ class Test_Setup extends Base {
 			'Failed to assert the event post type reaches the editor settings.'
 		);
 	}
+
+	/**
+	 * Tests adding status classes to post_class for events.
+	 *
+	 * @covers ::add_status_post_class
+	 *
+	 * @return void
+	 */
+	public function test_add_status_post_class(): void {
+		$setup = Setup::get_instance();
+
+		// Non-event post should remain unchanged.
+		$post_id = $this->factory->post->create( array( 'post_type' => 'post' ) );
+		$classes = $setup->add_status_post_class( array( 'hentry' ), array(), $post_id );
+		$this->assertSame( array( 'hentry' ), $classes );
+
+		// Scheduled event has default status, no special modifier class added.
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$classes  = $setup->add_status_post_class( array( 'hentry' ), array(), $event_id );
+		$this->assertSame( array( 'hentry' ), $classes );
+
+		// Cancelled event gets the status class.
+		$event = new Event( $event_id );
+		$event->set_status( Event::STATUS_CANCELLED );
+		$classes = $setup->add_status_post_class( array( 'hentry' ), array(), $event_id );
+		$this->assertContains( 'gatherpress-event-status--is-cancelled', $classes );
+	}
 }

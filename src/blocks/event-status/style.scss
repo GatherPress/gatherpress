@@ -51,6 +51,10 @@
 
 .wp-block-gatherpress-event-status,
 .gatherpress-event-status-preview {
+	--gatherpress-status-color: #137333;
+	--gatherpress-status-bg: #e6f4ea;
+	--gatherpress-status-border: #ceead6;
+
 	display: inline-flex;
 	align-items: center;
 
@@ -64,7 +68,9 @@
 		line-height: 1.2;
 		border-radius: 999px;
 		letter-spacing: 0.03em;
-		border: 1px solid transparent;
+		border: 1px solid var(--gatherpress-status-border);
+		background-color: var(--gatherpress-status-bg);
+		color: var(--gatherpress-status-color);
 		transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
 
 		&::before {
@@ -73,6 +79,7 @@
 			width: 0.5em;
 			height: 0.5em;
 			border-radius: 50%;
+			background-color: var(--gatherpress-status-color);
 		}
 
 		&:hover {
@@ -81,55 +88,44 @@
 		}
 	}
 
-	&.gatherpress-event-status--is-scheduled .gatherpress-event-status__badge {
-		background-color: #e6f4ea;
-		border-color: #ceead6;
-		color: #137333;
-
-		&::before {
-			background-color: #137333;
-		}
+	&.gatherpress-event-status--is-scheduled {
+		--gatherpress-status-color: #137333;
+		--gatherpress-status-bg: #e6f4ea;
+		--gatherpress-status-border: #ceead6;
 	}
 
-	&.gatherpress-event-status--is-cancelled .gatherpress-event-status__badge {
-		background-color: #fce8e6;
-		border-color: #fad2cf;
-		color: #c5221f;
+	&.gatherpress-event-status--is-cancelled {
+		--gatherpress-status-color: #c5221f;
+		--gatherpress-status-bg: #fce8e6;
+		--gatherpress-status-border: #fad2cf;
 
-		&::before {
-			background-color: #c5221f;
+		.gatherpress-event-status__badge::before {
 			animation: gatherpress-pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
 		}
 	}
 
-	&.gatherpress-event-status--is-postponed .gatherpress-event-status__badge {
-		background-color: #fef7e0;
-		border-color: #feefc3;
-		color: #b06000;
+	&.gatherpress-event-status--is-postponed {
+		--gatherpress-status-color: #b06000;
+		--gatherpress-status-bg: #fef7e0;
+		--gatherpress-status-border: #feefc3;
 
-		&::before {
-			background-color: #b06000;
+		.gatherpress-event-status__badge::before {
 			animation: gatherpress-pulse-warning 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
 		}
 	}
 
-	&.gatherpress-event-status--is-rescheduled .gatherpress-event-status__badge {
-		background-color: #e8f0fe;
-		border-color: #d2e3fc;
-		color: #1a73e8;
-
-		&::before {
-			background-color: #1a73e8;
-		}
+	&.gatherpress-event-status--is-rescheduled {
+		--gatherpress-status-color: #1a73e8;
+		--gatherpress-status-bg: #e8f0fe;
+		--gatherpress-status-border: #d2e3fc;
 	}
 
-	&.gatherpress-event-status--is-moved-online .gatherpress-event-status__badge {
-		background-color: #f3e8fd;
-		border-color: #e9d2fd;
-		color: #7627bb;
+	&.gatherpress-event-status--is-moved-online {
+		--gatherpress-status-color: #7627bb;
+		--gatherpress-status-bg: #f3e8fd;
+		--gatherpress-status-border: #e9d2fd;
 
-		&::before {
-			background-color: #7627bb;
+		.gatherpress-event-status__badge::before {
 			animation: gatherpress-pulse-info 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
 		}
 	}
@@ -138,7 +134,9 @@
 		display: block;
 		width: 100%;
 		padding: 0.85rem 1.15rem;
-		border-left: 4px solid;
+		border-left: 4px solid var(--gatherpress-status-color);
+		background-color: var(--gatherpress-status-bg);
+		color: var(--gatherpress-status-color);
 		border-radius: 6px;
 		transition: border-color 0.2s ease, background-color 0.2s ease;
 
@@ -152,30 +150,6 @@
 			color: inherit !important;
 			box-shadow: none !important;
 			transform: none !important;
-		}
-
-		&.gatherpress-event-status--is-cancelled {
-			background-color: #fce8e6;
-			border-color: #c5221f;
-			color: #c5221f;
-		}
-
-		&.gatherpress-event-status--is-postponed {
-			background-color: #fef7e0;
-			border-color: #b06000;
-			color: #b06000;
-		}
-
-		&.gatherpress-event-status--is-rescheduled {
-			background-color: #e8f0fe;
-			border-color: #1a73e8;
-			color: #1a73e8;
-		}
-
-		&.gatherpress-event-status--is-moved-online {
-			background-color: #f3e8fd;
-			border-color: #7627bb;
-			color: #7627bb;
 		}
 	}
 }
