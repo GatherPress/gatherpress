@@ -1460,4 +1460,37 @@ class Test_Rsvp extends Base {
 			'Nothing is stored for an identity without a provider.'
 		);
 	}
+
+	/**
+	 * Tests Rsvp::is_rsvp with different comment types, nonexistent IDs, and comment objects.
+	 *
+	 * @covers ::is_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_is_rsvp(): void {
+		$post_id = $this->factory->post->create();
+
+		$rsvp_comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		$regular_comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => 'comment',
+			)
+		);
+
+		$rsvp_comment = get_comment( $rsvp_comment_id );
+
+		$this->assertTrue( Rsvp::is_rsvp( $rsvp_comment_id ) );
+		$this->assertTrue( Rsvp::is_rsvp( $rsvp_comment ) );
+		$this->assertFalse( Rsvp::is_rsvp( $regular_comment_id ) );
+		$this->assertFalse( Rsvp::is_rsvp( 0 ) );
+		$this->assertFalse( Rsvp::is_rsvp( 999999 ) );
+	}
 }

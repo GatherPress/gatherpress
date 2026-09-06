@@ -101,7 +101,7 @@ final class Check_In {
 	 * @return bool True when the RSVP is checked in, false when it is not an RSVP.
 	 */
 	public function check_in( int $rsvp_id ): bool {
-		if ( ! $this->is_rsvp( $rsvp_id ) ) {
+		if ( ! Rsvp::is_rsvp( $rsvp_id ) ) {
 			return false;
 		}
 
@@ -144,7 +144,7 @@ final class Check_In {
 	 * @return bool True when the RSVP is no longer checked in, false when it is not an RSVP.
 	 */
 	public function clear( int $rsvp_id ): bool {
-		if ( ! $this->is_rsvp( $rsvp_id ) ) {
+		if ( ! Rsvp::is_rsvp( $rsvp_id ) ) {
 			return false;
 		}
 
@@ -241,20 +241,5 @@ final class Check_In {
 	public function delete_check_in( $comment_id ): void {
 		wp_remove_object_terms( (int) $comment_id, self::TERM, self::TAXONOMY );
 		delete_comment_meta( (int) $comment_id, self::META_KEY );
-	}
-
-	/**
-	 * Whether a comment ID belongs to an RSVP.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @param int $rsvp_id The comment ID to test.
-	 *
-	 * @return bool True when the comment exists and is an RSVP.
-	 */
-	private function is_rsvp( int $rsvp_id ): bool {
-		$comment = get_comment( $rsvp_id );
-
-		return $comment instanceof WP_Comment && Rsvp::COMMENT_TYPE === $comment->comment_type;
 	}
 }

@@ -86,25 +86,11 @@ final class Token {
 
 		$comment = get_comment( $comment_id );
 
-		if ( ! $this->is_valid_rsvp_comment( $comment, $comment_id ) ) {
+		if ( ! Rsvp::is_rsvp( $comment ) ) {
 			return;
 		}
 
 		$this->comment = $comment;
-	}
-
-	/**
-	 * Validates if a comment is a valid RSVP comment.
-	 *
-	 * @since 0.34.0
-	 *
-	 * @param WP_Comment|null $comment The comment object to validate.
-	 * @param int             $comment_id The comment ID for fallback validation.
-	 *
-	 * @return bool True if valid RSVP comment, false otherwise.
-	 */
-	private function is_valid_rsvp_comment( ?WP_Comment $comment, int $comment_id ): bool {
-		return $comment instanceof WP_Comment && Rsvp::COMMENT_TYPE === get_comment_type( $comment_id );
 	}
 
 	/**
