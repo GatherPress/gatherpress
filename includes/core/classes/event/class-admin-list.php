@@ -19,6 +19,7 @@ use Exception;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Query as Rsvp_Query;
 use GatherPress\Core\Rsvp;
+use GatherPress\Core\Topic;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
@@ -75,6 +76,7 @@ final class Admin_List {
 		add_filter( 'query_vars', array( $this, 'query_vars' ) );
 		add_filter( 'disable_months_dropdown', array( $this, 'disable_months_dropdown' ), 10, 2 );
 		add_action( 'restrict_manage_posts', array( $this, 'render_date_filters' ) );
+		add_action( 'restrict_manage_posts', array( $this, 'render_taxonomy_filters' ) );
 		add_action( 'registered_post_type', array( $this, 'maybe_register_post_type_hooks' ) );
 	}
 
@@ -424,6 +426,103 @@ final class Admin_List {
 				esc_attr( $current_view )
 			);
 		}
+	}
+
+	/**
+	 * Render the taxonomy filters above the list table.
+	 *
+	 * Core builds a filter dropdown for the built-in category taxonomy only, so
+	 * topics reach the events list with an admin column but no way to filter by
+	 * them. This adds the one core would have if topics were categories.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $post_type The post type the list table is rendering.
+	 *
+	 * @return void
+	 */
+	public function render_taxonomy_filters( string $post_type ): void {
+		if ( ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+			return;
+		}
+
+		$this->render_taxonomy_filter( $post_type, Topic::TAXONOMY );
+	}
+
+	/**
+	 * Render one taxonomy filter for the list table's filter form.
+	 *
+	 * Mirrors core's `WP_Posts_List_Table::categories_dropdown()`, down to
+	 * reading its two strings off the taxonomy's own labels so an extender's
+	 * taxonomy names itself. Terms submit by slug because that is what a
+	 * taxonomy's query var resolves against; the "all" choice submits a `0`,
+	 * which `WP_Query` reads as empty and skips.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $post_type The post type the list table is rendering.
+	 * @param string $taxonomy  The taxonomy to offer as a filter.
+	 *
+	 * @return void
+	 */
+	protected function render_taxonomy_filter( string $post_type, string $taxonomy ): void {
+		if ( ! is_object_in_taxonomy( $post_type, $taxonomy ) ) {
+			return;
+		}
+
+		$taxonomy_object = get_taxonomy( $taxonomy );
+
+		if ( ! $taxonomy_object ) {
+			return;
+		}
+
+		// A taxonomy with no terms has nothing to offer, and an empty dropdown
+		// would still draw the Filter button the whole form shares.
+		$terms = get_terms(
+			array(
+				'taxonomy'   => $taxonomy,
+				'hide_empty' => false,
+				'number'     => 1,
+				'fields'     => 'ids',
+			)
+		);
+
+		if ( is_wp_error( $terms ) || empty( $terms ) ) {
+			return;
+		}
+
+		// `filter_by_item` is only filled in by default for hierarchical
+		// taxonomies, so fall back to the plural name for the rest.
+		$filter_label = ! empty( $taxonomy_object->labels->filter_by_item )
+			? (string) $taxonomy_object->labels->filter_by_item
+			: (string) $taxonomy_object->labels->name;
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$selected = isset( $_GET[ $taxonomy ] ) && is_scalar( $_GET[ $taxonomy ] )
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			? sanitize_title( (string) wp_unslash( $_GET[ $taxonomy ] ) )
+			: '';
+
+		printf(
+			'<label class="screen-reader-text" for="%s">%s</label>',
+			esc_attr( $taxonomy ),
+			esc_html( $filter_label )
+		);
+
+		wp_dropdown_categories(
+			array(
+				'show_option_all' => $taxonomy_object->labels->all_items,
+				'taxonomy'        => $taxonomy,
+				'name'            => $taxonomy,
+				'id'              => $taxonomy,
+				'value_field'     => 'slug',
+				'selected'        => $selected,
+				'hierarchical'    => true,
+				'hide_empty'      => false,
+				'show_count'      => false,
+				'orderby'         => 'name',
+			)
+		);
 	}
 
 	/**

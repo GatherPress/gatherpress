@@ -12,6 +12,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Event\Admin_List;
 use GatherPress\Core\Event\Setup as Event_Setup;
 use GatherPress\Core\Rsvp;
+use GatherPress\Core\Topic;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use stdClass;
@@ -58,6 +59,12 @@ class Test_Admin_List extends Base {
 				'name'     => 'restrict_manage_posts',
 				'priority' => 10,
 				'callback' => array( $instance, 'render_date_filters' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'restrict_manage_posts',
+				'priority' => 10,
+				'callback' => array( $instance, 'render_taxonomy_filters' ),
 			),
 			array(
 				'type'     => 'action',
@@ -2099,6 +2106,209 @@ class Test_Admin_List extends Base {
 			" AND post_status = 'trash'",
 			$trash,
 			'The Trash view should list the months of trashed posts.'
+		);
+	}
+
+	/**
+	 * Coverage for render_taxonomy_filters method.
+	 *
+	 * @covers ::render_taxonomy_filters
+	 * @covers ::render_taxonomy_filter
+	 *
+	 * @return void
+	 */
+	public function test_render_taxonomy_filters_renders_the_topic_dropdown(): void {
+		$instance = Admin_List::get_instance();
+
+		$this->factory->term->create(
+			array(
+				'taxonomy' => Topic::TAXONOMY,
+				'name'     => 'Accessibility',
+				'slug'     => 'accessibility',
+			)
+		);
+
+		ob_start();
+		$instance->render_taxonomy_filters( Event::POST_TYPE );
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString(
+			"name='gatherpress_topic'",
+			$output,
+			'Should render a dropdown submitting the topic taxonomy query var.'
+		);
+		$this->assertStringContainsString(
+			'All Topics',
+			$output,
+			'Should offer the taxonomy\'s own "all" label.'
+		);
+		$this->assertStringContainsString(
+			'Filter by topic',
+			$output,
+			'Should label the dropdown for screen readers from the taxonomy.'
+		);
+		$this->assertStringContainsString(
+			'value="accessibility"',
+			$output,
+			'Terms should submit by slug, which is what the query var resolves.'
+		);
+	}
+
+	/**
+	 * Coverage for render_taxonomy_filters method with an unsupported post type.
+	 *
+	 * @covers ::render_taxonomy_filters
+	 *
+	 * @return void
+	 */
+	public function test_render_taxonomy_filters_skips_unsupported_post_type(): void {
+		$instance = Admin_List::get_instance();
+
+		$this->factory->term->create(
+			array(
+				'taxonomy' => Topic::TAXONOMY,
+				'name'     => 'Accessibility',
+			)
+		);
+
+		ob_start();
+		$instance->render_taxonomy_filters( 'post' );
+		$output = ob_get_clean();
+
+		$this->assertEmpty(
+			$output,
+			'Post types without event date support should render no taxonomy filters.'
+		);
+	}
+
+	/**
+	 * Coverage for render_taxonomy_filter method marking the filtered term.
+	 *
+	 * @covers ::render_taxonomy_filter
+	 *
+	 * @return void
+	 */
+	public function test_render_taxonomy_filter_marks_the_selected_term(): void {
+		$instance = Admin_List::get_instance();
+
+		$this->factory->term->create(
+			array(
+				'taxonomy' => Topic::TAXONOMY,
+				'name'     => 'Accessibility',
+				'slug'     => 'accessibility',
+			)
+		);
+
+		$_GET[ Topic::TAXONOMY ] = 'accessibility'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		ob_start();
+		$instance->render_taxonomy_filters( Event::POST_TYPE );
+		$output = ob_get_clean();
+
+		unset( $_GET[ Topic::TAXONOMY ] );
+
+		$this->assertMatchesRegularExpression(
+			'/<option class="level-0" value="accessibility" ?selected/',
+			$output,
+			'The topic being filtered on should come back selected.'
+		);
+	}
+
+	/**
+	 * Coverage for render_taxonomy_filter method with no terms to offer.
+	 *
+	 * @covers ::render_taxonomy_filter
+	 *
+	 * @return void
+	 */
+	public function test_render_taxonomy_filter_renders_nothing_without_terms(): void {
+		$instance = Admin_List::get_instance();
+
+		ob_start();
+		$instance->render_taxonomy_filters( Event::POST_TYPE );
+		$output = ob_get_clean();
+
+		$this->assertEmpty(
+			$output,
+			'A taxonomy with no terms should render no dropdown at all.'
+		);
+	}
+
+	/**
+	 * Coverage for render_taxonomy_filter method with an unattached taxonomy.
+	 *
+	 * @covers ::render_taxonomy_filter
+	 *
+	 * @return void
+	 */
+	public function test_render_taxonomy_filter_skips_an_unattached_taxonomy(): void {
+		$instance = Admin_List::get_instance();
+		$test_pt  = 'test_event_tax';
+
+		register_post_type( $test_pt, array( 'supports' => array( 'title' ) ) );
+		add_post_type_support( $test_pt, 'gatherpress-event-date' );
+
+		$this->factory->term->create(
+			array(
+				'taxonomy' => Topic::TAXONOMY,
+				'name'     => 'Accessibility',
+			)
+		);
+
+		ob_start();
+		$instance->render_taxonomy_filters( $test_pt );
+		$output = ob_get_clean();
+
+		unregister_post_type( $test_pt );
+
+		$this->assertEmpty(
+			$output,
+			'A post type the taxonomy is not registered for should get no dropdown.'
+		);
+	}
+
+	/**
+	 * Coverage for the topic filter narrowing the admin list.
+	 *
+	 * @covers ::render_taxonomy_filters
+	 *
+	 * @return void
+	 */
+	public function test_topic_filter_narrows_the_admin_list(): void {
+		$this->mock->user( true, 'admin' );
+		set_current_screen( 'edit-gatherpress_event' );
+
+		$term_id = $this->factory->term->create(
+			array(
+				'taxonomy' => Topic::TAXONOMY,
+				'name'     => 'Accessibility',
+				'slug'     => 'accessibility',
+			)
+		);
+
+		$tagged = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$other  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+
+		wp_set_object_terms( $tagged, array( (int) $term_id ), Topic::TAXONOMY );
+
+		$query = new WP_Query(
+			array(
+				'post_type'      => Event::POST_TYPE,
+				Topic::TAXONOMY  => 'accessibility',
+				'fields'         => 'ids',
+				'posts_per_page' => -1,
+			)
+		);
+
+		$this->assertSame(
+			array( $tagged ),
+			$query->posts,
+			'Filtering by a topic should leave only the events carrying it.'
+		);
+		$this->assertNotContains(
+			$other,
+			$query->posts,
+			'An event without the topic should drop out of the filtered list.'
 		);
 	}
 }
