@@ -163,6 +163,12 @@ class Test_Setup extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'add_editor_settings' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'post_class',
+				'priority' => 10,
+				'callback' => array( $instance, 'add_status_post_class' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
