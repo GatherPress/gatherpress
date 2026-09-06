@@ -364,7 +364,7 @@ final class Admin_List {
 	}
 
 	/**
-	 * Render the event date and published date filters above the list table.
+	 * Render the event date and post date filters above the list table.
 	 *
 	 * Replaces the dropdown removed in `disable_months_dropdown()` with a
 	 * labeled pair: one filtering the event date column, one filtering the
@@ -403,8 +403,8 @@ final class Admin_List {
 		$this->render_months_dropdown(
 			'm',
 			'filter-by-date',
-			__( 'Filter by published date', 'gatherpress' ),
-			__( 'All published dates', 'gatherpress' ),
+			__( 'Filter by post date', 'gatherpress' ),
+			__( 'All post dates', 'gatherpress' ),
 			$this->get_published_months( $post_type )
 		);
 

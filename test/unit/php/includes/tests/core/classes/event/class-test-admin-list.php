@@ -1836,9 +1836,9 @@ class Test_Admin_List extends Base {
 			'Should keep rendering core\'s publish date parameter.'
 		);
 		$this->assertStringContainsString(
-			'All published dates',
+			'All post dates',
 			$output,
-			'Publish date dropdown should say it filters the published date.'
+			'Post date dropdown should say which date it filters.'
 		);
 		$this->assertStringContainsString(
 			'<option value="202503"',
@@ -2006,7 +2006,7 @@ class Test_Admin_List extends Base {
 		Utility::invoke_hidden_method(
 			$instance,
 			'render_months_dropdown',
-			array( 'm', 'filter-by-date', 'Filter by published date', 'All published dates', array() )
+			array( 'm', 'filter-by-date', 'Filter by post date', 'All post dates', array() )
 		);
 		$empty = ob_get_clean();
 
@@ -2014,7 +2014,7 @@ class Test_Admin_List extends Base {
 		Utility::invoke_hidden_method(
 			$instance,
 			'render_months_dropdown',
-			array( 'm', 'filter-by-date', 'Filter by published date', 'All published dates', array( $year_zero ) )
+			array( 'm', 'filter-by-date', 'Filter by post date', 'All post dates', array( $year_zero ) )
 		);
 		$year_zero_only = ob_get_clean();
 
