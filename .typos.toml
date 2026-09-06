@@ -11,9 +11,6 @@ extend-exclude = [
     "**/node_modules/**",
     "build/**",
     "docs/media/**",
-    # Generated from GitHub usernames by the credits-sync workflow, so the
-    # words in them are nobody's to spell. "stein2nd" alone reads as a typo
-    # of "and" once typos splits it.
     ".github/scripts/release/credits/**",
 ]
 ignore-hidden = false
