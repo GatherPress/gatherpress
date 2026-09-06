@@ -21,6 +21,9 @@ extend-ignore-re = [
     "\\bEvent Organiser\\b",
     # Calibre (calibreapp.com) builds the image-actions image compressor.
     "\\bCalibre\\b",
+    # A contributor's GitHub username in the release credits; typos splits it
+    # into stein, 2 and nd and reads the last as a typo of "and".
+    "\\bstein2nd\\b",
 ]
 
 [default.extend-identifiers]
