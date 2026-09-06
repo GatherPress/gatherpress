@@ -66,6 +66,29 @@ final class Date_Query {
 	const EVENT_COLUMNS = array( self::DEFAULT_COLUMN, 'datetime_start' );
 
 	/**
+	 * Arguments a clause may carry and still be resolved.
+	 *
+	 * A clause carrying anything else is refused outright rather than
+	 * resolved in part. Honoring `year` while quietly dropping `week` would
+	 * hand back a window a whole year wide, and the caller lifts the original
+	 * `date_query` out of the query once a window comes back, so there is
+	 * nothing left to apply the dropped argument.
+	 *
+	 * @since 0.36.0
+	 * @var string[]
+	 */
+	const SUPPORTED_ARGS = array(
+		'after',
+		'before',
+		'column',
+		'day',
+		'inclusive',
+		'month',
+		'monthnum',
+		'year',
+	);
+
+	/**
 	 * Resolve a date query into the window an event has to touch.
 	 *
 	 * Reads the range-shaped arguments only: `after`, `before`, `year`,
@@ -75,8 +98,14 @@ final class Date_Query {
 	 * single answer across events in different timezones, so it is left alone
 	 * rather than answered wrongly.
 	 *
-	 * Only the first clause is read. Nested clauses and relations are a
-	 * generality nothing asks for yet.
+	 * A date query is resolved in full or not at all. One clause carrying only
+	 * arguments from `SUPPORTED_ARGS` resolves; anything else, including a
+	 * relation, a second clause, or one unreadable argument alongside readable
+	 * ones, resolves to nothing and is left for WordPress.
+	 *
+	 * Arguments narrow each other the way they do in a WordPress clause, so a
+	 * calendar span alongside an `after` or `before` yields their overlap
+	 * rather than whichever was read last.
 	 *
 	 * Boundaries come back in the clock of the column they will be compared
 	 * against: UTC for the GMT pair, the site's own time for the local pair. A
@@ -92,10 +121,15 @@ final class Date_Query {
 	 *         when nothing could be read.
 	 */
 	public static function resolve( array $date_query ): ?array {
-		$clause = self::first_clause( $date_query );
+		$clause = self::single_clause( $date_query );
+
+		if ( null === $clause ) {
+			return null;
+		}
+
 		$column = (string) ( $clause['column'] ?? self::DEFAULT_COLUMN );
 
-		if ( empty( $clause ) || ! in_array( $column, self::EVENT_COLUMNS, true ) ) {
+		if ( ! in_array( $column, self::EVENT_COLUMNS, true ) ) {
 			return null;
 		}
 
@@ -115,7 +149,8 @@ final class Date_Query {
 			if ( null !== $after ) {
 				// WordPress treats `after` as exclusive unless told otherwise,
 				// and the window is built to the second.
-				$start = $inclusive ? $after : $after->modify( '+1 second' );
+				$after = $inclusive ? $after : $after->modify( '+1 second' );
+				$start = ( null === $start || $after > $start ) ? $after : $start;
 			}
 		}
 
@@ -123,7 +158,8 @@ final class Date_Query {
 			$before = self::to_site_datetime( $clause['before'], true );
 
 			if ( null !== $before ) {
-				$end = $inclusive ? $before : $before->modify( '-1 second' );
+				$before = $inclusive ? $before : $before->modify( '-1 second' );
+				$end    = ( null === $end || $before < $end ) ? $before : $end;
 			}
 		}
 
@@ -141,22 +177,39 @@ final class Date_Query {
 	}
 
 	/**
-	 * Pull the clause to read out of a date query.
+	 * Pull the one clause a date query can be resolved from.
 	 *
-	 * A date query may carry its arguments at the top level or wrap them in a
-	 * list of clauses. Both shapes are common in the wild, so both are read.
+	 * A date query may carry its arguments at the top level or wrap a single
+	 * clause in a list. Both shapes are common in the wild, so both are read.
+	 * Anything else, a relation, a second clause, or an argument outside
+	 * `SUPPORTED_ARGS`, cannot be honored in full and so is not honored at all.
 	 *
 	 * @since 0.36.0
 	 *
 	 * @param array<int|string, mixed> $date_query A WordPress date query.
 	 *
-	 * @return array<string, mixed> The clause to read, or an empty array.
+	 * @return array<string, mixed>|null The clause to read, or null when there is not exactly one to read.
 	 */
-	private static function first_clause( array $date_query ): array {
-		if ( isset( $date_query[0] ) && is_array( $date_query[0] ) ) {
-			return $date_query[0];
+	private static function single_clause( array $date_query ): ?array {
+		$nested = array_filter( $date_query, 'is_int', ARRAY_FILTER_USE_KEY );
+
+		// A wrapped clause is read only when it is the whole date query, which
+		// rules out a relation or a sibling clause sitting beside it.
+		if ( ! empty( $nested ) ) {
+			$date_query = ( 1 === count( $nested ) && count( $nested ) === count( $date_query ) )
+				? (array) reset( $nested )
+				: array();
 		}
 
+		if ( empty( $date_query ) || ! empty( array_diff( array_keys( $date_query ), self::SUPPORTED_ARGS ) ) ) {
+			return null;
+		}
+
+		/**
+		 * The clause, now known to carry supported arguments only.
+		 *
+		 * @var array<string, mixed> $date_query
+		 */
 		return $date_query;
 	}
 

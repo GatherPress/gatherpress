@@ -2568,7 +2568,14 @@ class Test_Query extends Base {
 		$ids    = array();
 
 		foreach ( $events as $part => $datetimes ) {
-			$ids[ $part ] = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+			// An explicit publish date, so the test that filters on `post_date`
+			// keeps asserting the same thing after 2026 has passed.
+			$ids[ $part ] = $this->mock->post(
+				array(
+					'post_type' => Event::POST_TYPE,
+					'post_date' => '2026-02-01 09:00:00',
+				)
+			)->get()->ID;
 
 			( new Event( $ids[ $part ] ) )->save_datetimes(
 				array(
@@ -2777,7 +2784,12 @@ class Test_Query extends Base {
 		$this->assertContains(
 			$ids['before'],
 			$by_publish_date->posts,
-			'A core column should filter on publish date, which every fixture shares.'
+			'A core column should filter on the 2026 publish date every fixture was given.'
+		);
+		$this->assertContains(
+			$ids['within'],
+			$by_publish_date->posts,
+			'Publish-date filtering should ignore when the events themselves happen.'
 		);
 		// A query naming no post type at all is core's business, not ours.
 		$untyped = new WP_Query(

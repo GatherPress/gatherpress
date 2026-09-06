@@ -42,7 +42,7 @@ class Test_Date_Query extends Base {
 	 * @dataProvider data_resolve
 	 *
 	 * @covers ::resolve
-	 * @covers ::first_clause
+	 * @covers ::single_clause
 	 * @covers ::resolve_calendar_span
 	 * @covers ::to_site_datetime
 	 * @covers ::site_datetime
@@ -260,6 +260,76 @@ class Test_Date_Query extends Base {
 				),
 				null,
 				'A core column should be left for WordPress to resolve.',
+			),
+			array(
+				array(
+					'year' => 2026,
+					'week' => 24,
+				),
+				null,
+				'A clause carrying an argument that cannot be honored should resolve to nothing.',
+			),
+			array(
+				array(
+					'year'    => 2026,
+					'compare' => '>',
+				),
+				null,
+				'A comparison operator that cannot be honored should resolve to nothing.',
+			),
+			array(
+				array(
+					'relation' => 'AND',
+					array( 'year' => 2026 ),
+					array( 'year' => 2027 ),
+				),
+				null,
+				'A relation between clauses should resolve to nothing.',
+			),
+			array(
+				array(
+					array( 'year' => 2026 ),
+					array( 'year' => 2027 ),
+				),
+				null,
+				'More than one clause should resolve to nothing.',
+			),
+			array(
+				array(
+					'year'  => 2026,
+					'after' => '2025-12-01',
+				),
+				array(
+					'start'  => '2026-01-01 05:00:00',
+					'end'    => '2027-01-01 04:59:59',
+					'column' => Date_Query::DEFAULT_COLUMN,
+				),
+				'An `after` before the span opens should not widen it.',
+			),
+			array(
+				array(
+					'year'      => 2026,
+					'after'     => '2026-06-15',
+					'inclusive' => true,
+				),
+				array(
+					'start'  => '2026-06-15 04:00:00',
+					'end'    => '2027-01-01 04:59:59',
+					'column' => Date_Query::DEFAULT_COLUMN,
+				),
+				'An `after` inside the span should narrow its start.',
+			),
+			array(
+				array(
+					'year'   => 2026,
+					'before' => '2027-06-30',
+				),
+				array(
+					'start'  => '2026-01-01 05:00:00',
+					'end'    => '2027-01-01 04:59:59',
+					'column' => Date_Query::DEFAULT_COLUMN,
+				),
+				'A `before` after the span closes should not widen it.',
 			),
 		);
 	}
