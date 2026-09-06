@@ -14,6 +14,7 @@ use GatherPress\Core\Event\Setup as Event_Setup;
 use GatherPress\Core\Rsvp;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
+use stdClass;
 use WP_Query;
 
 /**
@@ -45,6 +46,18 @@ class Test_Admin_List extends Base {
 				'name'     => 'query_vars',
 				'priority' => 10,
 				'callback' => array( $instance, 'query_vars' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'disable_months_dropdown',
+				'priority' => 10,
+				'callback' => array( $instance, 'disable_months_dropdown' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'restrict_manage_posts',
+				'priority' => 10,
+				'callback' => array( $instance, 'render_date_filters' ),
 			),
 			array(
 				'type'     => 'action',
@@ -861,11 +874,16 @@ class Test_Admin_List extends Base {
 			'Should add gatherpress_event_query to query vars.'
 		);
 		$this->assertContains(
+			'gatherpress_event_date',
+			$result,
+			'Should add gatherpress_event_date to query vars.'
+		);
+		$this->assertContains(
 			'existing_var',
 			$result,
 			'Should preserve existing query vars.'
 		);
-		$this->assertCount( 2, $result, 'Should have exactly 2 query vars.' );
+		$this->assertCount( 3, $result, 'Should have exactly 3 query vars.' );
 	}
 
 	/**
@@ -885,7 +903,7 @@ class Test_Admin_List extends Base {
 			$result,
 			'Should add gatherpress_event_query even with empty input.'
 		);
-		$this->assertCount( 1, $result, 'Should have exactly 1 query var.' );
+		$this->assertCount( 2, $result, 'Should have exactly 2 query vars.' );
 	}
 
 	/**
@@ -1731,6 +1749,356 @@ class Test_Admin_List extends Base {
 		$this->assertFalse(
 			has_filter( 'posts_orderby', array( $instance, 'rsvp_sorting_orderby' ) ),
 			'No RSVP orderby filter should be added for event-date-only post types.'
+		);
+	}
+
+	/**
+	 * Coverage for disable_months_dropdown method.
+	 *
+	 * @covers ::disable_months_dropdown
+	 *
+	 * @return void
+	 */
+	public function test_disable_months_dropdown(): void {
+		$instance = Admin_List::get_instance();
+
+		$this->assertTrue(
+			$instance->disable_months_dropdown( false, Event::POST_TYPE ),
+			'Core\'s months dropdown should be removed for event post types.'
+		);
+		$this->assertFalse(
+			$instance->disable_months_dropdown( false, 'post' ),
+			'Post types without event date support should keep core\'s dropdown.'
+		);
+		$this->assertTrue(
+			$instance->disable_months_dropdown( true, 'post' ),
+			'An earlier filter removing the dropdown should be left alone.'
+		);
+	}
+
+	/**
+	 * Coverage for render_date_filters method.
+	 *
+	 * @covers ::render_date_filters
+	 * @covers ::render_months_dropdown
+	 * @covers ::get_event_date_months
+	 * @covers ::get_published_months
+	 * @covers ::get_months_status_clause
+	 *
+	 * @return void
+	 */
+	public function test_render_date_filters_renders_both_dropdowns(): void {
+		$instance = Admin_List::get_instance();
+		$post_id  = $this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+				'post_date'   => '2025-03-04 10:00:00',
+			)
+		)->get()->ID;
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2025-06-15 10:00:00',
+				'datetime_end'   => '2025-06-15 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		ob_start();
+		$instance->render_date_filters( Event::POST_TYPE );
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString(
+			'name="gatherpress_event_date"',
+			$output,
+			'Should render a dropdown submitting the event date parameter.'
+		);
+		$this->assertStringContainsString(
+			'All Event dates',
+			$output,
+			'Event date dropdown should name the date it filters.'
+		);
+		$this->assertStringContainsString(
+			'<option value="202506"',
+			$output,
+			'Event date dropdown should offer the month the event starts in.'
+		);
+		$this->assertStringContainsString(
+			'June 2025',
+			$output,
+			'Event date months should be labelled with month name and year.'
+		);
+		$this->assertStringContainsString(
+			'name="m"',
+			$output,
+			'Should keep rendering core\'s publish date parameter.'
+		);
+		$this->assertStringContainsString(
+			'All published dates',
+			$output,
+			'Publish date dropdown should say it filters the published date.'
+		);
+		$this->assertStringContainsString(
+			'<option value="202503"',
+			$output,
+			'Publish date dropdown should offer the month the event was published in.'
+		);
+	}
+
+	/**
+	 * Coverage for render_date_filters method with an unsupported post type.
+	 *
+	 * @covers ::render_date_filters
+	 *
+	 * @return void
+	 */
+	public function test_render_date_filters_skips_unsupported_post_type(): void {
+		$instance = Admin_List::get_instance();
+
+		$this->mock->post( array( 'post_type' => 'post' ) );
+
+		ob_start();
+		$instance->render_date_filters( 'post' );
+		$output = ob_get_clean();
+
+		$this->assertEmpty(
+			$output,
+			'Post types without event date support should render no date filters.'
+		);
+	}
+
+	/**
+	 * Coverage for render_date_filters method with an event whose date is unset.
+	 *
+	 * @covers ::render_date_filters
+	 * @covers ::render_months_dropdown
+	 * @covers ::get_event_date_months
+	 *
+	 * @return void
+	 */
+	public function test_render_date_filters_omits_events_without_a_date(): void {
+		$instance = Admin_List::get_instance();
+
+		$this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+				'post_date'   => '2025-03-04 10:00:00',
+			)
+		);
+
+		ob_start();
+		$instance->render_date_filters( Event::POST_TYPE );
+		$output = ob_get_clean();
+
+		$this->assertStringNotContainsString(
+			'name="gatherpress_event_date"',
+			$output,
+			'An event with no date gives the event date dropdown nothing to offer.'
+		);
+		$this->assertStringContainsString(
+			'name="m"',
+			$output,
+			'The publish date dropdown should still render on its own.'
+		);
+	}
+
+	/**
+	 * Coverage for render_date_filters method marking the filtered month.
+	 *
+	 * @covers ::render_date_filters
+	 * @covers ::render_months_dropdown
+	 *
+	 * @return void
+	 */
+	public function test_render_date_filters_marks_the_selected_month(): void {
+		$instance = Admin_List::get_instance();
+		$post_id  = $this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		)->get()->ID;
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2025-06-15 10:00:00',
+				'datetime_end'   => '2025-06-15 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$_GET['gatherpress_event_date'] = '202506'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		ob_start();
+		$instance->render_date_filters( Event::POST_TYPE );
+		$output = ob_get_clean();
+
+		unset( $_GET['gatherpress_event_date'] );
+
+		$this->assertMatchesRegularExpression(
+			'/<option value="202506" ?selected/',
+			$output,
+			'The month being filtered on should come back selected.'
+		);
+	}
+
+	/**
+	 * Coverage for render_date_filters method carrying the current view.
+	 *
+	 * @covers ::render_date_filters
+	 *
+	 * @return void
+	 */
+	public function test_render_date_filters_carries_the_current_view(): void {
+		$instance = Admin_List::get_instance();
+
+		$this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+
+		ob_start();
+		$instance->render_date_filters( Event::POST_TYPE );
+		$without_view = ob_get_clean();
+
+		$this->assertStringNotContainsString(
+			'name="gatherpress_event_query"',
+			$without_view,
+			'The All view has no view parameter to carry through the filter form.'
+		);
+
+		$_GET['gatherpress_event_query'] = 'upcoming'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		ob_start();
+		$instance->render_date_filters( Event::POST_TYPE );
+		$with_view = ob_get_clean();
+
+		unset( $_GET['gatherpress_event_query'] );
+
+		$this->assertStringContainsString(
+			'<input type="hidden" name="gatherpress_event_query" value="upcoming" />',
+			$with_view,
+			'Filtering by date from the Upcoming view should stay on the Upcoming view.'
+		);
+	}
+
+	/**
+	 * Coverage for render_months_dropdown method with nothing to offer.
+	 *
+	 * @covers ::render_months_dropdown
+	 *
+	 * @return void
+	 */
+	public function test_render_months_dropdown_renders_nothing_without_months(): void {
+		$instance  = Admin_List::get_instance();
+		$year_zero = new stdClass();
+
+		$year_zero->year  = '0';
+		$year_zero->month = '0';
+
+		ob_start();
+		Utility::invoke_hidden_method(
+			$instance,
+			'render_months_dropdown',
+			array( 'm', 'filter-by-date', 'Filter by published date', 'All published dates', array() )
+		);
+		$empty = ob_get_clean();
+
+		ob_start();
+		Utility::invoke_hidden_method(
+			$instance,
+			'render_months_dropdown',
+			array( 'm', 'filter-by-date', 'Filter by published date', 'All published dates', array( $year_zero ) )
+		);
+		$year_zero_only = ob_get_clean();
+
+		$this->assertEmpty( $empty, 'A bucket with no months should render no dropdown.' );
+		$this->assertEmpty(
+			$year_zero_only,
+			'A bucket holding only rows with no year should render no dropdown.'
+		);
+	}
+
+	/**
+	 * Coverage for get_published_months method firing core's filters.
+	 *
+	 * @covers ::get_published_months
+	 *
+	 * @return void
+	 */
+	public function test_get_published_months_fires_core_filters(): void {
+		$instance = Admin_List::get_instance();
+		$month    = new stdClass();
+
+		$month->year  = '2019';
+		$month->month = '11';
+
+		add_filter(
+			'pre_months_dropdown_query',
+			static function () use ( $month ): array {
+				return array( $month );
+			}
+		);
+
+		$short_circuited = Utility::invoke_hidden_method(
+			$instance,
+			'get_published_months',
+			array( Event::POST_TYPE )
+		);
+
+		$this->assertSame(
+			array( $month ),
+			$short_circuited,
+			'A pre_months_dropdown_query short circuit should replace the query.'
+		);
+
+		add_filter( 'months_dropdown_results', '__return_empty_array' );
+
+		$filtered = Utility::invoke_hidden_method(
+			$instance,
+			'get_published_months',
+			array( Event::POST_TYPE )
+		);
+
+		$this->assertSame(
+			array(),
+			$filtered,
+			'months_dropdown_results should still get the last word on the months.'
+		);
+	}
+
+	/**
+	 * Coverage for get_months_status_clause method.
+	 *
+	 * @covers ::get_months_status_clause
+	 *
+	 * @return void
+	 */
+	public function test_get_months_status_clause(): void {
+		$instance = Admin_List::get_instance();
+
+		$this->assertSame(
+			" AND post_status NOT IN ( 'auto-draft', 'trash' )",
+			Utility::invoke_hidden_method( $instance, 'get_months_status_clause' ),
+			'Views other than Trash should hide trashed posts and auto-drafts.'
+		);
+
+		$_GET['post_status'] = 'trash'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		$trash = Utility::invoke_hidden_method( $instance, 'get_months_status_clause' );
+
+		unset( $_GET['post_status'] );
+
+		$this->assertSame(
+			" AND post_status = 'trash'",
+			$trash,
+			'The Trash view should list the months of trashed posts.'
 		);
 	}
 }

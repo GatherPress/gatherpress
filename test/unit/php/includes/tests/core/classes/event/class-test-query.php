@@ -2278,4 +2278,103 @@ class Test_Query extends Base {
 			'Failed to assert anything that is not ASC falls back to DESC.'
 		);
 	}
+
+	/**
+	 * Coverage for adjust_event_month_sql method.
+	 *
+	 * @covers ::adjust_event_month_sql
+	 *
+	 * @return void
+	 */
+	public function test_adjust_event_month_sql(): void {
+		global $wpdb;
+
+		$instance = Query::get_instance();
+		$table    = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+
+		$pieces = Utility::invoke_hidden_method(
+			$instance,
+			'adjust_event_month_sql',
+			array( array( 'where' => '' ), '202609' )
+		);
+
+		$this->assertSame(
+			sprintf(
+				' AND YEAR(`%1$s`.`datetime_start`) = 2026 AND MONTH(`%1$s`.`datetime_start`) = 9',
+				$table
+			),
+			$pieces['where'],
+			'Should narrow the list to events starting in the requested month.'
+		);
+	}
+
+	/**
+	 * Coverage for adjust_event_month_sql method with a month it cannot use.
+	 *
+	 * @dataProvider data_adjust_event_month_sql_unusable_month
+	 *
+	 * @covers ::adjust_event_month_sql
+	 *
+	 * @param string $month Month value to pass through.
+	 *
+	 * @return void
+	 */
+	public function test_adjust_event_month_sql_leaves_unusable_month_alone( string $month ): void {
+		$instance = Query::get_instance();
+		$pieces   = array( 'where' => ' AND 1 = 1' );
+
+		$this->assertSame(
+			$pieces,
+			Utility::invoke_hidden_method( $instance, 'adjust_event_month_sql', array( $pieces, $month ) ),
+			'A month that is not YYYYMM should leave the query pieces untouched.'
+		);
+	}
+
+	/**
+	 * Data provider for unusable month values.
+	 *
+	 * @return array<string, array<int, string>>
+	 */
+	public function data_adjust_event_month_sql_unusable_month(): array {
+		return array(
+			'empty'          => array( '' ),
+			'no month'       => array( '2026' ),
+			'month zero'     => array( '202600' ),
+			'month thirteen' => array( '202613' ),
+			'too short'      => array( '20269' ),
+			'too long'       => array( '2026091' ),
+			'separated'      => array( '2026-09' ),
+			'not a number'   => array( 'september' ),
+		);
+	}
+
+	/**
+	 * Coverage for adjust_admin_event_sorting method filtering by event month.
+	 *
+	 * @covers ::adjust_admin_event_sorting
+	 * @covers ::adjust_event_month_sql
+	 *
+	 * @return void
+	 */
+	public function test_adjust_admin_event_sorting_filters_by_event_month(): void {
+		global $wpdb;
+
+		$instance = Query::get_instance();
+		$wp_query = new WP_Query();
+		$table    = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+
+		$this->mock->user( true, 'admin' );
+		set_current_screen( 'edit-gatherpress_event' );
+
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+		$wp_query->set( 'gatherpress_event_date', '202609' );
+
+		$pieces = $instance->adjust_admin_event_sorting( array( 'where' => '' ), $wp_query );
+
+		$this->assertStringContainsString(
+			sprintf( 'YEAR(`%s`.`datetime_start`) = 2026', $table ),
+			$pieces['where'],
+			'The event month filter should reach the admin list query.'
+		);
+	}
 }
