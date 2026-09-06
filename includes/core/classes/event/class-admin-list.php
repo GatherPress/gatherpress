@@ -19,9 +19,11 @@ use Exception;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Query as Rsvp_Query;
 use GatherPress\Core\Rsvp;
+use GatherPress\Core\Topic;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
+use stdClass;
 use WP_Query;
 
 /**
@@ -72,6 +74,9 @@ final class Admin_List {
 	protected function setup_hooks(): void {
 		add_action( 'pre_get_posts', array( $this, 'handle_rsvp_sorting' ) );
 		add_filter( 'query_vars', array( $this, 'query_vars' ) );
+		add_filter( 'disable_months_dropdown', array( $this, 'disable_months_dropdown' ), 10, 2 );
+		add_action( 'restrict_manage_posts', array( $this, 'render_date_filters' ) );
+		add_action( 'restrict_manage_posts', array( $this, 'render_taxonomy_filters' ) );
 		add_action( 'registered_post_type', array( $this, 'maybe_register_post_type_hooks' ) );
 	}
 
@@ -168,9 +173,9 @@ final class Admin_List {
 		$post_type = $screen->post_type;
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$current_view = isset( $_GET['gatherpress_event_query'] )
+		$current_view = isset( $_GET[ Query::EVENT_QUERY_PARAM ] )
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			? sanitize_text_field( wp_unslash( $_GET['gatherpress_event_query'] ) )
+			? sanitize_text_field( wp_unslash( $_GET[ Query::EVENT_QUERY_PARAM ] ) )
 			: '';
 
 		$counts    = $this->get_event_counts( $post_type );
@@ -187,10 +192,10 @@ final class Admin_List {
 				'<a href="%s"%s>%s <span class="count">(%s)</span></a>',
 				add_query_arg(
 					array(
-						'gatherpress_event_query' => $key,
-						'post_type'               => $post_type,
-						'order'                   => 'upcoming' === $key ? 'asc' : 'desc',
-						'orderby'                 => 'datetime',
+						Query::EVENT_QUERY_PARAM => $key,
+						'post_type'              => $post_type,
+						'order'                  => 'upcoming' === $key ? 'asc' : 'desc',
+						'orderby'                => 'datetime',
 					),
 					$base_url
 				),
@@ -321,7 +326,9 @@ final class Admin_List {
 	 * Allowlist for additional query parameters.
 	 *
 	 * Adds 'gatherpress_event_query' to the list of allowed query variables,
-	 * to be able to request 'upcoming' or 'past' events in the admin list view.
+	 * to be able to request 'upcoming' or 'past' events in the admin list view,
+	 * and 'gatherpress_event_date' to narrow that list to a single month of
+	 * event dates.
 	 *
 	 * @since 0.34.0
 	 *
@@ -330,8 +337,370 @@ final class Admin_List {
 	 * @return string[] Updated list of allowed query variables.
 	 */
 	public function query_vars( array $query_vars ): array {
-		$query_vars[] = 'gatherpress_event_query';
+		$query_vars[] = Query::EVENT_QUERY_PARAM;
+		$query_vars[] = Query::EVENT_DATE_QUERY_PARAM;
 		return $query_vars;
+	}
+
+	/**
+	 * Take over the months dropdown on list tables for event post types.
+	 *
+	 * Core renders a single dropdown reading "All dates" that silently filters
+	 * on publish date. On a screen whose marquee column is the event date, that
+	 * is read as filtering by event date instead. `render_date_filters()` puts
+	 * both dropdowns back, each saying which date it filters.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param bool   $disable   Whether to remove core's months dropdown.
+	 * @param string $post_type The post type the list table is rendering.
+	 *
+	 * @return bool True for post types that render our own date filters.
+	 */
+	public function disable_months_dropdown( bool $disable, string $post_type ): bool {
+		if ( post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+			return true;
+		}
+
+		return $disable;
+	}
+
+	/**
+	 * Render the event date and post date filters above the list table.
+	 *
+	 * Replaces the dropdown removed in `disable_months_dropdown()` with a
+	 * labeled pair: one filtering the event date column, one filtering the
+	 * publish date through the same `m` parameter core uses, so existing links
+	 * into a filtered list keep working.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $post_type The post type the list table is rendering.
+	 *
+	 * @return void
+	 */
+	public function render_date_filters( string $post_type ): void {
+		if ( ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+			return;
+		}
+
+		$singular = Utility::post_type_label( 'singular_name', $post_type );
+
+		$this->render_months_dropdown(
+			Query::EVENT_DATE_QUERY_PARAM,
+			'gatherpress-filter-by-event-date',
+			sprintf(
+				/* translators: %s: Singular post type label, e.g. "Event". */
+				__( 'Filter by %s date', 'gatherpress' ),
+				$singular
+			),
+			sprintf(
+				/* translators: %s: Singular post type label, e.g. "Event". */
+				__( 'All %s dates', 'gatherpress' ),
+				$singular
+			),
+			$this->get_event_date_months( $post_type )
+		);
+
+		$this->render_months_dropdown(
+			'm',
+			'filter-by-date',
+			__( 'Filter by post date', 'gatherpress' ),
+			__( 'All post dates', 'gatherpress' ),
+			$this->get_post_date_months( $post_type )
+		);
+
+		// The Upcoming and Past views travel in a query parameter core's filter
+		// form knows nothing about, so filtering by date from one of those views
+		// would otherwise drop the visitor back to All.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$current_view = isset( $_GET[ Query::EVENT_QUERY_PARAM ] )
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			? sanitize_text_field( wp_unslash( $_GET[ Query::EVENT_QUERY_PARAM ] ) )
+			: '';
+
+		if ( '' !== $current_view ) {
+			printf(
+				'<input type="hidden" name="%s" value="%s" />',
+				esc_attr( Query::EVENT_QUERY_PARAM ),
+				esc_attr( $current_view )
+			);
+		}
+	}
+
+	/**
+	 * Render the taxonomy filters above the list table.
+	 *
+	 * Core builds a filter dropdown for the built-in category taxonomy only, so
+	 * topics reach the events list with an admin column but no way to filter by
+	 * them. This adds the one core would have if topics were categories.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $post_type The post type the list table is rendering.
+	 *
+	 * @return void
+	 */
+	public function render_taxonomy_filters( string $post_type ): void {
+		if ( ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+			return;
+		}
+
+		$this->render_taxonomy_filter( $post_type, Topic::TAXONOMY );
+	}
+
+	/**
+	 * Render one taxonomy filter for the list table's filter form.
+	 *
+	 * Mirrors core's `WP_Posts_List_Table::categories_dropdown()`, down to
+	 * reading its two strings off the taxonomy's own labels so an extender's
+	 * taxonomy names itself. Terms submit by slug because that is what a
+	 * taxonomy's query var resolves against; the "all" choice submits a `0`,
+	 * which `WP_Query` reads as empty and skips.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $post_type The post type the list table is rendering.
+	 * @param string $taxonomy  The taxonomy to offer as a filter.
+	 *
+	 * @return void
+	 */
+	protected function render_taxonomy_filter( string $post_type, string $taxonomy ): void {
+		$taxonomy_object = get_taxonomy( $taxonomy );
+
+		if ( ! $taxonomy_object || ! is_object_in_taxonomy( $post_type, $taxonomy ) ) {
+			return;
+		}
+
+		// A taxonomy with no terms has nothing to offer, and an empty dropdown
+		// would still draw the Filter button the whole form shares.
+		$terms = get_terms(
+			array(
+				'taxonomy'   => $taxonomy,
+				'hide_empty' => false,
+				'number'     => 1,
+				'fields'     => 'ids',
+			)
+		);
+
+		if ( is_wp_error( $terms ) || empty( $terms ) ) {
+			return;
+		}
+
+		// `filter_by_item` is only filled in by default for hierarchical
+		// taxonomies, so fall back to the plural name for the rest.
+		$filter_label = ! empty( $taxonomy_object->labels->filter_by_item )
+			? (string) $taxonomy_object->labels->filter_by_item
+			: (string) $taxonomy_object->labels->name;
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$selected = isset( $_GET[ $taxonomy ] ) && is_scalar( $_GET[ $taxonomy ] )
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			? sanitize_title( (string) wp_unslash( $_GET[ $taxonomy ] ) )
+			: '';
+
+		printf(
+			'<label class="screen-reader-text" for="%s">%s</label>',
+			esc_attr( $taxonomy ),
+			esc_html( $filter_label )
+		);
+
+		wp_dropdown_categories(
+			array(
+				'show_option_all' => $taxonomy_object->labels->all_items,
+				'taxonomy'        => $taxonomy,
+				'name'            => $taxonomy,
+				'id'              => $taxonomy,
+				'value_field'     => 'slug',
+				'selected'        => $selected,
+				'hierarchical'    => true,
+				'hide_empty'      => false,
+				'show_count'      => false,
+				'orderby'         => 'name',
+			)
+		);
+	}
+
+	/**
+	 * Render one months dropdown for the list table's filter form.
+	 *
+	 * Mirrors the markup of core's `WP_List_Table::months_dropdown()`: rows
+	 * carrying no year are skipped, and a bucket with no months renders nothing
+	 * at all rather than a dropdown whose only choice is "all".
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string               $name      Query parameter the dropdown submits.
+	 * @param string               $id        HTML id tying the select to its label.
+	 * @param string               $label     Visually hidden label for the select.
+	 * @param string               $all_label Text of the unfiltered option.
+	 * @param array<int, stdClass> $months Month rows carrying `year` and `month` properties.
+	 *
+	 * @return void
+	 */
+	protected function render_months_dropdown(
+		string $name,
+		string $id,
+		string $label,
+		string $all_label,
+		array $months
+	): void {
+		global $wp_locale;
+
+		$months = array_filter(
+			$months,
+			static function ( stdClass $month ): bool {
+				return 0 !== (int) $month->year;
+			}
+		);
+
+		if ( empty( $months ) ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$selected = isset( $_GET[ $name ] ) ? (int) $_GET[ $name ] : 0;
+
+		printf(
+			'<label for="%1$s" class="screen-reader-text">%2$s</label>'
+			. '<select name="%3$s" id="%1$s"><option value="0"%4$s>%5$s</option>',
+			esc_attr( $id ),
+			esc_html( $label ),
+			esc_attr( $name ),
+			selected( $selected, 0, false ),
+			esc_html( $all_label )
+		);
+
+		foreach ( $months as $month ) {
+			$month_number = zeroise( $month->month, 2 );
+			$value        = $month->year . $month_number;
+
+			printf(
+				'<option value="%s"%s>%s</option>',
+				esc_attr( $value ),
+				selected( $selected, (int) $value, false ),
+				esc_html(
+					sprintf(
+						/* translators: 1: Month name, 2: 4-digit year. */
+						__( '%1$s %2$d', 'gatherpress' ),
+						$wp_locale->get_month( $month_number ),
+						$month->year
+					)
+				)
+			);
+		}
+
+		echo '</select>';
+	}
+
+	/**
+	 * Get the months that have events, newest first.
+	 *
+	 * Reads `datetime_start` rather than `datetime_start_gmt` so a month holds
+	 * the events the list table displays under it, since the event date column
+	 * renders in each event's own timezone. Events with no row in the events
+	 * table have no event date and appear under no month.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $post_type The event post type to collect months for.
+	 *
+	 * @return array<int, stdClass> Month rows carrying `year` and `month` properties.
+	 */
+	protected function get_event_date_months( string $post_type ): array {
+		global $wpdb;
+
+		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+
+		// The appended status clause is one of two fixed strings, but the
+		// sniff cannot see through the call that picks between them.
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared
+		$months = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT DISTINCT YEAR(%i.%i) AS year, MONTH(%i.%i) AS month'
+				. ' FROM %i INNER JOIN %i ON %i.ID = %i.post_id'
+				. ' WHERE %i.post_type = %s' . $this->get_months_status_clause()
+				. ' ORDER BY year DESC, month DESC',
+				$table,
+				'datetime_start',
+				$table,
+				'datetime_start',
+				$wpdb->posts,
+				$table,
+				$wpdb->posts,
+				$table,
+				$wpdb->posts,
+				$post_type
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared
+
+		return (array) $months;
+	}
+
+	/**
+	 * Get the months that have posts, newest first.
+	 *
+	 * Repeats the query core's months dropdown runs, along with the two filters
+	 * that shape it, so replacing that dropdown leaves anything hooked to them
+	 * working as before.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $post_type The post type to collect months for.
+	 *
+	 * @return array<int, stdClass> Month rows carrying `year` and `month` properties.
+	 */
+	protected function get_post_date_months( string $post_type ): array {
+		global $wpdb;
+
+		/** This filter is documented in wp-admin/includes/class-wp-list-table.php */
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		$months = apply_filters( 'pre_months_dropdown_query', false, $post_type );
+
+		if ( ! is_array( $months ) ) {
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared
+			$months = $wpdb->get_results(
+				$wpdb->prepare(
+					'SELECT DISTINCT YEAR(post_date) AS year, MONTH(post_date) AS month'
+					. ' FROM %i WHERE post_type = %s' . $this->get_months_status_clause()
+					. ' ORDER BY post_date DESC',
+					$wpdb->posts,
+					$post_type
+				)
+			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared
+		}
+
+		/** This filter is documented in wp-admin/includes/class-wp-list-table.php */
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		return (array) apply_filters( 'months_dropdown_results', $months, $post_type );
+	}
+
+	/**
+	 * Build the post status condition shared by both months queries.
+	 *
+	 * Follows core: the Trash view lists the months of trashed posts, every
+	 * other view hides them along with auto-drafts. Both arms are fixed SQL, so
+	 * nothing user-supplied reaches the clause.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string SQL fragment to append to a months query's WHERE clause.
+	 */
+	private function get_months_status_clause(): string {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$post_status = isset( $_GET['post_status'] ) ? sanitize_key( wp_unslash( $_GET['post_status'] ) ) : '';
+
+		if ( 'trash' === $post_status ) {
+			return " AND post_status = 'trash'";
+		}
+
+		return " AND post_status NOT IN ( 'auto-draft', 'trash' )";
 	}
 
 	/**
