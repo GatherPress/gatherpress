@@ -1782,7 +1782,7 @@ class Test_Admin_List extends Base {
 	 * @covers ::render_date_filters
 	 * @covers ::render_months_dropdown
 	 * @covers ::get_event_date_months
-	 * @covers ::get_published_months
+	 * @covers ::get_post_date_months
 	 * @covers ::get_months_status_clause
 	 *
 	 * @return void
@@ -2026,13 +2026,13 @@ class Test_Admin_List extends Base {
 	}
 
 	/**
-	 * Coverage for get_published_months method firing core's filters.
+	 * Coverage for get_post_date_months method firing core's filters.
 	 *
-	 * @covers ::get_published_months
+	 * @covers ::get_post_date_months
 	 *
 	 * @return void
 	 */
-	public function test_get_published_months_fires_core_filters(): void {
+	public function test_get_post_date_months_fires_core_filters(): void {
 		$instance = Admin_List::get_instance();
 		$month    = new stdClass();
 
@@ -2048,7 +2048,7 @@ class Test_Admin_List extends Base {
 
 		$short_circuited = Utility::invoke_hidden_method(
 			$instance,
-			'get_published_months',
+			'get_post_date_months',
 			array( Event::POST_TYPE )
 		);
 
@@ -2062,7 +2062,7 @@ class Test_Admin_List extends Base {
 
 		$filtered = Utility::invoke_hidden_method(
 			$instance,
-			'get_published_months',
+			'get_post_date_months',
 			array( Event::POST_TYPE )
 		);
 

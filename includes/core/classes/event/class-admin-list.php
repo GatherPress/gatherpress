@@ -405,7 +405,7 @@ final class Admin_List {
 			'filter-by-date',
 			__( 'Filter by post date', 'gatherpress' ),
 			__( 'All post dates', 'gatherpress' ),
-			$this->get_published_months( $post_type )
+			$this->get_post_date_months( $post_type )
 		);
 
 		// The Upcoming and Past views travel in a query parameter core's filter
@@ -558,7 +558,7 @@ final class Admin_List {
 	 *
 	 * @return array<int, stdClass> Month rows carrying `year` and `month` properties.
 	 */
-	protected function get_published_months( string $post_type ): array {
+	protected function get_post_date_months( string $post_type ): array {
 		global $wpdb;
 
 		/** This filter is documented in wp-admin/includes/class-wp-list-table.php */
