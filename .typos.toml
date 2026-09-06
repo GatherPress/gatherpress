@@ -38,6 +38,5 @@ extend-ignore-re = [
 
 # Case insensitive, matches inside word.
 # [default.extend-words]
-"Skelton" = "Skelton"
 # bellow = "below"
 # toi = "toi"
