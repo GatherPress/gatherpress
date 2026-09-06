@@ -86,7 +86,7 @@ final class Token {
 
 		$comment = get_comment( $comment_id );
 
-		if ( ! Rsvp::is_rsvp( $comment ) ) {
+		if ( ! $comment || ! Rsvp::is_rsvp( $comment ) ) {
 			return;
 		}
 

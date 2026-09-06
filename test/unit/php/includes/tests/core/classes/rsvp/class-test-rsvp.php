@@ -1492,5 +1492,7 @@ class Test_Rsvp extends Base {
 		$this->assertFalse( Rsvp::is_rsvp( $regular_comment_id ) );
 		$this->assertFalse( Rsvp::is_rsvp( 0 ) );
 		$this->assertFalse( Rsvp::is_rsvp( 999999 ) );
+		$this->assertFalse( Rsvp::is_rsvp( null ) );
+		$this->assertFalse( Rsvp::is_rsvp( 'invalid' ) );
 	}
 }

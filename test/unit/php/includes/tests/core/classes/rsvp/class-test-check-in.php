@@ -103,7 +103,6 @@ class Test_Check_In extends Base {
 	 * @covers ::check_in
 	 * @covers ::is_checked_in
 	 * @covers ::get_check_in_time
-	 * @covers ::is_rsvp
 	 *
 	 * @return void
 	 */
@@ -202,7 +201,6 @@ class Test_Check_In extends Base {
 	 *
 	 * @covers ::check_in
 	 * @covers ::clear
-	 * @covers ::is_rsvp
 	 *
 	 * @return void
 	 */
