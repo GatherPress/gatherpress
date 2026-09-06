@@ -164,7 +164,7 @@ class Query {
 	private const CITY_SUFFIXES = '市区郡县縣镇乡시군구';
 
 	/**
-	 * Suffixes closing a town, neighbourhood, road or block.
+	 * Suffixes closing a town, neighborhood, road or block.
 	 *
 	 * @since 0.36.0
 	 * @var string
