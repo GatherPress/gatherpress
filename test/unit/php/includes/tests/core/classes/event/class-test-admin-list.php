@@ -1828,7 +1828,7 @@ class Test_Admin_List extends Base {
 		$this->assertStringContainsString(
 			'June 2025',
 			$output,
-			'Event date months should be labelled with month name and year.'
+			'Event date months should be labeled with month name and year.'
 		);
 		$this->assertStringContainsString(
 			'name="m"',

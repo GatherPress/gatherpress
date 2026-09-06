@@ -367,7 +367,7 @@ final class Admin_List {
 	 * Render the event date and published date filters above the list table.
 	 *
 	 * Replaces the dropdown removed in `disable_months_dropdown()` with a
-	 * labelled pair: one filtering the event date column, one filtering the
+	 * labeled pair: one filtering the event date column, one filtering the
 	 * publish date through the same `m` parameter core uses, so existing links
 	 * into a filtered list keep working.
 	 *
