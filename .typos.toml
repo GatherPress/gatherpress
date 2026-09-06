@@ -19,7 +19,6 @@ ignore-hidden = false
 locale = "en-us"
 extend-ignore-re = [
     "\\biMatix\\b",
-    "\\bEvent Organiser\\b",
     # Calibre (calibreapp.com) builds the image-actions image compressor.
     "\\bCalibre\\b",
 ]
