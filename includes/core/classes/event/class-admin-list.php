@@ -466,13 +466,9 @@ final class Admin_List {
 	 * @return void
 	 */
 	protected function render_taxonomy_filter( string $post_type, string $taxonomy ): void {
-		if ( ! is_object_in_taxonomy( $post_type, $taxonomy ) ) {
-			return;
-		}
-
 		$taxonomy_object = get_taxonomy( $taxonomy );
 
-		if ( ! $taxonomy_object ) {
+		if ( ! $taxonomy_object || ! is_object_in_taxonomy( $post_type, $taxonomy ) ) {
 			return;
 		}
 

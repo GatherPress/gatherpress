@@ -2311,4 +2311,84 @@ class Test_Admin_List extends Base {
 			'An event without the topic should drop out of the filtered list.'
 		);
 	}
+
+	/**
+	 * Coverage for render_taxonomy_filter method with an unregistered taxonomy.
+	 *
+	 * @covers ::render_taxonomy_filter
+	 *
+	 * @return void
+	 */
+	public function test_render_taxonomy_filter_skips_an_unregistered_taxonomy(): void {
+		$instance = Admin_List::get_instance();
+
+		ob_start();
+		Utility::invoke_hidden_method(
+			$instance,
+			'render_taxonomy_filter',
+			array( Event::POST_TYPE, 'gatherpress_not_a_taxonomy' )
+		);
+		$output = ob_get_clean();
+
+		$this->assertEmpty(
+			$output,
+			'A taxonomy that is not registered should render no dropdown.'
+		);
+	}
+
+	/**
+	 * Coverage for render_taxonomy_filter method labelling a flat taxonomy.
+	 *
+	 * @covers ::render_taxonomy_filter
+	 *
+	 * @return void
+	 */
+	public function test_render_taxonomy_filter_falls_back_to_the_taxonomy_name(): void {
+		$instance = Admin_List::get_instance();
+		$taxonomy = 'test_event_tag';
+
+		// Non-hierarchical taxonomies get no `filter_by_item` label by default,
+		// which is the arm the fallback exists for.
+		register_taxonomy(
+			$taxonomy,
+			Event::POST_TYPE,
+			array(
+				'labels'       => array(
+					'name'      => 'Test Tags',
+					'all_items' => 'All Test Tags',
+				),
+				'hierarchical' => false,
+				'public'       => true,
+				'query_var'    => true,
+			)
+		);
+
+		$this->factory->term->create(
+			array(
+				'taxonomy' => $taxonomy,
+				'name'     => 'Flat Term',
+			)
+		);
+
+		ob_start();
+		Utility::invoke_hidden_method(
+			$instance,
+			'render_taxonomy_filter',
+			array( Event::POST_TYPE, $taxonomy )
+		);
+		$output = ob_get_clean();
+
+		unregister_taxonomy( $taxonomy );
+
+		$this->assertStringContainsString(
+			'<label class="screen-reader-text" for="test_event_tag">Test Tags</label>',
+			$output,
+			'A taxonomy with no filter label should fall back to its plural name.'
+		);
+		$this->assertStringContainsString(
+			'All Test Tags',
+			$output,
+			'The taxonomy\'s own "all" label should still be used.'
+		);
+	}
 }
