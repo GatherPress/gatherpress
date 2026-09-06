@@ -2377,4 +2377,40 @@ class Test_Query extends Base {
 			'The event month filter should reach the admin list query.'
 		);
 	}
+
+	/**
+	 * Coverage for adjust_admin_event_sorting method with array shaped parameters.
+	 *
+	 * @covers ::adjust_admin_event_sorting
+	 * @covers ::adjust_event_month_sql
+	 *
+	 * @return void
+	 */
+	public function test_adjust_admin_event_sorting_ignores_array_parameters(): void {
+		$instance = Query::get_instance();
+		$pieces   = array( 'where' => '' );
+
+		$this->mock->user( true, 'admin' );
+		set_current_screen( 'edit-gatherpress_event' );
+
+		$month_query = new WP_Query();
+		$month_query->set( 'post_type', Event::POST_TYPE );
+		$month_query->set( 'gatherpress_event_date', array( '202609' ) );
+
+		$this->assertSame(
+			'',
+			$instance->adjust_admin_event_sorting( $pieces, $month_query )['where'],
+			'An array shaped month should filter nothing rather than casting to "Array".'
+		);
+
+		$view_query = new WP_Query();
+		$view_query->set( 'post_type', Event::POST_TYPE );
+		$view_query->set( 'gatherpress_event_query', array( 'upcoming' ) );
+
+		$this->assertSame(
+			'',
+			$instance->adjust_admin_event_sorting( $pieces, $view_query )['where'],
+			'An array shaped view should fall back to all events rather than throwing.'
+		);
+	}
 }

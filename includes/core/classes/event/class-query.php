@@ -409,8 +409,11 @@ final class Query {
 		remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_upcoming_events' ) );
 
 		// Admin event list views can be filtered by 'upcoming', 'past' or 'all' events.
-		$gatherpress_events_query = ( ! empty( $wp_query->get( self::EVENT_QUERY_PARAM ) ) )
-			? $wp_query->get( self::EVENT_QUERY_PARAM )
+		// Public query vars keep whatever shape the request gave them, arrays
+		// included, so both parameters are read back as scalars or not at all.
+		$gatherpress_events_view  = $wp_query->get( self::EVENT_QUERY_PARAM );
+		$gatherpress_events_query = is_scalar( $gatherpress_events_view ) && ! empty( $gatherpress_events_view )
+			? (string) $gatherpress_events_view
 			: 'all';
 
 		// Upcoming is inclusive (running events count as upcoming);
@@ -426,9 +429,11 @@ final class Query {
 			$inclusive
 		);
 
+		$gatherpress_event_month = $wp_query->get( self::EVENT_DATE_QUERY_PARAM );
+
 		return $this->adjust_event_month_sql(
 			$query_pieces,
-			(string) $wp_query->get( self::EVENT_DATE_QUERY_PARAM )
+			is_scalar( $gatherpress_event_month ) ? (string) $gatherpress_event_month : ''
 		);
 	}
 
