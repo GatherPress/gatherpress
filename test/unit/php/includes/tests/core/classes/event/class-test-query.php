@@ -50,6 +50,12 @@ class Test_Query extends Base {
 			),
 			array(
 				'type'     => 'filter',
+				'name'     => 'posts_clauses',
+				'priority' => 10,
+				'callback' => array( $instance, 'adjust_event_date_window_sql' ),
+			),
+			array(
+				'type'     => 'filter',
 				'name'     => 'get_previous_post_join',
 				'priority' => 10,
 				'callback' => array( $instance, 'get_adjacent_post_join' ),
@@ -2543,6 +2549,257 @@ class Test_Query extends Base {
 			$straddling,
 			$query->posts,
 			'A month the event never reaches should not list it.'
+		);
+	}
+
+	/**
+	 * Build three events around June 2026, as the site's clock reckons it.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return array<string, int> Post IDs keyed by the part they play.
+	 */
+	protected function create_june_events(): array {
+		$events = array(
+			'within'   => array( '2026-06-15 10:00:00', '2026-06-15 14:00:00', 'America/New_York' ),
+			'before'   => array( '2026-05-15 10:00:00', '2026-05-15 14:00:00', 'America/New_York' ),
+			'spanning' => array( '2026-05-30 10:00:00', '2026-06-02 14:00:00', 'America/New_York' ),
+		);
+		$ids    = array();
+
+		foreach ( $events as $part => $datetimes ) {
+			$ids[ $part ] = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+
+			( new Event( $ids[ $part ] ) )->save_datetimes(
+				array(
+					'datetime_start' => $datetimes[0],
+					'datetime_end'   => $datetimes[1],
+					'timezone'       => $datetimes[2],
+				)
+			);
+		}
+
+		return $ids;
+	}
+
+	/**
+	 * Coverage for a date query narrowing an event query to a window.
+	 *
+	 * @covers ::intercept_date_query
+	 * @covers ::queries_event_post_types_only
+	 * @covers ::adjust_event_date_window_sql
+	 * @covers ::ensure_events_join
+	 *
+	 * @return void
+	 */
+	public function test_date_query_narrows_an_event_query_to_the_window(): void {
+		update_option( 'timezone_string', 'America/New_York' );
+
+		$ids   = $this->create_june_events();
+		$query = new WP_Query(
+			array(
+				'post_type'      => Event::POST_TYPE,
+				'fields'         => 'ids',
+				'posts_per_page' => -1,
+				'date_query'     => array(
+					array(
+						'year'     => 2026,
+						'monthnum' => 6,
+					),
+				),
+			)
+		);
+
+		$this->assertContains(
+			$ids['within'],
+			$query->posts,
+			'An event held inside the window should answer to it.'
+		);
+		$this->assertContains(
+			$ids['spanning'],
+			$query->posts,
+			'An event running into the window should answer to it.'
+		);
+		$this->assertNotContains(
+			$ids['before'],
+			$query->posts,
+			'An event finished before the window opened should not.'
+		);
+	}
+
+	/**
+	 * Coverage for a date query composing with the upcoming and past views.
+	 *
+	 * @covers ::intercept_date_query
+	 * @covers ::adjust_event_date_window_sql
+	 * @covers ::ensure_events_join
+	 *
+	 * @return void
+	 */
+	public function test_date_query_composes_with_the_past_view(): void {
+		update_option( 'timezone_string', 'America/New_York' );
+
+		$ids   = $this->create_june_events();
+		$query = new WP_Query(
+			array(
+				'post_type'              => Event::POST_TYPE,
+				'fields'                 => 'ids',
+				'posts_per_page'         => -1,
+				Query::EVENT_QUERY_PARAM => 'past',
+				'date_query'             => array(
+					array(
+						'year'     => 2026,
+						'monthnum' => 6,
+					),
+				),
+			)
+		);
+
+		$this->assertContains(
+			$ids['within'],
+			$query->posts,
+			'A past event inside the window should survive both filters.'
+		);
+		$this->assertNotContains(
+			$ids['before'],
+			$query->posts,
+			'The window should still exclude an event outside it.'
+		);
+	}
+
+	/**
+	 * Coverage for the two clocks disagreeing on a foreign timezone event.
+	 *
+	 * @covers ::intercept_date_query
+	 * @covers ::adjust_event_date_window_sql
+	 *
+	 * @return void
+	 */
+	public function test_date_query_reckons_the_window_in_the_chosen_clock(): void {
+		update_option( 'timezone_string', 'America/New_York' );
+
+		$post_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+
+		// June 1 in Tokyo is still May 31 in New York, so the two clocks
+		// disagree about whether this event belongs to June at all.
+		( new Event( $post_id ) )->save_datetimes(
+			array(
+				'datetime_start' => '2026-06-01 10:00:00',
+				'datetime_end'   => '2026-06-01 12:00:00',
+				'timezone'       => 'Asia/Tokyo',
+			)
+		);
+
+		$absolute = new WP_Query(
+			array(
+				'post_type'      => Event::POST_TYPE,
+				'fields'         => 'ids',
+				'posts_per_page' => -1,
+				'date_query'     => array(
+					array(
+						'year'     => 2026,
+						'monthnum' => 6,
+					),
+				),
+			)
+		);
+
+		$bucketed = new WP_Query(
+			array(
+				'post_type'      => Event::POST_TYPE,
+				'fields'         => 'ids',
+				'posts_per_page' => -1,
+				'date_query'     => array(
+					array(
+						'year'     => 2026,
+						'monthnum' => 6,
+						'column'   => 'datetime_start',
+					),
+				),
+			)
+		);
+
+		$this->assertNotContains(
+			$post_id,
+			$absolute->posts,
+			'By the site\'s clock the event happens in May, so June should not list it.'
+		);
+		$this->assertContains(
+			$post_id,
+			$bucketed->posts,
+			'By its own clock the event happens in June, which is what the local column buckets by.'
+		);
+	}
+
+	/**
+	 * Coverage for date queries left alone.
+	 *
+	 * @covers ::intercept_date_query
+	 * @covers ::queries_event_post_types_only
+	 *
+	 * @return void
+	 */
+	public function test_date_query_is_left_alone_when_it_is_not_ours(): void {
+		update_option( 'timezone_string', 'America/New_York' );
+
+		$ids = $this->create_june_events();
+
+		// Naming a core column is how an event query keeps filtering by the
+		// day its posts were written, which the admin list relies on.
+		$by_publish_date = new WP_Query(
+			array(
+				'post_type'      => Event::POST_TYPE,
+				'fields'         => 'ids',
+				'posts_per_page' => -1,
+				'date_query'     => array(
+					array(
+						'year'   => 2026,
+						'column' => 'post_date',
+					),
+				),
+			)
+		);
+
+		$mixed = new WP_Query(
+			array(
+				'post_type'      => array( Event::POST_TYPE, 'post' ),
+				'fields'         => 'ids',
+				'posts_per_page' => -1,
+				'date_query'     => array(
+					array(
+						'year'     => 2026,
+						'monthnum' => 6,
+					),
+				),
+			)
+		);
+
+		$this->assertContains(
+			$ids['before'],
+			$by_publish_date->posts,
+			'A core column should filter on publish date, which every fixture shares.'
+		);
+		// A query naming no post type at all is core's business, not ours.
+		$untyped = new WP_Query(
+			array(
+				'fields'         => 'ids',
+				'posts_per_page' => -1,
+				'date_query'     => array(
+					array(
+						'year'     => 2026,
+						'monthnum' => 6,
+					),
+				),
+			)
+		);
+
+		$this->assertEmpty(
+			$mixed->posts,
+			'A query mixing post types should fall through to core, which finds nothing published in June 2026.'
+		);
+		$this->assertEmpty(
+			$untyped->posts,
+			'A query with no post type should fall through to core as well.'
 		);
 	}
 }

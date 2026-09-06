@@ -59,6 +59,18 @@ final class Query {
 	const EVENT_DATE_QUERY_PARAM = 'gatherpress_event_date';
 
 	/**
+	 * Query variable carrying a resolved event date window between hooks.
+	 *
+	 * Set on the query by `intercept_date_query()` during `pre_get_posts` and
+	 * read back by `adjust_event_date_window_sql()` on `posts_clauses`. Never
+	 * registered as a public query var, so it cannot arrive from a URL.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const EVENT_DATE_WINDOW_PARAM = 'gatherpress_event_date_window';
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -82,6 +94,7 @@ final class Query {
 		add_action( 'pre_get_posts', array( $this, 'prepare_event_query_before_execution' ) );
 		// Priority 9 to run before the upcoming/past adjustments at priority 10.
 		add_filter( 'posts_clauses', array( $this, 'adjust_admin_event_sorting' ), 9, 2 );
+		add_filter( 'posts_clauses', array( $this, 'adjust_event_date_window_sql' ), 10, 2 );
 
 		// Filter adjacent post queries to join and sort by event datetime.
 		add_filter( 'get_previous_post_join', array( $this, 'get_adjacent_post_join' ), 10, 5 );
@@ -293,6 +306,8 @@ final class Query {
 				$query->set( 'tax_query', $existing_tax_query );
 			}
 		}
+
+		$this->intercept_date_query( $query );
 
 		switch ( $events_query ) {
 			case 'upcoming':
@@ -552,9 +567,8 @@ final class Query {
 		 */
 		$posts_table = esc_sql( $wpdb->posts );
 
-		$pieces['join'] .= ' LEFT JOIN ' . $events_table . ' ON ' . $posts_table . '.ID='
-						. $events_table . '.post_id';
-		$order           = strtoupper( $order );
+		$pieces = $this->ensure_events_join( $pieces );
+		$order  = strtoupper( $order );
 
 		if ( in_array( $order, array( 'DESC', 'ASC' ), true ) ) {
 			// ORDERBY is an array, which allows to orderby multiple values.
@@ -605,6 +619,160 @@ final class Query {
 		}
 
 		return $pieces;
+	}
+
+	/**
+	 * Join the events table onto a query once.
+	 *
+	 * Both the upcoming/past handlers and the date window handler need the
+	 * join, and either may run without the other, so each asks for it here
+	 * rather than appending its own and doubling the alias when both run.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, string> $pieces An array of query pieces, including join, where, orderby, and more.
+	 *
+	 * @return array<string, string> The pieces, with the events table joined.
+	 */
+	private function ensure_events_join( array $pieces ): array {
+		global $wpdb;
+
+		/**
+		 * Escaped events table name.
+		 *
+		 * @var string $events_table esc_sql() only returns an array when it is handed one.
+		 */
+		$events_table = esc_sql( sprintf( Event::TABLE_FORMAT, $wpdb->prefix ) );
+
+		/**
+		 * Escaped posts table name.
+		 *
+		 * @var string $posts_table esc_sql() only returns an array when it is handed one.
+		 */
+		$posts_table = esc_sql( $wpdb->posts );
+		$join        = (string) ( $pieces['join'] ?? '' );
+
+		if ( ! str_contains( $join, $events_table ) ) {
+			$join .= ' LEFT JOIN ' . $events_table . ' ON ' . $posts_table . '.ID=' . $events_table . '.post_id';
+		}
+
+		$pieces['join'] = $join;
+
+		return $pieces;
+	}
+
+	/**
+	 * Point a `date_query` at event dates rather than publish dates.
+	 *
+	 * WordPress reads `date_query` against `post_date`, which for an event is
+	 * the day its post was written. For a query made up entirely of event post
+	 * types the argument is lifted out here, before core turns it into SQL,
+	 * resolved into a window by `Date_Query`, and carried to `posts_clauses`
+	 * under `EVENT_DATE_WINDOW_PARAM`, where it is compared against the events
+	 * table instead.
+	 *
+	 * Three things are left for core to handle the way it always has: a clause
+	 * naming a core column such as `post_date`, which is how to keep filtering
+	 * an event query by publish date; a clause `Date_Query` cannot read; and a
+	 * query mixing event and non-event post types, whose non-event rows have no
+	 * event dates and would silently drop out.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param WP_Query $query The query being prepared.
+	 *
+	 * @return void
+	 */
+	private function intercept_date_query( WP_Query $query ): void {
+		$date_query = $query->get( 'date_query' );
+
+		if ( empty( $date_query ) || ! is_array( $date_query ) || ! $this->queries_event_post_types_only( $query ) ) {
+			return;
+		}
+
+		$window = Date_Query::resolve( $date_query );
+
+		if ( null === $window ) {
+			return;
+		}
+
+		$query->set( self::EVENT_DATE_WINDOW_PARAM, $window );
+		$query->set( 'date_query', array() );
+	}
+
+	/**
+	 * Whether every post type a query asks for carries event dates.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param WP_Query $query The query to inspect.
+	 *
+	 * @return bool True when the query is made up of event post types alone.
+	 */
+	private function queries_event_post_types_only( WP_Query $query ): bool {
+		$post_types = array_filter( (array) $query->get( 'post_type' ) );
+
+		if ( empty( $post_types ) ) {
+			return false;
+		}
+
+		foreach ( $post_types as $post_type ) {
+			if ( ! is_string( $post_type ) || ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Narrow a query to events touching the window a `date_query` resolved to.
+	 *
+	 * An event belongs to the window when it overlaps it: its start falls
+	 * before the window closes and its end falls after the window opens. An
+	 * open-ended window drops the bound it lacks. Compares the GMT pair or the
+	 * local pair according to the column the window was resolved for.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, string> $query_pieces An array containing pieces of the SQL query.
+	 * @param WP_Query              $query        The WP_Query instance (passed by reference).
+	 *
+	 * @return array<string, string> The query pieces, narrowed when the query carries a window.
+	 */
+	public function adjust_event_date_window_sql( array $query_pieces, WP_Query $query ): array {
+		global $wpdb;
+
+		$window = $query->get( self::EVENT_DATE_WINDOW_PARAM );
+
+		if ( empty( $window ) || ! is_array( $window ) || empty( $window['column'] ) ) {
+			return $query_pieces;
+		}
+
+		$query_pieces = $this->ensure_events_join( $query_pieces );
+		$table        = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$start_column = (string) $window['column'];
+		$end_column   = str_replace( 'datetime_start', 'datetime_end', $start_column );
+
+		if ( ! empty( $window['end'] ) ) {
+			$query_pieces['where'] .= $wpdb->prepare(
+				' AND %i.%i <= %s',
+				$table,
+				$start_column,
+				$window['end']
+			);
+		}
+
+		if ( ! empty( $window['start'] ) ) {
+			$query_pieces['where'] .= $wpdb->prepare(
+				' AND %i.%i >= %s',
+				$table,
+				$end_column,
+				$window['start']
+			);
+		}
+
+		return $query_pieces;
 	}
 
 	/**
