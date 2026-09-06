@@ -176,6 +176,8 @@ final class Setup {
 	 * @param string[] $css_classes An array of additional class names added to the post.
 	 * @param int      $post_id     The post ID.
 	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) - $css_classes is required by the post_class filter signature.
+	 *
 	 * @return string[] Filtered array of post class names.
 	 */
 	public function add_status_post_class( array $classes, array $css_classes, int $post_id ): array {
