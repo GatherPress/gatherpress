@@ -3428,4 +3428,86 @@ class Test_Geocoding extends Base {
 			}
 		}
 	}
+
+	/**
+	 * Save-time geocoding sends the split form of an unspaced address.
+	 *
+	 * Photon tokenizes on whitespace, so an unspaced Japanese address reaches
+	 * it as one token and matches nothing, or matches Paris. The split is
+	 * applied before the request and before the cache key, so the same
+	 * address spaced or unspaced shares a cache entry.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::geocode_to_result
+	 *
+	 * @return void
+	 */
+	public function test_geocode_to_result_sends_the_split_address(): void {
+		$instance     = Geocoding::get_instance();
+		$captured_url = '';
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => static function ( &$headers, $url ) use ( &$captured_url ) {
+					$captured_url = $url;
+					$headers      = 'HTTP/1.1 200 OK';
+
+					return wp_json_encode( array( 'features' => array() ) );
+				},
+			)
+		);
+
+		$instance->geocode_to_result( '兵庫県神戸市中央区三宮町3-1-16' );
+
+		$query = array();
+		wp_parse_str( (string) wp_parse_url( $captured_url, PHP_URL_QUERY ), $query );
+
+		$this->assertSame(
+			'兵庫県 神戸市 中央区 三宮町 3-1-16',
+			$query['q'] ?? '',
+			'Failed to assert the geocoder receives the address split at its boundaries.'
+		);
+	}
+
+	/**
+	 * Autocomplete sends the split form of an unspaced address.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_sends_the_split_address(): void {
+		$instance     = Geocoding::get_instance();
+		$captured_url = '';
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => static function ( &$headers, $url ) use ( &$captured_url ) {
+					$captured_url = $url;
+					$headers      = 'HTTP/1.1 200 OK';
+
+					return wp_json_encode( array( 'features' => array() ) );
+				},
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', '北京市朝阳区建国路1号' );
+
+		$instance->search_addresses( $request );
+
+		$query = array();
+		wp_parse_str( (string) wp_parse_url( $captured_url, PHP_URL_QUERY ), $query );
+
+		$this->assertSame(
+			'北京市 朝阳区 建国路 1号',
+			$query['q'] ?? '',
+			'Failed to assert autocomplete receives the address split at its boundaries.'
+		);
+	}
 }

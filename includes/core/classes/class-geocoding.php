@@ -15,6 +15,7 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Geocoding\Query;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue\Meta as Venue_Meta;
@@ -676,7 +677,7 @@ final class Geocoding {
 	public function geocode_to_result( string $address ): array|WP_Error {
 		// Cap oversize input for parity with search_addresses(); protects
 		// upstream from pathological requests.
-		$address = mb_substr( trim( $address ), 0, 200 );
+		$address = Query::normalize( mb_substr( trim( $address ), 0, 200 ) );
 
 		if ( '' === $address ) {
 			return $this->build_not_found_payload();
@@ -834,6 +835,7 @@ final class Geocoding {
 			);
 		}
 
+		$query     = Query::normalize( $query );
 		$language  = $this->get_language_code();
 		$cache_key = self::SEARCH_CACHE_PREFIX . md5( $query . '|' . $language ); // NOSONAR.
 		$cached    = get_transient( $cache_key );
