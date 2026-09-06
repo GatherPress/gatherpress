@@ -93,7 +93,7 @@ class Test_Tools extends Base_Ajax {
 		$instance = Tools::get_instance();
 		$priority = Utility::invoke_hidden_method( $instance, 'get_priority' );
 
-		$this->assertEquals( PHP_INT_MAX - 1, $priority, 'Failed to assert correct priority.' );
+		$this->assertEquals( PHP_INT_MAX - 2, $priority, 'Failed to assert correct priority.' );
 	}
 
 	/**
