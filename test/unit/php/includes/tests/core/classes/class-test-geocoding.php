@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Geocoding;
+use GatherPress\Core\Settings;
 use GatherPress\Core\Utility as GP_Utility;
 use GatherPress\Core\Venue\Meta as Venue_Meta;
 use GatherPress\Core\Venue;
@@ -1868,6 +1869,53 @@ class Test_Geocoding extends Base {
 	}
 
 	/**
+	 * The geocoding_provider_url setting (#1267): default, fallback, filter wins.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers \GatherPress\Core\Geocoding::get_photon_api_url
+	 *
+	 * @return void
+	 */
+	public function test_geocoding_private_get_photon_api_url_setting(): void {
+		$instance          = Geocoding::get_instance();
+		$settings_instance = Settings::get_instance();
+
+		$settings_instance->set( 'geocoding_provider_url', 'https://example.com/photon' );
+
+		$this->assertSame(
+			'https://example.com/photon',
+			$this->invoke_geocoding_private( $instance, 'get_photon_api_url' ),
+			'Failed to assert the geocoding_provider_url setting is used.'
+		);
+
+		add_filter(
+			'gatherpress_photon_api_url',
+			static function (): string {
+				return 'https://example.com/filtered-api';
+			}
+		);
+
+		$this->assertSame(
+			'https://example.com/filtered-api',
+			$this->invoke_geocoding_private( $instance, 'get_photon_api_url' ),
+			'Failed to assert the filter still overrides the geocoding_provider_url setting.'
+		);
+
+		remove_all_filters( 'gatherpress_photon_api_url' );
+
+		$settings_instance->set( 'geocoding_provider_url', 'not-a-url' );
+
+		$this->assertSame(
+			'https://photon.komoot.io/api',
+			$this->invoke_geocoding_private( $instance, 'get_photon_api_url' ),
+			'Failed to assert an invalid setting value falls back to the default.'
+		);
+
+		$settings_instance->set( 'geocoding_provider_url', '' );
+	}
+
+	/**
 	 * Non-array entries in GeoJSON features are ignored.
 	 *
 	 * @covers ::search_addresses
@@ -2459,6 +2507,288 @@ class Test_Geocoding extends Base {
 		$this->assertSame( '', $result['street'], 'Non-scalar properties must skip rather than cast to "Array".' );
 		// Other (well-formed) properties on the same feature still come through.
 		$this->assertSame( '07044', $result['postcode'] );
+	}
+
+	/**
+	 * Direct branch coverage for select_geocode_feature() (#1267, xdebug tracing gap).
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::select_geocode_feature
+	 *
+	 * @return void
+	 */
+	public function test_select_geocode_feature_branches(): void {
+		$instance = Geocoding::get_instance();
+
+		// Invalid entries are skipped.
+		$valid  = $this->build_photon_feature( array( 'countrycode' => 'us' ) );
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'select_geocode_feature',
+			array(
+				array(
+					'not-an-array',
+					array( 'properties' => array() ), // Missing geometry entirely.
+					$valid,
+				),
+				array(),
+			)
+		);
+		$this->assertSame(
+			$valid,
+			$result,
+			'Failed to assert invalid entries are skipped and the valid feature is returned.'
+		);
+
+		// Empty filter returns the first feature with usable coordinates.
+		$first  = $this->build_photon_feature( array( 'countrycode' => 'ca' ) );
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'select_geocode_feature',
+			array( array( $first ), array() )
+		);
+		$this->assertSame( $first, $result, 'Failed to assert the first feature is returned when unfiltered.' );
+
+		// Missing properties/countrycode fall back to '', which won't match.
+		$no_properties = array(
+			'geometry' => array( 'coordinates' => array( -74.0, 40.0 ) ),
+		);
+		$result        = Utility::invoke_hidden_method(
+			$instance,
+			'select_geocode_feature',
+			array( array( $no_properties ), array( 'us' ) )
+		);
+		$this->assertNull(
+			$result,
+			'Failed to assert a feature with no properties is skipped under a country filter.'
+		);
+
+		// A matching country code returns the feature.
+		$matching = $this->build_photon_feature( array( 'countrycode' => 'us' ) );
+		$result   = Utility::invoke_hidden_method(
+			$instance,
+			'select_geocode_feature',
+			array( array( $matching ), array( 'us' ) )
+		);
+		$this->assertSame( $matching, $result, 'Failed to assert a matching-country feature is returned.' );
+	}
+
+	/**
+	 * The country filter (#1267) picks the first matching-country feature.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::geocode_to_result
+	 * @covers ::select_geocode_feature
+	 * @covers \GatherPress\Core\Geocoding::get_country_filter
+	 *
+	 * @return void
+	 */
+	public function test_geocode_to_result_country_filter_selects_matching_feature(): void {
+		$instance = Geocoding::get_instance();
+
+		Settings::get_instance()->set( 'geocoding_country_filter', 'us' );
+
+		$this->mock_photon_response(
+			array(
+				$this->build_photon_feature(
+					array(
+						'countrycode' => 'ca',
+						'city'        => 'Toronto',
+					)
+				),
+				$this->build_photon_feature(
+					array(
+						'countrycode' => 'us',
+						'city'        => 'Verona',
+					)
+				),
+			)
+		);
+
+		$result = $instance->geocode_to_result( 'Country filter matching test address' );
+
+		$this->assertSame( 'us', $result['country_code'], 'Failed to assert the non-matching CA feature was skipped.' );
+		$this->assertSame( 'Verona', $result['city'], 'Failed to assert the matching US feature was selected.' );
+
+		Settings::get_instance()->set( 'geocoding_country_filter', '' );
+	}
+
+	/**
+	 * No matching country (#1267) falls back to the "not found" payload.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::geocode_to_result
+	 * @covers ::select_geocode_feature
+	 *
+	 * @return void
+	 */
+	public function test_geocode_to_result_country_filter_no_match_returns_not_found(): void {
+		$instance = Geocoding::get_instance();
+
+		Settings::get_instance()->set( 'geocoding_country_filter', 'us' );
+
+		$this->mock_photon_response(
+			array(
+				$this->build_photon_feature( array( 'countrycode' => 'ca' ) ),
+			)
+		);
+
+		$result = $instance->geocode_to_result( 'Country filter no match test address' );
+
+		$this->assertSame( '', $result['latitude'], 'Failed to assert not-found payload has empty latitude.' );
+		$this->assertNotNull( $result['error'], 'Failed to assert not-found payload carries an error message.' );
+
+		Settings::get_instance()->set( 'geocoding_country_filter', '' );
+	}
+
+	/**
+	 * The country filter (#1267) excludes non-matching search suggestions.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::search_addresses
+	 * @covers ::build_search_suggestions_response
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_country_filter_excludes_non_matching(): void {
+		$instance  = Geocoding::get_instance();
+		$cache_key = 'gatherpress_photon_search_' . md5( 'Country filter search test|default|us' );
+		delete_transient( $cache_key );
+
+		Settings::get_instance()->set( 'geocoding_country_filter', 'us' );
+
+		$this->mock_photon_response(
+			array(
+				$this->build_photon_feature(
+					array(
+						'countrycode' => 'ca',
+						'city'        => 'Toronto',
+					)
+				),
+				$this->build_photon_feature(
+					array(
+						'countrycode' => 'us',
+						'city'        => 'Verona',
+					)
+				),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Country filter search test' );
+
+		$response    = $instance->search_addresses( $request );
+		$suggestions = $response->get_data()['suggestions'];
+
+		$this->assertCount( 1, $suggestions, 'Failed to assert only the matching-country suggestion is returned.' );
+		$this->assertStringContainsString( 'Verona', $suggestions[0]['label'] );
+
+		delete_transient( $cache_key );
+		Settings::get_instance()->set( 'geocoding_country_filter', '' );
+	}
+
+	/**
+	 * A country filter (#1267) still caps suggestions at 5.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::search_addresses
+	 * @covers ::build_search_suggestions_response
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_country_filter_caps_at_five_suggestions(): void {
+		$instance  = Geocoding::get_instance();
+		$cache_key = 'gatherpress_photon_search_' . md5( 'Country filter cap test|default|us' );
+		delete_transient( $cache_key );
+
+		Settings::get_instance()->set( 'geocoding_country_filter', 'us' );
+
+		$features = array();
+		foreach ( range( 1, 7 ) as $i ) {
+			$features[] = $this->build_photon_feature(
+				array(
+					'countrycode' => 'us',
+					'city'        => "City {$i}",
+				)
+			);
+		}
+		$this->mock_photon_response( $features );
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Country filter cap test' );
+
+		$response    = $instance->search_addresses( $request );
+		$suggestions = $response->get_data()['suggestions'];
+
+		$this->assertCount(
+			5,
+			$suggestions,
+			'Failed to assert suggestions are capped at 5 even with more matches available.'
+		);
+
+		delete_transient( $cache_key );
+		Settings::get_instance()->set( 'geocoding_country_filter', '' );
+	}
+
+	/**
+	 * Changing the country filter (#1267) must not serve a stale cache entry.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::geocode_to_result
+	 *
+	 * @return void
+	 */
+	public function test_geocode_to_result_country_filter_cache_key_isolation(): void {
+		$instance = Geocoding::get_instance();
+		$address  = 'Cache isolation test address';
+
+		$unfiltered_key = 'gatherpress_photon_geocode_' . md5( $address . '|default' );
+		$us_filter_key  = 'gatherpress_photon_geocode_' . md5( $address . '|default|us' );
+		delete_transient( $unfiltered_key );
+		delete_transient( $us_filter_key );
+
+		$this->mock_photon_response(
+			array(
+				$this->build_photon_feature(
+					array(
+						'countrycode' => 'us',
+						'city'        => 'Verona',
+					)
+				),
+			)
+		);
+		$unfiltered_result = $instance->geocode_to_result( $address );
+		$this->assertSame( 'Verona', $unfiltered_result['city'] );
+
+		Settings::get_instance()->set( 'geocoding_country_filter', 'us' );
+
+		$this->mock_photon_response(
+			array(
+				$this->build_photon_feature(
+					array(
+						'countrycode' => 'us',
+						'city'        => 'Newark',
+					)
+				),
+			)
+		);
+		$filtered_result = $instance->geocode_to_result( $address );
+
+		$this->assertSame(
+			'Newark',
+			$filtered_result['city'],
+			'Failed to assert the filtered request hit Photon again rather than reusing the unfiltered cache entry.'
+		);
+
+		delete_transient( $unfiltered_key );
+		delete_transient( $us_filter_key );
+		Settings::get_instance()->set( 'geocoding_country_filter', '' );
 	}
 
 	/**

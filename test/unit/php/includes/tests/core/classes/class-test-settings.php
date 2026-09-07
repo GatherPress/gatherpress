@@ -349,6 +349,42 @@ class Test_Settings extends Base {
 	}
 
 	/**
+	 * The custom tile URL setting (#1267) is used as the default, but a filter still wins.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_map_tile_url
+	 *
+	 * @return void
+	 */
+	public function test_get_map_tile_url_custom_setting(): void {
+		$instance = Settings::get_instance();
+		$instance->set( 'map_tile_url_custom', 'https://custom.example.com/{z}/{x}/{y}.png' );
+
+		$this->assertSame(
+			'https://custom.example.com/{z}/{x}/{y}.png',
+			Settings::get_map_tile_url(),
+			'Failed to assert the custom tile URL setting is used.'
+		);
+
+		add_filter(
+			'gatherpress_interactive_map_tile_url',
+			static function (): string {
+				return 'https://filtered.example.com/{z}/{x}/{y}.png';
+			}
+		);
+
+		$this->assertSame(
+			'https://filtered.example.com/{z}/{x}/{y}.png',
+			Settings::get_map_tile_url(),
+			'Failed to assert the filter still overrides the custom tile URL setting.'
+		);
+
+		remove_all_filters( 'gatherpress_interactive_map_tile_url' );
+		$instance->set( 'map_tile_url_custom', '' );
+	}
+
+	/**
 	 * Default map attribution is filterable.
 	 *
 	 * @covers ::get_map_tile_attribution
@@ -374,6 +410,64 @@ class Test_Settings extends Base {
 		$this->assertSame( 'Custom attribution', Settings::get_map_tile_attribution() );
 
 		remove_all_filters( 'gatherpress_interactive_map_tile_attribution' );
+	}
+
+	/**
+	 * The custom attribution setting (#1267) is used as the default, but a filter still wins.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_map_tile_attribution
+	 *
+	 * @return void
+	 */
+	public function test_get_map_tile_attribution_custom_setting(): void {
+		$instance = Settings::get_instance();
+		$instance->set( 'map_tile_attribution_custom', 'My Custom Credit' );
+
+		$this->assertSame(
+			'My Custom Credit',
+			Settings::get_map_tile_attribution(),
+			'Failed to assert the custom attribution setting is used.'
+		);
+
+		add_filter(
+			'gatherpress_interactive_map_tile_attribution',
+			static function (): string {
+				return 'Filtered attribution';
+			}
+		);
+
+		$this->assertSame(
+			'Filtered attribution',
+			Settings::get_map_tile_attribution(),
+			'Failed to assert the filter still overrides the custom attribution setting.'
+		);
+
+		remove_all_filters( 'gatherpress_interactive_map_tile_attribution' );
+		$instance->set( 'map_tile_attribution_custom', '' );
+	}
+
+	/**
+	 * HTML in the custom attribution setting (#1267) is escaped — plain text only.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_map_tile_attribution
+	 *
+	 * @return void
+	 */
+	public function test_get_map_tile_attribution_custom_setting_escapes_html(): void {
+		$instance = Settings::get_instance();
+		$instance->set( 'map_tile_attribution_custom', '<script>alert(1)</script>' );
+
+		$this->assertSame(
+			'&lt;script&gt;alert(1)&lt;/script&gt;',
+			Settings::get_map_tile_attribution(),
+			'Failed to assert the custom attribution setting is escaped.'
+		);
+
+		$instance->set( 'map_tile_attribution_custom', '' );
 	}
 
 	/**
