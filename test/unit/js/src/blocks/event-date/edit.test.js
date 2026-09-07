@@ -29,6 +29,7 @@ jest.mock( '@wordpress/block-editor', () => ( {
 
 jest.mock( '@wordpress/components', () => ( {
 	__experimentalVStack: ( { children } ) => <div>{ children }</div>,
+	ExternalLink: ( { href, children } ) => <a href={ href }>{ children }</a>,
 	PanelBody: ( { children } ) => <div>{ children }</div>,
 	RadioControl: () => null,
 	Spinner: () => <div>spinner</div>,
