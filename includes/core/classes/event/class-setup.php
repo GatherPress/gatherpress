@@ -185,12 +185,9 @@ final class Setup {
 			return $classes;
 		}
 
-		$event  = new Event( $post_id );
-		$status = $event->get_status();
-
-		if ( Event::STATUS_SCHEDULED !== $status ) {
-			$classes[] = sprintf( 'gatherpress-event-status--is-%s', sanitize_html_class( $status ) );
-		}
+		$event     = new Event( $post_id );
+		$status    = $event->get_status();
+		$classes[] = sprintf( 'gatherpress-event-status--is-%s', sanitize_html_class( $status ) );
 
 		return $classes;
 	}

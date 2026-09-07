@@ -2467,6 +2467,14 @@ class Test_Event extends Base {
 		// Invalid status falls back to scheduled.
 		wp_set_object_terms( $post->ID, 'invalid-status', Event::TAXONOMY_STATUS );
 		$this->assertSame( Event::STATUS_SCHEDULED, $event->get_status() );
+
+		// An event with no status terms falls back to scheduled.
+		wp_delete_object_term_relationships( $post->ID, Event::TAXONOMY_STATUS );
+		$this->assertSame( Event::STATUS_SCHEDULED, $event->get_status() );
+
+		// Non-existent event falls back to scheduled.
+		$empty_event = new Event( 0 );
+		$this->assertSame( Event::STATUS_SCHEDULED, $empty_event->get_status() );
 	}
 
 	/**

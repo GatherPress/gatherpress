@@ -2328,10 +2328,10 @@ class Test_Setup extends Base {
 		$classes = $setup->add_status_post_class( array( 'hentry' ), array(), $post_id );
 		$this->assertSame( array( 'hentry' ), $classes );
 
-		// Scheduled event has default status, no special modifier class added.
+		// Scheduled event gets the scheduled status class.
 		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 		$classes  = $setup->add_status_post_class( array( 'hentry' ), array(), $event_id );
-		$this->assertSame( array( 'hentry' ), $classes );
+		$this->assertContains( 'gatherpress-event-status--is-scheduled', $classes );
 
 		// Cancelled event gets the status class.
 		$event = new Event( $event_id );

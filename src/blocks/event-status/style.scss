@@ -88,12 +88,6 @@
 		}
 	}
 
-	&.gatherpress-event-status--is-scheduled {
-		--gatherpress-status-color: #137333;
-		--gatherpress-status-bg: #e6f4ea;
-		--gatherpress-status-border: #ceead6;
-	}
-
 	&.gatherpress-event-status--is-cancelled {
 		--gatherpress-status-color: #c5221f;
 		--gatherpress-status-bg: #fce8e6;
