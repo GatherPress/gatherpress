@@ -1,4 +1,0 @@
-Significance: patch
-Type: changed
-
-The online event link's tooltip, and the screen reader text it produces, is built when the block renders instead of being written into the post. Events created from now on pick the wording up from the plugin, so it can be corrected without editing their content; events saved earlier keep their stored text until the block is edited. The link text itself is editable exactly as before.

@@ -1,17 +1,16 @@
 /**
  * WordPress dependencies
  */
-import { __, sprintf } from '@wordpress/i18n';
+import { __ } from '@wordpress/i18n';
 import { RichText, useBlockProps } from '@wordpress/block-editor';
 import { useSelect } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
 import { store as editorStore } from '@wordpress/editor';
-import { escapeAttribute } from '@wordpress/escape-html';
 
 /**
  * Internal dependencies
  */
-import { isPostTypeSupporting, usePostTypeSupports } from '../../helpers/event';
+import { isPostTypeSupporting } from '../../helpers/event';
 
 /**
  * Edit component for the GatherPress Online Event block.
@@ -106,22 +105,8 @@ const Edit = ( { context, attributes, setAttributes } ) => {
 		setAttributes( { linkText: newValue } );
 	};
 
-	const isEvent = usePostTypeSupports( 'gatherpress-event-date', postType );
-
-	// Mirrors the default render.php builds when the attribute is empty, so the
-	// editor shows what the front end will render without saving it.
-	const defaultText = isEvent
-		? sprintf(
-			/* translators: %1$s: tooltip text, %2$s: label text */
-			'<span class="gatherpress-tooltip" data-gatherpress-tooltip="%1$s">%2$s</span>',
-			escapeAttribute(
-				__( 'link available for attendees only', 'gatherpress' )
-			),
-			__( 'Online event', 'gatherpress' )
-		)
-		: __( 'Online event', 'gatherpress' );
-
-	const displayText = linkText || defaultText;
+	// Use default text if linkText is empty.
+	const displayText = linkText || __( 'Online event', 'gatherpress' );
 
 	// Conditionally set tag and props based on whether we have a URL.
 	const hasUrl = !! linkUrl;

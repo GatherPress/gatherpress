@@ -1,4 +1,9 @@
 /**
+ * WordPress dependencies
+ */
+import { __, sprintf } from '@wordpress/i18n';
+
+/**
  * Default template for the online-event block.
  */
 const TEMPLATE = [
@@ -27,7 +32,17 @@ const TEMPLATE = [
 					style: { dimensions: { width: '24px' } },
 				},
 			],
-			[ 'gatherpress/online-event-link' ],
+			[
+				'gatherpress/online-event-link',
+				{
+					linkText: sprintf(
+						/* translators: %1$s: tooltip text, %2$s: label text */
+						'<span class="gatherpress-tooltip" data-gatherpress-tooltip="%1$s">%2$s</span>',
+						__( 'Link available for attendees only.', 'gatherpress' ),
+						__( 'Online event', 'gatherpress' )
+					),
+				},
+			],
 		],
 	],
 ];

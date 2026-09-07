@@ -27,23 +27,10 @@ $gatherpress_current_post_id = ! empty( $block->context['postId'] )
 
 $gatherpress_is_event = post_type_supports( (string) get_post_type( $gatherpress_current_post_id ), Event::SUPPORT );
 
-// Get the link text from block attributes. The default is built here rather
-// than seeded into the block, so the wording is not frozen into every post
-// that uses it and stays updatable.
+// Get the link text from block attributes, default to "Online event".
 $gatherpress_link_text = $attributes['linkText'] ?? '';
-
 if ( empty( $gatherpress_link_text ) ) {
-	$gatherpress_link_text = esc_html__( 'Online event', 'gatherpress' );
-
-	// Only events hold the link back until someone is attending, so the
-	// caveat belongs to them and not to anything else using this block.
-	if ( $gatherpress_is_event ) {
-		$gatherpress_link_text = sprintf(
-			'<span class="gatherpress-tooltip" data-gatherpress-tooltip="%1$s">%2$s</span>',
-			esc_attr__( 'link available for attendees only', 'gatherpress' ),
-			$gatherpress_link_text
-		);
-	}
+	$gatherpress_link_text = __( 'Online event', 'gatherpress' );
 }
 
 // Determine the full URL and RSVP-aware URL.
