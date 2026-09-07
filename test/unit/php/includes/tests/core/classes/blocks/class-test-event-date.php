@@ -12,8 +12,8 @@ use GatherPress\Core\Assets;
 use GatherPress\Core\Blocks\Event_Date;
 use GatherPress\Core\Event;
 use GatherPress\Core\Settings;
-use GatherPress\Core\Utility;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Event_Date.
@@ -625,6 +625,7 @@ class Test_Event_Date extends Base {
 		wp_dequeue_style( 'gatherpress-utility-style' );
 		wp_dequeue_script( 'gatherpress-tooltip-view' );
 		Utility::set_and_get_hidden_property( Assets::get_instance(), 'tooltip_assets_enqueued', false );
+		Settings::get_instance()->set( 'show_viewer_timezone', false );
 		parent::tear_down();
 	}
 }
