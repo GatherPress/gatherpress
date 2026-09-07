@@ -31,6 +31,7 @@ In the event settings:
 
 * Add a start date and time.  
 * Add a duration or an end date and time.  
+* Turn on All day for an event that runs the whole day rather than at a set time.  
 * It is possible to end the event on another day, but recurring event functionality will be added in a future version.
 
 Behavior to be aware of:
@@ -40,6 +41,32 @@ Behavior to be aware of:
 * Timezones follow the user profile or site timezone.
 
 For developers: the Duration control's preset options and default value can be customized with JavaScript filters. See [Event duration filters](../developer/event-duration.md).
+
+### All day events
+
+All day makes an event cover whole days instead of a span of hours. Turning it on:
+
+* Turns the start and end pickers into date pickers, and replaces the Duration control with an end date.
+* Stores the event as running from the start of the first day to the end of the last one, so it still sorts and filters alongside every other event.
+* Shows the date without a time, using the date format from settings. A format saved on the Event Date block keeps its date and loses its time: wanting a time means the event is not all day.
+
+Leave the end date on the same day for a one-day event, or set a later one to span several days.
+
+An all day date does not move between timezones. An event on the 29th reads as the 29th to every visitor, wherever they are and whatever the site timezone is.
+
+Turning All day back off restores the times the event had before, on whichever dates are selected by then, so flipping the toggle to look at it does not cost you what you had. Those times are only remembered while the editor stays open. Reopen an event that was saved as all day and there are no earlier times left to come back to, so it returns as running from the start of the day to the end of it.
+
+### Appending the time zone
+
+Append time zone decides whether the event's timezone is printed after the date:
+
+* Always prints it, overruling the Event Date block.
+* Never leaves it off, overruling the Event Date block.
+* Default gives the event no say, so the block decides, falling back to the site setting when the block does not say either.
+
+The setting lives on the event rather than the block, so Always and Never still apply where the event date comes from a site template and there is no Event Date block in the post to configure.
+
+Turning on All day moves the setting from Default to Never, since a bare date has no time for a timezone to qualify. Turning it back off returns it to Default. Always is left alone in both directions.
 
 
 ![Screenshot of the WordPress editor with Event time](./user-doc-media/20260110153038.png)

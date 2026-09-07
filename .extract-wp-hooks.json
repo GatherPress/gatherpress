@@ -9,8 +9,10 @@
 	],
 	"ignore_filter": [
 		"determine_current_user",
+		"months_dropdown_results",
 		"post_type_labels_gatherpress_event",
-		"post_type_labels_gatherpress_venue"
+		"post_type_labels_gatherpress_venue",
+		"pre_months_dropdown_query"
 	],
 	"github_wiki": false
 }

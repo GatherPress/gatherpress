@@ -8,11 +8,14 @@
 
 namespace GatherPress\Tests\Core\Calendar;
 
+use GatherPress\Core\Calendar\Calendar;
 use GatherPress\Core\Calendar\Setup;
-use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event;
+use GatherPress\Core\Topic;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
+use WP_Error;
 
 /**
  * Class Test_Setup.
@@ -44,6 +47,18 @@ class Test_Setup extends Base {
 				'name'     => 'wp_head',
 				'priority' => 10,
 				'callback' => array( $instance, 'alternate_links' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'template_redirect',
+				'priority' => PHP_INT_MIN,
+				'callback' => array( $instance, 'maybe_handle_content_negotiation' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'wp_headers',
+				'priority' => 10,
+				'callback' => array( $instance, 'filter_wp_headers' ),
 			),
 		);
 
@@ -932,6 +947,57 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * An event-supporting post type registered without an archive has no
+	 * archive feed to advertise, so it is skipped instead of emitting an entry
+	 * with a false url.
+	 *
+	 * @since 0.36.0
+	 * @covers ::collect_post_type_archive_alternate_links
+	 *
+	 * @return void
+	 */
+	public function test_collect_post_type_archive_alternate_links_skips_post_type_without_archive(): void {
+		register_post_type(
+			'gatherpress_noarch',
+			array(
+				'public'      => true,
+				'has_archive' => false,
+				'supports'    => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
+
+		$instance   = Setup::get_instance();
+		$args       = Utility::invoke_hidden_method( $instance, 'alternate_link_label_args' );
+		$supporting = get_post_types_by_support( 'gatherpress-event-date' );
+		$links      = Utility::invoke_hidden_method(
+			$instance,
+			'collect_post_type_archive_alternate_links',
+			array( $args )
+		);
+
+		unregister_post_type( 'gatherpress_noarch' );
+
+		$this->assertContains(
+			'gatherpress_noarch',
+			$supporting,
+			'The archive-less post type should be among the event-supporting post types.'
+		);
+		$this->assertCount(
+			count( $supporting ) - 1,
+			$links,
+			'The archive-less post type should be skipped, leaving one entry per remaining post type.'
+		);
+
+		foreach ( $links as $link ) {
+			$this->assertStringNotContainsString(
+				'gatherpress_noarch',
+				$link['url'],
+				'No alternate link should point at the archive-less post type.'
+			);
+		}
+	}
+
+	/**
 	 * Coverage for collect_contextual_alternate_links — returns the singular-event
 	 * branch when on an event permalink.
 	 *
@@ -1146,6 +1212,38 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * A term that can no longer be resolved has no feed link, so the tax
+	 * archive collector emits nothing rather than an entry with a false url.
+	 *
+	 * @since 0.36.0
+	 * @covers ::collect_tax_archive_alternate_links
+	 *
+	 * @return void
+	 */
+	public function test_collect_tax_archive_alternate_links_skips_unresolvable_term(): void {
+		$term_id = $this->factory->term->create(
+			array( 'taxonomy' => 'gatherpress_topic' )
+		);
+		$term    = get_term( $term_id, 'gatherpress_topic' );
+
+		wp_delete_term( $term_id, 'gatherpress_topic' );
+
+		$instance = Setup::get_instance();
+		$args     = Utility::invoke_hidden_method( $instance, 'alternate_link_label_args' );
+		$links    = Utility::invoke_hidden_method(
+			$instance,
+			'collect_tax_archive_alternate_links',
+			array( $term, $args )
+		);
+
+		$this->assertSame(
+			array(),
+			$links,
+			'A deleted term should produce no alternate-link entries.'
+		);
+	}
+
+	/**
 	 * Coverage for collect_event_term_alternate_links — walks the event's
 	 * related terms and returns one entry per resolvable term.
 	 *
@@ -1175,6 +1273,48 @@ class Test_Setup extends Base {
 			'iCal Feed',
 			$links[0]['attr'],
 			'Term entry attr should be formatted with the taxtitle template.'
+		);
+	}
+
+	/**
+	 * A `get_terms()` error carries no terms to walk, so the collector emits
+	 * nothing rather than iterating the WP_Error object.
+	 *
+	 * @since 0.36.0
+	 * @covers ::collect_event_term_alternate_links
+	 *
+	 * @return void
+	 */
+	public function test_collect_event_term_alternate_links_returns_empty_on_term_error(): void {
+		$event_id = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+		$topic_id = $this->factory->term->create(
+			array( 'taxonomy' => 'gatherpress_topic' )
+		);
+		wp_set_post_terms( $event_id, array( $topic_id ), 'gatherpress_topic' );
+
+		$error = static function () {
+			return new WP_Error( 'invalid_taxonomy', 'Invalid taxonomy.' );
+		};
+
+		$instance = Setup::get_instance();
+		$args     = Utility::invoke_hidden_method( $instance, 'alternate_link_label_args' );
+
+		add_filter( 'get_terms', $error );
+
+		$links = Utility::invoke_hidden_method(
+			$instance,
+			'collect_event_term_alternate_links',
+			array( get_post( $event_id ), $args )
+		);
+
+		remove_filter( 'get_terms', $error );
+
+		$this->assertSame(
+			array(),
+			$links,
+			'An errored term query should produce no alternate-link entries.'
 		);
 	}
 
@@ -1518,5 +1658,368 @@ class Test_Setup extends Base {
 		);
 
 		unset( $_SERVER['HTTP_IF_MODIFIED_SINCE'] );
+	}
+
+	/**
+	 * Coverage for is_calendar_negotiated with various Accept headers.
+	 *
+	 * @covers ::is_calendar_negotiated
+	 *
+	 * @return void
+	 */
+	public function test_is_calendar_negotiated(): void {
+		$instance = Setup::get_instance();
+
+		// Empty / null.
+		$this->assertFalse( $instance->is_calendar_negotiated( '' ) );
+		$this->assertFalse( $instance->is_calendar_negotiated( null ) );
+
+		// Standard browser headers without text/calendar.
+		$this->assertFalse(
+			$instance->is_calendar_negotiated(
+				'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+			)
+		);
+		$this->assertFalse( $instance->is_calendar_negotiated( '*/*' ) );
+		$this->assertFalse( $instance->is_calendar_negotiated( 'application/json' ) );
+
+		// Direct calendar accept.
+		$this->assertTrue( $instance->is_calendar_negotiated( 'text/calendar' ) );
+		$this->assertTrue( $instance->is_calendar_negotiated( 'TEXT/CALENDAR' ) );
+
+		// Quality factor comparisons.
+		$this->assertTrue( $instance->is_calendar_negotiated( 'text/calendar;q=0.9, text/html;q=0.8' ) );
+		$this->assertTrue( $instance->is_calendar_negotiated( 'text/html;q=0.8, text/calendar;q=0.9' ) );
+		$this->assertTrue( $instance->is_calendar_negotiated( 'text/calendar, text/html' ) );
+
+		// Lower quality factor than HTML should not negotiate calendar.
+		$this->assertFalse(
+			$instance->is_calendar_negotiated(
+				'text/html,application/xhtml+xml,application/xml;q=0.9,text/calendar;q=0.5'
+			)
+		);
+
+		// Server global fallback.
+		$_SERVER['HTTP_ACCEPT'] = 'text/calendar';
+		$this->assertTrue( $instance->is_calendar_negotiated() );
+		unset( $_SERVER['HTTP_ACCEPT'] );
+	}
+
+	/**
+	 * Coverage for get_calendar_url_for_request and is_event_related_request.
+	 *
+	 * @covers ::get_calendar_url_for_request
+	 * @covers ::is_event_related_request
+	 *
+	 * @return void
+	 */
+	public function test_get_calendar_url_for_request_and_is_event_related(): void {
+		$instance   = Setup::get_instance();
+		$event_post = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+
+		$wp_query = $GLOBALS['wp_query'];
+		$wp_query->init();
+		$wp_query->queried_object    = $event_post;
+		$wp_query->is_singular       = true;
+		$wp_query->is_single         = true;
+		$wp_query->queried_object_id = $event_post->ID;
+
+		$calendar_url = $instance->get_calendar_url_for_request();
+		$this->assertIsString( $calendar_url );
+		$this->assertStringContainsString( 'ical', $calendar_url );
+		$this->assertTrue( $instance->is_event_related_request() );
+
+		// Venue shadow source post.
+		$venue_post = $this->mock->post( array( 'post_type' => Venue::POST_TYPE ) )->get();
+		$wp_query->init();
+		$wp_query->queried_object    = $venue_post;
+		$wp_query->is_singular       = true;
+		$wp_query->is_single         = true;
+		$wp_query->queried_object_id = $venue_post->ID;
+
+		$venue_url = $instance->get_calendar_url_for_request();
+		$this->assertIsString( $venue_url );
+		$this->assertTrue( $instance->is_event_related_request() );
+
+		// Event post type archive.
+		$wp_query->init();
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+
+		$archive_url = $instance->get_calendar_url_for_request();
+		$this->assertIsString( $archive_url );
+		$this->assertTrue( $instance->is_event_related_request() );
+
+		// Front page / home.
+		$wp_query->init();
+		$wp_query->is_front_page = true;
+		$wp_query->is_home       = true;
+
+		$home_url = $instance->get_calendar_url_for_request();
+		$this->assertIsString( $home_url );
+		$this->assertTrue( $instance->is_event_related_request() );
+
+		// Non-event singular post.
+		$regular_post = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+		$wp_query->init();
+		$wp_query->queried_object    = $regular_post;
+		$wp_query->is_singular       = true;
+		$wp_query->is_single         = true;
+		$wp_query->queried_object_id = $regular_post->ID;
+
+		$this->assertFalse( $instance->get_calendar_url_for_request() );
+		$this->assertFalse( $instance->is_event_related_request() );
+	}
+
+	/**
+	 * Coverage for filter_wp_headers method.
+	 *
+	 * @covers ::filter_wp_headers
+	 *
+	 * @return void
+	 */
+	public function test_filter_wp_headers(): void {
+		$instance   = Setup::get_instance();
+		$event_post = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+
+		$wp_query = $GLOBALS['wp_query'];
+		$wp_query->init();
+		$wp_query->queried_object    = $event_post;
+		$wp_query->is_singular       = true;
+		$wp_query->is_single         = true;
+		$wp_query->queried_object_id = $event_post->ID;
+
+		// When no Vary header is present.
+		$headers = $instance->filter_wp_headers( array( 'Content-Type' => 'text/html' ) );
+		$this->assertSame( 'Accept', $headers['Vary'] );
+
+		// When an existing Vary header is present without Accept.
+		$headers = $instance->filter_wp_headers( array( 'Vary' => 'User-Agent' ) );
+		$this->assertSame( 'User-Agent, Accept', $headers['Vary'] );
+
+		// When Vary already includes Accept.
+		$headers = $instance->filter_wp_headers( array( 'Vary' => 'Accept, Cookie' ) );
+		$this->assertSame( 'Accept, Cookie', $headers['Vary'] );
+
+		// Field names are compared as tokens: Accept-Encoding is not Accept.
+		$headers = $instance->filter_wp_headers( array( 'Vary' => 'Accept-Encoding' ) );
+		$this->assertSame( 'Accept-Encoding, Accept', $headers['Vary'] );
+
+		// And the comparison is case-insensitive, as header field names are.
+		$headers = $instance->filter_wp_headers( array( 'Vary' => 'accept, Cookie' ) );
+		$this->assertSame( 'accept, Cookie', $headers['Vary'] );
+
+		// For a non-event page, headers are unchanged.
+		$regular_post = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+		$wp_query->init();
+		$wp_query->queried_object    = $regular_post;
+		$wp_query->is_singular       = true;
+		$wp_query->is_single         = true;
+		$wp_query->queried_object_id = $regular_post->ID;
+
+		$headers = $instance->filter_wp_headers( array( 'Content-Type' => 'text/html' ) );
+		$this->assertArrayNotHasKey( 'Vary', $headers );
+	}
+
+	/**
+	 * Coverage for get_negotiated_redirect_url.
+	 *
+	 * @covers ::get_negotiated_redirect_url
+	 *
+	 * @return void
+	 */
+	public function test_get_negotiated_redirect_url(): void {
+		$instance   = Setup::get_instance();
+		$event_post = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+
+		$wp_query = $GLOBALS['wp_query'];
+		$wp_query->init();
+		$wp_query->queried_object    = $event_post;
+		$wp_query->is_singular       = true;
+		$wp_query->is_single         = true;
+		$wp_query->queried_object_id = $event_post->ID;
+
+		$expected = ( new Calendar( $event_post->ID ) )->get_ical_url();
+
+		// An HTML request is left alone.
+		$_SERVER['HTTP_ACCEPT'] = 'text/html';
+
+		$this->assertFalse(
+			$instance->get_negotiated_redirect_url(),
+			'Failed to assert an HTML request is not redirected.'
+		);
+
+		// A calendar request on the event page is redirected to its feed. This
+		// is the case the shipped substring guard refused, because the event
+		// permalink is a substring of its own calendar URL.
+		$_SERVER['HTTP_ACCEPT'] = 'text/calendar';
+		$_SERVER['REQUEST_URI'] = '/event/test-event/';
+
+		$this->assertSame(
+			$expected,
+			$instance->get_negotiated_redirect_url(),
+			'Failed to assert a negotiated event request resolves to its calendar URL.'
+		);
+
+		// The same request already on the calendar endpoint is left alone, so
+		// the redirect cannot loop.
+		$wp_query->set( Setup::QUERY_VAR, Setup::ICAL_SLUG );
+
+		$this->assertFalse(
+			$instance->get_negotiated_redirect_url(),
+			'Failed to assert a request already on the calendar endpoint is not redirected again.'
+		);
+
+		$wp_query->set( Setup::QUERY_VAR, '' );
+
+		unset( $_SERVER['HTTP_ACCEPT'], $_SERVER['REQUEST_URI'] );
+	}
+
+	/**
+	 * Coverage for maybe_handle_content_negotiation leaving a request alone.
+	 *
+	 * The redirecting branch ends in exit() and is marked
+	 *
+	 * @codeCoverageIgnore in the source; this pins the bail.
+	 *
+	 * @covers ::maybe_handle_content_negotiation
+	 *
+	 * @return void
+	 */
+	public function test_maybe_handle_content_negotiation_ignores_html_requests(): void {
+		$instance = Setup::get_instance();
+
+		$_SERVER['HTTP_ACCEPT'] = 'text/html';
+
+		$instance->maybe_handle_content_negotiation();
+
+		$this->assertFalse(
+			$instance->get_negotiated_redirect_url(),
+			'Failed to assert an HTML request is left alone by the handler.'
+		);
+
+		unset( $_SERVER['HTTP_ACCEPT'] );
+	}
+
+	/**
+	 * Coverage for get_negotiated_redirect_url on a request with no calendar.
+	 *
+	 * @covers ::get_negotiated_redirect_url
+	 * @covers ::get_calendar_url_for_request
+	 *
+	 * @return void
+	 */
+	public function test_get_negotiated_redirect_url_without_a_calendar_target(): void {
+		$instance = Setup::get_instance();
+		$post     = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+
+		$wp_query = $GLOBALS['wp_query'];
+		$wp_query->init();
+		$wp_query->queried_object    = $post;
+		$wp_query->is_singular       = true;
+		$wp_query->is_single         = true;
+		$wp_query->queried_object_id = $post->ID;
+
+		$_SERVER['HTTP_ACCEPT'] = 'text/calendar';
+
+		$this->assertFalse(
+			$instance->get_negotiated_redirect_url(),
+			'Failed to assert a post with no calendar representation is left alone.'
+		);
+
+		unset( $_SERVER['HTTP_ACCEPT'] );
+	}
+
+	/**
+	 * Coverage for get_calendar_url_for_request across archive contexts.
+	 *
+	 * @covers ::get_calendar_url_for_request
+	 *
+	 * @return void
+	 */
+	public function test_get_calendar_url_for_request_archive_contexts(): void {
+		$instance = Setup::get_instance();
+		$wp_query = $GLOBALS['wp_query'];
+
+		// An event post type archive resolves to that archive's feed.
+		$wp_query->init();
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+
+		$this->assertSame(
+			get_post_type_archive_feed_link( Event::POST_TYPE, Setup::ICAL_SLUG ),
+			$instance->get_calendar_url_for_request(),
+			'Failed to assert an event archive resolves to its calendar feed.'
+		);
+
+		// An event topic term archive resolves to that term's feed.
+		$term = $this->factory->term->create_and_get( array( 'taxonomy' => Topic::TAXONOMY ) );
+
+		$wp_query->init();
+		$wp_query->is_tax            = true;
+		$wp_query->queried_object    = $term;
+		$wp_query->queried_object_id = $term->term_id;
+
+		$this->assertSame(
+			get_term_feed_link( $term->term_id, Topic::TAXONOMY, Setup::ICAL_SLUG ),
+			$instance->get_calendar_url_for_request(),
+			'Failed to assert an event topic archive resolves to its calendar feed.'
+		);
+
+		$wp_query->init();
+	}
+
+	/**
+	 * Coverage for is_calendar_negotiated with media ranges.
+	 *
+	 * @covers ::is_calendar_negotiated
+	 * @covers ::accept_quality
+	 *
+	 * @return void
+	 */
+	public function test_is_calendar_negotiated_respects_media_ranges(): void {
+		$instance = Setup::get_instance();
+
+		$this->assertTrue(
+			$instance->is_calendar_negotiated( 'text/calendar' ),
+			'Failed to assert a bare calendar request negotiates.'
+		);
+
+		// A browser ranking HTML above everything else must keep its HTML.
+		$this->assertFalse(
+			$instance->is_calendar_negotiated( 'text/html,application/xhtml+xml,text/calendar;q=0.1' ),
+			'Failed to assert a browser Accept header does not negotiate calendar.'
+		);
+
+		// `*/*` stands in for text/html here, so the client ranks HTML at 0.9
+		// and the calendar at 0.5. Matching literal types only read this as
+		// calendar-preferred and redirected against the client's wishes.
+		$this->assertFalse(
+			$instance->is_calendar_negotiated( 'text/calendar;q=0.5, */*;q=0.9' ),
+			'Failed to assert a wildcard media range outranking the calendar is honored.'
+		);
+
+		$this->assertTrue(
+			$instance->is_calendar_negotiated( 'text/calendar;q=0.9, */*;q=0.5' ),
+			'Failed to assert the calendar still wins when it outranks the wildcard.'
+		);
+
+		// The wildcard stands in for HTML, never for the calendar. This client
+		// asked for a different type; the substring `text/calendar` in it and
+		// the wildcard's quality must not combine into a redirect.
+		$this->assertFalse(
+			$instance->is_calendar_negotiated( 'text/calendar+json, */*;q=0.9' ),
+			'Failed to assert a media type that merely starts with text/calendar does not negotiate.'
+		);
+		$this->assertFalse(
+			$instance->is_calendar_negotiated( 'text/*' ),
+			'Failed to assert a type wildcard does not negotiate the calendar.'
+		);
+
+		// Equal quality goes to the calendar, since the client listed it.
+		$this->assertTrue(
+			$instance->is_calendar_negotiated( 'text/html, text/calendar' ),
+			'Failed to assert an equally ranked calendar negotiates.'
+		);
 	}
 }

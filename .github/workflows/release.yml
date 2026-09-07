@@ -37,6 +37,20 @@ jobs:
       version: ${{ steps.context.outputs.version }}
       is_prerelease: ${{ steps.context.outputs.is_prerelease }}
     steps:
+      - name: Reject the cycle marker
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          # `-alpha.0` is the marker set on develop right after a release so
+          # the branch stops advertising the version that just shipped. It is
+          # not a build: nothing should reach the Releases tab or wp.org under
+          # it. Pre-release numbering starts at .1, so no suffix ending in .0
+          # is ever a real build.
+          if [[ "${VERSION}" =~ -(alpha|beta|rc)\.0$ ]]; then
+            echo "::error::'${VERSION}' is a cycle marker, not a release. Delete the tag; pre-releases start at .1."
+            exit 1
+          fi
+
       - name: Classify tag
         id: context
         run: |
@@ -140,6 +154,17 @@ jobs:
           # composer script. Idempotent.
           php .github/scripts/link-changelog-prs.php
 
+      # The zip and the wp.org deploy check out the tag, whose CHANGELOG.md
+      # predates this rollup, so on their own they ship a changelog one
+      # release behind. Hand them the rolled file instead.
+      - name: Publish the rolled changelog for packaging
+        uses: actions/upload-artifact@v4
+        with:
+          name: rolled-changelog
+          path: CHANGELOG.md
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Extract release body from CHANGELOG.md
         id: extract
         env:
@@ -232,7 +257,7 @@ jobs:
   # Same artifact for both pre-release and stable paths.
   build:
     name: Build distro zip
-    needs: prepare
+    needs: [prepare, rollup]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -241,6 +266,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
+
+      # Ship the changelog with this release's own section, not the tag's copy.
+      - name: Use the rolled changelog
+        uses: actions/download-artifact@v4
+        with:
+          name: rolled-changelog
+          path: .
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -311,6 +343,13 @@ jobs:
         with:
           ref: ${{ github.ref }}
 
+      # Ship the changelog with this release's own section, not the tag's copy.
+      - name: Use the rolled changelog
+        uses: actions/download-artifact@v4
+        with:
+          name: rolled-changelog
+          path: .
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -359,6 +398,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
+
+      # Ship the changelog with this release's own section, not the tag's copy.
+      - name: Use the rolled changelog
+        uses: actions/download-artifact@v4
+        with:
+          name: rolled-changelog
+          path: .
 
       - name: Setup Node
         uses: actions/setup-node@v4

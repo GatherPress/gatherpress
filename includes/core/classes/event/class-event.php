@@ -16,16 +16,17 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use DateTimeZone;
 use Exception;
-use GatherPress\Core\Calendar\Calendar;
+use GatherPress\Core\Calendar;
 use GatherPress\Core\Event\Recurrence\Context;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
 use GatherPress\Core\Venue\Setup;
-use GatherPress\Core\Venue\Venue;
+use GatherPress\Core\Venue;
 use WP_Post;
+use WP_Term;
 
 /**
  * Class Event.
@@ -33,6 +34,14 @@ use WP_Post;
  * Represents individual events within the GatherPress plugin and provides event-related functionality.
  *
  * @since 0.34.0
+ *
+ * @phpstan-type EventDatetime array{
+ *     datetime_start: string,
+ *     datetime_start_gmt: string,
+ *     datetime_end: string,
+ *     datetime_end_gmt: string,
+ *     timezone: string
+ * }
  */
 class Event {
 
@@ -59,6 +68,14 @@ class Event {
 	 * @var string $POST_TYPE
 	 */
 	const POST_TYPE = 'gatherpress_event';
+
+	/**
+	 * Post type support that makes a post type an event.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const SUPPORT = 'gatherpress-event-date';
 
 	/**
 	 * Capability for reading a specific event.
@@ -108,61 +125,15 @@ class Event {
 	 */
 	const TEMPLATE_PATTERN = 'gatherpress/event-template';
 
-	/**
-	 * Non-time PHP DateTime formatting characters
-	 *
-	 * @since 0.34.0
-	 * @var array
-	 */
-	const PHP_NON_TIME_FORMAT_CHARS = array(
-		'd',
-		'D',
-		'j',
-		'l',
-		'N',
-		'S',
-		'w',
-		'z',
-		'W',
-		'F',
-		'm',
-		'M',
-		'n',
-		't',
-		'L',
-		'o',
-		'X',
-		'x',
-		'Y',
-		'y',
-		'e',
-		'I',
-		'O',
-		'P',
-		'p',
-		'T',
-		'Z',
-		'c',
-		'r',
-		'U',
-		',',
-	);
+
 
 	/**
-	 * Event post object.
+	 * The event post.
 	 *
 	 * @since 0.34.0
 	 * @var WP_Post|null
 	 */
-	public ?WP_Post $event = null;
-
-	/**
-	 * RSVP instance.
-	 *
-	 * @since 0.34.0
-	 * @var Rsvp|null
-	 */
-	public ?Rsvp $rsvp = null;
+	public ?WP_Post $post = null;
 
 	/**
 	 * Cached datetime data, keyed by occurrence.
@@ -176,7 +147,7 @@ class Event {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @var array<string, array>
+	 * @var array<string, EventDatetime>
 	 */
 	private array $datetime_cache = array();
 
@@ -190,9 +161,8 @@ class Event {
 	 * @param int $post_id The event post ID.
 	 */
 	public function __construct( int $post_id ) {
-		if ( post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
-			$this->event = get_post( $post_id );
-			$this->rsvp  = new Rsvp( $post_id );
+		if ( post_type_supports( (string) get_post_type( $post_id ), self::SUPPORT ) ) {
+			$this->post = get_post( $post_id );
 		}
 	}
 
@@ -237,7 +207,7 @@ class Event {
 		$post = get_post( $post_id );
 
 		// A post that is gone, or one that never takes RSVPs, has no roster.
-		if ( ! $post instanceof WP_Post || ! post_type_supports( $post->post_type, 'gatherpress-rsvp' ) ) {
+		if ( ! $post instanceof WP_Post || ! post_type_supports( $post->post_type, Rsvp::SUPPORT ) ) {
 			return false;
 		}
 
@@ -296,29 +266,32 @@ class Event {
 			? in_array( $type, array( 'end', 'both' ), true )
 			: true;
 
-		// Set start date/time.
-		$start_datetime_format = $start_format ? $start_format : "{$date_format} {$time_format}";
-		$start                 = $show_start ? $this->get_datetime_start( $start_datetime_format ) : false;
+		$formats = $this->get_display_formats(
+			$start_format,
+			$end_format,
+			$date_format,
+			$time_format
+		);
 
-		// Set end date/time.
-		if ( $show_end ) {
-			$end_time_format     = $end_format ? $end_format : $time_format;
-			$end_datetime_format = $end_format ? $end_format : "{$date_format} {$time_format}";
-
-			$end = $show_start && $this->is_same_date()
-				? $this->get_time_end( $end_time_format )
-				: $this->get_datetime_end( $end_datetime_format );
-		} else {
-			$end = false;
-		}
+		$start = $show_start ? $this->get_datetime_start( $formats['start'] ) : false;
+		$end   = $show_end
+			? $this->get_display_end( $formats, $show_start && $this->is_same_date() )
+			: false;
 
 		// Add separator if there's both start and end date/time.
 		$default_separator = $separator ? $separator : __( 'to', 'gatherpress' );
 		$separator         = $start && $end ? $default_separator : false;
 
-		// Add timezone.
-		if ( $show_timezone ? 'yes' === $show_timezone : $timezone ) {
-			$timezone = $this->get_datetime_start( $timezone );
+		// Add timezone, event first. A block in a site template renders every
+		// event and cannot know which of them want their zone named, so an
+		// event that says either way is answered before the block is asked.
+		// Saying nothing leaves it to the block, whatever kind of event it is.
+		$preference = $this->get_timezone_preference();
+
+		if ( 'never' === $preference ) {
+			$timezone = false;
+		} elseif ( 'always' === $preference || ( $show_timezone ? 'yes' === $show_timezone : $timezone ) ) {
+			$timezone = $this->get_datetime_start( $timezone ? $timezone : ' T' );
 		} else {
 			$timezone = false;
 		}
@@ -468,12 +441,236 @@ class Event {
 	 */
 	public function get_time_end( string $format = '' ): string {
 		return $this->get_datetime_end(
-			str_replace(
-				static::PHP_NON_TIME_FORMAT_CHARS,
-				'',
-				$format ? $format : 'g:i a'
-			)
+			Utility::remove_non_time_format_chars( $format ? $format : 'g:i a' )
 		);
+	}
+
+	/**
+	 * Convert a datetime to the one format everything downstream reads.
+	 *
+	 * `get_gmt_datetime()` accepts anything `date_create()` understands, so a
+	 * caller is not limited to `self::DATETIME_FORMAT`. `get_datetime()` is:
+	 * it validates what it reads back and discards a value in any other
+	 * shape, so a datetime written as `2026-08-29T09:00:00` would be stored
+	 * and then silently lost.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string       $datetime Any datetime `date_create()` understands.
+	 * @param DateTimeZone $timezone The zone to read the datetime in.
+	 *
+	 * @return string The datetime in `self::DATETIME_FORMAT`, or an empty
+	 *                string when it cannot be read as one.
+	 */
+	protected function normalize_datetime( string $datetime, DateTimeZone $timezone ): string {
+		// An empty string parses to the current time rather than failing, so
+		// nothing would become now.
+		if ( '' === trim( $datetime ) ) {
+			return '';
+		}
+
+		$parsed = date_create( $datetime, $timezone );
+
+		// A MySQL zero date parses to a negative year instead of failing.
+		if ( false === $parsed || 1 > (int) $parsed->format( 'Y' ) ) {
+			return '';
+		}
+
+		// A datetime carrying its own offset is read in that offset, so it is
+		// moved into the event's zone before being stored as its local time.
+		// Otherwise the local column and the GMT one derived from it would
+		// describe different moments.
+		return $parsed->setTimezone( $timezone )->format( self::DATETIME_FORMAT );
+	}
+
+	/**
+	 * Snap a datetime to the beginning or the end of its own day.
+	 *
+	 * An all-day event stores a span that really covers the day rather than
+	 * hiding a time that is still 3pm underneath, so exports, duration and
+	 * date queries stay correct.
+	 *
+	 * @since 0.36.0
+	 *
+	 * Finds the date rather than assuming where it sits, so the method holds
+	 * on its own instead of depending on having been handed something
+	 * `normalize_datetime()` had already been through.
+	 *
+	 * @param string $datetime Any datetime `date_create()` understands.
+	 * @param string $which    Which boundary, 'start' or 'end'.
+	 *
+	 * @return string The snapped datetime, or an empty string when there is
+	 *                no date to snap.
+	 */
+	protected static function to_day_boundary( string $datetime, string $which ): string {
+		// An empty string parses to the current time rather than failing.
+		$parsed = '' === trim( $datetime ) ? false : date_create( $datetime );
+
+		if ( false === $parsed ) {
+			return '';
+		}
+
+		return sprintf(
+			'%s %s',
+			$parsed->format( 'Y-m-d' ),
+			'start' === $which ? '00:00:00' : '23:59:59'
+		);
+	}
+
+	/**
+	 * Format an all-day event's datetime.
+	 *
+	 * An all-day event carries no timezone, the way a calendar's date value
+	 * does: August 29 is August 29 in Tokyo and in Los Angeles. Converting the
+	 * stored GMT would land the day before or after depending on which side of
+	 * the meridian the event sits, so the local column is read and both parsed
+	 * and rendered in the event's own zone. The date therefore never moves,
+	 * and a format asking for the zone still names the one the day belongs to
+	 * rather than GMT.
+	 *
+	 * The GMT columns stay a real instant, because ordering upcoming against
+	 * past genuinely wants one.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string               $format The PHP date format.
+	 * @param string               $which  Which datetime to format, 'start' or 'end'.
+	 * @param bool                 $local  Whether the datetime is being rendered in local time.
+	 * @param array<string, mixed> $dt     The event's datetime data.
+	 *
+	 * @return string The formatted datetime.
+	 */
+	protected function get_formatted_all_day( string $format, string $which, bool $local, array $dt ): string {
+		$date = (string) $dt[ sprintf( 'datetime_%s', $which ) ];
+
+		if ( empty( $date ) ) {
+			return '';
+		}
+
+		$zone = in_array( $dt['timezone'], Utility::list_timezone_and_utc_offsets(), true )
+			? Utility::normalize_timezone_string( (string) $dt['timezone'] )
+			: 'GMT+0000';
+		$tz   = new DateTimeZone( $zone );
+
+		// `Validate::datetime()` accepts what `DateTime::createFromFormat()`
+		// accepts, which is wider than this: an overflowing value like
+		// '2030-06-31 25:00:00' is stored and read back, and constructing a
+		// date from it throws. Report no datetime rather than dying, matching
+		// what the timed path does with the same value.
+		$parsed = date_create( $date, $tz );
+
+		if ( false === $parsed ) {
+			return '';
+		}
+
+		/** This filter is documented in includes/core/classes/event/class-event.php */
+		$format = apply_filters( 'gatherpress_datetime_format', $format, $which, $local );
+
+		return trim( (string) wp_date( $format, $parsed->getTimestamp(), $tz ) );
+	}
+
+	/**
+	 * What this event says about showing its timezone.
+	 *
+	 * Overrides the block and the site setting, because a block in a site
+	 * template renders every event and cannot answer this per event.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string 'always', 'never', or an empty string to leave it to the
+	 *                block and the site setting.
+	 */
+	public function get_timezone_preference(): string {
+		if ( ! $this->post ) {
+			return '';
+		}
+
+		$preference = (string) get_post_meta( $this->post->ID, 'gatherpress_show_timezone', true );
+
+		return in_array( $preference, array( 'always', 'never' ), true ) ? $preference : '';
+	}
+
+	/**
+	 * Whether this event runs for whole days rather than at a time.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return bool True when the event is all day.
+	 */
+	public function is_all_day(): bool {
+		if ( ! $this->post ) {
+			return false;
+		}
+
+		return (bool) get_post_meta( $this->post->ID, 'gatherpress_is_all_day', true );
+	}
+
+	/**
+	 * Resolve the formats one rendered datetime range is built from.
+	 *
+	 * The site keeps its date and time formats separately, so an all-day
+	 * event simply uses the date one and never reaches for the time. A
+	 * format set explicitly on the block keeps its date and loses its time,
+	 * since wanting a time means the event is not all day.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $start_format Explicit start format, or an empty string.
+	 * @param string $end_format   Explicit end format, or an empty string.
+	 * @param string $date_format  The site's date format.
+	 * @param string $time_format  The site's time format.
+	 *
+	 * @return array{start: string, end: string, end_time: string} The formats to render with.
+	 */
+	protected function get_display_formats(
+		string $start_format,
+		string $end_format,
+		string $date_format,
+		string $time_format
+	): array {
+		if ( $this->is_all_day() ) {
+			// Wanting a time on the face of it means the event is not all
+			// day, so a format saved on the block loses its time rather than
+			// printing the day's boundary as though someone chose it.
+			$start = Utility::remove_time_format_chars( $start_format );
+			$end   = Utility::remove_time_format_chars( $end_format );
+
+			return array(
+				'start'    => $start ? $start : $date_format,
+				'end'      => $end ? $end : $date_format,
+				// Nothing follows the start date of a one-day event: it has
+				// no end time, and its end date has already been said.
+				'end_time' => '',
+			);
+		}
+
+		return array(
+			'start'    => $start_format ? $start_format : "{$date_format} {$time_format}",
+			'end'      => $end_format ? $end_format : "{$date_format} {$time_format}",
+			'end_time' => $end_format ? $end_format : $time_format,
+		);
+	}
+
+	/**
+	 * The end of a rendered datetime range.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array{start: string, end: string, end_time: string} $formats   The formats to render with.
+	 * @param bool                                                $same_date Whether the event starts and ends
+	 *                                                                       on the same day.
+	 *
+	 * @return string|false The rendered end, or false when there is nothing to add.
+	 */
+	protected function get_display_end( array $formats, bool $same_date ) {
+		if ( ! $same_date ) {
+			return $this->get_datetime_end( $formats['end'] );
+		}
+
+		// An all-day event has no end time, and its date has already been said.
+		return '' === $formats['end_time']
+			? false
+			: $this->get_time_end( $formats['end_time'] );
 	}
 
 	/**
@@ -498,9 +695,14 @@ class Event {
 		bool $local = true
 	): string {
 		$dt             = $this->get_datetime();
-		$date           = $dt[ sprintf( 'datetime_%s_gmt', $which ) ];
 		$dt['timezone'] = Utility::maybe_convert_utc_offset( $dt['timezone'] );
 		$tz             = null;
+
+		if ( $this->is_all_day() ) {
+			return $this->get_formatted_all_day( $format, $which, $local, $dt );
+		}
+
+		$date = $dt[ sprintf( 'datetime_%s_gmt', $which ) ];
 
 		if (
 			true === $local
@@ -513,15 +715,40 @@ class Event {
 		}
 
 		if ( ! empty( $date ) ) {
-			$ts   = strtotime( $date );
-			$date = wp_date(
-				apply_filters( 'gatherpress_datetime_format', $format, $which, $local ),
+			$ts = strtotime( $date );
+
+			// Validate::datetime() accepts what DateTime::createFromFormat() accepts,
+			// which is wider than strtotime(): an overflowing value like
+			// '2030-06-31 25:00:00' passes validation and still has no timestamp to
+			// format, so report no datetime rather than falling back to the epoch.
+			if ( false === $ts ) {
+				return '';
+			}
+
+			/**
+			 * Filters the format an event's datetime is rendered with.
+			 *
+			 * Applies to every context an event date is shown in, since they
+			 * all format through this method: the singular event, an archive,
+			 * the Event Date block and a query loop alike.
+			 *
+			 * @since 0.34.0
+			 *
+			 * @param string $format The PHP date format.
+			 * @param string $which  Which datetime is being formatted, 'start' or 'end'.
+			 * @param bool   $local  Whether the datetime is rendered in local time rather than GMT.
+			 */
+			$format = apply_filters( 'gatherpress_datetime_format', $format, $which, $local );
+
+			// wp_date() only returns false for a non-numeric timestamp, which $ts is not.
+			$date = (string) wp_date(
+				$format,
 				$ts,
 				$tz
 			);
 		}
 
-		return (string) trim( $date );
+		return trim( $date );
 	}
 
 	/**
@@ -533,7 +760,7 @@ class Event {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array An associative array detailing the event's schedule and timezone, potentially
+	 * @return EventDatetime An associative array detailing the event's schedule and timezone, potentially
 	 * adjusted for user-specific preferences:
 	 *     - 'datetime_start'     (string) The event start date and time.
 	 *     - 'datetime_start_gmt' (string) The event start date and time in GMT.
@@ -550,7 +777,7 @@ class Event {
 			'timezone'           => sanitize_text_field( wp_timezone_string() ),
 		);
 
-		if ( ! $this->event ) {
+		if ( ! $this->post ) {
 			return $data;
 		}
 
@@ -558,14 +785,14 @@ class Event {
 		// does not keep serving the series' values once context is established.
 		// Context owns the key, because deciding when an occurrence identity
 		// applies to a given post is the composite-key identity rule.
-		$cache_key = Context::get_instance()->cache_key( $this->event->ID );
+		$cache_key = Context::get_instance()->cache_key( $this->post->ID ?? 0 );
 
 		if ( isset( $this->datetime_cache[ $cache_key ] ) ) {
 			return $this->datetime_cache[ $cache_key ];
 		}
 
 		foreach ( array_keys( $data ) as $key ) {
-			$result = get_post_meta( $this->event->ID, Utility::prefix_key( $key ), true );
+			$result = get_post_meta( $this->post->ID, Utility::prefix_key( $key ), true );
 
 			if ( empty( $result ) ) {
 				continue;
@@ -627,12 +854,12 @@ class Event {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array An array containing venue information:
-	 *               - 'address' (string): The address of the venue.
-	 *               - 'name' (string): The name of the venue.
-	 *               - 'permalink' (string): The permalink (URL) of the venue.
-	 *               - 'phone' (string): The phone number of the venue.
-	 *               - 'website' (string): The website URL of the venue.
+	 * @return array<string, string> An array containing venue information:
+	 *                               - 'address' (string): The address of the venue.
+	 *                               - 'name' (string): The name of the venue.
+	 *                               - 'permalink' (string): The permalink (URL) of the venue.
+	 *                               - 'phone' (string): The phone number of the venue.
+	 *                               - 'website' (string): The website URL of the venue.
 	 */
 	public function get_venue_information(): array {
 		$venue_information = array(
@@ -643,10 +870,20 @@ class Event {
 			'website'   => '',
 		);
 
-		$event_post_type = (string) get_post_type( $this->event );
+		if ( ! $this->post ) {
+			return $venue_information;
+		}
+
+		$event_post_type = (string) get_post_type( $this->post );
 		$venue_setup     = Setup::get_instance();
 		$taxonomy        = $venue_setup->taxonomy_for_event_post_type( $event_post_type );
-		$venue_terms     = (array) get_the_terms( $this->event, $taxonomy );
+		$venue_terms     = get_the_terms( $this->post, $taxonomy );
+
+		// get_the_terms() hands back false when nothing is assigned and a WP_Error for an
+		// unregistered taxonomy; neither carries venue terms to inspect.
+		if ( ! is_array( $venue_terms ) ) {
+			return $venue_information;
+		}
 
 		// Prefer a real venue term (leading-underscore prefix) so a hybrid
 		// event with both a physical venue and the `online-event` sentinel
@@ -659,10 +896,6 @@ class Event {
 		$fallback = null;
 
 		foreach ( $venue_terms as $candidate ) {
-			if ( ! is_a( $candidate, 'WP_Term' ) ) {
-				continue;
-			}
-
 			if ( $venue_setup->is_venue_term_slug( $candidate->slug ) ) {
 				$term = $candidate;
 				break;
@@ -674,12 +907,12 @@ class Event {
 		$term  = $term ?? $fallback;
 		$venue = null;
 
-		if ( is_a( $term, 'WP_Term' ) ) {
+		if ( $term instanceof WP_Term ) {
 			$venue_information['name'] = $term->name;
 			$venue                     = $venue_setup->get_venue_post_from_term_slug( $term->slug );
 		}
 
-		if ( is_a( $venue, 'WP_Post' ) ) {
+		if ( $venue instanceof WP_Post ) {
 			$venue_information = array_merge( $venue_information, ( new Venue( $venue->ID ) )->get_information() );
 
 			$venue_information['permalink'] = (string) get_permalink( $venue->ID );
@@ -697,7 +930,8 @@ class Event {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array An associative array containing supported calendar links:
+	 * @return array<string, array{name: string, link?: string, download?: string}> An associative array containing
+	 *     supported calendar links:
 	 *     - 'google'  (array) Google Calendar link information with 'name' and 'link' keys.
 	 *     - 'ical'    (array) iCal download link information with 'name' and 'download' keys.
 	 *     - 'outlook' (array) Outlook download link information with 'name' and 'download' keys.
@@ -706,28 +940,30 @@ class Event {
 	 * @throws Exception If there is an issue while generating calendar links.
 	 */
 	public function get_calendar_links(): array {
-		if ( ! $this->event ) {
+		if ( ! $this->post ) {
 			return array();
 		}
 
-		$calendar = new Calendar( $this->event->ID );
+		$calendar = new Calendar( $this->post->ID );
 
+		// Each URL getter only reports false when its event post cannot be resolved, and the
+		// calendar was built from the post resolved directly above.
 		return array(
 			'google'  => array(
 				'name' => __( 'Google Calendar', 'gatherpress' ),
-				'link' => $calendar->get_google_url(),
+				'link' => (string) $calendar->get_google_url(),
 			),
 			'ical'    => array(
 				'name'     => __( 'iCal', 'gatherpress' ),
-				'download' => $calendar->get_ical_url(),
+				'download' => (string) $calendar->get_ical_url(),
 			),
 			'outlook' => array(
 				'name'     => __( 'Outlook', 'gatherpress' ),
-				'download' => $calendar->get_outlook_url(),
+				'download' => (string) $calendar->get_outlook_url(),
 			),
 			'yahoo'   => array(
 				'name' => __( 'Yahoo Calendar', 'gatherpress' ),
-				'link' => $calendar->get_yahoo_url(),
+				'link' => (string) $calendar->get_yahoo_url(),
 			),
 		);
 	}
@@ -743,8 +979,12 @@ class Event {
 	 * @return string The calendar event description with the event details link.
 	 */
 	public function get_calendar_description(): string {
+		if ( ! $this->post ) {
+			return '';
+		}
+
 		/* translators: %s: event link. */
-		return sprintf( __( 'For details go to %s', 'gatherpress' ), get_the_permalink( $this->event ) );
+		return sprintf( __( 'For details go to %s', 'gatherpress' ), get_the_permalink( $this->post ) );
 	}
 
 	/**
@@ -756,7 +996,7 @@ class Event {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $params {
+	 * @param array{post_id?: int, datetime_start?: string, datetime_end?: string, timezone?: string} $params {
 	 *     An array of arguments used to save event data to the custom event table.
 	 *
 	 *     @type int    $post_id        The event's post ID.
@@ -771,9 +1011,15 @@ class Event {
 	public function save_datetimes( array $params ): bool {
 		global $wpdb;
 
+		// Nothing to attach the datetimes to when the post ID handed to the constructor
+		// did not resolve to an event.
+		if ( ! $this->post ) {
+			return false;
+		}
+
 		$params = array_merge(
 			array(
-				'post_id'        => $this->event->ID,
+				'post_id'        => $this->post->ID,
 				'datetime_start' => '',
 				'datetime_end'   => '',
 				'timezone'       => '',
@@ -803,6 +1049,18 @@ class Event {
 
 		$fields['timezone'] = ( ! empty( $fields['timezone'] ) ) ? $fields['timezone'] : wp_timezone_string();
 		$timezone           = new DateTimeZone( Utility::normalize_timezone_string( (string) $fields['timezone'] ) );
+
+		// Everything downstream reads a datetime in one format: the day
+		// boundaries slice the date off the front, and `get_datetime()` drops
+		// a stored value that does not match it. So whatever a caller wrote
+		// is converted once, here, rather than parsed again at each step.
+		$fields['datetime_start'] = $this->normalize_datetime( (string) $fields['datetime_start'], $timezone );
+		$fields['datetime_end']   = $this->normalize_datetime( (string) $fields['datetime_end'], $timezone );
+
+		if ( $this->is_all_day() ) {
+			$fields['datetime_start'] = self::to_day_boundary( $fields['datetime_start'], 'start' );
+			$fields['datetime_end']   = self::to_day_boundary( $fields['datetime_end'], 'end' );
+		}
 
 		$fields['datetime_start_gmt'] = $this->get_gmt_datetime( (string) $fields['datetime_start'], $timezone );
 		$fields['datetime_end_gmt']   = $this->get_gmt_datetime( (string) $fields['datetime_end'], $timezone );
@@ -846,7 +1104,8 @@ class Event {
 			update_post_meta(
 				$fields['post_id'],
 				$meta_key,
-				sanitize_text_field( $field )
+				// Only the string-valued fields reach here; post_id is skipped above.
+				sanitize_text_field( (string) $field )
 			);
 		}
 
@@ -863,7 +1122,11 @@ class Event {
 	 * @return string The online event link if all conditions are met; otherwise, an empty string.
 	 */
 	public function maybe_get_online_event_link(): string {
-		$event_link = (string) get_post_meta( $this->event->ID, 'gatherpress_online_event_link', true );
+		if ( ! $this->post ) {
+			return '';
+		}
+
+		$event_link = (string) get_post_meta( $this->post->ID, 'gatherpress_online_event_link', true );
 
 		/**
 		 * Filters whether to force the display of the online event link.
@@ -881,12 +1144,8 @@ class Event {
 		$force_online_event_link = apply_filters( 'gatherpress_force_online_event_link', false );
 
 		if ( ! $force_online_event_link && ! is_admin() ) {
-			if ( ! $this->rsvp ) {
-				return '';
-			}
-
 			$user_identifier = Rsvp_Setup::get_instance()->get_user_identifier();
-			$response        = $this->rsvp->get( $user_identifier );
+			$response        = ( new Rsvp( $this->post->ID ) )->get( $user_identifier );
 
 			if (
 				! isset( $response['status'] ) ||

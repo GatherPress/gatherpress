@@ -15,6 +15,7 @@ namespace GatherPress\Core\Settings;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue;
@@ -27,6 +28,8 @@ use GatherPress\Core\Venue\Setup;
  * Handles the "Venues" settings page for GatherPress.
  *
  * @since 0.34.0
+ *
+ * @phpstan-import-type SettingsSection from Settings
  */
 final class Venues extends Base {
 
@@ -80,7 +83,7 @@ final class Venues extends Base {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array An array of sections and options for the Venues settings page.
+	 * @return array<string, SettingsSection> An array of sections and options for the Venues settings page.
 	 */
 	protected function get_sections(): array {
 		return array(
@@ -109,6 +112,37 @@ final class Venues extends Base {
 									'google' => __( 'Google Maps', 'gatherpress' ),
 								),
 							),
+						),
+					),
+					'carto_api_key'                  => array(
+						'labels'      => array(
+							'name' => __( 'CARTO API Key', 'gatherpress' ),
+						),
+						'description' => wp_kses(
+							sprintf(
+								// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string for the full key guidance sentence.
+								/* translators: %s: link to CARTO's free basemap key request form. */
+								__( 'Required. Without a key, map tiles are watermarked. Free up to 5 million tiles a month. %s.', 'gatherpress' ),
+								// phpcs:enable Generic.Files.LineLength.TooLong
+								'<a href="https://carto.com/basemaps/apikey/"'
+								. ' target="_blank" rel="noopener noreferrer">'
+								. __( 'Request a free key', 'gatherpress' ) . '</a>'
+							),
+							array(
+								'a' => array(
+									'href'   => array(),
+									'target' => array(),
+									'rel'    => array(),
+								),
+							)
+						),
+						'field'       => array(
+							'label' => __( 'CARTO API key:', 'gatherpress' ),
+							'type'  => 'text',
+							'size'  => 'regular',
+						),
+						'show_if'     => array(
+							'map_platform' => 'osm',
 						),
 					),
 					'google_maps_api_key'            => array(

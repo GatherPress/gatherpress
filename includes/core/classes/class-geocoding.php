@@ -30,6 +30,30 @@ use WP_REST_Server;
  * Provides REST API endpoints for geocoding and address search.
  *
  * @since 0.34.0
+ *
+ * @phpstan-type StructuredAddress array{
+ *     house_number: string,
+ *     street: string,
+ *     city: string,
+ *     county: string,
+ *     state: string,
+ *     postcode: string,
+ *     country: string,
+ *     country_code: string
+ * }
+ * @phpstan-type GeocodeResult array{
+ *     latitude: string,
+ *     longitude: string,
+ *     error: string|null,
+ *     house_number: string,
+ *     street: string,
+ *     city: string,
+ *     county: string,
+ *     state: string,
+ *     postcode: string,
+ *     country: string,
+ *     country_code: string
+ * }
  */
 final class Geocoding {
 
@@ -45,6 +69,17 @@ final class Geocoding {
 	 * @var string
 	 */
 	const PHOTON_API_URL = 'https://photon.komoot.io/api';
+
+	/**
+	 * Languages the public Photon API accepts.
+	 *
+	 * Anything else is rejected with HTTP 400, which takes autocomplete and
+	 * save-time geocoding down with it.
+	 *
+	 * @since 0.36.0
+	 * @var string[]
+	 */
+	private const PHOTON_LANGUAGES = array( 'default', 'de', 'en', 'fr' );
 
 	/**
 	 * Minimum trimmed query length before calling Photon for search.
@@ -211,7 +246,7 @@ final class Geocoding {
 			return;
 		}
 
-		if ( ! post_type_supports( $post->post_type, 'gatherpress-venue-information' ) ) {
+		if ( ! post_type_supports( $post->post_type, Venue::SUPPORT ) ) {
 			return;
 		}
 
@@ -340,7 +375,7 @@ final class Geocoding {
 			return;
 		}
 
-		if ( ! post_type_supports( $post->post_type, 'gatherpress-venue-information' ) ) {
+		if ( ! post_type_supports( $post->post_type, Venue::SUPPORT ) ) {
 			return;
 		}
 
@@ -398,9 +433,9 @@ final class Geocoding {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $settings The block editor settings array.
+	 * @param array<string, mixed> $settings The block editor settings array.
 	 *
-	 * @return array The modified settings.
+	 * @return array<string, mixed> The modified settings.
 	 */
 	public function add_editor_settings( array $settings ): array {
 		if ( ! isset( $settings['gatherpress'] ) ) {
@@ -582,6 +617,7 @@ final class Geocoding {
 	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request The REST request object.
+	 * @phpstan-param WP_REST_Request<array{address: string}> $request
 	 *
 	 * @return WP_REST_Response|WP_Error Response with coordinates or error.
 	 */
@@ -635,19 +671,7 @@ final class Geocoding {
 	 *
 	 * @param string $address Address string to resolve.
 	 *
-	 * @return array{
-	 *     latitude: string,
-	 *     longitude: string,
-	 *     error: string|null,
-	 *     house_number: string,
-	 *     street: string,
-	 *     city: string,
-	 *     county: string,
-	 *     state: string,
-	 *     postcode: string,
-	 *     country: string,
-	 *     country_code: string
-	 * }|WP_Error Result payload, or WP_Error on Photon HTTP failure.
+	 * @return GeocodeResult|WP_Error Result payload, or WP_Error on Photon HTTP failure.
 	 */
 	public function geocode_to_result( string $address ): array|WP_Error {
 		// Cap oversize input for parity with search_addresses(); protects
@@ -666,6 +690,12 @@ final class Geocoding {
 		// `house_number` slot. Treat as miss and refetch so the cache
 		// self-heals after the upgrade.
 		if ( is_array( $cached ) && array_key_exists( 'house_number', $cached ) ) {
+			/**
+			 * Cached payload.
+			 *
+			 * @var GeocodeResult $cached This method is the only writer of the cache key, and entries
+			 *                            predating the structured pieces were ruled out above.
+			 */
 			return $cached;
 		}
 
@@ -752,7 +782,7 @@ final class Geocoding {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array Result payload with empty fields and an error message.
+	 * @return GeocodeResult Result payload with empty fields and an error message.
 	 */
 	private function build_not_found_payload(): array {
 		return array_merge(
@@ -773,6 +803,7 @@ final class Geocoding {
 	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request The REST request object.
+	 * @phpstan-param WP_REST_Request<array{q: string}> $request
 	 *
 	 * @return WP_REST_Response|WP_Error Suggestions or error.
 	 */
@@ -964,18 +995,9 @@ final class Geocoding {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $properties Photon `properties` object.
+	 * @param array<string, mixed> $properties Photon `properties` object.
 	 *
-	 * @return array{
-	 *     house_number: string,
-	 *     street: string,
-	 *     city: string,
-	 *     county: string,
-	 *     state: string,
-	 *     postcode: string,
-	 *     country: string,
-	 *     country_code: string
-	 * }
+	 * @return StructuredAddress
 	 */
 	private function extract_structured_address( array $properties ): array {
 		$pluck = static function ( string $key ) use ( $properties ): string {
@@ -1001,6 +1023,12 @@ final class Geocoding {
 			$structured[ $field ] = $pluck( str_replace( '_', '', $field ) );
 		}
 
+		/**
+		 * Structured-address pieces.
+		 *
+		 * @var StructuredAddress $structured The loop fills one slot per `STRUCTURED_ADDRESS_FIELDS`
+		 *                                    entry, so every key of the shape is present.
+		 */
 		return $structured;
 	}
 
@@ -1019,7 +1047,7 @@ final class Geocoding {
 	 *               `gatherpress_geocode_street_line` filter was replaced
 	 *               by `gatherpress_formatted_address`.
 	 *
-	 * @param array $properties Photon `properties` object.
+	 * @param array<string, mixed> $properties Photon `properties` object.
 	 *
 	 * @return string Non-empty label or empty string.
 	 */
@@ -1249,10 +1277,27 @@ final class Geocoding {
 	 * @return string Language code (e.g., 'en', 'de').
 	 */
 	private function get_language_code(): string {
-		$locale = get_locale();
-
 		// Convert 'en_US' to 'en'.
-		return explode( '_', $locale )[0];
+		$language = explode( '_', get_locale() )[0];
+
+		/**
+		 * Filters the languages the geocoder is willing to be asked for.
+		 *
+		 * Widen this when `gatherpress_photon_api_url` points at a Photon
+		 * instance that serves more languages than the public one, so a site
+		 * gets results named in its own locale instead of falling back.
+		 *
+		 * @since 0.36.0
+		 *
+		 * @param string[] $languages Language codes the geocoder accepts.
+		 *
+		 * @return string[]
+		 */
+		$languages = (array) apply_filters( 'gatherpress_geocode_languages', self::PHOTON_LANGUAGES );
+
+		// `default` asks Photon for each result's own local-language name,
+		// which is the closest thing to correct for a locale it cannot serve.
+		return in_array( $language, $languages, true ) ? $language : 'default';
 	}
 
 	/**

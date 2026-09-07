@@ -14,6 +14,7 @@ namespace GatherPress\Core\Rsvp;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use WP_Comment;
 use WP_Comment_Query;
@@ -87,10 +88,10 @@ final class Query {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array            $clauses       The clauses for the query.
-	 * @param WP_Comment_Query $comment_query Current instance of WP_Comment_Query (passed by reference).
+	 * @param array<string, string> $clauses       The clauses for the query.
+	 * @param WP_Comment_Query      $comment_query Current instance of WP_Comment_Query (passed by reference).
 	 *
-	 * @return array Modified query clauses.
+	 * @return array<string, string> Modified query clauses.
 	 */
 	public function taxonomy_query( array $clauses, WP_Comment_Query $comment_query ): array {
 		global $wpdb;
@@ -114,7 +115,7 @@ final class Query {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $args Arguments for retrieving RSVPs.
+	 * @param array<string, mixed> $args Arguments for retrieving RSVPs.
 	 *
 	 * @return mixed Array of RSVP comments or integer count when count parameter is true.
 	 */
@@ -127,7 +128,7 @@ final class Query {
 		// Default to every RSVP-supporting post type; callers may narrow
 		// this down, like the per-post-type RSVPs admin pages do (#1849).
 		if ( empty( $args['post_type'] ) ) {
-			$args['post_type'] = array_values( get_post_types_by_support( 'gatherpress-rsvp' ) );
+			$args['post_type'] = array_values( get_post_types_by_support( Rsvp::SUPPORT ) );
 		}
 
 		remove_action( 'pre_get_comments', array( $this, 'exclude_rsvp_from_comment_query' ) );
@@ -187,7 +188,7 @@ final class Query {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $args Arguments for retrieving the RSVP.
+	 * @param array<string, mixed> $args Arguments for retrieving the RSVP.
 	 *
 	 * @return WP_Comment|null The RSVP comment or null if not found.
 	 */
@@ -212,7 +213,7 @@ final class Query {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array Array of all comment types in the database.
+	 * @return string[] Array of all comment types in the database.
 	 */
 	protected function get_all_comment_types(): array {
 		$default_types = array( 'comment', 'pingback', 'trackback' );

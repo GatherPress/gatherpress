@@ -28,8 +28,15 @@ $gatherpress_component_attrs = array(
 	'fieldOptions' => $field_options,
 	'disabled'     => ! empty( $disabled ),
 );
+
+$gatherpress_component_json = wp_json_encode( $gatherpress_component_attrs );
+
+// Without encodable attributes there is nothing to mount the component with.
+if ( false === $gatherpress_component_json ) {
+	return;
+}
 ?>
-<div class="regular-text" data-gatherpress_component_name="autocomplete" data-gatherpress_component_attrs="<?php echo esc_attr( htmlspecialchars( wp_json_encode( $gatherpress_component_attrs ), ENT_QUOTES, 'UTF-8' ) ); ?>"></div>
+<div class="regular-text" data-gatherpress_component_name="autocomplete" data-gatherpress_component_attrs="<?php echo esc_attr( htmlspecialchars( $gatherpress_component_json, ENT_QUOTES, 'UTF-8' ) ); ?>"></div>
 <?php
 if ( ! empty( $description ) ) {
 	?>

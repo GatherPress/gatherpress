@@ -75,9 +75,18 @@ final class Setup {
 	 */
 	public function register_blocks(): void {
 		$blocks_directory = sprintf( '%1$s/build/blocks/', GATHERPRESS_CORE_PATH );
-		$blocks           = array_diff( scandir( $blocks_directory ), array( '..', '.' ) );
+		$blocks           = is_dir( $blocks_directory ) ? scandir( $blocks_directory ) : false;
 
-		foreach ( $blocks as $block ) {
+		// Absent when run from source. Untestable: the test bootstrap mounts a built plugin.
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
+		// @codeCoverageIgnoreStart
+		if ( false === $blocks ) {
+			return;
+		}
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
+		// @codeCoverageIgnoreEnd
+
+		foreach ( array_diff( $blocks, array( '..', '.' ) ) as $block ) {
 			$block_metadata_path = sprintf( '%1$s/build/blocks/%2$s', GATHERPRESS_CORE_PATH, $block );
 
 			if ( is_dir( $block_metadata_path ) ) {
@@ -197,14 +206,14 @@ final class Setup {
 	 *
 	 * @see https://developer.wordpress.org/reference/hooks/hooked_block_types/
 	 *
-	 * @param string[]                $hooked_block_types The list of hooked block types.
-	 * @param string                  $relative_position  The relative position of the hooked blocks.
-	 *                                                    Can be one of 'before', 'after',
-	 *                                                    'first_child', or 'last_child'.
-	 * @param string                  $anchor_block_type  The anchor block type.
-	 * @param WP_Block_Template|array $context            The block template, template part, or pattern
-	 *                                                    that the anchor block belongs to.
-	 * @return string[]               The list of hooked block types.
+	 * @param string[]                               $hooked_block_types The list of hooked block types.
+	 * @param string                                 $relative_position  The relative position of the hooked
+	 *                                                                   blocks. Can be one of 'before', 'after',
+	 *                                                                   'first_child', or 'last_child'.
+	 * @param string                                 $anchor_block_type  The anchor block type.
+	 * @param WP_Block_Template|array<string, mixed> $context            The block template, template part, or
+	 *                                                                   pattern that the anchor block belongs to.
+	 * @return string[]                              The list of hooked block types.
 	 */
 	public function hook_blocks_into_patterns(
 		array $hooked_block_types,
@@ -248,16 +257,20 @@ final class Setup {
 	 *
 	 * @see https://developer.wordpress.org/reference/hooks/hooked_block_hooked_block_type/
 	 *
-	 * @param array|null                      $parsed_hooked_block The parsed block array for the given
-	 *                                                             hooked block type, or null to suppress the block.
-	 * @param string                          $hooked_block_type   The hooked block type name.
-	 * @param string                          $relative_position   The relative position of the hooked block.
-	 * @param array                           $parsed_anchor_block The anchor block, in parsed block array format.
-	 * @param WP_Block_Template|WP_Post|array $context             The block template, template part,
-	 *                                                             `wp_navigation` post type, or pattern
-	 *                                                             that the anchor block belongs to.
-	 * @return array|null                     The parsed block array for the given hooked block type,
-	 *                                        or null to suppress the block.
+	 * @param array<string, mixed>|null                      $parsed_hooked_block The parsed block array for the
+	 *                                                                            given hooked block type, or null
+	 *                                                                            to suppress the block.
+	 * @param string                                         $hooked_block_type   The hooked block type name.
+	 * @param string                                         $relative_position   The relative position of the
+	 *                                                                            hooked block.
+	 * @param array<string, mixed>                           $parsed_anchor_block The anchor block, in parsed block
+	 *                                                                            array format.
+	 * @param WP_Block_Template|WP_Post|array<string, mixed> $context             The block template, template
+	 *                                                                            part, `wp_navigation` post type,
+	 *                                                                            or pattern that the anchor block
+	 *                                                                            belongs to.
+	 * @return array<string, mixed>|null                     The parsed block array for the given hooked block type,
+	 *                                                       or null to suppress the block.
 	 */
 	public function modify_hooked_blocks_in_patterns(
 		?array $parsed_hooked_block,
@@ -297,14 +310,20 @@ final class Setup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $block The block data.
+	 * @param array<string, mixed> $block The block data.
 	 *
 	 * @return int The resolved post ID.
 	 */
 	public function get_post_id( array $block ): int {
 		$post_id = isset( $block['attrs']['postId'] ) ? intval( $block['attrs']['postId'] ) : 0;
 
-		return $post_id > 0 ? $post_id : get_the_ID();
+		if ( $post_id > 0 ) {
+			return $post_id;
+		}
+
+		$current_post_id = get_the_ID();
+
+		return false !== $current_post_id ? $current_post_id : 0;
 	}
 
 	/**
@@ -315,10 +334,10 @@ final class Setup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array  $args       The arguments for registering the block type.
-	 * @param string $block_type The name of the block type being registered.
+	 * @param array<string, mixed> $args       The arguments for registering the block type.
+	 * @param string               $block_type The name of the block type being registered.
 	 *
-	 * @return array Modified arguments for registering the block type.
+	 * @return array<string, mixed> Modified arguments for registering the block type.
 	 */
 	public function enable_context_for_core_query_block( array $args, string $block_type ): array {
 		// Only modify the Query block.

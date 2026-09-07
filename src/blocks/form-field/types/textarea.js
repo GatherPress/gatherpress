@@ -44,6 +44,7 @@ export default function TextareaField( {
 		maxValue,
 		inlineLayout,
 		textareaRows,
+		helpText,
 	} = attributes;
 
 	// Handle label blur to auto-generate field name.
@@ -105,6 +106,9 @@ export default function TextareaField( {
 				{ ...( undefined !== minValue && { minLength: minValue } ) }
 				{ ...( undefined !== maxValue && { maxLength: maxValue } ) }
 			/>
+			{ helpText && (
+				<p className="gatherpress-help-text">{ helpText }</p>
+			) }
 		</div>
 	);
 }

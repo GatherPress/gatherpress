@@ -33,9 +33,9 @@ final class Utility {
 	 *
 	 * @since 0.27.0
 	 *
-	 * @param string $path      The path to the template file.
-	 * @param array  $variables An array of variables to pass to the template.
-	 * @param bool   $output    Whether to echo the template (true) or return it (false).
+	 * @param string               $path      The path to the template file.
+	 * @param array<string, mixed> $variables An array of variables to pass to the template.
+	 * @param bool                 $output    Whether to echo the template (true) or return it (false).
 	 *
 	 * @return string The rendered template as a string.
 	 */
@@ -57,7 +57,9 @@ final class Utility {
 		ob_start();
 		// Loading PHP template file, not importing a class.
 		require $path; // NOSONAR.
-		return ob_get_clean();
+
+		// The buffer was opened directly above, so ob_get_clean() always returns its contents.
+		return (string) ob_get_clean();
 	}
 
 	/**
@@ -189,7 +191,8 @@ final class Utility {
 	 * @return string The key with the 'gatherpress_' prefix removed.
 	 */
 	public static function unprefix_key( string $key ): string {
-		return preg_replace( '/^gatherpress_/', '', $key );
+		// A literal pattern cannot fail to compile, so preg_replace() never returns null here.
+		return (string) preg_replace( '/^gatherpress_/', '', $key );
 	}
 
 	/**
@@ -301,6 +304,135 @@ final class Utility {
 	}
 
 	/**
+	 * The PHP DateTime formatting characters that denote a time.
+	 *
+	 * The complement of `non_time_format_chars()`, less the separators. The
+	 * timezone characters are here too: a floating date has no zone to
+	 * name, so the zone goes with the time.
+	 *
+	 * Shared with the editor through `Settings::add_editor_settings()`, so
+	 * the block preview strips a format the same way the rendered event
+	 * does.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string[] The formatting characters.
+	 */
+	public static function time_format_chars(): array {
+		return array(
+			'a',
+			'A',
+			'B',
+			'g',
+			'G',
+			'h',
+			'H',
+			'i',
+			's',
+			'u',
+			'v',
+			'e',
+			'I',
+			'O',
+			'P',
+			'p',
+			'T',
+			'Z',
+			'c',
+			'r',
+			'U',
+		);
+	}
+
+	/**
+	 * The PHP DateTime formatting characters that do not denote a time.
+	 *
+	 * The date, the timezone and the separating comma, so that stripping
+	 * them from a format leaves the time alone.
+	 *
+	 * Shared with the editor through `Settings::add_editor_settings()`, so
+	 * the block preview strips a format the same way the rendered event
+	 * does.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string[] The formatting characters.
+	 */
+	public static function non_time_format_chars(): array {
+		return array(
+			'd',
+			'D',
+			'j',
+			'l',
+			'N',
+			'S',
+			'w',
+			'z',
+			'W',
+			'F',
+			'm',
+			'M',
+			'n',
+			't',
+			'L',
+			'o',
+			'X',
+			'x',
+			'Y',
+			'y',
+			'e',
+			'I',
+			'O',
+			'P',
+			'p',
+			'T',
+			'Z',
+			'c',
+			'r',
+			'U',
+			',',
+		);
+	}
+
+	/**
+	 * Strip everything but the time out of a display format.
+	 *
+	 * The inverse of `remove_time_format_chars()`: 'F j, Y g:i a' keeps
+	 * 'g:i a'.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $format A PHP date format.
+	 *
+	 * @return string The time-only format.
+	 */
+	public static function remove_non_time_format_chars( string $format ): string {
+		return trim( str_replace( self::non_time_format_chars(), '', $format ) );
+	}
+
+	/**
+	 * Strip the time out of a display format.
+	 *
+	 * Leaves the date behind, along with whatever separated it from the
+	 * time: 'F j, Y g:i a' keeps 'F j, Y'. A format that was only ever a
+	 * time has nothing left to render, so it reports none rather than the
+	 * punctuation between the parts it lost.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $format A PHP date format.
+	 *
+	 * @return string The format without its time, or an empty string when
+	 *                no date survives it.
+	 */
+	public static function remove_time_format_chars( string $format ): string {
+		return trim(
+			str_replace( self::time_format_chars(), '', $format ),
+			" \t\n\r\0\x0B:,-/."
+		);
+	}
+
+	/**
 	 * Retrieve an array of time zone choices.
 	 *
 	 * This method converts the Time Zone markup returned by WordPress into an associative array
@@ -308,7 +440,8 @@ final class Utility {
 	 *
 	 * @since 0.27.0
 	 *
-	 * @return array An array of time zones with labels as keys and time zone choices as values.
+	 * @return array<string, array<string, string>> An array of time zones with labels as keys and time zone choices
+	 *                                             as values.
 	 */
 	public static function timezone_choices(): array {
 		// Parse `wp_timezone_choice()` output through WordPress's HTML tag
@@ -382,7 +515,7 @@ final class Utility {
 	 *
 	 * @since 0.29.0
 	 *
-	 * @return array An array of timezone identifiers and UTC offsets.
+	 * @return string[] An array of timezone identifiers and UTC offsets.
 	 */
 	public static function list_timezone_and_utc_offsets(): array {
 		// Get a list of all available timezone identifiers.
@@ -465,9 +598,7 @@ final class Utility {
 	 */
 	public static function maybe_convert_utc_offset( string $timezone ): string {
 		// Regex: https://regex101.com/r/wxhjIu/1.
-		preg_match( '/^UTC([+-])(\d+)(.\d+)?$/', $timezone, $matches );
-
-		if ( ! count( $matches ) ) {
+		if ( ! preg_match( '/^UTC([+-])(\d+)(.\d+)?$/', $timezone, $matches ) ) {
 			return $timezone;
 		}
 
@@ -601,7 +732,8 @@ final class Utility {
 	 * @return string The login URL for the event.
 	 */
 	public static function get_login_url( int $post_id = 0 ): string {
-		$permalink = get_the_permalink( $post_id );
+		// A post ID with no permalink (no such post, or no post in context) logs in without a redirect.
+		$permalink = (string) get_the_permalink( $post_id );
 
 		return wp_login_url( $permalink );
 	}
@@ -665,16 +797,23 @@ final class Utility {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string|null $class_string The CSS class string to search in.
-	 * @param string      $target_class The specific class to search for.
+	 * @param string|bool|null $class_string The CSS class string to search in. `WP_HTML_Tag_Processor`
+	 *                                       hands back `true` for a valueless `class` attribute, which
+	 *                                       carries no classes.
+	 * @param string           $target_class The specific class to search for.
 	 *
 	 * @return bool True if the target class is found, false otherwise.
 	 */
-	public static function has_css_class( ?string $class_string, string $target_class ): bool {
-		if ( empty( $class_string ) || empty( $target_class ) ) {
+	public static function has_css_class( string|bool|null $class_string, string $target_class ): bool {
+		if ( ! is_string( $class_string ) || empty( $class_string ) || empty( $target_class ) ) {
 			return false;
 		}
 
+		/**
+		 * Class names split on whitespace.
+		 *
+		 * @var list<string> $classes A literal pattern cannot fail, so preg_split() never returns false.
+		 */
 		$classes = preg_split( '/\s+/', trim( $class_string ) );
 
 		return in_array( $target_class, $classes, true );
@@ -806,9 +945,9 @@ final class Utility {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $blocks A parsed block, typically including `blockName` and `innerBlocks`.
+	 * @param array<string, mixed> $blocks A parsed block, typically including `blockName` and `innerBlocks`.
 	 *
-	 * @return array An array of block names found within the provided block structure.
+	 * @return string[] An array of block names found within the provided block structure.
 	 */
 	public static function get_block_names( array $blocks ): array {
 		$block_names = array();

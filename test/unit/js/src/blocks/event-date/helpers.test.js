@@ -26,6 +26,7 @@ describe( 'resolveEventDateData', () => {
 	let mockDatetimeStore;
 	let mockCoreStore;
 	let mockSelect;
+	let mockEditedMeta;
 
 	beforeEach( () => {
 		findEventPostById.mockReset();
@@ -51,6 +52,8 @@ describe( 'resolveEventDateData', () => {
 			} ) ),
 		};
 
+		mockEditedMeta = {};
+
 		mockSelect = jest.fn( ( store ) => {
 			if ( 'gatherpress/datetime' === store ) {
 				return mockDatetimeStore;
@@ -62,6 +65,7 @@ describe( 'resolveEventDateData', () => {
 				return {
 					getCurrentPostType: () => 'gatherpress_event',
 					getCurrentPostId: () => 42,
+					getEditedPostAttribute: () => mockEditedMeta,
 				};
 			}
 			return {};
@@ -257,6 +261,8 @@ describe( 'resolveEventDateData', () => {
 				dateTimeStart: undefined,
 				dateTimeEnd: undefined,
 				timezone: undefined,
+				isAllDay: false,
+				timezonePreference: '',
 				isLoading: true,
 				isValidEvent: false,
 			} );
@@ -279,6 +285,8 @@ describe( 'resolveEventDateData', () => {
 				dateTimeStart: undefined,
 				dateTimeEnd: undefined,
 				timezone: undefined,
+				isAllDay: false,
+				timezonePreference: '',
 				isLoading: false,
 				isValidEvent: false,
 			} );
@@ -358,6 +366,96 @@ describe( 'resolveEventDateData', () => {
 
 			expect( mockDatetimeStore.getDateTimeStart ).not.toHaveBeenCalled();
 			expect( result.dateTimeStart ).toBe( '2025-06-10 14:00:00' );
+		} );
+	} );
+
+	describe( 'all day', () => {
+		it( 'reports the edited post as all day while it is being edited', () => {
+			// From the edited meta rather than the saved record, so the block
+			// follows the toggle as it is flipped.
+			mockEditedMeta = { gatherpress_is_all_day: true };
+
+			expect(
+				resolveEventDateData( mockSelect, 'gatherpress_event', undefined, 42, false )
+					.isAllDay
+			).toBe( true );
+		} );
+
+		it( 'reports a queried event as all day from its own record', () => {
+			mockCoreStore.getEntityRecord = jest.fn( () => ( {
+				status: 'publish',
+				meta: {
+					gatherpress_datetime_start: '2025-06-10 00:00:00',
+					gatherpress_datetime_end: '2025-06-10 23:59:59',
+					gatherpress_timezone: 'America/Chicago',
+					gatherpress_is_all_day: true,
+				},
+			} ) );
+
+			expect(
+				resolveEventDateData( mockSelect, 'gatherpress_event', 1, 99, false ).isAllDay
+			).toBe( true );
+		} );
+
+		it( 'reports an override target as all day from its own record', () => {
+			mockCoreStore.getPostType.mockReturnValue( { supports: {} } );
+			findEventPostById.mockReturnValue( {
+				meta: {
+					gatherpress_datetime_start: '2025-06-10 00:00:00',
+					gatherpress_datetime_end: '2025-06-10 23:59:59',
+					gatherpress_timezone: 'Europe/London',
+					gatherpress_is_all_day: true,
+				},
+			} );
+
+			expect(
+				resolveEventDateData( mockSelect, 'page', undefined, 99, true ).isAllDay
+			).toBe( true );
+		} );
+	} );
+
+	describe( 'timezone preference', () => {
+		it( 'reads the edited post while it is being edited', () => {
+			mockEditedMeta = { gatherpress_show_timezone: 'always' };
+
+			expect(
+				resolveEventDateData( mockSelect, 'gatherpress_event', undefined, 42, false )
+					.timezonePreference
+			).toBe( 'always' );
+		} );
+
+		it( 'reads a queried event from its own record', () => {
+			mockCoreStore.getEntityRecord = jest.fn( () => ( {
+				status: 'publish',
+				meta: {
+					gatherpress_datetime_start: '2025-06-10 14:00:00',
+					gatherpress_datetime_end: '2025-06-10 16:00:00',
+					gatherpress_timezone: 'America/Chicago',
+					gatherpress_show_timezone: 'never',
+				},
+			} ) );
+
+			expect(
+				resolveEventDateData( mockSelect, 'gatherpress_event', 1, 99, false )
+					.timezonePreference
+			).toBe( 'never' );
+		} );
+
+		it( 'reads an override target from its own record', () => {
+			mockCoreStore.getPostType.mockReturnValue( { supports: {} } );
+			findEventPostById.mockReturnValue( {
+				meta: {
+					gatherpress_datetime_start: '2025-08-01 10:00:00',
+					gatherpress_datetime_end: '2025-08-01 12:00:00',
+					gatherpress_timezone: 'Europe/London',
+					gatherpress_show_timezone: 'always',
+				},
+			} );
+
+			expect(
+				resolveEventDateData( mockSelect, 'page', undefined, 99, true )
+					.timezonePreference
+			).toBe( 'always' );
 		} );
 	} );
 } );

@@ -572,6 +572,146 @@ class Test_Form_Field extends Base {
 	}
 
 	/**
+	 * Tests autocomplete token inference from the field type.
+	 *
+	 * Empty or absent means "infer": email/url/tel derive their specific
+	 * token and other types fall back to the generic `on`. Any stored
+	 * token — including `on`, which the editor control offers — is an
+	 * author choice and wins over inference.
+	 *
+	 * @since 0.36.0
+	 * @covers ::resolve_autocomplete
+	 * @covers ::get_input_attributes
+	 *
+	 * @return void
+	 */
+	public function test_resolve_autocomplete_infers_token_from_field_type(): void {
+		$email_field = new Form_Field( array( 'fieldType' => 'email' ) );
+		$this->assertStringContainsString(
+			'autocomplete="email"',
+			$email_field->get_input_attributes(),
+			'Failed to assert email fields infer the email token.'
+		);
+
+		$url_field = new Form_Field( array( 'fieldType' => 'url' ) );
+		$this->assertStringContainsString(
+			'autocomplete="url"',
+			$url_field->get_input_attributes(),
+			'Failed to assert url fields infer the url token.'
+		);
+
+		$tel_field = new Form_Field( array( 'fieldType' => 'tel' ) );
+		$this->assertStringContainsString(
+			'autocomplete="tel"',
+			$tel_field->get_input_attributes(),
+			'Failed to assert tel fields infer the tel token.'
+		);
+
+		$stored_on = new Form_Field(
+			array(
+				'fieldType'    => 'tel',
+				'autocomplete' => 'on',
+			)
+		);
+		$this->assertStringContainsString(
+			'autocomplete="on"',
+			$stored_on->get_input_attributes(),
+			'Failed to assert a stored "on" is an explicit author choice and wins over inference.'
+		);
+
+		$explicit = new Form_Field(
+			array(
+				'fieldType'    => 'text',
+				'autocomplete' => 'name',
+			)
+		);
+		$this->assertStringContainsString(
+			'autocomplete="name"',
+			$explicit->get_input_attributes(),
+			'Failed to assert an explicit token wins over inference.'
+		);
+
+		$text_field = new Form_Field( array( 'fieldType' => 'text' ) );
+		$this->assertStringContainsString(
+			'autocomplete="on"',
+			$text_field->get_input_attributes(),
+			'Failed to assert types without an unambiguous token keep "on".'
+		);
+	}
+
+	/**
+	 * Tests the aria-describedby association for rendered help text.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_input_attributes
+	 *
+	 * @return void
+	 */
+	public function test_get_input_attributes_help_text_describedby(): void {
+		$with_help  = new Form_Field(
+			array(
+				'fieldType' => 'text',
+				'helpText'  => 'Shown on your badge.',
+			)
+		);
+		$attributes = $with_help->get_input_attributes();
+		$this->assertMatchesRegularExpression(
+			'/aria-describedby="gatherpress_\d+-help"/',
+			$attributes,
+			'Failed to assert help text wires aria-describedby to the help element id.'
+		);
+
+		$without_help = new Form_Field( array( 'fieldType' => 'text' ) );
+		$this->assertStringNotContainsString(
+			'aria-describedby',
+			$without_help->get_input_attributes(),
+			'Failed to assert fields without help text carry no dangling reference.'
+		);
+
+		$radio_with_help = new Form_Field(
+			array(
+				'fieldType' => 'radio',
+				'helpText'  => 'Choose one option.',
+			)
+		);
+		$this->assertStringNotContainsString(
+			'aria-describedby',
+			$radio_with_help->get_input_attributes(),
+			'Failed to assert radio inputs leave the association to the fieldset.'
+		);
+	}
+
+	/**
+	 * Tests get_input_attributes for select field.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_input_attributes
+	 *
+	 * @return void
+	 */
+	public function test_get_input_attributes_select(): void {
+		$form_field = new Form_Field(
+			array(
+				'fieldType' => 'select',
+				'fieldName' => 'choice',
+			)
+		);
+
+		$attributes = $form_field->get_input_attributes();
+
+		$this->assertStringContainsString(
+			'name="choice"',
+			$attributes,
+			'Failed to assert select attributes contain name.'
+		);
+		$this->assertStringNotContainsString(
+			' type=',
+			' ' . $attributes,
+			'Failed to assert select attributes do not contain an input type.'
+		);
+	}
+
+	/**
 	 * Tests get_input_attributes for textarea field.
 	 *
 	 * @since 0.33.0
@@ -827,6 +967,34 @@ class Test_Form_Field extends Base {
 	}
 
 	/**
+	 * Tests get_template_path for select field type.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_template_path
+	 *
+	 * @return void
+	 */
+	public function test_get_template_path_select(): void {
+		$form_field = new Form_Field(
+			array(
+				'fieldType' => 'select',
+			)
+		);
+
+		$template_path = $form_field->get_template_path();
+
+		$this->assertStringContainsString(
+			'select.php',
+			$template_path,
+			'Failed to assert template path contains select.php.'
+		);
+		$this->assertFileExists(
+			$template_path,
+			'Failed to assert select template file exists.'
+		);
+	}
+
+	/**
 	 * Tests get_template_path falls back to default for non-existing field type.
 	 *
 	 * @since 0.33.0
@@ -851,6 +1019,235 @@ class Test_Form_Field extends Base {
 		$this->assertFileExists(
 			$template_path,
 			'Failed to assert default template file exists.'
+		);
+	}
+
+	/**
+	 * Tests render method.
+	 *
+	 * @since 0.36.0
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_render_select(): void {
+			$form_field = new Form_Field(
+				array(
+					'fieldType'    => 'select',
+					'fieldName'    => 'choice',
+					'fieldValue'   => 'large',
+					'label'        => 'Size',
+					'radioOptions' => array(
+						array(
+							'label' => 'Small',
+							'value' => 'small',
+						),
+						array(
+							'label' => 'Large',
+							'value' => 'large',
+						),
+					),
+				)
+			);
+
+		ob_start();
+		$form_field->render();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString( '<select', $output );
+		$this->assertStringContainsString( 'name="choice"', $output );
+		$this->assertStringContainsString( '<option value="small"', $output );
+		$this->assertStringContainsString( '<option value="large"', $output );
+		$this->assertStringContainsString(
+			'value="large" selected=\'selected\'',
+			$output
+		);
+		$this->assertStringNotContainsString( '<input', $output );
+	}
+
+	/**
+	 * Renders a select with an option valued '0' to confirm the template
+	 * preserves the '0' string instead of falling back to the label.
+	 *
+	 * @since 0.36.0
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_render_select_preserves_zero_value(): void {
+		$form_field = new Form_Field(
+			array(
+				'fieldType'    => 'select',
+				'fieldName'    => 'guests',
+				'fieldValue'   => '0',
+				'label'        => 'Guests',
+				'radioOptions' => array(
+					array(
+						'label' => 'None',
+						'value' => '0',
+					),
+				),
+			)
+		);
+
+		ob_start();
+		$form_field->render();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString(
+			'<option value="0"',
+			$output,
+			"Option with value '0' must render with value '0', not fall back to its label."
+		);
+		$this->assertStringContainsString(
+			'value="0" selected=\'selected\'',
+			$output,
+			"Stored option valued '0' must render selected so it survives as the stored field value."
+		);
+		$this->assertStringNotContainsString(
+			'<option value="None"',
+			$output,
+			"Template must not collapse option valued '0' to its label, or schema validation rejects valid submissions."
+		);
+	}
+
+	/**
+	 * Renders a required select with no stored value to confirm the disabled
+	 * placeholder option is emitted so the required attribute can actually fire.
+	 *
+	 * @since 0.36.0
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_render_select_required_empty_emits_placeholder(): void {
+		$form_field = new Form_Field(
+			array(
+				'fieldType'    => 'select',
+				'fieldName'    => 'choice',
+				'required'     => true,
+				'label'        => 'Size',
+				'radioOptions' => array(
+					array(
+						'label' => 'Small',
+						'value' => 'small',
+					),
+				),
+			)
+		);
+
+		ob_start();
+		$form_field->render();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString(
+			'required="required"',
+			$output,
+			'Required select must still emit the required attribute.'
+		);
+		$this->assertStringContainsString(
+			'<option value="" disabled selected>',
+			$output,
+			'Required select with no stored value must emit a disabled, selected '
+			. 'placeholder option so the control starts empty and required can fire.'
+		);
+		$this->assertStringContainsString(
+			'Select an option',
+			$output,
+			'Placeholder option must carry the visible prompt copy.'
+		);
+	}
+
+	/**
+	 * Renders a required select with a chosen value to confirm the placeholder
+	 * is absent so the chosen option stays the visible default.
+	 *
+	 * @since 0.36.0
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_render_select_required_with_value_skips_placeholder(): void {
+		$form_field = new Form_Field(
+			array(
+				'fieldType'    => 'select',
+				'fieldName'    => 'choice',
+				'required'     => true,
+				'fieldValue'   => 'small',
+				'label'        => 'Size',
+				'radioOptions' => array(
+					array(
+						'label' => 'Small',
+						'value' => 'small',
+					),
+				),
+			)
+		);
+
+		ob_start();
+		$form_field->render();
+		$output = ob_get_clean();
+
+		$this->assertStringNotContainsString(
+			'value="" disabled',
+			$output,
+			'Required select with a chosen value must not emit the empty placeholder.'
+		);
+		$this->assertStringContainsString(
+			'<option value="small"',
+			$output,
+			'Chosen option must still render even when the placeholder is omitted.'
+		);
+		$this->assertStringContainsString(
+			'value="small" selected=\'selected\'',
+			$output,
+			'Chosen option must render selected so the stored value survives.'
+		);
+	}
+
+	/**
+	 * Renders a radio with an option valued '0' to confirm the template
+	 * preserves the '0' string instead of falling back to the label.
+	 *
+	 * @since 0.36.0
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_render_radio_preserves_zero_value(): void {
+		$form_field = new Form_Field(
+			array(
+				'fieldType'    => 'radio',
+				'fieldName'    => 'guests',
+				'fieldValue'   => '0',
+				'label'        => 'Guests',
+				'radioOptions' => array(
+					array(
+						'label' => 'None',
+						'value' => '0',
+					),
+				),
+			)
+		);
+
+		ob_start();
+		$form_field->render();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString(
+			'value="0"',
+			$output,
+			"Radio option with value '0' must render with value '0', not fall back to its label."
+		);
+		$this->assertStringContainsString(
+			"checked='checked'",
+			$output,
+			"Stored radio option valued '0' must render checked so it survives as the stored field value."
+		);
+		$this->assertStringNotContainsString(
+			'value="None"',
+			$output,
+			"Radio template must not collapse option valued '0' to its label."
 		);
 	}
 

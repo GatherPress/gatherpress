@@ -94,7 +94,7 @@ final class Sitewide_Feed extends Endpoint {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array
+	 * @return array<string, string> The rewrite replacement attributes for add_rewrite_rule().
 	 */
 	public function get_rewrite_atts(): array {
 		return array(

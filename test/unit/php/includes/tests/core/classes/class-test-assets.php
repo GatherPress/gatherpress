@@ -483,11 +483,16 @@ class Test_Assets extends Base {
 	/**
 	 * Coverage for get_asset_data when the asset file is missing.
 	 *
+	 * Callers pass both keys straight to wp_register_script() and friends
+	 * without checking, so a missing metadata file resolves to usable
+	 * defaults rather than to an undefined-key warning.
+	 *
+	 * @since 0.36.0
 	 * @covers ::get_asset_data
 	 *
 	 * @return void
 	 */
-	public function test_get_asset_data_returns_empty_array_for_missing_file(): void {
+	public function test_get_asset_data_returns_defaults_for_missing_file(): void {
 		$instance = Assets::get_instance();
 
 		Utility::set_and_get_hidden_property( $instance, 'asset_data', array() );
@@ -497,9 +502,12 @@ class Test_Assets extends Base {
 		);
 
 		$this->assertSame(
-			array(),
+			array(
+				'dependencies' => array(),
+				'version'      => GATHERPRESS_VERSION,
+			),
 			$asset,
-			'get_asset_data should return an empty array when the asset file is missing.'
+			'A missing asset file should resolve to empty dependencies and the plugin version.'
 		);
 	}
 

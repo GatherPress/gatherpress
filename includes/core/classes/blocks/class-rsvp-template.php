@@ -87,8 +87,11 @@ final class Rsvp_Template {
 	public function ensure_block_styles_loaded( string $block_content ): string {
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
-		if ( $tag->next_tag() && ! empty( $tag->get_attribute( 'data-blocks' ) ) ) {
-			$inner_blocks = (array) json_decode( $tag->get_attribute( 'data-blocks' ), true );
+		$blocks_attr = $tag->next_tag() ? $tag->get_attribute( 'data-blocks' ) : null;
+
+		// A valueless attribute reads back as true.
+		if ( ! empty( $blocks_attr ) && is_string( $blocks_attr ) ) {
+			$inner_blocks = (array) json_decode( $blocks_attr, true );
 			$inner_blocks = Utility::get_block_names( $inner_blocks );
 
 			foreach ( $inner_blocks as $inner_block ) {
@@ -114,31 +117,32 @@ final class Rsvp_Template {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string   $block_content The original block content.
-	 * @param array    $block         The parsed block data.
-	 * @param WP_Block $instance      The block instance.
+	 * @param string               $block_content The original block content.
+	 * @param array<string, mixed> $block         The parsed block data.
+	 * @param WP_Block             $instance      The block instance.
 	 *
 	 * @return string The dynamically generated block content.
 	 */
 	public function generate_rsvp_template_block( string $block_content, array $block, WP_Block $instance ): string {
 		$post_id = (int) $instance->context['postId'];
-		$event   = new Event( $post_id );
 
 		// Only process if the post type supports RSVP. An unpublished event
 		// keeps its responses to viewers allowed to read it, so organizers see
 		// the roster on a draft or private event rather than an empty block.
 		if (
-			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
+			! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT ) ||
 			! Event::is_viewable( $post_id )
 		) {
 			return $block_content;
 		}
 
-		if ( ! ( new Rsvp( $post_id ) )->is_enabled() ) {
+		$rsvp = new Rsvp( $post_id );
+
+		if ( ! $rsvp->is_enabled() ) {
 			return '';
 		}
 
-		$responses     = $event->rsvp->responses()['attending']['records'];
+		$responses     = $rsvp->responses()['attending']['records'];
 		$block_content = '';
 		$args          = array(
 			'limit_enabled' => isset( $instance->context['gatherpress/rsvpLimitEnabled'] )
@@ -156,18 +160,58 @@ final class Rsvp_Template {
 		}
 
 		// Used for generating a parsed block for calls to API on the front end.
-		$blocks                 = wp_json_encode(
+		$blocks = wp_json_encode(
 			$block,
 			JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
 		);
+
+		// Without a template there is nothing to hand the front end, so send the responses alone.
+		if ( false === $blocks ) {
+			return $block_content;
+		}
+
 		$rsvp_response_template = sprintf(
 			'<div hidden data-wp-interactive="gatherpress"'
 				. ' data-wp-watch="callbacks.renderBlocks"'
-				. ' data-block-template="%s"></div>',
-			esc_attr( $blocks )
+				. ' data-block-template="%1$s"'
+				. ' data-block-signature="%2$s"></div>',
+			esc_attr( $blocks ),
+			esc_attr( self::sign_template( $blocks ) )
 		);
 
 		return $block_content . $rsvp_response_template;
+	}
+
+	/**
+	 * Signature for a template this class emitted.
+	 *
+	 * The front end hands the template back to the REST endpoint verbatim, so
+	 * the endpoint only renders what this class wrote in the first place. The
+	 * key is the site's nonce salt: stable for the site, the same for every
+	 * visitor, and not derived from anything a request can influence.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $template The JSON-encoded parsed block.
+	 *
+	 * @return string The signature.
+	 */
+	public static function sign_template( string $template ): string {
+		return hash_hmac( 'sha256', $template, wp_salt( 'nonce' ) );
+	}
+
+	/**
+	 * Whether a template and signature pair came from this class.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $template  The JSON-encoded parsed block.
+	 * @param string $signature The signature that accompanied it.
+	 *
+	 * @return bool True when the signature matches the template.
+	 */
+	public static function verify_template( string $template, string $signature ): bool {
+		return hash_equals( self::sign_template( $template ), $signature );
 	}
 
 	/**
@@ -180,9 +224,12 @@ final class Rsvp_Template {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array $parsed_block The parsed block data, typically from a block's JSON structure.
-	 * @param int   $response_id  The ID of the response used to populate the block's context.
-	 * @param array $args         Optional. Additional arguments for rendering. Default empty array.
+	 * @param array<string, mixed>                                  $parsed_block The parsed block data, typically from
+	 *                                                                            a block's JSON structure.
+	 * @param int                                                   $response_id  The ID of the response used to
+	 *                                                                            populate the block's context.
+	 * @param array{limit_enabled?: bool, limit?: int, index?: int} $args         Optional. Additional arguments for
+	 *                                                                            rendering. Default empty array.
 	 *
 	 * @return string The rendered block content wrapped in a `div` with a `data-id` attribute.
 	 */

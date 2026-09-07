@@ -9,6 +9,7 @@ import {
 	beforeEach,
 	afterEach,
 } from '@jest/globals';
+import { waitFor } from '@testing-library/react';
 
 /**
  * Mock the Interactivity API with a namespace-merging store so every
@@ -188,7 +189,10 @@ describe( 'rsvp updateRsvp post-success modal switch', () => {
 		const { trigger, attendingButton } = setupDom( true );
 
 		actions.updateRsvp( { preventDefault: jest.fn() } );
-		await flushRsvpFlow();
+
+		// closeModal is the last step of the flow, so waiting on it means the
+		// whole chain has settled without racing a fixed sleep against it.
+		await waitFor( () => expect( actions.closeModal ).toHaveBeenCalled() );
 
 		expect( actions.openModal ).toHaveBeenCalledWith(
 			null,
@@ -206,7 +210,10 @@ describe( 'rsvp updateRsvp post-success modal switch', () => {
 		const { trigger } = setupDom( false );
 
 		actions.updateRsvp( { preventDefault: jest.fn() } );
-		await flushRsvpFlow();
+
+		// openModal is decided synchronously before closeModal is scheduled,
+		// so once closeModal has fired the negative assertion below is settled.
+		await waitFor( () => expect( actions.closeModal ).toHaveBeenCalled() );
 
 		expect( actions.openModal ).not.toHaveBeenCalled();
 		expect( actions.closeModal ).toHaveBeenCalledWith(

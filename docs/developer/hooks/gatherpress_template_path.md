@@ -37,7 +37,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-utility.php:124](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-utility.php#L124)
+- [includes/core/classes/class-utility.php:126](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-utility.php#L126)
 ```php
 apply_filters( 'gatherpress_template_path', $resolved, $file_name, $fallback_dir )
 ```

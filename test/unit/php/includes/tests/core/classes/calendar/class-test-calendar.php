@@ -8,9 +8,9 @@
 
 namespace GatherPress\Tests\Core\Calendar;
 
-use GatherPress\Core\Calendar\Calendar;
+use GatherPress\Core\Calendar;
 use GatherPress\Core\Calendar\Setup;
-use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -83,12 +83,12 @@ class Test_Calendar extends Base {
 		);
 		$this->assertInstanceOf(
 			WP_Post::class,
-			$instance->event->event,
+			$instance->event->post,
 			'Composed Event should resolve to a real WP_Post.'
 		);
 		$this->assertSame(
 			$event_id,
-			$instance->event->event->ID,
+			$instance->event->post->ID,
 			'Composed Event should wrap the requested post id.'
 		);
 	}
@@ -274,6 +274,27 @@ class Test_Calendar extends Base {
 	}
 
 	/**
+	 * Returns an empty string from get_google_destination_url when the
+	 * underlying Event has no post — a Calendar built from a post type that
+	 * does not support `gatherpress-event-date` never resolves one.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_google_destination_url
+	 *
+	 * @return void
+	 */
+	public function test_get_google_destination_url_returns_empty_without_post(): void {
+		$post     = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+		$instance = new Calendar( $post->ID );
+
+		$this->assertSame(
+			'',
+			$instance->get_google_destination_url(),
+			'Google destination URL should be empty when the underlying post cannot be resolved as an event.'
+		);
+	}
+
+	/**
 	 * Coverage for get_yahoo_destination_url with no venue address.
 	 *
 	 * @covers ::get_yahoo_destination_url
@@ -294,10 +315,72 @@ class Test_Calendar extends Base {
 			$url,
 			'Yahoo destination URL should include the event title.'
 		);
+		// 14:30 New York, sent as New York wall-clock with no Z: Yahoo has no
+		// timezone parameter and shows the value verbatim as local time.
 		$this->assertStringContainsString(
-			'st=20300615',
+			'st=20300615T143000',
 			$url,
-			'Yahoo destination URL should include the event start date in Ymd format.'
+			'Yahoo destination URL should send the start in the event\'s own local time.'
+		);
+		$this->assertStringContainsString(
+			'et=20300615T163000',
+			$url,
+			'Yahoo destination URL should send the end in the event\'s own local time.'
+		);
+		$this->assertStringNotContainsString(
+			'Z',
+			(string) wp_parse_url( $url, PHP_URL_QUERY ),
+			'Yahoo destination URL should not carry a Z suffix, which Yahoo does not honor.'
+		);
+		$this->assertStringNotContainsString(
+			'dur=',
+			$url,
+			'Yahoo destination URL should send an end rather than a duration.'
+		);
+		$this->assertStringNotContainsString(
+			'allday',
+			$url,
+			'Yahoo destination URL should not mark a timed event as all day.'
+		);
+	}
+
+	/**
+	 * A fractional-hour event no longer falls apart in the Yahoo URL.
+	 *
+	 * The duration used to be built by padding the float, so ninety minutes
+	 * went out as `dur=1.530`. Sending the end instead has no such field.
+	 *
+	 * @covers ::get_yahoo_destination_url
+	 *
+	 * @return void
+	 */
+	public function test_get_yahoo_destination_url_with_fractional_hours(): void {
+		$event_id = $this->mock->post(
+			array(
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => 'Ninety Minutes',
+			)
+		)->get()->ID;
+
+		( new Event( $event_id ) )->save_datetimes(
+			array(
+				'datetime_start' => '2030-06-15 19:00:00',
+				'datetime_end'   => '2030-06-15 20:30:00',
+				'timezone'       => 'Asia/Tokyo',
+			)
+		);
+
+		$url = ( new Calendar( $event_id ) )->get_yahoo_destination_url();
+
+		$this->assertStringContainsString(
+			'st=20300615T190000',
+			$url,
+			'Yahoo destination URL should send Tokyo wall-clock time, not GMT.'
+		);
+		$this->assertStringContainsString(
+			'et=20300615T203000',
+			$url,
+			'Yahoo destination URL should end ninety minutes later, in the same zone.'
 		);
 	}
 
@@ -316,6 +399,26 @@ class Test_Calendar extends Base {
 			'in_loc=' . rawurlencode( 'Brooklyn Office, 123 Main; Street, Brooklyn' ),
 			$url,
 			'Yahoo destination URL in_loc should concat venue name and address.'
+		);
+	}
+
+	/**
+	 * Returns an empty string from get_yahoo_destination_url when the
+	 * underlying Event has no post.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_yahoo_destination_url
+	 *
+	 * @return void
+	 */
+	public function test_get_yahoo_destination_url_returns_empty_without_post(): void {
+		$post     = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+		$instance = new Calendar( $post->ID );
+
+		$this->assertSame(
+			'',
+			$instance->get_yahoo_destination_url(),
+			'Yahoo destination URL should be empty when the underlying post cannot be resolved as an event.'
 		);
 	}
 
@@ -360,7 +463,7 @@ class Test_Calendar extends Base {
 	public function test_get_ical_event_string_sequence_and_last_modified(): void {
 		$instance = new Calendar( $this->make_event() );
 
-		$instance->event->event->post_modified_gmt = '2030-01-01 10:00:00';
+		$instance->event->post->post_modified_gmt = '2030-01-01 10:00:00';
 
 		$vevent = $instance->get_ical_event_string();
 
@@ -380,7 +483,7 @@ class Test_Calendar extends Base {
 			'DTSTAMP shares the post_modified_gmt derivation with LAST-MODIFIED.'
 		);
 
-		$instance->event->event->post_modified_gmt = '2030-01-01 11:00:00';
+		$instance->event->post->post_modified_gmt = '2030-01-01 11:00:00';
 
 		$this->assertStringContainsString(
 			sprintf( 'SEQUENCE:%d', strtotime( '2030-01-01 11:00:00' ) - 1577836800 ),
@@ -405,8 +508,8 @@ class Test_Calendar extends Base {
 		$instance = new Calendar( $this->make_event() );
 
 		// Site-local modification time and its GMT counterpart differ by the offset.
-		$instance->event->event->post_modified     = '2030-01-01 05:00:00';
-		$instance->event->event->post_modified_gmt = '2030-01-01 10:00:00';
+		$instance->event->post->post_modified     = '2030-01-01 05:00:00';
+		$instance->event->post->post_modified_gmt = '2030-01-01 10:00:00';
 
 		$vevent = $instance->get_ical_event_string();
 
@@ -440,7 +543,7 @@ class Test_Calendar extends Base {
 		$event_id = $this->make_event();
 		$instance = new Calendar( $event_id );
 
-		$instance->event->event->post_modified_gmt = '2030-01-01 11:00:00';
+		$instance->event->post->post_modified_gmt = '2030-01-01 11:00:00';
 
 		$this->assertSame(
 			strtotime( '2030-01-01 11:00:00' ) - 1577836800,
@@ -448,7 +551,7 @@ class Test_Calendar extends Base {
 			'Sequence should be seconds since the 2020 epoch, taken from post_modified_gmt.'
 		);
 
-		$instance->event->event->post_modified_gmt = '2030-01-01 12:00:00';
+		$instance->event->post->post_modified_gmt = '2030-01-01 12:00:00';
 
 		$this->assertSame(
 			strtotime( '2030-01-01 12:00:00' ) - 1577836800,
@@ -468,12 +571,32 @@ class Test_Calendar extends Base {
 	public function test_get_sequence_returns_zero_for_unparsable_date(): void {
 		$instance = new Calendar( $this->make_event() );
 
-		$instance->event->event->post_modified_gmt = 'not a date';
+		$instance->event->post->post_modified_gmt = 'not a date';
 
 		$this->assertSame(
 			0,
 			Utility::invoke_hidden_method( $instance, 'get_sequence' ),
 			'An unparsable modification date should fall back to zero.'
+		);
+	}
+
+	/**
+	 * Coverage for the get_sequence guard when the underlying Event has no
+	 * post: there is no post_modified_gmt to derive a revision from.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_sequence
+	 *
+	 * @return void
+	 */
+	public function test_get_sequence_returns_zero_without_post(): void {
+		$post     = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+		$instance = new Calendar( $post->ID );
+
+		$this->assertSame(
+			0,
+			Utility::invoke_hidden_method( $instance, 'get_sequence' ),
+			'Sequence should be zero when the underlying post cannot be resolved as an event.'
 		);
 	}
 
@@ -488,7 +611,7 @@ class Test_Calendar extends Base {
 	public function test_get_sequence_clamps_to_rfc_integer_ceiling(): void {
 		$instance = new Calendar( $this->make_event() );
 
-		$instance->event->event->post_modified_gmt = '2100-01-01 00:00:00';
+		$instance->event->post->post_modified_gmt = '2100-01-01 00:00:00';
 
 		$this->assertSame(
 			2147483647,

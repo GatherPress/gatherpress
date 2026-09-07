@@ -16,7 +16,7 @@ use GatherPress\Core\Blocks\Form_Field;
 use GatherPress\Core\Blocks\General_Block;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Recurrence\Rsvp_Occurrence;
-use GatherPress\Core\Rsvp\Rsvp as Core_Rsvp;
+use GatherPress\Core\Rsvp as Core_Rsvp;
 use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
@@ -94,8 +94,9 @@ final class Rsvp {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The original HTML content of the block.
-	 * @param array  $block         An associative array containing block data, including `blockName` and `attrs`.
+	 * @param string               $block_content The original HTML content of the block.
+	 * @param array<string, mixed> $block         An associative array containing block data, including `blockName`
+	 *                                            and `attrs`.
 	 *
 	 * @return string The updated block content with dynamically rendered inner blocks and attributes.
 	 */
@@ -105,13 +106,15 @@ final class Rsvp {
 
 		// Validate that the post type supports RSVP.
 		if (
-			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
+			! post_type_supports( (string) get_post_type( $post_id ), Core_Rsvp::SUPPORT ) ||
 			! Event::is_viewable( $post_id )
 		) {
 			return '';
 		}
 
-		if ( ! ( new Core_Rsvp( $post_id ) )->is_enabled() ) {
+		$rsvp = new Core_Rsvp( $post_id );
+
+		if ( ! $rsvp->is_enabled() ) {
 			return '';
 		}
 
@@ -146,13 +149,8 @@ final class Rsvp {
 			// Serialize the current inner blocks for the saved status.
 			$serialized_inner_blocks[ $saved_status ] = serialize_blocks( $inner_blocks );
 
-			$user_data = array();
-
-			if ( $event->rsvp ) {
-				$user_identifier = Rsvp_Setup::get_instance()->get_user_identifier();
-
-				$user_data = $event->rsvp->get( $user_identifier ) ?? array();
-			}
+			$user_identifier = Rsvp_Setup::get_instance()->get_user_identifier();
+			$user_data       = $rsvp->get( $user_identifier ) ?? array();
 
 			$filtered_data   = array_intersect_key(
 				$user_data,
@@ -233,8 +231,15 @@ final class Rsvp {
 
 			// str_contains is used here to match BEM modifiers that extend the base class.
 			// For example, 'gatherpress-rsvp--trigger-update__attending' includes the base class as a prefix.
-			if ( $class_attr && str_contains( $class_attr, $rsvp_class ) ) {
-				$classes        = preg_split( '/\s+/', trim( $class_attr ) );
+			// A valueless attribute reads back as true.
+			if ( is_string( $class_attr ) && str_contains( $class_attr, $rsvp_class ) ) {
+				/**
+				 * Class names split on whitespace.
+				 *
+				 * @var list<string> $classes A literal pattern cannot fail, so preg_split() never returns false.
+				 */
+				$classes = preg_split( '/\s+/', trim( $class_attr ) );
+
 				$statuses       = array( 'attending', 'waiting-list', 'not-attending' );
 				$matched_status = null;
 
@@ -299,8 +304,10 @@ final class Rsvp {
 
 		$tag->next_tag();
 
-		$user_details = ! empty( $tag->get_attribute( 'data-user-details' ) ) ?
-			json_decode( $tag->get_attribute( 'data-user-details' ), true ) :
+		$user_details_attr = $tag->get_attribute( 'data-user-details' );
+
+		$user_details = ( is_string( $user_details_attr ) && ! empty( $user_details_attr ) ) ?
+			json_decode( $user_details_attr, true ) :
 			array();
 
 		while ( $tag->next_tag() ) {
@@ -346,8 +353,8 @@ final class Rsvp {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The form field block content.
-	 * @param array  $block         The block data including attributes.
+	 * @param string               $block_content The form field block content.
+	 * @param array<string, mixed> $block         The block data including attributes.
 	 *
 	 * @return string The modified block content or empty string if field should be hidden.
 	 */

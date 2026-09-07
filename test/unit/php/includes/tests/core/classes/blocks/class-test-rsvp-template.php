@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Rest_Api;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Settings;
@@ -17,6 +18,8 @@ use GatherPress\Tests\Base;
 use ReflectionClass;
 use WP_Block;
 use WP_Block_Type_Registry;
+use WP_HTML_Tag_Processor;
+use WP_REST_Request;
 
 /**
  * Class Test_Rsvp_Template.
@@ -202,6 +205,11 @@ class Test_Rsvp_Template extends Base {
 			'data-block-template=',
 			$result,
 			'Failed to assert published event with no responses contains block template data attribute.'
+		);
+		$this->assertStringContainsString(
+			'data-block-signature=',
+			$result,
+			'Failed to assert the template is emitted with its signature.'
 		);
 		// Should not contain any response content (data-id="rsvp-").
 		$this->assertStringNotContainsString(
@@ -571,15 +579,15 @@ class Test_Rsvp_Template extends Base {
 		$post_id  = $post->ID;
 
 		// Get event and save an RSVP using the proper API.
-		$event   = new Event( $post_id );
+		$rsvp    = new Rsvp( $post_id );
 		$user_id = $this->factory->user->create();
 
 		// Save RSVP using the Event's RSVP system.
-		$event->rsvp->save( $user_id, 'attending', 0, 0 );
+		$rsvp->save( $user_id, 'attending', 0, 0 );
 
 		// Create one more RSVP.
 		$user_id_2 = $this->factory->user->create();
-		$event->rsvp->save( $user_id_2, 'attending', 0, 0 );
+		$rsvp->save( $user_id_2, 'attending', 0, 0 );
 
 		$wp_block = new WP_Block(
 			array(
@@ -703,6 +711,112 @@ class Test_Rsvp_Template extends Base {
 			'data-id="rsvp-0"',
 			$result,
 			'No record degrades to the zero ID a missing commentId key produces.'
+		);
+	}
+
+	/**
+	 * Tests generate_rsvp_template_block with block data JSON cannot represent.
+	 *
+	 * @since 0.36.0
+	 * @covers ::generate_rsvp_template_block
+	 * @return void
+	 */
+	public function test_generate_rsvp_template_block_unencodable_block(): void {
+		$instance = Rsvp_Template::get_instance();
+		$post     = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+
+		$wp_block = new WP_Block(
+			array(),
+			array( 'postId' => $post->ID )
+		);
+
+		// INF has no JSON representation, so encoding the block comes back false.
+		$block  = array(
+			'innerBlocks' => array(),
+			'attrs'       => array( 'gatherpressUnencodable' => INF ),
+		);
+		$result = $instance->generate_rsvp_template_block( '', $block, $wp_block );
+
+		$this->assertSame(
+			'',
+			$result,
+			'Failed to assert an unencodable block renders the responses alone.'
+		);
+		$this->assertStringNotContainsString(
+			'data-block-template=',
+			$result,
+			'Failed to assert an unencodable block is not handed to the front end.'
+		);
+	}
+
+	/**
+	 * A template verifies against its own signature and nothing else.
+	 *
+	 * @covers ::sign_template
+	 * @covers ::verify_template
+	 *
+	 * @return void
+	 */
+	public function test_sign_and_verify_template(): void {
+		$template  = '{"blockName":"gatherpress/rsvp-template","attrs":{},"innerBlocks":[]}';
+		$signature = Rsvp_Template::sign_template( $template );
+
+		$this->assertMatchesRegularExpression( '/^[a-f0-9]{64}$/', $signature );
+		$this->assertTrue( Rsvp_Template::verify_template( $template, $signature ) );
+		$this->assertFalse(
+			Rsvp_Template::verify_template( $template . ' ', $signature ),
+			'Failed to assert a changed template does not verify.'
+		);
+		$this->assertFalse(
+			Rsvp_Template::verify_template( $template, strrev( $signature ) ),
+			'Failed to assert a changed signature does not verify.'
+		);
+		$this->assertFalse( Rsvp_Template::verify_template( $template, '' ) );
+	}
+
+	/**
+	 * The pair the block emits is what the endpoint accepts.
+	 *
+	 * Reads both attributes back out of the rendered markup rather than
+	 * signing a hand-built string, so the two ends are held to each other.
+	 *
+	 * @covers ::generate_rsvp_template_block
+	 * @covers ::sign_template
+	 * @covers ::verify_template
+	 *
+	 * @return void
+	 */
+	public function test_emitted_pair_is_accepted_by_the_endpoint(): void {
+		$post_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$result  = Rsvp_Template::get_instance()->generate_rsvp_template_block(
+			'',
+			array( 'innerBlocks' => array() ),
+			new WP_Block( array(), array( 'postId' => $post_id ) )
+		);
+
+		$tags = new WP_HTML_Tag_Processor( $result );
+		$this->assertTrue( $tags->next_tag( array( 'tag_name' => 'div' ) ) );
+
+		$template  = (string) $tags->get_attribute( 'data-block-template' );
+		$signature = (string) $tags->get_attribute( 'data-block-signature' );
+
+		$this->assertNotSame( '', $template );
+		$this->assertTrue( Rsvp_Template::verify_template( $template, $signature ) );
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'status', 'attending' );
+		$request->set_param( 'block_data', $template );
+		$request->set_param( 'block_signature', $signature );
+
+		$this->assertSame(
+			200,
+			Rest_Api::get_instance()->rsvp_status_html( $request )->get_status(),
+			'Failed to assert the emitted template and signature are accepted as sent.'
 		);
 	}
 }

@@ -29,6 +29,7 @@ use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\User;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
+use WP_Comment;
 use WP_Error;
 use WP_Post;
 use WP_REST_Request;
@@ -45,6 +46,10 @@ use WP_User;
  * infrastructure.
  *
  * @since 0.34.0
+ *
+ * @phpstan-type RouteDefinition array{route: string, args: array<string, mixed>}
+ * @phpstan-type SendOptions array{all: bool, attending: bool, waiting_list: bool, not_attending: bool}
+ * @phpstan-type Recipient array{is_user: bool, user_id: int, comment_id: int, email: string, name: string}
  */
 final class Rest_Api {
 
@@ -138,7 +143,7 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array[] An array of route definitions for GatherPress events.
+	 * @return array<int, RouteDefinition> An array of route definitions for GatherPress events.
 	 */
 	protected function get_event_routes(): array {
 		return array(
@@ -158,7 +163,7 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array The REST route configuration.
+	 * @return RouteDefinition The REST route configuration.
 	 */
 	protected function email_route(): array {
 		return array(
@@ -180,11 +185,11 @@ final class Rest_Api {
 					),
 					'message' => array(
 						'required'          => false,
-						'validate_callback' => 'sanitize_text_field',
+						'sanitize_callback' => 'sanitize_textarea_field',
 					),
 					'subject' => array(
 						'required'          => false,
-						'validate_callback' => 'sanitize_text_field',
+						'sanitize_callback' => 'sanitize_text_field',
 					),
 					'send'    => array(
 						'required'          => true,
@@ -203,7 +208,7 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array Route configuration array.
+	 * @return RouteDefinition Route configuration array.
 	 */
 	protected function nonce_route(): array {
 		return array(
@@ -238,7 +243,7 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array The REST route configuration.
+	 * @return RouteDefinition The REST route configuration.
 	 */
 	protected function rsvp_route(): array {
 		return array(
@@ -277,7 +282,7 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array The REST route configuration.
+	 * @return RouteDefinition The REST route configuration.
 	 */
 	protected function rsvp_form_route(): array {
 		return array(
@@ -337,7 +342,7 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array The REST route configuration.
+	 * @return RouteDefinition The REST route configuration.
 	 */
 	protected function rsvp_status_html_route(): array {
 		return array(
@@ -381,7 +386,7 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array Route configuration with path, methods, callback and arguments.
+	 * @return RouteDefinition Route configuration with path, methods, callback and arguments.
 	 */
 	protected function rsvp_responses_route(): array {
 		return array(
@@ -797,6 +802,7 @@ final class Rest_Api {
 	 * @since 0.35.1
 	 *
 	 * @param WP_REST_Request $request Contains data from the request.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
 	 * @return bool|WP_Error True when the caller may read the event's RSVP responses, false
 	 *                       when the named post refuses them, or the shared not-found refusal
@@ -825,9 +831,10 @@ final class Rest_Api {
 	 *
 	 * @since 0.35.1
 	 *
-	 * @param array $responses The full payload from Rsvp::responses().
+	 * @param array<string, array{records: array<int, array<string, mixed>>, count: int}> $responses Full payload from
+	 *                                                                                               Rsvp::responses().
 	 *
-	 * @return array The same status keys, each carrying only its count.
+	 * @return array<string, array{count: int}> The same status keys, each carrying only its count.
 	 */
 	private function rsvp_response_counts( array $responses ): array {
 		return array_map(
@@ -846,6 +853,7 @@ final class Rest_Api {
 	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request Contains data from the request.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
 	 * @return WP_REST_Response The response indicating the success of the email scheduling process.
 	 */
@@ -881,6 +889,7 @@ final class Rest_Api {
 	 * @param array  $send    Members to send the email to.
 	 * @param string $message Optional message to include in the email.
 	 * @param string $subject Optional subject line. Defaults to the existing `📅 {title}` template when empty.
+	 * @phpstan-param SendOptions $send
 	 *
 	 * @return void
 	 */
@@ -902,6 +911,7 @@ final class Rest_Api {
 	 * @param array  $send    Members to send the email to.
 	 * @param string $message Optional message to include in the email.
 	 * @param string $subject Optional subject line. Defaults to the existing `📅 {title}` template when empty.
+	 * @phpstan-param SendOptions $send
 	 *
 	 * @return bool True if emails were successfully sent, false otherwise.
 	 */
@@ -940,6 +950,7 @@ final class Rest_Api {
 	 * @param WP_User $current_user Originating editor (restored after locale/user switch).
 	 * @param string  $subject      Optional subject line. Empty falls back to the default template
 	 *                              and is then filtered via `gatherpress_email_subject`.
+	 * @phpstan-param Recipient $recipient
 	 *
 	 * @return void
 	 */
@@ -1033,8 +1044,9 @@ final class Rest_Api {
 	 *
 	 * @param array $send    An array specifying who to send emails to.
 	 * @param int   $post_id The Event Post ID.
+	 * @phpstan-param SendOptions $send
 	 *
-	 * @return array An array containing unified recipient data for both users and non-users.
+	 * @return array<int, Recipient> An array containing unified recipient data for both users and non-users.
 	 */
 	public function get_recipients( array $send, int $post_id ): array {
 		$recipients    = array();
@@ -1084,6 +1096,12 @@ final class Rest_Api {
 		);
 
 		foreach ( $comments as $comment ) {
+			// get_rsvps() is typed loosely enough to return counts, so only comment rows
+			// are turned into recipients.
+			if ( ! $comment instanceof WP_Comment ) {
+				continue;
+			}
+
 			$recipient = $this->build_comment_recipient( $comment );
 
 			if ( null !== $recipient ) {
@@ -1105,9 +1123,9 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param object $comment RSVP comment row from `Rsvp_Query::get_rsvps()`.
+	 * @param WP_Comment $comment RSVP comment row from `Rsvp_Query::get_rsvps()`.
 	 *
-	 * @return array|null Recipient row, or null when no email is on file.
+	 * @return Recipient|null Recipient row, or null when no email is on file.
 	 */
 	protected function build_comment_recipient( $comment ): ?array {
 		$user_id = intval( $comment->user_id );
@@ -1130,7 +1148,7 @@ final class Rest_Api {
 		return array(
 			'is_user'    => (bool) $user_id,
 			'user_id'    => $user_id,
-			'comment_id' => $comment->comment_ID,
+			'comment_id' => (int) $comment->comment_ID,
 			'email'      => $email,
 			'name'       => $name,
 		);
@@ -1146,6 +1164,7 @@ final class Rest_Api {
 	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request Contains data from the request.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
 	 * @return WP_REST_Response|WP_Error The response data, or a 404 when the named occurrence no longer resolves.
 	 */
@@ -1236,7 +1255,7 @@ final class Rest_Api {
 					$guests = 0;
 				}
 
-				$user_record = $event->rsvp->save( $user_identifier, $status, $anonymous, $guests );
+				$user_record = ( new Rsvp( $post_id ) )->save( $user_identifier, $status, $anonymous, $guests );
 				$status      = $user_record['status'];
 				$guests      = $user_record['guests'];
 
@@ -1251,7 +1270,7 @@ final class Rest_Api {
 				'status'      => $status,
 				'guests'      => $guests,
 				'anonymous'   => $anonymous,
-				'responses'   => $event->rsvp->responses(),
+				'responses'   => ( new Rsvp( $post_id ) )->responses(),
 				'online_link' => $event->maybe_get_online_event_link(),
 			);
 
@@ -1278,6 +1297,8 @@ final class Rest_Api {
 	 * @param WP_REST_Request $request The REST API request object containing parameters:
 	 *                                 - post_id (int): The ID of the post associated with the RSVP.
 	 *                                 - block_data (string): JSON-encoded block data used to render the RSVP content.
+	 *                                 - block_signature (string): Signature emitted alongside block_data.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
 	 * @return WP_REST_Response|WP_Error A 404 when the named occurrence no longer resolves, otherwise
 	 *                                a response containing:
@@ -1364,6 +1385,7 @@ final class Rest_Api {
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 *
 	 * @param WP_REST_Request $request The REST API request object.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
 	 * @return WP_REST_Response|WP_Error Success or failure, or a 404 when the named occurrence no longer resolves.
 	 */
@@ -1496,7 +1518,7 @@ final class Rest_Api {
 					'success'    => true,
 					'message'    => $result['message'],
 					'comment_id' => $result['comment_id'],
-					'responses'  => $this->rsvp_response_counts( $event->rsvp->responses() ),
+					'responses'  => $this->rsvp_response_counts( ( new Rsvp( $post_id ) )->responses() ),
 				);
 				$status   = 200;
 			} else {
@@ -1525,6 +1547,7 @@ final class Rest_Api {
 	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request REST API request object containing post_id parameter.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
 	 * @return WP_REST_Response|WP_Error Success status and RSVP data, or a 404 when the named
 	 *                                occurrence no longer resolves.

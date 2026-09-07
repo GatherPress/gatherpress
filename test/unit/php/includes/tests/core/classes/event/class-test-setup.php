@@ -20,6 +20,7 @@ use PMC\Unit_Test\Utility;
 use stdClass;
 use WP;
 use WP_Block;
+use WP_Block_Editor_Context;
 use WP_Block_Patterns_Registry;
 use WP_REST_Request;
 
@@ -155,6 +156,12 @@ class Test_Setup extends Base {
 				'name'     => 'display_post_states',
 				'priority' => 10,
 				'callback' => array( $instance, 'set_event_archive_labels' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'block_editor_settings_all',
+				'priority' => 10,
+				'callback' => array( $instance, 'add_editor_settings' ),
 			),
 		);
 
@@ -410,6 +417,63 @@ class Test_Setup extends Base {
 		foreach ( $supported as $post_type ) {
 			add_post_type_support( $post_type, 'gatherpress-event-date' );
 		}
+	}
+
+	/**
+	 * Coverage for add_editor_settings method.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::add_editor_settings
+	 *
+	 * @return void
+	 */
+	public function test_add_editor_settings_exposes_event_post_types(): void {
+		$instance = Setup::get_instance();
+		$settings = $instance->add_editor_settings( array() );
+
+		$this->assertContains(
+			Event::POST_TYPE,
+			$settings['gatherpress']['config']['eventPostTypes'],
+			'Failed to assert the event post type is exposed to the editor.'
+		);
+		$this->assertSame(
+			array_values( $settings['gatherpress']['config']['eventPostTypes'] ),
+			$settings['gatherpress']['config']['eventPostTypes'],
+			'Failed to assert the post type list is a JSON array rather than an object.'
+		);
+	}
+
+	/**
+	 * Coverage for add_editor_settings method preserving existing settings.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::add_editor_settings
+	 *
+	 * @return void
+	 */
+	public function test_add_editor_settings_preserves_existing_config(): void {
+		$instance = Setup::get_instance();
+		$settings = $instance->add_editor_settings(
+			array(
+				'unrelated'   => 'kept',
+				'gatherpress' => array(
+					'config' => array( 'venuePostTypes' => array( 'gatherpress_venue' ) ),
+				),
+			)
+		);
+
+		$this->assertSame(
+			'kept',
+			$settings['unrelated'],
+			'Failed to assert unrelated editor settings survive.'
+		);
+		$this->assertSame(
+			array( 'gatherpress_venue' ),
+			$settings['gatherpress']['config']['venuePostTypes'],
+			'Failed to assert a sibling config key survives.'
+		);
 	}
 
 	/**
@@ -1428,6 +1492,35 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * Tests handle_event_archive_redirect returns early when post_type is an array.
+	 *
+	 * Exercises the is_string($post_type) guard, which prevents a PHP "Array to
+	 * string conversion" warning when `get_query_var( 'post_type' )` returns an
+	 * array on a multi-post-type archive query.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_array_post_type(): void {
+		global $wp_query;
+
+		$instance = Setup::get_instance();
+
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', array( Event::POST_TYPE, 'post' ) );
+
+		$instance->handle_event_archive_redirect();
+
+		$this->assertFalse( $wp_query->is_404(), 'Should not 404 for an array post_type.' );
+		$this->assertEmpty(
+			$wp_query->get( Query::EVENT_QUERY_PARAM ),
+			'Should return early before the archive mode fallback runs.'
+		);
+	}
+
+	/**
 	 * Tests handle_event_archive_redirect serves page when page exists with same slug.
 	 *
 	 * @covers ::handle_event_archive_redirect
@@ -2143,5 +2236,29 @@ class Test_Setup extends Base {
 		remove_filter( 'gatherpress_event_archive_mode', $mode_filter );
 
 		$this->assertTrue( $wp_query->is_404() );
+	}
+
+	/**
+	 * The editor is told which post types are events.
+	 *
+	 * Applies the real filter rather than asserting the callback is hooked,
+	 * because several classes add to the same config array and one assigning
+	 * over it rather than merging would leave this key registered but absent.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::add_editor_settings
+	 *
+	 * @return void
+	 */
+	public function test_add_editor_settings_reaches_the_editor(): void {
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core's filter, not ours.
+		$settings = apply_filters( 'block_editor_settings_all', array(), new WP_Block_Editor_Context() );
+
+		$this->assertContains(
+			Event::POST_TYPE,
+			$settings['gatherpress']['config']['eventPostTypes'],
+			'Failed to assert the event post type reaches the editor settings.'
+		);
 	}
 }

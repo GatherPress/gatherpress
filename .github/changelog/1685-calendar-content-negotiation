@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Support HTTP Accept: text/calendar content-negotiation for event URLs and calendar feeds.

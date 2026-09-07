@@ -88,11 +88,11 @@ class Test_Query extends Base {
 		);
 		$event    = new Event( $post->ID );
 
-		$event->rsvp->save( $user_id, 'attending' );
+		( new Rsvp( $post->ID ) )->save( $user_id, 'attending' );
 
 		$comment_query = new WP_Comment_Query(
 			array(
-				'post_id'   => $event->event->ID,
+				'post_id'   => $event->post->ID,
 				'user_id'   => $user_id,
 				'tax_query' => array( //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 					array(

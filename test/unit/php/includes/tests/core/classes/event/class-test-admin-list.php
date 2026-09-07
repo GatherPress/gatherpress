@@ -22,6 +22,7 @@ use GatherPress\Core\Rsvp;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
+use stdClass;
 use WP_Query;
 
 /**
@@ -53,6 +54,24 @@ class Test_Admin_List extends Base {
 				'name'     => 'query_vars',
 				'priority' => 10,
 				'callback' => array( $instance, 'query_vars' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'disable_months_dropdown',
+				'priority' => 10,
+				'callback' => array( $instance, 'disable_months_dropdown' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'restrict_manage_posts',
+				'priority' => 10,
+				'callback' => array( $instance, 'render_date_filters' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'restrict_manage_posts',
+				'priority' => 10,
+				'callback' => array( $instance, 'render_taxonomy_filters' ),
 			),
 			array(
 				'type'     => 'action',
@@ -869,11 +888,16 @@ class Test_Admin_List extends Base {
 			'Should add gatherpress_event_query to query vars.'
 		);
 		$this->assertContains(
+			'gatherpress_event_date',
+			$result,
+			'Should add gatherpress_event_date to query vars.'
+		);
+		$this->assertContains(
 			'existing_var',
 			$result,
 			'Should preserve existing query vars.'
 		);
-		$this->assertCount( 2, $result, 'Should have exactly 2 query vars.' );
+		$this->assertCount( 3, $result, 'Should have exactly 3 query vars.' );
 	}
 
 	/**
@@ -893,7 +917,7 @@ class Test_Admin_List extends Base {
 			$result,
 			'Should add gatherpress_event_query even with empty input.'
 		);
-		$this->assertCount( 1, $result, 'Should have exactly 1 query var.' );
+		$this->assertCount( 2, $result, 'Should have exactly 2 query vars.' );
 	}
 
 	/**

@@ -38,6 +38,20 @@ const EventCommunicationModal = () => {
 		isSaving: wpSelect( 'gatherpress/email-modal' ).isSaving(),
 	} ), [] );
 	const { closeModal } = useDispatch( 'gatherpress/email-modal' );
+
+	// Shown as a placeholder only. Leaving the field empty lets the server
+	// compose the default subject once per recipient, inside that recipient's
+	// locale, which a pre-filled value would override with the sender's.
+	const postTitle = useSelect(
+		( wpSelect ) =>
+			wpSelect( 'core/editor' ).getEditedPostAttribute( 'title' ) || '',
+		[],
+	);
+	const defaultSubject = sprintf(
+		// translators: %s: event title.
+		_x( '📅 %s', 'Email notification subject with event title', 'gatherpress' ),
+		postTitle,
+	);
 	const [ isAllChecked, setAllChecked ] = useState( false );
 	const [ isAttendingChecked, setAttendingChecked ] = useState( false );
 	const [ isWaitingListChecked, setWaitingListChecked ] = useState( false );
@@ -104,21 +118,6 @@ const EventCommunicationModal = () => {
 		}
 	}, [ isOpen ] );
 
-	useEffect( () => {
-		if ( isOpen ) {
-			const title =
-				select( 'core/editor' ).getEditedPostAttribute( 'title' ) ||
-				'';
-			setSubject(
-				sprintf(
-					// translators: %s: event title.
-					_x( '📅 %s', 'Email notification subject with event title', 'gatherpress' ),
-					title,
-				),
-			);
-		}
-	}, [ isOpen ] );
-
 	return (
 		<>
 			{ isOpen && (
@@ -131,6 +130,7 @@ const EventCommunicationModal = () => {
 					<TextControl
 						label={ __( 'Subject', 'gatherpress' ) }
 						value={ subject }
+						placeholder={ defaultSubject }
 						onChange={ ( value ) => setSubject( value ) }
 						style={ { marginBottom: '1rem' } }
 					/>

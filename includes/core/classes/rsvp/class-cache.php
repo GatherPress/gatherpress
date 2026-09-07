@@ -70,7 +70,7 @@ final class Cache {
 	 * @param int         $post_id       The WordPress post ID of the event.
 	 * @param string|null $recurrence_id Optional. Occurrence to read, or null to resolve from the request.
 	 *
-	 * @return array|null The cached RSVP data, or null when no valid cache exists.
+	 * @return array<string, mixed>|null The cached RSVP data, or null when no valid cache exists.
 	 */
 	public static function get( int $post_id, ?string $recurrence_id = null ): ?array {
 		$value = get_transient( self::resolved_key( $post_id, $recurrence_id ) );

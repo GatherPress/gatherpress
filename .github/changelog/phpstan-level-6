@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Raise PHPStan to level 6 and document the shape of every array the plugin passes around.

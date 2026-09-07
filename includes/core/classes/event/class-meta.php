@@ -86,7 +86,7 @@ final class Meta {
 	 * @return void
 	 */
 	public function register( string $post_type ): void {
-		if ( post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+		if ( post_type_supports( $post_type, Event::SUPPORT ) ) {
 			$this->register_event_date_meta( $post_type );
 		}
 
@@ -156,6 +156,25 @@ final class Meta {
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
+			),
+			'gatherpress_is_all_day'         => array(
+				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'boolean',
+				'default'           => false,
+			),
+			// Whether this event overrides where its timezone is shown:
+			// 'always', 'never', or an empty string to leave it to the block
+			// and the site setting.
+			'gatherpress_show_timezone'      => array(
+				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
+				'sanitize_callback' => 'sanitize_key',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+				'default'           => '',
 			),
 		);
 
@@ -257,6 +276,7 @@ final class Meta {
 	 *
 	 * @param stdClass        $prepared_post An object representing a single post prepared for inserting or updating.
 	 * @param WP_REST_Request $request       Request object.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
 	 * @return stdClass The prepared post object.
 	 */

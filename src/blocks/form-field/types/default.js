@@ -43,6 +43,7 @@ export default function DefaultField( {
 		minValue,
 		maxValue,
 		inlineLayout,
+		helpText,
 	} = attributes;
 
 	// Handle label blur to auto-generate field name
@@ -104,6 +105,9 @@ export default function DefaultField( {
 				{ ...( undefined !== minValue && { min: minValue } ) }
 				{ ...( undefined !== maxValue && { max: maxValue } ) }
 			/>
+			{ helpText && (
+				<p className="gatherpress-help-text">{ helpText }</p>
+			) }
 		</div>
 	);
 }

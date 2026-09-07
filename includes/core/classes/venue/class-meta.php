@@ -23,6 +23,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
+use GatherPress\Core\Venue;
 use GatherPress\Core\Venue\Map;
 use stdClass;
 use WP_REST_Request;
@@ -156,7 +157,7 @@ final class Meta {
 	 * @return void
 	 */
 	public function register( string $post_type ): void {
-		if ( post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
+		if ( post_type_supports( $post_type, Venue::SUPPORT ) ) {
 			$this->register_venue_information_meta( $post_type );
 		}
 
@@ -350,6 +351,7 @@ final class Meta {
 	 *
 	 * @param stdClass        $prepared_post An object representing a single post prepared for inserting or updating.
 	 * @param WP_REST_Request $request       Request object.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
 	 * @return stdClass The prepared post object.
 	 */

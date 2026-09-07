@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Recurrence\Rsvp_Occurrence;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_Comment;
@@ -85,8 +85,9 @@ final class Rsvp_Response {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The original HTML content of the block.
-	 * @param array  $block         An associative array containing block data, including `blockName` and attributes.
+	 * @param string               $block_content The original HTML content of the block.
+	 * @param array<string, mixed> $block         An associative array containing block data, including
+	 *                                            `blockName` and attributes.
 	 *
 	 * @return string The modified block content with updated attributes.
 	 */
@@ -98,7 +99,7 @@ final class Rsvp_Response {
 		// its responses to viewers allowed to read it, so organizers see the
 		// roster on a draft or private event rather than an empty block.
 		if (
-			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
+			! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT ) ||
 			! Event::is_viewable( $post_id )
 		) {
 			return '';
@@ -141,6 +142,9 @@ final class Rsvp_Response {
 
 			do {
 				$class_attr = $tag->get_attribute( 'class' );
+
+				// A valueless attribute reads back as true.
+				$class_attr = is_string( $class_attr ) ? $class_attr : '';
 
 				if ( Utility::has_css_class( $class_attr, 'gatherpress-rsvp-response--no-responses' ) ) {
 					if ( $has_responses ) {
@@ -206,8 +210,10 @@ final class Rsvp_Response {
 	public function attach_dropdown_interactivity( string $block_content ): string {
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 		$tag->next_tag();
-		$counts = ! empty( $tag->get_attribute( 'data-counts' ) ) ?
-			json_decode( $tag->get_attribute( 'data-counts' ), true ) :
+		$counts_attr = $tag->get_attribute( 'data-counts' );
+
+		$counts = ! empty( $counts_attr ) && is_string( $counts_attr ) ?
+			json_decode( $counts_attr, true ) :
 			array();
 
 		if ( $tag->next_tag(
@@ -241,7 +247,7 @@ final class Rsvp_Response {
 				$current_class = $tag->get_attribute( 'class' );
 
 				if (
-					$current_class &&
+					is_string( $current_class ) &&
 					preg_match(
 						'/gatherpress--is-(attending|waiting-list|not-attending)/',
 						$current_class,
@@ -274,10 +280,10 @@ final class Rsvp_Response {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array $args    Array of arguments for the avatar data.
-	 * @param mixed $comment The comment object or other data passed to the filter.
+	 * @param array<string, mixed> $args    Array of arguments for the avatar data.
+	 * @param mixed                $comment The comment object or other data passed to the filter.
 	 *
-	 * @return array Modified array of avatar arguments, including the correct URL for the avatar.
+	 * @return array<string, mixed> Modified array of avatar arguments, including the correct URL for the avatar.
 	 */
 	public function modify_avatar_for_gatherpress_rsvp( array $args, $comment ): array {
 		// Bail when the filter fires for a non-RSVP comment so the body
@@ -335,9 +341,9 @@ final class Rsvp_Response {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array $metadata The block metadata for `core/comment-author-name`.
+	 * @param array<string, mixed> $metadata The block metadata for `core/comment-author-name`.
 	 *
-	 * @return array The modified block metadata with the updated ancestor property.
+	 * @return array<string, mixed> The modified block metadata with the updated ancestor property.
 	 */
 	public function add_rsvp_to_comment_ancestor( array $metadata ): array {
 		if ( isset( $metadata['name'] ) && 'core/comment-author-name' === $metadata['name'] ) {

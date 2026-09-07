@@ -106,17 +106,25 @@ function fetch_wporg_profile( $username ) {
 }
 
 /**
- * Fold pending credits/unreleased.json contributors into the version entry.
+ * Fold pending credits/unreleased.json entries into the version entry.
  *
  * The credits-sync automation (#1828) accumulates newly-merged contributors
  * in credits/unreleased.json between releases. At bump time they move into
  * the target version's file (which stays the source of truth) and the
  * staging file is emptied — both writes land in the version-bump commit.
  *
+ * The optional `noteworthy` array in the same file lets a lead queue a
+ * promotion when they decide it, rather than having to remember it at the
+ * next bump. It is hand-edited: the sync automation only ever appends to
+ * `contributors`, because who belongs in noteworthy is a judgment call the
+ * leads make and no tool can see. A queued name already sitting in
+ * `contributors` moves groups rather than appearing twice, and anyone
+ * already in `leads` is left alone.
+ *
  * @param array  $entry        The decoded credits entry for the version.
  * @param string $credits_file Absolute path to the version's credits file.
  * @param string $version      The plugin version (for messages).
- * @return array The entry with pending contributors folded in.
+ * @return array The entry with pending credits folded in.
  */
 function fold_unreleased_credits( $entry, $credits_file, $version ) {
 	$unreleased_file = SCRIPT_ROOT . '/credits/unreleased.json';
@@ -129,40 +137,82 @@ function fold_unreleased_credits( $entry, $credits_file, $version ) {
 	$pending    = isset( $unreleased['contributors'] ) && is_array( $unreleased['contributors'] )
 		? $unreleased['contributors']
 		: array();
+	$promoting  = isset( $unreleased['noteworthy'] ) && is_array( $unreleased['noteworthy'] )
+		? $unreleased['noteworthy']
+		: array();
+
+	$leads    = isset( $entry['leads'] ) ? $entry['leads'] : array();
+	$promoted = array_values(
+		array_diff(
+			array_unique( $promoting ),
+			$leads,
+			isset( $entry['noteworthy'] ) ? $entry['noteworthy'] : array()
+		)
+	);
+
+	if ( ! empty( $promoted ) ) {
+		$entry['noteworthy'] = array_merge(
+			isset( $entry['noteworthy'] ) ? $entry['noteworthy'] : array(),
+			$promoted
+		);
+
+		// A promoted name credited for this release as a contributor moves
+		// groups instead of being listed in both.
+		if ( isset( $entry['contributors'] ) ) {
+			$entry['contributors'] = array_values( array_diff( $entry['contributors'], $promoted ) );
+		}
+	}
 
 	// Already-credited people (any group) don't get re-added.
 	$credited = array_merge(
-		isset( $entry['leads'] ) ? $entry['leads'] : array(),
+		$leads,
 		isset( $entry['noteworthy'] ) ? $entry['noteworthy'] : array(),
 		isset( $entry['contributors'] ) ? $entry['contributors'] : array()
 	);
 	$new      = array_values( array_diff( array_unique( $pending ), $credited ) );
 
-	if ( empty( $new ) ) {
-		return $entry;
+	if ( ! empty( $new ) ) {
+		$entry['contributors'] = array_merge(
+			isset( $entry['contributors'] ) ? $entry['contributors'] : array(),
+			$new
+		);
 	}
 
-	$entry['contributors'] = array_merge(
-		isset( $entry['contributors'] ) ? $entry['contributors'] : array(),
-		$new
-	);
+	if ( empty( $new ) && empty( $promoted ) ) {
+		return $entry;
+	}
 
 	$json_flags = JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES;
 
 	if ( file_put_contents( $credits_file, json_encode( $entry, $json_flags ) . "\n" ) === false ) {
-		fail( "Failed to fold unreleased contributors into credits/{$version}.json." );
+		fail( "Failed to fold unreleased credits into credits/{$version}.json." );
 	}
 
-	$reset_json = json_encode( array( 'contributors' => array() ), $json_flags ) . "\n";
+	$reset_json = json_encode(
+		array(
+			'contributors' => array(),
+			'noteworthy'   => array(),
+		),
+		$json_flags
+	) . "\n";
 
 	if ( file_put_contents( $unreleased_file, $reset_json ) === false ) {
 		fail( 'Failed to reset credits/unreleased.json.' );
 	}
 
-	success(
-		'Folded ' . count( $new ) . " unreleased contributor(s) into credits/{$version}.json: "
-		. implode( ', ', $new ) . '.'
-	);
+	if ( ! empty( $promoted ) ) {
+		success(
+			'Promoted ' . count( $promoted ) . " contributor(s) to noteworthy in credits/{$version}.json: "
+			. implode( ', ', $promoted ) . '.'
+		);
+	}
+
+	if ( ! empty( $new ) ) {
+		success(
+			'Folded ' . count( $new ) . " unreleased contributor(s) into credits/{$version}.json: "
+			. implode( ', ', $new ) . '.'
+		);
+	}
 
 	return $entry;
 }

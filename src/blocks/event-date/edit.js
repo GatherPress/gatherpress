@@ -35,6 +35,7 @@ import {
 	getUtcOffset,
 	isManualOffset,
 	removeNonTimePHPFormatChars,
+	removeTimePHPFormatChars,
 } from '../../helpers/datetime';
 import DateTimeRange from '../../components/DateTimeRange';
 import { getFromSettings } from '../../helpers/editor-settings';
@@ -48,13 +49,15 @@ import { resolveEventDateData } from './helpers';
 /**
  * Similar to get_display_datetime method in class-event.php.
  *
- * @param {string} dateTimeStart
- * @param {string} dateTimeEnd
- * @param {string} timezone
- * @param {string} startFormat
- * @param {string} endFormat
- * @param {string} separator
- * @param {string} showTimezone
+ * @param {string}  dateTimeStart
+ * @param {string}  dateTimeEnd
+ * @param {string}  timezone
+ * @param {string}  startFormat
+ * @param {string}  endFormat
+ * @param {string}  separator
+ * @param {string}  showTimezone
+ * @param {boolean} isAllDay
+ * @param {string}  timezonePreference
  *
  * @return {string} Displayed date.
  */
@@ -65,12 +68,24 @@ const displayDateTime = (
 	startFormat,
 	endFormat,
 	separator,
-	showTimezone
+	showTimezone,
+	isAllDay = false,
+	timezonePreference = ''
 ) => {
 	const dateFormat = getFromSettings( 'dateFormat' );
 	const timeFormat = getFromSettings( 'timeFormat' );
 	const globalShowTimezone = getFromSettings( 'showTimezone' );
-	const fullFormat = `${ dateFormat } ${ timeFormat }`;
+	// The site keeps its date and time formats separately, so an all-day
+	// event simply uses the date one. Mirrors `Event::get_display_formats()`.
+	const fullFormat = isAllDay ? dateFormat : `${ dateFormat } ${ timeFormat }`;
+
+	// Wanting a time on the face of it means the event is not all day, so a
+	// format saved on the block loses its time rather than printing the
+	// day's boundary as though someone chose it.
+	if ( isAllDay ) {
+		startFormat = removeTimePHPFormatChars( startFormat );
+		endFormat = removeTimePHPFormatChars( endFormat );
+	}
 
 	timezone = getTimezone( timezone );
 	let sameStartEndDay = false;
@@ -100,8 +115,11 @@ const displayDateTime = (
 		endFormat = endFormat || fullFormat;
 
 		// Remove non-time characters from PHP date format if start and end
-		// are on the same day.
-		endFormat = sameStartEndDay ? removeNonTimePHPFormatChars( endFormat ) : endFormat;
+		// are on the same day. An all-day event has no time left to show, so
+		// its end drops out entirely.
+		if ( sameStartEndDay ) {
+			endFormat = isAllDay ? '' : removeNonTimePHPFormatChars( endFormat );
+		}
 
 		// There may be no valid PHP date/time chars left after the removal.
 		if ( ! endFormat ) {
@@ -120,8 +138,16 @@ const displayDateTime = (
 		parts.push( createMomentWithTimezone( dateTimeEnd, timezone ).format( endFormat ) );
 	}
 
-	// Add timezone.
-	if ( showTimezone ? 'yes' === showTimezone : globalShowTimezone ) {
+	// Add timezone, event first. Mirrors `Event::get_display_datetime()`: an
+	// event that says either way is answered before the block is asked, and
+	// saying nothing leaves the block to it.
+	const namesTimezone =
+		'never' === timezonePreference
+			? false
+			: 'always' === timezonePreference ||
+				( showTimezone ? 'yes' === showTimezone : globalShowTimezone );
+
+	if ( namesTimezone ) {
 		if ( isManualOffset( timezone ) ) {
 			// For manual offsets, display them as GMT+/-offset.
 			// Convert +05:30 to GMT+0530, -04:30 to GMT-0430, +00:00 to GMT+0000.
@@ -213,7 +239,15 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const contextPostType = context?.postType;
 	const contextQueryId = context?.queryId;
 
-	const { dateTimeStart, dateTimeEnd, timezone, isLoading, isValidEvent } = useSelect(
+	const {
+		dateTimeStart,
+		dateTimeEnd,
+		timezone,
+		isAllDay,
+		timezonePreference,
+		isLoading,
+		isValidEvent,
+	} = useSelect(
 		( select ) => resolveEventDateData( select, contextPostType, contextQueryId, postId, hasExplicitOverride ),
 		[ postId, contextPostType, contextQueryId, hasExplicitOverride ]
 	);
@@ -246,6 +280,12 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const showStartTime = [ 'start', 'both' ].includes( displayType );
 	const showEndTime = [ 'end', 'both' ].includes( displayType );
 
+	// What the format fields fall back to, which is the date alone once the
+	// event is all day.
+	const formatPlaceholder = isAllDay
+		? dateFormat
+		: `${ dateFormat } ${ timeFormat }`;
+
 	const displayedDateTime = displayDateTime(
 		showStartTime ? finalDateTimeStart : null,
 		showEndTime ? finalDateTimeEnd : null,
@@ -253,7 +293,9 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		startDateFormat,
 		endDateFormat,
 		separator,
-		showTimezone
+		showTimezone,
+		isAllDay,
+		timezonePreference
 	);
 
 	return (
@@ -352,7 +394,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						<TextControl
 							label={ __( 'Start date format', 'gatherpress' ) }
 							value={ startDateFormat }
-							placeholder={ `${ dateFormat } ${ timeFormat }` }
+							placeholder={ formatPlaceholder }
 							onChange={ ( value ) =>
 								setAttributes( { startDateFormat: value } )
 							}
@@ -362,7 +404,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						<TextControl
 							label={ __( 'End date format', 'gatherpress' ) }
 							value={ endDateFormat }
-							placeholder={ `${ dateFormat } ${ timeFormat }` }
+							placeholder={ formatPlaceholder }
 							onChange={ ( value ) =>
 								setAttributes( { endDateFormat: value } )
 							}

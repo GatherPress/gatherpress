@@ -30,6 +30,12 @@ tracked in [#1921](https://github.com/GatherPress/gatherpress/issues/1921).
   version differs from core's, so every core release (stable or patch) needs
   a matching version sync and release in
   [gatherpress-alpha](https://github.com/GatherPress/gatherpress-alpha).
+  Alpha mirrors this branch model for exactly that reason: its `develop`
+  carries whatever core's `develop` carries and is where pre-releases are
+  tagged, its `main` is the released state. The pairing is one rule — core
+  develop with alpha develop, core main with alpha main — and because the
+  version check is exact string equality, mixing them across branches makes
+  Alpha inert.
 
 ## What gets automated
 
@@ -91,7 +97,14 @@ in-progress release and see what's queued for it, without touching wp.org.
    PR to `develop`. Usually the leads/team roster copied forward; new
    contributors accumulate in `credits/unreleased.json` and the bump folds
    them in automatically.
-2. `version-X.Y.Z-suffix.N` → gatherpress-alpha `main`: the synced version
+
+   **On the cycle's first alpha**, copy forward from the `-alpha.0` marker
+   file and delete it in the same PR. The marker only exists between one
+   release and the next, so it should not outlive the cycle it opened.
+   Copy before deleting, in that order: the alpha.0 bump folded
+   `credits/unreleased.json` into that file and emptied it, so deleting
+   first drops every contributor who landed work during the window.
+2. `version-X.Y.Z-suffix.N` → gatherpress-alpha `develop`: the synced version
    header (`Skip Changelog` label). Opened by that repo's **Version Bump**
    workflow — core's Version Bump workflow dispatches it automatically when
    the `GATHERPRESS_ALPHA_TOKEN` secret is configured, and otherwise prints
@@ -142,6 +155,7 @@ Testers downloading the pre-release zip see the same changelog body they'd see a
 
 - [ ] All issues in the release's milestone are closed or moved.
 - [ ] Queued `.github/changelog/` entries read correctly (skim, fix anything off).
+- [ ] Rehearse the rollup in a throwaway tree so the tag run cannot fail on the changelog: `git worktree add /tmp/rollup main && cd /tmp/rollup && ../<repo>/vendor/bin/changelogger write --use-version=X.Y.Z --yes`, then check `CHANGELOG.md` has the new `## [X.Y.Z]` section and its `[X.Y.Z]:` link, and discard the worktree. This catches a missing link line under the previous version's heading, which the parser refuses (see Troubleshooting).
 - [ ] Credits file for `X.Y.Z` added at `.github/scripts/release/credits/X.Y.Z.json` — by convention a copy of the latest pre-release file, roster corrections applied to the pre-release file first.
 - [ ] `npm run version:bump -- --version=X.Y.Z` (or the Version Bump workflow) + `npm i --package-lock-only`; version PRs opened and merged in order: credits file, alpha sync, core `version-X.Y.Z` → develop.
 
@@ -180,7 +194,7 @@ git push origin X.Y.Z
 1. Detects the tag is stable (no `-alpha.` / `-beta.` / `-rc.` suffix).
 2. Aggregates every entry file in `.github/changelog/` into a new `## [X.Y.Z] - YYYY-MM-DD` section at the top of `CHANGELOG.md`, appending `[#NNNN]` PR references, and **deletes** the entry files (dotfiles like `.gitkeep` survive, which is why the directory persists in git).
 3. Commits that rollup to a new `release/X.Y.Z` branch and **opens an auto-PR back to `develop`** (with the `Skip Changelog` label).
-4. Builds `gatherpress.X.Y.Z.zip`.
+4. Builds `gatherpress.X.Y.Z.zip` with the rolled-up `CHANGELOG.md` from step 2 in it. The tag commit's own copy predates the rollup, so the build and the wp.org deploy take the rolled file from the rollup job rather than the checkout; before this, every shipped changelog was one release behind.
 5. Creates a GitHub **Release** with the zip attached, marked as **latest**, with the `[X.Y.Z]` section as the body.
 6. Deploys to wordpress.org via the `10up/action-wordpress-plugin-deploy` action using the `SVN_USERNAME` / `SVN_PASSWORD` secrets.
 
@@ -196,6 +210,19 @@ Every one of these is required; skipping any of them bites the next release:
   auto-merge (squash), so it lands on its own once checks pass — this brings
   the rolled-up `CHANGELOG.md` to develop and removes the consumed entry
   files. If it's still open, see Troubleshooting.
+
+  Know what that PR is before you touch it: the workflow branches
+  `release/X.Y.Z` **off the tag commit on `main`**, so GitHub's diff view
+  shows everything `main` gained since the last release merge, often
+  dozens of commits and a hundred files. Almost all of it is
+  content-identical to what `develop` already has. The only real change is
+  the rollup commit itself: the new section, its link line, and the deleted
+  entry files. If the PR is `DIRTY`, do **not** resolve it by merging
+  `main`'s state into `develop`; see "The rollup PR is DIRTY" below.
+- [ ] **Check `CHANGELOG.md` on both branches has exactly one `## [X.Y.Z]`
+  heading and a matching `[X.Y.Z]:` link line**, and that `main` has no
+  duplicate headings. A re-run of the tag after the entries were consumed
+  writes a second, empty heading (see "I need to move the tag" below).
 - [ ] **Check the PR numbers in the new changelog section are links.**
   `changelogger --add-pr-num` only emits bare `[#1234]` markers; the rollup
   job runs `.github/scripts/link-changelog-prs.php` immediately afterward to
@@ -207,21 +234,61 @@ Every one of these is required; skipping any of them bites the next release:
   Without this, the next patch release cut from main re-rolls every
   already-released entry into its changelog.
 - [ ] **Release GatherPress Alpha**: merge its `version-X.Y.Z` sync PR if
-  not already done, then let the core release workflow's `alpha-handoff` job
+  not already done, **and make sure alpha has a changelog entry file for
+  `X.Y.Z` on the branch it releases from** (`.github/changelog/sync-X-Y-Z`,
+  "Track the GatherPress X.Y.Z release, which the plugin is version-locked
+  to."). Alpha's rollup has nothing to write without it and its release
+  fails at "Extract release body" before tagging; 0.35.3 needed a second
+  PR for exactly this. Then let the core release workflow's `alpha-handoff` job
   dispatch alpha's release (automatic with the `GATHERPRESS_ALPHA_TOKEN`
   secret; otherwise run the `gh workflow run release.yml` one-liner from the
-  job summary — a manual `git tag X.Y.Z && git push origin X.Y.Z` on alpha's
-  main still works too). Merge alpha's own rollup PR afterward.
+  job summary — a manual `git tag X.Y.Z && git push origin X.Y.Z` on alpha
+  still works too, tagged on the branch that version lives on: `main` for a
+  stable, `develop` for a pre-release). Alpha's release train mirrors core's,
+  so its stable releases also want a develop→main merge before the tag.
+  Merge alpha's own rollup PR afterward, then do alpha's **changelog parity**
+  too: since alpha split `develop` from `main` (alpha #74) its rollup lands
+  on one branch only, so cherry-pick that squash across to the other, the
+  same way as core's parity step above. Alpha's `main` also runs whatever
+  copy of the workflow it has, which lags `develop` until alpha's next
+  release merge; if a dispatch from the Actions tab builds the wrong
+  branch, dispatch with `--ref main` (alpha #79 makes the checkout follow
+  the version instead).
 - [ ] **Bring the demo data in line with the new version**: follow the
   "Preparing demo-data for a new version of GatherPress" steps in the
   [gatherpress-demo-data README](https://github.com/GatherPress/gatherpress-demo-data#readme)
   so the Playground demo content matches the release.
+- [ ] **Open the next cycle** (minor and major releases only, not patches):
+  bump develop to `X.Y+1.0-alpha.0` via the **Version Bump** workflow and
+  merge its PR. Add the `credits/X.Y+1.0-alpha.0.json` file first — the
+  workflow refuses a version with no credits file — seeded from the most
+  recent release's file, which for a line that took patches means the
+  `X.Y.N` file that landed on main rather than the `X.Y.0` one on develop.
+
+  This is a marker, not a release. Nothing is tagged, and only tags deploy,
+  so merging it ships nothing. What it buys is that develop stops
+  advertising the version that just went out: before this step develop's
+  headers and README badge still read `X.Y.0` while the branch holds
+  `X.Y+1` work, which is what
+  [#2166](https://github.com/GatherPress/gatherpress/issues/2166) reported.
+
+  The marker lives only until the cycle's first real alpha: `-alpha.1`
+  copies its credits file forward and deletes it, per the pre-release flow.
+  Alpha's Version Bump is dispatched by core's, so its `develop` picks up
+  the same marker automatically; both repos' release workflows refuse to
+  build anything from an `-alpha.0` tag.
+
+  Known gap: the generator also moves `SECURITY.md`'s supported-versions
+  table to `X.Y+1.x`, which overstates support while `X.Y.N` is the released
+  line. Correct that row by hand until `patch_security_table()` learns to
+  skip pre-release versions.
 - [ ] **Delete the spent branches**: `version-X.Y.Z` (core and alpha) and the
   credits-file PR branch. The `release/X.Y.Z` branches go when their PRs merge.
 
 **Verify:**
 
 - [GitHub Releases page](https://github.com/GatherPress/gatherpress/releases) shows the new tag as "Latest release" with the zip attached.
+- The shipped changelog is the rolled one: `unzip -p gatherpress.X.Y.Z.zip gatherpress/CHANGELOG.md | head -20` opens with `## [X.Y.Z]`, and so does <https://plugins.svn.wordpress.org/gatherpress/tags/X.Y.Z/CHANGELOG.md>. Every release before 0.35.3 shipped the previous version's changelog here, because the build and deploy jobs checked out the tag commit while the rollup wrote the section in its own job; the workflow now hands the rolled file to both. If a shipped copy is wrong anyway, see "The shipped CHANGELOG.md is one release behind" below.
 - wp.org listing at <https://wordpress.org/plugins/gatherpress/> shows the new version (after the confirmation click; the directory can lag a few minutes).
 - `develop` and `main` both have the `[X.Y.Z]` CHANGELOG section and an empty `.github/changelog/`.
 
@@ -231,7 +298,8 @@ Every one of these is required; skipping any of them bites the next release:
 on to the next minor.
 
 1. **Fixes land on develop first** via normal PRs (with changelog entry
-   files), milestoned `X.Y.1`. Only fix directly on the patch branch when
+   files), milestoned `X.Y.1`. Create that milestone when the first patch
+   fix appears; it does not exist until someone makes it. Only fix directly on the patch branch when
    the bug doesn't exist on develop anymore.
 2. **Cut the patch branch from main** — this is why the changelog parity
    step above matters; main must start with a clean `.github/changelog/`:
@@ -243,10 +311,33 @@ on to the next minor.
     ```
 
     The `-x` records the source commit; the cherry-picks bring their
-    changelog entry files along.
+    changelog entry files along. Expect a conflict wherever `develop` has
+    since touched the same lines (a docblock, a test's neighbor); resolve
+    to the fix's own lines only, never to `develop`-only additions, and
+    check the result is still the same patch:
+
+    ```bash
+    git range-diff DEVELOP_SHA^..DEVELOP_SHA MAIN_SHA^..MAIN_SHA
+    ```
+
+    **The tag runs whatever `.github/workflows/release.yml` is on `main`.**
+    If `develop` changed the release workflow since the last release merge,
+    cherry-pick those commits onto the patch branch too, or the patch ships
+    with the old behavior (0.35.3 shipped a changelog one release behind
+    for exactly this reason).
+
+    Add files by path when committing on a patch branch. `git add -A`
+    sweeps in anything untracked that happens to be in the working tree; an
+    editor swap file rode into 0.35.3 that way and needed two PRs to take
+    back out.
 3. **Version bump on the patch branch**: add the `X.Y.1` credits file (copy
    the `X.Y.0` file forward, appending any new contributors) +
    `npm run version:bump -- --version=X.Y.1` + lockfile refresh.
+   Run locally, the bump also rewrites the Version header in a sibling
+   `../gatherpress-alpha` checkout **on whichever branch it has checked
+   out**. For a patch that must be alpha's `main`; if alpha is on
+   `develop`, revert that file there and open alpha's `version-X.Y.1` PR
+   against `main` by hand (it is a one-line header change).
 4. **PR `version-X.Y.1` → main, merge, tag `X.Y.1` on main.** The workflow
    ships it exactly like a stable release (it is one), and opens
    `release/X.Y.1` → develop.
@@ -254,7 +345,9 @@ on to the next minor.
    into develop promptly — because the fixes originated on develop, the
    rollup deletes those same entry files there, so the next minor's
    changelog won't re-list them — then parity-sync main, release alpha at
-   `X.Y.1`, delete spent branches.
+   `X.Y.1`, delete spent branches. Skip the "open the next cycle" step:
+   develop is already on `X.Y+1.0-alpha.N` and a patch doesn't start a new
+   line.
 
 Because every patch commit on main is a content-identical cherry-pick of a
 develop commit, the next minor's develop→main release merge auto-resolves
@@ -285,6 +378,20 @@ vendor/bin/changelogger write \
   --yes
 ```
 
+### "Heading seems to have a linked version, but link was not found"
+
+The rollup job fails before anything ships, with changelogger naming the
+previous release's heading (`## [X.Y.Z-1] - ...`). That heading has no
+matching `[X.Y.Z-1]: https://github.com/GatherPress/gatherpress/compare/...`
+line at the bottom of `CHANGELOG.md`; changelogger validates the heading it
+is about to push down, so a rollup that wrote a heading without its link
+only fails on the *next* release. The 0.35.2 rollup did this and 0.35.3's
+first tag run caught it.
+
+Add the missing link line on `main` (PR, merge commit) and on `develop`
+(PR, squash) so parity holds, then delete and re-push the tag. The
+pre-flight rehearsal above catches it before tagging.
+
 ### The changelog contains entries from the previous release
 
 The tag was cut from a `main` that never got the previous release's parity
@@ -310,6 +417,16 @@ that the workflow still calls it. This exact gap shipped in 0.34.0 and
 changelog:write`, but the rollup job calls `vendor/bin/changelogger` directly
 and was never updated to match (#2035).
 
+### The merge button is disabled for an admin
+
+`develop`'s protection rule has "Do not allow bypassing the above settings"
+on, so admins are held to the same rules. A review in the **Changes
+requested** state blocks the merge even with zero required approvals, and
+"dismiss stale reviews on push" only clears *approvals*, never change
+requests. Either the reviewer re-reviews, or dismiss that review from the
+PR page with a note pointing at the commit that addressed it. Toggling the
+bypass setting works too but changes the standing policy.
+
 ### The release merge PR can't be merged with a merge commit
 
 `main`'s branch protection has "Require linear history" enabled — GitHub
@@ -318,6 +435,64 @@ repo-level merge settings allow them, and a direct push of a merge commit is
 rejected with "This branch must not contain merge commits." Uncheck
 *Require linear history* in the `main` protection rule for the merge, and
 re-enable afterward if that's the standing policy.
+
+### The rollup PR is DIRTY (or shows hundreds of files)
+
+`release/X.Y.Z` is branched off the tag commit, so it carries `main`'s whole
+state. That merged cleanly while `develop` had not moved past the release,
+but once the next cycle is open (`X.Y+1.0-alpha.0` on develop) the version
+strings conflict and the PR goes `DIRTY`, and auto-merge cannot fire.
+
+Rebuild the branch as `develop` plus only the rollup commit, and let
+auto-merge take it from there:
+
+```bash
+git fetch origin
+git checkout -B release/X.Y.Z origin/develop
+git cherry-pick -x <rollup commit sha>   # "Roll up changelog for X.Y.Z" on release/X.Y.Z
+git diff --stat origin/develop..HEAD      # must be CHANGELOG.md + deleted entry files, nothing else
+git push --force-with-lease origin release/X.Y.Z
+```
+
+Never resolve it by merging `main` into `develop` through this PR: that would
+carry the release's version strings, credits, and rollups onto `develop`.
+
+### I need to move the tag after the rollup ran
+
+Re-pushing `X.Y.Z` re-runs the whole workflow with the entry files already
+consumed. changelogger then writes a second, empty `## [X.Y.Z]` heading and
+the rollup job opens another `release/X.Y.Z` PR whose only real change is
+that heading. Close that PR and delete its branch (nothing was consumed, so
+the double-roll guard is satisfied). The zip is rebuilt from the new tag
+commit, which is the point of moving it; the wp.org deploy sees
+`tags/X.Y.Z` already exists and bails without touching SVN; the alpha
+handoff dispatches again. Move the tag only after the parity cherry-pick,
+so the new tree carries its own section.
+
+### The shipped CHANGELOG.md is one release behind
+
+The zip and the wp.org tag carried the tag commit's `CHANGELOG.md`, which
+predates the rollup, on every release up to 0.35.3. The workflow now ships
+the rolled file. If it happens anyway, fix the copies that shipped:
+
+- **wp.org**: commit the rolled file into both the tag and trunk. Sparse
+  checkouts keep it to one file each:
+
+  ```bash
+  svn checkout --depth empty https://plugins.svn.wordpress.org/gatherpress/tags/X.Y.Z t && svn update t/CHANGELOG.md
+  svn checkout --depth empty https://plugins.svn.wordpress.org/gatherpress/trunk trunk && svn update trunk/CHANGELOG.md
+  git show main:CHANGELOG.md > t/CHANGELOG.md && git show main:CHANGELOG.md > trunk/CHANGELOG.md
+  svn diff t trunk        # must be the new section and its link line, nothing else
+  svn commit --username gatherpress -m "Add the X.Y.Z changelog section" t/CHANGELOG.md trunk/CHANGELOG.md
+  ```
+
+  Do this before clicking the wp.org release confirmation and nobody
+  downloads the stale copy.
+- **GitHub Release asset**: replace only `CHANGELOG.md` *inside CI's own
+  zip*, never a local rebuild (compiled chunk hashes differ from CI's), then
+  `gh release upload X.Y.Z gatherpress.X.Y.Z.zip --clobber` and confirm
+  every other entry's hash is unchanged. Re-tagging after parity has the
+  same effect through the workflow, with the caveats in the entry above.
 
 ### The rollup auto-PR didn't merge on its own
 
@@ -393,7 +568,8 @@ that no job ends up with broader scopes than it needs.
 
 - **Stable**: `0.34.0`, `0.35.0`, `1.0.0`. Three numeric components, no suffix. These ship to wp.org and are tagged on `main`.
 - **Patch**: `0.34.1`. Same shape as stable; cut from a `version-X.Y.1` branch off `main` per the patch flow.
-- **Alpha**: `0.34.0-alpha.1`, `0.34.0-alpha.2`. Use for early in-cycle builds; tagged on `develop`.
+- **Cycle marker**: `0.36.0-alpha.0`. Never tagged, never released. Set on `develop` immediately after a stable ships so the branch names the line being worked on instead of the one that just went out, and retired when `-alpha.1` supersedes it. The `.0` is what distinguishes it from a real build.
+- **Alpha**: `0.34.0-alpha.1`, `0.34.0-alpha.2`. Use for early in-cycle builds; tagged on `develop`. Numbering starts at `.1` because `.0` is the cycle marker above.
 - **Beta**: `0.34.0-beta.1`. Use for feature-complete in-cycle builds where the team is still smoke-testing; tagged on `develop`.
 - **Release candidate**: `0.34.0-rc.1`. Use for "we believe this is shippable, last call for showstoppers"; tagged on `develop`.
 

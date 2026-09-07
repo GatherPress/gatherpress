@@ -12,6 +12,7 @@ import {
 	createMomentWithTimezone,
 	useMatchedDuration,
 } from '../helpers/datetime';
+import AllDay from '../components/AllDay';
 import DateTimeStart from '../components/DateTimeStart';
 import DateTimeEnd from '../components/DateTimeEnd';
 import Timezone from './Timezone';
@@ -50,15 +51,20 @@ const DateTimeRange = () => {
 		dateTimeMetaData = {};
 	}
 
-	const { dateTimeStart, dateTimeEnd, timezone, isCleanNewPost } = useSelect(
-		( select ) => ( {
-			dateTimeStart: select( 'gatherpress/datetime' ).getDateTimeStart(),
-			dateTimeEnd: select( 'gatherpress/datetime' ).getDateTimeEnd(),
-			timezone: select( 'gatherpress/datetime' ).getTimezone(),
-			isCleanNewPost: select( 'core/editor' ).isCleanNewPost(),
-		} ),
-		[],
-	);
+	const { dateTimeStart, dateTimeEnd, timezone, isCleanNewPost, isAllDay } =
+		useSelect(
+			( select ) => ( {
+				dateTimeStart: select( 'gatherpress/datetime' ).getDateTimeStart(),
+				dateTimeEnd: select( 'gatherpress/datetime' ).getDateTimeEnd(),
+				timezone: select( 'gatherpress/datetime' ).getTimezone(),
+				isCleanNewPost: select( 'core/editor' ).isCleanNewPost(),
+				isAllDay: Boolean(
+					select( 'core/editor' ).getEditedPostAttribute( 'meta' )
+						?.gatherpress_is_all_day
+				),
+			} ),
+			[],
+		);
 	// Matched preset (or `false`) for the start/end pair. Memoized on the
 	// inputs so the moment.tz comparisons run once per real change rather
 	// than once per render — see `useMatchedDuration` for the #1607 context.
@@ -103,7 +109,11 @@ const DateTimeRange = () => {
 				<DateTimeStart />
 			</section>
 			<section>
-				{ matchedDuration ? <Duration /> : <DateTimeEnd /> }
+				{ /* Duration is a length in hours, which an all-day event does not have. */ }
+				{ matchedDuration && ! isAllDay ? <Duration /> : <DateTimeEnd /> }
+			</section>
+			<section>
+				<AllDay />
 			</section>
 			<section>
 				<Timezone />

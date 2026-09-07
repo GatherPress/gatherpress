@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Fixed the RSVP modal-switch tests failing on a loaded machine. They waited a flat 30ms for a flow that has to finish two fetches and a 10ms timer, which leaves about 3ms of slack on an idle machine and none on a busy one. They now wait on the flow completing instead of on the clock.

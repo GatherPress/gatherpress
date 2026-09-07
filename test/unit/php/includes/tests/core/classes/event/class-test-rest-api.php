@@ -8,6 +8,7 @@
 
 namespace GatherPress\Tests\Core\Event;
 
+use DateTime;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Rest_Api;
 use GatherPress\Core\Rsvp\Response\Status;
@@ -23,6 +24,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 use WP_User;
+use GatherPress\Core\Blocks\Rsvp_Template;
 
 /**
  * Class Test_Rest_Api.
@@ -42,12 +44,13 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
-	 * Restore open RSVP to its default disabled state after each test.
+	 * Restore RSVP settings to their defaults after each test.
 	 *
 	 * @return void
 	 */
 	public function tearDown(): void {
 		Settings::get_instance()->set( 'enable_open_rsvp', true );
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 		parent::tearDown();
 	}
 
@@ -201,6 +204,118 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Coverage for email_route argument handling.
+	 *
+	 * A sanitizer in the validate_callback slot never sanitizes: the REST server
+	 * only treats an exact `false` return as invalid, so the raw value is used.
+	 *
+	 * @covers ::email_route
+	 *
+	 * @return void
+	 */
+	public function test_email_route_sanitizes_text_params(): void {
+		$instance = Rest_Api::get_instance();
+		$route    = Utility::invoke_hidden_method( $instance, 'email_route' );
+		$args     = $route['args']['args'];
+
+		$this->assertArrayNotHasKey(
+			'validate_callback',
+			$args['message'],
+			'Failed to assert message does not use a sanitizer as a validator.'
+		);
+		$this->assertSame(
+			'sanitize_textarea_field',
+			$args['message']['sanitize_callback'],
+			'Failed to assert message is sanitized with newlines preserved.'
+		);
+		$this->assertArrayNotHasKey(
+			'validate_callback',
+			$args['subject'],
+			'Failed to assert subject does not use a sanitizer as a validator.'
+		);
+		$this->assertSame(
+			'sanitize_text_field',
+			$args['subject']['sanitize_callback'],
+			'Failed to assert subject is sanitized.'
+		);
+	}
+
+	/**
+	 * Coverage for text params sanitized through a dispatched request.
+	 *
+	 * Sanitization only runs on dispatch, so this exercises the registered route
+	 * rather than calling the callback directly, and reads the values back off
+	 * the scheduled event the callback hands to cron.
+	 *
+	 * @covers ::email
+	 *
+	 * @return void
+	 */
+	public function test_email_route_sanitizes_on_dispatch(): void {
+		$captured = array();
+
+		add_filter(
+			'schedule_event',
+			static function ( $event ) use ( &$captured ) {
+				if ( $event && 'gatherpress_send_emails' === $event->hook ) {
+					$captured = $event->args;
+				}
+
+				return $event;
+			}
+		);
+
+		$admin_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		$event_id = $this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_author' => $admin_id,
+			)
+		)->get()->ID;
+
+		wp_set_current_user( $admin_id );
+
+		Rest_Api::get_instance()->register_endpoints();
+
+		$request = new WP_REST_Request(
+			'POST',
+			sprintf( '/%s/event/email', GATHERPRESS_REST_NAMESPACE )
+		);
+
+		$request->set_body_params(
+			array(
+				'post_id' => $event_id,
+				'message' => "First line.\nSecond line.",
+				'subject' => '  Subject <b>with</b> markup  ',
+				'send'    => array(
+					'all'           => false,
+					'attending'     => true,
+					'waiting_list'  => false,
+					'not_attending' => false,
+				),
+			)
+		);
+
+		$response = rest_get_server()->dispatch( $request );
+
+		$this->assertSame(
+			200,
+			$response->get_status(),
+			'Failed to assert the email request was accepted.'
+		);
+		$this->assertSame(
+			"First line.\nSecond line.",
+			$captured[2],
+			'Failed to assert the newline survived sanitization of the message.'
+		);
+		$this->assertSame(
+			'Subject with markup',
+			$captured[3],
+			'Failed to assert the subject was sanitized.'
+		);
+	}
+
+	/**
 	 * Coverage for send_emails method.
 	 *
 	 * @covers ::send_emails
@@ -226,8 +341,8 @@ class Test_Rest_Api extends Base {
 			'not_attending' => false,
 		);
 
-		$event = new Event( $event_id );
-		$event->rsvp->save( $user_id, 'attending' );
+		$rsvp = new Rsvp( $event_id );
+		$rsvp->save( $user_id, 'attending' );
 
 		$this->assertFalse(
 			$instance->send_emails( $post_id, $send, $message ),
@@ -315,17 +430,17 @@ class Test_Rest_Api extends Base {
 		$event_id = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
-		$event    = new Event( $event_id );
+		$rsvp     = new Rsvp( $event_id );
 
 		// Create users and save RSVPs using the RSVP system.
 		$attending_user_id     = $this->factory->user->create();
 		$not_attending_user_id = $this->factory->user->create();
 
-		$event->rsvp->save( $attending_user_id, 'attending' );
-		$event->rsvp->save( $not_attending_user_id, 'not_attending' );
+		$rsvp->save( $attending_user_id, 'attending' );
+		$rsvp->save( $not_attending_user_id, 'not_attending' );
 
 		// Create anonymous attending RSVP.
-		$event->rsvp->save( 'attendee@example.com', 'attending', 1 );
+		$rsvp->save( 'attendee@example.com', 'attending', 1 );
 
 		$send = array(
 			'all'           => false,
@@ -382,10 +497,10 @@ class Test_Rest_Api extends Base {
 		$event_id = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
-		$event    = new Event( $event_id );
+		$rsvp     = new Rsvp( $event_id );
 
 		// Force no attendance so responses remain on waiting list.
-		Utility::set_and_get_hidden_property( $event->rsvp, 'max_attendance_limit', -1 );
+		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', -1 );
 
 		// Create user RSVP.
 		$user_id = $this->factory->user->create(
@@ -394,7 +509,7 @@ class Test_Rest_Api extends Base {
 				'display_name' => 'User Name',
 			)
 		);
-		$event->rsvp->save( $user_id, 'waiting_list' );
+		$rsvp->save( $user_id, 'waiting_list' );
 
 		// Create anonymous RSVP using wp_insert_comment for better control.
 		$comment_id = wp_insert_comment(
@@ -408,7 +523,7 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		$event->rsvp->save( 'anonymous@example.com', 'waiting_list' );
+		$rsvp->save( 'anonymous@example.com', 'waiting_list' );
 
 		$send = array(
 			'all'           => false,
@@ -641,8 +756,8 @@ class Test_Rest_Api extends Base {
 		// Approve the comment since rsvp->get() now only finds approved comments.
 		wp_set_comment_status( $data['comment_id'], 'approve' );
 
-		$event     = new Event( $post_id );
-		$rsvp_data = $event->rsvp->get( 'test@example.com' );
+		$rsvp      = new Rsvp( $post_id );
+		$rsvp_data = $rsvp->get( 'test@example.com' );
 
 		$this->assertNotEmpty( $rsvp_data['comment_id'] );
 
@@ -751,8 +866,8 @@ class Test_Rest_Api extends Base {
 		// Approve the comment since rsvp->get() now only finds approved comments.
 		wp_set_comment_status( $data['comment_id'], 'approve' );
 
-		$event     = new Event( $post_id );
-		$rsvp_data = $event->rsvp->get( $user_id );
+		$rsvp      = new Rsvp( $post_id );
+		$rsvp_data = $rsvp->get( $user_id );
 		$this->assertNotEmpty( $rsvp_data['comment_id'] );
 		$this->assertEquals( $user_id, $rsvp_data['user_id'] );
 	}
@@ -981,8 +1096,8 @@ class Test_Rest_Api extends Base {
 
 		// Create an RSVP.
 		$user_id = $this->factory()->user->create();
-		$event   = new Event( $post_id );
-		$event->rsvp->save( $user_id, 'attending', 0, 1 );
+		$rsvp    = new Rsvp( $post_id );
+		$rsvp->save( $user_id, 'attending', 0, 1 );
 
 		$request = new WP_REST_Request( 'GET' );
 		$request->set_param( 'post_id', $post_id );
@@ -1033,20 +1148,26 @@ class Test_Rest_Api extends Base {
 
 		// Create an approved RSVP.
 		$user_id     = $this->factory()->user->create();
-		$event       = new Event( $post_id );
-		$user_record = $event->rsvp->save( $user_id, 'attending', 0, 1 );
+		$rsvp        = new Rsvp( $post_id );
+		$user_record = $rsvp->save( $user_id, 'attending', 0, 1 );
 
 		// Approve the comment.
 		wp_set_comment_status( $user_record['comment_id'], 'approve' );
 
 		$block_data = array(
-			'blockName' => 'gatherpress/rsvp-template',
+			'blockName'   => 'gatherpress/rsvp-template',
+			'attrs'       => array(),
+			'innerBlocks' => array(),
 		);
 
 		$request = new WP_REST_Request( 'POST' );
 		$request->set_param( 'post_id', $post_id );
 		$request->set_param( 'status', 'attending' );
 		$request->set_param( 'block_data', wp_json_encode( $block_data ) );
+		$request->set_param(
+			'block_signature',
+			Rsvp_Template::sign_template( (string) wp_json_encode( $block_data ) )
+		);
 		$request->set_param( 'limit_enabled', false );
 		$request->set_param( 'limit', 10 );
 
@@ -1074,13 +1195,19 @@ class Test_Rest_Api extends Base {
 		);
 
 		$block_data = array(
-			'blockName' => 'gatherpress/rsvp-template',
+			'blockName'   => 'gatherpress/rsvp-template',
+			'attrs'       => array(),
+			'innerBlocks' => array(),
 		);
 
 		$request = new WP_REST_Request( 'POST' );
 		$request->set_param( 'post_id', $post_id );
 		$request->set_param( 'status', 'attending' );
 		$request->set_param( 'block_data', wp_json_encode( $block_data ) );
+		$request->set_param(
+			'block_signature',
+			Rsvp_Template::sign_template( (string) wp_json_encode( $block_data ) )
+		);
 
 		$response = $instance->rsvp_status_html( $request );
 		$data     = $response->get_data();
@@ -1177,7 +1304,7 @@ class Test_Rest_Api extends Base {
 
 		// Create an RSVP with email.
 		$email       = 'test@example.com';
-		$user_record = $event->rsvp->save( $email, 'attending', 0, 0 );
+		$user_record = ( new Rsvp( $post_id ) )->save( $email, 'attending', 0, 0 );
 
 		// Generate token.
 		$rsvp_token = new Token( $user_record['comment_id'] );
@@ -1266,8 +1393,8 @@ class Test_Rest_Api extends Base {
 		// User opts out of event updates.
 		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', 0 );
 
-		$event = new Event( $event_id );
-		$event->rsvp->save( $user_id, 'attending' );
+		$rsvp = new Rsvp( $event_id );
+		$rsvp->save( $user_id, 'attending' );
 
 		$send = array(
 			'attending' => true,
@@ -1396,6 +1523,51 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Test get_recipients skips rows the RSVP query returns that are not comments.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_recipients
+	 *
+	 * @return void
+	 */
+	public function test_get_recipients_skips_non_comment_rows(): void {
+		$instance = Rest_Api::get_instance();
+		$event_id = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+		$rsvp     = new Rsvp( $event_id );
+
+		$rsvp->save( 'attendee@example.com', 'attending', 1 );
+
+		// Append an unresolvable row to the RSVP lookup so a non-comment entry
+		// reaches the recipient loop.
+		$injector = static function ( $comments, $query ) {
+			if ( ! empty( $query->query_vars['comment__in'] ) ) {
+				$comments[] = PHP_INT_MAX;
+			}
+
+			return $comments;
+		};
+
+		add_filter( 'the_comments', $injector, 10, 2 );
+
+		$recipients = $instance->get_recipients( array( 'attending' => true ), $event_id );
+
+		remove_filter( 'the_comments', $injector, 10 );
+
+		$this->assertCount(
+			1,
+			$recipients,
+			'Failed to assert the non-comment row was skipped.'
+		);
+		$this->assertSame(
+			'attendee@example.com',
+			$recipients[0]['email'],
+			'Failed to assert the surviving recipient is the real RSVP.'
+		);
+	}
+
+	/**
 	 * Test send_emails with locale switching for user.
 	 *
 	 * @covers ::send_emails
@@ -1412,8 +1584,8 @@ class Test_Rest_Api extends Base {
 		// Opt in to updates.
 		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', 1 );
 
-		$event = new Event( $event_id );
-		$event->rsvp->save( $user_id, 'attending' );
+		$rsvp = new Rsvp( $event_id );
+		$rsvp->save( $user_id, 'attending' );
 
 		$send = array(
 			'attending' => true,
@@ -1558,8 +1730,8 @@ class Test_Rest_Api extends Base {
 
 		// Create a valid RSVP token.
 		$email       = 'test@example.com';
-		$event       = new Event( $post_id );
-		$user_record = $event->rsvp->save( $email, 'attending', 0, 0 );
+		$rsvp        = new Rsvp( $post_id );
+		$user_record = $rsvp->save( $email, 'attending', 0, 0 );
 
 		// Generate token.
 		$rsvp_token = new Token( $user_record['comment_id'] );
@@ -1599,7 +1771,7 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		$user_record = ( new Event( $token_event ) )->rsvp->save( 'test@example.com', 'attending' );
+		$user_record = ( new Rsvp( $token_event ) )->save( 'test@example.com', 'attending' );
 		$rsvp_token  = new Token( $user_record['comment_id'] );
 		$rsvp_token->generate_token();
 		$token_str = sprintf( '%d_%s', $user_record['comment_id'], $rsvp_token->get_token() );
@@ -2000,6 +2172,7 @@ class Test_Rest_Api extends Base {
 		$this->assertArrayHasKey( 'route', $route );
 		$this->assertArrayHasKey( 'args', $route );
 		$this->assertEquals( 'rsvp-status-html', $route['route'] );
+		$this->assertArrayHasKey( 'block_signature', $route['args']['args'] );
 		$this->assertArrayHasKey( 'methods', $route['args'] );
 		$this->assertArrayHasKey( 'callback', $route['args'] );
 		$this->assertArrayHasKey( 'permission_callback', $route['args'] );
@@ -2040,11 +2213,11 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		$event = new Event( $post_id );
+		$rsvp = new Rsvp( $post_id );
 
 		// Create non-user RSVP using email address.
 		$email   = 'nonuser@example.com';
-		$comment = $event->rsvp->save( $email, 'attending', 0, 0 );
+		$comment = $rsvp->save( $email, 'attending', 0, 0 );
 
 		// Set opt-in to '0' (opted out).
 		update_comment_meta( $comment['comment_id'], 'gatherpress_event_updates_opt_in', '0' );
@@ -2084,9 +2257,9 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		$event = new Event( $post_id );
+		$rsvp  = new Rsvp( $post_id );
 		$email = 'recipient@example.test';
-		$event->rsvp->save( $email, 'attending', 0, 0 );
+		$rsvp->save( $email, 'attending', 0, 0 );
 
 		$captured = array();
 		add_filter(
@@ -2137,9 +2310,9 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		$event = new Event( $post_id );
+		$rsvp  = new Rsvp( $post_id );
 		$email = 'recipient@example.test';
-		$event->rsvp->save( $email, 'attending', 0, 0 );
+		$rsvp->save( $email, 'attending', 0, 0 );
 
 		$captured = array();
 		add_filter(
@@ -2188,8 +2361,8 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		$event = new Event( $post_id );
-		$event->rsvp->save( 'recipient@example.test', 'attending', 0, 0 );
+		$rsvp = new Rsvp( $post_id );
+		$rsvp->save( 'recipient@example.test', 'attending', 0, 0 );
 
 		add_filter(
 			'gatherpress_email_subject',
@@ -2244,8 +2417,8 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		$event = new Event( $post_id );
-		$event->rsvp->save( 'recipient@example.test', 'attending', 0, 0 );
+		$rsvp = new Rsvp( $post_id );
+		$rsvp->save( 'recipient@example.test', 'attending', 0, 0 );
 
 		add_filter(
 			'gatherpress_email_subject',
@@ -2308,10 +2481,10 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		$event = new Event( $post_id );
+		$rsvp = new Rsvp( $post_id );
 
 		// Create RSVP for the user.
-		$event->rsvp->save( $user_id, 'attending' );
+		$rsvp->save( $user_id, 'attending' );
 
 		$send = array( 'attending' => true );
 
@@ -2348,11 +2521,11 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		$event = new Event( $post_id );
+		$rsvp = new Rsvp( $post_id );
 
 		// Create RSVP with valid email first.
 		$email   = 'test@example.com';
-		$comment = $event->rsvp->save( $email, 'attending', 0, 0 );
+		$comment = $rsvp->save( $email, 'attending', 0, 0 );
 
 		// Now remove the email to test the skip logic.
 		wp_update_comment(
@@ -2469,6 +2642,10 @@ class Test_Rest_Api extends Base {
 		$request->set_param( 'post_id', $post_id );
 		$request->set_param( 'status', 'attending' );
 		$request->set_param( 'block_data', wp_json_encode( array() ) );
+		$request->set_param(
+			'block_signature',
+			Rsvp_Template::sign_template( (string) wp_json_encode( array() ) )
+		);
 
 		// Check that nocache_headers is called by verifying headers are sent.
 		$response = $instance->rsvp_status_html( $request );
@@ -2908,6 +3085,211 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Future-event emails include the RSVP Now CTA.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::send_event_email_to_recipient
+	 *
+	 * @return void
+	 */
+	public function test_send_event_email_includes_rsvp_cta_for_future_event(): void {
+		$captured_body = '';
+		$capture_email = static function ( $preempt, $atts ) use ( &$captured_body ) {
+			$captured_body = $atts['message'] ?? '';
+			return true;
+		};
+		add_filter(
+			'pre_wp_mail',
+			$capture_email,
+			10,
+			2
+		);
+
+		$instance = Rest_Api::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$event    = new Event( $event_id );
+		$start    = new DateTime( 'now' );
+		$end      = new DateTime( 'now' );
+
+		$start->modify( '+1 day' );
+		$end->modify( '+1 day +2 hours' );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+				'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			)
+		);
+
+		$user = get_userdata( $this->factory->user->create() );
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'send_event_email_to_recipient',
+			array(
+				array(
+					'is_user'    => true,
+					'user_id'    => $user->ID,
+					'comment_id' => 0,
+					'email'      => $user->user_email,
+					'name'       => $user->display_name,
+				),
+				$event_id,
+				'Upcoming reminder.',
+				wp_get_current_user(),
+			)
+		);
+
+		remove_filter( 'pre_wp_mail', $capture_email );
+
+		$this->assertStringContainsString(
+			'RSVP Now',
+			$captured_body,
+			'Future-event email should include the RSVP Now CTA.'
+		);
+	}
+
+	/**
+	 * Past-event emails omit the RSVP Now CTA — registration is closed.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::send_event_email_to_recipient
+	 *
+	 * @return void
+	 */
+	public function test_send_event_email_omits_rsvp_cta_for_past_event(): void {
+		$captured_body = '';
+		$capture_email = static function ( $preempt, $atts ) use ( &$captured_body ) {
+			$captured_body = $atts['message'] ?? '';
+			return true;
+		};
+		add_filter(
+			'pre_wp_mail',
+			$capture_email,
+			10,
+			2
+		);
+
+		$instance = Rest_Api::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$event    = new Event( $event_id );
+		$start    = new DateTime( 'now' );
+		$end      = new DateTime( 'now' );
+
+		$start->modify( '-2 days' );
+		$end->modify( '-2 days +2 hours' );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+				'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			)
+		);
+
+		$user = get_userdata( $this->factory->user->create() );
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'send_event_email_to_recipient',
+			array(
+				array(
+					'is_user'    => true,
+					'user_id'    => $user->ID,
+					'comment_id' => 0,
+					'email'      => $user->user_email,
+					'name'       => $user->display_name,
+				),
+				$event_id,
+				'Thanks for coming.',
+				wp_get_current_user(),
+			)
+		);
+
+		remove_filter( 'pre_wp_mail', $capture_email );
+
+		$this->assertNotEmpty( $captured_body, 'Past-event email body should still be sent.' );
+		$this->assertStringContainsString(
+			'Thanks for coming.',
+			$captured_body,
+			'Past-event email should still include the custom message.'
+		);
+		$this->assertStringNotContainsString(
+			'RSVP Now',
+			$captured_body,
+			'Past-event email must not include the RSVP Now CTA.'
+		);
+	}
+
+	/**
+	 * Emails omit the RSVP Now CTA when RSVP is disabled for the event.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::send_event_email_to_recipient
+	 *
+	 * @return void
+	 */
+	public function test_send_event_email_omits_rsvp_cta_when_rsvp_disabled(): void {
+		$captured_body = '';
+		$capture_email = static function ( $preempt, $atts ) use ( &$captured_body ) {
+			$captured_body = $atts['message'] ?? '';
+			return true;
+		};
+		add_filter(
+			'pre_wp_mail',
+			$capture_email,
+			10,
+			2
+		);
+
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_enabled' );
+
+		$instance = Rest_Api::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$event    = new Event( $event_id );
+		$start    = new DateTime( 'now' );
+		$end      = new DateTime( 'now' );
+
+		$start->modify( '+1 day' );
+		$end->modify( '+1 day +2 hours' );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+				'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			)
+		);
+		update_post_meta( $event_id, 'gatherpress_enable_rsvp', '0' );
+
+		$user = get_userdata( $this->factory->user->create() );
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'send_event_email_to_recipient',
+			array(
+				array(
+					'is_user'    => true,
+					'user_id'    => $user->ID,
+					'comment_id' => 0,
+					'email'      => $user->user_email,
+					'name'       => $user->display_name,
+				),
+				$event_id,
+				'Event update.',
+				wp_get_current_user(),
+			)
+		);
+
+		remove_filter( 'pre_wp_mail', $capture_email );
+
+		$this->assertNotEmpty( $captured_body, 'Email body should still be sent.' );
+		$this->assertStringNotContainsString(
+			'RSVP Now',
+			$captured_body,
+			'Email must not include the RSVP Now CTA when RSVP is disabled.'
+		);
+	}
+
+	/**
 	 * `send_event_email_to_recipient` returns silently when the recipient
 	 * has no email address — protects against malformed recipient rows.
 	 *
@@ -3036,5 +3418,140 @@ class Test_Rest_Api extends Base {
 		);
 
 		$this->assertNull( $recipient );
+	}
+
+	/**
+	 * The endpoint renders only a template the server emitted.
+	 *
+	 * @covers ::rsvp_status_html
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_status_html_renders_only_an_emitted_template(): void {
+		$instance = Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$template = (string) wp_json_encode(
+			array(
+				'blockName'   => 'gatherpress/rsvp-template',
+				'attrs'       => array(),
+				'innerBlocks' => array(),
+			)
+		);
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'status', 'attending' );
+		$request->set_param( 'block_data', $template );
+		$request->set_param( 'block_signature', str_repeat( '0', 64 ) );
+
+		$response = $instance->rsvp_status_html( $request );
+
+		$this->assertSame( 403, $response->get_status(), 'Failed to assert a wrong signature is refused.' );
+		$this->assertFalse( $response->get_data()['success'] );
+
+		// A signature for one template does not carry over to another.
+		$request->set_param( 'block_signature', Rsvp_Template::sign_template( $template ) );
+		$request->set_param(
+			'block_data',
+			(string) wp_json_encode(
+				array(
+					'blockName'   => 'gatherpress/rsvp-template',
+					'attrs'       => array( 'x' => 1 ),
+					'innerBlocks' => array(),
+				)
+			)
+		);
+
+		$this->assertSame(
+			403,
+			$instance->rsvp_status_html( $request )->get_status(),
+			'Failed to assert an altered template is refused.'
+		);
+
+		// The pair the server produced is accepted.
+		$request->set_param( 'block_data', $template );
+
+		$this->assertSame(
+			200,
+			$instance->rsvp_status_html( $request )->get_status(),
+			'Failed to assert the emitted pair is accepted.'
+		);
+	}
+
+	/**
+	 * The route itself refuses a request without a usable signature.
+	 *
+	 * The handler tests call the callback directly and so skip the argument
+	 * validation the route registers. This one goes through the server.
+	 *
+	 * @covers ::rsvp_status_html_route
+	 * @covers ::rsvp_status_html
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_status_html_route_requires_a_signed_template(): void {
+		Rest_Api::get_instance()->register_endpoints();
+
+		$post_id  = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$template = (string) wp_json_encode(
+			array(
+				'blockName'   => 'gatherpress/rsvp-template',
+				'attrs'       => array(),
+				'innerBlocks' => array(),
+			)
+		);
+		$route    = sprintf( '/%s/event/rsvp-status-html', GATHERPRESS_REST_NAMESPACE );
+
+		$request = new WP_REST_Request( 'POST', $route );
+		$request->set_body_params(
+			array(
+				'post_id'    => $post_id,
+				'status'     => 'attending',
+				'block_data' => $template,
+			)
+		);
+
+		$this->assertSame(
+			400,
+			rest_do_request( $request )->get_status(),
+			'Failed to assert a missing signature is refused by the route.'
+		);
+
+		$request->set_param( 'block_signature', 'not-a-signature' );
+		$this->assertSame(
+			400,
+			rest_do_request( $request )->get_status(),
+			'Failed to assert a malformed signature is refused by the route.'
+		);
+
+		$request->set_param( 'block_signature', str_repeat( '0', 64 ) );
+		$this->assertSame(
+			403,
+			rest_do_request( $request )->get_status(),
+			'Failed to assert a wrong signature is refused by the handler.'
+		);
+
+		$request->set_param( 'block_signature', Rsvp_Template::sign_template( $template ) );
+		$this->assertSame(
+			200,
+			rest_do_request( $request )->get_status(),
+			'Failed to assert the emitted pair passes the route.'
+		);
+
+		$request->set_param(
+			'block_data',
+			(string) wp_json_encode(
+				array(
+					'blockName'   => 'core/paragraph',
+					'attrs'       => array(),
+					'innerBlocks' => array(),
+				)
+			)
+		);
+		$this->assertSame(
+			400,
+			rest_do_request( $request )->get_status(),
+			'Failed to assert a root that is not the RSVP template is refused by the route.'
+		);
 	}
 }

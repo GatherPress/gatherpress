@@ -116,6 +116,7 @@ final class Setup {
 	 * @return void
 	 */
 	protected function register_default_notices(): void {
+		$this->add( new Welcome() );
 	}
 
 	/**

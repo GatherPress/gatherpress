@@ -12,7 +12,7 @@ namespace GatherPress\Core\Rsvp\Response;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Rsvp\Response\Identity_Type;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Settings\Roles;
 use GatherPress\Core\Utility;
 
@@ -20,6 +20,8 @@ use GatherPress\Core\Utility;
  * Class with methods to serialize RSVP Response objects.
  *
  * @since 0.35.0
+ *
+ * @phpstan-import-type RsvpRecord from Rsvp
  */
 final class Serializer {
 
@@ -30,7 +32,7 @@ final class Serializer {
 	 *
 	 * @param State $state RSVP state.
 	 *
-	 * @return array The RSVP response state as an associative array.
+	 * @return RsvpRecord The RSVP response state as an associative array.
 	 */
 	public static function to_array( State $state ): array {
 		$identity = $state->data->identity;
@@ -95,6 +97,12 @@ final class Serializer {
 			$data[ Utility::snake_to_camel( $gatherpress_snake_key ) ] = $data[ $gatherpress_snake_key ];
 		}
 
+		/**
+		 * The completed record.
+		 *
+		 * @var RsvpRecord $data Writing the camelCase aliases in a loop loses the shape, but the
+		 *                       literal above plus those three aliases is the whole contract.
+		 */
 		return $data;
 	}
 

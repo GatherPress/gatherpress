@@ -14,7 +14,7 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
 
 /**
@@ -24,6 +24,37 @@ use GatherPress\Core\Traits\Singleton;
  * related to event display, roles, and credits.
  *
  * @since 0.27.0
+ *
+ * @phpstan-type SettingsFieldPreview array{template: string, suffix?: string}
+ * @phpstan-type SettingsFieldOptions array{
+ *     default?: bool|int|string,
+ *     items?: array<string, string>,
+ *     min?: int|string,
+ *     max?: int|string,
+ *     type?: string,
+ *     label?: string,
+ *     limit?: int
+ * }
+ * @phpstan-type SettingsField array{
+ *     type?: string,
+ *     label?: string,
+ *     size?: string,
+ *     placeholder?: string,
+ *     allow_empty?: bool,
+ *     rewrite?: bool,
+ *     options?: SettingsFieldOptions,
+ *     preview?: SettingsFieldPreview
+ * }
+ * @phpstan-type SettingsShowIf array<string, scalar|scalar[]|array{not: scalar|scalar[]}>
+ * @phpstan-type SettingsOption array{
+ *     labels: array<string, string>,
+ *     description?: string,
+ *     field: SettingsField,
+ *     show_if?: SettingsShowIf,
+ *     callback?: callable
+ * }
+ * @phpstan-type SettingsSection array{name: string, description?: string, options?: array<string, SettingsOption>}
+ * @phpstan-type SettingsSubPage array{name: string, priority?: int, sections?: array<string, SettingsSection>}
  */
 class Settings {
 
@@ -50,6 +81,24 @@ class Settings {
 	 * @since 0.34.0
 	 */
 	const MAP_TILE_URL = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
+
+	/**
+	 * Hosts the CARTO key may be sent to.
+	 *
+	 * The tile URL is filterable, so the key is only ever attached to hosts
+	 * known to be CARTO's. A site pointing its tiles elsewhere does not hand
+	 * its key to that host.
+	 *
+	 * @since 0.36.0
+	 * @var string[]
+	 */
+	private const CARTO_TILE_HOSTS = array(
+		'basemaps.cartocdn.com',
+		'cartodb-basemaps-a.global.ssl.fastly.net',
+		'cartodb-basemaps-b.global.ssl.fastly.net',
+		'cartodb-basemaps-c.global.ssl.fastly.net',
+		'cartodb-basemaps-d.global.ssl.fastly.net',
+	);
 
 	/**
 	 * URL used in the default map attribution credit to OpenStreetMap.
@@ -85,7 +134,7 @@ class Settings {
 	 * Cached flat map of option keys to their default values.
 	 *
 	 * @since 0.34.0
-	 * @var array|null
+	 * @var array<string, bool|int|string>|null
 	 */
 	protected ?array $defaults_cache = null;
 
@@ -160,9 +209,9 @@ class Settings {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $settings The block editor settings array.
+	 * @param array<string, mixed> $settings The block editor settings array.
 	 *
-	 * @return array The modified block editor settings array.
+	 * @return array<string, mixed> The modified block editor settings array.
 	 */
 	public function add_editor_settings( array $settings ): array {
 		if ( ! isset( $settings['gatherpress'] ) ) {
@@ -179,21 +228,27 @@ class Settings {
 
 		$settings['gatherpress']['settings'] = $gatherpress_settings;
 
-		// Infrastructure config values (not user-configurable).
-		$settings['gatherpress']['config'] = array(
-			'timezoneChoices'       => Utility::timezone_choices(),
-			'siteTimezone'          => Utility::get_system_timezone(),
-			'pluginUrl'             => GATHERPRESS_CORE_URL,
-			'homeUrl'               => get_home_url(),
-			'mapTileUrl'            => self::get_map_tile_url(),
-			'mapTileAttribution'    => self::get_map_tile_attribution(),
-			'venuesMapsSettingsUrl' => admin_url(
-				sprintf(
-					'edit.php?post_type=%s&page=%s',
-					Event::POST_TYPE,
-					sprintf( 'gatherpress_event_page_%s', Utility::prefix_key( 'venues_settings' ) )
-				)
-			),
+		// Merged rather than assigned: other classes hook this filter first,
+		// and assigning dropped their config keys.
+		$settings['gatherpress']['config'] = array_merge(
+			$settings['gatherpress']['config'] ?? array(),
+			array(
+				'nonTimeFormatChars'    => Utility::non_time_format_chars(),
+				'timeFormatChars'       => Utility::time_format_chars(),
+				'timezoneChoices'       => Utility::timezone_choices(),
+				'siteTimezone'          => Utility::get_system_timezone(),
+				'pluginUrl'             => GATHERPRESS_CORE_URL,
+				'homeUrl'               => get_home_url(),
+				'mapTileUrl'            => self::get_map_tile_url(),
+				'mapTileAttribution'    => self::get_map_tile_attribution(),
+				'venuesMapsSettingsUrl' => admin_url(
+					sprintf(
+						'edit.php?post_type=%s&page=%s',
+						Event::POST_TYPE,
+						sprintf( 'gatherpress_event_page_%s', Utility::prefix_key( 'venues_settings' ) )
+					)
+				),
+			)
 		);
 
 		return $settings;
@@ -216,7 +271,45 @@ class Settings {
 		 */
 		$filtered = (string) apply_filters( 'gatherpress_interactive_map_tile_url', self::MAP_TILE_URL );
 
-		return '' !== $filtered ? $filtered : self::MAP_TILE_URL;
+		return self::add_map_tile_key( '' !== $filtered ? $filtered : self::MAP_TILE_URL );
+	}
+
+	/**
+	 * Append the configured CARTO key to a tile URL.
+	 *
+	 * CARTO began enforcing keys on its basemaps in August 2026. Without one
+	 * every tile comes back stamped "API KEY REQUIRED", so both the Leaflet
+	 * basemap and the server-side compositor carry the key.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $url Tile URL template.
+	 *
+	 * @return string The template, with the key appended when there is one.
+	 */
+	public static function add_map_tile_key( string $url ): string {
+		$key = trim( (string) self::get_instance()->get( 'carto_api_key' ) );
+
+		if ( '' === $key ) {
+			return $url;
+		}
+
+		// `{s}` stands in for a subdomain, so it is resolved before the host
+		// is read; a bare placeholder does not parse as one.
+		$host = (string) wp_parse_url( str_replace( '{s}', 'a', $url ), PHP_URL_HOST );
+
+		$is_carto = in_array( $host, self::CARTO_TILE_HOSTS, true )
+			|| str_ends_with( $host, '.basemaps.cartocdn.com' );
+
+		// Matched at a parameter boundary, so `api_key=` is not mistaken for
+		// a key that is already there.
+		if ( ! $is_carto || 1 === preg_match( '/[?&]key=/', $url ) ) {
+			return $url;
+		}
+
+		// Concatenated rather than added with add_query_arg(), which cannot
+		// parse the `{s}` subdomain placeholder as a host.
+		return $url . ( str_contains( $url, '?' ) ? '&' : '?' ) . 'key=' . rawurlencode( $key );
 	}
 
 	/**
@@ -421,8 +514,8 @@ class Settings {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param string $sub_page Sub-page slug used to scope WP's settings API.
-	 * @param array  $sections Sections array from the sub-page settings.
+	 * @param string                         $sub_page Sub-page slug used to scope WP's settings API.
+	 * @param array<string, SettingsSection> $sections Sections array from the sub-page settings.
 	 *
 	 * @return void
 	 */
@@ -481,6 +574,7 @@ class Settings {
 	 * @since 0.34.0
 	 *
 	 * @param array $option_settings The option settings array.
+	 * @phpstan-param SettingsOption $option_settings
 	 *
 	 * @return string Space-separated class names for the row.
 	 */
@@ -515,6 +609,7 @@ class Settings {
 	 * @since 0.35.0 Added the `array( 'not' => … )` negation form.
 	 *
 	 * @param array $conditions Map of controlling option key => expected value(s).
+	 * @phpstan-param SettingsShowIf $conditions
 	 *
 	 * @return bool True when every key matches the current saved value, false otherwise.
 	 */
@@ -564,6 +659,7 @@ class Settings {
 	 * @since 0.34.0
 	 *
 	 * @param array $conditions Map of controlling option key => expected value(s).
+	 * @phpstan-param SettingsShowIf $conditions
 	 *
 	 * @return void
 	 */
@@ -582,9 +678,9 @@ class Settings {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $sub_pages The sub-pages array from get_sub_pages().
+	 * @param array<string, SettingsSubPage> $sub_pages The sub-pages array from get_sub_pages().
 	 *
-	 * @return array Flat map of option_key => field_type.
+	 * @return array<string, string> Flat map of option_key => field_type.
 	 */
 	protected function build_field_type_map( array $sub_pages ): array {
 		$map        = array();
@@ -642,10 +738,10 @@ class Settings {
 	 * to the same state. Consumers rely on `get_flat_default()` as the
 	 * authoritative source of defaults in both read paths.
 	 *
-	 * @param array  $field_type_map Flat map of option_key => field_type.
-	 * @param string $scope          Storage scope: 'blog' (default) or 'network'.
-	 *                               Determines which option store the closure
-	 *                               reads from when merging with existing values.
+	 * @param array<string, string> $field_type_map Flat map of option_key => field_type.
+	 * @param string                $scope          Storage scope: 'blog' (default) or 'network'.
+	 *                                              Determines which option store the closure
+	 *                                              reads from when merging with existing values.
 	 * @return callable A callback function that sanitizes input based on field types.
 	 */
 	public function sanitize_page_settings( array $field_type_map, string $scope = 'blog' ): callable {
@@ -662,10 +758,16 @@ class Settings {
 					// Width/Height "Auto") can round-trip blank without
 					// silently saving 0.
 					'number'       => ( '' === $value || null === $value ) ? '' : intval( $value ),
-					'autocomplete' => $this->sanitize_autocomplete( $value ),
+					// sanitize_autocomplete() takes a strictly-typed string
+					// argument — a malformed submission delivering an array
+					// here would otherwise throw a TypeError.
+					'autocomplete' => $this->sanitize_autocomplete( is_string( $value ) ? $value : '' ),
 					// password, text, select and any unrecognized type are
-					// sanitized as plain text.
-					default        => sanitize_text_field( (string) $value ),
+					// sanitized as plain text. A malformed submission (e.g.
+					// a field name suffixed with `[]`) can deliver an array
+					// here — is_scalar() guards the (string) cast so that
+					// doesn't emit an "Array to string conversion" warning.
+					default        => sanitize_text_field( is_scalar( $value ) ? (string) $value : '' ),
 				};
 			}
 
@@ -731,8 +833,8 @@ class Settings {
 			$sanitized[] = $clean_item;
 		}
 
-		// Re-encode.
-		return wp_json_encode( $sanitized );
+		// Re-encode. Every value ran through a sanitizer that guarantees valid UTF-8, so encoding cannot fail.
+		return (string) wp_json_encode( $sanitized );
 	}
 
 	/**
@@ -745,6 +847,7 @@ class Settings {
 	 *
 	 * @param string $option          The unique option key for the field.
 	 * @param array  $option_settings The option settings including field config.
+	 * @phpstan-param SettingsOption $option_settings
 	 *
 	 * @return void
 	 */
@@ -923,7 +1026,7 @@ class Settings {
 			$config = Settings\Network::get_config();
 
 			if ( ! empty( $config['enabled'] ) ) {
-				$inherited = in_array( $option, (array) ( $config['inherited'] ?? array() ), true );
+				$inherited = in_array( $option, $config['inherited'], true );
 			}
 		}
 
@@ -974,7 +1077,7 @@ class Settings {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array Flat map of option_key => default_value.
+	 * @return array<string, bool|int|string> Flat map of option_key => default_value.
 	 */
 	protected function get_defaults_map(): array {
 		if ( null !== $this->defaults_cache ) {
@@ -1033,7 +1136,7 @@ class Settings {
 	 *
 	 * @since 0.27.0
 	 *
-	 * @return array An array of sub-pages, each with settings and priority information.
+	 * @return array<string, SettingsSubPage> An array of sub-pages, each with settings and priority information.
 	 */
 	public function get_sub_pages(): array {
 		/**
@@ -1065,6 +1168,8 @@ class Settings {
 	 *
 	 * @param array $first  The first sub-page to compare by priority.
 	 * @param array $second The second sub-page to compare by priority.
+	 * @phpstan-param SettingsSubPage $first
+	 * @phpstan-param SettingsSubPage $second
 	 *
 	 * @return int Returns a negative number if the first sub-page has a lower priority,
 	 *             a positive number if the second sub-page has a lower priority,
@@ -1160,7 +1265,7 @@ class Settings {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array List of option keys that affect rewrite rules.
+	 * @return string[] List of option keys that affect rewrite rules.
 	 */
 	protected function get_rewrite_keys(): array {
 		$keys      = array();
@@ -1198,7 +1303,7 @@ class Settings {
 	 * @param string $scope Storage scope: 'blog' (default) or 'network'.
 	 *                      'network' reads the network-wide site option,
 	 *                      used when exporting from Network Admin.
-	 * @return array Export data with version, timestamp, scope, and settings.
+	 * @return array{version: string, exported_at: string, scope: string, settings: array<string, mixed>} Export data.
 	 */
 	public function export_settings( string $scope = 'blog' ): array {
 		return array(
@@ -1216,7 +1321,7 @@ class Settings {
 	 *
 	 * @param string $scope Storage scope: 'blog' or 'network'.
 	 *
-	 * @return array
+	 * @return array<string, mixed> Stored option values keyed by option key.
 	 */
 	protected function read_stored_options( string $scope ): array {
 		if ( 'network' === $scope ) {
@@ -1231,8 +1336,8 @@ class Settings {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param string $scope   Storage scope: 'blog' or 'network'.
-	 * @param array  $options Options array to persist.
+	 * @param string               $scope   Storage scope: 'blog' or 'network'.
+	 * @param array<string, mixed> $options Options array to persist.
 	 *
 	 * @return void
 	 */
@@ -1271,10 +1376,10 @@ class Settings {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array  $data  The parsed import data.
-	 * @param string $scope Storage scope: 'blog' (default) or 'network'.
+	 * @param array<string, mixed> $data  The parsed import data.
+	 * @param string               $scope Storage scope: 'blog' (default) or 'network'.
 	 *
-	 * @return array Validation result with 'valid', 'changes', 'unknown', and 'warnings' keys.
+	 * @return array{valid: bool, changes: string[], unknown: string[], warnings: string[]} Validation result.
 	 */
 	public function validate_import( array $data, string $scope = 'blog' ): array {
 		$result = array(
@@ -1330,11 +1435,11 @@ class Settings {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array  $data  The parsed import data.
-	 * @param string $mode  Import mode: 'merge' or 'replace'.
-	 * @param string $scope Storage scope: 'blog' (default) or 'network'.
+	 * @param array<string, mixed> $data  The parsed import data.
+	 * @param string               $mode  Import mode: 'merge' or 'replace'.
+	 * @param string               $scope Storage scope: 'blog' (default) or 'network'.
 	 *
-	 * @return array Result with 'success', 'imported', 'skipped', and 'warnings' keys.
+	 * @return array{success: bool, imported: string[], skipped: string[], warnings: string[]} Import result.
 	 */
 	public function import_settings( array $data, string $mode = 'merge', string $scope = 'blog' ): array {
 		$result = array(

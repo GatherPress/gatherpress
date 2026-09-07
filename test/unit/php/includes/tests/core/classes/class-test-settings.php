@@ -160,6 +160,70 @@ class Test_Settings extends Base {
 	}
 
 	/**
+	 * Config keys added by other classes survive this filter.
+	 *
+	 * Several classes hook `block_editor_settings_all` to add their own
+	 * config, and this one runs after some of them. A wholesale assignment
+	 * here silently dropped their values.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::add_editor_settings
+	 *
+	 * @return void
+	 */
+	public function test_add_editor_settings_preserves_config_from_other_callbacks(): void {
+		$instance = Settings::get_instance();
+		$settings = $instance->add_editor_settings(
+			array(
+				'gatherpress' => array(
+					'config' => array( 'setByAnotherCallback' => 'kept' ),
+				),
+			)
+		);
+
+		$this->assertSame(
+			'kept',
+			$settings['gatherpress']['config']['setByAnotherCallback'],
+			'Failed to assert a config key added by an earlier callback survives.'
+		);
+		$this->assertArrayHasKey(
+			'pluginUrl',
+			$settings['gatherpress']['config'],
+			'Failed to assert this callback still adds its own config keys.'
+		);
+	}
+
+	/**
+	 * The editor is handed the same time characters PHP formats with.
+	 *
+	 * `removeTimePHPFormatChars()` strips an all-day format with this list,
+	 * and `Utility::remove_time_format_chars()` strips the same format on
+	 * the server. The preview and the rendered event agree only while the
+	 * two read the same list.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::add_editor_settings
+	 *
+	 * @return void
+	 */
+	public function test_add_editor_settings_sends_the_time_format_chars(): void {
+		$settings = Settings::get_instance()->add_editor_settings( array() );
+
+		$this->assertSame(
+			GatherPress_Utility::time_format_chars(),
+			$settings['gatherpress']['config']['timeFormatChars'],
+			'Failed to assert the editor is sent the time formatting characters.'
+		);
+		$this->assertSame(
+			GatherPress_Utility::non_time_format_chars(),
+			$settings['gatherpress']['config']['nonTimeFormatChars'],
+			'Failed to assert the editor is sent the non-time formatting characters.'
+		);
+	}
+
+	/**
 	 * Coverage for add_editor_settings method.
 	 *
 	 * @covers ::add_editor_settings
@@ -1281,6 +1345,55 @@ class Test_Settings extends Base {
 			'"id":3',
 			$result['autocomplete_field'],
 			'Failed to assert autocomplete was sanitized.'
+		);
+	}
+
+	/**
+	 * A malformed submission (e.g. a field name suffixed with `[]`) can
+	 * deliver an array value for a scalar-typed field. The default (text)
+	 * arm must not emit a PHP "Array to string conversion" warning, and the
+	 * autocomplete arm must not throw a TypeError from its string-typed
+	 * parameter.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::sanitize_page_settings
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_page_settings_handles_array_value_for_scalar_fields(): void {
+		$instance = Settings::get_instance();
+
+		delete_option( 'gatherpress_settings' );
+
+		$field_type_map = array(
+			'text_field'         => 'text',
+			'autocomplete_field' => 'autocomplete',
+		);
+
+		$callback = $instance->sanitize_page_settings( $field_type_map );
+
+		$result = $callback(
+			array(
+				'text_field'         => array( 'unexpected' ),
+				'autocomplete_field' => array( 'unexpected' ),
+			)
+		);
+
+		// Sanitizes to '' — which matches the (unregistered) field's default,
+		// so the strip-defaults pass below removes the key entirely. That's
+		// the same outcome a legitimate empty-string submission would get;
+		// the assertion here is that no "Array" sentinel string survives.
+		$this->assertArrayNotHasKey(
+			'text_field',
+			$result,
+			'Failed to assert an array value for a text field sanitizes away instead of storing "Array".'
+		);
+
+		$this->assertSame(
+			'[]',
+			$result['autocomplete_field'],
+			'Failed to assert an array value for an autocomplete field sanitizes to an empty list.'
 		);
 	}
 
@@ -3204,5 +3317,152 @@ class Test_Settings extends Base {
 		);
 
 		delete_option( Settings::OPTION_NAME );
+	}
+
+	/**
+	 * Data provider for tile URLs handed to add_map_tile_key.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return array<string, array<int, string>>
+	 */
+	public function data_map_tile_keys(): array {
+		return array(
+			'the Leaflet basemap gets the key'   => array(
+				'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+				'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?key=abc123',
+			),
+			'the compositor host gets it too'    => array(
+				'https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png',
+				'https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png?key=abc123',
+			),
+			'an existing key is left alone'      => array(
+				'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?key=existing',
+				'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?key=existing',
+			),
+			'another query argument is kept'     => array(
+				'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?foo=bar',
+				'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?foo=bar&key=abc123',
+			),
+			'a host that wants no key is spared' => array(
+				'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+				'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+			),
+			'a lookalike host gets nothing'      => array(
+				'https://attacker-cartocdn.com/light_all/{z}/{x}/{y}.png',
+				'https://attacker-cartocdn.com/light_all/{z}/{x}/{y}.png',
+			),
+			'a lookalike subdomain too'          => array(
+				'https://basemaps.cartocdn.com.evil.test/light_all/{z}/{x}/{y}.png',
+				'https://basemaps.cartocdn.com.evil.test/light_all/{z}/{x}/{y}.png',
+			),
+			'another key argument is not ours'   => array(
+				'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?api_key=old',
+				'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?api_key=old&key=abc123',
+			),
+		);
+	}
+
+	/**
+	 * Coverage for add_map_tile_key.
+	 *
+	 * CARTO began enforcing keys on its basemaps in August 2026. Without one
+	 * every tile comes back stamped "API KEY REQUIRED", so the configured key
+	 * rides along on both the Leaflet basemap and the server-side compositor.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::add_map_tile_key
+	 *
+	 * @dataProvider data_map_tile_keys
+	 *
+	 * @param string $url      Tile URL template.
+	 * @param string $expected Template after the key is applied.
+	 *
+	 * @return void
+	 */
+	public function test_add_map_tile_key( string $url, string $expected ): void {
+		$instance = Settings::get_instance();
+
+		$instance->set( 'carto_api_key', 'abc123' );
+
+		$this->assertSame(
+			$expected,
+			Settings::add_map_tile_key( $url ),
+			'Failed to assert the CARTO key is applied to the tile URL.'
+		);
+
+		$instance->set( 'carto_api_key', '' );
+	}
+
+	/**
+	 * Without a key the tile URL is untouched.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::add_map_tile_key
+	 * @covers ::get_map_tile_url
+	 *
+	 * @return void
+	 */
+	public function test_add_map_tile_key_without_a_key(): void {
+		$instance = Settings::get_instance();
+
+		$instance->set( 'carto_api_key', '' );
+
+		$this->assertSame(
+			Settings::MAP_TILE_URL,
+			Settings::get_map_tile_url(),
+			'Failed to assert the tile URL is unchanged without a key.'
+		);
+	}
+
+	/**
+	 * The key is url-encoded on its way into the query string.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::add_map_tile_key
+	 *
+	 * @return void
+	 */
+	public function test_add_map_tile_key_encodes_the_key(): void {
+		$instance = Settings::get_instance();
+
+		$instance->set( 'carto_api_key', 'a b&c' );
+
+		$this->assertStringEndsWith(
+			'?key=a%20b%26c',
+			Settings::add_map_tile_key( 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png' ),
+			'Failed to assert the key is encoded.'
+		);
+
+		$instance->set( 'carto_api_key', '' );
+	}
+
+	/**
+	 * The Leaflet basemap URL carries the key.
+	 *
+	 * Covers the call site rather than the helper, so dropping the wrapper
+	 * call is caught.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_map_tile_url
+	 *
+	 * @return void
+	 */
+	public function test_get_map_tile_url_carries_the_key(): void {
+		$instance = Settings::get_instance();
+
+		$instance->set( 'carto_api_key', 'abc123' );
+
+		$this->assertSame(
+			Settings::MAP_TILE_URL . '?key=abc123',
+			Settings::get_map_tile_url(),
+			'Failed to assert the Leaflet basemap URL carries the key.'
+		);
+
+		$instance->set( 'carto_api_key', '' );
 	}
 }
