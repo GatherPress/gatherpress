@@ -23,10 +23,8 @@ use WP_Comment;
  * Records which RSVPs actually turned up.
  *
  * Check-in state is tracked via a taxonomy term on the RSVP comment for fast
- * queries, paired with a comment meta key holding the GMT timestamp of the
- * check-in. An absent value means "not checked in", so existing RSVPs need
- * no backfill. The timestamp rather than a boolean because arrival times are
- * free to keep and impossible to reconstruct afterwards.
+ * queries. An absent term means "not checked in", so existing RSVPs need
+ * no backfill.
  *
  * @since 0.36.0
  */
@@ -38,13 +36,13 @@ final class Check_In {
 	use Singleton;
 
 	/**
-	 * Taxonomy for tracking RSVP check-in state.
+	 * Taxonomy for tracking RSVP flags.
 	 *
 	 * @since 0.36.0
 	 *
 	 * @var string
 	 */
-	public const TAXONOMY = '_gatherpress_rsvp_checkin';
+	public const TAXONOMY = '_gatherpress_rsvp_flag';
 
 	/**
 	 * Term slug for checked-in status.
@@ -54,15 +52,6 @@ final class Check_In {
 	 * @var string
 	 */
 	public const TERM = 'checked-in';
-
-	/**
-	 * Comment meta key holding the GMT check-in timestamp.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @var string
-	 */
-	public const META_KEY = 'gatherpress_checked_in';
 
 	/**
 	 * Class constructor.
@@ -91,8 +80,8 @@ final class Check_In {
 	/**
 	 * Record that an RSVP turned up.
 	 *
-	 * Repeating a check-in keeps the first arrival time rather than moving it:
-	 * a second scan at the door is a duplicate, not a later arrival.
+	 * Assigning the term is idempotent: repeating a check-in maintains the
+	 * existing state without duplicate term relationships.
 	 *
 	 * @since 0.36.0
 	 *
@@ -109,23 +98,18 @@ final class Check_In {
 			return true;
 		}
 
-		wp_set_object_terms( $rsvp_id, self::TERM, self::TAXONOMY );
-
-		$timestamp = current_time( 'mysql', true );
-
-		update_comment_meta( $rsvp_id, self::META_KEY, $timestamp );
+		wp_set_object_terms( $rsvp_id, self::TERM, self::TAXONOMY, true );
 
 		/**
 		 * Fires after an RSVP has been checked in.
 		 *
 		 * @since 0.36.0
 		 *
-		 * @param int    $rsvp_id   The RSVP comment ID.
-		 * @param string $timestamp The GMT timestamp recorded for the check-in.
+		 * @param int $rsvp_id The RSVP comment ID.
 		 *
 		 * @return void
 		 */
-		do_action( 'gatherpress_rsvp_checked_in', $rsvp_id, $timestamp );
+		do_action( 'gatherpress_rsvp_checked_in', $rsvp_id );
 
 		return true;
 	}
@@ -133,9 +117,9 @@ final class Check_In {
 	/**
 	 * Undo a check-in.
 	 *
-	 * Wrong person, wrong row, or an accidental tap at the door: the arrival time is
-	 * removed rather than kept alongside a flag, so the meta stays the single
-	 * answer to whether someone turned up.
+	 * Wrong person, wrong row, or an accidental tap at the door: the check-in
+	 * term is removed so the absence of the term remains the single answer
+	 * to whether someone turned up.
 	 *
 	 * @since 0.36.0
 	 *
@@ -149,8 +133,6 @@ final class Check_In {
 		}
 
 		wp_remove_object_terms( $rsvp_id, self::TERM, self::TAXONOMY );
-
-		delete_comment_meta( $rsvp_id, self::META_KEY );
 
 		/**
 		 * Fires after an RSVP's check-in has been cleared.
@@ -177,19 +159,6 @@ final class Check_In {
 	 */
 	public function is_checked_in( int $rsvp_id ): bool {
 		return true === is_object_in_term( $rsvp_id, self::TAXONOMY, self::TERM );
-	}
-
-	/**
-	 * The GMT timestamp an RSVP was checked in.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @param int $rsvp_id The RSVP comment ID.
-	 *
-	 * @return string The GMT timestamp, or an empty string when not checked in.
-	 */
-	public function get_check_in_time( int $rsvp_id ): string {
-		return (string) get_comment_meta( $rsvp_id, self::META_KEY, true );
 	}
 
 	/**
@@ -228,10 +197,10 @@ final class Check_In {
 	/**
 	 * Drop the check-in when its RSVP is deleted.
 	 *
-	 * WordPress clears comment meta for deleted comments, so this exists for
-	 * the case where a filter or a direct query removed the comment row
-	 * without taking its meta: an orphaned arrival time would otherwise be
-	 * counted against whatever comment ID got reused.
+	 * WordPress core deletes commentmeta on wp_delete_comment(), but it never
+	 * touches term relationships. This method cleans up the taxonomy term
+	 * relationships for deleted RSVP comments so orphaned rows are not left
+	 * behind in the term relationships table.
 	 *
 	 * @since 0.36.0
 	 *
@@ -241,6 +210,5 @@ final class Check_In {
 	 */
 	public function delete_check_in( $comment_id ): void {
 		wp_remove_object_terms( (int) $comment_id, self::TERM, self::TAXONOMY );
-		delete_comment_meta( (int) $comment_id, self::META_KEY );
 	}
 }

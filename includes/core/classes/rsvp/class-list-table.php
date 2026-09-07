@@ -724,13 +724,8 @@ final class List_Table extends WP_List_Table {
 				$output = $statuses[ $approved ] ?? '-';
 				break;
 			case 'checked_in':
-				$check_in_time = Check_In::get_instance()->get_check_in_time( (int) $item['comment_ID'] );
-
-				// The stored value is GMT; render it in the site's timezone so
-				// the column reads like the Date column next to it. Escaping is
-				// left to the render layer, matching the Date column below.
-				$output = '' !== $check_in_time
-					? get_date_from_gmt( $check_in_time, 'Y/m/d \a\t g:i a' )
+				$output = Check_In::get_instance()->is_checked_in( (int) $item['comment_ID'] )
+					? __( 'Yes', 'gatherpress' )
 					: '-';
 				break;
 			case 'date':

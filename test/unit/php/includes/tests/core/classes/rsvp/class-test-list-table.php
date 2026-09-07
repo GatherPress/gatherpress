@@ -931,12 +931,9 @@ class Test_List_Table extends Base {
 		Check_In::get_instance()->check_in( (int) $this->rsvp['comment_ID'] );
 
 		$this->assertSame(
-			get_date_from_gmt(
-				Check_In::get_instance()->get_check_in_time( (int) $this->rsvp['comment_ID'] ),
-				'Y/m/d \a\t g:i a'
-			),
+			__( 'Yes', 'gatherpress' ),
 			$this->list_table->column_default( $this->rsvp, 'checked_in' ),
-			'Failed to assert checked-in column shows the arrival time in site time.'
+			'Failed to assert checked-in column shows Yes after check-in.'
 		);
 	}
 

@@ -102,7 +102,6 @@ class Test_Check_In extends Base {
 	 *
 	 * @covers ::check_in
 	 * @covers ::is_checked_in
-	 * @covers ::get_check_in_time
 	 *
 	 * @return void
 	 */
@@ -118,11 +117,6 @@ class Test_Check_In extends Base {
 			true === is_object_in_term( $rsvp['rsvp_id'], Check_In::TAXONOMY, Check_In::TERM ),
 			'A fresh RSVP should not have the check-in taxonomy term.'
 		);
-		$this->assertSame(
-			'',
-			$instance->get_check_in_time( $rsvp['rsvp_id'] ),
-			'A fresh RSVP should have no arrival time.'
-		);
 		$this->assertTrue(
 			$instance->check_in( $rsvp['rsvp_id'] ),
 			'Checking in an RSVP should succeed.'
@@ -135,36 +129,62 @@ class Test_Check_In extends Base {
 			true === is_object_in_term( $rsvp['rsvp_id'], Check_In::TAXONOMY, Check_In::TERM ),
 			'The RSVP should have the check-in taxonomy term.'
 		);
-		$this->assertNotEmpty(
-			$instance->get_check_in_time( $rsvp['rsvp_id'] ),
-			'A GMT arrival time should be recorded.'
-		);
 	}
 
 	/**
-	 * Coverage for check_in on an already checked-in RSVP: the first arrival
-	 * time stands rather than being overwritten by a second scan.
+	 * Coverage for check_in on an already checked-in RSVP: repeated check-in
+	 * is idempotent and continues reporting success.
 	 *
 	 * @covers ::check_in
 	 *
 	 * @return void
 	 */
-	public function test_check_in_keeps_the_first_arrival_time(): void {
+	public function test_check_in_is_idempotent_on_already_checked_in_rsvp(): void {
 		$instance = Check_In::get_instance();
 		$rsvp     = $this->make_rsvp();
 
-		$instance->check_in( $rsvp['rsvp_id'] );
-
-		$first = $instance->get_check_in_time( $rsvp['rsvp_id'] );
-
 		$this->assertTrue(
 			$instance->check_in( $rsvp['rsvp_id'] ),
-			'A repeated check-in should report success.'
+			'First check-in should succeed.'
 		);
-		$this->assertSame(
-			$first,
-			$instance->get_check_in_time( $rsvp['rsvp_id'] ),
-			'A repeated check-in should not move the arrival time.'
+		$this->assertTrue(
+			$instance->check_in( $rsvp['rsvp_id'] ),
+			'Repeated check-in should report success.'
+		);
+		$this->assertTrue(
+			$instance->is_checked_in( $rsvp['rsvp_id'] ),
+			'The RSVP should remain checked in.'
+		);
+	}
+
+	/**
+	 * Coverage for appending flag terms: check_in should append the term
+	 * without clobbering other terms assigned in the flag taxonomy.
+	 *
+	 * @covers ::check_in
+	 *
+	 * @return void
+	 */
+	public function test_check_in_appends_flag_term_without_clobbering_existing_flags(): void {
+		$instance = Check_In::get_instance();
+		$rsvp     = $this->make_rsvp();
+
+		wp_set_object_terms( $rsvp['rsvp_id'], 'host', Check_In::TAXONOMY );
+
+		$this->assertTrue(
+			true === is_object_in_term( $rsvp['rsvp_id'], Check_In::TAXONOMY, 'host' ),
+			'The RSVP should have the initial host flag.'
+		);
+
+		$instance->check_in( $rsvp['rsvp_id'] );
+
+		$this->assertTrue(
+			$instance->is_checked_in( $rsvp['rsvp_id'] ),
+			'The RSVP should now be checked in.'
+		);
+		$this->assertTrue(
+			true === is_object_in_term( $rsvp['rsvp_id'], Check_In::TAXONOMY, 'host' ),
+			'The existing host flag should not be clobbered.'
 		);
 	}
 
@@ -188,11 +208,6 @@ class Test_Check_In extends Base {
 		$this->assertFalse(
 			$instance->is_checked_in( $rsvp['rsvp_id'] ),
 			'The RSVP should no longer read as checked in.'
-		);
-		$this->assertSame(
-			'',
-			$instance->get_check_in_time( $rsvp['rsvp_id'] ),
-			'The check-in timestamp should be removed.'
 		);
 		$this->assertFalse(
 			true === is_object_in_term( $rsvp['rsvp_id'], Check_In::TAXONOMY, Check_In::TERM ),
@@ -288,7 +303,7 @@ class Test_Check_In extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_delete_check_in_removes_the_arrival_time(): void {
+	public function test_delete_check_in_removes_the_term(): void {
 		$instance = Check_In::get_instance();
 		$rsvp     = $this->make_rsvp();
 
@@ -297,12 +312,7 @@ class Test_Check_In extends Base {
 
 		$this->assertFalse(
 			$instance->is_checked_in( $rsvp['rsvp_id'] ),
-			'Deleting an RSVP should take its arrival time with it.'
-		);
-		$this->assertSame(
-			'',
-			$instance->get_check_in_time( $rsvp['rsvp_id'] ),
-			'The check-in timestamp should be removed.'
+			'Deleting an RSVP should remove its check-in status.'
 		);
 		$this->assertFalse(
 			true === is_object_in_term( $rsvp['rsvp_id'], Check_In::TAXONOMY, Check_In::TERM ),
@@ -325,11 +335,9 @@ class Test_Check_In extends Base {
 
 		add_action(
 			'gatherpress_rsvp_checked_in',
-			static function ( int $rsvp_id, string $timestamp ) use ( &$fired ): void {
-				$fired['checked_in'] = array( $rsvp_id, '' !== $timestamp );
-			},
-			10,
-			2
+			static function ( int $rsvp_id ) use ( &$fired ): void {
+				$fired['checked_in'] = $rsvp_id;
+			}
 		);
 		add_action(
 			'gatherpress_rsvp_check_in_cleared',
@@ -345,9 +353,9 @@ class Test_Check_In extends Base {
 		remove_all_actions( 'gatherpress_rsvp_check_in_cleared' );
 
 		$this->assertSame(
-			array( $rsvp['rsvp_id'], true ),
+			$rsvp['rsvp_id'],
 			$fired['checked_in'],
-			'The check-in action should report the RSVP and a timestamp.'
+			'The check-in action should report the RSVP.'
 		);
 		$this->assertSame(
 			$rsvp['rsvp_id'],
