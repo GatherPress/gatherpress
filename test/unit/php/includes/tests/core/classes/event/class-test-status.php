@@ -289,4 +289,80 @@ class Test_Status extends Base {
 
 		remove_filter( 'gatherpress_event_statuses', $callback );
 	}
+
+	/**
+	 * A status gets a term named the way people read it.
+	 *
+	 * Without this a term is created from the slug, and an event would say
+	 * `canceled` where it should say `Canceled`.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::ensure_term
+	 *
+	 * @return void
+	 */
+	public function test_ensure_term_names_the_term(): void {
+		wp_delete_term(
+			(int) ( get_term_by( 'slug', 'canceled', Event::TAXONOMY_STATUS )->term_id ?? 0 ),
+			Event::TAXONOMY_STATUS
+		);
+
+		Status::ensure_term( 'canceled' );
+
+		$term = get_term_by( 'slug', 'canceled', Event::TAXONOMY_STATUS );
+
+		$this->assertSame( 'Canceled', $term->name, 'Failed to assert the term carries the label.' );
+	}
+
+	/**
+	 * A term whose name has drifted from the vocabulary is put right.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::ensure_term
+	 *
+	 * @return void
+	 */
+	public function test_ensure_term_corrects_a_stale_name(): void {
+		Status::ensure_term( 'postponed' );
+
+		$term = get_term_by( 'slug', 'postponed', Event::TAXONOMY_STATUS );
+
+		wp_update_term( $term->term_id, Event::TAXONOMY_STATUS, array( 'name' => 'Put off' ) );
+
+		Status::ensure_term( 'postponed' );
+
+		$this->assertSame(
+			'Postponed',
+			get_term_by( 'slug', 'postponed', Event::TAXONOMY_STATUS )->name,
+			'Failed to assert a drifted name is corrected.'
+		);
+	}
+
+	/**
+	 * A status the vocabulary does not know gets no term.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::ensure_term
+	 *
+	 * @return void
+	 */
+	public function test_ensure_term_ignores_an_unknown_status(): void {
+		$callback = static function (): array {
+			return array();
+		};
+
+		add_filter( 'gatherpress_event_statuses', $callback );
+
+		Status::ensure_term( 'nothing-at-all' );
+
+		remove_filter( 'gatherpress_event_statuses', $callback );
+
+		$this->assertFalse(
+			get_term_by( 'slug', 'nothing-at-all', Event::TAXONOMY_STATUS ),
+			'Failed to assert an unknown status creates no term.'
+		);
+	}
 }

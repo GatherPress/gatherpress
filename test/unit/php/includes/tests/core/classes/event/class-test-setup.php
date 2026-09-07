@@ -176,6 +176,12 @@ class Test_Setup extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'add_status_post_class' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'term_links-' . Event::TAXONOMY_STATUS,
+				'priority' => 10,
+				'callback' => array( $instance, 'unlink_status_terms' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
@@ -2420,6 +2426,30 @@ class Test_Setup extends Base {
 			'--is-plain{',
 			implode( '', (array) wp_styles()->get_data( $handle, 'after' ) ),
 			'Failed to assert a status with no color adds no rule.'
+		);
+	}
+
+	/**
+	 * A status reads as a state rather than a link somewhere.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::unlink_status_terms
+	 *
+	 * @return void
+	 */
+	public function test_unlink_status_terms(): void {
+		$result = Setup::get_instance()->unlink_status_terms(
+			array(
+				'<a href="https://example.org/event-status/canceled/" rel="tag">Canceled</a>',
+				'<a href="https://example.org/event-status/moved/" rel="tag">Moved</a>',
+			)
+		);
+
+		$this->assertSame(
+			array( '<span>Canceled</span>', '<span>Moved</span>' ),
+			$result,
+			'Failed to assert a status is shown without a link.'
 		);
 	}
 }

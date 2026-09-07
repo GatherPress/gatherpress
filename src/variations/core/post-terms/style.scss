@@ -9,9 +9,7 @@
 	align-items: center;
 	gap: 0.5em;
 
-	a,
-	.wp-block-post-terms__prefix,
-	.wp-block-post-terms__suffix {
+	span:not(.wp-block-post-terms__prefix, .wp-block-post-terms__suffix, .wp-block-post-terms__separator) {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.45em;
@@ -28,7 +26,7 @@
 	}
 
 	// The dot takes the badge's color, which the shared ring animation pulses.
-	a::before {
+	span:not(.wp-block-post-terms__prefix, .wp-block-post-terms__suffix, .wp-block-post-terms__separator)::before {
 		content: "";
 		display: inline-block;
 		width: 0.5em;

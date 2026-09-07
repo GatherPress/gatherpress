@@ -11,6 +11,8 @@ namespace GatherPress\Core\Event;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use WP_Term;
+
 /**
  * Class Status.
  *
@@ -286,6 +288,40 @@ final class Status {
 		$ical = (string) ( self::get( $slug )['ical'] ?? '' );
 
 		return '' === $ical ? self::DEFAULT_ICAL : $ical;
+	}
+
+	/**
+	 * Make sure a status has a term named the way people read it.
+	 *
+	 * `wp_set_object_terms()` creates a missing term named after the slug, so
+	 * an event would show `canceled` where it should say `Canceled`. This
+	 * puts the label on the term, and corrects one that already carries the
+	 * wrong name, which is what a status renamed through the filter needs.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $slug The status slug.
+	 *
+	 * @return void
+	 */
+	public static function ensure_term( string $slug ): void {
+		$label = self::label( $slug );
+
+		if ( '' === $label ) {
+			return;
+		}
+
+		$term = get_term_by( 'slug', $slug, Event::TAXONOMY_STATUS );
+
+		if ( ! $term instanceof WP_Term ) {
+			wp_insert_term( $label, Event::TAXONOMY_STATUS, array( 'slug' => $slug ) );
+
+			return;
+		}
+
+		if ( $label !== $term->name ) {
+			wp_update_term( $term->term_id, Event::TAXONOMY_STATUS, array( 'name' => $label ) );
+		}
 	}
 
 	/**

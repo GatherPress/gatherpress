@@ -650,6 +650,8 @@ class Event {
 			return false;
 		}
 
+		Status::ensure_term( $status );
+
 		// A plain string replaces every term in the taxonomy, which is what
 		// enforces the statuses being mutually exclusive.
 		$result = wp_set_object_terms( $this->post->ID, $status, self::TAXONOMY_STATUS );

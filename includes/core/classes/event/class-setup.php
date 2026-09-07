@@ -123,6 +123,7 @@ final class Setup {
 		add_filter( 'display_post_states', array( $this, 'set_event_archive_labels' ), 10, 2 );
 		add_filter( 'block_editor_settings_all', array( $this, 'add_editor_settings' ) );
 		add_filter( 'post_class', array( $this, 'add_status_post_class' ), 10, 3 );
+		add_filter( 'term_links-' . Event::TAXONOMY_STATUS, array( $this, 'unlink_status_terms' ) );
 		add_action( 'init', array( $this, 'register_status_style' ) );
 	}
 
@@ -198,6 +199,29 @@ final class Setup {
 		$classes[] = sprintf( 'gatherpress-event-status--is-%s', sanitize_html_class( $status ) );
 
 		return $classes;
+	}
+
+	/**
+	 * Show a status as a state rather than somewhere to go.
+	 *
+	 * Core links every term it lists, which suits categories and tags. A
+	 * status is something the event is, and sending a reader to an archive of
+	 * every canceled event is not what the badge is for, so the anchors are
+	 * replaced with the words they wrapped.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string[] $links Term links, each a rendered anchor.
+	 *
+	 * @return string[] The same terms, unlinked.
+	 */
+	public function unlink_status_terms( array $links ): array {
+		return array_map(
+			static function ( $link ): string {
+				return sprintf( '<span>%s</span>', esc_html( wp_strip_all_tags( (string) $link ) ) );
+			},
+			$links
+		);
 	}
 
 	/**
