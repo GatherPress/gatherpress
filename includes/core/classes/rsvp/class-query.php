@@ -329,7 +329,7 @@ final class Query {
 	 * @return WP_Comment|mixed The comment, prepared for the current reader.
 	 */
 	public function prepare_rsvp_comment( $comment ) {
-		if ( ! $comment instanceof WP_Comment || Rsvp::COMMENT_TYPE !== $comment->comment_type ) {
+		if ( ! Rsvp::is_rsvp( $comment ) ) {
 			return $comment;
 		}
 
@@ -404,7 +404,7 @@ final class Query {
 		// this does not depend on what the mask above happens to write.
 		if (
 			isset( $data['author'] )
-			&& Rsvp::COMMENT_TYPE === $comment->comment_type
+			&& Rsvp::is_rsvp( $comment )
 			&& ! current_user_can( Rsvp::CAPABILITY )
 			&& get_comment_meta( (int) $comment->comment_ID, Rsvp::ANONYMOUS_META_KEY, true )
 		) {

@@ -171,6 +171,35 @@ final class Rsvp {
 	}
 
 	/**
+	 * Checks whether a comment ID or object is an RSVP comment.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param mixed $comment Comment ID or comment object.
+	 *
+	 * @return bool True if the comment exists and has the RSVP comment type, false otherwise.
+	 */
+	public static function is_rsvp( mixed $comment ): bool {
+		if ( $comment instanceof WP_Comment ) {
+			return self::COMMENT_TYPE === $comment->comment_type;
+		}
+
+		if ( ! is_int( $comment ) && ( ! is_string( $comment ) || ! ctype_digit( $comment ) ) ) {
+			return false;
+		}
+
+		$comment_id = (int) $comment;
+
+		if ( $comment_id <= 0 ) {
+			return false;
+		}
+
+		$comment = get_comment( $comment_id );
+
+		return $comment instanceof WP_Comment && self::COMMENT_TYPE === $comment->comment_type;
+	}
+
+	/**
 	 * Get RSVP information for a user and an event.
 	 *
 	 * This method retrieves RSVP information for a specific user and event, including the RSVP entry's ID,
