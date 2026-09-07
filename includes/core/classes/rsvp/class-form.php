@@ -585,10 +585,10 @@ final class Form {
 
 		// For REST API submissions, process the custom fields directly.
 		$comment = get_comment( $comment_id );
-		if ( ! $comment instanceof WP_Comment || ! Rsvp::is_rsvp( $comment ) ) {
+		if ( ! Rsvp::is_rsvp( $comment ) ) {
 			return;
 		}
-
+		/** @var WP_Comment $comment */
 		$post_id = (int) $comment->comment_post_ID;
 
 		// Get stored schemas for this post.

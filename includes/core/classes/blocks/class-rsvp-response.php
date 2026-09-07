@@ -285,10 +285,10 @@ final class Rsvp_Response {
 	 * @return array<string, mixed> Modified array of avatar arguments, including the correct URL for the avatar.
 	 */
 	public function modify_avatar_for_gatherpress_rsvp( array $args, $comment ): array {
-		// Bail when the filter fires for a non-RSVP comment so the body
-		// doesn't have to nest under the positive guard. The instanceof
-		// guard stays in front because get_avatar_data also passes user
-		// IDs and email addresses here, which must not be read as comment IDs.
+		// get_avatar_data also passes user IDs and email addresses here, and
+		// is_rsvp() would read a numeric value as a comment ID. The instanceof
+		// guard keeps those callers from ever matching an RSVP comment, so
+		// unlike the get_comment()-backed call sites this one keeps its guard.
 		if (
 			! $comment instanceof WP_Comment
 			|| ! Rsvp::is_rsvp( $comment )
