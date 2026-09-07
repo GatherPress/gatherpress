@@ -59,17 +59,22 @@ class Test_Uninstall extends Base {
 	 */
 	public function test_setup_hooks(): void {
 		$instance = Uninstall::get_instance();
+		$hooks    = array(
+			array(
+				'type'     => 'action',
+				'name'     => 'gatherpress_settings_section',
+				'priority' => 9,
+				'callback' => array( $instance, 'settings_section' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'admin_post_' . Uninstall::SAVE_ACTION,
+				'priority' => 10,
+				'callback' => array( $instance, 'handle_save' ),
+			),
+		);
 
-		$this->assertSame(
-			9,
-			has_action( 'gatherpress_settings_section', array( $instance, 'settings_section' ) ),
-			'The page renders its own form in place of the default one.'
-		);
-		$this->assertSame(
-			10,
-			has_action( 'admin_post_' . Uninstall::SAVE_ACTION, array( $instance, 'handle_save' ) ),
-			'The save handler is wired to its admin-post action.'
-		);
+		$this->assert_hooks( $hooks, $instance );
 	}
 
 	/**
@@ -296,5 +301,47 @@ class Test_Uninstall extends Base {
 			$output,
 			'The form tells the handler which screen it came from.'
 		);
+	}
+
+	/**
+	 * A user without the capability cannot arm data deletion.
+	 *
+	 * @covers ::handle_save
+	 * @covers ::required_capability
+	 *
+	 * @return void
+	 */
+	public function test_handle_save_wp_dies_without_capability(): void {
+		$user_id = $this->factory()->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $user_id );
+
+		$this->expectException( \WPDieException::class );
+
+		Uninstall::get_instance()->handle_save();
+	}
+
+	/**
+	 * A request without a valid nonce cannot arm data deletion.
+	 *
+	 * The capability check passes here, so this reaches
+	 * `check_admin_referer()` and proves the nonce is what stops it.
+	 *
+	 * @covers ::handle_save
+	 *
+	 * @return void
+	 */
+	public function test_handle_save_wp_dies_on_invalid_nonce(): void {
+		$user_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user_id );
+
+		$_POST[ Uninstall::NONCE_NAME ] = 'not-a-valid-nonce';
+
+		$this->expectException( \WPDieException::class );
+
+		try {
+			Uninstall::get_instance()->handle_save();
+		} finally {
+			unset( $_POST[ Uninstall::NONCE_NAME ] );
+		}
 	}
 }

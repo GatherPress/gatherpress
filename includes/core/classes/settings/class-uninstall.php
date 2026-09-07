@@ -173,6 +173,11 @@ final class Uninstall extends Base {
 
 		check_admin_referer( self::SAVE_ACTION, self::NONCE_NAME );
 
+		// The body below runs only on a valid nonce and terminates via
+		// wp_safe_redirect → exit, so it's untestable under PHPUnit without
+		// subprocess isolation.
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
+		// @codeCoverageIgnoreStart
 		$submitted = array();
 
 		foreach ( Preferences::task_keys() as $key ) {
@@ -185,6 +190,8 @@ final class Uninstall extends Base {
 		wp_safe_redirect( $this->redirect_url( $this->resolve_scope() ) );
 
 		exit;
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
+		// @codeCoverageIgnoreEnd
 	}
 
 	/**
