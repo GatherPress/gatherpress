@@ -109,19 +109,11 @@ final class Check_In {
 			return true;
 		}
 
-		$term_result = wp_set_object_terms( $rsvp_id, self::TERM, self::TAXONOMY );
-		if ( is_wp_error( $term_result ) ) {
-			return false;
-		}
+		wp_set_object_terms( $rsvp_id, self::TERM, self::TAXONOMY );
 
 		$timestamp = current_time( 'mysql', true );
 
-		$meta_updated = update_comment_meta( $rsvp_id, self::META_KEY, $timestamp );
-
-		if ( false === $meta_updated && get_comment_meta( $rsvp_id, self::META_KEY, true ) !== $timestamp ) {
-			wp_remove_object_terms( $rsvp_id, self::TERM, self::TAXONOMY );
-			return false;
-		}
+		update_comment_meta( $rsvp_id, self::META_KEY, $timestamp );
 
 		/**
 		 * Fires after an RSVP has been checked in.
@@ -156,11 +148,7 @@ final class Check_In {
 			return false;
 		}
 
-		$term_result = wp_remove_object_terms( $rsvp_id, self::TERM, self::TAXONOMY );
-
-		if ( is_wp_error( $term_result ) ) {
-			return false;
-		}
+		wp_remove_object_terms( $rsvp_id, self::TERM, self::TAXONOMY );
 
 		delete_comment_meta( $rsvp_id, self::META_KEY );
 
