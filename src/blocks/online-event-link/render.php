@@ -50,6 +50,9 @@ $gatherpress_context_json = wp_json_encode(
 	array(
 		'postId'   => $gatherpress_current_post_id,
 		'linkText' => $gatherpress_link_text,
+		'i18n'     => array(
+			'opensInNewTab' => __( '(opens in a new tab)', 'gatherpress' ),
+		),
 	),
 	JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
 );
@@ -63,6 +66,7 @@ $gatherpress_context_json = wp_json_encode(
 	<?php if ( $gatherpress_has_link ) : ?>
 		<a class="gatherpress-online-event__text" href="<?php echo esc_url( $gatherpress_online_event_link ); ?>" target="_blank" rel="noopener noreferrer">
 			<?php echo wp_kses_post( $gatherpress_link_text ); ?>
+			<span class="screen-reader-text"> <?php esc_html_e( '(opens in a new tab)', 'gatherpress' ); ?></span>
 		</a>
 	<?php else : ?>
 		<span class="gatherpress-online-event__text">

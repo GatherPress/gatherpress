@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Add screen-reader warning to links that open in a new tab.

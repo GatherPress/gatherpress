@@ -69,11 +69,25 @@ const { state } = store( 'gatherpress', {
 				linkElement.target = '_blank';
 				linkElement.rel = 'noopener noreferrer';
 				linkElement.innerHTML = currentHTML;
+
+				// Append screen-reader warning if not already present in currentHTML.
+				if ( ! linkElement.querySelector( '.screen-reader-text' ) ) {
+					const warningText = context?.i18n?.opensInNewTab || '(opens in a new tab)';
+					const srSpan = document.createElement( 'span' );
+					srSpan.className = 'screen-reader-text';
+					srSpan.textContent = ` ${ warningText }`;
+					linkElement.appendChild( srSpan );
+				}
+
 				currentElement.replaceWith( linkElement );
 			} else if ( ! hasLink && isLink ) {
 				const spanElement = document.createElement( 'span' );
 				spanElement.className = 'gatherpress-online-event__text';
 				spanElement.innerHTML = currentHTML;
+
+				// Remove screen-reader warning since the element is now static text.
+				spanElement.querySelectorAll( '.screen-reader-text' ).forEach( ( el ) => el.remove() );
+
 				currentElement.replaceWith( spanElement );
 			} else if ( hasLink && isLink && currentElement.href !== onlineEventLink ) {
 				currentElement.href = onlineEventLink;

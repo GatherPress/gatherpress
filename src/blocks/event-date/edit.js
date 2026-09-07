@@ -420,6 +420,10 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 								'Date/time formatting documentation',
 								'gatherpress'
 							) }
+							<span className="screen-reader-text">
+								{ ' ' }
+								{ __( '(opens in a new tab)', 'gatherpress' ) }
+							</span>
 						</a>
 					</p>
 					<ToggleControl

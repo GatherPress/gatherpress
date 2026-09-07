@@ -389,6 +389,13 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 										rel="noopener noreferrer"
 									>
 										{ __( 'Learn more', 'gatherpress' ) }
+										<span className="screen-reader-text">
+											{ ' ' }
+											{ __(
+												'(opens in a new tab)',
+												'gatherpress'
+											) }
+										</span>
 									</a>
 								</>
 							}
