@@ -164,6 +164,12 @@ class Test_Setup extends Base {
 				'callback' => array( $instance, 'add_editor_settings' ),
 			),
 			array(
+				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 10,
+				'callback' => array( $instance, 'register_status_style' ),
+			),
+			array(
 				'type'     => 'filter',
 				'name'     => 'post_class',
 				'priority' => 10,
@@ -512,13 +518,20 @@ class Test_Setup extends Base {
 			$taxonomy->public,
 			'Failed to assert the status taxonomy is not public.'
 		);
-		$this->assertFalse(
+		// Core's Post Terms block refuses to render a taxonomy that is not
+		// viewable, and the editor only offers a queryable one, so the Event
+		// Status variation depends on both of these.
+		$this->assertTrue(
 			$taxonomy->publicly_queryable,
-			'Failed to assert the status taxonomy is not publicly queryable.'
+			'Failed to assert the status taxonomy is publicly queryable.'
+		);
+		$this->assertTrue(
+			$taxonomy->show_in_rest,
+			'Failed to assert the status taxonomy reaches REST.'
 		);
 		$this->assertFalse(
-			$taxonomy->show_in_rest,
-			'Failed to assert the status taxonomy stays out of REST.'
+			$taxonomy->show_ui,
+			'Failed to assert the vocabulary is not editable in the admin.'
 		);
 		$this->assertContains(
 			Event::POST_TYPE,

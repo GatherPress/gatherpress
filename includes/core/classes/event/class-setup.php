@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use DateTimeImmutable;
 use Exception;
+use GatherPress\Core\Assets;
 use GatherPress\Core\Event;
 use GatherPress\Core\Feed;
 use GatherPress\Core\Rsvp;
@@ -122,6 +123,7 @@ final class Setup {
 		add_filter( 'display_post_states', array( $this, 'set_event_archive_labels' ), 10, 2 );
 		add_filter( 'block_editor_settings_all', array( $this, 'add_editor_settings' ) );
 		add_filter( 'post_class', array( $this, 'add_status_post_class' ), 10, 3 );
+		add_action( 'init', array( $this, 'register_status_style' ) );
 	}
 
 	/**
@@ -146,13 +148,18 @@ final class Setup {
 			array(
 				'labels'             => array(),
 				'hierarchical'       => false,
+				// Queryable and visible to the REST API so core's Post Terms
+				// block can render it, which is what the Event Status block
+				// variation is. Not `show_ui`, because the vocabulary comes
+				// from Event\Status rather than from people adding terms.
 				'public'             => false,
 				'show_ui'            => false,
 				'show_admin_column'  => false,
-				'query_var'          => false,
-				'publicly_queryable' => false,
-				'rewrite'            => false,
-				'show_in_rest'       => false,
+				'query_var'          => true,
+				'publicly_queryable' => true,
+				'rewrite'            => array( 'slug' => 'event-status' ),
+				'show_in_rest'       => true,
+				'rest_base'          => 'gatherpress_event_statuses',
 				// Every saved event carries a status term, so filtering for one is
 				// an IN query rather than a NOT EXISTS.
 				'default_term'       => array(
@@ -191,6 +198,59 @@ final class Setup {
 		$classes[] = sprintf( 'gatherpress-event-status--is-%s', sanitize_html_class( $status ) );
 
 		return $classes;
+	}
+
+	/**
+	 * Register the status stylesheet and give every status its color.
+	 *
+	 * The Event Status variation of core's Post Terms block is styled by the
+	 * stylesheet this registers, which core loads only on pages carrying that
+	 * block. `add_status_post_class()` puts the status on the post wrapper, so
+	 * one rule per status is enough for the badge inside it to draw itself in
+	 * that color. The rules come from the registry rather than the stylesheet,
+	 * so a status a site registers looks like its own without shipping CSS.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	public function register_status_style(): void {
+		$handle = 'gatherpress-event-status';
+		$asset  = Assets::get_instance()->get_asset_data(
+			'index',
+			sprintf( '%s/build/variations/core/post-terms/index.asset.php', GATHERPRESS_CORE_PATH )
+		);
+
+		// Core loads this only when the block it belongs to is on the page.
+		wp_enqueue_block_style(
+			'core/post-terms',
+			array(
+				'handle' => $handle,
+				'src'    => plugins_url( 'build/variations/core/post-terms/style-index.css', GATHERPRESS_CORE_FILE ),
+				'path'   => sprintf( '%1$s/build/variations/core/post-terms/style-index.css', GATHERPRESS_CORE_PATH ),
+				'ver'    => $asset['version'],
+			)
+		);
+
+		$rules = '';
+
+		foreach ( Status::all( Event::POST_TYPE ) as $gatherpress_slug => $status ) {
+			$color = Status::color( (string) $gatherpress_slug );
+
+			if ( '' === $color ) {
+				continue;
+			}
+
+			$rules .= sprintf(
+				'.gatherpress-event-status--is-%s{--gatherpress-status-color:%s}',
+				sanitize_html_class( (string) $gatherpress_slug ),
+				$color
+			);
+		}
+
+		if ( '' !== $rules ) {
+			wp_add_inline_style( $handle, $rules );
+		}
 	}
 
 	/**
