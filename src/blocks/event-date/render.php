@@ -88,18 +88,18 @@ if ( $gatherpress_viewer_time_context ) {
 ?>
 <div <?php echo wp_kses_data( $gatherpress_wrapper_attrs ); ?>>
 	<?php if ( ! empty( $attributes['isLink'] ) ) : ?>
-		<a
-			href="<?php echo esc_url( get_permalink( $gatherpress_post_id ) ); ?>"
-			<?php if ( $gatherpress_viewer_time_context ) : ?>
+		<?php if ( $gatherpress_viewer_time_context ) : ?>
+			<a
+				href="<?php echo esc_url( get_permalink( $gatherpress_post_id ) ); ?>"
 				data-wp-class--gatherpress-tooltip="state.hasViewerTime"
 				data-wp-bind--data-gatherpress-tooltip="state.viewerTimeLabel"
-			<?php endif; ?>
-		>
-			<?php echo esc_html( $gatherpress_display ); ?>
-			<?php if ( $gatherpress_viewer_time_context ) : ?>
+			>
+				<?php echo esc_html( $gatherpress_display ); ?>
 				<span class="screen-reader-text" data-wp-text="state.viewerTimeSrLabel"></span>
-			<?php endif; ?>
-		</a>
+			</a>
+		<?php else : ?>
+			<a href="<?php echo esc_url( get_permalink( $gatherpress_post_id ) ); ?>"><?php echo esc_html( $gatherpress_display ); ?></a>
+		<?php endif; ?>
 	<?php elseif ( $gatherpress_viewer_time_context ) : ?>
 		<span
 			data-wp-class--gatherpress-tooltip="state.hasViewerTime"

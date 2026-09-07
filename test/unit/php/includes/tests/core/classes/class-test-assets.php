@@ -1041,7 +1041,8 @@ class Test_Assets extends Base {
 		// First register the utility style.
 		$instance->register_block_assets();
 
-		// Dequeue if it was enqueued by previous test.
+		// Reset state in case a previous test enqueued tooltip assets.
+		Utility::set_and_get_hidden_property( $instance, 'tooltip_assets_enqueued', false );
 		wp_dequeue_style( 'gatherpress-utility-style' );
 
 		// Use invoke_hidden_method to call the protected method.
@@ -1065,6 +1066,10 @@ class Test_Assets extends Base {
 
 		// First register the utility style.
 		$instance->register_block_assets();
+
+		// Reset state to ensure clean start.
+		Utility::set_and_get_hidden_property( $instance, 'tooltip_assets_enqueued', false );
+		wp_dequeue_style( 'gatherpress-utility-style' );
 
 		// Call enqueue_tooltip_assets twice - second call should return early.
 		Utility::invoke_hidden_method( $instance, 'enqueue_tooltip_assets' );

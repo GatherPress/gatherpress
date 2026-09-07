@@ -8,9 +8,11 @@
 
 namespace GatherPress\Tests\Core\Blocks;
 
+use GatherPress\Core\Assets;
 use GatherPress\Core\Blocks\Event_Date;
 use GatherPress\Core\Event;
 use GatherPress\Core\Settings;
+use GatherPress\Core\Utility;
 use GatherPress\Tests\Base;
 
 /**
@@ -610,5 +612,19 @@ class Test_Event_Date extends Base {
 			$output,
 			'The anchor should carry the tooltip binding when isLink is set.'
 		);
+	}
+
+	/**
+	 * Clean up tooltip assets after tests.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	public function tear_down(): void {
+		wp_dequeue_style( 'gatherpress-utility-style' );
+		wp_dequeue_script( 'gatherpress-tooltip-view' );
+		Utility::set_and_get_hidden_property( Assets::get_instance(), 'tooltip_assets_enqueued', false );
+		parent::tear_down();
 	}
 }
