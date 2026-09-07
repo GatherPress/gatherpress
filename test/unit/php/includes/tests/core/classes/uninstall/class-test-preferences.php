@@ -222,4 +222,58 @@ class Test_Preferences extends Base {
 			);
 		}
 	}
+
+	/**
+	 * Saving on multisite writes the network option, not the site option.
+	 *
+	 * @covers ::save
+	 * @group multisite
+	 *
+	 * @return void
+	 */
+	public function test_save_writes_the_network_option_on_multisite(): void {
+		Preferences::save( array( Preferences::TASK_POSTS => true ) );
+
+		$stored = get_site_option( Preferences::OPTION_NAME );
+
+		$this->assertIsArray(
+			$stored,
+			'Saving on multisite must write the network option, because applies() reads it once for the network.'
+		);
+		$this->assertTrue(
+			$stored[ Preferences::TASK_POSTS ],
+			'The armed task must survive the round trip into network storage.'
+		);
+		$this->assertFalse(
+			get_option( Preferences::OPTION_NAME, false ),
+			'Nothing may land in per-site storage, or subsites would disagree about what uninstall removes.'
+		);
+	}
+
+	/**
+	 * Reading on multisite resolves the map from the network option.
+	 *
+	 * @covers ::all
+	 * @covers ::is_enabled
+	 * @group multisite
+	 *
+	 * @return void
+	 */
+	public function test_all_reads_the_network_option_on_multisite(): void {
+		update_site_option(
+			Preferences::OPTION_NAME,
+			array( Preferences::TASK_TERMS => true )
+		);
+
+		Preferences::flush_cache();
+
+		$this->assertTrue(
+			Preferences::is_enabled( Preferences::TASK_TERMS ),
+			'A task armed in the network option must read as enabled on multisite.'
+		);
+		$this->assertFalse(
+			Preferences::is_enabled( Preferences::TASK_POSTS ),
+			'A task absent from the network option stays off.'
+		);
+	}
 }

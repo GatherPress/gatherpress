@@ -11,13 +11,17 @@ namespace GatherPress\Core\Uninstall;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Calendar\Cache;
 use GatherPress\Core\Settings;
+use GatherPress\Core\Settings\Network;
 
 /**
  * Class Options.
  *
- * Removes the settings an administrator configured, and the version marker
- * the upgrade routine keeps.
+ * Removes the settings an administrator configured, the network settings,
+ * the version marker the upgrade routine keeps, and the calendar cache
+ * stamp. Every option the plugin writes under its own name belongs here,
+ * except the dismissed-notice bookkeeping, which `Notices` owns.
  *
  * The opt-in map itself goes last, in the network pass. `Preferences` reads
  * its option once and caches it, so removing it here cannot change whether
@@ -56,6 +60,7 @@ final class Options extends Base {
 	protected function uninstall_site(): void {
 		delete_option( Settings::OPTION_NAME );
 		delete_option( self::VERSION_OPTION );
+		delete_option( Cache::LAST_MODIFIED_OPTION );
 	}
 
 	/**
@@ -70,6 +75,7 @@ final class Options extends Base {
 	 */
 	protected function uninstall_network(): void {
 		delete_site_option( Settings::OPTION_NAME );
+		delete_site_option( Network::OPTION_NAME );
 		delete_site_option( Preferences::OPTION_NAME );
 		delete_option( Preferences::OPTION_NAME );
 	}

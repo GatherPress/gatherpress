@@ -8,7 +8,9 @@
 
 namespace GatherPress\Tests\Core\Uninstall;
 
+use GatherPress\Core\Calendar\Cache;
 use GatherPress\Core\Settings;
+use GatherPress\Core\Settings\Network;
 use GatherPress\Core\Uninstall\Options;
 use GatherPress\Core\Uninstall\Preferences;
 use GatherPress\Tests\Base;
@@ -128,6 +130,50 @@ class Test_Options extends Base {
 		$this->assertFalse(
 			get_option( Options::VERSION_OPTION ),
 			'The version marker is removed.'
+		);
+	}
+
+	/**
+	 * The calendar cache stamp goes with the rest of the options.
+	 *
+	 * Found by uninstalling a real site: the task deleted the settings and
+	 * the version marker and left this one behind, because the list of
+	 * option names was written by hand.
+	 *
+	 * @covers ::uninstall_site
+	 *
+	 * @return void
+	 */
+	public function test_removes_the_calendar_cache_stamp(): void {
+		Preferences::save( array( Preferences::TASK_OPTIONS => true ) );
+
+		update_option( Cache::LAST_MODIFIED_OPTION, '2026-09-07 12:00:00' );
+
+		( new Options() )->run();
+
+		$this->assertFalse(
+			get_option( Cache::LAST_MODIFIED_OPTION ),
+			'The calendar last-modified stamp is removed.'
+		);
+	}
+
+	/**
+	 * The network settings go in the network pass.
+	 *
+	 * @covers ::uninstall_network
+	 *
+	 * @return void
+	 */
+	public function test_removes_the_network_settings(): void {
+		Preferences::save( array( Preferences::TASK_OPTIONS => true ) );
+
+		update_site_option( Network::OPTION_NAME, array( 'some' => 'value' ) );
+
+		( new Options() )->run();
+
+		$this->assertFalse(
+			get_site_option( Network::OPTION_NAME ),
+			'The network settings option is removed.'
 		);
 	}
 
