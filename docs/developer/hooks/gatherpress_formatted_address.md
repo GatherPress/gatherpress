@@ -44,7 +44,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-geocoding.php:1142](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-geocoding.php#L1142)
+- [includes/core/classes/class-geocoding.php:1150](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-geocoding.php#L1150)
 ```php
 apply_filters(
 				'gatherpress_formatted_address',
