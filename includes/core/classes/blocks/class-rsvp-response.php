@@ -286,11 +286,12 @@ final class Rsvp_Response {
 	 */
 	public function modify_avatar_for_gatherpress_rsvp( array $args, $comment ): array {
 		// Bail when the filter fires for a non-RSVP comment so the body
-		// doesn't have to nest under the positive guard.
+		// doesn't have to nest under the positive guard. The instanceof
+		// guard stays in front because get_avatar_data also passes user
+		// IDs and email addresses here, which must not be read as comment IDs.
 		if (
-			! $comment
-			|| ! is_a( $comment, 'WP_Comment' )
-			|| Rsvp::COMMENT_TYPE !== $comment->comment_type
+			! $comment instanceof WP_Comment
+			|| ! Rsvp::is_rsvp( $comment )
 		) {
 			return $args;
 		}

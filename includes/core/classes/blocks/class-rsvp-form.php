@@ -22,6 +22,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
+use WP_Comment;
 use WP_HTML_Tag_Processor;
 
 /**
@@ -705,7 +706,7 @@ final class Rsvp_Form {
 	 */
 	public function process_custom_fields_for_form( int $comment_id ): void {
 		$comment = get_comment( $comment_id );
-		if ( ! $comment || Rsvp::COMMENT_TYPE !== $comment->comment_type ) {
+		if ( ! $comment instanceof WP_Comment || ! Rsvp::is_rsvp( $comment ) ) {
 			return;
 		}
 
