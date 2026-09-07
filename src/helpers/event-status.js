@@ -19,7 +19,7 @@ export const TAXONOMY_STATUS = '_gatherpress_event_status';
  *
  * @type {string}
  */
-export const DEFAULT_STATUS = 'scheduled';
+const DEFAULT_STATUS = 'scheduled';
 
 /**
  * Every status an event can be in, as PHP published it.
@@ -32,7 +32,7 @@ export const DEFAULT_STATUS = 'scheduled';
  *
  * @return {Object} Statuses keyed by slug, or an empty object before settings load.
  */
-export function getStatuses() {
+function getStatuses() {
 	const statuses = getFromConfig( 'eventStatuses' );
 
 	return statuses && 'object' === typeof statuses ? statuses : {};
@@ -51,19 +51,6 @@ function getStatus( slug ) {
 	const statuses = getStatuses();
 
 	return statuses[ slug ] || statuses[ DEFAULT_STATUS ] || {};
-}
-
-/**
- * The words shown for a status.
- *
- * @since 0.36.0
- *
- * @param {string} slug The status slug.
- *
- * @return {string} The label, or the slug itself before settings load.
- */
-export function getStatusLabel( slug ) {
-	return getStatus( slug ).label || slug;
 }
 
 /**
@@ -93,15 +80,3 @@ export function getStatusOptions() {
 	} ) );
 }
 
-/**
- * The color a status is shown in.
- *
- * @since 0.36.0
- *
- * @param {string} slug The status slug.
- *
- * @return {string} The color, or an empty string when there is none to use.
- */
-export function getStatusColor( slug ) {
-	return getStatus( slug ).color || '';
-}
