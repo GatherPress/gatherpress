@@ -9,6 +9,11 @@ import { __ } from '@wordpress/i18n';
  * PHP adds the notice when a block renders. This covers links that appear or
  * change afterwards, so a block that swaps a span for a link at runtime gets
  * the same treatment without knowing this exists.
+ *
+ * The notice follows the target rather than being added once. A block that
+ * hides a link by swapping in a span copies the content across verbatim,
+ * notice included, and would otherwise leave static text announcing that it
+ * opens a new tab. The same holds for a link retargeted away from `_blank`.
  */
 const BLOCK_SELECTOR = '[class*="wp-block-gatherpress-"]';
 const NOTICE_CLASS = 'gatherpress-new-tab-notice';
@@ -48,13 +53,34 @@ const opensNewTab = ( link ) =>
 	'_blank' === ( link.getAttribute( 'target' ) || '' ).toLowerCase();
 
 /**
- * Announce every new-tab link inside an element, and the element itself.
+ * Remove a notice that no longer describes where it sits.
+ *
+ * A notice belongs inside a link that opens a new tab and nowhere else. Left
+ * behind in plain text, or in a link that now opens in the same tab, it tells
+ * a screen reader something that is not true.
+ *
+ * @param {Element} notice The notice to check.
+ *
+ * @return {void}
+ */
+const withdraw = ( notice ) => {
+	const link = notice.closest( 'a' );
+
+	if ( ! link || ! opensNewTab( link ) ) {
+		notice.remove();
+	}
+};
+
+/**
+ * Bring the notices inside an element, and the element itself, into line with
+ * what its links actually do: added where a new-tab link lacks one, removed
+ * where one has outlived its link.
  *
  * @param {Element} root The element to search.
  *
  * @return {void}
  */
-const announceWithin = ( root ) => {
+const reconcileWithin = ( root ) => {
 	root.querySelectorAll?.( 'a[target]' ).forEach( ( link ) => {
 		if ( opensNewTab( link ) ) {
 			announce( link );
@@ -63,6 +89,12 @@ const announceWithin = ( root ) => {
 
 	if ( 'A' === root.tagName && opensNewTab( root ) ) {
 		announce( root );
+	}
+
+	root.querySelectorAll?.( `.${ NOTICE_CLASS }` ).forEach( withdraw );
+
+	if ( root.classList?.contains( NOTICE_CLASS ) ) {
+		withdraw( root );
 	}
 };
 
@@ -80,16 +112,16 @@ const start = () => {
 
 	const observer = new MutationObserver( ( records ) => {
 		records.forEach( ( record ) => {
-			record.addedNodes.forEach( announceWithin );
+			record.addedNodes.forEach( reconcileWithin );
 
 			if ( 'attributes' === record.type ) {
-				announceWithin( record.target );
+				reconcileWithin( record.target );
 			}
 		} );
 	} );
 
 	blocks.forEach( ( block ) => {
-		announceWithin( block );
+		reconcileWithin( block );
 		observer.observe( block, {
 			attributeFilter: [ 'target' ],
 			childList: true,

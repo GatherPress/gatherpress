@@ -261,6 +261,71 @@ describe( 'new-tab notice', () => {
 		expect( document.querySelector( `.${ NOTICE_CLASS }` ) ).toBeNull();
 	} );
 
+	it( 'strips the notice when a link becomes plain text', async () => {
+		// As PHP renders it: the notice is already inside the link.
+		document.body.innerHTML =
+			'<div class="wp-block-gatherpress-online-event-link">' +
+			'<a href="https://example.com/meet" target="_blank">Online event' +
+			`<span class="screen-reader-text ${ NOTICE_CLASS }">${ NOTICE_TEXT }</span>` +
+			'</a></div>';
+
+		load();
+
+		const block = document.querySelector( '.wp-block-gatherpress-online-event-link' );
+		const link = block.querySelector( 'a' );
+		const span = document.createElement( 'span' );
+
+		// The online-event-link view script hides the link by swapping in a
+		// span and copying the content across verbatim, notice included.
+		span.className = 'gatherpress-online-event__text';
+		span.innerHTML = link.innerHTML;
+		block.replaceChild( span, link );
+
+		await settle();
+
+		// Static text does not open anything, so it must not say it does.
+		expect( span.querySelector( `.${ NOTICE_CLASS }` ) ).toBeNull();
+		expect( span.textContent ).toBe( 'Online event' );
+	} );
+
+	it( 'strips the notice when a link stops opening a new tab', async () => {
+		document.body.innerHTML =
+			'<div class="wp-block-gatherpress-venue">' +
+			'<a href="https://example.com" target="_blank">Website</a></div>';
+
+		load();
+
+		const link = document.querySelector( 'a' );
+
+		expect( link.querySelector( `.${ NOTICE_CLASS }` ) ).not.toBeNull();
+
+		link.target = '_self';
+
+		await settle();
+
+		expect( link.querySelector( `.${ NOTICE_CLASS }` ) ).toBeNull();
+	} );
+
+	it( 'strips the notice when a link loses its target entirely', async () => {
+		document.body.innerHTML =
+			'<div class="wp-block-gatherpress-venue">' +
+			'<a href="https://example.com" target="_blank">Website</a></div>';
+
+		load();
+
+		const link = document.querySelector( 'a' );
+
+		expect( link.querySelector( `.${ NOTICE_CLASS }` ) ).not.toBeNull();
+
+		// Dropping the attribute is another way to make a link open in the
+		// same tab, and leaves nothing for the target check to read.
+		link.removeAttribute( 'target' );
+
+		await settle();
+
+		expect( link.querySelector( `.${ NOTICE_CLASS }` ) ).toBeNull();
+	} );
+
 	it( 'copes with text added to a block', async () => {
 		document.body.innerHTML =
 			'<div class="wp-block-gatherpress-venue-detail">Venue</div>';
