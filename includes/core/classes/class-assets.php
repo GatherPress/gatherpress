@@ -240,17 +240,18 @@ final class Assets {
 	}
 
 	/**
-	 * Register the shared utility stylesheet and enqueue it in the block editor.
+	 * Register the shared utility stylesheet and the new-tab notice script,
+	 * and enqueue the stylesheet in the block editor.
 	 *
 	 * Hooked on `enqueue_block_assets`, which fires in two contexts with
 	 * different responsibilities:
 	 *
-	 * - Frontend: registers the `gatherpress-utility-style` handle so other
-	 *   code paths can enqueue it by name. The actual frontend enqueue is
-	 *   delegated to `maybe_enqueue_styles()` on the `render_block` filter,
-	 *   which only fires the enqueue when a `gatherpress/*` block is being
-	 *   rendered — so frontends that don't use a gatherpress block don't
-	 *   load the CSS.
+	 * - Frontend: registers the `gatherpress-utility-style` and
+	 *   `gatherpress-new-tab-notice` handles so other code paths can enqueue
+	 *   them by name. The actual frontend enqueue is delegated to
+	 *   `maybe_enqueue_styles()` on the `render_block` filter, which only
+	 *   fires the enqueue when a `gatherpress/*` block is being rendered — so
+	 *   frontends that don't use a gatherpress block load neither.
 	 *
 	 * - Block editor: also enqueues unconditionally so the stylesheet lands
 	 *   inside the editor canvas iframe. `enqueue_block_assets` is the
@@ -260,18 +261,29 @@ final class Assets {
 	 *   iframe incorrectly" warning in newer WordPress (issue #1645).
 	 *
 	 * @since 0.34.0
+	 * @since 0.36.0 Also registers the new-tab notice script.
 	 *
 	 * @return void
 	 */
 	public function register_block_assets(): void {
-		$asset = $this->get_asset_data( 'utility_style' );
+		$style  = $this->get_asset_data( 'utility_style' );
+		$script = $this->get_asset_data( 'new_tab_notice' );
 
 		wp_register_style(
 			'gatherpress-utility-style',
 			$this->build . 'utility_style.css',
-			$asset['dependencies'],
-			$asset['version']
+			$style['dependencies'],
+			$style['version']
 		);
+
+		wp_register_script(
+			'gatherpress-new-tab-notice',
+			$this->build . 'new_tab_notice.js',
+			$script['dependencies'],
+			$script['version'],
+			true
+		);
+		wp_set_script_translations( 'gatherpress-new-tab-notice', 'gatherpress' );
 
 		if ( is_admin() ) {
 			wp_enqueue_style( 'gatherpress-utility-style' );
@@ -281,7 +293,12 @@ final class Assets {
 	/**
 	 * Conditionally enqueue utility styles if GatherPress blocks are rendered.
 	 *
+	 * The new-tab notice script rides along: PHP announces the links it
+	 * renders, and the script covers links a block creates or retargets
+	 * afterwards, so no block has to handle this itself.
+	 *
 	 * @since 0.33.0
+	 * @since 0.36.0 Also enqueues the new-tab notice script.
 	 *
 	 * @param string               $block_content The block content.
 	 * @param array<string, mixed> $block         The block settings.
@@ -312,6 +329,7 @@ final class Assets {
 		foreach ( $prefixes as $prefix ) {
 			if ( str_starts_with( $block['blockName'], (string) $prefix ) ) {
 				wp_enqueue_style( 'gatherpress-utility-style' );
+				wp_enqueue_script( 'gatherpress-new-tab-notice' );
 				break;
 			}
 		}
