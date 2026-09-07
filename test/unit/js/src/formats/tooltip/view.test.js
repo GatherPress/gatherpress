@@ -536,4 +536,86 @@ describe( 'Tooltip view', () => {
 			domLoadedCallback();
 		} );
 	} );
+
+	describe( 'defensive paths', () => {
+		it( 'reads the tooltip text from dataset when getAttribute is unavailable', () => {
+			const appendChild = jest.fn();
+			const tooltip = {
+				dataset: { gatherpressTooltip: 'Plain object tooltip' },
+				appendChild,
+			};
+
+			expect( () => initTooltip( tooltip ) ).not.toThrow();
+
+			// Without querySelector there is no way to look for existing screen
+			// reader text, so none is injected rather than risking a duplicate.
+			expect( appendChild ).not.toHaveBeenCalled();
+		} );
+
+		it.each( [
+			[ 'handleDocumentClick', handleDocumentClick ],
+			[ 'handleFocusOut', handleFocusOut ],
+			[ 'handleMouseLeave', handleMouseLeave ],
+			[ 'handleLazyInit', handleLazyInit ],
+		] )( '%s ignores an event whose target is not a node', ( name, handler ) => {
+			expect( () => handler( {} ) ).not.toThrow();
+		} );
+
+		it( 'treats a text node target as its parent element', () => {
+			const tooltip = document.createElement( 'span' );
+
+			tooltip.className = 'gatherpress-tooltip';
+			tooltip.dataset.gatherpressTooltip = 'Tip';
+			tooltip.appendChild( document.createTextNode( 'Hover me' ) );
+			document.body.appendChild( tooltip );
+
+			handleDocumentClick( { target: tooltip.firstChild } );
+
+			// A click landing on the text inside a tooltip is a click on the
+			// tooltip, so it opens rather than being discarded.
+			expect(
+				tooltip.classList.contains( 'gatherpress-tooltip--is-active' )
+			).toBe( true );
+		} );
+
+		it( 'closes a focused tooltip that was never marked active', () => {
+			const tooltip = document.createElement( 'span' );
+
+			tooltip.className = 'gatherpress-tooltip';
+			tooltip.dataset.gatherpressTooltip = 'Tip';
+			tooltip.setAttribute( 'tabindex', '0' );
+			document.body.appendChild( tooltip );
+			tooltip.focus();
+
+			handleDocumentClick( { target: tooltip } );
+
+			// Focus alone shows the tooltip, so a click on it is a dismissal
+			// even though the active class was never applied.
+			expect(
+				tooltip.classList.contains( 'gatherpress-tooltip--is-dismissed' )
+			).toBe( true );
+		} );
+
+		it( 'handles Escape when the active element is not a node', () => {
+			expect( () =>
+				handleDocumentKeyDown( {
+					key: 'Escape',
+					target: { ownerDocument: { activeElement: {} } },
+				} )
+			).not.toThrow();
+		} );
+
+		it( 'binds events in an environment without MutationObserver', () => {
+			const originalObserver = global.MutationObserver;
+
+			global.MutationObserver = undefined;
+			document.addEventListener = jest.fn();
+
+			try {
+				expect( () => bindTooltipEvents() ).not.toThrow();
+			} finally {
+				global.MutationObserver = originalObserver;
+			}
+		} );
+	} );
 } );

@@ -2278,4 +2278,271 @@ class Test_Query extends Base {
 			'Failed to assert anything that is not ASC falls back to DESC.'
 		);
 	}
+
+	/**
+	 * Coverage for adjust_event_month_sql method.
+	 *
+	 * @covers ::adjust_event_month_sql
+	 *
+	 * @return void
+	 */
+	public function test_adjust_event_month_sql(): void {
+		global $wpdb;
+
+		$instance = Query::get_instance();
+		$table    = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+
+		$pieces = Utility::invoke_hidden_method(
+			$instance,
+			'adjust_event_month_sql',
+			array( array( 'where' => '' ), '202609' )
+		);
+
+		$this->assertSame(
+			sprintf(
+				" AND `%1\$s`.`datetime_start` <= '2026-09-30 23:59:59'"
+				. " AND `%1\$s`.`datetime_end` >= '2026-09-01 00:00:00'",
+				$table
+			),
+			$pieces['where'],
+			'Should narrow the list to events overlapping the requested month.'
+		);
+	}
+
+	/**
+	 * Coverage for adjust_event_month_sql method with a month it cannot use.
+	 *
+	 * @dataProvider data_adjust_event_month_sql_unusable_month
+	 *
+	 * @covers ::adjust_event_month_sql
+	 *
+	 * @param string $month Month value to pass through.
+	 *
+	 * @return void
+	 */
+	public function test_adjust_event_month_sql_leaves_unusable_month_alone( string $month ): void {
+		$instance = Query::get_instance();
+		$pieces   = array( 'where' => ' AND 1 = 1' );
+
+		$this->assertSame(
+			$pieces,
+			Utility::invoke_hidden_method( $instance, 'adjust_event_month_sql', array( $pieces, $month ) ),
+			'A month that is not YYYYMM should leave the query pieces untouched.'
+		);
+	}
+
+	/**
+	 * Data provider for unusable month values.
+	 *
+	 * @return array<string, array<int, string>>
+	 */
+	public function data_adjust_event_month_sql_unusable_month(): array {
+		return array(
+			'empty'          => array( '' ),
+			'no month'       => array( '2026' ),
+			'month zero'     => array( '202600' ),
+			'month thirteen' => array( '202613' ),
+			'too short'      => array( '20269' ),
+			'too long'       => array( '2026091' ),
+			'separated'      => array( '2026-09' ),
+			'not a number'   => array( 'september' ),
+		);
+	}
+
+	/**
+	 * Coverage for adjust_admin_event_sorting method filtering by event month.
+	 *
+	 * @covers ::adjust_admin_event_sorting
+	 * @covers ::adjust_event_month_sql
+	 *
+	 * @return void
+	 */
+	public function test_adjust_admin_event_sorting_filters_by_event_month(): void {
+		global $wpdb;
+
+		$instance = Query::get_instance();
+		$wp_query = new WP_Query();
+		$table    = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+
+		$this->mock->user( true, 'admin' );
+		set_current_screen( 'edit-gatherpress_event' );
+
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+		$wp_query->set( 'gatherpress_event_date', '202609' );
+
+		$pieces = $instance->adjust_admin_event_sorting( array( 'where' => '' ), $wp_query );
+
+		$this->assertStringContainsString(
+			sprintf( "`%s`.`datetime_start` <= '2026-09-30 23:59:59'", $table ),
+			$pieces['where'],
+			'The event month filter should reach the admin list query.'
+		);
+	}
+
+	/**
+	 * Coverage for adjust_admin_event_sorting method with array shaped parameters.
+	 *
+	 * @covers ::adjust_admin_event_sorting
+	 * @covers ::adjust_event_month_sql
+	 *
+	 * @return void
+	 */
+	public function test_adjust_admin_event_sorting_ignores_array_parameters(): void {
+		$instance = Query::get_instance();
+		$pieces   = array( 'where' => '' );
+
+		$this->mock->user( true, 'admin' );
+		set_current_screen( 'edit-gatherpress_event' );
+
+		$month_query = new WP_Query();
+		$month_query->set( 'post_type', Event::POST_TYPE );
+		$month_query->set( 'gatherpress_event_date', array( '202609' ) );
+
+		$this->assertSame(
+			'',
+			$instance->adjust_admin_event_sorting( $pieces, $month_query )['where'],
+			'An array shaped month should filter nothing rather than casting to "Array".'
+		);
+
+		$view_query = new WP_Query();
+		$view_query->set( 'post_type', Event::POST_TYPE );
+		$view_query->set( 'gatherpress_event_query', array( 'upcoming' ) );
+
+		$this->assertSame(
+			'',
+			$instance->adjust_admin_event_sorting( $pieces, $view_query )['where'],
+			'An array shaped view should fall back to all events rather than throwing.'
+		);
+	}
+
+	/**
+	 * Coverage for the month filter matching events that overlap the month.
+	 *
+	 * @covers ::adjust_admin_event_sorting
+	 * @covers ::adjust_event_month_sql
+	 *
+	 * @return void
+	 */
+	public function test_event_month_filter_matches_overlapping_events(): void {
+		$spanning = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$before   = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$within   = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+
+		// Starts in May, still running into June.
+		( new Event( $spanning ) )->save_datetimes(
+			array(
+				'datetime_start' => '2026-05-30 10:00:00',
+				'datetime_end'   => '2026-06-02 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		// Starts and ends before June opens.
+		( new Event( $before ) )->save_datetimes(
+			array(
+				'datetime_start' => '2026-05-30 10:00:00',
+				'datetime_end'   => '2026-05-30 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		( new Event( $within ) )->save_datetimes(
+			array(
+				'datetime_start' => '2026-06-15 10:00:00',
+				'datetime_end'   => '2026-06-15 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		// Creating posts clears the current screen, so the admin list context
+		// only holds once the fixtures are in place.
+		$this->mock->user( true, 'admin' );
+		set_current_screen( 'edit-gatherpress_event' );
+
+		$query = new WP_Query(
+			array(
+				'post_type'              => Event::POST_TYPE,
+				'gatherpress_event_date' => '202606',
+				'fields'                 => 'ids',
+				'posts_per_page'         => -1,
+				'orderby'                => 'ID',
+				'order'                  => 'ASC',
+			)
+		);
+
+		$this->assertContains(
+			$spanning,
+			$query->posts,
+			'An event running into the month should answer to it.'
+		);
+		$this->assertContains(
+			$within,
+			$query->posts,
+			'An event held entirely within the month should answer to it.'
+		);
+		$this->assertNotContains(
+			$before,
+			$query->posts,
+			'An event finished before the month opened should not.'
+		);
+	}
+
+	/**
+	 * Coverage for the month filter matching an event that spans the whole month.
+	 *
+	 * @covers ::adjust_admin_event_sorting
+	 * @covers ::adjust_event_month_sql
+	 *
+	 * @return void
+	 */
+	public function test_event_month_filter_matches_an_event_spanning_the_month(): void {
+		$straddling = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+
+		// Opens in September, closes in November, so October passes underneath
+		// it without the event either starting or ending inside the month.
+		( new Event( $straddling ) )->save_datetimes(
+			array(
+				'datetime_start' => '2026-09-15 10:00:00',
+				'datetime_end'   => '2026-11-10 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		// Creating posts clears the current screen, so the admin list context
+		// only holds once the fixtures are in place.
+		$this->mock->user( true, 'admin' );
+		set_current_screen( 'edit-gatherpress_event' );
+
+		foreach ( array( '202609', '202610', '202611' ) as $month ) {
+			$query = new WP_Query(
+				array(
+					'post_type'              => Event::POST_TYPE,
+					'gatherpress_event_date' => $month,
+					'fields'                 => 'ids',
+					'posts_per_page'         => -1,
+				)
+			);
+
+			$this->assertContains(
+				$straddling,
+				$query->posts,
+				sprintf( 'An event running from September to November should answer to %s.', $month )
+			);
+		}
+
+		$query = new WP_Query(
+			array(
+				'post_type'              => Event::POST_TYPE,
+				'gatherpress_event_date' => '202612',
+				'fields'                 => 'ids',
+				'posts_per_page'         => -1,
+			)
+		);
+
+		$this->assertNotContains(
+			$straddling,
+			$query->posts,
+			'A month the event never reaches should not list it.'
+		);
+	}
 }

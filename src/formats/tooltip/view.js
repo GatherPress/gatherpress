@@ -155,9 +155,10 @@ export function handleDocumentClick( event ) {
  */
 export function handleDocumentKeyDown( event ) {
 	if ( 'Escape' === event?.key ) {
-		const doc =
-			event?.target?.ownerDocument ||
-			( 'undefined' !== typeof document ? document : null );
+		// No `typeof document` guard here: the lines below read the `Node` and
+		// `Element` globals, which an environment without a document does not
+		// have either, so a null document could only ever throw two lines later.
+		const doc = event?.target?.ownerDocument || document;
 		const rawActive =
 			doc?.activeElement instanceof Node
 				? doc.activeElement
@@ -263,14 +264,15 @@ export function bindTooltipEvents() {
 }
 
 // Initialize tooltips on DOMContentLoaded or immediately if already loaded.
-if ( 'undefined' !== typeof document ) {
-	if ( 'loading' === document.readyState ) {
-		document.addEventListener( 'DOMContentLoaded', () => {
-			initTooltips();
-			bindTooltipEvents();
-		} );
-	} else {
+// No `typeof document` guard: this file ships as an enqueued view script and
+// only ever runs in a browser, so the guard was covering a case that cannot
+// happen while leaving a branch nothing could reach.
+if ( 'loading' === document.readyState ) {
+	document.addEventListener( 'DOMContentLoaded', () => {
 		initTooltips();
 		bindTooltipEvents();
-	}
+	} );
+} else {
+	initTooltips();
+	bindTooltipEvents();
 }

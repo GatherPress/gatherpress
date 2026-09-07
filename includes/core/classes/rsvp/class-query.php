@@ -14,6 +14,7 @@ namespace GatherPress\Core\Rsvp;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use WP_Comment;
 use WP_Comment_Query;
@@ -126,7 +127,7 @@ final class Query {
 		// Default to every RSVP-supporting post type; callers may narrow
 		// this down, like the per-post-type RSVPs admin pages do (#1849).
 		if ( empty( $args['post_type'] ) ) {
-			$args['post_type'] = array_values( get_post_types_by_support( 'gatherpress-rsvp' ) );
+			$args['post_type'] = array_values( get_post_types_by_support( Rsvp::SUPPORT ) );
 		}
 
 		remove_action( 'pre_get_comments', array( $this, 'exclude_rsvp_from_comment_query' ) );
