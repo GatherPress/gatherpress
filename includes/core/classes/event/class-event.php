@@ -125,70 +125,48 @@ class Event {
 	const TEMPLATE_PATTERN = 'gatherpress/event-template';
 
 	/**
-	 * Status constant for scheduled event.
+	 * Status constant for a scheduled event.
+	 *
+	 * The vocabulary itself lives in Status, which a site can extend. These
+	 * name the built-in slugs so callers do not repeat string literals.
 	 *
 	 * @since 0.36.0
 	 * @var string
 	 */
-	const STATUS_SCHEDULED = 'scheduled';
+	const STATUS_SCHEDULED = Status::SCHEDULED;
 
 	/**
-	 * Status constant for cancelled event.
+	 * Status constant for a canceled event.
 	 *
 	 * @since 0.36.0
 	 * @var string
 	 */
-	const STATUS_CANCELLED = 'cancelled';
+	const STATUS_CANCELED = Status::CANCELED;
 
 	/**
-	 * Status constant for postponed event.
+	 * Status constant for a postponed event.
 	 *
 	 * @since 0.36.0
 	 * @var string
 	 */
-	const STATUS_POSTPONED = 'postponed';
+	const STATUS_POSTPONED = Status::POSTPONED;
 
 	/**
-	 * Status constant for rescheduled event.
+	 * Status constant for a rescheduled event.
 	 *
 	 * @since 0.36.0
 	 * @var string
 	 */
-	const STATUS_RESCHEDULED = 'rescheduled';
+	const STATUS_RESCHEDULED = Status::RESCHEDULED;
 
 	/**
-	 * Status constant for event moved online.
+	 * Status constant for an event that has moved.
 	 *
 	 * @since 0.36.0
 	 * @var string
 	 */
-	const STATUS_MOVED_ONLINE = 'moved-online';
+	const STATUS_MOVED = Status::MOVED;
 
-	/**
-	 * List of all supported event status slugs.
-	 *
-	 * @since 0.36.0
-	 * @var string[]
-	 */
-	const STATUSES = array(
-		self::STATUS_SCHEDULED,
-		self::STATUS_CANCELLED,
-		self::STATUS_POSTPONED,
-		self::STATUS_RESCHEDULED,
-		self::STATUS_MOVED_ONLINE,
-	);
-
-	/**
-	 * Taxonomy that stores the event's operational status.
-	 *
-	 * Hidden and not publicly queryable: it is a query surface, not a
-	 * classification a visitor browses. Statuses are mutually exclusive, so a
-	 * single term is set with wp_set_object_terms(), which replaces rather
-	 * than appends.
-	 *
-	 * @since 0.36.0
-	 * @var string
-	 */
 	const TAXONOMY_STATUS = '_gatherpress_event_status';
 
 
@@ -689,7 +667,7 @@ class Event {
 
 		$status = (string) $terms[0]->slug;
 
-		return in_array( $status, self::STATUSES, true ) ? $status : self::STATUS_SCHEDULED;
+		return Status::exists( $status ) ? $status : self::STATUS_SCHEDULED;
 	}
 
 	/**
@@ -697,12 +675,12 @@ class Event {
 	 *
 	 * @since 0.36.0
 	 *
-	 * @param string $status One of the slugs in self::STATUSES.
+	 * @param string $status One of the slugs Status::slugs() reports.
 	 *
 	 * @return bool True when the status was stored.
 	 */
 	public function set_status( string $status ): bool {
-		if ( ! $this->post || ! in_array( $status, self::STATUSES, true ) ) {
+		if ( ! $this->post || ! Status::exists( $status ) ) {
 			return false;
 		}
 
@@ -710,18 +688,26 @@ class Event {
 		// enforces the statuses being mutually exclusive.
 		$result = wp_set_object_terms( $this->post->ID, $status, self::TAXONOMY_STATUS );
 
-		return ! is_wp_error( $result );
+		if ( is_wp_error( $result ) ) {
+			return false;
+		}
+
+		// Terms are written without touching the post row, but the calendar
+		// reads `post_modified_gmt` for a VEVENT's `SEQUENCE`, and a client
+		// ignores an update whose sequence has not advanced. Touching the post
+		// is what tells a subscriber that a cancellation actually happened.
+		return ! is_wp_error( wp_update_post( array( 'ID' => $this->post->ID ), true ) );
 	}
 
 	/**
-	 * Whether this event is cancelled.
+	 * Whether this event is canceled.
 	 *
 	 * @since 0.36.0
 	 *
-	 * @return bool True when the event is cancelled.
+	 * @return bool True when the event is canceled.
 	 */
-	public function is_cancelled(): bool {
-		return self::STATUS_CANCELLED === $this->get_status();
+	public function is_canceled(): bool {
+		return self::STATUS_CANCELED === $this->get_status();
 	}
 
 	/**
@@ -736,66 +722,36 @@ class Event {
 	}
 
 	/**
-	 * Returns the human-readable translated label for the current status.
+	 * The words shown for this event's status.
 	 *
 	 * @since 0.36.0
 	 *
-	 * @return string Localized status label.
+	 * @return string The status label.
 	 */
 	public function get_status_label(): string {
-		$labels = array(
-			self::STATUS_SCHEDULED    => __( 'Scheduled', 'gatherpress' ),
-			self::STATUS_CANCELLED    => __( 'Cancelled', 'gatherpress' ),
-			self::STATUS_POSTPONED    => __( 'Postponed', 'gatherpress' ),
-			self::STATUS_RESCHEDULED  => __( 'Rescheduled', 'gatherpress' ),
-			self::STATUS_MOVED_ONLINE => __( 'Moved online', 'gatherpress' ),
-		);
-
-		$status = $this->get_status();
-
-		return $labels[ $status ] ?? __( 'Scheduled', 'gatherpress' );
+		return Status::label( $this->get_status() );
 	}
 
 	/**
-	 * Returns the Schema.org EventStatusType value for JSON-LD / structured data.
+	 * The Schema.org EventStatusType for this event's status.
 	 *
 	 * @since 0.36.0
 	 *
-	 * @return string The Schema.org EventStatusType (e.g. 'EventScheduled', 'EventCancelled').
+	 * @return string The Schema.org EventStatusType (e.g. 'EventScheduled').
 	 */
 	public function get_schema_event_status(): string {
-		$schema_map = array(
-			self::STATUS_SCHEDULED    => 'EventScheduled',
-			self::STATUS_CANCELLED    => 'EventCancelled',
-			self::STATUS_POSTPONED    => 'EventPostponed',
-			self::STATUS_RESCHEDULED  => 'EventRescheduled',
-			self::STATUS_MOVED_ONLINE => 'EventMovedOnline',
-		);
-
-		$status = $this->get_status();
-
-		return $schema_map[ $status ] ?? 'EventScheduled';
+		return Status::schema( $this->get_status() );
 	}
 
 	/**
-	 * Returns the RFC 5545 STATUS property value for iCalendar exports.
+	 * The RFC 5545 STATUS property for this event's status.
 	 *
 	 * @since 0.36.0
 	 *
 	 * @return string 'CONFIRMED', 'CANCELLED', or 'TENTATIVE'.
 	 */
 	public function get_ical_status(): string {
-		switch ( $this->get_status() ) {
-			case self::STATUS_CANCELLED:
-				return 'CANCELLED';
-			case self::STATUS_POSTPONED:
-			case self::STATUS_RESCHEDULED:
-				return 'TENTATIVE';
-			case self::STATUS_MOVED_ONLINE:
-			case self::STATUS_SCHEDULED:
-			default:
-				return 'CONFIRMED';
-		}
+		return Status::ical( $this->get_status() );
 	}
 
 	/**

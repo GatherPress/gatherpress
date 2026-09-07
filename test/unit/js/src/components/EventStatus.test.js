@@ -21,7 +21,7 @@ jest.mock( '@wordpress/data', () => ( {
 } ) );
 
 jest.mock( '@wordpress/components', () => ( {
-	SelectControl: ( { label, value, onChange, children } ) => (
+	SelectControl: ( { label, value, onChange, options, help } ) => (
 		<div>
 			<label htmlFor="mock-event-status-select">{ label }</label>
 			<select
@@ -29,10 +29,36 @@ jest.mock( '@wordpress/components', () => ( {
 				value={ value }
 				onChange={ ( e ) => onChange( e.target.value ) }
 			>
-				{ children }
+				{ ( options || [] ).map( ( option ) => (
+					<option key={ option.value } value={ option.value }>
+						{ option.label }
+					</option>
+				) ) }
 			</select>
+			<p>{ help }</p>
 		</div>
 	),
+} ) );
+
+// The vocabulary PHP publishes through the editor settings, which the status
+// helper reads. Stated here so these tests exercise the real lookup.
+const mockStatuses = {
+	scheduled: {
+		label: 'Scheduled',
+		description: 'Event is planned and confirmed to take place.',
+	},
+	cancelled: { label: 'Canceled', description: 'Event will not take place.' },
+	postponed: { label: 'Postponed', description: 'Event is delayed.' },
+	rescheduled: {
+		label: 'Rescheduled',
+		description: 'Event date and time have been changed.',
+	},
+	moved: { label: 'Moved', description: 'Event is taking place elsewhere.' },
+};
+
+jest.mock( '@src/helpers/editor-settings', () => ( {
+	getFromConfig: ( key ) =>
+		'eventStatuses' === key ? mockStatuses : undefined,
 } ) );
 
 describe( 'EventStatus component', () => {

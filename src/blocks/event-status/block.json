@@ -6,7 +6,7 @@
 	"title": "Event Status",
 	"category": "gatherpress",
 	"icon": "info-outline",
-	"description": "Display the operational status of an event (e.g. Cancelled, Postponed).",
+	"description": "Display the operational status of an event (e.g. Canceled, Postponed).",
 	"usesContext": [ "postId", "postType", "queryId" ],
 	"attributes": {
 		"postId": {
@@ -49,5 +49,6 @@
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
-	"style": "file:./style.css"
+	"style": "file:./style.css",
+	"render": "file:./render.php"
 }

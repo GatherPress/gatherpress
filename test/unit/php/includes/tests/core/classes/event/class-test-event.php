@@ -2447,7 +2447,7 @@ class Test_Event extends Base {
 	 * Coverage for get_status, is_cancelled, and is_postponed methods.
 	 *
 	 * @covers ::get_status
-	 * @covers ::is_cancelled
+	 * @covers ::is_canceled
 	 * @covers ::is_postponed
 	 *
 	 * @return void
@@ -2458,19 +2458,19 @@ class Test_Event extends Base {
 
 		// Default status is scheduled.
 		$this->assertSame( Event::STATUS_SCHEDULED, $event->get_status() );
-		$this->assertFalse( $event->is_cancelled() );
+		$this->assertFalse( $event->is_canceled() );
 		$this->assertFalse( $event->is_postponed() );
 
 		// Set cancelled status.
 		$event->set_status( 'cancelled' );
-		$this->assertSame( Event::STATUS_CANCELLED, $event->get_status() );
-		$this->assertTrue( $event->is_cancelled() );
+		$this->assertSame( Event::STATUS_CANCELED, $event->get_status() );
+		$this->assertTrue( $event->is_canceled() );
 		$this->assertFalse( $event->is_postponed() );
 
 		// Set postponed status.
 		$event->set_status( 'postponed' );
 		$this->assertSame( Event::STATUS_POSTPONED, $event->get_status() );
-		$this->assertFalse( $event->is_cancelled() );
+		$this->assertFalse( $event->is_canceled() );
 		$this->assertTrue( $event->is_postponed() );
 
 		// Invalid status falls back to scheduled.
@@ -2499,11 +2499,11 @@ class Test_Event extends Base {
 		$event = new Event( $post->ID );
 
 		$this->assertTrue(
-			$event->set_status( Event::STATUS_CANCELLED ),
+			$event->set_status( Event::STATUS_CANCELED ),
 			'Failed to assert a valid status is stored.'
 		);
 		$this->assertSame(
-			Event::STATUS_CANCELLED,
+			Event::STATUS_CANCELED,
 			$event->get_status(),
 			'Failed to assert the stored status reads back.'
 		);
@@ -2536,7 +2536,7 @@ class Test_Event extends Base {
 		$non_event = $this->mock->post( array( 'post_type' => 'post' ) )->get();
 
 		$this->assertFalse(
-			( new Event( $non_event->ID ) )->set_status( Event::STATUS_CANCELLED ),
+			( new Event( $non_event->ID ) )->set_status( Event::STATUS_CANCELED ),
 			'Failed to assert a post that is not an event refuses a status.'
 		);
 	}
@@ -2572,7 +2572,7 @@ class Test_Event extends Base {
 		$this->assertSame( 'Scheduled', $event->get_status_label() );
 
 		$event->set_status( 'cancelled' );
-		$this->assertSame( 'Cancelled', $event->get_status_label() );
+		$this->assertSame( 'Canceled', $event->get_status_label() );
 
 		$event->set_status( 'postponed' );
 		$this->assertSame( 'Postponed', $event->get_status_label() );
@@ -2580,8 +2580,8 @@ class Test_Event extends Base {
 		$event->set_status( 'rescheduled' );
 		$this->assertSame( 'Rescheduled', $event->get_status_label() );
 
-		$event->set_status( 'moved-online' );
-		$this->assertSame( 'Moved online', $event->get_status_label() );
+		$event->set_status( 'moved' );
+		$this->assertSame( 'Moved', $event->get_status_label() );
 	}
 
 	/**
@@ -2606,8 +2606,8 @@ class Test_Event extends Base {
 		$event->set_status( 'rescheduled' );
 		$this->assertSame( 'EventRescheduled', $event->get_schema_event_status() );
 
-		$event->set_status( 'moved-online' );
-		$this->assertSame( 'EventMovedOnline', $event->get_schema_event_status() );
+		$event->set_status( 'moved' );
+		$this->assertSame( 'EventScheduled', $event->get_schema_event_status() );
 	}
 
 	/**
@@ -2632,7 +2632,7 @@ class Test_Event extends Base {
 		$event->set_status( 'rescheduled' );
 		$this->assertSame( 'TENTATIVE', $event->get_ical_status() );
 
-		$event->set_status( 'moved-online' );
+		$event->set_status( 'moved' );
 		$this->assertSame( 'CONFIRMED', $event->get_ical_status() );
 	}
 }

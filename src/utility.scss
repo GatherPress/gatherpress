@@ -35,6 +35,27 @@
 	}
 }
 
+// A ring that swells out of an element and fades, in whatever color the
+// element is already drawing itself with. Shared rather than defined per
+// color, so anything that needs to draw attention to itself reuses this one
+// animation instead of shipping a copy per palette.
+@keyframes gatherpress-pulse-ring {
+	0% {
+		transform: scale(0.95);
+		box-shadow: 0 0 0 0 color-mix(in srgb, currentcolor 40%, transparent);
+	}
+
+	70% {
+		transform: scale(1);
+		box-shadow: 0 0 0 5px transparent;
+	}
+
+	100% {
+		transform: scale(0.95);
+		box-shadow: 0 0 0 0 transparent;
+	}
+}
+
 // Respect a reduced-motion preference without losing the loading state.
 // The pulse repeats indefinitely while a request is in flight, and
 // continuous looping animation is a common trigger for people who set the

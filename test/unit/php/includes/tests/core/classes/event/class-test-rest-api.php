@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\Event;
 
 use DateTime;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status as Event_Status;
 use GatherPress\Core\Event\Rest_Api;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Rsvp;
@@ -131,15 +132,15 @@ class Test_Rest_Api extends Base {
 		// An editor of the event may set the status.
 		$this->mock->user( 'admin' );
 
-		call_user_func( $field['update_callback'], Event::STATUS_CANCELLED, $post );
+		call_user_func( $field['update_callback'], Event::STATUS_CANCELED, $post );
 
 		$this->assertSame(
-			Event::STATUS_CANCELLED,
+			Event::STATUS_CANCELED,
 			$event->get_status(),
 			'Failed to assert the update callback stores the status.'
 		);
 		$this->assertSame(
-			Event::STATUS_CANCELLED,
+			Event::STATUS_CANCELED,
 			call_user_func( $field['get_callback'], array( 'id' => $post->ID ) ),
 			'Failed to assert the get callback reads the stored status.'
 		);
@@ -159,13 +160,13 @@ class Test_Rest_Api extends Base {
 			'Failed to assert the refusal names the status permission.'
 		);
 		$this->assertSame(
-			Event::STATUS_CANCELLED,
+			Event::STATUS_CANCELED,
 			$event->get_status(),
 			'Failed to assert a refused update leaves the status alone.'
 		);
 
 		$this->assertSame(
-			Event::STATUSES,
+			Event_Status::slugs(),
 			$field['schema']['enum'],
 			'Failed to assert the schema advertises the supported statuses.'
 		);

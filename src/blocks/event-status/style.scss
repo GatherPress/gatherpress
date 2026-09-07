@@ -1,59 +1,9 @@
-@keyframes gatherpress-pulse {
-	0% {
-		transform: scale(0.95);
-		box-shadow: 0 0 0 0 rgb(197 34 31 / 40%);
-	}
-
-	70% {
-		transform: scale(1);
-		box-shadow: 0 0 0 5px rgb(197 34 31 / 0%);
-	}
-
-	100% {
-		transform: scale(0.95);
-		box-shadow: 0 0 0 0 rgb(197 34 31 / 0%);
-	}
-}
-
-@keyframes gatherpress-pulse-warning {
-	0% {
-		transform: scale(0.95);
-		box-shadow: 0 0 0 0 rgb(176 96 0 / 40%);
-	}
-
-	70% {
-		transform: scale(1);
-		box-shadow: 0 0 0 5px rgb(176 96 0 / 0%);
-	}
-
-	100% {
-		transform: scale(0.95);
-		box-shadow: 0 0 0 0 rgb(176 96 0 / 0%);
-	}
-}
-
-@keyframes gatherpress-pulse-info {
-	0% {
-		transform: scale(0.95);
-		box-shadow: 0 0 0 0 rgb(118 39 187 / 40%);
-	}
-
-	70% {
-		transform: scale(1);
-		box-shadow: 0 0 0 5px rgb(118 39 187 / 0%);
-	}
-
-	100% {
-		transform: scale(0.95);
-		box-shadow: 0 0 0 0 rgb(118 39 187 / 0%);
-	}
-}
-
+// Each status sets one color. The badge derives its fill and border from it
+// with color-mix, the way the tooltip format does, so a status is a single
+// declaration rather than a palette to keep in step.
 .wp-block-gatherpress-event-status,
 .gatherpress-event-status-preview {
 	--gatherpress-status-color: #137333;
-	--gatherpress-status-bg: #e6f4ea;
-	--gatherpress-status-border: #ceead6;
 
 	display: inline-flex;
 	align-items: center;
@@ -63,65 +13,51 @@
 		align-items: center;
 		gap: 0.45em;
 		padding: 0.3em 0.75em;
-		font-size: 0.85em;
+		font-size: var(--wp--preset--font-size--small, 0.85em);
 		font-weight: 600;
 		line-height: 1.2;
 		border-radius: 999px;
 		letter-spacing: 0.03em;
-		border: 1px solid var(--gatherpress-status-border);
-		background-color: var(--gatherpress-status-bg);
+		border: 1px solid color-mix(in srgb, var(--gatherpress-status-color) 30%, transparent);
+		background-color: color-mix(in srgb, var(--gatherpress-status-color) 12%, transparent);
 		color: var(--gatherpress-status-color);
-		transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
 
+		// The dot inherits the badge's color, which is what the shared ring
+		// animation pulses in.
 		&::before {
 			content: "";
 			display: inline-block;
 			width: 0.5em;
 			height: 0.5em;
 			border-radius: 50%;
-			background-color: var(--gatherpress-status-color);
+			background-color: currentcolor;
 		}
+	}
 
-		&:hover {
-			transform: translateY(-1px);
-			box-shadow: 0 2px 6px rgb(0 0 0 / 8%);
+	// Only a status that changes someone's plans asks for attention. A
+	// rescheduled event still happens, so it states itself and stays still.
+	&.gatherpress-event-status--is-cancelled,
+	&.gatherpress-event-status--is-postponed,
+	&.gatherpress-event-status--is-moved {
+		.gatherpress-event-status__badge::before {
+			animation: gatherpress-pulse-ring 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
 		}
 	}
 
 	&.gatherpress-event-status--is-cancelled {
 		--gatherpress-status-color: #c5221f;
-		--gatherpress-status-bg: #fce8e6;
-		--gatherpress-status-border: #fad2cf;
-
-		.gatherpress-event-status__badge::before {
-			animation: gatherpress-pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
-		}
 	}
 
 	&.gatherpress-event-status--is-postponed {
 		--gatherpress-status-color: #b06000;
-		--gatherpress-status-bg: #fef7e0;
-		--gatherpress-status-border: #feefc3;
-
-		.gatherpress-event-status__badge::before {
-			animation: gatherpress-pulse-warning 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
-		}
 	}
 
 	&.gatherpress-event-status--is-rescheduled {
 		--gatherpress-status-color: #1a73e8;
-		--gatherpress-status-bg: #e8f0fe;
-		--gatherpress-status-border: #d2e3fc;
 	}
 
-	&.gatherpress-event-status--is-moved-online {
+	&.gatherpress-event-status--is-moved {
 		--gatherpress-status-color: #7627bb;
-		--gatherpress-status-bg: #f3e8fd;
-		--gatherpress-status-border: #e9d2fd;
-
-		.gatherpress-event-status__badge::before {
-			animation: gatherpress-pulse-info 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
-		}
 	}
 
 	&.is-style-notice {
@@ -129,34 +65,29 @@
 		width: 100%;
 		padding: 0.85rem 1.15rem;
 		border-left: 4px solid var(--gatherpress-status-color);
-		background-color: var(--gatherpress-status-bg);
+		background-color: color-mix(in srgb, var(--gatherpress-status-color) 12%, transparent);
 		color: var(--gatherpress-status-color);
 		border-radius: 6px;
-		transition: border-color 0.2s ease, background-color 0.2s ease;
 
 		.gatherpress-event-status__badge {
 			display: inline-flex;
 			padding: 0;
-			font-size: 1.05em;
+			font-size: var(--wp--preset--font-size--medium, 1.05em);
 			font-weight: 700;
 			border: none;
-			background: transparent !important;
-			color: inherit !important;
-			box-shadow: none !important;
-			transform: none !important;
+			background: none;
+			color: inherit;
 		}
 	}
 }
 
+// A looping animation is a common trigger for anyone who asks for less
+// motion, and the dot still reads as a dot without it.
 @media (prefers-reduced-motion: reduce) {
 	.wp-block-gatherpress-event-status,
 	.gatherpress-event-status-preview {
-		.gatherpress-event-status__badge {
-			transition: none;
-
-			&::before {
-				animation: none !important;
-			}
+		.gatherpress-event-status__badge::before {
+			animation: none;
 		}
 	}
 }

@@ -182,7 +182,7 @@ final class Setup {
 	 * @return string[] Filtered array of post class names.
 	 */
 	public function add_status_post_class( array $classes, array $css_classes, int $post_id ): array {
-		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), Event::SUPPORT ) ) {
 			return $classes;
 		}
 
@@ -217,6 +217,11 @@ final class Setup {
 		$settings['gatherpress']['config']['eventPostTypes'] = array_values(
 			get_post_types_by_support( Event::SUPPORT )
 		);
+
+		// The editor offers and labels the same statuses PHP publishes, so the
+		// list is stated once and a site that registers its own gets it in
+		// both places.
+		$settings['gatherpress']['config']['eventStatuses'] = Status::all();
 
 		return $settings;
 	}

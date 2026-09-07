@@ -12,13 +12,10 @@ import {
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 
-const STATUS_LABELS = {
-	scheduled: __( 'Scheduled', 'gatherpress' ),
-	cancelled: __( 'Cancelled', 'gatherpress' ),
-	postponed: __( 'Postponed', 'gatherpress' ),
-	rescheduled: __( 'Rescheduled', 'gatherpress' ),
-	'moved-online': __( 'Moved online', 'gatherpress' ),
-};
+/**
+ * Internal dependencies
+ */
+import { getStatusLabel } from '../../helpers/event-status';
 
 /**
  * Edit component for the GatherPress Event Status block.
@@ -34,7 +31,9 @@ const STATUS_LABELS = {
  */
 const Edit = ( { attributes, setAttributes, context } ) => {
 	const { hideScheduled } = attributes;
-	const postId = context.postId;
+	// An explicit override wins over the surrounding event, and the control
+	// clears it to an empty string rather than removing it.
+	const postId = attributes.postId || context.postId;
 
 	const status = useSelect(
 		( select ) => {
@@ -61,7 +60,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		className: `gatherpress-event-status gatherpress-event-status--is-${ status }`,
 	} );
 
-	const label = STATUS_LABELS[ status ] || STATUS_LABELS.scheduled;
+	const label = getStatusLabel( status );
 
 	return (
 		<>
@@ -71,7 +70,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						__nextHasNoMarginBottom
 						label={ __( 'Hide when scheduled', 'gatherpress' ) }
 						help={ __(
-							'Only display this block when the event is cancelled, postponed, rescheduled, or moved online.',
+							'Only display this block when the event is canceled, postponed, rescheduled, or moved online.',
 							'gatherpress'
 						) }
 						checked={ hideScheduled }

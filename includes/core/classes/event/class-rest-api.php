@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use Exception;
 use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status as Event_Status;
 use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Rsvp\Query as Rsvp_Query;
 use GatherPress\Core\Rsvp;
@@ -118,8 +119,8 @@ final class Rest_Api {
 				'schema'          => array(
 					'description' => __( 'The operational status of the event.', 'gatherpress' ),
 					'type'        => 'string',
-					'enum'        => Event::STATUSES,
-					'default'     => Event::STATUS_SCHEDULED,
+					'enum'        => Event_Status::slugs(),
+					'default'     => Event_Status::SCHEDULED,
 					'context'     => array( 'view', 'edit' ),
 				),
 			)
