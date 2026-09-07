@@ -14,12 +14,41 @@ import { __ } from '@wordpress/i18n';
  * hides a link by swapping in a span copies the content across verbatim,
  * notice included, and would otherwise leave static text announcing that it
  * opens a new tab. The same holds for a link retargeted away from `_blank`.
+ *
+ * @since 0.36.0
+ */
+
+/**
+ * Selector for the blocks to watch.
+ *
+ * @since 0.36.0
+ *
+ * @type {string}
  */
 const BLOCK_SELECTOR = '[class*="wp-block-gatherpress-"]';
+
+/**
+ * Class that hides the notice, styled by the utility stylesheet.
+ *
+ * @since 0.36.0
+ *
+ * @type {string}
+ */
+const SCREEN_READER_CLASS = 'gatherpress--screen-reader-text';
+
+/**
+ * Class on the notice, mirrored by the PHP filter.
+ *
+ * @since 0.36.0
+ *
+ * @type {string}
+ */
 const NOTICE_CLASS = 'gatherpress-new-tab-notice';
 
 /**
  * Add the notice to a link that opens in a new tab and lacks one.
+ *
+ * @since 0.36.0
  *
  * @param {Element} link The link to announce.
  *
@@ -32,7 +61,7 @@ const announce = ( link ) => {
 
 	const notice = document.createElement( 'span' );
 
-	notice.className = `screen-reader-text ${ NOTICE_CLASS }`;
+	notice.className = `screen-reader-text ${ SCREEN_READER_CLASS } ${ NOTICE_CLASS }`;
 	// The space is outside the string, as core does it, so the label and the
 	// notice cannot run together in the accessible name.
 	notice.textContent = ` ${ __( '(opens in a new tab)', 'gatherpress' ) }`;
@@ -44,6 +73,8 @@ const announce = ( link ) => {
  *
  * Target keywords beginning with an underscore are case-insensitive, so
  * `_BLANK` opens a new tab just as `_blank` does.
+ *
+ * @since 0.36.0
  *
  * @param {Element} link The link to check.
  *
@@ -58,6 +89,8 @@ const opensNewTab = ( link ) =>
  * A notice belongs inside a link that opens a new tab and nowhere else. Left
  * behind in plain text, or in a link that now opens in the same tab, it tells
  * a screen reader something that is not true.
+ *
+ * @since 0.36.0
  *
  * @param {Element} notice The notice to check.
  *
@@ -75,6 +108,8 @@ const withdraw = ( notice ) => {
  * Bring the notices inside an element, and the element itself, into line with
  * what its links actually do: added where a new-tab link lacks one, removed
  * where one has outlived its link.
+ *
+ * @since 0.36.0
  *
  * @param {Element} root The element to search.
  *
@@ -100,6 +135,8 @@ const reconcileWithin = ( root ) => {
 
 /**
  * Watch GatherPress blocks for links added or retargeted after render.
+ *
+ * @since 0.36.0
  *
  * @return {void}
  */

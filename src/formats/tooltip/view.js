@@ -9,7 +9,18 @@
  */
 
 /**
+ * Class that hides the screen-reader span, styled by the utility stylesheet.
+ *
+ * @since 0.36.0
+ *
+ * @type {string}
+ */
+const SCREEN_READER_CLASS = 'gatherpress--screen-reader-text';
+
+/**
  * Marks the span holding the tooltip text for screen readers.
+ *
+ * @since 0.36.0
  *
  * @type {string}
  */
@@ -75,7 +86,7 @@ export function initTooltip( tooltip ) {
 		);
 		if ( ! existingSrText ) {
 			const srText = document.createElement( 'span' );
-			srText.className = `screen-reader-text ${ NOTICE_CLASS }`;
+			srText.className = `screen-reader-text ${ SCREEN_READER_CLASS } ${ NOTICE_CLASS }`;
 			srText.textContent = ` (${ tooltipText })`;
 			tooltip.appendChild( srText );
 		}

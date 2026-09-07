@@ -50,6 +50,14 @@ final class Setup {
 	const NEW_TAB_CLASS = 'gatherpress-new-tab-notice';
 
 	/**
+	 * Class that hides screen-reader text wherever GatherPress renders it.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const SCREEN_READER_CLASS = 'gatherpress--screen-reader-text';
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -383,13 +391,13 @@ final class Setup {
 	 * @return string Markup with a notice inside each new-tab link.
 	 */
 	public function announce_new_tab_links( string $block_content, array $block ): string {
-		if ( ! str_starts_with( (string) ( $block['blockName'] ?? '' ), 'gatherpress/' ) ) {
-			return $block_content;
-		}
-
+		// Only GatherPress blocks, and only when there is a candidate to find.
 		// Target keywords beginning with an underscore are case-insensitive,
 		// so `_BLANK` opens a new tab just as `_blank` does.
-		if ( false === stripos( $block_content, '_blank' ) ) {
+		if (
+			! str_starts_with( (string) ( $block['blockName'] ?? '' ), 'gatherpress/' )
+			|| false === stripos( $block_content, '_blank' )
+		) {
 			return $block_content;
 		}
 
@@ -442,7 +450,8 @@ final class Setup {
 		// the label and the notice cannot run together in the accessible name
 		// and translators have no leading whitespace to preserve.
 		$notice = sprintf(
-			'<span class="screen-reader-text %1$s"> %2$s</span>',
+			'<span class="screen-reader-text %1$s %2$s"> %3$s</span>',
+			esc_attr( self::SCREEN_READER_CLASS ),
 			esc_attr( self::NEW_TAB_CLASS ),
 			esc_html__( '(opens in a new tab)', 'gatherpress' )
 		);

@@ -119,7 +119,7 @@ describe( 'Tooltip view', () => {
 			expect( srSpan ).not.toBeNull();
 			expect( srSpan.textContent ).toBe( ' (Accessible note)' );
 			expect( srSpan.className ).toBe(
-				'screen-reader-text gatherpress-tooltip-notice'
+				'screen-reader-text gatherpress--screen-reader-text gatherpress-tooltip-notice'
 			);
 		} );
 
@@ -128,7 +128,7 @@ describe( 'Tooltip view', () => {
 			el.setAttribute( 'data-gatherpress-tooltip', 'Accessible note' );
 			const existing = document.createElement( 'span' );
 			existing.className =
-				'screen-reader-text gatherpress-tooltip-notice';
+				'screen-reader-text gatherpress--screen-reader-text gatherpress-tooltip-notice';
 			existing.textContent = ' (Accessible note)';
 			el.appendChild( existing );
 
@@ -146,7 +146,7 @@ describe( 'Tooltip view', () => {
 			inner.className = 'gatherpress-tooltip';
 			inner.setAttribute( 'data-gatherpress-tooltip', 'Inner note' );
 			const innerSr = document.createElement( 'span' );
-			innerSr.className = 'screen-reader-text gatherpress-tooltip-notice';
+			innerSr.className = 'screen-reader-text gatherpress--screen-reader-text gatherpress-tooltip-notice';
 			innerSr.textContent = ' (Inner note)';
 			inner.appendChild( innerSr );
 			el.appendChild( inner );

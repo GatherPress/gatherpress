@@ -9,6 +9,7 @@ import { describe, expect, it, beforeEach, jest } from '@jest/globals';
 import { initTooltips } from '@src/formats/tooltip/view';
 
 const NOTICE_CLASS = 'gatherpress-new-tab-notice';
+const SCREEN_READER_CLASS = 'gatherpress--screen-reader-text';
 const NOTICE_TEXT = ' (opens in a new tab)';
 
 /**
@@ -49,7 +50,9 @@ describe( 'new-tab notice', () => {
 		expect( notice ).not.toBeNull();
 		expect( notice.textContent ).toBe( NOTICE_TEXT );
 		expect( notice.parentElement.tagName ).toBe( 'A' );
-		expect( notice.className ).toBe( `screen-reader-text ${ NOTICE_CLASS }` );
+		expect( notice.className ).toBe(
+			`screen-reader-text ${ SCREEN_READER_CLASS } ${ NOTICE_CLASS }`
+		);
 	} );
 
 	it( 'leaves a same-tab link alone', () => {
@@ -113,7 +116,7 @@ describe( 'new-tab notice', () => {
 		document.body.innerHTML =
 			'<div class="wp-block-gatherpress-venue-detail">' +
 			'<a href="/x" target="_blank">Site' +
-			`<span class="screen-reader-text ${ NOTICE_CLASS }">${ NOTICE_TEXT }</span>` +
+			`<span class="screen-reader-text ${ SCREEN_READER_CLASS } ${ NOTICE_CLASS }">${ NOTICE_TEXT }</span>` +
 			'</a></div>';
 
 		load();
@@ -170,7 +173,7 @@ describe( 'new-tab notice', () => {
 
 		expect( link.querySelectorAll( `.${ NOTICE_CLASS }` ) ).toHaveLength( 1 );
 		expect( link.lastElementChild.className ).toBe(
-			`screen-reader-text ${ NOTICE_CLASS }`
+			`screen-reader-text ${ SCREEN_READER_CLASS } ${ NOTICE_CLASS }`
 		);
 	} );
 
@@ -266,7 +269,7 @@ describe( 'new-tab notice', () => {
 		document.body.innerHTML =
 			'<div class="wp-block-gatherpress-online-event-link">' +
 			'<a href="https://example.com/meet" target="_blank">Online event' +
-			`<span class="screen-reader-text ${ NOTICE_CLASS }">${ NOTICE_TEXT }</span>` +
+			`<span class="screen-reader-text ${ SCREEN_READER_CLASS } ${ NOTICE_CLASS }">${ NOTICE_TEXT }</span>` +
 			'</a></div>';
 
 		load();
