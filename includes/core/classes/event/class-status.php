@@ -73,7 +73,7 @@ final class Status {
 				'schema'      => 'EventScheduled',
 				'ical'        => 'CONFIRMED',
 			),
-			'canceled'   => array(
+			'canceled'    => array(
 				'label'       => __( 'Canceled', 'gatherpress' ),
 				'description' => __(
 					'Event will not take place. Calendar feeds will mark it as canceled.',

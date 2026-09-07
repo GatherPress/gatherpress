@@ -3653,9 +3653,9 @@ class Test_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_status_reads_and_writes_over_the_rest_route(): void {
+		// rest_do_request() builds the server, which fires rest_api_init and
+		// registers the routes, so the field only needs to be in place first.
 		Rest_Api::get_instance()->register_status_field();
-
-		do_action( 'rest_api_init' );
 
 		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
 		$event = new Event( $post->ID );
