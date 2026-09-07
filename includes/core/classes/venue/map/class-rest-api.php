@@ -109,7 +109,7 @@ final class Rest_Api {
 				return $post_id > 0
 					&& post_type_supports(
 						(string) get_post_type( $post_id ),
-						'gatherpress-venue-information'
+						Venue::SUPPORT
 					);
 			},
 		);

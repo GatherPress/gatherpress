@@ -12,6 +12,7 @@
 
 namespace GatherPress\Core\Rsvp;
 
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Utility;
 use WP_Comment;
 use WP_Post;
@@ -282,7 +283,7 @@ final class Token {
 
 		$post = get_post( (int) $comment->comment_post_ID );
 
-		if ( ! $post || ! post_type_supports( (string) get_post_type( $post ), 'gatherpress-rsvp' ) ) {
+		if ( ! $post || ! post_type_supports( (string) get_post_type( $post ), Rsvp::SUPPORT ) ) {
 			return null;
 		}
 

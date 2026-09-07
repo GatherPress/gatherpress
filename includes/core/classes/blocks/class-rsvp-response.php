@@ -98,7 +98,7 @@ final class Rsvp_Response {
 		// its responses to viewers allowed to read it, so organizers see the
 		// roster on a draft or private event rather than an empty block.
 		if (
-			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
+			! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT ) ||
 			! Event::is_viewable( $post_id )
 		) {
 			return '';

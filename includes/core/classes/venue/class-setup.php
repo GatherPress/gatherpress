@@ -25,6 +25,7 @@ use GatherPress\Core\Shadow_Source;
 use GatherPress\Core\Starter_Pattern_Loader;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
+use GatherPress\Core\Venue;
 use GatherPress\Core\Venue\Map\Setup as Map_Setup;
 use stdClass;
 use WP_Block_Patterns_Registry;
@@ -135,11 +136,11 @@ final class Setup {
 	 * @return void
 	 */
 	public function maybe_link_shadow_source_support( string $post_type ): void {
-		if ( ! post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
+		if ( ! post_type_supports( $post_type, Venue::SUPPORT ) ) {
 			return;
 		}
 
-		add_post_type_support( $post_type, 'gatherpress-shadow-source' );
+		add_post_type_support( $post_type, Shadow_Source::SUPPORT );
 	}
 
 	/**
@@ -244,9 +245,9 @@ final class Setup {
 					'thumbnail',
 					'revisions',
 					'custom-fields',
-					'gatherpress-venue-information',
+					Venue::SUPPORT,
 					'gatherpress-venue-map',
-					'gatherpress-shadow-source',
+					Shadow_Source::SUPPORT,
 				),
 				'menu_icon'    => 'dashicons-location',
 				'has_archive'  => true,
@@ -296,7 +297,7 @@ final class Setup {
 	 * @return string[] The augmented list of event CPTs.
 	 */
 	public function attach_venue_taxonomy_to_event_types( array $object_types, string $source_post_type ): array {
-		foreach ( get_post_types_by_support( 'gatherpress-venue' ) as $event_post_type ) {
+		foreach ( get_post_types_by_support( Venue::ASSIGNMENT_SUPPORT ) as $event_post_type ) {
 			if ( $this->get_venue_post_type( $event_post_type ) === $source_post_type ) {
 				$object_types[] = $event_post_type;
 			}
@@ -327,7 +328,7 @@ final class Setup {
 	 * @return void
 	 */
 	public function register_starter_pattern(): void {
-		$post_types = get_post_types_by_support( 'gatherpress-venue-information' );
+		$post_types = get_post_types_by_support( Venue::SUPPORT );
 
 		if ( empty( $post_types ) ) {
 			return;
@@ -484,7 +485,7 @@ final class Setup {
 
 		$venue = null;
 
-		if ( post_type_supports( $post_type, 'gatherpress-venue' ) ) {
+		if ( post_type_supports( $post_type, Venue::ASSIGNMENT_SUPPORT ) ) {
 			$event       = new Event( $post_id );
 			$venue_terms = get_the_terms( $post_id, $this->taxonomy_for_event_post_type( $post_type ) );
 			$venue_slug  = ( is_array( $venue_terms ) && ! empty( $venue_terms ) ) ? $venue_terms[0]->slug : null;
@@ -497,7 +498,7 @@ final class Setup {
 			if ( $venue_post instanceof WP_Post ) {
 				$venue = new Venue( $venue_post->ID );
 			}
-		} elseif ( post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
+		} elseif ( post_type_supports( $post_type, Venue::SUPPORT ) ) {
 			$venue = new Venue( $post_id );
 		}
 
@@ -702,7 +703,7 @@ final class Setup {
 	public function get_venue_post_type_map(): array {
 		$map = array();
 
-		foreach ( get_post_types_by_support( 'gatherpress-venue' ) as $event_post_type ) {
+		foreach ( get_post_types_by_support( Venue::ASSIGNMENT_SUPPORT ) as $event_post_type ) {
 			$map[ $event_post_type ] = $this->get_venue_post_type( $event_post_type );
 		}
 
