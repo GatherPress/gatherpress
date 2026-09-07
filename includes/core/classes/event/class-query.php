@@ -717,7 +717,7 @@ final class Query {
 		}
 
 		foreach ( $post_types as $post_type ) {
-			if ( ! is_string( $post_type ) || ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+			if ( ! is_string( $post_type ) || ! post_type_supports( $post_type, Event::SUPPORT ) ) {
 				return false;
 			}
 		}
