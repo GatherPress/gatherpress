@@ -156,7 +156,7 @@ final class Feed {
 	 */
 	public function get_default_event_excerpt( string $excerpt ): string {
 		// Only apply to events.
-		if ( ! post_type_supports( (string) get_post_type(), 'gatherpress-event-date' ) ) {
+		if ( ! post_type_supports( (string) get_post_type(), Event::SUPPORT ) ) {
 			return $excerpt;
 		}
 
@@ -209,7 +209,7 @@ final class Feed {
 	 */
 	public function get_default_event_content( string $content ): string {
 		// Only apply to events.
-		if ( ! post_type_supports( (string) get_post_type(), 'gatherpress-event-date' ) ) {
+		if ( ! post_type_supports( (string) get_post_type(), Event::SUPPORT ) ) {
 			return $content;
 		}
 
@@ -261,7 +261,7 @@ final class Feed {
 	 */
 	public function apply_event_excerpt( string $excerpt ): string {
 		// Only apply to events.
-		if ( ! post_type_supports( (string) get_post_type(), 'gatherpress-event-date' ) ) {
+		if ( ! post_type_supports( (string) get_post_type(), Event::SUPPORT ) ) {
 			return $excerpt;
 		}
 
@@ -304,7 +304,7 @@ final class Feed {
 	 */
 	public function apply_event_content( string $content ): string {
 		// Only apply to events.
-		if ( ! post_type_supports( (string) get_post_type(), 'gatherpress-event-date' ) ) {
+		if ( ! post_type_supports( (string) get_post_type(), Event::SUPPORT ) ) {
 			return $content;
 		}
 

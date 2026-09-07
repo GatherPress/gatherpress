@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Assets;
 use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
 use GatherPress\Core\Rsvp\Response\Provider_Registry;
 use GatherPress\Core\Rsvp\Response\Status;
@@ -191,8 +192,8 @@ final class Setup {
 			return;
 		}
 
-		foreach ( get_post_types_by_support( 'gatherpress-rsvp' ) as $post_type ) {
-			remove_post_type_support( $post_type, 'gatherpress-rsvp' );
+		foreach ( get_post_types_by_support( Rsvp::SUPPORT ) as $post_type ) {
+			remove_post_type_support( $post_type, Rsvp::SUPPORT );
 		}
 	}
 
@@ -276,7 +277,7 @@ final class Setup {
 	 * @return int Adjusted number of comments.
 	 */
 	public function adjust_comments_number( int $comments_number, int $post_id ): int {
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT ) ) {
 			return $comments_number;
 		}
 
@@ -298,7 +299,7 @@ final class Setup {
 	 * @return void
 	 */
 	public function maybe_process_waiting_list( int $post_id ): void {
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT ) ) {
 			return;
 		}
 
@@ -318,7 +319,7 @@ final class Setup {
 	 */
 	public function maybe_set_rsvp_meta_default( int $post_id ): void {
 		// Skip non-event post types early to avoid an unnecessary Rsvp instantiation.
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT ) ) {
 			return;
 		}
 
@@ -348,7 +349,7 @@ final class Setup {
 		// When no post type declares `gatherpress-rsvp` support — e.g. a
 		// companion plugin removed it from the event post type — the loop
 		// simply adds nothing (#1849).
-		foreach ( get_post_types_by_support( 'gatherpress-rsvp' ) as $post_type ) {
+		foreach ( get_post_types_by_support( Rsvp::SUPPORT ) as $post_type ) {
 			$hook = add_submenu_page(
 				sprintf( 'edit.php?post_type=%s', $post_type ),
 				__( 'RSVPs', 'gatherpress' ),
@@ -387,7 +388,7 @@ final class Setup {
 		// Fall back to the event post type when the screen doesn't carry a
 		// supporting post type (defensive; the submenu is only registered
 		// for supporting post types).
-		if ( ! post_type_supports( $screen_post_type, 'gatherpress-rsvp' ) ) {
+		if ( ! post_type_supports( $screen_post_type, Rsvp::SUPPORT ) ) {
 			$screen_post_type = Event::POST_TYPE;
 		}
 
@@ -592,7 +593,7 @@ final class Setup {
 
 			// Each RSVP-supporting post type has its own RSVPs page, so
 			// highlight whichever post type menu the page lives under (#1849).
-			$post_type = ( ! empty( $typenow ) && post_type_supports( $typenow, 'gatherpress-rsvp' ) )
+			$post_type = ( ! empty( $typenow ) && post_type_supports( $typenow, Rsvp::SUPPORT ) )
 				? $typenow
 				: Event::POST_TYPE;
 

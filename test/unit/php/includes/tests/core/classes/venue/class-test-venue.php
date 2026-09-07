@@ -57,6 +57,17 @@ class Test_Venue extends Base {
 	}
 
 	/**
+	 * Asserts that the class constants are correctly defined.
+	 *
+	 * @return void
+	 */
+	public function test_constants(): void {
+		$this->assertSame( 'gatherpress-venue-information', Venue::SUPPORT );
+		$this->assertSame( 'gatherpress-venue', Venue::ASSIGNMENT_SUPPORT );
+		$this->assertSame( 'gatherpress-online-event', Venue::ONLINE_SUPPORT );
+	}
+
+	/**
 	 * Construct a Venue instance from a post ID and read it back.
 	 *
 	 * @covers ::__construct

@@ -162,7 +162,7 @@ final class Query {
 		$order = ( 'past' === $event_list_type ) ? 'DESC' : 'ASC';
 
 		$args = array(
-			'post_type'             => get_post_types_by_support( 'gatherpress-event-date' ),
+			'post_type'             => get_post_types_by_support( Event::SUPPORT ),
 			'fields'                => 'ids',
 			'no_found_rows'         => true,
 			'posts_per_page'        => $number,
@@ -245,7 +245,7 @@ final class Query {
 						$page_id      = $query->queried_object_id;
 						$events_query = $key;
 
-						$query->set( 'post_type', get_post_types_by_support( 'gatherpress-event-date' ) );
+						$query->set( 'post_type', get_post_types_by_support( Event::SUPPORT ) );
 						$query->set( self::EVENT_QUERY_PARAM, $key );
 						$query->is_page              = false;
 						$query->is_singular          = false;
@@ -414,7 +414,7 @@ final class Query {
 		if (
 			! $current_screen ||
 			'edit' !== $current_screen->base ||
-			! post_type_supports( $current_screen->post_type, 'gatherpress-event-date' ) ||
+			! post_type_supports( $current_screen->post_type, Event::SUPPORT ) ||
 			$wp_query->get( 'post_type' ) !== $current_screen->post_type
 		) {
 			return $query_pieces;
@@ -792,7 +792,7 @@ final class Query {
 	private function build_venue_tax_query( array $venues ): array {
 		$venue_tax_query = array( 'relation' => 'OR' );
 
-		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $venue_post_type ) {
+		foreach ( get_post_types_by_support( Venue::SUPPORT ) as $venue_post_type ) {
 			$venue_tax_query[] = array(
 				'taxonomy' => Setup::get_instance()->get_taxonomy( $venue_post_type ),
 				'field'    => 'slug',
@@ -952,7 +952,7 @@ final class Query {
 	 * @return bool Whether to join, compare, and sort by the event start.
 	 */
 	protected function follows_event_datetime( WP_Post $post ): bool {
-		return post_type_supports( $post->post_type, 'gatherpress-event-date' )
+		return post_type_supports( $post->post_type, Event::SUPPORT )
 			&& '' !== ( new Event( $post->ID ) )->get_datetime()['datetime_start_gmt'];
 	}
 
