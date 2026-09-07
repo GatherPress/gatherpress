@@ -9,6 +9,24 @@
  */
 
 /**
+ * Class that hides the screen-reader span, styled by the utility stylesheet.
+ *
+ * @since 0.36.0
+ *
+ * @type {string}
+ */
+const SCREEN_READER_CLASS = 'gatherpress--screen-reader-text';
+
+/**
+ * Marks the span holding the tooltip text for screen readers.
+ *
+ * @since 0.36.0
+ *
+ * @type {string}
+ */
+const NOTICE_CLASS = 'gatherpress-tooltip-notice';
+
+/**
  * Initialize a single tooltip element.
  *
  * @param {HTMLElement|Object} tooltip The tooltip element.
@@ -60,12 +78,15 @@ export function initTooltip( tooltip ) {
 		'function' === typeof tooltip.appendChild &&
 		'undefined' !== typeof document
 	) {
-		const existingSrText = tooltip.querySelector(
-			':scope > .screen-reader-text'
+		// Its own class so another feature's screen-reader text is never
+		// mistaken for this one, and a direct child so a nested tooltip's
+		// text is not either.
+		const existingSrText = Array.from( tooltip.children || [] ).find(
+			( child ) => child.classList?.contains( NOTICE_CLASS )
 		);
 		if ( ! existingSrText ) {
 			const srText = document.createElement( 'span' );
-			srText.className = 'screen-reader-text';
+			srText.className = `screen-reader-text ${ SCREEN_READER_CLASS } ${ NOTICE_CLASS }`;
 			srText.textContent = ` (${ tooltipText })`;
 			tooltip.appendChild( srText );
 		}

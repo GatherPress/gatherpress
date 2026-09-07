@@ -15,6 +15,7 @@ import {
 import {
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalVStack as VStack,
+	ExternalLink,
 	PanelBody,
 	RadioControl,
 	Spinner,
@@ -472,16 +473,12 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						/>
 					) }
 					<p className="components-base-control__help">
-						<a
-							href="https://wordpress.org/documentation/article/customize-date-and-time-format/"
-							target="_blank"
-							rel="noreferrer"
-						>
+						<ExternalLink href="https://wordpress.org/documentation/article/customize-date-and-time-format/">
 							{ __(
 								'Date/time formatting documentation',
 								'gatherpress'
 							) }
-						</a>
+						</ExternalLink>
 					</p>
 					<ToggleControl
 						label={ __( 'Append time zone', 'gatherpress' ) }

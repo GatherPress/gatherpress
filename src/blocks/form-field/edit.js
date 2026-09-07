@@ -6,6 +6,7 @@ import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import {
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalNumberControl as NumberControl,
+	ExternalLink,
 	PanelBody,
 	SelectControl,
 	TextControl,
@@ -383,13 +384,9 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 										'gatherpress',
 									) }
 									<br />
-									<a
-										href="https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/autocomplete"
-										target="_blank"
-										rel="noopener noreferrer"
-									>
+									<ExternalLink href="https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/autocomplete">
 										{ __( 'Learn more', 'gatherpress' ) }
-									</a>
+									</ExternalLink>
 								</>
 							}
 						/>
