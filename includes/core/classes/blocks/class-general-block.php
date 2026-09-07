@@ -39,6 +39,30 @@ final class General_Block {
 	use Singleton;
 
 	/**
+	 * Attribute used to carry the parser's decisions to the splice.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const NEW_TAB_ATTRIBUTE = 'data-gatherpress-new-tab';
+
+	/**
+	 * Class on the injected notice, mirrored by the front-end script.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const NEW_TAB_CLASS = 'gatherpress-new-tab-notice';
+
+	/**
+	 * Class that hides screen-reader text wherever GatherPress renders it.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const SCREEN_READER_CLASS = 'gatherpress--screen-reader-text';
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -63,6 +87,7 @@ final class General_Block {
 		add_filter( 'render_block', array( $this, 'process_registration_block' ), 10, 2 );
 		add_filter( 'render_block', array( $this, 'process_venue_detail_field' ), 10, 2 );
 		add_filter( 'render_block_core/button', array( $this, 'convert_submit_button' ), 10, 2 );
+		add_filter( 'render_block', array( $this, 'announce_new_tab_links' ), 10, 2 );
 	}
 
 	/**
@@ -325,5 +350,111 @@ final class General_Block {
 		}
 
 		return $block_content;
+	}
+
+	/**
+	 * Announce GatherPress links that open in a new tab to screen readers.
+	 *
+	 * Sighted users get a visual cue from the new tab itself; screen-reader
+	 * users get nothing unless the link says so. One filter covers every
+	 * GatherPress block rather than each template repeating the markup.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string              $block_content Rendered block markup.
+	 * @param array<string,mixed> $block         Parsed block.
+	 *
+	 * @return string Markup with a notice inside each new-tab link.
+	 */
+	public function announce_new_tab_links( string $block_content, array $block ): string {
+		// Only GatherPress blocks, and only when there is a candidate to find.
+		// Target keywords beginning with an underscore are case-insensitive,
+		// so `_BLANK` opens a new tab just as `_blank` does.
+		if (
+			! str_starts_with( (string) ( $block['blockName'] ?? '' ), 'gatherpress/' )
+			|| false === stripos( $block_content, '_blank' )
+		) {
+			return $block_content;
+		}
+
+		$processor = new WP_HTML_Tag_Processor( $block_content );
+		$found     = false;
+
+		// The parser decides which anchors qualify, so attribute order and
+		// quoting are its problem rather than a regex's.
+		while ( $processor->next_tag() ) {
+			if (
+				'A' === $processor->get_tag()
+				&& '_blank' === strtolower( (string) $processor->get_attribute( 'target' ) )
+			) {
+				$processor->set_attribute( self::NEW_TAB_ATTRIBUTE, '1' );
+				$found = true;
+
+				continue;
+			}
+
+			// Authored content could already carry the marker, which would
+			// send the splice below to the wrong element.
+			if ( null !== $processor->get_attribute( self::NEW_TAB_ATTRIBUTE ) ) {
+				$processor->remove_attribute( self::NEW_TAB_ATTRIBUTE );
+			}
+		}
+
+		if ( ! $found ) {
+			return $block_content;
+		}
+
+		return $this->insert_new_tab_notices( $processor->get_updated_html() );
+	}
+
+	/**
+	 * Splice a notice in before each marked anchor's closing tag.
+	 *
+	 * WP_HTML_Tag_Processor sets attributes but cannot insert markup, so the
+	 * marked anchors are closed by hand. Anchors cannot nest, so the next
+	 * `</a>` closes the marked one.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $html Markup carrying the marker attribute.
+	 *
+	 * @return string Markup with the notices in place and the markers gone.
+	 */
+	private function insert_new_tab_notices( string $html ): string {
+		$marker = sprintf( ' %s="1"', self::NEW_TAB_ATTRIBUTE );
+		// The space sits in the markup rather than the string, as core does, so
+		// the label and the notice cannot run together in the accessible name
+		// and translators have no leading whitespace to preserve.
+		$notice = sprintf(
+			'<span class="screen-reader-text %1$s %2$s"> %3$s</span>',
+			esc_attr( self::SCREEN_READER_CLASS ),
+			esc_attr( self::NEW_TAB_CLASS ),
+			esc_html__( '(opens in a new tab)', 'gatherpress' )
+		);
+
+		$output = '';
+		$offset = 0;
+
+		$marked = strpos( $html, $marker );
+
+		while ( false !== $marked ) {
+			$close = strpos( $html, '</a>', $marked );
+
+			if ( false === $close ) {
+				break;
+			}
+
+			$output .= substr( $html, $offset, $close - $offset );
+
+			// Leave an anchor alone when it is already announced.
+			if ( ! str_contains( substr( $html, $marked, $close - $marked ), self::NEW_TAB_CLASS ) ) {
+				$output .= $notice;
+			}
+
+			$offset = $close;
+			$marked = strpos( $html, $marker, $offset );
+		}
+
+		return str_replace( $marker, '', $output . substr( $html, $offset ) );
 	}
 }
