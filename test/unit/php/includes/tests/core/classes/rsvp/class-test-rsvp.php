@@ -1494,5 +1494,14 @@ class Test_Rsvp extends Base {
 		$this->assertFalse( Rsvp::is_rsvp( 999999 ) );
 		$this->assertFalse( Rsvp::is_rsvp( null ) );
 		$this->assertFalse( Rsvp::is_rsvp( 'invalid' ) );
+		$this->assertFalse( Rsvp::is_rsvp( 1.5 ) );
+		$this->assertFalse( Rsvp::is_rsvp( '1.5' ) );
+		$this->assertFalse( Rsvp::is_rsvp( -1 ) );
+
+		// 0 must not resolve to the global comment even if one is set.
+		$GLOBALS['comment'] = $rsvp_comment; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$this->assertFalse( Rsvp::is_rsvp( 0 ) );
+		$this->assertFalse( Rsvp::is_rsvp( '0' ) );
+		unset( $GLOBALS['comment'] );
 	}
 }

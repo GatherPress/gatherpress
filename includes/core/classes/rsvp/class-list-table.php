@@ -726,34 +726,33 @@ final class List_Table extends WP_List_Table {
 			case 'checked_in':
 				$check_in_time = Check_In::get_instance()->get_check_in_time( (int) $item['comment_ID'] );
 
-				if ( '' === $check_in_time ) {
-					return '-';
-				}
-
 				// The stored value is GMT; render it in the site's timezone so
 				// the column reads like the Date column next to it. Escaping is
 				// left to the render layer, matching the Date column below.
-				return get_date_from_gmt( $check_in_time, 'Y/m/d \a\t g:i a' );
+				$output = '' !== $check_in_time
+					? get_date_from_gmt( $check_in_time, 'Y/m/d \a\t g:i a' )
+					: '-';
+				break;
 			case 'date':
-				return get_comment_date( 'Y/m/d \a\t g:i a', $comment_id );
+				$output = get_comment_date( 'Y/m/d \a\t g:i a', $comment_id );
+				break;
 			case 'type':
 				$terms = wp_get_object_terms( $comment_id, Provider::TAXONOMY );
 
 				// Prefer the authoritative provider term when present, but
 				// fall back to inferring the provider from the comment so
 				// the column is correct for rows that never carried the
-				// term — the open/email front-end form doesn't stamp it,
+				// term - the open/email front-end form doesn't stamp it,
 				// and RSVPs saved before the term existed predate it.
 				// An unregistered taxonomy yields WP_Error rather than a term list.
 				if ( is_wp_error( $terms ) || empty( $terms ) ) {
 					$provider = $this->infer_provider_from_item( $item );
-
-					return $provider ? $provider::get_label() : '';
+					$output   = $provider ? $provider::get_label() : '';
+				} else {
+					$provider = Provider_Registry::get_instance()->get( $terms[0]->slug );
+					$output   = $provider ? $provider::get_label() : '-';
 				}
-
-				$provider = Provider_Registry::get_instance()->get( $terms[0]->slug );
-
-				return $provider ? $provider::get_label() : '-';
+				break;
 			default:
 				// Default assignment already covers this arm.
 				break;

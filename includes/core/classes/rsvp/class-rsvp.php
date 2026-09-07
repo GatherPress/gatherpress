@@ -172,11 +172,21 @@ final class Rsvp {
 	 * @return bool True if the comment exists and has the RSVP comment type, false otherwise.
 	 */
 	public static function is_rsvp( mixed $comment ): bool {
-		if ( ! $comment instanceof WP_Comment && ! is_numeric( $comment ) ) {
+		if ( $comment instanceof WP_Comment ) {
+			return self::COMMENT_TYPE === $comment->comment_type;
+		}
+
+		if ( ! is_int( $comment ) && ( ! is_string( $comment ) || ! ctype_digit( $comment ) ) ) {
 			return false;
 		}
 
-		$comment = get_comment( $comment );
+		$comment_id = (int) $comment;
+
+		if ( $comment_id <= 0 ) {
+			return false;
+		}
+
+		$comment = get_comment( $comment_id );
 
 		return $comment instanceof WP_Comment && self::COMMENT_TYPE === $comment->comment_type;
 	}

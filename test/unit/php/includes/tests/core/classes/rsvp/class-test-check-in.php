@@ -189,6 +189,11 @@ class Test_Check_In extends Base {
 			$instance->is_checked_in( $rsvp['rsvp_id'] ),
 			'The RSVP should no longer read as checked in.'
 		);
+		$this->assertSame(
+			'',
+			$instance->get_check_in_time( $rsvp['rsvp_id'] ),
+			'The check-in timestamp should be removed.'
+		);
 		$this->assertFalse(
 			true === is_object_in_term( $rsvp['rsvp_id'], Check_In::TAXONOMY, Check_In::TERM ),
 			'The check-in taxonomy term should be removed.'
@@ -293,6 +298,11 @@ class Test_Check_In extends Base {
 		$this->assertFalse(
 			$instance->is_checked_in( $rsvp['rsvp_id'] ),
 			'Deleting an RSVP should take its arrival time with it.'
+		);
+		$this->assertSame(
+			'',
+			$instance->get_check_in_time( $rsvp['rsvp_id'] ),
+			'The check-in timestamp should be removed.'
 		);
 		$this->assertFalse(
 			true === is_object_in_term( $rsvp['rsvp_id'], Check_In::TAXONOMY, Check_In::TERM ),
