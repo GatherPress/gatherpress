@@ -127,6 +127,7 @@ function TooltipPopover( {
 			>
 				<FlexItem>
 					<TextControl
+						__next40pxDefaultSize
 						/* translators: Label for the input field where users enter custom tooltip text. */
 						label={ __( 'Tooltip Text', 'gatherpress' ) }
 						value={ tooltipText }

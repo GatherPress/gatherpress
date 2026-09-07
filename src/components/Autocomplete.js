@@ -84,6 +84,7 @@ const Autocomplete = ( props ) => {
 	return (
 		<>
 			<FormTokenField
+				__next40pxDefaultSize
 				key={ option }
 				label={ fieldOptions.label || __( 'Select Posts', 'gatherpress' ) }
 				name={ name }
