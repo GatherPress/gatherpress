@@ -19,13 +19,13 @@ const DateTimeRangePanel = () => {
 	return (
 		<>
 			<DateTimeRange />
-			<section>
-				<EventStatus />
-			</section>
 			{ /* Belongs to the event rather than to a block, and the Event
 			     Date block already carries its own Append time zone toggle. */ }
 			<section>
 				<ShowTimezone />
+			</section>
+			<section>
+				<EventStatus />
 			</section>
 		</>
 	);
