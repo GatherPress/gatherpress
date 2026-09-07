@@ -1,4 +1,0 @@
-Significance: minor
-Type: removed
-
-Removed the upcoming PHP 8.1 and WordPress 7.0 requirement notices, which are obsolete now that 0.35.0 requires both.

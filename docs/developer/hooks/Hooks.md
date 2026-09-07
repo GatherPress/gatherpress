@@ -12,6 +12,10 @@
 
 - [`gatherpress_autoloader`](gatherpress_autoloader.md) Filters the registered autoloaders for GatherPress.
 
+## class-cache.php
+
+- [`gatherpress_calendar_max_age`](gatherpress_calendar_max_age.md) Filters how long calendar responses may be reused by clients and caches.
+
 ## class-calendar.php
 
 - [`gatherpress_calendar_url`](gatherpress_calendar_url.md) Filters the calendar URL for a single event.
@@ -23,7 +27,7 @@
 ## class-event.php
 
 - [`gatherpress_date_format`](gatherpress_date_format.md)
-- [`gatherpress_datetime_format`](gatherpress_datetime_format.md)
+- [`gatherpress_datetime_format`](gatherpress_datetime_format.md) Filters the format an event's datetime is rendered with.
 - [`gatherpress_force_online_event_link`](gatherpress_force_online_event_link.md) Filters whether to force the display of the online event link.
 - [`gatherpress_time_format`](gatherpress_time_format.md)
 - [`gatherpress_timezone`](gatherpress_timezone.md)
@@ -39,6 +43,7 @@
 - [`gatherpress_async_geocode_failed`](gatherpress_async_geocode_failed.md) Fires when the async geocode handler exits because Photon
 - [`gatherpress_async_geocode_pre_enqueue_job`](gatherpress_async_geocode_pre_enqueue_job.md) Filter the geocode enqueue call to take over scheduling.
 - [`gatherpress_formatted_address`](gatherpress_formatted_address.md) Filters the one-line address label minted from a geocoder result.
+- [`gatherpress_geocode_languages`](gatherpress_geocode_languages.md) Filters the languages the geocoder is willing to be asked for.
 - [`gatherpress_geocode_on_save_enabled`](gatherpress_geocode_on_save_enabled.md) Filters whether the async geocode should run on venue save.
 - [`gatherpress_geocode_rate_limit_enabled`](gatherpress_geocode_rate_limit_enabled.md) Filter whether the geocode REST rate limit is enforced.
 - [`gatherpress_geocode_rate_limit_per_minute`](gatherpress_geocode_rate_limit_per_minute.md) Filter the per-user requests-per-minute ceiling for the
@@ -59,6 +64,8 @@
 - [`gatherpress_map_zoom`](gatherpress_map_zoom.md) Filter the zoom level used when rendering the static venue map.
 - [`gatherpress_static_map_descriptors`](gatherpress_static_map_descriptors.md) Filters the parsed descriptor map for a venue.
 - [`gatherpress_static_map_generate_2x`](gatherpress_static_map_generate_2x.md) Filter whether to generate the retina (2×) static-map variant.
+- [`gatherpress_static_map_generate_async`](gatherpress_static_map_generate_async.md) Filters whether venue-save-triggered static-map generation runs
+- [`gatherpress_static_map_generate_pre_enqueue_job`](gatherpress_static_map_generate_pre_enqueue_job.md) Filter the async static-map generation enqueue call to take over
 
 ## class-migrate.php
 
@@ -82,6 +89,10 @@
 ## class-query.php
 
 - [`gatherpress_rsvp_comment_query_exclusion`](gatherpress_rsvp_comment_query_exclusion.md) Filters whether RSVP comments should be excluded from a comment query.
+
+## class-rest-api.php
+
+- [`gatherpress_email_subject`](gatherpress_email_subject.md) Filters the event update email subject.
 
 ## class-roles.php
 

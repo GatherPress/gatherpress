@@ -98,6 +98,7 @@ $gatherpress_is_network  = Network::NETWORK_TAB === $current_tab;
 			<a
 				class="<?php echo esc_attr( trim( 'nav-tab ' . $gatherpress_active ) ); ?>"
 				href="<?php echo esc_url( $gatherpress_href ); ?>"
+				<?php echo '' !== $gatherpress_active ? ' aria-current="page"' : ''; ?>
 			>
 				<?php echo esc_html( $gatherpress_tab['name'] ); ?>
 			</a>

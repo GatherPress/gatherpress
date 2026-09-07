@@ -12,6 +12,7 @@ import {
 	createMomentWithTimezone,
 	useMatchedDuration,
 } from '../helpers/datetime';
+import AllDay from '../components/AllDay';
 import DateTimeStart from '../components/DateTimeStart';
 import DateTimeEnd from '../components/DateTimeEnd';
 import Timezone from './Timezone';
@@ -50,20 +51,38 @@ const DateTimeRange = () => {
 		dateTimeMetaData = {};
 	}
 
-	const { dateTimeStart, dateTimeEnd, timezone } = useSelect(
-		( select ) => ( {
-			dateTimeStart: select( 'gatherpress/datetime' ).getDateTimeStart(),
-			dateTimeEnd: select( 'gatherpress/datetime' ).getDateTimeEnd(),
-			timezone: select( 'gatherpress/datetime' ).getTimezone(),
-		} ),
-		[],
-	);
+	const { dateTimeStart, dateTimeEnd, timezone, isCleanNewPost, isAllDay } =
+		useSelect(
+			( select ) => ( {
+				dateTimeStart: select( 'gatherpress/datetime' ).getDateTimeStart(),
+				dateTimeEnd: select( 'gatherpress/datetime' ).getDateTimeEnd(),
+				timezone: select( 'gatherpress/datetime' ).getTimezone(),
+				isCleanNewPost: select( 'core/editor' ).isCleanNewPost(),
+				isAllDay: Boolean(
+					select( 'core/editor' ).getEditedPostAttribute( 'meta' )
+						?.gatherpress_is_all_day
+				),
+			} ),
+			[],
+		);
 	// Matched preset (or `false`) for the start/end pair. Memoized on the
 	// inputs so the moment.tz comparisons run once per real change rather
 	// than once per render — see `useMatchedDuration` for the #1607 context.
 	const matchedDuration = useMatchedDuration();
 
 	useEffect( () => {
+		// Don't write meta into an untouched new post. The store already holds
+		// the defaults while the stored meta is empty, so this effect's first
+		// run would be a real edit and the editor would report unsaved changes
+		// before the author typed anything (#2054).
+		//
+		// Nothing is lost by waiting: `Event\Setup::set_datetimes()` fills the
+		// same defaults server side when the meta is absent at save time. Any
+		// real edit clears `isCleanNewPost`, and this effect runs from then on.
+		if ( isCleanNewPost ) {
+			return;
+		}
+
 		const payload = JSON.stringify( {
 			...dateTimeMetaData,
 			dateTimeStart: createMomentWithTimezone( dateTimeStart, timezone )
@@ -81,6 +100,7 @@ const DateTimeRange = () => {
 		timezone,
 		dateTimeMetaData,
 		editPost,
+		isCleanNewPost,
 	] );
 
 	return (
@@ -89,7 +109,11 @@ const DateTimeRange = () => {
 				<DateTimeStart />
 			</section>
 			<section>
-				{ matchedDuration ? <Duration /> : <DateTimeEnd /> }
+				{ /* Duration is a length in hours, which an all-day event does not have. */ }
+				{ matchedDuration && ! isAllDay ? <Duration /> : <DateTimeEnd /> }
+			</section>
+			<section>
+				<AllDay />
 			</section>
 			<section>
 				<Timezone />

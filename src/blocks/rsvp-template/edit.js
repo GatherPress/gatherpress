@@ -10,7 +10,7 @@ import {
 	useInnerBlocksProps,
 } from '@wordpress/block-editor';
 import { useSelect } from '@wordpress/data';
-import { memo, useState } from '@wordpress/element';
+import { memo, useEffect, useRef, useState } from '@wordpress/element';
 
 /**
  * Internal dependencies
@@ -29,10 +29,30 @@ const TemplateInnerBlocks = ( {
 		{ template: TEMPLATE },
 	);
 
+	// Activating a preview hides its own button (display: none), which strands
+	// keyboard focus. When this response becomes the active one, move focus to
+	// the revealed template content so focus follows the keyboard interaction.
+	const childrenRef = useRef( null );
+
+	const isSkippedInitial = useRef( false );
+	useEffect( () => {
+		// Skip the initial render so the default first-active preview never
+		// steals focus on editor load, and only focus after this response has
+		// just become active.
+		if ( ! isSkippedInitial.current ) {
+			isSkippedInitial.current = true;
+			return;
+		}
+
+		if ( response.commentId === ( activeRsvpId || firstRsvpId ) ) {
+			childrenRef.current?.focus();
+		}
+	}, [ activeRsvpId, firstRsvpId, response.commentId ] );
+
 	return (
 		<div { ...innerBlocksProps }>
 			{ response.commentId === ( activeRsvpId || firstRsvpId )
-				? children
+				? <div ref={ childrenRef } tabIndex={ -1 }>{ children }</div>
 				: null }
 
 			<MemoizedRsvpTemplatePreview
@@ -59,6 +79,23 @@ const RsvpTemplatePreview = ( {
 		setActiveRsvpId( commentId );
 	};
 
+	const handleKeyDown = ( event ) => {
+		if ( 'Enter' === event.key ) {
+			event.preventDefault();
+			handleOnClick();
+		} else if ( ' ' === event.key ) {
+			// Prevent scroll on Space; activation fires on keyup per button semantics.
+			event.preventDefault();
+		}
+	};
+
+	const handleKeyUp = ( event ) => {
+		if ( ' ' === event.key ) {
+			event.preventDefault();
+			handleOnClick();
+		}
+	};
+
 	// We have to hide the preview block if the `comment` props points to
 	// the currently active block!
 
@@ -76,7 +113,8 @@ const RsvpTemplatePreview = ( {
 			style={ style }
 			// eslint-disable-next-line jsx-a11y/no-noninteractive-element-to-interactive-role
 			onClick={ handleOnClick }
-			onKeyUp={ handleOnClick }
+			onKeyDown={ handleKeyDown }
+			onKeyUp={ handleKeyUp }
 		/>
 	);
 };

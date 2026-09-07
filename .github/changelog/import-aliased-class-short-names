@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Import the five aliased core classes by their short GatherPress\Core names, and register the missing Calendar alias with PHPStan.

@@ -146,17 +146,17 @@ final class Form {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $comment_data The comment data array.
+	 * @param array<string, mixed> $comment_data The comment data array.
 	 *
-	 * @return array Modified comment data array.
+	 * @return array<string, mixed> Modified comment data array.
 	 */
 	public function preprocess_rsvp_comment( array $comment_data ): array {
 		$author  = Utility::get_http_input( INPUT_POST, 'author' );
 		$email   = Utility::get_http_input( INPUT_POST, 'email', 'sanitize_email' );
 		$post_id = intval( $comment_data['comment_post_ID'] );
 
-		// Check sitewide/per-event RSVP setting before any post-type check so that
-		// globally-disabled mode returns the correct 403 rather than a misleading 400.
+		// is_enabled() is false for any post type without gatherpress-rsvp
+		// support, so a non-event ID answers 403 here like a disabled event.
 		if ( ! ( new Rsvp( $post_id ) )->is_enabled() ) {
 			wp_die(
 				esc_html__( 'RSVP is disabled for this event.', 'gatherpress' ),
@@ -170,15 +170,6 @@ final class Form {
 				esc_html__( 'Open RSVP is disabled for this site.', 'gatherpress' ),
 				esc_html__( 'Open RSVP Disabled', 'gatherpress' ),
 				403
-			);
-		}
-
-		// Validate that the post supports RSVP.
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
-			wp_die(
-				esc_html__( 'Invalid event ID.', 'gatherpress' ),
-				esc_html__( 'Invalid Request', 'gatherpress' ),
-				400
 			);
 		}
 
@@ -335,7 +326,7 @@ final class Form {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $data RSVP submission data containing post_id, author, email, and optional fields.
+	 * @param array<string, mixed> $data RSVP submission data containing post_id, author, email, and optional fields.
 	 *
 	 * @return array{success: bool, message: string, comment_id: int, error_code?: int} Processing result.
 	 */
@@ -436,7 +427,18 @@ final class Form {
 	 * @param string $author  The author name.
 	 * @param string $email   The email address.
 	 *
-	 * @return array Comment data array for wp_insert_comment().
+	 * @return array{
+	 *     comment_post_ID: int,
+	 *     comment_author_IP: string,
+	 *     comment_type: string,
+	 *     comment_content: string,
+	 *     comment_parent: int,
+	 *     user_id: int,
+	 *     comment_approved: int,
+	 *     comment_author: string,
+	 *     comment_author_email: string,
+	 *     comment_author_url: string
+	 * } Comment data array for wp_insert_comment().
 	 */
 	private function prepare_comment_data( int $post_id, string $author, string $email ): array {
 		$user = get_user_by( 'ID', get_current_user_id() );
@@ -497,8 +499,8 @@ final class Form {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param int   $comment_id The comment ID.
-	 * @param array $data       Submission data containing field values.
+	 * @param int                  $comment_id The comment ID.
+	 * @param array<string, mixed> $data       Submission data containing field values.
 	 *
 	 * @return void
 	 */
@@ -515,8 +517,8 @@ final class Form {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param int   $comment_id The comment ID.
-	 * @param array $data       Submission data containing meta field values.
+	 * @param int                  $comment_id The comment ID.
+	 * @param array<string, mixed> $data       Submission data containing meta field values.
 	 *
 	 * @return void
 	 */
@@ -566,8 +568,8 @@ final class Form {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param int   $comment_id The comment ID.
-	 * @param array $data       Submission data containing custom field values.
+	 * @param int                  $comment_id The comment ID.
+	 * @param array<string, mixed> $data       Submission data containing custom field values.
 	 *
 	 * @return void
 	 */
@@ -632,8 +634,8 @@ final class Form {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param int|false $comment_id_result The result from wp_insert_comment (comment ID or false).
-	 * @param array     $data              RSVP submission data.
+	 * @param int|false            $comment_id_result The result from wp_insert_comment (comment ID or false).
+	 * @param array<string, mixed> $data              RSVP submission data.
 	 *
 	 * @return array{success: bool, message: string, comment_id: int, error_code?: int} Processing result.
 	 */

@@ -9,7 +9,7 @@
 namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Shadow_Source;
-use GatherPress\Core\Venue\Venue;
+use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use WP_Post;
 
@@ -62,6 +62,15 @@ class Test_Shadow_Source extends Base {
 		);
 
 		$this->assert_hooks( $hooks, $instance );
+	}
+
+	/**
+	 * Asserts that the class constants are correctly defined.
+	 *
+	 * @return void
+	 */
+	public function test_constants(): void {
+		$this->assertSame( 'gatherpress-shadow-source', Shadow_Source::SUPPORT );
 	}
 
 	/**

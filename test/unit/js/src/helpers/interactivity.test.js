@@ -48,7 +48,11 @@ import { __mockState as mockInteractivityState } from '@wordpress/interactivity'
 /**
  * Internal dependencies
  */
-import { sendRsvpApiRequest, getNonce } from '@src/helpers/interactivity';
+import {
+	activateOnSpace,
+	sendRsvpApiRequest,
+	getNonce,
+} from '@src/helpers/interactivity';
 
 /**
  * English source strings mirroring Assets::add_interactivity_state(), so the
@@ -475,5 +479,61 @@ describe( 'sendRsvpApiRequest announcements', () => {
 		expect( speak ).not.toHaveBeenCalled();
 		// The request itself still succeeded.
 		expect( state.posts[ 123 ].currentUser.status ).toBe( 'attending' );
+	} );
+} );
+
+/**
+ * The Space half of the button keyboard contract for role="button" anchors
+ * (dropdown and RSVP-response-toggle triggers). Space must become a click —
+ * and must not scroll the page; every other key must pass through untouched
+ * so anchors keep their native Enter behavior.
+ */
+describe( 'activateOnSpace', () => {
+	const makeEvent = ( key, repeat = false ) => ( {
+		key,
+		repeat,
+		preventDefault: jest.fn(),
+	} );
+
+	it( 'turns Space into a click and prevents the scroll default', () => {
+		const ref = { click: jest.fn() };
+		const event = makeEvent( ' ' );
+
+		activateOnSpace( event, ref );
+
+		expect( event.preventDefault ).toHaveBeenCalled();
+		expect( ref.click ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	it( 'still prevents scrolling on key repeat but only clicks once', () => {
+		// Holding Space fires repeat keydowns; a native button suppresses
+		// the scroll default for the whole hold while activating only once.
+		const ref = { click: jest.fn() };
+		const event = makeEvent( ' ', true );
+
+		activateOnSpace( event, ref );
+
+		expect( event.preventDefault ).toHaveBeenCalled();
+		expect( ref.click ).not.toHaveBeenCalled();
+	} );
+
+	it( 'leaves Enter alone (anchors handle it natively)', () => {
+		const ref = { click: jest.fn() };
+		const event = makeEvent( 'Enter' );
+
+		activateOnSpace( event, ref );
+
+		expect( event.preventDefault ).not.toHaveBeenCalled();
+		expect( ref.click ).not.toHaveBeenCalled();
+	} );
+
+	it( 'leaves Tab alone so focus can move away from the trigger', () => {
+		const ref = { click: jest.fn() };
+		const event = makeEvent( 'Tab' );
+
+		activateOnSpace( event, ref );
+
+		expect( event.preventDefault ).not.toHaveBeenCalled();
+		expect( ref.click ).not.toHaveBeenCalled();
 	} );
 } );

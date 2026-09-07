@@ -7,6 +7,7 @@ import { store, getElement } from '@wordpress/interactivity';
  * Internal dependencies
  */
 import {
+	activateOnSpace as activateOnSpaceHelper,
 	manageFocusTrap,
 	setupCloseHandlers,
 } from '../../helpers/interactivity';
@@ -17,6 +18,9 @@ const { actions } = store( 'gatherpress', {
 			if ( event ) {
 				event.preventDefault();
 			}
+		},
+		activateOnSpace( event ) {
+			activateOnSpaceHelper( event, getElement().ref );
 		},
 		linkHandler( event ) {
 			actions.preventDefault( event );

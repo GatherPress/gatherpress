@@ -2,6 +2,7 @@
  * Internal dependencies
  */
 import DateTimeRange from '../../../components/DateTimeRange';
+import ShowTimezone from '../../../components/ShowTimezone';
 
 /**
  * A panel component for managing date and time ranges.
@@ -14,7 +15,16 @@ import DateTimeRange from '../../../components/DateTimeRange';
  * @return {JSX.Element} The JSX element for the DateTimeRangePanel.
  */
 const DateTimeRangePanel = () => {
-	return <DateTimeRange />;
+	return (
+		<>
+			<DateTimeRange />
+			{ /* Belongs to the event rather than to a block, and the Event
+			     Date block already carries its own Append time zone toggle. */ }
+			<section>
+				<ShowTimezone />
+			</section>
+		</>
+	);
 };
 
 export default DateTimeRangePanel;

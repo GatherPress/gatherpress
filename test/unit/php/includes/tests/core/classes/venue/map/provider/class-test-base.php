@@ -14,6 +14,7 @@ namespace GatherPress\Tests\Core\Venue\Map\Provider;
 
 use GatherPress\Core\Venue\Map\Provider\Base;
 use GatherPress\Tests\Base as GatherPress_Test_Base;
+use GdImage;
 
 /**
  * Class Test_Base.
@@ -119,7 +120,7 @@ class Test_Base extends GatherPress_Test_Base {
 				int $height,
 				int $density = 1,
 				string $map_type = 'roadmap'
-			) {
+			): ?GdImage {
 				return null;
 			}
 
@@ -184,7 +185,7 @@ class Test_Base extends GatherPress_Test_Base {
 				int $height,
 				int $density = 1,
 				string $map_type = 'roadmap'
-			) {
+			): ?GdImage {
 				return null;
 			}
 		};

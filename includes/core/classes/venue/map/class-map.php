@@ -49,6 +49,13 @@ use WP_Post;
  * @phpstan-type Descriptor array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}
  * @phpstan-type DescriptorMap array<string, Descriptor>
  * @phpstan-type ProviderDescriptorMap array<string, DescriptorMap>
+ * @phpstan-type ComboRequest array{
+ *     zoom?: int|null,
+ *     width?: int|null,
+ *     height?: int|null,
+ *     aspect_ratio?: string,
+ *     map_type?: string
+ * }
  */
 final class Map {
 
@@ -273,6 +280,17 @@ final class Map {
 	const UPLOADS_SUBDIR = 'gatherpress/static-maps';
 
 	/**
+	 * Cron action fired to generate a single (venue, combo) static map when
+	 * {@see self::maybe_generate()} defers to WP-Cron instead of rendering
+	 * inline. Handler signature: `( int $post_id, int $zoom, int $width,
+	 * int $height, string $map_type )`.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const GENERATE_CRON_ACTION = 'gatherpress_static_map_generate_run';
+
+	/**
 	 * Class constructor — wires hooks.
 	 *
 	 * @since 0.34.0
@@ -301,6 +319,7 @@ final class Map {
 		// React to provider changes so a `map_platform` switch schedules
 		// the same prewarm pass that runs on theme switches.
 		add_action( 'update_option_gatherpress_settings', array( $this, 'maybe_handle_settings_change' ), 10, 2 );
+		add_action( self::GENERATE_CRON_ACTION, array( $this, 'process_generate_job' ), 10, 5 );
 	}
 
 	/**
@@ -350,9 +369,9 @@ final class Map {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $metadata Parsed `block.json` metadata for the block being registered.
+	 * @param array<string, mixed> $metadata Parsed `block.json` metadata for the block being registered.
 	 *
-	 * @return array The metadata array, potentially with updated attribute defaults.
+	 * @return array<string, mixed> The metadata array, potentially with updated attribute defaults.
 	 */
 	public function apply_block_attribute_defaults( array $metadata ): array {
 		if ( 'gatherpress/venue-map' !== ( $metadata['name'] ?? '' ) ) {
@@ -439,7 +458,7 @@ final class Map {
 	 * @return void
 	 */
 	public function maybe_register_delete_hook( string $post_type ): void {
-		if ( ! post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
+		if ( ! post_type_supports( $post_type, Venue::SUPPORT ) ) {
 			return;
 		}
 
@@ -468,7 +487,7 @@ final class Map {
 			return;
 		}
 
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-venue-information' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), Venue::SUPPORT ) ) {
 			return;
 		}
 
@@ -510,16 +529,175 @@ final class Map {
 			);
 		}
 
+		$async = $this->should_generate_async( $post_id );
+
 		foreach ( $combos as $combo ) {
+			$map_type = $this->normalize_map_type( (string) $combo['map_type'] );
+
+			if ( $async ) {
+				$this->schedule_combo_generation(
+					$post_id,
+					$combo['zoom'],
+					$combo['width'],
+					$combo['height'],
+					$map_type
+				);
+				continue;
+			}
+
 			$this->ensure_descriptor_for_combo(
 				$post_id,
 				$info,
 				$combo['zoom'],
 				$combo['width'],
 				$combo['height'],
-				$this->normalize_map_type( (string) $combo['map_type'] )
+				$map_type
 			);
 		}
+	}
+
+	/**
+	 * Whether {@see self::maybe_generate()} should defer static-map
+	 * generation to a WP-Cron job instead of rendering inline on the
+	 * triggering `wp_after_insert_post` call.
+	 *
+	 * Default false: a venue save keeps returning with a freshly rendered
+	 * map, matching every release before this filter existed. Sites that
+	 * feel the synchronous tile-fetch-and-composite cost — bulk venue
+	 * imports, a REST integration that creates/updates many venues in a
+	 * tight loop, or simply a slow upstream tile host — can opt in here to
+	 * make venue saves return immediately and let the map render a few
+	 * seconds later via WP-Cron.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param int $post_id Venue post ID.
+	 *
+	 * @return bool
+	 */
+	protected function should_generate_async( int $post_id ): bool {
+		/**
+		 * Filters whether venue-save-triggered static-map generation runs
+		 * asynchronously via WP-Cron instead of blocking the save request.
+		 *
+		 * Enabling this trades an immediate map (visible the instant the
+		 * save request returns) for a fast save request: the actual
+		 * tile-fetch-and-composite work — which can take several seconds
+		 * per (zoom, width, height, map_type) combo, twice over when the
+		 * retina variant also renders — moves to a WP-Cron job scheduled a
+		 * moment later. Particularly useful for bulk venue imports or REST
+		 * integrations that create/update many venues in a tight loop.
+		 *
+		 * @since 0.36.0
+		 *
+		 * @param bool $async   Whether to defer generation to a cron job. Default false.
+		 * @param int  $post_id Venue post ID.
+		 */
+		return (bool) apply_filters( 'gatherpress_static_map_generate_async', false, $post_id );
+	}
+
+	/**
+	 * Schedule a single (venue, combo) static-map generation job, deduped
+	 * via `wp_next_scheduled()`.
+	 *
+	 * Mirrors {@see Prewarm::enqueue_warm_job()}'s shape, including the
+	 * short-circuit filter so a companion plugin can route the fanout
+	 * through Action Scheduler (or any other queue) instead of WP-Cron.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param int    $post_id  Venue post ID.
+	 * @param int    $zoom     Zoom level.
+	 * @param int    $width    Pixel width.
+	 * @param int    $height   Pixel height.
+	 * @param string $map_type Map type slug.
+	 *
+	 * @return void
+	 */
+	protected function schedule_combo_generation(
+		int $post_id,
+		int $zoom,
+		int $width,
+		int $height,
+		string $map_type
+	): void {
+		$args = array( $post_id, $zoom, $width, $height, $map_type );
+
+		/**
+		 * Filter the async static-map generation enqueue call to take over
+		 * scheduling.
+		 *
+		 * Return any non-null value from this filter to suppress both the
+		 * WP-Cron dedup check below and the `wp_schedule_single_event()`
+		 * call — a companion plugin that hooks this filter owns the full
+		 * scheduling path end-to-end (including its own dedup, since the
+		 * fanout by-passes `wp_next_scheduled()`). Mirrors the core `pre_*`
+		 * filter convention: `null` means "pass through to the default";
+		 * everything else, including falsy values like `false`, `0`, and
+		 * `''`, short-circuits.
+		 *
+		 * @since 0.36.0
+		 *
+		 * @param mixed  $short_circuit Non-null to suppress the default enqueue.
+		 * @param string $hook          Action hook name fired when the job runs.
+		 * @param array  $args          Args passed to the action hook when the job runs:
+		 *                              `array( $post_id, $zoom, $width, $height, $map_type )`.
+		 */
+		$short_circuit = apply_filters(
+			'gatherpress_static_map_generate_pre_enqueue_job',
+			null,
+			self::GENERATE_CRON_ACTION,
+			$args
+		);
+
+		if ( null !== $short_circuit ) {
+			return;
+		}
+
+		if ( false !== wp_next_scheduled( self::GENERATE_CRON_ACTION, $args ) ) {
+			return;
+		}
+
+		wp_schedule_single_event( time() + 1, self::GENERATE_CRON_ACTION, $args );
+	}
+
+	/**
+	 * Cron handler — generates the static map for a single (venue, combo)
+	 * job scheduled by {@see self::schedule_combo_generation()}.
+	 *
+	 * Re-validates the post's type and coordinates at run time: between the
+	 * scheduling save and the cron tick, the venue can be trashed, its post
+	 * type re-registered without venue support, or its address edited again
+	 * to something un-geocodable.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param int    $post_id  Venue post ID.
+	 * @param int    $zoom     Zoom level.
+	 * @param int    $width    Pixel width.
+	 * @param int    $height   Pixel height.
+	 * @param string $map_type Map type slug.
+	 *
+	 * @return void
+	 */
+	public function process_generate_job( int $post_id, int $zoom, int $width, int $height, string $map_type ): void {
+		$status = get_post_status( $post_id );
+		if ( false === $status || 'trash' === $status ) {
+			return;
+		}
+
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), Venue::SUPPORT ) ) {
+			return;
+		}
+
+		$info = ( new Venue( $post_id ) )->get_information();
+
+		if ( null === $this->parse_coord( $info['latitude'] ) ||
+			null === $this->parse_coord( $info['longitude'] ) ) {
+			return;
+		}
+
+		$this->ensure_descriptor_for_combo( $post_id, $info, $zoom, $width, $height, $map_type );
 	}
 
 	/**
@@ -558,11 +736,11 @@ final class Map {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param int        $post_id     The venue post ID.
-	 * @param array|null $extra_combo Optional extra combo to include, in the
-	 *                                {@see Rest_Api::parse_request()} shape:
-	 *                                `zoom`, `width` (0 = auto), `height`
-	 *                                (0 = auto), `aspect_ratio`, `map_type`.
+	 * @param int               $post_id     The venue post ID.
+	 * @param ComboRequest|null $extra_combo Optional extra combo to include, in the
+	 *                                       {@see Rest_Api::parse_request()} shape:
+	 *                                       `zoom`, `width` (0 = auto), `height`
+	 *                                       (0 = auto), `aspect_ratio`, `map_type`.
 	 *
 	 * @return ProviderDescriptorMap
 	 */
@@ -665,10 +843,11 @@ final class Map {
 	 *
 	 * @since 0.35.0
 	 *
-	 * @param int   $post_id The venue post ID.
-	 * @param array $combo   Combo in the {@see Rest_Api::parse_request()}
-	 *                       shape: `zoom`, `width` (0 = auto), `height`
-	 *                       (0 = auto), `aspect_ratio`, `map_type`.
+	 * @param int                  $post_id The venue post ID.
+	 * @param array<string, mixed> $combo   Combo in the {@see Rest_Api::parse_request()}
+	 *                                      shape: `zoom`, `width` (0 = auto), `height`
+	 *                                      (0 = auto), `aspect_ratio`, `map_type`.
+	 * @phpstan-param ComboRequest $combo
 	 *
 	 * @return ProviderDescriptorMap
 	 */
@@ -721,9 +900,9 @@ final class Map {
 	): ?array {
 		$venue_post_id = 0;
 
-		if ( post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
+		if ( post_type_supports( $post_type, Venue::SUPPORT ) ) {
 			$venue_post_id = $post_id;
-		} elseif ( post_type_supports( $post_type, 'gatherpress-venue' ) ) {
+		} elseif ( post_type_supports( $post_type, Venue::ASSIGNMENT_SUPPORT ) ) {
 			$venue_post = Setup::get_instance()->get_venue_post_from_event_post_id( $post_id );
 
 			if ( $venue_post instanceof WP_Post ) {
@@ -997,7 +1176,16 @@ final class Map {
 		 * @param array<string, array<string, array<string, mixed>>> $descriptors Provider-keyed descriptor map.
 		 * @param int                                                $post_id     Venue post ID.
 		 */
-		return (array) apply_filters( 'gatherpress_static_map_descriptors', $descriptors, $post_id );
+		$filtered = (array) apply_filters( 'gatherpress_static_map_descriptors', $descriptors, $post_id );
+
+		/**
+		 * The filtered descriptor map.
+		 *
+		 * @var ProviderDescriptorMap $filtered Integrators are documented to hand back the descriptor
+		 *                                      shape they were given; anything malformed is dropped
+		 *                                      the next time a descriptor is saved.
+		 */
+		return $filtered;
 	}
 
 	/**
@@ -1095,12 +1283,12 @@ final class Map {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param int    $post_id Venue post ID.
-	 * @param array  $info    Parsed venue information.
-	 * @param int    $zoom     Zoom level to render at.
-	 * @param int    $width    Pixel width of the PNG.
-	 * @param int    $height   Pixel height of the PNG.
-	 * @param string $map_type Map type slug for the render.
+	 * @param int                   $post_id  Venue post ID.
+	 * @param array<string, string> $info     Parsed venue information.
+	 * @param int                   $zoom     Zoom level to render at.
+	 * @param int                   $width    Pixel width of the PNG.
+	 * @param int                   $height   Pixel height of the PNG.
+	 * @param string                $map_type Map type slug for the render.
 	 *
 	 * @return array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}|null
 	 */
@@ -1274,12 +1462,12 @@ final class Map {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array  $info     Parsed venue information.
-	 * @param int    $zoom     Map zoom level.
-	 * @param int    $width    Output width.
-	 * @param int    $height   Output height.
-	 * @param string $provider Provider slug (e.g. `osm`).
-	 * @param string $map_type Map type slug.
+	 * @param array<string, string> $info     Parsed venue information.
+	 * @param int                   $zoom     Map zoom level.
+	 * @param int                   $width    Output width.
+	 * @param int                   $height   Output height.
+	 * @param string                $provider Provider slug (e.g. `osm`).
+	 * @param string                $map_type Map type slug.
 	 *
 	 * @return string MD5 hex digest.
 	 */
@@ -1414,19 +1602,19 @@ final class Map {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param GdImage|resource $image    Finished image from a provider's `render()`.
-	 * @param string           $address  Venue address (slugified for the filename).
-	 * @param int              $zoom     Map zoom level.
-	 * @param int              $width    Output width (at density 1).
-	 * @param int              $height   Output height (at density 1).
-	 * @param int              $density  Pixel-density multiplier. 1 = standard, 2 = retina.
-	 * @param string           $provider Provider slug.
-	 * @param string           $map_type Map type slug.
+	 * @param GdImage $image    Finished image from a provider's `render()`.
+	 * @param string  $address  Venue address (slugified for the filename).
+	 * @param int     $zoom     Map zoom level.
+	 * @param int     $width    Output width (at density 1).
+	 * @param int     $height   Output height (at density 1).
+	 * @param int     $density  Pixel-density multiplier. 1 = standard, 2 = retina.
+	 * @param string  $provider Provider slug.
+	 * @param string  $map_type Map type slug.
 	 *
 	 * @return string|null Public URL of the saved file, or null on failure.
 	 */
 	public function save_image(
-		$image,
+		GdImage $image,
 		string $address,
 		int $zoom,
 		int $width,

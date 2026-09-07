@@ -72,22 +72,28 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $args Optional. Additional arguments to configure the list table.
-	 *                    Supports 'screen' to specify a particular screen context and
-	 *                    'post_type' to scope the table to one RSVP-supporting post
-	 *                    type (defaults to the event post type).
+	 * @param array{screen?: string|null, post_type?: string} $args Optional. Additional arguments to configure
+	 *                                                             the list table. Supports 'screen' to specify a
+	 *                                                             particular screen context and 'post_type' to
+	 *                                                             scope the table to one RSVP-supporting post
+	 *                                                             type (defaults to the event post type).
 	 */
 	public function __construct( $args = array() ) {
 		$this->post_type = ! empty( $args['post_type'] ) ? (string) $args['post_type'] : Event::POST_TYPE;
 
-		parent::__construct(
-			array(
-				'plural'   => __( 'RSVPs', 'gatherpress' ),
-				'singular' => __( 'RSVP', 'gatherpress' ),
-				'ajax'     => false,
-				'screen'   => isset( $args['screen'] ) ? $args['screen'] : null,
-			)
+		$table_args = array(
+			'plural'   => __( 'RSVPs', 'gatherpress' ),
+			'singular' => __( 'RSVP', 'gatherpress' ),
+			'ajax'     => false,
 		);
+
+		// WP_List_Table defaults 'screen' to null, so leaving the key out is the same
+		// as the old explicit null and keeps the array to the shape the parent declares.
+		if ( ! empty( $args['screen'] ) ) {
+			$table_args['screen'] = (string) $args['screen'];
+		}
+
+		parent::__construct( $table_args );
 	}
 
 	/**
@@ -104,7 +110,7 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array Array of column identifiers and their labels.
+	 * @return array<string, string> Array of column identifiers and their labels.
 	 */
 	public function get_columns(): array {
 		return array(
@@ -127,7 +133,7 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array Filtered list of columns that can be hidden.
+	 * @return array<string, string> Filtered list of columns that can be hidden.
 	 */
 	public function get_hideable_columns(): array {
 		$essential_columns = array( 'attendee' );
@@ -140,6 +146,217 @@ final class List_Table extends WP_List_Table {
 		}
 
 		return $columns;
+	}
+
+	/**
+	 * Renders the filter controls beside the bulk actions.
+	 *
+	 * The controls are written here so the row is complete on the first paint;
+	 * script attaches the searching and multiple selection to them afterwards.
+	 *
+	 * Top only, at every width. Core hides `.tablenav.top .actions` below
+	 * 783px, which the stylesheet undoes for this group: a second copy in the
+	 * bottom tablenav would show beside the first, and the bottom tablenav is
+	 * not rendered at all for an empty list, which is precisely when a filter
+	 * has to stay reachable to undo it.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $which Which tablenav is being rendered, 'top' or 'bottom'.
+	 *
+	 * @return void
+	 */
+	protected function extra_tablenav( $which ): void {
+		if ( 'top' !== $which ) {
+			return;
+		}
+
+		$statuses  = array();
+		$responses = $this->get_filtered_responses();
+		$post_id   = $this->get_filtered_post_id();
+
+		foreach ( Status::filterable() as $status ) {
+			$statuses[] = array(
+				'value' => $status->value,
+				'label' => $status->label(),
+			);
+		}
+
+		printf(
+			'<div class="alignleft actions gatherpress-rsvp-filters"' .
+			' data-post-types="%1$s" data-post-id="%2$s" data-label="%3$s"' .
+			' data-statuses="%4$s" data-selected="%5$s">%6$s%7$s%8$s</div>',
+			esc_attr( implode( ',', get_post_types_by_support( Event::SUPPORT ) ) ),
+			absint( $post_id ),
+			esc_attr__( 'Filter by event', 'gatherpress' ),
+			esc_attr( (string) wp_json_encode( $statuses ) ),
+			esc_attr( implode( ',', $responses ) ),
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in the method.
+			$this->render_event_field(),
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in the method.
+			$this->render_response_toggle( $responses ),
+			sprintf(
+				'<button type="button" class="components-button is-secondary">%s</button>',
+				esc_html__( 'Filter', 'gatherpress' )
+			)
+		);
+	}
+
+	/**
+	 * The event field, before script makes it searchable.
+	 *
+	 * Left empty: `data-post-id` already carries the selection, and the
+	 * script resolves its title along with everything else it lists.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string The field markup.
+	 */
+	protected function render_event_field(): string {
+		return sprintf(
+			'<div class="gatherpress-rsvp-filters__event">' .
+			'<label class="screen-reader-text" for="gatherpress-rsvp-event">%s</label>' .
+			'<div class="components-combobox-control__suggestions-container">' .
+			'<input type="text" id="gatherpress-rsvp-event" class="components-combobox-control__input"' .
+			' autocomplete="off" />' .
+			'</div></div>',
+			esc_html__( 'Filter by event', 'gatherpress' )
+		);
+	}
+
+	/**
+	 * The response toggle, before script gives it a dropdown.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string[] $responses The responses the request is filtered to.
+	 *
+	 * @return string The toggle markup.
+	 */
+	protected function render_response_toggle( array $responses ): string {
+		return sprintf(
+			'<div class="gatherpress-rsvp-response-filter">' .
+			'<button type="button" class="components-button is-secondary has-icon%1$s" aria-label="%2$s">' .
+			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"' .
+			' aria-hidden="true" focusable="false">' .
+			'<path d="M10 17.5H14V16H10V17.5ZM6 6V7.5H18V6H6ZM8 12.5H16V11H8V12.5Z"></path></svg>%3$s' .
+			'</button></div>',
+			$responses ? ' has-text' : '',
+			esc_attr( $this->get_response_label( $responses ) ),
+			$responses ? absint( count( $responses ) ) : ''
+		);
+	}
+
+	/**
+	 * The response toggle's accessible name.
+	 *
+	 * The control is an icon, so this is its announced name and its tooltip.
+	 * Mirrors `getResponseLabel()` in the script that takes the toggle over.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string[] $responses The responses the request is filtered to.
+	 *
+	 * @return string The label.
+	 */
+	protected function get_response_label( array $responses ): string {
+		if ( empty( $responses ) ) {
+			return __( 'Filter by response: all', 'gatherpress' );
+		}
+
+		if ( 1 === count( $responses ) ) {
+			$status = Status::tryFrom( $responses[0] );
+
+			return $status
+				? sprintf(
+					/* translators: %s: the selected response, e.g. Attending. */
+					__( 'Filter by response: %s', 'gatherpress' ),
+					$status->label()
+				)
+				: __( 'Filter by response', 'gatherpress' );
+		}
+
+		return sprintf(
+			/* translators: %d: how many responses are selected. */
+			__( 'Filter by response: %d selected', 'gatherpress' ),
+			count( $responses )
+		);
+	}
+
+	/**
+	 * Adds the response filter to a comment query, when one is requested.
+	 *
+	 * `WP_Comment_Query` has no native `tax_query`; `Rsvp\Query` grafts one on
+	 * via `comments_clauses`.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, mixed> $args The comment query arguments.
+	 *
+	 * @return array<string, mixed> The arguments, filtered when a response was requested.
+	 */
+	protected function add_response_filter( array $args ): array {
+		$responses = $this->get_filtered_responses();
+
+		if ( empty( $responses ) ) {
+			return $args;
+		}
+
+		$args['tax_query'] = array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+			array(
+				'taxonomy' => Status::TAXONOMY,
+				'field'    => 'slug',
+				'terms'    => $responses,
+			),
+		);
+
+		return $args;
+	}
+
+	/**
+	 * The response statuses the current request is filtered to.
+	 *
+	 * Unknown values are dropped so a hand-edited URL cannot query arbitrary
+	 * terms.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string[] Status slugs, empty when unfiltered.
+	 */
+	public function get_filtered_responses(): array {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( empty( $_REQUEST['response'] ) || ! is_string( $_REQUEST['response'] ) ) {
+			return array();
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$requested = explode( ',', sanitize_text_field( wp_unslash( $_REQUEST['response'] ) ) );
+		$allowed   = array_map(
+			static fn( Status $status ): string => $status->value,
+			Status::filterable()
+		);
+
+		return array_values( array_intersect( $requested, $allowed ) );
+	}
+
+	/**
+	 * The event ID the current request is filtered to, if any.
+	 *
+	 * A non-scalar reads as unfiltered: `post_id[]=9` would otherwise cast to
+	 * 1 and filter the screen to whichever post holds that ID.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return int The event post ID, or 0 when unfiltered.
+	 */
+	public function get_filtered_post_id(): int {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! isset( $_REQUEST['post_id'] ) || ! is_scalar( $_REQUEST['post_id'] ) ) {
+			return 0;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		return absint( wp_unslash( $_REQUEST['post_id'] ) );
 	}
 
 	/**
@@ -179,7 +396,7 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array List of column identifiers that should be hidden from display.
+	 * @return string[] List of column identifiers that should be hidden from display.
 	 */
 	public function get_hidden_columns(): array {
 		$screen = get_current_screen();
@@ -211,7 +428,7 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array Associative array of sortable column identifiers and their configurations.
+	 * @return array<string, array{0: string, 1: bool}> Sortable column identifiers and their configurations.
 	 */
 	protected function get_sortable_columns(): array {
 		return array(
@@ -250,8 +467,11 @@ final class List_Table extends WP_List_Table {
 		$user     = get_current_user_id();
 		$option   = sprintf( '%s_per_page', Rsvp::COMMENT_TYPE );
 		$per_page = get_user_meta( $user, $option, true );
+		$per_page = is_numeric( $per_page ) ? (int) $per_page : 0;
 
-		if ( empty( $per_page ) || ! is_numeric( $per_page ) ) {
+		// A stored preference of zero or less would divide the total by a non-positive
+		// number when the page count is calculated below.
+		if ( 1 > $per_page ) {
 			$per_page = self::DEFAULT_PER_PAGE;
 		}
 
@@ -287,7 +507,7 @@ final class List_Table extends WP_List_Table {
 	 * @param ?int $per_page    Optional. Number of items per page. Default null (uses DEFAULT_PER_PAGE).
 	 * @param int  $page_number Optional. Current page number. Default 1.
 	 *
-	 * @return array Array of RSVP comment data prepared for display.
+	 * @return array<int, array<string, mixed>> Array of RSVP comment data prepared for display.
 	 */
 	private function get_rsvps( ?int $per_page = null, int $page_number = 1 ): array {
 		$rsvp_query = Query::get_instance();
@@ -336,10 +556,10 @@ final class List_Table extends WP_List_Table {
 			$args['user_id'] = intval( $_REQUEST['user_id'] );
 		}
 
-		if ( isset( $_REQUEST['post_id'] ) && ! empty( $_REQUEST['post_id'] ) ) {
-			$args['post_id'] = intval( $_REQUEST['post_id'] );
-		} elseif ( isset( $_REQUEST['event'] ) && ! empty( $_REQUEST['event'] ) ) {
-			$args['post_id'] = intval( $_REQUEST['event'] );
+		$post_id = $this->get_filtered_post_id();
+
+		if ( $post_id ) {
+			$args['post_id'] = $post_id;
 		}
 
 		if (
@@ -365,7 +585,7 @@ final class List_Table extends WP_List_Table {
 		$args['orderby'] = $orderby;
 		$args['order']   = $order;
 
-		$items = $rsvp_query->get_rsvps( $args );
+		$items = $rsvp_query->get_rsvps( $this->add_response_filter( $args ) );
 
 		return array_map(
 			static function ( $item ): array {
@@ -408,10 +628,10 @@ final class List_Table extends WP_List_Table {
 			$args['search'] = $search_term;
 		}
 
-		if ( isset( $_REQUEST['post_id'] ) && ! empty( $_REQUEST['post_id'] ) ) {
-			$args['post_id'] = intval( $_REQUEST['post_id'] );
-		} elseif ( isset( $_REQUEST['event'] ) && ! empty( $_REQUEST['event'] ) ) {
-			$args['post_id'] = intval( $_REQUEST['event'] );
+		$post_id = $this->get_filtered_post_id();
+
+		if ( $post_id ) {
+			$args['post_id'] = $post_id;
 		}
 
 		if (
@@ -429,7 +649,7 @@ final class List_Table extends WP_List_Table {
 			}
 		}
 
-		return $rsvp_query->get_rsvps( $args );
+		return $rsvp_query->get_rsvps( $this->add_response_filter( $args ) );
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
@@ -446,34 +666,47 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param object|array $item        RSVP comment data containing various properties like comment_ID.
-	 * @param string       $column_name The name of the column being rendered.
+	 * @param object|array<string, mixed> $item        RSVP comment data containing various properties like comment_ID.
+	 * @param string                      $column_name The name of the column being rendered.
 	 *
 	 * @return string Formatted content for the specified column.
 	 */
 	public function column_default( $item, $column_name ): string {
+		// Rows are comments cast to arrays by get_rsvps(); normalize anything else
+		// the parent hands over, the same way column_cb() does.
+		$item       = (array) $item;
+		$comment_id = (int) ( $item['comment_ID'] ?? 0 );
+
 		// Default fall-through (matches the original switch's `default` arm).
-		$output = isset( $item[ $column_name ] ) ? $item[ $column_name ] : '-';
+		$output = isset( $item[ $column_name ] ) && is_scalar( $item[ $column_name ] )
+			? (string) $item[ $column_name ]
+			: '-';
 
 		switch ( $column_name ) {
 			case 'response':
-				$terms = wp_get_object_terms( $item['comment_ID'], Status::TAXONOMY );
+				$terms = wp_get_object_terms( $comment_id, Status::TAXONOMY );
 
-				if ( empty( $terms ) ) {
+				// An unregistered taxonomy yields WP_Error rather than a term list.
+				if ( is_wp_error( $terms ) || empty( $terms ) ) {
 					return '-';
 				}
 
-				$output = match ( $terms[0]->slug ) {
-					'attending'     => __( 'Attending', 'gatherpress' ),
-					'not_attending' => __( 'Not Attending', 'gatherpress' ),
-					'waiting_list'  => __( 'Waiting List', 'gatherpress' ),
-					default         => '-',
-				};
+				$status = Status::tryFrom( $terms[0]->slug );
+				$output = ( $status && Status::NO_STATUS !== $status ) ? $status->label() : '-';
 
 				break;
 			case 'event':
-				$output = '<a href="' . esc_url( get_permalink( $item['comment_post_ID'] ) ) . '">' .
-					wp_kses_post( $item['event_title'] ) . '</a>';
+				$event_title = is_scalar( $item['event_title'] ?? null ) ? (string) $item['event_title'] : '';
+				$event_link  = get_permalink( (int) ( $item['comment_post_ID'] ?? 0 ) );
+
+				// An RSVP row outlives the post it points at, so a deleted event has
+				// neither a permalink nor a title. Show whatever is left of it.
+				if ( false === $event_link ) {
+					$output = '' !== $event_title ? wp_kses_post( $event_title ) : '-';
+					break;
+				}
+
+				$output = '<a href="' . esc_url( $event_link ) . '">' . wp_kses_post( $event_title ) . '</a>';
 				break;
 			case 'approved':
 				$statuses = array(
@@ -481,19 +714,26 @@ final class List_Table extends WP_List_Table {
 					'0'    => __( 'Pending', 'gatherpress' ),
 					'spam' => __( 'Spam', 'gatherpress' ),
 				);
-				$output   = $statuses[ $item['comment_approved'] ];
+				$approved = is_scalar( $item['comment_approved'] ?? null )
+					? (string) $item['comment_approved']
+					: '';
+
+				// Core stores other values here too ('trash', 'post-trashed'), which
+				// this table has no label for.
+				$output = $statuses[ $approved ] ?? '-';
 				break;
 			case 'date':
-				return get_comment_date( 'Y/m/d \a\t g:i a', $item['comment_ID'] );
+				return get_comment_date( 'Y/m/d \a\t g:i a', $comment_id );
 			case 'type':
-				$terms = wp_get_object_terms( $item['comment_ID'], Provider::TAXONOMY );
+				$terms = wp_get_object_terms( $comment_id, Provider::TAXONOMY );
 
 				// Prefer the authoritative provider term when present, but
 				// fall back to inferring the provider from the comment so
 				// the column is correct for rows that never carried the
 				// term — the open/email front-end form doesn't stamp it,
 				// and RSVPs saved before the term existed predate it.
-				if ( empty( $terms ) ) {
+				// An unregistered taxonomy yields WP_Error rather than a term list.
+				if ( is_wp_error( $terms ) || empty( $terms ) ) {
 					$provider = $this->infer_provider_from_item( $item );
 
 					return $provider ? $provider::get_label() : '';
@@ -521,7 +761,7 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * @since 0.35.0
 	 *
-	 * @param array $item Row data (a comment cast to an array).
+	 * @param array<string, mixed> $item Row data (a comment cast to an array).
 	 *
 	 * @return Provider|null The inferred provider, or null when none applies.
 	 */
@@ -544,19 +784,67 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * Generates a checkbox input element for each RSVP record that allows users
 	 * to select multiple entries for performing bulk actions. The checkbox value
-	 * is set to the comment ID.
+	 * is set to the comment ID. A visually hidden label names the checkbox after
+	 * the attendee — mirroring core's post/comment list tables — so screen-reader
+	 * users know which entry each checkbox selects.
 	 *
 	 * @since 0.34.0
+	 * @since 0.35.0 Row checkboxes carry a visually hidden label naming the attendee.
 	 *
-	 * @param array|object $item RSVP comment data containing the comment_ID.
+	 * @param array<string, mixed>|object $item RSVP comment data containing the comment_ID.
 	 *
-	 * @return string HTML markup for the checkbox input element.
+	 * @return string HTML markup for the labeled checkbox input element.
 	 */
 	public function column_cb( $item ): string {
+		$item       = (array) $item;
+		$comment_id = intval( $item['comment_ID'] );
+
 		return sprintf(
-			'<input type="checkbox" name="gatherpress_rsvp_id[]" value="%d" />',
-			intval( $item['comment_ID'] )
+			'<label class="label-covers-full-cell" for="cb-select-%1$d">' .
+			'<span class="screen-reader-text">%2$s</span></label>' .
+			'<input id="cb-select-%1$d" type="checkbox" name="gatherpress_rsvp_id[]" value="%1$d" />',
+			$comment_id,
+			esc_html(
+				sprintf(
+					/* translators: %s: Attendee name. */
+					__( 'Select %s', 'gatherpress' ),
+					$this->get_attendee_name( $item )
+				)
+			)
 		);
+	}
+
+	/**
+	 * Resolves the display name for an RSVP entry.
+	 *
+	 * Registered users are shown by their display name; open (account-less)
+	 * RSVPs — and stale user IDs whose account was deleted — fall back to the
+	 * submitted author name. Mirrors the resolution used when rendering the
+	 * Attendee column, and always returns a non-empty name so the checkbox
+	 * label never renders as a bare "Select ".
+	 *
+	 * @since 0.35.0
+	 *
+	 * @param array<string, mixed> $item RSVP comment data.
+	 *
+	 * @return string The attendee's display name.
+	 */
+	protected function get_attendee_name( array $item ): string {
+		$username = (string) ( $item['comment_author'] ?? '' );
+
+		if ( ! empty( $item['user_id'] ) ) {
+			$user = get_userdata( $item['user_id'] );
+
+			if ( $user && '' !== trim( (string) $user->display_name ) ) {
+				$username = $user->display_name;
+			}
+		}
+
+		if ( '' === trim( $username ) ) {
+			$username = __( 'Unknown', 'gatherpress' );
+		}
+
+		return $username;
 	}
 
 	/**
@@ -569,7 +857,7 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $item RSVP comment data for the RSVP entry.
+	 * @param array<string, mixed> $item RSVP comment data for the RSVP entry.
 	 *
 	 * @return string HTML content for the attendee column, including attendee information and action links.
 	 */
@@ -674,7 +962,7 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array An associative array of bulk action identifiers and their labels.
+	 * @return array<string, string> An associative array of bulk action identifiers and their labels.
 	 */
 	public function get_bulk_actions(): array {
 		if ( ! current_user_can( Rsvp::CAPABILITY ) ) {
@@ -699,8 +987,8 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param object|array $item RSVP comment data, either as an object or an associative array.
-	 *                           Contains properties/keys like 'comment_ID' and 'comment_approved'.
+	 * @param object|array<string, mixed> $item RSVP comment data, either as an object or an associative array.
+	 *                                          Contains properties/keys like 'comment_ID' and 'comment_approved'.
 	 *
 	 * @return void The method outputs HTML directly and doesn't return a value.
 	 */
@@ -708,6 +996,10 @@ final class List_Table extends WP_List_Table {
 		if ( ! current_user_can( Rsvp::CAPABILITY ) ) {
 			return;
 		}
+
+		// Rows are comments cast to arrays by get_rsvps(); normalize anything else
+		// the parent hands over, the same way column_cb() does.
+		$item = (array) $item;
 
 		if ( '1' === $item['comment_approved'] ) {
 			$status = 'approved';
@@ -739,17 +1031,39 @@ final class List_Table extends WP_List_Table {
 	 * @return void
 	 */
 	public function process_bulk_action(): void {
-		$nonce = isset( $_REQUEST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ) : '';
+		// Requests reach this method carrying different nonces under `_wpnonce`
+		// depending on how they were made: core's `bulk-<plural>` nonce from the
+		// bulk form, the comment-type nonce from the view links, and the
+		// dedicated `gatherpress_rsvp_action` nonce from the row-action delete
+		// link, which is why that one only counts for `delete`. Any single valid
+		// pairing is enough; the capability check below is what authorizes the
+		// action.
+		$nonces = array();
 
-		// Accept either the standard comment-type nonce, or — only for the
-		// `delete` action — the dedicated `gatherpress_rsvp_action` nonce
-		// the row-action emits. Cap check folds in for a single guard.
-		$valid_nonce = $nonce && (
-			wp_verify_nonce( $nonce, Rsvp::COMMENT_TYPE )
-			|| ( 'delete' === $this->current_action()
-				&& wp_verify_nonce( $nonce, 'gatherpress_rsvp_action' )
-			)
+		if ( isset( $_REQUEST['_wpnonce'] ) ) {
+			$nonces[] = sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) );
+		}
+
+		$nonce_actions = array(
+			sprintf( 'bulk-%s', $this->_args['plural'] ),
+			Rsvp::COMMENT_TYPE,
 		);
+
+		if ( 'delete' === $this->current_action() ) {
+			$nonce_actions[] = 'gatherpress_rsvp_action';
+		}
+
+		$valid_nonce = false;
+
+		foreach ( $nonces as $nonce ) {
+			foreach ( $nonce_actions as $nonce_action ) {
+				if ( wp_verify_nonce( $nonce, $nonce_action ) ) {
+					$valid_nonce = true;
+
+					break 2;
+				}
+			}
+		}
 
 		if ( ! $valid_nonce || ! current_user_can( Rsvp::CAPABILITY ) ) {
 			return;
@@ -791,17 +1105,24 @@ final class List_Table extends WP_List_Table {
 	}
 
 	/**
-	 * Gets the CSS class attribute for current status links.
+	 * Gets the current-view attributes for status links.
+	 *
+	 * The active view carries the `current` CSS class plus
+	 * `aria-current="page"` so assistive technology announces which status
+	 * filter is selected — the visual `current` styling alone conveys
+	 * nothing programmatically. Mirrors the Events list views
+	 * (`Admin_List`).
 	 *
 	 * @since 0.34.0
+	 * @since 0.35.0 Active link also carries `aria-current="page"`.
 	 *
 	 * @param string $status_key The status key to check.
 	 * @param string $current    The currently active status.
 	 *
-	 * @return string The class attribute string or empty string.
+	 * @return string The class and aria-current attributes, or empty string.
 	 */
 	private function get_current_class_attr( string $status_key, string $current ): string {
-		return $status_key === $current ? ' class="current"' : '';
+		return $status_key === $current ? ' class="current" aria-current="page"' : '';
 	}
 
 	/**
@@ -814,21 +1135,16 @@ final class List_Table extends WP_List_Table {
 	 * @since 0.34.0
 	 *
 	 * @global string $post_type
-	 * @return array An array of HTML links for different views.
+	 * @return array<string, string> An array of HTML links for different views, keyed by view slug.
 	 */
 	public function get_views(): array {
 		$rsvp_query   = Query::get_instance();
 		$status_links = array();
 		$current      = 'all';
 
-		// Check for post_id filter.
-		$post_id = 0;
+		$post_id = $this->get_filtered_post_id();
 
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- View state only, no data modification.
-		if ( isset( $_REQUEST['post_id'] ) && ! empty( $_REQUEST['post_id'] ) ) {
-			$post_id = intval( $_REQUEST['post_id'] );
-		}
-
 		// Check for current view status (doesn't require nonce).
 		if ( isset( $_REQUEST['user_id'] ) ) {
 			$user_id = absint( $_REQUEST['user_id'] );
@@ -852,12 +1168,22 @@ final class List_Table extends WP_List_Table {
 			$base_url_args['post_id'] = $post_id;
 		}
 
+		// Switching view keeps the response filter rather than widening the list.
+		$responses = $this->get_filtered_responses();
+
+		if ( ! empty( $responses ) ) {
+			$base_url_args['response'] = implode( ',', $responses );
+		}
+
 		$base_url = add_query_arg( $base_url_args, admin_url( 'edit.php' ) );
 
-		// Base args for count queries, scoped to this table's post type.
-		$count_base_args = array(
-			'count'     => true,
-			'post_type' => $this->post_type,
+		// The response filter applies to the counts too, so the views agree
+		// with the table below them.
+		$count_base_args = $this->add_response_filter(
+			array(
+				'count'     => true,
+				'post_type' => $this->post_type,
+			)
 		);
 
 		if ( $post_id ) {
@@ -943,23 +1269,5 @@ final class List_Table extends WP_List_Table {
 		);
 
 		return $status_links;
-	}
-
-	/**
-	 * Displays the RSVP list table with nonce fields.
-	 *
-	 * Outputs the HTML for the RSVP list table, including necessary nonce fields
-	 * for security. This method extends the parent display() method to add
-	 * GatherPress-specific nonce fields for RSVP actions.
-	 *
-	 * @since 0.34.0
-	 *
-	 * @return void
-	 */
-	public function display(): void {
-		wp_nonce_field( Rsvp::COMMENT_TYPE );
-		wp_nonce_field( 'gatherpress_rsvp_action', '_gatherpress_rsvp_action_nonce' );
-
-		parent::display();
 	}
 }

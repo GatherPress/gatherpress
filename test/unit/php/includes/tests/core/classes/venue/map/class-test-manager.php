@@ -15,6 +15,7 @@ use GatherPress\Core\Venue\Map\Provider\Google;
 use GatherPress\Core\Venue\Map\Provider\OSM;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
+use GdImage;
 
 /**
  * Class Test_Manager.
@@ -385,7 +386,7 @@ class Test_Manager extends Base {
 				int $height,
 				int $density = 1,
 				string $map_type = 'roadmap'
-			) {
+			): ?GdImage {
 				return null;
 			}
 		};

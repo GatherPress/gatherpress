@@ -10,6 +10,7 @@ import { useBlockProps, InnerBlocks } from '@wordpress/block-editor';
 import edit from './edit';
 import metadata from './block.json';
 import './style.scss';
+import './filters/dropdown-item-count';
 
 registerBlockType( metadata, {
 	edit,

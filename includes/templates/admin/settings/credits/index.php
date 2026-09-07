@@ -3,8 +3,8 @@
  * Render the Credits section in GatherPress settings.
  *
  * This code snippet is responsible for rendering the "Credits" section in the
- * GatherPress settings. It displays information about the project leaders, GatherPress team,
- * and contributors. It also includes links to contributors' profiles.
+ * GatherPress settings. It displays the project leads, the noteworthy
+ * contributors for this release, and everyone who contributed to it. It also includes links to contributors' profiles.
  *
  * @package GatherPress\Core
  * @param array $credits An array containing contributor information.
@@ -28,7 +28,7 @@ if ( ! isset( $credits ) ) {
 		<a href="https://github.com/GatherPress/gatherpress" rel="noopener" target="_blank"><?php esc_html_e( 'Get Involved', 'gatherpress' ); ?></a>.
 	</p>
 	<div class="gatherpress-settings__credits-wrapper">
-		<h3><?php esc_html_e( 'GatherPress Team', 'gatherpress' ); ?></h3>
+		<h3><?php esc_html_e( 'Noteworthy Contributors', 'gatherpress' ); ?></h3>
 		<ul class="gatherpress-settings__credits-featured">
 			<?php
 			foreach ( $credits['leads'] as $gatherpress_contributor ) :
@@ -41,7 +41,7 @@ if ( ! isset( $credits ) ) {
 					true
 				);
 			endforeach;
-			foreach ( $credits['team'] as $gatherpress_contributor ) :
+			foreach ( $credits['noteworthy'] as $gatherpress_contributor ) :
 				Utility::render_template(
 					sprintf( '%s/includes/templates/admin/settings/credits/contributor-card.php', GATHERPRESS_CORE_PATH ),
 					array(

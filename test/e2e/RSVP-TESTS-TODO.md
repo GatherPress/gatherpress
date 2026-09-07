@@ -66,7 +66,7 @@ Three potential solutions have been explored. Each has blockers that need resolu
 
 **Resources**:
 
-- Demo data URL: <https://raw.githubusercontent.com/GatherPress/gatherpress-demo-data/main/GatherPress-demo-data-0.33.0.xml>
+- Demo data URL: <https://raw.githubusercontent.com/GatherPress/gatherpress-demo-data/main/GatherPress-demo-data-0.35.0.xml>
 - Contains "Christmas 2025" event with complete RSVP block
 - Reference implementation: `.github/scripts/playground-preview/index.js`
 
@@ -186,7 +186,7 @@ All tests should run in CI without manual intervention.
 - **Main test file**: `test/e2e/rsvp-tests/rsvp-flows.spec.js`
 - **Helper attempts**: `test/e2e/helpers/create-event-*.js` and `create-event-with-rsvp.php`
 - **Blueprint reference**: `.github/scripts/playground-preview/index.js`
-- **Demo data**: <https://raw.githubusercontent.com/GatherPress/gatherpress-demo-data/main/GatherPress-demo-data-0.33.0.xml>
+- **Demo data**: <https://raw.githubusercontent.com/GatherPress/gatherpress-demo-data/main/GatherPress-demo-data-0.35.0.xml>
 
 ## Questions?
 

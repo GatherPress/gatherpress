@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Remove a static analysis guard that became redundant when the map provider contract was narrowed to GdImage.

@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+GatherPress now honors the operating system's reduced-motion preference: the modal no longer scales open and the loading indicator no longer pulses, while both keep the state they were communicating through a cross-fade and a static dim.

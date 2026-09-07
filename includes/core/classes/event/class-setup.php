@@ -14,6 +14,7 @@ namespace GatherPress\Core\Event;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use DateTimeImmutable;
 use Exception;
 use GatherPress\Core\Event;
 use GatherPress\Core\Feed;
@@ -22,6 +23,7 @@ use GatherPress\Core\Settings;
 use GatherPress\Core\Starter_Pattern_Loader;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
+use GatherPress\Core\Venue;
 use stdClass;
 use WP_Block;
 use WP_Post;
@@ -51,6 +53,18 @@ final class Setup {
 	protected string $archive_title = '';
 
 	/**
+	 * Post IDs awaiting a datetime decision at shutdown.
+	 *
+	 * Keyed by post ID so a post saved more than once in a request is only
+	 * resolved once. See `set_datetimes()` for why the decision is deferred.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @var array<int, bool>
+	 */
+	protected array $pending_datetimes = array();
+
+	/**
 	 * Class constructor.
 	 *
 	 * Instantiates the sibling Event\* singletons before wiring hooks so
@@ -77,6 +91,7 @@ final class Setup {
 	 * @return void
 	 */
 	protected function instantiate_classes(): void {
+		Abilities::get_instance();
 		Admin_List::get_instance();
 		Meta::get_instance();
 		Query::get_instance();
@@ -104,6 +119,35 @@ final class Setup {
 		add_filter( 'the_time', array( $this, 'get_the_event_date' ) );
 		add_filter( 'render_block_core/post-date', array( $this, 'render_event_post_date_block' ), 10, 3 );
 		add_filter( 'display_post_states', array( $this, 'set_event_archive_labels' ), 10, 2 );
+		add_filter( 'block_editor_settings_all', array( $this, 'add_editor_settings' ) );
+	}
+
+	/**
+	 * Adds GatherPress event configuration to the block editor settings.
+	 *
+	 * Exposes the event post types so the editor can search events without
+	 * hardcoding a post type slug.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, mixed> $settings The block editor settings array.
+	 *
+	 * @return array<string, mixed> The modified block editor settings array.
+	 */
+	public function add_editor_settings( array $settings ): array {
+		if ( ! isset( $settings['gatherpress'] ) ) {
+			$settings['gatherpress'] = array();
+		}
+
+		if ( ! isset( $settings['gatherpress']['config'] ) ) {
+			$settings['gatherpress']['config'] = array();
+		}
+
+		$settings['gatherpress']['config']['eventPostTypes'] = array_values(
+			get_post_types_by_support( Event::SUPPORT )
+		);
+
+		return $settings;
 	}
 
 	/**
@@ -182,10 +226,10 @@ final class Setup {
 					'comments',
 					'revisions',
 					'custom-fields',
-					'gatherpress-event-date',
-					'gatherpress-rsvp',
-					'gatherpress-venue',
-					'gatherpress-online-event',
+					Event::SUPPORT,
+					Rsvp::SUPPORT,
+					Venue::ASSIGNMENT_SUPPORT,
+					Venue::ONLINE_SUPPORT,
 				),
 				'menu_icon'     => 'dashicons-nametag',
 				// Note: has_archive must be true for event feed URLs (/event/feed/) to work.
@@ -266,7 +310,7 @@ final class Setup {
 	 * @return void
 	 */
 	public function register_starter_pattern(): void {
-		$post_types = get_post_types_by_support( 'gatherpress-event-date' );
+		$post_types = get_post_types_by_support( Event::SUPPORT );
 
 		if ( empty( $post_types ) ) {
 			return;
@@ -357,11 +401,20 @@ final class Setup {
 			return;
 		}
 
-		// Bail when not on a post type archive at all, or when the
-		// queried post type doesn't declare event-date support.
-		$post_type = (string) get_query_var( 'post_type' );
+		// `post_type` comes back as an array on multi-post-type archives
+		// (e.g. a combined archive query across several event-supporting
+		// post types); the is_string() guard below keeps that array out of
+		// post_type_supports(), which otherwise emits a PHP "Array to
+		// string conversion" warning when it casts its argument to string.
+		$post_type = get_query_var( 'post_type' );
 
-		if ( ! is_post_type_archive() || ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+		// Bail when not on a post type archive at all, when the queried
+		// post type isn't a single string, or when it doesn't declare
+		// event-date support.
+		if ( ! is_post_type_archive()
+			|| ! is_string( $post_type )
+			|| ! post_type_supports( $post_type, Event::SUPPORT )
+		) {
 			return;
 		}
 
@@ -552,7 +605,7 @@ final class Setup {
 	 * @return void
 	 */
 	public function check_waiting_list( int $post_id ): void {
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT ) ) {
 			return;
 		}
 
@@ -576,7 +629,7 @@ final class Setup {
 	public function delete_event( int $post_id ): void {
 		global $wpdb;
 
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), Event::SUPPORT ) ) {
 			return;
 		}
 
@@ -617,8 +670,10 @@ final class Setup {
 		$post_type = $post instanceof WP_Post ? $post->post_type : get_post_type();
 		$post_id   = $post instanceof WP_Post ? $post->ID : get_the_ID();
 
+		// get_the_ID() returns false when there is no post in the loop to date.
 		if (
-			! post_type_supports( (string) $post_type, 'gatherpress-event-date' )
+			false === $post_id
+			|| ! post_type_supports( (string) $post_type, Event::SUPPORT )
 			|| 1 !== intval( $use_event_date )
 		) {
 			return $the_date;
@@ -645,9 +700,9 @@ final class Setup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param string   $block_content The block content.
-	 * @param array    $block         The full block, including name and attributes.
-	 * @param WP_Block $instance      The block instance.
+	 * @param string               $block_content The block content.
+	 * @param array<string, mixed> $block         The full block, including name and attributes.
+	 * @param WP_Block             $instance      The block instance.
 	 *
 	 * @return string The filtered block content with event datetime.
 	 *
@@ -660,7 +715,7 @@ final class Setup {
 		// Bail when there's no post, when the post type doesn't carry event-date
 		// support, or when the "use event date" setting isn't enabled.
 		if ( ! $post_id
-			|| ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' )
+			|| ! post_type_supports( (string) get_post_type( $post_id ), Event::SUPPORT )
 			|| 1 !== intval( $use_event_date )
 		) {
 			return $block_content;
@@ -674,18 +729,24 @@ final class Setup {
 		}
 
 		// Replace the datetime attribute and the displayed date text in the block output.
-		$iso_date      = $event->get_datetime_start( 'c' );
-		$block_content = preg_replace(
+		$iso_date = $event->get_datetime_start( 'c' );
+
+		// A literal pattern cannot fail to compile, so preg_replace() never returns null here.
+		$block_content = (string) preg_replace(
 			'/datetime="[^"]*"/',
 			'datetime="' . esc_attr( $iso_date ) . '"',
 			$block_content
 		);
 
-		return preg_replace(
+		$replaced = preg_replace(
 			'|(<time[^>]*>).*?(</time>)|s',
 			'$1' . esc_html( $display_date ) . '$2',
 			$block_content
 		);
+
+		// A null return means PCRE gave up (e.g. the backtrack limit on very large
+		// markup), so the unmodified block content is served instead.
+		return $replaced ?? $block_content;
 	}
 
 	/**
@@ -697,10 +758,10 @@ final class Setup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array   $post_states An array of post display states.
-	 * @param WP_Post $post        The current post object.
+	 * @param array<string, string> $post_states An array of post display states.
+	 * @param WP_Post               $post        The current post object.
 	 *
-	 * @return array An updated array of post display states with custom labels if applicable.
+	 * @return array<string, string> An updated array of post display states with custom labels if applicable.
 	 */
 	public function set_event_archive_labels( array $post_states, WP_Post $post ): array {
 		// Retrieve archive page settings.
@@ -738,26 +799,143 @@ final class Setup {
 	 * @return void
 	 */
 	public function set_datetimes( int $post_id ): void {
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), Event::SUPPORT ) ) {
 			return;
 		}
 
 		$data = get_post_meta( $post_id, 'gatherpress_datetime', true );
 
-		if ( empty( $data ) ) {
+		if ( ! empty( $data ) ) {
+			$this->write_datetimes( $post_id, json_decode( (string) $data, true ) ?? array() );
+
 			return;
 		}
 
-		$data = json_decode( (string) $data, true ) ?? array();
+		// Nothing stored yet, but that does not mean nothing is coming. This
+		// hook fires from inside wp_insert_post(), and every caller writes the
+		// meta afterwards: REST does, and so does anything that duplicates or
+		// imports a post. Seeding a default here would win over values that
+		// arrive moments later, because those callers use add_post_meta(),
+		// which appends rather than replaces -- so the seeded row stays first
+		// and a single-value read never sees the real date (#2116).
+		//
+		// Decide at shutdown instead, once the request's meta writes are done.
+		$this->pending_datetimes[ $post_id ] = true;
 
-		$event  = new Event( $post_id );
-		$params = array(
-			'post_id'        => $post_id,
-			'datetime_start' => $data['dateTimeStart'] ?? '',
-			'datetime_end'   => $data['dateTimeEnd'] ?? '',
-			'timezone'       => $data['timezone'] ?? '',
+		add_action( 'shutdown', array( $this, 'resolve_pending_datetimes' ) );
+	}
+
+	/**
+	 * Write the events-table row and datetime meta for a post.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @param int                                                                    $post_id The post to write.
+	 * @param array{dateTimeStart?: string, dateTimeEnd?: string, timezone?: string} $data    Datetime payload keyed
+	 *                                                                                        dateTimeStart /
+	 *                                                                                        dateTimeEnd / timezone.
+	 *
+	 * @return void
+	 */
+	protected function write_datetimes( int $post_id, array $data ): void {
+		$event = new Event( $post_id );
+
+		$event->save_datetimes(
+			array(
+				'post_id'        => $post_id,
+				'datetime_start' => $data['dateTimeStart'] ?? '',
+				'datetime_end'   => $data['dateTimeEnd'] ?? '',
+				'timezone'       => $data['timezone'] ?? '',
+			)
 		);
+	}
 
-		$event->save_datetimes( $params );
+	/**
+	 * Resolve every post that finished its save without a stored datetime.
+	 *
+	 * Runs on shutdown, so the meta `resolve_datetime_payload()` reads is
+	 * whatever the request actually ended up with rather than what existed
+	 * mid-insert.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @return void
+	 */
+	public function resolve_pending_datetimes(): void {
+		$pending                 = $this->pending_datetimes;
+		$this->pending_datetimes = array();
+
+		foreach ( array_keys( $pending ) as $post_id ) {
+			// The post can be gone by shutdown -- a duplicate that failed, or
+			// an insert rolled back after this hook ran.
+			if ( ! post_type_supports( (string) get_post_type( $post_id ), Event::SUPPORT ) ) {
+				continue;
+			}
+
+			$this->write_datetimes( $post_id, $this->resolve_datetime_payload( $post_id ) );
+		}
+	}
+
+	/**
+	 * Decide which datetime a post that saved without one should end up with.
+	 *
+	 * Split out from `resolve_pending_datetimes()` so each outcome can be
+	 * asserted directly rather than through a shutdown run.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @param int $post_id The post to resolve.
+	 *
+	 * @return array{dateTimeStart: string, dateTimeEnd: string, timezone: string} Datetime payload.
+	 */
+	protected function resolve_datetime_payload( int $post_id ): array {
+		$data = get_post_meta( $post_id, 'gatherpress_datetime', true );
+
+		if ( ! empty( $data ) ) {
+			return json_decode( (string) $data, true ) ?? array();
+		}
+
+		// Only the individual keys arrived, which is what copying meta key by
+		// key produces when the JSON blob is filtered out. Rebuild from those
+		// rather than discarding a real date.
+		$start = (string) get_post_meta( $post_id, 'gatherpress_datetime_start', true );
+
+		if ( '' !== $start ) {
+			return array(
+				'dateTimeStart' => $start,
+				'dateTimeEnd'   => (string) get_post_meta( $post_id, 'gatherpress_datetime_end', true ),
+				'timezone'      => (string) get_post_meta( $post_id, 'gatherpress_timezone', true ),
+			);
+		}
+
+		return $this->get_default_datetime();
+	}
+
+	/**
+	 * Default date and time payload for an event that has none stored.
+	 *
+	 * Mirrors the editor's defaults in `src/helpers/datetime.js`: tomorrow at
+	 * 18:00 in the site timezone, running for two hours.
+	 *
+	 * The editor's duration is filterable in JavaScript through
+	 * `gatherpress.durationDefault`, which cannot be read from here. A site
+	 * that filters it only sees a difference for an event saved without the
+	 * date controls ever being touched, since any real edit writes the meta
+	 * from the editor instead.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @return array{dateTimeStart: string, dateTimeEnd: string, timezone: string} Default datetime payload.
+	 */
+	protected function get_default_datetime(): array {
+		$timezone = wp_timezone();
+		$start    = new DateTimeImmutable( 'tomorrow 18:00', $timezone );
+		$end      = $start->modify( '+2 hours' );
+
+		return array(
+			'dateTimeStart' => $start->format( Event::DATETIME_FORMAT ),
+			'dateTimeEnd'   => $end->format( Event::DATETIME_FORMAT ),
+			'timezone'      => wp_timezone_string(),
+		);
 	}
 }

@@ -88,6 +88,6 @@ final class User extends Base {
 	 * @return string The author posts URL.
 	 */
 	public function get_url( Identity $identity ): string {
-		return get_author_posts_url( $identity->value );
+		return get_author_posts_url( intval( $identity->value ) );
 	}
 }

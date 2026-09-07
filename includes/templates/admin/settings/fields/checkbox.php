@@ -26,6 +26,11 @@ $gatherpress_disabled = ! empty( $disabled ) ? ' disabled' : '';
 // from the POST, so the trailing hidden input's value is what lands in
 // `$_POST[$name]` — carry the current (possibly inherited) boolean so
 // the saved value matches what the UI displayed.
+/**
+ * Current checkbox value.
+ *
+ * @var bool|string|int $value Bool once sanitized; defaults and legacy options may carry a bool-like string or int.
+ */
 $gatherpress_fallback = ! empty( $disabled ) && rest_sanitize_boolean( $value ) ? '1' : '0';
 
 // IMPORTANT: keep the hidden input BEFORE the checkbox. PHP takes the

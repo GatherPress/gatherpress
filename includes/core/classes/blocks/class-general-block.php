@@ -15,9 +15,11 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
+use GatherPress\Core\Venue;
 use WP_HTML_Tag_Processor;
 
 /**
@@ -73,8 +75,8 @@ final class General_Block {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The HTML content of the block.
-	 * @param array  $block         The parsed block data.
+	 * @param string               $block_content The HTML content of the block.
+	 * @param array<string, mixed> $block         The parsed block data.
 	 *
 	 * @return string The modified block content or an empty string if the block should be removed.
 	 */
@@ -107,8 +109,8 @@ final class General_Block {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The HTML content of the block.
-	 * @param array  $block         The parsed block data.
+	 * @param string               $block_content The HTML content of the block.
+	 * @param array<string, mixed> $block         The parsed block data.
 	 *
 	 * @return string The modified block content or an empty string if the block should be removed.
 	 */
@@ -143,8 +145,8 @@ final class General_Block {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param string $block_content The HTML content of the block.
-	 * @param array  $block         The parsed block data.
+	 * @param string               $block_content The HTML content of the block.
+	 * @param array<string, mixed> $block         The parsed block data.
 	 *
 	 * @return string The modified block content or an empty string if the block should be removed.
 	 */
@@ -164,7 +166,7 @@ final class General_Block {
 		// fall back to the current post). Verify it's actually a venue.
 		$venue_post_id = $block['attrs']['postId'] ?? get_the_ID();
 
-		if ( ! post_type_supports( (string) get_post_type( $venue_post_id ), 'gatherpress-venue-information' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $venue_post_id ), Venue::SUPPORT ) ) {
 			return $block_content;
 		}
 
@@ -183,8 +185,8 @@ final class General_Block {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The HTML content of the block.
-	 * @param array  $block         The parsed block data.
+	 * @param string               $block_content The HTML content of the block.
+	 * @param array<string, mixed> $block         The parsed block data.
 	 *
 	 * @return string The modified block content with submit button functionality.
 	 */
@@ -207,7 +209,7 @@ final class General_Block {
 				$processor->remove_attribute( 'role' );
 
 				$content = $processor->get_updated_html();
-				$content = preg_replace( '/<a\b/', '<button', $content );
+				$content = (string) preg_replace( '/<a\b/', '<button', $content );
 				$content = str_replace( '</a>', '</button>', $content );
 				break;
 			}
@@ -230,8 +232,8 @@ final class General_Block {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The block content.
-	 * @param array  $block         The block data.
+	 * @param string               $block_content The block content.
+	 * @param array<string, mixed> $block         The block data.
 	 *
 	 * @return string The processed block content.
 	 */
@@ -241,10 +243,9 @@ final class General_Block {
 		$post_id        = $block_instance->get_post_id( $block );
 
 		// Only process if the post type supports RSVP.
-		// Only check publish status if not in preview mode.
 		if (
-			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
-			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
+			! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT ) ||
+			! Event::is_viewable( $post_id )
 		) {
 			return $block_content;
 		}
@@ -282,8 +283,8 @@ final class General_Block {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The block content.
-	 * @param array  $block         The block data.
+	 * @param string               $block_content The block content.
+	 * @param array<string, mixed> $block         The block data.
 	 *
 	 * @return string The processed block content.
 	 */
@@ -293,10 +294,9 @@ final class General_Block {
 		$post_id        = $block_instance->get_post_id( $block );
 
 		// Only process if the post type supports RSVP.
-		// Only check publish status if not in preview mode.
 		if (
-			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
-			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
+			! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT ) ||
+			! Event::is_viewable( $post_id )
 		) {
 			return $block_content;
 		}

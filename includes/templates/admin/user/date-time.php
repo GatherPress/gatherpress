@@ -19,9 +19,9 @@ if ( ! isset( $time_format, $timezone, $tz_choices ) ) {
 	<h2 id="gatherpress-user-time-formatting">
 		<?php esc_html_e( 'Time Display Formatting', 'gatherpress' ); ?>
 	</h2>
-	<table class="form-table" aria-describedby="gatherpress-date-time-formatting">
+	<table class="form-table" aria-describedby="gatherpress-user-time-formatting">
 		<tr>
-			<th><label for="gatherpress_time_format"><?php esc_html_e( 'Time Format', 'gatherpress' ); ?></label></th>
+			<th scope="row"><label for="gatherpress_time_format"><?php esc_html_e( 'Time Format', 'gatherpress' ); ?></label></th>
 			<td>
 				<div class="form-wrap">
 					<select name="gatherpress_time_format" id="gatherpress_time_format">
@@ -40,7 +40,7 @@ if ( ! isset( $time_format, $timezone, $tz_choices ) ) {
 			</td>
 		</tr>
 		<tr>
-			<th><label for="gatherpress_timezone"><?php esc_html_e( 'Timezone', 'gatherpress' ); ?></label></th>
+			<th scope="row"><label for="gatherpress_timezone"><?php esc_html_e( 'Timezone', 'gatherpress' ); ?></label></th>
 			<td>
 				<div class="form-wrap">
 					<select name="gatherpress_timezone" id="gatherpress_timezone">

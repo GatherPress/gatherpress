@@ -14,7 +14,9 @@ namespace GatherPress\Core\Rsvp;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Assets;
 use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
 use GatherPress\Core\Rsvp\Response\Provider_Registry;
 use GatherPress\Core\Rsvp\Response\Status;
@@ -78,6 +80,7 @@ final class Setup {
 	 * @return void
 	 */
 	protected function instantiate_classes(): void {
+		Abilities::get_instance();
 		Cleanup::get_instance();
 		Form::get_instance();
 		Query::get_instance();
@@ -189,8 +192,8 @@ final class Setup {
 			return;
 		}
 
-		foreach ( get_post_types_by_support( 'gatherpress-rsvp' ) as $post_type ) {
-			remove_post_type_support( $post_type, 'gatherpress-rsvp' );
+		foreach ( get_post_types_by_support( Rsvp::SUPPORT ) as $post_type ) {
+			remove_post_type_support( $post_type, Rsvp::SUPPORT );
 		}
 	}
 
@@ -274,7 +277,7 @@ final class Setup {
 	 * @return int Adjusted number of comments.
 	 */
 	public function adjust_comments_number( int $comments_number, int $post_id ): int {
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT ) ) {
 			return $comments_number;
 		}
 
@@ -296,7 +299,7 @@ final class Setup {
 	 * @return void
 	 */
 	public function maybe_process_waiting_list( int $post_id ): void {
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT ) ) {
 			return;
 		}
 
@@ -316,7 +319,7 @@ final class Setup {
 	 */
 	public function maybe_set_rsvp_meta_default( int $post_id ): void {
 		// Skip non-event post types early to avoid an unnecessary Rsvp instantiation.
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT ) ) {
 			return;
 		}
 
@@ -346,7 +349,7 @@ final class Setup {
 		// When no post type declares `gatherpress-rsvp` support — e.g. a
 		// companion plugin removed it from the event post type — the loop
 		// simply adds nothing (#1849).
-		foreach ( get_post_types_by_support( 'gatherpress-rsvp' ) as $post_type ) {
+		foreach ( get_post_types_by_support( Rsvp::SUPPORT ) as $post_type ) {
 			$hook = add_submenu_page(
 				sprintf( 'edit.php?post_type=%s', $post_type ),
 				__( 'RSVPs', 'gatherpress' ),
@@ -385,13 +388,41 @@ final class Setup {
 		// Fall back to the event post type when the screen doesn't carry a
 		// supporting post type (defensive; the submenu is only registered
 		// for supporting post types).
-		if ( ! post_type_supports( $screen_post_type, 'gatherpress-rsvp' ) ) {
+		if ( ! post_type_supports( $screen_post_type, Rsvp::SUPPORT ) ) {
 			$screen_post_type = Event::POST_TYPE;
 		}
 
 		$this->list_table = new List_Table( array( 'post_type' => $screen_post_type ) );
 
 		$this->setup_rsvp_list_table_screen_options();
+		$this->enqueue_rsvp_admin_assets();
+	}
+
+	/**
+	 * Loads the scripts the RSVP screen's filters need.
+	 *
+	 * Enqueued from the screen's own `load-` action, because the hook suffix
+	 * varies per supporting post type and this is where it is known.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	protected function enqueue_rsvp_admin_assets(): void {
+		$asset = Assets::get_instance()->get_asset_data( 'rsvp_admin' );
+
+		wp_enqueue_script(
+			'gatherpress-rsvp-admin',
+			GATHERPRESS_CORE_URL . 'build/rsvp_admin.js',
+			$asset['dependencies'],
+			$asset['version'],
+			true
+		);
+
+		wp_set_script_translations( 'gatherpress-rsvp-admin', 'gatherpress' );
+
+		// Admin screens do not load the components stylesheet by default.
+		wp_enqueue_style( 'wp-components' );
 	}
 
 	/**
@@ -414,7 +445,10 @@ final class Setup {
 			)
 		);
 
-		$this->list_table->register_column_options();
+		// The list table only exists when `prepare_rsvp_admin_page()` created it for this screen.
+		if ( $this->list_table instanceof List_Table ) {
+			$this->list_table->register_column_options();
+		}
 	}
 
 	/**
@@ -440,7 +474,6 @@ final class Setup {
 		$rsvp_table  = $this->list_table ?? new List_Table();
 		$search_term = isset( $_REQUEST['s'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['s'] ) ) : '';
 		$status      = isset( $_REQUEST['status'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['status'] ) ) : '';
-		$event       = isset( $_REQUEST['event'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['event'] ) ) : '';
 
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/rsvp/list-table.php', GATHERPRESS_CORE_PATH ),
@@ -448,7 +481,8 @@ final class Setup {
 				'rsvp_table'  => $rsvp_table,
 				'search_term' => $search_term,
 				'status'      => $status,
-				'event'       => $event,
+				'post_id'     => $rsvp_table->get_filtered_post_id(),
+				'responses'   => $rsvp_table->get_filtered_responses(),
 			),
 			true
 		);
@@ -559,7 +593,7 @@ final class Setup {
 
 			// Each RSVP-supporting post type has its own RSVPs page, so
 			// highlight whichever post type menu the page lives under (#1849).
-			$post_type = ( ! empty( $typenow ) && post_type_supports( $typenow, 'gatherpress-rsvp' ) )
+			$post_type = ( ! empty( $typenow ) && post_type_supports( $typenow, Rsvp::SUPPORT ) )
 				? $typenow
 				: Event::POST_TYPE;
 
@@ -597,10 +631,10 @@ final class Setup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array  $emails     Array of email addresses to notify.
-	 * @param string $comment_id The comment ID.
+	 * @param string[] $emails     Array of email addresses to notify.
+	 * @param string   $comment_id The comment ID.
 	 *
-	 * @return array Empty array for RSVP comments, original array otherwise.
+	 * @return string[] Empty array for RSVP comments, original array otherwise.
 	 */
 	public function remove_rsvp_notification_emails( array $emails, string $comment_id ): array {
 		if ( get_comment_type( (int) $comment_id ) !== Rsvp::COMMENT_TYPE ) {

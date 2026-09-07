@@ -67,22 +67,18 @@ const MaxAttendanceLimit = () => {
 	}, [ isNewEvent, defaultMaxAttendanceLimit, updateMaxAttendanceLimit ] );
 
 	return (
-		<>
-			<NumberControl
-				label={ __( 'Maximum Attendance Limit', 'gatherpress' ) }
-				value={ maxAttendanceLimit }
-				min={ 0 }
-				onChange={ ( value ) => {
-					updateMaxAttendanceLimit( value );
-				} }
-			/>
-			<p className="description">
-				{ __(
-					'Total number of people allowed at the event. A value of 0 indicates no limit.',
-					'gatherpress',
-				) }
-			</p>
-		</>
+		<NumberControl
+			label={ __( 'Maximum Attendance Limit', 'gatherpress' ) }
+			value={ maxAttendanceLimit }
+			min={ 0 }
+			help={ __(
+				'Total number of people allowed at the event. A value of 0 indicates no limit.',
+				'gatherpress',
+			) }
+			onChange={ ( value ) => {
+				updateMaxAttendanceLimit( value );
+			} }
+		/>
 	);
 };
 

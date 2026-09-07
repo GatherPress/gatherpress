@@ -57,23 +57,4 @@ final class Email extends Base {
 	public static function get_label(): string {
 		return __( 'Email', 'gatherpress' );
 	}
-
-	/**
-	 * Get the display name for an email-based RSVP.
-	 *
-	 * The address is the best displayable name an email identity has.
-	 * No sanitization is needed here: the Identity constructor already
-	 * rejected anything that is not a valid address, and sanitizing on
-	 * read could silently return a modified string that diverges from
-	 * the stored identity value.
-	 *
-	 * @since 0.35.0
-	 *
-	 * @param Identity $identity The identity.
-	 *
-	 * @return string The email address.
-	 */
-	public function get_display_name( Identity $identity ): string {
-		return (string) $identity->value;
-	}
 }

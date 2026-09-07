@@ -2,6 +2,7 @@
 
 1. [Template overrides](#template-overrides)
 2. [Theme supports](#theme-supports)
+3. [CSS custom properties](#css-custom-properties)
 
 ## Template overrides
 
@@ -67,3 +68,41 @@ GatherPress does respect [theme_supports](https://developer.wordpress.org/refere
         - `example.org/feed/ical`
         - `example.org/event/feed/ical`
         - `example.org/topic/my-sample-topic/feed/ical`
+
+## CSS custom properties
+
+Some GatherPress components read CSS custom properties so a theme can restyle them without overriding selectors or replacing assets. Set them anywhere the component inherits from — `:root`, a block wrapper, or `theme.json`'s `styles.css`.
+
+They follow WordPress's own `--wp--preset--color--primary` shape: `--gatherpress--{component}--{property}`, with two dashes between segments.
+
+Each one falls back to a WordPress global style before falling back to a hard-coded default, so a theme that defines its palette through `theme.json` usually gets something reasonable without setting these at all.
+
+### Tooltip
+
+| Property | Falls back to |
+| --- | --- |
+| `--gatherpress--tooltip--text-color` | `--wp--preset--color--base`, then `--wp--preset--color--background`, then `#fff` |
+| `--gatherpress--tooltip--background-color` | `--wp--preset--color--contrast`, then `--wp--preset--color--primary`, then `#333` |
+
+### Venue map
+
+Applies to the interactive (Leaflet) map. Static maps are server-rendered images and are not affected.
+
+| Property | Falls back to |
+| --- | --- |
+| `--gatherpress--venue-map--attribution-link-color` | `--wp--preset--color--primary`, then `#0073aa` |
+| `--gatherpress--venue-map--marker-filter` | `none` |
+
+`--gatherpress--venue-map--marker-filter` is **not a color**. The map marker is one of Leaflet's raster images, so the value has to be a valid CSS [`filter`](https://developer.mozilla.org/en-US/docs/Web/CSS/filter) list. Setting a color here does nothing.
+
+To tint the default marker toward a theme color, combine `brightness(0) saturate(100%)` (which flattens the image to black) with hue and saturation adjustments:
+
+```css
+:root {
+	--gatherpress--venue-map--marker-filter: brightness(0) saturate(100%) invert(28%)
+		sepia(96%) saturate(1720%) hue-rotate(196deg);
+}
+```
+
+Themes that would rather supply their own marker artwork should replace the icon rather than filter it.
+

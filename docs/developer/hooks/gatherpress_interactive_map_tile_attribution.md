@@ -24,7 +24,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-settings.php:253](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-settings.php#L253)
+- [includes/core/classes/class-settings.php:346](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-settings.php#L346)
 ```php
 apply_filters( 'gatherpress_interactive_map_tile_attribution', $default )
 ```

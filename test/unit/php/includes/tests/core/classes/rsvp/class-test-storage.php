@@ -17,7 +17,7 @@ use GatherPress\Core\Rsvp\Response\Provider\Email;
 use GatherPress\Core\Rsvp\Response\Provider\User;
 use GatherPress\Core\Rsvp\Response\State;
 use GatherPress\Core\Rsvp\Response\Status;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Storage;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -84,7 +84,16 @@ class Test_Storage extends Base {
 		$this->assertTrue( $state->data->anonymous );
 		$this->assertSame( $event_id, (int) $state->comment->comment_post_ID );
 		$this->assertSame( Rsvp::COMMENT_TYPE, $state->comment->comment_type );
-		$this->assertSame( 'Storage Tester', $state->comment->comment_author );
+
+		// The responder asked to stay anonymous, so reading the comment back
+		// masks the author for the public. Storage still recorded the real
+		// name, which a viewer allowed to see it reads unchanged.
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertSame(
+			'Storage Tester',
+			get_comment( (int) $state->comment->comment_ID )->comment_author
+		);
+		wp_set_current_user( 0 );
 
 		$terms = wp_get_object_terms( (int) $state->comment->comment_ID, Status::TAXONOMY );
 		$this->assertSame( 'attending', $terms[0]->slug );
@@ -519,5 +528,92 @@ class Test_Storage extends Base {
 
 		$this->assertInstanceOf( State::class, $found, 'The term-less row resolves when a provider is passed.' );
 		$this->assertSame( $comment_id, (int) $found->comment->comment_ID );
+	}
+
+	/**
+	 * An email response has no name to save, and the provider answers with the
+	 * address, so nothing is stored in the column read as a display name.
+	 *
+	 * @covers ::save
+	 *
+	 * @return void
+	 */
+	public function test_save_never_stores_an_address_as_the_author(): void {
+		list( $event_id, $storage ) = $this->make_storage();
+
+		$email  = 'no-name-given@example.test';
+		$intent = new Intent(
+			new Data( new Identity( Identity_Type::EMAIL, $email ), Status::ATTENDING ),
+			new Email()
+		);
+		$state  = $storage->save( $intent, null );
+
+		$this->assertInstanceOf( State::class, $state );
+		$this->assertSame(
+			'',
+			$state->comment->comment_author,
+			'The address is not stored as the display name.'
+		);
+		$this->assertSame(
+			$email,
+			$state->comment->comment_author_email,
+			'It is still stored where an address belongs.'
+		);
+		$this->assertSame( $event_id, (int) $state->comment->comment_post_ID );
+	}
+
+	/**
+	 * A comment that was deleted between the lookup that produced its ID and
+	 * the save reports false instead of updating a row that is no longer there.
+	 *
+	 * @since 0.36.0
+	 * @covers ::save
+	 *
+	 * @return void
+	 */
+	public function test_save_returns_false_when_the_row_to_update_is_gone(): void {
+		list( , $storage ) = $this->make_storage();
+
+		$user_id = $this->factory->user->create();
+		$result  = $storage->save( $this->user_intent( $user_id, Status::ATTENDING ), 999999 );
+
+		$this->assertFalse( $result, 'Updating a comment that no longer exists reports false.' );
+		$this->assertNull(
+			$storage->get( new Identity( Identity_Type::WP_USER_ID, $user_id ) ),
+			'The failed update does not fall through to an insert.'
+		);
+	}
+
+	/**
+	 * A comment that stops resolving after the write lands — deleted here from
+	 * the term hook that fires between the update and the read-back — reports a
+	 * failed save rather than a successful one.
+	 *
+	 * @since 0.36.0
+	 * @covers ::save
+	 *
+	 * @return void
+	 */
+	public function test_save_returns_false_when_the_saved_comment_stops_resolving(): void {
+		list( , $storage ) = $this->make_storage();
+
+		$user_id    = $this->factory->user->create();
+		$state      = $storage->save( $this->user_intent( $user_id, Status::ATTENDING ), null );
+		$comment_id = (int) $state->comment->comment_ID;
+		$vanish     = static function () use ( $comment_id ) {
+			wp_delete_comment( $comment_id, true );
+		};
+
+		add_action( 'set_object_terms', $vanish );
+
+		$result = $storage->save( $this->user_intent( $user_id, Status::NOT_ATTENDING ), $comment_id );
+
+		remove_action( 'set_object_terms', $vanish );
+
+		$this->assertFalse( $result, 'A comment that no longer resolves reports a failed save.' );
+		$this->assertNull(
+			get_comment( $comment_id ),
+			'The comment really is gone by the time the save reads it back.'
+		);
 	}
 }

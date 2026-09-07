@@ -20,10 +20,13 @@ namespace GatherPress\Core\Calendar;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Event\Query;
 use GatherPress\Core\Shadow_Source;
+use GatherPress\Core\Topic;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
+use GatherPress\Core\Venue;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
 use WP_Post;
 use WP_Post_Type;
@@ -38,6 +41,15 @@ use WP_Term;
  * sibling `Calendar` class, instantiated as `new Calendar( $event_id )`.
  *
  * @since 0.34.0
+ *
+ * @phpstan-type LabelArgs array{
+ *   blogtitle: string,
+ *   separator: string,
+ *   singletitle: string,
+ *   feedtitle: string,
+ *   posttypetitle: string,
+ *   taxtitle: string
+ * }
  */
 final class Setup {
 
@@ -55,6 +67,8 @@ final class Setup {
 	 * @since 0.34.0
 	 */
 	public function __construct() {
+		Cache::get_instance();
+
 		$this->setup_hooks();
 	}
 
@@ -78,6 +92,9 @@ final class Setup {
 		// validity check and never registered its rewrite rule.
 		add_action( 'init', array( $this, 'register_endpoints' ), PHP_INT_MAX );
 		add_action( 'wp_head', array( $this, 'alternate_links' ) );
+		// PHP_INT_MIN so the calendar redirect runs before redirect_canonical() and any theme's own handler.
+		add_action( 'template_redirect', array( $this, 'maybe_handle_content_negotiation' ), PHP_INT_MIN );
+		add_filter( 'wp_headers', array( $this, 'filter_wp_headers' ) );
 	}
 
 	/**
@@ -93,7 +110,7 @@ final class Setup {
 	 * @return void
 	 */
 	public function register_endpoints(): void {
-		$event_types = get_post_types_by_support( 'gatherpress-event-date' );
+		$event_types = get_post_types_by_support( Event::SUPPORT );
 		if ( empty( $event_types ) ) {
 			return;
 		}
@@ -126,7 +143,7 @@ final class Setup {
 	 * @return void
 	 */
 	public function init_events( string $post_type ): void {
-		if ( ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+		if ( ! post_type_supports( $post_type, Event::SUPPORT ) ) {
 			return;
 		}
 
@@ -184,12 +201,16 @@ final class Setup {
 	 * @return void
 	 */
 	public function init_taxonomies( string $taxonomy ): void {
+		$taxonomy_object = get_taxonomy( $taxonomy );
+
 		// Stop if the currently registered taxonomy does not validate.
-		if ( // Stop, if taxonomy is not registered for any event-date supporting post type.
+		if ( // Stop, if the taxonomy is not registered.
+			! $taxonomy_object ||
+			// Stop, if taxonomy is not registered for any event-date supporting post type.
 			! $this->has_post_type_for_taxonomy( $taxonomy ) ||
 			// Stop, if taxonomy is not public.
-			! is_taxonomy_viewable( $taxonomy ) ||
-			false === get_taxonomy( $taxonomy )->rewrite
+			! is_taxonomy_viewable( $taxonomy_object ) ||
+			false === $taxonomy_object->rewrite
 		) {
 			return;
 		}
@@ -231,7 +252,8 @@ final class Setup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array Template descriptor with `file_name` (and optional `dir_path`) keys.
+	 * @return array{file_name: string, dir_path?: string} Template descriptor with `file_name` (and optional
+	 *                                                      `dir_path`) keys.
 	 */
 	public function get_ical_file_template(): array {
 		return array(
@@ -244,7 +266,8 @@ final class Setup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array Template descriptor with `file_name` (and optional `dir_path`) keys.
+	 * @return array{file_name: string, dir_path?: string} Template descriptor with `file_name` (and optional
+	 *                                                      `dir_path`) keys.
 	 */
 	public function get_ical_feed_template(): array {
 		return array(
@@ -322,7 +345,7 @@ final class Setup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array{blogtitle:string,separator:string,singletitle:string,feedtitle:string,posttypetitle:string,taxtitle:string}
+	 * @return LabelArgs
 	 */
 	protected function alternate_link_label_args(): array {
 		return array(
@@ -348,6 +371,7 @@ final class Setup {
 	 * @since 0.34.0
 	 *
 	 * @param array $args Label args from `alternate_link_label_args()`.
+	 * @phpstan-param LabelArgs $args
 	 *
 	 * @return array<int,array{url:string,attr:string}> One-element list.
 	 */
@@ -378,13 +402,21 @@ final class Setup {
 	 * @since 0.34.0
 	 *
 	 * @param array $args Label args from `alternate_link_label_args()`.
+	 * @phpstan-param LabelArgs $args
 	 *
 	 * @return array<int,array{url:string,attr:string}> One entry per event-supporting post type.
 	 */
 	protected function collect_post_type_archive_alternate_links( array $args ): array {
 		$links = array();
 
-		foreach ( get_post_types_by_support( 'gatherpress-event-date' ) as $post_type ) {
+		foreach ( get_post_types_by_support( Event::SUPPORT ) as $post_type ) {
+			$feed_link = get_post_type_archive_feed_link( $post_type, self::ICAL_SLUG );
+
+			// A post type registered without an archive has no archive feed to advertise.
+			if ( false === $feed_link ) {
+				continue;
+			}
+
 			$post_type_object = get_post_type_object( $post_type );
 			// The fallback to the bare slug only fires when `get_post_type_object()`
 			// returns null — structurally unreachable here because the loop
@@ -394,10 +426,7 @@ final class Setup {
 				? $post_type_object->labels->name
 				: $post_type; // @codeCoverageIgnore
 			$links[]       = array(
-				'url'  => get_post_type_archive_feed_link(
-					$post_type,
-					self::ICAL_SLUG
-				),
+				'url'  => $feed_link,
 				'attr' => sprintf(
 					$args['posttypetitle'],
 					$args['blogtitle'],
@@ -421,21 +450,24 @@ final class Setup {
 	 * @since 0.34.0
 	 *
 	 * @param array $args Label args from `alternate_link_label_args()`.
+	 * @phpstan-param LabelArgs $args
 	 *
 	 * @return array<int,array{url:string,attr:string}>
 	 */
 	protected function collect_contextual_alternate_links( array $args ): array {
 		$queried = get_queried_object();
 
-		if ( is_singular() && post_type_supports( $queried->post_type, 'gatherpress-event-date' ) ) {
-			return $this->collect_singular_event_alternate_links( $queried, $args );
+		if ( is_singular() && $queried instanceof WP_Post ) {
+			if ( post_type_supports( $queried->post_type, Event::SUPPORT ) ) {
+				return $this->collect_singular_event_alternate_links( $queried, $args );
+			}
+
+			if ( $this->is_tax_like_type_for_event_supporting_types( $queried->post_type ) ) {
+				return $this->collect_singular_tax_like_alternate_links( $queried, $args );
+			}
 		}
 
-		if ( is_singular() && $this->is_tax_like_type_for_event_supporting_types( $queried->post_type ) ) {
-			return $this->collect_singular_tax_like_alternate_links( $queried, $args );
-		}
-
-		if ( is_tax() && $this->has_post_type_for_taxonomy( $queried->taxonomy ) ) {
+		if ( is_tax() && $queried instanceof WP_Term && $this->has_post_type_for_taxonomy( $queried->taxonomy ) ) {
 			return $this->collect_tax_archive_alternate_links( $queried, $args );
 		}
 
@@ -452,22 +484,31 @@ final class Setup {
 	 *
 	 * @param WP_Post $event The queried event post.
 	 * @param array   $args  Label args from `alternate_link_label_args()`.
+	 * @phpstan-param LabelArgs $args
 	 *
 	 * @return array<int,array{url:string,attr:string}>
 	 */
 	protected function collect_singular_event_alternate_links( WP_Post $event, array $args ): array {
+		// the_title_attribute() returns nothing for an empty title.
+		$title = the_title_attribute( array( 'echo' => false ) );
+		$title = is_string( $title ) ? $title : '';
+
 		$calendar = new Calendar( $event->ID );
-		$links    = array(
-			array(
-				'url'  => $calendar->get_ical_url(),
+		$ical_url = $calendar->get_ical_url();
+		$links    = array();
+
+		// False when the event post no longer resolves.
+		if ( false !== $ical_url ) {
+			$links[] = array(
+				'url'  => $ical_url,
 				'attr' => sprintf(
 					$args['singletitle'],
 					$args['blogtitle'],
 					$args['separator'],
-					the_title_attribute( array( 'echo' => false ) )
+					$title
 				),
-			),
-		);
+			);
+		}
 
 		return array_merge( $links, $this->collect_event_term_alternate_links( $event, $args ) );
 	}
@@ -482,10 +523,15 @@ final class Setup {
 	 *
 	 * @param WP_Post $post The queried shadow-source post (e.g. a venue).
 	 * @param array   $args Label args from `alternate_link_label_args()`.
+	 * @phpstan-param LabelArgs $args
 	 *
 	 * @return array<int,array{url:string,attr:string}>
 	 */
 	protected function collect_singular_tax_like_alternate_links( WP_Post $post, array $args ): array {
+		// the_title_attribute() returns nothing for an empty title.
+		$title = the_title_attribute( array( 'echo' => false ) );
+		$title = is_string( $title ) ? $title : '';
+
 		return array(
 			array(
 				'url'  => get_post_comments_feed_link( $post->ID, self::ICAL_SLUG ),
@@ -493,7 +539,7 @@ final class Setup {
 					$args['singletitle'],
 					$args['blogtitle'],
 					$args['separator'],
-					the_title_attribute( array( 'echo' => false ) )
+					$title
 				),
 			),
 		);
@@ -506,21 +552,27 @@ final class Setup {
 	 *
 	 * @param WP_Term $term The queried taxonomy term.
 	 * @param array   $args Label args from `alternate_link_label_args()`.
+	 * @phpstan-param LabelArgs $args
 	 *
 	 * @return array<int,array{url:string,attr:string}>
 	 */
 	protected function collect_tax_archive_alternate_links( WP_Term $term, array $args ): array {
-		$tax = get_taxonomy( $term->taxonomy );
+		$href = get_term_feed_link( $term->term_id, $term->taxonomy, self::ICAL_SLUG );
+
+		// False when the term no longer resolves.
+		if ( false === $href ) {
+			return array();
+		}
 
 		return array(
 			array(
-				'url'  => get_term_feed_link( $term->term_id, $term->taxonomy, self::ICAL_SLUG ),
+				'url'  => $href,
 				'attr' => sprintf(
 					$args['taxtitle'],
 					$args['blogtitle'],
 					$args['separator'],
 					$term->name,
-					$tax->labels->singular_name
+					Utility::taxonomy_label( 'singular_name', $term->taxonomy )
 				),
 			),
 		);
@@ -533,6 +585,7 @@ final class Setup {
 	 *
 	 * @param WP_Post $event The queried event post.
 	 * @param array   $args  Label args from `alternate_link_label_args()`.
+	 * @phpstan-param LabelArgs $args
 	 *
 	 * @return array<int,array{url:string,attr:string}>
 	 */
@@ -543,6 +596,11 @@ final class Setup {
 				'object_ids' => $event->ID,
 			)
 		);
+
+		// Only a `get_terms` filter can produce this; iterating it would fatal below.
+		if ( is_wp_error( $terms ) ) {
+			return array();
+		}
 
 		$links = array();
 
@@ -567,6 +625,7 @@ final class Setup {
 	 *
 	 * @param WP_Term $term Term attached to the queried event.
 	 * @param array   $args Label args from `alternate_link_label_args()`.
+	 * @phpstan-param LabelArgs $args
 	 *
 	 * @return array<int,array{url:string,attr:string}> Empty for sentinel terms; otherwise one entry.
 	 */
@@ -574,27 +633,27 @@ final class Setup {
 		$shadow_source = Shadow_Source::get_instance();
 		$href          = '';
 
-		if ( $shadow_source->is_shadow_term_slug( $term->taxonomy ) ) {
+		if ( ! $shadow_source->is_shadow_term_slug( $term->taxonomy ) ) {
+			$href = get_term_feed_link( $term->term_id, $term->taxonomy, self::ICAL_SLUG );
+		} elseif ( $shadow_source->is_shadow_term_slug( $term->slug ) ) {
 			// Skip sentinel shadow terms like `online-event` whose slug does
-			// not start with `_` — no backing post means no feed to link to.
-			if ( $shadow_source->is_shadow_term_slug( $term->slug ) ) {
-				$post = $shadow_source->get_post_from_term_slug(
-					$term->slug,
-					ltrim( $term->taxonomy, '_' )
-				);
+			// not start with `_` - no backing post means no feed to link to.
+			$post = $shadow_source->get_post_from_term_slug(
+				$term->slug,
+				ltrim( $term->taxonomy, '_' )
+			);
+
+			// Without this, get_post_comments_feed_link( null ) falls back to the global post.
+			if ( $post instanceof WP_Post ) {
 				// Feels weird to use a *_comments_* function here, but it delivers clean results
 				// in the form of "domain.tld/event/my-sample-event/feed/ical/".
 				$href = get_post_comments_feed_link( $post->ID, self::ICAL_SLUG );
 			}
-		} else {
-			$href = get_term_feed_link( $term->term_id, $term->taxonomy, self::ICAL_SLUG );
 		}
 
 		if ( empty( $href ) ) {
 			return array();
 		}
-
-		$tax = get_taxonomy( $term->taxonomy );
 
 		return array(
 			array(
@@ -604,7 +663,7 @@ final class Setup {
 					$args['blogtitle'],
 					$args['separator'],
 					$term->name,
-					$tax->labels->singular_name
+					Utility::taxonomy_label( 'singular_name', $term->taxonomy )
 				),
 			),
 		);
@@ -685,21 +744,26 @@ final class Setup {
 		$topics          = array();
 		$venues          = array();
 		$output          = array();
+		$queried_object  = get_queried_object();
 
-		if ( is_singular() && $this->is_tax_like_type_for_event_supporting_types( get_queried_object()->post_type ) ) {
-			if ( is_singular( 'gatherpress_venue' ) ) {
-				$venues = array( '_' . get_queried_object()->post_name );
-			}
-		} elseif ( is_tax() && $this->has_post_type_for_taxonomy( get_queried_object()->taxonomy ) ) {
-			if ( is_tax( 'gatherpress_topic' ) ) {
-				$topics = array( get_queried_object()->slug );
-			}
+		if (
+			is_singular( Venue::POST_TYPE ) &&
+			$queried_object instanceof WP_Post &&
+			$this->is_tax_like_type_for_event_supporting_types( $queried_object->post_type )
+		) {
+			$venues = array( '_' . $queried_object->post_name );
+		} elseif (
+			is_tax( Topic::TAXONOMY ) &&
+			$queried_object instanceof WP_Term &&
+			$this->has_post_type_for_taxonomy( $queried_object->taxonomy )
+		) {
+			$topics = array( $queried_object->slug );
 		}
 
 		$query = Query::get_instance()->get_events_list( $event_list_type, $number, $topics, $venues );
 		while ( $query->have_posts() ) {
 			$query->the_post();
-			$calendar = new Calendar( get_the_ID() );
+			$calendar = new Calendar( (int) get_the_ID() );
 			$output[] = $calendar->get_ical_event_string();
 		}
 
@@ -748,26 +812,29 @@ final class Setup {
 		$queried_object = get_queried_object();
 		$filename       = 'calendar';
 
-		if ( is_singular() && post_type_supports( $queried_object->post_type, 'gatherpress-event-date' ) ) {
-			$calendar  = new Calendar( $queried_object->ID );
-			$date      = $calendar->event->get_datetime_start( 'Y-m-d' );
-			$post_name = $queried_object->post_name;
-			$filename  = $date . '_' . $post_name;
-		} elseif ( is_singular() && $this->is_tax_like_type_for_event_supporting_types( $queried_object->post_type ) ) {
-			$filename = $queried_object->post_name;
-		} elseif ( is_tax() && $this->has_post_type_for_taxonomy( $queried_object->taxonomy ) ) {
+		if ( is_singular() && $queried_object instanceof WP_Post ) {
+			if ( post_type_supports( $queried_object->post_type, Event::SUPPORT ) ) {
+				$calendar  = new Calendar( $queried_object->ID );
+				$date      = $calendar->event->get_datetime_start( 'Y-m-d' );
+				$post_name = $queried_object->post_name;
+				$filename  = $date . '_' . $post_name;
+			} elseif ( $this->is_tax_like_type_for_event_supporting_types( $queried_object->post_type ) ) {
+				$filename = $queried_object->post_name;
+			}
+		} elseif (
+			is_tax() &&
+			$queried_object instanceof WP_Term &&
+			$this->has_post_type_for_taxonomy( $queried_object->taxonomy )
+		) {
 			$filename = $queried_object->slug;
-		} elseif ( is_post_type_archive() ) {
-			// `$queried_object` is the WP_Post_Type here. `rewrite` is `false`
-			// when the post type opted out of rewrite rules — fall back to the
-			// default filename in that case rather than `false['slug']`-ing.
+		} elseif ( is_post_type_archive() && $queried_object instanceof WP_Post_Type ) {
+			// `rewrite` is false when the post type opted out of rewrite rules.
 			$filename = is_array( $queried_object->rewrite ) ? $queried_object->rewrite['slug'] : $filename;
 		} elseif ( is_feed() && ! is_singular() && ! is_tax() ) {
-			$filename = str_replace(
-				'.',
-				'-',
-				wp_parse_url( home_url(), PHP_URL_HOST )
-			);
+			$host = wp_parse_url( home_url(), PHP_URL_HOST );
+
+			// A site URL without a parsable host keeps the default filename.
+			$filename = is_string( $host ) ? str_replace( '.', '-', $host ) : $filename;
 		}
 
 		return $filename . '.ics';
@@ -778,12 +845,17 @@ final class Setup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param string $filename Generated name of the file.
+	 * @since 0.36.0 Added `$etag` and `$last_modified` for cache validation.
+	 *
+	 * @param string $filename      Generated name of the file.
+	 * @param string $etag          Optional. Entity tag for the body being sent.
+	 * @param string $last_modified Optional. GMT timestamp of the last calendar change.
 	 *
 	 * @return void
 	 */
-	public function send_ics_headers( string $filename ): void {
+	public function send_ics_headers( string $filename, string $etag = '', string $last_modified = '' ): void {
 		$charset = strtolower( get_option( 'blog_charset' ) );
+		$max_age = Cache::get_instance()->get_max_age();
 
 		header( 'Content-Description: File Transfer' );
 
@@ -793,14 +865,132 @@ final class Setup {
 		// Force download in most browsers.
 		header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
 
-		// Avoid browser caching issues.
-		header( 'Cache-Control: no-store, no-cache, must-revalidate' );
-		header( 'Cache-Control: post-check=0, pre-check=0', false );
-		header( 'Pragma: no-cache' );
-		header( 'Expires: 0' );
+		// Subscribed clients poll on their own schedule, several times an hour
+		// in Outlook's and Apple Calendar's defaults, so the response tells them
+		// how long it stays fresh and hands them validators to revalidate with.
+		// A site can opt out entirely by filtering the max age to 0.
+		if ( 0 < $max_age ) {
+			header( sprintf( 'Cache-Control: public, max-age=%d', $max_age ) );
+		} else {
+			header( 'Cache-Control: no-store, no-cache, must-revalidate' );
+			header( 'Pragma: no-cache' );
+			header( 'Expires: 0' );
+		}
+
+		if ( '' !== $etag ) {
+			header( sprintf( 'ETag: %s', $etag ) );
+		}
+
+		if ( '' !== $last_modified ) {
+			$timestamp = (int) strtotime( $last_modified . ' GMT' );
+
+			header( sprintf( 'Last-Modified: %s GMT', gmdate( 'D, d M Y H:i:s', $timestamp ) ) );
+		}
 
 		// Prevent content sniffing which might lead to MIME type mismatch.
 		header( 'X-Content-Type-Options: nosniff' );
+	}
+
+	/**
+	 * Cached iCalendar body for the current request.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string The complete iCal payload.
+	 */
+	public function get_ics_body(): string {
+		$is_feed = is_feed();
+
+		return Cache::get_instance()->remember(
+			$this->get_ics_cache_key(),
+			function () use ( $is_feed ): string {
+				return (string) ( $is_feed ? $this->get_ical_feed() : $this->get_ical_file() );
+			}
+		);
+	}
+
+	/**
+	 * Cache key describing what the current request asks for.
+	 *
+	 * Built from the resolved query rather than the request URI, so unknown
+	 * query parameters cannot fragment the cache into unbounded entries.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string Scope-specific cache key.
+	 */
+	public function get_ics_cache_key(): string {
+		$queried_object = get_queried_object();
+		$scope          = array(
+			'feed'   => is_feed() ? 1 : 0,
+			'paged'  => (int) get_query_var( 'paged' ),
+			'object' => 0,
+			'type'   => '',
+		);
+
+		if ( $queried_object instanceof WP_Post ) {
+			$scope['object'] = (int) $queried_object->ID;
+			$scope['type']   = (string) $queried_object->post_type;
+		} elseif ( $queried_object instanceof WP_Term ) {
+			$scope['object'] = (int) $queried_object->term_id;
+			$scope['type']   = (string) $queried_object->taxonomy;
+		} elseif ( $queried_object instanceof WP_Post_Type ) {
+			$scope['type'] = (string) $queried_object->name;
+		}
+
+		return sprintf( 'ics:%s', md5( (string) wp_json_encode( $scope ) ) ); // NOSONAR.
+	}
+
+	/**
+	 * ETag for an iCalendar body.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $body The rendered iCal payload.
+	 *
+	 * @return string Quoted entity tag, per RFC 9110.
+	 */
+	public function get_etag( string $body ): string {
+		return sprintf( '"%s"', md5( $body ) ); // NOSONAR.
+	}
+
+	/**
+	 * Whether the client already holds this exact response.
+	 *
+	 * `If-None-Match` wins over `If-Modified-Since` when both are present,
+	 * which is what RFC 9110 asks for: the entity tag is exact where the
+	 * timestamp has one-second resolution.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $etag          Current entity tag.
+	 * @param string $last_modified Current GMT modification timestamp.
+	 *
+	 * @return bool True when a 304 is the correct answer.
+	 */
+	public function is_not_modified( string $etag, string $last_modified ): bool {
+		$client_etag = isset( $_SERVER['HTTP_IF_NONE_MATCH'] )
+			? sanitize_text_field( wp_unslash( $_SERVER['HTTP_IF_NONE_MATCH'] ) )
+			: '';
+
+		if ( '' !== $client_etag ) {
+			// A cache may return the tag weakened, and may hold several.
+			$tags = array_map( 'trim', explode( ',', str_replace( 'W/', '', $client_etag ) ) );
+			return in_array( $etag, $tags, true );
+		}
+
+		$client_time = isset( $_SERVER['HTTP_IF_MODIFIED_SINCE'] )
+			? sanitize_text_field( wp_unslash( $_SERVER['HTTP_IF_MODIFIED_SINCE'] ) )
+			: '';
+
+		if ( '' === $client_time ) {
+			return false;
+		}
+
+		$client_timestamp = strtotime( $client_time );
+		$current          = strtotime( $last_modified . ' GMT' );
+
+		return false !== $client_timestamp && false !== $current && $client_timestamp >= $current;
 	}
 
 	/**
@@ -829,21 +1019,31 @@ final class Setup {
 		// Prepare the filename.
 		$filename = $this->generate_ics_filename();
 
-		// Send headers for downloading the .ics file.
-		$this->send_ics_headers( $filename );
-
-		// Build the iCalendar content. The body is plain text per RFC 5545
-		// (not HTML), so HTML-sanitizers like `wp_kses_post()` are the wrong
-		// tool here — they would encode `&` into `&amp;` and produce broken
-		// .ics files. The TEXT-property values inside are already escaped at
-		// build time via `Calendar::escape_ical_text()` / sanitized via
+		// Build the iCalendar content before the headers now, because the ETag
+		// is a hash of the body. The body is plain text per RFC 5545 (not
+		// HTML), so HTML-sanitizers like `wp_kses_post()` are the wrong tool
+		// here — they would encode `&` into `&amp;` and produce broken .ics
+		// files. The TEXT-property values inside are already escaped at build
+		// time via `Calendar::escape_ical_text()` / sanitized via
 		// `sanitize_text_field()`.
-		$get_ical_method = ( is_feed() ) ? 'get_ical_feed' : 'get_ical_file';
-		$ics_content     = (string) $this->{$get_ical_method}();
-		$filesize        = strlen( $ics_content );
+		$ics_content   = $this->get_ics_body();
+		$etag          = $this->get_etag( $ics_content );
+		$last_modified = Cache::get_instance()->get_last_modified();
+
+		// A subscribed client that already holds this exact calendar gets a
+		// validator response instead of the payload.
+		if ( $this->is_not_modified( $etag, $last_modified ) ) {
+			ob_end_clean();
+			$this->send_ics_headers( $filename, $etag, $last_modified );
+			status_header( 304 );
+
+			exit();
+		}
+
+		$this->send_ics_headers( $filename, $etag, $last_modified );
 
 		// Send the file size in the header.
-		header( 'Content-Length: ' . $filesize );
+		header( 'Content-Length: ' . strlen( $ics_content ) );
 
 		// End output buffering and clean up.
 		ob_end_clean();
@@ -866,7 +1066,7 @@ final class Setup {
 	 * @return bool
 	 */
 	protected function has_post_type_for_taxonomy( string $taxonomy ): bool {
-		$post_types = get_post_types_by_support( 'gatherpress-event-date' );
+		$post_types = get_post_types_by_support( Event::SUPPORT );
 		foreach ( $post_types as $post_type ) {
 			if ( is_object_in_taxonomy( $post_type, $taxonomy ) ) {
 				return true;
@@ -889,7 +1089,237 @@ final class Setup {
 	 * @return bool
 	 */
 	protected function is_tax_like_type_for_event_supporting_types( string $post_type ): bool {
-		return post_type_supports( $post_type, 'gatherpress-shadow-source' ) &&
+		return post_type_supports( $post_type, Shadow_Source::SUPPORT ) &&
 			$this->has_post_type_for_taxonomy( Shadow_Source::get_instance()->get_taxonomy( $post_type ) );
+	}
+
+	/**
+	 * Determine whether the client's `Accept` HTTP header prefers `text/calendar`.
+	 *
+	 * Implements RFC 7231 / RFC 9110 content negotiation by parsing comma-separated
+	 * media ranges and their quality factor (`q=`) weights. Returns `true` if
+	 * `text/calendar` is requested with an explicit quality weight equal to or
+	 * higher than standard HTML formats (`text/html`, `application/xhtml+xml`).
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string|null $accept_header Optional raw Accept header. Defaults to `$_SERVER['HTTP_ACCEPT']`.
+	 *
+	 * @return bool True if text/calendar is negotiated/preferred, false otherwise.
+	 */
+	public function is_calendar_negotiated( ?string $accept_header = null ): bool {
+		if ( null === $accept_header ) {
+			$accept_header = isset( $_SERVER['HTTP_ACCEPT'] ) && is_string( $_SERVER['HTTP_ACCEPT'] )
+				? sanitize_text_field( wp_unslash( $_SERVER['HTTP_ACCEPT'] ) )
+				: '';
+		}
+
+		if ( '' === $accept_header ) {
+			return false;
+		}
+
+		$ranges = array();
+
+		foreach ( explode( ',', $accept_header ) as $range ) {
+			$q    = preg_match( '/;\s*q=([0-9.]+)/i', $range, $m ) ? (float) $m[1] : 1.0;
+			$mime = strtolower( trim( explode( ';', $range, 2 )[0] ) );
+
+			if ( '' !== $mime ) {
+				$ranges[ $mime ] = max( $ranges[ $mime ] ?? 0.0, $q );
+			}
+		}
+
+		// Only the exact media type counts for the calendar. A wildcard stands
+		// in for HTML below, but it must not stand in here: `text/calendar+json,
+		// */*` asks for a different type, and the wildcard's quality would
+		// otherwise carry the calendar past HTML and redirect a client that
+		// never asked for it.
+		if ( ! isset( $ranges['text/calendar'] ) ) {
+			return false;
+		}
+
+		$calendar_q = $ranges['text/calendar'];
+		$html_q     = max(
+			$this->accept_quality( $ranges, 'text/html' ),
+			$this->accept_quality( $ranges, 'application/xhtml+xml' )
+		);
+
+		return $calendar_q > 0.0 && $calendar_q >= $html_q;
+	}
+
+	/**
+	 * Quality value a parsed Accept header assigns to one media type.
+	 *
+	 * RFC 9110 section 12.5.1 ranks media ranges by precision, so the most
+	 * specific range that covers the type wins rather than the highest one.
+	 * Against an Accept of `text/calendar;q=0.5` plus a catch-all wildcard at
+	 * `q=0.9`, the calendar scores 0.5 from its own entry, while HTML, which
+	 * has no entry of its own, scores 0.9 from the wildcard. Taking the maximum
+	 * for both would tie them and redirect a client that asked for the
+	 * opposite.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, float> $ranges Parsed `media/range => quality` pairs.
+	 * @param string               $mime   Media type to score, e.g. `text/html`.
+	 *
+	 * @return float The quality value, 0.0 when nothing covers the type.
+	 */
+	protected function accept_quality( array $ranges, string $mime ): float {
+		$type = strtok( $mime, '/' );
+
+		foreach ( array( $mime, $type . '/*', '*/*' ) as $candidate ) {
+			if ( isset( $ranges[ $candidate ] ) ) {
+				return $ranges[ $candidate ];
+			}
+		}
+
+		return 0.0;
+	}
+
+	/**
+	 * Resolve the canonical calendar feed URL for the current query context.
+	 *
+	 * Dispatches across singular events, shadow-source posts (venues),
+	 * event-bearing taxonomy archives, event post-type archives, and the sitewide feed.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string|false Calendar feed or download URL, or false if not an event-related request.
+	 */
+	public function get_calendar_url_for_request() {
+		$queried = get_queried_object();
+
+		if ( is_singular() && $queried instanceof WP_Post ) {
+			if ( post_type_supports( $queried->post_type, Event::SUPPORT ) ) {
+				return ( new Calendar( $queried->ID ) )->get_ical_url();
+			}
+
+			if ( $this->is_tax_like_type_for_event_supporting_types( $queried->post_type ) ) {
+				return get_post_comments_feed_link( $queried->ID, self::ICAL_SLUG );
+			}
+		}
+
+		if ( is_tax() && $queried instanceof WP_Term && $this->has_post_type_for_taxonomy( $queried->taxonomy ) ) {
+			return get_term_feed_link( $queried->term_id, $queried->taxonomy, self::ICAL_SLUG );
+		}
+
+		if ( is_post_type_archive() ) {
+			$post_type = get_query_var( 'post_type' );
+			$post_type = is_array( $post_type ) ? reset( $post_type ) : $post_type;
+			if ( is_string( $post_type ) && post_type_supports( $post_type, Event::SUPPORT ) ) {
+				return get_post_type_archive_feed_link( $post_type, self::ICAL_SLUG );
+			}
+		}
+
+		return ( is_front_page() || is_home() ) ? get_feed_link( self::ICAL_SLUG ) : false;
+	}
+
+	/**
+	 * Check whether the current request is for an event-related view.
+	 *
+	 * Used to determine if the `Vary: Accept` HTTP header should be attached.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return bool
+	 */
+	public function is_event_related_request(): bool {
+		return false !== $this->get_calendar_url_for_request();
+	}
+
+	/**
+	 * Handle HTTP Content Negotiation for `Accept: text/calendar` requests.
+	 *
+	 * If the client requests `text/calendar` on an event-supporting URL,
+	 * safely redirect to the corresponding ICS calendar feed/download URL.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	public function maybe_handle_content_negotiation(): void {
+		$calendar_url = $this->get_negotiated_redirect_url();
+
+		if ( false === $calendar_url ) {
+			return;
+		}
+
+		// `Vary: Accept` is already on this response: filter_wp_headers() adds
+		// it for every request that resolves a calendar URL, and that is the
+		// same test the redirect target came from. Setting it again here would
+		// replace whatever else the header had gathered by then.
+		//
+		// The decision is covered through get_negotiated_redirect_url(); what
+		// remains here is the side effect, which ends in exit() and so cannot be
+		// exercised without ending the test run.
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation.
+		// @codeCoverageIgnoreStart
+		wp_safe_redirect( $calendar_url, 302 );
+		exit;
+		// @codeCoverageIgnoreEnd
+	}
+
+	/**
+	 * Resolve where an `Accept: text/calendar` request should be redirected.
+	 *
+	 * Split out from maybe_handle_content_negotiation() so the decision is
+	 * testable on its own: that method ends in exit(), which is why the
+	 * redirect-loop guard below shipped inverted and unnoticed.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string|false The calendar URL to redirect to, or false to leave
+	 *                      the request alone.
+	 */
+	public function get_negotiated_redirect_url() {
+		if ( ! $this->is_calendar_negotiated() ) {
+			return false;
+		}
+
+		// The request is already a calendar representation, so there is nothing
+		// to negotiate and redirecting would point it at itself. Both endpoint
+		// shapes are covered: the feed links carry is_feed(), and the single
+		// rewrite endpoint (/event/my-event/ical/) carries the query var.
+		//
+		// This replaces a substring test between the target and REQUEST_URI.
+		// Every target is the requested URL plus a suffix, so that test matched
+		// on every request and disabled negotiation entirely.
+		if ( is_feed() || '' !== (string) get_query_var( self::QUERY_VAR ) ) {
+			return false;
+		}
+
+		$calendar_url = $this->get_calendar_url_for_request();
+
+		if ( ! is_string( $calendar_url ) || '' === $calendar_url ) {
+			return false;
+		}
+
+		return $calendar_url;
+	}
+
+	/**
+	 * Add `Vary: Accept` header for event-related HTML views so downstream caches
+	 * (proxies, CDNs) differentiate responses based on the Accept header.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, string> $headers Associative array of HTTP headers to be sent.
+	 *
+	 * @return array<string, string> Updated HTTP headers array.
+	 */
+	public function filter_wp_headers( array $headers ): array {
+		if ( $this->is_event_related_request() ) {
+			// Field names, not substrings: `Accept-Encoding` is not `Accept`.
+			$fields = array_filter( array_map( 'trim', explode( ',', (string) ( $headers['Vary'] ?? '' ) ) ) );
+
+			if ( ! in_array( 'accept', array_map( 'strtolower', $fields ), true ) ) {
+				$fields[] = 'Accept';
+			}
+
+			$headers['Vary'] = implode( ', ', $fields );
+		}
+
+		return $headers;
 	}
 }

@@ -13,7 +13,7 @@ import {
 	parseCoordinates,
 	toGoogleMapType,
 	toMapsEmbedApiMapType,
-} from '../../../../../src/helpers/map-embed';
+} from '@src/helpers/map-embed';
 
 describe( 'toGoogleMapType', () => {
 	it.each( GOOGLE_MAP_TYPE_SLUGS )(

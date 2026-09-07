@@ -10,9 +10,12 @@ namespace GatherPress\Tests\Core\Event;
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Admin_List;
+use GatherPress\Core\Event\Setup as Event_Setup;
 use GatherPress\Core\Rsvp;
+use GatherPress\Core\Topic;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
+use stdClass;
 use WP_Query;
 
 /**
@@ -44,6 +47,24 @@ class Test_Admin_List extends Base {
 				'name'     => 'query_vars',
 				'priority' => 10,
 				'callback' => array( $instance, 'query_vars' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'disable_months_dropdown',
+				'priority' => 10,
+				'callback' => array( $instance, 'disable_months_dropdown' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'restrict_manage_posts',
+				'priority' => 10,
+				'callback' => array( $instance, 'render_date_filters' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'restrict_manage_posts',
+				'priority' => 10,
+				'callback' => array( $instance, 'render_taxonomy_filters' ),
 			),
 			array(
 				'type'     => 'action',
@@ -767,13 +788,16 @@ class Test_Admin_List extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_get_event_counts_with_no_date(): void {
+	public function test_get_event_counts_for_an_event_created_without_dates(): void {
 		$instance = Admin_List::get_instance();
 
 		// Reset cached counts.
 		Utility::set_and_get_hidden_property( $instance, 'event_counts', array() );
 
-		// Create an event without setting any dates.
+		// An event created without dates is seeded with the editor's default,
+		// which is tomorrow, so it counts as upcoming rather than falling out
+		// of both buckets the way a datetime-less event used to (#2054). The
+		// seed runs at shutdown so late-arriving meta wins over it (#2116).
 		$this->mock->post(
 			array(
 				'post_type'   => Event::POST_TYPE,
@@ -781,10 +805,12 @@ class Test_Admin_List extends Base {
 			)
 		)->get();
 
+		Event_Setup::get_instance()->resolve_pending_datetimes();
+
 		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
 
-		$this->assertSame( 0, $counts['upcoming'], 'Event without date should not count as upcoming.' );
-		$this->assertSame( 0, $counts['past'], 'Event without date should not count as past.' );
+		$this->assertSame( 1, $counts['upcoming'], 'Event created without dates should count as upcoming.' );
+		$this->assertSame( 0, $counts['past'], 'Event created without dates should not count as past.' );
 	}
 
 	/**
@@ -855,11 +881,16 @@ class Test_Admin_List extends Base {
 			'Should add gatherpress_event_query to query vars.'
 		);
 		$this->assertContains(
+			'gatherpress_event_date',
+			$result,
+			'Should add gatherpress_event_date to query vars.'
+		);
+		$this->assertContains(
 			'existing_var',
 			$result,
 			'Should preserve existing query vars.'
 		);
-		$this->assertCount( 2, $result, 'Should have exactly 2 query vars.' );
+		$this->assertCount( 3, $result, 'Should have exactly 3 query vars.' );
 	}
 
 	/**
@@ -879,7 +910,7 @@ class Test_Admin_List extends Base {
 			$result,
 			'Should add gatherpress_event_query even with empty input.'
 		);
-		$this->assertCount( 1, $result, 'Should have exactly 1 query var.' );
+		$this->assertCount( 2, $result, 'Should have exactly 2 query vars.' );
 	}
 
 	/**
@@ -1264,6 +1295,11 @@ class Test_Admin_List extends Base {
 
 		$this->assertStringContainsString( 'gatherpress-rsvp-approved', $output, 'Should show approved RSVP count.' );
 		$this->assertStringContainsString( '>1<', $output, 'Should show count of 1.' );
+		$this->assertStringContainsString(
+			'<span class="screen-reader-text"> approved RSVP</span>',
+			$output,
+			'Should append the visually hidden accessible-name suffix.'
+		);
 	}
 
 	/**
@@ -1305,6 +1341,11 @@ class Test_Admin_List extends Base {
 			'Should show unapproved RSVP indicator.'
 		);
 		$this->assertStringContainsString( 'Unapproved RSVPs', $output, 'Should contain title for unapproved.' );
+		$this->assertStringContainsString(
+			'<span class="screen-reader-text"> unapproved RSVP</span>',
+			$output,
+			'Should append the visually hidden accessible-name suffix.'
+		);
 	}
 
 	/**
@@ -1715,6 +1756,641 @@ class Test_Admin_List extends Base {
 		$this->assertFalse(
 			has_filter( 'posts_orderby', array( $instance, 'rsvp_sorting_orderby' ) ),
 			'No RSVP orderby filter should be added for event-date-only post types.'
+		);
+	}
+
+	/**
+	 * Coverage for disable_months_dropdown method.
+	 *
+	 * @covers ::disable_months_dropdown
+	 *
+	 * @return void
+	 */
+	public function test_disable_months_dropdown(): void {
+		$instance = Admin_List::get_instance();
+
+		$this->assertTrue(
+			$instance->disable_months_dropdown( false, Event::POST_TYPE ),
+			'Core\'s months dropdown should be removed for event post types.'
+		);
+		$this->assertFalse(
+			$instance->disable_months_dropdown( false, 'post' ),
+			'Post types without event date support should keep core\'s dropdown.'
+		);
+		$this->assertTrue(
+			$instance->disable_months_dropdown( true, 'post' ),
+			'An earlier filter removing the dropdown should be left alone.'
+		);
+	}
+
+	/**
+	 * Coverage for render_date_filters method.
+	 *
+	 * @covers ::render_date_filters
+	 * @covers ::render_months_dropdown
+	 * @covers ::get_event_date_months
+	 * @covers ::get_post_date_months
+	 * @covers ::get_months_status_clause
+	 *
+	 * @return void
+	 */
+	public function test_render_date_filters_renders_both_dropdowns(): void {
+		$instance = Admin_List::get_instance();
+		$post_id  = $this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+				'post_date'   => '2025-03-04 10:00:00',
+			)
+		)->get()->ID;
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2025-06-15 10:00:00',
+				'datetime_end'   => '2025-06-15 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		ob_start();
+		$instance->render_date_filters( Event::POST_TYPE );
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString(
+			'name="gatherpress_event_date"',
+			$output,
+			'Should render a dropdown submitting the event date parameter.'
+		);
+		$this->assertStringContainsString(
+			'All Event dates',
+			$output,
+			'Event date dropdown should name the date it filters.'
+		);
+		$this->assertStringContainsString(
+			'<option value="202506"',
+			$output,
+			'Event date dropdown should offer the month the event starts in.'
+		);
+		$this->assertStringContainsString(
+			'June 2025',
+			$output,
+			'Event date months should be labeled with month name and year.'
+		);
+		$this->assertStringContainsString(
+			'name="m"',
+			$output,
+			'Should keep rendering core\'s publish date parameter.'
+		);
+		$this->assertStringContainsString(
+			'All post dates',
+			$output,
+			'Post date dropdown should say which date it filters.'
+		);
+		$this->assertStringContainsString(
+			'<option value="202503"',
+			$output,
+			'Publish date dropdown should offer the month the event was published in.'
+		);
+	}
+
+	/**
+	 * Coverage for render_date_filters method with an unsupported post type.
+	 *
+	 * @covers ::render_date_filters
+	 *
+	 * @return void
+	 */
+	public function test_render_date_filters_skips_unsupported_post_type(): void {
+		$instance = Admin_List::get_instance();
+
+		$this->mock->post( array( 'post_type' => 'post' ) );
+
+		ob_start();
+		$instance->render_date_filters( 'post' );
+		$output = ob_get_clean();
+
+		$this->assertEmpty(
+			$output,
+			'Post types without event date support should render no date filters.'
+		);
+	}
+
+	/**
+	 * Coverage for render_date_filters method with an event whose date is unset.
+	 *
+	 * @covers ::render_date_filters
+	 * @covers ::render_months_dropdown
+	 * @covers ::get_event_date_months
+	 *
+	 * @return void
+	 */
+	public function test_render_date_filters_omits_events_without_a_date(): void {
+		$instance = Admin_List::get_instance();
+
+		$this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+				'post_date'   => '2025-03-04 10:00:00',
+			)
+		);
+
+		ob_start();
+		$instance->render_date_filters( Event::POST_TYPE );
+		$output = ob_get_clean();
+
+		$this->assertStringNotContainsString(
+			'name="gatherpress_event_date"',
+			$output,
+			'An event with no date gives the event date dropdown nothing to offer.'
+		);
+		$this->assertStringContainsString(
+			'name="m"',
+			$output,
+			'The publish date dropdown should still render on its own.'
+		);
+	}
+
+	/**
+	 * Coverage for render_date_filters method marking the filtered month.
+	 *
+	 * @covers ::render_date_filters
+	 * @covers ::render_months_dropdown
+	 *
+	 * @return void
+	 */
+	public function test_render_date_filters_marks_the_selected_month(): void {
+		$instance = Admin_List::get_instance();
+		$post_id  = $this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		)->get()->ID;
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2025-06-15 10:00:00',
+				'datetime_end'   => '2025-06-15 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$_GET['gatherpress_event_date'] = '202506'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		ob_start();
+		$instance->render_date_filters( Event::POST_TYPE );
+		$output = ob_get_clean();
+
+		unset( $_GET['gatherpress_event_date'] );
+
+		$this->assertMatchesRegularExpression(
+			'/<option value="202506" ?selected/',
+			$output,
+			'The month being filtered on should come back selected.'
+		);
+	}
+
+	/**
+	 * Coverage for render_date_filters method carrying the current view.
+	 *
+	 * @covers ::render_date_filters
+	 *
+	 * @return void
+	 */
+	public function test_render_date_filters_carries_the_current_view(): void {
+		$instance = Admin_List::get_instance();
+
+		$this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+
+		ob_start();
+		$instance->render_date_filters( Event::POST_TYPE );
+		$without_view = ob_get_clean();
+
+		$this->assertStringNotContainsString(
+			'name="gatherpress_event_query"',
+			$without_view,
+			'The All view has no view parameter to carry through the filter form.'
+		);
+
+		$_GET['gatherpress_event_query'] = 'upcoming'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		ob_start();
+		$instance->render_date_filters( Event::POST_TYPE );
+		$with_view = ob_get_clean();
+
+		unset( $_GET['gatherpress_event_query'] );
+
+		$this->assertStringContainsString(
+			'<input type="hidden" name="gatherpress_event_query" value="upcoming" />',
+			$with_view,
+			'Filtering by date from the Upcoming view should stay on the Upcoming view.'
+		);
+	}
+
+	/**
+	 * Coverage for render_months_dropdown method with nothing to offer.
+	 *
+	 * @covers ::render_months_dropdown
+	 *
+	 * @return void
+	 */
+	public function test_render_months_dropdown_renders_nothing_without_months(): void {
+		$instance  = Admin_List::get_instance();
+		$year_zero = new stdClass();
+
+		$year_zero->year  = '0';
+		$year_zero->month = '0';
+
+		ob_start();
+		Utility::invoke_hidden_method(
+			$instance,
+			'render_months_dropdown',
+			array( 'm', 'filter-by-date', 'Filter by post date', 'All post dates', array() )
+		);
+		$empty = ob_get_clean();
+
+		ob_start();
+		Utility::invoke_hidden_method(
+			$instance,
+			'render_months_dropdown',
+			array( 'm', 'filter-by-date', 'Filter by post date', 'All post dates', array( $year_zero ) )
+		);
+		$year_zero_only = ob_get_clean();
+
+		$this->assertEmpty( $empty, 'A bucket with no months should render no dropdown.' );
+		$this->assertEmpty(
+			$year_zero_only,
+			'A bucket holding only rows with no year should render no dropdown.'
+		);
+	}
+
+	/**
+	 * Coverage for get_post_date_months method firing core's filters.
+	 *
+	 * @covers ::get_post_date_months
+	 *
+	 * @return void
+	 */
+	public function test_get_post_date_months_fires_core_filters(): void {
+		$instance = Admin_List::get_instance();
+		$month    = new stdClass();
+
+		$month->year  = '2019';
+		$month->month = '11';
+
+		add_filter(
+			'pre_months_dropdown_query',
+			static function () use ( $month ): array {
+				return array( $month );
+			}
+		);
+
+		$short_circuited = Utility::invoke_hidden_method(
+			$instance,
+			'get_post_date_months',
+			array( Event::POST_TYPE )
+		);
+
+		$this->assertSame(
+			array( $month ),
+			$short_circuited,
+			'A pre_months_dropdown_query short circuit should replace the query.'
+		);
+
+		add_filter( 'months_dropdown_results', '__return_empty_array' );
+
+		$filtered = Utility::invoke_hidden_method(
+			$instance,
+			'get_post_date_months',
+			array( Event::POST_TYPE )
+		);
+
+		$this->assertSame(
+			array(),
+			$filtered,
+			'months_dropdown_results should still get the last word on the months.'
+		);
+	}
+
+	/**
+	 * Coverage for get_months_status_clause method.
+	 *
+	 * @covers ::get_months_status_clause
+	 *
+	 * @return void
+	 */
+	public function test_get_months_status_clause(): void {
+		$instance = Admin_List::get_instance();
+
+		$this->assertSame(
+			" AND post_status NOT IN ( 'auto-draft', 'trash' )",
+			Utility::invoke_hidden_method( $instance, 'get_months_status_clause' ),
+			'Views other than Trash should hide trashed posts and auto-drafts.'
+		);
+
+		$_GET['post_status'] = 'trash'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		$trash = Utility::invoke_hidden_method( $instance, 'get_months_status_clause' );
+
+		unset( $_GET['post_status'] );
+
+		$this->assertSame(
+			" AND post_status = 'trash'",
+			$trash,
+			'The Trash view should list the months of trashed posts.'
+		);
+	}
+
+	/**
+	 * Coverage for render_taxonomy_filters method.
+	 *
+	 * @covers ::render_taxonomy_filters
+	 * @covers ::render_taxonomy_filter
+	 *
+	 * @return void
+	 */
+	public function test_render_taxonomy_filters_renders_the_topic_dropdown(): void {
+		$instance = Admin_List::get_instance();
+
+		$this->factory->term->create(
+			array(
+				'taxonomy' => Topic::TAXONOMY,
+				'name'     => 'Accessibility',
+				'slug'     => 'accessibility',
+			)
+		);
+
+		ob_start();
+		$instance->render_taxonomy_filters( Event::POST_TYPE );
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString(
+			"name='gatherpress_topic'",
+			$output,
+			'Should render a dropdown submitting the topic taxonomy query var.'
+		);
+		$this->assertStringContainsString(
+			'All Topics',
+			$output,
+			'Should offer the taxonomy\'s own "all" label.'
+		);
+		$this->assertStringContainsString(
+			'Filter by topic',
+			$output,
+			'Should label the dropdown for screen readers from the taxonomy.'
+		);
+		$this->assertStringContainsString(
+			'value="accessibility"',
+			$output,
+			'Terms should submit by slug, which is what the query var resolves.'
+		);
+	}
+
+	/**
+	 * Coverage for render_taxonomy_filters method with an unsupported post type.
+	 *
+	 * @covers ::render_taxonomy_filters
+	 *
+	 * @return void
+	 */
+	public function test_render_taxonomy_filters_skips_unsupported_post_type(): void {
+		$instance = Admin_List::get_instance();
+
+		$this->factory->term->create(
+			array(
+				'taxonomy' => Topic::TAXONOMY,
+				'name'     => 'Accessibility',
+			)
+		);
+
+		ob_start();
+		$instance->render_taxonomy_filters( 'post' );
+		$output = ob_get_clean();
+
+		$this->assertEmpty(
+			$output,
+			'Post types without event date support should render no taxonomy filters.'
+		);
+	}
+
+	/**
+	 * Coverage for render_taxonomy_filter method marking the filtered term.
+	 *
+	 * @covers ::render_taxonomy_filter
+	 *
+	 * @return void
+	 */
+	public function test_render_taxonomy_filter_marks_the_selected_term(): void {
+		$instance = Admin_List::get_instance();
+
+		$this->factory->term->create(
+			array(
+				'taxonomy' => Topic::TAXONOMY,
+				'name'     => 'Accessibility',
+				'slug'     => 'accessibility',
+			)
+		);
+
+		$_GET[ Topic::TAXONOMY ] = 'accessibility'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		ob_start();
+		$instance->render_taxonomy_filters( Event::POST_TYPE );
+		$output = ob_get_clean();
+
+		unset( $_GET[ Topic::TAXONOMY ] );
+
+		$this->assertMatchesRegularExpression(
+			'/<option class="level-0" value="accessibility" ?selected/',
+			$output,
+			'The topic being filtered on should come back selected.'
+		);
+	}
+
+	/**
+	 * Coverage for render_taxonomy_filter method with no terms to offer.
+	 *
+	 * @covers ::render_taxonomy_filter
+	 *
+	 * @return void
+	 */
+	public function test_render_taxonomy_filter_renders_nothing_without_terms(): void {
+		$instance = Admin_List::get_instance();
+
+		ob_start();
+		$instance->render_taxonomy_filters( Event::POST_TYPE );
+		$output = ob_get_clean();
+
+		$this->assertEmpty(
+			$output,
+			'A taxonomy with no terms should render no dropdown at all.'
+		);
+	}
+
+	/**
+	 * Coverage for render_taxonomy_filter method with an unattached taxonomy.
+	 *
+	 * @covers ::render_taxonomy_filter
+	 *
+	 * @return void
+	 */
+	public function test_render_taxonomy_filter_skips_an_unattached_taxonomy(): void {
+		$instance = Admin_List::get_instance();
+		$test_pt  = 'test_event_tax';
+
+		register_post_type( $test_pt, array( 'supports' => array( 'title' ) ) );
+		add_post_type_support( $test_pt, 'gatherpress-event-date' );
+
+		$this->factory->term->create(
+			array(
+				'taxonomy' => Topic::TAXONOMY,
+				'name'     => 'Accessibility',
+			)
+		);
+
+		ob_start();
+		$instance->render_taxonomy_filters( $test_pt );
+		$output = ob_get_clean();
+
+		unregister_post_type( $test_pt );
+
+		$this->assertEmpty(
+			$output,
+			'A post type the taxonomy is not registered for should get no dropdown.'
+		);
+	}
+
+	/**
+	 * Coverage for the topic filter narrowing the admin list.
+	 *
+	 * @covers ::render_taxonomy_filters
+	 *
+	 * @return void
+	 */
+	public function test_topic_filter_narrows_the_admin_list(): void {
+		$term_id = $this->factory->term->create(
+			array(
+				'taxonomy' => Topic::TAXONOMY,
+				'name'     => 'Accessibility',
+				'slug'     => 'accessibility',
+			)
+		);
+
+		$tagged = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$other  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+
+		wp_set_object_terms( $tagged, array( (int) $term_id ), Topic::TAXONOMY );
+
+		// Creating posts clears the current screen, so the admin list context
+		// only holds once the fixtures are in place.
+		$this->mock->user( true, 'admin' );
+		set_current_screen( 'edit-gatherpress_event' );
+
+		$query = new WP_Query(
+			array(
+				'post_type'      => Event::POST_TYPE,
+				Topic::TAXONOMY  => 'accessibility',
+				'fields'         => 'ids',
+				'posts_per_page' => -1,
+			)
+		);
+
+		$this->assertSame(
+			array( $tagged ),
+			$query->posts,
+			'Filtering by a topic should leave only the events carrying it.'
+		);
+		$this->assertNotContains(
+			$other,
+			$query->posts,
+			'An event without the topic should drop out of the filtered list.'
+		);
+	}
+
+	/**
+	 * Coverage for render_taxonomy_filter method with an unregistered taxonomy.
+	 *
+	 * @covers ::render_taxonomy_filter
+	 *
+	 * @return void
+	 */
+	public function test_render_taxonomy_filter_skips_an_unregistered_taxonomy(): void {
+		$instance = Admin_List::get_instance();
+
+		ob_start();
+		Utility::invoke_hidden_method(
+			$instance,
+			'render_taxonomy_filter',
+			array( Event::POST_TYPE, 'gatherpress_not_a_taxonomy' )
+		);
+		$output = ob_get_clean();
+
+		$this->assertEmpty(
+			$output,
+			'A taxonomy that is not registered should render no dropdown.'
+		);
+	}
+
+	/**
+	 * Coverage for render_taxonomy_filter method labeling a flat taxonomy.
+	 *
+	 * @covers ::render_taxonomy_filter
+	 *
+	 * @return void
+	 */
+	public function test_render_taxonomy_filter_falls_back_to_the_taxonomy_name(): void {
+		$instance = Admin_List::get_instance();
+		$taxonomy = 'test_event_tag';
+
+		// Non-hierarchical taxonomies get no `filter_by_item` label by default,
+		// which is the arm the fallback exists for.
+		register_taxonomy(
+			$taxonomy,
+			Event::POST_TYPE,
+			array(
+				'labels'       => array(
+					'name'      => 'Test Tags',
+					'all_items' => 'All Test Tags',
+				),
+				'hierarchical' => false,
+				'public'       => true,
+				'query_var'    => true,
+			)
+		);
+
+		$this->factory->term->create(
+			array(
+				'taxonomy' => $taxonomy,
+				'name'     => 'Flat Term',
+			)
+		);
+
+		ob_start();
+		Utility::invoke_hidden_method(
+			$instance,
+			'render_taxonomy_filter',
+			array( Event::POST_TYPE, $taxonomy )
+		);
+		$output = ob_get_clean();
+
+		unregister_taxonomy( $taxonomy );
+
+		$this->assertStringContainsString(
+			'<label class="screen-reader-text" for="test_event_tag">Test Tags</label>',
+			$output,
+			'A taxonomy with no filter label should fall back to its plural name.'
+		);
+		$this->assertStringContainsString(
+			'All Test Tags',
+			$output,
+			'The taxonomy\'s own "all" label should still be used.'
 		);
 	}
 }

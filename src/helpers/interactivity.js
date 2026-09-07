@@ -375,6 +375,41 @@ export async function sendRsvpApiRequest(
 }
 
 /**
+ * Give a `role="button"` element the Space half of the button keyboard contract.
+ *
+ * The dropdown and RSVP-response-toggle triggers are anchors that announce
+ * themselves as buttons (`role="button"` is set at render time). Anchors only
+ * activate on Enter; the ARIA button pattern requires Space as well, and
+ * without it Space performs the anchor default — scrolling the page. This
+ * helper mirrors native button semantics by turning Space into a click on the
+ * same element, so each trigger's existing click action runs unchanged.
+ * Space always suppresses the scroll default — including key-repeat events
+ * while the key is held — but only the initial (non-repeat) press clicks, so
+ * holding Space neither scrolls nor rapid-toggles.
+ *
+ * Registered as `actions.activateOnSpace` by the view modules whose triggers
+ * carry `data-wp-on--keydown="actions.activateOnSpace"` (attached server-side
+ * in `Blocks\Dropdown::apply_dropdown_attributes()` and the
+ * rsvp-response-toggle render template).
+ *
+ * @since 0.35.0
+ *
+ * @param {KeyboardEvent} event The keydown event.
+ * @param {HTMLElement}   ref   The element carrying the directive.
+ *
+ * @return {void}
+ */
+export function activateOnSpace( event, ref ) {
+	if ( ' ' === event.key ) {
+		event.preventDefault();
+
+		if ( ! event.repeat ) {
+			ref.click();
+		}
+	}
+}
+
+/**
  * Manages focus trapping within a specified set of elements.
  *
  * This function ensures that keyboard navigation (using the `Tab` key) is

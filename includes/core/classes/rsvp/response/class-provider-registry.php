@@ -41,7 +41,7 @@ final class Provider_Registry {
 	 *
 	 * @since 0.35.0
 	 *
-	 * @var array
+	 * @var array<string, Provider> Registered provider instances, keyed by slug.
 	 */
 	private array $providers = array();
 

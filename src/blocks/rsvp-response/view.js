@@ -6,7 +6,10 @@ import { store, getElement, getContext } from '@wordpress/interactivity';
 /**
  * Internal dependencies
  */
-import { initPostContext } from '../../helpers/interactivity';
+import {
+	activateOnSpace as activateOnSpaceHelper,
+	initPostContext,
+} from '../../helpers/interactivity';
 import { toCamelCase } from '../../helpers/globals';
 
 const { state, actions } = store( 'gatherpress', {
@@ -14,6 +17,9 @@ const { state, actions } = store( 'gatherpress', {
 		posts: {},
 	},
 	actions: {
+		activateOnSpace( event ) {
+			activateOnSpaceHelper( event, getElement().ref );
+		},
 		processRsvpSelection( event ) {
 			// Call the linkHandler action to handle the default link behavior.
 			actions.linkHandler( event );
@@ -207,9 +213,15 @@ const { state, actions } = store( 'gatherpress', {
 			) {
 				triggerElement.classList.add( 'gatherpress--is-disabled' );
 				triggerElement.setAttribute( 'tabindex', '-1' );
+				// The trigger keeps role="button" and aria-expanded, so the
+				// disabled state has to be conveyed too. Without this an
+				// assistive technology announces an operable collapsed button
+				// that cannot be operated.
+				triggerElement.setAttribute( 'aria-disabled', 'true' );
 			} else {
 				triggerElement.classList.remove( 'gatherpress--is-disabled' );
 				triggerElement.setAttribute( 'tabindex', '0' );
+				triggerElement.removeAttribute( 'aria-disabled' );
 			}
 
 			// Clean up any existing event handlers and focus traps

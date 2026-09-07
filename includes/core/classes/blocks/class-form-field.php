@@ -30,7 +30,7 @@ final class Form_Field {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @var array
+	 * @var array<string, mixed>
 	 */
 	private array $attributes;
 
@@ -73,7 +73,7 @@ final class Form_Field {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array $attributes The block attributes array.
+	 * @param array<string, mixed> $attributes The block attributes array.
 	 */
 	public function __construct( array $attributes ) {
 		$this->attributes = $this->process_attributes( $attributes );
@@ -91,9 +91,9 @@ final class Form_Field {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array $raw_attributes Raw attributes from the block editor.
+	 * @param array<string, mixed> $raw_attributes Raw attributes from the block editor.
 	 *
-	 * @return array Processed attributes with defaults and proper formatting.
+	 * @return array<string, mixed> Processed attributes with defaults and proper formatting.
 	 */
 	private function process_attributes( array $raw_attributes ): array {
 		return array(
@@ -126,10 +126,48 @@ final class Form_Field {
 			'input_padding'          => $raw_attributes['inputPadding'] ?? 16,
 			'input_border_width'     => $raw_attributes['inputBorderWidth'] ?? 1,
 			'input_border_radius'    => $raw_attributes['inputBorderRadius'] ?? 0,
-			'autocomplete'           => $raw_attributes['autocomplete'] ?? 'on',
+			'autocomplete'           => $this->resolve_autocomplete( $raw_attributes ),
 			'textarea_rows'          => $raw_attributes['textareaRows'] ?? 4,
 			'input_id'               => $this->get_input_id(),
 		);
+	}
+
+	/**
+	 * Resolve the autocomplete token for the field.
+	 *
+	 * WCAG 1.3.5 (Identify Input Purpose) requires the specific token —
+	 * `email`, `url`, `tel` — rather than the generic `on`. An empty (or
+	 * absent) value means "infer from the field type": block.json defaults
+	 * the attribute to an empty string, and because the serializer never
+	 * persists an attribute equal to its default, content saved under the
+	 * earlier `on` default also arrives empty and gains inference
+	 * retroactively. Any stored token — including `on`, which the editor
+	 * control offers — is an author choice and wins. Types without an
+	 * unambiguous token fall back to `on`.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, mixed> $raw_attributes Raw block attributes.
+	 *
+	 * @return string The autocomplete token for the rendered input.
+	 */
+	private function resolve_autocomplete( array $raw_attributes ): string {
+		$autocomplete = (string) ( $raw_attributes['autocomplete'] ?? '' );
+
+		if ( '' !== $autocomplete ) {
+			return $autocomplete;
+		}
+
+		// `match` rather than a switch: this only produces a value, and the
+		// subject is a string on both sides so the `===` comparison is
+		// equivalent. The `default` arm keeps an unrecognized field type from
+		// raising UnhandledMatchError.
+		return match ( (string) ( $raw_attributes['fieldType'] ?? 'text' ) ) {
+			'email' => 'email',
+			'url'   => 'url',
+			'tel'   => 'tel',
+			default => 'on',
+		};
 	}
 
 	/**
@@ -190,9 +228,9 @@ final class Form_Field {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array  $styles   Reference to the styles array to modify.
-	 * @param string $attr_key The attribute key to check in the attributes array.
-	 * @param string $format   The sprintf format string for the CSS property (e.g., 'color:%s').
+	 * @param string[] $styles   Reference to the styles array to modify.
+	 * @param string   $attr_key The attribute key to check in the attributes array.
+	 * @param string   $format   The sprintf format string for the CSS property (e.g., 'color:%s').
 	 *
 	 * @return void
 	 */
@@ -210,7 +248,7 @@ final class Form_Field {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array $styles Array of CSS style declarations (e.g., ['color:red', 'font-size:16px']).
+	 * @param string[] $styles Array of CSS style declarations (e.g., ['color:red', 'font-size:16px']).
 	 *
 	 * @return string Formatted style attribute string or empty string if no styles.
 	 */
@@ -364,7 +402,7 @@ final class Form_Field {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @return array Array of CSS class names for the wrapper element.
+	 * @return string[] Array of CSS class names for the wrapper element.
 	 */
 	public function get_wrapper_classes(): array {
 		$field_type = $this->get_field_type();
@@ -436,6 +474,15 @@ final class Form_Field {
 
 				break;
 
+			case 'select':
+				$attributes = array(
+					'id'           => $this->attributes['input_id'],
+					'name'         => $this->attributes['field_name'],
+					'autocomplete' => $this->attributes['autocomplete'],
+				);
+
+				break;
+
 			case 'textarea':
 				$attributes = array(
 					'id'           => $this->attributes['input_id'],
@@ -492,6 +539,16 @@ final class Form_Field {
 		// Add required attribute for all non-hidden fields.
 		if ( 'hidden' !== $field_type && ! empty( $this->attributes['required'] ) ) {
 			$attributes['required'] = 'required';
+		}
+
+		// Point the input at its rendered help text. Radio groups get the
+		// association on their <fieldset> in the template instead, so the
+		// help is announced once with the group rather than on every radio.
+		if (
+			! in_array( $field_type, array( 'hidden', 'radio' ), true ) &&
+			'' !== (string) $this->attributes['help_text']
+		) {
+			$attributes['aria-describedby'] = $this->attributes['input_id'] . '-help';
 		}
 
 		// Convert array to string.

@@ -16,6 +16,8 @@ namespace GatherPress\Core\Calendar;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use WP_Post_Type;
+
 /**
  * Endpoint for Singular Post Types in GatherPress.
  *
@@ -73,6 +75,17 @@ final class Post_Type_Single extends Endpoint {
 	 * @return bool True if the current query is for a singular post of the post type, false otherwise.
 	 */
 	public function is_valid(): bool {
-		return is_singular( $this->type_object->name );
+		/**
+		 * Post type object this endpoint was registered for.
+		 *
+		 * `Endpoint` only finishes registration once the post type resolved,
+		 * so the base class' nullable union cannot be null by the time the
+		 * validation callback runs.
+		 *
+		 * @var WP_Post_Type $type_object
+		 */
+		$type_object = $this->type_object;
+
+		return is_singular( $type_object->name );
 	}
 }

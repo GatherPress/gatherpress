@@ -9,6 +9,7 @@ import {
 	beforeEach,
 	afterEach,
 } from '@jest/globals';
+import { waitFor } from '@testing-library/react';
 
 /**
  * Mock the Interactivity API with a namespace-merging store so every
@@ -58,18 +59,6 @@ import { getNonce } from '@src/helpers/interactivity';
 // Import the actual modules so their actions register on the shared store.
 import '@src/blocks/rsvp/view';
 import '@src/blocks/modal-manager/view';
-
-/**
- * Waits long enough for the fire-and-forget sendRsvpApiRequest promise
- * chain and the 10ms closeModal timeout inside updateRsvp to settle.
- *
- * @return {Promise<void>} Resolves after the RSVP flow settles.
- */
-function flushRsvpFlow() {
-	return new Promise( ( resolve ) => {
-		setTimeout( resolve, 30 );
-	} );
-}
 
 /**
  * Regression coverage for #1719 — after a successful RSVP from the
@@ -169,7 +158,10 @@ describe( 'rsvp updateRsvp post-success modal switch', () => {
 		const { trigger, attendingButton } = setupDom( true );
 
 		actions.updateRsvp( { preventDefault: jest.fn() } );
-		await flushRsvpFlow();
+
+		// closeModal is the last step of the flow, so waiting on it means the
+		// whole chain has settled without racing a fixed sleep against it.
+		await waitFor( () => expect( actions.closeModal ).toHaveBeenCalled() );
 
 		expect( actions.openModal ).toHaveBeenCalledWith(
 			null,
@@ -187,7 +179,10 @@ describe( 'rsvp updateRsvp post-success modal switch', () => {
 		const { trigger } = setupDom( false );
 
 		actions.updateRsvp( { preventDefault: jest.fn() } );
-		await flushRsvpFlow();
+
+		// openModal is decided synchronously before closeModal is scheduled,
+		// so once closeModal has fired the negative assertion below is settled.
+		await waitFor( () => expect( actions.closeModal ).toHaveBeenCalled() );
 
 		expect( actions.openModal ).not.toHaveBeenCalled();
 		expect( actions.closeModal ).toHaveBeenCalledWith(

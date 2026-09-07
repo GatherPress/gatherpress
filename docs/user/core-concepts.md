@@ -45,11 +45,13 @@ Supported patterns:
 
 * Single-date events  
 * Multi-date events, for now you must fill the end date and time to the end of the event for it to span several days. Recurring events are to be set manually for now. It’s on our roadmap to include recurring functionality.
+* All day events, single or multi-day, which carry a date but no time
 
 Notes:
 
 * Dates and times are stored in a structured way.  
 * Timezones are handled automatically based on site settings and user profile.  
+* An all day date is the same date everywhere, so it does not shift for visitors in another timezone.  
 * Front-end display adapts to the visitor’s locale when possible.
 
 ## Attendees and RSVPs

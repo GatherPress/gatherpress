@@ -620,7 +620,7 @@ The full release runbook lives at [`docs/contributor/release-process.md`](docs/c
 
 ### @wordpress/env Patched via patch-package
 
-**State**: `@wordpress/env` is on `^11.1.0` with a local patch at `patches/@wordpress+env+11.2.0.patch` applied during `npm install` via the `postinstall` hook (uses [`patch-package`](https://www.npmjs.com/package/patch-package)). The patch adds two `composer global config` lines before the wp-env Docker image's `composer global require phpunit` step so Composer's audit does not block install on advisories `PKSA-5jz8-6tcw-pbk4` / `PKSA-z3gr-8qht-p93v`.
+**State**: `@wordpress/env` is on `^11.13.0` with a local patch at `patches/@wordpress+env+11.13.0.patch` applied during `npm install` via the `postinstall` hook (uses [`patch-package`](https://www.npmjs.com/package/patch-package)). The patch adds two `composer global config` lines before the wp-env Docker image's `composer global require phpunit` step so Composer's audit does not block install on advisories `PKSA-5jz8-6tcw-pbk4` / `PKSA-z3gr-8qht-p93v`.
 
 **Why it's needed**: Without the patch, the wp-env Docker build fails before the test container is ready, which breaks `npm run test:unit:php` and the CI workflows that use it (`phpunit-tests.yml`, `sonarcloud.yml`, `pr-coverage.yml`, `e2e-tests.yml`).
 

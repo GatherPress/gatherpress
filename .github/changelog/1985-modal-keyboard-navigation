@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Fixed keyboard navigation on non-anchor modal triggers, where pressing Enter or Space did not open or close the modal.

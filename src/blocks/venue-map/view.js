@@ -212,6 +212,17 @@ function mountLeafletMap( wrapper, context, lat, lng ) {
 		mapEl.style.width = '100%';
 		mapEl.style.height = '100%';
 		mapEl.style.borderRadius = 'inherit';
+
+		// Leaflet makes the container focusable (tabindex="0") but gives it
+		// no role or accessible name, so keyboard/screen-reader users land on
+		// an unnamed region (WCAG 4.1.2). Name it like the static variant's
+		// alt text; the translated string travels via the server-built
+		// context because script modules cannot import @wordpress/i18n.
+		if ( i18n.mapLabel ) {
+			mapEl.setAttribute( 'role', 'region' );
+			mapEl.setAttribute( 'aria-label', i18n.mapLabel );
+		}
+
 		container.appendChild( mapEl );
 
 		const map = L.map( mapEl, {

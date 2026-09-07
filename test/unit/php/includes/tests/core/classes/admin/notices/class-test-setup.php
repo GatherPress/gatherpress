@@ -147,10 +147,8 @@ class Test_Setup extends Test_Base {
 	 * coverage collection starts, so the registration is invoked again here
 	 * from an empty slate.
 	 *
-	 * GatherPress ships no default notices as of 0.35.0. The upcoming PHP and
-	 * WordPress requirement notices were removed once those versions became
-	 * hard requirements, so the method is an empty registration point until
-	 * something else needs it.
+	 * The requirement notices are constructed by `requirements-check.php`
+	 * rather than registered here, so the welcome is the only default.
 	 *
 	 * @covers ::register_default_notices
 	 *
@@ -162,10 +160,10 @@ class Test_Setup extends Test_Base {
 
 		Utility::invoke_hidden_method( $instance, 'register_default_notices' );
 
-		$this->assertSame(
-			array(),
+		$this->assertArrayHasKey(
+			'gatherpress_welcome',
 			$instance->get_notices(),
-			'Failed to assert that no default notices are registered.'
+			'Failed to assert the welcome notice is registered by default.'
 		);
 
 		$this->swap_notices( $instance, $original );

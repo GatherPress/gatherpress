@@ -480,6 +480,94 @@ class Test_List_Table extends Base {
 			$cb_col,
 			'Failed to assert checkbox has comment ID as value.'
 		);
+		$this->assertStringContainsString(
+			sprintf( 'for="cb-select-%d"', $this->rsvp['comment_ID'] ),
+			$cb_col,
+			'Failed to assert label is associated with the checkbox.'
+		);
+		$this->assertStringContainsString(
+			sprintf( 'id="cb-select-%d"', $this->rsvp['comment_ID'] ),
+			$cb_col,
+			'Failed to assert checkbox carries the id the label points at.'
+		);
+		$this->assertStringContainsString(
+			'screen-reader-text',
+			$cb_col,
+			'Failed to assert label text is visually hidden.'
+		);
+		$this->assertStringContainsString(
+			sprintf( 'Select %s', $this->rsvp['comment_author'] ),
+			$cb_col,
+			'Failed to assert label names the attendee the checkbox selects.'
+		);
+	}
+
+	/**
+	 * Tests column_cb labels registered users by their display name.
+	 *
+	 * @covers ::column_cb
+	 * @covers ::get_attendee_name
+	 * @return void
+	 */
+	public function test_column_cb_registered_user(): void {
+		$user_id = $this->factory->user->create(
+			array(
+				'display_name' => 'Registered Attendee',
+			)
+		);
+
+		$rsvp            = $this->rsvp;
+		$rsvp['user_id'] = $user_id;
+
+		$cb_col = $this->list_table->column_cb( $rsvp );
+
+		$this->assertStringContainsString(
+			'Select Registered Attendee',
+			$cb_col,
+			'Failed to assert label uses the registered user\'s display name.'
+		);
+	}
+
+	/**
+	 * Tests column_cb falls back to the submitted author name when the
+	 * stored user ID no longer resolves to an account.
+	 *
+	 * @covers ::column_cb
+	 * @covers ::get_attendee_name
+	 * @return void
+	 */
+	public function test_column_cb_stale_user_id(): void {
+		$rsvp            = $this->rsvp;
+		$rsvp['user_id'] = 999999; // No such user.
+
+		$cb_col = $this->list_table->column_cb( $rsvp );
+
+		$this->assertStringContainsString(
+			sprintf( 'Select %s', $this->rsvp['comment_author'] ),
+			$cb_col,
+			'Failed to assert a stale user ID falls back to the submitted author name.'
+		);
+	}
+
+	/**
+	 * Tests column_cb never renders an empty attendee name.
+	 *
+	 * @covers ::column_cb
+	 * @covers ::get_attendee_name
+	 * @return void
+	 */
+	public function test_column_cb_unknown_attendee(): void {
+		$rsvp                   = $this->rsvp;
+		$rsvp['comment_author'] = '';
+		$rsvp['user_id']        = 0;
+
+		$cb_col = $this->list_table->column_cb( $rsvp );
+
+		$this->assertStringContainsString(
+			'Select Unknown',
+			$cb_col,
+			'Failed to assert an empty name resolution falls back to "Unknown".'
+		);
 	}
 
 	/**
@@ -784,6 +872,70 @@ class Test_List_Table extends Base {
 	}
 
 	/**
+	 * The bulk form's own nonce, which is core's `bulk-<plural>` nonce, is
+	 * accepted. Before #2062 only the comment-type nonce was, and since
+	 * `WP_List_Table` emits its nonce under the same `_wpnonce` name, a browser
+	 * submit was always rejected and the screen did nothing.
+	 *
+	 * @covers ::process_bulk_action
+	 *
+	 * @return void
+	 */
+	public function test_process_bulk_action_accepts_the_core_bulk_nonce(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$rsvp_id = (int) $this->rsvp['comment_ID'];
+
+		wp_set_comment_status( $rsvp_id, 'approve' );
+
+		// Derive the bulk nonce the same way process_bulk_action() does, so the
+		// test stays honest if the list table's plural arg ever changes.
+		$plural                          = Utility::get_hidden_property( $this->list_table, '_args' )['plural'];
+		$_REQUEST['_wpnonce']            = wp_create_nonce( sprintf( 'bulk-%s', $plural ) );
+		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
+		$_REQUEST['action']              = 'unapprove';
+
+		$this->list_table->process_bulk_action();
+
+		$this->assertSame(
+			'0',
+			get_comment( $rsvp_id )->comment_approved,
+			'Failed to assert the core bulk nonce authorizes a bulk action.'
+		);
+
+		unset( $_REQUEST['_wpnonce'], $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
+	}
+
+	/**
+	 * An unrelated nonce is still refused.
+	 *
+	 * @covers ::process_bulk_action
+	 *
+	 * @return void
+	 */
+	public function test_process_bulk_action_refuses_an_unrelated_nonce(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$rsvp_id = (int) $this->rsvp['comment_ID'];
+
+		wp_set_comment_status( $rsvp_id, 'approve' );
+
+		$_REQUEST['_wpnonce']            = wp_create_nonce( 'something-else' );
+		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
+		$_REQUEST['action']              = 'unapprove';
+
+		$this->list_table->process_bulk_action();
+
+		$this->assertSame(
+			'1',
+			get_comment( $rsvp_id )->comment_approved,
+			'Failed to assert an unrelated nonce is refused.'
+		);
+
+		unset( $_REQUEST['_wpnonce'], $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
+	}
+
+	/**
 	 * Tests get_views method.
 	 *
 	 * @covers ::get_views
@@ -819,7 +971,7 @@ class Test_List_Table extends Base {
 			'get_current_class_attr',
 			array( 'pending', 'pending' )
 		);
-		$this->assertEquals( ' class="current"', $result );
+		$this->assertEquals( ' class="current" aria-current="page"', $result );
 
 		// Test when status does not match current.
 		$result = Utility::invoke_hidden_method(
@@ -835,7 +987,7 @@ class Test_List_Table extends Base {
 			'get_current_class_attr',
 			array( 'all', 'all' )
 		);
-		$this->assertEquals( ' class="current"', $result );
+		$this->assertEquals( ' class="current" aria-current="page"', $result );
 
 		// Test with 'mine' status.
 		$result = Utility::invoke_hidden_method(
@@ -939,29 +1091,6 @@ class Test_List_Table extends Base {
 			array( 'date', true ),
 			$sortable['date'],
 			'Failed to assert date is the default sort column.'
-		);
-	}
-
-	/**
-	 * Tests display method.
-	 *
-	 * @covers ::display
-	 * @return void
-	 */
-	public function test_display(): void {
-		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
-		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
-
-		$this->list_table->prepare_items();
-
-		ob_start();
-		$this->list_table->display();
-		$output = ob_get_clean();
-
-		$this->assertStringContainsString(
-			'gatherpress_rsvp',
-			$output,
-			'Failed to assert display outputs table with RSVP nonce field.'
 		);
 	}
 
@@ -1408,29 +1537,6 @@ class Test_List_Table extends Base {
 	}
 
 	/**
-	 * Tests prepare_items with event filter.
-	 *
-	 * @covers ::prepare_items
-	 * @covers ::get_rsvps
-	 * @return void
-	 */
-	public function test_prepare_items_with_event_filter(): void {
-		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
-		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
-
-		$_REQUEST['event'] = $this->event_id;
-
-		$this->list_table->prepare_items();
-
-		$this->assertIsArray(
-			$this->list_table->items,
-			'Failed to assert items is an array after prepare_items with event filter.'
-		);
-
-		unset( $_REQUEST['event'] );
-	}
-
-	/**
 	 * Tests prepare_items with approved status filter.
 	 *
 	 * @covers ::prepare_items
@@ -1635,28 +1741,6 @@ class Test_List_Table extends Base {
 		);
 
 		unset( $_REQUEST['post_id'] );
-	}
-
-	/**
-	 * Tests get_rsvp_count with event filter.
-	 *
-	 * @covers ::get_rsvp_count
-	 * @return void
-	 */
-	public function test_get_rsvp_count_with_event_filter(): void {
-		$_REQUEST['event'] = $this->event_id;
-
-		$count = Utility::invoke_hidden_method(
-			$this->list_table,
-			'get_rsvp_count'
-		);
-
-		$this->assertIsInt(
-			$count,
-			'Failed to assert get_rsvp_count returns an integer with event filter.'
-		);
-
-		unset( $_REQUEST['event'] );
 	}
 
 	/**
@@ -1870,5 +1954,682 @@ class Test_List_Table extends Base {
 			),
 			'No term and nothing to infer from renders empty.'
 		);
+	}
+
+	/**
+	 * A screen passed to the constructor is the one the table binds its column
+	 * hooks to, instead of whatever screen the request is currently on.
+	 *
+	 * @since 0.36.0
+	 * @covers ::__construct
+	 *
+	 * @return void
+	 */
+	public function test_construct_with_screen(): void {
+		$screen_id  = 'gatherpress_event_page_gatherpress_rsvp';
+		$list_table = new List_Table( array( 'screen' => $screen_id ) );
+
+		$this->assertSame(
+			$screen_id,
+			$list_table->screen->id,
+			'The table adopts the screen named in the constructor arguments.'
+		);
+		$this->assertSame(
+			0,
+			has_filter( sprintf( 'manage_%s_columns', $screen_id ), array( $list_table, 'get_columns' ) ),
+			'The column hooks bind to the screen named in the constructor arguments.'
+		);
+	}
+
+	/**
+	 * A stored per-page preference that is not a positive integer would divide
+	 * the total by a non-positive number, so it falls back to the default.
+	 *
+	 * @since 0.36.0
+	 * @covers ::prepare_items
+	 *
+	 * @return void
+	 */
+	public function test_prepare_items_falls_back_to_default_per_page(): void {
+		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+
+		wp_set_current_user( $user_id );
+		update_user_meta( $user_id, sprintf( '%s_per_page', Rsvp::COMMENT_TYPE ), -5 );
+
+		$this->list_table->prepare_items();
+
+		$this->assertSame(
+			List_Table::DEFAULT_PER_PAGE,
+			$this->list_table->get_pagination_arg( 'per_page' ),
+			'A stored preference below one falls back to the default page size.'
+		);
+	}
+
+	/**
+	 * An RSVP row outlives the post it points at, so a deleted event renders the
+	 * stored title as text, or a dash when nothing is left of it.
+	 *
+	 * @since 0.36.0
+	 * @covers ::column_default
+	 *
+	 * @return void
+	 */
+	public function test_column_default_event_deleted(): void {
+		$item = $this->rsvp;
+
+		wp_delete_post( $this->event_id, true );
+
+		$item['event_title'] = 'Deleted Event';
+
+		$this->assertSame(
+			'Deleted Event',
+			$this->list_table->column_default( $item, 'event' ),
+			'A deleted event renders the stored title without a link.'
+		);
+
+		$item['event_title'] = '';
+
+		$this->assertSame(
+			'-',
+			$this->list_table->column_default( $item, 'event' ),
+			'A deleted event with no stored title renders a dash.'
+		);
+	}
+
+	/**
+	 * Core stores comment statuses this table has no label for, and a row can
+	 * arrive without the field at all; both render a dash.
+	 *
+	 * @since 0.36.0
+	 * @covers ::column_default
+	 *
+	 * @return void
+	 */
+	public function test_column_default_approved_unlabeled_status(): void {
+		$item                     = $this->rsvp;
+		$item['comment_approved'] = 'trash';
+
+		$this->assertSame(
+			'-',
+			$this->list_table->column_default( $item, 'approved' ),
+			'A status the table has no label for renders a dash.'
+		);
+
+		unset( $item['comment_approved'] );
+
+		$this->assertSame(
+			'-',
+			$this->list_table->column_default( $item, 'approved' ),
+			'A row carrying no status at all renders a dash.'
+		);
+	}
+
+	/**
+	 * An unfiltered request reports no event.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_filtered_post_id
+	 *
+	 * @return void
+	 */
+	public function test_get_filtered_post_id_unfiltered(): void {
+		$this->assertSame(
+			0,
+			Utility::invoke_hidden_method( $this->list_table, 'get_filtered_post_id' ),
+			'Failed to assert an unfiltered request reports no event.'
+		);
+	}
+
+	/**
+	 * The filter control submits the event as `post_id`.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_filtered_post_id
+	 *
+	 * @return void
+	 */
+	public function test_get_filtered_post_id_reads_post_id(): void {
+		$_REQUEST['post_id'] = (string) $this->event_id;
+
+		$this->assertSame(
+			$this->event_id,
+			Utility::invoke_hidden_method( $this->list_table, 'get_filtered_post_id' ),
+			'Failed to assert the requested event is read from post_id.'
+		);
+
+		unset( $_REQUEST['post_id'] );
+	}
+
+	/**
+	 * An unfiltered request reports no responses.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_filtered_responses
+	 *
+	 * @return void
+	 */
+	public function test_get_filtered_responses_unfiltered(): void {
+		$this->assertSame(
+			array(),
+			Utility::invoke_hidden_method( $this->list_table, 'get_filtered_responses' ),
+			'Failed to assert an unfiltered request reports no responses.'
+		);
+	}
+
+	/**
+	 * A response parameter that is not a string is ignored.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_filtered_responses
+	 *
+	 * @return void
+	 */
+	public function test_get_filtered_responses_ignores_a_non_string(): void {
+		// `response[]=attending` arrives as an array, which explode() rejects.
+		$_REQUEST['response'] = array( Status::ATTENDING->value );
+
+		$this->assertSame(
+			array(),
+			Utility::invoke_hidden_method( $this->list_table, 'get_filtered_responses' ),
+			'Failed to assert an array response parameter is ignored.'
+		);
+
+		unset( $_REQUEST['response'] );
+	}
+
+	/**
+	 * Several responses arrive as one comma-separated parameter.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_filtered_responses
+	 *
+	 * @return void
+	 */
+	public function test_get_filtered_responses_reads_a_list(): void {
+		$_REQUEST['response'] = sprintf(
+			'%s,%s',
+			Status::ATTENDING->value,
+			Status::WAITING_LIST->value
+		);
+
+		$this->assertSame(
+			array( Status::ATTENDING->value, Status::WAITING_LIST->value ),
+			Utility::invoke_hidden_method( $this->list_table, 'get_filtered_responses' ),
+			'Failed to assert every requested response is read.'
+		);
+
+		unset( $_REQUEST['response'] );
+	}
+
+	/**
+	 * A status the enum does not carry is dropped rather than queried.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_filtered_responses
+	 *
+	 * @return void
+	 */
+	public function test_get_filtered_responses_drops_unknown_values(): void {
+		// Otherwise a hand-edited URL could widen the filter to any term.
+		$_REQUEST['response'] = sprintf( '%s,made-up', Status::ATTENDING->value );
+
+		$this->assertSame(
+			array( Status::ATTENDING->value ),
+			Utility::invoke_hidden_method( $this->list_table, 'get_filtered_responses' ),
+			'Failed to assert an unknown status is dropped.'
+		);
+
+		unset( $_REQUEST['response'] );
+	}
+
+	/**
+	 * An unfiltered request leaves the comment query alone.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::add_response_filter
+	 *
+	 * @return void
+	 */
+	public function test_add_response_filter_leaves_args_alone(): void {
+		$args = array( 'number' => 20 );
+
+		$this->assertSame(
+			$args,
+			Utility::invoke_hidden_method(
+				$this->list_table,
+				'add_response_filter',
+				array( $args )
+			),
+			'Failed to assert an unfiltered request adds no taxonomy query.'
+		);
+	}
+
+	/**
+	 * A filtered request narrows the comment query by response term.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::add_response_filter
+	 *
+	 * @return void
+	 */
+	public function test_add_response_filter_adds_a_tax_query(): void {
+		$_REQUEST['response'] = sprintf(
+			'%s,%s',
+			Status::ATTENDING->value,
+			Status::WAITING_LIST->value
+		);
+
+		$args = Utility::invoke_hidden_method(
+			$this->list_table,
+			'add_response_filter',
+			array( array( 'number' => 20 ) )
+		);
+
+		$this->assertSame(
+			array(
+				array(
+					'taxonomy' => Status::TAXONOMY,
+					'field'    => 'slug',
+					'terms'    => array( Status::ATTENDING->value, Status::WAITING_LIST->value ),
+				),
+			),
+			$args['tax_query'],
+			'Failed to assert the requested responses become a taxonomy query.'
+		);
+
+		$this->assertSame(
+			20,
+			$args['number'],
+			'Failed to assert the existing arguments survive the filter.'
+		);
+
+		unset( $_REQUEST['response'] );
+	}
+
+	/**
+	 * The controls are written out, not left for script to create.
+	 *
+	 * The row has to be complete on the first paint; a mount point alone
+	 * leaves the tablenav short until the footer script runs.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::extra_tablenav
+	 * @covers ::render_event_field
+	 * @covers ::render_response_toggle
+	 *
+	 * @return void
+	 */
+	public function test_extra_tablenav_writes_the_controls(): void {
+		$output = Utility::buffer_and_return(
+			static function (): void {
+				Utility::invoke_hidden_method(
+					new List_Table(),
+					'extra_tablenav',
+					array( 'top' )
+				);
+			}
+		);
+
+		$this->assertStringContainsString(
+			'id="gatherpress-rsvp-event"',
+			$output,
+			'Failed to assert the event field is written out.'
+		);
+
+		$this->assertStringContainsString(
+			'<svg',
+			$output,
+			'Failed to assert the response toggle is written out.'
+		);
+
+		$this->assertStringContainsString(
+			'Filter',
+			$output,
+			'Failed to assert the submit control is written out.'
+		);
+
+		$this->assertStringContainsString(
+			Status::ATTENDING->value,
+			$output,
+			'Failed to assert the selectable responses reach the script.'
+		);
+	}
+
+	/**
+	 * The bottom tablenav renders nothing.
+	 *
+	 * A second copy carries the same controls and would show beside the first
+	 * below 783px, where the stylesheet keeps the top group visible.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::extra_tablenav
+	 *
+	 * @return void
+	 */
+	public function test_extra_tablenav_renders_once(): void {
+		$list_table = $this->list_table;
+
+		$this->assertSame(
+			'',
+			Utility::buffer_and_return(
+				static function () use ( $list_table ): void {
+					Utility::invoke_hidden_method( $list_table, 'extra_tablenav', array( 'bottom' ) );
+				}
+			),
+			'Failed to assert the bottom tablenav renders nothing.'
+		);
+	}
+
+	/**
+	 * The written event field is an empty, labeled text box.
+	 *
+	 * The selection's title is left to the script, which resolves it along
+	 * with everything else it lists rather than costing a query here.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::render_event_field
+	 *
+	 * @return void
+	 */
+	public function test_render_event_field_is_written_empty(): void {
+		$field = Utility::invoke_hidden_method( $this->list_table, 'render_event_field' );
+
+		$this->assertStringContainsString(
+			'id="gatherpress-rsvp-event"',
+			$field,
+			'Failed to assert the event field is written out.'
+		);
+
+		$this->assertStringNotContainsString(
+			'value=',
+			$field,
+			'Failed to assert the field leaves its value to the script.'
+		);
+	}
+
+	/**
+	 * The written toggle announces what it is filtered to.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::render_response_toggle
+	 * @covers ::get_response_label
+	 *
+	 * @return void
+	 */
+	public function test_render_response_toggle_announces_the_selection(): void {
+		$list_table = $this->list_table;
+		$toggle     = static fn( array $responses ): string => Utility::invoke_hidden_method(
+			$list_table,
+			'render_response_toggle',
+			array( $responses )
+		);
+
+		$this->assertStringContainsString(
+			'Filter by response: all',
+			$toggle( array() ),
+			'Failed to assert an unfiltered toggle reads as unfiltered.'
+		);
+
+		$this->assertStringContainsString(
+			'Filter by response: Attending',
+			$toggle( array( Status::ATTENDING->value ) ),
+			'Failed to assert one response is named.'
+		);
+
+		$this->assertStringContainsString(
+			'Filter by response: 2 selected',
+			$toggle( array( Status::ATTENDING->value, Status::WAITING_LIST->value ) ),
+			'Failed to assert several responses are counted.'
+		);
+
+		$this->assertStringContainsString(
+			'aria-label="Filter by response"',
+			$toggle( array( 'made-up' ) ),
+			'Failed to assert an unknown response still names the control.'
+		);
+	}
+
+	/**
+	 * The mount carries the filters the current request already applied.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::extra_tablenav
+	 *
+	 * @return void
+	 */
+	public function test_extra_tablenav_carries_the_current_filters(): void {
+		$_REQUEST['post_id']  = (string) $this->event_id;
+		$_REQUEST['response'] = Status::ATTENDING->value;
+
+		$list_table = $this->list_table;
+		$output     = Utility::buffer_and_return(
+			static function () use ( $list_table ): void {
+				Utility::invoke_hidden_method( $list_table, 'extra_tablenav', array( 'top' ) );
+			}
+		);
+
+		$this->assertStringContainsString(
+			sprintf( 'data-post-id="%d"', $this->event_id ),
+			$output,
+			'Failed to assert the filtered event reaches the mount.'
+		);
+
+		$this->assertStringContainsString(
+			sprintf( 'data-selected="%s"', Status::ATTENDING->value ),
+			$output,
+			'Failed to assert the filtered responses reach the mount.'
+		);
+
+		unset( $_REQUEST['post_id'], $_REQUEST['response'] );
+	}
+
+	/**
+	 * Switching view keeps the response filter rather than widening the list.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_views
+	 *
+	 * @return void
+	 */
+	public function test_get_views_preserves_the_response_filter(): void {
+		$_REQUEST['response'] = Status::ATTENDING->value;
+
+		$views = $this->list_table->get_views();
+
+		$this->assertStringContainsString(
+			sprintf( 'response=%s', Status::ATTENDING->value ),
+			implode( '', $views ),
+			'Failed to assert the view links carry the response filter.'
+		);
+
+		unset( $_REQUEST['response'] );
+	}
+
+	/**
+	 * Filtering by event returns that event's RSVPs and no others.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_rsvps
+	 * @covers ::get_rsvp_count
+	 *
+	 * @return void
+	 */
+	public function test_post_id_filter_narrows_the_results(): void {
+		$other_event = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_title'  => 'Other Event',
+				'post_status' => 'publish',
+			)
+		);
+
+		$this->factory->comment->create(
+			array(
+				'comment_post_ID' => $other_event,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		$_REQUEST['post_id'] = (string) $this->event_id;
+
+		$rsvps = Utility::invoke_hidden_method( $this->list_table, 'get_rsvps', array( 20, 1 ) );
+		$posts = array_unique( array_column( $rsvps, 'comment_post_ID' ) );
+
+		$this->assertSame(
+			array( (string) $this->event_id ),
+			array_values( $posts ),
+			'Failed to assert only the filtered event\'s RSVPs are returned.'
+		);
+
+		$this->assertSame(
+			count( $rsvps ),
+			Utility::invoke_hidden_method( $this->list_table, 'get_rsvp_count' ),
+			'Failed to assert the count agrees with the filtered rows.'
+		);
+
+		unset( $_REQUEST['post_id'] );
+	}
+
+	/**
+	 * Filtering by response returns those responses and no others.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_rsvps
+	 * @covers ::get_rsvp_count
+	 *
+	 * @return void
+	 */
+	public function test_response_filter_narrows_the_results(): void {
+		$attending = (int) $this->rsvp['comment_ID'];
+		$declined  = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $this->event_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		wp_set_object_terms( $attending, Status::ATTENDING->value, Status::TAXONOMY );
+		wp_set_object_terms( $declined, Status::NOT_ATTENDING->value, Status::TAXONOMY );
+
+		$_REQUEST['response'] = Status::ATTENDING->value;
+
+		$rsvps = Utility::invoke_hidden_method( $this->list_table, 'get_rsvps', array( 20, 1 ) );
+		$ids   = array_map( 'intval', array_column( $rsvps, 'comment_ID' ) );
+
+		$this->assertContains(
+			$attending,
+			$ids,
+			'Failed to assert the requested response is returned.'
+		);
+
+		$this->assertNotContains(
+			$declined,
+			$ids,
+			'Failed to assert an unrequested response is excluded.'
+		);
+
+		$this->assertSame(
+			count( $rsvps ),
+			Utility::invoke_hidden_method( $this->list_table, 'get_rsvp_count' ),
+			'Failed to assert the count agrees with the filtered rows.'
+		);
+
+		unset( $_REQUEST['response'] );
+	}
+
+	/**
+	 * Two responses widen the result rather than narrowing it to nothing.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_rsvps
+	 *
+	 * @return void
+	 */
+	public function test_response_filter_reads_as_or(): void {
+		$attending = (int) $this->rsvp['comment_ID'];
+		$waiting   = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $this->event_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		wp_set_object_terms( $attending, Status::ATTENDING->value, Status::TAXONOMY );
+		wp_set_object_terms( $waiting, Status::WAITING_LIST->value, Status::TAXONOMY );
+
+		$_REQUEST['response'] = sprintf(
+			'%s,%s',
+			Status::ATTENDING->value,
+			Status::WAITING_LIST->value
+		);
+
+		$rsvps = Utility::invoke_hidden_method( $this->list_table, 'get_rsvps', array( 20, 1 ) );
+		$ids   = array_map( 'intval', array_column( $rsvps, 'comment_ID' ) );
+
+		$this->assertContains( $attending, $ids, 'Failed to assert the first response is returned.' );
+		$this->assertContains( $waiting, $ids, 'Failed to assert the second response is returned.' );
+
+		unset( $_REQUEST['response'] );
+	}
+
+	/**
+	 * A non-scalar event reads as unfiltered rather than as post 1.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_filtered_post_id
+	 *
+	 * @return void
+	 */
+	public function test_get_filtered_post_id_ignores_a_non_scalar(): void {
+		// `post_id[]=9` casts to 1, which would filter the screen to whichever
+		// post holds that ID.
+		$_REQUEST['post_id'] = array( '9' );
+
+		$this->assertSame(
+			0,
+			$this->list_table->get_filtered_post_id(),
+			'Failed to assert an array event parameter is ignored.'
+		);
+
+		unset( $_REQUEST['post_id'] );
+	}
+
+	/**
+	 * A negative event reads as unfiltered.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_filtered_post_id
+	 *
+	 * @return void
+	 */
+	public function test_get_filtered_post_id_ignores_a_negative(): void {
+		$_REQUEST['post_id'] = '-5';
+
+		$this->assertSame(
+			5,
+			$this->list_table->get_filtered_post_id(),
+			'Failed to assert a negative event parameter is made absolute.'
+		);
+
+		unset( $_REQUEST['post_id'] );
 	}
 }
