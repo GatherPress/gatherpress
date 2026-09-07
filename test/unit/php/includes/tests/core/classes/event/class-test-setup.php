@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Event;
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status;
 use GatherPress\Core\Event\Admin_List;
 use GatherPress\Core\Event\Meta;
 use GatherPress\Core\Event\Query;
@@ -2351,5 +2352,74 @@ class Test_Setup extends Base {
 		$event->set_status( 'canceled' );
 		$classes = $setup->add_status_post_class( array( 'hentry' ), array(), $event_id );
 		$this->assertContains( 'gatherpress-event-status--is-canceled', $classes );
+	}
+
+	/**
+	 * The status stylesheet loads with the block it styles, carrying a color
+	 * for every status.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::register_status_style
+	 *
+	 * @return void
+	 */
+	public function test_register_status_style(): void {
+		$handle = 'gatherpress-event-status';
+
+		wp_deregister_style( $handle );
+
+		Setup::get_instance()->register_status_style();
+
+		$this->assertTrue(
+			wp_style_is( $handle, 'registered' ),
+			'Failed to assert the status stylesheet is registered.'
+		);
+
+		$after = (array) wp_styles()->get_data( $handle, 'after' );
+		$rules = implode( '', $after );
+
+		$this->assertStringContainsString(
+			'.gatherpress-event-status--is-canceled{--gatherpress-status-color:#c5221f}',
+			$rules,
+			'Failed to assert a status carries its own color.'
+		);
+
+		foreach ( Status::slugs( Event::POST_TYPE ) as $slug ) {
+			$this->assertStringContainsString(
+				sprintf( '--is-%s{', $slug ),
+				$rules,
+				sprintf( 'Failed to assert %s is given a color.', $slug )
+			);
+		}
+	}
+
+	/**
+	 * A status with no color of its own adds no rule, rather than an empty one.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::register_status_style
+	 *
+	 * @return void
+	 */
+	public function test_register_status_style_skips_a_colorless_status(): void {
+		$handle   = 'gatherpress-event-status';
+		$callback = static function (): array {
+			return array( 'plain' => array( 'label' => 'Plain' ) );
+		};
+
+		add_filter( 'gatherpress_event_statuses', $callback );
+		wp_deregister_style( $handle );
+
+		Setup::get_instance()->register_status_style();
+
+		remove_filter( 'gatherpress_event_statuses', $callback );
+
+		$this->assertStringNotContainsString(
+			'--is-plain{',
+			implode( '', (array) wp_styles()->get_data( $handle, 'after' ) ),
+			'Failed to assert a status with no color adds no rule.'
+		);
 	}
 }

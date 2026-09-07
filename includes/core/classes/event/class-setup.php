@@ -221,20 +221,26 @@ final class Setup {
 			sprintf( '%s/build/variations/core/post-terms/index.asset.php', GATHERPRESS_CORE_PATH )
 		);
 
-		// Core loads this only when the block it belongs to is on the page.
-		wp_enqueue_block_style(
-			'core/post-terms',
-			array(
-				'handle' => $handle,
-				'src'    => plugins_url( 'build/variations/core/post-terms/style-index.css', GATHERPRESS_CORE_FILE ),
-				'path'   => sprintf( '%1$s/build/variations/core/post-terms/style-index.css', GATHERPRESS_CORE_PATH ),
-				'ver'    => $asset['version'],
-			)
+		// Registered here rather than through wp_enqueue_block_style(), which
+		// defers registration to render time and would drop the colors below.
+		wp_register_style(
+			$handle,
+			plugins_url( 'build/variations/core/post-terms/style-index.css', GATHERPRESS_CORE_FILE ),
+			array(),
+			$asset['version']
 		);
+		wp_style_add_data(
+			$handle,
+			'path',
+			sprintf( '%s/build/variations/core/post-terms/style-index.css', GATHERPRESS_CORE_PATH )
+		);
+
+		// Core enqueues it only on pages carrying the block it styles.
+		wp_enqueue_block_style( 'core/post-terms', array( 'handle' => $handle ) );
 
 		$rules = '';
 
-		foreach ( Status::all( Event::POST_TYPE ) as $gatherpress_slug => $status ) {
+		foreach ( Status::slugs( Event::POST_TYPE ) as $gatherpress_slug ) {
 			$color = Status::color( (string) $gatherpress_slug );
 
 			if ( '' === $color ) {
