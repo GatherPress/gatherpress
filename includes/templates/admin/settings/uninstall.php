@@ -18,29 +18,40 @@ $gatherpress_preferences = isset( $preferences ) && is_array( $preferences ) ? $
 $gatherpress_can_edit    = ! empty( $can_edit );
 $gatherpress_scope       = isset( $scope ) && 'network' === $scope ? 'network' : 'blog';
 
+/*
+ * `label` names the row, the way core's settings screens do. `checkbox` is the
+ * control's own label, and says what it does without the row heading: the table
+ * is `role="presentation"`, so the heading is not read out with the control.
+ */
 $gatherpress_tasks = array(
 	Preferences::TASK_POSTS    => array(
 		'label'       => __( 'Events and venues', 'gatherpress' ),
+		'checkbox'    => __( 'Remove events and venues', 'gatherpress' ),
 		'description' => __( 'Removes every event and venue, with their meta, revisions, and the RSVPs recorded against them.', 'gatherpress' ),
 	),
 	Preferences::TASK_COMMENTS => array(
 		'label'       => __( 'RSVPs', 'gatherpress' ),
+		'checkbox'    => __( 'Remove RSVPs', 'gatherpress' ),
 		'description' => __( 'Removes every RSVP record and the answers people gave to custom RSVP fields.', 'gatherpress' ),
 	),
 	Preferences::TASK_TERMS    => array(
 		'label'       => __( 'Topics and venue terms', 'gatherpress' ),
+		'checkbox'    => __( 'Remove topics and venue terms', 'gatherpress' ),
 		'description' => __( 'Removes the terms in the topic, venue, and RSVP taxonomies. Categories and tags are not touched.', 'gatherpress' ),
 	),
 	Preferences::TASK_TABLES   => array(
 		'label'       => __( 'Event date table', 'gatherpress' ),
+		'checkbox'    => __( 'Remove the event date table', 'gatherpress' ),
 		'description' => __( 'Drops the custom database table that holds event start and end times.', 'gatherpress' ),
 	),
 	Preferences::TASK_CRON     => array(
 		'label'       => __( 'Scheduled jobs', 'gatherpress' ),
+		'checkbox'    => __( 'Remove scheduled jobs', 'gatherpress' ),
 		'description' => __( 'Clears the scheduled tasks the plugin registers, such as RSVP cleanup and map generation.', 'gatherpress' ),
 	),
 	Preferences::TASK_OPTIONS  => array(
 		'label'       => __( 'Settings', 'gatherpress' ),
+		'checkbox'    => __( 'Remove settings', 'gatherpress' ),
 		'description' => __( 'Removes the GatherPress settings, including the choices on this screen.', 'gatherpress' ),
 	),
 );
@@ -83,28 +94,35 @@ $gatherpress_tasks = array(
 			<?php esc_html_e( 'Data to remove when the plugin is deleted', 'gatherpress' ); ?>
 		</legend>
 
-		<?php foreach ( $gatherpress_tasks as $gatherpress_key => $gatherpress_task ) : ?>
-			<?php
-			$gatherpress_field_id    = 'gatherpress-uninstall-' . $gatherpress_key;
-			$gatherpress_describedby = $gatherpress_field_id . '-description';
-			?>
-			<p>
-				<label for="<?php echo esc_attr( $gatherpress_field_id ); ?>">
-					<input
-						type="checkbox"
-						id="<?php echo esc_attr( $gatherpress_field_id ); ?>"
-						name="<?php echo esc_attr( 'gatherpress_uninstall_' . $gatherpress_key ); ?>"
-						value="1"
-						aria-describedby="<?php echo esc_attr( $gatherpress_describedby ); ?>"
-						<?php checked( ! empty( $gatherpress_preferences[ $gatherpress_key ] ) ); ?>
-					/>
-					<?php echo esc_html( $gatherpress_task['label'] ); ?>
-				</label>
-				<span class="description" id="<?php echo esc_attr( $gatherpress_describedby ); ?>">
-					<?php echo esc_html( $gatherpress_task['description'] ); ?>
-				</span>
-			</p>
-		<?php endforeach; ?>
+		<table class="form-table" role="presentation">
+			<tbody>
+				<?php foreach ( $gatherpress_tasks as $gatherpress_key => $gatherpress_task ) : ?>
+					<?php
+					$gatherpress_field_id    = 'gatherpress-uninstall-' . $gatherpress_key;
+					$gatherpress_describedby = $gatherpress_field_id . '-description';
+					?>
+					<tr>
+						<th scope="row"><?php echo esc_html( $gatherpress_task['label'] ); ?></th>
+						<td>
+							<label for="<?php echo esc_attr( $gatherpress_field_id ); ?>">
+								<input
+									type="checkbox"
+									id="<?php echo esc_attr( $gatherpress_field_id ); ?>"
+									name="<?php echo esc_attr( 'gatherpress_uninstall_' . $gatherpress_key ); ?>"
+									value="1"
+									aria-describedby="<?php echo esc_attr( $gatherpress_describedby ); ?>"
+									<?php checked( ! empty( $gatherpress_preferences[ $gatherpress_key ] ) ); ?>
+								/>
+								<?php echo esc_html( $gatherpress_task['checkbox'] ); ?>
+							</label>
+							<p class="description" id="<?php echo esc_attr( $gatherpress_describedby ); ?>">
+								<?php echo esc_html( $gatherpress_task['description'] ); ?>
+							</p>
+						</td>
+					</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
 	</fieldset>
 
 	<?php if ( $gatherpress_can_edit ) : ?>
