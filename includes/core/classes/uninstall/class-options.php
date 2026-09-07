@@ -21,7 +21,8 @@ use GatherPress\Core\Settings\Network;
  * Removes the settings an administrator configured, the network settings,
  * the version marker the upgrade routine keeps, and the calendar cache
  * stamp. Every option the plugin writes under its own name belongs here,
- * except the dismissed-notice bookkeeping, which `Notices` owns.
+ * except the options `Notices` owns: the shared dismissal record and
+ * anything a notice declares through `get_options()`.
  *
  * The opt-in map itself goes last, in the network pass. `Preferences` reads
  * its option once and caches it, so removing it here cannot change whether

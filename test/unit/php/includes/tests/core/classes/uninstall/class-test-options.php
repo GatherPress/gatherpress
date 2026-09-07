@@ -160,7 +160,13 @@ class Test_Options extends Base {
 	/**
 	 * The network settings go in the network pass.
 	 *
+	 * Multisite-only on purpose. On a single site `delete_site_option()`
+	 * falls through to `delete_option()` on the same row, so a single-site
+	 * run of this test passes whichever of the two the task calls and
+	 * proves nothing about the network scope.
+	 *
 	 * @covers ::uninstall_network
+	 * @group multisite
 	 *
 	 * @return void
 	 */
