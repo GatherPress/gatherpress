@@ -11,6 +11,7 @@ extend-exclude = [
     "**/node_modules/**",
     "build/**",
     "docs/media/**",
+    ".github/scripts/release/credits/**",
 ]
 ignore-hidden = false
 
@@ -18,7 +19,6 @@ ignore-hidden = false
 locale = "en-us"
 extend-ignore-re = [
     "\\biMatix\\b",
-    "\\bEvent Organiser\\b",
     # Calibre (calibreapp.com) builds the image-actions image compressor.
     "\\bCalibre\\b",
 ]
@@ -38,6 +38,5 @@ extend-ignore-re = [
 
 # Case insensitive, matches inside word.
 # [default.extend-words]
-"Skelton" = "Skelton"
 # bellow = "below"
 # toi = "toi"

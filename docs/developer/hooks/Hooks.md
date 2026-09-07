@@ -43,6 +43,7 @@
 - [`gatherpress_async_geocode_failed`](gatherpress_async_geocode_failed.md) Fires when the async geocode handler exits because Photon
 - [`gatherpress_async_geocode_pre_enqueue_job`](gatherpress_async_geocode_pre_enqueue_job.md) Filter the geocode enqueue call to take over scheduling.
 - [`gatherpress_formatted_address`](gatherpress_formatted_address.md) Filters the one-line address label minted from a geocoder result.
+- [`gatherpress_geocode_languages`](gatherpress_geocode_languages.md) Filters the languages the geocoder is willing to be asked for.
 - [`gatherpress_geocode_on_save_enabled`](gatherpress_geocode_on_save_enabled.md) Filters whether the async geocode should run on venue save.
 - [`gatherpress_geocode_rate_limit_enabled`](gatherpress_geocode_rate_limit_enabled.md) Filter whether the geocode REST rate limit is enforced.
 - [`gatherpress_geocode_rate_limit_per_minute`](gatherpress_geocode_rate_limit_per_minute.md) Filter the per-user requests-per-minute ceiling for the

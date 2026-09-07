@@ -12,9 +12,12 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Venue;
 use GatherPress\Core\Venue\Setup;
 use WP_Block;
+use WP_Post;
 
 /**
  * Class responsible for managing the "Online Event" block and its functionality,
@@ -92,6 +95,11 @@ final class Online_Event {
 			return '';
 		}
 
+		// An override is honored on the same terms a direct visit would be.
+		if ( isset( $block['attrs']['postId'] ) && ! $this->can_view_post( $post_id ) ) {
+			return '';
+		}
+
 		// No override → render as-is. With override → re-render inner blocks
 		// with the override postId as context. One return either way.
 		return isset( $block['attrs']['postId'] )
@@ -112,7 +120,7 @@ final class Online_Event {
 		$event_post_type = (string) get_post_type( $post_id );
 
 		// Only render for post types that support online events.
-		if ( ! post_type_supports( $event_post_type, 'gatherpress-online-event' ) ) {
+		if ( ! post_type_supports( $event_post_type, Venue::ONLINE_SUPPORT ) ) {
 			return false;
 		}
 
@@ -124,6 +132,26 @@ final class Online_Event {
 		}
 
 		return in_array( 'online-event', wp_list_pluck( $venue_terms, 'slug' ), true );
+	}
+
+	/**
+	 * Whether the current viewer could open an event directly.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param int $post_id The post to check.
+	 *
+	 * @return bool True for an event the viewer could open, password included.
+	 */
+	private function can_view_post( int $post_id ): bool {
+		$post = get_post( $post_id );
+
+		// Event::is_viewable() does not ask about a password, and a direct
+		// visit to a protected event shows the form rather than the content.
+		return $post instanceof WP_Post
+			&& post_type_supports( $post->post_type, Event::SUPPORT )
+			&& Event::is_viewable( $post->ID )
+			&& ! post_password_required( $post );
 	}
 
 	/**

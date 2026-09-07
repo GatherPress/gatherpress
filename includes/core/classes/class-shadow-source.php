@@ -25,6 +25,7 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Event\Query as Event_Query;
 use GatherPress\Core\Traits\Singleton;
 use WP_Post;
@@ -49,6 +50,14 @@ final class Shadow_Source {
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
+
+	/**
+	 * Post type support that gives a post type a shadow taxonomy.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const SUPPORT = 'gatherpress-shadow-source';
 
 	/**
 	 * Class constructor.
@@ -96,7 +105,7 @@ final class Shadow_Source {
 	 * @return void
 	 */
 	public function maybe_register_post_type_hooks( string $post_type ): void {
-		if ( ! post_type_supports( $post_type, 'gatherpress-shadow-source' ) ) {
+		if ( ! post_type_supports( $post_type, self::SUPPORT ) ) {
 			return;
 		}
 
@@ -128,7 +137,7 @@ final class Shadow_Source {
 	 * @return void
 	 */
 	public function register_taxonomies(): void {
-		foreach ( get_post_types_by_support( 'gatherpress-shadow-source' ) as $post_type ) {
+		foreach ( get_post_types_by_support( self::SUPPORT ) as $post_type ) {
 			register_taxonomy(
 				$this->get_taxonomy( $post_type ),
 				array(),
@@ -157,7 +166,7 @@ final class Shadow_Source {
 	 * @return void
 	 */
 	public function attach_taxonomies_to_object_types(): void {
-		foreach ( get_post_types_by_support( 'gatherpress-shadow-source' ) as $source_post_type ) {
+		foreach ( get_post_types_by_support( self::SUPPORT ) as $source_post_type ) {
 			$taxonomy = $this->get_taxonomy( $source_post_type );
 
 			/**
@@ -275,7 +284,7 @@ final class Shadow_Source {
 		// Skip non-shadow-source post types, updates (we only insert on the
 		// initial publish), un-named or non-published posts in one guard so
 		// the function reads top-down rather than as a return chain.
-		if ( ! post_type_supports( $post->post_type, 'gatherpress-shadow-source' )
+		if ( ! post_type_supports( $post->post_type, self::SUPPORT )
 			|| $update
 			|| empty( $post->post_name )
 			|| 'publish' !== $post->post_status
@@ -320,7 +329,7 @@ final class Shadow_Source {
 		// Combined guard: only run on shadow-source post types, only for
 		// publish/trash transitions, and only when slug or title actually
 		// changed (saves are otherwise no-ops here).
-		if ( ! post_type_supports( $post_type, 'gatherpress-shadow-source' )
+		if ( ! post_type_supports( $post_type, self::SUPPORT )
 			|| ! in_array( $post_after->post_status, array( 'publish', 'trash' ), true )
 			|| (
 				$post_before->post_name === $post_after->post_name
@@ -373,7 +382,7 @@ final class Shadow_Source {
 	public function delete_term( int $post_id ): void {
 		$post_type = (string) get_post_type( $post_id );
 
-		if ( ! post_type_supports( $post_type, 'gatherpress-shadow-source' ) ) {
+		if ( ! post_type_supports( $post_type, self::SUPPORT ) ) {
 			return;
 		}
 
@@ -541,13 +550,13 @@ final class Shadow_Source {
 			$queried = get_queried_object();
 
 			if ( $queried instanceof WP_Post ) {
-				if ( post_type_supports( $queried->post_type, 'gatherpress-shadow-source' ) ) {
+				if ( post_type_supports( $queried->post_type, self::SUPPORT ) ) {
 					// The page itself is a shadow source (e.g. a single venue or
 					// season): scope the query to it directly.
 					$resolved = $queried;
 				} elseif (
 					'' !== $context_post_type
-					&& post_type_supports( $context_post_type, 'gatherpress-shadow-source' )
+					&& post_type_supports( $context_post_type, self::SUPPORT )
 				) {
 					// The page is an event (Single Event template). Resolve the
 					// source post of the requested type from the event's own
@@ -567,7 +576,7 @@ final class Shadow_Source {
 		if (
 			$context_post_id <= 0
 			|| '' === $context_post_type
-			|| ! post_type_supports( $context_post_type, 'gatherpress-shadow-source' )
+			|| ! post_type_supports( $context_post_type, self::SUPPORT )
 		) {
 			return null;
 		}
@@ -644,7 +653,7 @@ final class Shadow_Source {
 		$taxonomy_slug = $this->get_taxonomy( $source_post_type );
 		$taxonomy      = get_taxonomy( $taxonomy_slug );
 
-		$event_post_types = get_post_types_by_support( 'gatherpress-event-date' );
+		$event_post_types = get_post_types_by_support( Event::SUPPORT );
 
 		if (
 			! $taxonomy instanceof WP_Taxonomy

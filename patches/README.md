@@ -6,7 +6,7 @@ during `npm install` via the `postinstall` hook in `package.json`. Each patch
 should be documented here so a future contributor knows what it does, why it
 exists, and when it can be removed.
 
-## `@wordpress+env+11.13.0.patch`
+## `@wordpress+env+11.14.0.patch`
 
 ### What it changes
 

@@ -13,6 +13,7 @@ namespace GatherPress\Core\Blocks;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Shadow_Source;
 use GatherPress\Core\Traits\Singleton;
 use WP_Block;
 use WP_Query;
@@ -179,8 +180,8 @@ final class Event_Query {
 		return array_values(
 			array_unique(
 				array_merge(
-					get_post_types_by_support( 'gatherpress-event-date' ),
-					get_post_types_by_support( 'gatherpress-shadow-source' )
+					get_post_types_by_support( Event::SUPPORT ),
+					get_post_types_by_support( Shadow_Source::SUPPORT )
 				)
 			)
 		);
@@ -362,9 +363,9 @@ final class Event_Query {
 			: '';
 
 		$query_event_supports  = '' === $requested_post_type
-			|| post_type_supports( $requested_post_type, 'gatherpress-event-date' );
+			|| post_type_supports( $requested_post_type, Event::SUPPORT );
 		$query_shadow_supports = '' !== $requested_post_type
-			&& post_type_supports( $requested_post_type, 'gatherpress-shadow-source' );
+			&& post_type_supports( $requested_post_type, Shadow_Source::SUPPORT );
 
 		// Prefer the event type recorded in pre_render_block, then one set
 		// directly on the block query. The 'upcoming' fallback matches the
@@ -396,7 +397,7 @@ final class Event_Query {
 			// only when the block didn't pick one explicitly.
 			$query_args['post_type'] = '' !== $requested_post_type
 				? $requested_post_type
-				: get_post_types_by_support( 'gatherpress-event-date' );
+				: get_post_types_by_support( Event::SUPPORT );
 
 			// Type of event list: 'upcoming', 'past', or 'all',
 			// @see wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php.
@@ -507,8 +508,8 @@ final class Event_Query {
 		// declare them.
 		$requested_post_types = $this->get_requested_post_types_from_args( $args );
 
-		$event_post_types  = get_post_types_by_support( 'gatherpress-event-date' );
-		$shadow_post_types = get_post_types_by_support( 'gatherpress-shadow-source' );
+		$event_post_types  = get_post_types_by_support( Event::SUPPORT );
+		$shadow_post_types = get_post_types_by_support( Shadow_Source::SUPPORT );
 
 		$query_event_supports  = (bool) array_intersect( $requested_post_types, $event_post_types );
 		$query_shadow_supports = (bool) array_intersect( $requested_post_types, $shadow_post_types );
@@ -649,8 +650,8 @@ final class Event_Query {
 	 * @return array<string, array<string, mixed>> JSON Schema-formatted collection parameters, extended.
 	 */
 	public function add_gatherpress_collection_params( array $query_params, string $post_type ): array {
-		$is_event_date = post_type_supports( $post_type, 'gatherpress-event-date' );
-		$is_shadow     = post_type_supports( $post_type, 'gatherpress-shadow-source' );
+		$is_event_date = post_type_supports( $post_type, Event::SUPPORT );
+		$is_shadow     = post_type_supports( $post_type, Shadow_Source::SUPPORT );
 
 		if ( $is_event_date ) {
 			// Add GatherPress-specific orderby options.
@@ -751,8 +752,8 @@ final class Event_Query {
 		$post_type = $block_query['postType'] ?? '';
 
 		if (
-			! post_type_supports( $post_type, 'gatherpress-event-date' )
-			&& ! post_type_supports( $post_type, 'gatherpress-shadow-source' )
+			! post_type_supports( $post_type, Event::SUPPORT )
+			&& ! post_type_supports( $post_type, Shadow_Source::SUPPORT )
 		) {
 			return $query_args;
 		}

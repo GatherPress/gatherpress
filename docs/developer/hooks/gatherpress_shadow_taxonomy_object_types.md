@@ -48,7 +48,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-shadow-source.php:190](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-shadow-source.php#L190)
+- [includes/core/classes/class-shadow-source.php:198](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-shadow-source.php#L198)
 ```php
 apply_filters(
 				'gatherpress_shadow_taxonomy_object_types',
