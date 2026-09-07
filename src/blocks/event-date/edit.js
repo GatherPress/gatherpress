@@ -233,6 +233,10 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const dateFormat = getFromSettings( 'dateFormat' );
 	const timeFormat = getFromSettings( 'timeFormat' );
 	const defaultShowTimezone = getFromSettings( 'showTimezone' );
+	const globalShowViewerTimezone = getFromSettings( 'showViewerTimezone' );
+	const isTimezoneAppended = showTimezone
+		? 'yes' === showTimezone
+		: defaultShowTimezone;
 
 	// Defer the supports check to useSelect so it stays reactive.
 	const postId = attributes?.postId ?? context?.postId ?? null;
@@ -308,27 +312,61 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 
 	// Same label the frontend renders, so the toggle previews its own effect
 	// rather than changing something the author cannot see. Empty when the
-	// author is already in the event's timezone, which is what a reader there
+	// author is already in the event's timezone, which is what a viewer there
 	// would get too.
-	const viewerTimeLabel = showViewerTime
-		? getViewerTimeLabel( {
-			startGmt: showStartTime
-				? createMomentWithTimezone( finalDateTimeStart, finalTimezone )
-					.utc()
-					.format( 'YYYY-MM-DD HH:mm:ss' )
-				: '',
-			endGmt: showEndTime
-				? createMomentWithTimezone( finalDateTimeEnd, finalTimezone )
-					.utc()
-					.format( 'YYYY-MM-DD HH:mm:ss' )
-				: '',
-			eventTimezone: finalTimezone,
-			/* translators: 1: event start in the viewer's timezone, 2: event end in the viewer's timezone. */
-			rangeFormat: __( '%1$s to %2$s your time', 'gatherpress' ),
-			/* translators: %s: event start in the viewer's timezone. */
-			singleFormat: __( '%s your time', 'gatherpress' ),
-		} )
-		: '';
+	const viewerTimeLabel =
+		showViewerTime && isTimezoneAppended && globalShowViewerTimezone
+			? getViewerTimeLabel( {
+				startGmt: showStartTime
+					? createMomentWithTimezone( finalDateTimeStart, finalTimezone )
+						.utc()
+						.format( 'YYYY-MM-DD HH:mm:ss' )
+					: '',
+				endGmt: showEndTime
+					? createMomentWithTimezone( finalDateTimeEnd, finalTimezone )
+						.utc()
+						.format( 'YYYY-MM-DD HH:mm:ss' )
+					: '',
+				eventTimezone: finalTimezone,
+				/* translators: 1: event start in the viewer's timezone, 2: event end in the viewer's timezone. */
+				rangeFormat: __( '%1$s to %2$s your time', 'gatherpress' ),
+				/* translators: %s: event start in the viewer's timezone. */
+				singleFormat: __( '%s your time', 'gatherpress' ),
+			} )
+			: '';
+
+	let renderedDateTime = displayedDateTime;
+	if ( isLink ) {
+		renderedDateTime = (
+			<a
+				href="#gatherpress-event-date-pseudo-link"
+				onClick={ ( event ) => event.preventDefault() }
+				className={ viewerTimeLabel ? 'gatherpress-tooltip' : undefined }
+				data-gatherpress-tooltip={ viewerTimeLabel || undefined }
+				tabIndex={ viewerTimeLabel ? 0 : undefined }
+			>
+				{ displayedDateTime }
+				{ !! viewerTimeLabel && (
+					<span className="screen-reader-text">
+						{ ` (${ viewerTimeLabel })` }
+					</span>
+				) }
+			</a>
+		);
+	} else if ( viewerTimeLabel ) {
+		renderedDateTime = (
+			<span
+				className="gatherpress-tooltip"
+				data-gatherpress-tooltip={ viewerTimeLabel }
+				tabIndex={ 0 }
+			>
+				{ displayedDateTime }
+				<span className="screen-reader-text">
+					{ ` (${ viewerTimeLabel })` }
+				</span>
+			</span>
+		);
+	}
 
 	return (
 		<div { ...blockProps }>
@@ -364,21 +402,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 					/>
 				</ToolbarGroup>
 			</BlockControls>
-			{ isLink ? (
-				<a
-					href="#gatherpress-event-date-pseudo-link"
-					onClick={ ( event ) => event.preventDefault() }
-				>
-					{ displayedDateTime }
-				</a>
-			) : (
-				displayedDateTime
-			) }
-			{ !! viewerTimeLabel && (
-				<span className="gatherpress-event-date__viewer-time">
-					{ viewerTimeLabel }
-				</span>
-			) }
+			{ renderedDateTime }
 			{ isEventPostType() && (
 				<InspectorControls>
 					<PanelBody>
@@ -461,28 +485,34 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 					</p>
 					<ToggleControl
 						label={ __( 'Append time zone', 'gatherpress' ) }
-						checked={
-							showTimezone
-								? 'yes' === showTimezone
-								: defaultShowTimezone
-						}
+						checked={ isTimezoneAppended }
 						onChange={ ( value ) =>
 							setAttributes( {
 								showTimezone: value ? 'yes' : 'no',
 							} )
 						}
 					/>
-					<ToggleControl
-						label={ __( 'Show the reader their local time', 'gatherpress' ) }
-						help={ __(
-							'Adds the event time converted to each reader\u2019s own timezone. Readers already in the event\u2019s timezone see nothing extra.',
-							'gatherpress'
-						) }
-						checked={ !! showViewerTime }
-						onChange={ ( value ) =>
-							setAttributes( { showViewerTime: value } )
-						}
-					/>
+					{ globalShowViewerTimezone && (
+						<ToggleControl
+							label={ __( 'Show viewer local time', 'gatherpress' ) }
+							help={
+								! isTimezoneAppended
+									? __(
+										'Time zone must be appended to show viewer local time.',
+										'gatherpress'
+									)
+									: __(
+										'Displays the event time converted to each viewer\u2019s local timezone in a tooltip. Viewers in the same timezone see nothing extra.',
+										'gatherpress'
+									)
+							}
+							checked={ !! showViewerTime && isTimezoneAppended }
+							disabled={ ! isTimezoneAppended }
+							onChange={ ( value ) =>
+								setAttributes( { showViewerTime: value } )
+							}
+						/>
+					) }
 					<ToggleControl
 						label={ __( 'Link to event', 'gatherpress' ) }
 						checked={ isLink }

@@ -24,7 +24,7 @@ export function getViewerTimezone() {
  * ECMA-402 change that required offset time zones rejects "+05:30", and the
  * empty string returned here is what keeps that a degradation rather than a
  * break. There, `isSameZoneAt()` below can no longer match an offset-configured
- * site against the reader's own zone, so such a reader sees a local-time line
+ * site against the viewer's own zone, so such a viewer sees a tooltip
  * repeating a time they were already reading.
  *
  * @since 0.36.0
@@ -66,20 +66,20 @@ export function formatInTimezone( gmt, timezone, options, locale ) {
  *
  * A site can store its timezone as a manual UTC offset rather than a city, and
  * `wp_timezone_string()` returns exactly that for an offset-configured site. A
- * name comparison would then tell every reader their time differs from an event
+ * name comparison would then tell every viewer their time differs from an event
  * time they are already reading, so this compares what the two zones resolve to
  * for the event's own instant instead.
  *
  * Only that one instant is compared. A daylight-saving transition inside the
  * event window in exactly one of the two zones would make them agree here and
  * diverge before the event ends, and the label stays suppressed. The instant
- * the label is anchored to is the one readers plan around, so that is the one
+ * the label is anchored to is the one viewers plan around, so that is the one
  * worth being right about.
  *
  * @since 0.36.0
  *
  * @param {string} gmt            Event instant in `Y-m-d H:i:s` GMT.
- * @param {string} viewerTimezone The reader's timezone.
+ * @param {string} viewerTimezone The viewer's timezone.
  * @param {string} eventTimezone  The event's own timezone.
  *
  * @return {boolean} True when both timezones show that instant identically.
@@ -90,7 +90,7 @@ function isSameZoneAt( gmt, viewerTimezone, eventTimezone ) {
 	}
 
 	// A fixed locale keeps the comparison about the two zones rather than about
-	// how the reader's locale happens to punctuate a date.
+	// how the viewer's locale happens to punctuate a date.
 	const wallClockOptions = {
 		year: 'numeric',
 		month: 'numeric',
@@ -119,7 +119,7 @@ function isSameZoneAt( gmt, viewerTimezone, eventTimezone ) {
  * `@wordpress/i18n`, so its `sprintf` is out of reach here. Replacing a literal
  * `%s` is not a substitute: it fills only the first copy of a placeholder,
  * leaves `%%` doubled, and cannot see `%1$s` as the same placeholder as `%s`.
- * That last one is the one that actually reaches readers, because translators
+ * That last one is the one that actually reaches viewers, because translators
  * normalize a lone `%s` to `%1$s` as a matter of course, and the sentence would
  * then carry the raw token instead of a time. Mirrors the positional-tolerant
  * substitution `helpers/interactivity.js` does for the attendee count.

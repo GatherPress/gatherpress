@@ -12,6 +12,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Blocks\Setup;
 use GatherPress\Core\Event;
+use GatherPress\Core\Settings;
 
 $gatherpress_block_instance = Setup::get_instance();
 $gatherpress_post_id        = $gatherpress_block_instance->get_post_id( $block->parsed_block );
@@ -26,24 +27,23 @@ $gatherpress_display        = esc_html(
 	)
 );
 
-// Mirrors core/post-date's isLink attribute: link the datetime to the event.
-if ( ! empty( $attributes['isLink'] ) ) {
-	$gatherpress_display = sprintf(
-		'<a href="%s">%s</a>',
-		esc_url( get_permalink( $gatherpress_post_id ) ),
-		$gatherpress_display
-	);
-}
+$gatherpress_settings           = Settings::get_instance();
+$gatherpress_show_timezone_attr = $attributes['showTimezone'] ?? '';
+$gatherpress_is_timezone_active = '' !== $gatherpress_show_timezone_attr
+	? 'yes' === $gatherpress_show_timezone_attr
+	: (bool) $gatherpress_settings->get( 'show_timezone' );
 
-// The reader's timezone is only knowable in the browser, so this emits an empty
-// placeholder carrying the event's GMT datetimes and its own timezone for the
-// view module to fill. It stays hidden for a reader already in the event's
-// timezone, and for a reader without JavaScript, where an unconverted second
-// copy of the same time would be worse than nothing.
+// The viewer's timezone is only knowable in the browser, so this emits a context
+// payload carrying the event's GMT datetimes and its own timezone for the view
+// module to derive the viewer's local time in a tooltip.
 $gatherpress_viewer_time_context = '';
 
-if ( ! empty( $attributes['showViewerTime'] ) ) {
-	// Mirrors get_display_datetime(): the local-time line covers the same parts
+if (
+	! empty( $attributes['showViewerTime'] )
+	&& $gatherpress_is_timezone_active
+	&& $gatherpress_settings->get( 'show_viewer_timezone' )
+) {
+	// Mirrors get_display_datetime(): the local-time tooltip covers the same parts
 	// of the range the block itself displays, so the two cannot disagree. An
 	// empty display type reads as both there, and edit.js normalizes it the
 	// same way, so the editor preview and this agree on that input too.
@@ -58,7 +58,7 @@ if ( ! empty( $attributes['showViewerTime'] ) ) {
 	$gatherpress_end_gmt   = $gatherpress_show_end ? ( $gatherpress_datetime['datetime_end_gmt'] ?? '' ) : '';
 
 	// An end-only block converts its end: that is the only time it displays, so
-	// it is the one the reader needs converting, and get_display_datetime()
+	// it is the one the viewer needs converting, and get_display_datetime()
 	// shows the end alone there rather than showing nothing.
 	if ( $gatherpress_start_gmt || $gatherpress_end_gmt ) {
 		$gatherpress_viewer_time_context = wp_json_encode(
@@ -77,19 +77,39 @@ if ( ! empty( $attributes['showViewerTime'] ) ) {
 		);
 	}
 }
+
+$gatherpress_wrapper_attrs = get_block_wrapper_attributes();
+if ( $gatherpress_viewer_time_context ) {
+	$gatherpress_wrapper_attrs .= sprintf(
+		' data-wp-interactive="gatherpress" data-wp-context=\'%s\'',
+		$gatherpress_viewer_time_context
+	);
+}
 ?>
-<div <?php echo wp_kses_data( get_block_wrapper_attributes() ); ?>>
-	<?php echo wp_kses( $gatherpress_display, array( 'a' => array( 'href' => true ) ) ); ?>
-	<?php if ( $gatherpress_viewer_time_context ) : ?>
-		<?php // The `hidden` attribute is the no-JS state; the binding drops it once the browser has a label to show. ?>
+<div <?php echo wp_kses_data( $gatherpress_wrapper_attrs ); ?>>
+	<?php if ( ! empty( $attributes['isLink'] ) ) : ?>
+		<a
+			href="<?php echo esc_url( get_permalink( $gatherpress_post_id ) ); ?>"
+			<?php if ( $gatherpress_viewer_time_context ) : ?>
+				data-wp-class--gatherpress-tooltip="state.hasViewerTime"
+				data-wp-bind--data-gatherpress-tooltip="state.viewerTimeLabel"
+			<?php endif; ?>
+		>
+			<?php echo esc_html( $gatherpress_display ); ?>
+			<?php if ( $gatherpress_viewer_time_context ) : ?>
+				<span class="screen-reader-text" data-wp-text="state.viewerTimeSrLabel"></span>
+			<?php endif; ?>
+		</a>
+	<?php elseif ( $gatherpress_viewer_time_context ) : ?>
 		<span
-			class="gatherpress-event-date__viewer-time"
-			data-wp-interactive="gatherpress"
-			<?php // Already JSON-encoded with the HTML-escaping flags above; esc_attr() here would double-encode it. ?>
-			data-wp-context='<?php echo $gatherpress_viewer_time_context; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>'
-			data-wp-text="state.viewerTimeLabel"
-			data-wp-bind--hidden="!state.viewerTimeLabel"
-			hidden
-		></span>
+			data-wp-class--gatherpress-tooltip="state.hasViewerTime"
+			data-wp-bind--data-gatherpress-tooltip="state.viewerTimeLabel"
+			data-wp-bind--tabindex="state.viewerTimeTabIndex"
+		>
+			<?php echo esc_html( $gatherpress_display ); ?>
+			<span class="screen-reader-text" data-wp-text="state.viewerTimeSrLabel"></span>
+		</span>
+	<?php else : ?>
+		<?php echo esc_html( $gatherpress_display ); ?>
 	<?php endif; ?>
 </div>

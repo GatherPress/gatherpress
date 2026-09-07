@@ -1,4 +1,4 @@
 Significance: minor
 Type: added
 
-Added an optional local-time line to the Event Date block. With it on, each reader also sees the event time converted to their own timezone, including the date when the event falls on a different day for them. Readers already in the event's timezone see nothing extra.
+Added a viewer local time tooltip to the Event Date block and an administrative setting under Events > Date & Time. When enabled and the event date displays a timezone, viewers in a different timezone see the converted event time in their local timezone via an accessible tooltip.
