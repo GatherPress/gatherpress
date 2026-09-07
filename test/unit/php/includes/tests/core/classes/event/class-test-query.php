@@ -681,26 +681,30 @@ class Test_Query extends Base {
 		);
 
 		unregister_taxonomy_for_object_type( Venue::TAXONOMY, 'gatherpress_event' );
-		$this->assertFalse(
-			is_object_in_taxonomy( 'gatherpress_event', Venue::TAXONOMY ),
-			'Precondition: the venue taxonomy should not tag events for this test.'
-		);
 
-		$query = new WP_Query();
-		$query->set( 'post_type', Venue::POST_TYPE );
-		$query->set( 'has_events_filter', 1 );
-		$query->set( 'upcoming_events_only', 1 );
+		try {
+			$this->assertFalse(
+				is_object_in_taxonomy( 'gatherpress_event', Venue::TAXONOMY ),
+				'Precondition: the venue taxonomy should not tag events for this test.'
+			);
 
-		$instance->prepare_event_query_before_execution( $query );
+			$query = new WP_Query();
+			$query->set( 'post_type', Venue::POST_TYPE );
+			$query->set( 'has_events_filter', 1 );
+			$query->set( 'upcoming_events_only', 1 );
 
-		$this->assertSame(
-			'',
-			$query->get( 'post__in' ),
-			'An inapplicable activity filter should leave post__in untouched rather than pinning to an impossible ID.'
-		);
+			$instance->prepare_event_query_before_execution( $query );
 
-		// Restore the wiring so the setUp baseline does not leak into later tests.
-		register_taxonomy_for_object_type( Venue::TAXONOMY, 'gatherpress_event' );
+			$this->assertSame(
+				'',
+				$query->get( 'post__in' ),
+				'An inapplicable activity filter should leave post__in untouched rather '
+					. 'than pinning to an impossible ID.'
+			);
+		} finally {
+			// Restore the wiring so the setUp baseline does not leak into later tests.
+			register_taxonomy_for_object_type( Venue::TAXONOMY, 'gatherpress_event' );
+		}
 	}
 
 	/**
@@ -2366,14 +2370,16 @@ class Test_Query extends Base {
 		wp_get_current_user()->add_cap( $cap_name );
 		$this->assertTrue( current_user_can( $cap_name ), $cap_name );
 
-		$this->assertContains(
-			'_slugs-custom-cap-venue',
-			$instance->get_active_shadow_term_slugs( Venue::TAXONOMY, true ),
-			'A private custom-cap event should resolve after its private cap is granted.'
-		);
-
-		unregister_post_type( $custom_pt );
-		wp_set_current_user( 0 );
+		try {
+			$this->assertContains(
+				'_slugs-custom-cap-venue',
+				$instance->get_active_shadow_term_slugs( Venue::TAXONOMY, true ),
+				'A private custom-cap event should resolve after its private cap is granted.'
+			);
+		} finally {
+			unregister_post_type( $custom_pt );
+			wp_set_current_user( 0 );
+		}
 	}
 
 	/**
