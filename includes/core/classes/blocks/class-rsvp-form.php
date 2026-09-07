@@ -706,10 +706,10 @@ final class Rsvp_Form {
 	 */
 	public function process_custom_fields_for_form( int $comment_id ): void {
 		$comment = get_comment( $comment_id );
-		if ( ! $comment instanceof WP_Comment || ! Rsvp::is_rsvp( $comment ) ) {
+		if ( ! Rsvp::is_rsvp( $comment ) ) {
 			return;
 		}
-
+		/** @var WP_Comment $comment */
 		$post_id        = (int) $comment->comment_post_ID;
 		$form_schema_id = Utility::get_http_input( INPUT_POST, 'gatherpress_form_schema_id' );
 
