@@ -344,7 +344,10 @@ export function useVenueOptions(
 	);
 
 	// Use the pre-resolved sentinel term ID from editor settings so the filter
-	// compares against a single int instead of string-matching the slug.
+	// compares against a single int instead of string-matching the slug. When
+	// the settings have no entry for this venue post type (term not seeded yet),
+	// fall back to slug matching — real venue terms always carry a leading
+	// underscore, so the un-prefixed sentinel slug can never be a physical venue.
 	const onlineTermId = getOnlineEventTermId( venuePostType );
 
 	// Using useMemo will cause a re-render only when the raw venues really change.
@@ -352,8 +355,8 @@ export function useVenueOptions(
 		() => {
 			const isOnline = ( obj ) =>
 				'taxonomy' === kind &&
-				null !== onlineTermId &&
-				Number( obj?.id ) === Number( onlineTermId );
+				( ( null !== onlineTermId && Number( obj?.id ) === Number( onlineTermId ) ) ||
+					'online-event' === obj?.slug );
 
 			// Create a combobox-friendly list as dropdown
 			// from the array of venues (can be ~posts or ~terms).

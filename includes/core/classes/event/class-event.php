@@ -23,7 +23,7 @@ use GatherPress\Core\Setup as Core_Setup;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
-use GatherPress\Core\Venue\Setup;
+use GatherPress\Core\Venue\Setup as Venue_Setup;
 use GatherPress\Core\Venue;
 use WP_Post;
 use WP_Term;
@@ -862,7 +862,7 @@ class Event {
 		}
 
 		$event_post_type = (string) get_post_type( $this->post );
-		$venue_setup     = Setup::get_instance();
+		$venue_setup     = Venue_Setup::get_instance();
 		$taxonomy        = $venue_setup->taxonomy_for_event_post_type( $event_post_type );
 		$venue_terms     = get_the_terms( $this->post, $taxonomy );
 
@@ -1164,9 +1164,9 @@ class Event {
 			return false;
 		}
 
-		$taxonomy = Setup::get_instance()->taxonomy_for_event_post_type( $this->post->post_type );
+		$taxonomy = Venue_Setup::get_instance()->taxonomy_for_event_post_type( $this->post->post_type );
 
-		return has_term( Setup::ONLINE_EVENT_TERM_SLUG, $taxonomy, $this->post );
+		return has_term( Venue_Setup::ONLINE_EVENT_TERM_SLUG, $taxonomy, $this->post );
 	}
 
 	/**
@@ -1193,7 +1193,7 @@ class Event {
 			return false;
 		}
 
-		$venue_setup = Setup::get_instance();
+		$venue_setup = Venue_Setup::get_instance();
 		$venue_pt    = $venue_setup->get_venue_post_type( $this->post->post_type );
 		$taxonomy    = $venue_setup->taxonomy_for_event_post_type( $this->post->post_type );
 		$term_id     = $venue_setup->get_online_event_term_id( $venue_pt );

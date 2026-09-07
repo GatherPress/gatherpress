@@ -1441,12 +1441,17 @@ class Test_Event extends Base {
 	public function test_set_online_bails_when_no_event(): void {
 		$event = new Event( 0 );
 
+		// The sentinel term may or may not be seeded on the site under test;
+		// what matters is that bailing leaves its existence unchanged.
+		$term_existed = get_term_by( 'slug', Venue\Setup::ONLINE_EVENT_TERM_SLUG, Venue::TAXONOMY ) instanceof WP_Term;
+
 		// Should not error, should not create a term, and should report failure.
 		$this->assertFalse( $event->set_online( true, 'https://example.com/meet' ) );
 
-		$this->assertFalse(
+		$this->assertSame(
+			$term_existed,
 			get_term_by( 'slug', Venue\Setup::ONLINE_EVENT_TERM_SLUG, Venue::TAXONOMY ) instanceof WP_Term,
-			'set_online with no bound event should not seed any term.'
+			'set_online with no bound event must not change sentinel-term state.'
 		);
 	}
 

@@ -182,7 +182,7 @@ final class Setup {
 		// the existing "no term found" path in that case.
 		$online_term_ids = array();
 
-		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $venue_post_type ) {
+		foreach ( get_post_types_by_support( Venue::SUPPORT ) as $venue_post_type ) {
 			$id = $this->get_online_event_term_id( $venue_post_type );
 
 			if ( null !== $id ) {
