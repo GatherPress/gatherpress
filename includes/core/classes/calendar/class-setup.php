@@ -20,6 +20,7 @@ namespace GatherPress\Core\Calendar;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Event\Query;
 use GatherPress\Core\Shadow_Source;
 use GatherPress\Core\Topic;
@@ -109,7 +110,7 @@ final class Setup {
 	 * @return void
 	 */
 	public function register_endpoints(): void {
-		$event_types = get_post_types_by_support( 'gatherpress-event-date' );
+		$event_types = get_post_types_by_support( Event::SUPPORT );
 		if ( empty( $event_types ) ) {
 			return;
 		}
@@ -142,7 +143,7 @@ final class Setup {
 	 * @return void
 	 */
 	public function init_events( string $post_type ): void {
-		if ( ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+		if ( ! post_type_supports( $post_type, Event::SUPPORT ) ) {
 			return;
 		}
 
@@ -408,7 +409,7 @@ final class Setup {
 	protected function collect_post_type_archive_alternate_links( array $args ): array {
 		$links = array();
 
-		foreach ( get_post_types_by_support( 'gatherpress-event-date' ) as $post_type ) {
+		foreach ( get_post_types_by_support( Event::SUPPORT ) as $post_type ) {
 			$feed_link = get_post_type_archive_feed_link( $post_type, self::ICAL_SLUG );
 
 			// A post type registered without an archive has no archive feed to advertise.
@@ -457,7 +458,7 @@ final class Setup {
 		$queried = get_queried_object();
 
 		if ( is_singular() && $queried instanceof WP_Post ) {
-			if ( post_type_supports( $queried->post_type, 'gatherpress-event-date' ) ) {
+			if ( post_type_supports( $queried->post_type, Event::SUPPORT ) ) {
 				return $this->collect_singular_event_alternate_links( $queried, $args );
 			}
 
@@ -812,7 +813,7 @@ final class Setup {
 		$filename       = 'calendar';
 
 		if ( is_singular() && $queried_object instanceof WP_Post ) {
-			if ( post_type_supports( $queried_object->post_type, 'gatherpress-event-date' ) ) {
+			if ( post_type_supports( $queried_object->post_type, Event::SUPPORT ) ) {
 				$calendar  = new Calendar( $queried_object->ID );
 				$date      = $calendar->event->get_datetime_start( 'Y-m-d' );
 				$post_name = $queried_object->post_name;
@@ -1065,7 +1066,7 @@ final class Setup {
 	 * @return bool
 	 */
 	protected function has_post_type_for_taxonomy( string $taxonomy ): bool {
-		$post_types = get_post_types_by_support( 'gatherpress-event-date' );
+		$post_types = get_post_types_by_support( Event::SUPPORT );
 		foreach ( $post_types as $post_type ) {
 			if ( is_object_in_taxonomy( $post_type, $taxonomy ) ) {
 				return true;
@@ -1088,7 +1089,7 @@ final class Setup {
 	 * @return bool
 	 */
 	protected function is_tax_like_type_for_event_supporting_types( string $post_type ): bool {
-		return post_type_supports( $post_type, 'gatherpress-shadow-source' ) &&
+		return post_type_supports( $post_type, Shadow_Source::SUPPORT ) &&
 			$this->has_post_type_for_taxonomy( Shadow_Source::get_instance()->get_taxonomy( $post_type ) );
 	}
 
@@ -1190,7 +1191,7 @@ final class Setup {
 		$queried = get_queried_object();
 
 		if ( is_singular() && $queried instanceof WP_Post ) {
-			if ( post_type_supports( $queried->post_type, 'gatherpress-event-date' ) ) {
+			if ( post_type_supports( $queried->post_type, Event::SUPPORT ) ) {
 				return ( new Calendar( $queried->ID ) )->get_ical_url();
 			}
 
@@ -1206,7 +1207,7 @@ final class Setup {
 		if ( is_post_type_archive() ) {
 			$post_type = get_query_var( 'post_type' );
 			$post_type = is_array( $post_type ) ? reset( $post_type ) : $post_type;
-			if ( is_string( $post_type ) && post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+			if ( is_string( $post_type ) && post_type_supports( $post_type, Event::SUPPORT ) ) {
 				return get_post_type_archive_feed_link( $post_type, self::ICAL_SLUG );
 			}
 		}

@@ -19,6 +19,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
+use GatherPress\Core\Venue;
 use WP_HTML_Tag_Processor;
 
 /**
@@ -165,7 +166,7 @@ final class General_Block {
 		// fall back to the current post). Verify it's actually a venue.
 		$venue_post_id = $block['attrs']['postId'] ?? get_the_ID();
 
-		if ( ! post_type_supports( (string) get_post_type( $venue_post_id ), 'gatherpress-venue-information' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $venue_post_id ), Venue::SUPPORT ) ) {
 			return $block_content;
 		}
 
@@ -243,7 +244,7 @@ final class General_Block {
 
 		// Only process if the post type supports RSVP.
 		if (
-			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
+			! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT ) ||
 			! Event::is_viewable( $post_id )
 		) {
 			return $block_content;
@@ -294,7 +295,7 @@ final class General_Block {
 
 		// Only process if the post type supports RSVP.
 		if (
-			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
+			! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT ) ||
 			! Event::is_viewable( $post_id )
 		) {
 			return $block_content;

@@ -237,8 +237,20 @@ abstract class Base {
 			return '';
 		}
 
+		// add_query_arg() with no URL falls back to REQUEST_URI, which is a
+		// path. wp_nonce_url() escapes it and the browser resolves it against
+		// the current directory, so /wp-admin/edit.php became
+		// /wp-admin/wp-admin/edit.php and the dismissal never ran (#2233).
+		// Rebuild the current admin request as an absolute URL instead.
+		$request = isset( $_SERVER['REQUEST_URI'] )
+			? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) )
+			: '';
+		$query   = (string) wp_parse_url( $request, PHP_URL_QUERY );
+		$screen  = basename( (string) wp_parse_url( $request, PHP_URL_PATH ) );
+		$current = admin_url( $screen . ( '' !== $query ? '?' . $query : '' ) );
+
 		return wp_nonce_url(
-			add_query_arg( 'gatherpress_dismiss_notice', $this->get_slug() ),
+			add_query_arg( 'gatherpress_dismiss_notice', $this->get_slug(), $current ),
 			'gatherpress_dismiss_notice_' . $this->get_slug()
 		);
 	}
@@ -397,7 +409,8 @@ abstract class Base {
 
 		return sprintf(
 			'<div style="display:flex;align-items:flex-start;gap:1.25rem;position:relative;">%1$s<div>'
-			. '<p style="margin:0 0 0.375rem;font-size:0.875rem;font-weight:600;color:#1769AA;">%2$s</p>'
+			. '<p style="margin:0 0 0.375rem;font-size:0.875rem;font-weight:600;'
+			. 'color:var(--wp-admin-theme-color, #1769AA);">%2$s</p>'
 			. '<p style="margin:0 0 0.75rem;">%3$s</p>%4$s</div>%5$s</div>',
 			$this->get_mark(),
 			esc_html( $this->get_headline() ),
@@ -456,8 +469,9 @@ abstract class Base {
 	 */
 	protected function get_mark(): string {
 		return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="60" height="60"'
-			. ' aria-hidden="true" focusable="false" style="flex-shrink:0;">'
-			. '<path fill="#1769AA" d="'
+			. ' aria-hidden="true" focusable="false"'
+			. ' style="flex-shrink:0;color:var(--wp-admin-theme-color, #1769AA);">'
+			. '<path fill="currentColor" d="'
 			. 'M125.4,50.8V13.4c0-6.8-5.6-12.4-12.4-12.4H88.1c-6.8,0-12.4,5.6-'
 			. '12.4,12.4v37.3c0,6.8,5.6,12.4,12.4,12.4h24.9C119.8,63.2,125.4,57.6,125.4,50.8zM100.5,13.4c6.8,0'
 			. ',12.4,5.6,12.4,12.4s-5.6,12.4-12.4,12.4s-12.4-5.6-12.4-'

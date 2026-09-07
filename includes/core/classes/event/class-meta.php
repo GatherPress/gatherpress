@@ -86,7 +86,7 @@ final class Meta {
 	 * @return void
 	 */
 	public function register( string $post_type ): void {
-		if ( post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+		if ( post_type_supports( $post_type, Event::SUPPORT ) ) {
 			$this->register_event_date_meta( $post_type );
 		}
 

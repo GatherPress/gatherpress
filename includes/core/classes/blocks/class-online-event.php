@@ -14,6 +14,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Venue;
 use GatherPress\Core\Venue\Setup;
 use WP_Block;
 use WP_Post;
@@ -119,7 +120,7 @@ final class Online_Event {
 		$event_post_type = (string) get_post_type( $post_id );
 
 		// Only render for post types that support online events.
-		if ( ! post_type_supports( $event_post_type, 'gatherpress-online-event' ) ) {
+		if ( ! post_type_supports( $event_post_type, Venue::ONLINE_SUPPORT ) ) {
 			return false;
 		}
 
@@ -148,7 +149,7 @@ final class Online_Event {
 		// Event::is_viewable() does not ask about a password, and a direct
 		// visit to a protected event shows the form rather than the content.
 		return $post instanceof WP_Post
-			&& post_type_supports( $post->post_type, 'gatherpress-event-date' )
+			&& post_type_supports( $post->post_type, Event::SUPPORT )
 			&& Event::is_viewable( $post->ID )
 			&& ! post_password_required( $post );
 	}

@@ -88,7 +88,7 @@ final class Add_To_Calendar {
 
 		// Validate that the post type supports event_date.
 		if (
-			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ||
+			! post_type_supports( (string) get_post_type( $post_id ), Event::SUPPORT ) ||
 			! Event::is_viewable( $post_id )
 		) {
 			return '';
