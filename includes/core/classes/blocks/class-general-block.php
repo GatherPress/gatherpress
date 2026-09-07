@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
+use GatherPress\Core\Tag_Processor;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue;
@@ -37,14 +38,6 @@ final class General_Block {
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
-
-	/**
-	 * Attribute used to carry the parser's decisions to the splice.
-	 *
-	 * @since 0.36.0
-	 * @var string
-	 */
-	const NEW_TAB_ATTRIBUTE = 'data-gatherpress-new-tab';
 
 	/**
 	 * Class on the injected notice, mirrored by the front-end script.
@@ -377,51 +370,55 @@ final class General_Block {
 			return $block_content;
 		}
 
-		$processor = new WP_HTML_Tag_Processor( $block_content );
-		$found     = false;
+		$processor = new Tag_Processor( $block_content );
+		$offsets   = array();
+		$open      = false;
+		$announced = false;
 
-		// The parser decides which anchors qualify, so attribute order and
-		// quoting are its problem rather than a regex's.
-		while ( $processor->next_tag() ) {
-			if (
-				'A' === $processor->get_tag()
-				&& '_blank' === strtolower( (string) $processor->get_attribute( 'target' ) )
-			) {
-				$processor->set_attribute( self::NEW_TAB_ATTRIBUTE, '1' );
-				$found = true;
+		// The parser decides what is a tag and where each one ends, so case,
+		// whitespace, comments and attribute text are its problem rather than
+		// a string search's. Anchors cannot nest, so an opener starts a fresh
+		// candidate and its closer settles it.
+		while ( $processor->next_tag( array( 'tag_closers' => 'visit' ) ) ) {
+			$tag = $processor->get_tag();
+
+			if ( 'A' === $tag && ! $processor->is_tag_closer() ) {
+				$open      = '_blank' === strtolower( (string) $processor->get_attribute( 'target' ) );
+				$announced = false;
 
 				continue;
 			}
 
-			// Authored content could already carry the marker, which would
-			// send the splice below to the wrong element.
-			if ( null !== $processor->get_attribute( self::NEW_TAB_ATTRIBUTE ) ) {
-				$processor->remove_attribute( self::NEW_TAB_ATTRIBUTE );
+			if ( 'A' === $tag ) {
+				if ( $open && ! $announced ) {
+					$offsets[] = $processor->get_token_start();
+				}
+
+				$open = false;
+
+				continue;
+			}
+
+			// Leave an anchor alone when it is already announced.
+			if ( $open && ! $processor->is_tag_closer() && $processor->has_class( self::NEW_TAB_CLASS ) ) {
+				$announced = true;
 			}
 		}
 
-		if ( ! $found ) {
-			return $block_content;
-		}
-
-		return $this->insert_new_tab_notices( $processor->get_updated_html() );
+		return $this->insert_new_tab_notices( $block_content, array_filter( $offsets, 'is_int' ) );
 	}
 
 	/**
-	 * Splice a notice in before each marked anchor's closing tag.
-	 *
-	 * WP_HTML_Tag_Processor sets attributes but cannot insert markup, so the
-	 * marked anchors are closed by hand. Anchors cannot nest, so the next
-	 * `</a>` closes the marked one.
+	 * Splice a notice in at each offset, which is where a closing tag starts.
 	 *
 	 * @since 0.36.0
 	 *
-	 * @param string $html Markup carrying the marker attribute.
+	 * @param string $html    Rendered block markup.
+	 * @param int[]  $offsets Byte offsets of the closers to announce before.
 	 *
-	 * @return string Markup with the notices in place and the markers gone.
+	 * @return string Markup with the notices in place.
 	 */
-	private function insert_new_tab_notices( string $html ): string {
-		$marker = sprintf( ' %s="1"', self::NEW_TAB_ATTRIBUTE );
+	private function insert_new_tab_notices( string $html, array $offsets ): string {
 		// The space sits in the markup rather than the string, as core does, so
 		// the label and the notice cannot run together in the accessible name
 		// and translators have no leading whitespace to preserve.
@@ -432,29 +429,11 @@ final class General_Block {
 			esc_html__( '(opens in a new tab)', 'gatherpress' )
 		);
 
-		$output = '';
-		$offset = 0;
-
-		$marked = strpos( $html, $marker );
-
-		while ( false !== $marked ) {
-			$close = strpos( $html, '</a>', $marked );
-
-			if ( false === $close ) {
-				break;
-			}
-
-			$output .= substr( $html, $offset, $close - $offset );
-
-			// Leave an anchor alone when it is already announced.
-			if ( ! str_contains( substr( $html, $marked, $close - $marked ), self::NEW_TAB_CLASS ) ) {
-				$output .= $notice;
-			}
-
-			$offset = $close;
-			$marked = strpos( $html, $marker, $offset );
+		// Last first, so each splice leaves the offsets before it untouched.
+		foreach ( array_reverse( $offsets ) as $offset ) {
+			$html = substr( $html, 0, $offset ) . $notice . substr( $html, $offset );
 		}
 
-		return str_replace( $marker, '', $output . substr( $html, $offset ) );
+		return $html;
 	}
 }

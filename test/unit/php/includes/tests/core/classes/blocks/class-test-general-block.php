@@ -1222,48 +1222,64 @@ class Test_General_Block extends Base {
 	 */
 	public function data_new_tab_links(): array {
 		return array(
-			'a new-tab link is announced'         => array(
+			'a new-tab link is announced'           => array(
 				'<a href="/x" target="_blank">Site</a>',
 				1,
 			),
-			'a same-tab link is left alone'       => array(
+			'a same-tab link is left alone'         => array(
 				'<a href="/x">Site</a>',
 				0,
 			),
-			'an unquoted target still counts'     => array(
+			'an unquoted target still counts'       => array(
 				'<a href="/x" target=_blank>Site</a>',
 				1,
 			),
-			'attribute order does not matter'     => array(
+			'attribute order does not matter'       => array(
 				'<a target="_blank" rel="noopener" href="/x">Site</a>',
 				1,
 			),
-			'only the new-tab link is announced'  => array(
+			'only the new-tab link is announced'    => array(
 				'<a href="/a" target="_blank">A</a><a href="/b">B</a>',
 				1,
 			),
-			'every new-tab link is announced'     => array(
+			'every new-tab link is announced'       => array(
 				'<a href="/a" target="_blank">A</a><a href="/b" target="_blank">B</a>',
 				2,
 			),
-			'the word in link text is not a tag'  => array(
+			'the word in link text is not a tag'    => array(
 				'<a href="/x">say _blank</a>',
 				0,
 			),
-			'a link wrapping only an image'       => array(
+			'a link wrapping only an image'         => array(
 				'<a href="/x" target="_blank"><img src="/m.png" alt="Map"></a>',
 				1,
 			),
-			'an unclosed anchor is left as it is' => array(
+			'an unclosed anchor is left as it is'   => array(
 				'<a href="/x" target="_blank">Site',
 				0,
 			),
-			'an uppercase target still counts'    => array(
+			'an uppercase target still counts'      => array(
 				'<a href="/x" target="_BLANK">Site</a>',
 				1,
 			),
-			'a mixed-case target still counts'    => array(
+			'a mixed-case target still counts'      => array(
 				'<a href="/x" target="_Blank">Site</a>',
+				1,
+			),
+			'an uppercase closing tag is found'     => array(
+				'<A HREF="/x" TARGET="_blank">Site</A>',
+				1,
+			),
+			'a closing tag with a space is found'   => array(
+				'<a href="/x" target="_blank">Site</a >',
+				1,
+			),
+			'a closing tag in a comment is text'    => array(
+				'<a href="/x" target="_blank"><!-- </a> -->Site</a>',
+				1,
+			),
+			'a closing tag in an attribute is text' => array(
+				'<a href="/x" target="_blank"><img alt="</a>" src="/m.png">Site</a>',
 				1,
 			),
 		);
@@ -1295,11 +1311,6 @@ class Test_General_Block extends Base {
 			$expected,
 			substr_count( $result, General_Block::NEW_TAB_CLASS ),
 			'Failed to assert the expected number of new-tab notices.'
-		);
-		$this->assertStringNotContainsString(
-			General_Block::NEW_TAB_ATTRIBUTE,
-			$result,
-			'Failed to assert the marker attribute was removed.'
 		);
 	}
 
@@ -1454,12 +1465,8 @@ class Test_General_Block extends Base {
 	}
 
 	/**
-	 * A marker left in authored content does not misplace a notice.
-	 *
-	 * The marker is private to the two passes below, but nothing stops a
-	 * block's content carrying the same attribute. It is cleared from
-	 * anything that is not a qualifying link so the splice cannot land on
-	 * the wrong element.
+	 * The notice lands before the closer the parser found, not before the
+	 * first `</a>` a string search would hit.
 	 *
 	 * @since 0.36.0
 	 *
@@ -1468,30 +1475,36 @@ class Test_General_Block extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_announce_new_tab_links_ignores_a_marker_in_the_content(): void {
+	public function test_announce_new_tab_links_splices_before_the_real_closer(): void {
 		$instance = General_Block::get_instance();
-		$result   = $instance->announce_new_tab_links(
-			sprintf(
-				'<a href="/same" %s="1">Same tab</a><a href="/new" target="_blank">New tab</a>',
-				General_Block::NEW_TAB_ATTRIBUTE
-			),
-			array( 'blockName' => 'gatherpress/venue-detail' )
+		$block    = array( 'blockName' => 'gatherpress/venue-detail' );
+		$notice   = sprintf(
+			'<span class="screen-reader-text %s %s"> (opens in a new tab)</span>',
+			General_Block::SCREEN_READER_CLASS,
+			General_Block::NEW_TAB_CLASS
 		);
 
 		$this->assertSame(
-			1,
-			substr_count( $result, General_Block::NEW_TAB_CLASS ),
-			'Failed to assert only the new-tab link is announced.'
+			'<A HREF="/x" TARGET="_blank">Site' . $notice . '</A>',
+			$instance->announce_new_tab_links( '<A HREF="/x" TARGET="_blank">Site</A>', $block ),
+			'Failed to assert an uppercase closer is announced in place.'
 		);
-		$this->assertStringContainsString(
-			'New tab<span',
-			$result,
-			'Failed to assert the notice landed on the new-tab link.'
+		$this->assertSame(
+			'<a href="/x" target="_blank">Site' . $notice . '</a >',
+			$instance->announce_new_tab_links( '<a href="/x" target="_blank">Site</a >', $block ),
+			'Failed to assert a closer with trailing whitespace is announced in place.'
 		);
-		$this->assertStringNotContainsString(
-			General_Block::NEW_TAB_ATTRIBUTE,
-			$result,
-			'Failed to assert no marker attribute survives.'
+		$this->assertSame(
+			'<a href="/x" target="_blank"><!-- </a> -->Site' . $notice . '</a>',
+			$instance->announce_new_tab_links( '<a href="/x" target="_blank"><!-- </a> -->Site</a>', $block ),
+			'Failed to assert a closer inside a comment is passed over.'
+		);
+		$decoy = '<a href="/x" target="_blank"><img alt="</a>" src="/m.png">Site';
+
+		$this->assertSame(
+			$decoy . $notice . '</a>',
+			$instance->announce_new_tab_links( $decoy . '</a>', $block ),
+			'Failed to assert a closer inside an attribute is passed over.'
 		);
 	}
 }
