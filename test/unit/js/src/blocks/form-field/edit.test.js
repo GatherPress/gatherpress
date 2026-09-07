@@ -48,9 +48,6 @@ describe( 'Form Field Edit autocomplete help', () => {
 		const { getByRole } = renderEdit();
 		const link = getByRole( 'link', { name: /Learn more/ } );
 
-		// Core's controls warn about their 36px default size; not this block's concern here.
-		expect( console ).toHaveWarned();
-
 		expect( link.getAttribute( 'href' ) ).toBe(
 			'https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/autocomplete'
 		);
