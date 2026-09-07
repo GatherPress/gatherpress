@@ -119,8 +119,8 @@ final class Rest_Api {
 				'schema'          => array(
 					'description' => __( 'The operational status of the event.', 'gatherpress' ),
 					'type'        => 'string',
-					'enum'        => Event_Status::slugs(),
-					'default'     => Event_Status::SCHEDULED,
+					'enum'        => Event_Status::slugs( Event::POST_TYPE ),
+					'default'     => Event_Status::default_slug( Event::POST_TYPE ),
 					'context'     => array( 'view', 'edit' ),
 				),
 			)

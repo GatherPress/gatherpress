@@ -15,7 +15,7 @@ import { useSelect } from '@wordpress/data';
 /**
  * Internal dependencies
  */
-import { getStatusLabel } from '../../helpers/event-status';
+import { getStatusColor, getStatusLabel } from '../../helpers/event-status';
 
 /**
  * Edit component for the GatherPress Event Status block.
@@ -56,8 +56,12 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		[ postId, context.postType ]
 	);
 
+	const color = getStatusColor( status );
 	const blockProps = useBlockProps( {
 		className: `gatherpress-event-status gatherpress-event-status--is-${ status }`,
+		// The color travels with the status, so the preview matches whatever
+		// the front end will render, including a status a site registered.
+		style: color ? { '--gatherpress-status-color': color } : undefined,
 	} );
 
 	const label = getStatusLabel( status );

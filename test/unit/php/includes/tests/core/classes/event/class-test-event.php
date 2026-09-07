@@ -2444,11 +2444,9 @@ class Test_Event extends Base {
 	}
 
 	/**
-	 * Coverage for get_status, is_cancelled, and is_postponed methods.
+	 * Coverage for get_status.
 	 *
 	 * @covers ::get_status
-	 * @covers ::is_canceled
-	 * @covers ::is_postponed
 	 *
 	 * @return void
 	 */
@@ -2457,33 +2455,27 @@ class Test_Event extends Base {
 		$event = new Event( $post->ID );
 
 		// Default status is scheduled.
-		$this->assertSame( Event::STATUS_SCHEDULED, $event->get_status() );
-		$this->assertFalse( $event->is_canceled() );
-		$this->assertFalse( $event->is_postponed() );
+		$this->assertSame( 'scheduled', $event->get_status() );
 
-		// Set cancelled status.
-		$event->set_status( 'cancelled' );
-		$this->assertSame( Event::STATUS_CANCELED, $event->get_status() );
-		$this->assertTrue( $event->is_canceled() );
-		$this->assertFalse( $event->is_postponed() );
+		// Set canceled status.
+		$event->set_status( 'canceled' );
+		$this->assertSame( 'canceled', $event->get_status() );
 
 		// Set postponed status.
 		$event->set_status( 'postponed' );
-		$this->assertSame( Event::STATUS_POSTPONED, $event->get_status() );
-		$this->assertFalse( $event->is_canceled() );
-		$this->assertTrue( $event->is_postponed() );
+		$this->assertSame( 'postponed', $event->get_status() );
 
 		// Invalid status falls back to scheduled.
 		wp_set_object_terms( $post->ID, 'invalid-status', Event::TAXONOMY_STATUS );
-		$this->assertSame( Event::STATUS_SCHEDULED, $event->get_status() );
+		$this->assertSame( 'scheduled', $event->get_status() );
 
 		// An event with no status terms falls back to scheduled.
 		wp_delete_object_term_relationships( $post->ID, Event::TAXONOMY_STATUS );
-		$this->assertSame( Event::STATUS_SCHEDULED, $event->get_status() );
+		$this->assertSame( 'scheduled', $event->get_status() );
 
 		// Non-existent event falls back to scheduled.
 		$empty_event = new Event( 0 );
-		$this->assertSame( Event::STATUS_SCHEDULED, $empty_event->get_status() );
+		$this->assertSame( 'scheduled', $empty_event->get_status() );
 	}
 
 	/**
@@ -2499,23 +2491,23 @@ class Test_Event extends Base {
 		$event = new Event( $post->ID );
 
 		$this->assertTrue(
-			$event->set_status( Event::STATUS_CANCELED ),
+			$event->set_status( 'canceled' ),
 			'Failed to assert a valid status is stored.'
 		);
 		$this->assertSame(
-			Event::STATUS_CANCELED,
+			'canceled',
 			$event->get_status(),
 			'Failed to assert the stored status reads back.'
 		);
 
 		// A second status replaces the first rather than adding to it, which is
 		// what keeps the statuses mutually exclusive.
-		$event->set_status( Event::STATUS_POSTPONED );
+		$event->set_status( 'postponed' );
 
 		$terms = wp_get_object_terms( $post->ID, Event::TAXONOMY_STATUS, array( 'fields' => 'slugs' ) );
 
 		$this->assertSame(
-			array( Event::STATUS_POSTPONED ),
+			array( 'postponed' ),
 			$terms,
 			'Failed to assert a new status replaces the previous term.'
 		);
@@ -2525,7 +2517,7 @@ class Test_Event extends Base {
 			'Failed to assert an unknown status is refused.'
 		);
 		$this->assertSame(
-			Event::STATUS_POSTPONED,
+			'postponed',
 			$event->get_status(),
 			'Failed to assert a refused status leaves the stored one alone.'
 		);
@@ -2536,7 +2528,7 @@ class Test_Event extends Base {
 		$non_event = $this->mock->post( array( 'post_type' => 'post' ) )->get();
 
 		$this->assertFalse(
-			( new Event( $non_event->ID ) )->set_status( Event::STATUS_CANCELED ),
+			( new Event( $non_event->ID ) )->set_status( 'canceled' ),
 			'Failed to assert a post that is not an event refuses a status.'
 		);
 	}
@@ -2552,7 +2544,7 @@ class Test_Event extends Base {
 		$event = new Event( 0 );
 
 		$this->assertSame(
-			Event::STATUS_SCHEDULED,
+			'scheduled',
 			$event->get_status(),
 			'Failed to assert an event with no post reports the scheduled status.'
 		);
@@ -2571,7 +2563,7 @@ class Test_Event extends Base {
 
 		$this->assertSame( 'Scheduled', $event->get_status_label() );
 
-		$event->set_status( 'cancelled' );
+		$event->set_status( 'canceled' );
 		$this->assertSame( 'Canceled', $event->get_status_label() );
 
 		$event->set_status( 'postponed' );
@@ -2597,7 +2589,7 @@ class Test_Event extends Base {
 
 		$this->assertSame( 'EventScheduled', $event->get_schema_event_status() );
 
-		$event->set_status( 'cancelled' );
+		$event->set_status( 'canceled' );
 		$this->assertSame( 'EventCancelled', $event->get_schema_event_status() );
 
 		$event->set_status( 'postponed' );
@@ -2623,7 +2615,7 @@ class Test_Event extends Base {
 
 		$this->assertSame( 'CONFIRMED', $event->get_ical_status() );
 
-		$event->set_status( 'cancelled' );
+		$event->set_status( 'canceled' );
 		$this->assertSame( 'CANCELLED', $event->get_ical_status() );
 
 		$event->set_status( 'postponed' );

@@ -1,9 +1,10 @@
-// Each status sets one color. The badge derives its fill and border from it
-// with color-mix, the way the tooltip format does, so a status is a single
-// declaration rather than a palette to keep in step.
+// A status carries its own color, which the block sets as a custom property
+// on the wrapper, so a status a site registers looks like its own without
+// touching this file. The badge derives its fill and border from that one
+// value with color-mix, the way the tooltip format does.
 .wp-block-gatherpress-event-status,
 .gatherpress-event-status-preview {
-	--gatherpress-status-color: #137333;
+	--gatherpress-status-color: currentcolor;
 
 	display: inline-flex;
 	align-items: center;
@@ -34,30 +35,13 @@
 		}
 	}
 
-	// Only a status that changes someone's plans asks for attention. A
-	// rescheduled event still happens, so it states itself and stays still.
-	&.gatherpress-event-status--is-cancelled,
-	&.gatherpress-event-status--is-postponed,
-	&.gatherpress-event-status--is-moved {
+	// A status that is not the default is a change of plan, so its dot asks
+	// to be noticed. The block adds this class rather than the stylesheet
+	// naming statuses it cannot know.
+	&.gatherpress-event-status--is-changed {
 		.gatherpress-event-status__badge::before {
 			animation: gatherpress-pulse-ring 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
 		}
-	}
-
-	&.gatherpress-event-status--is-cancelled {
-		--gatherpress-status-color: #c5221f;
-	}
-
-	&.gatherpress-event-status--is-postponed {
-		--gatherpress-status-color: #b06000;
-	}
-
-	&.gatherpress-event-status--is-rescheduled {
-		--gatherpress-status-color: #1a73e8;
-	}
-
-	&.gatherpress-event-status--is-moved {
-		--gatherpress-status-color: #7627bb;
 	}
 
 	&.is-style-notice {

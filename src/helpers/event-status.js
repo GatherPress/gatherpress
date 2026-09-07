@@ -83,3 +83,16 @@ export function getStatusOptions() {
 		value,
 	} ) );
 }
+
+/**
+ * The color a status is shown in.
+ *
+ * @since 0.36.0
+ *
+ * @param {string} slug The status slug.
+ *
+ * @return {string} The color, or an empty string when there is none to use.
+ */
+export function getStatusColor( slug ) {
+	return getStatus( slug ).color || '';
+}

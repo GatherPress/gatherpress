@@ -8,6 +8,7 @@
 
 namespace GatherPress\Tests\Core\Event;
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Event\Status;
 use GatherPress\Tests\Base;
 
@@ -33,11 +34,11 @@ class Test_Status extends Base {
 
 		$this->assertSame(
 			array(
-				Status::SCHEDULED,
-				Status::CANCELED,
-				Status::POSTPONED,
-				Status::RESCHEDULED,
-				Status::MOVED,
+				'scheduled',
+				'canceled',
+				'postponed',
+				'rescheduled',
+				'moved',
 			),
 			Status::slugs(),
 			'Failed to assert the default statuses are offered in order.'
@@ -69,16 +70,16 @@ class Test_Status extends Base {
 	 * @return void
 	 */
 	public function test_a_known_status_reports_itself(): void {
-		$this->assertTrue( Status::exists( Status::CANCELED ), 'Failed to assert a default status exists.' );
-		$this->assertSame( 'Canceled', Status::label( Status::CANCELED ) );
-		$this->assertSame( 'EventCancelled', Status::schema( Status::CANCELED ) );
-		$this->assertSame( 'CANCELLED', Status::ical( Status::CANCELED ) );
+		$this->assertTrue( Status::exists( 'canceled' ), 'Failed to assert a default status exists.' );
+		$this->assertSame( 'Canceled', Status::label( 'canceled' ) );
+		$this->assertSame( 'EventCancelled', Status::schema( 'canceled' ) );
+		$this->assertSame( 'CANCELLED', Status::ical( 'canceled' ) );
 
 		// An event that has moved is still going ahead, so it stays confirmed
 		// and the new location speaks for itself.
-		$this->assertSame( 'Moved', Status::label( Status::MOVED ) );
-		$this->assertSame( 'EventScheduled', Status::schema( Status::MOVED ) );
-		$this->assertSame( 'CONFIRMED', Status::ical( Status::MOVED ) );
+		$this->assertSame( 'Moved', Status::label( 'moved' ) );
+		$this->assertSame( 'EventScheduled', Status::schema( 'moved' ) );
+		$this->assertSame( 'CONFIRMED', Status::ical( 'moved' ) );
 	}
 
 	/**
@@ -163,24 +164,120 @@ class Test_Status extends Base {
 	}
 
 	/**
-	 * Scheduled is what an event with no status of its own reports, so it
-	 * survives a filter that drops it.
+	 * A site can take a status away as readily as it can add one.
 	 *
 	 * @since 0.36.0
 	 *
 	 * @covers ::all
+	 * @covers ::slugs
+	 * @covers ::default_slug
 	 *
 	 * @return void
 	 */
-	public function test_scheduled_cannot_be_removed(): void {
-		$callback = static function (): array {
-			return array();
+	public function test_a_site_can_remove_a_status(): void {
+		$callback = static function ( array $statuses ): array {
+			unset( $statuses['scheduled'] );
+
+			return $statuses;
 		};
 
 		add_filter( 'gatherpress_event_statuses', $callback );
 
-		$this->assertTrue( Status::exists( Status::SCHEDULED ), 'Failed to assert scheduled survives.' );
-		$this->assertSame( 'Scheduled', Status::label( Status::SCHEDULED ) );
+		$this->assertFalse( Status::exists( 'scheduled' ), 'Failed to assert a status can be removed.' );
+		$this->assertSame(
+			'canceled',
+			Status::default_slug(),
+			'Failed to assert the first status left becomes the default.'
+		);
+
+		remove_filter( 'gatherpress_event_statuses', $callback );
+	}
+
+	/**
+	 * A status can name the post type support it depends on.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::all
+	 * @covers ::exists
+	 *
+	 * @return void
+	 */
+	public function test_a_status_can_depend_on_a_post_type_support(): void {
+		$this->assertTrue(
+			Status::exists( 'moved', Event::POST_TYPE ),
+			'Failed to assert an event that can say where it is may have moved.'
+		);
+		$this->assertFalse(
+			Status::exists( 'moved', 'post' ),
+			'Failed to assert a post type with no venue or online support is not offered moved.'
+		);
+		$this->assertTrue(
+			Status::exists( 'canceled', 'post' ),
+			'Failed to assert a status that names no support is offered everywhere.'
+		);
+	}
+
+	/**
+	 * The filter has the last word, so a site can put back a status its post
+	 * type would not otherwise be offered.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::all
+	 * @covers ::exists
+	 *
+	 * @return void
+	 */
+	public function test_the_filter_overrides_the_support_gate(): void {
+		$callback = static function ( array $statuses, string $post_type ): array {
+			if ( 'post' === $post_type ) {
+				$statuses['moved'] = array( 'label' => 'Moved' );
+			}
+
+			return $statuses;
+		};
+
+		add_filter( 'gatherpress_event_statuses', $callback, 10, 2 );
+
+		$this->assertTrue(
+			Status::exists( 'moved', 'post' ),
+			'Failed to assert the filter can put back a gated status.'
+		);
+
+		remove_filter( 'gatherpress_event_statuses', $callback, 10 );
+	}
+
+	/**
+	 * A status is shown in its own color, and anything that could break out
+	 * of a style attribute is refused.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::color
+	 *
+	 * @return void
+	 */
+	public function test_color_accepts_only_what_is_safe_to_render(): void {
+		$this->assertSame( '#c5221f', Status::color( 'canceled' ) );
+
+		$callback = static function ( array $statuses ): array {
+			$statuses['token']  = array( 'color' => 'var(--wp--preset--color--accent-1, #000)' );
+			$statuses['broken'] = array( 'color' => 'red;} body { display: none' );
+			$statuses['named']  = array( 'color' => 'rebeccapurple' );
+
+			return $statuses;
+		};
+
+		add_filter( 'gatherpress_event_statuses', $callback );
+
+		$this->assertSame(
+			'var(--wp--preset--color--accent-1, #000)',
+			Status::color( 'token' ),
+			'Failed to assert a custom property reference is allowed.'
+		);
+		$this->assertSame( '', Status::color( 'broken' ), 'Failed to assert an escape attempt is refused.' );
+		$this->assertSame( '', Status::color( 'named' ), 'Failed to assert an unrecognized form is refused.' );
 
 		remove_filter( 'gatherpress_event_statuses', $callback );
 	}

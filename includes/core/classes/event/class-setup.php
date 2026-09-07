@@ -128,7 +128,7 @@ final class Setup {
 	 * Registers the taxonomy holding an event's operational status.
 	 *
 	 * Hidden the way the RSVP taxonomies are: there is no useful
-	 * /event-status/cancelled/ archive, the taxonomy exists so events can be
+	 * /event-status/canceled/ archive, the taxonomy exists so events can be
 	 * filtered by status through tax_query the same way Event\Query already
 	 * filters by Topic and Venue. Kept out of REST on purpose: the editor writes
 	 * the status through the gatherpress_status REST field registered in
@@ -157,7 +157,7 @@ final class Setup {
 				// an IN query rather than a NOT EXISTS.
 				'default_term'       => array(
 					'name' => 'Scheduled',
-					'slug' => Event::STATUS_SCHEDULED,
+					'slug' => Status::default_slug( Event::POST_TYPE ),
 				),
 			)
 		);
@@ -221,7 +221,7 @@ final class Setup {
 		// The editor offers and labels the same statuses PHP publishes, so the
 		// list is stated once and a site that registers its own gets it in
 		// both places.
-		$settings['gatherpress']['config']['eventStatuses'] = Status::all();
+		$settings['gatherpress']['config']['eventStatuses'] = Status::all( Event::POST_TYPE );
 
 		return $settings;
 	}

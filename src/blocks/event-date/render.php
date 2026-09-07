@@ -12,6 +12,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Blocks\Setup;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status;
 
 $gatherpress_block_instance = Setup::get_instance();
 $gatherpress_post_id        = $gatherpress_block_instance->get_post_id( $block->parsed_block );
@@ -37,7 +38,7 @@ if ( ! empty( $attributes['isLink'] ) ) {
 
 $gatherpress_status  = $gatherpress_event->get_status();
 $gatherpress_classes = array();
-if ( Event::STATUS_SCHEDULED !== $gatherpress_status ) {
+if ( Status::default_slug( (string) get_post_type( $gatherpress_post_id ) ) !== $gatherpress_status ) {
 	$gatherpress_classes[] = sprintf( 'gatherpress-event-date--is-%s', sanitize_html_class( $gatherpress_status ) );
 }
 

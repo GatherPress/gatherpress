@@ -124,49 +124,6 @@ class Event {
 	 */
 	const TEMPLATE_PATTERN = 'gatherpress/event-template';
 
-	/**
-	 * Status constant for a scheduled event.
-	 *
-	 * The vocabulary itself lives in Status, which a site can extend. These
-	 * name the built-in slugs so callers do not repeat string literals.
-	 *
-	 * @since 0.36.0
-	 * @var string
-	 */
-	const STATUS_SCHEDULED = Status::SCHEDULED;
-
-	/**
-	 * Status constant for a canceled event.
-	 *
-	 * @since 0.36.0
-	 * @var string
-	 */
-	const STATUS_CANCELED = Status::CANCELED;
-
-	/**
-	 * Status constant for a postponed event.
-	 *
-	 * @since 0.36.0
-	 * @var string
-	 */
-	const STATUS_POSTPONED = Status::POSTPONED;
-
-	/**
-	 * Status constant for a rescheduled event.
-	 *
-	 * @since 0.36.0
-	 * @var string
-	 */
-	const STATUS_RESCHEDULED = Status::RESCHEDULED;
-
-	/**
-	 * Status constant for an event that has moved.
-	 *
-	 * @since 0.36.0
-	 * @var string
-	 */
-	const STATUS_MOVED = Status::MOVED;
-
 	const TAXONOMY_STATUS = '_gatherpress_event_status';
 
 
@@ -653,21 +610,22 @@ class Event {
 	 */
 	public function get_status(): string {
 		if ( ! $this->post ) {
-			return self::STATUS_SCHEDULED;
+			return Status::default_slug();
 		}
 
 		// An event carries the default term from register_taxonomy() once it has
 		// been saved, but one stored before this taxonomy existed carries none,
 		// and default_term only applies on insert. No term means scheduled.
-		$terms = get_the_terms( $this->post->ID, self::TAXONOMY_STATUS );
+		$post_type = (string) $this->post->post_type;
+		$terms     = get_the_terms( $this->post->ID, self::TAXONOMY_STATUS );
 
 		if ( ! is_array( $terms ) || empty( $terms ) ) {
-			return self::STATUS_SCHEDULED;
+			return Status::default_slug( $post_type );
 		}
 
 		$status = (string) $terms[0]->slug;
 
-		return Status::exists( $status ) ? $status : self::STATUS_SCHEDULED;
+		return Status::exists( $status, $post_type ) ? $status : Status::default_slug( $post_type );
 	}
 
 	/**
@@ -680,7 +638,7 @@ class Event {
 	 * @return bool True when the status was stored.
 	 */
 	public function set_status( string $status ): bool {
-		if ( ! $this->post || ! Status::exists( $status ) ) {
+		if ( ! $this->post || ! Status::exists( $status, (string) $this->post->post_type ) ) {
 			return false;
 		}
 
@@ -697,28 +655,6 @@ class Event {
 		// ignores an update whose sequence has not advanced. Touching the post
 		// is what tells a subscriber that a cancellation actually happened.
 		return ! is_wp_error( wp_update_post( array( 'ID' => $this->post->ID ), true ) );
-	}
-
-	/**
-	 * Whether this event is canceled.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @return bool True when the event is canceled.
-	 */
-	public function is_canceled(): bool {
-		return self::STATUS_CANCELED === $this->get_status();
-	}
-
-	/**
-	 * Whether this event is postponed.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @return bool True when the event is postponed.
-	 */
-	public function is_postponed(): bool {
-		return self::STATUS_POSTPONED === $this->get_status();
 	}
 
 	/**

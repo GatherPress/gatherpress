@@ -26,7 +26,7 @@ const mockStatuses = {
 		label: 'Scheduled',
 		description: 'Event is planned and confirmed to take place.',
 	},
-	cancelled: { label: 'Canceled', description: 'Event will not take place.' },
+	canceled: { label: 'Canceled', description: 'Event will not take place.' },
 	postponed: { label: 'Postponed', description: 'Event is delayed.' },
 	rescheduled: {
 		label: 'Rescheduled',
@@ -89,7 +89,7 @@ describe( 'EventStatus block Edit component', () => {
 	it( 'renders the status badge with canceled status', () => {
 		useSelect.mockImplementation( ( callback ) =>
 			callback( () => ( {
-				getEditedPostAttribute: () => 'cancelled',
+				getEditedPostAttribute: () => 'canceled',
 			} ) )
 		);
 

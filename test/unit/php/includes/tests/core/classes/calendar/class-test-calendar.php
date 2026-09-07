@@ -1098,7 +1098,7 @@ class Test_Calendar extends Base {
 			'Failed to assert a scheduled event is published as confirmed.'
 		);
 
-		( new Event( $event_id ) )->set_status( Event::STATUS_CANCELED );
+		( new Event( $event_id ) )->set_status( 'canceled' );
 
 		$after = ( new Calendar( $event_id ) )->get_ical_event_string();
 

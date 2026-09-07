@@ -15,60 +15,20 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * Class Status.
  *
  * One place that says what statuses exist and what each one means, so PHP,
- * the editor and the calendar all read the same list rather than keeping
- * their own copies in step.
+ * the editor, the stylesheet and the calendar all read the same list rather
+ * than keeping their own copies in step.
  *
- * The defaults are the whole of Schema.org's EventStatusType vocabulary, with
- * `moved` generalized: an event can move to a new venue as readily as it can
- * move online, and where it moved to is the location's business rather than
- * the status's.
+ * Nothing here is fixed. The list below is a starting point a site can add
+ * to, take from, or replace outright through `gatherpress_event_statuses`,
+ * so no status is named in code that would have to change alongside it.
+ *
+ * The starting point is the whole of Schema.org's EventStatusType vocabulary,
+ * with `moved` generalized: an event can move to a new venue as readily as it
+ * can move online, and where it went is the location's business.
  *
  * @since 0.36.0
  */
 final class Status {
-	/**
-	 * Status of an event that is going ahead as planned.
-	 *
-	 * @since 0.36.0
-	 * @var string
-	 */
-	const SCHEDULED = 'scheduled';
-
-	/**
-	 * Status of an event that will not take place.
-	 *
-	 * The slug keeps the doubled letter that Schema.org and RFC 5545 both
-	 * use, so what is stored matches what is published.
-	 *
-	 * @since 0.36.0
-	 * @var string
-	 */
-	const CANCELED = 'cancelled';
-
-	/**
-	 * Status of an event delayed to a date not yet decided.
-	 *
-	 * @since 0.36.0
-	 * @var string
-	 */
-	const POSTPONED = 'postponed';
-
-	/**
-	 * Status of an event whose date or time has changed.
-	 *
-	 * @since 0.36.0
-	 * @var string
-	 */
-	const RESCHEDULED = 'rescheduled';
-
-	/**
-	 * Status of an event that is happening somewhere else than announced.
-	 *
-	 * @since 0.36.0
-	 * @var string
-	 */
-	const MOVED = 'moved';
-
 	/**
 	 * Schema.org value published for a status that names none of its own.
 	 *
@@ -88,87 +48,116 @@ final class Status {
 	/**
 	 * Every status an event can be in, keyed by the slug that is stored.
 	 *
-	 * Each entry carries the words people read and the values the standards
-	 * expect, so adding a status is one array entry rather than an edit in
-	 * four places.
+	 * Each entry carries the words people read, the color it is shown in and
+	 * the values the standards expect, so a status is one array entry rather
+	 * than an edit in four places.
 	 *
 	 * @since 0.36.0
 	 *
-	 * @return array<string, array<string, string>> The statuses, keyed by slug.
+	 * A status can name the post type support it depends on, so one that only
+	 * makes sense for events that can be held online is not offered on a post
+	 * type that cannot.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $post_type Post type to offer statuses for, or empty for all of them.
+	 *
+	 * @return array<string, array<string, mixed>> The statuses, keyed by slug.
 	 */
-	public static function all(): array {
+	public static function all( string $post_type = '' ): array {
 		$statuses = array(
-			self::SCHEDULED   => array(
+			'scheduled'   => array(
 				'label'       => __( 'Scheduled', 'gatherpress' ),
 				'description' => __( 'Event is planned and confirmed to take place.', 'gatherpress' ),
+				'color'       => '#137333',
 				'schema'      => 'EventScheduled',
 				'ical'        => 'CONFIRMED',
 			),
-			self::CANCELED    => array(
+			'canceled'   => array(
 				'label'       => __( 'Canceled', 'gatherpress' ),
 				'description' => __(
 					'Event will not take place. Calendar feeds will mark it as canceled.',
 					'gatherpress'
 				),
+				'color'       => '#c5221f',
 				'schema'      => 'EventCancelled',
 				'ical'        => 'CANCELLED',
 			),
-			self::POSTPONED   => array(
+			'postponed'   => array(
 				'label'       => __( 'Postponed', 'gatherpress' ),
 				'description' => __( 'Event is delayed to a future unconfirmed date.', 'gatherpress' ),
+				'color'       => '#b06000',
 				'schema'      => 'EventPostponed',
 				'ical'        => 'TENTATIVE',
 			),
-			self::RESCHEDULED => array(
+			'rescheduled' => array(
 				'label'       => __( 'Rescheduled', 'gatherpress' ),
 				'description' => __( 'Event date and time have been changed.', 'gatherpress' ),
+				'color'       => '#1a73e8',
 				'schema'      => 'EventRescheduled',
 				'ical'        => 'TENTATIVE',
 			),
-			self::MOVED       => array(
+			'moved'       => array(
 				'label'       => __( 'Moved', 'gatherpress' ),
 				'description' => __(
 					'Event is taking place somewhere else, online or at another venue.',
 					'gatherpress'
 				),
+				'color'       => '#7627bb',
 				'schema'      => 'EventScheduled',
 				'ical'        => 'CONFIRMED',
+				// An event can only have moved if it can say where it is.
+				'supports'    => array( 'gatherpress-venue', 'gatherpress-online-event' ),
 			),
 		);
+
+		if ( '' !== $post_type ) {
+			$statuses = array_filter(
+				$statuses,
+				static function ( $status ) use ( $post_type ): bool {
+					$supports = (array) ( $status['supports'] ?? array() );
+
+					if ( empty( $supports ) ) {
+						return true;
+					}
+
+					foreach ( $supports as $support ) {
+						if ( post_type_supports( $post_type, (string) $support ) ) {
+							return true;
+						}
+					}
+
+					return false;
+				}
+			);
+		}
 
 		/**
 		 * Filters the operational statuses an event can be in.
 		 *
-		 * Each status is keyed by the slug stored against the event and holds
-		 * the `label` and `description` people read, plus the `schema`
-		 * (Schema.org EventStatusType) and `ical` (RFC 5545 STATUS) values
-		 * published for it. A status that omits either falls back to
-		 * `EventScheduled` and `CONFIRMED`, which say the event is going
-		 * ahead, so an unrecognized status never tells a calendar client
-		 * something untrue.
+		 * Each status is keyed by the slug stored against the event. An entry
+		 * holds the `label` and `description` people read, the `color` it is
+		 * shown in, and the `schema` (Schema.org EventStatusType) and `ical`
+		 * (RFC 5545 STATUS) values published for it. Anything omitted falls
+		 * back to something that says the event is going ahead, so a status
+		 * never tells a calendar client something untrue.
 		 *
-		 * Removing `scheduled` is not possible: it is what an event with no
-		 * status of its own reports.
+		 * Statuses can be added, removed or replaced, and this is the last
+		 * word: the built-in `supports` conditions have already been applied
+		 * against `$post_type` by the time this runs, so a status kept off a
+		 * post type can be put back, and one that does not suit a post type
+		 * can be taken away. `$post_type` is empty when the whole vocabulary
+		 * is being asked for rather than one post type's share of it.
+		 *
+		 * The first status in the list is what an event with no status of its
+		 * own reports, so order matters.
 		 *
 		 * @since 0.36.0
 		 *
-		 * @param array<string, array<string, string>> $statuses The statuses, keyed by slug.
+		 * @param array<string, array<string, mixed>> $statuses  The statuses, keyed by slug.
+		 * @param string                              $post_type Post type they are offered for, or empty for all.
 		 */
-		$statuses = (array) apply_filters( 'gatherpress_event_statuses', $statuses );
-
-		if ( ! isset( $statuses[ self::SCHEDULED ] ) ) {
-			$statuses[ self::SCHEDULED ] = array(
-				'label'       => __( 'Scheduled', 'gatherpress' ),
-				'description' => __(
-					'Event is planned and confirmed to take place.',
-					'gatherpress'
-				),
-				'schema'      => 'EventScheduled',
-				'ical'        => 'CONFIRMED',
-			);
-		}
-
-		return $statuses;
+		return (array) apply_filters( 'gatherpress_event_statuses', $statuses, $post_type );
 	}
 
 	/**
@@ -176,10 +165,30 @@ final class Status {
 	 *
 	 * @since 0.36.0
 	 *
+	 * @param string $post_type Post type to offer statuses for, or empty for all.
+	 *
 	 * @return string[] The status slugs.
 	 */
-	public static function slugs(): array {
-		return array_keys( self::all() );
+	public static function slugs( string $post_type = '' ): array {
+		return array_keys( self::all( $post_type ) );
+	}
+
+	/**
+	 * The status an event reports when it has none of its own.
+	 *
+	 * The first status offered, rather than a named one, so a site that
+	 * replaces the vocabulary outright still has a state to fall back on.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $post_type Post type to answer for, or empty for all.
+	 *
+	 * @return string The default slug, or an empty string when none exist.
+	 */
+	public static function default_slug( string $post_type = '' ): string {
+		$slugs = self::slugs( $post_type );
+
+		return (string) ( $slugs[0] ?? '' );
 	}
 
 	/**
@@ -187,12 +196,13 @@ final class Status {
 	 *
 	 * @since 0.36.0
 	 *
-	 * @param string $slug The slug to check.
+	 * @param string $slug      The slug to check.
+	 * @param string $post_type Post type to check against, or empty for all.
 	 *
 	 * @return bool True when the status exists.
 	 */
-	public static function exists( string $slug ): bool {
-		return isset( self::all()[ $slug ] );
+	public static function exists( string $slug, string $post_type = '' ): bool {
+		return isset( self::all( $post_type )[ $slug ] );
 	}
 
 	/**
@@ -202,10 +212,50 @@ final class Status {
 	 *
 	 * @param string $slug The status slug.
 	 *
-	 * @return string The label, or the scheduled one for an unknown status.
+	 * @return string The label, or an empty string when none is known.
 	 */
 	public static function label( string $slug ): string {
 		return (string) ( self::get( $slug )['label'] ?? '' );
+	}
+
+	/**
+	 * The sentence explaining what a status means.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $slug The status slug.
+	 *
+	 * @return string The description, or an empty string when none is known.
+	 */
+	public static function description( string $slug ): string {
+		return (string) ( self::get( $slug )['description'] ?? '' );
+	}
+
+	/**
+	 * The color a status is shown in.
+	 *
+	 * The badge derives its fill and border from this one value, so a status
+	 * a site registers looks like its own rather than borrowing the default's
+	 * color. Anything that is not a hex color or a CSS custom property is
+	 * refused, since the value reaches a style attribute.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $slug The status slug.
+	 *
+	 * @return string The color, or an empty string when there is none to use.
+	 */
+	public static function color( string $slug ): string {
+		$color = (string) ( self::get( $slug )['color'] ?? '' );
+
+		if (
+			preg_match( '/^#[0-9a-f]{3,8}$/i', $color )
+			|| preg_match( '/^var\(\s*--[\w-]+\s*(?:,[^;()]*)?\)$/', $color )
+		) {
+			return $color;
+		}
+
+		return '';
 	}
 
 	/**
@@ -218,9 +268,9 @@ final class Status {
 	 * @return string The Schema.org value.
 	 */
 	public static function schema( string $slug ): string {
-		$schema = self::get( $slug )['schema'] ?? '';
+		$schema = (string) ( self::get( $slug )['schema'] ?? '' );
 
-		return '' === $schema ? self::DEFAULT_SCHEMA : (string) $schema;
+		return '' === $schema ? self::DEFAULT_SCHEMA : $schema;
 	}
 
 	/**
@@ -233,23 +283,23 @@ final class Status {
 	 * @return string The iCalendar value.
 	 */
 	public static function ical( string $slug ): string {
-		$ical = self::get( $slug )['ical'] ?? '';
+		$ical = (string) ( self::get( $slug )['ical'] ?? '' );
 
-		return '' === $ical ? self::DEFAULT_ICAL : (string) $ical;
+		return '' === $ical ? self::DEFAULT_ICAL : $ical;
 	}
 
 	/**
-	 * One status's definition, falling back to the scheduled one.
+	 * One status's definition, falling back to the default one.
 	 *
 	 * @since 0.36.0
 	 *
 	 * @param string $slug The status slug.
 	 *
-	 * @return array<string, mixed> The definition.
+	 * @return array<string, mixed> The definition, or empty when none exist.
 	 */
 	private static function get( string $slug ): array {
 		$statuses = self::all();
 
-		return (array) ( $statuses[ $slug ] ?? $statuses[ self::SCHEDULED ] );
+		return (array) ( $statuses[ $slug ] ?? $statuses[ self::default_slug() ] ?? array() );
 	}
 }

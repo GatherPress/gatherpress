@@ -180,7 +180,7 @@ class Test_Event_Status extends Base {
 	public function test_render_names_a_changed_status(): void {
 		$event_post = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
 
-		( new Event( $event_post->ID ) )->set_status( Event::STATUS_CANCELED );
+		( new Event( $event_post->ID ) )->set_status( 'canceled' );
 
 		$this->go_to( get_permalink( $event_post->ID ) );
 
@@ -192,7 +192,7 @@ class Test_Event_Status extends Base {
 			'Failed to assert a canceled event is announced.'
 		);
 		$this->assertStringContainsString(
-			'gatherpress-event-status--is-cancelled',
+			'gatherpress-event-status--is-canceled',
 			$output,
 			'Failed to assert the rendered block carries the canceled class.'
 		);
