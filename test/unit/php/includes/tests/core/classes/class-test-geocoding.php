@@ -978,6 +978,52 @@ class Test_Geocoding extends Base {
 	}
 
 	/**
+	 * Coverage for search_addresses with a query that is nothing but a postal code.
+	 *
+	 * Long enough to clear the minimum length, but `Query::normalize()` strips
+	 * the postal code and leaves nothing, so there is nothing to search for.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_postal_code_only_query(): void {
+		$instance  = Geocoding::get_instance();
+		$requested = false;
+
+		add_filter(
+			'pre_http_request',
+			static function ( $preempt ) use ( &$requested ) {
+				$requested = true;
+
+				return $preempt;
+			}
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		// A Japanese postal marker and code, which is all `Query::normalize()`
+		// has to work with. Written as an escape so the file stays ASCII.
+		$request->set_param( 'q', "\u{3012}100-0001" );
+
+		$response = $instance->search_addresses( $request );
+
+		$this->assertInstanceOf(
+			WP_REST_Response::class,
+			$response,
+			'Failed to assert response is WP_REST_Response.'
+		);
+		$this->assertSame(
+			array( 'suggestions' => array() ),
+			$response->get_data(),
+			'A search that normalizes away to nothing should offer no suggestions.'
+		);
+		$this->assertFalse(
+			$requested,
+			'An empty query should never be sent to the geocoder.'
+		);
+	}
+
+	/**
 	 * Coverage for search_addresses with short query (returns empty suggestions; min length matches JS).
 	 *
 	 * @covers ::search_addresses

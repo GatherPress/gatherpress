@@ -824,9 +824,16 @@ final class Geocoding {
 			);
 		}
 
-		$query = mb_substr( trim( $query ), 0, 200 );
+		$query     = mb_substr( trim( $query ), 0, 200 );
+		$too_short = mb_strlen( $query ) < self::ADDRESS_SEARCH_MIN_QUERY_LENGTH;
+		$query     = Query::normalize( $query );
 
-		if ( mb_strlen( $query ) < self::ADDRESS_SEARCH_MIN_QUERY_LENGTH ) {
+		// The minimum length weighs what the visitor typed, since it is about
+		// whether they have entered enough to be worth a lookup. The empty
+		// check weighs what would be sent: a search that was nothing but a
+		// postal code normalizes away to nothing, and would otherwise reach
+		// Photon as `q=` and be cached against a key every such search shares.
+		if ( $too_short || '' === $query ) {
 			return new WP_REST_Response(
 				array(
 					'suggestions' => array(),
@@ -835,7 +842,6 @@ final class Geocoding {
 			);
 		}
 
-		$query     = Query::normalize( $query );
 		$language  = $this->get_language_code();
 		$cache_key = self::SEARCH_CACHE_PREFIX . md5( $query . '|' . $language ); // NOSONAR.
 		$cached    = get_transient( $cache_key );
