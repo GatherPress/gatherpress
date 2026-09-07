@@ -458,7 +458,7 @@ final class Map {
 	 * @return void
 	 */
 	public function maybe_register_delete_hook( string $post_type ): void {
-		if ( ! post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
+		if ( ! post_type_supports( $post_type, Venue::SUPPORT ) ) {
 			return;
 		}
 
@@ -487,7 +487,7 @@ final class Map {
 			return;
 		}
 
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-venue-information' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), Venue::SUPPORT ) ) {
 			return;
 		}
 
@@ -686,7 +686,7 @@ final class Map {
 			return;
 		}
 
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-venue-information' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), Venue::SUPPORT ) ) {
 			return;
 		}
 
@@ -900,9 +900,9 @@ final class Map {
 	): ?array {
 		$venue_post_id = 0;
 
-		if ( post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
+		if ( post_type_supports( $post_type, Venue::SUPPORT ) ) {
 			$venue_post_id = $post_id;
-		} elseif ( post_type_supports( $post_type, 'gatherpress-venue' ) ) {
+		} elseif ( post_type_supports( $post_type, Venue::ASSIGNMENT_SUPPORT ) ) {
 			$venue_post = Setup::get_instance()->get_venue_post_from_event_post_id( $post_id );
 
 			if ( $venue_post instanceof WP_Post ) {

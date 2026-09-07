@@ -66,7 +66,7 @@ final class Validate {
 		// positive_number() short-circuits first, so the cast only ever runs on a numeric ID.
 		return (
 			self::positive_number( $param ) &&
-			post_type_supports( (string) get_post_type( (int) $param ), 'gatherpress-event-date' )
+			post_type_supports( (string) get_post_type( (int) $param ), Event::SUPPORT )
 		);
 	}
 

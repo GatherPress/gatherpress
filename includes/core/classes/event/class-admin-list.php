@@ -91,7 +91,7 @@ final class Admin_List {
 	 * @return void
 	 */
 	public function maybe_register_post_type_hooks( string $post_type ): void {
-		if ( ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+		if ( ! post_type_supports( $post_type, Event::SUPPORT ) ) {
 			return;
 		}
 
@@ -143,7 +143,7 @@ final class Admin_List {
 			? (string) $screen->post_type
 			: Event::POST_TYPE;
 
-		if ( post_type_supports( $post_type, 'gatherpress-rsvp' ) ) {
+		if ( post_type_supports( $post_type, Rsvp::SUPPORT ) ) {
 			// Add 'rsvps' as a sortable column.
 			$columns['rsvps'] = 'rsvps';
 		}
@@ -358,7 +358,7 @@ final class Admin_List {
 	 * @return bool True for post types that render our own date filters.
 	 */
 	public function disable_months_dropdown( bool $disable, string $post_type ): bool {
-		if ( post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+		if ( post_type_supports( $post_type, Event::SUPPORT ) ) {
 			return true;
 		}
 
@@ -380,7 +380,7 @@ final class Admin_List {
 	 * @return void
 	 */
 	public function render_date_filters( string $post_type ): void {
-		if ( ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+		if ( ! post_type_supports( $post_type, Event::SUPPORT ) ) {
 			return;
 		}
 
@@ -442,7 +442,7 @@ final class Admin_List {
 	 * @return void
 	 */
 	public function render_taxonomy_filters( string $post_type ): void {
-		if ( ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+		if ( ! post_type_supports( $post_type, Event::SUPPORT ) ) {
 			return;
 		}
 
@@ -725,7 +725,7 @@ final class Admin_List {
 		// otherwise issue a pointless comments-table join. Multi-post-type queries
 		// (array `post_type`) fall through to `handle_column_sorting()`'s own
 		// array guard so its early-return arm stays exercised.
-		if ( is_string( $post_type ) && ! post_type_supports( $post_type, 'gatherpress-rsvp' ) ) {
+		if ( is_string( $post_type ) && ! post_type_supports( $post_type, Rsvp::SUPPORT ) ) {
 			return;
 		}
 
@@ -767,7 +767,7 @@ final class Admin_List {
 
 		// Only proceed if we're in admin, on the main query, and dealing with an event post type.
 		if ( ! is_admin() || ! $query->is_main_query()
-			|| ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+			|| ! post_type_supports( $post_type, Event::SUPPORT ) ) {
 			return;
 		}
 
@@ -1030,7 +1030,7 @@ final class Admin_List {
 		// Only show the RSVPs column for post types that declare gatherpress-rsvp support.
 		// Event-date-only post types (e.g. theater productions tagged with a premiere date)
 		// have no RSVP storage and should not advertise an empty RSVP column.
-		if ( post_type_supports( $post_type, 'gatherpress-rsvp' ) ) {
+		if ( post_type_supports( $post_type, Rsvp::SUPPORT ) ) {
 			$insert['rsvps'] = __( 'RSVPs', 'gatherpress' );
 		}
 
@@ -1065,7 +1065,7 @@ final class Admin_List {
 			? (string) $screen->post_type
 			: Event::POST_TYPE;
 
-		if ( ! post_type_supports( $post_type, 'gatherpress-rsvp' ) ) {
+		if ( ! post_type_supports( $post_type, Rsvp::SUPPORT ) ) {
 			return $columns;
 		}
 

@@ -155,7 +155,7 @@ final class Venue {
 		if (
 			isset( $block['attrs']['selectedPostId'] )
 			&& is_int( $block['attrs']['selectedPostId'] )
-			&& post_type_supports( $source_post_type, 'gatherpress-shadow-source' )
+			&& post_type_supports( $source_post_type, Shadow_Source::SUPPORT )
 		) {
 			$selected = get_post( $block['attrs']['selectedPostId'] );
 
