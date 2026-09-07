@@ -95,14 +95,23 @@ describe( 'Tooltip format registration', () => {
 		).toBe( 'data-gatherpress-tooltip-bg-color' );
 	} );
 
+	it( 'registers with tabindex attribute', () => {
+		expect( registrationArgs.settings.attributes ).toHaveProperty(
+			'tabindex'
+		);
+		expect( registrationArgs.settings.attributes.tabindex ).toBe(
+			'tabindex'
+		);
+	} );
+
 	it( 'registers with edit component', () => {
 		expect( registrationArgs.settings.edit ).toBeDefined();
 		expect( typeof registrationArgs.settings.edit ).toBe( 'function' );
 	} );
 
-	it( 'registers with exactly three attributes', () => {
+	it( 'registers with exactly four attributes', () => {
 		expect(
 			Object.keys( registrationArgs.settings.attributes ).length
-		).toBe( 3 );
+		).toBe( 4 );
 	} );
 } );

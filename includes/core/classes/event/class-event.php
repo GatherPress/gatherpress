@@ -70,6 +70,14 @@ class Event {
 	const POST_TYPE = 'gatherpress_event';
 
 	/**
+	 * Post type support that makes a post type an event.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const SUPPORT = 'gatherpress-event-date';
+
+	/**
 	 * Capability for reading a specific event.
 	 *
 	 * A meta capability, so it is always paired with the event's post ID and
@@ -146,7 +154,7 @@ class Event {
 	 * @param int $post_id The event post ID.
 	 */
 	public function __construct( int $post_id ) {
-		if ( post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
+		if ( post_type_supports( (string) get_post_type( $post_id ), self::SUPPORT ) ) {
 			$this->post = get_post( $post_id );
 		}
 	}
@@ -192,7 +200,7 @@ class Event {
 		$post = get_post( $post_id );
 
 		// A post that is gone, or one that never takes RSVPs, has no roster.
-		if ( ! $post instanceof WP_Post || ! post_type_supports( $post->post_type, 'gatherpress-rsvp' ) ) {
+		if ( ! $post instanceof WP_Post || ! post_type_supports( $post->post_type, Rsvp::SUPPORT ) ) {
 			return false;
 		}
 

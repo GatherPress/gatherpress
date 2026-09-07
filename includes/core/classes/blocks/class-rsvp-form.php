@@ -132,7 +132,7 @@ final class Rsvp_Form {
 		$rsvp = new Rsvp( $post_id );
 
 		if (
-			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' )
+			! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT )
 			|| ! Event::is_viewable( $post_id )
 			|| ! $rsvp->is_enabled()
 			|| ! $rsvp->allows_open_rsvp()

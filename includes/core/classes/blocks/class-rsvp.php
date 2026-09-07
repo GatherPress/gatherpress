@@ -105,7 +105,7 @@ final class Rsvp {
 
 		// Validate that the post type supports RSVP.
 		if (
-			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
+			! post_type_supports( (string) get_post_type( $post_id ), Core_Rsvp::SUPPORT ) ||
 			! Event::is_viewable( $post_id )
 		) {
 			return '';

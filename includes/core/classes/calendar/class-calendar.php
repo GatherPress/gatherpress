@@ -152,11 +152,19 @@ final class Calendar {
 			return '';
 		}
 
-		$date_start  = $this->event->get_formatted_datetime( 'Ymd', 'start', false );
-		$time_start  = $this->event->get_formatted_datetime( 'His', 'start', false );
-		$date_end    = $this->event->get_formatted_datetime( 'Ymd', 'end', false );
-		$time_end    = $this->event->get_formatted_datetime( 'His', 'end', false );
-		$datetime    = sprintf( '%sT%sZ/%sT%sZ', $date_start, $time_start, $date_end, $time_end );
+		if ( $this->event->is_all_day() ) {
+			$date_start   = $this->event->get_formatted_datetime( 'Ymd', 'start' );
+			$end_date_str = $this->event->get_formatted_datetime( 'Y-m-d', 'end' );
+			$date_end     = gmdate( 'Ymd', (int) strtotime( $end_date_str . ' +1 day' ) );
+			$datetime     = sprintf( '%s/%s', $date_start, $date_end );
+		} else {
+			$date_start = $this->event->get_formatted_datetime( 'Ymd', 'start', false );
+			$time_start = $this->event->get_formatted_datetime( 'His', 'start', false );
+			$date_end   = $this->event->get_formatted_datetime( 'Ymd', 'end', false );
+			$time_end   = $this->event->get_formatted_datetime( 'His', 'end', false );
+			$datetime   = sprintf( '%sT%sZ/%sT%sZ', $date_start, $time_start, $date_end, $time_end );
+		}
+
 		$venue       = $this->event->get_venue_information();
 		$location    = $venue['name'];
 		$description = $this->event->get_calendar_description();
@@ -184,7 +192,7 @@ final class Calendar {
 	 * Off-site destination URL for the Yahoo! Calendar redirect.
 	 *
 	 * Opens Yahoo! Calendar's event-creation form pre-filled with this
-	 * event's title, start time, duration, location, and description.
+	 * event's title, start and end time, location, and description.
 	 * Called from `Calendar\Setup::queried_event_yahoo_url()` to produce
 	 * the 302 target for the `/event/<slug>/yahoo-calendar/` endpoint —
 	 * front-end code should use `get_yahoo_url()` (the on-site URL) instead.
@@ -202,18 +210,39 @@ final class Calendar {
 			return '';
 		}
 
-		$date_start     = $this->event->get_formatted_datetime( 'Ymd', 'start', false );
-		$time_start     = $this->event->get_formatted_datetime( 'His', 'start', false );
-		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
+		if ( $this->event->is_all_day() ) {
+			// `dur=allday` is the only thing that switches Yahoo's all-day
+			// toggle on, and it is ignored the moment `et` is present, so a
+			// span cannot be flagged all day at all. A single day sends the
+			// flag and no end. A span goes out as the timed stretch it is
+			// stored as, midnight to 23:59:59 in the event's own zone: that
+			// opens showing the first and last days and covers them all, which
+			// a bare end date does not, since the composer reads it as
+			// midnight and drops the last day. (Verified in the composer.)
+			if ( $this->event->is_same_date() ) {
+				$timing = array(
+					'st'  => $this->event->get_formatted_datetime( 'Ymd', 'start' ),
+					'dur' => 'allday',
+				);
+			} else {
+				$timing = array(
+					'st' => $this->event->get_formatted_datetime( 'Ymd\THis', 'start' ),
+					'et' => $this->event->get_formatted_datetime( 'Ymd\THis', 'end' ),
+				);
+			}
+		} else {
+			// Yahoo has no timezone parameter and does not honor a trailing
+			// Z: whatever it is handed is shown verbatim as local wall-clock
+			// time. So the event's own local time goes out, right for anyone
+			// in its zone and the closest available for anyone else. The end
+			// is sent rather than a duration: `dur` is an `hhmm` field that
+			// tops out at 99 hours, and Yahoo ignores it once `et` is present.
+			$timing = array(
+				'st' => $this->event->get_formatted_datetime( 'Ymd\THis', 'start' ),
+				'et' => $this->event->get_formatted_datetime( 'Ymd\THis', 'end' ),
+			);
+		}
 
-		// Figure out duration of event in hours and minutes: hhmm format.
-		$diff_start  = $this->event->get_formatted_datetime( $this->event::DATETIME_FORMAT, 'start', false );
-		$diff_end    = $this->event->get_formatted_datetime( $this->event::DATETIME_FORMAT, 'end', false );
-		$duration    = ( ( strtotime( $diff_end ) - strtotime( $diff_start ) ) / 60 / 60 );
-		$full        = intval( $duration );
-		$fraction    = ( $duration - $full );
-		$hours       = str_pad( strval( $duration ), 2, '0', STR_PAD_LEFT );
-		$minutes     = str_pad( strval( $fraction * 60 ), 2, '0', STR_PAD_LEFT );
 		$venue       = $this->event->get_venue_information();
 		$location    = $venue['name'];
 		$description = $this->event->get_calendar_description();
@@ -222,15 +251,18 @@ final class Calendar {
 			$location .= sprintf( ', %s', $venue['address'] );
 		}
 
-		$params = array(
-			'v'      => '60',
-			'view'   => 'd',
-			'type'   => '20',
-			'title'  => sanitize_text_field( $post->post_title ),
-			'st'     => sanitize_text_field( $datetime_start ),
-			'dur'    => sanitize_text_field( (string) $hours . (string) $minutes ),
-			'desc'   => sanitize_text_field( $description ),
-			'in_loc' => sanitize_text_field( $location ),
+		$params = array_merge(
+			array(
+				'v'     => '60',
+				'view'  => 'd',
+				'type'  => '20',
+				'title' => sanitize_text_field( $post->post_title ),
+			),
+			array_map( 'sanitize_text_field', $timing ),
+			array(
+				'desc'   => sanitize_text_field( $description ),
+				'in_loc' => sanitize_text_field( $location ),
+			)
 		);
 
 		return add_query_arg(
@@ -259,13 +291,24 @@ final class Calendar {
 			return '';
 		}
 
-		$date_start     = $this->event->get_formatted_datetime( 'Ymd', 'start', false );
-		$time_start     = $this->event->get_formatted_datetime( 'His', 'start', false );
-		$date_end       = $this->event->get_formatted_datetime( 'Ymd', 'end', false );
-		$time_end       = $this->event->get_formatted_datetime( 'His', 'end', false );
-		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
-		$datetime_end   = sprintf( '%sT%sZ', $date_end, $time_end );
-		$modified_gmt   = strtotime( $post->post_modified_gmt );
+		if ( $this->event->is_all_day() ) {
+			$date_start   = $this->event->get_formatted_datetime( 'Ymd', 'start' );
+			$end_date_str = $this->event->get_formatted_datetime( 'Y-m-d', 'end' );
+			$date_end     = gmdate( 'Ymd', (int) strtotime( $end_date_str . ' +1 day' ) );
+			$dtstart_line = sprintf( 'DTSTART;VALUE=DATE:%s', sanitize_text_field( $date_start ) );
+			$dtend_line   = sprintf( 'DTEND;VALUE=DATE:%s', sanitize_text_field( $date_end ) );
+		} else {
+			$date_start     = $this->event->get_formatted_datetime( 'Ymd', 'start', false );
+			$time_start     = $this->event->get_formatted_datetime( 'His', 'start', false );
+			$date_end       = $this->event->get_formatted_datetime( 'Ymd', 'end', false );
+			$time_end       = $this->event->get_formatted_datetime( 'His', 'end', false );
+			$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
+			$datetime_end   = sprintf( '%sT%sZ', $date_end, $time_end );
+			$dtstart_line   = sprintf( 'DTSTART:%s', sanitize_text_field( $datetime_start ) );
+			$dtend_line     = sprintf( 'DTEND:%s', sanitize_text_field( $datetime_end ) );
+		}
+
+		$modified_gmt = strtotime( $post->post_modified_gmt );
 
 		if ( false === $modified_gmt ) {
 			// DTSTAMP is required by RFC 5545, so an unparsable date still needs one.
@@ -291,8 +334,8 @@ final class Calendar {
 		$args = array(
 			'BEGIN:VEVENT',
 			sprintf( 'URL:%s', esc_url_raw( $permalink ) ),
-			sprintf( 'DTSTART:%s', sanitize_text_field( $datetime_start ) ),
-			sprintf( 'DTEND:%s', sanitize_text_field( $datetime_end ) ),
+			$dtstart_line,
+			$dtend_line,
 			sprintf( 'DTSTAMP:%s', sanitize_text_field( $datetime_stamp ) ),
 			sprintf( 'LAST-MODIFIED:%s', sanitize_text_field( $last_modified ) ),
 			sprintf( 'SEQUENCE:%d', $sequence ),

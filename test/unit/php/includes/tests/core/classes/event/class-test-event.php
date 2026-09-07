@@ -79,6 +79,15 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * Asserts that the class constants are correctly defined.
+	 *
+	 * @return void
+	 */
+	public function test_constants(): void {
+		$this->assertSame( 'gatherpress-event-date', Event::SUPPORT );
+	}
+
+	/**
 	 * Data provider for get_display_datetime test.
 	 *
 	 * @return array
@@ -2353,7 +2362,7 @@ class Test_Event extends Base {
 	 *
 	 * @covers ::get_display_datetime
 	 * @covers ::get_display_formats
-	 * @covers ::remove_time_format_chars
+	 * @covers \GatherPress\Core\Utility::remove_time_format_chars
 	 *
 	 * @dataProvider data_all_day_display_formats
 	 *
