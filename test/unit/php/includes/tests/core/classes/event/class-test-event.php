@@ -2534,6 +2534,32 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * A status that cannot be written is reported as not written.
+	 *
+	 * Unregistering the taxonomy is the reachable way to make the term write
+	 * fail, which is what a site would see if something removed it.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::set_status
+	 *
+	 * @return void
+	 */
+	public function test_set_status_reports_a_failed_write(): void {
+		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$event = new Event( $post->ID );
+
+		unregister_taxonomy( Event::TAXONOMY_STATUS );
+
+		$this->assertFalse(
+			$event->set_status( 'canceled' ),
+			'Failed to assert an unwritable status is refused.'
+		);
+
+		Event_Setup::get_instance()->register_status_taxonomy();
+	}
+
+	/**
 	 * Coverage for get_status method with no backing post.
 	 *
 	 * @covers ::get_status

@@ -62,6 +62,7 @@ class Test_Status extends Base {
 	 * @since 0.36.0
 	 *
 	 * @covers ::label
+	 * @covers ::description
 	 * @covers ::schema
 	 * @covers ::ical
 	 * @covers ::exists
@@ -72,6 +73,7 @@ class Test_Status extends Base {
 	public function test_a_known_status_reports_itself(): void {
 		$this->assertTrue( Status::exists( 'canceled' ), 'Failed to assert a default status exists.' );
 		$this->assertSame( 'Canceled', Status::label( 'canceled' ) );
+		$this->assertStringContainsString( 'will not take place', Status::description( 'canceled' ) );
 		$this->assertSame( 'EventCancelled', Status::schema( 'canceled' ) );
 		$this->assertSame( 'CANCELLED', Status::ical( 'canceled' ) );
 
@@ -90,6 +92,7 @@ class Test_Status extends Base {
 	 *
 	 * @covers ::exists
 	 * @covers ::label
+	 * @covers ::description
 	 * @covers ::schema
 	 * @covers ::ical
 	 *
@@ -98,6 +101,11 @@ class Test_Status extends Base {
 	public function test_an_unknown_status_falls_back_to_scheduled(): void {
 		$this->assertFalse( Status::exists( 'not-a-status' ) );
 		$this->assertSame( 'Scheduled', Status::label( 'not-a-status' ) );
+		$this->assertSame(
+			Status::description( 'scheduled' ),
+			Status::description( 'not-a-status' ),
+			'Failed to assert an unknown status borrows the default explanation.'
+		);
 		$this->assertSame( 'EventScheduled', Status::schema( 'not-a-status' ) );
 		$this->assertSame( 'CONFIRMED', Status::ical( 'not-a-status' ) );
 	}
