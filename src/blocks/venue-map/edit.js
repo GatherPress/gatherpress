@@ -657,6 +657,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 						}
 					/>
 					<RangeControl
+						__next40pxDefaultSize
 						label={ __( 'Zoom level', 'gatherpress' ) }
 						value={ zoom }
 						onChange={ ( value ) =>
@@ -736,6 +737,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 					/>
 					{ isCustomAspectRatio && (
 						<TextControl
+							__next40pxDefaultSize
 							label={ __(
 								'Custom aspect ratio',
 								'gatherpress'
@@ -825,6 +827,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 									{ LINK_DESTINATION_CUSTOM ===
 										linkDestination && (
 										<TextControl
+											__next40pxDefaultSize
 											label={ __(
 												'Link URL',
 												'gatherpress'
@@ -860,6 +863,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 												}
 											/>
 											<TextControl
+												__next40pxDefaultSize
 												label={ __(
 													'Link rel',
 													'gatherpress'

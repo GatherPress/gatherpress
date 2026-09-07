@@ -48,6 +48,7 @@ export const EventCountControls = ( { attributes, setAttributes } ) => {
 
 	return (
 		<RangeControl
+			__next40pxDefaultSize
 			label={ sprintf(
 			/* translators: %s: Plural post type label, e.g. "Events". */
 				__( '%s Per Page', 'gatherpress' ),
@@ -462,6 +463,7 @@ export const EventOffsetControls = ( { attributes, setAttributes } ) => {
 
 	return (
 		<RangeControl
+			__next40pxDefaultSize
 			label={ sprintf(
 				/* translators: %s: Singular post type label, e.g. "Event". */
 				__( '%s Offset', 'gatherpress' ),

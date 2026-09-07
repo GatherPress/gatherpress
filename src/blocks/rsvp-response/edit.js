@@ -348,6 +348,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 						/>
 						{ rsvpLimitEnabled && (
 							<NumberControl
+								__next40pxDefaultSize
 								label={ __( 'RSVP Display Limit', 'gatherpress' ) }
 								value={ rsvpLimit }
 								onChange={ ( value ) =>

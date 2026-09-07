@@ -184,6 +184,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						) }
 					/>
 					<TextControl
+						__next40pxDefaultSize
 						label={ __( 'Singular Label', 'gatherpress' ) }
 						value={ singularLabel }
 						onChange={ ( value ) =>
@@ -196,6 +197,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						) }
 					/>
 					<TextControl
+						__next40pxDefaultSize
 						label={ __( 'Plural Label', 'gatherpress' ) }
 						value={ pluralLabel }
 						onChange={ ( value ) =>
