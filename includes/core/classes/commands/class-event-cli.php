@@ -73,7 +73,7 @@ final class Event_Cli extends WP_CLI {
 		$status    = ! empty( $assoc_args['status'] ) ? (string) $assoc_args['status'] : 'attending';
 
 		// The error message names this support, so gate on it rather than on event dates.
-		if ( ! post_type_supports( (string) get_post_type( $event_id ), 'gatherpress-rsvp' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $event_id ), Rsvp::SUPPORT ) ) {
 			self::error(
 				sprintf(
 					/* translators: %d: event ID. */

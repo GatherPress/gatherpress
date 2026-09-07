@@ -29,7 +29,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/calendar/class-cache.php:136](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/calendar/class-cache.php#L136)
+- [includes/core/classes/calendar/class-cache.php:138](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/calendar/class-cache.php#L138)
 ```php
 apply_filters( 'gatherpress_calendar_max_age', self::DEFAULT_MAX_AGE )
 ```

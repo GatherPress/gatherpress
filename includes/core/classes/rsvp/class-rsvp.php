@@ -85,6 +85,14 @@ final class Rsvp {
 	public const COMMENT_TYPE = 'gatherpress_rsvp';
 
 	/**
+	 * Post type support that lets a post type take RSVPs.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	public const SUPPORT = 'gatherpress-rsvp';
+
+	/**
 	 * Comment meta key flagging a response as anonymous.
 	 *
 	 * @since 0.35.1
@@ -233,7 +241,7 @@ final class Rsvp {
 			return;
 		}
 
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), self::SUPPORT ) ) {
 			return;
 		}
 
@@ -433,7 +441,7 @@ final class Rsvp {
 
 		if (
 			'disabled' === $rsvp_mode
-			|| ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' )
+			|| ! post_type_supports( (string) get_post_type( $post_id ), self::SUPPORT )
 		) {
 			return false;
 		}

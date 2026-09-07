@@ -186,7 +186,7 @@ final class List_Table extends WP_List_Table {
 			'<div class="alignleft actions gatherpress-rsvp-filters"' .
 			' data-post-types="%1$s" data-post-id="%2$s" data-label="%3$s"' .
 			' data-statuses="%4$s" data-selected="%5$s">%6$s%7$s%8$s</div>',
-			esc_attr( implode( ',', get_post_types_by_support( 'gatherpress-event-date' ) ) ),
+			esc_attr( implode( ',', get_post_types_by_support( Event::SUPPORT ) ) ),
 			absint( $post_id ),
 			esc_attr__( 'Filter by event', 'gatherpress' ),
 			esc_attr( (string) wp_json_encode( $statuses ) ),
