@@ -74,6 +74,7 @@ final class Status {
 				'color'       => '#137333',
 				'schema'      => 'EventScheduled',
 				'ical'        => 'CONFIRMED',
+				'priority'    => 0,
 			),
 			'canceled'    => array(
 				'label'       => __( 'Canceled', 'gatherpress' ),
@@ -84,6 +85,7 @@ final class Status {
 				'color'       => '#c5221f',
 				'schema'      => 'EventCancelled',
 				'ical'        => 'CANCELLED',
+				'priority'    => 50,
 			),
 			'postponed'   => array(
 				'label'       => __( 'Postponed', 'gatherpress' ),
@@ -91,6 +93,7 @@ final class Status {
 				'color'       => '#b06000',
 				'schema'      => 'EventPostponed',
 				'ical'        => 'TENTATIVE',
+				'priority'    => 40,
 			),
 			'rescheduled' => array(
 				'label'       => __( 'Rescheduled', 'gatherpress' ),
@@ -98,6 +101,7 @@ final class Status {
 				'color'       => '#1a73e8',
 				'schema'      => 'EventRescheduled',
 				'ical'        => 'TENTATIVE',
+				'priority'    => 30,
 			),
 			'moved'       => array(
 				'label'       => __( 'Moved', 'gatherpress' ),
@@ -108,8 +112,20 @@ final class Status {
 				'color'       => '#7627bb',
 				'schema'      => 'EventScheduled',
 				'ical'        => 'CONFIRMED',
+				'priority'    => 20,
 				// An event can only have moved if it can say where it is.
 				'supports'    => array( 'gatherpress-venue', 'gatherpress-online-event' ),
+			),
+			'tentative'   => array(
+				'label'       => __( 'Tentative', 'gatherpress' ),
+				'description' => __(
+					'Event is planned provisionally and awaiting confirmation.',
+					'gatherpress'
+				),
+				'color'       => '#ea8600',
+				'schema'      => 'EventScheduled',
+				'ical'        => 'TENTATIVE',
+				'priority'    => 10,
 			),
 		);
 
@@ -139,7 +155,8 @@ final class Status {
 		 *
 		 * Each status is keyed by the slug stored against the event. An entry
 		 * holds the `label` and `description` people read, the `color` it is
-		 * shown in, and the `schema` (Schema.org EventStatusType) and `ical`
+		 * shown in, the `priority` used to resolve precedence among multiple
+		 * statuses, and the `schema` (Schema.org EventStatusType) and `ical`
 		 * (RFC 5545 STATUS) values published for it. Anything omitted falls
 		 * back to something that says the event is going ahead, so a status
 		 * never tells a calendar client something untrue.
@@ -288,6 +305,22 @@ final class Status {
 		$ical = (string) ( self::get( $slug )['ical'] ?? '' );
 
 		return '' === $ical ? self::DEFAULT_ICAL : $ical;
+	}
+
+	/**
+	 * The priority a status carries when multiple statuses apply.
+	 *
+	 * A higher integer takes precedence over a lower one when a scalar
+	 * value must be chosen for iCalendar STATUS or Schema.org eventStatus.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $slug The status slug.
+	 *
+	 * @return int The priority, defaulting to 0 when unspecified.
+	 */
+	public static function priority( string $slug ): int {
+		return (int) ( self::get( $slug )['priority'] ?? 0 );
 	}
 
 	/**

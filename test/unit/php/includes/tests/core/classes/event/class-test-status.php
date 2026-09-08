@@ -39,6 +39,7 @@ class Test_Status extends Base {
 				'postponed',
 				'rescheduled',
 				'moved',
+				'tentative',
 			),
 			Status::slugs(),
 			'Failed to assert the default statuses are offered in order.'
@@ -48,6 +49,7 @@ class Test_Status extends Base {
 			$this->assertNotEmpty( $status['label'], sprintf( '%s should be named.', $slug ) );
 			$this->assertNotEmpty( $status['description'], sprintf( '%s should be explained.', $slug ) );
 			$this->assertNotEmpty( $status['schema'], sprintf( '%s should name a Schema.org value.', $slug ) );
+			$this->assertIsInt( $status['priority'], sprintf( '%s should carry an integer priority.', $slug ) );
 			$this->assertContains(
 				$status['ical'],
 				array( 'CONFIRMED', 'CANCELLED', 'TENTATIVE' ),
@@ -66,6 +68,7 @@ class Test_Status extends Base {
 	 * @covers ::schema
 	 * @covers ::ical
 	 * @covers ::exists
+	 * @covers ::priority
 	 * @covers ::get
 	 *
 	 * @return void
@@ -76,12 +79,23 @@ class Test_Status extends Base {
 		$this->assertStringContainsString( 'will not take place', Status::description( 'canceled' ) );
 		$this->assertSame( 'EventCancelled', Status::schema( 'canceled' ) );
 		$this->assertSame( 'CANCELLED', Status::ical( 'canceled' ) );
+		$this->assertSame( 50, Status::priority( 'canceled' ) );
 
 		// An event that has moved is still going ahead, so it stays confirmed
 		// and the new location speaks for itself.
 		$this->assertSame( 'Moved', Status::label( 'moved' ) );
 		$this->assertSame( 'EventScheduled', Status::schema( 'moved' ) );
 		$this->assertSame( 'CONFIRMED', Status::ical( 'moved' ) );
+		$this->assertSame( 20, Status::priority( 'moved' ) );
+
+		// A tentative event is provisionally scheduled and awaiting confirmation.
+		$this->assertTrue( Status::exists( 'tentative' ), 'Failed to assert tentative status exists.' );
+		$this->assertSame( 'Tentative', Status::label( 'tentative' ) );
+		$this->assertStringContainsString( 'awaiting confirmation', Status::description( 'tentative' ) );
+		$this->assertSame( 'EventScheduled', Status::schema( 'tentative' ) );
+		$this->assertSame( 'TENTATIVE', Status::ical( 'tentative' ) );
+		$this->assertSame( '#ea8600', Status::color( 'tentative' ) );
+		$this->assertSame( 10, Status::priority( 'tentative' ) );
 	}
 
 	/**
@@ -95,6 +109,7 @@ class Test_Status extends Base {
 	 * @covers ::description
 	 * @covers ::schema
 	 * @covers ::ical
+	 * @covers ::priority
 	 *
 	 * @return void
 	 */
@@ -108,6 +123,7 @@ class Test_Status extends Base {
 		);
 		$this->assertSame( 'EventScheduled', Status::schema( 'not-a-status' ) );
 		$this->assertSame( 'CONFIRMED', Status::ical( 'not-a-status' ) );
+		$this->assertSame( 0, Status::priority( 'not-a-status' ) );
 	}
 
 	/**
@@ -158,15 +174,50 @@ class Test_Status extends Base {
 	 */
 	public function test_a_registered_status_may_omit_the_standards(): void {
 		$callback = static function ( array $statuses ): array {
-			$statuses['tentative'] = array( 'label' => 'Tentative' );
+			$statuses['provisional'] = array( 'label' => 'Provisional' );
 
 			return $statuses;
 		};
 
 		add_filter( 'gatherpress_event_statuses', $callback );
 
-		$this->assertSame( Status::DEFAULT_SCHEMA, Status::schema( 'tentative' ) );
-		$this->assertSame( Status::DEFAULT_ICAL, Status::ical( 'tentative' ) );
+		$this->assertSame( Status::DEFAULT_SCHEMA, Status::schema( 'provisional' ) );
+		$this->assertSame( Status::DEFAULT_ICAL, Status::ical( 'provisional' ) );
+		$this->assertSame( 0, Status::priority( 'provisional' ) );
+
+		remove_filter( 'gatherpress_event_statuses', $callback );
+	}
+
+	/**
+	 * A status reports its priority for conflict resolution.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::priority
+	 *
+	 * @return void
+	 */
+	public function test_priority_reports_configured_or_default_value(): void {
+		$this->assertSame( 50, Status::priority( 'canceled' ) );
+		$this->assertSame( 40, Status::priority( 'postponed' ) );
+		$this->assertSame( 30, Status::priority( 'rescheduled' ) );
+		$this->assertSame( 20, Status::priority( 'moved' ) );
+		$this->assertSame( 10, Status::priority( 'tentative' ) );
+		$this->assertSame( 0, Status::priority( 'scheduled' ) );
+		$this->assertSame( 0, Status::priority( 'non-existent' ) );
+
+		$callback = static function ( array $statuses ): array {
+			$statuses['urgent'] = array(
+				'label'    => 'Urgent',
+				'priority' => 99,
+			);
+
+			return $statuses;
+		};
+
+		add_filter( 'gatherpress_event_statuses', $callback );
+
+		$this->assertSame( 99, Status::priority( 'urgent' ) );
 
 		remove_filter( 'gatherpress_event_statuses', $callback );
 	}

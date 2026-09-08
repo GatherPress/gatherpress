@@ -608,8 +608,62 @@ class Event {
 	}
 
 	/**
+	 * Returns every operational status slug assigned to the event.
+	 *
+	 * Returns all valid status slugs assigned to this event, ordered by
+	 * priority descending. Defaults to the default status slug if none is set.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string[] The status slugs assigned to the event.
+	 */
+	public function get_statuses(): array {
+		if ( ! $this->post ) {
+			$default = Status::default_slug();
+
+			return '' !== $default ? array( $default ) : array();
+		}
+
+		$post_type = (string) $this->post->post_type;
+		$terms     = get_the_terms( $this->post->ID, self::TAXONOMY_STATUS );
+
+		if ( ! is_array( $terms ) || empty( $terms ) ) {
+			$default = Status::default_slug( $post_type );
+
+			return '' !== $default ? array( $default ) : array();
+		}
+
+		$valid_statuses = array();
+
+		foreach ( $terms as $term ) {
+			$slug = (string) $term->slug;
+
+			if ( Status::exists( $slug, $post_type ) ) {
+				$valid_statuses[] = $slug;
+			}
+		}
+
+		if ( empty( $valid_statuses ) ) {
+			$default = Status::default_slug( $post_type );
+
+			return '' !== $default ? array( $default ) : array();
+		}
+
+		usort(
+			$valid_statuses,
+			static function ( string $a, string $b ): int {
+				return Status::priority( $b ) <=> Status::priority( $a );
+			}
+		);
+
+		return array_values( array_unique( $valid_statuses ) );
+	}
+
+	/**
 	 * Returns the event operational status.
 	 *
+	 * When an event holds multiple statuses, the one with the highest priority
+	 * wins for scalar consumers like iCalendar STATUS and Schema.org eventStatus.
 	 * Defaults to 'scheduled' if no custom status has been set.
 	 *
 	 * @since 0.36.0
@@ -617,23 +671,9 @@ class Event {
 	 * @return string The event status slug.
 	 */
 	public function get_status(): string {
-		if ( ! $this->post ) {
-			return Status::default_slug();
-		}
+		$statuses = $this->get_statuses();
 
-		// An event carries the default term from register_taxonomy() once it has
-		// been saved, but one stored before this taxonomy existed carries none,
-		// and default_term only applies on insert. No term means scheduled.
-		$post_type = (string) $this->post->post_type;
-		$terms     = get_the_terms( $this->post->ID, self::TAXONOMY_STATUS );
-
-		if ( ! is_array( $terms ) || empty( $terms ) ) {
-			return Status::default_slug( $post_type );
-		}
-
-		$status = (string) $terms[0]->slug;
-
-		return Status::exists( $status, $post_type ) ? $status : Status::default_slug( $post_type );
+		return $statuses[0] ?? Status::default_slug();
 	}
 
 	/**
@@ -642,19 +682,21 @@ class Event {
 	 * @since 0.36.0
 	 *
 	 * @param string $status One of the slugs Status::slugs() reports.
+	 * @param bool   $append Optional. When true, appends to existing terms
+	 *                       instead of replacing them. Default false.
 	 *
 	 * @return bool True when the status was stored.
 	 */
-	public function set_status( string $status ): bool {
+	public function set_status( string $status, bool $append = false ): bool {
 		if ( ! $this->post || ! Status::exists( $status, (string) $this->post->post_type ) ) {
 			return false;
 		}
 
 		Status::ensure_term( $status );
 
-		// A plain string replaces every term in the taxonomy, which is what
-		// enforces the statuses being mutually exclusive.
-		$result = wp_set_object_terms( $this->post->ID, $status, self::TAXONOMY_STATUS );
+		// A plain string replaces every term in the taxonomy by default, which is
+		// what enforces the statuses being mutually exclusive.
+		$result = wp_set_object_terms( $this->post->ID, $status, self::TAXONOMY_STATUS, $append );
 
 		if ( is_wp_error( $result ) ) {
 			return false;
