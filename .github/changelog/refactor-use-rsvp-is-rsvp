@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Replace hand-rolled RSVP comment type checks with the Rsvp::is_rsvp() helper across ten call sites.

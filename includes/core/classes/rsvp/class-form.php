@@ -588,7 +588,11 @@ final class Form {
 		if ( ! Rsvp::is_rsvp( $comment ) ) {
 			return;
 		}
-		/** @var WP_Comment $comment */
+		/**
+		 * The helper call above cannot narrow the type, so reassert it for the reads below.
+		 *
+		 * @var WP_Comment $comment
+		 */
 		$post_id = (int) $comment->comment_post_ID;
 
 		// Get stored schemas for this post.
