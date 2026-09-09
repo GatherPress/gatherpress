@@ -2478,7 +2478,8 @@ class Test_Event extends Base {
 		$this->assertSame( 'scheduled', $event->get_status() );
 
 		// Non-existent event falls back to scheduled.
-		$empty_event = new Event( 0 );
+		$non_event   = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+		$empty_event = new Event( $non_event->ID );
 		$this->assertSame( 'scheduled', $empty_event->get_status() );
 	}
 
@@ -2571,7 +2572,8 @@ class Test_Event extends Base {
 	 * @return void
 	 */
 	public function test_get_status_without_post(): void {
-		$event = new Event( 0 );
+		$non_event = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+		$event     = new Event( $non_event->ID );
 
 		$this->assertSame(
 			'scheduled',
@@ -2599,7 +2601,8 @@ class Test_Event extends Base {
 		$this->assertSame( array( 'scheduled' ), $event->get_statuses() );
 
 		// Event without backing post reports scheduled.
-		$empty_event = new Event( 0 );
+		$non_event   = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+		$empty_event = new Event( $non_event->ID );
 		$this->assertSame( array( 'scheduled' ), $empty_event->get_statuses() );
 
 		// Non-existent status term falls back to default.

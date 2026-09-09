@@ -619,18 +619,14 @@ class Event {
 	 */
 	public function get_statuses(): array {
 		if ( ! $this->post ) {
-			$default = Status::default_slug();
-
-			return '' !== $default ? array( $default ) : array();
+			return array( Status::default_slug() );
 		}
 
 		$post_type = (string) $this->post->post_type;
 		$terms     = get_the_terms( $this->post->ID, self::TAXONOMY_STATUS );
 
 		if ( ! is_array( $terms ) || empty( $terms ) ) {
-			$default = Status::default_slug( $post_type );
-
-			return '' !== $default ? array( $default ) : array();
+			return array( Status::default_slug( $post_type ) );
 		}
 
 		$valid_statuses = array();
@@ -644,9 +640,7 @@ class Event {
 		}
 
 		if ( empty( $valid_statuses ) ) {
-			$default = Status::default_slug( $post_type );
-
-			return '' !== $default ? array( $default ) : array();
+			return array( Status::default_slug( $post_type ) );
 		}
 
 		usort(
