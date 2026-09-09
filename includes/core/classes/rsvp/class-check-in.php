@@ -175,10 +175,9 @@ final class Check_In {
 	 * @return int Number of checked-in RSVPs.
 	 */
 	public function count_checked_in( int $post_id ): int {
-		$count = get_comments(
+		$count = Query::get_instance()->get_rsvps(
 			array(
 				'post_id'   => $post_id,
-				'type'      => Rsvp::COMMENT_TYPE,
 				'status'    => 'approve',
 				'count'     => true,
 				'tax_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
