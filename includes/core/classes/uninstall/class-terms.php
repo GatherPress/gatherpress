@@ -97,14 +97,26 @@ final class Terms extends Base {
 			)
 		);
 
-		// Term meta for terms this plugin's taxonomies own.
+		// Term meta for terms this plugin's taxonomies own, under the same
+		// condition the term row delete below uses. Meta hangs off the term
+		// row, so a term row that survives because another taxonomy still
+		// uses it must keep its meta with it.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Bulk delete on uninstall; not a read path.
 		$wpdb->query(
 			$wpdb->prepare(
 				'DELETE tm FROM %i AS tm'
 				. ' INNER JOIN %i AS tt ON tt.term_id = tm.term_id'
-				. ' WHERE tt.taxonomy IN ( %s, %s, %s, %s )',
+				. ' WHERE tt.taxonomy IN ( %s, %s, %s, %s )'
+				. ' AND NOT EXISTS ('
+				. ' SELECT 1 FROM ( SELECT term_id, taxonomy FROM %i ) AS other'
+				. ' WHERE other.term_id = tm.term_id'
+				. ' AND other.taxonomy NOT IN ( %s, %s, %s, %s ) )',
 				$wpdb->termmeta,
+				$wpdb->term_taxonomy,
+				Topic::TAXONOMY,
+				Venue::TAXONOMY,
+				Status::TAXONOMY,
+				Provider::TAXONOMY,
 				$wpdb->term_taxonomy,
 				Topic::TAXONOMY,
 				Venue::TAXONOMY,

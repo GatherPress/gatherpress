@@ -239,6 +239,8 @@ class Test_Terms extends Base {
 		$topic   = wp_insert_term( 'Shared Name', Topic::TAXONOMY );
 		$term_id = (int) $topic['term_id'];
 
+		add_term_meta( $term_id, 'gatherpress_test_meta', 'value' );
+
 		// Attach the same term row to a taxonomy this plugin does not own.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Building the shared-row fixture.
 		$wpdb->insert(
@@ -263,6 +265,17 @@ class Test_Terms extends Base {
 			1,
 			$rows,
 			'A term row another taxonomy still uses must not be deleted.'
+		);
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Verifying the meta survived.
+		$meta_rows = (int) $wpdb->get_var(
+			$wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->termmeta} WHERE term_id = %d", $term_id )
+		);
+
+		$this->assertSame(
+			1,
+			$meta_rows,
+			'Meta hangs off the term row, so a surviving row must keep its meta.'
 		);
 	}
 }
