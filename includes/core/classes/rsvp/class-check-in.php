@@ -100,6 +100,8 @@ final class Check_In {
 
 		wp_set_object_terms( $rsvp_id, self::TERM, self::TAXONOMY, true );
 
+		clean_comment_cache( $rsvp_id );
+
 		/**
 		 * Fires after an RSVP has been checked in.
 		 *
@@ -133,6 +135,8 @@ final class Check_In {
 		}
 
 		wp_remove_object_terms( $rsvp_id, self::TERM, self::TAXONOMY );
+
+		clean_comment_cache( $rsvp_id );
 
 		/**
 		 * Fires after an RSVP's check-in has been cleared.
@@ -209,5 +213,6 @@ final class Check_In {
 	 */
 	public function delete_check_in( $comment_id ): void {
 		wp_remove_object_terms( (int) $comment_id, self::TERM, self::TAXONOMY );
+		clean_comment_cache( (int) $comment_id );
 	}
 }
