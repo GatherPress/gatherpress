@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\Event;
 
 use DateTime;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status as Event_Status;
 use GatherPress\Core\Event\Rest_Api;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Rsvp;
@@ -73,6 +74,12 @@ class Test_Rest_Api extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'rest_api_init',
+				'priority' => 10,
+				'callback' => array( $instance, 'register_status_field' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'gatherpress_send_emails',
 				'priority' => 10,
 				'callback' => array( $instance, 'handle_email_send_action' ),
@@ -86,6 +93,83 @@ class Test_Rest_Api extends Base {
 		);
 
 		$this->assert_hooks( $hooks, $instance );
+	}
+
+	/**
+	 * Coverage for register_status_field method.
+	 *
+	 * @covers ::register_status_field
+	 *
+	 * @return void
+	 */
+	public function test_register_status_field(): void {
+		// WordPress core's own registry for register_rest_field(); the prefix
+		// sniff cannot tell a core global from a plugin one.
+		// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+		global $wp_rest_additional_fields;
+		// phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+
+		$instance = Rest_Api::get_instance();
+
+		$instance->register_status_field();
+
+		$this->assertArrayHasKey(
+			'gatherpress_status',
+			$wp_rest_additional_fields[ Event::POST_TYPE ],
+			'Failed to assert the status field is registered on the event post type.'
+		);
+
+		$field = $wp_rest_additional_fields[ Event::POST_TYPE ]['gatherpress_status'];
+		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$event = new Event( $post->ID );
+
+		$this->assertSame(
+			'scheduled',
+			call_user_func( $field['get_callback'], array( 'id' => $post->ID ) ),
+			'Failed to assert an untouched event reads as scheduled.'
+		);
+
+		// An editor of the event may set the status.
+		$this->mock->user( 'admin' );
+
+		call_user_func( $field['update_callback'], 'canceled', $post );
+
+		$this->assertSame(
+			'canceled',
+			$event->get_status(),
+			'Failed to assert the update callback stores the status.'
+		);
+		$this->assertSame(
+			'canceled',
+			call_user_func( $field['get_callback'], array( 'id' => $post->ID ) ),
+			'Failed to assert the get callback reads the stored status.'
+		);
+
+		// A visitor with no editing rights may not.
+		$this->mock->user( 'subscriber' );
+
+		$error = call_user_func( $field['update_callback'], 'postponed', $post );
+
+		$this->assertWPError(
+			$error,
+			'Failed to assert a user who cannot edit the event is refused.'
+		);
+		$this->assertSame(
+			'gatherpress_status_forbidden',
+			$error->get_error_code(),
+			'Failed to assert the refusal names the status permission.'
+		);
+		$this->assertSame(
+			'canceled',
+			$event->get_status(),
+			'Failed to assert a refused update leaves the status alone.'
+		);
+
+		$this->assertSame(
+			Event_Status::slugs(),
+			$field['schema']['enum'],
+			'Failed to assert the schema advertises the supported statuses.'
+		);
 	}
 
 	/**
@@ -3552,6 +3636,78 @@ class Test_Rest_Api extends Base {
 			400,
 			rest_do_request( $request )->get_status(),
 			'Failed to assert a root that is not the RSVP template is refused by the route.'
+		);
+	}
+
+	/**
+	 * The status travels over the real endpoint, not just its callbacks.
+	 *
+	 * Registering a field is only half of it: the route has to accept the
+	 * value, return it, and refuse anything outside the vocabulary. Calling
+	 * the callbacks by hand skips all of that.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::register_status_field
+	 *
+	 * @return void
+	 */
+	public function test_status_reads_and_writes_over_the_rest_route(): void {
+		// rest_do_request() builds the server, which fires rest_api_init and
+		// registers the routes, so the field only needs to be in place first.
+		Rest_Api::get_instance()->register_status_field();
+
+		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$event = new Event( $post->ID );
+		// The post type publishes itself under a plural rest_base.
+		$route = sprintf(
+			'/wp/v2/%s/%d',
+			get_post_type_object( Event::POST_TYPE )->rest_base,
+			$post->ID
+		);
+
+		$this->mock->user( 'admin' );
+
+		$read = rest_do_request( new WP_REST_Request( 'GET', $route ) );
+
+		$this->assertSame(
+			'scheduled',
+			$read->get_data()['gatherpress_status'],
+			'Failed to assert the route reports an untouched event as scheduled.'
+		);
+
+		$update = new WP_REST_Request( 'POST', $route );
+		$update->set_param( 'gatherpress_status', 'canceled' );
+
+		$written = rest_do_request( $update );
+
+		$this->assertSame(
+			200,
+			$written->get_status(),
+			'Failed to assert the route accepts a known status.'
+		);
+		$this->assertSame(
+			'canceled',
+			$event->get_status(),
+			'Failed to assert the route stored the status.'
+		);
+
+		// The schema advertises an enum, so the request is turned away before
+		// it can reach the event.
+		$invalid = new WP_REST_Request( 'POST', $route );
+		$invalid->set_param( 'gatherpress_status', 'not-a-status' );
+
+		$refused = rest_do_request( $invalid );
+
+		$this->assertSame(
+			400,
+			$refused->get_status(),
+			'Failed to assert an unknown status is refused.'
+		);
+		$this->assertSame(
+			'canceled',
+			$event->get_status(),
+			'Failed to assert a refused request leaves the stored status alone.'
 		);
 	}
 }

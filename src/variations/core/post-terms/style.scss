@@ -1,0 +1,42 @@
+// The Event Status variation of core's Post Terms block. Each status carries
+// its own color, written as a custom property on the post wrapper by
+// Event\Setup::add_status_colors(), so nothing here names a status.
+.wp-block-post-terms.gatherpress-event-status {
+	--gatherpress-status-color: currentcolor;
+
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5em;
+
+	span:not(.wp-block-post-terms__prefix, .wp-block-post-terms__suffix, .wp-block-post-terms__separator) {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45em;
+		padding: 0.3em 0.75em;
+		font-size: var(--wp--preset--font-size--small, 0.85em);
+		font-weight: 600;
+		line-height: 1.2;
+		letter-spacing: 0.03em;
+		border-radius: 999px;
+		text-decoration: none;
+		border: 1px solid color-mix(in srgb, var(--gatherpress-status-color) 30%, transparent);
+		background-color: color-mix(in srgb, var(--gatherpress-status-color) 12%, transparent);
+		color: var(--gatherpress-status-color);
+	}
+
+	// The dot takes the badge's color, which the shared ring animation pulses.
+	span:not(.wp-block-post-terms__prefix, .wp-block-post-terms__suffix, .wp-block-post-terms__separator)::before {
+		content: "";
+		display: inline-block;
+		width: 0.5em;
+		height: 0.5em;
+		border-radius: 50%;
+		background-color: currentcolor;
+	}
+
+	// Core separates terms with a comma, which the gap already does.
+	.wp-block-post-terms__separator {
+		display: none;
+	}
+}

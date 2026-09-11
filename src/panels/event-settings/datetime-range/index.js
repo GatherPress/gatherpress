@@ -3,6 +3,7 @@
  */
 import DateTimeRange from '../../../components/DateTimeRange';
 import ShowTimezone from '../../../components/ShowTimezone';
+import EventStatus from '../../../components/EventStatus';
 
 /**
  * A panel component for managing date and time ranges.
@@ -22,6 +23,9 @@ const DateTimeRangePanel = () => {
 			     Date block already carries its own Append time zone toggle. */ }
 			<section>
 				<ShowTimezone />
+			</section>
+			<section>
+				<EventStatus />
 			</section>
 		</>
 	);
