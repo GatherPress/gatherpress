@@ -1426,14 +1426,42 @@ describe( 'getEventMeta', () => {
 
 /**
  * Coverage for hasOnlineEventTerm.
+ *
+ * Mocks the pre-resolved online-event term ID via
+ * `select('core/editor').getEditorSettings().gatherpress.config.onlineEventTermIds`.
+ * hasOnlineEventTerm reads that field directly instead of issuing a
+ * taxonomy REST lookup on every render (#2047).
  */
 describe( 'hasOnlineEventTerm', () => {
-	it( 'returns false when online-event term does not exist', () => {
+	const mockEditorWithOnlineId = ( onlineTermId ) => ( {
+		getCurrentPostType: () => 'gatherpress_event',
+		getEditedPostAttribute: () => undefined,
+		getEditorSettings: () => ( {
+			gatherpress: {
+				config: {
+					onlineEventTermIds:
+						null === onlineTermId
+							? {}
+							: { gatherpress_venue: onlineTermId },
+				},
+			},
+		} ),
+	} );
+
+	it( 'returns false when the editor settings have no sentinel id', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
 					getPostType: mockGetPostType,
-					getEntityRecords: () => null,
+				};
+			}
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostType: () => 'gatherpress_event',
+					getEditedPostAttribute: () => undefined,
+					getEditorSettings: () => ( {
+						gatherpress: { config: { onlineEventTermIds: {} } },
+					} ),
 				};
 			}
 			return {};
@@ -1442,12 +1470,18 @@ describe( 'hasOnlineEventTerm', () => {
 		expect( hasOnlineEventTerm() ).toBe( false );
 	} );
 
-	it( 'returns false when online-event term array is empty', () => {
+	it( 'returns false when the editor settings have no gatherpress config at all', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
 					getPostType: mockGetPostType,
-					getEntityRecords: () => [],
+				};
+			}
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostType: () => 'gatherpress_event',
+					getEditedPostAttribute: () => undefined,
+					getEditorSettings: () => ( {} ),
 				};
 			}
 			return {};
@@ -1461,9 +1495,11 @@ describe( 'hasOnlineEventTerm', () => {
 			if ( 'core' === store ) {
 				return {
 					getPostType: mockGetPostType,
-					getEntityRecords: () => [ { id: 1 } ],
 					getEntityRecord: () => null,
 				};
+			}
+			if ( 'core/editor' === store ) {
+				return mockEditorWithOnlineId( 42 );
 			}
 			return {};
 		} );
@@ -1476,12 +1512,14 @@ describe( 'hasOnlineEventTerm', () => {
 			if ( 'core' === store ) {
 				return {
 					getPostType: mockGetPostType,
-					getEntityRecords: () => [ { id: 1 } ],
 					getEntityRecord: () => ( {
 						id: 123,
 						_gatherpress_venue: [],
 					} ),
 				};
+			}
+			if ( 'core/editor' === store ) {
+				return mockEditorWithOnlineId( 42 );
 			}
 			return {};
 		} );
@@ -1494,11 +1532,13 @@ describe( 'hasOnlineEventTerm', () => {
 			if ( 'core' === store ) {
 				return {
 					getPostType: mockGetPostType,
-					getEntityRecords: () => [ { id: 1 } ],
 					getEntityRecord: () => ( {
 						id: 123,
 					} ),
 				};
+			}
+			if ( 'core/editor' === store ) {
+				return mockEditorWithOnlineId( 42 );
 			}
 			return {};
 		} );
@@ -1513,12 +1553,14 @@ describe( 'hasOnlineEventTerm', () => {
 			if ( 'core' === store ) {
 				return {
 					getPostType: mockGetPostType,
-					getEntityRecords: () => [ { id: onlineTermId } ],
 					getEntityRecord: () => ( {
 						id: 123,
 						_gatherpress_venue: [ onlineTermId ],
 					} ),
 				};
+			}
+			if ( 'core/editor' === store ) {
+				return mockEditorWithOnlineId( onlineTermId );
 			}
 			return {};
 		} );
@@ -1531,12 +1573,14 @@ describe( 'hasOnlineEventTerm', () => {
 			if ( 'core' === store ) {
 				return {
 					getPostType: mockGetPostType,
-					getEntityRecords: () => [ { id: 42 } ],
 					getEntityRecord: () => ( {
 						id: 123,
 						_gatherpress_venue: [ 99 ], // Different term ID.
 					} ),
 				};
+			}
+			if ( 'core/editor' === store ) {
+				return mockEditorWithOnlineId( 42 );
 			}
 			return {};
 		} );
@@ -1549,12 +1593,18 @@ describe( 'hasOnlineEventTerm', () => {
 			if ( 'core' === store ) {
 				return {
 					getPostType: mockGetPostType,
-					getEntityRecords: () => [ { id: 42 } ],
 				};
 			}
 			if ( 'core/editor' === store ) {
 				return {
 					getCurrentPostType: () => 'post',
+					getEditorSettings: () => ( {
+						gatherpress: {
+							config: {
+								onlineEventTermIds: { gatherpress_venue: 42 },
+							},
+						},
+					} ),
 				};
 			}
 			return {};
@@ -1568,13 +1618,19 @@ describe( 'hasOnlineEventTerm', () => {
 			if ( 'core' === store ) {
 				return {
 					getPostType: mockGetPostType,
-					getEntityRecords: () => [ { id: 42 } ],
 				};
 			}
 			if ( 'core/editor' === store ) {
 				return {
 					getCurrentPostType: () => 'gatherpress_event',
 					getEditedPostAttribute: () => [],
+					getEditorSettings: () => ( {
+						gatherpress: {
+							config: {
+								onlineEventTermIds: { gatherpress_venue: 42 },
+							},
+						},
+					} ),
 				};
 			}
 			return {};
@@ -1588,13 +1644,19 @@ describe( 'hasOnlineEventTerm', () => {
 			if ( 'core' === store ) {
 				return {
 					getPostType: mockGetPostType,
-					getEntityRecords: () => [ { id: 42 } ],
 				};
 			}
 			if ( 'core/editor' === store ) {
 				return {
 					getCurrentPostType: () => 'gatherpress_event',
 					getEditedPostAttribute: () => undefined,
+					getEditorSettings: () => ( {
+						gatherpress: {
+							config: {
+								onlineEventTermIds: { gatherpress_venue: 42 },
+							},
+						},
+					} ),
 				};
 			}
 			return {};
@@ -1610,13 +1672,21 @@ describe( 'hasOnlineEventTerm', () => {
 			if ( 'core' === store ) {
 				return {
 					getPostType: mockGetPostType,
-					getEntityRecords: () => [ { id: onlineTermId } ],
 				};
 			}
 			if ( 'core/editor' === store ) {
 				return {
 					getCurrentPostType: () => 'gatherpress_event',
 					getEditedPostAttribute: () => [ onlineTermId ],
+					getEditorSettings: () => ( {
+						gatherpress: {
+							config: {
+								onlineEventTermIds: {
+									gatherpress_venue: onlineTermId,
+								},
+							},
+						},
+					} ),
 				};
 			}
 			return {};
@@ -1630,13 +1700,19 @@ describe( 'hasOnlineEventTerm', () => {
 			if ( 'core' === store ) {
 				return {
 					getPostType: mockGetPostType,
-					getEntityRecords: () => [ { id: 42 } ],
 				};
 			}
 			if ( 'core/editor' === store ) {
 				return {
 					getCurrentPostType: () => 'gatherpress_event',
 					getEditedPostAttribute: () => [ 99 ], // Different term ID.
+					getEditorSettings: () => ( {
+						gatherpress: {
+							config: {
+								onlineEventTermIds: { gatherpress_venue: 42 },
+							},
+						},
+					} ),
 				};
 			}
 			return {};
@@ -1651,13 +1727,19 @@ describe( 'hasOnlineEventTerm', () => {
 			if ( 'core' === store ) {
 				return {
 					getPostType: mockGetPostType,
-					getEntityRecords: () => [ { id: 42 } ], // Number.
 				};
 			}
 			if ( 'core/editor' === store ) {
 				return {
 					getCurrentPostType: () => 'gatherpress_event',
 					getEditedPostAttribute: () => [ '42' ], // String.
+					getEditorSettings: () => ( {
+						gatherpress: {
+							config: {
+								onlineEventTermIds: { gatherpress_venue: 42 },
+							},
+						},
+					} ),
 				};
 			}
 			return {};
@@ -1673,12 +1755,14 @@ describe( 'hasOnlineEventTerm', () => {
 			if ( 'core' === store ) {
 				return {
 					getPostType: mockGetPostType,
-					getEntityRecords: () => [ { id: onlineTermId } ],
 					getEntityRecord: () => ( {
 						id: 123,
 						_gatherpress_venue: [ 10, onlineTermId, 20 ], // Multiple terms.
 					} ),
 				};
+			}
+			if ( 'core/editor' === store ) {
+				return mockEditorWithOnlineId( onlineTermId );
 			}
 			return {};
 		} );

@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Venue;
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Setup as Core_Setup;
 use GatherPress\Core\Venue\Map\Setup as Map_Setup;
 use GatherPress\Core\Venue\Meta;
 use GatherPress\Core\Venue\Setup;
@@ -494,6 +495,58 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * Coverage for get_venue_meta on a hybrid event carrying both a physical
+	 * venue term and the online-event sentinel.
+	 *
+	 * The online state must be derived from the event object across every
+	 * assigned term, so `isOnlineEventTerm` is true even when the sentinel is
+	 * not the first term in the list.
+	 *
+	 * @covers ::get_venue_meta
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_meta_hybrid_is_online_true(): void {
+		register_taxonomy_for_object_type( Venue::TAXONOMY, Event::POST_TYPE );
+		Core_Setup::get_instance()->add_online_event_term();
+
+		$this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_name'  => 'hybrid-setup-venue',
+				'post_title' => 'Hybrid Setup Venue',
+			)
+		)->get();
+
+		$event = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+
+		// Attach the physical venue first so the online sentinel is not first.
+		wp_set_post_terms( $event->ID, array( '_hybrid-setup-venue' ), Venue::TAXONOMY );
+		wp_set_post_terms( $event->ID, array( Venue\Setup::ONLINE_EVENT_TERM_SLUG ), Venue::TAXONOMY, true );
+		add_post_meta( $event->ID, 'gatherpress_online_event_link', 'https://example.com/meet' );
+
+		// The link getter only discloses the URL in admin context, so force the
+		// admin screen to surface it through get_venue_meta's onlineEventLink key.
+		set_current_screen( 'edit.php' );
+		$venue_meta = Setup::get_instance()->get_venue_meta( $event->ID, Event::POST_TYPE );
+		set_current_screen( 'front' );
+
+		$this->assertTrue(
+			$venue_meta['isOnlineEventTerm'],
+			'get_venue_meta should report online when the sentinel is present on a hybrid.'
+		);
+		$this->assertSame(
+			'https://example.com/meet',
+			$venue_meta['onlineEventLink'],
+			'get_venue_meta should surface the online link for a hybrid.'
+		);
+	}
+
+	/**
 	 * Coverage for get_venue_meta method with valid JSON venue information.
 	 *
 	 * @covers ::get_venue_meta
@@ -789,6 +842,15 @@ class Test_Setup extends Base {
 			$result['gatherpress']['config']['venuePostTypes'],
 			'Failed to assert that venuePostTypes is an array.'
 		);
+		$this->assertArrayHasKey(
+			'onlineEventTermIds',
+			$result['gatherpress']['config'],
+			'Failed to assert that onlineEventTermIds is present in gatherpress config.'
+		);
+		$this->assertIsArray(
+			$result['gatherpress']['config']['onlineEventTermIds'],
+			'Failed to assert that onlineEventTermIds is an array.'
+		);
 
 		// Test that existing gatherpress settings are preserved and venuePostTypes is appended.
 		$settings = array(
@@ -805,6 +867,21 @@ class Test_Setup extends Base {
 			'venuePostTypes',
 			$result['gatherpress']['config'],
 			'Failed to assert that venuePostTypes is added alongside existing gatherpress settings.'
+		);
+		$this->assertArrayHasKey(
+			'onlineEventTermIds',
+			$result['gatherpress']['config'],
+			'Failed to assert that onlineEventTermIds is added alongside existing settings.'
+		);
+
+		// Seed the online-event sentinel term so the term-IDs map populates,
+		// exercising the non-null branch of the per-post-type resolver.
+		Core_Setup::get_instance()->add_online_event_term();
+		$seeded = $instance->add_editor_settings( array() );
+
+		$this->assertIsInt(
+			$seeded['gatherpress']['config']['onlineEventTermIds'][ Venue::POST_TYPE ],
+			'Failed to assert that the onlineEventTermIds entry is an int for a seeded venue taxonomy.'
 		);
 	}
 
@@ -1233,6 +1310,94 @@ class Test_Setup extends Base {
 		$this->assertTrue( $instance->is_venue_term_slug( '_my-venue' ) );
 		$this->assertFalse( $instance->is_venue_term_slug( 'online-event' ) );
 		$this->assertFalse( $instance->is_venue_term_slug( '' ) );
+	}
+
+	/**
+	 * Coverage for is_online_event_term_slug predicate.
+	 *
+	 * @covers ::is_online_event_term_slug
+	 *
+	 * @return void
+	 */
+	public function test_is_online_event_term_slug(): void {
+		$instance = Setup::get_instance();
+
+		$this->assertTrue(
+			$instance->is_online_event_term_slug( Setup::ONLINE_EVENT_TERM_SLUG ),
+			'is_online_event_term_slug should match the canonical online-event sentinel slug.'
+		);
+		$this->assertFalse(
+			$instance->is_online_event_term_slug( '_my-venue' ),
+			'is_online_event_term_slug should not match shadow-source slugs.'
+		);
+		$this->assertFalse(
+			$instance->is_online_event_term_slug( '' ),
+			'is_online_event_term_slug should not match empty input.'
+		);
+		$this->assertFalse(
+			$instance->is_online_event_term_slug( 'Online-Event' ),
+			'is_online_event_term_slug should be case-sensitive (matches the seeded lowercase slug).'
+		);
+	}
+
+	/**
+	 * Coverage for get_online_event_term_id resolver when the term is seeded.
+	 *
+	 * @covers ::get_online_event_term_id
+	 *
+	 * @return void
+	 */
+	public function test_get_online_event_term_id_returns_id_for_post_type(): void {
+		$instance = Setup::get_instance();
+
+		// Seed the online-event sentinel in this test's transaction so the
+		// resolver returns a real term ID, not null from a rolled-back seed.
+		Core_Setup::get_instance()->add_online_event_term();
+
+		$term_id = $instance->get_online_event_term_id( Venue::POST_TYPE );
+		$default = $instance->get_online_event_term_id();
+
+		$this->assertIsInt(
+			$term_id,
+			'get_online_event_term_id should return an int for a seeded venue taxonomy.'
+		);
+		$this->assertSame(
+			$term_id,
+			$default,
+			'Default venue post type should resolve same sentinel term ID.'
+		);
+		$this->assertSame(
+			Setup::ONLINE_EVENT_TERM_SLUG,
+			get_term_by( 'id', $term_id, Venue::TAXONOMY )->slug,
+			'Resolved term ID should point at the online-event sentinel.'
+		);
+	}
+
+	/**
+	 * Coverage for get_online_event_term_id resolver when the term is missing.
+	 *
+	 * @covers ::get_online_event_term_id
+	 *
+	 * @return void
+	 */
+	public function test_get_online_event_term_id_returns_null_when_term_missing(): void {
+		$instance = Setup::get_instance();
+		$existing = get_terms(
+			array(
+				'taxonomy'   => Venue::TAXONOMY,
+				'hide_empty' => false,
+				'slug'       => Setup::ONLINE_EVENT_TERM_SLUG,
+			)
+		);
+
+		foreach ( $existing as $term ) {
+			wp_delete_term( (int) $term->term_id, Venue::TAXONOMY );
+		}
+
+		$this->assertNull(
+			$instance->get_online_event_term_id( Venue::POST_TYPE ),
+			'get_online_event_term_id should return null when the sentinel term is missing.'
+		);
 	}
 
 	/**

@@ -15,7 +15,7 @@ import { useDispatch, useSelect } from '@wordpress/data';
  * Internal dependencies
  */
 import { usePostTypeLabel } from '../helpers/editor';
-import { getVenuePostType, getVenueTaxonomy } from '../helpers/venue';
+import { getOnlineEventTermId, getVenuePostType, getVenueTaxonomy } from '../helpers/venue';
 
 /**
  * OnlineEvent component for GatherPress.
@@ -62,25 +62,24 @@ const OnlineEvent = () => {
 		select( 'core/editor' ).getEditedPostAttribute( venueTaxonomy ),
 	);
 
-	// Get the online-event term to find its ID.
-	const onlineEventTerm = useSelect( ( select ) => {
-		const terms = select( 'core' ).getEntityRecords( 'taxonomy', venueTaxonomy, {
-			slug: 'online-event',
-			per_page: 1,
-		} );
-		return terms?.[ 0 ] || null;
-	}, [ venueTaxonomy ] );
+	// Get the online-event term ID from the pre-resolved editor settings so the
+	// panel doesn't issue a taxonomy REST lookup on every render. Falls back to
+	// null when settings haven't loaded yet (refresh path), in which case the
+	// panel behaves as today's empty-terms path does — no term assigned.
+	const onlineEventTermId = getOnlineEventTermId(
+		getVenuePostType( editorPostType )
+	);
 
 	// Check if online-event term is currently assigned.
 	// Term IDs may be strings or numbers depending on source, so compare as strings.
 	const hasOnlineEventTerm = ( () => {
-		if ( ! onlineEventTerm || ! venueTermIds ) {
+		if ( null === onlineEventTermId || ! venueTermIds ) {
 			return false;
 		}
 		const termIds = Array.isArray( venueTermIds )
 			? venueTermIds
 			: [ venueTermIds ];
-		const onlineTermId = String( onlineEventTerm.id );
+		const onlineTermId = String( onlineEventTermId );
 		return termIds.some( ( id ) => String( id ) === onlineTermId );
 	} )();
 
@@ -108,7 +107,7 @@ const OnlineEvent = () => {
 	};
 
 	const updateOnlineEventTerm = ( shouldAdd ) => {
-		if ( ! onlineEventTerm ) {
+		if ( null === onlineEventTermId ) {
 			return;
 		}
 
@@ -120,7 +119,7 @@ const OnlineEvent = () => {
 		}
 
 		// Use string for consistent comparison, but store as number for API.
-		const termId = onlineEventTerm.id;
+		const termId = Number( onlineEventTermId );
 		const termIdStr = String( termId );
 		const hasTermAlready = currentTerms.some(
 			( id ) => String( id ) === termIdStr

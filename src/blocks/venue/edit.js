@@ -26,7 +26,7 @@ import { useMemo, useState } from '@wordpress/element';
  */
 import { getCurrentContextualPostId, hasValidBlockContext, isInFSETemplate, usePostTypeLabel } from '../../helpers/editor';
 import { usePostTypeSupports, findEventPostById, DISABLED_FIELD_OPACITY } from '../../helpers/event';
-import { useVenuePostFromTermId, GetVenuePostFromEventId, findVenuePostById, getVenuePostType, getVenueTaxonomy, useVenueTaxonomyIds } from '../../helpers/venue';
+import { useVenuePostFromTermId, GetVenuePostFromEventId, findVenuePostById, getOnlineEventTermId, getVenuePostType, getVenueTaxonomy, useVenueTaxonomyIds } from '../../helpers/venue';
 import VenueNavigator from '../../components/VenueNavigator';
 import PatternPicker, { PatternChooserModal } from '../../components/PatternPicker';
 import { TEMPLATE_WITH_TITLE, TEMPLATE_WITHOUT_TITLE } from './templates/venue-details';
@@ -215,9 +215,14 @@ const Edit = ( props ) => {
 		[ isEditableEventContext, venueTaxonomyIds, venueTaxonomy ]
 	);
 
-	// Find venue term ID (excluding online-event).
+	// Find venue term ID (excluding the online-event sentinel, matched by its
+	// pre-resolved term ID so we don't string-compare slugs here).
+	const onlineTermId = getOnlineEventTermId( venuePostType );
+	const isOnlineTerm = ( term ) =>
+		null !== onlineTermId && Number( term?.id ) === Number( onlineTermId );
+
 	const venueTermId =
-		venueTerms.find( ( term ) => 'online-event' !== term?.slug )?.id ||
+		venueTerms.find( ( term ) => ! isOnlineTerm( term ) )?.id ||
 		null;
 
 	// Fetch venue post - use different methods for Query Loop vs direct editing.
