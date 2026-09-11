@@ -1,9 +1,18 @@
 /**
  * External dependencies
  */
-import { describe, expect, jest, it, beforeEach, afterEach } from '@jest/globals';
+import {
+	describe,
+	expect,
+	jest,
+	it,
+	beforeEach,
+	afterEach,
+} from '@jest/globals';
 import moment from 'moment';
 import 'moment-timezone';
+import { render, screen } from '@testing-library/react';
+import '@testing-library/jest-dom';
 
 /**
  * WordPress dependencies
@@ -114,7 +123,9 @@ describe( 'isPostTypeSupporting', () => {
 			return {};
 		} );
 
-		expect( isPostTypeSupporting( 'gatherpress-rsvp', 'gatherpress_event' ) ).toBe( true );
+		expect(
+			isPostTypeSupporting( 'gatherpress-rsvp', 'gatherpress_event' )
+		).toBe( true );
 		expect( isPostTypeSupporting( 'gatherpress-rsvp', 'post' ) ).toBe( false );
 	} );
 
@@ -150,9 +161,9 @@ describe( 'usePostTypeSupports', () => {
 			return {};
 		} );
 
-		expect(
-			usePostTypeSupports( 'gatherpress-event-date', 'post' )
-		).toBe( false );
+		expect( usePostTypeSupports( 'gatherpress-event-date', 'post' ) ).toBe(
+			false
+		);
 	} );
 
 	it( 'falls back to the editor post type when no postType is given', () => {
@@ -281,7 +292,9 @@ describe( 'hasEventActivityFilterSupport', () => {
 					getPostType: () => ( {
 						supports: { 'gatherpress-shadow-source': false },
 					} ),
-					getTaxonomy: () => ( { types: [ 'gatherpress_event', 'post' ] } ),
+					getTaxonomy: () => ( {
+						types: [ 'gatherpress_event', 'post' ],
+					} ),
 					getPostTypes: () => [
 						{
 							slug: 'gatherpress_event',
@@ -353,13 +366,51 @@ describe( 'hasEventActivityFilterSupport', () => {
 					getPostType: () => ( {
 						supports: { 'gatherpress-shadow-source': true },
 					} ),
-					getTaxonomy: () => ( { types: [ 'gatherpress_event', 'post' ] } ),
+					getTaxonomy: () => ( {
+						types: [ 'gatherpress_event', 'post' ],
+					} ),
 					getPostTypes: () => [
 						{
 							slug: 'gatherpress_event',
 							supports: {},
 						},
 					],
+				};
+			}
+			return {};
+		} );
+
+		expect( hasEventActivityFilterSupport( 'gatherpress_venue' ) ).toBe( false );
+	} );
+
+	it( 'returns false before the post type collection resolves', () => {
+		// `getPostTypes` returns undefined while core-data hydrates; the
+		// gate must treat that as unsupported rather than crash.
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getPostType: () => ( {
+						supports: { 'gatherpress-shadow-source': true },
+					} ),
+					getTaxonomy: () => ( { types: [ 'gatherpress_event' ] } ),
+					getPostTypes: () => undefined,
+				};
+			}
+			return {};
+		} );
+
+		expect( hasEventActivityFilterSupport( 'gatherpress_venue' ) ).toBe( false );
+	} );
+
+	it( 'returns false when the shadow taxonomy tags no post types', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getPostType: () => ( {
+						supports: { 'gatherpress-shadow-source': true },
+					} ),
+					getTaxonomy: () => ( { types: [] } ),
+					getPostTypes: () => [],
 				};
 			}
 			return {};
@@ -376,9 +427,8 @@ describe( 'useHasEventActivityFilterSupport', () => {
 	let useHasEventActivityFilterSupport;
 
 	beforeEach( async () => {
-		( { useHasEventActivityFilterSupport } = await import(
-			'@src/helpers/event'
-		) );
+		( { useHasEventActivityFilterSupport } =
+			await import( '@src/helpers/event' ) );
 	} );
 
 	it( 'returns false when sourcePostType is falsy', () => {
@@ -399,9 +449,9 @@ describe( 'useHasEventActivityFilterSupport', () => {
 			return {};
 		} );
 
-		expect(
-			useHasEventActivityFilterSupport( 'gatherpress_venue' )
-		).toBe( false );
+		expect( useHasEventActivityFilterSupport( 'gatherpress_venue' ) ).toBe(
+			false
+		);
 	} );
 
 	it( 'returns false when the shadow taxonomy is missing', () => {
@@ -417,9 +467,9 @@ describe( 'useHasEventActivityFilterSupport', () => {
 			return {};
 		} );
 
-		expect(
-			useHasEventActivityFilterSupport( 'gatherpress_venue' )
-		).toBe( false );
+		expect( useHasEventActivityFilterSupport( 'gatherpress_venue' ) ).toBe(
+			false
+		);
 	} );
 
 	it( 'returns false when the shadow taxonomy tags no post types', () => {
@@ -435,9 +485,9 @@ describe( 'useHasEventActivityFilterSupport', () => {
 			return {};
 		} );
 
-		expect(
-			useHasEventActivityFilterSupport( 'gatherpress_venue' )
-		).toBe( false );
+		expect( useHasEventActivityFilterSupport( 'gatherpress_venue' ) ).toBe(
+			false
+		);
 	} );
 
 	it( 'returns true when the shadow taxonomy types include an event-date post type', () => {
@@ -448,9 +498,9 @@ describe( 'useHasEventActivityFilterSupport', () => {
 			return {};
 		} );
 
-		expect(
-			useHasEventActivityFilterSupport( 'gatherpress_venue' )
-		).toBe( true );
+		expect( useHasEventActivityFilterSupport( 'gatherpress_venue' ) ).toBe(
+			true
+		);
 	} );
 
 	it( 'returns false when no event-supporting post type is registered', () => {
@@ -472,24 +522,46 @@ describe( 'useHasEventActivityFilterSupport', () => {
 			return {};
 		} );
 
-		expect(
-			useHasEventActivityFilterSupport( 'gatherpress_venue' )
-		).toBe( false );
+		expect( useHasEventActivityFilterSupport( 'gatherpress_venue' ) ).toBe(
+			false
+		);
 	} );
 
-	it( 'subscribes via useSelect so the gate is reactive', () => {
-		const { useSelect } = require( '@wordpress/data' );
-		useSelect.mockClear();
-		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+	it( 're-evaluates when the registry data arrives', () => {
+		// Behavioral check for the race the hook fixes: on the first render
+		// the wiring data isn't cached yet (the core selectors return
+		// nothing), then it resolves. The hook must flip from false to true
+		// rather than cache the false negative.
+		const { select } = require( '@wordpress/data' );
+		let wiringResolved = false;
+		select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
+				if ( ! wiringResolved ) {
+					return {
+						getPostType: () => undefined,
+						getTaxonomy: () => undefined,
+						getPostTypes: () => undefined,
+					};
+				}
 				return mockShadowSourceCore( [ 'gatherpress_event' ] );
 			}
 			return {};
 		} );
 
-		useHasEventActivityFilterSupport( 'gatherpress_venue' );
+		function Probe() {
+			const supported =
+				useHasEventActivityFilterSupport( 'gatherpress_venue' );
+			return <span data-testid="probe">{ supported ? 'yes' : 'no' }</span>;
+		}
 
-		expect( useSelect ).toHaveBeenCalledTimes( 1 );
+		const { rerender } = render( <Probe /> );
+
+		expect( screen.getByTestId( 'probe' ) ).toHaveTextContent( 'no' );
+
+		wiringResolved = true;
+		rerender( <Probe /> );
+
+		expect( screen.getByTestId( 'probe' ) ).toHaveTextContent( 'yes' );
 	} );
 } );
 
@@ -734,7 +806,10 @@ describe( 'hasValidEventId', () => {
 				return {
 					getPostType: mockGetPostType,
 					getEntityRecord: ( postType, postTypeName, id ) => {
-						if ( 'gatherpress_event' === postTypeName && postId === id ) {
+						if (
+							'gatherpress_event' === postTypeName &&
+							postId === id
+						) {
 							return {
 								id: postId,
 								status: 'draft', // Even draft is valid if it's the current post.
@@ -765,7 +840,10 @@ describe( 'hasValidEventId', () => {
 				return {
 					getPostType: mockGetPostType,
 					getEntityRecord: ( postType, postTypeName, id ) => {
-						if ( 'gatherpress_event' === postTypeName && postId === id ) {
+						if (
+							'gatherpress_event' === postTypeName &&
+							postId === id
+						) {
 							return {
 								id: postId,
 								status: 'publish',
@@ -796,7 +874,10 @@ describe( 'hasValidEventId', () => {
 				return {
 					getPostType: mockGetPostType,
 					getEntityRecord: ( postType, postTypeName, id ) => {
-						if ( 'gatherpress_event' === postTypeName && postId === id ) {
+						if (
+							'gatherpress_event' === postTypeName &&
+							postId === id
+						) {
 							return {
 								id: postId,
 								status: 'draft',
@@ -871,7 +952,10 @@ describe( 'hasValidEventId', () => {
 				return {
 					getPostType: mockGetPostType,
 					getEntityRecord: ( postType, postTypeName, id ) => {
-						if ( 'gatherpress_event' === postTypeName && postId === id ) {
+						if (
+							'gatherpress_event' === postTypeName &&
+							postId === id
+						) {
 							return {
 								id: postId,
 								status: 'private',
@@ -1080,9 +1164,7 @@ describe( 'hasValidEventId', () => {
 							supports: { 'gatherpress-event-date': true },
 						},
 					],
-					getEntityRecords: () => [
-						{ id: postId, status: 'draft' },
-					],
+					getEntityRecords: () => [ { id: postId, status: 'draft' } ],
 				};
 			}
 			return {};
@@ -1398,7 +1480,7 @@ describe( 'hasEventPastNotice', () => {
 			{
 				id: 'gatherpress_event_past',
 				isDismissible: false,
-			},
+			}
 		);
 	} );
 
@@ -1441,7 +1523,7 @@ describe( 'hasEventPastNotice', () => {
 			{
 				id: 'gatherpress_event_past',
 				isDismissible: false,
-			},
+			}
 		);
 	} );
 } );

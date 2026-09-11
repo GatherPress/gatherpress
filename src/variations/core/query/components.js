@@ -52,7 +52,7 @@ export const EventCountControls = ( { attributes, setAttributes } ) => {
 	return (
 		<RangeControl
 			label={ sprintf(
-			/* translators: %s: Plural post type label, e.g. "Events". */
+				/* translators: %s: Plural post type label, e.g. "Events". */
 				__( '%s Per Page', 'gatherpress' ),
 				pluralLabel
 			) }
@@ -88,7 +88,8 @@ export const EventCountControls = ( { attributes, setAttributes } ) => {
  * @return {Element}                        ToggleControl to exclude current event.
  */
 export const EventExcludeControls = ( { attributes, setAttributes } ) => {
-	const { query: { postType, exclude_current: excludeCurrent } = {} } = attributes;
+	const { query: { postType, exclude_current: excludeCurrent } = {} } =
+		attributes;
 
 	const currentPost = useSelect( ( select ) => {
 		return select( 'core/editor' ).getCurrentPost();
@@ -160,10 +161,10 @@ export const EventIncludeUnfinishedControls = ( {
 	let effectiveValue;
 	if ( undefined === includeUnfinished ) {
 		// Not explicitly set, use defaults based on event type
-		effectiveValue = ( 'upcoming' === eventListType );
+		effectiveValue = 'upcoming' === eventListType;
 	} else {
 		// Explicitly set to 1 or 0 (integers)
-		effectiveValue = ( 1 === includeUnfinished );
+		effectiveValue = 1 === includeUnfinished;
 	}
 
 	// Read the plural label so the label reflects what the currently
@@ -187,7 +188,7 @@ export const EventIncludeUnfinishedControls = ( {
 				_x(
 					'%1$s %2$s that have started but are not yet finished.',
 					"'Shows' or 'Hides'",
-					'gatherpress',
+					'gatherpress'
 				),
 				effectiveValue
 					? __( 'Shows', 'gatherpress' )
@@ -223,7 +224,10 @@ export const EventIncludeUnfinishedControls = ( {
  */
 export const EventListTypeControls = ( { attributes, setAttributes } ) => {
 	const {
-		query: { postType, gatherpress_event_query: eventListType = 'upcoming' } = {},
+		query: {
+			postType,
+			gatherpress_event_query: eventListType = 'upcoming',
+		} = {},
 	} = attributes;
 
 	// Read the singular label so the label reflects what the currently
@@ -303,9 +307,7 @@ export const ShadowSourceFilterControls = ( {
 	setAttributes,
 	inTemplateContext = false,
 } ) => {
-	const {
-		query: { shadow_filter: ShadowFilter } = {},
-	} = attributes;
+	const { query: { shadow_filter: ShadowFilter } = {} } = attributes;
 
 	// Detect if the editor's current post type is a shadow-source CPT
 	// (gatherpress-shadow-source post-type-support). If yes, the filter label
@@ -313,8 +315,14 @@ export const ShadowSourceFilterControls = ( {
 	// Production" — matching whatever the template renders against at runtime.
 	// Otherwise (events, pages, templates, patterns) fall back to gatherpress_venue
 	// since that's the most common scope-by-source scenario.
-	const fallbackPostId = useSelect( ( wpSelect ) => wpSelect( 'core/editor' )?.getCurrentPostId(), [] );
-	const fallbackPostType = useSelect( ( wpSelect ) => wpSelect( 'core/editor' )?.getCurrentPostType(), [] );
+	const fallbackPostId = useSelect(
+		( wpSelect ) => wpSelect( 'core/editor' )?.getCurrentPostId(),
+		[]
+	);
+	const fallbackPostType = useSelect(
+		( wpSelect ) => wpSelect( 'core/editor' )?.getCurrentPostType(),
+		[]
+	);
 	const editorPostId = context?.postId || fallbackPostId;
 	const editorPostType = context?.postType || fallbackPostType;
 
@@ -325,7 +333,8 @@ export const ShadowSourceFilterControls = ( {
 				: null,
 		[ editorPostType ]
 	);
-	const editorIsShadowSource = !! editorPostTypeSupports?.[ 'gatherpress-shadow-source' ];
+	const editorIsShadowSource =
+		!! editorPostTypeSupports?.[ 'gatherpress-shadow-source' ];
 	const sourcePostType = editorIsShadowSource
 		? editorPostType
 		: 'gatherpress_venue';
@@ -350,7 +359,8 @@ export const ShadowSourceFilterControls = ( {
 	// (templates, venue pages with the standard venue subsystem) behave as
 	// before.
 	const queryShadowId = attributes.query?.gatherpress_shadow_source_post_id;
-	const queryShadowType = attributes.query?.gatherpress_shadow_source_post_type;
+	const queryShadowType =
+		attributes.query?.gatherpress_shadow_source_post_type;
 	const needsBackfill =
 		!! ShadowFilter &&
 		editorIsShadowSource &&
@@ -471,20 +481,20 @@ export const HasEventsFilterControls = ( { attributes, setAttributes } ) => {
 
 	// A stored 0 intentionally selects the past branch; only an attribute that
 	// was never written defaults to "upcoming".
-	const showUpcoming = upcomingEventsOnly === undefined || !! upcomingEventsOnly;
+	const showUpcoming =
+		upcomingEventsOnly === undefined || !! upcomingEventsOnly;
 
 	return (
 		<>
 			<ToggleControl
 				label={ __( 'Filter by event activity', 'gatherpress' ) }
 				help={ sprintf(
-					/* translators: 1: Plural post type label, e.g. "Venues", 2: Plural noun, "events". */
+					/* translators: %s: Plural post type label, e.g. "Venues". */
 					__(
-						'Only shows %1$s that have upcoming or past %2$s attached.',
+						'Only shows %s that have upcoming or past events attached.',
 						'gatherpress'
 					),
-					pluralLabel,
-					__( 'events', 'gatherpress' )
+					pluralLabel
 				) }
 				checked={ !! hasEventsFilter }
 				onChange={ ( value ) => {
@@ -497,7 +507,9 @@ export const HasEventsFilterControls = ( { attributes, setAttributes } ) => {
 							// past/upcoming choice; only write the default 1 when
 							// nothing was stored yet.
 							upcoming_events_only:
-								value && upcomingEventsOnly === undefined ? 1 : upcomingEventsOnly,
+								value && upcomingEventsOnly === undefined
+									? 1
+									: upcomingEventsOnly,
 						},
 					} );
 				} }
@@ -697,10 +709,7 @@ export const EventOrderControls = ( { attributes, setAttributes } ) => {
  *
  * @return {Element} GatherPress Query Loop controls.
  */
-const QueryControlsContent = ( {
-	blockProps,
-	inTemplateContext,
-} ) => {
+const QueryControlsContent = ( { blockProps, inTemplateContext } ) => {
 	const queryPostType = blockProps.attributes?.query?.postType;
 	const currentPostType = blockProps?.context?.postType;
 	// The five event controls below apply to whatever post type the Query Loop
@@ -728,9 +737,8 @@ const QueryControlsContent = ( {
 		'gatherpress-shadow-source',
 		queryPostType
 	);
-	const queriedWiresEventActivity = useHasEventActivityFilterSupport(
-		queryPostType
-	);
+	const queriedWiresEventActivity =
+		useHasEventActivityFilterSupport( queryPostType );
 
 	const showExcludeControl =
 		isEventQuery &&
@@ -749,12 +757,8 @@ const QueryControlsContent = ( {
 	return (
 		<>
 			{ isEventQuery && <EventListTypeControls { ...blockProps } /> }
-			{ isEventQuery && (
-				<EventIncludeUnfinishedControls { ...blockProps } />
-			) }
-			{ showExcludeControl && (
-				<EventExcludeControls { ...blockProps } />
-			) }
+			{ isEventQuery && <EventIncludeUnfinishedControls { ...blockProps } /> }
+			{ showExcludeControl && <EventExcludeControls { ...blockProps } /> }
 			{ showShadowSourceFilterControl && (
 				<ShadowSourceFilterControls
 					{ ...blockProps }

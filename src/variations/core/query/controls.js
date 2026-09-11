@@ -115,7 +115,8 @@ const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
 export const EventQueryControlsPanel = ( props ) => {
 	const { updateBlockAttributes } = useDispatch( 'core/block-editor' );
 	const { clientId } = props;
-	const gatherpressEventQuery = props.attributes?.query?.gatherpress_event_query || 'upcoming';
+	const gatherpressEventQuery =
+		props.attributes?.query?.gatherpress_event_query || 'upcoming';
 	const queryPostType = props.attributes?.query?.postType;
 	const queryPostTypeSupportsEvents = usePostTypeSupports(
 		'gatherpress-event-date',
@@ -137,9 +138,10 @@ export const EventQueryControlsPanel = ( props ) => {
 
 	// Update block name with post type label and query mode
 	useEffect( () => {
-		const queryLabel = ( 'upcoming' === gatherpressEventQuery )
-			? __( 'Upcoming', 'gatherpress' )
-			: __( 'Past', 'gatherpress' );
+		const queryLabel =
+			'upcoming' === gatherpressEventQuery
+				? __( 'Upcoming', 'gatherpress' )
+				: __( 'Past', 'gatherpress' );
 
 		let blockName = sprintf(
 			/* translators: %1$s: 'Upcoming' or 'Past', %2$s: Plural post type label, e.g. "Events". */
@@ -167,15 +169,20 @@ export const EventQueryControlsPanel = ( props ) => {
 	] );
 
 	// Strip the event-only query vars when the selected post type doesn't
-	// support event dates. `orderBy: 'datetime'` (and 'rand') are added to the
-	// REST orderby enum only for event-date post types, so leaving them on a
-	// plain post/page/venue query makes the core endpoint reject the request
-	// (rest_invalid_param) and the Query Loop spins forever (#1756). The
-	// gatherpress_event_query / include_unfinished vars are harmless on those
-	// endpoints but meaningless there, so drop them too. Guarded on the vars
-	// still being present so this doesn't re-fire in a loop.
+	// support event dates, and the activity-filter vars when it doesn't
+	// support shadow sources — each group under its own gate. `orderBy:
+	// 'datetime'` (and 'rand') are added to the REST orderby enum only for
+	// event-date post types, so leaving them on a plain post/page/venue query
+	// makes the core endpoint reject the request (rest_invalid_param) and the
+	// Query Loop spins forever (#1756). The gatherpress_event_query /
+	// include_unfinished vars are harmless on those endpoints but meaningless
+	// there, so drop them too. The activity vars do not break or narrow a
+	// `post` query, but they silently reactivate activity filtering when the
+	// user later selects a shadow-source type again, so they go as well.
+	// Guarded on the vars still being present so this doesn't re-fire in a
+	// loop.
 	useEffect( () => {
-		if ( queryPostTypeSupportsEvents ) {
+		if ( queryPostTypeSupportsEvents && queryPostTypeSupportsShadowSource ) {
 			return;
 		}
 
@@ -185,28 +192,64 @@ export const EventQueryControlsPanel = ( props ) => {
 		const hasEventOnlyVars =
 			undefined !== query.gatherpress_event_query ||
 			undefined !== query.include_unfinished ||
+			undefined !== query.has_events_filter ||
+			undefined !== query.upcoming_events_only ||
 			hasEventOnlyOrderBy;
 
 		if ( ! hasEventOnlyVars ) {
 			return;
 		}
 
-		const {
-			gatherpress_event_query: removedEventQuery,
-			include_unfinished: removedIncludeUnfinished,
-			...remainingQuery
-		} = query;
+		const remainingQuery = { ...query };
 
 		// Reset the GatherPress-only ordering to the core default the
 		// posts/pages endpoint accepts; leave any other orderBy intact.
-		if ( hasEventOnlyOrderBy ) {
+		if ( ! queryPostTypeSupportsEvents && hasEventOnlyOrderBy ) {
 			remainingQuery.orderBy = 'date';
 			remainingQuery.order = 'desc';
+		}
+
+		if ( ! queryPostTypeSupportsEvents ) {
+			delete remainingQuery.gatherpress_event_query;
+			delete remainingQuery.include_unfinished;
+		}
+
+		if ( ! queryPostTypeSupportsShadowSource ) {
+			delete remainingQuery.has_events_filter;
+			delete remainingQuery.upcoming_events_only;
+		}
+
+		// The context params stay on event queries: the REST-side preview
+		// consumes them there too (rest_query forwards them when the
+		// queried type supports event dates). Delete them only when the
+		// queried type supports neither feature, or the strip fights the
+		// ShadowSourceFilterControls backfill effect and the block
+		// ping-pongs between two states.
+		if (
+			! queryPostTypeSupportsShadowSource &&
+			! queryPostTypeSupportsEvents
+		) {
+			delete remainingQuery.gatherpress_shadow_source_post_id;
+			delete remainingQuery.gatherpress_shadow_source_post_type;
+		}
+
+		// A shadow-source query carrying only activity vars trips the presence
+		// check above while nothing is actually stripped; skip the write when
+		// the remaining query is unchanged so this doesn't re-fire in a loop.
+		const unchanged = Object.keys( remainingQuery ).every(
+			( key ) => remainingQuery[ key ] === query[ key ]
+		);
+		if (
+			unchanged &&
+			Object.keys( remainingQuery ).length === Object.keys( query ).length
+		) {
+			return;
 		}
 
 		updateBlockAttributes( clientId, { query: remainingQuery } );
 	}, [
 		queryPostTypeSupportsEvents,
+		queryPostTypeSupportsShadowSource,
 		props.attributes,
 		clientId,
 		updateBlockAttributes,
@@ -232,15 +275,15 @@ export const EventQueryControlsPanel = ( props ) => {
 
 	return (
 		<InspectorControls>
-			<PanelBody title={ sprintf(
-				/* translators: %s: Singular post type label, e.g. "Event". */
-				__( '%s Query Settings', 'gatherpress' ),
-				singularLabel
-			) }>
+			<PanelBody
+				title={ sprintf(
+					/* translators: %s: Singular post type label, e.g. "Event". */
+					__( '%s Query Settings', 'gatherpress' ),
+					singularLabel
+				) }
+			>
 				{ false === props.attributes.query.inherit ? (
-					<EventQueryControls.Slot
-						fillProps={ { ...props } }
-					/>
+					<EventQueryControls.Slot fillProps={ { ...props } } />
 				) : (
 					<EventInheritedQueryControls.Slot
 						fillProps={ { ...props } }

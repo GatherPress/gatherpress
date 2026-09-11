@@ -2346,31 +2346,32 @@ class Test_Query extends Base {
 		$this->assertSame( $custom_pt, get_post_type( $event_post->ID ) );
 
 		$instance = Query::get_instance();
-		$this->assertContains( $custom_pt, get_post_types_by_support( 'gatherpress-event-date' ) );
-
-		// An administrator doesn't have the custom cap by default, so the
-		// private production event must NOT be picked up yet.
-		$admin_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
-		wp_set_current_user( $admin_id );
-
-		$this->assertNotContains(
-			'_slugs-custom-cap-venue',
-			$instance->get_active_shadow_term_slugs( Venue::TAXONOMY, true ),
-			'A private custom-cap event should not resolve without the post-type read_private_posts cap.'
-		);
-
-		// Grant the post-type-specific cap and re-check.
-		$cap_name = get_post_type_object( $custom_pt )->cap->read_private_posts;
-		$user     = new WP_User( $admin_id );
-		$user->add_cap( $cap_name );
-		wp_set_current_user( $admin_id );
-		// add_cap() writes to user_meta, but WP_User caches caps in the instance
-		// map. Re-add on the freshly-loaded current user so current_user_can()
-		// sees the cap this same request.
-		wp_get_current_user()->add_cap( $cap_name );
-		$this->assertTrue( current_user_can( $cap_name ), $cap_name );
 
 		try {
+			$this->assertContains( $custom_pt, get_post_types_by_support( 'gatherpress-event-date' ) );
+
+			// An administrator doesn't have the custom cap by default, so the
+			// private production event must NOT be picked up yet.
+			$admin_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+			wp_set_current_user( $admin_id );
+
+			$this->assertNotContains(
+				'_slugs-custom-cap-venue',
+				$instance->get_active_shadow_term_slugs( Venue::TAXONOMY, true ),
+				'A private custom-cap event should not resolve without the post-type read_private_posts cap.'
+			);
+
+			// Grant the post-type-specific cap and re-check.
+			$cap_name = get_post_type_object( $custom_pt )->cap->read_private_posts;
+			$user     = new WP_User( $admin_id );
+			$user->add_cap( $cap_name );
+			wp_set_current_user( $admin_id );
+			// add_cap() writes to user_meta, but WP_User caches caps in the instance
+			// map. Re-add on the freshly-loaded current user so current_user_can()
+			// sees the cap this same request.
+			wp_get_current_user()->add_cap( $cap_name );
+			$this->assertTrue( current_user_can( $cap_name ), $cap_name );
+
 			$this->assertContains(
 				'_slugs-custom-cap-venue',
 				$instance->get_active_shadow_term_slugs( Venue::TAXONOMY, true ),

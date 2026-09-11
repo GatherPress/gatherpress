@@ -6,9 +6,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 jest.mock( '@wordpress/components', () => ( {
-	RangeControl: ( { label } ) => (
-		<div data-testid="range-control">{ label }</div>
-	),
+	RangeControl: ( { label } ) => <div data-testid="range-control">{ label }</div>,
 	SelectControl: ( { label } ) => (
 		<div data-testid="select-control">{ label }</div>
 	),
@@ -155,9 +153,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 
 		render( <EventQueryControlsSlotFill /> );
 
-		expect(
-			screen.queryByText( venueToggleLabel )
-		).not.toBeInTheDocument();
+		expect( screen.queryByText( venueToggleLabel ) ).not.toBeInTheDocument();
 		expect( usePostTypeSupports ).toHaveBeenCalledWith(
 			'gatherpress-shadow-source',
 			'gatherpress_event'
@@ -220,9 +216,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 
 		render( <EventQueryControlsSlotFill /> );
 
-		expect(
-			screen.getByText( excludeToggleLabel )
-		).toBeInTheDocument();
+		expect( screen.getByText( excludeToggleLabel ) ).toBeInTheDocument();
 	} );
 
 	it( 'hides the exclude-current-event toggle when the host is not an event post type', () => {
@@ -254,9 +248,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 
 		render( <EventQueryControlsSlotFill /> );
 
-		expect(
-			screen.queryByText( excludeToggleLabel )
-		).not.toBeInTheDocument();
+		expect( screen.queryByText( excludeToggleLabel ) ).not.toBeInTheDocument();
 	} );
 
 	it( 'renders the event controls when the queried post type is an event but the host is a page', () => {
@@ -329,21 +321,13 @@ describe( 'EventQueryControlsSlotFill', () => {
 
 		render( <EventQueryControlsSlotFill /> );
 
-		expect(
-			screen.queryByText( 'Event List Type' )
-		).not.toBeInTheDocument();
+		expect( screen.queryByText( 'Event List Type' ) ).not.toBeInTheDocument();
 		expect(
 			screen.queryByText( 'Include Unfinished Events' )
 		).not.toBeInTheDocument();
-		expect(
-			screen.queryByText( 'Events Per Page' )
-		).not.toBeInTheDocument();
-		expect(
-			screen.queryByText( 'Event Offset' )
-		).not.toBeInTheDocument();
-		expect(
-			screen.queryByText( 'Order Events by' )
-		).not.toBeInTheDocument();
+		expect( screen.queryByText( 'Events Per Page' ) ).not.toBeInTheDocument();
+		expect( screen.queryByText( 'Event Offset' ) ).not.toBeInTheDocument();
+		expect( screen.queryByText( 'Order Events by' ) ).not.toBeInTheDocument();
 	} );
 
 	it( 'shows the exclude-current-event toggle when the host is an event post type', () => {
@@ -389,9 +373,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 
 		render( <EventQueryControlsSlotFill /> );
 
-		expect(
-			screen.queryByText( excludeToggleLabel )
-		).not.toBeInTheDocument();
+		expect( screen.queryByText( excludeToggleLabel ) ).not.toBeInTheDocument();
 	} );
 
 	it( 'shows the event-activity filter when the queried type is a shadow source and differs from the host', () => {
@@ -630,19 +612,17 @@ describe( 'EventQueryControlsSlotFill', () => {
 		expect(
 			screen.queryByText( 'Filter by event activity' )
 		).not.toBeInTheDocument();
-		expect(
-			screen.queryByText( 'Event List Type' )
-		).not.toBeInTheDocument();
-		expect(
-			screen.queryByText( 'Events Per Page' )
-		).not.toBeInTheDocument();
+		expect( screen.queryByText( 'Event List Type' ) ).not.toBeInTheDocument();
+		expect( screen.queryByText( 'Events Per Page' ) ).not.toBeInTheDocument();
 	} );
 } );
 
 describe( 'HasEventsFilterControls', () => {
 	beforeEach( () => {
 		usePostTypeLabel.mockReset();
-		usePostTypeLabel.mockImplementation( ( key, postType, fallback ) => fallback );
+		usePostTypeLabel.mockImplementation(
+			( key, postType, fallback ) => fallback
+		);
 	} );
 
 	const activityLabel = 'Filter by event activity';
@@ -756,9 +736,10 @@ describe( 'HasEventsFilterControls', () => {
 		expect( screen.getByText( pastLabel ) ).toBeInTheDocument();
 		expect( screen.getByText( pastHelp ) ).toBeInTheDocument();
 		expect( screen.queryByText( upcomingLabel ) ).not.toBeInTheDocument();
-		expect(
-			screen.getByRole( 'button', { name: pastLabel } )
-		).toHaveAttribute( 'aria-pressed', 'false' );
+		expect( screen.getByRole( 'button', { name: pastLabel } ) ).toHaveAttribute(
+			'aria-pressed',
+			'false'
+		);
 	} );
 
 	it( 'writes upcoming_events_only to 0 when the sub-filter is turned off', () => {
@@ -838,6 +819,35 @@ describe( 'HasEventsFilterControls', () => {
 				postType: 'gatherpress_venue',
 				has_events_filter: 0,
 				upcoming_events_only: 0,
+			},
+		} );
+	} );
+
+	it( 'clears has_events_filter without writing a sub-filter value when none was stored', () => {
+		// Pins the other side of the ternary: with no stored
+		// upcoming_events_only, turning the primary filter off writes
+		// `undefined` rather than the default 1.
+		const setAttributes = jest.fn();
+
+		render(
+			<HasEventsFilterControls
+				attributes={ {
+					query: {
+						postType: 'gatherpress_venue',
+						has_events_filter: 1,
+					},
+				} }
+				setAttributes={ setAttributes }
+			/>
+		);
+
+		fireEvent.click( screen.getByRole( 'button', { name: activityLabel } ) );
+
+		expect( setAttributes ).toHaveBeenCalledWith( {
+			query: {
+				postType: 'gatherpress_venue',
+				has_events_filter: 0,
+				upcoming_events_only: undefined,
 			},
 		} );
 	} );

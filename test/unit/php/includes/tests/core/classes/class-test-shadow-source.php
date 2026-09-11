@@ -262,18 +262,20 @@ class Test_Shadow_Source extends Base {
 
 		unregister_taxonomy_for_object_type( Venue::TAXONOMY, 'gatherpress_event' );
 
-		$instance->attach_taxonomies_to_object_types();
+		try {
+			$instance->attach_taxonomies_to_object_types();
 
-		$this->assertFalse(
-			is_object_in_taxonomy( 'gatherpress_event', Venue::TAXONOMY ),
-			'When the filter resolves to an empty list, no event CPTs should be wired.'
-		);
+			$this->assertFalse(
+				is_object_in_taxonomy( 'gatherpress_event', Venue::TAXONOMY ),
+				'When the filter resolves to an empty list, no event CPTs should be wired.'
+			);
+		} finally {
+			remove_filter( 'gatherpress_shadow_taxonomy_object_types', $short_circuit, PHP_INT_MAX );
 
-		remove_filter( 'gatherpress_shadow_taxonomy_object_types', $short_circuit, PHP_INT_MAX );
-
-		// Restore the venue taxonomy onto gatherpress_event so the activity
-		// filter tests below still resolve source posts.
-		register_taxonomy_for_object_type( Venue::TAXONOMY, 'gatherpress_event' );
+			// Restore the venue taxonomy onto gatherpress_event so the activity
+			// filter tests below still resolve source posts.
+			register_taxonomy_for_object_type( Venue::TAXONOMY, 'gatherpress_event' );
+		}
 	}
 
 	/**

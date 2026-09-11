@@ -171,26 +171,28 @@ class Test_Event_Query extends Base {
 		remove_all_filters( sprintf( 'rest_%s_query', $post_type ) );
 		remove_all_filters( sprintf( 'rest_%s_collection_params', $post_type ) );
 
-		$instance->register_existing_event_date_post_types();
+		try {
+			$instance->register_existing_event_date_post_types();
 
-		$this->assertSame(
-			10,
-			has_filter(
-				sprintf( 'rest_%s_query', $post_type ),
-				array( $instance, 'rest_query' )
-			),
-			'Sweep should install rest_query filter for every event-supporting post type.'
-		);
-		$this->assertSame(
-			10,
-			has_filter(
-				sprintf( 'rest_%s_collection_params', $post_type ),
-				array( $instance, 'rest_collection_params' )
-			),
-			'Sweep should install rest_collection_params filter for every event-supporting post type.'
-		);
-
-		unregister_post_type( $post_type );
+			$this->assertSame(
+				10,
+				has_filter(
+					sprintf( 'rest_%s_query', $post_type ),
+					array( $instance, 'rest_query' )
+				),
+				'Sweep should install rest_query filter for every event-supporting post type.'
+			);
+			$this->assertSame(
+				10,
+				has_filter(
+					sprintf( 'rest_%s_collection_params', $post_type ),
+					array( $instance, 'rest_collection_params' )
+				),
+				'Sweep should install rest_collection_params filter for every event-supporting post type.'
+			);
+		} finally {
+			unregister_post_type( $post_type );
+		}
 	}
 
 	/**
@@ -210,9 +212,9 @@ class Test_Event_Query extends Base {
 		// Create mock WP_REST_Request.
 		$request = $this->createMock( \WP_REST_Request::class );
 
-		// Event post type reads six event-only params; shadow-source-only
-		// params are not queried when the requested post type is not a
-		// shadow source.
+		// Event post type reads six event-only params plus the two
+		// shadow-source context params, which the REST branch forwards for
+		// event post types too (the editor preview needs them there).
 		$param_map = array(
 			array( 'include', null ),
 			array( 'gatherpress_event_query', 'past' ),
@@ -220,9 +222,11 @@ class Test_Event_Query extends Base {
 			array( 'include_unfinished', 0 ), // Integer 0 - the critical test case.
 			array( 'orderby', 'datetime' ),
 			array( 'shadow_filter', null ),
+			array( 'gatherpress_shadow_source_post_id', null ),
+			array( 'gatherpress_shadow_source_post_type', null ),
 		);
 
-		$request->expects( $this->exactly( 6 ) )
+		$request->expects( $this->exactly( 8 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -802,22 +806,24 @@ class Test_Event_Query extends Base {
 			)
 		);
 
-		$block->context = array(
-			'query' => array(
-				'gatherpress_event_query' => 'upcoming',
-				'postType'                => 'production',
-			),
-		);
+		try {
+			$block->context = array(
+				'query' => array(
+					'gatherpress_event_query' => 'upcoming',
+					'postType'                => 'production',
+				),
+			);
 
-		$result = $instance->query_loop_block_query_vars( array(), $block );
+			$result = $instance->query_loop_block_query_vars( array(), $block );
 
-		$this->assertSame(
-			$post_type,
-			$result['post_type'],
-			'Should pass the block-selected post type through verbatim, not the union of every event-supporting type.'
-		);
-
-		unregister_post_type( $post_type );
+			$this->assertSame(
+				$post_type,
+				$result['post_type'],
+				'Should pass the block-selected post type through verbatim, not the union of every type.'
+			);
+		} finally {
+			unregister_post_type( $post_type );
+		}
 	}
 
 	/**
@@ -973,9 +979,11 @@ class Test_Event_Query extends Base {
 			array( 'include_unfinished', null ),
 			array( 'orderby', 'datetime' ),
 			array( 'shadow_filter', null ),
+			array( 'gatherpress_shadow_source_post_id', null ),
+			array( 'gatherpress_shadow_source_post_type', null ),
 		);
 
-		$request->expects( $this->exactly( 6 ) )
+		$request->expects( $this->exactly( 8 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -1019,9 +1027,11 @@ class Test_Event_Query extends Base {
 			array( 'include_unfinished', 1 ),
 			array( 'orderby', 'date' ),
 			array( 'shadow_filter', null ),
+			array( 'gatherpress_shadow_source_post_id', null ),
+			array( 'gatherpress_shadow_source_post_type', null ),
 		);
 
-		$request->expects( $this->exactly( 6 ) )
+		$request->expects( $this->exactly( 8 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -1069,9 +1079,11 @@ class Test_Event_Query extends Base {
 			array( 'include_unfinished', null ),
 			array( 'orderby', null ),
 			array( 'shadow_filter', null ),
+			array( 'gatherpress_shadow_source_post_id', null ),
+			array( 'gatherpress_shadow_source_post_type', null ),
 		);
 
-		$request->expects( $this->exactly( 6 ) )
+		$request->expects( $this->exactly( 8 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -1253,9 +1265,11 @@ class Test_Event_Query extends Base {
 			array( 'include_unfinished', null ),
 			array( 'orderby', '' ),
 			array( 'shadow_filter', null ),
+			array( 'gatherpress_shadow_source_post_id', null ),
+			array( 'gatherpress_shadow_source_post_type', null ),
 		);
 
-		$request->expects( $this->exactly( 6 ) )
+		$request->expects( $this->exactly( 8 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -1321,9 +1335,11 @@ class Test_Event_Query extends Base {
 			array( 'include_unfinished', null ),
 			array( 'orderby', null ),
 			array( 'shadow_filter', 1 ),
+			array( 'gatherpress_shadow_source_post_id', null ),
+			array( 'gatherpress_shadow_source_post_type', null ),
 		);
 
-		$request->expects( $this->exactly( 6 ) )
+		$request->expects( $this->exactly( 8 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -1343,6 +1359,69 @@ class Test_Event_Query extends Base {
 		$result = $instance->rest_query( $initial_args, $request );
 
 		$this->assertSame( 1, $result['shadow_filter'], 'Should pass shadow_filter through to custom args.' );
+	}
+
+	/**
+	 * Forwards the shadow-source context params on an event post-type query.
+	 *
+	 * An event listing with the contextual shadow filter on needs the context
+	 * post in REST, where `is_singular()` is false and the query would
+	 * otherwise stay unscoped. The two context params are not schema-declared
+	 * for event post types, but WordPress only validates registered collection
+	 * params, so reading them with get_param() is safe.
+	 *
+	 * @since 0.36.0
+	 * @covers ::rest_query
+	 *
+	 * @return void
+	 */
+	public function test_rest_query_forwards_shadow_context_on_event_query(): void {
+		$instance = Event_Query::get_instance();
+
+		$request = $this->createMock( \WP_REST_Request::class );
+
+		$param_map = array(
+			array( 'include', null ),
+			array( 'gatherpress_event_query', 'upcoming' ),
+			array( 'exclude_current', null ),
+			array( 'include_unfinished', null ),
+			array( 'orderby', null ),
+			array( 'shadow_filter', 1 ),
+			array( 'gatherpress_shadow_source_post_id', 42 ),
+			array( 'gatherpress_shadow_source_post_type', 'production' ),
+		);
+
+		$request->expects( $this->exactly( 8 ) )
+			->method( 'get_param' )
+			->willReturnMap( $param_map );
+
+		$request->expects( $this->once() )
+			->method( 'get_params' )
+			->willReturn(
+				array(
+					'gatherpress_event_query'             => 'upcoming',
+					'shadow_filter'                       => 1,
+					'gatherpress_shadow_source_post_id'   => 42,
+					'gatherpress_shadow_source_post_type' => 'production',
+				)
+			);
+
+		$initial_args = array(
+			'post_type' => Event::POST_TYPE,
+		);
+
+		$result = $instance->rest_query( $initial_args, $request );
+
+		$this->assertSame(
+			42,
+			$result['gatherpress_shadow_source_post_id'],
+			'Should forward the shadow-source post id on an event query.'
+		);
+		$this->assertSame(
+			'production',
+			$result['gatherpress_shadow_source_post_type'],
+			'Should forward the shadow-source post type on an event query.'
+		);
 	}
 
 	/**
@@ -1696,14 +1775,16 @@ class Test_Event_Query extends Base {
 			)
 		);
 
-		$types = Utility::invoke_hidden_method( $instance, 'get_query_rest_post_types', array() );
+		try {
+			$types = Utility::invoke_hidden_method( $instance, 'get_query_rest_post_types', array() );
 
-		$this->assertContains( 'probe_evt', $types, 'Event-supporting types should be listed.' );
-		$this->assertContains( 'probe_shadow', $types, 'Shadow-source types should be listed.' );
-		$this->assertNotContains( 'post', $types, 'Unrelated types should not be listed.' );
-
-		unregister_post_type( 'probe_evt' );
-		unregister_post_type( 'probe_shadow' );
+			$this->assertContains( 'probe_evt', $types, 'Event-supporting types should be listed.' );
+			$this->assertContains( 'probe_shadow', $types, 'Shadow-source types should be listed.' );
+			$this->assertNotContains( 'post', $types, 'Unrelated types should not be listed.' );
+		} finally {
+			unregister_post_type( 'probe_evt' );
+			unregister_post_type( 'probe_shadow' );
+		}
 	}
 
 	/**

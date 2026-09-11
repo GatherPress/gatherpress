@@ -559,11 +559,17 @@ final class Event_Query {
 			if ( null !== $upcoming_events_only ) {
 				$custom_args['upcoming_events_only'] = $upcoming_events_only;
 			}
+		}
 
+		if ( $query_shadow_supports || $query_event_supports ) {
 			// REST-side context for the editor preview. When the editor's
 			// contextual toggle is on, the block sends the editor's current
 			// page post id and type so the REST query can scope to the same
-			// source the frontend `is_singular()` path would scope to.
+			// source the frontend `is_singular()` path would scope to. This
+			// also applies on event queries: an event listing with the
+			// contextual shadow filter on needs the context post in REST,
+			// where `is_singular()` is false and the query would otherwise
+			// stay unscoped.
 			$context_post_id = $request->get_param( 'gatherpress_shadow_source_post_id' );
 			if ( null !== $context_post_id ) {
 				$custom_args['gatherpress_shadow_source_post_id'] = (int) $context_post_id;
