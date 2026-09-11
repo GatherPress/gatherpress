@@ -22,6 +22,10 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Query;
+use GatherPress\Core\Event\Recurrence\Context;
+use GatherPress\Core\Event\Recurrence\Query as Recurrence_Query;
+use GatherPress\Core\Event\Recurrence\Rewrite;
+use GatherPress\Core\Event\Recurrence\Series;
 use GatherPress\Core\Shadow_Source;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Traits\Singleton;
@@ -60,6 +64,22 @@ final class Setup {
 
 	const QUERY_VAR = 'gatherpress_calendar';
 	const ICAL_SLUG = 'ical'; // Hardcoded ical slug — must not be translated or renamed.
+
+	/**
+	 * Endpoint slugs that serve an iCalendar body rather than an off-site redirect.
+	 *
+	 * The single source of truth for "this request is asking for `.ics`", read
+	 * both here and by `Recurrence\Rewrite::maybe_resolve_bare_series()`, which
+	 * must not narrow a series export to one date. The Google and Yahoo
+	 * redirects are deliberately absent: they are single-datetime query strings
+	 * that cannot express recurrence, and they are accepted carrying whatever
+	 * occurrence the request resolved to.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @var string[]
+	 */
+	const ICS_SLUGS = array( self::ICAL_SLUG, 'outlook' );
 
 	/**
 	 * Class constructor.
@@ -156,12 +176,18 @@ final class Setup {
 			self::QUERY_VAR,
 			$post_type
 		) )->init();
+		$ics_templates = array_map(
+			fn( string $slug ): Template => new Template( $slug, array( $this, 'get_ical_file_template' ) ),
+			self::ICS_SLUGS
+		);
+
 		( new Post_Type_Single(
-			array(
-				new Template( self::ICAL_SLUG, array( $this, 'get_ical_file_template' ) ),
-				new Template( 'outlook', array( $this, 'get_ical_file_template' ) ),
-				new Redirect( 'google-calendar', array( $this, 'queried_event_google_url' ) ),
-				new Redirect( 'yahoo-calendar', array( $this, 'queried_event_yahoo_url' ) ),
+			array_merge(
+				$ics_templates,
+				array(
+					new Redirect( 'google-calendar', array( $this, 'queried_event_google_url' ) ),
+					new Redirect( 'yahoo-calendar', array( $this, 'queried_event_yahoo_url' ) ),
+				)
 			),
 			self::QUERY_VAR,
 			$post_type
@@ -696,17 +722,30 @@ final class Setup {
 	 * Wrap iCal `BEGIN:VEVENT` blocks in a `BEGIN:VCALENDAR` envelope.
 	 *
 	 * Generates the `BEGIN:VCALENDAR` / `END:VCALENDAR` lines, the `VERSION`
-	 * header, and the `PRODID` header (which includes the blog title and the
-	 * current locale for proper calendar identification).
+	 * header, the `PRODID` header (which includes the blog title and the
+	 * current locale for proper calendar identification), and a `VTIMEZONE`
+	 * for every named timezone the components reference.
+	 *
+	 * The timezone definitions are not decoration. GatherPress emits
+	 * `DTSTART;TZID=...` wherever an event carries a named timezone, and
+	 * RFC 5545 section 3.2.19 requires that such a parameter refer to a
+	 * `VTIMEZONE` in the same `VCALENDAR`, so the definitions are what keep
+	 * the timezone-qualified start valid. They are derived from the assembled
+	 * component text rather than from the events, so a `TZID` cannot be emitted
+	 * without its definition following it. A fixed-offset event contributes no
+	 * `TZID` and therefore no definition.
 	 *
 	 * @since 0.34.0
+	 *
+	 * @since 0.36.0 Emits a `VTIMEZONE` per distinct referenced timezone.
 	 *
 	 * @param string $calendar_data The events to be included in the iCal file.
 	 *
 	 * @return string               The complete iCal data wrapped in the VCALENDAR format.
 	 */
 	public function get_ical_wrap( string $calendar_data ): string {
-		$args = array(
+		$timezones = Timezone_Component::get_instance()->render_for_body( $calendar_data );
+		$args      = array(
 			'BEGIN:VCALENDAR',
 			'VERSION:2.0',
 			sprintf(
@@ -715,9 +754,21 @@ final class Setup {
 				// Prepare 2-digit lang code.
 				strtoupper( substr( get_locale(), 0, 2 ) )
 			),
-			$calendar_data,
-			'END:VCALENDAR',
 		);
+
+		if ( '' !== $timezones ) {
+			$args[] = $timezones;
+		}
+
+		// Only when there is something to wrap: an empty element becomes a
+		// blank content line, which RFC 5545 section 3.1 does not allow, and
+		// the deliberately empty calendar a non-event request renders would
+		// then be rejected by exactly the strict clients it exists to serve.
+		if ( '' !== $calendar_data ) {
+			$args[] = $calendar_data;
+		}
+
+		$args[] = 'END:VCALENDAR';
 
 		return implode( "\r\n", $args );
 	}
@@ -776,16 +827,109 @@ final class Setup {
 	/**
 	 * Complete iCal file content for the queried single event.
 	 *
-	 * Builds the VEVENT for the queried event via `Calendar::get_ical_event_string()`
-	 * and wraps it in the VCALENDAR envelope.
+	 * ## One URL, every fragment of the logical series
+	 *
+	 * The subscription a client holds is this URL, and it was taken out before
+	 * anybody split anything. A forward split moves the later dates onto a
+	 * second post, and there is no protocol by which the subscriber discovers
+	 * that post's address, so an export of the queried post alone silently
+	 * drops every future occurrence from a calendar that keeps polling happily.
+	 * The body therefore carries one component per fragment (resolved through
+	 * `Series::resolve_post_ids()`), which together expand to exactly
+	 * the instants the pre-split subscription expanded to: the origin's rule is
+	 * capped where the split fell, and the fragment's rule takes it from there.
+	 *
+	 * A request naming one occurrence is exempt. That download is an override of
+	 * a single instance (`RECURRENCE-ID`), not a subscription, and widening it
+	 * to the series would hand back a component the requester did not ask for.
 	 *
 	 * @since 0.34.0
+	 *
+	 * @since 0.36.0 Serializes every fragment of a split series.
 	 *
 	 * @return string The complete iCal file content for the queried event.
 	 */
 	public function get_ical_file(): string {
-		$calendar = new Calendar( (int) get_queried_object_id() );
-		return $this->get_ical_wrap( $calendar->get_ical_event_string() );
+		$components = array();
+
+		foreach ( $this->series_component_post_ids() as $post_id ) {
+			$calendar     = new Calendar( $post_id );
+			$components[] = $calendar->get_ical_event_string();
+		}
+
+		return $this->get_ical_wrap( implode( "\r\n", $components ) );
+	}
+
+	/**
+	 * Every post whose component the queried single export carries.
+	 *
+	 * Read by both the body builder and the cache key, so a response can never
+	 * be stored under a key that describes a different set of fragments than it
+	 * contains, which is what would let one visitor's readable set be served
+	 * to a visitor who may not read it.
+	 *
+	 * The queried post is always present and is never re-authorized here: the
+	 * endpoint already decided that request. Siblings are additions to it, so
+	 * each one is checked on its own. A private sibling is invisible to anyone
+	 * who cannot read it, and a password-protected one stays behind its form
+	 * rather than exporting its title and description in plain text.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return int[] Contributing post IDs, ascending.
+	 */
+	public function series_component_post_ids(): array {
+		$post_id  = (int) get_queried_object_id();
+		$post_ids = array( $post_id );
+
+		// An occurrence override describes one instance of the post that owns
+		// it; a site with neither recurring events nor a split series has no
+		// siblings to resolve and must not pay the taxonomy read to learn
+		// that. The split flag keeps a fully demoted split's export carrying
+		// both fragments after the recurring flag has returned to '0'.
+		if ( 0 === $post_id
+			|| null !== Context::get_instance()->current()
+			|| ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' )
+			|| ! ( Recurrence_Query::site_has_recurring_events() || Series::site_has_split_series() )
+		) {
+			return $post_ids;
+		}
+
+		foreach ( Series::get_instance()->resolve_post_ids( $post_id ) as $sibling_id ) {
+			if ( (int) $sibling_id !== $post_id && $this->is_readable_fragment( (int) $sibling_id ) ) {
+				$post_ids[] = (int) $sibling_id;
+			}
+		}
+
+		$post_ids = array_values( array_unique( $post_ids ) );
+
+		sort( $post_ids );
+
+		return $post_ids;
+	}
+
+	/**
+	 * Whether a sibling fragment may be exported to the current visitor.
+	 *
+	 * A public status is what makes a post readable by the public;
+	 * `current_user_can( 'read_post' )` maps a published post to the plain
+	 * `read` capability, which a logged-out visitor never holds, so the
+	 * capability check alone would drop every fragment for exactly the
+	 * anonymous subscriber this feature exists for. It still runs, because it is
+	 * what admits a non-public fragment to an editor's own export.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param int $post_id Sibling post ID.
+	 *
+	 * @return bool True when the fragment is readable and carries no password.
+	 */
+	protected function is_readable_fragment( int $post_id ): bool {
+		if ( post_password_required( $post_id ) ) {
+			return false;
+		}
+
+		return Rewrite::is_publicly_readable( $post_id ) || current_user_can( 'read_post', $post_id );
 	}
 
 	/**
@@ -921,16 +1065,31 @@ final class Setup {
 	 */
 	public function get_ics_cache_key(): string {
 		$queried_object = get_queried_object();
+		$occurrence     = Context::get_instance()->current();
 		$scope          = array(
-			'feed'   => is_feed() ? 1 : 0,
-			'paged'  => (int) get_query_var( 'paged' ),
-			'object' => 0,
-			'type'   => '',
+			'feed'       => is_feed() ? 1 : 0,
+			'paged'      => (int) get_query_var( 'paged' ),
+			'object'     => 0,
+			'type'       => '',
+			// A single-occurrence download and its series' own export share a
+			// queried object, so without this the first of the two requested
+			// would be served for the other.
+			'occurrence' => (string) ( $occurrence['recurrence_id'] ?? '' ),
+			// Which fragments of a split series the body carries is a property
+			// of the visitor as well as of the series: a private sibling is in
+			// an editor's export and not in an anonymous one. Keying on the set
+			// is what stops the first of those two responses being served for
+			// the second.
+			'fragments'  => '',
 		);
 
 		if ( $queried_object instanceof WP_Post ) {
 			$scope['object'] = (int) $queried_object->ID;
 			$scope['type']   = (string) $queried_object->post_type;
+
+			if ( ! is_feed() ) {
+				$scope['fragments'] = implode( ',', $this->series_component_post_ids() );
+			}
 		} elseif ( $queried_object instanceof WP_Term ) {
 			$scope['object'] = (int) $queried_object->term_id;
 			$scope['type']   = (string) $queried_object->taxonomy;

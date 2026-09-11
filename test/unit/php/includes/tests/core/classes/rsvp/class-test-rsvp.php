@@ -1426,47 +1426,56 @@ class Test_Rsvp extends Base {
 	}
 
 	/**
-	 * An identity that no registered provider handles records nothing and hands
-	 * back the default save response.
+	 * Save returns the default response for an unusable post rather than throwing.
 	 *
-	 * @since 0.36.0
+	 * `save()` invalidates the cache before checking whether the state came
+	 * back null, which is deliberate: the `no_status` path returns null too and
+	 * that path is the one save that removes an attendee. But `$this->event` is
+	 * `?WP_Post` and `Cache::delete()` takes a non-nullable `int`, so a post ID
+	 * that resolves to no post reached the invalidation with null and raised a
+	 * `TypeError`, where this method documents returning
+	 * `DEFAULT_SAVE_RESPONSE`. Covers both ways the post can be unusable: never
+	 * existing, and existing when the object was built but deleted before the
+	 * save.
+	 *
 	 * @covers ::save
 	 *
 	 * @return void
 	 */
-	public function test_save_returns_default_when_no_provider_handles_identity(): void {
+	public function test_save_returns_the_default_response_for_an_unusable_post(): void {
+		$user_id = $this->factory->user->create();
+
+		// `DEFAULT_SAVE_RESPONSE` is private, so the shape is spelled out here
+		// rather than referenced. That also makes the expectation readable
+		// without opening the class.
+		$default = array(
+			'comment_id' => 0,
+			'post_id'    => 0,
+			'user_id'    => 0,
+			'timestamp'  => '0000-00-00 00:00:00',
+			'status'     => 'no_status',
+			'guests'     => 0,
+			'anonymous'  => 0,
+		);
+
+		$this->assertSame(
+			$default,
+			( new Rsvp( 0 ) )->save( $user_id, 'attending' ),
+			'Saving against a post ID that never existed returns the default response.'
+		);
+
+		// A second, distinct way the property ends up null: a non-zero ID that
+		// resolves to no post. Deleting first and constructing after is what
+		// makes `get_post()` return null, where constructing first would hold a
+		// live object and take the ordinary save path.
 		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
-		$user_id  = $this->factory->user->create();
-		$registry = Provider_Registry::get_instance();
-		$restore  = Utility::get_hidden_property( $registry, 'providers' );
 
-		// Rsvp snapshots the registry when it is constructed, so blanking the
-		// user provider first leaves an identity that resolves to no provider.
-		Utility::set_and_get_hidden_property(
-			$registry,
-			'providers',
-			array_merge( $restore, array( 'user' => null ) )
-		);
-
-		$rsvp = new Rsvp( $event_id );
-
-		Utility::set_and_get_hidden_property( $registry, 'providers', $restore );
-
-		$response = $rsvp->save( $user_id, 'attending' );
+		wp_delete_post( $event_id, true );
 
 		$this->assertSame(
-			'no_status',
-			$response['status'],
-			'An identity without a provider returns the default save response.'
-		);
-		$this->assertSame(
-			0,
-			$response['comment_id'],
-			'No response is recorded for an identity without a provider.'
-		);
-		$this->assertNull(
-			$rsvp->get( $user_id ),
-			'Nothing is stored for an identity without a provider.'
+			$default,
+			( new Rsvp( $event_id ) )->save( $user_id, 'attending' ),
+			'Saving against a non-zero ID that resolves to no post returns the default response.'
 		);
 	}
 }

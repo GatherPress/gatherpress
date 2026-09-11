@@ -3,6 +3,12 @@
  */
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
+/**
+ * Mock the Interactivity API with a namespace-merging store so every
+ * module contributing to the `gatherpress` namespace shares one registry,
+ * mirroring the real runtime. `withRecurrenceId()` reads that same namespace
+ * from `src/helpers/interactivity`, so it sees what this file sets.
+ */
 jest.mock(
 	'@wordpress/interactivity',
 	() => {
@@ -11,7 +17,11 @@ jest.mock(
 		return {
 			store: ( name, config = {} ) => {
 				if ( ! registries[ name ] ) {
-					registries[ name ] = { state: {}, actions: {}, callbacks: {} };
+					registries[ name ] = {
+						state: {},
+						actions: {},
+						callbacks: {},
+					};
 				}
 
 				const registry = registries[ name ];
@@ -39,44 +49,137 @@ import { store, getElement, getContext } from '@wordpress/interactivity';
  */
 import '@src/blocks/rsvp-template/view';
 
-describe( 'rsvp-template renderBlocks', () => {
+/**
+ * The occurrence a page is rendering reaches the server only because
+ * `renderBlocks()` spreads it into the `rsvp-status-html` request body. Nothing
+ * in the PHP suite can see that spread: drop it and every RSVP roster rendered
+ * from an occurrence page silently falls back to the whole series, with the
+ * REST layer behaving exactly as designed.
+ */
+describe( 'rsvp-template view renderBlocks', () => {
+	let state;
 	let callbacks;
+	let responseElement;
 
 	beforeEach( () => {
-		const registry = store( 'gatherpress' );
-		registry.state.eventApiUrl = 'https://example.test/wp-json/gatherpress/v1/event';
-		registry.state.posts = { 7: { rsvpSelection: 'attending' } };
-		callbacks = registry.callbacks;
+		jest.clearAllMocks();
 
-		getContext.mockReturnValue( { postId: 7 } );
+		( { state, callbacks } = store( 'gatherpress' ) );
+
+		state.eventApiUrl = 'https://example.test/wp-json/gatherpress/v1';
+		state.posts = {};
+
+		document.body.innerHTML = `
+			<div class="wp-block-gatherpress-rsvp-response"
+				data-limit-enabled="1" data-limit="8">
+				<div class="wrapper">
+					<div id="template" data-block-template="[]"></div>
+				</div>
+			</div>
+		`;
+
+		responseElement = document.querySelector(
+			'.wp-block-gatherpress-rsvp-response'
+		);
+
+		getContext.mockReturnValue( { postId: 42 } );
 		getElement.mockReturnValue( {
-			ref: {
-				dataset: {
-					blockTemplate: '{"blockName":"gatherpress/rsvp-template"}',
-					blockSignature: 'a'.repeat( 64 ),
-				},
-				closest: () => ( { dataset: { limitEnabled: '1', limit: '8' } } ),
-			},
+			ref: document.getElementById( 'template' ),
 		} );
 
 		global.fetch = jest.fn( () =>
-			Promise.resolve( { json: () => Promise.resolve( { success: false } ) } )
+			Promise.resolve( {
+				json: () => Promise.resolve( { success: false } ),
+			} )
 		);
 	} );
 
-	it( 'sends the template back with the signature it was emitted with', async () => {
-		callbacks.renderBlocks();
+	/**
+	 * Read the JSON body of the fetch the callback issued.
+	 *
+	 * @return {Object} The decoded request body.
+	 */
+	const requestBody = () =>
+		JSON.parse( global.fetch.mock.calls[ 0 ][ 1 ].body );
+
+	it( 'sends the occurrence identifier the row is rendering', async () => {
+		getContext.mockReturnValue( {
+			postId: 42,
+			recurrenceId: '20260917T180000',
+		} );
+
+		await callbacks.renderBlocks();
+
+		expect( requestBody() ).toMatchObject( {
+			post_id: 42,
+			recurrence_id: '20260917T180000',
+		} );
+	} );
+
+	it( 'omits the occurrence identifier for a row with no occurrence', async () => {
+		await callbacks.renderBlocks();
+
+		expect( requestBody() ).not.toHaveProperty( 'recurrence_id' );
+		expect( requestBody() ).toMatchObject( { post_id: 42 } );
+	} );
+
+	it( 'reads the row own filter selection when rendering the response list', async () => {
+		global.fetch = jest.fn( () =>
+			Promise.resolve( {
+				json: () =>
+					Promise.resolve( {
+						success: true,
+						content: '<div data-id="1">Ada</div>',
+						responses: { attending: { count: 0 } },
+					} ),
+			} )
+		);
+
+		state.posts = {
+			'42:20260917T180000': { rsvpSelection: 'waiting_list' },
+		};
+
+		getContext.mockReturnValue( {
+			postId: 42,
+			recurrenceId: '20260917T180000',
+		} );
+
+		await callbacks.renderBlocks();
 		await Promise.resolve();
 
-		expect( global.fetch ).toHaveBeenCalledTimes( 1 );
+		expect( requestBody().status ).toBe( 'waiting_list' );
+	} );
 
-		const [ url, options ] = global.fetch.mock.calls[ 0 ];
-		const body = JSON.parse( options.body );
+	it( 'defaults to the attending filter for a row with no selection', async () => {
+		global.fetch = jest.fn( () =>
+			Promise.resolve( {
+				json: () =>
+					Promise.resolve( {
+						success: true,
+						content: '<div data-id="1">Ada</div>',
+						responses: { attending: { count: 0 } },
+					} ),
+			} )
+		);
 
-		expect( url ).toBe( 'https://example.test/wp-json/gatherpress/v1/event/rsvp-status-html' );
-		expect( body.block_data ).toBe( '{"blockName":"gatherpress/rsvp-template"}' );
-		expect( body.block_signature ).toBe( 'a'.repeat( 64 ) );
-		expect( body.post_id ).toBe( 7 );
-		expect( body.status ).toBe( 'attending' );
+		await callbacks.renderBlocks();
+		await Promise.resolve();
+
+		expect( requestBody().status ).toBe( 'attending' );
+	} );
+
+	it( 'still sends the limit fields it has always sent', async () => {
+		getContext.mockReturnValue( {
+			postId: 42,
+			recurrenceId: '20260917T180000',
+		} );
+
+		await callbacks.renderBlocks();
+
+		expect( requestBody() ).toMatchObject( {
+			limit_enabled: true,
+			limit: 8,
+		} );
+		expect( responseElement.dataset.limit ).toBe( '8' );
 	} );
 } );

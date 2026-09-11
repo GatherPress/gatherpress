@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
 use GatherPress\Core\Admin\Notices\Setup as Notices_Setup;
+use GatherPress\Core\Event\Recurrence\Occurrences;
 use GatherPress\Core\Traits\Singleton;
 use WP_Site;
 
@@ -438,6 +439,11 @@ final class Setup {
 	 * which custom tables associated with the plugin should be deleted. It returns an
 	 * updated array of table names to be dropped during site deletion.
 	 *
+	 * Every custom table `create_tables()` creates must be listed here, or the
+	 * blog's rows survive the blog. `$wpdb->prefix` is read at call time and
+	 * WordPress runs this callback inside the deleted blog's context, so the
+	 * names are always the deleted blog's own, never another blog's.
+	 *
 	 * @since 0.27.0
 	 *
 	 * @param string[] $tables An array of names of the site tables to be dropped.
@@ -448,6 +454,7 @@ final class Setup {
 		global $wpdb;
 
 		$tables[] = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$tables[] = sprintf( Occurrences::TABLE_FORMAT, $wpdb->prefix );
 
 		return $tables;
 	}
@@ -455,18 +462,40 @@ final class Setup {
 	/**
 	 * Creates necessary database tables for the GatherPress plugin.
 	 *
-	 * This method creates the required database tables for storing event and RSVP data.
-	 * It constructs SQL queries for creating the tables with appropriate charset and collation,
-	 * and then executes these queries using the `dbDelta` function to ensure the tables are created
-	 * or updated as necessary. Additionally, it calls methods to add the online event term
-	 * and to set a flag for flushing rewrite rules.
+	 * Installs the required database tables via `install_tables()`, then adds
+	 * the online event term and sets the flag that flushes rewrite rules. The
+	 * two side effects are why activation and the version self-heal call this
+	 * rather than `install_tables()` directly.
 	 *
 	 * @since 0.27.0
+	 *
+	 * @return void
+	 */
+	protected function create_tables(): void {
+		$this->install_tables();
+
+		$this->add_online_event_term();
+		$this->schedule_rewrite_flush();
+	}
+
+	/**
+	 * Creates or updates the plugin's custom database tables.
+	 *
+	 * The DDL half of `create_tables()`, split out so a caller that only needs
+	 * the tables can get them without also re-adding the online-event term or
+	 * scheduling a rewrite flush. The PHPUnit bootstrap is one such caller,
+	 * and it has to issue the DDL once before any test transaction opens.
+	 * Public so `Recurrence\Occurrences` can self-heal a missing occurrence
+	 * table from its write path: a site that receives new code without a
+	 * version bump never runs `check_plugin_version()`'s own table pass, and
+	 * `dbDelta()` is idempotent, so re-running here is always safe.
+	 *
+	 * @since 0.36.0
 	 *
 	 * @global wpdb $wpdb WordPress database abstraction object.
 	 * @return void
 	 */
-	protected function create_tables(): void {
+	public function install_tables(): void {
 		global $wpdb;
 
 		$sql             = array();
@@ -486,13 +515,30 @@ final class Setup {
 					KEY datetime_end_gmt (datetime_end_gmt)
 				) {$charset_collate};";
 
+		$occurrences_table = sprintf( Occurrences::TABLE_FORMAT, $prefix );
+		$sql[]             = "CREATE TABLE {$occurrences_table} (
+					series_post_id bigint(20) unsigned NOT NULL default '0',
+					recurrence_id varchar(20) NOT NULL default '',
+					datetime_start datetime NOT NULL default '0000-00-00 00:00:00',
+					datetime_start_gmt datetime NOT NULL default '0000-00-00 00:00:00',
+					datetime_end datetime NOT NULL default '0000-00-00 00:00:00',
+					datetime_end_gmt datetime NOT NULL default '0000-00-00 00:00:00',
+					timezone varchar(255) default NULL,
+					status varchar(20) NOT NULL default 'scheduled',
+					PRIMARY KEY  (series_post_id,recurrence_id),
+					KEY start_gmt (datetime_start_gmt),
+					KEY series_status_start (series_post_id,status,datetime_start_gmt)
+				) {$charset_collate};";
+
 		// Loading WordPress core file for dbDelta function, not importing a class.
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php'; // NOSONAR.
 
 		dbDelta( $sql );
 
-		$this->add_online_event_term();
-		$this->schedule_rewrite_flush();
+		// This is the one path that can turn a "the occurrence table is
+		// missing" answer into a "it is there now" answer inside a single
+		// request, so the memo that answers it is discarded here.
+		Occurrences::get_instance()->forget_table_exists();
 	}
 
 	/**

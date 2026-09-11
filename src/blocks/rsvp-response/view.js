@@ -8,6 +8,7 @@ import { store, getElement, getContext } from '@wordpress/interactivity';
  */
 import {
 	activateOnSpace as activateOnSpaceHelper,
+	getPostKey,
 	initPostContext,
 } from '../../helpers/interactivity';
 import { toCamelCase } from '../../helpers/globals';
@@ -29,11 +30,12 @@ const { state, actions } = store( 'gatherpress', {
 			if ( status ) {
 				const context = getContext();
 				const postId = context?.postId || 0;
+				const postKey = getPostKey( postId, context?.recurrenceId );
 
-				initPostContext( state, postId );
+				initPostContext( state, postKey );
 
 				if ( postId ) {
-					state.posts[ postId ].rsvpSelection = status;
+					state.posts[ postKey ].rsvpSelection = status;
 				}
 			}
 		},
@@ -102,13 +104,13 @@ const { state, actions } = store( 'gatherpress', {
 	callbacks: {
 		processRsvpDropdown() {
 			const context = getContext();
-			const postId = context?.postId || 0;
+			const postKey = getPostKey( context?.postId || 0, context?.recurrenceId );
 			const element = getElement();
 			const rsvpResponseElement = element.ref.closest(
 				'.wp-block-gatherpress-rsvp-response',
 			);
 
-			initPostContext( state, postId );
+			initPostContext( state, postKey );
 
 			const counts = rsvpResponseElement.dataset.counts
 				? JSON.parse( rsvpResponseElement.dataset.counts )
@@ -118,8 +120,8 @@ const { state, actions } = store( 'gatherpress', {
 			delete rsvpResponseElement.dataset.counts;
 
 			if ( counts ) {
-				state.posts[ postId ] = {
-					...state.posts[ postId ],
+				state.posts[ postKey ] = {
+					...state.posts[ postKey ],
 					eventResponses: {
 						attending: counts?.attending || 0,
 						waitingList: counts?.waiting_list || 0,
@@ -143,9 +145,9 @@ const { state, actions } = store( 'gatherpress', {
 			const dataLabel = element.ref.dataset.label;
 			const activeElement =
 				element.ref.dataset.status ===
-					state.posts[ postId ]?.rsvpSelection ||
+					state.posts[ postKey ]?.rsvpSelection ||
 				( 'attending' === element.ref.dataset.status &&
-					'no_status' === state.posts[ postId ]?.rsvpSelection );
+					'no_status' === state.posts[ postKey ]?.rsvpSelection );
 
 			const dropdownParent = element.ref.closest(
 				'.wp-block-gatherpress-dropdown',
@@ -158,11 +160,11 @@ const { state, actions } = store( 'gatherpress', {
 			let count = 0;
 
 			if ( classList.contains( 'gatherpress--is-attending' ) ) {
-				count = state.posts[ postId ]?.eventResponses?.attending || 0;
+				count = state.posts[ postKey ]?.eventResponses?.attending || 0;
 			} else if ( classList.contains( 'gatherpress--is-waiting-list' ) ) {
-				count = state.posts[ postId ]?.eventResponses?.waitingList || 0;
+				count = state.posts[ postKey ]?.eventResponses?.waitingList || 0;
 			} else if ( classList.contains( 'gatherpress--is-not-attending' ) ) {
-				count = state.posts[ postId ]?.eventResponses?.notAttending || 0;
+				count = state.posts[ postKey ]?.eventResponses?.notAttending || 0;
 			}
 
 			// Replace %d in the data-label with the count and update the text content.
@@ -236,8 +238,6 @@ const { state, actions } = store( 'gatherpress', {
 		},
 		showHideToggle() {
 			const element = getElement();
-			const context = getContext();
-			const postId = context?.postId || 0;
 			const rsvpResponseElement = element.ref.closest(
 				'.wp-block-gatherpress-rsvp-response',
 			);
@@ -248,11 +248,13 @@ const { state, actions } = store( 'gatherpress', {
 				return;
 			}
 
+			const context = getContext();
+			const postKey = getPostKey( context?.postId || 0, context?.recurrenceId );
 			const rsvpSelection = toCamelCase(
-				state.posts[ postId ]?.rsvpSelection ?? 'attending',
+				state.posts[ postKey ]?.rsvpSelection ?? 'attending',
 			);
 			const count =
-				state.posts[ postId ]?.eventResponses?.[ rsvpSelection ] ?? 0;
+				state.posts[ postKey ]?.eventResponses?.[ rsvpSelection ] ?? 0;
 			const limit = parseInt( rsvpResponseElement.dataset.limit, 10 ) || 8;
 
 			// If the count is less than or equal to the limit, apply the class.

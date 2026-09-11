@@ -90,6 +90,66 @@ class Test_Query extends Base {
 	}
 
 	/**
+	 * Coverage for the ordering column `get_events_list()` asks for.
+	 *
+	 * The list is documented as soonest-first for upcoming and
+	 * most-recent-first for past, but `adjust_event_sql()` reads `orderby` off
+	 * the query and falls through its switch on an empty one, leaving
+	 * WordPress's default `wp_posts.post_date` in place, so the iCal feed is
+	 * ordered by authoring time instead. The assertion is on the emitted ORDER BY
+	 * rather than on a result order, because only the stated `orderby` can
+	 * produce that clause, while a result order coincides with the
+	 * `post_date` fallback whenever the fixture happens to be authored in
+	 * chronological order.
+	 *
+	 * @covers ::get_events_list
+	 * @covers ::adjust_sorting_for_upcoming_events
+	 * @covers ::adjust_sorting_for_past_events
+	 *
+	 * @return void
+	 */
+	public function test_get_events_list_orders_by_event_datetime(): void {
+		global $wpdb;
+
+		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+
+		$this->assertStringContainsString(
+			sprintf( 'ORDER BY %s.datetime_start_gmt ASC', $table ),
+			$this->capture_events_list_request( 'upcoming' ),
+			'Failed to assert an upcoming list is ordered by event start, soonest first.'
+		);
+		$this->assertStringContainsString(
+			sprintf( 'ORDER BY %s.datetime_start_gmt DESC', $table ),
+			$this->capture_events_list_request( 'past' ),
+			'Failed to assert a past list is ordered by event start, most recent first.'
+		);
+	}
+
+	/**
+	 * Capture the SQL one `get_events_list()` call sends to the database.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $event_list_type Either `upcoming` or `past`.
+	 *
+	 * @return string The SQL statement.
+	 */
+	protected function capture_events_list_request( string $event_list_type ): string {
+		$captured = '';
+		$capture  = static function ( string $request ) use ( &$captured ): string {
+			$captured = $request;
+
+			return $request;
+		};
+
+		add_filter( 'posts_request', $capture );
+		Query::get_instance()->get_events_list( $event_list_type, 5 );
+		remove_filter( 'posts_request', $capture );
+
+		return $captured;
+	}
+
+	/**
 	 * Coverage for get_upcoming_events method.
 	 *
 	 * @covers ::get_upcoming_events
@@ -929,6 +989,49 @@ class Test_Query extends Base {
 		$retval = $instance->adjust_event_sql( array(), 'all', 'ASC', 'rsvps' );
 
 		$this->assertEmpty( $retval['orderby'], 'Unrecognized orderby should not set orderby clause.' );
+	}
+
+	/**
+	 * Coverage for the secondary key that makes a datetime ordering total.
+	 *
+	 * `datetime_start_gmt` is not unique: any number of events can share one
+	 * start. MySQL's sort is not stable, so a tied pair can be ordered one way
+	 * for `LIMIT 0, 10` and the other for `LIMIT 10, 10`, which puts one event
+	 * on two pages of a paginated archive and leaves another off every page.
+	 * The posts-table ID is the column that breaks the tie, and it takes the
+	 * requested direction so a descending list is the exact reverse of the
+	 * ascending one.
+	 *
+	 * The whole clause is asserted rather than a substring, because the
+	 * requirement is the ID key's position and direction relative to the
+	 * datetime key, and a `assertStringContainsString( '.ID' )` would pass on
+	 * an `ORDER BY` that led with the ID.
+	 *
+	 * @covers ::adjust_event_sql
+	 *
+	 * @return void
+	 */
+	public function test_adjust_event_sql_datetime_ordering_is_total(): void {
+		global $wpdb;
+
+		$instance = Query::get_instance();
+		$table    = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+
+		$retval = $instance->adjust_event_sql( array(), 'upcoming', 'ASC' );
+
+		$this->assertSame(
+			sprintf( '%s.datetime_start_gmt ASC, %s.ID ASC', $table, $wpdb->posts ),
+			$retval['orderby'],
+			'Failed to assert an ascending datetime ordering breaks ties on the post ID, ascending.'
+		);
+
+		$retval = $instance->adjust_event_sql( array(), 'past', 'DESC' );
+
+		$this->assertSame(
+			sprintf( '%s.datetime_start_gmt DESC, %s.ID DESC', $table, $wpdb->posts ),
+			$retval['orderby'],
+			'Failed to assert a descending datetime ordering breaks ties on the post ID, descending.'
+		);
 	}
 
 	/**

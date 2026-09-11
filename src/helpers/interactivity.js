@@ -106,28 +106,83 @@ function announceRsvpSuccess( res, previousOnlineLink ) {
 }
 
 /**
+ * Build the occurrence identity to send with an RSVP REST request.
+ *
+ * The identifier comes from the block instance's own `data-wp-context`, which
+ * `Rsvp_Occurrence::block_context()` fills in per rendered row. It cannot come
+ * from a single request-scoped value: an archive or Query Loop renders many
+ * occurrences of one series on one response, and every one of them would then
+ * send the same date.
+ *
+ * The server cannot derive it either. A REST request never fires `wp`, so the
+ * occurrence context the page was rendered in does not exist by the time the
+ * route runs.
+ *
+ * Returns an empty object for a row with no occurrence, so the spread adds
+ * nothing and the request body stays byte-identical to what it has always been.
+ *
+ * @since 0.36.0
+ *
+ * @param {string} [recurrenceId] The row's occurrence identifier, in `Ymd\THis` form.
+ *
+ * @return {Object} Either `{ recurrence_id }` or an empty object.
+ */
+export function withRecurrenceId( recurrenceId ) {
+	return recurrenceId ? { recurrence_id: recurrenceId } : {};
+}
+
+/**
+ * Build the key one block instance's slice of `state.posts` lives under.
+ *
+ * Occurrence identity is `(post_id, recurrence_id)` everywhere else in this
+ * subsystem, and the client store is no exception. Keying on the post
+ * ID alone is the defect this exists to close: the entire point of the feature
+ * is that one post appears many times on a page, so a post-only key collapses
+ * every row of a series into one entry and an RSVP on one date visibly applies
+ * to all of them.
+ *
+ * A row with no occurrence, meaning every ordinary event, gets the bare
+ * `postId` back, unchanged and unstringified, so its state shape and its
+ * requests are exactly what they were. The two forms cannot collide: a bare key is all
+ * digits, and a composite one always carries the `:` separator.
+ *
+ * @since 0.36.0
+ *
+ * @param {number} postId         The post the block instance is rendering.
+ * @param {string} [recurrenceId] The occurrence that row represents, when it represents one.
+ *
+ * @return {number|string} The `state.posts` key for this block instance.
+ */
+export function getPostKey( postId, recurrenceId ) {
+	return recurrenceId ? `${ postId }:${ recurrenceId }` : postId;
+}
+
+/**
  * Initializes the post context within the application state.
  *
- * This function ensures that the given `postId` has an entry in the `state.posts` object.
+ * This function ensures that the given `postKey` has an entry in the `state.posts` object.
  * If no entry exists, it creates one with default values for event responses,
  * the current user's RSVP status, and other RSVP-related details.
  *
+ * The key is whatever `getPostKey()` returns for the block instance: the bare
+ * post ID for an ordinary event, `{postId}:{recurrenceId}` for one occurrence
+ * row of a recurring series.
+ *
  * @since 0.33.0
  *
- * @param {Object} state  - The application state object to be updated.
- *                        Should contain a `posts` property.
- * @param {number} postId - The ID of the post to initialize in the state.
+ * @param {Object}        state   - The application state object to be updated.
+ *                                Should contain a `posts` property.
+ * @param {number|string} postKey - The store key of the block instance to initialize.
  *
  * @return {void}
  *
  * @example
  * const appState = { posts: {} };
- * const postId = 123;
+ * const postKey = 123;
  *
- * initPostContext(appState, postId);
+ * initPostContext(appState, postKey);
  *
- * console.log(appState.posts[postId]);
- * // Output:
+ * // appState.posts[postKey] is now:
  * // {
  * //   eventResponses: {
  * //     attending: 10,
@@ -142,11 +197,11 @@ function announceRsvpSuccess( res, previousOnlineLink ) {
  * //   rsvpSelection: 'attending',
  * // }
  */
-export function initPostContext( state, postId ) {
+export function initPostContext( state, postKey ) {
 	state.posts = state.posts ?? [];
 
-	if ( postId && ! state.posts[ postId ] ) {
-		state.posts[ postId ] = {
+	if ( postKey && ! state.posts[ postKey ] ) {
+		state.posts[ postKey ] = {
 			eventResponses: {
 				attending: 0,
 				waitingList: 0,
@@ -245,6 +300,9 @@ export const getNonce = ( () => {
  * @param {number}      [args.guests=0]        - The number of additional guests.
  * @param {boolean}     [args.anonymous=false] - Whether the RSVP is anonymous.
  * @param {string}      [args.rsvpToken]       - Optional RSVP token for anonymous users.
+ * @param {string}      [args.recurrenceId]    - The occurrence this row represents, when it represents one.
+ *                                             Scopes both the request and the slice of state it updates, so
+ *                                             an RSVP made from one row of a series does not move its siblings.
  * @param {Object}      [state=null]           - A state object to update with the API response data.
  * @param {Function}    [onSuccess=null]       - A callback function to execute on a successful API response.
  *                                             Receives the API response as its argument.
@@ -274,6 +332,8 @@ export async function sendRsvpApiRequest(
 		return;
 	}
 
+	const postKey = getPostKey( postId, args.recurrenceId );
+
 	// Add loading class to element if provided.
 	if ( loadingElement ) {
 		loadingElement.classList.add( 'gatherpress--is-loading' );
@@ -299,6 +359,7 @@ export async function sendRsvpApiRequest(
 					guests: args.guests,
 					anonymous: args.anonymous,
 					rsvp_token: args.rsvpToken,
+					...withRecurrenceId( args.recurrenceId ),
 				} ),
 			},
 		);
@@ -326,11 +387,11 @@ export async function sendRsvpApiRequest(
 			// announcement only mentions the online link when it transitions
 			// from initialized-but-empty to present (see announceRsvpSuccess).
 			const previousOnlineLink =
-				state?.posts?.[ postId ]?.onlineEventLink;
+				state?.posts?.[ postKey ]?.onlineEventLink;
 
 			if ( state ) {
-				state.posts[ postId ] = {
-					...state.posts[ postId ],
+				state.posts[ postKey ] = {
+					...state.posts[ postKey ],
 					eventResponses: {
 						attending: res.responses?.attending?.count ?? 0,
 						waitingList: res.responses?.waiting_list?.count ?? 0,

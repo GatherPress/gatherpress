@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Recurring events now appear on the front end as individual dates. Each occurrence of a series gets its own list entry, its own permalink of the form `/event/my-event/20260908T180000/`, and its own date wherever an event date is displayed, with no block change needed to show it. A date that has been canceled leaves the listings but keeps a working URL that says so. Two long-standing archive problems are fixed alongside it, on every site whether or not it uses recurrence: the event archive now sorts by event date rather than by the order events were written, ascending for upcoming and descending for past, and page two onward of the archive no longer returns a 404 while page one advertises them.

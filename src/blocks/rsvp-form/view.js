@@ -6,7 +6,12 @@ import { store, getElement, getContext } from '@wordpress/interactivity';
 /**
  * Internal dependencies
  */
-import { initPostContext, getNonce } from '../../helpers/interactivity';
+import {
+	getPostKey,
+	initPostContext,
+	getNonce,
+	withRecurrenceId,
+} from '../../helpers/interactivity';
 const { state } = store( 'gatherpress', {
 	state: {
 		posts: {},
@@ -46,6 +51,7 @@ const { state } = store( 'gatherpress', {
 				author: formData.get( 'author' ),
 				email: formData.get( 'email' ),
 				gatherpress_rsvp_form_guests: formData.get( 'gatherpress_rsvp_form_guests' ) || '0',
+				...withRecurrenceId( context?.recurrenceId ),
 			};
 
 			// Handle checkbox fields - they only appear in FormData when checked.
@@ -149,9 +155,14 @@ const { state } = store( 'gatherpress', {
 
 					// Update the responses data if available.
 					if ( result.responses ) {
-						initPostContext( state, postId );
-						if ( state.posts[ postId ] ) {
-							state.posts[ postId ].eventResponses = {
+						const postKey = getPostKey(
+							postId,
+							context?.recurrenceId
+						);
+
+						initPostContext( state, postKey );
+						if ( state.posts[ postKey ] ) {
+							state.posts[ postKey ].eventResponses = {
 								attending:
 									result.responses?.attending?.count || 0,
 								waitingList:
@@ -196,10 +207,10 @@ const { state } = store( 'gatherpress', {
 			const element = getElement();
 			const form = element.ref;
 			const context = getContext();
-			const postId = context?.postId || 0;
+			const postKey = getPostKey( context?.postId || 0, context?.recurrenceId );
 
 			// Initialize post context.
-			initPostContext( state, postId );
+			initPostContext( state, postKey );
 
 			// Reset submission state.
 			state.rsvpForm.isSubmitting = false;

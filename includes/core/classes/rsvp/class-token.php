@@ -12,6 +12,8 @@
 
 namespace GatherPress\Core\Rsvp;
 
+use GatherPress\Core\Event\Recurrence\Rewrite as Recurrence_Rewrite;
+use GatherPress\Core\Event\Recurrence\Rsvp_Occurrence;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Utility;
 use WP_Comment;
@@ -189,7 +191,14 @@ final class Token {
 		$post_id = (int) $this->comment->comment_post_ID;
 
 		if ( $post_id ) {
-			Cache::delete( $post_id );
+			// The occurrence is read off the comment's own term rather than
+			// off the request: `handle_rsvp_token()` runs on `init`, before
+			// `wp`, so there is no occurrence context to resolve and the
+			// occurrence-scoped key would otherwise survive the write.
+			Cache::delete(
+				$post_id,
+				Rsvp_Occurrence::recurrence_id_for_comment( (int) $this->comment->comment_ID )
+			);
 			clean_post_cache( $post_id );
 		}
 	}
@@ -409,7 +418,7 @@ final class Token {
 			return '';
 		}
 
-		$event_url = get_permalink( $post );
+		$event_url = $this->get_event_url( $post, (int) $comment->comment_ID );
 
 		if ( ! $event_url ) {
 			return '';
@@ -418,6 +427,49 @@ final class Token {
 		$token_value = $this->format_token_value( (int) $comment->comment_ID, $token );
 
 		return add_query_arg( self::NAME, $token_value, $event_url );
+	}
+
+	/**
+	 * Resolves the event URL this token's confirmation link should point at.
+	 *
+	 * An RSVP taken on one date of a recurring series has to link back to
+	 * *that* date. `get_permalink()` alone answers with the bare series URL,
+	 * which resolves to the next upcoming occurrence, so a responder
+	 * confirming September 3rd would be sent a link to September 10th. The
+	 * email is outbound and cannot be corrected after sending, which is what
+	 * makes this the worse half of the defect.
+	 *
+	 * The occurrence is read off the comment's own `_gatherpress_occurrence`
+	 * term rather than off the request, because there is no request context to
+	 * read: the confirmation email is composed while the comment is being
+	 * inserted, from `Rsvp\Form`, on paths that never reach the `wp` action.
+	 * Those paths are the REST route (core's `rest_api_loaded()` runs on
+	 * `parse_request` and `die()`s) and `comment_post` on
+	 * `wp-comments-post.php`. The term is the
+	 * authoritative answer to "which occurrence did this person RSVP to."
+	 *
+	 * `occurrence_for_comment()` short-circuits on the autoloaded
+	 * `gatherpress_has_recurring_events` option, so a site with no recurring
+	 * events pays no query here and gets the same permalink it always did.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param WP_Post $post       The event post the RSVP belongs to.
+	 * @param int     $comment_id The RSVP comment ID.
+	 *
+	 * @return string The occurrence URL when the RSVP is scoped to one, otherwise the event permalink.
+	 */
+	private function get_event_url( WP_Post $post, int $comment_id ): string {
+		$occurrence = Rsvp_Occurrence::occurrence_for_comment( $comment_id );
+
+		if ( null === $occurrence ) {
+			return (string) get_permalink( $post );
+		}
+
+		return Recurrence_Rewrite::get_occurrence_url(
+			$occurrence['series_post_id'],
+			$occurrence['recurrence_id']
+		);
 	}
 
 	/**

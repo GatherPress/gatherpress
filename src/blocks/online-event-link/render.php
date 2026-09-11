@@ -14,6 +14,7 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Recurrence\Rsvp_Occurrence;
 
 if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 	return;
@@ -47,9 +48,9 @@ if ( $gatherpress_is_event ) {
 $gatherpress_has_link = ! empty( $gatherpress_online_event_link );
 
 $gatherpress_context_json = wp_json_encode(
-	array(
-		'postId'   => $gatherpress_current_post_id,
-		'linkText' => $gatherpress_link_text,
+	array_merge(
+		Rsvp_Occurrence::block_context( $gatherpress_current_post_id ),
+		array( 'linkText' => $gatherpress_link_text )
 	),
 	JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
 );

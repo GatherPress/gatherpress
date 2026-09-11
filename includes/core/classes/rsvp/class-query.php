@@ -120,6 +120,7 @@ final class Query {
 	 * @return mixed Array of RSVP comments or integer count when count parameter is true.
 	 */
 	public function get_rsvps( array $args ): mixed {
+		$args                 = $this->ensure_cache_domain( $args );
 		$args['type']         = Rsvp::COMMENT_TYPE;
 		$args['type__in']     = array();
 		$args['type__not_in'] = array();
@@ -141,6 +142,42 @@ final class Query {
 		}
 
 		return (array) $rsvps;
+	}
+
+	/**
+	 * Give a taxonomy-scoped comment query a cache key that varies with its scope.
+	 *
+	 * `WP_Comment_Query::get_comments()` builds its cache key from its own
+	 * declared query vars, and `tax_query` is not one of them. It reaches the
+	 * SQL only through `taxonomy_query()`, a `comments_clauses` filter. Two
+	 * queries differing solely by `tax_query` therefore hash to the same key,
+	 * and the second is served the first one's comment IDs. `cache_domain` is
+	 * a declared var, so deriving it from the scope is what actually varies
+	 * the key.
+	 *
+	 * Derived here, in the one funnel every RSVP read passes through, rather
+	 * than at each call site: `taxonomy_query()` is a global filter that will
+	 * splice a third party's `tax_query` into their comment query too, and a
+	 * caller that forgets `cache_domain` would poison a cache entry rather
+	 * than merely miss one. An explicit `cache_domain` always wins.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array $args Comment query args.
+	 *
+	 * @return array The args, carrying a scope-derived `cache_domain` when one is needed.
+	 */
+	private function ensure_cache_domain( array $args ): array {
+		if ( empty( $args['tax_query'] ) || ! empty( $args['cache_domain'] ) ) {
+			return $args;
+		}
+
+		$args['cache_domain'] = sprintf(
+			'gatherpress_tax_%s',
+			md5( (string) wp_json_encode( $args['tax_query'] ) )
+		);
+
+		return $args;
 	}
 
 	/**

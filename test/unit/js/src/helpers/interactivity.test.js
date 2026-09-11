@@ -29,20 +29,25 @@ jest.mock(
 /**
  * Mock the a11y script module so announcement tests can assert on `speak()`
  * without a DOM live region.
+ *
+ * Deliberately not `{ virtual: true }`: `@wordpress/a11y` ships a `require`
+ * entry point, so Jest resolves it, and the flag would key the mock to the
+ * bare specifier instead of that resolved path. Because the module ID for
+ * each `(importer, name)` pair is memoized on a `Resolver` that the test
+ * worker shares across files, another file loading `src/helpers/interactivity.js`
+ * first would cache the resolved path and leave this registration unmatched.
+ * The module under test would then receive the real `speak()` while these
+ * tests watch the mock. See `test/unit/js/mock-hygiene.test.js`.
  */
-jest.mock(
-	'@wordpress/a11y',
-	() => ( {
-		speak: jest.fn(),
-	} ),
-	{ virtual: true }
-);
+jest.mock( '@wordpress/a11y', () => ( {
+	speak: jest.fn(),
+} ) );
 
 /**
  * WordPress dependencies
  */
 import { speak } from '@wordpress/a11y';
-// eslint-disable-next-line import/named -- `__mockState` only exists on the virtual mock above.
+// eslint-disable-next-line import/named -- `__mockState` only exists on the virtual interactivity mock above.
 import { __mockState as mockInteractivityState } from '@wordpress/interactivity';
 
 /**
@@ -52,6 +57,8 @@ import {
 	activateOnSpace,
 	sendRsvpApiRequest,
 	getNonce,
+	getPostKey,
+	withRecurrenceId,
 } from '@src/helpers/interactivity';
 
 /**
@@ -535,5 +542,139 @@ describe( 'activateOnSpace', () => {
 
 		expect( event.preventDefault ).not.toHaveBeenCalled();
 		expect( ref.click ).not.toHaveBeenCalled();
+	} );
+} );
+
+describe( 'withRecurrenceId', () => {
+	it( 'contributes nothing when the row is not rendering an occurrence', () => {
+		expect( withRecurrenceId( undefined ) ).toEqual( {} );
+	} );
+
+	it( 'contributes nothing when the emitted identifier is empty', () => {
+		expect( withRecurrenceId( '' ) ).toEqual( {} );
+	} );
+
+	it( 'carries the occurrence the row is rendering', () => {
+		expect( withRecurrenceId( '20260903T180000' ) ).toEqual( {
+			recurrence_id: '20260903T180000',
+		} );
+	} );
+} );
+
+/**
+ * The store key carries occurrence identity on the client: one post rendered many
+ * times must not share one entry in `state.posts`.
+ */
+describe( 'getPostKey', () => {
+	it( 'returns the bare post ID for a row with no occurrence', () => {
+		expect( getPostKey( 123, undefined ) ).toBe( 123 );
+	} );
+
+	it( 'returns the bare post ID when the emitted identifier is empty', () => {
+		expect( getPostKey( 123, '' ) ).toBe( 123 );
+	} );
+
+	it( 'composes post and occurrence into one key', () => {
+		expect( getPostKey( 123, '20260903T180000' ) ).toBe(
+			'123:20260903T180000'
+		);
+	} );
+
+	it( 'cannot collide with a bare post-ID key', () => {
+		// A bare key is all digits; a composite one always carries the
+		// separator, so no occurrence identifier can forge another post's key.
+		expect( String( getPostKey( 123, undefined ) ) ).toMatch( /^\d+$/ );
+		expect( getPostKey( 123, '20260903T180000' ) ).toContain( ':' );
+	} );
+} );
+
+describe( 'sendRsvpApiRequest occurrence scoping', () => {
+	let state;
+
+	beforeEach( () => {
+		getNonce.clearCache();
+
+		state = { posts: { 123: {} } };
+		window.alert = jest.fn();
+		jest.spyOn( console, 'warn' ).mockImplementation( () => {} );
+
+		global.fetch = jest.fn( ( url ) => {
+			if ( url.endsWith( '/nonce' ) ) {
+				return Promise.resolve( {
+					json: () => Promise.resolve( { nonce: 'test-nonce' } ),
+				} );
+			}
+
+			return Promise.resolve( {
+				status: 200,
+				json: () =>
+					Promise.resolve( {
+						success: true,
+						status: 'attending',
+						guests: 0,
+						anonymous: false,
+						responses: {},
+					} ),
+			} );
+		} );
+	} );
+
+	afterEach( () => {
+		jest.restoreAllMocks();
+		delete global.fetch;
+	} );
+
+	const rsvpRequestBody = () => {
+		const call = global.fetch.mock.calls.find( ( [ url ] ) =>
+			url.endsWith( '/rsvp' )
+		);
+
+		return JSON.parse( call[ 1 ].body );
+	};
+
+	it( 'sends the occurrence identifier the row is rendering', async () => {
+		await sendRsvpApiRequest(
+			123,
+			{
+				status: 'attending',
+				guests: 0,
+				anonymous: false,
+				recurrenceId: '20260903T180000',
+			},
+			state
+		);
+
+		expect( rsvpRequestBody().recurrence_id ).toBe( '20260903T180000' );
+	} );
+
+	it( 'writes the response into that occurrence own state slice', async () => {
+		await sendRsvpApiRequest(
+			123,
+			{
+				status: 'attending',
+				guests: 0,
+				anonymous: false,
+				recurrenceId: '20260903T180000',
+			},
+			state
+		);
+
+		// The bare post key must be left exactly as it was found: a sibling row
+		// of the same series reads through it, and updating it here is the
+		// collapse this whole change exists to prevent.
+		expect( state.posts[ '123:20260903T180000' ].currentUser.status ).toBe(
+			'attending'
+		);
+		expect( state.posts[ 123 ] ).toEqual( {} );
+	} );
+
+	it( 'leaves the request body untouched off an occurrence page', async () => {
+		await sendRsvpApiRequest(
+			123,
+			{ status: 'attending', guests: 0, anonymous: false },
+			state
+		);
+
+		expect( rsvpRequestBody() ).not.toHaveProperty( 'recurrence_id' );
 	} );
 } );

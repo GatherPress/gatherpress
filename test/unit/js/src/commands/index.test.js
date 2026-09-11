@@ -7,35 +7,27 @@ import { describe, expect, it, jest } from '@jest/globals';
  * Mock the commands store so the registered command config can be captured
  * without a live store.
  */
-jest.mock(
-	'@wordpress/commands',
-	() => ( {
-		store: 'core/commands',
-	} ),
-	{ virtual: true }
-);
+jest.mock( '@wordpress/commands', () => ( {
+	store: 'core/commands',
+} ) );
 
 /**
  * Mock the data-store dispatch so registerCommand calls land on a spy. The spy
  * is created inside the factory (jest.mock is hoisted above any const) and
  * re-exported as `__registerCommand` so the tests can assert on it.
  */
-jest.mock(
-	'@wordpress/data',
-	() => {
-		const registerCommand = jest.fn();
-		return {
-			dispatch: jest.fn( () => ( { registerCommand } ) ),
-			__registerCommand: registerCommand,
-		};
-	},
-	{ virtual: true }
-);
+jest.mock( '@wordpress/data', () => {
+	const registerCommand = jest.fn();
+	return {
+		dispatch: jest.fn( () => ( { registerCommand } ) ),
+		__registerCommand: registerCommand,
+	};
+} );
 
 /**
  * WordPress dependencies
  */
-// eslint-disable-next-line import/named -- `__registerCommand` only exists on the virtual mock above.
+// eslint-disable-next-line import/named -- `__registerCommand` only exists on the mock above.
 import { __registerCommand as registerCommand } from '@wordpress/data';
 
 /**

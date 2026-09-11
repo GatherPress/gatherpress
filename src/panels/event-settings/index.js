@@ -18,6 +18,8 @@ import { PluginDocumentSettingPanel } from '@wordpress/editor';
 import { isEventPostType } from '../../helpers/event';
 import { usePostTypeLabel } from '../../helpers/editor';
 import DateTimeRangePanel from './datetime-range';
+import RecurrencePanel from './recurrence';
+import OccurrencesPanel from './occurrences';
 import NotifyMembersPanel from './notify-members';
 import { EventPluginDocumentSettings } from './slot';
 
@@ -100,6 +102,8 @@ const EventSettings = () => {
 
 				<VStack spacing={ 4 }>
 					<DateTimeRangePanel />
+					<RecurrencePanel />
+					<OccurrencesPanel />
 					<NotifyMembersPanel />
 				</VStack>
 			</PluginDocumentSettingPanel>

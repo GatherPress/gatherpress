@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Recurring events can now be authored in the event editor. A Repeat toggle sets how often an event repeats and when the series ends, and an Occurrences list shows the projected dates and lets an organizer cancel or restore any one of them. The admin events list marks a series as recurring and dates it from its next upcoming occurrence.

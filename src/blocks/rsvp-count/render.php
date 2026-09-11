@@ -12,6 +12,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Blocks\Setup;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Recurrence\Rsvp_Occurrence;
 use GatherPress\Core\Rsvp;
 
 $gatherpress_block_instance = Setup::get_instance();
@@ -65,7 +66,7 @@ $gatherpress_counts = array(
 <div
 	<?php echo wp_kses_data( get_block_wrapper_attributes() ); ?>
 	data-wp-interactive="gatherpress"
-	<?php echo wp_kses_data( wp_interactivity_data_wp_context( array( 'postId' => $gatherpress_post_id ) ) ); ?>
+	<?php echo wp_kses_data( wp_interactivity_data_wp_context( Rsvp_Occurrence::block_context( $gatherpress_post_id ) ) ); ?>
 	data-wp-watch="callbacks.updateRsvpCount"
 	data-wp-init="callbacks.initRsvpCount"
 	data-status="<?php echo esc_attr( $gatherpress_status_key ); ?>"

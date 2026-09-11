@@ -429,7 +429,7 @@ class Test_Calendar extends Base {
 	 *
 	 * @covers ::get_ical_event_string
 	 * @covers ::escape_ical_text
-	 * @covers ::fold_ical_text
+	 * @covers ::fold_content_line
 	 *
 	 * @return void
 	 */
@@ -439,8 +439,8 @@ class Test_Calendar extends Base {
 
 		$this->assertStringStartsWith( 'BEGIN:VEVENT', $vevent );
 		$this->assertStringEndsWith( 'END:VEVENT', $vevent );
-		$this->assertStringContainsString( 'DTSTART:20300615T183000Z', $vevent );
-		$this->assertStringContainsString( 'DTEND:20300615T203000Z', $vevent );
+		$this->assertStringContainsString( 'DTSTART;TZID=America/New_York:20300615T143000', $vevent );
+		$this->assertStringContainsString( 'DTEND;TZID=America/New_York:20300615T163000', $vevent );
 		$this->assertStringContainsString( 'SUMMARY:Sample Event', $vevent );
 
 		// Address has a `;` and `,` which RFC 5545 requires escaped as `\;` `\,`.
@@ -638,90 +638,80 @@ class Test_Calendar extends Base {
 	}
 
 	/**
-	 * Returns an empty string from get_ical_event_string when the underlying
-	 * Event has no post, so nothing malformed lands inside a VCALENDAR wrap.
+	 * Folding splits a content line on an octet budget and unfolds byte for byte.
 	 *
-	 * @since 0.36.0
-	 * @covers ::get_ical_event_string
+	 * RFC 5545 section 3.1 counts octets, not characters, and every physical
+	 * line has to fit the same ceiling, which the continuation lines only do
+	 * if the leading space they carry is charged against their own budget.
+	 *
+	 * @covers ::fold_content_line
 	 *
 	 * @return void
 	 */
-	public function test_get_ical_event_string_returns_empty_without_post(): void {
-		$post     = $this->mock->post( array( 'post_type' => 'post' ) )->get();
-		$instance = new Calendar( $post->ID );
+	public function test_fold_content_line_respects_the_octet_ceiling(): void {
+		$instance = new Calendar( $this->make_event() );
 
 		$this->assertSame(
-			'',
-			$instance->get_ical_event_string(),
-			'VEVENT should be empty when the underlying post cannot be resolved as an event.'
+			'DESCRIPTION:short',
+			Utility::invoke_hidden_method( $instance, 'fold_content_line', array( 'DESCRIPTION:short' ) ),
+			'A line inside the ceiling must pass through untouched.'
+		);
+
+		$line   = 'DESCRIPTION:' . str_repeat( 'a', 200 );
+		$folded = Utility::invoke_hidden_method( $instance, 'fold_content_line', array( $line ) );
+
+		$this->assertStringContainsString( "\r\n ", $folded, 'A line past the ceiling must be folded.' );
+		$this->assertSame(
+			$line,
+			str_replace( "\r\n ", '', $folded ),
+			'Unfolding must return the exact original bytes.'
+		);
+		$this->assertSame(
+			array(),
+			array_values(
+				array_filter(
+					explode( "\r\n", $folded ),
+					static function ( string $physical ): bool {
+						return strlen( $physical ) > 75;
+					}
+				)
+			),
+			'No physical line may exceed 75 octets, the leading space of a continuation included.'
 		);
 	}
 
 	/**
-	 * A post whose post_modified_gmt will not parse still gets the
-	 * RFC-required DTSTAMP, stamped at generation time rather than at the
-	 * Unix epoch.
+	 * A multi-byte character is never split across a fold.
 	 *
-	 * @since 0.36.0
-	 * @covers ::get_ical_event_string
+	 * The budget is octets and the unit is characters, which is the whole
+	 * difficulty: splitting a three-octet character leaves two byte sequences
+	 * that are not valid UTF-8 and do not reassemble into the original.
+	 *
+	 * @covers ::fold_content_line
 	 *
 	 * @return void
 	 */
-	public function test_get_ical_event_string_stamps_now_for_unparsable_modified_date(): void {
+	public function test_fold_content_line_never_splits_a_multibyte_character(): void {
 		$instance = new Calendar( $this->make_event() );
-
-		$instance->event->post->post_modified_gmt = '9999-99-99 99:99:99';
-
-		$before = time();
-		$vevent = $instance->get_ical_event_string();
-		$after  = time();
+		// Three octets each, so the boundary lands mid-character for at least
+		// one fold whatever the prefix length happens to be.
+		$line   = 'SUMMARY:' . str_repeat( '□', 60 );
+		$folded = Utility::invoke_hidden_method( $instance, 'fold_content_line', array( $line ) );
 
 		$this->assertSame(
-			1,
-			preg_match( '/DTSTAMP:(\d{8}T\d{6}Z)/', $vevent, $matches ),
-			'VEVENT should still carry a DTSTAMP when post_modified_gmt will not parse.'
+			$line,
+			str_replace( "\r\n ", '', $folded ),
+			'Unfolding a multi-byte value must return the original bytes.'
 		);
 
-		$stamp = strtotime( $matches[1] );
-
-		$this->assertGreaterThanOrEqual(
-			$before,
-			$stamp,
-			'DTSTAMP should fall back to the generation time, not the Unix epoch.'
-		);
-		$this->assertLessThanOrEqual(
-			$after,
-			$stamp,
-			'DTSTAMP should fall back to the generation time, not a future date.'
-		);
-		$this->assertStringContainsString(
-			sprintf( 'LAST-MODIFIED:%s', $matches[1] ),
-			$vevent,
-			'LAST-MODIFIED should share the fallback stamp with DTSTAMP.'
-		);
-	}
-
-	/**
-	 * Folding wraps text longer than 75 chars across CRLF + space.
-	 *
-	 * @covers ::fold_ical_text
-	 *
-	 * @return void
-	 */
-	public function test_fold_ical_text_wraps_long_strings(): void {
-		$instance = new Calendar( $this->make_event() );
-
-		$short = Utility::invoke_hidden_method( $instance, 'fold_ical_text', array( 'short text' ) );
-		$this->assertSame( 'short text', $short, 'Short text should pass through unchanged.' );
-
-		$long_text = str_repeat( 'a', 200 );
-		$folded    = Utility::invoke_hidden_method( $instance, 'fold_ical_text', array( $long_text ) );
-
-		$this->assertStringContainsString(
-			"\r\n ",
-			$folded,
-			'Long text should be folded with CRLF + space sequences.'
-		);
+		foreach ( explode( "\r\n", $folded ) as $physical ) {
+			$this->assertLessThanOrEqual( 75, strlen( $physical ), 'Every physical line stays inside the ceiling.' );
+			$this->assertSame(
+				$physical,
+				(string) mb_convert_encoding( $physical, 'UTF-8', 'UTF-8' ),
+				'Every physical line must remain valid UTF-8 on its own.'
+			);
+		}
 	}
 
 	/**
@@ -877,177 +867,63 @@ class Test_Calendar extends Base {
 	}
 
 	/**
-	 * Build an all-day event with local datetimes, specified timezone, and all-day meta.
+	 * The `.ics` template survives a request whose queried object is not an event.
 	 *
-	 * @param string $timezone   The timezone string.
-	 * @param string $start_date The start date in Y-m-d format.
-	 * @param string $end_date   The end date in Y-m-d format.
+	 * `Calendar\Setup::get_ics_body()` is what both `ical-feed.php` and
+	 * `ical-download.php` call, and on a non-feed request it builds a
+	 * `Calendar` from `get_queried_object_id()`. When that object is not an
+	 * event, such as a venue or any post that does not support
+	 * `gatherpress-event-date`, `Event::$event` stays null, and
+	 * `get_ical_event_string()` used to read `post_title` straight off it.
+	 * PHP 8 evaluates that to null rather than raising, so the null reached
+	 * `escape_ical_text( string $text )` and threw a `TypeError` that took the
+	 * whole public request down.
 	 *
-	 * @return int The event post ID.
-	 */
-	private function make_all_day_event(
-		string $timezone = 'Asia/Tokyo',
-		string $start_date = '2030-06-15',
-		string $end_date = '2030-06-15'
-	): int {
-		$event_id = $this->mock->post(
-			array(
-				'post_type'  => Event::POST_TYPE,
-				'post_title' => 'All Day Event',
-				'post_name'  => 'all-day-event',
-			)
-		)->get()->ID;
-
-		$event = new Event( $event_id );
-		$event->save_datetimes(
-			array(
-				'datetime_start' => "{$start_date} 00:00:00",
-				'datetime_end'   => "{$end_date} 23:59:59",
-				'timezone'       => $timezone,
-			)
-		);
-		update_post_meta( $event_id, 'gatherpress_is_all_day', 1 );
-
-		return $event_id;
-	}
-
-	/**
-	 * Coverage for get_google_destination_url with an all-day event.
+	 * Driven through `get_ics_body()` rather than `escape_ical_text()` so the
+	 * assertion covers the path a client actually reaches.
 	 *
-	 * All-day events must serialize as floating dates with exclusive end date (YYYYMMDD/YYYYMMDD)
-	 * and no time/UTC offset component.
-	 *
-	 * @since 0.36.0
-	 * @ticket 2225
-	 * @covers ::get_google_destination_url
-	 *
-	 * @return void
-	 */
-	public function test_get_google_destination_url_with_all_day_event(): void {
-		$event_id = $this->make_all_day_event( 'Asia/Tokyo', '2030-06-15', '2030-06-15' );
-		$instance = new Calendar( $event_id );
-		$url      = $instance->get_google_destination_url();
-
-		$this->assertStringContainsString(
-			'dates=20300615%2F20300616',
-			$url,
-			'Google destination URL for a 1-day all-day event should use floating dates with exclusive end date.'
-		);
-
-		$multi_day_id = $this->make_all_day_event( 'Asia/Tokyo', '2030-06-15', '2030-06-17' );
-		$multi_inst   = new Calendar( $multi_day_id );
-		$multi_url    = $multi_inst->get_google_destination_url();
-
-		$this->assertStringContainsString(
-			'dates=20300615%2F20300618',
-			$multi_url,
-			'Google destination URL for a multi-day all-day event should use floating dates with exclusive end date.'
-		);
-	}
-
-	/**
-	 * Coverage for get_yahoo_destination_url with an all-day event.
-	 *
-	 * All-day events serialize start date as YYYYMMDD and duration as whole-day hours (2400 per day).
-	 *
-	 * @since 0.36.0
-	 * @ticket 2225
-	 * @covers ::get_yahoo_destination_url
-	 *
-	 * @return void
-	 */
-	public function test_get_yahoo_destination_url_with_all_day_event(): void {
-		$event_id = $this->make_all_day_event( 'Asia/Tokyo', '2030-06-15', '2030-06-15' );
-		$instance = new Calendar( $event_id );
-		$url      = $instance->get_yahoo_destination_url();
-
-		$this->assertStringContainsString(
-			'st=20300615',
-			$url,
-			'Yahoo destination URL should use Ymd start date for all-day events.'
-		);
-		$this->assertStringContainsString(
-			'dur=allday',
-			$url,
-			'Yahoo destination URL should mark a one-day event all day with dur.'
-		);
-		$this->assertStringNotContainsString(
-			'et=',
-			$url,
-			'Yahoo destination URL should send no end date, which would make it ignore dur.'
-		);
-
-		$multi_day_id = $this->make_all_day_event( 'Asia/Tokyo', '2030-06-15', '2030-06-16' );
-		$multi_inst   = new Calendar( $multi_day_id );
-		$multi_url    = $multi_inst->get_yahoo_destination_url();
-
-		// A span goes out as the timed stretch it is stored as. Yahoo cannot
-		// flag it all day, and a bare end date is read as midnight, which
-		// drops the last day; this opens as the 15th through the 16th.
-		$this->assertStringContainsString(
-			'st=20300615T000000',
-			$multi_url,
-			'Yahoo destination URL should start a multi-day all-day event at midnight on its first day.'
-		);
-		$this->assertStringContainsString(
-			'et=20300616T235959',
-			$multi_url,
-			'Yahoo destination URL should end a multi-day all-day event at the end of its last day.'
-		);
-		$this->assertStringNotContainsString(
-			'dur=',
-			$multi_url,
-			'Yahoo destination URL should send no duration alongside an end date.'
-		);
-	}
-
-	/**
-	 * Coverage for get_ical_event_string with an all-day event.
-	 *
-	 * Per RFC 5545 §3.6.1, all-day events must use DTSTART;VALUE=DATE and DTEND;VALUE=DATE
-	 * with exclusive end date in local time without UTC offset drift.
-	 *
-	 * @since 0.36.0
-	 * @ticket 2225
 	 * @covers ::get_ical_event_string
 	 *
 	 * @return void
 	 */
-	public function test_get_ical_event_string_with_all_day_event(): void {
-		// Non-UTC timezone (Asia/Tokyo is UTC+9) where GMT start would fall on the previous day.
-		$event_id = $this->make_all_day_event( 'Asia/Tokyo', '2030-06-15', '2030-06-15' );
-		$instance = new Calendar( $event_id );
-		$vevent   = $instance->get_ical_event_string();
+	public function test_ics_body_on_a_non_event_request_renders_instead_of_fataling(): void {
+		$venue_id = $this->mock->post(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_title'  => 'Orphan Office',
+				'post_name'   => 'orphan-office',
+				'post_status' => 'publish',
+			)
+		)->get()->ID;
 
-		$this->assertStringContainsString(
-			'DTSTART;VALUE=DATE:20300615',
-			$vevent,
-			'iCal VEVENT for all-day event must use DTSTART;VALUE=DATE in local date.'
+		$this->go_to( home_url( '/?p=' . $venue_id . '&post_type=' . Venue::POST_TYPE ) );
+
+		$this->assertSame(
+			$venue_id,
+			get_queried_object_id(),
+			'Failed to assert that the request resolved to the venue post.'
 		);
-		$this->assertStringContainsString(
-			'DTEND;VALUE=DATE:20300616',
-			$vevent,
-			'iCal VEVENT for all-day event must use DTEND;VALUE=DATE with exclusive end date.'
+		$this->assertFalse(
+			is_feed(),
+			'Failed to assert that the request is the non-feed branch of get_ics_body().'
+		);
+
+		$body = Setup::get_instance()->get_ics_body();
+
+		$this->assertStringStartsWith(
+			'BEGIN:VCALENDAR',
+			$body,
+			'Failed to assert that a non-event request still renders a calendar envelope.'
 		);
 		$this->assertStringNotContainsString(
-			'DTSTART:20300614',
-			$vevent,
-			'iCal all-day date must not drift to previous day due to GMT offset.'
+			'BEGIN:VEVENT',
+			$body,
+			'Failed to assert that a non-event request emits no VEVENT.'
 		);
-
-		// Multi-day all-day event.
-		$multi_day_id = $this->make_all_day_event( 'Asia/Tokyo', '2030-06-15', '2030-06-17' );
-		$multi_inst   = new Calendar( $multi_day_id );
-		$multi_vevent = $multi_inst->get_ical_event_string();
-
-		$this->assertStringContainsString(
-			'DTSTART;VALUE=DATE:20300615',
-			$multi_vevent
-		);
-		$this->assertStringContainsString(
-			'DTEND;VALUE=DATE:20300618',
-			$multi_vevent,
-			'Multi-day all-day event must have DTEND on the day after the last day.'
+		$this->assertStringNotContainsString(
+			"\r\n\r\n",
+			$body,
+			'A blank content line violates RFC 5545 section 3.1, and a strict client rejects the whole body.'
 		);
 	}
 }

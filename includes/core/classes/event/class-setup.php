@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use DateTimeImmutable;
 use Exception;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Recurrence\Setup as Recurrence_Setup;
 use GatherPress\Core\Feed;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Settings;
@@ -95,6 +96,7 @@ final class Setup {
 		Admin_List::get_instance();
 		Meta::get_instance();
 		Query::get_instance();
+		Recurrence_Setup::get_instance();
 		Rest_Api::get_instance();
 	}
 
@@ -112,6 +114,9 @@ final class Setup {
 		// Priority 11 so post types registered at default priority 10 are available for get_post_types_by_support().
 		add_action( 'init', array( $this, 'register_starter_pattern' ), 11 );
 		add_action( 'template_redirect', array( $this, 'handle_event_archive_redirect' ) );
+		// Runs inside WP::handle_404(), which is several hooks before
+		// template_redirect. See defer_event_archive_404() for why that matters.
+		add_filter( 'pre_handle_404', array( $this, 'defer_event_archive_404' ), 10, 2 );
 		add_action( 'delete_post', array( $this, 'delete_event' ) );
 		add_action( 'wp_after_insert_post', array( $this, 'set_datetimes' ) );
 		add_action( 'save_post', array( $this, 'check_waiting_list' ) );
@@ -385,38 +390,37 @@ final class Setup {
 	 * work; the Feed class serves those. Setting `has_archive => false`
 	 * would make feed URLs 404 in every mode.
 	 *
+	 * Both event-archive rewrites run through `substitute_archive_query()`,
+	 * which is where the archive's ordering and its deferred 404 decision
+	 * live. The page-as-regular-page branch makes its own 404 decision through
+	 * `maybe_404_paged_page()`, because `defer_event_archive_404()` has already
+	 * taken core's away from every request that reaches this method.
+	 *
 	 * @since 0.34.0
 	 *
 	 * @see Feed::handle_events_feed_query()
 	 * @see self::get_event_archive_mode()
+	 * @see self::defer_event_archive_404()
+	 * @see self::maybe_404_paged_page()
 	 *
 	 * @return void
 	 */
 	public function handle_event_archive_redirect(): void {
 		global $wp_query;
 
-		// Bail on feeds (handled separately by Feed) or when something
-		// else already claimed this page as an event archive.
-		if ( is_feed() || $wp_query->get( Query::EVENT_QUERY_PARAM ) ) {
+		// The one guard `defer_event_archive_404()` also uses: whatever query
+		// shape defers core's 404 decision is exactly the shape this method
+		// owes a decision back to. Deciding the two independently is how the
+		// widened-array `post_type` case deferred the 404 and then bailed
+		// here on a `(string)` cast that read `Array`.
+		if ( ! $this->is_event_archive_request( $wp_query ) ) {
 			return;
 		}
 
-		// `post_type` comes back as an array on multi-post-type archives
-		// (e.g. a combined archive query across several event-supporting
-		// post types); the is_string() guard below keeps that array out of
-		// post_type_supports(), which otherwise emits a PHP "Array to
-		// string conversion" warning when it casts its argument to string.
-		$post_type = get_query_var( 'post_type' );
-
-		// Bail when not on a post type archive at all, when the queried
-		// post type isn't a single string, or when it doesn't declare
-		// event-date support.
-		if ( ! is_post_type_archive()
-			|| ! is_string( $post_type )
-			|| ! post_type_supports( $post_type, Event::SUPPORT )
-		) {
-			return;
-		}
+		// The concrete post type this request archives, resolved from the
+		// intersection rather than from a cast, because a `pre_get_posts`
+		// widening routinely turns the main query's `post_type` into an array.
+		$post_type = $this->first_queried_event_post_type( $wp_query );
 
 		// The page-as-archive flow below reads settings that exist only
 		// for the standard event post type (`events_url`,
@@ -454,20 +458,7 @@ final class Setup {
 				$page_title = get_the_title( $page->ID );
 
 				// Re-query as an event archive with proper sorting.
-				$paged = get_query_var( 'paged', 1 );
-
-				$wp_query->query(
-					array(
-						'post_type'              => Event::POST_TYPE,
-						Query::EVENT_QUERY_PARAM => $key,
-						'paged'                  => $paged,
-					)
-				);
-
-				$wp_query->is_page              = false;
-				$wp_query->is_singular          = false;
-				$wp_query->is_archive           = true;
-				$wp_query->is_post_type_archive = true;
+				$this->substitute_archive_query( $wp_query, Event::POST_TYPE, $key );
 
 				// Preserve the page as queried object so admin bar "Edit Page" works.
 				$wp_query->queried_object    = $page;
@@ -482,14 +473,63 @@ final class Setup {
 		}
 
 		// Page exists but is not an archive page — serve it as a regular page.
+		// The request parsed as a paged post type archive, so the page number
+		// arrives on `paged`; carry it over to `page`, which is the var a
+		// singular request paginates its content with, and read it before the
+		// re-query throws the original query vars away.
+		$paged = max( 1, (int) get_query_var( 'paged' ) );
+
 		$wp_query->init();
-		$wp_query->query( array( 'page_id' => $page->ID ) );
+		$wp_query->query(
+			array(
+				'page_id' => $page->ID,
+				'page'    => $paged,
+			)
+		);
 		$wp_query->is_post_type_archive = false;
 		$wp_query->is_archive           = false;
 		$wp_query->is_page              = true;
 		$wp_query->is_singular          = true;
 		$wp_query->queried_object       = $page;
 		$wp_query->queried_object_id    = $page->ID;
+
+		$this->maybe_404_paged_page( $wp_query, $page, $paged );
+	}
+
+	/**
+	 * Make core's out-of-range 404 decision for the page-as-regular-page branch.
+	 *
+	 * `defer_event_archive_404()` takes core's 404 decision away from every
+	 * request that reaches `handle_event_archive_redirect()`, so every branch
+	 * of that method owes one back. This is the branch a published page
+	 * occupying the events slug takes when it is not designated as the
+	 * upcoming or past archive page: what gets served is a single page, and a
+	 * page is one page long unless its content is split with
+	 * `<!--nextpage-->`. Past that bound there is nothing left to render,
+	 * which is the conclusion `WP::handle_404()` reaches for a singular
+	 * request whose page number exceeds the split count.
+	 *
+	 * Without it the events slug answers `200` at every page number,
+	 * unboundedly, with identical content: `/event/page/2/` and
+	 * `/event/page/50/` both serve the landing page instead of the `404` they
+	 * answer when core's decision is not deferred.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param WP_Query $wp_query The global query, mutated in place.
+	 * @param WP_Post  $page     The page occupying the events slug.
+	 * @param int      $paged    Page number the request asked for.
+	 *
+	 * @return void
+	 */
+	protected function maybe_404_paged_page( WP_Query $wp_query, WP_Post $page, int $paged ): void {
+		if ( $paged <= substr_count( $page->post_content, '<!--nextpage-->' ) + 1 ) {
+			return;
+		}
+
+		$wp_query->set_404();
+		status_header( 404 );
+		nocache_headers();
 	}
 
 	/**
@@ -519,13 +559,137 @@ final class Setup {
 			return;
 		}
 
-		$paged = get_query_var( 'paged', 1 );
+		$this->substitute_archive_query( $wp_query, $post_type, $mode );
+	}
 
+	/**
+	 * Stop core deciding the 404 before the archive query has been substituted.
+	 *
+	 * `WP::handle_404()` runs inside `WP::main()`, several hooks before
+	 * `template_redirect`, and it judges the query WordPress parsed from the
+	 * URL, which has one row per event *post*. `handle_event_archive_redirect()`
+	 * then
+	 * replaces that query with the occurrence-aware one, which has one row per
+	 * *occurrence* and therefore many more pages. On any page beyond the first,
+	 * the pre-substitution query has already run out of posts, so core 404s;
+	 * and `WP_Query::set_404()` resets every conditional flag, including
+	 * `is_post_type_archive`, which is the flag the substitution itself is
+	 * guarded on. The archive then loses every page but the first, and the
+	 * measured symptom is a 404 at `/event/page/2/` while `/event/` reports
+	 * nine pages.
+	 *
+	 * `pre_handle_404` exists for exactly this: deferring the judgment to
+	 * something that knows more about the request than core does. Every branch
+	 * `handle_event_archive_redirect()` can take then makes the judgment once
+	 * its real query has run: `substitute_archive_query()` for the two archive
+	 * rewrites, `maybe_404_paged_page()` for the page-as-regular-page branch.
+	 *
+	 * Neither the parameter nor the return value is typed as `bool`, and
+	 * neither should be: `pre_handle_404` is a public filter, so an earlier
+	 * callback can put any truthy value on it. Narrowing the signature would
+	 * coerce another plugin's value on the way back out; the guard below tests
+	 * `false !== $preempt` and returns whatever it was handed.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param mixed    $preempt  Whether to short-circuit core's 404 handling, as an earlier callback left it.
+	 * @param WP_Query $wp_query The query being judged.
+	 *
+	 * @return mixed `true` to defer the decision on an event archive request, otherwise `$preempt` unchanged.
+	 */
+	public function defer_event_archive_404( $preempt, WP_Query $wp_query ) {
+		// Anything already preempting wins. Beyond that the deferral and
+		// `handle_event_archive_redirect()` share one guard, so the query
+		// shapes that lose core's 404 decision and the shapes that get a
+		// decision back cannot drift apart.
+		if ( false !== $preempt || ! $this->is_event_archive_request( $wp_query ) ) {
+			return $preempt;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Decide whether a query is an event archive request this class handles.
+	 *
+	 * The single rule shared by `defer_event_archive_404()` and
+	 * `handle_event_archive_redirect()`: a front-end post type archive, not a
+	 * feed, not already claimed as an event archive, whose queried post types
+	 * include at least one with event-date support. The post type check
+	 * intersects rather than casts, because a `pre_get_posts` widening
+	 * routinely turns the main query's `post_type` into an array, and casting
+	 * that produced the literal string `Array`, declining for exactly the
+	 * sites that widened. Mirrors `Recurrence\Query::is_event_query()`.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param WP_Query $wp_query The query being judged.
+	 *
+	 * @return bool True when both callbacks should treat it as an event archive request.
+	 */
+	protected function is_event_archive_request( WP_Query $wp_query ): bool {
+		return $wp_query->is_post_type_archive
+			&& ! $wp_query->is_feed
+			&& ! $wp_query->get( Query::EVENT_QUERY_PARAM )
+			&& '' !== $this->first_queried_event_post_type( $wp_query );
+	}
+
+	/**
+	 * Resolve the first event-date-supporting post type a query asks for.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param WP_Query $wp_query The query to read.
+	 *
+	 * @return string The first supported post type queried, or '' when none is.
+	 */
+	protected function first_queried_event_post_type( WP_Query $wp_query ): string {
+		$queried   = array_map( 'strval', (array) $wp_query->get( 'post_type' ) );
+		$supported = array_intersect( $queried, get_post_types_by_support( 'gatherpress-event-date' ) );
+
+		return (string) reset( $supported );
+	}
+
+	/**
+	 * Replace the main query with the occurrence-aware archive query.
+	 *
+	 * The single place both archive rewrites go through, so the ordering, the
+	 * page number and the deferred 404 decision cannot drift apart.
+	 *
+	 * Ordering is by event datetime rather than by `post_date`. Without an
+	 * explicit `orderby`, `Event\Query::adjust_event_sql()` leaves WordPress's
+	 * default `wp_posts.post_date DESC` in place, which groups every
+	 * occurrence of one series together and lets a single recurring series
+	 * fill the whole first page. `datetime` resolves to the events table's
+	 * `datetime_start_gmt`, which `Recurrence\Query::expand_event_clauses()`
+	 * then rewrites to `COALESCE( occurrence, anchor )` on a site with
+	 * recurring events, so occurrences and non-recurring events interleave by
+	 * date. Direction follows the bucket, matching
+	 * `Event\Query::get_events_list()`: upcoming reads soonest-first, past
+	 * reads most-recent-first.
+	 *
+	 * The trailing block is the counterpart to `defer_event_archive_404()`.
+	 * Deferring the decision is only defensible if the decision still gets
+	 * made, and core's rule is reproduced rather than reinvented: a paged
+	 * request with no rows is a 404, an unpaged one is an empty archive at
+	 * `200`, because `get_queried_object()` resolves to the post type.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param WP_Query $wp_query  The global query, mutated in place.
+	 * @param string   $post_type The event-supporting post type being archived.
+	 * @param string   $bucket    Either `upcoming` or `past`.
+	 *
+	 * @return void
+	 */
+	protected function substitute_archive_query( WP_Query $wp_query, string $post_type, string $bucket ): void {
 		$wp_query->query(
 			array(
 				'post_type'              => $post_type,
-				Query::EVENT_QUERY_PARAM => $mode,
-				'paged'                  => $paged,
+				Query::EVENT_QUERY_PARAM => $bucket,
+				'paged'                  => get_query_var( 'paged', 1 ),
+				'orderby'                => 'datetime',
+				'order'                  => ( 'past' === $bucket ) ? 'DESC' : 'ASC',
 			)
 		);
 
@@ -533,6 +697,14 @@ final class Setup {
 		$wp_query->is_singular          = false;
 		$wp_query->is_archive           = true;
 		$wp_query->is_post_type_archive = true;
+
+		if ( ! empty( $wp_query->posts ) || 2 > (int) $wp_query->get( 'paged' ) ) {
+			return;
+		}
+
+		$wp_query->set_404();
+		status_header( 404 );
+		nocache_headers();
 	}
 
 	/**

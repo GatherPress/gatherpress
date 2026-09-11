@@ -70,6 +70,23 @@ final class Cache {
 	const LAST_MODIFIED_OPTION = 'gatherpress_calendar_last_modified';
 
 	/**
+	 * Option holding a strictly increasing count of calendar-relevant changes.
+	 *
+	 * `Last-Modified` has one-second resolution, and it is the whole cache
+	 * namespace: two changes inside one second produce the same stamp, so the
+	 * second one resolves to a key the first already filled and is served the
+	 * body it just invalidated. Canceling two occurrences of a series is one
+	 * loop, well inside a second, so this is the ordinary case rather than a
+	 * race. The counter separates them without pretending the HTTP validator has
+	 * finer resolution than it does.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @var string
+	 */
+	const CHANGE_COUNT_OPTION = 'gatherpress_calendar_change_count';
+
+	/**
 	 * Default seconds a client may reuse a calendar response without asking.
 	 *
 	 * Fifteen minutes matches the shortest polling interval the common clients
@@ -112,6 +129,11 @@ final class Cache {
 		add_action( 'added_post_meta', array( $this, 'mark_changed_for_meta' ), 10, 3 );
 		add_action( 'deleted_post_meta', array( $this, 'mark_changed_for_meta' ), 10, 3 );
 		add_action( 'set_object_terms', array( $this, 'mark_changed_for_terms' ), 10, 4 );
+		// Occurrence rows are written by bare SQL that touches none of the
+		// above, yet an `.ics` body is built from them: the aggregate feeds
+		// select their bucket from the rows, and a canceled row becomes an
+		// `EXDATE`.
+		add_action( 'gatherpress_occurrences_changed', array( $this, 'mark_changed_for_occurrences' ) );
 	}
 
 	/**
@@ -167,12 +189,140 @@ final class Cache {
 	 * Cached responses are namespaced by this stamp, so a new value moves every
 	 * lookup to a fresh key and strands the old entries until they expire.
 	 *
+	 * Both writes allocate in SQL rather than in PHP, for two properties a
+	 * read-then-write cannot give. The validator is written as the greater of
+	 * the clock and one second past the stored value, so the second change
+	 * inside one second still moves it and a client revalidating with the
+	 * first change's `Last-Modified` is never told 304 for a body missing the
+	 * second. The counter increments its row in place, so two concurrent
+	 * writers serialize on the row lock instead of both writing the same
+	 * value they read before either wrote, which would leave a feed request
+	 * between them a namespace it can fill with a stale body.
+	 *
+	 * A burst of stamps inside one second leans the validator a few seconds
+	 * ahead of the clock, one per stamp. That is the trade for strict
+	 * monotonicity at HTTP-date resolution, and it self-corrects on the first
+	 * change after the burst, when the clock has caught up.
+	 *
 	 * @since 0.36.0
 	 *
 	 * @return void
 	 */
 	public function mark_changed(): void {
-		update_option( self::LAST_MODIFIED_OPTION, current_time( 'mysql', true ), false );
+		$this->advance_last_modified( current_time( 'mysql', true ) );
+		$this->allocate_change_count();
+	}
+
+	/**
+	 * Advance the stored validator past both the clock and its own last value.
+	 *
+	 * One statement, so the read and the write cannot interleave with another
+	 * writer's. `GREATEST()` compares the two candidates as strings, which
+	 * orders correctly for the zero-padded `Y-m-d H:i:s` form, and the
+	 * `COALESCE()` catches a corrupt stored value: `DATE_ADD()` answers NULL
+	 * for one, NULL poisons `GREATEST()`, and the clock takes over.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $now The current GMT time in `Y-m-d H:i:s` form.
+	 *
+	 * @return void
+	 */
+	private function advance_last_modified( string $now ): void {
+		global $wpdb;
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->query(
+			$wpdb->prepare(
+				"INSERT INTO %i ( option_name, option_value, autoload )
+				VALUES ( %s, %s, 'off' )
+				ON DUPLICATE KEY UPDATE option_value = COALESCE(
+					GREATEST(
+						%s,
+						DATE_FORMAT(
+							DATE_ADD( option_value, INTERVAL 1 SECOND ),
+							'%%Y-%%m-%%d %%H:%%i:%%s'
+						)
+					),
+					%s
+				)",
+				$wpdb->options,
+				self::LAST_MODIFIED_OPTION,
+				$now,
+				$now,
+				$now
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+
+		$this->flush_option_caches();
+	}
+
+	/**
+	 * Allocate the next change count by incrementing the option row in place.
+	 *
+	 * One statement, so a concurrent allocation waits on the row lock and
+	 * builds on this one's value rather than on the same starting point. A
+	 * value that never took a detour through PHP cannot lose an increment to
+	 * an interleaved writer.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	private function allocate_change_count(): void {
+		global $wpdb;
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->query(
+			$wpdb->prepare(
+				"INSERT INTO %i ( option_name, option_value, autoload )
+				VALUES ( %s, '1', 'off' )
+				ON DUPLICATE KEY UPDATE option_value = CAST( option_value AS SIGNED ) + 1",
+				$wpdb->options,
+				self::CHANGE_COUNT_OPTION
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+
+		$this->flush_option_caches();
+	}
+
+	/**
+	 * Drop every cached copy of the two stamp options.
+	 *
+	 * The stamp is written by bare SQL, so the per-option cache and the
+	 * missing-option memo still hold whatever they held before the write, and
+	 * a read through either would resurrect the value the write just
+	 * superseded. The memo is the dangerous half on a persistent object
+	 * cache: `get_option()` consults it before touching the database, and a
+	 * feed request always reads the counter before the first change allocates
+	 * it, so without the delete the counter reads as zero forever while the
+	 * row keeps incrementing. Both options are written `autoload => 'off'`,
+	 * so the alloptions blob never carries them.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	private function flush_option_caches(): void {
+		wp_cache_delete( self::LAST_MODIFIED_OPTION, 'options' );
+		wp_cache_delete( self::CHANGE_COUNT_OPTION, 'options' );
+		wp_cache_delete( 'notoptions', 'options' );
+	}
+
+	/**
+	 * How many calendar-relevant changes this site has recorded.
+	 *
+	 * Part of the cache namespace rather than of any response: it exists to
+	 * separate two changes `Last-Modified` cannot, and a client never sees it.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return int The current count, starting at zero.
+	 */
+	public function get_change_count(): int {
+		return max( 0, (int) get_option( self::CHANGE_COUNT_OPTION, 0 ) );
 	}
 
 	/**
@@ -211,7 +361,9 @@ final class Cache {
 	 *
 	 * The scope key and the stamp are hashed together rather than concatenated
 	 * so the result stays inside the 172-character ceiling on option names, no
-	 * matter how long the caller's key grows.
+	 * matter how long the caller's key grows. The change counter joins them
+	 * because the stamp alone cannot separate two changes in one second, and a
+	 * key that does not move is a cached body that does not either.
 	 *
 	 * @since 0.36.0
 	 *
@@ -220,7 +372,9 @@ final class Cache {
 	 * @return string Versioned transient name.
 	 */
 	public function get_versioned_key( string $key ): string {
-		return self::TRANSIENT_PREFIX . md5( $this->get_last_modified() . ':' . $key ); // NOSONAR.
+		return self::TRANSIENT_PREFIX . md5( // NOSONAR.
+			$this->get_last_modified() . ':' . $this->get_change_count() . ':' . $key
+		);
 	}
 
 	/**
@@ -236,6 +390,37 @@ final class Cache {
 		if ( $this->is_calendar_post_type( (string) get_post_type( (int) $post_id ) ) ) {
 			$this->mark_changed();
 		}
+	}
+
+	/**
+	 * Stamp the calendar when a series' occurrence rows change.
+	 *
+	 * The stamp is what moves both halves of the response cache at once: the
+	 * stored bodies are namespaced by it, and it is what `Last-Modified` reports
+	 * to a revalidating subscriber. Without it a canceled date is held behind a
+	 * `304` until some unrelated write on the site happens to stamp the
+	 * calendar, which may be never.
+	 *
+	 * The series' calendar revision advances with it. The stamp invalidates the
+	 * *server's* copy, but a subscriber already holding the old component decides
+	 * whether to replace it by comparing `SEQUENCE`, and an occurrence write
+	 * leaves `post_modified_gmt` exactly where it was, and that number is
+	 * otherwise derived from it. Without the advance a canceled date is correctly
+	 * absent from the body and still on the subscriber's calendar.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param int|string $post_id The series post whose occurrence rows changed.
+	 *
+	 * @return void
+	 */
+	public function mark_changed_for_occurrences( $post_id ): void {
+		if ( ! $this->is_calendar_post_type( (string) get_post_type( (int) $post_id ) ) ) {
+			return;
+		}
+
+		Revision::get_instance()->advance( (int) $post_id );
+		$this->mark_changed();
 	}
 
 	/**
@@ -256,6 +441,15 @@ final class Cache {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Required by WP's *_post_meta signature.
 	 */
 	public function mark_changed_for_meta( $meta_id, $post_id, $meta_key = '' ): void {
+		// The revision advance is itself part of a stamp already in progress:
+		// `mark_changed_for_occurrences()` publishes it to every sibling and
+		// then stamps once. Without this bail each sibling's meta write
+		// re-enters `mark_changed()`, and the change count moves two or three
+		// times per change instead of once.
+		if ( Revision::META_KEY === (string) $meta_key ) {
+			return;
+		}
+
 		if (
 			str_starts_with( (string) $meta_key, 'gatherpress_' )
 			&& $this->is_calendar_post_type( (string) get_post_type( (int) $post_id ) )

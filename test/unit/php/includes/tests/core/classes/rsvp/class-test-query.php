@@ -1297,4 +1297,111 @@ class Test_Query extends Base {
 			'Matching columns holding a name rather than an address are not renamed.'
 		);
 	}
+
+	/**
+	 * A taxonomy-scoped read gets a cache key that varies with its scope.
+	 *
+	 * `tax_query` is not one of `WP_Comment_Query`'s declared query vars, so it
+	 * contributes nothing to the cache key that class builds. Two reads
+	 * differing only by taxonomy scope hash to the same key, and the second is
+	 * served the first's comment IDs. Deriving `cache_domain` in this funnel is
+	 * what stops a caller who forgets it from poisoning the entry rather than
+	 * merely missing it, and `taxonomy_query()` is a global `comments_clauses`
+	 * filter, so the caller may not be GatherPress.
+	 *
+	 * @covers ::ensure_cache_domain
+	 * @covers ::get_rsvps
+	 *
+	 * @return void
+	 */
+	public function test_get_rsvps_derives_a_cache_domain_from_the_tax_query(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$seen    = array();
+		$capture = static function ( WP_Comment_Query $query ) use ( &$seen ): void {
+			$seen[] = $query->query_vars['cache_domain'];
+		};
+
+		add_action( 'pre_get_comments', $capture, PHP_INT_MAX );
+
+		Query::get_instance()->get_rsvps(
+			array(
+				'post_id'   => $post_id,
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+				'tax_query' => array(
+					array(
+						'taxonomy' => Status::TAXONOMY,
+						'field'    => 'slug',
+						'terms'    => array( 'attending' ),
+					),
+				),
+			)
+		);
+		Query::get_instance()->get_rsvps(
+			array(
+				'post_id'   => $post_id,
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+				'tax_query' => array(
+					array(
+						'taxonomy' => Status::TAXONOMY,
+						'field'    => 'slug',
+						'terms'    => array( 'not_attending' ),
+					),
+				),
+			)
+		);
+		Query::get_instance()->get_rsvps( array( 'post_id' => $post_id ) );
+
+		remove_action( 'pre_get_comments', $capture, PHP_INT_MAX );
+
+		$this->assertNotSame(
+			$seen[0],
+			$seen[1],
+			'Failed to assert two differently-scoped taxonomy reads get different cache domains.'
+		);
+		$this->assertSame(
+			'core',
+			$seen[2],
+			'Failed to assert an unscoped read keeps the default cache domain.'
+		);
+	}
+
+	/**
+	 * An explicit cache domain is left alone.
+	 *
+	 * @covers ::ensure_cache_domain
+	 *
+	 * @return void
+	 */
+	public function test_get_rsvps_leaves_an_explicit_cache_domain_alone(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$seen    = array();
+		$capture = static function ( WP_Comment_Query $query ) use ( &$seen ): void {
+			$seen[] = $query->query_vars['cache_domain'];
+		};
+
+		add_action( 'pre_get_comments', $capture, PHP_INT_MAX );
+
+		Query::get_instance()->get_rsvps(
+			array(
+				'post_id'      => $post_id,
+				'cache_domain' => 'gatherpress_explicit',
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+				'tax_query'    => array(
+					array(
+						'taxonomy' => Status::TAXONOMY,
+						'field'    => 'slug',
+						'terms'    => array( 'attending' ),
+					),
+				),
+			)
+		);
+
+		remove_action( 'pre_get_comments', $capture, PHP_INT_MAX );
+
+		$this->assertSame(
+			array( 'gatherpress_explicit' ),
+			$seen,
+			'Failed to assert an explicitly set cache domain survives the funnel untouched.'
+		);
+	}
 }

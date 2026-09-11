@@ -17,6 +17,8 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use Exception;
 use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Recurrence\Context;
+use GatherPress\Core\Event\Recurrence\Occurrence_Identity;
 use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Rsvp\Query as Rsvp_Query;
 use GatherPress\Core\Rsvp;
@@ -28,6 +30,7 @@ use GatherPress\Core\User;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
 use WP_Comment;
+use WP_Error;
 use WP_Post;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -54,6 +57,35 @@ final class Rest_Api {
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
+
+	/**
+	 * Request parameter naming the occurrence an RSVP route operates on.
+	 *
+	 * Optional on every route that accepts it. Absent means the series, which
+	 * is what every one of these routes has always meant, so an unmodified
+	 * client keeps its exact behavior.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const RECURRENCE_ID_PARAM = 'recurrence_id';
+
+	/**
+	 * Occurrence-context frames, innermost last.
+	 *
+	 * Each frame is `array( 'request' => WP_REST_Request, 'previous' => array|null )`:
+	 * the dispatch that entered a context, and whatever context was standing
+	 * when it did. A stack rather than a single slot because REST dispatch
+	 * nests. `rsvp_status_html()` renders arbitrary block content, any of which
+	 * may call `rest_do_request()` for a different occurrence of the same
+	 * series. With one slot the inner dispatch overwrote the outer request's
+	 * identity, and its teardown then cleared the context outright, so the outer
+	 * route silently finished series-wide and never tore down at all.
+	 *
+	 * @since 0.36.0
+	 * @var array<int, array{request: WP_REST_Request, previous: array|null}>
+	 */
+	protected array $occurrence_frames = array();
 
 	/**
 	 * Class constructor.
@@ -219,34 +251,23 @@ final class Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'update_rsvp' ),
-				'permission_callback' => function ( WP_REST_Request $request ): bool {
-					$post_id    = (int) $request->get_param( 'post_id' );
-					$rsvp_token = Token::from_token_string( $request->get_param( Token::NAME ) );
-					$token_post = $rsvp_token ? $rsvp_token->get_post() : null;
-
-					// A magic-link token authorizes only the event it was issued for.
-					if ( $token_post instanceof WP_Post && $token_post->ID === $post_id ) {
-						return true;
-					}
-
-					// Otherwise the caller must be logged in and able to read the event.
-					return is_user_logged_in() && $this->can_read_event_rsvps( $request );
-				},
+				'permission_callback' => array( $this, 'can_update_rsvp' ),
 				'args'                => array(
-					'post_id'    => array(
+					'post_id'                 => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'event_post_id' ),
 					),
-					'rsvp_token' => array(
+					'rsvp_token'              => array(
 						'required'          => false,
 						'validate_callback' => static function ( $param ): bool {
 							return ! empty( Token::parse_token_string( $param ) );
 						},
 					),
-					'status'     => array(
+					'status'                  => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'rsvp_status' ),
 					),
+					self::RECURRENCE_ID_PARAM => $this->recurrence_id_arg(),
 				),
 			),
 		);
@@ -305,6 +326,7 @@ final class Rest_Api {
 						'required'          => false,
 						'validate_callback' => array( Validate::class, 'boolean' ),
 					),
+					self::RECURRENCE_ID_PARAM          => $this->recurrence_id_arg(),
 				),
 			),
 		);
@@ -330,30 +352,27 @@ final class Rest_Api {
 				'callback'            => array( $this, 'rsvp_status_html' ),
 				'permission_callback' => array( $this, 'can_read_event_rsvps' ),
 				'args'                => array(
-					'post_id'         => array(
+					'post_id'                 => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'event_post_id' ),
 					),
-					'status'          => array(
+					'status'                  => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'rsvp_status' ),
 					),
-					'block_data'      => array(
+					'block_data'              => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'block_data' ),
 					),
-					'block_signature' => array(
-						'required'          => true,
-						'validate_callback' => array( Validate::class, 'block_signature' ),
-					),
-					'limit_enabled'   => array(
+					'limit_enabled'           => array(
 						'required'          => false,
 						'validate_callback' => array( Validate::class, 'boolean' ),
 					),
-					'limit'           => array(
+					'limit'                   => array(
 						'required'          => false,
 						'validate_callback' => array( Validate::class, 'positive_number' ),
 					),
+					self::RECURRENCE_ID_PARAM => $this->recurrence_id_arg(),
 				),
 			),
 		);
@@ -377,12 +396,389 @@ final class Rest_Api {
 				'callback'            => array( $this, 'rsvp_responses' ),
 				'permission_callback' => array( $this, 'can_read_event_rsvps' ),
 				'args'                => array(
-					'post_id' => array(
+					'post_id'                 => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'event_post_id' ),
 					),
+					self::RECURRENCE_ID_PARAM => $this->recurrence_id_arg(),
 				),
 			),
+		);
+	}
+
+	/**
+	 * Build the shared optional `recurrence_id` argument definition.
+	 *
+	 * Optional everywhere. An absent argument means the series, the behavior
+	 * every one of these routes has always had. An unmodified client is
+	 * therefore unaffected, and a site with no recurring events never reaches
+	 * any of the occurrence machinery at all.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return array The argument definition, in `register_rest_route()` shape.
+	 */
+	protected function recurrence_id_arg(): array {
+		return array(
+			'required'          => false,
+			'validate_callback' => array( $this, 'validate_recurrence_id' ),
+			'sanitize_callback' => 'sanitize_text_field',
+		);
+	}
+
+	/**
+	 * Reject a `recurrence_id` that is not a canonical occurrence identifier.
+	 *
+	 * WordPress only runs a validate callback for a parameter the request
+	 * actually carries, so anything reaching here is a caller naming an
+	 * occurrence.
+	 *
+	 * **This check is deliberately syntax-only, and that is a security
+	 * property rather than a simplification.** WordPress runs validate
+	 * callbacks inside `WP_REST_Request::has_valid_params()`, which is *before*
+	 * the route's `permission_callback`. A validator that resolved the
+	 * identifier against storage therefore answered "is this a real occurrence
+	 * of that post?" for a caller who had not been authorized to ask, and the
+	 * 400-versus-401 split let an unauthenticated visitor enumerate the
+	 * schedule of a draft or private event one candidate at a time. Syntax is
+	 * the most that can be checked here without disclosure, because a malformed
+	 * string is refusable from the string alone.
+	 *
+	 * Membership is still enforced, one step later and after authorization, by
+	 * `enter_occurrence_context()`. **An unresolvable occurrence still fails
+	 * closed there**, and the alternative remains worse in both directions. On
+	 * a read, falling back to the series would hand a caller who asked for one
+	 * date the entire series' attendee list, including names and emails they
+	 * did not ask for. On a write it is worse still: the responder believes
+	 * they have booked September 17th, the RSVP lands series-wide with no
+	 * occurrence term, and there is no error anywhere and no way to tell it
+	 * apart afterwards from a deliberate series RSVP. Silent widening of a
+	 * scope the caller narrowed is not a graceful degradation; it is the
+	 * data-corruption mode this whole subsystem is built to avoid.
+	 *
+	 * The remaining accepted cost is staleness. A page cached by a reverse
+	 * proxy, or a rule edited between render and click, yields a 404 where the
+	 * request would previously have succeeded. That is correct, because the
+	 * occurrence the page named genuinely no longer exists, and it is a
+	 * recoverable client error that a reload fixes.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param mixed $param The submitted value, before sanitization.
+	 *
+	 * @return bool True when the identifier is a canonical `Ymd\THis` string.
+	 */
+	public function validate_recurrence_id( $param ): bool {
+		return Occurrence_Identity::is_canonical( sanitize_text_field( (string) $param ) );
+	}
+
+	/**
+	 * Read the event post ID a request names, whichever parameter carries it.
+	 *
+	 * The RSVP form route inherits `comment_post_ID` from the comment form it
+	 * replaced; every other RSVP route uses `post_id`. The two are mutually
+	 * exclusive per route, and `get_param()` reads undeclared parameters too,
+	 * so a route that declares `comment_post_ID` reads exactly that parameter:
+	 * a stray `post_id` posted alongside the form (a theme's hidden field, a
+	 * stale embed) must neither suppress the declared parameter when it is
+	 * zero nor override it when it is not. The override was the sharper half:
+	 * the form route's viewability gate authorizes the post that
+	 * `comment_post_ID` names, and a smuggled non-zero `post_id` resolved the
+	 * occurrence inside a series that gate never looked at. On every other
+	 * route `post_id` is read as given, with the `comment_post_ID` fallback
+	 * firing whenever `post_id` names no post.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param WP_REST_Request $request Contains data from the request.
+	 *
+	 * @return int The event post ID, or 0 when the request names none.
+	 */
+	private function request_post_id( WP_REST_Request $request ): int {
+		$declared = (array) ( $request->get_attributes()['args'] ?? array() );
+
+		if ( array_key_exists( 'comment_post_ID', $declared ) ) {
+			return (int) $request->get_param( 'comment_post_ID' );
+		}
+
+		$post_id = (int) $request->get_param( 'post_id' );
+
+		return ( 0 === $post_id ) ? (int) $request->get_param( 'comment_post_ID' ) : $post_id;
+	}
+
+	/**
+	 * Resolve the exact occurrence a request names, without entering it.
+	 *
+	 * Step 1 of the resolve-authorize-use sequence
+	 * (`Event\Recurrence\Occurrence_Identity`). The identity that comes back
+	 * names the post that actually owns the occurrence row, which a forward
+	 * split can make different from the post the caller named, so authorization
+	 * and mutation both work from the owner rather than from the request.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param WP_REST_Request $request Contains data from the request.
+	 *
+	 * @return Occurrence_Identity|null The identity, or null when the request names no resolvable occurrence.
+	 */
+	private function requested_occurrence( WP_REST_Request $request ): ?Occurrence_Identity {
+		$recurrence_id = (string) $request->get_param( self::RECURRENCE_ID_PARAM );
+
+		if ( '' === $recurrence_id ) {
+			return null;
+		}
+
+		return Occurrence_Identity::resolve( $this->request_post_id( $request ), $recurrence_id );
+	}
+
+	/**
+	 * Enter the occurrence context a request names, for the rest of the dispatch.
+	 *
+	 * `Context::sync()` is hooked on `wp`, which a REST request never reaches:
+	 * core's `rest_api_loaded()` runs on `parse_request` and ends in `die()`,
+	 * so `WP::main()` never fires `wp`. Without this, every RSVP written
+	 * through the REST layer is a series-wide RSVP however the visitor got
+	 * there, and every read returns the union of the series.
+	 *
+	 * Returning early on an absent parameter is what keeps the series behavior
+	 * byte-identical: nothing is resolved, no frame is pushed, and no occurrence
+	 * machinery is touched.
+	 *
+	 * A failure to resolve is returned rather than swallowed. Continuing would
+	 * serve the caller the **whole series** under a 200, which is precisely the
+	 * outcome the caller narrowing to one date asked not to have.
+	 *
+	 * Every call is a push, and every caller that gets a `null` back owes a
+	 * matching `unwind_occurrence_frame()` from a `finally`. The frame records
+	 * the context that was standing when this dispatch entered, so a nested
+	 * dispatch restores its caller's occurrence on the way out instead of
+	 * clearing the process.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param WP_REST_Request $request Contains data from the request.
+	 *
+	 * @return WP_Error|null An error when the named occurrence could not be entered, otherwise null.
+	 */
+	private function enter_occurrence_context( WP_REST_Request $request ): ?WP_Error {
+		$recurrence_id = (string) $request->get_param( self::RECURRENCE_ID_PARAM );
+
+		if ( '' === $recurrence_id ) {
+			return null;
+		}
+
+		$previous = Context::get_instance()->current();
+
+		if ( ! Context::get_instance()->set_for_series( $this->request_post_id( $request ), $recurrence_id ) ) {
+			// `set_for_series()` clears context when it cannot resolve, so put
+			// the caller's occurrence back before handing the error up: an
+			// inner dispatch failing must not widen the outer route's scope.
+			Context::get_instance()->restore( $previous );
+
+			return $this->occurrence_not_found();
+		}
+
+		$this->occurrence_frames[] = array(
+			'request'  => $request,
+			'previous' => $previous,
+		);
+
+		return null;
+	}
+
+	/**
+	 * Leave the occurrence context a route entered, on every way out of it.
+	 *
+	 * Called from the `finally` of each route that enters, which is the whole
+	 * point: teardown used to hang off `rest_request_after_callbacks`, and that
+	 * filter is applied only once the callback has **returned a value**. An
+	 * exception thrown anywhere in a route body never reaches it, and these
+	 * bodies run arbitrary third-party code: `rsvp_status_html()` renders
+	 * whatever blocks the site has, and every one of these routes queries
+	 * comments through filterable clauses. A throw there left the frame on the
+	 * stack and the process still scoped to that occurrence, so anything later
+	 * in the same request silently read and wrote one visitor's date. A
+	 * `finally` cannot be skipped that way, and it also runs strictly earlier,
+	 * at the end of the callback rather than after it.
+	 *
+	 * REST dispatch nests: `rsvp_status_html()` renders arbitrary blocks, any of
+	 * which may call `rest_do_request()` for another occurrence of the same
+	 * series. Two rules keep that safe, and both are load-bearing:
+	 *
+	 * - Only the **innermost** frame may be torn down. An inner dispatch that
+	 *   named no occurrence pushed no frame, and its own `finally` still calls
+	 *   this; keying on request identity is what stops it unwinding the outer
+	 *   route's frame instead of its own.
+	 * - Teardown **restores** the frame's previous occurrence rather than
+	 *   clearing. The context belongs to whatever is still running, not to the
+	 *   process, so clearing unconditionally left the outer route reading and
+	 *   writing series-wide for the remainder of its callback with no error
+	 *   anywhere.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param WP_REST_Request $request The request whose frame should be unwound.
+	 *
+	 * @return void
+	 */
+	private function unwind_occurrence_frame( WP_REST_Request $request ): void {
+		$innermost = end( $this->occurrence_frames );
+
+		if ( false === $innermost || $request !== $innermost['request'] ) {
+			return;
+		}
+
+		array_pop( $this->occurrence_frames );
+
+		Context::get_instance()->restore( $innermost['previous'] );
+	}
+
+	/**
+	 * Read the one RSVP token parameter this route recognizes.
+	 *
+	 * The token used to arrive under two names: the route registered
+	 * `rsvp_token`, which is what the browser sends and what `update_rsvp()`
+	 * reads, while the permission callback read `gatherpress_rsvp_token`, the
+	 * name the magic link carries in the *page* URL. A caller could therefore
+	 * satisfy authorization with one value and be identified by another, and
+	 * nothing compared the two.
+	 *
+	 * `rsvp_token` is now the single recognized name. A request carrying the
+	 * page-URL name as well is refused outright rather than having one of the
+	 * two silently win, because there is no legitimate client that sends both
+	 * and a caller sending both is asking two different questions.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param WP_REST_Request $request Contains data from the request.
+	 *
+	 * @return string|null The token string, or null when there is none or the request names two.
+	 */
+	private function request_token_string( WP_REST_Request $request ): ?string {
+		$canonical = (string) $request->get_param( 'rsvp_token' );
+		$legacy    = (string) $request->get_param( Token::NAME );
+
+		if ( '' !== $legacy ) {
+			return null;
+		}
+
+		return '' === $canonical ? null : $canonical;
+	}
+
+	/**
+	 * Permission callback gating an RSVP write.
+	 *
+	 * Two ways in, and the occurrence rule is the same for both: the identity
+	 * the caller's credential carries must be the exact identity the request
+	 * names.
+	 *
+	 * A magic-link token is a credential for **one stored RSVP**, and that RSVP
+	 * belongs to one occurrence. Authorizing on the token's event post alone
+	 * let the holder of a token for September 17th write the token holder's
+	 * email into September 24th's roster: the event matched, so permission
+	 * passed, and the callback then entered whichever occurrence the request
+	 * named. Comparing whole identities closes that, in both directions.
+	 * `Occurrence_Identity::matches()` treats absence as a value, so a
+	 * series-wide token cannot act on an occurrence and an occurrence token
+	 * cannot act series-wide.
+	 *
+	 * The occurrence is resolved here only once a token has already
+	 * authenticated. Resolution reads storage, and doing it for an
+	 * unauthenticated caller would answer "is this a real occurrence?" before
+	 * anything had established the caller's right to ask.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param WP_REST_Request $request Contains data from the request.
+	 *
+	 * @return bool|WP_Error True when the caller may write this RSVP, a 403 when a
+	 *                       presented token does not carry the requested occurrence, or
+	 *                       the shared not-found refusal when the occurrence's owner
+	 *                       refuses a logged-in caller.
+	 */
+	public function can_update_rsvp( WP_REST_Request $request ): bool|WP_Error {
+		$post_id    = (int) $request->get_param( 'post_id' );
+		$rsvp_token = Token::from_token_string( $this->request_token_string( $request ) );
+		$token_post = $rsvp_token ? $rsvp_token->get_post() : null;
+		$comment    = $rsvp_token ? $rsvp_token->get_comment() : null;
+
+		if ( $token_post instanceof WP_Post && $token_post->ID === $post_id && null !== $comment ) {
+			$requested = $this->requested_occurrence( $request );
+			$allowed   = Occurrence_Identity::matches(
+				Occurrence_Identity::for_comment( (int) $comment->comment_ID ),
+				$requested
+			) && $this->can_access_occurrence_owner( $requested, $post_id );
+
+			// One message and one status for every refusal, whether the
+			// requested occurrence is real, belongs to a sibling, or does not
+			// exist. A refusal that varied would tell a link holder which of
+			// the series' other dates exist.
+			return $allowed ? true : new WP_Error(
+				'gatherpress_rsvp_token_scope',
+				__( 'This RSVP link does not authorize the requested occurrence.', 'gatherpress' ),
+				array( 'status' => 403 )
+			);
+		}
+
+		// Otherwise the caller must be logged in and able to read the event.
+		// `can_read_event_rsvps()` carries the whole rule, ordered so storage
+		// is only read for a caller the named-post check has already admitted,
+		// and its owner refusal is returned as-is so the refusal stays
+		// indistinguishable from a fabricated identifier's.
+		if ( ! is_user_logged_in() ) {
+			return false;
+		}
+
+		return $this->can_read_event_rsvps( $request );
+	}
+
+	/**
+	 * Authorize the post that actually owns the occurrence being read or written.
+	 *
+	 * The named post and the owner are the same post for every series that has
+	 * never been split, so this is a no-op today. It exists because they stop
+	 * being the same post the moment the forward split moves an occurrence
+	 * onto a sibling: authorization would then have been granted against the
+	 * fragment the caller named while the read or write landed on a fragment
+	 * nobody checked. Capability on one fragment must never authorize access
+	 * to an unauthorized sibling, and the rule is the same for a roster read
+	 * as for a mutation, because the read is what discloses the roster.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param Occurrence_Identity|null $identity      The resolved occurrence, if any.
+	 * @param int                      $named_post_id The post the request named.
+	 *
+	 * @return bool True when the caller may act against the owning post.
+	 */
+	private function can_access_occurrence_owner( ?Occurrence_Identity $identity, int $named_post_id ): bool {
+		if ( null === $identity || $identity->owner_post_id === $named_post_id ) {
+			return true;
+		}
+
+		return Event::can_read_rsvps( $identity->owner_post_id );
+	}
+
+	/**
+	 * Build the one refusal every unusable occurrence receives.
+	 *
+	 * The single source of that refusal, shared by
+	 * `enter_occurrence_context()`, `can_read_event_rsvps()` and
+	 * `handle_rsvp_form_submission()`, so a caller cannot tell an occurrence
+	 * that does not exist from one whose owner refused them. Two refusals that
+	 * drifted apart in status, code or message would let a caller authorized
+	 * on one post of a series enumerate which occurrences of an unreadable
+	 * sibling exist, one candidate at a time.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return WP_Error The not-found refusal, identical for every caller.
+	 */
+	private function occurrence_not_found(): WP_Error {
+		return new WP_Error(
+			'gatherpress_occurrence_not_found',
+			__( 'The requested occurrence no longer exists.', 'gatherpress' ),
+			array( 'status' => 404 )
 		);
 	}
 
@@ -393,15 +789,37 @@ final class Rest_Api {
 	 * public (subject to any password gate), while other statuses require read
 	 * access to the specific event. Editors keep access in every state.
 	 *
+	 * The roster callbacks read from the post that owns the requested
+	 * occurrence, which a forward split can make a different post from the one
+	 * the request named, so the owner is authorized here too. The named-post
+	 * check runs first and alone for a refused caller: the owner re-check
+	 * resolves the occurrence from storage, and resolving for a caller the
+	 * named post refuses would answer "is this occurrence real?" for a caller
+	 * with no right to ask. An authorized caller whose resolved owner refuses
+	 * them gets the exact refusal a fabricated identifier gets, for the reason
+	 * given on `occurrence_not_found()`.
+	 *
 	 * @since 0.35.1
 	 *
 	 * @param WP_REST_Request $request Contains data from the request.
 	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
-	 * @return bool True when the caller may read the event's RSVP responses.
+	 * @return bool|WP_Error True when the caller may read the event's RSVP responses, false
+	 *                       when the named post refuses them, or the shared not-found refusal
+	 *                       when the occurrence's owner does.
 	 */
-	public function can_read_event_rsvps( WP_REST_Request $request ): bool {
-		return Event::can_read_rsvps( (int) $request->get_param( 'post_id' ) );
+	public function can_read_event_rsvps( WP_REST_Request $request ): bool|WP_Error {
+		$post_id = (int) $request->get_param( 'post_id' );
+
+		if ( ! Event::can_read_rsvps( $post_id ) ) {
+			return false;
+		}
+
+		if ( $this->can_access_occurrence_owner( $this->requested_occurrence( $request ), $post_id ) ) {
+			return true;
+		}
+
+		return $this->occurrence_not_found();
 	}
 
 	/**
@@ -748,105 +1166,121 @@ final class Rest_Api {
 	 * @param WP_REST_Request $request Contains data from the request.
 	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
-	 * @return WP_REST_Response An instance of WP_REST_Response containing the response data.
+	 * @return WP_REST_Response|WP_Error The response data, or a 404 when the named occurrence no longer resolves.
 	 */
-	public function update_rsvp( WP_REST_Request $request ): WP_REST_Response {
+	public function update_rsvp( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		// Prevent caching of RSVP updates.
 		nocache_headers();
 
-		$params          = $request->get_params();
-		$success         = false;
-		$current_user_id = get_current_user_id();
-		$blog_id         = get_current_blog_id();
-		$user_id         = isset( $params['user_id'] ) ? intval( $params['user_id'] ) : $current_user_id;
-		$post_id         = intval( $params['post_id'] );
-		$status          = sanitize_key( $params['status'] );
-		$guests          = intval( $params['guests'] ?? 0 );
-		$anonymous       = intval( $params['anonymous'] ?? 0 );
-		$unparsed_token  = sanitize_text_field( $params['rsvp_token'] ?? '' );
-		$event           = new Event( $post_id );
-		$rsvp            = new Rsvp( $post_id );
+		// Scope every read and write below to the occurrence the visitor is
+		// looking at, when the request names one.
+		$occurrence_error = $this->enter_occurrence_context( $request );
 
-		// If managing user is adding someone to an event.
-		$is_managing_other = false;
-		if (
-			$current_user_id &&
-			$user_id &&
-			$current_user_id !== $user_id
-		) {
-			// Per-event check: only users who can edit *this* event may
-			// RSVP someone else into it. The previous flat `edit_posts`
-			// check would have let any Author manage attendees on any
-			// event, including ones they don't own.
-			if ( current_user_can( Event::EDIT_CAPABILITY, $post_id ) ) {
-				$is_managing_other = true;
+		if ( null !== $occurrence_error ) {
+			return $occurrence_error;
+		}
+
+		try {
+			$params          = $request->get_params();
+			$success         = false;
+			$current_user_id = get_current_user_id();
+			$blog_id         = get_current_blog_id();
+			$user_id         = isset( $params['user_id'] ) ? intval( $params['user_id'] ) : $current_user_id;
+			$status          = sanitize_key( $params['status'] );
+			$guests          = intval( $params['guests'] ?? 0 );
+			$anonymous       = intval( $params['anonymous'] ?? 0 );
+			$unparsed_token  = (string) $this->request_token_string( $request );
+
+			// Step 3 of resolve-authorize-use: the mutation runs against the post
+			// that owns the authorized occurrence, not against whichever post the
+			// request named. The two are the same post until a forward split moves
+			// an occurrence onto a sibling, and after one they are not. Writing to
+			// the named post there would store the response under an owner no
+			// reader of that occurrence queries by.
+			$identity = $this->requested_occurrence( $request );
+			$post_id  = ( null === $identity ) ? intval( $params['post_id'] ) : $identity->owner_post_id;
+			$event    = new Event( $post_id );
+
+			// If managing user is adding someone to an event.
+			$is_managing_other = false;
+			if (
+				$current_user_id &&
+				$user_id &&
+				$current_user_id !== $user_id
+			) {
+				// Per-event check: only users who can edit *this* event may
+				// RSVP someone else into it. The previous flat `edit_posts`
+				// check would have let any Author manage attendees on any
+				// event, including ones they don't own.
+				if ( current_user_can( Event::EDIT_CAPABILITY, $post_id ) ) {
+					$is_managing_other = true;
+				} else {
+					$user_id = 0;
+				}
 			} else {
-				$user_id = 0;
-			}
-		} else {
-			$user_id = $current_user_id;
-		}
-
-		// Auto-join the current blog when the RSVP target is not yet a member.
-		// A user RSVPing *themselves* joins as a subscriber (the open-RSVP
-		// across-network flow). Enrolling *another* user is a higher-privilege
-		// action: `edit_post` lets an editor manage attendees, but adding users
-		// to a site is gated by `promote_users` in WordPress, so require that
-		// capability here and confirm the target is a real user before creating
-		// any membership.
-		if (
-			intval( $user_id )
-			&& ! is_user_member_of_blog( $user_id )
-			&& ( ! $is_managing_other || ( current_user_can( 'promote_users' ) && get_userdata( $user_id ) ) )
-		) {
-			add_user_to_blog( $blog_id, $user_id, 'subscriber' );
-		}
-
-		$user_identifier = $user_id;
-
-		if ( ! empty( $unparsed_token ) ) {
-			$rsvp_token = Token::from_token_string( $unparsed_token );
-
-			if ( $rsvp_token ) {
-				$user_identifier = $rsvp_token->get_email();
-			}
-		}
-
-		// A magic-link token supplies an email address; every other path supplies a user ID,
-		// so each identifier is checked against the one thing it can be.
-		if (
-			$user_identifier &&
-			(
-				is_string( $user_identifier )
-					? is_email( $user_identifier )
-					: is_user_member_of_blog( $user_identifier )
-			) &&
-			! $event->has_event_past()
-		) {
-			if ( 'attending' !== $status ) {
-				$guests = 0;
+				$user_id = $current_user_id;
 			}
 
-			$user_record = $rsvp->save( $user_identifier, $status, $anonymous, $guests );
-			$status      = $user_record['status'];
-			$guests      = $user_record['guests'];
-
-			if ( in_array( $status, Status::values(), true ) ) {
-				$success = true;
+			// Auto-join the current blog when the RSVP target is not yet a member.
+			// A user RSVPing *themselves* joins as a subscriber (the open-RSVP
+			// across-network flow). Enrolling *another* user is a higher-privilege
+			// action: `edit_post` lets an editor manage attendees, but adding users
+			// to a site is gated by `promote_users` in WordPress, so require that
+			// capability here and confirm the target is a real user before creating
+			// any membership.
+			if (
+				intval( $user_id )
+				&& ! is_user_member_of_blog( $user_id )
+				&& ( ! $is_managing_other || ( current_user_can( 'promote_users' ) && get_userdata( $user_id ) ) )
+			) {
+				add_user_to_blog( $blog_id, $user_id, 'subscriber' );
 			}
+
+			$user_identifier = $user_id;
+
+			if ( ! empty( $unparsed_token ) ) {
+				$rsvp_token = Token::from_token_string( $unparsed_token );
+
+				if ( $rsvp_token ) {
+					$user_identifier = $rsvp_token->get_email();
+				}
+			}
+
+			if (
+				$user_identifier &&
+				( is_user_member_of_blog( $user_identifier ) || is_email( $user_identifier ) ) &&
+				! $event->has_event_past()
+			) {
+				if ( 'attending' !== $status ) {
+					$guests = 0;
+				}
+
+				$user_record = ( new Rsvp( $post_id ) )->save( $user_identifier, $status, $anonymous, $guests );
+				$status      = $user_record['status'];
+				$guests      = $user_record['guests'];
+
+				if ( in_array( $status, Status::values(), true ) ) {
+					$success = true;
+				}
+			}
+
+			$response = array(
+				'event_id'    => $post_id,
+				'success'     => $success,
+				'status'      => $status,
+				'guests'      => $guests,
+				'anonymous'   => $anonymous,
+				'responses'   => ( new Rsvp( $post_id ) )->responses(),
+				'online_link' => $event->maybe_get_online_event_link(),
+			);
+
+			return new WP_REST_Response( $response );
+		} finally {
+			// Every exit from the body unwinds, a throw included. See
+			// `unwind_occurrence_frame()` for why a `finally` rather than a
+			// filter on the dispatch that follows the callback.
+			$this->unwind_occurrence_frame( $request );
 		}
-
-		$response = array(
-			'event_id'    => $post_id,
-			'success'     => $success,
-			'status'      => $status,
-			'guests'      => $guests,
-			'anonymous'   => $anonymous,
-			'responses'   => $rsvp->responses(),
-			'online_link' => $event->maybe_get_online_event_link(),
-		);
-
-		return new WP_REST_Response( $response );
 	}
 
 	/**
@@ -866,11 +1300,12 @@ final class Rest_Api {
 	 *                                 - block_signature (string): Signature emitted alongside block_data.
 	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
-	 * @return WP_REST_Response The REST API response containing:
+	 * @return WP_REST_Response|WP_Error A 404 when the named occurrence no longer resolves, otherwise
+	 *                                a response containing:
 	 *                          - success (bool): Whether the content was successfully generated.
 	 *                          - content (string): The dynamically rendered HTML markup for the RSVP responses.
 	 */
-	public function rsvp_status_html( WP_REST_Request $request ): WP_REST_Response {
+	public function rsvp_status_html( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		// Prevent caching for logged-in users or users with valid RSVP tokens.
 		$unparsed_token = $request->get_param( Token::NAME );
 		$rsvp_token     = Token::from_token_string( $unparsed_token );
@@ -879,55 +1314,56 @@ final class Rest_Api {
 			nocache_headers();
 		}
 
-		$rsvp_template = Rsvp_Template::get_instance();
-		$params        = $request->get_params();
+		// Scope the rendered roster to the occurrence the visitor is looking at.
+		$occurrence_error = $this->enter_occurrence_context( $request );
 
-		// Only a template the server emitted is rendered. The block tree is
-		// handed back verbatim from the markup Rsvp_Template wrote, and it is
-		// that markup, not the request, which decides what gets rendered.
-		$emitted = Rsvp_Template::verify_template(
-			(string) $params['block_data'],
-			(string) $params['block_signature']
-		);
+		if ( null !== $occurrence_error ) {
+			return $occurrence_error;
+		}
 
-		if ( ! $emitted ) {
-			return new WP_REST_Response(
-				array(
-					'success' => false,
-					'content' => '',
-				),
-				403
+		try {
+			$rsvp_template = Rsvp_Template::get_instance();
+			$params        = $request->get_params();
+			$identity      = $this->requested_occurrence( $request );
+			// The roster is read from the post that owns the occurrence, which a
+			// forward split can make different from the post the request named.
+			// Reading the named post there would apply the owner's occurrence term
+			// to the wrong post and return an empty roster under a 200.
+			$post_id    = ( null === $identity ) ? intval( $params['post_id'] ) : $identity->owner_post_id;
+			$status     = $params['status'];
+			$block_data = $params['block_data'];
+			$block_data = json_decode( $block_data, true );
+			$rsvp       = new Rsvp( $post_id );
+			$responses  = $rsvp->responses();
+			$content    = '';
+			// @todo set this up...
+			$args = array(
+				'limit_enabled' => (bool) $params['limit_enabled'],
+				'limit'         => (int) $params['limit'],
 			);
-		}
 
-		$post_id    = intval( $params['post_id'] );
-		$status     = $params['status'];
-		$block_data = json_decode( $params['block_data'], true );
-		$rsvp       = new Rsvp( $post_id );
-		$responses  = $rsvp->responses();
-		$content    = '';
-		// @todo set this up...
-		$args = array(
-			'limit_enabled' => (bool) $params['limit_enabled'],
-			'limit'         => (int) $params['limit'],
-		);
-
-		if ( ! empty( $responses[ $status ] ) ) {
-			foreach ( $responses[ $status ]['records'] as $key => $record ) {
-				$args['index'] = $key;
-				$content      .= $rsvp_template->get_block_content( $block_data, $record['comment_id'], $args );
+			if ( ! empty( $responses[ $status ] ) ) {
+				foreach ( $responses[ $status ]['records'] as $key => $record ) {
+					$args['index'] = $key;
+					$content      .= $rsvp_template->get_block_content( $block_data, $record['comment_id'], $args );
+				}
 			}
+
+			$success = true;
+
+			$response = array(
+				'success'   => $success,
+				'content'   => $content,
+				'responses' => $responses,
+			);
+
+			return new WP_REST_Response( $response );
+		} finally {
+			// Every exit from the body unwinds, a throw included. See
+			// `unwind_occurrence_frame()` for why a `finally` rather than a
+			// filter on the dispatch that follows the callback.
+			$this->unwind_occurrence_frame( $request );
 		}
-
-		$success = true;
-
-		$response = array(
-			'success'   => $success,
-			'content'   => $content,
-			'responses' => $responses,
-		);
-
-		return new WP_REST_Response( $response );
 	}
 
 	/**
@@ -938,101 +1374,168 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 *
+	 * Just over PHPMD's NPath threshold (9,232 against 9,217). The branches are
+	 * the submission's own gates, and their order is load bearing: the owner's
+	 * viewability is checked before the occurrence is resolved and before the
+	 * context is entered, which is what stops a submission naming a viewable
+	 * sibling from landing on an unviewable owner. A refactor to shed paths
+	 * could reorder that silently, so the count is suppressed rather than
+	 * chased. Restructuring it remains open for the maintainers.
+	 *
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 *
 	 * @param WP_REST_Request $request The REST API request object.
 	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
-	 * @return WP_REST_Response The response indicating success or failure.
+	 * @return WP_REST_Response|WP_Error Success or failure, or a 404 when the named occurrence no longer resolves.
 	 */
-	public function handle_rsvp_form_submission( WP_REST_Request $request ): WP_REST_Response {
+	public function handle_rsvp_form_submission( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		// Prevent caching of RSVP form submission responses.
 		nocache_headers();
 
-		$params = $request->get_params();
+		// Viewability is settled before any occurrence is resolved, and that
+		// order is the fix rather than a tidy-up. This route's
+		// `permission_callback` is `__return_true`, so it is the only place an
+		// unauthenticated caller reaches occurrence resolution at all. Resolving
+		// first meant a draft or private event answered "that occurrence exists"
+		// with a 404 naming the occurrence and "it does not" with a different
+		// status, which let a visitor who cannot read the event enumerate its
+		// schedule one `Ymd\THis` candidate at a time. Bailing here returns the
+		// identical `Event not found.` 404 for a real occurrence and a
+		// fabricated one, having run identical work to produce it.
+		$post_id = intval( $request->get_param( 'comment_post_ID' ) );
 
-		// Prepare data for the RSVP processor.
-		$data = array(
-			'post_id'                          => intval( $params['comment_post_ID'] ),
-			'author'                           => $params['author'] ?? '',
-			'email'                            => $params['email'] ?? '',
-			'gatherpress_event_updates_opt_in' => $request->get_param( 'gatherpress_event_updates_opt_in' ),
-			'gatherpress_rsvp_guests'          => $request->get_param( 'gatherpress_rsvp_form_guests' ),
-			'gatherpress_rsvp_anonymous'       => $request->get_param( 'gatherpress_rsvp_form_anonymous' ),
-			'gatherpress_form_schema_id'       => $request->get_param( 'gatherpress_form_schema_id' ),
-		);
-
-		// Add custom fields to data.
-		foreach ( $params as $key => $value ) {
-			if ( str_starts_with( $key, 'gatherpress_custom_' ) ) {
-				$data[ $key ] = $value;
-			}
-		}
-
-		// Also include custom fields defined in form schema.
-		$form_schema_id = $data['gatherpress_form_schema_id'] ?? '';
-
-		if ( ! empty( $form_schema_id ) ) {
-			$post_id = $data['post_id'];
-			$schemas = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true );
-
-			if ( is_array( $schemas ) && isset( $schemas[ $form_schema_id ]['fields'] ) ) {
-				$fields = $schemas[ $form_schema_id ]['fields'];
-				foreach ( array_keys( $fields ) as $field_name ) {
-					if ( isset( $params[ $field_name ] ) ) {
-						$data[ $field_name ] = $params[ $field_name ];
-					}
-				}
-			}
-		}
-
-		// Pre-flight: bail with a structured error before processing if the
-		// event is not viewable, open RSVP is disabled or the event has already passed.
-		$event = new Event( $data['post_id'] );
-		$rsvp  = new Rsvp( $data['post_id'] );
-		$bail  = null;
-
-		if ( ! Event::is_viewable( $data['post_id'] ) ) {
-			$bail = array( __( 'Event not found.', 'gatherpress' ), 404 );
-		} elseif ( ! $rsvp->is_enabled() ) {
-			$bail = array( __( 'RSVP is disabled for this event.', 'gatherpress' ), 403 );
-		} elseif ( ! $rsvp->allows_open_rsvp() ) {
-			$bail = array( __( 'Open RSVP is disabled for this event.', 'gatherpress' ), 403 );
-		} elseif ( $event->has_event_past() ) {
-			$bail = array( __( 'Registration for this event is now closed.', 'gatherpress' ), 400 );
-		}
-
-		if ( null !== $bail ) {
+		if ( ! Event::is_viewable( $post_id ) ) {
 			return new WP_REST_Response(
 				array(
 					'success' => false,
-					'message' => $bail[0],
+					'message' => __( 'Event not found.', 'gatherpress' ),
 				),
-				$bail[1]
+				404
 			);
 		}
 
-		// Process the RSVP using the centralized processor.
-		$result = Form::get_instance()->process_rsvp( $data );
+		// Steps 1 and 2 of resolve-authorize-use, on the one route whose
+		// `permission_callback` is `__return_true`: the response is written
+		// against the post that owns the occurrence, so that owner is the post
+		// that must pass the same viewability gate the named post just did.
+		// The two are identical on every unsplit series, and deliberately not
+		// identical after a forward split has moved the occurrence onto a
+		// sibling; without this, naming a viewable sibling wrote an RSVP onto
+		// a private owner nobody authorized. The refusal is the exact refusal
+		// a fabricated identifier gets, for the reason given on
+		// `occurrence_not_found()`.
+		$identity = $this->requested_occurrence( $request );
 
-		// One trailing return covers both the success and error shapes — the
-		// success body carries comment_id + responses, the error body just
-		// the message and the upstream error_code.
-		if ( $result['success'] ) {
-			$response = array(
-				'success'    => true,
-				'message'    => $result['message'],
-				'comment_id' => $result['comment_id'],
-				'responses'  => $this->rsvp_response_counts( $rsvp->responses() ),
-			);
-			$status   = 200;
-		} else {
-			$response = array(
-				'success' => false,
-				'message' => $result['message'],
-			);
-			$status   = $result['error_code'] ?? 500;
+		if (
+			null !== $identity
+			&& $identity->owner_post_id !== $post_id
+			&& ! Event::is_viewable( $identity->owner_post_id )
+		) {
+			return $this->occurrence_not_found();
 		}
 
-		return new WP_REST_Response( $response, $status );
+		// Scope the duplicate check, the written response and the returned
+		// counts to the occurrence the visitor is looking at.
+		$occurrence_error = $this->enter_occurrence_context( $request );
+
+		if ( null !== $occurrence_error ) {
+			return $occurrence_error;
+		}
+
+		try {
+			$params = $request->get_params();
+
+			// Step 3: the write itself runs against the authorized owner.
+			$post_id = ( null === $identity ) ? $post_id : $identity->owner_post_id;
+
+			// Prepare data for the RSVP processor.
+			$data = array(
+				'post_id'                          => $post_id,
+				'author'                           => $params['author'] ?? '',
+				'email'                            => $params['email'] ?? '',
+				'gatherpress_event_updates_opt_in' => $request->get_param( 'gatherpress_event_updates_opt_in' ),
+				'gatherpress_rsvp_guests'          => $request->get_param( 'gatherpress_rsvp_form_guests' ),
+				'gatherpress_rsvp_anonymous'       => $request->get_param( 'gatherpress_rsvp_form_anonymous' ),
+				'gatherpress_form_schema_id'       => $request->get_param( 'gatherpress_form_schema_id' ),
+			);
+
+			// Add custom fields to data.
+			foreach ( $params as $key => $value ) {
+				if ( str_starts_with( $key, 'gatherpress_custom_' ) ) {
+					$data[ $key ] = $value;
+				}
+			}
+
+			// Also include custom fields defined in form schema.
+			$form_schema_id = $data['gatherpress_form_schema_id'] ?? '';
+
+			if ( ! empty( $form_schema_id ) ) {
+				$schemas = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true );
+
+				if ( is_array( $schemas ) && isset( $schemas[ $form_schema_id ]['fields'] ) ) {
+					$fields = $schemas[ $form_schema_id ]['fields'];
+					foreach ( array_keys( $fields ) as $field_name ) {
+						if ( isset( $params[ $field_name ] ) ) {
+							$data[ $field_name ] = $params[ $field_name ];
+						}
+					}
+				}
+			}
+
+			// Pre-flight: bail with a structured error before processing if the
+			// event is not viewable, open RSVP is disabled or the event has already passed.
+			$event = new Event( $data['post_id'] );
+			$rsvp  = new Rsvp( $data['post_id'] );
+			$bail  = null;
+
+			if ( ! $rsvp->is_enabled() ) {
+				$bail = array( __( 'RSVP is disabled for this event.', 'gatherpress' ), 403 );
+			} elseif ( ! $rsvp->allows_open_rsvp() ) {
+				$bail = array( __( 'Open RSVP is disabled for this event.', 'gatherpress' ), 403 );
+			} elseif ( $event->has_event_past() ) {
+				$bail = array( __( 'Registration for this event is now closed.', 'gatherpress' ), 400 );
+			}
+
+			if ( null !== $bail ) {
+				return new WP_REST_Response(
+					array(
+						'success' => false,
+						'message' => $bail[0],
+					),
+					$bail[1]
+				);
+			}
+
+			// Process the RSVP using the centralized processor.
+			$result = Form::get_instance()->process_rsvp( $data );
+
+			// One trailing return covers both the success and error shapes: the
+			// success body carries comment_id + responses, the error body just
+			// the message and the upstream error_code.
+			if ( $result['success'] ) {
+				$response = array(
+					'success'    => true,
+					'message'    => $result['message'],
+					'comment_id' => $result['comment_id'],
+					'responses'  => $this->rsvp_response_counts( ( new Rsvp( $post_id ) )->responses() ),
+				);
+				$status   = 200;
+			} else {
+				$response = array(
+					'success' => false,
+					'message' => $result['message'],
+				);
+				$status   = $result['error_code'] ?? 500;
+			}
+
+			return new WP_REST_Response( $response, $status );
+		} finally {
+			// Every exit from the body unwinds, a throw included. See
+			// `unwind_occurrence_frame()` for why a `finally` rather than a
+			// filter on the dispatch that follows the callback.
+			$this->unwind_occurrence_frame( $request );
+		}
 	}
 
 	/**
@@ -1046,9 +1549,10 @@ final class Rest_Api {
 	 * @param WP_REST_Request $request REST API request object containing post_id parameter.
 	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
-	 * @return WP_REST_Response Response containing success status and RSVP data.
+	 * @return WP_REST_Response|WP_Error Success status and RSVP data, or a 404 when the named
+	 *                                occurrence no longer resolves.
 	 */
-	public function rsvp_responses( WP_REST_Request $request ): WP_REST_Response {
+	public function rsvp_responses( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		// Prevent caching for logged-in users or users with valid RSVP tokens.
 		$unparsed_token = $request->get_param( Token::NAME );
 		$rsvp_token     = Token::from_token_string( $unparsed_token );
@@ -1057,23 +1561,40 @@ final class Rest_Api {
 			nocache_headers();
 		}
 
-		$params    = $request->get_params();
-		$post_id   = intval( $params['post_id'] );
-		$success   = false;
-		$responses = array();
+		// Scope the returned roster to the occurrence the caller named.
+		$occurrence_error = $this->enter_occurrence_context( $request );
 
-		if ( Event::POST_TYPE === get_post_type( $post_id ) ) {
-			$success   = true;
-			$rsvp      = new Rsvp( $post_id );
-			$responses = $rsvp->responses();
+		if ( null !== $occurrence_error ) {
+			return $occurrence_error;
 		}
 
-		$response = array(
-			'success' => $success,
-			'data'    => $responses,
-		);
+		try {
+			$params   = $request->get_params();
+			$identity = $this->requested_occurrence( $request );
+			// Read from the occurrence's owning post, for the reason given on
+			// `rsvp_status_html()`.
+			$post_id   = ( null === $identity ) ? intval( $params['post_id'] ) : $identity->owner_post_id;
+			$success   = false;
+			$responses = array();
 
-		return new WP_REST_Response( $response );
+			if ( Event::POST_TYPE === get_post_type( $post_id ) ) {
+				$success   = true;
+				$rsvp      = new Rsvp( $post_id );
+				$responses = $rsvp->responses();
+			}
+
+			$response = array(
+				'success' => $success,
+				'data'    => $responses,
+			);
+
+			return new WP_REST_Response( $response );
+		} finally {
+			// Every exit from the body unwinds, a throw included. See
+			// `unwind_occurrence_frame()` for why a `finally` rather than a
+			// filter on the dispatch that follows the callback.
+			$this->unwind_occurrence_frame( $request );
+		}
 	}
 
 

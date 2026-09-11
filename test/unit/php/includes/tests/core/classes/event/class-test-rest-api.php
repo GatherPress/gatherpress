@@ -1741,7 +1741,7 @@ class Test_Rest_Api extends Base {
 
 		// Create request with token for the event the token was issued against.
 		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
-		$request->set_param( Token::NAME, $token_str );
+		$request->set_param( 'rsvp_token', $token_str );
 		$request->set_param( 'post_id', $post_id );
 
 		// Call the permission callback.
@@ -1779,7 +1779,7 @@ class Test_Rest_Api extends Base {
 		wp_set_current_user( 0 );
 
 		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
-		$request->set_param( Token::NAME, $token_str );
+		$request->set_param( 'rsvp_token', $token_str );
 		$request->set_param( 'post_id', $other_event );
 
 		$this->assertFalse(

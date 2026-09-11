@@ -1,0 +1,4 @@
+Significance: minor
+Type: changed
+
+Recurring series now export their whole schedule in one `.ics` component carrying an `RRULE`, with canceled dates as `EXDATE` exclusions, so subscribing once gets every date. A series appears once in the site-wide, archive, venue and taxonomy feeds, and a single date downloads as an instance of it. This changes the emitted start for every event with a named timezone, recurring or not: `DTSTART:20300615T183000Z` becomes `DTSTART;TZID=America/New_York:20300615T143000`, with a matching `VTIMEZONE`. The instant is the same. An event on a fixed UTC offset is unchanged.

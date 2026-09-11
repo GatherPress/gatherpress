@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Assets;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Recurrence\Rsvp_Occurrence;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
 use GatherPress\Core\Rsvp\Response\Provider_Registry;
@@ -171,6 +172,25 @@ final class Setup {
 				'publicly_queryable' => false,
 				'rewrite'            => false,
 				'show_in_rest'       => true,
+			)
+		);
+
+		// The occurrence link is an internal join key rather than a vocabulary
+		// anyone browses or edits, so unlike the two above it is private and
+		// withheld from REST.
+		register_taxonomy(
+			Rsvp_Occurrence::TAXONOMY,
+			'comment',
+			array(
+				'labels'             => array(),
+				'hierarchical'       => false,
+				'public'             => false,
+				'show_ui'            => false,
+				'show_admin_column'  => false,
+				'query_var'          => false,
+				'publicly_queryable' => false,
+				'rewrite'            => false,
+				'show_in_rest'       => false,
 			)
 		);
 	}

@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use DateTimeZone;
 use Exception;
 use GatherPress\Core\Calendar;
+use GatherPress\Core\Event\Recurrence\Context;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
 use GatherPress\Core\Settings;
@@ -135,13 +136,20 @@ class Event {
 	public ?WP_Post $post = null;
 
 	/**
-	 * Cached datetime data.
+	 * Cached datetime data, keyed by occurrence.
+	 *
+	 * Keyed rather than single-slot because nothing stops a plugin or theme from
+	 * constructing an `Event` and reading its datetime before occurrence context
+	 * is established on `wp`. A single slot would hand that instance the series'
+	 * values for the rest of its life; a pre-warmed instance caches under `''`
+	 * and still resolves correctly once context is set, because the lookup key
+	 * changes with it.
 	 *
 	 * @since 0.34.0
 	 *
-	 * @var EventDatetime|null
+	 * @var array<string, EventDatetime>
 	 */
-	private ?array $datetime_cache = null;
+	private array $datetime_cache = array();
 
 	/**
 	 * Event constructor.
@@ -773,8 +781,14 @@ class Event {
 			return $data;
 		}
 
-		if ( null !== $this->datetime_cache ) {
-			return $this->datetime_cache;
+		// Cache per occurrence, so an instance warmed outside occurrence context
+		// does not keep serving the series' values once context is established.
+		// Context owns the key, because deciding when an occurrence identity
+		// applies to a given post is the composite-key identity rule.
+		$cache_key = Context::get_instance()->cache_key( $this->post->ID ?? 0 );
+
+		if ( isset( $this->datetime_cache[ $cache_key ] ) ) {
+			return $this->datetime_cache[ $cache_key ];
 		}
 
 		foreach ( array_keys( $data ) as $key ) {
@@ -797,7 +811,7 @@ class Event {
 
 		$data['timezone'] = apply_filters( 'gatherpress_timezone', $data['timezone'] );
 
-		$this->datetime_cache = $data;
+		$this->datetime_cache[ $cache_key ] = $data;
 
 		return $data;
 	}
@@ -1075,8 +1089,8 @@ class Event {
 			$value = $wpdb->insert( $table, $fields );
 		}
 
-		// Clear cache after insert or update.
-		$this->datetime_cache = null;
+		// Clear every occurrence's cached entry after insert or update.
+		$this->datetime_cache = array();
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.NoCaching
 

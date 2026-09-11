@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+RSVPs are now per date on a recurring event. Responding to one occurrence records attendance for that date alone, so attendee lists, counts, attendance limits, waiting lists and the attendees-only online event link all belong to the date they were shown on rather than to the whole series. This holds on the interactive RSVP block, on the RSVP form, and on the plain form that runs when JavaScript is unavailable. Two older problems are fixed alongside it, on every site whether or not it uses recurrence: permanently deleting an RSVP now removes its taxonomy rows instead of leaving them behind, and saving an RSVP now batches status and provider term hydration, removing the two term queries previously issued per stored response. The save path still reads the response set for attendance-limit and waiting-list logic.

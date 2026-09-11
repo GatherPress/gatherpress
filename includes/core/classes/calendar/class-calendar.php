@@ -21,8 +21,19 @@ namespace GatherPress\Core\Calendar;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use DateTimeImmutable;
+use DateTimeZone;
 use Exception;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Recurrence\Context;
+use GatherPress\Core\Event\Recurrence\Occurrences;
+use GatherPress\Core\Event\Recurrence\Query as Recurrence_Query;
+use GatherPress\Core\Event\Recurrence\Rule;
+use GatherPress\Core\Event\Recurrence\Series;
+use GatherPress\Core\Event\Recurrence\Timezone_Guard;
+use GatherPress\Core\Utility;
+use WP_Post;
+use WP_Term;
 
 /**
  * Per-event calendar wrapper.
@@ -40,12 +51,25 @@ final class Calendar {
 	 * Epoch the VEVENT `SEQUENCE` counts from, as a Unix timestamp.
 	 *
 	 * 2020-01-01 00:00:00 UTC. See `get_sequence()` for why the sequence is
-	 * measured from an epoch rather than being a raw timestamp.
+	 * measured from an epoch rather than being a raw timestamp. Aliased from
+	 * `Revision` so the serializer and the primitive that advances it cannot
+	 * drift apart.
 	 *
 	 * @since 0.35.0
 	 * @var int
 	 */
-	private const SEQUENCE_EPOCH = 1577836800;
+	private const SEQUENCE_EPOCH = Revision::EPOCH;
+
+	/**
+	 * Largest number of octets a content line may carry, excluding its break.
+	 *
+	 * RFC 5545 section 3.1. See `fold_content_line()`.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @var int
+	 */
+	private const MAX_LINE_OCTETS = 75;
 
 	/**
 	 * Event this Calendar instance wraps.
@@ -280,44 +304,32 @@ final class Calendar {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return string The VEVENT block, or an empty string when the event post can't be resolved.
+	 * @return string The VEVENT block, or an empty string when the wrapped
+	 *                post is not a resolvable event.
 	 *
 	 * @throws Exception If reading event data fails.
 	 */
 	public function get_ical_event_string(): string {
-		$post = $this->event->post;
-
-		if ( ! $post ) {
+		// Nothing to serialize when the wrapped post is not a resolvable
+		// event. `Event::$event` is declared `?WP_Post` and stays null
+		// whenever the ID does not resolve to a post that supports
+		// `gatherpress-event-date`, such as a deleted post, a venue, or the 0
+		// that `get_queried_object_id()` yields on an unresolved request. Every
+		// line below reads through it, and reading `post_title` off null
+		// evaluates to null in PHP 8, which reaches `escape_ical_text()`'s
+		// `string` parameter and fatals the whole request on what is a public
+		// endpoint. `Event::get_calendar_links()` and `get_endpoint_url()`
+		// already bail on the same condition; this is the one caller that
+		// dereferenced it unguarded.
+		if ( ! $this->event->post instanceof WP_Post ) {
 			return '';
 		}
 
-		if ( $this->event->is_all_day() ) {
-			$date_start   = $this->event->get_formatted_datetime( 'Ymd', 'start' );
-			$end_date_str = $this->event->get_formatted_datetime( 'Y-m-d', 'end' );
-			$date_end     = gmdate( 'Ymd', (int) strtotime( $end_date_str . ' +1 day' ) );
-			$dtstart_line = sprintf( 'DTSTART;VALUE=DATE:%s', sanitize_text_field( $date_start ) );
-			$dtend_line   = sprintf( 'DTEND;VALUE=DATE:%s', sanitize_text_field( $date_end ) );
-		} else {
-			$date_start     = $this->event->get_formatted_datetime( 'Ymd', 'start', false );
-			$time_start     = $this->event->get_formatted_datetime( 'His', 'start', false );
-			$date_end       = $this->event->get_formatted_datetime( 'Ymd', 'end', false );
-			$time_end       = $this->event->get_formatted_datetime( 'His', 'end', false );
-			$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
-			$datetime_end   = sprintf( '%sT%sZ', $date_end, $time_end );
-			$dtstart_line   = sprintf( 'DTSTART:%s', sanitize_text_field( $datetime_start ) );
-			$dtend_line     = sprintf( 'DTEND:%s', sanitize_text_field( $datetime_end ) );
-		}
-
-		$modified_gmt = strtotime( $post->post_modified_gmt );
-
-		if ( false === $modified_gmt ) {
-			// DTSTAMP is required by RFC 5545, so an unparsable date still needs one.
-			$modified_gmt = time();
-		}
-
-		$datetime_stamp = sprintf( '%sT%sZ', gmdate( 'Ymd', $modified_gmt ), gmdate( 'His', $modified_gmt ) );
-		$last_modified  = $datetime_stamp;
+		$timezone       = $this->series_timezone();
+		$occurrence     = $this->current_occurrence();
 		$sequence       = $this->get_sequence();
+		$datetime_stamp = $this->revision_stamp( $sequence );
+		$last_modified  = $datetime_stamp;
 		$venue          = $this->event->get_venue_information();
 		$location       = $venue['name'];
 		$description    = $this->event->get_calendar_description();
@@ -326,27 +338,419 @@ final class Calendar {
 			$location .= sprintf( ', %s', $venue['address'] );
 		}
 
-		$permalink   = (string) get_permalink( $post );
-		$summary     = $this->fold_ical_text( $this->escape_ical_text( $post->post_title ) );
-		$description = $this->fold_ical_text( $this->escape_ical_text( $description ) );
-		$location    = $this->fold_ical_text( $this->escape_ical_text( $location ) );
+		$summary     = $this->escape_ical_text( $this->event->post->post_title );
+		$description = $this->escape_ical_text( $description );
+		$location    = $this->escape_ical_text( $location );
 
-		$args = array(
-			'BEGIN:VEVENT',
-			sprintf( 'URL:%s', esc_url_raw( $permalink ) ),
-			$dtstart_line,
-			$dtend_line,
-			sprintf( 'DTSTAMP:%s', sanitize_text_field( $datetime_stamp ) ),
-			sprintf( 'LAST-MODIFIED:%s', sanitize_text_field( $last_modified ) ),
-			sprintf( 'SEQUENCE:%d', $sequence ),
-			sprintf( 'SUMMARY:%s', $summary ),
-			sprintf( 'DESCRIPTION:%s', $description ),
-			sprintf( 'LOCATION:%s', $location ),
-			'UID:gatherpress_' . intval( $post->ID ),
-			'END:VEVENT',
+		$args = array_merge(
+			array(
+				'BEGIN:VEVENT',
+				sprintf( 'URL:%s', esc_url_raw( get_permalink( $this->event->post->ID ) ) ),
+			),
+			$this->datetime_lines( $timezone, $this->first_projected_occurrence( $timezone, $occurrence ) ),
+			array(
+				sprintf( 'DTSTAMP:%s', sanitize_text_field( $datetime_stamp ) ),
+				sprintf( 'LAST-MODIFIED:%s', sanitize_text_field( $last_modified ) ),
+				sprintf( 'SEQUENCE:%d', $sequence ),
+				sprintf( 'SUMMARY:%s', $summary ),
+				sprintf( 'DESCRIPTION:%s', $description ),
+				sprintf( 'LOCATION:%s', $location ),
+			),
+			$this->recurrence_lines( $timezone, $occurrence ),
+			array( sprintf( 'UID:%s', $this->uid() ) ),
+			$this->related_lines(),
+			array( 'END:VEVENT' )
 		);
 
-		return implode( "\r\n", $args );
+		return implode( "\r\n", array_map( array( $this, 'fold_content_line' ), $args ) );
+	}
+
+	/**
+	 * The event's timezone, when it is one a `TZID` parameter may name.
+	 *
+	 * GatherPress accepts a fixed UTC offset (`UTC+5:30`) where a tz-database
+	 * identifier belongs, and RFC 5545 has no way to express one as a `TZID`.
+	 * An empty string is the signal that this component keeps the bare UTC form
+	 * the plugin has always emitted.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string A named tz-database identifier, or '' when the event has none.
+	 */
+	private function series_timezone(): string {
+		$timezone = Utility::maybe_convert_utc_offset(
+			(string) $this->event->get_datetime()['timezone']
+		);
+
+		return Timezone_Guard::is_named( $timezone ) ? $timezone : '';
+	}
+
+	/**
+	 * The first occurrence a rule-bearing series actually projects.
+	 *
+	 * Null whenever `DTSTART` should stay on the anchor: for a component that
+	 * carries no `RRULE` (a fixed-offset event emits none, and neither does an
+	 * event with no rule), for a single occurrence's own component, which
+	 * carries a `RECURRENCE-ID` instead, and for a series whose projection is
+	 * empty.
+	 *
+	 * Read from the projection rather than re-derived from the rule, so the
+	 * date the feed opens on is the same one the site lists. The read is
+	 * `LIMIT 1` and is skipped entirely on a site with no recurring events.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string     $timezone   A named tz-database identifier, or '' for none.
+	 * @param array|null $occurrence The occurrence this component renders, if any.
+	 *
+	 * @return array|null The first scheduled occurrence row, or null.
+	 */
+	private function first_projected_occurrence( string $timezone, ?array $occurrence ): ?array {
+		if ( '' === $timezone
+			|| null !== $occurrence
+			|| ! Recurrence_Query::site_has_recurring_events()
+			|| null === Rule::from_post( $this->event->post->ID )
+		) {
+			return null;
+		}
+
+		// This post's own rows, not the resolved series. `exdate_line()` reads
+		// series-wide because a split series still excludes every date it
+		// canceled, whichever post holds the row. `DTSTART` is the opposite: it
+		// has to agree with the `RRULE` emitted beside it, and that rule comes
+		// from this post alone. Reading series-wide gave both fragments of a
+		// split the same earliest date, so the two components opened on the
+		// same instant and a subscriber merged duplicates.
+		$rows = Occurrences::get_instance()->select_for_series(
+			array( $this->event->post->ID ),
+			array(
+				'status' => Occurrences::STATUS_SCHEDULED,
+				'limit'  => 1,
+			)
+		);
+
+		return $rows[0] ?? null;
+	}
+
+	/**
+	 * The `DTSTART` and `DTEND` properties for this component.
+	 *
+	 * A named timezone produces the `TZID`-qualified local wall clock RFC 5545
+	 * requires before an `RRULE` may be attached; anything else keeps the bare
+	 * UTC form, which is what a fixed-offset event has always emitted and is
+	 * still correct for a component carrying no rule.
+	 *
+	 * When a rule is attached, these come from the first projected occurrence
+	 * rather than from the series anchor. RFC 5545 section 3.8.5.3 makes
+	 * `DTSTART` part of the recurrence set, and nothing couples the anchor's
+	 * weekday to the rule's: a Wednesday anchor carrying `BYDAY=FR` is not an
+	 * occurrence as far as `Expander::matches()` is concerned, so emitting it
+	 * gave subscribers a date the site does not list and cannot cancel, since
+	 * no row exists to cancel. Under `COUNT`, which is what the fixtures use,
+	 * it also drops a real date off the end, because a client counts `DTSTART`
+	 * as the first instance.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string     $timezone A named tz-database identifier, or '' for none.
+	 * @param array|null $first    First projected occurrence row, or null to use
+	 *                             the series anchor.
+	 *
+	 * @return string[] The two property lines, in order.
+	 */
+	private function datetime_lines( string $timezone, ?array $first = null ): array {
+		if ( null !== $first ) {
+			$zone  = new DateTimeZone( $timezone );
+			$utc   = new DateTimeZone( 'UTC' );
+			$start = new DateTimeImmutable( (string) $first['datetime_start_gmt'], $utc );
+			$end   = new DateTimeImmutable( (string) $first['datetime_end_gmt'], $utc );
+
+			return array(
+				sprintf(
+					'DTSTART;TZID=%s:%s',
+					$timezone,
+					$start->setTimezone( $zone )->format( 'Ymd\THis' )
+				),
+				sprintf(
+					'DTEND;TZID=%s:%s',
+					$timezone,
+					$end->setTimezone( $zone )->format( 'Ymd\THis' )
+				),
+			);
+		}
+
+		if ( '' === $timezone ) {
+			return array(
+				sprintf(
+					'DTSTART:%sT%sZ',
+					$this->event->get_formatted_datetime( 'Ymd', 'start', false ),
+					$this->event->get_formatted_datetime( 'His', 'start', false )
+				),
+				sprintf(
+					'DTEND:%sT%sZ',
+					$this->event->get_formatted_datetime( 'Ymd', 'end', false ),
+					$this->event->get_formatted_datetime( 'His', 'end', false )
+				),
+			);
+		}
+
+		return array(
+			sprintf(
+				'DTSTART;TZID=%s:%sT%s',
+				$timezone,
+				$this->event->get_formatted_datetime( 'Ymd', 'start', true ),
+				$this->event->get_formatted_datetime( 'His', 'start', true )
+			),
+			sprintf(
+				'DTEND;TZID=%s:%sT%s',
+				$timezone,
+				$this->event->get_formatted_datetime( 'Ymd', 'end', true ),
+				$this->event->get_formatted_datetime( 'His', 'end', true )
+			),
+		);
+	}
+
+	/**
+	 * The occurrence this component describes, when the request named one.
+	 *
+	 * Identity is compared by post ID rather than taken on trust, mirroring
+	 * `Context::resolve()`: one response can render several posts, and only the
+	 * one the occurrence belongs to may claim it.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return array|null The occurrence row, or null for a series component.
+	 */
+	private function current_occurrence(): ?array {
+		$occurrence = Context::get_instance()->current();
+
+		if ( null === $occurrence
+			|| (int) $occurrence['series_post_id'] !== (int) $this->event->post->ID
+		) {
+			return null;
+		}
+
+		return $occurrence;
+	}
+
+	/**
+	 * The recurrence properties for this component, if it has any.
+	 *
+	 * Two shapes. A component describing one named occurrence
+	 * carries a `RECURRENCE-ID` referring back to the series and no rule of its
+	 * own. A component describing the series carries the rule and the
+	 * exclusions **derived** from its canceled occurrence rows. The stored
+	 * rule is never mutated to express a cancellation.
+	 *
+	 * Neither shape is emitted without a named timezone: an `RRULE` cannot be
+	 * correctly attached to a UTC-anchored start for anything but a
+	 * fixed-offset series, and a `RECURRENCE-ID` must match `DTSTART`'s value
+	 * type. Every recurring event is kept on a named timezone, so this arm is
+	 * a guard rather than an authored case.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string     $timezone   A named tz-database identifier, or '' for none.
+	 * @param array|null $occurrence The occurrence this component describes, or null.
+	 *
+	 * @return string[] The recurrence property lines, possibly empty.
+	 *
+	 * @throws Exception If reading the event's datetime fails.
+	 */
+	private function recurrence_lines( string $timezone, ?array $occurrence ): array {
+		if ( '' === $timezone ) {
+			return array();
+		}
+
+		if ( null !== $occurrence ) {
+			return array(
+				sprintf( 'RECURRENCE-ID;TZID=%s:%s', $timezone, $occurrence['recurrence_id'] ),
+			);
+		}
+
+		// A site with no recurring events reads neither the rule
+		// mirrors nor the occurrence table on any calendar request, so the flag
+		// short-circuits the lookup rather than filtering its result. An event
+		// with no rule of its own then contributes nothing either, however many
+		// other events on the site do.
+		$rule  = Recurrence_Query::site_has_recurring_events()
+			? Rule::from_post( $this->event->post->ID )
+			: null;
+		$lines = array();
+
+		if ( null !== $rule ) {
+			$zone    = new DateTimeZone( $timezone );
+			$lines[] = sprintf(
+				'RRULE:%s',
+				$rule->to_rrule_string(
+					new DateTimeImmutable(
+						$this->event->get_formatted_datetime( 'Y-m-d H:i:s', 'start', true ),
+						$zone
+					),
+					$zone
+				)
+			);
+			$exdate  = $this->exdate_line( $timezone );
+
+			if ( '' !== $exdate ) {
+				$lines[] = $exdate;
+			}
+		}
+
+		return $lines;
+	}
+
+	/**
+	 * The `EXDATE` property derived from this series' canceled occurrences.
+	 *
+	 * Read through `Series::resolve_post_ids()`, so a series a forward split
+	 * has spread across several posts still excludes every date it canceled.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $timezone A named tz-database identifier.
+	 *
+	 * @return string The `EXDATE` line, or '' when nothing is canceled.
+	 */
+	private function exdate_line( string $timezone ): string {
+		$rows = Occurrences::get_instance()->select_for_series(
+			Series::get_instance()->resolve_post_ids( $this->event->post->ID ),
+			array( 'status' => Occurrences::STATUS_CANCELED )
+		);
+
+		if ( array() === $rows ) {
+			return '';
+		}
+
+		return sprintf(
+			'EXDATE;TZID=%s:%s',
+			$timezone,
+			implode( ',', array_column( $rows, 'recurrence_id' ) )
+		);
+	}
+
+	/**
+	 * The unique identifier for this component.
+	 *
+	 * One identifier for the whole recurrence set, occurrences included. RFC
+	 * 5545 section 3.8.4.4 is explicit that the `UID` references the *entire*
+	 * recurrence set and that `RECURRENCE-ID` is what identifies one instance
+	 * within it, so a single-occurrence download is an override of that
+	 * instance rather than a component of its own. Minting a per-occurrence
+	 * identifier instead gives a client no way to correlate the download with
+	 * the series it belongs to, and it shows up as a second, duplicate event
+	 * sitting on top of the one the rule already produced.
+	 *
+	 * The identity that distinguishes two occurrences of one series is
+	 * therefore the `(UID, RECURRENCE-ID)` tuple, whose second half
+	 * `recurrence_lines()` emits.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string The `UID` value.
+	 */
+	private function uid(): string {
+		return 'gatherpress_' . intval( $this->event->post->ID );
+	}
+
+	/**
+	 * The `RELATED-TO` property tying a split fragment back to its origin.
+	 *
+	 * A forward split gives the dates it moves a new `UID`, because they now
+	 * belong to a different post with its own rule, its own edits and its own
+	 * RSVPs. RFC 5545 section 3.8.4.5 is how the two components say they are one
+	 * thing: the fragment points at the `UID` the subscription was first taken
+	 * out against, with the default `RELTYPE=PARENT`. A client that understands
+	 * the property groups the fragments; a client that does not ignores an
+	 * unknown property, which is why this is additive rather than a change to
+	 * `UID`.
+	 *
+	 * Emitted only by a fragment. The origin carries no pointer, because it is
+	 * the identifier everything else points at, and a self-reference would make
+	 * the relationship a cycle rather than a tree.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string[] The property line, or an empty array for an unsplit series.
+	 */
+	private function related_lines(): array {
+		$post_id = (int) $this->event->post->ID;
+		$origin  = $this->series_origin_post_id( $post_id );
+
+		if ( 0 === $origin || $origin === $post_id ) {
+			return array();
+		}
+
+		return array( sprintf( 'RELATED-TO:gatherpress_%d', $origin ) );
+	}
+
+	/**
+	 * The post a logical series started on.
+	 *
+	 * The series term's slug names it (`Series::create_term_for()`), which is
+	 * durable across further splits: a second split of either fragment joins the
+	 * same term rather than minting a new one, so every fragment resolves to the
+	 * one post a subscriber's `UID` was first issued for.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param int $post_id Any post of the series.
+	 *
+	 * @return int The origin post ID, or 0 when this post belongs to no series term.
+	 */
+	private function series_origin_post_id( int $post_id ): int {
+		// A site with neither recurring events nor a split series reads
+		// neither the taxonomy nor the term cache on a calendar request. The
+		// split flag keeps a fully demoted split's fragments pointing at the
+		// origin's UID after the recurring flag has returned to '0'.
+		if ( ! ( Recurrence_Query::site_has_recurring_events() || Series::site_has_split_series() ) ) {
+			return 0;
+		}
+
+		$series  = Series::get_instance();
+		$term_id = $series->term_id_for_post( $post_id );
+
+		if ( 0 === $term_id ) {
+			return 0;
+		}
+
+		$term    = get_term( $term_id, Series::TAXONOMY );
+		$slug    = ( $term instanceof WP_Term ) ? $term->slug : '';
+		$matches = array();
+		$named   = 1 === preg_match( '/^series-(\d+)$/', $slug, $matches ) ? (int) $matches[1] : 0;
+		$members = $series->resolve_post_ids( $post_id );
+
+		// The slug is only believed when it names a post that is still in the
+		// series: a renamed term, or one whose origin has been deleted, would
+		// otherwise point subscribers at a `UID` no component in the body
+		// carries. The lowest member is the fallback, since a split only ever
+		// creates posts after the one it splits.
+		return in_array( $named, $members, true ) ? $named : min( $members );
+	}
+
+	/**
+	 * The GMT stamp reporting when this series' calendar content last changed.
+	 *
+	 * `DTSTAMP` and `LAST-MODIFIED` are derived from the same revision
+	 * `SEQUENCE` reports rather than from `post_modified_gmt` directly, so the
+	 * three properties cannot disagree about whether a component is newer than
+	 * the one a subscriber holds. They did disagree: a forward split caps the
+	 * origin's `RRULE` with a bare `postmeta` write, which advances the revision
+	 * and leaves the post row alone, so the capped component announced a shorter
+	 * rule under an unchanged modification time. The revision floors at
+	 * `post_modified_gmt`, so for an event nothing has ever advanced this is the
+	 * same string it has always emitted.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param int $sequence This component's revision, in seconds from the epoch.
+	 *
+	 * @return string The stamp in RFC 5545 UTC form.
+	 */
+	private function revision_stamp( int $sequence ): string {
+		$timestamp = self::SEQUENCE_EPOCH + $sequence;
+
+		return sprintf( '%sT%sZ', gmdate( 'Ymd', $timestamp ), gmdate( 'His', $timestamp ) );
 	}
 
 	/**
@@ -357,17 +761,22 @@ final class Calendar {
 	 * emits a stable `UID`, so without a sequence an edited event keeps
 	 * showing its original date in a subscribed calendar.
 	 *
-	 * The value is seconds since `SEQUENCE_EPOCH`, read from
-	 * `post_modified_gmt`. That field only moves forward, so the sequence is
-	 * strictly monotonic per event, which is the only thing the property
-	 * requires. It emits around 2.1e8 today and reaches the RFC's INTEGER
-	 * ceiling of 2147483647 in 2088.
+	 * The floor is seconds since `SEQUENCE_EPOCH`, read from
+	 * `post_modified_gmt`. That field never moves backwards, so the floor is
+	 * non-decreasing per event, which is what the property requires. It emits
+	 * around 2.1e8 today and reaches the RFC's INTEGER ceiling of 2147483647
+	 * in 2088.
 	 *
-	 * Neither obvious alternative works. The gap between creation and
-	 * modification shrinks whenever `post_date_gmt` is corrected forward, and
-	 * a sequence that moves backwards is one clients may ignore. A raw
-	 * timestamp is monotonic but hits the same ceiling in January 2038; the
-	 * epoch is what buys the other sixty years at the same resolution.
+	 * The epoch offset is what buys the headroom: a raw Unix timestamp would
+	 * hit the same ceiling in January 2038 instead.
+	 *
+	 * That field alone is not sufficient, though, which is what `Revision`
+	 * exists for. Occurrence rows, rule mirrors and a forward split are all
+	 * written by statements that leave `post_modified_gmt` untouched, and its
+	 * one-second resolution cannot separate two changes that land in the same
+	 * second either. The stored revision is the greater of the two whenever
+	 * something has advanced it, so a change the post row never saw still
+	 * reaches subscribers.
 	 *
 	 * The clamp guards against corrupt data, not ordinary growth. Saturating
 	 * it would freeze the event in subscribers' calendars, since every later
@@ -380,21 +789,15 @@ final class Calendar {
 	 * @return int Non-negative revision number for this event.
 	 */
 	private function get_sequence(): int {
-		$post = $this->event->post;
-
-		if ( ! $post ) {
-			return 0;
-		}
-
-		$modified = strtotime( $post->post_modified_gmt );
-
-		if ( false === $modified ) {
-			return 0;
-		}
-
+		$modified = strtotime( (string) $this->event->post->post_modified_gmt );
 		// Floor at zero for anything modified before the epoch; clamp at the
 		// RFC ceiling for dates far enough out to be data corruption.
-		return min( max( 0, $modified - self::SEQUENCE_EPOCH ), 2147483647 );
+		$from_post = ( false === $modified ) ? 0 : max( 0, $modified - self::SEQUENCE_EPOCH );
+
+		return min(
+			max( $from_post, Revision::get_instance()->stored( (int) $this->event->post->ID ) ),
+			Revision::CEILING
+		);
 	}
 
 	/**
@@ -452,7 +855,17 @@ final class Calendar {
 			);
 		}
 
-		$post_url = get_permalink( $post );
+		// Read the *series* permalink rather than the filtered one. The
+		// endpoint URL is a path segment appended to the post's permalink, and
+		// `Context::permalink()` answers with the occurrence's URL whenever one
+		// is in play, both during a loop iteration and on an occurrence's own
+		// page. Appending `ical/` to that produces
+		// `/event/my-series/20260903T180000/ical/`, which matches no rewrite
+		// rule and 404s (measured). The endpoint serves the series today;
+		// giving each occurrence its own export is a separate piece of work,
+		// and when it lands it belongs in the rewrite rule rather than in a
+		// concatenation here.
+		$post_url = (string) Context::get_instance()->series_permalink( $post->ID );
 
 		// `get_permalink()` returns a query-string permalink either when the
 		// site has no permalink structure at all, or when the rewrite rules
@@ -512,35 +925,62 @@ final class Calendar {
 	}
 
 	/**
-	 * Fold text per [iCal specifications](http://www.ietf.org/rfc/rfc2445.txt).
+	 * Fold one assembled content line per RFC 5545 section 3.1.
 	 *
-	 * Lines of text SHOULD NOT be longer than 75 octets, excluding the line
-	 * break. Long content lines SHOULD be split into a multiple line
-	 * representations using a line "folding" technique. That is, a long
-	 * line can be split between any two characters by inserting a CRLF
-	 * immediately followed by a single linear white space character (i.e.,
-	 * SPACE, US-ASCII decimal 32 or HTAB, US-ASCII decimal 9). Any sequence
-	 * of CRLF followed immediately by a single linear white space character
-	 * is ignored (i.e., removed) when processing the content type.
+	 * "Lines of text SHOULD NOT be longer than 75 octets, excluding the line
+	 * break", and a longer one is split by inserting a CRLF followed by a single
+	 * space, which a parser removes again when it reads the value. Octets, not
+	 * characters: the limit is a byte budget, so a multi-byte character counts
+	 * for as many bytes as it occupies, and must never be split across a fold,
+	 * which would leave two invalid byte sequences that do not reassemble.
 	 *
-	 * @author Stephen Harris (@stephenharris)
-	 * @source https://github.com/stephenharris/Event-Organiser/blob/develop/includes/event-organiser-utility-functions.php#L1663
+	 * Applied to the whole property line rather than to a value, because the
+	 * limit is a property of the line: `EXDATE;TZID=America/New_York:` is 29
+	 * octets of it before the first identifier, and an exclusion list grows
+	 * without bound as a series accumulates cancellations. Folding the value
+	 * alone measures the wrong string and emits over-length lines a strict
+	 * parser may reject or truncate, which puts canceled dates back on the
+	 * subscriber's calendar.
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param string $text The string to be escaped.
+	 * @since 0.36.0 Folds a whole content line on an octet budget, replacing a
+	 *               character-counted helper applied to selected values.
 	 *
-	 * @return string The escaped string.
+	 * PHPMD reads this as an unused private method. It is called once, as
+	 * `array_map( array( $this, 'fold_content_line' ), $args )` in the line
+	 * assembler above, and PHPMD does not resolve a method named inside a
+	 * callable array.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
+	 *
+	 * @param string $line One complete content line, without its line break.
+	 *
+	 * @return string The line, folded where it exceeded the limit.
 	 */
-	private function fold_ical_text( string $text ): string {
-		$text_arr = array();
-
-		$lines = ceil( mb_strlen( $text ) / 75 );
-
-		for ( $i = 0; $i < $lines; $i++ ) {
-			$text_arr[ $i ] = mb_substr( $text, $i * 75, 75 );
+	private function fold_content_line( string $line ): string {
+		if ( self::MAX_LINE_OCTETS >= strlen( $line ) ) {
+			return $line;
 		}
 
-		return join( "\r\n ", $text_arr );
+		$folded  = array();
+		$current = '';
+		// The first physical line spends its whole budget on content; every
+		// continuation spends one octet of it on the leading space.
+		$budget = self::MAX_LINE_OCTETS;
+
+		foreach ( mb_str_split( $line ) as $character ) {
+			if ( strlen( $current ) + strlen( $character ) > $budget ) {
+				$folded[] = $current;
+				$current  = '';
+				$budget   = self::MAX_LINE_OCTETS - 1;
+			}
+
+			$current .= $character;
+		}
+
+		$folded[] = $current;
+
+		return implode( "\r\n ", $folded );
 	}
 }
