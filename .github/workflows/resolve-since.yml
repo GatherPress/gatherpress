@@ -1,0 +1,54 @@
+name: Resolve @since tags
+
+on:
+  push:
+    branches: [ develop ]
+    paths:
+      - 'includes/**'
+      - 'src/**'
+      - 'package.json'
+      - '.github/scripts/resolve-since.php'
+      - '.github/workflows/resolve-since.yml'
+  workflow_dispatch:
+
+permissions:
+  pull-requests: write
+  contents: write
+
+jobs:
+  resolve-since:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout develop
+      uses: actions/checkout@v4
+      with:
+        ref: develop
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.1'
+        coverage: none
+
+    - name: Resolve @since tags
+      run: php .github/scripts/resolve-since.php
+
+    - name: Create pull request with resolved tags
+      id: cpr
+      uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        sign-commits: true
+        branch: fix/resolve-since-${{ github.sha }}
+        base: develop
+        commit-message: "Resolve @since tags"
+        title: "Resolve @since tags automatically"
+        body: "Resolves new @since TBD tags to the current stable development version."
+        labels: "Skip Changelog"
+        delete-branch: true
+
+    - name: Enable auto-merge
+      if: ${{ steps.cpr.outputs.pull-request-number }}
+      run: gh pr merge "${{ steps.cpr.outputs.pull-request-number }}" --auto --squash --delete-branch
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

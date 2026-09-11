@@ -1,0 +1,34 @@
+name: Check @since tags
+
+on:
+  pull_request:
+    branches: [ develop ]
+    paths:
+      - 'includes/**'
+      - 'src/**'
+      - '.github/scripts/check-since.php'
+      - '.github/workflows/check-since.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check-since:
+    name: Check newly-added @since tags
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.1'
+        coverage: none
+
+    - name: Check @since tags
+      run: php .github/scripts/check-since.php
+      env:
+        GITHUB_BASE_REF: ${{ github.base_ref }}
