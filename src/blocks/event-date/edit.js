@@ -437,6 +437,10 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 					/>
 					<ToggleControl
 						label={ __( 'Link to event', 'gatherpress' ) }
+						help={ __(
+							'Make the date a link to the event page.',
+							'gatherpress'
+						) }
 						checked={ isLink }
 						onChange={ () =>
 							setAttributes( { isLink: ! isLink } )
