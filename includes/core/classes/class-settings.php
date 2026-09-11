@@ -172,6 +172,7 @@ class Settings {
 		Settings\Roles::get_instance();
 		Settings\Rsvp::get_instance();
 		Settings\Tools::get_instance();
+		Settings\Uninstall::get_instance();
 		Settings\Venues::get_instance();
 	}
 
