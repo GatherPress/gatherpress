@@ -1132,6 +1132,81 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Coverage for rsvp_responses with a custom post type that declares RSVP support.
+	 *
+	 * @covers ::rsvp_responses
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_responses_custom_rsvp_post_type(): void {
+		$instance  = Rest_Api::get_instance();
+		$post_type = 'gp_rsvp_custom';
+
+		register_post_type(
+			$post_type,
+			array(
+				'public'   => true,
+				'supports' => array( 'title', Event::SUPPORT, Rsvp::SUPPORT ),
+			)
+		);
+
+		$post_id = $this->factory()->post->create( array( 'post_type' => $post_type ) );
+		$user_id = $this->factory()->user->create();
+		$rsvp    = new Rsvp( $post_id );
+		$rsvp->save( $user_id, 'attending', 0, 1 );
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'post_id', $post_id );
+
+		$response = $instance->rsvp_responses( $request );
+		$data     = $response->get_data();
+
+		unregister_post_type( $post_type );
+
+		$this->assertTrue(
+			$data['success'],
+			'Failed to assert that a post type with RSVP support returns its responses.'
+		);
+		$this->assertArrayHasKey( 'attending', $data['data'] );
+	}
+
+	/**
+	 * Coverage for rsvp_responses with a post type that has event dates but no RSVP support.
+	 *
+	 * @covers ::rsvp_responses
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_responses_event_date_only_post_type(): void {
+		$instance  = Rest_Api::get_instance();
+		$post_type = 'gp_date_only';
+
+		register_post_type(
+			$post_type,
+			array(
+				'public'   => true,
+				'supports' => array( 'title', Event::SUPPORT ),
+			)
+		);
+
+		$post_id = $this->factory()->post->create( array( 'post_type' => $post_type ) );
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'post_id', $post_id );
+
+		$response = $instance->rsvp_responses( $request );
+		$data     = $response->get_data();
+
+		unregister_post_type( $post_type );
+
+		$this->assertFalse(
+			$data['success'],
+			'Failed to assert that event-date support alone does not expose RSVP responses.'
+		);
+		$this->assertEmpty( $data['data'] );
+	}
+
+	/**
 	 * Coverage for rsvp_status_html method.
 	 *
 	 * @covers ::rsvp_status_html
@@ -1374,6 +1449,43 @@ class Test_Rest_Api extends Base {
 		$result = $instance->send_emails( $post_id, array( 'all' => true ), '' );
 
 		$this->assertFalse( $result );
+	}
+
+	/**
+	 * Coverage for send_emails with a custom post type that declares RSVP support.
+	 *
+	 * @covers ::send_emails
+	 *
+	 * @return void
+	 */
+	public function test_send_emails_custom_rsvp_post_type(): void {
+		add_filter( 'pre_wp_mail', '__return_false' );
+
+		$instance  = Rest_Api::get_instance();
+		$post_type = 'gp_rsvp_custom';
+
+		register_post_type(
+			$post_type,
+			array(
+				'public'   => true,
+				'supports' => array( 'title', Event::SUPPORT, Rsvp::SUPPORT ),
+			)
+		);
+
+		$post_id = $this->factory()->post->create( array( 'post_type' => $post_type ) );
+		$user_id = $this->factory()->user->create();
+		$rsvp    = new Rsvp( $post_id );
+		$rsvp->save( $user_id, 'attending' );
+
+		$result = $instance->send_emails( $post_id, array( 'attending' => true ), 'Test message' );
+
+		unregister_post_type( $post_type );
+		remove_filter( 'pre_wp_mail', '__return_false' );
+
+		$this->assertTrue(
+			$result,
+			'Failed to assert that a post type with RSVP support can send event emails.'
+		);
 	}
 
 	/**

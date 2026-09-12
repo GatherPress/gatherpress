@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Resolve event posts by post type support instead of the hardcoded `gatherpress_event` slug in the editor event helpers, the RSVP REST handlers, and the WXR importer, so blocks and endpoints pointed at a companion plugin's event post type read its settings instead of quietly falling back to defaults.
