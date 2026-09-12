@@ -692,8 +692,9 @@ final class Geocoding {
 
 		$language       = $this->get_language_code();
 		$country_filter = $this->get_country_filter();
-		// Keeps the unfiltered cache key's original shape.
-		$cache_suffix = array() === $country_filter ? '' : '|' . implode( ',', $country_filter );
+		$provider_url   = $this->get_photon_api_url();
+		// Keeps the unfiltered/default-provider cache key's original shape.
+		$cache_suffix = $this->get_cache_key_suffix( $provider_url, $country_filter );
 		$cache_key    = self::GEOCODE_CACHE_PREFIX . md5( $address . '|' . $language . $cache_suffix ); // NOSONAR.
 		$cached       = get_transient( $cache_key );
 
@@ -717,7 +718,7 @@ final class Geocoding {
 				'limit' => array() === $country_filter ? 1 : self::COUNTRY_FILTER_SEARCH_LIMIT,
 				'lang'  => $language,
 			),
-			$this->get_photon_api_url()
+			$provider_url
 		);
 
 		$response = wp_safe_remote_get(
@@ -799,7 +800,7 @@ final class Geocoding {
 	 */
 	private function select_geocode_feature( array $features, array $country_filter ): ?array {
 		foreach ( $features as $feature ) {
-			if ( ! is_array( $feature ) || ! isset( $feature['geometry']['coordinates'] ) ) {
+			if ( ! is_array( $feature ) || ! $this->has_valid_coordinates( $feature ) ) {
 				continue;
 			}
 
@@ -820,6 +821,24 @@ final class Geocoding {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Whether a Photon feature has usable `[longitude, latitude]` coordinates.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, mixed> $feature Decoded Photon feature.
+	 *
+	 * @return bool
+	 */
+	private function has_valid_coordinates( array $feature ): bool {
+		$coordinates = $feature['geometry']['coordinates'] ?? null;
+
+		return is_array( $coordinates )
+			&& isset( $coordinates[0], $coordinates[1] )
+			&& is_numeric( $coordinates[0] )
+			&& is_numeric( $coordinates[1] );
 	}
 
 	/**
@@ -885,8 +904,9 @@ final class Geocoding {
 
 		$language       = $this->get_language_code();
 		$country_filter = $this->get_country_filter();
-		// Keeps the unfiltered cache key's original shape.
-		$cache_suffix = array() === $country_filter ? '' : '|' . implode( ',', $country_filter );
+		$provider_url   = $this->get_photon_api_url();
+		// Keeps the unfiltered/default-provider cache key's original shape.
+		$cache_suffix = $this->get_cache_key_suffix( $provider_url, $country_filter );
 		$cache_key    = self::SEARCH_CACHE_PREFIX . md5( $query . '|' . $language . $cache_suffix ); // NOSONAR.
 		$cached       = get_transient( $cache_key );
 
@@ -906,7 +926,7 @@ final class Geocoding {
 				'limit' => array() === $country_filter ? 5 : self::COUNTRY_FILTER_SEARCH_LIMIT,
 				'lang'  => $language,
 			),
-			$this->get_photon_api_url()
+			$provider_url
 		);
 
 		$response = wp_safe_remote_get(
@@ -992,14 +1012,11 @@ final class Geocoding {
 				break;
 			}
 
-			if ( ! is_array( $feature ) ) {
+			if ( ! is_array( $feature ) || ! $this->has_valid_coordinates( $feature ) ) {
 				continue;
 			}
 
-			$coords = $feature['geometry']['coordinates'] ?? null;
-			if ( ! is_array( $coords ) || count( $coords ) < 2 ) {
-				continue;
-			}
+			$coords = $feature['geometry']['coordinates'];
 
 			$properties = isset( $feature['properties'] ) && is_array( $feature['properties'] )
 				? $feature['properties']
@@ -1361,6 +1378,31 @@ final class Geocoding {
 		$codes = array_filter( array_map( 'trim', explode( ',', strtolower( $raw ) ) ) );
 
 		return array_values( array_unique( $codes ) );
+	}
+
+	/**
+	 * Cache-key suffix for a resolved provider URL and country filter.
+	 *
+	 * Empty for the default provider with no filter, so that common case's
+	 * cache key keeps its pre-existing shape; a custom provider and/or an
+	 * active filter each add their own segment, so switching either one
+	 * can't serve a stale result cached under the other.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string   $provider_url   Resolved Photon API base URL.
+	 * @param string[] $country_filter Lowercased country codes to restrict to; empty means unrestricted.
+	 *
+	 * @return string
+	 */
+	private function get_cache_key_suffix( string $provider_url, array $country_filter ): string {
+		$suffix = self::PHOTON_API_URL === $provider_url ? '' : '|provider:' . $provider_url;
+
+		if ( array() !== $country_filter ) {
+			$suffix .= '|' . implode( ',', $country_filter );
+		}
+
+		return $suffix;
 	}
 
 	/**

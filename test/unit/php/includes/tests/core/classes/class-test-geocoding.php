@@ -1916,6 +1916,95 @@ class Test_Geocoding extends Base {
 	}
 
 	/**
+	 * The geocoding_provider_url setting (#1267) is honored by the public request path, not just the resolver.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::geocode_to_result
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_public_geocoding_methods_use_configured_provider_url(): void {
+		$instance          = Geocoding::get_instance();
+		$settings_instance = Settings::get_instance();
+		$captured_url      = '';
+
+		$settings_instance->set( 'geocoding_provider_url', 'https://example.com/custom-photon' );
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => static function ( &$headers, $url ) use ( &$captured_url ) {
+					$captured_url = $url;
+					$headers      = 'HTTP/1.1 200 OK';
+					return wp_json_encode( array( 'features' => array() ) );
+				},
+			)
+		);
+
+		$instance->geocode_to_result( 'Provider URL public path test address' );
+
+		$this->assertStringStartsWith(
+			'https://example.com/custom-photon',
+			$captured_url,
+			'Failed to assert geocode_to_result() requests the configured provider URL.'
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Provider URL public path search test' );
+		$instance->search_addresses( $request );
+
+		$this->assertStringStartsWith(
+			'https://example.com/custom-photon',
+			$captured_url,
+			'Failed to assert search_addresses() requests the configured provider URL.'
+		);
+
+		$settings_instance->set( 'geocoding_provider_url', '' );
+	}
+
+	/**
+	 * Switching geocoding_provider_url (#1267) must not serve a cache entry from the previous provider.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::geocode_to_result
+	 *
+	 * @return void
+	 */
+	public function test_geocode_to_result_provider_url_cache_key_isolation(): void {
+		$instance          = Geocoding::get_instance();
+		$settings_instance = Settings::get_instance();
+		$address           = 'Provider cache isolation test address';
+
+		$default_key = 'gatherpress_photon_geocode_' . md5( $address . '|default' );
+		$custom_key  = 'gatherpress_photon_geocode_'
+			. md5( $address . '|default|provider:https://example.com/custom-photon' );
+		delete_transient( $default_key );
+		delete_transient( $custom_key );
+
+		$this->mock_photon_response( array( $this->build_photon_feature( array( 'city' => 'Verona' ) ) ) );
+		$default_result = $instance->geocode_to_result( $address );
+		$this->assertSame( 'Verona', $default_result['city'] );
+
+		$settings_instance->set( 'geocoding_provider_url', 'https://example.com/custom-photon' );
+
+		$this->mock_photon_response( array( $this->build_photon_feature( array( 'city' => 'Newark' ) ) ) );
+		$custom_result = $instance->geocode_to_result( $address );
+
+		$this->assertSame(
+			'Newark',
+			$custom_result['city'],
+			'Failed to assert the custom-provider request hit Photon again rather than reusing the old cache entry.'
+		);
+
+		delete_transient( $default_key );
+		delete_transient( $custom_key );
+		$settings_instance->set( 'geocoding_provider_url', '' );
+	}
+
+	/**
 	 * Non-array entries in GeoJSON features are ignored.
 	 *
 	 * @covers ::search_addresses
@@ -2521,7 +2610,7 @@ class Test_Geocoding extends Base {
 	public function test_select_geocode_feature_branches(): void {
 		$instance = Geocoding::get_instance();
 
-		// Invalid entries are skipped.
+		// Invalid entries — including malformed/non-numeric coordinates — are skipped.
 		$valid  = $this->build_photon_feature( array( 'countrycode' => 'us' ) );
 		$result = Utility::invoke_hidden_method(
 			$instance,
@@ -2530,6 +2619,8 @@ class Test_Geocoding extends Base {
 				array(
 					'not-an-array',
 					array( 'properties' => array() ), // Missing geometry entirely.
+					array( 'geometry' => array( 'coordinates' => array( 'not', 'numeric' ) ) ),
+					array( 'geometry' => array( 'coordinates' => array( 1.0 ) ) ), // Only one element.
 					$valid,
 				),
 				array(),
@@ -2572,6 +2663,42 @@ class Test_Geocoding extends Base {
 			array( array( $matching ), array( 'us' ) )
 		);
 		$this->assertSame( $matching, $result, 'Failed to assert a matching-country feature is returned.' );
+	}
+
+	/**
+	 * Direct branch coverage for has_valid_coordinates() (#1267, xdebug tracing gap).
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::has_valid_coordinates
+	 *
+	 * @return void
+	 */
+	public function test_has_valid_coordinates_branches(): void {
+		$instance = Geocoding::get_instance();
+
+		$cases = array(
+			'missing geometry'      => array( 'properties' => array() ),
+			'non-array coordinates' => array( 'geometry' => array( 'coordinates' => 'nope' ) ),
+			'only one element'      => array( 'geometry' => array( 'coordinates' => array( 1.0 ) ) ),
+			'non-numeric values'    => array( 'geometry' => array( 'coordinates' => array( 'a', 'b' ) ) ),
+		);
+
+		foreach ( $cases as $label => $feature ) {
+			$this->assertFalse(
+				Utility::invoke_hidden_method( $instance, 'has_valid_coordinates', array( $feature ) ),
+				sprintf( 'Failed to assert "%s" is treated as invalid coordinates.', $label )
+			);
+		}
+
+		$this->assertTrue(
+			Utility::invoke_hidden_method(
+				$instance,
+				'has_valid_coordinates',
+				array( array( 'geometry' => array( 'coordinates' => array( -74.0, 40.0 ) ) ) )
+			),
+			'Failed to assert valid numeric coordinates pass.'
+		);
 	}
 
 	/**
