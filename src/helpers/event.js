@@ -116,28 +116,25 @@ export function isEventPostType( postType = null ) {
  *                   event-supporting post type.
  */
 function resolveEventActivityFilterSupport( selectFn, sourcePostType ) {
-	if ( ! sourcePostType ) {
-		return false;
-	}
+	const isShadowSource =
+		!! sourcePostType &&
+		!! selectFn( 'core' ).getPostType( sourcePostType )?.supports?.[
+			'gatherpress-shadow-source'
+		];
+	const taxonomy = isShadowSource
+		? selectFn( 'core' ).getTaxonomy( `_${ sourcePostType }` )
+		: undefined;
 
-	const sourcePostTypeObject = selectFn( 'core' ).getPostType( sourcePostType );
-	if ( ! sourcePostTypeObject?.supports?.[ 'gatherpress-shadow-source' ] ) {
-		return false;
-	}
-
-	const taxonomy = selectFn( 'core' ).getTaxonomy( `_${ sourcePostType }` );
 	if ( ! taxonomy?.types?.length ) {
 		return false;
 	}
 
-	const eventPostTypes = selectFn( 'core' )
-		.getPostTypes( { per_page: -1, context: 'edit' } )
-		?.filter( ( type ) => type?.supports?.[ 'gatherpress-event-date' ] )
+	const eventPostTypes = (
+		selectFn( 'core' ).getPostTypes( { per_page: -1, context: 'edit' } ) ??
+		[]
+	)
+		.filter( ( type ) => type?.supports?.[ 'gatherpress-event-date' ] )
 		.map( ( type ) => type.slug );
-
-	if ( ! Array.isArray( eventPostTypes ) || 0 === eventPostTypes.length ) {
-		return false;
-	}
 
 	return eventPostTypes.some( ( slug ) => taxonomy.types.includes( slug ) );
 }

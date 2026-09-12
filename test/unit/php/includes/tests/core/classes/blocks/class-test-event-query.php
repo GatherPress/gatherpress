@@ -340,8 +340,11 @@ class Test_Event_Query extends Base {
 	}
 
 	/**
-	 * Collection params for a shadow-source post type include the
-	 * activity-only params and exclude the event-only params.
+	 * Collection params for a shadow-source post type are returned unchanged.
+	 *
+	 * Shadow-source activity params (`has_events_filter`,
+	 * `upcoming_events_only`, context) are owned by `Shadow_Source`, not by
+	 * `Event_Query`, so its schema filter must not add them here.
 	 *
 	 * @since 0.36.0
 	 * @covers ::add_gatherpress_collection_params
@@ -359,19 +362,8 @@ class Test_Event_Query extends Base {
 
 		$result = $instance->add_gatherpress_collection_params( $base_params, 'gatherpress_venue' );
 
-		$this->assertArrayHasKey( 'has_events_filter', $result );
-		$this->assertSame( 'integer', $result['has_events_filter']['type'] );
-		$this->assertSame( array( 0, 1 ), $result['has_events_filter']['enum'] );
-
-		$this->assertArrayHasKey( 'upcoming_events_only', $result );
-		$this->assertSame( 'integer', $result['upcoming_events_only']['type'] );
-		$this->assertSame( array( 0, 1 ), $result['upcoming_events_only']['enum'] );
-		$this->assertSame( 1, $result['upcoming_events_only']['default'], 'Upcoming-only should default to on.' );
-
-		$this->assertArrayHasKey( 'gatherpress_shadow_source_post_id', $result );
-		$this->assertArrayHasKey( 'gatherpress_shadow_source_post_type', $result );
-
 		// Event-only params must not leak into a shadow-source schema.
+		$this->assertSame( $base_params, $result );
 		$this->assertArrayNotHasKey( 'include_unfinished', $result );
 		$this->assertArrayNotHasKey( 'gatherpress_event_query', $result );
 		$this->assertArrayNotHasKey( 'exclude_current', $result );
@@ -409,7 +401,8 @@ class Test_Event_Query extends Base {
 	 * add_gatherpress_collection_params tests bypass — a future edit that
 	 * mistypes the substr offsets would strip every GatherPress param from
 	 * every registered post type's REST schema, and the unrelated test
-	 * alone would not catch it.
+	 * alone would not catch it. Shadow-source post types no longer route
+	 * through this callback; their schema is owned by Shadow_Source.
 	 *
 	 * @since 0.36.0
 	 * @covers ::rest_collection_params
@@ -419,27 +412,8 @@ class Test_Event_Query extends Base {
 	public function test_rest_collection_params_derives_post_type_from_current_filter(): void {
 		$instance = Event_Query::get_instance();
 
-		$base_params = array( 'orderby' => array( 'enum' => array( 'date' ) ) );
-
 		// Drive the WP filter directly so current_filter() resolves to
-		// 'rest_gatherpress_venue_collection_params' inside the callback.
-		$result = apply_filters(
-			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Test the exact REST hook name used by WordPress.
-			'rest_gatherpress_venue_collection_params',
-			$base_params
-		);
-
-		// Shadow-source post types should expose the activity-filter params
-		// (has_events_filter, upcoming_events_only) and the editor-preview
-		// context, but NOT the event-only orderby enum members.
-		$this->assertArrayHasKey( 'has_events_filter', $result );
-		$this->assertArrayHasKey( 'upcoming_events_only', $result );
-		$this->assertNotContains( 'datetime', $result['orderby']['enum'] );
-		$this->assertNotContains( 'rand', $result['orderby']['enum'] );
-
-		// And the same callback for an event-date post type should add the
-		// event-only orderby enum members and shadow_filter, not the
-		// activity-filter params.
+		// 'rest_gatherpress_event_collection_params' inside the callback.
 		$event_result = apply_filters(
 			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- Test the exact REST hook name used by WordPress.
 			sprintf( 'rest_%s_collection_params', Event::POST_TYPE ),
@@ -449,7 +423,9 @@ class Test_Event_Query extends Base {
 		$this->assertContains( 'datetime', $event_result['orderby']['enum'] );
 		$this->assertContains( 'rand', $event_result['orderby']['enum'] );
 		$this->assertArrayHasKey( 'shadow_filter', $event_result );
+		$this->assertArrayHasKey( 'gatherpress_event_query', $event_result );
 		$this->assertArrayNotHasKey( 'has_events_filter', $event_result );
+		$this->assertArrayNotHasKey( 'upcoming_events_only', $event_result );
 	}
 
 	/**
@@ -1482,13 +1458,16 @@ class Test_Event_Query extends Base {
 
 		$param_map = array(
 			array( 'include', null ),
-			array( 'has_events_filter', null ),
-			array( 'upcoming_events_only', null ),
+			array( 'gatherpress_event_query', null ),
+			array( 'exclude_current', null ),
+			array( 'include_unfinished', null ),
+			array( 'orderby', null ),
+			array( 'shadow_filter', null ),
 			array( 'gatherpress_shadow_source_post_id', 42 ),
 			array( 'gatherpress_shadow_source_post_type', 'production' ),
 		);
 
-		$request->expects( $this->exactly( 5 ) )
+		$request->expects( $this->exactly( 8 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -1586,467 +1565,66 @@ class Test_Event_Query extends Base {
 	}
 
 	/**
-	 * Coverage for maybe_register_event_date_rest_hooks on a shadow-source
-	 * post type — REST filters must also register for post types that declare
-	 * `gatherpress-shadow-source` so venue/production queries accept the new
-	 * `has_events_filter` / `upcoming_events_only` collection params.
-	 *
-	 * @since 0.36.0
-	 * @covers ::maybe_register_event_date_rest_hooks
-	 *
-	 * @return void
-	 */
-	public function test_maybe_register_event_date_rest_hooks_on_shadow_source_post_type(): void {
-		$instance  = Event_Query::get_instance();
-		$post_type = 'gatherpress_venue';
-
-		remove_all_filters( sprintf( 'rest_%s_query', $post_type ) );
-		remove_all_filters( sprintf( 'rest_%s_collection_params', $post_type ) );
-
-		$instance->maybe_register_event_date_rest_hooks( $post_type );
-
-		$this->assertSame(
-			10,
-			has_filter(
-				sprintf( 'rest_%s_query', $post_type ),
-				array( $instance, 'rest_query' )
-			),
-			'Failed to assert rest_query filter is registered for a shadow-source post type.'
-		);
-		$this->assertSame(
-			10,
-			has_filter(
-				sprintf( 'rest_%s_collection_params', $post_type ),
-				array( $instance, 'rest_collection_params' )
-			),
-			'Failed to assert rest_collection_params filter is registered for a shadow-source post type.'
-		);
-	}
-
-	/**
-	 * Passes the shadow-source activity params through rest_query to custom args.
-	 *
-	 * @since 0.36.0
-	 * @covers ::rest_query
-	 *
-	 * @return void
-	 */
-	public function test_rest_query_with_has_events_filter(): void {
-		$instance = Event_Query::get_instance();
-
-		$request = $this->createMock( \WP_REST_Request::class );
-
-		$param_map = array(
-			array( 'include', null ),
-			array( 'has_events_filter', 1 ),
-			array( 'upcoming_events_only', 0 ),
-			array( 'gatherpress_shadow_source_post_id', null ),
-			array( 'gatherpress_shadow_source_post_type', null ),
-		);
-
-		$request->expects( $this->exactly( 5 ) )
-			->method( 'get_param' )
-			->willReturnMap( $param_map );
-
-		$request->expects( $this->once() )
-			->method( 'get_params' )
-			->willReturn(
-				array(
-					'has_events_filter'    => 1,
-					'upcoming_events_only' => 0,
-				)
-			);
-
-		$initial_args = array(
-			'post_type' => 'gatherpress_venue',
-		);
-
-		$result = $instance->rest_query( $initial_args, $request );
-
-		$this->assertSame(
-			1,
-			$result['has_events_filter'],
-			'Should pass has_events_filter through to custom args.'
-		);
-		$this->assertSame(
-			0,
-			$result['upcoming_events_only'],
-			'Should pass upcoming_events_only through to custom args.'
-		);
-	}
-
-	/**
-	 * Passes the shadow-source activity params through
-	 * query_loop_block_query_vars to query args.
-	 *
-	 * @since 0.36.0
-	 * @covers ::query_loop_block_query_vars
-	 *
-	 * @return void
-	 */
-	public function test_query_loop_block_query_vars_with_has_events_filter(): void {
-		$instance = Event_Query::get_instance();
-
-		$query = array( 'posts_per_page' => 10 );
-		$block = $this->createMock( \WP_Block::class );
-
-		$block->context = array(
-			'query' => array(
-				'gatherpress_event_query' => 'upcoming',
-				'postType'                => 'gatherpress_venue',
-				'has_events_filter'       => 1,
-				'upcoming_events_only'    => 0,
-			),
-		);
-
-		$result = $instance->query_loop_block_query_vars( $query, $block );
-
-		$this->assertSame(
-			1,
-			$result['has_events_filter'],
-			'Should pass has_events_filter through to query args.'
-		);
-		$this->assertSame(
-			0,
-			$result['upcoming_events_only'],
-			'Should pass upcoming_events_only through to query args.'
-		);
-	}
-
-	/**
-	 * Passes the shadow-source activity params through aql_query_vars to
-	 * query args.
+	 * An event-only AQL loop should not receive shadow-source activity vars,
+	 * and a shadow-source AQL loop should not receive event vars — the two
+	 * support groups own disjoint param sets.
 	 *
 	 * @since 0.36.0
 	 * @covers ::aql_query_vars
 	 *
 	 * @return void
 	 */
-	public function test_aql_query_vars_with_has_events_filter(): void {
+	public function test_aql_query_vars_does_not_cross_param_groups(): void {
 		$instance = Event_Query::get_instance();
 
-		$query_args  = array( 'posts_per_page' => 10 );
-		$block_query = array(
-			'postType'             => 'gatherpress_venue',
-			'has_events_filter'    => 1,
-			'upcoming_events_only' => 0,
-		);
-
-		$result = $instance->aql_query_vars( $query_args, $block_query, false );
-
-		$this->assertSame(
-			1,
-			$result['has_events_filter'],
-			'Should pass has_events_filter through to query args.'
-		);
-		$this->assertSame(
-			0,
-			$result['upcoming_events_only'],
-			'Should pass upcoming_events_only through to query args.'
-		);
-	}
-
-	/**
-	 * Direct coverage for the protected helper that the xdebug same-class
-	 * gap leaves untraced when it is only called from within its own class.
-	 *
-	 * @since 0.36.0
-	 * @covers ::get_query_rest_post_types
-	 *
-	 * @return void
-	 */
-	public function test_get_query_rest_post_types_returns_event_and_shadow_source_types(): void {
-		$instance = Event_Query::get_instance();
-
-		register_post_type(
-			'probe_evt',
+		// Event-only loop: activity params must not leak in.
+		$event_args = $instance->aql_query_vars(
+			array( 'posts_per_page' => 10 ),
 			array(
-				'label'    => 'Probe Event',
-				'public'   => false,
-				'supports' => array( 'title', 'gatherpress-event-date' ),
-			)
+				'postType'                => Event::POST_TYPE,
+				'gatherpress_event_query' => 'past',
+				'has_events_filter'       => 1,
+				'upcoming_events_only'    => 0,
+			),
+			false
 		);
-		register_post_type(
-			'probe_shadow',
+
+		$this->assertSame( 'past', $event_args['gatherpress_event_query'], 'Event query type should pass through.' );
+		$this->assertArrayNotHasKey(
+			'has_events_filter',
+			$event_args,
+			'Activity params should not leak into an event-only AQL loop.'
+		);
+		$this->assertArrayNotHasKey(
+			'upcoming_events_only',
+			$event_args,
+			'Activity params should not leak into an event-only AQL loop.'
+		);
+
+		// Shadow-source-only loop: event params must not leak in.
+		$shadow_args = $instance->aql_query_vars(
+			array( 'posts_per_page' => 10 ),
 			array(
-				'label'    => 'Probe Shadow',
-				'public'   => false,
-				'supports' => array( 'title', 'gatherpress-shadow-source' ),
-			)
+				'postType'                => 'gatherpress_venue',
+				'has_events_filter'       => 1,
+				'upcoming_events_only'    => 0,
+				'gatherpress_event_query' => 'past',
+				'shadow_filter'           => 1,
+			),
+			false
 		);
 
-		try {
-			$types = Utility::invoke_hidden_method( $instance, 'get_query_rest_post_types', array() );
-
-			$this->assertContains( 'probe_evt', $types, 'Event-supporting types should be listed.' );
-			$this->assertContains( 'probe_shadow', $types, 'Shadow-source types should be listed.' );
-			$this->assertNotContains( 'post', $types, 'Unrelated types should not be listed.' );
-		} finally {
-			unregister_post_type( 'probe_evt' );
-			unregister_post_type( 'probe_shadow' );
-		}
-	}
-
-	/**
-	 * Direct coverage for get_requested_post_types_from_args across all
-	 * supported input shapes (array, CSV string, missing, empty).
-	 *
-	 * @since 0.36.0
-	 * @covers ::get_requested_post_types_from_args
-	 *
-	 * @return void
-	 */
-	public function test_get_requested_post_types_from_args_handles_array(): void {
-		$instance = Event_Query::get_instance();
-
-		$result = Utility::invoke_hidden_method(
-			$instance,
-			'get_requested_post_types_from_args',
-			array(
-				array(
-					'post_type' => array( 'gatherpress_event', 'gatherpress_venue', 0 ),
-				),
-			)
-		);
-
-		$this->assertSame(
-			array( 'gatherpress_event', 'gatherpress_venue' ),
-			$result,
-			'Should return array of valid post type slugs.'
-		);
-	}
-
-	/**
-	 * Comma-separated post_type input should be split into individual slugs.
-	 *
-	 * @since 0.36.0
-	 * @covers ::get_requested_post_types_from_args
-	 *
-	 * @return void
-	 */
-	public function test_get_requested_post_types_from_args_handles_csv_string(): void {
-		$instance = Event_Query::get_instance();
-
-		$result = Utility::invoke_hidden_method(
-			$instance,
-			'get_requested_post_types_from_args',
-			array(
-				array(
-					'post_type' => ' gatherpress_event , gatherpress_venue , ',
-				),
-			)
-		);
-
-		$this->assertSame(
-			array( 'gatherpress_event', 'gatherpress_venue' ),
-			$result,
-			'Should split CSV string and trim whitespace.'
-		);
-	}
-
-	/**
-	 * Missing post_type arg should produce an empty list rather than error.
-	 *
-	 * @since 0.36.0
-	 * @covers ::get_requested_post_types_from_args
-	 *
-	 * @return void
-	 */
-	public function test_get_requested_post_types_from_args_handles_missing(): void {
-		$instance = Event_Query::get_instance();
-
-		$result = Utility::invoke_hidden_method(
-			$instance,
-			'get_requested_post_types_from_args',
-			array( array() )
-		);
-
-		$this->assertSame(
-			array(),
-			$result,
-			'Missing post_type should resolve to empty list.'
-		);
-	}
-
-	/**
-	 * Empty post_type (any of array, CSV, or string) should produce an
-	 * empty list so the caller falls through to support-agnostic behavior.
-	 *
-	 * @since 0.36.0
-	 * @covers ::get_requested_post_types_from_args
-	 *
-	 * @return void
-	 */
-	public function test_get_requested_post_types_from_args_handles_empty(): void {
-		$instance = Event_Query::get_instance();
-
-		$empty_array  = Utility::invoke_hidden_method(
-			$instance,
-			'get_requested_post_types_from_args',
-			array(
-				array(
-					'post_type' => array(),
-				),
-			)
-		);
-		$empty_string = Utility::invoke_hidden_method(
-			$instance,
-			'get_requested_post_types_from_args',
-			array(
-				array(
-					'post_type' => '',
-				),
-			)
-		);
-
-		$this->assertSame( array(), $empty_array, 'Empty array post_type should yield empty list.' );
-		$this->assertSame( array(), $empty_string, 'Empty string post_type should yield empty list.' );
-	}
-
-	/**
-	 * Mixed post type requests should route to both event and shadow-source
-	 * param branches in rest_query.
-	 *
-	 * @since 0.36.0
-	 * @covers ::rest_query
-	 *
-	 * @return void
-	 */
-	public function test_rest_query_routes_mixed_post_types_to_both_branches(): void {
-		$instance = Event_Query::get_instance();
-
-		$request = $this->createMock( \WP_REST_Request::class );
-
-		$param_map = array(
-			array( 'include', null ),
-			array( 'gatherpress_event_query', 'past' ),
-			array( 'exclude_current', null ),
-			array( 'include_unfinished', 1 ),
-			array( 'orderby', 'datetime' ),
-			array( 'shadow_filter', 1 ),
-			array( 'has_events_filter', 1 ),
-			array( 'upcoming_events_only', 0 ),
-			array( 'gatherpress_shadow_source_post_id', null ),
-			array( 'gatherpress_shadow_source_post_type', null ),
-		);
-
-		$request->expects( $this->exactly( 10 ) )
-			->method( 'get_param' )
-			->willReturnMap( $param_map );
-
-		$request->expects( $this->once() )
-			->method( 'get_params' )
-			->willReturn(
-				array(
-					'gatherpress_event_query' => 'past',
-					'has_events_filter'       => 1,
-				)
-			);
-
-		$initial_args = array(
-			'post_type' => array( 'gatherpress_event', 'gatherpress_venue' ),
-		);
-
-		$result = $instance->rest_query( $initial_args, $request );
-
-		$this->assertSame( 'past', $result['gatherpress_event_query'], 'Event query should be set.' );
-		$this->assertSame( 1, $result['has_events_filter'], 'Activity filter should be set.' );
-		$this->assertSame( 0, $result['upcoming_events_only'], 'Upcoming-only flag should be set.' );
-	}
-
-	/**
-	 * When a shadow-source-only post type is queried, only shadow-source
-	 * params should be read; event-only params should not be requested
-	 * from the REST request (would 400 with rest_invalid_param).
-	 *
-	 * @since 0.36.0
-	 * @covers ::rest_query
-	 *
-	 * @return void
-	 */
-	public function test_rest_query_uses_shadow_only_params_for_shadow_post_type(): void {
-		$instance = Event_Query::get_instance();
-
-		$request = $this->createMock( \WP_REST_Request::class );
-
-		$param_map = array(
-			array( 'include', null ),
-			array( 'has_events_filter', 1 ),
-			array( 'upcoming_events_only', 1 ),
-			array( 'gatherpress_shadow_source_post_id', null ),
-			array( 'gatherpress_shadow_source_post_type', null ),
-		);
-
-		$request->expects( $this->exactly( 5 ) )
-			->method( 'get_param' )
-			->willReturnMap( $param_map );
-
-		$request->expects( $this->once() )
-			->method( 'get_params' )
-			->willReturn( array( 'has_events_filter' => 1 ) );
-
-		$initial_args = array(
-			'post_type' => 'gatherpress_venue',
-		);
-
-		$result = $instance->rest_query( $initial_args, $request );
-
+		$this->assertSame( 1, $shadow_args['has_events_filter'], 'Activity filter should pass through.' );
+		$this->assertSame( 0, $shadow_args['upcoming_events_only'], 'Upcoming-only should pass through.' );
 		$this->assertArrayNotHasKey(
 			'gatherpress_event_query',
-			$result,
-			'Event-only params should not appear in shadow-source result.'
-		);
-		$this->assertArrayNotHasKey(
-			'include_unfinished',
-			$result,
-			'Event-only params should not appear in shadow-source result.'
+			$shadow_args,
+			'Event params should not leak into a shadow-source AQL loop.'
 		);
 		$this->assertArrayNotHasKey(
 			'shadow_filter',
-			$result,
-			'Event-only shadow_filter should not appear in shadow-source result.'
-		);
-		$this->assertSame( 1, $result['has_events_filter'], 'Activity filter should pass through.' );
-	}
-
-	/**
-	 * When an unrelated post type is queried, neither event nor shadow-source
-	 * params should be requested.
-	 *
-	 * @since 0.36.0
-	 * @covers ::rest_query
-	 *
-	 * @return void
-	 */
-	public function test_rest_query_skips_both_branches_for_unrelated_post_type(): void {
-		$instance = Event_Query::get_instance();
-
-		$request = $this->createMock( \WP_REST_Request::class );
-
-		$request->expects( $this->once() )
-			->method( 'get_param' )
-			->with( 'include' )
-			->willReturn( null );
-
-		$request->expects( $this->once() )
-			->method( 'get_params' )
-			->willReturn( array() );
-
-		$initial_args = array(
-			'post_type' => 'post',
-		);
-
-		$result = $instance->rest_query( $initial_args, $request );
-
-		$this->assertArrayNotHasKey(
-			'gatherpress_event_query',
-			$result,
-			'Unrelated post types should not have event params.'
-		);
-		$this->assertArrayNotHasKey(
-			'has_events_filter',
-			$result,
-			'Unrelated post types should not have activity params.'
+			$shadow_args,
+			'Event params should not leak into a shadow-source AQL loop.'
 		);
 	}
 

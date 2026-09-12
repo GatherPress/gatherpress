@@ -104,6 +104,25 @@ class Test_Shadow_Source extends Base {
 				),
 				sprintf( 'Failed to assert that delete_post_%s has the delete_term action.', $post_type )
 			);
+			$this->assertSame(
+				10,
+				has_filter(
+					sprintf( 'rest_%s_query', $post_type ),
+					array( $instance, 'rest_query' )
+				),
+				sprintf( 'Failed to assert that rest_%s_query has the rest_query filter.', $post_type )
+			);
+			$this->assertSame(
+				10,
+				has_filter(
+					sprintf( 'rest_%s_collection_params', $post_type ),
+					array( $instance, 'rest_collection_params' )
+				),
+				sprintf(
+					'Failed to assert that rest_%s_collection_params has the rest_collection_params filter.',
+					$post_type
+				)
+			);
 		}
 	}
 
@@ -127,6 +146,96 @@ class Test_Shadow_Source extends Base {
 			has_action( 'delete_post_post', array( $instance, 'delete_term' ) ),
 			'Failed to assert no delete hook is registered for a post type without gatherpress-shadow-source support.'
 		);
+		$this->assertFalse(
+			has_filter( 'rest_post_query', array( $instance, 'rest_query' ) ),
+			'Failed to assert no REST query filter is registered for an unsupported post type.'
+		);
+		$this->assertFalse(
+			has_filter( 'rest_post_collection_params', array( $instance, 'rest_collection_params' ) ),
+			'Failed to assert no REST collection params filter is registered for an unsupported post type.'
+		);
+	}
+
+	/**
+	 * Passes the shadow-source activity and context params through rest_query.
+	 *
+	 * @covers ::rest_query
+	 *
+	 * @return void
+	 */
+	public function test_rest_query_passes_activity_params(): void {
+		$instance = Shadow_Source::get_instance();
+
+		$request = $this->createMock( \WP_REST_Request::class );
+
+		$request->method( 'get_param' )
+			->willReturnMap(
+				array(
+					array( 'has_events_filter', 1 ),
+					array( 'upcoming_events_only', 0 ),
+					array( 'gatherpress_shadow_source_post_id', 42 ),
+					array( 'gatherpress_shadow_source_post_type', 'production' ),
+				)
+			);
+
+		$result = $instance->rest_query( array( 'post_type' => 'gatherpress_venue' ), $request );
+
+		$this->assertSame( 1, $result['has_events_filter'], 'Should pass has_events_filter through.' );
+		$this->assertSame( 0, $result['upcoming_events_only'], 'Should pass upcoming_events_only through.' );
+		$this->assertSame( 42, $result['gatherpress_shadow_source_post_id'], 'Should int-cast the context post id.' );
+		$this->assertSame(
+			'production',
+			$result['gatherpress_shadow_source_post_type'],
+			'Should string-cast the context post type.'
+		);
+	}
+
+	/**
+	 * Leaves args untouched when the activity and context params are absent.
+	 *
+	 * @covers ::rest_query
+	 *
+	 * @return void
+	 */
+	public function test_rest_query_without_params_leaves_args_unchanged(): void {
+		$instance = Shadow_Source::get_instance();
+
+		$request = $this->createMock( \WP_REST_Request::class );
+
+		$request->method( 'get_param' )->willReturn( null );
+
+		$args = array( 'post_type' => 'gatherpress_venue' );
+
+		$this->assertSame( $args, $instance->rest_query( $args, $request ) );
+	}
+
+	/**
+	 * Adds the activity and context params to the REST collection schema.
+	 *
+	 * @covers ::rest_collection_params
+	 *
+	 * @return void
+	 */
+	public function test_rest_collection_params_adds_activity_params(): void {
+		$instance = Shadow_Source::get_instance();
+
+		$result = $instance->rest_collection_params( array( 'orderby' => array( 'enum' => array( 'date' ) ) ) );
+
+		$this->assertSame( 'integer', $result['has_events_filter']['type'] );
+		$this->assertSame( array( 0, 1 ), $result['has_events_filter']['enum'] );
+
+		$this->assertSame( 'integer', $result['upcoming_events_only']['type'] );
+		$this->assertSame( array( 0, 1 ), $result['upcoming_events_only']['enum'] );
+		$this->assertSame( 1, $result['upcoming_events_only']['default'], 'Upcoming-only should default to on.' );
+
+		$this->assertSame( 'integer', $result['gatherpress_shadow_source_post_id']['type'] );
+		$this->assertSame( '__return_true', $result['gatherpress_shadow_source_post_id']['validate_callback'] );
+		$this->assertSame( 'absint', $result['gatherpress_shadow_source_post_id']['sanitize_callback'] );
+
+		$this->assertSame( 'string', $result['gatherpress_shadow_source_post_type']['type'] );
+
+		// Pre-existing params should survive untouched.
+		$this->assertSame( array( 'enum' => array( 'date' ) ), $result['orderby'] );
 	}
 
 	/**

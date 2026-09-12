@@ -736,103 +736,138 @@ final class Query {
 
 		$event_post_types = get_post_types_by_support( Event::SUPPORT );
 
-		// An empty IN () list is invalid SQL, and with no event post type
-		// registered there is nothing the filter could match anyway.
 		if ( empty( $event_post_types ) ) {
 			return array();
 		}
 
-		$private_event_post_types = array();
+		$sql = $this->build_active_shadow_term_sql( $taxonomy, $upcoming, $event_post_types );
 
-		foreach ( $event_post_types as $event_post_type ) {
-			$post_type_object   = get_post_type_object( $event_post_type );
-			$private_capability = $post_type_object->cap->read_private_posts ?? 'read_private_posts';
-
-			if ( current_user_can( $private_capability ) ) {
-				$private_event_post_types[] = $event_post_type;
-			}
-		}
-
-		// Same column and clock the posts_clauses filters use, so this query and
-		// a regular upcoming/past event query always agree on the boundary.
-		$column  = $this->get_datetime_comparison_column( $upcoming ? 'upcoming' : 'past', $upcoming );
-		$current = gmdate( Event::DATETIME_FORMAT, time() );
-		$table   = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
-
-		$post_type_placeholders = implode( ', ', array_fill( 0, count( $event_post_types ), '%s' ) );
-		$private_type_condition = '';
-		$status_args            = array( 'publish' );
-
-		if ( ! empty( $private_event_post_types ) ) {
-			$private_type_placeholders = implode(
-				', ',
-				array_fill( 0, count( $private_event_post_types ), '%s' )
-			);
-			$private_type_condition    = ' OR ( p.post_status = %s AND p.post_type IN ('
-				. $private_type_placeholders . ') )';
-			$status_args               = array_merge(
-				$status_args,
-				array( 'private' ),
-				$private_event_post_types
-			);
-		}
-
-		// Only the generated placeholder runs are interpolated; every value is
-		// still bound through prepare() below.
-		$sql = 'SELECT DISTINCT t.slug'
-			. ' FROM %i AS tr'
-			. ' INNER JOIN %i AS tt ON tt.term_taxonomy_id = tr.term_taxonomy_id'
-			. ' INNER JOIN %i AS t ON t.term_id = tt.term_id'
-			. ' INNER JOIN %i AS e ON e.post_id = tr.object_id'
-			. ' INNER JOIN %i AS p ON p.ID = tr.object_id'
-			. ' WHERE tt.taxonomy = %s'
-			. ' AND p.post_type IN (' . $post_type_placeholders . ')'
-			. ' AND ( p.post_status = %s'
-			. $private_type_condition
-			. ' )'
-			. ' AND t.slug LIKE %s';
-
-		// Two literal fragments rather than an interpolated operator.
-		if ( $upcoming ) {
-			$sql .= ' AND e.%i >= %s';
-		} else {
-			$sql .= ' AND e.%i < %s';
-		}
-
-		$args = array_merge(
-			array(
-				$wpdb->term_relationships,
-				$wpdb->term_taxonomy,
-				$wpdb->terms,
-				$table,
-				$wpdb->posts,
-				$taxonomy,
-			),
-			array_values( $event_post_types ),
-			$status_args,
-			array(
-				$wpdb->esc_like( '_' ) . '%',
-				$column,
-				$current,
-			)
-		);
-
-		// $sql is assembled from literals above: only the generated placeholder
-		// runs are interpolated, and every value is bound by prepare(). The
-		// identifier placeholders use the %i form phpcs does not yet recognize.
-		// The result is time-relative, so a persistent cache would go stale as
-		// events cross the upcoming/past boundary.
+		// Every fragment of $sql was prepared where it was written. The result
+		// is time-relative, so a persistent cache would go stale as events cross
+		// the upcoming/past boundary.
 		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared
-		// phpcs:disable WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching
-		$slugs = $wpdb->get_col( $wpdb->prepare( $sql, $args ) );
+		$slugs = $wpdb->get_col( $sql );
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.NoCaching
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery
-		// phpcs:enable WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
 		// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared
 
 		return array_map( 'strval', (array) $slugs );
+	}
+
+	/**
+	 * Build the statement behind get_active_shadow_term_slugs().
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string   $taxonomy         Shadow taxonomy slug.
+	 * @param bool     $upcoming         True for upcoming events, false for past.
+	 * @param string[] $event_post_types Event post type slugs, never empty.
+	 *
+	 * @return string The prepared statement.
+	 */
+	protected function build_active_shadow_term_sql(
+		string $taxonomy,
+		bool $upcoming,
+		array $event_post_types
+	): string {
+		global $wpdb;
+
+		$column = $this->get_datetime_comparison_column( $upcoming ? 'upcoming' : 'past', $upcoming );
+		$now    = gmdate( Event::DATETIME_FORMAT, time() );
+
+		// Identifier placeholders use the %i form phpcs does not yet recognize.
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:disable WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
+		$from = $wpdb->prepare(
+			'FROM %i AS tr'
+			. ' INNER JOIN %i AS tt ON tt.term_taxonomy_id = tr.term_taxonomy_id'
+			. ' INNER JOIN %i AS t ON t.term_id = tt.term_id'
+			. ' INNER JOIN %i AS e ON e.post_id = tr.object_id'
+			. ' INNER JOIN %i AS p ON p.ID = tr.object_id',
+			$wpdb->term_relationships,
+			$wpdb->term_taxonomy,
+			$wpdb->terms,
+			sprintf( Event::TABLE_FORMAT, $wpdb->prefix ),
+			$wpdb->posts
+		);
+
+		$where = array(
+			$wpdb->prepare( 'tt.taxonomy = %s', $taxonomy ),
+			'p.post_type ' . $this->prepare_in_list( $event_post_types ),
+			$this->prepare_readable_status_clause( $event_post_types ),
+			$wpdb->prepare( 't.slug LIKE %s', $wpdb->esc_like( '_' ) . '%' ),
+			$upcoming
+				? $wpdb->prepare( 'e.%i >= %s', $column, $now )
+				: $wpdb->prepare( 'e.%i < %s', $column, $now ),
+		);
+
+		$sql = 'SELECT DISTINCT t.slug ' . $from . ' WHERE ' . implode( ' AND ', $where );
+		// phpcs:enable WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
+		// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared
+
+		return $sql;
+	}
+
+	/**
+	 * Build the prepared readable-status condition for event post types.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string[] $event_post_types Event post type slugs, never empty.
+	 *
+	 * @return string The prepared condition, parenthesized.
+	 */
+	protected function prepare_readable_status_clause( array $event_post_types ): string {
+		global $wpdb;
+
+		$private_post_types = array_values(
+			array_filter(
+				$event_post_types,
+				static function ( string $post_type ): bool {
+					$post_type_object = get_post_type_object( $post_type );
+
+					return current_user_can(
+						$post_type_object->cap->read_private_posts ?? 'read_private_posts'
+					);
+				}
+			)
+		);
+
+		$clause = $wpdb->prepare( 'p.post_status = %s', 'publish' );
+
+		if ( ! empty( $private_post_types ) ) {
+			$clause .= $wpdb->prepare( ' OR ( p.post_status = %s AND p.post_type ', 'private' )
+				. $this->prepare_in_list( $private_post_types )
+				. ' )';
+		}
+
+		return '( ' . $clause . ' )';
+	}
+
+	/**
+	 * Build a prepared IN list for string values.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string[] $values Values to match, never empty.
+	 *
+	 * @return string The prepared IN fragment.
+	 */
+	protected function prepare_in_list( array $values ): string {
+		global $wpdb;
+
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:disable WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+		$fragment = $wpdb->prepare(
+			'IN (' . implode( ', ', array_fill( 0, count( $values ), '%s' ) ) . ')',
+			array_values( $values )
+		);
+		// phpcs:enable WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+		// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared
+
+		return $fragment;
 	}
 
 	/**
