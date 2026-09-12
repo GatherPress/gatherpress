@@ -1,0 +1,4 @@
+Significance: minor
+Type: fixed
+
+Japanese, Chinese and Korean venue addresses now geocode. Written without spaces, they reached the geocoder as one word and matched nothing, or matched the wrong continent; they are split at their administrative boundaries before being sent.

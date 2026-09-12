@@ -197,6 +197,7 @@ const RsvpManager = ( { defaultStatus, setDefaultStatus } ) => {
 				onChange={ ( status ) => setDefaultStatus( status ) }
 			/>
 			<FormTokenField
+				__next40pxDefaultSize
 				key="query-controls-topics-select"
 				label={ __( 'Members', 'gatherpress' ) }
 				value={

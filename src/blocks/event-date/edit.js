@@ -444,6 +444,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 					/>
 					{ 'both' === effectiveDisplayType && (
 						<TextControl
+							__next40pxDefaultSize
 							label={ __( 'Separator', 'gatherpress' ) }
 							value={ separator }
 							placeholder={ __( 'to', 'gatherpress' ) }
@@ -454,6 +455,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 					) }
 					{ showStartTime && (
 						<TextControl
+							__next40pxDefaultSize
 							label={ __( 'Start date format', 'gatherpress' ) }
 							value={ startDateFormat }
 							placeholder={ formatPlaceholder }
@@ -464,6 +466,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 					) }
 					{ showEndTime && (
 						<TextControl
+							__next40pxDefaultSize
 							label={ __( 'End date format', 'gatherpress' ) }
 							value={ endDateFormat }
 							placeholder={ formatPlaceholder }
@@ -512,6 +515,10 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 					) }
 					<ToggleControl
 						label={ __( 'Link to event', 'gatherpress' ) }
+						help={ __(
+							'Make the date a link to the event page.',
+							'gatherpress'
+						) }
 						checked={ isLink }
 						onChange={ () =>
 							setAttributes( { isLink: ! isLink } )

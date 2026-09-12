@@ -2,6 +2,7 @@
  * External dependencies
  */
 import { describe, expect, it, jest } from '@jest/globals';
+import '@testing-library/jest-dom';
 import { render, fireEvent } from '@testing-library/react';
 
 /**
@@ -40,14 +41,17 @@ jest.mock( '@wordpress/components', () => ( {
 	RadioControl: () => null,
 	Spinner: () => <div>spinner</div>,
 	TextControl: () => null,
-	ToggleControl: ( { label, checked, onChange, disabled } ) => (
-		<button
-			aria-pressed={ checked }
-			disabled={ disabled }
-			onClick={ () => ! disabled && onChange( ! checked ) }
-		>
-			{ label }
-		</button>
+	ToggleControl: ( { label, help, checked, onChange, disabled } ) => (
+		<>
+			<button
+				aria-pressed={ checked }
+				disabled={ disabled }
+				onClick={ () => ! disabled && onChange( ! checked ) }
+			>
+				{ label }
+			</button>
+			{ help && <p>{ help }</p> }
+		</>
 	),
 	ToolbarButton: ( { text } ) => <button>{ text }</button>,
 	ToolbarGroup: ( { children } ) => <div>{ children }</div>,
@@ -162,6 +166,14 @@ describe( 'Event Date Edit isLink', () => {
 		fireEvent.click( getByText( 'Link to event' ) );
 
 		expect( setAttributes ).toHaveBeenCalledWith( { isLink: false } );
+	} );
+
+	it( 'describes what the Link to event toggle does', () => {
+		const { getByText } = renderEdit();
+
+		expect(
+			getByText( 'Make the date a link to the event page.' )
+		).toBeInTheDocument();
 	} );
 } );
 

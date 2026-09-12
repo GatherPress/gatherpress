@@ -64,6 +64,7 @@ const GuestLimit = () => {
 
 	return (
 		<NumberControl
+			__next40pxDefaultSize
 			label={ __( 'Maximum Number of Guests', 'gatherpress' ) }
 			value={ guestLimit }
 			min={ 0 }
