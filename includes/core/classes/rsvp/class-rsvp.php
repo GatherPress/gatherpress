@@ -167,26 +167,18 @@ final class Rsvp {
 	 *
 	 * @since 0.36.0
 	 *
-	 * @param mixed $comment Comment ID or comment object.
+	 * @param int|WP_Comment $comment Comment ID or comment object.
 	 *
 	 * @return bool True if the comment exists and has the RSVP comment type, false otherwise.
 	 */
-	public static function is_rsvp( mixed $comment ): bool {
-		if ( $comment instanceof WP_Comment ) {
-			return self::COMMENT_TYPE === $comment->comment_type;
-		}
-
-		if ( ! is_int( $comment ) && ( ! is_string( $comment ) || ! ctype_digit( $comment ) ) ) {
+	public static function is_comment_type( int|WP_Comment $comment ): bool {
+		// get_comment( 0 ) falls back to the global comment, which in a loop
+		// would make an unrelated comment read as an RSVP.
+		if ( is_int( $comment ) && $comment <= 0 ) {
 			return false;
 		}
 
-		$comment_id = (int) $comment;
-
-		if ( $comment_id <= 0 ) {
-			return false;
-		}
-
-		$comment = get_comment( $comment_id );
+		$comment = get_comment( $comment );
 
 		return $comment instanceof WP_Comment && self::COMMENT_TYPE === $comment->comment_type;
 	}

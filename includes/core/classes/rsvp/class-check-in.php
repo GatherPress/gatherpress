@@ -90,7 +90,7 @@ final class Check_In {
 	 * @return bool True when the RSVP is checked in, false when it is not an RSVP.
 	 */
 	public function check_in( int $rsvp_id ): bool {
-		if ( ! Rsvp::is_rsvp( $rsvp_id ) ) {
+		if ( ! Rsvp::is_comment_type( $rsvp_id ) ) {
 			return false;
 		}
 
@@ -130,7 +130,7 @@ final class Check_In {
 	 * @return bool True when the RSVP is no longer checked in, false when it is not an RSVP.
 	 */
 	public function clear( int $rsvp_id ): bool {
-		if ( ! Rsvp::is_rsvp( $rsvp_id ) ) {
+		if ( ! Rsvp::is_comment_type( $rsvp_id ) ) {
 			return false;
 		}
 

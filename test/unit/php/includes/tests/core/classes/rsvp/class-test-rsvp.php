@@ -1462,13 +1462,13 @@ class Test_Rsvp extends Base {
 	}
 
 	/**
-	 * Tests Rsvp::is_rsvp with different comment types, nonexistent IDs, and comment objects.
+	 * Tests Rsvp::is_comment_type with different comment types, nonexistent IDs, and comment objects.
 	 *
-	 * @covers ::is_rsvp
+	 * @covers ::is_comment_type
 	 *
 	 * @return void
 	 */
-	public function test_is_rsvp(): void {
+	public function test_is_comment_type(): void {
 		$post_id = $this->factory->post->create();
 
 		$rsvp_comment_id = $this->factory->comment->create(
@@ -1487,21 +1487,16 @@ class Test_Rsvp extends Base {
 
 		$rsvp_comment = get_comment( $rsvp_comment_id );
 
-		$this->assertTrue( Rsvp::is_rsvp( $rsvp_comment_id ) );
-		$this->assertTrue( Rsvp::is_rsvp( $rsvp_comment ) );
-		$this->assertFalse( Rsvp::is_rsvp( $regular_comment_id ) );
-		$this->assertFalse( Rsvp::is_rsvp( 0 ) );
-		$this->assertFalse( Rsvp::is_rsvp( 999999 ) );
-		$this->assertFalse( Rsvp::is_rsvp( null ) );
-		$this->assertFalse( Rsvp::is_rsvp( 'invalid' ) );
-		$this->assertFalse( Rsvp::is_rsvp( 1.5 ) );
-		$this->assertFalse( Rsvp::is_rsvp( '1.5' ) );
-		$this->assertFalse( Rsvp::is_rsvp( -1 ) );
+		$this->assertTrue( Rsvp::is_comment_type( $rsvp_comment_id ) );
+		$this->assertTrue( Rsvp::is_comment_type( $rsvp_comment ) );
+		$this->assertFalse( Rsvp::is_comment_type( $regular_comment_id ) );
+		$this->assertFalse( Rsvp::is_comment_type( 0 ) );
+		$this->assertFalse( Rsvp::is_comment_type( 999999 ) );
+		$this->assertFalse( Rsvp::is_comment_type( -1 ) );
 
 		// 0 must not resolve to the global comment even if one is set.
 		$GLOBALS['comment'] = $rsvp_comment; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
-		$this->assertFalse( Rsvp::is_rsvp( 0 ) );
-		$this->assertFalse( Rsvp::is_rsvp( '0' ) );
+		$this->assertFalse( Rsvp::is_comment_type( 0 ) );
 		unset( $GLOBALS['comment'] );
 	}
 }

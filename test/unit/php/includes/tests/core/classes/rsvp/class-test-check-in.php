@@ -216,7 +216,7 @@ class Test_Check_In extends Base {
 	}
 
 	/**
-	 * Coverage for the is_rsvp guard on both writers: a comment that is not an
+	 * Coverage for the is_comment_type guard on both writers: a comment that is not an
 	 * RSVP, and a comment ID that does not exist.
 	 *
 	 * @covers ::check_in

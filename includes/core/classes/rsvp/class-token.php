@@ -80,17 +80,11 @@ final class Token {
 	 * @param int $comment_id The ID of the RSVP comment.
 	 */
 	public function __construct( int $comment_id ) {
-		if ( $comment_id <= 0 ) {
+		if ( ! Rsvp::is_comment_type( $comment_id ) ) {
 			return;
 		}
 
-		$comment = get_comment( $comment_id );
-
-		if ( ! $comment || ! Rsvp::is_rsvp( $comment ) ) {
-			return;
-		}
-
-		$this->comment = $comment;
+		$this->comment = get_comment( $comment_id );
 	}
 
 	/**
