@@ -8,6 +8,7 @@
 
 namespace GatherPress\Tests\Core\Settings;
 
+use GatherPress\Core\Geocoding;
 use GatherPress\Core\Settings\Venues;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -125,6 +126,52 @@ class Test_Venues extends Base {
 			array( 'map_platform' => 'google' ),
 			$section['maps']['options']['venue_map_default_type']['show_if'],
 			'Failed to assert Default Map Type is gated to the Google platform.'
+		);
+
+		// Custom tile URL / attribution (#1267): optional, gated to OSM.
+		foreach ( array( 'map_tile_url_custom', 'map_tile_attribution_custom' ) as $key ) {
+			$this->assertArrayHasKey(
+				$key,
+				$section['maps']['options'],
+				sprintf( 'Failed to assert %s option is present.', $key )
+			);
+			$this->assertSame(
+				'text',
+				$section['maps']['options'][ $key ]['field']['type'],
+				sprintf( 'Failed to assert %s uses text field.', $key )
+			);
+			$this->assertSame(
+				array( 'map_platform' => 'osm' ),
+				$section['maps']['options'][ $key ]['show_if'],
+				sprintf( 'Failed to assert %s is gated to the OSM platform.', $key )
+			);
+		}
+
+		// Geocoding (#1267): Photon URL + country filter.
+		$this->assertSame(
+			'Geocoding',
+			$section['geocoding']['name'],
+			'Failed to assert geocoding section name is Geocoding.'
+		);
+		$this->assertArrayHasKey(
+			'geocoding_provider_url',
+			$section['geocoding']['options'],
+			'Failed to assert geocoding_provider_url option is present.'
+		);
+		$this->assertSame(
+			Geocoding::PHOTON_API_URL,
+			$section['geocoding']['options']['geocoding_provider_url']['field']['options']['default'],
+			'Failed to assert geocoding_provider_url defaults to the public Photon API URL.'
+		);
+		$this->assertArrayHasKey(
+			'geocoding_country_filter',
+			$section['geocoding']['options'],
+			'Failed to assert geocoding_country_filter option is present.'
+		);
+		$this->assertSame(
+			'text',
+			$section['geocoding']['options']['geocoding_country_filter']['field']['type'],
+			'Failed to assert geocoding_country_filter uses text field.'
 		);
 	}
 }

@@ -16,6 +16,7 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Geocoding\Query;
+use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue\Meta as Venue_Meta;
@@ -120,6 +121,13 @@ final class Geocoding {
 	 * @since 0.34.0
 	 */
 	private const GEOCODE_CACHE_TTL = 15 * MINUTE_IN_SECONDS;
+
+	/**
+	 * Number of Photon results requested when a country filter is active.
+	 *
+	 * @since 0.36.0
+	 */
+	private const COUNTRY_FILTER_SEARCH_LIMIT = 10;
 
 	/**
 	 * Cron action fired to backfill structured-address venue meta after a
@@ -683,9 +691,13 @@ final class Geocoding {
 			return $this->build_not_found_payload();
 		}
 
-		$language  = $this->get_language_code();
-		$cache_key = self::GEOCODE_CACHE_PREFIX . md5( $address . '|' . $language ); // NOSONAR.
-		$cached    = get_transient( $cache_key );
+		$language       = $this->get_language_code();
+		$country_filter = $this->get_country_filter();
+		$provider_url   = $this->get_photon_api_url();
+		// Keeps the unfiltered/default-provider cache key's original shape.
+		$cache_suffix = $this->get_cache_key_suffix( $provider_url, $country_filter );
+		$cache_key    = self::GEOCODE_CACHE_PREFIX . md5( $address . '|' . $language . $cache_suffix ); // NOSONAR.
+		$cached       = get_transient( $cache_key );
 
 		// Cached entry written before structured pieces existed lacks a
 		// `house_number` slot. Treat as miss and refetch so the cache
@@ -700,13 +712,14 @@ final class Geocoding {
 			return $cached;
 		}
 
+		// A country filter needs more candidates to pick from.
 		$url = add_query_arg(
 			array(
 				'q'     => $address,
-				'limit' => 1,
+				'limit' => array() === $country_filter ? 1 : self::COUNTRY_FILTER_SEARCH_LIMIT,
 				'lang'  => $language,
 			),
-			$this->get_photon_api_url()
+			$provider_url
 		);
 
 		$response = wp_safe_remote_get(
@@ -746,8 +759,10 @@ final class Geocoding {
 
 		$this->maybe_log_json_decode_failure( $body, $data, 'geocode_address' );
 
-		if ( ! empty( $data['features'] ) && isset( $data['features'][0]['geometry']['coordinates'] ) ) {
-			$feature     = $data['features'][0];
+		$features = ( is_array( $data ) && is_array( $data['features'] ?? null ) ) ? $data['features'] : array();
+		$feature  = $this->select_geocode_feature( $features, $country_filter );
+
+		if ( null !== $feature ) {
 			$coordinates = $feature['geometry']['coordinates'];
 			$properties  = isset( $feature['properties'] ) && is_array( $feature['properties'] )
 				? $feature['properties']
@@ -772,6 +787,59 @@ final class Geocoding {
 		set_transient( $cache_key, $not_found, self::GEOCODE_CACHE_TTL );
 
 		return $not_found;
+	}
+
+	/**
+	 * Picks the first Photon feature with usable coordinates matching the country filter.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<int, mixed> $features       Decoded Photon `features` array.
+	 * @param string[]          $country_filter Lowercased country codes to restrict to; empty means unrestricted.
+	 *
+	 * @return array<string, mixed>|null The selected feature, or null when nothing qualifies.
+	 */
+	private function select_geocode_feature( array $features, array $country_filter ): ?array {
+		foreach ( $features as $feature ) {
+			if ( ! is_array( $feature ) || ! $this->has_valid_coordinates( $feature ) ) {
+				continue;
+			}
+
+			if ( array() === $country_filter ) {
+				return $feature;
+			}
+
+			$properties   = isset( $feature['properties'] ) && is_array( $feature['properties'] )
+				? $feature['properties']
+				: array();
+			$country_code = isset( $properties['countrycode'] ) && is_scalar( $properties['countrycode'] )
+				? strtolower( (string) $properties['countrycode'] )
+				: '';
+
+			if ( in_array( $country_code, $country_filter, true ) ) {
+				return $feature;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Whether a Photon feature has usable `[longitude, latitude]` coordinates.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, mixed> $feature Decoded Photon feature.
+	 *
+	 * @return bool
+	 */
+	private function has_valid_coordinates( array $feature ): bool {
+		$coordinates = $feature['geometry']['coordinates'] ?? null;
+
+		return is_array( $coordinates )
+			&& isset( $coordinates[0], $coordinates[1] )
+			&& is_numeric( $coordinates[0] )
+			&& is_numeric( $coordinates[1] );
 	}
 
 	/**
@@ -842,9 +910,13 @@ final class Geocoding {
 			);
 		}
 
-		$language  = $this->get_language_code();
-		$cache_key = self::SEARCH_CACHE_PREFIX . md5( $query . '|' . $language ); // NOSONAR.
-		$cached    = get_transient( $cache_key );
+		$language       = $this->get_language_code();
+		$country_filter = $this->get_country_filter();
+		$provider_url   = $this->get_photon_api_url();
+		// Keeps the unfiltered/default-provider cache key's original shape.
+		$cache_suffix = $this->get_cache_key_suffix( $provider_url, $country_filter );
+		$cache_key    = self::SEARCH_CACHE_PREFIX . md5( $query . '|' . $language . $cache_suffix ); // NOSONAR.
+		$cached       = get_transient( $cache_key );
 
 		if ( is_array( $cached ) ) {
 			return new WP_REST_Response(
@@ -855,13 +927,14 @@ final class Geocoding {
 			);
 		}
 
+		// A country filter needs more candidates to still fill 5 suggestions.
 		$url = add_query_arg(
 			array(
 				'q'     => $query,
-				'limit' => 5,
+				'limit' => array() === $country_filter ? 5 : self::COUNTRY_FILTER_SEARCH_LIMIT,
 				'lang'  => $language,
 			),
-			$this->get_photon_api_url()
+			$provider_url
 		);
 
 		$response = wp_safe_remote_get(
@@ -901,7 +974,7 @@ final class Geocoding {
 
 		$this->maybe_log_json_decode_failure( $body, $data, 'search_addresses' );
 
-		return $this->build_search_suggestions_response( $data, $cache_key );
+		return $this->build_search_suggestions_response( $data, $cache_key, $country_filter );
 	}
 
 	/**
@@ -915,14 +988,20 @@ final class Geocoding {
 	 * and PHPMD-clean.
 	 *
 	 * @since 0.34.0
+	 * @since 0.36.0 Added `$country_filter`.
 	 *
-	 * @param mixed  $data      Decoded JSON body. Treated as "no results"
-	 *                          when not an array or missing `features`.
-	 * @param string $cache_key Transient key for the cached suggestions.
+	 * @param mixed    $data           Decoded JSON body. Treated as "no results"
+	 *                                 when not an array or missing `features`.
+	 * @param string   $cache_key      Transient key for the cached suggestions.
+	 * @param string[] $country_filter Lowercased country codes to restrict to; empty means unrestricted.
 	 *
 	 * @return WP_REST_Response The response with a `suggestions` array (possibly empty).
 	 */
-	private function build_search_suggestions_response( $data, string $cache_key ): WP_REST_Response {
+	private function build_search_suggestions_response(
+		$data,
+		string $cache_key,
+		array $country_filter = array()
+	): WP_REST_Response {
 		if ( ! is_array( $data ) || empty( $data['features'] ) || ! is_array( $data['features'] ) ) {
 			set_transient( $cache_key, array(), self::SEARCH_CACHE_TTL );
 
@@ -937,18 +1016,27 @@ final class Geocoding {
 		$suggestions = array();
 
 		foreach ( $data['features'] as $feature ) {
-			if ( ! is_array( $feature ) ) {
+			if ( count( $suggestions ) >= 5 ) {
+				break;
+			}
+
+			if ( ! is_array( $feature ) || ! $this->has_valid_coordinates( $feature ) ) {
 				continue;
 			}
 
-			$coords = $feature['geometry']['coordinates'] ?? null;
-			if ( ! is_array( $coords ) || count( $coords ) < 2 ) {
-				continue;
-			}
+			$coords = $feature['geometry']['coordinates'];
 
 			$properties = isset( $feature['properties'] ) && is_array( $feature['properties'] )
 				? $feature['properties']
 				: array();
+
+			$country_code = isset( $properties['countrycode'] ) && is_scalar( $properties['countrycode'] )
+				? strtolower( (string) $properties['countrycode'] )
+				: '';
+
+			if ( array() !== $country_filter && ! in_array( $country_code, $country_filter, true ) ) {
+				continue;
+			}
 
 			$label = $this->format_photon_feature_label( $properties );
 
@@ -1254,11 +1342,19 @@ final class Geocoding {
 	/**
 	 * Photon API base URL (filterable for self-hosted instances).
 	 *
+	 * Layers the `geocoding_provider_url` setting under the filter.
+	 *
 	 * @since 0.34.0
+	 * @since 0.36.0 Layered under the `geocoding_provider_url` setting.
 	 *
 	 * @return string Base URL for Photon `/api` requests.
 	 */
 	private function get_photon_api_url(): string {
+		$configured = trim( (string) Settings::get_instance()->get( 'geocoding_provider_url' ) );
+		$default    = ( '' !== $configured && false !== wp_http_validate_url( $configured ) )
+			? $configured
+			: self::PHOTON_API_URL;
+
 		/**
 		 * Filters the Photon API base URL used for geocoding and address search.
 		 *
@@ -1266,7 +1362,7 @@ final class Geocoding {
 		 *
 		 * @param string $url Default Photon API URL (e.g. https://photon.komoot.io/api).
 		 */
-		$filtered = (string) apply_filters( 'gatherpress_photon_api_url', self::PHOTON_API_URL );
+		$filtered = (string) apply_filters( 'gatherpress_photon_api_url', $default );
 
 		// Fall back to the default when a filter produces an unusable URL; keeps
 		// outbound requests routed through wp_safe_remote_get against a real host.
@@ -1275,6 +1371,46 @@ final class Geocoding {
 		}
 
 		return $filtered;
+	}
+
+	/**
+	 * Country codes the `geocoding_country_filter` setting restricts results to.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string[] Lowercased ISO 3166-1 alpha-2 codes; empty when unrestricted.
+	 */
+	private function get_country_filter(): array {
+		$raw = (string) Settings::get_instance()->get( 'geocoding_country_filter' );
+
+		$codes = array_filter( array_map( 'trim', explode( ',', strtolower( $raw ) ) ) );
+
+		return array_values( array_unique( $codes ) );
+	}
+
+	/**
+	 * Cache-key suffix for a resolved provider URL and country filter.
+	 *
+	 * Empty for the default provider with no filter, so that common case's
+	 * cache key keeps its pre-existing shape; a custom provider and/or an
+	 * active filter each add their own segment, so switching either one
+	 * can't serve a stale result cached under the other.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string   $provider_url   Resolved Photon API base URL.
+	 * @param string[] $country_filter Lowercased country codes to restrict to; empty means unrestricted.
+	 *
+	 * @return string
+	 */
+	private function get_cache_key_suffix( string $provider_url, array $country_filter ): string {
+		$suffix = self::PHOTON_API_URL === $provider_url ? '' : '|provider:' . $provider_url;
+
+		if ( array() !== $country_filter ) {
+			$suffix .= '|' . implode( ',', $country_filter );
+		}
+
+		return $suffix;
 	}
 
 	/**
