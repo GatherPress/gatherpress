@@ -2748,6 +2748,59 @@ class Test_Geocoding extends Base {
 	}
 
 	/**
+	 * Direct branch coverage for get_cache_key_suffix() (#1267, xdebug tracing gap).
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_cache_key_suffix
+	 *
+	 * @return void
+	 */
+	public function test_get_cache_key_suffix_branches(): void {
+		$instance = Geocoding::get_instance();
+
+		$this->assertSame(
+			'',
+			Utility::invoke_hidden_method(
+				$instance,
+				'get_cache_key_suffix',
+				array( Geocoding::PHOTON_API_URL, array() )
+			),
+			'Failed to assert the default provider with no filter has no suffix.'
+		);
+
+		$this->assertSame(
+			'|us,ca',
+			Utility::invoke_hidden_method(
+				$instance,
+				'get_cache_key_suffix',
+				array( Geocoding::PHOTON_API_URL, array( 'us', 'ca' ) )
+			),
+			'Failed to assert the default provider with a filter only adds the filter segment.'
+		);
+
+		$this->assertSame(
+			'|provider:https://example.com/photon',
+			Utility::invoke_hidden_method(
+				$instance,
+				'get_cache_key_suffix',
+				array( 'https://example.com/photon', array() )
+			),
+			'Failed to assert a custom provider with no filter only adds the provider segment.'
+		);
+
+		$this->assertSame(
+			'|provider:https://example.com/photon|us',
+			Utility::invoke_hidden_method(
+				$instance,
+				'get_cache_key_suffix',
+				array( 'https://example.com/photon', array( 'us' ) )
+			),
+			'Failed to assert a custom provider with a filter adds both segments.'
+		);
+	}
+
+	/**
 	 * The country filter (#1267) picks the first matching-country feature.
 	 *
 	 * @since 0.36.0
