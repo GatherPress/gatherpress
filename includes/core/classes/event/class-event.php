@@ -247,7 +247,7 @@ class Event {
 	/**
 	 * Gets raw formatted datetime parts for display.
 	 *
-	 * @since 0.34.0
+	 * @since 0.36.0
 	 *
 	 * @param string $type          Display type: 'start', 'end', or 'both'.
 	 * @param string $start_format  PHP display format for start date/time.
@@ -550,7 +550,7 @@ class Event {
 		string $which,
 		bool $local,
 		array $dt,
-		bool $apply_filter
+		bool $apply_filter = true
 	): string {
 		$date = (string) $dt[ sprintf( 'datetime_%s', $which ) ];
 
@@ -728,7 +728,7 @@ class Event {
 	 *
 	 * @throws Exception If there is an issue while formatting the datetime value.
 	 */
-	private function format_datetime( string $format, string $which, bool $local, bool $apply_filter ): string {
+	private function format_datetime( string $format, string $which, bool $local, bool $apply_filter = true ): string {
 		$dt             = $this->get_datetime();
 		$dt['timezone'] = Utility::maybe_convert_utc_offset( $dt['timezone'] );
 		$tz             = null;
