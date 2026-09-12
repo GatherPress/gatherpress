@@ -8,6 +8,7 @@
 
 namespace GatherPress\Tests\Core;
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Shadow_Source;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
@@ -103,6 +104,25 @@ class Test_Shadow_Source extends Base {
 				),
 				sprintf( 'Failed to assert that delete_post_%s has the delete_term action.', $post_type )
 			);
+			$this->assertSame(
+				10,
+				has_filter(
+					sprintf( 'rest_%s_query', $post_type ),
+					array( $instance, 'rest_query' )
+				),
+				sprintf( 'Failed to assert that rest_%s_query has the rest_query filter.', $post_type )
+			);
+			$this->assertSame(
+				10,
+				has_filter(
+					sprintf( 'rest_%s_collection_params', $post_type ),
+					array( $instance, 'rest_collection_params' )
+				),
+				sprintf(
+					'Failed to assert that rest_%s_collection_params has the rest_collection_params filter.',
+					$post_type
+				)
+			);
 		}
 	}
 
@@ -126,6 +146,96 @@ class Test_Shadow_Source extends Base {
 			has_action( 'delete_post_post', array( $instance, 'delete_term' ) ),
 			'Failed to assert no delete hook is registered for a post type without gatherpress-shadow-source support.'
 		);
+		$this->assertFalse(
+			has_filter( 'rest_post_query', array( $instance, 'rest_query' ) ),
+			'Failed to assert no REST query filter is registered for an unsupported post type.'
+		);
+		$this->assertFalse(
+			has_filter( 'rest_post_collection_params', array( $instance, 'rest_collection_params' ) ),
+			'Failed to assert no REST collection params filter is registered for an unsupported post type.'
+		);
+	}
+
+	/**
+	 * Passes the shadow-source activity and context params through rest_query.
+	 *
+	 * @covers ::rest_query
+	 *
+	 * @return void
+	 */
+	public function test_rest_query_passes_activity_params(): void {
+		$instance = Shadow_Source::get_instance();
+
+		$request = $this->createMock( \WP_REST_Request::class );
+
+		$request->method( 'get_param' )
+			->willReturnMap(
+				array(
+					array( 'has_events_filter', 1 ),
+					array( 'upcoming_events_only', 0 ),
+					array( 'gatherpress_shadow_source_post_id', 42 ),
+					array( 'gatherpress_shadow_source_post_type', 'production' ),
+				)
+			);
+
+		$result = $instance->rest_query( array( 'post_type' => 'gatherpress_venue' ), $request );
+
+		$this->assertSame( 1, $result['has_events_filter'], 'Should pass has_events_filter through.' );
+		$this->assertSame( 0, $result['upcoming_events_only'], 'Should pass upcoming_events_only through.' );
+		$this->assertSame( 42, $result['gatherpress_shadow_source_post_id'], 'Should int-cast the context post id.' );
+		$this->assertSame(
+			'production',
+			$result['gatherpress_shadow_source_post_type'],
+			'Should string-cast the context post type.'
+		);
+	}
+
+	/**
+	 * Leaves args untouched when the activity and context params are absent.
+	 *
+	 * @covers ::rest_query
+	 *
+	 * @return void
+	 */
+	public function test_rest_query_without_params_leaves_args_unchanged(): void {
+		$instance = Shadow_Source::get_instance();
+
+		$request = $this->createMock( \WP_REST_Request::class );
+
+		$request->method( 'get_param' )->willReturn( null );
+
+		$args = array( 'post_type' => 'gatherpress_venue' );
+
+		$this->assertSame( $args, $instance->rest_query( $args, $request ) );
+	}
+
+	/**
+	 * Adds the activity and context params to the REST collection schema.
+	 *
+	 * @covers ::rest_collection_params
+	 *
+	 * @return void
+	 */
+	public function test_rest_collection_params_adds_activity_params(): void {
+		$instance = Shadow_Source::get_instance();
+
+		$result = $instance->rest_collection_params( array( 'orderby' => array( 'enum' => array( 'date' ) ) ) );
+
+		$this->assertSame( 'integer', $result['has_events_filter']['type'] );
+		$this->assertSame( array( 0, 1 ), $result['has_events_filter']['enum'] );
+
+		$this->assertSame( 'integer', $result['upcoming_events_only']['type'] );
+		$this->assertSame( array( 0, 1 ), $result['upcoming_events_only']['enum'] );
+		$this->assertSame( 1, $result['upcoming_events_only']['default'], 'Upcoming-only should default to on.' );
+
+		$this->assertSame( 'integer', $result['gatherpress_shadow_source_post_id']['type'] );
+		$this->assertSame( '__return_true', $result['gatherpress_shadow_source_post_id']['validate_callback'] );
+		$this->assertSame( 'absint', $result['gatherpress_shadow_source_post_id']['sanitize_callback'] );
+
+		$this->assertSame( 'string', $result['gatherpress_shadow_source_post_type']['type'] );
+
+		// Pre-existing params should survive untouched.
+		$this->assertSame( array( 'enum' => array( 'date' ) ), $result['orderby'] );
 	}
 
 	/**
@@ -261,14 +371,20 @@ class Test_Shadow_Source extends Base {
 
 		unregister_taxonomy_for_object_type( Venue::TAXONOMY, 'gatherpress_event' );
 
-		$instance->attach_taxonomies_to_object_types();
+		try {
+			$instance->attach_taxonomies_to_object_types();
 
-		$this->assertFalse(
-			is_object_in_taxonomy( 'gatherpress_event', Venue::TAXONOMY ),
-			'When the filter resolves to an empty list, no event CPTs should be wired.'
-		);
+			$this->assertFalse(
+				is_object_in_taxonomy( 'gatherpress_event', Venue::TAXONOMY ),
+				'When the filter resolves to an empty list, no event CPTs should be wired.'
+			);
+		} finally {
+			remove_filter( 'gatherpress_shadow_taxonomy_object_types', $short_circuit, PHP_INT_MAX );
 
-		remove_filter( 'gatherpress_shadow_taxonomy_object_types', $short_circuit, PHP_INT_MAX );
+			// Restore the venue taxonomy onto gatherpress_event so the activity
+			// filter tests below still resolve source posts.
+			register_taxonomy_for_object_type( Venue::TAXONOMY, 'gatherpress_event' );
+		}
 	}
 
 	/**
@@ -1116,5 +1232,244 @@ class Test_Shadow_Source extends Base {
 		);
 
 		wp_delete_post( $venue_post_id, true );
+	}
+
+	/**
+	 * Resolves shadow-source posts that have at least one upcoming event
+	 * attached, dropping those whose events are all past.
+	 *
+	 * @covers ::get_source_post_ids_by_event_activity
+	 *
+	 * @return void
+	 */
+	public function test_get_source_post_ids_by_event_activity_splits_upcoming_and_past(): void {
+		$instance = Shadow_Source::get_instance();
+
+		$active_venue  = $this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'activity-active-venue',
+			)
+		)->get();
+		$archive_venue = $this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'activity-archive-venue',
+			)
+		)->get();
+
+		$this->create_activity_event( 'activity-active-venue', 'upcoming' );
+		$this->create_activity_event( 'activity-archive-venue', 'past' );
+
+		$upcoming_ids = $instance->get_source_post_ids_by_event_activity( Venue::POST_TYPE, true );
+
+		$this->assertContains(
+			$active_venue->ID,
+			$upcoming_ids,
+			'A venue with an upcoming event should resolve.'
+		);
+		$this->assertNotContains(
+			$archive_venue->ID,
+			$upcoming_ids,
+			'A venue with only past events should not resolve for upcoming.'
+		);
+
+		$past_ids = $instance->get_source_post_ids_by_event_activity( Venue::POST_TYPE, false );
+
+		$this->assertContains(
+			$archive_venue->ID,
+			$past_ids,
+			'A venue with a past event should resolve for the past state.'
+		);
+		$this->assertNotContains(
+			$active_venue->ID,
+			$past_ids,
+			'A venue with an upcoming event should not resolve for the past state.'
+		);
+	}
+
+	/**
+	 * A source post tagged by two events with the same activity resolves once —
+	 * the returned ID list is deduplicated.
+	 *
+	 * @covers ::get_source_post_ids_by_event_activity
+	 *
+	 * @return void
+	 */
+	public function test_get_source_post_ids_by_event_activity_deduplicates_multiple_events(): void {
+		$instance = Shadow_Source::get_instance();
+
+		$venue = $this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'activity-multi-venue',
+			)
+		)->get();
+
+		$this->create_activity_event( 'activity-multi-venue', 'upcoming' );
+		$this->create_activity_event( 'activity-multi-venue', 'upcoming' );
+
+		$ids = $instance->get_source_post_ids_by_event_activity( Venue::POST_TYPE, true );
+
+		$this->assertCount( 1, $ids, 'A venue with multiple matching events should resolve exactly once.' );
+		$this->assertSame( array( $venue->ID ), $ids, 'Expected the deduplicated source ID.' );
+	}
+
+	/**
+	 * Sentinel terms (slugs without a leading underscore, e.g. `online-event`)
+	 * are skipped when resolving source posts from event activity.
+	 *
+	 * @covers ::get_source_post_ids_by_event_activity
+	 *
+	 * @return void
+	 */
+	public function test_get_source_post_ids_by_event_activity_skips_sentinel_term(): void {
+		$instance = Shadow_Source::get_instance();
+
+		// An event tagged only with the sentinel (which is not a real source).
+		$event = $this->mock->post(
+			array( 'post_type' => 'gatherpress_event' )
+		)->get();
+		wp_set_post_terms( $event->ID, 'online-event', Venue::TAXONOMY );
+		$this->set_event_datetime( $event->ID, 'upcoming' );
+
+		$ids = $instance->get_source_post_ids_by_event_activity( Venue::POST_TYPE, true );
+
+		$this->assertSame( array(), $ids, 'A sentinel-only event should not resolve to a source post.' );
+	}
+
+	/**
+	 * A taxonomy that does not tag an event post type makes the activity filter
+	 * inapplicable; the method bails with null so callers skip the filter.
+	 *
+	 * @covers ::get_source_post_ids_by_event_activity
+	 *
+	 * @return void
+	 */
+	public function test_get_source_post_ids_by_event_activity_bails_when_taxonomy_not_on_events(): void {
+		$instance = Shadow_Source::get_instance();
+
+		// 'category' is a built-in taxonomy that is not attached to events and
+		// is not a valid shadow taxonomy for the venue type.
+		$ids = $instance->get_source_post_ids_by_event_activity( 'category', true );
+
+		$this->assertNull( $ids, 'An uninvolved taxonomy should bail to null.' );
+	}
+
+	/**
+	 * A real shadow taxonomy that is not wired onto the event post type bails:
+	 * the venue taxonomy resolves, but its object_type does not include events.
+	 *
+	 * @covers ::get_source_post_ids_by_event_activity
+	 *
+	 * @return void
+	 */
+	public function test_get_source_post_ids_by_event_activity_bails_when_taxonomy_has_no_events(): void {
+		$instance = Shadow_Source::get_instance();
+
+		// A real shadow taxonomy still exists, but without the event wiring it
+		// cannot drive the activity filter, so the method bails to null.
+		unregister_taxonomy_for_object_type( Venue::TAXONOMY, 'gatherpress_event' );
+		$this->assertFalse(
+			is_object_in_taxonomy( 'gatherpress_event', Venue::TAXONOMY ),
+			'Precondition: the venue taxonomy should not tag events for this test.'
+		);
+
+		$ids = $instance->get_source_post_ids_by_event_activity( Venue::POST_TYPE, true );
+
+		$this->assertNull( $ids, 'A shadow taxonomy not wired to events should bail to null.' );
+
+		// Restore the wiring so the setUp baseline does not leak into later tests.
+		register_taxonomy_for_object_type( Venue::TAXONOMY, 'gatherpress_event' );
+	}
+
+	/**
+	 * A source post whose shadow term exists but whose events carry no terms
+	 * of that taxonomy resolves to nothing.
+	 *
+	 * @covers ::get_source_post_ids_by_event_activity
+	 *
+	 * @return void
+	 */
+	public function test_get_source_post_ids_by_event_activity_returns_empty_for_untagged_events(): void {
+		$instance = Shadow_Source::get_instance();
+
+		$this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'activity-untagged-venue',
+			)
+		)->get();
+
+		// An upcoming event at no venue.
+		$event = $this->mock->post(
+			array( 'post_type' => 'gatherpress_event' )
+		)->get();
+		$this->set_event_datetime( $event->ID, 'upcoming' );
+
+		$this->assertSame(
+			array(),
+			$instance->get_source_post_ids_by_event_activity( Venue::POST_TYPE, true ),
+			'Source posts should not resolve when no event references them.'
+		);
+	}
+
+	/**
+	 * Hits the zero-events early-bail in get_source_post_ids_by_event_activity
+	 * (line 664 `return array()`). Unlike the untagged test, the query matches
+	 * **no** events at all, so the empty check fires before any term walk.
+	 *
+	 * @covers ::get_source_post_ids_by_event_activity
+	 *
+	 * @return void
+	 */
+	public function test_get_source_post_ids_by_event_activity_returns_empty_when_no_events(): void {
+		$instance = Shadow_Source::get_instance();
+
+		$this->assertSame(
+			array(),
+			$instance->get_source_post_ids_by_event_activity( Venue::POST_TYPE, true ),
+			'No matching events should resolve to an empty array.'
+		);
+	}
+
+	/**
+	 * Creates an event at the given venue slug with upcoming or past datetime.
+	 *
+	 * @param string $post_name Venue post_name to tag the event with.
+	 * @param string $state     'upcoming' or 'past'.
+	 *
+	 * @return int Event post ID.
+	 */
+	protected function create_activity_event( string $post_name, string $state ): int {
+		$event = $this->mock->post(
+			array( 'post_type' => 'gatherpress_event' )
+		)->get();
+		wp_set_post_terms( $event->ID, '_' . $post_name, Venue::TAXONOMY );
+		$this->set_event_datetime( $event->ID, $state );
+
+		return $event->ID;
+	}
+
+	/**
+	 * Writes an upcoming or past datetime pair onto an event post.
+	 *
+	 * @param int    $event_id Event post ID.
+	 * @param string $state    'upcoming' or 'past'.
+	 *
+	 * @return void
+	 */
+	protected function set_event_datetime( int $event_id, string $state ): void {
+		$event  = new Event( $event_id );
+		$start  = new \DateTime( 'upcoming' === $state ? 'tomorrow' : 'yesterday' );
+		$format = 'Y-m-d H:i:s';
+
+		$event->save_datetimes(
+			array(
+				'datetime_start' => $start->format( $format ),
+				'datetime_end'   => $start->modify( '+1 hour' )->format( $format ),
+				'timezone'       => 'America/New_York',
+			)
+		);
 	}
 }
