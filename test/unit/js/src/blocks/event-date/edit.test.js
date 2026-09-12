@@ -41,11 +41,12 @@ jest.mock( '@wordpress/components', () => ( {
 	RadioControl: () => null,
 	Spinner: () => <div>spinner</div>,
 	TextControl: () => null,
-	ToggleControl: ( { label, help, checked, onChange } ) => (
+	ToggleControl: ( { label, help, checked, onChange, disabled } ) => (
 		<>
 			<button
 				aria-pressed={ checked }
-				onClick={ () => onChange( ! checked ) }
+				disabled={ disabled }
+				onClick={ () => ! disabled && onChange( ! checked ) }
 			>
 				{ label }
 			</button>
@@ -58,13 +59,15 @@ jest.mock( '@wordpress/components', () => ( {
 
 jest.mock( '@src/components/DateTimeRange', () => () => null );
 
+const mockSettings = {
+	dateFormat: 'F j, Y',
+	timeFormat: 'g:i a',
+	showTimezone: false,
+	showViewerTimezone: true,
+};
+
 jest.mock( '@src/helpers/editor-settings', () => ( {
-	getFromSettings: ( key ) =>
-		( {
-			dateFormat: 'F j, Y',
-			timeFormat: 'g:i a',
-			showTimezone: false,
-		} )[ key ],
+	getFromSettings: ( key ) => mockSettings[ key ],
 } ) );
 
 jest.mock( '@src/helpers/event', () => ( {
@@ -171,6 +174,52 @@ describe( 'Event Date Edit isLink', () => {
 		expect(
 			getByText( 'Make the date a link to the event page.' )
 		).toBeInTheDocument();
+	} );
+} );
+
+describe( 'Event Date Edit displayType', () => {
+	it( 'reads an empty displayType as both, the way render.php does', () => {
+		// Unreachable through the UI, since block.json defaults displayType to
+		// "both", but hand-authored and migrated markup can carry the empty
+		// string. `Event::get_display_datetime()` renders a full range for it,
+		// so the editor has to preview one or the author is shown something no
+		// viewer will get.
+		const { container } = renderEdit( { displayType: '' } );
+
+		expect( container.textContent ).toContain(
+			'2026-08-01 18:00 to 2026-08-01 20:00'
+		);
+	} );
+} );
+
+describe( 'Event Date Edit showViewerTime', () => {
+	it( 'renders the toggle disabled when timezone is not appended', () => {
+		const { getByText } = renderEdit( { showTimezone: 'no' } );
+		const toggle = getByText( 'Show viewer local time' );
+
+		expect( toggle ).toBeDefined();
+		expect( toggle.hasAttribute( 'disabled' ) ).toBe( true );
+	} );
+
+	it( 'renders the toggle enabled when timezone is appended', () => {
+		const setAttributes = jest.fn();
+		const { getByText } = renderEdit(
+			{ showTimezone: 'yes', showViewerTime: false },
+			setAttributes
+		);
+		const toggle = getByText( 'Show viewer local time' );
+
+		expect( toggle.hasAttribute( 'disabled' ) ).toBe( false );
+		fireEvent.click( toggle );
+		expect( setAttributes ).toHaveBeenCalledWith( { showViewerTime: true } );
+	} );
+
+	it( 'does not render the toggle when showViewerTimezone is disabled globally', () => {
+		mockSettings.showViewerTimezone = false;
+		const { queryByText } = renderEdit( { showTimezone: 'yes' } );
+
+		expect( queryByText( 'Show viewer local time' ) ).toBeNull();
+		mockSettings.showViewerTimezone = true;
 	} );
 } );
 
