@@ -40,7 +40,7 @@ function gatherpress_resolve_since_file( string $file, string $version ): bool {
 		throw new RuntimeException( "Unable to read {$file}" );
 	}
 
-	$resolved = preg_replace( '/(@since\s+)TBD\b/', '$1' . $version, $contents );
+	$resolved = preg_replace( '/(@since\s+)TBD\b/', '${1}' . $version, $contents );
 
 	if ( null === $resolved ) {
 		throw new RuntimeException( "Unable to process {$file}" );

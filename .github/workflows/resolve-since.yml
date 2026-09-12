@@ -30,6 +30,15 @@ jobs:
         php-version: '8.1'
         coverage: none
 
+    - name: Smoke test the resolver
+      run: |
+        root="$(mktemp -d)"
+        mkdir -p "$root/includes" "$root/src"
+        echo '{"version":"0.36.0-alpha.1"}' > "$root/package.json"
+        printf '<?php\n/**\n * @since TBD\n */\n' > "$root/includes/x.php"
+        php -r 'require ".github/scripts/resolve-since.php"; exit( gatherpress_run_since_resolver( $argv[1] ) );' "$root"
+        grep -q '@since 0.36.0' "$root/includes/x.php"
+
     - name: Resolve @since tags
       run: php .github/scripts/resolve-since.php
 
