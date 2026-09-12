@@ -13,7 +13,6 @@ use GatherPress\Core\Rsvp\Query;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Tests\Base;
-use PMC\Unit_Test\Utility;
 use WP_Block;
 use WP_Comment;
 use WP_Comment_Query;
@@ -194,48 +193,101 @@ class Test_Query extends Base {
 	}
 
 	/**
-	 * Test excluding RSVP from type array removes RSVP and reindexes array.
+	 * Seeds one ordinary comment, one pingback, and one RSVP on a post.
+	 *
+	 * @param int $post_id The post to attach the comments to.
+	 *
+	 * @return array<string, int> Comment IDs keyed by `comment`, `pingback`, and `rsvp`.
+	 */
+	protected function seed_comment_mix( int $post_id ): array {
+		return array(
+			'comment'  => $this->factory->comment->create( array( 'comment_post_ID' => $post_id ) ),
+			'pingback' => $this->factory->comment->create(
+				array(
+					'comment_post_ID' => $post_id,
+					'comment_type'    => 'pingback',
+				)
+			),
+			'rsvp'     => $this->factory->comment->create(
+				array(
+					'comment_post_ID' => $post_id,
+					'comment_type'    => Rsvp::COMMENT_TYPE,
+				)
+			),
+		);
+	}
+
+	/**
+	 * Runs a comment query through the live `pre_get_comments` exclusion and
+	 * returns the matching comment IDs in date order.
+	 *
+	 * @param array<string, mixed> $args Query arguments.
+	 *
+	 * @return int[] Matching comment IDs.
+	 */
+	protected function query_comment_ids( array $args ): array {
+		Query::get_instance();
+
+		$query = new WP_Comment_Query(
+			array_merge(
+				array(
+					'fields'  => 'ids',
+					'orderby' => 'comment_ID',
+					'order'   => 'ASC',
+				),
+				$args
+			)
+		);
+
+		return array_values( array_map( 'intval', (array) $query->comments ) );
+	}
+
+	/**
+	 * A `type` array keeps every type the caller named, and the RSVP rows drop
+	 * out through `type__not_in`.
 	 *
 	 * @covers ::exclude_rsvp_from_comment_query
 	 *
 	 * @return void
 	 */
 	public function test_exclude_rsvp_from_type_array(): void {
-		$instance = Query::get_instance();
-		$query    = new WP_Comment_Query();
+		$post_id = $this->factory->post->create();
+		$ids     = $this->seed_comment_mix( $post_id );
 
-		$query->query_vars['type']     = array( 'comment', Rsvp::COMMENT_TYPE, 'pingback' );
-		$query->query_vars['type__in'] = '';
-
-		$instance->exclude_rsvp_from_comment_query( $query );
-
-		$this->assertEquals(
-			array( 'comment', 'pingback' ),
-			$query->query_vars['type'],
-			'RSVP comment type should be removed from type array and array should be reindexed'
+		$this->assertSame(
+			array( $ids['comment'], $ids['pingback'] ),
+			$this->query_comment_ids(
+				array(
+					'post_id' => $post_id,
+					'type'    => array( 'comment', Rsvp::COMMENT_TYPE, 'pingback' ),
+				)
+			),
+			'Every type the caller named except the RSVP type should be returned.'
 		);
 	}
 
 	/**
-	 * Test excluding RSVP when type is a single RSVP string sets type to empty.
+	 * A `type` naming only the RSVP type returns nothing while the exclusion
+	 * is active, rather than every other comment on the post.
 	 *
 	 * @covers ::exclude_rsvp_from_comment_query
 	 *
 	 * @return void
 	 */
 	public function test_exclude_rsvp_from_type_string(): void {
-		$instance = Query::get_instance();
-		$query    = new WP_Comment_Query();
+		$post_id = $this->factory->post->create();
 
-		$query->query_vars['type']     = Rsvp::COMMENT_TYPE;
-		$query->query_vars['type__in'] = '';
+		$this->seed_comment_mix( $post_id );
 
-		$instance->exclude_rsvp_from_comment_query( $query );
-
-		$this->assertEquals(
-			'',
-			$query->query_vars['type'],
-			'Type should be set to empty string when only RSVP comment type is present'
+		$this->assertSame(
+			array(),
+			$this->query_comment_ids(
+				array(
+					'post_id' => $post_id,
+					'type'    => Rsvp::COMMENT_TYPE,
+				)
+			),
+			'An RSVP-only allow-list should return no comments while the exclusion is active.'
 		);
 	}
 
@@ -271,26 +323,25 @@ class Test_Query extends Base {
 	}
 
 	/**
-	 * A caller asking for `all` keeps that, and the RSVP type is still excluded.
+	 * A caller asking for `all` still gets every non-RSVP comment and no RSVPs.
 	 *
 	 * @covers ::exclude_rsvp_from_comment_query
 	 *
 	 * @return void
 	 */
 	public function test_exclude_rsvp_from_type_all(): void {
-		$instance = Query::get_instance();
-		$query    = new WP_Comment_Query();
+		$post_id = $this->factory->post->create();
+		$ids     = $this->seed_comment_mix( $post_id );
 
-		$query->query_vars['type']     = 'all';
-		$query->query_vars['type__in'] = '';
-
-		$instance->exclude_rsvp_from_comment_query( $query );
-
-		$this->assertSame( 'all', $query->query_vars['type'], 'Type should be left as the caller set it.' );
 		$this->assertSame(
-			array( Rsvp::COMMENT_TYPE ),
-			$query->query_vars['type__not_in'],
-			'RSVP type should be excluded through type__not_in.'
+			array( $ids['comment'], $ids['pingback'] ),
+			$this->query_comment_ids(
+				array(
+					'post_id' => $post_id,
+					'type'    => 'all',
+				)
+			),
+			'Asking for all types should return everything but the RSVP.'
 		);
 	}
 
@@ -420,87 +471,57 @@ class Test_Query extends Base {
 	}
 
 	/**
-	 * Direct coverage for the `type` / `type__in` normalizer: arrays come back
-	 * reindexed without the RSVP type, an RSVP-only string becomes empty, and
-	 * any other string is left alone.
-	 *
-	 * @covers ::remove_rsvp_type
-	 *
-	 * @return void
-	 */
-	public function test_remove_rsvp_type(): void {
-		$instance = Query::get_instance();
-
-		$this->assertSame(
-			array( 'comment', 'pingback' ),
-			Utility::invoke_hidden_method(
-				$instance,
-				'remove_rsvp_type',
-				array( array( 'comment', Rsvp::COMMENT_TYPE, 'pingback' ) )
-			),
-			'An array should be reindexed without the RSVP type.'
-		);
-		$this->assertSame(
-			'',
-			Utility::invoke_hidden_method( $instance, 'remove_rsvp_type', array( Rsvp::COMMENT_TYPE ) ),
-			'An RSVP-only string should become empty.'
-		);
-		$this->assertSame(
-			'comment',
-			Utility::invoke_hidden_method( $instance, 'remove_rsvp_type', array( 'comment' ) ),
-			'Any other string should be left alone.'
-		);
-	}
-
-
-	/**
-	 * Test excluding RSVP from type__in array removes RSVP and reindexes array.
+	 * A `type__in` array keeps every type the caller named, and the RSVP rows
+	 * drop out through `type__not_in`.
 	 *
 	 * @covers ::exclude_rsvp_from_comment_query
 	 *
 	 * @return void
 	 */
 	public function test_exclude_rsvp_from_type_in_array(): void {
-		$instance = Query::get_instance();
-		$query    = new WP_Comment_Query();
+		$post_id = $this->factory->post->create();
+		$ids     = $this->seed_comment_mix( $post_id );
 
-		$query->query_vars['type']     = '';
-		$query->query_vars['type__in'] = array( 'comment', Rsvp::COMMENT_TYPE, 'custom' );
-
-		$instance->exclude_rsvp_from_comment_query( $query );
-
-		$this->assertEquals(
-			array( 'comment', 'custom' ),
-			$query->query_vars['type__in'],
-			'RSVP comment type should be removed from type__in array and array should be reindexed'
+		$this->assertSame(
+			array( $ids['comment'], $ids['pingback'] ),
+			$this->query_comment_ids(
+				array(
+					'post_id'  => $post_id,
+					'type__in' => array( 'comment', Rsvp::COMMENT_TYPE, 'pingback' ),
+				)
+			),
+			'Every type the caller named except the RSVP type should be returned.'
 		);
 	}
 
 	/**
-	 * Test excluding RSVP when type__in is a single RSVP string sets type__in to empty.
+	 * A `type__in` naming only the RSVP type returns nothing while the
+	 * exclusion is active, rather than every other comment on the post.
 	 *
 	 * @covers ::exclude_rsvp_from_comment_query
 	 *
 	 * @return void
 	 */
 	public function test_exclude_rsvp_from_type_in_string(): void {
-		$instance = Query::get_instance();
-		$query    = new WP_Comment_Query();
+		$post_id = $this->factory->post->create();
 
-		$query->query_vars['type']     = '';
-		$query->query_vars['type__in'] = Rsvp::COMMENT_TYPE;
+		$this->seed_comment_mix( $post_id );
 
-		$instance->exclude_rsvp_from_comment_query( $query );
-
-		$this->assertEquals(
-			'',
-			$query->query_vars['type__in'],
-			'Type__in should be set to empty string when only RSVP comment type is present'
+		$this->assertSame(
+			array(),
+			$this->query_comment_ids(
+				array(
+					'post_id'  => $post_id,
+					'type__in' => Rsvp::COMMENT_TYPE,
+				)
+			),
+			'An RSVP-only type__in should return no comments while the exclusion is active.'
 		);
 	}
 
 	/**
-	 * Test excluding RSVP from both type and type__in variables simultaneously.
+	 * `type` and `type__in` are both left as the caller wrote them; only
+	 * `type__not_in` changes.
 	 *
 	 * @covers ::exclude_rsvp_from_comment_query
 	 *
@@ -515,47 +536,44 @@ class Test_Query extends Base {
 
 		$instance->exclude_rsvp_from_comment_query( $query );
 
-		$this->assertEquals(
-			array( 'comment' ),
+		$this->assertSame(
+			array( 'comment', Rsvp::COMMENT_TYPE ),
 			$query->query_vars['type'],
-			'RSVP should be removed from type array'
+			'Type should be left as the caller set it.'
 		);
-		$this->assertEquals(
-			array( 'pingback' ),
+		$this->assertSame(
+			array( 'pingback', Rsvp::COMMENT_TYPE ),
 			$query->query_vars['type__in'],
-			'RSVP should be removed from type__in array'
+			'Type__in should be left as the caller set it.'
+		);
+		$this->assertSame(
+			array( Rsvp::COMMENT_TYPE ),
+			$query->query_vars['type__not_in'],
+			'RSVP type should be excluded through type__not_in.'
 		);
 	}
 
 	/**
 	 * Test the gatherpress_rsvp_comment_query_exclusion filter short-circuits
-	 * the exclusion when an integration returns false, leaving both `type` and
-	 * `type__in` untouched so the caller's original query vars survive.
+	 * the exclusion when an integration returns false, so the RSVP type never
+	 * reaches `type__not_in` and RSVP rows come back.
 	 *
 	 * @covers ::exclude_rsvp_from_comment_query
 	 *
 	 * @return void
 	 */
 	public function test_exclude_rsvp_filter_can_short_circuit(): void {
-		$instance = Query::get_instance();
-		$query    = new WP_Comment_Query();
-
-		$query->query_vars['type']     = array( 'comment', Rsvp::COMMENT_TYPE, 'pingback' );
-		$query->query_vars['type__in'] = array( 'comment', Rsvp::COMMENT_TYPE );
+		$post_id = $this->factory->post->create();
+		$ids     = $this->seed_comment_mix( $post_id );
 
 		add_filter( 'gatherpress_rsvp_comment_query_exclusion', '__return_false' );
-		$instance->exclude_rsvp_from_comment_query( $query );
+		$results = $this->query_comment_ids( array( 'post_id' => $post_id ) );
 		remove_filter( 'gatherpress_rsvp_comment_query_exclusion', '__return_false' );
 
-		$this->assertEquals(
-			array( 'comment', Rsvp::COMMENT_TYPE, 'pingback' ),
-			$query->query_vars['type'],
-			'Type array should be untouched when the filter returns false'
-		);
-		$this->assertEquals(
-			array( 'comment', Rsvp::COMMENT_TYPE ),
-			$query->query_vars['type__in'],
-			'Type__in array should be untouched when the filter returns false'
+		$this->assertSame(
+			array( $ids['comment'], $ids['pingback'], $ids['rsvp'] ),
+			$results,
+			'Opting out through the filter should let the RSVP through.'
 		);
 	}
 
@@ -613,15 +631,15 @@ class Test_Query extends Base {
 		$instance->exclude_rsvp_from_comment_query( $query );
 		remove_filter( 'gatherpress_rsvp_comment_query_exclusion', '__return_true' );
 
-		$this->assertEquals(
-			array( 'comment' ),
-			$query->query_vars['type'],
+		$this->assertSame(
+			array( Rsvp::COMMENT_TYPE ),
+			$query->query_vars['type__not_in'],
 			'Returning true from the filter should preserve the existing exclusion behavior'
 		);
 	}
 
 	/**
-	 * Test excluding RSVP makes no changes when RSVP is not present in arrays.
+	 * Test excluding RSVP leaves allow-lists alone when RSVP is not present in them.
 	 *
 	 * @covers ::exclude_rsvp_from_comment_query
 	 *
@@ -636,15 +654,20 @@ class Test_Query extends Base {
 
 		$instance->exclude_rsvp_from_comment_query( $query );
 
-		$this->assertEquals(
+		$this->assertSame(
 			array( 'comment', 'pingback' ),
 			$query->query_vars['type'],
 			'Type array should remain unchanged when RSVP is not present'
 		);
-		$this->assertEquals(
+		$this->assertSame(
 			array( 'custom', 'review' ),
 			$query->query_vars['type__in'],
 			'Type__in array should remain unchanged when RSVP is not present'
+		);
+		$this->assertSame(
+			array( Rsvp::COMMENT_TYPE ),
+			$query->query_vars['type__not_in'],
+			'RSVP type should still be excluded through type__not_in'
 		);
 	}
 

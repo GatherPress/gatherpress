@@ -154,8 +154,10 @@ final class Query {
 	/**
 	 * Exclude RSVP comments from a query.
 	 *
-	 * Strips the RSVP type out of any `type` / `type__in` allow-list the caller
-	 * passed, then excludes it through `type__not_in`. Excluding, rather than
+	 * Adds the RSVP type to `type__not_in` and leaves `type` / `type__in` as the
+	 * caller wrote them; core applies the `NOT IN` on top of any allow-list, so
+	 * a mixed list keeps its other types and a list naming only the RSVP type
+	 * returns nothing while the exclusion is active. Excluding, rather than
 	 * rebuilding an allow-list from the comment types stored in the database,
 	 * closes three gaps: the allow-list is empty when RSVPs are the only stored
 	 * type, and core reads an empty `type` as no restriction at all; a caller
@@ -200,38 +202,12 @@ final class Query {
 			return;
 		}
 
-		$query->query_vars['type'] = $this->remove_rsvp_type( $query->query_vars['type'] ?? '' );
-
-		if ( ! empty( $query->query_vars['type__in'] ) ) {
-			$query->query_vars['type__in'] = $this->remove_rsvp_type( $query->query_vars['type__in'] );
-		}
-
 		// Core accepts a string or an array here; drop the empty default so the
 		// RSVP type never sits next to a blank entry.
 		$type_not_in   = array_diff( (array) ( $query->query_vars['type__not_in'] ?? '' ), array( '' ) );
 		$type_not_in[] = Rsvp::COMMENT_TYPE;
 
 		$query->query_vars['type__not_in'] = array_values( array_unique( $type_not_in ) );
-	}
-
-	/**
-	 * Removes the RSVP comment type from a `type` or `type__in` query var.
-	 *
-	 * Keeps the shape the caller used: an array comes back reindexed without
-	 * the RSVP type, and a string naming only the RSVP type becomes empty.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @param string|string[] $types The query var as the caller set it.
-	 *
-	 * @return string|string[] The query var without the RSVP type.
-	 */
-	protected function remove_rsvp_type( string|array $types ): string|array {
-		if ( is_array( $types ) ) {
-			return array_values( array_diff( $types, array( Rsvp::COMMENT_TYPE ) ) );
-		}
-
-		return Rsvp::COMMENT_TYPE === $types ? '' : $types;
 	}
 
 	/**

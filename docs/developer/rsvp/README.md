@@ -14,11 +14,13 @@ admin moderation lists, REST endpoints, federation plugins) would surface them
 alongside real comments unless filtered out. GatherPress hooks
 `pre_get_comments` in `Rsvp\Query::exclude_rsvp_from_comment_query()`
 ([`includes/core/classes/rsvp/class-query.php`](../../../includes/core/classes/rsvp/class-query.php)),
-which strips the `gatherpress_rsvp` type from any `type` / `type__in`
-allow-list the caller passed and adds it to `type__not_in`. Core turns that
-into `comment_type NOT IN ('gatherpress_rsvp')`, so the exclusion holds
-whatever else is stored: a site whose only comments are RSVPs, a caller asking
-for `all`, and a query that only sets `type__in` all stay RSVP-free.
+which adds the `gatherpress_rsvp` type to `type__not_in` and leaves `type` /
+`type__in` as the caller wrote them. Core turns that into
+`comment_type NOT IN ('gatherpress_rsvp')` on top of any allow-list, so the
+exclusion holds whatever else is stored: a site whose only comments are RSVPs,
+a caller asking for `all`, and a query that only sets `type__in` all stay
+RSVP-free, and an allow-list naming only the RSVP type returns nothing while
+the exclusion is active.
 
 The `comment_type` column is not indexed in WordPress core (see
 [Trac #59488](https://core.trac.wordpress.org/ticket/59488)), so the type
