@@ -163,8 +163,12 @@ final class Query {
 	 * was widened to every stored type, because core merges `type` and
 	 * `type__in` into one `IN` list (#2282).
 	 *
-	 * Note: The comment_type field is not currently indexed in WordPress core,
-	 * which may impact query performance. See https://core.trac.wordpress.org/ticket/59488
+	 * Note: The comment_type column is not indexed in WordPress core, so the
+	 * exclusion is evaluated per row after the post ID or approval index has
+	 * narrowed the query. Once a `comment_type` index exists, whether core adds
+	 * one (https://core.trac.wordpress.org/ticket/59488) or a large site adds
+	 * its own, the `NOT IN` becomes a range scan on that index, the same as an
+	 * allow-list would.
 	 *
 	 * @since 0.34.0
 	 *

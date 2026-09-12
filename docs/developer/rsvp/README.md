@@ -12,20 +12,25 @@ infrastructure for free.
 Because RSVPs live in `wp_comments`, generic comment queries (sidebar widgets,
 admin moderation lists, REST endpoints, federation plugins) would surface them
 alongside real comments unless filtered out. GatherPress hooks
-`pre_get_comments` and removes the `gatherpress_rsvp` type from each query's
-`type` / `type__in` vars in `Rsvp\Query::exclude_rsvp_from_comment_query()`
-([`includes/core/classes/rsvp/class-query.php`](../../../includes/core/classes/rsvp/class-query.php)).
+`pre_get_comments` in `Rsvp\Query::exclude_rsvp_from_comment_query()`
+([`includes/core/classes/rsvp/class-query.php`](../../../includes/core/classes/rsvp/class-query.php)),
+which strips the `gatherpress_rsvp` type from any `type` / `type__in`
+allow-list the caller passed and adds it to `type__not_in`. Core turns that
+into `comment_type NOT IN ('gatherpress_rsvp')`, so the exclusion holds
+whatever else is stored: a site whose only comments are RSVPs, a caller asking
+for `all`, and a query that only sets `type__in` all stay RSVP-free.
 
-The exclusion mutates query vars rather than appending a `WHERE comment_type !=
-…` clause because the `comment_type` column is not indexed in WordPress core
-(see [Trac #59488](https://core.trac.wordpress.org/ticket/59488)). Pre-populating
-the type list lets MySQL use the existing index and avoids a full-table scan on
-sites with large comment volumes.
+The `comment_type` column is not indexed in WordPress core (see
+[Trac #59488](https://core.trac.wordpress.org/ticket/59488)), so the type
+condition is evaluated per row after the post ID or approval index has
+narrowed the query. Sites with large comment volumes can add a `comment_type`
+index themselves; once one exists, whether core adds it or the site does, the
+`NOT IN` becomes a range scan on that index.
 
 ### When the default exclusion gets in the way
 
-Mutating shared query vars is the right trade-off for performance but can
-conflict with other plugins that read or write the same vars on
+The exclusion touches shared query vars, which can conflict with other plugins
+that read or write the same vars on
 `pre_get_comments`. The canonical example is the [ActivityPub
 plugin](https://github.com/Automattic/wordpress-activitypub) — federation
 interactions (likes, boosts, quotes) flow through `wp_comments` with their own
