@@ -6,6 +6,7 @@ import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import {
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalNumberControl as NumberControl,
+	ExternalLink,
 	PanelBody,
 	SelectControl,
 	TextControl,
@@ -209,6 +210,7 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 						} }
 					/>
 					<TextControl
+						__next40pxDefaultSize
 						label={ __( 'Field Name', 'gatherpress' ) }
 						value={ fieldName }
 						onChange={ ( value ) => {
@@ -228,6 +230,7 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 
 					{ 'hidden' !== fieldType && (
 						<TextControl
+							__next40pxDefaultSize
 							label={ __( 'Help Text', 'gatherpress' ) }
 							value={ helpText }
 							onChange={ ( value ) =>
@@ -294,6 +297,7 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 					{ ! [ 'hidden', 'checkbox', 'radio', 'select' ].includes( fieldType ) && (
 						<>
 							<TextControl
+								__next40pxDefaultSize
 								label={ __( 'Placeholder', 'gatherpress' ) }
 								value={ placeholder }
 								onChange={ ( value ) =>
@@ -305,6 +309,7 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 								) }
 							/>
 							<NumberControl
+								__next40pxDefaultSize
 								label={
 									'number' === fieldType
 										? __( 'Minimum Value', 'gatherpress' )
@@ -333,6 +338,7 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 								}
 							/>
 							<NumberControl
+								__next40pxDefaultSize
 								label={
 									'number' === fieldType
 										? __( 'Maximum Value', 'gatherpress' )
@@ -365,6 +371,7 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 
 					{ ! [ 'hidden' ].includes( fieldType ) && (
 						<TextControl
+							__next40pxDefaultSize
 							label={ __( 'Autocomplete', 'gatherpress' ) }
 							value={ autocomplete }
 							onChange={ ( value ) => {
@@ -383,13 +390,9 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 										'gatherpress',
 									) }
 									<br />
-									<a
-										href="https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/autocomplete"
-										target="_blank"
-										rel="noopener noreferrer"
-									>
+									<ExternalLink href="https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/autocomplete">
 										{ __( 'Learn more', 'gatherpress' ) }
-									</a>
+									</ExternalLink>
 								</>
 							}
 						/>

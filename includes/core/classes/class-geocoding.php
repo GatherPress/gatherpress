@@ -15,6 +15,7 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Geocoding\Query;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
@@ -684,7 +685,7 @@ final class Geocoding {
 	public function geocode_to_result( string $address ): array|WP_Error {
 		// Cap oversize input for parity with search_addresses(); protects
 		// upstream from pathological requests.
-		$address = mb_substr( trim( $address ), 0, 200 );
+		$address = Query::normalize( mb_substr( trim( $address ), 0, 200 ) );
 
 		if ( '' === $address ) {
 			return $this->build_not_found_payload();
@@ -891,9 +892,16 @@ final class Geocoding {
 			);
 		}
 
-		$query = mb_substr( trim( $query ), 0, 200 );
+		$query     = mb_substr( trim( $query ), 0, 200 );
+		$too_short = mb_strlen( $query ) < self::ADDRESS_SEARCH_MIN_QUERY_LENGTH;
+		$query     = Query::normalize( $query );
 
-		if ( mb_strlen( $query ) < self::ADDRESS_SEARCH_MIN_QUERY_LENGTH ) {
+		// The minimum length weighs what the visitor typed, since it is about
+		// whether they have entered enough to be worth a lookup. The empty
+		// check weighs what would be sent: a search that was nothing but a
+		// postal code normalizes away to nothing, and would otherwise reach
+		// Photon as `q=` and be cached against a key every such search shares.
+		if ( $too_short || '' === $query ) {
 			return new WP_REST_Response(
 				array(
 					'suggestions' => array(),

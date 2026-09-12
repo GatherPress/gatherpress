@@ -368,6 +368,7 @@ class Test_Assets extends Base {
 		// `maybe_enqueue_styles` filter handles conditional frontend loading).
 		set_current_screen( 'front' );
 		wp_dequeue_style( 'gatherpress-utility-style' );
+		wp_dequeue_script( 'gatherpress-new-tab-notice' );
 
 		$instance->register_block_assets();
 
@@ -378,6 +379,19 @@ class Test_Assets extends Base {
 		$this->assertFalse(
 			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
 			'Failed to assert gatherpress-utility-style is not enqueued on frontend.'
+		);
+		$this->assertTrue(
+			wp_script_is( 'gatherpress-new-tab-notice', 'registered' ),
+			'Failed to assert the new-tab notice script is registered on frontend.'
+		);
+		$this->assertFalse(
+			wp_script_is( 'gatherpress-new-tab-notice', 'enqueued' ),
+			'Failed to assert the new-tab notice script is not enqueued on frontend.'
+		);
+		$this->assertContains(
+			'wp-i18n',
+			wp_scripts()->registered['gatherpress-new-tab-notice']->deps,
+			'Failed to assert the script can translate its own string.'
 		);
 
 		// Admin / block-editor context: style is also enqueued so it reaches
@@ -524,6 +538,8 @@ class Test_Assets extends Base {
 		// First register the utility style.
 		$instance->register_block_assets();
 
+		wp_dequeue_script( 'gatherpress-new-tab-notice' );
+
 		$block_content = '<div class="wp-block-gatherpress-event-date">Test</div>';
 		$block         = array(
 			'blockName' => 'gatherpress/event-date',
@@ -532,6 +548,10 @@ class Test_Assets extends Base {
 		$this->assertFalse(
 			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
 			'Failed to assert gatherpress-utility-style is not enqueued before filter.'
+		);
+		$this->assertFalse(
+			wp_script_is( 'gatherpress-new-tab-notice', 'enqueued' ),
+			'Failed to assert the new-tab notice script is not enqueued before filter.'
 		);
 
 		$result = $instance->maybe_enqueue_styles( $block_content, $block );
@@ -544,6 +564,10 @@ class Test_Assets extends Base {
 		$this->assertTrue(
 			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
 			'Failed to assert gatherpress-utility-style is enqueued for GatherPress blocks.'
+		);
+		$this->assertTrue(
+			wp_script_is( 'gatherpress-new-tab-notice', 'enqueued' ),
+			'Failed to assert the new-tab notice script is enqueued for GatherPress blocks.'
 		);
 	}
 
@@ -562,6 +586,7 @@ class Test_Assets extends Base {
 
 		// Dequeue if it was enqueued by previous test.
 		wp_dequeue_style( 'gatherpress-utility-style' );
+		wp_dequeue_script( 'gatherpress-new-tab-notice' );
 
 		$block_content = '<div class="wp-block-paragraph">Test</div>';
 		$block         = array(
@@ -578,6 +603,10 @@ class Test_Assets extends Base {
 		$this->assertFalse(
 			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
 			'Failed to assert gatherpress-utility-style is not enqueued for non-GatherPress blocks.'
+		);
+		$this->assertFalse(
+			wp_script_is( 'gatherpress-new-tab-notice', 'enqueued' ),
+			'Failed to assert the new-tab notice script is not enqueued for non-GatherPress blocks.'
 		);
 	}
 
@@ -626,6 +655,7 @@ class Test_Assets extends Base {
 
 		$instance->register_block_assets();
 		wp_dequeue_style( 'gatherpress-utility-style' );
+		wp_dequeue_script( 'gatherpress-new-tab-notice' );
 
 		$callback = static function (): array {
 			return array( 'gatherpress-awesome/' );
@@ -642,6 +672,10 @@ class Test_Assets extends Base {
 		$this->assertTrue(
 			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
 			'Failed to assert gatherpress-utility-style is enqueued for a filter-added prefix.'
+		);
+		$this->assertTrue(
+			wp_script_is( 'gatherpress-new-tab-notice', 'enqueued' ),
+			'Failed to assert the new-tab notice script is enqueued for a filter-added prefix.'
 		);
 	}
 

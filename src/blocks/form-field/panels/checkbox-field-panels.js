@@ -28,8 +28,8 @@ export default function CheckboxFieldPanels( { attributes, setAttributes } ) {
 			<PanelBody title={ __( 'Label Styles', 'gatherpress' ) }>
 				<BaseControl>
 					<FontSizePicker
+						__next40pxDefaultSize
 						withReset={ true }
-						size="__unstable-large"
 						onChange={ ( value ) =>
 							setAttributes( { labelFontSize: value } )
 						}
@@ -37,6 +37,7 @@ export default function CheckboxFieldPanels( { attributes, setAttributes } ) {
 					/>
 				</BaseControl>
 				<RangeControl
+					__next40pxDefaultSize
 					label={ __( 'Line Height', 'gatherpress' ) }
 					value={ labelLineHeight }
 					onChange={ ( value ) =>
