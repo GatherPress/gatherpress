@@ -212,16 +212,16 @@ When working with this codebase:
 
 Apply to PHP PHPDoc blocks and JS JSDoc blocks alike.
 
-- **Never write `@since 1.0.0`**. 1.0.0 has not been released — every `@since` must resolve to a tag that exists in `git tag`. The tag floor is `0.27.0`; the current development line is `0.34.0`. New symbols added on `develop` past the latest tag take the next planned release version (i.e. whatever `0.34.0` resolves to today).
-    - ✅ Good: `@since 0.33.0` (filter shipped in 0.33.0 stable).
-    - ✅ Good: `@since 0.34.0` for anything introduced in the current dev cycle.
-    - ❌ Bad: `@since 1.0.0`, `@since unreleased`, `@since TBD`.
-- **Derive `@since` from git history, not memory.** When adding a new symbol, set `@since` to the target release. When touching an existing symbol whose `@since` looks wrong, verify against history before fixing:
+- **Use `@since TBD` for new symbols on `develop`.** The resolver workflow replaces it with the current stable development version after the change lands. The tag floor is `0.27.0`; patch branches are not processed by this workflow and must carry their resolved release version.
+    - ✅ Good: `@since TBD` for a new symbol on `develop`.
+    - ✅ Good: `@since 0.33.0` for an existing symbol shipped in 0.33.0 stable.
+    - ❌ Bad: `@since 1.0.0` or `@since unreleased`.
+- **Derive existing `@since` values from git history, not memory.** When adding a new symbol, use `@since TBD`. When touching an existing symbol whose `@since` looks wrong, verify against history before fixing:
     - Find the introducing commit: `git log --all --reverse -G "['\"]hook_name['\"]" --format=%H | head -1` for hooks, `git log --all --reverse -G "function method_name" -- path/to/file.php --format=%H | head -1` for methods.
     - Resolve to the first containing tag: `git describe --contains <sha>`.
     - Strip pre-release suffixes — `0.33.0-alpha.1` → `@since 0.33.0`. The `@since` tag tracks the **stable base version**, not the alpha/beta/rc the symbol first landed on.
     - Floor anything older than `0.27.0` to `0.27.0`.
-    - Commits not yet in any tag map to the next release (currently `0.34.0`).
+    - Commits not yet in any tag map to the release that contains them. On `develop`, leave new symbols as `@since TBD` until the resolver workflow runs.
 - **Signature changes after introduction don't move `@since`.** If a filter shipped in 0.30.0 and grew a third `@param` in 0.31.0, the docblock stays `@since 0.30.0`. Document the parameter evolution in a separate sentence or `@since` note inside the param's description — matches WordPress core convention.
 - **Hook-name search must require quotes.** A PHP variable named `$gatherpress_template_path` shares a token with the filter `'gatherpress_template_path'`. When dating a hook from history, the search pattern needs the quote chars: `-G "['\"]hook_name['\"]"`. Bare-word matching picks up unrelated commits and dates the hook too early.
 - **Canonical docblock shape** — short description first, then `@since` separated by a blank `* ` line, then the `@param` group separated by another blank `* ` line, then `@return` separated by another blank `* ` line:
