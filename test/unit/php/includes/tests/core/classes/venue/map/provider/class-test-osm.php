@@ -780,4 +780,33 @@ class Test_OSM extends Base {
 
 		$settings->set( 'map_tile_url_custom', '' );
 	}
+
+	/**
+	 * A custom tile URL is never keyed, even when it resolves to a CARTO host.
+	 *
+	 * The settings UI documents the CARTO key as "ignored when a custom tile
+	 * layer URL is set above" — that has to hold regardless of which host the
+	 * custom URL happens to point at.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_tile_url_template
+	 *
+	 * @return void
+	 */
+	public function test_get_tile_url_template_custom_setting_on_a_carto_host_is_not_keyed(): void {
+		$settings = Settings::get_instance();
+
+		$settings->set( 'carto_api_key', 'abc123' );
+		$settings->set( 'map_tile_url_custom', 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png' );
+
+		$this->assertSame(
+			'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+			Utility::invoke_hidden_method( new OSM(), 'get_tile_url_template' ),
+			'Failed to assert a custom URL on a CARTO host is left unkeyed.'
+		);
+
+		$settings->set( 'carto_api_key', '' );
+		$settings->set( 'map_tile_url_custom', '' );
+	}
 }

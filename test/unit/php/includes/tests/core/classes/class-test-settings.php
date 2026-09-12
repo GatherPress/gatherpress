@@ -3559,4 +3559,33 @@ class Test_Settings extends Base {
 
 		$instance->set( 'carto_api_key', '' );
 	}
+
+	/**
+	 * A custom tile URL is never keyed, even when it resolves to a CARTO host.
+	 *
+	 * The settings UI documents the CARTO key as "ignored when a custom tile
+	 * layer URL is set above" — that has to hold regardless of which host the
+	 * custom URL happens to point at.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_map_tile_url
+	 *
+	 * @return void
+	 */
+	public function test_get_map_tile_url_custom_setting_on_a_carto_host_is_not_keyed(): void {
+		$instance = Settings::get_instance();
+
+		$instance->set( 'carto_api_key', 'abc123' );
+		$instance->set( 'map_tile_url_custom', 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png' );
+
+		$this->assertSame(
+			'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+			Settings::get_map_tile_url(),
+			'Failed to assert a custom URL on a CARTO host is left unkeyed.'
+		);
+
+		$instance->set( 'carto_api_key', '' );
+		$instance->set( 'map_tile_url_custom', '' );
+	}
 }

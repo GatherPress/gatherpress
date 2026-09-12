@@ -277,7 +277,18 @@ class Settings {
 		 */
 		$filtered = (string) apply_filters( 'gatherpress_interactive_map_tile_url', $default );
 
-		return self::add_map_tile_key( '' !== $filtered ? $filtered : self::MAP_TILE_URL );
+		if ( '' === $filtered ) {
+			return self::add_map_tile_key( self::MAP_TILE_URL );
+		}
+
+		// The CARTO key belongs only to the built-in default: a custom URL
+		// is documented as overriding CARTO entirely, even when it happens
+		// to resolve to a CARTO-allowlisted host.
+		if ( '' !== $custom ) {
+			return $filtered;
+		}
+
+		return self::add_map_tile_key( $filtered );
 	}
 
 	/**

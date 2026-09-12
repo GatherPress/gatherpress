@@ -392,6 +392,13 @@ final class OSM extends Base {
 		// Static compositor makes direct requests, so `{s}` needs resolving.
 		$template = str_replace( '{s}', 'a', $template );
 
+		// The CARTO key belongs only to the built-in default: a custom URL
+		// is documented as overriding CARTO entirely, even when it happens
+		// to resolve to a CARTO-allowlisted host.
+		if ( '' !== $custom ) {
+			return $template;
+		}
+
 		return Settings::add_map_tile_key( $template );
 	}
 
