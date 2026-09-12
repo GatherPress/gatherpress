@@ -13,7 +13,7 @@ use GatherPress\Core\Rsvp\Query;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Tests\Base;
-use stdClass;
+use WP_Block;
 use WP_Comment;
 use WP_Comment_Query;
 use WP_REST_Response;
@@ -47,12 +47,6 @@ class Test_Query extends Base {
 				'name'     => 'comments_clauses',
 				'priority' => 10,
 				'callback' => array( $instance, 'taxonomy_query' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'wp_insert_comment',
-				'priority' => 10,
-				'callback' => array( $instance, 'maybe_invalidate_comment_types_cache' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -199,56 +193,110 @@ class Test_Query extends Base {
 	}
 
 	/**
-	 * Test excluding RSVP from type array removes RSVP and reindexes array.
+	 * Seeds one ordinary comment, one pingback, and one RSVP on a post.
+	 *
+	 * @param int $post_id The post to attach the comments to.
+	 *
+	 * @return array<string, int> Comment IDs keyed by `comment`, `pingback`, and `rsvp`.
+	 */
+	protected function seed_comment_mix( int $post_id ): array {
+		return array(
+			'comment'  => $this->factory->comment->create( array( 'comment_post_ID' => $post_id ) ),
+			'pingback' => $this->factory->comment->create(
+				array(
+					'comment_post_ID' => $post_id,
+					'comment_type'    => 'pingback',
+				)
+			),
+			'rsvp'     => $this->factory->comment->create(
+				array(
+					'comment_post_ID' => $post_id,
+					'comment_type'    => Rsvp::COMMENT_TYPE,
+				)
+			),
+		);
+	}
+
+	/**
+	 * Runs a comment query through the live `pre_get_comments` exclusion and
+	 * returns the matching comment IDs in date order.
+	 *
+	 * @param array<string, mixed> $args Query arguments.
+	 *
+	 * @return int[] Matching comment IDs.
+	 */
+	protected function query_comment_ids( array $args ): array {
+		Query::get_instance();
+
+		$query = new WP_Comment_Query(
+			array_merge(
+				array(
+					'fields'  => 'ids',
+					'orderby' => 'comment_ID',
+					'order'   => 'ASC',
+				),
+				$args
+			)
+		);
+
+		return array_values( array_map( 'intval', (array) $query->comments ) );
+	}
+
+	/**
+	 * A `type` array keeps every type the caller named, and the RSVP rows drop
+	 * out through `type__not_in`.
 	 *
 	 * @covers ::exclude_rsvp_from_comment_query
 	 *
 	 * @return void
 	 */
 	public function test_exclude_rsvp_from_type_array(): void {
-		$instance = Query::get_instance();
-		$query    = new WP_Comment_Query();
+		$post_id = $this->factory->post->create();
+		$ids     = $this->seed_comment_mix( $post_id );
 
-		$query->query_vars['type']     = array( 'comment', Rsvp::COMMENT_TYPE, 'pingback' );
-		$query->query_vars['type__in'] = '';
-
-		$instance->exclude_rsvp_from_comment_query( $query );
-
-		$this->assertEquals(
-			array( 'comment', 'pingback' ),
-			$query->query_vars['type'],
-			'RSVP comment type should be removed from type array and array should be reindexed'
+		$this->assertSame(
+			array( $ids['comment'], $ids['pingback'] ),
+			$this->query_comment_ids(
+				array(
+					'post_id' => $post_id,
+					'type'    => array( 'comment', Rsvp::COMMENT_TYPE, 'pingback' ),
+				)
+			),
+			'Every type the caller named except the RSVP type should be returned.'
 		);
 	}
 
 	/**
-	 * Test excluding RSVP when type is a single RSVP string sets type to empty.
+	 * A `type` naming only the RSVP type returns nothing while the exclusion
+	 * is active, rather than every other comment on the post.
 	 *
 	 * @covers ::exclude_rsvp_from_comment_query
 	 *
 	 * @return void
 	 */
 	public function test_exclude_rsvp_from_type_string(): void {
-		$instance = Query::get_instance();
-		$query    = new WP_Comment_Query();
+		$post_id = $this->factory->post->create();
 
-		$query->query_vars['type']     = Rsvp::COMMENT_TYPE;
-		$query->query_vars['type__in'] = '';
+		$this->seed_comment_mix( $post_id );
 
-		$instance->exclude_rsvp_from_comment_query( $query );
-
-		$this->assertEquals(
-			'',
-			$query->query_vars['type'],
-			'Type should be set to empty string when only RSVP comment type is present'
+		$this->assertSame(
+			array(),
+			$this->query_comment_ids(
+				array(
+					'post_id' => $post_id,
+					'type'    => Rsvp::COMMENT_TYPE,
+				)
+			),
+			'An RSVP-only allow-list should return no comments while the exclusion is active.'
 		);
 	}
 
 	/**
-	 * Test excluding RSVP from empty type sets default comment types.
+	 * With no `type` set, the query var stays empty and the RSVP type lands in
+	 * `type__not_in`, so a site whose only stored comment type is the RSVP type
+	 * still excludes it (#2282).
 	 *
 	 * @covers ::exclude_rsvp_from_comment_query
-	 * @covers ::get_all_comment_types
 	 *
 	 * @return void
 	 */
@@ -256,88 +304,224 @@ class Test_Query extends Base {
 		$instance = Query::get_instance();
 		$query    = new WP_Comment_Query();
 
-		// Clear any existing transient.
-		delete_transient( Query::COMMENT_TYPES_CACHE_KEY );
-
-		// Create a custom comment type to test dynamic fetching.
-		$this->factory->comment->create(
-			array(
-				'comment_type' => 'custom_type',
-			)
-		);
-
-		$query->query_vars['type']     = '';
-		$query->query_vars['type__in'] = '';
+		$query->query_vars['type']         = '';
+		$query->query_vars['type__in']     = '';
+		$query->query_vars['type__not_in'] = '';
 
 		$instance->exclude_rsvp_from_comment_query( $query );
 
-		// Should include all types except RSVP.
-		$this->assertNotContains(
-			'gatherpress_rsvp',
+		$this->assertSame(
+			'',
 			$query->query_vars['type'],
-			'RSVP type should be excluded'
+			'Type should stay empty rather than being rebuilt from the stored comment types.'
 		);
-
-		// Should include the custom type.
-		$this->assertContains(
-			'custom_type',
-			$query->query_vars['type'],
-			'Custom comment type should be included'
+		$this->assertSame(
+			array( Rsvp::COMMENT_TYPE ),
+			$query->query_vars['type__not_in'],
+			'RSVP type should be excluded through type__not_in.'
 		);
-
-		// Clean up.
-		delete_transient( Query::COMMENT_TYPES_CACHE_KEY );
 	}
 
+	/**
+	 * A caller asking for `all` still gets every non-RSVP comment and no RSVPs.
+	 *
+	 * @covers ::exclude_rsvp_from_comment_query
+	 *
+	 * @return void
+	 */
+	public function test_exclude_rsvp_from_type_all(): void {
+		$post_id = $this->factory->post->create();
+		$ids     = $this->seed_comment_mix( $post_id );
+
+		$this->assertSame(
+			array( $ids['comment'], $ids['pingback'] ),
+			$this->query_comment_ids(
+				array(
+					'post_id' => $post_id,
+					'type'    => 'all',
+				)
+			),
+			'Asking for all types should return everything but the RSVP.'
+		);
+	}
 
 	/**
-	 * Test excluding RSVP from type__in array removes RSVP and reindexes array.
+	 * The RSVP type is appended to whatever `type__not_in` the caller passed,
+	 * string or array, without duplicating it.
+	 *
+	 * @covers ::exclude_rsvp_from_comment_query
+	 *
+	 * @return void
+	 */
+	public function test_exclude_rsvp_merges_into_existing_type_not_in(): void {
+		$instance = Query::get_instance();
+		$query    = new WP_Comment_Query();
+
+		$query->query_vars['type']         = '';
+		$query->query_vars['type__in']     = '';
+		$query->query_vars['type__not_in'] = 'pingback';
+
+		$instance->exclude_rsvp_from_comment_query( $query );
+
+		$this->assertSame(
+			array( 'pingback', Rsvp::COMMENT_TYPE ),
+			$query->query_vars['type__not_in'],
+			'A string type__not_in should become an array that keeps the caller type.'
+		);
+
+		$query = new WP_Comment_Query();
+
+		$query->query_vars['type']         = '';
+		$query->query_vars['type__in']     = '';
+		$query->query_vars['type__not_in'] = array( 'trackback', Rsvp::COMMENT_TYPE );
+
+		$instance->exclude_rsvp_from_comment_query( $query );
+
+		$this->assertSame(
+			array( 'trackback', Rsvp::COMMENT_TYPE ),
+			$query->query_vars['type__not_in'],
+			'An RSVP type already in type__not_in should not be duplicated.'
+		);
+	}
+
+	/**
+	 * A query that only sets `type__in` keeps `type` empty, so core's merge of
+	 * the two does not widen it to every stored comment type (#1637).
+	 *
+	 * @covers ::exclude_rsvp_from_comment_query
+	 *
+	 * @return void
+	 */
+	public function test_exclude_rsvp_keeps_type_in_only_query_narrow(): void {
+		Query::get_instance();
+
+		$post_id = $this->factory->post->create();
+
+		$this->factory->comment->create( array( 'comment_post_ID' => $post_id ) );
+		$this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+		$custom_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => 'custom_type',
+			)
+		);
+
+		$query = new WP_Comment_Query(
+			array(
+				'post_id'  => $post_id,
+				'type__in' => array( 'custom_type' ),
+				'fields'   => 'ids',
+			)
+		);
+
+		$this->assertSame( '', $query->query_vars['type'], 'Type should not be rebuilt when only type__in is set.' );
+		$this->assertSame(
+			array( $custom_id ),
+			array_map( 'intval', $query->comments ),
+			'Only the type__in comment should be returned.'
+		);
+	}
+
+	/**
+	 * Reproduces #2282: with the RSVP type as the only comment type stored, the
+	 * comments block's query still comes back empty, and returns only the
+	 * ordinary comment once one exists.
+	 *
+	 * @covers ::exclude_rsvp_from_comment_query
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_is_excluded_when_it_is_the_only_comment_type(): void {
+		Query::get_instance();
+
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$user_id = $this->factory->user->create();
+
+		( new Rsvp( $post_id ) )->save( $user_id, 'attending' );
+
+		$block          = new WP_Block( array( 'blockName' => 'core/comments' ) );
+		$block->context = array( 'postId' => $post_id );
+
+		$query = new WP_Comment_Query( build_comment_query_vars_from_block( $block ) );
+
+		$this->assertContains(
+			Rsvp::COMMENT_TYPE,
+			$query->query_vars['type__not_in'],
+			'The RSVP type should be excluded through type__not_in.'
+		);
+		$this->assertSame( array(), $query->comments, 'The RSVP should not surface as a comment.' );
+
+		$comment_id = $this->factory->comment->create( array( 'comment_post_ID' => $post_id ) );
+
+		$query = new WP_Comment_Query( build_comment_query_vars_from_block( $block ) );
+
+		// Threaded results are keyed by comment ID, so compare values only.
+		$this->assertSame(
+			array( $comment_id ),
+			array_values(
+				array_map( static fn ( WP_Comment $comment ): int => (int) $comment->comment_ID, $query->comments )
+			),
+			'Only the ordinary comment should be returned.'
+		);
+	}
+
+	/**
+	 * A `type__in` array keeps every type the caller named, and the RSVP rows
+	 * drop out through `type__not_in`.
 	 *
 	 * @covers ::exclude_rsvp_from_comment_query
 	 *
 	 * @return void
 	 */
 	public function test_exclude_rsvp_from_type_in_array(): void {
-		$instance = Query::get_instance();
-		$query    = new WP_Comment_Query();
+		$post_id = $this->factory->post->create();
+		$ids     = $this->seed_comment_mix( $post_id );
 
-		$query->query_vars['type']     = '';
-		$query->query_vars['type__in'] = array( 'comment', Rsvp::COMMENT_TYPE, 'custom' );
-
-		$instance->exclude_rsvp_from_comment_query( $query );
-
-		$this->assertEquals(
-			array( 'comment', 'custom' ),
-			$query->query_vars['type__in'],
-			'RSVP comment type should be removed from type__in array and array should be reindexed'
+		$this->assertSame(
+			array( $ids['comment'], $ids['pingback'] ),
+			$this->query_comment_ids(
+				array(
+					'post_id'  => $post_id,
+					'type__in' => array( 'comment', Rsvp::COMMENT_TYPE, 'pingback' ),
+				)
+			),
+			'Every type the caller named except the RSVP type should be returned.'
 		);
 	}
 
 	/**
-	 * Test excluding RSVP when type__in is a single RSVP string sets type__in to empty.
+	 * A `type__in` naming only the RSVP type returns nothing while the
+	 * exclusion is active, rather than every other comment on the post.
 	 *
 	 * @covers ::exclude_rsvp_from_comment_query
 	 *
 	 * @return void
 	 */
 	public function test_exclude_rsvp_from_type_in_string(): void {
-		$instance = Query::get_instance();
-		$query    = new WP_Comment_Query();
+		$post_id = $this->factory->post->create();
 
-		$query->query_vars['type']     = '';
-		$query->query_vars['type__in'] = Rsvp::COMMENT_TYPE;
+		$this->seed_comment_mix( $post_id );
 
-		$instance->exclude_rsvp_from_comment_query( $query );
-
-		$this->assertEquals(
-			'',
-			$query->query_vars['type__in'],
-			'Type__in should be set to empty string when only RSVP comment type is present'
+		$this->assertSame(
+			array(),
+			$this->query_comment_ids(
+				array(
+					'post_id'  => $post_id,
+					'type__in' => Rsvp::COMMENT_TYPE,
+				)
+			),
+			'An RSVP-only type__in should return no comments while the exclusion is active.'
 		);
 	}
 
 	/**
-	 * Test excluding RSVP from both type and type__in variables simultaneously.
+	 * `type` and `type__in` are both left as the caller wrote them; only
+	 * `type__not_in` changes.
 	 *
 	 * @covers ::exclude_rsvp_from_comment_query
 	 *
@@ -352,47 +536,44 @@ class Test_Query extends Base {
 
 		$instance->exclude_rsvp_from_comment_query( $query );
 
-		$this->assertEquals(
-			array( 'comment' ),
+		$this->assertSame(
+			array( 'comment', Rsvp::COMMENT_TYPE ),
 			$query->query_vars['type'],
-			'RSVP should be removed from type array'
+			'Type should be left as the caller set it.'
 		);
-		$this->assertEquals(
-			array( 'pingback' ),
+		$this->assertSame(
+			array( 'pingback', Rsvp::COMMENT_TYPE ),
 			$query->query_vars['type__in'],
-			'RSVP should be removed from type__in array'
+			'Type__in should be left as the caller set it.'
+		);
+		$this->assertSame(
+			array( Rsvp::COMMENT_TYPE ),
+			$query->query_vars['type__not_in'],
+			'RSVP type should be excluded through type__not_in.'
 		);
 	}
 
 	/**
 	 * Test the gatherpress_rsvp_comment_query_exclusion filter short-circuits
-	 * the exclusion when an integration returns false, leaving both `type` and
-	 * `type__in` untouched so the caller's original query vars survive.
+	 * the exclusion when an integration returns false, so the RSVP type never
+	 * reaches `type__not_in` and RSVP rows come back.
 	 *
 	 * @covers ::exclude_rsvp_from_comment_query
 	 *
 	 * @return void
 	 */
 	public function test_exclude_rsvp_filter_can_short_circuit(): void {
-		$instance = Query::get_instance();
-		$query    = new WP_Comment_Query();
-
-		$query->query_vars['type']     = array( 'comment', Rsvp::COMMENT_TYPE, 'pingback' );
-		$query->query_vars['type__in'] = array( 'comment', Rsvp::COMMENT_TYPE );
+		$post_id = $this->factory->post->create();
+		$ids     = $this->seed_comment_mix( $post_id );
 
 		add_filter( 'gatherpress_rsvp_comment_query_exclusion', '__return_false' );
-		$instance->exclude_rsvp_from_comment_query( $query );
+		$results = $this->query_comment_ids( array( 'post_id' => $post_id ) );
 		remove_filter( 'gatherpress_rsvp_comment_query_exclusion', '__return_false' );
 
-		$this->assertEquals(
-			array( 'comment', Rsvp::COMMENT_TYPE, 'pingback' ),
-			$query->query_vars['type'],
-			'Type array should be untouched when the filter returns false'
-		);
-		$this->assertEquals(
-			array( 'comment', Rsvp::COMMENT_TYPE ),
-			$query->query_vars['type__in'],
-			'Type__in array should be untouched when the filter returns false'
+		$this->assertSame(
+			array( $ids['comment'], $ids['pingback'], $ids['rsvp'] ),
+			$results,
+			'Opting out through the filter should let the RSVP through.'
 		);
 	}
 
@@ -450,15 +631,15 @@ class Test_Query extends Base {
 		$instance->exclude_rsvp_from_comment_query( $query );
 		remove_filter( 'gatherpress_rsvp_comment_query_exclusion', '__return_true' );
 
-		$this->assertEquals(
-			array( 'comment' ),
-			$query->query_vars['type'],
+		$this->assertSame(
+			array( Rsvp::COMMENT_TYPE ),
+			$query->query_vars['type__not_in'],
 			'Returning true from the filter should preserve the existing exclusion behavior'
 		);
 	}
 
 	/**
-	 * Test excluding RSVP makes no changes when RSVP is not present in arrays.
+	 * Test excluding RSVP leaves allow-lists alone when RSVP is not present in them.
 	 *
 	 * @covers ::exclude_rsvp_from_comment_query
 	 *
@@ -473,241 +654,20 @@ class Test_Query extends Base {
 
 		$instance->exclude_rsvp_from_comment_query( $query );
 
-		$this->assertEquals(
+		$this->assertSame(
 			array( 'comment', 'pingback' ),
 			$query->query_vars['type'],
 			'Type array should remain unchanged when RSVP is not present'
 		);
-		$this->assertEquals(
+		$this->assertSame(
 			array( 'custom', 'review' ),
 			$query->query_vars['type__in'],
 			'Type__in array should remain unchanged when RSVP is not present'
 		);
-	}
-
-	/**
-	 * Test get_all_comment_types method caches results.
-	 *
-	 * @covers ::get_all_comment_types
-	 *
-	 * @return void
-	 */
-	public function test_get_all_comment_types_caching(): void {
-		$instance = Query::get_instance();
-
-		// Clear any existing transient.
-		delete_transient( Query::COMMENT_TYPES_CACHE_KEY );
-
-		// Temporarily remove the cache invalidation hook for this test.
-		remove_action( 'wp_insert_comment', array( $instance, 'maybe_invalidate_comment_types_cache' ), 10 );
-
-		// Create some test comment types.
-		$this->factory->comment->create(
-			array(
-				'comment_type' => 'test_type_1',
-			)
-		);
-		$this->factory->comment->create(
-			array(
-				'comment_type' => 'test_type_2',
-			)
-		);
-
-		// Use reflection to access protected method.
-		$reflection = new \ReflectionClass( $instance );
-		$method     = $reflection->getMethod( 'get_all_comment_types' );
-		$method->setAccessible( true );
-
-		// First call should hit the database.
-		$types = $method->invoke( $instance );
-
-		// Should include our test types.
-		$this->assertContains( 'test_type_1', $types, 'First test type should be included' );
-		$this->assertContains( 'test_type_2', $types, 'Second test type should be included' );
-
-		// Verify transient was set.
-		$cached_types = get_transient( Query::COMMENT_TYPES_CACHE_KEY );
-		$this->assertEquals( $types, $cached_types, 'Transient should store the types' );
-
-		// Create another type after caching.
-		$this->factory->comment->create(
-			array(
-				'comment_type' => 'test_type_3',
-			)
-		);
-
-		// Second call should use cache and NOT include the new type.
-		$cached_result = $method->invoke( $instance );
-		$this->assertNotContains( 'test_type_3', $cached_result, 'New type should not be in cached result' );
-
-		// Clear transient and verify new type is included.
-		delete_transient( Query::COMMENT_TYPES_CACHE_KEY );
-		$fresh_result = $method->invoke( $instance );
-		$this->assertContains( 'test_type_3', $fresh_result, 'New type should be included after cache clear' );
-
-		// Clean up and restore hook.
-		delete_transient( Query::COMMENT_TYPES_CACHE_KEY );
-		add_action( 'wp_insert_comment', array( $instance, 'maybe_invalidate_comment_types_cache' ), 10, 2 );
-	}
-
-	/**
-	 * Test cache invalidation when new comment type is added.
-	 *
-	 * @covers ::maybe_invalidate_comment_types_cache
-	 *
-	 * @return void
-	 */
-	public function test_maybe_invalidate_comment_types_cache(): void {
-		$instance = Query::get_instance();
-
-		// Clear any existing transient.
-		delete_transient( Query::COMMENT_TYPES_CACHE_KEY );
-
-		// Set up initial cache with known types.
-		set_transient(
-			Query::COMMENT_TYPES_CACHE_KEY,
-			array( 'comment', 'pingback', 'trackback' ),
-			Query::CACHE_EXPIRATION
-		);
-
-		// Create a comment with existing type (should not invalidate).
-		$comment_id = $this->factory->comment->create(
-			array(
-				'comment_type' => 'pingback',
-			)
-		);
-		$comment    = get_comment( $comment_id );
-		$instance->maybe_invalidate_comment_types_cache( $comment_id, $comment );
-
-		// Cache should still exist.
-		$this->assertNotFalse(
-			get_transient( Query::COMMENT_TYPES_CACHE_KEY ),
-			'Cache should not be invalidated for existing comment type'
-		);
-
-		// Create a comment with new type (should invalidate).
-		$comment_id = $this->factory->comment->create(
-			array(
-				'comment_type' => 'new_custom_type',
-			)
-		);
-		$comment    = get_comment( $comment_id );
-		$instance->maybe_invalidate_comment_types_cache( $comment_id, $comment );
-
-		// Cache should be cleared.
-		$this->assertFalse(
-			get_transient( Query::COMMENT_TYPES_CACHE_KEY ),
-			'Cache should be invalidated when new comment type is added'
-		);
-
-		// Clean up.
-		delete_transient( Query::COMMENT_TYPES_CACHE_KEY );
-	}
-
-	/**
-	 * Test maybe_invalidate_comment_types_cache with empty comment type.
-	 *
-	 * Tests the early return path when comment_type is empty (regular comment).
-	 *
-	 * @covers ::maybe_invalidate_comment_types_cache
-	 *
-	 * @return void
-	 */
-	public function test_maybe_invalidate_comment_types_cache_with_empty_type(): void {
-		$instance = Query::get_instance();
-
-		// Set up cache.
-		set_transient(
-			Query::COMMENT_TYPES_CACHE_KEY,
-			array( 'pingback', 'trackback' ),
-			Query::CACHE_EXPIRATION
-		);
-
-		// Create a mock WP_Comment object with empty string comment_type.
-		$comment               = new WP_Comment( new stdClass() );
-		$comment->comment_ID   = 998;
-		$comment->comment_type = '';
-
-		// Verify comment_type is actually empty.
-		$this->assertEmpty(
-			$comment->comment_type,
-			'Comment type should be empty for this test'
-		);
-
-		$instance->maybe_invalidate_comment_types_cache( 998, $comment );
-
-		// Cache should still exist (method returns early for empty types).
-		$this->assertNotFalse(
-			get_transient( Query::COMMENT_TYPES_CACHE_KEY ),
-			'Cache should not be invalidated for empty comment type'
-		);
-
-		// Clean up.
-		delete_transient( Query::COMMENT_TYPES_CACHE_KEY );
-	}
-
-	/**
-	 * Test maybe_invalidate_comment_types_cache with null comment type.
-	 *
-	 * @covers ::maybe_invalidate_comment_types_cache
-	 *
-	 * @return void
-	 */
-	public function test_maybe_invalidate_comment_types_cache_with_null_type(): void {
-		$instance = Query::get_instance();
-
-		// Set up cache.
-		set_transient(
-			Query::COMMENT_TYPES_CACHE_KEY,
-			array( 'comment', 'pingback' ),
-			Query::CACHE_EXPIRATION
-		);
-
-		// Create a mock WP_Comment object with null comment_type.
-		$comment               = new WP_Comment( new stdClass() );
-		$comment->comment_ID   = 999;
-		$comment->comment_type = null;
-
-		$instance->maybe_invalidate_comment_types_cache( 999, $comment );
-
-		// Cache should still exist (method returns early for empty types).
-		$this->assertNotFalse(
-			get_transient( Query::COMMENT_TYPES_CACHE_KEY ),
-			'Cache should not be invalidated for null comment type'
-		);
-
-		// Clean up.
-		delete_transient( Query::COMMENT_TYPES_CACHE_KEY );
-	}
-
-	/**
-	 * Test maybe_invalidate_comment_types_cache when cache doesn't exist.
-	 *
-	 * @covers ::maybe_invalidate_comment_types_cache
-	 *
-	 * @return void
-	 */
-	public function test_maybe_invalidate_comment_types_cache_no_cache(): void {
-		$instance = Query::get_instance();
-
-		// Clear any existing transient.
-		delete_transient( Query::COMMENT_TYPES_CACHE_KEY );
-
-		// Create a comment with custom type when cache doesn't exist.
-		$comment_id = $this->factory->comment->create(
-			array(
-				'comment_type' => 'custom_type',
-			)
-		);
-		$comment    = get_comment( $comment_id );
-
-		// Should not error and should do nothing since cache doesn't exist.
-		$instance->maybe_invalidate_comment_types_cache( $comment_id, $comment );
-
-		// Verify cache still doesn't exist.
-		$this->assertFalse(
-			get_transient( Query::COMMENT_TYPES_CACHE_KEY ),
-			'Cache should remain non-existent when it was not set'
+		$this->assertSame(
+			array( Rsvp::COMMENT_TYPE ),
+			$query->query_vars['type__not_in'],
+			'RSVP type should still be excluded through type__not_in'
 		);
 	}
 
@@ -833,49 +793,6 @@ class Test_Query extends Base {
 			$result['where'],
 			'Where should remain unchanged when tax_query is empty'
 		);
-	}
-
-	/**
-	 * Test get_all_comment_types returns defaults when database query fails.
-	 *
-	 * @covers ::get_all_comment_types
-	 *
-	 * @return void
-	 */
-	public function test_get_all_comment_types_with_empty_db_result(): void {
-		global $wpdb;
-
-		$instance = Query::get_instance();
-
-		// Clear any existing transient.
-		delete_transient( Query::COMMENT_TYPES_CACHE_KEY );
-
-		// Suppress database errors to avoid output during test.
-		$wpdb->suppress_errors( true );
-
-		// Temporarily replace the comments table name to force empty result.
-		$original_comments = $wpdb->comments;
-		$wpdb->comments    = 'nonexistent_table_xyz';
-
-		// Use reflection to access protected method.
-		$reflection = new \ReflectionClass( $instance );
-		$method     = $reflection->getMethod( 'get_all_comment_types' );
-		$method->setAccessible( true );
-
-		// Should return defaults when query fails.
-		$types = $method->invoke( $instance );
-
-		// Restore original table name and error settings.
-		$wpdb->comments = $original_comments;
-		$wpdb->suppress_errors( false );
-
-		// Should return default types.
-		$this->assertContains( 'comment', $types, 'Should include default comment type' );
-		$this->assertContains( 'pingback', $types, 'Should include default pingback type' );
-		$this->assertContains( 'trackback', $types, 'Should include default trackback type' );
-
-		// Clean up.
-		delete_transient( Query::COMMENT_TYPES_CACHE_KEY );
 	}
 
 	/**
