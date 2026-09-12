@@ -1469,4 +1469,43 @@ class Test_Rsvp extends Base {
 			'Nothing is stored for an identity without a provider.'
 		);
 	}
+
+	/**
+	 * Tests Rsvp::is_comment_type with different comment types, nonexistent IDs, and comment objects.
+	 *
+	 * @covers ::is_comment_type
+	 *
+	 * @return void
+	 */
+	public function test_is_comment_type(): void {
+		$post_id = $this->factory->post->create();
+
+		$rsvp_comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		$regular_comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => 'comment',
+			)
+		);
+
+		$rsvp_comment = get_comment( $rsvp_comment_id );
+
+		$this->assertTrue( Rsvp::is_comment_type( $rsvp_comment_id ) );
+		$this->assertTrue( Rsvp::is_comment_type( $rsvp_comment ) );
+		$this->assertFalse( Rsvp::is_comment_type( $regular_comment_id ) );
+		$this->assertFalse( Rsvp::is_comment_type( 0 ) );
+		$this->assertFalse( Rsvp::is_comment_type( 999999 ) );
+		$this->assertFalse( Rsvp::is_comment_type( -1 ) );
+
+		// 0 must not resolve to the global comment even if one is set.
+		$GLOBALS['comment'] = $rsvp_comment; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$this->assertFalse( Rsvp::is_comment_type( 0 ) );
+		unset( $GLOBALS['comment'] );
+	}
 }
