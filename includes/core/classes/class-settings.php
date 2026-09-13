@@ -257,11 +257,17 @@ class Settings {
 	/**
 	 * Returns the map tile layer URL, allowing sites to override the default.
 	 *
+	 * Layers the `map_tile_url_custom` setting under the filter.
+	 *
 	 * @since 0.34.0
+	 * @since 0.36.0 Layered under the `map_tile_url_custom` setting.
 	 *
 	 * @return string Leaflet-compatible tile URL template.
 	 */
 	public static function get_map_tile_url(): string {
+		$custom  = trim( (string) self::get_instance()->get( 'map_tile_url_custom' ) );
+		$default = '' !== $custom ? $custom : self::MAP_TILE_URL;
+
 		/**
 		 * Filters the Leaflet tile layer URL used by the venue map.
 		 *
@@ -269,9 +275,20 @@ class Settings {
 		 *
 		 * @param string $url Default tile URL template (CartoDB Positron).
 		 */
-		$filtered = (string) apply_filters( 'gatherpress_interactive_map_tile_url', self::MAP_TILE_URL );
+		$filtered = (string) apply_filters( 'gatherpress_interactive_map_tile_url', $default );
 
-		return self::add_map_tile_key( '' !== $filtered ? $filtered : self::MAP_TILE_URL );
+		if ( '' === $filtered ) {
+			return self::add_map_tile_key( self::MAP_TILE_URL );
+		}
+
+		// The CARTO key belongs only to the built-in default: a custom URL
+		// is documented as overriding CARTO entirely, even when it happens
+		// to resolve to a CARTO-allowlisted host.
+		if ( '' !== $custom ) {
+			return $filtered;
+		}
+
+		return self::add_map_tile_key( $filtered );
 	}
 
 	/**
@@ -315,23 +332,30 @@ class Settings {
 	/**
 	 * Returns the map attribution string, allowing sites to override the default.
 	 *
+	 * Layers the `map_tile_attribution_custom` setting under the filter.
+	 *
 	 * @since 0.34.0
+	 * @since 0.36.0 Layered under the `map_tile_attribution_custom` setting.
 	 *
 	 * @return string HTML attribution credit shown on the map.
 	 */
 	public static function get_map_tile_attribution(): string {
-		$default = sprintf(
-			/* translators: 1: OpenStreetMap credit link, 2: CARTO credit link. */
-			__( '© %1$s contributors © %2$s', 'gatherpress' ),
-			sprintf(
-				'<a href="%s">OpenStreetMap</a>',
-				esc_url( self::MAP_TILE_ATTRIBUTION_OSM_URL )
-			),
-			sprintf(
-				'<a href="%s">CARTO</a>',
-				esc_url( self::MAP_TILE_ATTRIBUTION_CARTO_URL )
-			)
-		);
+		$custom = trim( (string) self::get_instance()->get( 'map_tile_attribution_custom' ) );
+
+		$default = '' !== $custom
+			? esc_html( $custom )
+			: sprintf(
+				/* translators: 1: OpenStreetMap credit link, 2: CARTO credit link. */
+				__( '© %1$s contributors © %2$s', 'gatherpress' ),
+				sprintf(
+					'<a href="%s">OpenStreetMap</a>',
+					esc_url( self::MAP_TILE_ATTRIBUTION_OSM_URL )
+				),
+				sprintf(
+					'<a href="%s">CARTO</a>',
+					esc_url( self::MAP_TILE_ATTRIBUTION_CARTO_URL )
+				)
+			);
 
 		/**
 		 * Filters the attribution HTML rendered with the venue map.
