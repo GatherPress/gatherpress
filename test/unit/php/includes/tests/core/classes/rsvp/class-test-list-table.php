@@ -641,9 +641,9 @@ class Test_List_Table extends Base {
 		$attendee_col = $this->list_table->column_attendee( $this->rsvp );
 
 		$this->assertStringContainsString(
-			'>Undo check in<',
+			'>Not Checked In<',
 			$attendee_col,
-			'Failed to assert attendee column contains Undo check in action for approved, checked-in RSVP.'
+			'Failed to assert attendee column contains Not Checked In action for approved, checked-in RSVP.'
 		);
 		$this->assertStringNotContainsString(
 			'>Check in<',
@@ -651,7 +651,7 @@ class Test_List_Table extends Base {
 			'Failed to assert attendee column does not contain Check in action for already checked-in RSVP.'
 		);
 
-		Check_In::get_instance()->clear( (int) $this->rsvp['comment_ID'] );
+		Check_In::get_instance()->uncheck_in( (int) $this->rsvp['comment_ID'] );
 	}
 
 	/**
@@ -675,9 +675,9 @@ class Test_List_Table extends Base {
 			'Failed to assert attendee column does not contain Check in action for pending RSVP.'
 		);
 		$this->assertStringNotContainsString(
-			'>Undo check in<',
+			'>Not Checked In<',
 			$attendee_col,
-			'Failed to assert attendee column does not contain Undo check in action for pending RSVP.'
+			'Failed to assert attendee column does not contain Not Checked In action for pending RSVP.'
 		);
 	}
 
@@ -707,9 +707,9 @@ class Test_List_Table extends Base {
 			'Failed to assert attendee column does not contain Check in action for spam RSVP.'
 		);
 		$this->assertStringNotContainsString(
-			'>Undo check in<',
+			'>Not Checked In<',
 			$attendee_col,
-			'Failed to assert attendee column does not contain Undo check in action for spam RSVP.'
+			'Failed to assert attendee column does not contain Not Checked In action for spam RSVP.'
 		);
 	}
 
@@ -955,20 +955,20 @@ class Test_List_Table extends Base {
 			'Failed to assert bulk actions contain check_in.'
 		);
 		$this->assertArrayHasKey(
-			'clear_check_in',
+			'uncheck_in',
 			$actions,
-			'Failed to assert bulk actions contain clear_check_in.'
+			'Failed to assert bulk actions contain uncheck_in.'
 		);
 	}
 
 	/**
-	 * The check-in bulk actions write and clear the arrival time.
+	 * The check-in bulk actions record and remove an arrival.
 	 *
 	 * @covers ::process_bulk_action
 	 *
 	 * @return void
 	 */
-	public function test_process_bulk_action_check_in_and_clear(): void {
+	public function test_process_bulk_action_check_in_and_uncheck_in(): void {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
 		$rsvp_id  = (int) $this->rsvp['comment_ID'];
@@ -985,13 +985,13 @@ class Test_List_Table extends Base {
 			'Failed to assert the check_in bulk action records an arrival.'
 		);
 
-		$_REQUEST['action'] = 'clear_check_in';
+		$_REQUEST['action'] = 'uncheck_in';
 
 		$this->list_table->process_bulk_action();
 
 		$this->assertFalse(
 			$check_in->is_checked_in( $rsvp_id ),
-			'Failed to assert the clear_check_in bulk action removes the arrival.'
+			'Failed to assert the uncheck_in bulk action removes the arrival.'
 		);
 
 		unset( $_REQUEST['_wpnonce'], $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );

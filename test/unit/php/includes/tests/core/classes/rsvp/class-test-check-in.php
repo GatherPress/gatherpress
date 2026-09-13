@@ -189,21 +189,21 @@ class Test_Check_In extends Base {
 	}
 
 	/**
-	 * Coverage for clear.
+	 * Coverage for uncheck_in.
 	 *
-	 * @covers ::clear
+	 * @covers ::uncheck_in
 	 *
 	 * @return void
 	 */
-	public function test_clear_undoes_a_check_in(): void {
+	public function test_uncheck_in_removes_a_check_in(): void {
 		$instance = Check_In::get_instance();
 		$rsvp     = $this->make_rsvp();
 
 		$instance->check_in( $rsvp['rsvp_id'] );
 
 		$this->assertTrue(
-			$instance->clear( $rsvp['rsvp_id'] ),
-			'Clearing a check-in should succeed.'
+			$instance->uncheck_in( $rsvp['rsvp_id'] ),
+			'Removing a check-in should succeed.'
 		);
 		$this->assertFalse(
 			$instance->is_checked_in( $rsvp['rsvp_id'] ),
@@ -220,7 +220,7 @@ class Test_Check_In extends Base {
 	 * RSVP, and a comment ID that does not exist.
 	 *
 	 * @covers ::check_in
-	 * @covers ::clear
+	 * @covers ::uncheck_in
 	 *
 	 * @return void
 	 */
@@ -239,8 +239,8 @@ class Test_Check_In extends Base {
 			'A plain comment should not be checkable.'
 		);
 		$this->assertFalse(
-			$instance->clear( $comment_id ),
-			'A plain comment should not be clearable.'
+			$instance->uncheck_in( $comment_id ),
+			'A plain comment should not be uncheckable.'
 		);
 		$this->assertFalse(
 			$instance->check_in( 0 ),
@@ -324,7 +324,7 @@ class Test_Check_In extends Base {
 	 * Coverage for the check-in actions, which report the RSVP to consumers.
 	 *
 	 * @covers ::check_in
-	 * @covers ::clear
+	 * @covers ::uncheck_in
 	 *
 	 * @return void
 	 */
@@ -340,17 +340,17 @@ class Test_Check_In extends Base {
 			}
 		);
 		add_action(
-			'gatherpress_rsvp_check_in_cleared',
+			'gatherpress_rsvp_unchecked_in',
 			static function ( int $rsvp_id ) use ( &$fired ): void {
-				$fired['cleared'] = $rsvp_id;
+				$fired['unchecked_in'] = $rsvp_id;
 			}
 		);
 
 		$instance->check_in( $rsvp['rsvp_id'] );
-		$instance->clear( $rsvp['rsvp_id'] );
+		$instance->uncheck_in( $rsvp['rsvp_id'] );
 
 		remove_all_actions( 'gatherpress_rsvp_checked_in' );
-		remove_all_actions( 'gatherpress_rsvp_check_in_cleared' );
+		remove_all_actions( 'gatherpress_rsvp_unchecked_in' );
 
 		$this->assertSame(
 			$rsvp['rsvp_id'],
@@ -359,8 +359,142 @@ class Test_Check_In extends Base {
 		);
 		$this->assertSame(
 			$rsvp['rsvp_id'],
-			$fired['cleared'],
-			'The cleared action should report the RSVP.'
+			$fired['unchecked_in'],
+			'The unchecked-in action should report the RSVP.'
+		);
+	}
+
+	/**
+	 * Coverage for the term write failing, here because the taxonomy is not
+	 * registered: the call reports failure and announces nothing.
+	 *
+	 * @covers ::check_in
+	 *
+	 * @return void
+	 */
+	public function test_check_in_fails_when_the_term_cannot_be_assigned(): void {
+		$instance = Check_In::get_instance();
+		$rsvp     = $this->make_rsvp();
+		$fired    = false;
+
+		add_action(
+			'gatherpress_rsvp_checked_in',
+			static function () use ( &$fired ): void {
+				$fired = true;
+			}
+		);
+		unregister_taxonomy( Check_In::TAXONOMY );
+
+		$result = $instance->check_in( $rsvp['rsvp_id'] );
+
+		Setup::get_instance()->register_taxonomy();
+		remove_all_actions( 'gatherpress_rsvp_checked_in' );
+
+		$this->assertFalse(
+			$result,
+			'A check-in whose term could not be assigned should report failure.'
+		);
+		$this->assertFalse(
+			$fired,
+			'Nothing should be announced when nothing was recorded.'
+		);
+		$this->assertFalse(
+			$instance->is_checked_in( $rsvp['rsvp_id'] ),
+			'The RSVP should not read as checked in.'
+		);
+	}
+
+	/**
+	 * Coverage for uncheck_in on an RSVP that is not checked in: the state
+	 * already holds, so it succeeds and announces nothing.
+	 *
+	 * @covers ::uncheck_in
+	 *
+	 * @return void
+	 */
+	public function test_uncheck_in_is_idempotent_when_not_checked_in(): void {
+		$instance = Check_In::get_instance();
+		$rsvp     = $this->make_rsvp();
+		$fired    = false;
+
+		add_action(
+			'gatherpress_rsvp_unchecked_in',
+			static function () use ( &$fired ): void {
+				$fired = true;
+			}
+		);
+
+		$result = $instance->uncheck_in( $rsvp['rsvp_id'] );
+
+		remove_all_actions( 'gatherpress_rsvp_unchecked_in' );
+
+		$this->assertTrue(
+			$result,
+			'An RSVP that is already not checked in should count as done.'
+		);
+		$this->assertFalse(
+			$fired,
+			'Nothing should be announced when nothing was removed.'
+		);
+	}
+
+	/**
+	 * Coverage for the term removal failing: the check-in stands, the call
+	 * reports failure, and nothing is announced. The DELETE is pointed at a
+	 * table that does not exist for that one statement, which core reports
+	 * as a failed removal.
+	 *
+	 * @covers ::uncheck_in
+	 *
+	 * @return void
+	 */
+	public function test_uncheck_in_fails_when_the_term_cannot_be_removed(): void {
+		global $wpdb;
+
+		$instance = Check_In::get_instance();
+		$rsvp     = $this->make_rsvp();
+		$fired    = false;
+		$table    = $wpdb->term_relationships;
+
+		$instance->check_in( $rsvp['rsvp_id'] );
+
+		add_action(
+			'gatherpress_rsvp_unchecked_in',
+			static function () use ( &$fired ): void {
+				$fired = true;
+			}
+		);
+
+		$break   = static function () use ( $wpdb ): void {
+			$wpdb->term_relationships = 'gatherpress_missing_table';
+		};
+		$restore = static function () use ( $wpdb, $table ): void {
+			$wpdb->term_relationships = $table;
+		};
+
+		add_action( 'delete_term_relationships', $break );
+		add_action( 'deleted_term_relationships', $restore );
+		$suppressed = $wpdb->suppress_errors( true );
+
+		$result = $instance->uncheck_in( $rsvp['rsvp_id'] );
+
+		$wpdb->suppress_errors( $suppressed );
+		$wpdb->term_relationships = $table;
+		remove_action( 'delete_term_relationships', $break );
+		remove_action( 'deleted_term_relationships', $restore );
+		remove_all_actions( 'gatherpress_rsvp_unchecked_in' );
+
+		$this->assertFalse(
+			$result,
+			'A removal that failed should report failure.'
+		);
+		$this->assertFalse(
+			$fired,
+			'Nothing should be announced when nothing was removed.'
+		);
+		$this->assertTrue(
+			$instance->is_checked_in( $rsvp['rsvp_id'] ),
+			'The check-in should still stand.'
 		);
 	}
 }

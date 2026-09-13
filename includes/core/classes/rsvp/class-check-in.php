@@ -81,73 +81,83 @@ final class Check_In {
 	 * Record that an RSVP turned up.
 	 *
 	 * Assigning the term is idempotent: repeating a check-in maintains the
-	 * existing state without duplicate term relationships.
+	 * existing state without duplicate term relationships, and announces
+	 * nothing the second time.
 	 *
 	 * @since 0.36.0
 	 *
 	 * @param int $rsvp_id The RSVP comment ID.
 	 *
-	 * @return bool True when the RSVP is checked in, false when it is not an RSVP.
+	 * @return bool True when the RSVP is checked in, false when it is not an RSVP
+	 *              or the term could not be assigned.
 	 */
 	public function check_in( int $rsvp_id ): bool {
 		if ( ! Rsvp::is_comment_type( $rsvp_id ) ) {
 			return false;
 		}
 
-		if ( $this->is_checked_in( $rsvp_id ) ) {
-			return true;
+		if ( ! $this->is_checked_in( $rsvp_id ) ) {
+			// Nothing was recorded, so there is nothing to announce.
+			if ( is_wp_error( wp_set_object_terms( $rsvp_id, self::TERM, self::TAXONOMY, true ) ) ) {
+				return false;
+			}
+
+			clean_comment_cache( $rsvp_id );
+
+			/**
+			 * Fires after an RSVP has been checked in.
+			 *
+			 * @since 0.36.0
+			 *
+			 * @param int $rsvp_id The RSVP comment ID.
+			 *
+			 * @return void
+			 */
+			do_action( 'gatherpress_rsvp_checked_in', $rsvp_id );
 		}
-
-		wp_set_object_terms( $rsvp_id, self::TERM, self::TAXONOMY, true );
-
-		clean_comment_cache( $rsvp_id );
-
-		/**
-		 * Fires after an RSVP has been checked in.
-		 *
-		 * @since 0.36.0
-		 *
-		 * @param int $rsvp_id The RSVP comment ID.
-		 *
-		 * @return void
-		 */
-		do_action( 'gatherpress_rsvp_checked_in', $rsvp_id );
 
 		return true;
 	}
 
 	/**
-	 * Undo a check-in.
+	 * Mark an RSVP as not checked in.
 	 *
 	 * Wrong person, wrong row, or an accidental tap at the door: the check-in
 	 * term is removed so the absence of the term remains the single answer
-	 * to whether someone turned up.
+	 * to whether someone turned up. An RSVP that is already not checked in
+	 * counts as done, and announces nothing.
 	 *
 	 * @since 0.36.0
 	 *
 	 * @param int $rsvp_id The RSVP comment ID.
 	 *
-	 * @return bool True when the RSVP is no longer checked in, false when it is not an RSVP.
+	 * @return bool True when the RSVP is not checked in, false when it is not an RSVP
+	 *              or the term could not be removed.
 	 */
-	public function clear( int $rsvp_id ): bool {
+	public function uncheck_in( int $rsvp_id ): bool {
 		if ( ! Rsvp::is_comment_type( $rsvp_id ) ) {
 			return false;
 		}
 
-		wp_remove_object_terms( $rsvp_id, self::TERM, self::TAXONOMY );
+		if ( $this->is_checked_in( $rsvp_id ) ) {
+			// Nothing was removed, so there is nothing to announce.
+			if ( true !== wp_remove_object_terms( $rsvp_id, self::TERM, self::TAXONOMY ) ) {
+				return false;
+			}
 
-		clean_comment_cache( $rsvp_id );
+			clean_comment_cache( $rsvp_id );
 
-		/**
-		 * Fires after an RSVP's check-in has been cleared.
-		 *
-		 * @since 0.36.0
-		 *
-		 * @param int $rsvp_id The RSVP comment ID.
-		 *
-		 * @return void
-		 */
-		do_action( 'gatherpress_rsvp_check_in_cleared', $rsvp_id );
+			/**
+			 * Fires after an RSVP's check-in has been removed.
+			 *
+			 * @since 0.36.0
+			 *
+			 * @param int $rsvp_id The RSVP comment ID.
+			 *
+			 * @return void
+			 */
+			do_action( 'gatherpress_rsvp_unchecked_in', $rsvp_id );
+		}
 
 		return true;
 	}
