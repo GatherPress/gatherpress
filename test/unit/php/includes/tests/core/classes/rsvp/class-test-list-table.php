@@ -641,9 +641,9 @@ class Test_List_Table extends Base {
 		$attendee_col = $this->list_table->column_attendee( $this->rsvp );
 
 		$this->assertStringContainsString(
-			'>Clear check-in<',
+			'>Undo check in<',
 			$attendee_col,
-			'Failed to assert attendee column contains Clear check-in action for approved, checked-in RSVP.'
+			'Failed to assert attendee column contains Undo check in action for approved, checked-in RSVP.'
 		);
 		$this->assertStringNotContainsString(
 			'>Check in<',
@@ -675,9 +675,9 @@ class Test_List_Table extends Base {
 			'Failed to assert attendee column does not contain Check in action for pending RSVP.'
 		);
 		$this->assertStringNotContainsString(
-			'>Clear check-in<',
+			'>Undo check in<',
 			$attendee_col,
-			'Failed to assert attendee column does not contain Clear check-in action for pending RSVP.'
+			'Failed to assert attendee column does not contain Undo check in action for pending RSVP.'
 		);
 	}
 
@@ -707,9 +707,9 @@ class Test_List_Table extends Base {
 			'Failed to assert attendee column does not contain Check in action for spam RSVP.'
 		);
 		$this->assertStringNotContainsString(
-			'>Clear check-in<',
+			'>Undo check in<',
 			$attendee_col,
-			'Failed to assert attendee column does not contain Clear check-in action for spam RSVP.'
+			'Failed to assert attendee column does not contain Undo check in action for spam RSVP.'
 		);
 	}
 

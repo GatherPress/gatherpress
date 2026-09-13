@@ -895,7 +895,7 @@ final class List_Table extends WP_List_Table {
 			),
 			'clear_check_in' => array(
 				'condition' => $is_approved && $is_checked_in,
-				'label'     => __( 'Clear check-in', 'gatherpress' ),
+				'label'     => __( 'Undo check in', 'gatherpress' ),
 				'action'    => 'clear_check_in',
 			),
 			'spam'           => array(
@@ -990,7 +990,7 @@ final class List_Table extends WP_List_Table {
 			'approve'        => __( 'Approve', 'gatherpress' ),
 			'unapprove'      => __( 'Unapprove', 'gatherpress' ),
 			'check_in'       => __( 'Check in', 'gatherpress' ),
-			'clear_check_in' => __( 'Clear check-in', 'gatherpress' ),
+			'clear_check_in' => __( 'Undo check in', 'gatherpress' ),
 			'spam'           => __( 'Mark as Spam', 'gatherpress' ),
 			'unspam'         => __( 'Not Spam', 'gatherpress' ),
 			'delete'         => __( 'Delete', 'gatherpress' ),
