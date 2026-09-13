@@ -20,6 +20,11 @@
 
 - [`gatherpress_calendar_url`](gatherpress_calendar_url.md) Filters the calendar URL for a single event.
 
+## class-check-in.php
+
+- [`gatherpress_rsvp_checked_in`](gatherpress_rsvp_checked_in.md) Fires after an RSVP has been checked in.
+- [`gatherpress_rsvp_unchecked_in`](gatherpress_rsvp_unchecked_in.md) Fires after an RSVP's check-in has been removed.
+
 ## class-event-query.php
 
 - [`gatherpress_query_vars`](gatherpress_query_vars.md) This filter is documented in includes/query-loop.php
