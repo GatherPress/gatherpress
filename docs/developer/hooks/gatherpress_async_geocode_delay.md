@@ -33,7 +33,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-geocoding.php:329](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-geocoding.php#L329)
+- [includes/core/classes/class-geocoding.php:337](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-geocoding.php#L337)
 ```php
 apply_filters( 'gatherpress_async_geocode_delay', self::CRON_DELAY_SECONDS, $post_id )
 ```
