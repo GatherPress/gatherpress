@@ -1,27 +1,28 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Rsvp\Flag.
+ * Class handles unit tests for GatherPress\Core\Rsvp\Flag\Base.
  *
- * @package GatherPress\Core\Rsvp
+ * @package GatherPress\Core\Rsvp\Flag
  * @since 0.36.0
  */
 
-namespace GatherPress\Tests\Core\Rsvp;
+namespace GatherPress\Tests\Core\Rsvp\Flag;
 
 use GatherPress\Core\Event;
-use GatherPress\Core\Rsvp\Flag;
-use GatherPress\Core\Rsvp\Rsvp;
-use GatherPress\Core\Rsvp\Setup;
-use GatherPress\Tests\Base;
+use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Flag\Base;
+use GatherPress\Core\Rsvp\Flag\Setup;
+use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
+use GatherPress\Tests\Base as Base_Unit_Test;
 use PMC\Unit_Test\Utility;
 use WP_Error;
 
 /**
- * Class Test_Flag.
+ * Class Test_Base.
  *
- * @coversDefaultClass \GatherPress\Core\Rsvp\Flag
+ * @coversDefaultClass \GatherPress\Core\Rsvp\Flag\Base
  */
-class Test_Flag extends Base {
+class Test_Base extends Base_Unit_Test {
 
 	/**
 	 * Set up the test environment before each test.
@@ -30,7 +31,7 @@ class Test_Flag extends Base {
 	 */
 	public function set_up(): void {
 		parent::set_up();
-		Setup::get_instance()->register_taxonomy();
+		Rsvp_Setup::get_instance()->register_taxonomy();
 	}
 
 	/**
@@ -58,103 +59,35 @@ class Test_Flag extends Base {
 	}
 
 	/**
-	 * Coverage for __construct.
-	 *
-	 * The instance is built during plugin bootstrap, so the constructor only
-	 * runs inside a test once the stored instance is cleared. The bootstrap
-	 * instance is put back afterwards: its hooks are the registered ones, and
-	 * the hooks the fresh instance adds are dropped when the test ends.
-	 *
-	 * @covers ::__construct
-	 *
-	 * @return void
-	 */
-	public function test_construct_builds_the_instance(): void {
-		$bootstrap = Flag::get_instance();
-
-		Utility::set_and_get_hidden_static_property( Flag::class, 'instance', null );
-
-		$built = Flag::get_instance();
-
-		Utility::set_and_get_hidden_static_property( Flag::class, 'instance', $bootstrap );
-
-		$this->assertInstanceOf(
-			Flag::class,
-			$built,
-			'Failed to assert that the constructor returns a Flag instance.'
-		);
-		$this->assertNotSame(
-			$bootstrap,
-			$built,
-			'Failed to assert that the constructor ran rather than returning the stored instance.'
-		);
-	}
-
-	/**
-	 * Coverage for setup_hooks.
-	 *
-	 * @covers ::setup_hooks
-	 *
-	 * @return void
-	 */
-	public function test_setup_hooks(): void {
-		$instance = Flag::get_instance();
-		$hooks    = array(
-			array(
-				'type'     => 'action',
-				'name'     => 'deleted_comment',
-				'priority' => 10,
-				'callback' => array( $instance, 'delete_flags' ),
-			),
-		);
-
-		$this->assert_hooks( $hooks, $instance );
-	}
-
-	/**
-	 * Coverage for add, has, and get on an RSVP: the flag is stored, reads
-	 * back, and is announced once even when added twice.
+	 * Coverage for add and has on an RSVP: the flag is stored, reads back, and
+	 * is announced once, with its slug, even when added twice.
 	 *
 	 * @covers ::add
 	 * @covers ::has
-	 * @covers ::get
+	 * @covers ::after_add
 	 *
 	 * @return void
 	 */
 	public function test_add_records_a_flag_and_announces_it_once(): void {
-		$instance = Flag::get_instance();
+		$flag     = new Test_Base_Concrete( 'walk-in' );
 		$rsvp     = $this->make_rsvp();
 		$fired    = array();
-		$listener = static function ( int $rsvp_id, string $flag ) use ( &$fired ): void {
-			$fired[] = array( $rsvp_id, $flag );
+		$listener = static function ( int $rsvp_id, string $slug ) use ( &$fired ): void {
+			$fired[] = array( $rsvp_id, $slug );
 		};
 
 		add_action( 'gatherpress_rsvp_flag_added', $listener, 10, 2 );
 
-		$this->assertFalse(
-			$instance->has( $rsvp['rsvp_id'], 'walk-in' ),
-			'A fresh RSVP should not carry the flag.'
-		);
+		$this->assertFalse( $flag->has( $rsvp['rsvp_id'] ), 'A fresh RSVP should not carry the flag.' );
+		$this->assertTrue( $flag->add( $rsvp['rsvp_id'] ), 'Adding a flag to an RSVP should succeed.' );
 		$this->assertTrue(
-			$instance->add( $rsvp['rsvp_id'], 'walk-in' ),
-			'Adding a flag to an RSVP should succeed.'
-		);
-		$this->assertTrue(
-			$instance->add( $rsvp['rsvp_id'], 'walk-in' ),
+			$flag->add( $rsvp['rsvp_id'] ),
 			'Adding a flag the RSVP already carries should still report success.'
 		);
 
 		remove_action( 'gatherpress_rsvp_flag_added', $listener, 10 );
 
-		$this->assertTrue(
-			$instance->has( $rsvp['rsvp_id'], 'walk-in' ),
-			'The RSVP should carry the flag afterwards.'
-		);
-		$this->assertSame(
-			array( 'walk-in' ),
-			$instance->get( $rsvp['rsvp_id'] ),
-			'The flag should read back exactly as it was added.'
-		);
+		$this->assertTrue( $flag->has( $rsvp['rsvp_id'] ), 'The RSVP should carry the flag afterwards.' );
 		$this->assertSame(
 			array( array( $rsvp['rsvp_id'], 'walk-in' ) ),
 			$fired,
@@ -166,20 +99,18 @@ class Test_Flag extends Base {
 	 * Coverage for add appending: a second flag leaves the first in place.
 	 *
 	 * @covers ::add
-	 * @covers ::get
 	 *
 	 * @return void
 	 */
 	public function test_add_keeps_every_other_flag(): void {
-		$instance = Flag::get_instance();
-		$rsvp     = $this->make_rsvp();
+		$rsvp = $this->make_rsvp();
 
-		$instance->add( $rsvp['rsvp_id'], 'host' );
-		$instance->add( $rsvp['rsvp_id'], 'checked-in' );
+		( new Test_Base_Concrete( 'host' ) )->add( $rsvp['rsvp_id'] );
+		( new Test_Base_Concrete( 'walk-in' ) )->add( $rsvp['rsvp_id'] );
 
 		$this->assertEqualsCanonicalizing(
-			array( 'host', 'checked-in' ),
-			$instance->get( $rsvp['rsvp_id'] ),
+			array( 'host', 'walk-in' ),
+			Setup::get_instance()->get_flags( $rsvp['rsvp_id'] ),
 			'Adding a flag should not replace the flags already on the RSVP.'
 		);
 	}
@@ -195,7 +126,7 @@ class Test_Flag extends Base {
 	 * @return void
 	 */
 	public function test_add_and_remove_refuse_invalid_input(): void {
-		$instance   = Flag::get_instance();
+		$flag       = new Test_Base_Concrete( 'host' );
 		$rsvp       = $this->make_rsvp();
 		$comment_id = (int) wp_insert_comment(
 			array(
@@ -204,28 +135,31 @@ class Test_Flag extends Base {
 			)
 		);
 
-		$this->assertFalse( $instance->add( $comment_id, 'host' ), 'A plain comment should not take a flag.' );
-		$this->assertFalse(
-			$instance->remove( $comment_id, 'host' ),
-			'A plain comment should not have a flag removed.'
-		);
-		$this->assertFalse( $instance->add( 0, 'host' ), 'A comment ID that does not exist should not take a flag.' );
+		$this->assertFalse( $flag->add( $comment_id ), 'A plain comment should not take a flag.' );
+		$this->assertFalse( $flag->remove( $comment_id ), 'A plain comment should not have a flag removed.' );
+		$this->assertFalse( $flag->add( 0 ), 'A comment ID that does not exist should not take a flag.' );
 
 		foreach ( array( '', 'Walk In', 'walk in', 'HOST', 'no-show!' ) as $slug ) {
+			$invalid = new Test_Base_Concrete( $slug );
+
 			$this->assertFalse(
-				$instance->add( $rsvp['rsvp_id'], $slug ),
+				$invalid->add( $rsvp['rsvp_id'] ),
 				sprintf( 'The slug %s should be refused on add.', wp_json_encode( $slug ) )
 			);
 			$this->assertFalse(
-				$instance->remove( $rsvp['rsvp_id'], $slug ),
+				$invalid->remove( $rsvp['rsvp_id'] ),
 				sprintf( 'The slug %s should be refused on remove.', wp_json_encode( $slug ) )
 			);
 		}
 
-		$this->assertSame( array(), $instance->get( $rsvp['rsvp_id'] ), 'Nothing should have been stored.' );
 		$this->assertSame(
 			array(),
-			$instance->get( $comment_id ),
+			Setup::get_instance()->get_flags( $rsvp['rsvp_id'] ),
+			'Nothing should have been stored on the RSVP.'
+		);
+		$this->assertSame(
+			array(),
+			Setup::get_instance()->get_flags( $comment_id ),
 			'Nothing should have been stored on the plain comment.'
 		);
 	}
@@ -237,27 +171,26 @@ class Test_Flag extends Base {
 	 *
 	 * @covers ::add
 	 * @covers ::remove
-	 * @covers ::can_write
 	 *
 	 * @return void
 	 */
 	public function test_add_and_remove_refuse_before_the_taxonomy_exists(): void {
-		$instance = Flag::get_instance();
-		$rsvp     = $this->make_rsvp();
+		$host = new Test_Base_Concrete( 'host' );
+		$rsvp = $this->make_rsvp();
 
-		$instance->add( $rsvp['rsvp_id'], 'host' );
-		unregister_taxonomy( Flag::TAXONOMY );
+		$host->add( $rsvp['rsvp_id'] );
+		unregister_taxonomy( Base::TAXONOMY );
 
-		$added   = $instance->add( $rsvp['rsvp_id'], 'walk-in' );
-		$removed = $instance->remove( $rsvp['rsvp_id'], 'host' );
+		$added   = ( new Test_Base_Concrete( 'walk-in' ) )->add( $rsvp['rsvp_id'] );
+		$removed = $host->remove( $rsvp['rsvp_id'] );
 
-		Setup::get_instance()->register_taxonomy();
+		Rsvp_Setup::get_instance()->register_taxonomy();
 
 		$this->assertFalse( $added, 'Adding a flag before the taxonomy exists should report failure.' );
 		$this->assertFalse( $removed, 'Removing a flag before the taxonomy exists should report failure.' );
 		$this->assertSame(
 			array( 'host' ),
-			$instance->get( $rsvp['rsvp_id'] ),
+			Setup::get_instance()->get_flags( $rsvp['rsvp_id'] ),
 			'The stored flag should still be there once the taxonomy is back.'
 		);
 	}
@@ -272,7 +205,7 @@ class Test_Flag extends Base {
 	 * @return void
 	 */
 	public function test_add_fails_when_the_flag_cannot_be_stored(): void {
-		$instance = Flag::get_instance();
+		$flag     = new Test_Base_Concrete( 'host' );
 		$rsvp     = $this->make_rsvp();
 		$fired    = false;
 		$listener = static function () use ( &$fired ): void {
@@ -285,49 +218,51 @@ class Test_Flag extends Base {
 		add_action( 'gatherpress_rsvp_flag_added', $listener );
 		add_filter( 'pre_insert_term', $refuse );
 
-		$result = $instance->add( $rsvp['rsvp_id'], 'host' );
+		$result = $flag->add( $rsvp['rsvp_id'] );
 
 		remove_filter( 'pre_insert_term', $refuse );
 		remove_action( 'gatherpress_rsvp_flag_added', $listener );
 
 		$this->assertFalse( $result, 'A flag that could not be stored should report failure.' );
 		$this->assertFalse( $fired, 'Nothing should be announced when nothing was stored.' );
-		$this->assertFalse( $instance->has( $rsvp['rsvp_id'], 'host' ), 'The RSVP should not carry the flag.' );
+		$this->assertFalse( $flag->has( $rsvp['rsvp_id'] ), 'The RSVP should not carry the flag.' );
 	}
 
 	/**
-	 * Coverage for remove: only the named flag goes, and its removal is
-	 * announced with the RSVP and the slug.
+	 * Coverage for remove: only this flag goes, and its removal is announced
+	 * with the RSVP and the slug.
 	 *
 	 * @covers ::remove
+	 * @covers ::after_remove
 	 *
 	 * @return void
 	 */
 	public function test_remove_drops_only_that_flag_and_announces_it(): void {
-		$instance = Flag::get_instance();
+		$host     = new Test_Base_Concrete( 'host' );
+		$walk_in  = new Test_Base_Concrete( 'walk-in' );
 		$rsvp     = $this->make_rsvp();
 		$fired    = array();
-		$listener = static function ( int $rsvp_id, string $flag ) use ( &$fired ): void {
-			$fired[] = array( $rsvp_id, $flag );
+		$listener = static function ( int $rsvp_id, string $slug ) use ( &$fired ): void {
+			$fired[] = array( $rsvp_id, $slug );
 		};
 
-		$instance->add( $rsvp['rsvp_id'], 'host' );
-		$instance->add( $rsvp['rsvp_id'], 'checked-in' );
+		$host->add( $rsvp['rsvp_id'] );
+		$walk_in->add( $rsvp['rsvp_id'] );
 
 		add_action( 'gatherpress_rsvp_flag_removed', $listener, 10, 2 );
 
-		$result = $instance->remove( $rsvp['rsvp_id'], 'checked-in' );
+		$result = $walk_in->remove( $rsvp['rsvp_id'] );
 
 		remove_action( 'gatherpress_rsvp_flag_removed', $listener, 10 );
 
 		$this->assertTrue( $result, 'Removing a flag should succeed.' );
 		$this->assertSame(
 			array( 'host' ),
-			$instance->get( $rsvp['rsvp_id'] ),
+			Setup::get_instance()->get_flags( $rsvp['rsvp_id'] ),
 			'Removing one flag should leave the others in place.'
 		);
 		$this->assertSame(
-			array( array( $rsvp['rsvp_id'], 'checked-in' ) ),
+			array( array( $rsvp['rsvp_id'], 'walk-in' ) ),
 			$fired,
 			'The removal should be announced with the RSVP and the slug.'
 		);
@@ -342,7 +277,7 @@ class Test_Flag extends Base {
 	 * @return void
 	 */
 	public function test_remove_is_idempotent_when_the_flag_is_absent(): void {
-		$instance = Flag::get_instance();
+		$flag     = new Test_Base_Concrete( 'host' );
 		$rsvp     = $this->make_rsvp();
 		$fired    = false;
 		$listener = static function () use ( &$fired ): void {
@@ -351,7 +286,7 @@ class Test_Flag extends Base {
 
 		add_action( 'gatherpress_rsvp_flag_removed', $listener );
 
-		$result = $instance->remove( $rsvp['rsvp_id'], 'host' );
+		$result = $flag->remove( $rsvp['rsvp_id'] );
 
 		remove_action( 'gatherpress_rsvp_flag_removed', $listener );
 
@@ -372,7 +307,7 @@ class Test_Flag extends Base {
 	public function test_remove_fails_when_the_flag_cannot_be_removed(): void {
 		global $wpdb;
 
-		$instance = Flag::get_instance();
+		$flag     = new Test_Base_Concrete( 'host' );
 		$rsvp     = $this->make_rsvp();
 		$fired    = false;
 		$table    = $wpdb->term_relationships;
@@ -386,14 +321,14 @@ class Test_Flag extends Base {
 			$wpdb->term_relationships = $table;
 		};
 
-		$instance->add( $rsvp['rsvp_id'], 'host' );
+		$flag->add( $rsvp['rsvp_id'] );
 
 		add_action( 'gatherpress_rsvp_flag_removed', $listener );
 		add_action( 'delete_term_relationships', $break );
 		add_action( 'deleted_term_relationships', $restore );
 		$suppressed = $wpdb->suppress_errors( true );
 
-		$result = $instance->remove( $rsvp['rsvp_id'], 'host' );
+		$result = $flag->remove( $rsvp['rsvp_id'] );
 
 		$wpdb->suppress_errors( $suppressed );
 		$wpdb->term_relationships = $table;
@@ -403,7 +338,7 @@ class Test_Flag extends Base {
 
 		$this->assertFalse( $result, 'A removal that failed should report failure.' );
 		$this->assertFalse( $fired, 'Nothing should be announced when nothing was removed.' );
-		$this->assertTrue( $instance->has( $rsvp['rsvp_id'], 'host' ), 'The flag should still stand.' );
+		$this->assertTrue( $flag->has( $rsvp['rsvp_id'] ), 'The flag should still stand.' );
 	}
 
 	/**
@@ -415,43 +350,20 @@ class Test_Flag extends Base {
 	 * @return void
 	 */
 	public function test_has_matches_exact_slugs_only(): void {
-		$instance = Flag::get_instance();
-		$rsvp     = $this->make_rsvp();
+		$rsvp = $this->make_rsvp();
 
-		$instance->add( $rsvp['rsvp_id'], 'host' );
+		( new Test_Base_Concrete( 'host' ) )->add( $rsvp['rsvp_id'] );
 
-		$term_id = (string) get_term_by( 'slug', 'host', Flag::TAXONOMY )->term_id;
+		$term_id = (string) get_term_by( 'slug', 'host', Base::TAXONOMY )->term_id;
 
 		$this->assertTrue(
-			is_object_in_term( $rsvp['rsvp_id'], Flag::TAXONOMY, $term_id ),
+			is_object_in_term( $rsvp['rsvp_id'], Base::TAXONOMY, $term_id ),
 			'Core should match the term ID given as a string, which is the trap has() avoids.'
 		);
 		$this->assertFalse(
-			$instance->has( $rsvp['rsvp_id'], $term_id ),
-			'A numeric string should not match a flag by its term ID.'
+			( new Test_Base_Concrete( $term_id ) )->has( $rsvp['rsvp_id'] ),
+			'A numeric slug should not match a flag by its term ID.'
 		);
-	}
-
-	/**
-	 * Coverage for get returning an empty list when the taxonomy cannot be
-	 * read, where core returns a WP_Error.
-	 *
-	 * @covers ::get
-	 *
-	 * @return void
-	 */
-	public function test_get_returns_empty_when_the_taxonomy_cannot_be_read(): void {
-		$instance = Flag::get_instance();
-		$rsvp     = $this->make_rsvp();
-
-		$instance->add( $rsvp['rsvp_id'], 'host' );
-		unregister_taxonomy( Flag::TAXONOMY );
-
-		$flags = $instance->get( $rsvp['rsvp_id'] );
-
-		Setup::get_instance()->register_taxonomy();
-
-		$this->assertSame( array(), $flags, 'An unreadable taxonomy should read as no flags.' );
 	}
 
 	/**
@@ -462,15 +374,15 @@ class Test_Flag extends Base {
 	 * @return void
 	 */
 	public function test_count_counts_approved_rsvps_only(): void {
-		$instance = Flag::get_instance();
+		$flag     = new Test_Base_Concrete( 'host' );
 		$rsvp     = $this->make_rsvp();
 		$event_id = $rsvp['event_id'];
 
-		$this->assertSame( 0, $instance->count( $event_id, 'host' ), 'An event with no flags should count zero.' );
+		$this->assertSame( 0, $flag->count( $event_id ), 'An event with no flags should count zero.' );
 
-		$instance->add( $rsvp['rsvp_id'], 'host' );
+		$flag->add( $rsvp['rsvp_id'] );
 
-		$this->assertSame( 1, $instance->count( $event_id, 'host' ), 'A flagged approved RSVP should be counted.' );
+		$this->assertSame( 1, $flag->count( $event_id ), 'A flagged approved RSVP should be counted.' );
 
 		$pending_id = (int) wp_insert_comment(
 			array(
@@ -481,61 +393,17 @@ class Test_Flag extends Base {
 			)
 		);
 
-		$instance->add( $pending_id, 'host' );
+		$flag->add( $pending_id );
 
 		$this->assertSame(
 			1,
-			$instance->count( $event_id, 'host' ),
+			$flag->count( $event_id ),
 			'A flagged RSVP awaiting moderation should not be counted.'
 		);
-		$this->assertSame( 0, $instance->count( $event_id, 'HOST' ), 'An invalid slug should count zero.' );
-	}
-
-	/**
-	 * Coverage for delete_flags: deleting an RSVP sweeps every flag on it.
-	 *
-	 * @covers ::delete_flags
-	 *
-	 * @return void
-	 */
-	public function test_delete_flags_sweeps_every_flag_from_a_deleted_rsvp(): void {
-		$instance = Flag::get_instance();
-		$rsvp     = $this->make_rsvp();
-
-		$instance->add( $rsvp['rsvp_id'], 'host' );
-		$instance->add( $rsvp['rsvp_id'], 'checked-in' );
-
-		wp_delete_comment( $rsvp['rsvp_id'], true );
-
 		$this->assertSame(
-			array(),
-			wp_get_object_terms( $rsvp['rsvp_id'], Flag::TAXONOMY, array( 'fields' => 'slugs' ) ),
-			'Deleting an RSVP should leave no flag relationships behind.'
-		);
-	}
-
-	/**
-	 * Coverage for delete_flags skipping other comment types without touching
-	 * the taxonomy.
-	 *
-	 * @covers ::delete_flags
-	 *
-	 * @return void
-	 */
-	public function test_delete_flags_skips_other_comment_types(): void {
-		$instance   = Flag::get_instance();
-		$post_id    = $this->mock->post()->get()->ID;
-		$comment_id = (int) wp_insert_comment( array( 'comment_post_ID' => $post_id ) );
-
-		// Written directly, since the API refuses comments that are not RSVPs.
-		wp_set_object_terms( $comment_id, 'host', Flag::TAXONOMY );
-
-		$instance->delete_flags( $comment_id, get_comment( $comment_id ) );
-
-		$this->assertSame(
-			array( 'host' ),
-			wp_get_object_terms( $comment_id, Flag::TAXONOMY, array( 'fields' => 'slugs' ) ),
-			'A comment that is not an RSVP should be left alone.'
+			0,
+			( new Test_Base_Concrete( 'HOST' ) )->count( $event_id ),
+			'An invalid slug should count zero.'
 		);
 	}
 
@@ -547,51 +415,51 @@ class Test_Flag extends Base {
 	 * @return void
 	 */
 	public function test_can_write(): void {
-		$instance = Flag::get_instance();
-		$rsvp     = $this->make_rsvp();
+		$flag = new Test_Base_Concrete( 'host' );
+		$rsvp = $this->make_rsvp();
 
 		$this->assertTrue(
-			Utility::invoke_hidden_method( $instance, 'can_write', array( $rsvp['rsvp_id'], 'host' ) ),
+			Utility::invoke_hidden_method( $flag, 'can_write', array( $rsvp['rsvp_id'] ) ),
 			'A valid slug on an RSVP with the taxonomy registered should be writable.'
 		);
 		$this->assertFalse(
-			Utility::invoke_hidden_method( $instance, 'can_write', array( $rsvp['rsvp_id'], 'HOST' ) ),
+			Utility::invoke_hidden_method( new Test_Base_Concrete( 'HOST' ), 'can_write', array( $rsvp['rsvp_id'] ) ),
 			'An invalid slug should not be writable.'
 		);
 		$this->assertFalse(
-			Utility::invoke_hidden_method( $instance, 'can_write', array( 0, 'host' ) ),
+			Utility::invoke_hidden_method( $flag, 'can_write', array( 0 ) ),
 			'A comment ID that does not exist should not be writable.'
 		);
 
-		unregister_taxonomy( Flag::TAXONOMY );
+		unregister_taxonomy( Base::TAXONOMY );
 
-		$before_init = Utility::invoke_hidden_method( $instance, 'can_write', array( $rsvp['rsvp_id'], 'host' ) );
+		$before_init = Utility::invoke_hidden_method( $flag, 'can_write', array( $rsvp['rsvp_id'] ) );
 
-		Setup::get_instance()->register_taxonomy();
+		Rsvp_Setup::get_instance()->register_taxonomy();
 
 		$this->assertFalse( $before_init, 'Nothing should be writable before the taxonomy is registered.' );
 	}
 
 	/**
-	 * Coverage for is_valid_flag on each branch.
+	 * Coverage for is_valid_slug on each branch.
 	 *
-	 * @covers ::is_valid_flag
+	 * @covers ::is_valid_slug
 	 *
 	 * @return void
 	 */
-	public function test_is_valid_flag(): void {
-		$instance = Flag::get_instance();
+	public function test_is_valid_slug(): void {
+		$flag = new Test_Base_Concrete();
 
 		foreach ( array( 'checked-in', 'first_timer', 'walk-in', 'host2' ) as $slug ) {
 			$this->assertTrue(
-				Utility::invoke_hidden_method( $instance, 'is_valid_flag', array( $slug ) ),
+				Utility::invoke_hidden_method( $flag, 'is_valid_slug', array( $slug ) ),
 				sprintf( 'The slug %s should be accepted.', $slug )
 			);
 		}
 
 		foreach ( array( '', 'Walk In', 'HOST', 'no-show!' ) as $slug ) {
 			$this->assertFalse(
-				Utility::invoke_hidden_method( $instance, 'is_valid_flag', array( $slug ) ),
+				Utility::invoke_hidden_method( $flag, 'is_valid_slug', array( $slug ) ),
 				sprintf( 'The slug %s should be refused.', wp_json_encode( $slug ) )
 			);
 		}

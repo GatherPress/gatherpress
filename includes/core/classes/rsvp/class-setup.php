@@ -17,6 +17,8 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Assets;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Flag\Base as Flag;
+use GatherPress\Core\Rsvp\Flag\Setup as Flag_Setup;
 use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
 use GatherPress\Core\Rsvp\Response\Provider_Registry;
 use GatherPress\Core\Rsvp\Response\Status;
@@ -81,9 +83,8 @@ final class Setup {
 	 */
 	protected function instantiate_classes(): void {
 		Abilities::get_instance();
-		Check_In::get_instance();
 		Cleanup::get_instance();
-		Flag::get_instance();
+		Flag_Setup::get_instance();
 		Form::get_instance();
 		Query::get_instance();
 		Provider_Registry::get_instance();

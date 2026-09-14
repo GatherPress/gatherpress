@@ -1,4 +1,4 @@
 Significance: minor
 Type: added
 
-Added an RSVP flag API, `Rsvp\Flag`, so GatherPress and companion plugins can store yes/no markers on an RSVP, such as check-in, in one shared taxonomy without overwriting each other, with `gatherpress_rsvp_flag_added` and `gatherpress_rsvp_flag_removed` actions.
+Added an RSVP flag API: a flag is a class extending `Rsvp\Flag\Base`, the way a settings tab extends `Settings\Base`, so GatherPress and companion plugins can store yes/no markers on an RSVP, such as check-in, in one shared taxonomy without overwriting each other, with `gatherpress_rsvp_flag_added` and `gatherpress_rsvp_flag_removed` actions.

@@ -22,6 +22,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
 use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Flag\Check_In;
 use GatherPress\Core\Rsvp\Response\Status;
 use WP_List_Table;
 
@@ -724,7 +725,7 @@ final class List_Table extends WP_List_Table {
 				$output = $statuses[ $approved ] ?? '-';
 				break;
 			case 'checked_in':
-				$output = Check_In::get_instance()->is_checked_in( (int) $item['comment_ID'] )
+				$output = Check_In::get_instance()->has( (int) $item['comment_ID'] )
 					? __( 'Yes', 'gatherpress' )
 					: '-';
 				break;
@@ -875,7 +876,7 @@ final class List_Table extends WP_List_Table {
 		$actions       = array();
 		$is_approved   = ( '1' === $item['comment_approved'] );
 		$is_spam       = ( 'spam' === $item['comment_approved'] );
-		$is_checked_in = Check_In::get_instance()->is_checked_in( (int) $item['comment_ID'] );
+		$is_checked_in = Check_In::get_instance()->has( (int) $item['comment_ID'] );
 
 		$action_definitions = array(
 			'approve'    => array(
@@ -1119,12 +1120,12 @@ final class List_Table extends WP_List_Table {
 
 			foreach ( $rsvp_ids as $rsvp_id ) {
 				if ( 'check_in' === $current_action ) {
-					$check_in->check_in( $rsvp_id );
+					$check_in->add( $rsvp_id );
 
 					continue;
 				}
 
-				$check_in->uncheck_in( $rsvp_id );
+				$check_in->remove( $rsvp_id );
 			}
 		} elseif ( isset( $action_status_map[ $current_action ] ) ) {
 			$status = $action_status_map[ $current_action ];

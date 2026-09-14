@@ -166,21 +166,65 @@ checked in" or "this person walked in without an RSVP". A flag is a term in the
 `_gatherpress_rsvp_flag` taxonomy attached to the RSVP comment. Its presence
 means yes and its absence means no, so existing RSVPs need no backfill.
 
-`GatherPress\Core\Rsvp\Flag` is the only place flags are written. GatherPress
-and companion plugins share it, so anything that needs yes/no state on an RSVP
-should store it here rather than register a taxonomy of its own.
+Each flag is a class that extends `GatherPress\Core\Rsvp\Flag\Base`, the same
+way a settings tab extends `GatherPress\Core\Settings\Base`. GatherPress and
+companion plugins share the one taxonomy, so anything that needs yes/no state
+on an RSVP should define a flag rather than register a taxonomy of its own.
 
-### The API
+### The flag classes
 
-All methods are on the singleton, `Flag::get_instance()`.
+- **`GatherPress\Core\Rsvp\Flag\Base`**: the abstract class a flag extends. It
+  stores, reads, and counts the flag, and fires the flag hooks.
+- **`GatherPress\Core\Rsvp\Flag\Check_In`**: the `checked-in` flag, the first
+  one GatherPress ships.
+- **`GatherPress\Core\Rsvp\Flag\Setup`**: what belongs to every flag rather
+  than one. It reads all flags on an RSVP and sweeps them when the RSVP is
+  deleted.
+
+### Adding a flag
+
+Create a class that extends `Base`, use the `Singleton` trait, and return the
+slug from `get_slug()`:
+
+```php
+<?php
+
+namespace My_Plugin\Flag;
+
+use GatherPress\Core\Rsvp\Flag\Base;
+use GatherPress\Core\Traits\Singleton;
+
+class Walk_In extends Base {
+	use Singleton;
+
+	protected function get_slug(): string {
+		return 'my-plugin-walk-in';
+	}
+}
+```
+
+That is the whole flag. It has no hooks of its own, so it needs no bootstrapping:
+call it wherever you need it.
+
+```php
+use My_Plugin\Flag\Walk_In;
+
+$walk_in = Walk_In::get_instance();
+
+$walk_in->add( $rsvp_id );    // true once the RSVP carries the flag.
+$walk_in->has( $rsvp_id );    // true.
+$walk_in->count( $event_id ); // Approved RSVPs on the event with the flag.
+$walk_in->remove( $rsvp_id ); // true once the RSVP no longer carries it.
+```
+
+### The methods
 
 | Method | Returns | Purpose |
 |---|---|---|
-| `add( int $rsvp_id, string $flag )` | `bool` | Adds the flag, leaving every other flag in place. |
-| `remove( int $rsvp_id, string $flag )` | `bool` | Removes the flag, leaving every other flag in place. |
-| `has( int $rsvp_id, string $flag )` | `bool` | Whether the RSVP carries the flag. |
-| `get( int $rsvp_id )` | `string[]` | Every flag on the RSVP, in one query. |
-| `count( int $post_id, string $flag )` | `int` | How many approved RSVPs on the event carry the flag. |
+| `add( int $rsvp_id )` | `bool` | Adds the flag, leaving every other flag on the RSVP in place. |
+| `remove( int $rsvp_id )` | `bool` | Removes the flag, leaving every other flag in place. |
+| `has( int $rsvp_id )` | `bool` | Whether the RSVP carries the flag. |
+| `count( int $post_id )` | `int` | How many approved RSVPs on the event carry the flag. |
 
 `add()` and `remove()` are idempotent. They return `true` when the RSVP ends up
 in the requested state, including when it was already there, and `false` when
@@ -192,72 +236,55 @@ taxonomy is not registered yet. It registers on `init`, so write flags from
 spammed RSVP is not part of the event's audience even if it was flagged before
 it was moderated.
 
+To read every flag on an RSVP at once, use
+`Setup::get_instance()->get_flags( $rsvp_id )`. It returns the slugs and reads
+through the object term cache, so checking several flags on one RSVP queries
+once.
+
+### Reacting to a change
+
+Override `after_add()` or `after_remove()` to run code when your flag actually
+changes. Neither runs on a repeat or a failed write. `Check_In` uses them to
+fire its own actions:
+
+```php
+protected function after_add( int $rsvp_id ): void {
+	do_action( 'my_plugin_walk_in_recorded', $rsvp_id );
+}
+```
+
 ### Slugs
 
-Slugs are free-form and need no registration, so a companion plugin can add one
-without coordinating with GatherPress. A slug must already be in the shape
-`sanitize_key()` produces: lowercase letters, digits, hyphens and underscores.
-`walk-in` and `first_timer` are accepted; `Walk In` and `HOST` are refused
-rather than silently rewritten, so the flag you read back is always the one you
-wrote.
+A slug needs no registration, so a companion plugin can add one without
+coordinating with GatherPress. It must already be in the shape `sanitize_key()`
+produces: lowercase letters, digits, hyphens and underscores. `walk-in` and
+`first_timer` are accepted; `Walk In` and `HOST` are refused rather than
+silently rewritten, so the flag stored is always the one the class declares.
 
 Prefix slugs your plugin owns, for example `my-plugin-vip`, to stay clear of
 any flag GatherPress adds later.
 
-### Write through the API
+### Write through a flag class
 
 Never call `wp_set_object_terms()` on `_gatherpress_rsvp_flag` directly. Without
 `$append = true` it replaces every flag on the RSVP, wiping state other code
-stored there. `Flag::add()` always appends.
+stored there. `add()` always appends.
 
 Reads have a similar trap: `is_object_in_term()` matches term names as well as
-slugs, and treats a numeric string as a term ID. `Flag::has()` compares exact
-slugs.
+slugs, and treats a numeric string as a term ID. `has()` compares exact slugs.
 
 ### Hooks
 
 | Action | Arguments | Fires |
 |---|---|---|
-| `gatherpress_rsvp_flag_added` | `int $rsvp_id`, `string $flag` | After a flag is added to an RSVP that did not carry it. |
-| `gatherpress_rsvp_flag_removed` | `int $rsvp_id`, `string $flag` | After a flag is removed from an RSVP that carried it. |
+| `gatherpress_rsvp_flag_added` | `int $rsvp_id`, `string $flag` | After any flag is added to an RSVP that did not carry it. |
+| `gatherpress_rsvp_flag_removed` | `int $rsvp_id`, `string $flag` | After any flag is removed from an RSVP that carried it. |
+| `gatherpress_rsvp_checked_in` | `int $rsvp_id` | After an RSVP is checked in. |
+| `gatherpress_rsvp_unchecked_in` | `int $rsvp_id` | After an RSVP's check-in is removed. |
 
-Neither fires when the RSVP was already in the requested state, or when the
-write failed. Deleting an RSVP sweeps every flag on it without firing
-`gatherpress_rsvp_flag_removed`, since the RSVP itself is gone.
-
-### Check-in
-
-Check-in is the first flag, `checked-in`, available as `Check_In::FLAG`.
-`Rsvp\Check_In` is a thin consumer of the API: `check_in()`, `uncheck_in()`,
-`is_checked_in()` and `count_checked_in()` call `add()`, `remove()`, `has()` and
-`count()`. Its own `gatherpress_rsvp_checked_in` and
-`gatherpress_rsvp_unchecked_in` actions follow the flag actions, so they fire
-however the flag was written.
-
-### Example
-
-A companion plugin marking RSVPs added at the door:
-
-```php
-use GatherPress\Core\Rsvp\Flag;
-
-const MY_PLUGIN_WALK_IN = 'my-plugin-walk-in';
-
-function my_plugin_record_walk_in( int $rsvp_id ): bool {
-	return Flag::get_instance()->add( $rsvp_id, MY_PLUGIN_WALK_IN );
-}
-
-function my_plugin_count_walk_ins( int $event_id ): int {
-	return Flag::get_instance()->count( $event_id, MY_PLUGIN_WALK_IN );
-}
-
-function my_plugin_on_flag_added( int $rsvp_id, string $flag ): void {
-	if ( MY_PLUGIN_WALK_IN === $flag ) {
-		my_plugin_notify_door_staff( $rsvp_id );
-	}
-}
-add_action( 'gatherpress_rsvp_flag_added', 'my_plugin_on_flag_added', 10, 2 );
-```
+None fires when the RSVP was already in the requested state, or when the write
+failed. Deleting an RSVP sweeps every flag on it without firing the removal
+actions, since the RSVP itself is gone.
 
 ### What belongs in a flag
 
