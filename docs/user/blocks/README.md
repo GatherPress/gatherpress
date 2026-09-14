@@ -8,7 +8,9 @@ Event List (deprecated in 0.34 — replaced by the [Event Query](./event-query.m
 
 [RSVP Response and its inner blocks](./rsvp-response-and-inner-blocks.md) (RSVP Response Toggle, Avatar Display Name, RSVP Guest Count Display, etc)
 
-Add to Calendar: Allows a user to add an event to their preferred calendar application. This saves a one-time copy of the event; for live, auto-updating subscriptions by venue, topic, or site, see [Calendar feeds](../calendar-feeds.md).
+[Subscribe to Events](./subscribe-to-events.md): Hands visitors a link (iCal or `webcal:`) they can paste into a calendar app to follow a venue, a topic, the events archive, or the whole site. This is a live subscription, unlike the one-time Add to Calendar download.
+
+Add to Calendar: Allows a user to add an event to their preferred calendar application. This saves a one-time copy of the event; for live, auto-updating subscriptions by venue, topic, or site, see [Calendar feeds](../calendar-feeds.md) or the [Subscribe to Events](./subscribe-to-events.md) block.
 
 ## Other blocks used in an event
 
