@@ -312,82 +312,27 @@ final class Event_Query {
 			return $query;
 		}
 
-		// Generate a new custom query with all potential query vars.
+		// Generate a new custom query with all potential query vars. Each
+		// support-gated group is built by its own helper so the branches do
+		// not multiply into this method's NPath complexity.
 		$query_args = array();
 
 		if ( $query_event_supports ) {
-			// Honor the block's selected post type when present so a Query
-			// Loop pinned to e.g. `production` doesn't leak `gatherpress_event`
-			// posts (#1609). Fall back to all event-supporting post types
-			// only when the block didn't pick one explicitly.
-			$query_args['post_type'] = '' !== $requested_post_type
-				? $requested_post_type
-				: get_post_types_by_support( Event::SUPPORT );
-
-			// Type of event list: 'upcoming', 'past', or 'all',
-			// @see wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php.
-			$query_args['gatherpress_event_query'] = $event_query_type;
-
-			// Exclude Posts.
-			$exclude_ids = $this->get_exclude_ids( $block_query );
-			if ( ! empty( $exclude_ids ) ) {
-				// phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
-				$query_args['post__not_in'] = $exclude_ids;
-			}
-
-			if ( isset( $block_query['include_unfinished'] ) ) {
-				$query_args['include_unfinished'] = $block_query['include_unfinished'];
-			}
-
-			// Order By.
-			if ( isset( $block_query['orderBy'] ) ) {
-				$query_args['orderby'] = array( $block_query['orderBy'] );
-			}
-
-			// Order
-			// can be NULL, when ASC.
-			$query_args['order'] = strtoupper( $block_query['order'] ?? 'ASC' );
-
-			// The shadow-source contextual filter only applies to event
-			// queries; on a venue/production loop it would scope the loop
-			// to the host page, which isn't what the block is for.
-			if ( ! empty( $block_query['shadow_filter'] ) ) {
-				$query_args['shadow_filter'] = $block_query['shadow_filter'];
-			}
-
-			// Editor-preview context also applies to event queries. The REST
-			// path uses these values when the singular query context is absent.
-			if ( ! empty( $block_query['gatherpress_shadow_source_post_id'] ) ) {
-				$query_args['gatherpress_shadow_source_post_id'] =
-					(int) $block_query['gatherpress_shadow_source_post_id'];
-			}
-			if ( ! empty( $block_query['gatherpress_shadow_source_post_type'] ) ) {
-				$query_args['gatherpress_shadow_source_post_type'] =
-					(string) $block_query['gatherpress_shadow_source_post_type'];
-			}
+			$query_args = array_merge(
+				$query_args,
+				$this->get_event_loop_query_args(
+					$block_query,
+					$requested_post_type,
+					$event_query_type
+				)
+			);
 		}
 
 		if ( $query_shadow_supports ) {
-			// Filter source posts by their event activity (upcoming or past).
-			// Only meaningful on a query loop listing shadow-source post
-			// types; the pre_get_posts handler in Event\Query gates on that
-			// support.
-			if ( ! empty( $block_query['has_events_filter'] ) ) {
-				$query_args['has_events_filter'] = $block_query['has_events_filter'];
-			}
-
-			if ( isset( $block_query['upcoming_events_only'] ) ) {
-				$query_args['upcoming_events_only'] = $block_query['upcoming_events_only'];
-			}
-
-			if ( ! empty( $block_query['gatherpress_shadow_source_post_id'] ) ) {
-				$query_args['gatherpress_shadow_source_post_id'] =
-					(int) $block_query['gatherpress_shadow_source_post_id'];
-			}
-			if ( ! empty( $block_query['gatherpress_shadow_source_post_type'] ) ) {
-				$query_args['gatherpress_shadow_source_post_type'] =
-					(string) $block_query['gatherpress_shadow_source_post_type'];
-			}
+			$query_args = array_merge(
+				$query_args,
+				$this->get_shadow_loop_query_args( $block_query )
+			);
 		}
 
 		/** This filter is documented in includes/query-loop.php */
@@ -403,6 +348,126 @@ final class Event_Query {
 			$query,
 			$filtered_query_args
 		);
+	}
+
+	/**
+	 * Build the event-specific query vars for an event-supporting Query Loop.
+	 *
+	 * Also carries the editor-preview shadow-source context, because an event
+	 * loop can be scoped to the shadow-source post it was placed on.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, mixed> $block_query         Query attribute from the block context.
+	 * @param string               $requested_post_type Post type the block asked for, '' when unset.
+	 * @param string               $event_query_type    One of 'upcoming', 'past', or 'all'.
+	 *
+	 * @return array<string, mixed> Event-specific query vars.
+	 */
+	protected function get_event_loop_query_args(
+		array $block_query,
+		string $requested_post_type,
+		string $event_query_type
+	): array {
+		$query_args = array();
+
+		// Honor the block's selected post type when present so a Query
+		// Loop pinned to e.g. `production` doesn't leak `gatherpress_event`
+		// posts (#1609). Fall back to all event-supporting post types
+		// only when the block didn't pick one explicitly.
+		$query_args['post_type'] = '' !== $requested_post_type
+			? $requested_post_type
+			: get_post_types_by_support( Event::SUPPORT );
+
+		// Type of event list: 'upcoming', 'past', or 'all',
+		// @see wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php.
+		$query_args['gatherpress_event_query'] = $event_query_type;
+
+		// Exclude Posts.
+		$exclude_ids = $this->get_exclude_ids( $block_query );
+		if ( ! empty( $exclude_ids ) ) {
+			// phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
+			$query_args['post__not_in'] = $exclude_ids;
+		}
+
+		if ( isset( $block_query['include_unfinished'] ) ) {
+			$query_args['include_unfinished'] = $block_query['include_unfinished'];
+		}
+
+		// Order By.
+		if ( isset( $block_query['orderBy'] ) ) {
+			$query_args['orderby'] = array( $block_query['orderBy'] );
+		}
+
+		// Order
+		// can be NULL, when ASC.
+		$query_args['order'] = strtoupper( $block_query['order'] ?? 'ASC' );
+
+		// The shadow-source contextual filter only applies to event
+		// queries; on a venue/production loop it would scope the loop
+		// to the host page, which isn't what the block is for.
+		if ( ! empty( $block_query['shadow_filter'] ) ) {
+			$query_args['shadow_filter'] = $block_query['shadow_filter'];
+		}
+
+		// Editor-preview context also applies to event queries. The REST
+		// path uses these values when the singular query context is absent.
+		return array_merge( $query_args, $this->get_shadow_source_context_args( $block_query ) );
+	}
+
+	/**
+	 * Build the event-activity query vars for a shadow-source Query Loop.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, mixed> $block_query Query attribute from the block context.
+	 *
+	 * @return array<string, mixed> Shadow-source activity query vars.
+	 */
+	protected function get_shadow_loop_query_args( array $block_query ): array {
+		$query_args = array();
+
+		// Filter source posts by their event activity (upcoming or past).
+		// Only meaningful on a query loop listing shadow-source post
+		// types; the pre_get_posts handler in Event\Query gates on that
+		// support.
+		if ( ! empty( $block_query['has_events_filter'] ) ) {
+			$query_args['has_events_filter'] = $block_query['has_events_filter'];
+		}
+
+		if ( isset( $block_query['upcoming_events_only'] ) ) {
+			$query_args['upcoming_events_only'] = $block_query['upcoming_events_only'];
+		}
+
+		return array_merge( $query_args, $this->get_shadow_source_context_args( $block_query ) );
+	}
+
+	/**
+	 * Build the editor-preview shadow-source context query vars.
+	 *
+	 * Shared by the event and shadow-source branches so the cast and the
+	 * empty() check have a single definition.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, mixed> $block_query Query attribute from the block context.
+	 *
+	 * @return array<string, mixed> Shadow-source context query vars, empty when unset.
+	 */
+	protected function get_shadow_source_context_args( array $block_query ): array {
+		$query_args = array();
+
+		if ( ! empty( $block_query['gatherpress_shadow_source_post_id'] ) ) {
+			$query_args['gatherpress_shadow_source_post_id'] =
+				(int) $block_query['gatherpress_shadow_source_post_id'];
+		}
+
+		if ( ! empty( $block_query['gatherpress_shadow_source_post_type'] ) ) {
+			$query_args['gatherpress_shadow_source_post_type'] =
+				(string) $block_query['gatherpress_shadow_source_post_type'];
+		}
+
+		return $query_args;
 	}
 
 	/**

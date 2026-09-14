@@ -1444,6 +1444,271 @@ class Test_Event_Query extends Base {
 	}
 
 	/**
+	 * Test query_loop_block_query_vars forwards shadow-source context on an event query.
+	 *
+	 * The event branch carries the editor-preview context params so a REST
+	 * preview can scope an event loop to the shadow-source post it sits on.
+	 * A venue-only fixture exercises the shadow branch instead, so this pins
+	 * the event-side copy with an event-supporting post type.
+	 *
+	 * @since 0.36.0
+	 * @covers ::query_loop_block_query_vars
+	 *
+	 * @return void
+	 */
+	public function test_query_loop_block_query_vars_forwards_shadow_context_on_event_query(): void {
+		$instance = Event_Query::get_instance();
+
+		$query = array( 'posts_per_page' => 10 );
+		$block = $this->createMock( \WP_Block::class );
+
+		$block->context = array(
+			'query' => array(
+				'postType'                            => Event::POST_TYPE,
+				'gatherpress_event_query'             => 'upcoming',
+				'shadow_filter'                       => 1,
+				'gatherpress_shadow_source_post_id'   => 42,
+				'gatherpress_shadow_source_post_type' => 'production',
+			),
+		);
+
+		$result = $instance->query_loop_block_query_vars( $query, $block );
+
+		$this->assertSame(
+			42,
+			$result['gatherpress_shadow_source_post_id'],
+			'Should cast the shadow-source post id to int on an event query.'
+		);
+		$this->assertSame(
+			'production',
+			$result['gatherpress_shadow_source_post_type'],
+			'Should pass the shadow-source post type through on an event query.'
+		);
+	}
+
+	/**
+	 * Test get_event_loop_query_args builds every event query var.
+	 *
+	 * Invoked directly on purpose, not as a substitute for the public-method
+	 * tests. xdebug does not reliably trace a same-class helper reached only
+	 * through short delegation from `query_loop_block_query_vars`, so with
+	 * these helpers exercised solely through the public method the coverage
+	 * gate reports 93.26% for this file (18 uncovered lines) even though the
+	 * code runs. Each helper therefore gets a direct invoke per return path.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_event_loop_query_args
+	 *
+	 * @return void
+	 */
+	public function test_get_event_loop_query_args_builds_all_vars(): void {
+		$instance = Event_Query::get_instance();
+
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'get_event_loop_query_args',
+			array(
+				array(
+					'postType'                            => 'production',
+					'include_unfinished'                  => 1,
+					'orderBy'                             => 'datetime',
+					'order'                               => 'desc',
+					'shadow_filter'                       => 1,
+					'gatherpress_shadow_source_post_id'   => '42',
+					'gatherpress_shadow_source_post_type' => 'season',
+				),
+				'production',
+				'past',
+			)
+		);
+
+		$this->assertSame( 'production', $result['post_type'], 'Should honor the block post type.' );
+		$this->assertSame( 'past', $result['gatherpress_event_query'], 'Should pass the event query type.' );
+		$this->assertSame( 1, $result['include_unfinished'], 'Should pass include_unfinished through.' );
+		$this->assertSame( array( 'datetime' ), $result['orderby'], 'Should wrap orderby in an array.' );
+		$this->assertSame( 'DESC', $result['order'], 'Should upper-case the order direction.' );
+		$this->assertSame( 1, $result['shadow_filter'], 'Should pass shadow_filter through.' );
+		$this->assertSame(
+			42,
+			$result['gatherpress_shadow_source_post_id'],
+			'Should cast the context post id to int.'
+		);
+		$this->assertSame(
+			'season',
+			$result['gatherpress_shadow_source_post_type'],
+			'Should pass the context post type through.'
+		);
+	}
+
+	/**
+	 * Test get_event_loop_query_args falls back and omits unset optionals.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_event_loop_query_args
+	 *
+	 * @return void
+	 */
+	public function test_get_event_loop_query_args_falls_back_without_optionals(): void {
+		$instance = Event_Query::get_instance();
+
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'get_event_loop_query_args',
+			array( array(), '', 'upcoming' )
+		);
+
+		$this->assertSame(
+			get_post_types_by_support( Event::SUPPORT ),
+			$result['post_type'],
+			'Should fall back to all event-supporting post types.'
+		);
+		$this->assertSame( 'upcoming', $result['gatherpress_event_query'], 'Should pass the query type.' );
+		$this->assertSame( 'ASC', $result['order'], 'Should default the order to ASC.' );
+		$this->assertArrayNotHasKey( 'post__not_in', $result, 'Should omit post__not_in without exclusions.' );
+		$this->assertArrayNotHasKey( 'include_unfinished', $result, 'Should omit unset include_unfinished.' );
+		$this->assertArrayNotHasKey( 'orderby', $result, 'Should omit unset orderby.' );
+		$this->assertArrayNotHasKey( 'shadow_filter', $result, 'Should omit unset shadow_filter.' );
+		$this->assertArrayNotHasKey(
+			'gatherpress_shadow_source_post_id',
+			$result,
+			'Should omit unset shadow-source context.'
+		);
+	}
+
+	/**
+	 * Test get_event_loop_query_args collects excluded post IDs.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_event_loop_query_args
+	 *
+	 * @return void
+	 */
+	public function test_get_event_loop_query_args_includes_excluded_ids(): void {
+		$post_id  = self::factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$instance = Event_Query::get_instance();
+
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'get_event_loop_query_args',
+			array( array( 'exclude_current' => $post_id ), Event::POST_TYPE, 'all' )
+		);
+
+		$this->assertSame(
+			array( $post_id ),
+			$result['post__not_in'],
+			'Should collect the excluded post id.'
+		);
+	}
+
+	/**
+	 * Test get_shadow_loop_query_args builds activity vars plus context.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_shadow_loop_query_args
+	 *
+	 * @return void
+	 */
+	public function test_get_shadow_loop_query_args_builds_activity_vars(): void {
+		$instance = Event_Query::get_instance();
+
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'get_shadow_loop_query_args',
+			array(
+				array(
+					'has_events_filter'                   => 1,
+					'upcoming_events_only'                => 0,
+					'gatherpress_shadow_source_post_id'   => 7,
+					'gatherpress_shadow_source_post_type' => 'production',
+				),
+			)
+		);
+
+		$this->assertSame( 1, $result['has_events_filter'], 'Should pass has_events_filter through.' );
+		$this->assertSame( 0, $result['upcoming_events_only'], 'Should preserve an explicit 0.' );
+		$this->assertSame( 7, $result['gatherpress_shadow_source_post_id'], 'Should cast the context post id.' );
+		$this->assertSame(
+			'production',
+			$result['gatherpress_shadow_source_post_type'],
+			'Should pass the context post type.'
+		);
+	}
+
+	/**
+	 * Test get_shadow_loop_query_args omits unset activity vars.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_shadow_loop_query_args
+	 *
+	 * @return void
+	 */
+	public function test_get_shadow_loop_query_args_omits_unset_vars(): void {
+		$instance = Event_Query::get_instance();
+
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'get_shadow_loop_query_args',
+			array( array() )
+		);
+
+		$this->assertSame( array(), $result, 'Should return an empty set when nothing is set.' );
+	}
+
+	/**
+	 * Test get_shadow_source_context_args casts and passes set values.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_shadow_source_context_args
+	 *
+	 * @return void
+	 */
+	public function test_get_shadow_source_context_args_casts_set_values(): void {
+		$instance = Event_Query::get_instance();
+
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'get_shadow_source_context_args',
+			array(
+				array(
+					'gatherpress_shadow_source_post_id'   => '7',
+					'gatherpress_shadow_source_post_type' => 'production',
+				),
+			)
+		);
+
+		$this->assertSame(
+			7,
+			$result['gatherpress_shadow_source_post_id'],
+			'Should cast the context post id to int.'
+		);
+		$this->assertSame(
+			'production',
+			$result['gatherpress_shadow_source_post_type'],
+			'Should pass the context post type through.'
+		);
+	}
+
+	/**
+	 * Test get_shadow_source_context_args omits unset context values.
+	 *
+	 * @since 0.36.0
+	 * @covers ::get_shadow_source_context_args
+	 *
+	 * @return void
+	 */
+	public function test_get_shadow_source_context_args_omits_unset_values(): void {
+		$instance = Event_Query::get_instance();
+
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'get_shadow_source_context_args',
+			array( array() )
+		);
+
+		$this->assertSame( array(), $result, 'Should return an empty set when no context is set.' );
+	}
+
+	/**
 	 * Test rest_query passes shadow-source context params through to custom args.
 	 *
 	 * @since 0.34.0
