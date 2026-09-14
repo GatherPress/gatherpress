@@ -105,4 +105,29 @@ class Test_Event_Email extends Base {
 
 		$this->assertStringNotContainsString( '<img', $output );
 	}
+
+	/**
+	 * Tests the RSVP button reserves the space its padding occupies.
+	 *
+	 * An inline box does not grow to fit vertical padding, so without a
+	 * display the button's background paints over the excerpt beneath it.
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_button_is_laid_out_as_an_inline_block(): void {
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+
+		$output = Utility::render_template(
+			GATHERPRESS_CORE_PATH . '/includes/templates/admin/emails/event-email.php',
+			array(
+				'event_id' => $event_id,
+				'message'  => '',
+			)
+		);
+
+		$this->assertMatchesRegularExpression(
+			'/<a [^>]*style="[^"]*padding: 12px 20px;[^"]*display: inline-block;[^"]*"/',
+			$output
+		);
+	}
 }
