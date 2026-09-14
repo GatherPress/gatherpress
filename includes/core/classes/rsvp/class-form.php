@@ -240,7 +240,7 @@ final class Form {
 	 * @return void
 	 */
 	public function handle_rsvp_comment_post( int $comment_id ): void {
-		if ( Rsvp::COMMENT_TYPE === get_comment_type( $comment_id ) ) {
+		if ( Rsvp::is_comment_type( $comment_id ) ) {
 			// Prepare data for meta processing.
 			// phpcs:disable WordPress.Security.NonceVerification.Missing
 			$data = array(
@@ -292,7 +292,7 @@ final class Form {
 	 * @return string The modified redirect location.
 	 */
 	public function handle_rsvp_comment_redirect( string $location, WP_Comment $comment ): string {
-		if ( Rsvp::COMMENT_TYPE !== $comment->comment_type ) {
+		if ( ! Rsvp::is_comment_type( $comment ) ) {
 			return $location;
 		}
 
@@ -584,11 +584,16 @@ final class Form {
 		}
 
 		// For REST API submissions, process the custom fields directly.
-		$comment = get_comment( $comment_id );
-		if ( ! $comment || Rsvp::COMMENT_TYPE !== $comment->comment_type ) {
+		if ( ! Rsvp::is_comment_type( $comment_id ) ) {
 			return;
 		}
 
+		$comment = get_comment( $comment_id );
+		/**
+		 * Comment resolution returns a union, so reassert the type for the reads below.
+		 *
+		 * @var WP_Comment $comment
+		 */
 		$post_id = (int) $comment->comment_post_ID;
 
 		// Get stored schemas for this post.
