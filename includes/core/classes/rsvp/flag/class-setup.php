@@ -17,7 +17,6 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
-use WP_Comment;
 
 /**
  * Class Setup.
@@ -52,7 +51,7 @@ final class Setup {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_action( 'deleted_comment', array( $this, 'delete_flags' ), 10, 2 );
+		add_action( 'deleted_comment', array( $this, 'delete_flags' ) );
 	}
 
 	/**
@@ -87,17 +86,16 @@ final class Setup {
 	 * WordPress core deletes commentmeta on `wp_delete_comment()` but never
 	 * touches term relationships, so without this the flags would be left
 	 * behind as orphaned rows. Other comment types carry no flags and are
-	 * skipped without a query.
+	 * skipped.
 	 *
 	 * @since 0.36.0
 	 *
 	 * @param int|string $comment_id The deleted comment ID.
-	 * @param WP_Comment $comment    The deleted comment.
 	 *
 	 * @return void
 	 */
-	public function delete_flags( $comment_id, WP_Comment $comment ): void {
-		if ( Rsvp::COMMENT_TYPE !== $comment->comment_type ) {
+	public function delete_flags( $comment_id ): void {
+		if ( ! Rsvp::is_comment_type( (int) $comment_id ) ) {
 			return;
 		}
 

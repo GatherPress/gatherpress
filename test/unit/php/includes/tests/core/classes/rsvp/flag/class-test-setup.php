@@ -186,7 +186,9 @@ class Test_Setup extends Base_Unit_Test {
 	}
 
 	/**
-	 * Coverage for delete_flags: deleting an RSVP sweeps every flag on it.
+	 * Coverage for delete_flags: deleting an RSVP sweeps every flag on it. Runs
+	 * through wp_delete_comment() so the RSVP check reads the comment the way it
+	 * does in production, after the row is gone.
 	 *
 	 * @covers ::delete_flags
 	 *
@@ -222,7 +224,7 @@ class Test_Setup extends Base_Unit_Test {
 		// Written directly, since flags refuse comments that are not RSVPs.
 		wp_set_object_terms( $comment_id, 'host', Base::TAXONOMY );
 
-		Setup::get_instance()->delete_flags( $comment_id, get_comment( $comment_id ) );
+		Setup::get_instance()->delete_flags( $comment_id );
 
 		$this->assertSame(
 			array( 'host' ),
