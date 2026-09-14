@@ -9,8 +9,8 @@
 namespace GatherPress\Tests\Core\Rsvp;
 
 use GatherPress\Core\Event;
-use GatherPress\Core\Rsvp\Check_In;
 use GatherPress\Core\Rsvp\Cleanup;
+use GatherPress\Core\Rsvp\Flag;
 use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Rsvp\List_Table;
 use GatherPress\Core\Rsvp\Query;
@@ -54,6 +54,10 @@ class Test_Setup extends Base {
 			Cleanup::class => array(
 				'gatherpress_rsvp_cleanup',
 				array( Cleanup::get_instance(), 'rsvp_cleanup' ),
+			),
+			Flag::class    => array(
+				'deleted_comment',
+				array( Flag::get_instance(), 'delete_flags' ),
 			),
 			Form::class    => array(
 				'init',
@@ -192,7 +196,7 @@ class Test_Setup extends Base {
 
 		$this->assertTrue( taxonomy_exists( Status::TAXONOMY ) );
 		$this->assertTrue( taxonomy_exists( Provider::TAXONOMY ) );
-		$this->assertTrue( taxonomy_exists( Check_In::TAXONOMY ) );
+		$this->assertTrue( taxonomy_exists( Flag::TAXONOMY ) );
 
 		// Private comment taxonomies: nothing is reachable through a term URL,
 		// so no rewrite rules may be generated for them (#825).
@@ -205,8 +209,8 @@ class Test_Setup extends Base {
 			'Failed to assert that the RSVP provider taxonomy registers no rewrite rules.'
 		);
 		$this->assertFalse(
-			get_taxonomy( Check_In::TAXONOMY )->rewrite,
-			'Failed to assert that the RSVP check-in taxonomy registers no rewrite rules.'
+			get_taxonomy( Flag::TAXONOMY )->rewrite,
+			'Failed to assert that the RSVP flag taxonomy registers no rewrite rules.'
 		);
 	}
 

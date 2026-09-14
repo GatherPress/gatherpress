@@ -83,6 +83,7 @@ final class Setup {
 		Abilities::get_instance();
 		Check_In::get_instance();
 		Cleanup::get_instance();
+		Flag::get_instance();
 		Form::get_instance();
 		Query::get_instance();
 		Provider_Registry::get_instance();
@@ -176,7 +177,7 @@ final class Setup {
 		);
 
 		register_taxonomy(
-			Check_In::TAXONOMY,
+			Flag::TAXONOMY,
 			'comment',
 			array(
 				'labels'             => array(),

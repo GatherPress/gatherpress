@@ -17,14 +17,12 @@ namespace GatherPress\Core\Rsvp;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
-use WP_Comment;
 
 /**
  * Records which RSVPs actually turned up.
  *
- * Check-in state is tracked via a taxonomy term on the RSVP comment for fast
- * queries. An absent term means "not checked in", so existing RSVPs need
- * no backfill.
+ * Check-in is the `checked-in` flag, stored through `Flag`. An absent flag
+ * means "not checked in", so existing RSVPs need no backfill.
  *
  * @since 0.36.0
  */
@@ -36,22 +34,13 @@ final class Check_In {
 	use Singleton;
 
 	/**
-	 * Taxonomy for tracking RSVP flags.
+	 * Flag slug for checked-in status.
 	 *
 	 * @since 0.36.0
 	 *
 	 * @var string
 	 */
-	public const TAXONOMY = '_gatherpress_rsvp_flag';
-
-	/**
-	 * Term slug for checked-in status.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @var string
-	 */
-	public const TERM = 'checked-in';
+	public const FLAG = 'checked-in';
 
 	/**
 	 * Class constructor.
@@ -67,99 +56,48 @@ final class Check_In {
 	/**
 	 * Set up hooks for various purposes.
 	 *
-	 * This method adds hooks for different purposes as needed.
+	 * The check-in actions follow the flag actions, so they fire however the
+	 * flag was written, whether through this class or through `Flag` directly.
 	 *
 	 * @since 0.36.0
 	 *
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_action( 'deleted_comment', array( $this, 'delete_check_in' ) );
+		add_action( 'gatherpress_rsvp_flag_added', array( $this, 'announce_check_in' ), 10, 2 );
+		add_action( 'gatherpress_rsvp_flag_removed', array( $this, 'announce_uncheck_in' ), 10, 2 );
 	}
 
 	/**
 	 * Record that an RSVP turned up.
-	 *
-	 * Assigning the term is idempotent: repeating a check-in maintains the
-	 * existing state without duplicate term relationships, and announces
-	 * nothing the second time.
 	 *
 	 * @since 0.36.0
 	 *
 	 * @param int $rsvp_id The RSVP comment ID.
 	 *
 	 * @return bool True when the RSVP is checked in, false when it is not an RSVP
-	 *              or the term could not be assigned.
+	 *              or the flag could not be stored.
 	 */
 	public function check_in( int $rsvp_id ): bool {
-		if ( ! Rsvp::is_comment_type( $rsvp_id ) ) {
-			return false;
-		}
-
-		if ( ! $this->is_checked_in( $rsvp_id ) ) {
-			// Nothing was recorded, so there is nothing to announce.
-			if ( is_wp_error( wp_set_object_terms( $rsvp_id, self::TERM, self::TAXONOMY, true ) ) ) {
-				return false;
-			}
-
-			clean_comment_cache( $rsvp_id );
-
-			/**
-			 * Fires after an RSVP has been checked in.
-			 *
-			 * @since 0.36.0
-			 *
-			 * @param int $rsvp_id The RSVP comment ID.
-			 *
-			 * @return void
-			 */
-			do_action( 'gatherpress_rsvp_checked_in', $rsvp_id );
-		}
-
-		return true;
+		return Flag::get_instance()->add( $rsvp_id, self::FLAG );
 	}
 
 	/**
 	 * Mark an RSVP as not checked in.
 	 *
-	 * Wrong person, wrong row, or an accidental tap at the door: the check-in
-	 * term is removed so the absence of the term remains the single answer
-	 * to whether someone turned up. An RSVP that is already not checked in
-	 * counts as done, and announces nothing.
+	 * Wrong person, wrong row, or an accidental tap at the door: removing the
+	 * flag leaves its absence as the single answer to whether someone turned
+	 * up. An RSVP that is already not checked in counts as done.
 	 *
 	 * @since 0.36.0
 	 *
 	 * @param int $rsvp_id The RSVP comment ID.
 	 *
 	 * @return bool True when the RSVP is not checked in, false when it is not an RSVP
-	 *              or the term could not be removed.
+	 *              or the flag could not be removed.
 	 */
 	public function uncheck_in( int $rsvp_id ): bool {
-		if ( ! Rsvp::is_comment_type( $rsvp_id ) ) {
-			return false;
-		}
-
-		if ( $this->is_checked_in( $rsvp_id ) ) {
-			// Nothing was removed, so there is nothing to announce.
-			if ( true !== wp_remove_object_terms( $rsvp_id, self::TERM, self::TAXONOMY ) ) {
-				return false;
-			}
-
-			clean_comment_cache( $rsvp_id );
-
-			/**
-			 * Fires after an RSVP's check-in has been removed.
-			 *
-			 * @since 0.36.0
-			 *
-			 * @param int $rsvp_id The RSVP comment ID.
-			 *
-			 * @return void
-			 */
-			do_action( 'gatherpress_rsvp_unchecked_in', $rsvp_id );
-		}
-
-		return true;
+		return Flag::get_instance()->remove( $rsvp_id, self::FLAG );
 	}
 
 	/**
@@ -169,18 +107,16 @@ final class Check_In {
 	 *
 	 * @param int $rsvp_id The RSVP comment ID.
 	 *
-	 * @return bool True when a check-in term is assigned.
+	 * @return bool True when the checked-in flag is on the RSVP.
 	 */
 	public function is_checked_in( int $rsvp_id ): bool {
-		return true === is_object_in_term( $rsvp_id, self::TAXONOMY, self::TERM );
+		return Flag::get_instance()->has( $rsvp_id, self::FLAG );
 	}
 
 	/**
 	 * How many RSVPs turned up for an event.
 	 *
-	 * Counts approved RSVPs only, matching what the attendee list shows: a
-	 * held or spammed RSVP is not part of the event's audience even if someone
-	 * checked it in before it was moderated.
+	 * Counts approved RSVPs only; see `Flag::count()`.
 	 *
 	 * @since 0.36.0
 	 *
@@ -189,40 +125,60 @@ final class Check_In {
 	 * @return int Number of checked-in RSVPs.
 	 */
 	public function count_checked_in( int $post_id ): int {
-		$count = Query::get_instance()->get_rsvps(
-			array(
-				'post_id'   => $post_id,
-				'status'    => 'approve',
-				'count'     => true,
-				'tax_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
-					array(
-						'taxonomy' => self::TAXONOMY,
-						'field'    => 'slug',
-						'terms'    => self::TERM,
-					),
-				),
-			)
-		);
-
-		return (int) $count;
+		return Flag::get_instance()->count( $post_id, self::FLAG );
 	}
 
 	/**
-	 * Drop the check-in when its RSVP is deleted.
-	 *
-	 * WordPress core deletes commentmeta on wp_delete_comment(), but it never
-	 * touches term relationships. This method cleans up the taxonomy term
-	 * relationships for deleted RSVP comments so orphaned rows are not left
-	 * behind in the term relationships table.
+	 * Announce a check-in when the checked-in flag is added.
 	 *
 	 * @since 0.36.0
 	 *
-	 * @param int|string $comment_id The deleted comment ID.
+	 * @param int    $rsvp_id The RSVP comment ID.
+	 * @param string $flag    The flag slug that was added.
 	 *
 	 * @return void
 	 */
-	public function delete_check_in( $comment_id ): void {
-		wp_remove_object_terms( (int) $comment_id, self::TERM, self::TAXONOMY );
-		clean_comment_cache( (int) $comment_id );
+	public function announce_check_in( int $rsvp_id, string $flag ): void {
+		if ( self::FLAG !== $flag ) {
+			return;
+		}
+
+		/**
+		 * Fires after an RSVP has been checked in.
+		 *
+		 * @since 0.36.0
+		 *
+		 * @param int $rsvp_id The RSVP comment ID.
+		 *
+		 * @return void
+		 */
+		do_action( 'gatherpress_rsvp_checked_in', $rsvp_id );
+	}
+
+	/**
+	 * Announce an uncheck-in when the checked-in flag is removed.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param int    $rsvp_id The RSVP comment ID.
+	 * @param string $flag    The flag slug that was removed.
+	 *
+	 * @return void
+	 */
+	public function announce_uncheck_in( int $rsvp_id, string $flag ): void {
+		if ( self::FLAG !== $flag ) {
+			return;
+		}
+
+		/**
+		 * Fires after an RSVP's check-in has been removed.
+		 *
+		 * @since 0.36.0
+		 *
+		 * @param int $rsvp_id The RSVP comment ID.
+		 *
+		 * @return void
+		 */
+		do_action( 'gatherpress_rsvp_unchecked_in', $rsvp_id );
 	}
 }

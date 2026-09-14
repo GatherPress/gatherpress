@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\Rsvp;
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Check_In;
+use GatherPress\Core\Rsvp\Flag;
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Rsvp\Setup;
 use GatherPress\Tests\Base;
@@ -17,6 +18,9 @@ use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Check_In.
+ *
+ * The flag mechanics are covered in Test_Flag; these tests cover the
+ * check-in contract built on top of them.
  *
  * @coversDefaultClass \GatherPress\Core\Rsvp\Check_In
  */
@@ -27,13 +31,13 @@ class Test_Check_In extends Base {
 	 *
 	 * @return void
 	 */
-	public function setUp(): void {
-		parent::setUp();
+	public function set_up(): void {
+		parent::set_up();
 		Setup::get_instance()->register_taxonomy();
 	}
 
 	/**
-	 * Create an event and an approved RSVP against it.
+	 * Create an event and an RSVP against it.
 	 *
 	 * @param string $status Comment approval status: 1, 0, or spam.
 	 *
@@ -60,19 +64,32 @@ class Test_Check_In extends Base {
 	 * Coverage for __construct.
 	 *
 	 * The instance is built during plugin bootstrap, so the constructor only
-	 * runs inside a test once the stored instance is cleared.
+	 * runs inside a test once the stored instance is cleared. The bootstrap
+	 * instance is put back afterwards: its hooks are the registered ones, and
+	 * the hooks the fresh instance adds are dropped when the test ends.
 	 *
 	 * @covers ::__construct
 	 *
 	 * @return void
 	 */
 	public function test_construct_builds_the_instance(): void {
+		$bootstrap = Check_In::get_instance();
+
 		Utility::set_and_get_hidden_static_property( Check_In::class, 'instance', null );
+
+		$built = Check_In::get_instance();
+
+		Utility::set_and_get_hidden_static_property( Check_In::class, 'instance', $bootstrap );
 
 		$this->assertInstanceOf(
 			Check_In::class,
-			Check_In::get_instance(),
+			$built,
 			'Failed to assert that the constructor returns a Check_In instance.'
+		);
+		$this->assertNotSame(
+			$bootstrap,
+			$built,
+			'Failed to assert that the constructor ran rather than returning the stored instance.'
 		);
 	}
 
@@ -88,9 +105,15 @@ class Test_Check_In extends Base {
 		$hooks    = array(
 			array(
 				'type'     => 'action',
-				'name'     => 'deleted_comment',
+				'name'     => 'gatherpress_rsvp_flag_added',
 				'priority' => 10,
-				'callback' => array( $instance, 'delete_check_in' ),
+				'callback' => array( $instance, 'announce_check_in' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'gatherpress_rsvp_flag_removed',
+				'priority' => 10,
+				'callback' => array( $instance, 'announce_uncheck_in' ),
 			),
 		);
 
@@ -113,10 +136,6 @@ class Test_Check_In extends Base {
 			$instance->is_checked_in( $rsvp['rsvp_id'] ),
 			'A fresh RSVP should not be checked in.'
 		);
-		$this->assertFalse(
-			true === is_object_in_term( $rsvp['rsvp_id'], Check_In::TAXONOMY, Check_In::TERM ),
-			'A fresh RSVP should not have the check-in taxonomy term.'
-		);
 		$this->assertTrue(
 			$instance->check_in( $rsvp['rsvp_id'] ),
 			'Checking in an RSVP should succeed.'
@@ -126,8 +145,8 @@ class Test_Check_In extends Base {
 			'The RSVP should read as checked in afterwards.'
 		);
 		$this->assertTrue(
-			true === is_object_in_term( $rsvp['rsvp_id'], Check_In::TAXONOMY, Check_In::TERM ),
-			'The RSVP should have the check-in taxonomy term.'
+			Flag::get_instance()->has( $rsvp['rsvp_id'], Check_In::FLAG ),
+			'The RSVP should carry the checked-in flag.'
 		);
 	}
 
@@ -158,37 +177,6 @@ class Test_Check_In extends Base {
 	}
 
 	/**
-	 * Coverage for appending flag terms: check_in should append the term
-	 * without clobbering other terms assigned in the flag taxonomy.
-	 *
-	 * @covers ::check_in
-	 *
-	 * @return void
-	 */
-	public function test_check_in_appends_flag_term_without_clobbering_existing_flags(): void {
-		$instance = Check_In::get_instance();
-		$rsvp     = $this->make_rsvp();
-
-		wp_set_object_terms( $rsvp['rsvp_id'], 'host', Check_In::TAXONOMY );
-
-		$this->assertTrue(
-			true === is_object_in_term( $rsvp['rsvp_id'], Check_In::TAXONOMY, 'host' ),
-			'The RSVP should have the initial host flag.'
-		);
-
-		$instance->check_in( $rsvp['rsvp_id'] );
-
-		$this->assertTrue(
-			$instance->is_checked_in( $rsvp['rsvp_id'] ),
-			'The RSVP should now be checked in.'
-		);
-		$this->assertTrue(
-			true === is_object_in_term( $rsvp['rsvp_id'], Check_In::TAXONOMY, 'host' ),
-			'The existing host flag should not be clobbered.'
-		);
-	}
-
-	/**
 	 * Coverage for uncheck_in.
 	 *
 	 * @covers ::uncheck_in
@@ -209,15 +197,11 @@ class Test_Check_In extends Base {
 			$instance->is_checked_in( $rsvp['rsvp_id'] ),
 			'The RSVP should no longer read as checked in.'
 		);
-		$this->assertFalse(
-			true === is_object_in_term( $rsvp['rsvp_id'], Check_In::TAXONOMY, Check_In::TERM ),
-			'The check-in taxonomy term should be removed.'
-		);
 	}
 
 	/**
-	 * Coverage for the is_comment_type guard on both writers: a comment that is not an
-	 * RSVP, and a comment ID that does not exist.
+	 * Coverage for the guards on both writers: a comment that is not an RSVP,
+	 * and a comment ID that does not exist.
 	 *
 	 * @covers ::check_in
 	 * @covers ::uncheck_in
@@ -297,34 +281,10 @@ class Test_Check_In extends Base {
 	}
 
 	/**
-	 * Coverage for delete_check_in, the orphan sweep on comment deletion.
-	 *
-	 * @covers ::delete_check_in
-	 *
-	 * @return void
-	 */
-	public function test_delete_check_in_removes_the_term(): void {
-		$instance = Check_In::get_instance();
-		$rsvp     = $this->make_rsvp();
-
-		$instance->check_in( $rsvp['rsvp_id'] );
-		$instance->delete_check_in( $rsvp['rsvp_id'] );
-
-		$this->assertFalse(
-			$instance->is_checked_in( $rsvp['rsvp_id'] ),
-			'Deleting an RSVP should remove its check-in status.'
-		);
-		$this->assertFalse(
-			true === is_object_in_term( $rsvp['rsvp_id'], Check_In::TAXONOMY, Check_In::TERM ),
-			'Deleting an RSVP should remove its check-in term.'
-		);
-	}
-
-	/**
 	 * Coverage for the check-in actions, which report the RSVP to consumers.
 	 *
-	 * @covers ::check_in
-	 * @covers ::uncheck_in
+	 * @covers ::announce_check_in
+	 * @covers ::announce_uncheck_in
 	 *
 	 * @return void
 	 */
@@ -365,14 +325,57 @@ class Test_Check_In extends Base {
 	}
 
 	/**
-	 * Coverage for the term write failing, here because the taxonomy is not
+	 * Coverage for the announcers following the flag, not the caller: writing
+	 * the checked-in flag through Flag directly still announces a check-in,
+	 * and any other flag announces nothing.
+	 *
+	 * @covers ::announce_check_in
+	 * @covers ::announce_uncheck_in
+	 *
+	 * @return void
+	 */
+	public function test_announcers_follow_the_checked_in_flag_only(): void {
+		$flag  = Flag::get_instance();
+		$rsvp  = $this->make_rsvp();
+		$fired = array();
+
+		add_action(
+			'gatherpress_rsvp_checked_in',
+			static function () use ( &$fired ): void {
+				$fired[] = 'checked_in';
+			}
+		);
+		add_action(
+			'gatherpress_rsvp_unchecked_in',
+			static function () use ( &$fired ): void {
+				$fired[] = 'unchecked_in';
+			}
+		);
+
+		$flag->add( $rsvp['rsvp_id'], 'host' );
+		$flag->remove( $rsvp['rsvp_id'], 'host' );
+		$flag->add( $rsvp['rsvp_id'], Check_In::FLAG );
+		$flag->remove( $rsvp['rsvp_id'], Check_In::FLAG );
+
+		remove_all_actions( 'gatherpress_rsvp_checked_in' );
+		remove_all_actions( 'gatherpress_rsvp_unchecked_in' );
+
+		$this->assertSame(
+			array( 'checked_in', 'unchecked_in' ),
+			$fired,
+			'Only the checked-in flag should announce, however it was written.'
+		);
+	}
+
+	/**
+	 * Coverage for the flag write failing, here because the taxonomy is not
 	 * registered: the call reports failure and announces nothing.
 	 *
 	 * @covers ::check_in
 	 *
 	 * @return void
 	 */
-	public function test_check_in_fails_when_the_term_cannot_be_assigned(): void {
+	public function test_check_in_fails_when_the_flag_cannot_be_stored(): void {
 		$instance = Check_In::get_instance();
 		$rsvp     = $this->make_rsvp();
 		$fired    = false;
@@ -383,7 +386,7 @@ class Test_Check_In extends Base {
 				$fired = true;
 			}
 		);
-		unregister_taxonomy( Check_In::TAXONOMY );
+		unregister_taxonomy( Flag::TAXONOMY );
 
 		$result = $instance->check_in( $rsvp['rsvp_id'] );
 
@@ -392,7 +395,7 @@ class Test_Check_In extends Base {
 
 		$this->assertFalse(
 			$result,
-			'A check-in whose term could not be assigned should report failure.'
+			'A check-in whose flag could not be stored should report failure.'
 		);
 		$this->assertFalse(
 			$fired,
@@ -435,66 +438,6 @@ class Test_Check_In extends Base {
 		$this->assertFalse(
 			$fired,
 			'Nothing should be announced when nothing was removed.'
-		);
-	}
-
-	/**
-	 * Coverage for the term removal failing: the check-in stands, the call
-	 * reports failure, and nothing is announced. The DELETE is pointed at a
-	 * table that does not exist for that one statement, which core reports
-	 * as a failed removal.
-	 *
-	 * @covers ::uncheck_in
-	 *
-	 * @return void
-	 */
-	public function test_uncheck_in_fails_when_the_term_cannot_be_removed(): void {
-		global $wpdb;
-
-		$instance = Check_In::get_instance();
-		$rsvp     = $this->make_rsvp();
-		$fired    = false;
-		$table    = $wpdb->term_relationships;
-
-		$instance->check_in( $rsvp['rsvp_id'] );
-
-		add_action(
-			'gatherpress_rsvp_unchecked_in',
-			static function () use ( &$fired ): void {
-				$fired = true;
-			}
-		);
-
-		$break   = static function () use ( $wpdb ): void {
-			$wpdb->term_relationships = 'gatherpress_missing_table';
-		};
-		$restore = static function () use ( $wpdb, $table ): void {
-			$wpdb->term_relationships = $table;
-		};
-
-		add_action( 'delete_term_relationships', $break );
-		add_action( 'deleted_term_relationships', $restore );
-		$suppressed = $wpdb->suppress_errors( true );
-
-		$result = $instance->uncheck_in( $rsvp['rsvp_id'] );
-
-		$wpdb->suppress_errors( $suppressed );
-		$wpdb->term_relationships = $table;
-		remove_action( 'delete_term_relationships', $break );
-		remove_action( 'deleted_term_relationships', $restore );
-		remove_all_actions( 'gatherpress_rsvp_unchecked_in' );
-
-		$this->assertFalse(
-			$result,
-			'A removal that failed should report failure.'
-		);
-		$this->assertFalse(
-			$fired,
-			'Nothing should be announced when nothing was removed.'
-		);
-		$this->assertTrue(
-			$instance->is_checked_in( $rsvp['rsvp_id'] ),
-			'The check-in should still stand.'
 		);
 	}
 }
