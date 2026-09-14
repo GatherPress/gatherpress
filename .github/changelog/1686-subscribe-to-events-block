@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Added a Subscribe to Events block. Editors can place it to render an iCal or webcal link for the whole site, the events archive, one venue, or one topic, so visitors can subscribe instead of downloading a single event.
