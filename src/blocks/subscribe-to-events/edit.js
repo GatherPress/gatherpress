@@ -50,7 +50,7 @@ const SCOPE_OPTIONS = [
 ];
 
 /**
- * The link flavours the block can render.
+ * The link flavors the block can render.
  *
  * @since 0.36.0
  *

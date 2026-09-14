@@ -24,7 +24,7 @@ The venue and topic pickers only appear for their own scope. If a scope needs an
 
 ## Link format
 
-A feed can be offered in two flavours, and the **Link format** setting controls which are shown:
+A feed can be offered in two flavors, and the **Link format** setting controls which are shown:
 
 - **iCal feed**: a plain `https://` link. This is what most calendar apps want when the visitor pastes or imports a URL.
 - **Subscribe**: the same feed with a `webcal://` address. Clicking a `webcal:` link hands the URL straight to the visitor's default calendar app, which is usually the smoother path on desktop.

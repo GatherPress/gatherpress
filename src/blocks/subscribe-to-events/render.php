@@ -20,11 +20,7 @@ if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 	return;
 }
 
-// An unknown scope would otherwise fall through to the sitewide feed.
 $gatherpress_scope = $attributes['scope'] ?? '';
-if ( ! in_array( $gatherpress_scope, Feed_Url::SCOPES, true ) ) {
-	return;
-}
 
 $gatherpress_feed_url = Feed_Url::get(
 	array(

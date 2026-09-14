@@ -226,7 +226,7 @@ class Test_Subscribe_To_Events extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_render_honours_the_feed_url_filter(): void {
+	public function test_render_honors_the_feed_url_filter(): void {
 		$callback = function (): string {
 			return 'https://example.org/filtered-feed/';
 		};
@@ -241,6 +241,31 @@ class Test_Subscribe_To_Events extends Base {
 			'href="https://example.org/filtered-feed/"',
 			$output,
 			'The resolved feed URL should pass through the gatherpress_calendar_feed_url filter.'
+		);
+	}
+
+	/**
+	 * Coverage for the filter supplying a feed URL for a scope core does not know.
+	 *
+	 * @return void
+	 */
+	public function test_render_honors_the_feed_url_filter_for_unknown_scope(): void {
+		$callback = function (): string {
+			return 'https://example.org/companion-feed/';
+		};
+
+		add_filter( 'gatherpress_calendar_feed_url', $callback );
+
+		$output = do_blocks(
+			sprintf( '<!-- wp:%s {"scope":"companion"} /-->', self::BLOCK_NAME )
+		);
+
+		remove_filter( 'gatherpress_calendar_feed_url', $callback );
+
+		$this->assertStringContainsString(
+			'href="https://example.org/companion-feed/"',
+			$output,
+			'The block should render a feed URL the filter supplies for an unknown scope.'
 		);
 	}
 }
