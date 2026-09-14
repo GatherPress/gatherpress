@@ -17,7 +17,6 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Assets;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
-use GatherPress\Core\Rsvp\Flag\Base as Flag;
 use GatherPress\Core\Rsvp\Flag\Setup as Flag_Setup;
 use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
 use GatherPress\Core\Rsvp\Response\Provider_Registry;
@@ -163,22 +162,6 @@ final class Setup {
 
 		register_taxonomy(
 			Provider::TAXONOMY,
-			'comment',
-			array(
-				'labels'             => array(),
-				'hierarchical'       => false,
-				'public'             => true,
-				'show_ui'            => false,
-				'show_admin_column'  => false,
-				'query_var'          => true,
-				'publicly_queryable' => false,
-				'rewrite'            => false,
-				'show_in_rest'       => true,
-			)
-		);
-
-		register_taxonomy(
-			Flag::TAXONOMY,
 			'comment',
 			array(
 				'labels'             => array(),

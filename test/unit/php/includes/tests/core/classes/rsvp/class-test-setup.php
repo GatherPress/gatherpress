@@ -10,7 +10,6 @@ namespace GatherPress\Tests\Core\Rsvp;
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Cleanup;
-use GatherPress\Core\Rsvp\Flag\Base as Flag;
 use GatherPress\Core\Rsvp\Flag\Setup as Flag_Setup;
 use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Rsvp\List_Table;
@@ -197,7 +196,6 @@ class Test_Setup extends Base {
 
 		$this->assertTrue( taxonomy_exists( Status::TAXONOMY ) );
 		$this->assertTrue( taxonomy_exists( Provider::TAXONOMY ) );
-		$this->assertTrue( taxonomy_exists( Flag::TAXONOMY ) );
 
 		// Private comment taxonomies: nothing is reachable through a term URL,
 		// so no rewrite rules may be generated for them (#825).
@@ -208,10 +206,6 @@ class Test_Setup extends Base {
 		$this->assertFalse(
 			get_taxonomy( Provider::TAXONOMY )->rewrite,
 			'Failed to assert that the RSVP provider taxonomy registers no rewrite rules.'
-		);
-		$this->assertFalse(
-			get_taxonomy( Flag::TAXONOMY )->rewrite,
-			'Failed to assert that the RSVP flag taxonomy registers no rewrite rules.'
 		);
 	}
 

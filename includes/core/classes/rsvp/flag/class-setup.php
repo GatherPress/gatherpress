@@ -3,8 +3,8 @@
  * Shared wiring for RSVP flags.
  *
  * This file defines the flag `Setup` class, which holds what belongs to every
- * flag rather than to one: reading all flags on an RSVP, and sweeping them
- * when the RSVP is deleted.
+ * flag rather than to one: registering the taxonomy, reading all flags on an
+ * RSVP, and sweeping them when the RSVP is deleted.
  *
  * @package GatherPress\Core\Rsvp\Flag
  * @since 0.36.0
@@ -51,7 +51,35 @@ final class Setup {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
+		add_action( 'init', array( $this, 'register_taxonomy' ) );
 		add_action( 'deleted_comment', array( $this, 'delete_flags' ) );
+	}
+
+	/**
+	 * Register the taxonomy that holds RSVP flags.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	public function register_taxonomy(): void {
+		// No register_taxonomy_for_object_type() here (#1639): core requires a
+		// post type object and returns false for 'comment'.
+		register_taxonomy(
+			Base::TAXONOMY,
+			'comment',
+			array(
+				'labels'             => array(),
+				'hierarchical'       => false,
+				'public'             => true,
+				'show_ui'            => false,
+				'show_admin_column'  => false,
+				'query_var'          => true,
+				'publicly_queryable' => false,
+				'rewrite'            => false,
+				'show_in_rest'       => true,
+			)
+		);
 	}
 
 	/**

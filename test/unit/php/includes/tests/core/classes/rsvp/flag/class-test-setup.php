@@ -12,7 +12,6 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Flag\Base;
 use GatherPress\Core\Rsvp\Flag\Setup;
-use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
 use GatherPress\Tests\Base as Base_Unit_Test;
 use PMC\Unit_Test\Utility;
 
@@ -30,7 +29,7 @@ class Test_Setup extends Base_Unit_Test {
 	 */
 	public function set_up(): void {
 		parent::set_up();
-		Rsvp_Setup::get_instance()->register_taxonomy();
+		Setup::get_instance()->register_taxonomy();
 	}
 
 	/**
@@ -96,6 +95,12 @@ class Test_Setup extends Base_Unit_Test {
 		$hooks    = array(
 			array(
 				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 10,
+				'callback' => array( $instance, 'register_taxonomy' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'deleted_comment',
 				'priority' => 10,
 				'callback' => array( $instance, 'delete_flags' ),
@@ -103,6 +108,34 @@ class Test_Setup extends Base_Unit_Test {
 		);
 
 		$this->assert_hooks( $hooks, $instance );
+	}
+
+	/**
+	 * Coverage for register_taxonomy: the flag taxonomy exists on comments and,
+	 * being private, generates no rewrite rules (#825).
+	 *
+	 * @covers ::register_taxonomy
+	 *
+	 * @return void
+	 */
+	public function test_register_taxonomy(): void {
+		unregister_taxonomy( Base::TAXONOMY );
+
+		Setup::get_instance()->register_taxonomy();
+
+		$this->assertTrue(
+			taxonomy_exists( Base::TAXONOMY ),
+			'Failed to assert that the RSVP flag taxonomy is registered.'
+		);
+		$this->assertSame(
+			array( 'comment' ),
+			get_taxonomy( Base::TAXONOMY )->object_type,
+			'Failed to assert that the RSVP flag taxonomy is registered on comments.'
+		);
+		$this->assertFalse(
+			get_taxonomy( Base::TAXONOMY )->rewrite,
+			'Failed to assert that the RSVP flag taxonomy registers no rewrite rules.'
+		);
 	}
 
 	/**
@@ -180,7 +213,7 @@ class Test_Setup extends Base_Unit_Test {
 
 		$flags = $instance->get_flags( $rsvp_id );
 
-		Rsvp_Setup::get_instance()->register_taxonomy();
+		Setup::get_instance()->register_taxonomy();
 
 		$this->assertSame( array(), $flags, 'An unreadable taxonomy should read as no flags.' );
 	}

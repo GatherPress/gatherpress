@@ -12,7 +12,6 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Flag\Base;
 use GatherPress\Core\Rsvp\Flag\Setup;
-use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
 use GatherPress\Tests\Base as Base_Unit_Test;
 use PMC\Unit_Test\Utility;
 use WP_Error;
@@ -31,7 +30,7 @@ class Test_Base extends Base_Unit_Test {
 	 */
 	public function set_up(): void {
 		parent::set_up();
-		Rsvp_Setup::get_instance()->register_taxonomy();
+		Setup::get_instance()->register_taxonomy();
 	}
 
 	/**
@@ -184,7 +183,7 @@ class Test_Base extends Base_Unit_Test {
 		$added   = ( new Test_Base_Concrete( 'walk-in' ) )->add( $rsvp['rsvp_id'] );
 		$removed = $host->remove( $rsvp['rsvp_id'] );
 
-		Rsvp_Setup::get_instance()->register_taxonomy();
+		Setup::get_instance()->register_taxonomy();
 
 		$this->assertFalse( $added, 'Adding a flag before the taxonomy exists should report failure.' );
 		$this->assertFalse( $removed, 'Removing a flag before the taxonomy exists should report failure.' );
@@ -435,7 +434,7 @@ class Test_Base extends Base_Unit_Test {
 
 		$before_init = Utility::invoke_hidden_method( $flag, 'can_write', array( $rsvp['rsvp_id'] ) );
 
-		Rsvp_Setup::get_instance()->register_taxonomy();
+		Setup::get_instance()->register_taxonomy();
 
 		$this->assertFalse( $before_init, 'Nothing should be writable before the taxonomy is registered.' );
 	}

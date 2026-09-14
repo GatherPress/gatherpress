@@ -13,7 +13,6 @@ use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Flag\Base;
 use GatherPress\Core\Rsvp\Flag\Check_In;
 use GatherPress\Core\Rsvp\Flag\Setup;
-use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
 use GatherPress\Tests\Base as Base_Unit_Test;
 use PMC\Unit_Test\Utility;
 
@@ -34,7 +33,7 @@ class Test_Check_In extends Base_Unit_Test {
 	 */
 	public function set_up(): void {
 		parent::set_up();
-		Rsvp_Setup::get_instance()->register_taxonomy();
+		Setup::get_instance()->register_taxonomy();
 	}
 
 	/**
@@ -162,7 +161,7 @@ class Test_Check_In extends Base_Unit_Test {
 
 				unregister_taxonomy( Base::TAXONOMY );
 				$instance->add( $rsvp_id );
-				Rsvp_Setup::get_instance()->register_taxonomy();
+				Setup::get_instance()->register_taxonomy();
 			}
 		);
 
