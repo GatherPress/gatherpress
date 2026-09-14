@@ -1,0 +1,43 @@
+name: Check @since tags
+
+on:
+  pull_request:
+    branches: [ develop ]
+    paths:
+      - 'includes/**'
+      - 'src/**'
+      - '.github/scripts/check-since.php'
+      - '.github/workflows/check-since.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check-since:
+    name: Check newly-added @since tags
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.1'
+        coverage: none
+
+    - name: Smoke test the checker
+      run: |
+        php -r '
+        require ".github/scripts/check-since.php";
+        $flagged = gatherpress_since_diff_violations( "+++ b/includes/x.php\n@@ -1 +1 @@\n+ * @since 0.36.0\n" );
+        $clean   = gatherpress_since_diff_violations( "+++ b/includes/x.php\n@@ -1 +1 @@\n+ * @since TBD\n" );
+        exit( ( 1 === count( $flagged ) && array() === $clean ) ? 0 : 1 );
+        '
+
+    - name: Check @since tags
+      run: php .github/scripts/check-since.php
+      env:
+        GITHUB_BASE_REF: ${{ github.base_ref }}
