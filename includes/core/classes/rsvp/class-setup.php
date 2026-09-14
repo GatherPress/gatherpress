@@ -521,7 +521,7 @@ final class Setup {
 	 * @return string Filtered comment text.
 	 */
 	public function maybe_hide_rsvp_comment_content( string $comment_content, ?WP_Comment $comment ): string {
-		if ( ! Rsvp::is_rsvp( $comment ) ) {
+		if ( null === $comment || ! Rsvp::is_comment_type( $comment ) ) {
 			return $comment_content;
 		}
 
@@ -654,7 +654,7 @@ final class Setup {
 	 * @return string[] Empty array for RSVP comments, original array otherwise.
 	 */
 	public function remove_rsvp_notification_emails( array $emails, string $comment_id ): array {
-		if ( ! Rsvp::is_rsvp( (int) $comment_id ) ) {
+		if ( ! Rsvp::is_comment_type( (int) $comment_id ) ) {
 			return $emails;
 		}
 

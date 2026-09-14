@@ -247,7 +247,7 @@ final class Storage {
 		?Identity $identity = null,
 		?Provider $provider = null
 	): ?State {
-		if ( ! Rsvp::is_rsvp( $comment ) ) {
+		if ( ! Rsvp::is_comment_type( $comment ) ) {
 			return null;
 		}
 

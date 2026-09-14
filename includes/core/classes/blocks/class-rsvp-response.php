@@ -286,12 +286,13 @@ final class Rsvp_Response {
 	 */
 	public function modify_avatar_for_gatherpress_rsvp( array $args, $comment ): array {
 		// get_avatar_data also passes user IDs and email addresses here, and
-		// is_rsvp() would read a numeric value as a comment ID. The instanceof
-		// guard keeps those callers from ever matching an RSVP comment, so
-		// unlike the get_comment()-backed call sites this one keeps its guard.
+		// is_comment_type() takes an int as a comment ID, so a user ID that
+		// collides with an RSVP comment ID would match. The instanceof guard
+		// keeps those callers out and satisfies the helper's typed parameter,
+		// so unlike the comment-backed call sites this one keeps its guard.
 		if (
 			! $comment instanceof WP_Comment
-			|| ! Rsvp::is_rsvp( $comment )
+			|| ! Rsvp::is_comment_type( $comment )
 		) {
 			return $args;
 		}

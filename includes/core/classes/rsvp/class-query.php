@@ -228,7 +228,9 @@ final class Query {
 	 * @return WP_Comment|mixed The comment, prepared for the current reader.
 	 */
 	public function prepare_rsvp_comment( $comment ) {
-		if ( ! Rsvp::is_rsvp( $comment ) ) {
+		// The get_comment filter passes the value straight through and can hand
+		// over a non-comment, so narrow it before the helper reads the type.
+		if ( ! $comment instanceof WP_Comment || ! Rsvp::is_comment_type( $comment ) ) {
 			return $comment;
 		}
 
@@ -303,7 +305,7 @@ final class Query {
 		// this does not depend on what the mask above happens to write.
 		if (
 			isset( $data['author'] )
-			&& Rsvp::is_rsvp( $comment )
+			&& Rsvp::is_comment_type( $comment )
 			&& ! current_user_can( Rsvp::CAPABILITY )
 			&& get_comment_meta( (int) $comment->comment_ID, Rsvp::ANONYMOUS_META_KEY, true )
 		) {
