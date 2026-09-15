@@ -159,6 +159,150 @@ inferring `user` from a real user ID and `email` from a valid author email when
 no term is present, so responses written by paths that don't stamp it (the open
 RSVP form) still resolve.
 
+## RSVP flags
+
+Since 0.36.0 an RSVP can carry **flags**: yes/no markers such as "this person
+checked in" or "this person walked in without an RSVP". A flag is a term in the
+`_gatherpress_rsvp_flag` taxonomy attached to the RSVP comment. Its presence
+means yes and its absence means no, so existing RSVPs need no backfill.
+
+Each flag is a class that extends `GatherPress\Core\Rsvp\Flag\Base` and
+declares its slug, much as a settings tab extends `GatherPress\Core\Settings\Base`.
+An instance wraps one RSVP, the way `new Token( $comment_id )` does. GatherPress
+and companion plugins share the one taxonomy, so anything that needs yes/no
+state on an RSVP should define a flag rather than register a taxonomy of its
+own.
+
+### The flag classes
+
+- **`GatherPress\Core\Rsvp\Flag\Base`**: the abstract class a flag extends. It
+  stores, reads, and counts the flag, and fires the flag hooks.
+- **`GatherPress\Core\Rsvp\Flag\Check_In`**: the `checked-in` flag, the first
+  one GatherPress ships.
+- **`GatherPress\Core\Rsvp\Flag\Setup`**: what belongs to every flag rather
+  than one. It registers the taxonomy, reads all flags on an RSVP, and sweeps
+  them when the RSVP is deleted.
+
+### Adding a flag
+
+Create a class that extends `Base` and declares the slug in its `SLUG`
+constant:
+
+```php
+<?php
+
+namespace My_Plugin\Flag;
+
+use GatherPress\Core\Rsvp\Flag\Base;
+
+class Walk_In extends Base {
+	public const SLUG = 'my-plugin-walk-in';
+}
+```
+
+That is the whole flag. It has no hooks of its own, so it needs no
+bootstrapping. Build one around an RSVP wherever you need it:
+
+```php
+use My_Plugin\Flag\Walk_In;
+
+$walk_in = new Walk_In( $rsvp_id );
+
+$walk_in->add();    // true once the RSVP carries the flag.
+$walk_in->has();    // true.
+$walk_in->remove(); // true once the RSVP no longer carries it.
+
+Walk_In::count( $event_id ); // Approved RSVPs on the event with the flag.
+```
+
+### The methods
+
+| Method | Returns | Purpose |
+|---|---|---|
+| `new Flag( int $rsvp_id )` | | Wraps one RSVP. An ID that is not an RSVP comment gives a flag that refuses every write. |
+| `add()` | `bool` | Adds the flag, leaving every other flag on the RSVP in place. |
+| `remove()` | `bool` | Removes the flag, leaving every other flag in place. |
+| `has()` | `bool` | Whether the RSVP carries the flag. |
+| `Flag::count( int $post_id )` | `int` | How many approved RSVPs on the event carry the flag. Static, since it spans an event. |
+
+`add()` and `remove()` are idempotent. They return `true` when the RSVP ends up
+in the requested state, including when it was already there, and `false` when
+the comment is not an RSVP, the slug is invalid, the write failed, or the
+taxonomy is not registered yet. It registers on `init`, so write flags from
+`init` or later.
+
+`count()` includes approved RSVPs only, matching the attendee list: a held or
+spammed RSVP is not part of the event's audience even if it was flagged before
+it was moderated.
+
+To read every flag on an RSVP at once, use
+`Setup::get_instance()->get_flags( $rsvp_id )`. It returns the slugs and reads
+through the object term cache, so checking several flags on one RSVP queries
+once.
+
+### Reacting to a change
+
+Every flag fires `gatherpress_rsvp_flag_added` and `gatherpress_rsvp_flag_removed`
+with the RSVP ID and the flag slug. To react to one flag, compare the slug with
+that flag class's `SLUG`. Neither action fires on a repeat or a failed write,
+and when two requests add the same flag at once, only the one that stored it
+announces it.
+
+```php
+use My_Plugin\Flag\Walk_In;
+
+function my_plugin_on_flag_added( int $rsvp_id, string $flag ): void {
+	if ( Walk_In::SLUG === $flag ) {
+		my_plugin_notify_door_staff( $rsvp_id );
+	}
+}
+add_action( 'gatherpress_rsvp_flag_added', 'my_plugin_on_flag_added', 10, 2 );
+```
+
+The same pattern reacts to a check-in, with `Check_In::SLUG`.
+
+### Slugs
+
+A slug needs no registration, so a companion plugin can add one without
+coordinating with GatherPress. It must already be in the shape `sanitize_key()`
+produces: lowercase letters, digits, hyphens and underscores. `walk-in` and
+`first_timer` are accepted; `Walk In` and `HOST` are refused rather than
+silently rewritten, so the flag stored is always the one the class declares. A
+class that leaves `SLUG` empty is refused too.
+
+Prefix slugs your plugin owns, for example `my-plugin-vip`, to stay clear of
+any flag GatherPress adds later.
+
+### Write through a flag class
+
+Never call `wp_set_object_terms()` on `_gatherpress_rsvp_flag` directly. Without
+`$append = true` it replaces every flag on the RSVP, wiping state other code
+stored there. `add()` always appends.
+
+Reads have a similar trap: `is_object_in_term()` matches term names as well as
+slugs, and treats a numeric string as a term ID. `has()` compares slugs only.
+
+### Hooks
+
+| Action | Arguments | Fires |
+|---|---|---|
+| `gatherpress_rsvp_flag_added` | `int $rsvp_id`, `string $flag` | After any flag is added to an RSVP that did not carry it. |
+| `gatherpress_rsvp_flag_removed` | `int $rsvp_id`, `string $flag` | After any flag is removed from an RSVP that carried it. |
+
+None fires when the RSVP was already in the requested state, or when the write
+failed. Deleting an RSVP sweeps every flag on it without firing the removal
+actions, since the RSVP itself is gone.
+
+### What belongs in a flag
+
+- **Yes/no state only.** Anything carrying a value, such as a guest count or a
+  timestamp, belongs in comment meta.
+- **Not one-of-N choices.** RSVP status and provider are dimensions, each with
+  its own taxonomy, and should not be folded in.
+- **Nothing private.** `public` and `show_in_rest` apply to the whole taxonomy,
+  so a flag that must not be exposed, such as a moderation note, needs its own
+  taxonomy.
+
 ## Sitewide gating (RSVP Mode and Open RSVP)
 
 Since 0.34.0 the `rsvp_mode` setting is the master switch for the whole RSVP
