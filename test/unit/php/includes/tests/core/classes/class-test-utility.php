@@ -985,6 +985,72 @@ class Test_Utility extends Base {
 	}
 
 	/**
+	 * Coverage for ensure_user_authentication leaving a request from another
+	 * origin as core resolved it, and restoring the user for the site's own.
+	 *
+	 * @covers ::ensure_user_authentication
+	 *
+	 * @return void
+	 */
+	public function test_ensure_user_authentication_skips_other_origins(): void {
+		$user_id     = $this->factory()->user->create();
+		$home        = wp_parse_url( home_url() );
+		$cookie_user = static function () use ( $user_id ): int {
+			return $user_id;
+		};
+
+		add_filter( 'determine_current_user', $cookie_user, 100 );
+		wp_set_current_user( 0 );
+
+		$_SERVER['HTTP_ORIGIN'] = 'https://elsewhere.example';
+		$other_result           = Utility::ensure_user_authentication();
+		$other_user             = get_current_user_id();
+
+		$_SERVER['HTTP_ORIGIN'] = sprintf( '%s://%s', $home['scheme'], $home['host'] );
+		$own_result             = Utility::ensure_user_authentication();
+		$own_user               = get_current_user_id();
+
+		unset( $_SERVER['HTTP_ORIGIN'] );
+		remove_filter( 'determine_current_user', $cookie_user, 100 );
+		wp_set_current_user( 0 );
+
+		$this->assertFalse( $other_result, 'Failed to assert another origin is not authenticated.' );
+		$this->assertSame( 0, $other_user, 'Failed to assert another origin stays logged out.' );
+		$this->assertSame( $user_id, $own_result, 'Failed to assert the site\'s origin is authenticated.' );
+		$this->assertSame( $user_id, $own_user, 'Failed to assert the site\'s origin gets its user back.' );
+	}
+
+	/**
+	 * Coverage for is_same_origin_request.
+	 *
+	 * @covers ::is_same_origin_request
+	 *
+	 * @return void
+	 */
+	public function test_is_same_origin_request(): void {
+		$home = wp_parse_url( home_url() );
+
+		unset( $_SERVER['HTTP_ORIGIN'] );
+		$without_origin = Utility::is_same_origin_request();
+
+		$_SERVER['HTTP_ORIGIN'] = sprintf( '%s://%s', $home['scheme'], $home['host'] );
+		$own_origin             = Utility::is_same_origin_request();
+
+		$_SERVER['HTTP_ORIGIN'] = 'https://elsewhere.example';
+		$other_origin           = Utility::is_same_origin_request();
+
+		$_SERVER['HTTP_ORIGIN'] = 'null';
+		$opaque_origin          = Utility::is_same_origin_request();
+
+		unset( $_SERVER['HTTP_ORIGIN'] );
+
+		$this->assertTrue( $without_origin, 'Failed to assert a request without an origin is the site\'s own.' );
+		$this->assertTrue( $own_origin, 'Failed to assert the site\'s origin is its own.' );
+		$this->assertFalse( $other_origin, 'Failed to assert another origin is not the site\'s own.' );
+		$this->assertFalse( $opaque_origin, 'Failed to assert an opaque origin is not the site\'s own.' );
+	}
+
+	/**
 	 * Data provider for has_css_class test.
 	 *
 	 * @return array

@@ -773,11 +773,18 @@ final class Utility {
 	 * This is particularly important after the introduction of dynamic nonce generation,
 	 * which changed how user authentication flows through the application.
 	 *
+	 * A request from another origin is left as core resolved it, so a REST
+	 * request that core treats as logged out stays logged out.
+	 *
 	 * @since 0.33.0
 	 *
 	 * @return int|false The user ID if authentication was successful, false otherwise.
 	 */
 	public static function ensure_user_authentication(): int|false {
+		if ( ! self::is_same_origin_request() ) {
+			return false;
+		}
+
 		// Force WordPress to authenticate the user.
 		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 		$user_id = apply_filters( 'determine_current_user', false );
@@ -787,6 +794,23 @@ final class Utility {
 		}
 
 		return $user_id;
+	}
+
+	/**
+	 * Whether the request comes from this site rather than another origin.
+	 *
+	 * Browsers send an `Origin` header with every cross-origin request, so a
+	 * request without one, or with one of the site's allowed origins, is the
+	 * site's own. Only the `allowed_http_origins` filter widens the list.
+	 *
+	 * @since 0.35.4
+	 *
+	 * @return bool True when the request has no origin or an allowed one.
+	 */
+	public static function is_same_origin_request(): bool {
+		$origin = get_http_origin();
+
+		return '' === $origin || '' !== is_allowed_http_origin( $origin );
 	}
 
 	/**

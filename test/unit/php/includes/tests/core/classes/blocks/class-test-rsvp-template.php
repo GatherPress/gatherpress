@@ -763,19 +763,49 @@ class Test_Rsvp_Template extends Base {
 	 */
 	public function test_sign_and_verify_template(): void {
 		$template  = '{"blockName":"gatherpress/rsvp-template","attrs":{},"innerBlocks":[]}';
-		$signature = Rsvp_Template::sign_template( $template );
+		$signature = Rsvp_Template::sign_template( $template, 12 );
 
 		$this->assertMatchesRegularExpression( '/^[a-f0-9]{64}$/', $signature );
-		$this->assertTrue( Rsvp_Template::verify_template( $template, $signature ) );
+		$this->assertTrue( Rsvp_Template::verify_template( $template, 12, $signature ) );
 		$this->assertFalse(
-			Rsvp_Template::verify_template( $template . ' ', $signature ),
+			Rsvp_Template::verify_template( $template . ' ', 12, $signature ),
 			'Failed to assert a changed template does not verify.'
 		);
 		$this->assertFalse(
-			Rsvp_Template::verify_template( $template, strrev( $signature ) ),
+			Rsvp_Template::verify_template( $template, 12, strrev( $signature ) ),
 			'Failed to assert a changed signature does not verify.'
 		);
-		$this->assertFalse( Rsvp_Template::verify_template( $template, '' ) );
+		$this->assertFalse( Rsvp_Template::verify_template( $template, 12, '' ) );
+		$this->assertFalse(
+			Rsvp_Template::verify_template( $template, 13, $signature ),
+			'Failed to assert a signature does not verify for another event.'
+		);
+		$this->assertNotSame(
+			hash_hmac( 'sha256', $template, wp_salt( 'nonce' ) ),
+			$signature,
+			'Failed to assert the signature covers more than the template.'
+		);
+	}
+
+	/**
+	 * A signature is tied to the site it was emitted on.
+	 *
+	 * @covers ::sign_template
+	 *
+	 * @return void
+	 */
+	public function test_sign_template_differs_per_site(): void {
+		global $blog_id;
+
+		$template = '{"blockName":"gatherpress/rsvp-template","attrs":{},"innerBlocks":[]}';
+		$original = $blog_id;
+		$here     = Rsvp_Template::sign_template( $template, 12 );
+
+		$blog_id = $original + 1; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$there   = Rsvp_Template::sign_template( $template, 12 );
+		$blog_id = $original; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		$this->assertNotSame( $here, $there, 'Failed to assert a signature differs between sites.' );
 	}
 
 	/**
@@ -795,7 +825,7 @@ class Test_Rsvp_Template extends Base {
 		$result  = Rsvp_Template::get_instance()->generate_rsvp_template_block(
 			'',
 			array( 'innerBlocks' => array() ),
-			new WP_Block( array(), array( 'postId' => $post_id ) )
+			new WP_Block( array( 'blockName' => Rsvp_Template::BLOCK_NAME ), array( 'postId' => $post_id ) )
 		);
 
 		$tags = new WP_HTML_Tag_Processor( $result );
@@ -805,7 +835,7 @@ class Test_Rsvp_Template extends Base {
 		$signature = (string) $tags->get_attribute( 'data-block-signature' );
 
 		$this->assertNotSame( '', $template );
-		$this->assertTrue( Rsvp_Template::verify_template( $template, $signature ) );
+		$this->assertTrue( Rsvp_Template::verify_template( $template, $post_id, $signature ) );
 
 		$request = new WP_REST_Request( 'POST' );
 		$request->set_param( 'post_id', $post_id );
