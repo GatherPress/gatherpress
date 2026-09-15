@@ -81,8 +81,8 @@ export function initTooltip( tooltip ) {
 		// Its own class so another feature's screen-reader text is never
 		// mistaken for this one, and a direct child so a nested tooltip's
 		// text is not either.
-		const existingSrText = tooltip.querySelector(
-			`:scope > .${ NOTICE_CLASS }`
+		const existingSrText = Array.from( tooltip.children || [] ).find(
+			( child ) => child.classList?.contains( NOTICE_CLASS )
 		);
 		if ( ! existingSrText ) {
 			const srText = document.createElement( 'span' );

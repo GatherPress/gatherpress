@@ -43,6 +43,10 @@
 		"showTimezone": {
 			"type": "string",
 			"default": ""
+		},
+		"showViewerTime": {
+			"type": "boolean",
+			"default": false
 		}
 	},
 	"supports": {
@@ -77,9 +81,7 @@
 				"fontSize": true
 			}
 		},
-		"interactivity": {
-			"clientNavigation": true
-		},
+		"interactivity": true,
 		"__experimentalBorder": {
 			"radius": true,
 			"color": true,
@@ -95,6 +97,7 @@
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
+	"viewScriptModule": "file:./view.js",
 	"style": "file:./style-index.css",
 	"render": "file:./render.php"
 }
