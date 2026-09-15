@@ -244,6 +244,35 @@ class Test_Setup extends Base_Unit_Test {
 	}
 
 	/**
+	 * Coverage for delete_flags when the comment cache is gone before
+	 * `deleted_comment` fires. The row is already deleted by then, so only the
+	 * comment object the action passes can identify the RSVP.
+	 *
+	 * @covers ::delete_flags
+	 *
+	 * @return void
+	 */
+	public function test_delete_flags_sweeps_when_the_comment_cache_is_evicted(): void {
+		$rsvp_id = $this->make_rsvp();
+		$evict   = static function ( $comment_id ): void {
+			clean_comment_cache( (int) $comment_id );
+		};
+
+		( new Test_Base_Concrete( $rsvp_id ) )->add();
+		( new Check_In( $rsvp_id ) )->add();
+
+		add_action( 'delete_comment', $evict );
+		wp_delete_comment( $rsvp_id, true );
+		remove_action( 'delete_comment', $evict );
+
+		$this->assertSame(
+			array(),
+			wp_get_object_terms( $rsvp_id, Base::TAXONOMY, array( 'fields' => 'slugs' ) ),
+			'Deleting an RSVP should leave no flag relationships behind even with its cache evicted.'
+		);
+	}
+
+	/**
 	 * Coverage for delete_flags skipping other comment types without touching
 	 * the taxonomy.
 	 *
@@ -258,7 +287,7 @@ class Test_Setup extends Base_Unit_Test {
 		// Written directly, since flags refuse comments that are not RSVPs.
 		wp_set_object_terms( $comment_id, 'host', Base::TAXONOMY );
 
-		Setup::get_instance()->delete_flags( $comment_id );
+		Setup::get_instance()->delete_flags( $comment_id, get_comment( $comment_id ) );
 
 		$this->assertSame(
 			array( 'host' ),

@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
+use WP_Comment;
 
 /**
  * Class Setup.
@@ -52,7 +53,7 @@ final class Setup {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_taxonomy' ) );
-		add_action( 'deleted_comment', array( $this, 'delete_flags' ) );
+		add_action( 'deleted_comment', array( $this, 'delete_flags' ), 10, 2 );
 	}
 
 	/**
@@ -116,14 +117,19 @@ final class Setup {
 	 * behind as orphaned rows. Other comment types carry no flags and are
 	 * skipped.
 	 *
+	 * The check reads the comment object the action passes. By the time
+	 * `deleted_comment` fires the row is gone, so looking the comment up by ID
+	 * finds it only while it is still cached.
+	 *
 	 * @since 0.36.0
 	 *
 	 * @param int|string $comment_id The deleted comment ID.
+	 * @param WP_Comment $comment    The deleted comment.
 	 *
 	 * @return void
 	 */
-	public function delete_flags( $comment_id ): void {
-		if ( ! Rsvp::is_comment_type( (int) $comment_id ) ) {
+	public function delete_flags( $comment_id, WP_Comment $comment ): void {
+		if ( ! Rsvp::is_comment_type( $comment ) ) {
 			return;
 		}
 
