@@ -24,9 +24,7 @@ use WP_Term;
  * to, take from, or replace outright through `gatherpress_event_statuses`,
  * so no status is named in code that would have to change alongside it.
  *
- * The starting point is the whole of Schema.org's EventStatusType vocabulary,
- * with `moved` generalized: an event can move to a new venue as readily as it
- * can move online, and where it went is the location's business.
+ * The starting point is the whole of Schema.org's EventStatusType vocabulary.
  *
  * @since 0.36.0
  */
@@ -68,16 +66,18 @@ final class Status {
 	 */
 	public static function all( string $post_type = '' ): array {
 		$statuses = array(
-			'scheduled'   => array(
-				'label'       => __( 'Scheduled', 'gatherpress' ),
+			'scheduled'    => array(
+				/* translators: Event operational status label. */
+				'label'       => _x( 'Scheduled', 'event status', 'gatherpress' ),
 				'description' => __( 'Event is planned and confirmed to take place.', 'gatherpress' ),
 				'color'       => '#137333',
 				'schema'      => 'EventScheduled',
 				'ical'        => 'CONFIRMED',
 				'priority'    => 0,
 			),
-			'canceled'    => array(
-				'label'       => __( 'Canceled', 'gatherpress' ),
+			'canceled'     => array(
+				/* translators: Event operational status label. */
+				'label'       => _x( 'Canceled', 'event status', 'gatherpress' ),
 				'description' => __(
 					'Event will not take place. Calendar feeds will mark it as canceled.',
 					'gatherpress'
@@ -87,37 +87,41 @@ final class Status {
 				'ical'        => 'CANCELLED',
 				'priority'    => 50,
 			),
-			'postponed'   => array(
-				'label'       => __( 'Postponed', 'gatherpress' ),
+			'postponed'    => array(
+				/* translators: Event operational status label. */
+				'label'       => _x( 'Postponed', 'event status', 'gatherpress' ),
 				'description' => __( 'Event is delayed to a future unconfirmed date.', 'gatherpress' ),
 				'color'       => '#b06000',
 				'schema'      => 'EventPostponed',
 				'ical'        => 'TENTATIVE',
 				'priority'    => 40,
 			),
-			'rescheduled' => array(
-				'label'       => __( 'Rescheduled', 'gatherpress' ),
+			'rescheduled'  => array(
+				/* translators: Event operational status label. */
+				'label'       => _x( 'Rescheduled', 'event status', 'gatherpress' ),
 				'description' => __( 'Event date and time have been changed.', 'gatherpress' ),
 				'color'       => '#1a73e8',
 				'schema'      => 'EventRescheduled',
 				'ical'        => 'TENTATIVE',
 				'priority'    => 30,
 			),
-			'moved'       => array(
-				'label'       => __( 'Moved', 'gatherpress' ),
+			'moved-online' => array(
+				/* translators: Event operational status label. */
+				'label'       => _x( 'Moved online', 'event status', 'gatherpress' ),
 				'description' => __(
-					'Event is taking place somewhere else, online or at another venue.',
+					'Event venue has changed to an online meeting.',
 					'gatherpress'
 				),
 				'color'       => '#7627bb',
-				'schema'      => 'EventScheduled',
+				'schema'      => 'EventMovedOnline',
 				'ical'        => 'CONFIRMED',
 				'priority'    => 20,
-				// An event can only have moved if it can say where it is.
-				'supports'    => array( 'gatherpress-venue', 'gatherpress-online-event' ),
+				// An event can only have moved online if it supports online events.
+				'supports'    => array( 'gatherpress-online-event' ),
 			),
-			'tentative'   => array(
-				'label'       => __( 'Tentative', 'gatherpress' ),
+			'tentative'    => array(
+				/* translators: Event operational status label. */
+				'label'       => _x( 'Tentative', 'event status', 'gatherpress' ),
 				'description' => __(
 					'Event is planned provisionally and awaiting confirmation.',
 					'gatherpress'
@@ -176,7 +180,7 @@ final class Status {
 		 * @param array<string, array<string, mixed>> $statuses  The statuses, keyed by slug.
 		 * @param string                              $post_type Post type they are offered for, or empty for all.
 		 */
-		return (array) apply_filters( 'gatherpress_event_statuses', $statuses, $post_type );
+		return apply_filters( 'gatherpress_event_statuses', $statuses, $post_type );
 	}
 
 	/**
@@ -267,10 +271,13 @@ final class Status {
 	public static function color( string $slug ): string {
 		$color = (string) ( self::get( $slug )['color'] ?? '' );
 
-		if (
-			preg_match( '/^#[0-9a-f]{3,8}$/i', $color )
-			|| preg_match( '/^var\(\s*--[\w-]+\s*(?:,[^;()]*)?\)$/', $color )
-		) {
+		$hex = sanitize_hex_color( $color );
+
+		if ( ! empty( $hex ) ) {
+			return $hex;
+		}
+
+		if ( preg_match( '/^var\(\s*--[\w-]+\s*(?:,[^;()]*)?\)$/', $color ) ) {
 			return $color;
 		}
 

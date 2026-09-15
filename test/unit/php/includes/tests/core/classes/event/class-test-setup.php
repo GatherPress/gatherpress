@@ -2386,14 +2386,19 @@ class Test_Setup extends Base {
 		$rules = implode( '', $after );
 
 		$this->assertStringContainsString(
-			'.gatherpress-event-status--is-canceled{--gatherpress-status-color:#c5221f}',
+			'.gatherpress-event-status--is-canceled',
 			$rules,
 			'Failed to assert a status carries its own color.'
+		);
+		$this->assertStringContainsString(
+			'{--gatherpress-status-color:#c5221f}',
+			$rules,
+			'Failed to assert a status carries its color value.'
 		);
 
 		foreach ( Status::slugs( Event::POST_TYPE ) as $slug ) {
 			$this->assertStringContainsString(
-				sprintf( '--is-%s{', $slug ),
+				sprintf( '--is-%s', $slug ),
 				$rules,
 				sprintf( 'Failed to assert %s is given a color.', $slug )
 			);
@@ -2423,14 +2428,15 @@ class Test_Setup extends Base {
 		remove_filter( 'gatherpress_event_statuses', $callback );
 
 		$this->assertStringNotContainsString(
-			'--is-plain{',
+			'--is-plain',
 			implode( '', (array) wp_styles()->get_data( $handle, 'after' ) ),
 			'Failed to assert a status with no color adds no rule.'
 		);
 	}
 
 	/**
-	 * A status reads as a state rather than a link somewhere.
+	 * Status terms are shown without links so they act as states rather than
+	 * taxonomy archives.
 	 *
 	 * @since 0.36.0
 	 *
@@ -2442,12 +2448,16 @@ class Test_Setup extends Base {
 		$result = Setup::get_instance()->unlink_status_terms(
 			array(
 				'<a href="https://example.org/event-status/canceled/" rel="tag">Canceled</a>',
-				'<a href="https://example.org/event-status/moved/" rel="tag">Moved</a>',
+				'<a href="https://example.org/event-status/moved-online/" rel="tag">Moved online</a>',
 			)
 		);
 
 		$this->assertSame(
-			array( '<span>Canceled</span>', '<span>Moved</span>' ),
+			array(
+				'<span class="gatherpress-event-status__term gatherpress-event-status--is-canceled">Canceled</span>',
+				'<span class="gatherpress-event-status__term gatherpress-event-status--is-moved-online">'
+				. 'Moved online</span>',
+			),
 			$result,
 			'Failed to assert a status is shown without a link.'
 		);

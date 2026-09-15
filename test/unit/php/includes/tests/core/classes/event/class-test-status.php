@@ -38,7 +38,7 @@ class Test_Status extends Base {
 				'canceled',
 				'postponed',
 				'rescheduled',
-				'moved',
+				'moved-online',
 				'tentative',
 			),
 			Status::slugs(),
@@ -81,12 +81,11 @@ class Test_Status extends Base {
 		$this->assertSame( 'CANCELLED', Status::ical( 'canceled' ) );
 		$this->assertSame( 50, Status::priority( 'canceled' ) );
 
-		// An event that has moved is still going ahead, so it stays confirmed
-		// and the new location speaks for itself.
-		$this->assertSame( 'Moved', Status::label( 'moved' ) );
-		$this->assertSame( 'EventScheduled', Status::schema( 'moved' ) );
-		$this->assertSame( 'CONFIRMED', Status::ical( 'moved' ) );
-		$this->assertSame( 20, Status::priority( 'moved' ) );
+		// An event that has moved online maps to Schema.org's EventMovedOnline.
+		$this->assertSame( 'Moved online', Status::label( 'moved-online' ) );
+		$this->assertSame( 'EventMovedOnline', Status::schema( 'moved-online' ) );
+		$this->assertSame( 'CONFIRMED', Status::ical( 'moved-online' ) );
+		$this->assertSame( 20, Status::priority( 'moved-online' ) );
 
 		// A tentative event is provisionally scheduled and awaiting confirmation.
 		$this->assertTrue( Status::exists( 'tentative' ), 'Failed to assert tentative status exists.' );
@@ -201,7 +200,7 @@ class Test_Status extends Base {
 		$this->assertSame( 50, Status::priority( 'canceled' ) );
 		$this->assertSame( 40, Status::priority( 'postponed' ) );
 		$this->assertSame( 30, Status::priority( 'rescheduled' ) );
-		$this->assertSame( 20, Status::priority( 'moved' ) );
+		$this->assertSame( 20, Status::priority( 'moved-online' ) );
 		$this->assertSame( 10, Status::priority( 'tentative' ) );
 		$this->assertSame( 0, Status::priority( 'scheduled' ) );
 		$this->assertSame( 0, Status::priority( 'non-existent' ) );
@@ -264,12 +263,12 @@ class Test_Status extends Base {
 	 */
 	public function test_a_status_can_depend_on_a_post_type_support(): void {
 		$this->assertTrue(
-			Status::exists( 'moved', Event::POST_TYPE ),
-			'Failed to assert an event that can say where it is may have moved.'
+			Status::exists( 'moved-online', Event::POST_TYPE ),
+			'Failed to assert an event that can say where it is may have moved online.'
 		);
 		$this->assertFalse(
-			Status::exists( 'moved', 'post' ),
-			'Failed to assert a post type with no venue or online support is not offered moved.'
+			Status::exists( 'moved-online', 'post' ),
+			'Failed to assert a post type with no venue or online support is not offered moved online.'
 		);
 		$this->assertTrue(
 			Status::exists( 'canceled', 'post' ),
@@ -291,7 +290,7 @@ class Test_Status extends Base {
 	public function test_the_filter_overrides_the_support_gate(): void {
 		$callback = static function ( array $statuses, string $post_type ): array {
 			if ( 'post' === $post_type ) {
-				$statuses['moved'] = array( 'label' => 'Moved' );
+				$statuses['moved-online'] = array( 'label' => 'Moved online' );
 			}
 
 			return $statuses;
@@ -300,7 +299,7 @@ class Test_Status extends Base {
 		add_filter( 'gatherpress_event_statuses', $callback, 10, 2 );
 
 		$this->assertTrue(
-			Status::exists( 'moved', 'post' ),
+			Status::exists( 'moved-online', 'post' ),
 			'Failed to assert the filter can put back a gated status.'
 		);
 

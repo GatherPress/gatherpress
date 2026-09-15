@@ -2615,13 +2615,13 @@ class Test_Event extends Base {
 		$this->assertSame( 'tentative', $event->get_status() );
 
 		// Appending a higher priority status reorders by priority descending.
-		$event->set_status( 'moved', true );
-		$this->assertSame( array( 'moved', 'tentative' ), $event->get_statuses() );
-		$this->assertSame( 'moved', $event->get_status() );
+		$event->set_status( 'moved-online', true );
+		$this->assertSame( array( 'moved-online', 'tentative' ), $event->get_statuses() );
+		$this->assertSame( 'moved-online', $event->get_status() );
 
-		// Appending canceled (priority 50) trumps both moved (20) and tentative (10).
+		// Appending canceled (priority 50) trumps both moved-online (20) and tentative (10).
 		$event->set_status( 'canceled', true );
-		$this->assertSame( array( 'canceled', 'moved', 'tentative' ), $event->get_statuses() );
+		$this->assertSame( array( 'canceled', 'moved-online', 'tentative' ), $event->get_statuses() );
 		$this->assertSame( 'canceled', $event->get_status() );
 		$this->assertSame( 'CANCELLED', $event->get_ical_status() );
 		$this->assertSame( 'EventCancelled', $event->get_schema_event_status() );
@@ -2629,6 +2629,8 @@ class Test_Event extends Base {
 
 	/**
 	 * Coverage for get_status_label method.
+	 *
+	 * @since 0.36.0
 	 *
 	 * @covers ::get_status_label
 	 *
@@ -2649,8 +2651,8 @@ class Test_Event extends Base {
 		$event->set_status( 'rescheduled' );
 		$this->assertSame( 'Rescheduled', $event->get_status_label() );
 
-		$event->set_status( 'moved' );
-		$this->assertSame( 'Moved', $event->get_status_label() );
+		$event->set_status( 'moved-online' );
+		$this->assertSame( 'Moved online', $event->get_status_label() );
 
 		$event->set_status( 'tentative' );
 		$this->assertSame( 'Tentative', $event->get_status_label() );
@@ -2658,6 +2660,8 @@ class Test_Event extends Base {
 
 	/**
 	 * Coverage for get_schema_event_status method.
+	 *
+	 * @since 0.36.0
 	 *
 	 * @covers ::get_schema_event_status
 	 *
@@ -2678,8 +2682,8 @@ class Test_Event extends Base {
 		$event->set_status( 'rescheduled' );
 		$this->assertSame( 'EventRescheduled', $event->get_schema_event_status() );
 
-		$event->set_status( 'moved' );
-		$this->assertSame( 'EventScheduled', $event->get_schema_event_status() );
+		$event->set_status( 'moved-online' );
+		$this->assertSame( 'EventMovedOnline', $event->get_schema_event_status() );
 
 		$event->set_status( 'tentative' );
 		$this->assertSame( 'EventScheduled', $event->get_schema_event_status() );
@@ -2687,6 +2691,8 @@ class Test_Event extends Base {
 
 	/**
 	 * Coverage for get_ical_status method.
+	 *
+	 * @since 0.36.0
 	 *
 	 * @covers ::get_ical_status
 	 *
@@ -2707,7 +2713,7 @@ class Test_Event extends Base {
 		$event->set_status( 'rescheduled' );
 		$this->assertSame( 'TENTATIVE', $event->get_ical_status() );
 
-		$event->set_status( 'moved' );
+		$event->set_status( 'moved-online' );
 		$this->assertSame( 'CONFIRMED', $event->get_ical_status() );
 
 		$event->set_status( 'tentative' );

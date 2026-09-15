@@ -147,7 +147,10 @@ final class Setup {
 			Event::TAXONOMY_STATUS,
 			Event::POST_TYPE,
 			array(
-				'labels'             => array(),
+				'labels'             => array(
+					'name'          => _x( 'Event Statuses', 'taxonomy general name', 'gatherpress' ),
+					'singular_name' => _x( 'Event Status', 'taxonomy singular name', 'gatherpress' ),
+				),
 				'hierarchical'       => false,
 				// Queryable and visible to the REST API so core's Post Terms
 				// block can render it, which is what the Event Status block
@@ -218,7 +221,21 @@ final class Setup {
 	public function unlink_status_terms( array $links ): array {
 		return array_map(
 			static function ( $link ): string {
-				return sprintf( '<span>%s</span>', esc_html( wp_strip_all_tags( (string) $link ) ) );
+				$text = esc_html( wp_strip_all_tags( (string) $link ) );
+				$slug = '';
+
+				if ( preg_match( '/[?&]term=([^&"\'>]+)|event-status\/([^"\'>\/]+)/', (string) $link, $matches ) ) {
+					$raw_slug = ! empty( $matches[1] ) ? $matches[1] : ( $matches[2] ?? '' );
+					$slug     = sanitize_html_class( $raw_slug );
+				}
+
+				$classes = array( 'gatherpress-event-status__term' );
+
+				if ( '' !== $slug ) {
+					$classes[] = sprintf( 'gatherpress-event-status--is-%s', $slug );
+				}
+
+				return sprintf( '<span class="%s">%s</span>', esc_attr( implode( ' ', $classes ) ), $text );
 			},
 			$links
 		);
@@ -262,6 +279,16 @@ final class Setup {
 		// Core enqueues it only on pages carrying the block it styles.
 		wp_enqueue_block_style( 'core/post-terms', array( 'handle' => $handle ) );
 
+		register_block_style(
+			'core/post-terms',
+			array(
+				'name'         => 'gatherpress-badge',
+				/* translators: Block style label for post terms status badge. */
+				'label'        => _x( 'Badge', 'block style', 'gatherpress' ),
+				'style_handle' => $handle,
+			)
+		);
+
 		$rules = '';
 
 		foreach ( Status::slugs( Event::POST_TYPE ) as $gatherpress_slug ) {
@@ -271,9 +298,15 @@ final class Setup {
 				continue;
 			}
 
+			$slug_class = sanitize_html_class( (string) $gatherpress_slug );
+
 			$rules .= sprintf(
-				'.gatherpress-event-status--is-%s{--gatherpress-status-color:%s}',
-				sanitize_html_class( (string) $gatherpress_slug ),
+				'.gatherpress-event-status--is-%1$s, ' .
+				'.wp-block-post-terms.gatherpress-event-status .gatherpress-event-status--is-%1$s, ' .
+				'.wp-block-post-terms.gatherpress-event-status a[href*="%1$s"], ' .
+				'.wp-block-post-terms.is-style-gatherpress-badge a[href*="%1$s"]' .
+				'{--gatherpress-status-color:%2$s}',
+				$slug_class,
 				$color
 			);
 		}

@@ -53,7 +53,10 @@ const mockStatuses = {
 		label: 'Rescheduled',
 		description: 'Event date and time have been changed.',
 	},
-	moved: { label: 'Moved', description: 'Event is taking place elsewhere.' },
+	'moved-online': {
+		label: 'Moved online',
+		description: 'Event venue has changed to an online meeting.',
+	},
 };
 
 jest.mock( '@src/helpers/editor-settings', () => ( {

@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies
  */
-import { registerBlockVariation } from '@wordpress/blocks';
+import { registerBlockVariation, unregisterBlockVariation } from '@wordpress/blocks';
 import { __ } from '@wordpress/i18n';
 
 /**
@@ -25,11 +25,14 @@ import './style.scss';
 const CORE_BLOCK = 'core/post-terms';
 const CLASS_NAME = 'gatherpress-event-status';
 
+// Unregister core's auto-generated variation for this taxonomy if it was registered.
+unregisterBlockVariation( CORE_BLOCK, TAXONOMY_STATUS );
+
 registerBlockVariation( CORE_BLOCK, {
 	name: CLASS_NAME,
 	title: __( 'Event Status', 'gatherpress' ),
 	description: __(
-		'Displays whether an event is going ahead, or has been canceled, postponed, rescheduled or moved.',
+		'Displays whether an event is going ahead, or has been canceled, postponed, rescheduled or moved online.',
 		'gatherpress'
 	),
 	category: 'gatherpress',
@@ -37,6 +40,7 @@ registerBlockVariation( CORE_BLOCK, {
 		className: CLASS_NAME,
 		term: TAXONOMY_STATUS,
 	},
-	isActive: [ 'term' ],
+	isActive: ( blockAttributes, variationAttributes ) =>
+		blockAttributes?.term === variationAttributes?.term,
 	scope: [ 'block', 'inserter', 'transform' ],
 } );
