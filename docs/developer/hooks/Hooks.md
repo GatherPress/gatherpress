@@ -12,6 +12,11 @@
 
 - [`gatherpress_autoloader`](gatherpress_autoloader.md) Filters the registered autoloaders for GatherPress.
 
+## class-base.php
+
+- [`gatherpress_rsvp_flag_added`](gatherpress_rsvp_flag_added.md) Fires after a flag is added to an RSVP that did not carry it.
+- [`gatherpress_rsvp_flag_removed`](gatherpress_rsvp_flag_removed.md) Fires after a flag is removed from an RSVP that carried it.
+
 ## class-cache.php
 
 - [`gatherpress_calendar_max_age`](gatherpress_calendar_max_age.md) Filters how long calendar responses may be reused by clients and caches.
@@ -19,11 +24,6 @@
 ## class-calendar.php
 
 - [`gatherpress_calendar_url`](gatherpress_calendar_url.md) Filters the calendar URL for a single event.
-
-## class-check-in.php
-
-- [`gatherpress_rsvp_checked_in`](gatherpress_rsvp_checked_in.md) Fires after an RSVP has been checked in.
-- [`gatherpress_rsvp_unchecked_in`](gatherpress_rsvp_unchecked_in.md) Fires after an RSVP's check-in has been removed.
 
 ## class-event-query.php
 
