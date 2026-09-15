@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Add an Uninstall settings screen that controls what deleting the plugin removes. Every option is off by default, so deleting GatherPress keeps your data unless you ask for it to go. You can opt in separately to removing events and venues, RSVPs, topic and venue terms, the event date table, scheduled jobs, and the plugin settings.
