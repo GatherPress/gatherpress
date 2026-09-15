@@ -615,6 +615,47 @@ class Test_Event_Date extends Base {
 	}
 
 	/**
+	 * All-day events do not display viewer time tooltips.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	public function test_render_omits_viewer_time_for_all_day_event(): void {
+		Settings::get_instance()->set( 'show_viewer_timezone', true );
+
+		$event_post = $this->mock->post(
+			array(
+				'post_title' => 'All Day Event With Viewer Time',
+				'post_type'  => Event::POST_TYPE,
+			)
+		)->get();
+
+		update_post_meta( $event_post->ID, 'gatherpress_is_all_day', 1 );
+
+		$event = new Event( $event_post->ID );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2030-06-15 00:00:00',
+				'datetime_end'   => '2030-06-15 23:59:59',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$this->go_to( get_permalink( $event_post->ID ) );
+
+		$output = do_blocks(
+			'<!-- wp:gatherpress/event-date {"showViewerTime":true,"showTimezone":"yes"} /-->'
+		);
+
+		$this->assertStringNotContainsString(
+			'data-wp-class--gatherpress-tooltip',
+			$output,
+			'All-day events should not carry the viewer time tooltip.'
+		);
+	}
+
+	/**
 	 * Clean up tooltip assets after tests.
 	 *
 	 * @since 0.36.0

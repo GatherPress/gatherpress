@@ -316,7 +316,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	// author is already in the event's timezone, which is what a viewer there
 	// would get too.
 	const viewerTimeLabel =
-		showViewerTime && isTimezoneAppended && globalShowViewerTimezone
+		showViewerTime && isTimezoneAppended && globalShowViewerTimezone && ! isAllDay
 			? getViewerTimeLabel( {
 				startGmt: showStartTime
 					? createMomentWithTimezone( finalDateTimeStart, finalTimezone )
@@ -329,6 +329,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						.format( 'YYYY-MM-DD HH:mm:ss' )
 					: '',
 				eventTimezone: finalTimezone,
+				isAllDay,
 				/* translators: 1: event start in the viewer's timezone, 2: event end in the viewer's timezone. */
 				rangeFormat: __( '%1$s to %2$s your time', 'gatherpress' ),
 				/* translators: %s: event start in the viewer's timezone. */
@@ -366,6 +367,23 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 					{ ` (${ viewerTimeLabel })` }
 				</span>
 			</span>
+		);
+	}
+
+	let viewerTimeHelp = __(
+		'Displays the event time converted to each viewer\u2019s local timezone in a tooltip. Viewers in the same timezone see nothing extra.',
+		'gatherpress'
+	);
+
+	if ( isAllDay ) {
+		viewerTimeHelp = __(
+			'All-day events do not show viewer local time.',
+			'gatherpress'
+		);
+	} else if ( ! isTimezoneAppended ) {
+		viewerTimeHelp = __(
+			'Time zone must be appended to show viewer local time.',
+			'gatherpress'
 		);
 	}
 
@@ -495,19 +513,9 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 					{ globalShowViewerTimezone && (
 						<ToggleControl
 							label={ __( 'Show viewer local time', 'gatherpress' ) }
-							help={
-								! isTimezoneAppended
-									? __(
-										'Time zone must be appended to show viewer local time.',
-										'gatherpress'
-									)
-									: __(
-										'Displays the event time converted to each viewer\u2019s local timezone in a tooltip. Viewers in the same timezone see nothing extra.',
-										'gatherpress'
-									)
-							}
-							checked={ !! showViewerTime && isTimezoneAppended }
-							disabled={ ! isTimezoneAppended }
+							help={ viewerTimeHelp }
+							checked={ !! showViewerTime && isTimezoneAppended && ! isAllDay }
+							disabled={ ! isTimezoneAppended || isAllDay }
 							onChange={ ( value ) =>
 								setAttributes( { showViewerTime: value } )
 							}

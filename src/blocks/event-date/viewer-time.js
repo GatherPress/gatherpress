@@ -174,14 +174,15 @@ function fillFormat( format, values ) {
  *
  * @since 0.36.0
  *
- * @param {Object} args                Label inputs.
- * @param {string} args.startGmt       Event start in `Y-m-d H:i:s` GMT.
- * @param {string} args.endGmt         Optional event end in `Y-m-d H:i:s` GMT.
- * @param {string} args.eventTimezone  The event's own timezone.
- * @param {string} args.viewerTimezone Optional override for the browser timezone, for tests.
- * @param {string} args.locale         Optional BCP 47 locale tag.
- * @param {string} args.rangeFormat    Translated format taking `%1$s` start and `%2$s` end.
- * @param {string} args.singleFormat   Translated format taking `%s` for the one time shown.
+ * @param {Object}  args                Label inputs.
+ * @param {string}  args.startGmt       Event start in `Y-m-d H:i:s` GMT.
+ * @param {string}  args.endGmt         Optional event end in `Y-m-d H:i:s` GMT.
+ * @param {string}  args.eventTimezone  The event's own timezone.
+ * @param {string}  args.viewerTimezone Optional override for the browser timezone, for tests.
+ * @param {string}  args.locale         Optional BCP 47 locale tag.
+ * @param {boolean} args.isAllDay       Whether the event is an all-day event.
+ * @param {string}  args.rangeFormat    Translated format taking `%1$s` start and `%2$s` end.
+ * @param {string}  args.singleFormat   Translated format taking `%s` for the one time shown.
  *
  * @return {string} The label, or an empty string when there is nothing to add.
  */
@@ -191,9 +192,14 @@ export function getViewerTimeLabel( {
 	eventTimezone = '',
 	viewerTimezone = undefined,
 	locale = undefined,
+	isAllDay = false,
 	rangeFormat = '%1$s to %2$s your time',
 	singleFormat = '%s your time',
 } = {} ) {
+	if ( isAllDay ) {
+		return '';
+	}
+
 	const viewer = viewerTimezone ?? getViewerTimezone();
 
 	// An end-only block has no start to convert, so its end becomes the one
@@ -223,7 +229,6 @@ export function getViewerTimeLabel( {
 		return '';
 	}
 
-	// Same instant, both calendars: when they disagree the label needs the date.
 	const viewerDay = formatInTimezone( labelStartGmt, viewer, dayOptions, locale );
 	const eventDay = formatInTimezone(
 		labelStartGmt,
@@ -231,9 +236,19 @@ export function getViewerTimeLabel( {
 		dayOptions,
 		locale
 	);
-	const spansDays = !! eventDay && viewerDay !== eventDay;
+	const viewerEndDay = labelEndGmt
+		? formatInTimezone( labelEndGmt, viewer, dayOptions, locale )
+		: '';
 
-	const start = spansDays
+	// When the range spans across days for the viewer, both start and end
+	// require the date so the interval is anchored clearly in the viewer's
+	// calendar. If start and end are on the same day for the viewer, only
+	// the start needs the date (and only when the date shifted relative to
+	// the event's own start day).
+	const rangeSpansDays = !! viewerEndDay && viewerEndDay !== viewerDay;
+	const startShiftedDay = !! eventDay && viewerDay !== eventDay;
+
+	const start = rangeSpansDays || startShiftedDay
 		? formatInTimezone(
 			labelStartGmt,
 			viewer,
@@ -242,19 +257,11 @@ export function getViewerTimeLabel( {
 		)
 		: viewerStart;
 
-	// Mirrors `Event::get_display_datetime()`, which picks `get_time_end()` over
-	// `get_datetime_end()` only while the two ends share a date. Measured in the
-	// viewer's calendar here, because that is the one the label speaks in.
-	const viewerEndDay = labelEndGmt
-		? formatInTimezone( labelEndGmt, viewer, dayOptions, locale )
-		: '';
-	const endSpansDays = !! viewerEndDay && viewerEndDay !== viewerDay;
-
 	const viewerEnd = labelEndGmt
 		? formatInTimezone(
 			labelEndGmt,
 			viewer,
-			endSpansDays ? { ...dayOptions, ...timeOptions } : timeOptions,
+			rangeSpansDays ? { ...dayOptions, ...timeOptions } : timeOptions,
 			locale
 		)
 		: '';
