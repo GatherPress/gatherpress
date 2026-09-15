@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Query;
+use WP_Term;
 
 /**
  * Class Base.
@@ -65,6 +66,15 @@ abstract class Base {
 	protected readonly int $rsvp_id;
 
 	/**
+	 * Whether the current `add()` call inserted this flag's relationship row.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @var bool
+	 */
+	private bool $inserted = false;
+
+	/**
 	 * Class constructor.
 	 *
 	 * Keeps the ID only when it belongs to an RSVP comment, so every method can
@@ -96,31 +106,72 @@ abstract class Base {
 		}
 
 		if ( ! $this->has() ) {
+			add_action( 'added_term_relationship', array( $this, 'record_insertion' ), 10, 3 );
+			$stored = wp_set_object_terms( $this->rsvp_id, static::SLUG, self::TAXONOMY, true );
+			remove_action( 'added_term_relationship', array( $this, 'record_insertion' ), 10 );
+
+			$inserted       = $this->inserted;
+			$this->inserted = false;
+
 			// Nothing was stored, so there is nothing to announce.
-			if ( is_wp_error( wp_set_object_terms( $this->rsvp_id, static::SLUG, self::TAXONOMY, true ) ) ) {
+			if ( is_wp_error( $stored ) ) {
 				return false;
 			}
 
-			clean_comment_cache( $this->rsvp_id );
+			// Another request can store the same flag between has() and the
+			// write, and core then finds the row and inserts nothing. Only the
+			// request whose write inserted it announces the change.
+			if ( $inserted ) {
+				clean_comment_cache( $this->rsvp_id );
 
-			/**
-			 * Fires after a flag is added to an RSVP that did not carry it.
-			 *
-			 * Every flag fires this, so code reacting to one flag compares `$flag`
-			 * with that flag class's `SLUG`, for example `Check_In::SLUG` to act
-			 * on a check-in. It does not fire on a repeat or a failed write.
-			 *
-			 * @since 0.36.0
-			 *
-			 * @param int    $rsvp_id The RSVP comment ID.
-			 * @param string $flag    The flag slug.
-			 *
-			 * @return void
-			 */
-			do_action( 'gatherpress_rsvp_flag_added', $this->rsvp_id, static::SLUG );
+				/**
+				 * Fires after a flag is added to an RSVP that did not carry it.
+				 *
+				 * Every flag fires this, so code reacting to one flag compares
+				 * `$flag` with that flag class's `SLUG`, for example
+				 * `Check_In::SLUG` to act on a check-in. It does not fire on a
+				 * repeat, a failed write, or when an overlapping request stored
+				 * the flag first.
+				 *
+				 * @since 0.36.0
+				 *
+				 * @param int    $rsvp_id The RSVP comment ID.
+				 * @param string $flag    The flag slug.
+				 *
+				 * @return void
+				 */
+				do_action( 'gatherpress_rsvp_flag_added', $this->rsvp_id, static::SLUG );
+			}
 		}
 
 		return true;
+	}
+
+	/**
+	 * Note that this flag's relationship row was inserted.
+	 *
+	 * Listens to core's `added_term_relationship` only for the duration of an
+	 * `add()` call, and only counts the row for this RSVP and this flag's slug.
+	 * Public because core calls it; not meant to be called directly.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param int    $object_id The object the term was attached to.
+	 * @param int    $tt_id     The term taxonomy ID attached.
+	 * @param string $taxonomy  The taxonomy slug.
+	 *
+	 * @return void
+	 */
+	public function record_insertion( int $object_id, int $tt_id, string $taxonomy ): void {
+		if ( $this->rsvp_id !== $object_id || self::TAXONOMY !== $taxonomy ) {
+			return;
+		}
+
+		$term = get_term_by( 'term_taxonomy_id', $tt_id, self::TAXONOMY );
+
+		if ( $term instanceof WP_Term && static::SLUG === $term->slug ) {
+			$this->inserted = true;
+		}
 	}
 
 	/**

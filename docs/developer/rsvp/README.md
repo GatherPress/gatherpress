@@ -244,7 +244,9 @@ once.
 
 Every flag fires `gatherpress_rsvp_flag_added` and `gatherpress_rsvp_flag_removed`
 with the RSVP ID and the flag slug. To react to one flag, compare the slug with
-that flag class's `SLUG`. Neither action fires on a repeat or a failed write.
+that flag class's `SLUG`. Neither action fires on a repeat or a failed write,
+and when two requests add the same flag at once, only the one that stored it
+announces it.
 
 ```php
 use My_Plugin\Flag\Walk_In;

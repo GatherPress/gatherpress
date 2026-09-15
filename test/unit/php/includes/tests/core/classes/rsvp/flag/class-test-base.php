@@ -13,6 +13,7 @@ use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Flag\Base;
 use GatherPress\Core\Rsvp\Flag\Check_In;
 use GatherPress\Core\Rsvp\Flag\Setup;
+use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Tests\Base as Base_Unit_Test;
 use PMC\Unit_Test\Utility;
 use WP_Error;
@@ -61,39 +62,12 @@ class Test_Base extends Base_Unit_Test {
 	}
 
 	/**
-	 * Coverage for __construct: the ID is kept only when it belongs to an RSVP.
-	 *
-	 * @covers ::__construct
-	 *
-	 * @return void
-	 */
-	public function test_construct_keeps_the_id_of_an_rsvp_only(): void {
-		$rsvp       = $this->make_rsvp();
-		$comment_id = (int) wp_insert_comment( array( 'comment_post_ID' => $rsvp['event_id'] ) );
-
-		$this->assertSame(
-			$rsvp['rsvp_id'],
-			Utility::get_hidden_property( new Test_Base_Concrete( $rsvp['rsvp_id'] ), 'rsvp_id' ),
-			'An RSVP ID should be kept.'
-		);
-		$this->assertSame(
-			0,
-			Utility::get_hidden_property( new Test_Base_Concrete( $comment_id ), 'rsvp_id' ),
-			'A comment that is not an RSVP should not be kept.'
-		);
-		$this->assertSame(
-			0,
-			Utility::get_hidden_property( new Test_Base_Concrete( 0 ), 'rsvp_id' ),
-			'A comment ID that does not exist should not be kept.'
-		);
-	}
-
-	/**
 	 * Coverage for add and has on an RSVP: the flag is stored, reads back, and
 	 * is announced once, with its slug, even when added twice.
 	 *
 	 * @covers ::add
 	 * @covers ::has
+	 * @covers ::record_insertion
 	 *
 	 * @return void
 	 */
@@ -143,8 +117,10 @@ class Test_Base extends Base_Unit_Test {
 
 	/**
 	 * Coverage for a flag built from a comment that is not an RSVP, or an ID
-	 * that does not exist: both writers refuse and has() reports false.
+	 * that does not exist: the constructor keeps no RSVP, so both writers
+	 * refuse and has() reports false.
 	 *
+	 * @covers ::__construct
 	 * @covers ::add
 	 * @covers ::remove
 	 * @covers ::has
@@ -254,6 +230,77 @@ class Test_Base extends Base_Unit_Test {
 		$this->assertFalse( $result, 'A flag that could not be stored should report failure.' );
 		$this->assertFalse( $fired, 'Nothing should be announced when nothing was stored.' );
 		$this->assertFalse( $flag->has(), 'The RSVP should not carry the flag.' );
+	}
+
+	/**
+	 * Coverage for two overlapping additions. Another request stores the flag
+	 * between this call's has() check and its write, so core finds the row and
+	 * inserts nothing: the call still succeeds but must not announce a change
+	 * it did not make. Relationships inserted for another RSVP, another flag,
+	 * or another taxonomy during the same write must not count as this flag's.
+	 *
+	 * @covers ::add
+	 * @covers ::record_insertion
+	 *
+	 * @return void
+	 */
+	public function test_add_does_not_announce_when_an_overlapping_request_stored_the_flag_first(): void {
+		global $wpdb;
+
+		$rsvp         = $this->make_rsvp();
+		$other_rsvp   = $this->make_rsvp();
+		$flag         = new Test_Base_Concrete( $rsvp['rsvp_id'] );
+		$fired        = false;
+		$overlapped   = false;
+		$listener     = static function () use ( &$fired ): void {
+			$fired = true;
+		};
+		$other_writer = static function (
+			$term_id,
+			$tt_id,
+			$taxonomy
+		) use (
+			$wpdb,
+			$rsvp,
+			$other_rsvp,
+			&$overlapped
+		): void {
+			$is_this_flag = Base::TAXONOMY === $taxonomy && Test_Base_Concrete::SLUG === get_term( $term_id )->slug;
+
+			if ( $overlapped || ! $is_this_flag ) {
+				return;
+			}
+
+			$overlapped = true;
+
+			// The overlapping request stores this flag first, outside the API.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$wpdb->insert(
+				$wpdb->term_relationships,
+				array(
+					'object_id'        => $rsvp['rsvp_id'],
+					'term_taxonomy_id' => (int) $tt_id,
+				)
+			);
+
+			// Unrelated insertions during the same write.
+			wp_set_object_terms( $other_rsvp['rsvp_id'], (int) $term_id, Base::TAXONOMY, true );
+			wp_set_object_terms( $rsvp['rsvp_id'], 'other-flag', Base::TAXONOMY, true );
+			wp_set_object_terms( $rsvp['rsvp_id'], 'attending', Status::TAXONOMY, true );
+		};
+
+		add_action( 'gatherpress_rsvp_flag_added', $listener );
+		add_action( 'created_term', $other_writer, 10, 3 );
+
+		$result = $flag->add();
+
+		remove_action( 'created_term', $other_writer, 10 );
+		remove_action( 'gatherpress_rsvp_flag_added', $listener );
+
+		$this->assertTrue( $overlapped, 'The overlapping write should have run during add().' );
+		$this->assertTrue( $result, 'The RSVP carries the flag, so add() should report success.' );
+		$this->assertFalse( $fired, 'Only the request that inserted the row should announce the change.' );
+		$this->assertTrue( $flag->has(), 'The RSVP should carry the flag.' );
 	}
 
 	/**
