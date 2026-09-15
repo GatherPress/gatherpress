@@ -171,8 +171,9 @@ final class Rest_Api {
 	/**
 	 * Define REST API route for generating nonce.
 	 *
-	 * Creates a publicly accessible endpoint that generates a fresh nonce
-	 * for authenticated REST API requests.
+	 * Creates an endpoint that generates a fresh nonce for authenticated REST
+	 * API requests. The nonce is for the site's own pages, so the endpoint
+	 * only answers requests from the site's origin.
 	 *
 	 * @since 0.34.0
 	 *
@@ -184,11 +185,15 @@ final class Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => static function () {
+					// The site's own pages need no CORS headers to read the nonce.
+					remove_filter( 'rest_pre_serve_request', 'rest_send_cors_headers' );
+
 					// Short-term caching (30 seconds) to prevent endpoint hammering while maintaining security.
 					// WordPress nonces are valid for ~12 hours, so 30 seconds of caching has no UX impact
 					// but protects against rapid successive requests that could overwhelm the server.
 					header( 'Cache-Control: private, max-age=30' );
 					header( 'Expires: ' . gmdate( 'D, d M Y H:i:s', time() + 30 ) . ' GMT' );
+					header( 'Vary: Origin' );
 
 					// Ensure proper user authentication for nonce generation.
 					Utility::ensure_user_authentication();
@@ -199,7 +204,7 @@ final class Rest_Api {
 
 					return new WP_REST_Response( $response );
 				},
-				'permission_callback' => '__return_true',
+				'permission_callback' => array( Utility::class, 'is_same_origin_request' ),
 			),
 		);
 	}
@@ -881,12 +886,15 @@ final class Rest_Api {
 
 		$rsvp_template = Rsvp_Template::get_instance();
 		$params        = $request->get_params();
+		$post_id       = intval( $params['post_id'] );
 
-		// Only a template the server emitted is rendered. The block tree is
-		// handed back verbatim from the markup Rsvp_Template wrote, and it is
-		// that markup, not the request, which decides what gets rendered.
+		// Only a template the server emitted for this event is rendered. The
+		// block tree is handed back verbatim from the markup Rsvp_Template
+		// wrote, and it is that markup, not the request, which decides what
+		// gets rendered.
 		$emitted = Rsvp_Template::verify_template(
 			(string) $params['block_data'],
+			$post_id,
 			(string) $params['block_signature']
 		);
 
@@ -900,7 +908,6 @@ final class Rest_Api {
 			);
 		}
 
-		$post_id    = intval( $params['post_id'] );
 		$status     = $params['status'];
 		$block_data = json_decode( $params['block_data'], true );
 		$rsvp       = new Rsvp( $post_id );

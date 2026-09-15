@@ -1,0 +1,4 @@
+Significance: patch
+Type: security
+
+Tighten request and rendering checks. The nonce endpoint only answers requests from the site's own origin, RSVP template signatures only verify for the site and event they were emitted for, and the venue and RSVP count blocks only show a post the viewer could open directly.

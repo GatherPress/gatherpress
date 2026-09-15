@@ -17,6 +17,7 @@ use GatherPress\Core\Rsvp\Token;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Setup;
 use GatherPress\Core\Topic;
+use GatherPress\Core\Utility as GatherPress_Utility;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -1166,7 +1167,7 @@ class Test_Rest_Api extends Base {
 		$request->set_param( 'block_data', wp_json_encode( $block_data ) );
 		$request->set_param(
 			'block_signature',
-			Rsvp_Template::sign_template( (string) wp_json_encode( $block_data ) )
+			Rsvp_Template::sign_template( (string) wp_json_encode( $block_data ), $post_id )
 		);
 		$request->set_param( 'limit_enabled', false );
 		$request->set_param( 'limit', 10 );
@@ -1206,7 +1207,7 @@ class Test_Rest_Api extends Base {
 		$request->set_param( 'block_data', wp_json_encode( $block_data ) );
 		$request->set_param(
 			'block_signature',
-			Rsvp_Template::sign_template( (string) wp_json_encode( $block_data ) )
+			Rsvp_Template::sign_template( (string) wp_json_encode( $block_data ), $post_id )
 		);
 
 		$response = $instance->rsvp_status_html( $request );
@@ -1616,7 +1617,11 @@ class Test_Rest_Api extends Base {
 		$this->assertEquals( 'nonce', $route['route'] );
 		$this->assertArrayHasKey( 'methods', $route['args'] );
 		$this->assertArrayHasKey( 'callback', $route['args'] );
-		$this->assertArrayHasKey( 'permission_callback', $route['args'] );
+		$this->assertSame(
+			array( GatherPress_Utility::class, 'is_same_origin_request' ),
+			$route['args']['permission_callback'],
+			'Failed to assert the nonce route only answers the site\'s own origin.'
+		);
 	}
 
 	/**
@@ -1634,10 +1639,16 @@ class Test_Rest_Api extends Base {
 		$user_id = $this->factory->user->create();
 		wp_set_current_user( $user_id );
 
+		add_filter( 'rest_pre_serve_request', 'rest_send_cors_headers' );
+
 		// Call the callback.
 		$callback = $route['args']['callback'];
 		$response = call_user_func( $callback );
 
+		$this->assertFalse(
+			has_filter( 'rest_pre_serve_request', 'rest_send_cors_headers' ),
+			'Failed to assert the nonce response is served without CORS headers.'
+		);
 		$this->assertInstanceOf( WP_REST_Response::class, $response, 'Callback should return WP_REST_Response' );
 
 		$data = $response->get_data();
@@ -1647,6 +1658,42 @@ class Test_Rest_Api extends Base {
 		// Verify the nonce is valid.
 		$this->assertIsString( $data['nonce'], 'Nonce should be a string' );
 		$this->assertGreaterThan( 0, wp_verify_nonce( $data['nonce'], 'wp_rest' ), 'Nonce should be valid' );
+	}
+
+	/**
+	 * The nonce route answers the site's own origin and refuses any other.
+	 *
+	 * @covers ::nonce_route
+	 *
+	 * @return void
+	 */
+	public function test_nonce_route_refuses_other_origins(): void {
+		Rest_Api::get_instance()->register_endpoints();
+
+		$request = new WP_REST_Request( 'GET', sprintf( '/%s/event/nonce', GATHERPRESS_REST_NAMESPACE ) );
+
+		$without_origin = rest_do_request( $request )->get_status();
+
+		$_SERVER['HTTP_ORIGIN'] = untrailingslashit( home_url() );
+		$own_origin             = rest_do_request( $request )->get_status();
+
+		$_SERVER['HTTP_ORIGIN'] = 'https://elsewhere.example';
+		$other_origin           = rest_do_request( $request );
+
+		unset( $_SERVER['HTTP_ORIGIN'] );
+
+		$this->assertSame( 200, $without_origin, 'Failed to assert a request without an origin is answered.' );
+		$this->assertSame( 200, $own_origin, 'Failed to assert a request from the site\'s origin is answered.' );
+		$this->assertContains(
+			$other_origin->get_status(),
+			array( 401, 403 ),
+			'Failed to assert a request from another origin is refused.'
+		);
+		$this->assertArrayNotHasKey(
+			'nonce',
+			(array) $other_origin->get_data(),
+			'Failed to assert a request from another origin gets no nonce.'
+		);
 	}
 
 	/**
@@ -2644,7 +2691,7 @@ class Test_Rest_Api extends Base {
 		$request->set_param( 'block_data', wp_json_encode( array() ) );
 		$request->set_param(
 			'block_signature',
-			Rsvp_Template::sign_template( (string) wp_json_encode( array() ) )
+			Rsvp_Template::sign_template( (string) wp_json_encode( array() ), $post_id )
 		);
 
 		// Check that nocache_headers is called by verifying headers are sent.
@@ -3450,7 +3497,7 @@ class Test_Rest_Api extends Base {
 		$this->assertFalse( $response->get_data()['success'] );
 
 		// A signature for one template does not carry over to another.
-		$request->set_param( 'block_signature', Rsvp_Template::sign_template( $template ) );
+		$request->set_param( 'block_signature', Rsvp_Template::sign_template( $template, $post_id ) );
 		$request->set_param(
 			'block_data',
 			(string) wp_json_encode(
@@ -3475,6 +3522,18 @@ class Test_Rest_Api extends Base {
 			200,
 			$instance->rsvp_status_html( $request )->get_status(),
 			'Failed to assert the emitted pair is accepted.'
+		);
+
+		// A pair emitted for one event does not carry over to another.
+		$request->set_param(
+			'post_id',
+			$this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) )
+		);
+
+		$this->assertSame(
+			403,
+			$instance->rsvp_status_html( $request )->get_status(),
+			'Failed to assert a pair emitted for another event is refused.'
 		);
 	}
 
@@ -3531,7 +3590,7 @@ class Test_Rest_Api extends Base {
 			'Failed to assert a wrong signature is refused by the handler.'
 		);
 
-		$request->set_param( 'block_signature', Rsvp_Template::sign_template( $template ) );
+		$request->set_param( 'block_signature', Rsvp_Template::sign_template( $template, $post_id ) );
 		$this->assertSame(
 			200,
 			rest_do_request( $request )->get_status(),
