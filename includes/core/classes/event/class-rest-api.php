@@ -482,9 +482,9 @@ final class Rest_Api {
 	/**
 	 * Send emails to selected members.
 	 *
-	 * This method is responsible for sending emails to specific members. It checks if the given
-	 * `$post_id` corresponds to a specific post type, retrieves the list of members to email, and sends the email with
-	 * the appropriate subject, body, and headers.
+	 * This method is responsible for sending emails to specific members. It checks that the given
+	 * `$post_id` belongs to a post type with RSVP support, retrieves the list of members to email, and sends the
+	 * email with the appropriate subject, body, and headers.
 	 *
 	 * @since 0.34.0
 	 * @since 0.36.0 Added `$subject` parameter for #827.
@@ -498,7 +498,7 @@ final class Rest_Api {
 	 * @return bool True if emails were successfully sent, false otherwise.
 	 */
 	public function send_emails( int $post_id, array $send, string $message, string $subject = '' ): bool {
-		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT ) ) {
 			return false;
 		}
 
@@ -1039,7 +1039,7 @@ final class Rest_Api {
 	 * Handle RSVP responses REST endpoint request.
 	 *
 	 * Retrieves RSVP response data for a given event post ID. Validates that the post
-	 * is an event type before returning response data.
+	 * type declares RSVP support before returning response data.
 	 *
 	 * @since 0.34.0
 	 *
@@ -1062,7 +1062,7 @@ final class Rest_Api {
 		$success   = false;
 		$responses = array();
 
-		if ( Event::POST_TYPE === get_post_type( $post_id ) ) {
+		if ( post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT ) ) {
 			$success   = true;
 			$rsvp      = new Rsvp( $post_id );
 			$responses = $rsvp->responses();

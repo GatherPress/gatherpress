@@ -97,15 +97,21 @@ final class Import extends Migrate {
 	}
 
 	/**
-	 * Checks if the currently imported post is of type 'gatherpress_event'.
+	 * Checks if the currently imported post belongs to an event-supporting post type.
+	 *
+	 * Mirrors the export side, which marks posts through `Validate::event_post_id()`,
+	 * so a companion plugin's event post type round-trips its datetimes too.
 	 *
 	 * @param  array<string, mixed> $post_data_raw The result of 'wp_import_post_data_raw'.
 	 *
-	 * @return bool                                True, when the currently imported post is of type
-	 *                                             'gatherpress_event', false otherwise.
+	 * @return bool                                True, when the currently imported post's type declares
+	 *                                             `gatherpress-event-date` support, false otherwise.
 	 */
 	protected function validate( array $post_data_raw ): bool {
-		return ( isset( $post_data_raw['post_type'] ) && Event::POST_TYPE === $post_data_raw['post_type'] );
+		return (
+			isset( $post_data_raw['post_type'] ) &&
+			post_type_supports( (string) $post_data_raw['post_type'], Event::SUPPORT )
+		);
 	}
 
 	/**
