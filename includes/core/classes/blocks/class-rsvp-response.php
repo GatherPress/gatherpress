@@ -13,6 +13,7 @@ namespace GatherPress\Core\Blocks;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Recurrence\Rsvp_Occurrence;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
@@ -134,7 +135,7 @@ final class Rsvp_Response {
 			);
 
 			$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
-			$tag->set_attribute( 'data-wp-context', wp_json_encode( array( 'postId' => $post_id ) ) );
+			$tag->set_attribute( 'data-wp-context', wp_json_encode( Rsvp_Occurrence::block_context( $post_id ) ) );
 			$tag->set_attribute( 'data-counts', wp_json_encode( $counts ) );
 
 			$has_responses = ! empty( $counts['attending'] );

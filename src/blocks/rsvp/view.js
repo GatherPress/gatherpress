@@ -7,6 +7,7 @@ import { store, getElement, getContext } from '@wordpress/interactivity';
  * Internal dependencies
  */
 import {
+	getPostKey,
 	initPostContext,
 	sendRsvpApiRequest,
 } from '../../helpers/interactivity';
@@ -18,13 +19,15 @@ const { state, actions } = store( 'gatherpress', {
 			const element = getElement();
 			const context = getContext();
 			const postId = context.postId || 0;
+			const postKey = getPostKey( postId, context?.recurrenceId );
 
-			initPostContext( state, postId );
+			initPostContext( state, postKey );
 
-			const currentUser = state.posts[ postId ].currentUser;
+			const currentUser = state.posts[ postKey ].currentUser;
 
 			currentUser.guests = parseInt( element.ref.value, 10 );
 			currentUser.rsvpToken = getUrlParam( 'gatherpress_rsvp_token' );
+			currentUser.recurrenceId = context?.recurrenceId;
 
 			// Find the closest trigger element for loading state.
 			const triggerElement = element.ref.closest( '.gatherpress-rsvp--trigger-update' );
@@ -40,13 +43,15 @@ const { state, actions } = store( 'gatherpress', {
 			const element = getElement();
 			const context = getContext();
 			const postId = context.postId || 0;
+			const postKey = getPostKey( postId, context?.recurrenceId );
 
-			initPostContext( state, postId );
+			initPostContext( state, postKey );
 
-			const currentUser = state.posts[ postId ].currentUser;
+			const currentUser = state.posts[ postKey ].currentUser;
 
 			currentUser.anonymous = element.ref.checked ? 1 : 0;
 			currentUser.rsvpToken = getUrlParam( 'gatherpress_rsvp_token' );
+			currentUser.recurrenceId = context?.recurrenceId;
 
 			// Find the closest trigger element for loading state.
 			const triggerElement = element.ref.closest( '.gatherpress-rsvp--trigger-update' );
@@ -66,11 +71,12 @@ const { state, actions } = store( 'gatherpress', {
 			const element = getElement();
 			const context = getContext();
 			const postId = context?.postId || 0;
+			const postKey = getPostKey( postId, context?.recurrenceId );
 
-			initPostContext( state, postId );
+			initPostContext( state, postKey );
 
 			const setStatus = element.ref.dataset.setStatus ?? '';
-			const currentUserStatus = state.posts[ postId ].currentUser.status;
+			const currentUserStatus = state.posts[ postKey ].currentUser.status;
 
 			let status = 'not_attending';
 
@@ -90,8 +96,8 @@ const { state, actions } = store( 'gatherpress', {
 				status = currentUserStatus;
 			}
 
-			const guests = state.posts[ postId ].currentUser.guests;
-			const anonymous = state.posts[ postId ].currentUser.anonymous;
+			const guests = state.posts[ postKey ].currentUser.guests;
+			const anonymous = state.posts[ postKey ].currentUser.anonymous;
 			const rsvpToken = getUrlParam( 'gatherpress_rsvp_token' );
 
 			// Find the closest trigger element for loading state.
@@ -104,6 +110,7 @@ const { state, actions } = store( 'gatherpress', {
 					guests,
 					anonymous,
 					rsvpToken,
+					recurrenceId: context?.recurrenceId,
 				},
 				state,
 				() => {
@@ -166,27 +173,27 @@ const { state, actions } = store( 'gatherpress', {
 		monitorAnonymousStatus() {
 			const element = getElement();
 			const context = getContext();
-			const postId = context.postId || 0;
+			const postKey = getPostKey( context.postId || 0, context?.recurrenceId );
 
-			initPostContext( state, postId );
+			initPostContext( state, postKey );
 
-			element.ref.checked = state.posts[ postId ].currentUser.anonymous;
+			element.ref.checked = state.posts[ postKey ].currentUser.anonymous;
 		},
 		setGuestCount() {
 			const element = getElement();
 			const context = getContext();
-			const postId = context.postId || 0;
+			const postKey = getPostKey( context.postId || 0, context?.recurrenceId );
 
-			initPostContext( state, postId );
+			initPostContext( state, postKey );
 
-			element.ref.value = state.posts[ postId ].currentUser.guests;
+			element.ref.value = state.posts[ postKey ].currentUser.guests;
 		},
 		renderRsvpBlock() {
 			const element = getElement();
 			const context = getContext();
-			const postId = context.postId || 0;
+			const postKey = getPostKey( context.postId || 0, context?.recurrenceId );
 
-			initPostContext( state, postId );
+			initPostContext( state, postKey );
 
 			const userDetails = element.ref.dataset.userDetails
 				? JSON.parse( element.ref.dataset.userDetails )
@@ -195,8 +202,8 @@ const { state, actions } = store( 'gatherpress', {
 			delete element.ref.dataset.userDetails;
 
 			if ( userDetails ) {
-				state.posts[ postId ] = {
-					...state.posts[ postId ],
+				state.posts[ postKey ] = {
+					...state.posts[ postKey ],
 					currentUser: {
 						status: userDetails?.status || 'no_status',
 						guests: userDetails?.guests || 0,
@@ -207,7 +214,7 @@ const { state, actions } = store( 'gatherpress', {
 
 			const innerBlocks =
 				element.ref.querySelectorAll( '[data-rsvp-status]' );
-			const currentStatus = state.posts[ postId ].currentUser.status;
+			const currentStatus = state.posts[ postKey ].currentUser.status;
 
 			let matched = false;
 
@@ -253,14 +260,14 @@ const { state, actions } = store( 'gatherpress', {
 		},
 		updateGuestCountDisplay() {
 			const context = getContext();
-			const postId = context?.postId || 0;
+			const postKey = getPostKey( context?.postId || 0, context?.recurrenceId );
 
 			// Ensure the state is initialized.
-			initPostContext( state, context );
+			initPostContext( state, postKey );
 
 			// Retrieve the current guest count from the state.
 			const guestCount = parseInt(
-				state.posts[ postId ]?.currentUser?.guests || 0,
+				state.posts[ postKey ]?.currentUser?.guests || 0,
 				10,
 			);
 

@@ -6,7 +6,7 @@ import { store, getElement, getContext } from '@wordpress/interactivity';
 /**
  * Internal dependencies
  */
-import { initPostContext } from '../../helpers/interactivity';
+import { getPostKey, initPostContext } from '../../helpers/interactivity';
 
 const { state } = store( 'gatherpress', {
 	state: {
@@ -28,7 +28,9 @@ const { state } = store( 'gatherpress', {
 				return;
 			}
 
-			initPostContext( state, postId );
+			const postKey = getPostKey( postId, context?.recurrenceId );
+
+			initPostContext( state, postKey );
 
 			const counts = element.ref.dataset.counts
 				? JSON.parse( element.ref.dataset.counts )
@@ -38,8 +40,8 @@ const { state } = store( 'gatherpress', {
 			delete element.ref.dataset.counts;
 
 			if ( counts ) {
-				state.posts[ postId ] = {
-					...state.posts[ postId ],
+				state.posts[ postKey ] = {
+					...state.posts[ postKey ],
 					eventResponses: {
 						attending: counts?.attending || 0,
 						waitingList: counts?.waiting_list || 0,
@@ -63,8 +65,10 @@ const { state } = store( 'gatherpress', {
 				return;
 			}
 
+			const postKey = getPostKey( postId, context?.recurrenceId );
+
 			// Access eventResponses to set up reactive dependency.
-			const eventResponses = state.posts?.[ postId ]?.eventResponses;
+			const eventResponses = state.posts?.[ postKey ]?.eventResponses;
 
 			if ( ! eventResponses ) {
 				return;

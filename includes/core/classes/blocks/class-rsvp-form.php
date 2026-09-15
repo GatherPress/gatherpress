@@ -19,7 +19,9 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Blocks\Form_Field;
 use GatherPress\Core\Blocks\General_Block;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Recurrence\Rsvp_Occurrence;
 use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Form as Rsvp_Form_Handler;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_HTML_Tag_Processor;
@@ -151,6 +153,7 @@ final class Rsvp_Form {
 			'<input type="hidden" name="' . esc_attr( Rsvp::COMMENT_TYPE ) . '" value="1">' .
 			'<input type="hidden" name="gatherpress_rsvp_form_id" value="' . esc_attr( $unique_form_id ) . '">' .
 			'<input type="hidden" name="gatherpress_form_schema_id" value="' . esc_attr( $schema_form_id ) . '">' .
+			$this->occurrence_input( $post_id ) .
 			'</form>',
 			$block_content
 		);
@@ -165,7 +168,7 @@ final class Rsvp_Form {
 		$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 		$tag->set_attribute( 'data-wp-init', 'callbacks.initRsvpForm' );
 		$tag->set_attribute( 'data-wp-on--submit', 'actions.handleRsvpFormSubmit' );
-		$tag->set_attribute( 'data-wp-context', wp_json_encode( array( 'postId' => $post_id ) ) );
+		$tag->set_attribute( 'data-wp-context', wp_json_encode( Rsvp_Occurrence::block_context( $post_id ) ) );
 
 		$event = new Event( $post_id );
 
@@ -184,6 +187,67 @@ final class Rsvp_Form {
 		$updated_html = $this->handle_form_visibility( $updated_html, $is_success );
 
 		return $updated_html;
+	}
+
+	/**
+	 * Emit the scope this form was rendered for as a posted field.
+	 *
+	 * The block form submits through the REST route, which carries the
+	 * occurrence as a request argument. The **no-JavaScript fallback** posts
+	 * natively to `wp-comments-post.php`, and that endpoint never fires `wp`,
+	 * so `Event\Recurrence\Context::sync()` never runs and there is no ambient
+	 * occurrence for the handler to read. Without a posted field the fallback
+	 * therefore wrote series-wide from an occurrence page: the response showed
+	 * on every date, and duplicate detection then refused the same visitor on
+	 * all the others.
+	 *
+	 * `data-wp-context` already carries the occurrence, but only the
+	 * interactivity runtime reads it, which is exactly the runtime this path
+	 * exists for the absence of.
+	 *
+	 * A recurring event's form emits the field on **every** render, not only
+	 * inside occurrence context: outside one it carries the explicit series
+	 * value. That is what lets `Rsvp\Form::posted_occurrence()` tell an
+	 * intentional series-wide submission apart from a stale pre-upgrade page
+	 * posting with no field at all, which it refuses with a reload error
+	 * rather than silently widening.
+	 *
+	 * The value is user-controllable, which is why `Rsvp\Form` validates it
+	 * against the event's own series rather than trusting it. That is the same
+	 * trust model `comment_post_ID` beside it already operates under. The
+	 * alternative of inferring the occurrence from `HTTP_REFERER` is
+	 * deliberately not taken: a referer is attacker-controlled *and* routinely
+	 * stripped, so scoping a write by it is a worse failure mode than the
+	 * honest series-wide behavior it would replace.
+	 *
+	 * For a non-recurring event, and on every site with no recurring events,
+	 * this returns an empty string and the emitted form is byte-identical to
+	 * the one this block has always rendered;
+	 * `Rsvp_Occurrence::requires_explicit_scope()` decides from the autoloaded
+	 * option before touching occurrence storage.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param int $post_id The event post ID the form belongs to.
+	 *
+	 * @return string The hidden input, or an empty string for a non-recurring event.
+	 */
+	private function occurrence_input( int $post_id ): string {
+		$recurrence_id = Rsvp_Occurrence::current_recurrence_id( $post_id );
+
+		if ( null === $recurrence_id ) {
+			if ( ! Rsvp_Occurrence::requires_explicit_scope( $post_id ) ) {
+				return '';
+			}
+
+			$recurrence_id = Rsvp_Form_Handler::RECURRENCE_SCOPE_SERIES;
+		}
+
+		return sprintf(
+			'<input type="hidden" name="%s" value="%s">',
+			esc_attr( Rsvp_Form_Handler::RECURRENCE_ID_FIELD ),
+			esc_attr( $recurrence_id )
+		);
 	}
 
 	/**

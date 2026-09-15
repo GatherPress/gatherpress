@@ -145,7 +145,12 @@ final class Query {
 		array $venues = array()
 	): WP_Query {
 		// Past events should be ordered DESC (most recent first),
-		// upcoming events should be ordered ASC (soonest first).
+		// upcoming events should be ordered ASC (soonest first). The `orderby`
+		// has to be stated explicitly: `adjust_event_sql()` reads it off the
+		// query, and an unset `orderby` reaches it as `''`, which falls through
+		// its switch and leaves WordPress's default `wp_posts.post_date` in
+		// place, which orders the list by authoring time rather than by when the
+		// events happen, and that is not what either direction above means.
 		$order = ( 'past' === $event_list_type ) ? 'DESC' : 'ASC';
 
 		$args = array(
@@ -154,6 +159,7 @@ final class Query {
 			'no_found_rows'         => true,
 			'posts_per_page'        => $number,
 			self::EVENT_QUERY_PARAM => $event_list_type,
+			'orderby'               => 'datetime',
 			'order'                 => $order,
 		);
 
@@ -578,7 +584,30 @@ final class Query {
 					$pieces['orderby'] = esc_sql( 'RAND()' );
 					break;
 				case 'datetime':
-					$pieces['orderby'] = sprintf( $events_table . '.datetime_start_gmt %s', esc_sql( $order ) );
+					// The start datetime is not unique: any number of events
+					// can share one start, and MySQL's sort is not stable, so
+					// a tied pair can be ordered one way for `LIMIT 0, 10` and
+					// the other for `LIMIT 10, 10`, putting one event on two
+					// pages of a paginated archive and leaving another off
+					// every page. The posts-table ID is the only column
+					// guaranteed unique across the result set, so it is what
+					// makes the ordering total.
+					//
+					// `Recurrence\Query::expand_event_clauses()` appends the
+					// `recurrence_id` behind this key, but only on a site with
+					// recurring events: the byte-identical SQL contract means
+					// a site without them never reaches that method and has to
+					// get its total ordering from here.
+					//
+					// The ID follows the requested direction rather than
+					// pinning `ASC`, so a descending list is the exact reverse
+					// of the ascending one and a tie group reads the same way
+					// as the list around it. Either direction is deterministic;
+					// this one is the reversible choice.
+					$pieces['orderby'] = sprintf(
+						$events_table . '.datetime_start_gmt %1$s, ' . $posts_table . '.ID %1$s',
+						esc_sql( $order )
+					);
 					break;
 				default:
 					// Custom column sorting (e.g., rsvps, venue) is handled

@@ -110,6 +110,12 @@ class Test_Setup extends Base {
 				'callback' => array( $instance, 'handle_event_archive_redirect' ),
 			),
 			array(
+				'type'     => 'filter',
+				'name'     => 'pre_handle_404',
+				'priority' => 10,
+				'callback' => array( $instance, 'defer_event_archive_404' ),
+			),
+			array(
 				'type'     => 'action',
 				'name'     => 'delete_post',
 				'priority' => 10,

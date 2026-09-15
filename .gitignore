@@ -42,6 +42,7 @@ wp-core
 coverage.xml
 .env
 .wp-env.override.json
+.wp-env.test.override.json
 mu-plugins/
 
 # Playwright #

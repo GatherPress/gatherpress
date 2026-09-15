@@ -16,12 +16,20 @@ module.exports = async ( config ) => {
 
 	// Create request context for API calls.
 	const requestContext = await request.newContext( {
-		baseURL: baseURL || 'http://localhost:8889',
+		baseURL,
 	} );
 
 	// Create request utils for WordPress REST API operations.
+	//
+	// `baseURL` has to be passed here as well as to the request context above.
+	// `RequestUtils` keeps its own copy and defaults it to the package's
+	// `WP_BASE_URL`, which is `http://localhost:8889` unless that variable is
+	// set, and it builds its REST calls from that copy rather than from the
+	// context it was handed. Leaving it out therefore aims authentication at
+	// port 8889 no matter which port the suite resolved.
 	const requestUtils = new RequestUtils( requestContext, {
 		storageStatePath,
+		baseURL,
 	} );
 
 	try {

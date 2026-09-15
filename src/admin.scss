@@ -70,6 +70,19 @@
 	color: #fff;
 }
 
+/* Recurring marker in the event date column of the admin events list. */
+.gatherpress-recurring-badge {
+	display: inline-block;
+	padding: 2px 6px;
+	background: #f0f0f1;
+	border: 1px solid #c3c4c7;
+	border-radius: 3px;
+	color: #50575e;
+	font-size: 11px;
+	line-height: 1.4;
+	white-space: nowrap;
+}
+
 /* Popular Venues Quick Select */
 .gatherpress-popular-venues {
 	margin: 12px 0;

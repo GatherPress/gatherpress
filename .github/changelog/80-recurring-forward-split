@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+A change to a recurring event can now be applied going forward instead of to the whole series. Moving the venue in October no longer rewrites where the group met in March. Choosing "Apply going forward" and picking a date splits the series there: the original keeps the dates up to that point with everything they already had, and a new event carries the rest, where the change is made. Both halves stay one series for the purposes of listings, calendar feeds and links, and a permalink copied before the split redirects to the date's new home. RSVPs already made stay on the dates they were made for, on whichever side of the split those dates ended up. Before a rule change removes dates that people have already responded to, the editor says how many responses are affected rather than moving them silently.

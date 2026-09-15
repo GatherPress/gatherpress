@@ -6,7 +6,7 @@ import { store, getElement, getContext } from '@wordpress/interactivity';
 /**
  * Internal dependencies
  */
-import { initPostContext } from '../../helpers/interactivity';
+import { getPostKey, initPostContext } from '../../helpers/interactivity';
 import { stripScriptsAndEventHandlers } from '../../helpers/globals';
 
 const { state } = store( 'gatherpress', {
@@ -30,7 +30,9 @@ const { state } = store( 'gatherpress', {
 				return;
 			}
 
-			initPostContext( state, postId );
+			const postKey = getPostKey( postId, context?.recurrenceId );
+
+			initPostContext( state, postKey );
 
 			const element = getElement();
 			const currentElement = element.ref.querySelector( '.gatherpress-online-event__text' );
@@ -42,14 +44,14 @@ const { state } = store( 'gatherpress', {
 			const isLink = 'A' === currentElement.tagName;
 
 			// Initialize state from DOM on first run.
-			if ( undefined === state.posts[ postId ].onlineEventLink ) {
-				state.posts[ postId ].onlineEventLink = isLink ? currentElement.href : '';
+			if ( undefined === state.posts[ postKey ].onlineEventLink ) {
+				state.posts[ postKey ].onlineEventLink = isLink ? currentElement.href : '';
 				// Don't manipulate DOM on first run - PHP already rendered it correctly.
 				return;
 			}
 
-			// Access state.posts[postId].onlineEventLink for reactivity.
-			const onlineEventLink = state.posts[ postId ]?.onlineEventLink || '';
+			// Access state.posts[postKey].onlineEventLink for reactivity.
+			const onlineEventLink = state.posts[ postKey ]?.onlineEventLink || '';
 			const hasLink = '' !== onlineEventLink;
 
 			// Preserve the current inner HTML (including tooltip markup)

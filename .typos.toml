@@ -27,6 +27,10 @@ extend-ignore-re = [
 ]
 
 [default.extend-identifiers]
+# Not typos. `IST` is the tz-database abbreviation for India Standard Time,
+# emitted as a VTIMEZONE `TZNAME` and asserted by the calendar suite.
+"IST" = "IST"
+
 # Typos
 "Github" = "GitHub"
 "Wordpress" = "WordPress"

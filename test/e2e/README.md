@@ -2,6 +2,39 @@
 
 This directory contains end-to-end tests for GatherPress using Playwright. These tests have been designed with reliability, maintainability, and debugging in mind.
 
+## Running the suite
+
+```bash
+npm run test:e2e
+```
+
+`pretest:e2e` starts the WordPress instance with `wp-env start --config .wp-env.test.json`, and `playwright.config.js` derives its `baseURL` from the same inputs wp-env reads, in the same order wp-env applies them (`test/e2e/resolve-wp-env-port.js`):
+
+1. `WP_ENV_PORT`, which wp-env consults ahead of every config file. A value that is not a whole number between 1 and 65535 is ignored and resolution falls through to the files.
+2. `.wp-env.test.override.json`, which wp-env layers on top of the tracked config.
+3. `.wp-env.test.json`, the tracked config.
+4. `8888`, wp-env's own default, when none of the above supplies a port.
+
+**Do not hard-code the port anywhere.** The override file is local, untracked, per-checkout state: it is how parallel git worktrees keep off each other's ports, so its value differs between checkouts and is not in git.
+
+This matters more than it looks. If the config and the running environment disagree on the port, Playwright does not fail fast. It finds *a* WordPress on the stale port, either another worktree's or a leftover container, authenticates against it, and then fails deep in the specs with REST errors that read like application bugs.
+
+**A green authentication step is not evidence that you are on the right site.** `global-setup.js` logging `Authentication successful - storage state saved` only proves that *some* WordPress accepted the admin credentials. Every wp-env instance on the machine shares those credentials, so it succeeds just as happily against the wrong one. Screenshots showing a fully rendered admin menu prove the same nothing.
+
+The tell is `rest_no_route` or `rest_type_invalid` on a GatherPress route: that is a WordPress without this plugin active, i.e. the wrong site, not a broken feature. Note also that `wp-env run` / `docker exec` diagnostics resolve the container by *name*, not by the port Playwright is using. It is therefore entirely possible to confirm the plugin is active, the post type exists and the route responds, all against a container the browser never touched. Establish the port first, then diagnose.
+
+To point the suite somewhere else, set `WP_BASE_URL`, which takes precedence over the derived value:
+
+```bash
+WP_BASE_URL=http://localhost:8891 npx playwright test
+```
+
+To confirm what the config resolved before blaming a spec:
+
+```bash
+node -e "console.log(require('./playwright.config.js').use.baseURL)"
+```
+
 ## Architecture
 
 ### Page Object Model (POM)
