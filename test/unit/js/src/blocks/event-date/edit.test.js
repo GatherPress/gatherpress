@@ -6,6 +6,11 @@ import '@testing-library/jest-dom';
 import { render, fireEvent } from '@testing-library/react';
 
 /**
+ * WordPress dependencies
+ */
+import { useSelect } from '@wordpress/data';
+
+/**
  * Mocks
  */
 jest.mock( '@wordpress/data', () => ( {
@@ -89,6 +94,7 @@ jest.mock( '@src/helpers/datetime', () => {
 		getUtcOffset: () => '',
 		isManualOffset: () => false,
 		removeNonTimePHPFormatChars: ( format ) => format,
+		removeTimePHPFormatChars: ( format ) => format,
 	};
 } );
 
@@ -212,6 +218,25 @@ describe( 'Event Date Edit showViewerTime', () => {
 		expect( toggle.hasAttribute( 'disabled' ) ).toBe( false );
 		fireEvent.click( toggle );
 		expect( setAttributes ).toHaveBeenCalledWith( { showViewerTime: true } );
+	} );
+
+	it( 'renders the toggle disabled when event is all day', () => {
+		useSelect.mockReturnValueOnce( {
+			dateTimeStart: '2026-08-01 00:00:00',
+			dateTimeEnd: '2026-08-01 23:59:59',
+			timezone: 'UTC',
+			isAllDay: true,
+			isLoading: false,
+			isValidEvent: true,
+		} );
+
+		const { getByText } = renderEdit( { showTimezone: 'yes' } );
+		const toggle = getByText( 'Show viewer local time' );
+
+		expect( toggle.hasAttribute( 'disabled' ) ).toBe( true );
+		expect(
+			getByText( 'All-day events do not show viewer local time.' )
+		).toBeInTheDocument();
 	} );
 
 	it( 'does not render the toggle when showViewerTimezone is disabled globally', () => {

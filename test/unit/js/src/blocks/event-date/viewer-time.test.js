@@ -127,9 +127,9 @@ describe( 'getViewerTimeLabel', () => {
 		expect( label ).toContain( 'your time' );
 	} );
 
-	it( 'dates the end when it crosses midnight for the viewer', () => {
+	it( 'dates both start and end when an event crosses midnight for the viewer', () => {
 		// 18:00 to 20:00 in New York, which is 23:00 to 01:00 the next day in
-		// London: without the date the end reads as an earlier time than the start.
+		// London: both start and end carry their dates so the crossing is clear.
 		expect(
 			getViewerTimeLabel( {
 				startGmt: '2030-06-15 22:00:00',
@@ -138,10 +138,10 @@ describe( 'getViewerTimeLabel', () => {
 				viewerTimezone: 'Europe/London',
 				locale: 'en-US',
 			} )
-		).toBe( '11:00 PM to 6/16/2030, 1:00 AM your time' );
+		).toBe( '6/15/2030, 11:00 PM to 6/16/2030, 1:00 AM your time' );
 	} );
 
-	it( 'dates the end of a multi-day event', () => {
+	it( 'dates both start and end of a multi-day event', () => {
 		expect(
 			getViewerTimeLabel( {
 				startGmt: '2030-06-15 13:00:00',
@@ -150,7 +150,19 @@ describe( 'getViewerTimeLabel', () => {
 				viewerTimezone: 'Europe/London',
 				locale: 'en-US',
 			} )
-		).toBe( '2:00 PM to 6/17/2030, 10:00 PM your time' );
+		).toBe( '6/15/2030, 2:00 PM to 6/17/2030, 10:00 PM your time' );
+	} );
+
+	it( 'says nothing for an all-day event', () => {
+		expect(
+			getViewerTimeLabel( {
+				startGmt: '2030-06-15 13:00:00',
+				endGmt: '2030-06-17 21:00:00',
+				eventTimezone: 'America/New_York',
+				viewerTimezone: 'Europe/London',
+				isAllDay: true,
+			} )
+		).toBe( '' );
 	} );
 
 	it( 'leaves the end undated when it shares the viewer day with the start', () => {

@@ -42,6 +42,7 @@ if (
 	! empty( $attributes['showViewerTime'] )
 	&& $gatherpress_is_timezone_active
 	&& $gatherpress_settings->get( 'show_viewer_timezone' )
+	&& ! $gatherpress_event->is_all_day()
 ) {
 	// Mirrors get_display_datetime(): the local-time tooltip covers the same parts
 	// of the range the block itself displays, so the two cannot disagree. An
