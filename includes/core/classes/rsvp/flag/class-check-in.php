@@ -16,8 +16,6 @@ namespace GatherPress\Core\Rsvp\Flag;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Traits\Singleton;
-
 /**
  * Class Check_In.
  *
@@ -29,31 +27,22 @@ use GatherPress\Core\Traits\Singleton;
 final class Check_In extends Base {
 
 	/**
-	 * Enforces a single instance of this class.
-	 */
-	use Singleton;
-
-	/**
-	 * Get the slug for the check-in flag.
+	 * The check-in flag slug.
 	 *
 	 * @since 0.36.0
 	 *
-	 * @return string The flag slug.
+	 * @var string
 	 */
-	protected function get_slug(): string {
-		return 'checked-in';
-	}
+	public const SLUG = 'checked-in';
 
 	/**
 	 * Announce a check-in.
 	 *
 	 * @since 0.36.0
 	 *
-	 * @param int $rsvp_id The RSVP comment ID.
-	 *
 	 * @return void
 	 */
-	protected function after_add( int $rsvp_id ): void {
+	protected function after_add(): void {
 		/**
 		 * Fires after an RSVP has been checked in.
 		 *
@@ -63,7 +52,7 @@ final class Check_In extends Base {
 		 *
 		 * @return void
 		 */
-		do_action( 'gatherpress_rsvp_checked_in', $rsvp_id );
+		do_action( 'gatherpress_rsvp_checked_in', $this->rsvp_id );
 	}
 
 	/**
@@ -71,11 +60,9 @@ final class Check_In extends Base {
 	 *
 	 * @since 0.36.0
 	 *
-	 * @param int $rsvp_id The RSVP comment ID.
-	 *
 	 * @return void
 	 */
-	protected function after_remove( int $rsvp_id ): void {
+	protected function after_remove(): void {
 		/**
 		 * Fires after an RSVP's check-in has been removed.
 		 *
@@ -85,6 +72,6 @@ final class Check_In extends Base {
 		 *
 		 * @return void
 		 */
-		do_action( 'gatherpress_rsvp_unchecked_in', $rsvp_id );
+		do_action( 'gatherpress_rsvp_unchecked_in', $this->rsvp_id );
 	}
 }

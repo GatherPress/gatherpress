@@ -14,7 +14,6 @@ use GatherPress\Core\Rsvp\Flag\Base;
 use GatherPress\Core\Rsvp\Flag\Check_In;
 use GatherPress\Core\Rsvp\Flag\Setup;
 use GatherPress\Tests\Base as Base_Unit_Test;
-use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Check_In.
@@ -39,18 +38,22 @@ class Test_Check_In extends Base_Unit_Test {
 	/**
 	 * Create an event and an approved RSVP against it.
 	 *
-	 * @return int The RSVP comment ID.
+	 * @return array{event_id:int, rsvp_id:int} The event and RSVP IDs.
 	 */
-	private function make_rsvp(): int {
+	private function make_rsvp(): array {
 		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
-
-		return (int) wp_insert_comment(
+		$rsvp_id  = wp_insert_comment(
 			array(
 				'comment_post_ID'  => $event_id,
 				'comment_type'     => Rsvp::COMMENT_TYPE,
 				'comment_approved' => '1',
 				'user_id'          => 1,
 			)
+		);
+
+		return array(
+			'event_id' => $event_id,
+			'rsvp_id'  => (int) $rsvp_id,
 		);
 	}
 
@@ -82,30 +85,28 @@ class Test_Check_In extends Base_Unit_Test {
 	}
 
 	/**
-	 * Coverage for get_slug: check-in is stored as the `checked-in` flag.
+	 * Check-in is the `checked-in` flag: that is the term stored and the one
+	 * counted.
 	 *
-	 * @covers ::get_slug
+	 * @coversNothing
 	 *
 	 * @return void
 	 */
-	public function test_get_slug(): void {
-		$instance = Check_In::get_instance();
-		$rsvp_id  = $this->make_rsvp();
+	public function test_check_in_is_the_checked_in_flag(): void {
+		$rsvp     = $this->make_rsvp();
+		$check_in = new Check_In( $rsvp['rsvp_id'] );
 
-		$this->assertSame(
-			'checked-in',
-			Utility::invoke_hidden_method( $instance, 'get_slug' ),
-			'The check-in flag slug should be checked-in.'
-		);
+		$this->assertSame( 'checked-in', Check_In::SLUG, 'The check-in flag slug should be checked-in.' );
+		$this->assertInstanceOf( Base::class, $check_in, 'Check-in should be a flag.' );
 
-		$instance->add( $rsvp_id );
+		$check_in->add();
 
 		$this->assertSame(
 			array( 'checked-in' ),
-			Setup::get_instance()->get_flags( $rsvp_id ),
+			Setup::get_instance()->get_flags( $rsvp['rsvp_id'] ),
 			'Checking in should store the checked-in flag.'
 		);
-		$this->assertInstanceOf( Base::class, $instance, 'Check-in should be a flag.' );
+		$this->assertSame( 1, Check_In::count( $rsvp['event_id'] ), 'The check-in should be counted.' );
 	}
 
 	/**
@@ -118,15 +119,15 @@ class Test_Check_In extends Base_Unit_Test {
 	 * @return void
 	 */
 	public function test_check_in_actions_fire_once_per_change(): void {
-		$instance = Check_In::get_instance();
-		$rsvp_id  = $this->make_rsvp();
+		$rsvp_id  = $this->make_rsvp()['rsvp_id'];
+		$check_in = new Check_In( $rsvp_id );
 
 		$fired = $this->capture_check_in_actions(
-			static function () use ( $instance, $rsvp_id ): void {
-				$instance->add( $rsvp_id );
-				$instance->add( $rsvp_id );
-				$instance->remove( $rsvp_id );
-				$instance->remove( $rsvp_id );
+			static function () use ( $check_in ): void {
+				$check_in->add();
+				$check_in->add();
+				$check_in->remove();
+				$check_in->remove();
 			}
 		);
 
@@ -150,22 +151,22 @@ class Test_Check_In extends Base_Unit_Test {
 	 * @return void
 	 */
 	public function test_check_in_actions_do_not_fire_for_other_flags_or_failed_writes(): void {
-		$instance = Check_In::get_instance();
-		$host     = new Test_Base_Concrete( 'host' );
-		$rsvp_id  = $this->make_rsvp();
+		$rsvp_id  = $this->make_rsvp()['rsvp_id'];
+		$check_in = new Check_In( $rsvp_id );
+		$other    = new Test_Base_Concrete( $rsvp_id );
 
 		$fired = $this->capture_check_in_actions(
-			static function () use ( $instance, $host, $rsvp_id ): void {
-				$host->add( $rsvp_id );
-				$host->remove( $rsvp_id );
+			static function () use ( $check_in, $other ): void {
+				$other->add();
+				$other->remove();
 
 				unregister_taxonomy( Base::TAXONOMY );
-				$instance->add( $rsvp_id );
+				$check_in->add();
 				Setup::get_instance()->register_taxonomy();
 			}
 		);
 
 		$this->assertSame( array(), $fired, 'No check-in action should fire.' );
-		$this->assertFalse( $instance->has( $rsvp_id ), 'The failed check-in should not have been stored.' );
+		$this->assertFalse( $check_in->has(), 'The failed check-in should not have been stored.' );
 	}
 }

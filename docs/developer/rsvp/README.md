@@ -166,10 +166,12 @@ checked in" or "this person walked in without an RSVP". A flag is a term in the
 `_gatherpress_rsvp_flag` taxonomy attached to the RSVP comment. Its presence
 means yes and its absence means no, so existing RSVPs need no backfill.
 
-Each flag is a class that extends `GatherPress\Core\Rsvp\Flag\Base`, the same
-way a settings tab extends `GatherPress\Core\Settings\Base`. GatherPress and
-companion plugins share the one taxonomy, so anything that needs yes/no state
-on an RSVP should define a flag rather than register a taxonomy of its own.
+Each flag is a class that extends `GatherPress\Core\Rsvp\Flag\Base` and
+declares its slug, much as a settings tab extends `GatherPress\Core\Settings\Base`.
+An instance wraps one RSVP, the way `new Token( $comment_id )` does. GatherPress
+and companion plugins share the one taxonomy, so anything that needs yes/no
+state on an RSVP should define a flag rather than register a taxonomy of its
+own.
 
 ### The flag classes
 
@@ -178,13 +180,13 @@ on an RSVP should define a flag rather than register a taxonomy of its own.
 - **`GatherPress\Core\Rsvp\Flag\Check_In`**: the `checked-in` flag, the first
   one GatherPress ships.
 - **`GatherPress\Core\Rsvp\Flag\Setup`**: what belongs to every flag rather
-  than one. It reads all flags on an RSVP and sweeps them when the RSVP is
-  deleted.
+  than one. It registers the taxonomy, reads all flags on an RSVP, and sweeps
+  them when the RSVP is deleted.
 
 ### Adding a flag
 
-Create a class that extends `Base`, use the `Singleton` trait, and return the
-slug from `get_slug()`:
+Create a class that extends `Base` and declares the slug in its `SLUG`
+constant:
 
 ```php
 <?php
@@ -192,39 +194,36 @@ slug from `get_slug()`:
 namespace My_Plugin\Flag;
 
 use GatherPress\Core\Rsvp\Flag\Base;
-use GatherPress\Core\Traits\Singleton;
 
 class Walk_In extends Base {
-	use Singleton;
-
-	protected function get_slug(): string {
-		return 'my-plugin-walk-in';
-	}
+	public const SLUG = 'my-plugin-walk-in';
 }
 ```
 
-That is the whole flag. It has no hooks of its own, so it needs no bootstrapping:
-call it wherever you need it.
+That is the whole flag. It has no hooks of its own, so it needs no
+bootstrapping. Build one around an RSVP wherever you need it:
 
 ```php
 use My_Plugin\Flag\Walk_In;
 
-$walk_in = Walk_In::get_instance();
+$walk_in = new Walk_In( $rsvp_id );
 
-$walk_in->add( $rsvp_id );    // true once the RSVP carries the flag.
-$walk_in->has( $rsvp_id );    // true.
-$walk_in->count( $event_id ); // Approved RSVPs on the event with the flag.
-$walk_in->remove( $rsvp_id ); // true once the RSVP no longer carries it.
+$walk_in->add();    // true once the RSVP carries the flag.
+$walk_in->has();    // true.
+$walk_in->remove(); // true once the RSVP no longer carries it.
+
+Walk_In::count( $event_id ); // Approved RSVPs on the event with the flag.
 ```
 
 ### The methods
 
 | Method | Returns | Purpose |
 |---|---|---|
-| `add( int $rsvp_id )` | `bool` | Adds the flag, leaving every other flag on the RSVP in place. |
-| `remove( int $rsvp_id )` | `bool` | Removes the flag, leaving every other flag in place. |
-| `has( int $rsvp_id )` | `bool` | Whether the RSVP carries the flag. |
-| `count( int $post_id )` | `int` | How many approved RSVPs on the event carry the flag. |
+| `new Flag( int $rsvp_id )` | | Wraps one RSVP. An ID that is not an RSVP comment gives a flag that refuses every write. |
+| `add()` | `bool` | Adds the flag, leaving every other flag on the RSVP in place. |
+| `remove()` | `bool` | Removes the flag, leaving every other flag in place. |
+| `has()` | `bool` | Whether the RSVP carries the flag. |
+| `Flag::count( int $post_id )` | `int` | How many approved RSVPs on the event carry the flag. Static, since it spans an event. |
 
 `add()` and `remove()` are idempotent. They return `true` when the RSVP ends up
 in the requested state, including when it was already there, and `false` when
@@ -244,12 +243,12 @@ once.
 ### Reacting to a change
 
 Override `after_add()` or `after_remove()` to run code when your flag actually
-changes. Neither runs on a repeat or a failed write. `Check_In` uses them to
-fire its own actions:
+changes. Neither runs on a repeat or a failed write. The RSVP is available as
+`$this->rsvp_id`. `Check_In` uses them to fire its own actions:
 
 ```php
-protected function after_add( int $rsvp_id ): void {
-	do_action( 'my_plugin_walk_in_recorded', $rsvp_id );
+protected function after_add(): void {
+	do_action( 'my_plugin_walk_in_recorded', $this->rsvp_id );
 }
 ```
 
@@ -259,7 +258,8 @@ A slug needs no registration, so a companion plugin can add one without
 coordinating with GatherPress. It must already be in the shape `sanitize_key()`
 produces: lowercase letters, digits, hyphens and underscores. `walk-in` and
 `first_timer` are accepted; `Walk In` and `HOST` are refused rather than
-silently rewritten, so the flag stored is always the one the class declares.
+silently rewritten, so the flag stored is always the one the class declares. A
+class that leaves `SLUG` empty is refused too.
 
 Prefix slugs your plugin owns, for example `my-plugin-vip`, to stay clear of
 any flag GatherPress adds later.
@@ -271,7 +271,7 @@ Never call `wp_set_object_terms()` on `_gatherpress_rsvp_flag` directly. Without
 stored there. `add()` always appends.
 
 Reads have a similar trap: `is_object_in_term()` matches term names as well as
-slugs, and treats a numeric string as a term ID. `has()` compares exact slugs.
+slugs, and treats a numeric string as a term ID. `has()` compares slugs only.
 
 ### Hooks
 

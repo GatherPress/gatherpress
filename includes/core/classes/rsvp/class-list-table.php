@@ -725,7 +725,7 @@ final class List_Table extends WP_List_Table {
 				$output = $statuses[ $approved ] ?? '-';
 				break;
 			case 'checked_in':
-				$output = Check_In::get_instance()->has( (int) $item['comment_ID'] )
+				$output = ( new Check_In( (int) $item['comment_ID'] ) )->has()
 					? __( 'Yes', 'gatherpress' )
 					: '-';
 				break;
@@ -876,7 +876,7 @@ final class List_Table extends WP_List_Table {
 		$actions       = array();
 		$is_approved   = ( '1' === $item['comment_approved'] );
 		$is_spam       = ( 'spam' === $item['comment_approved'] );
-		$is_checked_in = Check_In::get_instance()->has( (int) $item['comment_ID'] );
+		$is_checked_in = ( new Check_In( (int) $item['comment_ID'] ) )->has();
 
 		$action_definitions = array(
 			'approve'    => array(
@@ -1116,16 +1116,16 @@ final class List_Table extends WP_List_Table {
 				wp_delete_comment( $rsvp_id, true );
 			}
 		} elseif ( 'check_in' === $current_action || 'uncheck_in' === $current_action ) {
-			$check_in = Check_In::get_instance();
-
 			foreach ( $rsvp_ids as $rsvp_id ) {
+				$check_in = new Check_In( $rsvp_id );
+
 				if ( 'check_in' === $current_action ) {
-					$check_in->add( $rsvp_id );
+					$check_in->add();
 
 					continue;
 				}
 
-				$check_in->remove( $rsvp_id );
+				$check_in->remove();
 			}
 		} elseif ( isset( $action_status_map[ $current_action ] ) ) {
 			$status = $action_status_map[ $current_action ];

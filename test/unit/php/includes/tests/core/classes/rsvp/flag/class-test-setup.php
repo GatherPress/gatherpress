@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core\Rsvp\Flag;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Flag\Base;
+use GatherPress\Core\Rsvp\Flag\Check_In;
 use GatherPress\Core\Rsvp\Flag\Setup;
 use GatherPress\Tests\Base as Base_Unit_Test;
 use PMC\Unit_Test\Utility;
@@ -152,11 +153,11 @@ class Test_Setup extends Base_Unit_Test {
 
 		$this->assertSame( array(), $instance->get_flags( $rsvp_id ), 'A fresh RSVP should carry no flags.' );
 
-		( new Test_Base_Concrete( 'host' ) )->add( $rsvp_id );
-		( new Test_Base_Concrete( 'walk-in' ) )->add( $rsvp_id );
+		( new Test_Base_Concrete( $rsvp_id ) )->add();
+		( new Check_In( $rsvp_id ) )->add();
 
 		$this->assertEqualsCanonicalizing(
-			array( 'host', 'walk-in' ),
+			array( Test_Base_Concrete::SLUG, Check_In::SLUG ),
 			$instance->get_flags( $rsvp_id ),
 			'Every flag on the RSVP should be returned.'
 		);
@@ -177,7 +178,7 @@ class Test_Setup extends Base_Unit_Test {
 		$instance = Setup::get_instance();
 		$rsvp_id  = $this->make_rsvp();
 
-		( new Test_Base_Concrete( 'host' ) )->add( $rsvp_id );
+		( new Test_Base_Concrete( $rsvp_id ) )->add();
 		wp_cache_delete( $rsvp_id, Base::TAXONOMY . '_relationships' );
 
 		$instance->get_flags( $rsvp_id );
@@ -186,10 +187,10 @@ class Test_Setup extends Base_Unit_Test {
 
 		$this->assertSame( $queries, $wpdb->num_queries, 'A repeat read should come from the cache.' );
 
-		( new Test_Base_Concrete( 'walk-in' ) )->add( $rsvp_id );
+		( new Check_In( $rsvp_id ) )->add();
 
 		$this->assertEqualsCanonicalizing(
-			array( 'host', 'walk-in' ),
+			array( Test_Base_Concrete::SLUG, Check_In::SLUG ),
 			$instance->get_flags( $rsvp_id ),
 			'A read after a write should see the new flag.'
 		);
@@ -207,7 +208,7 @@ class Test_Setup extends Base_Unit_Test {
 		$instance = Setup::get_instance();
 		$rsvp_id  = $this->make_rsvp();
 
-		( new Test_Base_Concrete( 'host' ) )->add( $rsvp_id );
+		( new Test_Base_Concrete( $rsvp_id ) )->add();
 		wp_cache_delete( $rsvp_id, Base::TAXONOMY . '_relationships' );
 		unregister_taxonomy( Base::TAXONOMY );
 
@@ -230,8 +231,8 @@ class Test_Setup extends Base_Unit_Test {
 	public function test_delete_flags_sweeps_every_flag_from_a_deleted_rsvp(): void {
 		$rsvp_id = $this->make_rsvp();
 
-		( new Test_Base_Concrete( 'host' ) )->add( $rsvp_id );
-		( new Test_Base_Concrete( 'walk-in' ) )->add( $rsvp_id );
+		( new Test_Base_Concrete( $rsvp_id ) )->add();
+		( new Check_In( $rsvp_id ) )->add();
 
 		wp_delete_comment( $rsvp_id, true );
 
