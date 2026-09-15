@@ -800,17 +800,59 @@ final class Utility {
 	 * Whether the request comes from this site rather than another origin.
 	 *
 	 * Browsers send an `Origin` header with every cross-origin request, so a
-	 * request without one, or with one of the site's allowed origins, is the
-	 * site's own. Only the `allowed_http_origins` filter widens the list.
+	 * request without one, or with the exact origin of the site's home, site
+	 * or admin URL, is the site's own. Core's CORS allow-list is not used: it
+	 * drops the port and can be widened by filters.
 	 *
 	 * @since 0.35.4
 	 *
-	 * @return bool True when the request has no origin or an allowed one.
+	 * @return bool True when the request has no origin or the site's own.
 	 */
 	public static function is_same_origin_request(): bool {
 		$origin = get_http_origin();
 
-		return '' === $origin || '' !== is_allowed_http_origin( $origin );
+		if ( '' === $origin ) {
+			return true;
+		}
+
+		$origin       = self::get_url_origin( $origin );
+		$site_origins = array_map(
+			array( self::class, 'get_url_origin' ),
+			array( home_url(), site_url(), admin_url() )
+		);
+
+		return '' !== $origin && in_array( $origin, $site_origins, true );
+	}
+
+	/**
+	 * The normalized origin of a URL.
+	 *
+	 * Lowercases the scheme and host and keeps the port only when it is not the
+	 * scheme's default, so equal origins compare equal as strings.
+	 *
+	 * @since 0.35.4
+	 *
+	 * @param string $url The URL or origin.
+	 *
+	 * @return string The origin, or an empty string when the URL has no scheme or host.
+	 */
+	private static function get_url_origin( string $url ): string {
+		$parts = wp_parse_url( $url );
+
+		if ( ! is_array( $parts ) || empty( $parts['scheme'] ) || empty( $parts['host'] ) ) {
+			return '';
+		}
+
+		$scheme        = strtolower( $parts['scheme'] );
+		$default_ports = array(
+			'http'  => 80,
+			'https' => 443,
+		);
+		$port          = isset( $parts['port'] ) && ( $default_ports[ $scheme ] ?? null ) !== $parts['port']
+			? ':' . $parts['port']
+			: '';
+
+		return $scheme . '://' . strtolower( $parts['host'] ) . $port;
 	}
 
 	/**

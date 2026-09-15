@@ -1671,11 +1671,10 @@ class Test_Rest_Api extends Base {
 		Rest_Api::get_instance()->register_endpoints();
 
 		$request = new WP_REST_Request( 'GET', sprintf( '/%s/event/nonce', GATHERPRESS_REST_NAMESPACE ) );
-		$home    = wp_parse_url( home_url() );
 
 		$without_origin = rest_do_request( $request )->get_status();
 
-		$_SERVER['HTTP_ORIGIN'] = sprintf( '%s://%s', $home['scheme'], $home['host'] );
+		$_SERVER['HTTP_ORIGIN'] = untrailingslashit( home_url() );
 		$own_origin             = rest_do_request( $request )->get_status();
 
 		$_SERVER['HTTP_ORIGIN'] = 'https://elsewhere.example';
