@@ -94,7 +94,6 @@ class Test_Base extends Base_Unit_Test {
 	 *
 	 * @covers ::add
 	 * @covers ::has
-	 * @covers ::after_add
 	 *
 	 * @return void
 	 */
@@ -262,7 +261,6 @@ class Test_Base extends Base_Unit_Test {
 	 * with the RSVP and the slug.
 	 *
 	 * @covers ::remove
-	 * @covers ::after_remove
 	 *
 	 * @return void
 	 */

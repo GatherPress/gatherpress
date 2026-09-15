@@ -104,7 +104,11 @@ abstract class Base {
 			clean_comment_cache( $this->rsvp_id );
 
 			/**
-			 * Fires after a flag has been added to an RSVP.
+			 * Fires after a flag is added to an RSVP that did not carry it.
+			 *
+			 * Every flag fires this, so code reacting to one flag compares `$flag`
+			 * with that flag class's `SLUG`, for example `Check_In::SLUG` to act
+			 * on a check-in. It does not fire on a repeat or a failed write.
 			 *
 			 * @since 0.36.0
 			 *
@@ -114,8 +118,6 @@ abstract class Base {
 			 * @return void
 			 */
 			do_action( 'gatherpress_rsvp_flag_added', $this->rsvp_id, static::SLUG );
-
-			$this->after_add();
 		}
 
 		return true;
@@ -147,7 +149,12 @@ abstract class Base {
 			clean_comment_cache( $this->rsvp_id );
 
 			/**
-			 * Fires after a flag has been removed from an RSVP.
+			 * Fires after a flag is removed from an RSVP that carried it.
+			 *
+			 * Every flag fires this, so code reacting to one flag compares `$flag`
+			 * with that flag class's `SLUG`, for example `Check_In::SLUG` to act
+			 * on a removed check-in. It does not fire on a repeat, a failed write,
+			 * or when the RSVP itself is deleted.
 			 *
 			 * @since 0.36.0
 			 *
@@ -157,8 +164,6 @@ abstract class Base {
 			 * @return void
 			 */
 			do_action( 'gatherpress_rsvp_flag_removed', $this->rsvp_id, static::SLUG );
-
-			$this->after_remove();
 		}
 
 		return true;
@@ -213,32 +218,6 @@ abstract class Base {
 		);
 
 		return (int) $count;
-	}
-
-	/**
-	 * Runs after this flag is added to an RSVP that did not carry it.
-	 *
-	 * Child classes override this to fire their own actions or side effects.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @return void
-	 */
-	protected function after_add(): void {
-		// Nothing by default.
-	}
-
-	/**
-	 * Runs after this flag is removed from an RSVP that carried it.
-	 *
-	 * Child classes override this to fire their own actions or side effects.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @return void
-	 */
-	protected function after_remove(): void {
-		// Nothing by default.
 	}
 
 	/**

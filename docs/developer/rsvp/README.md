@@ -242,15 +242,22 @@ once.
 
 ### Reacting to a change
 
-Override `after_add()` or `after_remove()` to run code when your flag actually
-changes. Neither runs on a repeat or a failed write. The RSVP is available as
-`$this->rsvp_id`. `Check_In` uses them to fire its own actions:
+Every flag fires `gatherpress_rsvp_flag_added` and `gatherpress_rsvp_flag_removed`
+with the RSVP ID and the flag slug. To react to one flag, compare the slug with
+that flag class's `SLUG`. Neither action fires on a repeat or a failed write.
 
 ```php
-protected function after_add(): void {
-	do_action( 'my_plugin_walk_in_recorded', $this->rsvp_id );
+use My_Plugin\Flag\Walk_In;
+
+function my_plugin_on_flag_added( int $rsvp_id, string $flag ): void {
+	if ( Walk_In::SLUG === $flag ) {
+		my_plugin_notify_door_staff( $rsvp_id );
+	}
 }
+add_action( 'gatherpress_rsvp_flag_added', 'my_plugin_on_flag_added', 10, 2 );
 ```
+
+The same pattern reacts to a check-in, with `Check_In::SLUG`.
 
 ### Slugs
 
@@ -279,8 +286,6 @@ slugs, and treats a numeric string as a term ID. `has()` compares slugs only.
 |---|---|---|
 | `gatherpress_rsvp_flag_added` | `int $rsvp_id`, `string $flag` | After any flag is added to an RSVP that did not carry it. |
 | `gatherpress_rsvp_flag_removed` | `int $rsvp_id`, `string $flag` | After any flag is removed from an RSVP that carried it. |
-| `gatherpress_rsvp_checked_in` | `int $rsvp_id` | After an RSVP is checked in. |
-| `gatherpress_rsvp_unchecked_in` | `int $rsvp_id` | After an RSVP's check-in is removed. |
 
 None fires when the RSVP was already in the requested state, or when the write
 failed. Deleting an RSVP sweeps every flag on it without firing the removal

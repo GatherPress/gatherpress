@@ -18,10 +18,10 @@ use GatherPress\Tests\Base as Base_Unit_Test;
 /**
  * Class Test_Check_In.
  *
- * The flag mechanics are covered in Test_Base; these tests cover what the
- * check-in flag adds on top of them.
+ * Check-in declares only its slug; the flag mechanics are covered in Test_Base.
+ * These tests pin what the slug means in storage, counts and hooks.
  *
- * @coversDefaultClass \GatherPress\Core\Rsvp\Flag\Check_In
+ * @coversNothing
  */
 class Test_Check_In extends Base_Unit_Test {
 
@@ -58,37 +58,8 @@ class Test_Check_In extends Base_Unit_Test {
 	}
 
 	/**
-	 * Collect the check-in actions that fire while a callback runs.
-	 *
-	 * @param callable $callback The code to run.
-	 *
-	 * @return array<int, array{0: string, 1: int}> Each action name with the RSVP it reported.
-	 */
-	private function capture_check_in_actions( callable $callback ): array {
-		$fired        = array();
-		$checked_in   = static function ( int $rsvp_id ) use ( &$fired ): void {
-			$fired[] = array( 'checked_in', $rsvp_id );
-		};
-		$unchecked_in = static function ( int $rsvp_id ) use ( &$fired ): void {
-			$fired[] = array( 'unchecked_in', $rsvp_id );
-		};
-
-		add_action( 'gatherpress_rsvp_checked_in', $checked_in );
-		add_action( 'gatherpress_rsvp_unchecked_in', $unchecked_in );
-
-		$callback();
-
-		remove_action( 'gatherpress_rsvp_checked_in', $checked_in );
-		remove_action( 'gatherpress_rsvp_unchecked_in', $unchecked_in );
-
-		return $fired;
-	}
-
-	/**
 	 * Check-in is the `checked-in` flag: that is the term stored and the one
 	 * counted.
-	 *
-	 * @coversNothing
 	 *
 	 * @return void
 	 */
@@ -110,63 +81,38 @@ class Test_Check_In extends Base_Unit_Test {
 	}
 
 	/**
-	 * Coverage for after_add and after_remove: each check-in action fires once
-	 * per real change and not on a repeat.
-	 *
-	 * @covers ::after_add
-	 * @covers ::after_remove
+	 * Checking in and removing it reach listeners through the flag actions,
+	 * with the check-in slug, which is how code reacts to a check-in.
 	 *
 	 * @return void
 	 */
-	public function test_check_in_actions_fire_once_per_change(): void {
+	public function test_check_in_is_announced_through_the_flag_actions(): void {
 		$rsvp_id  = $this->make_rsvp()['rsvp_id'];
 		$check_in = new Check_In( $rsvp_id );
+		$fired    = array();
+		$added    = static function ( int $id, string $flag ) use ( &$fired ): void {
+			$fired[] = array( 'added', $id, $flag );
+		};
+		$removed  = static function ( int $id, string $flag ) use ( &$fired ): void {
+			$fired[] = array( 'removed', $id, $flag );
+		};
 
-		$fired = $this->capture_check_in_actions(
-			static function () use ( $check_in ): void {
-				$check_in->add();
-				$check_in->add();
-				$check_in->remove();
-				$check_in->remove();
-			}
-		);
+		add_action( 'gatherpress_rsvp_flag_added', $added, 10, 2 );
+		add_action( 'gatherpress_rsvp_flag_removed', $removed, 10, 2 );
+
+		$check_in->add();
+		$check_in->remove();
+
+		remove_action( 'gatherpress_rsvp_flag_added', $added, 10 );
+		remove_action( 'gatherpress_rsvp_flag_removed', $removed, 10 );
 
 		$this->assertSame(
 			array(
-				array( 'checked_in', $rsvp_id ),
-				array( 'unchecked_in', $rsvp_id ),
+				array( 'added', $rsvp_id, Check_In::SLUG ),
+				array( 'removed', $rsvp_id, Check_In::SLUG ),
 			),
 			$fired,
-			'Each check-in action should fire once, with the RSVP, only when the state changes.'
+			'Checking in and removing it should each fire the flag action once, with the check-in slug.'
 		);
-	}
-
-	/**
-	 * Coverage for the check-in actions staying quiet for other flags and for
-	 * a write that failed.
-	 *
-	 * @covers ::after_add
-	 * @covers ::after_remove
-	 *
-	 * @return void
-	 */
-	public function test_check_in_actions_do_not_fire_for_other_flags_or_failed_writes(): void {
-		$rsvp_id  = $this->make_rsvp()['rsvp_id'];
-		$check_in = new Check_In( $rsvp_id );
-		$other    = new Test_Base_Concrete( $rsvp_id );
-
-		$fired = $this->capture_check_in_actions(
-			static function () use ( $check_in, $other ): void {
-				$other->add();
-				$other->remove();
-
-				unregister_taxonomy( Base::TAXONOMY );
-				$check_in->add();
-				Setup::get_instance()->register_taxonomy();
-			}
-		);
-
-		$this->assertSame( array(), $fired, 'No check-in action should fire.' );
-		$this->assertFalse( $check_in->has(), 'The failed check-in should not have been stored.' );
 	}
 }
