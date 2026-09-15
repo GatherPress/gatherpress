@@ -161,7 +161,7 @@ const NO_STATUS = [
 											),
 											tagName: 'button',
 											className:
-												'gatherpress-rsvp--trigger-update',
+												'gatherpress-rsvp--trigger-update gatherpress-rsvp--trigger-no-script',
 											metadata: {
 												name: _x(
 													'RSVP Button',
