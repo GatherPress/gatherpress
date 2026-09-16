@@ -22,9 +22,9 @@ use GatherPress\Core\Traits\Singleton;
  * A registry of uninstall tasks, run by `uninstall.php` when the user
  * deletes the plugin. Each cleanup concern is one small Base subclass, so
  * adding one is a single registration here rather than another procedural
- * block in the bootstrap file. The #681 follow-up registers its
- * settings-gated tasks (options, tables, posts, terms, comments, cron)
- * the same way.
+ * block in the bootstrap file. The settings-gated tasks (options, tables,
+ * posts, terms, comments, cron) are registered the same way, and run only
+ * where an administrator opted in on the Uninstall screen.
  *
  * @since 0.36.0
  */

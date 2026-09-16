@@ -30,8 +30,8 @@ abstract class Base {
 	 *
 	 * False by default: uninstall tasks are destructive, so a task that
 	 * never says otherwise removes nothing. Each subclass opts in — by
-	 * returning true when the cleanup is always safe (caches), or, once
-	 * the #681 follow-up lands, by checking its opt-in setting here.
+	 * returning true when the cleanup is always safe (caches), or by
+	 * checking its opt-in setting here through `Preferences`.
 	 *
 	 * @since 0.36.0
 	 *

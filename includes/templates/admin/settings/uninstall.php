@@ -70,6 +70,16 @@ $gatherpress_tasks = array(
 	</p>
 </div>
 
+<p class="description">
+	<?php
+	printf(
+		/* translators: %s: The WP-CLI command that deletes the plugin, in a code element. */
+		esc_html__( 'On a large site, delete the plugin with WP-CLI: %s. A browser request can stop at the web server time limit and leave part of the data behind. WP-CLI has no such limit.', 'gatherpress' ),
+		'<code>wp plugin uninstall gatherpress --deactivate</code>' // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Fixed markup, no user input.
+	);
+	?>
+</p>
+
 <?php if ( ! $gatherpress_can_edit ) : ?>
 	<div class="notice notice-info inline">
 		<p>
