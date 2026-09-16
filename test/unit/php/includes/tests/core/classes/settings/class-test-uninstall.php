@@ -8,6 +8,7 @@
 
 namespace GatherPress\Tests\Core\Settings;
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Settings\Uninstall;
 use GatherPress\Core\Uninstall\Preferences;
 use GatherPress\Tests\Base;
@@ -343,5 +344,53 @@ class Test_Uninstall extends Base {
 		} finally {
 			unset( $_POST[ Uninstall::NONCE_NAME ] );
 		}
+	}
+
+	/**
+	 * A changed post type label reaches every part of its row.
+	 *
+	 * The description is wired to the checkbox through `aria-describedby`,
+	 * so the heading, the control, and the description must all use the
+	 * same name, or a screen reader announces a row that contradicts
+	 * itself.
+	 *
+	 * @covers ::settings_section
+	 *
+	 * @return void
+	 */
+	public function test_registered_label_reaches_every_part_of_the_row(): void {
+		$object   = get_post_type_object( Event::POST_TYPE );
+		$original = $object->labels->name;
+
+		$object->labels->name = 'Gatherings';
+
+		try {
+			ob_start();
+			Uninstall::get_instance()->settings_section( 'gatherpress_uninstall_settings' );
+			$output = (string) ob_get_clean();
+		} finally {
+			$object->labels->name = $original;
+		}
+
+		$this->assertStringContainsString(
+			'<th scope="row">Gatherings and Venues</th>',
+			$output,
+			'The row heading reads the registered label.'
+		);
+		$this->assertStringContainsString(
+			'Remove Gatherings and Venues',
+			$output,
+			'The checkbox reads the registered label.'
+		);
+		$this->assertStringContainsString(
+			'Removes all Gatherings and Venues',
+			$output,
+			'The description reads the registered label, so aria-describedby does not contradict the control.'
+		);
+		$this->assertStringNotContainsString(
+			'every event and venue',
+			$output,
+			'No hardcoded post type noun remains in the row.'
+		);
 	}
 }

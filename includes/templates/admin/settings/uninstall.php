@@ -41,7 +41,12 @@ $gatherpress_tasks = array(
 			Utility::post_type_label( 'name', Event::POST_TYPE ),
 			Utility::post_type_label( 'name', Venue::POST_TYPE )
 		),
-		'description' => __( 'Removes every event and venue, with their meta, revisions, and the RSVPs recorded against them.', 'gatherpress' ),
+		'description' => sprintf(
+			/* translators: 1: Plural post type label (e.g. "Events"), 2: Plural post type label (e.g. "Venues"). */
+			__( 'Removes all %1$s and %2$s, with their meta, revisions, and the RSVPs recorded against them.', 'gatherpress' ),
+			Utility::post_type_label( 'name', Event::POST_TYPE ),
+			Utility::post_type_label( 'name', Venue::POST_TYPE )
+		),
 	),
 	Preferences::TASK_COMMENTS => array(
 		'label'       => __( 'RSVPs', 'gatherpress' ),
@@ -55,7 +60,12 @@ $gatherpress_tasks = array(
 			__( 'Remove %s', 'gatherpress' ),
 			Utility::taxonomy_label( 'name', Topic::TAXONOMY )
 		),
-		'description' => __( 'Removes every topic, and the internal terms GatherPress keeps for venues and RSVP records. Categories and tags are not touched.', 'gatherpress' ),
+		'description' => sprintf(
+			/* translators: 1: Plural taxonomy label (e.g. "Topics"), 2: Plural post type label (e.g. "Venues"). */
+			__( 'Removes all %1$s and the internal terms GatherPress keeps for %2$s and RSVP records. Categories and tags are not touched.', 'gatherpress' ),
+			Utility::taxonomy_label( 'name', Topic::TAXONOMY ),
+			Utility::post_type_label( 'name', Venue::POST_TYPE )
+		),
 	),
 	Preferences::TASK_TABLES   => array(
 		'label'       => __( 'Event date table', 'gatherpress' ),
