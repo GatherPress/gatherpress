@@ -1116,6 +1116,17 @@ final class Rest_Api {
 		// - The code is not in an admin context.
 		$response->data['meta']['online_event_link'] = $event->maybe_get_online_event_link();
 
+		// The link's own meta key is registered for the editor, where it is
+		// written, so the value is only carried for a viewer who could edit the
+		// event. Everyone else reads the link through the key above, which
+		// answers on the terms the event sets.
+		if (
+			isset( $response->data['meta']['gatherpress_online_event_link'] )
+			&& ! current_user_can( Event::EDIT_CAPABILITY, $post_id )
+		) {
+			$response->data['meta']['gatherpress_online_event_link'] = '';
+		}
+
 		return $response;
 	}
 }

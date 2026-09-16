@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\Event;
 
 use DateTime;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Meta;
 use GatherPress\Core\Event\Rest_Api;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Rsvp;
@@ -1245,6 +1246,112 @@ class Test_Rest_Api extends Base {
 		$result = $instance->prepare_event_data( $response );
 
 		$this->assertArrayHasKey( 'online_event_link', $result->data['meta'] );
+	}
+
+	/**
+	 * The online event link's own meta key is carried only for a viewer who
+	 * could edit the event.
+	 *
+	 * @covers ::prepare_event_data
+	 *
+	 * @return void
+	 */
+	public function test_prepare_event_data_hides_the_link_meta_from_readers(): void {
+		$instance = Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		$link     = 'https://example.com/meeting';
+		$response = static function () use ( $post_id, $link ): WP_REST_Response {
+			return new WP_REST_Response(
+				array(
+					'id'   => $post_id,
+					'meta' => array( 'gatherpress_online_event_link' => $link ),
+				)
+			);
+		};
+
+		update_post_meta( $post_id, 'gatherpress_online_event_link', $link );
+
+		wp_set_current_user( 0 );
+		$anonymous = $instance->prepare_event_data( $response() )->data['meta'];
+
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		$subscriber = $instance->prepare_event_data( $response() )->data['meta'];
+
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$editor = $instance->prepare_event_data( $response() )->data['meta'];
+
+		wp_set_current_user( 0 );
+
+		$this->assertSame(
+			'',
+			$anonymous['gatherpress_online_event_link'],
+			'Failed to assert an anonymous reader gets no link from the meta key.'
+		);
+		$this->assertSame(
+			'',
+			$subscriber['gatherpress_online_event_link'],
+			'Failed to assert a reader who cannot edit the event gets no link from the meta key.'
+		);
+		$this->assertSame(
+			$link,
+			$editor['gatherpress_online_event_link'],
+			'Failed to assert a viewer who can edit the event still gets the link.'
+		);
+	}
+
+	/**
+	 * The route itself no longer hands the link to an anonymous reader, on a
+	 * single event or a collection.
+	 *
+	 * @covers ::prepare_event_data
+	 *
+	 * @return void
+	 */
+	public function test_rest_route_hides_the_link_meta_from_readers(): void {
+		$post_id = $this->factory()->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		$link    = 'https://example.com/meeting';
+
+		// Another test in this class leaves the event meta unregistered, and the
+		// point here is what the registered key does in a response.
+		Meta::get_instance()->register( Event::POST_TYPE );
+
+		update_post_meta( $post_id, 'gatherpress_online_event_link', $link );
+		( new Event( $post_id ) )->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 day' ) ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 day 2 hours' ) ),
+				'timezone'       => 'America/New_York',
+			)
+		);
+		wp_set_current_user( 0 );
+
+		$rest_base  = get_post_type_object( Event::POST_TYPE )->rest_base;
+		$single     = rest_do_request( new WP_REST_Request( 'GET', sprintf( '/wp/v2/%s/%d', $rest_base, $post_id ) ) );
+		$collection = rest_do_request( new WP_REST_Request( 'GET', sprintf( '/wp/v2/%s', $rest_base ) ) );
+		$listed     = wp_list_filter( (array) $collection->get_data(), array( 'id' => $post_id ) );
+
+		$this->assertSame( 200, $single->get_status(), 'Expected the published event to be readable.' );
+		$this->assertSame(
+			'',
+			$single->get_data()['meta']['gatherpress_online_event_link'] ?? null,
+			'Failed to assert a single event response carries no link for an anonymous reader.'
+		);
+		$this->assertNotEmpty( $listed, 'Expected the published event in the collection response.' );
+		$this->assertSame(
+			'',
+			reset( $listed )['meta']['gatherpress_online_event_link'] ?? null,
+			'Failed to assert a collection response carries no link for an anonymous reader.'
+		);
 	}
 
 	/**
