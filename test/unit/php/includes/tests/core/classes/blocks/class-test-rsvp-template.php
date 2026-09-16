@@ -809,6 +809,37 @@ class Test_Rsvp_Template extends Base {
 	}
 
 	/**
+	 * A signature emitted on one site does not verify on another.
+	 *
+	 * @group multisite
+	 *
+	 * @covers ::sign_template
+	 * @covers ::verify_template
+	 *
+	 * @return void
+	 */
+	public function test_signature_does_not_carry_across_sites(): void {
+		$template  = '{"blockName":"gatherpress/rsvp-template","attrs":{},"innerBlocks":[]}';
+		$signature = Rsvp_Template::sign_template( $template, 12 );
+		$blog_id   = $this->factory()->blog->create();
+
+		switch_to_blog( $blog_id );
+
+		$verified_elsewhere = Rsvp_Template::verify_template( $template, 12, $signature );
+
+		restore_current_blog();
+
+		$this->assertTrue(
+			Rsvp_Template::verify_template( $template, 12, $signature ),
+			'Failed to assert the signature verifies on the site that emitted it.'
+		);
+		$this->assertFalse(
+			$verified_elsewhere,
+			'Failed to assert the signature does not verify on another site of the network.'
+		);
+	}
+
+	/**
 	 * The pair the block emits is what the endpoint accepts.
 	 *
 	 * Reads both attributes back out of the rendered markup rather than

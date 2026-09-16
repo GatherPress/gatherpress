@@ -1075,17 +1075,19 @@ class Test_Venue extends Base {
 	 * @param array<string, mixed> $post_args Arguments for the selected post.
 	 * @param string               $type      The sourcePostType the block names.
 	 * @param bool                 $expected  Whether an anonymous viewer gets the inner blocks.
+	 * @param string               $variant   Optional. 'revision' or 'autosave' to wrap the post.
 	 *
 	 * @return void
 	 */
-	public function test_selected_source_follows_visibility( array $post_args, string $type, bool $expected ): void {
+	public function test_selected_source_follows_visibility(
+		array $post_args,
+		string $type,
+		bool $expected,
+		string $variant = ''
+	): void {
 		wp_set_current_user( 0 );
 
-		$selected_id = $this->factory->post->create( $post_args );
-
-		if ( 'revision' === $type ) {
-			$selected_id = (int) wp_save_post_revision( $selected_id );
-		}
+		$selected_id = $this->make_source_post( $post_args, $variant );
 
 		$block_instance = new WP_Block(
 			array(
@@ -1120,7 +1122,7 @@ class Test_Venue extends Base {
 	/**
 	 * Data provider for selected source visibility.
 	 *
-	 * @return array<string, array{0: array<string, mixed>, 1: string, 2: bool}>
+	 * @return array<string, array{0: array<string, mixed>, 1: string, 2: bool, 3?: string}>
 	 */
 	public function data_selected_source_visibility(): array {
 		return array(
@@ -1162,7 +1164,35 @@ class Test_Venue extends Base {
 				false,
 			),
 			'a published non-venue'    => array( array( 'post_type' => 'post' ), 'post', false ),
-			'a revision'               => array( array( 'post_type' => 'gatherpress_venue' ), 'revision', false ),
+			'a revision'               => array(
+				array( 'post_type' => 'gatherpress_venue' ),
+				'revision',
+				false,
+				'revision',
+			),
+			'an autosave'              => array(
+				array( 'post_type' => 'gatherpress_venue' ),
+				'revision',
+				false,
+				'autosave',
+			),
+			'pending venue'            => array(
+				array(
+					'post_type'   => 'gatherpress_venue',
+					'post_status' => 'pending',
+				),
+				'gatherpress_venue',
+				false,
+			),
+			'scheduled venue'          => array(
+				array(
+					'post_type'   => 'gatherpress_venue',
+					'post_status' => 'future',
+					'post_date'   => '2099-01-01 00:00:00',
+				),
+				'gatherpress_venue',
+				false,
+			),
 			'password-protected venue' => array(
 				array(
 					'post_type'     => 'gatherpress_venue',
@@ -1230,17 +1260,19 @@ class Test_Venue extends Base {
 	 * @param array<string, mixed> $post_args Arguments for the post.
 	 * @param string               $type      The sourcePostType the block names.
 	 * @param bool                 $expected  Whether an anonymous viewer gets the inner blocks.
+	 * @param string               $variant   Optional. 'revision' or 'autosave' to wrap the post.
 	 *
 	 * @return void
 	 */
-	public function test_post_id_source_follows_visibility( array $post_args, string $type, bool $expected ): void {
+	public function test_post_id_source_follows_visibility(
+		array $post_args,
+		string $type,
+		bool $expected,
+		string $variant = ''
+	): void {
 		wp_set_current_user( 0 );
 
-		$post_id = $this->factory->post->create( $post_args );
-
-		if ( 'revision' === $type ) {
-			$post_id = (int) wp_save_post_revision( $post_id );
-		}
+		$post_id = $this->make_source_post( $post_args, $variant );
 
 		$result = Venue_Block::get_instance()->render_inner_blocks(
 			$this->make_venue_block(
@@ -1439,6 +1471,42 @@ class Test_Venue extends Base {
 				array( $venue, Venue::POST_TYPE )
 			)
 		);
+	}
+
+	/**
+	 * Create the post a selector points at.
+	 *
+	 * @param array<string, mixed> $post_args Arguments for the post.
+	 * @param string               $variant   Optional. 'revision' or 'autosave'.
+	 *
+	 * @return int The post, revision, or autosave ID.
+	 */
+	private function make_source_post( array $post_args, string $variant ): int {
+		$post_id = $this->factory->post->create( $post_args );
+
+		if ( 'revision' === $variant ) {
+			return (int) wp_save_post_revision( $post_id );
+		}
+
+		if ( 'autosave' === $variant ) {
+			$author_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+
+			wp_set_current_user( $author_id );
+
+			$autosave_id = wp_create_post_autosave(
+				array(
+					'post_ID'      => $post_id,
+					'post_content' => 'Autosaved content',
+					'post_type'    => get_post_type( $post_id ),
+				)
+			);
+
+			wp_set_current_user( 0 );
+
+			return (int) $autosave_id;
+		}
+
+		return $post_id;
 	}
 
 	/**
