@@ -8,8 +8,12 @@
  * @since 0.36.0
  */
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Settings\Uninstall;
+use GatherPress\Core\Topic;
 use GatherPress\Core\Uninstall\Preferences;
+use GatherPress\Core\Utility;
+use GatherPress\Core\Venue;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
@@ -25,8 +29,18 @@ $gatherpress_scope       = isset( $scope ) && 'network' === $scope ? 'network' :
  */
 $gatherpress_tasks = array(
 	Preferences::TASK_POSTS    => array(
-		'label'       => __( 'Events and venues', 'gatherpress' ),
-		'checkbox'    => __( 'Remove events and venues', 'gatherpress' ),
+		'label'       => sprintf(
+			/* translators: 1: Plural post type label (e.g. "Events"), 2: Plural post type label (e.g. "Venues"). */
+			__( '%1$s and %2$s', 'gatherpress' ),
+			Utility::post_type_label( 'name', Event::POST_TYPE ),
+			Utility::post_type_label( 'name', Venue::POST_TYPE )
+		),
+		'checkbox'    => sprintf(
+			/* translators: 1: Plural post type label (e.g. "Events"), 2: Plural post type label (e.g. "Venues"). */
+			__( 'Remove %1$s and %2$s', 'gatherpress' ),
+			Utility::post_type_label( 'name', Event::POST_TYPE ),
+			Utility::post_type_label( 'name', Venue::POST_TYPE )
+		),
 		'description' => __( 'Removes every event and venue, with their meta, revisions, and the RSVPs recorded against them.', 'gatherpress' ),
 	),
 	Preferences::TASK_COMMENTS => array(
@@ -35,9 +49,13 @@ $gatherpress_tasks = array(
 		'description' => __( 'Removes every RSVP record and the answers people gave to custom RSVP fields.', 'gatherpress' ),
 	),
 	Preferences::TASK_TERMS    => array(
-		'label'       => __( 'Topics and venue terms', 'gatherpress' ),
-		'checkbox'    => __( 'Remove topics and venue terms', 'gatherpress' ),
-		'description' => __( 'Removes the terms in the topic, venue, and RSVP taxonomies. Categories and tags are not touched.', 'gatherpress' ),
+		'label'       => Utility::taxonomy_label( 'name', Topic::TAXONOMY ),
+		'checkbox'    => sprintf(
+			/* translators: %s: Plural taxonomy label (e.g. "Topics"). */
+			__( 'Remove %s', 'gatherpress' ),
+			Utility::taxonomy_label( 'name', Topic::TAXONOMY )
+		),
+		'description' => __( 'Removes every topic, and the internal terms GatherPress keeps for venues and RSVP records. Categories and tags are not touched.', 'gatherpress' ),
 	),
 	Preferences::TASK_TABLES   => array(
 		'label'       => __( 'Event date table', 'gatherpress' ),

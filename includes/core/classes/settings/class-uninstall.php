@@ -67,7 +67,7 @@ final class Uninstall extends Base {
 		parent::setup_hooks();
 
 		add_action( 'gatherpress_settings_section', array( $this, 'settings_section' ), 9 );
-		add_action( 'admin_post_' . self::SAVE_ACTION, array( $this, 'handle_save' ) );
+		add_action( sprintf( 'admin_post_%s', self::SAVE_ACTION ), array( $this, 'handle_save' ) );
 	}
 
 	/**
