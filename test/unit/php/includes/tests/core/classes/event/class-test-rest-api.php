@@ -1279,11 +1279,18 @@ class Test_Rest_Api extends Base {
 		wp_set_current_user( 0 );
 		$anonymous = $instance->prepare_event_data( $response() )->data['meta'];
 
+		// Another plugin can filter `id` out of the body, so the post the filter
+		// is handed is the only way to know which event this is (#1765).
+		$without_id = $instance->prepare_event_data(
+			new WP_REST_Response( array( 'meta' => array( 'gatherpress_online_event_link' => $link ) ) ),
+			get_post( $post_id )
+		)->data['meta'];
+
 		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'subscriber' ) ) );
 		$subscriber = $instance->prepare_event_data( $response() )->data['meta'];
 
 		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
-		$editor = $instance->prepare_event_data( $response() )->data['meta'];
+		$editor = $instance->prepare_event_data( $response(), get_post( $post_id ) )->data['meta'];
 
 		wp_set_current_user( 0 );
 
@@ -1291,6 +1298,11 @@ class Test_Rest_Api extends Base {
 			'',
 			$anonymous['gatherpress_online_event_link'],
 			'Failed to assert an anonymous reader gets no link from the meta key.'
+		);
+		$this->assertSame(
+			'',
+			$without_id['gatherpress_online_event_link'],
+			'Failed to assert the link is withheld when the response body has no ID.'
 		);
 		$this->assertSame(
 			'',

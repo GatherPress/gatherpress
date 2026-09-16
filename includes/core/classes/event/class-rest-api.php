@@ -78,7 +78,7 @@ final class Rest_Api {
 	protected function setup_hooks(): void {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
 		add_action( 'gatherpress_send_emails', array( $this, 'handle_email_send_action' ), 10, 4 );
-		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ) );
+		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ), 10, 2 );
 	}
 
 	/**
@@ -1092,17 +1092,19 @@ final class Rest_Api {
 	 * The enhanced data is then added to the response.
 	 *
 	 * @since 0.34.0
+	 * @since 0.35.4 Added the `$post` parameter.
 	 *
 	 * @param WP_REST_Response $response The response object containing event data.
+	 * @param WP_Post|null     $post     The event the response was prepared for.
 	 *
 	 * @return WP_REST_Response The response object with enhanced event data.
 	 */
-	public function prepare_event_data( WP_REST_Response $response ): WP_REST_Response {
-		// The response data shape depends on what the controller included: a
-		// `_fields=` request that drops `id`, or another plugin filtering the
-		// response, can leave it absent. Bail rather than emit an undefined-key
+	public function prepare_event_data( WP_REST_Response $response, ?WP_Post $post = null ): WP_REST_Response {
+		// Core hands the filter the post itself, so the event is known even when
+		// another plugin filters `id` out of the response body. The body is the
+		// fallback for a direct caller: bail rather than emit an undefined-key
 		// notice and construct Event( 0 ), which would silently do nothing.
-		$post_id = $response->data['id'] ?? 0;
+		$post_id = $post instanceof WP_Post ? $post->ID : (int) ( $response->data['id'] ?? 0 );
 
 		if ( ! $post_id ) {
 			return $response;
@@ -1114,17 +1116,20 @@ final class Rest_Api {
 		// - The user is attending the event.
 		// - The event is in the future.
 		// - The code is not in an admin context.
-		$response->data['meta']['online_event_link'] = $event->maybe_get_online_event_link();
+		$online_event_link = $event->maybe_get_online_event_link();
 
-		// The link's own meta key is registered for the editor, where it is
-		// written, so the value is only carried for a viewer who could edit the
-		// event. Everyone else reads the link through the key above, which
-		// answers on the terms the event sets.
+		$response->data['meta']['online_event_link'] = $online_event_link;
+
+		// The link's own meta key is registered with `show_in_rest`, and core
+		// hands a registered value to everyone who can read the post, since
+		// `auth_callback` gates writes rather than reads. Give that key the
+		// same answer, so a reader gets the link on the terms the event sets
+		// while the editor still loads what it has to save.
 		if (
-			isset( $response->data['meta']['gatherpress_online_event_link'] )
+			array_key_exists( 'gatherpress_online_event_link', $response->data['meta'] ?? array() )
 			&& ! current_user_can( Event::EDIT_CAPABILITY, $post_id )
 		) {
-			$response->data['meta']['gatherpress_online_event_link'] = '';
+			$response->data['meta']['gatherpress_online_event_link'] = $online_event_link;
 		}
 
 		return $response;
