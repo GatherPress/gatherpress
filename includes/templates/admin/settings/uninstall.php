@@ -62,7 +62,7 @@ $gatherpress_tasks = array(
 		),
 		'description' => sprintf(
 			/* translators: 1: Plural taxonomy label (e.g. "Topics"), 2: Plural post type label (e.g. "Venues"). */
-			__( 'Removes all %1$s and the internal terms GatherPress keeps for %2$s and RSVP records. Categories and tags are not touched.', 'gatherpress' ),
+			__( 'Removes all %1$s and the internal terms GatherPress keeps for %2$s and RSVP records.', 'gatherpress' ),
 			Utility::taxonomy_label( 'name', Topic::TAXONOMY ),
 			Utility::post_type_label( 'name', Venue::POST_TYPE )
 		),
@@ -88,13 +88,13 @@ $gatherpress_tasks = array(
 <h2><?php esc_html_e( 'Uninstall', 'gatherpress' ); ?></h2>
 
 <p class="description">
-	<?php esc_html_e( 'Choose what GatherPress removes when the plugin is deleted from the Plugins screen. Everything is off by default, so deleting the plugin keeps your data unless you ask for it to go.', 'gatherpress' ); ?>
+	<?php esc_html_e( 'Choose what GatherPress removes when the plugin is deleted from the Plugins screen. Everything is off by default, so deleting the plugin keeps your data unless you select it here.', 'gatherpress' ); ?>
 </p>
 
 <div class="notice notice-warning inline">
 	<p>
 		<strong><?php esc_html_e( 'These choices cannot be undone.', 'gatherpress' ); ?></strong>
-		<?php esc_html_e( 'Deactivating the plugin removes nothing. The data goes only when the plugin is deleted, and it cannot be recovered without a backup.', 'gatherpress' ); ?>
+		<?php esc_html_e( 'Deactivating the plugin removes nothing. The data goes only when the plugin is deleted, and it cannot be recovered without a backup. Before you delete the plugin, export your GatherPress settings from the Tools tab, and your events and venues with the WordPress exporter under Tools > Export.', 'gatherpress' ); ?>
 	</p>
 </div>
 
