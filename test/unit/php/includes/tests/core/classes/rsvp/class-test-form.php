@@ -60,6 +60,12 @@ class Test_Form extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'initialize_rsvp_form_handling' ),
 			),
+			array(
+				'type'     => 'action',
+				'name'     => 'admin_post_' . Form::NO_SCRIPT_ACTION,
+				'priority' => 10,
+				'callback' => array( $instance, 'handle_no_script_rsvp' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
@@ -3084,5 +3090,374 @@ class Test_Form extends Base {
 			get_comment_meta( $comment_id, 'gatherpress_custom_my_custom_field', true ),
 			'Custom field should be saved with custom prefix'
 		);
+	}
+
+	/**
+	 * Tests handle_no_script_rsvp when the user is logged out.
+	 *
+	 * Covers: wp_die for anonymous requests even with a valid nonce shape.
+	 *
+	 * @covers ::handle_no_script_rsvp
+	 * @return void
+	 */
+	public function test_handle_no_script_rsvp_logged_out(): void {
+		$instance = Form::get_instance();
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) {
+				if ( INPUT_POST === $type && Form::NONCE_NAME === $var_name ) {
+					return wp_create_nonce( Form::NO_SCRIPT_ACTION );
+				}
+				return $pre_value;
+			},
+			10,
+			3
+		);
+
+		$this->expectException( 'WPDieException' );
+		$this->expectExceptionMessage( 'Your session expired. Please reload the page and try again.' );
+
+		$instance->handle_no_script_rsvp();
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
+
+	/**
+	 * Tests handle_no_script_rsvp with an invalid or missing nonce.
+	 *
+	 * Covers: wp_die for a logged-in user without a valid nonce.
+	 *
+	 * @covers ::handle_no_script_rsvp
+	 * @return void
+	 */
+	public function test_handle_no_script_rsvp_invalid_nonce(): void {
+		$user_id = $this->factory->user->create();
+		wp_set_current_user( $user_id );
+
+		$instance = Form::get_instance();
+
+		$this->expectException( 'WPDieException' );
+		$this->expectExceptionMessage( 'Your session expired. Please reload the page and try again.' );
+
+		$instance->handle_no_script_rsvp();
+	}
+
+	/**
+	 * Tests handle_no_script_rsvp with an invalid status.
+	 *
+	 * Covers: wp_die when the submitted status is not attending or not_attending.
+	 *
+	 * @covers ::handle_no_script_rsvp
+	 * @return void
+	 */
+	public function test_handle_no_script_rsvp_invalid_status(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+		$user_id = $this->factory->user->create();
+		wp_set_current_user( $user_id );
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) use ( $post_id ) {
+				if ( INPUT_POST === $type && Form::NONCE_NAME === $var_name ) {
+					return wp_create_nonce( Form::NO_SCRIPT_ACTION );
+				}
+				if ( INPUT_POST === $type && 'post_id' === $var_name ) {
+					return (string) $post_id;
+				}
+				if ( INPUT_POST === $type && 'status' === $var_name ) {
+					return 'waiting_list';
+				}
+				return $pre_value;
+			},
+			10,
+			3
+		);
+
+		$instance = Form::get_instance();
+
+		$this->expectException( 'WPDieException' );
+		$this->expectExceptionMessage( 'This RSVP is no longer available.' );
+
+		$instance->handle_no_script_rsvp();
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
+
+	/**
+	 * Tests handle_no_script_rsvp on a past event.
+	 *
+	 * Covers: wp_die when the event has already ended.
+	 *
+	 * @covers ::handle_no_script_rsvp
+	 * @return void
+	 */
+	public function test_handle_no_script_rsvp_past_event(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+		$user_id = $this->factory->user->create();
+		wp_set_current_user( $user_id );
+
+		$start = ( new \DateTimeImmutable( 'now', wp_timezone() ) )->modify( '-3 hours' );
+		$end   = ( new \DateTimeImmutable( 'now', wp_timezone() ) )->modify( '-1 hours' );
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+				'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			)
+		);
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) use ( $post_id ) {
+				if ( INPUT_POST === $type && Form::NONCE_NAME === $var_name ) {
+					return wp_create_nonce( Form::NO_SCRIPT_ACTION );
+				}
+				if ( INPUT_POST === $type && 'post_id' === $var_name ) {
+					return (string) $post_id;
+				}
+				if ( INPUT_POST === $type && 'status' === $var_name ) {
+					return Status::ATTENDING->value;
+				}
+				return $pre_value;
+			},
+			10,
+			3
+		);
+
+		$instance = Form::get_instance();
+
+		$this->expectException( 'WPDieException' );
+		$this->expectExceptionMessage( 'Registration for this event is now closed.' );
+
+		$instance->handle_no_script_rsvp();
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
+
+	/**
+	 * Tests handle_no_script_rsvp success path.
+	 *
+	 * Covers: saving the attending status for a logged-in user and the
+	 * redirect back to the event with success flags.
+	 *
+	 * @covers ::handle_no_script_rsvp
+	 * @return void
+	 */
+	public function test_handle_no_script_rsvp_success(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+		$user_id = $this->factory->user->create();
+		wp_set_current_user( $user_id );
+
+		$permalink = (string) get_permalink( $post_id );
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) use ( $post_id, $permalink ) {
+				if ( INPUT_POST === $type && Form::NONCE_NAME === $var_name ) {
+					return wp_create_nonce( Form::NO_SCRIPT_ACTION );
+				}
+				if ( INPUT_POST === $type && 'post_id' === $var_name ) {
+					return (string) $post_id;
+				}
+				if ( INPUT_POST === $type && 'status' === $var_name ) {
+					return Status::ATTENDING->value;
+				}
+				if ( INPUT_POST === $type && 'return_url' === $var_name ) {
+					return $permalink;
+				}
+				return $pre_value;
+			},
+			10,
+			3
+		);
+
+		add_filter(
+			'wp_redirect',
+			static function ( $location ) {
+				throw new \WPDieException( esc_html( 'Redirect to: ' . $location ) );
+			},
+			10,
+			1
+		);
+
+		$instance = Form::get_instance();
+
+		$this->expectException( 'WPDieException' );
+		$this->expectExceptionMessage(
+			esc_html(
+				'Redirect to: ' . add_query_arg(
+					array(
+						'gatherpress_rsvp_no_script' => 'success',
+						'gatherpress_rsvp_status'    => Status::ATTENDING->value,
+					),
+					$permalink
+				)
+			)
+		);
+
+		$instance->handle_no_script_rsvp();
+
+		$rsvp  = new Rsvp( $post_id );
+		$saved = $rsvp->get( $user_id );
+
+		$this->assertSame( Status::ATTENDING->value, $saved['status'], 'The RSVP must be saved as attending.' );
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+		remove_all_filters( 'wp_redirect' );
+	}
+
+	/**
+	 * Tests handle_no_script_rsvp saving failure path.
+	 *
+	 * Covers: redirect with the error flag when the save returns no_status.
+	 *
+	 * @covers ::handle_no_script_rsvp
+	 * @return void
+	 */
+	public function test_handle_no_script_rsvp_save_failure(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+		$user_id = $this->factory->user->create();
+		wp_set_current_user( $user_id );
+
+		$permalink = (string) get_permalink( $post_id );
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) use ( $post_id, $permalink ) {
+				if ( INPUT_POST === $type && Form::NONCE_NAME === $var_name ) {
+					return wp_create_nonce( Form::NO_SCRIPT_ACTION );
+				}
+				if ( INPUT_POST === $type && 'post_id' === $var_name ) {
+					return (string) $post_id;
+				}
+				if ( INPUT_POST === $type && 'status' === $var_name ) {
+					return Status::ATTENDING->value;
+				}
+				if ( INPUT_POST === $type && 'return_url' === $var_name ) {
+					return $permalink;
+				}
+				return $pre_value;
+			},
+			10,
+			3
+		);
+
+		add_filter(
+			'wp_redirect',
+			static function ( $location ) {
+				throw new \WPDieException( esc_html( 'Redirect to: ' . $location ) );
+			},
+			10,
+			1
+		);
+
+		// Force the save to fail: delete the user after setting the current
+		// user context so get_current_user_id() still resolves but the RSVP
+		// identity cannot, and save() returns the default response.
+		wp_delete_user( $user_id );
+
+		$instance = Form::get_instance();
+
+		$this->expectException( 'WPDieException' );
+		$this->expectExceptionMessage(
+			esc_html(
+				'Redirect to: ' . add_query_arg(
+					array(
+						'gatherpress_rsvp_no_script' => 'error',
+					),
+					$permalink
+				)
+			)
+		);
+
+		$instance->handle_no_script_rsvp();
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+		remove_all_filters( 'wp_redirect' );
+	}
+
+	/**
+	 * Tests handle_no_script_rsvp falling back to the event permalink.
+	 *
+	 * Covers: empty return_url resolves to the event permalink.
+	 *
+	 * @covers ::handle_no_script_rsvp
+	 * @return void
+	 */
+	public function test_handle_no_script_rsvp_empty_return_url(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+		$user_id = $this->factory->user->create();
+		wp_set_current_user( $user_id );
+
+		$permalink = (string) get_permalink( $post_id );
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) use ( $post_id ) {
+				if ( INPUT_POST === $type && Form::NONCE_NAME === $var_name ) {
+					return wp_create_nonce( Form::NO_SCRIPT_ACTION );
+				}
+				if ( INPUT_POST === $type && 'post_id' === $var_name ) {
+					return (string) $post_id;
+				}
+				if ( INPUT_POST === $type && 'status' === $var_name ) {
+					return Status::ATTENDING->value;
+				}
+				return $pre_value;
+			},
+			10,
+			3
+		);
+
+		add_filter(
+			'wp_redirect',
+			static function ( $location ) {
+				throw new \WPDieException( esc_html( 'Redirect to: ' . $location ) );
+			},
+			10,
+			1
+		);
+
+		$instance = Form::get_instance();
+
+		$this->expectException( 'WPDieException' );
+		$this->expectExceptionMessage(
+			esc_html(
+				'Redirect to: ' . add_query_arg(
+					array(
+						'gatherpress_rsvp_no_script' => 'success',
+						'gatherpress_rsvp_status'    => Status::ATTENDING->value,
+					),
+					$permalink
+				)
+			)
+		);
+
+		$instance->handle_no_script_rsvp();
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+		remove_all_filters( 'wp_redirect' );
 	}
 }
