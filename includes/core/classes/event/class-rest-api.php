@@ -73,7 +73,7 @@ final class Rest_Api {
 	protected function setup_hooks(): void {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
 		add_action( 'gatherpress_send_emails', array( $this, 'handle_email_send_action' ), 10, 3 );
-		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ) );
+		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ), 10, 2 );
 	}
 
 	/**
@@ -162,8 +162,9 @@ final class Rest_Api {
 	/**
 	 * Define REST API route for generating nonce.
 	 *
-	 * Creates a publicly accessible endpoint that generates a fresh nonce
-	 * for authenticated REST API requests.
+	 * Creates an endpoint that generates a fresh nonce for authenticated REST
+	 * API requests. The nonce is for the site's own pages, so the endpoint
+	 * only answers requests from the site's origin.
 	 *
 	 * @since 0.34.0
 	 *
@@ -175,11 +176,15 @@ final class Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => static function () {
+					// The site's own pages need no CORS headers to read the nonce.
+					remove_filter( 'rest_pre_serve_request', 'rest_send_cors_headers' );
+
 					// Short-term caching (30 seconds) to prevent endpoint hammering while maintaining security.
 					// WordPress nonces are valid for ~12 hours, so 30 seconds of caching has no UX impact
 					// but protects against rapid successive requests that could overwhelm the server.
 					header( 'Cache-Control: private, max-age=30' );
 					header( 'Expires: ' . gmdate( 'D, d M Y H:i:s', time() + 30 ) . ' GMT' );
+					header( 'Vary: Origin' );
 
 					// Ensure proper user authentication for nonce generation.
 					Utility::ensure_user_authentication();
@@ -190,7 +195,7 @@ final class Rest_Api {
 
 					return new WP_REST_Response( $response );
 				},
-				'permission_callback' => '__return_true',
+				'permission_callback' => array( Utility::class, 'is_same_origin_request' ),
 			),
 		);
 	}
@@ -825,12 +830,15 @@ final class Rest_Api {
 
 		$rsvp_template = Rsvp_Template::get_instance();
 		$params        = $request->get_params();
+		$post_id       = intval( $params['post_id'] );
 
-		// Only a template the server emitted is rendered. The block tree is
-		// handed back verbatim from the markup Rsvp_Template wrote, and it is
-		// that markup, not the request, which decides what gets rendered.
+		// Only a template the server emitted for this event is rendered. The
+		// block tree is handed back verbatim from the markup Rsvp_Template
+		// wrote, and it is that markup, not the request, which decides what
+		// gets rendered.
 		$emitted = Rsvp_Template::verify_template(
 			(string) $params['block_data'],
+			$post_id,
 			(string) $params['block_signature']
 		);
 
@@ -844,7 +852,6 @@ final class Rest_Api {
 			);
 		}
 
-		$post_id    = intval( $params['post_id'] );
 		$status     = $params['status'];
 		$block_data = json_decode( $params['block_data'], true );
 		$rsvp       = new Rsvp( $post_id );
@@ -1027,17 +1034,19 @@ final class Rest_Api {
 	 * The enhanced data is then added to the response.
 	 *
 	 * @since 0.34.0
+	 * @since 0.35.4 Added the `$post` parameter.
 	 *
 	 * @param WP_REST_Response $response The response object containing event data.
+	 * @param WP_Post|null     $post     The event the response was prepared for.
 	 *
 	 * @return WP_REST_Response The response object with enhanced event data.
 	 */
-	public function prepare_event_data( WP_REST_Response $response ): WP_REST_Response {
-		// The response data shape depends on what the controller included: a
-		// `_fields=` request that drops `id`, or another plugin filtering the
-		// response, can leave it absent. Bail rather than emit an undefined-key
+	public function prepare_event_data( WP_REST_Response $response, ?WP_Post $post = null ): WP_REST_Response {
+		// Core hands the filter the post itself, so the event is known even when
+		// another plugin filters `id` out of the response body. The body is the
+		// fallback for a direct caller: bail rather than emit an undefined-key
 		// notice and construct Event( 0 ), which would silently do nothing.
-		$post_id = $response->data['id'] ?? 0;
+		$post_id = $post instanceof WP_Post ? $post->ID : (int) ( $response->data['id'] ?? 0 );
 
 		if ( ! $post_id ) {
 			return $response;
@@ -1049,7 +1058,21 @@ final class Rest_Api {
 		// - The user is attending the event.
 		// - The event is in the future.
 		// - The code is not in an admin context.
-		$response->data['meta']['online_event_link'] = $event->maybe_get_online_event_link();
+		$online_event_link = $event->maybe_get_online_event_link();
+
+		$response->data['meta']['online_event_link'] = $online_event_link;
+
+		// The link's own meta key is registered with `show_in_rest`, and core
+		// hands a registered value to everyone who can read the post, since
+		// `auth_callback` gates writes rather than reads. Give that key the
+		// same answer, so a reader gets the link on the terms the event sets
+		// while the editor still loads what it has to save.
+		if (
+			array_key_exists( 'gatherpress_online_event_link', $response->data['meta'] ?? array() )
+			&& ! current_user_can( Event::EDIT_CAPABILITY, $post_id )
+		) {
+			$response->data['meta']['gatherpress_online_event_link'] = $online_event_link;
+		}
 
 		return $response;
 	}

@@ -136,7 +136,7 @@ final class Online_Event {
 	/**
 	 * Whether the current viewer could open an event directly.
 	 *
-	 * @since 0.36.0
+	 * @since 0.35.3
 	 *
 	 * @param int $post_id The post to check.
 	 *

@@ -1291,7 +1291,7 @@ class Test_Settings extends Base {
 	 * autocomplete arm must not throw a TypeError from its string-typed
 	 * parameter.
 	 *
-	 * @since 0.36.0
+	 * @since 0.35.4
 	 *
 	 * @covers ::sanitize_page_settings
 	 *

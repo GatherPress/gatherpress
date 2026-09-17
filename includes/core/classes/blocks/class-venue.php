@@ -148,49 +148,59 @@ final class Venue {
 		$source_post_type = $this->get_source_post_type( $block );
 		$source_post      = null;
 
-		// Check for a manually selected source post in block attributes. The
-		// selection is honored on the same terms a direct visit would be: the
-		// type has to be a shadow source, which venues and any companion type
-		// declare, and the post has to be one the viewer could open.
-		if (
-			isset( $block['attrs']['selectedPostId'] )
-			&& is_int( $block['attrs']['selectedPostId'] )
-			&& post_type_supports( $source_post_type, 'gatherpress-shadow-source' )
-		) {
-			$selected = get_post( $block['attrs']['selectedPostId'] );
-
-			if (
-				$selected instanceof WP_Post
-				&& $source_post_type === $selected->post_type
-				&& ! post_password_required( $selected )
-				&& (
-					is_post_publicly_viewable( $selected )
-					|| current_user_can( Event::READ_CAPABILITY, $selected->ID )
-				)
-			) {
-				$source_post = $selected;
-			}
+		// Check for a manually selected source post in block attributes.
+		if ( isset( $block['attrs']['selectedPostId'] ) && is_int( $block['attrs']['selectedPostId'] ) ) {
+			$source_post = $this->get_viewable_source_post(
+				get_post( $block['attrs']['selectedPostId'] ),
+				$source_post_type
+			);
 		}
 
 		if ( null === $source_post ) {
 			// Get post ID from block attributes or global (handles query loop, override, global).
 			$post_id   = Setup::get_instance()->get_post_id( $block );
-			$post_type = get_post_type( $post_id );
+			$candidate = null;
 
-			if ( $source_post_type === $post_type ) {
-				$source_post = get_post( $post_id );
-			} else {
+			// An event only leads to its source when the viewer could open the event.
+			if ( get_post_type( $post_id ) === $source_post_type ) {
+				$candidate = get_post( $post_id );
+			} elseif ( Event::is_viewable( $post_id ) ) {
 				$candidate = Shadow_Source::get_instance()->get_source_post_from_event_post_id(
-					(int) $post_id,
+					$post_id,
 					$source_post_type
 				);
-
-				if ( $candidate instanceof WP_Post && $source_post_type === $candidate->post_type ) {
-					$source_post = $candidate;
-				}
 			}
+
+			$source_post = $this->get_viewable_source_post( $candidate, $source_post_type );
 		}
 
 		return $source_post;
+	}
+
+	/**
+	 * Returns a resolved source post only when the viewer may see it.
+	 *
+	 * A source post is honored on the same terms a direct visit would be: the
+	 * type has to be the configured shadow source, which venues and any
+	 * companion type declare, and the post has to be one the viewer could open.
+	 *
+	 * @since 0.35.4
+	 *
+	 * @param WP_Post|null $candidate        The resolved post, if any.
+	 * @param string       $source_post_type Shadow-source post type the block renders.
+	 *
+	 * @return WP_Post|null The post when the viewer may see it, otherwise null.
+	 */
+	private function get_viewable_source_post( ?WP_Post $candidate, string $source_post_type ): ?WP_Post {
+		$viewable = $candidate instanceof WP_Post
+			&& $source_post_type === $candidate->post_type
+			&& post_type_supports( $source_post_type, 'gatherpress-shadow-source' )
+			&& ! post_password_required( $candidate )
+			&& (
+				is_post_publicly_viewable( $candidate )
+				|| current_user_can( Event::READ_CAPABILITY, $candidate->ID )
+			);
+
+		return $viewable ? $candidate : null;
 	}
 }
