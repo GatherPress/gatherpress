@@ -192,6 +192,30 @@ register_post_type( 'my_custom_event', array(
 ) );
 ```
 
+### `gatherpress-event-checklist`
+
+Enables the per-event organizer checklist. This includes:
+
+- The "Checklist" section in the event settings sidebar panel, where event editors add, rename, tick off, reorder, and remove checklist items
+- Registration of the `gatherpress_checklist` post meta key: a single JSON string holding an ordered array of `{ id, text, completed }` items, defaulting to `[]`
+
+The checklist is working state for the people running an event: who has been contacted, whose compliance review is done, which invoice is still outstanding, and so on. Because that can include payment and compliance notes, the meta is registered with `show_in_rest` limited to the **`edit` context**, so it is left out of public post reads even when the rest of the event is publicly readable. Writes go through the core REST meta API (no custom endpoint), gated by the shared `Utility::can_edit_post_meta()` auth callback.
+
+Declaring the support also forces WordPress's `custom-fields` support onto the post type, because `WP_REST_Posts_Controller` only attaches the `meta` field to a post type's REST schema when that support is present. Without it the editor's save silently drops the checklist.
+
+Item shape follows the same convention as the venue field lists: items carry a stable `id` generated in the editor so a row keeps its identity while its text is rewritten, which keeps React keys stable. `text` is sanitized through `sanitize_text_field()` and capped at 255 characters, `completed` is coerced with `rest_sanitize_boolean()`, and the whole list is capped at 200 items. Malformed payloads collapse to `[]` rather than being stored as unparseable JSON.
+
+#### Usage for gatherpress-event-checklist
+
+```php
+register_post_type( 'my_custom_event', array(
+    'supports' => array( 'title', 'editor', 'gatherpress-event-date', 'gatherpress-event-checklist' ),
+    // ... other args
+) );
+```
+
+Read the stored list with `get_post_meta( $post_id, 'gatherpress_checklist', true )` and `json_decode()` the result. There is no public template-tag accessor in this release: the checklist is editor-side data, and a frontend block is deliberately held back until there is a participant model to control who sees it. The stored shape leaves room for per-item assignment and due-date fields without a migration.
+
 ---
 
 ## Venue Post Type Supports

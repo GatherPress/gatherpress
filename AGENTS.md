@@ -109,6 +109,7 @@ GatherPress uses custom `post_type_supports` to decouple features from specific 
 - `gatherpress-rsvp` — Comment-based RSVP system, attendee management, waiting list, RSVP blocks (rsvp, rsvp-form, rsvp-response, rsvp-template)
 - `gatherpress-venue` — Association with a venue post type via the `_gatherpress_venue` taxonomy, venue selector in the editor, and venue block rendering
 - `gatherpress-online-event` — Online event link meta (stored on the event), online-event term in the taxonomy, and online-event block rendering
+- `gatherpress-event-checklist` — Per-event organizer checklist (`gatherpress_checklist` meta, a JSON string of `{ id, text, completed }` items) and the Checklist section in the event settings panel. Owned by `Event\Checklist`; the meta is registered in the REST `edit` context only so payment/compliance notes stay out of public event reads
 
 **Venue post type supports** (declared on post types that act as venues):
 
