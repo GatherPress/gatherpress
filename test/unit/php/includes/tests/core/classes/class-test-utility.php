@@ -985,6 +985,196 @@ class Test_Utility extends Base {
 	}
 
 	/**
+	 * Coverage for ensure_user_authentication leaving a request from another
+	 * origin as core resolved it, and restoring the user for the site's own.
+	 *
+	 * @covers ::ensure_user_authentication
+	 *
+	 * @return void
+	 */
+	public function test_ensure_user_authentication_skips_other_origins(): void {
+		$user_id     = $this->factory()->user->create();
+		$cookie_user = static function () use ( $user_id ): int {
+			return $user_id;
+		};
+
+		add_filter( 'determine_current_user', $cookie_user, 100 );
+		wp_set_current_user( 0 );
+
+		$_SERVER['HTTP_ORIGIN'] = 'https://elsewhere.example';
+		$other_result           = Utility::ensure_user_authentication();
+		$other_user             = get_current_user_id();
+
+		$_SERVER['HTTP_ORIGIN'] = untrailingslashit( home_url() );
+		$own_result             = Utility::ensure_user_authentication();
+		$own_user               = get_current_user_id();
+
+		unset( $_SERVER['HTTP_ORIGIN'] );
+		remove_filter( 'determine_current_user', $cookie_user, 100 );
+		wp_set_current_user( 0 );
+
+		$this->assertFalse( $other_result, 'Failed to assert another origin is not authenticated.' );
+		$this->assertSame( 0, $other_user, 'Failed to assert another origin stays logged out.' );
+		$this->assertSame( $user_id, $own_result, 'Failed to assert the site\'s origin is authenticated.' );
+		$this->assertSame( $user_id, $own_user, 'Failed to assert the site\'s origin gets its user back.' );
+	}
+
+	/**
+	 * Coverage for ensure_user_authentication on a site served from a
+	 * non-default port.
+	 *
+	 * @covers ::ensure_user_authentication
+	 *
+	 * @return void
+	 */
+	public function test_ensure_user_authentication_on_a_non_default_port(): void {
+		$user_id     = $this->factory()->user->create();
+		$site_url    = static fn(): string => 'https://example.test:8443';
+		$cookie_user = static function () use ( $user_id ): int {
+			return $user_id;
+		};
+
+		add_filter( 'pre_option_home', $site_url );
+		add_filter( 'pre_option_siteurl', $site_url );
+		add_filter( 'determine_current_user', $cookie_user, 100 );
+		wp_set_current_user( 0 );
+
+		$_SERVER['HTTP_ORIGIN'] = 'https://example.test';
+		$without_port_result    = Utility::ensure_user_authentication();
+		$without_port_user      = get_current_user_id();
+
+		$_SERVER['HTTP_ORIGIN'] = 'https://example.test:8443';
+		$with_port_result       = Utility::ensure_user_authentication();
+		$with_port_user         = get_current_user_id();
+
+		unset( $_SERVER['HTTP_ORIGIN'] );
+		remove_filter( 'pre_option_home', $site_url );
+		remove_filter( 'pre_option_siteurl', $site_url );
+		remove_filter( 'determine_current_user', $cookie_user, 100 );
+		wp_set_current_user( 0 );
+
+		$this->assertFalse( $without_port_result, 'Failed to assert the host without the port is not authenticated.' );
+		$this->assertSame( 0, $without_port_user, 'Failed to assert the host without the port stays logged out.' );
+		$this->assertSame( $user_id, $with_port_result, 'Failed to assert the origin with the port is authenticated.' );
+		$this->assertSame( $user_id, $with_port_user, 'Failed to assert the origin with the port gets its user back.' );
+	}
+
+	/**
+	 * Coverage for is_same_origin_request.
+	 *
+	 * @covers ::is_same_origin_request
+	 *
+	 * @return void
+	 */
+	public function test_is_same_origin_request(): void {
+		$own          = untrailingslashit( home_url() );
+		$other_scheme = set_url_scheme( $own, str_starts_with( $own, 'https:' ) ? 'http' : 'https' );
+
+		unset( $_SERVER['HTTP_ORIGIN'] );
+		$without_origin = Utility::is_same_origin_request();
+
+		$_SERVER['HTTP_ORIGIN'] = $own;
+		$own_origin             = Utility::is_same_origin_request();
+
+		$_SERVER['HTTP_ORIGIN'] = strtoupper( $own );
+		$uppercase_origin       = Utility::is_same_origin_request();
+
+		$_SERVER['HTTP_ORIGIN'] = 'https://elsewhere.example';
+		$other_origin           = Utility::is_same_origin_request();
+
+		$_SERVER['HTTP_ORIGIN'] = $other_scheme;
+		$other_scheme_origin    = Utility::is_same_origin_request();
+
+		$_SERVER['HTTP_ORIGIN'] = 'null';
+		$opaque_origin          = Utility::is_same_origin_request();
+
+		unset( $_SERVER['HTTP_ORIGIN'] );
+
+		$this->assertTrue( $without_origin, 'Failed to assert a request without an origin is the site\'s own.' );
+		$this->assertTrue( $own_origin, 'Failed to assert the site\'s origin is its own.' );
+		$this->assertTrue( $uppercase_origin, 'Failed to assert the origin is compared without regard to case.' );
+		$this->assertFalse( $other_origin, 'Failed to assert another origin is not the site\'s own.' );
+		$this->assertFalse( $other_scheme_origin, 'Failed to assert another scheme is not the site\'s own.' );
+		$this->assertFalse( $opaque_origin, 'Failed to assert an opaque origin is not the site\'s own.' );
+	}
+
+	/**
+	 * Coverage for is_same_origin_request on a site served from a non-default
+	 * port: only the origin with that port is the site's own.
+	 *
+	 * @covers ::is_same_origin_request
+	 *
+	 * @return void
+	 */
+	public function test_is_same_origin_request_on_a_non_default_port(): void {
+		$site_url = static fn(): string => 'https://example.test:8443';
+
+		add_filter( 'pre_option_home', $site_url );
+		add_filter( 'pre_option_siteurl', $site_url );
+
+		$_SERVER['HTTP_ORIGIN'] = 'https://example.test:8443';
+		$with_port              = Utility::is_same_origin_request();
+
+		$_SERVER['HTTP_ORIGIN'] = 'https://example.test';
+		$without_port           = Utility::is_same_origin_request();
+
+		$_SERVER['HTTP_ORIGIN'] = 'https://example.test:9443';
+		$other_port             = Utility::is_same_origin_request();
+
+		unset( $_SERVER['HTTP_ORIGIN'] );
+		remove_filter( 'pre_option_home', $site_url );
+		remove_filter( 'pre_option_siteurl', $site_url );
+
+		$this->assertTrue( $with_port, 'Failed to assert the site\'s origin includes its port.' );
+		$this->assertFalse( $without_port, 'Failed to assert the same host without the port is another origin.' );
+		$this->assertFalse( $other_port, 'Failed to assert the same host on another port is another origin.' );
+	}
+
+	/**
+	 * Coverage for get_url_origin returning an empty string for a value with
+	 * no scheme or host.
+	 *
+	 * @covers ::get_url_origin
+	 *
+	 * @return void
+	 */
+	public function test_get_url_origin_without_a_host(): void {
+		foreach ( array( 'null', '/path', '' ) as $url ) {
+			$this->assertSame(
+				'',
+				PMC_Utility::invoke_hidden_static_method( Utility::class, 'get_url_origin', array( $url ) ),
+				sprintf( 'Failed to assert %s has no origin.', $url )
+			);
+		}
+	}
+
+	/**
+	 * Coverage for get_url_origin normalizing case and default ports.
+	 *
+	 * @covers ::get_url_origin
+	 *
+	 * @return void
+	 */
+	public function test_get_url_origin_normalizes(): void {
+		$origins = array(
+			'HTTPS://Example.TEST/path'   => 'https://example.test',
+			'http://example.test:80'      => 'http://example.test',
+			'https://example.test:443/'   => 'https://example.test',
+			'https://example.test:8443/a' => 'https://example.test:8443',
+			'http://example.test:443'     => 'http://example.test:443',
+			'ftp://example.test:21'       => 'ftp://example.test:21',
+		);
+
+		foreach ( $origins as $url => $expected ) {
+			$this->assertSame(
+				$expected,
+				PMC_Utility::invoke_hidden_static_method( Utility::class, 'get_url_origin', array( $url ) ),
+				sprintf( 'Failed to assert the origin of %s.', $url )
+			);
+		}
+	}
+
+	/**
 	 * Data provider for has_css_class test.
 	 *
 	 * @return array
