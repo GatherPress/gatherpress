@@ -180,21 +180,12 @@ final class Rsvp {
 	 * @return bool True if the comment exists and has the RSVP comment type, false otherwise.
 	 */
 	public static function is_comment_type( int|WP_Comment $comment ): bool {
-		// An object already carries its type, so read it directly. Resolving it
-		// through get_comment() instead would re-fire the get_comment filter,
-		// which is where the callers on a comment object are reached from, and
-		// recursing through it exhausts the stack on every comment read.
-		if ( $comment instanceof WP_Comment ) {
-			return self::COMMENT_TYPE === $comment->comment_type;
+		// Only resolve IDs: passing an object back through get_comment() would
+		// re-fire the get_comment filter these callers run from and recurse.
+		// get_comment( 0 ) also falls back to the global comment, so guard that.
+		if ( ! $comment instanceof WP_Comment ) {
+			$comment = $comment > 0 ? get_comment( $comment ) : null;
 		}
-
-		// get_comment( 0 ) falls back to the global comment, which in a loop
-		// would make an unrelated comment read as an RSVP.
-		if ( $comment <= 0 ) {
-			return false;
-		}
-
-		$comment = get_comment( $comment );
 
 		return $comment instanceof WP_Comment && self::COMMENT_TYPE === $comment->comment_type;
 	}

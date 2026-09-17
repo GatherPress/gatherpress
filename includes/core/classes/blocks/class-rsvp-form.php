@@ -705,16 +705,11 @@ final class Rsvp_Form {
 	 * @return void
 	 */
 	public function process_custom_fields_for_form( int $comment_id ): void {
-		if ( ! Rsvp::is_comment_type( $comment_id ) ) {
+		$comment = get_comment( $comment_id );
+		if ( ! $comment instanceof WP_Comment || ! Rsvp::is_comment_type( $comment ) ) {
 			return;
 		}
 
-		$comment = get_comment( $comment_id );
-		/**
-		 * Comment resolution returns a union, so reassert the type for the reads below.
-		 *
-		 * @var WP_Comment $comment
-		 */
 		$post_id        = (int) $comment->comment_post_ID;
 		$form_schema_id = Utility::get_http_input( INPUT_POST, 'gatherpress_form_schema_id' );
 
