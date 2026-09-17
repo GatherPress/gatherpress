@@ -9,6 +9,13 @@ Pending entries for the next release live as individual files under
 [`.github/changelog/`](.github/changelog/) and get rolled up into a new
 version section by `composer changelog:write` at release time.
 
+## [0.35.4] - 2026-09-17
+### Security
+- Tighten request and rendering checks. The nonce endpoint only answers requests from the site's own origin, RSVP template signatures only verify for the site and event they were emitted for, the venue and RSVP count blocks only show a post the viewer could open directly, and an event's online link is carried in its own meta key only for a viewer who could edit the event. [#2305](https://github.com/GatherPress/gatherpress/pull/2305)
+
+### Fixed
+- Fixed several PHP `Array to string conversion` warnings (and one latent TypeError) triggered when a value that WordPress or a malformed request can legitimately deliver as an array reached an unguarded `(string)` cast: the event archive redirect handler's `post_type` query var, the venue map REST endpoint's `aspect_ratio`/`map_type` params, the settings page sanitizer's scalar fields, and the venue map prewarm job's `aspectRatio` block attribute. Each now guards with `is_string()`/`is_scalar()` before casting, consistent with the existing pattern already used elsewhere in the codebase (`Admin_List::handle_column_sorting()`, `Geocoding`'s Photon property extraction). [#2169](https://github.com/GatherPress/gatherpress/pull/2169)
+
 ## [0.35.3] - 2026-09-04
 ### Security
 - Fix an information disclosure in the RSVP status endpoint. A request could supply its own block tree and, through the venue and online-event blocks, read private, draft, trashed, and revision content without logging in. The endpoint now renders only the template the server emitted, and both blocks resolve a selected or overridden post on the same terms as a direct visit. [#2243](https://github.com/GatherPress/gatherpress/pull/2243)
@@ -527,6 +534,7 @@ Initial public release. Represents 18+ months of pre-1.0 development and ships t
 - Initial unit test suite with code coverage via SonarCloud.
 - Multilingual screenshots and i18n scaffolding.
 
+[0.35.4]: https://github.com/GatherPress/gatherpress/compare/0.35.3...0.35.4
 [0.35.3]: https://github.com/GatherPress/gatherpress/compare/0.35.2...0.35.3
 [0.35.2]: https://github.com/GatherPress/gatherpress/compare/0.35.1...0.35.2
 [0.35.1]: https://github.com/GatherPress/gatherpress/compare/0.35.0...0.35.1
