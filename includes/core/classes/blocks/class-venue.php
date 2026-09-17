@@ -194,7 +194,7 @@ final class Venue {
 	private function get_viewable_source_post( ?WP_Post $candidate, string $source_post_type ): ?WP_Post {
 		$viewable = $candidate instanceof WP_Post
 			&& $source_post_type === $candidate->post_type
-			&& post_type_supports( $source_post_type, Shadow_Source::SUPPORT )
+			&& post_type_supports( $source_post_type, 'gatherpress-shadow-source' )
 			&& ! post_password_required( $candidate )
 			&& (
 				is_post_publicly_viewable( $candidate )

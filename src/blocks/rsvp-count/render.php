@@ -19,7 +19,7 @@ $gatherpress_post_id        = $gatherpress_block_instance->get_post_id( $block->
 
 // Only render for events that take RSVPs and that the viewer could open.
 if (
-	! post_type_supports( (string) get_post_type( $gatherpress_post_id ), Rsvp::SUPPORT ) ||
+	! post_type_supports( (string) get_post_type( $gatherpress_post_id ), 'gatherpress-rsvp' ) ||
 	! Event::is_viewable( $gatherpress_post_id )
 ) {
 	return;
