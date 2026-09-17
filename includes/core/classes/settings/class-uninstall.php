@@ -66,6 +66,9 @@ final class Uninstall extends Base {
 	protected function setup_hooks(): void {
 		parent::setup_hooks();
 
+		// Priority 9 so this runs before Settings::render_settings_form() on
+		// the same hook at 10. settings_section() removes that default
+		// renderer for this page, and it can only do so before it has fired.
 		add_action( 'gatherpress_settings_section', array( $this, 'settings_section' ), 9 );
 		add_action( sprintf( 'admin_post_%s', self::SAVE_ACTION ), array( $this, 'handle_save' ) );
 	}
