@@ -22,6 +22,8 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
+use WP_Post;
+use WP_REST_Response;
 
 /**
  * Class Checklist.
@@ -158,6 +160,37 @@ final class Checklist {
 				'default'           => self::EMPTY_CHECKLIST,
 			)
 		);
+
+		add_filter( sprintf( 'rest_prepare_%s', $post_type ), array( $this, 'strip_from_readers' ), 10, 2 );
+	}
+
+	/**
+	 * Keep the checklist out of responses for readers who cannot edit the post.
+	 *
+	 * `register_post_meta()` gates writes through `auth_callback` but hands a
+	 * registered value to anyone who can read the post, so the `edit`-only
+	 * schema is the whole of the public-read promise. Core enforces that schema
+	 * by dropping keys it finds a matching property for, and it keeps keys it
+	 * does not, which makes the promise depend on the controller's item schema
+	 * being rebuilt after this meta was registered. That schema is memoized per
+	 * controller, so a controller built earlier carries an empty meta schema and
+	 * hands the checklist to a public read. Answering from the capability keeps
+	 * the promise whatever the schema holds, the way
+	 * `Event\Rest_Api::prepare_event_data()` answers the online event link.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param WP_REST_Response $response The response object.
+	 * @param WP_Post          $post     The post the response was prepared for.
+	 *
+	 * @return WP_REST_Response The response, without the checklist for readers without edit access.
+	 */
+	public function strip_from_readers( WP_REST_Response $response, WP_Post $post ): WP_REST_Response {
+		if ( ! current_user_can( 'edit_post', $post->ID ) ) {
+			unset( $response->data['meta'][ self::META_KEY ] );
+		}
+
+		return $response;
 	}
 
 	/**

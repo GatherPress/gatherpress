@@ -12,6 +12,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Event\Checklist;
 use GatherPress\Tests\Base;
 use WP_REST_Request;
+use WP_REST_Response;
 
 /**
  * Class Test_Checklist.
@@ -110,6 +111,13 @@ class Test_Checklist extends Base {
 		$this->assertTrue(
 			post_type_supports( $test_pt, 'custom-fields' ),
 			'Failed to assert custom-fields support is auto-added so REST exposes meta.'
+		);
+		$this->assertNotFalse(
+			has_filter(
+				sprintf( 'rest_prepare_%s', $test_pt ),
+				array( $instance, 'strip_from_readers' )
+			),
+			'Failed to assert the public-read backstop is hooked on a supporting post type.'
 		);
 
 		unregister_post_type( $test_pt );
@@ -560,6 +568,87 @@ class Test_Checklist extends Base {
 			Checklist::META_KEY,
 			$meta,
 			'Failed to assert a public read carries no checklist.'
+		);
+	}
+
+	/**
+	 * `strip_from_readers()` drops the checklist for a reader without edit access.
+	 *
+	 * The schema alone is not enough to keep the list out of a public read: the
+	 * posts controller memoizes its item schema, so a controller built before
+	 * this meta was registered carries no property for the key, and core keeps
+	 * keys it finds no property for. This is the backstop that answers from the
+	 * capability instead, so it is asserted directly as well as through the
+	 * dispatched request above.
+	 *
+	 * @covers ::strip_from_readers
+	 *
+	 * @return void
+	 */
+	public function test_strip_from_readers_removes_the_checklist_without_edit_access(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+
+		wp_set_current_user( 0 );
+
+		$response = new WP_REST_Response(
+			array(
+				'meta' => array(
+					Checklist::META_KEY => '[{"id":"a","text":"Invoice","completed":true}]',
+					'kept'              => 'value',
+				),
+			)
+		);
+
+		$stripped = Checklist::get_instance()->strip_from_readers( $response, get_post( $post_id ) );
+
+		$this->assertArrayNotHasKey(
+			Checklist::META_KEY,
+			$stripped->get_data()['meta'],
+			'Failed to assert a reader without edit access gets no checklist.'
+		);
+		$this->assertSame(
+			'value',
+			$stripped->get_data()['meta']['kept'],
+			'Failed to assert the backstop leaves the rest of the meta alone.'
+		);
+	}
+
+	/**
+	 * `strip_from_readers()` leaves the checklist alone for an editor.
+	 *
+	 * @covers ::strip_from_readers
+	 *
+	 * @return void
+	 */
+	public function test_strip_from_readers_keeps_the_checklist_for_an_editor(): void {
+		$user_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		$stored  = '[{"id":"a","text":"Invoice","completed":true}]';
+
+		wp_set_current_user( $user_id );
+
+		$response = new WP_REST_Response(
+			array(
+				'meta' => array( Checklist::META_KEY => $stored ),
+			)
+		);
+
+		$kept = Checklist::get_instance()->strip_from_readers( $response, get_post( $post_id ) );
+
+		$this->assertSame(
+			$stored,
+			$kept->get_data()['meta'][ Checklist::META_KEY ],
+			'Failed to assert an editor still gets the stored checklist.'
 		);
 	}
 
