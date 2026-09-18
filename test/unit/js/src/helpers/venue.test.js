@@ -1023,6 +1023,36 @@ describe( 'useVenueOptions', () => {
 		] );
 	} );
 
+	it( 'filters the online-event term by resolved id when the term id is configured', () => {
+		select.mockReturnValue( {
+			getEditorSettings: () => ( {
+				gatherpress: { config: { onlineEventTermIds: { gatherpress_venue: 42 } } },
+			} ),
+		} );
+		const mockVenues = [
+			// The sentinel carries a slug other than 'online-event' on purpose,
+			// so only the resolved-id branch can filter it out here.
+			{ id: 42, slug: '_renamed-sentinel', name: 'Online Event' },
+			{ id: 7, slug: '_my-venue', name: 'My Venue' },
+		];
+
+		useSelect.mockImplementation( ( callback ) => {
+			const wpSelect = jest.fn( () => ( {
+				getEntityRecord: jest.fn( () => null ),
+				getEntityRecords: jest.fn( () => mockVenues ),
+			} ) );
+			return callback( wpSelect );
+		} );
+
+		const { result } = renderHook( () =>
+			useVenueOptions( '', null, 'taxonomy', '_gatherpress_venue' )
+		);
+
+		expect( result.current.venueOptions ).toEqual( [
+			{ value: 7, label: 'My Venue' },
+		] );
+	} );
+
 	it( 'handles postType kind with rendered title', () => {
 		const mockVenues = [
 			{ id: 1, title: { rendered: 'Post Venue One' } },

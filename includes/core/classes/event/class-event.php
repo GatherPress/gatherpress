@@ -1155,12 +1155,19 @@ class Event {
 	 * context. Distinct from {@see self::maybe_get_online_event_link()}, which
 	 * gates link disclosure on attendance and time.
 	 *
+	 * Requires the post type to declare `gatherpress-online-event` support, the
+	 * same gate {@see \GatherPress\Core\Blocks\Online_Event::render_block()}
+	 * applies, so a post that cannot render the online-event block never
+	 * reports itself as online.
+	 *
 	 * @since 0.36.0
 	 *
 	 * @return bool True if the event has the online-event term, false otherwise.
 	 */
 	public function is_online(): bool {
-		if ( ! $this->post ) {
+		// A post type without online-event support has no online state to
+		// report, whether or not the sentinel term happens to be attached.
+		if ( ! $this->post || ! post_type_supports( $this->post->post_type, Venue::ONLINE_SUPPORT ) ) {
 			return false;
 		}
 
@@ -1180,16 +1187,21 @@ class Event {
 	 * removed and the link meta is deleted so re-enabling starts blank rather
 	 * than reading a stale URL.
 	 *
+	 * Requires the post type to declare `gatherpress-online-event` support, so
+	 * a write can never land a sentinel term that the online-event block would
+	 * then refuse to render. A post type without that support is reported as
+	 * unsaved, the same answer as a post that does not exist.
+	 *
 	 * @since 0.36.0
 	 *
 	 * @param bool   $is_online True to mark online, false to mark offline.
 	 * @param string $link      Optional URL for the `gatherpress_online_event_link` meta when online. An empty
-	 *                          value preserves an existing link.
+	 *                          value preserves an existing link, and so does a value `esc_url_raw()` rejects.
 	 *
 	 * @return bool True when the online status was saved, false otherwise.
 	 */
 	public function set_online( bool $is_online, string $link = '' ): bool {
-		if ( ! $this->post ) {
+		if ( ! $this->post || ! post_type_supports( $this->post->post_type, Venue::ONLINE_SUPPORT ) ) {
 			return false;
 		}
 
@@ -1242,7 +1254,14 @@ class Event {
 			}
 
 			if ( '' !== $link ) {
-				update_post_meta( $this->post->ID, 'gatherpress_online_event_link', esc_url_raw( $link ) );
+				$escaped_link = esc_url_raw( $link );
+
+				// esc_url_raw() returns '' for a URL it rejects, and writing that
+				// would erase a link already saved. An unusable value is treated
+				// as no link at all, matching the empty-string behavior above.
+				if ( '' !== $escaped_link ) {
+					update_post_meta( $this->post->ID, 'gatherpress_online_event_link', $escaped_link );
+				}
 			}
 			return true;
 		}

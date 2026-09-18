@@ -1243,6 +1243,8 @@ class Test_Event extends Base {
 	 * @return void
 	 */
 	public function test_set_online_off_removes_term_and_meta(): void {
+		register_taxonomy_for_object_type( Venue::TAXONOMY, Event::POST_TYPE );
+
 		$event_id = $this->mock->post(
 			array(
 				'post_type' => Event::POST_TYPE,
@@ -1277,6 +1279,8 @@ class Test_Event extends Base {
 	 * @return void
 	 */
 	public function test_set_online_off_preserves_venue_term(): void {
+		register_taxonomy_for_object_type( Venue::TAXONOMY, Event::POST_TYPE );
+
 		$venue    = $this->mock->post(
 			array(
 				'post_type'  => Venue::POST_TYPE,
@@ -1452,6 +1456,129 @@ class Test_Event extends Base {
 			$term_existed,
 			get_term_by( 'slug', Venue\Setup::ONLINE_EVENT_TERM_SLUG, Venue::TAXONOMY ) instanceof WP_Term,
 			'set_online with no bound event must not change sentinel-term state.'
+		);
+	}
+
+	/**
+	 * Coverage for is_online returning false without online-event support.
+	 *
+	 * The core `post` type is given `gatherpress-event-date` so the Event
+	 * constructor binds the post, but it never declares
+	 * `gatherpress-online-event`. The sentinel term is still attached, so the
+	 * support gate — not an empty term list — is what answers false.
+	 *
+	 * @covers ::is_online
+	 *
+	 * @return void
+	 */
+	public function test_is_online_returns_false_without_online_support(): void {
+		add_post_type_support( 'post', Event::SUPPORT );
+
+		try {
+			register_taxonomy_for_object_type( Venue::TAXONOMY, 'post' );
+			Setup::get_instance()->add_online_event_term();
+			register_taxonomy_for_object_type( Venue::TAXONOMY, 'post' );
+
+			$post_id = $this->mock->post( array( 'post_type' => 'post' ) )->get()->ID;
+
+			wp_set_post_terms( $post_id, array( Venue\Setup::ONLINE_EVENT_TERM_SLUG ), Venue::TAXONOMY );
+
+			$event = new Event( $post_id );
+
+			// Guards the assertion below: an unbound post would also return
+			// false, but for the wrong reason.
+			$this->assertInstanceOf(
+				WP_Post::class,
+				Utility::get_hidden_property( $event, 'post' ),
+				'The post should be bound so the support gate is what returns false.'
+			);
+			$this->assertFalse(
+				$event->is_online(),
+				'is_online should be false for a post type without gatherpress-online-event support.'
+			);
+		} finally {
+			remove_post_type_support( 'post', Event::SUPPORT );
+		}
+	}
+
+	/**
+	 * Coverage for set_online bailing on a post type without online-event support.
+	 *
+	 * Writing the sentinel term here would return true while the online-event
+	 * block refused to render the same post, so the method must report failure
+	 * and leave both the terms and the link meta untouched.
+	 *
+	 * @covers ::set_online
+	 *
+	 * @return void
+	 */
+	public function test_set_online_returns_false_without_online_support(): void {
+		add_post_type_support( 'post', Event::SUPPORT );
+
+		try {
+			register_taxonomy_for_object_type( Venue::TAXONOMY, 'post' );
+			Setup::get_instance()->add_online_event_term();
+			register_taxonomy_for_object_type( Venue::TAXONOMY, 'post' );
+
+			$post_id = $this->mock->post( array( 'post_type' => 'post' ) )->get()->ID;
+			$event   = new Event( $post_id );
+
+			// Guards the assertion below: an unbound post would also return
+			// false, but for the wrong reason.
+			$this->assertInstanceOf(
+				WP_Post::class,
+				Utility::get_hidden_property( $event, 'post' ),
+				'The post should be bound so the support gate is what returns false.'
+			);
+			$this->assertFalse(
+				$event->set_online( true, 'https://example.com/meet' ),
+				'set_online should report failure without gatherpress-online-event support.'
+			);
+
+			$terms = wp_get_post_terms( $post_id, Venue::TAXONOMY, array( 'fields' => 'slugs' ) );
+
+			$this->assertNotContains(
+				Venue\Setup::ONLINE_EVENT_TERM_SLUG,
+				$terms,
+				'set_online should not attach the sentinel term without online-event support.'
+			);
+			$this->assertSame(
+				'',
+				get_post_meta( $post_id, 'gatherpress_online_event_link', true ),
+				'set_online should not write link meta without online-event support.'
+			);
+		} finally {
+			remove_post_type_support( 'post', Event::SUPPORT );
+		}
+	}
+
+	/**
+	 * Coverage for set_online ignoring a link that esc_url_raw rejects.
+	 *
+	 * A rejected URL escapes to an empty string, which would erase a link
+	 * already saved if it were written unconditionally. The status still saves.
+	 *
+	 * @covers ::set_online
+	 *
+	 * @return void
+	 */
+	public function test_set_online_ignores_link_rejected_by_esc_url_raw(): void {
+		register_taxonomy_for_object_type( Venue::TAXONOMY, Event::POST_TYPE );
+		Setup::get_instance()->add_online_event_term();
+		register_taxonomy_for_object_type( Venue::TAXONOMY, Event::POST_TYPE );
+
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $event_id );
+
+		$this->assertTrue( $event->set_online( true, 'https://example.com/meet' ) );
+		$this->assertTrue(
+			$event->set_online( true, 'javascript:alert(1)' ),
+			'set_online should still report the online status as saved.'
+		);
+		$this->assertSame(
+			'https://example.com/meet',
+			get_post_meta( $event_id, 'gatherpress_online_event_link', true ),
+			'set_online should keep the saved link when the new value is unusable.'
 		);
 	}
 
