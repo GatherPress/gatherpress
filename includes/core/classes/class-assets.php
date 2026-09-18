@@ -71,6 +71,14 @@ final class Assets {
 	protected array $block_variation_names = array();
 
 	/**
+	 * Flag indicating whether tooltip frontend assets have been enqueued.
+	 *
+	 * @since 0.36.0
+	 * @var bool
+	 */
+	protected bool $tooltip_assets_enqueued = false;
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -250,7 +258,7 @@ final class Assets {
 	 *   `gatherpress-new-tab-notice` handles so other code paths can enqueue
 	 *   them by name. The actual frontend enqueue is delegated to
 	 *   `maybe_enqueue_styles()` on the `render_block` filter, which only
-	 *   fires the enqueue when a `gatherpress/*` block is being rendered — so
+	 *   fires the enqueue when a `gatherpress/*` block is being rendered - so
 	 *   frontends that don't use a gatherpress block load neither.
 	 *
 	 * - Block editor: also enqueues unconditionally so the stylesheet lands
@@ -365,13 +373,11 @@ final class Assets {
 	 * @return void
 	 */
 	protected function enqueue_tooltip_assets(): void {
-		static $enqueued = false;
-
-		if ( $enqueued ) {
+		if ( $this->tooltip_assets_enqueued ) {
 			return;
 		}
 
-		$enqueued = true;
+		$this->tooltip_assets_enqueued = true;
 
 		// Enqueue utility styles which include tooltip styles.
 		wp_enqueue_style( 'gatherpress-utility-style' );
