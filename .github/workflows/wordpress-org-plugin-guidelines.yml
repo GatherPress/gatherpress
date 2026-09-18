@@ -44,6 +44,13 @@ jobs:
           # is public, so drop the token and install unauthenticated.
           composer config --global --unset github-oauth.github.com 2>/dev/null || true
           rm -f "$HOME/.config/composer/auth.json" "$HOME/.composer/auth.json" "$HOME/.wp-cli/packages/auth.json" 2>/dev/null || true
+          # The `2` branch of dist-archive-command no longer exists, so the
+          # composer.json probe 404s and wp-cli falls back to registering the
+          # repository as VCS. Composer then drives it through the GitHub API
+          # and, when that fails, clones over SSH (git@github.com), which has
+          # no key on a runner. Resolving without the API keeps the install on
+          # Packagist over https.
+          composer config --global use-github-api false
           wp package install wp-cli/dist-archive-command:^2
 
       - name: Setup Node
