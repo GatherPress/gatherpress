@@ -93,6 +93,7 @@ final class Setup {
 	protected function instantiate_classes(): void {
 		Abilities::get_instance();
 		Admin_List::get_instance();
+		Checklist::get_instance();
 		Meta::get_instance();
 		Query::get_instance();
 		Rest_Api::get_instance();
@@ -228,6 +229,7 @@ final class Setup {
 					'custom-fields',
 					Event::SUPPORT,
 					Rsvp::SUPPORT,
+					Checklist::SUPPORT,
 					Venue::ASSIGNMENT_SUPPORT,
 					Venue::ONLINE_SUPPORT,
 				),

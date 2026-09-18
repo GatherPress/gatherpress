@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Add a per-event checklist to the event settings panel, stored as ordered JSON in the `gatherpress_checklist` post meta and readable only in the REST edit context.
