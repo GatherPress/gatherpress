@@ -266,6 +266,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 					initialOpen={ true }
 				>
 					<RangeControl
+						__next40pxDefaultSize
 						label={ __( 'Dropdown Z-Index', 'gatherpress' ) }
 						value={ dropdownZIndex }
 						onChange={ ( value ) =>
@@ -275,6 +276,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 						max={ 9999 }
 					/>
 					<RangeControl
+						__next40pxDefaultSize
 						label={ __( 'Dropdown Width', 'gatherpress' ) }
 						value={ parseInt( dropdownWidth, 10 ) }
 						onChange={ ( value ) =>
@@ -284,6 +286,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 						max={ 300 }
 					/>
 					<RangeControl
+						__next40pxDefaultSize
 						label={ __( 'Dropdown Border Thickness', 'gatherpress' ) }
 						value={ dropdownBorderThickness || 1 }
 						onChange={ ( value ) =>
@@ -293,6 +296,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 						max={ 20 }
 					/>
 					<RangeControl
+						__next40pxDefaultSize
 						label={ __( 'Dropdown Border Radius', 'gatherpress' ) }
 						value={ dropdownBorderRadius }
 						onChange={ ( value ) =>
@@ -302,6 +306,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 						max={ 50 }
 					/>
 					<BoxControl
+						__next40pxDefaultSize
 						label={ __( 'Item Padding', 'gatherpress' ) }
 						values={ itemPadding || 8 }
 						onChange={ ( value ) =>
@@ -309,6 +314,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 						}
 					/>
 					<RangeControl
+						__next40pxDefaultSize
 						label={ __( 'Item Divider Thickness', 'gatherpress' ) }
 						value={ itemDividerThickness || 1 }
 						onChange={ ( value ) =>

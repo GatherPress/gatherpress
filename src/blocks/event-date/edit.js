@@ -15,6 +15,7 @@ import {
 import {
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalVStack as VStack,
+	ExternalLink,
 	PanelBody,
 	RadioControl,
 	Spinner,
@@ -382,6 +383,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 					/>
 					{ 'both' === displayType && (
 						<TextControl
+							__next40pxDefaultSize
 							label={ __( 'Separator', 'gatherpress' ) }
 							value={ separator }
 							placeholder={ __( 'to', 'gatherpress' ) }
@@ -392,6 +394,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 					) }
 					{ showStartTime && (
 						<TextControl
+							__next40pxDefaultSize
 							label={ __( 'Start date format', 'gatherpress' ) }
 							value={ startDateFormat }
 							placeholder={ formatPlaceholder }
@@ -402,6 +405,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 					) }
 					{ showEndTime && (
 						<TextControl
+							__next40pxDefaultSize
 							label={ __( 'End date format', 'gatherpress' ) }
 							value={ endDateFormat }
 							placeholder={ formatPlaceholder }
@@ -411,16 +415,12 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						/>
 					) }
 					<p className="components-base-control__help">
-						<a
-							href="https://wordpress.org/documentation/article/customize-date-and-time-format/"
-							target="_blank"
-							rel="noreferrer"
-						>
+						<ExternalLink href="https://wordpress.org/documentation/article/customize-date-and-time-format/">
 							{ __(
 								'Date/time formatting documentation',
 								'gatherpress'
 							) }
-						</a>
+						</ExternalLink>
 					</p>
 					<ToggleControl
 						label={ __( 'Append time zone', 'gatherpress' ) }
@@ -437,6 +437,10 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 					/>
 					<ToggleControl
 						label={ __( 'Link to event', 'gatherpress' ) }
+						help={ __(
+							'Make the date a link to the event page.',
+							'gatherpress'
+						) }
 						checked={ isLink }
 						onChange={ () =>
 							setAttributes( { isLink: ! isLink } )

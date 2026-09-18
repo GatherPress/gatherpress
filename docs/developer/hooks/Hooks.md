@@ -12,6 +12,11 @@
 
 - [`gatherpress_autoloader`](gatherpress_autoloader.md) Filters the registered autoloaders for GatherPress.
 
+## class-base.php
+
+- [`gatherpress_rsvp_flag_added`](gatherpress_rsvp_flag_added.md) Fires after a flag is added to an RSVP that did not carry it.
+- [`gatherpress_rsvp_flag_removed`](gatherpress_rsvp_flag_removed.md) Fires after a flag is removed from an RSVP that carried it.
+
 ## class-cache.php
 
 - [`gatherpress_calendar_max_age`](gatherpress_calendar_max_age.md) Filters how long calendar responses may be reused by clients and caches.
@@ -88,6 +93,7 @@
 
 ## class-query.php
 
+- [`gatherpress_geocode_query`](gatherpress_geocode_query.md) Filters the address sent to the geocoder.
 - [`gatherpress_rsvp_comment_query_exclusion`](gatherpress_rsvp_comment_query_exclusion.md) Filters whether RSVP comments should be excluded from a comment query.
 
 ## class-rest-api.php

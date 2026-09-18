@@ -128,6 +128,7 @@ const EventCommunicationModal = () => {
 					style={ { maxWidth: '550px' } }
 				>
 					<TextControl
+						__next40pxDefaultSize
 						label={ __( 'Subject', 'gatherpress' ) }
 						value={ subject }
 						placeholder={ defaultSubject }

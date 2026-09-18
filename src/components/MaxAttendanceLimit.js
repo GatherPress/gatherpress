@@ -68,6 +68,7 @@ const MaxAttendanceLimit = () => {
 
 	return (
 		<NumberControl
+			__next40pxDefaultSize
 			label={ __( 'Maximum Attendance Limit', 'gatherpress' ) }
 			value={ maxAttendanceLimit }
 			min={ 0 }

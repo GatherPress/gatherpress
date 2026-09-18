@@ -270,6 +270,7 @@ export default function FieldValue( { fieldType, attributes, setAttributes } ) {
 		case 'email':
 			return (
 				<TextControl
+					__next40pxDefaultSize
 					label={ __( 'Default Value', 'gatherpress' ) }
 					type="email"
 					value={ fieldValue }
@@ -284,6 +285,7 @@ export default function FieldValue( { fieldType, attributes, setAttributes } ) {
 		case 'url':
 			return (
 				<TextControl
+					__next40pxDefaultSize
 					label={ __( 'Default Value', 'gatherpress' ) }
 					type="url"
 					value={ fieldValue }
@@ -295,6 +297,7 @@ export default function FieldValue( { fieldType, attributes, setAttributes } ) {
 		case 'tel':
 			return (
 				<TextControl
+					__next40pxDefaultSize
 					label={ __( 'Default Value', 'gatherpress' ) }
 					type="tel"
 					value={ fieldValue }
@@ -309,6 +312,7 @@ export default function FieldValue( { fieldType, attributes, setAttributes } ) {
 		case 'number':
 			return (
 				<TextControl
+					__next40pxDefaultSize
 					label={ __( 'Default Value', 'gatherpress' ) }
 					type="number"
 					value={ fieldValue }
@@ -357,6 +361,7 @@ export default function FieldValue( { fieldType, attributes, setAttributes } ) {
 		case 'hidden':
 			return (
 				<TextControl
+					__next40pxDefaultSize
 					label={ __( 'Value', 'gatherpress' ) }
 					value={ fieldValue }
 					onChange={ ( value ) => setAttributes( { fieldValue: value } ) }
@@ -367,6 +372,7 @@ export default function FieldValue( { fieldType, attributes, setAttributes } ) {
 		default:
 			return (
 				<TextControl
+					__next40pxDefaultSize
 					label={ __( 'Default Value', 'gatherpress' ) }
 					value={ fieldValue }
 					onChange={ ( value ) => setAttributes( { fieldValue: value } ) }

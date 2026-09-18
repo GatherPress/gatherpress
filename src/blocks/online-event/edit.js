@@ -248,6 +248,7 @@ const Edit = ( { attributes, context } ) => {
 							/>
 							{ isOnlineEvent && (
 								<TextControl
+									__next40pxDefaultSize
 									type="url"
 									label={ sprintf(
 										/* translators: %s: Singular post type label, e.g. "Event". */

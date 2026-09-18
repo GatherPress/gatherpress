@@ -164,7 +164,10 @@ add_filter( 'gatherpress_venue_post_type', function( $post_type, $event_post_typ
 ### Database Schema
 
 - Custom post types: `gatherpress_event`, `gatherpress_venue`
-- Custom taxonomy: `_gatherpress_rsvp_status`
+- Custom taxonomies on RSVP comments:
+    - `_gatherpress_rsvp_status`: the response status, one of the `Rsvp\Response\Status` enum cases
+    - `_gatherpress_rsvp_provider`: the identity source, one per `Rsvp\Response\Provider\Base` subclass
+    - `_gatherpress_rsvp_flag`: yes/no markers, one per `Rsvp\Flag\Base` subclass (see `docs/developer/rsvp/README.md`)
 - Uses WordPress comments system for RSVP storage
 - Venue data stored as post meta
 

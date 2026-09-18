@@ -1569,7 +1569,7 @@ class Test_Setup extends Base {
 	 * string conversion" warning when `get_query_var( 'post_type' )` returns an
 	 * array on a multi-post-type archive query.
 	 *
-	 * @since 0.36.0
+	 * @since 0.35.4
 	 *
 	 * @covers ::handle_event_archive_redirect
 	 * @return void

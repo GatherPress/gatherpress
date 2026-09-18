@@ -369,15 +369,17 @@ final class OSM extends Base {
 	}
 
 	/**
-	 * Tile URL template. Filterable so site owners can repoint at a
-	 * different XYZ provider (self-hosted, Stamen, Maptiler, etc.) without
-	 * forking the provider class.
+	 * Tile URL template, filterable and layered under `map_tile_url_custom`.
 	 *
 	 * @since 0.34.0
+	 * @since 0.36.0 Layered under the `map_tile_url_custom` setting; resolves `{s}`.
 	 *
 	 * @return string
 	 */
 	protected function get_tile_url_template(): string {
+		$custom  = trim( (string) Settings::get_instance()->get( 'map_tile_url_custom' ) );
+		$default = '' !== $custom ? $custom : self::DEFAULT_TILE_URL;
+
 		/**
 		 * Filter the tile URL template used by the OSM static map provider.
 		 *
@@ -385,9 +387,19 @@ final class OSM extends Base {
 		 *
 		 * @param string $template Tile URL with `{z}`, `{x}`, `{y}` placeholders.
 		 */
-		return Settings::add_map_tile_key(
-			(string) apply_filters( 'gatherpress_static_map_tile_url', self::DEFAULT_TILE_URL )
-		);
+		$template = (string) apply_filters( 'gatherpress_static_map_tile_url', $default );
+
+		// Static compositor makes direct requests, so `{s}` needs resolving.
+		$template = str_replace( '{s}', 'a', $template );
+
+		// The CARTO key belongs only to the built-in default: a custom URL
+		// is documented as overriding CARTO entirely, even when it happens
+		// to resolve to a CARTO-allowlisted host.
+		if ( '' !== $custom ) {
+			return $template;
+		}
+
+		return Settings::add_map_tile_key( $template );
 	}
 
 	/**
