@@ -120,6 +120,7 @@ final class Setup {
 		add_filter( 'get_the_date', array( $this, 'get_the_event_date' ), 10, 3 );
 		add_filter( 'the_time', array( $this, 'get_the_event_date' ) );
 		add_filter( 'render_block_core/post-date', array( $this, 'render_event_post_date_block' ), 10, 3 );
+		add_filter( 'render_block_core/post-terms', array( $this, 'render_event_status_post_terms_block' ), 10, 3 );
 		add_filter( 'display_post_states', array( $this, 'set_event_archive_labels' ), 10, 2 );
 		add_filter( 'block_editor_settings_all', array( $this, 'add_editor_settings' ) );
 		add_filter( 'post_class', array( $this, 'add_status_post_class' ), 10, 3 );
@@ -946,6 +947,50 @@ final class Setup {
 		// A null return means PCRE gave up (e.g. the backtrack limit on very large
 		// markup), so the unmodified block content is served instead.
 		return $replaced ?? $block_content;
+	}
+
+	/**
+	 * Filters the output of the core/post-terms block for event statuses.
+	 *
+	 * When the block renders the event status taxonomy and `hideWhenScheduled`
+	 * is enabled, this suppresses rendering when the event is in the default
+	 * scheduled status.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string   $block_content The block content.
+	 * @param array    $block         The parsed block.
+	 * @param WP_Block $instance      The block instance.
+	 *
+	 * @return string The filtered block content.
+	 */
+	public function render_event_status_post_terms_block( string $block_content, array $block, WP_Block $instance ): string {
+		$term = $block['attrs']['term'] ?? '';
+
+		if ( Event::TAXONOMY_STATUS !== $term ) {
+			return $block_content;
+		}
+
+		$hide_when_scheduled = ! empty( $block['attrs']['hideWhenScheduled'] );
+
+		if ( ! $hide_when_scheduled ) {
+			return $block_content;
+		}
+
+		$post_id = $instance->context['postId'] ?? get_the_ID();
+
+		if ( ! $post_id ) {
+			return $block_content;
+		}
+
+		$event  = new Event( (int) $post_id );
+		$status = $event->get_status();
+
+		if ( Status::default_slug() === $status ) {
+			return '';
+		}
+
+		return $block_content;
 	}
 
 	/**

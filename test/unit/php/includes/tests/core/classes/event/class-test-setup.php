@@ -154,6 +154,12 @@ class Test_Setup extends Base {
 			),
 			array(
 				'type'     => 'filter',
+				'name'     => 'render_block_core/post-terms',
+				'priority' => 10,
+				'callback' => array( $instance, 'render_event_status_post_terms_block' ),
+			),
+			array(
+				'type'     => 'filter',
 				'name'     => 'display_post_states',
 				'priority' => 10,
 				'callback' => array( $instance, 'set_event_archive_labels' ),
@@ -1100,6 +1106,105 @@ class Test_Setup extends Base {
 		);
 
 		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Tests render_event_status_post_terms_block returns content unchanged when not status taxonomy.
+	 *
+	 * @covers ::render_event_status_post_terms_block
+	 *
+	 * @return void
+	 */
+	public function test_render_event_status_post_terms_block_non_status(): void {
+		$instance      = Setup::get_instance();
+		$block_content = '<div class="wp-block-post-terms">Category</div>';
+		$block         = array(
+			'blockName' => 'core/post-terms',
+			'attrs'     => array( 'term' => 'category' ),
+		);
+		$wp_block      = new WP_Block( $block, array() );
+
+		$result = $instance->render_event_status_post_terms_block( $block_content, $block, $wp_block );
+
+		$this->assertSame( $block_content, $result );
+	}
+
+	/**
+	 * Tests render_event_status_post_terms_block returns content unchanged when hideWhenScheduled is off.
+	 *
+	 * @covers ::render_event_status_post_terms_block
+	 *
+	 * @return void
+	 */
+	public function test_render_event_status_post_terms_block_hide_disabled(): void {
+		$instance      = Setup::get_instance();
+		$post_id       = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$block_content = '<div class="wp-block-post-terms gatherpress-event-status">Scheduled</div>';
+		$block         = array(
+			'blockName' => 'core/post-terms',
+			'attrs'     => array(
+				'term'              => Event::TAXONOMY_STATUS,
+				'hideWhenScheduled' => false,
+			),
+		);
+		$wp_block      = new WP_Block( $block, array( 'postId' => $post_id ) );
+
+		$result = $instance->render_event_status_post_terms_block( $block_content, $block, $wp_block );
+
+		$this->assertSame( $block_content, $result );
+	}
+
+	/**
+	 * Tests render_event_status_post_terms_block hides block when event is scheduled and hideWhenScheduled is on.
+	 *
+	 * @covers ::render_event_status_post_terms_block
+	 *
+	 * @return void
+	 */
+	public function test_render_event_status_post_terms_block_hides_scheduled(): void {
+		$instance      = Setup::get_instance();
+		$post_id       = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$block_content = '<div class="wp-block-post-terms gatherpress-event-status">Scheduled</div>';
+		$block         = array(
+			'blockName' => 'core/post-terms',
+			'attrs'     => array(
+				'term'              => Event::TAXONOMY_STATUS,
+				'hideWhenScheduled' => true,
+			),
+		);
+		$wp_block      = new WP_Block( $block, array( 'postId' => $post_id ) );
+
+		$result = $instance->render_event_status_post_terms_block( $block_content, $block, $wp_block );
+
+		$this->assertSame( '', $result );
+	}
+
+	/**
+	 * Tests render_event_status_post_terms_block shows block when event has non-scheduled status.
+	 *
+	 * @covers ::render_event_status_post_terms_block
+	 *
+	 * @return void
+	 */
+	public function test_render_event_status_post_terms_block_shows_non_scheduled(): void {
+		$instance      = Setup::get_instance();
+		$post_id       = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event         = new Event( $post_id );
+		$event->set_status( 'canceled' );
+
+		$block_content = '<div class="wp-block-post-terms gatherpress-event-status">Canceled</div>';
+		$block         = array(
+			'blockName' => 'core/post-terms',
+			'attrs'     => array(
+				'term'              => Event::TAXONOMY_STATUS,
+				'hideWhenScheduled' => true,
+			),
+		);
+		$wp_block      = new WP_Block( $block, array( 'postId' => $post_id ) );
+
+		$result = $instance->render_event_status_post_terms_block( $block_content, $block, $wp_block );
+
+		$this->assertSame( $block_content, $result );
 	}
 
 	/**

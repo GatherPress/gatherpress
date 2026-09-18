@@ -1,7 +1,11 @@
 /**
  * WordPress dependencies
  */
+import { InspectorControls } from '@wordpress/block-editor';
 import { registerBlockVariation, unregisterBlockVariation } from '@wordpress/blocks';
+import { PanelBody, ToggleControl } from '@wordpress/components';
+import { createHigherOrderComponent } from '@wordpress/compose';
+import { addFilter } from '@wordpress/hooks';
 import { __ } from '@wordpress/i18n';
 
 /**
@@ -40,7 +44,83 @@ registerBlockVariation( CORE_BLOCK, {
 		className: CLASS_NAME,
 		term: TAXONOMY_STATUS,
 	},
-	isActive: ( blockAttributes, variationAttributes ) =>
-		blockAttributes?.term === variationAttributes?.term,
+	isActive: [ 'term' ],
 	scope: [ 'block', 'inserter', 'transform' ],
 } );
+
+/**
+ * Extends core/post-terms block with GatherPress event status attributes.
+ *
+ * @param {Object} settings Original block settings.
+ * @param {string} name     Block name.
+ *
+ * @return {Object} Filtered block settings.
+ */
+function addEventStatusAttributes( settings, name ) {
+	if ( CORE_BLOCK !== name ) {
+		return settings;
+	}
+
+	return {
+		...settings,
+		attributes: {
+			...settings.attributes,
+			hideWhenScheduled: {
+				type: 'boolean',
+				default: false,
+			},
+		},
+	};
+}
+
+addFilter(
+	'blocks.registerBlockType',
+	'gatherpress/event-status-attributes',
+	addEventStatusAttributes
+);
+
+/**
+ * Injects Status settings into core/post-terms inspector when displaying event status.
+ */
+const withEventStatusControls = createHigherOrderComponent( ( BlockEdit ) => {
+	return ( props ) => {
+		if (
+			CORE_BLOCK !== props.name ||
+			props.attributes?.term !== TAXONOMY_STATUS
+		) {
+			return <BlockEdit { ...props } />;
+		}
+
+		const { attributes, setAttributes } = props;
+		const { hideWhenScheduled } = attributes;
+
+		return (
+			<>
+				<BlockEdit { ...props } />
+				<InspectorControls>
+					<PanelBody title={ __( 'Status settings', 'gatherpress' ) }>
+						<ToggleControl
+							__nextHasNoMarginBottom
+							label={ __( 'Hide when scheduled', 'gatherpress' ) }
+							help={ __(
+								'Only show the status badge when an event is canceled, postponed, rescheduled, moved online, or tentative.',
+								'gatherpress'
+							) }
+							checked={ !! hideWhenScheduled }
+							onChange={ ( value ) =>
+								setAttributes( { hideWhenScheduled: value } )
+							}
+						/>
+					</PanelBody>
+				</InspectorControls>
+			</>
+		);
+	};
+}, 'withEventStatusControls' );
+
+addFilter(
+	'editor.BlockEdit',
+	'gatherpress/event-status-controls',
+	withEventStatusControls
+);
+
