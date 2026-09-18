@@ -19,10 +19,11 @@ use Exception;
 use GatherPress\Core\Calendar;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
+use GatherPress\Core\Setup as Core_Setup;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
-use GatherPress\Core\Venue\Setup;
+use GatherPress\Core\Venue\Setup as Venue_Setup;
 use GatherPress\Core\Venue;
 use WP_Post;
 use WP_Term;
@@ -861,7 +862,7 @@ class Event {
 		}
 
 		$event_post_type = (string) get_post_type( $this->post );
-		$venue_setup     = Setup::get_instance();
+		$venue_setup     = Venue_Setup::get_instance();
 		$taxonomy        = $venue_setup->taxonomy_for_event_post_type( $event_post_type );
 		$venue_terms     = get_the_terms( $this->post, $taxonomy );
 
@@ -1143,5 +1144,144 @@ class Event {
 		}
 
 		return $event_link;
+	}
+
+	/**
+	 * Whether this event is marked online.
+	 *
+	 * Unconditional online-status check: returns true whenever the event
+	 * carries the `online-event` sentinel term in its venue taxonomy, no
+	 * matter the current user's RSVP status, the event's time, or the admin
+	 * context. Distinct from {@see self::maybe_get_online_event_link()}, which
+	 * gates link disclosure on attendance and time.
+	 *
+	 * Requires the post type to declare `gatherpress-online-event` support, the
+	 * same gate {@see \GatherPress\Core\Blocks\Online_Event::render_block()}
+	 * applies, so a post that cannot render the online-event block never
+	 * reports itself as online.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return bool True if the event has the online-event term, false otherwise.
+	 */
+	public function is_online(): bool {
+		// A post type without online-event support has no online state to
+		// report, whether or not the sentinel term happens to be attached.
+		if ( ! $this->post || ! post_type_supports( $this->post->post_type, Venue::ONLINE_SUPPORT ) ) {
+			return false;
+		}
+
+		$taxonomy = Venue_Setup::get_instance()->taxonomy_for_event_post_type( $this->post->post_type );
+
+		return has_term( Venue_Setup::ONLINE_EVENT_TERM_SLUG, $taxonomy, $this->post );
+	}
+
+	/**
+	 * Mark this event as online or offline and persist the link.
+	 *
+	 * Owns the term-plus-meta pairing so callers do not have to coordinate
+	 * the two writes themselves. Toggle on: the sentinel term is ensured to
+	 * exist in the right venue taxonomy (idempotent with plugin activation)
+	 * and its term ID is appended without removing existing venue terms, so
+	 * hybrid events keep their venue. Toggle off: the sentinel term is
+	 * removed and the link meta is deleted so re-enabling starts blank rather
+	 * than reading a stale URL.
+	 *
+	 * Requires the post type to declare `gatherpress-online-event` support, so
+	 * a write can never land a sentinel term that the online-event block would
+	 * then refuse to render. A post type without that support is reported as
+	 * unsaved, the same answer as a post that does not exist.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param bool   $is_online True to mark online, false to mark offline.
+	 * @param string $link      Optional URL for the `gatherpress_online_event_link` meta when online. An empty
+	 *                          value preserves an existing link, and so does a value `esc_url_raw()` rejects.
+	 *
+	 * @return bool True when the online status was saved, false otherwise.
+	 */
+	public function set_online( bool $is_online, string $link = '' ): bool {
+		if ( ! $this->post || ! post_type_supports( $this->post->post_type, Venue::ONLINE_SUPPORT ) ) {
+			return false;
+		}
+
+		$venue_setup = Venue_Setup::get_instance();
+		$venue_pt    = $venue_setup->get_venue_post_type( $this->post->post_type );
+		$taxonomy    = $venue_setup->taxonomy_for_event_post_type( $this->post->post_type );
+		$term_id     = $venue_setup->get_online_event_term_id( $venue_pt );
+
+		// No resolved term id means the venue taxonomy has no sentinel seeded.
+		// Toggle on: seed it first; toggle off: nothing to remove from terms.
+		if ( null === $term_id ) {
+			if ( ! $is_online ) {
+				delete_post_meta( $this->post->ID, 'gatherpress_online_event_link' );
+				return true;
+			}
+
+			Core_Setup::get_instance()->add_online_event_term();
+			$term_id = $venue_setup->get_online_event_term_id( $venue_pt );
+
+			if ( null === $term_id ) {
+				return false;
+			}
+		}
+
+		$existing = wp_get_post_terms( $this->post->ID, $taxonomy, array( 'fields' => 'ids' ) );
+
+		// @codeCoverageIgnoreStart
+		// get_online_event_term_id() above already resolved a term ID, so the
+		// taxonomy exists and this read cannot fail with a WP_Error.
+		if ( is_wp_error( $existing ) ) {
+			return false;
+		}
+		// @codeCoverageIgnoreEnd
+
+		$existing = array_map( 'intval', $existing );
+
+		if ( $is_online ) {
+			if ( ! in_array( $term_id, $existing, true ) ) {
+				$existing[] = $term_id;
+
+				$terms_to_set = array_values( array_unique( $existing ) );
+				$result       = wp_set_post_terms( $this->post->ID, $terms_to_set, $taxonomy );
+
+				// @codeCoverageIgnoreStart
+				// The write only fails on a DB error this harness cannot force.
+				if ( is_wp_error( $result ) ) {
+					return false;
+				}
+				// @codeCoverageIgnoreEnd
+			}
+
+			if ( '' !== $link ) {
+				$escaped_link = esc_url_raw( $link );
+
+				// esc_url_raw() returns '' for a URL it rejects, and writing that
+				// would erase a link already saved. An unusable value is treated
+				// as no link at all, matching the empty-string behavior above.
+				if ( '' !== $escaped_link ) {
+					update_post_meta( $this->post->ID, 'gatherpress_online_event_link', $escaped_link );
+				}
+			}
+			return true;
+		}
+
+		// Toggle off: drop the sentinel from the term list (preserve venue terms)
+		// and clear the link meta so re-enabling starts blank.
+		$remaining = array_values( array_filter( $existing, static fn ( int $id ): bool => $id !== $term_id ) );
+
+		if ( count( $remaining ) !== count( $existing ) ) {
+			$result = wp_set_post_terms( $this->post->ID, $remaining, $taxonomy );
+
+			// @codeCoverageIgnoreStart
+			// The write only fails on a DB error this harness cannot force.
+			if ( is_wp_error( $result ) ) {
+				return false;
+			}
+			// @codeCoverageIgnoreEnd
+		}
+
+		delete_post_meta( $this->post->ID, 'gatherpress_online_event_link' );
+		return true;
 	}
 }
