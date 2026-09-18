@@ -1261,6 +1261,7 @@ class Test_Assets extends Base {
 
 		$this->assertSame(
 			array(
+				'post-terms',
 				'query',
 				'query-no-results',
 				'query-pagination',

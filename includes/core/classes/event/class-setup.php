@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use DateTimeImmutable;
 use Exception;
+use GatherPress\Core\Assets;
 use GatherPress\Core\Event;
 use GatherPress\Core\Feed;
 use GatherPress\Core\Rsvp;
@@ -109,6 +110,7 @@ final class Setup {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_post_type' ) );
+		add_action( 'init', array( $this, 'register_status_taxonomy' ) );
 		// Priority 11 so post types registered at default priority 10 are available for get_post_types_by_support().
 		add_action( 'init', array( $this, 'register_starter_pattern' ), 11 );
 		add_action( 'template_redirect', array( $this, 'handle_event_archive_redirect' ) );
@@ -118,8 +120,201 @@ final class Setup {
 		add_filter( 'get_the_date', array( $this, 'get_the_event_date' ), 10, 3 );
 		add_filter( 'the_time', array( $this, 'get_the_event_date' ) );
 		add_filter( 'render_block_core/post-date', array( $this, 'render_event_post_date_block' ), 10, 3 );
+		add_filter( 'render_block_core/post-terms', array( $this, 'render_event_status_post_terms_block' ), 10, 3 );
 		add_filter( 'display_post_states', array( $this, 'set_event_archive_labels' ), 10, 2 );
 		add_filter( 'block_editor_settings_all', array( $this, 'add_editor_settings' ) );
+		add_filter( 'post_class', array( $this, 'add_status_post_class' ), 10, 3 );
+		add_filter( 'term_links-' . Event::TAXONOMY_STATUS, array( $this, 'unlink_status_terms' ) );
+		add_action( 'init', array( $this, 'register_status_style' ) );
+	}
+
+	/**
+	 * Registers the taxonomy holding an event's operational status.
+	 *
+	 * Hidden the way the RSVP taxonomies are: there is no useful
+	 * /event-status/canceled/ archive, the taxonomy exists so events can be
+	 * filtered by status through tax_query the same way Event\Query already
+	 * filters by Topic and Venue. Kept out of REST on purpose: the editor writes
+	 * the status through the gatherpress_status REST field registered in
+	 * Event\Rest_Api, so there is exactly one write path and no term-id round
+	 * trip in the block editor.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	public function register_status_taxonomy(): void {
+		register_taxonomy(
+			Event::TAXONOMY_STATUS,
+			Event::POST_TYPE,
+			array(
+				'labels'             => array(
+					'name'          => _x( 'Event Statuses', 'taxonomy general name', 'gatherpress' ),
+					'singular_name' => _x( 'Event Status', 'taxonomy singular name', 'gatherpress' ),
+				),
+				'hierarchical'       => false,
+				// Queryable and visible to the REST API so core's Post Terms
+				// block can render it, which is what the Event Status block
+				// variation is. Not `show_ui`, because the vocabulary comes
+				// from Event\Status rather than from people adding terms.
+				'public'             => false,
+				'show_ui'            => false,
+				'show_admin_column'  => false,
+				'query_var'          => true,
+				'publicly_queryable' => true,
+				'rewrite'            => array( 'slug' => 'event-status' ),
+				'show_in_rest'       => true,
+				'rest_base'          => 'gatherpress_event_statuses',
+				// Every saved event carries a status term, so filtering for one is
+				// an IN query rather than a NOT EXISTS.
+				'default_term'       => array(
+					'name' => 'Scheduled',
+					'slug' => Status::default_slug( Event::POST_TYPE ),
+				),
+			)
+		);
+	}
+
+	/**
+	 * Adds the event status class to post classes.
+	 *
+	 * WordPress core automatically adds taxonomy terms to post classes for
+	 * public taxonomies, but gatherpress_event_status is non-public. Injecting
+	 * it here makes status classes available across query loops, archives,
+	 * and singular views.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string[] $classes     An array of post class names.
+	 * @param string[] $css_classes An array of additional class names added to the post.
+	 * @param int      $post_id     The post ID.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) - $css_classes is required by the post_class filter signature.
+	 *
+	 * @return string[] Filtered array of post class names.
+	 */
+	public function add_status_post_class( array $classes, array $css_classes, int $post_id ): array {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), Event::SUPPORT ) ) {
+			return $classes;
+		}
+
+		$event     = new Event( $post_id );
+		$status    = $event->get_status();
+		$classes[] = sprintf( 'gatherpress-event-status--is-%s', sanitize_html_class( $status ) );
+
+		return $classes;
+	}
+
+	/**
+	 * Show a status as a state rather than somewhere to go.
+	 *
+	 * Core links every term it lists, which suits categories and tags. A
+	 * status is something the event is, and sending a reader to an archive of
+	 * every canceled event is not what the badge is for, so the anchors are
+	 * replaced with the words they wrapped.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string[] $links Term links, each a rendered anchor.
+	 *
+	 * @return string[] The same terms, unlinked.
+	 */
+	public function unlink_status_terms( array $links ): array {
+		return array_map(
+			static function ( $link ): string {
+				$text = esc_html( wp_strip_all_tags( (string) $link ) );
+				$slug = '';
+
+				if ( preg_match( '/[?&]term=([^&"\'>]+)|event-status\/([^"\'>\/]+)/', (string) $link, $matches ) ) {
+					$raw_slug = ! empty( $matches[1] ) ? $matches[1] : ( $matches[2] ?? '' );
+					$slug     = sanitize_html_class( $raw_slug );
+				}
+
+				$classes = array( 'gatherpress-event-status__term' );
+
+				if ( '' !== $slug ) {
+					$classes[] = sprintf( 'gatherpress-event-status--is-%s', $slug );
+				}
+
+				return sprintf( '<span class="%s">%s</span>', esc_attr( implode( ' ', $classes ) ), $text );
+			},
+			$links
+		);
+	}
+
+	/**
+	 * Register the status stylesheet and give every status its color.
+	 *
+	 * The Event Status variation of core's Post Terms block is styled by the
+	 * stylesheet this registers, which core loads only on pages carrying that
+	 * block. `add_status_post_class()` puts the status on the post wrapper, so
+	 * one rule per status is enough for the badge inside it to draw itself in
+	 * that color. The rules come from the registry rather than the stylesheet,
+	 * so a status a site registers looks like its own without shipping CSS.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	public function register_status_style(): void {
+		$handle = 'gatherpress-event-status';
+		$asset  = Assets::get_instance()->get_asset_data(
+			'index',
+			sprintf( '%s/build/variations/core/post-terms/index.asset.php', GATHERPRESS_CORE_PATH )
+		);
+
+		// Registered here rather than through wp_enqueue_block_style(), which
+		// defers registration to render time and would drop the colors below.
+		wp_register_style(
+			$handle,
+			plugins_url( 'build/variations/core/post-terms/style-index.css', GATHERPRESS_CORE_FILE ),
+			array(),
+			$asset['version']
+		);
+		wp_style_add_data(
+			$handle,
+			'path',
+			sprintf( '%s/build/variations/core/post-terms/style-index.css', GATHERPRESS_CORE_PATH )
+		);
+
+		// Core enqueues it only on pages carrying the block it styles.
+		wp_enqueue_block_style( 'core/post-terms', array( 'handle' => $handle ) );
+
+		register_block_style(
+			'core/post-terms',
+			array(
+				'name'         => 'gatherpress-badge',
+				/* translators: Block style label for post terms status badge. */
+				'label'        => _x( 'Badge', 'block style', 'gatherpress' ),
+				'style_handle' => $handle,
+			)
+		);
+
+		$rules = '';
+
+		foreach ( Status::slugs( Event::POST_TYPE ) as $gatherpress_slug ) {
+			$color = Status::color( (string) $gatherpress_slug );
+
+			if ( '' === $color ) {
+				continue;
+			}
+
+			$slug_class = sanitize_html_class( (string) $gatherpress_slug );
+
+			$rules .= sprintf(
+				'.gatherpress-event-status--is-%1$s, ' .
+				'.wp-block-post-terms.gatherpress-event-status .gatherpress-event-status--is-%1$s, ' .
+				'.wp-block-post-terms.gatherpress-event-status a[href*="%1$s"], ' .
+				'.wp-block-post-terms.is-style-gatherpress-badge a[href*="%1$s"]' .
+				'{--gatherpress-status-color:%2$s}',
+				$slug_class,
+				$color
+			);
+		}
+
+		if ( '' !== $rules ) {
+			wp_add_inline_style( $handle, $rules );
+		}
 	}
 
 	/**
@@ -146,6 +341,11 @@ final class Setup {
 		$settings['gatherpress']['config']['eventPostTypes'] = array_values(
 			get_post_types_by_support( Event::SUPPORT )
 		);
+
+		// The editor offers and labels the same statuses PHP publishes, so the
+		// list is stated once and a site that registers its own gets it in
+		// both places.
+		$settings['gatherpress']['config']['eventStatuses'] = Status::all( Event::POST_TYPE );
 
 		return $settings;
 	}
@@ -747,6 +947,50 @@ final class Setup {
 		// A null return means PCRE gave up (e.g. the backtrack limit on very large
 		// markup), so the unmodified block content is served instead.
 		return $replaced ?? $block_content;
+	}
+
+	/**
+	 * Filters the output of the core/post-terms block for event statuses.
+	 *
+	 * When the block renders the event status taxonomy and `hideWhenScheduled`
+	 * is enabled, this suppresses rendering when the event is in the default
+	 * scheduled status.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string   $block_content The block content.
+	 * @param array    $block         The parsed block.
+	 * @param WP_Block $instance      The block instance.
+	 *
+	 * @return string The filtered block content.
+	 */
+	public function render_event_status_post_terms_block( string $block_content, array $block, WP_Block $instance ): string {
+		$term = $block['attrs']['term'] ?? '';
+
+		if ( Event::TAXONOMY_STATUS !== $term ) {
+			return $block_content;
+		}
+
+		$hide_when_scheduled = ! empty( $block['attrs']['hideWhenScheduled'] );
+
+		if ( ! $hide_when_scheduled ) {
+			return $block_content;
+		}
+
+		$post_id = $instance->context['postId'] ?? get_the_ID();
+
+		if ( ! $post_id ) {
+			return $block_content;
+		}
+
+		$event  = new Event( (int) $post_id );
+		$status = $event->get_status();
+
+		if ( Status::default_slug() === $status ) {
+			return '';
+		}
+
+		return $block_content;
 	}
 
 	/**

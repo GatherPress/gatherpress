@@ -1050,4 +1050,71 @@ class Test_Calendar extends Base {
 			'Multi-day all-day event must have DTEND on the day after the last day.'
 		);
 	}
+
+	/**
+	 * Regression coverage: cancelling an event must reach calendar clients.
+	 *
+	 * A client holds an existing VEVENT and ignores a replacement whose
+	 * SEQUENCE has not advanced. Statuses live in a taxonomy, and writing a
+	 * term does not touch the post row the sequence is derived from, so the
+	 * cancellation would otherwise be published under the old revision and
+	 * never displace what the subscriber already has.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_ical_event_string
+	 * @covers ::get_sequence
+	 *
+	 * @return void
+	 */
+	public function test_ical_event_string_advances_after_a_status_change(): void {
+		$event_id = $this->make_event();
+
+		// Backdate the row so the change under test is the only thing that
+		// could move the sequence forward. wp_update_post() would stamp the
+		// current time over these, which is the very behavior under test.
+		global $wpdb;
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery
+		$wpdb->update(
+			$wpdb->posts,
+			array(
+				'post_modified'     => '2020-06-01 10:00:00',
+				'post_modified_gmt' => '2020-06-01 10:00:00',
+			),
+			array( 'ID' => $event_id ),
+			array( '%s', '%s' ),
+			array( '%d' )
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery
+
+		clean_post_cache( $event_id );
+
+		$before = ( new Calendar( $event_id ) )->get_ical_event_string();
+
+		$this->assertStringContainsString(
+			'STATUS:CONFIRMED',
+			$before,
+			'Failed to assert a scheduled event is published as confirmed.'
+		);
+
+		( new Event( $event_id ) )->set_status( 'canceled' );
+
+		$after = ( new Calendar( $event_id ) )->get_ical_event_string();
+
+		$this->assertStringContainsString(
+			'STATUS:CANCELLED',
+			$after,
+			'Failed to assert the cancellation reaches the calendar.'
+		);
+
+		preg_match( '/SEQUENCE:(\\d+)/', $before, $was );
+		preg_match( '/SEQUENCE:(\\d+)/', $after, $now );
+
+		$this->assertGreaterThan(
+			(int) $was[1],
+			(int) $now[1],
+			'Failed to assert the sequence advances so a client accepts the update.'
+		);
+	}
 }
