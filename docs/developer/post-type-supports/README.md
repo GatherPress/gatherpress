@@ -203,7 +203,7 @@ The checklist is working state for the people running an event: who has been con
 
 Declaring the support also forces WordPress's `custom-fields` support onto the post type, because `WP_REST_Posts_Controller` only attaches the `meta` field to a post type's REST schema when that support is present. Without it the editor's save silently drops the checklist.
 
-Item shape follows the same convention as the venue field lists: items carry a stable `id` generated in the editor so a row keeps its identity while its text is rewritten, which keeps React keys stable. `text` is sanitized through `sanitize_text_field()` and capped at 255 characters, `completed` is coerced with `rest_sanitize_boolean()`, and the whole list is capped at 200 items. Malformed payloads collapse to `[]` rather than being stored as unparsable JSON.
+Item shape follows the same convention as the venue field lists: items carry a stable `id` generated in the editor so a row keeps its identity while its text is rewritten, which keeps React keys stable. `text` is sanitized through `sanitize_text_field()` and capped at 255 characters, `id` is sanitized the same way and capped at 64 characters, `completed` is coerced with `rest_sanitize_boolean()`, and the whole list is capped at 200 items. The id cap is a bound rather than a format: UUIDs from the editor, short hand-written ids such as `inquiry`, and everything in between are all accepted, but a REST write cannot park a near-request-sized string in a meta row. Malformed payloads collapse to `[]` rather than being stored as unparsable JSON: that covers invalid JSON, a non-string value, and a JSON object at the top level, which is rejected instead of being silently reindexed into a list.
 
 #### Usage for gatherpress-event-checklist
 

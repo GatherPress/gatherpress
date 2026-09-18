@@ -25,6 +25,18 @@ export const MAX_CHECKLIST_ITEMS = 200;
 export const MAX_CHECKLIST_TEXT_LENGTH = 255;
 
 /**
+ * Maximum number of characters kept in an item id.
+ *
+ * Mirrors `Checklist::MAX_ID_LENGTH` in PHP so an over-long id is dropped in
+ * the editor rather than only on save, where the PHP sanitizer would silently
+ * discard the whole row.
+ *
+ * @since 0.36.0
+ * @type {number}
+ */
+export const MAX_CHECKLIST_ID_LENGTH = 64;
+
+/**
  * Coerce a stored `completed` value to a boolean.
  *
  * Mirrors `rest_sanitize_boolean()` on the PHP side, where the strings
@@ -70,7 +82,9 @@ export function sanitizeChecklistItem( entry ) {
 
 	const id = String( entry.id ?? '' ).trim();
 
-	if ( ! id ) {
+	// Counted as codepoints, matching `mb_strlen()` on the PHP side, so an id
+	// built from multi-byte characters is measured the same way in both places.
+	if ( ! id || Array.from( id ).length > MAX_CHECKLIST_ID_LENGTH ) {
 		return null;
 	}
 

@@ -11,6 +11,7 @@ jest.mock( 'uuid', () => ( {
  * Internal dependencies
  */
 import {
+	MAX_CHECKLIST_ID_LENGTH,
 	MAX_CHECKLIST_ITEMS,
 	MAX_CHECKLIST_TEXT_LENGTH,
 	addChecklistItem,
@@ -40,6 +41,32 @@ describe( 'Checklist helpers', () => {
 
 		it( 'returns null when the id is blank', () => {
 			expect( sanitizeChecklistItem( { id: '   ' } ) ).toBeNull();
+		} );
+
+		it( 'returns null when the id is over the cap', () => {
+			expect(
+				sanitizeChecklistItem( {
+					id: 'i'.repeat( MAX_CHECKLIST_ID_LENGTH + 1 ),
+				} )
+			).toBeNull();
+		} );
+
+		it( 'keeps an id exactly at the cap', () => {
+			const id = 'i'.repeat( MAX_CHECKLIST_ID_LENGTH );
+
+			expect( sanitizeChecklistItem( { id } ).id ).toBe( id );
+		} );
+
+		it( 'measures the id cap in codepoints, like mb_strlen', () => {
+			// An astral-plane character is one codepoint but two UTF-16 units,
+			// so 40 of them are 40 codepoints and 80 `.length`. A naive
+			// `.length` check would wrongly drop this id.
+			const codepoints = ( MAX_CHECKLIST_ID_LENGTH / 2 ) + 8;
+			const id = '\u{1f600}'.repeat( codepoints );
+
+			expect( Array.from( id ) ).toHaveLength( codepoints );
+			expect( id.length ).toBeGreaterThan( MAX_CHECKLIST_ID_LENGTH );
+			expect( sanitizeChecklistItem( { id } ).id ).toBe( id );
 		} );
 
 		it( 'normalizes an id to a string', () => {

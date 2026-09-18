@@ -85,6 +85,20 @@ final class Checklist {
 	const MAX_TEXT_LENGTH = 255;
 
 	/**
+	 * Maximum number of characters kept in an item id.
+	 *
+	 * An id only has to identify a row while it is rewritten, so it does not
+	 * need to carry content. The cap sits well above the editor's UUIDs (36
+	 * characters) and above hand-written ids such as `inquiry`, but keeps a
+	 * REST write from parking a near-request-sized string in a meta row.
+	 * Format is deliberately not validated: any stable id is allowed.
+	 *
+	 * @since 0.36.0
+	 * @var int
+	 */
+	const MAX_ID_LENGTH = 64;
+
+	/**
 	 * Class constructor.
 	 *
 	 * @since 0.36.0
@@ -166,7 +180,11 @@ final class Checklist {
 
 		$decoded = json_decode( $value, true );
 
-		if ( ! is_array( $decoded ) ) {
+		// `json_decode()` with associative mode turns a JSON object into a PHP
+		// array, so `is_array()` alone would accept `{"row":{...}}` and rewrite
+		// it as a list. Requiring a list keeps associative containers on the
+		// malformed-payload fallback instead of silently reindexing them.
+		if ( ! is_array( $decoded ) || ! array_is_list( $decoded ) ) {
 			return self::EMPTY_CHECKLIST;
 		}
 
@@ -210,7 +228,7 @@ final class Checklist {
 
 		$id = sanitize_text_field( (string) $item['id'] );
 
-		if ( '' === $id ) {
+		if ( '' === $id || mb_strlen( $id ) > self::MAX_ID_LENGTH ) {
 			return null;
 		}
 

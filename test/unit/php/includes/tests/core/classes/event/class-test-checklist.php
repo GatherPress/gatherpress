@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core\Event;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Checklist;
 use GatherPress\Tests\Base;
+use WP_REST_Request;
 
 /**
  * Class Test_Checklist.
@@ -374,6 +375,108 @@ class Test_Checklist extends Base {
 	}
 
 	/**
+	 * A JSON object at the top level is rejected rather than reindexed.
+	 *
+	 * `json_decode( $value, true )` turns a JSON object into a PHP array, so
+	 * an associative payload such as `{"row":{...}}` would otherwise satisfy
+	 * the array check and be silently rewritten as a list. It has to take the
+	 * malformed-payload fallback instead.
+	 *
+	 * @covers ::sanitize
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_rejects_associative_payload(): void {
+		$instance = Checklist::get_instance();
+
+		$this->assertSame(
+			Checklist::EMPTY_CHECKLIST,
+			$instance->sanitize( '{"row":{"id":"a","text":"Ask"}}' ),
+			'Failed to assert an associative payload is not reindexed into a list.'
+		);
+	}
+
+	/**
+	 * An item id over the cap is dropped.
+	 *
+	 * @covers ::sanitize
+	 * @covers ::sanitize_item
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_drops_over_long_ids(): void {
+		$instance = Checklist::get_instance();
+
+		$result = $instance->sanitize(
+			sprintf(
+				'[{"id":"%s","text":"Too long","completed":false},'
+					. '{"id":"kept","text":"Kept","completed":false}]',
+				str_repeat( 'i', Checklist::MAX_ID_LENGTH + 1 )
+			)
+		);
+
+		$this->assertSame(
+			'[{"id":"kept","text":"Kept","completed":false}]',
+			$result,
+			'Failed to assert an over-long id is dropped instead of stored.'
+		);
+	}
+
+	/**
+	 * An item id exactly at the cap is kept.
+	 *
+	 * The bound has to admit the editor's UUIDs and hand-written ids alike, so
+	 * the check is `>` and not `>=`.
+	 *
+	 * @covers ::sanitize
+	 * @covers ::sanitize_item
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_keeps_ids_at_the_cap(): void {
+		$instance = Checklist::get_instance();
+		$id       = str_repeat( 'i', Checklist::MAX_ID_LENGTH );
+
+		$result = $instance->sanitize(
+			sprintf( '[{"id":"%s","text":"Kept","completed":false}]', $id )
+		);
+
+		$this->assertSame(
+			sprintf( '[{"id":"%s","text":"Kept","completed":false}]', $id ),
+			$result,
+			'Failed to assert an id at the cap is kept.'
+		);
+	}
+
+	/**
+	 * Non-scalar `completed` values coerce to false.
+	 *
+	 * `sanitize_item()` maps a non-scalar to an empty string before handing it
+	 * to `rest_sanitize_boolean()`, which reads that as false. An array or
+	 * object from a malformed write must not mark an item complete.
+	 *
+	 * @covers ::sanitize
+	 * @covers ::sanitize_item
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_coerces_non_scalar_completed_to_false(): void {
+		$instance = Checklist::get_instance();
+
+		$result = $instance->sanitize(
+			'[{"id":"array","text":"Array","completed":{"nested":true}},'
+				. '{"id":"object","text":"Object","completed":[1,2]}]'
+		);
+
+		$this->assertSame(
+			'[{"id":"array","text":"Array","completed":false},'
+				. '{"id":"object","text":"Object","completed":false}]',
+			$result,
+			'Failed to assert a non-scalar completed value coerces to false.'
+		);
+	}
+
+	/**
 	 * A checklist longer than the cap is trimmed to the cap.
 	 *
 	 * @covers ::sanitize
@@ -404,6 +507,191 @@ class Test_Checklist extends Base {
 			'item-' . ( Checklist::MAX_ITEMS - 1 ),
 			$decoded[ Checklist::MAX_ITEMS - 1 ]['id'],
 			'Failed to assert the cap keeps the first items.'
+		);
+	}
+
+	/**
+	 * A public read omits the checklist.
+	 *
+	 * The meta is registered with `show_in_rest` limited to the `edit` context,
+	 * so `rest_filter_response_by_context()` drops the key from a `view`
+	 * response even though the rest of the published event is readable. This is
+	 * the privacy property the class header promises, so it gets a real
+	 * dispatched request rather than a schema assertion.
+	 *
+	 * @covers ::register
+	 *
+	 * @return void
+	 */
+	public function test_rest_view_context_omits_the_checklist(): void {
+		Checklist::get_instance()->register( Event::POST_TYPE );
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+
+		update_post_meta( $post_id, Checklist::META_KEY, '[{"id":"a","text":"Invoice","completed":true}]' );
+
+		wp_set_current_user( 0 );
+
+		$rest_base = get_post_type_object( Event::POST_TYPE )->rest_base;
+		$request   = new WP_REST_Request( 'GET', sprintf( '/wp/v2/%s/%d', $rest_base, $post_id ) );
+		$request->set_param( 'context', 'view' );
+
+		$response = rest_do_request( $request );
+		$meta     = $response->get_data()['meta'] ?? array();
+
+		$this->assertSame(
+			200,
+			$response->get_status(),
+			'Failed to assert the published event is readable anonymously.'
+		);
+		// Assert the meta field itself is present, so the absence check below
+		// cannot pass merely because the whole meta object is missing.
+		$this->assertArrayHasKey(
+			'meta',
+			$response->get_data(),
+			'Failed to assert the response carries a meta field to check within.'
+		);
+		$this->assertArrayNotHasKey(
+			Checklist::META_KEY,
+			$meta,
+			'Failed to assert a public read carries no checklist.'
+		);
+	}
+
+	/**
+	 * An editor read in the edit context returns the stored checklist.
+	 *
+	 * @covers ::register
+	 *
+	 * @return void
+	 */
+	public function test_rest_edit_context_returns_the_checklist(): void {
+		Checklist::get_instance()->register( Event::POST_TYPE );
+
+		$user_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		$stored  = '[{"id":"a","text":"Invoice","completed":true}]';
+
+		update_post_meta( $post_id, Checklist::META_KEY, $stored );
+		wp_set_current_user( $user_id );
+
+		$rest_base = get_post_type_object( Event::POST_TYPE )->rest_base;
+		$request   = new WP_REST_Request( 'GET', sprintf( '/wp/v2/%s/%d', $rest_base, $post_id ) );
+		$request->set_param( 'context', 'edit' );
+
+		$response = rest_do_request( $request );
+
+		$this->assertSame(
+			200,
+			$response->get_status(),
+			'Failed to assert an editor can read the event in the edit context.'
+		);
+		$this->assertSame(
+			$stored,
+			$response->get_data()['meta'][ Checklist::META_KEY ] ?? null,
+			'Failed to assert the edit context returns the stored checklist.'
+		);
+	}
+
+	/**
+	 * An editor can write the checklist over REST.
+	 *
+	 * @covers ::register
+	 *
+	 * @return void
+	 */
+	public function test_rest_editor_can_write_the_checklist(): void {
+		Checklist::get_instance()->register( Event::POST_TYPE );
+
+		$user_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		$payload = '[{"id":"a","text":"Invoice","completed":false}]';
+
+		wp_set_current_user( $user_id );
+
+		$rest_base = get_post_type_object( Event::POST_TYPE )->rest_base;
+		$request   = new WP_REST_Request( 'POST', sprintf( '/wp/v2/%s/%d', $rest_base, $post_id ) );
+		$request->set_body_params(
+			array(
+				'meta' => array( Checklist::META_KEY => $payload ),
+			)
+		);
+
+		$response = rest_do_request( $request );
+
+		$this->assertSame(
+			200,
+			$response->get_status(),
+			'Failed to assert an editor can write the checklist over REST.'
+		);
+		$this->assertSame(
+			$payload,
+			get_post_meta( $post_id, Checklist::META_KEY, true ),
+			'Failed to assert the written checklist persists.'
+		);
+	}
+
+	/**
+	 * A subscriber cannot write the checklist over REST.
+	 *
+	 * @covers ::register
+	 *
+	 * @return void
+	 */
+	public function test_rest_subscriber_cannot_write_the_checklist(): void {
+		Checklist::get_instance()->register( Event::POST_TYPE );
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		$stored  = '[{"id":"a","text":"Kept","completed":false}]';
+		$user_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+
+		update_post_meta( $post_id, Checklist::META_KEY, $stored );
+		wp_set_current_user( $user_id );
+
+		$rest_base = get_post_type_object( Event::POST_TYPE )->rest_base;
+		$request   = new WP_REST_Request( 'POST', sprintf( '/wp/v2/%s/%d', $rest_base, $post_id ) );
+		$request->set_body_params(
+			array(
+				'meta' => array( Checklist::META_KEY => '[{"id":"b","text":"Injected","completed":true}]' ),
+			)
+		);
+
+		$response = rest_do_request( $request );
+
+		$this->assertGreaterThanOrEqual(
+			400,
+			$response->get_status(),
+			'Failed to assert a subscriber cannot write the checklist over REST.'
+		);
+		$this->assertLessThan(
+			500,
+			$response->get_status(),
+			'Failed to assert the subscriber write is denied, not a server error.'
+		);
+		$this->assertSame(
+			$stored,
+			get_post_meta( $post_id, Checklist::META_KEY, true ),
+			'Failed to assert a denied write leaves the checklist unchanged.'
 		);
 	}
 }
