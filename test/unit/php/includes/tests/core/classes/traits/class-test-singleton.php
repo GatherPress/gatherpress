@@ -35,6 +35,7 @@ class Test_Singleton extends Base {
 	public function tear_down(): void {
 		$this->reset_dummy_instance( Test_Singleton_Dummy::class );
 		$this->reset_dummy_instance( Test_Singleton_Other_Dummy::class );
+		Test_Singleton_Dummy::$constructor_calls = 0;
 
 		parent::tear_down();
 	}
@@ -101,13 +102,13 @@ class Test_Singleton extends Base {
 	 * @return void
 	 */
 	public function test_constructor_called_only_once(): void {
-		$instance = Test_Singleton_Dummy::get_instance();
+		Test_Singleton_Dummy::get_instance();
 		Test_Singleton_Dummy::get_instance();
 		Test_Singleton_Dummy::get_instance();
 
 		$this->assertSame(
 			1,
-			$instance->constructor_count,
+			Test_Singleton_Dummy::$constructor_calls,
 			'Failed to assert that the constructor was invoked only once.'
 		);
 	}
@@ -209,6 +210,11 @@ class Test_Singleton extends Base {
 			1,
 			$second_instance->constructor_count,
 			'Failed to assert that the new instance executed its constructor.'
+		);
+		$this->assertSame(
+			2,
+			Test_Singleton_Dummy::$constructor_calls,
+			'Failed to assert that resetting $instance allowed constructor re-execution.'
 		);
 	}
 

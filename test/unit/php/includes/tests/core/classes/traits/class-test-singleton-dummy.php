@@ -18,7 +18,16 @@ use GatherPress\Core\Traits\Singleton;
  * @since 0.36.0
  */
 class Test_Singleton_Dummy {
+
 	use Singleton;
+
+	/**
+	 * Total count of constructor invocations across all instances.
+	 *
+	 * @since 0.36.0
+	 * @var int
+	 */
+	public static int $constructor_calls = 0;
 
 	/**
 	 * Counter tracking constructor invocations.
@@ -42,6 +51,7 @@ class Test_Singleton_Dummy {
 	 * @since 0.36.0
 	 */
 	public function __construct() {
+		++self::$constructor_calls;
 		++$this->constructor_count;
 	}
 }

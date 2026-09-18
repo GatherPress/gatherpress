@@ -18,6 +18,7 @@ use GatherPress\Core\Traits\Singleton;
  * @since 0.36.0
  */
 class Test_Singleton_Other_Dummy {
+
 	use Singleton;
 
 	/**
