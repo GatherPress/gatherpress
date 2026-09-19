@@ -22,9 +22,9 @@ use GatherPress\Core\Traits\Singleton;
  * A registry of uninstall tasks, run by `uninstall.php` when the user
  * deletes the plugin. Each cleanup concern is one small Base subclass, so
  * adding one is a single registration here rather than another procedural
- * block in the bootstrap file. The #681 follow-up registers its
- * settings-gated tasks (options, tables, posts, terms, comments, cron)
- * the same way.
+ * block in the bootstrap file. The settings-gated tasks (options, tables,
+ * posts, terms, comments, cron) are registered the same way, and run only
+ * where an administrator opted in on the Uninstall screen.
  *
  * @since 0.36.0
  */
@@ -60,8 +60,18 @@ final class Setup {
 	 * @return void
 	 */
 	protected function register_default_tasks(): void {
+		// The always-on bookkeeping runs first, then the
+		// opt-in data tasks in dependency order: comments and posts before
+		// the taxonomies and the table they point at, and options last
+		// so the opt-in map is the final thing to go.
 		$this->add( new Notices() );
 		$this->add( new Transients() );
+		$this->add( new Comments() );
+		$this->add( new Posts() );
+		$this->add( new Terms() );
+		$this->add( new Tables() );
+		$this->add( new Cron() );
+		$this->add( new Options() );
 	}
 
 	/**
@@ -102,5 +112,14 @@ final class Setup {
 		foreach ( $this->tasks as $task ) {
 			$task->run();
 		}
+
+		// The destructive tasks delete rows with SQL rather than through the
+		// post, comment and term APIs, so nothing has invalidated the object
+		// cache for what they removed. A persistent backend (Redis, Memcached)
+		// outlives the plugin being deleted, and would keep serving objects
+		// for rows that no longer exist. Flushing once here is the same
+		// reasoning `Transients` documents for its own per-key invalidation,
+		// applied to the tasks that cannot cheaply enumerate their IDs.
+		wp_cache_flush();
 	}
 }
