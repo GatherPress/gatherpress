@@ -44,13 +44,12 @@ class Test_Meta extends Base {
 	}
 
 	/**
-	 * Calling `register()` on the built-in event post type registers
-	 * both the event-date meta (gated on the `gatherpress-event-date`
-	 * support) and the event-only meta (RSVP / attendance / online-event
-	 * link). Also wires the REST readonly-strip filter.
+	 * `register()` on the built-in event post type registers all three
+	 * meta bands (event-date, venue-geo, event-only) and the REST filter.
 	 *
 	 * @covers ::register
 	 * @covers ::register_event_date_meta
+	 * @covers ::register_venue_geo_meta
 	 * @covers ::register_event_only_meta
 	 *
 	 * @return void
@@ -59,8 +58,9 @@ class Test_Meta extends Base {
 		$instance = Meta::get_instance();
 
 		// Wipe a representative key from each band so we can prove
-		// re-registration restores both.
+		// re-registration restores all three.
 		unregister_post_meta( Event::POST_TYPE, 'gatherpress_datetime' );
+		unregister_post_meta( Event::POST_TYPE, 'geo_latitude' );
 		unregister_post_meta( Event::POST_TYPE, 'gatherpress_online_event_link' );
 
 		$instance->register( Event::POST_TYPE );
@@ -71,6 +71,26 @@ class Test_Meta extends Base {
 			'gatherpress_datetime',
 			$meta,
 			'Event-date meta should be registered for a post type with gatherpress-event-date support.'
+		);
+		$this->assertArrayHasKey(
+			'geo_latitude',
+			$meta,
+			'Venue-geo meta should be registered for a post type with gatherpress-venue support.'
+		);
+		$this->assertArrayHasKey(
+			'geo_longitude',
+			$meta,
+			'Venue-geo meta should be registered for a post type with gatherpress-venue support.'
+		);
+		$this->assertArrayHasKey(
+			'geo_address',
+			$meta,
+			'Venue-geo meta should be registered for a post type with gatherpress-venue support.'
+		);
+		$this->assertArrayHasKey(
+			'geo_public',
+			$meta,
+			'Venue-geo meta should be registered for a post type with gatherpress-venue support.'
 		);
 		$this->assertArrayHasKey(
 			'gatherpress_online_event_link',
@@ -84,6 +104,71 @@ class Test_Meta extends Base {
 			),
 			'REST readonly-strip filter should be wired for the event-date band.'
 		);
+	}
+
+	/**
+	 * `register()` registers the venue-geo band independently of the
+	 * event-date band, on `gatherpress-venue` support alone.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::register
+	 * @covers ::register_venue_geo_meta
+	 *
+	 * @return void
+	 */
+	public function test_register_on_venue_assignment_supporting_post_type(): void {
+		$instance = Meta::get_instance();
+		$test_pt  = 'test_venue_geo_meta';
+
+		register_post_type(
+			$test_pt,
+			array(
+				'label'    => 'Test Venue Geo Meta',
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-venue' ),
+			)
+		);
+
+		$instance->register( $test_pt );
+
+		$meta = get_registered_meta_keys( 'post', $test_pt );
+
+		$this->assertArrayHasKey(
+			'geo_latitude',
+			$meta,
+			'Venue-geo meta should be registered for a post type with gatherpress-venue support.'
+		);
+		$this->assertArrayHasKey(
+			'geo_longitude',
+			$meta,
+			'Venue-geo meta should be registered for a post type with gatherpress-venue support.'
+		);
+		$this->assertArrayHasKey(
+			'geo_address',
+			$meta,
+			'Venue-geo meta should be registered for a post type with gatherpress-venue support.'
+		);
+		$this->assertArrayHasKey(
+			'geo_public',
+			$meta,
+			'Venue-geo meta should be registered for a post type with gatherpress-venue support.'
+		);
+		$this->assertArrayNotHasKey(
+			'gatherpress_datetime',
+			$meta,
+			'Event-date meta must NOT register on a post type without gatherpress-event-date support.'
+		);
+		$this->assertNotFalse(
+			has_filter( sprintf( 'rest_pre_insert_%s', $test_pt ), array( $instance, 'filter_readonly_meta' ) ),
+			'REST readonly-strip filter should wire on venue-assignment-supporting post types.'
+		);
+		$this->assertTrue(
+			post_type_supports( $test_pt, 'custom-fields' ),
+			'custom-fields support should be auto-added so the REST controller exposes the meta field.'
+		);
+
+		unregister_post_type( $test_pt );
 	}
 
 	/**
@@ -238,6 +323,10 @@ class Test_Meta extends Base {
 				'gatherpress_datetime_end'       => '2025-01-01 12:00:00',
 				'gatherpress_datetime_end_gmt'   => '2025-01-01 17:00:00',
 				'gatherpress_timezone'           => 'America/New_York',
+				'geo_latitude'                   => '40.7128',
+				'geo_longitude'                  => '-74.006',
+				'geo_address'                    => '123 Main St',
+				'geo_public'                     => 1,
 				'gatherpress_online_event_link'  => 'https://example.com',
 			)
 		);
@@ -257,6 +346,10 @@ class Test_Meta extends Base {
 		$this->assertArrayNotHasKey( 'gatherpress_datetime_end', $filtered_meta );
 		$this->assertArrayNotHasKey( 'gatherpress_datetime_end_gmt', $filtered_meta );
 		$this->assertArrayNotHasKey( 'gatherpress_timezone', $filtered_meta );
+		$this->assertArrayNotHasKey( 'geo_latitude', $filtered_meta );
+		$this->assertArrayNotHasKey( 'geo_longitude', $filtered_meta );
+		$this->assertArrayNotHasKey( 'geo_address', $filtered_meta );
+		$this->assertArrayNotHasKey( 'geo_public', $filtered_meta );
 		$this->assertArrayHasKey( 'gatherpress_datetime', $filtered_meta );
 		$this->assertArrayHasKey( 'gatherpress_online_event_link', $filtered_meta );
 	}
@@ -362,6 +455,10 @@ class Test_Meta extends Base {
 				'gatherpress_datetime_end'       => '2025-01-01 12:00:00',
 				'gatherpress_datetime_end_gmt'   => '2025-01-01 17:00:00',
 				'gatherpress_timezone'           => 'America/New_York',
+				'geo_latitude'                   => '40.7128',
+				'geo_longitude'                  => '-74.006',
+				'geo_address'                    => '123 Main St',
+				'geo_public'                     => 1,
 			)
 		);
 

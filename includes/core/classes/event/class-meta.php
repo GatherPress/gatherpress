@@ -3,10 +3,12 @@
  * Owns the event post-meta surface.
  *
  * Registers the read-only datetime / timezone meta on any post type that
- * declares `gatherpress-event-date` support, plus the always-on
- * RSVP / attendance / online-event-link meta on the built-in event post
- * type. Also owns the REST readonly-strip filter that pairs with the
- * `__return_false` auth callbacks.
+ * declares `gatherpress-event-date` support, the read-only Geodata
+ * standard (`geo_*`) meta on any post type that declares `gatherpress-venue`
+ * (assignment) support, plus the always-on RSVP / attendance /
+ * online-event-link meta on the built-in event post type. Also owns the
+ * REST readonly-strip filter that pairs with the `__return_false` auth
+ * callbacks.
  *
  * Sibling singleton to `Event\Setup` — `Setup` keeps post-type
  * registration and date-formatting filters; `Meta` keeps everything
@@ -25,6 +27,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
+use GatherPress\Core\Venue;
 use stdClass;
 use WP_REST_Request;
 
@@ -88,6 +91,10 @@ final class Meta {
 	public function register( string $post_type ): void {
 		if ( post_type_supports( $post_type, Event::SUPPORT ) ) {
 			$this->register_event_date_meta( $post_type );
+		}
+
+		if ( post_type_supports( $post_type, Venue::ASSIGNMENT_SUPPORT ) ) {
+			$this->register_venue_geo_meta( $post_type );
 		}
 
 		if ( Event::POST_TYPE === $post_type ) {
@@ -192,6 +199,52 @@ final class Meta {
 	}
 
 	/**
+	 * Registers the Geodata standard meta (`geo_*`) as read-only.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $post_type The post type to register against.
+	 *
+	 * @return void
+	 */
+	protected function register_venue_geo_meta( string $post_type ): void {
+		add_post_type_support( $post_type, 'custom-fields' );
+
+		$string_args = array(
+			'auth_callback'     => '__return_false',
+			'sanitize_callback' => 'sanitize_text_field',
+			'show_in_rest'      => true,
+			'single'            => true,
+			'type'              => 'string',
+			'default'           => '',
+		);
+
+		register_post_meta( $post_type, 'geo_latitude', $string_args );
+		register_post_meta( $post_type, 'geo_longitude', $string_args );
+		register_post_meta( $post_type, 'geo_address', $string_args );
+
+		register_post_meta(
+			$post_type,
+			'geo_public',
+			array(
+				'auth_callback'     => '__return_false',
+				'sanitize_callback' => 'absint',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'integer',
+				'default'           => 0,
+			)
+		);
+
+		add_filter(
+			sprintf( 'rest_pre_insert_%s', $post_type ),
+			array( $this, 'filter_readonly_meta' ),
+			10,
+			2
+		);
+	}
+
+	/**
 	 * Registers meta that only lives on the built-in event post type (RSVP
 	 * toggles, guest / attendance limits, online event link).
 	 *
@@ -270,9 +323,12 @@ final class Meta {
 	 *
 	 * The derived datetime fields are populated programmatically via the
 	 * `Event\Setup::set_datetimes()` method when gatherpress_datetime is saved,
-	 * so any values sent via REST API should be silently discarded.
+	 * so any values sent via REST API should be silently discarded. The
+	 * venue-geo fields are populated lazily at view time by
+	 * {@see Geo_Sync}, never through the REST write path.
 	 *
 	 * @since 0.34.0
+	 * @since 0.36.0 Also strips the read-only venue-geo fields.
 	 *
 	 * @param stdClass        $prepared_post An object representing a single post prepared for inserting or updating.
 	 * @param WP_REST_Request $request       Request object.
@@ -287,6 +343,10 @@ final class Meta {
 			'gatherpress_datetime_end',
 			'gatherpress_datetime_end_gmt',
 			'gatherpress_timezone',
+			'geo_latitude',
+			'geo_longitude',
+			'geo_address',
+			'geo_public',
 		);
 
 		$meta = $request->get_param( 'meta' );
