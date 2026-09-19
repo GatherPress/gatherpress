@@ -93,6 +93,7 @@ final class Setup {
 	protected function instantiate_classes(): void {
 		Abilities::get_instance();
 		Admin_List::get_instance();
+		Geo_Sync::get_instance();
 		Meta::get_instance();
 		Query::get_instance();
 		Rest_Api::get_instance();
