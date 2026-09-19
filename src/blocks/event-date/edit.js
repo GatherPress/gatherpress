@@ -71,7 +71,7 @@ const displayDateTime = (
 	separator,
 	showTimezone,
 	isAllDay = false,
-	timezonePreference = ''
+	timezonePreference = '',
 ) => {
 	const dateFormat = getFromSettings( 'dateFormat' );
 	const timeFormat = getFromSettings( 'timeFormat' );
@@ -105,7 +105,7 @@ const displayDateTime = (
 	// Add start date/time.
 	if ( dateTimeStart ) {
 		startFormat = convertPHPToMomentFormat(
-			startFormat || fullFormat
+			startFormat || fullFormat,
 		);
 		parts.push( createMomentWithTimezone( dateTimeStart, timezone ).format( startFormat ) );
 	}
@@ -159,7 +159,7 @@ const displayDateTime = (
 			// For IANA timezones, use the timezone abbreviation.
 			parts.push(
 				createMomentWithTimezone( dateTimeEnd || dateTimeStart, timezone )
-					.format( 'z' )
+					.format( 'z' ),
 			);
 		}
 	}
@@ -250,7 +250,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		isValidEvent,
 	} = useSelect(
 		( select ) => resolveEventDateData( select, contextPostType, contextQueryId, postId, hasExplicitOverride ),
-		[ postId, contextPostType, contextQueryId, hasExplicitOverride ]
+		[ postId, contextPostType, contextQueryId, hasExplicitOverride ],
 	);
 
 	const blockProps = useBlockProps( {
@@ -272,7 +272,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	// fall back to today's date to show a normal appearance.
 	const fallbackDateTime = createMomentWithTimezone(
 		moment().format( 'YYYY-MM-DD HH:mm:ss' ),
-		getTimezone()
+		getTimezone(),
 	);
 	const finalDateTimeStart = dateTimeStart || fallbackDateTime.format();
 	const finalDateTimeEnd = dateTimeEnd || fallbackDateTime.clone().add( 1, 'hour' ).format();
@@ -296,7 +296,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		separator,
 		showTimezone,
 		isAllDay,
-		timezonePreference
+		timezonePreference,
 	);
 
 	return (
@@ -312,7 +312,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 								displayType: calculateDisplayType(
 									'start',
 									showStartTime,
-									showEndTime
+									showEndTime,
 								),
 							} );
 						} }
@@ -326,7 +326,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 								displayType: calculateDisplayType(
 									'end',
 									showStartTime,
-									showEndTime
+									showEndTime,
 								),
 							} );
 						} }
@@ -364,7 +364,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 							{
 								label: __(
 									'Start and end date',
-									'gatherpress'
+									'gatherpress',
 								),
 								value: 'both',
 							},
@@ -418,7 +418,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						<ExternalLink href="https://wordpress.org/documentation/article/customize-date-and-time-format/">
 							{ __(
 								'Date/time formatting documentation',
-								'gatherpress'
+								'gatherpress',
 							) }
 						</ExternalLink>
 					</p>
@@ -439,7 +439,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						label={ __( 'Link to event', 'gatherpress' ) }
 						help={ __(
 							'Make the date a link to the event page.',
-							'gatherpress'
+							'gatherpress',
 						) }
 						checked={ isLink }
 						onChange={ () =>

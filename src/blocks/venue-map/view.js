@@ -59,7 +59,6 @@ function loadLeaflet() {
 		leafletPromise = ( async () => {
 			const { default: L } = await import( 'leaflet' );
 
-			// eslint-disable-next-line import/no-extraneous-dependencies
 			const gesture = await import( 'leaflet-gesture-handling' );
 
 			// Add gesture handling to Leaflet. Under ESM module output the
@@ -71,7 +70,7 @@ function loadLeaflet() {
 				'gestureHandling',
 				gesture.GestureHandling ||
 					gesture.default ||
-					L.GestureHandling
+					L.GestureHandling,
 			);
 
 			return L;
@@ -326,7 +325,7 @@ store( 'gatherpress/venue-map', {
 
 			const { valid, lat, lng } = parseCoordinates(
 				context.latitude,
-				context.longitude
+				context.longitude,
 			);
 
 			// No mappable coordinates — leave the server-rendered static

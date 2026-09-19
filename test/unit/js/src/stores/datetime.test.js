@@ -108,13 +108,13 @@ describe( 'DateTime store', () => {
 			dispatch( STORE_NAME ).setTimezone( 'Pacific/Auckland' );
 
 			expect( select( STORE_NAME ).getDateTimeStart() ).toBe(
-				'2025-05-01 08:00:00'
+				'2025-05-01 08:00:00',
 			);
 			expect( select( STORE_NAME ).getDateTimeEnd() ).toBe(
-				'2025-05-01 10:00:00'
+				'2025-05-01 10:00:00',
 			);
 			expect( select( STORE_NAME ).getTimezone() ).toBe(
-				'Pacific/Auckland'
+				'Pacific/Auckland',
 			);
 		} );
 	} );

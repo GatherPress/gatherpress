@@ -23,7 +23,7 @@ jest.mock(
 			__mockState: state,
 		};
 	},
-	{ virtual: true }
+	{ virtual: true },
 );
 
 /**
@@ -35,14 +35,14 @@ jest.mock(
 	() => ( {
 		speak: jest.fn(),
 	} ),
-	{ virtual: true }
+	{ virtual: true },
 );
 
 /**
  * WordPress dependencies
  */
 import { speak } from '@wordpress/a11y';
-// eslint-disable-next-line import/named -- `__mockState` only exists on the virtual mock above.
+// `__mockState` only exists on the virtual mock above.
 import { __mockState as mockInteractivityState } from '@wordpress/interactivity';
 
 /**
@@ -126,7 +126,7 @@ describe( 'sendRsvpApiRequest', () => {
 		await sendRsvpApiRequest(
 			123,
 			{ status: 'attending', guests: 2, anonymous: false },
-			state
+			state,
 		);
 
 		expect( state.posts[ 123 ].eventResponses ).toEqual( {
@@ -148,7 +148,7 @@ describe( 'sendRsvpApiRequest', () => {
 		await sendRsvpApiRequest(
 			123,
 			{ status: 'attending', guests: 0, anonymous: false },
-			state
+			state,
 		);
 
 		// The key assertion: no throw, and the state is still updated with
@@ -176,7 +176,7 @@ describe( 'sendRsvpApiRequest', () => {
 			123,
 			{ status: 'attending', guests: 0, anonymous: false },
 			state,
-			onSuccess
+			onSuccess,
 		);
 
 		expect( onSuccess ).toHaveBeenCalledWith( rsvpPayload );
@@ -199,16 +199,17 @@ describe( 'sendRsvpApiRequest', () => {
 			123,
 			{ status: 'attending', guests: 0, anonymous: false },
 			state,
-			onSuccess
+			onSuccess,
 		);
 
 		// The request succeeded, so the user-facing failure alert must not
 		// fire; the UI error is only logged for debugging.
 		expect( window.alert ).not.toHaveBeenCalled();
-		// eslint-disable-next-line no-console
-		expect( console.warn ).toHaveBeenCalledWith(
+		// @wordpress/jest-console fails a test on any console call it was not
+		// told to expect, and its own matcher is what declares the warning.
+		expect( console ).toHaveWarnedWith(
 			'RSVP post-success UI update failed:',
-			expect.any( TypeError )
+			new TypeError( 'UI update failed' ),
 		);
 		// State was still updated before the callback threw.
 		expect( state.posts[ 123 ].currentUser.status ).toBe( 'attending' );
@@ -229,7 +230,7 @@ describe( 'sendRsvpApiRequest', () => {
 		await sendRsvpApiRequest(
 			123,
 			{ status: 'not_attending', guests: 0, anonymous: false },
-			state
+			state,
 		);
 
 		expect( state.posts[ 123 ].eventResponses ).toEqual( {
@@ -295,12 +296,12 @@ describe( 'sendRsvpApiRequest announcements', () => {
 		await sendRsvpApiRequest(
 			123,
 			{ status: 'attending', guests: 0, anonymous: false },
-			state
+			state,
 		);
 
 		expect( speak ).toHaveBeenCalledWith(
 			'Your RSVP was updated. You are attending. 1 attendee.',
-			'polite'
+			'polite',
 		);
 	} );
 
@@ -316,12 +317,12 @@ describe( 'sendRsvpApiRequest announcements', () => {
 		await sendRsvpApiRequest(
 			123,
 			{ status: 'attending', guests: 0, anonymous: false },
-			state
+			state,
 		);
 
 		expect( speak ).toHaveBeenCalledWith(
 			'Your RSVP was updated. You are attending. 7 attendees.',
-			'polite'
+			'polite',
 		);
 	} );
 
@@ -340,12 +341,12 @@ describe( 'sendRsvpApiRequest announcements', () => {
 		await sendRsvpApiRequest(
 			123,
 			{ status: 'attending', guests: 0, anonymous: false },
-			state
+			state,
 		);
 
 		expect( speak ).toHaveBeenCalledWith(
 			'Your RSVP was updated. You are on the waiting list. 5 attendees.',
-			'polite'
+			'polite',
 		);
 	} );
 
@@ -366,12 +367,12 @@ describe( 'sendRsvpApiRequest announcements', () => {
 		await sendRsvpApiRequest(
 			123,
 			{ status: 'attending', guests: 0, anonymous: false },
-			state
+			state,
 		);
 
 		expect( speak ).toHaveBeenCalledWith(
 			'Your RSVP was updated. You are attending. 1 attendee. The event link is now available on this page.',
-			'polite'
+			'polite',
 		);
 	} );
 
@@ -392,7 +393,7 @@ describe( 'sendRsvpApiRequest announcements', () => {
 		await sendRsvpApiRequest(
 			123,
 			{ status: 'attending', guests: 1, anonymous: false },
-			state
+			state,
 		);
 
 		// toHaveBeenCalledWith only proves *some* call matched, and the
@@ -403,7 +404,7 @@ describe( 'sendRsvpApiRequest announcements', () => {
 		expect( speak ).toHaveBeenCalledTimes( 1 );
 		expect( speak ).toHaveBeenCalledWith(
 			'Your RSVP was updated. You are attending. 1 attendee.',
-			'polite'
+			'polite',
 		);
 	} );
 
@@ -422,7 +423,7 @@ describe( 'sendRsvpApiRequest announcements', () => {
 		await sendRsvpApiRequest(
 			123,
 			{ status: 'attending', guests: 0, anonymous: false },
-			state
+			state,
 		);
 
 		// Same reasoning as the already-visible case above: the count pins
@@ -430,7 +431,7 @@ describe( 'sendRsvpApiRequest announcements', () => {
 		expect( speak ).toHaveBeenCalledTimes( 1 );
 		expect( speak ).toHaveBeenCalledWith(
 			'Your RSVP was updated. You are attending. 1 attendee.',
-			'polite'
+			'polite',
 		);
 	} );
 
@@ -448,12 +449,12 @@ describe( 'sendRsvpApiRequest announcements', () => {
 		await sendRsvpApiRequest(
 			123,
 			{ status: 'attending', guests: 0, anonymous: false },
-			state
+			state,
 		);
 
 		expect( speak ).toHaveBeenCalledWith(
 			'Your RSVP was updated. You are attending. 3 attendees.',
-			'polite'
+			'polite',
 		);
 	} );
 
@@ -473,7 +474,7 @@ describe( 'sendRsvpApiRequest announcements', () => {
 		await sendRsvpApiRequest(
 			123,
 			{ status: 'attending', guests: 0, anonymous: false },
-			state
+			state,
 		);
 
 		expect( speak ).not.toHaveBeenCalled();

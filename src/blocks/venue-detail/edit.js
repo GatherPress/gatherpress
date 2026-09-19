@@ -56,7 +56,7 @@ const Edit = ( {
 		fieldType,
 		fieldValue,
 		updateVenueField,
-		! isEditingCurrentPost
+		! isEditingCurrentPost,
 	);
 
 	// Handle Enter key block insertion.
@@ -132,7 +132,7 @@ const Edit = ( {
 						}
 						help={ __(
 							'Choose how this field should be displayed and formatted.',
-							'gatherpress'
+							'gatherpress',
 						) }
 					/>
 				</PanelBody>

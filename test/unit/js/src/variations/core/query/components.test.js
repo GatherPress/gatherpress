@@ -41,7 +41,7 @@ jest.mock( '@wordpress/i18n', () => ( {
 		// sequential (%s) placeholders so help copy interpolates correctly.
 		let sequential = 0;
 		return fmt.replace( /%(\d+)\$s|%s/g, ( match, position ) =>
-			position ? args[ position - 1 ] : args[ sequential++ ]
+			position ? args[ position - 1 ] : args[ sequential++ ],
 		);
 	},
 } ) );
@@ -126,11 +126,11 @@ describe( 'EventQueryControlsSlotFill', () => {
 		render( <EventQueryControlsSlotFill /> );
 
 		expect(
-			screen.queryByText( venueToggleLabel )
+			screen.queryByText( venueToggleLabel ),
 		).not.toBeInTheDocument();
 		expect( isPostTypeSupporting ).toHaveBeenCalledWith(
 			'gatherpress-shadow-source',
-			'gatherpress_event'
+			'gatherpress_event',
 		);
 	} );
 
@@ -179,7 +179,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 		render( <EventQueryControlsSlotFill /> );
 
 		expect(
-			screen.queryByText( excludeToggleLabel )
+			screen.queryByText( excludeToggleLabel ),
 		).not.toBeInTheDocument();
 	} );
 
@@ -227,7 +227,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 		render( <EventQueryControlsSlotFill /> );
 
 		expect(
-			screen.queryByText( excludeToggleLabel )
+			screen.queryByText( excludeToggleLabel ),
 		).not.toBeInTheDocument();
 	} );
 } );

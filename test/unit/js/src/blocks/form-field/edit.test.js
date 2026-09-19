@@ -40,7 +40,7 @@ const renderEdit = ( attributes = {}, setAttributes = jest.fn() ) =>
 			attributes={ { ...baseAttributes, ...attributes } }
 			setAttributes={ setAttributes }
 			isSelected={ true }
-		/>
+		/>,
 	);
 
 describe( 'Form Field Edit autocomplete help', () => {
@@ -49,12 +49,12 @@ describe( 'Form Field Edit autocomplete help', () => {
 		const link = getByRole( 'link', { name: /Learn more/ } );
 
 		expect( link.getAttribute( 'href' ) ).toBe(
-			'https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/autocomplete'
+			'https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/autocomplete',
 		);
 		expect( link.getAttribute( 'target' ) ).toBe( '_blank' );
 		expect( link.getAttribute( 'rel' ) ).toContain( 'noopener' );
 		expect(
-			getByRole( 'link', { name: /opens in a new tab/ } )
+			getByRole( 'link', { name: /opens in a new tab/ } ),
 		).toBe( link );
 	} );
 

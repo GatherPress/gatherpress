@@ -44,7 +44,7 @@ jest.mock(
 			getContext: jest.fn(),
 		};
 	},
-	{ virtual: true }
+	{ virtual: true },
 );
 
 /**
@@ -140,7 +140,7 @@ describe( 'rsvp updateRsvp post-success modal switch', () => {
 		`;
 
 		const trigger = document.querySelector(
-			'[data-rsvp-status="no_status"] button'
+			'[data-rsvp-status="no_status"] button',
 		);
 
 		getElement.mockReturnValue( { ref: trigger } );
@@ -149,7 +149,7 @@ describe( 'rsvp updateRsvp post-success modal switch', () => {
 		return {
 			trigger,
 			attendingButton: document.querySelector(
-				'[data-rsvp-status="attending"] button'
+				'[data-rsvp-status="attending"] button',
 			),
 		};
 	}
@@ -165,12 +165,12 @@ describe( 'rsvp updateRsvp post-success modal switch', () => {
 
 		expect( actions.openModal ).toHaveBeenCalledWith(
 			null,
-			attendingButton
+			attendingButton,
 		);
 		expect( actions.closeModal ).toHaveBeenCalledWith(
 			null,
 			trigger,
-			false
+			false,
 		);
 		expect( window.alert ).not.toHaveBeenCalled();
 	} );
@@ -188,7 +188,7 @@ describe( 'rsvp updateRsvp post-success modal switch', () => {
 		expect( actions.closeModal ).toHaveBeenCalledWith(
 			null,
 			trigger,
-			true
+			true,
 		);
 		// The RSVP succeeded; no failure alert may fire.
 		expect( window.alert ).not.toHaveBeenCalled();
