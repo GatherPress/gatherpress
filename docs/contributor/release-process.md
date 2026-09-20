@@ -241,6 +241,11 @@ Every one of these is required; skipping any of them bites the next release:
   If the commit step failed because main moved between the tag and the run,
   the job says so rather than committing onto a stale branch. Rebuild it the
   way a DIRTY rollup is rebuilt, below.
+- [ ] **Check the rollup PR for an `@since` note.** A patch stamps `@since`
+  on its own branch, so develop still says `TBD` for the same symbols. The
+  rollup carries back every docblock that is byte-identical apart from the
+  tag, and lists anything it could not match with certainty in the PR body.
+  Resolve those by hand before merging, or the next minor claims them.
 - [ ] **Check develop has the version's credits file** at
   `.github/scripts/release/credits/X.Y.Z.json`. A patch's file is written on
   the `version-X.Y.Z` branch, so it only reaches main; the rollup PR carries

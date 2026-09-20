@@ -226,6 +226,31 @@ jobs:
             --arg contents "$(base64 -w0 CHANGELOG.md)" \
             '[{path: $path, contents: $contents}]')
 
+          # A patch stamps @since on its own branch, so develop still says
+          # TBD for the same symbols and the next minor would claim them.
+          # Only docblocks that are byte-identical apart from the tag are
+          # carried; anything else is reported for a human (#2222).
+          git fetch --quiet origin develop
+          php .github/scripts/release/carry-since.php --version="${VERSION}" > /tmp/carry-since.json
+
+          carried=$(jq '[.additions[].resolved] | add // 0' /tmp/carry-since.json)
+          unmatched=$(jq -r '.unmatched | length' /tmp/carry-since.json)
+
+          if [ "${carried}" -gt 0 ]; then
+            echo "Carrying ${carried} resolved @since tag(s) back to develop."
+            additions=$(jq -n \
+              --argjson additions "${additions}" \
+              --slurpfile carry /tmp/carry-since.json \
+              '$additions + ($carry[0].additions | map({path, contents}))')
+          fi
+
+          since_note=""
+
+          if [ "${unmatched}" -gt 0 ]; then
+            echo "::warning::${unmatched} @since docblock(s) could not be matched on develop; resolve them by hand."
+            since_note=$(jq -r '"\n\n**@since tags needing a look.** These shipped in this release but their docblocks on develop are not identical to the released ones, so they were left alone rather than guessed at:\n" + (.unmatched | map("- `" + . + "`") | join("\n"))' /tmp/carry-since.json)
+          fi
+
           # A patch's credits file is written on the version-X.Y.Z branch, so
           # it only ever reaches main. Carry it back when develop is missing
           # it, which is how develop ended up without 0.35.3.json (#2311). A
@@ -264,7 +289,7 @@ jobs:
             --base develop \
             --head "${branch}" \
             --title "Roll up changelog for ${VERSION}" \
-            --body "Automated rollup of \`.github/changelog/*\` entries into \`CHANGELOG.md\` as part of the ${VERSION} release. Auto-merges once checks pass; the rendered release body lives at https://github.com/${GITHUB_REPOSITORY}/releases/tag/${VERSION}. The matching parity PR to main is opened alongside this one and is **not** set to auto-merge." \
+            --body "Automated rollup of \`.github/changelog/*\` entries into \`CHANGELOG.md\` as part of the ${VERSION} release. Auto-merges once checks pass; the rendered release body lives at https://github.com/${GITHUB_REPOSITORY}/releases/tag/${VERSION}. The matching parity PR to main is opened alongside this one and is **not** set to auto-merge.${since_note}" \
             --label "Skip Changelog")
 
           gh pr merge --auto --squash "${pr_url}"
