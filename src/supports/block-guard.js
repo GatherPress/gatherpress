@@ -92,7 +92,7 @@ function ensureGuardHint( doc ) {
 	hint.className = 'screen-reader-text';
 	hint.textContent = __(
 		'Protected block. Press Enter to edit the blocks inside it.',
-		'gatherpress'
+		'gatherpress',
 	);
 	doc.body.appendChild( hint );
 }
@@ -142,7 +142,7 @@ export function publishSealedState( clientId, sealed ) {
  */
 export function useIsBlockSealed( clientId ) {
 	const [ sealed, setSealed ] = useState(
-		() => sealedStates.get( clientId ) ?? true
+		() => sealedStates.get( clientId ) ?? true,
 	);
 
 	useEffect( () => {
@@ -414,7 +414,7 @@ export const withBlockGuard = createHigherOrderComponent( ( BlockListBlock ) => 
 			if ( wasSealed.current && ! sealed ) {
 				speak(
 					__( 'Block unlocked. You can edit its contents.', 'gatherpress' ),
-					'polite'
+					'polite',
 				);
 			}
 

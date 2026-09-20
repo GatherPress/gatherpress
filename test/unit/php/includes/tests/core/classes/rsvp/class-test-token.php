@@ -28,7 +28,6 @@ class Test_Token extends Base {
 	 * Coverage for __construct method with invalid comment ID.
 	 *
 	 * @covers ::__construct
-	 * @covers ::is_valid_rsvp_comment
 	 *
 	 * @return void
 	 */
@@ -44,7 +43,6 @@ class Test_Token extends Base {
 	 * Coverage for __construct method with non-existent comment.
 	 *
 	 * @covers ::__construct
-	 * @covers ::is_valid_rsvp_comment
 	 *
 	 * @return void
 	 */
@@ -57,7 +55,6 @@ class Test_Token extends Base {
 	 * Coverage for __construct method with invalid comment type.
 	 *
 	 * @covers ::__construct
-	 * @covers ::is_valid_rsvp_comment
 	 *
 	 * @return void
 	 */
@@ -78,7 +75,6 @@ class Test_Token extends Base {
 	 * Coverage for __construct method with valid RSVP comment.
 	 *
 	 * @covers ::__construct
-	 * @covers ::is_valid_rsvp_comment
 	 *
 	 * @return void
 	 */

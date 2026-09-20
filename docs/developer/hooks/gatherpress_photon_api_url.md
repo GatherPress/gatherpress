@@ -21,9 +21,9 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-geocoding.php:1261](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-geocoding.php#L1261)
+- [includes/core/classes/class-geocoding.php:1365](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-geocoding.php#L1365)
 ```php
-apply_filters( 'gatherpress_photon_api_url', self::PHOTON_API_URL )
+apply_filters( 'gatherpress_photon_api_url', $default )
 ```
 
 

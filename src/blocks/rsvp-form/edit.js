@@ -43,8 +43,8 @@ function templateToBlocks( template ) {
 		createBlock(
 			name,
 			attributes,
-			templateToBlocks( innerBlocks || [] )
-		)
+			templateToBlocks( innerBlocks || [] ),
+		),
 	);
 }
 
@@ -66,7 +66,7 @@ function templateToBlocks( template ) {
  */
 const DEFAULT_TEMPLATE = applyFilters(
 	'gatherpress.rsvpFormDefaultTemplate',
-	STANDARD_RSVP_FORM_TEMPLATE
+	STANDARD_RSVP_FORM_TEMPLATE,
 );
 
 /**
@@ -101,7 +101,7 @@ const PATTERNS = applyFilters( 'gatherpress.rsvpFormPatterns', [
 		title: __( 'Standard RSVP Form', 'gatherpress' ),
 		description: __(
 			'Name + email + guest count + anonymous opt-in + email-updates opt-in, plus success and past-event message groups.',
-			'gatherpress'
+			'gatherpress',
 		),
 		template: STANDARD_RSVP_FORM_TEMPLATE,
 	},
@@ -123,7 +123,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	// Get event data - either from override postId or current post.
 	const { maxGuestLimit: maxAttendanceLimit, enableRsvp, enableAnonymousRsvp } = useSelect(
 		( select ) => getEventMeta( select, postId, attributes ),
-		[ postId, attributes ]
+		[ postId, attributes ],
 	);
 
 	// Read per-event open RSVP setting (integer 0/1; undefined/null defaults to enabled).
@@ -137,7 +137,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	// gate re-evaluates when the override target's entity record loads.
 	const isValidEvent = useSelect(
 		( select ) => hasValidEventId( select, postId ),
-		[ postId ]
+		[ postId ],
 	);
 
 	// Get all inner blocks.
@@ -362,7 +362,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 						icon="forms"
 						instructions={ __(
 							'Choose a pattern for the RSVP form.',
-							'gatherpress'
+							'gatherpress',
 						) }
 						patterns={ PATTERNS }
 						showStartBlank={ false }

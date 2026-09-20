@@ -76,7 +76,7 @@ jest.mock( '@wordpress/components', () => {
 		),
 		ToolbarButton: forwardRef( function MockToolbarButton(
 			{ title, onClick, isPressed },
-			ref
+			ref,
 		) {
 			return (
 				<button
@@ -113,7 +113,7 @@ jest.mock(
 				.replace( /^www\./, '' )
 				.replace( /\/$/, '' );
 		},
-	} )
+	} ),
 );
 
 describe( 'UrlField', () => {
@@ -134,28 +134,28 @@ describe( 'UrlField', () => {
 	it( 'always renders as an anchor so the contenteditable element does not remount on first keystroke', () => {
 		const { rerender } = render( <UrlField { ...defaultProps } /> );
 		expect( screen.getByTestId( 'rich-text' ).tagName.toLowerCase() ).toBe(
-			'a'
+			'a',
 		);
 
 		rerender(
-			<UrlField { ...defaultProps } value="https://example.com" />
+			<UrlField { ...defaultProps } value="https://example.com" />,
 		);
 		expect( screen.getByTestId( 'rich-text' ).tagName.toLowerCase() ).toBe(
-			'a'
+			'a',
 		);
 	} );
 
 	it( 'uses a placeholder href when empty and the URL when populated', () => {
 		const { rerender } = render( <UrlField { ...defaultProps } /> );
 		expect( screen.getByTestId( 'rich-text' ).getAttribute( 'href' ) ).toBe(
-			'#'
+			'#',
 		);
 
 		rerender(
-			<UrlField { ...defaultProps } value="https://example.com" />
+			<UrlField { ...defaultProps } value="https://example.com" />,
 		);
 		expect( screen.getByTestId( 'rich-text' ).getAttribute( 'href' ) ).toBe(
-			'https://example.com'
+			'https://example.com',
 		);
 	} );
 
@@ -172,12 +172,12 @@ describe( 'UrlField', () => {
 				{ ...defaultProps }
 				value="https://www.example.com/"
 				cleanUrl={ false }
-			/>
+			/>,
 		);
 
 		const element = screen.getByTestId( 'rich-text' );
 		expect( element.getAttribute( 'data-value' ) ).toBe(
-			'https://www.example.com/'
+			'https://www.example.com/',
 		);
 	} );
 
@@ -221,7 +221,7 @@ describe( 'UrlField', () => {
 				{ ...defaultProps }
 				value="https://example.com"
 				linkTarget="_blank"
-			/>
+			/>,
 		);
 
 		const element = screen.getByTestId( 'rich-text' );
@@ -235,7 +235,7 @@ describe( 'UrlField', () => {
 				{ ...defaultProps }
 				value="https://example.com"
 				linkTarget="_self"
-			/>
+			/>,
 		);
 
 		const element = screen.getByTestId( 'rich-text' );
@@ -248,7 +248,7 @@ describe( 'UrlField', () => {
 		const element = screen.getByTestId( 'rich-text' );
 		// Uses default 'Venue website URL…' placeholder.
 		expect( element.getAttribute( 'data-placeholder' ) ).toBe(
-			'Venue website URL…'
+			'Venue website URL…',
 		);
 	} );
 
@@ -265,7 +265,7 @@ describe( 'UrlField', () => {
 		const placeholder = screen.getByText( 'Venue website URL…' );
 		expect( placeholder ).toBeTruthy();
 		expect( placeholder.className ).toBe(
-			'wp-block-gatherpress-venue-detail__placeholder'
+			'wp-block-gatherpress-venue-detail__placeholder',
 		);
 	} );
 
@@ -275,7 +275,7 @@ describe( 'UrlField', () => {
 				{ ...defaultProps }
 				value="https://www.example.com/"
 				cleanUrl={ true }
-			/>
+			/>,
 		);
 
 		const element = screen.getByTestId( 'rich-text' );
@@ -290,7 +290,7 @@ describe( 'UrlField', () => {
 				{ ...defaultProps }
 				setAttributes={ setAttributes }
 				linkTarget="_self"
-			/>
+			/>,
 		);
 
 		// Open the popover.
@@ -311,7 +311,7 @@ describe( 'UrlField', () => {
 				{ ...defaultProps }
 				setAttributes={ setAttributes }
 				linkTarget="_blank"
-			/>
+			/>,
 		);
 
 		// Open the popover.
@@ -332,7 +332,7 @@ describe( 'UrlField', () => {
 				{ ...defaultProps }
 				setAttributes={ setAttributes }
 				cleanUrl={ false }
-			/>
+			/>,
 		);
 
 		// Open the popover.
@@ -352,7 +352,7 @@ describe( 'UrlField', () => {
 				{ ...defaultProps }
 				value="https://www.example.com/"
 				cleanUrl={ true }
-			/>
+			/>,
 		);
 
 		const element = screen.getByTestId( 'rich-text' );
@@ -369,7 +369,7 @@ describe( 'UrlField', () => {
 
 	it( 'has onClick handler when value exists', () => {
 		render(
-			<UrlField { ...defaultProps } value="https://example.com" />
+			<UrlField { ...defaultProps } value="https://example.com" />,
 		);
 
 		const element = screen.getByTestId( 'rich-text' );

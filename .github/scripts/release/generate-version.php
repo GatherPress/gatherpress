@@ -318,6 +318,131 @@ function patch_file( $file, $pattern, $replacement, $label ) {
 }
 
 /**
+ * Resolve `@since TBD` docblocks to the version being released.
+ *
+ * New symbols are authored with `@since TBD`, because the version they will
+ * ship in is not knowable while the work is in flight. A fix written on
+ * develop may go out in the next minor, or be cherry-picked into a patch
+ * release first, and only the branch being versioned knows which.
+ *
+ * Resolving here rather than on merge is what makes the patch flow correct:
+ * a cherry-picked fix carries `TBD` onto the `version-X.Y.N` branch, and
+ * this run stamps it with the patch version it is actually shipping in.
+ *
+ * Pre-releases are skipped. An alpha is not the version a symbol shipped in,
+ * and stamping one would freeze the answer before a patch release could
+ * claim it.
+ *
+ * @param string $version The version being generated.
+ * @return void
+ */
+function resolve_since_tags( $version ) {
+	if ( preg_match( '/-(alpha|beta|rc)\./', $version ) ) {
+		warning( "Leaving @since TBD alone for the {$version} pre-release; only a stable version can answer it." );
+		return;
+	}
+
+	$files   = since_source_files();
+	$updated = 0;
+	$total   = 0;
+
+	foreach ( $files as $file ) {
+		$contents = file_get_contents( $file );
+
+		// A file that cannot be read could be holding a TBD, and reporting
+		// success without knowing is the one outcome this must not have.
+		if ( $contents === false ) {
+			fail( "Could not read {$file} while resolving @since TBD." );
+		}
+
+		if ( ! str_contains( $contents, 'TBD' ) ) {
+			continue;
+		}
+
+		$count        = 0;
+		$new_contents = preg_replace( '/(@since\s+)TBD\b/', '${1}' . $version, $contents, -1, $count );
+
+		if ( $count === 0 ) {
+			continue;
+		}
+
+		if ( file_put_contents( $file, $new_contents ) === false ) {
+			fail( "Failed to write {$file} while resolving @since TBD." );
+		}
+
+		++$updated;
+		$total += $count;
+	}
+
+	if ( $total === 0 ) {
+		success( 'No @since TBD tags to resolve.' );
+		return;
+	}
+
+	success( "Resolved {$total} @since TBD tag(s) to {$version} across {$updated} file(s)." );
+
+	// The release must not ship a docblock that still says TBD, so the write
+	// is verified rather than assumed.
+	$leftovers = array();
+
+	foreach ( since_source_files() as $file ) {
+		$contents = file_get_contents( $file );
+
+		if ( $contents === false ) {
+			fail( "Could not re-read {$file} while verifying the @since resolution." );
+		}
+
+		if ( preg_match( '/@since\s+TBD\b/', $contents ) ) {
+			$leftovers[] = str_replace( REPO_ROOT . '/', '', $file );
+		}
+	}
+
+	if ( ! empty( $leftovers ) ) {
+		fail( 'Unresolved @since TBD remains in: ' . implode( ', ', $leftovers ) );
+	}
+}
+
+/**
+ * Source files that may carry a docblock.
+ *
+ * Only the shipped source is walked. Generated hook docs pick the resolved
+ * values up on their own regen, and `build/` is rebuilt from `src/`.
+ *
+ * @return string[] Absolute paths.
+ */
+function since_source_files() {
+	$files = array();
+
+	foreach ( array( '/includes', '/src' ) as $relative ) {
+		$root = REPO_ROOT . $relative;
+
+		if ( ! is_dir( $root ) ) {
+			continue;
+		}
+
+		$iterator = new RecursiveIteratorIterator(
+			new RecursiveDirectoryIterator( $root, FilesystemIterator::SKIP_DOTS )
+		);
+
+		foreach ( $iterator as $file ) {
+			if ( ! $file->isFile() ) {
+				continue;
+			}
+
+			if ( ! in_array( strtolower( $file->getExtension() ), array( 'php', 'js' ), true ) ) {
+				continue;
+			}
+
+			$files[] = $file->getPathname();
+		}
+	}
+
+	sort( $files );
+
+	return $files;
+}
+
+/**
  * Patch the supported-versions table in a SECURITY.md file.
  *
  * @param string $file        Absolute path to the SECURITY.md.
@@ -404,6 +529,9 @@ patch_file(
 );
 
 patch_security_table( REPO_ROOT . '/SECURITY.md', $major_minor, 'core' );
+
+// Docblocks authored as `@since TBD` become the version now being released.
+resolve_since_tags( $version );
 
 // GatherPress Alpha is versioned in lockstep; sync it when checked out.
 $alpha_dir = dirname( REPO_ROOT ) . '/gatherpress-alpha';

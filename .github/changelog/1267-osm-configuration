@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Admin settings for the geocoding service and map tile source: a configurable Photon-compatible geocoding API URL, a country-code filter for geocoding results, and a custom tile layer URL/attribution for self-hosted or third-party OpenStreetMap tiles.

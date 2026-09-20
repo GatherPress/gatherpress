@@ -176,7 +176,7 @@ final class Rsvp_Template {
 				. ' data-block-template="%1$s"'
 				. ' data-block-signature="%2$s"></div>',
 			esc_attr( $blocks ),
-			esc_attr( self::sign_template( $blocks ) )
+			esc_attr( self::sign_template( $blocks, $post_id ) )
 		);
 
 		return $block_content . $rsvp_response_template;
@@ -190,28 +190,37 @@ final class Rsvp_Template {
 	 * key is the site's nonce salt: stable for the site, the same for every
 	 * visitor, and not derived from anything a request can influence.
 	 *
-	 * @since 0.36.0
+	 * The signed message names this use, the site and the event along with the
+	 * template, so a signature is only good for the event it was emitted on.
+	 *
+	 * @since 0.35.3
+	 * @since 0.35.4 Added the `$post_id` parameter.
 	 *
 	 * @param string $template The JSON-encoded parsed block.
+	 * @param int    $post_id  The event the template was emitted for.
 	 *
 	 * @return string The signature.
 	 */
-	public static function sign_template( string $template ): string {
-		return hash_hmac( 'sha256', $template, wp_salt( 'nonce' ) );
+	public static function sign_template( string $template, int $post_id ): string {
+		$message = implode( '|', array( self::BLOCK_NAME, get_current_blog_id(), $post_id, $template ) );
+
+		return hash_hmac( 'sha256', $message, wp_salt( 'nonce' ) );
 	}
 
 	/**
 	 * Whether a template and signature pair came from this class.
 	 *
-	 * @since 0.36.0
+	 * @since 0.35.3
+	 * @since 0.35.4 Added the `$post_id` parameter.
 	 *
 	 * @param string $template  The JSON-encoded parsed block.
+	 * @param int    $post_id   The event the template is being rendered for.
 	 * @param string $signature The signature that accompanied it.
 	 *
-	 * @return bool True when the signature matches the template.
+	 * @return bool True when the signature matches the template and event.
 	 */
-	public static function verify_template( string $template, string $signature ): bool {
-		return hash_equals( self::sign_template( $template ), $signature );
+	public static function verify_template( string $template, int $post_id, string $signature ): bool {
+		return hash_equals( self::sign_template( $template, $post_id ), $signature );
 	}
 
 	/**

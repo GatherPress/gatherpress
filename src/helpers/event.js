@@ -85,7 +85,7 @@ export function usePostTypeSupports( support, postType = null ) {
 			return !! wpSelect( 'core' ).getPostType( typeToCheck )
 				?.supports?.[ support ];
 		},
-		[ support, postType ]
+		[ support, postType ],
 	);
 }
 
@@ -177,7 +177,7 @@ export function findEventPostById( selectFunc, postId ) {
 		const records = selectFunc( 'core' ).getEntityRecords(
 			'postType',
 			type.slug,
-			{ include: [ postId ], context: 'edit', per_page: 1 }
+			{ include: [ postId ], context: 'edit', per_page: 1 },
 		);
 		if ( Array.isArray( records ) && 0 < records.length ) {
 			const post = records[ 0 ];
@@ -260,7 +260,7 @@ const verifyPostIdIsValidEvent = ( selectFunc, postId, postType ) => {
 		const post = selectFunc( 'core' ).getEntityRecord(
 			'postType',
 			currentPostType,
-			postId
+			postId,
 		);
 		return !! post;
 	}
@@ -271,7 +271,7 @@ const verifyPostIdIsValidEvent = ( selectFunc, postId, postType ) => {
 		const post = selectFunc( 'core' ).getEntityRecord(
 			'postType',
 			lookupType,
-			postId
+			postId,
 		);
 		return !! post && 'publish' === post.status;
 	}
@@ -391,7 +391,7 @@ export function hasEventPastNotice() {
 		const singularLabel = getPostTypeLabel(
 			'singular_name',
 			null,
-			__( 'Event', 'gatherpress' )
+			__( 'Event', 'gatherpress' ),
 		);
 
 		notices.createNotice(
@@ -399,7 +399,7 @@ export function hasEventPastNotice() {
 			sprintf(
 				/* translators: %s: Singular post type label, e.g. "Event". */
 				__( '%s has already passed.', 'gatherpress' ),
-				singularLabel
+				singularLabel,
 			),
 			{
 				id,
@@ -430,7 +430,7 @@ export function hasOnlineEventTerm( postId = null ) {
 	const onlineEventTerms = select( 'core' ).getEntityRecords(
 		'taxonomy',
 		venueTaxonomy,
-		{ slug: 'online-event', per_page: 1 }
+		{ slug: 'online-event', per_page: 1 },
 	);
 	const onlineEventTermId = onlineEventTerms?.[ 0 ]?.id;
 
@@ -443,7 +443,7 @@ export function hasOnlineEventTerm( postId = null ) {
 		const post = select( 'core' ).getEntityRecord(
 			'postType',
 			currentPostType || 'gatherpress_event',
-			postId
+			postId,
 		);
 		const venueTaxonomyIds = post?.[ venueTaxonomy ];
 
@@ -452,7 +452,7 @@ export function hasOnlineEventTerm( postId = null ) {
 		}
 
 		return venueTaxonomyIds.some(
-			( id ) => String( id ) === String( onlineEventTermId )
+			( id ) => String( id ) === String( onlineEventTermId ),
 		);
 	}
 
@@ -469,7 +469,7 @@ export function hasOnlineEventTerm( postId = null ) {
 	}
 
 	return venueTaxonomyIds.some(
-		( id ) => String( id ) === String( onlineEventTermId )
+		( id ) => String( id ) === String( onlineEventTermId ),
 	);
 }
 

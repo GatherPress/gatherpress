@@ -57,32 +57,32 @@ describe( 'rsvp-admin entry point', () => {
 
 		expect( mount.getByLabelText( 'Pick an event' ) ).toBeInTheDocument();
 		expect(
-			mount.getByLabelText( 'Filter by response: Attending' )
+			mount.getByLabelText( 'Filter by response: Attending' ),
 		).toBeInTheDocument();
 	} );
 
 	it( 'falls back to a default label when the mount point omits one', () => {
 		expect(
-			within( nodes.bare ).getByLabelText( 'Filter by event' )
+			within( nodes.bare ).getByLabelText( 'Filter by event' ),
 		).toBeInTheDocument();
 	} );
 
 	it( 'starts unfiltered when the request carried no filters', () => {
 		expect(
-			within( nodes.bare ).getByLabelText( 'Filter by response: all' )
+			within( nodes.bare ).getByLabelText( 'Filter by response: all' ),
 		).toBeInTheDocument();
 	} );
 
 	it( 'still renders the event picker when the statuses are malformed', () => {
 		expect(
-			within( nodes.malformed ).getByLabelText( 'Filter by event' )
+			within( nodes.malformed ).getByLabelText( 'Filter by event' ),
 		).toBeInTheDocument();
 	} );
 
 	it( 'mounts every mount point on the screen', () => {
 		// `extra_tablenav()` prints one above the table and one below it.
 		expect( screen.getAllByRole( 'button', { name: 'Filter' } ) ).toHaveLength(
-			Object.keys( MOUNTS ).length
+			Object.keys( MOUNTS ).length,
 		);
 	} );
 } );
