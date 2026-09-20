@@ -91,3 +91,5 @@ Returning `true` forces inheritance for an option that wasn't in the allowlist. 
 `Settings::export_settings()`, `Settings::validate_import()`, and `Settings::import_settings()` each accept a trailing `string $scope = 'blog'` parameter. When `'network'` is passed, the methods read from and write to the network-wide site option instead of the blog option, and `import_settings()` flushes `Network::get_config()` so subsequent reads see the new values.
 
 The JSON produced by `export_settings()` includes a `"scope"` field so an import can be routed to the right store even if the operator picks the wrong UI by accident. The Tools template and its AJAX handlers use the current screen (`is_network_admin()`) to set the scope when the tab is rendered at network admin.
+
+Scope decides *which* store an import or export touches. Whether an option takes part at all is decided per option by `exportable` and `importable`, documented in [Extending Settings](extending-settings.md#exportable-and-importable). An option that opts out is left out of the export and refused by the import in both scopes.

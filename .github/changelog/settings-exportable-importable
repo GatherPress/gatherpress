@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Settings can now declare that they do not travel. An option marked `exportable => false` is left out of a settings export, and is refused by an import, so a value that describes one site cannot be carried to another by a settings file. An option can also opt out of import alone with `importable => false`, for a value worth reading in a file but never applying. Imports report anything they refused instead of counting it as an unknown key.
