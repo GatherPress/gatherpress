@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use DateTimeImmutable;
 use Exception;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Email_Sends;
 use GatherPress\Core\Feed;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Settings;
@@ -93,6 +94,7 @@ final class Setup {
 	protected function instantiate_classes(): void {
 		Abilities::get_instance();
 		Admin_List::get_instance();
+		Email_Sends::get_instance();
 		Meta::get_instance();
 		Query::get_instance();
 		Rest_Api::get_instance();
