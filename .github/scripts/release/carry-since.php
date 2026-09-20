@@ -142,7 +142,7 @@ foreach ( carry_source_files() as $source ) {
 			$unmatched[] = sprintf( '%s (no identical TBD docblock on develop)', $source );
 			continue;
 		}
-		$updated  = substr_replace( $updated, $block, $position, strlen( $unresolved ) );
+		$updated = substr_replace( $updated, $block, $position, strlen( $unresolved ) );
 
 		++$changed;
 	}
