@@ -2555,7 +2555,7 @@ class Test_Query extends Base {
 	/**
 	 * Build three events around June 2026, as the site's clock reckons it.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return array<string, int> Post IDs keyed by the part they play.
 	 */

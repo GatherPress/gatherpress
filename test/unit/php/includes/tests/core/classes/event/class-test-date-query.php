@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Event\Date_Query.
  *
  * @package GatherPress\Core\Event
- * @since 0.36.0
+ * @since TBD
  */
 
 namespace GatherPress\Tests\Core\Event;
@@ -26,7 +26,7 @@ class Test_Date_Query extends Base {
 	 * all. New York keeps that mistake visible, and straddles a DST change
 	 * between January and June.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return void
 	 */
