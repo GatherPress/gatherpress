@@ -3588,4 +3588,238 @@ class Test_Settings extends Base {
 		$instance->set( 'carto_api_key', '' );
 		$instance->set( 'map_tile_url_custom', '' );
 	}
+
+	/**
+	 * Declare a page covering each combination of the travel flags.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	private function declare_travel_flag_fixture(): void {
+		add_filter(
+			'gatherpress_sub_pages',
+			static function ( $sub_pages ) {
+				$sub_pages['test_travel_flags'] = array(
+					'name'     => 'Test Travel Flags',
+					'priority' => 99,
+					'sections' => array(
+						'test_travel_flags_section' => array(
+							'name'    => 'Test Travel Flags Section',
+							'options' => array(
+								'test_ordinary_setting'  => array(
+									'labels' => array( 'name' => 'Ordinary' ),
+									'field'  => array( 'type' => 'checkbox' ),
+								),
+								'test_read_only_setting' => array(
+									'labels'     => array( 'name' => 'Travels but is never applied' ),
+									'field'      => array( 'type' => 'checkbox' ),
+									'importable' => false,
+								),
+								'test_stays_at_home_setting' => array(
+									'labels'     => array( 'name' => 'Never leaves this site' ),
+									'field'      => array( 'type' => 'checkbox' ),
+									'exportable' => false,
+								),
+							),
+						),
+					),
+				);
+
+				return $sub_pages;
+			}
+		);
+	}
+
+	/**
+	 * Only the option that opts out of export is kept out of a file.
+	 *
+	 * @covers ::get_non_exportable_keys
+	 * @covers ::get_keys_opted_out_of
+	 *
+	 * @return void
+	 */
+	public function test_get_non_exportable_keys_lists_only_opted_out_options(): void {
+		$this->declare_travel_flag_fixture();
+
+		$keys = Settings::get_instance()->get_non_exportable_keys();
+
+		$this->assertContains( 'test_stays_at_home_setting', $keys, 'The option that opts out is listed.' );
+		$this->assertNotContains( 'test_ordinary_setting', $keys, 'Every other option travels as it always has.' );
+		$this->assertNotContains(
+			'test_read_only_setting',
+			$keys,
+			'Refusing to apply a value from a file says nothing about whether it may be read in one.'
+		);
+
+		remove_all_filters( 'gatherpress_sub_pages' );
+	}
+
+	/**
+	 * Keeping a value off a file keeps a file from setting it.
+	 *
+	 * @covers ::get_non_importable_keys
+	 *
+	 * @return void
+	 */
+	public function test_non_exportable_options_are_non_importable_too(): void {
+		$this->declare_travel_flag_fixture();
+
+		$keys = Settings::get_instance()->get_non_importable_keys();
+
+		$this->assertContains(
+			'test_stays_at_home_setting',
+			$keys,
+			'A value that may not leave this site may not be written into it by a file either.'
+		);
+		$this->assertContains( 'test_read_only_setting', $keys, 'An option can also opt out of import alone.' );
+		$this->assertNotContains( 'test_ordinary_setting', $keys, 'Every other option imports as it always has.' );
+
+		remove_all_filters( 'gatherpress_sub_pages' );
+	}
+
+	/**
+	 * A flag left out of a declaration is on.
+	 *
+	 * @covers ::get_keys_opted_out_of
+	 *
+	 * @return void
+	 */
+	public function test_keys_opted_out_of_reads_an_absent_flag_as_on(): void {
+		$this->declare_travel_flag_fixture();
+
+		$keys = \PMC\Unit_Test\Utility::invoke_hidden_method(
+			Settings::get_instance(),
+			'get_keys_opted_out_of',
+			array( 'importable' )
+		);
+
+		$this->assertSame(
+			array( 'test_read_only_setting' ),
+			$keys,
+			'Only a declaration that says false opts out.'
+		);
+
+		remove_all_filters( 'gatherpress_sub_pages' );
+	}
+
+	/**
+	 * An import writes the ordinary option and refuses both opted-out ones.
+	 *
+	 * @covers ::import_settings
+	 *
+	 * @return void
+	 */
+	public function test_import_settings_refuses_non_importable_keys(): void {
+		$this->declare_travel_flag_fixture();
+
+		delete_option( Settings::OPTION_NAME );
+
+		$result = Settings::get_instance()->import_settings(
+			array(
+				'settings' => array(
+					'test_ordinary_setting'      => '1',
+					'test_read_only_setting'     => '1',
+					'test_stays_at_home_setting' => '1',
+				),
+			)
+		);
+
+		$stored = (array) get_option( Settings::OPTION_NAME, array() );
+
+		$this->assertArrayHasKey( 'test_ordinary_setting', $stored, 'The ordinary option is imported.' );
+		$this->assertArrayNotHasKey(
+			'test_read_only_setting',
+			$stored,
+			'A file must not be able to set an option that was declared out of reach.'
+		);
+		$this->assertArrayNotHasKey(
+			'test_stays_at_home_setting',
+			$stored,
+			'Opting out of export opts out of import with it.'
+		);
+		$this->assertContains(
+			'test_read_only_setting',
+			$result['not_importable'],
+			'The refusal is reported, so nobody is left thinking the value carried over.'
+		);
+		$this->assertNotContains(
+			'test_read_only_setting',
+			$result['skipped'],
+			'A known key that was refused is not a key nobody recognizes.'
+		);
+
+		delete_option( Settings::OPTION_NAME );
+		remove_all_filters( 'gatherpress_sub_pages' );
+	}
+
+	/**
+	 * Validation separates a refused key from one nobody recognizes.
+	 *
+	 * @covers ::validate_import
+	 *
+	 * @return void
+	 */
+	public function test_validate_import_separates_refused_from_unknown(): void {
+		$this->declare_travel_flag_fixture();
+
+		$result = Settings::get_instance()->validate_import(
+			array(
+				'settings' => array(
+					'test_read_only_setting' => '1',
+					'not_a_setting_at_all'   => '1',
+				),
+			)
+		);
+
+		$this->assertSame(
+			array( 'not_a_setting_at_all' ),
+			$result['unknown'],
+			'An unrecognized key is unknown.'
+		);
+		$this->assertSame(
+			array( 'test_read_only_setting' ),
+			$result['not_importable'],
+			'A recognized key that may not be written is reported on its own.'
+		);
+
+		remove_all_filters( 'gatherpress_sub_pages' );
+	}
+
+	/**
+	 * An export leaves out only what opted out of travelling.
+	 *
+	 * @covers ::export_settings
+	 *
+	 * @return void
+	 */
+	public function test_export_settings_omits_non_exportable_keys(): void {
+		$this->declare_travel_flag_fixture();
+
+		update_option(
+			Settings::OPTION_NAME,
+			array(
+				'test_ordinary_setting'      => '1',
+				'test_read_only_setting'     => '1',
+				'test_stays_at_home_setting' => '1',
+			)
+		);
+
+		$export = Settings::get_instance()->export_settings();
+
+		$this->assertArrayHasKey( 'test_ordinary_setting', $export['settings'], 'The ordinary option travels.' );
+		$this->assertArrayHasKey(
+			'test_read_only_setting',
+			$export['settings'],
+			'A value worth reading in a file still travels, even though an import will not apply it.'
+		);
+		$this->assertArrayNotHasKey(
+			'test_stays_at_home_setting',
+			$export['settings'],
+			'A value about this one site does not belong in a file that gets handed around.'
+		);
+
+		delete_option( Settings::OPTION_NAME );
+		remove_all_filters( 'gatherpress_sub_pages' );
+	}
 }

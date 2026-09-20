@@ -51,10 +51,26 @@ use GatherPress\Core\Traits\Singleton;
  *     description?: string,
  *     field: SettingsField,
  *     show_if?: SettingsShowIf,
+ *     importable?: bool,
+ *     exportable?: bool,
  *     callback?: callable
  * }
  * @phpstan-type SettingsSection array{name: string, description?: string, options?: array<string, SettingsOption>}
  * @phpstan-type SettingsSubPage array{name: string, priority?: int, sections?: array<string, SettingsSection>}
+ * @phpstan-type SettingsImportValidation array{
+ *     valid: bool,
+ *     changes: string[],
+ *     unknown: string[],
+ *     not_importable: string[],
+ *     warnings: string[]
+ * }
+ * @phpstan-type SettingsImportResult array{
+ *     success: bool,
+ *     imported: string[],
+ *     skipped: string[],
+ *     not_importable: string[],
+ *     warnings: string[]
+ * }
  */
 class Settings {
 
@@ -693,6 +709,86 @@ class Settings {
 			'<input type="hidden" class="gatherpress-show-if-marker" data-show-if="%s" />',
 			esc_attr( (string) wp_json_encode( $conditions ) )
 		);
+	}
+
+	/**
+	 * Option keys an import is never allowed to write.
+	 *
+	 * An option declares `'importable' => false` when the harm of setting it
+	 * by accident outweighs the convenience of carrying it between sites.
+	 * The uninstall opt-ins are the case this exists for: every other
+	 * setting shows its effect as soon as it is wrong, while those do
+	 * nothing until the plugin is deleted, possibly months later and by
+	 * somebody who never ran the import, and what they remove is gone.
+	 *
+	 * An import skips these keys and reports them, so nobody is left
+	 * believing a value carried over when it did not.
+	 *
+	 * Opting out of export opts out of import too. A value that may not
+	 * leave this site has no business being written into it by a file, so
+	 * `'exportable' => false` is enough on its own and this flag is only
+	 * needed for a value that may travel but must not be applied.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string[] The option keys.
+	 */
+	public function get_non_importable_keys(): array {
+		return array_values(
+			array_unique(
+				array_merge(
+					$this->get_keys_opted_out_of( 'importable' ),
+					$this->get_non_exportable_keys()
+				)
+			)
+		);
+	}
+
+	/**
+	 * Option keys an export never writes into the file.
+	 *
+	 * An option declares `'exportable' => false` when its value is about
+	 * this one site and should not travel: it describes what happens here,
+	 * it may say something the owner would not want to hand over with a
+	 * settings file, and nothing on the receiving end should act on it.
+	 *
+	 * Independent of `importable`. A value can be worth reading in a file
+	 * without being safe to apply, and worth keeping out of a file while
+	 * still being settable by one.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string[] The option keys.
+	 */
+	public function get_non_exportable_keys(): array {
+		return $this->get_keys_opted_out_of( 'exportable' );
+	}
+
+	/**
+	 * Option keys whose declaration turns a boolean flag off.
+	 *
+	 * A flag that is absent is on, so an option has to say so to opt out.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $flag The declaration key to read.
+	 *
+	 * @return string[] The option keys.
+	 */
+	protected function get_keys_opted_out_of( string $flag ): array {
+		$keys = array();
+
+		foreach ( $this->get_sub_pages() as $sub_page_settings ) {
+			foreach ( (array) ( $sub_page_settings['sections'] ?? array() ) as $section_settings ) {
+				foreach ( (array) ( $section_settings['options'] ?? array() ) as $option => $option_settings ) {
+					if ( false === ( $option_settings[ $flag ] ?? true ) ) {
+						$keys[] = (string) $option;
+					}
+				}
+			}
+		}
+
+		return $keys;
 	}
 
 	/**
@@ -1335,7 +1431,10 @@ class Settings {
 			'version'     => GATHERPRESS_VERSION,
 			'exported_at' => current_time( 'c' ),
 			'scope'       => $scope,
-			'settings'    => $this->read_stored_options( $scope ),
+			'settings'    => array_diff_key(
+				$this->read_stored_options( $scope ),
+				array_flip( $this->get_non_exportable_keys() )
+			),
 		);
 	}
 
@@ -1404,14 +1503,16 @@ class Settings {
 	 * @param array<string, mixed> $data  The parsed import data.
 	 * @param string               $scope Storage scope: 'blog' (default) or 'network'.
 	 *
-	 * @return array{valid: bool, changes: string[], unknown: string[], warnings: string[]} Validation result.
+	 * @return array Validation result.
+	 * @phpstan-return SettingsImportValidation
 	 */
 	public function validate_import( array $data, string $scope = 'blog' ): array {
 		$result = array(
-			'valid'    => true,
-			'changes'  => array(),
-			'unknown'  => array(),
-			'warnings' => array(),
+			'valid'          => true,
+			'changes'        => array(),
+			'unknown'        => array(),
+			'not_importable' => array(),
+			'warnings'       => array(),
 		);
 
 		if ( ! isset( $data['settings'] ) || ! is_array( $data['settings'] ) ) {
@@ -1434,11 +1535,20 @@ class Settings {
 		}
 
 		$field_type_map = $this->build_field_type_map( $this->get_sub_pages() );
+		$blocked        = $this->get_non_importable_keys();
 		$current        = $this->read_stored_options( $scope );
 
 		foreach ( $data['settings'] as $key => $value ) {
 			if ( ! isset( $field_type_map[ $key ] ) ) {
 				$result['unknown'][] = $key;
+				continue;
+			}
+
+			// Known, but declared out of the importer's reach. Reported on its
+			// own rather than as an unknown key, because the two mean different
+			// things to whoever is reading the result.
+			if ( in_array( $key, $blocked, true ) ) {
+				$result['not_importable'][] = $key;
 				continue;
 			}
 
@@ -1464,14 +1574,16 @@ class Settings {
 	 * @param string               $mode  Import mode: 'merge' or 'replace'.
 	 * @param string               $scope Storage scope: 'blog' (default) or 'network'.
 	 *
-	 * @return array{success: bool, imported: string[], skipped: string[], warnings: string[]} Import result.
+	 * @return array Import result.
+	 * @phpstan-return SettingsImportResult
 	 */
 	public function import_settings( array $data, string $mode = 'merge', string $scope = 'blog' ): array {
 		$result = array(
-			'success'  => false,
-			'imported' => array(),
-			'skipped'  => array(),
-			'warnings' => array(),
+			'success'        => false,
+			'imported'       => array(),
+			'skipped'        => array(),
+			'not_importable' => array(),
+			'warnings'       => array(),
 		);
 
 		$validation = $this->validate_import( $data, $scope );
@@ -1482,16 +1594,18 @@ class Settings {
 			return $result;
 		}
 
-		$result['warnings'] = $validation['warnings'];
-		$result['skipped']  = $validation['unknown'];
+		$result['warnings']       = $validation['warnings'];
+		$result['skipped']        = $validation['unknown'];
+		$result['not_importable'] = $validation['not_importable'];
 
 		$field_type_map = $this->build_field_type_map( $this->get_sub_pages() );
 		$sanitize       = $this->sanitize_page_settings( $field_type_map, $scope );
 
-		// Filter to only known keys.
-		$to_import = array_intersect_key(
-			$data['settings'],
-			$field_type_map
+		// Filter to only known keys, then drop the ones declared out of the
+		// importer's reach.
+		$to_import = array_diff_key(
+			array_intersect_key( $data['settings'], $field_type_map ),
+			array_flip( $this->get_non_importable_keys() )
 		);
 
 		// Sanitize imported values.
