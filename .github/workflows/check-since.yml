@@ -110,7 +110,12 @@ jobs:
                   }
 
                   if ( line.startsWith( '-' ) ) {
-                    ++removed;
+                    // A removed TBD is not a correction, it is somebody
+                    // resolving the placeholder by hand, which is the thing
+                    // this check exists to stop.
+                    if ( 'TBD' !== match[ 1 ] ) {
+                      ++removed;
+                    }
                   } else if ( 'TBD' !== match[ 1 ] ) {
                     added.push( match[ 1 ] );
                   }

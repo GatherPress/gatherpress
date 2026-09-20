@@ -139,6 +139,14 @@ foreach ( carry_source_files() as $source ) {
 		$position = strpos( $updated, $unresolved );
 
 		if ( $position === false ) {
+			// A minor release resolves the tags on develop through its own
+			// bump, so the released block is already there word for word and
+			// there is nothing to carry. Reporting that as unmatched would
+			// put a warning on every minor and teach everyone to ignore it.
+			if ( str_contains( $updated, $block ) ) {
+				continue;
+			}
+
 			$unmatched[] = sprintf( '%s (no identical TBD docblock on develop)', $source );
 			continue;
 		}
