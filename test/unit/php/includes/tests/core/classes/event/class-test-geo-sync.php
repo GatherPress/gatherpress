@@ -89,21 +89,27 @@ class Test_Geo_Sync extends Base {
 	}
 
 	/**
-	 * Create a published venue with the given information, and a taxonomy
-	 * term linking it up for `wp_set_post_terms()` calls.
+	 * Create a venue with the given information, and a taxonomy term
+	 * linking it up for `wp_set_post_terms()` calls.
 	 *
 	 * @param string $post_name Venue post_name (also used as the term slug source).
 	 * @param array  $meta      Venue information to seed (address/latitude/longitude).
+	 * @param string $status    Venue post status. Defaults to published.
 	 *
 	 * @return array{post: \WP_Post, term_slug: string}
 	 */
-	protected function create_linked_venue( string $post_name, array $meta = array() ): array {
+	protected function create_linked_venue(
+		string $post_name,
+		array $meta = array(),
+		string $status = 'publish'
+	): array {
 		$venue_setup = Venue_Setup::get_instance();
 		$venue_post  = $this->mock->post(
 			array(
-				'post_type'  => Venue::POST_TYPE,
-				'post_name'  => $post_name,
-				'post_title' => $post_name,
+				'post_type'   => Venue::POST_TYPE,
+				'post_name'   => $post_name,
+				'post_title'  => $post_name,
+				'post_status' => $status,
 			)
 		)->get();
 
@@ -304,6 +310,48 @@ class Test_Geo_Sync extends Base {
 		$result = Geo_Sync::get_instance()->maybe_refresh( $event->ID );
 
 		$this->assertSame( 0, $result['geo_public'] );
+		$this->assertSame( '0', get_post_meta( $event->ID, 'geo_public', true ) );
+	}
+
+	/**
+	 * `maybe_refresh()` clears geo_* meta and forces `geo_public` to `0`
+	 * for an event linked to a draft venue, even though the event itself
+	 * is published — a draft venue's real location must not leak out.
+	 *
+	 * @covers ::maybe_refresh
+	 *
+	 * @return void
+	 */
+	public function test_maybe_refresh_hides_location_for_unpublished_venue(): void {
+		$venue = $this->create_linked_venue(
+			'test-draft-venue',
+			array(
+				'latitude'  => '40.7128',
+				'longitude' => '-74.006',
+				'address'   => '123 Main St, New York, NY',
+			),
+			'draft'
+		);
+		$event = $this->create_event( '2099-01-01 10:00:00', '2099-01-01 12:00:00', $venue['term_slug'] );
+
+		// Seed stale, visible values so the hide-on-refresh is an actual detectable change.
+		update_post_meta( $event->ID, 'geo_latitude', '40.7128' );
+		update_post_meta( $event->ID, 'geo_longitude', '-74.006' );
+		update_post_meta( $event->ID, 'geo_address', '123 Main St, New York, NY' );
+		update_post_meta( $event->ID, 'geo_public', 1 );
+
+		$result = Geo_Sync::get_instance()->maybe_refresh( $event->ID );
+
+		$this->assertSame(
+			array(
+				'geo_latitude'  => '',
+				'geo_longitude' => '',
+				'geo_address'   => '',
+				'geo_public'    => 0,
+			),
+			$result
+		);
+		$this->assertSame( '', get_post_meta( $event->ID, 'geo_latitude', true ) );
 		$this->assertSame( '0', get_post_meta( $event->ID, 'geo_public', true ) );
 	}
 

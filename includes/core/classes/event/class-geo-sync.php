@@ -145,14 +145,20 @@ final class Geo_Sync {
 		}
 
 		$venue_post  = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $event_id );
-		$venue       = new Venue( $venue_post instanceof WP_Post ? $venue_post->ID : 0 );
+		$has_venue   = $venue_post instanceof WP_Post;
+		$venue       = new Venue( $has_venue ? $venue_post->ID : 0 );
 		$information = $venue->get_information();
 
+		// A draft/private venue's real location must not leak through a
+		// published event just because the event itself is public. An
+		// event with no venue at all has nothing to hide.
+		$venue_hides_location = $has_venue && 'publish' !== $venue_post->post_status;
+
 		$desired = array(
-			'geo_latitude'  => $information['latitude'],
-			'geo_longitude' => $information['longitude'],
-			'geo_address'   => $information['address'],
-			'geo_public'    => 'publish' === get_post_status( $event_id ) ? 1 : 0,
+			'geo_latitude'  => $venue_hides_location ? '' : $information['latitude'],
+			'geo_longitude' => $venue_hides_location ? '' : $information['longitude'],
+			'geo_address'   => $venue_hides_location ? '' : $information['address'],
+			'geo_public'    => ( ! $venue_hides_location && 'publish' === get_post_status( $event_id ) ) ? 1 : 0,
 		);
 
 		$changed = false;

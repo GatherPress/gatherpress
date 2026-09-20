@@ -96,13 +96,13 @@ class Test_Geo_Sync extends Base {
 	}
 
 	/**
-	 * `on_post_saved()` is a no-op for a revision or autosave.
+	 * `on_post_saved()` is a no-op for a revision.
 	 *
 	 * @covers ::on_post_saved
 	 *
 	 * @return void
 	 */
-	public function test_on_post_saved_skips_revisions_and_autosaves(): void {
+	public function test_on_post_saved_skips_revisions(): void {
 		$venue = $this->mock->post(
 			array(
 				'post_type'   => Venue::POST_TYPE,
@@ -121,6 +121,49 @@ class Test_Geo_Sync extends Base {
 			'',
 			get_post_meta( $revision_id, 'geo_latitude', true ),
 			'A revision save must not write geo meta.'
+		);
+	}
+
+	/**
+	 * `on_post_saved()` is a no-op for an autosave. Built directly with
+	 * `wp_insert_post()` rather than the wp-admin autosave flow, matching
+	 * the shape `wp_is_post_autosave()` checks for.
+	 *
+	 * @covers ::on_post_saved
+	 *
+	 * @return void
+	 */
+	public function test_on_post_saved_skips_autosaves(): void {
+		$venue = $this->mock->post(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		)->get();
+
+		$autosave_id = wp_insert_post(
+			array(
+				'post_type'   => 'revision',
+				'post_status' => 'inherit',
+				'post_parent' => $venue->ID,
+				'post_name'   => "{$venue->ID}-autosave-v1",
+				'post_title'  => $venue->post_title,
+			)
+		);
+		$this->assertIsInt( $autosave_id, 'An autosave-shaped revision should have been created.' );
+		$this->assertNotFalse(
+			wp_is_post_autosave( $autosave_id ),
+			'Failed to assert the fixture is actually recognized as an autosave.'
+		);
+
+		$autosave = get_post( $autosave_id );
+
+		Geo_Sync::get_instance()->on_post_saved( $autosave_id, $autosave );
+
+		$this->assertSame(
+			'',
+			get_post_meta( $autosave_id, 'geo_latitude', true ),
+			'An autosave save must not write geo meta.'
 		);
 	}
 
