@@ -74,12 +74,6 @@ class Test_Rest_Api extends Base {
 				'callback' => array( $instance, 'register_endpoints' ),
 			),
 			array(
-				'type'     => 'action',
-				'name'     => 'gatherpress_send_emails',
-				'priority' => 10,
-				'callback' => array( $instance, 'handle_email_send_action' ),
-			),
-			array(
 				'type'     => 'filter',
 				'name'     => sprintf( 'rest_prepare_%s', Event::POST_TYPE ),
 				'priority' => 10,
@@ -315,6 +309,48 @@ class Test_Rest_Api extends Base {
 			$captured[3],
 			'Failed to assert the subject was sanitized.'
 		);
+	}
+
+	/**
+	 * A freed spot sends a confirmation email to the promoted member.
+	 *
+	 * @covers \GatherPress\Core\Event\Email_Sends::send_waiting_list_promotion_email
+	 *
+	 * @return void
+	 */
+	public function test_waiting_list_promotion_sends_email(): void {
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => 'Promotion Event',
+			)
+		);
+		update_post_meta( $event_id, 'gatherpress_max_attendance_limit', 1 );
+
+		$attendee_id = $this->factory->user->create();
+		$waiter_id   = $this->factory->user->create(
+			array( 'user_email' => 'waiter@example.test' )
+		);
+		$rsvp        = new Rsvp( $event_id );
+		$rsvp->save( $attendee_id, 'attending' );
+		$rsvp->save( $waiter_id, 'attending' );
+
+		$captured = array();
+		add_filter(
+			'pre_wp_mail',
+			static function ( $previous, $attributes ) use ( &$captured ): bool {
+				$captured = $attributes;
+				return true;
+			},
+			10,
+			2
+		);
+
+		$rsvp->save( $attendee_id, 'not_attending' );
+
+		$this->assertSame( 'waiter@example.test', $captured['to'] );
+		$this->assertStringContainsString( 'Promotion Event', $captured['subject'] );
+		$this->assertStringContainsString( 'now confirmed', $captured['message'] );
 	}
 
 	/**

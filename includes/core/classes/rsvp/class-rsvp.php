@@ -383,6 +383,7 @@ final class Rsvp {
 	public function check_waiting_list(): int {
 		$states    = $this->storage->all();
 		$responses = new Collection( $states );
+		$post_id   = $this->post instanceof WP_Post ? $this->post->ID : 0;
 
 		// If no RSVP responses are on the waiting list, quit.
 		if ( ! $responses->has_waiting_list() ) {
@@ -400,6 +401,16 @@ final class Rsvp {
 
 				if ( $state instanceof State ) {
 					++$promoted_count;
+
+					/**
+					 * Fires after a waiting-list RSVP is promoted to attending.
+					 *
+					 * @since 0.37.0
+					 *
+					 * @param int   $post_id Event post ID.
+					 * @param State $state   Promoted RSVP state.
+					 */
+					do_action( 'gatherpress_rsvp_waiting_list_promoted', $post_id, $state );
 				}
 			}
 
@@ -433,6 +444,16 @@ final class Rsvp {
 			if ( $state instanceof State ) {
 				++$promoted_count;
 				$remaining_spots -= $state->get_attendee_count();
+
+				/**
+				 * Fires after a waiting-list RSVP is promoted to attending.
+				 *
+				 * @since 0.37.0
+				 *
+				 * @param int   $post_id Event post ID.
+				 * @param State $state   Promoted RSVP state.
+				 */
+				do_action( 'gatherpress_rsvp_waiting_list_promoted', $post_id, $state );
 			}
 		}
 

@@ -1274,6 +1274,16 @@ class Test_Rsvp extends Base {
 	 * @return void
 	 */
 	public function test_check_waiting_list_promotes_on_freed_spot(): void {
+		$promotions = array();
+		add_action(
+			'gatherpress_rsvp_waiting_list_promoted',
+			static function ( int $post_id, State $state ) use ( &$promotions ): void {
+				$promotions[] = array( $post_id, $state );
+			},
+			10,
+			2
+		);
+
 		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 		update_post_meta( $event_id, 'gatherpress_max_attendance_limit', 1 );
 
@@ -1296,6 +1306,11 @@ class Test_Rsvp extends Base {
 			( new Rsvp( $event_id ) )->get( $waiter_id )['status'],
 			'Freeing a spot promotes the waiting-list responder.'
 		);
+		$this->assertCount( 1, $promotions, 'A successful promotion fires one notification action.' );
+		$this->assertSame( $event_id, $promotions[0][0] );
+		$this->assertInstanceOf( State::class, $promotions[0][1] );
+		$this->assertTrue( $promotions[0][1]->is_attending() );
+		$this->assertSame( $waiter_id, (int) $promotions[0][1]->data->identity->value );
 	}
 
 	/**

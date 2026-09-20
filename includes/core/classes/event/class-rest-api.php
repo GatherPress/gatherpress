@@ -17,22 +17,21 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use Exception;
 use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Email_Sends;
 use GatherPress\Core\Rsvp\Form;
-use GatherPress\Core\Rsvp\Query as Rsvp_Query;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Rsvp\Token;
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\User;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
 use WP_Comment;
 use WP_Post;
+use WP_User;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
-use WP_User;
 
 /**
  * Class Rest_Api.
@@ -77,7 +76,6 @@ final class Rest_Api {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
-		add_action( 'gatherpress_send_emails', array( $this, 'handle_email_send_action' ), 10, 4 );
 		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ), 10, 2 );
 	}
 
@@ -465,78 +463,73 @@ final class Rest_Api {
 	/**
 	 * Hooked method to trigger the sending of related emails.
 	 *
-	 * This method hooks into a WordPress action, triggering the `send_emails` method
-	 * to send emails to selected members. It doesn't return any value,
-	 * as it's intended to be called by an action hook.
-	 *
 	 * @since 0.34.0
-	 * @since 0.36.0 Added `$subject` parameter for #827.
+	 * @since 0.37.0 Delegated to Email_Sends.
 	 *
 	 * @param int    $post_id Post ID.
-	 * @param array  $send    Members to send the email to.
+	 * @param array  $send Members to send the email to.
 	 * @param string $message Optional message to include in the email.
-	 * @param string $subject Optional subject line. Defaults to the existing `📅 {title}` template when empty.
-	 * @phpstan-param SendOptions $send
+	 * @param string $subject Optional subject line.
+	 * @phpstan-param array{all: bool, attending: bool, waiting_list: bool, not_attending: bool} $send
 	 *
 	 * @return void
 	 */
 	public function handle_email_send_action( int $post_id, array $send, string $message, string $subject = '' ): void {
-		$this->send_emails( $post_id, $send, $message, $subject );
+		Email_Sends::get_instance()->handle_email_send_action( $post_id, $send, $message, $subject );
 	}
 
 	/**
 	 * Send emails to selected members.
 	 *
-	 * This method is responsible for sending emails to specific members. It checks if the given
-	 * `$post_id` corresponds to a specific post type, retrieves the list of members to email, and sends the email with
-	 * the appropriate subject, body, and headers.
+	 * Kept as a compatibility wrapper for extensions that called the former
+	 * Rest_Api implementation directly.
 	 *
 	 * @since 0.34.0
-	 * @since 0.36.0 Added `$subject` parameter for #827.
+	 * @since 0.37.0 Delegated to Email_Sends.
 	 *
 	 * @param int    $post_id Post ID.
-	 * @param array  $send    Members to send the email to.
-	 * @param string $message Optional message to include in the email.
-	 * @param string $subject Optional subject line. Defaults to the existing `📅 {title}` template when empty.
-	 * @phpstan-param SendOptions $send
+	 * @param array  $send Members to send the email to.
+	 * @param string $message Optional message.
+	 * @param string $subject Optional subject.
+	 * @phpstan-param array{all: bool, attending: bool, waiting_list: bool, not_attending: bool} $send
 	 *
-	 * @return bool True if emails were successfully sent, false otherwise.
+	 * @return bool True when dispatch was attempted.
 	 */
 	public function send_emails( int $post_id, array $send, string $message, string $subject = '' ): bool {
-		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
-			return false;
-		}
-
-		// Keep the currently logged-in user so per-recipient locale / user
-		// switches inside the loop can restore back to it.
-		$current_user = wp_get_current_user();
-		$recipients   = $this->get_recipients( $send, $post_id );
-
-		foreach ( $recipients as $recipient ) {
-			$this->send_event_email_to_recipient( $recipient, $post_id, $message, $current_user, $subject );
-		}
-
-		return true;
+		return Email_Sends::get_instance()->send_emails( $post_id, $send, $message, $subject );
 	}
 
 	/**
-	 * Send the per-event update email to a single recipient.
-	 *
-	 * Extracted from `send_emails()` so the outer loop body stays shallow
-	 * enough for SonarCloud's cognitive-complexity gate. Honors the
-	 * recipient's opt-in (user meta for WP users, comment meta for
-	 * non-user RSVPs) and skips silently when no email is on file.
-	 * Restores the editor's user / locale before returning.
+	 * Get event email recipients.
 	 *
 	 * @since 0.34.0
-	 * @since 0.36.0 Added `$subject` parameter for #827.
 	 *
-	 * @param array   $recipient    Recipient row from `get_recipients()`.
-	 * @param int     $post_id      Event post ID.
-	 * @param string  $message      Optional editor-supplied message body.
-	 * @param WP_User $current_user Originating editor (restored after locale/user switch).
-	 * @param string  $subject      Optional subject line. Empty falls back to the default template
-	 *                              and is then filtered via `gatherpress_email_subject`.
+	 * @param array $send Recipient groups.
+	 * @param int   $post_id Event post ID.
+	 * @phpstan-param array{all: bool, attending: bool, waiting_list: bool, not_attending: bool} $send
+	 *
+	 * @return array<int, array{
+	 *     is_user: bool,
+	 *     user_id: int,
+	 *     comment_id: int,
+	 *     email: string,
+	 *     name: string
+	 * }> Recipient data.
+	 */
+	public function get_recipients( array $send, int $post_id ): array {
+		return Email_Sends::get_instance()->get_recipients( $send, $post_id );
+	}
+
+	/**
+	 * Send one event email to a recipient.
+	 *
+	 * @since 0.37.0 Delegated to Email_Sends.
+	 *
+	 * @param array   $recipient Recipient data.
+	 * @param int     $post_id Event post ID.
+	 * @param string  $message Message content.
+	 * @param WP_User $current_user User to restore after rendering.
+	 * @param string  $subject Subject line.
 	 * @phpstan-param Recipient $recipient
 	 *
 	 * @return void
@@ -548,197 +541,26 @@ final class Rest_Api {
 		WP_User $current_user,
 		string $subject = ''
 	): void {
-		// Check opt-in preference based on recipient type.
-		if ( $recipient['is_user'] ) {
-			if ( ! User::get_instance()->has_event_updates_opt_in( $recipient['user_id'] ) ) {
-				return;
-			}
-		} elseif (
-			'0' === get_comment_meta(
-				$recipient['comment_id'],
-				'gatherpress_event_updates_opt_in',
-				true
-			)
-		) {
-			return;
-		}
-
-		if ( ! $recipient['email'] ) {
-			return;
-		}
-
-		$switched_locale = false;
-
-		// Set the current user context for templating.
-		if ( $recipient['is_user'] ) {
-			$switched_locale = switch_to_user_locale( $recipient['user_id'] );
-			// Set the current user to the actual member to mail to,
-			// to make sure the GatherPress filters for date- and time- format, as well as the users timezone,
-			// are recognized by the functions inside render_template().
-			wp_set_current_user( $recipient['user_id'] );
-		}
-
-		if ( '' === $subject ) {
-			$subject = sprintf(
-				// translators: %s: event title.
-				_x( '📅 %s', 'Email notification subject with event title', 'gatherpress' ),
-				get_the_title( $post_id )
-			);
-		}
-
-		/**
-		 * Filters the event update email subject.
-		 *
-		 * @since 0.36.0
-		 *
-		 * @param string $subject Email subject line.
-		 * @param int    $post_id Event post ID.
-		 */
-		$subject = apply_filters( 'gatherpress_email_subject', $subject, $post_id );
-		$body    = Utility::render_template(
-			sprintf( '%s/includes/templates/admin/emails/event-email.php', GATHERPRESS_CORE_PATH ),
-			array(
-				'event_id' => $post_id,
-				'message'  => $message,
-			),
+		Email_Sends::get_instance()->send_event_email_to_recipient(
+			$recipient,
+			$post_id,
+			$message,
+			$current_user,
+			$subject
 		);
-		$headers = array( 'Content-Type: text/html; charset=UTF-8' );
-		$subject = stripslashes_deep( html_entity_decode( $subject, ENT_QUOTES, 'UTF-8' ) );
-
-		// Reset the current user to the editor sending the email.
-		wp_set_current_user( $current_user->ID );
-
-		wp_mail( $recipient['email'], $subject, $body, $headers );
-
-		// Cleanup branch only fires when `switch_to_user_locale()` actually
-		// switched, which requires a non-stub `WP_Locale_Switcher` and is not
-		// reachable from the test runner.
-		if ( $switched_locale ) { // @codeCoverageIgnore
-			restore_previous_locale(); // @codeCoverageIgnore
-		}
 	}
 
 	/**
-	 * Get the list of recipients to send event-related emails to.
+	 * Build one recipient from an RSVP comment.
 	 *
-	 * This method retrieves the list of recipients to whom event-related emails should be sent
-	 * based on the given `$send` parameter and the specified event `$post_id`.
-	 * It checks the `$send` array for specific email recipient categories,
-	 * such as 'all,' 'attending,' 'waiting_list,' and 'not_attending,' and compiles a unified list of recipients
-	 * that includes both WordPress users and non-user RSVPs with their email addresses and metadata.
+	 * @since 0.37.0 Delegated to Email_Sends.
 	 *
-	 * @since 0.34.0
+	 * @param WP_Comment $comment RSVP comment.
 	 *
-	 * @param array $send    An array specifying who to send emails to.
-	 * @param int   $post_id The Event Post ID.
-	 * @phpstan-param SendOptions $send
-	 *
-	 * @return array<int, Recipient> An array containing unified recipient data for both users and non-users.
-	 */
-	public function get_recipients( array $send, int $post_id ): array {
-		$recipients    = array();
-		$all_responses = ( new Rsvp( $post_id ) )->responses();
-
-		// Handle 'all' members (WordPress users only) — array_map keeps the
-		// per-user shape declarative.
-		if ( ! empty( $send['all'] ) ) {
-			$recipients = array_map(
-				static function ( $user ): array {
-					return array(
-						'is_user'    => true,
-						'user_id'    => $user->ID,
-						'comment_id' => 0,
-						'email'      => $user->user_email,
-						'name'       => $user->display_name,
-					);
-				},
-				get_users()
-			);
-		}
-
-		// Collect comment IDs for the requested RSVP statuses — `array_column`
-		// flattens each status's records to its commentId list in one pass,
-		// avoiding the inner foreach.
-		$comment_ids = array();
-		foreach ( array( 'attending', 'waiting_list', 'not_attending' ) as $status ) {
-			if ( ! empty( $send[ $status ] ) ) {
-				$comment_ids = array_merge(
-					$comment_ids,
-					array_column( $all_responses[ $status ]['records'], 'comment_id' )
-				);
-			}
-		}
-
-		if ( empty( $comment_ids ) ) {
-			return $recipients;
-		}
-
-		// Get full comment data for the RSVPs and build recipient rows.
-		$comments = Rsvp_Query::get_instance()->get_rsvps(
-			array(
-				'post_id'     => $post_id,
-				'status'      => 'approve',
-				'comment__in' => $comment_ids,
-			)
-		);
-
-		foreach ( $comments as $comment ) {
-			// get_rsvps() is typed loosely enough to return counts, so only comment rows
-			// are turned into recipients.
-			if ( ! $comment instanceof WP_Comment ) {
-				continue;
-			}
-
-			$recipient = $this->build_comment_recipient( $comment );
-
-			if ( null !== $recipient ) {
-				$recipients[] = $recipient;
-			}
-		}
-
-		return $recipients;
-	}
-
-	/**
-	 * Build a single recipient row from an approved RSVP comment, resolving
-	 * the user's email/display name when the comment is tied to a WordPress
-	 * user. Returns null when no email can be determined so the caller can
-	 * skip the row.
-	 *
-	 * Extracted from `get_recipients()` so the outer dispatch stays under
-	 * SonarCloud's cognitive-complexity threshold.
-	 *
-	 * @since 0.34.0
-	 *
-	 * @param WP_Comment $comment RSVP comment row from `Rsvp_Query::get_rsvps()`.
-	 *
-	 * @return Recipient|null Recipient row, or null when no email is on file.
+	 * @return array{is_user: bool, user_id: int, comment_id: int, email: string, name: string}|null Recipient data.
 	 */
 	protected function build_comment_recipient( $comment ): ?array {
-		$user_id = intval( $comment->user_id );
-		$email   = $comment->comment_author_email;
-		$name    = $comment->comment_author;
-
-		if ( $user_id ) {
-			$user = get_userdata( $user_id );
-
-			if ( $user ) {
-				$email = $user->user_email;
-				$name  = $user->display_name;
-			}
-		}
-
-		if ( empty( $email ) ) {
-			return null;
-		}
-
-		return array(
-			'is_user'    => (bool) $user_id,
-			'user_id'    => $user_id,
-			'comment_id' => (int) $comment->comment_ID,
-			'email'      => $email,
-			'name'       => $name,
-		);
+		return Email_Sends::get_instance()->build_comment_recipient( $comment );
 	}
 
 	/**
