@@ -68,11 +68,16 @@ final class Date_Query {
 	/**
 	 * Arguments a clause may carry and still be resolved.
 	 *
-	 * A clause carrying anything else is refused outright rather than
-	 * resolved in part. Honoring `year` while quietly dropping `week` would
-	 * hand back a window a whole year wide, and the caller lifts the original
-	 * `date_query` out of the query once a window comes back, so there is
-	 * nothing left to apply the dropped argument.
+	 * A clause is read only when every argument in it is on this list. If it
+	 * carries anything else, nothing is read and WordPress handles the whole
+	 * date query as usual.
+	 *
+	 * It has to be all or nothing. Take `array( 'year' => 2026, 'week' => 1 )`.
+	 * `year` is on this list and `week` is not. Reading `year` by itself would
+	 * match all of 2026 instead of one week of it, and `Query` removes the date
+	 * query from the request as soon as this class answers, so nothing
+	 * downstream would ever apply the `week` part. The answer would be wrong,
+	 * and wrong silently.
 	 *
 	 * @since 0.36.0
 	 * @var string[]
@@ -89,28 +94,26 @@ final class Date_Query {
 	);
 
 	/**
-	 * Resolve a date query into the window an event has to touch.
+	 * Turn a date query into the stretch of time an event has to fall inside.
 	 *
-	 * Reads the range-shaped arguments only: `after`, `before`, `year`,
-	 * `monthnum`, `month` and `day`, plus `inclusive`. Everything else
-	 * WordPress accepts (`week`, `dayofweek`, `hour`, and friends) describes a
-	 * repeating slice of the calendar rather than one stretch of it, and has no
-	 * single answer across events in different timezones, so it is left alone
-	 * rather than answered wrongly.
+	 * Only reads arguments that describe one stretch of the calendar:
+	 * `after`, `before`, `year`, `monthnum`, `month`, `day` and `inclusive`.
+	 * Arguments like `week`, `dayofweek` and `hour` describe a slice that
+	 * repeats, which has no single answer once events sit in different time
+	 * zones, so they are left alone. See `SUPPORTED_ARGS`.
 	 *
-	 * A date query is resolved in full or not at all. One clause carrying only
-	 * arguments from `SUPPORTED_ARGS` resolves; anything else, including a
-	 * relation, a second clause, or one unreadable argument alongside readable
-	 * ones, resolves to nothing and is left for WordPress.
+	 * Reads the whole query or none of it. It needs one clause, every
+	 * argument on that list, and a column this class owns. A relation, a
+	 * second clause, a column such as `post_date`, or one unsupported
+	 * argument, and it returns null for WordPress to handle as usual.
 	 *
-	 * Arguments narrow each other the way they do in a WordPress clause, so a
-	 * calendar span alongside an `after` or `before` yields their overlap
-	 * rather than whichever was read last.
+	 * Arguments narrow each other, the same as they do in WordPress.
+	 * `array( 'year' => 2026, 'after' => '2026-06-01' )` gives June to
+	 * December 2026, not the whole year and not everything after June.
 	 *
-	 * Boundaries come back in the clock of the column they will be compared
-	 * against: UTC for the GMT pair, the site's own time for the local pair. A
-	 * clause naming a column outside `EVENT_COLUMNS` resolves to nothing, so
-	 * the caller leaves it to WordPress.
+	 * The boundaries come back in the clock of the column they will be
+	 * compared against: UTC for the GMT columns, the site's own time for the
+	 * local ones.
 	 *
 	 * @since 0.36.0
 	 *
