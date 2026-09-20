@@ -46,7 +46,7 @@ export function useGeocoding( fieldType, fieldValue, updateVenueField, enabled =
 			mapCustomLatLong:
 				selectData( 'gatherpress/venue' ).getMapCustomLatLong(),
 		} ),
-		[]
+		[],
 	);
 
 	// Track address for geocoding.

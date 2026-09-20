@@ -59,7 +59,7 @@ const { state } = store( 'gatherpress', {
 			// that may have mutated the DOM between server render and
 			// our handler — not a substitute for proper escaping.
 			const currentHTML = stripScriptsAndEventHandlers(
-				currentElement.innerHTML
+				currentElement.innerHTML,
 			);
 
 			if ( hasLink && ! isLink ) {

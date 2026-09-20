@@ -147,7 +147,7 @@ function wireMarker( marker ) {
 
 	const evaluate = () => {
 		const allMatch = controllers.every( ( { key, el } ) =>
-			matches( readControlValue( el ), conditions[ key ] )
+			matches( readControlValue( el ), conditions[ key ] ),
 		);
 
 		row.classList.toggle( ROW_HIDDEN_CLASS, ! allMatch );

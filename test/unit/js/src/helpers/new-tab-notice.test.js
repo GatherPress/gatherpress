@@ -51,7 +51,7 @@ describe( 'new-tab notice', () => {
 		expect( notice.textContent ).toBe( NOTICE_TEXT );
 		expect( notice.parentElement.tagName ).toBe( 'A' );
 		expect( notice.className ).toBe(
-			`screen-reader-text ${ SCREEN_READER_CLASS } ${ NOTICE_CLASS }`
+			`screen-reader-text ${ SCREEN_READER_CLASS } ${ NOTICE_CLASS }`,
 		);
 	} );
 
@@ -173,7 +173,7 @@ describe( 'new-tab notice', () => {
 
 		expect( link.querySelectorAll( `.${ NOTICE_CLASS }` ) ).toHaveLength( 1 );
 		expect( link.lastElementChild.className ).toBe(
-			`screen-reader-text ${ SCREEN_READER_CLASS } ${ NOTICE_CLASS }`
+			`screen-reader-text ${ SCREEN_READER_CLASS } ${ NOTICE_CLASS }`,
 		);
 	} );
 
@@ -194,7 +194,7 @@ describe( 'new-tab notice', () => {
 
 		expect( link.querySelectorAll( `.${ NOTICE_CLASS }` ) ).toHaveLength( 1 );
 		expect(
-			tooltip.querySelectorAll( ':scope > .screen-reader-text' )
+			tooltip.querySelectorAll( ':scope > .screen-reader-text' ),
 		).toHaveLength( 1 );
 		expect( tooltip.querySelector( `.${ NOTICE_CLASS }` ) ).toBeNull();
 	} );
@@ -213,10 +213,10 @@ describe( 'new-tab notice', () => {
 		const tooltip = document.querySelector( '.gatherpress-tooltip' );
 
 		expect(
-			document.querySelector( 'a' ).querySelectorAll( `.${ NOTICE_CLASS }` )
+			document.querySelector( 'a' ).querySelectorAll( `.${ NOTICE_CLASS }` ),
 		).toHaveLength( 1 );
 		expect(
-			tooltip.querySelector( ':scope > .screen-reader-text' ).textContent
+			tooltip.querySelector( ':scope > .screen-reader-text' ).textContent,
 		).toContain( 'Our venue' );
 	} );
 

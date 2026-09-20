@@ -60,47 +60,47 @@ describe( 'Tooltip format registration', () => {
 
 	it( 'registers with correct className', () => {
 		expect( registrationArgs.settings.className ).toBe(
-			'gatherpress-tooltip'
+			'gatherpress-tooltip',
 		);
 	} );
 
 	it( 'registers with tooltip data attribute', () => {
 		expect( registrationArgs.settings.attributes ).toHaveProperty(
-			'data-gatherpress-tooltip'
+			'data-gatherpress-tooltip',
 		);
 		expect(
-			registrationArgs.settings.attributes[ 'data-gatherpress-tooltip' ]
+			registrationArgs.settings.attributes[ 'data-gatherpress-tooltip' ],
 		).toBe( 'data-gatherpress-tooltip' );
 	} );
 
 	it( 'registers with text color data attribute', () => {
 		expect( registrationArgs.settings.attributes ).toHaveProperty(
-			'data-gatherpress-tooltip-text-color'
+			'data-gatherpress-tooltip-text-color',
 		);
 		expect(
 			registrationArgs.settings.attributes[
 				'data-gatherpress-tooltip-text-color'
-			]
+			],
 		).toBe( 'data-gatherpress-tooltip-text-color' );
 	} );
 
 	it( 'registers with background color data attribute', () => {
 		expect( registrationArgs.settings.attributes ).toHaveProperty(
-			'data-gatherpress-tooltip-bg-color'
+			'data-gatherpress-tooltip-bg-color',
 		);
 		expect(
 			registrationArgs.settings.attributes[
 				'data-gatherpress-tooltip-bg-color'
-			]
+			],
 		).toBe( 'data-gatherpress-tooltip-bg-color' );
 	} );
 
 	it( 'registers with tabindex attribute', () => {
 		expect( registrationArgs.settings.attributes ).toHaveProperty(
-			'tabindex'
+			'tabindex',
 		);
 		expect( registrationArgs.settings.attributes.tabindex ).toBe(
-			'tabindex'
+			'tabindex',
 		);
 	} );
 
@@ -111,7 +111,7 @@ describe( 'Tooltip format registration', () => {
 
 	it( 'registers with exactly four attributes', () => {
 		expect(
-			Object.keys( registrationArgs.settings.attributes ).length
+			Object.keys( registrationArgs.settings.attributes ).length,
 		).toBe( 4 );
 	} );
 } );
