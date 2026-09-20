@@ -137,6 +137,8 @@ git push origin 0.34.0-alpha.1
 
 Testers downloading the pre-release zip see the same changelog body they'd see at stable release time — minus any further entries that land between now and then.
 
+A pre-release zip also carries `@since TBD` in the docblocks of anything new, and that is intended rather than a bug. Only a stable bump resolves those tags, because a fix on `develop` can still be cherry-picked into a patch release and ship there first. Stamping the alpha's base version would claim a release the symbol may never appear in.
+
 **Verify after the workflow lands:**
 
 - [GitHub Releases page](https://github.com/GatherPress/gatherpress/releases) shows the new tag with a "Pre-release" badge.
