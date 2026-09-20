@@ -18,7 +18,6 @@ import {
 	ToolbarButton,
 	ToolbarGroup,
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
-	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalToolsPanelItem as ToolsPanelItem,
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
@@ -224,7 +223,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 				const editedVenuePost = select( 'core' ).getEditedEntityRecord(
 					'postType',
 					resolvedVenuePostType,
-					effectiveVenuePostId
+					effectiveVenuePostId,
 				);
 				return {
 					isEditingThisVenue: true,
@@ -243,7 +242,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 			const venuePost = getEditedEntityRecord(
 				'postType',
 				context?.postType,
-				effectiveVenuePostId
+				effectiveVenuePostId,
 			);
 
 			const meta = venuePost?.meta || EMPTY_META;
@@ -258,7 +257,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 				venuePostType: context?.postType || '',
 			};
 		},
-		[ context?.postId, context?.postType ]
+		[ context?.postId, context?.postType ],
 	);
 
 	const { storeLat, storeLng } = useSelect(
@@ -266,7 +265,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 			storeLat: select( 'gatherpress/venue' ).getVenueLatitude(),
 			storeLng: select( 'gatherpress/venue' ).getVenueLongitude(),
 		} ),
-		[]
+		[],
 	);
 
 	const address = venueMeta.gatherpress_address || '';
@@ -306,11 +305,11 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 		( definition ) => ( {
 			label: definition.label,
 			value: definition.slug,
-		} )
+		} ),
 	);
 
 	const KEYLESS_UNSUPPORTED_GOOGLE_MAP_TYPES = new Set(
-		GOOGLE_KEYLESS_UNSUPPORTED_MAP_TYPE_SLUGS
+		GOOGLE_KEYLESS_UNSUPPORTED_MAP_TYPE_SLUGS,
 	);
 
 	const isKeylessInteractiveGoogle =
@@ -319,7 +318,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 	let googleMapTypeSelectOptions = GOOGLE_MAP_TYPE_OPTIONS_ALL;
 	if ( isKeylessInteractiveGoogle ) {
 		googleMapTypeSelectOptions = GOOGLE_MAP_TYPE_OPTIONS_ALL.filter(
-			( opt ) => ! KEYLESS_UNSUPPORTED_GOOGLE_MAP_TYPES.has( opt.value )
+			( opt ) => ! KEYLESS_UNSUPPORTED_GOOGLE_MAP_TYPES.has( opt.value ),
 		);
 	}
 
@@ -400,12 +399,12 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 		zoom,
 		effectiveWidth,
 		effectiveHeight,
-		type || 'roadmap'
+		type || 'roadmap',
 	);
 	const staticMapDescriptor = pickDescriptorForCombo(
 		staticMapDescriptors,
 		comboKey,
-		mapPlatform || 'osm'
+		mapPlatform || 'osm',
 	);
 	const staticMapUrl = staticMapDescriptor?.url || '';
 	const isStaticMode = 'static' === renderMode;
@@ -415,7 +414,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 
 	const isCustomAspectRatio =
 		! ASPECT_RATIO_PRESETS.some(
-			( preset ) => preset.value === aspectRatio
+			( preset ) => preset.value === aspectRatio,
 		) || 'custom' === aspectRatio;
 
 	// Find the nearest `gatherpress/venue` ancestor so we can subscribe to
@@ -429,7 +428,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 			const { getBlockParentsByBlockName } = select( 'core/block-editor' );
 			const parents = getBlockParentsByBlockName(
 				clientId,
-				'gatherpress/venue'
+				'gatherpress/venue',
 			);
 			if ( ! Array.isArray( parents ) || 0 === parents.length ) {
 				return '';
@@ -438,7 +437,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 			// last entry is the closest ancestor.
 			return parents.at( -1 );
 		},
-		[ clientId ]
+		[ clientId ],
 	);
 	const isParentGuarded = useIsBlockSealed( parentVenueClientId );
 
@@ -483,7 +482,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 				linkDestination,
 				latitude,
 				longitude,
-				zoom
+				zoom,
 			);
 			if ( computed && computed !== href ) {
 				setAttributes( { href: computed } );
@@ -504,8 +503,8 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 			HEIGHT_MIN,
 			Math.min(
 				HEIGHT_MAX,
-				Math.round( effectiveHeight + delta.height )
-			)
+				Math.round( effectiveHeight + delta.height ),
+			),
 		);
 
 		setDimensions( { height: `${ newHeight }px` } );
@@ -579,13 +578,13 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 							! isInFSETemplate() &&
 							__(
 								'Add an address to generate the map.',
-								'gatherpress'
+								'gatherpress',
 							) }
 						{ address &&
 							hasUnsavedMapInputs &&
 							__(
 								'Save the venue first.',
-								'gatherpress'
+								'gatherpress',
 							) }
 						{ address &&
 							! hasUnsavedMapInputs &&
@@ -594,7 +593,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 								<span>
 									{ __(
 										'Ready to generate the map.',
-										'gatherpress'
+										'gatherpress',
 									) }
 								</span>
 								<RegenerateMapButton
@@ -607,7 +606,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 									mapType={ type }
 									label={ __(
 										'Generate map',
-										'gatherpress'
+										'gatherpress',
 									) }
 									variant="primary"
 								/>
@@ -740,11 +739,11 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 							__next40pxDefaultSize
 							label={ __(
 								'Custom aspect ratio',
-								'gatherpress'
+								'gatherpress',
 							) }
 							help={ __(
 								'Format: "16/9" or "4:3".',
-								'gatherpress'
+								'gatherpress',
 							) }
 							value={ aspectRatio || '' }
 							onChange={ ( value ) =>
@@ -830,7 +829,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 											__next40pxDefaultSize
 											label={ __(
 												'Link URL',
-												'gatherpress'
+												'gatherpress',
 											) }
 											value={ href || '' }
 											onChange={ ( value ) =>
@@ -847,7 +846,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 											<ToggleControl
 												label={ __(
 													'Open in new tab',
-													'gatherpress'
+													'gatherpress',
 												) }
 												checked={
 													'_blank' ===
@@ -866,11 +865,11 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 												__next40pxDefaultSize
 												label={ __(
 													'Link rel',
-													'gatherpress'
+													'gatherpress',
 												) }
 												help={ __(
 													'Space-separated tokens, e.g. "nofollow sponsored". `noopener noreferrer` is added automatically when the link opens in a new tab.',
-													'gatherpress'
+													'gatherpress',
 												) }
 												value={ rel || '' }
 												onChange={ ( value ) =>

@@ -60,7 +60,6 @@ const OpenStreetMap = ( props ) => {
 
 			// Import CSS files.
 			await import( 'leaflet/dist/leaflet.css' );
-			// eslint-disable-next-line import/no-extraneous-dependencies
 			await import(
 				'leaflet-gesture-handling/dist/leaflet-gesture-handling.css'
 			);
@@ -70,7 +69,6 @@ const OpenStreetMap = ( props ) => {
 			await import( 'leaflet/dist/images/marker-shadow.png' );
 
 			// Import gesture handling.
-			// eslint-disable-next-line import/no-extraneous-dependencies
 			await import( 'leaflet-gesture-handling' );
 
 			// Add gesture handling to Leaflet.
@@ -139,7 +137,7 @@ const OpenStreetMap = ( props ) => {
 				/* translators: %1$s: OpenStreetMap credit link; %2$s: CARTO credit link. */
 				__( '© %1$s contributors © %2$s', 'gatherpress' ),
 				'<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-				'<a href="https://carto.com/attributions">CARTO</a>'
+				'<a href="https://carto.com/attributions">CARTO</a>',
 			);
 
 		// Surface a clear "unavailable" state instead of a blank gray map when
@@ -196,7 +194,7 @@ const OpenStreetMap = ( props ) => {
 					mapInstanceRef.current.invalidateSize();
 					mapInstanceRef.current.setView(
 						[ latitude, longitude ],
-						zoom
+						zoom,
 					);
 				}
 			} );
@@ -282,7 +280,7 @@ const OpenStreetMap = ( props ) => {
 				>
 					{ __(
 						'Map could not be loaded. Please try again later.',
-						'gatherpress'
+						'gatherpress',
 					) }
 				</output>
 			) }

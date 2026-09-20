@@ -263,7 +263,7 @@ final class Validate {
 	 * Whether it matches the template is decided by the endpoint; this only
 	 * rules out values that could never be one.
 	 *
-	 * @since 0.36.0
+	 * @since 0.35.3
 	 *
 	 * @param mixed $param The value to validate.
 	 *

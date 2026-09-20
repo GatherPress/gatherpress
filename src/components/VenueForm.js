@@ -79,7 +79,7 @@ function VenueForm( {
 					onChange={ onChangeAddress }
 					help={ __(
 						'Address will be automatically geocoded for map display.',
-						'gatherpress'
+						'gatherpress',
 					) }
 				/>
 			</div>
@@ -139,7 +139,7 @@ function CreateVenueForm( { search, ...props } ) {
 		( select ) =>
 			props?.context?.postType ||
 			select( 'core/editor' )?.getCurrentPostType(),
-		[ props?.context?.postType ]
+		[ props?.context?.postType ],
 	);
 	const venuePostType = getVenuePostType( currentPostType );
 	const venueTaxonomy = getVenueTaxonomy( venuePostType );
@@ -151,26 +151,26 @@ function CreateVenueForm( { search, ...props } ) {
 	const singularLabel = usePostTypeLabel(
 		'singular_name',
 		venuePostType,
-		__( 'Venue', 'gatherpress' )
+		__( 'Venue', 'gatherpress' ),
 	);
 	const newTitleLabel = sprintf(
 		/* translators: %s: Singular post type label, e.g. "Venue". */
 		__( '%s name', 'gatherpress' ),
-		singularLabel
+		singularLabel,
 	);
 
 	const { lastError, isSaving: isSavingEntityRecord } = useSelect(
 		( select ) => ( {
 			lastError: select( coreDataStore ).getLastEntitySaveError(
 				'postType',
-				venuePostType
+				venuePostType,
 			),
 			isSaving: select( coreDataStore ).isSavingEntityRecord(
 				'postType',
-				venuePostType
+				venuePostType,
 			),
 		} ),
-		[ venuePostType ]
+		[ venuePostType ],
 	);
 
 	// The venue post is created via a raw apiFetch() call rather than
@@ -197,14 +197,14 @@ function CreateVenueForm( { search, ...props } ) {
 			return sprintf(
 				/* translators: %s: Singular post type label, e.g. "Venue". */
 				__( '%s name is required.', 'gatherpress' ),
-				singularLabel
+				singularLabel,
 			);
 		}
 		if ( 2 > value.trim().length ) {
 			return sprintf(
 				/* translators: %s: Singular post type label, e.g. "Venue". */
 				__( '%s name must be at least 2 characters.', 'gatherpress' ),
-				singularLabel
+				singularLabel,
 			);
 		}
 		return '';
@@ -226,7 +226,7 @@ function CreateVenueForm( { search, ...props } ) {
 			const venuePostTypeObj = select( 'core' ).getPostType( venuePostType );
 			return venuePostTypeObj?.rest_base || venuePostType + 's';
 		},
-		[ venuePostType ]
+		[ venuePostType ],
 	);
 
 	const { editPost } = useDispatch( 'core/editor' );
@@ -279,7 +279,7 @@ function CreateVenueForm( { search, ...props } ) {
 		newTitle,
 		newAddress,
 		latitude = '',
-		longitude = ''
+		longitude = '',
 	) => {
 		return apiFetch( {
 			path: `/wp/v2/${ venueRestBase }`,
@@ -304,7 +304,7 @@ function CreateVenueForm( { search, ...props } ) {
 	 */
 	const fetchTermAndUpdateEvent = async (
 		newPostSlug,
-		wpUpdateVenueTaxonomyIds
+		wpUpdateVenueTaxonomyIds,
 	) => {
 		try {
 			const terms = await apiFetch( {
@@ -335,7 +335,7 @@ function CreateVenueForm( { search, ...props } ) {
 				title,
 				address,
 				latitude,
-				longitude
+				longitude,
 			);
 			const newPostSlug = '_' + newPost.slug;
 			await fetchTermAndUpdateEvent( newPostSlug, updateVenueTaxonomyIds );
@@ -343,7 +343,7 @@ function CreateVenueForm( { search, ...props } ) {
 			// eslint-disable-next-line no-console
 			console.error(
 				'Error in the updateVenueTermOnEventPost process:',
-				error
+				error,
 			);
 		}
 	};
@@ -360,14 +360,14 @@ function CreateVenueForm( { search, ...props } ) {
 				title,
 				address,
 				latitude,
-				longitude
+				longitude,
 			);
 			updateVenueDetailsBlockAttributes( newPost.id, props );
 		} catch ( error ) {
 			// eslint-disable-next-line no-console
 			console.error(
 				'Error in the updateVenuePostOnBlockAttributes process:',
-				error
+				error,
 			);
 		}
 	};

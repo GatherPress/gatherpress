@@ -59,7 +59,7 @@ function buildFixture( {
 	// markup puts a hidden fallback BEFORE the live control (select /
 	// checkbox), so the last match is the one actually wired to events.
 	const candidates = document.querySelectorAll(
-		'[name="gatherpress_settings[map_platform]"]'
+		'[name="gatherpress_settings[map_platform]"]',
 	);
 
 	return {
@@ -143,10 +143,10 @@ describe( 'settings-show-if helper', () => {
 
 		it( 'negates with { not: array } — false when the value is any of the listed', () => {
 			expect(
-				matches( 'per_event_disabled', { not: [ 'disabled', 'per_event_disabled' ] } )
+				matches( 'per_event_disabled', { not: [ 'disabled', 'per_event_disabled' ] } ),
 			).toBe( false );
 			expect(
-				matches( 'enabled', { not: [ 'disabled', 'per_event_disabled' ] } )
+				matches( 'enabled', { not: [ 'disabled', 'per_event_disabled' ] } ),
 			).toBe( true );
 		} );
 	} );
@@ -308,7 +308,7 @@ describe( 'settings-show-if helper', () => {
 					data-show-if='{"map_platform":"google"}' />
 			`;
 			const marker = document.querySelector(
-				'.gatherpress-show-if-marker'
+				'.gatherpress-show-if-marker',
 			);
 
 			// Should not throw despite the missing tr.
@@ -327,7 +327,7 @@ describe( 'settings-show-if helper', () => {
 				</table>
 			`;
 			const marker = document.querySelector(
-				'.gatherpress-show-if-marker'
+				'.gatherpress-show-if-marker',
 			);
 			const row = document.querySelector( 'tr' );
 
@@ -351,7 +351,7 @@ describe( 'settings-show-if helper', () => {
 				</table>
 			`;
 			const marker = document.querySelector(
-				'.gatherpress-show-if-marker'
+				'.gatherpress-show-if-marker',
 			);
 			const row = document.querySelector( 'tr' );
 
@@ -400,12 +400,12 @@ describe( 'settings-show-if helper', () => {
 			expect(
 				document
 					.getElementById( 'row-google' )
-					.classList.contains( HIDDEN_CLASS )
+					.classList.contains( HIDDEN_CLASS ),
 			).toBe( false );
 			expect(
 				document
 					.getElementById( 'row-osm' )
-					.classList.contains( HIDDEN_CLASS )
+					.classList.contains( HIDDEN_CLASS ),
 			).toBe( true );
 		} );
 

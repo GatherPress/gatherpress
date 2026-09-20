@@ -99,9 +99,9 @@ export function useEventOptions( search, eventId, postTypes ) {
 	const types = useMemo(
 		() =>
 			( Array.isArray( postTypes ) ? postTypes : [ postTypes ] ).filter(
-				Boolean
+				Boolean,
 			),
-		[ postTypes ]
+		[ postTypes ],
 	);
 
 	// `useSelect` bails out by comparing what the mapping returned, so a
@@ -141,8 +141,8 @@ export function useEventOptions( search, eventId, postTypes ) {
 					types.map(
 						( type ) =>
 							getEntityRecords( 'postType', type, query ) ??
-							EMPTY_RECORDS
-					)
+							EMPTY_RECORDS,
+					),
 				),
 				// The selection's post type is unknown, so ask each; at most
 				// one answers.
@@ -150,7 +150,7 @@ export function useEventOptions( search, eventId, postTypes ) {
 					.map( ( type ) =>
 						eventId
 							? getEntityRecord( 'postType', type, eventId )
-							: null
+							: null,
 					)
 					.find( Boolean ),
 				isResolving: types.some( ( type ) =>
@@ -158,16 +158,16 @@ export function useEventOptions( search, eventId, postTypes ) {
 						'postType',
 						type,
 						query,
-					] )
+					] ),
 				),
 			};
 		},
-		[ types, search, eventId ]
+		[ types, search, eventId ],
 	);
 
 	const eventOptions = useMemo(
 		() => toEventOptions( events, selected ),
-		[ events, selected ]
+		[ events, selected ],
 	);
 
 	return { eventOptions, isResolving };

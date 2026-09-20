@@ -2,6 +2,7 @@
  * External dependencies
  */
 import { describe, expect, it, jest } from '@jest/globals';
+import '@testing-library/jest-dom';
 import { render, fireEvent } from '@testing-library/react';
 
 /**
@@ -40,13 +41,16 @@ jest.mock( '@wordpress/components', () => ( {
 	RadioControl: () => null,
 	Spinner: () => <div>spinner</div>,
 	TextControl: () => null,
-	ToggleControl: ( { label, checked, onChange } ) => (
-		<button
-			aria-pressed={ checked }
-			onClick={ () => onChange( ! checked ) }
-		>
-			{ label }
-		</button>
+	ToggleControl: ( { label, help, checked, onChange } ) => (
+		<>
+			<button
+				aria-pressed={ checked }
+				onClick={ () => onChange( ! checked ) }
+			>
+				{ label }
+			</button>
+			{ help && <p>{ help }</p> }
+		</>
 	),
 	ToolbarButton: ( { text } ) => <button>{ text }</button>,
 	ToolbarGroup: ( { children } ) => <div>{ children }</div>,
@@ -109,7 +113,7 @@ const renderEdit = ( attributes = {}, setAttributes = jest.fn() ) =>
 			attributes={ { ...baseAttributes, ...attributes } }
 			setAttributes={ setAttributes }
 			context={ {} }
-		/>
+		/>,
 	);
 
 describe( 'Event Date Edit isLink', () => {
@@ -117,7 +121,7 @@ describe( 'Event Date Edit isLink', () => {
 		const { container } = renderEdit();
 
 		expect(
-			container.querySelector( 'a[href="#gatherpress-event-date-pseudo-link"]' )
+			container.querySelector( 'a[href="#gatherpress-event-date-pseudo-link"]' ),
 		).toBeNull();
 	} );
 
@@ -125,7 +129,7 @@ describe( 'Event Date Edit isLink', () => {
 		const { container } = renderEdit( { isLink: true } );
 
 		const anchor = container.querySelector(
-			'a[href="#gatherpress-event-date-pseudo-link"]'
+			'a[href="#gatherpress-event-date-pseudo-link"]',
 		);
 
 		expect( anchor ).not.toBeNull();
@@ -136,7 +140,7 @@ describe( 'Event Date Edit isLink', () => {
 		const { container } = renderEdit( { isLink: true } );
 
 		const anchor = container.querySelector(
-			'a[href="#gatherpress-event-date-pseudo-link"]'
+			'a[href="#gatherpress-event-date-pseudo-link"]',
 		);
 
 		// fireEvent returns false when preventDefault was called.
@@ -160,6 +164,14 @@ describe( 'Event Date Edit isLink', () => {
 
 		expect( setAttributes ).toHaveBeenCalledWith( { isLink: false } );
 	} );
+
+	it( 'describes what the Link to event toggle does', () => {
+		const { getByText } = renderEdit();
+
+		expect(
+			getByText( 'Make the date a link to the event page.' ),
+		).toBeInTheDocument();
+	} );
 } );
 
 describe( 'Event Date Edit documentation link', () => {
@@ -170,12 +182,12 @@ describe( 'Event Date Edit documentation link', () => {
 		} );
 
 		expect( link.getAttribute( 'href' ) ).toBe(
-			'https://wordpress.org/documentation/article/customize-date-and-time-format/'
+			'https://wordpress.org/documentation/article/customize-date-and-time-format/',
 		);
 		expect( link.getAttribute( 'target' ) ).toBe( '_blank' );
 		expect( link.getAttribute( 'rel' ) ).toContain( 'noopener' );
 		expect(
-			getByRole( 'link', { name: /opens in a new tab/ } )
+			getByRole( 'link', { name: /opens in a new tab/ } ),
 		).toBe( link );
 	} );
 } );

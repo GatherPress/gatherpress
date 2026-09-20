@@ -57,7 +57,7 @@ describe( 'TextField', () => {
 
 		const element = screen.getByTestId( 'rich-text' );
 		expect( element.getAttribute( 'data-placeholder' ) ).toBe(
-			'Enter text…'
+			'Enter text…',
 		);
 	} );
 
@@ -71,7 +71,7 @@ describe( 'TextField', () => {
 		const placeholder = screen.getByText( 'Enter text…' );
 		expect( placeholder ).toBeTruthy();
 		expect( placeholder.className ).toBe(
-			'wp-block-gatherpress-venue-detail__placeholder'
+			'wp-block-gatherpress-venue-detail__placeholder',
 		);
 	} );
 } );

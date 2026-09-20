@@ -200,7 +200,7 @@ export async function geocodeAddress( address ) {
 		try {
 			const response = await apiFetch( {
 				path: `/${ REST_NAMESPACE }/geocode?address=${ encodeURIComponent(
-					trimmedAddress
+					trimmedAddress,
 				) }`,
 			} );
 
@@ -224,7 +224,7 @@ export async function geocodeAddress( address ) {
 					response.error ||
 					__(
 						'Could not find location. Please check the address and try again.',
-						'gatherpress'
+						'gatherpress',
 					),
 			};
 			// Cache "not found" results since the address won't suddenly exist.
@@ -277,7 +277,7 @@ export async function fetchAddressSuggestions( query, { signal } = {} ) {
 
 	const response = await apiFetch( {
 		path: `/${ REST_NAMESPACE }/geocode/search?q=${ encodeURIComponent(
-			trimmed
+			trimmed,
 		) }`,
 		signal,
 	} );

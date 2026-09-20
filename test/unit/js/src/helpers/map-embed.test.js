@@ -20,7 +20,7 @@ describe( 'toGoogleMapType', () => {
 		'passes the canonical slug %s through',
 		( slug ) => {
 			expect( toGoogleMapType( slug ) ).toBe( slug );
-		}
+		},
 	);
 
 	it( 'falls back to roadmap for unknown slugs', () => {
@@ -62,7 +62,7 @@ describe( 'getGoogleMapEmbedSrc', () => {
 		const url = new URL( src );
 
 		expect( url.origin + url.pathname ).toBe(
-			'https://www.google.com/maps/embed/v1/view'
+			'https://www.google.com/maps/embed/v1/view',
 		);
 		// The key is trimmed before use.
 		expect( url.searchParams.get( 'key' ) ).toBe( 'my-key' );
@@ -80,7 +80,7 @@ describe( 'getGoogleMapEmbedSrc', () => {
 		} );
 
 		expect( new URL( src ).searchParams.get( 'maptype' ) ).toBe(
-			'satellite'
+			'satellite',
 		);
 	} );
 
@@ -94,12 +94,12 @@ describe( 'getGoogleMapEmbedSrc', () => {
 		const url = new URL( src );
 
 		expect( url.origin + url.pathname ).toBe(
-			'https://maps.google.com/maps'
+			'https://maps.google.com/maps',
 		);
 		expect( url.searchParams.get( 'q' ) ).toBe( '40.7,-74.0' );
 		expect( url.searchParams.get( 'z' ) ).toBe( '15' );
 		expect( url.searchParams.get( 't' ) ).toBe(
-			LEGACY_EMBED_LETTER_BY_SLUG.roadmap
+			LEGACY_EMBED_LETTER_BY_SLUG.roadmap,
 		);
 		expect( url.searchParams.get( 'output' ) ).toBe( 'embed' );
 	} );
@@ -113,7 +113,7 @@ describe( 'getGoogleMapEmbedSrc', () => {
 		} );
 
 		expect( new URL( src ).searchParams.get( 't' ) ).toBe(
-			LEGACY_EMBED_LETTER_BY_SLUG.satellite
+			LEGACY_EMBED_LETTER_BY_SLUG.satellite,
 		);
 	} );
 
