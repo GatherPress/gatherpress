@@ -23,6 +23,11 @@ use GatherPress\Tests\Base;
 class Test_Options extends Base {
 
 	/**
+	 * Arms and resets the uninstall opt-ins.
+	 */
+	use Preferences_Fixture;
+
+	/**
 	 * Reset the opt-in map between tests.
 	 *
 	 * @since 0.36.0
@@ -56,9 +61,7 @@ class Test_Options extends Base {
 	 * @return void
 	 */
 	protected function reset_preferences(): void {
-		delete_option( Preferences::OPTION_NAME );
-		delete_site_option( Preferences::OPTION_NAME );
-		Preferences::flush_cache();
+		$this->reset_uninstall_preferences();
 	}
 
 	/**
@@ -83,7 +86,7 @@ class Test_Options extends Base {
 	 * @return void
 	 */
 	public function test_applies_when_opted_in(): void {
-		Preferences::save( array( Preferences::TASK_OPTIONS => true ) );
+		$this->arm_uninstall( Preferences::TASK_OPTIONS );
 
 		$this->assertTrue( ( new Options() )->applies(), 'The opt-in turns the task on.' );
 	}
@@ -116,10 +119,10 @@ class Test_Options extends Base {
 	 * @return void
 	 */
 	public function test_removes_settings_and_version(): void {
-		Preferences::save( array( Preferences::TASK_OPTIONS => true ) );
-
 		update_option( Settings::OPTION_NAME, array( 'some' => 'value' ) );
 		update_option( Options::VERSION_OPTION, '0.36.0' );
+
+		$this->arm_uninstall( Preferences::TASK_OPTIONS );
 
 		( new Options() )->run();
 
@@ -145,7 +148,7 @@ class Test_Options extends Base {
 	 * @return void
 	 */
 	public function test_removes_the_calendar_cache_stamp(): void {
-		Preferences::save( array( Preferences::TASK_OPTIONS => true ) );
+		$this->arm_uninstall( Preferences::TASK_OPTIONS );
 
 		update_option( Cache::LAST_MODIFIED_OPTION, '2026-09-07 12:00:00' );
 
@@ -171,7 +174,7 @@ class Test_Options extends Base {
 	 * @return void
 	 */
 	public function test_removes_the_network_settings(): void {
-		Preferences::save( array( Preferences::TASK_OPTIONS => true ) );
+		$this->arm_uninstall( Preferences::TASK_OPTIONS );
 
 		update_site_option( Network::OPTION_NAME, array( 'some' => 'value' ) );
 
@@ -184,19 +187,27 @@ class Test_Options extends Base {
 	}
 
 	/**
-	 * The opt-in map itself is removed in the network pass.
+	 * The choices made on the Uninstall screen go with the settings.
 	 *
-	 * @covers ::uninstall_network
+	 * @covers ::uninstall_site
 	 *
 	 * @return void
 	 */
-	public function test_removes_its_own_opt_in_map(): void {
-		Preferences::save( array( Preferences::TASK_OPTIONS => true ) );
+	public function test_removes_its_own_opt_ins(): void {
+		$this->arm_uninstall( Preferences::TASK_OPTIONS );
+
+		$this->assertArrayHasKey(
+			Preferences::option_key( Preferences::TASK_OPTIONS ),
+			(array) get_option( Settings::OPTION_NAME ),
+			'Pre-condition: the opt-in is stored with the rest of the settings.'
+		);
 
 		( new Options() )->run();
 
-		$this->assertFalse( get_option( Preferences::OPTION_NAME ), 'The site opt-in map is removed.' );
-		$this->assertFalse( get_site_option( Preferences::OPTION_NAME ), 'The network opt-in map is removed.' );
+		$this->assertFalse(
+			get_option( Settings::OPTION_NAME ),
+			'The opt-ins live in the settings, so removing the settings takes them too.'
+		);
 	}
 
 	/**
@@ -207,7 +218,7 @@ class Test_Options extends Base {
 	 * @return void
 	 */
 	public function test_leaves_other_options_alone(): void {
-		Preferences::save( array( Preferences::TASK_OPTIONS => true ) );
+		$this->arm_uninstall( Preferences::TASK_OPTIONS );
 
 		update_option( 'some_other_plugin_option', 'intact' );
 

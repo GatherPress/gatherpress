@@ -23,6 +23,11 @@ use PMC\Unit_Test\Utility;
 class Test_Events extends Base {
 
 	/**
+	 * Arms and resets the uninstall opt-ins.
+	 */
+	use Preferences_Fixture;
+
+	/**
 	 * Queries captured during a run.
 	 *
 	 * @since 0.36.0
@@ -40,9 +45,7 @@ class Test_Events extends Base {
 	public function setUp(): void {
 		parent::setUp();
 
-		delete_option( Preferences::OPTION_NAME );
-		delete_site_option( Preferences::OPTION_NAME );
-		Preferences::flush_cache();
+		$this->reset_uninstall_preferences();
 	}
 
 	/**
@@ -53,9 +56,7 @@ class Test_Events extends Base {
 	 * @return void
 	 */
 	public function tearDown(): void {
-		delete_option( Preferences::OPTION_NAME );
-		delete_site_option( Preferences::OPTION_NAME );
-		Preferences::flush_cache();
+		$this->reset_uninstall_preferences();
 
 		parent::tearDown();
 	}
@@ -171,7 +172,7 @@ class Test_Events extends Base {
 	 * @return void
 	 */
 	public function test_applies_when_opted_in(): void {
-		Preferences::save( array( Preferences::TASK_EVENTS => true ) );
+		$this->arm_uninstall( Preferences::TASK_EVENTS );
 
 		$this->assertTrue( ( new Events() )->applies(), 'The opt-in turns the task on.' );
 	}
@@ -241,7 +242,7 @@ class Test_Events extends Base {
 	public function test_removes_events_and_leaves_venues(): void {
 		global $wpdb;
 
-		Preferences::save( array( Preferences::TASK_EVENTS => true ) );
+		$this->arm_uninstall( Preferences::TASK_EVENTS );
 
 		$event_id = (int) self::factory()->post->create(
 			array( 'post_type' => Event::POST_TYPE )
@@ -315,7 +316,7 @@ class Test_Events extends Base {
 	public function test_drops_the_event_date_table(): void {
 		global $wpdb;
 
-		Preferences::save( array( Preferences::TASK_EVENTS => true ) );
+		$this->arm_uninstall( Preferences::TASK_EVENTS );
 
 		$drops = $this->drop_statements( $this->capture_run() );
 
@@ -344,7 +345,7 @@ class Test_Events extends Base {
 	 * @return void
 	 */
 	public function test_takes_removed_events_out_of_term_counts(): void {
-		Preferences::save( array( Preferences::TASK_EVENTS => true ) );
+		$this->arm_uninstall( Preferences::TASK_EVENTS );
 
 		register_taxonomy_for_object_type( 'category', Event::POST_TYPE );
 
@@ -383,7 +384,7 @@ class Test_Events extends Base {
 	 * @return void
 	 */
 	public function test_leaves_counts_alone_for_unpublished_events(): void {
-		Preferences::save( array( Preferences::TASK_EVENTS => true ) );
+		$this->arm_uninstall( Preferences::TASK_EVENTS );
 
 		register_taxonomy_for_object_type( 'category', Event::POST_TYPE );
 

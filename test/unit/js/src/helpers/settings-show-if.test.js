@@ -101,7 +101,7 @@ function renderControllingInput( type, value ) {
 		const fallback = 'true' === value ? '1' : '0';
 		return `
 			<input type="hidden" name="gatherpress_settings[map_platform]" value="${ fallback }" />
-			<input type="checkbox" name="gatherpress_settings[map_platform]"${ checked } />
+			<input type="checkbox" name="gatherpress_settings[map_platform]" value="1"${ checked } />
 		`;
 	}
 	return `<input type="text" name="gatherpress_settings[map_platform]" value="${ value }" />`;
@@ -119,9 +119,8 @@ describe( 'settings-show-if helper', () => {
 		} );
 
 		it( 'coerces booleans and numbers to strings for comparison', () => {
-			// Checkbox booleans round-trip through String() so a stored
-			// checkbox value can be matched against '1'/'true' as the
-			// declared expected.
+			// Values arrive as strings from the DOM, but a declaration can
+			// still name a bool or a number as the expected value.
 			expect( matches( true, 'true' ) ).toBe( true );
 			expect( matches( false, 'false' ) ).toBe( true );
 			expect( matches( 5, '5' ) ).toBe( true );
@@ -160,12 +159,20 @@ describe( 'settings-show-if helper', () => {
 			expect( readControlValue( input ) ).toBe( 'hello' );
 		} );
 
-		it( 'returns the checked state for checkboxes', () => {
+		it( 'returns what a checkbox would submit, not its checked property', () => {
+			// PHP stores a checkbox as a bool and compares `(string) $value`,
+			// so it sees '1' when on and '' when off. Reporting true / false
+			// here would compare 'true' against '1' and never match.
 			const input = document.createElement( 'input' );
 			input.type = 'checkbox';
+			input.value = '1';
 			input.checked = true;
 
-			expect( readControlValue( input ) ).toBe( true );
+			expect( readControlValue( input ) ).toBe( '1' );
+
+			input.checked = false;
+
+			expect( readControlValue( input ) ).toBe( '' );
 		} );
 	} );
 
@@ -198,51 +205,6 @@ describe( 'settings-show-if helper', () => {
 
 			expect( resolved ).toHaveLength( 1 );
 			expect( resolved[ 0 ].key ).toBe( 'map_platform' );
-		} );
-
-		it( 'falls back to a flat field name outside the settings array', () => {
-			// The Uninstall screen posts its fields flat and outside
-			// `gatherpress_settings`, because importing a settings file must
-			// not be able to arm data deletion. Its rows still need a
-			// controller, so the lookup tries the plain name second.
-			document.body.innerHTML = `
-				<table><tbody>
-					<tr>
-						<td>
-							<input type="checkbox" name="gatherpress_uninstall_events" checked />
-						</td>
-					</tr>
-				</tbody></table>
-			`;
-
-			const resolved = resolveControllers( {
-				gatherpress_uninstall_events: false,
-			} );
-
-			expect( resolved ).toHaveLength( 1 );
-			expect( resolved[ 0 ].el.name ).toBe( 'gatherpress_uninstall_events' );
-		} );
-
-		it( 'prefers the settings array over a flat name of the same key', () => {
-			document.body.innerHTML = `
-				<table><tbody>
-					<tr>
-						<td>
-							<input type="text" name="map_platform" value="flat" />
-							<input
-								type="text"
-								name="gatherpress_settings[map_platform]"
-								value="google"
-							/>
-						</td>
-					</tr>
-				</tbody></table>
-			`;
-
-			const resolved = resolveControllers( { map_platform: 'google' } );
-
-			expect( resolved ).toHaveLength( 1 );
-			expect( resolved[ 0 ].el.value ).toBe( 'google' );
 		} );
 
 		it( 'picks the LAST element when multiple inputs share the name', () => {
@@ -331,11 +293,11 @@ describe( 'settings-show-if helper', () => {
 			expect( dependent.classList.contains( HIDDEN_CLASS ) ).toBe( true );
 		} );
 
-		it( 'reads checkbox controls via .checked rather than .value', () => {
+		it( 'drives a dependent row from a checkbox controller', () => {
 			const { controlling, dependent, marker } = buildFixture( {
 				controllingType: 'checkbox',
 				controllingValue: 'true',
-				conditions: { map_platform: 'true' },
+				conditions: { map_platform: '1' },
 				initiallyHidden: true,
 			} );
 

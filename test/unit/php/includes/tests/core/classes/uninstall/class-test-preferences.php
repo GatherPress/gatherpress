@@ -8,6 +8,8 @@
 
 namespace GatherPress\Tests\Core\Uninstall;
 
+use GatherPress\Core\Settings;
+use GatherPress\Core\Settings\Network;
 use GatherPress\Core\Uninstall\Preferences;
 use GatherPress\Tests\Base;
 
@@ -19,7 +21,12 @@ use GatherPress\Tests\Base;
 class Test_Preferences extends Base {
 
 	/**
-	 * Reset the resolved map between tests.
+	 * Arms and resets the uninstall opt-ins.
+	 */
+	use Preferences_Fixture;
+
+	/**
+	 * Reset the opt-ins between tests.
 	 *
 	 * @since 0.36.0
 	 *
@@ -28,68 +35,81 @@ class Test_Preferences extends Base {
 	public function setUp(): void {
 		parent::setUp();
 
-		Preferences::flush_cache();
-		$this->forget_stored_preferences();
+		$this->reset_uninstall_preferences();
 	}
 
 	/**
-	 * Leave no stored preference behind for the next test.
+	 * Clean up after each test.
 	 *
 	 * @since 0.36.0
 	 *
 	 * @return void
 	 */
 	public function tearDown(): void {
-		$this->forget_stored_preferences();
-		Preferences::flush_cache();
+		$this->reset_uninstall_preferences();
 
 		parent::tearDown();
 	}
 
 	/**
-	 * Remove the stored option from whichever scope holds it.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @return void
-	 */
-	protected function forget_stored_preferences(): void {
-		delete_option( Preferences::OPTION_NAME );
-		delete_site_option( Preferences::OPTION_NAME );
-	}
-
-	/**
-	 * Every gated task is listed.
+	 * Every destructive task is represented by a key.
 	 *
 	 * @covers ::task_keys
 	 *
 	 * @return void
 	 */
 	public function test_task_keys_lists_every_gated_task(): void {
-		$keys = Preferences::task_keys();
-
 		$this->assertSame(
 			array( 'events', 'rsvps', 'topics', 'venues', 'files', 'cron', 'users', 'options' ),
-			$keys,
+			Preferences::task_keys(),
 			'Every destructive task must be represented by a key.'
 		);
 	}
 
 	/**
-	 * Nothing is enabled when no preference has been stored.
+	 * A task key maps to the settings key that stores it.
+	 *
+	 * @covers ::option_key
+	 *
+	 * @return void
+	 */
+	public function test_option_key_is_prefixed(): void {
+		$this->assertSame(
+			'uninstall_events',
+			Preferences::option_key( Preferences::TASK_EVENTS ),
+			'The opt-ins share a prefix so they read as a group in the stored settings.'
+		);
+	}
+
+	/**
+	 * Nothing is on until somebody turns it on.
 	 *
 	 * @covers ::all
-	 * @covers ::is_enabled
+	 * @covers ::resolve
 	 *
 	 * @return void
 	 */
 	public function test_defaults_to_everything_off(): void {
-		foreach ( Preferences::task_keys() as $key ) {
-			$this->assertFalse(
-				Preferences::is_enabled( $key ),
-				sprintf( 'Task "%s" must be off until an administrator opts in.', $key )
-			);
-		}
+		$this->assertSame(
+			array_fill_keys( Preferences::task_keys(), false ),
+			Preferences::all(),
+			'A site that never visited the screen must lose nothing.'
+		);
+	}
+
+	/**
+	 * A stored opt-in reads as enabled.
+	 *
+	 * @covers ::is_enabled
+	 * @covers ::all
+	 *
+	 * @return void
+	 */
+	public function test_reads_an_opt_in_from_the_settings(): void {
+		$this->arm_uninstall( Preferences::TASK_EVENTS );
+
+		$this->assertTrue( Preferences::is_enabled( Preferences::TASK_EVENTS ), 'The opt-in reads back.' );
+		$this->assertFalse( Preferences::is_enabled( Preferences::TASK_CRON ), 'An absent key stays off.' );
 	}
 
 	/**
@@ -100,7 +120,8 @@ class Test_Preferences extends Base {
 	 * @return void
 	 */
 	public function test_unknown_key_is_never_enabled(): void {
-		Preferences::save( array( 'not_a_task' => true ) );
+		update_option( Settings::OPTION_NAME, array( 'uninstall_not_a_task' => true ) );
+		Preferences::flush_cache();
 
 		$this->assertFalse(
 			Preferences::is_enabled( 'not_a_task' ),
@@ -109,46 +130,14 @@ class Test_Preferences extends Base {
 	}
 
 	/**
-	 * Saving stores only the known keys, as booleans.
-	 *
-	 * @covers ::save
-	 * @covers ::all
-	 *
-	 * @return void
-	 */
-	public function test_save_stores_known_keys_as_booleans(): void {
-		Preferences::save(
-			array(
-				Preferences::TASK_EVENTS => '1',
-				'not_a_task'             => true,
-			)
-		);
-
-		$all = Preferences::all();
-
-		$this->assertSame(
-			Preferences::task_keys(),
-			array_keys( $all ),
-			'Only the known task keys are stored.'
-		);
-		$this->assertTrue( $all[ Preferences::TASK_EVENTS ], 'A truthy value opts the task in.' );
-		$this->assertFalse( $all[ Preferences::TASK_CRON ], 'An absent key stays off.' );
-	}
-
-	/**
 	 * A stored value that is not an array is treated as nothing stored.
 	 *
-	 * @covers ::all
+	 * @covers ::stored_options
 	 *
 	 * @return void
 	 */
 	public function test_corrupt_stored_value_falls_back_to_off(): void {
-		if ( is_multisite() ) {
-			update_site_option( Preferences::OPTION_NAME, 'corrupt' );
-		} else {
-			update_option( Preferences::OPTION_NAME, 'corrupt' );
-		}
-
+		update_option( Settings::OPTION_NAME, 'corrupt' );
 		Preferences::flush_cache();
 
 		$this->assertFalse(
@@ -158,20 +147,20 @@ class Test_Preferences extends Base {
 	}
 
 	/**
-	 * The map survives the option being deleted mid-run.
+	 * The answer survives the settings being deleted mid-run.
 	 *
-	 * @covers ::all
+	 * @covers ::resolve
 	 *
 	 * @return void
 	 */
-	public function test_resolved_map_survives_option_deletion(): void {
-		Preferences::save( array( Preferences::TASK_TOPICS => true ) );
+	public function test_resolved_map_survives_the_settings_being_deleted(): void {
+		$this->arm_uninstall( Preferences::TASK_TOPICS );
 
-		// Prime the cache the way the first task to run would.
+		// Prime the map the way the first task to run would.
 		$this->assertTrue( Preferences::is_enabled( Preferences::TASK_TOPICS ) );
 
 		// The Options task removes this while later tasks still need it.
-		$this->forget_stored_preferences();
+		delete_option( Settings::OPTION_NAME );
 
 		$this->assertTrue(
 			Preferences::is_enabled( Preferences::TASK_TOPICS ),
@@ -187,10 +176,10 @@ class Test_Preferences extends Base {
 	 * @return void
 	 */
 	public function test_flush_cache_rereads_storage(): void {
-		Preferences::save( array( Preferences::TASK_FILES => true ) );
+		$this->arm_uninstall( Preferences::TASK_FILES );
 		$this->assertTrue( Preferences::is_enabled( Preferences::TASK_FILES ) );
 
-		$this->forget_stored_preferences();
+		delete_option( Settings::OPTION_NAME );
 		Preferences::flush_cache();
 
 		$this->assertFalse(
@@ -200,80 +189,104 @@ class Test_Preferences extends Base {
 	}
 
 	/**
-	 * The preference is stored in the scope uninstall reads it from.
+	 * On a single site the network answer is the site's answer.
 	 *
-	 * @covers ::save
-	 * @covers ::all
+	 * @covers ::all_for_network
+	 * @covers ::is_enabled_for_network
 	 *
 	 * @return void
 	 */
-	public function test_stored_in_the_scope_uninstall_reads(): void {
-		Preferences::save( array( Preferences::TASK_OPTIONS => true ) );
-
+	public function test_network_answer_matches_the_site_on_a_single_site(): void {
 		if ( is_multisite() ) {
-			$this->assertIsArray(
-				get_site_option( Preferences::OPTION_NAME ),
-				'On multisite the opt-in is a network option, because applies() runs once for the network.'
-			);
-		} else {
-			$this->assertIsArray(
-				get_option( Preferences::OPTION_NAME ),
-				'On a single site the opt-in is a site option.'
-			);
+			$this->markTestSkipped( 'Single-site behavior.' );
 		}
-	}
 
-	/**
-	 * Saving on multisite writes the network option, not the site option.
-	 *
-	 * @covers ::save
-	 * @group multisite
-	 *
-	 * @return void
-	 */
-	public function test_save_writes_the_network_option_on_multisite(): void {
-		Preferences::save( array( Preferences::TASK_EVENTS => true ) );
+		$this->arm_uninstall( Preferences::TASK_USERS );
 
-		$stored = get_site_option( Preferences::OPTION_NAME );
-
-		$this->assertIsArray(
-			$stored,
-			'Saving on multisite must write the network option, because applies() reads it once for the network.'
-		);
 		$this->assertTrue(
-			$stored[ Preferences::TASK_EVENTS ],
-			'The armed task must survive the round trip into network storage.'
-		);
-		$this->assertFalse(
-			get_option( Preferences::OPTION_NAME, false ),
-			'Nothing may land in per-site storage, or subsites would disagree about what uninstall removes.'
+			Preferences::is_enabled_for_network( Preferences::TASK_USERS ),
+			'Without a network there is only one answer to give.'
 		);
 	}
 
 	/**
-	 * Reading on multisite resolves the map from the network option.
+	 * A site answers for its own data when the network did not decide.
 	 *
-	 * @covers ::all
-	 * @covers ::is_enabled
+	 * @covers ::resolve
 	 * @group multisite
 	 *
 	 * @return void
 	 */
-	public function test_all_reads_the_network_option_on_multisite(): void {
-		update_site_option(
-			Preferences::OPTION_NAME,
-			array( Preferences::TASK_TOPICS => true )
-		);
+	public function test_site_answers_for_itself_when_not_inherited(): void {
+		$this->arm_uninstall( Preferences::TASK_EVENTS );
 
+		update_site_option(
+			Settings::OPTION_NAME,
+			array( Preferences::option_key( Preferences::TASK_EVENTS ) => false )
+		);
 		Preferences::flush_cache();
 
 		$this->assertTrue(
-			Preferences::is_enabled( Preferences::TASK_TOPICS ),
-			'A task armed in the network option must read as enabled on multisite.'
+			Preferences::is_enabled( Preferences::TASK_EVENTS ),
+			'A network that left the choice to its sites must not overrule one.'
 		);
 		$this->assertFalse(
+			Preferences::is_enabled_for_network( Preferences::TASK_EVENTS ),
+			'What no single site owns still answers to the network.'
+		);
+	}
+
+	/**
+	 * The network decides for every site once it says so.
+	 *
+	 * @covers ::resolve
+	 * @group multisite
+	 *
+	 * @return void
+	 */
+	public function test_network_decides_for_every_site_when_inherited(): void {
+		// The site says no.
+		update_option(
+			Settings::OPTION_NAME,
+			array( Preferences::option_key( Preferences::TASK_EVENTS ) => false )
+		);
+
+		// The network says yes, for everyone.
+		$this->arm_uninstall_for_network( Preferences::TASK_EVENTS );
+
+		$this->assertTrue(
 			Preferences::is_enabled( Preferences::TASK_EVENTS ),
-			'A task absent from the network option stays off.'
+			'A network that told its sites what to do is answered for them.'
+		);
+	}
+
+	/**
+	 * An inheritance list the network never switched on decides nothing.
+	 *
+	 * @covers ::resolve
+	 * @group multisite
+	 *
+	 * @return void
+	 */
+	public function test_inheritance_list_is_ignored_while_disabled(): void {
+		update_site_option(
+			Settings::OPTION_NAME,
+			array( Preferences::option_key( Preferences::TASK_EVENTS ) => true )
+		);
+		update_site_option(
+			Network::OPTION_NAME,
+			array(
+				'enabled'   => false,
+				'inherited' => array( Preferences::option_key( Preferences::TASK_EVENTS ) ),
+			)
+		);
+
+		Network::flush_config_cache();
+		Preferences::flush_cache();
+
+		$this->assertFalse(
+			Preferences::is_enabled( Preferences::TASK_EVENTS ),
+			'A list that is switched off is not an instruction.'
 		);
 	}
 }

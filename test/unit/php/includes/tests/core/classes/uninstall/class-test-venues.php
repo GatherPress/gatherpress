@@ -23,6 +23,11 @@ use PMC\Unit_Test\Utility;
 class Test_Venues extends Base {
 
 	/**
+	 * Arms and resets the uninstall opt-ins.
+	 */
+	use Preferences_Fixture;
+
+	/**
 	 * Reset the opt-in map between tests.
 	 *
 	 * @since 0.36.0
@@ -32,9 +37,7 @@ class Test_Venues extends Base {
 	public function setUp(): void {
 		parent::setUp();
 
-		delete_option( Preferences::OPTION_NAME );
-		delete_site_option( Preferences::OPTION_NAME );
-		Preferences::flush_cache();
+		$this->reset_uninstall_preferences();
 	}
 
 	/**
@@ -45,9 +48,7 @@ class Test_Venues extends Base {
 	 * @return void
 	 */
 	public function tearDown(): void {
-		delete_option( Preferences::OPTION_NAME );
-		delete_site_option( Preferences::OPTION_NAME );
-		Preferences::flush_cache();
+		$this->reset_uninstall_preferences();
 
 		parent::tearDown();
 	}
@@ -90,7 +91,7 @@ class Test_Venues extends Base {
 	 * @return void
 	 */
 	public function test_applies_when_opted_in(): void {
-		Preferences::save( array( Preferences::TASK_VENUES => true ) );
+		$this->arm_uninstall( Preferences::TASK_VENUES );
 
 		$this->assertTrue( ( new Venues() )->applies(), 'The opt-in turns the task on.' );
 	}
@@ -153,7 +154,7 @@ class Test_Venues extends Base {
 	public function test_removes_venues_and_their_shadow_terms(): void {
 		global $wpdb;
 
-		Preferences::save( array( Preferences::TASK_VENUES => true ) );
+		$this->arm_uninstall( Preferences::TASK_VENUES );
 
 		$venue_id = (int) self::factory()->post->create(
 			array(

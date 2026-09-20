@@ -27,14 +27,14 @@ use GatherPress\Core\Topic;
 final class Topics extends Base {
 
 	/**
-	 * Whether the administrator opted in to removing topics.
+	 * The preference that gates this task.
 	 *
 	 * @since 0.36.0
 	 *
-	 * @return bool True when the task should run.
+	 * @return string The task key.
 	 */
-	public function applies(): bool {
-		return Preferences::is_enabled( Preferences::TASK_TOPICS );
+	protected function preference(): string {
+		return Preferences::TASK_TOPICS;
 	}
 
 	/**

@@ -24,9 +24,10 @@ use GatherPress\Core\Settings\Network;
  * except the options `Notices` owns: the shared dismissal record and
  * anything a notice declares through `get_options()`.
  *
- * The opt-in map itself goes last, in the network pass. `Preferences` reads
- * its option once and caches it, so removing it here cannot change whether
- * a task ordered after this one runs.
+ * The choices made on the Uninstall screen are part of those settings, so
+ * they go with them. `Preferences` reads them once and remembers the
+ * answer, so removing the settings here cannot change whether a task
+ * ordered after this one runs.
  *
  * @since 0.36.0
  */
@@ -41,14 +42,14 @@ final class Options extends Base {
 	const VERSION_OPTION = 'gatherpress_version';
 
 	/**
-	 * Whether the administrator opted in to removing options.
+	 * The preference that gates this task.
 	 *
 	 * @since 0.36.0
 	 *
-	 * @return bool True when the task should run.
+	 * @return string The task key.
 	 */
-	public function applies(): bool {
-		return Preferences::is_enabled( Preferences::TASK_OPTIONS );
+	protected function preference(): string {
+		return Preferences::TASK_OPTIONS;
 	}
 
 	/**
@@ -67,8 +68,9 @@ final class Options extends Base {
 	/**
 	 * Remove the network options.
 	 *
-	 * Settings can be stored network-wide, and the opt-in map is always a
-	 * site option on multisite, so both are cleared once for the network.
+	 * Settings can be stored network-wide, and the inheritance config that
+	 * says which of them a subsite takes from the network is network-wide
+	 * by definition, so both are cleared once for the network.
 	 *
 	 * @since 0.36.0
 	 *
@@ -77,7 +79,5 @@ final class Options extends Base {
 	protected function uninstall_network(): void {
 		delete_site_option( Settings::OPTION_NAME );
 		delete_site_option( Network::OPTION_NAME );
-		delete_site_option( Preferences::OPTION_NAME );
-		delete_option( Preferences::OPTION_NAME );
 	}
 }

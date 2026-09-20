@@ -15,9 +15,11 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Settings;
+use GatherPress\Core\Topic;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Uninstall\Preferences;
 use GatherPress\Core\Utility;
+use GatherPress\Core\Venue;
 
 /**
  * Class Uninstall.
@@ -26,13 +28,21 @@ use GatherPress\Core\Utility;
  * off until an administrator turns it on, so deleting the plugin removes
  * nothing a reinstall would want back unless that was asked for.
  *
- * Rendered as its own form rather than through `get_sections()`, because a
- * declared settings field is written by `Settings::import_settings()`, and
- * importing a settings file from elsewhere must not be able to arm data
- * deletion. `Preferences` stores the values in its own option, which the
- * importer never sees.
+ * Every option is declared `'exportable' => false`. A settings export
+ * leaves them out and an import refuses them, because every other setting
+ * shows its effect as soon as it is wrong, while these do nothing until the
+ * plugin is deleted, possibly months later and by somebody who never ran
+ * the import, and what they remove is gone.
+ *
+ * On multisite the page appears on the network settings screen like any
+ * other, so a network administrator can either set one answer for every
+ * site, by adding these keys to the inheritance list on the Network tab, or
+ * leave them off it and let each site answer for its own data.
  *
  * @since 0.36.0
+ *
+ * @phpstan-import-type SettingsOption from Settings
+ * @phpstan-import-type SettingsSection from Settings
  */
 final class Uninstall extends Base {
 
@@ -40,39 +50,6 @@ final class Uninstall extends Base {
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
-
-	/**
-	 * Action name for the save request.
-	 *
-	 * @since 0.36.0
-	 * @var string
-	 */
-	const SAVE_ACTION = 'gatherpress_save_uninstall';
-
-	/**
-	 * Nonce name for the save request.
-	 *
-	 * @since 0.36.0
-	 * @var string
-	 */
-	const NONCE_NAME = 'gatherpress_uninstall_nonce';
-
-	/**
-	 * Set up hooks for various purposes.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @return void
-	 */
-	protected function setup_hooks(): void {
-		parent::setup_hooks();
-
-		// Priority 9 so this runs before Settings::render_settings_form() on
-		// the same hook at 10. settings_section() removes that default
-		// renderer for this page, and it can only do so before it has fired.
-		add_action( 'gatherpress_settings_section', array( $this, 'settings_section' ), 9 );
-		add_action( sprintf( 'admin_post_%s', self::SAVE_ACTION ), array( $this, 'handle_save' ) );
-	}
 
 	/**
 	 * Get the slug for the uninstall settings page.
@@ -115,210 +92,193 @@ final class Uninstall extends Base {
 	}
 
 	/**
-	 * Capability required to change what uninstall removes.
-	 *
-	 * The preference is a network option on multisite, because
-	 * `Uninstall\Base::run()` checks it once for the whole network, so
-	 * changing it is a network administrator's decision there.
+	 * Get the sections for the uninstall settings page.
 	 *
 	 * @since 0.36.0
 	 *
-	 * @return string The capability name.
+	 * @return array<string, SettingsSection> The sections for the uninstall settings page.
 	 */
-	public static function required_capability(): string {
-		return is_multisite() ? 'manage_network_options' : 'manage_options';
-	}
-
-	/**
-	 * The form field name a task's checkbox posts under.
-	 *
-	 * Prefixed and flat rather than an array under one name, because these
-	 * values are stored by `Preferences` and never by `Settings`, and the
-	 * shape of the request should say so.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @param string $task The task key.
-	 *
-	 * @return string The input name.
-	 */
-	public static function field_name( string $task ): string {
-		return sprintf( 'gatherpress_uninstall_%s', $task );
-	}
-
-	/**
-	 * Translate a row's `show_if` condition into one the settings JS can read.
-	 *
-	 * The declaration is written in task keys, which is what the rest of this
-	 * screen deals in. The marker has to name form fields, because that is
-	 * what the JS looks up.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @param array<string, bool> $show_if Map of task key to the state that shows the row.
-	 *
-	 * @return array<string, bool> Map of field name to the state that shows the row.
-	 */
-	public static function show_if_condition( array $show_if ): array {
-		$condition = array();
-
-		foreach ( $show_if as $task => $expected ) {
-			$condition[ self::field_name( (string) $task ) ] = (bool) $expected;
-		}
-
-		return $condition;
-	}
-
-	/**
-	 * The class list for a task's row.
-	 *
-	 * Mirrors `Settings::build_row_class()`: every row carries the hook the
-	 * show_if JS attaches to, and a row whose condition does not match the
-	 * saved values is painted hidden on first render so it does not flash
-	 * into view before the JS runs.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @param array<string, bool> $show_if     Map of task key to the state that shows the row.
-	 * @param array<string, bool> $preferences The saved preferences.
-	 *
-	 * @return string Space-separated class names.
-	 */
-	public static function row_class( array $show_if, array $preferences ): string {
-		$classes = array( 'gatherpress-settings-row' );
-
-		foreach ( $show_if as $task => $expected ) {
-			if ( ! empty( $preferences[ $task ] ) === (bool) $expected ) {
-				continue;
-			}
-
-			$classes[] = 'gatherpress--is-hidden';
-
-			break;
-		}
-
-		return implode( ' ', $classes );
-	}
-
-	/**
-	 * Render the uninstall form instead of the default settings form.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @param string $page The current settings page slug.
-	 *
-	 * @return void
-	 */
-	public function settings_section( string $page ): void {
-		if ( Utility::unprefix_key( $page ) !== $this->slug ) {
-			return;
-		}
-
-		remove_action(
-			'gatherpress_settings_section',
-			array( Settings::get_instance(), 'render_settings_form' )
-		);
-
-		Utility::render_template(
-			sprintf( '%s/includes/templates/admin/settings/uninstall.php', GATHERPRESS_CORE_PATH ),
-			array(
-				'preferences' => Preferences::all(),
-				'can_edit'    => current_user_can( self::required_capability() ),
-				'scope'       => is_network_admin() ? 'network' : 'blog',
+	protected function get_sections(): array {
+		return array(
+			'uninstall' => array(
+				'name'        => __( 'What to remove', 'gatherpress' ),
+				'description' => $this->get_section_description(),
+				'options'     => $this->get_task_options(),
 			),
-			true
 		);
 	}
 
 	/**
-	 * Save the submitted preferences.
+	 * The copy that sits above the choices.
 	 *
 	 * @since 0.36.0
 	 *
-	 * @return void
+	 * @return string The description, with the markup `wp_kses_post()` allows.
 	 */
-	public function handle_save(): void {
-		if ( ! current_user_can( self::required_capability() ) ) {
-			wp_die(
-				esc_html__( 'You are not allowed to change what uninstall removes.', 'gatherpress' ),
-				'',
-				array( 'response' => 403 )
-			);
-		}
-
-		check_admin_referer( self::SAVE_ACTION, self::NONCE_NAME );
-
-		// The body below runs only on a valid nonce and terminates via
-		// wp_safe_redirect → exit, so it's untestable under PHPUnit without
-		// subprocess isolation.
-		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
-		// @codeCoverageIgnoreStart
-		$submitted = array();
-
-		foreach ( Preferences::task_keys() as $key ) {
-			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer() ran above.
-			$submitted[ $key ] = ! empty( $_POST[ self::field_name( $key ) ] );
-		}
-
-		Preferences::save( $submitted );
-
-		wp_safe_redirect( $this->redirect_url( $this->resolve_scope() ) );
-
-		exit;
-		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
-		// @codeCoverageIgnoreEnd
-	}
-
-	/**
-	 * Which screen the form was submitted from.
-	 *
-	 * The scope travels with the request rather than being read from the
-	 * environment, because `admin-post.php` always runs in site-admin
-	 * context: `is_network_admin()` is false here even when the form was
-	 * rendered on the network screen. `Settings\Tools` resolves its own
-	 * scope the same way, for the same reason.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @return string Either 'network' or 'blog'.
-	 */
-	protected function resolve_scope(): string {
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer() ran in the caller.
-		$raw = isset( $_POST['gatherpress_scope'] )
-			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer() ran in the caller.
-			? sanitize_key( wp_unslash( $_POST['gatherpress_scope'] ) )
-			: 'blog';
-
-		return 'network' === $raw ? 'network' : 'blog';
-	}
-
-	/**
-	 * Where to send the administrator after a save.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @param string $scope Either 'network' or 'blog'.
-	 *
-	 * @return string The settings page URL.
-	 */
-	protected function redirect_url( string $scope = 'blog' ): string {
-		if ( 'network' === $scope ) {
-			return add_query_arg(
-				array(
-					'page'                        => Network::PAGE_SLUG,
-					'gatherpress_uninstall_saved' => 1,
+	protected function get_section_description(): string {
+		return sprintf(
+			'%1$s <strong>%2$s</strong> %3$s %4$s',
+			esc_html__(
+				// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string, kept whole.
+				'Choose what GatherPress removes when you delete the plugin. Everything is off by default, so your data stays unless you select it here.',
+				// phpcs:enable Generic.Files.LineLength.TooLong
+				'gatherpress'
+			),
+			esc_html__( 'These choices cannot be undone.', 'gatherpress' ),
+			esc_html__(
+				// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string, kept whole.
+				'Deactivating removes nothing, and only a backup brings back what deleting takes. Export your settings from the Tools tab first, and your events and venues under Tools > Export.',
+				// phpcs:enable Generic.Files.LineLength.TooLong
+				'gatherpress'
+			),
+			sprintf(
+				/* translators: %s: The WP-CLI command that deletes the plugin, in a code element. */
+				esc_html__(
+					// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string, kept whole.
+					'On a large site, delete with WP-CLI: %s. A browser request can hit the web server time limit and stop part way through.',
+					// phpcs:enable Generic.Files.LineLength.TooLong
+					'gatherpress'
 				),
-				network_admin_url( 'settings.php' )
-			);
+				'<code>wp plugin uninstall gatherpress --deactivate</code>'
+			)
+		);
+	}
+
+	/**
+	 * One checkbox per uninstall task.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return array<string, SettingsOption> The options for the section.
+	 */
+	protected function get_task_options(): array {
+		$events = Utility::post_type_label( 'name', Event::POST_TYPE );
+		$venues = Utility::post_type_label( 'name', Venue::POST_TYPE );
+		$topics = Utility::taxonomy_label( 'name', Topic::TAXONOMY );
+
+		$options = array(
+			Preferences::TASK_EVENTS  => array(
+				'name'        => $events,
+				/* translators: %s: Plural post type label (e.g. "Events"). */
+				'label'       => sprintf( __( 'Remove %s', 'gatherpress' ), $events ),
+				'description' => sprintf(
+					/* translators: %s: Plural post type label (e.g. "Events"). */
+					__(
+						// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string, kept whole.
+						'Removes all %s with their meta and revisions, the RSVPs recorded against them, and the table that holds their dates.',
+						// phpcs:enable Generic.Files.LineLength.TooLong
+						'gatherpress'
+					),
+					$events
+				),
+			),
+			Preferences::TASK_RSVPS   => array(
+				'name'        => __( 'RSVPs', 'gatherpress' ),
+				'label'       => __( 'Remove RSVPs', 'gatherpress' ),
+				'description' => __(
+					// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string, kept whole.
+					'Removes every RSVP record, the answers people gave to custom RSVP fields, and the internal terms that track each response.',
+					// phpcs:enable Generic.Files.LineLength.TooLong
+					'gatherpress'
+				),
+				// Removing events removes the RSVPs on them either way, so the
+				// choice is only offered while events are staying. An unchecked
+				// checkbox reads as '' here and as false in the browser, which
+				// is what the two accepted values cover.
+				'show_if'     => array(
+					Preferences::option_key( Preferences::TASK_EVENTS ) => '',
+				),
+			),
+			Preferences::TASK_TOPICS  => array(
+				'name'        => $topics,
+				/* translators: %s: Plural taxonomy label (e.g. "Topics"). */
+				'label'       => sprintf( __( 'Remove %s', 'gatherpress' ), $topics ),
+				'description' => sprintf(
+					/* translators: %s: Plural taxonomy label (e.g. "Topics"). */
+					__(
+						// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string, kept whole.
+						'Removes all %s and the way they were assigned. They are kept by default, because a vocabulary you built can outlive the plugin.',
+						// phpcs:enable Generic.Files.LineLength.TooLong
+						'gatherpress'
+					),
+					$topics
+				),
+			),
+			Preferences::TASK_VENUES  => array(
+				'name'        => $venues,
+				/* translators: %s: Plural post type label (e.g. "Venues"). */
+				'label'       => sprintf( __( 'Remove %s', 'gatherpress' ), $venues ),
+				'description' => sprintf(
+					/* translators: 1: Plural post type label ("Venues"), 2: Plural post type label ("Events"). */
+					__(
+						// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string, kept whole.
+						'Removes all %1$s with their meta and revisions, and the internal terms GatherPress keeps to connect %2$s to them.',
+						// phpcs:enable Generic.Files.LineLength.TooLong
+						'gatherpress'
+					),
+					$venues,
+					$events
+				),
+			),
+			Preferences::TASK_FILES   => array(
+				'name'        => __( 'Generated files', 'gatherpress' ),
+				'label'       => __( 'Remove generated files', 'gatherpress' ),
+				'description' => sprintf(
+					/* translators: %s: Plural post type label (e.g. "Venues"). */
+					__(
+						// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string, kept whole.
+						'Deletes the files GatherPress generated in your uploads folder, such as the static maps for %s. They are not in your media library.',
+						// phpcs:enable Generic.Files.LineLength.TooLong
+						'gatherpress'
+					),
+					$venues
+				),
+			),
+			Preferences::TASK_CRON    => array(
+				'name'        => __( 'Scheduled jobs', 'gatherpress' ),
+				'label'       => __( 'Remove scheduled jobs', 'gatherpress' ),
+				'description' => __(
+					'Clears the scheduled tasks the plugin registers, such as RSVP cleanup and map generation.',
+					'gatherpress'
+				),
+			),
+			Preferences::TASK_USERS   => array(
+				'name'        => __( 'User preferences', 'gatherpress' ),
+				'label'       => __( 'Remove user preferences', 'gatherpress' ),
+				'description' => __(
+					// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string, kept whole.
+					'Removes what each person chose for themselves: their time zone and time format, whether they receive event updates, and their RSVP screen options.',
+					// phpcs:enable Generic.Files.LineLength.TooLong
+					'gatherpress'
+				),
+			),
+			Preferences::TASK_OPTIONS => array(
+				'name'        => __( 'Settings', 'gatherpress' ),
+				'label'       => __( 'Remove settings', 'gatherpress' ),
+				'description' => __(
+					'Removes the GatherPress settings, including the choices on this screen.',
+					'gatherpress'
+				),
+			),
+		);
+
+		$declared = array();
+
+		foreach ( $options as $task => $option ) {
+			$declared[ Preferences::option_key( (string) $task ) ] = array(
+				'labels'      => array( 'name' => $option['name'] ),
+				'description' => $option['description'],
+				'field'       => array(
+					'label'   => $option['label'],
+					'type'    => 'checkbox',
+					'options' => array( 'default' => false ),
+				),
+				// Never travels in a settings file, and an import will not
+				// write it. See the class docblock for why.
+				'exportable'  => false,
+			) + ( isset( $option['show_if'] ) ? array( 'show_if' => $option['show_if'] ) : array() );
 		}
 
-		return add_query_arg(
-			array(
-				'post_type'                   => 'gatherpress_event',
-				'page'                        => Utility::prefix_key( $this->slug ),
-				'gatherpress_uninstall_saved' => 1,
-			),
-			admin_url( 'edit.php' )
-		);
+		return $declared;
 	}
 }

@@ -29,14 +29,14 @@ use GatherPress\Core\Rsvp;
 final class Users extends Base {
 
 	/**
-	 * Whether the administrator opted in to removing user preferences.
+	 * The preference that gates this task.
 	 *
 	 * @since 0.36.0
 	 *
-	 * @return bool True when the task should run.
+	 * @return string The task key.
 	 */
-	public function applies(): bool {
-		return Preferences::is_enabled( Preferences::TASK_USERS );
+	protected function preference(): string {
+		return Preferences::TASK_USERS;
 	}
 
 	/**

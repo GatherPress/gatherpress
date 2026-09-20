@@ -22,6 +22,11 @@ use PMC\Unit_Test\Utility;
 class Test_Users extends Base {
 
 	/**
+	 * Arms and resets the uninstall opt-ins.
+	 */
+	use Preferences_Fixture;
+
+	/**
 	 * Reset the opt-in map between tests.
 	 *
 	 * @since 0.36.0
@@ -31,9 +36,7 @@ class Test_Users extends Base {
 	public function setUp(): void {
 		parent::setUp();
 
-		delete_option( Preferences::OPTION_NAME );
-		delete_site_option( Preferences::OPTION_NAME );
-		Preferences::flush_cache();
+		$this->reset_uninstall_preferences();
 	}
 
 	/**
@@ -44,9 +47,7 @@ class Test_Users extends Base {
 	 * @return void
 	 */
 	public function tearDown(): void {
-		delete_option( Preferences::OPTION_NAME );
-		delete_site_option( Preferences::OPTION_NAME );
-		Preferences::flush_cache();
+		$this->reset_uninstall_preferences();
 
 		parent::tearDown();
 	}
@@ -93,7 +94,7 @@ class Test_Users extends Base {
 	 * @return void
 	 */
 	public function test_applies_when_opted_in(): void {
-		Preferences::save( array( Preferences::TASK_USERS => true ) );
+		$this->arm_uninstall( Preferences::TASK_USERS );
 
 		$this->assertTrue( ( new Users() )->applies(), 'The opt-in turns the task on.' );
 	}
@@ -160,7 +161,7 @@ class Test_Users extends Base {
 	 * @return void
 	 */
 	public function test_removes_the_plugin_keys_only(): void {
-		Preferences::save( array( Preferences::TASK_USERS => true ) );
+		$this->arm_uninstall( Preferences::TASK_USERS );
 
 		$user_id = $this->make_user();
 

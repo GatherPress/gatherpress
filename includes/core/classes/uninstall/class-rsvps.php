@@ -61,7 +61,18 @@ final class Rsvps extends Base {
 	}
 
 	/**
-	 * Whether RSVPs are being removed.
+	 * The preference that gates this task.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string The task key.
+	 */
+	protected function preference(): string {
+		return Preferences::TASK_RSVPS;
+	}
+
+	/**
+	 * Whether RSVPs are being removed from this site.
 	 *
 	 * True when the administrator opted in directly, and true when events
 	 * are going: every RSVP on a deleted event would otherwise be left
@@ -72,8 +83,19 @@ final class Rsvps extends Base {
 	 * @return bool True when the task should run.
 	 */
 	public function applies(): bool {
-		return Preferences::is_enabled( Preferences::TASK_RSVPS )
-			|| Preferences::is_enabled( Preferences::TASK_EVENTS );
+		return parent::applies() || Preferences::is_enabled( Preferences::TASK_EVENTS );
+	}
+
+	/**
+	 * Whether RSVPs are being removed at the network level.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return bool True when the network cleanup should run.
+	 */
+	public function applies_to_network(): bool {
+		return parent::applies_to_network()
+			|| Preferences::is_enabled_for_network( Preferences::TASK_EVENTS );
 	}
 
 	/**

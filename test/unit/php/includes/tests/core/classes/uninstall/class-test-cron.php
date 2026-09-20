@@ -20,6 +20,11 @@ use GatherPress\Tests\Base;
 class Test_Cron extends Base {
 
 	/**
+	 * Arms and resets the uninstall opt-ins.
+	 */
+	use Preferences_Fixture;
+
+	/**
 	 * Reset the opt-in map between tests.
 	 *
 	 * @since 0.36.0
@@ -29,9 +34,7 @@ class Test_Cron extends Base {
 	public function setUp(): void {
 		parent::setUp();
 
-		delete_option( Preferences::OPTION_NAME );
-		delete_site_option( Preferences::OPTION_NAME );
-		Preferences::flush_cache();
+		$this->reset_uninstall_preferences();
 	}
 
 	/**
@@ -46,9 +49,7 @@ class Test_Cron extends Base {
 		wp_unschedule_hook( 'gatherpress_async_geocode_venue' );
 		wp_unschedule_hook( 'some_other_plugin_job' );
 
-		delete_option( Preferences::OPTION_NAME );
-		delete_site_option( Preferences::OPTION_NAME );
-		Preferences::flush_cache();
+		$this->reset_uninstall_preferences();
 
 		parent::tearDown();
 	}
@@ -75,7 +76,7 @@ class Test_Cron extends Base {
 	 * @return void
 	 */
 	public function test_applies_when_opted_in(): void {
-		Preferences::save( array( Preferences::TASK_CRON => true ) );
+		$this->arm_uninstall( Preferences::TASK_CRON );
 
 		$this->assertTrue(
 			( new Cron() )->applies(),
@@ -110,7 +111,7 @@ class Test_Cron extends Base {
 	 * @return void
 	 */
 	public function test_clears_only_plugin_owned_jobs(): void {
-		Preferences::save( array( Preferences::TASK_CRON => true ) );
+		$this->arm_uninstall( Preferences::TASK_CRON );
 
 		wp_schedule_single_event( time() + HOUR_IN_SECONDS, 'gatherpress_rsvp_cleanup' );
 		wp_schedule_single_event( time() + HOUR_IN_SECONDS, 'some_other_plugin_job' );
@@ -140,7 +141,7 @@ class Test_Cron extends Base {
 	 * @return void
 	 */
 	public function test_clears_jobs_scheduled_with_arguments(): void {
-		Preferences::save( array( Preferences::TASK_CRON => true ) );
+		$this->arm_uninstall( Preferences::TASK_CRON );
 
 		$args = array( 123 );
 

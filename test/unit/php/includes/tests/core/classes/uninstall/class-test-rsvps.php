@@ -24,6 +24,11 @@ use GatherPress\Tests\Base;
 class Test_Rsvps extends Base {
 
 	/**
+	 * Arms and resets the uninstall opt-ins.
+	 */
+	use Preferences_Fixture;
+
+	/**
 	 * Reset the opt-in map between tests.
 	 *
 	 * @since 0.36.0
@@ -33,9 +38,7 @@ class Test_Rsvps extends Base {
 	public function setUp(): void {
 		parent::setUp();
 
-		delete_option( Preferences::OPTION_NAME );
-		delete_site_option( Preferences::OPTION_NAME );
-		Preferences::flush_cache();
+		$this->reset_uninstall_preferences();
 	}
 
 	/**
@@ -46,9 +49,7 @@ class Test_Rsvps extends Base {
 	 * @return void
 	 */
 	public function tearDown(): void {
-		delete_option( Preferences::OPTION_NAME );
-		delete_site_option( Preferences::OPTION_NAME );
-		Preferences::flush_cache();
+		$this->reset_uninstall_preferences();
 
 		parent::tearDown();
 	}
@@ -120,7 +121,7 @@ class Test_Rsvps extends Base {
 	 * @return void
 	 */
 	public function test_applies_when_opted_in(): void {
-		Preferences::save( array( Preferences::TASK_RSVPS => true ) );
+		$this->arm_uninstall( Preferences::TASK_RSVPS );
 
 		$this->assertTrue( ( new Rsvps() )->applies(), 'The opt-in turns the task on.' );
 	}
@@ -133,7 +134,7 @@ class Test_Rsvps extends Base {
 	 * @return void
 	 */
 	public function test_applies_when_events_are_going(): void {
-		Preferences::save( array( Preferences::TASK_EVENTS => true ) );
+		$this->arm_uninstall( Preferences::TASK_EVENTS );
 
 		$this->assertTrue(
 			( new Rsvps() )->applies(),
@@ -201,7 +202,7 @@ class Test_Rsvps extends Base {
 	public function test_removes_rsvps_meta_and_every_taxonomy(): void {
 		global $wpdb;
 
-		Preferences::save( array( Preferences::TASK_RSVPS => true ) );
+		$this->arm_uninstall( Preferences::TASK_RSVPS );
 
 		$post_id    = (int) self::factory()->post->create();
 		$comment_id = $this->make_rsvp( $post_id );
@@ -260,7 +261,7 @@ class Test_Rsvps extends Base {
 	public function test_leaves_ordinary_comments_alone(): void {
 		global $wpdb;
 
-		Preferences::save( array( Preferences::TASK_RSVPS => true ) );
+		$this->arm_uninstall( Preferences::TASK_RSVPS );
 
 		$post_id  = (int) self::factory()->post->create();
 		$ordinary = (int) self::factory()->comment->create(
@@ -287,7 +288,7 @@ class Test_Rsvps extends Base {
 	 * @return void
 	 */
 	public function test_does_not_touch_post_relationships_sharing_an_id(): void {
-		Preferences::save( array( Preferences::TASK_RSVPS => true ) );
+		$this->arm_uninstall( Preferences::TASK_RSVPS );
 
 		$post_id    = (int) self::factory()->post->create();
 		$comment_id = $this->make_rsvp( $post_id );
@@ -313,7 +314,7 @@ class Test_Rsvps extends Base {
 	 * @return void
 	 */
 	public function test_takes_removed_rsvps_out_of_the_comment_count(): void {
-		Preferences::save( array( Preferences::TASK_RSVPS => true ) );
+		$this->arm_uninstall( Preferences::TASK_RSVPS );
 
 		$post_id = (int) self::factory()->post->create();
 

@@ -21,6 +21,11 @@ use GatherPress\Tests\Base;
 class Test_Files extends Base {
 
 	/**
+	 * Arms and resets the uninstall opt-ins.
+	 */
+	use Preferences_Fixture;
+
+	/**
 	 * Reset the opt-in map between tests.
 	 *
 	 * @since 0.36.0
@@ -30,9 +35,7 @@ class Test_Files extends Base {
 	public function setUp(): void {
 		parent::setUp();
 
-		delete_option( Preferences::OPTION_NAME );
-		delete_site_option( Preferences::OPTION_NAME );
-		Preferences::flush_cache();
+		$this->reset_uninstall_preferences();
 	}
 
 	/**
@@ -45,9 +48,7 @@ class Test_Files extends Base {
 	public function tearDown(): void {
 		$this->remove_directory( $this->plugin_directory() );
 
-		delete_option( Preferences::OPTION_NAME );
-		delete_site_option( Preferences::OPTION_NAME );
-		Preferences::flush_cache();
+		$this->reset_uninstall_preferences();
 
 		parent::tearDown();
 	}
@@ -162,7 +163,7 @@ class Test_Files extends Base {
 	 * @return void
 	 */
 	public function test_applies_when_opted_in(): void {
-		Preferences::save( array( Preferences::TASK_FILES => true ) );
+		$this->arm_uninstall( Preferences::TASK_FILES );
 
 		$this->assertTrue( ( new Files() )->applies(), 'The opt-in turns the task on.' );
 	}
@@ -193,7 +194,7 @@ class Test_Files extends Base {
 	 * @return void
 	 */
 	public function test_removes_the_plugin_directory(): void {
-		Preferences::save( array( Preferences::TASK_FILES => true ) );
+		$this->arm_uninstall( Preferences::TASK_FILES );
 
 		$map    = trailingslashit( $this->map_directory() ) . 'venue-osm-map-15-600-400.png';
 		$nested = trailingslashit( $this->map_directory() ) . 'retina/venue-osm-map-15-600-400@2x.png';
@@ -224,7 +225,7 @@ class Test_Files extends Base {
 	 * @return void
 	 */
 	public function test_leaves_the_rest_of_uploads_alone(): void {
-		Preferences::save( array( Preferences::TASK_FILES => true ) );
+		$this->arm_uninstall( Preferences::TASK_FILES );
 
 		$uploads   = wp_get_upload_dir();
 		$elsewhere = trailingslashit( $uploads['basedir'] ) . 'not-ours.txt';
@@ -247,7 +248,7 @@ class Test_Files extends Base {
 	 * @return void
 	 */
 	public function test_tolerates_a_missing_directory(): void {
-		Preferences::save( array( Preferences::TASK_FILES => true ) );
+		$this->arm_uninstall( Preferences::TASK_FILES );
 
 		$this->remove_directory( $this->plugin_directory() );
 
@@ -267,7 +268,7 @@ class Test_Files extends Base {
 	 * @return void
 	 */
 	public function test_stops_when_uploads_reports_an_error(): void {
-		Preferences::save( array( Preferences::TASK_FILES => true ) );
+		$this->arm_uninstall( Preferences::TASK_FILES );
 
 		$file = trailingslashit( $this->map_directory() ) . 'venue-osm-map-15-600-400.png';
 
@@ -297,7 +298,7 @@ class Test_Files extends Base {
 	 * @return void
 	 */
 	public function test_stops_when_the_filesystem_is_unavailable(): void {
-		Preferences::save( array( Preferences::TASK_FILES => true ) );
+		$this->arm_uninstall( Preferences::TASK_FILES );
 
 		$file = trailingslashit( $this->map_directory() ) . 'venue-osm-map-15-600-400.png';
 

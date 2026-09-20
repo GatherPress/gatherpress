@@ -20,25 +20,25 @@
 
 const ROW_HIDDEN_CLASS = 'gatherpress--is-hidden';
 const MARKER_SELECTOR = '.gatherpress-show-if-marker';
-const NAME_SELECTORS = ( key ) => [
-	`[name="gatherpress_settings[${ key }]"]`,
-	`[name="${ key }"]`,
-];
+const NAME_TEMPLATE = ( key ) => `[name="gatherpress_settings[${ key }]"]`;
 
 /**
  * Read the current submittable value from a form control.
  *
- * Checkboxes report their checked state as a boolean — everything else
- * (text, number, select, hidden) reports `value`. The string casts in
- * `matches()` smooth the boolean / number / string comparison.
+ * Checkboxes report what they would submit rather than their `checked`
+ * property, so a condition reads the same on both sides of the wire. PHP
+ * stores a checkbox as a bool and `Settings::evaluate_show_if()` compares
+ * `(string) $value`, which is `'1'` when on and `''` when off; reporting
+ * `true` / `false` here would compare `'true'` against `'1'` and never
+ * match. Everything else (text, number, select, hidden) reports `value`.
  *
  * @param {HTMLInputElement|HTMLSelectElement} el The input or select element.
  *
- * @return {string|boolean} The control's current value.
+ * @return {string} The control's current value.
  */
 function readControlValue( el ) {
 	if ( 'checkbox' === el.type ) {
-		return el.checked;
+		return el.checked ? el.value : '';
 	}
 
 	return el.value;
@@ -53,7 +53,7 @@ function readControlValue( el ) {
  * checkbox booleans, select strings, and numeric values compare cleanly.
  * Mirrors `Settings::evaluate_show_if()` on the server.
  *
- * @param {string|boolean}                     current  The control's current value.
+ * @param {string}                             current  The control's current value.
  * @param {string|number|boolean|Array|Object} expected The expected value(s) from the show_if declaration.
  *
  * @return {boolean} True when the current value satisfies the expectation.
@@ -96,11 +96,6 @@ function matches( current, expected ) {
  * last one. That naturally picks the live `<select>` / `<input type="checkbox">`
  * over the upstream hidden fallback.
  *
- * A key is looked up as a member of the `gatherpress_settings` array first and
- * as a field name of its own second. The Uninstall screen posts its fields
- * flat and outside that array on purpose, so its rows would otherwise find no
- * controller at all.
- *
  * @param {Object} conditions Map of controlling option key → expected value(s).
  *
  * @return {Array<{key: string, el: HTMLElement}>} Resolved controller pairs.
@@ -108,13 +103,10 @@ function matches( current, expected ) {
 function resolveControllers( conditions ) {
 	return Object.keys( conditions )
 		.map( ( key ) => {
-			const candidates = NAME_SELECTORS( key )
-				.map( ( selector ) => document.querySelectorAll( selector ) )
-				.find( ( found ) => 0 < found.length );
-
+			const candidates = document.querySelectorAll( NAME_TEMPLATE( key ) );
 			return {
 				key,
-				el: candidates ? candidates[ candidates.length - 1 ] : null,
+				el: 0 < candidates.length ? candidates[ candidates.length - 1 ] : null,
 			};
 		} )
 		.filter( ( entry ) => entry.el );

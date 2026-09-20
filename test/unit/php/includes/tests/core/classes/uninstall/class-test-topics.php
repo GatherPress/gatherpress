@@ -21,6 +21,11 @@ use GatherPress\Tests\Base;
 class Test_Topics extends Base {
 
 	/**
+	 * Arms and resets the uninstall opt-ins.
+	 */
+	use Preferences_Fixture;
+
+	/**
 	 * Reset the opt-in map between tests.
 	 *
 	 * @since 0.36.0
@@ -30,9 +35,7 @@ class Test_Topics extends Base {
 	public function setUp(): void {
 		parent::setUp();
 
-		delete_option( Preferences::OPTION_NAME );
-		delete_site_option( Preferences::OPTION_NAME );
-		Preferences::flush_cache();
+		$this->reset_uninstall_preferences();
 	}
 
 	/**
@@ -43,9 +46,7 @@ class Test_Topics extends Base {
 	 * @return void
 	 */
 	public function tearDown(): void {
-		delete_option( Preferences::OPTION_NAME );
-		delete_site_option( Preferences::OPTION_NAME );
-		Preferences::flush_cache();
+		$this->reset_uninstall_preferences();
 
 		parent::tearDown();
 	}
@@ -88,7 +89,7 @@ class Test_Topics extends Base {
 	 * @return void
 	 */
 	public function test_applies_when_opted_in(): void {
-		Preferences::save( array( Preferences::TASK_TOPICS => true ) );
+		$this->arm_uninstall( Preferences::TASK_TOPICS );
 
 		$this->assertTrue( ( new Topics() )->applies(), 'The opt-in turns the task on.' );
 	}
@@ -137,7 +138,7 @@ class Test_Topics extends Base {
 	public function test_removes_topics(): void {
 		global $wpdb;
 
-		Preferences::save( array( Preferences::TASK_TOPICS => true ) );
+		$this->arm_uninstall( Preferences::TASK_TOPICS );
 
 		$term_id = (int) self::factory()->term->create( array( 'taxonomy' => Topic::TAXONOMY ) );
 
