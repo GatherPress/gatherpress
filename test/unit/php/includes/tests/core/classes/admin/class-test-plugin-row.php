@@ -1,0 +1,165 @@
+<?php
+/**
+ * Unit tests for the Plugins screen row warning.
+ *
+ * @package GatherPress\Core\Admin
+ * @since 0.36.0
+ */
+
+namespace GatherPress\Tests\Core\Admin;
+
+use GatherPress\Core\Admin\Plugin_Row;
+use GatherPress\Core\Settings;
+use GatherPress\Core\Uninstall\Preferences;
+use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
+
+/**
+ * Class Test_Plugin_Row.
+ *
+ * @coversDefaultClass \GatherPress\Core\Admin\Plugin_Row
+ */
+class Test_Plugin_Row extends Base {
+
+	/**
+	 * Clean up after each test.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	public function tearDown(): void {
+		delete_option( Settings::OPTION_NAME );
+		delete_site_option( Settings::OPTION_NAME );
+		Preferences::flush_cache();
+
+		parent::tearDown();
+	}
+
+	/**
+	 * Opt in to one or more tasks for the current site.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string ...$tasks Task keys.
+	 *
+	 * @return void
+	 */
+	protected function arm( string ...$tasks ): void {
+		$settings = array();
+
+		foreach ( $tasks as $task ) {
+			$settings[ Preferences::option_key( $task ) ] = true;
+		}
+
+		update_option( Settings::OPTION_NAME, $settings );
+		Preferences::flush_cache();
+	}
+
+	/**
+	 * The warning is hooked into the plugin row meta.
+	 *
+	 * @covers ::setup_hooks
+	 * @covers ::__construct
+	 *
+	 * @return void
+	 */
+	public function test_setup_hooks(): void {
+		$instance = Plugin_Row::get_instance();
+
+		$this->assert_hooks(
+			array(
+				array(
+					'type'     => 'action',
+					'name'     => 'after_plugin_row_meta',
+					'priority' => 10,
+					'callback' => array( $instance, 'render_uninstall_warning' ),
+				),
+			),
+			$instance
+		);
+	}
+
+	/**
+	 * Render the warning for a plugin row.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $plugin_file The row being rendered.
+	 *
+	 * @return string The output.
+	 */
+	protected function render( string $plugin_file ): string {
+		ob_start();
+		Plugin_Row::get_instance()->render_uninstall_warning( $plugin_file );
+
+		return (string) ob_get_clean();
+	}
+
+	/**
+	 * A site that opted into nothing gets no warning.
+	 *
+	 * @covers ::render_uninstall_warning
+	 *
+	 * @return void
+	 */
+	public function test_renders_nothing_when_nothing_is_armed(): void {
+		$this->assertSame(
+			'',
+			$this->render( plugin_basename( GATHERPRESS_CORE_FILE ) ),
+			'A site that loses nothing has no reason to be warned.'
+		);
+	}
+
+	/**
+	 * Another plugin's row is left alone.
+	 *
+	 * @covers ::render_uninstall_warning
+	 *
+	 * @return void
+	 */
+	public function test_renders_nothing_on_another_plugin_row(): void {
+		$this->arm( Preferences::TASK_EVENTS );
+
+		$this->assertSame(
+			'',
+			$this->render( 'another-plugin/another-plugin.php' ),
+			'Nothing of ours is deleted by removing somebody else\'s plugin.'
+		);
+	}
+
+	/**
+	 * The warning names what goes, in the shape core uses in that cell.
+	 *
+	 * @covers ::render_uninstall_warning
+	 * @covers ::get_message
+	 *
+	 * @return void
+	 */
+	public function test_renders_a_warning_naming_the_data(): void {
+		$this->arm( Preferences::TASK_EVENTS, Preferences::TASK_RSVPS );
+
+		$output = $this->render( plugin_basename( GATHERPRESS_CORE_FILE ) );
+
+		$this->assertStringStartsWith(
+			'<p><span class="dashicons dashicons-warning"></span>',
+			$output,
+			'It reads as one of the plugin row lines, the way the paused notice does.'
+		);
+		$this->assertStringContainsString(
+			'<strong>Deleting GatherPress will also delete your data.</strong>',
+			$output,
+			'The consequence leads, in bold.'
+		);
+		$this->assertStringContainsString(
+			'Events and RSVPs',
+			$output,
+			'What goes is named in the words the administrator ticked.'
+		);
+		$this->assertStringContainsString(
+			'page=gatherpress_uninstall_settings',
+			$output,
+			'The screen where the choice was made is one click away.'
+		);
+	}
+}

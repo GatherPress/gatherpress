@@ -92,12 +92,17 @@ final class Uninstall extends Base {
 		wp_admin_notice(
 			sprintf(
 				'<strong>%1$s</strong> %2$s',
-				esc_html__( 'Deleting this plugin cannot be undone.', 'gatherpress' ),
+				esc_html__(
+					// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string, kept whole.
+					'What you select below is permanently deleted when the plugin is deleted.',
+					// phpcs:enable Generic.Files.LineLength.TooLong
+					'gatherpress'
+				),
 				sprintf(
 					/* translators: %s: Link to the WordPress export screen, reading "Tools > Export". */
 					esc_html__(
 						// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string, kept whole.
-						'Deactivating it removes nothing. Your data goes only when you delete the plugin from the Plugins screen. Back up first. Export your GatherPress settings from the Tools tab, and export your events and venues from %s.',
+						'Deleting the plugin on its own removes nothing, and deactivating never does. There is no undo, so back up first. Export your GatherPress settings from the Tools tab, and export your events and venues from %s.',
 						// phpcs:enable Generic.Files.LineLength.TooLong
 						'gatherpress'
 					),
@@ -149,6 +154,51 @@ final class Uninstall extends Base {
 	 */
 	protected function get_priority(): int {
 		return PHP_INT_MAX - 1;
+	}
+
+	/**
+	 * Where this screen lives.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string The admin URL of the uninstall settings page.
+	 */
+	public static function get_page_url(): string {
+		return add_query_arg(
+			array(
+				'post_type' => Event::POST_TYPE,
+				'page'      => Utility::prefix_key( self::get_instance()->slug ),
+			),
+			admin_url( 'edit.php' )
+		);
+	}
+
+	/**
+	 * The names of the tasks this site has opted in to.
+	 *
+	 * Read from the same declarations the screen renders, so a warning
+	 * elsewhere in the admin names the rows in the words the administrator
+	 * saw when they ticked them.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string[] The labels, in the order the screen lists them.
+	 */
+	public static function armed_labels(): array {
+		$options = self::get_instance()->get_task_options();
+		$armed   = array();
+
+		foreach ( Preferences::task_keys() as $task ) {
+			if ( ! Preferences::is_enabled( $task ) ) {
+				continue;
+			}
+
+			$key = Preferences::option_key( $task );
+
+			$armed[] = (string) ( $options[ $key ]['labels']['name'] ?? $task );
+		}
+
+		return $armed;
 	}
 
 	/**

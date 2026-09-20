@@ -261,7 +261,7 @@ class Test_Uninstall extends Base {
 			'What deleting the plugin costs is a warning, not information.'
 		);
 		$this->assertStringContainsString(
-			'<strong>Deleting this plugin cannot be undone.</strong>',
+			'<strong>What you select below is permanently deleted when the plugin is deleted.</strong>',
 			$output,
 			'The part somebody has to read leads the notice.'
 		);
@@ -307,5 +307,61 @@ class Test_Uninstall extends Base {
 		$output = Utility::buffer_and_return( array( Uninstall::get_instance(), 'render_warning' ) );
 
 		$this->assertSame( '', $output, 'A screen that names no page is not this one.' );
+	}
+
+	/**
+	 * Nothing is armed until somebody arms it.
+	 *
+	 * @covers ::armed_labels
+	 *
+	 * @return void
+	 */
+	public function test_armed_labels_is_empty_by_default(): void {
+		delete_option( Settings::OPTION_NAME );
+		Preferences::flush_cache();
+
+		$this->assertSame(
+			array(),
+			Uninstall::armed_labels(),
+			'A site that opted into nothing has nothing to warn about.'
+		);
+	}
+
+	/**
+	 * An armed task is named the way the screen names it.
+	 *
+	 * @covers ::armed_labels
+	 *
+	 * @return void
+	 */
+	public function test_armed_labels_reads_the_declared_label(): void {
+		update_option(
+			Settings::OPTION_NAME,
+			array( Preferences::option_key( Preferences::TASK_EVENTS ) => true )
+		);
+		Preferences::flush_cache();
+
+		$this->assertSame(
+			array( 'Events' ),
+			Uninstall::armed_labels(),
+			'A warning elsewhere should use the words the administrator ticked.'
+		);
+
+		delete_option( Settings::OPTION_NAME );
+		Preferences::flush_cache();
+	}
+
+	/**
+	 * The page knows its own address.
+	 *
+	 * @covers ::get_page_url
+	 *
+	 * @return void
+	 */
+	public function test_get_page_url_points_at_this_screen(): void {
+		$url = Uninstall::get_page_url();
+
+		$this->assertStringContainsString( 'page=gatherpress_uninstall_settings', $url, 'The page is named.' );
+		$this->assertStringContainsString( 'post_type=gatherpress_event', $url, 'Under the menu it lives in.' );
 	}
 }
