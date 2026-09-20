@@ -1,0 +1,123 @@
+name: '@since tags'
+on:
+  pull_request_target:
+    # "labeled" and "unlabeled" are listed so the skip label takes effect
+    # without another push, matching the changelog workflow.
+    types: [opened, edited, synchronize, reopened, ready_for_review, labeled, unlabeled]
+
+# Least-privilege scopes for the default GITHUB_TOKEN, matching the workflow's
+# actual API calls:
+#   pull-requests: read — listFiles, for the diff of each changed file
+permissions:
+  pull-requests: read
+
+jobs:
+  # A new symbol cannot know which release it will ship in: work on develop
+  # may go out in the next minor, or be cherry-picked into a patch release
+  # first. `@since TBD` records that, and the release tooling resolves it to
+  # the version actually being shipped. A hand-written version here would be
+  # a guess, and a wrong one every time a fix is backported.
+  since-tags:
+    name: 'New @since tags say TBD'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Check for the skip label, a draft, or another base branch'
+        id: check-skip-label
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { payload: { pull_request: { number, labels, draft = false, base: { ref } } } } = context;
+
+            const skipLabel = 'Skip Since Check';
+            const hasSkipLabel = labels.map( label => label.name ).includes( skipLabel );
+
+            if ( hasSkipLabel ) {
+              core.info( `Skipping the @since check for PR #${ number } because of the "${ skipLabel }" label.` );
+              core.setOutput( 'skip', 'true' );
+            } else if ( draft ) {
+              core.info( `Skipping the @since check for PR #${ number } because it is a draft.` );
+              core.setOutput( 'skip', 'true' );
+            } else if ( ref !== 'develop' ) {
+              // Release and patch branches carry resolved versions on purpose.
+              core.info( `Skipping the @since check for PR #${ number } because it is not against "develop".` );
+              core.setOutput( 'skip', 'true' );
+            } else {
+              core.setOutput( 'skip', 'false' );
+            }
+
+      - name: 'Check the @since tags this PR adds'
+        if: steps.check-skip-label.outputs.skip != 'true'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { repo: { owner, repo }, payload: { pull_request: { number } } } = context;
+
+            // Read the diffs through the API rather than checking the branch
+            // out, so no code from the pull request runs here.
+            const files = [];
+            for await ( const response of github.paginate.iterator( github.rest.pulls.listFiles, {
+              owner,
+              repo,
+              pull_number: +number,
+              per_page: 100,
+            } ) ) {
+              files.push( ...response.data );
+            }
+
+            const isSource = filename =>
+              ( filename.startsWith( 'includes/' ) || filename.startsWith( 'src/' ) ) &&
+              /\.(php|js)$/.test( filename );
+
+            const sinceLine = /^[-+].*@since\s+(\S+)/;
+            const violations = [];
+
+            for ( const file of files ) {
+              if ( ! isSource( file.filename ) || ! file.patch ) {
+                continue;
+              }
+
+              // One hunk at a time. A tag that replaces another inside the
+              // same hunk is a correction or a moved block, both of which are
+              // allowed: only tags that arrive out of nowhere are checked.
+              for ( const hunk of file.patch.split( /^@@/m ).slice( 1 ) ) {
+                const added = [];
+                let removedAny = false;
+
+                for ( const line of hunk.split( '\n' ) ) {
+                  const match = line.match( sinceLine );
+
+                  if ( ! match ) {
+                    continue;
+                  }
+
+                  if ( line.startsWith( '-' ) ) {
+                    removedAny = true;
+                  } else if ( 'TBD' !== match[ 1 ] ) {
+                    added.push( match[ 1 ] );
+                  }
+                }
+
+                if ( ! removedAny && added.length ) {
+                  violations.push( `${ file.filename }: @since ${ added.join( ', @since ' ) }` );
+                }
+              }
+            }
+
+            if ( ! violations.length ) {
+              core.info( 'Every @since tag this PR adds says TBD.' );
+              return;
+            }
+
+            core.setFailed(
+              [
+                'A new @since tag has to say TBD:',
+                ...violations.map( violation => `  ${ violation }` ),
+                '',
+                'The version a symbol ships in is not knowable while the work is in flight, because a',
+                'fix on develop can be cherry-picked into a patch release before the next minor goes out.',
+                'Write `@since TBD` and the release tooling resolves it to the version actually shipping.',
+                '',
+                'Correcting an existing tag is fine, as long as the old line goes in the same change.',
+                'Add the "Skip Since Check" label if this PR genuinely needs a literal version.',
+              ].join( '\n' )
+            );
