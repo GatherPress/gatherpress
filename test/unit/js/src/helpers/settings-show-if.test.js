@@ -200,6 +200,51 @@ describe( 'settings-show-if helper', () => {
 			expect( resolved[ 0 ].key ).toBe( 'map_platform' );
 		} );
 
+		it( 'falls back to a flat field name outside the settings array', () => {
+			// The Uninstall screen posts its fields flat and outside
+			// `gatherpress_settings`, because importing a settings file must
+			// not be able to arm data deletion. Its rows still need a
+			// controller, so the lookup tries the plain name second.
+			document.body.innerHTML = `
+				<table><tbody>
+					<tr>
+						<td>
+							<input type="checkbox" name="gatherpress_uninstall_events" checked />
+						</td>
+					</tr>
+				</tbody></table>
+			`;
+
+			const resolved = resolveControllers( {
+				gatherpress_uninstall_events: false,
+			} );
+
+			expect( resolved ).toHaveLength( 1 );
+			expect( resolved[ 0 ].el.name ).toBe( 'gatherpress_uninstall_events' );
+		} );
+
+		it( 'prefers the settings array over a flat name of the same key', () => {
+			document.body.innerHTML = `
+				<table><tbody>
+					<tr>
+						<td>
+							<input type="text" name="map_platform" value="flat" />
+							<input
+								type="text"
+								name="gatherpress_settings[map_platform]"
+								value="google"
+							/>
+						</td>
+					</tr>
+				</tbody></table>
+			`;
+
+			const resolved = resolveControllers( { map_platform: 'google' } );
+
+			expect( resolved ).toHaveLength( 1 );
+			expect( resolved[ 0 ].el.value ).toBe( 'google' );
+		} );
+
 		it( 'picks the LAST element when multiple inputs share the name', () => {
 			// Production markup: select / checkbox fields emit a hidden
 			// fallback BEFORE the real control (same name). PHP takes the

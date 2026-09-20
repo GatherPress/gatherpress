@@ -139,7 +139,7 @@ class Test_Uninstall extends Base {
 		$output = (string) ob_get_clean();
 
 		$this->assertStringContainsString(
-			'gatherpress_uninstall_posts',
+			'gatherpress_uninstall_events',
 			$output,
 			'The form offers a checkbox for each gated task.'
 		);
@@ -198,7 +198,7 @@ class Test_Uninstall extends Base {
 	 * @return void
 	 */
 	public function test_stored_opt_in_is_checked(): void {
-		Preferences::save( array( Preferences::TASK_POSTS => true ) );
+		Preferences::save( array( Preferences::TASK_EVENTS => true ) );
 
 		$instance = Uninstall::get_instance();
 
@@ -207,7 +207,7 @@ class Test_Uninstall extends Base {
 		$output = (string) ob_get_clean();
 
 		$this->assertMatchesRegularExpression(
-			'/gatherpress_uninstall_posts.*?checked/s',
+			'/gatherpress_uninstall_events.*?checked/s',
 			$output,
 			'A task that is on reads back as checked.'
 		);
@@ -373,17 +373,17 @@ class Test_Uninstall extends Base {
 		}
 
 		$this->assertStringContainsString(
-			'<th scope="row">Gatherings and Venues</th>',
+			'<th scope="row">Gatherings</th>',
 			$output,
 			'The row heading reads the registered label.'
 		);
 		$this->assertStringContainsString(
-			'Remove Gatherings and Venues',
+			'Remove Gatherings',
 			$output,
 			'The checkbox reads the registered label.'
 		);
 		$this->assertStringContainsString(
-			'Removes all Gatherings and Venues',
+			'Removes all Gatherings with their meta',
 			$output,
 			'The description reads the registered label, so aria-describedby does not contradict the control.'
 		);
@@ -391,6 +391,117 @@ class Test_Uninstall extends Base {
 			'every event and venue',
 			$output,
 			'No hardcoded post type noun remains in the row.'
+		);
+	}
+
+	/**
+	 * A task's checkbox posts under its own prefixed name.
+	 *
+	 * @covers ::field_name
+	 *
+	 * @return void
+	 */
+	public function test_field_name_is_prefixed_and_flat(): void {
+		$this->assertSame(
+			'gatherpress_uninstall_events',
+			Uninstall::field_name( Preferences::TASK_EVENTS ),
+			'These values are stored by Preferences, never by Settings, and the request should say so.'
+		);
+	}
+
+	/**
+	 * A show_if declaration is translated into field names for the JS.
+	 *
+	 * @covers ::show_if_condition
+	 *
+	 * @return void
+	 */
+	public function test_show_if_condition_names_form_fields(): void {
+		$this->assertSame(
+			array( 'gatherpress_uninstall_events' => false ),
+			Uninstall::show_if_condition( array( Preferences::TASK_EVENTS => false ) ),
+			'The marker has to name the input the JS looks up, not the task key.'
+		);
+	}
+
+	/**
+	 * A row with no condition is always shown.
+	 *
+	 * @covers ::row_class
+	 *
+	 * @return void
+	 */
+	public function test_row_class_shows_an_unconditional_row(): void {
+		$this->assertSame(
+			'gatherpress-settings-row',
+			Uninstall::row_class( array(), array() ),
+			'A row with nothing controlling it carries only the hook the JS attaches to.'
+		);
+	}
+
+	/**
+	 * A row whose condition is met is shown.
+	 *
+	 * @covers ::row_class
+	 *
+	 * @return void
+	 */
+	public function test_row_class_shows_a_matching_row(): void {
+		$this->assertSame(
+			'gatherpress-settings-row',
+			Uninstall::row_class(
+				array( Preferences::TASK_EVENTS => false ),
+				array( Preferences::TASK_EVENTS => false )
+			),
+			'The RSVP row is a choice of its own while events are staying.'
+		);
+	}
+
+	/**
+	 * A row whose condition is not met is painted hidden on first render.
+	 *
+	 * @covers ::row_class
+	 *
+	 * @return void
+	 */
+	public function test_row_class_hides_a_row_that_does_not_match(): void {
+		$this->assertSame(
+			'gatherpress-settings-row gatherpress--is-hidden',
+			Uninstall::row_class(
+				array( Preferences::TASK_EVENTS => false ),
+				array( Preferences::TASK_EVENTS => true )
+			),
+			'Painting it hidden server-side is what stops the row flashing into view before the JS runs.'
+		);
+	}
+
+	/**
+	 * The RSVP row drops out of the form once events are being removed.
+	 *
+	 * @covers ::settings_section
+	 * @covers ::row_class
+	 * @covers ::show_if_condition
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_row_hides_once_events_are_going(): void {
+		Preferences::save( array( Preferences::TASK_EVENTS => true ) );
+
+		$instance = Uninstall::get_instance();
+
+		ob_start();
+		$instance->settings_section( 'gatherpress_uninstall_settings' );
+		$output = (string) ob_get_clean();
+
+		$this->assertStringContainsString(
+			'data-show-if="{&quot;gatherpress_uninstall_events&quot;:false}"',
+			$output,
+			'The row carries the marker the settings JS re-evaluates on every change.'
+		);
+		$this->assertMatchesRegularExpression(
+			'/gatherpress--is-hidden.*?gatherpress_uninstall_rsvps/s',
+			$output,
+			'Removing events removes the RSVPs on them, so the choice is not offered twice.'
 		);
 	}
 }

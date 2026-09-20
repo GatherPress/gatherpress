@@ -26,34 +26,32 @@ $gatherpress_scope       = isset( $scope ) && 'network' === $scope ? 'network' :
  * `label` names the row, the way core's settings screens do. `checkbox` is the
  * control's own label, and says what it does without the row heading: the table
  * is `role="presentation"`, so the heading is not read out with the control.
+ *
+ * `show_if` names another task whose checkbox controls whether this row is
+ * shown, and the state it has to be in. The RSVP row uses it because removing
+ * events removes the RSVPs on them either way.
  */
 $gatherpress_tasks = array(
-	Preferences::TASK_POSTS    => array(
-		'label'       => sprintf(
-			/* translators: 1: Plural post type label (e.g. "Events"), 2: Plural post type label (e.g. "Venues"). */
-			__( '%1$s and %2$s', 'gatherpress' ),
-			Utility::post_type_label( 'name', Event::POST_TYPE ),
-			Utility::post_type_label( 'name', Venue::POST_TYPE )
-		),
+	Preferences::TASK_EVENTS  => array(
+		'label'       => Utility::post_type_label( 'name', Event::POST_TYPE ),
 		'checkbox'    => sprintf(
-			/* translators: 1: Plural post type label (e.g. "Events"), 2: Plural post type label (e.g. "Venues"). */
-			__( 'Remove %1$s and %2$s', 'gatherpress' ),
-			Utility::post_type_label( 'name', Event::POST_TYPE ),
-			Utility::post_type_label( 'name', Venue::POST_TYPE )
+			/* translators: %s: Plural post type label (e.g. "Events"). */
+			__( 'Remove %s', 'gatherpress' ),
+			Utility::post_type_label( 'name', Event::POST_TYPE )
 		),
 		'description' => sprintf(
-			/* translators: 1: Plural post type label (e.g. "Events"), 2: Plural post type label (e.g. "Venues"). */
-			__( 'Removes all %1$s and %2$s, with their meta, revisions, and the RSVPs recorded against them.', 'gatherpress' ),
-			Utility::post_type_label( 'name', Event::POST_TYPE ),
-			Utility::post_type_label( 'name', Venue::POST_TYPE )
+			/* translators: %s: Plural post type label (e.g. "Events"). */
+			__( 'Removes all %s with their meta and revisions, the RSVPs recorded against them, and the table that holds their dates.', 'gatherpress' ),
+			Utility::post_type_label( 'name', Event::POST_TYPE )
 		),
 	),
-	Preferences::TASK_COMMENTS => array(
+	Preferences::TASK_RSVPS   => array(
 		'label'       => __( 'RSVPs', 'gatherpress' ),
 		'checkbox'    => __( 'Remove RSVPs', 'gatherpress' ),
-		'description' => __( 'Removes every RSVP record and the answers people gave to custom RSVP fields.', 'gatherpress' ),
+		'description' => __( 'Removes every RSVP record, the answers people gave to custom RSVP fields, and the internal terms that track each response.', 'gatherpress' ),
+		'show_if'     => array( Preferences::TASK_EVENTS => false ),
 	),
-	Preferences::TASK_TERMS    => array(
+	Preferences::TASK_TOPICS  => array(
 		'label'       => Utility::taxonomy_label( 'name', Topic::TAXONOMY ),
 		'checkbox'    => sprintf(
 			/* translators: %s: Plural taxonomy label (e.g. "Topics"). */
@@ -61,23 +59,45 @@ $gatherpress_tasks = array(
 			Utility::taxonomy_label( 'name', Topic::TAXONOMY )
 		),
 		'description' => sprintf(
-			/* translators: 1: Plural taxonomy label (e.g. "Topics"), 2: Plural post type label (e.g. "Venues"). */
-			__( 'Removes all %1$s and the internal terms GatherPress keeps for %2$s and RSVP records.', 'gatherpress' ),
-			Utility::taxonomy_label( 'name', Topic::TAXONOMY ),
+			/* translators: %s: Plural taxonomy label (e.g. "Topics"). */
+			__( 'Removes all %s and the way they were assigned. They are kept by default, because a vocabulary you built can outlive the plugin.', 'gatherpress' ),
+			Utility::taxonomy_label( 'name', Topic::TAXONOMY )
+		),
+	),
+	Preferences::TASK_VENUES  => array(
+		'label'       => Utility::post_type_label( 'name', Venue::POST_TYPE ),
+		'checkbox'    => sprintf(
+			/* translators: %s: Plural post type label (e.g. "Venues"). */
+			__( 'Remove %s', 'gatherpress' ),
+			Utility::post_type_label( 'name', Venue::POST_TYPE )
+		),
+		'description' => sprintf(
+			/* translators: 1: Plural post type label (e.g. "Venues"), 2: Plural post type label (e.g. "Events"). */
+			__( 'Removes all %1$s with their meta and revisions, and the internal terms GatherPress keeps to connect %2$s to them.', 'gatherpress' ),
+			Utility::post_type_label( 'name', Venue::POST_TYPE ),
+			Utility::post_type_label( 'name', Event::POST_TYPE )
+		),
+	),
+	Preferences::TASK_FILES   => array(
+		'label'       => __( 'Generated files', 'gatherpress' ),
+		'checkbox'    => __( 'Remove generated files', 'gatherpress' ),
+		'description' => sprintf(
+			/* translators: %s: Plural post type label (e.g. "Venues"). */
+			__( 'Deletes the files GatherPress generated in your uploads folder, such as the static maps for %s. They are not in your media library.', 'gatherpress' ),
 			Utility::post_type_label( 'name', Venue::POST_TYPE )
 		),
 	),
-	Preferences::TASK_TABLES   => array(
-		'label'       => __( 'Event date table', 'gatherpress' ),
-		'checkbox'    => __( 'Remove the event date table', 'gatherpress' ),
-		'description' => __( 'Drops the custom database table that holds event start and end times.', 'gatherpress' ),
-	),
-	Preferences::TASK_CRON     => array(
+	Preferences::TASK_CRON    => array(
 		'label'       => __( 'Scheduled jobs', 'gatherpress' ),
 		'checkbox'    => __( 'Remove scheduled jobs', 'gatherpress' ),
 		'description' => __( 'Clears the scheduled tasks the plugin registers, such as RSVP cleanup and map generation.', 'gatherpress' ),
 	),
-	Preferences::TASK_OPTIONS  => array(
+	Preferences::TASK_USERS   => array(
+		'label'       => __( 'User preferences', 'gatherpress' ),
+		'checkbox'    => __( 'Remove user preferences', 'gatherpress' ),
+		'description' => __( 'Removes what each person chose for themselves: their time zone and time format, whether they receive event updates, and their RSVP screen options.', 'gatherpress' ),
+	),
+	Preferences::TASK_OPTIONS => array(
 		'label'       => __( 'Settings', 'gatherpress' ),
 		'checkbox'    => __( 'Remove settings', 'gatherpress' ),
 		'description' => __( 'Removes the GatherPress settings, including the choices on this screen.', 'gatherpress' ),
@@ -88,13 +108,13 @@ $gatherpress_tasks = array(
 <h2><?php esc_html_e( 'Uninstall', 'gatherpress' ); ?></h2>
 
 <p class="description">
-	<?php esc_html_e( 'Choose what GatherPress removes when the plugin is deleted from the Plugins screen. Everything is off by default, so deleting the plugin keeps your data unless you select it here.', 'gatherpress' ); ?>
+	<?php esc_html_e( 'Choose what GatherPress removes when you delete the plugin. Everything is off by default, so your data stays unless you select it here.', 'gatherpress' ); ?>
 </p>
 
 <div class="notice notice-warning inline">
 	<p>
 		<strong><?php esc_html_e( 'These choices cannot be undone.', 'gatherpress' ); ?></strong>
-		<?php esc_html_e( 'Deactivating the plugin removes nothing. The data goes only when the plugin is deleted, and it cannot be recovered without a backup. Before you delete the plugin, export your GatherPress settings from the Tools tab, and your events and venues with the WordPress exporter under Tools > Export.', 'gatherpress' ); ?>
+		<?php esc_html_e( 'Deactivating removes nothing, and only a backup brings back what deleting takes. Export your settings from the Tools tab first, and your events and venues under Tools > Export.', 'gatherpress' ); ?>
 	</p>
 </div>
 
@@ -102,7 +122,7 @@ $gatherpress_tasks = array(
 	<?php
 	printf(
 		/* translators: %s: The WP-CLI command that deletes the plugin, in a code element. */
-		esc_html__( 'On a large site, delete the plugin with WP-CLI: %s. A browser request can stop at the web server time limit and leave part of the data behind. WP-CLI has no such limit.', 'gatherpress' ),
+		esc_html__( 'On a large site, delete with WP-CLI: %s. A browser request can hit the web server time limit and stop part way through.', 'gatherpress' ),
 		'<code>wp plugin uninstall gatherpress --deactivate</code>' // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Fixed markup, no user input.
 	);
 	?>
@@ -138,15 +158,24 @@ $gatherpress_tasks = array(
 					<?php
 					$gatherpress_field_id    = 'gatherpress-uninstall-' . $gatherpress_key;
 					$gatherpress_describedby = $gatherpress_field_id . '-description';
+					$gatherpress_show_if     = $gatherpress_task['show_if'] ?? array();
+					$gatherpress_row_class   = Uninstall::row_class( $gatherpress_show_if, $gatherpress_preferences );
 					?>
-					<tr>
+					<tr class="<?php echo esc_attr( $gatherpress_row_class ); ?>">
 						<th scope="row"><?php echo esc_html( $gatherpress_task['label'] ); ?></th>
 						<td>
+							<?php if ( ! empty( $gatherpress_show_if ) ) : ?>
+								<input
+									type="hidden"
+									class="gatherpress-show-if-marker"
+									data-show-if="<?php echo esc_attr( (string) wp_json_encode( Uninstall::show_if_condition( $gatherpress_show_if ) ) ); ?>"
+								/>
+							<?php endif; ?>
 							<label for="<?php echo esc_attr( $gatherpress_field_id ); ?>">
 								<input
 									type="checkbox"
 									id="<?php echo esc_attr( $gatherpress_field_id ); ?>"
-									name="<?php echo esc_attr( 'gatherpress_uninstall_' . $gatherpress_key ); ?>"
+									name="<?php echo esc_attr( Uninstall::field_name( $gatherpress_key ) ); ?>"
 									value="1"
 									aria-describedby="<?php echo esc_attr( $gatherpress_describedby ); ?>"
 									<?php checked( ! empty( $gatherpress_preferences[ $gatherpress_key ] ) ); ?>

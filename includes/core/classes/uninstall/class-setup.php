@@ -22,9 +22,9 @@ use GatherPress\Core\Traits\Singleton;
  * A registry of uninstall tasks, run by `uninstall.php` when the user
  * deletes the plugin. Each cleanup concern is one small Base subclass, so
  * adding one is a single registration here rather than another procedural
- * block in the bootstrap file. The settings-gated tasks (options, tables,
- * posts, terms, comments, cron) are registered the same way, and run only
- * where an administrator opted in on the Uninstall screen.
+ * block in the bootstrap file. The settings-gated tasks (events, venues,
+ * RSVPs, topics, venues, files, cron, users, options) are registered the same way,
+ * and run only where an administrator opted in on the Uninstall screen.
  *
  * @since 0.36.0
  */
@@ -60,17 +60,19 @@ final class Setup {
 	 * @return void
 	 */
 	protected function register_default_tasks(): void {
-		// The always-on bookkeeping runs first, then the
-		// opt-in data tasks in dependency order: comments and posts before
-		// the taxonomies and the table they point at, and options last
+		// The always-on bookkeeping runs first, then the opt-in tasks in
+		// dependency order: the posts and the RSVPs recorded against them
+		// before the taxonomies that classify what is left, and options last
 		// so the opt-in map is the final thing to go.
 		$this->add( new Notices() );
 		$this->add( new Transients() );
-		$this->add( new Comments() );
-		$this->add( new Posts() );
-		$this->add( new Terms() );
-		$this->add( new Tables() );
+		$this->add( new Events() );
+		$this->add( new Venues() );
+		$this->add( new Rsvps() );
+		$this->add( new Topics() );
+		$this->add( new Files() );
 		$this->add( new Cron() );
+		$this->add( new Users() );
 		$this->add( new Options() );
 	}
 
@@ -109,17 +111,22 @@ final class Setup {
 	 * @return void
 	 */
 	public function run(): void {
+		$flush = false;
+
 		foreach ( $this->tasks as $task ) {
+			$flush = $flush || ( $task->applies() && $task->invalidates_cache() );
+
 			$task->run();
 		}
 
-		// The destructive tasks delete rows with SQL rather than through the
-		// post, comment and term APIs, so nothing has invalidated the object
-		// cache for what they removed. A persistent backend (Redis, Memcached)
-		// outlives the plugin being deleted, and would keep serving objects
-		// for rows that no longer exist. Flushing once here is the same
-		// reasoning `Transients` documents for its own per-key invalidation,
-		// applied to the tasks that cannot cheaply enumerate their IDs.
-		wp_cache_flush();
+		// The tasks that delete rows with SQL never told the object cache what
+		// they removed, and a persistent backend (Redis, Memcached) outlives
+		// the plugin being deleted: it would keep serving objects for rows that
+		// are no longer there. Flushing clears the whole site's cache rather
+		// than this plugin's share of it, which is why it waits until a task
+		// that works that way has actually run.
+		if ( $flush ) {
+			wp_cache_flush();
+		}
 	}
 }

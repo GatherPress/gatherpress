@@ -13,6 +13,7 @@ namespace GatherPress\Core\Settings;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Uninstall\Preferences;
@@ -129,6 +130,77 @@ final class Uninstall extends Base {
 	}
 
 	/**
+	 * The form field name a task's checkbox posts under.
+	 *
+	 * Prefixed and flat rather than an array under one name, because these
+	 * values are stored by `Preferences` and never by `Settings`, and the
+	 * shape of the request should say so.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $task The task key.
+	 *
+	 * @return string The input name.
+	 */
+	public static function field_name( string $task ): string {
+		return sprintf( 'gatherpress_uninstall_%s', $task );
+	}
+
+	/**
+	 * Translate a row's `show_if` condition into one the settings JS can read.
+	 *
+	 * The declaration is written in task keys, which is what the rest of this
+	 * screen deals in. The marker has to name form fields, because that is
+	 * what the JS looks up.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, bool> $show_if Map of task key to the state that shows the row.
+	 *
+	 * @return array<string, bool> Map of field name to the state that shows the row.
+	 */
+	public static function show_if_condition( array $show_if ): array {
+		$condition = array();
+
+		foreach ( $show_if as $task => $expected ) {
+			$condition[ self::field_name( (string) $task ) ] = (bool) $expected;
+		}
+
+		return $condition;
+	}
+
+	/**
+	 * The class list for a task's row.
+	 *
+	 * Mirrors `Settings::build_row_class()`: every row carries the hook the
+	 * show_if JS attaches to, and a row whose condition does not match the
+	 * saved values is painted hidden on first render so it does not flash
+	 * into view before the JS runs.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, bool> $show_if     Map of task key to the state that shows the row.
+	 * @param array<string, bool> $preferences The saved preferences.
+	 *
+	 * @return string Space-separated class names.
+	 */
+	public static function row_class( array $show_if, array $preferences ): string {
+		$classes = array( 'gatherpress-settings-row' );
+
+		foreach ( $show_if as $task => $expected ) {
+			if ( ! empty( $preferences[ $task ] ) === (bool) $expected ) {
+				continue;
+			}
+
+			$classes[] = 'gatherpress--is-hidden';
+
+			break;
+		}
+
+		return implode( ' ', $classes );
+	}
+
+	/**
 	 * Render the uninstall form instead of the default settings form.
 	 *
 	 * @since 0.36.0
@@ -185,7 +257,7 @@ final class Uninstall extends Base {
 
 		foreach ( Preferences::task_keys() as $key ) {
 			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer() ran above.
-			$submitted[ $key ] = ! empty( $_POST[ 'gatherpress_uninstall_' . $key ] );
+			$submitted[ $key ] = ! empty( $_POST[ self::field_name( $key ) ] );
 		}
 
 		Preferences::save( $submitted );

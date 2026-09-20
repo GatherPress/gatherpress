@@ -45,44 +45,44 @@ final class Preferences {
 	const OPTION_NAME = 'gatherpress_uninstall';
 
 	/**
-	 * Task key: plugin options.
+	 * Task key: event posts and the event date table.
 	 *
 	 * @since 0.36.0
 	 * @var string
 	 */
-	const TASK_OPTIONS = 'options';
+	const TASK_EVENTS = 'events';
 
 	/**
-	 * Task key: the custom events table.
+	 * Task key: venue posts and the venue terms that shadow them.
 	 *
 	 * @since 0.36.0
 	 * @var string
 	 */
-	const TASK_TABLES = 'tables';
+	const TASK_VENUES = 'venues';
 
 	/**
-	 * Task key: event and venue posts.
+	 * Task key: RSVP records and the taxonomies that classify them.
 	 *
 	 * @since 0.36.0
 	 * @var string
 	 */
-	const TASK_POSTS = 'posts';
+	const TASK_RSVPS = 'rsvps';
 
 	/**
-	 * Task key: plugin taxonomies and their terms.
+	 * Task key: the topic taxonomy and its terms.
 	 *
 	 * @since 0.36.0
 	 * @var string
 	 */
-	const TASK_TERMS = 'terms';
+	const TASK_TOPICS = 'topics';
 
 	/**
-	 * Task key: RSVP comments.
+	 * Task key: the files the plugin generated under uploads.
 	 *
 	 * @since 0.36.0
 	 * @var string
 	 */
-	const TASK_COMMENTS = 'comments';
+	const TASK_FILES = 'files';
 
 	/**
 	 * Task key: scheduled events.
@@ -91,6 +91,22 @@ final class Preferences {
 	 * @var string
 	 */
 	const TASK_CRON = 'cron';
+
+	/**
+	 * Task key: per-user preferences.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const TASK_USERS = 'users';
+
+	/**
+	 * Task key: plugin options.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const TASK_OPTIONS = 'options';
 
 	/**
 	 * Resolved preferences, or null before the first read.
@@ -113,12 +129,14 @@ final class Preferences {
 	 */
 	public static function task_keys(): array {
 		return array(
-			self::TASK_OPTIONS,
-			self::TASK_TABLES,
-			self::TASK_POSTS,
-			self::TASK_TERMS,
-			self::TASK_COMMENTS,
+			self::TASK_EVENTS,
+			self::TASK_RSVPS,
+			self::TASK_TOPICS,
+			self::TASK_VENUES,
+			self::TASK_FILES,
 			self::TASK_CRON,
+			self::TASK_USERS,
+			self::TASK_OPTIONS,
 		);
 	}
 

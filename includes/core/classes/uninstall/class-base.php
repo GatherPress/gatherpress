@@ -42,6 +42,22 @@ abstract class Base {
 	}
 
 	/**
+	 * Whether this task changes rows behind the object cache's back.
+	 *
+	 * False by default, for the tasks that work through `delete_option()`,
+	 * `wp_unschedule_hook()` and the like: core invalidates what those
+	 * touch. A task that deletes rows with SQL returns true, and the
+	 * registry flushes once at the end if any such task ran.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return bool True when the task writes past the object cache.
+	 */
+	public function invalidates_cache(): bool {
+		return false;
+	}
+
+	/**
 	 * Per-site cleanup.
 	 *
 	 * Runs once on a single-site install, and once per subsite (inside

@@ -69,7 +69,7 @@ class Test_Preferences extends Base {
 		$keys = Preferences::task_keys();
 
 		$this->assertSame(
-			array( 'options', 'tables', 'posts', 'terms', 'comments', 'cron' ),
+			array( 'events', 'rsvps', 'topics', 'venues', 'files', 'cron', 'users', 'options' ),
 			$keys,
 			'Every destructive task must be represented by a key.'
 		);
@@ -119,8 +119,8 @@ class Test_Preferences extends Base {
 	public function test_save_stores_known_keys_as_booleans(): void {
 		Preferences::save(
 			array(
-				Preferences::TASK_POSTS => '1',
-				'not_a_task'            => true,
+				Preferences::TASK_EVENTS => '1',
+				'not_a_task'             => true,
 			)
 		);
 
@@ -131,7 +131,7 @@ class Test_Preferences extends Base {
 			array_keys( $all ),
 			'Only the known task keys are stored.'
 		);
-		$this->assertTrue( $all[ Preferences::TASK_POSTS ], 'A truthy value opts the task in.' );
+		$this->assertTrue( $all[ Preferences::TASK_EVENTS ], 'A truthy value opts the task in.' );
 		$this->assertFalse( $all[ Preferences::TASK_CRON ], 'An absent key stays off.' );
 	}
 
@@ -152,7 +152,7 @@ class Test_Preferences extends Base {
 		Preferences::flush_cache();
 
 		$this->assertFalse(
-			Preferences::is_enabled( Preferences::TASK_POSTS ),
+			Preferences::is_enabled( Preferences::TASK_EVENTS ),
 			'A corrupt option must fail closed, not open.'
 		);
 	}
@@ -165,16 +165,16 @@ class Test_Preferences extends Base {
 	 * @return void
 	 */
 	public function test_resolved_map_survives_option_deletion(): void {
-		Preferences::save( array( Preferences::TASK_TERMS => true ) );
+		Preferences::save( array( Preferences::TASK_TOPICS => true ) );
 
 		// Prime the cache the way the first task to run would.
-		$this->assertTrue( Preferences::is_enabled( Preferences::TASK_TERMS ) );
+		$this->assertTrue( Preferences::is_enabled( Preferences::TASK_TOPICS ) );
 
 		// The Options task removes this while later tasks still need it.
 		$this->forget_stored_preferences();
 
 		$this->assertTrue(
-			Preferences::is_enabled( Preferences::TASK_TERMS ),
+			Preferences::is_enabled( Preferences::TASK_TOPICS ),
 			'A task ordered after Options must still see the opt-in it was given.'
 		);
 	}
@@ -187,14 +187,14 @@ class Test_Preferences extends Base {
 	 * @return void
 	 */
 	public function test_flush_cache_rereads_storage(): void {
-		Preferences::save( array( Preferences::TASK_TABLES => true ) );
-		$this->assertTrue( Preferences::is_enabled( Preferences::TASK_TABLES ) );
+		Preferences::save( array( Preferences::TASK_FILES => true ) );
+		$this->assertTrue( Preferences::is_enabled( Preferences::TASK_FILES ) );
 
 		$this->forget_stored_preferences();
 		Preferences::flush_cache();
 
 		$this->assertFalse(
-			Preferences::is_enabled( Preferences::TASK_TABLES ),
+			Preferences::is_enabled( Preferences::TASK_FILES ),
 			'After a flush the deleted option reads as nothing stored.'
 		);
 	}
@@ -232,7 +232,7 @@ class Test_Preferences extends Base {
 	 * @return void
 	 */
 	public function test_save_writes_the_network_option_on_multisite(): void {
-		Preferences::save( array( Preferences::TASK_POSTS => true ) );
+		Preferences::save( array( Preferences::TASK_EVENTS => true ) );
 
 		$stored = get_site_option( Preferences::OPTION_NAME );
 
@@ -241,7 +241,7 @@ class Test_Preferences extends Base {
 			'Saving on multisite must write the network option, because applies() reads it once for the network.'
 		);
 		$this->assertTrue(
-			$stored[ Preferences::TASK_POSTS ],
+			$stored[ Preferences::TASK_EVENTS ],
 			'The armed task must survive the round trip into network storage.'
 		);
 		$this->assertFalse(
@@ -262,17 +262,17 @@ class Test_Preferences extends Base {
 	public function test_all_reads_the_network_option_on_multisite(): void {
 		update_site_option(
 			Preferences::OPTION_NAME,
-			array( Preferences::TASK_TERMS => true )
+			array( Preferences::TASK_TOPICS => true )
 		);
 
 		Preferences::flush_cache();
 
 		$this->assertTrue(
-			Preferences::is_enabled( Preferences::TASK_TERMS ),
+			Preferences::is_enabled( Preferences::TASK_TOPICS ),
 			'A task armed in the network option must read as enabled on multisite.'
 		);
 		$this->assertFalse(
-			Preferences::is_enabled( Preferences::TASK_POSTS ),
+			Preferences::is_enabled( Preferences::TASK_EVENTS ),
 			'A task absent from the network option stays off.'
 		);
 	}

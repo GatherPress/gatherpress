@@ -13,8 +13,8 @@
  * an abstract Base that owns the multisite fan-out, one small class per
  * cleanup concern, and a Setup registry that runs them. The transient wipe
  * and the admin notice bookkeeping always run. The destructive tasks
- * (options, tables, posts, terms, comments, cron) run only where an
- * administrator opted in on the Uninstall screen.
+ * (events, venues, RSVPs, topics, files, cron, users, options) run only
+ * where an administrator opted in on the Uninstall screen.
  *
  * @since 0.36.0
  *

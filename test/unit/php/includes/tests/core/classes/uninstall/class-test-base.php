@@ -20,6 +20,20 @@ use PMC\Unit_Test\Utility;
 class Test_Base extends Base {
 
 	/**
+	 * A task is assumed to work through the APIs core already invalidates.
+	 *
+	 * @covers ::invalidates_cache
+	 *
+	 * @return void
+	 */
+	public function test_invalidates_cache_defaults_to_false(): void {
+		$this->assertFalse(
+			$this->make_task()->invalidates_cache(),
+			'Flushing clears the whole site, so a task has to ask for it.'
+		);
+	}
+
+	/**
 	 * Builds a task double that counts its cleanup calls.
 	 *
 	 * @since 0.36.0
