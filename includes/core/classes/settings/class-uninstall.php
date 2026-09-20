@@ -52,6 +52,66 @@ final class Uninstall extends Base {
 	use Singleton;
 
 	/**
+	 * Set up hooks for various purposes.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	protected function setup_hooks(): void {
+		parent::setup_hooks();
+
+		add_action( 'admin_notices', array( $this, 'render_warning' ) );
+	}
+
+	/**
+	 * Warn what deleting the plugin costs, on this screen and no other.
+	 *
+	 * Not dismissible. It is the whole subject of the page, and somebody
+	 * who came here to change what gets deleted should read it every time
+	 * rather than once.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	public function render_warning(): void {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check.
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+
+		if ( Utility::prefix_key( $this->slug ) !== $page ) {
+			return;
+		}
+
+		$export = sprintf(
+			'<a href="%1$s">%2$s</a>',
+			esc_url( admin_url( 'export.php' ) ),
+			esc_html__( 'Tools > Export', 'gatherpress' )
+		);
+
+		wp_admin_notice(
+			sprintf(
+				'<strong>%1$s</strong> %2$s',
+				esc_html__( 'Deleting this plugin cannot be undone.', 'gatherpress' ),
+				sprintf(
+					/* translators: %s: Link to the WordPress export screen, reading "Tools > Export". */
+					esc_html__(
+						// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string, kept whole.
+						'Deactivating it removes nothing. Your data goes only when you delete the plugin from the Plugins screen. Back up first. Export your GatherPress settings from the Tools tab, and export your events and venues from %s.',
+						// phpcs:enable Generic.Files.LineLength.TooLong
+						'gatherpress'
+					),
+					$export
+				)
+			),
+			array(
+				'type'        => 'warning',
+				'dismissible' => false,
+			)
+		);
+	}
+
+	/**
 	 * Get the slug for the uninstall settings page.
 	 *
 	 * @since 0.36.0
@@ -117,20 +177,8 @@ final class Uninstall extends Base {
 	 */
 	protected function get_section_description(): string {
 		return sprintf(
-			'%1$s <strong>%2$s</strong> %3$s %4$s',
-			esc_html__(
-				// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string, kept whole.
-				'Choose what GatherPress removes when you delete the plugin. Everything is off by default, so your data stays unless you select it here.',
-				// phpcs:enable Generic.Files.LineLength.TooLong
-				'gatherpress'
-			),
-			esc_html__( 'These choices cannot be undone.', 'gatherpress' ),
-			esc_html__(
-				// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string, kept whole.
-				'Deactivating removes nothing, and only a backup brings back what deleting takes. Export your settings from the Tools tab first, and your events and venues under Tools > Export.',
-				// phpcs:enable Generic.Files.LineLength.TooLong
-				'gatherpress'
-			),
+			'%1$s %2$s',
+			esc_html__( 'Choose what GatherPress removes when you delete the plugin.', 'gatherpress' ),
 			sprintf(
 				/* translators: %s: The WP-CLI command that deletes the plugin, in a code element. */
 				esc_html__(

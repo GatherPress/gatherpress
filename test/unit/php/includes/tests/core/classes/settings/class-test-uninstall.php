@@ -171,23 +171,18 @@ class Test_Uninstall extends Base {
 	}
 
 	/**
-	 * The copy above the choices says what deleting costs.
+	 * The copy above the choices points a large site at WP-CLI.
 	 *
 	 * @covers ::get_section_description
 	 *
 	 * @return void
 	 */
-	public function test_section_description_warns_before_it_explains(): void {
+	public function test_section_description_points_a_large_site_at_wp_cli(): void {
 		$description = (string) Utility::invoke_hidden_method(
 			Uninstall::get_instance(),
 			'get_section_description'
 		);
 
-		$this->assertStringContainsString(
-			'<strong>These choices cannot be undone.</strong>',
-			$description,
-			'The warning is the part somebody has to read.'
-		);
 		$this->assertStringContainsString(
 			'<code>wp plugin uninstall gatherpress --deactivate</code>',
 			$description,
@@ -221,5 +216,96 @@ class Test_Uninstall extends Base {
 			$events['description'],
 			'So does the description, or aria-describedby would contradict the control.'
 		);
+	}
+
+	/**
+	 * The warning is hooked onto the admin notices.
+	 *
+	 * @covers ::setup_hooks
+	 *
+	 * @return void
+	 */
+	public function test_setup_hooks(): void {
+		$instance = Uninstall::get_instance();
+
+		$this->assert_hooks(
+			array(
+				array(
+					'type'     => 'action',
+					'name'     => 'admin_notices',
+					'priority' => 10,
+					'callback' => array( $instance, 'render_warning' ),
+				),
+			),
+			$instance
+		);
+	}
+
+	/**
+	 * The warning renders on the uninstall screen and cannot be dismissed.
+	 *
+	 * @covers ::render_warning
+	 *
+	 * @return void
+	 */
+	public function test_warning_renders_on_its_own_page(): void {
+		$_GET['page'] = 'gatherpress_uninstall_settings';
+
+		$output = Utility::buffer_and_return( array( Uninstall::get_instance(), 'render_warning' ) );
+
+		unset( $_GET['page'] );
+
+		$this->assertStringContainsString(
+			'notice-warning',
+			$output,
+			'What deleting the plugin costs is a warning, not information.'
+		);
+		$this->assertStringContainsString(
+			'<strong>Deleting this plugin cannot be undone.</strong>',
+			$output,
+			'The part somebody has to read leads the notice.'
+		);
+		$this->assertStringNotContainsString(
+			'is-dismissible',
+			$output,
+			'Somebody who came to change what gets deleted should read this every time, not once.'
+		);
+		$this->assertStringContainsString(
+			sprintf( '<a href="%s">Tools &gt; Export</a>', esc_url( admin_url( 'export.php' ) ) ),
+			$output,
+			'The exporter it tells you to use is one click away.'
+		);
+	}
+
+	/**
+	 * The warning stays off every other screen.
+	 *
+	 * @covers ::render_warning
+	 *
+	 * @return void
+	 */
+	public function test_warning_stays_off_other_pages(): void {
+		$_GET['page'] = 'gatherpress_general';
+
+		$output = Utility::buffer_and_return( array( Uninstall::get_instance(), 'render_warning' ) );
+
+		unset( $_GET['page'] );
+
+		$this->assertSame( '', $output, 'Nothing is being deleted on any other screen.' );
+	}
+
+	/**
+	 * A screen with no page at all is left alone.
+	 *
+	 * @covers ::render_warning
+	 *
+	 * @return void
+	 */
+	public function test_warning_stays_off_a_page_with_no_slug(): void {
+		unset( $_GET['page'] );
+
+		$output = Utility::buffer_and_return( array( Uninstall::get_instance(), 'render_warning' ) );
+
+		$this->assertSame( '', $output, 'A screen that names no page is not this one.' );
 	}
 }
