@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Blocks set to read a specific event now work when that event belongs to a post type from a companion plugin, not only GatherPress's own. Two helpers asked the events endpoint by name, so an override pointing anywhere else came back empty and the block quietly showed its defaults: no guest limit, RSVP on, anonymous RSVP off, and no online-event term. They resolve the post through its event support now, the same way the event date block already did.

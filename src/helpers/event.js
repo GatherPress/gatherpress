@@ -417,14 +417,34 @@ export function hasEventPastNotice() {
  *
  * @since 0.27.0
  *
+ * An override resolves through `findEventPostById()`, which returns
+ * published posts only, so an override pointing at a draft reads as no
+ * online-event term rather than reading the draft's terms.
+ *
+ * @since 0.27.0 Introduced.
+ * @since TBD    Overrides resolve by post type support rather than assuming
+ *               the editor's own post type.
+ *
  * @param {number|null} postId Optional post ID override to check.
  *
  * @return {boolean} True if the event has the online-event term, false otherwise.
  */
 export function hasOnlineEventTerm( postId = null ) {
-	// Derive the venue taxonomy from the current editor post type.
-	const currentPostType = select( 'core/editor' )?.getCurrentPostType?.();
-	const venueTaxonomy = getVenueTaxonomy( getVenuePostType( currentPostType ) );
+	// An override can name a post of any type declaring
+	// `gatherpress-event-date`, so resolve it before deciding anything else.
+	// Deriving the taxonomy from whatever is open in the editor read the
+	// wrong taxonomy, and asking for the post by that type read the wrong
+	// endpoint, so a companion plugin's event answered with nothing.
+	const overridePost = postId ? findEventPostById( select, postId ) : null;
+
+	if ( postId && ! overridePost ) {
+		return false;
+	}
+
+	const eventPostType = postId
+		? overridePost?.type
+		: select( 'core/editor' )?.getCurrentPostType?.();
+	const venueTaxonomy = getVenueTaxonomy( getVenuePostType( eventPostType ) );
 
 	// Get the online-event term ID.
 	const onlineEventTerms = select( 'core' ).getEntityRecords(
@@ -440,12 +460,7 @@ export function hasOnlineEventTerm( postId = null ) {
 
 	// If postId is provided, check that specific post.
 	if ( postId ) {
-		const post = select( 'core' ).getEntityRecord(
-			'postType',
-			currentPostType || 'gatherpress_event',
-			postId,
-		);
-		const venueTaxonomyIds = post?.[ venueTaxonomy ];
+		const venueTaxonomyIds = overridePost?.[ venueTaxonomy ];
 
 		if ( ! venueTaxonomyIds?.length ) {
 			return false;
@@ -522,7 +537,14 @@ export function isOpenRsvpEnabled( enableOpenRsvp ) {
  * 2. Context postId - postId from block context (uses live editor data)
  * 3. No postId - checks if current post is an event (uses live editor data)
  *
- * @since 0.27.0
+ * An override resolves through `findEventPostById()`, which returns
+ * published posts only. An override pointing at a draft therefore reads as
+ * defaults rather than reading the draft's meta, which is the right answer
+ * for a block rendering on the front end.
+ *
+ * @since 0.27.0 Introduced.
+ * @since TBD    Overrides resolve by post type support rather than naming
+ *               the event post type.
  *
  * @param {Object}      selectFunc WordPress data select function.
  * @param {number|null} postId     Post ID from context or null.
@@ -541,8 +563,10 @@ export function getEventMeta( selectFunc, postId, attributes ) {
 	const hasExplicitOverride = !! attributes?.postId;
 
 	if ( hasExplicitOverride && postId ) {
-		// Explicit override - fetch from post via core data store.
-		const post = selectFunc( 'core' ).getEntityRecord( 'postType', 'gatherpress_event', postId );
+		// Explicit override - resolve across every post type declaring
+		// `gatherpress-event-date` rather than naming one, so a companion
+		// plugin's event type answers here the same as ours does.
+		const post = findEventPostById( selectFunc, postId );
 		maxLimit = post?.meta?.gatherpress_max_guest_limit;
 		// Stored as integer (0/1); undefined means not yet set, default to enabled.
 		enableRsvp = 0 !== post?.meta?.gatherpress_enable_rsvp;
