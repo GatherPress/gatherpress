@@ -133,4 +133,37 @@ class Test_Taxonomy_Cleanup extends Base {
 		$this->assertSame( 0, $this->count_rows( 'term_taxonomy', $topic_id ), 'The named taxonomy goes.' );
 		$this->assertSame( 1, $this->count_rows( 'term_taxonomy', $category_id ), 'Nothing else does.' );
 	}
+
+	/**
+	 * The hierarchy cache core keeps for the taxonomy goes with it.
+	 *
+	 * @covers ::remove
+	 *
+	 * @return void
+	 */
+	public function test_removes_the_term_hierarchy_option(): void {
+		$parent = (int) self::factory()->term->create( array( 'taxonomy' => Topic::TAXONOMY ) );
+
+		self::factory()->term->create(
+			array(
+				'taxonomy' => Topic::TAXONOMY,
+				'parent'   => $parent,
+			)
+		);
+
+		// Core writes the option the first time it walks the hierarchy.
+		_get_term_hierarchy( Topic::TAXONOMY );
+
+		$this->assertNotFalse(
+			get_option( sprintf( '%s_children', Topic::TAXONOMY ) ),
+			'Pre-condition: core is keeping a hierarchy cache for this taxonomy.'
+		);
+
+		Taxonomy_Cleanup::remove( Topic::TAXONOMY );
+
+		$this->assertFalse(
+			get_option( sprintf( '%s_children', Topic::TAXONOMY ) ),
+			'An option describing terms that no longer exist is litter.'
+		);
+	}
 }

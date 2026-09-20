@@ -107,6 +107,12 @@ final class Taxonomy_Cleanup {
 			)
 		);
 
+		// The hierarchy cache core keeps for a hierarchical taxonomy, which
+		// nothing above would reach: it is an option, not a term row, and it
+		// outlives the terms it describes. Harmless where the taxonomy was
+		// flat and the option was never written.
+		delete_option( sprintf( '%s_children', $taxonomy ) );
+
 		// The taxonomy rows themselves, last: every statement above joins
 		// through this table to decide what it owns.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Bulk delete on uninstall; not a read path.
