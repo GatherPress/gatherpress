@@ -216,7 +216,7 @@ When working with this codebase:
 Apply to PHP PHPDoc blocks and JS JSDoc blocks alike.
 
 - **A new symbol gets `@since TBD`.** Which release it ships in is not knowable while the work is in flight: a fix written on `develop` may go out in the next minor, or be cherry-picked into a patch release first. `npm run version:bump` resolves every `TBD` to the version being released, on the branch that is releasing it, so the patch case is right without anyone editing docblocks by hand. Pre-release bumps leave `TBD` alone, because an alpha is not the version a symbol shipped in.
-    - ✅ Good: `@since TBD` for anything new, on `develop` or on a patch branch.
+    - ✅ Good: `@since TBD` for anything new, on `develop` or on a patch branch. This covers every PHP and JS file the plugin owns, tests included, not just `includes/` and `src/`.
     - ✅ Good: `@since 0.33.0` on an existing symbol that shipped in 0.33.0 stable.
     - ❌ Bad: `@since 1.0.0`, `@since unreleased`, and any hand-written version on a symbol that has not shipped.
     - The `@since tags` workflow fails a pull request into `develop` that adds a literal version. Correcting an existing tag is fine when the old line goes in the same change; the `Skip Since Check` label is the way out when a literal version is genuinely right.
