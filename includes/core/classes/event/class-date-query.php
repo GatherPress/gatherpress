@@ -3,7 +3,7 @@
  * Resolves a WordPress date query into a window of event time.
  *
  * @package GatherPress\Core\Event
- * @since 0.36.0
+ * @since TBD
  */
 
 namespace GatherPress\Core\Event;
@@ -29,14 +29,14 @@ use Exception;
  * only reading that stays coherent across a schedule spanning many timezones.
  *
  * @package GatherPress\Core\Event
- * @since 0.36.0
+ * @since TBD
  */
 final class Date_Query {
 
 	/**
 	 * Format both stored event datetimes and resolved boundaries use.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @var string
 	 */
 	const DATETIME_FORMAT = 'Y-m-d H:i:s';
@@ -49,7 +49,7 @@ final class Date_Query {
 	 * by each event's own clock, which is what a list table wants when the
 	 * column beside the filter renders in that clock.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @var string
 	 */
 	const DEFAULT_COLUMN = 'datetime_start_gmt';
@@ -60,7 +60,7 @@ final class Date_Query {
 	 * Any other column, `post_date` included, is left for WordPress to handle
 	 * the way it always has.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @var string[]
 	 */
 	const EVENT_COLUMNS = array( self::DEFAULT_COLUMN, 'datetime_start' );
@@ -79,7 +79,7 @@ final class Date_Query {
 	 * downstream would ever apply the `week` part. The answer would be wrong,
 	 * and wrong silently.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @var string[]
 	 */
 	const SUPPORTED_ARGS = array(
@@ -115,7 +115,7 @@ final class Date_Query {
 	 * compared against: UTC for the GMT columns, the site's own time for the
 	 * local ones.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param array<int|string, mixed> $date_query A WordPress date query.
 	 *
@@ -187,7 +187,7 @@ final class Date_Query {
 	 * Anything else, a relation, a second clause, or an argument outside
 	 * `SUPPORTED_ARGS`, cannot be honored in full and so is not honored at all.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param array<int|string, mixed> $date_query A WordPress date query.
 	 *
@@ -223,7 +223,7 @@ final class Date_Query {
 	 * three span the day. A month or day without a year has no anchor to hang
 	 * on, so it resolves to nothing rather than guessing at the current year.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param array<string, mixed> $clause The clause being read.
 	 *
@@ -266,7 +266,7 @@ final class Date_Query {
 	 * A value that names a day without naming a time covers the whole day, so
 	 * it opens at the first second and closes at the last.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param mixed $value    The value to read.
 	 * @param bool  $end_of_day Whether a bare day should resolve to its last second.
@@ -308,7 +308,7 @@ final class Date_Query {
 	/**
 	 * Build a datetime in the site's timezone.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $value A value `DateTimeImmutable` can parse.
 	 *
@@ -329,7 +329,7 @@ final class Date_Query {
 	 * so a site-local boundary compares against them as it is. The GMT columns
 	 * need the boundary shifted to UTC first.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param DateTimeImmutable|null $datetime The datetime to render.
 	 * @param bool                   $in_utc   Whether to shift it to UTC first.

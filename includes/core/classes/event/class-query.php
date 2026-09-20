@@ -65,7 +65,7 @@ final class Query {
 	 * read back by `adjust_event_date_window_sql()` on `posts_clauses`. Never
 	 * registered as a public query var, so it cannot arrive from a URL.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @var string
 	 */
 	const EVENT_DATE_WINDOW_PARAM = 'gatherpress_event_date_window';
@@ -628,7 +628,7 @@ final class Query {
 	 * join, and either may run without the other, so each asks for it here
 	 * rather than appending its own and doubling the alias when both run.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param array<string, string> $pieces An array of query pieces, including join, where, orderby, and more.
 	 *
@@ -677,7 +677,7 @@ final class Query {
 	 * query mixing event and non-event post types, whose non-event rows have no
 	 * event dates and would silently drop out.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param WP_Query $query The query being prepared.
 	 *
@@ -703,7 +703,7 @@ final class Query {
 	/**
 	 * Whether every post type a query asks for carries event dates.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param WP_Query $query The query to inspect.
 	 *
@@ -733,7 +733,7 @@ final class Query {
 	 * open-ended window drops the bound it lacks. Compares the GMT pair or the
 	 * local pair according to the column the window was resolved for.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param array<string, string> $query_pieces An array containing pieces of the SQL query.
 	 * @param WP_Query              $query        The WP_Query instance (passed by reference).
