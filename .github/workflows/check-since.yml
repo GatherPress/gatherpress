@@ -76,14 +76,33 @@ jobs:
                 continue;
               }
 
-              // One hunk at a time. A tag that replaces another inside the
-              // same hunk is a correction or a moved block, both of which are
-              // allowed: only tags that arrive out of nowhere are checked.
+              // A diff represents an edit as a run of consecutive removed
+              // and added lines, so replacements are paired inside one run
+              // rather than anywhere in the hunk. Counting per run is what
+              // stops a genuine correction from excusing an unrelated
+              // literal version that happens to sit in the same hunk.
               for ( const hunk of file.patch.split( /^@@/m ).slice( 1 ) ) {
-                const added = [];
-                let removedAny = false;
+                let removed = 0;
+                let added = [];
+
+                const settle = () => {
+                  if ( added.length > removed ) {
+                    violations.push(
+                      `${ file.filename }: @since ${ added.slice( removed ).join( ', @since ' ) }`
+                    );
+                  }
+
+                  removed = 0;
+                  added = [];
+                };
 
                 for ( const line of hunk.split( '\n' ) ) {
+                  if ( ! line.startsWith( '-' ) && ! line.startsWith( '+' ) ) {
+                    // Context line: the run of changes ends here.
+                    settle();
+                    continue;
+                  }
+
                   const match = line.match( sinceLine );
 
                   if ( ! match ) {
@@ -91,15 +110,13 @@ jobs:
                   }
 
                   if ( line.startsWith( '-' ) ) {
-                    removedAny = true;
+                    ++removed;
                   } else if ( 'TBD' !== match[ 1 ] ) {
                     added.push( match[ 1 ] );
                   }
                 }
 
-                if ( ! removedAny && added.length ) {
-                  violations.push( `${ file.filename }: @since ${ added.join( ', @since ' ) }` );
-                }
+                settle();
               }
             }
 

@@ -319,9 +319,17 @@ jobs:
           deletions=$(git status --porcelain .github/changelog/ \
             | awk '$1 == "D" {print $2}' | jq -R '{path: .}' | jq -s .)
 
-          # expectedHeadOid is main's head rather than the tag's: if main has
-          # moved since the tag, this fails loudly instead of committing onto
-          # a branch that no longer matches what was released.
+          # expectedHeadOid guards the branch being committed to, which is the
+          # new sync branch, so it cannot notice main moving. Re-read main and
+          # stop rather than opening a parity PR against a base that no longer
+          # matches what shipped.
+          main_now=$(gh api "repos/${REPO}/git/ref/heads/main" --jq '.object.sha')
+
+          if [ "${main_now}" != "${main_sha}" ]; then
+            echo "::error::main moved from ${main_sha} to ${main_now} while the parity branch was being cut. Rebuild it by hand (docs/contributor/release-process.md)."
+            exit 1
+          fi
+
           jq -n \
             --arg query 'mutation ($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }' \
             --arg repo "${REPO}" \

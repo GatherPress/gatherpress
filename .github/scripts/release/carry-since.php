@@ -106,7 +106,12 @@ $unmatched = array();
 foreach ( carry_source_files() as $source ) {
 	$released = file_get_contents( CARRY_REPO_ROOT . '/' . $source );
 
-	if ( $released === false || strpos( $released, '@since ' . $version ) === false ) {
+	if ( $released === false ) {
+		fwrite( STDERR, sprintf( "Could not read %s.\n", $source ) );
+		exit( 1 );
+	}
+
+	if ( ! str_contains( $released, '@since ' . $version ) ) {
 		continue;
 	}
 
@@ -121,7 +126,7 @@ foreach ( carry_source_files() as $source ) {
 	$changed = 0;
 
 	foreach ( docblocks( $released ) as $block ) {
-		if ( strpos( $block, '@since ' . $version ) === false ) {
+		if ( ! str_contains( $block, '@since ' . $version ) ) {
 			continue;
 		}
 
@@ -131,12 +136,12 @@ foreach ( carry_source_files() as $source ) {
 		// different state of the code and gets reported instead.
 		$unresolved = str_replace( '@since ' . $version, '@since TBD', $block );
 
-		if ( strpos( $updated, $unresolved ) === false ) {
+		$position = strpos( $updated, $unresolved );
+
+		if ( $position === false ) {
 			$unmatched[] = sprintf( '%s (no identical TBD docblock on develop)', $source );
 			continue;
 		}
-
-		$position = strpos( $updated, $unresolved );
 		$updated  = substr_replace( $updated, $block, $position, strlen( $unresolved ) );
 
 		++$changed;

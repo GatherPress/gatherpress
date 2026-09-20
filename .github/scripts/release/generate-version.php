@@ -349,7 +349,13 @@ function resolve_since_tags( $version ) {
 	foreach ( $files as $file ) {
 		$contents = file_get_contents( $file );
 
-		if ( $contents === false || strpos( $contents, 'TBD' ) === false ) {
+		// A file that cannot be read could be holding a TBD, and reporting
+		// success without knowing is the one outcome this must not have.
+		if ( $contents === false ) {
+			fail( "Could not read {$file} while resolving @since TBD." );
+		}
+
+		if ( ! str_contains( $contents, 'TBD' ) ) {
 			continue;
 		}
 
@@ -382,7 +388,11 @@ function resolve_since_tags( $version ) {
 	foreach ( since_source_files() as $file ) {
 		$contents = file_get_contents( $file );
 
-		if ( $contents !== false && preg_match( '/@since\s+TBD\b/', $contents ) ) {
+		if ( $contents === false ) {
+			fail( "Could not re-read {$file} while verifying the @since resolution." );
+		}
+
+		if ( preg_match( '/@since\s+TBD\b/', $contents ) ) {
 			$leftovers[] = str_replace( REPO_ROOT . '/', '', $file );
 		}
 	}
