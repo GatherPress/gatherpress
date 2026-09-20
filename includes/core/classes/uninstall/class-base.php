@@ -127,11 +127,17 @@ abstract class Base {
 	 * network uninstall, asking each one whether it applies there, and the
 	 * network cleanup runs at most once.
 	 *
+	 * Reports whether anything ran, because the answer cannot be worked out
+	 * from outside: a subsite can opt in where the uninstalling site did
+	 * not, and a task like `Users` does all its work in the network pass.
+	 *
 	 * @since 0.36.0
 	 *
-	 * @return void
+	 * @return bool True when any cleanup ran.
 	 */
-	final public function run(): void {
+	final public function run(): bool {
+		$ran = false;
+
 		if ( is_multisite() ) {
 			// `number => 0` is required so WP doesn't silently cap the
 			// loop at 100 sites.
@@ -148,16 +154,24 @@ abstract class Base {
 
 				if ( $this->applies() ) {
 					$this->uninstall_site();
+
+					$ran = true;
 				}
 
 				restore_current_blog();
 			}
 		} elseif ( $this->applies() ) {
 			$this->uninstall_site();
+
+			$ran = true;
 		}
 
 		if ( $this->applies_to_network() ) {
 			$this->uninstall_network();
+
+			$ran = true;
 		}
+
+		return $ran;
 	}
 }

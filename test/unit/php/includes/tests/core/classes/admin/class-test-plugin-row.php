@@ -162,4 +162,35 @@ class Test_Plugin_Row extends Base {
 			'The screen where the choice was made is one click away.'
 		);
 	}
+
+	/**
+	 * The message links a super admin to a screen they can act on.
+	 *
+	 * @covers ::get_message
+	 *
+	 * @return void
+	 */
+	public function test_message_links_to_the_network_screen_for_the_network(): void {
+		$site    = Utility::invoke_hidden_method(
+			Plugin_Row::get_instance(),
+			'get_message',
+			array( array( 'Events' ), false )
+		);
+		$network = Utility::invoke_hidden_method(
+			Plugin_Row::get_instance(),
+			'get_message',
+			array( array( 'Events' ), true )
+		);
+
+		$this->assertStringContainsString(
+			'post_type=gatherpress_event',
+			(string) $site,
+			'A site administrator is sent to their own screen.'
+		);
+		$this->assertStringContainsString(
+			'page=gatherpress-network-settings',
+			(string) $network,
+			'The network Plugins screen is where a plugin is deleted on multisite, so the link has to lead there.'
+		);
+	}
 }

@@ -1603,10 +1603,19 @@ class Settings {
 
 		// Filter to only known keys, then drop the ones declared out of the
 		// importer's reach.
+		$blocked   = array_flip( $this->get_non_importable_keys() );
 		$to_import = array_diff_key(
 			array_intersect_key( $data['settings'], $field_type_map ),
-			array_flip( $this->get_non_importable_keys() )
+			$blocked
 		);
+
+		// Replace mode clears everything, which would take the refused keys
+		// with it and quietly reset a choice the file was never allowed to
+		// make. Carry them across the delete instead, so "left as they are"
+		// is true in both modes.
+		$preserved = 'replace' === $mode
+			? array_intersect_key( $this->read_stored_options( $scope ), $blocked )
+			: array();
 
 		// Sanitize imported values.
 		if ( 'replace' === $mode ) {
@@ -1614,7 +1623,7 @@ class Settings {
 			$this->delete_stored_options( $scope );
 		}
 
-		$sanitized = $sanitize( $to_import );
+		$sanitized = array_merge( $preserved, $sanitize( $to_import ) );
 
 		$this->write_stored_options( $scope, $sanitized );
 

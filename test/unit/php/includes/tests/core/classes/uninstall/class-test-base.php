@@ -357,4 +357,22 @@ class Test_Base extends Base {
 			'A task that names no preference is gated by nothing, so it removes nothing.'
 		);
 	}
+
+	/**
+	 * Running reports whether any cleanup happened.
+	 *
+	 * @covers ::run
+	 *
+	 * @return void
+	 */
+	public function test_run_reports_whether_it_did_anything(): void {
+		$this->assertTrue(
+			$this->make_task( true )->run(),
+			'A task that applies did work, and the registry needs to know.'
+		);
+		$this->assertFalse(
+			$this->make_task( false )->run(),
+			'A task that never applied touched nothing.'
+		);
+	}
 }

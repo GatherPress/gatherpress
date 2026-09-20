@@ -3688,7 +3688,7 @@ class Test_Settings extends Base {
 	public function test_keys_opted_out_of_reads_an_absent_flag_as_on(): void {
 		$this->declare_travel_flag_fixture();
 
-		$keys = \PMC\Unit_Test\Utility::invoke_hidden_method(
+		$keys = Utility::invoke_hidden_method(
 			Settings::get_instance(),
 			'get_keys_opted_out_of',
 			array( 'importable' )
@@ -3817,6 +3817,52 @@ class Test_Settings extends Base {
 			'test_stays_at_home_setting',
 			$export['settings'],
 			'A value about this one site does not belong in a file that gets handed around.'
+		);
+
+		delete_option( Settings::OPTION_NAME );
+		remove_all_filters( 'gatherpress_sub_pages' );
+	}
+
+	/**
+	 * A replace import leaves a refused key exactly as it was.
+	 *
+	 * @covers ::import_settings
+	 *
+	 * @return void
+	 */
+	public function test_replace_import_preserves_a_refused_key(): void {
+		$this->declare_travel_flag_fixture();
+
+		update_option(
+			Settings::OPTION_NAME,
+			array(
+				'test_stays_at_home_setting' => true,
+				'test_ordinary_setting'      => true,
+			)
+		);
+
+		// The file asks for the refused key to be turned off, and asks it in
+		// the mode that clears everything first.
+		$result = Settings::get_instance()->import_settings(
+			array(
+				'settings' => array(
+					'test_ordinary_setting'      => false,
+					'test_stays_at_home_setting' => false,
+				),
+			),
+			'replace'
+		);
+
+		$stored = (array) get_option( Settings::OPTION_NAME, array() );
+
+		$this->assertTrue(
+			$stored['test_stays_at_home_setting'] ?? false,
+			'Replace clears everything, so a refused key has to survive the delete or the file unsets it.'
+		);
+		$this->assertContains(
+			'test_stays_at_home_setting',
+			$result['not_importable'],
+			'The refusal is still reported.'
 		);
 
 		delete_option( Settings::OPTION_NAME );

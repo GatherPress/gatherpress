@@ -73,7 +73,11 @@ class Plugin_Row {
 			return;
 		}
 
-		$armed = Uninstall_Settings::armed_labels();
+		// The network Plugins screen is where a plugin is deleted on
+		// multisite, so the warning there has to answer for the network
+		// rather than for whichever site the screen happens to run under.
+		$network = is_network_admin();
+		$armed   = Uninstall_Settings::armed_labels( $network );
 
 		if ( empty( $armed ) ) {
 			return;
@@ -85,7 +89,7 @@ class Plugin_Row {
 		echo '<div class="gatherpress-plugin-row-warning">';
 
 		wp_admin_notice(
-			$this->get_message( $armed ),
+			$this->get_message( $armed, $network ),
 			array(
 				'type'               => 'warning',
 				'additional_classes' => array( 'inline', 'notice-alt' ),
@@ -100,14 +104,15 @@ class Plugin_Row {
 	 *
 	 * @since 0.36.0
 	 *
-	 * @param string[] $armed Labels of the data selected for removal.
+	 * @param string[] $armed   Labels of the data selected for removal.
+	 * @param bool     $network Whether the warning is for the network screen.
 	 *
 	 * @return string The escaped message.
 	 */
-	protected function get_message( array $armed ): string {
+	protected function get_message( array $armed, bool $network = false ): string {
 		$link = sprintf(
 			'<a href="%1$s">%2$s</a>',
-			esc_url( Uninstall_Settings::get_page_url() ),
+			esc_url( Uninstall_Settings::get_page_url( $network ) ),
 			esc_html__( 'GatherPress Uninstall screen', 'gatherpress' )
 		);
 

@@ -364,4 +364,53 @@ class Test_Uninstall extends Base {
 		$this->assertStringContainsString( 'page=gatherpress_uninstall_settings', $url, 'The page is named.' );
 		$this->assertStringContainsString( 'post_type=gatherpress_event', $url, 'Under the menu it lives in.' );
 	}
+
+	/**
+	 * The network copy of the screen has an address of its own.
+	 *
+	 * @covers ::get_page_url
+	 *
+	 * @return void
+	 */
+	public function test_get_page_url_points_at_the_network_screen(): void {
+		$url = Uninstall::get_page_url( true );
+
+		$this->assertStringContainsString(
+			'page=gatherpress-network-settings',
+			$url,
+			'A link shown in network admin has to lead somewhere a super admin can act.'
+		);
+		$this->assertStringContainsString( 'tab=uninstall_settings', $url, 'On the tab that governs this.' );
+	}
+
+	/**
+	 * The network answer is read from network storage.
+	 *
+	 * @covers ::armed_labels
+	 * @group multisite
+	 *
+	 * @return void
+	 */
+	public function test_armed_labels_can_read_the_network_answer(): void {
+		update_option(
+			Settings::OPTION_NAME,
+			array( Preferences::option_key( Preferences::TASK_EVENTS ) => true )
+		);
+		update_site_option(
+			Settings::OPTION_NAME,
+			array( Preferences::option_key( Preferences::TASK_TOPICS ) => true )
+		);
+		Preferences::flush_cache();
+
+		$this->assertSame( array( 'Events' ), Uninstall::armed_labels(), 'The site answers for itself.' );
+		$this->assertSame(
+			array( 'Topics' ),
+			Uninstall::armed_labels( true ),
+			'The network answers for what no single site owns.'
+		);
+
+		delete_option( Settings::OPTION_NAME );
+		delete_site_option( Settings::OPTION_NAME );
+		Preferences::flush_cache();
+	}
 }

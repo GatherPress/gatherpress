@@ -27,7 +27,7 @@ defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
  * A sweep on a large site can outlive PHP's own limits. Raise them where the
  * host allows it, and keep working if the browser goes away, so the delete
  * does not stop part-way and leave half the data behind. Neither call is
- * guaranteed: a host can disable `set_time_limit()`, and a hard web server
+ * guaranteed: a host can disable either function, and a hard web server
  * timeout is outside PHP's control. The Uninstall screen recommends WP-CLI
  * for sites large enough for that to matter.
  */
@@ -35,7 +35,9 @@ if ( function_exists( 'set_time_limit' ) ) {
 	set_time_limit( 0 );
 }
 
-ignore_user_abort( true );
+if ( function_exists( 'ignore_user_abort' ) ) {
+	ignore_user_abort( true );
+}
 
 // gatherpress.php defines this on a normal load; nothing has during uninstall.
 defined( 'GATHERPRESS_CORE_PATH' ) || define( 'GATHERPRESS_CORE_PATH', __DIR__ );

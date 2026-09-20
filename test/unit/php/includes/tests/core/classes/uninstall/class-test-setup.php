@@ -217,4 +217,63 @@ class Test_Setup extends Test_Base {
 			'A persistent cache outlives the plugin, so deleted rows must not stay readable through it.'
 		);
 	}
+
+	/**
+	 * A task that only works in the network pass still flushes the cache.
+	 *
+	 * @covers ::run
+	 *
+	 * @return void
+	 */
+	public function test_run_flushes_for_a_network_only_task(): void {
+		$task = new class() extends Base {
+
+			/**
+			 * Never applies to the site the uninstall runs on.
+			 *
+			 * @return bool Always false.
+			 */
+			public function applies(): bool {
+				return false;
+			}
+
+			/**
+			 * Applies to the network, the way `Users` does.
+			 *
+			 * @return bool Always true.
+			 */
+			public function applies_to_network(): bool {
+				return true;
+			}
+
+			/**
+			 * Reports that it deletes rows with SQL.
+			 *
+			 * @return bool Always true.
+			 */
+			public function invalidates_cache(): bool {
+				return true;
+			}
+
+			/**
+			 * No-op per-site pass.
+			 *
+			 * @return void
+			 */
+			protected function uninstall_site(): void {
+			}
+		};
+
+		$instance = Setup::get_instance();
+		$instance->add( $task );
+
+		wp_cache_set( 'probe', 'value', 'gatherpress_test' );
+
+		$instance->run();
+
+		$this->assertFalse(
+			wp_cache_get( 'probe', 'gatherpress_test' ),
+			'Work done in the network pass leaves the same stale objects behind as work done per site.'
+		);
+	}
 }

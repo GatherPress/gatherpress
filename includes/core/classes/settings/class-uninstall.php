@@ -15,6 +15,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Settings;
+use GatherPress\Core\Settings\Network;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Uninstall\Preferences;
@@ -161,9 +162,21 @@ final class Uninstall extends Base {
 	 *
 	 * @since 0.36.0
 	 *
+	 * @param bool $network Whether to address the network copy of the screen.
+	 *
 	 * @return string The admin URL of the uninstall settings page.
 	 */
-	public static function get_page_url(): string {
+	public static function get_page_url( bool $network = false ): string {
+		if ( $network ) {
+			return add_query_arg(
+				array(
+					'page' => Network::PAGE_SLUG,
+					'tab'  => self::get_instance()->slug,
+				),
+				network_admin_url( 'settings.php' )
+			);
+		}
+
 		return add_query_arg(
 			array(
 				'post_type' => Event::POST_TYPE,
@@ -182,14 +195,21 @@ final class Uninstall extends Base {
 	 *
 	 * @since 0.36.0
 	 *
+	 * @param bool $network Whether to read the network's own answer rather
+	 *                      than the current site's.
+	 *
 	 * @return string[] The labels, in the order the screen lists them.
 	 */
-	public static function armed_labels(): array {
+	public static function armed_labels( bool $network = false ): array {
 		$options = self::get_instance()->get_task_options();
 		$armed   = array();
 
 		foreach ( Preferences::task_keys() as $task ) {
-			if ( ! Preferences::is_enabled( $task ) ) {
+			$enabled = $network
+				? Preferences::is_enabled_for_network( $task )
+				: Preferences::is_enabled( $task );
+
+			if ( ! $enabled ) {
 				continue;
 			}
 

@@ -114,9 +114,13 @@ final class Setup {
 		$flush = false;
 
 		foreach ( $this->tasks as $task ) {
-			$flush = $flush || ( $task->applies() && $task->invalidates_cache() );
+			// Asked of the run rather than of `applies()`, which answers only
+			// for the site the uninstall started on: a subsite can opt in
+			// where that site did not, and a task can do all its work in the
+			// network pass.
+			$ran = $task->run();
 
-			$task->run();
+			$flush = $flush || ( $ran && $task->invalidates_cache() );
 		}
 
 		// The tasks that delete rows with SQL never told the object cache what
