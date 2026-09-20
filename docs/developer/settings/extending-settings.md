@@ -81,7 +81,7 @@ Your tab will appear in the GatherPress settings page, and your options are auto
 
 - Stored in the shared `gatherpress_settings` option
 - Sanitized based on field type
-- Included in import/export
+- Included in import/export, unless the option opts out (see [exportable and importable](#exportable-and-importable))
 - Stripped when matching their defaults
 
 ## Reading and Writing Your Custom Settings
@@ -276,7 +276,31 @@ This works because (a) the field row is hidden via CSS, so the input still posts
 
 - **Same page only.** The controlling field must live on the same settings tab as the dependent field.
 - **Single controller per key.** Each option key on a settings page renders one input; that's the input the JS will resolve.
-- **Comparisons are string-based.** Booleans and numbers are coerced to string before comparing. To match a checkbox stored as `true`, declare `'my_toggle' => 'true'`.
+- **Comparisons are string-based.** Booleans and numbers are coerced to string before comparing.
+- **A checkbox controller compares on what it submits**, not on its `checked` property: `'1'` when it is on and `''` when it is off. PHP stores a checkbox as a bool and compares `(string) $value`, and the JS reports the same two values so both sides agree. To show a field only while a toggle is off, declare `'my_toggle' => ''`.
+
+### exportable and importable
+
+Settings travel between sites through the export and import on the Tools tab. Two flags, both siblings of `field` and both on unless the declaration says otherwise, take an option out of that.
+
+`'exportable' => false` leaves the value out of an export, for something that describes this one site and should not be handed around in a file. It implies the other flag: a value that may not leave here has no business being written into it by a file either.
+
+`'importable' => false` is the narrower one, for a value worth reading in an export but never worth applying on the way back in.
+
+```php
+'uninstall_events' => array(
+    'labels'     => array( 'name' => __( 'Events', 'my-plugin' ) ),
+    'field'      => array(
+        'type'    => 'checkbox',
+        'options' => array( 'default' => false ),
+    ),
+    'exportable' => false,
+),
+```
+
+An import skips these keys and reports them separately from keys it does not recognize, because the two mean different things to whoever reads the result, and the Tools tab says so rather than calling a refusal an unknown key.
+
+Reach for this when the harm of setting an option by accident outweighs the convenience of carrying it between sites. GatherPress uses it for the Uninstall tab. Every other setting shows its effect as soon as it is wrong, so a bad import is visible; a switch that only acts when the plugin is deleted does nothing until much later, possibly for somebody who never ran the import, and what it removes is gone.
 
 ## Key Uniqueness
 

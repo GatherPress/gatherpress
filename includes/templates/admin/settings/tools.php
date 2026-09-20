@@ -249,11 +249,11 @@ $gatherpress_scope = isset( $scope ) && 'network' === $scope ? 'network' : 'blog
 				const blocked = response.data.not_importable ? response.data.not_importable.length : 0;
 				let msg = imported + ' <?php echo esc_js( __( 'setting(s) imported.', 'gatherpress' ) ); ?>';
 
-				if (skipped > 0) {
+				if ( 0 < skipped ) {
 					msg += ' ' + skipped + ' <?php echo esc_js( __( 'unknown key(s) skipped.', 'gatherpress' ) ); ?>';
 				}
 
-				if (blocked > 0) {
+				if ( 0 < blocked ) {
 					msg += ' ' + blocked + ' <?php echo esc_js( __( 'setting(s) cannot be imported and were left as they are.', 'gatherpress' ) ); ?>';
 				}
 
