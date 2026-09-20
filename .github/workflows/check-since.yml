@@ -64,9 +64,13 @@ jobs:
               files.push( ...response.data );
             }
 
+            // Every PHP and JS file the plugin owns, source and tests alike.
+            // Excluding rather than allowlisting keeps a new source directory
+            // covered the day it appears. Generated output, vendored code and
+            // tooling are skipped, matching what the release resolver walks.
+            const skipped = /^(build|node_modules|vendor|\.)/;
             const isSource = filename =>
-              ( filename.startsWith( 'includes/' ) || filename.startsWith( 'src/' ) ) &&
-              /\.(php|js)$/.test( filename );
+              ! skipped.test( filename ) && /\.(php|js)$/.test( filename );
 
             const sinceLine = /^[-+].*@since\s+(\S+)/;
             const violations = [];

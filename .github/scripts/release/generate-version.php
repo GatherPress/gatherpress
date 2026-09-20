@@ -412,29 +412,31 @@ function resolve_since_tags( $version ) {
  */
 function since_source_files() {
 	$files = array();
+	$skip  = array( 'build', 'node_modules', 'vendor' );
 
-	foreach ( array( '/includes', '/src' ) as $relative ) {
-		$root = REPO_ROOT . $relative;
+	$iterator = new RecursiveIteratorIterator(
+		new RecursiveCallbackFilterIterator(
+			new RecursiveDirectoryIterator( REPO_ROOT, FilesystemIterator::SKIP_DOTS ),
+			static function ( $current ) use ( $skip ) {
+				if ( ! $current->isDir() ) {
+					return true;
+				}
 
-		if ( ! is_dir( $root ) ) {
+				$name = $current->getFilename();
+
+				// Generated output, vendored code and anything hidden. A
+				// dot directory holds tooling rather than plugin source.
+				return ! in_array( $name, $skip, true ) && ! str_starts_with( $name, '.' );
+			}
+		)
+	);
+
+	foreach ( $iterator as $file ) {
+		if ( ! $file->isFile() || ! in_array( strtolower( $file->getExtension() ), array( 'php', 'js' ), true ) ) {
 			continue;
 		}
 
-		$iterator = new RecursiveIteratorIterator(
-			new RecursiveDirectoryIterator( $root, FilesystemIterator::SKIP_DOTS )
-		);
-
-		foreach ( $iterator as $file ) {
-			if ( ! $file->isFile() ) {
-				continue;
-			}
-
-			if ( ! in_array( strtolower( $file->getExtension() ), array( 'php', 'js' ), true ) ) {
-				continue;
-			}
-
-			$files[] = $file->getPathname();
-		}
+		$files[] = $file->getPathname();
 	}
 
 	sort( $files );

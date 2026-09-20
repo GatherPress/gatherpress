@@ -57,36 +57,46 @@ function docblocks( $contents ) {
 }
 
 /**
- * Source files in this tree that may carry a docblock.
+ * Every PHP and JS file the plugin owns, source and tests alike.
+ *
+ * Excludes rather than allowlists, so a new source directory is covered
+ * the day it appears. Generated output, vendored code and tooling are
+ * skipped.
  *
  * @return string[] Repository-relative paths.
  */
 function carry_source_files() {
-	$paths = array();
+	$files = array();
+	$skip  = array( 'build', 'node_modules', 'vendor' );
 
-	foreach ( array( 'includes', 'src' ) as $relative ) {
-		$root = CARRY_REPO_ROOT . '/' . $relative;
+	$iterator = new RecursiveIteratorIterator(
+		new RecursiveCallbackFilterIterator(
+			new RecursiveDirectoryIterator( CARRY_REPO_ROOT, FilesystemIterator::SKIP_DOTS ),
+			static function ( $current ) use ( $skip ) {
+				if ( ! $current->isDir() ) {
+					return true;
+				}
 
-		if ( ! is_dir( $root ) ) {
+				$name = $current->getFilename();
+
+				// Generated output, vendored code and anything hidden. A
+				// dot directory holds tooling rather than plugin source.
+				return ! in_array( $name, $skip, true ) && ! str_starts_with( $name, '.' );
+			}
+		)
+	);
+
+	foreach ( $iterator as $file ) {
+		if ( ! $file->isFile() || ! in_array( strtolower( $file->getExtension() ), array( 'php', 'js' ), true ) ) {
 			continue;
 		}
 
-		$iterator = new RecursiveIteratorIterator(
-			new RecursiveDirectoryIterator( $root, FilesystemIterator::SKIP_DOTS )
-		);
-
-		foreach ( $iterator as $file ) {
-			if ( ! $file->isFile() || ! in_array( strtolower( $file->getExtension() ), array( 'php', 'js' ), true ) ) {
-				continue;
-			}
-
-			$paths[] = str_replace( CARRY_REPO_ROOT . '/', '', $file->getPathname() );
-		}
+		$files[] = str_replace( CARRY_REPO_ROOT . '/', '', $file->getPathname() );
 	}
 
-	sort( $paths );
+	sort( $files );
 
-	return $paths;
+	return $files;
 }
 
 $options = getopt( '', array( 'version:' ) );
