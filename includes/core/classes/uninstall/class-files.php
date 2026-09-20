@@ -11,6 +11,8 @@ namespace GatherPress\Core\Uninstall;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use WP_Filesystem_Base;
+
 /**
  * Class Files.
  *
@@ -59,74 +61,35 @@ final class Files extends Base {
 	/**
 	 * Remove the current site's generated files.
 	 *
+	 * Goes through `WP_Filesystem` rather than `unlink()` and `rmdir()`, so
+	 * the deletion answers to whatever transport the site is configured
+	 * for and nothing has to silence a warning. A site whose transport
+	 * needs credentials has none to offer during an uninstall, and keeping
+	 * the files is the right outcome there: they are inert, and the
+	 * alternative is guessing at someone else's filesystem.
+	 *
 	 * @since 0.36.0
+	 *
+	 * @global WP_Filesystem_Base $wp_filesystem WordPress filesystem abstraction.
 	 *
 	 * @return void
 	 */
 	protected function uninstall_site(): void {
+		global $wp_filesystem;
+
 		$uploads = wp_get_upload_dir();
 
 		if ( ! empty( $uploads['error'] ) || empty( $uploads['basedir'] ) ) {
 			return;
 		}
 
-		$this->delete_directory( trailingslashit( $uploads['basedir'] ) . self::DIRECTORY );
-	}
+		// Loading WordPress core file for the WP_Filesystem function, not importing a class.
+		require_once ABSPATH . 'wp-admin/includes/file.php'; // NOSONAR.
 
-	/**
-	 * Delete a directory and everything in it.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @param string $directory Absolute path to the directory.
-	 *
-	 * @return void
-	 */
-	protected function delete_directory( string $directory ): void {
-		if ( ! is_dir( $directory ) ) {
+		if ( ! WP_Filesystem() || ! $wp_filesystem instanceof WP_Filesystem_Base ) {
 			return;
 		}
 
-		foreach ( $this->entries( $directory ) as $entry ) {
-			$path = trailingslashit( $directory ) . $entry;
-
-			if ( is_dir( $path ) ) {
-				$this->delete_directory( $path );
-
-				continue;
-			}
-
-			wp_delete_file( $path );
-		}
-
-		/*
-		 * WP_Filesystem is not set up during an uninstall, and the writers
-		 * that made these files reach for the same direct calls. A directory
-		 * that will not go, because a handle is open on it or the permissions
-		 * say no, is not worth failing the uninstall over.
-		 */
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir, WordPress.PHP.NoSilencedErrors.Discouraged
-		@rmdir( $directory );
-	}
-
-	/**
-	 * The names in a directory, without the dot entries.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @param string $directory Absolute path to the directory.
-	 *
-	 * @return string[] Entry names.
-	 */
-	protected function entries( string $directory ): array {
-		// No WP_Filesystem during an uninstall; see delete_directory().
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_scandir
-		$entries = scandir( $directory );
-
-		if ( false === $entries ) {
-			return array();
-		}
-
-		return array_values( array_diff( $entries, array( '.', '..' ) ) );
+		$wp_filesystem->rmdir( trailingslashit( $uploads['basedir'] ) . self::DIRECTORY, true );
 	}
 }

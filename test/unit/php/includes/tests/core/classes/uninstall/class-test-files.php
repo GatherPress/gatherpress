@@ -12,7 +12,6 @@ use GatherPress\Core\Uninstall\Files;
 use GatherPress\Core\Uninstall\Preferences;
 use GatherPress\Core\Venue\Map\Map;
 use GatherPress\Tests\Base;
-use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Files.
@@ -190,8 +189,6 @@ class Test_Files extends Base {
 	 * The plugin's whole uploads directory goes once opted in to.
 	 *
 	 * @covers ::uninstall_site
-	 * @covers ::delete_directory
-	 * @covers ::entries
 	 *
 	 * @return void
 	 */
@@ -246,7 +243,6 @@ class Test_Files extends Base {
 	 * Nothing happens when the directory was never created.
 	 *
 	 * @covers ::uninstall_site
-	 * @covers ::delete_directory
 	 *
 	 * @return void
 	 */
@@ -294,21 +290,32 @@ class Test_Files extends Base {
 	}
 
 	/**
-	 * A path that is not a directory is not scanned.
+	 * A filesystem the site cannot reach without credentials is left alone.
 	 *
-	 * @covers ::entries
+	 * @covers ::uninstall_site
 	 *
 	 * @return void
 	 */
-	public function test_entries_is_empty_for_a_missing_directory(): void {
-		$this->assertSame(
-			array(),
-			Utility::invoke_hidden_method(
-				new Files(),
-				'entries',
-				array( trailingslashit( $this->plugin_directory() ) . 'not-here' )
-			),
-			'A directory that is not there has no entries.'
+	public function test_stops_when_the_filesystem_is_unavailable(): void {
+		Preferences::save( array( Preferences::TASK_FILES => true ) );
+
+		$file = trailingslashit( $this->map_directory() ) . 'venue-osm-map-15-600-400.png';
+
+		$this->write_file( $file );
+
+		// A transport with no class behind it, which is what an uninstall
+		// sees on a site configured for FTP with no credentials to offer.
+		$filter = static function (): string {
+			return 'gatherpress_unavailable';
+		};
+
+		add_filter( 'filesystem_method', $filter );
+		( new Files() )->run();
+		remove_filter( 'filesystem_method', $filter );
+
+		$this->assertFileExists(
+			$file,
+			'Files are inert, so keeping them beats guessing at someone else\'s filesystem.'
 		);
 	}
 }
