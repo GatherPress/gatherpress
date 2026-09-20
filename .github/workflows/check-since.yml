@@ -66,11 +66,23 @@ jobs:
 
             // Every PHP and JS file the plugin owns, source and tests alike.
             // Excluding rather than allowlisting keeps a new source directory
-            // covered the day it appears. Generated output, vendored code and
-            // tooling are skipped, matching what the release resolver walks.
-            const skipped = /^(build|node_modules|vendor|\.)/;
-            const isSource = filename =>
-              ! skipped.test( filename ) && /\.(php|js)$/.test( filename );
+            // covered the day it appears.
+            //
+            // Matched on directory segments at every depth, which is what the
+            // release resolver does: anchoring on the path would both miss
+            // `src/vendor/x.php` and wrongly skip a root file called
+            // `build-helper.php`, leaving CI and the release disagreeing about
+            // which files the rule covers.
+            const skippedDirectories = [ 'build', 'node_modules', 'vendor' ];
+            const isSource = filename => {
+              const directories = filename.split( '/' ).slice( 0, -1 );
+
+              if ( directories.some( name => skippedDirectories.includes( name ) || name.startsWith( '.' ) ) ) {
+                return false;
+              }
+
+              return /\.(php|js)$/.test( filename );
+            };
 
             const sinceLine = /^[-+].*@since\s+(\S+)/;
             const violations = [];
