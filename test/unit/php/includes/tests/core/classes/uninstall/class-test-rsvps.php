@@ -15,6 +15,7 @@ use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Uninstall\Preferences;
 use GatherPress\Core\Uninstall\Rsvps;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Rsvps.
@@ -344,6 +345,24 @@ class Test_Rsvps extends Base {
 			1,
 			(int) get_post_field( 'comment_count', $post_id ),
 			'A post that keeps its event but loses its RSVPs must stop reporting them.'
+		);
+	}
+
+	/**
+	 * The task names the preference that gates it.
+	 *
+	 * Invoked directly as well as through `applies()`, because xdebug does
+	 * not trace a protected method called from the parent class.
+	 *
+	 * @covers ::preference
+	 *
+	 * @return void
+	 */
+	public function test_preference_names_its_task(): void {
+		$this->assertSame(
+			Preferences::TASK_RSVPS,
+			Utility::invoke_hidden_method( new Rsvps(), 'preference' ),
+			'The task reads the opt-in for RSVPs and nothing else.'
 		);
 	}
 }

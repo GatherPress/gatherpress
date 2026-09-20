@@ -12,6 +12,7 @@ use GatherPress\Core\Uninstall\Files;
 use GatherPress\Core\Uninstall\Preferences;
 use GatherPress\Core\Venue\Map\Map;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Files.
@@ -317,6 +318,24 @@ class Test_Files extends Base {
 		$this->assertFileExists(
 			$file,
 			'Files are inert, so keeping them beats guessing at someone else\'s filesystem.'
+		);
+	}
+
+	/**
+	 * The task names the preference that gates it.
+	 *
+	 * Invoked directly as well as through `applies()`, because xdebug does
+	 * not trace a protected method called from the parent class.
+	 *
+	 * @covers ::preference
+	 *
+	 * @return void
+	 */
+	public function test_preference_names_its_task(): void {
+		$this->assertSame(
+			Preferences::TASK_FILES,
+			Utility::invoke_hidden_method( new Files(), 'preference' ),
+			'The task reads the opt-in for generated files and nothing else.'
 		);
 	}
 }

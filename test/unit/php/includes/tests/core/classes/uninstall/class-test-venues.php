@@ -212,4 +212,22 @@ class Test_Venues extends Base {
 			'The event stops being tagged with a venue that is gone.'
 		);
 	}
+
+	/**
+	 * The task names the preference that gates it.
+	 *
+	 * Invoked directly as well as through `applies()`, because xdebug does
+	 * not trace a protected method called from the parent class.
+	 *
+	 * @covers ::preference
+	 *
+	 * @return void
+	 */
+	public function test_preference_names_its_task(): void {
+		$this->assertSame(
+			Preferences::TASK_VENUES,
+			Utility::invoke_hidden_method( new Venues(), 'preference' ),
+			'The task reads the opt-in for venues and nothing else.'
+		);
+	}
 }

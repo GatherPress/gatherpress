@@ -340,4 +340,21 @@ class Test_Base extends Base {
 			'A network that never opted in keeps what it owns.'
 		);
 	}
+
+	/**
+	 * A task names no preference unless it says so.
+	 *
+	 * Invoked directly as well as through `applies()`, because xdebug does
+	 * not trace a protected method called from the parent class.
+	 *
+	 * @covers ::preference
+	 *
+	 * @return void
+	 */
+	public function test_preference_defaults_to_none(): void {
+		$this->assertNull(
+			Utility::invoke_hidden_method( $this->make_task(), 'preference' ),
+			'A task that names no preference is gated by nothing, so it removes nothing.'
+		);
+	}
 }

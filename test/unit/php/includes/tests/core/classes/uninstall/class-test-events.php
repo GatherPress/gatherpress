@@ -412,4 +412,22 @@ class Test_Events extends Base {
 			'Subtracting a draft would push the count below what core stored.'
 		);
 	}
+
+	/**
+	 * The task names the preference that gates it.
+	 *
+	 * Invoked directly as well as through `applies()`, because xdebug does
+	 * not trace a protected method called from the parent class.
+	 *
+	 * @covers ::preference
+	 *
+	 * @return void
+	 */
+	public function test_preference_names_its_task(): void {
+		$this->assertSame(
+			Preferences::TASK_EVENTS,
+			Utility::invoke_hidden_method( new Events(), 'preference' ),
+			'The task reads the opt-in for events and nothing else.'
+		);
+	}
 }

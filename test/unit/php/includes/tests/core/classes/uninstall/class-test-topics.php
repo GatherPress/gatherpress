@@ -12,6 +12,7 @@ use GatherPress\Core\Topic;
 use GatherPress\Core\Uninstall\Preferences;
 use GatherPress\Core\Uninstall\Topics;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Topics.
@@ -161,5 +162,23 @@ class Test_Topics extends Base {
 		);
 
 		$this->assertSame( 0, $meta_rows, 'Term meta goes with the term row.' );
+	}
+
+	/**
+	 * The task names the preference that gates it.
+	 *
+	 * Invoked directly as well as through `applies()`, because xdebug does
+	 * not trace a protected method called from the parent class.
+	 *
+	 * @covers ::preference
+	 *
+	 * @return void
+	 */
+	public function test_preference_names_its_task(): void {
+		$this->assertSame(
+			Preferences::TASK_TOPICS,
+			Utility::invoke_hidden_method( new Topics(), 'preference' ),
+			'The task reads the opt-in for topics and nothing else.'
+		);
 	}
 }

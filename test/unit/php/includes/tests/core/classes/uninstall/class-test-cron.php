@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core\Uninstall;
 use GatherPress\Core\Uninstall\Cron;
 use GatherPress\Core\Uninstall\Preferences;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Cron.
@@ -157,6 +158,24 @@ class Test_Cron extends Base {
 		$this->assertFalse(
 			wp_next_scheduled( 'gatherpress_async_geocode_venue', $args ),
 			'wp_unschedule_hook() clears every event for the hook, whatever its arguments.'
+		);
+	}
+
+	/**
+	 * The task names the preference that gates it.
+	 *
+	 * Invoked directly as well as through `applies()`, because xdebug does
+	 * not trace a protected method called from the parent class.
+	 *
+	 * @covers ::preference
+	 *
+	 * @return void
+	 */
+	public function test_preference_names_its_task(): void {
+		$this->assertSame(
+			Preferences::TASK_CRON,
+			Utility::invoke_hidden_method( new Cron(), 'preference' ),
+			'The task reads the opt-in for scheduled jobs and nothing else.'
 		);
 	}
 }

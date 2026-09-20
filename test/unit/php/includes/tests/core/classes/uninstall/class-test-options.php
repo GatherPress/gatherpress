@@ -14,6 +14,7 @@ use GatherPress\Core\Settings\Network;
 use GatherPress\Core\Uninstall\Options;
 use GatherPress\Core\Uninstall\Preferences;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Options.
@@ -174,9 +175,11 @@ class Test_Options extends Base {
 	 * @return void
 	 */
 	public function test_removes_the_network_settings(): void {
-		$this->arm_uninstall( Preferences::TASK_OPTIONS );
-
 		update_site_option( Network::OPTION_NAME, array( 'some' => 'value' ) );
+
+		// The network options belong to no single site, so the network's own
+		// answer is what governs them.
+		$this->arm_uninstall_for_network( Preferences::TASK_OPTIONS );
 
 		( new Options() )->run();
 
@@ -231,5 +234,23 @@ class Test_Options extends Base {
 		);
 
 		delete_option( 'some_other_plugin_option' );
+	}
+
+	/**
+	 * The task names the preference that gates it.
+	 *
+	 * Invoked directly as well as through `applies()`, because xdebug does
+	 * not trace a protected method called from the parent class.
+	 *
+	 * @covers ::preference
+	 *
+	 * @return void
+	 */
+	public function test_preference_names_its_task(): void {
+		$this->assertSame(
+			Preferences::TASK_OPTIONS,
+			Utility::invoke_hidden_method( new Options(), 'preference' ),
+			'The task reads the opt-in for options and nothing else.'
+		);
 	}
 }

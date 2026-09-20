@@ -230,4 +230,22 @@ class Test_Users extends Base {
 			'usermeta is one shared table, so the work belongs to the network pass.'
 		);
 	}
+
+	/**
+	 * The task names the preference that gates it.
+	 *
+	 * Invoked directly as well as through `applies()`, because xdebug does
+	 * not trace a protected method called from the parent class.
+	 *
+	 * @covers ::preference
+	 *
+	 * @return void
+	 */
+	public function test_preference_names_its_task(): void {
+		$this->assertSame(
+			Preferences::TASK_USERS,
+			Utility::invoke_hidden_method( new Users(), 'preference' ),
+			'The task reads the opt-in for user preferences and nothing else.'
+		);
+	}
 }

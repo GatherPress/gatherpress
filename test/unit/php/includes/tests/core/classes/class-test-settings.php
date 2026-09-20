@@ -3787,7 +3787,7 @@ class Test_Settings extends Base {
 	}
 
 	/**
-	 * An export leaves out only what opted out of travelling.
+	 * An export leaves out only what opted out of traveling.
 	 *
 	 * @covers ::export_settings
 	 *
