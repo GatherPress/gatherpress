@@ -79,11 +79,20 @@ class Plugin_Row {
 			return;
 		}
 
-		printf(
-			'<p><span class="dashicons dashicons-warning"></span> %s</p>',
-			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in get_message().
-			$this->get_message( $armed )
+		// Same shape core gives an unmet dependency in this cell: a wrapper
+		// for the margin, and an inline alt notice inside it. Warning rather
+		// than error, because nothing is broken.
+		echo '<div class="gatherpress-plugin-row-warning">';
+
+		wp_admin_notice(
+			$this->get_message( $armed ),
+			array(
+				'type'               => 'warning',
+				'additional_classes' => array( 'inline', 'notice-alt' ),
+			)
 		);
+
+		echo '</div>';
 	}
 
 	/**

@@ -142,9 +142,9 @@ class Test_Plugin_Row extends Base {
 		$output = $this->render( plugin_basename( GATHERPRESS_CORE_FILE ) );
 
 		$this->assertStringStartsWith(
-			'<p><span class="dashicons dashicons-warning"></span>',
+			'<div class="gatherpress-plugin-row-warning"><div class="notice notice-warning inline notice-alt">',
 			$output,
-			'It reads as one of the plugin row lines, the way the paused notice does.'
+			'Same shape core gives an unmet dependency in this cell, in warning colors.'
 		);
 		$this->assertStringContainsString(
 			'<strong>Deleting GatherPress will also delete your data.</strong>',
