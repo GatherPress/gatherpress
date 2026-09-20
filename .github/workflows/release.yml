@@ -225,6 +225,22 @@ jobs:
             --arg path "CHANGELOG.md" \
             --arg contents "$(base64 -w0 CHANGELOG.md)" \
             '[{path: $path, contents: $contents}]')
+
+          # A patch's credits file is written on the version-X.Y.Z branch, so
+          # it only ever reaches main. Carry it back when develop is missing
+          # it, which is how develop ended up without 0.35.3.json (#2311). A
+          # minor already has the file from its own bump, so this is a no-op
+          # there rather than a special case.
+          credits=".github/scripts/release/credits/${VERSION}.json"
+
+          if [ -f "${credits}" ] && ! gh api "repos/${REPO}/contents/${credits}?ref=develop" --silent 2>/dev/null; then
+            echo "develop is missing ${credits}; adding it to the rollup."
+            additions=$(jq -n \
+              --argjson additions "${additions}" \
+              --arg path "${credits}" \
+              --arg contents "$(base64 -w0 "${credits}")" \
+              '$additions + [{path: $path, contents: $contents}]')
+          fi
           deletions=$(git status --porcelain .github/changelog/ \
             | awk '$1 == "D" {print $2}' | jq -R '{path: .}' | jq -s .)
 
@@ -248,10 +264,60 @@ jobs:
             --base develop \
             --head "${branch}" \
             --title "Roll up changelog for ${VERSION}" \
-            --body "Automated rollup of \`.github/changelog/*\` entries into \`CHANGELOG.md\` as part of the ${VERSION} release. Auto-merges once checks pass; the rendered release body lives at https://github.com/${GITHUB_REPOSITORY}/releases/tag/${VERSION}. Remember the changelog parity cherry-pick to main afterward (docs/contributor/release-process.md)." \
+            --body "Automated rollup of \`.github/changelog/*\` entries into \`CHANGELOG.md\` as part of the ${VERSION} release. Auto-merges once checks pass; the rendered release body lives at https://github.com/${GITHUB_REPOSITORY}/releases/tag/${VERSION}. The matching parity PR to main is opened alongside this one and is **not** set to auto-merge." \
             --label "Skip Changelog")
 
           gh pr merge --auto --squash "${pr_url}"
+
+      - name: Open the changelog parity PR to main (stable only)
+        if: needs.prepare.outputs.is_prerelease == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          REPO: ${{ github.repository }}
+        run: |
+          # main keeps the entry files the release already consumed unless
+          # something removes them, and the next patch is cut from main: it
+          # would roll those same entries into its own release. 0.35.3 needed
+          # this by hand (#2251). Same file changes as the rollup, applied to
+          # main instead of develop.
+          branch="sync/${VERSION}-changelog-parity"
+          main_sha=$(gh api "repos/${REPO}/git/ref/heads/main" --jq '.object.sha')
+
+          gh api "repos/${REPO}/git/refs" \
+            -f ref="refs/heads/${branch}" -f sha="${main_sha}" > /dev/null
+
+          additions=$(jq -n \
+            --arg path "CHANGELOG.md" \
+            --arg contents "$(base64 -w0 CHANGELOG.md)" \
+            '[{path: $path, contents: $contents}]')
+          deletions=$(git status --porcelain .github/changelog/ \
+            | awk '$1 == "D" {print $2}' | jq -R '{path: .}' | jq -s .)
+
+          # expectedHeadOid is main's head rather than the tag's: if main has
+          # moved since the tag, this fails loudly instead of committing onto
+          # a branch that no longer matches what was released.
+          jq -n \
+            --arg query 'mutation ($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }' \
+            --arg repo "${REPO}" \
+            --arg branch "${branch}" \
+            --arg oid "${main_sha}" \
+            --arg headline "Carry the ${VERSION} changelog to main" \
+            --argjson additions "${additions}" \
+            --argjson deletions "${deletions}" \
+            '{query: $query, variables: {input: {branch: {repositoryNameWithOwner: $repo, branchName: $branch}, expectedHeadOid: $oid, message: {headline: $headline}, fileChanges: {additions: $additions, deletions: $deletions}}}}' \
+            > /tmp/parity-commit.json
+
+          gh api graphql --input /tmp/parity-commit.json > /dev/null
+
+          # No auto-merge. main is the released state, and a surprise merge
+          # there is worse than one on develop, so this waits for a human.
+          gh pr create \
+            --base main \
+            --head "${branch}" \
+            --title "Carry the ${VERSION} changelog to main" \
+            --body "Puts main in step with the ${VERSION} release: the rolled \`[${VERSION}]\` section in \`CHANGELOG.md\`, and the entry files it consumed removed. The next patch is cut from main, so leaving those entries behind means the next release rolls them a second time (#2311). Merge with a merge commit, not a squash. Not set to auto-merge on purpose." \
+            --label "Skip Changelog"
 
   # Build the distro zip via wp-scripts plugin-zip (already in package.json).
   # Same artifact for both pre-release and stable paths.

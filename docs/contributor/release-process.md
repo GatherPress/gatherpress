@@ -193,7 +193,7 @@ git push origin X.Y.Z
 
 1. Detects the tag is stable (no `-alpha.` / `-beta.` / `-rc.` suffix).
 2. Aggregates every entry file in `.github/changelog/` into a new `## [X.Y.Z] - YYYY-MM-DD` section at the top of `CHANGELOG.md`, appending `[#NNNN]` PR references, and **deletes** the entry files (dotfiles like `.gitkeep` survive, which is why the directory persists in git).
-3. Commits that rollup to a new `release/X.Y.Z` branch and **opens an auto-PR back to `develop`** (with the `Skip Changelog` label).
+3. Commits that rollup to a new `release/X.Y.Z` branch and **opens an auto-PR back to `develop`** (with the `Skip Changelog` label), carrying the version's credits file along when develop does not have it. On a stable tag it also opens **`sync/X.Y.Z-changelog-parity` against `main`** with the same changelog changes, which is not on auto-merge.
 4. Builds `gatherpress.X.Y.Z.zip` with the rolled-up `CHANGELOG.md` from step 2 in it. The tag commit's own copy predates the rollup, so the build and the wp.org deploy take the rolled file from the rollup job rather than the checkout; before this, every shipped changelog was one release behind.
 5. Creates a GitHub **Release** with the zip attached, marked as **latest**, with the `[X.Y.Z]` section as the body.
 6. Deploys to wordpress.org via the `10up/action-wordpress-plugin-deploy` action using the `SVN_USERNAME` / `SVN_PASSWORD` secrets.
@@ -228,11 +228,22 @@ Every one of these is required; skipping any of them bites the next release:
   job runs `.github/scripts/link-changelog-prs.php` immediately afterward to
   turn them into inline links. Bare markers mean that step did not run — see
   Troubleshooting.
-- [ ] **Sync the rollup state to main** (changelog parity): the auto-PR only
-  targets develop, so cherry-pick develop's rollup squash commit onto a
-  branch off main and PR it (`Sync X.Y.Z changelog rollup state to main`).
-  Without this, the next patch release cut from main re-rolls every
+- [ ] **Merge the changelog parity PR to main** (`sync/X.Y.Z-changelog-parity`,
+  "Carry the X.Y.Z changelog to main"). The tag opens it alongside the
+  rollup, with the same file changes applied to main: the rolled section and
+  the consumed entry files removed. It is deliberately **not** on auto-merge,
+  because main is the released state. Merge it with a merge commit, never a
+  squash. Without it, the next patch release cut from main re-rolls every
   already-released entry into its changelog.
+
+  If the commit step failed because main moved between the tag and the run,
+  the job says so rather than committing onto a stale branch. Rebuild it the
+  way a DIRTY rollup is rebuilt, below.
+- [ ] **Check develop has the version's credits file** at
+  `.github/scripts/release/credits/X.Y.Z.json`. A patch's file is written on
+  the `version-X.Y.Z` branch, so it only reaches main; the rollup PR carries
+  it back when develop is missing it. For a minor it is already there from
+  the bump.
 - [ ] **Release GatherPress Alpha**: merge its `version-X.Y.Z` sync PR if
   not already done, **and make sure alpha has a changelog entry file for
   `X.Y.Z` on the branch it releases from** (`.github/changelog/sync-X-Y-Z`,
