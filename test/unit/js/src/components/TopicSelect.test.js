@@ -146,15 +146,15 @@ describe( 'useTopicOptions', () => {
 		} );
 	} );
 
-	it( 'orders by relevance while searching', () => {
+	// The terms endpoint has no `relevance` orderby, so `name` is used whether
+	// or not there is a search term. `relevance` would come back as a 400.
+	it( 'always orders by name', () => {
 		mockState.queries = [];
 
 		renderHook( () => useTopicOptions( 'work', 0 ) );
 
-		expect( mockState.queries[ 0 ].query.orderby ).toBe( 'relevance' );
-	} );
+		expect( mockState.queries[ 0 ].query.orderby ).toBe( 'name' );
 
-	it( 'orders by name when not searching', () => {
 		mockState.queries = [];
 
 		renderHook( () => useTopicOptions( '', 0 ) );

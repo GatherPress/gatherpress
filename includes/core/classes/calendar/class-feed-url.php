@@ -9,9 +9,10 @@
  * term — so resolving one from a scope plus an identifier needs the dispatch
  * this file provides.
  *
- * The block that renders subscribe links and the `<link rel="alternate">` tags
- * in `<head>` both need that dispatch, which is why it lives here rather than
- * in either caller.
+ * The block that renders subscribe links needs that dispatch, which is why it
+ * lives here rather than in the block. The `<link rel="alternate">` tags in
+ * `<head>` are built separately by `Calendar\Setup` and do not pass through
+ * this resolver.
  *
  * @package GatherPress\Core\Calendar
  * @since 0.36.0
@@ -230,6 +231,10 @@ final class Feed_Url {
 	 * Venue feeds are served off the venue post's comments feed, so the ID has
 	 * to resolve to a published tax-like shadow source.
 	 *
+	 * A non-positive ID resolves to nothing before the lookup: `get_post( 0 )`
+	 * returns the global post, which would otherwise render the current venue's
+	 * feed on a venue page or inside a venue Query Loop.
+	 *
 	 * @since 0.36.0
 	 *
 	 * @param int $venue_id Venue post ID.
@@ -237,7 +242,7 @@ final class Feed_Url {
 	 * @return string|false Feed URL, or false when the ID is not a venue.
 	 */
 	protected static function venue_url( int $venue_id ): string|false {
-		$venue = get_post( $venue_id );
+		$venue = 0 < $venue_id ? get_post( $venue_id ) : null;
 
 		if (
 			! $venue instanceof WP_Post ||

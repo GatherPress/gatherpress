@@ -3,9 +3,8 @@
  * Render Subscribe to Events block.
  *
  * Resolves a calendar feed URL from the block's scope attributes and links to
- * it. The feed URL itself is built by `Calendar\Feed_Url`, so the block and the
- * `<link rel="alternate">` tags in `<head>` cannot disagree about where a feed
- * lives.
+ * it. The feed URL comes from `Calendar\Feed_Url`, so the block honors the
+ * `gatherpress_calendar_feed_url` filter.
  *
  * @package GatherPress\Core
  * @since 0.36.0

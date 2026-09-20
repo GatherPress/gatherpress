@@ -214,6 +214,28 @@ class Test_Feed_Url extends Base {
 	}
 
 	/**
+	 * Coverage for get() with the venue scope and no venue selected.
+	 *
+	 * `get_post( 0 )` returns the global post, so a venue page must still
+	 * resolve to false rather than rendering its own feed.
+	 *
+	 * @covers ::get
+	 * @covers ::resolve
+	 * @covers ::venue_url
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_scope_rejects_zero_venue_id(): void {
+		$venue = $this->mock->post( array( 'post_type' => Venue::POST_TYPE ) )->get();
+		$this->go_to( get_permalink( $venue->ID ) );
+
+		$this->assertFalse(
+			Feed_Url::get( array( 'scope' => 'venue' ) ),
+			'Failed to assert an unselected venue resolves to false on a venue page.'
+		);
+	}
+
+	/**
 	 * Coverage for get() with the topic scope.
 	 *
 	 * @covers ::get

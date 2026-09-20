@@ -112,8 +112,12 @@ jest.mock( '@wordpress/components', () => ( {
 
 jest.mock( '@wordpress/server-side-render', () => ( {
 	__esModule: true,
-	default: ( { block, attributes } ) => (
-		<div data-testid="ssr-preview" data-block={ block }>
+	default: ( { block, attributes, skipBlockSupportAttributes } ) => (
+		<div
+			data-testid="ssr-preview"
+			data-block={ block }
+			data-skip-supports={ JSON.stringify( skipBlockSupportAttributes ) }
+		>
 			{ JSON.stringify( attributes ) }
 		</div>
 	),
@@ -182,6 +186,17 @@ describe( 'Subscribe to Events edit', () => {
 		renderEdit();
 
 		expect( screen.getByTestId( 'ssr-preview' ) ).toBeInTheDocument();
+	} );
+
+	// `useBlockProps()` already puts the block supports on the editor wrapper,
+	// and the server puts them on the <ul>, so the preview must not send them
+	// again or they land twice in the editor and once on the front end.
+	it( 'skips the block support attributes in the preview', () => {
+		renderEdit();
+
+		expect(
+			screen.getByTestId( 'ssr-preview' )
+		).toHaveAttribute( 'data-skip-supports', 'true' );
 	} );
 
 	it( 'updates the scope attribute when another scope is chosen', () => {

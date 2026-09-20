@@ -83,7 +83,10 @@ export function useTopicOptions( search, topicId ) {
 				context: 'view',
 				per_page: PER_PAGE,
 				search,
-				orderby: search ? 'relevance' : 'name',
+				// The terms endpoint has no `relevance` orderby; its enum is
+				// id, include, name, slug, include_slugs, term_group, description,
+				// count. Anything else is a 400 and an empty picker.
+				orderby: 'name',
 				order: 'asc',
 			};
 

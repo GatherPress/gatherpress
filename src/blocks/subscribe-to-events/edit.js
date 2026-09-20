@@ -237,6 +237,7 @@ export default function Edit( { attributes, setAttributes } ) {
 				<ServerSideRender
 					block="gatherpress/subscribe-to-events"
 					attributes={ attributes }
+					skipBlockSupportAttributes
 				/>
 			</div>
 		</>

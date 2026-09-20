@@ -162,6 +162,29 @@ class Test_Subscribe_To_Events extends Base {
 	}
 
 	/**
+	 * Coverage for a venue scope with no venue selected.
+	 *
+	 * The docs say a scope that needs an ID renders nothing. `get_post( 0 )`
+	 * returns the global post, so a venue page must not leak its own feed.
+	 *
+	 * @return void
+	 */
+	public function test_render_venue_scope_without_a_venue(): void {
+		$venue = $this->mock->post( array( 'post_type' => Venue::POST_TYPE ) )->get();
+		$this->go_to( get_permalink( $venue->ID ) );
+
+		$output = do_blocks(
+			sprintf( '<!-- wp:%s {"scope":"venue"} /-->', self::BLOCK_NAME )
+		);
+
+		$this->assertStringNotContainsString(
+			'gatherpress-subscribe-to-events',
+			$output,
+			'A venue scope with no venue selected should render no wrapper.'
+		);
+	}
+
+	/**
 	 * Coverage for the topic scope.
 	 *
 	 * @return void
