@@ -12,6 +12,7 @@ use GatherPress\Core\Settings;
 use GatherPress\Core\Settings\Network;
 use GatherPress\Core\Uninstall\Preferences;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Preferences.
@@ -287,6 +288,35 @@ class Test_Preferences extends Base {
 		$this->assertFalse(
 			Preferences::is_enabled( Preferences::TASK_EVENTS ),
 			'A list that is switched off is not an instruction.'
+		);
+	}
+
+	/**
+	 * The network values are read from network storage.
+	 *
+	 * Invoked directly as well as through `resolve()`, because xdebug does
+	 * not trace a static helper called from its own class. Multisite only:
+	 * `get_site_option()` falls back to the options table on a single site,
+	 * so the two scopes are the same row there and cannot be told apart.
+	 *
+	 * @covers ::stored_options
+	 * @group multisite
+	 *
+	 * @return void
+	 */
+	public function test_stored_options_reads_the_scope_it_is_asked_for(): void {
+		update_site_option( Settings::OPTION_NAME, array( 'from' => 'the network' ) );
+		update_option( Settings::OPTION_NAME, array( 'from' => 'the site' ) );
+
+		$this->assertSame(
+			array( 'from' => 'the network' ),
+			Utility::invoke_hidden_static_method( Preferences::class, 'stored_options', array( true ) ),
+			'The network answer comes from network storage.'
+		);
+		$this->assertSame(
+			array( 'from' => 'the site' ),
+			Utility::invoke_hidden_static_method( Preferences::class, 'stored_options', array( false ) ),
+			'A site answers from its own.'
 		);
 	}
 }

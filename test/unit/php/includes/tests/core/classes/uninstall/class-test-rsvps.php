@@ -365,4 +365,28 @@ class Test_Rsvps extends Base {
 			'The task reads the opt-in for RSVPs and nothing else.'
 		);
 	}
+
+	/**
+	 * Events carry RSVPs with them at the network level too.
+	 *
+	 * Called directly as well as through `run()`, because xdebug does not
+	 * trace an override reached from the parent class.
+	 *
+	 * @covers ::applies_to_network
+	 *
+	 * @return void
+	 */
+	public function test_applies_to_network_follows_events(): void {
+		$this->assertFalse(
+			( new Rsvps() )->applies_to_network(),
+			'Nothing is removed until somebody opts in.'
+		);
+
+		$this->arm_uninstall( Preferences::TASK_EVENTS );
+
+		$this->assertTrue(
+			( new Rsvps() )->applies_to_network(),
+			'An RSVP whose event has been deleted is an orphan, wherever the choice was made.'
+		);
+	}
 }
