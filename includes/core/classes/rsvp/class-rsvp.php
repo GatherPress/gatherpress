@@ -171,6 +171,26 @@ final class Rsvp {
 	}
 
 	/**
+	 * Checks whether a comment ID or object is an RSVP comment.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param int|WP_Comment $comment Comment ID or comment object.
+	 *
+	 * @return bool True if the comment exists and has the RSVP comment type, false otherwise.
+	 */
+	public static function is_comment_type( int|WP_Comment $comment ): bool {
+		// Only resolve IDs: passing an object back through get_comment() would
+		// re-fire the get_comment filter these callers run from and recurse.
+		// get_comment( 0 ) also falls back to the global comment, so guard that.
+		if ( ! $comment instanceof WP_Comment ) {
+			$comment = $comment > 0 ? get_comment( $comment ) : null;
+		}
+
+		return $comment instanceof WP_Comment && self::COMMENT_TYPE === $comment->comment_type;
+	}
+
+	/**
 	 * Get RSVP information for a user and an event.
 	 *
 	 * This method retrieves RSVP information for a specific user and event, including the RSVP entry's ID,

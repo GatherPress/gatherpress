@@ -33,4 +33,9 @@ tests_add_filter(
 	}
 );
 
+// Shared fixtures used by more than one test class. PHPUnit collects test
+// files by their `class-test-` prefix and the autoloader's two layouts do not
+// reach into the tests directory, so a helper that is neither gets required.
+require_once __DIR__ . '/includes/tests/core/classes/uninstall/class-preferences-fixture.php';
+
 $gatherpress_bootstrap_instance->start();

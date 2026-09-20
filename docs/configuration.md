@@ -38,8 +38,17 @@ The settings screen is organized into tabs: **Events**, **Venues**, **RSVP**, **
 These settings choose the mapping platform and the defaults applied to newly added venue map blocks. Changing a default does not alter maps already placed in your content.
 
 - **Mapping Platform** selects **OpenStreetMap** (the default, no account needed) or **Google Maps**. Selecting Google Maps reveals a field for your Google Maps API key.
+- **Custom Tile Layer URL** and **Custom Attribution** point OpenStreetMap maps at a self-hosted or third-party XYZ tile server instead of the built-in CARTO tiles, and let you replace the credit line shown alongside the map. Leave both empty to use the defaults.
+- **CARTO API Key** is required for the default (unmodified) OpenStreetMap tiles; it's ignored once a custom tile layer URL is set.
 - **Default Render Mode** chooses between an interactive map and a static map image for new blocks.
 - **Default Zoom Level**, **Default Height**, **Default Width**, **Default Aspect Ratio**, and **Default Scale** set the initial appearance of new venue map blocks. Height and width can be left empty for automatic sizing derived from the aspect ratio.
+
+### Geocoding
+
+These settings control the address lookup service used for venue autocomplete and geocoding.
+
+- **Geocoding API URL** points at a Photon-API-compatible geocoding service — a self-hosted [Photon](https://photon.komoot.io/) instance or compatible drop-in. Leave empty to use the public Photon service.
+- **Country Code Filter** restricts geocoding results to a comma-separated list of ISO 3166-1 alpha-2 country codes (e.g. `us,ca`). Leave empty for no restriction.
 
 ### Venue permalink
 

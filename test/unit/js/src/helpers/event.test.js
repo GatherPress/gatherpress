@@ -133,7 +133,7 @@ describe( 'usePostTypeSupports', () => {
 		} );
 
 		expect(
-			usePostTypeSupports( 'gatherpress-event-date', 'gatherpress_event' )
+			usePostTypeSupports( 'gatherpress-event-date', 'gatherpress_event' ),
 		).toBe( true );
 	} );
 
@@ -146,7 +146,7 @@ describe( 'usePostTypeSupports', () => {
 		} );
 
 		expect(
-			usePostTypeSupports( 'gatherpress-event-date', 'post' )
+			usePostTypeSupports( 'gatherpress-event-date', 'post' ),
 		).toBe( false );
 	} );
 
@@ -215,13 +215,13 @@ describe( 'usePostTypeSupports', () => {
 		} );
 
 		expect(
-			usePostTypeSupports( 'gatherpress-event-date', 'gatherpress_event' )
+			usePostTypeSupports( 'gatherpress-event-date', 'gatherpress_event' ),
 		).toBe( false );
 
 		resolved = true;
 
 		expect(
-			usePostTypeSupports( 'gatherpress-event-date', 'gatherpress_event' )
+			usePostTypeSupports( 'gatherpress-event-date', 'gatherpress_event' ),
 		).toBe( true );
 	} );
 } );
@@ -849,7 +849,7 @@ describe( 'hasValidEventId', () => {
 		};
 
 		expect( hasValidEventId( selectFunc, postId, 'gatherpress_event' ) ).toBe(
-			true
+			true,
 		);
 	} );
 
@@ -1210,7 +1210,7 @@ describe( 'getEventMeta', () => {
 			],
 			getEntityRecords: ( kind, slug, query ) =>
 				( recordsByType[ slug ] ?? [] ).filter( ( record ) =>
-					query?.include?.includes( record.id )
+					query?.include?.includes( record.id ),
 				),
 		};
 	}

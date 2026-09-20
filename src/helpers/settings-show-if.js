@@ -25,17 +25,20 @@ const NAME_TEMPLATE = ( key ) => `[name="gatherpress_settings[${ key }]"]`;
 /**
  * Read the current submittable value from a form control.
  *
- * Checkboxes report their checked state as a boolean — everything else
- * (text, number, select, hidden) reports `value`. The string casts in
- * `matches()` smooth the boolean / number / string comparison.
+ * Checkboxes report what they would submit rather than their `checked`
+ * property, so a condition reads the same on both sides of the wire. PHP
+ * stores a checkbox as a bool and `Settings::evaluate_show_if()` compares
+ * `(string) $value`, which is `'1'` when on and `''` when off; reporting
+ * `true` / `false` here would compare `'true'` against `'1'` and never
+ * match. Everything else (text, number, select, hidden) reports `value`.
  *
  * @param {HTMLInputElement|HTMLSelectElement} el The input or select element.
  *
- * @return {string|boolean} The control's current value.
+ * @return {string} The control's current value.
  */
 function readControlValue( el ) {
 	if ( 'checkbox' === el.type ) {
-		return el.checked;
+		return el.checked ? el.value : '';
 	}
 
 	return el.value;
@@ -50,7 +53,7 @@ function readControlValue( el ) {
  * checkbox booleans, select strings, and numeric values compare cleanly.
  * Mirrors `Settings::evaluate_show_if()` on the server.
  *
- * @param {string|boolean}                     current  The control's current value.
+ * @param {string}                             current  The control's current value.
  * @param {string|number|boolean|Array|Object} expected The expected value(s) from the show_if declaration.
  *
  * @return {boolean} True when the current value satisfies the expectation.
@@ -147,7 +150,7 @@ function wireMarker( marker ) {
 
 	const evaluate = () => {
 		const allMatch = controllers.every( ( { key, el } ) =>
-			matches( readControlValue( el ), conditions[ key ] )
+			matches( readControlValue( el ), conditions[ key ] ),
 		);
 
 		row.classList.toggle( ROW_HIDDEN_CLASS, ! allMatch );

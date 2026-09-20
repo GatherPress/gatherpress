@@ -76,7 +76,7 @@ const PATTERNS = applyFilters( 'gatherpress.rsvpPatterns', [
 		title: __( 'RSVP Button with Modal', 'gatherpress' ),
 		description: __(
 			'An RSVP button that opens a modal — five inner-block layouts, one per RSVP status (no response, attending, waiting list, not attending, past).',
-			'gatherpress'
+			'gatherpress',
 		),
 		template: RSVP_BUTTON_WITH_MODAL_TEMPLATES.no_status,
 		statusTemplates: RSVP_BUTTON_WITH_MODAL_TEMPLATES,
@@ -101,7 +101,7 @@ const PATTERNS = applyFilters( 'gatherpress.rsvpPatterns', [
  */
 const DEFAULT_STATUS_TEMPLATES = applyFilters(
 	'gatherpress.rsvpDefaultStatusTemplates',
-	RSVP_BUTTON_WITH_MODAL_TEMPLATES
+	RSVP_BUTTON_WITH_MODAL_TEMPLATES,
 );
 
 /**
@@ -164,7 +164,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 			Object.entries( bundle ).map( ( [ status, template ] ) => [
 				status,
 				serialize( templateToBlocks( template ) ),
-			] )
+			] ),
 		);
 
 		setAttributes( {
@@ -215,7 +215,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 			hasExplicitOverride,
 			isDescendentOfQueryLoop,
 			isEventContext,
-		]
+		],
 	);
 
 	// Get the current inner blocks
@@ -227,7 +227,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	// Get event data - either from override postId or current post.
 	const { maxGuestLimit: maxNumberOfGuests, enableRsvp, enableAnonymousRsvp } = useSelect(
 		( select ) => getEventMeta( select, postId, attributes ),
-		[ postId, attributes ]
+		[ postId, attributes ],
 	);
 
 	const rsvpMode = getFromSettings( 'rsvpMode' ) ?? 'enabled';
@@ -360,7 +360,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 
 					if ( templateKey !== selectedStatus ) {
 						const blocks = templateToBlocks(
-							DEFAULT_STATUS_TEMPLATES[ templateKey ]
+							DEFAULT_STATUS_TEMPLATES[ templateKey ],
 						);
 
 						updatedSerializedBlocks[ templateKey ] =
@@ -492,7 +492,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 						icon="insert"
 						instructions={ __(
 							'Choose a pattern for the RSVP block.',
-							'gatherpress'
+							'gatherpress',
 						) }
 						patterns={ PATTERNS }
 						showStartBlank={ false }

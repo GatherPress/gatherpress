@@ -43,10 +43,10 @@ const formatEventDateTime = ( dateTimeStart, dateTimeEnd, timezone ) => {
 		const sameDayFormat = convertPHPToMomentFormat( dateFormat );
 		sameStartEndDay =
 			createMomentWithTimezone( dateTimeStart, timezone ).format(
-				sameDayFormat
+				sameDayFormat,
 			) ===
 			createMomentWithTimezone( dateTimeEnd, timezone ).format(
-				sameDayFormat
+				sameDayFormat,
 			);
 	}
 
@@ -57,8 +57,8 @@ const formatEventDateTime = ( dateTimeStart, dateTimeEnd, timezone ) => {
 		const startFormat = convertPHPToMomentFormat( fullFormat );
 		parts.push(
 			createMomentWithTimezone( dateTimeStart, timezone ).format(
-				startFormat
-			)
+				startFormat,
+			),
 		);
 	}
 
@@ -86,8 +86,8 @@ const formatEventDateTime = ( dateTimeStart, dateTimeEnd, timezone ) => {
 		const momentEndFormat = convertPHPToMomentFormat( endFormat );
 		parts.push(
 			createMomentWithTimezone( dateTimeEnd, timezone ).format(
-				momentEndFormat
-			)
+				momentEndFormat,
+			),
 		);
 	}
 
@@ -147,7 +147,7 @@ const withEventPostDateOverride = createHigherOrderComponent(
 
 			// Check if the setting is enabled and we are editing an event.
 			const postOrEventDate = getFromSettings(
-				'postOrEventDate'
+				'postOrEventDate',
 			);
 
 			if ( ! postOrEventDate || ! isEventPostType() ) {
@@ -166,7 +166,7 @@ const withEventPostDateOverride = createHigherOrderComponent(
 						timezone: datetimeStore.getTimezone(),
 					};
 				},
-				[]
+				[],
 			);
 
 			if ( ! dateTimeStart ) {
@@ -177,13 +177,13 @@ const withEventPostDateOverride = createHigherOrderComponent(
 			const displayDate = formatEventDateTime(
 				dateTimeStart,
 				dateTimeEnd,
-				timezone
+				timezone,
 			);
 
 			return <div { ...blockProps }>{ displayDate }</div>;
 		};
 	},
-	'withEventPostDateOverride'
+	'withEventPostDateOverride',
 );
 
 /**
@@ -192,5 +192,5 @@ const withEventPostDateOverride = createHigherOrderComponent(
 addFilter(
 	'editor.BlockEdit',
 	'gatherpress/with-event-post-date-override',
-	withEventPostDateOverride
+	withEventPostDateOverride,
 );

@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Assets;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Flag\Setup as Flag_Setup;
 use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
 use GatherPress\Core\Rsvp\Response\Provider_Registry;
 use GatherPress\Core\Rsvp\Response\Status;
@@ -82,6 +83,7 @@ final class Setup {
 	protected function instantiate_classes(): void {
 		Abilities::get_instance();
 		Cleanup::get_instance();
+		Flag_Setup::get_instance();
 		Form::get_instance();
 		Query::get_instance();
 		Provider_Registry::get_instance();
@@ -504,7 +506,7 @@ final class Setup {
 	 * @return string Filtered comment text.
 	 */
 	public function maybe_hide_rsvp_comment_content( string $comment_content, ?WP_Comment $comment ): string {
-		if ( null === $comment || Rsvp::COMMENT_TYPE !== $comment->comment_type ) {
+		if ( null === $comment || ! Rsvp::is_comment_type( $comment ) ) {
 			return $comment_content;
 		}
 
@@ -637,7 +639,7 @@ final class Setup {
 	 * @return string[] Empty array for RSVP comments, original array otherwise.
 	 */
 	public function remove_rsvp_notification_emails( array $emails, string $comment_id ): array {
-		if ( get_comment_type( (int) $comment_id ) !== Rsvp::COMMENT_TYPE ) {
+		if ( ! Rsvp::is_comment_type( (int) $comment_id ) ) {
 			return $emails;
 		}
 

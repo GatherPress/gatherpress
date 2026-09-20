@@ -271,3 +271,11 @@
 		}
 	}
 }
+
+/* Uninstall warning in the GatherPress row on the Plugins screen. Core gives
+   its own dependency notices in this cell a 1em top margin through
+   `.requires`; this matches it so the warning sits where those do. The notice
+   inside carries core's warning palette on its own. */
+.plugins #the-list .gatherpress-plugin-row-warning {
+	margin-top: 1em;
+}
