@@ -164,7 +164,10 @@ add_filter( 'gatherpress_venue_post_type', function( $post_type, $event_post_typ
 ### Database Schema
 
 - Custom post types: `gatherpress_event`, `gatherpress_venue`
-- Custom taxonomy: `_gatherpress_rsvp_status`
+- Custom taxonomies on RSVP comments:
+    - `_gatherpress_rsvp_status`: the response status, one of the `Rsvp\Response\Status` enum cases
+    - `_gatherpress_rsvp_provider`: the identity source, one per `Rsvp\Response\Provider\Base` subclass
+    - `_gatherpress_rsvp_flag`: yes/no markers, one per `Rsvp\Flag\Base` subclass (see `docs/developer/rsvp/README.md`)
 - Uses WordPress comments system for RSVP storage
 - Venue data stored as post meta
 
@@ -212,16 +215,18 @@ When working with this codebase:
 
 Apply to PHP PHPDoc blocks and JS JSDoc blocks alike.
 
-- **Never write `@since 1.0.0`**. 1.0.0 has not been released — every `@since` must resolve to a tag that exists in `git tag`. The tag floor is `0.27.0`; the current development line is `0.34.0`. New symbols added on `develop` past the latest tag take the next planned release version (i.e. whatever `0.34.0` resolves to today).
-    - ✅ Good: `@since 0.33.0` (filter shipped in 0.33.0 stable).
-    - ✅ Good: `@since 0.34.0` for anything introduced in the current dev cycle.
-    - ❌ Bad: `@since 1.0.0`, `@since unreleased`, `@since TBD`.
-- **Derive `@since` from git history, not memory.** When adding a new symbol, set `@since` to the target release. When touching an existing symbol whose `@since` looks wrong, verify against history before fixing:
+- **A new symbol gets `@since TBD`.** Which release it ships in is not knowable while the work is in flight: a fix written on `develop` may go out in the next minor, or be cherry-picked into a patch release first. `npm run version:bump` resolves every `TBD` to the version being released, on the branch that is releasing it, so the patch case is right without anyone editing docblocks by hand. Pre-release bumps leave `TBD` alone, because an alpha is not the version a symbol shipped in.
+    - ✅ Good: `@since TBD` for anything new, on `develop` or on a patch branch. This covers every PHP and JS file the plugin owns, tests included, not just `includes/` and `src/`.
+    - ✅ Good: `@since 0.33.0` on an existing symbol that shipped in 0.33.0 stable.
+    - ❌ Bad: `@since 1.0.0`, `@since unreleased`, and any hand-written version on a symbol that has not shipped.
+    - The `@since tags` workflow fails a pull request into `develop` that adds a literal version. Correcting an existing tag is fine when the old line goes in the same change; the `Skip Since Check` label is the way out when a literal version is genuinely right.
+- **Every other `@since` must resolve to a tag that exists in `git tag`.** The tag floor is `0.27.0`.
+- **Derive `@since` from git history, not memory.** When touching an existing symbol whose `@since` looks wrong, verify against history before fixing:
     - Find the introducing commit: `git log --all --reverse -G "['\"]hook_name['\"]" --format=%H | head -1` for hooks, `git log --all --reverse -G "function method_name" -- path/to/file.php --format=%H | head -1` for methods.
     - Resolve to the first containing tag: `git describe --contains <sha>`.
     - Strip pre-release suffixes — `0.33.0-alpha.1` → `@since 0.33.0`. The `@since` tag tracks the **stable base version**, not the alpha/beta/rc the symbol first landed on.
     - Floor anything older than `0.27.0` to `0.27.0`.
-    - Commits not yet in any tag map to the next release (currently `0.34.0`).
+    - A commit not yet in any tag has no answer to give: that is what `TBD` is for.
 - **Signature changes after introduction don't move `@since`.** If a filter shipped in 0.30.0 and grew a third `@param` in 0.31.0, the docblock stays `@since 0.30.0`. Document the parameter evolution in a separate sentence or `@since` note inside the param's description — matches WordPress core convention.
 - **Hook-name search must require quotes.** A PHP variable named `$gatherpress_template_path` shares a token with the filter `'gatherpress_template_path'`. When dating a hook from history, the search pattern needs the quote chars: `-G "['\"]hook_name['\"]"`. Bare-word matching picks up unrelated commits and dates the hook too early.
 - **Canonical docblock shape** — short description first, then `@since` separated by a blank `* ` line, then the `@param` group separated by another blank `* ` line, then `@return` separated by another blank `* ` line:

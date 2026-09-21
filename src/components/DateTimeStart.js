@@ -54,7 +54,7 @@ const DateTimeStart = () => {
 		( select ) =>
 			Boolean(
 				select( 'core/editor' ).getEditedPostAttribute( 'meta' )
-					?.gatherpress_is_all_day
+					?.gatherpress_is_all_day,
 			),
 		[],
 	);

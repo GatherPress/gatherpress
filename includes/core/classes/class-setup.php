@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
 use GatherPress\Core\Admin\Notices\Setup as Notices_Setup;
+use GatherPress\Core\Admin\Plugin_Row;
 use GatherPress\Core\Traits\Singleton;
 use WP_Site;
 
@@ -73,6 +74,7 @@ final class Setup {
 		Geocoding::get_instance();
 		Import::get_instance();
 		Notices_Setup::get_instance();
+		Plugin_Row::get_instance();
 		Rsvp\Setup::get_instance();
 		Settings::get_instance();
 		Site_Health::get_instance();

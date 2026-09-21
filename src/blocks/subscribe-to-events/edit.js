@@ -14,7 +14,7 @@ import {
 import { useMemo, useState } from '@wordpress/element';
 import { useDebounce } from '@wordpress/compose';
 import { __ } from '@wordpress/i18n';
-import ServerSideRender from '@wordpress/server-side-render';
+import { ServerSideRender } from '@wordpress/server-side-render';
 
 /**
  * Internal dependencies
@@ -90,7 +90,7 @@ function VenueSelect( { value, onChange } ) {
 		search,
 		value,
 		'postType',
-		getVenuePostType()
+		getVenuePostType(),
 	);
 
 	const setSearchDebounced = useDebounce( setSearch, 300 );
@@ -138,7 +138,7 @@ export default function Edit( { attributes, setAttributes } ) {
 				label: slug,
 				value: slug,
 			} ) ),
-		[]
+		[],
 	);
 
 	const blockProps = useBlockProps();
@@ -180,7 +180,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							<VenueSelect
 								value={ venueId }
 								onChange={ ( value ) =>
-									setAttributes( { venueId: value ?? 0 } )
+									setAttributes( { venueId: null === value ? 0 : Number( value ) } )
 								}
 							/>
 						) }

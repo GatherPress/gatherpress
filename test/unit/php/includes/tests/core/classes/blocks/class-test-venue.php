@@ -1075,17 +1075,19 @@ class Test_Venue extends Base {
 	 * @param array<string, mixed> $post_args Arguments for the selected post.
 	 * @param string               $type      The sourcePostType the block names.
 	 * @param bool                 $expected  Whether an anonymous viewer gets the inner blocks.
+	 * @param string               $variant   Optional. 'revision' or 'autosave' to wrap the post.
 	 *
 	 * @return void
 	 */
-	public function test_selected_source_follows_visibility( array $post_args, string $type, bool $expected ): void {
+	public function test_selected_source_follows_visibility(
+		array $post_args,
+		string $type,
+		bool $expected,
+		string $variant = ''
+	): void {
 		wp_set_current_user( 0 );
 
-		$selected_id = $this->factory->post->create( $post_args );
-
-		if ( 'revision' === $type ) {
-			$selected_id = (int) wp_save_post_revision( $selected_id );
-		}
+		$selected_id = $this->make_source_post( $post_args, $variant );
 
 		$block_instance = new WP_Block(
 			array(
@@ -1120,7 +1122,7 @@ class Test_Venue extends Base {
 	/**
 	 * Data provider for selected source visibility.
 	 *
-	 * @return array<string, array{0: array<string, mixed>, 1: string, 2: bool}>
+	 * @return array<string, array{0: array<string, mixed>, 1: string, 2: bool, 3?: string}>
 	 */
 	public function data_selected_source_visibility(): array {
 		return array(
@@ -1161,7 +1163,36 @@ class Test_Venue extends Base {
 				'post',
 				false,
 			),
-			'a revision'               => array( array( 'post_type' => 'gatherpress_venue' ), 'revision', false ),
+			'a published non-venue'    => array( array( 'post_type' => 'post' ), 'post', false ),
+			'a revision'               => array(
+				array( 'post_type' => 'gatherpress_venue' ),
+				'revision',
+				false,
+				'revision',
+			),
+			'an autosave'              => array(
+				array( 'post_type' => 'gatherpress_venue' ),
+				'revision',
+				false,
+				'autosave',
+			),
+			'pending venue'            => array(
+				array(
+					'post_type'   => 'gatherpress_venue',
+					'post_status' => 'pending',
+				),
+				'gatherpress_venue',
+				false,
+			),
+			'scheduled venue'          => array(
+				array(
+					'post_type'   => 'gatherpress_venue',
+					'post_status' => 'future',
+					'post_date'   => '2099-01-01 00:00:00',
+				),
+				'gatherpress_venue',
+				false,
+			),
 			'password-protected venue' => array(
 				array(
 					'post_type'     => 'gatherpress_venue',
@@ -1215,5 +1246,293 @@ class Test_Venue extends Base {
 		);
 
 		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * A source named by the postId attribute renders only when the viewer
+	 * could open it directly, on the same terms as a selected source.
+	 *
+	 * @covers ::get_source_post
+	 * @covers ::get_viewable_source_post
+	 *
+	 * @dataProvider data_selected_source_visibility
+	 *
+	 * @param array<string, mixed> $post_args Arguments for the post.
+	 * @param string               $type      The sourcePostType the block names.
+	 * @param bool                 $expected  Whether an anonymous viewer gets the inner blocks.
+	 * @param string               $variant   Optional. 'revision' or 'autosave' to wrap the post.
+	 *
+	 * @return void
+	 */
+	public function test_post_id_source_follows_visibility(
+		array $post_args,
+		string $type,
+		bool $expected,
+		string $variant = ''
+	): void {
+		wp_set_current_user( 0 );
+
+		$post_id = $this->make_source_post( $post_args, $variant );
+
+		$result = Venue_Block::get_instance()->render_inner_blocks(
+			$this->make_venue_block(
+				array(
+					'postId'         => $post_id,
+					'sourcePostType' => $type,
+				)
+			)
+		);
+
+		if ( $expected ) {
+			$this->assertStringContainsString( 'Inner content', (string) $result );
+		} else {
+			$this->assertNull( $result );
+		}
+	}
+
+	/**
+	 * An event only leads to its venue when the viewer could open the event.
+	 *
+	 * @covers ::get_source_post
+	 *
+	 * @return void
+	 */
+	public function test_event_source_follows_event_visibility(): void {
+		$venue_id  = $this->factory->post->create(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'venue-of-a-private-event',
+			)
+		);
+		$term_slug = ( new Venue( $venue_id ) )->get_term_slug();
+		$event_id  = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'private',
+			)
+		);
+
+		wp_insert_term( 'Venue of a private event', Venue::TAXONOMY, array( 'slug' => $term_slug ) );
+		wp_set_post_terms( $event_id, $term_slug, Venue::TAXONOMY );
+
+		$block = $this->make_venue_block( array( 'postId' => $event_id ) );
+
+		wp_set_current_user( 0 );
+		$anonymous = Venue_Block::get_instance()->render_inner_blocks( $block );
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$reader = Venue_Block::get_instance()->render_inner_blocks( $block );
+
+		wp_set_current_user( 0 );
+
+		$this->assertNull(
+			$anonymous,
+			'Failed to assert a private event does not lead an anonymous viewer to its venue.'
+		);
+		$this->assertStringContainsString(
+			'Inner content',
+			(string) $reader,
+			'Failed to assert a viewer who can read the event gets its venue.'
+		);
+	}
+
+	/**
+	 * Coverage for get_viewable_source_post returning nothing without a post.
+	 *
+	 * @covers ::get_viewable_source_post
+	 *
+	 * @return void
+	 */
+	public function test_get_viewable_source_post_without_a_post(): void {
+		$this->assertNull(
+			Utility::invoke_hidden_method(
+				Venue_Block::get_instance(),
+				'get_viewable_source_post',
+				array( null, Venue::POST_TYPE )
+			)
+		);
+	}
+
+	/**
+	 * Coverage for get_viewable_source_post refusing a post of another type
+	 * than the block renders.
+	 *
+	 * @covers ::get_viewable_source_post
+	 *
+	 * @return void
+	 */
+	public function test_get_viewable_source_post_refuses_another_type(): void {
+		$venue = get_post( $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) ) );
+
+		$this->assertNull(
+			Utility::invoke_hidden_method(
+				Venue_Block::get_instance(),
+				'get_viewable_source_post',
+				array( $venue, 'post' )
+			)
+		);
+	}
+
+	/**
+	 * Coverage for get_viewable_source_post refusing a type that is not a
+	 * shadow source.
+	 *
+	 * @covers ::get_viewable_source_post
+	 *
+	 * @return void
+	 */
+	public function test_get_viewable_source_post_refuses_a_type_that_is_no_source(): void {
+		$post = get_post( $this->factory->post->create() );
+
+		$this->assertNull(
+			Utility::invoke_hidden_method(
+				Venue_Block::get_instance(),
+				'get_viewable_source_post',
+				array( $post, 'post' )
+			)
+		);
+	}
+
+	/**
+	 * Coverage for get_viewable_source_post refusing a password-protected post.
+	 *
+	 * @covers ::get_viewable_source_post
+	 *
+	 * @return void
+	 */
+	public function test_get_viewable_source_post_refuses_a_protected_post(): void {
+		$venue = get_post(
+			$this->factory->post->create(
+				array(
+					'post_type'     => Venue::POST_TYPE,
+					'post_password' => 'secret',
+				)
+			)
+		);
+
+		$this->assertNull(
+			Utility::invoke_hidden_method(
+				Venue_Block::get_instance(),
+				'get_viewable_source_post',
+				array( $venue, Venue::POST_TYPE )
+			)
+		);
+	}
+
+	/**
+	 * Coverage for get_viewable_source_post refusing a post the viewer cannot
+	 * open, and returning it to a viewer who can.
+	 *
+	 * @covers ::get_viewable_source_post
+	 *
+	 * @return void
+	 */
+	public function test_get_viewable_source_post_follows_read_access(): void {
+		$venue = get_post(
+			$this->factory->post->create(
+				array(
+					'post_type'   => Venue::POST_TYPE,
+					'post_status' => 'draft',
+				)
+			)
+		);
+		$block = Venue_Block::get_instance();
+		$args  = array( $venue, Venue::POST_TYPE );
+
+		wp_set_current_user( 0 );
+		$anonymous = Utility::invoke_hidden_method( $block, 'get_viewable_source_post', $args );
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$reader = Utility::invoke_hidden_method( $block, 'get_viewable_source_post', $args );
+
+		wp_set_current_user( 0 );
+
+		$this->assertNull( $anonymous, 'Failed to assert a draft is refused to an anonymous viewer.' );
+		$this->assertSame( $venue, $reader, 'Failed to assert a draft is returned to a viewer who can read it.' );
+	}
+
+	/**
+	 * Coverage for get_viewable_source_post returning a published source.
+	 *
+	 * @covers ::get_viewable_source_post
+	 *
+	 * @return void
+	 */
+	public function test_get_viewable_source_post_returns_a_published_source(): void {
+		$venue = get_post( $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) ) );
+
+		wp_set_current_user( 0 );
+
+		$this->assertSame(
+			$venue,
+			Utility::invoke_hidden_method(
+				Venue_Block::get_instance(),
+				'get_viewable_source_post',
+				array( $venue, Venue::POST_TYPE )
+			)
+		);
+	}
+
+	/**
+	 * Create the post a selector points at.
+	 *
+	 * @param array<string, mixed> $post_args Arguments for the post.
+	 * @param string               $variant   Optional. 'revision' or 'autosave'.
+	 *
+	 * @return int The post, revision, or autosave ID.
+	 */
+	private function make_source_post( array $post_args, string $variant ): int {
+		$post_id = $this->factory->post->create( $post_args );
+
+		if ( 'revision' === $variant ) {
+			return (int) wp_save_post_revision( $post_id );
+		}
+
+		if ( 'autosave' === $variant ) {
+			$author_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+
+			wp_set_current_user( $author_id );
+
+			$autosave_id = wp_create_post_autosave(
+				array(
+					'post_ID'      => $post_id,
+					'post_content' => 'Autosaved content',
+					'post_type'    => get_post_type( $post_id ),
+				)
+			);
+
+			wp_set_current_user( 0 );
+
+			return (int) $autosave_id;
+		}
+
+		return $post_id;
+	}
+
+	/**
+	 * Build a venue block with one paragraph inside.
+	 *
+	 * @param array<string, mixed> $attrs The venue block attributes.
+	 *
+	 * @return WP_Block The block instance.
+	 */
+	private function make_venue_block( array $attrs ): WP_Block {
+		return new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue',
+				'attrs'        => $attrs,
+				'innerBlocks'  => array(
+					array(
+						'blockName'    => 'core/paragraph',
+						'attrs'        => array(),
+						'innerBlocks'  => array(),
+						'innerHTML'    => '<p>Inner content</p>',
+						'innerContent' => array( '<p>Inner content</p>' ),
+					),
+				),
+				'innerHTML'    => '',
+				'innerContent' => array( null ),
+			)
+		);
 	}
 }

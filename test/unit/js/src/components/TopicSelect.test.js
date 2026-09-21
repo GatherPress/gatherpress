@@ -57,7 +57,7 @@ jest.mock( '@wordpress/components', () => ( {
 			{ options.map( ( option ) => (
 				<button
 					key={ option.value }
-					onClick={ () => onChange( option.value ) }
+					onClick={ () => onChange( String( option.value ) ) }
 				>
 					{ option.label }
 				</button>
@@ -92,8 +92,8 @@ describe( 'toTopicOptions', () => {
 					{ id: 1, name: 'Workshops' },
 					{ id: 2, name: 'Meetups' },
 				],
-				null
-			)
+				null,
+			),
 		).toEqual( [
 			{ value: 1, label: 'Workshops' },
 			{ value: 2, label: 'Meetups' },
@@ -113,7 +113,7 @@ describe( 'toTopicOptions', () => {
 	it( 'keeps the current selection visible when the search excludes it', () => {
 		const options = toTopicOptions(
 			[ { id: 2, name: 'Meetups' } ],
-			{ id: 1, name: 'Workshops' }
+			{ id: 1, name: 'Workshops' },
 		);
 
 		expect( options ).toEqual( [
@@ -125,7 +125,7 @@ describe( 'toTopicOptions', () => {
 	it( 'does not duplicate the selection when it is already listed', () => {
 		const options = toTopicOptions(
 			[ { id: 1, name: 'Workshops' } ],
-			{ id: 1, name: 'Workshops' }
+			{ id: 1, name: 'Workshops' },
 		);
 
 		expect( options ).toEqual( [ { value: 1, label: 'Workshops' } ] );
@@ -222,6 +222,9 @@ describe( 'TopicSelect', () => {
 		fireEvent.click( screen.getByText( 'Workshops' ) );
 
 		expect( onChange ).toHaveBeenCalledWith( 1 );
+
+		fireEvent.click( screen.getByText( 'clear' ) );
+		expect( onChange ).toHaveBeenCalledWith( null );
 	} );
 
 	it( 'reports a cleared selection as null', () => {
@@ -248,7 +251,7 @@ describe( 'TopicSelect', () => {
 		} );
 
 		expect(
-			mockState.queries.some( ( { query } ) => 'work' === query.search )
+			mockState.queries.some( ( { query } ) => 'work' === query.search ),
 		).toBe( true );
 	} );
 } );

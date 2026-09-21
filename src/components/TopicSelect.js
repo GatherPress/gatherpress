@@ -104,14 +104,14 @@ export function useTopicOptions( search, topicId ) {
 				] ),
 			};
 		},
-		[ search, topicId ]
+		[ search, topicId ],
 	);
 
 	// `getEntityRecords` hands back the same array while a query is unchanged,
 	// so this only rebuilds when the records or the selection actually move.
 	const topicOptions = useMemo(
 		() => toTopicOptions( topics, selected ),
-		[ topics, selected ]
+		[ topics, selected ],
 	);
 
 	return { topicOptions, isResolving };
@@ -152,7 +152,9 @@ export default function TopicSelect( {
 			help={ help }
 			value={ value || null }
 			options={ topicOptions }
-			onChange={ onChange }
+			onChange={ ( selected ) =>
+				onChange( null === selected ? null : Number( selected ) )
+			}
 			onFilterValueChange={ setSearchDebounced }
 		/>
 	);

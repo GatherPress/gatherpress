@@ -75,7 +75,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 			}
 			return { enableRsvp: true };
 		},
-		[ postId, attributes, hasExplicitOverride, isDescendentOfQueryLoop, isEventContext ]
+		[ postId, attributes, hasExplicitOverride, isDescendentOfQueryLoop, isEventContext ],
 	);
 
 	// Check if block has a valid event connection. An explicit override
@@ -93,7 +93,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 			hasExplicitOverride,
 			isDescendentOfQueryLoop,
 			isEventContext,
-		]
+		],
 	);
 
 	const rsvpMode = getFromSettings( 'rsvpMode' ) ?? 'enabled';

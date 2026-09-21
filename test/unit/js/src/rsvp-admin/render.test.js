@@ -57,11 +57,11 @@ describe( 'ResponseFilter', () => {
 				statuses={ STATUSES }
 				selected={ [] }
 				onChange={ () => {} }
-			/>
+			/>,
 		);
 
 		expect(
-			screen.getByLabelText( 'Filter by response: all' )
+			screen.getByLabelText( 'Filter by response: all' ),
 		).toBeInTheDocument();
 	} );
 
@@ -71,11 +71,11 @@ describe( 'ResponseFilter', () => {
 				statuses={ STATUSES }
 				selected={ [ 'attending', 'waiting_list' ] }
 				onChange={ () => {} }
-			/>
+			/>,
 		);
 
 		expect(
-			screen.getByLabelText( 'Filter by response: 2 selected' )
+			screen.getByLabelText( 'Filter by response: 2 selected' ),
 		).toHaveTextContent( '2' );
 	} );
 
@@ -85,7 +85,7 @@ describe( 'ResponseFilter', () => {
 				statuses={ STATUSES }
 				selected={ [] }
 				onChange={ () => {} }
-			/>
+			/>,
 		);
 
 		await clickSettled( screen.getByLabelText( 'Filter by response: all' ) );
@@ -93,7 +93,7 @@ describe( 'ResponseFilter', () => {
 		// One await for the popover to mount, then the rest synchronously: a
 		// findBy* per status spends its own timeout each and blows the budget.
 		expect(
-			await screen.findByLabelText( STATUSES[ 0 ].label )
+			await screen.findByLabelText( STATUSES[ 0 ].label ),
 		).toBeInTheDocument();
 
 		STATUSES.slice( 1 ).forEach( ( status ) => {
@@ -109,7 +109,7 @@ describe( 'ResponseFilter', () => {
 				statuses={ STATUSES }
 				selected={ [] }
 				onChange={ onChange }
-			/>
+			/>,
 		);
 
 		await clickSettled( screen.getByLabelText( 'Filter by response: all' ) );
@@ -126,11 +126,11 @@ describe( 'ResponseFilter', () => {
 				statuses={ STATUSES }
 				selected={ [ 'attending', 'waiting_list' ] }
 				onChange={ onChange }
-			/>
+			/>,
 		);
 
 		await clickSettled(
-			screen.getByLabelText( 'Filter by response: 2 selected' )
+			screen.getByLabelText( 'Filter by response: 2 selected' ),
 		);
 		await clickSettled( await screen.findByLabelText( 'Attending' ) );
 
@@ -167,10 +167,10 @@ describe( 'Filters', () => {
 
 		expect( screen.getByLabelText( 'Filter by event' ) ).toBeInTheDocument();
 		expect(
-			screen.getByLabelText( 'Filter by response: all' )
+			screen.getByLabelText( 'Filter by response: all' ),
 		).toBeInTheDocument();
 		expect(
-			screen.getByRole( 'button', { name: 'Filter' } )
+			screen.getByRole( 'button', { name: 'Filter' } ),
 		).toBeInTheDocument();
 	} );
 
@@ -182,11 +182,11 @@ describe( 'Filters', () => {
 
 	it( 'reflects responses carried in from the request', async () => {
 		await renderSettled(
-			<Filters { ...defaults } initialResponses={ [ 'attending' ] } />
+			<Filters { ...defaults } initialResponses={ [ 'attending' ] } />,
 		);
 
 		expect(
-			screen.getByLabelText( 'Filter by response: Attending' )
+			screen.getByLabelText( 'Filter by response: Attending' ),
 		).toBeInTheDocument();
 	} );
 
@@ -203,7 +203,7 @@ describe( 'Filters', () => {
 		await clickSettled( await screen.findByLabelText( 'Not Attending' ) );
 
 		expect(
-			screen.getByLabelText( 'Filter by response: Not Attending' )
+			screen.getByLabelText( 'Filter by response: Not Attending' ),
 		).toBeInTheDocument();
 
 		await pressFilter();

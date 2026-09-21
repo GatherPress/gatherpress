@@ -9,7 +9,7 @@
 namespace GatherPress\Tests\Core\Rsvp;
 
 use GatherPress\Core\Event;
-use GatherPress\Core\Rsvp\Check_In;
+use GatherPress\Core\Rsvp\Flag\Check_In;
 use GatherPress\Core\Rsvp\List_Table;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
@@ -637,7 +637,7 @@ class Test_List_Table extends Base {
 			'Failed to assert attendee column contains Check in action for approved, not checked-in RSVP.'
 		);
 
-		Check_In::get_instance()->check_in( (int) $this->rsvp['comment_ID'] );
+		( new Check_In( (int) $this->rsvp['comment_ID'] ) )->add();
 		$attendee_col = $this->list_table->column_attendee( $this->rsvp );
 
 		$this->assertStringContainsString(
@@ -651,7 +651,7 @@ class Test_List_Table extends Base {
 			'Failed to assert attendee column does not contain Check in action for already checked-in RSVP.'
 		);
 
-		Check_In::get_instance()->uncheck_in( (int) $this->rsvp['comment_ID'] );
+		( new Check_In( (int) $this->rsvp['comment_ID'] ) )->remove();
 	}
 
 	/**
@@ -928,7 +928,7 @@ class Test_List_Table extends Base {
 			'Failed to assert checked-in column shows a dash before check-in.'
 		);
 
-		Check_In::get_instance()->check_in( (int) $this->rsvp['comment_ID'] );
+		( new Check_In( (int) $this->rsvp['comment_ID'] ) )->add();
 
 		$this->assertSame(
 			__( 'Yes', 'gatherpress' ),
@@ -972,7 +972,7 @@ class Test_List_Table extends Base {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
 		$rsvp_id  = (int) $this->rsvp['comment_ID'];
-		$check_in = Check_In::get_instance();
+		$check_in = new Check_In( $rsvp_id );
 
 		$_REQUEST['_wpnonce']            = wp_create_nonce( Rsvp::COMMENT_TYPE );
 		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
@@ -981,7 +981,7 @@ class Test_List_Table extends Base {
 		$this->list_table->process_bulk_action();
 
 		$this->assertTrue(
-			$check_in->is_checked_in( $rsvp_id ),
+			$check_in->has(),
 			'Failed to assert the check_in bulk action records an arrival.'
 		);
 
@@ -990,7 +990,7 @@ class Test_List_Table extends Base {
 		$this->list_table->process_bulk_action();
 
 		$this->assertFalse(
-			$check_in->is_checked_in( $rsvp_id ),
+			$check_in->has(),
 			'Failed to assert the uncheck_in bulk action removes the arrival.'
 		);
 

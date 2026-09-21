@@ -98,7 +98,7 @@ jest.mock( '@wordpress/components', () => ( {
 			{ options.map( ( option ) => (
 				<button
 					key={ option.value }
-					onClick={ () => onChange( option.value ) }
+					onClick={ () => onChange( String( option.value ) ) }
 				>
 					{ `${ label }:${ option.label }` }
 				</button>
@@ -112,7 +112,7 @@ jest.mock( '@wordpress/components', () => ( {
 
 jest.mock( '@wordpress/server-side-render', () => ( {
 	__esModule: true,
-	default: ( { block, attributes, skipBlockSupportAttributes } ) => (
+	ServerSideRender: ( { block, attributes, skipBlockSupportAttributes } ) => (
 		<div
 			data-testid="ssr-preview"
 			data-block={ block }
@@ -175,7 +175,7 @@ function renderEdit( attributes = {} ) {
 				...attributes,
 			} }
 			setAttributes={ setAttributes }
-		/>
+		/>,
 	);
 
 	return { setAttributes, ...result };
@@ -195,7 +195,7 @@ describe( 'Subscribe to Events edit', () => {
 		renderEdit();
 
 		expect(
-			screen.getByTestId( 'ssr-preview' )
+			screen.getByTestId( 'ssr-preview' ),
 		).toHaveAttribute( 'data-skip-supports', 'true' );
 	} );
 
@@ -203,7 +203,7 @@ describe( 'Subscribe to Events edit', () => {
 		const { setAttributes } = renderEdit();
 
 		fireEvent.click(
-			screen.getByRole( 'button', { name: 'Events in one topic' } )
+			screen.getByRole( 'button', { name: 'Events in one topic' } ),
 		);
 
 		expect( setAttributes ).toHaveBeenCalledWith( { scope: 'topic' } );
@@ -235,7 +235,7 @@ describe( 'Subscribe to Events edit', () => {
 		// The archive panel still renders; the select has only its Default entry.
 		expect( screen.getByText( 'Which events?' ) ).toBeInTheDocument();
 		expect(
-			screen.getAllByRole( 'option' ).map( ( option ) => option.value )
+			screen.getAllByRole( 'option' ).map( ( option ) => option.value ),
 		).toEqual( [ '' ] );
 
 		mockState.eventPostTypes = [ 'gatherpress_event' ];
@@ -248,7 +248,7 @@ describe( 'Subscribe to Events edit', () => {
 
 		expect( preview ).toHaveAttribute(
 			'data-block',
-			'gatherpress/subscribe-to-events'
+			'gatherpress/subscribe-to-events',
 		);
 		expect( preview ).toHaveTextContent( '"venueId":7' );
 	} );
@@ -268,7 +268,7 @@ describe( 'Subscribe to Events edit', () => {
 		renderEdit( { scope: 'archive' } );
 
 		expect(
-			screen.getByRole( 'option', { name: 'gatherpress_conference' } )
+			screen.getByRole( 'option', { name: 'gatherpress_conference' } ),
 		).toBeInTheDocument();
 
 		mockState.eventPostTypes = [ 'gatherpress_event' ];
@@ -290,13 +290,13 @@ describe( 'Subscribe to Events edit', () => {
 		const { setAttributes } = renderEdit( { scope: 'venue' } );
 
 		fireEvent.click(
-			screen.getByRole( 'button', { name: 'Venue:City Library' } )
+			screen.getByRole( 'button', { name: 'Venue:City Library' } ),
 		);
 
 		expect( setAttributes ).toHaveBeenCalledWith( { venueId: 9 } );
 
 		fireEvent.click(
-			screen.getByRole( 'button', { name: 'Venue:clear' } )
+			screen.getByRole( 'button', { name: 'Venue:clear' } ),
 		);
 
 		expect( setAttributes ).toHaveBeenCalledWith( { venueId: 0 } );
@@ -318,7 +318,7 @@ describe( 'Subscribe to Events edit', () => {
 		const { setAttributes } = renderEdit();
 
 		fireEvent.click(
-			screen.getByRole( 'button', { name: 'Subscribe link only' } )
+			screen.getByRole( 'button', { name: 'Subscribe link only' } ),
 		);
 
 		expect( setAttributes ).toHaveBeenCalledWith( { linkFormat: 'webcal' } );

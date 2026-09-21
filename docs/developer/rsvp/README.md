@@ -159,6 +159,150 @@ inferring `user` from a real user ID and `email` from a valid author email when
 no term is present, so responses written by paths that don't stamp it (the open
 RSVP form) still resolve.
 
+## RSVP flags
+
+Since 0.36.0 an RSVP can carry **flags**: yes/no markers such as "this person
+checked in" or "this person walked in without an RSVP". A flag is a term in the
+`_gatherpress_rsvp_flag` taxonomy attached to the RSVP comment. Its presence
+means yes and its absence means no, so existing RSVPs need no backfill.
+
+Each flag is a class that extends `GatherPress\Core\Rsvp\Flag\Base` and
+declares its slug, much as a settings tab extends `GatherPress\Core\Settings\Base`.
+An instance wraps one RSVP, the way `new Token( $comment_id )` does. GatherPress
+and companion plugins share the one taxonomy, so anything that needs yes/no
+state on an RSVP should define a flag rather than register a taxonomy of its
+own.
+
+### The flag classes
+
+- **`GatherPress\Core\Rsvp\Flag\Base`**: the abstract class a flag extends. It
+  stores, reads, and counts the flag, and fires the flag hooks.
+- **`GatherPress\Core\Rsvp\Flag\Check_In`**: the `checked-in` flag, the first
+  one GatherPress ships.
+- **`GatherPress\Core\Rsvp\Flag\Setup`**: what belongs to every flag rather
+  than one. It registers the taxonomy, reads all flags on an RSVP, and sweeps
+  them when the RSVP is deleted.
+
+### Adding a flag
+
+Create a class that extends `Base` and declares the slug in its `SLUG`
+constant:
+
+```php
+<?php
+
+namespace My_Plugin\Flag;
+
+use GatherPress\Core\Rsvp\Flag\Base;
+
+class Walk_In extends Base {
+	public const SLUG = 'my-plugin-walk-in';
+}
+```
+
+That is the whole flag. It has no hooks of its own, so it needs no
+bootstrapping. Build one around an RSVP wherever you need it:
+
+```php
+use My_Plugin\Flag\Walk_In;
+
+$walk_in = new Walk_In( $rsvp_id );
+
+$walk_in->add();    // true once the RSVP carries the flag.
+$walk_in->has();    // true.
+$walk_in->remove(); // true once the RSVP no longer carries it.
+
+Walk_In::count( $event_id ); // Approved RSVPs on the event with the flag.
+```
+
+### The methods
+
+| Method | Returns | Purpose |
+|---|---|---|
+| `new Flag( int $rsvp_id )` | | Wraps one RSVP. An ID that is not an RSVP comment gives a flag that refuses every write. |
+| `add()` | `bool` | Adds the flag, leaving every other flag on the RSVP in place. |
+| `remove()` | `bool` | Removes the flag, leaving every other flag in place. |
+| `has()` | `bool` | Whether the RSVP carries the flag. |
+| `Flag::count( int $post_id )` | `int` | How many approved RSVPs on the event carry the flag. Static, since it spans an event. |
+
+`add()` and `remove()` are idempotent. They return `true` when the RSVP ends up
+in the requested state, including when it was already there, and `false` when
+the comment is not an RSVP, the slug is invalid, the write failed, or the
+taxonomy is not registered yet. It registers on `init`, so write flags from
+`init` or later.
+
+`count()` includes approved RSVPs only, matching the attendee list: a held or
+spammed RSVP is not part of the event's audience even if it was flagged before
+it was moderated.
+
+To read every flag on an RSVP at once, use
+`Setup::get_instance()->get_flags( $rsvp_id )`. It returns the slugs and reads
+through the object term cache, so checking several flags on one RSVP queries
+once.
+
+### Reacting to a change
+
+Every flag fires `gatherpress_rsvp_flag_added` and `gatherpress_rsvp_flag_removed`
+with the RSVP ID and the flag slug. To react to one flag, compare the slug with
+that flag class's `SLUG`. Neither action fires on a repeat or a failed write,
+and when two requests add the same flag at once, only the one that stored it
+announces it.
+
+```php
+use My_Plugin\Flag\Walk_In;
+
+function my_plugin_on_flag_added( int $rsvp_id, string $flag ): void {
+	if ( Walk_In::SLUG === $flag ) {
+		my_plugin_notify_door_staff( $rsvp_id );
+	}
+}
+add_action( 'gatherpress_rsvp_flag_added', 'my_plugin_on_flag_added', 10, 2 );
+```
+
+The same pattern reacts to a check-in, with `Check_In::SLUG`.
+
+### Slugs
+
+A slug needs no registration, so a companion plugin can add one without
+coordinating with GatherPress. It must already be in the shape `sanitize_key()`
+produces: lowercase letters, digits, hyphens and underscores. `walk-in` and
+`first_timer` are accepted; `Walk In` and `HOST` are refused rather than
+silently rewritten, so the flag stored is always the one the class declares. A
+class that leaves `SLUG` empty is refused too.
+
+Prefix slugs your plugin owns, for example `my-plugin-vip`, to stay clear of
+any flag GatherPress adds later.
+
+### Write through a flag class
+
+Never call `wp_set_object_terms()` on `_gatherpress_rsvp_flag` directly. Without
+`$append = true` it replaces every flag on the RSVP, wiping state other code
+stored there. `add()` always appends.
+
+Reads have a similar trap: `is_object_in_term()` matches term names as well as
+slugs, and treats a numeric string as a term ID. `has()` compares slugs only.
+
+### Hooks
+
+| Action | Arguments | Fires |
+|---|---|---|
+| `gatherpress_rsvp_flag_added` | `int $rsvp_id`, `string $flag` | After any flag is added to an RSVP that did not carry it. |
+| `gatherpress_rsvp_flag_removed` | `int $rsvp_id`, `string $flag` | After any flag is removed from an RSVP that carried it. |
+
+None fires when the RSVP was already in the requested state, or when the write
+failed. Deleting an RSVP sweeps every flag on it without firing the removal
+actions, since the RSVP itself is gone.
+
+### What belongs in a flag
+
+- **Yes/no state only.** Anything carrying a value, such as a guest count or a
+  timestamp, belongs in comment meta.
+- **Not one-of-N choices.** RSVP status and provider are dimensions, each with
+  its own taxonomy, and should not be folded in.
+- **Nothing private.** `public` and `show_in_rest` apply to the whole taxonomy,
+  so a flag that must not be exposed, such as a moderation note, needs its own
+  taxonomy.
+
 ## Sitewide gating (RSVP Mode and Open RSVP)
 
 Since 0.34.0 the `rsvp_mode` setting is the master switch for the whole RSVP
@@ -174,6 +318,109 @@ Open RSVP has two gates: the sitewide `enable_open_rsvp` setting and a
 per-event `gatherpress_enable_open_rsvp` post meta (unset means enabled).
 `Rsvp::allows_open_rsvp()` resolves both; when it returns false the RSVP Form
 block renders nothing and form or REST submissions are rejected with a 403.
+
+## Acting on an RSVP
+
+GatherPress fires no action of its own when somebody RSVPs or changes their
+answer. It does not need to: an RSVP is a comment, so core's comment and
+term hooks are the integration surface, and pushing a signup to a CRM or a
+mailing list is a matter of listening to the right one.
+
+Which one is the whole question, because a signup and a change are stored
+differently.
+
+### A new RSVP
+
+A first response inserts a comment, so `wp_insert_comment` fires. Filter on
+the comment type, since every comment on the site comes through here:
+
+```php
+use GatherPress\Core\Rsvp;
+
+function my_plugin_on_rsvp_created( int $comment_id, WP_Comment $comment ): void {
+	if ( Rsvp::COMMENT_TYPE !== $comment->comment_type ) {
+		return;
+	}
+
+	my_plugin_push_to_crm( $comment_id );
+}
+add_action( 'wp_insert_comment', 'my_plugin_on_rsvp_created', 10, 2 );
+```
+
+**The RSVP has no status yet at this point.** The comment is inserted first
+and the status term is written immediately afterwards
+(`Rsvp\Storage::save()`), so anything reading the response inside this hook
+gets nothing back. If you need to know what the person answered, use the
+term hook below, which fires for a new RSVP as well.
+
+### A change of answer
+
+Moving from attending to not attending does **not** insert a comment. The
+status is a term on the comment that already exists, so nothing in the
+comment hooks fires at all. An integration built only on
+`wp_insert_comment` records every signup and silently misses every
+cancellation, which is the one failure a CRM sync cannot afford.
+
+The status is written with `wp_set_object_terms()`, so core's
+`set_object_terms` fires:
+
+```php
+use GatherPress\Core\Rsvp\Response\Status;
+
+function my_plugin_on_rsvp_status( int $comment_id, $terms, array $tt_ids, string $taxonomy, bool $append, array $old_tt_ids ): void {
+	if ( Status::TAXONOMY !== $taxonomy ) {
+		return;
+	}
+
+	// Fires on every save, including one that stores the status the RSVP
+	// already had, so compare before treating it as a change. Cast both
+	// sides: core hands back the new IDs as strings and the old ones as
+	// integers, so a strict comparison never matches.
+	if ( array_map( 'intval', $tt_ids ) === array_map( 'intval', $old_tt_ids ) ) {
+		return;
+	}
+
+	$status = (string) ( (array) $terms )[0];
+
+	my_plugin_sync_to_crm( $comment_id, $status );
+}
+add_action( 'set_object_terms', 'my_plugin_on_rsvp_status', 10, 6 );
+```
+
+This one hook covers both events. The status term is written on the same
+line whether the comment was just inserted or already existed, so a new RSVP
+reaches it too, with `$old_tt_ids` empty.
+
+### Which hook to use
+
+| You need | Hook |
+|---|---|
+| Signups only, and nothing about the answer | `wp_insert_comment`, filtered to `Rsvp::COMMENT_TYPE` |
+| The answer, or cancellations, or both | `set_object_terms`, filtered to `Status::TAXONOMY` |
+
+Reach for the second unless you are certain you only care that a comment
+appeared. Starting with the first and adding the second later means going
+back through whatever you already synced.
+
+### The statuses
+
+`attending`, `not_attending` and `waiting_list`, plus `no_status` for a
+response that has none. They are the cases of the `Rsvp\Response\Status`
+enum, so compare against `Status::ATTENDING->value` rather than retyping the
+string.
+
+A waiting-list entry becoming `attending` because a place opened up arrives
+as an ordinary status change, indistinguishable from the person changing
+their own answer. If that distinction matters, read the flags on the RSVP.
+
+### Reading the rest of the response
+
+The comment ID is the RSVP ID everywhere else in this document. Guest counts
+and anonymous state live in comment meta, the identity source is a term
+(see [RSVP providers](#rsvp-providers-identity-sources)), and yes/no markers
+are flags (see [RSVP flags](#rsvp-flags)). Querying alongside ordinary
+comments has its own rules, covered in
+[Comment-query coexistence](#comment-query-coexistence).
 
 ## Further reading
 

@@ -113,7 +113,7 @@ const renderEdit = ( attributes = {}, setAttributes = jest.fn() ) =>
 			attributes={ { ...baseAttributes, ...attributes } }
 			setAttributes={ setAttributes }
 			context={ {} }
-		/>
+		/>,
 	);
 
 describe( 'Event Date Edit isLink', () => {
@@ -121,7 +121,7 @@ describe( 'Event Date Edit isLink', () => {
 		const { container } = renderEdit();
 
 		expect(
-			container.querySelector( 'a[href="#gatherpress-event-date-pseudo-link"]' )
+			container.querySelector( 'a[href="#gatherpress-event-date-pseudo-link"]' ),
 		).toBeNull();
 	} );
 
@@ -129,7 +129,7 @@ describe( 'Event Date Edit isLink', () => {
 		const { container } = renderEdit( { isLink: true } );
 
 		const anchor = container.querySelector(
-			'a[href="#gatherpress-event-date-pseudo-link"]'
+			'a[href="#gatherpress-event-date-pseudo-link"]',
 		);
 
 		expect( anchor ).not.toBeNull();
@@ -140,7 +140,7 @@ describe( 'Event Date Edit isLink', () => {
 		const { container } = renderEdit( { isLink: true } );
 
 		const anchor = container.querySelector(
-			'a[href="#gatherpress-event-date-pseudo-link"]'
+			'a[href="#gatherpress-event-date-pseudo-link"]',
 		);
 
 		// fireEvent returns false when preventDefault was called.
@@ -169,7 +169,7 @@ describe( 'Event Date Edit isLink', () => {
 		const { getByText } = renderEdit();
 
 		expect(
-			getByText( 'Make the date a link to the event page.' )
+			getByText( 'Make the date a link to the event page.' ),
 		).toBeInTheDocument();
 	} );
 } );
@@ -182,12 +182,12 @@ describe( 'Event Date Edit documentation link', () => {
 		} );
 
 		expect( link.getAttribute( 'href' ) ).toBe(
-			'https://wordpress.org/documentation/article/customize-date-and-time-format/'
+			'https://wordpress.org/documentation/article/customize-date-and-time-format/',
 		);
 		expect( link.getAttribute( 'target' ) ).toBe( '_blank' );
 		expect( link.getAttribute( 'rel' ) ).toContain( 'noopener' );
 		expect(
-			getByRole( 'link', { name: /opens in a new tab/ } )
+			getByRole( 'link', { name: /opens in a new tab/ } ),
 		).toBe( link );
 	} );
 } );
