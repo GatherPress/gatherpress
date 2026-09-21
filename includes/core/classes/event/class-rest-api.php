@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use Exception;
 use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Event;
+use GatherPress\Core\Mailer;
 use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Rsvp\Query as Rsvp_Query;
 use GatherPress\Core\Rsvp;
@@ -24,7 +25,6 @@ use GatherPress\Core\Rsvp\Setup;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Rsvp\Token;
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\User;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
 use WP_Comment;
@@ -46,7 +46,7 @@ use WP_User;
  *
  * @phpstan-type RouteDefinition array{route: string, args: array<string, mixed>}
  * @phpstan-type SendOptions array{all: bool, attending: bool, waiting_list: bool, not_attending: bool}
- * @phpstan-type Recipient array{is_user: bool, user_id: int, comment_id: int, email: string, name: string}
+ * @phpstan-import-type Recipient from Mailer
  */
 final class Rest_Api {
 
@@ -548,35 +548,15 @@ final class Rest_Api {
 		WP_User $current_user,
 		string $subject = ''
 	): void {
-		// Check opt-in preference based on recipient type.
-		if ( $recipient['is_user'] ) {
-			if ( ! User::get_instance()->has_event_updates_opt_in( $recipient['user_id'] ) ) {
-				return;
-			}
-		} elseif (
-			'0' === get_comment_meta(
-				$recipient['comment_id'],
-				'gatherpress_event_updates_opt_in',
-				true
-			)
-		) {
+		$mailer = Mailer::get_instance();
+
+		// Opt-in preference (user meta or RSVP comment meta) and a usable email
+		// address are both required before anything is rendered.
+		if ( ! $mailer->is_eligible( $recipient ) ) {
 			return;
 		}
 
-		if ( ! $recipient['email'] ) {
-			return;
-		}
-
-		$switched_locale = false;
-
-		// Set the current user context for templating.
-		if ( $recipient['is_user'] ) {
-			$switched_locale = switch_to_user_locale( $recipient['user_id'] );
-			// Set the current user to the actual member to mail to,
-			// to make sure the GatherPress filters for date- and time- format, as well as the users timezone,
-			// are recognized by the functions inside render_template().
-			wp_set_current_user( $recipient['user_id'] );
-		}
+		$switched_locale = $mailer->switch_context( $recipient );
 
 		if ( '' === $subject ) {
 			$subject = sprintf(
@@ -603,19 +583,9 @@ final class Rest_Api {
 			),
 		);
 		$headers = array( 'Content-Type: text/html; charset=UTF-8' );
-		$subject = stripslashes_deep( html_entity_decode( $subject, ENT_QUOTES, 'UTF-8' ) );
 
-		// Reset the current user to the editor sending the email.
-		wp_set_current_user( $current_user->ID );
-
-		wp_mail( $recipient['email'], $subject, $body, $headers );
-
-		// Cleanup branch only fires when `switch_to_user_locale()` actually
-		// switched, which requires a non-stub `WP_Locale_Switcher` and is not
-		// reachable from the test runner.
-		if ( $switched_locale ) { // @codeCoverageIgnore
-			restore_previous_locale(); // @codeCoverageIgnore
-		}
+		$mailer->restore_context( $switched_locale, $current_user );
+		$mailer->deliver( $recipient['email'], $subject, $body, $headers );
 	}
 
 	/**

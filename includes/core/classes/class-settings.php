@@ -187,6 +187,7 @@ class Settings {
 		Settings\Network::get_instance();
 		Settings\Roles::get_instance();
 		Settings\Rsvp::get_instance();
+		Settings\Send_Email::get_instance();
 		Settings\Tools::get_instance();
 		Settings\Uninstall::get_instance();
 		Settings\Venues::get_instance();

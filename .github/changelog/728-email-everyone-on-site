@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+A new "Send Email" page under GatherPress settings lets an administrator message every member on the site without going through an event. Members who turned event updates off in their profile are skipped, delivery runs on cron so the page returns right away, and the audience and subject line are filterable through `gatherpress_site_message_recipients` and `gatherpress_site_message_subject`.
