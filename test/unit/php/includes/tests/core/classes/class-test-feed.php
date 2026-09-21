@@ -297,6 +297,34 @@ class Test_Feed extends Base {
 	}
 
 	/**
+	 * Test topic feeds keep the upcoming event query for non-past types.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::handle_events_feed_query
+	 *
+	 * @return void
+	 */
+	public function test_handle_topic_feed_query_with_non_past_type(): void {
+		$_GET['type'] = 'future';
+
+		$query = $this->createMock( WP_Query::class );
+		$query->method( 'is_main_query' )->willReturn( true );
+		$query->method( 'is_feed' )->willReturn( true );
+		$query->method( 'is_tax' )->with( Topic::TAXONOMY )->willReturn( true );
+		$query->expects( $this->exactly( 2 ) )
+			->method( 'set' )
+			->withConsecutive(
+				array( 'post_type', Event::POST_TYPE ),
+				array( 'gatherpress_event_query', 'upcoming' )
+			);
+
+		$this->instance->handle_events_feed_query( $query );
+
+		unset( $_GET['type'] );
+	}
+
+	/**
 	 * Test modify_feed_link_for_past_events method.
 	 *
 	 * @since 0.33.0
