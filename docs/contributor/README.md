@@ -8,6 +8,21 @@ If you are building *with* GatherPress rather than *on* it, you want the [develo
 
 Read the [Code of Conduct](../../CODE_OF_CONDUCT.md). It applies in the repository, in Slack, and at events, and it is the one thing here that is not optional.
 
+## Finding something to work on
+
+Every issue is filed against a **release milestone**, so the fastest way to contribute something that lands soon is to work from the [milestone we are currently focused on](https://github.com/GatherPress/gatherpress/milestones) rather than from the full issue list. Anything outside the current milestone may be a while off, however good it is.
+
+Once something catches your eye, **read the activity on it before you start**. Check whether it is already assigned, whether somebody has left comments that change the shape of it, and whether a pull request is already open. That is a minute of reading that saves you from rebuilding work somebody has already done.
+
+If it is unclaimed and you think you can finish it in a reasonable amount of time, **say so in a comment**. A maintainer will assign it to you, which tells everyone else it is taken.
+
+You do not have to write code to be useful on an issue. Commenting on an idea, pointing out a case nobody considered, or reviewing an open pull request all move an issue forward, and all of it is welcome.
+
+Stuck, or not sure whether something is a good first issue? Ask. The maintainers and other contributors are in Slack:
+
+- **[#gatherpress in the Make WordPress Slack](https://wordpress.slack.com/archives/C07NB4N0ESJ)**, which is open to anyone with a WordPress.org account. Start here.
+- **[The GatherPress Slack](https://join.slack.com/t/gatherpress/shared_invite/zt-2luaqcruf-iQm_o2UuKBpnX7zfRCxMAg)**, where the day-to-day work happens, including a weekly huddle. Ask if you would like to join.
+
 ## Contributing code
 
 ### Set up
@@ -76,7 +91,7 @@ Open one, try the thing the PR claims to fix, and say what happened. "Works on m
 
 New issues need someone to reproduce them, add the version and environment, and say whether they are still happening. A confirmed bug with clear steps is most of the way to a fix; an unconfirmed report is a question nobody can act on.
 
-Browse [open issues](https://github.com/GatherPress/gatherpress/issues) and start with the ones nobody has answered.
+Browse [open issues](https://github.com/GatherPress/gatherpress/issues) and start with the ones nobody has answered, or work through the [current milestone](https://github.com/GatherPress/gatherpress/milestones) if you would rather help with what is shipping next.
 
 ### Translate
 
@@ -94,7 +109,8 @@ Write about how your group uses it, answer a question in the [support forum](htt
 
 ### Show up
 
-- **[GatherPress Slack](https://join.slack.com/t/gatherpress/shared_invite/zt-2luaqcruf-iQm_o2UuKBpnX7zfRCxMAg)**: where the work is discussed, including a weekly huddle
+- **[#gatherpress in the Make WordPress Slack](https://wordpress.slack.com/archives/C07NB4N0ESJ)**: open to anyone with a WordPress.org account
+- **[GatherPress Slack](https://join.slack.com/t/gatherpress/shared_invite/zt-2luaqcruf-iQm_o2UuKBpnX7zfRCxMAg)**: where the day-to-day work is discussed, including a weekly huddle. Ask if you would like to join
 - **[gatherpress.org/get-involved](https://gatherpress.org/get-involved)**: the current list of ways to help
 
 ## Credits and access
