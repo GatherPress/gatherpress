@@ -2,7 +2,7 @@
 
 [Event Query](./event-query.md)
 
-Event List (deprecated in 0.34 — replaced by the [Event Query](./event-query.md) block; existing blocks are migrated by GatherPress Alpha)
+Event List (deprecated in 0.34, replaced by the [Event Query](./event-query.md) block; existing blocks are migrated by GatherPress Alpha)
 
 [RSVP and its inner blocks](./rsvp-and-inner-blocks.md) (RSVP Form and fields, Modal Manager, etc)
 
@@ -10,15 +10,17 @@ Event List (deprecated in 0.34 — replaced by the [Event Query](./event-query.m
 
 [Subscribe to Events](./subscribe-to-events.md): Hands visitors a link (iCal or `webcal:`) they can paste into a calendar app to follow a venue, a topic, the events archive, or the whole site. This is a live subscription, unlike the one-time Add to Calendar download.
 
-Add to Calendar: Allows a user to add an event to their preferred calendar application. This saves a one-time copy of the event; for live, auto-updating subscriptions by venue, topic, or site, see [Calendar feeds](../calendar-feeds.md) or the [Subscribe to Events](./subscribe-to-events.md) block.
+[Add to Calendar](./add-to-calendar.md): Allows a user to add an event to their preferred calendar application. This saves a one-time copy of the event; for live, auto-updating subscriptions by venue, topic, or site, see [Calendar feeds](../calendar-feeds.md) or the [Subscribe to Events](./subscribe-to-events.md) block.
 
 ## Other blocks used in an event
 
 See details on [Creating and managing events](../creating-and-managing-events.md)
 
-Event Date
-Venue
-Online Event
+[Event Date](./event-date.md)
+
+[Venue](./venue-v2/README.md)
+
+[Online Event](./online-event.md)
 
 ## Block Guard
 
@@ -28,8 +30,8 @@ Complex blocks like RSVP are built from many inner blocks (buttons, modals, text
 
 There is no setting to turn on or off. The block simply responds to how you interact with it:
 
-- **Click it once** to select the whole block. It stays protected, so dragging now moves the entire block — you cannot grab a piece out of it by accident.
-- **Double-click** to work inside it. If you double-click on text, your cursor lands right where you clicked so you can start typing. Double-clicking elsewhere — a button, an image, empty space — still opens the block, but you then click the part you want.
+- **Click it once** to select the whole block. It stays protected, so dragging now moves the entire block, you cannot grab a piece out of it by accident.
+- **Double-click** to work inside it. If you double-click on text, your cursor lands right where you clicked so you can start typing. Double-clicking elsewhere (a button, an image, empty space), still opens the block, but you then click the part you want.
 - **Click outside the block** and the protection comes back on. Moving to a different spot inside an open block does not re-protect it; only leaving the block does.
 
 From the keyboard, press **Enter** or **Space** while the block is selected to open it, then use the usual block navigation to reach what you want.
@@ -52,4 +54,4 @@ While the Venue block is protected, the Venue Map inside it hides its resize han
 
 ### How is this different from WordPress's block locking?
 
-They solve opposite problems. Core's block locking pins a block in place — it prevents moving or removing the block, but still lets you click inside and edit its inner blocks. Block Guard leaves the block free to move as a whole, while protecting its insides from accidental selection and editing until you double-click in. Block Guard also never actually locks anything: the block stays fully editable, it just asks for one deliberate gesture first. Use core locking when a block must stay where it is; use Block Guard to keep a complex block's inner structure intact while you work around it. The two can be combined.
+They solve opposite problems. Core's block locking pins a block in place. It prevents moving or removing the block, but still lets you click inside and edit its inner blocks. Block Guard leaves the block free to move as a whole, while protecting its insides from accidental selection and editing until you double-click in. Block Guard also never actually locks anything: the block stays fully editable, it just asks for one deliberate gesture first. Use core locking when a block must stay where it is; use Block Guard to keep a complex block's inner structure intact while you work around it. The two can be combined.

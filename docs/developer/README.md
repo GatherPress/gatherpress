@@ -1,12 +1,24 @@
 # Developer Documentation
 
+## Start here
+
+- [Close to core](philosophy/README.md): the design rule behind most of the others, and why some good ideas belong in a companion plugin instead.
+- [Companion plugins](companion-plugins/README.md): building on GatherPress rather than in it, starting from the GatherPress Awesome template.
+- [Data model](data-model/README.md): post types, taxonomies, meta, the events table and every REST route.
+- [URLs and permalinks](urls-and-permalinks/README.md): every public URL, where its slug comes from, and when rewrite rules flush.
+- [Multisite](multisite/README.md): what is per site and what is network wide, from activation through uninstall.
+- [GatherPress Alpha](gatherpress-alpha/README.md): the companion plugin that runs data migrations, and why it is version-locked to core.
+- [Demo data and prepared playgrounds](demo-data/README.md): the blueprints, the demo content, and where both are used.
+
 ## Feature guides
 
 Standalone guides for customizing specific GatherPress features through hooks:
 
 - [Event duration filters](event-duration.md): customize the editor's Duration control (`gatherpress.durationOptions`, `gatherpress.durationDefault`).
 - [Venue address format](venue-address-format.md): locale-aware ordering of geocoded address labels via translatable format strings, plus the `gatherpress_formatted_address` filter.
-- [Plugin lifecycle](plugin-lifecycle.md): the load sequence and the `gatherpress_loaded` hook — when GatherPress's classes are ready and how load order affects catching the hook.
+- [Plugin lifecycle](plugin-lifecycle.md): the load sequence and the `gatherpress_loaded` hook, when GatherPress's classes are ready and how load order affects catching the hook.
+- [WP-CLI commands](wp-cli/README.md): `wp gatherpress event rsvp` and `wp gatherpress settings import|export`, and how to add a command of your own.
+- [Content import and export](content-import-export/README.md): how event dates survive a WXR round trip, and how to carry your own data with them.
 
 For every hook GatherPress exposes, see the auto-generated [hook reference](hooks/) and the [hook naming convention](hooks-naming-convention.md).
 

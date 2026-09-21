@@ -70,7 +70,7 @@ The `rsvp_mode` setting controls how RSVP availability is determined across the 
 | `per_event_off` | Per event (default off) | A per-event toggle appears in the block editor. New events default to RSVP disabled. |
 | `disabled` | Disabled | RSVP is turned off sitewide. RSVP blocks are hidden from the inserter, the RSVPs admin submenu is removed, and the RSVP Settings editor panel is hidden. |
 
-**Per-event meta convention:** the `gatherpress_enable_rsvp` post meta stores the per-event state as an integer (`1` = enabled, `0` = disabled). An unset meta value (empty string) is treated as enabled — only an explicit `0` disables RSVP for an individual event. When mode is `all_on`, this meta is explicitly written as `1` on save so that switching to a per-event mode later produces predictable results.
+**Per-event meta convention:** the `gatherpress_enable_rsvp` post meta stores the per-event state as an integer (`1` = enabled, `0` = disabled). An unset meta value (empty string) is treated as enabled, only an explicit `0` disables RSVP for an individual event. When mode is `all_on`, this meta is explicitly written as `1` on save so that switching to a per-event mode later produces predictable results.
 
 ```php
 use GatherPress\Core\Settings;

@@ -39,11 +39,11 @@ endpoints.
 
    provides a subscribable event feed in ical format with all events grouped into that topic.
 
-The most obvious WordPress core functions for this are [`add_feed()`](https://developer.wordpress.org/reference/functions/add_feed/) and [`add_rewrite_endpoint()`](https://developer.wordpress.org/reference/functions/add_rewrite_endpoint/). Both share a common pitfall — they're not restrictive to any post type at all, so a naive `/feed/ical` registration would attach the endpoint to every non-hierarchical custom post type on the site. GatherPress's endpoint helper sidesteps that by scoping registration to specific post types and taxonomies up front.
+The most obvious WordPress core functions for this are [`add_feed()`](https://developer.wordpress.org/reference/functions/add_feed/) and [`add_rewrite_endpoint()`](https://developer.wordpress.org/reference/functions/add_rewrite_endpoint/). Both share a common pitfall, they're not restrictive to any post type at all, so a naive `/feed/ical` registration would attach the endpoint to every non-hierarchical custom post type on the site. GatherPress's endpoint helper sidesteps that by scoping registration to specific post types and taxonomies up front.
 
 ## GatherPress' own Endpoint API
 
-The endpoint classes live under `GatherPress\Core\Calendar` ([`includes/core/classes/calendar/`](../../../includes/core/classes/calendar/)). Companion plugins can use them to declare endpoints against their own post types or taxonomies — the API isn't calendar-specific despite living in that namespace.
+The endpoint classes live under `GatherPress\Core\Calendar` ([`includes/core/classes/calendar/`](../../../includes/core/classes/calendar/)). Companion plugins can use them to declare endpoints against their own post types or taxonomies. The API isn't calendar-specific despite living in that namespace.
 
 In general, one endpoint can be created …
 
@@ -86,11 +86,11 @@ To create a new endpoint, instantiate one of the [`Endpoint`](../../../includes/
 
 These pick *where* an endpoint runs. To become callable, each endpoint also needs at least one of:
 
-- [`Redirect`](../../../includes/core/classes/calendar/class-redirect.php) — for off-site redirects
+- [`Redirect`](../../../includes/core/classes/calendar/class-redirect.php): for off-site redirects
 
   *or*
 
-- [`Template`](../../../includes/core/classes/calendar/class-template.php) — for theme-overridable template output
+- [`Template`](../../../includes/core/classes/calendar/class-template.php): for theme-overridable template output
 
 ## Example | Add events to *Office365 Calendar*
 
@@ -98,7 +98,7 @@ Example for a new redirection endpoint like `example.org/event/my-sample-event/o
 
 ### 1. Setup a new endpoint
 
-Set up a single-event endpoint via [`Post_Type_Single`](../../../includes/core/classes/calendar/class-post-type-single.php). Run it on `init` at a very high priority so every relevant post type and shadow taxonomy has finished registering — GatherPress core uses `PHP_INT_MAX` for this (see `Calendar\Setup::setup_hooks()`); companion plugins can pick any similarly high priority, with `99` being a safe default that still leaves room for downstream observers to hook after.
+Set up a single-event endpoint via [`Post_Type_Single`](../../../includes/core/classes/calendar/class-post-type-single.php). Run it on `init` at a very high priority so every relevant post type and shadow taxonomy has finished registering. GatherPress core uses `PHP_INT_MAX` for this (see `Calendar\Setup::setup_hooks()`); companion plugins can pick any similarly high priority, with `99` being a safe default that still leaves room for downstream observers to hook after.
 
 ```php
 use GatherPress\Core\Calendar\Post_Type_Single;
@@ -151,7 +151,7 @@ public function get_office365_calendar_link(): string {
     $location    = $venue['name'];
     $description = $event->get_calendar_description();
 
-    // The venue info shape uses `address`, not `full_address` — earlier
+    // The venue info shape uses `address`, not `full_address`. Earlier
     // drafts of this doc referenced the latter.
     if ( ! empty( $venue['address'] ) ) {
         $location .= sprintf( ', %s', $venue['address'] );
@@ -188,7 +188,7 @@ $google_url  = $calendar->get_google_url();
 $yahoo_url   = $calendar->get_yahoo_url();
 ```
 
-For companion-plugin endpoints (the Office 365 example above), build the URL the same way GatherPress does internally — wrap a small helper class around the post ID and concatenate the slug onto the post permalink, falling back to a query-arg form when permalinks are off or a path conflict exists. The shape of `Calendar::get_endpoint_url()` is the reference implementation.
+For companion-plugin endpoints (the Office 365 example above), build the URL the same way GatherPress does internally, wrap a small helper class around the post ID and concatenate the slug onto the post permalink, falling back to a query-arg form when permalinks are off or a path conflict exists. The shape of `Calendar::get_endpoint_url()` is the reference implementation.
 
 ## Filtering calendar URLs
 

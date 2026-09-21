@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+The `--guests` and `--anonymous` options on `wp gatherpress event rsvp` were missing from the command's synopsis, so WP-CLI rejected them as unknown parameters and the command could never record a guest count or an anonymous response.

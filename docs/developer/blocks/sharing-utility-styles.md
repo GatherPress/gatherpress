@@ -23,15 +23,15 @@ Use this filter when your block:
 - You'd rather inherit the host plugin's CSS than maintain your own copy that
   could drift if GatherPress changes a class name.
 
-If your block doesn't use any of those classes, you don't need this filter —
+If your block doesn't use any of those classes, you don't need this filter.
 WordPress will load only the styles your own block registers.
 
 ## How it works
 
-GatherPress always handles the `gatherpress/` prefix itself. The filter is
-purely additive: whatever array you return is merged with `gatherpress/`
-before the prefix match runs, so you cannot accidentally break GatherPress's
-own blocks by replacing the array — you can only add to it.
+GatherPress always handles the `gatherpress/` prefix itself. The filter is purely
+additive: whatever array you return is merged with `gatherpress/` before the
+prefix match runs, so you cannot accidentally break GatherPress's own blocks by
+replacing the array. You can only add to it.
 
 ## Example
 
@@ -74,6 +74,6 @@ add_filter(
   `gatherpress-utility-style`. If you need it loaded in a non-block context
   (e.g. a settings screen of your own), enqueue it directly by handle.
 - Frontend enqueue is gated on `render_block` for prefixes returned by the
-  filter. Blocks rendered exclusively client-side (without ever hitting
-  PHP `render_block`) won't trigger the enqueue — fall back to enqueuing
-  the handle yourself in that case.
+  filter. Blocks rendered exclusively client-side (without ever hitting PHP
+  `render_block`) won't trigger the enqueue, fall back to enqueuing the handle
+  yourself in that case.

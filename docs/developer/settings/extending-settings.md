@@ -223,7 +223,7 @@ Flag fields that affect permalink structure. When these change, rewrite rules ar
 
 ### show_if (conditional visibility)
 
-Show a field only when one or more controlling fields hold a specific value. Useful for "this setting only matters when that other setting is on" relationships — for example, hiding the Google Maps API Key field unless Google is the selected map provider.
+Show a field only when one or more controlling fields hold a specific value, which is useful for "this setting only matters when that other setting is on" relationships. For example, hiding the Google Maps API Key field unless Google is the selected map provider.
 
 `show_if` is a sibling of `field`, not nested inside it. It maps controlling field keys to expected values:
 
@@ -244,10 +244,10 @@ Show a field only when one or more controlling fields hold a specific value. Use
 
 #### Match semantics
 
-- **Scalar value** — string equality after casting. `'map_platform' => 'google'` matches when the controlling field's current value (coerced to string) equals `'google'`.
-- **Array of values** — OR within one key. `'map_platform' => array( 'google', 'mapbox' )` matches when the current value is either.
-- **Negation** — `array( 'not' => value )` or `array( 'not' => array( … ) )` — the inverse: show when the current value is **not** (one of) the given value(s). Useful for "show unless disabled" without enumerating every enabled variant.
-- **Multiple keys** — AND across keys. Every entry in the `show_if` array must be satisfied for the field to be visible.
+- **Scalar value**: string equality after casting. `'map_platform' => 'google'` matches when the controlling field's current value (coerced to string) equals `'google'`.
+- **Array of values**: OR within one key. `'map_platform' => array( 'google', 'mapbox' )` matches when the current value is either.
+- **Negation**: `array( 'not' => value )` or `array( 'not' => array( … ) )`. The inverse: show when the current value is **not** (one of) the given value(s). Useful for "show unless disabled" without enumerating every enabled variant.
+- **Multiple keys**: AND across keys. Every entry in the `show_if` array must be satisfied for the field to be visible.
 
 ```php
 'show_if' => array(
@@ -256,7 +256,7 @@ Show a field only when one or more controlling fields hold a specific value. Use
 ),
 ```
 
-The negation form is what the RSVP settings page uses to hide the mode-dependent fields whenever RSVP Mode is `disabled` — rather than listing `all_on`, `per_event_on`, `per_event_off`, so the intent reads directly and a future mode doesn't silently fall out of the condition:
+The negation form is what the RSVP settings page uses to hide the mode-dependent fields whenever RSVP Mode is `disabled`, rather than listing `all_on`, `per_event_on`, `per_event_off`, so the intent reads directly and a future mode doesn't silently fall out of the condition:
 
 ```php
 'show_if' => array(
@@ -268,9 +268,9 @@ The negation form is available since 0.35.0.
 
 #### Hidden ≠ cleared
 
-Hiding a field is purely visual — its stored value is **never** dropped just because the field is currently hidden. If a user enters a Google Maps API key, switches the platform to OSM, and saves, the key remains in the `gatherpress_settings` option. Switching back to Google reveals the field with its prior value intact.
+Hiding a field is purely visual. Its stored value is **never** dropped just because the field is currently hidden. If a user enters a Google Maps API key, switches the platform to OSM, and saves, the key remains in the `gatherpress_settings` option. Switching back to Google reveals the field with its prior value intact.
 
-This works because (a) the field row is hidden via CSS, so the input still posts its value, and (b) the save path merges submitted input with the previously stored options — any field key not in POST keeps its existing value.
+This works because (a) the field row is hidden via CSS, so the input still posts its value, and (b) the save path merges submitted input with the previously stored options. Any field key not in POST keeps its existing value.
 
 #### Constraints (v1)
 

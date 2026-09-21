@@ -24,7 +24,7 @@ The label is built from two `sprintf()` format strings, each registered with
 
 The two lines are joined with `, `. With the English defaults a German address
 renders as `42 Hauptstraße, Berlin, 10115`; a German translation of `%2$s %1$s`
-and `%3$s %1$s` renders the same address as `Hauptstraße 42, 10115 Berlin` —
+and `%3$s %1$s` renders the same address as `Hauptstraße 42, 10115 Berlin`:
 house number after the street, postal code before the city, region omitted.
 
 Missing components are safe to ignore when translating: GatherPress strips the
@@ -32,7 +32,7 @@ dangling separators an empty component leaves behind, so a suggestion without a
 house number or postal code still comes out clean. A placeholder a translation
 doesn't reference (like the region in `%3$s %1$s`) is simply dropped.
 
-Translations resolve in the locale of the request building the label — for the
+Translations resolve in the locale of the request building the label, for the
 editor's autocomplete that is the locale of the user doing the editing, exactly
 like every other GatherPress string.
 
@@ -110,8 +110,8 @@ add_filter(
 ```
 
 For a single, always-on ordering change, prefer a translation override of the
-format strings (a `gettext_with_context` filter or a custom language pack) —
-that is what the format strings are for.
+format strings (a `gettext_with_context` filter or a custom language pack). That
+is what the format strings are for.
 
 ## Replaces `gatherpress_geocode_street_line`
 
@@ -170,7 +170,7 @@ removed), and its return value is what is sent.
 - An address a user types by hand (rather than choosing a suggestion) is stored
   verbatim and never passes through the format strings or the filter.
 - Already-saved addresses are not reformatted when translations or filters
-  change — the stored address string stays the single source of truth.
+  change. The stored address string stays the single source of truth.
 - Splitting is applied to the query only. The address the user typed is what
   gets saved; the spaced form never replaces it.
 
