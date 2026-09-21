@@ -1451,8 +1451,8 @@ class Test_Event extends Base {
 					'timezone'       => 'America/New_York',
 				)
 			);
-			$this->assertSame( '2025-06-15T00:00:00-04:00', $all_day_event->get_datetime_start_iso() );
-			$this->assertSame( '2025-06-15T23:59:59-04:00', $all_day_event->get_datetime_end_iso() );
+			$this->assertSame( '2025-06-15', $all_day_event->get_datetime_start_iso() );
+			$this->assertSame( '2025-06-15', $all_day_event->get_datetime_end_iso() );
 		} finally {
 			remove_filter( 'gatherpress_datetime_format', $filter );
 		}
@@ -2845,7 +2845,7 @@ class Test_Event extends Base {
 				'Failed to assert an all-day event skips the filter when it is not asked for.'
 			);
 			$this->assertSame(
-				'2026-08-29T00:00:00-04:00',
+				'2026-08-29',
 				$event->get_datetime_start_iso(),
 				'Failed to assert the ISO start of an all-day event ignores the display filter.'
 			);

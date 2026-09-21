@@ -25,22 +25,32 @@ $gatherpress_parts = $gatherpress_event->get_display_datetime_parts(
 	$attributes['showTimezone'] ?? ''
 );
 
-$gatherpress_render_part = static function ( $human, $iso ): string {
+$gatherpress_render_part = static function ( string $human, string $iso ): string {
 	if ( empty( $human ) ) {
 		return '';
 	}
 
 	return empty( $iso )
-		? $human
-		: sprintf( '<time datetime="%s">%s</time>', esc_attr( $iso ), $human );
+		? esc_html( $human )
+		: sprintf(
+			'<time datetime="%s">%s</time>',
+			esc_attr( $iso ),
+			esc_html( $human )
+		);
 };
 
 $gatherpress_output_parts = array_filter(
 	array(
-		$gatherpress_render_part( $gatherpress_parts['start'], $gatherpress_event->get_datetime_start_iso() ),
-		$gatherpress_parts['separator'],
-		$gatherpress_render_part( $gatherpress_parts['end'], $gatherpress_event->get_datetime_end_iso() ),
-		$gatherpress_parts['timezone'],
+		$gatherpress_render_part(
+			(string) $gatherpress_parts['start'],
+			$gatherpress_event->get_datetime_start_iso()
+		),
+		esc_html( (string) $gatherpress_parts['separator'] ),
+		$gatherpress_render_part(
+			(string) $gatherpress_parts['end'],
+			$gatherpress_event->get_datetime_end_iso()
+		),
+		esc_html( (string) $gatherpress_parts['timezone'] ),
 	)
 );
 

@@ -312,6 +312,51 @@ class Test_Event_Date extends Base {
 	}
 
 	/**
+	 * Escapes markup supplied through the separator attribute.
+	 *
+	 * The separator is human-readable text and must not become live markup,
+	 * even though the final output allows the block's own anchor and time tags.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	public function test_render_escapes_separator_markup(): void {
+		$event_post = $this->mock->post(
+			array(
+				'post_title' => 'Escaped Separator Unit Test Event',
+				'post_type'  => Event::POST_TYPE,
+			)
+		)->get();
+		$event      = new Event( $event_post->ID );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2020-05-11 15:00:00',
+				'datetime_end'   => '2020-05-11 17:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$this->go_to( get_permalink( $event_post->ID ) );
+
+		$separator = '<a href="https://attacker.example">to</a>';
+		$render    = do_blocks(
+			sprintf(
+				'<!-- wp:gatherpress/event-date %s /-->',
+				wp_json_encode(
+					array(
+						'displayType' => 'both',
+						'separator'   => $separator,
+					)
+				)
+			)
+		);
+
+		$this->assertStringContainsString( esc_html( $separator ), $render );
+		$this->assertStringNotContainsString( 'href="https://attacker.example"', $render );
+	}
+
+	/**
 	 * Parity between the rendered block text and Event::get_display_datetime().
 	 *
 	 * Strips the <time>/<a> markup out of the block render and asserts the

@@ -797,7 +797,9 @@ class Event {
 	 * @throws Exception If there is an issue formatting the start datetime.
 	 */
 	public function get_datetime_start_iso(): string {
-		return $this->format_datetime( 'c', 'start', true, false );
+		$format = $this->is_all_day() ? 'Y-m-d' : 'c';
+
+		return $this->format_datetime( $format, 'start', true, false );
 	}
 
 	/**
@@ -815,7 +817,9 @@ class Event {
 	 * @throws Exception If there is an issue formatting the end datetime.
 	 */
 	public function get_datetime_end_iso(): string {
-		return $this->format_datetime( 'c', 'end', true, false );
+		$format = $this->is_all_day() ? 'Y-m-d' : 'c';
+
+		return $this->format_datetime( $format, 'end', true, false );
 	}
 
 	/**
