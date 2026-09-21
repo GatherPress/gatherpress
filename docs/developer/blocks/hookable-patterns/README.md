@@ -89,6 +89,24 @@ The `gatherpress/venue-template` pattern still exists. It is the Block Hooks anc
 
 ...
 
+## The anchors
+
+Every example below filters `hooked_block_types`, and to target the right insertion point you need three values: the pattern's name (`$context['name']`), the anchor block, and the relative position. GatherPress uses two anchors today:
+
+| Pattern (`$context['name']`) | Anchor block | Position | Hooked by default, in order |
+|---|---|---|---|
+| `gatherpress/event-template` | `gatherpress/event-date` | `after` | `gatherpress/add-to-calendar`, `gatherpress/venue`, `gatherpress/online-event`, `gatherpress/rsvp`, `core/paragraph`, `gatherpress/rsvp-response` |
+| `gatherpress/venue-details` | `core/post-title` | `after` | `gatherpress/venue` |
+
+A few things follow from that table:
+
+- **Order in the array is order on the page.** The list is rendered in sequence after the anchor, which is why reordering is a matter of moving an entry rather than setting a priority.
+- **`before` is free.** Nothing is hooked before either anchor, so hooking `before` gives you the top of the pattern without having to displace anything.
+- **The event anchor is the Event Date block**, not the title. An event without its date is not an event, so that block is the one thing the pattern can rely on being present.
+- **`core/paragraph` in the list is the event description placeholder.** It is a core block, so if you filter by block type rather than by position, be careful not to catch every paragraph on the site.
+
+The canonical values are `Event::TEMPLATE_PATTERN` and the `gatherpress/venue-details` pattern name, both registered in `Blocks\Setup::hook_blocks_into_patterns()`.
+
 ## Modify the blocks in the patterns
 
 - [Change order of the default blocks](#change-order-of-the-default-blocks)

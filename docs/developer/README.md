@@ -7,6 +7,8 @@
 - [Data model](data-model/README.md): post types, taxonomies, meta, the events table and every REST route.
 - [URLs and permalinks](urls-and-permalinks/README.md): every public URL, where its slug comes from, and when rewrite rules flush.
 - [Multisite](multisite/README.md): what is per site and what is network wide, from activation through uninstall.
+- [GatherPress Alpha](gatherpress-alpha/README.md): the companion plugin that runs data migrations, and why it is version-locked to core.
+- [Demo data and prepared playgrounds](demo-data/README.md): the blueprints, the demo content, and where both are used.
 
 ## Feature guides
 

@@ -28,6 +28,7 @@ Extending the plugin from a theme, a companion plugin, or your own post types.
 - [Theme customizations](developer/theme-customizations/README.md) · [Custom URL endpoints](developer/custom-url-endpoints/README.md)
 - [Content import and export](developer/content-import-export/README.md) · [WP-CLI commands](developer/wp-cli/README.md)
 - [URLs and permalinks](developer/urls-and-permalinks/README.md) · [Multisite](developer/multisite/README.md)
+- [GatherPress Alpha](developer/gatherpress-alpha/README.md) · [Demo data and playgrounds](developer/demo-data/README.md)
 - [Plugin lifecycle](developer/plugin-lifecycle.md) · [Hook reference](developer/hooks/) · [Hook naming](developer/hooks-naming-convention.md)
 
 ## [For contributors](contributor/README.md)
