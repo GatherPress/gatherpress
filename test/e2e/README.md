@@ -2,7 +2,7 @@
 
 End-to-end tests for GatherPress, using [Playwright](https://playwright.dev/) against a real WordPress install.
 
-This file covers the suite's internals. For getting it running — installing, starting `wp-env`, running a single spec, reading a failure — see the [contributor guide](../../docs/contributor/e2e-tests/README.md).
+This file covers the suite's internals. For getting it running (installing, starting `wp-env`, running a single spec, reading a failure), see the [contributor guide](../../docs/contributor/e2e-tests/README.md).
 
 ## Layout
 
@@ -12,7 +12,7 @@ test/e2e/
 ├── storageState.json      The saved session every test reuses
 ├── admin-tests/           Admin screens load and the login works
 ├── event-tests/           Front-end event rendering, editor regressions
-├── rsvp-tests/            RSVP flows (needs a seeded event — see below)
+├── rsvp-tests/            RSVP flows (needs a seeded event, see below)
 └── helpers/               Experimental event-creation helpers, not yet wired in
 ```
 
@@ -28,7 +28,7 @@ There is no page-object layer and no fixture factory. If you are adding a test, 
 
 `global-setup.js` runs once before the suite. It uses `RequestUtils` from `@wordpress/e2e-test-utils-playwright` to authenticate over the REST API and save the session to `storageState.json`; `playwright.config.js` then hands that state to every test. Tests start already logged in as `admin`, and no test walks the login form.
 
-If authentication fails for every test at once, delete `storageState.json` and run again — global setup rebuilds it.
+If authentication fails for every test at once, delete `storageState.json` and run again. Global setup rebuilds it.
 
 ## The suites
 
@@ -42,7 +42,7 @@ These are the canary tests. When they fail, it is usually the environment rather
 
 `event-display.spec.js` publishes an event and checks it renders on the front end.
 
-`datetime-picker-regression.spec.js` guards [#1607](https://github.com/GatherPress/gatherpress/issues/1607): stepping the year *down* in the datetime picker crashed the editor. The test exists because unit tests could not see it — the crash only happened in a real editor with a real picker.
+`datetime-picker-regression.spec.js` guards [#1607](https://github.com/GatherPress/gatherpress/issues/1607): stepping the year *down* in the datetime picker crashed the editor. The test exists because unit tests could not see it. The crash only happened in a real editor with a real picker.
 
 ### `rsvp-tests/`
 
@@ -56,7 +56,7 @@ EVENT_URL=http://localhost:8889/event/your-event/ npm run test:e2e -- rsvp-tests
 
 Without `EVENT_URL` the suite fails immediately with setup instructions rather than reporting a misleading failure.
 
-Getting them into CI means creating that event automatically. Three approaches are sketched in the spec's comments — a Playground blueprint importing WXR, driving the block editor with Playwright, or seeding directly with WP-CLI — and `helpers/` holds unfinished attempts at the second and third. None is wired into the suite.
+Getting them into CI means creating that event automatically. Three approaches are sketched in the spec's comments (a Playground blueprint importing WXR, driving the block editor with Playwright, or seeding directly with WP-CLI), and `helpers/` holds unfinished attempts at the second and third. None is wired into the suite.
 
 ## Conventions
 
@@ -111,4 +111,4 @@ These are set in [`playwright.config.js`](../../playwright.config.js) and are de
 - [ ] REST API tests
 - [ ] Accessibility assertions
 - [ ] Visual regression testing
-- [ ] A cross-browser matrix — the suite is Chromium-only today
+- [ ] A cross-browser matrix. The suite is Chromium-only today

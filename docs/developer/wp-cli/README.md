@@ -12,7 +12,7 @@ Two command groups ship with the plugin today:
 
 Every command supports WP-CLI's own global flags, so `--url` picks a site on multisite and `--user` changes who the command runs as.
 
-Run `wp help gatherpress event rsvp` for the same reference from your terminal — WP-CLI builds it from the command's docblock.
+Run `wp help gatherpress event rsvp` for the same reference from your terminal. WP-CLI builds it from the command's docblock.
 
 ## `wp gatherpress event rsvp`
 
@@ -24,8 +24,8 @@ wp gatherpress event rsvp --event_id=<id> --user_id=<id> [--status=<status>] [--
 
 | Option | Default | Notes |
 |---|---|---|
-| `--event_id` | — | The event to RSVP to |
-| `--user_id` | — | The person RSVPing |
+| `--event_id` | none | The event to RSVP to |
+| `--user_id` | none | The person RSVPing |
 | `--status` | `attending` | One of `attending`, `not_attending`, `waiting_list` |
 | `--guests` | `0` | How many people they are bringing |
 | `--anonymous` | `0` | `1` hides them from the public response list |
@@ -41,14 +41,14 @@ wp gatherpress event rsvp --event_id=525 --user_id=1 --status=not_attending
 wp gatherpress event rsvp --event_id=525 --user_id=1 --guests=2 --anonymous=1
 ```
 
-The command targets any post type that declares the `gatherpress-rsvp` support, not just `gatherpress_event` — see [post type supports](../post-type-supports/README.md). A post that does not support RSVPs is refused:
+The command targets any post type that declares the `gatherpress-rsvp` support, not just `gatherpress_event`. See [post type supports](../post-type-supports/README.md). A post that does not support RSVPs is refused:
 
 ```text
 Error: Event ID "525" does not exist or does not support RSVPs.
 ```
 
 > [!IMPORTANT]
-> **`--guests` and `--anonymous` are subject to the event's own settings**, exactly as they are on the front end. Guests are clamped to the event's `gatherpress_max_guest_limit`, which is `0` unless somebody raised it, and `--anonymous=1` is ignored unless the event has `gatherpress_enable_anonymous_rsvp` turned on. In both cases the command still reports success — it has recorded the RSVP, just not the part the event does not allow. If a guest count silently comes back as zero, check the event before suspecting the command.
+> **`--guests` and `--anonymous` are subject to the event's own settings**, exactly as they are on the front end. Guests are clamped to the event's `gatherpress_max_guest_limit`, which is `0` unless somebody raised it, and `--anonymous=1` is ignored unless the event has `gatherpress_enable_anonymous_rsvp` turned on. In both cases the command still reports success. It has recorded the RSVP, just not the part the event does not allow. If a guest count silently comes back as zero, check the event before suspecting the command.
 
 ## `wp gatherpress settings export`
 
@@ -68,7 +68,7 @@ On multisite the export carries a `scope` field recording whether it came from a
 
 ## `wp gatherpress settings import`
 
-Reads a file produced by `export`. **It does not change anything unless you pass `--apply`** — without that flag it prints what would change and stops.
+Reads a file produced by `export`. **It does not change anything unless you pass `--apply`**. Without that flag it prints what would change and stops.
 
 ```bash
 # Preview. Changes nothing.
@@ -83,7 +83,7 @@ wp gatherpress settings import gatherpress-settings.json --apply --mode=replace
 
 | Option | Default | Notes |
 |---|---|---|
-| `<file>` | — | Path to the JSON file. Positional, not a flag |
+| `<file>` | none | Path to the JSON file. Positional, not a flag |
 | `--mode` | `merge` | `merge` keeps settings absent from the file; `replace` clears them |
 | `--apply` | off | Without it, the command is a dry run |
 
@@ -97,7 +97,7 @@ Settings marked non-exportable are also not importable, so a hand-edited file ca
 wp gatherpress alpha fix
 ```
 
-It is documented with the plugin itself, not here — see [getting started](../../user/getting-started.md).
+It is documented with the plugin itself, not here. See [getting started](../../user/getting-started.md).
 
 ## Adding a command
 

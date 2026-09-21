@@ -22,12 +22,12 @@ Two are public. The rest are internal plumbing, hidden from the UI, and are pref
 | `gatherpress_topic` | Events | Yes | Hierarchical topics. The archive slug is the `topics_url` setting |
 | `_gatherpress_venue` | Events | No | Ties an event to its venue. One term per published venue post |
 | `_gatherpress_rsvp_status` | RSVP comments | No | The response: `attending`, `not_attending`, `waiting_list`, `no_status` |
-| `_gatherpress_rsvp_provider` | RSVP comments | No | How the person was identified — one term per provider class |
+| `_gatherpress_rsvp_provider` | RSVP comments | No | How the person was identified. One term per provider class |
 | `_gatherpress_rsvp_flag` | RSVP comments | No | Yes/no markers such as `checked-in` |
 
 The three RSVP taxonomies are on *comments*, not posts, because an RSVP is a comment. [The RSVP docs](../rsvp/README.md) cover that in full.
 
-`_gatherpress_venue` is not venue-specific machinery. It is produced by the `gatherpress-shadow-source` support, which keeps one hidden term per published post of a given type, in lockstep with its slug and title. Any post type can declare it — productions, organizers, sponsors — and get the same event-tagging behavior. The leading underscore on a term slug (`_my-venue`) is what distinguishes a real shadow term from a sentinel like `online-event`.
+`_gatherpress_venue` is not venue-specific machinery. It is produced by the `gatherpress-shadow-source` support, which keeps one hidden term per published post of a given type, in lockstep with its slug and title. Any post type can declare it (productions, organizers, sponsors) and get the same event-tagging behavior. The leading underscore on a term slug (`_my-venue`) is what distinguishes a real shadow term from a sentinel like `online-event`.
 
 ## Post meta
 
@@ -49,13 +49,13 @@ The three RSVP taxonomies are on *comments*, not posts, because an RSVP is a com
 
 The datetime meta is written alongside the [custom table](#the-events-table), and the table is what queries read.
 
-The two limit keys are enforced server-side on every write, including from WP-CLI. An RSVP asking for more guests than `gatherpress_max_guest_limit` allows is not rejected — it is clamped, and the caller still gets a success response.
+The two limit keys are enforced server-side on every write, including from WP-CLI. An RSVP asking for more guests than `gatherpress_max_guest_limit` allows is not rejected. It is clamped, and the caller still gets a success response.
 
 ### Venues
 
 Five keys are editor-writable, registered `show_in_rest` so they can be bound to blocks through `core/post-meta`: `gatherpress_address`, `gatherpress_latitude`, `gatherpress_longitude`, `gatherpress_phone`, `gatherpress_website`.
 
-Eight more hold the structured address the geocoder derives from `gatherpress_address`: `gatherpress_house_number`, `gatherpress_street`, `gatherpress_city`, `gatherpress_county`, `gatherpress_state`, `gatherpress_postcode`, `gatherpress_country`, `gatherpress_country_code`. These are readable over REST but **not writable** — REST writes are silently stripped, because the geocode cron owns them. Write `gatherpress_address` and let the cron fill the rest.
+Eight more hold the structured address the geocoder derives from `gatherpress_address`: `gatherpress_house_number`, `gatherpress_street`, `gatherpress_city`, `gatherpress_county`, `gatherpress_state`, `gatherpress_postcode`, `gatherpress_country`, `gatherpress_country_code`. These are readable over REST but **not writable**. REST writes are silently stripped, because the geocode cron owns them. Write `gatherpress_address` and let the cron fill the rest.
 
 Both lists exist as constants (`Venue\Meta::EDITOR_WRITABLE_FIELDS` and `::STRUCTURED_ADDRESS_FIELDS`) and are the single source of truth. Read them rather than retyping the keys.
 
@@ -70,7 +70,7 @@ RSVPs are comments of type `gatherpress_rsvp`. Their extras live in comment meta
 | `gatherpress_rsvp_external_id` | The identity value for non-user providers, e.g. an email address |
 | `gatherpress_event_updates_opt_in` | Whether this response wants event email |
 
-The status is **not** in comment meta — it is a term. Reading it with `get_comment_meta()` returns nothing.
+The status is **not** in comment meta. It is a term. Reading it with `get_comment_meta()` returns nothing.
 
 ## User meta
 
@@ -104,7 +104,7 @@ CREATE TABLE {$prefix}gatherpress_events (
 );
 ```
 
-**Why a table rather than meta.** Every event query is a date-range query — upcoming, past, between two dates, ordered by start — and meta queries cannot do that efficiently. `wp_postmeta` stores values as `longtext`, so a range comparison means casting every row, and there is no index to help. Indexed `datetime` columns turn that into a normal range scan.
+**Why a table rather than meta.** Every event query is a date-range query: upcoming, past, between two dates, ordered by start. Meta queries cannot do that efficiently. `wp_postmeta` stores values as `longtext`, so a range comparison means casting every row, and there is no index to help. Indexed `datetime` columns turn that into a normal range scan.
 
 `Event\Query` joins the table into `WP_Query` through the standard SQL clause filters, so the usual query API keeps working and blocks and Query Loops behave normally. Nothing reads the table directly.
 
@@ -119,7 +119,7 @@ Everything is under the `gatherpress/v1` namespace, defined as `GATHERPRESS_REST
 | Route | Method | Who can call it |
 |---|---|---|
 | `/event/rsvp` | POST | Someone who can RSVP to that event |
-| `/event/rsvp-form` | POST | Public — this is the open-RSVP path for logged-out visitors |
+| `/event/rsvp-form` | POST | Public. This is the open-RSVP path for logged-out visitors |
 | `/event/rsvp-status-html` | POST | Someone who can read that event's responses |
 | `/event/rsvp-responses` | GET | Someone who can read that event's responses |
 | `/event/email` | POST | Someone who can send that event's notifications |
@@ -138,7 +138,7 @@ GatherPress also extends core's own REST responses rather than replacing them: v
 
 ## See also
 
-- [Post type supports](../post-type-supports/README.md) — putting these features on your own post types
-- [RSVP system](../rsvp/README.md) — the comment storage, statuses, providers and flags in detail
-- [Settings architecture](../settings/architecture.md) — where settings are stored and how they travel
-- [Hook reference](../hooks/) — every filter and action, generated from source
+- [Post type supports](../post-type-supports/README.md): putting these features on your own post types
+- [RSVP system](../rsvp/README.md): the comment storage, statuses, providers and flags in detail
+- [Settings architecture](../settings/architecture.md): where settings are stored and how they travel
+- [Hook reference](../hooks/): every filter and action, generated from source

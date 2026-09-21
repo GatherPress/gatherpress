@@ -28,7 +28,7 @@ npm run wp-env start
 - **`develop` is the trunk.** Branch from it, and target it with your pull request. `main` reflects what has been released and only receives release-train PRs.
 - **Pull requests into `develop` are squash-merged.** Branch protection enforces linear history and signed commits, so one tidy commit is what lands however many you pushed.
 - **Fixes are born on `develop`**, even when they are destined for a patch release. Patch branches receive them as cherry-picks.
-- **Every pull request needs changelog handling** — either a file in `.github/changelog/` (`composer changelog:add` writes one) or the `Skip Changelog` label for changes nobody would read about, such as CI tweaks or docs.
+- **Every pull request needs changelog handling**: either a file in `.github/changelog/` (`composer changelog:add` writes one) or the `Skip Changelog` label for changes nobody would read about, such as CI tweaks or docs.
 
 The full picture, including how releases are cut, is in the [release process](release-process.md).
 
@@ -51,16 +51,16 @@ npm run lint:md:docs
 |---|---|---|
 | PHP unit | `npm run test:unit:php` | [unit-tests](unit-tests/README.md) |
 | PHP unit, multisite | `npm run test:unit:php:multisite` | [unit-tests](unit-tests/README.md) |
-| JavaScript unit | `npm run test:unit:js` | — |
+| JavaScript unit | `npm run test:unit:js` | none |
 | End-to-end | `npm run test:e2e` | [e2e-tests](e2e-tests/README.md) |
 
 New code is expected to be covered on every branch, not just the happy path. `AGENTS.md` is specific about what that means.
 
 ### Tooling
 
-- [Screenshot generator](screenshot-generator/README.md) — regenerates the WordPress.org screenshots, in every locale
-- [Playground PR previews](playground-pr-preview/README.md) — the live preview attached to each pull request
-- [Release process](release-process.md) — the version bump, the credits script, and the whole release train
+- [Screenshot generator](screenshot-generator/README.md): regenerates the WordPress.org screenshots, in every locale
+- [Playground PR previews](playground-pr-preview/README.md): the live preview attached to each pull request
+- [Release process](release-process.md): the version bump, the credits script, and the whole release train
 
 ## Contributing without writing code
 
@@ -94,8 +94,8 @@ Write about how your group uses it, answer a question in the [support forum](htt
 
 ### Show up
 
-- **[GatherPress Slack](https://join.slack.com/t/gatherpress/shared_invite/zt-2luaqcruf-iQm_o2UuKBpnX7zfRCxMAg)** — where the work is discussed, including a weekly huddle
-- **[gatherpress.org/get-involved](https://gatherpress.org/get-involved)** — the current list of ways to help
+- **[GatherPress Slack](https://join.slack.com/t/gatherpress/shared_invite/zt-2luaqcruf-iQm_o2UuKBpnX7zfRCxMAg)**: where the work is discussed, including a weekly huddle
+- **[gatherpress.org/get-involved](https://gatherpress.org/get-involved)**: the current list of ways to help
 
 ## Credits and access
 

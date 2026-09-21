@@ -3,7 +3,7 @@
 GatherPress does not ship an importer. It teaches **WordPress's own** import and export tools about the data that does not live in post meta, so Tools → Export and Tools → Import work on events the way they already work on posts.
 
 > [!NOTE]
-> This is about *content*. Exporting the plugin's **settings** is a separate thing with its own file format and WP-CLI commands — see [settings import and export](../settings/README.md).
+> This is about *content*. Exporting the plugin's **settings** is a separate thing with its own file format and WP-CLI commands. See [settings import and export](../settings/README.md).
 
 ## What round-trips, and what does not
 
@@ -11,7 +11,7 @@ Everything WordPress already handles comes along for free, because events and ve
 
 - Event and venue posts, with their titles, content, status, slug and dates
 - Topics and the hidden venue taxonomy, as term assignments
-- All the post meta listed in the [data model](../data-model/README.md) — RSVP limits, the online-event link, venue address and coordinates
+- All the post meta listed in the [data model](../data-model/README.md): RSVP limits, the online-event link, venue address and coordinates
 
 **RSVPs do not.** They are comments, and WordPress's exporter does not carry comments for custom post types in a form GatherPress can restore. An imported event arrives with no responses.
 
@@ -19,7 +19,7 @@ The interesting case is the one in between: an event's dates.
 
 ## Why dates need special handling
 
-Event dates live in the [`gatherpress_events` table](../data-model/README.md#the-events-table), not in post meta. WXR — the XML format WordPress exports — has no concept of a custom table. A plain export would carry the event and lose its date, which is the one thing an event cannot be without.
+Event dates live in the [`gatherpress_events` table](../data-model/README.md#the-events-table), not in post meta. WXR, the XML format WordPress exports, has no concept of a custom table. A plain export would carry the event and lose its date, which is the one thing an event cannot be without.
 
 So GatherPress writes the dates into the export **as if** they were post meta, under a key that does not exist in the database: `gatherpress_datetimes`. On import it intercepts that key before WordPress can store it, unpacks it, and writes the real row into the events table. Nothing named `gatherpress_datetimes` is ever stored on either side.
 
@@ -37,7 +37,7 @@ The marker exists because WordPress's exporter has no per-post action to hook. W
 
 **Importing** (`Core\Import`):
 
-1. GatherPress hooks whichever importer is installed — `wxr_importer.pre_process.post` for the v2 importer, `wp_import_post_data_raw` for the classic one.
+1. GatherPress hooks whichever importer is installed: `wxr_importer.pre_process.post` for the v2 importer, `wp_import_post_data_raw` for the classic one.
 2. Posts whose type declares `gatherpress-event-date` fire the `gatherpress_import` action.
 3. That adds a short-circuiting `add_post_metadata` filter. When a pseudo-post-meta key comes past, its import callback runs and the filter returns early, so WordPress never writes the fake key to `wp_postmeta`.
 
@@ -66,7 +66,7 @@ add_filter(
 ```
 
 - **`export_callback( WP_Post $post ): string`** returns the value to write. It has to be a string, so serialize anything structured. It runs inside the export request, so keep it cheap.
-- **`import_callback( int $post_id, $meta_value ): void`** stores it wherever it belongs. Returning nothing is the point — the filter has already stopped WordPress from writing the key itself.
+- **`import_callback( int $post_id, $meta_value ): void`** stores it wherever it belongs. Returning nothing is the point, because the filter has already stopped WordPress from writing the key itself.
 
 The default registration is a good model, because it is the same shape:
 
@@ -90,6 +90,6 @@ The same filter is the migration path. An importer for another plugin's format r
 
 ## See also
 
-- [Data model](../data-model/README.md) — what lives in meta, what lives in the table
-- [Settings import and export](../settings/README.md) — the separate, settings-only mechanism
-- [Post type supports](../post-type-supports/README.md) — why both sides gate on support rather than post type
+- [Data model](../data-model/README.md): what lives in meta, what lives in the table
+- [Settings import and export](../settings/README.md): the separate, settings-only mechanism
+- [Post type supports](../post-type-supports/README.md): why both sides gate on support rather than post type

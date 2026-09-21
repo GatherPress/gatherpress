@@ -29,7 +29,7 @@ npx playwright install chromium --with-deps
 
 ### Start the environment
 
-You do not have to start anything by hand. `npm run test:e2e` is preceded by a `pretest:e2e` script that starts `wp-env` with [`.wp-env.test.json`](../../../.wp-env.test.json) — a slim config that mounts the plugin, activates Twenty Twenty-Five, and serves on port **8889**. If an instance is already running the tests use it.
+You do not have to start anything by hand. `npm run test:e2e` is preceded by a `pretest:e2e` script that starts `wp-env` with [`.wp-env.test.json`](../../../.wp-env.test.json), a slim config that mounts the plugin, activates Twenty Twenty-Five, and serves on port **8889**. If an instance is already running the tests use it.
 
 The test site is at `http://localhost:8889`, the user is `admin` and the password is `password`.
 
@@ -87,7 +87,7 @@ To run it, publish an event dated at least a week out, add the RSVP block, then 
 EVENT_URL=http://localhost:8889/event/your-event/ npm run test:e2e -- rsvp-tests/rsvp-flows.spec.js
 ```
 
-Getting these into CI means seeding that event automatically. Three approaches are sketched in the spec's own comments — a Playground blueprint importing WXR, driving the editor with Playwright, or seeding the database with WP-CLI — and there are experimental helpers in `test/e2e/helpers/` for reference.
+Getting these into CI means seeding that event automatically. Three approaches are sketched in the spec's own comments (a Playground blueprint importing WXR, driving the editor with Playwright, or seeding the database with WP-CLI), and there are experimental helpers in `test/e2e/helpers/` for reference.
 
 ## Configuration
 
