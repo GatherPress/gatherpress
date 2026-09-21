@@ -1,11 +1,6 @@
 # RSVP
 
-GatherPress stores RSVPs as WordPress comments with a custom `comment_type` of
-`gatherpress_rsvp`. The comment row is the canonical record — status changes
-(`attending`, `not_attending`, `waiting_list`), guest counts, and anonymous /
-authenticated state all live on the comment and its meta. Reusing the comments
-table means RSVPs inherit WordPress's moderation, capability, and i18n
-infrastructure for free.
+GatherPress stores RSVPs as WordPress comments with a custom `comment_type` of `gatherpress_rsvp`. The comment row is the canonical record: status changes (`attending`, `not_attending`, `waiting_list`), guest counts, and anonymous / authenticated state all live on the comment and its meta. Reusing the comments table means RSVPs inherit WordPress's moderation, capability, and i18n infrastructure for free.
 
 ## Comment-query coexistence
 
@@ -31,13 +26,7 @@ index themselves; once one exists, whether core adds it or the site does, the
 
 ### When the default exclusion gets in the way
 
-The exclusion touches shared query vars, which can conflict with other plugins
-that read or write the same vars on
-`pre_get_comments`. The canonical example is the [ActivityPub
-plugin](https://github.com/Automattic/wordpress-activitypub) — federation
-interactions (likes, boosts, quotes) flow through `wp_comments` with their own
-types, and ActivityPub's own `pre_get_comments` callback assumes the caller's
-`type__in` reflects the original query.
+The exclusion touches shared query vars, which can conflict with other plugins that read or write the same vars on `pre_get_comments`. The canonical example is the [ActivityPub plugin](https://github.com/Automattic/wordpress-activitypub): federation interactions (likes, boosts, quotes) flow through `wp_comments` with their own types, and ActivityPub's own `pre_get_comments` callback assumes the caller's `type__in` reflects the original query.
 
 To opt out of GatherPress's default exclusion for a specific query, return
 false from the `gatherpress_rsvp_comment_query_exclusion` filter. The filter
@@ -49,7 +38,7 @@ add_filter(
     'gatherpress_rsvp_comment_query_exclusion',
     function ( bool $exclude, WP_Comment_Query $query ): bool {
         // Only short-circuit when the caller is asking for federation
-        // interaction types — leave every other comment query alone so
+        // interaction types. Leave every other comment query alone so
         // GatherPress's default RSVP exclusion continues to apply.
         $types = (array) ( $query->query_vars['type__in'] ?? array() );
 
@@ -72,25 +61,20 @@ refactors without code changes on the integration side.
 
 ## RSVP providers (identity sources)
 
-Since 0.35.0 an RSVP response is attributed to a **provider** — the source of
-the responder's identity. GatherPress ships two: `user` (a logged-in WordPress
-account) and `email` (an address supplied through the open RSVP form). Companion
-plugins can add their own — a membership system, an external ticketing platform,
-an SSO directory — so responses from those sources are stored, displayed, and
-de-duplicated alongside the built-in ones.
+Since 0.35.0 an RSVP response is attributed to a **provider**, the source of the responder's identity. GatherPress ships two: `user` (a logged-in WordPress account) and `email` (an address supplied through the open RSVP form). Companion plugins can add their own (a membership system, an external ticketing platform, an SSO directory), so responses from those sources are stored, displayed, and de-duplicated alongside the built-in ones.
 
 ### The pieces
 
-- **`GatherPress\Core\Rsvp\Response\Identity`** — a value object pairing an
+- **`GatherPress\Core\Rsvp\Response\Identity`**: a value object pairing an
   `Identity_Type` with its value (a user ID, an email address, a URL, or an
   external ID). It validates on construction, so an invalid email or a
   non-existent user ID throws rather than persisting a bad row.
-- **`GatherPress\Core\Rsvp\Response\Identity_Type`** — the enum of identity
+- **`GatherPress\Core\Rsvp\Response\Identity_Type`**: the enum of identity
   kinds: `WP_USER_ID`, `EMAIL`, `URL`, `EXTERNAL_ID`.
-- **`GatherPress\Core\Rsvp\Response\Provider\Base`** — the abstract a provider
+- **`GatherPress\Core\Rsvp\Response\Provider\Base`**: the abstract a provider
   extends. It declares what an identity *is* and how to present it; it does not
   touch storage (the repository owns that).
-- **`GatherPress\Core\Rsvp\Response\Provider_Registry`** — the singleton that
+- **`GatherPress\Core\Rsvp\Response\Provider_Registry`**: the singleton that
   holds registered providers and fires the registration hook.
 
 ### The provider contract
@@ -149,15 +133,7 @@ add_action( 'gatherpress_register_rsvp_types', function ( $registry ) {
 
 ### What the provider term is (and isn't) for
 
-On save, GatherPress stamps the provider's slug as a `_gatherpress_rsvp_provider`
-taxonomy term on the RSVP comment. That term is the authoritative record of which
-provider issued a response — and for a custom identity type such as
-`EXTERNAL_ID` it is the **only** way to resolve the provider later, since it
-can't be inferred from a user ID or email. For the two core providers the term
-is an optimization: the admin Type column and hydration both fall back to
-inferring `user` from a real user ID and `email` from a valid author email when
-no term is present, so responses written by paths that don't stamp it (the open
-RSVP form) still resolve.
+On save, GatherPress stamps the provider's slug as a `_gatherpress_rsvp_provider` taxonomy term on the RSVP comment. That term is the authoritative record of which provider issued a response, and for a custom identity type such as `EXTERNAL_ID` it is the **only** way to resolve the provider later, since it can't be inferred from a user ID or email. For the two core providers the term is an optimization: the admin Type column and hydration both fall back to inferring `user` from a real user ID and `email` from a valid author email when no term is present, so responses written by paths that don't stamp it (the open RSVP form) still resolve.
 
 ## RSVP flags
 
@@ -309,7 +285,7 @@ Since 0.34.0 the `rsvp_mode` setting is the master switch for the whole RSVP
 subsystem. When it is set to `disabled`, GatherPress removes the
 `gatherpress-rsvp` post type support from every post type that declares it
 (`Rsvp\Setup::maybe_disable_rsvp()`), so every `post_type_supports()` guard in
-the plugin — and in companion plugins following the same pattern — returns
+the plugin (and in companion plugins following the same pattern) returns
 false without needing its own setting check. The `gatherpress/rsvp*` blocks are
 also filtered out of the block inserter, and the RSVPs admin page is not
 registered.

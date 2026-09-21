@@ -1,6 +1,6 @@
 # Playground
 
-The GatherPress Playground is a live, interactive demo environment powered by [WordPress Playground](https://developer.wordpress.org/playground/). It lets you explore GatherPress instantly — no installation required.
+The GatherPress Playground is a live, interactive demo environment powered by [WordPress Playground](https://developer.wordpress.org/playground/). It lets you explore GatherPress instantly, no installation required.
 
 ## 🚀 Try It Now
 

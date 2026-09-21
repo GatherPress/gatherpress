@@ -22,13 +22,19 @@ Whenever WordPress already has an answer, GatherPress uses it rather than invent
 
 The payoff is compounding. RSVPs being comments means the comment query, comment meta, moderation and the REST API work on them already. Venues being posts means the block editor, revisions and the media library work on them already. None of that had to be built, and none of it can drift out of step with core.
 
-### When we do break the pattern
+### When we do add something of our own
 
-Rarely, and the code says why at the point where it happens.
+Rarely, and it is additive rather than a replacement.
 
-The clearest example is the one [custom table](../data-model/README.md#the-events-table). Event dates could have been post meta, and they nearly were. But every event query is a date-range query, `wp_postmeta` stores its values as `longtext`, and there is no index to help, so every "upcoming events" query would have meant casting every row in the table. Indexed `datetime` columns turn that into a normal range scan.
+The clearest example is the one [custom table](../data-model/README.md#the-events-table), and it is worth being precise about what it is for, because it is easy to misread as "we gave up on post meta".
 
-That is the shape of an acceptable exception: core's own storage genuinely could not do the job, the cost was measured rather than assumed, and the departure is one table rather than one architecture. `Event\Query` still joins it into `WP_Query` through the standard SQL clause filters, so blocks, Query Loops and the REST API keep behaving like they always did.
+We did not. Event dates **are** post meta. `gatherpress_datetime` is the canonical value the editor and the REST API write, and it is the representation that travels with the content. The table sits alongside it and exists for **queries and scale**, which is a different job.
+
+The reason is that every event query is a date-range query: upcoming, past, between two dates, ordered by start. `wp_postmeta` stores its values as `longtext` with no useful index, so a range comparison means casting every row. Indexed `datetime` columns turn that into a normal range scan, and they keep doing so on a site with tens of thousands of events. That was a scaling decision made deliberately at the start, not a retreat after post meta fell over.
+
+The two stay in step automatically. On `wp_after_insert_post`, `Event\Setup::set_datetimes()` reads the `gatherpress_datetime` meta and writes the table row from it, so updating the meta updates the table. Nothing has to remember to do both.
+
+That is the shape of an acceptable addition: core's storage still owns the content, the extra structure serves a job core's storage is not built for, and the departure is one table rather than one architecture. `Event\Query` joins it into `WP_Query` through the standard SQL clause filters, so blocks, Query Loops and the REST API keep behaving like they always did.
 
 ## Keeping the plugin focused
 

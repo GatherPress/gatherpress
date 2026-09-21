@@ -19,27 +19,27 @@ a short, fixed sequence:
 
 ```php
 add_action( 'gatherpress_loaded', function () {
-    // Every core GatherPress class exists — safe to integrate.
+    // Every core GatherPress class exists, safe to integrate.
 } );
 ```
 
-Fires once, on `plugins_loaded`, to signal that **every core GatherPress class
-has been instantiated**. Code that needs a GatherPress class to already exist —
-a registry to register into, a singleton to read — can run here instead of
-guessing at load order.
+Fires once, on `plugins_loaded`, to signal that **every core GatherPress class has
+been instantiated**. Code that needs a GatherPress class to already exist (a
+registry to register into, a singleton to read), can run here instead of guessing
+at load order.
 
 Crucially, it fires **only after the requirements check has passed**. If
-GatherPress bails early — the site is below the minimum PHP or WordPress
-version, or the build is missing — the action never fires. That makes it the
-correct signal for anything that must not run when GatherPress isn't fully
-loaded (see [Companion plugins](#companion-plugins) below).
+GatherPress bails early (the site is below the minimum PHP or WordPress version,
+or the build is missing), the action never fires. That makes it the correct signal
+for anything that must not run when GatherPress isn't fully loaded (see [Companion
+plugins](#companion-plugins) below).
 
-The classes are actually constructed earlier, at step 4 (plugin include time).
-The action is deliberately deferred to `plugins_loaded` so that it fires *after
-every active plugin's main file has been included* — which means a listener
-added at the top level of **any** plugin is registered in time to catch it,
-regardless of whether that plugin loads before or after GatherPress. Without the
-deferral, a plugin that loaded after GatherPress would miss the event.
+The classes are actually constructed earlier, at step 4 (plugin include time). The
+action is deliberately deferred to `plugins_loaded` so that it fires *after every
+active plugin's main file has been included*, which means a listener added at the
+top level of **any** plugin is registered in time to catch it, regardless of
+whether that plugin loads before or after GatherPress. Without the deferral, a
+plugin that loaded after GatherPress would miss the event.
 
 GatherPress uses it internally: the RSVP provider registry
 (`Rsvp\Response\Provider_Registry`) hooks `gatherpress_loaded` and, when it
@@ -49,15 +49,15 @@ plugins can register custom providers once the registry is ready. See the
 
 ## Which hook should I use?
 
-- **To integrate with GatherPress-specific extension points** — register an RSVP
-  provider, react to the subsystems being ready — hook **`gatherpress_loaded`**.
+- **To integrate with GatherPress-specific extension points**: register an RSVP
+  provider, react to the subsystems being ready. Hook **`gatherpress_loaded`**.
 - **If you only need GatherPress classes to *exist*** (call a singleton, read a
   setting, query events) and don't need the readiness event itself, any hook
   from `plugins_loaded` onward (including `init`) works, since GatherPress is
   fully instantiated by then. Guarding with `class_exists()` / `function_exists()`
   is still good practice for a soft dependency.
 - **If you are a companion plugin whose classes load through GatherPress's
-  autoloader**, you must boot on `gatherpress_loaded` — see below.
+  autoloader**, you must boot on `gatherpress_loaded`. See below.
 
 ## Companion plugins
 
@@ -83,14 +83,13 @@ add_action( 'gatherpress_loaded', function (): void {
 
 **Boot on `gatherpress_loaded`, never on the `GATHERPRESS_VERSION` constant and
 never on `plugins_loaded` alone.** The constant is defined *before* the
-requirements check, so `defined( 'GATHERPRESS_VERSION' )` means "GatherPress
-began loading", not "GatherPress loaded successfully". If GatherPress bails at
-its requirements gate, the constant is set but the autoloader was never
-registered — so a companion that boots on the constant calls into its own
-classes, which cannot be autoloaded, and the whole site fatals with a white
-screen instead of GatherPress's "please upgrade" notice. Gating on
-`gatherpress_loaded` avoids this: the action simply never fires, and the
-companion stays dormant.
+requirements check, so `defined( 'GATHERPRESS_VERSION' )` means "GatherPress began
+loading", not "GatherPress loaded successfully". If GatherPress bails at its
+requirements gate, the constant is set but the autoloader was never registered, so
+a companion that boots on the constant calls into its own classes, which cannot be
+autoloaded, and the whole site fatals with a white screen instead of GatherPress's
+"please upgrade" notice. Gating on `gatherpress_loaded` avoids this: the action
+simply never fires, and the companion stays dormant.
 
 Two details matter:
 
@@ -108,7 +107,7 @@ Two details matter:
 The same rule applies to registering with GatherPress's coexistence guard.
 GatherPress's `Coexistence_Guard` listens for the
 `gatherpress_register_coexistence_guard` action, and that listener only exists
-once GatherPress has bootstrapped — so announce your plugin on
+once GatherPress has bootstrapped, so announce your plugin on
 `gatherpress_loaded`:
 
 ```php
@@ -124,7 +123,7 @@ add_action( 'gatherpress_loaded', function (): void {
 
 ## See also
 
-- [RSVP providers](rsvp/README.md#rsvp-providers-identity-sources) — the main
+- [RSVP providers](rsvp/README.md#rsvp-providers-identity-sources): the main
   consumer of `gatherpress_loaded`.
 - The auto-generated per-hook reference under
   [`docs/developer/hooks/`](hooks/) (regenerated by CI on merge).

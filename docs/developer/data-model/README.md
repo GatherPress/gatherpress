@@ -47,7 +47,7 @@ The three RSVP taxonomies are on *comments*, not posts, because an RSVP is a com
 | `gatherpress_max_guest_limit` | Guests per RSVP. `0` means none |
 | `gatherpress_online_event_link` | The joining link, shown only to attendees |
 
-The datetime meta is written alongside the [custom table](#the-events-table), and the table is what queries read.
+`gatherpress_datetime` is the canonical value the editor and REST write. The [events table](#the-events-table) is derived from it and is what queries read.
 
 The two limit keys are enforced server-side on every write, including from WP-CLI. An RSVP asking for more guests than `gatherpress_max_guest_limit` allows is not rejected. It is clamped, and the caller still gets a success response.
 
@@ -104,7 +104,11 @@ CREATE TABLE {$prefix}gatherpress_events (
 );
 ```
 
-**Why a table rather than meta.** Every event query is a date-range query: upcoming, past, between two dates, ordered by start. Meta queries cannot do that efficiently. `wp_postmeta` stores values as `longtext`, so a range comparison means casting every row, and there is no index to help. Indexed `datetime` columns turn that into a normal range scan.
+**The table does not replace the meta, it serves a different job.** `gatherpress_datetime` post meta is the canonical value: it is what the editor and the REST API write, and it is the representation that travels with the content. The table is derived from it, and exists for querying and scale.
+
+Every event query is a date-range query: upcoming, past, between two dates, ordered by start. `wp_postmeta` stores values as `longtext` with no useful index, so a range comparison means casting every row. Indexed `datetime` columns turn that into a normal range scan, and keep doing so as an install grows.
+
+**The two stay in step automatically.** On `wp_after_insert_post`, `Event\Setup::set_datetimes()` reads the `gatherpress_datetime` meta and writes the table row from it. Update the meta and the table follows; nothing has to write both by hand.
 
 `Event\Query` joins the table into `WP_Query` through the standard SQL clause filters, so the usual query API keeps working and blocks and Query Loops behave normally. Nothing reads the table directly.
 

@@ -21,13 +21,7 @@ GatherPress combines four of such block-patterns to curate the creation of:
 
 ### New Event
 
-Creating a new event opens WordPress's "Choose a pattern" starter modal —
-the same UX Twenty Twenty-Five uses on new pages. The bundled patterns
-live in `includes/core/templates/event/`; each file returns a
-`name/title/description/content` array and the loader registers it
-scoped to `core/post-content` plus every post type declaring
-`gatherpress-event-date` support. Adding a new pattern is just dropping
-a file into that directory.
+Creating a new event opens WordPress's "Choose a pattern" starter modal, the same UX Twenty Twenty-Five uses on new pages. The bundled patterns live in `includes/core/templates/event/`; each file returns a `name/title/description/content` array and the loader registers it scoped to `core/post-content` plus every post type declaring `gatherpress-event-date` support. Adding a new pattern is just dropping a file into that directory.
 
 The bundled default ships with the plugin:
 
@@ -37,14 +31,7 @@ The bundled default ships with the plugin:
   RSVP, and rsvp-response carry `patternPicked: true` so their
   in-block pattern pickers stay suppressed.
 
-Third parties can append their own without forking by hooking the
-`gatherpress_event_starter_patterns` filter. A definition without a
-`postTypes` key registers against every post type declaring
-`gatherpress-event-date` support — no slugs to enumerate, and a
-companion post type declaring the support later is included
-automatically. To scope an entry to one post type among several sharing
-the support, give the definition its own `postTypes` key (core's
-per-pattern granularity):
+Third parties can append their own without forking by hooking the `gatherpress_event_starter_patterns` filter. A definition without a `postTypes` key registers against every post type declaring `gatherpress-event-date` support, no slugs to enumerate, and a companion post type declaring the support later is included automatically. To scope an entry to one post type among several sharing the support, give the definition its own `postTypes` key (core's per-pattern granularity):
 
 ```php
 add_filter(
@@ -64,15 +51,9 @@ add_filter(
 );
 ```
 
-The filter's second argument is the array of post types declaring the
-support — useful when the returned patterns themselves should vary by
-which event-acting post types are in scope. The bundled defaults arrive
-in the same array, so they can also be reordered, modified, or removed
-here rather than only appended to.
+The filter's second argument is the array of post types declaring the support, useful when the returned patterns themselves should vary by which event-acting post types are in scope. The bundled defaults arrive in the same array, so they can also be reordered, modified, or removed here rather than only appended to.
 
-Per-user dismissal is handled by the modal's own *"Always show starter
-patterns for new pages"* toggle — that's a WordPress-core user
-preference, not a GatherPress setting.
+Per-user dismissal is handled by the modal's own *"Always show starter patterns for new pages"* toggle: that's a WordPress-core user preference, not a GatherPress setting.
 
 The `gatherpress/event-template` pattern still exists as the Block Hooks
 anchor for companion plugins that hook blocks before/after the event-date
@@ -93,18 +74,11 @@ The bundled default:
   single `gatherpress/venue` block with `patternPicked: true` so the
   block's in-block picker stays suppressed.
 
-Third parties can append their own via the
-`gatherpress_venue_starter_patterns` filter — same shape as the event
-filter above, including the optional per-pattern `postTypes` key.
+Third parties can append their own via the `gatherpress_venue_starter_patterns` filter, same shape as the event filter above, including the optional per-pattern `postTypes` key.
 
-Per-user dismissal is handled by the modal's own *"Always show starter
-patterns for new pages"* toggle — that's a WordPress-core user
-preference, not a GatherPress setting.
+Per-user dismissal is handled by the modal's own *"Always show starter patterns for new pages"* toggle: that's a WordPress-core user preference, not a GatherPress setting.
 
-The `gatherpress/venue-template` pattern still exists — it is the
-Block Hooks anchor and the seed used by `Venue\Setup::maybe_apply_venue_template()`
-when venues are created programmatically (e.g., via REST without
-content).
+The `gatherpress/venue-template` pattern still exists. It is the Block Hooks anchor and the seed used by `Venue\Setup::maybe_apply_venue_template()` when venues are created programmatically (e.g., via REST without content).
 
 
 ### New Event Queries within any post
