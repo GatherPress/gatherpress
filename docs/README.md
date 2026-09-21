@@ -10,7 +10,8 @@ Installing GatherPress, creating events and venues, taking RSVPs, sending email,
 - [Core concepts](user/core-concepts.md): how events, venues, topics and RSVPs fit together
 - [Creating and managing events](user/creating-and-managing-events.md) · [Venues](user/venues.md) · [Topics](user/topics.md)
 - [The RSVP system](user/rsvp-system.md) · [Emails](user/emails.md) · [Calendar feeds](user/calendar-feeds.md)
-- [Blocks](user/blocks/README.md) · [Roles and permissions](user/user-roles-and-permissions.md) · [Privacy](user/privacy.md)
+- [Blocks](user/blocks/README.md): [Event Date](user/blocks/event-date.md), [Add to Calendar](user/blocks/add-to-calendar.md), [Online Event](user/blocks/online-event.md), [Event Query](user/blocks/event-query.md)
+- [Roles and permissions](user/user-roles-and-permissions.md) · [Privacy](user/privacy.md)
 - [FAQ](faq.md) · [Where to get help](user/where-to-get-help.md)
 
 ## [For developers building on GatherPress](developer/README.md)
@@ -26,6 +27,7 @@ Extending the plugin from a theme, a companion plugin, or your own post types.
 - [Blocks](developer/blocks/README.md): [hookable patterns](developer/blocks/hookable-patterns/README.md), [slot fills](developer/blocks/slot-fills/README.md), [pattern pickers](developer/blocks/pattern-pickers.md)
 - [Theme customizations](developer/theme-customizations/README.md) · [Custom URL endpoints](developer/custom-url-endpoints/README.md)
 - [Content import and export](developer/content-import-export/README.md) · [WP-CLI commands](developer/wp-cli/README.md)
+- [URLs and permalinks](developer/urls-and-permalinks/README.md) · [Multisite](developer/multisite/README.md)
 - [Plugin lifecycle](developer/plugin-lifecycle.md) · [Hook reference](developer/hooks/) · [Hook naming](developer/hooks-naming-convention.md)
 
 ## [For contributors](contributor/README.md)

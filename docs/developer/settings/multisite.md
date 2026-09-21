@@ -1,5 +1,7 @@
 # Multisite Network Settings
 
+This page covers settings only. For the plugin's multisite behavior generally, from activation through uninstall, see [Multisite](../multisite/README.md).
+
 On a WordPress Multisite install, GatherPress can expose settings at the network level so super admins set one value that all sites in the network inherit. The inheritance is opt-in per option, individual sites remain free to manage the rest locally.
 
 ## UI Surfaces

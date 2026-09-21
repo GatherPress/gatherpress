@@ -8,15 +8,17 @@ Event List (deprecated in 0.34, replaced by the [Event Query](./event-query.md) 
 
 [RSVP Response and its inner blocks](./rsvp-response-and-inner-blocks.md) (RSVP Response Toggle, Avatar Display Name, RSVP Guest Count Display, etc)
 
-Add to Calendar: Allows a user to add an event to their preferred calendar application. This saves a one-time copy of the event; for live, auto-updating subscriptions by venue, topic, or site, see [Calendar feeds](../calendar-feeds.md).
+[Add to Calendar](./add-to-calendar.md): lets a visitor add an event to their preferred calendar application. This saves a one-time copy of the event; for live, auto-updating subscriptions by venue, topic, or site, see [Calendar feeds](../calendar-feeds.md).
 
 ## Other blocks used in an event
 
 See details on [Creating and managing events](../creating-and-managing-events.md)
 
-Event Date
-Venue
-Online Event
+[Event Date](./event-date.md)
+
+[Venue](./venue-v2/README.md)
+
+[Online Event](./online-event.md)
 
 ## Block Guard
 

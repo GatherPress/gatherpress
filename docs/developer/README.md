@@ -5,6 +5,8 @@
 - [Close to core](philosophy/README.md): the design rule behind most of the others, and why some good ideas belong in a companion plugin instead.
 - [Companion plugins](companion-plugins/README.md): building on GatherPress rather than in it, starting from the GatherPress Awesome template.
 - [Data model](data-model/README.md): post types, taxonomies, meta, the events table and every REST route.
+- [URLs and permalinks](urls-and-permalinks/README.md): every public URL, where its slug comes from, and when rewrite rules flush.
+- [Multisite](multisite/README.md): what is per site and what is network wide, from activation through uninstall.
 
 ## Feature guides
 
