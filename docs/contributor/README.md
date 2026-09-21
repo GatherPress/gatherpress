@@ -44,6 +44,9 @@ npm run wp-env start
 - **Pull requests into `develop` are squash-merged.** Branch protection enforces linear history and signed commits, so one tidy commit is what lands however many you pushed.
 - **Fixes are born on `develop`**, even when they are destined for a patch release. Patch branches receive them as cherry-picks.
 - **Every pull request needs changelog handling**: either a file in `.github/changelog/` (`composer changelog:add` writes one) or the `Skip Changelog` label for changes nobody would read about, such as CI tweaks or docs.
+- **Leave "Allow edits by maintainers" ticked** when you open a pull request from a fork. GitHub ticks it by default, so this is mostly about not unticking it.
+
+That last one matters more than it looks. A pull request often needs a rebase, a conflict resolved, a changelog entry, or a small change to get it over the line, and it is usually faster for a maintainer to push that commit than to describe it and wait. Without that box ticked nobody can push to your branch, so a change that was minutes from merging can sit for days instead. You keep authorship and you keep the credit either way.
 
 The full picture, including how releases are cut, is in the [release process](release-process.md).
 
@@ -59,6 +62,21 @@ npm run lint:js
 npm run lint:css
 npm run lint:md:docs
 ```
+
+### Using AI tools
+
+Plenty of contributors use AI assistants. So do we, and we are not going to pretend otherwise or ask you to.
+
+What matters is that **you are steering it**, and that what you open a pull request with represents the quality of code you would expect from yourself. An agent will happily produce something plausible that does not work, and it cannot tell you which of its guesses it is least sure about. You can.
+
+In practice that means two habits:
+
+- **Review your own code before you ask anyone else to.** Read the whole diff as though somebody else wrote it. If there is a line you cannot explain, that line is not ready.
+- **Test that it does what it claims.** Run it. Click the thing. Check the case the change was supposed to fix, and the nearby case it might have broken.
+
+If you are new to coding, that is genuinely fine and you are welcome here. We like helping people level up on this project, and asking a question in Slack is never the wrong move. The reason we are direct about this is that people run real websites on GatherPress, [WordPress.org](https://wordpress.org/) among them, and a bug that ships is somebody's event page on the day of their event.
+
+None of this is a bar to clear before you are allowed to contribute. It is the same standard the maintainers hold themselves to, and the more of us reviewing and testing, the better it gets for everyone.
 
 ### Tests
 
