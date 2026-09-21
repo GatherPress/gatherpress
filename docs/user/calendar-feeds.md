@@ -2,7 +2,7 @@
 
 Subscribe once, never miss an event.
 
-GatherPress publishes subscribable calendar feeds in the widely supported iCalendar (`.ics`) format. Attendees can follow a venue, a topic, or all of a site's events in their own calendar app, and the calendar stays up to date automatically — new events appear, and changes to dates, times, or venues flow through without anyone having to download anything again.
+GatherPress publishes subscribable calendar feeds in the widely supported iCalendar (`.ics`) format. Attendees can follow a venue, a topic, or all of a site's events in their own calendar app, and the calendar stays up to date automatically: new events appear, and changes to dates, times, or venues flow through without anyone having to download anything again.
 
 ## Download once vs. subscribe
 
@@ -24,7 +24,7 @@ Each feed is a URL that can be pasted into any calendar app that supports iCalen
 | Events at one venue | `example.org/venue/my-venue/feed/ical` |
 | Events in one topic | `example.org/topic/my-topic/feed/ical` |
 
-Replace `example.org` with your site address, and `my-venue` / `my-topic` with the slug of the venue or topic — the same slug that appears in the venue's or topic's own web address. If you have customized the event, venue, or topic permalink bases in the GatherPress settings, the feed URLs follow your custom slugs.
+Replace `example.org` with your site address, and `my-venue` / `my-topic` with the slug of the venue or topic, the same slug that appears in the venue's or topic's own web address. If you have customized the event, venue, or topic permalink bases in the GatherPress settings, the feed URLs follow your custom slugs.
 
 So a community site could offer, for example:
 
@@ -41,7 +41,7 @@ So a community site could offer, for example:
 
 ## Automatic discovery
 
-The feeds are also advertised in the site's HTML (as `<link rel="alternate">` tags), so calendar-aware browsers, apps, and services can find the right feed on their own. Visiting a venue page advertises that venue's feed, a topic page advertises that topic's feed, and so on — often subscribing is as simple as pointing a calendar app at the page URL itself.
+The feeds are also advertised in the site's HTML (as `<link rel="alternate">` tags), so calendar-aware browsers, apps, and services can find the right feed on their own. Visiting a venue page advertises that venue's feed, a topic page advertises that topic's feed, and so on. Often subscribing is as simple as pointing a calendar app at the page URL itself.
 
 ## For developers
 
