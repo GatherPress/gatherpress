@@ -1,6 +1,6 @@
 # Add to Calendar block
 
-Gives visitors a way to put the event into their own calendar. It renders as a dropdown labelled **Add to calendar** with four choices:
+Gives visitors a way to put the event into their own calendar. It renders as a dropdown labeled **Add to calendar** with four choices:
 
 - **Google Calendar**, which opens Google Calendar with the event prefilled
 - **iCal**, which downloads an `.ics` file
