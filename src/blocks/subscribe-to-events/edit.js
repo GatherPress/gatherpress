@@ -26,7 +26,7 @@ import { getVenuePostType, useVenueOptions } from '../../helpers/venue';
 /**
  * The feed scopes the block can render.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @type {Object[]}
  */
@@ -52,7 +52,7 @@ const SCOPE_OPTIONS = [
 /**
  * The link flavors the block can render.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @type {Object[]}
  */
@@ -74,7 +74,7 @@ const LINK_FORMAT_OPTIONS = [
 /**
  * A searchable venue picker for the venue feed scope.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @param {Object}   props          Component props.
  * @param {number}   props.value    Currently selected venue post ID.
@@ -110,7 +110,7 @@ function VenueSelect( { value, onChange } ) {
 /**
  * The Subscribe to Events block edit component.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @param {Object}   props               Component props.
  * @param {Object}   props.attributes    Block attributes.

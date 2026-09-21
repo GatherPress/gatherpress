@@ -12,7 +12,7 @@ import { __ } from '@wordpress/i18n';
 /**
  * The topic taxonomy backing the feed scope of the same name.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @type {string}
  */
@@ -21,7 +21,7 @@ export const TOPIC_TAXONOMY = 'gatherpress_topic';
 /**
  * How many topics one search returns.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @type {number}
  */
@@ -32,7 +32,7 @@ const PER_PAGE = 10;
  *
  * Shared so an unresolved search keeps its reference between renders.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @type {Object[]}
  */
@@ -41,7 +41,7 @@ const EMPTY_RECORDS = [];
 /**
  * Turns topic records into combobox options.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @param {Object[]} topics   Topic records from the search.
  * @param {Object}   selected The currently selected topic, if any.
@@ -67,7 +67,7 @@ export function toTopicOptions( topics, selected ) {
 /**
  * Search topics for a combobox, keeping the current selection visible.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @param {string}        search  Current search term.
  * @param {number|string} topicId The currently selected topic ID, if any.
@@ -120,7 +120,7 @@ export function useTopicOptions( search, topicId ) {
 /**
  * A searchable topic picker.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @param {Object}   props                     Component props.
  * @param {number}   props.value               Currently selected topic ID.

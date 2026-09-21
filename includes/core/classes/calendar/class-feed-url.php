@@ -15,7 +15,7 @@
  * this resolver.
  *
  * @package GatherPress\Core\Calendar
- * @since 0.36.0
+ * @since TBD
  */
 
 namespace GatherPress\Core\Calendar;
@@ -34,14 +34,14 @@ use WP_Term;
  * Every method is static: this is a pure mapping from (scope, identifier) to
  * URL, with no state to hold and nothing to wire up.
  *
- * @since 0.36.0
+ * @since TBD
  */
 final class Feed_Url {
 
 	/**
 	 * Scopes this resolver understands.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @var string[]
 	 */
@@ -59,7 +59,7 @@ final class Feed_Url {
 	 * point at something the feed can be built from — a venue that is not a
 	 * shadow source, a term whose taxonomy carries no events, and so on.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param array<string, mixed> $args {
 	 *     Scope args.
@@ -97,7 +97,7 @@ final class Feed_Url {
 		 * replaces it, which is how a companion plugin can surface a feed
 		 * shape the core resolver does not know about.
 		 *
-		 * @since 0.36.0
+		 * @since TBD
 		 *
 		 * @param string|false         $url  Resolved feed URL, or false when unresolved.
 		 * @param array<string, mixed> $args Scope args the URL was resolved from.
@@ -117,7 +117,7 @@ final class Feed_Url {
 	 * HTTP URL — an already-webcal URL, a relative path, a false — is returned
 	 * unchanged so callers can map over mixed values safely.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $url Feed URL to rewrite.
 	 *
@@ -134,7 +134,7 @@ final class Feed_Url {
 	/**
 	 * Check whether any event-bearing post type is registered with a taxonomy.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $taxonomy Taxonomy slug to look up.
 	 *
@@ -157,7 +157,7 @@ final class Feed_Url {
 	 * tagged onto events through the shadow taxonomy their slug derives. A
 	 * post type only qualifies when both halves are true.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $post_type Post type to check.
 	 *
@@ -171,7 +171,7 @@ final class Feed_Url {
 	/**
 	 * Dispatch a validated scope to its URL builder.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string               $scope One of self::SCOPES.
 	 * @param array<string, mixed> $args  Scope args.
@@ -191,7 +191,7 @@ final class Feed_Url {
 	/**
 	 * Build the sitewide events feed URL.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return string|false Feed URL, or false when the feed link cannot be built.
 	 */
@@ -207,7 +207,7 @@ final class Feed_Url {
 	 * An empty post type means the editor did not pin one, so the primary event
 	 * post type is used and the block works with no configuration.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $post_type Event post type slug, or empty for the default.
 	 *
@@ -235,7 +235,7 @@ final class Feed_Url {
 	 * returns the global post, which would otherwise render the current venue's
 	 * feed on a venue page or inside a venue Query Loop.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param int $venue_id Venue post ID.
 	 *
@@ -263,7 +263,7 @@ final class Feed_Url {
 	 * The taxonomy has to be attached to an event-bearing post type, otherwise
 	 * the term feed would carry no events.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param int $topic_id Term ID.
 	 *
@@ -284,7 +284,7 @@ final class Feed_Url {
 	/**
 	 * Return the first post type registered with event dates.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return string Post type slug, or an empty string when none is registered.
 	 */

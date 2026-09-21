@@ -16,7 +16,7 @@ import metadata from './block.json';
  * The frontend markup comes from render.php; the editor preview renders the
  * same PHP through ServerSideRender so both agree on the resolved feed URL.
  *
- * @since 0.36.0
+ * @since TBD
  */
 registerBlockType( metadata.name, {
 	icon: 'calendar',

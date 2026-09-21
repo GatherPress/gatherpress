@@ -7,7 +7,7 @@
  * tests drive it through the block registry the way the frontend does.
  *
  * @package GatherPress\Core
- * @since 0.36.0
+ * @since TBD
  */
 
 namespace GatherPress\Tests\Core\Blocks;
@@ -29,7 +29,7 @@ class Test_Subscribe_To_Events extends Base {
 	/**
 	 * The block name under test.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @var string
 	 */

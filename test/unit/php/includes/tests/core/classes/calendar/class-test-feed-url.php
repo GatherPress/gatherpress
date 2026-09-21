@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Calendar\Feed_Url.
  *
  * @package GatherPress\Core\Calendar
- * @since 0.36.0
+ * @since TBD
  */
 
 namespace GatherPress\Tests\Core\Calendar;

@@ -7,7 +7,7 @@
  * `gatherpress_calendar_feed_url` filter.
  *
  * @package GatherPress\Core
- * @since 0.36.0
+ * @since TBD
  */
 
 // Exit if accessed directly.
