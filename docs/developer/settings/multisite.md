@@ -1,13 +1,15 @@
 # Multisite Network Settings
 
-On a WordPress Multisite install, GatherPress can expose settings at the network level so super admins set one value that all sites in the network inherit. The inheritance is opt-in per option — individual sites remain free to manage the rest locally.
+This page covers settings only. For the plugin's multisite behavior generally, from activation through uninstall, see [Multisite](../multisite/README.md).
+
+On a WordPress Multisite install, GatherPress can expose settings at the network level so super admins set one value that all sites in the network inherit. The inheritance is opt-in per option, individual sites remain free to manage the rest locally.
 
 ## UI Surfaces
 
 Two separate surfaces render the Settings form:
 
-- **Per-site** (unchanged) — `Dashboard → Events → Settings` on each site. Writes to the site's own `gatherpress_settings` blog option.
-- **Network-wide** (new) — `Network Admin → Settings → GatherPress`. Renders the same Events / Venues / Roles / RSVP / Credits / Tools tabs plus an additional **Network** tab. Writes to the network-wide `gatherpress_settings` *site* option via `update_site_option()`. Requires the `manage_network_options` capability.
+- **Per-site** (unchanged): `Dashboard → Events → Settings` on each site. Writes to the site's own `gatherpress_settings` blog option.
+- **Network-wide** (new): `Network Admin → Settings → GatherPress`. Renders the same Events / Venues / Roles / RSVP / Credits / Tools tabs plus an additional **Network** tab. Writes to the network-wide `gatherpress_settings` *site* option via `update_site_option()`. Requires the `manage_network_options` capability.
 
 The Tools tab (import / export) is available at both scopes. In per-site admin it operates on the blog option; in network admin it reads and writes the network-wide site option. A hidden `scope` value on the Tools form (and in the `gatherpress_export_settings` / `gatherpress_import_settings` AJAX payload) tells the handler which store to target, and capability is gated per-scope (`manage_options` for blog, `manage_network_options` for network).
 
@@ -22,7 +24,7 @@ array(
 )
 ```
 
-When `enabled` is `false`, inheritance is off — every site reads its own blog option as usual. When `enabled` is `true`, any option key listed in `inherited` is resolved from the network-wide site option on subsites.
+When `enabled` is `false`, inheritance is off. Every site reads its own blog option as usual. When `enabled` is `true`, any option key listed in `inherited` is resolved from the network-wide site option on subsites.
 
 ## Storage Layers
 
@@ -30,7 +32,7 @@ When `enabled` is `false`, inheritance is off — every site reads its own blog 
 |----------------------------------------|---------------------------------------------------|---------------------------------------------------------------------------|
 | Site / blog option `gatherpress_settings`             | `get_option` / `update_option`                    | Per-site values.                                                          |
 | Network site option `gatherpress_settings`            | `get_site_option` / `update_site_option`          | Values set at Network Admin → Settings → GatherPress.                     |
-| Network site option `gatherpress_network_settings`    | `get_site_option` / `update_site_option`          | Inheritance config — master toggle + list of inherited option keys.       |
+| Network site option `gatherpress_network_settings` | `get_site_option` / `update_site_option` | Inheritance config, master toggle + list of inherited option keys. |
 
 The network admin UI reuses the existing `Settings` class: a `pre_option_gatherpress_settings` filter scoped to the network admin page (`load-{hook}`) short-circuits reads to the site option while that page renders, so the renderer is oblivious to which storage layer is in play.
 
@@ -49,7 +51,7 @@ Behavior:
 
 ## Per-Site Override Filter
 
-`Settings::is_option_inherited()` runs its result through a filter so individual sites can opt out of inheritance for a given option. This is intentional as an escape hatch for edge cases — the default path is always "respect the network config."
+`Settings::is_option_inherited()` runs its result through a filter so individual sites can opt out of inheritance for a given option. This is intentional as an escape hatch for edge cases. The default path is always "respect the network config."
 
 ```php
 /**
@@ -76,7 +78,7 @@ Returning `true` forces inheritance for an option that wasn't in the allowlist. 
 
 ## Subsite UX When an Option is Locked
 
-- The field renders disabled + dimmed (`.gatherpress-field-inherited` wrapper + native `disabled` attribute on the `input` / `select`), and **shows the current network value** — not whatever the subsite had stored locally.
+- The field renders disabled + dimmed (`.gatherpress-field-inherited` wrapper + native `disabled` attribute on the `input` / `select`), and **shows the current network value**. Not whatever the subsite had stored locally.
 - A per-field note appears underneath. Super admins see `Inherited from the <a>network</a>. Edit there to change this value.`; regular site admins see a plain `Inherited from the network.` (no dead-end link).
 - A page-level `notice-info` appears whenever any setting on the current page is inherited. Every admin sees the first sentence; only users with `manage_network_options` see the appended link sentence pointing to network admin.
 

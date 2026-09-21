@@ -12,16 +12,17 @@ seeds the block's inner content with that layout. The block toolbar's
 layout.
 
 On a new event post, the canonical _Attendee Grid with Filter_ pattern is
-auto-loaded — picking a layout would be a redundant click for the
-auto-included instance, so the picker is suppressed there. The toolbar's
-**Choose pattern** still works if you want a different layout.
+auto-loaded. Picking a layout would be a redundant click for the auto-included
+instance, so the picker is suppressed there. The toolbar's **Choose pattern**
+still works if you want a different layout.
 
 Developers can add their own patterns to the picker via the
-`gatherpress.rsvpResponsePatterns` JS filter — see [the developer guide](../../developer/blocks/README.md).
+`gatherpress.rsvpResponsePatterns` JS filter. See [the developer
+guide](../../developer/blocks/README.md).
 
 ## Editing the inner content
 
-To edit the content of the RSVP Response block, double-click it to step inside — or expand it in the List view and select an inner block directly. See [Block Guard](README.md#block-guard).
+To edit the content of the RSVP Response block, double-click it to step inside, or expand it in the List view and select an inner block directly. See [Block Guard](README.md#block-guard).
 
 You will then see the default inner content that you can modify. Be careful!
 

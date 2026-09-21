@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file is the canonical project guide for AI coding agents (Claude Code, Cursor, Codex, Aider, etc.). The legacy `CLAUDE.md` path is a symlink to this file so Claude Code's auto-load picks up the same content other agents read — keep all guidance in `AGENTS.md`, never edit through the symlink.
+This file is the canonical project guide for AI coding agents (Claude Code, Cursor, Codex, Aider, etc.). The legacy `CLAUDE.md` path is a symlink to this file so Claude Code's auto-load picks up the same content other agents read. Keep all guidance in `AGENTS.md`, never edit through the symlink.
 
 ## Language
 
@@ -105,19 +105,19 @@ GatherPress uses custom `post_type_supports` to decouple features from specific 
 
 **Event post type supports** (declared on post types that act as events):
 
-- `gatherpress-event-date` — **Core event identifier.** Datetime storage, the `gatherpress_events` DB table, date-based queries, timezone handling, and related blocks (event-date, add-to-calendar)
-- `gatherpress-rsvp` — Comment-based RSVP system, attendee management, waiting list, RSVP blocks (rsvp, rsvp-form, rsvp-response, rsvp-template)
-- `gatherpress-venue` — Association with a venue post type via the `_gatherpress_venue` taxonomy, venue selector in the editor, and venue block rendering
-- `gatherpress-online-event` — Online event link meta (stored on the event), online-event term in the taxonomy, and online-event block rendering
+- `gatherpress-event-date`: **Core event identifier.** Datetime storage, the `gatherpress_events` DB table, date-based queries, timezone handling, and related blocks (event-date, add-to-calendar)
+- `gatherpress-rsvp`: Comment-based RSVP system, attendee management, waiting list, RSVP blocks (rsvp, rsvp-form, rsvp-response, rsvp-template)
+- `gatherpress-venue`: Association with a venue post type via the `_gatherpress_venue` taxonomy, venue selector in the editor, and venue block rendering
+- `gatherpress-online-event`: Online event link meta (stored on the event), online-event term in the taxonomy, and online-event block rendering
 
 **Venue post type supports** (declared on post types that act as venues):
 
-- `gatherpress-venue-information` — **Core venue identifier.** Registers five individual editor-writable post meta keys (`gatherpress_address`, `gatherpress_latitude`, `gatherpress_longitude`, `gatherpress_phone`, `gatherpress_website`), all `show_in_rest`, so venue fields can be bound to blocks via `core/post-meta` block bindings. Also registers eight server-populated structured-address meta keys (`gatherpress_house_number`, `gatherpress_street`, `gatherpress_city`, `gatherpress_county`, `gatherpress_state`, `gatherpress_postcode`, `gatherpress_country`, `gatherpress_country_code`) derived from `gatherpress_address` by an async geocode cron handler — these are `show_in_rest` for read access only; REST writes are silently stripped. The unprefixed field list is the `Venue\Meta::STRUCTURED_ADDRESS_FIELDS` constant — single source of truth for registration, REST stripping, the cron write loop, and `Venue::get_information()`. (The companion editor-writable list lives at `Venue\Meta::EDITOR_WRITABLE_FIELDS`.) Meta registration itself lives on `Venue\Meta::register()`, hooked on `registered_post_type` so it fires once per supported post type; `Event\Meta::register()` mirrors the shape for event-date and event-only meta. The cron is gated by `gatherpress_geocode_on_save_enabled` (opt-out) and `gatherpress_async_geocode_pre_enqueue_job` (Action Scheduler short-circuit). Wires up the venue detail blocks. Meta revisions (`revisions_enabled`) are opted-in per post type and only applied when the post type declares `revisions` in its `supports` array. Declaring this support is what makes a post type a venue source. Implicitly declares `gatherpress-shadow-source` via `Venue\Setup::maybe_link_shadow_source_support()` (priority 9 on `registered_post_type`), so the venue's `_gatherpress_venue` taxonomy and term lifecycle wire up automatically without companion plugins having to declare both.
-- `gatherpress-venue-map` — Map display meta (show/zoom/height) and the venue map block
+- `gatherpress-venue-information`: **Core venue identifier.** Registers five individual editor-writable post meta keys (`gatherpress_address`, `gatherpress_latitude`, `gatherpress_longitude`, `gatherpress_phone`, `gatherpress_website`), all `show_in_rest`, so venue fields can be bound to blocks via `core/post-meta` block bindings. Also registers eight server-populated structured-address meta keys (`gatherpress_house_number`, `gatherpress_street`, `gatherpress_city`, `gatherpress_county`, `gatherpress_state`, `gatherpress_postcode`, `gatherpress_country`, `gatherpress_country_code`) derived from `gatherpress_address` by an async geocode cron handler. These are `show_in_rest` for read access only; REST writes are silently stripped. The unprefixed field list is the `Venue\Meta::STRUCTURED_ADDRESS_FIELDS` constant, single source of truth for registration, REST stripping, the cron write loop, and `Venue::get_information()`. (The companion editor-writable list lives at `Venue\Meta::EDITOR_WRITABLE_FIELDS`.) Meta registration itself lives on `Venue\Meta::register()`, hooked on `registered_post_type` so it fires once per supported post type; `Event\Meta::register()` mirrors the shape for event-date and event-only meta. The cron is gated by `gatherpress_geocode_on_save_enabled` (opt-out) and `gatherpress_async_geocode_pre_enqueue_job` (Action Scheduler short-circuit). Wires up the venue detail blocks. Meta revisions (`revisions_enabled`) are opted-in per post type and only applied when the post type declares `revisions` in its `supports` array. Declaring this support is what makes a post type a venue source. Implicitly declares `gatherpress-shadow-source` via `Venue\Setup::maybe_link_shadow_source_support()` (priority 9 on `registered_post_type`), so the venue's `_gatherpress_venue` taxonomy and term lifecycle wire up automatically without companion plugins having to declare both.
+- `gatherpress-venue-map`: Map display meta (show/zoom/height) and the venue map block
 
 **Shared primitives** (not specific to events or venues):
 
-- `gatherpress-shadow-source` — Owned by `GatherPress\Core\Shadow_Source` (singleton at `includes/core/classes/class-shadow-source.php`). Registers a hidden `_<post_type>` taxonomy for any post type that declares the support and keeps one term per published post in lockstep with the post slug and title. Three lifecycle hooks: `save_post_<post_type>` inserts the term on first publish, the global `post_updated` action renames it when post_name/post_title change, and `delete_post_<post_type>` removes it. Term slugs are derived from `post_name` prefixed with an underscore (e.g. `my-venue` → `_my-venue`) — the leading underscore is the canonical signal that distinguishes real shadow terms from sentinel terms like the venue subsystem's `online-event`. Taxonomy labels are inherited from the source post type's labels (filterable via `gatherpress_shadow_taxonomy_args`). The shadow source primitive is what powers `gatherpress_venue` ⇄ event tagging; companion plugins can declare it directly on their own post types (productions, organizers, sponsors) to get the same behavior with no venue-specific baggage. Wiring the taxonomy onto consumer post types (events, sessions, etc.) is the developer's responsibility — pass it via `register_post_type`'s `taxonomies` arg or call `register_taxonomy_for_object_type()`. The venue subsystem performs that wiring for `gatherpress-venue` post types via `Venue\Setup::register_taxonomy()`.
+- `gatherpress-shadow-source`: Owned by `GatherPress\Core\Shadow_Source` (singleton at `includes/core/classes/class-shadow-source.php`). Registers a hidden `_<post_type>` taxonomy for any post type that declares the support and keeps one term per published post in lockstep with the post slug and title. Three lifecycle hooks: `save_post_<post_type>` inserts the term on first publish, the global `post_updated` action renames it when post_name/post_title change, and `delete_post_<post_type>` removes it. Term slugs are derived from `post_name` prefixed with an underscore (e.g. `my-venue` → `_my-venue`). The leading underscore is the canonical signal that distinguishes real shadow terms from sentinel terms like the venue subsystem's `online-event`. Taxonomy labels are inherited from the source post type's labels (filterable via `gatherpress_shadow_taxonomy_args`). The shadow source primitive is what powers `gatherpress_venue` ⇄ event tagging; companion plugins can declare it directly on their own post types (productions, organizers, sponsors) to get the same behavior with no venue-specific baggage. Wiring the taxonomy onto consumer post types (events, sessions, etc.) is the developer's responsibility, pass it via `register_post_type`'s `taxonomies` arg or call `register_taxonomy_for_object_type()`. The venue subsystem performs that wiring for `gatherpress-venue` post types via `Venue\Setup::register_taxonomy()`.
 
 **How it works:**
 
@@ -126,7 +126,7 @@ GatherPress uses custom `post_type_supports` to decouple features from specific 
 - PHP checks use `post_type_supports( $post_type, 'gatherpress-event-date' )` instead of `Event::POST_TYPE === $post_type`
 - PHP checks use `post_type_supports( $post_type, 'gatherpress-venue-information' )` instead of `Venue::POST_TYPE === $post_type`
 - Queries use `get_post_types_by_support( 'gatherpress-event-date' )` or `get_post_types_by_support( 'gatherpress-venue-information' )` instead of hardcoded post type slugs
-- JS checks go through helpers in `src/helpers/event.js`: `isPostTypeSupporting( support, postType )` for imperative use, `usePostTypeSupports( support, postType )` (a `useSelect`-backed hook) when the result drives rendering. The non-reactive variant misses the post-type registry's first-render cache miss and leaves dim-gated blocks permanently dimmed in Query Loops — always reach for `usePostTypeSupports` inside React components
+- JS checks go through helpers in `src/helpers/event.js`: `isPostTypeSupporting( support, postType )` for imperative use, `usePostTypeSupports( support, postType )` (a `useSelect`-backed hook) when the result drives rendering. The non-reactive variant misses the post-type registry's first-render cache miss and leaves dim-gated blocks permanently dimmed in Query Loops, always reach for `usePostTypeSupports` inside React components
 - JS venue post type resolution uses `select('core/editor').getEditorSettings()?.gatherpress?.config?.venuePostTypes` (exposed via `block_editor_settings_all` filter)
 - Post-type-specific hooks are registered inside `register_post_meta()` or similar `init` callbacks that loop over supported post types at priority 11
 
@@ -158,7 +158,7 @@ add_filter( 'gatherpress_venue_post_type', function( $post_type, $event_post_typ
 4. Replace `Venue::POST_TYPE === get_post_type()` checks with `post_type_supports( ..., 'gatherpress-venue-information' )`
 5. Replace `'post_type' => Event::POST_TYPE` in queries with `get_post_types_by_support( 'gatherpress-event-date' )`
 6. Register post-type-specific hooks inside `register_post_meta()` or similar `init` callbacks at priority 11 that loop over supported post types
-7. Update JS helpers to check supports via `isPostTypeSupporting` (imperative) or `usePostTypeSupports` (reactive — required when the check drives render output, including dim/opacity gates)
+7. Update JS helpers to check supports via `isPostTypeSupporting` (imperative) or `usePostTypeSupports` (reactive, required when the check drives render output, including dim/opacity gates)
 8. Update corresponding unit tests (PHP and JS mocks)
 
 ### Database Schema
@@ -204,11 +204,11 @@ When working with this codebase:
 
 ### Auto-generated developer hook docs
 
-`docs/developer/hooks/` is regenerated automatically by CI — the `extract-wp-hooks-as-docs.yml` workflow runs on every push to `develop` that touches a `.php` file, runs `vendor/bin/extract-wp-hooks.php`, and opens a dedicated `fix/extract-wp-hooks-{sha}` PR titled "Hook docs updated!" with the regen.
+`docs/developer/hooks/` is regenerated automatically by CI. The `extract-wp-hooks-as-docs.yml` workflow runs on every push to `develop` that touches a `.php` file, runs `vendor/bin/extract-wp-hooks.php`, and opens a dedicated `fix/extract-wp-hooks-{sha}` PR titled "Hook docs updated!" with the regen.
 
 - **Do not commit changes under `docs/developer/hooks/` in feature PRs.** Add the new filter/action with a correct `@since` / `@param` / description docblock, and let CI regenerate the markdown on merge. Committing regen in a feature PR just creates duplicate diffs and churn when the auto-PR lands.
 - If you regenerated locally to sanity-check a docblock, revert before committing: `git checkout -- docs/developer/hooks/` and `rm` any newly-created hook markdown files.
-- The exception is a `fix/extract-wp-hooks-{sha}` branch itself — regen is the point of that branch. Merge-conflict resolution there is also fair game (take develop's version for any conflict, then re-run `vendor/bin/extract-wp-hooks.php` against the merged state).
+- The exception is a `fix/extract-wp-hooks-{sha}` branch itself: regen is the point of that branch. Merge-conflict resolution there is also fair game (take develop's version for any conflict, then re-run `vendor/bin/extract-wp-hooks.php` against the merged state).
 - This applies only to `docs/developer/hooks/`. `docs/user/` and the rest of `docs/developer/` are hand-maintained.
 
 ### Docblock conventions
@@ -224,12 +224,12 @@ Apply to PHP PHPDoc blocks and JS JSDoc blocks alike.
 - **Derive `@since` from git history, not memory.** When touching an existing symbol whose `@since` looks wrong, verify against history before fixing:
     - Find the introducing commit: `git log --all --reverse -G "['\"]hook_name['\"]" --format=%H | head -1` for hooks, `git log --all --reverse -G "function method_name" -- path/to/file.php --format=%H | head -1` for methods.
     - Resolve to the first containing tag: `git describe --contains <sha>`.
-    - Strip pre-release suffixes — `0.33.0-alpha.1` → `@since 0.33.0`. The `@since` tag tracks the **stable base version**, not the alpha/beta/rc the symbol first landed on.
+    - Strip pre-release suffixes: `0.33.0-alpha.1` → `@since 0.33.0`. The `@since` tag tracks the **stable base version**, not the alpha/beta/rc the symbol first landed on.
     - Floor anything older than `0.27.0` to `0.27.0`.
     - A commit not yet in any tag has no answer to give: that is what `TBD` is for.
-- **Signature changes after introduction don't move `@since`.** If a filter shipped in 0.30.0 and grew a third `@param` in 0.31.0, the docblock stays `@since 0.30.0`. Document the parameter evolution in a separate sentence or `@since` note inside the param's description — matches WordPress core convention.
+- **Signature changes after introduction don't move `@since`.** If a filter shipped in 0.30.0 and grew a third `@param` in 0.31.0, the docblock stays `@since 0.30.0`. Document the parameter evolution in a separate sentence or `@since` note inside the param's description, matches WordPress core convention.
 - **Hook-name search must require quotes.** A PHP variable named `$gatherpress_template_path` shares a token with the filter `'gatherpress_template_path'`. When dating a hook from history, the search pattern needs the quote chars: `-G "['\"]hook_name['\"]"`. Bare-word matching picks up unrelated commits and dates the hook too early.
-- **Canonical docblock shape** — short description first, then `@since` separated by a blank `* ` line, then the `@param` group separated by another blank `* ` line, then `@return` separated by another blank `* ` line:
+- **Canonical docblock shape**: short description first, then `@since` separated by a blank `* ` line, then the `@param` group separated by another blank `* ` line, then `@return` separated by another blank `* ` line:
 
     ```php
     /**
@@ -248,7 +248,7 @@ Apply to PHP PHPDoc blocks and JS JSDoc blocks alike.
     - Blank `* ` line between the short description and `@since`.
     - Blank `* ` line between `@since` and the `@param` group.
     - Blank `* ` line between the `@param` group and `@return`.
-    - **No blank lines inside the `@param` group** — `@param` lines run consecutively.
+    - **No blank lines inside the `@param` group**: `@param` lines run consecutively.
     - Same shape for JS JSDoc (`@since`, `@param`, `@return`).
 - **`@since` lives below the short description, not next to it.** ❌ Bad: `* Method description. @since 0.33.0` on one line. ✅ Good: description on its own line(s), blank `* ` separator, then `@since` on its own line.
 
@@ -284,12 +284,12 @@ Apply to PHP PHPDoc blocks and JS JSDoc blocks alike.
 - **Prefer `str_contains` / `str_starts_with` / `str_ends_with` over `strpos`**: native in PHP 8 (the plugin's floor is 8.1). They read better than the `false ===` / `0 ===` dance and SonarCloud flags the legacy form.
     - ✅ Good: `if ( str_contains( $haystack, $needle ) )` / `if ( str_starts_with( $key, 'gatherpress_' ) )` / `if ( ! str_contains( $content, $token ) )`
     - ❌ Bad: `if ( false !== strpos( $haystack, $needle ) )` / `if ( 0 === strpos( $key, 'gatherpress_' ) )` / `if ( false === strpos( $content, $token ) )`
-- **Prefer `match` when a `switch` exists only to produce one value.** `match` is an expression, so the assignment appears once instead of in every arm, and it is exhaustive — which retires the `default:`-arm boilerplate `php:S131` otherwise demands. Two things to check before converting, because they are behavior changes rather than style:
+- **Prefer `match` when a `switch` exists only to produce one value.** `match` is an expression, so the assignment appears once instead of in every arm, and it is exhaustive, which retires the `default:`-arm boilerplate `php:S131` otherwise demands. Two things to check before converting, because they are behavior changes rather than style:
     1. **`match` compares with `===`, `switch` with `==`.** Equivalent when dispatching on strings or enum cases (what we do everywhere today); not equivalent if the subject can be an int compared against string cases.
     2. **`match` throws `UnhandledMatchError` when nothing matches**, where `switch` silently falls through. Keep a `default =>` arm unless an unmatched value genuinely is a bug worth surfacing.
     - ✅ Good: `$multiplier = match ( $frequency ) { 'daily' => DAY_IN_SECONDS, ..., default => HOUR_IN_SECONDS };`
-    - ❌ Not a candidate: arms with side effects (`add_filter`), arms assigning *different* targets, arms with intermediate variables, or a `default` that deliberately does nothing. Leave those as `switch` — most of ours are this shape.
-- **Every remaining `switch` needs a `default` case**: SonarCloud (`php:S131`) flags any switch missing a `default` branch, even when the listed cases cover the expected values. Add `default: break;` with a one-line comment explaining what falls through (e.g. "Field types without extra params render with the base $params.") — that way the reader sees the intent rather than wondering whether a case was forgotten.
+    - ❌ Not a candidate: arms with side effects (`add_filter`), arms assigning *different* targets, arms with intermediate variables, or a `default` that deliberately does nothing. Leave those as `switch`. Most of ours are this shape.
+- **Every remaining `switch` needs a `default` case**: SonarCloud (`php:S131`) flags any switch missing a `default` branch, even when the listed cases cover the expected values. Add `default: break;` with a one-line comment explaining what falls through (e.g. "Field types without extra params render with the base $params."). That way the reader sees the intent rather than wondering whether a case was forgotten.
     - ✅ Good:
 
         ```php
@@ -307,7 +307,7 @@ Apply to PHP PHPDoc blocks and JS JSDoc blocks alike.
 - **Merge nested `if` statements when the outer body has nothing else** (`php:S1066`, "Mergeable 'if' statements should be combined"). If the inner `if` is the *only* statement in the outer block, hoist its condition with `&&`. Short-circuit semantics are identical, the indentation flattens, and SonarCloud stops nagging.
     - ✅ Good: `if ( 'on' === $switch && ! wp_next_scheduled( 'gatherpress_rsvp_cleanup' ) ) { ... }`
     - ❌ Bad: `if ( 'on' === $switch ) { if ( ! wp_next_scheduled( 'gatherpress_rsvp_cleanup' ) ) { ... } }`
-    - Doesn't apply when the outer block has additional statements — keep them separate then.
+    - Doesn't apply when the outer block has additional statements: keep them separate then.
 - **Collapse duplicate `if`/`elseif` bodies into one conditional with `||`** (`php:S1871`, "Two branches in a conditional structure should not have exactly the same implementation"). When two arms run the same body, fold the conditions and add a comment if the original was preserving a non-obvious fallback.
     - ✅ Good (preserves the `Validate::datetime` fallback for the `timezone` key that the original `elseif` arm gave it):
 
@@ -323,14 +323,14 @@ Apply to PHP PHPDoc blocks and JS JSDoc blocks alike.
         }
         ```
 
-    - ❌ Bad: `if ( ... ) { $data[ $key ] = $result; } elseif ( ... ) { $data[ $key ] = $result; }` — same body twice.
-    - Build a truth table before the merge — short-circuit-with-`||` doesn't always preserve the `if/elseif` chain's fallback semantics, especially when the second condition can re-evaluate after the first fails.
+    - ❌ Bad: `if ( ... ) { $data[ $key ] = $result; } elseif ( ... ) { $data[ $key ] = $result; }`, same body twice.
+    - Build a truth table before the merge: short-circuit-with-`||` doesn't always preserve the `if/elseif` chain's fallback semantics, especially when the second condition can re-evaluate after the first fails.
 - **Drop dead `@SuppressWarnings(PHPMD.UnusedFormalParameter)` and inline `phpcs:ignore` comments when the parameter becomes used.** Suppressions are commitments to a known-bad state; once the underlying issue is fixed (e.g. the unused param is removed or starts being read), the suppression must go too. Leaving stale suppressions around hides future regressions of the same rule.
-    - ✅ Good: `public function aql_query_vars( array $query_args, array $block_query ): array { ... }` — both params used, no annotation needed.
+    - ✅ Good: `public function aql_query_vars( array $query_args, array $block_query ): array { ... }`: both params used, no annotation needed.
     - ❌ Bad: keeping `@SuppressWarnings(PHPMD.UnusedFormalParameter)` and `// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed` after the unused parameter has been removed.
 - **Methods should have ≤3 `return` statements** (`php:S1142`, "This method has N returns, which is more than the 3 allowed"). Two patterns work depending on the shape of the function:
-    - **Switch dispatches** — assign to a `$result` variable and return once at the end. Each `case` body sets `$result` and `break;` instead of returning.
-    - **Guard chains** — combine multiple early bails into one `if (... || ... || ...)` with a single `return`. The `Why:` for each guard moves into a single explanatory comment above the merged condition rather than one comment per arm.
+    - **Switch dispatches**: assign to a `$result` variable and return once at the end. Each `case` body sets `$result` and `break;` instead of returning.
+    - **Guard chains**: combine multiple early bails into one `if (... || ... || ...)` with a single `return`. The `Why:` for each guard moves into a single explanatory comment above the merged condition rather than one comment per arm.
     - ✅ Good (switch dispatch with one trailing return):
 
         ```php
@@ -363,14 +363,14 @@ Apply to PHP PHPDoc blocks and JS JSDoc blocks alike.
         }
         ```
 
-    - ❌ Bad: a four-arm `if (X) return; if (Y) return; if (Z) return; if (W) return;` chain when nothing else lives between them — that's the shape S1142 flags.
+    - ❌ Bad: a four-arm `if (X) return; if (Y) return; if (Z) return; if (W) return;` chain when nothing else lives between them, that's the shape S1142 flags.
     - **When NOT to merge:** if the bails surround `apply_filters` calls whose docblocks document the shape of each filter and matter to extension authors (e.g. `Geocoding::maybe_schedule_geocode`), keeping per-guard structure preserves the docs. Mark those instances won't-fix in SonarCloud rather than collapsing.
 - **Reduce function cognitive complexity by extracting helpers from tight loops or repeated branches** (`php:S3776`, "Refactor this function to reduce its Cognitive Complexity from N to the 15 allowed"). Each `if`, `for`, `while`, or logical operator inside a loop costs more cognitive points the deeper it nests, so the cheapest reductions are the ones that pull a nested-2-deep block up to a helper called once.
     - ✅ Good (loop body extracted): the inner per-tile `fetch → decode → imagecopy` block in `Osm::render` moved into `paint_tile()`, dropping `render`'s complexity from 16 → ~10.
     - ✅ Good (per-recipient logic extracted): `Rest_Api::send_emails`'s per-recipient `opt-in / locale-switch / wp_mail` block moved into `send_event_email_to_recipient()`.
-    - **Critical follow-up:** extracting a helper from a tight loop in the same class hits a known xdebug coverage gap — see the "Extracted same-class helpers and xdebug coverage tracing" rule in **Test Coverage** below. You must add a direct reflection-invoke test for every helper you extract.
-- **WP callback signatures with required-but-unused params: mark won't-fix in SonarCloud, don't paper over with `unset()`** (`php:S1172`). When a parameter exists only to satisfy a WordPress hook signature (`auth_callback`, `added_post_meta` action, `register_meta` callbacks), the right answer is to mark the Sonar finding as a false positive in the Sonar UI. Do *not* add `unset( $allowed, $meta_key );` lines or rename to `$_allowed` to silence — those add noise without communicating the constraint, and reviewers don't know whether the workaround can be removed later. The existing `@SuppressWarnings(PHPMD.UnusedFormalParameter)` docblock plus a one-line "required by WP's X signature" comment is enough; the won't-fix in Sonar carries the rest.
-    - ✅ Good: `public static function can_edit_post_meta( bool $allowed, string $meta_key, int $object_id, int $user_id ): bool { return user_can( $user_id, 'edit_post', $object_id ); }` plus a `@SuppressWarnings` docblock noting WP's contract — Sonar finding marked won't-fix.
+    - **Critical follow-up:** extracting a helper from a tight loop in the same class hits a known xdebug coverage gap. See the "Extracted same-class helpers and xdebug coverage tracing" rule in **Test Coverage** below. You must add a direct reflection-invoke test for every helper you extract.
+- **WP callback signatures with required-but-unused params: mark won't-fix in SonarCloud, don't paper over with `unset()`** (`php:S1172`). When a parameter exists only to satisfy a WordPress hook signature (`auth_callback`, `added_post_meta` action, `register_meta` callbacks), the right answer is to mark the Sonar finding as a false positive in the Sonar UI. Do *not* add `unset( $allowed, $meta_key );` lines or rename to `$_allowed` to silence. Those add noise without communicating the constraint, and reviewers don't know whether the workaround can be removed later. The existing `@SuppressWarnings(PHPMD.UnusedFormalParameter)` docblock plus a one-line "required by WP's X signature" comment is enough; the won't-fix in Sonar carries the rest.
+    - ✅ Good: `public static function can_edit_post_meta( bool $allowed, string $meta_key, int $object_id, int $user_id ): bool { return user_can( $user_id, 'edit_post', $object_id ); }` plus a `@SuppressWarnings` docblock noting WP's contract, Sonar finding marked won't-fix.
     - ❌ Bad: `unset( $allowed, $meta_key );` as the first line of the function body.
 - **Method organization**: Place related methods in logically grouped classes (e.g., form-related methods in `Rsvp_Form`)
 - **Singleton pattern**: Many GatherPress classes use the Singleton trait - check if a class has `use Singleton;`
@@ -382,23 +382,23 @@ Apply to PHP PHPDoc blocks and JS JSDoc blocks alike.
         - ❌ Bad: `Event::get_instance()` (doesn't exist for these classes)
     - In tests, always check the class structure before deciding instantiation method
     - Look for `use Singleton;` trait to determine if `::get_instance()` should be used
-- **`readonly` where a property is genuinely write-once** (#1961), which lets the type system enforce immutability instead of convention. The surface is far smaller than it looks — four conditions each disqualify a property, and three of them are invisible in the class itself:
+- **`readonly` where a property is genuinely write-once** (#1961), which lets the type system enforce immutability instead of convention. The surface is far smaller than it looks, four conditions each disqualify a property, and three of them are invisible in the class itself:
     1. **It cannot have a default value.** `protected ?WP_Post $event = null;` is out; `readonly` forbids defaults, and dropping the default only works if the constructor always assigns.
-    2. **It must be assigned unconditionally.** `Calendar\Endpoint` assigns inside `if ( $this->is_valid_registration() )`, so on the failing branch the property stays uninitialized forever — PHPStan flags this as `property.uninitializedReadonly`.
-    3. **Nothing may write it from outside the declaring class** — including tests writing to a mock, e.g. `$template->slug = '…';`. That is a fatal `Cannot initialize readonly property … from scope`.
-    4. **The PMC test helpers must not touch it.** `Utility::set_and_get_hidden_property()` writes through reflection, which PHP 8.1 forbids on an initialized readonly property, and `assert_hooks()` re-invokes the constructor on an existing instance — which throws on the *second* assignment. This is what keeps `Settings\Base::$priority` and `Rsvp::$max_attendance_limit` mutable.
-    - Before adding the keyword, grep for external writes with POSIX classes, not `\s` — **BSD grep on macOS silently matches nothing for `\s`**, which will tell you a property is safe when it is not: `grep -rnE -- "->[[:space:]]*prop[[:space:]]*=[^=>]" includes test`.
-- **Classes are `final` by default** (#1961). Extensibility flows through hooks, `post_type_supports`, and the abstract provider bases — not through subclassing concrete classes. A new class gets `final` unless it is deliberately an extension point.
-    - ✅ Good: `final class Token {` — a leaf class nothing extends.
-    - ✅ Good: `abstract class Base {` — the documented extension point for settings pages / RSVP response providers / venue map providers.
+    2. **It must be assigned unconditionally.** `Calendar\Endpoint` assigns inside `if ( $this->is_valid_registration() )`, so on the failing branch the property stays uninitialized forever, PHPStan flags this as `property.uninitializedReadonly`.
+    3. **Nothing may write it from outside the declaring class**: including tests writing to a mock, e.g. `$template->slug = '…';`. That is a fatal `Cannot initialize readonly property … from scope`.
+    4. **The PMC test helpers must not touch it.** `Utility::set_and_get_hidden_property()` writes through reflection, which PHP 8.1 forbids on an initialized readonly property, and `assert_hooks()` re-invokes the constructor on an existing instance, which throws on the *second* assignment. This is what keeps `Settings\Base::$priority` and `Rsvp::$max_attendance_limit` mutable.
+    - Before adding the keyword, grep for external writes with POSIX classes, not `\s`: **BSD grep on macOS silently matches nothing for `\s`**, which will tell you a property is safe when it is not: `grep -rnE -- "->[[:space:]]*prop[[:space:]]*=[^=>]" includes test`.
+- **Classes are `final` by default** (#1961). Extensibility flows through hooks, `post_type_supports`, and the abstract provider bases, not through subclassing concrete classes. A new class gets `final` unless it is deliberately an extension point.
+    - ✅ Good: `final class Token {`: a leaf class nothing extends.
+    - ✅ Good: `abstract class Base {`: the documented extension point for settings pages / RSVP response providers / venue map providers.
     - ❌ Bad: a plain `class Foo {` that nothing extends and that isn't meant to be extended.
     - **Four things must stay non-final**, and the reasons are worth knowing before you add the keyword:
         1. Abstract bases (`Settings\Base`, `Calendar\Endpoint_Type`, `Rsvp\Response\Provider\Base`, `Venue\Map\Provider\Base`).
-        2. Anything actually extended in `includes/` — currently `Calendar\Endpoint` and `Migrate`.
+        2. Anything actually extended in `includes/`: currently `Calendar\Endpoint` and `Migrate`.
         3. **Anything mocked in tests.** PHPUnit cannot mock a `final` class, so `createMock( Foo::class )` / `getMockBuilder( Foo::class )` and `final` are mutually exclusive. This is what keeps `Event`, `Settings`, `Template`, and `Endpoint` non-final. Check `grep -rn "createMock\|getMockBuilder" test/unit/php` before finalizing.
         4. Anything a test subclasses, including anonymous `new class() extends Foo` doubles.
-    - `final` makes PHPStan's inference precise: it can prove a return type is never returned, where before a hypothetical subclass kept the union alive. Expect the analyzer to surface dead types when you add the keyword — fix them rather than widening the signature back.
-    - In a `final` class, use `self::` rather than `static::` — late static binding has no meaning once nothing can subclass, and PHPCS enforces it (`Universal.CodeAnalysis.StaticInFinalClass`).
+    - `final` makes PHPStan's inference precise: it can prove a return type is never returned, where before a hypothetical subclass kept the union alive. Expect the analyzer to surface dead types when you add the keyword, fix them rather than widening the signature back.
+    - In a `final` class, use `self::` rather than `static::`: late static binding has no meaning once nothing can subclass, and PHPCS enforces it (`Universal.CodeAnalysis.StaticInFinalClass`).
 
 ### PHP Linting Requirements
 
@@ -419,35 +419,35 @@ Based on WordPress Coding Standards (WPCS), always ensure:
         ```
 
     - ❌ Bad: `/** @var int|false|\WP_Error $result - WordPress may return WP_Error via filters. */`
-- **PHPDoc short description must start with a capital letter** (`Generic.Commenting.DocComment.ShortNotCapital`). This trips most often when a test/method docblock starts with the bare method name being described — since method names are lowercase, the line starts lowercase and lint fails. Reword as a proper sentence.
+- **PHPDoc short description must start with a capital letter** (`Generic.Commenting.DocComment.ShortNotCapital`). This trips most often when a test/method docblock starts with the bare method name being described, since method names are lowercase, the line starts lowercase and lint fails. Reword as a proper sentence.
     - ✅ Good: `Returns '' from get_taxonomy when wrapping a non-venue post.`
     - ❌ Bad: `get_taxonomy returns '' when wrapping a non-venue post.`
 - **Type handling**: WordPress functions may return multiple types; handle all cases with proper type checking
     - Use `is_wp_error()`, `is_numeric()`, and similar WordPress/PHP functions
     - Cast types explicitly when needed: `(int) $comment->comment_post_ID`
-- **PHPCS warnings count as failures**: `npm run lint:php` exits non-zero on warnings, not just errors. The most common one is `Generic.Files.LineLength.TooLong` (120-char limit). Don't dismiss warnings as cosmetic — fix them before declaring lint passes.
+- **PHPCS warnings count as failures**: `npm run lint:php` exits non-zero on warnings, not just errors. The most common one is `Generic.Files.LineLength.TooLong` (120-char limit). Don't dismiss warnings as cosmetic, fix them before declaring lint passes.
     - Long `@return array<string, array<...>>` PHPDoc types: extract the array shape into a `@phpstan-type` alias at the top of the class, then reference the alias.
     - Long expression lines: break at logical points (after `return`, after `=`, around operators) and indent the continuation with one tab beyond the statement start.
     - Long `sprintf()` / translator string args: split the format string across `__()` calls with concatenation, or store the format in a variable on its own line.
 
 ### Test Coverage
 
-**Full coverage is the bar — partial branch coverage does not count.** When you add or touch code, cover every branch: each side of a ternary, each arm of `||` / `??` fallbacks, each `if` / `else`, each optional-chain short-circuit, each falsy-default spread. If a line like `error?.message || __( 'fallback' )` has a test for the truthy side but not the falsy side, the PR is incomplete — add the missing case.
+**Full coverage is the bar. Partial branch coverage does not count.** When you add or touch code, cover every branch: each side of a ternary, each arm of `||` / `??` fallbacks, each `if` / `else`, each optional-chain short-circuit, each falsy-default spread. If a line like `error?.message || __( 'fallback' )` has a test for the truthy side but not the falsy side, the PR is incomplete. Add the missing case.
 
 - ✅ Good: a test for `error?.message` present *and* a test where `.message` is absent so the `__( 'fallback' )` branch executes.
 - ✅ Good: a test for `current.meta` being populated *and* a test where it's undefined so `( current.meta || {} )` spreads the empty default.
 - ✅ Good: a test where `response.descriptors` arrives *and* a test where it's missing so `response?.descriptors || {}` falls through.
 - ❌ Bad: shipping with the coverage tool reporting "1/2" on a branch and calling it done.
 
-Coverage gaps flagged by SonarCloud or the `test:unit:js` / `test:unit:php` coverage reports must be closed before merging — add the tests, don't suppress. `@codeCoverageIgnore` is reserved for genuinely unreachable/untestable code (the existing uses on missing-GD branches, unwritable filesystem branches) and is not a shortcut for "I didn't write the test yet."
+Coverage gaps flagged by SonarCloud or the `test:unit:js` / `test:unit:php` coverage reports must be closed before merging. Add the tests, don't suppress. `@codeCoverageIgnore` is reserved for genuinely unreachable/untestable code (the existing uses on missing-GD branches, unwritable filesystem branches) and is not a shortcut for "I didn't write the test yet."
 
-**Multisite test group**: GatherPress runs two separate PHPUnit test suites in CI — a standard single-site run and a multisite run. Tests that require a multisite WordPress environment are annotated with `@group multisite`. The standard `phpunit.xml.dist` excludes this group so it does not run locally via `npm run test:unit:php`, but CI runs it separately and merges the coverage data before the PR coverage check.
+**Multisite test group**: GatherPress runs two separate PHPUnit test suites in CI. A standard single-site run and a multisite run. Tests that require a multisite WordPress environment are annotated with `@group multisite`. The standard `phpunit.xml.dist` excludes this group so it does not run locally via `npm run test:unit:php`, but CI runs it separately and merges the coverage data before the PR coverage check.
 
-- **Never remove `@group multisite`** from test classes that carry it — those tests exist and run in CI.
-- **Never add `@codeCoverageIgnore`** to multisite-only code paths (e.g., `switch_to_blog`, `get_sites`, `is_plugin_active_for_network` branches) — those lines are covered by the multisite test run.
+- **Never remove `@group multisite`** from test classes that carry it: those tests exist and run in CI.
+- **Never add `@codeCoverageIgnore`** to multisite-only code paths (e.g., `switch_to_blog`, `get_sites`, `is_plugin_active_for_network` branches). Those lines are covered by the multisite test run.
 - If the PR coverage check shows 0% for a class whose tests are in `@group multisite`, the most likely cause is that the multisite test suite is **failing** (e.g., a `test_setup_hooks` assertion no longer matches after a hook was changed). Fix the failing test rather than suppressing coverage.
 
-**Extracted same-class helpers and xdebug coverage tracing:** xdebug doesn't reliably trace lines inside `private` / `protected` methods that are called from a tight loop or short delegation in the same class. The method body executes (you can confirm with a `file_put_contents( '/tmp/probe.log', ... )` inside it) but `coverage.xml` reports the body as `count=0`. This bites every time you extract a helper for `php:S3776` cognitive-complexity reduction, and once for the inlined `current_screen_post_type()` helper in `Admin_List` before that — same shape, same gap.
+**Extracted same-class helpers and xdebug coverage tracing:** xdebug doesn't reliably trace lines inside `private` / `protected` methods that are called from a tight loop or short delegation in the same class. The method body executes (you can confirm with a `file_put_contents( '/tmp/probe.log', ... )` inside it) but `coverage.xml` reports the body as `count=0`. This bites every time you extract a helper for `php:S3776` cognitive-complexity reduction, and once for the inlined `current_screen_post_type()` helper in `Admin_List` before that: same shape, same gap.
 
 - **The fix:** add a direct test that invokes the helper via `Utility::invoke_hidden_method( $instance, 'helper_name', array( ... ) )`. xdebug traces through that call cleanly even when it doesn't trace the same call from inside the parent function. Cover each branch of the helper this way (one test per `return` path).
 - ✅ Good (after extracting `Osm::paint_tile` from `Osm::render`'s loop):
@@ -465,9 +465,9 @@ Coverage gaps flagged by SonarCloud or the `test:unit:js` / `test:unit:php` cove
     }
     ```
 
-- ❌ Bad: relying on the existing `test_render_*` tests to cover `paint_tile` transitively — they exercise the code path (the helper IS called) but xdebug records the helper body as uncovered, and the PR coverage gate fails.
+- ❌ Bad: relying on the existing `test_render_*` tests to cover `paint_tile` transitively. They exercise the code path (the helper IS called) but xdebug records the helper body as uncovered, and the PR coverage gate fails.
 - **Apply this proactively**, not just when the gate fails: any time you extract a helper for cognitive-complexity reduction, add the direct invokes in the same PR.
-- **Two cases that genuinely need `@codeCoverageIgnore`** even after adding direct invokes: (1) WP-locale-switcher cleanup branches like `if ( $switched_locale ) { restore_previous_locale(); }` — `switch_to_user_locale()` returns false in the test runner regardless of `get_user_locale` filters because the test env's `WP_Locale_Switcher` is stubbed; (2) classic-theme guards like `if ( ! function_exists( 'get_block_templates' ) ) { return; }` — the function always exists in the WP test bootstrap. Mark these with a short comment explaining what's untestable.
+- **Two cases that genuinely need `@codeCoverageIgnore`** even after adding direct invokes: (1) WP-locale-switcher cleanup branches like `if ( $switched_locale ) { restore_previous_locale(); }`. `Switch_to_user_locale()` returns false in the test runner regardless of `get_user_locale` filters because the test env's `WP_Locale_Switcher` is stubbed; (2) classic-theme guards like `if ( ! function_exists( 'get_block_templates' ) ) { return; }`. The function always exists in the WP test bootstrap. Mark these with a short comment explaining what's untestable.
 
 When writing PHPUnit tests that need WordPress post context:
 
@@ -490,7 +490,7 @@ When working with JavaScript code:
     - ❌ Bad: `// Check if this is a form-field block with guest count field name`
 - **Comment consistency**: Apply the same punctuation standards across PHP and JavaScript for consistency
 - **Block comments**: Multi-line JSDoc comments should follow proper formatting with periods in descriptions
-- **Dependency-section docblocks have no trailing period**: The `WordPress dependencies` / `Internal dependencies` / `External dependencies` (and `Mock …` test variants) section headers above import groups are labels, not sentences — leave the period off.
+- **Dependency-section docblocks have no trailing period**: The `WordPress dependencies` / `Internal dependencies` / `External dependencies` (and `Mock …` test variants) section headers above import groups are labels, not sentences, leave the period off.
     - ✅ Good:
 
         ```js
@@ -504,29 +504,29 @@ When working with JavaScript code:
 - **Optional chaining over `&&` / `||` guard chains**: SonarCloud (`javascript:S6582`) flags multi-step nullable property access dressed up as `a && a.b && a.b.c` (positive guard) or `! a || ! a.b` (negated guard). Use `?.` instead.
     - ✅ Good: `if ( ! window.wp?.date ) { return; }` / `if ( ! settings?.timezone?.string ) { return; }` / `if ( 'TEXTAREA' !== el?.nodeName ) { return; }` / `if ( 'publish' === post?.status ) { ... }` / `if ( ! terms?.length ) { return 'in-person'; }`
     - ❌ Bad: `if ( ! window.wp || ! window.wp.date )` / `if ( ! settings || ! settings.timezone || ! settings.timezone.string )` / `if ( ! el || 'TEXTAREA' !== el.nodeName )` / `if ( post && 'publish' === post.status )` / `if ( ! terms || ! terms.length )`
-- **No empty-object-spread fallback** (`javascript:S6661`, "The empty object is useless"). Spreading `null` or `undefined` is already a no-op in modern JS — `{ ...maybeObj }` works whether `maybeObj` is `undefined`, `null`, or an object. Drop the `|| {}`.
+- **No empty-object-spread fallback** (`javascript:S6661`, "The empty object is useless"). Spreading `null` or `undefined` is already a no-op in modern JS, `{ ...maybeObj }` works whether `maybeObj` is `undefined`, `null`, or an object. Drop the `|| {}`.
     - ✅ Good: `const next = { ...attributes.metadata }` / `meta: { ...current.meta, gatherpress_static_map: response?.descriptors || {} }`
     - ❌ Bad: `const next = { ...( attributes.metadata || {} ) }` / `meta: { ...( current.meta || {} ), ... }`
-    - The `|| {}` / `|| []` is still load-bearing for *array spreads* into a non-spread context (`Array.from(maybeArr || [])`), or when you actually need the empty object as a return value — only the spread-followed-by-`|| {}` form is dead.
+    - The `|| {}` / `|| []` is still load-bearing for *array spreads* into a non-spread context (`Array.from(maybeArr || [])`), or when you actually need the empty object as a return value, only the spread-followed-by-`|| {}` form is dead.
 - **Prefer `Array.prototype.at(-1)` over `arr[ arr.length - 1 ]`** (`javascript:S6582`). Cleaner and avoids the manual length math. Same for `at( -2 )`, etc.
     - ✅ Good: `return parents.at( -1 );`
     - ❌ Bad: `return parents[ parents.length - 1 ];`
 - **Use `RegExp.exec()` over `String.match()` when capturing groups from a non-global pattern** (`javascript:S6594`). Same return shape (match array or `null`), but the static-analyzer reads the intent better and SonarCloud stops flagging.
     - ✅ Good: `const match = /^(\d+)\s*[/:]\s*(\d+)$/.exec( ratio.trim() );`
     - ❌ Bad: `const match = ratio.trim().match( /^(\d+)\s*[/:]\s*(\d+)$/ );`
-- **Optional catch binding for intentionally swallowed exceptions** (`javascript:S2486`, "Either log this exception or rethrow it"). Drop the unused `( e )` and use the bare `catch { ... }` form (ES2019). The no-binding form is the canonical "this is intentional" signal — ESLint won't complain and SonarCloud accepts it because there's no captured exception that gets ignored. The project's no-console policy means logging from inside the catch is usually off the table, so this is the standard fix.
+- **Optional catch binding for intentionally swallowed exceptions** (`javascript:S2486`, "Either log this exception or rethrow it"). Drop the unused `( e )` and use the bare `catch { ... }` form (ES2019). The no-binding form is the canonical "this is intentional" signal. ESLint won't complain and SonarCloud accepts it because there's no captured exception that gets ignored. The project's no-console policy means logging from inside the catch is usually off the table, so this is the standard fix.
     - ✅ Good:
 
         ```js
         try {
             attrs = JSON.parse( container.dataset.gatherpress_block_attrs );
         } catch {
-            // Malformed JSON — leave the static baseline in place.
+            // Malformed JSON, leave the static baseline in place.
             continue;
         }
         ```
 
-    - ❌ Bad: `} catch ( e ) { /* swallow */ continue; }` — captured exception that's then ignored.
+    - ❌ Bad: `} catch ( e ) { /* swallow */ continue; }`: captured exception that's then ignored.
 - **`element.dataset.foo` over `element.setAttribute( 'data-foo', ... )`** (`javascript:S6747`, "Prefer `.dataset` over `setAttribute`"). The `dataset` accessor is faster, type-coerces consistently, and reads better. Only use `setAttribute` for non-`data-*` attributes (`autocomplete`, ARIA attrs, `role`, etc.).
     - ✅ Good: `el.dataset.lpignore = 'true';` / `el.dataset.formType = 'other';` / `el.dataset[ '1pIgnore' ] = 'true';`
     - ❌ Bad: `el.setAttribute( 'data-lpignore', 'true' );` / `el.setAttribute( 'data-form-type', 'other' );`
@@ -534,7 +534,7 @@ When working with JavaScript code:
 - **No useless `try { ... } catch ( e ) { throw e; }` wrappers** (`javascript:S2737`, "Catch clauses should do more than rethrow"). If the catch only re-throws the same error with no logging, transformation, or cleanup, delete the entire `try`/`catch` and let the exception propagate naturally. Same control flow, less code.
     - ✅ Good: `return apiFetch( { path: ..., method: 'POST', data: ... } );`
     - ❌ Bad: `try { return await apiFetch( ... ); } catch ( error ) { throw error; }`
-    - If you remove a try/catch wrapper that only existed for a now-deleted log statement, also drop the `async` keyword if the function no longer has an internal `await` — see the "no redundant `async`" rule below.
+    - If you remove a try/catch wrapper that only existed for a now-deleted log statement, also drop the `async` keyword if the function no longer has an internal `await`. See the "no redundant `async`" rule below.
 - **`javascript:S4123` ("`await` of a non-Thenable") needs a per-case decision**: Sonar's flow analysis is finicky about whether it can prove a function returns a Promise. Two sub-cases, and the right fix is different for each:
     - **(a) Function is `async` with no internal `await`** (e.g. `async (a, b) => { return apiFetch({...}); }`): drop the `async`. The function still returns a Promise (via `apiFetch`) so callers' `await fn()` keeps working, and Sonar accepts the await on the Promise return type.
         - ✅ Good: `const createNewVenuePost = ( a, b ) => apiFetch( { ... } );`
@@ -549,7 +549,7 @@ When working with JavaScript code:
 - **Flip negated `if`/`else` conditions so the positive arm comes first** (`javascript:S2310`, "Unexpected negated condition"). Easier to read and SonarCloud stops flagging. For two-branch ternaries, swap the arms; for `if/else` blocks, flip the condition and swap the bodies. For pure boolean choices a ternary is often cleaner than nested `if/else` (e.g. `newTerms = hasTermAlready ? currentTerms : [ ...currentTerms, termId ];` instead of `if ( ! hasTermAlready ) { ... } else { ... }`).
     - ✅ Good: `if ( 'loading' === document.readyState ) { document.addEventListener( ... ); } else { initTooltips(); }`
     - ❌ Bad: `if ( 'loading' !== document.readyState ) { initTooltips(); } else { document.addEventListener( ... ); }`
-- **Every arm of a callback (`useSelect`, reducers, mappers) must return the same shape** (`javascript:S3801`, "Refactor this function to always return the same type"). When the early-bail arm returns `[]` and the happy-path arm returns `{ key: value }`, downstream destructures (`const { key } = useSelect( ... )`) silently yield `undefined` from the `[]` arm — that's a latent bug, not a stylistic issue. Unify both arms to the object shape.
+- **Every arm of a callback (`useSelect`, reducers, mappers) must return the same shape** (`javascript:S3801`, "Refactor this function to always return the same type"). When the early-bail arm returns `[]` and the happy-path arm returns `{ key: value }`, downstream destructures (`const { key } = useSelect( ... )`) silently yield `undefined` from the `[]` arm: that's a latent bug, not a stylistic issue. Unify both arms to the object shape.
     - ✅ Good:
 
         ```js
@@ -561,15 +561,15 @@ When working with JavaScript code:
         }, [ id ] );
         ```
 
-    - ❌ Bad: `if ( null === id ) { return []; } return { venuePost: ... };` — destructure of `[]` gives `undefined`, accidentally matching the intent but for the wrong reason.
-- **Hooks must start with `use` — never PascalCase** (`react-hooks/rules-of-hooks`). Any function calling `useSelect` / `useState` / `useEffect` / etc. is a hook and the linter only enforces the rules-of-hooks invariants when the name starts with `use`. PascalCase names like `GetVenuePostFromTermId` (which uses `useSelect` internally) are silently exempted from the linter and risk hook-order violations going undetected.
+    - ❌ Bad: `if ( null === id ) { return []; } return { venuePost: ... };`: destructure of `[]` gives `undefined`, accidentally matching the intent but for the wrong reason.
+- **Hooks must start with `use`: never PascalCase** (`react-hooks/rules-of-hooks`). Any function calling `useSelect` / `useState` / `useEffect` / etc. is a hook and the linter only enforces the rules-of-hooks invariants when the name starts with `use`. PascalCase names like `GetVenuePostFromTermId` (which uses `useSelect` internally) are silently exempted from the linter and risk hook-order violations going undetected.
     - ✅ Good: `export function useVenuePostFromTermId( termId, ... ) { const { venuePost } = useSelect( ... ); ... }`
-    - ❌ Bad: `export function GetVenuePostFromTermId( termId, ... ) { const { venuePost } = useSelect( ... ); ... }` — looks like a regular helper, isn't.
-    - When renaming, also update *every* call site (block edits, slotfills, tests) — and check tests for `renderHook( () => OldName( ... ) )` patterns.
-- **Drop deprecated `__nextHasNoMarginBottom` from `@wordpress/components` 32+**: The "no margin bottom" behavior became the default in v29, and the prop is now a deprecated no-op. Just remove the line. If SonarCloud flags `'__nextHasNoMarginBottom' is deprecated`, the fix is one-line. The same will eventually apply to other `__next*` opt-in flags (`__next40pxDefaultSize`, `__nextHasNoMarginTop`, etc.) — only remove what Sonar / the WP changelog actually marks deprecated, since some are still opt-ins on this version.
+    - ❌ Bad: `export function GetVenuePostFromTermId( termId, ... ) { const { venuePost } = useSelect( ... ); ... }`. Looks like a regular helper, isn't.
+    - When renaming, also update *every* call site (block edits, slotfills, tests): and check tests for `renderHook( () => OldName( ... ) )` patterns.
+- **Drop deprecated `__nextHasNoMarginBottom` from `@wordpress/components` 32+**: The "no margin bottom" behavior became the default in v29, and the prop is now a deprecated no-op. Just remove the line. If SonarCloud flags `'__nextHasNoMarginBottom' is deprecated`, the fix is one-line. The same will eventually apply to other `__next*` opt-in flags (`__next40pxDefaultSize`, `__nextHasNoMarginTop`, etc.), only remove what Sonar / the WP changelog actually marks deprecated, since some are still opt-ins on this version.
     - ✅ Good: `<ToggleGroupControl label={ ... } isBlock __next40pxDefaultSize onChange={ ... }>`
     - ❌ Bad: `<ToggleGroupControl label={ ... } isBlock __nextHasNoMarginBottom __next40pxDefaultSize onChange={ ... }>`
-- **Stable `Navigator` over `__experimentalNavigatorProvider`** (and the rest of the `__experimentalNavigator*` family). The stable API ships under `Navigator` with the same props (`initialPath`, etc.) and exposes subcomponents as `Navigator.Screen`, `Navigator.Button`, `Navigator.BackButton`. If a file imports both the stable `Navigator` and the experimental `__experimentalNavigatorProvider as NavigatorProvider`, the migration is half-done — drop the experimental import and rename the wrapper.
+- **Stable `Navigator` over `__experimentalNavigatorProvider`** (and the rest of the `__experimentalNavigator*` family). The stable API ships under `Navigator` with the same props (`initialPath`, etc.) and exposes subcomponents as `Navigator.Screen`, `Navigator.Button`, `Navigator.BackButton`. If a file imports both the stable `Navigator` and the experimental `__experimentalNavigatorProvider as NavigatorProvider`, the migration is half-done, drop the experimental import and rename the wrapper.
     - ✅ Good: `import { Navigator } from '@wordpress/components';` then `<Navigator initialPath="/">...</Navigator>`
     - ❌ Bad: `import { __experimentalNavigatorProvider as NavigatorProvider, Navigator } from '@wordpress/components';` then `<NavigatorProvider initialPath="/">...</NavigatorProvider>`
 
@@ -595,31 +595,31 @@ A11y rules that fire frequently and have known-good fixes specific to this codeb
     </div>
     ```
 
-    The CSS is class-based (`display: grid; grid-template-columns: 200px 1fr;` with a 782px mobile breakpoint that stacks). It currently lives inline in `network-page.php` and `tools.php` — duplicate it inline if you need it on a third settings template, or extract to a shared admin CSS file if it grows further. Tables emitted by `do_settings_sections()` (WP core) are out of scope — those need custom section/field renderers to reshape, which isn't worth doing for a Sonar finding.
-- **ARIA combobox-with-listbox-popup pattern is correct for autocomplete — file Sonar's `<select>`/`<datalist>` suggestion as won't-fix** (`Web:S6817` and friends). Sonar's recommendations don't fit free-text autocomplete with custom-rendered items. The W3C ARIA Authoring Practices Guide combobox pattern is what this codebase uses and what AT expects. Required wiring on the input element:
+    The CSS is class-based (`display: grid; grid-template-columns: 200px 1fr;` with a 782px mobile breakpoint that stacks). It currently lives inline in `network-page.php` and `tools.php`. Duplicate it inline if you need it on a third settings template, or extract to a shared admin CSS file if it grows further. Tables emitted by `do_settings_sections()` (WP core) are out of scope. Those need custom section/field renderers to reshape, which isn't worth doing for a Sonar finding.
+- **ARIA combobox-with-listbox-popup pattern is correct for autocomplete: file Sonar's `<select>`/`<datalist>` suggestion as won't-fix** (`Web:S6817` and friends). Sonar's recommendations don't fit free-text autocomplete with custom-rendered items. The W3C ARIA Authoring Practices Guide combobox pattern is what this codebase uses and what AT expects. Required wiring on the input element:
     - `role="combobox"`, `aria-autocomplete="list"`, `aria-expanded={ panelOpen }`, `aria-controls={ panelOpen ? listboxId : undefined }`, `aria-activedescendant={ activeId }`, plus an accessible name (`aria-label` or wrapped `<label>`).
-    - The popup uses `<div role="listbox" id={ listboxId } aria-label="...">` (use a `<div>`, not `<ul>` — see next bullet) with each option as `<button role="option" id={ optionId } aria-selected={ isActive } tabIndex={ -1 }>`.
+    - The popup uses `<div role="listbox" id={ listboxId } aria-label="...">` (use a `<div>`, not `<ul>`. See next bullet) with each option as `<button role="option" id={ optionId } aria-selected={ isActive } tabIndex={ -1 }>`.
     - When marking won't-fix in SonarCloud, paste the rationale: *"ARIA combobox-with-listbox-popup pattern (W3C APG). Native `<input list>`/`<datalist>` are single-line and can't render custom items; `<select multiple>` is for static-options selection, not free-text autocomplete."*
-- **Use `<div role="listbox">` rather than `<ul role="listbox">`** (`jsx-a11y/no-noninteractive-element-to-interactive-role`). The lint rule fires on the implicit-role-of-`<ul>`-being-overridden, not on the listbox role itself. Switching to a `<div>` with `<button role="option">` children (no wrapping `<li role="none">` needed) avoids the rule entirely. CSS targeting class names rather than tags makes this a free swap — verify before touching markup that styles aren't `ul.foo` / `li`-scoped.
-- **Don't slap `role="listbox"` on a plain list of standalone clickable items**. If the children aren't `role="option"` and there's no combobox driving the list (no `aria-controls`/`aria-activedescendant` from an input), the role is incomplete-and-cosmetic — just delete it. A `<ul>`/`<li>`/`<button>` markup is already correct, accessible "list of clickable items," and users navigate with Tab. Don't add ARIA you don't intend to wire up fully.
+- **Use `<div role="listbox">` rather than `<ul role="listbox">`** (`jsx-a11y/no-noninteractive-element-to-interactive-role`). The lint rule fires on the implicit-role-of-`<ul>`-being-overridden, not on the listbox role itself. Switching to a `<div>` with `<button role="option">` children (no wrapping `<li role="none">` needed) avoids the rule entirely. CSS targeting class names rather than tags makes this a free swap. Verify before touching markup that styles aren't `ul.foo` / `li`-scoped.
+- **Don't slap `role="listbox"` on a plain list of standalone clickable items**. If the children aren't `role="option"` and there's no combobox driving the list (no `aria-controls`/`aria-activedescendant` from an input), the role is incomplete-and-cosmetic, just delete it. A `<ul>`/`<li>`/`<button>` markup is already correct, accessible "list of clickable items," and users navigate with Tab. Don't add ARIA you don't intend to wire up fully.
 
 ## Release Process and Branch Model
 
 The full release runbook lives at [`docs/contributor/release-process.md`](docs/contributor/release-process.md). The rules below are the invariants agents must respect in day-to-day work:
 
 - **`develop` is the trunk; `main` is the released state.** All feature/fix PRs target `develop` and get **squash-merged** (branch protection enforces linear history and signed commits). Only release-train PRs target `main` (the develop→main release merge, patch `version-X.Y.N` branches, changelog parity syncs).
-- **Never squash a develop→main release PR** — it must merge with a merge commit or the branch histories permanently diverge. Conversely, PRs into `develop` are always squashed.
-- **Every PR into `develop` needs changelog handling**: either a `.github/changelog/` entry file (Significance/Type header + one-line message; generate one with `composer changelog:add`, or copy the format from entries in git history — the directory is empty right after a release) or the `Skip Changelog` label. Convention: user-visible changes get an entry; docs-only, CI-only, dev-dependency, and version-bump PRs get the label. The gate only enforces on PRs based on `develop`.
-- **Know which release files are generated and which are only patched.** #1827 moved the release tooling into `.github/scripts/release/generate-version.php`, and it changed this materially — the old gatherpress-develop `parts/` pipeline that assembled the readmes is no longer in use, so editing `parts/shared/*.md` there does nothing.
-    - **Fully regenerated, never hand-edit**: `includes/data/credits.php`, and `docs/developer/hooks/` (regenerated by CI — see above).
-    - **Hand-edited, with individual lines patched in place**: `README.md` (only its version badge is rewritten), `readme.txt` (only `Stable tag:` and `Contributors:`), and `SECURITY.md` (only the supported-versions table). Improve the surrounding copy in these like any other file — that is the point of the change. `README.md` says as much in a comment at the top of the file.
+- **Never squash a develop→main release PR**: it must merge with a merge commit or the branch histories permanently diverge. Conversely, PRs into `develop` are always squashed.
+- **Every PR into `develop` needs changelog handling**: either a `.github/changelog/` entry file (Significance/Type header + one-line message; generate one with `composer changelog:add`, or copy the format from entries in git history. The directory is empty right after a release) or the `Skip Changelog` label. Convention: user-visible changes get an entry; docs-only, CI-only, dev-dependency, and version-bump PRs get the label. The gate only enforces on PRs based on `develop`.
+- **Know which release files are generated and which are only patched.** #1827 moved the release tooling into `.github/scripts/release/generate-version.php`, and it changed this materially. The old gatherpress-develop `parts/` pipeline that assembled the readmes is no longer in use, so editing `parts/shared/*.md` there does nothing.
+    - **Fully regenerated, never hand-edit**: `includes/data/credits.php`, and `docs/developer/hooks/` (regenerated by CI. See above).
+    - **Hand-edited, with individual lines patched in place**: `README.md` (only its version badge is rewritten), `readme.txt` (only `Stable tag:` and `Contributors:`), and `SECURITY.md` (only the supported-versions table). Improve the surrounding copy in these like any other file. That is the point of the change. `README.md` says as much in a comment at the top of the file.
     - **Version strings patched in place**: `gatherpress.php`, `package.json` (refresh the lockfile after with `npm i --package-lock-only`), and gatherpress-alpha's `Version:` header.
     - Feature-list changes go in `docs/features.md`. The short lists in `README.md` and `readme.txt` are now maintained by hand, so update them there too if they should stay in step.
 - **Distribution has two allowlists**: the GitHub release zip uses `package.json`'s `files` field; the wp.org deploy uses `.distignore`. A new dev/config/tooling file at the repo root must be added to `.distignore` or it ships to wp.org (see #1920 for the precedent).
 - **Patch fixes are born on `develop`** and cherry-picked (`git cherry-pick -x`) to the `version-X.Y.N` branch off `main`. Don't write original fixes on a patch branch unless the bug no longer exists on develop.
 - **After any release, two loop-closing steps are mandatory**: confirm the auto-opened `release/X.Y.Z` rollup PR auto-merged into develop (its commit is API-signed and auto-merge is pre-enabled; intervene only if it's stuck), and cherry-pick that rollup onto `main` for changelog parity. The release workflow refuses to run a stable tag while a `release/*` PR is still open, so an unmerged rollup blocks the next release instead of double-rolling its changelog.
 - **Agents must not push release tags.** A stable tag push deploys to WordPress.org; that call belongs to the release manager.
-- **GatherPress Alpha** (sibling repo/checkout `../gatherpress-alpha`) is version-locked to core and refuses to run on mismatch — every core version bump needs its lockstep sync PR.
+- **GatherPress Alpha** (sibling repo/checkout `../gatherpress-alpha`) is version-locked to core and refuses to run on mismatch. Every core version bump needs its lockstep sync PR.
 
 ## Known Issues / Technical Debt
 
@@ -633,7 +633,7 @@ The full release runbook lives at [`docs/contributor/release-process.md`](docs/c
 
 - Monitor [@wordpress/env releases](https://www.npmjs.com/package/@wordpress/env) for an upstream fix that disables / configures Composer audit, or a PHPUnit pin that no longer trips the advisories.
 - When such a release lands, bump `@wordpress/env`, delete `patches/@wordpress+env+*.patch`, and remove the `postinstall` hook + `patch-package` dependency from `package.json` if no other patches remain.
-- Removal procedure and full rationale live in [`patches/README.md`](patches/README.md) — keep that file in sync with whatever lives under `patches/`.
+- Removal procedure and full rationale live in [`patches/README.md`](patches/README.md). Keep that file in sync with whatever lives under `patches/`.
 
 ## Planned Improvements for v0.34.0
 

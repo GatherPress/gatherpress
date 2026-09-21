@@ -71,7 +71,7 @@ GatherPress does respect [theme_supports](https://developer.wordpress.org/refere
 
 ## CSS custom properties
 
-Some GatherPress components read CSS custom properties so a theme can restyle them without overriding selectors or replacing assets. Set them anywhere the component inherits from — `:root`, a block wrapper, or `theme.json`'s `styles.css`.
+Some GatherPress components read CSS custom properties so a theme can restyle them without overriding selectors or replacing assets. Set them anywhere the component inherits from: `:root`, a block wrapper, or `theme.json`'s `styles.css`.
 
 They follow WordPress's own `--wp--preset--color--primary` shape: `--gatherpress--{component}--{property}`, with two dashes between segments.
 
