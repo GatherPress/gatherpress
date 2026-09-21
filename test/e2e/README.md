@@ -1,323 +1,114 @@
-# GatherPress E2E Testing Guide
+# GatherPress E2E tests
 
-This directory contains end-to-end tests for GatherPress using Playwright. These tests have been designed with reliability, maintainability, and debugging in mind.
+End-to-end tests for GatherPress, using [Playwright](https://playwright.dev/) against a real WordPress install.
 
-## Architecture
+This file covers the suite's internals. For getting it running — installing, starting `wp-env`, running a single spec, reading a failure — see the [contributor guide](../../docs/contributor/e2e-tests/README.md).
 
-### Page Object Model (POM)
+## Layout
 
-- **pages/BasePage.js**: Common WordPress admin functionality
-- **pages/EventPage.js**: Event-specific page interactions
-- **pages/VenuePage.js**: Venue-specific page interactions (future)
-
-### Test Data Management
-
-- **fixtures/TestDataFactory.js**: Consistent test data creation and cleanup
-- Automatic cleanup after each test
-- Unique identifiers to avoid conflicts
-
-### Test Structure
-
-- **admin-tests/**: Tests for WordPress admin functionality
-- **frontend-tests/**: Tests for frontend user interactions
-- **api-tests/**: Tests for REST API endpoints (future)
-
-## Best Practices Implemented
-
-### ✅ Reliable Selectors
-
-```javascript
-// Good: Semantic, stable selectors
-this.selectors = {
-    titleInput: '.editor-post-title__input, [aria-label="Add title"]',
-    publishButton: '.editor-post-publish-button, button:has-text("Publish")',
-};
-
-// Bad: Fragile selectors
-'.css-1234567'
-'div > span:nth-child(3)'
+```text
+test/e2e/
+├── global-setup.js        Logs in once over REST, writes storageState.json
+├── storageState.json      The saved session every test reuses
+├── admin-tests/           Admin screens load and the login works
+├── event-tests/           Front-end event rendering, editor regressions
+├── rsvp-tests/            RSVP flows (needs a seeded event — see below)
+└── helpers/               Experimental event-creation helpers, not yet wired in
 ```
 
-### ✅ Proper Error Handling
+Every spec is a plain Playwright file. It requires `@playwright/test` and nothing else, and talks to the page directly:
 
 ```javascript
-// Good: Clear error messages with context
-if (actualTitle !== title) {
-    throw new Error(`Failed to set title. Expected: "${title}", Got: "${actualTitle}"`);
-}
-
-// Bad: Generic errors
-throw new Error('Something went wrong');
+const { test, expect } = require( '@playwright/test' );
 ```
 
-### ✅ Robust Waiting Strategies
+There is no page-object layer and no fixture factory. If you are adding a test, you have everything you need after that one `require`.
 
-```javascript
-// Good: Wait for specific conditions
-await element.waitFor({ state: 'visible', timeout: 10000 });
+## Authentication
 
-// Bad: Arbitrary timeouts
-await page.waitForTimeout(5000);
-```
+`global-setup.js` runs once before the suite. It uses `RequestUtils` from `@wordpress/e2e-test-utils-playwright` to authenticate over the REST API and save the session to `storageState.json`; `playwright.config.js` then hands that state to every test. Tests start already logged in as `admin`, and no test walks the login form.
 
-### ✅ Test Data Isolation
+If authentication fails for every test at once, delete `storageState.json` and run again — global setup rebuilds it.
 
-```javascript
-// Good: Unique test data
-const eventData = testData.createEventData({
-    title: 'E2E Test Online Event',  // Will be timestamped
-});
+## The suites
 
-// Bad: Static test data
-const title = 'Test Event';  // Causes conflicts
-```
+### `admin-tests/`
 
-### ✅ Comprehensive Cleanup
+`gatherpress-auth-test.spec.js` confirms the shared session actually works and that the GatherPress admin pages are reachable. `gatherpress-basic.spec.js` checks the events list, the venues list, the plugin's presence on the plugins screen, and the admin menu.
 
-```javascript
-test.afterEach(async () => {
-    // Cleanup all created test data
-    await testData.cleanup();
-});
-```
+These are the canary tests. When they fail, it is usually the environment rather than the plugin.
 
-## Test Suites
+### `event-tests/`
 
-### Admin Tests (`admin-tests/`)
+`event-display.spec.js` publishes an event and checks it renders on the front end.
 
-Tests for WordPress admin functionality using Page Object Model.
+`datetime-picker-regression.spec.js` guards [#1607](https://github.com/GatherPress/gatherpress/issues/1607): stepping the year *down* in the datetime picker crashed the editor. The test exists because unit tests could not see it — the crash only happened in a real editor with a real picker.
 
-### Event Display Tests (`event-tests/`)
+### `rsvp-tests/`
 
-Basic frontend tests verifying event pages load correctly.
+`rsvp-flows.spec.js` covers the RSVP surface: open RSVP by email while logged out, RSVP while logged in, status changes across attending / not attending / waiting list, the anonymous checkbox, guest counts, and the modal.
+
+The tests are written and complete, but they are **skipped in CI**, because they need an event with an RSVP block and nothing seeds one yet. Run them by hand against an event you publish yourself:
 
 ```bash
-npm run test:e2e -- event-tests/event-display.spec.js
-```
-
-### RSVP Flow Tests (`rsvp-tests/`) - **CURRENTLY SKIPPED**
-
-**Status**: These tests are fully written but currently skipped in CI due to manual setup requirements.
-
-Comprehensive tests for RSVP functionality covering:
-
-- Open RSVP Flow (logged-out users with email)
-- Logged-in user RSVP interactions
-- Status changes (attending, not attending, waiting list)
-- Anonymous checkbox (hide user identity)
-- Guest count functionality
-- Modal interactions
-
-**11 tests total** - All test logic is complete and ready to run.
-
-#### To Run Locally
-
-These tests require a manually created event with an RSVP block:
-
-```bash
-# 1. Create event via WordPress admin at http://localhost:8889/wp-admin
-# 2. Add RSVP block to the event
-# 3. Set event date to 7+ days in the future
-# 4. Publish the event
-# 5. Run tests with event URL:
-EVENT_URL=http://localhost:8889/event/test-event/ npm run test:e2e -- rsvp-tests/rsvp-flows.spec.js
-```
-
-#### Future Work Needed
-
-To make these tests production-ready and run in CI, automated event creation is needed. See inline documentation in `rsvp-flows.spec.js` for three potential approaches:
-
-1. **WordPress Playground Blueprint** - WXR import (similar to PR preview workflow)
-2. **Playwright Admin UI** - Automate event creation via WordPress editor
-3. **Direct Database Seeding** - wp-cli with proper post content
-
-Experimental helper implementations exist in `test/e2e/helpers/` for reference.
-
-## Running Tests
-
-### Local Development
-
-```bash
-# Run all E2E tests
-npm run test:e2e
-
-# Run specific test file
-npm run test:e2e -- test/e2e/admin-tests/gatherpress-event-robust.spec.js
-
-# Run RSVP tests with manual event setup
 EVENT_URL=http://localhost:8889/event/your-event/ npm run test:e2e -- rsvp-tests/rsvp-flows.spec.js
-
-# Run tests in headed mode (see browser)
-npm run test:e2e -- --headed
-
-# Debug mode (pause on failures)
-npm run test:e2e -- --debug
 ```
 
-### With wp-env
+Without `EVENT_URL` the suite fails immediately with setup instructions rather than reporting a misleading failure.
 
-```bash
-# Start WordPress environment
-npm run wp-env start
+Getting them into CI means creating that event automatically. Three approaches are sketched in the spec's comments — a Playground blueprint importing WXR, driving the block editor with Playwright, or seeding directly with WP-CLI — and `helpers/` holds unfinished attempts at the second and third. None is wired into the suite.
 
-# Run tests against wp-env
-WP_BASE_URL=http://localhost:8889 npm run test:e2e
+## Conventions
 
-# Stop environment
-npm run wp-env stop
-```
-
-### CI/GitHub Actions
-
-Tests run automatically on:
-
-- Push to main/develop branches
-- Pull requests affecting E2E code
-- Uses single worker to avoid conflicts
-- Artifacts saved for debugging failures
-
-## Debugging Test Failures
-
-### 1. View Test Reports
-
-```bash
-# Open HTML report
-npx playwright show-report
-
-# View specific test traces
-npx playwright show-trace test-results/.../trace.zip
-```
-
-### 2. Debug Screenshots
-
-Failed tests automatically capture:
-
-- Screenshots on failure
-- Video recordings on retry
-- Debug screenshots via `takeDebugScreenshot()`
-
-### 3. Verbose Logging
-
-```bash
-# Enable debug logging
-DEBUG=pw:api npm run test:e2e
-
-# Playwright debug mode
-PWDEBUG=1 npm run test:e2e
-```
-
-### 4. Common Issues & Solutions
-
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| Authentication failures | Storage state corruption | Delete `storageState.json`, restart tests |
-| Element not found | Selector changed | Update selector in Page Object |
-| Timeout on load | Slow WordPress admin | Increase `navigationTimeout` |
-| Test data conflicts | Static test data | Use TestDataFactory for unique data |
-| Race conditions | Parallel execution | Disable parallel mode or add proper waits |
-
-## Writing New Tests
-
-### 1. Follow the Pattern
+**Select the way a person would.** Role, label and visible text survive a markup refactor; generated class names do not.
 
 ```javascript
-const { test, expect } = require('@playwright/test');
-const EventPage = require('../pages/EventPage');
-const TestDataFactory = require('../fixtures/TestDataFactory');
+// Good.
+page.getByRole( 'button', { name: 'RSVP' } );
 
-test.describe('Feature Name', () => {
-    let eventPage;
-    let testData;
-
-    test.beforeEach(async ({ page }) => {
-        eventPage = new EventPage(page);
-        testData = new TestDataFactory(page);
-        await eventPage.goToAdmin();
-    });
-
-    test.afterEach(async () => {
-        await testData.cleanup();
-    });
-
-    test('should do something specific', async () => {
-        // Arrange
-        const testData = testData.createEventData({ /* config */ });
-        
-        // Act
-        const result = await eventPage.performAction(testData);
-        
-        // Assert
-        expect(result).toBeTruthy();
-    });
-});
+// Fragile.
+page.locator( '.css-1a2b3c' );
+page.locator( 'div > span:nth-child(3)' );
 ```
 
-### 2. Add Selectors to Page Objects
-
-Never use raw selectors in tests. Add them to the appropriate Page Object.
-
-### 3. Use Test Steps for Complex Tests
+**Wait for a condition, not a duration.** Playwright's assertions retry until they time out, which is both faster and steadier than sleeping.
 
 ```javascript
-test('complex workflow', async () => {
-    await test.step('Setup test data', async () => {
-        // Setup code
-    });
-    
-    await test.step('Perform main action', async () => {
-        // Main test logic
-    });
-    
-    await test.step('Verify results', async () => {
-        // Assertions
-    });
-});
+// Good.
+await expect( modal ).toBeVisible();
+
+// Bad.
+await page.waitForTimeout( 5000 );
 ```
 
-### 4. Add Meaningful Test Names
+**Make the data unique.** Two tests that both publish "Test Event" will collide as soon as they run in the same database. Add a timestamp.
+
+**Clean up what you create**, so the next test starts from a known state.
+
+**Fail with a message that names the problem.** `Expected title "Team standup", got "Auto Draft"` points at the bug; `Something went wrong` starts an investigation.
+
+**Group long tests into steps**, so the report shows where it stopped:
 
 ```javascript
-// Good: Describes what and why
-test('should create online event when venue selector has online option');
-
-// Bad: Vague or technical
-test('test event creation');
+await test.step( 'publish the event', async () => { /* … */ } );
+await test.step( 'RSVP as a logged-out visitor', async () => { /* … */ } );
 ```
 
-## Migration from Old Tests
+**Name the test after the behavior.** "should show the waiting list once the event is full" tells you what broke. "test rsvp 3" does not.
 
-### Before (Problematic)
+## Constraints worth knowing
 
-```javascript
-test.skip('the user should be able to publish an online event', async ({ page }) => {
-    await login({ page, username: 'prashantbellad' });
-    await page.getByLabel('Venue Selector').selectOption('33:online-event', { timeout: 60000 });
-    // ... fragile code
-});
-```
+These are set in [`playwright.config.js`](../../playwright.config.js) and are deliberate:
 
-### After (Robust)
+- **One worker, no parallelism.** The tests share a single WordPress database and fought over it when run in parallel.
+- **Generous timeouts** (180s per test, 30s navigation, 15s per action). WordPress admin is slow enough that Playwright's defaults produce false failures.
+- **Artifacts on failure**: a screenshot always, plus a trace and video on the first retry.
 
-```javascript
-test('should create and publish an online event', async () => {
-    const eventData = testData.createEventData({ venueType: 'online' });
-    await testData.createOnlineVenue();
-    const eventUrl = await eventPage.createEvent(eventData);
-    await eventPage.verifyPublishedEvent(eventUrl, eventData.title, 'online');
-});
-```
+## Still to do
 
-## Performance Considerations
-
-- Single worker mode prevents race conditions
-- Test data cleanup prevents database bloat
-- Selective test running for faster feedback
-- Network simulation for testing edge cases
-
-## Future Improvements
-
-- [ ] Add visual regression testing
-- [ ] Implement API test coverage
-- [ ] Add accessibility testing
-- [ ] Create performance benchmarks
-- [ ] Add cross-browser testing matrix
+- [ ] Seed the RSVP event automatically so `rsvp-tests/` can run in CI
+- [ ] Front-end coverage beyond event display
+- [ ] REST API tests
+- [ ] Accessibility assertions
+- [ ] Visual regression testing
+- [ ] A cross-browser matrix — the suite is Chromium-only today
