@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\Modal;
 use GatherPress\Tests\Base;
+use WP_HTML_Tag_Processor;
 
 /**
  * Class Test_Modal.
@@ -298,6 +299,83 @@ class Test_Modal extends Base {
 			'style="; z-index: 1000;"',
 			$output_html,
 			'Output should set z-index when style is empty'
+		);
+	}
+
+	/**
+	 * Data provider for existing styles that contain a percent sign.
+	 *
+	 * @since TBD
+	 *
+	 * @return array<string, array<int, string>>
+	 */
+	public function data_styles_with_percent_signs(): array {
+		return array(
+			'gradient stops (#2333)'         => array(
+				'background:linear-gradient(135deg,rgb(6,147,227) 0%,rgb(155,81,224) 100%)',
+			),
+			'a percentage width'             => array( 'width:50%' ),
+			'a percent-encoded URL'          => array( 'background-image:url(photo%20one.jpg)' ),
+			'several percentage values'      => array( 'width:50%;height:25%;margin:5%' ),
+			'a sequence that is a specifier' => array( 'background-image:url(img%2d.png)' ),
+		);
+	}
+
+	/**
+	 * Test existing styles containing a percent sign are kept verbatim.
+	 *
+	 * A `%` in the block's own style attribute must not be read as a
+	 * `sprintf()` specifier, which threw a fatal ValueError on gradients.
+	 *
+	 * @since TBD
+	 * @covers ::adjust_block_z_index
+	 *
+	 * @dataProvider data_styles_with_percent_signs
+	 *
+	 * @param string $style The block's existing style attribute.
+	 *
+	 * @return void
+	 */
+	public function test_z_index_keeps_styles_with_percent_signs( string $style ): void {
+		$instance = Modal::get_instance();
+		$output   = $instance->adjust_block_z_index(
+			sprintf( '<div style="%s">Content</div>', esc_attr( $style ) ),
+			array( 'attrs' => array() )
+		);
+		$tag      = new WP_HTML_Tag_Processor( $output );
+
+		$tag->next_tag();
+
+		$this->assertSame(
+			$style . '; z-index: 1000;',
+			$tag->get_attribute( 'style' ),
+			'Existing styles should survive unchanged, with the z-index appended.'
+		);
+	}
+
+	/**
+	 * Test a custom z-index is still applied alongside a gradient.
+	 *
+	 * @since TBD
+	 * @covers ::adjust_block_z_index
+	 *
+	 * @return void
+	 */
+	public function test_z_index_custom_value_with_gradient(): void {
+		$instance = Modal::get_instance();
+		$gradient = 'background:linear-gradient(135deg,rgb(6,147,227) 0%,rgb(155,81,224) 100%)';
+		$output   = $instance->adjust_block_z_index(
+			sprintf( '<div style="%s">Content</div>', esc_attr( $gradient ) ),
+			array( 'attrs' => array( 'zIndex' => 2000 ) )
+		);
+		$tag      = new WP_HTML_Tag_Processor( $output );
+
+		$tag->next_tag();
+
+		$this->assertSame(
+			$gradient . '; z-index: 2000;',
+			$tag->get_attribute( 'style' ),
+			'The custom z-index should be applied without disturbing the gradient.'
 		);
 	}
 
