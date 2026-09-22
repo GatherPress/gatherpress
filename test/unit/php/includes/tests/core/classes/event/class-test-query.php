@@ -16,6 +16,7 @@ use GatherPress\Core\Venue;
 use GatherPress\Core\Venue\Setup;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
+use stdClass;
 use WP_Query;
 
 /**
@@ -218,10 +219,12 @@ class Test_Query extends Base {
 		wp_set_post_terms( $post_1->ID, '_unit-test-venue', Venue::TAXONOMY );
 
 		$results = $instance->get_events_list(
-			'past',
-			2,
-			array( 'unit-test-topic' ),
-			array( '_unit-test-venue' )
+			array(
+				'event_list_type' => 'past',
+				'number'          => 2,
+				'topics'          => array( 'unit-test-topic' ),
+				'venues'          => array( '_unit-test-venue' ),
+			)
 		);
 
 		$this->assertContains( $post_1->ID, $results->posts, 'Failed to assert that post ID was in array.' );
@@ -245,6 +248,164 @@ class Test_Query extends Base {
 
 		$this->assertContains( $post_1->ID, $results->posts, 'Failed to assert that post ID was in array.' );
 		$this->assertNotContains( $post_2->ID, $results->posts, 'Failed to assert that post ID was not in array.' );
+	}
+
+	/**
+	 * Coverage for the legacy positional signature of get_events_list.
+	 *
+	 * @covers ::get_events_list
+	 *
+	 * @return void
+	 */
+	public function test_get_events_list_legacy_signature(): void {
+		$instance = Query::get_instance();
+
+		$results = $instance->get_events_list( 'upcoming', 1 );
+
+		$this->assertSame( 'upcoming', $results->query[ Query::EVENT_QUERY_PARAM ] );
+		$this->assertSame( 1, $results->query['posts_per_page'] );
+		$this->assertSame( 'ASC', $results->query['order'] );
+	}
+
+	/**
+	 * Coverage for the args array signature of get_events_list.
+	 *
+	 * @covers ::get_events_list
+	 *
+	 * @return void
+	 */
+	public function test_get_events_list_defaults_to_array_args(): void {
+		$instance = Query::get_instance();
+
+		$results = $instance->get_events_list( array( 'event_list_type' => 'past' ) );
+
+		$this->assertSame( 'past', $results->query[ Query::EVENT_QUERY_PARAM ] );
+		$this->assertSame( 5, $results->query['posts_per_page'] );
+		$this->assertSame( 'DESC', $results->query['order'] );
+	}
+
+	/**
+	 * Coverage for an empty args array falling back to every default.
+	 *
+	 * @covers ::get_events_list
+	 *
+	 * @return void
+	 */
+	public function test_get_events_list_empty_args_array(): void {
+		$instance = Query::get_instance();
+
+		$results = $instance->get_events_list( array() );
+
+		$this->assertSame( '', $results->query[ Query::EVENT_QUERY_PARAM ] );
+		$this->assertSame( 5, $results->query['posts_per_page'] );
+		$this->assertSame( 'ASC', $results->query['order'] );
+		$this->assertSame( array(), $results->query['tax_query'] );
+	}
+
+	/**
+	 * Coverage for args of the wrong type falling back to defaults.
+	 *
+	 * @covers ::get_events_list
+	 *
+	 * @return void
+	 */
+	public function test_get_events_list_invalid_arg_types(): void {
+		$instance = Query::get_instance();
+
+		$results = $instance->get_events_list(
+			array(
+				'event_list_type' => 123,
+				'number'          => 'not-a-number',
+				'topics'          => 'not-an-array',
+				'venues'          => 42,
+			)
+		);
+
+		$this->assertSame( '', $results->query[ Query::EVENT_QUERY_PARAM ] );
+		$this->assertSame( 5, $results->query['posts_per_page'] );
+		$this->assertSame( 'ASC', $results->query['order'] );
+		$this->assertSame( array(), $results->query['tax_query'] );
+	}
+
+	/**
+	 * Coverage for topic and venue slugs being cast to strings.
+	 *
+	 * @covers ::get_events_list
+	 *
+	 * @return void
+	 */
+	public function test_get_events_list_casts_slugs_to_strings(): void {
+		$instance = Query::get_instance();
+
+		$results = $instance->get_events_list(
+			array(
+				'event_list_type' => 'upcoming',
+				'topics'          => array( 123 ),
+			)
+		);
+
+		$this->assertSame( '123', $results->query['tax_query'][0]['terms'][0] );
+	}
+
+	/**
+	 * Coverage for non-scalar slugs being dropped from the list.
+	 *
+	 * @covers ::get_events_list
+	 * @covers ::normalize_slug_list
+	 *
+	 * @return void
+	 */
+	public function test_get_events_list_drops_non_scalar_slugs(): void {
+		$instance = Query::get_instance();
+
+		$results = $instance->get_events_list(
+			array(
+				'event_list_type' => 'upcoming',
+				'topics'          => array( 'kept', array( 'nested' ), new stdClass() ),
+			)
+		);
+
+		$this->assertSame( array( 'kept' ), $results->query['tax_query'][0]['terms'] );
+	}
+
+	/**
+	 * Coverage for normalize_slug_list rejecting a non-array value.
+	 *
+	 * @covers ::normalize_slug_list
+	 *
+	 * @return void
+	 */
+	public function test_normalize_slug_list_returns_empty_for_non_array(): void {
+		$instance = Query::get_instance();
+
+		$this->assertSame(
+			array(),
+			Utility::invoke_hidden_method( $instance, 'normalize_slug_list', array( 'not-an-array' ) )
+		);
+	}
+
+	/**
+	 * Coverage for the gatherpress_events_list_query_args filter.
+	 *
+	 * @covers ::get_events_list
+	 *
+	 * @return void
+	 */
+	public function test_get_events_list_query_args_filter(): void {
+		$instance = Query::get_instance();
+		$callback = static function ( array $query_args ): array {
+			$query_args['orderby'] = 'title';
+
+			return $query_args;
+		};
+
+		add_filter( 'gatherpress_events_list_query_args', $callback );
+
+		$results = $instance->get_events_list( array( 'event_list_type' => 'upcoming' ) );
+
+		remove_filter( 'gatherpress_events_list_query_args', $callback );
+
+		$this->assertSame( 'title', $results->query['orderby'] );
 	}
 
 	/**
