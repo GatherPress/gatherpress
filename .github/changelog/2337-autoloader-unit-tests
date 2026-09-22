@@ -1,0 +1,4 @@
+Significance: patch
+Type: added
+
+Add comprehensive unit test suite and isolated fixtures for Autoloader class.
