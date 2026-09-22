@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Feed;
+use GatherPress\Core\Topic;
 use GatherPress\Tests\Base;
 use WP_Query;
 
@@ -98,9 +99,10 @@ class Test_Feed extends Base {
 			array(
 				'type'     => 'action',
 				'name'     => 'pre_get_posts',
-				'priority' => 10,
+				'priority' => 9,
 				'callback' => array( $this->instance, 'handle_events_feed_query' ),
 			),
+
 			array(
 				'type'     => 'filter',
 				'name'     => 'post_type_archive_feed_link',
@@ -217,6 +219,108 @@ class Test_Feed extends Base {
 
 		// Clean up.
 		unset( $_SERVER['REQUEST_URI'] );
+		unset( $_GET['type'] );
+	}
+
+	/**
+	 * Test topic feeds use the upcoming event query by default.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::handle_events_feed_query
+	 *
+	 * @return void
+	 */
+	public function test_handle_topic_feed_query(): void {
+		unset( $_GET['type'] );
+
+		$query = $this->createMock( WP_Query::class );
+		$query->method( 'is_main_query' )->willReturn( true );
+		$query->method( 'is_feed' )->willReturn( true );
+		$query->method( 'is_tax' )->with( Topic::TAXONOMY )->willReturn( true );
+		$query->expects( $this->exactly( 2 ) )
+			->method( 'set' )
+			->withConsecutive(
+				array( 'post_type', Event::POST_TYPE ),
+				array( 'gatherpress_event_query', 'upcoming' )
+			);
+
+		$this->instance->handle_events_feed_query( $query );
+	}
+
+	/**
+	 * Test topic calendar feeds are not handled as RSS feeds.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::handle_events_feed_query
+	 *
+	 * @return void
+	 */
+	public function test_handle_topic_ical_feed_query(): void {
+		$query = $this->createMock( WP_Query::class );
+		$query->method( 'is_main_query' )->willReturn( true );
+		$query->method( 'is_feed' )->willReturn( true );
+		$query->method( 'is_tax' )->with( Topic::TAXONOMY )->willReturn( true );
+		$query->method( 'get' )->with( 'feed' )->willReturn( 'ical' );
+		$query->expects( $this->never() )->method( 'set' );
+
+		$this->instance->handle_events_feed_query( $query );
+	}
+
+	/**
+	 * Test topic feeds support past event queries.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::handle_events_feed_query
+	 *
+	 * @return void
+	 */
+	public function test_handle_topic_feed_query_with_past_type(): void {
+		$_GET['type'] = 'past';
+
+		$query = $this->createMock( WP_Query::class );
+		$query->method( 'is_main_query' )->willReturn( true );
+		$query->method( 'is_feed' )->willReturn( true );
+		$query->method( 'is_tax' )->with( Topic::TAXONOMY )->willReturn( true );
+		$query->expects( $this->exactly( 2 ) )
+			->method( 'set' )
+			->withConsecutive(
+				array( 'post_type', Event::POST_TYPE ),
+				array( 'gatherpress_event_query', 'past' )
+			);
+
+		$this->instance->handle_events_feed_query( $query );
+
+		unset( $_GET['type'] );
+	}
+
+	/**
+	 * Test topic feeds keep the upcoming event query for non-past types.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::handle_events_feed_query
+	 *
+	 * @return void
+	 */
+	public function test_handle_topic_feed_query_with_non_past_type(): void {
+		$_GET['type'] = 'future';
+
+		$query = $this->createMock( WP_Query::class );
+		$query->method( 'is_main_query' )->willReturn( true );
+		$query->method( 'is_feed' )->willReturn( true );
+		$query->method( 'is_tax' )->with( Topic::TAXONOMY )->willReturn( true );
+		$query->expects( $this->exactly( 2 ) )
+			->method( 'set' )
+			->withConsecutive(
+				array( 'post_type', Event::POST_TYPE ),
+				array( 'gatherpress_event_query', 'upcoming' )
+			);
+
+		$this->instance->handle_events_feed_query( $query );
+
 		unset( $_GET['type'] );
 	}
 
