@@ -129,7 +129,7 @@ $gatherpress_nonce = wp_create_nonce( 'gatherpress_send_email_nonce' );
 			return;
 		}
 
-		if (!window.confirm('<?php echo esc_js( __( 'Send this message to every member? This cannot be undone.', 'gatherpress' ) ); ?>')) {
+		if (!window.confirm('<?php echo esc_js( __( 'Send this message to every opted-in member? This cannot be undone.', 'gatherpress' ) ); ?>')) {
 			return;
 		}
 

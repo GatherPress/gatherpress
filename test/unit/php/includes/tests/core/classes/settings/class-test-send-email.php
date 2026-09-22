@@ -8,6 +8,7 @@
 
 namespace GatherPress\Tests\Core\Settings;
 
+use Closure;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Settings\Send_Email;
 use PMC\Unit_Test\Base_Ajax;
@@ -19,6 +20,13 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Settings\Send_Email
  */
 class Test_Send_Email extends Base_Ajax {
+
+	/**
+	 * Reusable batch-size filter so the same closure can be removed again.
+	 *
+	 * @var Closure|null
+	 */
+	private ?Closure $batch_size_filter = null;
 
 	/**
 	 * Coverage for setup_hooks method.
@@ -129,32 +137,94 @@ class Test_Send_Email extends Base_Ajax {
 	}
 
 	/**
-	 * Check recipient filtering and the recipients filter.
+	 * Check that paging walks every user and the count only includes eligible ones.
 	 *
-	 * @covers ::get_recipients
+	 * @covers ::get_recipient_batch
+	 * @covers ::count_recipients
+	 * @covers ::get_batch_size
 	 *
 	 * @return void
 	 */
-	public function test_get_recipients_filters_opted_out_members(): void {
+	public function test_count_recipients_pages_and_filters_opted_out_members(): void {
 		$included_id = $this->factory->user->create( array( 'display_name' => 'Included' ) );
 		$excluded_id = $this->factory->user->create( array( 'display_name' => 'Excluded' ) );
+		$second_id   = $this->factory->user->create( array( 'display_name' => 'Second' ) );
 		update_user_meta( $excluded_id, 'gatherpress_event_updates_opt_in', '0' );
-		$filtered = false;
+		add_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
+		$offsets = array();
 		add_filter(
 			'gatherpress_site_message_recipients',
-			static function ( $recipients ) use ( &$filtered ) {
-				$filtered = true;
-				return $recipients;
-			}
+			static function ( $recipients, $offset ) use ( &$offsets, $included_id, $second_id ) {
+				$offsets[] = $offset;
+
+				return array_values(
+					array_filter(
+						$recipients,
+						static function ( $recipient ) use ( $included_id, $second_id ) {
+							return in_array( $recipient['user_id'], array( $included_id, $second_id ), true );
+						}
+					)
+				);
+			},
+			10,
+			2
 		);
 
-		$recipients = Send_Email::get_instance()->get_recipients();
+		$count = Send_Email::get_instance()->count_recipients();
 		remove_all_filters( 'gatherpress_site_message_recipients' );
-		$ids = array_column( $recipients, 'user_id' );
+		remove_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
 
-		$this->assertTrue( $filtered );
-		$this->assertContains( $included_id, $ids );
-		$this->assertNotContains( $excluded_id, $ids );
+		// The excluded member is dropped, so only the two opted-in users count.
+		$this->assertSame( 2, $count );
+		// Every page of one was visited, and a later offset exists past the first.
+		$this->assertContains( 0, $offsets );
+		$this->assertContains( 1, $offsets );
+	}
+
+	/**
+	 * Check that a full batch reports the list unfinished and advances the cursor.
+	 *
+	 * @covers ::get_recipient_batch
+	 *
+	 * @return void
+	 */
+	public function test_recipient_batch_reports_incomplete_and_advances_cursor(): void {
+		$this->factory->user->create( array( 'display_name' => 'First' ) );
+		$this->factory->user->create( array( 'display_name' => 'Second' ) );
+		add_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
+		$instance = Send_Email::get_instance();
+
+		$first  = Utility::invoke_hidden_method( $instance, 'get_recipient_batch', array( 0 ) );
+		$second = Utility::invoke_hidden_method( $instance, 'get_recipient_batch', array( 1 ) );
+		remove_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
+
+		$this->assertSame( 1, $first['fetched'] );
+		$this->assertFalse( $first['complete'] );
+		$this->assertNotSame(
+			$first['recipients'][0]['user_id'],
+			$second['recipients'][0]['user_id']
+		);
+	}
+
+	/**
+	 * Check that a page smaller than the batch size reports the list complete.
+	 *
+	 * @covers ::get_recipient_batch
+	 *
+	 * @return void
+	 */
+	public function test_recipient_batch_marks_final_page_complete(): void {
+		$this->factory->user->create( array( 'display_name' => 'Only' ) );
+
+		$batch = Utility::invoke_hidden_method(
+			Send_Email::get_instance(),
+			'get_recipient_batch',
+			array( 0 )
+		);
+
+		$this->assertTrue( $batch['complete'] );
+		$this->assertGreaterThan( 0, $batch['fetched'] );
+		$this->assertLessThan( 50, $batch['fetched'] );
 	}
 
 	/**
@@ -223,6 +293,91 @@ class Test_Send_Email extends Base_Ajax {
 
 		$this->assertTrue( $response->success );
 		$this->assertStringContainsString( 'Queued for', $response->data->message );
+		$this->assertNotFalse(
+			wp_next_scheduled( 'gatherpress_site_message_send', array( 'Subject', 'Message body', 0 ) )
+		);
+		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
+	}
+
+	/**
+	 * Check that the pre-enqueue filter can take over scheduling.
+	 *
+	 * @covers ::schedule_message_batch
+	 *
+	 * @return void
+	 */
+	public function test_schedule_message_batch_honors_short_circuit_filter(): void {
+		$captured_args = array();
+		add_filter(
+			'gatherpress_site_message_pre_enqueue_job',
+			static function ( $short_circuit, $hook, $args ) use ( &$captured_args ) {
+				$captured_args = array( $hook, $args );
+
+				return 'action-scheduler-id';
+			},
+			10,
+			3
+		);
+
+		$scheduled = Utility::invoke_hidden_method(
+			Send_Email::get_instance(),
+			'schedule_message_batch',
+			array( 'Subject', 'Message', 0 )
+		);
+		remove_all_filters( 'gatherpress_site_message_pre_enqueue_job' );
+
+		$this->assertTrue( $scheduled );
+		$this->assertSame(
+			array( 'gatherpress_site_message_send', array( 'Subject', 'Message', 0 ) ),
+			$captured_args
+		);
+		$this->assertFalse( wp_next_scheduled( 'gatherpress_site_message_send', array( 'Subject', 'Message', 0 ) ) );
+	}
+
+	/**
+	 * Check that a new batch is scheduled with its cursor arguments.
+	 *
+	 * @covers ::schedule_message_batch
+	 *
+	 * @return void
+	 */
+	public function test_schedule_message_batch_queues_new_offset(): void {
+		$result = Utility::invoke_hidden_method(
+			Send_Email::get_instance(),
+			'schedule_message_batch',
+			array( 'Unique subject', 'Unique message', 99 )
+		);
+
+		$this->assertTrue( $result );
+		$this->assertNotFalse(
+			wp_next_scheduled( 'gatherpress_site_message_send', array( 'Unique subject', 'Unique message', 99 ) )
+		);
+		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
+	}
+
+	/**
+	 * Check that a batch already queued for an offset is not stacked twice.
+	 *
+	 * @covers ::schedule_message_batch
+	 *
+	 * @return void
+	 */
+	public function test_schedule_message_batch_skips_duplicate_offset(): void {
+		$instance = Send_Email::get_instance();
+		wp_schedule_single_event( time() + 60, 'gatherpress_site_message_send', array( 'Subject', 'Message', 0 ) );
+		$scheduled_at = wp_next_scheduled( 'gatherpress_site_message_send', array( 'Subject', 'Message', 0 ) );
+
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'schedule_message_batch',
+			array( 'Subject', 'Message', 0 )
+		);
+
+		$this->assertTrue( $result );
+		$this->assertSame(
+			$scheduled_at,
+			wp_next_scheduled( 'gatherpress_site_message_send', array( 'Subject', 'Message', 0 ) )
+		);
 		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
 	}
 
@@ -245,14 +400,52 @@ class Test_Send_Email extends Base_Ajax {
 	}
 
 	/**
-	 * Check that process_message sends to eligible members and renders the body.
+	 * Check that process_message sends one batch and queues the next offset.
 	 *
 	 * @covers ::process_message
 	 *
 	 * @return void
 	 */
-	public function test_process_message_sends_to_recipients(): void {
-		$user_id  = $this->factory->user->create( array( 'display_name' => 'Recipient' ) );
+	public function test_process_message_sends_batch_and_queues_next_offset(): void {
+		add_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
+		$this->factory->user->create( array( 'display_name' => 'First' ) );
+		$second_id = $this->factory->user->create( array( 'display_name' => 'Second' ) );
+		$captured  = array();
+		add_filter(
+			'pre_wp_mail',
+			static function ( $previous, $atts ) use ( &$captured ): bool {
+				$captured[] = $atts;
+				return true;
+			},
+			10,
+			2
+		);
+
+		$instance = Send_Email::get_instance();
+		$instance->process_message( '', 'A site message' );
+		remove_all_filters( 'pre_wp_mail' );
+		remove_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
+
+		$recipient_emails = array_column( $captured, 'to' );
+		$this->assertCount( 1, $captured );
+		$this->assertNotContains( get_userdata( $second_id )->user_email, $recipient_emails );
+		$this->assertStringContainsString( 'A site message', $captured[0]['message'] );
+		$this->assertStringContainsString( get_bloginfo( 'name' ), $captured[0]['subject'] );
+		$this->assertNotFalse(
+			wp_next_scheduled( 'gatherpress_site_message_send', array( '', 'A site message', 1 ) )
+		);
+		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
+	}
+
+	/**
+	 * Check that the final batch sends without queuing another offset.
+	 *
+	 * @covers ::process_message
+	 *
+	 * @return void
+	 */
+	public function test_process_message_final_batch_does_not_reschedule(): void {
+		$this->factory->user->create( array( 'display_name' => 'Only' ) );
 		$captured = array();
 		add_filter(
 			'pre_wp_mail',
@@ -264,45 +457,44 @@ class Test_Send_Email extends Base_Ajax {
 			2
 		);
 
-		Send_Email::get_instance()->process_message( '', 'A site message' );
+		Send_Email::get_instance()->process_message( 'Subject', 'Message' );
 		remove_all_filters( 'pre_wp_mail' );
 
-		$recipient_emails = array_column( $captured, 'to' );
-		$this->assertContains( get_userdata( $user_id )->user_email, $recipient_emails );
-		$this->assertStringContainsString( 'A site message', $captured[0]['message'] );
-		$this->assertStringContainsString( get_bloginfo( 'name' ), $captured[0]['subject'] );
+		$this->assertNotEmpty( $captured );
+		$this->assertFalse( wp_next_scheduled( 'gatherpress_site_message_send' ) );
 	}
 
 	/**
-	 * Check that process_message exits when there is nobody to email.
+	 * Check that an empty filtered batch still queues the next offset.
+	 *
+	 * A filter can narrow one page away without ending the chain, so the next
+	 * offset is queued even when the current page has no recipients.
 	 *
 	 * @covers ::process_message
 	 *
 	 * @return void
 	 */
-	public function test_process_message_returns_with_no_recipients(): void {
+	public function test_process_message_continues_when_filter_empties_page(): void {
+		$this->factory->user->create( array( 'display_name' => 'First' ) );
+		$this->factory->user->create( array( 'display_name' => 'Second' ) );
+		add_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
 		add_filter( 'gatherpress_site_message_recipients', '__return_empty_array' );
-		$mail_called = false;
-		add_filter(
-			'pre_wp_mail',
-			static function () use ( &$mail_called ): bool {
-				$mail_called = true;
-				return true;
-			}
-		);
 
 		Send_Email::get_instance()->process_message( 'Subject', 'Message' );
-		remove_all_filters( 'pre_wp_mail' );
 		remove_all_filters( 'gatherpress_site_message_recipients' );
+		remove_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
 
-		$this->assertFalse( $mail_called );
+		$this->assertNotFalse(
+			wp_next_scheduled( 'gatherpress_site_message_send', array( 'Subject', 'Message', 1 ) )
+		);
+		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
 	}
 
 	/**
 	 * Check that process_message skips a recipient who is no longer eligible.
 	 *
-	 * The audience filter can inject rows that `get_recipients()` would not build
-	 * itself, so delivery re-checks eligibility before rendering.
+	 * The audience filter can inject rows that `get_recipient_batch()` would not
+	 * build itself, so delivery re-checks eligibility before rendering.
 	 *
 	 * @covers ::process_message
 	 *
@@ -362,6 +554,23 @@ class Test_Send_Email extends Base_Ajax {
 		remove_all_filters( 'gatherpress_site_message_subject' );
 
 		$this->assertSame( 'Custom filtered', $filtered );
+	}
+
+	/**
+	 * Return a shared closure that limits one cron job to a single member.
+	 *
+	 * The same instance is returned on every call so the filter can be removed.
+	 *
+	 * @return Closure Batch size filter.
+	 */
+	private function batch_size_filter(): Closure {
+		if ( null === $this->batch_size_filter ) {
+			$this->batch_size_filter = static function (): int {
+				return 1;
+			};
+		}
+
+		return $this->batch_size_filter;
 	}
 
 	/**
