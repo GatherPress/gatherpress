@@ -128,9 +128,8 @@ final class Modal {
 			$existing_styles       = is_string( $existing_styles ) ? $existing_styles : '';
 			$existing_styles_array = explode( ';', rtrim( $existing_styles, ';' ) );
 			$existing_styles_clean = implode( ';', array_filter( $existing_styles_array ) ) . ';';
-			$updated_styles        = trim(
-				sprintf( $existing_styles_clean . ' z-index: %d;', $z_index )
-			);
+			// Keep existing styles out of the format string, where a gradient stop's `%` reads as a specifier.
+			$updated_styles = trim( $existing_styles_clean . sprintf( ' z-index: %d;', $z_index ) );
 
 			$tag->set_attribute( 'style', $updated_styles );
 		}
