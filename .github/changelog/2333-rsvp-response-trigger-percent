@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+A percent sign in an RSVP Response dropdown label no longer breaks the block. The label was read as a format string, so a stray `%` could crash the page or silently corrupt the text, turning "50% of seats taken" into "503f seats taken".

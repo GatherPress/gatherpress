@@ -13,6 +13,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
+use WP_HTML_Tag_Processor;
 
 /**
  * Class Test_Rsvp_Response.
@@ -366,6 +367,79 @@ class Test_Rsvp_Response extends Base {
 			'data-wp-on--click="actions.processRsvpSelection"',
 			$result,
 			'Buttons should have click handler'
+		);
+	}
+
+	/**
+	 * Data provider for trigger labels and the text they render.
+	 *
+	 * @since TBD
+	 *
+	 * @return array<string, array<int, mixed>>
+	 */
+	public function data_trigger_labels(): array {
+		return array(
+			'the count replaces %d'           => array( 'Attending (%d)', 3, 'Attending (3)' ),
+			'a stray percent is left alone'   => array(
+				'Attending (%d), 100% full',
+				3,
+				'Attending (3), 100% full',
+			),
+			'a label with no %d is unchanged' => array( '50% of seats taken', 3, '50% of seats taken' ),
+			'only the first %d is replaced'   => array( '%d of %d', 3, '3 of %d' ),
+			'a missing count renders as zero' => array( 'Attending (%d)', null, 'Attending (0)' ),
+		);
+	}
+
+	/**
+	 * Tests the trigger label's `%d` is replaced without reading it as a format string.
+	 *
+	 * The label is editable, so it can hold a `%` that `sprintf()` would
+	 * reject as an unknown specifier and fatal the render (#2333).
+	 *
+	 * @since TBD
+	 * @covers ::attach_dropdown_interactivity
+	 *
+	 * @dataProvider data_trigger_labels
+	 *
+	 * @param string   $label    The trigger label as saved in the block.
+	 * @param int|null $count    The attending count, or null for no counts attribute.
+	 * @param string   $expected The label the trigger should render.
+	 *
+	 * @return void
+	 */
+	public function test_attach_dropdown_interactivity_trigger_label(
+		string $label,
+		?int $count,
+		string $expected
+	): void {
+		$counts = '';
+
+		if ( null !== $count ) {
+			$counts = sprintf(
+				' data-counts="%s"',
+				esc_attr( (string) wp_json_encode( array( 'attending' => $count ) ) )
+			);
+		}
+
+		// The menu is part of real markup, and the method only returns its updates when one is present.
+		$result = Rsvp_Response::get_instance()->attach_dropdown_interactivity(
+			sprintf(
+				'<div%s><a class="wp-block-gatherpress-dropdown__trigger">%s</a>' .
+				'<div class="wp-block-gatherpress-dropdown__menu"></div></div>',
+				$counts,
+				esc_html( $label )
+			)
+		);
+		$tag    = new WP_HTML_Tag_Processor( $result );
+
+		$tag->next_tag( array( 'tag_name' => 'a' ) );
+		$tag->next_token();
+
+		$this->assertSame(
+			$expected,
+			$tag->get_modifiable_text(),
+			'The trigger should render the label with the count swapped in.'
 		);
 	}
 
