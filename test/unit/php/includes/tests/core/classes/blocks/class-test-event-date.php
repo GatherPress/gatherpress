@@ -317,7 +317,7 @@ class Test_Event_Date extends Base {
 	 * The separator is human-readable text and must not become live markup,
 	 * even though the final output allows the block's own anchor and time tags.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return void
 	 */
@@ -367,7 +367,7 @@ class Test_Event_Date extends Base {
 	 * Covers the timezone override case (block showTimezone=yes with the global
 	 * setting off) that previously diverged between the two.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return void
 	 */
@@ -477,7 +477,7 @@ class Test_Event_Date extends Base {
 	 * endpoint and that the datetime attribute holds the full unfiltered ISO
 	 * value, while the no-datetime placeholder emits none.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return void
 	 */
@@ -530,7 +530,7 @@ class Test_Event_Date extends Base {
 	 * An event without saved datetimes renders the em-dash placeholder with no
 	 * <time datetime> element.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return void
 	 */

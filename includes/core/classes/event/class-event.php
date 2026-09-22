@@ -247,7 +247,7 @@ class Event {
 	/**
 	 * Gets raw formatted datetime parts for display.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $type          Display type: 'start', 'end', or 'both'.
 	 * @param string $start_format  PHP display format for start date/time.
@@ -717,7 +717,7 @@ class Event {
 	 * the gatherpress_datetime_format filter, so filter application is opt-in via
 	 * $apply_filter. Display formatting enables it; the ISO accessors do not.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $format       PHP date format.
 	 * @param string $which        Datetime field in event table to format ('start' or 'end').
@@ -790,7 +790,7 @@ class Event {
 	 * the gatherpress_datetime_format filter, so the ISO value cannot be changed
 	 * by display-format customization.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return string The ISO 8601 start datetime, or empty string when unset.
 	 *
@@ -810,7 +810,7 @@ class Event {
 	 * the gatherpress_datetime_format filter, so the ISO value cannot be changed
 	 * by display-format customization.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return string The ISO 8601 end datetime, or empty string when unset.
 	 *
