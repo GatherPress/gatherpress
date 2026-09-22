@@ -19,6 +19,7 @@ use GatherPress\Core\Mailer;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
+use WP_User_Query;
 
 /**
  * Class Send_Email.
@@ -28,7 +29,7 @@ use GatherPress\Core\Utility;
  * @since TBD
  *
  * @phpstan-import-type Recipient from Mailer
- * @phpstan-type RecipientBatch array{recipients: array<int, Recipient>, complete: bool, fetched: int}
+ * @phpstan-type RecipientBatch array{recipients: array<int, Recipient>, complete: bool, fetched: int, last_id: int}
  */
 final class Send_Email extends Base {
 
@@ -116,19 +117,32 @@ final class Send_Email extends Base {
 	 *
 	 * @since TBD
 	 *
-	 * @param int $offset Number of users to skip.
+	 * @param int $last_id Last user ID processed before this batch.
 	 *
-	 * @return array{recipients: array<int, Recipient>, complete: bool, fetched: int} Recipient batch.
+	 * @return array{recipients: array<int, Recipient>, complete: bool, fetched: int, last_id: int} Recipient batch.
 	 */
-	protected function get_recipient_batch( int $offset = 0 ): array {
-		$batch_size = $this->get_batch_size();
-		$users      = get_users(
+	protected function get_recipient_batch( int $last_id = 0 ): array {
+		$batch_size   = $this->get_batch_size();
+		$after_cursor = static function ( WP_User_Query $query ) use ( $last_id ): WP_User_Query {
+			global $wpdb;
+
+			$query->query_where .= $wpdb->prepare(
+				" AND {$wpdb->users}.ID > %d",
+				$last_id
+			);
+
+			return $query;
+		};
+		add_filter( 'pre_user_query', $after_cursor );
+		$users = get_users(
 			array(
-				'number' => $batch_size,
-				'offset' => $offset,
-				'fields' => array( 'ID', 'user_email', 'display_name' ),
+				'number'  => $batch_size,
+				'fields'  => array( 'ID', 'user_email', 'display_name' ),
+				'orderby' => 'ID',
+				'order'   => 'ASC',
 			)
 		);
+		remove_filter( 'pre_user_query', $after_cursor );
 		update_meta_cache(
 			'user',
 			array_map(
@@ -164,14 +178,17 @@ final class Send_Email extends Base {
 		 * @since TBD
 		 *
 		 * @param array<int, Recipient> $recipients Recipient rows to email.
-		 * @param int                  $offset     Number of users skipped for this batch.
+		 * @param int                  $last_id    Last user ID processed before this batch.
 		 */
-		$recipients = apply_filters( 'gatherpress_site_message_recipients', $recipients, $offset );
+		$recipients = apply_filters( 'gatherpress_site_message_recipients', $recipients, $last_id );
+
+		$last_user_id = empty( $users ) ? $last_id : (int) $users[ array_key_last( $users ) ]->ID;
 
 		return array(
 			'recipients' => $recipients,
 			'complete'   => count( $users ) < $batch_size,
 			'fetched'    => count( $users ),
+			'last_id'    => $last_user_id,
 		);
 	}
 
@@ -183,13 +200,13 @@ final class Send_Email extends Base {
 	 * @return int Number of eligible members.
 	 */
 	public function count_recipients(): int {
-		$count  = 0;
-		$offset = 0;
+		$count   = 0;
+		$last_id = 0;
 
 		do {
-			$batch   = $this->get_recipient_batch( $offset );
+			$batch   = $this->get_recipient_batch( $last_id );
 			$count  += count( $batch['recipients'] );
-			$offset += $batch['fetched'];
+			$last_id = $batch['last_id'];
 		} while ( ! $batch['complete'] );
 
 		return $count;
@@ -276,7 +293,7 @@ final class Send_Email extends Base {
 	 * Queue the cron job for one batch of a site-wide member message.
 	 *
 	 * The batches are chained rather than sent in one request: each job sends a
-	 * bounded page of recipients and queues the next offset. A fatal error part
+	 * bounded page of recipients and queues the next cursor. A fatal error part
 	 * way through a page therefore leaves the next page scheduled, so the
 	 * remaining members still receive the message.
 	 *
@@ -284,12 +301,12 @@ final class Send_Email extends Base {
 	 *
 	 * @param string $subject Message subject.
 	 * @param string $message Message body.
-	 * @param int    $offset  Number of users to skip for this batch.
+	 * @param int    $last_id Last user ID processed before this batch.
 	 *
 	 * @return bool True when the batch is queued, false when it is not.
 	 */
-	protected function schedule_message_batch( string $subject, string $message, int $offset ): bool {
-		$args = array( $subject, $message, $offset );
+	protected function schedule_message_batch( string $subject, string $message, int $last_id ): bool {
+		$args = array( $subject, $message, $last_id );
 
 		/**
 		 * Filter the site message enqueue call to take over scheduling.
@@ -303,12 +320,12 @@ final class Send_Email extends Base {
 		 * `null` means "pass through to the default"; everything else,
 		 * including falsy values like `false`, `0`, and `''`, short-circuits.
 		 *
-		 * @since TBD
-		 *
-		 * @param mixed  $short_circuit Non-null to suppress the default enqueue.
-		 * @param string $hook          Action hook name fired when the job runs.
-		 * @param array  $args          Args passed to the action hook: `array( $subject, $message, $offset )`.
-		 */
+			 * @since TBD
+			 *
+			 * @param mixed  $short_circuit Non-null to suppress the default enqueue.
+			 * @param string $hook          Action hook name fired when the job runs.
+			 * @param array  $args          Args passed to the action hook: `array( $subject, $message, $last_id )`.
+			 */
 		$short_circuit = apply_filters(
 			'gatherpress_site_message_pre_enqueue_job',
 			null,
@@ -320,7 +337,7 @@ final class Send_Email extends Base {
 			return true;
 		}
 
-		// A batch already queued for this offset owns it, so do not stack a
+		// A batch already queued for this cursor owns it, so do not stack a
 		// duplicate. The short delay keeps each batch from running in the same
 		// cron pass as the batch that queued it.
 		if ( false !== wp_next_scheduled( 'gatherpress_site_message_send', $args ) ) {
@@ -343,19 +360,22 @@ final class Send_Email extends Base {
 	 * @param string $subject Optional subject line. Empty falls back to a
 	 *                        translatable default built in the recipient's locale.
 	 * @param string $message Message body.
-	 * @param int    $offset  Number of users skipped before this batch.
+	 * @param int    $last_id Last user ID processed before this batch.
 	 *
 	 * @return void
 	 */
-	public function process_message( string $subject, string $message, int $offset = 0 ): void {
-		$batch = $this->get_recipient_batch( $offset );
+	public function process_message( string $subject, string $message, int $last_id = 0 ): void {
+		$batch = $this->get_recipient_batch( $last_id );
 
 		// Queue the next page before sending this one, so an error part way
-		// through the batch cannot strand the recipients the offsets do not
-		// cover yet. This runs even when the filtered page is empty, since a
-		// filter can narrow one page without ending the chain.
+		// through the batch cannot strand recipients after this cursor.
+		// This runs even when the filtered page is empty, since a filter can
+		// narrow one page without ending the chain.
 		if ( ! $batch['complete'] ) {
-			$this->schedule_message_batch( $subject, $message, $offset + $batch['fetched'] );
+			$next_last_id = $batch['last_id'];
+			if ( ! $this->schedule_message_batch( $subject, $message, $next_last_id ) ) {
+				$this->schedule_message_batch( $subject, $message, $next_last_id );
+			}
 		}
 
 		$mailer = Mailer::get_instance();
