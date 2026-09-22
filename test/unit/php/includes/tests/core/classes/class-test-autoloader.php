@@ -121,7 +121,7 @@ class Test_Autoloader extends Base {
 		$this->assertNotNull( $autoloader );
 
 		$autoloader( 'WordPress\Plugin\Some_Class' );
-		$autoloader( 'Automattic\Jetpack\My_Class' );
+		$autoloader( 'Acme\Package\My_Class' );
 
 		$this->assertFalse(
 			class_exists( 'WordPress\Plugin\Some_Class', false ),
