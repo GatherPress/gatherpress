@@ -711,31 +711,18 @@ final class Rsvp_Form {
 		}
 
 		$post_id        = (int) $comment->comment_post_ID;
-		$form_schema_id = Utility::get_http_input( INPUT_POST, 'gatherpress_form_schema_id' );
-
-		// Bail when the form-schema id is missing, when no schemas are stored
-		// for this post, when the requested schema id isn't one of them, or
-		// when the matched schema has no field definitions.
-		$schemas = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true );
-
-		if ( empty( $form_schema_id )
-			|| empty( $schemas )
-			|| ! isset( $schemas[ $form_schema_id ] )
-			|| empty( $schemas[ $form_schema_id ]['fields'] )
-		) {
-			return;
-		}
-
-		$schema = $schemas[ $form_schema_id ];
+		$form_schema_id = (string) Utility::get_http_input( INPUT_POST, 'gatherpress_form_schema_id' );
+		$fields         = $this->get_schema_fields( $post_id, $form_schema_id );
 
 		// Process each custom field from the schema.
-		foreach ( $schema['fields'] as $field_name => $field_config ) {
+		foreach ( $fields as $field_name => $field_config ) {
 			// Skip built-in fields.
 			if ( in_array( $field_name, self::BUILT_IN_FIELDS, true ) ) {
 				continue;
 			}
 
-			$field_value = Utility::get_http_input( INPUT_POST, $field_name, null );
+			// get_http_input() returns '' for an absent field, never null.
+			$field_value = Utility::get_http_input( INPUT_POST, $field_name );
 			if ( '' === $field_value ) {
 				continue;
 			}
@@ -746,6 +733,172 @@ final class Rsvp_Form {
 				update_comment_meta( $comment_id, 'gatherpress_custom_' . $field_name, $validated_value );
 			}
 		}
+	}
+
+	/**
+	 * Get the custom field definitions for a stored form schema.
+	 *
+	 * @since TBD
+	 *
+	 * @param int    $post_id        The event post ID the schema belongs to.
+	 * @param string $form_schema_id The submitted form-schema id.
+	 *
+	 * @return array<string, mixed> The schema's field definitions, or an empty array when there are none.
+	 * @phpstan-return array<string, FieldConfig>
+	 */
+	private function get_schema_fields( int $post_id, string $form_schema_id ): array {
+		// Bail when the form-schema id is missing, when no schemas are stored
+		// for this post, when the requested schema id isn't one of them, or
+		// when the matched schema has no field definitions.
+		$schemas = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true );
+
+		if ( '' === $form_schema_id
+			|| empty( $schemas )
+			|| ! isset( $schemas[ $form_schema_id ] )
+			|| empty( $schemas[ $form_schema_id ]['fields'] )
+		) {
+			return array();
+		}
+
+		return $schemas[ $form_schema_id ]['fields'];
+	}
+
+	/**
+	 * Validate submitted values against a form schema's custom fields.
+	 *
+	 * Runs before the RSVP comment is created, so a submission that fails
+	 * here is rejected outright rather than stored with answers missing.
+	 *
+	 * @since TBD
+	 *
+	 * @param int                  $post_id        The event post ID the schema belongs to.
+	 * @param string               $form_schema_id The submitted form-schema id.
+	 * @param array<string, mixed> $values         Submitted values keyed by field name.
+	 *
+	 * @return array<string, string> Error messages keyed by field name. Empty when every value is acceptable.
+	 */
+	public function validate_custom_fields( int $post_id, string $form_schema_id, array $values ): array {
+		$errors = array();
+
+		foreach ( $this->get_schema_fields( $post_id, $form_schema_id ) as $field_name => $field_config ) {
+			// Skip built-in fields, which are validated by the RSVP form itself.
+			if ( in_array( $field_name, self::BUILT_IN_FIELDS, true ) ) {
+				continue;
+			}
+
+			$value = $values[ $field_name ] ?? null;
+
+			// An explicit "0" is a real answer, so only null and '' count as unanswered.
+			if ( null === $value || '' === $value ) {
+				if ( ! empty( $field_config['required'] ) ) {
+					$errors[ $field_name ] = sprintf(
+						/* translators: %s: The form field's label. */
+						__( '%s is required.', 'gatherpress' ),
+						$this->get_field_label( $field_name, $field_config )
+					);
+				}
+
+				continue;
+			}
+
+			if ( false === $this->sanitize_custom_field_value( $value, $field_config ) ) {
+				$errors[ $field_name ] = $this->get_field_error_message( $field_name, $field_config );
+			}
+		}
+
+		return $errors;
+	}
+
+	/**
+	 * Validate a traditional form submission's custom fields.
+	 *
+	 * Reads each value the same way the save path does, so validation and
+	 * storage always see the same input.
+	 *
+	 * @since TBD
+	 *
+	 * @param int    $post_id        The event post ID the schema belongs to.
+	 * @param string $form_schema_id The submitted form-schema id.
+	 *
+	 * @return array<string, string> Error messages keyed by field name. Empty when every value is acceptable.
+	 */
+	public function validate_custom_fields_from_post( int $post_id, string $form_schema_id ): array {
+		$values = array();
+
+		foreach ( array_keys( $this->get_schema_fields( $post_id, $form_schema_id ) ) as $field_name ) {
+			$values[ $field_name ] = Utility::get_http_input( INPUT_POST, (string) $field_name );
+		}
+
+		return $this->validate_custom_fields( $post_id, $form_schema_id, $values );
+	}
+
+	/**
+	 * Get a field's display label, falling back to its name.
+	 *
+	 * @since TBD
+	 *
+	 * @param string               $field_name   The field's name in the schema.
+	 * @param array<string, mixed> $field_config The field configuration from the schema.
+	 *
+	 * @return string The label to show the submitter.
+	 */
+	private function get_field_label( string $field_name, array $field_config ): string {
+		$label = trim( (string) ( $field_config['label'] ?? '' ) );
+
+		return '' !== $label ? $label : $field_name;
+	}
+
+	/**
+	 * Get the message explaining why a submitted value was rejected.
+	 *
+	 * @since TBD
+	 *
+	 * @param string               $field_name   The field's name in the schema.
+	 * @param array<string, mixed> $field_config The field configuration from the schema.
+	 *
+	 * @return string The message to show the submitter.
+	 */
+	private function get_field_error_message( string $field_name, array $field_config ): string {
+		$label = $this->get_field_label( $field_name, $field_config );
+
+		switch ( (string) ( $field_config['type'] ?? 'text' ) ) {
+			case 'email':
+				/* translators: %s: The form field's label. */
+				$message = sprintf( __( '%s must be a valid email address.', 'gatherpress' ), $label );
+				break;
+
+			case 'url':
+				/* translators: %s: The form field's label. */
+				$message = sprintf( __( '%s must be a valid URL.', 'gatherpress' ), $label );
+				break;
+
+			case 'number':
+				/* translators: %s: The form field's label. */
+				$message = sprintf( __( '%s must be a number.', 'gatherpress' ), $label );
+				break;
+
+			case 'select':
+			case 'radio':
+				/* translators: %s: The form field's label. */
+				$message = sprintf( __( '%s must be one of the available choices.', 'gatherpress' ), $label );
+				break;
+
+			case 'textarea':
+				$message = sprintf(
+					/* translators: 1: The form field's label, 2: The maximum number of characters allowed. */
+					__( '%1$s must be %2$s characters or fewer.', 'gatherpress' ),
+					$label,
+					number_format_i18n( (int) ( $field_config['max_length'] ?? 1000 ) )
+				);
+				break;
+
+			default:
+				/* translators: %s: The form field's label. */
+				$message = sprintf( __( '%s is not valid.', 'gatherpress' ), $label );
+				break;
+		}
+
+		return $message;
 	}
 
 	/**

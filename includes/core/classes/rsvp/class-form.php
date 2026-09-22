@@ -205,6 +205,23 @@ final class Form {
 			);
 		}
 
+		// Validate custom fields before the comment is created. The `required`
+		// attribute in the markup is browser-side only, so anything submitting
+		// past the browser reaches this gate instead of storing an RSVP with
+		// answers missing.
+		$field_errors = Rsvp_Form::get_instance()->validate_custom_fields_from_post(
+			$post_id,
+			Utility::get_http_input( INPUT_POST, 'gatherpress_form_schema_id' )
+		);
+
+		if ( ! empty( $field_errors ) ) {
+			wp_die(
+				esc_html( implode( ' ', $field_errors ) ),
+				esc_html__( 'RSVP Incomplete', 'gatherpress' ),
+				400
+			);
+		}
+
 		// Prepare comment data for WordPress processing.
 		$comment_data['comment_content'] = '';
 		$comment_data['comment_type']    = Rsvp::COMMENT_TYPE;
@@ -328,7 +345,8 @@ final class Form {
 	 *
 	 * @param array<string, mixed> $data RSVP submission data containing post_id, author, email, and optional fields.
 	 *
-	 * @return array{success: bool, message: string, comment_id: int, error_code?: int} Processing result.
+	 * @return array{success: bool, message: string, comment_id: int, error_code?: int, errors?: array<string, string>}
+	 *               Processing result. On a custom-field rejection, `errors` carries one message per failing field.
 	 */
 	public function process_rsvp( array $data ): array {
 		$post_id = intval( $data['post_id'] );
@@ -352,6 +370,25 @@ final class Form {
 				'message'    => $this->get_duplicate_rsvp_message(),
 				'comment_id' => 0,
 				'error_code' => 409,
+			);
+		}
+
+		// Validate custom fields before the comment exists, so a rejected
+		// submission is rejected outright rather than stored with answers
+		// missing and confirmed by email.
+		$field_errors = Rsvp_Form::get_instance()->validate_custom_fields(
+			$post_id,
+			(string) ( $data['gatherpress_form_schema_id'] ?? '' ),
+			$data
+		);
+
+		if ( ! empty( $field_errors ) ) {
+			return array(
+				'success'    => false,
+				'message'    => implode( ' ', $field_errors ),
+				'comment_id' => 0,
+				'error_code' => 400,
+				'errors'     => $field_errors,
 			);
 		}
 
@@ -616,8 +653,13 @@ final class Form {
 
 			$field_value = $data[ $field_name ];
 
-			// Sanitize the field value.
+			// Sanitize the field value. A rejected value is not stored at all,
+			// rather than stored as the sanitizer's `false`.
 			$sanitized_value = $rsvp_form_blocks->sanitize_custom_field_value( $field_value, $field_config );
+
+			if ( false === $sanitized_value ) {
+				continue;
+			}
 
 			// Save the sanitized field value with prefix to avoid conflicts.
 			$meta_key = 'gatherpress_custom_' . sanitize_key( $field_name );

@@ -1036,7 +1036,14 @@ final class Rest_Api {
 				'success' => false,
 				'message' => $result['message'],
 			);
-			$status   = $result['error_code'] ?? 500;
+
+			// Custom-field rejections carry one message per failing field so a
+			// client can mark the inputs rather than only show the summary.
+			if ( ! empty( $result['errors'] ) ) {
+				$response['errors'] = $result['errors'];
+			}
+
+			$status = $result['error_code'] ?? 500;
 		}
 
 		return new WP_REST_Response( $response, $status );
