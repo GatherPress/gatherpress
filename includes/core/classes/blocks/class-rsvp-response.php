@@ -268,11 +268,9 @@ final class Rsvp_Response {
 					$tag->set_attribute( 'data-status', $status );
 				}
 			}
-
-			$block_content = $tag->get_updated_html();
 		}
 
-		return $block_content;
+		return $tag->get_updated_html();
 	}
 
 	/**

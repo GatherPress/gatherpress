@@ -288,7 +288,9 @@ class Test_Rsvp_Response extends Base {
 	}
 
 	/**
-	 * Tests trigger text with attendee count.
+	 * Tests trigger text with attendee count, when the block has no dropdown menu.
+	 *
+	 * The trigger updates must not depend on a menu being present.
 	 *
 	 * @since 0.33.0
 	 * @covers ::attach_dropdown_interactivity
@@ -297,22 +299,20 @@ class Test_Rsvp_Response extends Base {
 	 */
 	public function test_attach_dropdown_interactivity_trigger(): void {
 		$instance      = Rsvp_Response::get_instance();
-		$block_content = sprintf(
-			'<div data-counts="%s"><a class="wp-block-gatherpress-dropdown__trigger">%d Attending</a></div>',
-			wp_json_encode( array( 'attending' => 5 ) ),
-			5
-		);
+		$counts        = esc_attr( (string) wp_json_encode( array( 'attending' => 5 ) ) );
+		$block_content = '<div data-counts="' . $counts . '">' .
+			'<a class="wp-block-gatherpress-dropdown__trigger">%d Attending</a></div>';
 		$result        = $instance->attach_dropdown_interactivity( $block_content );
 
 		$this->assertStringContainsString(
-			'{"attending":5}',
-			$result,
-			'Trigger should show correct attendee data'
-		);
-		$this->assertStringContainsString(
 			'5 Attending',
 			$result,
-			'Trigger should show correct attendee count'
+			'Trigger should show the attending count in place of %d.'
+		);
+		$this->assertStringContainsString(
+			'gatherpress--is-disabled',
+			$result,
+			'Trigger should be disabled until the block hydrates.'
 		);
 	}
 
@@ -422,7 +422,7 @@ class Test_Rsvp_Response extends Base {
 			);
 		}
 
-		// The menu is part of real markup, and the method only returns its updates when one is present.
+		// Real RSVP Response markup always includes the dropdown menu.
 		$result = Rsvp_Response::get_instance()->attach_dropdown_interactivity(
 			sprintf(
 				'<div%s><a class="wp-block-gatherpress-dropdown__trigger">%s</a>' .
@@ -453,7 +453,7 @@ class Test_Rsvp_Response extends Base {
 	 */
 	public function test_attach_dropdown_interactivity_no_counts(): void {
 		$instance      = Rsvp_Response::get_instance();
-		$block_content = '<div><a class="wp-block-gatherpress-dropdown__trigger">0 Attending</a></div>';
+		$block_content = '<div><a class="wp-block-gatherpress-dropdown__trigger">%d Attending</a></div>';
 		$result        = $instance->attach_dropdown_interactivity( $block_content );
 
 		$this->assertStringContainsString(
