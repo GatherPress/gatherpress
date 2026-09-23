@@ -231,16 +231,24 @@ export const showFieldErrors = ( form, errors ) => {
 
 		// Clear this field's error as soon as the person edits it, so a
 		// corrected answer stops being reported while they are still filling
-		// the form in.
-		inputs.forEach( ( input ) => {
-			const clear = () => {
-				removeDescribedBy( described, errorId );
-				described.removeAttribute( 'aria-invalid' );
-				document.getElementById( errorId )?.remove();
-			};
+		// the form in. One controller covers every input of the group, so the
+		// first edit detaches the rest rather than leaving them to fire
+		// against a message that is already gone.
+		const listening = new AbortController();
+		const clear = () => {
+			removeDescribedBy( described, errorId );
+			described.removeAttribute( 'aria-invalid' );
+			document.getElementById( errorId )?.remove();
+			listening.abort();
+		};
 
-			input.addEventListener( 'input', clear, { once: true } );
-			input.addEventListener( 'change', clear, { once: true } );
+		inputs.forEach( ( input ) => {
+			input.addEventListener( 'input', clear, {
+				signal: listening.signal,
+			} );
+			input.addEventListener( 'change', clear, {
+				signal: listening.signal,
+			} );
 		} );
 
 		shown.push( fieldName );
