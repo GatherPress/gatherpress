@@ -27,11 +27,16 @@ $gatherpress_display        = esc_html(
 	)
 );
 
-$gatherpress_settings           = Settings::get_instance();
-$gatherpress_show_timezone_attr = $attributes['showTimezone'] ?? '';
-$gatherpress_is_timezone_active = '' !== $gatherpress_show_timezone_attr
-	? 'yes' === $gatherpress_show_timezone_attr
-	: (bool) $gatherpress_settings->get( 'show_timezone' );
+$gatherpress_settings            = Settings::get_instance();
+$gatherpress_show_timezone_attr  = $attributes['showTimezone'] ?? '';
+$gatherpress_timezone_preference = $gatherpress_event->get_timezone_preference();
+$gatherpress_is_timezone_active  = 'never' !== $gatherpress_timezone_preference
+	&& (
+		'always' === $gatherpress_timezone_preference
+		|| ( '' !== $gatherpress_show_timezone_attr
+			? 'yes' === $gatherpress_show_timezone_attr
+			: (bool) $gatherpress_settings->get( 'show_timezone' ) )
+	);
 
 // The viewer's timezone is only knowable in the browser, so this emits a context
 // payload carrying the event's GMT datetimes and its own timezone for the view
@@ -96,7 +101,7 @@ if ( $gatherpress_viewer_time_context ) {
 				data-wp-bind--data-gatherpress-tooltip="state.viewerTimeLabel"
 			>
 				<?php echo esc_html( $gatherpress_display ); ?>
-				<span class="screen-reader-text" data-wp-text="state.viewerTimeSrLabel"></span>
+				<span class="screen-reader-text gatherpress--screen-reader-text gatherpress-tooltip-notice" data-wp-text="state.viewerTimeSrLabel"></span>
 			</a>
 		<?php else : ?>
 			<a href="<?php echo esc_url( get_permalink( $gatherpress_post_id ) ); ?>"><?php echo esc_html( $gatherpress_display ); ?></a>
@@ -108,7 +113,7 @@ if ( $gatherpress_viewer_time_context ) {
 			data-wp-bind--tabindex="state.viewerTimeTabIndex"
 		>
 			<?php echo esc_html( $gatherpress_display ); ?>
-			<span class="screen-reader-text" data-wp-text="state.viewerTimeSrLabel"></span>
+			<span class="screen-reader-text gatherpress--screen-reader-text gatherpress-tooltip-notice" data-wp-text="state.viewerTimeSrLabel"></span>
 		</span>
 	<?php else : ?>
 		<?php echo esc_html( $gatherpress_display ); ?>

@@ -235,9 +235,6 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const timeFormat = getFromSettings( 'timeFormat' );
 	const defaultShowTimezone = getFromSettings( 'showTimezone' );
 	const globalShowViewerTimezone = getFromSettings( 'showViewerTimezone' );
-	const isTimezoneAppended = showTimezone
-		? 'yes' === showTimezone
-		: defaultShowTimezone;
 
 	// Defer the supports check to useSelect so it stays reactive.
 	const postId = attributes?.postId ?? context?.postId ?? null;
@@ -258,6 +255,11 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		( select ) => resolveEventDateData( select, contextPostType, contextQueryId, postId, hasExplicitOverride ),
 		[ postId, contextPostType, contextQueryId, hasExplicitOverride ]
 	);
+
+	const isTimezoneAppended =
+		'never' !== timezonePreference &&
+		( 'always' === timezonePreference ||
+			( showTimezone ? 'yes' === showTimezone : defaultShowTimezone ) );
 
 	const blockProps = useBlockProps( {
 		style: {
@@ -349,7 +351,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 			>
 				{ displayedDateTime }
 				{ !! viewerTimeLabel && (
-					<span className="screen-reader-text">
+					<span className="screen-reader-text gatherpress--screen-reader-text gatherpress-tooltip-notice">
 						{ ` (${ viewerTimeLabel })` }
 					</span>
 				) }
@@ -363,7 +365,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				tabIndex={ 0 }
 			>
 				{ displayedDateTime }
-				<span className="screen-reader-text">
+				<span className="screen-reader-text gatherpress--screen-reader-text gatherpress-tooltip-notice">
 					{ ` (${ viewerTimeLabel })` }
 				</span>
 			</span>
