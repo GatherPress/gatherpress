@@ -316,6 +316,55 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
+	 * Tests a pinned input id is carried into the stored schema.
+	 *
+	 * Generated ids change on every render, so only an author-set id is
+	 * worth storing.
+	 *
+	 * @since TBD
+	 * @covers ::extract_form_fields_from_inner_blocks
+	 *
+	 * @return void
+	 */
+	public function test_save_form_schema_carries_a_pinned_input_id(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type'    => Event::POST_TYPE,
+				'post_content' => '<!-- wp:gatherpress/rsvp-form -->
+					<div class="wp-block-gatherpress-rsvp-form">
+						<!-- wp:gatherpress/form-field '
+					. '{"fieldName":"pinned","fieldType":"text","inputId":"my_plugin_pinned"} -->
+						<div class="wp-block-gatherpress-form-field"></div>
+						<!-- /wp:gatherpress/form-field -->
+						<!-- wp:gatherpress/form-field '
+					. '{"fieldName":"loose","fieldType":"text"} -->
+						<div class="wp-block-gatherpress-form-field"></div>
+						<!-- /wp:gatherpress/form-field -->
+					</div>
+					<!-- /wp:gatherpress/rsvp-form -->',
+			)
+		);
+
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
+
+		$instance->save_form_schema( $post_id );
+
+		$fields = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true )['form_0']['fields'];
+
+		$this->assertSame(
+			'my_plugin_pinned',
+			$fields['pinned']['input_id'],
+			'A pinned id should be stored with the field.'
+		);
+		$this->assertArrayNotHasKey(
+			'input_id',
+			$fields['loose'],
+			'A field with no pinned id should carry no input_id at all.'
+		);
+	}
+
+	/**
 	 * Tests a filtered schema survives a save with no RSVP Form block.
 	 *
 	 * The block-derived set is the only producer of the meta, so a post with

@@ -328,7 +328,7 @@ array(
 )
 ```
 
-Every field carries `name`, `type`, `required`, `label` and `placeholder`. Three keys are added by type: `options` for `select` and `radio`, `max_length` for `textarea`, and `validation` for `email`.
+Every field carries `name`, `type`, `required`, `label` and `placeholder`. Three keys are added by type: `options` for `select` and `radio`, `max_length` for `textarea`, and `validation` for `email`. A fourth, `input_id`, appears only when the author pinned a fixed id on the field, so generated ids never end up stored.
 
 The form id is `form_<index>`, the index of the RSVP Form block in the post's top-level block list, and a nested form is prefixed with its parent's index. The `hash` is a hash of the field definitions, so a change to the fields changes it.
 
