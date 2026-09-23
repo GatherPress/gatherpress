@@ -17,6 +17,7 @@ The core identifier for event post types. Enables event datetime storage and dis
 - Add to Calendar block rendering
 - RSS feed enrichment with event date information
 - Post date override with event date (when enabled in settings)
+- The Topics taxonomy (`gatherpress_topic`), attached to every post type declaring this support — see [Taxonomies](../taxonomies/README.md)
 
 Two of those meta keys are editor-writable settings rather than storage:
 

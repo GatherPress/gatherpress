@@ -105,7 +105,7 @@ GatherPress uses custom `post_type_supports` to decouple features from specific 
 
 **Event post type supports** (declared on post types that act as events):
 
-- `gatherpress-event-date`: **Core event identifier.** Datetime storage, the `gatherpress_events` DB table, date-based queries, timezone handling, and related blocks (event-date, add-to-calendar)
+- `gatherpress-event-date`: **Core event identifier.** Datetime storage, the `gatherpress_events` DB table, date-based queries, timezone handling, related blocks (event-date, add-to-calendar), and the Topics taxonomy, which `Topic::register_taxonomy()` attaches to every post type declaring this support at `init` priority 11 (with a `registered_post_type` listener for anything registered later)
 - `gatherpress-rsvp`: Comment-based RSVP system, attendee management, waiting list, RSVP blocks (rsvp, rsvp-form, rsvp-response, rsvp-template)
 - `gatherpress-venue`: Association with a venue post type via the `_gatherpress_venue` taxonomy, venue selector in the editor, and venue block rendering
 - `gatherpress-online-event`: Online event link meta (stored on the event), online-event term in the taxonomy, and online-event block rendering

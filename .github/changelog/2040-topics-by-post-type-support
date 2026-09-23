@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Topics are now registered for every post type that declares `gatherpress-event-date` support, rather than for the built-in event post type alone, so a custom event post type is taggable with Topics the way it already gets datetimes and calendar feeds.
