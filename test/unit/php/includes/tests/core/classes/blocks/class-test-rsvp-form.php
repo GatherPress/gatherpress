@@ -729,6 +729,540 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
+	 * Create an event carrying a form schema with one field of each shape under test.
+	 *
+	 * @since TBD
+	 *
+	 * @return int The event post ID.
+	 */
+	private function create_event_with_schema(): int {
+		$post_id = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		update_post_meta(
+			$post_id,
+			'gatherpress_rsvp_form_schemas',
+			array(
+				'form_0' => array(
+					'hash'   => 'test',
+					'fields' => array(
+						'dietary' => array(
+							'name'        => 'dietary',
+							'type'        => 'text',
+							'required'    => true,
+							'label'       => 'Dietary needs',
+							'placeholder' => '',
+						),
+						'contact' => array(
+							'name'        => 'contact',
+							'type'        => 'email',
+							'required'    => false,
+							'label'       => 'Backup email',
+							'placeholder' => '',
+						),
+						'tshirt'  => array(
+							'name'        => 'tshirt',
+							'type'        => 'select',
+							'required'    => false,
+							'label'       => '',
+							'placeholder' => '',
+							'options'     => array( 'S', 'M', 'L' ),
+						),
+						'email'   => array(
+							'name'        => 'email',
+							'type'        => 'email',
+							'required'    => true,
+							'label'       => 'Email',
+							'placeholder' => '',
+						),
+					),
+				),
+			)
+		);
+
+		return $post_id;
+	}
+
+	/**
+	 * Data provider for custom-field validation.
+	 *
+	 * @since TBD
+	 *
+	 * @return array<string, array<int, mixed>>
+	 */
+	public function data_custom_field_validation(): array {
+		return array(
+			'a missing required field is rejected'    => array(
+				array(),
+				array( 'dietary' ),
+				'Dietary needs is required.',
+			),
+			'an empty required field is rejected'     => array(
+				array( 'dietary' => '' ),
+				array( 'dietary' ),
+				'Dietary needs is required.',
+			),
+			'an invalid email is rejected'            => array(
+				array(
+					'dietary' => 'none',
+					'contact' => 'not-an-email',
+				),
+				array( 'contact' ),
+				'Backup email must be a valid email address.',
+			),
+			'a value outside the options is rejected' => array(
+				array(
+					'dietary' => 'none',
+					'tshirt'  => 'XXL',
+				),
+				array( 'tshirt' ),
+				'tshirt must be one of the available choices.',
+			),
+			'every failing field is reported'         => array(
+				array( 'contact' => 'nope' ),
+				array( 'dietary', 'contact' ),
+				'Dietary needs is required. Backup email must be a valid email address.',
+			),
+			'an empty optional field is allowed'      => array(
+				array(
+					'dietary' => 'none',
+					'contact' => '',
+				),
+				array(),
+				'',
+			),
+			'valid values are accepted'               => array(
+				array(
+					'dietary' => 'none',
+					'contact' => 'backup@example.com',
+					'tshirt'  => 'M',
+				),
+				array(),
+				'',
+			),
+		);
+	}
+
+	/**
+	 * Tests validate_custom_fields against a stored schema.
+	 *
+	 * @since TBD
+	 * @covers ::validate_custom_fields
+	 * @covers ::get_schema_fields
+	 * @covers ::get_field_label
+	 * @covers ::get_field_error_message
+	 *
+	 * @dataProvider data_custom_field_validation
+	 *
+	 * @param array<string, mixed> $values          Submitted values keyed by field name.
+	 * @param string[]             $expected_fields The field names expected to fail.
+	 * @param string               $expected_text   The messages, joined, that the failures should produce.
+	 *
+	 * @return void
+	 */
+	public function test_validate_custom_fields( array $values, array $expected_fields, string $expected_text ): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->create_event_with_schema();
+		$errors   = $instance->validate_custom_fields( $post_id, 'form_0', $values );
+
+		$this->assertSame(
+			$expected_fields,
+			array_keys( $errors ),
+			'The failing fields should be reported, and only those.'
+		);
+		$this->assertSame(
+			$expected_text,
+			implode( ' ', $errors ),
+			'Each failure should explain itself in terms of the field.'
+		);
+	}
+
+	/**
+	 * Tests validate_custom_fields ignores built-in fields.
+	 *
+	 * The schema carries an `email` field, but that one belongs to the RSVP
+	 * form itself and is validated before custom fields are considered.
+	 *
+	 * @since TBD
+	 * @covers ::validate_custom_fields
+	 *
+	 * @return void
+	 */
+	public function test_validate_custom_fields_skips_built_in_fields(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->create_event_with_schema();
+		$errors   = $instance->validate_custom_fields( $post_id, 'form_0', array( 'dietary' => 'none' ) );
+
+		$this->assertSame(
+			array(),
+			$errors,
+			'A missing built-in field should not be reported as a custom-field failure.'
+		);
+	}
+
+	/**
+	 * Tests an unrecognized schema id is rejected when the event defines a form.
+	 *
+	 * Resolving an unknown id to no fields would skip every required answer
+	 * on the form, which is the bypass the validation exists to close.
+	 *
+	 * @since TBD
+	 * @covers ::validate_custom_fields
+	 *
+	 * @return void
+	 */
+	public function test_validate_custom_fields_rejects_an_unrecognized_schema(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->create_event_with_schema();
+
+		foreach ( array( '', 'does_not_exist' ) as $form_schema_id ) {
+			$errors = $instance->validate_custom_fields( $post_id, $form_schema_id, array( 'dietary' => 'none' ) );
+
+			$this->assertSame(
+				array( Rsvp_Form::SCHEMA_ID_FIELD ),
+				array_keys( $errors ),
+				'A submission naming no known schema should be rejected.'
+			);
+		}
+	}
+
+	/**
+	 * Tests any schema id is accepted when the event defines no form.
+	 *
+	 * @since TBD
+	 * @covers ::validate_custom_fields
+	 *
+	 * @return void
+	 */
+	public function test_validate_custom_fields_without_a_schema(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		$this->assertSame(
+			array(),
+			$instance->validate_custom_fields( $post_id, '', array() ),
+			'An event with no stored schemas has nothing to validate.'
+		);
+		$this->assertSame(
+			array(),
+			$instance->validate_custom_fields( $post_id, 'does_not_exist', array() ),
+			'An event with no stored schemas should not reject a schema id.'
+		);
+	}
+
+	/**
+	 * Tests a required answer that sanitizes away is rejected.
+	 *
+	 * Whitespace passes the requiredness check, because it is neither null
+	 * nor '', but sanitizing trims it to nothing.
+	 *
+	 * @since TBD
+	 * @covers ::validate_custom_fields
+	 *
+	 * @return void
+	 */
+	public function test_validate_custom_fields_rejects_a_value_that_sanitizes_away(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->create_event_with_schema();
+
+		$this->assertSame(
+			array( 'dietary' => 'Dietary needs is required.' ),
+			$instance->validate_custom_fields( $post_id, 'form_0', array( 'dietary' => '   ' ) ),
+			'Whitespace is not an answer to a required field.'
+		);
+		$this->assertSame(
+			array(),
+			$instance->validate_custom_fields( $post_id, 'form_0', array( 'dietary' => '0' ) ),
+			'An explicit zero is a real answer and should survive.'
+		);
+	}
+
+	/**
+	 * Tests malformed select options are rejected rather than fataling.
+	 *
+	 * `in_array()` raises a TypeError when the haystack is not an array, and
+	 * the stored schema can carry a scalar there.
+	 *
+	 * @since TBD
+	 * @covers ::sanitize_custom_field_value
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_custom_field_value_with_malformed_options(): void {
+		$instance = Rsvp_Form::get_instance();
+
+		foreach ( array( 'select', 'radio' ) as $type ) {
+			$this->assertFalse(
+				$instance->sanitize_custom_field_value(
+					'S',
+					array(
+						'type'     => $type,
+						'required' => false,
+						'options'  => 'S,M,L',
+					)
+				),
+				'Scalar options should be rejected rather than raising a TypeError.'
+			);
+			$this->assertFalse(
+				$instance->sanitize_custom_field_value(
+					'S',
+					array(
+						'type'     => $type,
+						'required' => false,
+					)
+				),
+				'Absent options should be rejected.'
+			);
+		}
+	}
+
+	/**
+	 * Data provider for malformed stored schemas.
+	 *
+	 * The schema is post meta, so its shape is whatever is in the database.
+	 *
+	 * @since TBD
+	 *
+	 * @return array<string, array<int, mixed>>
+	 */
+	public function data_malformed_schemas(): array {
+		return array(
+			'the meta is a string'         => array( 'corrupted' ),
+			'the meta is a number'         => array( 42 ),
+			'the schema entry is a string' => array( array( 'form_0' => 'corrupted' ) ),
+			'fields is a string'           => array( array( 'form_0' => array( 'fields' => 'corrupted' ) ) ),
+			'fields is a number'           => array( array( 'form_0' => array( 'fields' => 7 ) ) ),
+			'a field config is a string'   => array(
+				array(
+					'form_0' => array(
+						'fields' => array( 'dietary' => 'corrupted' ),
+					),
+				),
+			),
+			'a field config is a number'   => array(
+				array(
+					'form_0' => array(
+						'fields' => array( 'dietary' => 7 ),
+					),
+				),
+			),
+		);
+	}
+
+	/**
+	 * Tests a malformed stored schema yields no fields rather than a fatal.
+	 *
+	 * `get_schema_fields()` declares an array return and its callers pass each
+	 * config to `sanitize_custom_field_value()`, which is typed `array`, so an
+	 * unchecked shape here is a fatal rather than a bad answer.
+	 *
+	 * @since TBD
+	 * @covers ::get_schema_fields
+	 * @covers ::validate_custom_fields
+	 * @covers ::validate_custom_fields_from_post
+	 *
+	 * @dataProvider data_malformed_schemas
+	 *
+	 * @param mixed $schemas The corrupted value stored in the schema meta.
+	 *
+	 * @return void
+	 */
+	public function test_malformed_schema_yields_no_fields( $schemas ): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		update_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', $schemas );
+
+		$this->assertSame(
+			array(),
+			$instance->get_schema_fields( $post_id, 'form_0' ),
+			'A malformed schema should yield no field definitions.'
+		);
+		$this->assertSame(
+			array(),
+			$instance->validate_custom_fields( $post_id, 'form_0', array( 'dietary' => 'none' ) ),
+			'A malformed schema should validate rather than fail.'
+		);
+		$this->assertSame(
+			array(),
+			$instance->validate_custom_fields_from_post( $post_id, 'form_0' ),
+			'Reading a malformed schema from POST should not fail.'
+		);
+	}
+
+	/**
+	 * Tests a usable field survives alongside a malformed sibling.
+	 *
+	 * @since TBD
+	 * @covers ::get_schema_fields
+	 *
+	 * @return void
+	 */
+	public function test_malformed_field_does_not_discard_its_siblings(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		update_post_meta(
+			$post_id,
+			'gatherpress_rsvp_form_schemas',
+			array(
+				'form_0' => array(
+					'fields' => array(
+						'broken'  => 'corrupted',
+						'dietary' => array(
+							'name'        => 'dietary',
+							'type'        => 'text',
+							'required'    => true,
+							'label'       => 'Dietary needs',
+							'placeholder' => '',
+						),
+					),
+				),
+			)
+		);
+
+		$this->assertSame(
+			array( 'dietary' ),
+			array_keys( $instance->get_schema_fields( $post_id, 'form_0' ) ),
+			'The usable field should survive, the malformed one should be dropped.'
+		);
+		$this->assertSame(
+			array( 'dietary' => 'Dietary needs is required.' ),
+			$instance->validate_custom_fields( $post_id, 'form_0', array() ),
+			'The usable field should still be enforced.'
+		);
+	}
+
+	/**
+	 * Tests the required message names the field.
+	 *
+	 * Invoked directly because the helper is private and called from a loop
+	 * in the same class, which xdebug does not trace reliably.
+	 *
+	 * @since TBD
+	 * @covers ::get_required_message
+	 *
+	 * @return void
+	 */
+	public function test_get_required_message(): void {
+		$instance = Rsvp_Form::get_instance();
+
+		$this->assertSame(
+			'Website is required.',
+			Utility::invoke_hidden_method(
+				$instance,
+				'get_required_message',
+				array( 'website', array( 'label' => 'Website' ) )
+			),
+			'The message should use the field label.'
+		);
+		$this->assertSame(
+			'website is required.',
+			Utility::invoke_hidden_method( $instance, 'get_required_message', array( 'website', array() ) ),
+			'The message should fall back to the field name.'
+		);
+	}
+
+	/**
+	 * Tests validate_custom_fields_from_post reads the submitted values.
+	 *
+	 * @since TBD
+	 * @covers ::validate_custom_fields_from_post
+	 *
+	 * @return void
+	 */
+	public function test_validate_custom_fields_from_post(): void {
+		$instance  = Rsvp_Form::get_instance();
+		$post_id   = $this->create_event_with_schema();
+		$submitted = array( 'dietary' => 'none' );
+
+		$filter = static function ( $pre_value, $type, $var_name ) use ( &$submitted ) {
+			if ( INPUT_POST !== $type ) {
+				return $pre_value;
+			}
+
+			return $submitted[ $var_name ] ?? '';
+		};
+
+		add_filter( 'gatherpress_pre_get_http_input', $filter, 10, 3 );
+
+		$errors = $instance->validate_custom_fields_from_post( $post_id, 'form_0' );
+
+		$this->assertSame(
+			array(),
+			$errors,
+			'A submission answering the required field should pass.'
+		);
+
+		$submitted = array();
+		$errors    = $instance->validate_custom_fields_from_post( $post_id, 'form_0' );
+
+		remove_filter( 'gatherpress_pre_get_http_input', $filter, 10 );
+
+		$this->assertSame(
+			array( 'dietary' ),
+			array_keys( $errors ),
+			'A submission leaving the required field blank should fail.'
+		);
+	}
+
+	/**
+	 * Tests the sanitize_custom_field_value method with radio fields.
+	 *
+	 * @since TBD
+	 * @covers ::sanitize_custom_field_value
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_custom_field_value_radio(): void {
+		$instance = Rsvp_Form::get_instance();
+		$config   = array(
+			'type'     => 'radio',
+			'required' => false,
+			'options'  => array( 'yes', 'no' ),
+		);
+
+		$this->assertSame(
+			'yes',
+			$instance->sanitize_custom_field_value( 'yes', $config ),
+			'An option from the schema should be accepted.'
+		);
+		$this->assertFalse(
+			$instance->sanitize_custom_field_value( 'maybe', $config ),
+			'A value outside the schema options should be rejected.'
+		);
+	}
+
+	/**
+	 * Tests the sanitize_custom_field_value method rejects an empty required value.
+	 *
+	 * @since TBD
+	 * @covers ::sanitize_custom_field_value
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_custom_field_value_required(): void {
+		$instance = Rsvp_Form::get_instance();
+		$config   = array(
+			'type'     => 'text',
+			'required' => true,
+		);
+
+		$this->assertFalse(
+			$instance->sanitize_custom_field_value( '', $config ),
+			'An empty string should be rejected for a required field.'
+		);
+		$this->assertFalse(
+			$instance->sanitize_custom_field_value( null, $config ),
+			'A missing value should be rejected for a required field.'
+		);
+		$this->assertSame(
+			'0',
+			$instance->sanitize_custom_field_value( '0', $config ),
+			'An explicit zero is a real answer and should be accepted.'
+		);
+	}
+
+	/**
 	 * Tests the sanitize_custom_field_value method with URL fields.
 	 *
 	 * Verifies that URL field sanitization correctly validates

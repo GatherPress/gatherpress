@@ -465,6 +465,289 @@ class Test_Form extends Base {
 	}
 
 	/**
+	 * Create an event carrying a form schema with a required custom field.
+	 *
+	 * @since TBD
+	 *
+	 * @return int The event post ID.
+	 */
+	private function create_event_with_required_field(): int {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		update_post_meta(
+			$post_id,
+			'gatherpress_rsvp_form_schemas',
+			array(
+				'form_0' => array(
+					'hash'   => 'test',
+					'fields' => array(
+						'dietary' => array(
+							'name'        => 'dietary',
+							'type'        => 'text',
+							'required'    => true,
+							'label'       => 'Dietary needs',
+							'placeholder' => '',
+						),
+						'contact' => array(
+							'name'        => 'contact',
+							'type'        => 'email',
+							'required'    => false,
+							'label'       => 'Backup email',
+							'placeholder' => '',
+						),
+					),
+				),
+			)
+		);
+
+		return $post_id;
+	}
+
+	/**
+	 * Tests process_rsvp rejects a submission missing a required custom field.
+	 *
+	 * The RSVP must not be created, because a stored RSVP triggers a
+	 * confirmation email for an answer the organizer never receives.
+	 *
+	 * @since TBD
+	 * @covers ::process_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_process_rsvp_rejects_missing_required_custom_field(): void {
+		$instance = Form::get_instance();
+		$post_id  = $this->create_event_with_required_field();
+		$result   = $instance->process_rsvp(
+			array(
+				'post_id'                    => $post_id,
+				'author'                     => 'Test Author',
+				'email'                      => 'test@example.com',
+				'gatherpress_form_schema_id' => 'form_0',
+			)
+		);
+
+		$this->assertFalse( $result['success'], 'A missing required answer should fail the submission.' );
+		$this->assertSame( 400, $result['error_code'], 'A validation failure should answer 400.' );
+		$this->assertSame( 0, $result['comment_id'], 'No RSVP should be created.' );
+		$this->assertSame(
+			array( 'dietary' => 'Dietary needs is required.' ),
+			$result['errors'],
+			'The failing field should be named in the response.'
+		);
+		$this->assertSame(
+			0,
+			count(
+				get_comments(
+					array(
+						'post_id' => $post_id,
+						'type'    => Rsvp::COMMENT_TYPE,
+					)
+				)
+			),
+			'The event should hold no RSVP after a rejected submission.'
+		);
+	}
+
+	/**
+	 * Tests process_rsvp rejects a submission carrying an invalid custom value.
+	 *
+	 * @since TBD
+	 * @covers ::process_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_process_rsvp_rejects_invalid_custom_field(): void {
+		$instance = Form::get_instance();
+		$post_id  = $this->create_event_with_required_field();
+		$result   = $instance->process_rsvp(
+			array(
+				'post_id'                    => $post_id,
+				'author'                     => 'Test Author',
+				'email'                      => 'test@example.com',
+				'gatherpress_form_schema_id' => 'form_0',
+				'dietary'                    => 'none',
+				'contact'                    => 'not-an-email',
+			)
+		);
+
+		$this->assertFalse( $result['success'], 'An invalid answer should fail the submission.' );
+		$this->assertSame( 0, $result['comment_id'], 'No RSVP should be created.' );
+		$this->assertSame(
+			array( 'contact' ),
+			array_keys( $result['errors'] ),
+			'The failing field should be named in the response.'
+		);
+	}
+
+	/**
+	 * Tests process_rsvp accepts a submission whose custom fields are valid.
+	 *
+	 * @since TBD
+	 * @covers ::process_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_process_rsvp_accepts_valid_custom_fields(): void {
+		$instance = Form::get_instance();
+		$post_id  = $this->create_event_with_required_field();
+		$result   = $instance->process_rsvp(
+			array(
+				'post_id'                    => $post_id,
+				'author'                     => 'Test Author',
+				'email'                      => 'test@example.com',
+				'gatherpress_form_schema_id' => 'form_0',
+				'dietary'                    => 'Vegan',
+				'contact'                    => 'backup@example.com',
+			)
+		);
+
+		$this->assertTrue( $result['success'], 'A complete submission should succeed.' );
+		$this->assertArrayNotHasKey( 'errors', $result, 'A successful submission reports no field errors.' );
+		$this->assertSame(
+			'Vegan',
+			get_comment_meta( $result['comment_id'], 'gatherpress_custom_dietary', true ),
+			'The answer should be stored against the RSVP.'
+		);
+	}
+
+	/**
+	 * Tests process_fields does not store a value the sanitizer rejects.
+	 *
+	 * Validation happens before the RSVP is created, so this is the
+	 * defensive half: a rejected value is left unset rather than written
+	 * as the sanitizer's false.
+	 *
+	 * @since TBD
+	 * @covers ::process_fields
+	 *
+	 * @return void
+	 */
+	public function test_process_fields_does_not_store_a_rejected_value(): void {
+		$instance   = Form::get_instance();
+		$post_id    = $this->create_event_with_required_field();
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		$instance->process_fields(
+			$comment_id,
+			array(
+				'gatherpress_form_schema_id' => 'form_0',
+				'dietary'                    => 'Vegan',
+				'contact'                    => 'not-an-email',
+			)
+		);
+
+		$this->assertSame(
+			'Vegan',
+			get_comment_meta( $comment_id, 'gatherpress_custom_dietary', true ),
+			'An accepted answer should be stored.'
+		);
+		$this->assertSame(
+			'',
+			get_comment_meta( $comment_id, 'gatherpress_custom_contact', true ),
+			'A rejected answer should not be stored at all.'
+		);
+		$this->assertEmpty(
+			get_comment_meta( $comment_id, 'gatherpress_custom_contact', false ),
+			'A rejected answer should leave no meta row behind.'
+		);
+	}
+
+	/**
+	 * Tests process_custom_fields skips a rejected value.
+	 *
+	 * Invoked directly because the method is private and called from
+	 * process_fields() in the same class, which xdebug does not trace
+	 * reliably.
+	 *
+	 * @since TBD
+	 * @covers ::process_custom_fields
+	 *
+	 * @return void
+	 */
+	public function test_process_custom_fields_skips_a_rejected_value(): void {
+		$instance   = Form::get_instance();
+		$post_id    = $this->create_event_with_required_field();
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'process_custom_fields',
+			array(
+				$comment_id,
+				array(
+					'gatherpress_form_schema_id' => 'form_0',
+					'dietary'                    => 'Vegan',
+					'contact'                    => 'not-an-email',
+				),
+			)
+		);
+
+		$this->assertSame(
+			'Vegan',
+			get_comment_meta( $comment_id, 'gatherpress_custom_dietary', true ),
+			'An accepted answer should be stored.'
+		);
+		$this->assertEmpty(
+			get_comment_meta( $comment_id, 'gatherpress_custom_contact', false ),
+			'A rejected answer should leave no meta row behind.'
+		);
+	}
+
+	/**
+	 * Tests preprocess_rsvp_comment rejects a missing required custom field.
+	 *
+	 * The `required` attribute in the markup is browser-side only, so the
+	 * traditional POST path has to enforce it itself.
+	 *
+	 * @since TBD
+	 * @covers ::preprocess_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_preprocess_rsvp_comment_rejects_missing_required_custom_field(): void {
+		$post_id = $this->create_event_with_required_field();
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) {
+				if ( INPUT_POST !== $type ) {
+					return $pre_value;
+				}
+
+				$values = array(
+					'author'                     => 'Test Author',
+					'email'                      => 'test@example.com',
+					'gatherpress_form_schema_id' => 'form_0',
+				);
+
+				return $values[ $var_name ] ?? '';
+			},
+			10,
+			3
+		);
+
+		$instance = Form::get_instance();
+
+		$this->expectException( 'WPDieException' );
+		$instance->preprocess_rsvp_comment(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_content' => 'RSVP comment',
+			)
+		);
+	}
+
+	/**
 	 * Coverage for preprocess_rsvp_comment method.
 	 *
 	 * @covers ::preprocess_rsvp_comment

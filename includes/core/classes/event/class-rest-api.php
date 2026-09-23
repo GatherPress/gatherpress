@@ -15,6 +15,7 @@ namespace GatherPress\Core\Event;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
+use GatherPress\Core\Blocks\Rsvp_Form;
 use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Form;
@@ -978,15 +979,18 @@ final class Rest_Api {
 		$form_schema_id = $data['gatherpress_form_schema_id'] ?? '';
 
 		if ( ! empty( $form_schema_id ) ) {
-			$post_id = $data['post_id'];
-			$schemas = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true );
+			// Read the schema through the shared accessor, which type-checks
+			// the stored meta. Enumerating it directly meant array_keys()
+			// raised a TypeError on a scalar, before process_rsvp() ever got
+			// the chance to reject the submission.
+			$fields = Rsvp_Form::get_instance()->get_schema_fields(
+				(int) $data['post_id'],
+				(string) $form_schema_id
+			);
 
-			if ( is_array( $schemas ) && isset( $schemas[ $form_schema_id ]['fields'] ) ) {
-				$fields = $schemas[ $form_schema_id ]['fields'];
-				foreach ( array_keys( $fields ) as $field_name ) {
-					if ( isset( $params[ $field_name ] ) ) {
-						$data[ $field_name ] = $params[ $field_name ];
-					}
+			foreach ( array_keys( $fields ) as $field_name ) {
+				if ( isset( $params[ $field_name ] ) ) {
+					$data[ $field_name ] = $params[ $field_name ];
 				}
 			}
 		}
@@ -1036,7 +1040,14 @@ final class Rest_Api {
 				'success' => false,
 				'message' => $result['message'],
 			);
-			$status   = $result['error_code'] ?? 500;
+
+			// Custom-field rejections carry one message per failing field so a
+			// client can mark the inputs rather than only show the summary.
+			if ( ! empty( $result['errors'] ) ) {
+				$response['errors'] = $result['errors'];
+			}
+
+			$status = $result['error_code'] ?? 500;
 		}
 
 		return new WP_REST_Response( $response, $status );
