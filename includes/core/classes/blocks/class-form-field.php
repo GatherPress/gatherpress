@@ -21,6 +21,72 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * Class responsible for managing the "FormField" block and its functionality,
  * including dynamic rendering and attribute processing.
  *
+ * ## Public API
+ *
+ * This class is a supported entry point for rendering a single form field,
+ * and is not limited to the block editor. Nothing about it requires a block
+ * context: hand it an attributes array and it returns markup. Companion
+ * plugins that build their own forms, or that render fields from a stored
+ * RSVP form schema, are expected to use it.
+ *
+ * ```php
+ * $field = new Form_Field(
+ *     array(
+ *         'fieldType' => 'email',
+ *         'fieldName' => 'contact',
+ *         'label'     => 'Backup email',
+ *         'required'  => true,
+ *     )
+ * );
+ *
+ * echo $field->get_html();
+ * ```
+ *
+ * `get_html()` returns the markup and `render()` echoes it. Everything the
+ * templates need is derived from the attributes, so a partial array is fine.
+ *
+ * ## Accepted attributes
+ *
+ * Keys are camelCase, matching the block's own attributes, and every one is
+ * optional. Anything absent falls back to the default below.
+ *
+ * | Key | Default | Notes |
+ * |---|---|---|
+ * | `fieldType` | `text` | One of the supported types, listed under the table |
+ * | `fieldName` | `''` | The input's `name`, and the key an RSVP answer is stored under |
+ * | `fieldValue` | `''` | Initial value |
+ * | `inputId` | generated | Supply one for deterministic markup; otherwise a random id is generated |
+ * | `label` | `''` | Visible label |
+ * | `placeholder` | `''` | Placeholder text |
+ * | `required` | `false` | Adds the `required` attribute. Server-side enforcement is the caller's job |
+ * | `requiredText` | `(required)` | Suffix shown beside the label |
+ * | `helpText` | `''` | Description, wired up with `aria-describedby` |
+ * | `prefillCurrentUser` | `false` | Fills text and email fields from the logged-in user |
+ * | `autocomplete` | derived | Explicit value, else derived from the field name and type |
+ * | `minValue`, `maxValue` | `null` | Numeric bounds |
+ * | `radioOptions` | `array()` | Options for `select` and `radio` |
+ * | `textareaRows` | `4` | Rows for `textarea` |
+ * | `inlineLayout` | `false` | Lays the label beside the input |
+ * | `fieldWidth` | `100` | Percentage width |
+ *
+ * Supported field types: `text`, `email`, `tel`, `url`, `number`,
+ * `textarea`, `checkbox`, `radio`, `select`, `hidden`. Each renders from
+ * its own template, falling back to the shared default.
+ *
+ * Presentation keys follow the same pattern: `labelTextColor`,
+ * `fieldTextColor`, `fieldBackgroundColor`, `borderColor`,
+ * `optionTextColor`, `requiredTextColor`, `labelFontSize`,
+ * `labelLineHeight`, `optionFontSize`, `optionLineHeight`,
+ * `inputFontSize`, `inputLineHeight`, `inputPadding`,
+ * `inputBorderWidth`, `inputBorderRadius`.
+ *
+ * ## Compatibility
+ *
+ * The constructor's attribute array, `get_html()` and `render()` are treated
+ * as a stable surface: accepted keys keep their meaning, and new ones are
+ * added with defaults that preserve current output. The class stays `final`,
+ * so extend it by composing rather than subclassing.
+ *
  * @since 0.33.0
  */
 final class Form_Field {
@@ -128,7 +194,7 @@ final class Form_Field {
 			'input_border_radius'    => $raw_attributes['inputBorderRadius'] ?? 0,
 			'autocomplete'           => $this->resolve_autocomplete( $raw_attributes ),
 			'textarea_rows'          => $raw_attributes['textareaRows'] ?? 4,
-			'input_id'               => $this->get_input_id(),
+			'input_id'               => $this->get_input_id( $raw_attributes ),
 		);
 	}
 
@@ -177,12 +243,21 @@ final class Form_Field {
 	 * a random number to ensure uniqueness across multiple
 	 * form fields on the same page.
 	 *
-	 * @since 0.33.0
+	 * A caller that needs the markup to be deterministic, to cache a
+	 * fragment or to wire up its own `<label for>`, supplies `inputId`
+	 * instead. It is used as given, and the templates escape it.
 	 *
-	 * @return string Unique input ID (e.g., 'gatherpress_123456789').
+	 * @since 0.33.0
+	 * @since TBD Accepts a caller-supplied `inputId`.
+	 *
+	 * @param array<string, mixed> $raw_attributes The attributes passed to the constructor.
+	 *
+	 * @return string The supplied input ID, or a generated one (e.g. 'gatherpress_123456789').
 	 */
-	private function get_input_id(): string {
-		return sprintf( 'gatherpress_%s', wp_rand() );
+	private function get_input_id( array $raw_attributes ): string {
+		$input_id = trim( (string) ( $raw_attributes['inputId'] ?? '' ) );
+
+		return '' !== $input_id ? $input_id : sprintf( 'gatherpress_%s', wp_rand() );
 	}
 
 	/**
@@ -585,27 +660,56 @@ final class Form_Field {
 	}
 
 	/**
+	 * Get the variables the field's template renders with.
+	 *
+	 * @since TBD
+	 *
+	 * @return array<string, mixed> The template variables.
+	 */
+	private function get_template_variables(): array {
+		return array(
+			'attributes'           => $this->attributes,
+			'wrapper_attributes'   => $this->get_wrapper_attributes(),
+			'input_styles'         => $this->get_input_styles(),
+			'label_styles'         => $this->get_label_styles(),
+			'label_wrapper_styles' => $this->get_label_wrapper_styles(),
+			'required_styles'      => $this->get_required_styles(),
+			'option_styles'        => $this->get_option_styles(),
+			'input_attributes'     => $this->get_input_attributes(),
+		);
+	}
+
+	/**
+	 * Get the form field's rendered HTML.
+	 *
+	 * The string-returning half of the pair. Use this when composing,
+	 * filtering or caching the markup; `render()` echoes the same output for
+	 * the block render callback.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The rendered field markup.
+	 */
+	public function get_html(): string {
+		return Utility::render_template(
+			$this->get_template_path(),
+			$this->get_template_variables()
+		);
+	}
+
+	/**
 	 * Renders the form field based on its type and attributes.
+	 *
+	 * Echoes what `get_html()` returns.
 	 *
 	 * @since 0.33.0
 	 *
 	 * @return void
 	 */
 	public function render(): void {
-		$template_path = $this->get_template_path();
-
 		Utility::render_template(
-			$template_path,
-			array(
-				'attributes'           => $this->attributes,
-				'wrapper_attributes'   => $this->get_wrapper_attributes(),
-				'input_styles'         => $this->get_input_styles(),
-				'label_styles'         => $this->get_label_styles(),
-				'label_wrapper_styles' => $this->get_label_wrapper_styles(),
-				'required_styles'      => $this->get_required_styles(),
-				'option_styles'        => $this->get_option_styles(),
-				'input_attributes'     => $this->get_input_attributes(),
-			),
+			$this->get_template_path(),
+			$this->get_template_variables(),
 			true
 		);
 	}

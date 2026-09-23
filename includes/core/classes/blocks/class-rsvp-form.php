@@ -39,7 +39,8 @@ use WP_HTML_Tag_Processor;
  *     placeholder: string,
  *     validation?: string,
  *     options?: string[],
- *     max_length?: int
+ *     max_length?: int,
+ *     input_id?: string
  * }
  * @phpstan-type FormSchema array{fields: array<string, FieldConfig>, hash: string}
  */
@@ -571,6 +572,14 @@ final class Rsvp_Form {
 						'label'       => sanitize_text_field( $attrs['label'] ?? '' ),
 						'placeholder' => sanitize_text_field( $attrs['placeholder'] ?? '' ),
 					);
+
+					// Only carried when the author pinned one, so a schema
+					// stays free of generated ids that change every render.
+					$input_id = trim( sanitize_text_field( $attrs['inputId'] ?? '' ) );
+
+					if ( '' !== $input_id ) {
+						$field_config['input_id'] = $input_id;
+					}
 
 					// Add type-specific validation rules.
 					switch ( $field_config['type'] ) {

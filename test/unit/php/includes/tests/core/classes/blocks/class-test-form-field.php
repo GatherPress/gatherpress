@@ -1023,6 +1023,116 @@ class Test_Form_Field extends Base {
 	}
 
 	/**
+	 * Tests get_html returns the markup that render echoes.
+	 *
+	 * The pair has to agree, since render() is the block path and get_html()
+	 * is what a consumer composing markup calls.
+	 *
+	 * @since TBD
+	 * @covers ::get_html
+	 * @covers ::render
+	 * @covers ::get_template_variables
+	 *
+	 * @return void
+	 */
+	public function test_get_html_matches_render(): void {
+		$attributes = array(
+			'fieldType' => 'email',
+			'fieldName' => 'contact',
+			'label'     => 'Backup email',
+			'required'  => true,
+			'inputId'   => 'gatherpress_fixed_id',
+		);
+
+		$html = ( new Form_Field( $attributes ) )->get_html();
+
+		ob_start();
+		( new Form_Field( $attributes ) )->render();
+		$echoed = ob_get_clean();
+
+		$this->assertNotEmpty( $html, 'get_html() should return the rendered markup.' );
+		$this->assertSame( $echoed, $html, 'render() should echo exactly what get_html() returns.' );
+		$this->assertStringContainsString( 'name="contact"', $html );
+		$this->assertStringContainsString( 'type="email"', $html );
+	}
+
+	/**
+	 * Tests a caller-supplied input id is used as given.
+	 *
+	 * Without one the id is random, which is fine for a single render and
+	 * useless for deterministic markup.
+	 *
+	 * @since TBD
+	 * @covers ::get_input_id
+	 * @covers ::process_attributes
+	 *
+	 * @return void
+	 */
+	public function test_supplied_input_id_is_used(): void {
+		$attributes = array(
+			'fieldType' => 'text',
+			'fieldName' => 'dietary',
+			'label'     => 'Dietary needs',
+			'inputId'   => 'my_plugin_dietary',
+		);
+
+		$first  = ( new Form_Field( $attributes ) )->get_html();
+		$second = ( new Form_Field( $attributes ) )->get_html();
+
+		$this->assertStringContainsString( 'id="my_plugin_dietary"', $first );
+		$this->assertStringContainsString( 'for="my_plugin_dietary"', $first );
+		$this->assertSame( $first, $second, 'A supplied id should make the markup deterministic.' );
+	}
+
+	/**
+	 * Tests an id is generated when the caller supplies none.
+	 *
+	 * @since TBD
+	 * @covers ::get_input_id
+	 *
+	 * @return void
+	 */
+	public function test_input_id_is_generated_when_absent(): void {
+		$attributes = array(
+			'fieldType' => 'text',
+			'fieldName' => 'dietary',
+			'label'     => 'Dietary needs',
+		);
+
+		$first  = ( new Form_Field( $attributes ) )->get_html();
+		$second = ( new Form_Field( array_merge( $attributes, array( 'inputId' => '   ' ) ) ) )->get_html();
+
+		$this->assertMatchesRegularExpression(
+			'/id="gatherpress_\d+"/',
+			$first,
+			'An absent id should be generated.'
+		);
+		$this->assertMatchesRegularExpression(
+			'/id="gatherpress_\d+"/',
+			$second,
+			'A blank id should be treated as absent.'
+		);
+	}
+
+	/**
+	 * Tests get_html works from a partial attributes array.
+	 *
+	 * Every key is optional, which is what lets a consumer outside the
+	 * editor hand over only what it knows.
+	 *
+	 * @since TBD
+	 * @covers ::get_html
+	 *
+	 * @return void
+	 */
+	public function test_get_html_with_minimal_attributes(): void {
+		$html = ( new Form_Field( array( 'fieldName' => 'note' ) ) )->get_html();
+
+		$this->assertStringContainsString( 'name="note"', $html, 'The field name should survive.' );
+		$this->assertStringContainsString( 'type="text"', $html, 'The type should default to text.' );
+	}
+
+	/**
 	 * Tests render method.
 	 *
 	 * @since 0.36.0
