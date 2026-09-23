@@ -658,6 +658,52 @@ class Test_Form extends Base {
 	}
 
 	/**
+	 * Tests process_custom_fields skips a rejected value.
+	 *
+	 * Invoked directly because the method is private and called from
+	 * process_fields() in the same class, which xdebug does not trace
+	 * reliably.
+	 *
+	 * @since TBD
+	 * @covers ::process_custom_fields
+	 *
+	 * @return void
+	 */
+	public function test_process_custom_fields_skips_a_rejected_value(): void {
+		$instance   = Form::get_instance();
+		$post_id    = $this->create_event_with_required_field();
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'process_custom_fields',
+			array(
+				$comment_id,
+				array(
+					'gatherpress_form_schema_id' => 'form_0',
+					'dietary'                    => 'Vegan',
+					'contact'                    => 'not-an-email',
+				),
+			)
+		);
+
+		$this->assertSame(
+			'Vegan',
+			get_comment_meta( $comment_id, 'gatherpress_custom_dietary', true ),
+			'An accepted answer should be stored.'
+		);
+		$this->assertEmpty(
+			get_comment_meta( $comment_id, 'gatherpress_custom_contact', false ),
+			'A rejected answer should leave no meta row behind.'
+		);
+	}
+
+	/**
 	 * Tests preprocess_rsvp_comment rejects a missing required custom field.
 	 *
 	 * The `required` attribute in the markup is browser-side only, so the

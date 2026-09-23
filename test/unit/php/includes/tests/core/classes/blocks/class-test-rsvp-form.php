@@ -925,6 +925,99 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
+	 * Data provider for per-type rejection messages.
+	 *
+	 * @since TBD
+	 *
+	 * @return array<string, array<int, mixed>>
+	 */
+	public function data_field_error_messages(): array {
+		return array(
+			'email'            => array( array( 'type' => 'email' ), 'Website must be a valid email address.' ),
+			'url'              => array( array( 'type' => 'url' ), 'Website must be a valid URL.' ),
+			'number'           => array( array( 'type' => 'number' ), 'Website must be a number.' ),
+			'select'           => array( array( 'type' => 'select' ), 'Website must be one of the available choices.' ),
+			'radio'            => array( array( 'type' => 'radio' ), 'Website must be one of the available choices.' ),
+			'textarea'         => array(
+				array(
+					'type'       => 'textarea',
+					'max_length' => 2000,
+				),
+				'Website must be 2,000 characters or fewer.',
+			),
+			'textarea default' => array( array( 'type' => 'textarea' ), 'Website must be 1,000 characters or fewer.' ),
+			'an unknown type'  => array( array( 'type' => 'carrier-pigeon' ), 'Website is not valid.' ),
+			'no type at all'   => array( array(), 'Website is not valid.' ),
+		);
+	}
+
+	/**
+	 * Tests the rejection message explains the failure in the field's terms.
+	 *
+	 * Invoked directly because the helper is private and called from a loop in
+	 * the same class, which xdebug does not trace reliably.
+	 *
+	 * @since TBD
+	 * @covers ::get_field_error_message
+	 *
+	 * @dataProvider data_field_error_messages
+	 *
+	 * @param array<string, mixed> $field_config The field configuration from the schema.
+	 * @param string               $expected     The message the submitter should see.
+	 *
+	 * @return void
+	 */
+	public function test_get_field_error_message( array $field_config, string $expected ): void {
+		$field_config['label'] = 'Website';
+
+		$this->assertSame(
+			$expected,
+			Utility::invoke_hidden_method(
+				Rsvp_Form::get_instance(),
+				'get_field_error_message',
+				array( 'website', $field_config )
+			),
+			'The message should name the field and explain the failure.'
+		);
+	}
+
+	/**
+	 * Tests the field label falls back to the field name.
+	 *
+	 * @since TBD
+	 * @covers ::get_field_label
+	 *
+	 * @return void
+	 */
+	public function test_get_field_label_falls_back_to_the_field_name(): void {
+		$instance = Rsvp_Form::get_instance();
+
+		$this->assertSame(
+			'Website',
+			Utility::invoke_hidden_method(
+				$instance,
+				'get_field_label',
+				array( 'website', array( 'label' => 'Website' ) )
+			),
+			'A label should be used when the schema carries one.'
+		);
+		$this->assertSame(
+			'website',
+			Utility::invoke_hidden_method(
+				$instance,
+				'get_field_label',
+				array( 'website', array( 'label' => '   ' ) )
+			),
+			'A blank label should fall back to the field name.'
+		);
+		$this->assertSame(
+			'website',
+			Utility::invoke_hidden_method( $instance, 'get_field_label', array( 'website', array() ) ),
+			'A missing label should fall back to the field name.'
+		);
+	}
+
+	/**
 	 * Data provider for malformed stored schemas.
 	 *
 	 * The schema is post meta, so its shape is whatever is in the database.
