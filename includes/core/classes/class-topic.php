@@ -95,7 +95,8 @@ final class Topic {
 	 *
 	 * The taxonomy is attached to every post type declaring `gatherpress-event-date`
 	 * rather than to `gatherpress_event` alone, so a custom event post type is
-	 * taggable with Topics the way it already gets datetimes, RSVPs and venues.
+	 * taggable with Topics the way it already gets datetimes and calendar feeds.
+	 * RSVPs and venues are separate supports and do not come with this one.
 	 * It registers even when nothing declares that support: the settings screen,
 	 * the calendar feeds and the topic archive all read the taxonomy itself, and
 	 * an empty object-type list still leaves it registered.

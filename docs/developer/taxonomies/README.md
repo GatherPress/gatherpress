@@ -4,7 +4,7 @@ GatherPress registers one public taxonomy of its own, **Topics** (`gatherpress_t
 
 ## Topics follow post type support, not a post type
 
-Topics is registered for every post type declaring [`gatherpress-event-date`](../post-type-supports/README.md#gatherpress-event-date), the same support that gives a post type datetimes, RSVPs and calendar feeds. Declare that support and your post type is taggable with Topics with no further wiring:
+Topics is registered for every post type declaring [`gatherpress-event-date`](../post-type-supports/README.md#gatherpress-event-date), the same support that gives a post type datetimes and calendar feeds. Declare that support and your post type is taggable with Topics with no further wiring:
 
 ```php
 register_post_type( 'my_custom_event', array(
@@ -53,7 +53,7 @@ add_action(
 
 `hierarchical => true` gives you a Topics-style checkbox tree with parents; `false` gives a flat tag input. That choice also decides the REST and block editor controls you get, so make it before you have terms.
 
-`show_in_rest => true` is what makes the taxonomy appear in the block editor and in the Query Loop's taxonomy filters. Leave it off and your taxonomy is admin-only.
+`show_in_rest => true` puts the taxonomy in the REST API, which is what the block editor panel and the Query Loop's taxonomy filters read. Leaving it off does not make the taxonomy admin-only: `public => true` still gives you term archives and front-end `tax_query`. What you lose is the block editor panel, which falls back to the classic metabox, and the Query Loop filter.
 
 ## Attaching WordPress's built-in taxonomies
 
@@ -70,7 +70,21 @@ add_action(
     },
     11
 );
+
+add_action(
+    'registered_post_type',
+    function ( string $post_type ): void {
+        if ( ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+            return;
+        }
+
+        register_taxonomy_for_object_type( 'category', $post_type );
+        register_taxonomy_for_object_type( 'post_tag', $post_type );
+    }
+);
 ```
+
+The listener is the same late-registration catch as above, and it matters here for the same reason: the sweep only sees post types already in the registry when it runs. No `taxonomy_exists()` guard this time, because `category` and `post_tag` are always registered by the time anything can declare support.
 
 ## Removing Topics from a post type
 
