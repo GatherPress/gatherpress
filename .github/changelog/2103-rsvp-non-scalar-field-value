@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Submitting an array or object for an RSVP custom field no longer causes a fatal error. A JSON request body can carry one, and it reached the sanitizers, which only accept strings.
