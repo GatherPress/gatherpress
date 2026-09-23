@@ -1,0 +1,4 @@
+Significance: minor
+Type: changed
+
+Date and time formats are now chosen from a list of rendered examples, in Events settings and on the Event Date block alike, with a Custom field for raw PHP format codes.

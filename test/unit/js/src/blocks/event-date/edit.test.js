@@ -20,6 +20,12 @@ jest.mock( '@wordpress/data', () => ( {
 
 jest.mock( '@wordpress/i18n', () => ( {
 	__: ( text ) => text,
+	sprintf: ( text, ...args ) =>
+		args.reduce( ( carry, arg ) => carry.replace( '%s', arg ), text ),
+} ) );
+
+jest.mock( '@wordpress/date', () => ( {
+	format: jest.fn( ( dateFormat ) => `rendered(${ dateFormat })` ),
 } ) );
 
 jest.mock( '@wordpress/block-editor', () => ( {
@@ -57,6 +63,10 @@ jest.mock( '@wordpress/components', () => ( {
 } ) );
 
 jest.mock( '@src/components/DateTimeRange', () => () => null );
+
+// Covered on its own in `components/FormatControl.test.js`; here it would
+// only pull `SelectControl` into the components mock for no gain.
+jest.mock( '@src/components/FormatControl', () => () => null );
 
 jest.mock( '@src/helpers/editor-settings', () => ( {
 	getFromSettings: ( key ) =>

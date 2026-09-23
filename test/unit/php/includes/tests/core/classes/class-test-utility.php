@@ -1799,4 +1799,132 @@ class Test_Utility extends Base {
 			'an empty format stays empty'      => array( '', '' ),
 		);
 	}
+
+	/**
+	 * Coverage for date_format_choices.
+	 *
+	 * @covers ::date_format_choices
+	 * @covers ::build_format_choices
+	 *
+	 * @return void
+	 */
+	public function test_date_format_choices(): void {
+		$choices = Utility::date_format_choices();
+		$formats = array_column( $choices, 'format' );
+
+		$this->assertContains(
+			'l, F j, Y',
+			$formats,
+			'Failed to assert the weekday-led default is offered.'
+		);
+		$this->assertContains(
+			'Y-m-d',
+			$formats,
+			'Failed to assert the ISO format is offered.'
+		);
+		$this->assertSame(
+			wp_date( 'Y-m-d' ),
+			$choices[ array_search( 'Y-m-d', $formats, true ) ]['example'],
+			'Failed to assert each format is paired with the date it renders.'
+		);
+	}
+
+	/**
+	 * Coverage for time_format_choices.
+	 *
+	 * @covers ::time_format_choices
+	 *
+	 * @return void
+	 */
+	public function test_time_format_choices(): void {
+		$formats = array_column( Utility::time_format_choices(), 'format' );
+
+		$this->assertContains(
+			'H:i',
+			$formats,
+			'Failed to assert the 24-hour format is offered.'
+		);
+		$this->assertContains(
+			'g:i A',
+			$formats,
+			'Failed to assert the 12-hour format is offered.'
+		);
+	}
+
+	/**
+	 * Adding a format through the filter offers it with its example.
+	 *
+	 * @covers ::date_format_choices
+	 *
+	 * @return void
+	 */
+	public function test_date_format_choices_is_filterable(): void {
+		add_filter(
+			'gatherpress_date_formats',
+			static fn(): array => array( 'D, j M Y' )
+		);
+
+		$choices = Utility::date_format_choices();
+
+		remove_all_filters( 'gatherpress_date_formats' );
+
+		$this->assertSame(
+			array(
+				array(
+					'format'  => 'D, j M Y',
+					'example' => wp_date( 'D, j M Y' ),
+				),
+			),
+			$choices,
+			'Failed to assert the filtered list is the one offered.'
+		);
+	}
+
+	/**
+	 * Coverage for the time format filter.
+	 *
+	 * @covers ::time_format_choices
+	 *
+	 * @return void
+	 */
+	public function test_time_format_choices_is_filterable(): void {
+		add_filter(
+			'gatherpress_time_formats',
+			static fn(): array => array( 'H:i:s' )
+		);
+
+		$formats = array_column( Utility::time_format_choices(), 'format' );
+
+		remove_all_filters( 'gatherpress_time_formats' );
+
+		$this->assertSame(
+			array( 'H:i:s' ),
+			$formats,
+			'Failed to assert the filtered list is the one offered.'
+		);
+	}
+
+	/**
+	 * Empty and duplicate formats are dropped rather than offered twice.
+	 *
+	 * @covers ::build_format_choices
+	 *
+	 * @return void
+	 */
+	public function test_format_choices_drop_empty_and_duplicate_formats(): void {
+		add_filter(
+			'gatherpress_date_formats',
+			static fn(): array => array( 'Y-m-d', '', 'Y-m-d', 'd.m.Y' )
+		);
+
+		$formats = array_column( Utility::date_format_choices(), 'format' );
+
+		remove_all_filters( 'gatherpress_date_formats' );
+
+		$this->assertSame(
+			array( 'Y-m-d', 'd.m.Y' ),
+			$formats,
+			'Failed to assert empties and duplicates were dropped.'
+		);
+	}
 }
