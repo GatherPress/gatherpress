@@ -130,7 +130,7 @@ const displayDateTime = (
 
 	// Add separator if start + end date/time(s).
 	if ( dateTimeStart && dateTimeEnd ) {
-		parts.push( 'to' === separator ? __( 'to', 'gatherpress' ) : separator );
+		parts.push( ! separator || 'to' === separator ? __( 'to', 'gatherpress' ) : separator );
 	}
 
 	// Add end date/time.

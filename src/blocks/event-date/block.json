@@ -37,7 +37,7 @@
 		},
 		"separator": {
 			"type": "string",
-			"default": "to",
+			"default": "",
 			"role": "content"
 		},
 		"showTimezone": {
