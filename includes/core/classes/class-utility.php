@@ -441,7 +441,7 @@ final class Utility {
 	 * is a thing that happens on a day of the week, which is also why
 	 * GatherPress defaults to it while WordPress does not.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return array<int, array{format: string, example: string}> The choices.
 	 */
@@ -463,7 +463,7 @@ final class Utility {
 		 * A format that is not on this list still saves and still renders;
 		 * it simply arrives through the Custom field rather than the list.
 		 *
-		 * @since 0.36.0
+		 * @since TBD
 		 *
 		 * @param string[] $formats PHP date formats.
 		 */
@@ -475,7 +475,7 @@ final class Utility {
 	/**
 	 * The time formats an organizer picks from, as examples.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return array<int, array{format: string, example: string}> The choices.
 	 */
@@ -490,7 +490,7 @@ final class Utility {
 		/**
 		 * Filters the time formats offered as examples in GatherPress.
 		 *
-		 * @since 0.36.0
+		 * @since TBD
 		 *
 		 * @param string[] $formats PHP time formats.
 		 */
@@ -506,7 +506,7 @@ final class Utility {
 	 * locale and zone, which is the whole point: the reader recognizes
 	 * the result instead of decoding the format.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string[] $formats PHP date formats.
 	 *

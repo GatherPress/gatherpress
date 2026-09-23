@@ -11,7 +11,7 @@
  * as large as PHPMD will allow.
  *
  * @package GatherPress\Core
- * @since 0.36.0
+ * @since TBD
  */
 
 namespace GatherPress\Core\Settings;
@@ -24,14 +24,14 @@ use GatherPress\Core\Utility;
 /**
  * Class Format_Field.
  *
- * @since 0.36.0
+ * @since TBD
  */
 final class Format_Field {
 
 	/**
 	 * The field type this class belongs to.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 */
 	const TYPE = 'format';
 
@@ -44,14 +44,14 @@ final class Format_Field {
 	 * resolved to the Custom field's own value before anything is stored, so it
 	 * never reaches the database.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 */
 	const CUSTOM = '__gatherpress_custom__';
 
 	/**
 	 * The submission key holding a field's Custom value.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $option The option key the Custom field belongs to.
 	 *
@@ -70,7 +70,7 @@ final class Format_Field {
 	 * and is discarded. Either way the companion key is dropped, so nothing
 	 * downstream sees it and nothing stores it.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param array<string, mixed>  $input          The raw submission.
 	 * @param array<string, string> $field_type_map Flat map of option_key => field_type.
@@ -99,7 +99,7 @@ final class Format_Field {
 	/**
 	 * The formats a field offers.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $which Which list to offer: 'date' or 'time'.
 	 *
