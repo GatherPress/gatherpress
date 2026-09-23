@@ -276,7 +276,13 @@ export const showFieldErrors = ( form, errors ) => {
 
 	if ( orphaned.length ) {
 		showFormError( form, orphaned.join( ' ' ) );
-	} else if ( firstInvalid ) {
+	}
+
+	// A submission can fail on a hidden field and a visible one at once, and
+	// the alert is a live region announced wherever focus sits. So whenever
+	// the form holds something the person can actually correct, focus goes
+	// there rather than staying on the alert.
+	if ( firstInvalid ) {
 		// A fieldset is not focusable on its own, so send focus to the first
 		// option inside it instead.
 		const target = 'FIELDSET' === firstInvalid.tagName

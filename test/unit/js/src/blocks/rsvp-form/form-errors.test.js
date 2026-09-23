@@ -283,6 +283,21 @@ describe( 'showFieldErrors', () => {
 		).not.toHaveAttribute( 'aria-invalid' );
 	} );
 
+	it( 'focuses the visible field when a hidden one failed too', () => {
+		const form = buildForm();
+
+		const shown = showFieldErrors( form, {
+			gatherpress_form_schema_id: 'This form could not be verified.',
+			dietary: 'Dietary needs is required.',
+		} );
+
+		expect( shown ).toEqual( [ 'dietary' ] );
+		expect( form.querySelector( `.${ FORM_ERROR_CLASS }` ) ).toHaveTextContent(
+			'This form could not be verified.',
+		);
+		expect( document.activeElement.id ).toBe( 'field_dietary' );
+	} );
+
 	it( 'moves focus nowhere when there is nothing to report', () => {
 		const form = buildForm();
 
