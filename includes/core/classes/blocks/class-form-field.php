@@ -26,8 +26,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * This class is a supported entry point for rendering a single form field,
  * and is not limited to the block editor. Nothing about it requires a block
  * context: hand it an attributes array and it returns markup. Companion
- * plugins that build their own forms, or that render fields from a stored
- * RSVP form schema, are expected to use it.
+ * plugins that build their own forms are expected to use it.
  *
  * ```php
  * $field = new Form_Field(
@@ -44,6 +43,34 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  *
  * `get_html()` returns the markup and `render()` echoes it. Everything the
  * templates need is derived from the attributes, so a partial array is fine.
+ *
+ * ## Rendering a field from a stored RSVP form schema
+ *
+ * A schema field is not an attributes array. It uses the schema's own key
+ * names, and its `options` is a flat list of values where this class expects
+ * `radioOptions` as label/value pairs. Map it:
+ *
+ * ```php
+ * $attributes = array(
+ *     'fieldName'    => $field['name'],
+ *     'fieldType'    => $field['type'],
+ *     'label'        => $field['label'] ?? '',
+ *     'placeholder'  => $field['placeholder'] ?? '',
+ *     'required'     => ! empty( $field['required'] ),
+ *     'inputId'      => $field['input_id'] ?? '',
+ *     'radioOptions' => array_map(
+ *         static fn ( string $value ): array => array(
+ *             'label' => $value,
+ *             'value' => $value,
+ *         ),
+ *         $field['options'] ?? array()
+ *     ),
+ * );
+ * ```
+ *
+ * The schema's `validation` and `max_length` are validation rules rather than
+ * render input, so they have no attribute here. See
+ * [the RSVP docs](../../../../docs/developer/rsvp/README.md) for the schema.
  *
  * ## Accepted attributes
  *
