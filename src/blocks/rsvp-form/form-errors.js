@@ -202,7 +202,12 @@ export const showFieldErrors = ( form, errors ) => {
 	let firstInvalid = null;
 
 	Object.entries( errors ).forEach( ( [ fieldName, message ] ) => {
-		const inputs = getFieldInputs( form, fieldName );
+		// A hidden input, the schema id among them, has nothing on screen a
+		// person could fix, and assistive technology ignores it. Leaving it
+		// out sends the message to the form-level alert instead.
+		const inputs = getFieldInputs( form, fieldName ).filter(
+			( input ) => 'hidden' !== input.type,
+		);
 
 		if ( ! inputs.length ) {
 			orphaned.push( message );
@@ -211,16 +216,31 @@ export const showFieldErrors = ( form, errors ) => {
 
 		const described = getDescribedElement( inputs );
 		const anchor = inputs.at( -1 );
-		const errorId = `${ described.id || fieldName }-error`;
+		// An input carries an id unique to its form, but the fieldset around a
+		// radio group does not, so the form's own id keeps the fallback from
+		// colliding with the same field on a second form on the page.
+		const errorId = described.id
+			? `${ described.id }-error`
+			: `${ form.id }-${ fieldName }-error`;
 		const element = document.createElement( 'p' );
 
 		element.className = FIELD_ERROR_CLASS;
 		element.id = errorId;
 		element.textContent = message;
 
-		// After the last input of the group, so a radio group's message sits
-		// below every option rather than between the first two.
-		anchor.insertAdjacentElement( 'afterend', element );
+		// At the end of the field's own block, so the message sits below the
+		// input, its help text, and every option of a radio group. Anchoring
+		// to the last input instead drops it between an option and the label
+		// that belongs to it.
+		const container =
+			anchor.closest( '.wp-block-gatherpress-form-field' ) ??
+			anchor.closest( 'fieldset' );
+
+		if ( container ) {
+			container.append( element );
+		} else {
+			anchor.insertAdjacentElement( 'afterend', element );
+		}
 
 		described.setAttribute( 'aria-invalid', 'true' );
 		addDescribedBy( described, errorId );
@@ -238,7 +258,7 @@ export const showFieldErrors = ( form, errors ) => {
 		const clear = () => {
 			removeDescribedBy( described, errorId );
 			described.removeAttribute( 'aria-invalid' );
-			document.getElementById( errorId )?.remove();
+			element.remove();
 			listening.abort();
 		};
 

@@ -37,7 +37,7 @@ Give each field on a form a different name. Two fields sharing one name will col
 
 **Help Text** is a short description below the field. It is announced by screen readers along with the field, so it is a good place for a constraint or an example rather than an instruction that repeats the label.
 
-**Placeholder** is the greyed-out hint inside an empty field. It disappears as soon as someone types, so do not put anything essential there. Use Help Text for that.
+**Placeholder** is the grayed-out hint inside an empty field. It disappears as soon as someone types, so do not put anything essential there. Use Help Text for that.
 
 **Input ID** is optional, and most forms never need it. Leave it empty and an id is generated. Set one when you need the id to stay the same every time the page loads, for example to point your own label or script at the field. It must be unique on the page.
 

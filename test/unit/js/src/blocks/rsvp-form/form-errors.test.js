@@ -53,6 +53,7 @@ const buildForm = () => {
 			<div class="wp-block-gatherpress-form-field">
 				<input type="text" name="nickname" />
 			</div>
+			<input type="hidden" name="gatherpress_form_schema_id" value="form_0" />
 		</form>
 	`;
 
@@ -75,7 +76,10 @@ describe( 'showFieldErrors', () => {
 		expect( contact ).toHaveTextContent(
 			'Backup email must be a valid email address.',
 		);
-		expect( dietary.previousElementSibling.id ).toBe( 'field_dietary' );
+		expect( dietary.parentElement ).toBe(
+			document.getElementById( 'field_dietary' ).parentElement,
+		);
+		expect( dietary.parentElement.lastElementChild ).toBe( dietary );
 	} );
 
 	it( 'marks the input invalid and describes it with the message', () => {
@@ -129,11 +133,9 @@ describe( 'showFieldErrors', () => {
 		expect(
 			form.querySelectorAll( `.${ FIELD_ERROR_CLASS }` ),
 		).toHaveLength( 1 );
-		// The message sits after the last option, not between the two.
-		expect(
-			document.getElementById( 'field_tshirt-error' )
-				.previousElementSibling.id,
-		).toBe( 'field_tshirt_m' );
+		// The message closes the group rather than landing between an option
+		// and the label that belongs to it.
+		expect( fieldset.lastElementChild.id ).toBe( 'field_tshirt-error' );
 	} );
 
 	it( 'focuses into a fieldset rather than the fieldset itself', () => {
@@ -218,6 +220,9 @@ describe( 'showFieldErrors', () => {
 		const first = form.querySelector( '[name="carpool"]' );
 
 		expect( first ).toHaveAttribute( 'aria-invalid', 'true' );
+		expect( first.parentElement.lastElementChild.id ).toBe(
+			'rsvp-form-carpool-error',
+		);
 		expect( form.querySelectorAll( `.${ FIELD_ERROR_CLASS }` ) ).toHaveLength(
 			1,
 		);
@@ -228,9 +233,9 @@ describe( 'showFieldErrors', () => {
 
 		showFieldErrors( form, { nickname: 'Nickname is not valid.' } );
 
-		expect( document.getElementById( 'nickname-error' ) ).toHaveTextContent(
-			'Nickname is not valid.',
-		);
+		expect(
+			document.getElementById( 'rsvp-form-nickname-error' ),
+		).toHaveTextContent( 'Nickname is not valid.' );
 	} );
 
 	it( 'escapes a field name that would otherwise break the selector', () => {
@@ -245,7 +250,8 @@ describe( 'showFieldErrors', () => {
 		expect( () =>
 			showFieldErrors( form, { 'odd"name': 'Odd is required.' } ),
 		).not.toThrow();
-		expect( document.getElementById( 'field_odd-error' ) ).not.toBeNull();
+		// Nothing wraps this input, so the message goes straight after it.
+		expect( input.nextElementSibling.id ).toBe( 'field_odd-error' );
 	} );
 
 	it( 'describes a field once when the same error is reported twice', () => {
@@ -258,6 +264,23 @@ describe( 'showFieldErrors', () => {
 			'aria-describedby',
 			'field_dietary-error',
 		);
+	} );
+
+	it( 'reports a hidden field against the form, not the input', () => {
+		const form = buildForm();
+
+		const shown = showFieldErrors( form, {
+			gatherpress_form_schema_id:
+				'This form could not be verified. Please reload the page and try again.',
+		} );
+
+		expect( shown ).toEqual( [] );
+		expect( form.querySelector( `.${ FORM_ERROR_CLASS }` ) ).toHaveTextContent(
+			'This form could not be verified. Please reload the page and try again.',
+		);
+		expect(
+			form.querySelector( '[name="gatherpress_form_schema_id"]' ),
+		).not.toHaveAttribute( 'aria-invalid' );
 	} );
 
 	it( 'moves focus nowhere when there is nothing to report', () => {
