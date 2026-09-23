@@ -628,17 +628,12 @@ final class Form {
 
 		$post_id = (int) $comment->comment_post_ID;
 
-		// Get stored schemas for this post.
-		$schemas = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true );
-		if ( empty( $schemas ) || ! isset( $schemas[ $form_schema_id ] ) ) {
-			return; // No schema found for this form.
-		}
-
-		$form_schema = $schemas[ $form_schema_id ];
-		$fields      = $form_schema['fields'] ?? array();
-
-		// Get the blocks Rsvp_Form instance for field sanitization.
+		// Get the blocks Rsvp_Form instance for the schema and field sanitization.
 		$rsvp_form_blocks = Rsvp_Form::get_instance();
+
+		// Read the schema through the shared accessor, which type-checks the
+		// stored meta rather than trusting its shape.
+		$fields = $rsvp_form_blocks->get_schema_fields( $post_id, (string) $form_schema_id );
 
 		// Process each custom field.
 		foreach ( $fields as $field_name => $field_config ) {

@@ -743,24 +743,39 @@ final class Rsvp_Form {
 	 * @param int    $post_id        The event post ID the schema belongs to.
 	 * @param string $form_schema_id The submitted form-schema id.
 	 *
+	 * The stored meta is whatever is in the database, so every level is
+	 * type-checked. A schema that has been corrupted, hand-edited, or written
+	 * by an older version yields no fields rather than a fatal downstream.
+	 *
 	 * @return array<string, mixed> The schema's field definitions, or an empty array when there are none.
 	 * @phpstan-return array<string, FieldConfig>
 	 */
-	private function get_schema_fields( int $post_id, string $form_schema_id ): array {
+	public function get_schema_fields( int $post_id, string $form_schema_id ): array {
 		// Bail when the form-schema id is missing, when no schemas are stored
 		// for this post, when the requested schema id isn't one of them, or
-		// when the matched schema has no field definitions.
+		// when the matched schema has no usable field definitions.
 		$schemas = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true );
 
 		if ( '' === $form_schema_id
-			|| empty( $schemas )
-			|| ! isset( $schemas[ $form_schema_id ] )
+			|| ! is_array( $schemas )
 			|| empty( $schemas[ $form_schema_id ]['fields'] )
+			|| ! is_array( $schemas[ $form_schema_id ]['fields'] )
 		) {
 			return array();
 		}
 
-		return $schemas[ $form_schema_id ]['fields'];
+		/**
+		 * Field definitions from the stored schema.
+		 *
+		 * Any field whose config is not an array is dropped, because callers
+		 * pass each one to sanitize_custom_field_value(), which is typed
+		 * `array $config`. Individual keys are still read defensively.
+		 *
+		 * @var array<string, FieldConfig> $fields
+		 */
+		$fields = array_filter( $schemas[ $form_schema_id ]['fields'], 'is_array' );
+
+		return $fields;
 	}
 
 	/**

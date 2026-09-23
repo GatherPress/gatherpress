@@ -925,6 +925,123 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
+	 * Data provider for malformed stored schemas.
+	 *
+	 * The schema is post meta, so its shape is whatever is in the database.
+	 *
+	 * @since TBD
+	 *
+	 * @return array<string, array<int, mixed>>
+	 */
+	public function data_malformed_schemas(): array {
+		return array(
+			'the meta is a string'         => array( 'corrupted' ),
+			'the meta is a number'         => array( 42 ),
+			'the schema entry is a string' => array( array( 'form_0' => 'corrupted' ) ),
+			'fields is a string'           => array( array( 'form_0' => array( 'fields' => 'corrupted' ) ) ),
+			'fields is a number'           => array( array( 'form_0' => array( 'fields' => 7 ) ) ),
+			'a field config is a string'   => array(
+				array(
+					'form_0' => array(
+						'fields' => array( 'dietary' => 'corrupted' ),
+					),
+				),
+			),
+			'a field config is a number'   => array(
+				array(
+					'form_0' => array(
+						'fields' => array( 'dietary' => 7 ),
+					),
+				),
+			),
+		);
+	}
+
+	/**
+	 * Tests a malformed stored schema yields no fields rather than a fatal.
+	 *
+	 * `get_schema_fields()` declares an array return and its callers pass each
+	 * config to `sanitize_custom_field_value()`, which is typed `array`, so an
+	 * unchecked shape here is a fatal rather than a bad answer.
+	 *
+	 * @since TBD
+	 * @covers ::get_schema_fields
+	 * @covers ::validate_custom_fields
+	 * @covers ::validate_custom_fields_from_post
+	 *
+	 * @dataProvider data_malformed_schemas
+	 *
+	 * @param mixed $schemas The corrupted value stored in the schema meta.
+	 *
+	 * @return void
+	 */
+	public function test_malformed_schema_yields_no_fields( $schemas ): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		update_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', $schemas );
+
+		$this->assertSame(
+			array(),
+			$instance->get_schema_fields( $post_id, 'form_0' ),
+			'A malformed schema should yield no field definitions.'
+		);
+		$this->assertSame(
+			array(),
+			$instance->validate_custom_fields( $post_id, 'form_0', array( 'dietary' => 'none' ) ),
+			'A malformed schema should validate rather than fail.'
+		);
+		$this->assertSame(
+			array(),
+			$instance->validate_custom_fields_from_post( $post_id, 'form_0' ),
+			'Reading a malformed schema from POST should not fail.'
+		);
+	}
+
+	/**
+	 * Tests a usable field survives alongside a malformed sibling.
+	 *
+	 * @since TBD
+	 * @covers ::get_schema_fields
+	 *
+	 * @return void
+	 */
+	public function test_malformed_field_does_not_discard_its_siblings(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		update_post_meta(
+			$post_id,
+			'gatherpress_rsvp_form_schemas',
+			array(
+				'form_0' => array(
+					'fields' => array(
+						'broken'  => 'corrupted',
+						'dietary' => array(
+							'name'        => 'dietary',
+							'type'        => 'text',
+							'required'    => true,
+							'label'       => 'Dietary needs',
+							'placeholder' => '',
+						),
+					),
+				),
+			)
+		);
+
+		$this->assertSame(
+			array( 'dietary' ),
+			array_keys( $instance->get_schema_fields( $post_id, 'form_0' ) ),
+			'The usable field should survive, the malformed one should be dropped.'
+		);
+		$this->assertSame(
+			array( 'dietary' => 'Dietary needs is required.' ),
+			$instance->validate_custom_fields( $post_id, 'form_0', array() ),
+			'The usable field should still be enforced.'
+		);
+	}
+
+	/**
 	 * Tests validate_custom_fields_from_post reads the submitted values.
 	 *
 	 * @since TBD
