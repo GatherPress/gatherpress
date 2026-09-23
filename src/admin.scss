@@ -5,7 +5,7 @@
 
 .gatherpress-attendee-info {
 	display: flex;
-	gap: 0.5rem;
+	gap: 8px;
 }
 
 [data-gatherpress-no-render="true"] {
@@ -86,7 +86,7 @@
 	padding: 0;
 	height: auto;
 	min-height: 0;
-	margin-right: 0.5rem;
+	margin-right: 8px;
 }
 
 .gatherpress-popular-venue.components-button.is-link:not(:disabled):hover {

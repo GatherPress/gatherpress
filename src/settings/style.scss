@@ -38,6 +38,9 @@
 		img {
 			border-radius: 999rem;
 			margin-bottom: 0.5rem;
+
+			// The avatar is requested from Gravatar at 96, so the cap is the
+			// image's own size rather than a layout measurement.
 			max-width: 96px;
 		}
 

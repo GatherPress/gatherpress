@@ -573,6 +573,45 @@ When working with JavaScript code:
     - ✅ Good: `import { Navigator } from '@wordpress/components';` then `<Navigator initialPath="/">...</Navigator>`
     - ❌ Bad: `import { __experimentalNavigatorProvider as NavigatorProvider, Navigator } from '@wordpress/components';` then `<NavigatorProvider initialPath="/">...</NavigatorProvider>`
 
+### CSS and SCSS Coding Standards
+
+#### Units
+
+Three units, picked by what the value has to track. The split already holds across `src/`: the front-end block stylesheets are `rem`-dominant, the admin and editor stylesheets are `px`-dominant, and `em` shows up only where a value belongs with its text.
+
+- **`rem` for layout and block-level spacing on the front end**: gaps, block margins, widths, max-widths. It does not compound through nesting, so a field wrapper's `margin-bottom` means the same thing wherever the block lands.
+    - ✅ Good: `gap: 0.5rem;` / `margin-bottom: 1rem;` / `max-width: 28rem;`
+    - ❌ Bad: `gap: 8px;` in a front-end block stylesheet.
+- **`em` for values that have to track the text they sit with**: `font-size`, and the tight gap between a control and the caption under it.
+    - ✅ Good: `font-size: 0.875em;` on a caption, and `margin: 0.25em 0 0;` shared by `.gatherpress-help-text` and the validation message that occupies the same slot.
+    - **Know what `em` resolves against before reaching for it.** `font-size` in `em` resolves against the *parent's* font size; every other property resolves against the element's *own*. The Form Field block applies `inputFontSize` as an inline style on the `<input>`, so an `em` on a sibling caption tracks the field wrapper, not the input. It follows the surrounding content, which is usually what you want, but it is not "scales with the field".
+- **`px` for hairlines, chrome, and breakpoints**: borders, `box-shadow`, `outline`, `outline-offset`, small `border-radius`, arrow and caret sizes, media queries, and the `1px` / `-1px` of the screen-reader clip rectangle in `src/utility.scss`.
+    - ✅ Good: `border: 1px solid;` / `box-shadow: 0 2px 8px rgb(0 0 0 / 15%);` / `@media screen and (width <= 782px)`
+    - Also `px` when the number is an asset's intrinsic size rather than a layout measurement, such as capping a Gravatar requested at 96 with `max-width: 96px`. Say so in a comment, because it reads like a layout value otherwise.
+- **`px` throughout admin and editor stylesheets**, matching WordPress core's own pixel grid: `src/admin.scss`, `src/components/PatternPicker/index.scss`, every `editor.scss`, and any rule targeting a `.components-*` class. A `rem` in one of those files is out of place rather than a modernization.
+    - The exception is a value copied from core so the two line up. `src/admin.scss` gives the plugin-row warning `margin-top: 1em` because core's `.requires` uses `1em`, and the comment above it says so. Match core's unit, not the file's.
+
+#### CSS custom properties
+
+Two shapes, and the dash count is the whole distinction:
+
+- **`--gatherpress--{component}--{property}`, two dashes between segments, is the public API.** Themes set these. Every one belongs in [`docs/developer/theme-customizations/README.md`](docs/developer/theme-customizations/README.md); one added without a row in that table is one no theme author will ever find. The shape follows WordPress's own `--wp--preset--color--primary`.
+- **`--gatherpress-{component}-{property}`, single dashes, is internal.** A component defines these for itself, usually to resolve a fallback chain once and then reuse it. Nothing outside the component reads one, and a theme that sets one is leaning on an implementation detail.
+
+The chain runs public property, then WordPress global style, then a hard-coded default:
+
+```scss
+--gatherpress-tooltip-text-color: var(
+	--gatherpress--tooltip--text-color,
+	var(--wp--preset--color--base, var(--wp--preset--color--background, #fff))
+);
+```
+
+Reach for the internal alias only when the value is composed or reused across a lot of rules. A single color read in two or three places should read the public property directly.
+
+- ✅ Good: `color: var(--gatherpress--rsvp-form--error-color, #b32d2e);`
+- ❌ Bad: `color: var(--gatherpress-field-error-color, #b32d2e);`, which invites a theme to set an internal name that is documented nowhere.
+
 ### Accessibility
 
 A11y rules that fire frequently and have known-good fixes specific to this codebase:

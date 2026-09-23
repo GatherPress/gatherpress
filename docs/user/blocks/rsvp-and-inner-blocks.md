@@ -28,7 +28,7 @@ Note that moving the RSVP block re-protects it, so double-click it again if you 
         - Row
             - Icon  (by default, it shows the checkmark on Attending more, the clock icon on Waiting list mode, or the X icon on the Not attending mode)
             - RSVP Status (by default, it shows "Attending", "Waiting List" or "Not Attending")
-        - RSVP Guest Count Display. Note: if the event is set not to accept guests, this field is greyed out in the editor and will not display on front end.
+        - RSVP Guest Count Display. Note: if the event is set not to accept guests, this field is grayed out in the editor and will not display on front end.
     - RSVP Modal
         - Modal Content
             - RSVP Heading
