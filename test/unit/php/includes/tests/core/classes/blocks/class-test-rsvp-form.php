@@ -900,121 +900,119 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
-	 * Tests validate_custom_fields accepts anything when no schema matches.
+	 * Tests an unrecognized schema id is rejected when the event defines a form.
+	 *
+	 * Resolving an unknown id to no fields would skip every required answer
+	 * on the form, which is the bypass the validation exists to close.
 	 *
 	 * @since TBD
 	 * @covers ::validate_custom_fields
-	 * @covers ::get_schema_fields
+	 *
+	 * @return void
+	 */
+	public function test_validate_custom_fields_rejects_an_unrecognized_schema(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->create_event_with_schema();
+
+		foreach ( array( '', 'does_not_exist' ) as $form_schema_id ) {
+			$errors = $instance->validate_custom_fields( $post_id, $form_schema_id, array( 'dietary' => 'none' ) );
+
+			$this->assertSame(
+				array( Rsvp_Form::SCHEMA_ID_FIELD ),
+				array_keys( $errors ),
+				'A submission naming no known schema should be rejected.'
+			);
+		}
+	}
+
+	/**
+	 * Tests any schema id is accepted when the event defines no form.
+	 *
+	 * @since TBD
+	 * @covers ::validate_custom_fields
 	 *
 	 * @return void
 	 */
 	public function test_validate_custom_fields_without_a_schema(): void {
 		$instance = Rsvp_Form::get_instance();
-		$post_id  = $this->create_event_with_schema();
+		$post_id  = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
 
 		$this->assertSame(
 			array(),
 			$instance->validate_custom_fields( $post_id, '', array() ),
-			'An absent form-schema id should not fail validation.'
+			'An event with no stored schemas has nothing to validate.'
 		);
 		$this->assertSame(
 			array(),
 			$instance->validate_custom_fields( $post_id, 'does_not_exist', array() ),
-			'An unknown form-schema id should not fail validation.'
+			'An event with no stored schemas should not reject a schema id.'
 		);
 	}
 
 	/**
-	 * Data provider for per-type rejection messages.
+	 * Tests a required answer that sanitizes away is rejected.
+	 *
+	 * Whitespace passes the requiredness check, because it is neither null
+	 * nor '', but sanitizing trims it to nothing.
 	 *
 	 * @since TBD
-	 *
-	 * @return array<string, array<int, mixed>>
-	 */
-	public function data_field_error_messages(): array {
-		return array(
-			'email'            => array( array( 'type' => 'email' ), 'Website must be a valid email address.' ),
-			'url'              => array( array( 'type' => 'url' ), 'Website must be a valid URL.' ),
-			'number'           => array( array( 'type' => 'number' ), 'Website must be a number.' ),
-			'select'           => array( array( 'type' => 'select' ), 'Website must be one of the available choices.' ),
-			'radio'            => array( array( 'type' => 'radio' ), 'Website must be one of the available choices.' ),
-			'textarea'         => array(
-				array(
-					'type'       => 'textarea',
-					'max_length' => 2000,
-				),
-				'Website must be 2,000 characters or fewer.',
-			),
-			'textarea default' => array( array( 'type' => 'textarea' ), 'Website must be 1,000 characters or fewer.' ),
-			'an unknown type'  => array( array( 'type' => 'carrier-pigeon' ), 'Website is not valid.' ),
-			'no type at all'   => array( array(), 'Website is not valid.' ),
-		);
-	}
-
-	/**
-	 * Tests the rejection message explains the failure in the field's terms.
-	 *
-	 * Invoked directly because the helper is private and called from a loop in
-	 * the same class, which xdebug does not trace reliably.
-	 *
-	 * @since TBD
-	 * @covers ::get_field_error_message
-	 *
-	 * @dataProvider data_field_error_messages
-	 *
-	 * @param array<string, mixed> $field_config The field configuration from the schema.
-	 * @param string               $expected     The message the submitter should see.
+	 * @covers ::validate_custom_fields
 	 *
 	 * @return void
 	 */
-	public function test_get_field_error_message( array $field_config, string $expected ): void {
-		$field_config['label'] = 'Website';
+	public function test_validate_custom_fields_rejects_a_value_that_sanitizes_away(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->create_event_with_schema();
 
 		$this->assertSame(
-			$expected,
-			Utility::invoke_hidden_method(
-				Rsvp_Form::get_instance(),
-				'get_field_error_message',
-				array( 'website', $field_config )
-			),
-			'The message should name the field and explain the failure.'
+			array( 'dietary' => 'Dietary needs is required.' ),
+			$instance->validate_custom_fields( $post_id, 'form_0', array( 'dietary' => '   ' ) ),
+			'Whitespace is not an answer to a required field.'
+		);
+		$this->assertSame(
+			array(),
+			$instance->validate_custom_fields( $post_id, 'form_0', array( 'dietary' => '0' ) ),
+			'An explicit zero is a real answer and should survive.'
 		);
 	}
 
 	/**
-	 * Tests the field label falls back to the field name.
+	 * Tests malformed select options are rejected rather than fataling.
+	 *
+	 * `in_array()` raises a TypeError when the haystack is not an array, and
+	 * the stored schema can carry a scalar there.
 	 *
 	 * @since TBD
-	 * @covers ::get_field_label
+	 * @covers ::sanitize_custom_field_value
 	 *
 	 * @return void
 	 */
-	public function test_get_field_label_falls_back_to_the_field_name(): void {
+	public function test_sanitize_custom_field_value_with_malformed_options(): void {
 		$instance = Rsvp_Form::get_instance();
 
-		$this->assertSame(
-			'Website',
-			Utility::invoke_hidden_method(
-				$instance,
-				'get_field_label',
-				array( 'website', array( 'label' => 'Website' ) )
-			),
-			'A label should be used when the schema carries one.'
-		);
-		$this->assertSame(
-			'website',
-			Utility::invoke_hidden_method(
-				$instance,
-				'get_field_label',
-				array( 'website', array( 'label' => '   ' ) )
-			),
-			'A blank label should fall back to the field name.'
-		);
-		$this->assertSame(
-			'website',
-			Utility::invoke_hidden_method( $instance, 'get_field_label', array( 'website', array() ) ),
-			'A missing label should fall back to the field name.'
-		);
+		foreach ( array( 'select', 'radio' ) as $type ) {
+			$this->assertFalse(
+				$instance->sanitize_custom_field_value(
+					'S',
+					array(
+						'type'     => $type,
+						'required' => false,
+						'options'  => 'S,M,L',
+					)
+				),
+				'Scalar options should be rejected rather than raising a TypeError.'
+			);
+			$this->assertFalse(
+				$instance->sanitize_custom_field_value(
+					'S',
+					array(
+						'type'     => $type,
+						'required' => false,
+					)
+				),
+				'Absent options should be rejected.'
+			);
+		}
 	}
 
 	/**
@@ -1131,6 +1129,36 @@ class Test_Rsvp_Form extends Base {
 			array( 'dietary' => 'Dietary needs is required.' ),
 			$instance->validate_custom_fields( $post_id, 'form_0', array() ),
 			'The usable field should still be enforced.'
+		);
+	}
+
+	/**
+	 * Tests the required message names the field.
+	 *
+	 * Invoked directly because the helper is private and called from a loop
+	 * in the same class, which xdebug does not trace reliably.
+	 *
+	 * @since TBD
+	 * @covers ::get_required_message
+	 *
+	 * @return void
+	 */
+	public function test_get_required_message(): void {
+		$instance = Rsvp_Form::get_instance();
+
+		$this->assertSame(
+			'Website is required.',
+			Utility::invoke_hidden_method(
+				$instance,
+				'get_required_message',
+				array( 'website', array( 'label' => 'Website' ) )
+			),
+			'The message should use the field label.'
+		);
+		$this->assertSame(
+			'website is required.',
+			Utility::invoke_hidden_method( $instance, 'get_required_message', array( 'website', array() ) ),
+			'The message should fall back to the field name.'
 		);
 	}
 

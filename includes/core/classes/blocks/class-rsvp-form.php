@@ -59,6 +59,17 @@ final class Rsvp_Form {
 	const BLOCK_NAME = 'gatherpress/rsvp-form';
 
 	/**
+	 * The hidden input naming which stored schema a submission answers.
+	 *
+	 * Also the key a schema failure is reported under, since that failure
+	 * belongs to the form rather than to any one field.
+	 *
+	 * @since TBD
+	 * @var string
+	 */
+	const SCHEMA_ID_FIELD = 'gatherpress_form_schema_id';
+
+	/**
 	 * Built-in field names that should not be processed as custom fields.
 	 *
 	 * These fields are handled by WordPress core or other parts of the RSVP system.
@@ -793,7 +804,27 @@ final class Rsvp_Form {
 	 * @return array<string, string> Error messages keyed by field name. Empty when every value is acceptable.
 	 */
 	public function validate_custom_fields( int $post_id, string $form_schema_id, array $values ): array {
-		$errors = array();
+		$errors  = array();
+		$schemas = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true );
+
+		// An event with no stored schemas has no custom fields to answer for.
+		// A schema meta value that is not an array is corrupt rather than
+		// absent, and there is nothing in it to enforce either.
+		if ( ! is_array( $schemas ) || array() === $schemas ) {
+			return $errors;
+		}
+
+		// The event defines at least one form, so the submission has to name
+		// one of its schemas. Without this an unrecognized id resolves to no
+		// fields, which skips every required answer on the form.
+		if ( '' === $form_schema_id || ! isset( $schemas[ $form_schema_id ] ) ) {
+			return array(
+				self::SCHEMA_ID_FIELD => __(
+					'This form could not be verified. Please reload the page and try again.',
+					'gatherpress'
+				),
+			);
+		}
 
 		foreach ( $this->get_schema_fields( $post_id, $form_schema_id ) as $field_name => $field_config ) {
 			// Skip built-in fields, which are validated by the RSVP form itself.
@@ -801,27 +832,53 @@ final class Rsvp_Form {
 				continue;
 			}
 
-			$value = $values[ $field_name ] ?? null;
+			$value    = $values[ $field_name ] ?? null;
+			$required = ! empty( $field_config['required'] );
 
 			// An explicit "0" is a real answer, so only null and '' count as unanswered.
 			if ( null === $value || '' === $value ) {
-				if ( ! empty( $field_config['required'] ) ) {
-					$errors[ $field_name ] = sprintf(
-						/* translators: %s: The form field's label. */
-						__( '%s is required.', 'gatherpress' ),
-						$this->get_field_label( $field_name, $field_config )
-					);
+				if ( $required ) {
+					$errors[ $field_name ] = $this->get_required_message( $field_name, $field_config );
 				}
 
 				continue;
 			}
 
-			if ( false === $this->sanitize_custom_field_value( $value, $field_config ) ) {
+			$sanitized = $this->sanitize_custom_field_value( $value, $field_config );
+
+			if ( false === $sanitized ) {
 				$errors[ $field_name ] = $this->get_field_error_message( $field_name, $field_config );
+
+				continue;
+			}
+
+			// A required answer that sanitizes away, whitespace being the
+			// usual case, is not an answer. An explicit "0" survives this
+			// because it sanitizes to the string "0" rather than ''.
+			if ( $required && '' === $sanitized ) {
+				$errors[ $field_name ] = $this->get_required_message( $field_name, $field_config );
 			}
 		}
 
 		return $errors;
+	}
+
+	/**
+	 * Get the message for a required field that was left unanswered.
+	 *
+	 * @since TBD
+	 *
+	 * @param string               $field_name   The field's name in the schema.
+	 * @param array<string, mixed> $field_config The field configuration from the schema.
+	 *
+	 * @return string The message to show the submitter.
+	 */
+	private function get_required_message( string $field_name, array $field_config ): string {
+		return sprintf(
+			/* translators: %s: The form field's label. */
+			__( '%s is required.', 'gatherpress' ),
+			$this->get_field_label( $field_name, $field_config )
+		);
 	}
 
 	/**
@@ -920,9 +977,11 @@ final class Rsvp_Form {
 	 *
 	 * @since 0.33.0
 	 *
+	 * The config is read from post meta, so individual keys are checked
+	 * rather than assumed: a stored schema can carry the wrong type.
+	 *
 	 * @param mixed                $value  The field value to sanitize.
 	 * @param array<string, mixed> $config The field configuration from the schema.
-	 * @phpstan-param FieldConfig $config
 	 *
 	 * @return mixed|false The sanitized value, or false if sanitization fails.
 	 */
@@ -937,7 +996,7 @@ final class Rsvp_Form {
 		// dispatch (one return) rather than a 7-arm return chain.
 		$result = false;
 
-		switch ( $config['type'] ) {
+		switch ( (string) ( $config['type'] ?? 'text' ) ) {
 			case 'email':
 				$sanitized = sanitize_email( $value );
 				$result    = is_email( $sanitized ) ? $sanitized : false;
@@ -954,8 +1013,12 @@ final class Rsvp_Form {
 
 			case 'select':
 			case 'radio':
+				// `??` only covers a null options key. A stored schema can
+				// carry a scalar there, which in_array() rejects with a
+				// TypeError rather than a false.
+				$options   = $config['options'] ?? array();
 				$sanitized = sanitize_text_field( $value );
-				$result    = in_array( $sanitized, $config['options'] ?? array(), true ) ? $sanitized : false;
+				$result    = is_array( $options ) && in_array( $sanitized, $options, true ) ? $sanitized : false;
 				break;
 
 			case 'checkbox':
@@ -964,7 +1027,7 @@ final class Rsvp_Form {
 
 			case 'textarea':
 				$sanitized  = sanitize_textarea_field( $value );
-				$max_length = $config['max_length'] ?? 1000;
+				$max_length = (int) ( $config['max_length'] ?? 1000 );
 				$result     = strlen( $sanitized ) <= $max_length ? $sanitized : false;
 				break;
 
