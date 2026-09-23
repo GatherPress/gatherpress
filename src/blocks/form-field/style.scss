@@ -76,3 +76,20 @@
 .gatherpress-help-text {
 	margin: 0.25em 0 0;
 }
+
+// Message shown against a field the server rejected. Added by view.js on a
+// failed submission, so it has no server-rendered counterpart.
+.gatherpress-field-error {
+	color: var(--gatherpress-field-error-color, #b32d2e);
+	font-size: 0.875em;
+	margin: 0.25em 0 0;
+}
+
+// Message for a failure that belongs to the form rather than one field, such
+// as a duplicate RSVP. Prepended to the form.
+.gatherpress-form-error {
+	border-left: 4px solid var(--gatherpress-field-error-color, #b32d2e);
+	color: var(--gatherpress-field-error-color, #b32d2e);
+	margin: 0 0 1em;
+	padding: 0.5em 0.75em;
+}

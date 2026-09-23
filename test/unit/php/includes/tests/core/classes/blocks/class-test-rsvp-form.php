@@ -242,6 +242,43 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
+	 * Tests that transform_block_content renders the fallback error message.
+	 *
+	 * The form's error reporting runs in an Interactivity module, which cannot
+	 * import @wordpress/i18n, so the generic failure message has to reach the
+	 * browser as a translated attribute on the form.
+	 *
+	 * @since TBD
+	 * @covers ::transform_block_content
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_adds_error_message_attribute(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$block_content = '<div class="wp-block-gatherpress-rsvp-form">RSVP Form Content</div>';
+		$block         = array(
+			'blockName' => 'gatherpress/rsvp-form',
+			'attrs'     => array(
+				'postId' => $post_id,
+			),
+		);
+
+		$transformed_content = $instance->transform_block_content( $block_content, $block );
+
+		$this->assertStringContainsString(
+			'data-gatherpress-error-message="Sorry, there was an issue processing your RSVP. Please try again."',
+			$transformed_content,
+			'Failed to assert the form carries the fallback error message.'
+		);
+	}
+
+	/**
 	 * Tests that transform_block_content hides success message blocks by default.
 	 *
 	 * Verifies that elements with gatherpress--rsvp-form-message class

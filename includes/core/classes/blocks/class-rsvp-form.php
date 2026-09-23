@@ -180,6 +180,14 @@ final class Rsvp_Form {
 		$tag->set_attribute( 'data-wp-on--submit', 'actions.handleRsvpFormSubmit' );
 		$tag->set_attribute( 'data-wp-context', wp_json_encode( array( 'postId' => $post_id ) ) );
 
+		// The form's error reporting runs in an Interactivity module, which
+		// cannot import @wordpress/i18n, so the fallback message is rendered
+		// here where it can still be translated.
+		$tag->set_attribute(
+			'data-gatherpress-error-message',
+			__( 'Sorry, there was an issue processing your RSVP. Please try again.', 'gatherpress' )
+		);
+
 		$event = new Event( $post_id );
 
 		// Add event state if the event has passed.

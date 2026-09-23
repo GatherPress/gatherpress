@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+A rejected RSVP now reports itself in the form rather than in a browser alert. Each field at fault gets its own message, marked up so screen readers announce it with the field, focus moves to the first one, and correcting a field clears its message. Failures that do not belong to a field, such as a duplicate RSVP, still show a single message at the top of the form.

@@ -7,6 +7,10 @@ import { store, getElement, getContext } from '@wordpress/interactivity';
  * Internal dependencies
  */
 import { initPostContext, getNonce } from '../../helpers/interactivity';
+import {
+	clearFormErrors,
+	reportSubmissionError,
+} from './form-errors';
 const { state } = store( 'gatherpress', {
 	state: {
 		posts: {},
@@ -27,6 +31,11 @@ const { state } = store( 'gatherpress', {
 			if ( state.rsvpForm.isSubmitting ) {
 				return;
 			}
+
+			// Drop anything the previous attempt reported, so a field the
+			// person has since fixed stops being marked while the new
+			// submission is in flight.
+			clearFormErrors( form );
 
 			// Find submit button for loading state.
 			const submitButton = form.querySelector( '.gatherpress-submit-button' );
@@ -162,12 +171,10 @@ const { state } = store( 'gatherpress', {
 						}
 					}
 				} else {
-					// Error from the server - show alert with server-provided message.
-					// eslint-disable-next-line no-alert
-					alert(
-						result?.message ||
-							'Sorry, there was an issue processing your RSVP. Please try again.',
-					);
+					// Report in the form itself. The server names each failing
+					// field, so the messages go against the inputs rather than
+					// into an alert the person has to dismiss and remember.
+					reportSubmissionError( form, result );
 				}
 			} catch ( error ) {
 				// Network or other errors - fall back to regular form submission.
