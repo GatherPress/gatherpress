@@ -876,44 +876,41 @@ final class Rsvp_Form {
 	private function get_field_error_message( string $field_name, array $field_config ): string {
 		$label = $this->get_field_label( $field_name, $field_config );
 
-		switch ( (string) ( $field_config['type'] ?? 'text' ) ) {
-			case 'email':
+		// A type that cannot fail sanitization never reaches here, so the
+		// default arm covers an unknown or absent type rather than `text`.
+		return match ( (string) ( $field_config['type'] ?? 'text' ) ) {
+			'email' => sprintf(
 				/* translators: %s: The form field's label. */
-				$message = sprintf( __( '%s must be a valid email address.', 'gatherpress' ), $label );
-				break;
-
-			case 'url':
+				__( '%s must be a valid email address.', 'gatherpress' ),
+				$label
+			),
+			'url' => sprintf(
 				/* translators: %s: The form field's label. */
-				$message = sprintf( __( '%s must be a valid URL.', 'gatherpress' ), $label );
-				break;
-
-			case 'number':
+				__( '%s must be a valid URL.', 'gatherpress' ),
+				$label
+			),
+			'number' => sprintf(
 				/* translators: %s: The form field's label. */
-				$message = sprintf( __( '%s must be a number.', 'gatherpress' ), $label );
-				break;
-
-			case 'select':
-			case 'radio':
+				__( '%s must be a number.', 'gatherpress' ),
+				$label
+			),
+			'select', 'radio' => sprintf(
 				/* translators: %s: The form field's label. */
-				$message = sprintf( __( '%s must be one of the available choices.', 'gatherpress' ), $label );
-				break;
-
-			case 'textarea':
-				$message = sprintf(
-					/* translators: 1: The form field's label, 2: The maximum number of characters allowed. */
-					__( '%1$s must be %2$s characters or fewer.', 'gatherpress' ),
-					$label,
-					number_format_i18n( (int) ( $field_config['max_length'] ?? 1000 ) )
-				);
-				break;
-
-			default:
+				__( '%s must be one of the available choices.', 'gatherpress' ),
+				$label
+			),
+			'textarea' => sprintf(
+				/* translators: 1: The form field's label, 2: The maximum number of characters allowed. */
+				__( '%1$s must be %2$s characters or fewer.', 'gatherpress' ),
+				$label,
+				number_format_i18n( (int) ( $field_config['max_length'] ?? 1000 ) )
+			),
+			default => sprintf(
 				/* translators: %s: The form field's label. */
-				$message = sprintf( __( '%s is not valid.', 'gatherpress' ), $label );
-				break;
-		}
-
-		return $message;
+				__( '%s is not valid.', 'gatherpress' ),
+				$label
+			),
+		};
 	}
 
 	/**
