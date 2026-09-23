@@ -154,7 +154,7 @@ class Test_Autoloader extends Base {
 	}
 
 	/**
-	 * Test that leading backslashes are trimmed properly.
+	 * Test that leading backslashes are trimmed properly and class is successfully loaded.
 	 *
 	 * @since TBD
 	 *
@@ -163,16 +163,35 @@ class Test_Autoloader extends Base {
 	 * @return void
 	 */
 	public function test_trims_leading_backslash(): void {
+		$fixture_root = dirname( __DIR__, 4 ) . '/fixtures/autoloader/layout-a';
+
+		$filter_callback = static function ( array $namespaces ) use ( $fixture_root ): array {
+			$namespaces['GatherPress_Autoloader_Fixture'] = $fixture_root;
+			return $namespaces;
+		};
+
+		add_filter( 'gatherpress_autoloader', $filter_callback );
+
 		$autoloader = $this->get_autoloader();
 
 		$this->assertNotNull( $autoloader );
 
+		$autoloader( '\GatherPress_Autoloader_Fixture\Core\Fixture_Leading_Backslash' );
+
+		$this->assertTrue(
+			class_exists( 'GatherPress_Autoloader_Fixture\Core\Fixture_Leading_Backslash', false ),
+			'Class with leading backslash should be trimmed, resolved, and loaded successfully.'
+		);
+
+		// Verify non-existent class with leading backslash safely fails without errors.
 		$autoloader( '\GatherPress\NonExistent\Dummy_Class' );
 
 		$this->assertFalse(
 			class_exists( '\GatherPress\NonExistent\Dummy_Class', false ),
-			'Class with leading backslash should be trimmed and safely processed.'
+			'Non-existent class with leading backslash should safely fail to load.'
 		);
+
+		remove_filter( 'gatherpress_autoloader', $filter_callback );
 	}
 
 	/**
@@ -296,16 +315,17 @@ class Test_Autoloader extends Base {
 	 * @return void
 	 */
 	public function test_validate_file_blocks_invalid_paths(): void {
-		$invalid_path = '/nonexistent/../traversal/path';
+		$fixture_root = dirname( __DIR__, 4 ) . '/fixtures/autoloader/layout-a';
+		$invalid_path = $fixture_root . '/../layout-a';
 
 		$filter_callback = static function ( array $namespaces ) use ( $invalid_path ): array {
-			$namespaces['GatherPress_Invalid_Fixture'] = $invalid_path;
+			$namespaces['GatherPress_Traversal_Fixture'] = $invalid_path;
 			return $namespaces;
 		};
 
 		add_filter( 'gatherpress_autoloader', $filter_callback );
 
-		$class_name = 'GatherPress_Invalid_Fixture\Core\Test_Invalid';
+		$class_name = 'GatherPress_Traversal_Fixture\Core\Fixture_Traversal';
 
 		$this->assertFalse(
 			class_exists( $class_name ),
