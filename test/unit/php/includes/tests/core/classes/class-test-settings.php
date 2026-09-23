@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Settings\Credits;
 use GatherPress\Core\Settings\Events;
+use GatherPress\Core\Settings\Format_Field;
 use GatherPress\Core\Settings\Network;
 use GatherPress\Core\Settings\Roles;
 use GatherPress\Core\Settings\Rsvp;
@@ -3873,8 +3874,6 @@ class Test_Settings extends Base {
 	 * A format field saves the radio's format and drops the Custom companion.
 	 *
 	 * @covers ::sanitize_page_settings
-	 * @covers ::resolve_custom_formats
-	 * @covers ::custom_format_key
 	 *
 	 * @return void
 	 */
@@ -3907,7 +3906,6 @@ class Test_Settings extends Base {
 	 * The Custom radio saves what the Custom field holds, not the sentinel.
 	 *
 	 * @covers ::sanitize_page_settings
-	 * @covers ::resolve_custom_formats
 	 *
 	 * @return void
 	 */
@@ -3919,7 +3917,7 @@ class Test_Settings extends Base {
 		$callback = $instance->sanitize_page_settings( array( 'date_format' => 'format' ) );
 		$result   = $callback(
 			array(
-				'date_format'        => Settings::FORMAT_CUSTOM,
+				'date_format'        => Format_Field::CUSTOM,
 				'date_format_custom' => 'D, j M Y',
 			)
 		);
@@ -3939,7 +3937,7 @@ class Test_Settings extends Base {
 	/**
 	 * A Custom radio with nothing beside it saves nothing rather than the sentinel.
 	 *
-	 * @covers ::resolve_custom_formats
+	 * @covers ::sanitize_page_settings
 	 *
 	 * @return void
 	 */
@@ -3949,7 +3947,7 @@ class Test_Settings extends Base {
 		delete_option( 'gatherpress_settings' );
 
 		$callback = $instance->sanitize_page_settings( array( 'date_format' => 'format' ) );
-		$result   = $callback( array( 'date_format' => Settings::FORMAT_CUSTOM ) );
+		$result   = $callback( array( 'date_format' => Format_Field::CUSTOM ) );
 
 		$this->assertSame(
 			'',
@@ -3961,7 +3959,7 @@ class Test_Settings extends Base {
 	/**
 	 * A malformed Custom submission is not coerced through a string cast.
 	 *
-	 * @covers ::resolve_custom_formats
+	 * @covers ::sanitize_page_settings
 	 *
 	 * @return void
 	 */
@@ -3973,7 +3971,7 @@ class Test_Settings extends Base {
 		$callback = $instance->sanitize_page_settings( array( 'date_format' => 'format' ) );
 		$result   = $callback(
 			array(
-				'date_format'        => Settings::FORMAT_CUSTOM,
+				'date_format'        => Format_Field::CUSTOM,
 				'date_format_custom' => array( 'Y-m-d' ),
 			)
 		);
@@ -3989,7 +3987,6 @@ class Test_Settings extends Base {
 	 * Coverage for render_field with format type.
 	 *
 	 * @covers ::render_field
-	 * @covers ::get_format_choices
 	 *
 	 * @return void
 	 */
@@ -4020,7 +4017,7 @@ class Test_Settings extends Base {
 		$this->assertStringContainsString(
 			'<legend>Unit test</legend>',
 			$html,
-			'Failed to assert the field is a labelled fieldset.'
+			'Failed to assert the field is a labeled fieldset.'
 		);
 		$this->assertStringContainsString(
 			'value="Y-m-d"',
@@ -4038,7 +4035,7 @@ class Test_Settings extends Base {
 			'Failed to assert the Custom field is offered alongside the list.'
 		);
 		$this->assertStringContainsString(
-			sprintf( 'value="%s"', esc_attr( Settings::FORMAT_CUSTOM ) ),
+			sprintf( 'value="%s"', esc_attr( Format_Field::CUSTOM ) ),
 			$html,
 			'Failed to assert the Custom radio carries the sentinel.'
 		);
@@ -4047,7 +4044,7 @@ class Test_Settings extends Base {
 	/**
 	 * A time-format field offers the time list rather than the date one.
 	 *
-	 * @covers ::get_format_choices
+	 * @covers ::render_field
 	 *
 	 * @return void
 	 */
@@ -4121,7 +4118,7 @@ class Test_Settings extends Base {
 			'Failed to assert the unlisted format landed in the Custom field.'
 		);
 		$this->assertStringContainsString(
-			sprintf( 'value="%s" checked', esc_attr( Settings::FORMAT_CUSTOM ) ),
+			sprintf( 'value="%s" checked', esc_attr( Format_Field::CUSTOM ) ),
 			$collapsed,
 			'Failed to assert the Custom radio is the one selected.'
 		);

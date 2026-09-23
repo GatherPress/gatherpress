@@ -84,19 +84,6 @@ class Settings {
 	const OPTION_NAME = 'gatherpress_settings';
 
 	/**
-	 * The value a `format` field's Custom radio submits.
-	 *
-	 * A sentinel rather than an empty string because an empty format already
-	 * means "fall back to the default" everywhere else in this class, and
-	 * because no one is going to save this as a date format on purpose. It is
-	 * resolved to the Custom field's own value before anything is stored, so
-	 * it never reaches the database.
-	 *
-	 * @since 0.36.0
-	 */
-	const FORMAT_CUSTOM = '__gatherpress_custom__';
-
-	/**
 	 * Default Leaflet tile layer URL.
 	 *
 	 * CartoDB "Positron" raster tiles are OSM-derived but served from a CDN with
@@ -884,7 +871,7 @@ class Settings {
 	public function sanitize_page_settings( array $field_type_map, string $scope = 'blog' ): callable {
 		return function ( $input ) use ( $field_type_map, $scope ): array {
 			$sanitized = array();
-			$input     = $this->resolve_custom_formats( (array) $input, $field_type_map );
+			$input     = Settings\Format_Field::resolve( (array) $input, $field_type_map );
 
 			foreach ( $input as $key => $value ) {
 				$type = $field_type_map[ $key ] ?? 'text';
@@ -924,69 +911,6 @@ class Settings {
 
 			return $merged;
 		};
-	}
-
-	/**
-	 * The submission key holding a `format` field's Custom value.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @param string $option The option key the Custom field belongs to.
-	 *
-	 * @return string The companion key.
-	 */
-	public static function custom_format_key( string $option ): string {
-		return $option . '_custom';
-	}
-
-	/**
-	 * Fold each Custom format back into the option it belongs to.
-	 *
-	 * A `format` field submits two values: the radio group, and the Custom
-	 * text field alongside it. When the radio says Custom the text field is
-	 * the real answer; otherwise the text field is whatever the reader last
-	 * typed there and is discarded. Either way the companion key is dropped,
-	 * so nothing downstream sees it and nothing stores it.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @param array<string, mixed>  $input          The raw submission.
-	 * @param array<string, string> $field_type_map Flat map of option_key => field_type.
-	 *
-	 * @return array<string, mixed> The submission, with each format resolved.
-	 */
-	protected function resolve_custom_formats( array $input, array $field_type_map ): array {
-		foreach ( $field_type_map as $option => $type ) {
-			if ( 'format' !== $type ) {
-				continue;
-			}
-
-			$custom_key = self::custom_format_key( $option );
-
-			if ( ( $input[ $option ] ?? null ) === self::FORMAT_CUSTOM ) {
-				$custom           = $input[ $custom_key ] ?? '';
-				$input[ $option ] = is_scalar( $custom ) ? (string) $custom : '';
-			}
-
-			unset( $input[ $custom_key ] );
-		}
-
-		return $input;
-	}
-
-	/**
-	 * The formats offered by a `format` field.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @param string $choices Which list to offer: 'date' or 'time'.
-	 *
-	 * @return array<int, array{format: string, example: string}> The choices.
-	 */
-	protected static function get_format_choices( string $choices ): array {
-		return 'time' === $choices
-			? Utility::time_format_choices()
-			: Utility::date_format_choices();
 	}
 
 	/**
@@ -1093,11 +1017,13 @@ class Settings {
 				// Resolved here rather than in the settings declaration so the
 				// examples are not rendered on every request that merely walks
 				// the settings tree for defaults, import or export.
-				$params['choices']     = self::get_format_choices(
+				$params['choices']     = Settings\Format_Field::choices(
 					(string) ( $option_settings['field']['options']['choices'] ?? '' )
 				);
-				$params['custom']      = self::FORMAT_CUSTOM;
-				$params['custom_name'] = $this->get_name_field( self::custom_format_key( $option ) );
+				$params['custom']      = Settings\Format_Field::CUSTOM;
+				$params['custom_name'] = $this->get_name_field(
+					Settings\Format_Field::custom_key( $option )
+				);
 				$params['preview']     = $option_settings['field']['preview'] ?? array();
 				break;
 			default:
