@@ -104,6 +104,10 @@
 
 - [`gatherpress_roles`](gatherpress_roles.md) Filter the list of roles for GatherPress.
 
+## class-rsvp-form.php
+
+- [`gatherpress_rsvp_form_schemas`](gatherpress_rsvp_form_schemas.md) Filters the RSVP form schemas about to be stored for a post.
+
 ## class-settings.php
 
 - [`gatherpress_interactive_map_tile_attribution`](gatherpress_interactive_map_tile_attribution.md) Filters the attribution HTML rendered with the venue map.
