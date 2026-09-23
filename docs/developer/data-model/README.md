@@ -46,6 +46,7 @@ The three RSVP taxonomies are on *comments*, not posts, because an RSVP is a com
 | `gatherpress_max_attendance_limit` | Capacity. `0` means unlimited |
 | `gatherpress_max_guest_limit` | Guests per RSVP. `0` means none |
 | `gatherpress_online_event_link` | The joining link, shown only to attendees |
+| `gatherpress_rsvp_form_schemas` | The RSVP form's custom field definitions, keyed by form id |
 
 `gatherpress_datetime` is the canonical value the editor and REST write. The [events table](#the-events-table) is derived from it and is what queries read.
 
@@ -66,9 +67,12 @@ RSVPs are comments of type `gatherpress_rsvp`. Their extras live in comment meta
 | Key | Notes |
 |---|---|
 | `gatherpress_rsvp_guests` | Guest count. Deleted rather than set to `0` |
+| `gatherpress_custom_<field>` | One row per answered custom field, named from the form schema |
 | `gatherpress_rsvp_anonymous` | `1` when the person is hidden from the public list |
 | `gatherpress_rsvp_external_id` | The identity value for non-user providers, e.g. an email address |
 | `gatherpress_event_updates_opt_in` | Whether this response wants event email |
+
+Custom field answers are covered in [the RSVP docs](../rsvp/README.md#custom-fields-and-the-form-schema), including the schema they are validated against and how a companion plugin supplies one.
 
 The status is **not** in comment meta. It is a term. Reading it with `get_comment_meta()` returns nothing.
 

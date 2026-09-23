@@ -452,6 +452,46 @@ final class Rsvp_Form {
 		$blocks  = array_values( parse_blocks( $post->post_content ) );
 		$schemas = $this->extract_form_schemas_from_blocks( $blocks );
 
+		/**
+		 * Filters the RSVP form schemas about to be stored for a post.
+		 *
+		 * `gatherpress_rsvp_form_schemas` post meta is what every consumer
+		 * reads to validate and persist custom fields, but this method is its
+		 * only producer and it derives the set from the post's RSVP Form
+		 * blocks. A post with no such block resolves to an empty set, which
+		 * deletes the meta, so a schema written by anything other than the
+		 * block editor is destroyed the next time the post is saved.
+		 *
+		 * This filter is how a consumer keeps its own schemas: return them
+		 * alongside, or instead of, the block-derived set. The meta is only
+		 * deleted when the filtered result is still empty, so returning
+		 * anything non-empty keeps it.
+		 *
+		 * @example
+		 *   Keep registration questions stored outside the block editor.
+		 *
+		 *   ```php
+		 *   add_filter(
+		 *       'gatherpress_rsvp_form_schemas',
+		 *       function ( array $schemas, int $post_id ): array {
+		 *           $mine = my_plugin_get_registration_schema( $post_id );
+		 *
+		 *           return $mine ? array_merge( $schemas, $mine ) : $schemas;
+		 *       },
+		 *       10,
+		 *       2
+		 *   );
+		 *   ```
+		 *
+		 * @since TBD
+		 *
+		 * @param array<string, mixed> $schemas Schemas derived from the post's RSVP Form blocks, keyed by form id.
+		 * @param int                  $post_id The post being saved.
+		 *
+		 * @return array<string, mixed> The schemas to store, or an empty array to remove the meta.
+		 */
+		$schemas = (array) apply_filters( 'gatherpress_rsvp_form_schemas', $schemas, $post_id );
+
 		if ( ! empty( $schemas ) ) {
 			// Save schemas as post meta.
 			update_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', $schemas );
@@ -986,11 +1026,24 @@ final class Rsvp_Form {
 	 * @return mixed|false The sanitized value, or false if sanitization fails.
 	 */
 	public function sanitize_custom_field_value( $value, array $config ): mixed {
+		// A REST submission carries a decoded JSON body, so a field can arrive
+		// as an array or an object. The sanitizers below take strings and
+		// raise a TypeError on anything else, so reject it as a bad answer.
+		// Null is left alone: the required check below is what answers for it.
+		if ( null !== $value && ! is_scalar( $value ) ) {
+			return false;
+		}
+
 		// Handle required field validation. An explicit "0" is a real option
 		// value (the schema preserves it), not an empty submit.
 		if ( ! empty( $config['required'] ) && ( null === $value || '' === $value ) ) {
 			return false;
 		}
+
+		// A scalar is still not a string: a JSON body can carry a bool or a
+		// number, and the sanitizers below only take strings. Cast once, after
+		// the requiredness check has had the raw value.
+		$value = (string) $value;
 
 		// Handle type-specific validation; assign to $result so the switch is a
 		// dispatch (one return) rather than a 7-arm return chain.

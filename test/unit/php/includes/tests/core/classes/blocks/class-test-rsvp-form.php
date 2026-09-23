@@ -316,6 +316,161 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
+	 * Tests a filtered schema survives a save with no RSVP Form block.
+	 *
+	 * The block-derived set is the only producer of the meta, so a post with
+	 * no RSVP Form block used to take the delete branch and destroy a schema
+	 * written by anything else.
+	 *
+	 * @since TBD
+	 * @covers ::save_form_schema
+	 *
+	 * @return void
+	 */
+	public function test_save_form_schema_keeps_a_filtered_schema(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type'    => Event::POST_TYPE,
+				'post_content' => '<!-- wp:paragraph --><p>No form here.</p><!-- /wp:paragraph -->',
+			)
+		);
+
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
+
+		$external = array(
+			'external_0' => array(
+				'hash'   => 'external',
+				'fields' => array(
+					'dietary' => array(
+						'name'        => 'dietary',
+						'type'        => 'text',
+						'required'    => true,
+						'label'       => 'Dietary needs',
+						'placeholder' => '',
+					),
+				),
+			),
+		);
+
+		update_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', $external );
+
+		// Without a filter the meta is destroyed, which is the bug.
+		$instance->save_form_schema( $post_id );
+
+		$this->assertSame(
+			'',
+			get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true ),
+			'A post with no RSVP Form block still clears the block-derived meta.'
+		);
+
+		update_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', $external );
+
+		$filter = static function ( array $schemas, int $filtered_post_id ) use ( $external ) {
+			return array_merge( $schemas, $external ) + array( 'saw_post_id' => $filtered_post_id );
+		};
+
+		add_filter( 'gatherpress_rsvp_form_schemas', $filter, 10, 2 );
+		$instance->save_form_schema( $post_id );
+		remove_filter( 'gatherpress_rsvp_form_schemas', $filter, 10 );
+
+		$stored = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true );
+
+		$this->assertArrayHasKey(
+			'external_0',
+			$stored,
+			'A schema supplied by the filter should be stored.'
+		);
+		$this->assertSame(
+			$post_id,
+			$stored['saw_post_id'],
+			'The filter should receive the post being saved.'
+		);
+	}
+
+	/**
+	 * Tests the filter receives the block-derived schemas.
+	 *
+	 * @since TBD
+	 * @covers ::save_form_schema
+	 *
+	 * @return void
+	 */
+	public function test_save_form_schema_filter_receives_block_schemas(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type'    => Event::POST_TYPE,
+				'post_content' => '<!-- wp:gatherpress/rsvp-form -->
+					<div class="wp-block-gatherpress-rsvp-form">
+						<!-- wp:gatherpress/form-field '
+					. '{"fieldName":"custom_field","fieldType":"text","required":true} -->
+						<div class="wp-block-gatherpress-form-field"></div>
+						<!-- /wp:gatherpress/form-field -->
+					</div>
+					<!-- /wp:gatherpress/rsvp-form -->',
+			)
+		);
+
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
+
+		$received = null;
+		$filter   = static function ( array $schemas ) use ( &$received ) {
+			$received = $schemas;
+
+			return $schemas;
+		};
+
+		add_filter( 'gatherpress_rsvp_form_schemas', $filter );
+		$instance->save_form_schema( $post_id );
+		remove_filter( 'gatherpress_rsvp_form_schemas', $filter );
+
+		$this->assertIsArray( $received, 'The filter should run on every save.' );
+		$this->assertArrayHasKey(
+			'form_0',
+			$received,
+			'The filter should receive the schemas derived from the blocks.'
+		);
+	}
+
+	/**
+	 * Tests the filter can clear the schemas.
+	 *
+	 * @since TBD
+	 * @covers ::save_form_schema
+	 *
+	 * @return void
+	 */
+	public function test_save_form_schema_filter_can_clear(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type'    => Event::POST_TYPE,
+				'post_content' => '<!-- wp:gatherpress/rsvp-form -->
+					<div class="wp-block-gatherpress-rsvp-form">
+						<!-- wp:gatherpress/form-field '
+					. '{"fieldName":"custom_field","fieldType":"text","required":true} -->
+						<div class="wp-block-gatherpress-form-field"></div>
+						<!-- /wp:gatherpress/form-field -->
+					</div>
+					<!-- /wp:gatherpress/rsvp-form -->',
+			)
+		);
+
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
+
+		add_filter( 'gatherpress_rsvp_form_schemas', '__return_empty_array' );
+		$instance->save_form_schema( $post_id );
+		remove_filter( 'gatherpress_rsvp_form_schemas', '__return_empty_array' );
+
+		$this->assertSame(
+			'',
+			get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true ),
+			'An empty filtered result should still remove the meta.'
+		);
+	}
+
+	/**
 	 * Tests the save_form_schema method.
 	 *
 	 * Verifies that form schemas are correctly extracted and saved as post meta
@@ -973,6 +1128,76 @@ class Test_Rsvp_Form extends Base {
 			array(),
 			$instance->validate_custom_fields( $post_id, 'form_0', array( 'dietary' => '0' ) ),
 			'An explicit zero is a real answer and should survive.'
+		);
+	}
+
+	/**
+	 * Data provider for values that are not scalars.
+	 *
+	 * @since TBD
+	 *
+	 * @return array<string, array<int, mixed>>
+	 */
+	public function data_non_scalar_values(): array {
+		return array(
+			'a list'         => array( array( 'a', 'b' ) ),
+			'a map'          => array( array( 'answer' => 'a' ) ),
+			'an empty array' => array( array() ),
+			'an object'      => array( new \stdClass() ),
+		);
+	}
+
+	/**
+	 * Tests a non-scalar value is rejected rather than fataling.
+	 *
+	 * A REST submission carries a decoded JSON body, so a field can arrive as
+	 * an array. The sanitizers take strings and raise a TypeError otherwise.
+	 *
+	 * @since TBD
+	 * @covers ::sanitize_custom_field_value
+	 *
+	 * @dataProvider data_non_scalar_values
+	 *
+	 * @param mixed $value The value a client submitted for the field.
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_custom_field_value_with_a_non_scalar( $value ): void {
+		$instance = Rsvp_Form::get_instance();
+
+		foreach ( array( 'text', 'email', 'number', 'textarea', 'select' ) as $type ) {
+			$this->assertFalse(
+				$instance->sanitize_custom_field_value(
+					$value,
+					array(
+						'type'     => $type,
+						'required' => true,
+						'options'  => array( 'a' ),
+					)
+				),
+				'A non-scalar value should be rejected rather than reaching the sanitizers.'
+			);
+		}
+	}
+
+	/**
+	 * Tests a non-scalar value is reported against its field.
+	 *
+	 * @since TBD
+	 * @covers ::validate_custom_fields
+	 *
+	 * @return void
+	 */
+	public function test_validate_custom_fields_rejects_a_non_scalar(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->create_event_with_schema();
+
+		$this->assertSame(
+			array( 'dietary' ),
+			array_keys(
+				$instance->validate_custom_fields( $post_id, 'form_0', array( 'dietary' => array( 'a', 'b' ) ) )
+			),
+			'An array submitted for a text field should be reported, not fataled on.'
 		);
 	}
 

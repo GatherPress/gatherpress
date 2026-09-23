@@ -295,6 +295,97 @@ per-event `gatherpress_enable_open_rsvp` post meta (unset means enabled).
 `Rsvp::allows_open_rsvp()` resolves both; when it returns false the RSVP Form
 block renders nothing and form or REST submissions are rejected with a 403.
 
+## Custom fields and the form schema
+
+An RSVP Form can carry fields beyond name and email: dietary needs, a t-shirt size, an accessibility request. Those are defined with Form Field blocks inside the form, and what a submission is validated against is not the blocks themselves but a **schema stored in post meta**.
+
+### The schema
+
+`gatherpress_rsvp_form_schemas` on the event post, keyed by form id:
+
+```php
+array(
+    'form_0' => array(
+        'fields' => array(
+            'dietary' => array(
+                'name'        => 'dietary',
+                'type'        => 'text',
+                'required'    => true,
+                'label'       => 'Dietary needs',
+                'placeholder' => '',
+            ),
+            'tshirt'  => array(
+                'name'        => 'tshirt',
+                'type'        => 'select',
+                'required'    => false,
+                'label'       => 'T-shirt size',
+                'placeholder' => '',
+                'options'     => array( 'S', 'M', 'L' ),
+            ),
+        ),
+        'hash'   => '…',
+    ),
+)
+```
+
+Every field carries `name`, `type`, `required`, `label` and `placeholder`. Three keys are added by type: `options` for `select` and `radio`, `max_length` for `textarea`, and `validation` for `email`.
+
+The form id is `form_<index>`, the index of the RSVP Form block in the post's top-level block list, and a nested form is prefixed with its parent's index. The `hash` is a hash of the field definitions, so a change to the fields changes it.
+
+**This meta is the read surface.** Both submission paths and the REST handler resolve fields from it, not from the post content, so anything present in it is validated and stored like any other field.
+
+### Supplying a schema from elsewhere
+
+The block editor is the default producer, but it is not the only possible one. Group organizers who never open the editor still need registration questions, so a companion plugin may want to define the fields itself.
+
+The obstacle used to be that saving a post asserted sole ownership of the meta: a post with no RSVP Form block produced an empty set and deleted whatever was stored. The `gatherpress_rsvp_form_schemas` filter runs on the derived set before it is written, so a consumer can keep its own:
+
+```php
+add_filter(
+    'gatherpress_rsvp_form_schemas',
+    function ( array $schemas, int $post_id ): array {
+        $mine = my_plugin_get_registration_schema( $post_id );
+
+        return $mine ? array_merge( $schemas, $mine ) : $schemas;
+    },
+    10,
+    2
+);
+```
+
+The meta is only deleted when the filtered result is still empty, so returning anything non-empty keeps it. Two things to know:
+
+- **The filter runs on every save**, so a consumer has to return its schemas each time rather than writing the meta once and expecting it to persist.
+- **Whether to merge or replace is yours.** Returning `$schemas` plus your own keeps an editor-composed form alongside yours. Returning only your own replaces it.
+
+### How a submission is validated
+
+Validation runs **before the RSVP is created**, on both the REST and traditional paths, so a submission that fails is rejected rather than stored with answers missing:
+
+| Type | Accepted |
+|---|---|
+| `text` | Any string, sanitized |
+| `email` | A valid address |
+| `url` | A valid URL |
+| `number` | Anything numeric |
+| `select`, `radio` | A value present in `options` |
+| `textarea` | Up to `max_length`, defaulting to 1000 |
+| `checkbox` | Anything, stored as `1` or `0` |
+
+A required field must be answered. Whitespace does not count, because it sanitizes to nothing. An explicit `"0"` does count, since it is a real option value.
+
+Failures come back one per field. REST answers 400 with a summary `message` and an `errors` map keyed by field name; the traditional path stops the submission with the same messages. Nothing partial is stored and no confirmation email is sent.
+
+### Reading the answers
+
+Each answer is comment meta on the RSVP, prefixed to avoid collisions:
+
+```php
+get_comment_meta( $comment_id, 'gatherpress_custom_dietary', true );
+```
+
+A field the submitter left blank has no meta row, rather than an empty one.
+
 ## Acting on an RSVP
 
 GatherPress fires no action of its own when somebody RSVPs or changes their
