@@ -433,6 +433,102 @@ final class Utility {
 	}
 
 	/**
+	 * The date formats an organizer picks from, as examples.
+	 *
+	 * The same idea as the radio list on Settings > General: a format is
+	 * chosen by recognizing the date it produces, not by reading its PHP
+	 * format codes. The first entry leads with the weekday because an event
+	 * is a thing that happens on a day of the week, which is also why
+	 * GatherPress defaults to it while WordPress does not.
+	 *
+	 * @since TBD
+	 *
+	 * @return array<int, array{format: string, example: string}> The choices.
+	 */
+	public static function date_format_choices(): array {
+		$formats = array(
+			/* translators: PHP date format for a date led by its weekday. Translate to the order your locale writes. */
+			__( 'l, F j, Y', 'gatherpress' ),
+			/* translators: PHP date format for a plain long date. Translate to the order your locale writes. */
+			__( 'F j, Y', 'gatherpress' ),
+			'Y-m-d',
+			'm/d/Y',
+			'd/m/Y',
+			'd.m.Y',
+		);
+
+		/**
+		 * Filters the date formats offered as examples in GatherPress.
+		 *
+		 * A format that is not on this list still saves and still renders;
+		 * it simply arrives through the Custom field rather than the list.
+		 *
+		 * @since TBD
+		 *
+		 * @param string[] $formats PHP date formats.
+		 */
+		$formats = (array) apply_filters( 'gatherpress_date_formats', $formats );
+
+		return self::build_format_choices( $formats );
+	}
+
+	/**
+	 * The time formats an organizer picks from, as examples.
+	 *
+	 * @since TBD
+	 *
+	 * @return array<int, array{format: string, example: string}> The choices.
+	 */
+	public static function time_format_choices(): array {
+		$formats = array(
+			/* translators: PHP time format for a 12-hour clock. Translate to the clock your locale reads. */
+			__( 'g:i a', 'gatherpress' ),
+			'g:i A',
+			'H:i',
+		);
+
+		/**
+		 * Filters the time formats offered as examples in GatherPress.
+		 *
+		 * @since TBD
+		 *
+		 * @param string[] $formats PHP time formats.
+		 */
+		$formats = (array) apply_filters( 'gatherpress_time_formats', $formats );
+
+		return self::build_format_choices( $formats );
+	}
+
+	/**
+	 * Pair each format with the date it renders right now.
+	 *
+	 * Rendered through `wp_date()` so the example arrives in the site's
+	 * locale and zone, which is the whole point: the reader recognizes
+	 * the result instead of decoding the format.
+	 *
+	 * @since TBD
+	 *
+	 * @param string[] $formats PHP date formats.
+	 *
+	 * @return array<int, array{format: string, example: string}> The choices.
+	 */
+	private static function build_format_choices( array $formats ): array {
+		$choices = array();
+
+		foreach ( array_unique( array_filter( array_map( 'strval', $formats ) ) ) as $format ) {
+			$choices[] = array(
+				'format'  => $format,
+				// `wp_date()` is typed as string|false, but only reports false
+				// for a timestamp it cannot read, and the one it defaults to is
+				// always readable. Cast rather than branch on what cannot happen.
+				'example' => (string) wp_date( $format ),
+			);
+		}
+
+		return $choices;
+	}
+
+	/**
 	 * Retrieve an array of time zone choices.
 	 *
 	 * This method converts the Time Zone markup returned by WordPress into an associative array

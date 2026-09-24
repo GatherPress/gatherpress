@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Settings\Credits;
 use GatherPress\Core\Settings\Events;
+use GatherPress\Core\Settings\Format_Field;
 use GatherPress\Core\Settings\Network;
 use GatherPress\Core\Settings\Roles;
 use GatherPress\Core\Settings\Rsvp;
@@ -2243,7 +2244,7 @@ class Test_Settings extends Base {
 		$this->assertSame( 'select', $map['map_platform'] );
 		$this->assertSame( 'checkbox', $map['post_or_event_date'] );
 		$this->assertSame( 'number', $map['max_attendance_limit'] );
-		$this->assertSame( 'text', $map['date_format'] );
+		$this->assertSame( 'format', $map['date_format'] );
 		$this->assertSame( 'autocomplete', $map['organizer'] );
 	}
 
@@ -3867,5 +3868,389 @@ class Test_Settings extends Base {
 
 		delete_option( Settings::OPTION_NAME );
 		remove_all_filters( 'gatherpress_sub_pages' );
+	}
+
+	/**
+	 * A format field saves the radio's format and drops the Custom companion.
+	 *
+	 * @covers ::sanitize_page_settings
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_page_settings_keeps_a_listed_format(): void {
+		$instance = Settings::get_instance();
+
+		delete_option( 'gatherpress_settings' );
+
+		$callback = $instance->sanitize_page_settings( array( 'date_format' => 'format' ) );
+		$result   = $callback(
+			array(
+				'date_format'        => 'Y-m-d',
+				'date_format_custom' => 'leftover typing',
+			)
+		);
+
+		$this->assertSame(
+			'Y-m-d',
+			$result['date_format'],
+			'Failed to assert the chosen format was saved.'
+		);
+		$this->assertArrayNotHasKey(
+			'date_format_custom',
+			$result,
+			'Failed to assert the Custom companion key was dropped.'
+		);
+	}
+
+	/**
+	 * The Custom radio saves what the Custom field holds, not the sentinel.
+	 *
+	 * @covers ::sanitize_page_settings
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_page_settings_resolves_a_custom_format(): void {
+		$instance = Settings::get_instance();
+
+		delete_option( 'gatherpress_settings' );
+
+		$callback = $instance->sanitize_page_settings( array( 'date_format' => 'format' ) );
+		$result   = $callback(
+			array(
+				'date_format'        => Format_Field::CUSTOM,
+				'date_format_custom' => 'D, j M Y',
+			)
+		);
+
+		$this->assertSame(
+			'D, j M Y',
+			$result['date_format'],
+			'Failed to assert the Custom field supplied the saved format.'
+		);
+		$this->assertArrayNotHasKey(
+			'date_format_custom',
+			$result,
+			'Failed to assert the Custom companion key was dropped.'
+		);
+	}
+
+	/**
+	 * A Custom radio with nothing beside it saves nothing rather than the sentinel.
+	 *
+	 * @covers ::sanitize_page_settings
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_page_settings_custom_format_without_a_value(): void {
+		$instance = Settings::get_instance();
+
+		delete_option( 'gatherpress_settings' );
+
+		$callback = $instance->sanitize_page_settings( array( 'date_format' => 'format' ) );
+		$result   = $callback( array( 'date_format' => Format_Field::CUSTOM ) );
+
+		$this->assertSame(
+			'',
+			$result['date_format'],
+			'Failed to assert an empty Custom field saved an empty format.'
+		);
+	}
+
+	/**
+	 * A malformed Custom submission is not coerced through a string cast.
+	 *
+	 * @covers ::sanitize_page_settings
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_page_settings_custom_format_rejects_an_array(): void {
+		$instance = Settings::get_instance();
+
+		delete_option( 'gatherpress_settings' );
+
+		$callback = $instance->sanitize_page_settings( array( 'date_format' => 'format' ) );
+		$result   = $callback(
+			array(
+				'date_format'        => Format_Field::CUSTOM,
+				'date_format_custom' => array( 'Y-m-d' ),
+			)
+		);
+
+		$this->assertSame(
+			'',
+			$result['date_format'],
+			'Failed to assert a non-scalar Custom value was discarded.'
+		);
+	}
+
+	/**
+	 * Coverage for render_field with format type.
+	 *
+	 * @covers ::render_field
+	 *
+	 * @return void
+	 */
+	public function test_render_field_format(): void {
+		$instance = Settings::get_instance();
+
+		add_filter(
+			'gatherpress_date_formats',
+			static fn(): array => array( 'Y-m-d' )
+		);
+
+		$html = Utility::buffer_and_return(
+			array( $instance, 'render_field' ),
+			array(
+				'date_format',
+				array(
+					'field' => array(
+						'type'    => 'format',
+						'label'   => 'Unit test',
+						'options' => array( 'choices' => 'date' ),
+					),
+				),
+			)
+		);
+
+		remove_all_filters( 'gatherpress_date_formats' );
+
+		$this->assertStringContainsString(
+			'<legend>Unit test</legend>',
+			$html,
+			'Failed to assert the field is a labeled fieldset.'
+		);
+		$this->assertStringContainsString(
+			'value="Y-m-d"',
+			$html,
+			'Failed to assert the offered format is a radio value.'
+		);
+		$this->assertStringContainsString(
+			esc_html( wp_date( 'Y-m-d' ) ),
+			$html,
+			'Failed to assert the format is shown as the date it renders.'
+		);
+		$this->assertStringContainsString(
+			'name="gatherpress_settings[date_format_custom]"',
+			$html,
+			'Failed to assert the Custom field is offered alongside the list.'
+		);
+		$this->assertStringContainsString(
+			sprintf( 'value="%s"', esc_attr( Format_Field::CUSTOM ) ),
+			$html,
+			'Failed to assert the Custom radio carries the sentinel.'
+		);
+	}
+
+	/**
+	 * A time-format field offers the time list rather than the date one.
+	 *
+	 * @covers ::render_field
+	 *
+	 * @return void
+	 */
+	public function test_render_field_format_offers_the_time_list(): void {
+		$instance = Settings::get_instance();
+
+		$html = Utility::buffer_and_return(
+			array( $instance, 'render_field' ),
+			array(
+				'time_format',
+				array(
+					'field' => array(
+						'type'    => 'format',
+						'label'   => 'Unit test',
+						'options' => array( 'choices' => 'time' ),
+					),
+				),
+			)
+		);
+
+		$this->assertStringContainsString(
+			'value="H:i"',
+			$html,
+			'Failed to assert a time format is offered.'
+		);
+		$this->assertStringNotContainsString(
+			'value="Y-m-d"',
+			$html,
+			'Failed to assert the date list was not offered.'
+		);
+	}
+
+	/**
+	 * A saved format the list does not offer arrives in the Custom field.
+	 *
+	 * @covers ::render_field
+	 *
+	 * @return void
+	 */
+	public function test_render_field_format_puts_an_unlisted_format_in_custom(): void {
+		$instance = Settings::get_instance();
+
+		update_option( 'gatherpress_settings', array( 'date_format' => 'jS \o\f F' ) );
+
+		$html = Utility::buffer_and_return(
+			array( $instance, 'render_field' ),
+			array(
+				'date_format',
+				array(
+					'field' => array(
+						'type'    => 'format',
+						'label'   => 'Unit test',
+						'options' => array( 'choices' => 'date' ),
+					),
+				),
+			)
+		);
+
+		delete_option( 'gatherpress_settings' );
+
+		// Collapsed so the assertion reads the attributes rather than the
+		// template's indentation.
+		$collapsed = (string) preg_replace( '/\s+/', ' ', $html );
+
+		$this->assertStringContainsString(
+			sprintf(
+				'name="gatherpress_settings[date_format_custom]" value="%s"',
+				esc_attr( 'jS \o\f F' )
+			),
+			$collapsed,
+			'Failed to assert the unlisted format landed in the Custom field.'
+		);
+		$this->assertStringContainsString(
+			sprintf( 'value="%s" checked', esc_attr( Format_Field::CUSTOM ) ),
+			$collapsed,
+			'Failed to assert the Custom radio is the one selected.'
+		);
+	}
+
+	/**
+	 * An inherited format field still submits the value it displays.
+	 *
+	 * Radios have no `readonly`, and a disabled input is left out of the POST,
+	 * so the hidden fallback is what keeps a network-inherited format from
+	 * emptying itself the next time someone saves the page.
+	 *
+	 * @covers ::render_field
+	 *
+	 * @return void
+	 */
+	public function test_render_field_format_carries_an_inherited_value(): void {
+		$instance = Settings::get_instance();
+
+		update_option( 'gatherpress_settings', array( 'date_format' => 'Y-m-d' ) );
+		add_filter( 'gatherpress_network_is_option_inherited', '__return_true' );
+
+		$html = Utility::buffer_and_return(
+			array( $instance, 'render_field' ),
+			array(
+				'date_format',
+				array(
+					'field' => array(
+						'type'    => 'format',
+						'label'   => 'Unit test',
+						'options' => array( 'choices' => 'date' ),
+					),
+				),
+			)
+		);
+
+		remove_filter( 'gatherpress_network_is_option_inherited', '__return_true' );
+		delete_option( 'gatherpress_settings' );
+
+		$collapsed = (string) preg_replace( '/\s+/', ' ', $html );
+
+		$this->assertStringContainsString(
+			'<input type="hidden" name="gatherpress_settings[date_format]" value="Y-m-d" />',
+			$collapsed,
+			'Failed to assert the inherited value is carried by the hidden input.'
+		);
+		$this->assertStringContainsString(
+			'type="radio" name="gatherpress_settings[date_format]" value="l, F j, Y" disabled',
+			$collapsed,
+			'Failed to assert the radios are disabled while inherited.'
+		);
+	}
+
+	/**
+	 * The format template renders nothing when a parameter is missing.
+	 *
+	 * @covers ::render_field
+	 *
+	 * @return void
+	 */
+	public function test_format_template_without_its_parameters_renders_nothing(): void {
+		$html = Utility::buffer_and_return(
+			array( GatherPress_Utility::class, 'render_template' ),
+			array(
+				sprintf(
+					'%s/includes/templates/admin/settings/fields/format.php',
+					GATHERPRESS_CORE_PATH
+				),
+				array( 'name' => 'gatherpress_settings[date_format]' ),
+				true,
+			)
+		);
+
+		$this->assertSame(
+			'',
+			$html,
+			'Failed to assert an incomplete template call renders nothing.'
+		);
+	}
+
+	/**
+	 * The Custom field keeps the live preview the plain text input had.
+	 *
+	 * The list entries are already rendered dates, so the preview only has
+	 * work left to do beside the one field still taking format codes.
+	 *
+	 * @covers ::render_field
+	 *
+	 * @return void
+	 */
+	public function test_render_field_format_previews_the_custom_field(): void {
+		$instance = Settings::get_instance();
+
+		update_option( 'gatherpress_settings', array( 'date_format' => 'jS \\o\\f F' ) );
+
+		$html = Utility::buffer_and_return(
+			array( $instance, 'render_field' ),
+			array(
+				'date_format',
+				array(
+					'field' => array(
+						'type'    => 'format',
+						'label'   => 'Unit test',
+						'options' => array( 'choices' => 'date' ),
+						'preview' => array( 'template' => 'datetime-preview' ),
+					),
+				),
+			)
+		);
+
+		delete_option( 'gatherpress_settings' );
+
+		$this->assertStringContainsString(
+			'data-gatherpress_component_name="datetime-preview"',
+			$html,
+			'Failed to assert the preview partial was rendered.'
+		);
+		$this->assertStringContainsString(
+			esc_attr(
+				htmlspecialchars(
+					(string) wp_json_encode(
+						array(
+							'name'  => 'gatherpress_settings[date_format_custom]',
+							'value' => 'jS \\o\\f F',
+						)
+					),
+					ENT_QUOTES,
+					'UTF-8'
+				)
+			),
+			$html,
+			'Failed to assert the preview watches the Custom field.'
+		);
 	}
 }

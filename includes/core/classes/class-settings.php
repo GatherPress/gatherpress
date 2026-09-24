@@ -28,6 +28,7 @@ use GatherPress\Core\Traits\Singleton;
  * @phpstan-type SettingsFieldPreview array{template: string, suffix?: string}
  * @phpstan-type SettingsFieldOptions array{
  *     default?: bool|int|string,
+ *     choices?: string,
  *     items?: array<string, string>,
  *     min?: int|string,
  *     max?: int|string,
@@ -252,6 +253,8 @@ class Settings {
 			array(
 				'nonTimeFormatChars'    => Utility::non_time_format_chars(),
 				'timeFormatChars'       => Utility::time_format_chars(),
+				'dateFormatChoices'     => Utility::date_format_choices(),
+				'timeFormatChoices'     => Utility::time_format_choices(),
 				'timezoneChoices'       => Utility::timezone_choices(),
 				'siteTimezone'          => Utility::get_system_timezone(),
 				'pluginUrl'             => GATHERPRESS_CORE_URL,
@@ -868,6 +871,7 @@ class Settings {
 	public function sanitize_page_settings( array $field_type_map, string $scope = 'blog' ): callable {
 		return function ( $input ) use ( $field_type_map, $scope ): array {
 			$sanitized = array();
+			$input     = Settings\Format_Field::resolve( (array) $input, $field_type_map );
 
 			foreach ( $input as $key => $value ) {
 				$type = $field_type_map[ $key ] ?? 'text';
@@ -1008,6 +1012,19 @@ class Settings {
 				break;
 			case 'autocomplete':
 				$params['field_options'] = $option_settings['field']['options'] ?? array();
+				break;
+			case 'format':
+				// Resolved here rather than in the settings declaration so the
+				// examples are not rendered on every request that merely walks
+				// the settings tree for defaults, import or export.
+				$params['choices']     = Settings\Format_Field::choices(
+					(string) ( $option_settings['field']['options']['choices'] ?? '' )
+				);
+				$params['custom']      = Settings\Format_Field::CUSTOM;
+				$params['custom_name'] = $this->get_name_field(
+					Settings\Format_Field::custom_key( $option )
+				);
+				$params['preview']     = $option_settings['field']['preview'] ?? array();
 				break;
 			default:
 				// Field types without extra params (checkbox, etc.) render with the base $params.

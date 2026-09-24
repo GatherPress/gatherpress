@@ -6,7 +6,8 @@ import moment from 'moment';
 /**
  * WordPress dependencies
  */
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
+import { dateI18n } from '@wordpress/date';
 import {
 	BlockControls,
 	InspectorControls,
@@ -39,6 +40,7 @@ import {
 	removeTimePHPFormatChars,
 } from '../../helpers/datetime';
 import DateTimeRange from '../../components/DateTimeRange';
+import FormatControl from '../../components/FormatControl';
 import { getFromSettings } from '../../helpers/editor-settings';
 import {
 	isEventPostType,
@@ -287,6 +289,17 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		? dateFormat
 		: `${ dateFormat } ${ timeFormat }`;
 
+	// Shown as the date it produces rather than as its format codes, so the
+	// inherit option reads like every other entry on the list. dateI18n rather
+	// than format, because the other entries are rendered by wp_date() on the
+	// PHP side and this one would otherwise be the only English label on a
+	// translated site.
+	const inheritLabel = sprintf(
+		/* translators: %s: the site's format, rendered as a date. */
+		__( 'Site default (%s)', 'gatherpress' ),
+		dateI18n( formatPlaceholder ),
+	);
+
 	const displayedDateTime = displayDateTime(
 		showStartTime ? finalDateTimeStart : null,
 		showEndTime ? finalDateTimeEnd : null,
@@ -393,22 +406,20 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						/>
 					) }
 					{ showStartTime && (
-						<TextControl
-							__next40pxDefaultSize
+						<FormatControl
 							label={ __( 'Start date format', 'gatherpress' ) }
 							value={ startDateFormat }
-							placeholder={ formatPlaceholder }
+							inheritLabel={ inheritLabel }
 							onChange={ ( value ) =>
 								setAttributes( { startDateFormat: value } )
 							}
 						/>
 					) }
 					{ showEndTime && (
-						<TextControl
-							__next40pxDefaultSize
+						<FormatControl
 							label={ __( 'End date format', 'gatherpress' ) }
 							value={ endDateFormat }
-							placeholder={ formatPlaceholder }
+							inheritLabel={ inheritLabel }
 							onChange={ ( value ) =>
 								setAttributes( { endDateFormat: value } )
 							}
