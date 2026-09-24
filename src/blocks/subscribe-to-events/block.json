@@ -1,0 +1,70 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "gatherpress/subscribe-to-events",
+	"version": "1.0.0",
+	"title": "Subscribe to Events",
+	"category": "gatherpress",
+	"icon": "calendar",
+	"description": "Link to a calendar feed so visitors can subscribe to your events.",
+	"keywords": ["calendar", "ical", "subscribe", "feed", "events"],
+	"attributes": {
+		"scope": {
+			"type": "string",
+			"default": "sitewide"
+		},
+		"postType": {
+			"type": "string",
+			"default": ""
+		},
+		"venueId": {
+			"type": "number",
+			"default": 0
+		},
+		"topicId": {
+			"type": "number",
+			"default": 0
+		},
+		"linkFormat": {
+			"type": "string",
+			"default": "both"
+		},
+		"subscribeText": {
+			"type": "string",
+			"default": ""
+		},
+		"linkText": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"supports": {
+		"contentRole": true,
+		"html": false,
+		"anchor": true,
+		"className": true,
+		"color": {
+			"gradients": true,
+			"link": true,
+			"__experimentalDefaultControls": {
+				"background": true,
+				"text": true
+			}
+		},
+		"spacing": {
+			"margin": true,
+			"padding": true
+		},
+		"typography": {
+			"fontSize": true,
+			"lineHeight": true,
+			"__experimentalDefaultControls": {
+				"fontSize": true
+			}
+		}
+	},
+	"textdomain": "gatherpress",
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}
