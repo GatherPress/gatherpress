@@ -43,7 +43,7 @@ The three RSVP taxonomies are on *comments*, not posts, because an RSVP is a com
 | `gatherpress_enable_rsvp` | Whether RSVPs are open |
 | `gatherpress_enable_anonymous_rsvp` | Whether a person may hide their name |
 | `gatherpress_enable_open_rsvp` | Whether logged-out visitors may RSVP by email |
-| `gatherpress_capacity` | Capacity. `0` means unlimited. Called `gatherpress_max_attendance_limit` before 0.36.0, which still answers until 0.37.0 |
+| `gatherpress_capacity` | Capacity. `0` means unlimited |
 | `gatherpress_guest_limit` | Guests per RSVP. `0` means none |
 | `gatherpress_online_event_link` | The joining link, shown only to attendees |
 | `gatherpress_rsvp_form_schemas` | The RSVP form's custom field definitions, keyed by form id |

@@ -1130,10 +1130,8 @@ class Settings {
 
 		// isset() is safe on a non-array, which is what get_site_option()
 		// hands back on single site, so no shape check is needed first.
-		foreach ( Renamed_Keys::option_names( $option ) as $name ) {
-			if ( isset( $options[ $name ] ) && '' !== $options[ $name ] ) {
-				return $options[ $name ];
-			}
+		if ( isset( $options[ $option ] ) && '' !== $options[ $option ] ) {
+			return $options[ $option ];
 		}
 
 		return $this->get_flat_default( $option );
@@ -1166,15 +1164,7 @@ class Settings {
 			$config = Settings\Network::get_config();
 
 			if ( ! empty( $config['enabled'] ) ) {
-				// The stored list is written from whatever the option keys were
-				// called when the network admin last saved it, so the former
-				// name has to count too. Without this a network that opted an
-				// option into inheritance before 0.36.0 would quietly stop
-				// inheriting it.
-				$inherited = (bool) array_intersect(
-					Renamed_Keys::option_names( $option ),
-					$config['inherited']
-				);
+				$inherited = in_array( $option, $config['inherited'], true );
 			}
 		}
 
