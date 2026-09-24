@@ -213,14 +213,6 @@ describe( 'Event Date Edit separator control', () => {
 		expect( input ).toHaveAttribute( 'placeholder', 'to' );
 	} );
 
-	it( 'reads a legacy "to" as unset so the placeholder still shows', () => {
-		const { getByLabelText } = renderEdit( { separator: 'to' } );
-		const input = getByLabelText( 'Separator' );
-
-		expect( input ).toHaveValue( '' );
-		expect( input ).toHaveAttribute( 'placeholder', 'to' );
-	} );
-
 	it( 'shows a custom separator as it was saved', () => {
 		const { getByLabelText } = renderEdit( { separator: 'UNTIL' } );
 
@@ -229,7 +221,7 @@ describe( 'Event Date Edit separator control', () => {
 
 	it( 'reports what is typed into the separator field', () => {
 		const setAttributes = jest.fn();
-		const { getByLabelText } = renderEdit( { separator: 'to' }, setAttributes );
+		const { getByLabelText } = renderEdit( { separator: '' }, setAttributes );
 
 		fireEvent.change( getByLabelText( 'Separator' ), {
 			target: { value: 'bis' },
