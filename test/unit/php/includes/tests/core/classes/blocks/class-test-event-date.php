@@ -310,4 +310,45 @@ class Test_Event_Date extends Base {
 			'The datetime should not be linked when isLink is not set.'
 		);
 	}
+
+	/**
+	 * A scheduled event's date carries no status class.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	public function test_render_leaves_a_scheduled_date_unmarked(): void {
+		$event_post = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+
+		$this->go_to( get_permalink( $event_post->ID ) );
+
+		$this->assertStringNotContainsString(
+			'gatherpress-event-date--is-',
+			do_blocks( '<!-- wp:gatherpress/event-date /-->' ),
+			'Failed to assert a scheduled event adds no status class.'
+		);
+	}
+
+	/**
+	 * A date whose event is no longer going ahead says so on the wrapper, so
+	 * a stylesheet can strike it through without the block knowing why.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	public function test_render_marks_a_date_with_its_status(): void {
+		$event_post = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+
+		( new Event( $event_post->ID ) )->set_status( 'canceled' );
+
+		$this->go_to( get_permalink( $event_post->ID ) );
+
+		$this->assertStringContainsString(
+			'gatherpress-event-date--is-canceled',
+			do_blocks( '<!-- wp:gatherpress/event-date /-->' ),
+			'Failed to assert a canceled event marks its date.'
+		);
+	}
 }
