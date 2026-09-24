@@ -95,6 +95,32 @@ final class Renamed_Keys {
 	}
 
 	/**
+	 * Drop the former name of every setting that has just been written.
+	 *
+	 * The fallback in `Settings::get()` only exists for a site that has not
+	 * saved since the rename. Once the current name is written the former one
+	 * has to go, or it keeps answering: a setting saved as its default, or
+	 * emptied, is stripped from storage, which would otherwise hand the read
+	 * straight back to the stale value.
+	 *
+	 * Goes away in 0.37.0 with the rest of this class.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $options The options about to be stored.
+	 * @param string[]             $written The option keys that were written.
+	 *
+	 * @return array<string, mixed> The options, without any superseded former names.
+	 */
+	public static function forget_former_names( array $options, array $written ): array {
+		foreach ( $written as $option ) {
+			unset( $options[ self::OPTIONS[ $option ] ?? '' ] );
+		}
+
+		return $options;
+	}
+
+	/**
 	 * Class constructor.
 	 *
 	 * @since TBD

@@ -225,6 +225,70 @@ class Test_Map extends Base {
 	}
 
 	/**
+	 * A valid aspect ratio from Settings becomes the block attribute default.
+	 *
+	 * @since   TBD
+	 * @covers ::apply_block_attribute_defaults
+	 *
+	 * @return void
+	 */
+	public function test_apply_block_attribute_defaults_uses_a_valid_aspect_ratio(): void {
+		$instance = Map::get_instance();
+
+		\GatherPress\Core\Settings::get_instance()->set( 'venue_map_aspect_ratio', '16/9' );
+
+		$metadata = array(
+			'name'       => 'gatherpress/venue-map',
+			'attributes' => array(
+				'aspectRatio' => array(
+					'type'    => 'string',
+					'default' => '4/3',
+				),
+			),
+		);
+
+		$result = $instance->apply_block_attribute_defaults( $metadata );
+
+		$this->assertSame(
+			'16/9',
+			$result['attributes']['aspectRatio']['default'],
+			'Failed to assert a valid aspect ratio reaches the block default.'
+		);
+	}
+
+	/**
+	 * An unparseable aspect ratio falls through to the block.json default.
+	 *
+	 * @since   TBD
+	 * @covers ::apply_block_attribute_defaults
+	 *
+	 * @return void
+	 */
+	public function test_apply_block_attribute_defaults_rejects_an_invalid_aspect_ratio(): void {
+		$instance = Map::get_instance();
+
+		\GatherPress\Core\Settings::get_instance()->set( 'venue_map_aspect_ratio', 'not-a-ratio' );
+
+		$metadata = array(
+			'name'       => 'gatherpress/venue-map',
+			'attributes' => array(
+				'aspectRatio' => array(
+					'type'    => 'string',
+					'default' => '4/3',
+				),
+			),
+		);
+
+		$result = $instance->apply_block_attribute_defaults( $metadata );
+
+		$this->assertSame(
+			'4/3',
+			$result['attributes']['aspectRatio']['default'],
+			'Failed to assert an unparseable ratio leaves the block default alone.'
+		);
+	}
+
+	/**
 	 * A scale value outside the allow-list falls through — the block.json
 	 * default stays in place. Guards against a stale or hand-edited Settings
 	 * row smuggling an unexpected CSS keyword into `object-fit`.

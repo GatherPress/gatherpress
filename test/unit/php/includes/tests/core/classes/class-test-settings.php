@@ -1456,6 +1456,99 @@ class Test_Settings extends Base {
 	}
 
 	/**
+	 * Test that saving a renamed setting retires the name it used to have.
+	 *
+	 * Without this the fallback in get() resurrects the former value the
+	 * moment the admin saves the current one as its default, because the
+	 * strip-defaults pass removes the current key and leaves the former one
+	 * standing.
+	 *
+	 * @since  TBD
+	 * @covers ::sanitize_page_settings
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_page_settings_retires_a_renamed_options_former_name(): void {
+		$instance = Settings::get_instance();
+
+		update_option( 'gatherpress_settings', array( 'max_attendance_limit' => 100 ) );
+
+		$callback = $instance->sanitize_page_settings( array( 'capacity' => 'number' ) );
+		$merged   = $callback( array( 'capacity' => 50 ) );
+
+		update_option( 'gatherpress_settings', $merged );
+
+		$this->assertArrayNotHasKey(
+			'max_attendance_limit',
+			$merged,
+			'Failed to assert the former name is dropped once the current one is saved.'
+		);
+		$this->assertSame(
+			50,
+			$instance->get( 'capacity' ),
+			'Failed to assert a renamed setting can be returned to its default.'
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Test that emptying a renamed setting retires the name it used to have.
+	 *
+	 * @since  TBD
+	 * @covers ::sanitize_page_settings
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_page_settings_retires_a_former_name_on_an_empty_value(): void {
+		$instance = Settings::get_instance();
+
+		update_option( 'gatherpress_settings', array( 'venue_map_default_height' => 300 ) );
+
+		$callback = $instance->sanitize_page_settings( array( 'venue_map_height' => 'number' ) );
+		$merged   = $callback( array( 'venue_map_height' => '' ) );
+
+		update_option( 'gatherpress_settings', $merged );
+
+		$this->assertArrayNotHasKey(
+			'venue_map_default_height',
+			$merged,
+			'Failed to assert an emptied setting drops its former name.'
+		);
+		$this->assertNotSame(
+			300,
+			$instance->get( 'venue_map_height' ),
+			'Failed to assert an emptied setting stops answering with the former value.'
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Test that set() retires a renamed setting's former name.
+	 *
+	 * @since  TBD
+	 * @covers ::set
+	 *
+	 * @return void
+	 */
+	public function test_set_retires_a_renamed_options_former_name(): void {
+		$instance = Settings::get_instance();
+
+		update_option( 'gatherpress_settings', array( 'max_attendance_limit' => 100 ) );
+
+		$instance->set( 'capacity', 50 );
+
+		$this->assertSame(
+			50,
+			$instance->get( 'capacity' ),
+			'Failed to assert set() to the default clears the former name.'
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
 	 * Test sanitize_page_settings callback with various field types.
 	 *
 	 * @since  0.33.0

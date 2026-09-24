@@ -77,6 +77,55 @@ class Test_Renamed_Keys extends Base {
 	/**
 	 * Coverage for answer_with_former_name.
 	 *
+	 * The guest limit is the second key in the map, and asserting it here is
+	 * what makes removing its compatibility registration fail the suite
+	 * rather than pass quietly.
+	 *
+	 * @since  TBD
+	 * @covers ::answer_with_former_name
+	 *
+	 * @return void
+	 */
+	public function test_guest_limit_reads_the_pre_036_meta_key(): void {
+		$post_id = $this->factory()->post->create(
+			array( 'post_type' => Event::POST_TYPE )
+		);
+
+		update_post_meta( $post_id, 'gatherpress_max_guest_limit', 6 );
+
+		$this->assertSame(
+			'6',
+			get_post_meta( $post_id, 'gatherpress_guest_limit', true ),
+			'Failed to assert an event saved under the old guest limit name keeps it.'
+		);
+	}
+
+	/**
+	 * Coverage for answer_with_former_name.
+	 *
+	 * @since  TBD
+	 * @covers ::answer_with_former_name
+	 *
+	 * @return void
+	 */
+	public function test_guest_limit_prefers_its_own_row_over_the_old_one(): void {
+		$post_id = $this->factory()->post->create(
+			array( 'post_type' => Event::POST_TYPE )
+		);
+
+		update_post_meta( $post_id, 'gatherpress_max_guest_limit', 6 );
+		update_post_meta( $post_id, 'gatherpress_guest_limit', 2 );
+
+		$this->assertSame(
+			'2',
+			get_post_meta( $post_id, 'gatherpress_guest_limit', true ),
+			'Failed to assert the current guest limit key wins over the one it replaced.'
+		);
+	}
+
+	/**
+	 * Coverage for answer_with_former_name.
+	 *
 	 * @since  TBD
 	 * @covers ::answer_with_former_name
 	 *

@@ -899,6 +899,7 @@ class Settings {
 			// Merge with existing values to preserve settings from other tabs.
 			$existing = $this->read_stored_options( $scope );
 			$merged   = array_merge( $existing, $sanitized );
+			$merged   = Renamed_Keys::forget_former_names( $merged, array_keys( $sanitized ) );
 
 			// Remove values that match their defaults to keep the option lean.
 			foreach ( $merged as $key => $value ) {
@@ -1098,6 +1099,8 @@ class Settings {
 		} else {
 			$options[ $option ] = $value;
 		}
+
+		$options = Renamed_Keys::forget_former_names( $options, array( $option ) );
 
 		update_option( self::OPTION_NAME, $options );
 	}
