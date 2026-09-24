@@ -40,7 +40,19 @@ jest.mock( '@wordpress/components', () => ( {
 	PanelBody: ( { children } ) => <div>{ children }</div>,
 	RadioControl: () => null,
 	Spinner: () => <div>spinner</div>,
-	TextControl: () => null,
+	// Rendered rather than stubbed so the separator control's value and
+	// placeholder can be asserted. aria-label rather than a wrapping <label>,
+	// which getByLabelText reads just the same without tripping
+	// jsx-a11y/label-has-associated-control on a mock.
+	TextControl: ( { label, value, placeholder, onChange } ) => (
+		<input
+			type="text"
+			aria-label={ label }
+			value={ value }
+			placeholder={ placeholder }
+			onChange={ ( event ) => onChange( event.target.value ) }
+		/>
+	),
 	ToggleControl: ( { label, help, checked, onChange } ) => (
 		<>
 			<button
@@ -189,5 +201,40 @@ describe( 'Event Date Edit documentation link', () => {
 		expect(
 			getByRole( 'link', { name: /opens in a new tab/ } ),
 		).toBe( link );
+	} );
+} );
+
+describe( 'Event Date Edit separator control', () => {
+	it( 'offers the localized default as a placeholder when unset', () => {
+		const { getByLabelText } = renderEdit( { separator: '' } );
+		const input = getByLabelText( 'Separator' );
+
+		expect( input ).toHaveValue( '' );
+		expect( input ).toHaveAttribute( 'placeholder', 'to' );
+	} );
+
+	it( 'reads a legacy "to" as unset so the placeholder still shows', () => {
+		const { getByLabelText } = renderEdit( { separator: 'to' } );
+		const input = getByLabelText( 'Separator' );
+
+		expect( input ).toHaveValue( '' );
+		expect( input ).toHaveAttribute( 'placeholder', 'to' );
+	} );
+
+	it( 'shows a custom separator as it was saved', () => {
+		const { getByLabelText } = renderEdit( { separator: 'UNTIL' } );
+
+		expect( getByLabelText( 'Separator' ) ).toHaveValue( 'UNTIL' );
+	} );
+
+	it( 'reports what is typed into the separator field', () => {
+		const setAttributes = jest.fn();
+		const { getByLabelText } = renderEdit( { separator: 'to' }, setAttributes );
+
+		fireEvent.change( getByLabelText( 'Separator' ), {
+			target: { value: 'bis' },
+		} );
+
+		expect( setAttributes ).toHaveBeenCalledWith( { separator: 'bis' } );
 	} );
 } );

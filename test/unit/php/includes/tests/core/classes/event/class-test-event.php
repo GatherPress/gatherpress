@@ -2468,15 +2468,31 @@ class Test_Event extends Base {
 			)
 		);
 
+		// No translations are loaded in the test suite, so asserting the English
+		// 'to' would pass whether or not the code ever reaches __(). This filter
+		// is what makes the next two assertions able to fail.
+		$translate_to = static function ( string $translation, string $text, string $domain ): string {
+			if ( 'gatherpress' !== $domain || 'to' !== $text ) {
+				return $translation;
+			}
+
+			return 'bis';
+		};
+
+		add_filter( 'gettext_gatherpress', $translate_to, 10, 3 );
+
 		// Default empty separator yields the translated string.
 		$display_empty = $event->get_display_datetime( 'both', 'H:i', 'H:i', '', 'no' );
-		$this->assertSame( '18:00 to 19:30', $display_empty );
+		$this->assertSame( '18:00 bis 19:30', $display_empty );
 
 		// Legacy default "to" yields the translated string.
 		$display_to = $event->get_display_datetime( 'both', 'H:i', 'H:i', 'to', 'no' );
-		$this->assertSame( '18:00 to 19:30', $display_to );
+		$this->assertSame( '18:00 bis 19:30', $display_to );
 
-		// Custom separator string is preserved.
+		remove_filter( 'gettext_gatherpress', $translate_to, 10 );
+
+		// Custom separator string is preserved. 'bis' again, deliberately: with
+		// the filter gone it can only have come from the argument.
 		$display_custom = $event->get_display_datetime( 'both', 'H:i', 'H:i', 'bis', 'no' );
 		$this->assertSame( '18:00 bis 19:30', $display_custom );
 

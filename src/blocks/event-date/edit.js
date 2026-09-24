@@ -385,7 +385,13 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						<TextControl
 							__next40pxDefaultSize
 							label={ __( 'Separator', 'gatherpress' ) }
-							value={ separator }
+							// A block saved before the default became empty
+							// carries the literal "to". Showing it would put
+							// English in the field on a translated site and
+							// hide the localized placeholder, so the legacy
+							// sentinel reads as empty here the way it does
+							// when rendering.
+							value={ 'to' === separator ? '' : separator }
 							placeholder={ __( 'to', 'gatherpress' ) }
 							onChange={ ( value ) =>
 								setAttributes( { separator: value } )
