@@ -75,7 +75,6 @@ final class Setup {
 		Import::get_instance();
 		Notices_Setup::get_instance();
 		Plugin_Row::get_instance();
-		Renamed_Keys::get_instance();
 		Rsvp\Setup::get_instance();
 		Settings::get_instance();
 		Site_Health::get_instance();
