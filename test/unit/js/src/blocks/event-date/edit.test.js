@@ -25,7 +25,7 @@ jest.mock( '@wordpress/i18n', () => ( {
 } ) );
 
 jest.mock( '@wordpress/date', () => ( {
-	format: jest.fn( ( dateFormat ) => `rendered(${ dateFormat })` ),
+	dateI18n: jest.fn( ( dateFormat ) => `rendered(${ dateFormat })` ),
 } ) );
 
 jest.mock( '@wordpress/block-editor', () => ( {

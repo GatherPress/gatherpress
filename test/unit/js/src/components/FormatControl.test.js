@@ -186,6 +186,68 @@ describe( 'FormatControl', () => {
 		);
 	} );
 
+	it( 'opens on custom when an unlisted format arrives later', () => {
+		const { rerender } = render(
+			<FormatControl
+				label="Start date format"
+				value=""
+				inheritLabel="Site default"
+				onChange={ jest.fn() }
+			/>,
+		);
+
+		expect( screen.queryByLabelText( 'Custom format' ) ).toBeNull();
+
+		// An undo, a pattern sync or another setAttributes can hand the
+		// control a format it never saw at mount.
+		rerender(
+			<FormatControl
+				label="Start date format"
+				value={ UNLISTED_FORMAT }
+				inheritLabel="Site default"
+				onChange={ jest.fn() }
+			/>,
+		);
+
+		expect( screen.getByLabelText( 'Start date format' ) ).toHaveValue(
+			FORMAT_CUSTOM,
+		);
+		expect( screen.getByLabelText( 'Custom format' ) ).toHaveValue(
+			UNLISTED_FORMAT,
+		);
+	} );
+
+	it( 'keeps the custom field open when it is emptied', () => {
+		const onChange = jest.fn();
+
+		const { rerender } = render(
+			<FormatControl
+				label="Start date format"
+				value=""
+				inheritLabel="Site default"
+				onChange={ onChange }
+			/>,
+		);
+
+		fireEvent.change( screen.getByLabelText( 'Start date format' ), {
+			target: { value: FORMAT_CUSTOM },
+		} );
+		fireEvent.change( screen.getByLabelText( 'Custom format' ), {
+			target: { value: '' },
+		} );
+
+		rerender(
+			<FormatControl
+				label="Start date format"
+				value=""
+				inheritLabel="Site default"
+				onChange={ onChange }
+			/>,
+		);
+
+		expect( screen.getByLabelText( 'Custom format' ) ).toBeInTheDocument();
+	} );
+
 	it( 'opens on the list when the saved format is on it', () => {
 		render(
 			<FormatControl

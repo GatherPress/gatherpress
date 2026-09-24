@@ -7,7 +7,7 @@ import moment from 'moment';
  * WordPress dependencies
  */
 import { __, sprintf } from '@wordpress/i18n';
-import { format } from '@wordpress/date';
+import { dateI18n } from '@wordpress/date';
 import {
 	BlockControls,
 	InspectorControls,
@@ -290,11 +290,14 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		: `${ dateFormat } ${ timeFormat }`;
 
 	// Shown as the date it produces rather than as its format codes, so the
-	// inherit option reads like every other entry on the list.
+	// inherit option reads like every other entry on the list. dateI18n rather
+	// than format, because the other entries are rendered by wp_date() on the
+	// PHP side and this one would otherwise be the only English label on a
+	// translated site.
 	const inheritLabel = sprintf(
 		/* translators: %s: the site's format, rendered as a date. */
 		__( 'Site default (%s)', 'gatherpress' ),
-		format( formatPlaceholder ),
+		dateI18n( formatPlaceholder ),
 	);
 
 	const displayedDateTime = displayDateTime(

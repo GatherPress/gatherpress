@@ -20,6 +20,8 @@
  * @param string $description  (Optional) Additional information or instructions for the field.
  */
 
+use GatherPress\Core\Utility;
+
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
@@ -97,7 +99,7 @@ $gatherpress_fallback = ! empty( $disabled ) ? $gatherpress_value : '';
 	// field is left needing a preview — and it is the one place someone is
 	// still typing format codes.
 	if ( ! empty( $preview['template'] ) ) {
-		\GatherPress\Core\Utility::render_template(
+		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/settings/partials/%s.php', GATHERPRESS_CORE_PATH, $preview['template'] ),
 			array_merge(
 				array(

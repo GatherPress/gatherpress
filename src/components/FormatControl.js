@@ -64,11 +64,12 @@ const FormatControl = ( { label, value, inheritLabel, onChange } ) => {
 	const choices = getFormatChoices();
 	const isListed = choices.some( ( choice ) => choice.format === value );
 
-	// A format that is not on the list is one someone typed, so the control
-	// opens on Custom holding it. Tracked in state as well as derived from the
-	// value, so that choosing Custom with nothing typed yet does not snap the
-	// select straight back to "inherit" on the empty string.
-	const [ isCustom, setIsCustom ] = useState( !! value && ! isListed );
+	// State carries only the explicit "Custom" choice, which is what keeps the
+	// select from snapping back to inherit before anything has been typed.
+	// Everything else is derived, so a value arriving later, from an undo or
+	// another setAttributes, still opens the field holding it.
+	const [ customChosen, setCustomChosen ] = useState( false );
+	const isCustom = customChosen || ( !! value && ! isListed );
 
 	const options = [
 		{ label: inheritLabel, value: '' },
@@ -81,11 +82,11 @@ const FormatControl = ( { label, value, inheritLabel, onChange } ) => {
 
 	const onSelect = ( selected ) => {
 		if ( FORMAT_CUSTOM === selected ) {
-			setIsCustom( true );
+			setCustomChosen( true );
 			return;
 		}
 
-		setIsCustom( false );
+		setCustomChosen( false );
 		onChange( selected );
 	};
 
@@ -93,7 +94,6 @@ const FormatControl = ( { label, value, inheritLabel, onChange } ) => {
 		<>
 			<SelectControl
 				__next40pxDefaultSize
-				__nextHasNoMarginBottom
 				label={ label }
 				value={ isCustom ? FORMAT_CUSTOM : value }
 				options={ options }
@@ -102,7 +102,6 @@ const FormatControl = ( { label, value, inheritLabel, onChange } ) => {
 			{ isCustom && (
 				<TextControl
 					__next40pxDefaultSize
-					__nextHasNoMarginBottom
 					label={ __( 'Custom format', 'gatherpress' ) }
 					value={ value }
 					onChange={ onChange }
