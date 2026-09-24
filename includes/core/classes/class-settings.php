@@ -83,35 +83,6 @@ class Settings {
 	const PARENT_SLUG = 'edit.php?post_type=gatherpress_event';
 	const OPTION_NAME = 'gatherpress_settings';
 
-	/**
-	 * Options that were renamed, mapped new name to old name.
-	 *
-	 * A site that has not re-saved its settings since a rename still carries
-	 * the old key in the options array, so the old key answers for the new one
-	 * until something writes the new one. GatherPress Alpha rewrites the key
-	 * outright; this is the fallback for everyone who is not running it.
-	 *
-	 * Entries are temporary. Each one is removed a release after the rename,
-	 * once sites have had a version to settle on the new name.
-	 *
-	 * @since TBD
-	 * @var array<string, string>
-	 */
-	const RENAMED_OPTIONS = array(
-		'capacity'                    => 'max_attendance_limit',
-		'guest_limit'                 => 'max_guest_limit',
-		'enable_rsvp_cleanup'         => 'rsvp_cleanup_switch',
-		'rsvp_cleanup_multiplier'     => 'rsvp_cleanup_interval',
-		'use_event_date_for_publish'  => 'post_or_event_date',
-		'custom_map_tile_url'         => 'map_tile_url_custom',
-		'custom_map_tile_attribution' => 'map_tile_attribution_custom',
-		'venue_map_type'              => 'venue_map_default_type',
-		'venue_map_render_mode'       => 'venue_map_default_render_mode',
-		'venue_map_zoom'              => 'venue_map_default_zoom',
-		'venue_map_height'            => 'venue_map_default_height',
-		'venue_map_aspect_ratio'      => 'venue_map_default_aspect_ratio',
-		'venue_map_scale'             => 'venue_map_default_scale',
-	);
 
 	/**
 	 * Default Leaflet tile layer URL.
@@ -1157,26 +1128,17 @@ class Settings {
 			? get_site_option( self::OPTION_NAME, array() )
 			: get_option( self::OPTION_NAME, array() );
 
-		if (
-			is_array( $options )
-			&& isset( $options[ $option ] )
-			&& '' !== $options[ $option ]
-		) {
-			return $options[ $option ];
-		}
-
-		$legacy = self::RENAMED_OPTIONS[ $option ] ?? '';
-
-		if (
-			is_array( $options )
-			&& isset( $options[ $legacy ] )
-			&& '' !== $options[ $legacy ]
-		) {
-			return $options[ $legacy ];
+		// isset() is safe on a non-array, which is what get_site_option()
+		// hands back on single site, so no shape check is needed first.
+		foreach ( Renamed_Keys::option_names( $option ) as $name ) {
+			if ( isset( $options[ $name ] ) && '' !== $options[ $name ] ) {
+				return $options[ $name ];
+			}
 		}
 
 		return $this->get_flat_default( $option );
 	}
+
 
 	/**
 	 * Whether a given option is inherited from the network.
@@ -1205,14 +1167,14 @@ class Settings {
 
 			if ( ! empty( $config['enabled'] ) ) {
 				// The stored list is written from whatever the option keys were
-				// called when the network admin last saved it, so a renamed
-				// option has to answer to its former name too. Without this a
-				// network that opted an option into inheritance before 0.36.0
-				// would quietly stop inheriting it.
-				$former = self::RENAMED_OPTIONS[ $option ] ?? '';
-
-				$inherited = in_array( $option, $config['inherited'], true )
-					|| ( '' !== $former && in_array( $former, $config['inherited'], true ) );
+				// called when the network admin last saved it, so the former
+				// name has to count too. Without this a network that opted an
+				// option into inheritance before 0.36.0 would quietly stop
+				// inheriting it.
+				$inherited = (bool) array_intersect(
+					Renamed_Keys::option_names( $option ),
+					$config['inherited']
+				);
 			}
 		}
 

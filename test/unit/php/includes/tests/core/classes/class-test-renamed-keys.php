@@ -1,6 +1,6 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Renamed_Meta.
+ * Class handles unit tests for GatherPress\Core\Renamed_Keys.
  *
  * @package GatherPress\Core
  * @since TBD
@@ -9,15 +9,70 @@
 namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Event;
-use GatherPress\Core\Renamed_Meta;
+use GatherPress\Core\Renamed_Keys;
 use GatherPress\Tests\Base;
 
 /**
- * Class Test_Renamed_Meta.
+ * Class Test_Renamed_Keys.
  *
- * @coversDefaultClass \GatherPress\Core\Renamed_Meta
+ * @coversDefaultClass \GatherPress\Core\Renamed_Keys
  */
-class Test_Renamed_Meta extends Base {
+class Test_Renamed_Keys extends Base {
+
+	/**
+	 * Coverage for setup_hooks.
+	 *
+	 * @since  TBD
+	 * @covers ::__construct
+	 * @covers ::setup_hooks
+	 *
+	 * @return void
+	 */
+	public function test_setup_hooks(): void {
+		$instance = Renamed_Keys::get_instance();
+		$hooks    = array(
+			array(
+				'type'     => 'filter',
+				'name'     => 'get_post_metadata',
+				'priority' => 10,
+				'callback' => array( $instance, 'answer_with_former_name' ),
+			),
+		);
+
+		$this->assert_hooks( $hooks, $instance );
+	}
+
+	/**
+	 * Coverage for option_names.
+	 *
+	 * @since  TBD
+	 * @covers ::option_names
+	 *
+	 * @return void
+	 */
+	public function test_option_names_lists_the_former_name_second(): void {
+		$this->assertSame(
+			array( 'capacity', 'max_attendance_limit' ),
+			Renamed_Keys::option_names( 'capacity' ),
+			'Failed to assert a renamed setting answers to both names.'
+		);
+	}
+
+	/**
+	 * Coverage for option_names.
+	 *
+	 * @since  TBD
+	 * @covers ::option_names
+	 *
+	 * @return void
+	 */
+	public function test_option_names_is_just_the_name_when_nothing_was_renamed(): void {
+		$this->assertSame(
+			array( 'date_format' ),
+			Renamed_Keys::option_names( 'date_format' ),
+			'Failed to assert an untouched setting answers to one name.'
+		);
+	}
 
 	/**
 	 * Coverage for answer_with_former_name.
@@ -104,7 +159,7 @@ class Test_Renamed_Meta extends Base {
 
 		// The registered default is frozen at registration time, so it is read
 		// back from the registry rather than from the live setting, which a
-		// neighbouring test can have moved.
+		// neighboring test can have moved.
 		$registered = get_registered_meta_keys( 'post', Event::POST_TYPE );
 
 		$this->assertSame(

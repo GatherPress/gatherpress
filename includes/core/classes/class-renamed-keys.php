@@ -1,6 +1,6 @@
 <?php
 /**
- * Answers reads of renamed post meta with the value saved under the old name.
+ * Holds the 0.36.0 key renames and answers reads with the former name.
  *
  * @package GatherPress\Core
  * @since TBD
@@ -14,7 +14,7 @@ use GatherPress\Core\Traits\Singleton;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 /**
- * Class Renamed_Meta.
+ * Class Renamed_Keys.
  *
  * Several meta keys were renamed in 0.36.0. Filtering the read rather than
  * patching each caller means PHP, the REST API and the editor all see the
@@ -28,12 +28,34 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  *
  * @since TBD
  */
-final class Renamed_Meta {
+final class Renamed_Keys {
 
 	/**
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
+
+	/**
+	 * Settings renamed in 0.36.0, mapped current name to former name.
+	 *
+	 * @since TBD
+	 * @var array<string, string>
+	 */
+	const OPTIONS = array(
+		'capacity'                    => 'max_attendance_limit',
+		'guest_limit'                 => 'max_guest_limit',
+		'enable_rsvp_cleanup'         => 'rsvp_cleanup_switch',
+		'rsvp_cleanup_multiplier'     => 'rsvp_cleanup_interval',
+		'use_event_date_for_publish'  => 'post_or_event_date',
+		'custom_map_tile_url'         => 'map_tile_url_custom',
+		'custom_map_tile_attribution' => 'map_tile_attribution_custom',
+		'venue_map_type'              => 'venue_map_default_type',
+		'venue_map_render_mode'       => 'venue_map_default_render_mode',
+		'venue_map_zoom'              => 'venue_map_default_zoom',
+		'venue_map_height'            => 'venue_map_default_height',
+		'venue_map_aspect_ratio'      => 'venue_map_default_aspect_ratio',
+		'venue_map_scale'             => 'venue_map_default_scale',
+	);
 
 	/**
 	 * Post meta renamed in 0.36.0, mapped current name to former name.
@@ -53,6 +75,24 @@ final class Renamed_Meta {
 	 * @var array<string, bool>
 	 */
 	private array $resolving = array();
+
+	/**
+	 * The names a setting answers to, current first.
+	 *
+	 * A setting renamed in 0.36.0 also answers to the name it had before, so
+	 * a site that has not re-saved its settings still resolves the value and
+	 * a network that opted the old name into inheritance keeps inheriting it.
+	 * The former name drops out of this list in 0.37.0.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $option The option key being resolved.
+	 *
+	 * @return string[] One name, or two when the setting was renamed.
+	 */
+	public static function option_names( string $option ): array {
+		return array_filter( array( $option, self::OPTIONS[ $option ] ?? '' ) );
+	}
 
 	/**
 	 * Class constructor.

@@ -22,7 +22,7 @@ namespace GatherPress\Core\Event;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
-use GatherPress\Core\Renamed_Meta;
+use GatherPress\Core\Renamed_Keys;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
@@ -261,8 +261,8 @@ final class Meta {
 
 			// A key renamed in 0.36.0 keeps its former name registered for a
 			// release, so a REST consumer that has not moved over still finds
-			// the field. Goes away in 0.37.0 with Renamed_Meta itself.
-			$former = Renamed_Meta::RENAMED[ $meta_key ] ?? '';
+			// the field. Goes away in 0.37.0 with Renamed_Keys itself.
+			$former = Renamed_Keys::RENAMED[ $meta_key ] ?? '';
 
 			if ( $former ) {
 				register_post_meta( Event::POST_TYPE, $former, $args );
