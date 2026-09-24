@@ -257,7 +257,7 @@ class Test_Map extends Base {
 	}
 
 	/**
-	 * An unparseable aspect ratio falls through to the block.json default.
+	 * An unparsable aspect ratio falls through to the block.json default.
 	 *
 	 * @since   TBD
 	 * @covers ::apply_block_attribute_defaults
@@ -284,7 +284,7 @@ class Test_Map extends Base {
 		$this->assertSame(
 			'4/3',
 			$result['attributes']['aspectRatio']['default'],
-			'Failed to assert an unparseable ratio leaves the block default alone.'
+			'Failed to assert an unparsable ratio leaves the block default alone.'
 		);
 	}
 
