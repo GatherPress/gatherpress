@@ -271,9 +271,7 @@ class Event {
 			: false;
 
 		// Add separator if there's both start and end date/time.
-		$default_separator = ( ! $separator || 'to' === $separator )
-			? __( 'to', 'gatherpress' )
-			: $separator;
+		$default_separator = $separator ? $separator : __( 'to', 'gatherpress' );
 
 		/**
 		 * Filter the separator between start and end dates/times.

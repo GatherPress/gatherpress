@@ -2485,9 +2485,11 @@ class Test_Event extends Base {
 		$display_empty = $event->get_display_datetime( 'both', 'H:i', 'H:i', '', 'no' );
 		$this->assertSame( '18:00 bis 19:30', $display_empty );
 
-		// Legacy default "to" yields the translated string.
+		// A literal "to" is an ordinary custom separator, not a sentinel, so it
+		// is passed through rather than translated. The filter is still active
+		// here, which is what makes that distinguishable.
 		$display_to = $event->get_display_datetime( 'both', 'H:i', 'H:i', 'to', 'no' );
-		$this->assertSame( '18:00 bis 19:30', $display_to );
+		$this->assertSame( '18:00 to 19:30', $display_to );
 
 		remove_filter( 'gettext_gatherpress', $translate_to, 10 );
 
