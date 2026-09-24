@@ -143,9 +143,11 @@
 
 ## class-utility.php
 
+- [`gatherpress_date_formats`](gatherpress_date_formats.md) Filters the date formats offered as examples in GatherPress.
 - [`gatherpress_pre_get_http_input`](gatherpress_pre_get_http_input.md) Short-circuit filter for HTTP input retrieval during testing.
 - [`gatherpress_pre_get_wp_referer`](gatherpress_pre_get_wp_referer.md) Short-circuit filter for wp_get_referer() during testing.
 - [`gatherpress_template_path`](gatherpress_template_path.md) Filters the resolved template path returned by `Utility::locate_template()`.
+- [`gatherpress_time_formats`](gatherpress_time_formats.md) Filters the time formats offered as examples in GatherPress.
 
 ## gatherpress.php
 
