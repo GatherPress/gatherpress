@@ -83,7 +83,6 @@ class Settings {
 	const PARENT_SLUG = 'edit.php?post_type=gatherpress_event';
 	const OPTION_NAME = 'gatherpress_settings';
 
-
 	/**
 	 * Default Leaflet tile layer URL.
 	 *
@@ -1136,7 +1135,6 @@ class Settings {
 
 		return $this->get_flat_default( $option );
 	}
-
 
 	/**
 	 * Whether a given option is inherited from the network.
