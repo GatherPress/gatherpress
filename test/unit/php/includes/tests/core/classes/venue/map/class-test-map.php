@@ -179,11 +179,11 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
-		$settings->set( 'venue_map_default_render_mode', 'static' );
-		$settings->set( 'venue_map_default_zoom', 12 );
-		$settings->set( 'venue_map_default_height', 450 );
-		$settings->set( 'venue_map_default_scale', 'contain' );
-		$settings->set( 'venue_map_default_type', 'satellite' );
+		$settings->set( 'venue_map_render_mode', 'static' );
+		$settings->set( 'venue_map_zoom', 12 );
+		$settings->set( 'venue_map_height', 450 );
+		$settings->set( 'venue_map_scale', 'contain' );
+		$settings->set( 'venue_map_type', 'satellite' );
 
 		$metadata = array(
 			'name'       => 'gatherpress/venue-map',
@@ -237,7 +237,7 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
-		$settings->set( 'venue_map_default_scale', 'none' );
+		$settings->set( 'venue_map_scale', 'none' );
 
 		$metadata = array(
 			'name'       => 'gatherpress/venue-map',
@@ -292,10 +292,10 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
-		$settings->set( 'venue_map_default_render_mode', '' );
-		$settings->set( 'venue_map_default_zoom', 0 );
-		$settings->set( 'venue_map_default_height', '' );
-		$settings->set( 'venue_map_default_type', '' );
+		$settings->set( 'venue_map_render_mode', '' );
+		$settings->set( 'venue_map_zoom', 0 );
+		$settings->set( 'venue_map_height', '' );
+		$settings->set( 'venue_map_type', '' );
 
 		$metadata = array(
 			'name'       => 'gatherpress/venue-map',
@@ -1735,14 +1735,14 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
-		$settings->set( 'venue_map_default_zoom', 13 );
+		$settings->set( 'venue_map_zoom', 13 );
 		$this->assertSame(
 			13,
 			Utility::invoke_hidden_method( $instance, 'get_zoom' ),
 			'Should prefer the stored Settings value.'
 		);
 
-		$settings->set( 'venue_map_default_zoom', 0 );
+		$settings->set( 'venue_map_zoom', 0 );
 		$this->assertSame(
 			Map::DEFAULT_ZOOM,
 			Utility::invoke_hidden_method( $instance, 'get_zoom' ),
@@ -1766,7 +1766,7 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
-		$settings->set( 'venue_map_default_zoom', 0 );
+		$settings->set( 'venue_map_zoom', 0 );
 		$too_high = static function () {
 			return 99;
 		};
@@ -1802,7 +1802,7 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
-		$settings->set( 'venue_map_default_height', 0 );
+		$settings->set( 'venue_map_height', 0 );
 		$too_big = static function () {
 			return 9999;
 		};
@@ -1827,14 +1827,14 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
-		$settings->set( 'venue_map_default_height', 450 );
+		$settings->set( 'venue_map_height', 450 );
 		$this->assertSame(
 			450,
 			Utility::invoke_hidden_method( $instance, 'get_height' ),
 			'Should prefer the stored Settings value.'
 		);
 
-		$settings->set( 'venue_map_default_height', 0 );
+		$settings->set( 'venue_map_height', 0 );
 		$this->assertSame(
 			Map::DEFAULT_HEIGHT,
 			Utility::invoke_hidden_method( $instance, 'get_height' ),
@@ -1886,7 +1886,7 @@ class Test_Map extends Base {
 		$this->assertSame( 'terrain', $instance->normalize_map_type( 'terrain' ) );
 		$this->assertSame( 'roadmap', $instance->normalize_map_type( 'bogus' ) );
 
-		$settings->set( 'venue_map_default_type', 'satellite' );
+		$settings->set( 'venue_map_type', 'satellite' );
 		$this->assertSame( 'satellite', $instance->normalize_map_type( '' ) );
 	}
 

@@ -68,7 +68,7 @@ $gatherpress_ratio       = (string) ( $attributes['aspectRatio'] ?? Map::DEFAULT
 // land as CSS only). Width is never stored: the PNG derives its width
 // from height × ratio, and the wrapper takes its width from the
 // container.
-$gatherpress_default_height = (int) Settings::get_instance()->get( 'venue_map_default_height' );
+$gatherpress_default_height = (int) Settings::get_instance()->get( 'venue_map_height' );
 $gatherpress_height_value   = Dimensions::get_dimension_value( $attributes, 'height' )
 	?? ( 0 < $gatherpress_default_height ? $gatherpress_default_height : null );
 $gatherpress_raw_height     = Dimensions::parse_px_dimension( $gatherpress_height_value );

@@ -1,0 +1,4 @@
+Significance: minor
+Type: changed
+
+Several settings and event meta keys were renamed to say what they mean: `max_attendance_limit` is now `capacity`, `max_guest_limit` is `guest_limit`, `rsvp_cleanup_switch` is `enable_rsvp_cleanup`, `rsvp_cleanup_interval` is `rsvp_cleanup_multiplier`, `post_or_event_date` is `use_event_date_for_publish`, the two custom map tile settings lead with `custom_` rather than trailing it, and the six `venue_map_default_*` settings drop the redundant `default`. The former names still answer for a release, including on multisite networks that opted an option into inheritance, so nothing needs changing before 0.37.0.

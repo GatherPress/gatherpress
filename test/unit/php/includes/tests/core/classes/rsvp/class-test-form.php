@@ -279,7 +279,7 @@ class Test_Form extends Base {
 		);
 
 		// Set max guest limit.
-		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 3 );
+		add_post_meta( $post_id, 'gatherpress_guest_limit', 3 );
 
 		$data = array(
 			'post_id'                 => $post_id,
@@ -1040,7 +1040,7 @@ class Test_Form extends Base {
 		);
 
 		// Set up event meta for guest limit and anonymous RSVP.
-		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 5 );
+		add_post_meta( $post_id, 'gatherpress_guest_limit', 5 );
 		add_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', 1 );
 
 		// Create a comment (RSVP).
@@ -1107,7 +1107,7 @@ class Test_Form extends Base {
 		);
 
 		// Set guest limit to 2.
-		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 2 );
+		add_post_meta( $post_id, 'gatherpress_guest_limit', 2 );
 
 		$comment_id = $this->factory->comment->create(
 			array(
@@ -1965,7 +1965,7 @@ class Test_Form extends Base {
 		);
 
 		// Set guest limit.
-		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 5 );
+		add_post_meta( $post_id, 'gatherpress_guest_limit', 5 );
 
 		$data = array(
 			'gatherpress_rsvp_guests' => 0,
@@ -2210,7 +2210,7 @@ class Test_Form extends Base {
 		);
 
 		// Set max guest limit to 0 (no guests allowed).
-		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 0 );
+		add_post_meta( $post_id, 'gatherpress_guest_limit', 0 );
 
 		$comment_id = $this->factory->comment->create(
 			array(
@@ -2245,7 +2245,7 @@ class Test_Form extends Base {
 		);
 
 		// Set max guest limit to 2.
-		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 2 );
+		add_post_meta( $post_id, 'gatherpress_guest_limit', 2 );
 
 		$comment_id = $this->factory->comment->create(
 			array(

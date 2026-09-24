@@ -2268,7 +2268,7 @@ class Test_Rsvp_Form extends Base {
 				'post_status' => 'publish',
 			)
 		);
-		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 5 );
+		add_post_meta( $post_id, 'gatherpress_guest_limit', 5 );
 
 		// Mock block content with guest count input field.
 		$block_content = '<div class="wp-block-gatherpress-form-field">
@@ -2310,7 +2310,7 @@ class Test_Rsvp_Form extends Base {
 				'post_status' => 'publish',
 			)
 		);
-		// Explicitly do not set gatherpress_max_guest_limit meta.
+		// Explicitly do not set gatherpress_guest_limit meta.
 
 		// Mock block content with guest count input field.
 		$block_content = '<div class="wp-block-gatherpress-form-field">
@@ -2351,7 +2351,7 @@ class Test_Rsvp_Form extends Base {
 				'post_status' => 'publish',
 			)
 		);
-		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 3 );
+		add_post_meta( $post_id, 'gatherpress_guest_limit', 3 );
 
 		// Mock block content with multiple guest count input fields.
 		$block_content = '<div class="wp-block-gatherpress-form-field">
@@ -2393,7 +2393,7 @@ class Test_Rsvp_Form extends Base {
 				'post_status' => 'publish',
 			)
 		);
-		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 0 );
+		add_post_meta( $post_id, 'gatherpress_guest_limit', 0 );
 
 		// Mock block content with guest count input field.
 		$block_content = '<div class="wp-block-gatherpress-form-field">
@@ -2432,7 +2432,7 @@ class Test_Rsvp_Form extends Base {
 				'post_status' => 'publish',
 			)
 		);
-		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 5 );
+		add_post_meta( $post_id, 'gatherpress_guest_limit', 5 );
 
 		// Mock block content with non-guest input fields.
 		$block_content = '<div class="wp-block-gatherpress-form-field">
@@ -2474,7 +2474,7 @@ class Test_Rsvp_Form extends Base {
 				'post_status' => 'publish',
 			)
 		);
-		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 5 );
+		add_post_meta( $post_id, 'gatherpress_guest_limit', 5 );
 
 		// Mock block content with no input fields.
 		$block_content = '<div class="wp-block-gatherpress-form-field">

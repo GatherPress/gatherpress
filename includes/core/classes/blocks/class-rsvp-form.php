@@ -1128,10 +1128,10 @@ final class Rsvp_Form {
 		$post_id        = $block_instance->get_post_id( $block );
 
 		// Get max guest limit from event settings.
-		$max_guest_limit = get_post_meta( $post_id, 'gatherpress_max_guest_limit', true );
+		$guest_limit = get_post_meta( $post_id, 'gatherpress_guest_limit', true );
 
 		// Only process if max guest limit is numeric.
-		if ( ! is_numeric( $max_guest_limit ) ) {
+		if ( ! is_numeric( $guest_limit ) ) {
 			return $block_content;
 		}
 
@@ -1142,7 +1142,7 @@ final class Rsvp_Form {
 			$name_attr = $tag->get_attribute( 'name' );
 
 			if ( 'gatherpress_rsvp_form_guests' === $name_attr ) {
-				$tag->set_attribute( 'max', (string) $max_guest_limit );
+				$tag->set_attribute( 'max', (string) $guest_limit );
 			}
 		}
 

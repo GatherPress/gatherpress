@@ -1248,7 +1248,7 @@ describe( 'getEventMeta', () => {
 		const result = getEventMeta( mockSelect, null, {} );
 
 		expect( result ).toEqual( {
-			maxGuestLimit: 0,
+			guestLimit: 0,
 			enableRsvp: true,
 			enableAnonymousRsvp: false,
 		} );
@@ -1262,7 +1262,7 @@ describe( 'getEventMeta', () => {
 					getEditedPostAttribute: jest.fn( ( attr ) => {
 						if ( 'meta' === attr ) {
 							return {
-								gatherpress_max_guest_limit: 5,
+								gatherpress_guest_limit: 5,
 								gatherpress_enable_anonymous_rsvp: true,
 							};
 						}
@@ -1279,7 +1279,7 @@ describe( 'getEventMeta', () => {
 		const result = getEventMeta( mockSelect, null, {} );
 
 		expect( result ).toEqual( {
-			maxGuestLimit: 5,
+			guestLimit: 5,
 			enableRsvp: true,
 			enableAnonymousRsvp: true,
 		} );
@@ -1293,7 +1293,7 @@ describe( 'getEventMeta', () => {
 					getEditedPostAttribute: jest.fn( ( attr ) => {
 						if ( 'meta' === attr ) {
 							return {
-								gatherpress_max_guest_limit: 10,
+								gatherpress_guest_limit: 10,
 								gatherpress_enable_anonymous_rsvp: false,
 							};
 						}
@@ -1311,7 +1311,7 @@ describe( 'getEventMeta', () => {
 		const result = getEventMeta( mockSelect, 123, {} );
 
 		expect( result ).toEqual( {
-			maxGuestLimit: 10,
+			guestLimit: 10,
 			enableRsvp: true,
 			enableAnonymousRsvp: false,
 		} );
@@ -1326,7 +1326,7 @@ describe( 'getEventMeta', () => {
 							id: 456,
 							status: 'publish',
 							meta: {
-								gatherpress_max_guest_limit: 20,
+								gatherpress_guest_limit: 20,
 								gatherpress_enable_anonymous_rsvp: true,
 							},
 						},
@@ -1346,7 +1346,7 @@ describe( 'getEventMeta', () => {
 		const result = getEventMeta( mockSelect, 456, { postId: 456 } );
 
 		expect( result ).toEqual( {
-			maxGuestLimit: 20,
+			guestLimit: 20,
 			enableRsvp: true,
 			enableAnonymousRsvp: true,
 		} );
@@ -1361,7 +1361,7 @@ describe( 'getEventMeta', () => {
 							id: 456,
 							status: 'publish',
 							meta: {
-								gatherpress_max_guest_limit: 7,
+								gatherpress_guest_limit: 7,
 								gatherpress_enable_rsvp: 0,
 								gatherpress_enable_anonymous_rsvp: false,
 							},
@@ -1381,7 +1381,7 @@ describe( 'getEventMeta', () => {
 		const result = getEventMeta( mockSelect, 456, { postId: 456 } );
 
 		expect( result ).toEqual( {
-			maxGuestLimit: 7,
+			guestLimit: 7,
 			enableRsvp: false,
 			enableAnonymousRsvp: false,
 		} );
@@ -1396,7 +1396,7 @@ describe( 'getEventMeta', () => {
 							id: 456,
 							status: 'draft',
 							meta: {
-								gatherpress_max_guest_limit: 20,
+								gatherpress_guest_limit: 20,
 								gatherpress_enable_anonymous_rsvp: true,
 							},
 						},
@@ -1409,7 +1409,7 @@ describe( 'getEventMeta', () => {
 		const result = getEventMeta( mockSelect, 456, { postId: 456 } );
 
 		expect( result ).toEqual( {
-			maxGuestLimit: 0,
+			guestLimit: 0,
 			enableRsvp: true,
 			enableAnonymousRsvp: false,
 		} );
@@ -1428,7 +1428,7 @@ describe( 'getEventMeta', () => {
 		const result = getEventMeta( mockSelect, 789, { postId: 789 } );
 
 		expect( result ).toEqual( {
-			maxGuestLimit: 0,
+			guestLimit: 0,
 			enableRsvp: true,
 			enableAnonymousRsvp: false,
 		} );
@@ -1445,7 +1445,7 @@ describe( 'getEventMeta', () => {
 		const result = getEventMeta( mockSelect, 999, { postId: 999 } );
 
 		expect( result ).toEqual( {
-			maxGuestLimit: 0,
+			guestLimit: 0,
 			enableRsvp: true,
 			enableAnonymousRsvp: false,
 		} );
@@ -1459,7 +1459,7 @@ describe( 'getEventMeta', () => {
 					getEditedPostAttribute: jest.fn( ( attr ) => {
 						if ( 'meta' === attr ) {
 							return {
-								gatherpress_max_guest_limit: 3,
+								gatherpress_guest_limit: 3,
 								gatherpress_enable_anonymous_rsvp: 1, // Truthy number.
 							};
 						}
@@ -1486,7 +1486,7 @@ describe( 'getEventMeta', () => {
 					getEditedPostAttribute: jest.fn( ( attr ) => {
 						if ( 'meta' === attr ) {
 							return {
-								gatherpress_max_guest_limit: 3,
+								gatherpress_guest_limit: 3,
 								gatherpress_enable_anonymous_rsvp: 0, // Falsy number.
 							};
 						}

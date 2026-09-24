@@ -252,7 +252,7 @@ Show a field only when one or more controlling fields hold a specific value, whi
 ```php
 'show_if' => array(
     'map_platform'                  => array( 'google', 'mapbox' ),
-    'venue_map_default_render_mode' => 'interactive',
+    'venue_map_render_mode' => 'interactive',
 ),
 ```
 
