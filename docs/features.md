@@ -11,6 +11,7 @@ GatherPress includes a growing list of features to help communities organize and
 - **Guest support**: Allow attendees to include additional guests.
 - **Anonymous RSVPs**: Optionally list attendees as anonymous (only visible to admins).
 - **Email notifications**: Send emails to all members, event attendees, non-attendees, or those on the waitlist.
+- **Site-wide member email**: Send a message to every member of the site from a dedicated GatherPress settings page, without going through an event. Members who turned event updates off in their profile are skipped.
 - **Subscribable calendar feeds**: Attendees can subscribe to a live, auto-updating calendar feed for a venue, a topic, the events archive, or the whole site, distinct from the one-time "Add to Calendar" download. See [Calendar feeds](./user/calendar-feeds.md).
 - **Online and in-person events**: Add venues with maps or online meeting links.
 - **Mapping**: Supports OpenStreetMap (via Leaflet) and Google Maps, rendered as interactive maps or as static map images.
