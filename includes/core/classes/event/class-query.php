@@ -117,7 +117,12 @@ final class Query {
 	 * @return WP_Query A WordPress query object containing the list of upcoming events.
 	 */
 	public function get_upcoming_events( int $number = 5 ): WP_Query {
-		return $this->get_events_list( 'upcoming', $number );
+		return $this->get_events_list(
+			array(
+				'event_list_type' => 'upcoming',
+				'number'          => $number,
+			)
+		);
 	}
 
 	/**
@@ -132,7 +137,12 @@ final class Query {
 	 * @return WP_Query A WordPress query object containing the list of past events.
 	 */
 	public function get_past_events( int $number = 5 ): WP_Query {
-		return $this->get_events_list( 'past', $number );
+		return $this->get_events_list(
+			array(
+				'event_list_type' => 'past',
+				'number'          => $number,
+			)
+		);
 	}
 
 	/**
@@ -144,24 +154,39 @@ final class Query {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param string   $event_list_type Type of event list: 'upcoming' or 'past'.
-	 * @param int      $number          Maximum number of events to retrieve.
-	 * @param string[] $topics          Array of topic slugs for additional filtering.
-	 * @param string[] $venues          Array of venue slugs for additional filtering.
+	 * @param string|array<string, mixed> $args   Event query arguments, or the event list type for the legacy
+	 *                                            positional signature. Recognized keys are `event_list_type`,
+	 *                                            `number`, `topics` and `venues`.
+	 * @param int                         $number Maximum number of events to retrieve.
+	 * @param string[]                    $topics Array of topic slugs for additional filtering.
+	 * @param string[]                    $venues Array of venue slugs for additional filtering.
 	 *
 	 * @return WP_Query A WordPress query object containing the list of events.
 	 */
 	public function get_events_list(
-		string $event_list_type = '',
+		array|string $args = '',
 		int $number = 5,
 		array $topics = array(),
 		array $venues = array()
 	): WP_Query {
+		if ( is_array( $args ) ) {
+			$event_list_type = isset( $args['event_list_type'] ) && is_string( $args['event_list_type'] )
+				? $args['event_list_type']
+				: '';
+			$number          = isset( $args['number'] ) && is_numeric( $args['number'] )
+				? (int) $args['number']
+				: 5;
+			$topics          = $this->normalize_slug_list( $args['topics'] ?? array() );
+			$venues          = $this->normalize_slug_list( $args['venues'] ?? array() );
+		} else {
+			$event_list_type = $args;
+		}
+
 		// Past events should be ordered DESC (most recent first),
 		// upcoming events should be ordered ASC (soonest first).
 		$order = ( 'past' === $event_list_type ) ? 'DESC' : 'ASC';
 
-		$args = array(
+		$query_args = array(
 			'post_type'             => get_post_types_by_support( Event::SUPPORT ),
 			'fields'                => 'ids',
 			'no_found_rows'         => true,
@@ -192,9 +217,20 @@ final class Query {
 			$tax_query[] = $this->build_venue_tax_query( $venues );
 		}
 
-		$args['tax_query'] = $tax_query; //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+		$query_args['tax_query'] = $tax_query; //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 
-		return new WP_Query( $args );
+		/**
+		 * Filters the arguments used to query the event list.
+		 *
+		 * Use this filter to add query constraints such as location-based filtering.
+		 *
+		 * @since TBD
+		 *
+		 * @param array<string, mixed> $query_args Arguments passed to WP_Query.
+		 */
+		$query_args = apply_filters( 'gatherpress_events_list_query_args', $query_args );
+
+		return new WP_Query( $query_args );
 	}
 
 	/**
@@ -801,6 +837,30 @@ final class Query {
 		}
 
 		return $venue_tax_query;
+	}
+
+	/**
+	 * Normalize a list of taxonomy slugs to strings.
+	 *
+	 * Companion plugins pass the values through the args array, so anything can
+	 * arrive here. Non-scalar members are dropped rather than cast, because
+	 * `strval()` on an array raises a warning and on an object throws.
+	 *
+	 * @since TBD
+	 *
+	 * @param mixed $slugs Candidate slug list.
+	 *
+	 * @return string[] Filtered list of slugs.
+	 */
+	private function normalize_slug_list( mixed $slugs ): array {
+		if ( ! is_array( $slugs ) ) {
+			return array();
+		}
+
+		return array_map(
+			'strval',
+			array_filter( $slugs, 'is_scalar' )
+		);
 	}
 
 	/**

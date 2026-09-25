@@ -760,7 +760,14 @@ final class Setup {
 			$topics = array( $queried_object->slug );
 		}
 
-		$query = Query::get_instance()->get_events_list( $event_list_type, $number, $topics, $venues );
+		$query = Query::get_instance()->get_events_list(
+			array(
+				'event_list_type' => $event_list_type,
+				'number'          => $number,
+				'topics'          => $topics,
+				'venues'          => $venues,
+			)
+		);
 		while ( $query->have_posts() ) {
 			$query->the_post();
 			$calendar = new Calendar( (int) get_the_ID() );
