@@ -16,6 +16,8 @@ use GatherPress\Core\Blocks\Form_Field;
 use GatherPress\Core\Blocks\General_Block;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp as Core_Rsvp;
+use GatherPress\Core\Rsvp\Form;
+use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
@@ -41,6 +43,15 @@ final class Rsvp {
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress/rsvp';
+
+	/**
+	 * Constant representing the class that flags a trigger for the no-JS RSVP form.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @var string
+	 */
+	const NO_SCRIPT_TRIGGER_CLASS = 'gatherpress-rsvp--trigger-no-script';
 
 	/**
 	 * Class constructor.
@@ -69,6 +80,7 @@ final class Rsvp {
 		add_filter( $render_block_hook, array( $this, 'apply_rsvp_button_interactivity' ) );
 		// Priority 11 ensures this runs after transform_block_content which modifies the block structure.
 		add_filter( $render_block_hook, array( $this, 'apply_guest_count_watch' ), 11 );
+		add_filter( $render_block_hook, array( $this, 'render_no_script_fallback' ), 12, 2 );
 		// Priority 9 ensures this runs before transform_block_content to properly register form field hooks.
 		add_filter( $render_block_hook, array( $this, 'apply_guests_input_interactivity' ), 9 );
 
@@ -199,6 +211,87 @@ final class Rsvp {
 		}
 
 		return $block_content;
+	}
+
+	/**
+	 * Adds a no-JavaScript RSVP form for marked triggers.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string               $block_content The block content.
+	 * @param array<string, mixed> $block         The block data.
+	 *
+	 * @return string The block content with the fallback form.
+	 */
+	public function render_no_script_fallback( string $block_content, array $block ): string {
+		if (
+			! is_user_logged_in()
+			|| ! str_contains( $block_content, self::NO_SCRIPT_TRIGGER_CLASS )
+		) {
+			return $block_content;
+		}
+
+		$post_id = Setup::get_instance()->get_post_id( $block );
+		$rsvp    = new Core_Rsvp( $post_id );
+
+		if ( ! $post_id || ! $rsvp->is_enabled() ) {
+			return $block_content;
+		}
+
+		if ( ( new Event( $post_id ) )->has_event_past() ) {
+			return $block_content;
+		}
+
+		$user_identifier = Rsvp_Setup::get_instance()->get_user_identifier();
+		$user_data       = $rsvp->get( $user_identifier ) ?? array();
+		$current_status  = $user_data['status'] ?? Status::NO_STATUS->value;
+
+		if ( in_array( $current_status, array( Status::NOT_ATTENDING->value, Status::NO_STATUS->value ), true ) ) {
+			$next_status = Status::ATTENDING->value;
+			$button_text = __( 'Attend', 'gatherpress' );
+		} else {
+			$next_status = Status::NOT_ATTENDING->value;
+			$button_text = __( 'Not Attending', 'gatherpress' );
+		}
+
+		$return_url = (string) get_permalink( $post_id );
+
+		$message      = '';
+		$result       = Utility::get_http_input( INPUT_GET, 'gatherpress_rsvp_no_script' );
+		$saved_status = Utility::get_http_input( INPUT_GET, 'gatherpress_rsvp_status' );
+
+		if ( 'success' === $result ) {
+			$message = Status::WAITING_LIST->value === $saved_status
+				? __( 'You are on the waiting list.', 'gatherpress' )
+				: __( 'Your RSVP has been updated.', 'gatherpress' );
+		} elseif ( 'error' === $result ) {
+			$message = __( 'Your RSVP could not be saved. Please try again.', 'gatherpress' );
+		}
+
+		$form = sprintf(
+			'<noscript><form class="gatherpress-rsvp--no-script" method="post" action="%1$s">%2$s%3$s'
+			. '<input type="hidden" name="action" value="%4$s">'
+			. '<input type="hidden" name="post_id" value="%5$d">'
+			. '<input type="hidden" name="status" value="%6$s">'
+			. '<input type="hidden" name="return_url" value="%7$s">'
+			. '<button type="submit">%8$s</button></form></noscript>',
+			esc_url( admin_url( 'admin-post.php' ) ),
+			wp_nonce_field( Form::NO_SCRIPT_ACTION, Form::NONCE_NAME, true, false ),
+			$message ? sprintf( '<p role="status">%s</p>', esc_html( $message ) ) : '',
+			esc_attr( Form::NO_SCRIPT_ACTION ),
+			absint( $post_id ),
+			esc_attr( $next_status ),
+			esc_url( $return_url ),
+			esc_html( $button_text )
+		);
+
+		$closing_position = strrpos( $block_content, '</div>' );
+
+		if ( false === $closing_position ) {
+			return $block_content . $form;
+		}
+
+		return substr_replace( $block_content, $form, $closing_position, 0 );
 	}
 
 	/**

@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core\Blocks;
 use GatherPress\Core\Blocks\Rsvp;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp as Core_Rsvp;
+use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Event\Setup;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
@@ -62,6 +63,12 @@ class Test_Rsvp extends Base {
 				'name'     => $render_block_hook,
 				'priority' => 9,
 				'callback' => array( $instance, 'apply_guests_input_interactivity' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => $render_block_hook,
+				'priority' => 12,
+				'callback' => array( $instance, 'render_no_script_fallback' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -975,5 +982,484 @@ class Test_Rsvp extends Base {
 
 		// Clean up.
 		remove_filter( $form_field_hook, array( $instance, 'handle_rsvp_form_fields' ) );
+	}
+
+	/**
+	 * Tests the render_no_script_fallback method for a logged-in user.
+	 *
+	 * Verifies that a marked RSVP block gets a <noscript> POST form with the
+	 * expected action URL, nonce, post ID, next status, and submit label.
+	 *
+	 * @since 0.36.0
+	 * @covers ::render_no_script_fallback
+	 *
+	 * @return void
+	 */
+	public function test_render_no_script_fallback_logged_in(): void {
+		$instance = Rsvp::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+		$this->mock->user( true )->get();
+
+		$block         = array(
+			'blockName' => Rsvp::BLOCK_NAME,
+			'attrs'     => array( 'postId' => $post_id ),
+		);
+		$block_content = sprintf(
+			'<div class="wp-block-gatherpress-rsvp" data-post-id="%d">'
+			. '<button class="gatherpress-rsvp--trigger-update gatherpress-rsvp--trigger-no-script">Attend</button>'
+			. '</div>',
+			$post_id
+		);
+
+		$result = $instance->render_no_script_fallback( $block_content, $block );
+
+		$this->assertStringContainsString( '<noscript>', $result, 'The fallback form must render inside <noscript>.' );
+		$this->assertStringContainsString(
+			'method="post"',
+			$result,
+			'The fallback form must submit via POST so link prefetchers cannot trigger an RSVP.'
+		);
+		$this->assertStringContainsString(
+			esc_attr( admin_url( 'admin-post.php' ) ),
+			$result,
+			'The fallback form must post to admin-post.php.'
+		);
+		$this->assertStringContainsString(
+			'name="post_id" value="' . $post_id . '"',
+			$result,
+			'The fallback form must carry the event post ID.'
+		);
+		$this->assertStringContainsString(
+			'name="status" value="attending"',
+			$result,
+			'The fallback form must default to the attending status for a user without an RSVP.'
+		);
+		$this->assertStringContainsString( 'Attend', $result, 'The fallback submit button must read Attend.' );
+		$this->assertStringContainsString(
+			'name="' . Form::NONCE_NAME . '"',
+			$result,
+			'The fallback form must include a nonce.'
+		);
+		$this->assertStringContainsString(
+			'name="return_url" value="' . esc_url( get_permalink( $post_id ) ) . '"',
+			$result,
+			'The fallback form must return to the event permalink.'
+		);
+	}
+
+	/**
+	 * Tests the render_no_script_fallback method when the user is logged out.
+	 *
+	 * Verifies that no fallback form is emitted for anonymous visitors.
+	 *
+	 * @since 0.36.0
+	 * @covers ::render_no_script_fallback
+	 *
+	 * @return void
+	 */
+	public function test_render_no_script_fallback_logged_out(): void {
+		$instance = Rsvp::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$block         = array(
+			'blockName' => Rsvp::BLOCK_NAME,
+			'attrs'     => array( 'postId' => $post_id ),
+		);
+		$block_content = sprintf(
+			'<div class="wp-block-gatherpress-rsvp" data-post-id="%d">'
+			. '<button class="gatherpress-rsvp--trigger-update gatherpress-rsvp--trigger-no-script">Attend</button>'
+			. '</div>',
+			$post_id
+		);
+
+		$result = $instance->render_no_script_fallback( $block_content, $block );
+
+		$this->assertSame(
+			$block_content,
+			$result,
+			'The fallback form must not render for logged-out users.'
+		);
+	}
+
+	/**
+	 * Tests the render_no_script_fallback method without the marker class.
+	 *
+	 * Verifies that unmarked RSVP blocks stay untouched.
+	 *
+	 * @since 0.36.0
+	 * @covers ::render_no_script_fallback
+	 *
+	 * @return void
+	 */
+	public function test_render_no_script_fallback_unmarked(): void {
+		$instance = Rsvp::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+		$this->mock->user( true )->get();
+
+		$block         = array(
+			'blockName' => Rsvp::BLOCK_NAME,
+			'attrs'     => array( 'postId' => $post_id ),
+		);
+		$block_content = sprintf(
+			'<div class="wp-block-gatherpress-rsvp" data-post-id="%d">'
+			. '<button class="gatherpress-rsvp--trigger-update">Attend</button>'
+			. '</div>',
+			$post_id
+		);
+
+		$result = $instance->render_no_script_fallback( $block_content, $block );
+
+		$this->assertSame(
+			$block_content,
+			$result,
+			'The fallback form must not render without the no-script marker class.'
+		);
+	}
+
+	/**
+	 * Tests the render_no_script_fallback method for a user already attending.
+	 *
+	 * Verifies that the next status and the submit label flip to not_attending.
+	 *
+	 * @since 0.36.0
+	 * @covers ::render_no_script_fallback
+	 *
+	 * @return void
+	 */
+	public function test_render_no_script_fallback_attending_toggles_off(): void {
+		$instance = Rsvp::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+		$user     = $this->mock->user( true )->get();
+		( new Core_Rsvp( $post_id ) )->save( $user->ID, 'attending' );
+
+		$block         = array(
+			'blockName' => Rsvp::BLOCK_NAME,
+			'attrs'     => array( 'postId' => $post_id ),
+		);
+		$block_content = sprintf(
+			'<div class="wp-block-gatherpress-rsvp" data-post-id="%d">'
+			. '<button class="gatherpress-rsvp--trigger-update gatherpress-rsvp--trigger-no-script">'
+			. 'Not Attending</button></div>',
+			$post_id
+		);
+
+		$result = $instance->render_no_script_fallback( $block_content, $block );
+
+		$this->assertStringContainsString(
+			'name="status" value="not_attending"',
+			$result,
+			'The fallback form must offer not_attending to a user already attending.'
+		);
+		$this->assertStringContainsString( 'Not Attending', $result, 'The submit label must read Not Attending.' );
+	}
+
+	/**
+	 * Tests the render_no_script_fallback method on a past event.
+	 *
+	 * Verifies that no fallback form is emitted when the event has passed.
+	 *
+	 * @since 0.36.0
+	 * @covers ::render_no_script_fallback
+	 *
+	 * @return void
+	 */
+	public function test_render_no_script_fallback_past_event(): void {
+		$instance = Rsvp::get_instance();
+		$post     = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+				'post_meta' => array(
+					'gatherpress_datetime' => wp_json_encode(
+						array(
+							'dateTimeStart' => '2024-01-22 18:00:00',
+							'dateTimeEnd'   => '2024-01-22 20:00:00',
+							'timezone'      => 'America/New_York',
+						)
+					),
+				),
+			)
+		)->get();
+
+		// Trigger to set datetimes.
+		Setup::get_instance()->set_datetimes( $post->ID );
+
+		$this->mock->user( true )->get();
+
+		$block         = array(
+			'blockName' => Rsvp::BLOCK_NAME,
+			'attrs'     => array( 'postId' => $post->ID ),
+		);
+		$block_content = sprintf(
+			'<div class="wp-block-gatherpress-rsvp" data-post-id="%d">'
+			. '<button class="gatherpress-rsvp--trigger-update gatherpress-rsvp--trigger-no-script">Attend</button>'
+			. '</div>',
+			$post->ID
+		);
+
+		$result = $instance->render_no_script_fallback( $block_content, $block );
+
+		$this->assertStringNotContainsString(
+			'<noscript>',
+			$result,
+			'The fallback form must not render for a past event.'
+		);
+	}
+
+	/**
+	 * Tests the render_no_script_fallback method after a successful submission.
+	 *
+	 * Verifies that the success query flags produce a status message inside the form.
+	 *
+	 * @since 0.36.0
+	 * @covers ::render_no_script_fallback
+	 *
+	 * @return void
+	 */
+	public function test_render_no_script_fallback_success_message(): void {
+		$instance = Rsvp::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+		$this->mock->user( true )->get();
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) {
+				if ( INPUT_GET === $type && 'gatherpress_rsvp_no_script' === $var_name ) {
+					return 'success';
+				}
+				if ( INPUT_GET === $type && 'gatherpress_rsvp_status' === $var_name ) {
+					return 'waiting_list';
+				}
+				return $pre_value;
+			},
+			10,
+			3
+		);
+
+		$block         = array(
+			'blockName' => Rsvp::BLOCK_NAME,
+			'attrs'     => array( 'postId' => $post_id ),
+		);
+		$block_content = sprintf(
+			'<div class="wp-block-gatherpress-rsvp" data-post-id="%d">'
+			. '<button class="gatherpress-rsvp--trigger-update gatherpress-rsvp--trigger-no-script">Attend</button>'
+			. '</div>',
+			$post_id
+		);
+
+		$result = $instance->render_no_script_fallback( $block_content, $block );
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+
+		$this->assertStringContainsString(
+			'You are on the waiting list.',
+			$result,
+			'The fallback form must surface the waiting list message after a waiting list placement.'
+		);
+		$this->assertStringContainsString( 'role="status"', $result, 'The status message must be announced politely.' );
+	}
+
+	/**
+	 * Tests the render_no_script_fallback method with an error result.
+	 *
+	 * Verifies that a failed save is communicated to the user.
+	 *
+	 * @since 0.36.0
+	 * @covers ::render_no_script_fallback
+	 *
+	 * @return void
+	 */
+	public function test_render_no_script_fallback_error_message(): void {
+		$instance = Rsvp::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+		$this->mock->user( true )->get();
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) {
+				if ( INPUT_GET === $type && 'gatherpress_rsvp_no_script' === $var_name ) {
+					return 'error';
+				}
+				return $pre_value;
+			},
+			10,
+			3
+		);
+
+		$block         = array(
+			'blockName' => Rsvp::BLOCK_NAME,
+			'attrs'     => array( 'postId' => $post_id ),
+		);
+		$block_content = sprintf(
+			'<div class="wp-block-gatherpress-rsvp" data-post-id="%d">'
+			. '<button class="gatherpress-rsvp--trigger-update gatherpress-rsvp--trigger-no-script">Attend</button>'
+			. '</div>',
+			$post_id
+		);
+
+		$result = $instance->render_no_script_fallback( $block_content, $block );
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+
+		$this->assertStringContainsString(
+			'Your RSVP could not be saved. Please try again.',
+			$result,
+			'The fallback form must surface the error message.'
+		);
+	}
+
+	/**
+	 * Tests the render_no_script_fallback method with a non-waiting-list success.
+	 *
+	 * Verifies that a plain success shows the generic updated message.
+	 *
+	 * @since 0.36.0
+	 * @covers ::render_no_script_fallback
+	 *
+	 * @return void
+	 */
+	public function test_render_no_script_fallback_success_generic_message(): void {
+		$instance = Rsvp::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+		$this->mock->user( true )->get();
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) {
+				if ( INPUT_GET === $type && 'gatherpress_rsvp_no_script' === $var_name ) {
+					return 'success';
+				}
+				if ( INPUT_GET === $type && 'gatherpress_rsvp_status' === $var_name ) {
+					return 'attending';
+				}
+				return $pre_value;
+			},
+			10,
+			3
+		);
+
+		$block         = array(
+			'blockName' => Rsvp::BLOCK_NAME,
+			'attrs'     => array( 'postId' => $post_id ),
+		);
+		$block_content = sprintf(
+			'<div class="wp-block-gatherpress-rsvp" data-post-id="%d">'
+			. '<button class="gatherpress-rsvp--trigger-update gatherpress-rsvp--trigger-no-script">Attend</button>'
+			. '</div>',
+			$post_id
+		);
+
+		$result = $instance->render_no_script_fallback( $block_content, $block );
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+
+		$this->assertStringContainsString(
+			'Your RSVP has been updated.',
+			$result,
+			'The fallback form must surface the generic success message.'
+		);
+	}
+
+	/**
+	 * Tests the render_no_script_fallback method when RSVP is disabled.
+	 *
+	 * Verifies that no fallback form is emitted when RSVP is disabled for the event.
+	 *
+	 * @since 0.36.0
+	 * @covers ::render_no_script_fallback
+	 *
+	 * @return void
+	 */
+	public function test_render_no_script_fallback_rsvp_disabled(): void {
+		$instance = Rsvp::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+		$this->mock->user( true )->get();
+
+		// Sitewide RSVP mode overrides the per-event meta, so switch the mode.
+		Settings::get_instance()->set( 'rsvp_mode', 'disabled' );
+
+		$block         = array(
+			'blockName' => Rsvp::BLOCK_NAME,
+			'attrs'     => array( 'postId' => $post_id ),
+		);
+		$block_content = sprintf(
+			'<div class="wp-block-gatherpress-rsvp" data-post-id="%d">'
+			. '<button class="gatherpress-rsvp--trigger-update gatherpress-rsvp--trigger-no-script">Attend</button>'
+			. '</div>',
+			$post_id
+		);
+
+		$result = $instance->render_no_script_fallback( $block_content, $block );
+
+		$this->assertStringNotContainsString(
+			'<noscript>',
+			$result,
+			'The fallback form must not render when RSVP is disabled for the event.'
+		);
+	}
+
+	/**
+	 * Tests the render_no_script_fallback method without a closing div.
+	 *
+	 * Verifies that the fallback form is appended when the block content has
+	 * no closing div to insert before.
+	 *
+	 * @since 0.36.0
+	 * @covers ::render_no_script_fallback
+	 *
+	 * @return void
+	 */
+	public function test_render_no_script_fallback_appends_without_closing_div(): void {
+		$instance = Rsvp::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+		$this->mock->user( true )->get();
+
+		$block         = array(
+			'blockName' => Rsvp::BLOCK_NAME,
+			'attrs'     => array( 'postId' => $post_id ),
+		);
+		$block_content = sprintf(
+			'<button class="gatherpress-rsvp--trigger-update gatherpress-rsvp--trigger-no-script">Attend</button>',
+			$post_id
+		);
+
+		$result = $instance->render_no_script_fallback( $block_content, $block );
+
+		$this->assertStringEndsWith( '</noscript>', $result, 'The fallback form must be appended to the content.' );
 	}
 }
