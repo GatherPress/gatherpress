@@ -198,8 +198,8 @@ class Test_Meta extends Base {
 			'Should allow meta update for timezone.'
 		);
 		$this->assertNotFalse(
-			update_post_meta( $post_id, 'gatherpress_max_guest_limit', 5 ),
-			'Should allow meta update for max_guest_limit.'
+			update_post_meta( $post_id, 'gatherpress_guest_limit', 5 ),
+			'Should allow meta update for guest_limit.'
 		);
 		$this->assertNotFalse(
 			update_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true ),
@@ -210,8 +210,8 @@ class Test_Meta extends Base {
 			'Should allow meta update for online_event_link.'
 		);
 		$this->assertNotFalse(
-			update_post_meta( $post_id, 'gatherpress_max_attendance_limit', 100 ),
-			'Should allow meta update for max_attendance_limit.'
+			update_post_meta( $post_id, 'gatherpress_capacity', 100 ),
+			'Should allow meta update for capacity.'
 		);
 	}
 
@@ -322,8 +322,8 @@ class Test_Meta extends Base {
 				'gatherpress_datetime'              => '{"dateTimeStart":"2025-01-01 10:00:00"}',
 				'gatherpress_online_event_link'     => 'https://example.com/meeting',
 				'gatherpress_enable_anonymous_rsvp' => true,
-				'gatherpress_max_guest_limit'       => 5,
-				'gatherpress_max_attendance_limit'  => 100,
+				'gatherpress_guest_limit'           => 5,
+				'gatherpress_capacity'              => 100,
 			)
 		);
 
@@ -340,8 +340,8 @@ class Test_Meta extends Base {
 		$this->assertArrayHasKey( 'gatherpress_datetime', $filtered_meta );
 		$this->assertArrayHasKey( 'gatherpress_online_event_link', $filtered_meta );
 		$this->assertArrayHasKey( 'gatherpress_enable_anonymous_rsvp', $filtered_meta );
-		$this->assertArrayHasKey( 'gatherpress_max_guest_limit', $filtered_meta );
-		$this->assertArrayHasKey( 'gatherpress_max_attendance_limit', $filtered_meta );
+		$this->assertArrayHasKey( 'gatherpress_guest_limit', $filtered_meta );
+		$this->assertArrayHasKey( 'gatherpress_capacity', $filtered_meta );
 	}
 
 	/**

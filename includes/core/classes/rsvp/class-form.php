@@ -573,12 +573,12 @@ final class Form {
 
 		// Handle guest count field.
 		if ( isset( $data['gatherpress_rsvp_guests'] ) && is_numeric( $data['gatherpress_rsvp_guests'] ) ) {
-			$guest_count     = intval( $data['gatherpress_rsvp_guests'] );
-			$max_guest_limit = intval( get_post_meta( $post_id, 'gatherpress_max_guest_limit', true ) );
+			$guest_count = intval( $data['gatherpress_rsvp_guests'] );
+			$guest_limit = intval( get_post_meta( $post_id, 'gatherpress_guest_limit', true ) );
 
 			// Cap guest count at the maximum allowed.
-			if ( $max_guest_limit > 0 && $guest_count > $max_guest_limit ) {
-				$guest_count = $max_guest_limit;
+			if ( $guest_limit > 0 && $guest_count > $guest_limit ) {
+				$guest_count = $guest_limit;
 			}
 
 			update_comment_meta( $comment_id, 'gatherpress_rsvp_guests', $guest_count );

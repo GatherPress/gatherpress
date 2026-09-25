@@ -43,14 +43,14 @@ The three RSVP taxonomies are on *comments*, not posts, because an RSVP is a com
 | `gatherpress_enable_rsvp` | Whether RSVPs are open |
 | `gatherpress_enable_anonymous_rsvp` | Whether a person may hide their name |
 | `gatherpress_enable_open_rsvp` | Whether logged-out visitors may RSVP by email |
-| `gatherpress_max_attendance_limit` | Capacity. `0` means unlimited |
-| `gatherpress_max_guest_limit` | Guests per RSVP. `0` means none |
+| `gatherpress_capacity` | Capacity. `0` means unlimited. Called `gatherpress_max_attendance_limit` before 0.36.0, which still answers until 0.37.0 |
+| `gatherpress_guest_limit` | Guests per RSVP. `0` means none |
 | `gatherpress_online_event_link` | The joining link, shown only to attendees |
 | `gatherpress_rsvp_form_schemas` | The RSVP form's custom field definitions, keyed by form id |
 
 `gatherpress_datetime` is the canonical value the editor and REST write. The [events table](#the-events-table) is derived from it and is what queries read.
 
-The two limit keys are enforced server-side on every write, including from WP-CLI. An RSVP asking for more guests than `gatherpress_max_guest_limit` allows is not rejected. It is clamped, and the caller still gets a success response.
+The two limit keys are enforced server-side on every write, including from WP-CLI. An RSVP asking for more guests than `gatherpress_guest_limit` allows is not rejected. It is clamped, and the caller still gets a success response.
 
 ### Venues
 

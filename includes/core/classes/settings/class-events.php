@@ -173,7 +173,7 @@ final class Events extends Base {
 					Utility::post_type_label( 'name', Event::POST_TYPE )
 				),
 				'options'     => array(
-					'post_or_event_date' => array(
+					'use_event_date_for_publish' => array(
 						'labels' => array(
 							'name' => __( 'Publish Date', 'gatherpress' ),
 						),

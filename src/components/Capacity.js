@@ -15,45 +15,41 @@ import { useDispatch, useSelect } from '@wordpress/data';
 import { getFromSettings } from '../helpers/editor-settings';
 
 /**
- * MaxAttendance component.
+ * Capacity component.
  *
- * This component renders a number control that allows setting the maximum attendance limit for an event.
+ * This component renders a number control that allows setting an event's capacity.
  * It handles the state and updates the post's metadata accordingly. When creating a new event, the default
  * state of the control is determined by a global setting. For existing events, it uses the event's current
  * setting. The component ensures that changes are reflected in the post's metadata and also unlocks post saving.
  *
- * @return {JSX.Element} A number control for setting the maximum attendance limit.
+ * @return {JSX.Element} A number control for setting an event's capacity.
  */
-const MaxAttendanceLimit = () => {
+const Capacity = () => {
 	const { editPost, unlockPostSaving } = useDispatch( 'core/editor' );
 	const isNewEvent = useSelect( ( select ) => {
 		return select( 'core/editor' ).isCleanNewPost();
 	}, [] );
 
-	let defaultMaxAttendanceLimit = useSelect( ( select ) => {
+	let defaultCapacity = useSelect( ( select ) => {
 		return select( 'core/editor' ).getEditedPostAttribute( 'meta' )
-			.gatherpress_max_attendance_limit;
+			.gatherpress_capacity;
 	}, [] );
 
 	if ( isNewEvent ) {
-		defaultMaxAttendanceLimit = getFromSettings(
-			'maxAttendanceLimit',
-		);
+		defaultCapacity = getFromSettings( 'capacity' );
 	}
 
-	if ( false === defaultMaxAttendanceLimit ) {
-		defaultMaxAttendanceLimit = 0;
+	if ( false === defaultCapacity ) {
+		defaultCapacity = 0;
 	}
 
-	const [ maxAttendanceLimit, setMaxAttendanceLimit ] = useState(
-		defaultMaxAttendanceLimit,
-	);
+	const [ capacity, setCapacity ] = useState( defaultCapacity );
 
-	const updateMaxAttendanceLimit = useCallback(
+	const updateCapacity = useCallback(
 		( value ) => {
-			const meta = { gatherpress_max_attendance_limit: Number( value ) };
+			const meta = { gatherpress_capacity: Number( value ) };
 
-			setMaxAttendanceLimit( value );
+			setCapacity( value );
 			editPost( { meta } );
 			unlockPostSaving();
 		},
@@ -61,26 +57,26 @@ const MaxAttendanceLimit = () => {
 	);
 
 	useEffect( () => {
-		if ( isNewEvent && 0 !== defaultMaxAttendanceLimit ) {
-			updateMaxAttendanceLimit( defaultMaxAttendanceLimit );
+		if ( isNewEvent && 0 !== defaultCapacity ) {
+			updateCapacity( defaultCapacity );
 		}
-	}, [ isNewEvent, defaultMaxAttendanceLimit, updateMaxAttendanceLimit ] );
+	}, [ isNewEvent, defaultCapacity, updateCapacity ] );
 
 	return (
 		<NumberControl
 			__next40pxDefaultSize
-			label={ __( 'Maximum Attendance Limit', 'gatherpress' ) }
-			value={ maxAttendanceLimit }
+			label={ __( 'Capacity', 'gatherpress' ) }
+			value={ capacity }
 			min={ 0 }
 			help={ __(
 				'Total number of people allowed at the event. A value of 0 indicates no limit.',
 				'gatherpress',
 			) }
 			onChange={ ( value ) => {
-				updateMaxAttendanceLimit( value );
+				updateCapacity( value );
 			} }
 		/>
 	);
 };
 
-export default MaxAttendanceLimit;
+export default Capacity;

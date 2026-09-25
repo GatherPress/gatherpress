@@ -360,7 +360,7 @@ class Test_Settings extends Base {
 	 */
 	public function test_get_map_tile_url_custom_setting(): void {
 		$instance = Settings::get_instance();
-		$instance->set( 'map_tile_url_custom', 'https://custom.example.com/{z}/{x}/{y}.png' );
+		$instance->set( 'custom_map_tile_url', 'https://custom.example.com/{z}/{x}/{y}.png' );
 
 		$this->assertSame(
 			'https://custom.example.com/{z}/{x}/{y}.png',
@@ -382,7 +382,7 @@ class Test_Settings extends Base {
 		);
 
 		remove_all_filters( 'gatherpress_interactive_map_tile_url' );
-		$instance->set( 'map_tile_url_custom', '' );
+		$instance->set( 'custom_map_tile_url', '' );
 	}
 
 	/**
@@ -424,7 +424,7 @@ class Test_Settings extends Base {
 	 */
 	public function test_get_map_tile_attribution_custom_setting(): void {
 		$instance = Settings::get_instance();
-		$instance->set( 'map_tile_attribution_custom', 'My Custom Credit' );
+		$instance->set( 'custom_map_tile_attribution', 'My Custom Credit' );
 
 		$this->assertSame(
 			'My Custom Credit',
@@ -446,7 +446,7 @@ class Test_Settings extends Base {
 		);
 
 		remove_all_filters( 'gatherpress_interactive_map_tile_attribution' );
-		$instance->set( 'map_tile_attribution_custom', '' );
+		$instance->set( 'custom_map_tile_attribution', '' );
 	}
 
 	/**
@@ -460,7 +460,7 @@ class Test_Settings extends Base {
 	 */
 	public function test_get_map_tile_attribution_custom_setting_escapes_html(): void {
 		$instance = Settings::get_instance();
-		$instance->set( 'map_tile_attribution_custom', '<script>alert(1)</script>' );
+		$instance->set( 'custom_map_tile_attribution', '<script>alert(1)</script>' );
 
 		$this->assertSame(
 			'&lt;script&gt;alert(1)&lt;/script&gt;',
@@ -468,7 +468,7 @@ class Test_Settings extends Base {
 			'Failed to assert the custom attribution setting is escaped.'
 		);
 
-		$instance->set( 'map_tile_attribution_custom', '' );
+		$instance->set( 'custom_map_tile_attribution', '' );
 	}
 
 	/**
@@ -868,6 +868,90 @@ class Test_Settings extends Base {
 			$expected,
 			$value,
 			'Should return the correct value when all parameters are set'
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Test that a renamed option is answered by the name it used to have.
+	 *
+	 * @since  TBD
+	 * @covers ::get
+	 *
+	 * @return void
+	 */
+	public function test_get_falls_back_to_a_renamed_options_old_name(): void {
+		$instance = Settings::get_instance();
+
+		add_option(
+			'gatherpress_settings',
+			array(
+				'max_attendance_limit' => 100,
+			)
+		);
+
+		$this->assertSame(
+			100,
+			$instance->get( 'capacity' ),
+			'Failed to assert the pre-0.36.0 name answers for capacity.'
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Test that the current name wins over the one it replaced.
+	 *
+	 * @since  TBD
+	 * @covers ::get
+	 *
+	 * @return void
+	 */
+	public function test_get_prefers_the_current_name_over_the_old_one(): void {
+		$instance = Settings::get_instance();
+
+		add_option(
+			'gatherpress_settings',
+			array(
+				'capacity'             => 25,
+				'max_attendance_limit' => 100,
+			)
+		);
+
+		$this->assertSame(
+			25,
+			$instance->get( 'capacity' ),
+			'Failed to assert capacity wins over the name it replaced.'
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Test that an option with no rename entry is unaffected by the fallback.
+	 *
+	 * @since  TBD
+	 * @covers ::get
+	 *
+	 * @return void
+	 */
+	public function test_get_without_a_rename_entry_uses_the_default(): void {
+		$instance = Settings::get_instance();
+
+		add_option(
+			'gatherpress_settings',
+			array(
+				'max_attendance_limit' => 100,
+			)
+		);
+
+		// Only `capacity` is mapped to the old name, so nothing else should
+		// start answering with it.
+		$this->assertNotSame(
+			100,
+			$instance->get( 'guest_limit' ),
+			'Failed to assert the rename map only applies to the option it names.'
 		);
 
 		delete_option( 'gatherpress_settings' );
@@ -1369,6 +1453,99 @@ class Test_Settings extends Base {
 			get_option( 'rewrite_rules' ),
 			'Failed to assert rewrite rules were deleted when URLs removed.'
 		);
+	}
+
+	/**
+	 * Test that saving a renamed setting retires the name it used to have.
+	 *
+	 * Without this the fallback in get() resurrects the former value the
+	 * moment the admin saves the current one as its default, because the
+	 * strip-defaults pass removes the current key and leaves the former one
+	 * standing.
+	 *
+	 * @since  TBD
+	 * @covers ::sanitize_page_settings
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_page_settings_retires_a_renamed_options_former_name(): void {
+		$instance = Settings::get_instance();
+
+		update_option( 'gatherpress_settings', array( 'max_attendance_limit' => 100 ) );
+
+		$callback = $instance->sanitize_page_settings( array( 'capacity' => 'number' ) );
+		$merged   = $callback( array( 'capacity' => 50 ) );
+
+		update_option( 'gatherpress_settings', $merged );
+
+		$this->assertArrayNotHasKey(
+			'max_attendance_limit',
+			$merged,
+			'Failed to assert the former name is dropped once the current one is saved.'
+		);
+		$this->assertSame(
+			50,
+			$instance->get( 'capacity' ),
+			'Failed to assert a renamed setting can be returned to its default.'
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Test that emptying a renamed setting retires the name it used to have.
+	 *
+	 * @since  TBD
+	 * @covers ::sanitize_page_settings
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_page_settings_retires_a_former_name_on_an_empty_value(): void {
+		$instance = Settings::get_instance();
+
+		update_option( 'gatherpress_settings', array( 'venue_map_default_height' => 300 ) );
+
+		$callback = $instance->sanitize_page_settings( array( 'venue_map_height' => 'number' ) );
+		$merged   = $callback( array( 'venue_map_height' => '' ) );
+
+		update_option( 'gatherpress_settings', $merged );
+
+		$this->assertArrayNotHasKey(
+			'venue_map_default_height',
+			$merged,
+			'Failed to assert an emptied setting drops its former name.'
+		);
+		$this->assertNotSame(
+			300,
+			$instance->get( 'venue_map_height' ),
+			'Failed to assert an emptied setting stops answering with the former value.'
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Test that set() retires a renamed setting's former name.
+	 *
+	 * @since  TBD
+	 * @covers ::set
+	 *
+	 * @return void
+	 */
+	public function test_set_retires_a_renamed_options_former_name(): void {
+		$instance = Settings::get_instance();
+
+		update_option( 'gatherpress_settings', array( 'max_attendance_limit' => 100 ) );
+
+		$instance->set( 'capacity', 50 );
+
+		$this->assertSame(
+			50,
+			$instance->get( 'capacity' ),
+			'Failed to assert set() to the default clears the former name.'
+		);
+
+		delete_option( 'gatherpress_settings' );
 	}
 
 	/**
@@ -2103,18 +2280,18 @@ class Test_Settings extends Base {
 		$data = array(
 			'version'  => GATHERPRESS_VERSION,
 			'settings' => array(
-				'max_attendance_limit' => 100,
+				'capacity' => 100,
 			),
 		);
 
 		$result = $instance->import_settings( $data, 'merge' );
 
 		$this->assertTrue( $result['success'] );
-		$this->assertContains( 'max_attendance_limit', $result['imported'] );
+		$this->assertContains( 'capacity', $result['imported'] );
 
 		$settings = get_option( 'gatherpress_settings' );
 		$this->assertSame( 'google', $settings['map_platform'], 'Existing value should be preserved in merge.' );
-		$this->assertSame( 100, $settings['max_attendance_limit'], 'Imported value should be set.' );
+		$this->assertSame( 100, $settings['capacity'], 'Imported value should be set.' );
 
 		delete_option( 'gatherpress_settings' );
 	}
@@ -2134,7 +2311,7 @@ class Test_Settings extends Base {
 		$data = array(
 			'version'  => GATHERPRESS_VERSION,
 			'settings' => array(
-				'max_attendance_limit' => 100,
+				'capacity' => 100,
 			),
 		);
 
@@ -2144,7 +2321,7 @@ class Test_Settings extends Base {
 
 		$settings = get_option( 'gatherpress_settings' );
 		$this->assertArrayNotHasKey( 'map_platform', $settings, 'Old value should be gone in replace.' );
-		$this->assertSame( 100, $settings['max_attendance_limit'], 'Imported value should be set.' );
+		$this->assertSame( 100, $settings['capacity'], 'Imported value should be set.' );
 
 		delete_option( 'gatherpress_settings' );
 	}
@@ -2242,8 +2419,8 @@ class Test_Settings extends Base {
 
 		$this->assertIsArray( $map );
 		$this->assertSame( 'select', $map['map_platform'] );
-		$this->assertSame( 'checkbox', $map['post_or_event_date'] );
-		$this->assertSame( 'number', $map['max_attendance_limit'] );
+		$this->assertSame( 'checkbox', $map['use_event_date_for_publish'] );
+		$this->assertSame( 'number', $map['capacity'] );
 		$this->assertSame( 'format', $map['date_format'] );
 		$this->assertSame( 'autocomplete', $map['organizer'] );
 	}
@@ -2657,6 +2834,81 @@ class Test_Settings extends Base {
 		$this->assertTrue( Settings::get_instance()->is_option_inherited( 'date_format' ) );
 		$this->assertFalse( Settings::get_instance()->is_option_inherited( 'time_format' ) );
 
+		delete_site_option( 'gatherpress_network_settings' );
+		\GatherPress\Core\Settings\Network::flush_config_cache();
+	}
+
+	/**
+	 * Coverage for is_option_inherited when the network list predates a rename.
+	 *
+	 * @since   TBD
+	 * @covers ::is_option_inherited
+	 *
+	 * @group   multisite
+	 *
+	 * @return void
+	 */
+	public function test_is_option_inherited_matches_a_renamed_options_old_name(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		// Written by a network admin before 0.36.0, so it names the option the
+		// way it was called then.
+		update_site_option(
+			'gatherpress_network_settings',
+			array(
+				'enabled'   => true,
+				'inherited' => array( 'max_attendance_limit' ),
+			)
+		);
+		\GatherPress\Core\Settings\Network::flush_config_cache();
+
+		$this->assertTrue(
+			Settings::get_instance()->is_option_inherited( 'capacity' ),
+			'Failed to assert the pre-0.36.0 name keeps the option inherited.'
+		);
+		$this->assertFalse(
+			Settings::get_instance()->is_option_inherited( 'guest_limit' ),
+			'Failed to assert an unlisted option stays site-editable.'
+		);
+
+		delete_site_option( 'gatherpress_network_settings' );
+		\GatherPress\Core\Settings\Network::flush_config_cache();
+	}
+
+	/**
+	 * Coverage for get() reading a network value stored under a renamed option's old name.
+	 *
+	 * @since   TBD
+	 * @covers ::get
+	 *
+	 * @group   multisite
+	 *
+	 * @return void
+	 */
+	public function test_get_reads_a_network_value_saved_under_the_old_name(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		update_site_option( 'gatherpress_settings', array( 'max_attendance_limit' => 100 ) );
+		update_site_option(
+			'gatherpress_network_settings',
+			array(
+				'enabled'   => true,
+				'inherited' => array( 'max_attendance_limit' ),
+			)
+		);
+		\GatherPress\Core\Settings\Network::flush_config_cache();
+
+		$this->assertSame(
+			100,
+			Settings::get_instance()->get( 'capacity' ),
+			'Failed to assert a network value saved under the old name is inherited.'
+		);
+
+		delete_site_option( 'gatherpress_settings' );
 		delete_site_option( 'gatherpress_network_settings' );
 		\GatherPress\Core\Settings\Network::flush_config_cache();
 	}
@@ -3217,14 +3469,14 @@ class Test_Settings extends Base {
 		update_option(
 			Settings::OPTION_NAME,
 			array(
-				'map_platform'                  => 'google',
-				'venue_map_default_render_mode' => 'interactive',
+				'map_platform'          => 'google',
+				'venue_map_render_mode' => 'interactive',
 			)
 		);
 
 		$matching_conditions = array(
-			'map_platform'                  => 'google',
-			'venue_map_default_render_mode' => 'interactive',
+			'map_platform'          => 'google',
+			'venue_map_render_mode' => 'interactive',
 		);
 		$this->assertTrue(
 			Utility::invoke_hidden_method(
@@ -3236,8 +3488,8 @@ class Test_Settings extends Base {
 
 		// Flip one key out of band — overall result must drop to false.
 		$mixed_conditions = array(
-			'map_platform'                  => 'google',
-			'venue_map_default_render_mode' => 'static',
+			'map_platform'          => 'google',
+			'venue_map_render_mode' => 'static',
 		);
 		$this->assertFalse(
 			Utility::invoke_hidden_method(
@@ -3578,7 +3830,7 @@ class Test_Settings extends Base {
 		$instance = Settings::get_instance();
 
 		$instance->set( 'carto_api_key', 'abc123' );
-		$instance->set( 'map_tile_url_custom', 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png' );
+		$instance->set( 'custom_map_tile_url', 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png' );
 
 		$this->assertSame(
 			'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
@@ -3587,7 +3839,7 @@ class Test_Settings extends Base {
 		);
 
 		$instance->set( 'carto_api_key', '' );
-		$instance->set( 'map_tile_url_custom', '' );
+		$instance->set( 'custom_map_tile_url', '' );
 	}
 
 	/**

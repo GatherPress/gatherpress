@@ -550,7 +550,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * Tests the handle_rsvp_form_fields method for guest count field with allowed guests.
 	 *
-	 * Ensures that when guest count field is rendered and guests are allowed (max_guest_limit > 0),
+	 * Ensures that when guest count field is rendered and guests are allowed (guest_limit > 0),
 	 * the appropriate interactivity attributes are added to the input field.
 	 *
 	 * @since 0.33.0
@@ -567,7 +567,7 @@ class Test_Rsvp extends Base {
 		);
 
 		// Add post meta.
-		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 5 );
+		add_post_meta( $post_id, 'gatherpress_guest_limit', 5 );
 
 		// Set the WordPress global query context by visiting the post.
 		$this->go_to( get_permalink( $post_id ) );
@@ -607,7 +607,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * Tests the handle_rsvp_form_fields method for guest count field when guests are not allowed.
 	 *
-	 * Ensures that when guests are not allowed (max_guest_limit is 0 or empty),
+	 * Ensures that when guests are not allowed (guest_limit is 0 or empty),
 	 * the method returns empty content to hide the field.
 	 *
 	 * @since 0.33.0
@@ -624,7 +624,7 @@ class Test_Rsvp extends Base {
 		);
 
 		// Add post meta.
-		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 0 );
+		add_post_meta( $post_id, 'gatherpress_guest_limit', 0 );
 
 		// Set the WordPress global query context by visiting the post.
 		$this->go_to( get_permalink( $post_id ) );
@@ -818,7 +818,7 @@ class Test_Rsvp extends Base {
 		);
 
 		// Add post meta.
-		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 3 );
+		add_post_meta( $post_id, 'gatherpress_guest_limit', 3 );
 
 		// Set the WordPress global query context by visiting the post.
 		$this->go_to( get_permalink( $post_id ) );

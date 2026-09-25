@@ -277,15 +277,15 @@ class Settings {
 	/**
 	 * Returns the map tile layer URL, allowing sites to override the default.
 	 *
-	 * Layers the `map_tile_url_custom` setting under the filter.
+	 * Layers the `custom_map_tile_url` setting under the filter.
 	 *
 	 * @since 0.34.0
-	 * @since 0.36.0 Layered under the `map_tile_url_custom` setting.
+	 * @since 0.36.0 Layered under the `custom_map_tile_url` setting.
 	 *
 	 * @return string Leaflet-compatible tile URL template.
 	 */
 	public static function get_map_tile_url(): string {
-		$custom  = trim( (string) self::get_instance()->get( 'map_tile_url_custom' ) );
+		$custom  = trim( (string) self::get_instance()->get( 'custom_map_tile_url' ) );
 		$default = '' !== $custom ? $custom : self::MAP_TILE_URL;
 
 		/**
@@ -352,15 +352,15 @@ class Settings {
 	/**
 	 * Returns the map attribution string, allowing sites to override the default.
 	 *
-	 * Layers the `map_tile_attribution_custom` setting under the filter.
+	 * Layers the `custom_map_tile_attribution` setting under the filter.
 	 *
 	 * @since 0.34.0
-	 * @since 0.36.0 Layered under the `map_tile_attribution_custom` setting.
+	 * @since 0.36.0 Layered under the `custom_map_tile_attribution` setting.
 	 *
 	 * @return string HTML attribution credit shown on the map.
 	 */
 	public static function get_map_tile_attribution(): string {
-		$custom = trim( (string) self::get_instance()->get( 'map_tile_attribution_custom' ) );
+		$custom = trim( (string) self::get_instance()->get( 'custom_map_tile_attribution' ) );
 
 		$default = '' !== $custom
 			? esc_html( $custom )
@@ -899,6 +899,7 @@ class Settings {
 			// Merge with existing values to preserve settings from other tabs.
 			$existing = $this->read_stored_options( $scope );
 			$merged   = array_merge( $existing, $sanitized );
+			$merged   = Renamed_Keys::forget_former_names( $merged, array_keys( $sanitized ) );
 
 			// Remove values that match their defaults to keep the option lean.
 			foreach ( $merged as $key => $value ) {
@@ -1099,6 +1100,8 @@ class Settings {
 			$options[ $option ] = $value;
 		}
 
+		$options = Renamed_Keys::forget_former_names( $options, array( $option ) );
+
 		update_option( self::OPTION_NAME, $options );
 	}
 
@@ -1127,12 +1130,12 @@ class Settings {
 			? get_site_option( self::OPTION_NAME, array() )
 			: get_option( self::OPTION_NAME, array() );
 
-		if (
-			is_array( $options )
-			&& isset( $options[ $option ] )
-			&& '' !== $options[ $option ]
-		) {
-			return $options[ $option ];
+		// isset() is safe on a non-array, which is what get_site_option()
+		// hands back on single site, so no shape check is needed first.
+		foreach ( Renamed_Keys::option_names( $option ) as $name ) {
+			if ( isset( $options[ $name ] ) && '' !== $options[ $name ] ) {
+				return $options[ $name ];
+			}
 		}
 
 		return $this->get_flat_default( $option );
@@ -1164,7 +1167,15 @@ class Settings {
 			$config = Settings\Network::get_config();
 
 			if ( ! empty( $config['enabled'] ) ) {
-				$inherited = in_array( $option, $config['inherited'], true );
+				// The stored list is written from whatever the option keys were
+				// called when the network admin last saved it, so the former
+				// name has to count too. Without this a network that opted an
+				// option into inheritance before 0.36.0 would quietly stop
+				// inheriting it.
+				$inherited = (bool) array_intersect(
+					Renamed_Keys::option_names( $option ),
+					$config['inherited']
+				);
 			}
 		}
 

@@ -179,11 +179,11 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
-		$settings->set( 'venue_map_default_render_mode', 'static' );
-		$settings->set( 'venue_map_default_zoom', 12 );
-		$settings->set( 'venue_map_default_height', 450 );
-		$settings->set( 'venue_map_default_scale', 'contain' );
-		$settings->set( 'venue_map_default_type', 'satellite' );
+		$settings->set( 'venue_map_render_mode', 'static' );
+		$settings->set( 'venue_map_zoom', 12 );
+		$settings->set( 'venue_map_height', 450 );
+		$settings->set( 'venue_map_scale', 'contain' );
+		$settings->set( 'venue_map_type', 'satellite' );
 
 		$metadata = array(
 			'name'       => 'gatherpress/venue-map',
@@ -225,6 +225,70 @@ class Test_Map extends Base {
 	}
 
 	/**
+	 * A valid aspect ratio from Settings becomes the block attribute default.
+	 *
+	 * @since   TBD
+	 * @covers ::apply_block_attribute_defaults
+	 *
+	 * @return void
+	 */
+	public function test_apply_block_attribute_defaults_uses_a_valid_aspect_ratio(): void {
+		$instance = Map::get_instance();
+
+		\GatherPress\Core\Settings::get_instance()->set( 'venue_map_aspect_ratio', '16/9' );
+
+		$metadata = array(
+			'name'       => 'gatherpress/venue-map',
+			'attributes' => array(
+				'aspectRatio' => array(
+					'type'    => 'string',
+					'default' => '4/3',
+				),
+			),
+		);
+
+		$result = $instance->apply_block_attribute_defaults( $metadata );
+
+		$this->assertSame(
+			'16/9',
+			$result['attributes']['aspectRatio']['default'],
+			'Failed to assert a valid aspect ratio reaches the block default.'
+		);
+	}
+
+	/**
+	 * An unparsable aspect ratio falls through to the block.json default.
+	 *
+	 * @since   TBD
+	 * @covers ::apply_block_attribute_defaults
+	 *
+	 * @return void
+	 */
+	public function test_apply_block_attribute_defaults_rejects_an_invalid_aspect_ratio(): void {
+		$instance = Map::get_instance();
+
+		\GatherPress\Core\Settings::get_instance()->set( 'venue_map_aspect_ratio', 'not-a-ratio' );
+
+		$metadata = array(
+			'name'       => 'gatherpress/venue-map',
+			'attributes' => array(
+				'aspectRatio' => array(
+					'type'    => 'string',
+					'default' => '4/3',
+				),
+			),
+		);
+
+		$result = $instance->apply_block_attribute_defaults( $metadata );
+
+		$this->assertSame(
+			'4/3',
+			$result['attributes']['aspectRatio']['default'],
+			'Failed to assert an unparsable ratio leaves the block default alone.'
+		);
+	}
+
+	/**
 	 * A scale value outside the allow-list falls through — the block.json
 	 * default stays in place. Guards against a stale or hand-edited Settings
 	 * row smuggling an unexpected CSS keyword into `object-fit`.
@@ -237,7 +301,7 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
-		$settings->set( 'venue_map_default_scale', 'none' );
+		$settings->set( 'venue_map_scale', 'none' );
 
 		$metadata = array(
 			'name'       => 'gatherpress/venue-map',
@@ -292,10 +356,10 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
-		$settings->set( 'venue_map_default_render_mode', '' );
-		$settings->set( 'venue_map_default_zoom', 0 );
-		$settings->set( 'venue_map_default_height', '' );
-		$settings->set( 'venue_map_default_type', '' );
+		$settings->set( 'venue_map_render_mode', '' );
+		$settings->set( 'venue_map_zoom', 0 );
+		$settings->set( 'venue_map_height', '' );
+		$settings->set( 'venue_map_type', '' );
 
 		$metadata = array(
 			'name'       => 'gatherpress/venue-map',
@@ -1735,14 +1799,14 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
-		$settings->set( 'venue_map_default_zoom', 13 );
+		$settings->set( 'venue_map_zoom', 13 );
 		$this->assertSame(
 			13,
 			Utility::invoke_hidden_method( $instance, 'get_zoom' ),
 			'Should prefer the stored Settings value.'
 		);
 
-		$settings->set( 'venue_map_default_zoom', 0 );
+		$settings->set( 'venue_map_zoom', 0 );
 		$this->assertSame(
 			Map::DEFAULT_ZOOM,
 			Utility::invoke_hidden_method( $instance, 'get_zoom' ),
@@ -1766,7 +1830,7 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
-		$settings->set( 'venue_map_default_zoom', 0 );
+		$settings->set( 'venue_map_zoom', 0 );
 		$too_high = static function () {
 			return 99;
 		};
@@ -1802,7 +1866,7 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
-		$settings->set( 'venue_map_default_height', 0 );
+		$settings->set( 'venue_map_height', 0 );
 		$too_big = static function () {
 			return 9999;
 		};
@@ -1827,14 +1891,14 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
-		$settings->set( 'venue_map_default_height', 450 );
+		$settings->set( 'venue_map_height', 450 );
 		$this->assertSame(
 			450,
 			Utility::invoke_hidden_method( $instance, 'get_height' ),
 			'Should prefer the stored Settings value.'
 		);
 
-		$settings->set( 'venue_map_default_height', 0 );
+		$settings->set( 'venue_map_height', 0 );
 		$this->assertSame(
 			Map::DEFAULT_HEIGHT,
 			Utility::invoke_hidden_method( $instance, 'get_height' ),
@@ -1886,7 +1950,7 @@ class Test_Map extends Base {
 		$this->assertSame( 'terrain', $instance->normalize_map_type( 'terrain' ) );
 		$this->assertSame( 'roadmap', $instance->normalize_map_type( 'bogus' ) );
 
-		$settings->set( 'venue_map_default_type', 'satellite' );
+		$settings->set( 'venue_map_type', 'satellite' );
 		$this->assertSame( 'satellite', $instance->normalize_map_type( '' ) );
 	}
 

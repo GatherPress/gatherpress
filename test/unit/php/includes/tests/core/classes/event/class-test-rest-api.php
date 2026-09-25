@@ -502,7 +502,7 @@ class Test_Rest_Api extends Base {
 		$rsvp     = new Rsvp( $event_id );
 
 		// Force no attendance so responses remain on waiting list.
-		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', -1 );
+		Utility::set_and_get_hidden_property( $rsvp, 'capacity', -1 );
 
 		// Create user RSVP.
 		$user_id = $this->factory->user->create(

@@ -387,7 +387,7 @@ class Test_General_Block extends Base {
 
 		// Set the event post type.
 		set_post_type( $post_id, 'gatherpress_event' );
-		add_post_meta( $post_id, 'gatherpress_max_guest_limit', '0' );
+		add_post_meta( $post_id, 'gatherpress_guest_limit', '0' );
 
 		$block_content = '<div class="gatherpress-rsvp-field-guests">Guest Count Field</div>';
 		$block         = array( 'attrs' => array( 'postId' => $post_id ) );
@@ -415,7 +415,7 @@ class Test_General_Block extends Base {
 
 		// Set the event post type.
 		set_post_type( $post_id, 'gatherpress_event' );
-		add_post_meta( $post_id, 'gatherpress_max_guest_limit', '5' );
+		add_post_meta( $post_id, 'gatherpress_guest_limit', '5' );
 
 		$block_content = '<div class="gatherpress-rsvp-field-guests">Guest Count Field</div>';
 		$block         = array( 'attrs' => array( 'postId' => $post_id ) );
@@ -537,7 +537,7 @@ class Test_General_Block extends Base {
 
 		// Set the event post type.
 		set_post_type( $post_id, 'gatherpress_event' );
-		add_post_meta( $post_id, 'gatherpress_max_guest_limit', '0' );
+		add_post_meta( $post_id, 'gatherpress_guest_limit', '0' );
 
 		// Block content with multiple guest fields.
 		$block_content = '<div class="form-wrapper">' .
@@ -742,7 +742,7 @@ class Test_General_Block extends Base {
 		$post_id       = $this->mock->post( array( 'post_status' => 'draft' ) )->get()->ID;
 
 		set_post_type( $post_id, 'gatherpress_event' );
-		add_post_meta( $post_id, 'gatherpress_max_guest_limit', '0' );
+		add_post_meta( $post_id, 'gatherpress_guest_limit', '0' );
 
 		$block_content = '<div class="gatherpress-rsvp-field-guests">Guest Count Field</div>';
 		$block         = array( 'attrs' => array( 'postId' => $post_id ) );
@@ -1115,7 +1115,7 @@ class Test_General_Block extends Base {
 
 		// Set the event post type with both conditions.
 		set_post_type( $post_id, 'gatherpress_event' );
-		add_post_meta( $post_id, 'gatherpress_max_guest_limit', '0' );
+		add_post_meta( $post_id, 'gatherpress_guest_limit', '0' );
 		add_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', '' );
 
 		// Block content with mixed field types.
