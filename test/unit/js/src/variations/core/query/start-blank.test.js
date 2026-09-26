@@ -103,7 +103,7 @@ describe( 'core/query "Start blank" variations', () => {
 		expect( new Set( names ).size ).toBe( names.length );
 		names.forEach( ( name ) => {
 			expect( name ).toMatch(
-				/^gatherpress-event-query-start-blank-\d+$/
+				/^gatherpress-event-query-start-blank-\d+$/,
 			);
 		} );
 		startBlankVariations.forEach( ( variation ) => {
@@ -115,7 +115,7 @@ describe( 'core/query "Start blank" variations', () => {
 	it( 'carries the event-query className without leaking string-spread keys', () => {
 		startBlankVariations.forEach( ( variation ) => {
 			expect( variation.attributes.className ).toBe(
-				'gatherpress-event-query'
+				'gatherpress-event-query',
 			);
 			// A regression guard against spreading the className *string*,
 			// which would scatter numeric-index keys ("0","1",...) across
@@ -129,7 +129,7 @@ describe( 'core/query "Start blank" variations', () => {
 	it( 'scaffolds an event template with pagination and no-results in each variation', () => {
 		startBlankVariations.forEach( ( variation ) => {
 			const blocks = createBlocksFromInnerBlocksTemplate(
-				variation.innerBlocks
+				variation.innerBlocks,
 			);
 			const all = flattenNames( blocks );
 

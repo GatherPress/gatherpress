@@ -32,7 +32,7 @@ function notifyRsvpFailure( error = null ) {
 	// eslint-disable-next-line no-alert
 	alert(
 		gatherPressState.i18n?.rsvpFailed ??
-			'Sorry, there was an issue processing your RSVP. Please try again.'
+			'Sorry, there was an issue processing your RSVP. Please try again.',
 	);
 }
 

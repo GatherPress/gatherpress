@@ -85,7 +85,7 @@ export function usePostTypeSupports( support, postType = null ) {
 			return !! wpSelect( 'core' ).getPostType( typeToCheck )
 				?.supports?.[ support ];
 		},
-		[ support, postType ]
+		[ support, postType ],
 	);
 }
 
@@ -177,7 +177,7 @@ export function findEventPostById( selectFunc, postId ) {
 		const records = selectFunc( 'core' ).getEntityRecords(
 			'postType',
 			type.slug,
-			{ include: [ postId ], context: 'edit', per_page: 1 }
+			{ include: [ postId ], context: 'edit', per_page: 1 },
 		);
 		if ( Array.isArray( records ) && 0 < records.length ) {
 			const post = records[ 0 ];
@@ -260,7 +260,7 @@ const verifyPostIdIsValidEvent = ( selectFunc, postId, postType ) => {
 		const post = selectFunc( 'core' ).getEntityRecord(
 			'postType',
 			currentPostType,
-			postId
+			postId,
 		);
 		return !! post;
 	}
@@ -271,7 +271,7 @@ const verifyPostIdIsValidEvent = ( selectFunc, postId, postType ) => {
 		const post = selectFunc( 'core' ).getEntityRecord(
 			'postType',
 			lookupType,
-			postId
+			postId,
 		);
 		return !! post && 'publish' === post.status;
 	}
@@ -391,7 +391,7 @@ export function hasEventPastNotice() {
 		const singularLabel = getPostTypeLabel(
 			'singular_name',
 			null,
-			__( 'Event', 'gatherpress' )
+			__( 'Event', 'gatherpress' ),
 		);
 
 		notices.createNotice(
@@ -399,7 +399,7 @@ export function hasEventPastNotice() {
 			sprintf(
 				/* translators: %s: Singular post type label, e.g. "Event". */
 				__( '%s has already passed.', 'gatherpress' ),
-				singularLabel
+				singularLabel,
 			),
 			{
 				id,
@@ -422,15 +422,31 @@ export function hasEventPastNotice() {
  * @return {boolean} True if the event has the online-event term, false otherwise.
  */
 export function hasOnlineEventTerm( postId = null ) {
-	// Derive the venue taxonomy from the current editor post type.
-	const currentPostType = select( 'core/editor' )?.getCurrentPostType?.();
-	const venueTaxonomy = getVenueTaxonomy( getVenuePostType( currentPostType ) );
+	let post = null;
+	let eventPostType = select( 'core/editor' )?.getCurrentPostType?.();
+
+	// An override resolves the post across every event-supporting post
+	// type, so the venue taxonomy has to come from the post that was
+	// found rather than from whatever post type the editor has open.
+	if ( postId ) {
+		post = findEventPostById( select, postId );
+
+		if ( ! post ) {
+			return false;
+		}
+
+		eventPostType = post.type;
+	} else if ( ! isEventPostType() ) {
+		return false;
+	}
+
+	const venueTaxonomy = getVenueTaxonomy( getVenuePostType( eventPostType ) );
 
 	// Get the online-event term ID.
 	const onlineEventTerms = select( 'core' ).getEntityRecords(
 		'taxonomy',
 		venueTaxonomy,
-		{ slug: 'online-event', per_page: 1 }
+		{ slug: 'online-event', per_page: 1 },
 	);
 	const onlineEventTermId = onlineEventTerms?.[ 0 ]?.id;
 
@@ -438,38 +454,16 @@ export function hasOnlineEventTerm( postId = null ) {
 		return false;
 	}
 
-	// If postId is provided, check that specific post.
-	if ( postId ) {
-		const post = select( 'core' ).getEntityRecord(
-			'postType',
-			currentPostType || 'gatherpress_event',
-			postId
-		);
-		const venueTaxonomyIds = post?.[ venueTaxonomy ];
-
-		if ( ! venueTaxonomyIds?.length ) {
-			return false;
-		}
-
-		return venueTaxonomyIds.some(
-			( id ) => String( id ) === String( onlineEventTermId )
-		);
-	}
-
-	// Otherwise, check current post if it's an event.
-	if ( ! isEventPostType() ) {
-		return false;
-	}
-
-	const venueTaxonomyIds =
-		select( 'core/editor' ).getEditedPostAttribute( venueTaxonomy );
+	const venueTaxonomyIds = post
+		? post[ venueTaxonomy ]
+		: select( 'core/editor' ).getEditedPostAttribute( venueTaxonomy );
 
 	if ( ! venueTaxonomyIds?.length ) {
 		return false;
 	}
 
 	return venueTaxonomyIds.some(
-		( id ) => String( id ) === String( onlineEventTermId )
+		( id ) => String( id ) === String( onlineEventTermId ),
 	);
 }
 
@@ -528,7 +522,7 @@ export function isOpenRsvpEnabled( enableOpenRsvp ) {
  * @param {number|null} postId     Post ID from context or null.
  * @param {Object}      attributes Block attributes (may contain explicit postId override).
  *
- * @return {Object} Object containing maxGuestLimit, enableRsvp, and enableAnonymousRsvp.
+ * @return {Object} Object containing guestLimit, enableRsvp, and enableAnonymousRsvp.
  */
 export function getEventMeta( selectFunc, postId, attributes ) {
 	let maxLimit;
@@ -541,20 +535,21 @@ export function getEventMeta( selectFunc, postId, attributes ) {
 	const hasExplicitOverride = !! attributes?.postId;
 
 	if ( hasExplicitOverride && postId ) {
-		// Explicit override - fetch from post via core data store.
-		const post = selectFunc( 'core' ).getEntityRecord( 'postType', 'gatherpress_event', postId );
-		maxLimit = post?.meta?.gatherpress_max_guest_limit;
+		// Explicit override - resolve the post across every event-supporting
+		// post type rather than assuming the standard event slug.
+		const post = findEventPostById( selectFunc, postId );
+		maxLimit = post?.meta?.gatherpress_guest_limit;
 		// Stored as integer (0/1); undefined means not yet set, default to enabled.
 		enableRsvp = 0 !== post?.meta?.gatherpress_enable_rsvp;
 		enableAnonymous = Boolean( post?.meta?.gatherpress_enable_anonymous_rsvp );
 	} else {
 		// No override - check if current post is an event and use editor for live edits.
 		const currentPostType = selectFunc( 'core/editor' )?.getCurrentPostType();
-		const isCurrentPostEvent = isEventPostType( currentPostType );
+		const isCurrentPostEvent = isEventSupportingType( selectFunc, currentPostType );
 
 		if ( isCurrentPostEvent ) {
 			const meta = selectFunc( 'core/editor' ).getEditedPostAttribute( 'meta' );
-			maxLimit = meta?.gatherpress_max_guest_limit;
+			maxLimit = meta?.gatherpress_guest_limit;
 			// Stored as integer (0/1); undefined means not yet set, default to enabled.
 			enableRsvp = 0 !== meta?.gatherpress_enable_rsvp;
 			enableAnonymous = Boolean( meta?.gatherpress_enable_anonymous_rsvp );
@@ -562,7 +557,7 @@ export function getEventMeta( selectFunc, postId, attributes ) {
 	}
 
 	return {
-		maxGuestLimit: maxLimit ?? 0,
+		guestLimit: maxLimit ?? 0,
 		enableRsvp: enableRsvp ?? true,
 		enableAnonymousRsvp: enableAnonymous ?? false,
 	};

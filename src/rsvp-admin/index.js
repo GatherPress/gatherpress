@@ -48,7 +48,7 @@ function mountFilters() {
 					eventLabel={ label || __( 'Filter by event', 'gatherpress' ) }
 					statuses={ parsedStatuses }
 					initialResponses={ selected ? selected.split( ',' ) : [] }
-				/>
+				/>,
 			);
 		} );
 }

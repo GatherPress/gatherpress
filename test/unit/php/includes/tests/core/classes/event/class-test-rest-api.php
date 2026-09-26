@@ -586,7 +586,7 @@ class Test_Rest_Api extends Base {
 		$rsvp     = new Rsvp( $event_id );
 
 		// Force no attendance so responses remain on waiting list.
-		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', -1 );
+		Utility::set_and_get_hidden_property( $rsvp, 'capacity', -1 );
 
 		// Create user RSVP.
 		$user_id = $this->factory->user->create(
@@ -785,6 +785,95 @@ class Test_Rest_Api extends Base {
 		$this->assertTrue( $route['args']['args']['author']['required'] );
 		$this->assertTrue( $route['args']['args']['email']['required'] );
 		$this->assertFalse( $route['args']['args']['gatherpress_event_updates_opt_in']['required'] );
+	}
+
+	/**
+	 * Tests handle_rsvp_form_submission survives a malformed stored schema.
+	 *
+	 * The handler copies the schema's field names off the request before
+	 * process_rsvp() validates anything, so enumerating a scalar there
+	 * fataled with a TypeError before the submission could be rejected.
+	 *
+	 * @since TBD
+	 * @covers ::handle_rsvp_form_submission
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_form_submission_with_a_malformed_schema(): void {
+		$instance = Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		update_post_meta(
+			$post_id,
+			'gatherpress_rsvp_form_schemas',
+			array( 'form_0' => array( 'fields' => 'corrupted' ) )
+		);
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'comment_post_ID', $post_id );
+		$request->set_param( 'author', 'Test Author' );
+		$request->set_param( 'email', 'test@example.com' );
+		$request->set_param( 'gatherpress_form_schema_id', 'form_0' );
+
+		$response = $instance->handle_rsvp_form_submission( $request );
+
+		$this->assertInstanceOf(
+			'WP_REST_Response',
+			$response,
+			'A malformed schema should answer rather than fatal.'
+		);
+	}
+
+	/**
+	 * Tests handle_rsvp_form_submission reports per-field errors.
+	 *
+	 * A custom-field rejection answers 400 and carries one message per
+	 * failing field alongside the summary the form already shows.
+	 *
+	 * @since TBD
+	 * @covers ::handle_rsvp_form_submission
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_form_submission_reports_field_errors(): void {
+		$instance = Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		update_post_meta(
+			$post_id,
+			'gatherpress_rsvp_form_schemas',
+			array(
+				'form_0' => array(
+					'hash'   => 'test_hash',
+					'fields' => array(
+						'dietary' => array(
+							'name'        => 'dietary',
+							'type'        => 'text',
+							'required'    => true,
+							'label'       => 'Dietary needs',
+							'placeholder' => '',
+						),
+					),
+				),
+			)
+		);
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'comment_post_ID', $post_id );
+		$request->set_param( 'author', 'Test Author' );
+		$request->set_param( 'email', 'test@example.com' );
+		$request->set_param( 'gatherpress_form_schema_id', 'form_0' );
+
+		$response = $instance->handle_rsvp_form_submission( $request );
+		$data     = $response->get_data();
+
+		$this->assertSame( 400, $response->get_status(), 'A rejected submission should answer 400.' );
+		$this->assertFalse( $data['success'], 'A rejected submission should not report success.' );
+		$this->assertSame(
+			array( 'dietary' => 'Dietary needs is required.' ),
+			$data['errors'],
+			'The response should name each failing field.'
+		);
 	}
 
 	/**
@@ -1218,6 +1307,81 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Coverage for rsvp_responses with a custom post type that declares RSVP support.
+	 *
+	 * @covers ::rsvp_responses
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_responses_custom_rsvp_post_type(): void {
+		$instance  = Rest_Api::get_instance();
+		$post_type = 'gp_rsvp_custom';
+
+		register_post_type(
+			$post_type,
+			array(
+				'public'   => true,
+				'supports' => array( 'title', Event::SUPPORT, Rsvp::SUPPORT ),
+			)
+		);
+
+		$post_id = $this->factory()->post->create( array( 'post_type' => $post_type ) );
+		$user_id = $this->factory()->user->create();
+		$rsvp    = new Rsvp( $post_id );
+		$rsvp->save( $user_id, 'attending', 0, 1 );
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'post_id', $post_id );
+
+		$response = $instance->rsvp_responses( $request );
+		$data     = $response->get_data();
+
+		unregister_post_type( $post_type );
+
+		$this->assertTrue(
+			$data['success'],
+			'Failed to assert that a post type with RSVP support returns its responses.'
+		);
+		$this->assertArrayHasKey( 'attending', $data['data'] );
+	}
+
+	/**
+	 * Coverage for rsvp_responses with a post type that has event dates but no RSVP support.
+	 *
+	 * @covers ::rsvp_responses
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_responses_event_date_only_post_type(): void {
+		$instance  = Rest_Api::get_instance();
+		$post_type = 'gp_date_only';
+
+		register_post_type(
+			$post_type,
+			array(
+				'public'   => true,
+				'supports' => array( 'title', Event::SUPPORT ),
+			)
+		);
+
+		$post_id = $this->factory()->post->create( array( 'post_type' => $post_type ) );
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'post_id', $post_id );
+
+		$response = $instance->rsvp_responses( $request );
+		$data     = $response->get_data();
+
+		unregister_post_type( $post_type );
+
+		$this->assertFalse(
+			$data['success'],
+			'Failed to assert that event-date support alone does not expose RSVP responses.'
+		);
+		$this->assertEmpty( $data['data'] );
+	}
+
+	/**
 	 * Coverage for rsvp_status_html method.
 	 *
 	 * @covers ::rsvp_status_html
@@ -1578,6 +1742,43 @@ class Test_Rest_Api extends Base {
 		$result = $instance->send_emails( $post_id, array( 'all' => true ), '' );
 
 		$this->assertFalse( $result );
+	}
+
+	/**
+	 * Coverage for send_emails with a custom post type that declares RSVP support.
+	 *
+	 * @covers ::send_emails
+	 *
+	 * @return void
+	 */
+	public function test_send_emails_custom_rsvp_post_type(): void {
+		add_filter( 'pre_wp_mail', '__return_false' );
+
+		$instance  = Rest_Api::get_instance();
+		$post_type = 'gp_rsvp_custom';
+
+		register_post_type(
+			$post_type,
+			array(
+				'public'   => true,
+				'supports' => array( 'title', Event::SUPPORT, Rsvp::SUPPORT ),
+			)
+		);
+
+		$post_id = $this->factory()->post->create( array( 'post_type' => $post_type ) );
+		$user_id = $this->factory()->user->create();
+		$rsvp    = new Rsvp( $post_id );
+		$rsvp->save( $user_id, 'attending' );
+
+		$result = $instance->send_emails( $post_id, array( 'attending' => true ), 'Test message' );
+
+		unregister_post_type( $post_type );
+		remove_filter( 'pre_wp_mail', '__return_false' );
+
+		$this->assertTrue(
+			$result,
+			'Failed to assert that a post type with RSVP support can send event emails.'
+		);
 	}
 
 	/**

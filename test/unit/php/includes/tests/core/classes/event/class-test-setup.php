@@ -829,7 +829,7 @@ class Test_Setup extends Base {
 		update_option(
 			'gatherpress_settings',
 			array(
-				'post_or_event_date' => '1',
+				'use_event_date_for_publish' => '1',
 			)
 		);
 
@@ -868,7 +868,7 @@ class Test_Setup extends Base {
 		update_option(
 			'gatherpress_settings',
 			array(
-				'post_or_event_date' => '1',
+				'use_event_date_for_publish' => '1',
 			)
 		);
 
@@ -899,7 +899,7 @@ class Test_Setup extends Base {
 		update_option(
 			'gatherpress_settings',
 			array(
-				'post_or_event_date' => '0',
+				'use_event_date_for_publish' => '0',
 			)
 		);
 
@@ -958,7 +958,7 @@ class Test_Setup extends Base {
 		update_option(
 			'gatherpress_settings',
 			array(
-				'post_or_event_date' => '1',
+				'use_event_date_for_publish' => '1',
 			)
 		);
 
@@ -1002,7 +1002,7 @@ class Test_Setup extends Base {
 		update_option(
 			'gatherpress_settings',
 			array(
-				'post_or_event_date' => '0',
+				'use_event_date_for_publish' => '0',
 			)
 		);
 
@@ -1080,7 +1080,7 @@ class Test_Setup extends Base {
 		update_option(
 			'gatherpress_settings',
 			array(
-				'post_or_event_date' => '1',
+				'use_event_date_for_publish' => '1',
 			)
 		);
 

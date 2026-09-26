@@ -113,7 +113,7 @@ describe( 'Geocoding helpers', () => {
 			apiFetch.mockImplementation( ( { path } ) => {
 				// Return unique coordinates per address so entries differ.
 				const address = decodeURIComponent(
-					path.split( 'address=' )[ 1 ] || ''
+					path.split( 'address=' )[ 1 ] || '',
 				);
 				return Promise.resolve( {
 					latitude: `lat-${ address }`,
@@ -141,7 +141,7 @@ describe( 'Geocoding helpers', () => {
 		it( 'treats a cache hit as recently used so it is not evicted next', async () => {
 			apiFetch.mockImplementation( ( { path } ) => {
 				const address = decodeURIComponent(
-					path.split( 'address=' )[ 1 ] || ''
+					path.split( 'address=' )[ 1 ] || '',
 				);
 				return Promise.resolve( {
 					latitude: `lat-${ address }`,
@@ -233,7 +233,7 @@ describe( 'Geocoding helpers', () => {
 				() =>
 					new Promise( ( resolve ) => {
 						resolveFetch = resolve;
-					} )
+					} ),
 			);
 
 			const address = 'Shared Address';
@@ -295,7 +295,7 @@ describe( 'Geocoding helpers', () => {
 			} );
 			expect( apiFetch ).toHaveBeenCalledWith( {
 				path: expect.stringContaining(
-					'address=123%20Main%20St%2C%20New%20York%2C%20NY'
+					'address=123%20Main%20St%2C%20New%20York%2C%20NY',
 				),
 			} );
 		} );
@@ -460,7 +460,7 @@ describe( 'Geocoding helpers', () => {
 			apiFetch.mockRejectedValue( failure );
 
 			await expect(
-				fetchAddressSuggestions( 'Some place' )
+				fetchAddressSuggestions( 'Some place' ),
 			).rejects.toBe( failure );
 		} );
 
@@ -475,7 +475,7 @@ describe( 'Geocoding helpers', () => {
 			expect( apiFetch ).toHaveBeenCalledWith(
 				expect.objectContaining( {
 					signal: controller.signal,
-				} )
+				} ),
 			);
 		} );
 
@@ -486,7 +486,7 @@ describe( 'Geocoding helpers', () => {
 			apiFetch.mockRejectedValue( abortError );
 
 			await expect(
-				fetchAddressSuggestions( 'Some place' )
+				fetchAddressSuggestions( 'Some place' ),
 			).rejects.toBe( abortError );
 		} );
 

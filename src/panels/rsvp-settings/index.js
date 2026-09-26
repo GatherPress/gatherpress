@@ -18,7 +18,7 @@ import AnonymousRsvpPanel from './anonymous-rsvp';
 import EnableOpenRsvpPanel from './enable-open-rsvp';
 import EnableRsvpPanel from './enable-rsvp';
 import GuestLimitPanel from './guest-limit';
-import MaxAttendanceLimitPanel from './max-attendance-limit';
+import CapacityPanel from './capacity';
 import { RsvpPluginDocumentSettings } from './slot';
 
 /**
@@ -58,7 +58,7 @@ const RsvpSettings = () => {
 						<EnableOpenRsvpPanel />
 					) }
 					<GuestLimitPanel />
-					<MaxAttendanceLimitPanel />
+					<CapacityPanel />
 					<AnonymousRsvpPanel />
 				</VStack>
 			</PluginDocumentSettingPanel>

@@ -40,7 +40,7 @@ export const VenueTermsCombobox = ( { search, setSearch, ...props } ) => {
 		( select ) =>
 			props?.context?.postType ||
 			select( 'core/editor' )?.getCurrentPostType(),
-		[ props?.context?.postType ]
+		[ props?.context?.postType ],
 	);
 
 	const venuePostType = getVenuePostType( currentPostType );
@@ -52,12 +52,12 @@ export const VenueTermsCombobox = ( { search, setSearch, ...props } ) => {
 	const singularLabel = usePostTypeLabel(
 		'singular_name',
 		venuePostType,
-		__( 'Venue', 'gatherpress' )
+		__( 'Venue', 'gatherpress' ),
 	);
 	const comboBoxLabel = sprintf(
 		/* translators: %s: Singular post type label, e.g. "Venue". */
 		__( 'Choose a %s', 'gatherpress' ),
-		singularLabel
+		singularLabel,
 	);
 
 	// Derive the venue taxonomy from the event post type.
@@ -70,7 +70,7 @@ export const VenueTermsCombobox = ( { search, setSearch, ...props } ) => {
 
 	const updateVenueTaxonomyIds = useCallback(
 		( newIds ) => editPost( { [ venueTaxonomy ]: newIds } ),
-		[ editPost, venueTaxonomy ]
+		[ editPost, venueTaxonomy ],
 	);
 
 	// Get the online-event term to exclude it from venue selection.
@@ -132,7 +132,7 @@ export const VenueTermsCombobox = ( { search, setSearch, ...props } ) => {
 			}
 			updateVenueTaxonomyIds( save );
 		},
-		[ updateVenueTaxonomyIds, hasOnlineEventTerm, onlineEventTermId ]
+		[ updateVenueTaxonomyIds, hasOnlineEventTerm, onlineEventTermId ],
 	);
 
 	/**

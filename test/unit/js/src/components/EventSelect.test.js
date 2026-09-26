@@ -63,19 +63,19 @@ describe( 'buildEventQuery', () => {
 describe( 'toEventOptions', () => {
 	it( 'maps records to combobox options', () => {
 		expect( toEventOptions( [ event( 1, 'Summer Picnic' ) ], null ) ).toEqual(
-			[ { value: 1, label: 'Summer Picnic' } ]
+			[ { value: 1, label: 'Summer Picnic' } ],
 		);
 	} );
 
 	it( 'decodes entities in titles', () => {
 		expect(
-			toEventOptions( [ event( 1, 'Bob &amp; Alice' ) ], null )[ 0 ].label
+			toEventOptions( [ event( 1, 'Bob &amp; Alice' ) ], null )[ 0 ].label,
 		).toBe( 'Bob & Alice' );
 	} );
 
 	it( 'falls back to the ID when an event has no title', () => {
 		expect( toEventOptions( [ { id: 7, title: {} } ], null )[ 0 ].label ).toBe(
-			'#7'
+			'#7',
 		);
 	} );
 
@@ -87,8 +87,8 @@ describe( 'toEventOptions', () => {
 		expect(
 			toEventOptions(
 				[ event( 2, 'Autumn Walk' ) ],
-				event( 9, 'Winter Social' )
-			)
+				event( 9, 'Winter Social' ),
+			),
 		).toEqual( [
 			{ value: 9, label: 'Winter Social' },
 			{ value: 2, label: 'Autumn Walk' },
@@ -163,7 +163,7 @@ describe( 'EventSelect', () => {
 				postTypes="gatherpress_event"
 				value={ null }
 				onChange={ () => {} }
-			/>
+			/>,
 		);
 
 		expect( screen.getByRole( 'combobox' ) ).toBeInTheDocument();
@@ -175,7 +175,7 @@ describe( 'EventSelect', () => {
 				postTypes={ [ 'gatherpress_event' ] }
 				value={ null }
 				onChange={ () => {} }
-			/>
+			/>,
 		);
 
 		expect( screen.getByLabelText( 'Event' ) ).toBeVisible();
@@ -191,7 +191,7 @@ describe( 'EventSelect', () => {
 				postTypes={ [ POST_TYPE ] }
 				value={ 11 }
 				onChange={ () => {} }
-			/>
+			/>,
 		);
 
 		expect( screen.getByRole( 'combobox' ) ).toHaveValue( 'Summer Picnic' );
@@ -205,7 +205,7 @@ describe( 'EventSelect', () => {
 				hideLabelFromVision
 				value={ null }
 				onChange={ () => {} }
-			/>
+			/>,
 		);
 
 		expect( screen.getByLabelText( 'Filter by event' ) ).toBeInTheDocument();

@@ -47,7 +47,7 @@ These settings choose the mapping platform and the defaults applied to newly add
 
 These settings control the address lookup service used for venue autocomplete and geocoding.
 
-- **Geocoding API URL** points at a Photon-API-compatible geocoding service — a self-hosted [Photon](https://photon.komoot.io/) instance or compatible drop-in. Leave empty to use the public Photon service.
+- **Geocoding API URL** points at a Photon-API-compatible geocoding service: a self-hosted [Photon](https://photon.komoot.io/) instance or compatible drop-in. Leave empty to use the public Photon service.
 - **Country Code Filter** restricts geocoding results to a comma-separated list of ISO 3166-1 alpha-2 country codes (e.g. `us,ca`). Leave empty for no restriction.
 
 ### Venue permalink
