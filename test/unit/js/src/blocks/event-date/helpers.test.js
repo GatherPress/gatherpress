@@ -79,7 +79,7 @@ describe( 'resolveEventDateData', () => {
 				'gatherpress_event',
 				undefined,
 				42,
-				false
+				false,
 			);
 
 			expect( mockDatetimeStore.getDateTimeStart ).toHaveBeenCalled();
@@ -96,7 +96,7 @@ describe( 'resolveEventDateData', () => {
 				'gatherpress_event',
 				undefined,
 				42,
-				false
+				false,
 			);
 
 			expect( mockDatetimeStore.getDateTimeStart ).toHaveBeenCalled();
@@ -111,7 +111,7 @@ describe( 'resolveEventDateData', () => {
 				'gatherpress_event',
 				0,
 				42,
-				false
+				false,
 			);
 
 			expect( mockDatetimeStore.getDateTimeStart ).not.toHaveBeenCalled();
@@ -125,7 +125,7 @@ describe( 'resolveEventDateData', () => {
 				'gatherpress_event',
 				1,
 				42,
-				false
+				false,
 			);
 
 			expect( mockDatetimeStore.getDateTimeStart ).not.toHaveBeenCalled();
@@ -147,7 +147,7 @@ describe( 'resolveEventDateData', () => {
 				'gatherpress_event',
 				0,
 				42,
-				false
+				false,
 			);
 
 			expect( result.isValidEvent ).toBe( false );
@@ -165,14 +165,14 @@ describe( 'resolveEventDateData', () => {
 				'gatherpress_production',
 				undefined,
 				777,
-				false
+				false,
 			);
 
 			expect( mockDatetimeStore.getDateTimeStart ).not.toHaveBeenCalled();
 			expect( mockCoreStore.getEntityRecord ).toHaveBeenCalledWith(
 				'postType',
 				'gatherpress_production',
-				777
+				777,
 			);
 			expect( result.dateTimeStart ).toBe( '2025-06-10 14:00:00' );
 			expect( result.timezone ).toBe( 'America/Chicago' );
@@ -188,7 +188,7 @@ describe( 'resolveEventDateData', () => {
 				'gatherpress_event',
 				undefined,
 				42,
-				false
+				false,
 			);
 
 			expect( mockDatetimeStore.getDateTimeStart ).toHaveBeenCalled();
@@ -203,7 +203,7 @@ describe( 'resolveEventDateData', () => {
 				'gatherpress_event',
 				undefined,
 				null,
-				false
+				false,
 			);
 
 			expect( result.isValidEvent ).toBe( false );
@@ -221,7 +221,7 @@ describe( 'resolveEventDateData', () => {
 				'post',
 				0,
 				42,
-				false
+				false,
 			);
 
 			expect( result.isValidEvent ).toBe( false );
@@ -236,7 +236,7 @@ describe( 'resolveEventDateData', () => {
 				'gatherpress_event',
 				1,
 				42,
-				false
+				false,
 			);
 
 			expect( result.isValidEvent ).toBe( false );
@@ -254,7 +254,7 @@ describe( 'resolveEventDateData', () => {
 				'gatherpress_event',
 				1,
 				42,
-				false
+				false,
 			);
 
 			expect( result ).toEqual( {
@@ -277,7 +277,7 @@ describe( 'resolveEventDateData', () => {
 				'page',
 				undefined,
 				99,
-				true
+				true,
 			);
 
 			expect( findEventPostById ).toHaveBeenCalledWith( mockSelect, 99 );
@@ -307,7 +307,7 @@ describe( 'resolveEventDateData', () => {
 				'page',
 				undefined,
 				99,
-				true
+				true,
 			);
 
 			expect( findEventPostById ).toHaveBeenCalledWith( mockSelect, 99 );
@@ -322,7 +322,7 @@ describe( 'resolveEventDateData', () => {
 				null,
 				undefined,
 				42,
-				false
+				false,
 			);
 
 			// Editor post type 'gatherpress_event' supports event-date, so
@@ -361,7 +361,7 @@ describe( 'resolveEventDateData', () => {
 				'gatherpress_event',
 				undefined,
 				42,
-				false
+				false,
 			);
 
 			expect( mockDatetimeStore.getDateTimeStart ).not.toHaveBeenCalled();
@@ -377,7 +377,7 @@ describe( 'resolveEventDateData', () => {
 
 			expect(
 				resolveEventDateData( mockSelect, 'gatherpress_event', undefined, 42, false )
-					.isAllDay
+					.isAllDay,
 			).toBe( true );
 		} );
 
@@ -393,7 +393,7 @@ describe( 'resolveEventDateData', () => {
 			} ) );
 
 			expect(
-				resolveEventDateData( mockSelect, 'gatherpress_event', 1, 99, false ).isAllDay
+				resolveEventDateData( mockSelect, 'gatherpress_event', 1, 99, false ).isAllDay,
 			).toBe( true );
 		} );
 
@@ -409,7 +409,7 @@ describe( 'resolveEventDateData', () => {
 			} );
 
 			expect(
-				resolveEventDateData( mockSelect, 'page', undefined, 99, true ).isAllDay
+				resolveEventDateData( mockSelect, 'page', undefined, 99, true ).isAllDay,
 			).toBe( true );
 		} );
 	} );
@@ -420,7 +420,7 @@ describe( 'resolveEventDateData', () => {
 
 			expect(
 				resolveEventDateData( mockSelect, 'gatherpress_event', undefined, 42, false )
-					.timezonePreference
+					.timezonePreference,
 			).toBe( 'always' );
 		} );
 
@@ -437,7 +437,7 @@ describe( 'resolveEventDateData', () => {
 
 			expect(
 				resolveEventDateData( mockSelect, 'gatherpress_event', 1, 99, false )
-					.timezonePreference
+					.timezonePreference,
 			).toBe( 'never' );
 		} );
 
@@ -454,7 +454,7 @@ describe( 'resolveEventDateData', () => {
 
 			expect(
 				resolveEventDateData( mockSelect, 'page', undefined, 99, true )
-					.timezonePreference
+					.timezonePreference,
 			).toBe( 'always' );
 		} );
 	} );

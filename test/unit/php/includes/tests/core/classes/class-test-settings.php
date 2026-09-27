@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Settings\Credits;
 use GatherPress\Core\Settings\Events;
+use GatherPress\Core\Settings\Format_Field;
 use GatherPress\Core\Settings\Network;
 use GatherPress\Core\Settings\Roles;
 use GatherPress\Core\Settings\Rsvp;
@@ -349,6 +350,42 @@ class Test_Settings extends Base {
 	}
 
 	/**
+	 * The custom tile URL setting (#1267) is used as the default, but a filter still wins.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_map_tile_url
+	 *
+	 * @return void
+	 */
+	public function test_get_map_tile_url_custom_setting(): void {
+		$instance = Settings::get_instance();
+		$instance->set( 'custom_map_tile_url', 'https://custom.example.com/{z}/{x}/{y}.png' );
+
+		$this->assertSame(
+			'https://custom.example.com/{z}/{x}/{y}.png',
+			Settings::get_map_tile_url(),
+			'Failed to assert the custom tile URL setting is used.'
+		);
+
+		add_filter(
+			'gatherpress_interactive_map_tile_url',
+			static function (): string {
+				return 'https://filtered.example.com/{z}/{x}/{y}.png';
+			}
+		);
+
+		$this->assertSame(
+			'https://filtered.example.com/{z}/{x}/{y}.png',
+			Settings::get_map_tile_url(),
+			'Failed to assert the filter still overrides the custom tile URL setting.'
+		);
+
+		remove_all_filters( 'gatherpress_interactive_map_tile_url' );
+		$instance->set( 'custom_map_tile_url', '' );
+	}
+
+	/**
 	 * Default map attribution is filterable.
 	 *
 	 * @covers ::get_map_tile_attribution
@@ -374,6 +411,64 @@ class Test_Settings extends Base {
 		$this->assertSame( 'Custom attribution', Settings::get_map_tile_attribution() );
 
 		remove_all_filters( 'gatherpress_interactive_map_tile_attribution' );
+	}
+
+	/**
+	 * The custom attribution setting (#1267) is used as the default, but a filter still wins.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_map_tile_attribution
+	 *
+	 * @return void
+	 */
+	public function test_get_map_tile_attribution_custom_setting(): void {
+		$instance = Settings::get_instance();
+		$instance->set( 'custom_map_tile_attribution', 'My Custom Credit' );
+
+		$this->assertSame(
+			'My Custom Credit',
+			Settings::get_map_tile_attribution(),
+			'Failed to assert the custom attribution setting is used.'
+		);
+
+		add_filter(
+			'gatherpress_interactive_map_tile_attribution',
+			static function (): string {
+				return 'Filtered attribution';
+			}
+		);
+
+		$this->assertSame(
+			'Filtered attribution',
+			Settings::get_map_tile_attribution(),
+			'Failed to assert the filter still overrides the custom attribution setting.'
+		);
+
+		remove_all_filters( 'gatherpress_interactive_map_tile_attribution' );
+		$instance->set( 'custom_map_tile_attribution', '' );
+	}
+
+	/**
+	 * HTML in the custom attribution setting (#1267) is escaped — plain text only.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_map_tile_attribution
+	 *
+	 * @return void
+	 */
+	public function test_get_map_tile_attribution_custom_setting_escapes_html(): void {
+		$instance = Settings::get_instance();
+		$instance->set( 'custom_map_tile_attribution', '<script>alert(1)</script>' );
+
+		$this->assertSame(
+			'&lt;script&gt;alert(1)&lt;/script&gt;',
+			Settings::get_map_tile_attribution(),
+			'Failed to assert the custom attribution setting is escaped.'
+		);
+
+		$instance->set( 'custom_map_tile_attribution', '' );
 	}
 
 	/**
@@ -773,6 +868,90 @@ class Test_Settings extends Base {
 			$expected,
 			$value,
 			'Should return the correct value when all parameters are set'
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Test that a renamed option is answered by the name it used to have.
+	 *
+	 * @since  TBD
+	 * @covers ::get
+	 *
+	 * @return void
+	 */
+	public function test_get_falls_back_to_a_renamed_options_old_name(): void {
+		$instance = Settings::get_instance();
+
+		add_option(
+			'gatherpress_settings',
+			array(
+				'max_attendance_limit' => 100,
+			)
+		);
+
+		$this->assertSame(
+			100,
+			$instance->get( 'capacity' ),
+			'Failed to assert the pre-0.36.0 name answers for capacity.'
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Test that the current name wins over the one it replaced.
+	 *
+	 * @since  TBD
+	 * @covers ::get
+	 *
+	 * @return void
+	 */
+	public function test_get_prefers_the_current_name_over_the_old_one(): void {
+		$instance = Settings::get_instance();
+
+		add_option(
+			'gatherpress_settings',
+			array(
+				'capacity'             => 25,
+				'max_attendance_limit' => 100,
+			)
+		);
+
+		$this->assertSame(
+			25,
+			$instance->get( 'capacity' ),
+			'Failed to assert capacity wins over the name it replaced.'
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Test that an option with no rename entry is unaffected by the fallback.
+	 *
+	 * @since  TBD
+	 * @covers ::get
+	 *
+	 * @return void
+	 */
+	public function test_get_without_a_rename_entry_uses_the_default(): void {
+		$instance = Settings::get_instance();
+
+		add_option(
+			'gatherpress_settings',
+			array(
+				'max_attendance_limit' => 100,
+			)
+		);
+
+		// Only `capacity` is mapped to the old name, so nothing else should
+		// start answering with it.
+		$this->assertNotSame(
+			100,
+			$instance->get( 'guest_limit' ),
+			'Failed to assert the rename map only applies to the option it names.'
 		);
 
 		delete_option( 'gatherpress_settings' );
@@ -1277,6 +1456,99 @@ class Test_Settings extends Base {
 	}
 
 	/**
+	 * Test that saving a renamed setting retires the name it used to have.
+	 *
+	 * Without this the fallback in get() resurrects the former value the
+	 * moment the admin saves the current one as its default, because the
+	 * strip-defaults pass removes the current key and leaves the former one
+	 * standing.
+	 *
+	 * @since  TBD
+	 * @covers ::sanitize_page_settings
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_page_settings_retires_a_renamed_options_former_name(): void {
+		$instance = Settings::get_instance();
+
+		update_option( 'gatherpress_settings', array( 'max_attendance_limit' => 100 ) );
+
+		$callback = $instance->sanitize_page_settings( array( 'capacity' => 'number' ) );
+		$merged   = $callback( array( 'capacity' => 50 ) );
+
+		update_option( 'gatherpress_settings', $merged );
+
+		$this->assertArrayNotHasKey(
+			'max_attendance_limit',
+			$merged,
+			'Failed to assert the former name is dropped once the current one is saved.'
+		);
+		$this->assertSame(
+			50,
+			$instance->get( 'capacity' ),
+			'Failed to assert a renamed setting can be returned to its default.'
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Test that emptying a renamed setting retires the name it used to have.
+	 *
+	 * @since  TBD
+	 * @covers ::sanitize_page_settings
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_page_settings_retires_a_former_name_on_an_empty_value(): void {
+		$instance = Settings::get_instance();
+
+		update_option( 'gatherpress_settings', array( 'venue_map_default_height' => 300 ) );
+
+		$callback = $instance->sanitize_page_settings( array( 'venue_map_height' => 'number' ) );
+		$merged   = $callback( array( 'venue_map_height' => '' ) );
+
+		update_option( 'gatherpress_settings', $merged );
+
+		$this->assertArrayNotHasKey(
+			'venue_map_default_height',
+			$merged,
+			'Failed to assert an emptied setting drops its former name.'
+		);
+		$this->assertNotSame(
+			300,
+			$instance->get( 'venue_map_height' ),
+			'Failed to assert an emptied setting stops answering with the former value.'
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Test that set() retires a renamed setting's former name.
+	 *
+	 * @since  TBD
+	 * @covers ::set
+	 *
+	 * @return void
+	 */
+	public function test_set_retires_a_renamed_options_former_name(): void {
+		$instance = Settings::get_instance();
+
+		update_option( 'gatherpress_settings', array( 'max_attendance_limit' => 100 ) );
+
+		$instance->set( 'capacity', 50 );
+
+		$this->assertSame(
+			50,
+			$instance->get( 'capacity' ),
+			'Failed to assert set() to the default clears the former name.'
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
 	 * Test sanitize_page_settings callback with various field types.
 	 *
 	 * @since  0.33.0
@@ -1355,7 +1627,7 @@ class Test_Settings extends Base {
 	 * autocomplete arm must not throw a TypeError from its string-typed
 	 * parameter.
 	 *
-	 * @since 0.36.0
+	 * @since 0.35.4
 	 *
 	 * @covers ::sanitize_page_settings
 	 *
@@ -2008,18 +2280,18 @@ class Test_Settings extends Base {
 		$data = array(
 			'version'  => GATHERPRESS_VERSION,
 			'settings' => array(
-				'max_attendance_limit' => 100,
+				'capacity' => 100,
 			),
 		);
 
 		$result = $instance->import_settings( $data, 'merge' );
 
 		$this->assertTrue( $result['success'] );
-		$this->assertContains( 'max_attendance_limit', $result['imported'] );
+		$this->assertContains( 'capacity', $result['imported'] );
 
 		$settings = get_option( 'gatherpress_settings' );
 		$this->assertSame( 'google', $settings['map_platform'], 'Existing value should be preserved in merge.' );
-		$this->assertSame( 100, $settings['max_attendance_limit'], 'Imported value should be set.' );
+		$this->assertSame( 100, $settings['capacity'], 'Imported value should be set.' );
 
 		delete_option( 'gatherpress_settings' );
 	}
@@ -2039,7 +2311,7 @@ class Test_Settings extends Base {
 		$data = array(
 			'version'  => GATHERPRESS_VERSION,
 			'settings' => array(
-				'max_attendance_limit' => 100,
+				'capacity' => 100,
 			),
 		);
 
@@ -2049,7 +2321,7 @@ class Test_Settings extends Base {
 
 		$settings = get_option( 'gatherpress_settings' );
 		$this->assertArrayNotHasKey( 'map_platform', $settings, 'Old value should be gone in replace.' );
-		$this->assertSame( 100, $settings['max_attendance_limit'], 'Imported value should be set.' );
+		$this->assertSame( 100, $settings['capacity'], 'Imported value should be set.' );
 
 		delete_option( 'gatherpress_settings' );
 	}
@@ -2147,9 +2419,9 @@ class Test_Settings extends Base {
 
 		$this->assertIsArray( $map );
 		$this->assertSame( 'select', $map['map_platform'] );
-		$this->assertSame( 'checkbox', $map['post_or_event_date'] );
-		$this->assertSame( 'number', $map['max_attendance_limit'] );
-		$this->assertSame( 'text', $map['date_format'] );
+		$this->assertSame( 'checkbox', $map['use_event_date_for_publish'] );
+		$this->assertSame( 'number', $map['capacity'] );
+		$this->assertSame( 'format', $map['date_format'] );
 		$this->assertSame( 'autocomplete', $map['organizer'] );
 	}
 
@@ -2562,6 +2834,81 @@ class Test_Settings extends Base {
 		$this->assertTrue( Settings::get_instance()->is_option_inherited( 'date_format' ) );
 		$this->assertFalse( Settings::get_instance()->is_option_inherited( 'time_format' ) );
 
+		delete_site_option( 'gatherpress_network_settings' );
+		\GatherPress\Core\Settings\Network::flush_config_cache();
+	}
+
+	/**
+	 * Coverage for is_option_inherited when the network list predates a rename.
+	 *
+	 * @since   TBD
+	 * @covers ::is_option_inherited
+	 *
+	 * @group   multisite
+	 *
+	 * @return void
+	 */
+	public function test_is_option_inherited_matches_a_renamed_options_old_name(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		// Written by a network admin before 0.36.0, so it names the option the
+		// way it was called then.
+		update_site_option(
+			'gatherpress_network_settings',
+			array(
+				'enabled'   => true,
+				'inherited' => array( 'max_attendance_limit' ),
+			)
+		);
+		\GatherPress\Core\Settings\Network::flush_config_cache();
+
+		$this->assertTrue(
+			Settings::get_instance()->is_option_inherited( 'capacity' ),
+			'Failed to assert the pre-0.36.0 name keeps the option inherited.'
+		);
+		$this->assertFalse(
+			Settings::get_instance()->is_option_inherited( 'guest_limit' ),
+			'Failed to assert an unlisted option stays site-editable.'
+		);
+
+		delete_site_option( 'gatherpress_network_settings' );
+		\GatherPress\Core\Settings\Network::flush_config_cache();
+	}
+
+	/**
+	 * Coverage for get() reading a network value stored under a renamed option's old name.
+	 *
+	 * @since   TBD
+	 * @covers ::get
+	 *
+	 * @group   multisite
+	 *
+	 * @return void
+	 */
+	public function test_get_reads_a_network_value_saved_under_the_old_name(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		update_site_option( 'gatherpress_settings', array( 'max_attendance_limit' => 100 ) );
+		update_site_option(
+			'gatherpress_network_settings',
+			array(
+				'enabled'   => true,
+				'inherited' => array( 'max_attendance_limit' ),
+			)
+		);
+		\GatherPress\Core\Settings\Network::flush_config_cache();
+
+		$this->assertSame(
+			100,
+			Settings::get_instance()->get( 'capacity' ),
+			'Failed to assert a network value saved under the old name is inherited.'
+		);
+
+		delete_site_option( 'gatherpress_settings' );
 		delete_site_option( 'gatherpress_network_settings' );
 		\GatherPress\Core\Settings\Network::flush_config_cache();
 	}
@@ -3122,14 +3469,14 @@ class Test_Settings extends Base {
 		update_option(
 			Settings::OPTION_NAME,
 			array(
-				'map_platform'                  => 'google',
-				'venue_map_default_render_mode' => 'interactive',
+				'map_platform'          => 'google',
+				'venue_map_render_mode' => 'interactive',
 			)
 		);
 
 		$matching_conditions = array(
-			'map_platform'                  => 'google',
-			'venue_map_default_render_mode' => 'interactive',
+			'map_platform'          => 'google',
+			'venue_map_render_mode' => 'interactive',
 		);
 		$this->assertTrue(
 			Utility::invoke_hidden_method(
@@ -3141,8 +3488,8 @@ class Test_Settings extends Base {
 
 		// Flip one key out of band — overall result must drop to false.
 		$mixed_conditions = array(
-			'map_platform'                  => 'google',
-			'venue_map_default_render_mode' => 'static',
+			'map_platform'          => 'google',
+			'venue_map_render_mode' => 'static',
 		);
 		$this->assertFalse(
 			Utility::invoke_hidden_method(
@@ -3464,5 +3811,698 @@ class Test_Settings extends Base {
 		);
 
 		$instance->set( 'carto_api_key', '' );
+	}
+
+	/**
+	 * A custom tile URL is never keyed, even when it resolves to a CARTO host.
+	 *
+	 * The settings UI documents the CARTO key as "ignored when a custom tile
+	 * layer URL is set above" — that has to hold regardless of which host the
+	 * custom URL happens to point at.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_map_tile_url
+	 *
+	 * @return void
+	 */
+	public function test_get_map_tile_url_custom_setting_on_a_carto_host_is_not_keyed(): void {
+		$instance = Settings::get_instance();
+
+		$instance->set( 'carto_api_key', 'abc123' );
+		$instance->set( 'custom_map_tile_url', 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png' );
+
+		$this->assertSame(
+			'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+			Settings::get_map_tile_url(),
+			'Failed to assert a custom URL on a CARTO host is left unkeyed.'
+		);
+
+		$instance->set( 'carto_api_key', '' );
+		$instance->set( 'custom_map_tile_url', '' );
+	}
+
+	/**
+	 * Declare a page covering each combination of the travel flags.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	private function declare_travel_flag_fixture(): void {
+		add_filter(
+			'gatherpress_sub_pages',
+			static function ( $sub_pages ) {
+				$sub_pages['test_travel_flags'] = array(
+					'name'     => 'Test Travel Flags',
+					'priority' => 99,
+					'sections' => array(
+						'test_travel_flags_section' => array(
+							'name'    => 'Test Travel Flags Section',
+							'options' => array(
+								'test_ordinary_setting'  => array(
+									'labels' => array( 'name' => 'Ordinary' ),
+									'field'  => array( 'type' => 'checkbox' ),
+								),
+								'test_read_only_setting' => array(
+									'labels'     => array( 'name' => 'Travels but is never applied' ),
+									'field'      => array( 'type' => 'checkbox' ),
+									'importable' => false,
+								),
+								'test_stays_at_home_setting' => array(
+									'labels'     => array( 'name' => 'Never leaves this site' ),
+									'field'      => array( 'type' => 'checkbox' ),
+									'exportable' => false,
+								),
+							),
+						),
+					),
+				);
+
+				return $sub_pages;
+			}
+		);
+	}
+
+	/**
+	 * Only the option that opts out of export is kept out of a file.
+	 *
+	 * @covers ::get_non_exportable_keys
+	 * @covers ::get_keys_opted_out_of
+	 *
+	 * @return void
+	 */
+	public function test_get_non_exportable_keys_lists_only_opted_out_options(): void {
+		$this->declare_travel_flag_fixture();
+
+		$keys = Settings::get_instance()->get_non_exportable_keys();
+
+		$this->assertContains( 'test_stays_at_home_setting', $keys, 'The option that opts out is listed.' );
+		$this->assertNotContains( 'test_ordinary_setting', $keys, 'Every other option travels as it always has.' );
+		$this->assertNotContains(
+			'test_read_only_setting',
+			$keys,
+			'Refusing to apply a value from a file says nothing about whether it may be read in one.'
+		);
+
+		remove_all_filters( 'gatherpress_sub_pages' );
+	}
+
+	/**
+	 * Keeping a value off a file keeps a file from setting it.
+	 *
+	 * @covers ::get_non_importable_keys
+	 *
+	 * @return void
+	 */
+	public function test_non_exportable_options_are_non_importable_too(): void {
+		$this->declare_travel_flag_fixture();
+
+		$keys = Settings::get_instance()->get_non_importable_keys();
+
+		$this->assertContains(
+			'test_stays_at_home_setting',
+			$keys,
+			'A value that may not leave this site may not be written into it by a file either.'
+		);
+		$this->assertContains( 'test_read_only_setting', $keys, 'An option can also opt out of import alone.' );
+		$this->assertNotContains( 'test_ordinary_setting', $keys, 'Every other option imports as it always has.' );
+
+		remove_all_filters( 'gatherpress_sub_pages' );
+	}
+
+	/**
+	 * A flag left out of a declaration is on.
+	 *
+	 * @covers ::get_keys_opted_out_of
+	 *
+	 * @return void
+	 */
+	public function test_keys_opted_out_of_reads_an_absent_flag_as_on(): void {
+		$this->declare_travel_flag_fixture();
+
+		$keys = Utility::invoke_hidden_method(
+			Settings::get_instance(),
+			'get_keys_opted_out_of',
+			array( 'importable' )
+		);
+
+		$this->assertSame(
+			array( 'test_read_only_setting' ),
+			$keys,
+			'Only a declaration that says false opts out.'
+		);
+
+		remove_all_filters( 'gatherpress_sub_pages' );
+	}
+
+	/**
+	 * An import writes the ordinary option and refuses both opted-out ones.
+	 *
+	 * @covers ::import_settings
+	 *
+	 * @return void
+	 */
+	public function test_import_settings_refuses_non_importable_keys(): void {
+		$this->declare_travel_flag_fixture();
+
+		delete_option( Settings::OPTION_NAME );
+
+		$result = Settings::get_instance()->import_settings(
+			array(
+				'settings' => array(
+					'test_ordinary_setting'      => '1',
+					'test_read_only_setting'     => '1',
+					'test_stays_at_home_setting' => '1',
+				),
+			)
+		);
+
+		$stored = (array) get_option( Settings::OPTION_NAME, array() );
+
+		$this->assertArrayHasKey( 'test_ordinary_setting', $stored, 'The ordinary option is imported.' );
+		$this->assertArrayNotHasKey(
+			'test_read_only_setting',
+			$stored,
+			'A file must not be able to set an option that was declared out of reach.'
+		);
+		$this->assertArrayNotHasKey(
+			'test_stays_at_home_setting',
+			$stored,
+			'Opting out of export opts out of import with it.'
+		);
+		$this->assertContains(
+			'test_read_only_setting',
+			$result['not_importable'],
+			'The refusal is reported, so nobody is left thinking the value carried over.'
+		);
+		$this->assertNotContains(
+			'test_read_only_setting',
+			$result['skipped'],
+			'A known key that was refused is not a key nobody recognizes.'
+		);
+
+		delete_option( Settings::OPTION_NAME );
+		remove_all_filters( 'gatherpress_sub_pages' );
+	}
+
+	/**
+	 * Validation separates a refused key from one nobody recognizes.
+	 *
+	 * @covers ::validate_import
+	 *
+	 * @return void
+	 */
+	public function test_validate_import_separates_refused_from_unknown(): void {
+		$this->declare_travel_flag_fixture();
+
+		$result = Settings::get_instance()->validate_import(
+			array(
+				'settings' => array(
+					'test_read_only_setting' => '1',
+					'not_a_setting_at_all'   => '1',
+				),
+			)
+		);
+
+		$this->assertSame(
+			array( 'not_a_setting_at_all' ),
+			$result['unknown'],
+			'An unrecognized key is unknown.'
+		);
+		$this->assertSame(
+			array( 'test_read_only_setting' ),
+			$result['not_importable'],
+			'A recognized key that may not be written is reported on its own.'
+		);
+
+		remove_all_filters( 'gatherpress_sub_pages' );
+	}
+
+	/**
+	 * An export leaves out only what opted out of traveling.
+	 *
+	 * @covers ::export_settings
+	 *
+	 * @return void
+	 */
+	public function test_export_settings_omits_non_exportable_keys(): void {
+		$this->declare_travel_flag_fixture();
+
+		update_option(
+			Settings::OPTION_NAME,
+			array(
+				'test_ordinary_setting'      => '1',
+				'test_read_only_setting'     => '1',
+				'test_stays_at_home_setting' => '1',
+			)
+		);
+
+		$export = Settings::get_instance()->export_settings();
+
+		$this->assertArrayHasKey( 'test_ordinary_setting', $export['settings'], 'The ordinary option travels.' );
+		$this->assertArrayHasKey(
+			'test_read_only_setting',
+			$export['settings'],
+			'A value worth reading in a file still travels, even though an import will not apply it.'
+		);
+		$this->assertArrayNotHasKey(
+			'test_stays_at_home_setting',
+			$export['settings'],
+			'A value about this one site does not belong in a file that gets handed around.'
+		);
+
+		delete_option( Settings::OPTION_NAME );
+		remove_all_filters( 'gatherpress_sub_pages' );
+	}
+
+	/**
+	 * A replace import leaves a refused key exactly as it was.
+	 *
+	 * @covers ::import_settings
+	 *
+	 * @return void
+	 */
+	public function test_replace_import_preserves_a_refused_key(): void {
+		$this->declare_travel_flag_fixture();
+
+		update_option(
+			Settings::OPTION_NAME,
+			array(
+				'test_stays_at_home_setting' => true,
+				'test_ordinary_setting'      => true,
+			)
+		);
+
+		// The file asks for the refused key to be turned off, and asks it in
+		// the mode that clears everything first.
+		$result = Settings::get_instance()->import_settings(
+			array(
+				'settings' => array(
+					'test_ordinary_setting'      => false,
+					'test_stays_at_home_setting' => false,
+				),
+			),
+			'replace'
+		);
+
+		$stored = (array) get_option( Settings::OPTION_NAME, array() );
+
+		$this->assertTrue(
+			$stored['test_stays_at_home_setting'] ?? false,
+			'Replace clears everything, so a refused key has to survive the delete or the file unsets it.'
+		);
+		$this->assertContains(
+			'test_stays_at_home_setting',
+			$result['not_importable'],
+			'The refusal is still reported.'
+		);
+
+		delete_option( Settings::OPTION_NAME );
+		remove_all_filters( 'gatherpress_sub_pages' );
+	}
+
+	/**
+	 * A format field saves the radio's format and drops the Custom companion.
+	 *
+	 * @covers ::sanitize_page_settings
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_page_settings_keeps_a_listed_format(): void {
+		$instance = Settings::get_instance();
+
+		delete_option( 'gatherpress_settings' );
+
+		$callback = $instance->sanitize_page_settings( array( 'date_format' => 'format' ) );
+		$result   = $callback(
+			array(
+				'date_format'        => 'Y-m-d',
+				'date_format_custom' => 'leftover typing',
+			)
+		);
+
+		$this->assertSame(
+			'Y-m-d',
+			$result['date_format'],
+			'Failed to assert the chosen format was saved.'
+		);
+		$this->assertArrayNotHasKey(
+			'date_format_custom',
+			$result,
+			'Failed to assert the Custom companion key was dropped.'
+		);
+	}
+
+	/**
+	 * The Custom radio saves what the Custom field holds, not the sentinel.
+	 *
+	 * @covers ::sanitize_page_settings
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_page_settings_resolves_a_custom_format(): void {
+		$instance = Settings::get_instance();
+
+		delete_option( 'gatherpress_settings' );
+
+		$callback = $instance->sanitize_page_settings( array( 'date_format' => 'format' ) );
+		$result   = $callback(
+			array(
+				'date_format'        => Format_Field::CUSTOM,
+				'date_format_custom' => 'D, j M Y',
+			)
+		);
+
+		$this->assertSame(
+			'D, j M Y',
+			$result['date_format'],
+			'Failed to assert the Custom field supplied the saved format.'
+		);
+		$this->assertArrayNotHasKey(
+			'date_format_custom',
+			$result,
+			'Failed to assert the Custom companion key was dropped.'
+		);
+	}
+
+	/**
+	 * A Custom radio with nothing beside it saves nothing rather than the sentinel.
+	 *
+	 * @covers ::sanitize_page_settings
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_page_settings_custom_format_without_a_value(): void {
+		$instance = Settings::get_instance();
+
+		delete_option( 'gatherpress_settings' );
+
+		$callback = $instance->sanitize_page_settings( array( 'date_format' => 'format' ) );
+		$result   = $callback( array( 'date_format' => Format_Field::CUSTOM ) );
+
+		$this->assertSame(
+			'',
+			$result['date_format'],
+			'Failed to assert an empty Custom field saved an empty format.'
+		);
+	}
+
+	/**
+	 * A malformed Custom submission is not coerced through a string cast.
+	 *
+	 * @covers ::sanitize_page_settings
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_page_settings_custom_format_rejects_an_array(): void {
+		$instance = Settings::get_instance();
+
+		delete_option( 'gatherpress_settings' );
+
+		$callback = $instance->sanitize_page_settings( array( 'date_format' => 'format' ) );
+		$result   = $callback(
+			array(
+				'date_format'        => Format_Field::CUSTOM,
+				'date_format_custom' => array( 'Y-m-d' ),
+			)
+		);
+
+		$this->assertSame(
+			'',
+			$result['date_format'],
+			'Failed to assert a non-scalar Custom value was discarded.'
+		);
+	}
+
+	/**
+	 * Coverage for render_field with format type.
+	 *
+	 * @covers ::render_field
+	 *
+	 * @return void
+	 */
+	public function test_render_field_format(): void {
+		$instance = Settings::get_instance();
+
+		add_filter(
+			'gatherpress_date_formats',
+			static fn(): array => array( 'Y-m-d' )
+		);
+
+		$html = Utility::buffer_and_return(
+			array( $instance, 'render_field' ),
+			array(
+				'date_format',
+				array(
+					'field' => array(
+						'type'    => 'format',
+						'label'   => 'Unit test',
+						'options' => array( 'choices' => 'date' ),
+					),
+				),
+			)
+		);
+
+		remove_all_filters( 'gatherpress_date_formats' );
+
+		$this->assertStringContainsString(
+			'<legend>Unit test</legend>',
+			$html,
+			'Failed to assert the field is a labeled fieldset.'
+		);
+		$this->assertStringContainsString(
+			'value="Y-m-d"',
+			$html,
+			'Failed to assert the offered format is a radio value.'
+		);
+		$this->assertStringContainsString(
+			esc_html( wp_date( 'Y-m-d' ) ),
+			$html,
+			'Failed to assert the format is shown as the date it renders.'
+		);
+		$this->assertStringContainsString(
+			'name="gatherpress_settings[date_format_custom]"',
+			$html,
+			'Failed to assert the Custom field is offered alongside the list.'
+		);
+		$this->assertStringContainsString(
+			sprintf( 'value="%s"', esc_attr( Format_Field::CUSTOM ) ),
+			$html,
+			'Failed to assert the Custom radio carries the sentinel.'
+		);
+	}
+
+	/**
+	 * A time-format field offers the time list rather than the date one.
+	 *
+	 * @covers ::render_field
+	 *
+	 * @return void
+	 */
+	public function test_render_field_format_offers_the_time_list(): void {
+		$instance = Settings::get_instance();
+
+		$html = Utility::buffer_and_return(
+			array( $instance, 'render_field' ),
+			array(
+				'time_format',
+				array(
+					'field' => array(
+						'type'    => 'format',
+						'label'   => 'Unit test',
+						'options' => array( 'choices' => 'time' ),
+					),
+				),
+			)
+		);
+
+		$this->assertStringContainsString(
+			'value="H:i"',
+			$html,
+			'Failed to assert a time format is offered.'
+		);
+		$this->assertStringNotContainsString(
+			'value="Y-m-d"',
+			$html,
+			'Failed to assert the date list was not offered.'
+		);
+	}
+
+	/**
+	 * A saved format the list does not offer arrives in the Custom field.
+	 *
+	 * @covers ::render_field
+	 *
+	 * @return void
+	 */
+	public function test_render_field_format_puts_an_unlisted_format_in_custom(): void {
+		$instance = Settings::get_instance();
+
+		update_option( 'gatherpress_settings', array( 'date_format' => 'jS \o\f F' ) );
+
+		$html = Utility::buffer_and_return(
+			array( $instance, 'render_field' ),
+			array(
+				'date_format',
+				array(
+					'field' => array(
+						'type'    => 'format',
+						'label'   => 'Unit test',
+						'options' => array( 'choices' => 'date' ),
+					),
+				),
+			)
+		);
+
+		delete_option( 'gatherpress_settings' );
+
+		// Collapsed so the assertion reads the attributes rather than the
+		// template's indentation.
+		$collapsed = (string) preg_replace( '/\s+/', ' ', $html );
+
+		$this->assertStringContainsString(
+			sprintf(
+				'name="gatherpress_settings[date_format_custom]" value="%s"',
+				esc_attr( 'jS \o\f F' )
+			),
+			$collapsed,
+			'Failed to assert the unlisted format landed in the Custom field.'
+		);
+		$this->assertStringContainsString(
+			sprintf( 'value="%s" checked', esc_attr( Format_Field::CUSTOM ) ),
+			$collapsed,
+			'Failed to assert the Custom radio is the one selected.'
+		);
+	}
+
+	/**
+	 * An inherited format field still submits the value it displays.
+	 *
+	 * Radios have no `readonly`, and a disabled input is left out of the POST,
+	 * so the hidden fallback is what keeps a network-inherited format from
+	 * emptying itself the next time someone saves the page.
+	 *
+	 * @covers ::render_field
+	 *
+	 * @return void
+	 */
+	public function test_render_field_format_carries_an_inherited_value(): void {
+		$instance = Settings::get_instance();
+
+		update_option( 'gatherpress_settings', array( 'date_format' => 'Y-m-d' ) );
+		add_filter( 'gatherpress_network_is_option_inherited', '__return_true' );
+
+		$html = Utility::buffer_and_return(
+			array( $instance, 'render_field' ),
+			array(
+				'date_format',
+				array(
+					'field' => array(
+						'type'    => 'format',
+						'label'   => 'Unit test',
+						'options' => array( 'choices' => 'date' ),
+					),
+				),
+			)
+		);
+
+		remove_filter( 'gatherpress_network_is_option_inherited', '__return_true' );
+		delete_option( 'gatherpress_settings' );
+
+		$collapsed = (string) preg_replace( '/\s+/', ' ', $html );
+
+		$this->assertStringContainsString(
+			'<input type="hidden" name="gatherpress_settings[date_format]" value="Y-m-d" />',
+			$collapsed,
+			'Failed to assert the inherited value is carried by the hidden input.'
+		);
+		$this->assertStringContainsString(
+			'type="radio" name="gatherpress_settings[date_format]" value="l, F j, Y" disabled',
+			$collapsed,
+			'Failed to assert the radios are disabled while inherited.'
+		);
+	}
+
+	/**
+	 * The format template renders nothing when a parameter is missing.
+	 *
+	 * @covers ::render_field
+	 *
+	 * @return void
+	 */
+	public function test_format_template_without_its_parameters_renders_nothing(): void {
+		$html = Utility::buffer_and_return(
+			array( GatherPress_Utility::class, 'render_template' ),
+			array(
+				sprintf(
+					'%s/includes/templates/admin/settings/fields/format.php',
+					GATHERPRESS_CORE_PATH
+				),
+				array( 'name' => 'gatherpress_settings[date_format]' ),
+				true,
+			)
+		);
+
+		$this->assertSame(
+			'',
+			$html,
+			'Failed to assert an incomplete template call renders nothing.'
+		);
+	}
+
+	/**
+	 * The Custom field keeps the live preview the plain text input had.
+	 *
+	 * The list entries are already rendered dates, so the preview only has
+	 * work left to do beside the one field still taking format codes.
+	 *
+	 * @covers ::render_field
+	 *
+	 * @return void
+	 */
+	public function test_render_field_format_previews_the_custom_field(): void {
+		$instance = Settings::get_instance();
+
+		update_option( 'gatherpress_settings', array( 'date_format' => 'jS \\o\\f F' ) );
+
+		$html = Utility::buffer_and_return(
+			array( $instance, 'render_field' ),
+			array(
+				'date_format',
+				array(
+					'field' => array(
+						'type'    => 'format',
+						'label'   => 'Unit test',
+						'options' => array( 'choices' => 'date' ),
+						'preview' => array( 'template' => 'datetime-preview' ),
+					),
+				),
+			)
+		);
+
+		delete_option( 'gatherpress_settings' );
+
+		$this->assertStringContainsString(
+			'data-gatherpress_component_name="datetime-preview"',
+			$html,
+			'Failed to assert the preview partial was rendered.'
+		);
+		$this->assertStringContainsString(
+			esc_attr(
+				htmlspecialchars(
+					(string) wp_json_encode(
+						array(
+							'name'  => 'gatherpress_settings[date_format_custom]',
+							'value' => 'jS \\o\\f F',
+						)
+					),
+					ENT_QUOTES,
+					'UTF-8'
+				)
+			),
+			$html,
+			'Failed to assert the preview watches the Custom field.'
+		);
 	}
 }

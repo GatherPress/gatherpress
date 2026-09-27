@@ -35,7 +35,7 @@ jest.mock(
 			getContext: jest.fn(),
 		};
 	},
-	{ virtual: true }
+	{ virtual: true },
 );
 
 /**
@@ -84,7 +84,7 @@ describe( 'modal-manager openModal', () => {
 		expect(
 			document
 				.querySelector( '.wp-block-gatherpress-modal' )
-				.classList.contains( 'gatherpress--is-visible' )
+				.classList.contains( 'gatherpress--is-visible' ),
 		).toBe( true );
 	} );
 
@@ -103,7 +103,7 @@ describe( 'modal-manager openModal', () => {
 		expect(
 			document
 				.querySelector( '.wp-block-gatherpress-modal' )
-				.classList.contains( 'gatherpress--is-visible' )
+				.classList.contains( 'gatherpress--is-visible' ),
 		).toBe( true );
 	} );
 
@@ -126,7 +126,7 @@ describe( 'modal-manager openModal', () => {
 		expect(
 			document
 				.querySelector( '.wp-block-gatherpress-modal' )
-				.classList.contains( 'gatherpress--is-visible' )
+				.classList.contains( 'gatherpress--is-visible' ),
 		).toBe( false );
 
 		// Enter should open the modal.
@@ -135,7 +135,7 @@ describe( 'modal-manager openModal', () => {
 		expect(
 			document
 				.querySelector( '.wp-block-gatherpress-modal' )
-				.classList.contains( 'gatherpress--is-visible' )
+				.classList.contains( 'gatherpress--is-visible' ),
 		).toBe( true );
 
 		// Reset visibility.
@@ -147,7 +147,7 @@ describe( 'modal-manager openModal', () => {
 		expect(
 			document
 				.querySelector( '.wp-block-gatherpress-modal' )
-				.classList.contains( 'gatherpress--is-visible' )
+				.classList.contains( 'gatherpress--is-visible' ),
 		).toBe( true );
 	} );
 
@@ -170,7 +170,7 @@ describe( 'modal-manager openModal', () => {
 		expect(
 			document
 				.querySelector( '.wp-block-gatherpress-modal' )
-				.classList.contains( 'gatherpress--is-visible' )
+				.classList.contains( 'gatherpress--is-visible' ),
 		).toBe( true );
 
 		// Enter should close the modal.
@@ -179,7 +179,7 @@ describe( 'modal-manager openModal', () => {
 		expect(
 			document
 				.querySelector( '.wp-block-gatherpress-modal' )
-				.classList.contains( 'gatherpress--is-visible' )
+				.classList.contains( 'gatherpress--is-visible' ),
 		).toBe( false );
 
 		// Reset visibility.
@@ -191,7 +191,7 @@ describe( 'modal-manager openModal', () => {
 		expect(
 			document
 				.querySelector( '.wp-block-gatherpress-modal' )
-				.classList.contains( 'gatherpress--is-visible' )
+				.classList.contains( 'gatherpress--is-visible' ),
 		).toBe( false );
 	} );
 } );

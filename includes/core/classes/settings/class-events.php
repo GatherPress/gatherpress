@@ -104,10 +104,10 @@ final class Events extends Base {
 								),
 								Utility::post_type_label( 'name', Event::POST_TYPE )
 							),
-							'type'    => 'text',
-							'size'    => 'regular',
+							'type'    => 'format',
 							'options' => array(
 								'default' => get_option( 'date_format', 'l, F j, Y' ),
+								'choices' => 'date',
 							),
 							'preview' => array(
 								'template' => 'datetime-preview',
@@ -127,10 +127,10 @@ final class Events extends Base {
 								),
 								Utility::post_type_label( 'name', Event::POST_TYPE )
 							),
-							'type'    => 'text',
-							'size'    => 'regular',
+							'type'    => 'format',
 							'options' => array(
 								'default' => get_option( 'time_format', 'g:i A' ),
+								'choices' => 'time',
 							),
 							'preview' => array(
 								'template' => 'datetime-preview',
@@ -191,7 +191,7 @@ final class Events extends Base {
 					Utility::post_type_label( 'name', Event::POST_TYPE )
 				),
 				'options'     => array(
-					'post_or_event_date' => array(
+					'use_event_date_for_publish' => array(
 						'labels' => array(
 							'name' => __( 'Publish Date', 'gatherpress' ),
 						),

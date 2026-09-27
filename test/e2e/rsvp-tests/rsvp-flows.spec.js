@@ -62,7 +62,7 @@ test.describe.skip( 'RSVP Flows', () => {
 				'1. Create a GatherPress event with an RSVP block via WordPress admin\n' +
 				'2. Set EVENT_URL to your event URL\n\n' +
 				'Example:\n' +
-				'  EVENT_URL=http://localhost:8889/event/test-event/ npm run test:e2e -- rsvp-tests/rsvp-flows.spec.js\n'
+				'  EVENT_URL=http://localhost:8889/event/test-event/ npm run test:e2e -- rsvp-tests/rsvp-flows.spec.js\n',
 			);
 		}
 

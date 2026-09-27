@@ -2442,4 +2442,74 @@ class Test_Event extends Base {
 			),
 		);
 	}
+
+	/**
+	 * Test that get_display_datetime() respects custom separators, falls back to translatable default,
+	 * and honors the gatherpress_datetime_separator filter.
+	 *
+	 * @covers ::get_display_datetime
+	 *
+	 * @return void
+	 */
+	public function test_get_display_datetime_separator(): void {
+		$post = $this->mock->post(
+			array(
+				'post_title' => 'Separator Test Event',
+				'post_type'  => 'gatherpress_event',
+			)
+		)->get();
+
+		$event = new Event( $post->ID );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2026-09-23 18:00:00',
+				'datetime_end'   => '2026-09-23 19:30:00',
+				'timezone'       => 'UTC',
+			)
+		);
+
+		// No translations are loaded in the test suite, so asserting the English
+		// 'to' would pass whether or not the code ever reaches __(). This filter
+		// is what makes the next two assertions able to fail.
+		$translate_to = static function ( string $translation, string $text, string $domain ): string {
+			if ( 'gatherpress' !== $domain || 'to' !== $text ) {
+				return $translation;
+			}
+
+			return 'bis';
+		};
+
+		add_filter( 'gettext_gatherpress', $translate_to, 10, 3 );
+
+		// Default empty separator yields the translated string.
+		$display_empty = $event->get_display_datetime( 'both', 'H:i', 'H:i', '', 'no' );
+		$this->assertSame( '18:00 bis 19:30', $display_empty );
+
+		// A literal "to" is an ordinary custom separator, not a sentinel, so it
+		// is passed through rather than translated. The filter is still active
+		// here, which is what makes that distinguishable.
+		$display_to = $event->get_display_datetime( 'both', 'H:i', 'H:i', 'to', 'no' );
+		$this->assertSame( '18:00 to 19:30', $display_to );
+
+		remove_filter( 'gettext_gatherpress', $translate_to, 10 );
+
+		// Custom separator string is preserved. 'bis' again, deliberately: with
+		// the filter gone it can only have come from the argument.
+		$display_custom = $event->get_display_datetime( 'both', 'H:i', 'H:i', 'bis', 'no' );
+		$this->assertSame( '18:00 bis 19:30', $display_custom );
+
+		$display_dash = $event->get_display_datetime( 'both', 'H:i', 'H:i', '–', 'no' );
+		$this->assertSame( '18:00 – 19:30', $display_dash );
+
+		// Filter gatherpress_datetime_separator modifies the separator.
+		$filter_callback = function () {
+			return '–';
+		};
+		add_filter( 'gatherpress_datetime_separator', $filter_callback );
+
+		$display_filtered = $event->get_display_datetime( 'both', 'H:i', 'H:i', '', 'no' );
+		$this->assertSame( '18:00 – 19:30', $display_filtered );
+
+		remove_filter( 'gatherpress_datetime_separator', $filter_callback );
+	}
 }

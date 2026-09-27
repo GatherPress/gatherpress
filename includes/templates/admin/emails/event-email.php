@@ -96,7 +96,7 @@ $gatherpress_venue       = $gatherpress_event->get_venue_information()['name'];
 			$gatherpress_rsvp_url = (string) get_the_permalink( $event_id );
 			?>
 			<div style="text-align: center; margin-top: 20px;">
-				<a href="<?php echo esc_url( $gatherpress_rsvp_url ); ?>" style="background-color: #0a58ca; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 16px;">
+				<a href="<?php echo esc_url( $gatherpress_rsvp_url ); ?>" style="background-color: #0a58ca; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 16px; display: inline-block;">
 					<?php esc_html_e( 'RSVP Now', 'gatherpress' ); ?>
 				</a>
 			</div>

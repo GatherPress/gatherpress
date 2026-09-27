@@ -6,7 +6,8 @@ import moment from 'moment';
 /**
  * WordPress dependencies
  */
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
+import { dateI18n } from '@wordpress/date';
 import {
 	BlockControls,
 	InspectorControls,
@@ -39,6 +40,7 @@ import {
 	removeTimePHPFormatChars,
 } from '../../helpers/datetime';
 import DateTimeRange from '../../components/DateTimeRange';
+import FormatControl from '../../components/FormatControl';
 import { getFromSettings } from '../../helpers/editor-settings';
 import {
 	isEventPostType,
@@ -72,7 +74,7 @@ const displayDateTime = (
 	separator,
 	showTimezone,
 	isAllDay = false,
-	timezonePreference = ''
+	timezonePreference = '',
 ) => {
 	const dateFormat = getFromSettings( 'dateFormat' );
 	const timeFormat = getFromSettings( 'timeFormat' );
@@ -106,7 +108,7 @@ const displayDateTime = (
 	// Add start date/time.
 	if ( dateTimeStart ) {
 		startFormat = convertPHPToMomentFormat(
-			startFormat || fullFormat
+			startFormat || fullFormat,
 		);
 		parts.push( createMomentWithTimezone( dateTimeStart, timezone ).format( startFormat ) );
 	}
@@ -131,7 +133,7 @@ const displayDateTime = (
 
 	// Add separator if start + end date/time(s).
 	if ( dateTimeStart && dateTimeEnd ) {
-		parts.push( 'to' === separator ? __( 'to', 'gatherpress' ) : separator );
+		parts.push( separator || __( 'to', 'gatherpress' ) );
 	}
 
 	// Add end date/time.
@@ -160,7 +162,7 @@ const displayDateTime = (
 			// For IANA timezones, use the timezone abbreviation.
 			parts.push(
 				createMomentWithTimezone( dateTimeEnd || dateTimeStart, timezone )
-					.format( 'z' )
+					.format( 'z' ),
 			);
 		}
 	}
@@ -253,7 +255,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		isValidEvent,
 	} = useSelect(
 		( select ) => resolveEventDateData( select, contextPostType, contextQueryId, postId, hasExplicitOverride ),
-		[ postId, contextPostType, contextQueryId, hasExplicitOverride ]
+		[ postId, contextPostType, contextQueryId, hasExplicitOverride ],
 	);
 
 	const isTimezoneAppended =
@@ -280,7 +282,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	// fall back to today's date to show a normal appearance.
 	const fallbackDateTime = createMomentWithTimezone(
 		moment().format( 'YYYY-MM-DD HH:mm:ss' ),
-		getTimezone()
+		getTimezone(),
 	);
 	const finalDateTimeStart = dateTimeStart || fallbackDateTime.format();
 	const finalDateTimeEnd = dateTimeEnd || fallbackDateTime.clone().add( 1, 'hour' ).format();
@@ -301,6 +303,17 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		? dateFormat
 		: `${ dateFormat } ${ timeFormat }`;
 
+	// Shown as the date it produces rather than as its format codes, so the
+	// inherit option reads like every other entry on the list. dateI18n rather
+	// than format, because the other entries are rendered by wp_date() on the
+	// PHP side and this one would otherwise be the only English label on a
+	// translated site.
+	const inheritLabel = sprintf(
+		/* translators: %s: the site's format, rendered as a date. */
+		__( 'Site default (%s)', 'gatherpress' ),
+		dateI18n( formatPlaceholder ),
+	);
+
 	const displayedDateTime = displayDateTime(
 		showStartTime ? finalDateTimeStart : null,
 		showEndTime ? finalDateTimeEnd : null,
@@ -310,7 +323,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		separator,
 		showTimezone,
 		isAllDay,
-		timezonePreference
+		timezonePreference,
 	);
 
 	// Same label the frontend renders, so the toggle previews its own effect
@@ -402,7 +415,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 								displayType: calculateDisplayType(
 									'start',
 									showStartTime,
-									showEndTime
+									showEndTime,
 								),
 							} );
 						} }
@@ -416,7 +429,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 								displayType: calculateDisplayType(
 									'end',
 									showStartTime,
-									showEndTime
+									showEndTime,
 								),
 							} );
 						} }
@@ -445,7 +458,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 							{
 								label: __(
 									'Start and end date',
-									'gatherpress'
+									'gatherpress',
 								),
 								value: 'both',
 							},
@@ -474,22 +487,20 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						/>
 					) }
 					{ showStartTime && (
-						<TextControl
-							__next40pxDefaultSize
+						<FormatControl
 							label={ __( 'Start date format', 'gatherpress' ) }
 							value={ startDateFormat }
-							placeholder={ formatPlaceholder }
+							inheritLabel={ inheritLabel }
 							onChange={ ( value ) =>
 								setAttributes( { startDateFormat: value } )
 							}
 						/>
 					) }
 					{ showEndTime && (
-						<TextControl
-							__next40pxDefaultSize
+						<FormatControl
 							label={ __( 'End date format', 'gatherpress' ) }
 							value={ endDateFormat }
-							placeholder={ formatPlaceholder }
+							inheritLabel={ inheritLabel }
 							onChange={ ( value ) =>
 								setAttributes( { endDateFormat: value } )
 							}
@@ -499,7 +510,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						<ExternalLink href="https://wordpress.org/documentation/article/customize-date-and-time-format/">
 							{ __(
 								'Date/time formatting documentation',
-								'gatherpress'
+								'gatherpress',
 							) }
 						</ExternalLink>
 					</p>
@@ -527,7 +538,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						label={ __( 'Link to event', 'gatherpress' ) }
 						help={ __(
 							'Make the date a link to the event page.',
-							'gatherpress'
+							'gatherpress',
 						) }
 						checked={ isLink }
 						onChange={ () =>
