@@ -12,6 +12,7 @@ import {
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import { useEffect } from '@wordpress/element';
+import { applyFilters } from '@wordpress/hooks';
 import { __, _x, sprintf } from '@wordpress/i18n';
 
 /**
@@ -589,6 +590,28 @@ export const EventOrderControls = ( { attributes, setAttributes } ) => {
 };
 
 /**
+ * Render a filtered list of query controls.
+ *
+ * Entries a filter mangled are skipped rather than thrown, because a bad
+ * return from somebody else's plugin should not take the editor down with it.
+ *
+ * @param {Array}  controls  Entries shaped `{ name, Component, props }`.
+ * @param {Object} fillProps Block edit props handed down by the slot.
+ *
+ * @return {Array} The rendered controls.
+ */
+const renderQueryControls = ( controls, fillProps ) =>
+	( Array.isArray( controls ) ? controls : [] ).map( ( control ) => {
+		const { name, Component, props } = control ?? {};
+
+		if ( ! name || ! Component ) {
+			return null;
+		}
+
+		return <Component key={ name } { ...fillProps } { ...props } />;
+	} );
+
+/**
  * EventQueryControlsSlotFill component
  *
  * Provides the main container for all GatherPress event query controls.
@@ -634,22 +657,67 @@ export const EventQueryControlsSlotFill = () => {
 						currentPostType !== queryPostType
 					);
 
-				return (
-					<>
-						<EventListTypeControls { ...props } />
-						<EventIncludeUnfinishedControls { ...props } />
+				const controls = [
+					{ name: 'listType', Component: EventListTypeControls },
+					{
+						name: 'includeUnfinished',
+						Component: EventIncludeUnfinishedControls,
+					},
+					...( showExcludeControl
+						? [ { name: 'exclude', Component: EventExcludeControls } ]
+						: [] ),
+					...( showShadowSourceFilterControl
+						? [
+							{
+								name: 'shadowSourceFilter',
+								Component: ShadowSourceFilterControls,
+								props: { inTemplateContext },
+							},
+						]
+						: [] ),
+					{ name: 'count', Component: EventCountControls },
+					{ name: 'offset', Component: EventOffsetControls },
+					{ name: 'order', Component: EventOrderControls },
+				];
 
-						{ showExcludeControl && <EventExcludeControls { ...props } /> }
-						{ showShadowSourceFilterControl && (
-							<ShadowSourceFilterControls
-								{ ...props }
-								inTemplateContext={ inTemplateContext }
-							/>
-						) }
-						<EventCountControls { ...props } />
-						<EventOffsetControls { ...props } />
-						<EventOrderControls { ...props } />
-					</>
+				/**
+				 * Filters the controls shown in the Event Query Loop panel.
+				 *
+				 * The list holds only what would actually render, so a
+				 * context-gated control is absent rather than present and
+				 * hidden. Entries are `{ name, Component, props }`, where
+				 * `props` is merged over the block edit props the slot passes
+				 * down. Returning a reordered, extended or shortened array all
+				 * work, which is what lets a companion plugin drop controls its
+				 * own layout has no use for.
+				 *
+				 * The inherited variant of the panel has its own filter,
+				 * `gatherpress.eventInheritedQueryControls`.
+				 *
+				 * @since TBD
+				 *
+				 * @param {Array}  controls Entries shaped `{ name, Component, props }`,
+				 *                          in render order.
+				 * @param {Object} props    Block edit props for the query block
+				 *                          being edited.
+				 * @return {Array} The controls to render.
+				 *
+				 * @example
+				 *   addFilter(
+				 *     'gatherpress.eventQueryControls',
+				 *     'my-calendar/trim-controls',
+				 *     ( controls ) => controls.filter(
+				 *       ( { name } ) => ! [ 'listType', 'offset' ].includes( name )
+				 *     )
+				 *   );
+				 */
+				return renderQueryControls(
+					applyFilters(
+						'gatherpress.eventQueryControls',
+						controls,
+						props,
+					),
+					props,
 				);
 			} }
 		</EventQueryControls>
@@ -668,13 +736,41 @@ export const EventQueryControlsSlotFill = () => {
 export const EventInheritedQueryControlsSlotFill = () => {
 	return (
 		<EventInheritedQueryControls>
-			{ ( props ) => (
-				<>
-					<EventListTypeControls { ...props } />
-					<EventIncludeUnfinishedControls { ...props } />
-					<EventOrderControls { ...props } />
-				</>
-			) }
+			{ ( props ) => {
+				const controls = [
+					{ name: 'listType', Component: EventListTypeControls },
+					{
+						name: 'includeUnfinished',
+						Component: EventIncludeUnfinishedControls,
+					},
+					{ name: 'order', Component: EventOrderControls },
+				];
+
+				/**
+				 * Filters the controls shown when the query is inherited.
+				 *
+				 * Same shape as `gatherpress.eventQueryControls`, kept
+				 * separate because an inherited query already offers a
+				 * different, shorter set and a consumer is unlikely to want
+				 * one rule for both.
+				 *
+				 * @since TBD
+				 *
+				 * @param {Array}  controls Entries shaped `{ name, Component, props }`,
+				 *                          in render order.
+				 * @param {Object} props    Block edit props for the query block
+				 *                          being edited.
+				 * @return {Array} The controls to render.
+				 */
+				return renderQueryControls(
+					applyFilters(
+						'gatherpress.eventInheritedQueryControls',
+						controls,
+						props,
+					),
+					props,
+				);
+			} }
 		</EventInheritedQueryControls>
 	);
 };

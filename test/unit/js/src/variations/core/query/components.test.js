@@ -1,7 +1,14 @@
 /**
  * External dependencies
  */
-import { describe, expect, it, jest, beforeEach } from '@jest/globals';
+import {
+	describe,
+	expect,
+	it,
+	jest,
+	beforeEach,
+	afterEach,
+} from '@jest/globals';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
@@ -96,13 +103,17 @@ jest.mock( '@src/helpers/editor', () => ( {
 /**
  * WordPress dependencies
  */
+import { addFilter, removeFilter } from '@wordpress/hooks';
 import { isEventPostType, isPostTypeSupporting } from '@src/helpers/event';
 import { isInFSETemplate } from '@src/helpers/editor';
 
 /**
  * Internal dependencies
  */
-import { EventQueryControlsSlotFill } from '@src/variations/core/query/components';
+import {
+	EventQueryControlsSlotFill,
+	EventInheritedQueryControlsSlotFill,
+} from '@src/variations/core/query/components';
 
 const venueToggleLabel = 'Filter by Current Venue';
 const excludeToggleLabel = 'Exclude Current Event';
@@ -229,5 +240,148 @@ describe( 'EventQueryControlsSlotFill', () => {
 		expect(
 			screen.queryByText( excludeToggleLabel ),
 		).not.toBeInTheDocument();
+	} );
+} );
+
+describe( 'gatherpress.eventQueryControls', () => {
+	const NAMESPACE = 'test/query-controls';
+
+	beforeEach( () => {
+		mockQueryControlsProps = {
+			...mockQueryControlsProps,
+			context: { postType: 'gatherpress_event' },
+			attributes: {
+				query: { postType: 'gatherpress_event', inherit: false },
+			},
+		};
+
+		isEventPostType.mockReturnValue( true );
+		isPostTypeSupporting.mockReturnValue( false );
+		isInFSETemplate.mockReturnValue( false );
+	} );
+
+	afterEach( () => {
+		removeFilter( 'gatherpress.eventQueryControls', NAMESPACE );
+		removeFilter( 'gatherpress.eventInheritedQueryControls', NAMESPACE );
+	} );
+
+	it( 'hands the filter every control that would render, in order', () => {
+		let seen = [];
+
+		addFilter(
+			'gatherpress.eventQueryControls',
+			NAMESPACE,
+			( controls ) => {
+				seen = controls.map( ( { name } ) => name );
+				return controls;
+			},
+		);
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect( seen ).toEqual( [
+			'listType',
+			'includeUnfinished',
+			'exclude',
+			'count',
+			'offset',
+			'order',
+		] );
+	} );
+
+	it( 'lets a filter drop a control', () => {
+		addFilter( 'gatherpress.eventQueryControls', NAMESPACE, ( controls ) =>
+			controls.filter( ( { name } ) => 'offset' !== name ),
+		);
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect( screen.queryByText( 'Event Offset' ) ).not.toBeInTheDocument();
+		expect( screen.getByText( 'Events Per Page' ) ).toBeInTheDocument();
+	} );
+
+	it( 'lets a filter add a control of its own', () => {
+		addFilter( 'gatherpress.eventQueryControls', NAMESPACE, ( controls ) => [
+			...controls,
+			{
+				name: 'test/extra',
+				Component: () => <div>Extra Control</div>,
+			},
+		] );
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect( screen.getByText( 'Extra Control' ) ).toBeInTheDocument();
+	} );
+
+	it( 'passes the block edit props through to a filtered-in control', () => {
+		let received = null;
+
+		addFilter( 'gatherpress.eventQueryControls', NAMESPACE, ( controls ) => [
+			{
+				name: 'test/probe',
+				Component: ( props ) => {
+					received = props;
+					return null;
+				},
+				props: { extra: 'from-entry' },
+			},
+			...controls,
+		] );
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect( received.attributes.query.postType ).toBe( 'gatherpress_event' );
+		expect( received.extra ).toBe( 'from-entry' );
+	} );
+
+	it( 'survives a filter returning entries it cannot render', () => {
+		addFilter( 'gatherpress.eventQueryControls', NAMESPACE, () => [
+			null,
+			{ name: 'no-component' },
+			{ Component: () => <div>No Name</div> },
+			{ name: 'test/ok', Component: () => <div>Still Here</div> },
+		] );
+
+		expect( () => render( <EventQueryControlsSlotFill /> ) ).not.toThrow();
+		expect( screen.getByText( 'Still Here' ) ).toBeInTheDocument();
+		expect( screen.queryByText( 'No Name' ) ).not.toBeInTheDocument();
+	} );
+
+	it( 'survives a filter returning something that is not an array', () => {
+		addFilter( 'gatherpress.eventQueryControls', NAMESPACE, () => null );
+
+		expect( () => render( <EventQueryControlsSlotFill /> ) ).not.toThrow();
+		expect( screen.queryByText( 'Event Offset' ) ).not.toBeInTheDocument();
+	} );
+
+	it( 'filters the inherited panel through its own hook', () => {
+		let seen = [];
+
+		addFilter(
+			'gatherpress.eventInheritedQueryControls',
+			NAMESPACE,
+			( controls ) => {
+				seen = controls.map( ( { name } ) => name );
+				return controls.filter( ( { name } ) => 'order' !== name );
+			},
+		);
+
+		render( <EventInheritedQueryControlsSlotFill /> );
+
+		expect( seen ).toEqual( [ 'listType', 'includeUnfinished', 'order' ] );
+		expect( screen.queryByText( 'Order Events by' ) ).not.toBeInTheDocument();
+	} );
+
+	it( 'leaves the main panel alone when only the inherited hook is filtered', () => {
+		addFilter(
+			'gatherpress.eventInheritedQueryControls',
+			NAMESPACE,
+			() => [],
+		);
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect( screen.getByText( 'Event Offset' ) ).toBeInTheDocument();
 	} );
 } );

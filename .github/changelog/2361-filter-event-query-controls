@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+The Event Query Loop's controls can now be filtered rather than only added to. `gatherpress.eventQueryControls` and `gatherpress.eventInheritedQueryControls` hand you the list of controls the panel is about to render, as `{ name, Component, props }` entries, so a companion plugin can drop the ones its own layout has no use for, reorder them or insert its own. The control components are also published on `window.gatherpress.queryControls` for plugins that would rather compose a panel of their own.

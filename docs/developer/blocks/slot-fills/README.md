@@ -20,7 +20,7 @@ All slots will be rendered into the `PluginDocumentSettingPanel` imported from t
 - `VenuePluginFill` loads the `VenuePluginDocumentSettings` slot into the `EventPluginDocumentSettings` slot, so that venue changes can be made from within an event context.
 
 
-## Add or remove UI elements
+## Add UI elements
 
 ```js
 export default function GatherPressAwesomeFill() {
@@ -34,6 +34,69 @@ export default function GatherPressAwesomeFill() {
 }
 ```
 
+
+## Event Query Loop controls
+
+The Event Query Loop keeps its own slot, separate from the document sidebar ones above. GatherPress fills it with the controls in the **Event Query Settings** panel, and two filters let you change that list rather than only add to it.
+
+### `gatherpress.eventQueryControls`
+
+Filters the controls shown when the query is not inherited. Each entry is an object:
+
+| Key | Type | Description |
+|---|---|---|
+| `name` | `string` | Stable identifier. Use a plugin namespace for your own, e.g. `my-calendar/density`. |
+| `Component` | `Function` | The React component to render. |
+| `props` | `Object` | Optional. Merged over the block edit props the slot passes down. |
+
+The controls GatherPress registers, in render order:
+
+| `name` | Control |
+|---|---|
+| `listType` | Upcoming / Past |
+| `includeUnfinished` | Include events already under way |
+| `exclude` | Exclude the current event. Only present when the query and its host are the same post type |
+| `shadowSourceFilter` | Filter by the current venue or other shadow source. Only present in a template, or on a shadow-source host querying a different post type |
+| `count` | Events per page |
+| `offset` | Offset |
+| `order` | Order and order by |
+
+The two conditional entries are absent rather than present-and-hidden, so the array is always exactly what would render.
+
+A calendar has no use for Upcoming / Past or an offset, so it can drop them:
+
+```js
+import { addFilter } from '@wordpress/hooks';
+
+addFilter(
+	'gatherpress.eventQueryControls',
+	'my-calendar/trim-controls',
+	( controls ) =>
+		controls.filter(
+			( { name } ) => ! [ 'listType', 'offset' ].includes( name )
+		)
+);
+```
+
+Reordering, wrapping and inserting all work the same way, since you are handed the array and return one.
+
+### `gatherpress.eventInheritedQueryControls`
+
+The same shape, for the shorter set shown when the query inherits from the template: `listType`, `includeUnfinished` and `order`. It is a separate filter because a rule that suits one panel rarely suits the other.
+
+### Reusing the controls
+
+Removing a control is one thing; building a panel of your own out of GatherPress's controls is another. The components are published on a global for that:
+
+```php
+wp_enqueue_script( 'my-calendar', $url, array( 'gatherpress-query' ), $ver, true );
+```
+
+```js
+const { EventOrderControls, EventCountControls } = window.gatherpress.queryControls;
+```
+
+Declaring `gatherpress-query` as a script dependency is what guarantees the global exists by the time your code runs. Available components: `EventCountControls`, `EventExcludeControls`, `EventIncludeUnfinishedControls`, `EventListTypeControls`, `EventOffsetControls`, `EventOrderControls` and `ShadowSourceFilterControls`.
 
 ### Resources
 
