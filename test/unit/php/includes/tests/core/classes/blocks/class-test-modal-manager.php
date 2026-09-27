@@ -121,10 +121,10 @@ class Test_Modal_Manager extends Base {
 			$output_html,
 			'Output should contain button role'
 		);
-		$this->assertStringNotContainsString(
-			'data-wp-on--keydown',
+		$this->assertStringContainsString(
+			'data-wp-on--keydown="actions.openModalOnEnter"',
 			$output_html,
-			'Output should not contain keydown handler for links'
+			'Links acting as buttons need the keydown handler so Space works'
 		);
 		$this->assertStringNotContainsString(
 			'tabindex',
@@ -198,10 +198,10 @@ class Test_Modal_Manager extends Base {
 			$output_html,
 			'Output should contain button role for links'
 		);
-		$this->assertStringNotContainsString(
-			'data-wp-on--keydown',
+		$this->assertStringContainsString(
+			'data-wp-on--keydown="actions.openModalOnEnter"',
 			$output_html,
-			'Output should not contain keydown handler for links'
+			'Links acting as buttons need the keydown handler so Space works'
 		);
 	}
 
@@ -367,10 +367,10 @@ class Test_Modal_Manager extends Base {
 			$output_html,
 			'Output should contain button role'
 		);
-		$this->assertStringNotContainsString(
-			'data-wp-on--keydown',
+		$this->assertStringContainsString(
+			'data-wp-on--keydown="actions.closeModalOnEnter"',
 			$output_html,
-			'Output should not contain keydown handler for links'
+			'Links acting as buttons need the keydown handler so Space works'
 		);
 		$this->assertStringNotContainsString(
 			'tabindex',

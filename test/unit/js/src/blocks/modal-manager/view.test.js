@@ -195,3 +195,147 @@ describe( 'modal-manager openModal', () => {
 		).toBe( false );
 	} );
 } );
+
+/**
+ * closeModal must hand focus back to whatever opened the modal. The
+ * trigger class often sits on a block wrapper (e.g. the Event Date
+ * block's <div>) with the focusable link inside it; focusing the
+ * wrapper itself does nothing and drops focus to the page body.
+ */
+describe( 'modal-manager closeModal focus return', () => {
+	let actions;
+
+	beforeEach( () => {
+		( { actions } = store( 'gatherpress' ) );
+		document.body.innerHTML = '';
+	} );
+
+	it( 'focuses a link nested inside the trigger wrapper', () => {
+		document.body.innerHTML = `
+			<div class="wp-block-gatherpress-modal-manager">
+				<div class="gatherpress-modal--trigger-open">
+					<a href="/event/" role="button">9:00</a>
+				</div>
+				<div class="wp-block-gatherpress-modal gatherpress--is-visible">
+					<div class="wp-block-gatherpress-modal-content">
+						<button type="button" class="close">Close</button>
+					</div>
+				</div>
+			</div>
+		`;
+
+		actions.closeModal( null, document.querySelector( '.close' ) );
+
+		expect( document.activeElement ).toBe(
+			document.querySelector( '.gatherpress-modal--trigger-open a' )
+		);
+	} );
+
+	it( 'still focuses a button nested inside the trigger wrapper', () => {
+		document.body.innerHTML = `
+			<div class="wp-block-gatherpress-modal-manager">
+				<div class="gatherpress-modal--trigger-open">
+					<button type="button">Open</button>
+				</div>
+				<div class="wp-block-gatherpress-modal gatherpress--is-visible">
+					<div class="wp-block-gatherpress-modal-content">
+						<button type="button" class="close">Close</button>
+					</div>
+				</div>
+			</div>
+		`;
+
+		actions.closeModal( null, document.querySelector( '.close' ) );
+
+		expect( document.activeElement ).toBe(
+			document.querySelector( '.gatherpress-modal--trigger-open button' )
+		);
+	} );
+
+	it( 'focuses the trigger itself when it is the link', () => {
+		document.body.innerHTML = `
+			<div class="wp-block-gatherpress-modal-manager">
+				<a href="/event/" class="gatherpress-modal--trigger-open" role="button">Open</a>
+				<div class="wp-block-gatherpress-modal gatherpress--is-visible">
+					<div class="wp-block-gatherpress-modal-content">
+						<button type="button" class="close">Close</button>
+					</div>
+				</div>
+			</div>
+		`;
+
+		actions.closeModal( null, document.querySelector( '.close' ) );
+
+		expect( document.activeElement ).toBe(
+			document.querySelector( 'a.gatherpress-modal--trigger-open' )
+		);
+	} );
+} );
+
+/**
+ * An unnamed modal (server marker `data-gatherpress-default-label`) is
+ * named after its first heading the user can see when it opens. RSVP
+ * modals keep hidden state headings (e.g. "Thank you for your RSVP!")
+ * before the form, so the first heading in the markup is not enough.
+ */
+describe( 'modal-manager openModal naming', () => {
+	let actions;
+
+	beforeEach( () => {
+		( { actions } = store( 'gatherpress' ) );
+		document.body.innerHTML = '';
+	} );
+
+	const render = ( modalAttrs, content ) => {
+		document.body.innerHTML = `
+			<div class="wp-block-gatherpress-modal-manager">
+				<button type="button" class="open">Open</button>
+				<div class="wp-block-gatherpress-modal" role="dialog" aria-label="Modal" ${ modalAttrs }>
+					<div class="wp-block-gatherpress-modal-content">${ content }</div>
+				</div>
+			</div>
+		`;
+		actions.openModal( null, document.querySelector( '.open' ) );
+		return document.querySelector( '[role="dialog"]' );
+	};
+
+	it( 'skips hidden headings and uses the first visible one', () => {
+		const modal = render(
+			'data-gatherpress-default-label="true"',
+			`<div style="display: none"><h3>Thank you for your RSVP!</h3></div>
+			<div hidden><h3>This event has already occurred.</h3></div>
+			<div class="gatherpress--is-hidden"><h3>Hidden by class</h3></div>
+			<h2>Register for this event</h2>`
+		);
+
+		const heading = document.querySelector( 'h2' );
+		expect( heading.id ).toMatch( /^gatherpress-modal-heading-\d+$/ );
+		expect( modal.getAttribute( 'aria-labelledby' ) ).toBe( heading.id );
+	} );
+
+	it( 'reuses an existing heading id', () => {
+		const modal = render(
+			'data-gatherpress-default-label="true"',
+			'<h3 id="event-title">QA Morning Coffee</h3>'
+		);
+
+		expect( modal.getAttribute( 'aria-labelledby' ) ).toBe( 'event-title' );
+	} );
+
+	it( 'keeps the generic label when no heading is visible', () => {
+		const modal = render(
+			'data-gatherpress-default-label="true" aria-labelledby="stale-id"',
+			'<div style="display: none"><h3>Hidden</h3></div><p>No heading</p>'
+		);
+
+		expect( modal.hasAttribute( 'aria-labelledby' ) ).toBe( false );
+		expect( modal.getAttribute( 'aria-label' ) ).toBe( 'Modal' );
+	} );
+
+	it( 'leaves a modal with a custom name alone', () => {
+		const modal = render( '', '<h3>Heading</h3>' );
+
+		expect( modal.hasAttribute( 'aria-labelledby' ) ).toBe( false );
+		expect( document.querySelector( 'h3' ).id ).toBe( '' );
+	} );
+} );

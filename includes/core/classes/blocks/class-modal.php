@@ -76,7 +76,15 @@ final class Modal {
 	 * Dynamically updates the modal block's rendered content to include necessary
 	 * attributes for improved accessibility and functionality.
 	 *
+	 * A modal with a custom name (`metadata.name`) uses it as its `aria-label`.
+	 * A modal without one gets the generic "Modal" label and the
+	 * `data-gatherpress-default-label` marker. When the modal opens, the view
+	 * script points `aria-labelledby` at the first heading the user can see,
+	 * which only the browser knows (RSVP modals show and hide their headings
+	 * after the page loads).
+	 *
 	 * @since 0.33.0
+	 * @since 0.36.0 Marks modals that have no custom name.
 	 *
 	 * @param string               $block_content The HTML content of the block.
 	 * @param array<string, mixed> $block         The parsed block data.
@@ -87,7 +95,14 @@ final class Modal {
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
 		if ( $tag->next_tag() ) {
-			$modal_name = $block['attrs']['metadata']['name'] ?? __( 'Modal', 'gatherpress' );
+			$modal_name = $block['attrs']['metadata']['name'] ?? '';
+			$modal_name = is_string( $modal_name ) ? trim( $modal_name ) : '';
+
+			if ( '' === $modal_name ) {
+				$modal_name = __( 'Modal', 'gatherpress' );
+
+				$tag->set_attribute( 'data-gatherpress-default-label', 'true' );
+			}
 
 			$tag->set_attribute( 'role', 'dialog' );
 			$tag->set_attribute( 'aria-modal', 'true' );

@@ -77,10 +77,13 @@ final class Modal_Manager {
 	 *
 	 * - Adds `data-wp-interactive` for interactivity.
 	 * - Adds `data-wp-on--click` to handle click events.
-	 * - Adds `data-wp-on--keydown` for keyboard accessibility.
+	 * - Adds `data-wp-on--keydown` for keyboard accessibility. Links get it too:
+	 *   `role="button"` tells assistive technology the element responds to Space,
+	 *   which a native link does not.
 	 * - Sets `role="button"` and `tabindex="0"` for non-native actionable elements.
 	 *
 	 * @since 0.33.0
+	 * @since 0.36.0 Links acting as buttons also open the modal on Space.
 	 *
 	 * @param string $block_content The original block HTML content.
 	 *
@@ -108,13 +111,13 @@ final class Modal_Manager {
 
 				// Apply modal attributes if target was found.
 				if ( $target_found ) {
-					// Links only get role="button", others get full keyboard handling.
-					if ( 'A' === $tag->get_tag() ) {
-						$tag->set_attribute( 'role', 'button' ); // For links acting as buttons.
-					} else {
-						$tag->set_attribute( 'data-wp-on--keydown', 'actions.openModalOnEnter' );
+					// Links are already focusable, so they skip tabindex, but they
+					// still need the keydown handler so Space opens the modal.
+					$tag->set_attribute( 'data-wp-on--keydown', 'actions.openModalOnEnter' );
+					$tag->set_attribute( 'role', 'button' );
+
+					if ( 'A' !== $tag->get_tag() ) {
 						$tag->set_attribute( 'tabindex', '0' );
-						$tag->set_attribute( 'role', 'button' );
 					}
 
 					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
@@ -136,10 +139,12 @@ final class Modal_Manager {
 	 *
 	 * - Adds `data-wp-interactive` for interactivity.
 	 * - Adds `data-wp-on--click` to handle click events.
-	 * - Adds `data-wp-on--keydown` for keyboard accessibility.
+	 * - Adds `data-wp-on--keydown` for keyboard accessibility, including on links,
+	 *   so Space closes the modal from a link acting as a button.
 	 * - Sets `role="button"` and `tabindex="0"` for non-native actionable elements.
 	 *
 	 * @since 0.33.0
+	 * @since 0.36.0 Links acting as buttons also close the modal on Space.
 	 *
 	 * @param string $block_content The original block HTML content.
 	 *
@@ -153,16 +158,16 @@ final class Modal_Manager {
 			$class_attr = $tag->get_attribute( 'class' );
 
 			if ( Utility::has_css_class( $class_attr, 'gatherpress-modal--trigger-close' ) ) {
-				if (
-					// @phpstan-ignore-next-line
-					$tag->next_tag() &&
-					in_array( $tag->get_tag(), array( 'A' ), true )
-				) {
-					$tag->set_attribute( 'role', 'button' ); // For links acting as buttons.
-				} else {
-					$tag->set_attribute( 'data-wp-on--keydown', 'actions.closeModalOnEnter' );
+				// @phpstan-ignore-next-line
+				$is_link = $tag->next_tag() && 'A' === $tag->get_tag();
+
+				// Links are already focusable, so they skip tabindex, but they
+				// still need the keydown handler so Space closes the modal.
+				$tag->set_attribute( 'data-wp-on--keydown', 'actions.closeModalOnEnter' );
+				$tag->set_attribute( 'role', 'button' );
+
+				if ( ! $is_link ) {
 					$tag->set_attribute( 'tabindex', '0' );
-					$tag->set_attribute( 'role', 'button' );
 				}
 
 				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
