@@ -1,7 +1,7 @@
 /**
  * Resolve the timezone the browser is running in.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @return {string} An IANA timezone name, or an empty string when the browser will not say.
  */
@@ -27,7 +27,7 @@ export function getViewerTimezone() {
  * site against the viewer's own zone, so such a viewer sees a tooltip
  * repeating a time they were already reading.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @param {string} gmt      Datetime in `Y-m-d H:i:s` GMT, as stored in event meta.
  * @param {string} timezone IANA timezone name to render in.
@@ -76,7 +76,7 @@ export function formatInTimezone( gmt, timezone, options, locale ) {
  * the label is anchored to is the one viewers plan around, so that is the one
  * worth being right about.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @param {string} gmt            Event instant in `Y-m-d H:i:s` GMT.
  * @param {string} viewerTimezone The viewer's timezone.
@@ -127,7 +127,7 @@ function isSameZoneAt( gmt, viewerTimezone, eventTimezone ) {
  * A placeholder no value answers is left as written, so a translation that
  * invents an extra one shows the token rather than the word "undefined".
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @param {string}   format Translated format string.
  * @param {string[]} values Values to substitute, in `%1$s` order.
@@ -172,7 +172,7 @@ function fillFormat( format, values ) {
  * so it receives them server-translated in the block's `data-wp-context`. The
  * English defaults are the fallback for a caller that has nothing better.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @param {Object}  args                Label inputs.
  * @param {string}  args.startGmt       Event start in `Y-m-d H:i:s` GMT.

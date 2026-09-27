@@ -317,7 +317,7 @@ class Test_Event_Date extends Base {
 	/**
 	 * Render the block for an event fixed at 18:00 to 20:00 New York time.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $title      Post title, so each test gets its own event.
 	 * @param array  $attributes Block attributes to render with.
@@ -356,7 +356,7 @@ class Test_Event_Date extends Base {
 	/**
 	 * Read back the Interactivity API context the block wrapper carries.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $output Rendered block.
 	 *
@@ -374,7 +374,7 @@ class Test_Event_Date extends Base {
 	 * The showViewerTime attribute emits the tooltip markup and context for the
 	 * view module, carrying the event's GMT datetimes and its own timezone.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return void
 	 */
@@ -438,7 +438,7 @@ class Test_Event_Date extends Base {
 	 * A block showing only the start says only the start in local time too,
 	 * rather than announcing a range the block itself never displays.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return void
 	 */
@@ -472,7 +472,7 @@ class Test_Event_Date extends Base {
 	 * viewer needs converting. Mirrors get_display_datetime(), which shows the
 	 * end alone for this display type rather than showing nothing.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return void
 	 */
@@ -509,7 +509,7 @@ class Test_Event_Date extends Base {
 	 * No tooltip without the attribute, so nothing changes for the blocks
 	 * already out there.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return void
 	 */
@@ -536,7 +536,7 @@ class Test_Event_Date extends Base {
 	 * Disabling the global setting suppresses the tooltip context even when
 	 * the block-level attribute is enabled.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return void
 	 */
@@ -570,7 +570,7 @@ class Test_Event_Date extends Base {
 	/**
 	 * Turning off timezone appending suppresses the tooltip.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return void
 	 */
@@ -594,7 +594,7 @@ class Test_Event_Date extends Base {
 	 * When isLink is enabled alongside showViewerTime, the tooltip bindings
 	 * attach directly to the anchor.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return void
 	 */
@@ -617,7 +617,7 @@ class Test_Event_Date extends Base {
 	/**
 	 * All-day events do not display viewer time tooltips.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return void
 	 */
@@ -658,7 +658,7 @@ class Test_Event_Date extends Base {
 	/**
 	 * Clean up tooltip assets after tests.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return void
 	 */

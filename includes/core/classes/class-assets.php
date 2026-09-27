@@ -73,7 +73,7 @@ final class Assets {
 	/**
 	 * Flag indicating whether tooltip frontend assets have been enqueued.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @var bool
 	 */
 	protected bool $tooltip_assets_enqueued = false;
