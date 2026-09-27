@@ -57,8 +57,8 @@ describe( 'formatInTimezone', () => {
 				'2030-06-15 22:00:00',
 				'America/New_York',
 				{ hour: 'numeric', minute: '2-digit' },
-				'en-US'
-			)
+				'en-US',
+			),
 		).toBe( '6:00 PM' );
 	} );
 
@@ -69,7 +69,7 @@ describe( 'formatInTimezone', () => {
 
 	it( 'returns an empty string for an unparsable datetime', () => {
 		expect(
-			formatInTimezone( 'not a date', 'America/New_York', {}, 'en-US' )
+			formatInTimezone( 'not a date', 'America/New_York', {}, 'en-US' ),
 		).toBe( '' );
 	} );
 
@@ -79,14 +79,14 @@ describe( 'formatInTimezone', () => {
 				'2030-06-15 22:00:00',
 				'+05:30',
 				{ hour: 'numeric', minute: '2-digit' },
-				'en-US'
-			)
+				'en-US',
+			),
 		).toBe( '3:30 AM' );
 	} );
 
 	it( 'returns an empty string for a timezone Intl will not take', () => {
 		expect(
-			formatInTimezone( '2030-06-15 22:00:00', 'Not/AZone', {}, 'en-US' )
+			formatInTimezone( '2030-06-15 22:00:00', 'Not/AZone', {}, 'en-US' ),
 		).toBe( '' );
 	} );
 } );
@@ -99,7 +99,7 @@ describe( 'getViewerTimeLabel', () => {
 				eventTimezone: 'America/New_York',
 				viewerTimezone: 'Europe/Warsaw',
 				locale: 'en-US',
-			} )
+			} ),
 		).toBe( '6:00 PM your time' );
 	} );
 
@@ -111,7 +111,7 @@ describe( 'getViewerTimeLabel', () => {
 				eventTimezone: 'America/New_York',
 				viewerTimezone: 'Europe/Warsaw',
 				locale: 'en-US',
-			} )
+			} ),
 		).toBe( '6:00 PM to 8:00 PM your time' );
 	} );
 
@@ -137,7 +137,7 @@ describe( 'getViewerTimeLabel', () => {
 				eventTimezone: 'America/New_York',
 				viewerTimezone: 'Europe/London',
 				locale: 'en-US',
-			} )
+			} ),
 		).toBe( '6/15/2030, 11:00 PM to 6/16/2030, 1:00 AM your time' );
 	} );
 
@@ -149,7 +149,7 @@ describe( 'getViewerTimeLabel', () => {
 				eventTimezone: 'America/New_York',
 				viewerTimezone: 'Europe/London',
 				locale: 'en-US',
-			} )
+			} ),
 		).toBe( '6/15/2030, 2:00 PM to 6/17/2030, 10:00 PM your time' );
 	} );
 
@@ -161,7 +161,7 @@ describe( 'getViewerTimeLabel', () => {
 				eventTimezone: 'America/New_York',
 				viewerTimezone: 'Europe/London',
 				isAllDay: true,
-			} )
+			} ),
 		).toBe( '' );
 	} );
 
@@ -175,7 +175,7 @@ describe( 'getViewerTimeLabel', () => {
 				eventTimezone: 'America/New_York',
 				viewerTimezone: 'Asia/Tokyo',
 				locale: 'en-US',
-			} )
+			} ),
 		).toBe( '6/16/2030, 7:00 AM to 9:00 AM your time' );
 	} );
 
@@ -187,7 +187,7 @@ describe( 'getViewerTimeLabel', () => {
 				eventTimezone: '+05:30',
 				viewerTimezone: 'Asia/Kolkata',
 				locale: 'en-US',
-			} )
+			} ),
 		).toBe( '' );
 	} );
 
@@ -198,7 +198,7 @@ describe( 'getViewerTimeLabel', () => {
 				eventTimezone: 'Not/AZone',
 				viewerTimezone: 'Europe/Warsaw',
 				locale: 'en-US',
-			} )
+			} ),
 		).toBe( '12:00 AM your time' );
 	} );
 
@@ -208,7 +208,7 @@ describe( 'getViewerTimeLabel', () => {
 				startGmt: '2030-06-15 22:00:00',
 				viewerTimezone: 'Europe/Warsaw',
 				locale: 'en-US',
-			} )
+			} ),
 		).toBe( '12:00 AM your time' );
 	} );
 
@@ -219,7 +219,7 @@ describe( 'getViewerTimeLabel', () => {
 				eventTimezone: 'America/New_York',
 				viewerTimezone: 'America/New_York',
 				locale: 'en-US',
-			} )
+			} ),
 		).toBe( '' );
 	} );
 
@@ -232,7 +232,7 @@ describe( 'getViewerTimeLabel', () => {
 				eventTimezone: 'America/New_York',
 				viewerTimezone: 'Europe/London',
 				locale: 'en-US',
-			} )
+			} ),
 		).toBe( '7:00 PM your time' );
 	} );
 
@@ -244,7 +244,7 @@ describe( 'getViewerTimeLabel', () => {
 				eventTimezone: 'America/New_York',
 				viewerTimezone: 'Europe/London',
 				locale: 'en-US',
-			} )
+			} ),
 		).toBe( '6/16/2030, 1:00 AM your time' );
 	} );
 
@@ -253,7 +253,7 @@ describe( 'getViewerTimeLabel', () => {
 			getViewerTimeLabel( {
 				eventTimezone: 'America/New_York',
 				viewerTimezone: 'Europe/Warsaw',
-			} )
+			} ),
 		).toBe( '' );
 	} );
 
@@ -263,7 +263,7 @@ describe( 'getViewerTimeLabel', () => {
 				startGmt: '2030-06-15 22:00:00',
 				eventTimezone: 'America/New_York',
 				viewerTimezone: '',
-			} )
+			} ),
 		).toBe( '' );
 	} );
 
@@ -273,7 +273,7 @@ describe( 'getViewerTimeLabel', () => {
 				startGmt: 'not a date',
 				eventTimezone: 'America/New_York',
 				viewerTimezone: 'Europe/Warsaw',
-			} )
+			} ),
 		).toBe( '' );
 	} );
 
@@ -284,7 +284,7 @@ describe( 'getViewerTimeLabel', () => {
 				eventTimezone: '+05:30',
 				viewerTimezone: 'Europe/Warsaw',
 				locale: 'en-US',
-			} )
+			} ),
 		).toBe( '12:00 AM your time' );
 	} );
 
@@ -298,7 +298,7 @@ describe( 'getViewerTimeLabel', () => {
 				locale: 'en-US',
 				rangeFormat: 'u ciebie %1$s do %2$s',
 				singleFormat: 'u ciebie %s',
-			} )
+			} ),
 		).toBe( 'u ciebie 6:00 PM do 8:00 PM' );
 
 		expect(
@@ -309,7 +309,7 @@ describe( 'getViewerTimeLabel', () => {
 				locale: 'en-US',
 				rangeFormat: 'u ciebie %1$s do %2$s',
 				singleFormat: 'u ciebie %s',
-			} )
+			} ),
 		).toBe( 'u ciebie 6:00 PM' );
 	} );
 
@@ -324,7 +324,7 @@ describe( 'getViewerTimeLabel', () => {
 				viewerTimezone: 'Europe/Warsaw',
 				locale: 'en-US',
 				singleFormat: '%1$s czasu u ciebie',
-			} )
+			} ),
 		).toBe( '6:00 PM czasu u ciebie' );
 	} );
 
@@ -337,7 +337,7 @@ describe( 'getViewerTimeLabel', () => {
 				viewerTimezone: 'Europe/Warsaw',
 				locale: 'en-US',
 				rangeFormat: '%s to %s your time',
-			} )
+			} ),
 		).toBe( '6:00 PM to 8:00 PM your time' );
 	} );
 
@@ -350,7 +350,7 @@ describe( 'getViewerTimeLabel', () => {
 				viewerTimezone: 'Europe/Warsaw',
 				locale: 'en-US',
 				rangeFormat: 'od %1$s do %2$s, czyli %1$s u ciebie',
-			} )
+			} ),
 		).toBe( 'od 6:00 PM do 8:00 PM, czyli 6:00 PM u ciebie' );
 	} );
 
@@ -362,7 +362,7 @@ describe( 'getViewerTimeLabel', () => {
 				viewerTimezone: 'Europe/Warsaw',
 				locale: 'en-US',
 				singleFormat: '%s your time (100%% local)',
-			} )
+			} ),
 		).toBe( '6:00 PM your time (100% local)' );
 	} );
 
@@ -376,7 +376,7 @@ describe( 'getViewerTimeLabel', () => {
 				viewerTimezone: 'Europe/Warsaw',
 				locale: 'en-US',
 				singleFormat: '%s your time (%3$s)',
-			} )
+			} ),
 		).toBe( '6:00 PM your time (%3$s)' );
 	} );
 

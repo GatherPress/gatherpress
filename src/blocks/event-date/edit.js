@@ -387,18 +387,18 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 
 	let viewerTimeHelp = __(
 		'Displays the event time converted to each viewer\u2019s local timezone in a tooltip. Viewers in the same timezone see nothing extra.',
-		'gatherpress'
+		'gatherpress',
 	);
 
 	if ( isAllDay ) {
 		viewerTimeHelp = __(
 			'All-day events do not show viewer local time.',
-			'gatherpress'
+			'gatherpress',
 		);
 	} else if ( ! isTimezoneAppended ) {
 		viewerTimeHelp = __(
 			'Time zone must be appended to show viewer local time.',
-			'gatherpress'
+			'gatherpress',
 		);
 	}
 

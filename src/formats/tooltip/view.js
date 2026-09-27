@@ -82,7 +82,7 @@ export function initTooltip( tooltip ) {
 		// mistaken for this one, and a direct child so a nested tooltip's
 		// text is not either.
 		const existingSrText = tooltip.querySelector(
-			`:scope > .${ NOTICE_CLASS }`
+			`:scope > .${ NOTICE_CLASS }`,
 		);
 		if ( ! existingSrText ) {
 			const srText = document.createElement( 'span' );

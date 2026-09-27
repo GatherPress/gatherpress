@@ -102,7 +102,7 @@ function isSameZoneAt( gmt, viewerTimezone, eventTimezone ) {
 		gmt,
 		viewerTimezone,
 		wallClockOptions,
-		'en-US'
+		'en-US',
 	);
 
 	return (
@@ -149,7 +149,7 @@ function fillFormat( format, values ) {
 				: values[ next++ ];
 
 			return undefined === value ? placeholder : String( value );
-		}
+		},
 	);
 }
 
@@ -222,7 +222,7 @@ export function getViewerTimeLabel( {
 		labelStartGmt,
 		viewer,
 		timeOptions,
-		locale
+		locale,
 	);
 
 	if ( ! viewerStart ) {
@@ -234,7 +234,7 @@ export function getViewerTimeLabel( {
 		labelStartGmt,
 		eventTimezone,
 		dayOptions,
-		locale
+		locale,
 	);
 	const viewerEndDay = labelEndGmt
 		? formatInTimezone( labelEndGmt, viewer, dayOptions, locale )
@@ -253,7 +253,7 @@ export function getViewerTimeLabel( {
 			labelStartGmt,
 			viewer,
 			{ ...dayOptions, ...timeOptions },
-			locale
+			locale,
 		)
 		: viewerStart;
 
@@ -262,7 +262,7 @@ export function getViewerTimeLabel( {
 			labelEndGmt,
 			viewer,
 			rangeSpansDays ? { ...dayOptions, ...timeOptions } : timeOptions,
-			locale
+			locale,
 		)
 		: '';
 

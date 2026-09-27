@@ -215,7 +215,7 @@ describe( 'Event Date Edit displayType', () => {
 		const { container } = renderEdit( { displayType: '' } );
 
 		expect( container.textContent ).toContain(
-			'2026-08-01 18:00 to 2026-08-01 20:00'
+			'2026-08-01 18:00 to 2026-08-01 20:00',
 		);
 	} );
 } );
@@ -233,7 +233,7 @@ describe( 'Event Date Edit showViewerTime', () => {
 		const setAttributes = jest.fn();
 		const { getByText } = renderEdit(
 			{ showTimezone: 'yes', showViewerTime: false },
-			setAttributes
+			setAttributes,
 		);
 		const toggle = getByText( 'Show viewer local time' );
 
@@ -257,7 +257,7 @@ describe( 'Event Date Edit showViewerTime', () => {
 
 		expect( toggle.hasAttribute( 'disabled' ) ).toBe( true );
 		expect(
-			getByText( 'All-day events do not show viewer local time.' )
+			getByText( 'All-day events do not show viewer local time.' ),
 		).toBeInTheDocument();
 	} );
 

@@ -154,7 +154,7 @@ describe( 'Tooltip view', () => {
 			initTooltip( el );
 
 			const own = Array.from( el.children ).find( ( child ) =>
-				child.classList?.contains( 'gatherpress-tooltip-notice' )
+				child.classList?.contains( 'gatherpress-tooltip-notice' ),
 			);
 			expect( own ).not.toBeNull();
 			expect( own.textContent ).toBe( ' (Outer note)' );
