@@ -284,8 +284,14 @@ const { actions } = store( 'gatherpress', {
 			if ( findActiveSibling ) {
 				// The trigger class often sits on a block wrapper (for example the
 				// Event Date block's <div>) with the focusable link or button inside it.
+				// A link without an href is focusable only through the tabindex the
+				// server adds, so match that too.
 				let openTrigger = modalManager.querySelector(
-					'.gatherpress-modal--trigger-open button, .gatherpress-modal--trigger-open a[href]',
+					[
+						'.gatherpress-modal--trigger-open button',
+						'.gatherpress-modal--trigger-open a[href]',
+						'.gatherpress-modal--trigger-open [tabindex]:not([tabindex="-1"])',
+					].join( ', ' ),
 				);
 
 				// If no nested button or link, try the trigger element itself (could be anchor or button).

@@ -470,4 +470,43 @@ class Test_Modal_Manager extends Base {
 			'Should preserve all existing classes'
 		);
 	}
+
+	/**
+	 * Test a link trigger without an href gets tabindex so it can take focus.
+	 *
+	 * A Button block with no URL renders `<a>` without `href`, which is not in
+	 * the tab order. A link with an `href`, even a valueless one, needs none.
+	 *
+	 * @since  0.36.0
+	 * @covers ::attach_modal_open_behavior
+	 * @covers ::attach_modal_close_behavior
+	 * @covers ::is_link_with_href
+	 *
+	 * @return void
+	 */
+	public function test_link_without_href_gets_tabindex(): void {
+		$instance = Modal_Manager::get_instance();
+
+		$open = $instance->attach_modal_open_behavior(
+			'<div class="wp-block-button gatherpress-modal--trigger-open">'
+			. '<a class="wp-block-button__link">Open</a></div>'
+		);
+		$this->assertStringContainsString( 'tabindex="0"', $open, 'Open link without href should get tabindex' );
+		$this->assertStringContainsString( 'data-wp-on--keydown="actions.openModalOnEnter"', $open );
+
+		$close = $instance->attach_modal_close_behavior(
+			'<div class="wp-block-button gatherpress-modal--trigger-close">'
+			. '<a class="wp-block-button__link">Close</a></div>'
+		);
+		$this->assertStringContainsString( 'tabindex="0"', $close, 'Close link without href should get tabindex' );
+		$this->assertStringContainsString( 'data-wp-on--keydown="actions.closeModalOnEnter"', $close );
+
+		$direct = $instance->attach_modal_open_behavior( '<a class="gatherpress-modal--trigger-open">Open</a>' );
+		$this->assertStringContainsString( 'tabindex="0"', $direct, 'Direct link without href needs tabindex' );
+
+		$valueless = $instance->attach_modal_open_behavior(
+			'<div class="gatherpress-modal--trigger-open"><a href>Open</a></div>'
+		);
+		$this->assertStringNotContainsString( 'tabindex', $valueless, 'A valueless href is focusable' );
+	}
 }

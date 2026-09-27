@@ -231,6 +231,29 @@ describe( 'modal-manager closeModal focus return', () => {
 		);
 	} );
 
+	it( 'focuses a link without an href that the server made focusable', () => {
+		// A Button block with no URL renders <a> without href; the server
+		// adds tabindex="0" so it can take focus.
+		document.body.innerHTML = `
+			<div class="wp-block-gatherpress-modal-manager">
+				<div class="wp-block-button gatherpress-modal--trigger-open">
+					<a class="wp-block-button__link" role="button" tabindex="0">Open</a>
+				</div>
+				<div class="wp-block-gatherpress-modal gatherpress--is-visible">
+					<div class="wp-block-gatherpress-modal-content">
+						<button type="button" class="close">Close</button>
+					</div>
+				</div>
+			</div>
+		`;
+
+		actions.closeModal( null, document.querySelector( '.close' ) );
+
+		expect( document.activeElement ).toBe(
+			document.querySelector( '.gatherpress-modal--trigger-open a' )
+		);
+	} );
+
 	it( 'still focuses a button nested inside the trigger wrapper', () => {
 		document.body.innerHTML = `
 			<div class="wp-block-gatherpress-modal-manager">
@@ -274,9 +297,10 @@ describe( 'modal-manager closeModal focus return', () => {
 
 /**
  * An unnamed modal (server marker `data-gatherpress-default-label`) is
- * named after its first heading the user can see when it opens. RSVP
- * modals keep hidden state headings (e.g. "Thank you for your RSVP!")
- * before the form, so the first heading in the markup is not enough.
+ * named after its first heading the user can see when it opens. An RSVP
+ * modal without a custom name keeps hidden state headings (e.g. "Thank
+ * you for your RSVP!") before the form, so the first heading in the
+ * markup is not enough.
  */
 describe( 'modal-manager openModal naming', () => {
 	let actions;

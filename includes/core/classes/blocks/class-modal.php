@@ -80,8 +80,8 @@ final class Modal {
 	 * A modal without one gets the generic "Modal" label and the
 	 * `data-gatherpress-default-label` marker. When the modal opens, the view
 	 * script points `aria-labelledby` at the first heading the user can see,
-	 * which only the browser knows (RSVP modals show and hide their headings
-	 * after the page loads).
+	 * which only the browser knows. An RSVP modal without a custom name, for
+	 * example, shows and hides its headings after the page loads.
 	 *
 	 * @since 0.33.0
 	 * @since 0.36.0 Marks modals that have no custom name.
