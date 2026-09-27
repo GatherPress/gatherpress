@@ -103,6 +103,8 @@ jest.mock( '@src/helpers/editor', () => ( {
 /**
  * WordPress dependencies
  */
+import { useSelect } from '@wordpress/data';
+import { memo } from '@wordpress/element';
 import { addFilter, removeFilter } from '@wordpress/hooks';
 import { isEventPostType, isPostTypeSupporting } from '@src/helpers/event';
 import { isInFSETemplate } from '@src/helpers/editor';
@@ -113,6 +115,7 @@ import { isInFSETemplate } from '@src/helpers/editor';
 import {
 	EventQueryControlsSlotFill,
 	EventInheritedQueryControlsSlotFill,
+	ShadowSourceFilterControls,
 } from '@src/variations/core/query/components';
 
 const venueToggleLabel = 'Filter by Current Venue';
@@ -383,5 +386,148 @@ describe( 'gatherpress.eventQueryControls', () => {
 		render( <EventQueryControlsSlotFill /> );
 
 		expect( screen.getByText( 'Event Offset' ) ).toBeInTheDocument();
+	} );
+} );
+
+describe( 'gatherpress.eventQueryControls component validation', () => {
+	const NAMESPACE = 'test/component-validation';
+
+	beforeEach( () => {
+		mockQueryControlsProps = {
+			...mockQueryControlsProps,
+			context: { postType: 'gatherpress_event' },
+			attributes: {
+				query: { postType: 'gatherpress_event', inherit: false },
+			},
+		};
+
+		isEventPostType.mockReturnValue( true );
+		isPostTypeSupporting.mockReturnValue( false );
+		isInFSETemplate.mockReturnValue( false );
+	} );
+
+	afterEach( () => {
+		removeFilter( 'gatherpress.eventQueryControls', NAMESPACE );
+	} );
+
+	it( 'skips an entry whose Component is not something React can render', () => {
+		addFilter( 'gatherpress.eventQueryControls', NAMESPACE, () => [
+			{ name: 'number', Component: 42 },
+			{ name: 'string', Component: 'not a component' },
+			{ name: 'plain-object', Component: {} },
+			{ name: 'test/ok', Component: () => <div>Still Here</div> },
+		] );
+
+		expect( () => render( <EventQueryControlsSlotFill /> ) ).not.toThrow();
+		expect( screen.getByText( 'Still Here' ) ).toBeInTheDocument();
+	} );
+
+	it( 'still renders a memoized component, which is an object rather than a function', () => {
+		const Memoized = memo( () => <div>Memoized Control</div> );
+
+		addFilter( 'gatherpress.eventQueryControls', NAMESPACE, ( controls ) => [
+			...controls,
+			{ name: 'test/memo', Component: Memoized },
+		] );
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect( screen.getByText( 'Memoized Control' ) ).toBeInTheDocument();
+	} );
+} );
+
+describe( 'shadow-source sync', () => {
+	const NAMESPACE = 'test/shadow-source-sync';
+	const HOST_ID = 42;
+	const HOST_TYPE = 'gatherpress_venue';
+
+	// A shadow-source host querying events, with the filter switched on but
+	// the source IDs never written: the case the sync exists for.
+	const staleQuery = {
+		postType: 'gatherpress_event',
+		inherit: false,
+		shadow_filter: 1,
+		gatherpress_shadow_source_post_id: null,
+		gatherpress_shadow_source_post_type: null,
+	};
+
+	const fakeSelect = ( store ) => {
+		if ( 'core/editor' === store ) {
+			return {
+				getCurrentPostId: () => HOST_ID,
+				getCurrentPostType: () => HOST_TYPE,
+				getCurrentPost: () => ( { id: HOST_ID } ),
+			};
+		}
+
+		if ( 'core' === store ) {
+			return {
+				getPostType: () => ( {
+					supports: { 'gatherpress-shadow-source': true },
+				} ),
+			};
+		}
+
+		return {};
+	};
+
+	let setAttributes;
+
+	beforeEach( () => {
+		setAttributes = jest.fn();
+
+		mockQueryControlsProps = {
+			context: { postType: HOST_TYPE, postId: HOST_ID },
+			attributes: { query: { ...staleQuery } },
+			setAttributes,
+		};
+
+		useSelect.mockImplementation( ( callback ) => callback( fakeSelect ) );
+		isEventPostType.mockReturnValue( false );
+		isPostTypeSupporting.mockReturnValue( true );
+		isInFSETemplate.mockReturnValue( false );
+	} );
+
+	afterEach( () => {
+		removeFilter( 'gatherpress.eventQueryControls', NAMESPACE );
+		useSelect.mockImplementation( () => ( { id: 1 } ) );
+	} );
+
+	const backfillCalls = () =>
+		setAttributes.mock.calls.filter(
+			( [ next ] ) =>
+				HOST_ID === next?.query?.gatherpress_shadow_source_post_id &&
+				HOST_TYPE === next?.query?.gatherpress_shadow_source_post_type,
+		);
+
+	it( 'backfills the source when the toggle is in the panel', () => {
+		render( <EventQueryControlsSlotFill /> );
+
+		expect( backfillCalls() ).toHaveLength( 1 );
+	} );
+
+	it( 'still backfills when a plugin removes the toggle', () => {
+		addFilter( 'gatherpress.eventQueryControls', NAMESPACE, ( controls ) =>
+			controls.filter( ( { name } ) => 'shadowSourceFilter' !== name ),
+		);
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect(
+			screen.queryByText( 'Filter by Current Venue' ),
+		).not.toBeInTheDocument();
+		expect( backfillCalls() ).toHaveLength( 1 );
+	} );
+
+	it( 'backfills when the published toggle is rendered in a panel of its own', () => {
+		render(
+			<ShadowSourceFilterControls
+				context={ { postType: HOST_TYPE, postId: HOST_ID } }
+				attributes={ { query: { ...staleQuery } } }
+				setAttributes={ setAttributes }
+			/>,
+		);
+
+		expect( backfillCalls() ).toHaveLength( 1 );
 	} );
 } );

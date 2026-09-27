@@ -46,7 +46,7 @@ Filters the controls shown when the query is not inherited. Each entry is an obj
 | Key | Type | Description |
 |---|---|---|
 | `name` | `string` | Stable identifier. Use a plugin namespace for your own, e.g. `my-calendar/density`. |
-| `Component` | `Function` | The React component to render. |
+| `Component` | `Function` or `Object` | The React component to render: a function or class, or a `memo`, `forwardRef` or `lazy` wrapper. Anything else is skipped rather than rendered. |
 | `props` | `Object` | Optional. Merged over the block edit props the slot passes down. |
 
 The controls GatherPress registers, in render order:
@@ -62,6 +62,8 @@ The controls GatherPress registers, in render order:
 | `order` | Order and order by |
 
 The two conditional entries are absent rather than present-and-hidden, so the array is always exactly what would render.
+
+Removing `shadowSourceFilter` removes the toggle only. A block that already has the filter switched on keeps its source in step with the post being edited, because that sync runs separately from the control.
 
 A calendar has no use for Upcoming / Past or an offset, so it can drop them:
 
@@ -96,7 +98,7 @@ wp_enqueue_script( 'my-calendar', $url, array( 'gatherpress-query' ), $ver, true
 const { EventOrderControls, EventCountControls } = window.gatherpress.queryControls;
 ```
 
-Declaring `gatherpress-query` as a script dependency is what guarantees the global exists by the time your code runs. Available components: `EventCountControls`, `EventExcludeControls`, `EventIncludeUnfinishedControls`, `EventListTypeControls`, `EventOffsetControls`, `EventOrderControls` and `ShadowSourceFilterControls`.
+Declaring `gatherpress-query` as a script dependency is what guarantees the global exists by the time your code runs. `ShadowSourceFilterControls` keeps the query's source current on its own when rendered in your panel, so there is nothing extra to wire up for it. Available components: `EventCountControls`, `EventExcludeControls`, `EventIncludeUnfinishedControls`, `EventListTypeControls`, `EventOffsetControls`, `EventOrderControls` and `ShadowSourceFilterControls`.
 
 ### Resources
 
