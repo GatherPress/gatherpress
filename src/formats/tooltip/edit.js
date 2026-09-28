@@ -92,7 +92,7 @@ function TooltipPopover( {
 				applyFormat( value, {
 					type: FORMAT_NAME,
 					attributes,
-				} )
+				} ),
 			);
 		} else {
 			// Remove format if tooltip text is empty.
@@ -146,7 +146,7 @@ function TooltipPopover( {
 										variant="secondary"
 										onClick={ () => {
 											setShowTextColorPicker(
-												! showTextColorPicker
+												! showTextColorPicker,
 											);
 											setShowBgColorPicker( false );
 										} }
@@ -167,7 +167,7 @@ function TooltipPopover( {
 										variant="secondary"
 										onClick={ () => {
 											setShowBgColorPicker(
-												! showBgColorPicker
+												! showBgColorPicker,
 											);
 											setShowTextColorPicker( false );
 										} }
@@ -229,7 +229,7 @@ function TooltipPopover( {
 								_x(
 									'Sample tooltip',
 									'tooltip preview content',
-									'gatherpress'
+									'gatherpress',
 								)
 							}
 						>

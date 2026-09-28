@@ -102,11 +102,11 @@ class Test_Venues extends Base {
 		// New block-default settings feed the venue-map block.json defaults
 		// via Venue\Map::apply_block_attribute_defaults().
 		foreach ( array(
-			'venue_map_default_render_mode' => 'interactive',
-			'venue_map_default_zoom'        => 16,
-			'venue_map_default_height'      => '',
-			'venue_map_default_scale'       => 'cover',
-			'venue_map_default_type'        => 'roadmap',
+			'venue_map_render_mode' => 'interactive',
+			'venue_map_zoom'        => 16,
+			'venue_map_height'      => '',
+			'venue_map_scale'       => 'cover',
+			'venue_map_type'        => 'roadmap',
 		) as $key => $expected ) {
 			$this->assertArrayHasKey(
 				$key,
@@ -124,12 +124,12 @@ class Test_Venues extends Base {
 		// behind the Google platform via show_if (#1760).
 		$this->assertSame(
 			array( 'map_platform' => 'google' ),
-			$section['maps']['options']['venue_map_default_type']['show_if'],
+			$section['maps']['options']['venue_map_type']['show_if'],
 			'Failed to assert Default Map Type is gated to the Google platform.'
 		);
 
 		// Custom tile URL / attribution (#1267): optional, gated to OSM.
-		foreach ( array( 'map_tile_url_custom', 'map_tile_attribution_custom' ) as $key ) {
+		foreach ( array( 'custom_map_tile_url', 'custom_map_tile_attribution' ) as $key ) {
 			$this->assertArrayHasKey(
 				$key,
 				$section['maps']['options'],

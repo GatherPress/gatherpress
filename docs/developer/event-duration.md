@@ -3,8 +3,8 @@
 GatherPress lets developers customize the event **Duration** control in the
 block editor through two JavaScript filters:
 
-1. [`gatherpress.durationOptions`](#gatherpressdurationoptions) — change the list of selectable durations.
-2. [`gatherpress.durationDefault`](#gatherpressdurationdefault) — choose which duration is selected by default.
+1. [`gatherpress.durationOptions`](#gatherpressdurationoptions): change the list of selectable durations.
+2. [`gatherpress.durationDefault`](#gatherpressdurationdefault): choose which duration is selected by default.
 
 Both are registered with `wp.hooks.addFilter` (the `@wordpress/hooks` package)
 and follow the [JavaScript hook naming convention](hooks-naming-convention.md)
@@ -26,8 +26,8 @@ Filters the array of duration presets shown in the Duration select.
 
 Each option is an object with:
 
-- `label` (`string`) — the text shown in the dropdown.
-- `value` (`number | false`) — the duration in hours, or `false` for the
+- `label` (`string`): the text shown in the dropdown.
+- `value` (`number | false`): the duration in hours, or `false` for the
   "Set an end time…" entry that switches to the absolute end-time picker.
 
 ```js
@@ -84,6 +84,6 @@ The default duration is resolved against the (possibly filtered) options:
 - With the built-in options unchanged, the default stays `2` hours.
 
 So if you provide a custom `durationOptions` list that does not include `2`, you
-do not have to set `gatherpress.durationDefault` as well — the first duration in
+do not have to set `gatherpress.durationDefault` as well. The first duration in
 your list is used automatically. Set `gatherpress.durationDefault` only when you
 want a specific entry (other than the first) to be the default.

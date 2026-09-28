@@ -66,7 +66,7 @@ export function resolveEventDateData( select, contextPostType, contextQueryId, p
 			// as it is flipped, rather than after a save.
 			isAllDay: Boolean(
 				select( 'core/editor' )?.getEditedPostAttribute?.( 'meta' )
-					?.gatherpress_is_all_day
+					?.gatherpress_is_all_day,
 			),
 			timezonePreference:
 				select( 'core/editor' )?.getEditedPostAttribute?.( 'meta' )
@@ -106,7 +106,7 @@ export function resolveEventDateData( select, contextPostType, contextQueryId, p
 	// For Query Loop and override contexts, fetch from entity record.
 	const hasResolved = select( 'core' ).hasFinishedResolution(
 		'getEntityRecord',
-		[ 'postType', postType, postId ]
+		[ 'postType', postType, postId ],
 	);
 
 	if ( ! hasResolved ) {

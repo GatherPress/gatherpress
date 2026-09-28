@@ -21,26 +21,26 @@ describe( 'getResponseLabel', () => {
 	// The toggle is an icon, so this is its accessible name and tooltip.
 	it( 'reads as unfiltered when nothing is selected', () => {
 		expect( getResponseLabel( STATUSES, [] ) ).toBe(
-			'Filter by response: all'
+			'Filter by response: all',
 		);
 	} );
 
 	it( 'names the status when exactly one is selected', () => {
 		expect( getResponseLabel( STATUSES, [ 'waiting_list' ] ) ).toBe(
-			'Filter by response: Waiting List'
+			'Filter by response: Waiting List',
 		);
 	} );
 
 	it( 'counts them once naming each would not fit', () => {
 		expect(
-			getResponseLabel( STATUSES, [ 'attending', 'waiting_list' ] )
+			getResponseLabel( STATUSES, [ 'attending', 'waiting_list' ] ),
 		).toBe( 'Filter by response: 2 selected' );
 	} );
 
 	it( 'still announces the control for an unknown value', () => {
 		// A hand-edited URL can name a status the list does not carry.
 		expect( getResponseLabel( STATUSES, [ 'invented' ] ) ).toBe(
-			'Filter by response'
+			'Filter by response',
 		);
 	} );
 } );
@@ -56,7 +56,7 @@ describe( 'toggleResponse', () => {
 
 	it( 'leaves the other selections alone', () => {
 		expect(
-			toggleResponse( [ 'attending', 'waiting_list' ], 'attending' )
+			toggleResponse( [ 'attending', 'waiting_list' ], 'attending' ),
 		).toEqual( [ 'waiting_list' ] );
 	} );
 

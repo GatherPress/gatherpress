@@ -95,7 +95,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	const selectedBlockId = useSelect(
 		( blockEditorSelect ) =>
 			blockEditorSelect( 'core/block-editor' ).getSelectedBlockClientId(),
-		[]
+		[],
 	);
 
 	// Auto-expand dropdown when a child block is selected (e.g., from List View)
@@ -140,7 +140,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 			actAsSelect,
 			innerBlocks,
 			selectedIndex,
-			__( 'Dropdown', 'gatherpress' )
+			__( 'Dropdown', 'gatherpress' ),
 		);
 
 		if ( reset ) {

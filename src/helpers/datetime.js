@@ -42,7 +42,7 @@ function getDefaultDateTimeStart() {
 	const timezone = getTimezone();
 	return createMomentWithTimezone(
 		moment().format( 'YYYY-MM-DD HH:mm:ss' ),
-		timezone
+		timezone,
 	)
 		.add( 1, 'day' )
 		.set( 'hour', 18 )

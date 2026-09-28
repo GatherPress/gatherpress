@@ -43,7 +43,7 @@ export const EventCountControls = ( { attributes, setAttributes } ) => {
 	const pluralLabel = usePostTypeLabel(
 		'name',
 		postType,
-		__( 'Events', 'gatherpress' )
+		__( 'Events', 'gatherpress' ),
 	);
 
 	return (
@@ -52,7 +52,7 @@ export const EventCountControls = ( { attributes, setAttributes } ) => {
 			label={ sprintf(
 			/* translators: %s: Plural post type label, e.g. "Events". */
 				__( '%s Per Page', 'gatherpress' ),
-				pluralLabel
+				pluralLabel,
 			) }
 			min={ 1 }
 			max={ 50 }
@@ -98,7 +98,7 @@ export const EventExcludeControls = ( { attributes, setAttributes } ) => {
 	const singularLabel = usePostTypeLabel(
 		'singular_name',
 		postType,
-		__( 'Event', 'gatherpress' )
+		__( 'Event', 'gatherpress' ),
 	);
 
 	if ( ! currentPost ) {
@@ -110,7 +110,7 @@ export const EventExcludeControls = ( { attributes, setAttributes } ) => {
 			label={ sprintf(
 				/* translators: %s: Singular post type label, e.g. "Event". */
 				__( 'Exclude Current %s', 'gatherpress' ),
-				singularLabel
+				singularLabel,
 			) }
 			checked={ !! excludeCurrent }
 			onChange={ ( value ) => {
@@ -170,7 +170,7 @@ export const EventIncludeUnfinishedControls = ( {
 	const pluralLabel = usePostTypeLabel(
 		'name',
 		postType,
-		__( 'Events', 'gatherpress' )
+		__( 'Events', 'gatherpress' ),
 	);
 
 	return (
@@ -178,7 +178,7 @@ export const EventIncludeUnfinishedControls = ( {
 			label={ sprintf(
 				/* translators: %s: Plural post type label, e.g. "Events". */
 				__( 'Include Unfinished %s', 'gatherpress' ),
-				pluralLabel
+				pluralLabel,
 			) }
 			help={ sprintf(
 				/* translators: %1$s: 'upcoming' or 'past', %2$s: Plural post type label */
@@ -190,7 +190,7 @@ export const EventIncludeUnfinishedControls = ( {
 				effectiveValue
 					? __( 'Shows', 'gatherpress' )
 					: __( 'Hides', 'gatherpress' ),
-				pluralLabel
+				pluralLabel,
 			) }
 			checked={ effectiveValue }
 			onChange={ ( value ) => {
@@ -230,7 +230,7 @@ export const EventListTypeControls = ( { attributes, setAttributes } ) => {
 	const singularLabel = usePostTypeLabel(
 		'singular_name',
 		postType,
-		__( 'Event', 'gatherpress' )
+		__( 'Event', 'gatherpress' ),
 	);
 
 	return (
@@ -238,7 +238,7 @@ export const EventListTypeControls = ( { attributes, setAttributes } ) => {
 			label={ sprintf(
 				/* translators: %s: Singular post type label, e.g. "Event". */
 				__( '%s List Type', 'gatherpress' ),
-				singularLabel
+				singularLabel,
 			) }
 			value={ eventListType }
 			isBlock
@@ -321,7 +321,7 @@ export const ShadowSourceFilterControls = ( {
 			editorPostType
 				? wpSelect( 'core' ).getPostType( editorPostType )?.supports
 				: null,
-		[ editorPostType ]
+		[ editorPostType ],
 	);
 	const editorIsShadowSource = !! editorPostTypeSupports?.[ 'gatherpress-shadow-source' ];
 	const sourcePostType = editorIsShadowSource
@@ -381,28 +381,28 @@ export const ShadowSourceFilterControls = ( {
 	const pluralQueryLabel = usePostTypeLabel(
 		'name',
 		attributes?.query?.postType,
-		__( 'Events', 'gatherpress' )
+		__( 'Events', 'gatherpress' ),
 	);
 
 	const singularLabel = usePostTypeLabel(
 		'singular_name',
 		sourcePostType,
-		__( 'Venue', 'gatherpress' )
+		__( 'Venue', 'gatherpress' ),
 	);
 
 	const helpText = inTemplateContext
 		? __(
 			'The filter only takes effect when this template renders on a shadow-source page (venue, tour, production, etc.).',
-			'gatherpress'
+			'gatherpress',
 		)
 		: sprintf(
 			/* translators: 1: Singular post type label, e.g. "Venue", 2: Plural post type label, e.g. "Events" */
 			__(
 				'When placed inside %1$s context, only shows %2$s tied to that %1$s.',
-				'gatherpress'
+				'gatherpress',
 			),
 			singularLabel,
-			pluralQueryLabel
+			pluralQueryLabel,
 		);
 
 	return (
@@ -410,7 +410,7 @@ export const ShadowSourceFilterControls = ( {
 			label={ sprintf(
 				/* translators: %s: Singular post type label, e.g. "Venue". */
 				__( 'Filter by Current %s', 'gatherpress' ),
-				singularLabel
+				singularLabel,
 			) }
 			help={ helpText }
 			checked={ !! ShadowFilter }
@@ -458,7 +458,7 @@ export const EventOffsetControls = ( { attributes, setAttributes } ) => {
 	const singularLabel = usePostTypeLabel(
 		'singular_name',
 		postType,
-		__( 'Event', 'gatherpress' )
+		__( 'Event', 'gatherpress' ),
 	);
 
 	return (
@@ -467,7 +467,7 @@ export const EventOffsetControls = ( { attributes, setAttributes } ) => {
 			label={ sprintf(
 				/* translators: %s: Singular post type label, e.g. "Event". */
 				__( '%s Offset', 'gatherpress' ),
-				singularLabel
+				singularLabel,
 			) }
 			min={ 0 }
 			max={ 50 }
@@ -514,7 +514,7 @@ export const EventOrderControls = ( { attributes, setAttributes } ) => {
 	const singularLabel = usePostTypeLabel(
 		'singular_name',
 		postType,
-		__( 'Event', 'gatherpress' )
+		__( 'Event', 'gatherpress' ),
 	);
 
 	// Read the plural label so the label reflects what the currently
@@ -523,7 +523,7 @@ export const EventOrderControls = ( { attributes, setAttributes } ) => {
 	const pluralLabel = usePostTypeLabel(
 		'name',
 		postType,
-		__( 'Events', 'gatherpress' )
+		__( 'Events', 'gatherpress' ),
 	);
 
 	return (
@@ -533,7 +533,7 @@ export const EventOrderControls = ( { attributes, setAttributes } ) => {
 				label={ sprintf(
 					/* translators: %s: Plural post type label, e.g. "Events". */
 					__( 'Order %s by', 'gatherpress' ),
-					pluralLabel
+					pluralLabel,
 				) }
 				value={ orderBy }
 				options={ [
@@ -541,7 +541,7 @@ export const EventOrderControls = ( { attributes, setAttributes } ) => {
 						label: sprintf(
 							/* translators: %s: Singular post type label, e.g. "Event". */
 							__( '%s Date', 'gatherpress' ),
-							singularLabel
+							singularLabel,
 						),
 						value: 'datetime', // This is GatherPress specific, a normal post would use 'date'.
 					},
@@ -616,7 +616,7 @@ export const EventQueryControlsSlotFill = () => {
 				// it to remove the mental load of an option that does nothing.
 				const isShadowSourceContext = isPostTypeSupporting(
 					'gatherpress-shadow-source',
-					currentPostType
+					currentPostType,
 				);
 
 				const showExcludeControl =

@@ -36,7 +36,7 @@ describe( 'Tooltip view', () => {
 
 		originalReadyState = Object.getOwnPropertyDescriptor(
 			document,
-			'readyState'
+			'readyState',
 		);
 		originalQuerySelectorAll = document.querySelectorAll;
 		originalAddEventListener = document.addEventListener;
@@ -50,7 +50,7 @@ describe( 'Tooltip view', () => {
 			Object.defineProperty(
 				document,
 				'readyState',
-				originalReadyState
+				originalReadyState,
 			);
 		}
 		document.querySelectorAll = originalQuerySelectorAll;
@@ -95,7 +95,7 @@ describe( 'Tooltip view', () => {
 			initTooltip( el );
 
 			expect(
-				el.style.getPropertyValue( '--gatherpress-tooltip-text-color' )
+				el.style.getPropertyValue( '--gatherpress-tooltip-text-color' ),
 			).toBe( '#ff0000' );
 		} );
 
@@ -106,7 +106,7 @@ describe( 'Tooltip view', () => {
 			initTooltip( el );
 
 			expect(
-				el.style.getPropertyValue( '--gatherpress-tooltip-bg-color' )
+				el.style.getPropertyValue( '--gatherpress-tooltip-bg-color' ),
 			).toBe( '#00ff00' );
 		} );
 
@@ -119,7 +119,7 @@ describe( 'Tooltip view', () => {
 			expect( srSpan ).not.toBeNull();
 			expect( srSpan.textContent ).toBe( ' (Accessible note)' );
 			expect( srSpan.className ).toBe(
-				'screen-reader-text gatherpress--screen-reader-text gatherpress-tooltip-notice'
+				'screen-reader-text gatherpress--screen-reader-text gatherpress-tooltip-notice',
 			);
 		} );
 
@@ -196,11 +196,11 @@ describe( 'Tooltip view', () => {
 
 			expect( el1.getAttribute( 'tabindex' ) ).toBe( '0' );
 			expect(
-				el1.style.getPropertyValue( '--gatherpress-tooltip-text-color' )
+				el1.style.getPropertyValue( '--gatherpress-tooltip-text-color' ),
 			).toBe( '#111' );
 			expect( el2.getAttribute( 'tabindex' ) ).toBe( '0' );
 			expect(
-				el2.style.getPropertyValue( '--gatherpress-tooltip-bg-color' )
+				el2.style.getPropertyValue( '--gatherpress-tooltip-bg-color' ),
 			).toBe( '#222' );
 		} );
 
@@ -223,10 +223,10 @@ describe( 'Tooltip view', () => {
 			closeAllTooltips();
 
 			expect(
-				el1.classList.contains( 'gatherpress-tooltip--is-active' )
+				el1.classList.contains( 'gatherpress-tooltip--is-active' ),
 			).toBe( false );
 			expect(
-				el2.classList.contains( 'gatherpress-tooltip--is-active' )
+				el2.classList.contains( 'gatherpress-tooltip--is-active' ),
 			).toBe( false );
 		} );
 
@@ -245,13 +245,13 @@ describe( 'Tooltip view', () => {
 
 			handleDocumentClick( { target: el } );
 			expect(
-				el.classList.contains( 'gatherpress-tooltip--is-active' )
+				el.classList.contains( 'gatherpress-tooltip--is-active' ),
 			).toBe( true );
 			expect( el.getAttribute( 'tabindex' ) ).toBe( '0' );
 
 			handleDocumentClick( { target: el } );
 			expect(
-				el.classList.contains( 'gatherpress-tooltip--is-active' )
+				el.classList.contains( 'gatherpress-tooltip--is-active' ),
 			).toBe( false );
 		} );
 
@@ -270,10 +270,10 @@ describe( 'Tooltip view', () => {
 			handleDocumentClick( { target: el2 } );
 
 			expect(
-				el1.classList.contains( 'gatherpress-tooltip--is-active' )
+				el1.classList.contains( 'gatherpress-tooltip--is-active' ),
 			).toBe( false );
 			expect(
-				el2.classList.contains( 'gatherpress-tooltip--is-active' )
+				el2.classList.contains( 'gatherpress-tooltip--is-active' ),
 			).toBe( true );
 		} );
 
@@ -289,7 +289,7 @@ describe( 'Tooltip view', () => {
 			handleDocumentClick( { target: outside } );
 
 			expect(
-				el.classList.contains( 'gatherpress-tooltip--is-active' )
+				el.classList.contains( 'gatherpress-tooltip--is-active' ),
 			).toBe( false );
 		} );
 	} );
@@ -303,7 +303,7 @@ describe( 'Tooltip view', () => {
 			handleDocumentKeyDown( { key: 'Escape' } );
 
 			expect(
-				el.classList.contains( 'gatherpress-tooltip--is-active' )
+				el.classList.contains( 'gatherpress-tooltip--is-active' ),
 			).toBe( false );
 		} );
 
@@ -318,10 +318,10 @@ describe( 'Tooltip view', () => {
 			handleDocumentKeyDown( { key: 'Escape' } );
 
 			expect(
-				el.classList.contains( 'gatherpress-tooltip--is-dismissed' )
+				el.classList.contains( 'gatherpress-tooltip--is-dismissed' ),
 			).toBe( true );
 			expect(
-				el.classList.contains( 'gatherpress-tooltip--is-active' )
+				el.classList.contains( 'gatherpress-tooltip--is-active' ),
 			).toBe( false );
 		} );
 
@@ -333,7 +333,7 @@ describe( 'Tooltip view', () => {
 			handleDocumentKeyDown( { key: 'Enter' } );
 
 			expect(
-				el.classList.contains( 'gatherpress-tooltip--is-active' )
+				el.classList.contains( 'gatherpress-tooltip--is-active' ),
 			).toBe( true );
 		} );
 	} );
@@ -349,10 +349,10 @@ describe( 'Tooltip view', () => {
 			handleFocusOut( { target: el } );
 
 			expect(
-				el.classList.contains( 'gatherpress-tooltip--is-dismissed' )
+				el.classList.contains( 'gatherpress-tooltip--is-dismissed' ),
 			).toBe( false );
 			expect(
-				el.classList.contains( 'gatherpress-tooltip--is-active' )
+				el.classList.contains( 'gatherpress-tooltip--is-active' ),
 			).toBe( false );
 		} );
 
@@ -375,7 +375,7 @@ describe( 'Tooltip view', () => {
 			handleMouseLeave( { target: el } );
 
 			expect(
-				el.classList.contains( 'gatherpress-tooltip--is-dismissed' )
+				el.classList.contains( 'gatherpress-tooltip--is-dismissed' ),
 			).toBe( false );
 		} );
 
@@ -391,7 +391,7 @@ describe( 'Tooltip view', () => {
 			handleMouseLeave( { target: el } );
 
 			expect(
-				el.classList.contains( 'gatherpress-tooltip--is-dismissed' )
+				el.classList.contains( 'gatherpress-tooltip--is-dismissed' ),
 			).toBe( true );
 		} );
 
@@ -440,31 +440,31 @@ describe( 'Tooltip view', () => {
 
 			expect( mockAddEventListener ).toHaveBeenCalledWith(
 				'click',
-				expect.any( Function )
+				expect.any( Function ),
 			);
 			expect( mockAddEventListener ).toHaveBeenCalledWith(
 				'keydown',
-				expect.any( Function )
+				expect.any( Function ),
 			);
 			expect( mockAddEventListener ).toHaveBeenCalledWith(
 				'focusin',
 				expect.any( Function ),
-				true
+				true,
 			);
 			expect( mockAddEventListener ).toHaveBeenCalledWith(
 				'mouseenter',
 				expect.any( Function ),
-				true
+				true,
 			);
 			expect( mockAddEventListener ).toHaveBeenCalledWith(
 				'focusout',
 				expect.any( Function ),
-				true
+				true,
 			);
 			expect( mockAddEventListener ).toHaveBeenCalledWith(
 				'mouseleave',
 				expect.any( Function ),
-				true
+				true,
 			);
 
 			expect( mockObserve ).toHaveBeenCalledWith( document.body, {
@@ -505,7 +505,7 @@ describe( 'Tooltip view', () => {
 			await import( '@src/formats/tooltip/view' );
 
 			expect( mockQuerySelectorAll ).toHaveBeenCalledWith(
-				'.gatherpress-tooltip[data-gatherpress-tooltip]'
+				'.gatherpress-tooltip[data-gatherpress-tooltip]',
 			);
 		} );
 
@@ -529,7 +529,7 @@ describe( 'Tooltip view', () => {
 
 			expect( mockAddEventListener ).toHaveBeenCalledWith(
 				'DOMContentLoaded',
-				expect.any( Function )
+				expect.any( Function ),
 			);
 
 			// Call the DOMContentLoaded callback to cover line 193-194.
@@ -574,7 +574,7 @@ describe( 'Tooltip view', () => {
 			// A click landing on the text inside a tooltip is a click on the
 			// tooltip, so it opens rather than being discarded.
 			expect(
-				tooltip.classList.contains( 'gatherpress-tooltip--is-active' )
+				tooltip.classList.contains( 'gatherpress-tooltip--is-active' ),
 			).toBe( true );
 		} );
 
@@ -592,7 +592,7 @@ describe( 'Tooltip view', () => {
 			// Focus alone shows the tooltip, so a click on it is a dismissal
 			// even though the active class was never applied.
 			expect(
-				tooltip.classList.contains( 'gatherpress-tooltip--is-dismissed' )
+				tooltip.classList.contains( 'gatherpress-tooltip--is-dismissed' ),
 			).toBe( true );
 		} );
 
@@ -601,7 +601,7 @@ describe( 'Tooltip view', () => {
 				handleDocumentKeyDown( {
 					key: 'Escape',
 					target: { ownerDocument: { activeElement: {} } },
-				} )
+				} ),
 			).not.toThrow();
 		} );
 
