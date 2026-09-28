@@ -17,13 +17,17 @@ import {
  * `gatherpress.eventQueryControls` lets a plugin take controls away. Building
  * a panel of its own needs the components themselves, and they are otherwise
  * sealed inside this bundle, so they go on a global the way core publishes
- * `wp.*`. The plugin that reads them declares `gatherpress-query` as a script
- * dependency, which is what guarantees this has run first.
+ * `wp.*`.
+ *
+ * This is the `query-controls` surface: `@gatherpress/query-controls` in an
+ * import, `window.gatherpress.queryControls` at runtime, and the
+ * `gatherpress-query-controls` handle to depend on. Declaring that handle is
+ * what guarantees this has run first.
  *
  * @since TBD
  *
  * @example
- *   wp_enqueue_script( 'my-calendar', $url, array( 'gatherpress-query' ), $ver, true );
+ *   wp_enqueue_script( 'my-calendar', $url, array( 'gatherpress-query-controls' ), $ver, true );
  *
  *   const { EventOrderControls } = window.gatherpress.queryControls;
  */
