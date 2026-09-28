@@ -227,7 +227,7 @@ describe( 'modal-manager closeModal focus return', () => {
 		actions.closeModal( null, document.querySelector( '.close' ) );
 
 		expect( document.activeElement ).toBe(
-			document.querySelector( '.gatherpress-modal--trigger-open a' )
+			document.querySelector( '.gatherpress-modal--trigger-open a' ),
 		);
 	} );
 
@@ -250,7 +250,7 @@ describe( 'modal-manager closeModal focus return', () => {
 		actions.closeModal( null, document.querySelector( '.close' ) );
 
 		expect( document.activeElement ).toBe(
-			document.querySelector( '.gatherpress-modal--trigger-open a' )
+			document.querySelector( '.gatherpress-modal--trigger-open a' ),
 		);
 	} );
 
@@ -271,7 +271,7 @@ describe( 'modal-manager closeModal focus return', () => {
 		actions.closeModal( null, document.querySelector( '.close' ) );
 
 		expect( document.activeElement ).toBe(
-			document.querySelector( '.gatherpress-modal--trigger-open button' )
+			document.querySelector( '.gatherpress-modal--trigger-open button' ),
 		);
 	} );
 
@@ -290,7 +290,7 @@ describe( 'modal-manager closeModal focus return', () => {
 		actions.closeModal( null, document.querySelector( '.close' ) );
 
 		expect( document.activeElement ).toBe(
-			document.querySelector( 'a.gatherpress-modal--trigger-open' )
+			document.querySelector( 'a.gatherpress-modal--trigger-open' ),
 		);
 	} );
 } );
@@ -329,7 +329,7 @@ describe( 'modal-manager openModal naming', () => {
 			`<div style="display: none"><h3>Thank you for your RSVP!</h3></div>
 			<div hidden><h3>This event has already occurred.</h3></div>
 			<div class="gatherpress--is-hidden"><h3>Hidden by class</h3></div>
-			<h2>Register for this event</h2>`
+			<h2>Register for this event</h2>`,
 		);
 
 		const heading = document.querySelector( 'h2' );
@@ -340,7 +340,7 @@ describe( 'modal-manager openModal naming', () => {
 	it( 'reuses an existing heading id', () => {
 		const modal = render(
 			'data-gatherpress-default-label="true"',
-			'<h3 id="event-title">QA Morning Coffee</h3>'
+			'<h3 id="event-title">QA Morning Coffee</h3>',
 		);
 
 		expect( modal.getAttribute( 'aria-labelledby' ) ).toBe( 'event-title' );
@@ -349,7 +349,7 @@ describe( 'modal-manager openModal naming', () => {
 	it( 'keeps the generic label when no heading is visible', () => {
 		const modal = render(
 			'data-gatherpress-default-label="true" aria-labelledby="stale-id"',
-			'<div style="display: none"><h3>Hidden</h3></div><p>No heading</p>'
+			'<div style="display: none"><h3>Hidden</h3></div><p>No heading</p>',
 		);
 
 		expect( modal.hasAttribute( 'aria-labelledby' ) ).toBe( false );

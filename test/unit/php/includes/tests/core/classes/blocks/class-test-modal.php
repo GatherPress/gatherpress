@@ -167,7 +167,7 @@ class Test_Modal extends Base {
 		$output_html = $instance->apply_modal_attributes( '<div><h2>Details</h2></div>', array( 'attrs' => array() ) );
 
 		$this->assertStringContainsString( 'data-gatherpress-default-label="true"', $output_html );
-		$this->assertStringContainsString( 'aria-label="Modal"', $output_html, 'The generic label stays as the fallback' );
+		$this->assertStringContainsString( 'aria-label="Modal"', $output_html, 'Generic label is the fallback' );
 		$this->assertStringContainsString( '<h2>Details</h2>', $output_html, 'Headings are not changed on the server' );
 	}
 
