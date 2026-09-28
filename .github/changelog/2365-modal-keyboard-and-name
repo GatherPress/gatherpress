@@ -1,4 +1,4 @@
 Significance: patch
 Type: fixed
 
-Fix modal keyboard and screen reader support: Space opens and closes a modal from a link trigger, a trigger link without a URL can take keyboard focus, focus returns to the trigger after the modal closes, and a modal without a custom name is announced by its visible heading instead of "Modal".
+Fix modal keyboard and screen reader support: Space opens and closes a modal from a link trigger, a trigger link without a URL can take keyboard focus, focus returns to the trigger after the modal closes, Escape closes only the top-most of nested modals, and a modal without a custom name is announced by its visible heading instead of "Modal".
