@@ -157,7 +157,7 @@ class Test_Modal extends Base {
 	/**
 	 * Test an unnamed modal is marked so the view script can name it on open.
 	 *
-	 * @since  0.36.0
+	 * @since  TBD
 	 * @covers ::apply_modal_attributes
 	 *
 	 * @return void
@@ -174,7 +174,7 @@ class Test_Modal extends Base {
 	/**
 	 * Test a custom name is not marked, and a blank name is treated as no name.
 	 *
-	 * @since  0.36.0
+	 * @since  TBD
 	 * @covers ::apply_modal_attributes
 	 *
 	 * @return void

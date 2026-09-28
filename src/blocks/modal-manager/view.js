@@ -18,7 +18,7 @@ import {
  * computed `display`/`visibility`, so it works without layout (e.g. in tests)
  * and while the modal's own open transition is still running.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @param {HTMLElement} element The element to check.
  * @param {HTMLElement} root    The ancestor to stop at.
@@ -49,7 +49,7 @@ function isShownWithin( element, root ) {
  * label while a visible heading exists; when none does, the attribute is
  * removed so the generic label applies again.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @param {HTMLElement} modal        The modal element (role="dialog").
  * @param {HTMLElement} modalContent The modal content element.

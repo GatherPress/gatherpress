@@ -84,7 +84,7 @@ final class Modal {
 	 * example, shows and hides its headings after the page loads.
 	 *
 	 * @since 0.33.0
-	 * @since 0.36.0 Marks modals that have no custom name.
+	 * @since TBD Marks modals that have no custom name.
 	 *
 	 * @param string               $block_content The HTML content of the block.
 	 * @param array<string, mixed> $block         The parsed block data.

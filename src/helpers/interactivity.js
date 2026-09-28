@@ -419,7 +419,7 @@ export function activateOnSpace( event, ref ) {
  * top-most one, and the modal under it must keep its trap.
  *
  * @since 0.33.0
- * @since 0.36.0 No longer removes itself on `Escape`.
+ * @since TBD No longer removes itself on `Escape`.
  *
  * @param {HTMLElement[]} focusableElements - An array of focusable elements.
  *                                          These elements will be used to define
@@ -493,7 +493,7 @@ export function manageFocusTrap( focusableElements ) {
  * Escape handling looks across all of them, so a dropdown open inside a modal
  * closes before the modal does.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @type {Map<string, number>}
  */
@@ -505,7 +505,7 @@ const activeCloseSelectors = new Map();
  * That is the innermost open element: the last one in document order that
  * holds no other open element. For nested modals, it is the top-most modal.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @return {HTMLElement|null} The element to close, or null when none is open.
  */
@@ -536,8 +536,7 @@ function getTopMostOpenElement() {
  * handlers are listening: with nested modals, one press closes the inner
  * modal and leaves the outer one open.
  *
- * @since 0.33.0
- * @since 0.36.0 `Escape` closes only the top-most open element.
+ * @since TBD `Escape` closes only the top-most open element.
  *
  * @param {string}   elementSelector - Selector for the parent element (modal or dropdown).
  * @param {string}   contentSelector - Selector for the inner content element.

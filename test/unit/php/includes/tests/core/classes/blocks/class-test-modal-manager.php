@@ -477,7 +477,7 @@ class Test_Modal_Manager extends Base {
 	 * A Button block with no URL renders `<a>` without `href`, which is not in
 	 * the tab order. A link with an `href`, even a valueless one, needs none.
 	 *
-	 * @since  0.36.0
+	 * @since  TBD
 	 * @covers ::attach_modal_open_behavior
 	 * @covers ::attach_modal_close_behavior
 	 * @covers ::is_link_with_href
