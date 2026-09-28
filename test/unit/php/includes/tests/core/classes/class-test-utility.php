@@ -1751,14 +1751,18 @@ class Test_Utility extends Base {
 	 */
 	public function data_remove_time_format_chars(): array {
 		return array(
-			'a date and a time keeps the date' => array( 'F j, Y g:i a', 'F j, Y' ),
-			'only a time keeps nothing'        => array( 'g:i a', '' ),
-			'only a date is left alone'        => array( 'M j', 'M j' ),
-			'the timezone goes with the time'  => array( 'F j, Y T', 'F j, Y' ),
-			'an empty format stays empty'      => array( '', '' ),
-			'a dash separator is trimmed off'  => array( 'Y-m-d H:i', 'Y-m-d' ),
-			'a slash separator is trimmed off' => array( 'd/m/Y H:i', 'd/m/Y' ),
-			'punctuation alone keeps nothing'  => array( ':', '' ),
+			'a date and a time keeps the date'            => array( 'F j, Y g:i a', 'F j, Y' ),
+			'only a time keeps nothing'                   => array( 'g:i a', '' ),
+			'only a date is left alone'                   => array( 'M j', 'M j' ),
+			'the timezone goes with the time'             => array( 'F j, Y T', 'F j, Y' ),
+			'an empty format stays empty'                 => array( '', '' ),
+			'a dash separator is trimmed off'             => array( 'Y-m-d H:i', 'Y-m-d' ),
+			'a slash separator is trimmed off'            => array( 'd/m/Y H:i', 'd/m/Y' ),
+			'punctuation alone keeps nothing'             => array( ':', '' ),
+			'german datetime with escaped Uhr keeps date' => array( 'j. F Y, H:i \U\h\r', 'j. F Y' ),
+			'time with escaped Uhr keeps nothing'         => array( 'H:i \U\h\r', '' ),
+			'spanish date with escaped de keeps date'     => array( 'j \d\e F \d\e Y, H:i', 'j \d\e F \d\e Y' ),
+			'reversed order time before date keeps date'  => array( 'H:i, j. F Y', 'j. F Y' ),
 		);
 	}
 
@@ -1793,10 +1797,120 @@ class Test_Utility extends Base {
 	 */
 	public function data_remove_non_time_format_chars(): array {
 		return array(
-			'a date and a time keeps the time' => array( 'F j, Y g:i a', 'g:i a' ),
-			'only a date keeps nothing'        => array( 'F j, Y', '' ),
-			'only a time is left alone'        => array( 'g:i a', 'g:i a' ),
-			'an empty format stays empty'      => array( '', '' ),
+			'a date and a time keeps the time'            => array( 'F j, Y g:i a', 'g:i a' ),
+			'only a date keeps nothing'                   => array( 'F j, Y', '' ),
+			'only a time is left alone'                   => array( 'g:i a', 'g:i a' ),
+			'an empty format stays empty'                 => array( '', '' ),
+			'german datetime with escaped Uhr keeps time' => array( 'j. F Y, H:i \U\h\r', 'H:i \U\h\r' ),
+			'time with escaped Uhr is left alone'         => array( 'H:i \U\h\r', 'H:i \U\h\r' ),
+			'spanish date with escaped de keeps time'     => array( 'j \d\e F \d\e Y, H:i', 'H:i' ),
+			'reversed order time before date keeps time'  => array( 'H:i \U\h\r, j. F Y', 'H:i \U\h\r' ),
+			'date and time with leading punctuation trim' => array( 'Y-m-d H:i:s', 'H:i:s' ),
+		);
+	}
+
+	/**
+	 * Coverage for tokenize_date_format.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::tokenize_date_format
+	 *
+	 * @return void
+	 */
+	public function test_tokenize_date_format(): void {
+		$tokens = Utility::tokenize_date_format( 'j. F Y, H:i \U\h\r' );
+
+		$this->assertSame(
+			array(
+				array(
+					'type'  => 'char',
+					'value' => 'j',
+				),
+				array(
+					'type'  => 'char',
+					'value' => '.',
+				),
+				array(
+					'type'  => 'char',
+					'value' => ' ',
+				),
+				array(
+					'type'  => 'char',
+					'value' => 'F',
+				),
+				array(
+					'type'  => 'char',
+					'value' => ' ',
+				),
+				array(
+					'type'  => 'char',
+					'value' => 'Y',
+				),
+				array(
+					'type'  => 'char',
+					'value' => ',',
+				),
+				array(
+					'type'  => 'char',
+					'value' => ' ',
+				),
+				array(
+					'type'  => 'char',
+					'value' => 'H',
+				),
+				array(
+					'type'  => 'char',
+					'value' => ':',
+				),
+				array(
+					'type'  => 'char',
+					'value' => 'i',
+				),
+				array(
+					'type'  => 'char',
+					'value' => ' ',
+				),
+				array(
+					'type'  => 'literal',
+					'value' => '\U',
+				),
+				array(
+					'type'  => 'literal',
+					'value' => '\h',
+				),
+				array(
+					'type'  => 'literal',
+					'value' => '\r',
+				),
+			),
+			$tokens,
+			'tokenize_date_format should tokenize escaped characters as literals and others as characters.'
+		);
+
+		// Trailing backslash edge case.
+		$trailing = Utility::tokenize_date_format( 'H:i\\' );
+		$this->assertSame(
+			array(
+				array(
+					'type'  => 'char',
+					'value' => 'H',
+				),
+				array(
+					'type'  => 'char',
+					'value' => ':',
+				),
+				array(
+					'type'  => 'char',
+					'value' => 'i',
+				),
+				array(
+					'type'  => 'literal',
+					'value' => '\\',
+				),
+			),
+			$trailing,
+			'tokenize_date_format should handle a trailing backslash without error.'
 		);
 	}
 

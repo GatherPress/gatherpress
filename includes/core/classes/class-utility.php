@@ -395,10 +395,56 @@ final class Utility {
 	}
 
 	/**
+	 * Tokenize a PHP date format into literals (escaped characters) and formatting tokens.
+	 *
+	 * A backslash escapes the following character in PHP's date() syntax, so that
+	 * pair represents a single literal character rather than a formatting token.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $format The PHP date format to tokenize.
+	 *
+	 * @return array<int, array{type: 'literal'|'char', value: string}> The tokenized format.
+	 */
+	public static function tokenize_date_format( string $format ): array {
+		$tokens = array();
+		$len    = strlen( $format );
+		$i      = 0;
+
+		while ( $i < $len ) {
+			if ( '\\' === $format[ $i ] ) {
+				if ( $i + 1 < $len ) {
+					$tokens[] = array(
+						'type'  => 'literal',
+						'value' => substr( $format, $i, 2 ),
+					);
+
+					$i += 2;
+				} else {
+					$tokens[] = array(
+						'type'  => 'literal',
+						'value' => '\\',
+					);
+					++$i;
+				}
+			} else {
+				$tokens[] = array(
+					'type'  => 'char',
+					'value' => $format[ $i ],
+				);
+				++$i;
+			}
+		}
+
+		return $tokens;
+	}
+
+	/**
 	 * Strip everything but the time out of a display format.
 	 *
 	 * The inverse of `remove_time_format_chars()`: 'F j, Y g:i a' keeps
-	 * 'g:i a'.
+	 * 'g:i a'. Escaped literal characters belonging to the time portion
+	 * (such as German '\U\h\r' in 'j. F Y, H:i \U\h\r') are preserved.
 	 *
 	 * @since 0.36.0
 	 *
@@ -407,7 +453,51 @@ final class Utility {
 	 * @return string The time-only format.
 	 */
 	public static function remove_non_time_format_chars( string $format ): string {
-		return trim( str_replace( self::non_time_format_chars(), '', $format ) );
+		$tokens          = self::tokenize_date_format( $format );
+		$pure_time_chars = str_split( 'aABgGhHisuv' );
+		$pure_date_chars = str_split( 'dDjlNSwzWFmMntLoXxYy' );
+
+		$first_time = null;
+		$first_date = null;
+
+		foreach ( $tokens as $idx => $t ) {
+			if ( 'char' === $t['type'] ) {
+				if ( in_array( $t['value'], $pure_time_chars, true ) ) {
+					if ( null === $first_time ) {
+						$first_time = $idx;
+					}
+				} elseif ( in_array( $t['value'], $pure_date_chars, true ) ) {
+					if ( null === $first_date ) {
+						$first_date = $idx;
+					}
+				}
+			}
+		}
+
+		// If there are no time tokens, nothing is left.
+		if ( null === $first_time ) {
+			return '';
+		}
+
+		// If there are no date tokens, the format is only a time.
+		if ( null === $first_date ) {
+			return trim( $format, " \t\n\r\0\x0B:,-/." );
+		}
+
+		// If date comes before time, take everything from the first time token onward.
+		if ( $first_date < $first_time ) {
+			$slice = array_slice( $tokens, $first_time );
+		} else {
+			// Time comes before date, take everything up to the first date token.
+			$slice = array_slice( $tokens, $first_time, $first_date - $first_time );
+		}
+
+		$result = '';
+		foreach ( $slice as $tok ) {
+			$result .= $tok['value'];
+		}
+
+		return trim( $result, " \t\n\r\0\x0B:,-/." );
 	}
 
 	/**
@@ -416,7 +506,9 @@ final class Utility {
 	 * Leaves the date behind, along with whatever separated it from the
 	 * time: 'F j, Y g:i a' keeps 'F j, Y'. A format that was only ever a
 	 * time has nothing left to render, so it reports none rather than the
-	 * punctuation between the parts it lost.
+	 * punctuation between the parts it lost. Escaped literal characters
+	 * belonging to the date portion (such as Spanish '\d\e' in 'j \d\e F \d\e Y')
+	 * are preserved.
 	 *
 	 * @since 0.36.0
 	 *
@@ -426,10 +518,51 @@ final class Utility {
 	 *                no date survives it.
 	 */
 	public static function remove_time_format_chars( string $format ): string {
-		return trim(
-			str_replace( self::time_format_chars(), '', $format ),
-			" \t\n\r\0\x0B:,-/."
-		);
+		$tokens          = self::tokenize_date_format( $format );
+		$pure_time_chars = str_split( 'aABgGhHisuvTeIOPpZ' );
+		$pure_date_chars = str_split( 'dDjlNSwzWFmMntLoXxYy' );
+
+		$first_time = null;
+		$first_date = null;
+
+		foreach ( $tokens as $idx => $t ) {
+			if ( 'char' === $t['type'] ) {
+				if ( in_array( $t['value'], $pure_time_chars, true ) ) {
+					if ( null === $first_time ) {
+						$first_time = $idx;
+					}
+				} elseif ( in_array( $t['value'], $pure_date_chars, true ) ) {
+					if ( null === $first_date ) {
+						$first_date = $idx;
+					}
+				}
+			}
+		}
+
+		// If there are no date tokens, nothing is left.
+		if ( null === $first_date ) {
+			return '';
+		}
+
+		// If there are no time tokens, the format is only a date.
+		if ( null === $first_time ) {
+			return trim( $format, " \t\n\r\0\x0B:,-/." );
+		}
+
+		// If date comes before time, take everything up to the first time token.
+		if ( $first_date < $first_time ) {
+			$slice = array_slice( $tokens, 0, $first_time );
+		} else {
+			// Time comes before date, take everything from the first date token onward.
+			$slice = array_slice( $tokens, $first_date );
+		}
+
+		$result = '';
+		foreach ( $slice as $tok ) {
+			$result .= $tok['value'];
+		}
+
+		return trim( $result, " \t\n\r\0\x0B:,-/." );
 	}
 
 	/**
