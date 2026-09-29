@@ -947,6 +947,12 @@ describe( 'removeNonTimePHPFormatChars', () => {
 		);
 	} );
 
+	test( 'handles reversed order where time comes before date', () => {
+		expect(
+			removeNonTimePHPFormatChars( 'H:i \\U\\h\\r, j. F Y' ),
+		).toBe( 'H:i \\U\\h\\r' );
+	} );
+
 	test( 'handles format with mixed characters', () => {
 		// Format like "F j, Y g:i a".
 		const format = 'F j, Y g:i a';
