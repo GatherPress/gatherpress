@@ -413,11 +413,13 @@ export function activateOnSpace( event, ref ) {
  * Manages focus trapping within a specified set of elements.
  *
  * This function ensures that keyboard navigation (using the `Tab` key) is
- * confined to the provided focusable elements. It also handles cleanup
- * when the `Escape` key is pressed or when the function is explicitly
- * invoked.
+ * confined to the provided focusable elements. The caller removes the trap
+ * with the returned cleanup function when its element closes. The trap does
+ * not remove itself on `Escape`: with nested modals, `Escape` closes only the
+ * top-most one, and the modal under it must keep its trap.
  *
  * @since 0.33.0
+ * @since TBD No longer removes itself on `Escape`.
  *
  * @param {HTMLElement[]} focusableElements - An array of focusable elements.
  *                                          These elements will be used to define
@@ -474,31 +476,73 @@ export function manageFocusTrap( focusableElements ) {
 		}
 	};
 
-	const handleEscapeKey = ( e ) => {
-		if ( 'Escape' === e.key ) {
-			cleanup(); // Trigger cleanup on Escape key.
-		}
-	};
-
 	const cleanup = () => {
 		document.removeEventListener( 'keydown', handleFocusTrap );
-		document.removeEventListener( 'keydown', handleEscapeKey );
 	};
 
-	// Attach the event listeners for focus trap.
+	// Attach the event listener for focus trap.
 	document.addEventListener( 'keydown', handleFocusTrap );
-	document.addEventListener( 'keydown', handleEscapeKey );
 
 	// Return a cleanup function for the caller.
 	return cleanup;
 }
 
 /**
+ * Selectors with close handlers attached, and how many handlers use each.
+ *
+ * Escape handling looks across all of them, so a dropdown open inside a modal
+ * closes before the modal does.
+ *
+ * @since TBD
+ *
+ * @type {Map<string, number>}
+ */
+const activeCloseSelectors = new Map();
+
+/**
+ * Finds the open element that `Escape` should close.
+ *
+ * That is the innermost open element: the last one in document order that
+ * holds no other open element. For nested modals, it is the top-most modal.
+ *
+ * @since TBD
+ *
+ * @return {HTMLElement|null} The element to close, or null when none is open.
+ */
+function getTopMostOpenElement() {
+	const selector = Array.from( activeCloseSelectors.keys() )
+		.map( ( key ) => `${ key }.gatherpress--is-visible` )
+		.join( ',' );
+
+	if ( ! selector ) {
+		return null;
+	}
+
+	const openElements = Array.from( document.querySelectorAll( selector ) );
+	const innermost = openElements.filter(
+		( element ) =>
+			! openElements.some(
+				( other ) => other !== element && element.contains( other ),
+			),
+	);
+
+	return innermost.at( -1 ) ?? null;
+}
+
+/**
  * Generalized function to handle close events for modals and dropdowns.
+ *
+ * `Escape` closes only the top-most open element, even when several close
+ * handlers are listening: with nested modals, one press closes the inner
+ * modal and leaves the outer one open.
+ *
+ * @since TBD `Escape` closes only the top-most open element.
  *
  * @param {string}   elementSelector - Selector for the parent element (modal or dropdown).
  * @param {string}   contentSelector - Selector for the inner content element.
  * @param {Function} onClose         - Callback to execute when the element is closed.
+ *
+ * @return {Function} A cleanup function that removes the event listeners.
  */
 export function setupCloseHandlers( elementSelector, contentSelector, onClose ) {
 	const handleClose = ( element ) => {
@@ -512,12 +556,20 @@ export function setupCloseHandlers( elementSelector, contentSelector, onClose ) 
 	};
 
 	const handleEscapeKey = ( event ) => {
-		if ( 'Escape' === event.key ) {
-			const openElements = document.querySelectorAll(
-				`${ elementSelector }.gatherpress--is-visible`,
-			);
-			openElements.forEach( ( element ) => handleClose( element ) );
+		// Every open element registers a listener; the first one that owns
+		// the top-most element handles the key, and the rest stand down.
+		if ( 'Escape' !== event.key || event.gatherpressEscapeHandled ) {
+			return;
 		}
+
+		const topMost = getTopMostOpenElement();
+
+		if ( ! topMost || ! topMost.matches( elementSelector ) ) {
+			return;
+		}
+
+		event.gatherpressEscapeHandled = true;
+		handleClose( topMost );
 	};
 
 	const handleOutsideClick = ( event ) => {
@@ -545,10 +597,31 @@ export function setupCloseHandlers( elementSelector, contentSelector, onClose ) 
 	// Attach event listeners.
 	document.addEventListener( 'keydown', handleEscapeKey );
 	document.addEventListener( 'click', handleOutsideClick );
+	activeCloseSelectors.set(
+		elementSelector,
+		( activeCloseSelectors.get( elementSelector ) ?? 0 ) + 1,
+	);
+
+	let cleanedUp = false;
 
 	// Return a cleanup function to remove event listeners if needed.
 	return () => {
+		// Callers may clean up twice (on close and before re-opening), so
+		// release the selector only once.
+		if ( cleanedUp ) {
+			return;
+		}
+
+		cleanedUp = true;
 		document.removeEventListener( 'keydown', handleEscapeKey );
 		document.removeEventListener( 'click', handleOutsideClick );
+
+		const count = ( activeCloseSelectors.get( elementSelector ) ?? 1 ) - 1;
+
+		if ( 0 < count ) {
+			activeCloseSelectors.set( elementSelector, count );
+		} else {
+			activeCloseSelectors.delete( elementSelector );
+		}
 	};
 }
