@@ -1930,7 +1930,7 @@ class Test_Rest_Api extends Base {
 	/**
 	 * Test get_recipients skips rows the RSVP query returns that are not comments.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @covers ::get_recipients
 	 *
 	 * @return void
@@ -3538,7 +3538,7 @@ class Test_Rest_Api extends Base {
 	/**
 	 * Future-event emails include the RSVP Now CTA.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @covers ::send_event_email_to_recipient
 	 *
@@ -3603,7 +3603,7 @@ class Test_Rest_Api extends Base {
 	/**
 	 * Past-event emails omit the RSVP Now CTA — registration is closed.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @covers ::send_event_email_to_recipient
 	 *
@@ -3674,7 +3674,7 @@ class Test_Rest_Api extends Base {
 	/**
 	 * Emails omit the RSVP Now CTA when RSVP is disabled for the event.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @covers ::send_event_email_to_recipient
 	 *
@@ -4025,7 +4025,7 @@ class Test_Rest_Api extends Base {
 	 * value, return it, and refuse anything outside the vocabulary. Calling
 	 * the callbacks by hand skips all of that.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @covers ::register_status_field
 	 *
@@ -4088,5 +4088,38 @@ class Test_Rest_Api extends Base {
 			$event->get_status(),
 			'Failed to assert a refused request leaves the stored status alone.'
 		);
+	}
+
+	/**
+	 * Creating an event with taxonomy terms without gatherpress_status should preserve the term.
+	 *
+	 * @covers ::register_status_field
+	 *
+	 * @return void
+	 */
+	public function test_create_event_preserves_taxonomy_status_without_field(): void {
+		Rest_Api::get_instance()->register_status_field();
+
+		$this->mock->user( 'admin' );
+
+		Event_Status::ensure_term( 'canceled' );
+		$term = get_term_by( 'slug', 'canceled', Event::TAXONOMY_STATUS );
+		$this->assertInstanceOf( \WP_Term::class, $term );
+
+		$route = sprintf(
+			'/wp/v2/%s',
+			get_post_type_object( Event::POST_TYPE )->rest_base
+		);
+
+		$create = new WP_REST_Request( 'POST', $route );
+		$create->set_param( 'title', 'Canceled Event via Taxonomy' );
+		$create->set_param( 'gatherpress_event_statuses', array( $term->term_id ) );
+
+		$response = rest_do_request( $create );
+		$this->assertSame( 201, $response->get_status() );
+
+		$event_id = (int) $response->get_data()['id'];
+		$event    = new Event( $event_id );
+		$this->assertSame( 'canceled', $event->get_status() );
 	}
 }

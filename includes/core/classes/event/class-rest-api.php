@@ -94,7 +94,7 @@ final class Rest_Api {
 	 * status panel stays a SelectControl and the taxonomy stays an
 	 * implementation detail with a single write path through Event::set_status().
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return void
 	 */
@@ -121,7 +121,6 @@ final class Rest_Api {
 					'description' => __( 'The operational status of the event.', 'gatherpress' ),
 					'type'        => 'string',
 					'enum'        => Event_Status::slugs( Event::POST_TYPE ),
-					'default'     => Event_Status::default_slug( Event::POST_TYPE ),
 					'context'     => array( 'view', 'edit' ),
 				),
 			)
@@ -517,7 +516,7 @@ final class Rest_Api {
 	 * as it's intended to be called by an action hook.
 	 *
 	 * @since 0.34.0
-	 * @since 0.36.0 Added `$subject` parameter for #827.
+	 * @since TBD Added `$subject` parameter for #827.
 	 *
 	 * @param int    $post_id Post ID.
 	 * @param array  $send    Members to send the email to.
@@ -539,7 +538,7 @@ final class Rest_Api {
 	 * email with the appropriate subject, body, and headers.
 	 *
 	 * @since 0.34.0
-	 * @since 0.36.0 Added `$subject` parameter for #827.
+	 * @since TBD Added `$subject` parameter for #827.
 	 *
 	 * @param int    $post_id Post ID.
 	 * @param array  $send    Members to send the email to.
@@ -576,7 +575,7 @@ final class Rest_Api {
 	 * Restores the editor's user / locale before returning.
 	 *
 	 * @since 0.34.0
-	 * @since 0.36.0 Added `$subject` parameter for #827.
+	 * @since TBD Added `$subject` parameter for #827.
 	 *
 	 * @param array   $recipient    Recipient row from `get_recipients()`.
 	 * @param int     $post_id      Event post ID.
@@ -636,7 +635,7 @@ final class Rest_Api {
 		/**
 		 * Filters the event update email subject.
 		 *
-		 * @since 0.36.0
+		 * @since TBD
 		 *
 		 * @param string $subject Email subject line.
 		 * @param int    $post_id Event post ID.

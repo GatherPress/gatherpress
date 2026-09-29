@@ -6,7 +6,7 @@ import { getFromConfig } from './editor-settings';
 /**
  * Taxonomy the status is stored in, mirrored from Event::TAXONOMY_STATUS.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @type {string}
  */
@@ -15,7 +15,7 @@ export const TAXONOMY_STATUS = '_gatherpress_event_status';
 /**
  * Slug reported for an event that has no status of its own.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @type {string}
  */
@@ -28,7 +28,7 @@ const DEFAULT_STATUS = 'scheduled';
  * through the block editor settings, so a site that registers its own status
  * gets it here without touching JavaScript. Labels arrive translated.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @return {Object} Statuses keyed by slug, or an empty object before settings load.
  */
@@ -41,7 +41,7 @@ function getStatuses() {
 /**
  * One status's definition, falling back to the scheduled one.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @param {string} slug The status slug.
  *
@@ -56,7 +56,7 @@ function getStatus( slug ) {
 /**
  * The sentence explaining what a status means.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @param {string} slug The status slug.
  *
@@ -69,7 +69,7 @@ export function getStatusDescription( slug ) {
 /**
  * The statuses shaped for a SelectControl.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @return {Array} Options of label and value, in the order PHP offers them.
  */

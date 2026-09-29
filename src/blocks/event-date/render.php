@@ -36,10 +36,12 @@ if ( ! empty( $attributes['isLink'] ) ) {
 	);
 }
 
-$gatherpress_status  = $gatherpress_event->get_status();
-$gatherpress_classes = array();
+$gatherpress_status       = $gatherpress_event->get_status();
+$gatherpress_status_label = '';
+$gatherpress_classes      = array();
 if ( Status::default_slug( (string) get_post_type( $gatherpress_post_id ) ) !== $gatherpress_status ) {
-	$gatherpress_classes[] = sprintf( 'gatherpress-event-date--is-%s', sanitize_html_class( $gatherpress_status ) );
+	$gatherpress_classes[]    = sprintf( 'gatherpress-event-date--is-%s', sanitize_html_class( $gatherpress_status ) );
+	$gatherpress_status_label = Status::label( $gatherpress_status );
 }
 
 $gatherpress_wrapper_attributes = empty( $gatherpress_classes )
@@ -48,4 +50,7 @@ $gatherpress_wrapper_attributes = empty( $gatherpress_classes )
 ?>
 <div <?php echo wp_kses_data( $gatherpress_wrapper_attributes ); ?>>
 	<?php echo wp_kses( $gatherpress_display, array( 'a' => array( 'href' => true ) ) ); ?>
+	<?php if ( '' !== $gatherpress_status_label ) : ?>
+		<span class="screen-reader-text gatherpress--screen-reader-text"><?php echo esc_html( sprintf( ' (%s)', $gatherpress_status_label ) ); ?></span>
+	<?php endif; ?>
 </div>

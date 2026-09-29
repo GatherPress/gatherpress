@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Event\Status.
  *
  * @package GatherPress\Core
- * @since 0.36.0
+ * @since TBD
  */
 
 namespace GatherPress\Tests\Core\Event;
@@ -22,7 +22,7 @@ class Test_Status extends Base {
 	 * The defaults cover Schema.org's vocabulary and each carries what the
 	 * standards need.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @covers ::all
 	 * @covers ::slugs
@@ -61,7 +61,7 @@ class Test_Status extends Base {
 	/**
 	 * A status reports the words and standard values it was given.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @covers ::label
 	 * @covers ::description
@@ -101,7 +101,7 @@ class Test_Status extends Base {
 	 * An unknown status is treated as scheduled rather than published as
 	 * something a calendar client would misread.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @covers ::exists
 	 * @covers ::label
@@ -128,7 +128,7 @@ class Test_Status extends Base {
 	/**
 	 * A site can add a status of its own.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @covers ::all
 	 * @covers ::slugs
@@ -164,7 +164,7 @@ class Test_Status extends Base {
 	 * A registered status that names no standard values still publishes
 	 * something true, rather than telling a calendar client nothing.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @covers ::schema
 	 * @covers ::ical
@@ -190,7 +190,7 @@ class Test_Status extends Base {
 	/**
 	 * A status reports its priority for conflict resolution.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @covers ::priority
 	 *
@@ -224,7 +224,7 @@ class Test_Status extends Base {
 	/**
 	 * A site can take a status away as readily as it can add one.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @covers ::all
 	 * @covers ::slugs
@@ -254,7 +254,7 @@ class Test_Status extends Base {
 	/**
 	 * A status can name the post type support it depends on.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @covers ::all
 	 * @covers ::exists
@@ -280,7 +280,7 @@ class Test_Status extends Base {
 	 * The filter has the last word, so a site can put back a status its post
 	 * type would not otherwise be offered.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @covers ::all
 	 * @covers ::exists
@@ -310,7 +310,7 @@ class Test_Status extends Base {
 	 * A status is shown in its own color, and anything that could break out
 	 * of a style attribute is refused.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @covers ::color
 	 *
@@ -346,7 +346,7 @@ class Test_Status extends Base {
 	 * Without this a term is created from the slug, and an event would say
 	 * `canceled` where it should say `Canceled`.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @covers ::ensure_term
 	 *
@@ -368,7 +368,7 @@ class Test_Status extends Base {
 	/**
 	 * A term whose name has drifted from the vocabulary is put right.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @covers ::ensure_term
 	 *
@@ -393,7 +393,7 @@ class Test_Status extends Base {
 	/**
 	 * A status the vocabulary does not know gets no term.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @covers ::ensure_term
 	 *

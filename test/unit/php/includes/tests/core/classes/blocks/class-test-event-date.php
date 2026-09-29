@@ -314,7 +314,7 @@ class Test_Event_Date extends Base {
 	/**
 	 * A scheduled event's date carries no status class.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return void
 	 */
@@ -334,21 +334,35 @@ class Test_Event_Date extends Base {
 	 * A date whose event is no longer going ahead says so on the wrapper, so
 	 * a stylesheet can strike it through without the block knowing why.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return void
 	 */
 	public function test_render_marks_a_date_with_its_status(): void {
+		\GatherPress\Core\Event\Setup::get_instance()->register_status_taxonomy();
+
 		$event_post = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
 
-		( new Event( $event_post->ID ) )->set_status( 'canceled' );
+		$this->assertTrue( ( new Event( $event_post->ID ) )->set_status( 'canceled' ) );
 
 		$this->go_to( get_permalink( $event_post->ID ) );
 
+		$output = do_blocks( '<!-- wp:gatherpress/event-date /-->' );
+
 		$this->assertStringContainsString(
 			'gatherpress-event-date--is-canceled',
-			do_blocks( '<!-- wp:gatherpress/event-date /-->' ),
+			$output,
 			'Failed to assert a canceled event marks its date.'
+		);
+		$this->assertStringContainsString(
+			'screen-reader-text gatherpress--screen-reader-text',
+			$output,
+			'Failed to assert a canceled event adds screen reader status.'
+		);
+		$this->assertStringContainsString(
+			'(Canceled)',
+			$output,
+			'Failed to assert a canceled event names its status for screen readers.'
 		);
 	}
 }

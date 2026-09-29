@@ -5,6 +5,7 @@ import { InspectorControls } from '@wordpress/block-editor';
 import { registerBlockVariation, unregisterBlockVariation } from '@wordpress/blocks';
 import { PanelBody, ToggleControl } from '@wordpress/components';
 import { createHigherOrderComponent } from '@wordpress/compose';
+import domReady from '@wordpress/dom-ready';
 import { addFilter } from '@wordpress/hooks';
 import { __ } from '@wordpress/i18n';
 
@@ -29,15 +30,17 @@ import './style.scss';
 const CORE_BLOCK = 'core/post-terms';
 const CLASS_NAME = 'gatherpress-event-status';
 
-// Unregister core's auto-generated variation for this taxonomy if it was registered.
-unregisterBlockVariation( CORE_BLOCK, TAXONOMY_STATUS );
+// Unregister core's auto-generated variation for this taxonomy once the DOM and editor are ready.
+domReady( () => {
+	unregisterBlockVariation( CORE_BLOCK, TAXONOMY_STATUS );
+} );
 
 registerBlockVariation( CORE_BLOCK, {
 	name: CLASS_NAME,
 	title: __( 'Event Status', 'gatherpress' ),
 	description: __(
 		'Displays whether an event is going ahead, or has been canceled, postponed, rescheduled or moved online.',
-		'gatherpress'
+		'gatherpress',
 	),
 	category: 'gatherpress',
 	attributes: {
@@ -76,7 +79,7 @@ function addEventStatusAttributes( settings, name ) {
 addFilter(
 	'blocks.registerBlockType',
 	'gatherpress/event-status-attributes',
-	addEventStatusAttributes
+	addEventStatusAttributes,
 );
 
 /**
@@ -104,7 +107,7 @@ const withEventStatusControls = createHigherOrderComponent( ( BlockEdit ) => {
 							label={ __( 'Hide when scheduled', 'gatherpress' ) }
 							help={ __(
 								'Only show the status badge when an event is canceled, postponed, rescheduled, moved online, or tentative.',
-								'gatherpress'
+								'gatherpress',
 							) }
 							checked={ !! hideWhenScheduled }
 							onChange={ ( value ) =>
@@ -121,6 +124,6 @@ const withEventStatusControls = createHigherOrderComponent( ( BlockEdit ) => {
 addFilter(
 	'editor.BlockEdit',
 	'gatherpress/event-status-controls',
-	withEventStatusControls
+	withEventStatusControls,
 );
 

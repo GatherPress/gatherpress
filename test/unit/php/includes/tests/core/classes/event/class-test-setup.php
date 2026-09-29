@@ -188,6 +188,18 @@ class Test_Setup extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'unlink_status_terms' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'get_term',
+				'priority' => 10,
+				'callback' => array( $instance, 'filter_event_status_term' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'get_block_type_variations',
+				'priority' => 10,
+				'callback' => array( $instance, 'filter_post_terms_block_variations' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
@@ -447,7 +459,7 @@ class Test_Setup extends Base {
 	/**
 	 * Coverage for add_editor_settings method.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @covers ::add_editor_settings
 	 *
@@ -472,7 +484,7 @@ class Test_Setup extends Base {
 	/**
 	 * Coverage for add_editor_settings method preserving existing settings.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @covers ::add_editor_settings
 	 *
@@ -1187,9 +1199,9 @@ class Test_Setup extends Base {
 	 * @return void
 	 */
 	public function test_render_event_status_post_terms_block_shows_non_scheduled(): void {
-		$instance      = Setup::get_instance();
-		$post_id       = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
-		$event         = new Event( $post_id );
+		$instance = Setup::get_instance();
+		$post_id  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $post_id );
 		$event->set_status( 'canceled' );
 
 		$block_content = '<div class="wp-block-post-terms gatherpress-event-status">Canceled</div>';
@@ -2421,7 +2433,7 @@ class Test_Setup extends Base {
 	 * because several classes add to the same config array and one assigning
 	 * over it rather than merging would leave this key registered but absent.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @covers ::add_editor_settings
 	 *
@@ -2469,7 +2481,7 @@ class Test_Setup extends Base {
 	 * The status stylesheet loads with the block it styles, carrying a color
 	 * for every status.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @covers ::register_status_style
 	 *
@@ -2513,7 +2525,7 @@ class Test_Setup extends Base {
 	/**
 	 * A status with no color of its own adds no rule, rather than an empty one.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @covers ::register_status_style
 	 *
@@ -2543,7 +2555,7 @@ class Test_Setup extends Base {
 	 * Status terms are shown without links so they act as states rather than
 	 * taxonomy archives.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @covers ::unlink_status_terms
 	 *

@@ -80,7 +80,7 @@ describe( 'EventStatus component', () => {
 		useSelect.mockImplementation( ( callback ) =>
 			callback( () => ( {
 				getEditedPostAttribute: () => undefined,
-			} ) )
+			} ) ),
 		);
 
 		render( <EventStatus /> );
@@ -94,7 +94,7 @@ describe( 'EventStatus component', () => {
 		useSelect.mockImplementation( ( callback ) =>
 			callback( () => ( {
 				getEditedPostAttribute: () => 'canceled',
-			} ) )
+			} ) ),
 		);
 
 		render( <EventStatus /> );
@@ -107,7 +107,7 @@ describe( 'EventStatus component', () => {
 		useSelect.mockImplementation( ( callback ) =>
 			callback( () => ( {
 				getEditedPostAttribute: () => 'scheduled',
-			} ) )
+			} ) ),
 		);
 
 		render( <EventStatus /> );

@@ -3,7 +3,7 @@
  * Vocabulary of the operational statuses an event can be in.
  *
  * @package GatherPress\Core
- * @since 0.36.0
+ * @since TBD
  */
 
 namespace GatherPress\Core\Event;
@@ -26,13 +26,13 @@ use WP_Term;
  *
  * The starting point is the whole of Schema.org's EventStatusType vocabulary.
  *
- * @since 0.36.0
+ * @since TBD
  */
 final class Status {
 	/**
 	 * Schema.org value published for a status that names none of its own.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @var string
 	 */
 	const DEFAULT_SCHEMA = 'EventScheduled';
@@ -40,7 +40,7 @@ final class Status {
 	/**
 	 * RFC 5545 value published for a status that names none of its own.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @var string
 	 */
 	const DEFAULT_ICAL = 'CONFIRMED';
@@ -52,13 +52,13 @@ final class Status {
 	 * the values the standards expect, so a status is one array entry rather
 	 * than an edit in four places.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * A status can name the post type support it depends on, so one that only
 	 * makes sense for events that can be held online is not offered on a post
 	 * type that cannot.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $post_type Post type to offer statuses for, or empty for all of them.
 	 *
@@ -175,7 +175,7 @@ final class Status {
 		 * The first status in the list is what an event with no status of its
 		 * own reports, so order matters.
 		 *
-		 * @since 0.36.0
+		 * @since TBD
 		 *
 		 * @param array<string, array<string, mixed>> $statuses  The statuses, keyed by slug.
 		 * @param string                              $post_type Post type they are offered for, or empty for all.
@@ -186,7 +186,7 @@ final class Status {
 	/**
 	 * The slugs of every status, in the order they are offered.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $post_type Post type to offer statuses for, or empty for all.
 	 *
@@ -202,7 +202,7 @@ final class Status {
 	 * The first status offered, rather than a named one, so a site that
 	 * replaces the vocabulary outright still has a state to fall back on.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $post_type Post type to answer for, or empty for all.
 	 *
@@ -217,7 +217,7 @@ final class Status {
 	/**
 	 * Whether a slug names a status an event can be in.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $slug      The slug to check.
 	 * @param string $post_type Post type to check against, or empty for all.
@@ -231,7 +231,7 @@ final class Status {
 	/**
 	 * The words shown for a status.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $slug The status slug.
 	 *
@@ -244,7 +244,7 @@ final class Status {
 	/**
 	 * The sentence explaining what a status means.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $slug The status slug.
 	 *
@@ -262,7 +262,7 @@ final class Status {
 	 * color. Anything that is not a hex color or a CSS custom property is
 	 * refused, since the value reaches a style attribute.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $slug The status slug.
 	 *
@@ -287,7 +287,7 @@ final class Status {
 	/**
 	 * The Schema.org EventStatusType published for a status.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $slug The status slug.
 	 *
@@ -302,7 +302,7 @@ final class Status {
 	/**
 	 * The RFC 5545 STATUS published for a status.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $slug The status slug.
 	 *
@@ -320,7 +320,7 @@ final class Status {
 	 * A higher integer takes precedence over a lower one when a scalar
 	 * value must be chosen for iCalendar STATUS or Schema.org eventStatus.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $slug The status slug.
 	 *
@@ -331,14 +331,14 @@ final class Status {
 	}
 
 	/**
-	 * Make sure a status has a term named the way people read it.
+	 * Make sure a status has a term created.
 	 *
-	 * `wp_set_object_terms()` creates a missing term named after the slug, so
-	 * an event would show `canceled` where it should say `Canceled`. This
-	 * puts the label on the term, and corrects one that already carries the
-	 * wrong name, which is what a status renamed through the filter needs.
+	 * Creates a missing term for the status if it does not yet exist. Existing
+	 * terms are left alone in the database so saving events does not rewrite
+	 * term names across different user locales. Localized display names are
+	 * handled dynamically via filters at retrieval and render time.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $slug The status slug.
 	 *
@@ -355,19 +355,13 @@ final class Status {
 
 		if ( ! $term instanceof WP_Term ) {
 			wp_insert_term( $label, Event::TAXONOMY_STATUS, array( 'slug' => $slug ) );
-
-			return;
-		}
-
-		if ( $label !== $term->name ) {
-			wp_update_term( $term->term_id, Event::TAXONOMY_STATUS, array( 'name' => $label ) );
 		}
 	}
 
 	/**
 	 * One status's definition, falling back to the default one.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $slug The status slug.
 	 *

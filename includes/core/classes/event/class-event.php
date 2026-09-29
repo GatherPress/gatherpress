@@ -71,7 +71,7 @@ class Event {
 	/**
 	 * Post type support that makes a post type an event.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @var string
 	 */
 	const SUPPORT = 'gatherpress-event-date';
@@ -131,7 +131,7 @@ class Event {
 	 * public taxonomy space, and a status is read and written through
 	 * Event::get_status() and Event::set_status() rather than as terms.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @var string
 	 */
 	const TAXONOMY_STATUS = '_gatherpress_event_status';
@@ -471,7 +471,7 @@ class Event {
 	 * shape, so a datetime written as `2026-08-29T09:00:00` would be stored
 	 * and then silently lost.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string       $datetime Any datetime `date_create()` understands.
 	 * @param DateTimeZone $timezone The zone to read the datetime in.
@@ -507,7 +507,7 @@ class Event {
 	 * hiding a time that is still 3pm underneath, so exports, duration and
 	 * date queries stay correct.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * Finds the date rather than assuming where it sits, so the method holds
 	 * on its own instead of depending on having been handed something
@@ -548,7 +548,7 @@ class Event {
 	 * The GMT columns stay a real instant, because ordering upcoming against
 	 * past genuinely wants one.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string               $format The PHP date format.
 	 * @param string               $which  Which datetime to format, 'start' or 'end'.
@@ -592,7 +592,7 @@ class Event {
 	 * Overrides the block and the site setting, because a block in a site
 	 * template renders every event and cannot answer this per event.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return string 'always', 'never', or an empty string to leave it to the
 	 *                block and the site setting.
@@ -610,7 +610,7 @@ class Event {
 	/**
 	 * Whether this event runs for whole days rather than at a time.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return bool True when the event is all day.
 	 */
@@ -628,7 +628,7 @@ class Event {
 	 * Returns all valid status slugs assigned to this event, ordered by
 	 * priority descending. Defaults to the default status slug if none is set.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return string[] The status slugs assigned to the event.
 	 */
@@ -675,7 +675,7 @@ class Event {
 	 * wins for scalar consumers like iCalendar STATUS and Schema.org eventStatus.
 	 * Defaults to 'scheduled' if no custom status has been set.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return string The event status slug.
 	 */
@@ -688,7 +688,7 @@ class Event {
 	/**
 	 * Sets the event operational status.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $status One of the slugs Status::slugs() reports.
 	 * @param bool   $append Optional. When true, appends to existing terms
@@ -721,7 +721,7 @@ class Event {
 	/**
 	 * The words shown for this event's status.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return string The status label.
 	 */
@@ -732,7 +732,7 @@ class Event {
 	/**
 	 * The Schema.org EventStatusType for this event's status.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return string The Schema.org EventStatusType (e.g. 'EventScheduled').
 	 */
@@ -743,7 +743,7 @@ class Event {
 	/**
 	 * The RFC 5545 STATUS property for this event's status.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return string 'CONFIRMED', 'CANCELLED', or 'TENTATIVE'.
 	 */
@@ -759,7 +759,7 @@ class Event {
 	 * format set explicitly on the block keeps its date and loses its time,
 	 * since wanting a time means the event is not all day.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $start_format Explicit start format, or an empty string.
 	 * @param string $end_format   Explicit end format, or an empty string.
@@ -800,7 +800,7 @@ class Event {
 	/**
 	 * The end of a rendered datetime range.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param array{start: string, end: string, end_time: string} $formats   The formats to render with.
 	 * @param bool                                                $same_date Whether the event starts and ends

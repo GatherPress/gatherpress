@@ -21,7 +21,7 @@ import { getStatusDescription, getStatusOptions } from '../helpers/event-status'
  * `gatherpress_status` REST field, so this stays a SelectControl rather than a
  * term-id round trip.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @return {JSX.Element} A select control for the event status.
  */
@@ -31,9 +31,9 @@ const EventStatus = () => {
 	const status = useSelect(
 		( select ) =>
 			select( 'core/editor' ).getEditedPostAttribute(
-				'gatherpress_status'
+				'gatherpress_status',
 			) || 'scheduled',
-		[]
+		[],
 	);
 
 	const updateStatus = useCallback(
@@ -41,7 +41,7 @@ const EventStatus = () => {
 			editPost( { gatherpress_status: value } );
 			unlockPostSaving();
 		},
-		[ editPost, unlockPostSaving ]
+		[ editPost, unlockPostSaving ],
 	);
 
 	return (

@@ -27,8 +27,10 @@ use GatherPress\Core\Utility;
 use GatherPress\Core\Venue;
 use stdClass;
 use WP_Block;
+use WP_Block_Type;
 use WP_Post;
 use WP_Query;
+use WP_Term;
 
 /**
  * Class Setup.
@@ -125,6 +127,8 @@ final class Setup {
 		add_filter( 'block_editor_settings_all', array( $this, 'add_editor_settings' ) );
 		add_filter( 'post_class', array( $this, 'add_status_post_class' ), 10, 3 );
 		add_filter( 'term_links-' . Event::TAXONOMY_STATUS, array( $this, 'unlink_status_terms' ) );
+		add_filter( 'get_term', array( $this, 'filter_event_status_term' ), 10, 2 );
+		add_filter( 'get_block_type_variations', array( $this, 'filter_post_terms_block_variations' ), 10, 2 );
 		add_action( 'init', array( $this, 'register_status_style' ) );
 	}
 
@@ -139,7 +143,7 @@ final class Setup {
 	 * Event\Rest_Api, so there is exactly one write path and no term-id round
 	 * trip in the block editor.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return void
 	 */
@@ -183,7 +187,7 @@ final class Setup {
 	 * it here makes status classes available across query loops, archives,
 	 * and singular views.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string[] $classes     An array of post class names.
 	 * @param string[] $css_classes An array of additional class names added to the post.
@@ -213,7 +217,7 @@ final class Setup {
 	 * every canceled event is not what the badge is for, so the anchors are
 	 * replaced with the words they wrapped.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string[] $links Term links, each a rendered anchor.
 	 *
@@ -252,7 +256,7 @@ final class Setup {
 	 * that color. The rules come from the registry rather than the stylesheet,
 	 * so a status a site registers looks like its own without shipping CSS.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return void
 	 */
@@ -323,7 +327,7 @@ final class Setup {
 	 * Exposes the event post types so the editor can search events without
 	 * hardcoding a post type slug.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param array<string, mixed> $settings The block editor settings array.
 	 *
@@ -956,15 +960,19 @@ final class Setup {
 	 * is enabled, this suppresses rendering when the event is in the default
 	 * scheduled status.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
-	 * @param string   $block_content The block content.
-	 * @param array    $block         The parsed block.
-	 * @param WP_Block $instance      The block instance.
+	 * @param string               $block_content The block content.
+	 * @param array<string, mixed> $block         The parsed block.
+	 * @param WP_Block             $instance      The block instance.
 	 *
 	 * @return string The filtered block content.
 	 */
-	public function render_event_status_post_terms_block( string $block_content, array $block, WP_Block $instance ): string {
+	public function render_event_status_post_terms_block(
+		string $block_content,
+		array $block,
+		WP_Block $instance
+	): string {
 		$term = $block['attrs']['term'] ?? '';
 
 		if ( Event::TAXONOMY_STATUS !== $term ) {
@@ -991,6 +999,59 @@ final class Setup {
 		}
 
 		return $block_content;
+	}
+
+	/**
+	 * Filters the term name for event status taxonomy to use the localized status label.
+	 *
+	 * Since term names in the database are shared site data, dynamically filtering
+	 * the term name at retrieval and render time ensures each visitor and editor reads
+	 * the label translated in their own locale without mutating database records.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_Term|mixed $term     The term object.
+	 * @param string        $taxonomy The taxonomy slug.
+	 *
+	 * @return WP_Term|mixed The term object with localized label.
+	 */
+	public function filter_event_status_term( $term, string $taxonomy ) {
+		if ( Event::TAXONOMY_STATUS === $taxonomy && $term instanceof WP_Term ) {
+			$label = Status::label( $term->slug );
+			if ( '' !== $label ) {
+				$term->name = $label;
+			}
+		}
+
+		return $term;
+	}
+
+	/**
+	 * Filters the block variations for core/post-terms to remove core's auto-generated variation for event status.
+	 *
+	 * Core automatically registers an "Event Statuses" variation for any taxonomy.
+	 * Removing it leaves GatherPress's customized "Event Status" variation in place.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<int, array<string, mixed>> $variations Block variations.
+	 * @param WP_Block_Type                    $block_type The block type.
+	 *
+	 * @return array<int, array<string, mixed>> Filtered variations.
+	 */
+	public function filter_post_terms_block_variations( array $variations, WP_Block_Type $block_type ): array {
+		if ( 'core/post-terms' === $block_type->name ) {
+			$variations = array_values(
+				array_filter(
+					$variations,
+					static function ( array $variation ): bool {
+						return ( $variation['name'] ?? '' ) !== Event::TAXONOMY_STATUS;
+					}
+				)
+			);
+		}
+
+		return $variations;
 	}
 
 	/**
