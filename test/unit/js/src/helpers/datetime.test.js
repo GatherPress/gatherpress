@@ -864,10 +864,21 @@ describe( 'removeNonTimePHPFormatChars', () => {
 		'Z', 'c', 'r', 'U', ',',
 	];
 
+	const timeChars = [
+		'a', 'A', 'B', 'g', 'G', 'h', 'H', 'i', 's', 'u', 'v',
+		'e', 'I', 'O', 'P', 'p', 'T', 'Z', 'c', 'r', 'U',
+	];
+
 	beforeEach( () => {
-		getFromConfig.mockImplementation( ( key ) =>
-			'nonTimeFormatChars' === key ? nonTimeChars : undefined,
-		);
+		getFromConfig.mockImplementation( ( key ) => {
+			if ( 'nonTimeFormatChars' === key ) {
+				return nonTimeChars;
+			}
+			if ( 'timeFormatChars' === key ) {
+				return timeChars;
+			}
+			return undefined;
+		} );
 	} );
 
 	test( 'leaves the format alone when the editor sent no list', () => {
@@ -916,6 +927,22 @@ describe( 'removeNonTimePHPFormatChars', () => {
 
 	test( 'strips escaped characters belonging to the date', () => {
 		expect( removeNonTimePHPFormatChars( 'j \\d\\e F \\d\\e Y, H:i' ) ).toBe(
+			'H:i',
+		);
+	} );
+
+	test( 'drops timezone format tokens from the time portion', () => {
+		expect( removeNonTimePHPFormatChars( 'D, M j, Y, g:i a T' ) ).toBe(
+			'g:i a',
+		);
+		expect( removeNonTimePHPFormatChars( 'g:i a T' ) ).toBe( 'g:i a' );
+	} );
+
+	test( 'excludes boundary literals between date and time', () => {
+		expect(
+			removeNonTimePHPFormatChars( 'j. F Y \\u\\m H:i \\U\\h\\r' ),
+		).toBe( 'H:i \\U\\h\\r' );
+		expect( removeNonTimePHPFormatChars( 'j F Y, \\U\\h\\r H:i' ) ).toBe(
 			'H:i',
 		);
 	} );
@@ -1242,10 +1269,22 @@ describe( 'removeTimePHPFormatChars', () => {
 		'e', 'I', 'O', 'P', 'p', 'T', 'Z', 'c', 'r', 'U',
 	];
 
+	const nonTimeChars = [
+		'd', 'D', 'j', 'l', 'N', 'S', 'w', 'z', 'W', 'F', 'm', 'M', 'n',
+		't', 'L', 'o', 'X', 'x', 'Y', 'y', 'e', 'I', 'O', 'P', 'p', 'T',
+		'Z', 'c', 'r', 'U', ',',
+	];
+
 	beforeEach( () => {
-		getFromConfig.mockImplementation( ( key ) =>
-			'timeFormatChars' === key ? timeChars : undefined,
-		);
+		getFromConfig.mockImplementation( ( key ) => {
+			if ( 'timeFormatChars' === key ) {
+				return timeChars;
+			}
+			if ( 'nonTimeFormatChars' === key ) {
+				return nonTimeChars;
+			}
+			return undefined;
+		} );
 	} );
 
 	test( 'leaves the format alone when the editor sent no list', () => {
@@ -1264,6 +1303,9 @@ describe( 'removeTimePHPFormatChars', () => {
 
 	test( 'drops the timezone with the time', () => {
 		expect( removeTimePHPFormatChars( 'F j, Y T' ) ).toBe( 'F j, Y' );
+		expect( removeTimePHPFormatChars( 'D, M j, Y, g:i a T' ) ).toBe(
+			'D, M j, Y',
+		);
 	} );
 
 	test( 'leaves a date-only format alone', () => {
@@ -1282,6 +1324,15 @@ describe( 'removeTimePHPFormatChars', () => {
 			'j \\d\\e F \\d\\e Y',
 		);
 		expect( removeTimePHPFormatChars( 'H:i \\U\\h\\r' ) ).toBe( '' );
+	} );
+
+	test( 'excludes boundary literals between date and time', () => {
+		expect(
+			removeTimePHPFormatChars( 'j. F Y \\u\\m H:i \\U\\h\\r' ),
+		).toBe( 'j. F Y' );
+		expect( removeTimePHPFormatChars( 'j F Y, \\U\\h\\r H:i' ) ).toBe(
+			'j F Y',
+		);
 	} );
 } );
 

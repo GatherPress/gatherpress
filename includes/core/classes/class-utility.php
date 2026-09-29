@@ -442,9 +442,12 @@ final class Utility {
 	/**
 	 * Strip everything but the time out of a display format.
 	 *
-	 * The inverse of `remove_time_format_chars()`: 'F j, Y g:i a' keeps
-	 * 'g:i a'. Escaped literal characters belonging to the time portion
-	 * (such as German '\U\h\r' in 'j. F Y, H:i \U\h\r') are preserved.
+	 * Tokenizes the format so escaped literal characters (such as German '\U\h\r'
+	 * in 'j. F Y, H:i \U\h\r' or Spanish '\d\e' in 'j \d\e F \d\e Y') are
+	 * preserved rather than corrupted. Date characters and timezone characters
+	 * (from `Utility::non_time_format_chars()`) are stripped, and boundary
+	 * literals between date and time (such as German '\u\m' in 'j. F Y \u\m H:i')
+	 * are excluded.
 	 *
 	 * @since 0.36.0
 	 *
@@ -454,8 +457,9 @@ final class Utility {
 	 */
 	public static function remove_non_time_format_chars( string $format ): string {
 		$tokens          = self::tokenize_date_format( $format );
-		$pure_time_chars = str_split( 'aABgGhHisuv' );
-		$pure_date_chars = str_split( 'dDjlNSwzWFmMntLoXxYy' );
+		$timezone_chars  = array_values( array_intersect( self::non_time_format_chars(), self::time_format_chars() ) );
+		$pure_date_chars = array_values( array_diff( self::non_time_format_chars(), $timezone_chars, array( ',' ) ) );
+		$pure_time_chars = array_values( array_diff( self::time_format_chars(), $timezone_chars ) );
 
 		$first_time = null;
 		$first_date = null;
@@ -479,21 +483,22 @@ final class Utility {
 			return '';
 		}
 
-		// If there are no date tokens, the format is only a time.
+		// If there are no date tokens, use all tokens.
 		if ( null === $first_date ) {
-			return trim( $format, " \t\n\r\0\x0B:,-/." );
-		}
-
-		// If date comes before time, take everything from the first time token onward.
-		if ( $first_date < $first_time ) {
+			$slice = $tokens;
+		} elseif ( $first_date < $first_time ) {
+			// Date comes before time, take everything from the first time token onward.
 			$slice = array_slice( $tokens, $first_time );
 		} else {
 			// Time comes before date, take everything up to the first date token.
-			$slice = array_slice( $tokens, $first_time, $first_date - $first_time );
+			$slice = array_slice( $tokens, 0, $first_date );
 		}
 
 		$result = '';
 		foreach ( $slice as $tok ) {
+			if ( 'char' === $tok['type'] && in_array( $tok['value'], $timezone_chars, true ) ) {
+				continue;
+			}
 			$result .= $tok['value'];
 		}
 
@@ -508,7 +513,8 @@ final class Utility {
 	 * time has nothing left to render, so it reports none rather than the
 	 * punctuation between the parts it lost. Escaped literal characters
 	 * belonging to the date portion (such as Spanish '\d\e' in 'j \d\e F \d\e Y')
-	 * are preserved.
+	 * are preserved, while boundary literals between date and time (such as
+	 * German '\u\m' in 'j. F Y \u\m H:i \U\h\r') are excluded.
 	 *
 	 * @since 0.36.0
 	 *
@@ -519,15 +525,17 @@ final class Utility {
 	 */
 	public static function remove_time_format_chars( string $format ): string {
 		$tokens          = self::tokenize_date_format( $format );
-		$pure_time_chars = str_split( 'aABgGhHisuvTeIOPpZ' );
-		$pure_date_chars = str_split( 'dDjlNSwzWFmMntLoXxYy' );
+		$time_chars      = self::time_format_chars();
+		$timezone_chars  = array_values( array_intersect( self::non_time_format_chars(), $time_chars ) );
+		$pure_date_chars = array_values( array_diff( self::non_time_format_chars(), $timezone_chars, array( ',' ) ) );
 
 		$first_time = null;
 		$first_date = null;
+		$last_date  = null;
 
 		foreach ( $tokens as $idx => $t ) {
 			if ( 'char' === $t['type'] ) {
-				if ( in_array( $t['value'], $pure_time_chars, true ) ) {
+				if ( in_array( $t['value'], $time_chars, true ) ) {
 					if ( null === $first_time ) {
 						$first_time = $idx;
 					}
@@ -535,12 +543,13 @@ final class Utility {
 					if ( null === $first_date ) {
 						$first_date = $idx;
 					}
+					$last_date = $idx;
 				}
 			}
 		}
 
 		// If there are no date tokens, nothing is left.
-		if ( null === $first_date ) {
+		if ( null === $first_date || null === $last_date ) {
 			return '';
 		}
 
@@ -549,9 +558,9 @@ final class Utility {
 			return trim( $format, " \t\n\r\0\x0B:,-/." );
 		}
 
-		// If date comes before time, take everything up to the first time token.
+		// If date comes before time, take everything up to the last date token.
 		if ( $first_date < $first_time ) {
-			$slice = array_slice( $tokens, 0, $first_time );
+			$slice = array_slice( $tokens, 0, $last_date + 1 );
 		} else {
 			// Time comes before date, take everything from the first date token onward.
 			$slice = array_slice( $tokens, $first_date );

@@ -1763,6 +1763,9 @@ class Test_Utility extends Base {
 			'time with escaped Uhr keeps nothing'         => array( 'H:i \U\h\r', '' ),
 			'spanish date with escaped de keeps date'     => array( 'j \d\e F \d\e Y, H:i', 'j \d\e F \d\e Y' ),
 			'reversed order time before date keeps date'  => array( 'H:i, j. F Y', 'j. F Y' ),
+			'datetime with timezone keeps date without timezone' => array( 'D, M j, Y, g:i a T', 'D, M j, Y' ),
+			'german datetime with boundary connector drops um' => array( 'j. F Y \u\m H:i \U\h\r', 'j. F Y' ),
+			'german datetime with Uhr before time drops Uhr' => array( 'j F Y, \U\h\r H:i', 'j F Y' ),
 		);
 	}
 
@@ -1806,6 +1809,10 @@ class Test_Utility extends Base {
 			'spanish date with escaped de keeps time'     => array( 'j \d\e F \d\e Y, H:i', 'H:i' ),
 			'reversed order time before date keeps time'  => array( 'H:i \U\h\r, j. F Y', 'H:i \U\h\r' ),
 			'date and time with leading punctuation trim' => array( 'Y-m-d H:i:s', 'H:i:s' ),
+			'datetime with timezone drops timezone'       => array( 'D, M j, Y, g:i a T', 'g:i a' ),
+			'time only with timezone drops timezone'      => array( 'g:i a T', 'g:i a' ),
+			'german datetime with boundary connector drops um' => array( 'j. F Y \u\m H:i \U\h\r', 'H:i \U\h\r' ),
+			'german datetime with Uhr before time drops Uhr' => array( 'j F Y, \U\h\r H:i', 'H:i' ),
 		);
 	}
 
