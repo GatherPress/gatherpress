@@ -39,6 +39,24 @@ final class Send_Email extends Base {
 	use Singleton;
 
 	/**
+	 * Transient key prefix for the cached eligible recipient count.
+	 *
+	 * @since TBD
+	 *
+	 * @var string
+	 */
+	private const COUNT_CACHE_PREFIX = 'gatherpress_site_message_count_';
+
+	/**
+	 * How long the cached eligible recipient count stays valid.
+	 *
+	 * @since TBD
+	 *
+	 * @var int
+	 */
+	private const COUNT_CACHE_TTL = 12 * HOUR_IN_SECONDS;
+
+	/**
 	 * Set up hooks for various purposes.
 	 *
 	 * @since TBD
@@ -51,6 +69,15 @@ final class Send_Email extends Base {
 		add_action( 'gatherpress_settings_section', array( $this, 'settings_section' ), 9 );
 		add_action( 'wp_ajax_gatherpress_send_site_message', array( $this, 'ajax_send' ) );
 		add_action( 'gatherpress_site_message_send', array( $this, 'process_message' ), 10, 3 );
+
+		foreach ( array( 'added_user_meta', 'updated_user_meta', 'deleted_user_meta' ) as $meta_hook ) {
+			add_action( $meta_hook, array( $this, 'maybe_clear_count_cache' ), 10, 3 );
+		}
+
+		// Membership changes move the count too, so the settings page does not
+		// keep showing a stale number until the transient expires.
+		add_action( 'user_register', array( $this, 'clear_count_cache' ) );
+		add_action( 'deleted_user', array( $this, 'clear_count_cache' ) );
 	}
 
 	/**
@@ -107,9 +134,61 @@ final class Send_Email extends Base {
 
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/settings/send-email.php', GATHERPRESS_CORE_PATH ),
-			array( 'recipient_count' => $this->count_recipients() ),
+			array( 'recipient_count' => $this->get_cached_recipient_count() ),
 			true
 		);
+	}
+
+	/**
+	 * Clear the cached recipient count.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function clear_count_cache(): void {
+		delete_transient( self::COUNT_CACHE_PREFIX . get_current_blog_id() );
+	}
+
+	/**
+	 * Clear the cached recipient count when a member changes their opt-in.
+	 *
+	 * @since TBD
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @param int|int[] $meta_id  ID of the meta row, or the list of IDs for a delete.
+	 * @param int       $user_id  User the meta belongs to.
+	 * @param string    $meta_key Meta key being written.
+	 *
+	 * @return void
+	 */
+	public function maybe_clear_count_cache( $meta_id, int $user_id, string $meta_key ): void {
+		// $meta_id and $user_id are required by the user meta action signature.
+		if ( 'gatherpress_event_updates_opt_in' === $meta_key ) {
+			$this->clear_count_cache();
+		}
+	}
+
+	/**
+	 * Get the eligible recipient count from the cache, filling it when empty.
+	 *
+	 * Counting walks every member on the site, so the settings page reads a
+	 * cached count instead of paying that cost on each load.
+	 *
+	 * @since TBD
+	 *
+	 * @return int Number of eligible members.
+	 */
+	protected function get_cached_recipient_count(): int {
+		$count = get_transient( self::COUNT_CACHE_PREFIX . get_current_blog_id() );
+
+		if ( false === $count ) {
+			$count = $this->count_recipients();
+			set_transient( self::COUNT_CACHE_PREFIX . get_current_blog_id(), $count, self::COUNT_CACHE_TTL );
+		}
+
+		return (int) $count;
 	}
 
 	/**
@@ -195,6 +274,9 @@ final class Send_Email extends Base {
 	/**
 	 * Get the number of members currently eligible for a site-wide message.
 	 *
+	 * Walks the full member list, so callers that run on every page load
+	 * should use the cached variant instead.
+	 *
 	 * @since TBD
 	 *
 	 * @return int Number of eligible members.
@@ -259,6 +341,8 @@ final class Send_Email extends Base {
 			);
 		}
 
+		// Count fresh at send time rather than trusting the cached value the
+		// settings page showed, so the queued count reflects who is eligible now.
 		$recipient_count = $this->count_recipients();
 
 		if ( 0 === $recipient_count ) {
@@ -376,6 +460,10 @@ final class Send_Email extends Base {
 			if ( ! $this->schedule_message_batch( $subject, $message, $next_last_id ) ) {
 				$this->schedule_message_batch( $subject, $message, $next_last_id );
 			}
+		} else {
+			// The last page is done, so the cached count the settings page
+			// showed is stale. Drop it so the next page load recounts.
+			$this->clear_count_cache();
 		}
 
 		$mailer = Mailer::get_instance();
@@ -396,8 +484,15 @@ final class Send_Email extends Base {
 				array( 'message' => $message ),
 			);
 
-			$mailer->restore_context( $switched_locale, $sender );
-			$mailer->deliver( $recipient['email'], $subject_line, $body, $headers );
+			// Deliver while still in the recipient's context, so wp_mail
+			// filters run with the recipient's locale active. A filter that
+			// throws still has to hand the context back, or the rest of the
+			// batch would be mailed in the wrong locale.
+			try {
+				$mailer->deliver( $recipient['email'], $subject_line, $body, $headers );
+			} finally {
+				$mailer->restore_context( $switched_locale, $sender );
+			}
 		}
 	}
 

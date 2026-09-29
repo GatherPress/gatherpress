@@ -8,6 +8,8 @@
 
 namespace GatherPress\Tests\Core;
 
+use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\User;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -91,6 +93,11 @@ class Test_User extends Base {
 			$markup,
 			'Failed to assert that checkbox is checked by default.'
 		);
+		$this->assertStringContainsString(
+			'updates and information about Events from the organizers.',
+			$markup,
+			'Failed to assert that the consent line names the RSVP post type.'
+		);
 
 		// Test with explicit opt-out.
 		update_user_meta( $user->ID, 'gatherpress_event_updates_opt_in', 0 );
@@ -142,6 +149,63 @@ class Test_User extends Base {
 			$markup,
 			"12-hour option was expected to be selected but wasn't"
 		);
+	}
+
+	/**
+	 * Coverage for get_rsvp_post_type_plural.
+	 *
+	 * @covers ::get_rsvp_post_type_plural
+	 *
+	 * @return void
+	 */
+	public function test_get_rsvp_post_type_plural_defaults_to_event_post_type(): void {
+		$plural = User::get_instance()->get_rsvp_post_type_plural();
+
+		$this->assertSame( 'Events', $plural );
+	}
+
+	/**
+	 * Check that the plural label filter receives the source post type.
+	 *
+	 * @covers ::get_rsvp_post_type_plural
+	 *
+	 * @return void
+	 */
+	public function test_get_rsvp_post_type_plural_filter(): void {
+		$captured = array();
+		add_filter(
+			'gatherpress_event_updates_plural_label',
+			static function ( $plural, $post_type ) use ( &$captured ) {
+				$captured = array( $plural, $post_type );
+
+				return 'Sessions';
+			},
+			10,
+			2
+		);
+
+		$plural = User::get_instance()->get_rsvp_post_type_plural();
+		remove_all_filters( 'gatherpress_event_updates_plural_label' );
+
+		$this->assertSame( 'Sessions', $plural );
+		$this->assertSame( array( 'Events', Event::POST_TYPE ), $captured );
+	}
+
+	/**
+	 * Check that the plural label falls back when no post type takes RSVPs.
+	 *
+	 * @covers ::get_rsvp_post_type_plural
+	 *
+	 * @return void
+	 */
+	public function test_get_rsvp_post_type_plural_falls_back_without_rsvp_support(): void {
+		remove_post_type_support( Event::POST_TYPE, Rsvp::SUPPORT );
+
+		$plural = User::get_instance()->get_rsvp_post_type_plural();
+
+		add_post_type_support( Event::POST_TYPE, Rsvp::SUPPORT );
+
+		$this->assertSame( '', $plural );
 	}
 
 	/**

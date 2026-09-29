@@ -584,8 +584,15 @@ final class Rest_Api {
 		);
 		$headers = array( 'Content-Type: text/html; charset=UTF-8' );
 
-		$mailer->restore_context( $switched_locale, $current_user );
-		$mailer->deliver( $recipient['email'], $subject, $body, $headers );
+		// Deliver while still in the recipient's context, so wp_mail filters
+		// run with the recipient's locale active. A filter that throws still
+		// has to hand the context back, or the next recipient would be mailed
+		// in the wrong locale.
+		try {
+			$mailer->deliver( $recipient['email'], $subject, $body, $headers );
+		} finally {
+			$mailer->restore_context( $switched_locale, $current_user );
+		}
 	}
 
 	/**

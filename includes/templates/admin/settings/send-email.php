@@ -82,8 +82,11 @@ $gatherpress_nonce = wp_create_nonce( 'gatherpress_send_email_nonce' );
 				type="text"
 				id="gatherpress-message-subject"
 				class="large-text"
-				placeholder="<?php esc_attr_e( 'Leave blank to use the site name', 'gatherpress' ); ?>"
+				aria-describedby="gatherpress-message-subject-description"
 			/>
+			<p class="description" id="gatherpress-message-subject-description">
+				<?php esc_html_e( 'Leave blank to use "Message from" and the site name.', 'gatherpress' ); ?>
+			</p>
 		</div>
 	</div>
 	<div class="gatherpress-settings-form__row">
@@ -124,6 +127,12 @@ $gatherpress_nonce = wp_create_nonce( 'gatherpress_send_email_nonce' );
 	button.addEventListener('click', function(e) {
 		e.preventDefault();
 
+		// aria-disabled keeps the button focusable for screen readers, so the
+		// busy guard here is what actually stops a second send.
+		if (button.getAttribute('aria-disabled') === 'true') {
+			return;
+		}
+
 		if (!messageField.value.trim()) {
 			alert('<?php echo esc_js( __( 'Please write a message before sending.', 'gatherpress' ) ); ?>');
 			return;
@@ -140,7 +149,7 @@ $gatherpress_nonce = wp_create_nonce( 'gatherpress_send_email_nonce' );
 			message: messageField.value
 		});
 
-		button.disabled = true;
+		button.setAttribute('aria-disabled', 'true');
 		result.style.display = 'flex';
 		resultText.textContent = '<?php echo esc_js( __( 'Queuing message...', 'gatherpress' ) ); ?>';
 		spinner.classList.add('is-active');
@@ -167,7 +176,7 @@ $gatherpress_nonce = wp_create_nonce( 'gatherpress_send_email_nonce' );
 			resultText.textContent = '<?php echo esc_js( __( 'The message could not be queued.', 'gatherpress' ) ); ?>';
 		})
 		.finally(function() {
-			button.disabled = false;
+			button.setAttribute('aria-disabled', 'false');
 			spinner.classList.remove('is-active');
 		});
 	});

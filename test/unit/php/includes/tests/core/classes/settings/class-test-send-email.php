@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core\Settings;
 use Closure;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Settings\Send_Email;
+use GatherPress\Core\User;
 use GatherPress\Core\Utility as Core_Utility;
 use PMC\Unit_Test\Base_Ajax;
 use PMC\Unit_Test\Utility;
@@ -57,6 +58,36 @@ class Test_Send_Email extends Base_Ajax {
 				'name'     => 'gatherpress_site_message_send',
 				'priority' => 10,
 				'callback' => array( $instance, 'process_message' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'added_user_meta',
+				'priority' => 10,
+				'callback' => array( $instance, 'maybe_clear_count_cache' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'updated_user_meta',
+				'priority' => 10,
+				'callback' => array( $instance, 'maybe_clear_count_cache' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'deleted_user_meta',
+				'priority' => 10,
+				'callback' => array( $instance, 'maybe_clear_count_cache' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'user_register',
+				'priority' => 10,
+				'callback' => array( $instance, 'clear_count_cache' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'deleted_user',
+				'priority' => 10,
+				'callback' => array( $instance, 'clear_count_cache' ),
 			),
 		);
 
@@ -657,6 +688,214 @@ class Test_Send_Email extends Base_Ajax {
 		remove_all_filters( 'gatherpress_site_message_subject' );
 
 		$this->assertSame( 'Custom filtered', $filtered );
+	}
+
+	/**
+	 * Check that the count cache helper drops the transient.
+	 *
+	 * @covers ::clear_count_cache
+	 *
+	 * @return void
+	 */
+	public function test_clear_count_cache_drops_transient(): void {
+		$cache_key = 'gatherpress_site_message_count_' . get_current_blog_id();
+		set_transient( $cache_key, 4, HOUR_IN_SECONDS );
+
+		Send_Email::get_instance()->clear_count_cache();
+
+		$this->assertFalse( get_transient( $cache_key ), 'Count cache helper should clear the transient.' );
+	}
+
+	/**
+	 * Check that registering a member clears the cached count.
+	 *
+	 * @return void
+	 */
+	public function test_user_register_clears_count_cache(): void {
+		$cache_key = 'gatherpress_site_message_count_' . get_current_blog_id();
+		set_transient( $cache_key, 4, HOUR_IN_SECONDS );
+
+		$this->factory->user->create();
+
+		$this->assertFalse( get_transient( $cache_key ), 'Registering a member should drop the cached count.' );
+	}
+
+	/**
+	 * Check that deleting a member clears the cached count.
+	 *
+	 * @return void
+	 */
+	public function test_deleted_user_clears_count_cache(): void {
+		$cache_key = 'gatherpress_site_message_count_' . get_current_blog_id();
+		$user_id   = $this->factory->user->create();
+		set_transient( $cache_key, 4, HOUR_IN_SECONDS );
+
+		wp_delete_user( $user_id );
+
+		$this->assertFalse( get_transient( $cache_key ), 'Deleting a member should drop the cached count.' );
+	}
+
+	/**
+	 * Check that an opt-in change clears the cached count.
+	 *
+	 * @covers ::maybe_clear_count_cache
+	 *
+	 * @return void
+	 */
+	public function test_maybe_clear_count_cache_clears_on_opt_in_change(): void {
+		$cache_key = 'gatherpress_site_message_count_' . get_current_blog_id();
+		set_transient( $cache_key, 3, HOUR_IN_SECONDS );
+
+		$user_id = $this->factory->user->create();
+		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', '0' );
+
+		$this->assertFalse( get_transient( $cache_key ), 'Opt-in write should drop the cached count.' );
+	}
+
+	/**
+	 * Check that an unrelated meta change leaves the cached count alone.
+	 *
+	 * @covers ::maybe_clear_count_cache
+	 *
+	 * @return void
+	 */
+	public function test_maybe_clear_count_cache_ignores_other_meta(): void {
+		$cache_key = 'gatherpress_site_message_count_' . get_current_blog_id();
+		$user_id   = $this->factory->user->create();
+		set_transient( $cache_key, 3, HOUR_IN_SECONDS );
+
+		update_user_meta( $user_id, 'gatherpress_time_format', User::HOUR_12 );
+
+		$this->assertSame( 3, get_transient( $cache_key ), 'Unrelated meta should not clear the cache.' );
+
+		delete_transient( $cache_key );
+	}
+
+	/**
+	 * Check that the cached count helper fills the cache when it is empty.
+	 *
+	 * Invoked directly rather than through the settings page because xdebug
+	 * does not trace same-class protected helpers called by short delegation.
+	 *
+	 * @covers ::get_cached_recipient_count
+	 *
+	 * @return void
+	 */
+	public function test_get_cached_recipient_count_fills_empty_cache(): void {
+		$cache_key = 'gatherpress_site_message_count_' . get_current_blog_id();
+		delete_transient( $cache_key );
+
+		$count = Utility::invoke_hidden_method( Send_Email::get_instance(), 'get_cached_recipient_count' );
+
+		$cached = get_transient( $cache_key );
+		delete_transient( $cache_key );
+
+		$this->assertSame( $cached, $count, 'Helper should store the count it computed.' );
+		$this->assertIsInt( $count );
+	}
+
+	/**
+	 * Check that the cached count helper serves the stored value.
+	 *
+	 * @covers ::get_cached_recipient_count
+	 *
+	 * @return void
+	 */
+	public function test_get_cached_recipient_count_serves_existing_cache(): void {
+		$cache_key = 'gatherpress_site_message_count_' . get_current_blog_id();
+		set_transient( $cache_key, 5, HOUR_IN_SECONDS );
+
+		$count = Utility::invoke_hidden_method( Send_Email::get_instance(), 'get_cached_recipient_count' );
+
+		delete_transient( $cache_key );
+
+		$this->assertSame( 5, $count, 'Helper should return the cached count without recounting.' );
+	}
+
+	/**
+	 * Check that the settings page count is served from a transient cache.
+	 *
+	 * @covers ::get_cached_recipient_count
+	 *
+	 * @return void
+	 */
+	public function test_settings_page_count_is_cached(): void {
+		$cache_key = 'gatherpress_site_message_count_' . get_current_blog_id();
+		delete_transient( $cache_key );
+		$instance = Send_Email::get_instance();
+
+		// Seed a sentinel the page could only show if it read the transient.
+		set_transient( $cache_key, 4242, HOUR_IN_SECONDS );
+		$page = Utility::buffer_and_return(
+			array( $instance, 'settings_section' ),
+			array( 'gatherpress_send_email_settings' )
+		);
+
+		$this->assertStringContainsString( 'This will email 4242 members.', $page );
+
+		delete_transient( $cache_key );
+	}
+
+	/**
+	 * Check that the final batch clears the cached count.
+	 *
+	 * @covers ::process_message
+	 *
+	 * @return void
+	 */
+	public function test_process_message_final_batch_clears_count_cache(): void {
+		$cache_key = 'gatherpress_site_message_count_' . get_current_blog_id();
+		$this->factory->user->create( array( 'display_name' => 'Only' ) );
+		set_transient( $cache_key, 7, HOUR_IN_SECONDS );
+		add_filter(
+			'pre_wp_mail',
+			static function (): bool {
+				return true;
+			}
+		);
+
+		Send_Email::get_instance()->process_message( 'Subject', 'Message' );
+		remove_all_filters( 'pre_wp_mail' );
+
+		$this->assertFalse(
+			get_transient( $cache_key ),
+			'Final batch delivery should drop the cached count.'
+		);
+	}
+
+	/**
+	 * Check that the final batch keeps an unrelated cache untouched.
+	 *
+	 * @covers ::process_message
+	 *
+	 * @return void
+	 */
+	public function test_process_message_keeps_cache_when_batch_continues(): void {
+		$cache_key = 'gatherpress_site_message_count_' . get_current_blog_id();
+		$cursor    = $this->max_user_id();
+		$this->factory->user->create( array( 'display_name' => 'First' ) );
+		$this->factory->user->create( array( 'display_name' => 'Second' ) );
+		set_transient( $cache_key, 7, HOUR_IN_SECONDS );
+		add_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
+		add_filter(
+			'pre_wp_mail',
+			static function (): bool {
+				return true;
+			}
+		);
+
+		Send_Email::get_instance()->process_message( 'Subject', 'Message', $cursor );
+		remove_all_filters( 'pre_wp_mail' );
+		remove_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
+		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
+
+		$this->assertSame(
+			7,
+			get_transient( $cache_key ),
+			'A continued chain should leave the cached count alone.'
+		);
+
+		delete_transient( $cache_key );
 	}
 
 	/**
