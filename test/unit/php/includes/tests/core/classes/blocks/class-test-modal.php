@@ -155,6 +155,49 @@ class Test_Modal extends Base {
 	}
 
 	/**
+	 * Test an unnamed modal is marked so the view script can name it on open.
+	 *
+	 * @since  TBD
+	 * @covers ::apply_modal_attributes
+	 *
+	 * @return void
+	 */
+	public function test_modal_attributes_mark_unnamed_modal(): void {
+		$instance    = Modal::get_instance();
+		$output_html = $instance->apply_modal_attributes( '<div><h2>Details</h2></div>', array( 'attrs' => array() ) );
+
+		$this->assertStringContainsString( 'data-gatherpress-default-label="true"', $output_html );
+		$this->assertStringContainsString( 'aria-label="Modal"', $output_html, 'Generic label is the fallback' );
+		$this->assertStringContainsString( '<h2>Details</h2>', $output_html, 'Headings are not changed on the server' );
+	}
+
+	/**
+	 * Test a custom name is not marked, and a blank name is treated as no name.
+	 *
+	 * @since  TBD
+	 * @covers ::apply_modal_attributes
+	 *
+	 * @return void
+	 */
+	public function test_modal_attributes_custom_and_blank_names(): void {
+		$instance = Modal::get_instance();
+
+		$named = $instance->apply_modal_attributes(
+			'<div>Content</div>',
+			array( 'attrs' => array( 'metadata' => array( 'name' => 'RSVP Modal' ) ) )
+		);
+		$this->assertStringContainsString( 'aria-label="RSVP Modal"', $named );
+		$this->assertStringNotContainsString( 'data-gatherpress-default-label', $named );
+
+		$blank = $instance->apply_modal_attributes(
+			'<div>Content</div>',
+			array( 'attrs' => array( 'metadata' => array( 'name' => '   ' ) ) )
+		);
+		$this->assertStringContainsString( 'aria-label="Modal"', $blank );
+		$this->assertStringContainsString( 'data-gatherpress-default-label="true"', $blank );
+	}
+
+	/**
 	 * Test modal attributes preserve existing content.
 	 *
 	 * @since  0.33.0
