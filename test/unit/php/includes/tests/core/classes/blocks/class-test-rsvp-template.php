@@ -129,10 +129,7 @@ class Test_Rsvp_Template extends Base {
 	public function test_generate_rsvp_template_block_non_event(): void {
 		$instance   = Rsvp_Template::get_instance();
 		$post_id    = $this->factory->post->create( array( 'post_type' => 'post' ) );
-		$wp_block   = new WP_Block(
-			array(),
-			array( 'postId' => $post_id )
-		);
+		$wp_block   = $this->rsvp_template_instance( array( 'postId' => $post_id ) );
 		$block      = array();
 		$input_html = '<div>Original content</div>';
 		$result     = $instance->generate_rsvp_template_block( $input_html, $block, $wp_block );
@@ -323,10 +320,7 @@ class Test_Rsvp_Template extends Base {
 				'post_status' => 'draft',
 			)
 		);
-		$wp_block   = new WP_Block(
-			array(),
-			array( 'postId' => $post_id )
-		);
+		$wp_block   = $this->rsvp_template_instance( array( 'postId' => $post_id ) );
 		$block      = array();
 		$input_html = '<div>Original content</div>';
 		$result     = $instance->generate_rsvp_template_block( $input_html, $block, $wp_block );
