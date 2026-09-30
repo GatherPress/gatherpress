@@ -65,20 +65,35 @@ The two conditional entries are absent rather than present-and-hidden, so the ar
 
 Removing `shadowSourceFilter` removes the toggle only. A block that already has the filter switched on keeps its source in step with the post being edited, because that sync runs separately from the control.
 
-A calendar has no use for Upcoming / Past or an offset, so it can drop them:
+The filter runs for every Event Query Loop in the editor, so a callback that only looks at its first argument changes all of them. The second argument is the query block's own edit props, including its `clientId` and `attributes`, and that is how to change only the blocks your plugin is responsible for.
+
+A calendar has no use for Upcoming / Past or an offset, but only in the query loops that actually hold a calendar. Every other query loop on the page should keep its controls:
 
 ```js
+import { select } from '@wordpress/data';
+import { store as blockEditorStore } from '@wordpress/block-editor';
 import { addFilter } from '@wordpress/hooks';
 
 addFilter(
 	'gatherpress.eventQueryControls',
 	'my-calendar/trim-controls',
-	( controls ) =>
-		controls.filter(
-			( { name } ) => ! [ 'listType', 'offset' ].includes( name )
-		)
+	( controls, { clientId } ) => {
+		const hasCalendar = select( blockEditorStore )
+			.getBlock( clientId )
+			?.innerBlocks.some( ( block ) => 'my-calendar/calendar' === block.name );
+
+		return hasCalendar
+			? controls.filter(
+				( { name } ) => ! [ 'listType', 'offset' ].includes( name )
+			)
+			: controls;
+	}
 );
 ```
+
+The callback is not a component, so it reads the store with `select()` rather than `useSelect()`. The panel renders again whenever the block is selected, so the check always runs against the block's current inner blocks. Checking `attributes` works the same way, for example a `className` or `namespace` your plugin sets on its own query loops.
+
+Avoid adding the filter just before a block renders and removing it afterwards. Filters are global, so that races with every other query loop on the page.
 
 Reordering, wrapping and inserting all work the same way, since you are handed the array and return one.
 

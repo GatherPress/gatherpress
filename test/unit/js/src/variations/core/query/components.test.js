@@ -292,6 +292,46 @@ describe( 'gatherpress.eventQueryControls', () => {
 		] );
 	} );
 
+	it( 'hands the filter the query block\'s own props, so it can scope itself', () => {
+		let received = null;
+
+		mockQueryControlsProps = {
+			...mockQueryControlsProps,
+			clientId: 'query-block-1',
+		};
+
+		addFilter(
+			'gatherpress.eventQueryControls',
+			NAMESPACE,
+			( controls, props ) => {
+				received = props;
+				return controls;
+			},
+		);
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect( received.clientId ).toBe( 'query-block-1' );
+		expect( received.attributes.query.postType ).toBe( 'gatherpress_event' );
+	} );
+
+	it( 'leaves the panel alone for a block the filter does not claim', () => {
+		mockQueryControlsProps = {
+			...mockQueryControlsProps,
+			clientId: 'someone-elses-query',
+		};
+
+		addFilter( 'gatherpress.eventQueryControls', NAMESPACE, ( controls, { clientId } ) =>
+			'my-calendar-query' === clientId
+				? controls.filter( ( { name } ) => 'offset' !== name )
+				: controls,
+		);
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect( screen.getByText( 'Event Offset' ) ).toBeInTheDocument();
+	} );
+
 	it( 'lets a filter drop a control', () => {
 		addFilter( 'gatherpress.eventQueryControls', NAMESPACE, ( controls ) =>
 			controls.filter( ( { name } ) => 'offset' !== name ),

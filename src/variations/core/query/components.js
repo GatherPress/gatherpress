@@ -793,19 +793,30 @@ export const EventQueryControlsSlotFill = () => {
 				 * block that already has the filter on keeps its source in
 				 * step with the post being edited either way.
 				 *
+				 * The filter runs for every Event Query Loop, so use the
+				 * second argument to change only the blocks a plugin is
+				 * responsible for.
+				 *
 				 * @param {Array}  controls Entries shaped `{ name, Component, props }`,
 				 *                          in render order.
 				 * @param {Object} props    Block edit props for the query block
-				 *                          being edited.
+				 *                          being edited, including `clientId`
+				 *                          and `attributes`.
 				 * @return {Array} The controls to render.
 				 *
 				 * @example
 				 *   addFilter(
 				 *     'gatherpress.eventQueryControls',
 				 *     'my-calendar/trim-controls',
-				 *     ( controls ) => controls.filter(
-				 *       ( { name } ) => ! [ 'listType', 'offset' ].includes( name )
-				 *     )
+				 *     ( controls, { clientId } ) => {
+				 *       const hasCalendar = select( blockEditorStore )
+				 *         .getBlock( clientId )
+				 *         ?.innerBlocks.some( ( block ) => 'my-calendar/calendar' === block.name );
+				 *
+				 *       return hasCalendar
+				 *         ? controls.filter( ( { name } ) => 'offset' !== name )
+				 *         : controls;
+				 *     }
 				 *   );
 				 */
 				const filtered = applyFilters(
