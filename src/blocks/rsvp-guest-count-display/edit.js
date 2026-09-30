@@ -50,8 +50,8 @@ const Edit = ( { context, clientId } ) => {
 		}
 	}
 
-	// Get max attendance limit from meta - check Post ID override first.
-	const maxAttendanceLimit = useSelect(
+	// Get the guest limit from meta - check Post ID override first.
+	const guestLimit = useSelect(
 		( select ) => {
 			// Find the first ancestor RSVP or RSVP Response block that
 			// declared a postId override — replaces the original `for` loop
@@ -81,7 +81,7 @@ const Edit = ( { context, clientId } ) => {
 					context?.postType ||
 					select( 'core/editor' )?.getCurrentPostType();
 				const post = select( 'core' ).getEntityRecord( 'postType', overridePostType, postIdOverride );
-				return post?.meta?.gatherpress_max_guest_limit || 0;
+				return post?.meta?.gatherpress_guest_limit || 0;
 			}
 
 			// Otherwise check current post. Read supports through the `select`
@@ -94,14 +94,14 @@ const Edit = ( { context, clientId } ) => {
 
 			return currentSupportsRsvp
 				? ( select( 'core/editor' ).getEditedPostAttribute( 'meta' )
-					?.gatherpress_max_guest_limit || 0 )
+					?.gatherpress_guest_limit || 0 )
 				: 0;
 		},
 		[ clientId, contextPostId, isEventContext, context?.postType ],
 	);
 
-	// Apply dimming via CSS when max attendance limit is 0.
-	const shouldDim = 0 === maxAttendanceLimit;
+	// Apply dimming via CSS when the guest limit is 0.
+	const shouldDim = 0 === guestLimit;
 
 	useEffect( () => {
 		const editorDoc = getEditorDocument();

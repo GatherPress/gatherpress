@@ -272,7 +272,22 @@ class Event {
 
 		// Add separator if there's both start and end date/time.
 		$default_separator = $separator ? $separator : __( 'to', 'gatherpress' );
-		$separator         = $start && $end ? $default_separator : false;
+
+		/**
+		 * Filter the separator between start and end dates/times.
+		 *
+		 * @since TBD
+		 *
+		 * @param string $default_separator The separator string.
+		 * @param Event  $event             The event instance.
+		 */
+		$default_separator = apply_filters(
+			'gatherpress_datetime_separator',
+			$default_separator,
+			$this
+		);
+
+		$separator = $start && $end ? $default_separator : false;
 
 		// Add timezone, event first. A block in a site template renders every
 		// event and cannot know which of them want their zone named, so an

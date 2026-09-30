@@ -22,6 +22,7 @@ namespace GatherPress\Core\Event;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Renamed_Keys;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
@@ -211,13 +212,13 @@ final class Meta {
 				'type'              => 'integer',
 				'default'           => 1,
 			),
-			'gatherpress_max_guest_limit'       => array(
+			'gatherpress_guest_limit'           => array(
 				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'absint',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'integer',
-				'default'           => (int) Settings::get_instance()->get( 'max_guest_limit' ),
+				'default'           => (int) Settings::get_instance()->get( 'guest_limit' ),
 			),
 			'gatherpress_enable_anonymous_rsvp' => array(
 				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
@@ -245,18 +246,27 @@ final class Meta {
 				'type'              => 'string',
 				'default'           => '',
 			),
-			'gatherpress_max_attendance_limit'  => array(
+			'gatherpress_capacity'              => array(
 				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'absint',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'integer',
-				'default'           => (int) Settings::get_instance()->get( 'max_attendance_limit' ),
+				'default'           => (int) Settings::get_instance()->get( 'capacity' ),
 			),
 		);
 
 		foreach ( $event_only_meta as $meta_key => $args ) {
 			register_post_meta( Event::POST_TYPE, $meta_key, $args );
+
+			// A key renamed in 0.36.0 keeps its former name registered for a
+			// release, so a REST consumer that has not moved over still finds
+			// the field. Goes away in 0.37.0 with Renamed_Keys itself.
+			$former = Renamed_Keys::RENAMED[ $meta_key ] ?? '';
+
+			if ( $former ) {
+				register_post_meta( Event::POST_TYPE, $former, $args );
+			}
 		}
 	}
 

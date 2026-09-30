@@ -43,24 +43,24 @@ describe( 'PhoneField', () => {
 	it( 'always renders as an anchor so the contenteditable element does not remount on first keystroke', () => {
 		const { rerender } = render( <PhoneField { ...defaultProps } /> );
 		expect( screen.getByTestId( 'rich-text' ).tagName.toLowerCase() ).toBe(
-			'a'
+			'a',
 		);
 
 		rerender( <PhoneField { ...defaultProps } value="555-1234" /> );
 		expect( screen.getByTestId( 'rich-text' ).tagName.toLowerCase() ).toBe(
-			'a'
+			'a',
 		);
 	} );
 
 	it( 'uses a placeholder href when empty and a tel: href when populated', () => {
 		const { rerender } = render( <PhoneField { ...defaultProps } /> );
 		expect( screen.getByTestId( 'rich-text' ).getAttribute( 'href' ) ).toBe(
-			'#'
+			'#',
 		);
 
 		rerender( <PhoneField { ...defaultProps } value="555-1234" /> );
 		expect( screen.getByTestId( 'rich-text' ).getAttribute( 'href' ) ).toBe(
-			'tel:555-1234'
+			'tel:555-1234',
 		);
 	} );
 
@@ -83,7 +83,7 @@ describe( 'PhoneField', () => {
 
 		const element = screen.getByTestId( 'rich-text' );
 		expect( element.getAttribute( 'data-placeholder' ) ).toBe(
-			'Enter phone…'
+			'Enter phone…',
 		);
 	} );
 
@@ -97,7 +97,7 @@ describe( 'PhoneField', () => {
 		const placeholder = screen.getByText( 'Enter phone…' );
 		expect( placeholder ).toBeTruthy();
 		expect( placeholder.className ).toBe(
-			'wp-block-gatherpress-venue-detail__placeholder'
+			'wp-block-gatherpress-venue-detail__placeholder',
 		);
 	} );
 

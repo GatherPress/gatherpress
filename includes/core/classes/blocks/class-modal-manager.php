@@ -77,10 +77,15 @@ final class Modal_Manager {
 	 *
 	 * - Adds `data-wp-interactive` for interactivity.
 	 * - Adds `data-wp-on--click` to handle click events.
-	 * - Adds `data-wp-on--keydown` for keyboard accessibility.
-	 * - Sets `role="button"` and `tabindex="0"` for non-native actionable elements.
+	 * - Adds `data-wp-on--keydown` for keyboard accessibility. Links get it too:
+	 *   `role="button"` tells assistive technology the element responds to Space,
+	 *   which a native link does not.
+	 * - Sets `role="button"`, plus `tabindex="0"` on elements that are not focusable on their own
+	 *   (anything except a `<button>` or a link with an `href`).
 	 *
 	 * @since 0.33.0
+	 * @since TBD Links acting as buttons also open the modal on Space. Links without an
+	 *            `href` get `tabindex`.
 	 *
 	 * @param string $block_content The original block HTML content.
 	 *
@@ -108,13 +113,15 @@ final class Modal_Manager {
 
 				// Apply modal attributes if target was found.
 				if ( $target_found ) {
-					// Links only get role="button", others get full keyboard handling.
-					if ( 'A' === $tag->get_tag() ) {
-						$tag->set_attribute( 'role', 'button' ); // For links acting as buttons.
-					} else {
-						$tag->set_attribute( 'data-wp-on--keydown', 'actions.openModalOnEnter' );
+					// Links with an href are already focusable, so they skip tabindex,
+					// but they still need the keydown handler so Space opens the modal.
+					// A link without an href (e.g. a Button block with no URL) is not
+					// focusable, so it gets tabindex like any other element.
+					$tag->set_attribute( 'data-wp-on--keydown', 'actions.openModalOnEnter' );
+					$tag->set_attribute( 'role', 'button' );
+
+					if ( ! $this->is_link_with_href( $tag ) ) {
 						$tag->set_attribute( 'tabindex', '0' );
-						$tag->set_attribute( 'role', 'button' );
 					}
 
 					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
@@ -136,10 +143,14 @@ final class Modal_Manager {
 	 *
 	 * - Adds `data-wp-interactive` for interactivity.
 	 * - Adds `data-wp-on--click` to handle click events.
-	 * - Adds `data-wp-on--keydown` for keyboard accessibility.
-	 * - Sets `role="button"` and `tabindex="0"` for non-native actionable elements.
+	 * - Adds `data-wp-on--keydown` for keyboard accessibility, including on links,
+	 *   so Space closes the modal from a link acting as a button.
+	 * - Sets `role="button"`, plus `tabindex="0"` on elements that are not focusable on their own
+	 *   (anything except a `<button>` or a link with an `href`).
 	 *
 	 * @since 0.33.0
+	 * @since TBD Links acting as buttons also close the modal on Space. Links without an
+	 *            `href` get `tabindex`.
 	 *
 	 * @param string $block_content The original block HTML content.
 	 *
@@ -153,16 +164,17 @@ final class Modal_Manager {
 			$class_attr = $tag->get_attribute( 'class' );
 
 			if ( Utility::has_css_class( $class_attr, 'gatherpress-modal--trigger-close' ) ) {
-				if (
-					// @phpstan-ignore-next-line
-					$tag->next_tag() &&
-					in_array( $tag->get_tag(), array( 'A' ), true )
-				) {
-					$tag->set_attribute( 'role', 'button' ); // For links acting as buttons.
-				} else {
-					$tag->set_attribute( 'data-wp-on--keydown', 'actions.closeModalOnEnter' );
+				// @phpstan-ignore-next-line
+				$is_link_with_href = $tag->next_tag() && $this->is_link_with_href( $tag );
+
+				// Links with an href are already focusable, so they skip tabindex,
+				// but they still need the keydown handler so Space closes the modal.
+				// A link without an href is not focusable, so it gets tabindex.
+				$tag->set_attribute( 'data-wp-on--keydown', 'actions.closeModalOnEnter' );
+				$tag->set_attribute( 'role', 'button' );
+
+				if ( ! $is_link_with_href ) {
 					$tag->set_attribute( 'tabindex', '0' );
-					$tag->set_attribute( 'role', 'button' );
 				}
 
 				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
@@ -172,5 +184,22 @@ final class Modal_Manager {
 		}
 
 		return $tag->get_updated_html();
+	}
+
+	/**
+	 * Checks whether the processor's current tag is a link with an `href`.
+	 *
+	 * Only such a link is focusable without `tabindex`. An `<a>` without an
+	 * `href` (a Button block with no URL renders one) is not in the tab order.
+	 * A valueless `href` still counts, because browsers treat it as a link.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_HTML_Tag_Processor $tag Processor positioned on the tag to check.
+	 *
+	 * @return bool True when the tag is an `<a>` with an `href` attribute.
+	 */
+	private function is_link_with_href( WP_HTML_Tag_Processor $tag ): bool {
+		return 'A' === $tag->get_tag() && null !== $tag->get_attribute( 'href' );
 	}
 }
