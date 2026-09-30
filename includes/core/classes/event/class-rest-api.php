@@ -503,7 +503,7 @@ final class Rest_Api {
 	/**
 	 * Get event email recipients.
 	 *
-	 * @since 0.34.0
+	 * @since TBD Delegated to Email_Sends.
 	 *
 	 * @param array $send Recipient groups.
 	 * @param int   $post_id Event post ID.
