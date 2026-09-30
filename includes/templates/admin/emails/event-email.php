@@ -9,6 +9,8 @@
  *
  * @param int    $event_id The ID of the event for which the email is generated.
  * @param string $message  Optional message content for the email.
+ * @param bool   $show_rsvp_button Optional. Whether to render the RSVP button. Defaults to true,
+ *                                 so a caller that omits it keeps the button.
  */
 
 // Exit if accessed directly.
@@ -27,6 +29,9 @@ $gatherpress_event       = new Event( $event_id );
 $gatherpress_event_image = get_post_thumbnail_id( $event_id );
 $gatherpress_venue       = $gatherpress_event->get_venue_information()['name'];
 
+// A confirmation email for a spot the member already holds, such as a waiting
+// list promotion, passes false so the button does not read as "RSVP again".
+$gatherpress_show_rsvp_button = $show_rsvp_button ?? true;
 ?>
 
 <!DOCTYPE html>
@@ -90,7 +95,8 @@ $gatherpress_venue       = $gatherpress_event->get_venue_information()['name'];
 		<!-- RSVP Button: only when registration is still open. -->
 		<?php
 		if (
-			! $gatherpress_event->has_event_past()
+			$gatherpress_show_rsvp_button
+			&& ! $gatherpress_event->has_event_past()
 			&& ( new Rsvp( $event_id ) )->is_enabled()
 		) :
 			$gatherpress_rsvp_url = (string) get_the_permalink( $event_id );

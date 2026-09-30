@@ -482,7 +482,7 @@ final class Rest_Api {
 	/**
 	 * Send emails to selected members.
 	 *
-* Kept as a compatibility wrapper for extensions that called the former
+	 * Kept as a compatibility wrapper for extensions that called the former
 	 * Rest_Api implementation directly.
 	 *
 	 * @since 0.34.0
@@ -497,7 +497,7 @@ final class Rest_Api {
 	 * @return bool True when dispatch was attempted.
 	 */
 	public function send_emails( int $post_id, array $send, string $message, string $subject = '' ): bool {
-return Email_Sends::get_instance()->send_emails( $post_id, $send, $message, $subject );
+		return Email_Sends::get_instance()->send_emails( $post_id, $send, $message, $subject );
 	}
 
 	/**

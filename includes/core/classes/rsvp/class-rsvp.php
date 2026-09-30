@@ -405,7 +405,7 @@ final class Rsvp {
 					/**
 					 * Fires after a waiting-list RSVP is promoted to attending.
 					 *
-					 * @since 0.37.0
+					 * @since TBD
 					 *
 					 * @param int   $post_id Event post ID.
 					 * @param State $state   Promoted RSVP state.
@@ -448,7 +448,7 @@ final class Rsvp {
 				/**
 				 * Fires after a waiting-list RSVP is promoted to attending.
 				 *
-				 * @since 0.37.0
+				 * @since TBD
 				 *
 				 * @param int   $post_id Event post ID.
 				 * @param State $state   Promoted RSVP state.
