@@ -1220,6 +1220,36 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * Tests render_event_status_post_terms_block returns content unchanged when post ID cannot be resolved.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::render_event_status_post_terms_block
+	 *
+	 * @return void
+	 */
+	public function test_render_event_status_post_terms_block_without_post_id(): void {
+		$instance = Setup::get_instance();
+
+		// Ensure global post is not set.
+		$GLOBALS['post'] = null;
+
+		$block_content = '<div class="wp-block-post-terms gatherpress-event-status">Scheduled</div>';
+		$block         = array(
+			'blockName' => 'core/post-terms',
+			'attrs'     => array(
+				'term'              => Event::TAXONOMY_STATUS,
+				'hideWhenScheduled' => true,
+			),
+		);
+		$wp_block      = new WP_Block( $block, array() );
+
+		$result = $instance->render_event_status_post_terms_block( $block_content, $block, $wp_block );
+
+		$this->assertSame( $block_content, $result );
+	}
+
+	/**
 	 * Coverage for set_event_archive_labels method with no pages set.
 	 *
 	 * @covers ::set_event_archive_labels
@@ -2578,5 +2608,96 @@ class Test_Setup extends Base {
 			$result,
 			'Failed to assert a status is shown without a link.'
 		);
+	}
+
+	/**
+	 * Tests filter_event_status_term translates status term names dynamically.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::filter_event_status_term
+	 *
+	 * @return void
+	 */
+	public function test_filter_event_status_term(): void {
+		$instance = Setup::get_instance();
+
+		// Non-status taxonomy should remain untouched.
+		$tag_term = (object) array(
+			'term_id' => 123,
+			'name'    => 'Old Tag',
+			'slug'    => 'old-tag',
+		);
+		$result   = $instance->filter_event_status_term( $tag_term, 'post_tag' );
+		$this->assertSame( 'Old Tag', $result->name );
+
+		// Non-WP_Term should remain untouched.
+		$null_result = $instance->filter_event_status_term( null, Event::TAXONOMY_STATUS );
+		$this->assertNull( $null_result );
+
+		// Status taxonomy term with known status should update label.
+		$term       = new \WP_Term(
+			(object) array(
+				'term_id'  => 456,
+				'name'     => 'canceled',
+				'slug'     => 'canceled',
+				'taxonomy' => Event::TAXONOMY_STATUS,
+			)
+		);
+		$translated = $instance->filter_event_status_term( $term, Event::TAXONOMY_STATUS );
+		$this->assertSame( 'Canceled', $translated->name );
+
+		// Status taxonomy term with unknown status falls back to the default status label.
+		$unknown_term = new \WP_Term(
+			(object) array(
+				'term_id'  => 789,
+				'name'     => 'Unknown',
+				'slug'     => 'unknown-status',
+				'taxonomy' => Event::TAXONOMY_STATUS,
+			)
+		);
+		$unchanged    = $instance->filter_event_status_term( $unknown_term, Event::TAXONOMY_STATUS );
+		$this->assertSame( 'Scheduled', $unchanged->name );
+	}
+
+	/**
+	 * Tests filter_post_terms_block_variations strips core Event Statuses variation.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::filter_post_terms_block_variations
+	 *
+	 * @return void
+	 */
+	public function test_filter_post_terms_block_variations(): void {
+		$instance = Setup::get_instance();
+
+		$variations = array(
+			array(
+				'name'  => 'category',
+				'title' => 'Categories',
+			),
+			array(
+				'name'  => Event::TAXONOMY_STATUS,
+				'title' => 'Event Statuses',
+			),
+			array(
+				'name'  => 'post_tag',
+				'title' => 'Tags',
+			),
+		);
+
+		// Non-matching block type leaves variations unchanged.
+		$paragraph_type = new \WP_Block_Type( 'core/paragraph', array() );
+		$result         = $instance->filter_post_terms_block_variations( $variations, $paragraph_type );
+		$this->assertSame( $variations, $result );
+
+		// core/post-terms removes the Event::TAXONOMY_STATUS variation.
+		$post_terms_type = new \WP_Block_Type( 'core/post-terms', array() );
+		$filtered        = $instance->filter_post_terms_block_variations( $variations, $post_terms_type );
+
+		$this->assertCount( 2, $filtered );
+		$this->assertSame( 'category', $filtered[0]['name'] );
+		$this->assertSame( 'post_tag', $filtered[1]['name'] );
 	}
 }
