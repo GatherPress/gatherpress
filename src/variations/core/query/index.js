@@ -10,6 +10,7 @@ import { __ } from '@wordpress/i18n';
 import { NAME } from './name';
 import { QUERY_ATTRIBUTES, VARIATION_ATTRIBUTES } from './constants';
 import './controls';
+import './expose';
 import './patterns';
 import './start-blank';
 
