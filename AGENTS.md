@@ -6,6 +6,18 @@ This file is the canonical project guide for AI coding agents (Claude Code, Curs
 
 Always use **US English** spelling in all code, comments, and documentation. When in doubt, use the spelling WordPress core uses.
 
+### People terminology
+
+Use these words consistently in code, comments, user-facing copy, and docs:
+
+- **viewer** — anyone looking at a page, logged in or not. Default term. Matches internal usage (`Event::is_viewable()`, “the current viewer may read…”). Makes no claim about whether someone has an account.
+- **visitor** — only where “without an account” is the actual meaning (Open RSVP, logged-out fallbacks, anonymous page hits). Not a synonym for viewer. Prefer “people without an account” when that reads clearer.
+- **attendee** — someone who RSVP’d. Never for someone merely looking at an event.
+- **guest** — additional people an attendee brings (`Maximum Number of Guests`, `+%d guest`). Not for viewers or attendees.
+- **member** — a role, not an audience (`Settings\Roles`, RSVP roles list). Leave as is.
+- **reader** — assistive technology only (“screen reader”). Never for a human looking at a page. Non-screen-reader uses in `Rsvp\Query` / `Rsvp\Storage` (“every reader of a comment”) mean a code path, not a person.
+
+
 ## Development Commands
 
 ### PHP Development
