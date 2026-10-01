@@ -12,7 +12,9 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Event\Email_Sends;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Response\State;
+use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Tests\Base;
+use WP_Error;
 
 /**
  * Class Test_Email_Sends.
@@ -227,6 +229,9 @@ class Test_Email_Sends extends Base {
 			)
 		);
 
+		// The promotion sets the attending term; the handler reads it back before sending.
+		wp_set_object_terms( $comment_id, Status::ATTENDING->value, Status::TAXONOMY );
+
 		Email_Sends::get_instance()->send_waiting_list_promotion_email( $post_id, $comment_id );
 
 		$this->assertSame( 'open-rsvp@example.test', $captured['to'] );
@@ -326,7 +331,62 @@ class Test_Email_Sends extends Base {
 			)
 		);
 
+		// Attending so the handler reaches the recipient build, which is where the empty email is skipped.
+		wp_set_object_terms( $comment_id, Status::ATTENDING->value, Status::TAXONOMY );
+
 		Email_Sends::get_instance()->send_waiting_list_promotion_email( $post_id, $comment_id );
+
+		$this->assertArrayNotHasKey( 'to', $captured );
+	}
+
+	/**
+	 * A member who cancelled after the promotion is not emailed.
+	 *
+	 * The job runs on cron, so the RSVP can change between the promotion and
+	 * the delivery. Only a still-attending RSVP gets the confirmation.
+	 *
+	 * @covers ::send_waiting_list_promotion_email
+	 *
+	 * @return void
+	 */
+	public function test_send_waiting_list_promotion_email_skips_cancelled_member(): void {
+		$captured = array();
+		$this->capture_mail( $captured );
+		$post_id    = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$user_id    = $this->create_user( 'cancelled@example.test' );
+		$state      = $this->create_attending_state( $post_id, $user_id );
+		$comment_id = (int) $state->comment->comment_ID;
+
+		( new Rsvp( $post_id ) )->save( $user_id, 'not_attending' );
+
+		Email_Sends::get_instance()->send_waiting_list_promotion_email( $post_id, $comment_id );
+
+		$this->assertArrayNotHasKey( 'to', $captured );
+	}
+
+	/**
+	 * A failed status read is treated as not attending, so no email goes out.
+	 *
+	 * @covers ::send_waiting_list_promotion_email
+	 *
+	 * @return void
+	 */
+	public function test_send_waiting_list_promotion_email_skips_term_read_failure(): void {
+		$captured = array();
+		$this->capture_mail( $captured );
+		$post_id    = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$state      = $this->create_attending_state( $post_id, $this->create_user( 'term-error@example.test' ) );
+		$comment_id = (int) $state->comment->comment_ID;
+
+		$return_error = static function (): WP_Error {
+			return new WP_Error( 'gatherpress_test_error', 'Term read failed.' );
+		};
+
+		add_filter( 'get_object_terms', $return_error );
+
+		Email_Sends::get_instance()->send_waiting_list_promotion_email( $post_id, $comment_id );
+
+		remove_filter( 'get_object_terms', $return_error );
 
 		$this->assertArrayNotHasKey( 'to', $captured );
 	}

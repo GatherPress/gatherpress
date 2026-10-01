@@ -14,6 +14,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Query as Rsvp_Query;
 use GatherPress\Core\Rsvp\Response\State;
+use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\User;
 use GatherPress\Core\Utility;
@@ -148,6 +149,9 @@ final class Email_Sends {
 	 * through the schedule, which keeps every RSVP identity type working
 	 * without serializing a state object into a cron argument.
 	 *
+	 * The RSVP status is re-checked here because the job runs after the
+	 * promotion, so the member can cancel in between.
+	 *
 	 * @since TBD
 	 *
 	 * @param int $post_id Event post ID.
@@ -159,6 +163,13 @@ final class Email_Sends {
 		$comment = get_comment( $comment_id );
 
 		if ( ! $comment instanceof WP_Comment ) {
+			return;
+		}
+
+		// The member can cancel between the promotion and this job.
+		$status = wp_get_object_terms( $comment_id, Status::TAXONOMY, array( 'fields' => 'slugs' ) );
+
+		if ( ! is_array( $status ) || ! in_array( Status::ATTENDING->value, $status, true ) ) {
 			return;
 		}
 
