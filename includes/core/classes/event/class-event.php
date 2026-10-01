@@ -354,6 +354,8 @@ class Event {
 			return false;
 		}
 
+		// Compare only the date portion: the first 10 characters of a `Y-m-d`
+		// ISO string, so the time of day does not affect the result.
 		return substr( $datetime_start, 0, 10 ) === substr( $datetime_end, 0, 10 );
 	}
 
@@ -560,11 +562,11 @@ class Event {
 	 *
 	 * @since 0.36.0
 	 *
-	 * @param string               $format The PHP date format.
-	 * @param string               $which  Which datetime to format, 'start' or 'end'.
-	 * @param bool                 $local        Whether the datetime is being rendered in local time.
-	 * @param array<string, mixed> $dt           The event's datetime data.
-	 * @param bool                 $apply_filter Whether to pass $format through the gatherpress_datetime_format filter.
+	 * @param string               $format         The PHP date format.
+	 * @param string               $which          Which datetime to format, 'start' or 'end'.
+	 * @param bool                 $local          Whether the datetime is being rendered in local time.
+	 * @param array<string, mixed> $dt             The event's datetime data.
+	 * @param bool                 $apply_filters  Whether to apply the gatherpress_datetime_format filter.
 	 *
 	 * @return string The formatted datetime.
 	 */
@@ -573,7 +575,7 @@ class Event {
 		string $which,
 		bool $local,
 		array $dt,
-		bool $apply_filter = true
+		bool $apply_filters = true
 	): string {
 		$date = (string) $dt[ sprintf( 'datetime_%s', $which ) ];
 
@@ -597,7 +599,7 @@ class Event {
 			return '';
 		}
 
-		if ( $apply_filter ) {
+		if ( $apply_filters ) {
 			/** This filter is documented in includes/core/classes/event/class-event.php */
 			$format = apply_filters( 'gatherpress_datetime_format', $format, $which, $local );
 		}
@@ -738,26 +740,26 @@ class Event {
 	 *
 	 * The machine-readable output passed to this method must not be altered by
 	 * the gatherpress_datetime_format filter, so filter application is opt-in via
-	 * $apply_filter. Display formatting enables it; the ISO accessors do not.
+	 * $apply_filters. Display formatting enables it; the ISO accessors do not.
 	 *
 	 * @since TBD
 	 *
-	 * @param string $format       PHP date format.
-	 * @param string $which        Datetime field in event table to format ('start' or 'end').
-	 * @param bool   $local        Whether to format the date in local time (true) or GMT (false).
-	 * @param bool   $apply_filter Whether to pass $format through the gatherpress_datetime_format filter.
+	 * @param string $format        PHP date format.
+	 * @param string $which         Datetime field in event table to format ('start' or 'end').
+	 * @param bool   $local         Whether to format the date in local time (true) or GMT (false).
+	 * @param bool   $apply_filters Whether to pass $format through the gatherpress_datetime_format filter.
 	 *
 	 * @return string The formatted datetime value.
 	 *
 	 * @throws Exception If there is an issue while formatting the datetime value.
 	 */
-	private function format_datetime( string $format, string $which, bool $local, bool $apply_filter = true ): string {
+	private function format_datetime( string $format, string $which, bool $local, bool $apply_filters = true ): string {
 		$dt             = $this->get_datetime();
 		$dt['timezone'] = Utility::maybe_convert_utc_offset( $dt['timezone'] );
 		$tz             = null;
 
 		if ( $this->is_all_day() ) {
-			return $this->get_formatted_all_day( $format, $which, $local, $dt, $apply_filter );
+			return $this->get_formatted_all_day( $format, $which, $local, $dt, $apply_filters );
 		}
 
 		$date = $dt[ sprintf( 'datetime_%s_gmt', $which ) ];
@@ -783,7 +785,7 @@ class Event {
 				return '';
 			}
 
-			if ( $apply_filter ) {
+			if ( $apply_filters ) {
 				/**
 				 * Filters the format an event's datetime is rendered with.
 				 *
