@@ -1224,79 +1224,39 @@ class Event {
 		$venue_pt    = $venue_setup->get_venue_post_type( $this->post->post_type );
 		$taxonomy    = $venue_setup->taxonomy_for_event_post_type( $this->post->post_type );
 		$term_id     = $venue_setup->get_online_event_term_id( $venue_pt );
+		$result      = null;
 
-		// No resolved term id means the venue taxonomy has no sentinel seeded.
-		// Toggle on: seed it first; toggle off: nothing to remove from terms.
-		if ( null === $term_id ) {
-			if ( ! $is_online ) {
-				delete_post_meta( $this->post->ID, 'gatherpress_online_event_link' );
-				return true;
-			}
-
+		// Marking online needs the sentinel, so seed it when the taxonomy has none yet.
+		if ( $is_online && null === $term_id ) {
 			Core_Setup::get_instance()->add_online_event_term();
 			$term_id = $venue_setup->get_online_event_term_id( $venue_pt );
-
-			if ( null === $term_id ) {
-				return false;
-			}
 		}
 
-		$existing = wp_get_post_terms( $this->post->ID, $taxonomy, array( 'fields' => 'ids' ) );
+		// Adding or removing only the sentinel leaves any physical venue term in
+		// place, so hybrid events keep their venue. With no sentinel seeded there
+		// is nothing to remove when going offline.
+		if ( null !== $term_id ) {
+			$result = $is_online
+				? wp_add_object_terms( $this->post->ID, $term_id, $taxonomy )
+				: wp_remove_object_terms( $this->post->ID, $term_id, $taxonomy );
+		}
 
-		// @codeCoverageIgnoreStart
-		// get_online_event_term_id() above already resolved a term ID, so the
-		// taxonomy exists and this read cannot fail with a WP_Error.
-		if ( is_wp_error( $existing ) ) {
+		// Going online without a sentinel means seeding failed. A WP_Error from
+		// the term write only happens on a DB error.
+		if ( ( $is_online && null === $term_id ) || is_wp_error( $result ) ) {
 			return false;
 		}
-		// @codeCoverageIgnoreEnd
 
-		$existing = array_map( 'intval', $existing );
+		$escaped_link = esc_url_raw( $link );
 
-		if ( $is_online ) {
-			if ( ! in_array( $term_id, $existing, true ) ) {
-				$existing[] = $term_id;
-
-				$terms_to_set = array_values( array_unique( $existing ) );
-				$result       = wp_set_post_terms( $this->post->ID, $terms_to_set, $taxonomy );
-
-				// @codeCoverageIgnoreStart
-				// The write only fails on a DB error this harness cannot force.
-				if ( is_wp_error( $result ) ) {
-					return false;
-				}
-				// @codeCoverageIgnoreEnd
-			}
-
-			if ( '' !== $link ) {
-				$escaped_link = esc_url_raw( $link );
-
-				// esc_url_raw() returns '' for a URL it rejects, and writing that
-				// would erase a link already saved. An unusable value is treated
-				// as no link at all, matching the empty-string behavior above.
-				if ( '' !== $escaped_link ) {
-					update_post_meta( $this->post->ID, 'gatherpress_online_event_link', $escaped_link );
-				}
-			}
-			return true;
+		// Going offline clears the link so re-enabling starts blank. Going online
+		// skips an empty link, or one esc_url_raw() rejects, so a saved link survives.
+		if ( ! $is_online ) {
+			delete_post_meta( $this->post->ID, 'gatherpress_online_event_link' );
+		} elseif ( '' !== $escaped_link ) {
+			update_post_meta( $this->post->ID, 'gatherpress_online_event_link', $escaped_link );
 		}
 
-		// Toggle off: drop the sentinel from the term list (preserve venue terms)
-		// and clear the link meta so re-enabling starts blank.
-		$remaining = array_values( array_filter( $existing, static fn ( int $id ): bool => $id !== $term_id ) );
-
-		if ( count( $remaining ) !== count( $existing ) ) {
-			$result = wp_set_post_terms( $this->post->ID, $remaining, $taxonomy );
-
-			// @codeCoverageIgnoreStart
-			// The write only fails on a DB error this harness cannot force.
-			if ( is_wp_error( $result ) ) {
-				return false;
-			}
-			// @codeCoverageIgnoreEnd
-		}
-
-		delete_post_meta( $this->post->ID, 'gatherpress_online_event_link' );
 		return true;
 	}
 }
