@@ -294,11 +294,11 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 							help={
 								'email' === fieldType
 									? __(
-										'Prefill with the email address of the logged-in user, overriding the default value. Logged-out viewers see the default value.',
+										'Prefill with the email address of the logged-in user, overriding the default value. Logged-out visitors see the default value.',
 										'gatherpress',
 									)
 									: __(
-										'Prefill with the display name of the logged-in user, overriding the default value. Logged-out viewers see the default value.',
+										'Prefill with the display name of the logged-in user, overriding the default value. Logged-out visitors see the default value.',
 										'gatherpress',
 									)
 							}
