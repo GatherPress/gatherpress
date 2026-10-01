@@ -156,6 +156,30 @@ Gaps here become gaps in the published hook reference.
   Revert the regen output before committing. CI regenerates it on merge (see
   [AGENTS.md](../../AGENTS.md#auto-generated-developer-hook-docs)).
 
+## Public JavaScript surfaces
+
+Some editor code is published for companion plugins to import, not just to filter. Every such surface has one name, and the three places it appears are derived from that name mechanically:
+
+| Where | Shape | Example for `query-controls` |
+|---|---|---|
+| Import path | `@gatherpress/<surface>` | `@gatherpress/query-controls` |
+| Runtime global | `window.gatherpress.<surfaceInCamelCase>` | `window.gatherpress.queryControls` |
+| Script handle | `gatherpress-<surface>` | `gatherpress-query-controls` |
+
+The surface name is kebab-case and describes what is published, not which bundle happens to publish it. The global is the only runtime mechanism WordPress has for sharing code between separately built plugins; `window.wp.*` is the same thing for core, and the import path is a build-time convenience layered on top of it.
+
+Because the mapping is mechanical, a companion plugin can cover every surface with one dependency-extraction rule rather than one per surface. The [slot-fills guide](blocks/slot-fills/README.md#importing-instead-of-reading-the-global) has the webpack configuration.
+
+When a surface is published by a script whose handle does not already follow the convention, register the conventional handle as an alias of it, the way core registers `jquery` over `jquery-core`. `Assets::PUBLIC_SCRIPT_HANDLES` holds those aliases. A companion plugin depends on the conventional handle and never on whichever bundle does the publishing.
+
+Current surfaces:
+
+| Surface | Contents |
+|---|---|
+| `query-controls` | The Event Query Loop control components |
+
+JavaScript filters follow a separate, older pattern, `gatherpress.<camelCaseName>` through `@wordpress/hooks`, for example `gatherpress.eventQueryControls`.
+
 ## Renaming an existing hook
 
 Hook renames are breaking changes for any companion plugin or theme that hooks

@@ -573,6 +573,16 @@ When working with JavaScript code:
     - ✅ Good: `import { Navigator } from '@wordpress/components';` then `<Navigator initialPath="/">...</Navigator>`
     - ❌ Bad: `import { __experimentalNavigatorProvider as NavigatorProvider, Navigator } from '@wordpress/components';` then `<NavigatorProvider initialPath="/">...</NavigatorProvider>`
 
+#### Public JavaScript surfaces
+
+Editor code published for companion plugins follows one naming rule, set out in [`docs/developer/hooks-naming-convention.md`](docs/developer/hooks-naming-convention.md#public-javascript-surfaces): a kebab-case surface name `<surface>` appears as the import path `@gatherpress/<surface>`, the global `window.gatherpress.<surfaceInCamelCase>`, and the script handle `gatherpress-<surface>`.
+
+- Publish with `window.gatherpress ??= {};` so other surfaces on the namespace survive.
+- If the publishing script's handle does not already match, add the conventional handle to `Assets::PUBLIC_SCRIPT_HANDLES` as an alias of it, and document only the conventional handle.
+- Add the surface to the table in the naming convention doc.
+- ✅ Good: `window.gatherpress.queryControls`, depended on as `gatherpress-query-controls`.
+- ❌ Bad: telling companion plugins to depend on `gatherpress-query`, which is whatever bundle happens to publish the global today.
+
 ### CSS and SCSS Coding Standards
 
 #### Units

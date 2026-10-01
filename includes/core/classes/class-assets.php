@@ -30,6 +30,27 @@ final class Assets {
 	use Singleton;
 
 	/**
+	 * Public JavaScript surfaces, mapped to the script that publishes each one.
+	 *
+	 * The key is the handle a companion plugin depends on. It follows the
+	 * convention that `@gatherpress/<surface>` in an import resolves to
+	 * `window.gatherpress.<surface>` in camelCase, published by the
+	 * `gatherpress-<surface>` handle, so one webpack rule covers every surface
+	 * the way `@wordpress/*` does for core.
+	 *
+	 * The value is the script that actually writes the global. Registering
+	 * the public handle as an alias of it, the way core registers `jquery` over
+	 * `jquery-core`, keeps the promised name stable whichever bundle turns out
+	 * to do the publishing.
+	 *
+	 * @since TBD
+	 * @var array<string, string>
+	 */
+	const PUBLIC_SCRIPT_HANDLES = array(
+		'gatherpress-query-controls' => 'gatherpress-query',
+	);
+
+	/**
 	 * An array used to cache data assets.
 	 *
 	 * This property stores data assets in an array for efficient access and management.
@@ -105,6 +126,8 @@ final class Assets {
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_variation_assets' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_aql_integration' ) );
 		add_action( 'init', array( $this, 'register_variation_assets' ) );
+		// After the variations, since each public handle is an alias of one.
+		add_action( 'init', array( $this, 'register_public_script_handles' ), 11 );
 		add_action( 'wp_head', array( $this, 'add_interactivity_state' ) );
 		// Set priority to 11 to not conflict with media modal.
 		add_action( 'admin_footer', array( $this, 'event_communication_modal' ), 11 );
@@ -631,6 +654,25 @@ final class Assets {
 	public function register_variation_assets(): void {
 		foreach ( $this->get_block_variations() as $variation ) {
 			$this->register_asset( $variation, 'variations/core/' );
+		}
+	}
+
+	/**
+	 * Register the handles companion plugins depend on for public surfaces.
+	 *
+	 * Each is an alias with no source of its own, so depending on it pulls in
+	 * the script that publishes the surface. A publisher missing from the build
+	 * leaves its alias unregistered rather than pointing at nothing.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function register_public_script_handles(): void {
+		foreach ( self::PUBLIC_SCRIPT_HANDLES as $handle => $publisher ) {
+			if ( wp_script_is( $publisher, 'registered' ) ) {
+				wp_register_script( $handle, false, array( $publisher ), GATHERPRESS_VERSION, true );
+			}
 		}
 	}
 
