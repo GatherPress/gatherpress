@@ -514,7 +514,8 @@ final class Utility {
 	 * punctuation between the parts it lost. Escaped literal characters
 	 * belonging to the date portion (such as Spanish '\d\e' in 'j \d\e F \d\e Y')
 	 * are preserved, while boundary literals between date and time (such as
-	 * German '\u\m' in 'j. F Y \u\m H:i \U\h\r') are excluded.
+	 * German '\u\m' in 'j. F Y \u\m H:i \U\h\r') are excluded. Unescaped text
+	 * after the day (such as '日' in 'Y年n月j日') stays with the date.
 	 *
 	 * @since 0.36.0
 	 *
@@ -558,9 +559,15 @@ final class Utility {
 			return trim( $format, " \t\n\r\0\x0B:,-/." );
 		}
 
-		// If date comes before time, take everything up to the last date token.
+		// If date comes before time, take everything up to the first time token.
 		if ( $first_date < $first_time ) {
-			$slice = array_slice( $tokens, 0, $last_date + 1 );
+			$slice = array_slice( $tokens, 0, $first_time );
+
+			// Drop escaped words and spaces that lead into the time, such as German '\u\m'.
+			// Unescaped text after the date, such as '日' in 'Y年n月j日', stays.
+			while ( $slice && ( 'literal' === end( $slice )['type'] || '' === trim( end( $slice )['value'] ) ) ) {
+				array_pop( $slice );
+			}
 		} else {
 			// Time comes before date, take everything from the first date token onward.
 			$slice = array_slice( $tokens, $first_date );

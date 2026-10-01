@@ -1032,10 +1032,21 @@ export function removeTimePHPFormatChars( format ) {
 		return format.replace( /^[\s:,\-/.]+|[\s:,\-/.]+$/g, '' );
 	}
 
-	const slice =
+	let slice =
 		firstDate < firstTime
-			? tokens.slice( 0, lastDate + 1 )
+			? tokens.slice( 0, firstTime )
 			: tokens.slice( firstDate );
+
+	// Drop escaped words and spaces that lead into the time, such as German
+	// '\u\m'. Unescaped text after the date, such as '日', stays.
+	while (
+		firstDate < firstTime &&
+		slice.length &&
+		( 'literal' === slice[ slice.length - 1 ].type ||
+			'' === slice[ slice.length - 1 ].value.trim() )
+	) {
+		slice.pop();
+	}
 
 	return slice
 		.map( ( tok ) => tok.value )

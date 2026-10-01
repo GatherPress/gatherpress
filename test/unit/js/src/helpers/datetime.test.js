@@ -1340,6 +1340,13 @@ describe( 'removeTimePHPFormatChars', () => {
 			'j F Y',
 		);
 	} );
+
+	test( 'keeps unescaped day suffixes such as Japanese and Korean', () => {
+		expect( removeTimePHPFormatChars( 'Y年n月j日 H:i' ) ).toBe( 'Y年n月j日' );
+		expect( removeTimePHPFormatChars( 'Y년 n월 j일 H:i' ) ).toBe(
+			'Y년 n월 j일',
+		);
+	} );
 } );
 
 /**

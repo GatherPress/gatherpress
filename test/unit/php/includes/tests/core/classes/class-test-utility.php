@@ -1766,6 +1766,8 @@ class Test_Utility extends Base {
 			'datetime with timezone keeps date without timezone' => array( 'D, M j, Y, g:i a T', 'D, M j, Y' ),
 			'german datetime with boundary connector drops um' => array( 'j. F Y \u\m H:i \U\h\r', 'j. F Y' ),
 			'german datetime with Uhr before time drops Uhr' => array( 'j F Y, \U\h\r H:i', 'j F Y' ),
+			'japanese datetime keeps day suffix'             => array( 'Y年n月j日 H:i', 'Y年n月j日' ),
+			'korean datetime keeps day suffix'               => array( 'Y년 n월 j일 H:i', 'Y년 n월 j일' ),
 		);
 	}
 
