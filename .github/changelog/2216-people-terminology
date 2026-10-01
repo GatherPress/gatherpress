@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Align people terminology: use “viewer” for anyone looking at a page, reserve “visitor” for no-account contexts, and document the rules in AGENTS.md.
