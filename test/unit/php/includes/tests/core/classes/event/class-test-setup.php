@@ -1231,7 +1231,7 @@ class Test_Setup extends Base {
 	public function test_render_event_status_post_terms_block_without_post_id(): void {
 		$instance = Setup::get_instance();
 
-		// Ensure global post is not set.
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Ensure global post is not set.
 		$GLOBALS['post'] = null;
 
 		$block_content = '<div class="wp-block-post-terms gatherpress-event-status">Scheduled</div>';
