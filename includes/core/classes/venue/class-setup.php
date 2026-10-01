@@ -19,7 +19,7 @@ namespace GatherPress\Core\Venue;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Event\Event as Core_Event;
+use GatherPress\Core\Event;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Shadow_Source;
 use GatherPress\Core\Starter_Pattern_Loader;
@@ -511,7 +511,7 @@ final class Setup {
 		$venue = null;
 
 		if ( post_type_supports( $post_type, Venue::ASSIGNMENT_SUPPORT ) ) {
-			$event = new Core_Event( $post_id );
+			$event = new Event( $post_id );
 
 			// Derive the online state from the event object so the sentinel
 			// is detected across every assigned term, not just the first.
@@ -640,7 +640,7 @@ final class Setup {
 	 * Resolve the term ID of the online-event sentinel in a venue taxonomy.
 	 *
 	 * Returns null when the term has not been seeded. Callers that need
-	 * to assign it (e.g. {@see Core_Event::set_online()}) handle the null branch by
+	 * to assign it (e.g. {@see Event::set_online()}) handle the null branch by
 	 * running {@see \GatherPress\Core\Setup::add_online_event_term()} first.
 	 *
 	 * @since TBD
