@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Make event dates machine-readable by adding time elements with datetime attributes to the Event Date block. The timezone now also displays when the block overrides the global setting to yes.
