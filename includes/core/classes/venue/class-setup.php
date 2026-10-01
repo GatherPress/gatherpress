@@ -78,7 +78,6 @@ final class Setup {
 	 */
 	protected function instantiate_classes(): void {
 		Admin_List::get_instance();
-		Geo_Sync::get_instance();
 		Map_Setup::get_instance();
 		Meta::get_instance();
 	}

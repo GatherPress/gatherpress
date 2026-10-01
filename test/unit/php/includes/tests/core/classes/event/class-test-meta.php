@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\Event;
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Meta;
+use GatherPress\Core\Geo_Sync;
 use GatherPress\Tests\Base;
 use stdClass;
 use WP_REST_Request;
@@ -37,6 +38,12 @@ class Test_Meta extends Base {
 				'name'     => 'registered_post_type',
 				'priority' => 10,
 				'callback' => array( $instance, 'register' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'template_redirect',
+				'priority' => 10,
+				'callback' => array( Geo_Sync::get_instance(), 'maybe_refresh_on_view' ),
 			),
 		);
 
@@ -133,6 +140,12 @@ class Test_Meta extends Base {
 		$instance->register( $test_pt );
 
 		$meta = get_registered_meta_keys( 'post', $test_pt );
+
+		$this->assertSame(
+			10,
+			has_filter( 'rest_prepare_' . $test_pt, array( Geo_Sync::get_instance(), 'maybe_refresh_on_rest' ) ),
+			'The REST geo refresh should be wired for a post type with gatherpress-venue support.'
+		);
 
 		$this->assertArrayHasKey(
 			'geo_latitude',

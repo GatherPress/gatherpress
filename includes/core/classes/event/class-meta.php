@@ -70,6 +70,7 @@ final class Meta {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'registered_post_type', array( $this, 'register' ) );
+		add_action( 'template_redirect', array( Shared_Geo_Sync::get_instance(), 'maybe_refresh_on_view' ) );
 	}
 
 	/**
@@ -219,6 +220,12 @@ final class Meta {
 			array( $this, 'filter_readonly_meta' ),
 			10,
 			2
+		);
+		add_filter(
+			sprintf( 'rest_prepare_%s', $post_type ),
+			array( Shared_Geo_Sync::get_instance(), 'maybe_refresh_on_rest' ),
+			10,
+			3
 		);
 	}
 

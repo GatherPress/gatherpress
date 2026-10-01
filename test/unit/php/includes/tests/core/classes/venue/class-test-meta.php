@@ -8,6 +8,7 @@
 
 namespace GatherPress\Tests\Core\Venue;
 
+use GatherPress\Core\Geo_Sync;
 use GatherPress\Core\Venue\Meta;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
@@ -37,6 +38,12 @@ class Test_Meta extends Base {
 				'name'     => 'registered_post_type',
 				'priority' => 10,
 				'callback' => array( $instance, 'register' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'wp_after_insert_post',
+				'priority' => 10,
+				'callback' => array( Geo_Sync::get_instance(), 'on_venue_saved' ),
 			),
 		);
 
