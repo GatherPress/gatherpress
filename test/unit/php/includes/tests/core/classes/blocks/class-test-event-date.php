@@ -435,6 +435,50 @@ class Test_Event_Date extends Base {
 	}
 
 	/**
+	 * The rangeFormat honors custom separator attributes and the gatherpress_datetime_separator filter.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function test_render_viewer_time_honors_custom_separator_and_filter(): void {
+		$output = $this->render_viewer_time_block(
+			'Viewer Time Custom Separator Event',
+			array(
+				'showViewerTime' => true,
+				'separator'      => '–',
+			)
+		);
+
+		$context = $this->get_viewer_time_context( $output );
+
+		$this->assertSame(
+			'%1$s – %2$s your time',
+			$context['rangeFormat'] ?? null,
+			'The rangeFormat should incorporate the custom separator attribute.'
+		);
+
+		$filter_callback = function () {
+			return 'until';
+		};
+		add_filter( 'gatherpress_datetime_separator', $filter_callback );
+
+		$output_filtered  = $this->render_viewer_time_block(
+			'Viewer Time Filtered Separator Event',
+			array( 'showViewerTime' => true )
+		);
+		$context_filtered = $this->get_viewer_time_context( $output_filtered );
+
+		$this->assertSame(
+			'%1$s until %2$s your time',
+			$context_filtered['rangeFormat'] ?? null,
+			'The rangeFormat should honor the gatherpress_datetime_separator filter.'
+		);
+
+		remove_filter( 'gatherpress_datetime_separator', $filter_callback );
+	}
+
+	/**
 	 * A block showing only the start says only the start in local time too,
 	 * rather than announcing a range the block itself never displays.
 	 *

@@ -67,6 +67,22 @@ if (
 	// it is the one the viewer needs converting, and get_display_datetime()
 	// shows the end alone there rather than showing nothing.
 	if ( $gatherpress_start_gmt || $gatherpress_end_gmt ) {
+		$gatherpress_separator = $attributes['separator'] ?? '';
+		$gatherpress_separator = $gatherpress_separator ? $gatherpress_separator : __( 'to', 'gatherpress' );
+		/** This filter is documented in includes/core/classes/event/class-event.php */
+		$gatherpress_separator    = apply_filters(
+			'gatherpress_datetime_separator',
+			$gatherpress_separator,
+			$gatherpress_event
+		);
+		$gatherpress_range_format = sprintf(
+			/* translators: 1: event start in the viewer's timezone, 2: separator between start and end, 3: event end in the viewer's timezone. */
+			__( '%1$s %2$s %3$s your time', 'gatherpress' ),
+			'%1$s',
+			$gatherpress_separator,
+			'%2$s'
+		);
+
 		$gatherpress_viewer_time_context = wp_json_encode(
 			array(
 				'startGmt'      => $gatherpress_start_gmt,
@@ -74,8 +90,7 @@ if (
 				'eventTimezone' => $gatherpress_datetime['timezone'] ?? '',
 				// The view script is a module and cannot import `@wordpress/i18n`,
 				// so the sentence it fills in is translated here instead.
-				/* translators: 1: event start in the viewer's timezone, 2: event end in the viewer's timezone. */
-				'rangeFormat'   => __( '%1$s to %2$s your time', 'gatherpress' ),
+				'rangeFormat'   => $gatherpress_range_format,
 				/* translators: %s: event start in the viewer's timezone. */
 				'singleFormat'  => __( '%s your time', 'gatherpress' ),
 			),
