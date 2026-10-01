@@ -110,7 +110,7 @@ class Test_Meta extends Base {
 	 * `register()` registers the venue-geo band independently of the
 	 * event-date band, on `gatherpress-venue` support alone.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @covers ::register
 	 * @covers ::register_venue_geo_meta

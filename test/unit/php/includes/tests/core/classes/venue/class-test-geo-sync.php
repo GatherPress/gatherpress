@@ -3,7 +3,7 @@
  * Unit tests for GatherPress\Core\Venue\Geo_Sync.
  *
  * @package GatherPress\Core\Venue
- * @since 0.36.0
+ * @since TBD
  */
 
 namespace GatherPress\Tests\Core\Venue;

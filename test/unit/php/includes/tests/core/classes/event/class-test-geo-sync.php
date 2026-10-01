@@ -3,7 +3,7 @@
  * Unit tests for GatherPress\Core\Event\Geo_Sync.
  *
  * @package GatherPress\Core\Event
- * @since 0.36.0
+ * @since TBD
  */
 
 namespace GatherPress\Tests\Core\Event;

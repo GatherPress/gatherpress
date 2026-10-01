@@ -21,6 +21,7 @@ namespace GatherPress\Core\Venue;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Geo_Sync as Shared_Geo_Sync;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
@@ -299,38 +300,14 @@ final class Meta {
 	/**
 	 * Registers the Geodata standard meta (`geo_*`) as read-only.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $post_type The post type to register against.
 	 *
 	 * @return void
 	 */
 	protected function register_geo_meta( string $post_type ): void {
-		$string_args = array(
-			'auth_callback'     => '__return_false', // Read-only: derived from the venue's own gatherpress_* fields.
-			'sanitize_callback' => 'sanitize_text_field',
-			'show_in_rest'      => true,
-			'single'            => true,
-			'type'              => 'string',
-			'default'           => '',
-		);
-
-		register_post_meta( $post_type, 'geo_latitude', $string_args );
-		register_post_meta( $post_type, 'geo_longitude', $string_args );
-		register_post_meta( $post_type, 'geo_address', $string_args );
-
-		register_post_meta(
-			$post_type,
-			'geo_public',
-			array(
-				'auth_callback'     => '__return_false', // Read-only: derived from the venue's own publish status.
-				'sanitize_callback' => 'absint',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'integer',
-				'default'           => 0,
-			)
-		);
+		Shared_Geo_Sync::register_meta( $post_type );
 	}
 
 	/**
@@ -400,7 +377,8 @@ final class Meta {
 		// rather than rejected so a client that PATCHes them alongside
 		// editor-writable fields doesn't fail the whole request.
 		$readonly_keys = array_merge(
-			array( Map::META_KEY, 'geo_latitude', 'geo_longitude', 'geo_address', 'geo_public' ),
+			array( Map::META_KEY ),
+			Shared_Geo_Sync::FIELDS,
 			array_map(
 				array( Utility::class, 'prefix_key' ),
 				self::STRUCTURED_ADDRESS_FIELDS

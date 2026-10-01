@@ -5,7 +5,7 @@
  * pushed on every venue save — a venue can have ~1,000 linked events.
  *
  * @package GatherPress\Core\Event
- * @since 0.36.0
+ * @since TBD
  */
 
 namespace GatherPress\Core\Event;
@@ -13,6 +13,7 @@ namespace GatherPress\Core\Event;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Geo_Sync as Shared_Geo_Sync;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
@@ -23,7 +24,7 @@ use WP_REST_Response;
 /**
  * Class Geo_Sync.
  *
- * @since 0.36.0
+ * @since TBD
  */
 final class Geo_Sync {
 
@@ -35,7 +36,7 @@ final class Geo_Sync {
 	/**
 	 * Class constructor — wires hooks.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -44,7 +45,7 @@ final class Geo_Sync {
 	/**
 	 * Set up hooks for the lazy view-time geo refresh.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return void
 	 */
@@ -57,7 +58,7 @@ final class Geo_Sync {
 	 * Wires the REST refresh filter for a post type with venue-assignment
 	 * support.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $post_type The post type that was just registered.
 	 *
@@ -75,7 +76,7 @@ final class Geo_Sync {
 	 * Refreshes the queried event's geo meta before a single front-end
 	 * view renders.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return void
 	 */
@@ -98,7 +99,7 @@ final class Geo_Sync {
 	 * `rest_prepare_` fires after `meta` is already serialized, so
 	 * persisting alone wouldn't show up until the next request.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param WP_REST_Response $response The response object.
 	 * @param WP_Post          $post     The post being returned.
@@ -129,7 +130,7 @@ final class Geo_Sync {
 	 * Refreshes one event's geo_* meta from its venue if stale. Skipped
 	 * for events that already happened.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param int $event_id The event post ID.
 	 *
@@ -154,26 +155,11 @@ final class Geo_Sync {
 		// event with no venue at all has nothing to hide.
 		$venue_hides_location = $has_venue && 'publish' !== $venue_post->post_status;
 
-		$desired = array(
-			'geo_latitude'  => $venue_hides_location ? '' : $information['latitude'],
-			'geo_longitude' => $venue_hides_location ? '' : $information['longitude'],
-			'geo_address'   => $venue_hides_location ? '' : $information['address'],
-			'geo_public'    => ( ! $venue_hides_location && 'publish' === get_post_status( $event_id ) ) ? 1 : 0,
+		$desired = Shared_Geo_Sync::build_values(
+			$venue_hides_location ? array() : $information,
+			! $venue_hides_location && 'publish' === get_post_status( $event_id )
 		);
 
-		$changed = false;
-
-		foreach ( $desired as $key => $value ) {
-			$current = get_post_meta( $event_id, $key, true );
-			// get_post_meta() always returns a string — cast geo_public to int.
-			$current = 'geo_public' === $key ? (int) $current : (string) $current;
-
-			if ( $current !== $value ) {
-				update_post_meta( $event_id, $key, $value );
-				$changed = true;
-			}
-		}
-
-		return $changed ? $desired : null;
+		return Shared_Geo_Sync::write( $event_id, $desired ) ? $desired : null;
 	}
 }
