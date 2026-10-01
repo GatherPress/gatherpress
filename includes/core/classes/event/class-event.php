@@ -19,10 +19,11 @@ use Exception;
 use GatherPress\Core\Calendar;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
+use GatherPress\Core\Setup as Core_Setup;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
-use GatherPress\Core\Venue\Setup;
+use GatherPress\Core\Venue\Setup as Venue_Setup;
 use GatherPress\Core\Venue;
 use WP_Post;
 use WP_Term;
@@ -876,7 +877,7 @@ class Event {
 		}
 
 		$event_post_type = (string) get_post_type( $this->post );
-		$venue_setup     = Setup::get_instance();
+		$venue_setup     = Venue_Setup::get_instance();
 		$taxonomy        = $venue_setup->taxonomy_for_event_post_type( $event_post_type );
 		$venue_terms     = get_the_terms( $this->post, $taxonomy );
 
@@ -1158,5 +1159,104 @@ class Event {
 		}
 
 		return $event_link;
+	}
+
+	/**
+	 * Whether this event is marked online.
+	 *
+	 * Unconditional online-status check: returns true whenever the event
+	 * carries the `online-event` sentinel term in its venue taxonomy, no
+	 * matter the current user's RSVP status, the event's time, or the admin
+	 * context. Distinct from {@see self::maybe_get_online_event_link()}, which
+	 * gates link disclosure on attendance and time.
+	 *
+	 * Requires the post type to declare `gatherpress-online-event` support, the
+	 * same gate {@see \GatherPress\Core\Blocks\Online_Event::render_block()}
+	 * applies, so a post that cannot render the online-event block never
+	 * reports itself as online.
+	 *
+	 * @since TBD
+	 *
+	 * @return bool True if the event has the online-event term, false otherwise.
+	 */
+	public function is_online(): bool {
+		// A post type without online-event support has no online state to
+		// report, whether or not the sentinel term happens to be attached.
+		if ( ! $this->post || ! post_type_supports( $this->post->post_type, Venue::ONLINE_SUPPORT ) ) {
+			return false;
+		}
+
+		$taxonomy = Venue_Setup::get_instance()->taxonomy_for_event_post_type( $this->post->post_type );
+
+		return has_term( Venue_Setup::ONLINE_EVENT_TERM_SLUG, $taxonomy, $this->post );
+	}
+
+	/**
+	 * Mark this event as online or offline and persist the link.
+	 *
+	 * Owns the term-plus-meta pairing so callers do not have to coordinate
+	 * the two writes themselves. Toggle on: the sentinel term is ensured to
+	 * exist in the right venue taxonomy (idempotent with plugin activation)
+	 * and its term ID is appended without removing existing venue terms, so
+	 * hybrid events keep their venue. Toggle off: the sentinel term is
+	 * removed and the link meta is deleted so re-enabling starts blank rather
+	 * than reading a stale URL.
+	 *
+	 * Requires the post type to declare `gatherpress-online-event` support, so
+	 * a write can never land a sentinel term that the online-event block would
+	 * then refuse to render. A post type without that support is reported as
+	 * unsaved, the same answer as a post that does not exist.
+	 *
+	 * @since TBD
+	 *
+	 * @param bool   $is_online True to mark online, false to mark offline.
+	 * @param string $link      Optional URL for the `gatherpress_online_event_link` meta when online. An empty
+	 *                          value preserves an existing link, and so does a value `esc_url_raw()` rejects.
+	 *
+	 * @return bool True when the online status was saved, false otherwise.
+	 */
+	public function set_online( bool $is_online, string $link = '' ): bool {
+		if ( ! $this->post || ! post_type_supports( $this->post->post_type, Venue::ONLINE_SUPPORT ) ) {
+			return false;
+		}
+
+		$venue_setup = Venue_Setup::get_instance();
+		$venue_pt    = $venue_setup->get_venue_post_type( $this->post->post_type );
+		$taxonomy    = $venue_setup->taxonomy_for_event_post_type( $this->post->post_type );
+		$term_id     = $venue_setup->get_online_event_term_id( $venue_pt );
+		$result      = null;
+
+		// Marking online needs the sentinel, so seed it when the taxonomy has none yet.
+		if ( $is_online && null === $term_id ) {
+			Core_Setup::get_instance()->add_online_event_term();
+			$term_id = $venue_setup->get_online_event_term_id( $venue_pt );
+		}
+
+		// Adding or removing only the sentinel leaves any physical venue term in
+		// place, so hybrid events keep their venue. With no sentinel seeded there
+		// is nothing to remove when going offline.
+		if ( null !== $term_id ) {
+			$result = $is_online
+				? wp_add_object_terms( $this->post->ID, $term_id, $taxonomy )
+				: wp_remove_object_terms( $this->post->ID, $term_id, $taxonomy );
+		}
+
+		// Going online without a sentinel means seeding failed. A WP_Error from
+		// the term write only happens on a DB error.
+		if ( ( $is_online && null === $term_id ) || is_wp_error( $result ) ) {
+			return false;
+		}
+
+		$escaped_link = esc_url_raw( $link );
+
+		// Going offline clears the link so re-enabling starts blank. Going online
+		// skips an empty link, or one esc_url_raw() rejects, so a saved link survives.
+		if ( ! $is_online ) {
+			delete_post_meta( $this->post->ID, 'gatherpress_online_event_link' );
+		} elseif ( '' !== $escaped_link ) {
+			update_post_meta( $this->post->ID, 'gatherpress_online_event_link', $escaped_link );
+		}
+
+		return true;
 	}
 }
