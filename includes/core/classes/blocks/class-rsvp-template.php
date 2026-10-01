@@ -124,13 +124,18 @@ final class Rsvp_Template {
 	 * @return string The dynamically generated block content.
 	 */
 	public function generate_rsvp_template_block( string $block_content, array $block, WP_Block $instance ): string {
-		$post_id = (int) $instance->context['postId'];
+		// No ancestor may provide postId (e.g. an archive, search or 404 template), so fall back to the current post.
+		$post_id = (int) ( $instance->context['postId'] ?? get_the_ID() );
+
+		if ( ! $post_id ) {
+			return $block_content;
+		}
 
 		// Only process if the post type supports RSVP. An unpublished event
 		// keeps its responses to viewers allowed to read it, so organizers see
 		// the roster on a draft or private event rather than an empty block.
 		if (
-			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
+			! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT ) ||
 			! Event::is_viewable( $post_id )
 		) {
 			return $block_content;
@@ -173,11 +178,54 @@ final class Rsvp_Template {
 		$rsvp_response_template = sprintf(
 			'<div hidden data-wp-interactive="gatherpress"'
 				. ' data-wp-watch="callbacks.renderBlocks"'
-				. ' data-block-template="%s"></div>',
-			esc_attr( $blocks )
+				. ' data-block-template="%1$s"'
+				. ' data-block-signature="%2$s"></div>',
+			esc_attr( $blocks ),
+			esc_attr( self::sign_template( $blocks, $post_id ) )
 		);
 
 		return $block_content . $rsvp_response_template;
+	}
+
+	/**
+	 * Signature for a template this class emitted.
+	 *
+	 * The front end hands the template back to the REST endpoint verbatim, so
+	 * the endpoint only renders what this class wrote in the first place. The
+	 * key is the site's nonce salt: stable for the site, the same for every
+	 * visitor, and not derived from anything a request can influence.
+	 *
+	 * The signed message names this use, the site and the event along with the
+	 * template, so a signature is only good for the event it was emitted on.
+	 *
+	 * @since 0.35.3
+	 * @since 0.35.4 Added the `$post_id` parameter.
+	 *
+	 * @param string $template The JSON-encoded parsed block.
+	 * @param int    $post_id  The event the template was emitted for.
+	 *
+	 * @return string The signature.
+	 */
+	public static function sign_template( string $template, int $post_id ): string {
+		$message = implode( '|', array( self::BLOCK_NAME, get_current_blog_id(), $post_id, $template ) );
+
+		return hash_hmac( 'sha256', $message, wp_salt( 'nonce' ) );
+	}
+
+	/**
+	 * Whether a template and signature pair came from this class.
+	 *
+	 * @since 0.35.3
+	 * @since 0.35.4 Added the `$post_id` parameter.
+	 *
+	 * @param string $template  The JSON-encoded parsed block.
+	 * @param int    $post_id   The event the template is being rendered for.
+	 * @param string $signature The signature that accompanied it.
+	 *
+	 * @return bool True when the signature matches the template and event.
+	 */
+	public static function verify_template( string $template, int $post_id, string $signature ): bool {
+		return hash_equals( self::sign_template( $template, $post_id ), $signature );
 	}
 
 	/**

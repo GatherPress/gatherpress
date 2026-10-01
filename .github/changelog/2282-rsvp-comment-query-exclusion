@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Exclude RSVPs from comment queries through `type__not_in` instead of an allow-list built from the stored comment types, so a site whose only comments are RSVPs no longer shows them as blank entries in the Discussion section, `type => 'all'` queries stay RSVP-free, and queries that only set `type__in` are no longer widened to every comment type.

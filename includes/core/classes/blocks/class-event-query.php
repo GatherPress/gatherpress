@@ -116,7 +116,7 @@ final class Event_Query {
 	 * @return void
 	 */
 	public function register_existing_event_date_post_types(): void {
-		foreach ( get_post_types_by_support( 'gatherpress-event-date' ) as $post_type ) {
+		foreach ( get_post_types_by_support( Event::SUPPORT ) as $post_type ) {
 			$this->maybe_register_event_date_rest_hooks( $post_type );
 		}
 	}
@@ -131,7 +131,7 @@ final class Event_Query {
 	 * @return void
 	 */
 	public function maybe_register_event_date_rest_hooks( string $post_type ): void {
-		if ( ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+		if ( ! post_type_supports( $post_type, Event::SUPPORT ) ) {
 			return;
 		}
 
@@ -299,7 +299,7 @@ final class Event_Query {
 		// the block didn't pick one explicitly.
 		$query_args['post_type'] = ! empty( $block_query['postType'] )
 			? $block_query['postType']
-			: get_post_types_by_support( 'gatherpress-event-date' );
+			: get_post_types_by_support( Event::SUPPORT );
 
 		// Type of event list: 'upcoming', 'past', or 'all',
 		// @see wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php.
@@ -538,7 +538,7 @@ final class Event_Query {
 		// Only process if querying GatherPress events.
 		$post_type = $block_query['postType'] ?? '';
 
-		if ( ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+		if ( ! post_type_supports( $post_type, Event::SUPPORT ) ) {
 			return $query_args;
 		}
 

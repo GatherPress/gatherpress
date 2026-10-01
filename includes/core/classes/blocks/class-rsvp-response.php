@@ -98,7 +98,7 @@ final class Rsvp_Response {
 		// its responses to viewers allowed to read it, so organizers see the
 		// roster on a draft or private event rather than an empty block.
 		if (
-			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
+			! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT ) ||
 			! Event::is_viewable( $post_id )
 		) {
 			return '';
@@ -225,7 +225,12 @@ final class Rsvp_Response {
 			$tag->set_attribute( 'class', $class_attr . ' gatherpress--is-disabled' );
 
 			$tag->next_token();
-			$trigger_text = sprintf( $tag->get_modifiable_text(), intval( $counts['attending'] ?? 0 ) );
+
+			// Swap the first `%d` literally, as view.js does, so any other `%` in the label is left alone.
+			$trigger_text = implode(
+				(string) intval( $counts['attending'] ?? 0 ),
+				explode( '%d', $tag->get_modifiable_text(), 2 )
+			);
 
 			$tag->set_modifiable_text( $trigger_text );
 		}
@@ -263,11 +268,9 @@ final class Rsvp_Response {
 					$tag->set_attribute( 'data-status', $status );
 				}
 			}
-
-			$block_content = $tag->get_updated_html();
 		}
 
-		return $block_content;
+		return $tag->get_updated_html();
 	}
 
 	/**
@@ -285,12 +288,14 @@ final class Rsvp_Response {
 	 * @return array<string, mixed> Modified array of avatar arguments, including the correct URL for the avatar.
 	 */
 	public function modify_avatar_for_gatherpress_rsvp( array $args, $comment ): array {
-		// Bail when the filter fires for a non-RSVP comment so the body
-		// doesn't have to nest under the positive guard.
+		// get_avatar_data also passes user IDs and email addresses here, and
+		// is_comment_type() takes an int as a comment ID, so a user ID that
+		// collides with an RSVP comment ID would match. The instanceof guard
+		// keeps those callers out and satisfies the helper's typed parameter,
+		// so unlike the comment-backed call sites this one keeps its guard.
 		if (
-			! $comment
-			|| ! is_a( $comment, 'WP_Comment' )
-			|| Rsvp::COMMENT_TYPE !== $comment->comment_type
+			! $comment instanceof WP_Comment
+			|| ! Rsvp::is_comment_type( $comment )
 		) {
 			return $args;
 		}

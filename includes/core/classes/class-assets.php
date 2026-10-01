@@ -30,6 +30,27 @@ final class Assets {
 	use Singleton;
 
 	/**
+	 * Public JavaScript surfaces, mapped to the script that publishes each one.
+	 *
+	 * The key is the handle a companion plugin depends on. It follows the
+	 * convention that `@gatherpress/<surface>` in an import resolves to
+	 * `window.gatherpress.<surface>` in camelCase, published by the
+	 * `gatherpress-<surface>` handle, so one webpack rule covers every surface
+	 * the way `@wordpress/*` does for core.
+	 *
+	 * The value is the script that actually writes the global. Registering
+	 * the public handle as an alias of it, the way core registers `jquery` over
+	 * `jquery-core`, keeps the promised name stable whichever bundle turns out
+	 * to do the publishing.
+	 *
+	 * @since TBD
+	 * @var array<string, string>
+	 */
+	const PUBLIC_SCRIPT_HANDLES = array(
+		'gatherpress-query-controls' => 'gatherpress-query',
+	);
+
+	/**
 	 * An array used to cache data assets.
 	 *
 	 * This property stores data assets in an array for efficient access and management.
@@ -97,6 +118,8 @@ final class Assets {
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_variation_assets' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_aql_integration' ) );
 		add_action( 'init', array( $this, 'register_variation_assets' ) );
+		// After the variations, since each public handle is an alias of one.
+		add_action( 'init', array( $this, 'register_public_script_handles' ), 11 );
 		add_action( 'wp_head', array( $this, 'add_interactivity_state' ) );
 		// Set priority to 11 to not conflict with media modal.
 		add_action( 'admin_footer', array( $this, 'event_communication_modal' ), 11 );
@@ -240,17 +263,18 @@ final class Assets {
 	}
 
 	/**
-	 * Register the shared utility stylesheet and enqueue it in the block editor.
+	 * Register the shared utility stylesheet and the new-tab notice script,
+	 * and enqueue the stylesheet in the block editor.
 	 *
 	 * Hooked on `enqueue_block_assets`, which fires in two contexts with
 	 * different responsibilities:
 	 *
-	 * - Frontend: registers the `gatherpress-utility-style` handle so other
-	 *   code paths can enqueue it by name. The actual frontend enqueue is
-	 *   delegated to `maybe_enqueue_styles()` on the `render_block` filter,
-	 *   which only fires the enqueue when a `gatherpress/*` block is being
-	 *   rendered — so frontends that don't use a gatherpress block don't
-	 *   load the CSS.
+	 * - Frontend: registers the `gatherpress-utility-style` and
+	 *   `gatherpress-new-tab-notice` handles so other code paths can enqueue
+	 *   them by name. The actual frontend enqueue is delegated to
+	 *   `maybe_enqueue_styles()` on the `render_block` filter, which only
+	 *   fires the enqueue when a `gatherpress/*` block is being rendered — so
+	 *   frontends that don't use a gatherpress block load neither.
 	 *
 	 * - Block editor: also enqueues unconditionally so the stylesheet lands
 	 *   inside the editor canvas iframe. `enqueue_block_assets` is the
@@ -260,18 +284,29 @@ final class Assets {
 	 *   iframe incorrectly" warning in newer WordPress (issue #1645).
 	 *
 	 * @since 0.34.0
+	 * @since 0.36.0 Also registers the new-tab notice script.
 	 *
 	 * @return void
 	 */
 	public function register_block_assets(): void {
-		$asset = $this->get_asset_data( 'utility_style' );
+		$style  = $this->get_asset_data( 'utility_style' );
+		$script = $this->get_asset_data( 'new_tab_notice' );
 
 		wp_register_style(
 			'gatherpress-utility-style',
 			$this->build . 'utility_style.css',
-			$asset['dependencies'],
-			$asset['version']
+			$style['dependencies'],
+			$style['version']
 		);
+
+		wp_register_script(
+			'gatherpress-new-tab-notice',
+			$this->build . 'new_tab_notice.js',
+			$script['dependencies'],
+			$script['version'],
+			true
+		);
+		wp_set_script_translations( 'gatherpress-new-tab-notice', 'gatherpress' );
 
 		if ( is_admin() ) {
 			wp_enqueue_style( 'gatherpress-utility-style' );
@@ -281,7 +316,12 @@ final class Assets {
 	/**
 	 * Conditionally enqueue utility styles if GatherPress blocks are rendered.
 	 *
+	 * The new-tab notice script rides along: PHP announces the links it
+	 * renders, and the script covers links a block creates or retargets
+	 * afterwards, so no block has to handle this itself.
+	 *
 	 * @since 0.33.0
+	 * @since 0.36.0 Also enqueues the new-tab notice script.
 	 *
 	 * @param string               $block_content The block content.
 	 * @param array<string, mixed> $block         The block settings.
@@ -312,6 +352,7 @@ final class Assets {
 		foreach ( $prefixes as $prefix ) {
 			if ( str_starts_with( $block['blockName'], (string) $prefix ) ) {
 				wp_enqueue_style( 'gatherpress-utility-style' );
+				wp_enqueue_script( 'gatherpress-new-tab-notice' );
 				break;
 			}
 		}
@@ -522,7 +563,7 @@ final class Assets {
 	 * @return void
 	 */
 	public function event_communication_modal(): void {
-		if ( post_type_supports( (string) get_post_type(), 'gatherpress-event-date' ) ) {
+		if ( post_type_supports( (string) get_post_type(), Event::SUPPORT ) ) {
 			echo '<div id="gatherpress-event-communication-modal"></div>';
 		}
 	}
@@ -607,6 +648,25 @@ final class Assets {
 	public function register_variation_assets(): void {
 		foreach ( $this->get_block_variations() as $variation ) {
 			$this->register_asset( $variation, 'variations/core/' );
+		}
+	}
+
+	/**
+	 * Register the handles companion plugins depend on for public surfaces.
+	 *
+	 * Each is an alias with no source of its own, so depending on it pulls in
+	 * the script that publishes the surface. A publisher missing from the build
+	 * leaves its alias unregistered rather than pointing at nothing.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function register_public_script_handles(): void {
+		foreach ( self::PUBLIC_SCRIPT_HANDLES as $handle => $publisher ) {
+			if ( wp_script_is( $publisher, 'registered' ) ) {
+				wp_register_script( $handle, false, array( $publisher ), GATHERPRESS_VERSION, true );
+			}
 		}
 	}
 

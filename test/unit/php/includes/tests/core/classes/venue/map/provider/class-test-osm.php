@@ -13,6 +13,7 @@
 namespace GatherPress\Tests\Core\Venue\Map\Provider;
 
 use ErrorException;
+use GatherPress\Core\Settings;
 use GatherPress\Core\Venue\Map;
 use GatherPress\Core\Venue\Map\Provider\OSM;
 use GatherPress\Tests\Base;
@@ -692,5 +693,120 @@ class Test_OSM extends Base {
 			$provider->render( 40.7128, -74.0060, 12, 320, -1 ),
 			'A negative height is unrenderable.'
 		);
+	}
+
+	/**
+	 * The compositor's tile URL carries the CARTO key.
+	 *
+	 * Covers the call site rather than the helper, so dropping the wrapper
+	 * call is caught.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_tile_url_template
+	 *
+	 * @return void
+	 */
+	public function test_get_tile_url_template_carries_the_key(): void {
+		$settings = Settings::get_instance();
+
+		$settings->set( 'carto_api_key', 'abc123' );
+
+		$this->assertSame(
+			OSM::DEFAULT_TILE_URL . '?key=abc123',
+			Utility::invoke_hidden_method( new OSM(), 'get_tile_url_template' ),
+			'Failed to assert the compositor tile URL carries the key.'
+		);
+
+		$settings->set( 'carto_api_key', '' );
+	}
+
+	/**
+	 * The custom_map_tile_url setting (#1267) is used as the default, but a filter still wins.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_tile_url_template
+	 *
+	 * @return void
+	 */
+	public function test_get_tile_url_template_uses_custom_setting(): void {
+		$settings = Settings::get_instance();
+
+		$settings->set( 'custom_map_tile_url', 'https://custom.example.test/{z}/{x}/{y}.png' );
+
+		$this->assertSame(
+			'https://custom.example.test/{z}/{x}/{y}.png',
+			Utility::invoke_hidden_method( new OSM(), 'get_tile_url_template' ),
+			'Failed to assert the custom tile URL setting is used.'
+		);
+
+		add_filter(
+			'gatherpress_static_map_tile_url',
+			static function (): string {
+				return 'https://filtered.example.test/{z}/{x}/{y}.png';
+			}
+		);
+
+		$this->assertSame(
+			'https://filtered.example.test/{z}/{x}/{y}.png',
+			Utility::invoke_hidden_method( new OSM(), 'get_tile_url_template' ),
+			'Failed to assert the filter still overrides the custom tile URL setting.'
+		);
+
+		remove_all_filters( 'gatherpress_static_map_tile_url' );
+		$settings->set( 'custom_map_tile_url', '' );
+	}
+
+	/**
+	 * A custom tile URL's `{s}` placeholder resolves to a fixed subdomain.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_tile_url_template
+	 *
+	 * @return void
+	 */
+	public function test_get_tile_url_template_resolves_subdomain_placeholder(): void {
+		$settings = Settings::get_instance();
+
+		$settings->set( 'custom_map_tile_url', 'https://{s}.tile.example.test/{z}/{x}/{y}.png' );
+
+		$this->assertSame(
+			'https://a.tile.example.test/{z}/{x}/{y}.png',
+			Utility::invoke_hidden_method( new OSM(), 'get_tile_url_template' ),
+			'Failed to assert the {s} placeholder resolves to a fixed subdomain.'
+		);
+
+		$settings->set( 'custom_map_tile_url', '' );
+	}
+
+	/**
+	 * A custom tile URL is never keyed, even when it resolves to a CARTO host.
+	 *
+	 * The settings UI documents the CARTO key as "ignored when a custom tile
+	 * layer URL is set above" — that has to hold regardless of which host the
+	 * custom URL happens to point at.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::get_tile_url_template
+	 *
+	 * @return void
+	 */
+	public function test_get_tile_url_template_custom_setting_on_a_carto_host_is_not_keyed(): void {
+		$settings = Settings::get_instance();
+
+		$settings->set( 'carto_api_key', 'abc123' );
+		$settings->set( 'custom_map_tile_url', 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png' );
+
+		$this->assertSame(
+			'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+			Utility::invoke_hidden_method( new OSM(), 'get_tile_url_template' ),
+			'Failed to assert a custom URL on a CARTO host is left unkeyed.'
+		);
+
+		$settings->set( 'carto_api_key', '' );
+		$settings->set( 'custom_map_tile_url', '' );
 	}
 }

@@ -45,4 +45,4 @@ jobs:
         if: ${{ success() || failure() }}
         run: |
           vendor/bin/phpstan --version
-          vendor/bin/phpstan analyze -vv --memory-limit=2G --error-format=checkstyle | cs2pr
+          vendor/bin/phpstan analyze -vv --memory-limit=4G --error-format=checkstyle | cs2pr

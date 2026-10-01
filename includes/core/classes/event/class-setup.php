@@ -23,6 +23,7 @@ use GatherPress\Core\Settings;
 use GatherPress\Core\Starter_Pattern_Loader;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
+use GatherPress\Core\Venue;
 use stdClass;
 use WP_Block;
 use WP_Post;
@@ -143,7 +144,7 @@ final class Setup {
 		}
 
 		$settings['gatherpress']['config']['eventPostTypes'] = array_values(
-			get_post_types_by_support( 'gatherpress-event-date' )
+			get_post_types_by_support( Event::SUPPORT )
 		);
 
 		return $settings;
@@ -225,10 +226,10 @@ final class Setup {
 					'comments',
 					'revisions',
 					'custom-fields',
-					'gatherpress-event-date',
-					'gatherpress-rsvp',
-					'gatherpress-venue',
-					'gatherpress-online-event',
+					Event::SUPPORT,
+					Rsvp::SUPPORT,
+					Venue::ASSIGNMENT_SUPPORT,
+					Venue::ONLINE_SUPPORT,
 				),
 				'menu_icon'     => 'dashicons-nametag',
 				// Note: has_archive must be true for event feed URLs (/event/feed/) to work.
@@ -309,7 +310,7 @@ final class Setup {
 	 * @return void
 	 */
 	public function register_starter_pattern(): void {
-		$post_types = get_post_types_by_support( 'gatherpress-event-date' );
+		$post_types = get_post_types_by_support( Event::SUPPORT );
 
 		if ( empty( $post_types ) ) {
 			return;
@@ -412,7 +413,7 @@ final class Setup {
 		// event-date support.
 		if ( ! is_post_type_archive()
 			|| ! is_string( $post_type )
-			|| ! post_type_supports( $post_type, 'gatherpress-event-date' )
+			|| ! post_type_supports( $post_type, Event::SUPPORT )
 		) {
 			return;
 		}
@@ -604,7 +605,7 @@ final class Setup {
 	 * @return void
 	 */
 	public function check_waiting_list( int $post_id ): void {
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT ) ) {
 			return;
 		}
 
@@ -628,7 +629,7 @@ final class Setup {
 	public function delete_event( int $post_id ): void {
 		global $wpdb;
 
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), Event::SUPPORT ) ) {
 			return;
 		}
 
@@ -663,7 +664,7 @@ final class Setup {
 	 */
 	public function get_the_event_date( string $the_date, string $format = '', $post = null ): string {
 		$settings       = Settings::get_instance();
-		$use_event_date = $settings->get( 'post_or_event_date' );
+		$use_event_date = $settings->get( 'use_event_date_for_publish' );
 
 		// Determine the post type and ID from the post object or global context.
 		$post_type = $post instanceof WP_Post ? $post->post_type : get_post_type();
@@ -672,7 +673,7 @@ final class Setup {
 		// get_the_ID() returns false when there is no post in the loop to date.
 		if (
 			false === $post_id
-			|| ! post_type_supports( (string) $post_type, 'gatherpress-event-date' )
+			|| ! post_type_supports( (string) $post_type, Event::SUPPORT )
 			|| 1 !== intval( $use_event_date )
 		) {
 			return $the_date;
@@ -709,12 +710,12 @@ final class Setup {
 	 */
 	public function render_event_post_date_block( string $block_content, array $block, WP_Block $instance ): string {
 		$post_id        = $instance->context['postId'] ?? get_the_ID();
-		$use_event_date = Settings::get_instance()->get( 'post_or_event_date' );
+		$use_event_date = Settings::get_instance()->get( 'use_event_date_for_publish' );
 
 		// Bail when there's no post, when the post type doesn't carry event-date
 		// support, or when the "use event date" setting isn't enabled.
 		if ( ! $post_id
-			|| ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' )
+			|| ! post_type_supports( (string) get_post_type( $post_id ), Event::SUPPORT )
 			|| 1 !== intval( $use_event_date )
 		) {
 			return $block_content;
@@ -798,7 +799,7 @@ final class Setup {
 	 * @return void
 	 */
 	public function set_datetimes( int $post_id ): void {
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), Event::SUPPORT ) ) {
 			return;
 		}
 
@@ -867,7 +868,7 @@ final class Setup {
 		foreach ( array_keys( $pending ) as $post_id ) {
 			// The post can be gone by shutdown -- a duplicate that failed, or
 			// an insert rolled back after this hook ran.
-			if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
+			if ( ! post_type_supports( (string) get_post_type( $post_id ), Event::SUPPORT ) ) {
 				continue;
 			}
 

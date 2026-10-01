@@ -606,4 +606,33 @@ describe( 'getOptionUpdates', () => {
 		expect( original[ 0 ].label ).toBe( 'One' );
 		expect( original[ 0 ].value ).toBe( 'one' );
 	} );
+
+	it( 'leaves the value alone when the edited field is not the label', () => {
+		const updates = getOptionUpdates( {
+			options: [ { label: 'One', value: 'one', id: 'a' } ],
+			index: 0,
+			field: 'value',
+			value: 'typed-directly',
+			fieldValue: 'one',
+		} );
+
+		// Editing the value is the author saying what it should be, so nothing
+		// regenerates it from the label.
+		expect( updates.radioOptions[ 0 ].value ).toBe( 'typed-directly' );
+		expect( updates.radioOptions[ 0 ].label ).toBe( 'One' );
+	} );
+
+	it( 'keeps the raw label as the value when it has nothing to slug', () => {
+		const updates = getOptionUpdates( {
+			options: [ { label: 'One', value: 'one', id: 'a' } ],
+			index: 0,
+			field: 'label',
+			value: '!!!',
+			fieldValue: 'one',
+		} );
+
+		// Every character is stripped by the slug rules, and an option with an
+		// empty value could never be selected, so the label stands in for it.
+		expect( updates.radioOptions[ 0 ].value ).toBe( '!!!' );
+	} );
 } );

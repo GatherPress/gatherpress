@@ -57,6 +57,7 @@ export default function DefaultFieldPanels( { attributes, setAttributes } ) {
 					/>
 				) }
 				<RangeControl
+					__next40pxDefaultSize
 					label={ __( 'Field Width (%)', 'gatherpress' ) }
 					value={ fieldWidth }
 					onChange={ ( value ) => setAttributes( { fieldWidth: value } ) }
@@ -72,8 +73,8 @@ export default function DefaultFieldPanels( { attributes, setAttributes } ) {
 			<PanelBody title={ __( 'Label Styles', 'gatherpress' ) }>
 				<BaseControl>
 					<FontSizePicker
+						__next40pxDefaultSize
 						withReset={ true }
-						size="__unstable-large"
 						onChange={ ( value ) =>
 							setAttributes( { labelFontSize: value } )
 						}
@@ -81,6 +82,7 @@ export default function DefaultFieldPanels( { attributes, setAttributes } ) {
 					/>
 				</BaseControl>
 				<RangeControl
+					__next40pxDefaultSize
 					label={ __( 'Line Height', 'gatherpress' ) }
 					value={ labelLineHeight }
 					onChange={ ( value ) =>
@@ -95,8 +97,8 @@ export default function DefaultFieldPanels( { attributes, setAttributes } ) {
 			<PanelBody title={ __( 'Input Field Styles', 'gatherpress' ) }>
 				<BaseControl>
 					<FontSizePicker
+						__next40pxDefaultSize
 						withReset={ true }
-						size="__unstable-large"
 						onChange={ ( value ) =>
 							setAttributes( { inputFontSize: value } )
 						}
@@ -104,6 +106,7 @@ export default function DefaultFieldPanels( { attributes, setAttributes } ) {
 					/>
 				</BaseControl>
 				<RangeControl
+					__next40pxDefaultSize
 					label={ __( 'Line Height', 'gatherpress' ) }
 					value={ inputLineHeight }
 					onChange={ ( value ) =>
@@ -114,6 +117,7 @@ export default function DefaultFieldPanels( { attributes, setAttributes } ) {
 					step={ 0.1 }
 				/>
 				<RangeControl
+					__next40pxDefaultSize
 					label={ __( 'Padding (px)', 'gatherpress' ) }
 					value={ inputPadding }
 					onChange={ ( value ) => setAttributes( { inputPadding: value } ) }
@@ -122,6 +126,7 @@ export default function DefaultFieldPanels( { attributes, setAttributes } ) {
 				/>
 				{ 'textarea' === fieldType && (
 					<RangeControl
+						__next40pxDefaultSize
 						label={ __( 'Rows', 'gatherpress' ) }
 						value={ textareaRows }
 						onChange={ ( value ) =>
@@ -136,6 +141,7 @@ export default function DefaultFieldPanels( { attributes, setAttributes } ) {
 					/>
 				) }
 				<RangeControl
+					__next40pxDefaultSize
 					label={ __( 'Border Width (px)', 'gatherpress' ) }
 					value={ inputBorderWidth }
 					onChange={ ( value ) =>
@@ -145,6 +151,7 @@ export default function DefaultFieldPanels( { attributes, setAttributes } ) {
 					max={ 10 }
 				/>
 				<RangeControl
+					__next40pxDefaultSize
 					label={ __( 'Border Radius (px)', 'gatherpress' ) }
 					value={ inputBorderRadius }
 					onChange={ ( value ) =>

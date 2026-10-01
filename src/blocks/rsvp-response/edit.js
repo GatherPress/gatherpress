@@ -49,8 +49,8 @@ function templateToBlocks( template ) {
 		createBlock(
 			name,
 			attributes,
-			templateToBlocks( innerBlocks || [] )
-		)
+			templateToBlocks( innerBlocks || [] ),
+		),
 	);
 }
 
@@ -99,7 +99,7 @@ function templateToBlocks( template ) {
  */
 const DEFAULT_TEMPLATE = applyFilters(
 	'gatherpress.rsvpResponseDefaultTemplate',
-	ATTENDEE_GRID_WITH_FILTER_TEMPLATE
+	ATTENDEE_GRID_WITH_FILTER_TEMPLATE,
 );
 
 const PATTERNS = applyFilters( 'gatherpress.rsvpResponsePatterns', [
@@ -108,7 +108,7 @@ const PATTERNS = applyFilters( 'gatherpress.rsvpResponsePatterns', [
 		title: __( 'Attendee Grid with Filter', 'gatherpress' ),
 		description: __(
 			'A status filter (Attending / Waiting List / Not Attending) above a three-column grid of attendee avatars.',
-			'gatherpress'
+			'gatherpress',
 		),
 		template: ATTENDEE_GRID_WITH_FILTER_TEMPLATE,
 	},
@@ -180,7 +180,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 	// set) from suddenly seeing the picker.
 	const innerBlockCount = useSelect(
 		( select ) => select( blockEditorStore ).getBlocks( clientId ).length,
-		[ clientId ]
+		[ clientId ],
 	);
 	const showPatternPicker =
 		! patternPicked && 0 === innerBlockCount;
@@ -205,12 +205,12 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 			hasExplicitOverride,
 			isDescendentOfQueryLoop,
 			isEventContext,
-		]
+		],
 	);
 
 	const { enableRsvp } = useSelect(
 		( select ) => getEventMeta( select, postId, attributes ),
-		[ postId, attributes ]
+		[ postId, attributes ],
 	);
 
 	const rsvpMode = getFromSettings( 'rsvpMode' ) ?? 'enabled';
@@ -348,6 +348,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 						/>
 						{ rsvpLimitEnabled && (
 							<NumberControl
+								__next40pxDefaultSize
 								label={ __( 'RSVP Display Limit', 'gatherpress' ) }
 								value={ rsvpLimit }
 								onChange={ ( value ) =>
@@ -411,7 +412,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 						icon="groups"
 						instructions={ __(
 							'Choose a pattern for the RSVP response.',
-							'gatherpress'
+							'gatherpress',
 						) }
 						patterns={ PATTERNS }
 						showStartBlank={ false }

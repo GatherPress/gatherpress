@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Giving a Modal block a gradient background no longer causes a fatal error on save. The block's own styles were being read as a format string, so the `%` in a gradient stop crashed the render.

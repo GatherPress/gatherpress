@@ -40,7 +40,7 @@ export default function VenuePluginFill() {
 				venuePostType: currentVenuePostType,
 			};
 		},
-		[]
+		[],
 	);
 
 	// Read the singular label so the panel title reflects what the post type
@@ -50,7 +50,7 @@ export default function VenuePluginFill() {
 	const singularLabel = usePostTypeLabel(
 		'singular_name',
 		venuePostType,
-		__( 'Venue', 'gatherpress' )
+		__( 'Venue', 'gatherpress' ),
 	);
 
 	return (
@@ -60,7 +60,7 @@ export default function VenuePluginFill() {
 				title={ sprintf(
 					/* translators: %s: Singular post type label, e.g. "Venue". */
 					__( '%s settings', 'gatherpress' ),
-					singularLabel
+					singularLabel,
 				) }
 				className="gatherpress-venue-settings"
 			>

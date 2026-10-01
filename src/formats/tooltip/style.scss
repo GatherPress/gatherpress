@@ -18,6 +18,7 @@
 
 // CSS custom properties with theme-aware defaults.
 // Priority: 1) Inline styles 2) GatherPress theme vars 3) WP global styles 4) Fallback
+
 .gatherpress-tooltip {
 	--gatherpress-tooltip-text-color: var(
 		--gatherpress--tooltip--text-color,
@@ -36,7 +37,12 @@
 
 	position: relative;
 	border-bottom: 1px dotted currentcolor;
-	cursor: help;
+	cursor: pointer;
+	touch-action: manipulation;
+
+	@media (hover: hover) {
+		cursor: help;
+	}
 
 	// Tooltip bubble (using ::after for content).
 	&::before,
@@ -76,9 +82,17 @@
 		box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
 	}
 
-	// Show tooltip on hover/focus.
-	&:hover,
-	&:focus {
+
+	// Focus affordance for keyboard navigation.
+	&:focus-visible {
+		outline: 2px solid currentcolor;
+		outline-offset: 2px;
+	}
+
+	// Show tooltip on hover, focus, or active state (touch toggle), unless explicitly dismissed.
+	&:hover:not(.gatherpress-tooltip--is-dismissed),
+	&:focus:not(.gatherpress-tooltip--is-dismissed),
+	&.gatherpress-tooltip--is-active {
 		&::before,
 		&::after {
 			opacity: 1;

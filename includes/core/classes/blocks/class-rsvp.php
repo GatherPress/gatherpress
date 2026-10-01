@@ -105,7 +105,7 @@ final class Rsvp {
 
 		// Validate that the post type supports RSVP.
 		if (
-			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
+			! post_type_supports( (string) get_post_type( $post_id ), Core_Rsvp::SUPPORT ) ||
 			! Event::is_viewable( $post_id )
 		) {
 			return '';
@@ -364,7 +364,7 @@ final class Rsvp {
 
 		// Handle guest count field interactivity.
 		if ( 'gatherpress_rsvp_guests' === $field_name ) {
-			$max_guest_limit = get_post_meta( $post_id, 'gatherpress_max_guest_limit', true );
+			$guest_limit = get_post_meta( $post_id, 'gatherpress_guest_limit', true );
 
 			// Apply interactivity attributes and max limit for guest count.
 			$tag = new WP_HTML_Tag_Processor( $block_content );
@@ -376,7 +376,7 @@ final class Rsvp {
 					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 					$tag->set_attribute( 'data-wp-watch', 'callbacks.setGuestCount' );
 					$tag->set_attribute( 'data-wp-on--change', 'actions.updateGuestCount' );
-					$tag->set_attribute( 'max', (string) $max_guest_limit );
+					$tag->set_attribute( 'max', (string) $guest_limit );
 				}
 			}
 

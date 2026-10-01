@@ -62,6 +62,7 @@ class Test_Map extends Base {
 	 */
 	public function tearDown(): void {
 		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
+		wp_clear_scheduled_hook( Map::GENERATE_CRON_ACTION );
 
 		$dirs     = wp_get_upload_dir();
 		$base_dir = trailingslashit( $dirs['basedir'] ) . Map::UPLOADS_SUBDIR;
@@ -155,6 +156,12 @@ class Test_Map extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'apply_block_attribute_defaults' ),
 			),
+			array(
+				'type'     => 'action',
+				'name'     => Map::GENERATE_CRON_ACTION,
+				'priority' => 10,
+				'callback' => array( $instance, 'process_generate_job' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
@@ -172,11 +179,11 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
-		$settings->set( 'venue_map_default_render_mode', 'static' );
-		$settings->set( 'venue_map_default_zoom', 12 );
-		$settings->set( 'venue_map_default_height', 450 );
-		$settings->set( 'venue_map_default_scale', 'contain' );
-		$settings->set( 'venue_map_default_type', 'satellite' );
+		$settings->set( 'venue_map_render_mode', 'static' );
+		$settings->set( 'venue_map_zoom', 12 );
+		$settings->set( 'venue_map_height', 450 );
+		$settings->set( 'venue_map_scale', 'contain' );
+		$settings->set( 'venue_map_type', 'satellite' );
 
 		$metadata = array(
 			'name'       => 'gatherpress/venue-map',
@@ -218,6 +225,70 @@ class Test_Map extends Base {
 	}
 
 	/**
+	 * A valid aspect ratio from Settings becomes the block attribute default.
+	 *
+	 * @since   TBD
+	 * @covers ::apply_block_attribute_defaults
+	 *
+	 * @return void
+	 */
+	public function test_apply_block_attribute_defaults_uses_a_valid_aspect_ratio(): void {
+		$instance = Map::get_instance();
+
+		\GatherPress\Core\Settings::get_instance()->set( 'venue_map_aspect_ratio', '16/9' );
+
+		$metadata = array(
+			'name'       => 'gatherpress/venue-map',
+			'attributes' => array(
+				'aspectRatio' => array(
+					'type'    => 'string',
+					'default' => '4/3',
+				),
+			),
+		);
+
+		$result = $instance->apply_block_attribute_defaults( $metadata );
+
+		$this->assertSame(
+			'16/9',
+			$result['attributes']['aspectRatio']['default'],
+			'Failed to assert a valid aspect ratio reaches the block default.'
+		);
+	}
+
+	/**
+	 * An unparsable aspect ratio falls through to the block.json default.
+	 *
+	 * @since   TBD
+	 * @covers ::apply_block_attribute_defaults
+	 *
+	 * @return void
+	 */
+	public function test_apply_block_attribute_defaults_rejects_an_invalid_aspect_ratio(): void {
+		$instance = Map::get_instance();
+
+		\GatherPress\Core\Settings::get_instance()->set( 'venue_map_aspect_ratio', 'not-a-ratio' );
+
+		$metadata = array(
+			'name'       => 'gatherpress/venue-map',
+			'attributes' => array(
+				'aspectRatio' => array(
+					'type'    => 'string',
+					'default' => '4/3',
+				),
+			),
+		);
+
+		$result = $instance->apply_block_attribute_defaults( $metadata );
+
+		$this->assertSame(
+			'4/3',
+			$result['attributes']['aspectRatio']['default'],
+			'Failed to assert an unparsable ratio leaves the block default alone.'
+		);
+	}
+
+	/**
 	 * A scale value outside the allow-list falls through — the block.json
 	 * default stays in place. Guards against a stale or hand-edited Settings
 	 * row smuggling an unexpected CSS keyword into `object-fit`.
@@ -230,7 +301,7 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
-		$settings->set( 'venue_map_default_scale', 'none' );
+		$settings->set( 'venue_map_scale', 'none' );
 
 		$metadata = array(
 			'name'       => 'gatherpress/venue-map',
@@ -285,10 +356,10 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
-		$settings->set( 'venue_map_default_render_mode', '' );
-		$settings->set( 'venue_map_default_zoom', 0 );
-		$settings->set( 'venue_map_default_height', '' );
-		$settings->set( 'venue_map_default_type', '' );
+		$settings->set( 'venue_map_render_mode', '' );
+		$settings->set( 'venue_map_zoom', 0 );
+		$settings->set( 'venue_map_height', '' );
+		$settings->set( 'venue_map_type', '' );
 
 		$metadata = array(
 			'name'       => 'gatherpress/venue-map',
@@ -618,6 +689,250 @@ class Test_Map extends Base {
 				'Revisions should not receive a static map.'
 			);
 		}
+	}
+
+	/**
+	 * Defers to WP-Cron instead of rendering inline when the async filter
+	 * is enabled — no descriptor exists yet, but a job is scheduled.
+	 *
+	 * @covers ::maybe_generate
+	 * @covers ::should_generate_async
+	 * @covers ::schedule_combo_generation
+	 *
+	 * @return void
+	 */
+	public function test_maybe_generate_defers_to_cron_when_async_enabled(): void {
+		add_filter( 'gatherpress_static_map_generate_async', '__return_true' );
+
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop, Cupertino, CA' );
+		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
+		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
+
+		$instance->maybe_generate( $post_id );
+
+		remove_filter( 'gatherpress_static_map_generate_async', '__return_true' );
+
+		$this->assertNull(
+			$instance->get_stored_descriptor( $post_id ),
+			'No descriptor should be written inline when generation is deferred.'
+		);
+
+		$default = Utility::invoke_hidden_method(
+			$instance,
+			'resolve_dimensions',
+			array( 0, Map::DEFAULT_HEIGHT, Map::DEFAULT_ASPECT_RATIO )
+		);
+
+		$scheduled = wp_next_scheduled(
+			Map::GENERATE_CRON_ACTION,
+			array(
+				$post_id,
+				Map::DEFAULT_ZOOM,
+				$default['width'],
+				$default['height'],
+				'roadmap',
+			)
+		);
+
+		$this->assertNotFalse( $scheduled, 'A generate job should be scheduled for the default combo.' );
+	}
+
+	/**
+	 * A second save while a job is already scheduled for the same combo
+	 * should not queue a duplicate.
+	 *
+	 * @covers ::maybe_generate
+	 * @covers ::schedule_combo_generation
+	 *
+	 * @return void
+	 */
+	public function test_maybe_generate_async_dedupes_scheduled_jobs(): void {
+		add_filter( 'gatherpress_static_map_generate_async', '__return_true' );
+
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		update_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
+		update_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
+		update_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
+
+		$instance->maybe_generate( $post_id );
+		$default = Utility::invoke_hidden_method(
+			$instance,
+			'resolve_dimensions',
+			array( 0, Map::DEFAULT_HEIGHT, Map::DEFAULT_ASPECT_RATIO )
+		);
+		$args    = array( $post_id, Map::DEFAULT_ZOOM, $default['width'], $default['height'], 'roadmap' );
+		$first   = wp_next_scheduled( Map::GENERATE_CRON_ACTION, $args );
+
+		$instance->maybe_generate( $post_id );
+		$second = wp_next_scheduled( Map::GENERATE_CRON_ACTION, $args );
+
+		remove_filter( 'gatherpress_static_map_generate_async', '__return_true' );
+
+		$this->assertNotFalse( $first, 'Sanity: first save should schedule a job.' );
+		$this->assertSame( $first, $second, 'A second save should not queue a duplicate job.' );
+	}
+
+	/**
+	 * The pre-enqueue filter can short-circuit the default WP-Cron scheduling.
+	 *
+	 * @covers ::schedule_combo_generation
+	 *
+	 * @return void
+	 */
+	public function test_generate_pre_enqueue_job_filter_short_circuits_scheduling(): void {
+		add_filter( 'gatherpress_static_map_generate_async', '__return_true' );
+		add_filter(
+			'gatherpress_static_map_generate_pre_enqueue_job',
+			static function () {
+				return 'handled-elsewhere';
+			}
+		);
+
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		update_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
+		update_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
+		update_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
+
+		$instance->maybe_generate( $post_id );
+
+		remove_filter( 'gatherpress_static_map_generate_async', '__return_true' );
+		remove_all_filters( 'gatherpress_static_map_generate_pre_enqueue_job' );
+
+		$this->assertFalse(
+			(bool) wp_next_scheduled( Map::GENERATE_CRON_ACTION ),
+			'A non-null filter return should suppress the default wp_schedule_single_event() call.'
+		);
+	}
+
+	/**
+	 * The cron handler generates and stores the descriptor for its job.
+	 *
+	 * @covers ::process_generate_job
+	 *
+	 * @return void
+	 */
+	public function test_process_generate_job_writes_descriptor(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		update_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop, Cupertino, CA' );
+		update_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
+		update_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
+
+		$instance->process_generate_job( $post_id, 15, 800, 400, 'roadmap' );
+
+		$descriptor = $instance->get_all_descriptors( $post_id );
+
+		$this->assertNotEmpty( $descriptor['osm']['15x800x400xroadmap']['url'] ?? '' );
+	}
+
+	/**
+	 * The cron handler is a no-op when the venue's coordinates have become
+	 * un-geocodable between scheduling and the job running.
+	 *
+	 * @covers ::process_generate_job
+	 *
+	 * @return void
+	 */
+	public function test_process_generate_job_bails_without_coordinates(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		update_post_meta( $post_id, 'gatherpress_address', 'Nonexistent Place' );
+		update_post_meta( $post_id, 'gatherpress_latitude', '' );
+		update_post_meta( $post_id, 'gatherpress_longitude', '' );
+
+		$instance->process_generate_job( $post_id, 15, 800, 400, 'roadmap' );
+
+		$this->assertNull( $instance->get_stored_descriptor( $post_id ) );
+	}
+
+	/**
+	 * The cron handler is a no-op when the target post is no longer a
+	 * supported venue post type at run time.
+	 *
+	 * @covers ::process_generate_job
+	 *
+	 * @return void
+	 */
+	public function test_process_generate_job_bails_for_unsupported_post_type(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => 'post' ) );
+
+		$instance->process_generate_job( $post_id, 15, 800, 400, 'roadmap' );
+
+		$this->assertNull( $instance->get_stored_descriptor( $post_id ) );
+	}
+
+	/**
+	 * The cron handler is a no-op when the venue post no longer exists at
+	 * run time, so `get_post_status()` returns false.
+	 *
+	 * @covers ::process_generate_job
+	 *
+	 * @return void
+	 */
+	public function test_process_generate_job_bails_for_missing_post(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		update_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop, Cupertino, CA' );
+		update_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
+		update_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
+
+		wp_delete_post( $post_id, true );
+
+		$instance->process_generate_job( $post_id, 15, 800, 400, 'roadmap' );
+
+		// Asserting the whole map rather than get_stored_descriptor(), which
+		// only reads the active provider's default combo and would miss a
+		// regression that wrote the job's own (15, 800, 400) combo.
+		$this->assertSame(
+			array(),
+			$instance->get_all_descriptors( $post_id ),
+			'A deleted venue should not gain a descriptor under any provider.'
+		);
+	}
+
+	/**
+	 * The cron handler is a no-op when the venue has been trashed between
+	 * the scheduling save and the cron tick.
+	 *
+	 * @covers ::process_generate_job
+	 *
+	 * @return void
+	 */
+	public function test_process_generate_job_bails_for_trashed_post(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		update_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop, Cupertino, CA' );
+		update_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
+		update_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
+
+		wp_trash_post( $post_id );
+
+		// Setting the venue meta above already generated the default combo
+		// synchronously, so the map is not empty here. Snapshotting it keeps
+		// the assertion provider- and combo-agnostic: the handler must leave
+		// the stored state byte-for-byte unchanged.
+		$before = $instance->get_all_descriptors( $post_id );
+
+		$instance->process_generate_job( $post_id, 15, 800, 400, 'roadmap' );
+
+		$this->assertSame( 'trash', get_post_status( $post_id ), 'Sanity: the venue should be trashed.' );
+		$this->assertSame(
+			$before,
+			$instance->get_all_descriptors( $post_id ),
+			'A trashed venue should not gain a descriptor under any provider.'
+		);
 	}
 
 	/**
@@ -1484,14 +1799,14 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
-		$settings->set( 'venue_map_default_zoom', 13 );
+		$settings->set( 'venue_map_zoom', 13 );
 		$this->assertSame(
 			13,
 			Utility::invoke_hidden_method( $instance, 'get_zoom' ),
 			'Should prefer the stored Settings value.'
 		);
 
-		$settings->set( 'venue_map_default_zoom', 0 );
+		$settings->set( 'venue_map_zoom', 0 );
 		$this->assertSame(
 			Map::DEFAULT_ZOOM,
 			Utility::invoke_hidden_method( $instance, 'get_zoom' ),
@@ -1515,7 +1830,7 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
-		$settings->set( 'venue_map_default_zoom', 0 );
+		$settings->set( 'venue_map_zoom', 0 );
 		$too_high = static function () {
 			return 99;
 		};
@@ -1551,7 +1866,7 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
-		$settings->set( 'venue_map_default_height', 0 );
+		$settings->set( 'venue_map_height', 0 );
 		$too_big = static function () {
 			return 9999;
 		};
@@ -1576,14 +1891,14 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
-		$settings->set( 'venue_map_default_height', 450 );
+		$settings->set( 'venue_map_height', 450 );
 		$this->assertSame(
 			450,
 			Utility::invoke_hidden_method( $instance, 'get_height' ),
 			'Should prefer the stored Settings value.'
 		);
 
-		$settings->set( 'venue_map_default_height', 0 );
+		$settings->set( 'venue_map_height', 0 );
 		$this->assertSame(
 			Map::DEFAULT_HEIGHT,
 			Utility::invoke_hidden_method( $instance, 'get_height' ),
@@ -1635,7 +1950,7 @@ class Test_Map extends Base {
 		$this->assertSame( 'terrain', $instance->normalize_map_type( 'terrain' ) );
 		$this->assertSame( 'roadmap', $instance->normalize_map_type( 'bogus' ) );
 
-		$settings->set( 'venue_map_default_type', 'satellite' );
+		$settings->set( 'venue_map_type', 'satellite' );
 		$this->assertSame( 'satellite', $instance->normalize_map_type( '' ) );
 	}
 

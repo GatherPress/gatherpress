@@ -48,6 +48,29 @@ final class Query {
 	const EVENT_QUERY_PARAM = 'gatherpress_event_query';
 
 	/**
+	 * Query parameter name for filtering the admin list by event month.
+	 *
+	 * Holds a `YYYYMM` value, the same shape WordPress core's `m` parameter
+	 * uses for publish dates.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const EVENT_DATE_QUERY_PARAM = 'gatherpress_event_date';
+
+	/**
+	 * Query variable carrying a resolved event date window between hooks.
+	 *
+	 * Set on the query by `intercept_date_query()` during `pre_get_posts` and
+	 * read back by `adjust_event_date_window_sql()` on `posts_clauses`. Never
+	 * registered as a public query var, so it cannot arrive from a URL.
+	 *
+	 * @since TBD
+	 * @var string
+	 */
+	const EVENT_DATE_WINDOW_PARAM = 'gatherpress_event_date_window';
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -71,6 +94,15 @@ final class Query {
 		add_action( 'pre_get_posts', array( $this, 'prepare_event_query_before_execution' ) );
 		// Priority 9 to run before the upcoming/past adjustments at priority 10.
 		add_filter( 'posts_clauses', array( $this, 'adjust_admin_event_sorting' ), 9, 2 );
+		add_filter( 'posts_clauses', array( $this, 'adjust_event_date_window_sql' ), 10, 2 );
+
+		// Filter adjacent post queries to join and sort by event datetime.
+		add_filter( 'get_previous_post_join', array( $this, 'get_adjacent_post_join' ), 10, 5 );
+		add_filter( 'get_next_post_join', array( $this, 'get_adjacent_post_join' ), 10, 5 );
+		add_filter( 'get_previous_post_where', array( $this, 'get_adjacent_post_where' ), 10, 5 );
+		add_filter( 'get_next_post_where', array( $this, 'get_adjacent_post_where' ), 10, 5 );
+		add_filter( 'get_previous_post_sort', array( $this, 'get_adjacent_post_sort' ), 10, 3 );
+		add_filter( 'get_next_post_sort', array( $this, 'get_adjacent_post_sort' ), 10, 3 );
 	}
 
 	/**
@@ -130,7 +162,7 @@ final class Query {
 		$order = ( 'past' === $event_list_type ) ? 'DESC' : 'ASC';
 
 		$args = array(
-			'post_type'             => get_post_types_by_support( 'gatherpress-event-date' ),
+			'post_type'             => get_post_types_by_support( Event::SUPPORT ),
 			'fields'                => 'ids',
 			'no_found_rows'         => true,
 			'posts_per_page'        => $number,
@@ -213,7 +245,7 @@ final class Query {
 						$page_id      = $query->queried_object_id;
 						$events_query = $key;
 
-						$query->set( 'post_type', get_post_types_by_support( 'gatherpress-event-date' ) );
+						$query->set( 'post_type', get_post_types_by_support( Event::SUPPORT ) );
 						$query->set( self::EVENT_QUERY_PARAM, $key );
 						$query->is_page              = false;
 						$query->is_singular          = false;
@@ -274,6 +306,8 @@ final class Query {
 				$query->set( 'tax_query', $existing_tax_query );
 			}
 		}
+
+		$this->intercept_date_query( $query );
 
 		switch ( $events_query ) {
 			case 'upcoming':
@@ -380,7 +414,7 @@ final class Query {
 		if (
 			! $current_screen ||
 			'edit' !== $current_screen->base ||
-			! post_type_supports( $current_screen->post_type, 'gatherpress-event-date' ) ||
+			! post_type_supports( $current_screen->post_type, Event::SUPPORT ) ||
 			$wp_query->get( 'post_type' ) !== $current_screen->post_type
 		) {
 			return $query_pieces;
@@ -390,8 +424,11 @@ final class Query {
 		remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_upcoming_events' ) );
 
 		// Admin event list views can be filtered by 'upcoming', 'past' or 'all' events.
-		$gatherpress_events_query = ( ! empty( $wp_query->get( self::EVENT_QUERY_PARAM ) ) )
-			? $wp_query->get( self::EVENT_QUERY_PARAM )
+		// Public query vars keep whatever shape the request gave them, arrays
+		// included, so both parameters are read back as scalars or not at all.
+		$gatherpress_events_view  = $wp_query->get( self::EVENT_QUERY_PARAM );
+		$gatherpress_events_query = is_scalar( $gatherpress_events_view ) && ! empty( $gatherpress_events_view )
+			? (string) $gatherpress_events_view
 			: 'all';
 
 		// Upcoming is inclusive (running events count as upcoming);
@@ -405,6 +442,64 @@ final class Query {
 			$wp_query->get( 'order' ),
 			$wp_query->get( 'orderby' ),
 			$inclusive
+		);
+
+		$gatherpress_event_month = $wp_query->get( self::EVENT_DATE_QUERY_PARAM );
+
+		return $this->adjust_event_month_sql(
+			$query_pieces,
+			is_scalar( $gatherpress_event_month ) ? (string) $gatherpress_event_month : ''
+		);
+	}
+
+	/**
+	 * Narrow the admin event list to a single month of event dates.
+	 *
+	 * The companion to WordPress core's `m` parameter, which buckets the same
+	 * list by publish date. `$month` takes core's `YYYYMM` shape; any other
+	 * value leaves the clauses untouched, so a hand-edited URL degrades to an
+	 * unfiltered list rather than an empty one.
+	 *
+	 * An event belongs to a month when it overlaps it, so one running from
+	 * May 30 to June 2 answers to both. Filtering on the start alone would
+	 * hide a running event from the month it is actually happening in.
+	 *
+	 * Compares the local columns rather than their `_gmt` counterparts so an
+	 * event falls in the month the list table displays for it, which is
+	 * rendered in the event's own timezone. Events with no row in the events
+	 * table have no dates to overlap with and drop out of every month.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, string> $query_pieces An array containing pieces of the SQL query.
+	 * @param string                $month        Month to filter by, as `YYYYMM`.
+	 *
+	 * @return array<string, string> The query pieces, with the month condition appended when $month is valid.
+	 */
+	protected function adjust_event_month_sql( array $query_pieces, string $month ): array {
+		global $wpdb;
+
+		if ( 1 !== preg_match( '/^(\d{4})(0[1-9]|1[0-2])$/', $month, $matches ) ) {
+			return $query_pieces;
+		}
+
+		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$year  = (int) $matches[1];
+		$month = (int) $matches[2];
+
+		// `t` resolves to the last day of the month, so the window closes on
+		// the final second rather than opening the next month's first.
+		$opens  = sprintf( '%04d-%02d-01 00:00:00', $year, $month );
+		$closes = gmdate( 'Y-m-t 23:59:59', (int) gmmktime( 0, 0, 0, $month, 1, $year ) );
+
+		$query_pieces['where'] .= $wpdb->prepare(
+			' AND %i.%i <= %s AND %i.%i >= %s',
+			$table,
+			'datetime_start',
+			$closes,
+			$table,
+			'datetime_end',
+			$opens
 		);
 
 		return $query_pieces;
@@ -472,9 +567,8 @@ final class Query {
 		 */
 		$posts_table = esc_sql( $wpdb->posts );
 
-		$pieces['join'] .= ' LEFT JOIN ' . $events_table . ' ON ' . $posts_table . '.ID='
-						. $events_table . '.post_id';
-		$order           = strtoupper( $order );
+		$pieces = $this->ensure_events_join( $pieces );
+		$order  = strtoupper( $order );
 
 		if ( in_array( $order, array( 'DESC', 'ASC' ), true ) ) {
 			// ORDERBY is an array, which allows to orderby multiple values.
@@ -528,6 +622,160 @@ final class Query {
 	}
 
 	/**
+	 * Join the events table onto a query once.
+	 *
+	 * Both the upcoming/past handlers and the date window handler need the
+	 * join, and either may run without the other, so each asks for it here
+	 * rather than appending its own and doubling the alias when both run.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, string> $pieces An array of query pieces, including join, where, orderby, and more.
+	 *
+	 * @return array<string, string> The pieces, with the events table joined.
+	 */
+	private function ensure_events_join( array $pieces ): array {
+		global $wpdb;
+
+		/**
+		 * Escaped events table name.
+		 *
+		 * @var string $events_table esc_sql() only returns an array when it is handed one.
+		 */
+		$events_table = esc_sql( sprintf( Event::TABLE_FORMAT, $wpdb->prefix ) );
+
+		/**
+		 * Escaped posts table name.
+		 *
+		 * @var string $posts_table esc_sql() only returns an array when it is handed one.
+		 */
+		$posts_table = esc_sql( $wpdb->posts );
+		$join        = (string) ( $pieces['join'] ?? '' );
+
+		if ( ! str_contains( $join, $events_table ) ) {
+			$join .= ' LEFT JOIN ' . $events_table . ' ON ' . $posts_table . '.ID=' . $events_table . '.post_id';
+		}
+
+		$pieces['join'] = $join;
+
+		return $pieces;
+	}
+
+	/**
+	 * Point a `date_query` at event dates rather than publish dates.
+	 *
+	 * WordPress reads `date_query` against `post_date`, which for an event is
+	 * the day its post was written. For a query made up entirely of event post
+	 * types the argument is lifted out here, before core turns it into SQL,
+	 * resolved into a window by `Date_Query`, and carried to `posts_clauses`
+	 * under `EVENT_DATE_WINDOW_PARAM`, where it is compared against the events
+	 * table instead.
+	 *
+	 * Three things are left for core to handle the way it always has: a clause
+	 * naming a core column such as `post_date`, which is how to keep filtering
+	 * an event query by publish date; a clause `Date_Query` cannot read; and a
+	 * query mixing event and non-event post types, whose non-event rows have no
+	 * event dates and would silently drop out.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_Query $query The query being prepared.
+	 *
+	 * @return void
+	 */
+	private function intercept_date_query( WP_Query $query ): void {
+		$date_query = $query->get( 'date_query' );
+
+		if ( empty( $date_query ) || ! is_array( $date_query ) || ! $this->queries_event_post_types_only( $query ) ) {
+			return;
+		}
+
+		$window = Date_Query::resolve( $date_query );
+
+		if ( null === $window ) {
+			return;
+		}
+
+		$query->set( self::EVENT_DATE_WINDOW_PARAM, $window );
+		$query->set( 'date_query', array() );
+	}
+
+	/**
+	 * Whether every post type a query asks for carries event dates.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_Query $query The query to inspect.
+	 *
+	 * @return bool True when the query is made up of event post types alone.
+	 */
+	private function queries_event_post_types_only( WP_Query $query ): bool {
+		$post_types = array_filter( (array) $query->get( 'post_type' ) );
+
+		if ( empty( $post_types ) ) {
+			return false;
+		}
+
+		foreach ( $post_types as $post_type ) {
+			if ( ! is_string( $post_type ) || ! post_type_supports( $post_type, Event::SUPPORT ) ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Narrow a query to events touching the window a `date_query` resolved to.
+	 *
+	 * An event belongs to the window when it overlaps it: its start falls
+	 * before the window closes and its end falls after the window opens. An
+	 * open-ended window drops the bound it lacks. Compares the GMT pair or the
+	 * local pair according to the column the window was resolved for.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, string> $query_pieces An array containing pieces of the SQL query.
+	 * @param WP_Query              $query        The WP_Query instance (passed by reference).
+	 *
+	 * @return array<string, string> The query pieces, narrowed when the query carries a window.
+	 */
+	public function adjust_event_date_window_sql( array $query_pieces, WP_Query $query ): array {
+		global $wpdb;
+
+		$window = $query->get( self::EVENT_DATE_WINDOW_PARAM );
+
+		if ( empty( $window ) || ! is_array( $window ) || empty( $window['column'] ) ) {
+			return $query_pieces;
+		}
+
+		$query_pieces = $this->ensure_events_join( $query_pieces );
+		$table        = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$start_column = (string) $window['column'];
+		$end_column   = str_replace( 'datetime_start', 'datetime_end', $start_column );
+
+		if ( ! empty( $window['end'] ) ) {
+			$query_pieces['where'] .= $wpdb->prepare(
+				' AND %i.%i <= %s',
+				$table,
+				$start_column,
+				$window['end']
+			);
+		}
+
+		if ( ! empty( $window['start'] ) ) {
+			$query_pieces['where'] .= $wpdb->prepare(
+				' AND %i.%i >= %s',
+				$table,
+				$end_column,
+				$window['start']
+			);
+		}
+
+		return $query_pieces;
+	}
+
+	/**
 	 * Builds a WP_Query compatible tax_query array for filtering events by venue slugs.
 	 *
 	 * Creates an OR relation across all registered venue post type taxonomies, allowing
@@ -544,7 +792,7 @@ final class Query {
 	private function build_venue_tax_query( array $venues ): array {
 		$venue_tax_query = array( 'relation' => 'OR' );
 
-		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $venue_post_type ) {
+		foreach ( get_post_types_by_support( Venue::SUPPORT ) as $venue_post_type ) {
 			$venue_tax_query[] = array(
 				'taxonomy' => Setup::get_instance()->get_taxonomy( $venue_post_type ),
 				'field'    => 'slug',
@@ -580,5 +828,159 @@ final class Query {
 		// - Upcoming events, without running events.
 		// - Past events, that are still running.
 		return 'datetime_start_gmt';
+	}
+
+	/**
+	 * Join the GatherPress events table for adjacent post queries.
+	 *
+	 * This method modifies the SQL JOIN clause for adjacent post queries (previous and next)
+	 * to include the GatherPress events table.
+	 *
+	 * @see https://developer.wordpress.org/reference/hooks/get_adjacent_post_join/
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string       $join           The JOIN clause in the SQL.
+	 * @param bool         $in_same_term   Whether post should be in the same taxonomy term
+	 *                                     (unused; part of the hook signature).
+	 * @param int[]|string $excluded_terms Array of excluded term IDs. Empty string if none were provided
+	 *                                     (unused; part of the hook signature).
+	 * @param string       $taxonomy       Taxonomy. Used to identify the term used when `$in_same_term` is true
+	 *                                     (unused; part of the hook signature).
+	 * @param WP_Post      $post           The current post object.
+	 *
+	 * @return string The modified JOIN clause for adjacent post queries.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Required by WP's get_{$adjacent}_post_join hook signature.
+	 */
+	public function get_adjacent_post_join(
+		string $join,
+		bool $in_same_term,
+		array|string $excluded_terms,
+		string $taxonomy,
+		WP_Post $post
+	): string {
+		if ( ! $this->follows_event_datetime( $post ) ) {
+			return $join;
+		}
+
+		global $wpdb;
+		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+
+		return $join . $wpdb->prepare( ' INNER JOIN %i AS gpe ON p.ID = gpe.post_id', $table );
+	}
+
+	/**
+	 * Modify the WHERE clause to compare by event datetime instead of post_date for adjacent post queries.
+	 *
+	 * This method modifies the SQL WHERE clause for adjacent post queries (previous and next)
+	 * to compare by event datetime instead of the default post_date.
+	 *
+	 * @see https://developer.wordpress.org/reference/hooks/get_adjacent_post_where/
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string       $where          The WHERE clause in the SQL.
+	 * @param bool         $in_same_term   Whether post should be in the same taxonomy term
+	 *                                     (unused; part of the hook signature).
+	 * @param int[]|string $excluded_terms Array of excluded term IDs. Empty string if none were provided
+	 *                                     (unused; part of the hook signature).
+	 * @param string       $taxonomy       Taxonomy. Used to identify the term used when `$in_same_term` is true
+	 *                                     (unused; part of the hook signature).
+	 * @param WP_Post      $post           The current post object.
+	 *
+	 * @return string The modified WHERE clause for adjacent post queries.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Required by WP's get_{$adjacent}_post_where hook signature.
+	 */
+	public function get_adjacent_post_where(
+		string $where,
+		bool $in_same_term,
+		array|string $excluded_terms,
+		string $taxonomy,
+		WP_Post $post
+	): string {
+		if ( ! $this->follows_event_datetime( $post ) ) {
+			return $where;
+		}
+
+		global $wpdb;
+		// One event is read through its own API; the candidates come from
+		// the joined events table.
+		$current = ( new Event( $post->ID ) )->get_datetime()['datetime_start_gmt'];
+
+		// Core compares the publish date and, since 6.9, breaks a tie on ID.
+		// Swap the date for the event start and keep the tiebreak, so events
+		// that start at the same moment can still reach each other.
+		if ( 'get_previous_post_where' === current_filter() ) {
+			$comparison = $wpdb->prepare(
+				'(gpe.datetime_start_gmt < %s OR (gpe.datetime_start_gmt = %s AND p.ID < %d))',
+				$current,
+				$current,
+				$post->ID
+			);
+		} else {
+			$comparison = $wpdb->prepare(
+				'(gpe.datetime_start_gmt > %s OR (gpe.datetime_start_gmt = %s AND p.ID > %d))',
+				$current,
+				$current,
+				$post->ID
+			);
+		}
+
+		return (string) preg_replace(
+			"/\(p\.post_date\s*[<>]\s*'[^']*' OR \(p\.post_date\s*=\s*'[^']*' AND p\.ID\s*[<>]\s*\d+\)\)/",
+			$comparison,
+			$where,
+			1
+		);
+	}
+
+	/**
+	 * Whether an adjacent-post query for this post follows the event start.
+	 *
+	 * All three adjacent-post filters read this, so they switch together. A
+	 * post with no event start yet, such as one on a post type that gained
+	 * event support after it already had posts, keeps core's publish-date
+	 * navigation throughout, rather than joining and sorting on a column its
+	 * WHERE clause never compares.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param WP_Post $post The post being navigated from.
+	 *
+	 * @return bool Whether to join, compare, and sort by the event start.
+	 */
+	protected function follows_event_datetime( WP_Post $post ): bool {
+		return post_type_supports( $post->post_type, Event::SUPPORT )
+			&& '' !== ( new Event( $post->ID ) )->get_datetime()['datetime_start_gmt'];
+	}
+
+	/**
+	 * Modify the ORDER BY clause to sort by event datetime for adjacent post queries.
+	 *
+	 * This method modifies the SQL ORDER BY clause for adjacent post queries (previous and next)
+	 * to sort by event datetime instead of the default post_date.
+	 *
+	 * @see https://developer.wordpress.org/reference/hooks/get_adjacent_post_sort/
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string  $sort  The ORDER BY clause in the SQL.
+	 * @param WP_Post $post  The current post object.
+	 * @param string  $order Sort order. 'DESC' for previous post, 'ASC' for next.
+	 *
+	 * @return string The modified ORDER BY clause for adjacent post queries.
+	 */
+	public function get_adjacent_post_sort( string $sort, WP_Post $post, string $order ): string {
+		if ( ! $this->follows_event_datetime( $post ) ) {
+			return $sort;
+		}
+
+		// Core hands over 'DESC' for previous and 'ASC' for next. A keyword
+		// has no prepare() placeholder, so it is allowed through by name.
+		$order = 'ASC' === strtoupper( $order ) ? 'ASC' : 'DESC';
+
+		return "ORDER BY gpe.datetime_start_gmt {$order}, p.ID {$order} LIMIT 1";
 	}
 }

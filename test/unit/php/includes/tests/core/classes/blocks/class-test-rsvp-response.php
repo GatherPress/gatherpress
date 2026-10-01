@@ -13,6 +13,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
+use WP_HTML_Tag_Processor;
 
 /**
  * Class Test_Rsvp_Response.
@@ -287,7 +288,9 @@ class Test_Rsvp_Response extends Base {
 	}
 
 	/**
-	 * Tests trigger text with attendee count.
+	 * Tests trigger text with attendee count, when the block has no dropdown menu.
+	 *
+	 * The trigger updates must not depend on a menu being present.
 	 *
 	 * @since 0.33.0
 	 * @covers ::attach_dropdown_interactivity
@@ -296,22 +299,20 @@ class Test_Rsvp_Response extends Base {
 	 */
 	public function test_attach_dropdown_interactivity_trigger(): void {
 		$instance      = Rsvp_Response::get_instance();
-		$block_content = sprintf(
-			'<div data-counts="%s"><a class="wp-block-gatherpress-dropdown__trigger">%d Attending</a></div>',
-			wp_json_encode( array( 'attending' => 5 ) ),
-			5
-		);
+		$counts        = esc_attr( (string) wp_json_encode( array( 'attending' => 5 ) ) );
+		$block_content = '<div data-counts="' . $counts . '">' .
+			'<a class="wp-block-gatherpress-dropdown__trigger">%d Attending</a></div>';
 		$result        = $instance->attach_dropdown_interactivity( $block_content );
 
 		$this->assertStringContainsString(
-			'{"attending":5}',
-			$result,
-			'Trigger should show correct attendee data'
-		);
-		$this->assertStringContainsString(
 			'5 Attending',
 			$result,
-			'Trigger should show correct attendee count'
+			'Trigger should show the attending count in place of %d.'
+		);
+		$this->assertStringContainsString(
+			'gatherpress--is-disabled',
+			$result,
+			'Trigger should be disabled until the block hydrates.'
 		);
 	}
 
@@ -370,6 +371,79 @@ class Test_Rsvp_Response extends Base {
 	}
 
 	/**
+	 * Data provider for trigger labels and the text they render.
+	 *
+	 * @since TBD
+	 *
+	 * @return array<string, array<int, mixed>>
+	 */
+	public function data_trigger_labels(): array {
+		return array(
+			'the count replaces %d'           => array( 'Attending (%d)', 3, 'Attending (3)' ),
+			'a stray percent is left alone'   => array(
+				'Attending (%d), 100% full',
+				3,
+				'Attending (3), 100% full',
+			),
+			'a label with no %d is unchanged' => array( '50% of seats taken', 3, '50% of seats taken' ),
+			'only the first %d is replaced'   => array( '%d of %d', 3, '3 of %d' ),
+			'a missing count renders as zero' => array( 'Attending (%d)', null, 'Attending (0)' ),
+		);
+	}
+
+	/**
+	 * Tests the trigger label's `%d` is replaced without reading it as a format string.
+	 *
+	 * The label is editable, so it can hold a `%` that `sprintf()` would
+	 * reject as an unknown specifier and fatal the render (#2333).
+	 *
+	 * @since TBD
+	 * @covers ::attach_dropdown_interactivity
+	 *
+	 * @dataProvider data_trigger_labels
+	 *
+	 * @param string   $label    The trigger label as saved in the block.
+	 * @param int|null $count    The attending count, or null for no counts attribute.
+	 * @param string   $expected The label the trigger should render.
+	 *
+	 * @return void
+	 */
+	public function test_attach_dropdown_interactivity_trigger_label(
+		string $label,
+		?int $count,
+		string $expected
+	): void {
+		$counts = '';
+
+		if ( null !== $count ) {
+			$counts = sprintf(
+				' data-counts="%s"',
+				esc_attr( (string) wp_json_encode( array( 'attending' => $count ) ) )
+			);
+		}
+
+		// Real RSVP Response markup always includes the dropdown menu.
+		$result = Rsvp_Response::get_instance()->attach_dropdown_interactivity(
+			sprintf(
+				'<div%s><a class="wp-block-gatherpress-dropdown__trigger">%s</a>' .
+				'<div class="wp-block-gatherpress-dropdown__menu"></div></div>',
+				$counts,
+				esc_html( $label )
+			)
+		);
+		$tag    = new WP_HTML_Tag_Processor( $result );
+
+		$tag->next_tag( array( 'tag_name' => 'a' ) );
+		$tag->next_token();
+
+		$this->assertSame(
+			$expected,
+			$tag->get_modifiable_text(),
+			'The trigger should render the label with the count swapped in.'
+		);
+	}
+
+	/**
 	 * Tests with missing data counts.
 	 *
 	 * @since 0.33.0
@@ -379,7 +453,7 @@ class Test_Rsvp_Response extends Base {
 	 */
 	public function test_attach_dropdown_interactivity_no_counts(): void {
 		$instance      = Rsvp_Response::get_instance();
-		$block_content = '<div><a class="wp-block-gatherpress-dropdown__trigger">0 Attending</a></div>';
+		$block_content = '<div><a class="wp-block-gatherpress-dropdown__trigger">%d Attending</a></div>';
 		$result        = $instance->attach_dropdown_interactivity( $block_content );
 
 		$this->assertStringContainsString(

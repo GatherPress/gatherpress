@@ -20,7 +20,7 @@ Go to `Settings > Privacy > Policy Guide` to find a new '*GatherPress*' dropdown
 
 GatherPress can [email members about event updates](./emails.md). Out of the box, every user is treated as **opted in** to these emails until they uncheck "*Yes, I want to receive updates and information about events from the organizers.*" in the **Notifications** section of their user profile.
 
-The GDPR — the European Union's privacy regulation, known in Germany as the DSGVO — requires affirmative consent for this kind of communication. An opt-out default generally does not qualify, so if your site operates under the GDPR or a similar privacy law, you should flip the default so users are **opted out** until they actively opt in:
+The GDPR (the European Union's privacy regulation, known in Germany as the DSGVO) requires affirmative consent for this kind of communication. An opt-out default generally does not qualify, so if your site operates under the GDPR or a similar privacy law, you should flip the default so users are **opted out** until they actively opt in:
 
 ```php
 add_filter( 'gatherpress_event_updates_default_opt_in', static function () {
@@ -30,7 +30,7 @@ add_filter( 'gatherpress_event_updates_default_opt_in', static function () {
 
 Drop the snippet into a must-use plugin, a site-specific plugin, or your theme's `functions.php`.
 
-The filter only controls the default for users who have never touched the setting — anyone who has explicitly saved a preference in their profile keeps it. See the [`gatherpress_event_updates_default_opt_in`](../developer/hooks/gatherpress_event_updates_default_opt_in.md) hook reference for details.
+The filter only controls the default for users who have never touched the setting. Anyone who has explicitly saved a preference in their profile keeps it. See the [`gatherpress_event_updates_default_opt_in`](../developer/hooks/gatherpress_event_updates_default_opt_in.md) hook reference for details.
 
 ## Redacting RSVP IP addresses and user agents
 
@@ -46,7 +46,7 @@ add_filter( 'pre_comment_user_agent', static function () {
 } );
 ```
 
-Drop the snippet into a must-use plugin, a site-specific plugin, or your theme's `functions.php`. It applies to all RSVP paths — form submissions, REST/AJAX submissions, and waiting-list promotions.
+Drop the snippet into a must-use plugin, a site-specific plugin, or your theme's `functions.php`. It applies to all RSVP paths: form submissions, REST/AJAX submissions, and waiting-list promotions.
 
 The same mechanism exposes the rest of WordPress's comment-data filters to RSVPs, should you want to sanitize or override them:
 

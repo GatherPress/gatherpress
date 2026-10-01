@@ -29,6 +29,7 @@ namespace GatherPress\Core\Venue\Map;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Venue;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
 use WP_Post;
 
@@ -231,9 +232,9 @@ final class Prewarm {
 
 		if ( in_array( $post->post_type, array( 'wp_template', 'wp_template_part' ), true ) ) {
 			$this->enqueue_for_all_venues( $this->collect_combos_from_content( $post->post_content ) );
-		} elseif ( post_type_supports( $post->post_type, 'gatherpress-venue-information' ) ) {
+		} elseif ( post_type_supports( $post->post_type, Venue::SUPPORT ) ) {
 			$this->enqueue_for_venue( $post_id );
-		} elseif ( post_type_supports( $post->post_type, 'gatherpress-venue' ) ) {
+		} elseif ( post_type_supports( $post->post_type, Venue::ASSIGNMENT_SUPPORT ) ) {
 			// Event post types (or any post type that carries venue-map inside
 			// a gatherpress/venue parent). Collect combos from the post's own
 			// content, but enqueue those combos against the associated venue,
@@ -310,7 +311,7 @@ final class Prewarm {
 			return;
 		}
 
-		$types = get_post_types_by_support( 'gatherpress-venue-information' );
+		$types = get_post_types_by_support( Venue::SUPPORT );
 		if ( empty( $types ) ) {
 			return;
 		}
@@ -436,7 +437,7 @@ final class Prewarm {
 	 */
 	protected function collect_all_template_combos(): array {
 		$combos               = $this->collect_combos_from_block_templates();
-		$venue_carrying_types = get_post_types_by_support( 'gatherpress-venue' );
+		$venue_carrying_types = get_post_types_by_support( Venue::ASSIGNMENT_SUPPORT );
 
 		if ( ! empty( $venue_carrying_types ) ) {
 			$combos = array_merge( $combos, $this->collect_combos_from_venue_posts( $venue_carrying_types ) );
@@ -652,7 +653,7 @@ final class Prewarm {
 	 * @return int[]
 	 */
 	protected function get_venue_post_ids(): array {
-		$types = get_post_types_by_support( 'gatherpress-venue-information' );
+		$types = get_post_types_by_support( Venue::SUPPORT );
 		if ( empty( $types ) ) {
 			return array();
 		}

@@ -23,7 +23,9 @@ namespace GatherPress\Core\Calendar;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Venue;
 
 /**
  * Caching for the iCalendar responses.
@@ -301,7 +303,7 @@ final class Cache {
 	 * @return bool True for event-bearing and venue post types.
 	 */
 	private function is_calendar_post_type( string $post_type ): bool {
-		return post_type_supports( $post_type, 'gatherpress-event-date' )
-			|| post_type_supports( $post_type, 'gatherpress-venue-information' );
+		return post_type_supports( $post_type, Event::SUPPORT )
+			|| post_type_supports( $post_type, Venue::SUPPORT );
 	}
 }

@@ -145,6 +145,7 @@ const VenueInformation = () => {
 				} }
 			/>
 			<TextControl
+				__next40pxDefaultSize
 				label={ __( 'Phone Number', 'gatherpress' ) }
 				value={ phone }
 				onChange={ ( value ) => {
@@ -152,6 +153,7 @@ const VenueInformation = () => {
 				} }
 			/>
 			<TextControl
+				__next40pxDefaultSize
 				label={ __( 'Website', 'gatherpress' ) }
 				value={ website }
 				type="url"

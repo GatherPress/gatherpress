@@ -217,7 +217,7 @@ class Test_Prewarm extends Base {
 	 * used instead of casting the array and emitting a PHP "Array to
 	 * string conversion" warning.
 	 *
-	 * @since 0.36.0
+	 * @since 0.35.4
 	 *
 	 * @covers ::extract_block_combo
 	 *

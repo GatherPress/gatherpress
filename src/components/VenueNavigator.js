@@ -30,7 +30,7 @@ export default function VenueNavigator( props = null ) {
 		( select ) =>
 			props?.context?.postType ||
 			select( 'core/editor' )?.getCurrentPostType(),
-		[ props?.context?.postType ]
+		[ props?.context?.postType ],
 	);
 	const venuePostType = getVenuePostType( currentPostType );
 	const venueTaxonomy = getVenueTaxonomy( venuePostType );
@@ -42,7 +42,7 @@ export default function VenueNavigator( props = null ) {
 	const addNewItemLabel = usePostTypeLabel(
 		'add_new_item',
 		venuePostType,
-		__( 'Add New Venue', 'gatherpress' )
+		__( 'Add New Venue', 'gatherpress' ),
 	);
 
 	/**
@@ -73,7 +73,7 @@ export default function VenueNavigator( props = null ) {
 
 	const updateVenueTaxonomyIds = useCallback(
 		( newIds ) => editPost( { [ venueTaxonomy ]: newIds } ),
-		[ editPost, venueTaxonomy ]
+		[ editPost, venueTaxonomy ],
 	);
 
 	// Get the online-event term to preserve it when selecting a venue.
@@ -106,7 +106,7 @@ export default function VenueNavigator( props = null ) {
 				updateVenueTaxonomyIds( save );
 			}
 		},
-		[ isEventContext, updateVenueTaxonomyIds, hasOnlineEventTerm, onlineEventTermId ]
+		[ isEventContext, updateVenueTaxonomyIds, hasOnlineEventTerm, onlineEventTermId ],
 	);
 
 	return (

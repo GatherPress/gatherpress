@@ -69,6 +69,14 @@ class Event {
 	const POST_TYPE = 'gatherpress_event';
 
 	/**
+	 * Post type support that makes a post type an event.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const SUPPORT = 'gatherpress-event-date';
+
+	/**
 	 * Capability for reading a specific event.
 	 *
 	 * A meta capability, so it is always paired with the event's post ID and
@@ -145,7 +153,7 @@ class Event {
 	 * @param int $post_id The event post ID.
 	 */
 	public function __construct( int $post_id ) {
-		if ( post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
+		if ( post_type_supports( (string) get_post_type( $post_id ), self::SUPPORT ) ) {
 			$this->post = get_post( $post_id );
 		}
 	}
@@ -191,7 +199,7 @@ class Event {
 		$post = get_post( $post_id );
 
 		// A post that is gone, or one that never takes RSVPs, has no roster.
-		if ( ! $post instanceof WP_Post || ! post_type_supports( $post->post_type, 'gatherpress-rsvp' ) ) {
+		if ( ! $post instanceof WP_Post || ! post_type_supports( $post->post_type, Rsvp::SUPPORT ) ) {
 			return false;
 		}
 
@@ -287,7 +295,22 @@ class Event {
 
 		// Add separator if there's both start and end date/time.
 		$default_separator = $separator ? $separator : __( 'to', 'gatherpress' );
-		$separator         = $start && $end ? $default_separator : false;
+
+		/**
+		 * Filter the separator between start and end dates/times.
+		 *
+		 * @since TBD
+		 *
+		 * @param string $default_separator The separator string.
+		 * @param Event  $event             The event instance.
+		 */
+		$default_separator = apply_filters(
+			'gatherpress_datetime_separator',
+			$default_separator,
+			$this
+		);
+
+		$separator = $start && $end ? $default_separator : false;
 
 		// Add timezone, event first. A block in a site template renders every
 		// event and cannot know which of them want their zone named, so an
@@ -762,15 +785,19 @@ class Event {
 
 			if ( $apply_filter ) {
 				/**
-				 * Filters the PHP date format used to render an event datetime.
+				 * Filters the format an event's datetime is rendered with.
+				 *
+				 * Applies to every context an event date is shown in, since they
+				 * all format through this method: the singular event, an archive,
+				 * the Event Date block and a query loop alike. The machine-readable
+				 * ISO accessors bypass it, so a format filter cannot alter the
+				 * datetime attribute values.
 				 *
 				 * @since 0.34.0
 				 *
-				 * @param string $format PHP date format.
-				 * @param string $which  Datetime field, 'start' or 'end'.
-				 * @param bool   $local  True for local time, false for GMT.
-				 *
-				 * @return string PHP date format.
+				 * @param string $format The PHP date format.
+				 * @param string $which  Which datetime is being formatted, 'start' or 'end'.
+				 * @param bool   $local  Whether the datetime is rendered in local time rather than GMT.
 				 */
 				$format = apply_filters( 'gatherpress_datetime_format', $format, $which, $local );
 			}

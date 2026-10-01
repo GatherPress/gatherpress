@@ -49,12 +49,32 @@ final class Event_Cli extends WP_CLI {
 	 *  - attending
 	 *  - not_attending
 	 *  - waiting_list
+	 * ---
+	 *
+	 * [--guests=<guests>]
+	 * : Number of guests accompanying the attendee.
+	 * ---
+	 * default: 0
+	 * ---
+	 *
+	 * [--anonymous=<anonymous>]
+	 * : Whether to hide the attendee's identity from the public response list.
+	 * ---
+	 * default: 0
+	 * options:
+	 *  - 0
+	 *  - 1
+	 * ---
 	 *
 	 * ## EXAMPLES
 	 *
 	 *    # Update RSVP for an event.
 	 *    $ wp gatherpress event rsvp --event_id=525 --user_id=1 --status="not_attending"
 	 *    Success: The RSVP status for Event ID "525" has been successfully set to "not_attending" for User ID "1".
+	 *
+	 *    # RSVP with two guests, anonymously.
+	 *    $ wp gatherpress event rsvp --event_id=525 --user_id=1 --guests=2 --anonymous=1
+	 *    Success: The RSVP status for Event ID "525" has been successfully set to "attending" for User ID "1".
 	 *
 	 * @since 0.29.0
 	 *
@@ -73,7 +93,7 @@ final class Event_Cli extends WP_CLI {
 		$status    = ! empty( $assoc_args['status'] ) ? (string) $assoc_args['status'] : 'attending';
 
 		// The error message names this support, so gate on it rather than on event dates.
-		if ( ! post_type_supports( (string) get_post_type( $event_id ), 'gatherpress-rsvp' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $event_id ), Rsvp::SUPPORT ) ) {
 			self::error(
 				sprintf(
 					/* translators: %d: event ID. */

@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Filters for the event date and the topic on the events admin list, alongside a relabeled filter for the post date.

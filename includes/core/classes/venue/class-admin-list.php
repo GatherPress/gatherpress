@@ -12,6 +12,7 @@ namespace GatherPress\Core\Venue;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Venue;
 
 /**
  * Class Admin_List.
@@ -54,7 +55,7 @@ final class Admin_List {
 	 * @return void
 	 */
 	public function maybe_register_post_type_hooks( string $post_type ): void {
-		if ( ! post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
+		if ( ! post_type_supports( $post_type, Venue::SUPPORT ) ) {
 			return;
 		}
 

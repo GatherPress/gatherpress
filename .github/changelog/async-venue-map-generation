@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Added an opt-in `gatherpress_static_map_generate_async` filter that defers venue-save-triggered static-map generation to a WP-Cron job instead of rendering inline, so bulk venue imports and REST integrations that save many venues in a tight loop no longer block on tile-fetch-and-composite time.

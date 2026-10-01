@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
 use GatherPress\Core\Admin\Notices\Setup as Notices_Setup;
+use GatherPress\Core\Admin\Plugin_Row;
 use GatherPress\Core\Traits\Singleton;
 use WP_Site;
 
@@ -73,6 +74,8 @@ final class Setup {
 		Geocoding::get_instance();
 		Import::get_instance();
 		Notices_Setup::get_instance();
+		Plugin_Row::get_instance();
+		Renamed_Keys::get_instance();
 		Rsvp\Setup::get_instance();
 		Settings::get_instance();
 		Site_Health::get_instance();
@@ -364,7 +367,7 @@ final class Setup {
 		$term_slug = 'online-event';
 
 		// Ensure the online-event term exists in each registered venue taxonomy.
-		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $venue_post_type ) {
+		foreach ( get_post_types_by_support( Venue::SUPPORT ) as $venue_post_type ) {
 			$taxonomy = Venue\Setup::get_instance()->get_taxonomy( $venue_post_type );
 			$term     = term_exists( $term_slug, $taxonomy );
 

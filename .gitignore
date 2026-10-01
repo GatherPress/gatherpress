@@ -62,3 +62,7 @@ test-report.xml
 
 *.zip
 coverage-multisite.xml
+
+# Editor swap files.
+*.swp
+*.swo

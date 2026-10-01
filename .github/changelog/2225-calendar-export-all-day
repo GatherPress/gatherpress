@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Export all-day events as floating dates in iCal, Google, and Yahoo calendar feeds.

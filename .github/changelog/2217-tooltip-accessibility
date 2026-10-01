@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Fix tooltip accessibility: keyboard focus, touch toggle, screen reader text and client navigation.

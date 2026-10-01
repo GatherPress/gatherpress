@@ -28,6 +28,7 @@ use GatherPress\Core\Traits\Singleton;
  * @phpstan-type SettingsFieldPreview array{template: string, suffix?: string}
  * @phpstan-type SettingsFieldOptions array{
  *     default?: bool|int|string,
+ *     choices?: string,
  *     items?: array<string, string>,
  *     min?: int|string,
  *     max?: int|string,
@@ -51,10 +52,26 @@ use GatherPress\Core\Traits\Singleton;
  *     description?: string,
  *     field: SettingsField,
  *     show_if?: SettingsShowIf,
+ *     importable?: bool,
+ *     exportable?: bool,
  *     callback?: callable
  * }
  * @phpstan-type SettingsSection array{name: string, description?: string, options?: array<string, SettingsOption>}
  * @phpstan-type SettingsSubPage array{name: string, priority?: int, sections?: array<string, SettingsSection>}
+ * @phpstan-type SettingsImportValidation array{
+ *     valid: bool,
+ *     changes: string[],
+ *     unknown: string[],
+ *     not_importable: string[],
+ *     warnings: string[]
+ * }
+ * @phpstan-type SettingsImportResult array{
+ *     success: bool,
+ *     imported: string[],
+ *     skipped: string[],
+ *     not_importable: string[],
+ *     warnings: string[]
+ * }
  */
 class Settings {
 
@@ -81,6 +98,24 @@ class Settings {
 	 * @since 0.34.0
 	 */
 	const MAP_TILE_URL = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
+
+	/**
+	 * Hosts the CARTO key may be sent to.
+	 *
+	 * The tile URL is filterable, so the key is only ever attached to hosts
+	 * known to be CARTO's. A site pointing its tiles elsewhere does not hand
+	 * its key to that host.
+	 *
+	 * @since 0.36.0
+	 * @var string[]
+	 */
+	private const CARTO_TILE_HOSTS = array(
+		'basemaps.cartocdn.com',
+		'cartodb-basemaps-a.global.ssl.fastly.net',
+		'cartodb-basemaps-b.global.ssl.fastly.net',
+		'cartodb-basemaps-c.global.ssl.fastly.net',
+		'cartodb-basemaps-d.global.ssl.fastly.net',
+	);
 
 	/**
 	 * URL used in the default map attribution credit to OpenStreetMap.
@@ -154,6 +189,7 @@ class Settings {
 		Settings\Roles::get_instance();
 		Settings\Rsvp::get_instance();
 		Settings\Tools::get_instance();
+		Settings\Uninstall::get_instance();
 		Settings\Venues::get_instance();
 	}
 
@@ -217,6 +253,8 @@ class Settings {
 			array(
 				'nonTimeFormatChars'    => Utility::non_time_format_chars(),
 				'timeFormatChars'       => Utility::time_format_chars(),
+				'dateFormatChoices'     => Utility::date_format_choices(),
+				'timeFormatChoices'     => Utility::time_format_choices(),
 				'timezoneChoices'       => Utility::timezone_choices(),
 				'siteTimezone'          => Utility::get_system_timezone(),
 				'pluginUrl'             => GATHERPRESS_CORE_URL,
@@ -239,11 +277,17 @@ class Settings {
 	/**
 	 * Returns the map tile layer URL, allowing sites to override the default.
 	 *
+	 * Layers the `custom_map_tile_url` setting under the filter.
+	 *
 	 * @since 0.34.0
+	 * @since 0.36.0 Layered under the `custom_map_tile_url` setting.
 	 *
 	 * @return string Leaflet-compatible tile URL template.
 	 */
 	public static function get_map_tile_url(): string {
+		$custom  = trim( (string) self::get_instance()->get( 'custom_map_tile_url' ) );
+		$default = '' !== $custom ? $custom : self::MAP_TILE_URL;
+
 		/**
 		 * Filters the Leaflet tile layer URL used by the venue map.
 		 *
@@ -251,31 +295,87 @@ class Settings {
 		 *
 		 * @param string $url Default tile URL template (CartoDB Positron).
 		 */
-		$filtered = (string) apply_filters( 'gatherpress_interactive_map_tile_url', self::MAP_TILE_URL );
+		$filtered = (string) apply_filters( 'gatherpress_interactive_map_tile_url', $default );
 
-		return '' !== $filtered ? $filtered : self::MAP_TILE_URL;
+		if ( '' === $filtered ) {
+			return self::add_map_tile_key( self::MAP_TILE_URL );
+		}
+
+		// The CARTO key belongs only to the built-in default: a custom URL
+		// is documented as overriding CARTO entirely, even when it happens
+		// to resolve to a CARTO-allowlisted host.
+		if ( '' !== $custom ) {
+			return $filtered;
+		}
+
+		return self::add_map_tile_key( $filtered );
+	}
+
+	/**
+	 * Append the configured CARTO key to a tile URL.
+	 *
+	 * CARTO began enforcing keys on its basemaps in August 2026. Without one
+	 * every tile comes back stamped "API KEY REQUIRED", so both the Leaflet
+	 * basemap and the server-side compositor carry the key.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $url Tile URL template.
+	 *
+	 * @return string The template, with the key appended when there is one.
+	 */
+	public static function add_map_tile_key( string $url ): string {
+		$key = trim( (string) self::get_instance()->get( 'carto_api_key' ) );
+
+		if ( '' === $key ) {
+			return $url;
+		}
+
+		// `{s}` stands in for a subdomain, so it is resolved before the host
+		// is read; a bare placeholder does not parse as one.
+		$host = (string) wp_parse_url( str_replace( '{s}', 'a', $url ), PHP_URL_HOST );
+
+		$is_carto = in_array( $host, self::CARTO_TILE_HOSTS, true )
+			|| str_ends_with( $host, '.basemaps.cartocdn.com' );
+
+		// Matched at a parameter boundary, so `api_key=` is not mistaken for
+		// a key that is already there.
+		if ( ! $is_carto || 1 === preg_match( '/[?&]key=/', $url ) ) {
+			return $url;
+		}
+
+		// Concatenated rather than added with add_query_arg(), which cannot
+		// parse the `{s}` subdomain placeholder as a host.
+		return $url . ( str_contains( $url, '?' ) ? '&' : '?' ) . 'key=' . rawurlencode( $key );
 	}
 
 	/**
 	 * Returns the map attribution string, allowing sites to override the default.
 	 *
+	 * Layers the `custom_map_tile_attribution` setting under the filter.
+	 *
 	 * @since 0.34.0
+	 * @since 0.36.0 Layered under the `custom_map_tile_attribution` setting.
 	 *
 	 * @return string HTML attribution credit shown on the map.
 	 */
 	public static function get_map_tile_attribution(): string {
-		$default = sprintf(
-			/* translators: 1: OpenStreetMap credit link, 2: CARTO credit link. */
-			__( '© %1$s contributors © %2$s', 'gatherpress' ),
-			sprintf(
-				'<a href="%s">OpenStreetMap</a>',
-				esc_url( self::MAP_TILE_ATTRIBUTION_OSM_URL )
-			),
-			sprintf(
-				'<a href="%s">CARTO</a>',
-				esc_url( self::MAP_TILE_ATTRIBUTION_CARTO_URL )
-			)
-		);
+		$custom = trim( (string) self::get_instance()->get( 'custom_map_tile_attribution' ) );
+
+		$default = '' !== $custom
+			? esc_html( $custom )
+			: sprintf(
+				/* translators: 1: OpenStreetMap credit link, 2: CARTO credit link. */
+				__( '© %1$s contributors © %2$s', 'gatherpress' ),
+				sprintf(
+					'<a href="%s">OpenStreetMap</a>',
+					esc_url( self::MAP_TILE_ATTRIBUTION_OSM_URL )
+				),
+				sprintf(
+					'<a href="%s">CARTO</a>',
+					esc_url( self::MAP_TILE_ATTRIBUTION_CARTO_URL )
+				)
+			);
 
 		/**
 		 * Filters the attribution HTML rendered with the venue map.
@@ -615,6 +715,86 @@ class Settings {
 	}
 
 	/**
+	 * Option keys an import is never allowed to write.
+	 *
+	 * An option declares `'importable' => false` when the harm of setting it
+	 * by accident outweighs the convenience of carrying it between sites.
+	 * The uninstall opt-ins are the case this exists for: every other
+	 * setting shows its effect as soon as it is wrong, while those do
+	 * nothing until the plugin is deleted, possibly months later and by
+	 * somebody who never ran the import, and what they remove is gone.
+	 *
+	 * An import skips these keys and reports them, so nobody is left
+	 * believing a value carried over when it did not.
+	 *
+	 * Opting out of export opts out of import too. A value that may not
+	 * leave this site has no business being written into it by a file, so
+	 * `'exportable' => false` is enough on its own and this flag is only
+	 * needed for a value that may travel but must not be applied.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string[] The option keys.
+	 */
+	public function get_non_importable_keys(): array {
+		return array_values(
+			array_unique(
+				array_merge(
+					$this->get_keys_opted_out_of( 'importable' ),
+					$this->get_non_exportable_keys()
+				)
+			)
+		);
+	}
+
+	/**
+	 * Option keys an export never writes into the file.
+	 *
+	 * An option declares `'exportable' => false` when its value is about
+	 * this one site and should not travel: it describes what happens here,
+	 * it may say something the owner would not want to hand over with a
+	 * settings file, and nothing on the receiving end should act on it.
+	 *
+	 * Independent of `importable`. A value can be worth reading in a file
+	 * without being safe to apply, and worth keeping out of a file while
+	 * still being settable by one.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string[] The option keys.
+	 */
+	public function get_non_exportable_keys(): array {
+		return $this->get_keys_opted_out_of( 'exportable' );
+	}
+
+	/**
+	 * Option keys whose declaration turns a boolean flag off.
+	 *
+	 * A flag that is absent is on, so an option has to say so to opt out.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $flag The declaration key to read.
+	 *
+	 * @return string[] The option keys.
+	 */
+	protected function get_keys_opted_out_of( string $flag ): array {
+		$keys = array();
+
+		foreach ( $this->get_sub_pages() as $sub_page_settings ) {
+			foreach ( (array) ( $sub_page_settings['sections'] ?? array() ) as $section_settings ) {
+				foreach ( (array) ( $section_settings['options'] ?? array() ) as $option => $option_settings ) {
+					if ( false === ( $option_settings[ $flag ] ?? true ) ) {
+						$keys[] = (string) $option;
+					}
+				}
+			}
+		}
+
+		return $keys;
+	}
+
+	/**
 	 * Build a flat map of option keys to their field types.
 	 *
 	 * Iterates all sub-pages, sections, and options to produce
@@ -691,6 +871,7 @@ class Settings {
 	public function sanitize_page_settings( array $field_type_map, string $scope = 'blog' ): callable {
 		return function ( $input ) use ( $field_type_map, $scope ): array {
 			$sanitized = array();
+			$input     = Settings\Format_Field::resolve( (array) $input, $field_type_map );
 
 			foreach ( $input as $key => $value ) {
 				$type = $field_type_map[ $key ] ?? 'text';
@@ -718,6 +899,7 @@ class Settings {
 			// Merge with existing values to preserve settings from other tabs.
 			$existing = $this->read_stored_options( $scope );
 			$merged   = array_merge( $existing, $sanitized );
+			$merged   = Renamed_Keys::forget_former_names( $merged, array_keys( $sanitized ) );
 
 			// Remove values that match their defaults to keep the option lean.
 			foreach ( $merged as $key => $value ) {
@@ -832,6 +1014,19 @@ class Settings {
 			case 'autocomplete':
 				$params['field_options'] = $option_settings['field']['options'] ?? array();
 				break;
+			case 'format':
+				// Resolved here rather than in the settings declaration so the
+				// examples are not rendered on every request that merely walks
+				// the settings tree for defaults, import or export.
+				$params['choices']     = Settings\Format_Field::choices(
+					(string) ( $option_settings['field']['options']['choices'] ?? '' )
+				);
+				$params['custom']      = Settings\Format_Field::CUSTOM;
+				$params['custom_name'] = $this->get_name_field(
+					Settings\Format_Field::custom_key( $option )
+				);
+				$params['preview']     = $option_settings['field']['preview'] ?? array();
+				break;
 			default:
 				// Field types without extra params (checkbox, etc.) render with the base $params.
 				break;
@@ -905,6 +1100,8 @@ class Settings {
 			$options[ $option ] = $value;
 		}
 
+		$options = Renamed_Keys::forget_former_names( $options, array( $option ) );
+
 		update_option( self::OPTION_NAME, $options );
 	}
 
@@ -933,12 +1130,12 @@ class Settings {
 			? get_site_option( self::OPTION_NAME, array() )
 			: get_option( self::OPTION_NAME, array() );
 
-		if (
-			is_array( $options )
-			&& isset( $options[ $option ] )
-			&& '' !== $options[ $option ]
-		) {
-			return $options[ $option ];
+		// isset() is safe on a non-array, which is what get_site_option()
+		// hands back on single site, so no shape check is needed first.
+		foreach ( Renamed_Keys::option_names( $option ) as $name ) {
+			if ( isset( $options[ $name ] ) && '' !== $options[ $name ] ) {
+				return $options[ $name ];
+			}
 		}
 
 		return $this->get_flat_default( $option );
@@ -970,7 +1167,15 @@ class Settings {
 			$config = Settings\Network::get_config();
 
 			if ( ! empty( $config['enabled'] ) ) {
-				$inherited = in_array( $option, $config['inherited'], true );
+				// The stored list is written from whatever the option keys were
+				// called when the network admin last saved it, so the former
+				// name has to count too. Without this a network that opted an
+				// option into inheritance before 0.36.0 would quietly stop
+				// inheriting it.
+				$inherited = (bool) array_intersect(
+					Renamed_Keys::option_names( $option ),
+					$config['inherited']
+				);
 			}
 		}
 
@@ -1254,7 +1459,10 @@ class Settings {
 			'version'     => GATHERPRESS_VERSION,
 			'exported_at' => current_time( 'c' ),
 			'scope'       => $scope,
-			'settings'    => $this->read_stored_options( $scope ),
+			'settings'    => array_diff_key(
+				$this->read_stored_options( $scope ),
+				array_flip( $this->get_non_exportable_keys() )
+			),
 		);
 	}
 
@@ -1323,14 +1531,16 @@ class Settings {
 	 * @param array<string, mixed> $data  The parsed import data.
 	 * @param string               $scope Storage scope: 'blog' (default) or 'network'.
 	 *
-	 * @return array{valid: bool, changes: string[], unknown: string[], warnings: string[]} Validation result.
+	 * @return array Validation result.
+	 * @phpstan-return SettingsImportValidation
 	 */
 	public function validate_import( array $data, string $scope = 'blog' ): array {
 		$result = array(
-			'valid'    => true,
-			'changes'  => array(),
-			'unknown'  => array(),
-			'warnings' => array(),
+			'valid'          => true,
+			'changes'        => array(),
+			'unknown'        => array(),
+			'not_importable' => array(),
+			'warnings'       => array(),
 		);
 
 		if ( ! isset( $data['settings'] ) || ! is_array( $data['settings'] ) ) {
@@ -1353,11 +1563,20 @@ class Settings {
 		}
 
 		$field_type_map = $this->build_field_type_map( $this->get_sub_pages() );
+		$blocked        = $this->get_non_importable_keys();
 		$current        = $this->read_stored_options( $scope );
 
 		foreach ( $data['settings'] as $key => $value ) {
 			if ( ! isset( $field_type_map[ $key ] ) ) {
 				$result['unknown'][] = $key;
+				continue;
+			}
+
+			// Known, but declared out of the importer's reach. Reported on its
+			// own rather than as an unknown key, because the two mean different
+			// things to whoever is reading the result.
+			if ( in_array( $key, $blocked, true ) ) {
+				$result['not_importable'][] = $key;
 				continue;
 			}
 
@@ -1383,14 +1602,16 @@ class Settings {
 	 * @param string               $mode  Import mode: 'merge' or 'replace'.
 	 * @param string               $scope Storage scope: 'blog' (default) or 'network'.
 	 *
-	 * @return array{success: bool, imported: string[], skipped: string[], warnings: string[]} Import result.
+	 * @return array Import result.
+	 * @phpstan-return SettingsImportResult
 	 */
 	public function import_settings( array $data, string $mode = 'merge', string $scope = 'blog' ): array {
 		$result = array(
-			'success'  => false,
-			'imported' => array(),
-			'skipped'  => array(),
-			'warnings' => array(),
+			'success'        => false,
+			'imported'       => array(),
+			'skipped'        => array(),
+			'not_importable' => array(),
+			'warnings'       => array(),
 		);
 
 		$validation = $this->validate_import( $data, $scope );
@@ -1401,17 +1622,28 @@ class Settings {
 			return $result;
 		}
 
-		$result['warnings'] = $validation['warnings'];
-		$result['skipped']  = $validation['unknown'];
+		$result['warnings']       = $validation['warnings'];
+		$result['skipped']        = $validation['unknown'];
+		$result['not_importable'] = $validation['not_importable'];
 
 		$field_type_map = $this->build_field_type_map( $this->get_sub_pages() );
 		$sanitize       = $this->sanitize_page_settings( $field_type_map, $scope );
 
-		// Filter to only known keys.
-		$to_import = array_intersect_key(
-			$data['settings'],
-			$field_type_map
+		// Filter to only known keys, then drop the ones declared out of the
+		// importer's reach.
+		$blocked   = array_flip( $this->get_non_importable_keys() );
+		$to_import = array_diff_key(
+			array_intersect_key( $data['settings'], $field_type_map ),
+			$blocked
 		);
+
+		// Replace mode clears everything, which would take the refused keys
+		// with it and quietly reset a choice the file was never allowed to
+		// make. Carry them across the delete instead, so "left as they are"
+		// is true in both modes.
+		$preserved = 'replace' === $mode
+			? array_intersect_key( $this->read_stored_options( $scope ), $blocked )
+			: array();
 
 		// Sanitize imported values.
 		if ( 'replace' === $mode ) {
@@ -1419,7 +1651,7 @@ class Settings {
 			$this->delete_stored_options( $scope );
 		}
 
-		$sanitized = $sanitize( $to_import );
+		$sanitized = array_merge( $preserved, $sanitize( $to_import ) );
 
 		$this->write_stored_options( $scope, $sanitized );
 

@@ -269,7 +269,7 @@ class Test_Validate extends Base {
 	public function test_valid_block_data(): void {
 		$valid_data = wp_json_encode(
 			array(
-				'blockName'   => 'core/paragraph',
+				'blockName'   => 'gatherpress/rsvp-template',
 				'attrs'       => array( 'align' => 'center' ),
 				'innerBlocks' => array(),
 			)
@@ -278,6 +278,42 @@ class Test_Validate extends Base {
 		$this->assertTrue(
 			Validate::block_data( $valid_data )
 		);
+	}
+
+	/**
+	 * Only the RSVP template is a valid root block.
+	 *
+	 * @covers ::block_data
+	 *
+	 * @return void
+	 */
+	public function test_block_data_requires_the_rsvp_template_root(): void {
+		$this->assertFalse(
+			Validate::block_data(
+				(string) wp_json_encode(
+					array(
+						'blockName'   => 'core/paragraph',
+						'attrs'       => array(),
+						'innerBlocks' => array(),
+					)
+				)
+			)
+		);
+	}
+
+	/**
+	 * A signature is a 64-character lowercase hex string, nothing else.
+	 *
+	 * @covers ::block_signature
+	 *
+	 * @return void
+	 */
+	public function test_block_signature(): void {
+		$this->assertTrue( Validate::block_signature( str_repeat( 'a0', 32 ) ) );
+		$this->assertFalse( Validate::block_signature( str_repeat( 'A0', 32 ) ) );
+		$this->assertFalse( Validate::block_signature( str_repeat( 'a0', 31 ) ) );
+		$this->assertFalse( Validate::block_signature( 64 ) );
+		$this->assertFalse( Validate::block_signature( '' ) );
 	}
 
 	/**
@@ -381,7 +417,7 @@ class Test_Validate extends Base {
 	public function test_complex_nested_blocks(): void {
 		$complex_data = wp_json_encode(
 			array(
-				'blockName'   => 'core/column',
+				'blockName'   => 'gatherpress/rsvp-template',
 				'attrs'       => array( 'width' => 50 ),
 				'innerBlocks' => array(
 					array(

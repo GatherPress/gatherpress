@@ -65,6 +65,15 @@ class Test_Shadow_Source extends Base {
 	}
 
 	/**
+	 * Asserts that the class constants are correctly defined.
+	 *
+	 * @return void
+	 */
+	public function test_constants(): void {
+		$this->assertSame( 'gatherpress-shadow-source', Shadow_Source::SUPPORT );
+	}
+
+	/**
 	 * Coverage for maybe_register_post_type_hooks — wires per-post-type
 	 * save and delete actions when the given post type declares
 	 * `gatherpress-shadow-source` support.

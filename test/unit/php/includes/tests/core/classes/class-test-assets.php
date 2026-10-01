@@ -69,6 +69,12 @@ class Test_Assets extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 11,
+				'callback' => array( $instance, 'register_public_script_handles' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'wp_head',
 				'priority' => 10,
 				'callback' => array( $instance, 'add_interactivity_state' ),
@@ -368,6 +374,7 @@ class Test_Assets extends Base {
 		// `maybe_enqueue_styles` filter handles conditional frontend loading).
 		set_current_screen( 'front' );
 		wp_dequeue_style( 'gatherpress-utility-style' );
+		wp_dequeue_script( 'gatherpress-new-tab-notice' );
 
 		$instance->register_block_assets();
 
@@ -378,6 +385,19 @@ class Test_Assets extends Base {
 		$this->assertFalse(
 			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
 			'Failed to assert gatherpress-utility-style is not enqueued on frontend.'
+		);
+		$this->assertTrue(
+			wp_script_is( 'gatherpress-new-tab-notice', 'registered' ),
+			'Failed to assert the new-tab notice script is registered on frontend.'
+		);
+		$this->assertFalse(
+			wp_script_is( 'gatherpress-new-tab-notice', 'enqueued' ),
+			'Failed to assert the new-tab notice script is not enqueued on frontend.'
+		);
+		$this->assertContains(
+			'wp-i18n',
+			wp_scripts()->registered['gatherpress-new-tab-notice']->deps,
+			'Failed to assert the script can translate its own string.'
 		);
 
 		// Admin / block-editor context: style is also enqueued so it reaches
@@ -524,6 +544,8 @@ class Test_Assets extends Base {
 		// First register the utility style.
 		$instance->register_block_assets();
 
+		wp_dequeue_script( 'gatherpress-new-tab-notice' );
+
 		$block_content = '<div class="wp-block-gatherpress-event-date">Test</div>';
 		$block         = array(
 			'blockName' => 'gatherpress/event-date',
@@ -532,6 +554,10 @@ class Test_Assets extends Base {
 		$this->assertFalse(
 			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
 			'Failed to assert gatherpress-utility-style is not enqueued before filter.'
+		);
+		$this->assertFalse(
+			wp_script_is( 'gatherpress-new-tab-notice', 'enqueued' ),
+			'Failed to assert the new-tab notice script is not enqueued before filter.'
 		);
 
 		$result = $instance->maybe_enqueue_styles( $block_content, $block );
@@ -544,6 +570,10 @@ class Test_Assets extends Base {
 		$this->assertTrue(
 			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
 			'Failed to assert gatherpress-utility-style is enqueued for GatherPress blocks.'
+		);
+		$this->assertTrue(
+			wp_script_is( 'gatherpress-new-tab-notice', 'enqueued' ),
+			'Failed to assert the new-tab notice script is enqueued for GatherPress blocks.'
 		);
 	}
 
@@ -562,6 +592,7 @@ class Test_Assets extends Base {
 
 		// Dequeue if it was enqueued by previous test.
 		wp_dequeue_style( 'gatherpress-utility-style' );
+		wp_dequeue_script( 'gatherpress-new-tab-notice' );
 
 		$block_content = '<div class="wp-block-paragraph">Test</div>';
 		$block         = array(
@@ -578,6 +609,10 @@ class Test_Assets extends Base {
 		$this->assertFalse(
 			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
 			'Failed to assert gatherpress-utility-style is not enqueued for non-GatherPress blocks.'
+		);
+		$this->assertFalse(
+			wp_script_is( 'gatherpress-new-tab-notice', 'enqueued' ),
+			'Failed to assert the new-tab notice script is not enqueued for non-GatherPress blocks.'
 		);
 	}
 
@@ -626,6 +661,7 @@ class Test_Assets extends Base {
 
 		$instance->register_block_assets();
 		wp_dequeue_style( 'gatherpress-utility-style' );
+		wp_dequeue_script( 'gatherpress-new-tab-notice' );
 
 		$callback = static function (): array {
 			return array( 'gatherpress-awesome/' );
@@ -642,6 +678,10 @@ class Test_Assets extends Base {
 		$this->assertTrue(
 			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
 			'Failed to assert gatherpress-utility-style is enqueued for a filter-added prefix.'
+		);
+		$this->assertTrue(
+			wp_script_is( 'gatherpress-new-tab-notice', 'enqueued' ),
+			'Failed to assert the new-tab notice script is enqueued for a filter-added prefix.'
 		);
 	}
 
@@ -726,6 +766,66 @@ class Test_Assets extends Base {
 			true,
 			'The register_variation_assets method should execute without error.'
 		);
+	}
+
+	/**
+	 * Coverage for register_public_script_handles.
+	 *
+	 * The public handle has no source of its own; depending on it has to pull
+	 * in the script that writes the global.
+	 *
+	 * @since  TBD
+	 * @covers ::register_public_script_handles
+	 *
+	 * @return void
+	 */
+	public function test_register_public_script_handles_aliases_the_publisher(): void {
+		$instance = Assets::get_instance();
+
+		wp_deregister_script( 'gatherpress-query-controls' );
+		wp_register_script( 'gatherpress-query', 'https://example.test/query.js', array(), '1', true );
+
+		$instance->register_public_script_handles();
+
+		$registered = wp_scripts()->query( 'gatherpress-query-controls', 'registered' );
+
+		$this->assertNotFalse( $registered, 'Failed to assert the public handle is registered.' );
+		$this->assertFalse( $registered->src, 'Failed to assert the public handle is an alias with no source.' );
+		$this->assertSame(
+			array( 'gatherpress-query' ),
+			$registered->deps,
+			'Failed to assert the public handle pulls in the script that publishes the global.'
+		);
+
+		wp_deregister_script( 'gatherpress-query-controls' );
+	}
+
+	/**
+	 * Coverage for register_public_script_handles.
+	 *
+	 * A build without the publishing script should not leave a public handle
+	 * that depends on something missing.
+	 *
+	 * @since  TBD
+	 * @covers ::register_public_script_handles
+	 *
+	 * @return void
+	 */
+	public function test_register_public_script_handles_skips_a_missing_publisher(): void {
+		$instance = Assets::get_instance();
+
+		wp_deregister_script( 'gatherpress-query-controls' );
+		wp_deregister_script( 'gatherpress-query' );
+
+		$instance->register_public_script_handles();
+
+		$this->assertFalse(
+			wp_script_is( 'gatherpress-query-controls', 'registered' ),
+			'Failed to assert no public handle is registered without its publisher.'
+		);
+
+		// Restore the variation for the tests that follow.
+		$instance->register_variation_assets();
 	}
 
 	/**
