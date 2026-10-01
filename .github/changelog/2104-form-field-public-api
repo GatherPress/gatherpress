@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+`Form_Field` can now return its markup as a string with `get_html()`, alongside the existing `render()` that echoes it, and its attribute array is documented as a supported way to render a single field outside the block editor.

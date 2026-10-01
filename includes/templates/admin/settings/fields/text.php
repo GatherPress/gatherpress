@@ -16,6 +16,8 @@
  * @param string $size        The size class for styling (e.g., 'regular', 'large', or 'small').
  */
 
+use GatherPress\Core\Utility;
+
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
@@ -39,7 +41,7 @@ $gatherpress_readonly = ! empty( $disabled ) ? ' readonly' : '';
 	}
 
 	if ( ! empty( $preview['template'] ) ) {
-		\GatherPress\Core\Utility::render_template(
+		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/settings/partials/%s.php', GATHERPRESS_CORE_PATH, $preview['template'] ),
 			array_merge(
 				array(

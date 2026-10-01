@@ -55,7 +55,7 @@ export function useVenueData( context, fieldType ) {
 					isPostTypeSupporting( 'gatherpress-venue-information', currentPostType ),
 			};
 		},
-		[ context?.postId, context?.postType ]
+		[ context?.postId, context?.postType ],
 	);
 
 	// Map field type to its individual venue meta key.
@@ -77,7 +77,7 @@ export function useVenueData( context, fieldType ) {
 			if ( isEditingCurrentPost ) {
 				return (
 					selectData( 'core/editor' )?.getEditedPostAttribute(
-						'meta'
+						'meta',
 					) || {}
 				);
 			}
@@ -85,12 +85,12 @@ export function useVenueData( context, fieldType ) {
 			const venuePost = selectData( coreStore ).getEditedEntityRecord(
 				'postType',
 				context?.postType,
-				venuePostId
+				venuePostId,
 			);
 
 			return venuePost?.meta || {};
 		},
-		[ venuePostId, isEditingCurrentPost, context?.postType ]
+		[ venuePostId, isEditingCurrentPost, context?.postType ],
 	);
 
 	const fieldValue = metaKey ? venueMeta[ metaKey ] || '' : '';
@@ -110,7 +110,7 @@ export function useVenueData( context, fieldType ) {
 				} );
 			}
 		},
-		[ venuePostId, isEditingCurrentPost, editEntityRecord, editPost, context?.postType ]
+		[ venuePostId, isEditingCurrentPost, editEntityRecord, editPost, context?.postType ],
 	);
 
 	// Update the current field value (strips HTML tags).
@@ -122,7 +122,7 @@ export function useVenueData( context, fieldType ) {
 
 			updateVenueField( { [ metaKey ]: stripHTML( newValue ) } );
 		},
-		[ metaKey, updateVenueField ]
+		[ metaKey, updateVenueField ],
 	);
 
 	// Update the website URL specifically (strips HTML tags).
@@ -132,7 +132,7 @@ export function useVenueData( context, fieldType ) {
 				gatherpress_website: stripHTML( newValue ),
 			} );
 		},
-		[ updateVenueField ]
+		[ updateVenueField ],
 	);
 
 	return {

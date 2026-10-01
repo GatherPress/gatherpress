@@ -23,7 +23,7 @@ jest.mock(
 			__mockState: state,
 		};
 	},
-	{ virtual: true }
+	{ virtual: true },
 );
 
 /**
@@ -35,14 +35,14 @@ jest.mock(
 	() => ( {
 		speak: jest.fn(),
 	} ),
-	{ virtual: true }
+	{ virtual: true },
 );
 
 /**
  * WordPress dependencies
  */
 import { speak } from '@wordpress/a11y';
-// eslint-disable-next-line import/named -- `__mockState` only exists on the virtual mock above.
+// `__mockState` only exists on the virtual mock above.
 import { __mockState as mockInteractivityState } from '@wordpress/interactivity';
 
 /**
@@ -50,8 +50,10 @@ import { __mockState as mockInteractivityState } from '@wordpress/interactivity'
  */
 import {
 	activateOnSpace,
+	manageFocusTrap,
 	sendRsvpApiRequest,
 	getNonce,
+	setupCloseHandlers,
 } from '@src/helpers/interactivity';
 
 /**
@@ -126,7 +128,7 @@ describe( 'sendRsvpApiRequest', () => {
 		await sendRsvpApiRequest(
 			123,
 			{ status: 'attending', guests: 2, anonymous: false },
-			state
+			state,
 		);
 
 		expect( state.posts[ 123 ].eventResponses ).toEqual( {
@@ -148,7 +150,7 @@ describe( 'sendRsvpApiRequest', () => {
 		await sendRsvpApiRequest(
 			123,
 			{ status: 'attending', guests: 0, anonymous: false },
-			state
+			state,
 		);
 
 		// The key assertion: no throw, and the state is still updated with
@@ -176,7 +178,7 @@ describe( 'sendRsvpApiRequest', () => {
 			123,
 			{ status: 'attending', guests: 0, anonymous: false },
 			state,
-			onSuccess
+			onSuccess,
 		);
 
 		expect( onSuccess ).toHaveBeenCalledWith( rsvpPayload );
@@ -199,16 +201,17 @@ describe( 'sendRsvpApiRequest', () => {
 			123,
 			{ status: 'attending', guests: 0, anonymous: false },
 			state,
-			onSuccess
+			onSuccess,
 		);
 
 		// The request succeeded, so the user-facing failure alert must not
 		// fire; the UI error is only logged for debugging.
 		expect( window.alert ).not.toHaveBeenCalled();
-		// eslint-disable-next-line no-console
-		expect( console.warn ).toHaveBeenCalledWith(
+		// @wordpress/jest-console fails a test on any console call it was not
+		// told to expect, and its own matcher is what declares the warning.
+		expect( console ).toHaveWarnedWith(
 			'RSVP post-success UI update failed:',
-			expect.any( TypeError )
+			new TypeError( 'UI update failed' ),
 		);
 		// State was still updated before the callback threw.
 		expect( state.posts[ 123 ].currentUser.status ).toBe( 'attending' );
@@ -229,7 +232,7 @@ describe( 'sendRsvpApiRequest', () => {
 		await sendRsvpApiRequest(
 			123,
 			{ status: 'not_attending', guests: 0, anonymous: false },
-			state
+			state,
 		);
 
 		expect( state.posts[ 123 ].eventResponses ).toEqual( {
@@ -295,12 +298,12 @@ describe( 'sendRsvpApiRequest announcements', () => {
 		await sendRsvpApiRequest(
 			123,
 			{ status: 'attending', guests: 0, anonymous: false },
-			state
+			state,
 		);
 
 		expect( speak ).toHaveBeenCalledWith(
 			'Your RSVP was updated. You are attending. 1 attendee.',
-			'polite'
+			'polite',
 		);
 	} );
 
@@ -316,12 +319,12 @@ describe( 'sendRsvpApiRequest announcements', () => {
 		await sendRsvpApiRequest(
 			123,
 			{ status: 'attending', guests: 0, anonymous: false },
-			state
+			state,
 		);
 
 		expect( speak ).toHaveBeenCalledWith(
 			'Your RSVP was updated. You are attending. 7 attendees.',
-			'polite'
+			'polite',
 		);
 	} );
 
@@ -340,12 +343,12 @@ describe( 'sendRsvpApiRequest announcements', () => {
 		await sendRsvpApiRequest(
 			123,
 			{ status: 'attending', guests: 0, anonymous: false },
-			state
+			state,
 		);
 
 		expect( speak ).toHaveBeenCalledWith(
 			'Your RSVP was updated. You are on the waiting list. 5 attendees.',
-			'polite'
+			'polite',
 		);
 	} );
 
@@ -366,12 +369,12 @@ describe( 'sendRsvpApiRequest announcements', () => {
 		await sendRsvpApiRequest(
 			123,
 			{ status: 'attending', guests: 0, anonymous: false },
-			state
+			state,
 		);
 
 		expect( speak ).toHaveBeenCalledWith(
 			'Your RSVP was updated. You are attending. 1 attendee. The event link is now available on this page.',
-			'polite'
+			'polite',
 		);
 	} );
 
@@ -392,7 +395,7 @@ describe( 'sendRsvpApiRequest announcements', () => {
 		await sendRsvpApiRequest(
 			123,
 			{ status: 'attending', guests: 1, anonymous: false },
-			state
+			state,
 		);
 
 		// toHaveBeenCalledWith only proves *some* call matched, and the
@@ -403,7 +406,7 @@ describe( 'sendRsvpApiRequest announcements', () => {
 		expect( speak ).toHaveBeenCalledTimes( 1 );
 		expect( speak ).toHaveBeenCalledWith(
 			'Your RSVP was updated. You are attending. 1 attendee.',
-			'polite'
+			'polite',
 		);
 	} );
 
@@ -422,7 +425,7 @@ describe( 'sendRsvpApiRequest announcements', () => {
 		await sendRsvpApiRequest(
 			123,
 			{ status: 'attending', guests: 0, anonymous: false },
-			state
+			state,
 		);
 
 		// Same reasoning as the already-visible case above: the count pins
@@ -430,7 +433,7 @@ describe( 'sendRsvpApiRequest announcements', () => {
 		expect( speak ).toHaveBeenCalledTimes( 1 );
 		expect( speak ).toHaveBeenCalledWith(
 			'Your RSVP was updated. You are attending. 1 attendee.',
-			'polite'
+			'polite',
 		);
 	} );
 
@@ -448,12 +451,12 @@ describe( 'sendRsvpApiRequest announcements', () => {
 		await sendRsvpApiRequest(
 			123,
 			{ status: 'attending', guests: 0, anonymous: false },
-			state
+			state,
 		);
 
 		expect( speak ).toHaveBeenCalledWith(
 			'Your RSVP was updated. You are attending. 3 attendees.',
-			'polite'
+			'polite',
 		);
 	} );
 
@@ -473,7 +476,7 @@ describe( 'sendRsvpApiRequest announcements', () => {
 		await sendRsvpApiRequest(
 			123,
 			{ status: 'attending', guests: 0, anonymous: false },
-			state
+			state,
 		);
 
 		expect( speak ).not.toHaveBeenCalled();
@@ -535,5 +538,122 @@ describe( 'activateOnSpace', () => {
 
 		expect( event.preventDefault ).not.toHaveBeenCalled();
 		expect( ref.click ).not.toHaveBeenCalled();
+	} );
+} );
+
+/**
+ * Escape closes only the top-most open element. A calendar event modal can
+ * hold an RSVP block that opens a second modal; one Escape must close the
+ * inner modal and leave the outer one open, with its focus trap.
+ */
+describe( 'setupCloseHandlers Escape with nested elements', () => {
+	const escape = () =>
+		document.dispatchEvent(
+			new KeyboardEvent( 'keydown', { key: 'Escape', bubbles: true } ),
+		);
+	let cleanups;
+
+	beforeEach( () => {
+		cleanups = [];
+		document.body.innerHTML = `
+			<div class="modal gatherpress--is-visible" id="outer">
+				<div class="content">
+					<div class="modal gatherpress--is-visible" id="inner">
+						<div class="content">
+							<div class="menu gatherpress--is-visible" id="menu"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		`;
+	} );
+
+	afterEach( () => {
+		cleanups.forEach( ( cleanup ) => cleanup() );
+	} );
+
+	it( 'closes only the inner modal, then the outer one', () => {
+		document.getElementById( 'menu' ).classList.remove( 'gatherpress--is-visible' );
+		const onClose = jest.fn();
+		// One handler per open modal, as modal-manager registers them.
+		cleanups.push( setupCloseHandlers( '.modal', '.content', onClose ) );
+		cleanups.push( setupCloseHandlers( '.modal', '.content', onClose ) );
+
+		escape();
+
+		expect( onClose ).toHaveBeenCalledTimes( 1 );
+		expect( onClose ).toHaveBeenCalledWith( document.getElementById( 'inner' ) );
+		expect(
+			document.getElementById( 'inner' ).classList.contains( 'gatherpress--is-visible' ),
+		).toBe( false );
+		expect(
+			document.getElementById( 'outer' ).classList.contains( 'gatherpress--is-visible' ),
+		).toBe( true );
+
+		escape();
+
+		expect( onClose ).toHaveBeenCalledTimes( 2 );
+		expect( onClose ).toHaveBeenLastCalledWith( document.getElementById( 'outer' ) );
+	} );
+
+	it( 'closes a dropdown inside a modal before the modal', () => {
+		const onModalClose = jest.fn();
+		const onMenuClose = jest.fn();
+		cleanups.push( setupCloseHandlers( '.modal', '.content', onModalClose ) );
+		cleanups.push( setupCloseHandlers( '.menu', null, onMenuClose ) );
+
+		escape();
+
+		expect( onMenuClose ).toHaveBeenCalledTimes( 1 );
+		expect( onModalClose ).not.toHaveBeenCalled();
+	} );
+
+	it( 'stops handling Escape after cleanup, even when cleanup runs twice', () => {
+		const onClose = jest.fn();
+		const cleanup = setupCloseHandlers( '.modal', '.content', onClose );
+
+		cleanup();
+		cleanup();
+		escape();
+
+		expect( onClose ).not.toHaveBeenCalled();
+	} );
+} );
+
+/**
+ * The focus trap stays in place on Escape; its owner removes it when its
+ * element closes. Otherwise closing an inner modal would drop the trap of the
+ * outer modal that is still open.
+ */
+describe( 'manageFocusTrap', () => {
+	it( 'keeps trapping Tab after Escape until cleanup is called', () => {
+		document.body.innerHTML = '<button id="first">First</button><button id="last">Last</button>';
+		const first = document.getElementById( 'first' );
+		const last = document.getElementById( 'last' );
+		// jsdom has no layout, so give the buttons an offsetParent.
+		Object.defineProperty( HTMLElement.prototype, 'offsetParent', {
+			configurable: true,
+			get() {
+				return this.parentNode;
+			},
+		} );
+
+		const cleanup = manageFocusTrap( [ first, last ] );
+		const tab = () =>
+			document.dispatchEvent(
+				new KeyboardEvent( 'keydown', { key: 'Tab', bubbles: true, cancelable: true } ),
+			);
+
+		document.dispatchEvent( new KeyboardEvent( 'keydown', { key: 'Escape', bubbles: true } ) );
+		last.focus();
+		tab();
+		expect( document.activeElement ).toBe( first );
+
+		cleanup();
+		last.focus();
+		tab();
+		expect( document.activeElement ).toBe( last );
+
+		delete HTMLElement.prototype.offsetParent;
 	} );
 } );

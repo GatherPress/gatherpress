@@ -35,7 +35,7 @@ jest.mock(
 			getContext: jest.fn(),
 		};
 	},
-	{ virtual: true }
+	{ virtual: true },
 );
 
 /**
@@ -90,12 +90,12 @@ describe( 'rsvp-response processRsvpDropdown trigger disabled state', () => {
 
 		return {
 			trigger: document.querySelector(
-				'.wp-block-gatherpress-dropdown__trigger'
+				'.wp-block-gatherpress-dropdown__trigger',
 			),
 			items: Array.from(
 				document.querySelectorAll(
-					'.wp-block-gatherpress-dropdown-item a'
-				)
+					'.wp-block-gatherpress-dropdown-item a',
+				),
 			),
 		};
 	}
@@ -124,7 +124,7 @@ describe( 'rsvp-response processRsvpDropdown trigger disabled state', () => {
 		processItems( items );
 
 		expect(
-			trigger.classList.contains( 'gatherpress--is-disabled' )
+			trigger.classList.contains( 'gatherpress--is-disabled' ),
 		).toBe( true );
 		expect( trigger.getAttribute( 'aria-disabled' ) ).toBe( 'true' );
 	} );
@@ -139,7 +139,7 @@ describe( 'rsvp-response processRsvpDropdown trigger disabled state', () => {
 		processItems( items );
 
 		expect(
-			trigger.classList.contains( 'gatherpress--is-disabled' )
+			trigger.classList.contains( 'gatherpress--is-disabled' ),
 		).toBe( false );
 		expect( trigger.hasAttribute( 'aria-disabled' ) ).toBe( false );
 	} );

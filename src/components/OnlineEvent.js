@@ -54,7 +54,7 @@ const OnlineEvent = () => {
 	const singularLabel = usePostTypeLabel(
 		'singular_name',
 		editorPostType,
-		__( 'Event', 'gatherpress' )
+		__( 'Event', 'gatherpress' ),
 	);
 
 	// Get current venue taxonomy terms.
@@ -67,7 +67,7 @@ const OnlineEvent = () => {
 	// null when settings haven't loaded yet (refresh path), in which case the
 	// panel behaves as today's empty-terms path does — no term assigned.
 	const onlineEventTermId = getOnlineEventTermId(
-		getVenuePostType( editorPostType )
+		getVenuePostType( editorPostType ),
 	);
 
 	// Check if online-event term is currently assigned.
@@ -122,7 +122,7 @@ const OnlineEvent = () => {
 		const termId = Number( onlineEventTermId );
 		const termIdStr = String( termId );
 		const hasTermAlready = currentTerms.some(
-			( id ) => String( id ) === termIdStr
+			( id ) => String( id ) === termIdStr,
 		);
 
 		let newTerms;
@@ -134,7 +134,7 @@ const OnlineEvent = () => {
 		} else {
 			// Remove the online-event term.
 			newTerms = currentTerms.filter(
-				( id ) => String( id ) !== termIdStr
+				( id ) => String( id ) !== termIdStr,
 			);
 		}
 
@@ -157,24 +157,25 @@ const OnlineEvent = () => {
 				label={ sprintf(
 					/* translators: %s: Singular post type label, e.g. "Event". */
 					__( 'This is an online %s', 'gatherpress' ),
-					singularLabel
+					singularLabel,
 				) }
 				checked={ isOnlineEvent }
 				onChange={ handleToggleChange }
 			/>
 			{ isOnlineEvent && (
 				<TextControl
+					__next40pxDefaultSize
 					type="url"
 					label={ sprintf(
 						/* translators: %s: Singular post type label, e.g. "Event". */
 						__( 'Online %s link', 'gatherpress' ),
-						singularLabel
+						singularLabel,
 					) }
 					value={ onlineEventLink }
 					placeholder={ sprintf(
 						/* translators: %s: Singular post type label, e.g. "Event". */
 						__( 'Add link to online %s', 'gatherpress' ),
-						singularLabel
+						singularLabel,
 					) }
 					onChange={ ( value ) => {
 						updateEventLink( value );

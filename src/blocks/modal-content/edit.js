@@ -26,6 +26,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 			<InspectorControls>
 				<PanelBody title="Width Settings">
 					<RangeControl
+						__next40pxDefaultSize
 						label="Max Width"
 						value={ maxWidth }
 						onChange={ ( value ) =>

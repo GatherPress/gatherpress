@@ -273,7 +273,22 @@ class Event {
 
 		// Add separator if there's both start and end date/time.
 		$default_separator = $separator ? $separator : __( 'to', 'gatherpress' );
-		$separator         = $start && $end ? $default_separator : false;
+
+		/**
+		 * Filter the separator between start and end dates/times.
+		 *
+		 * @since TBD
+		 *
+		 * @param string $default_separator The separator string.
+		 * @param Event  $event             The event instance.
+		 */
+		$default_separator = apply_filters(
+			'gatherpress_datetime_separator',
+			$default_separator,
+			$this
+		);
+
+		$separator = $start && $end ? $default_separator : false;
 
 		// Add timezone, event first. A block in a site template renders every
 		// event and cannot know which of them want their zone named, so an
@@ -1160,7 +1175,7 @@ class Event {
 	 * applies, so a post that cannot render the online-event block never
 	 * reports itself as online.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return bool True if the event has the online-event term, false otherwise.
 	 */
@@ -1192,7 +1207,7 @@ class Event {
 	 * then refuse to render. A post type without that support is reported as
 	 * unsaved, the same answer as a post that does not exist.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param bool   $is_online True to mark online, false to mark offline.
 	 * @param string $link      Optional URL for the `gatherpress_online_event_link` meta when online. An empty

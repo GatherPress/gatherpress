@@ -77,7 +77,7 @@ describe( 'getVenuePostType', () => {
 			} ),
 		} );
 		expect( getVenuePostType( 'gatherpress_event' ) ).toBe(
-			'gatherpress_venue'
+			'gatherpress_venue',
 		);
 	} );
 
@@ -94,7 +94,7 @@ describe( 'getVenuePostType', () => {
 			} ),
 		} );
 		expect( getVenuePostType( 'unknown_event_type' ) ).toBe(
-			'gatherpress_venue'
+			'gatherpress_venue',
 		);
 	} );
 
@@ -105,7 +105,7 @@ describe( 'getVenuePostType', () => {
 			getEditorSettings: () => ( {} ),
 		} );
 		expect( getVenuePostType( 'gatherpress_event' ) ).toBe(
-			'gatherpress_venue'
+			'gatherpress_venue',
 		);
 	} );
 
@@ -288,7 +288,7 @@ describe( 'useVenuePostFromTermId', () => {
 		} );
 
 		expect( () =>
-			renderHook( () => useVenuePostFromTermId( 1 ) )
+			renderHook( () => useVenuePostFromTermId( 1 ) ),
 		).not.toThrow();
 		expect( capturedSlug ).toBeUndefined();
 	} );
@@ -313,7 +313,7 @@ describe( 'useVenuePostFromTermId', () => {
 		} );
 
 		expect( () =>
-			renderHook( () => useVenuePostFromTermId( 1 ) )
+			renderHook( () => useVenuePostFromTermId( 1 ) ),
 		).not.toThrow();
 		expect( capturedSlug ).toBeUndefined();
 	} );
@@ -428,7 +428,7 @@ describe( 'useVenuePostFromTermId', () => {
 
 		renderHook( () => useVenuePostFromTermId( 1 ) );
 		expect( capturedQuery ).not.toHaveProperty(
-			'gatherpress_event_query'
+			'gatherpress_event_query',
 		);
 	} );
 
@@ -452,7 +452,7 @@ describe( 'useVenuePostFromTermId', () => {
 
 		renderHook( () => useVenuePostFromTermId( 1, 'production' ) );
 		expect( capturedQuery ).not.toHaveProperty(
-			'gatherpress_event_query'
+			'gatherpress_event_query',
 		);
 	} );
 } );
@@ -833,7 +833,7 @@ describe( 'GetVenuePostFromEventId', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			GetVenuePostFromEventId( 100, 'gatherpress_event' )
+			GetVenuePostFromEventId( 100, 'gatherpress_event' ),
 		);
 		// No venue terms returned, so result is undefined; the value we care
 		// about is that the helper traversed the fallback paths without throwing.
@@ -866,7 +866,7 @@ describe( 'GetVenuePostFromEventId', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			GetVenuePostFromEventId( 100, 'unknown_event_type' )
+			GetVenuePostFromEventId( 100, 'unknown_event_type' ),
 		);
 		expect( result.current ).toEqual( undefined );
 	} );
@@ -890,7 +890,7 @@ describe( 'useVenueOptions', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useVenueOptions( '', null, 'taxonomy', '_gatherpress_venue' )
+			useVenueOptions( '', null, 'taxonomy', '_gatherpress_venue' ),
 		);
 		expect( result.current.venueOptions ).toEqual( [] );
 	} );
@@ -910,7 +910,7 @@ describe( 'useVenueOptions', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useVenueOptions( '', null, 'taxonomy', '_gatherpress_venue' )
+			useVenueOptions( '', null, 'taxonomy', '_gatherpress_venue' ),
 		);
 
 		expect( result.current.venueOptions ).toEqual( [
@@ -935,7 +935,7 @@ describe( 'useVenueOptions', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useVenueOptions( '', 99, 'taxonomy', '_gatherpress_venue' )
+			useVenueOptions( '', 99, 'taxonomy', '_gatherpress_venue' ),
 		);
 
 		expect( result.current.venueOptions ).toEqual( [
@@ -961,7 +961,7 @@ describe( 'useVenueOptions', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useVenueOptions( '', 1, 'taxonomy', '_gatherpress_venue' )
+			useVenueOptions( '', 1, 'taxonomy', '_gatherpress_venue' ),
 		);
 
 		expect( result.current.venueOptions ).toEqual( [
@@ -987,7 +987,7 @@ describe( 'useVenueOptions', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useVenueOptions( '', null, 'postType', 'gatherpress_venue' )
+			useVenueOptions( '', null, 'postType', 'gatherpress_venue' ),
 		);
 
 		expect( result.current.venueOptions ).toEqual( [
@@ -1015,7 +1015,7 @@ describe( 'useVenueOptions', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useVenueOptions( '', null, 'taxonomy', '_gatherpress_venue' )
+			useVenueOptions( '', null, 'taxonomy', '_gatherpress_venue' ),
 		);
 
 		expect( result.current.venueOptions ).toEqual( [
@@ -1045,7 +1045,7 @@ describe( 'useVenueOptions', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useVenueOptions( '', null, 'taxonomy', '_gatherpress_venue' )
+			useVenueOptions( '', null, 'taxonomy', '_gatherpress_venue' ),
 		);
 
 		expect( result.current.venueOptions ).toEqual( [
@@ -1068,7 +1068,7 @@ describe( 'useVenueOptions', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useVenueOptions( '', null, 'postType', 'gatherpress_venue' )
+			useVenueOptions( '', null, 'postType', 'gatherpress_venue' ),
 		);
 
 		expect( result.current.venueOptions ).toEqual( [
@@ -1096,8 +1096,8 @@ describe( 'useVenueOptions', () => {
 				'search term',
 				null,
 				'taxonomy',
-				'_gatherpress_venue'
-			)
+				'_gatherpress_venue',
+			),
 		);
 
 		expect( capturedQuery.search ).toBe( 'search term' );
@@ -1295,7 +1295,7 @@ describe( 'useVenueTaxonomyIds', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useVenueTaxonomyIds( '_gatherpress_venue', 42, true )
+			useVenueTaxonomyIds( '_gatherpress_venue', 42, true ),
 		);
 		expect( result.current ).toBeUndefined();
 	} );
@@ -1312,7 +1312,7 @@ describe( 'useVenueTaxonomyIds', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useVenueTaxonomyIds( '_gatherpress_venue', 42 )
+			useVenueTaxonomyIds( '_gatherpress_venue', 42 ),
 		);
 		expect( result.current ).toEqual( [ 1, 2, 3 ] );
 	} );
@@ -1329,7 +1329,7 @@ describe( 'useVenueTaxonomyIds', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useVenueTaxonomyIds( '_gatherpress_venue', null )
+			useVenueTaxonomyIds( '_gatherpress_venue', null ),
 		);
 		expect( result.current ).toBeUndefined();
 	} );
@@ -1350,7 +1350,7 @@ describe( 'useVenueTaxonomyIds', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useVenueTaxonomyIds( '_gatherpress_venue', 42 )
+			useVenueTaxonomyIds( '_gatherpress_venue', 42 ),
 		);
 		expect( result.current ).toEqual( [ 10, 20 ] );
 	} );
@@ -1367,7 +1367,7 @@ describe( 'useVenueTaxonomyIds', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useVenueTaxonomyIds( '_gatherpress_venue', 42 )
+			useVenueTaxonomyIds( '_gatherpress_venue', 42 ),
 		);
 		expect( result.current ).toBeUndefined();
 	} );

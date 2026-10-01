@@ -10,7 +10,7 @@
 	"category": "gatherpress",
 	"icon": "external",
 	"example": {},
-	"description": "Enables members to easily confirm their attendance for an event.",
+	"description": "Holds the blocks shown inside a modal.",
 	"attributes": {
 		"style": {
 			"type": "object",

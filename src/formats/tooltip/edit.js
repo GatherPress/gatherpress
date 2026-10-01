@@ -92,7 +92,7 @@ function TooltipPopover( {
 				applyFormat( value, {
 					type: FORMAT_NAME,
 					attributes,
-				} )
+				} ),
 			);
 		} else {
 			// Remove format if tooltip text is empty.
@@ -127,6 +127,7 @@ function TooltipPopover( {
 			>
 				<FlexItem>
 					<TextControl
+						__next40pxDefaultSize
 						/* translators: Label for the input field where users enter custom tooltip text. */
 						label={ __( 'Tooltip Text', 'gatherpress' ) }
 						value={ tooltipText }
@@ -145,7 +146,7 @@ function TooltipPopover( {
 										variant="secondary"
 										onClick={ () => {
 											setShowTextColorPicker(
-												! showTextColorPicker
+												! showTextColorPicker,
 											);
 											setShowBgColorPicker( false );
 										} }
@@ -166,7 +167,7 @@ function TooltipPopover( {
 										variant="secondary"
 										onClick={ () => {
 											setShowBgColorPicker(
-												! showBgColorPicker
+												! showBgColorPicker,
 											);
 											setShowTextColorPicker( false );
 										} }
@@ -228,7 +229,7 @@ function TooltipPopover( {
 								_x(
 									'Sample tooltip',
 									'tooltip preview content',
-									'gatherpress'
+									'gatherpress',
 								)
 							}
 						>

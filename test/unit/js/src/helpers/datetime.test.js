@@ -687,7 +687,7 @@ describe( 'Relative mode duration tests', () => {
 		global.__gpDatetime.dateTimeEnd = undefined;
 
 		expect( () =>
-			validateDateTimeStart( '2023-11-30 18:00:00', setDateTimeEnd, 2 )
+			validateDateTimeStart( '2023-11-30 18:00:00', setDateTimeEnd, 2 ),
 		).not.toThrow();
 		expect( setDateTimeEnd ).not.toHaveBeenCalled();
 	} );
@@ -828,7 +828,7 @@ describe( 'validateDateTimeEnd', () => {
 		global.__gpDatetime.dateTimeEnd = '2023-11-30 18:17:00';
 
 		expect( () =>
-			validateDateTimeEnd( '2023-11-30 16:00:00', setDateTimeStart )
+			validateDateTimeEnd( '2023-11-30 16:00:00', setDateTimeStart ),
 		).not.toThrow();
 		expect( setDateTimeStart ).not.toHaveBeenCalled();
 	} );
@@ -856,7 +856,7 @@ describe( 'removeNonTimePHPFormatChars', () => {
 
 	beforeEach( () => {
 		getFromConfig.mockImplementation( ( key ) =>
-			'nonTimeFormatChars' === key ? nonTimeChars : undefined
+			'nonTimeFormatChars' === key ? nonTimeChars : undefined,
 		);
 	} );
 
@@ -864,7 +864,7 @@ describe( 'removeNonTimePHPFormatChars', () => {
 		getFromConfig.mockReturnValue( undefined );
 
 		expect( removeNonTimePHPFormatChars( 'F j, Y g:i a' ) ).toBe(
-			'F j, Y g:i a'
+			'F j, Y g:i a',
 		);
 	} );
 
@@ -964,7 +964,7 @@ describe( 'dateTimePreview', () => {
 		// The function execution itself provides coverage.
 		try {
 			dateTimePreview();
-		} catch ( error ) {
+		} catch {
 			// Expected to fail because createRoot isn't properly mocked.
 			// But the lines inside the function are still executed and covered.
 		}
@@ -1147,7 +1147,7 @@ describe( 'all-day helpers', () => {
 			// The site keeps its date and time formats separately, so an
 			// all-day event simply uses the date one.
 			getFromSettings.mockImplementation( ( key ) =>
-				( { dateFormat: 'F j, Y', timeFormat: 'g:i a' } )[ key ]
+				( { dateFormat: 'F j, Y', timeFormat: 'g:i a' } )[ key ],
 			);
 
 			expect( dateLabelFormat() ).toBe( 'MMMM D, YYYY' );
@@ -1157,13 +1157,13 @@ describe( 'all-day helpers', () => {
 	describe( 'toDayStart', () => {
 		test( 'snaps to the beginning of the day', () => {
 			expect( toDayStart( '2026-08-29 14:30:00' ) ).toBe(
-				'2026-08-29 00:00:00'
+				'2026-08-29 00:00:00',
 			);
 		} );
 
 		test( 'leaves a datetime already at the beginning alone', () => {
 			expect( toDayStart( '2026-08-29 00:00:00' ) ).toBe(
-				'2026-08-29 00:00:00'
+				'2026-08-29 00:00:00',
 			);
 		} );
 	} );
@@ -1171,14 +1171,14 @@ describe( 'all-day helpers', () => {
 	describe( 'toDayEnd', () => {
 		test( 'snaps to the end of the day', () => {
 			expect( toDayEnd( '2026-08-29 14:30:00' ) ).toBe(
-				'2026-08-29 23:59:59'
+				'2026-08-29 23:59:59',
 			);
 		} );
 
 		test( 'keeps each end on its own day', () => {
 			// A multi-day event ends on the last day, not the first.
 			expect( toDayEnd( '2026-08-31 09:00:00' ) ).toBe(
-				'2026-08-31 23:59:59'
+				'2026-08-31 23:59:59',
 			);
 		} );
 	} );
@@ -1196,7 +1196,7 @@ describe( 'all-day helpers', () => {
 	describe( 'withTimeOfDay', () => {
 		test( 'puts a time onto the datetime own date', () => {
 			expect( withTimeOfDay( '2026-08-29 00:00:00', '18:00:00' ) ).toBe(
-				'2026-08-29 18:00:00'
+				'2026-08-29 18:00:00',
 			);
 		} );
 
@@ -1204,7 +1204,7 @@ describe( 'all-day helpers', () => {
 			// Restoring a remembered time must not also undo a date the
 			// author changed while the event was all day.
 			expect( withTimeOfDay( '2026-09-04 00:00:00', '09:30:00' ) ).toBe(
-				'2026-09-04 09:30:00'
+				'2026-09-04 09:30:00',
 			);
 		} );
 	} );
@@ -1219,7 +1219,7 @@ describe( 'removeTimePHPFormatChars', () => {
 
 	beforeEach( () => {
 		getFromConfig.mockImplementation( ( key ) =>
-			'timeFormatChars' === key ? timeChars : undefined
+			'timeFormatChars' === key ? timeChars : undefined,
 		);
 	} );
 

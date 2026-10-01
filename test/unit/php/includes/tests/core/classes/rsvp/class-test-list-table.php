@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Rsvp;
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp\Flag\Check_In;
 use GatherPress\Core\Rsvp\List_Table;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
@@ -630,6 +631,27 @@ class Test_List_Table extends Base {
 			$attendee_col,
 			'Failed to assert attendee column does not contain Approve action for approved RSVP.'
 		);
+		$this->assertStringContainsString(
+			'>Check in<',
+			$attendee_col,
+			'Failed to assert attendee column contains Check in action for approved, not checked-in RSVP.'
+		);
+
+		( new Check_In( (int) $this->rsvp['comment_ID'] ) )->add();
+		$attendee_col = $this->list_table->column_attendee( $this->rsvp );
+
+		$this->assertStringContainsString(
+			'>Not Checked In<',
+			$attendee_col,
+			'Failed to assert attendee column contains Not Checked In action for approved, checked-in RSVP.'
+		);
+		$this->assertStringNotContainsString(
+			'>Check in<',
+			$attendee_col,
+			'Failed to assert attendee column does not contain Check in action for already checked-in RSVP.'
+		);
+
+		( new Check_In( (int) $this->rsvp['comment_ID'] ) )->remove();
 	}
 
 	/**
@@ -646,6 +668,16 @@ class Test_List_Table extends Base {
 			'>Approve<',
 			$attendee_col,
 			'Failed to assert attendee column contains Approve action for pending RSVP.'
+		);
+		$this->assertStringNotContainsString(
+			'>Check in<',
+			$attendee_col,
+			'Failed to assert attendee column does not contain Check in action for pending RSVP.'
+		);
+		$this->assertStringNotContainsString(
+			'>Not Checked In<',
+			$attendee_col,
+			'Failed to assert attendee column does not contain Not Checked In action for pending RSVP.'
 		);
 	}
 
@@ -668,6 +700,16 @@ class Test_List_Table extends Base {
 			'>Spam<',
 			$attendee_col,
 			'Failed to assert attendee column does not contain Spam action for spam RSVP.'
+		);
+		$this->assertStringNotContainsString(
+			'>Check in<',
+			$attendee_col,
+			'Failed to assert attendee column does not contain Check in action for spam RSVP.'
+		);
+		$this->assertStringNotContainsString(
+			'>Not Checked In<',
+			$attendee_col,
+			'Failed to assert attendee column does not contain Not Checked In action for spam RSVP.'
 		);
 	}
 
@@ -869,6 +911,90 @@ class Test_List_Table extends Base {
 			true,
 			'Failed to assert process_bulk_action handles empty rsvp_ids gracefully.'
 		);
+	}
+
+	/**
+	 * The checked-in column reports a dash until the RSVP has been checked in,
+	 * then the arrival time in the site's timezone.
+	 *
+	 * @covers ::column_default
+	 *
+	 * @return void
+	 */
+	public function test_column_default_checked_in(): void {
+		$this->assertSame(
+			'-',
+			$this->list_table->column_default( $this->rsvp, 'checked_in' ),
+			'Failed to assert checked-in column shows a dash before check-in.'
+		);
+
+		( new Check_In( (int) $this->rsvp['comment_ID'] ) )->add();
+
+		$this->assertSame(
+			__( 'Yes', 'gatherpress' ),
+			$this->list_table->column_default( $this->rsvp, 'checked_in' ),
+			'Failed to assert checked-in column shows Yes after check-in.'
+		);
+	}
+
+	/**
+	 * The check-in bulk actions are offered alongside the moderation ones.
+	 *
+	 * @covers ::get_bulk_actions
+	 *
+	 * @return void
+	 */
+	public function test_get_bulk_actions_includes_check_in(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$actions = $this->list_table->get_bulk_actions();
+
+		$this->assertArrayHasKey(
+			'check_in',
+			$actions,
+			'Failed to assert bulk actions contain check_in.'
+		);
+		$this->assertArrayHasKey(
+			'uncheck_in',
+			$actions,
+			'Failed to assert bulk actions contain uncheck_in.'
+		);
+	}
+
+	/**
+	 * The check-in bulk actions record and remove an arrival.
+	 *
+	 * @covers ::process_bulk_action
+	 *
+	 * @return void
+	 */
+	public function test_process_bulk_action_check_in_and_uncheck_in(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$rsvp_id  = (int) $this->rsvp['comment_ID'];
+		$check_in = new Check_In( $rsvp_id );
+
+		$_REQUEST['_wpnonce']            = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
+		$_REQUEST['action']              = 'check_in';
+
+		$this->list_table->process_bulk_action();
+
+		$this->assertTrue(
+			$check_in->has(),
+			'Failed to assert the check_in bulk action records an arrival.'
+		);
+
+		$_REQUEST['action'] = 'uncheck_in';
+
+		$this->list_table->process_bulk_action();
+
+		$this->assertFalse(
+			$check_in->has(),
+			'Failed to assert the uncheck_in bulk action removes the arrival.'
+		);
+
+		unset( $_REQUEST['_wpnonce'], $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
 	}
 
 	/**

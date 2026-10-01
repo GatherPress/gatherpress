@@ -1,5 +1,18 @@
 // Import tooltip format styles for frontend display.
 @use "formats/tooltip/style";
+// Mirrors core's `.screen-reader-text`, which not every theme ships.
+.gatherpress--screen-reader-text {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	border: 0;
+	overflow: hidden;
+	clip-path: inset(50%);
+	overflow-wrap: normal !important;
+	word-break: normal !important;
+}
 
 .gatherpress--is-visible {
 	display: block !important;

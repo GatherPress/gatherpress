@@ -42,7 +42,7 @@ const transforms = {
 
 				return isPostTypeSupporting(
 					'gatherpress-event-date',
-					postType
+					postType,
 				);
 			},
 			transform: ( { format = '' } ) =>

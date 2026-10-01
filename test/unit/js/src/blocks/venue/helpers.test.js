@@ -22,7 +22,7 @@ describe( 'venue helpers', () => {
 
 		it( 'should return "in-person" when terms is undefined', () => {
 			expect( calculateMode( undefined, onlineEventTermId ) ).toBe(
-				'in-person'
+				'in-person',
 			);
 		} );
 

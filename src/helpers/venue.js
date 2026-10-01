@@ -67,7 +67,7 @@ export function getVenuePostType( eventPostType = '' ) {
  * "not online", the same answer today's REST lookups produce when they
  * come back empty.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @param {string} [venuePostType='gatherpress_venue'] The venue post type slug.
  *
@@ -120,7 +120,7 @@ export function useVenuePostFromTermId( termId, venuePostType = DEFAULT_VENUE_PO
 			const venueTerm = wpSelect( 'core' ).getEntityRecord(
 				'taxonomy',
 				getVenueTaxonomy( venuePostType ),
-				termId
+				termId,
 			);
 			// If term object exists, strip any leading underscore from its slug.
 			const venueSlug = venueTerm?.slug?.replace( /^_/, '' );
@@ -145,11 +145,11 @@ export function useVenuePostFromTermId( termId, venuePostType = DEFAULT_VENUE_PO
 						...( supportsEventDate && {
 							gatherpress_event_query: 'all',
 						} ),
-					}
+					},
 				),
 			};
 		},
-		[ termId, venuePostType ]
+		[ termId, venuePostType ],
 	);
 
 	return venuePost;
@@ -179,7 +179,7 @@ export function useVenueTermFromPostId( postId = null, venuePostType = DEFAULT_V
 			const venuePost = wpSelect( 'core' ).getEntityRecord(
 				'postType',
 				venuePostType,
-				postId
+				postId,
 			);
 			// Bail when the post hasn't resolved yet (or arrived without a
 			// slug) so the underscore-prefix doesn't produce `_undefined`.
@@ -196,11 +196,11 @@ export function useVenueTermFromPostId( postId = null, venuePostType = DEFAULT_V
 					{
 						per_page: 1,
 						slug: venueSlug,
-					}
+					},
 				),
 			};
 		},
-		[ postId, venuePostType ]
+		[ postId, venuePostType ],
 	);
 
 	return venueTerm;
@@ -247,7 +247,7 @@ export function GetVenuePostFromEventId( eventId, postType = null ) {
 			const venueTerms = wpSelect( 'core' ).getEntityRecords(
 				'taxonomy',
 				venueTax,
-				{ post: eventId, per_page: 10, context: 'view' }
+				{ post: eventId, per_page: 10, context: 'view' },
 			);
 
 			// Find the first non-online-event term. The sentinel ID is read from
@@ -259,7 +259,7 @@ export function GetVenuePostFromEventId( eventId, postType = null ) {
 			const venueTerm = venueTerms?.find(
 				( term ) =>
 					null === onlineTermId ||
-					Number( term.id ) !== Number( onlineTermId )
+					Number( term.id ) !== Number( onlineTermId ),
 			);
 
 			return {
@@ -267,7 +267,7 @@ export function GetVenuePostFromEventId( eventId, postType = null ) {
 				venuePostType: resolvedVenuePostType,
 			};
 		},
-		[ eventId, postType ]
+		[ eventId, postType ],
 	);
 
 	// Fetch and return the related venue post using the term ID and resolved venue post type.
@@ -318,7 +318,7 @@ export function useVenueOptions(
 	venueId,
 	kind = 'taxonomy',
 	name = getVenueTaxonomy( DEFAULT_VENUE_POST_TYPE ),
-	venuePostType = DEFAULT_VENUE_POST_TYPE
+	venuePostType = DEFAULT_VENUE_POST_TYPE,
 ) {
 	const { venue, venues } = useSelect(
 		( wpSelect ) => {
@@ -340,7 +340,7 @@ export function useVenueOptions(
 				venues: getEntityRecords( kind, name, query ),
 			};
 		},
-		[ kind, name, search, venueId ]
+		[ kind, name, search, venueId ],
 	);
 
 	// Use the pre-resolved sentinel term ID from editor settings so the filter
@@ -373,7 +373,7 @@ export function useVenueOptions(
 			// Check if the current venue is already included in the list.
 			// Will be -1 if not found.
 			const foundVenue = fetchedVenues.findIndex(
-				( { value } ) => venue?.id === value
+				( { value } ) => venue?.id === value,
 			);
 
 			// Ensure the current venue is included in the list (but not online-event).
@@ -391,7 +391,7 @@ export function useVenueOptions(
 		},
 		// Dependency array, every time venue or venues is updated,
 		//  the useMemo callback will be called.
-		[ venue, venues, kind, onlineTermId ]
+		[ venue, venues, kind, onlineTermId ],
 	);
 
 	return { venueOptions };
@@ -438,11 +438,11 @@ export function useVenueTaxonomyIds( venueTaxonomy, postId, skip = false ) {
 			const terms = wpSelect( 'core' ).getEntityRecords(
 				'taxonomy',
 				venueTaxonomy,
-				{ post: postId, per_page: 100, context: 'view' }
+				{ post: postId, per_page: 100, context: 'view' },
 			);
 			return terms?.map( ( t ) => t.id );
 		},
-		[ skip, venueTaxonomy, postId ]
+		[ skip, venueTaxonomy, postId ],
 	);
 }
 
@@ -475,7 +475,7 @@ export function usePopularVenues( limit = 3, venuePostType = DEFAULT_VENUE_POST_
 			const venues = getEntityRecords(
 				'taxonomy',
 				getVenueTaxonomy( venuePostType ),
-				query
+				query,
 			);
 
 			// Filter out the online-event term since it's controlled by a separate toggle.
@@ -488,11 +488,11 @@ export function usePopularVenues( limit = 3, venuePostType = DEFAULT_VENUE_POST_
 			return venues
 				?.filter( ( venue ) =>
 					null === onlineTermId ||
-					Number( venue.id ) !== Number( onlineTermId )
+					Number( venue.id ) !== Number( onlineTermId ),
 				)
 				.slice( 0, limit );
 		},
-		[ limit, venuePostType ]
+		[ limit, venuePostType ],
 	);
 
 	return popularVenues ?? [];
@@ -550,7 +550,7 @@ export function findVenuePostById( selectFunc, postId ) {
 		const records = selectFunc( 'core' ).getEntityRecords(
 			'postType',
 			type.slug,
-			{ include: [ postId ], context: 'edit', per_page: 1 }
+			{ include: [ postId ], context: 'edit', per_page: 1 },
 		);
 		if ( Array.isArray( records ) && 0 < records.length ) {
 			const post = records[ 0 ];

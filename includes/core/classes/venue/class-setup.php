@@ -53,7 +53,7 @@ final class Setup {
 	/**
 	 * Slug of the sentinel term used to mark an event as online.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @var string
 	 */
 	const ONLINE_EVENT_TERM_SLUG = 'online-event';
@@ -626,7 +626,7 @@ final class Setup {
 	 * shadow. Centralizing the slug lets the editor and any third-party code
 	 * test for the sentinel without restating the string.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $slug The term slug to test.
 	 *
@@ -643,7 +643,7 @@ final class Setup {
 	 * to assign it (e.g. {@see Core_Event::set_online()}) handle the null branch by
 	 * running {@see \GatherPress\Core\Setup::add_online_event_term()} first.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $venue_post_type The venue post type whose taxonomy should be
 	 *                                queried. Defaults to {@see Venue::POST_TYPE}

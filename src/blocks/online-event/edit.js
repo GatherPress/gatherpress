@@ -63,7 +63,7 @@ const Edit = ( { attributes, context } ) => {
 					?.gatherpress?.config?.onlineEventTermIds?.[ venuePostType ] ?? null,
 			};
 		},
-		[]
+		[],
 	);
 
 	// Read the singular label so the panel title reflects what the post type
@@ -73,7 +73,7 @@ const Edit = ( { attributes, context } ) => {
 	const singularLabel = usePostTypeLabel(
 		'singular_name',
 		currentPostType,
-		__( 'Event', 'gatherpress' )
+		__( 'Event', 'gatherpress' ),
 	);
 
 	const isEditingEvent = isPostTypeSupporting( 'gatherpress-online-event', currentPostType );
@@ -84,7 +84,7 @@ const Edit = ( { attributes, context } ) => {
 	const venueTaxonomyIds = useVenueTaxonomyIds(
 		venueTaxonomy,
 		currentPostId,
-		! isEditingEvent
+		! isEditingEvent,
 	);
 
 	const updateVenueTaxonomyIds = ( newIds ) =>
@@ -95,7 +95,7 @@ const Edit = ( { attributes, context } ) => {
 		( select ) =>
 			select( 'core/editor' ).getEditedPostAttribute( 'meta' )
 				?.gatherpress_online_event_link || '',
-		[]
+		[],
 	);
 
 	const [ onlineEventLink, setOnlineEventLink ] = useState( onlineEventLinkMeta );
@@ -128,7 +128,7 @@ const Edit = ( { attributes, context } ) => {
 		const termId = Number( onlineEventTermId );
 		const termIdStr = String( termId );
 		const hasTermAlready = currentTerms.some(
-			( id ) => String( id ) === termIdStr
+			( id ) => String( id ) === termIdStr,
 		);
 
 		let newTerms;
@@ -159,7 +159,7 @@ const Edit = ( { attributes, context } ) => {
 			const isCurrentPost = eventId && editorPostId === eventId;
 			const isEditorEvent = isPostTypeSupporting(
 				'gatherpress-online-event',
-				editorPostType
+				editorPostType,
 			);
 
 			let venueTermIds;
@@ -173,7 +173,7 @@ const Edit = ( { attributes, context } ) => {
 				const terms = select( 'core' ).getEntityRecords(
 					'taxonomy',
 					venueTaxonomy,
-					{ post: eventId, per_page: 100, context: 'view' }
+					{ post: eventId, per_page: 100, context: 'view' },
 				);
 				venueTermIds = terms?.map( ( t ) => t.id );
 			} else {
@@ -185,17 +185,17 @@ const Edit = ( { attributes, context } ) => {
 			}
 
 			return venueTermIds.some(
-				( id ) => String( id ) === String( onlineTermId )
+				( id ) => String( id ) === String( onlineTermId ),
 			);
 		},
-		[ eventId, onlineEventTermId, venueTaxonomy ]
+		[ eventId, onlineEventTermId, venueTaxonomy ],
 	);
 
 	// Reactive supports check — keeps the block from staying dimmed when the
 	// post-type definition isn't cached on first render.
 	const hasOnlineEventSupport = usePostTypeSupports(
 		'gatherpress-online-event',
-		context?.postType
+		context?.postType,
 	);
 
 	// Dim the block when not an online event or no valid context.
@@ -230,7 +230,7 @@ const Edit = ( { attributes, context } ) => {
 						title={ sprintf(
 							/* translators: %s: Singular post type label, e.g. "Event". */
 							__( 'Online %s Settings', 'gatherpress' ),
-							singularLabel
+							singularLabel,
 						) }
 						initialOpen={ true }
 					>
@@ -239,24 +239,25 @@ const Edit = ( { attributes, context } ) => {
 								label={ sprintf(
 									/* translators: %s: Singular post type label, e.g. "Event". */
 									__( 'This is an online %s', 'gatherpress' ),
-									singularLabel
+									singularLabel,
 								) }
 								checked={ isOnlineEvent }
 								onChange={ toggleOnlineEvent }
 							/>
 							{ isOnlineEvent && (
 								<TextControl
+									__next40pxDefaultSize
 									type="url"
 									label={ sprintf(
 										/* translators: %s: Singular post type label, e.g. "Event". */
 										__( 'Online %s link', 'gatherpress' ),
-										singularLabel
+										singularLabel,
 									) }
 									value={ onlineEventLink }
 									placeholder={ sprintf(
 										/* translators: %s: Singular post type label, e.g. "Event". */
 										__( 'Add link to online %s', 'gatherpress' ),
-										singularLabel
+										singularLabel,
 									) }
 									onChange={ updateOnlineEventLink }
 								/>

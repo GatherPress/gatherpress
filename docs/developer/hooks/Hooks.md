@@ -12,6 +12,11 @@
 
 - [`gatherpress_autoloader`](gatherpress_autoloader.md) Filters the registered autoloaders for GatherPress.
 
+## class-base.php
+
+- [`gatherpress_rsvp_flag_added`](gatherpress_rsvp_flag_added.md) Fires after a flag is added to an RSVP that did not carry it.
+- [`gatherpress_rsvp_flag_removed`](gatherpress_rsvp_flag_removed.md) Fires after a flag is removed from an RSVP that carried it.
+
 ## class-cache.php
 
 - [`gatherpress_calendar_max_age`](gatherpress_calendar_max_age.md) Filters how long calendar responses may be reused by clients and caches.
@@ -28,6 +33,7 @@
 
 - [`gatherpress_date_format`](gatherpress_date_format.md)
 - [`gatherpress_datetime_format`](gatherpress_datetime_format.md) Filters the format an event's datetime is rendered with.
+- [`gatherpress_datetime_separator`](gatherpress_datetime_separator.md) Filter the separator between start and end dates/times.
 - [`gatherpress_force_online_event_link`](gatherpress_force_online_event_link.md) Filters whether to force the display of the online event link.
 - [`gatherpress_time_format`](gatherpress_time_format.md)
 - [`gatherpress_timezone`](gatherpress_timezone.md)
@@ -88,6 +94,7 @@
 
 ## class-query.php
 
+- [`gatherpress_geocode_query`](gatherpress_geocode_query.md) Filters the address sent to the geocoder.
 - [`gatherpress_rsvp_comment_query_exclusion`](gatherpress_rsvp_comment_query_exclusion.md) Filters whether RSVP comments should be excluded from a comment query.
 
 ## class-rest-api.php
@@ -97,6 +104,10 @@
 ## class-roles.php
 
 - [`gatherpress_roles`](gatherpress_roles.md) Filter the list of roles for GatherPress.
+
+## class-rsvp-form.php
+
+- [`gatherpress_rsvp_form_schemas`](gatherpress_rsvp_form_schemas.md) Filters the RSVP form schemas about to be stored for a post.
 
 ## class-settings.php
 
@@ -133,14 +144,16 @@
 
 ## class-utility.php
 
+- [`gatherpress_date_formats`](gatherpress_date_formats.md) Filters the date formats offered as examples in GatherPress.
 - [`gatherpress_pre_get_http_input`](gatherpress_pre_get_http_input.md) Short-circuit filter for HTTP input retrieval during testing.
 - [`gatherpress_pre_get_wp_referer`](gatherpress_pre_get_wp_referer.md) Short-circuit filter for wp_get_referer() during testing.
 - [`gatherpress_template_path`](gatherpress_template_path.md) Filters the resolved template path returned by `Utility::locate_template()`.
+- [`gatherpress_time_formats`](gatherpress_time_formats.md) Filters the time formats offered as examples in GatherPress.
 
 ## gatherpress.php
 
 - [`gatherpress_loaded`](gatherpress_loaded.md) Fires once GatherPress has finished bootstrapping its core classes.
 
-## index.php
+## network-page.php
 
 - [`gatherpress_settings_section`](gatherpress_settings_section.md) Fires so tabs that render via the GatherPress settings section action

@@ -1,7 +1,4 @@
-<!--
-This file is hand-edited — improve it like any other file. The version badge
-below is the only line the release tooling touches (see .github/scripts/release/).
--->
+<!-- This file is hand-edited, improve it like any other file. The version badge below is the only line the release tooling touches (see .github/scripts/release/). -->
 
 # GatherPress
 

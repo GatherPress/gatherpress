@@ -43,8 +43,8 @@ function templateToBlocks( template ) {
 		createBlock(
 			name,
 			attributes,
-			templateToBlocks( innerBlocks || [] )
-		)
+			templateToBlocks( innerBlocks || [] ),
+		),
 	);
 }
 
@@ -66,7 +66,7 @@ function templateToBlocks( template ) {
  */
 const DEFAULT_TEMPLATE = applyFilters(
 	'gatherpress.rsvpFormDefaultTemplate',
-	STANDARD_RSVP_FORM_TEMPLATE
+	STANDARD_RSVP_FORM_TEMPLATE,
 );
 
 /**
@@ -101,7 +101,7 @@ const PATTERNS = applyFilters( 'gatherpress.rsvpFormPatterns', [
 		title: __( 'Standard RSVP Form', 'gatherpress' ),
 		description: __(
 			'Name + email + guest count + anonymous opt-in + email-updates opt-in, plus success and past-event message groups.',
-			'gatherpress'
+			'gatherpress',
 		),
 		template: STANDARD_RSVP_FORM_TEMPLATE,
 	},
@@ -121,9 +121,9 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 		.filter( ( name ) => 'gatherpress/rsvp-form' !== name );
 
 	// Get event data - either from override postId or current post.
-	const { maxGuestLimit: maxAttendanceLimit, enableRsvp, enableAnonymousRsvp } = useSelect(
+	const { guestLimit, enableRsvp, enableAnonymousRsvp } = useSelect(
 		( select ) => getEventMeta( select, postId, attributes ),
-		[ postId, attributes ]
+		[ postId, attributes ],
 	);
 
 	// Read per-event open RSVP setting (integer 0/1; undefined/null defaults to enabled).
@@ -137,7 +137,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	// gate re-evaluates when the override target's entity record loads.
 	const isValidEvent = useSelect(
 		( select ) => hasValidEventId( select, postId ),
-		[ postId ]
+		[ postId ],
 	);
 
 	// Get all inner blocks.
@@ -175,7 +175,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 
 				// Determine if the field should be disabled based on its field name.
 				if ( 'gatherpress_rsvp_form_guests' === fieldName ) {
-					shouldDisable = 0 === parseInt( maxAttendanceLimit, 10 );
+					shouldDisable = 0 === parseInt( guestLimit, 10 );
 				} else if ( 'gatherpress_rsvp_form_anonymous' === fieldName ) {
 					shouldDisable = ! enableAnonymousRsvp;
 				}
@@ -207,7 +207,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 
 			return block;
 		} );
-	}, [ maxAttendanceLimit, enableAnonymousRsvp ] );
+	}, [ guestLimit, enableAnonymousRsvp ] );
 
 	/**
 	 * Recursively collect visibility styles from blocks with metadata.
@@ -274,7 +274,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 		const styles = [];
 
 		// Hide guest count field if max attendance limit is 0.
-		if ( 0 === parseInt( maxAttendanceLimit, 10 ) ) {
+		if ( 0 === parseInt( guestLimit, 10 ) ) {
 			styles.push( `#block-${ clientId } .gatherpress-rsvp-field-guests { opacity: ${ DISABLED_FIELD_OPACITY }; }` );
 		}
 
@@ -289,7 +289,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 		return () => {
 			styleElement?.remove();
 		};
-	}, [ maxAttendanceLimit, enableAnonymousRsvp, clientId ] );
+	}, [ guestLimit, enableAnonymousRsvp, clientId ] );
 
 	const rsvpMode = getFromSettings( 'rsvpMode' ) ?? 'enabled';
 	const enableOpenRsvp = getFromSettings( 'enableOpenRsvp' ) ?? true;
@@ -362,7 +362,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 						icon="forms"
 						instructions={ __(
 							'Choose a pattern for the RSVP form.',
-							'gatherpress'
+							'gatherpress',
 						) }
 						patterns={ PATTERNS }
 						showStartBlank={ false }

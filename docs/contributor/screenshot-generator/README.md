@@ -15,7 +15,7 @@ There are **two screenshot suites**, both driven by the same reusable workflow (
 | wordpress.org plugin assets | [wporg.spec.ts](../../../.github/scripts/wordpress-org-screenshots/wporg.spec.ts) | `.wordpress-org/` | every locale with more than 90% of finished translations |
 | Documentation images | [docs.spec.ts](../../../.github/scripts/docs-screenshots/docs.spec.ts) | `docs/user/user-doc-media/` | English only |
 
-For the wordpress.org suite, the names of the generated files match the captions in the plugins [readme.md](../../../readme.md)! For the documentation suite, the screenshot names are semantic (`settings-rsvp-tab.png`) and are referenced directly from the markdown under `docs/user/` — a spec can also **highlight an element** in GatherPress' brand color via the [highlight helper](../../../.github/scripts/docs-screenshots/highlight.ts) to draw the reader's attention.
+For the wordpress.org suite, the names of the generated files match the captions in the plugins [readme.md](../../../readme.md)! For the documentation suite, the screenshot names are semantic (`settings-rsvp-tab.png`) and are referenced directly from the markdown under `docs/user/`. A spec can also **highlight an element** in GatherPress' brand color via the [highlight helper](../../../.github/scripts/docs-screenshots/highlight.ts) to draw the reader's attention.
 
 ## Automated Screenshots
 
@@ -36,11 +36,11 @@ While such a workflow could run on every major- and minor-, but not on bug-fix-r
 
 Some details worth knowing when reviewing the generated pull requests:
 
-- The locale jobs run **sequentially** (`max-parallel: 1`) so later jobs reuse the cached Playwright browser, and every job is bounded by timeouts — a hung step fails within minutes instead of stalling the whole matrix.
+- The locale jobs run **sequentially** (`max-parallel: 1`) so later jobs reuse the cached Playwright browser, and every job is bounded by timeouts, a hung step fails within minutes instead of stalling the whole matrix.
 - Each per-locale branch is cut **from `origin/develop`** and contains **only the `.wordpress-org/` screenshot changes**; incidental changes elsewhere in the run's checkout (for example the image recompression pass) are never committed.
-- The pull requests **target `develop`** — like all other work, screenshots reach `main` with the next release. They carry the **Skip Changelog** label, since screenshot regeneration doesn't warrant a changelog entry.
-- Branch, commit, and pull request are created by [`peter-evans/create-pull-request`](https://github.com/peter-evans/create-pull-request) with `sign-commits: true` — the same pattern as the hook-docs workflow. Commits are created through the GitHub API and therefore **signed by GitHub ("Verified")**, which the branch protection on `develop` requires.
-- Each pull request has **auto-merge (squash) enabled** and its branch is deleted after merging — the per-locale PRs land on their own once required checks pass, and only stay open for human review when something fails.
+- The pull requests **target `develop`**: like all other work, screenshots reach `main` with the next release. They carry the **Skip Changelog** label, since screenshot regeneration doesn't warrant a changelog entry.
+- Branch, commit, and pull request are created by [`peter-evans/create-pull-request`](https://github.com/peter-evans/create-pull-request) with `sign-commits: true`, the same pattern as the hook-docs workflow. Commits are created through the GitHub API and therefore **signed by GitHub ("Verified")**, which the branch protection on `develop` requires.
+- Each pull request has **auto-merge (squash) enabled** and its branch is deleted after merging. The per-locale PRs land on their own once required checks pass, and only stay open for human review when something fails.
 
 ## Manually generating Screenshots
 

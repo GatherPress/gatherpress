@@ -84,7 +84,7 @@ describe( 'AQL Integration', () => {
 		usePostTypeSupports.mockImplementation(
 			( support, postType ) =>
 				'gatherpress-event-date' === support &&
-				'gatherpress_event' === postType
+				'gatherpress_event' === postType,
 		);
 	} );
 
@@ -93,7 +93,7 @@ describe( 'AQL Integration', () => {
 			expect( addFilter ).toHaveBeenCalledWith(
 				'editor.BlockEdit',
 				'gatherpress/aql-integration',
-				expect.any( Function )
+				expect.any( Function ),
 			);
 		} );
 	} );
@@ -109,12 +109,12 @@ describe( 'AQL Integration', () => {
 				<Enhanced
 					name="core/paragraph"
 					attributes={ { namespace: 'some-namespace' } }
-				/>
+				/>,
 			);
 
 			expect( getByTestId( 'block-edit' ) ).toBeInTheDocument();
 			expect(
-				queryByTestId( 'inspector-controls' )
+				queryByTestId( 'inspector-controls' ),
 			).not.toBeInTheDocument();
 		} );
 
@@ -131,12 +131,12 @@ describe( 'AQL Integration', () => {
 						namespace: 'gatherpress-event-query',
 						query: { postType: 'gatherpress_event' },
 					} }
-				/>
+				/>,
 			);
 
 			expect( getByTestId( 'block-edit' ) ).toBeInTheDocument();
 			expect(
-				queryByTestId( 'inspector-controls' )
+				queryByTestId( 'inspector-controls' ),
 			).not.toBeInTheDocument();
 		} );
 
@@ -154,25 +154,25 @@ describe( 'AQL Integration', () => {
 						query: { postType: 'gatherpress_event' },
 					} }
 					setAttributes={ jest.fn() }
-				/>
+				/>,
 			);
 
 			expect( getByTestId( 'block-edit' ) ).toBeInTheDocument();
 			expect(
-				getByTestId( 'inspector-controls' )
+				getByTestId( 'inspector-controls' ),
 			).toBeInTheDocument();
 			expect( getByTestId( 'panel-body' ) ).toHaveAttribute(
 				'data-title',
-				'Event Query Settings'
+				'Event Query Settings',
 			);
 			expect(
-				getByTestId( 'event-list-type-controls' )
+				getByTestId( 'event-list-type-controls' ),
 			).toBeInTheDocument();
 			expect(
-				getByTestId( 'event-include-unfinished-controls' )
+				getByTestId( 'event-include-unfinished-controls' ),
 			).toBeInTheDocument();
 			expect(
-				getByTestId( 'event-order-controls' )
+				getByTestId( 'event-order-controls' ),
 			).toBeInTheDocument();
 		} );
 
@@ -181,7 +181,7 @@ describe( 'AQL Integration', () => {
 			usePostTypeSupports.mockImplementation(
 				( support, postType ) =>
 					'gatherpress-event-date' === support &&
-					'gatherpress_shindig' === postType
+					'gatherpress_shindig' === postType,
 			);
 
 			const MockBlockEdit = () => (
@@ -197,7 +197,7 @@ describe( 'AQL Integration', () => {
 						query: { postType: 'gatherpress_shindig' },
 					} }
 					setAttributes={ jest.fn() }
-				/>
+				/>,
 			);
 
 			expect( getByTestId( 'block-edit' ) ).toBeInTheDocument();
@@ -219,12 +219,12 @@ describe( 'AQL Integration', () => {
 						query: { postType: 'post' },
 					} }
 					setAttributes={ jest.fn() }
-				/>
+				/>,
 			);
 
 			expect( getByTestId( 'block-edit' ) ).toBeInTheDocument();
 			expect(
-				queryByTestId( 'inspector-controls' )
+				queryByTestId( 'inspector-controls' ),
 			).not.toBeInTheDocument();
 		} );
 	} );
@@ -245,7 +245,7 @@ describe( 'AQL Integration', () => {
 						query: { postType: 'gatherpress_event' },
 					} }
 					setAttributes={ mockSetAttributes }
-				/>
+				/>,
 			);
 
 			expect( mockSetAttributes ).toHaveBeenCalledWith( {
@@ -277,7 +277,7 @@ describe( 'AQL Integration', () => {
 						},
 					} }
 					setAttributes={ mockSetAttributes }
-				/>
+				/>,
 			);
 
 			expect( mockSetAttributes ).not.toHaveBeenCalled();
@@ -298,7 +298,7 @@ describe( 'AQL Integration', () => {
 						query: { postType: 'post' },
 					} }
 					setAttributes={ mockSetAttributes }
-				/>
+				/>,
 			);
 
 			expect( mockSetAttributes ).not.toHaveBeenCalled();
@@ -323,7 +323,7 @@ describe( 'AQL Integration', () => {
 						},
 					} }
 					setAttributes={ mockSetAttributes }
-				/>
+				/>,
 			);
 
 			expect( mockSetAttributes ).toHaveBeenCalledWith( {
@@ -354,7 +354,7 @@ describe( 'AQL Integration', () => {
 						query: { postType: 'gatherpress_event' },
 					} }
 					setAttributes={ mockSetAttributes }
-				/>
+				/>,
 			);
 
 			// Verify useEffect was called with a callback and dependency
@@ -368,7 +368,7 @@ describe( 'AQL Integration', () => {
 					undefined,
 					expect.any( Object ),
 					mockSetAttributes,
-				] )
+				] ),
 			);
 		} );
 	} );

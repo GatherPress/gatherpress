@@ -9,6 +9,24 @@
  */
 
 /**
+ * Class that hides the screen-reader span, styled by the utility stylesheet.
+ *
+ * @since 0.36.0
+ *
+ * @type {string}
+ */
+const SCREEN_READER_CLASS = 'gatherpress--screen-reader-text';
+
+/**
+ * Marks the span holding the tooltip text for screen readers.
+ *
+ * @since 0.36.0
+ *
+ * @type {string}
+ */
+const NOTICE_CLASS = 'gatherpress-tooltip-notice';
+
+/**
  * Initialize a single tooltip element.
  *
  * @param {HTMLElement|Object} tooltip The tooltip element.
@@ -43,14 +61,14 @@ export function initTooltip( tooltip ) {
 	if ( textColor && tooltip.style?.setProperty ) {
 		tooltip.style.setProperty(
 			'--gatherpress-tooltip-text-color',
-			textColor
+			textColor,
 		);
 	}
 
 	if ( bgColor && tooltip.style?.setProperty ) {
 		tooltip.style.setProperty(
 			'--gatherpress-tooltip-bg-color',
-			bgColor
+			bgColor,
 		);
 	}
 
@@ -60,12 +78,15 @@ export function initTooltip( tooltip ) {
 		'function' === typeof tooltip.appendChild &&
 		'undefined' !== typeof document
 	) {
+		// Its own class so another feature's screen-reader text is never
+		// mistaken for this one, and a direct child so a nested tooltip's
+		// text is not either.
 		const existingSrText = tooltip.querySelector(
-			':scope > .screen-reader-text'
+			`:scope > .${ NOTICE_CLASS }`,
 		);
 		if ( ! existingSrText ) {
 			const srText = document.createElement( 'span' );
-			srText.className = 'screen-reader-text';
+			srText.className = `screen-reader-text ${ SCREEN_READER_CLASS } ${ NOTICE_CLASS }`;
 			srText.textContent = ` (${ tooltipText })`;
 			tooltip.appendChild( srText );
 		}
@@ -81,7 +102,7 @@ export function initTooltips() {
 	}
 
 	const tooltips = document.querySelectorAll(
-		'.gatherpress-tooltip[data-gatherpress-tooltip]'
+		'.gatherpress-tooltip[data-gatherpress-tooltip]',
 	);
 
 	tooltips.forEach( ( tooltip ) => {
@@ -98,7 +119,7 @@ export function closeAllTooltips() {
 	}
 
 	const activeTooltips = document.querySelectorAll(
-		'.gatherpress-tooltip--is-active'
+		'.gatherpress-tooltip--is-active',
 	);
 	activeTooltips.forEach( ( el ) => {
 		el.classList.remove( 'gatherpress-tooltip--is-active' );
