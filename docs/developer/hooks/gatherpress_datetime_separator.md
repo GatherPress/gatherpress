@@ -27,7 +27,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/event/class-event.php:284](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-event.php#L284)
+- [includes/core/classes/event/class-event.php:285](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-event.php#L285)
 ```php
 apply_filters(
 			'gatherpress_datetime_separator',
