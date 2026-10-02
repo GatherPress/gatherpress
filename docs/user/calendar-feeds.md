@@ -11,7 +11,7 @@ There are two ways to get GatherPress events into a calendar app, and they behav
 * **Add to Calendar** (the [block](./blocks/README.md) on a single event) saves a *one-time snapshot* of that event, or hands it off to Google Calendar or Yahoo Calendar. If the event is rescheduled afterwards, the entry in the attendee's calendar does not update.
 * **Calendar feeds** (this page) are a *live subscription*. The calendar app checks the feed URL periodically and keeps every event in it current.
 
-If someone cares about one event, the Add to Calendar block is enough. If they care about your community, hand them a feed.
+If someone cares about one event, the Add to Calendar block is enough. If they care about your community, hand them a feed. The easiest way to do that from the editor is the [Subscribe to Events](./blocks/subscribe-to-events.md) block, which renders the right feed link for a venue, a topic, the archive, or the whole site without anyone having to type a URL.
 
 ## Available feeds
 
