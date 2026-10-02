@@ -14,7 +14,6 @@ use GatherPress\Core\Venue;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
-use WP_REST_Request;
 use WP_REST_Response;
 
 /**
@@ -767,9 +766,8 @@ class Test_Geo_Sync extends Base {
 				'geo_latitude' => '0',
 			),
 		);
-		$request        = new WP_REST_Request( 'GET', '/wp/v2/gatherpress_event/' . $event->ID );
 
-		$result = Geo_Sync::get_instance()->maybe_refresh_on_rest( $response, $event, $request );
+		$result = Geo_Sync::get_instance()->maybe_refresh_on_rest( $response, $event );
 
 		$this->assertSame( '35.6762', $result->data['meta']['geo_latitude'] );
 		$this->assertSame( '139.6503', $result->data['meta']['geo_longitude'] );
@@ -800,9 +798,8 @@ class Test_Geo_Sync extends Base {
 				'geo_latitude' => 'untouched',
 			),
 		);
-		$request        = new WP_REST_Request( 'GET', '/wp/v2/gatherpress_event/' . $event->ID );
 
-		$result = Geo_Sync::get_instance()->maybe_refresh_on_rest( $response, $event, $request );
+		$result = Geo_Sync::get_instance()->maybe_refresh_on_rest( $response, $event );
 
 		$this->assertSame( 'untouched', $result->data['meta']['geo_latitude'] );
 	}
@@ -828,9 +825,8 @@ class Test_Geo_Sync extends Base {
 
 		$response       = new WP_REST_Response();
 		$response->data = array( 'id' => $event->ID );
-		$request        = new WP_REST_Request( 'GET', '/wp/v2/gatherpress_event/' . $event->ID );
 
-		$result = Geo_Sync::get_instance()->maybe_refresh_on_rest( $response, $event, $request );
+		$result = Geo_Sync::get_instance()->maybe_refresh_on_rest( $response, $event );
 
 		$this->assertArrayNotHasKey( 'meta', $result->data );
 		$this->assertSame(

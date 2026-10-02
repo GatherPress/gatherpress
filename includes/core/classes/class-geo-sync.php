@@ -17,7 +17,6 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
 use WP_Post;
-use WP_REST_Request;
 use WP_REST_Response;
 
 /**
@@ -198,18 +197,10 @@ final class Geo_Sync {
 	 *
 	 * @param WP_REST_Response $response The response object.
 	 * @param WP_Post          $post     The post being returned.
-	 * @param WP_REST_Request  $request  Request object.
-	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
 	 * @return WP_REST_Response
 	 */
-	public function maybe_refresh_on_rest(
-		WP_REST_Response $response,
-		WP_Post $post,
-		WP_REST_Request $request
-	): WP_REST_Response {
-		unset( $request );
-
+	public function maybe_refresh_on_rest( WP_REST_Response $response, WP_Post $post ): WP_REST_Response {
 		$fresh = $this->maybe_refresh( $post->ID );
 
 		if ( null !== $fresh && isset( $response->data['meta'] ) && is_array( $response->data['meta'] ) ) {

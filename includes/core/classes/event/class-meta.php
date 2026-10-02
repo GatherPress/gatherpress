@@ -225,7 +225,7 @@ final class Meta {
 			sprintf( 'rest_prepare_%s', $post_type ),
 			array( Geo_Sync::get_instance(), 'maybe_refresh_on_rest' ),
 			10,
-			3
+			2
 		);
 	}
 
