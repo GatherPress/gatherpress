@@ -3480,5 +3480,32 @@ class Test_Event extends Base {
 		$this->assertSame( ' - ', Event::get_default_datetime_separator() );
 
 		remove_filter( 'gatherpress_datetime_separator', $filter_callback );
+
+		// When called within a supported event post context without an explicit event.
+		$post_id = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+		$post    = get_post( $post_id );
+
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Required to establish the global post for get_the_ID().
+		$GLOBALS['post'] = $post;
+		setup_postdata( $post );
+
+		$captured_event    = null;
+		$filter_with_event = function ( $separator, $event ) use ( &$captured_event ) {
+			$captured_event = $event;
+			return $separator;
+		};
+		add_filter( 'gatherpress_datetime_separator', $filter_with_event, 10, 2 );
+
+		Event::get_default_datetime_separator();
+
+		$this->assertInstanceOf( Event::class, $captured_event );
+		$this->assertSame( $post_id, $captured_event->get_post_id() );
+
+		remove_filter( 'gatherpress_datetime_separator', $filter_with_event, 10 );
+		wp_reset_postdata();
 	}
 }
