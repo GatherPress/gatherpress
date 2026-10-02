@@ -39,6 +39,24 @@ final class Form {
 	use Singleton;
 
 	/**
+	 * The form action for no-JavaScript RSVP updates.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @var string
+	 */
+	public const NO_SCRIPT_ACTION = 'gatherpress_no_script_rsvp';
+
+	/**
+	 * The no-JavaScript RSVP nonce field name.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @var string
+	 */
+	public const NONCE_NAME = 'gatherpress_no_script_rsvp_nonce';
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -60,6 +78,99 @@ final class Form {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'initialize_rsvp_form_handling' ) );
+		add_action( 'admin_post_' . self::NO_SCRIPT_ACTION, array( $this, 'handle_no_script_rsvp' ) );
+	}
+
+	/**
+	 * Process a no-JavaScript RSVP submission.
+	 *
+	 * The RSVP block renders a POST form inside <noscript> for logged-in users,
+	 * so the RSVP toggle still works when JavaScript never arrives. This handler
+	 * validates the request, saves the new status, and redirects back to the
+	 * event with a query flag the block turns into a status message.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	public function handle_no_script_rsvp(): void {
+		$nonce = Utility::get_http_input( INPUT_POST, self::NONCE_NAME );
+
+		if (
+			! is_user_logged_in()
+			|| '' === $nonce
+			|| ! wp_verify_nonce( $nonce, self::NO_SCRIPT_ACTION )
+		) {
+			wp_die(
+				esc_html__( 'Your session expired. Please reload the page and try again.', 'gatherpress' ),
+				esc_html__( 'RSVP Not Saved', 'gatherpress' ),
+				403
+			);
+		}
+
+		$post_id = absint( Utility::get_http_input( INPUT_POST, 'post_id' ) );
+		$status  = Utility::get_http_input( INPUT_POST, 'status' );
+		$rsvp    = new Rsvp( $post_id );
+
+		if (
+			! $post_id
+			|| ! in_array( $status, array( Status::ATTENDING->value, Status::NOT_ATTENDING->value ), true )
+			|| ! Event::is_viewable( $post_id )
+			|| ! $rsvp->is_enabled()
+		) {
+			wp_die(
+				esc_html__( 'This RSVP is no longer available.', 'gatherpress' ),
+				esc_html__( 'RSVP Not Saved', 'gatherpress' ),
+				400
+			);
+		}
+
+		$event = new Event( $post_id );
+
+		if ( $event->has_event_past() ) {
+			wp_die(
+				esc_html__( 'Registration for this event is now closed.', 'gatherpress' ),
+				esc_html__( 'Event Has Passed', 'gatherpress' ),
+				400
+			);
+		}
+
+		$user_id = get_current_user_id();
+		$result  = $rsvp->save( $user_id, $status );
+		$saved   = $result['status'];
+
+		$return_url = Utility::get_http_input( INPUT_POST, 'return_url' );
+
+		if ( '' === $return_url ) {
+			$return_url = (string) get_permalink( $post_id );
+		}
+
+		$redirect_url = remove_query_arg(
+			array( 'gatherpress_rsvp_no_script', 'gatherpress_rsvp_status' ),
+			$return_url
+		);
+
+		if ( Status::NO_STATUS->value === $saved ) {
+			$redirect_url = add_query_arg(
+				array(
+					'gatherpress_rsvp_no_script' => 'error',
+				),
+				$redirect_url
+			);
+		} else {
+			$redirect_url = add_query_arg(
+				array(
+					'gatherpress_rsvp_no_script' => 'success',
+					'gatherpress_rsvp_status'    => $saved,
+				),
+				$redirect_url
+			);
+		}
+
+		wp_safe_redirect( esc_url_raw( $redirect_url ) );
+
+		// Tests intercept wp_redirect and throw before this line executes.
+		exit; // @codeCoverageIgnore
 	}
 
 	/**
