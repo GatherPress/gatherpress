@@ -25,7 +25,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-utility.php:1071](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-utility.php#L1071)
+- [includes/core/classes/class-utility.php:1203](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-utility.php#L1203)
 ```php
 apply_filters( 'gatherpress_pre_get_wp_referer', null )
 ```

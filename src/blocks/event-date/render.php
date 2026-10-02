@@ -17,13 +17,41 @@ use GatherPress\Core\Settings;
 $gatherpress_block_instance = Setup::get_instance();
 $gatherpress_post_id        = $gatherpress_block_instance->get_post_id( $block->parsed_block );
 $gatherpress_event          = new Event( $gatherpress_post_id );
-$gatherpress_display        = esc_html(
-	$gatherpress_event->get_display_datetime(
-		$attributes['displayType'] ?? '',
-		$attributes['startDateFormat'] ?? '',
-		$attributes['endDateFormat'] ?? '',
-		$attributes['separator'] ?? '',
-		$attributes['showTimezone'] ?? ''
+
+$gatherpress_parts = $gatherpress_event->get_display_datetime_parts(
+	$attributes['displayType'] ?? '',
+	$attributes['startDateFormat'] ?? '',
+	$attributes['endDateFormat'] ?? '',
+	$attributes['separator'] ?? '',
+	$attributes['showTimezone'] ?? ''
+);
+
+$gatherpress_render_part = static function ( string $human, string $iso ): string {
+	if ( empty( $human ) ) {
+		return '';
+	}
+
+	return empty( $iso )
+		? esc_html( $human )
+		: sprintf(
+			'<time datetime="%s">%s</time>',
+			esc_attr( $iso ),
+			esc_html( $human )
+		);
+};
+
+$gatherpress_output_parts = array_filter(
+	array(
+		$gatherpress_render_part(
+			(string) $gatherpress_parts['start'],
+			$gatherpress_event->get_datetime_start_iso()
+		),
+		esc_html( (string) $gatherpress_parts['separator'] ),
+		$gatherpress_render_part(
+			(string) $gatherpress_parts['end'],
+			$gatherpress_event->get_datetime_end_iso()
+		),
+		esc_html( (string) $gatherpress_parts['timezone'] ),
 	)
 );
 
@@ -99,6 +127,10 @@ if (
 	}
 }
 
+$gatherpress_display = $gatherpress_output_parts
+	? implode( ' ', $gatherpress_output_parts )
+	: Event::DATETIME_PLACEHOLDER;
+
 $gatherpress_wrapper_attrs = get_block_wrapper_attributes();
 if ( $gatherpress_viewer_time_context ) {
 	$gatherpress_wrapper_attrs .= sprintf(
@@ -115,11 +147,27 @@ if ( $gatherpress_viewer_time_context ) {
 				data-wp-class--gatherpress-tooltip="state.hasViewerTime"
 				data-wp-bind--data-gatherpress-tooltip="state.viewerTimeLabel"
 			>
-				<?php echo esc_html( $gatherpress_display ); ?>
+				<?php
+				echo wp_kses(
+					$gatherpress_display,
+					array(
+						'time' => array( 'datetime' => true ),
+					)
+				);
+				?>
 				<span class="screen-reader-text gatherpress--screen-reader-text gatherpress-tooltip-notice" data-wp-text="state.viewerTimeSrLabel"></span>
 			</a>
 		<?php else : ?>
-			<a href="<?php echo esc_url( get_permalink( $gatherpress_post_id ) ); ?>"><?php echo esc_html( $gatherpress_display ); ?></a>
+			<a href="<?php echo esc_url( get_permalink( $gatherpress_post_id ) ); ?>">
+				<?php
+				echo wp_kses(
+					$gatherpress_display,
+					array(
+						'time' => array( 'datetime' => true ),
+					)
+				);
+				?>
+			</a>
 		<?php endif; ?>
 	<?php elseif ( $gatherpress_viewer_time_context ) : ?>
 		<span
@@ -127,10 +175,24 @@ if ( $gatherpress_viewer_time_context ) {
 			data-wp-bind--data-gatherpress-tooltip="state.viewerTimeLabel"
 			data-wp-bind--tabindex="state.viewerTimeTabIndex"
 		>
-			<?php echo esc_html( $gatherpress_display ); ?>
+			<?php
+			echo wp_kses(
+				$gatherpress_display,
+				array(
+					'time' => array( 'datetime' => true ),
+				)
+			);
+			?>
 			<span class="screen-reader-text gatherpress--screen-reader-text gatherpress-tooltip-notice" data-wp-text="state.viewerTimeSrLabel"></span>
 		</span>
 	<?php else : ?>
-		<?php echo esc_html( $gatherpress_display ); ?>
+		<?php
+		echo wp_kses(
+			$gatherpress_display,
+			array(
+				'time' => array( 'datetime' => true ),
+			)
+		);
+		?>
 	<?php endif; ?>
 </div>
