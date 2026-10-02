@@ -345,12 +345,12 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 					: '',
 				eventTimezone: finalTimezone,
 				isAllDay,
-				/* translators: 1: event start in the viewer's timezone, 2: separator between start and end, 3: event end in the viewer's timezone. */
 				rangeFormat: sprintf(
+					/* translators: 1: event start in the viewer's timezone, 2: separator between start and end, 3: event end in the viewer's timezone. */
 					__( '%1$s %2$s %3$s your time', 'gatherpress' ),
 					'%1$s',
 					separator || __( 'to', 'gatherpress' ),
-					'%2$s'
+					'%2$s',
 				),
 				/* translators: %s: event start in the viewer's timezone. */
 				singleFormat: __( '%s your time', 'gatherpress' ),
