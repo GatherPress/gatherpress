@@ -1766,8 +1766,8 @@ class Test_Utility extends Base {
 			'datetime with timezone keeps date without timezone' => array( 'D, M j, Y, g:i a T', 'D, M j, Y' ),
 			'german datetime with boundary connector drops um' => array( 'j. F Y \u\m H:i \U\h\r', 'j. F Y' ),
 			'german datetime with Uhr before time drops Uhr' => array( 'j F Y, \U\h\r H:i', 'j F Y' ),
-			'japanese datetime keeps day suffix'             => array( 'Y年n月j日 H:i', 'Y年n月j日' ),
-			'korean datetime keeps day suffix'               => array( 'Y년 n월 j일 H:i', 'Y년 n월 j일' ),
+			'japanese datetime keeps day suffix'          => array( 'Y年n月j日 H:i', 'Y年n月j日' ),
+			'korean datetime keeps day suffix'            => array( 'Y년 n월 j일 H:i', 'Y년 n월 j일' ),
 		);
 	}
 
@@ -1882,19 +1882,11 @@ class Test_Utility extends Base {
 				),
 				array(
 					'type'  => 'literal',
-					'value' => '\U',
-				),
-				array(
-					'type'  => 'literal',
-					'value' => '\h',
-				),
-				array(
-					'type'  => 'literal',
-					'value' => '\r',
+					'value' => '\U\h\r',
 				),
 			),
 			$tokens,
-			'tokenize_date_format should tokenize escaped characters as literals and others as characters.'
+			'tokenize_date_format should keep a run of escaped characters as one literal and others as characters.'
 		);
 
 		// Trailing backslash edge case.
@@ -1920,6 +1912,152 @@ class Test_Utility extends Base {
 			),
 			$trailing,
 			'tokenize_date_format should handle a trailing backslash without error.'
+		);
+	}
+
+	/**
+	 * Splitting a format puts each piece with the date or the time.
+	 *
+	 * Called directly because the strip methods reach it through a same-class
+	 * delegation that xdebug does not trace.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::split_date_time_format
+	 *
+	 * @dataProvider data_split_date_time_format
+	 *
+	 * @param string $format   The format to split.
+	 * @param array  $expected The date part and the time part.
+	 *
+	 * @return void
+	 */
+	public function test_split_date_time_format( string $format, array $expected ): void {
+		$this->assertSame(
+			$expected,
+			PMC_Utility::invoke_hidden_method( new Utility(), 'split_date_time_format', array( $format ) ),
+			'Failed to assert the format was split into its date and time parts.'
+		);
+	}
+
+	/**
+	 * Data provider for split_date_time_format.
+	 *
+	 * @since TBD
+	 *
+	 * @return array[]
+	 */
+	public function data_split_date_time_format(): array {
+		return array(
+			'the date comes first' => array(
+				'j. F Y \u\m H:i \U\h\r',
+				array(
+					'date' => 'j. F Y',
+					'time' => 'H:i \U\h\r',
+				),
+			),
+			'the time comes first' => array(
+				'H:i \U\h\r, j. F Y',
+				array(
+					'date' => 'j. F Y',
+					'time' => 'H:i \U\h\r',
+				),
+			),
+			'only a date'          => array(
+				'Y年n月j日 T',
+				array(
+					'date' => 'Y年n月j日',
+					'time' => '',
+				),
+			),
+			'only a time'          => array(
+				'g:i a T',
+				array(
+					'date' => '',
+					'time' => 'g:i a',
+				),
+			),
+			'no format characters' => array(
+				'\a\t',
+				array(
+					'date' => '',
+					'time' => '',
+				),
+			),
+		);
+	}
+
+	/**
+	 * Finding a format character skips escaped text.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::find_format_char
+	 *
+	 * @return void
+	 */
+	public function test_find_format_char(): void {
+		$tokens = Utility::tokenize_date_format( '\H j H' );
+
+		$this->assertSame(
+			4,
+			PMC_Utility::invoke_hidden_method( new Utility(), 'find_format_char', array( $tokens, array( 'H' ) ) ),
+			'Failed to assert the escaped H was skipped for the format character.'
+		);
+		$this->assertNull(
+			PMC_Utility::invoke_hidden_method( new Utility(), 'find_format_char', array( $tokens, array( 'G' ) ) ),
+			'Failed to assert a character the format does not use is not found.'
+		);
+	}
+
+	/**
+	 * Dropping the lead-in removes the escaped words and spaces ending a date.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::drop_lead_in
+	 *
+	 * @return void
+	 */
+	public function test_drop_lead_in(): void {
+		$this->assertSame(
+			Utility::tokenize_date_format( 'j. F Y' ),
+			PMC_Utility::invoke_hidden_method(
+				new Utility(),
+				'drop_lead_in',
+				array( Utility::tokenize_date_format( 'j. F Y \u\m ' ) )
+			),
+			'Failed to assert the escaped word and spaces before the time were dropped.'
+		);
+		$this->assertSame(
+			array(),
+			PMC_Utility::invoke_hidden_method(
+				new Utility(),
+				'drop_lead_in',
+				array( Utility::tokenize_date_format( ' \u\m' ) )
+			),
+			'Failed to assert a lead-in with nothing before it leaves no tokens.'
+		);
+	}
+
+	/**
+	 * Joining tokens leaves out the skipped characters and trims the ends.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::join_format_tokens
+	 *
+	 * @return void
+	 */
+	public function test_join_format_tokens(): void {
+		$this->assertSame(
+			'g:i a \T',
+			PMC_Utility::invoke_hidden_method(
+				new Utility(),
+				'join_format_tokens',
+				array( Utility::tokenize_date_format( ' - g:i a \T T.' ), array( 'T' ) )
+			),
+			'Failed to assert the skipped character was left out, the escaped one kept, and the ends trimmed.'
 		);
 	}
 
