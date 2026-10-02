@@ -747,62 +747,38 @@ export function convertPHPToMomentFormat( format ) {
 		r: '', // no equivalent
 		U: 'X',
 	};
-	let result = '';
-	let i = 0;
-	const len = String( format ).length;
 
-	while ( i < len ) {
-		if ( '\\' === format[ i ] ) {
-			let literal = '';
-			while ( i < len && '\\' === format[ i ] ) {
-				i++;
-				if ( i < len ) {
-					literal += format[ i ];
-					i++;
-				}
-			}
-			result += `[${ literal }]`;
-		} else {
-			const chr = format[ i ];
-			result += chr in replacements ? replacements[ chr ] : chr;
-			i++;
-		}
-	}
-
-	return result;
+	// Moment reads text inside brackets literally, so PHP's escaped text
+	// becomes a bracketed run: '\U\h\r' turns into '[Uhr]'.
+	return tokenizePHPDateFormat( format )
+		.map( ( { type, value } ) =>
+			'literal' === type
+				? `[${ value.replace( /\\(.?)/gs, '$1' ) }]`
+				: ( replacements[ value ] ?? value ),
+		)
+		.join( '' );
 }
 
 /**
- * Tokenize a PHP datetime format string into escaped literals and characters.
+ * Tokenize a PHP datetime format into escaped text and format characters.
+ *
+ * A backslash escapes the character after it, so a run of escaped
+ * characters, such as German '\U\h\r', is one literal token. Every other
+ * character is a token of its own.
  *
  * @since TBD
  *
  * @param {string} format - The PHP datetime format.
  *
- * @return {Array<{type: string, value: string}>} Array of token objects.
+ * @return {Array<{type: string, value: string}>} The tokens, in order.
  */
 export function tokenizePHPDateFormat( format ) {
-	const tokens = [];
-	const str = String( format );
-	const len = str.length;
-	let i = 0;
-
-	while ( i < len ) {
-		if ( '\\' === str[ i ] ) {
-			if ( i + 1 < len ) {
-				tokens.push( { type: 'literal', value: str.slice( i, i + 2 ) } );
-				i += 2;
-			} else {
-				tokens.push( { type: 'literal', value: '\\' } );
-				i++;
-			}
-		} else {
-			tokens.push( { type: 'char', value: str[ i ] } );
-			i++;
-		}
-	}
-
-	return tokens;
+	return ( String( format ).match( /(?:\\.?)+|./gs ) ?? [] ).map(
+		( value ) => ( {
+			type: value.startsWith( '\\' ) ? 'literal' : 'char',
+			value,
+		} ),
+	);
 }
 
 /**
@@ -836,14 +812,128 @@ export function dateTimePreview() {
 }
 
 /**
+ * Split a PHP datetime format into its date part and its time part.
+ *
+ * The part that comes first ends where the other begins, so escaped text stays
+ * with the part it sits in: German '\U\h\r' in 'j. F Y, H:i \U\h\r' belongs to
+ * the time. Escaped words and spaces that lead from the date into the time,
+ * such as German '\u\m' in 'j. F Y \u\m H:i', belong to neither part.
+ * Timezone characters are left out of both.
+ *
+ * Mirrors `Utility::split_date_time_format()`. The characters come from
+ * `Utility::time_format_chars()` and `Utility::non_time_format_chars()`
+ * through the editor settings.
+ *
+ * @since TBD
+ *
+ * @param {string} format - The PHP datetime format.
+ *
+ * @return {{date: string, time: string}|null} The two parts, or null without
+ *                                             the editor config.
+ */
+function splitPHPDateTimeFormat( format ) {
+	const timeFormatChars = getFromConfig( 'timeFormatChars' );
+	const nonTimeFormatChars = getFromConfig( 'nonTimeFormatChars' );
+
+	if ( ! timeFormatChars || ! nonTimeFormatChars ) {
+		return null;
+	}
+
+	const timezoneChars = timeFormatChars.filter( ( char ) =>
+		nonTimeFormatChars.includes( char ),
+	);
+	const dateChars = nonTimeFormatChars.filter(
+		( char ) => ',' !== char && ! timezoneChars.includes( char ),
+	);
+	const timeChars = timeFormatChars.filter(
+		( char ) => ! timezoneChars.includes( char ),
+	);
+	const tokens = tokenizePHPDateFormat( format );
+	const dateAt = findFormatChar( tokens, dateChars );
+	const timeAt = findFormatChar( tokens, timeChars );
+	let date = -1 === dateAt ? [] : tokens;
+	let time = -1 === timeAt ? [] : tokens;
+
+	// With both parts present, the one that comes first ends where the other
+	// one starts.
+	if ( -1 !== dateAt && -1 !== timeAt ) {
+		const boundary = Math.max( dateAt, timeAt );
+		const first = tokens.slice( 0, boundary );
+		const last = tokens.slice( boundary );
+
+		[ date, time ] =
+			dateAt < timeAt ? [ dropLeadIn( first ), last ] : [ last, first ];
+	}
+
+	return {
+		date: joinFormatTokens( date, timezoneChars ),
+		time: joinFormatTokens( time, timezoneChars ),
+	};
+}
+
+/**
+ * Find the first token that is one of the given format characters.
+ *
+ * @since TBD
+ *
+ * @param {Array<{type: string, value: string}>} tokens - The format tokens.
+ * @param {string[]}                             chars  - The format characters to look for.
+ *
+ * @return {number} The token's index, or -1 when none of them is used.
+ */
+function findFormatChar( tokens, chars ) {
+	return tokens.findIndex(
+		( { type, value } ) => 'char' === type && chars.includes( value ),
+	);
+}
+
+/**
+ * Drop the escaped words and spaces that end a date and lead into the time.
+ *
+ * Unescaped text stays, so the Japanese day suffix '日' in 'Y年n月j日 H:i' is
+ * still part of the date.
+ *
+ * @since TBD
+ *
+ * @param {Array<{type: string, value: string}>} tokens - The date's tokens.
+ *
+ * @return {Array<{type: string, value: string}>} The tokens without the lead-in.
+ */
+function dropLeadIn( tokens ) {
+	const end = tokens.findLastIndex(
+		( { type, value } ) => 'char' === type && '' !== value.trim(),
+	);
+
+	return tokens.slice( 0, end + 1 );
+}
+
+/**
+ * Join format tokens back into a format, trimming the separators at its ends.
+ *
+ * @since TBD
+ *
+ * @param {Array<{type: string, value: string}>} tokens    - The format tokens.
+ * @param {string[]}                             skipChars - Format characters to leave out.
+ *
+ * @return {string} The joined format.
+ */
+function joinFormatTokens( tokens, skipChars ) {
+	return tokens
+		.filter(
+			( { type, value } ) =>
+				'literal' === type || ! skipChars.includes( value ),
+		)
+		.map( ( { value } ) => value )
+		.join( '' )
+		.replace( /^[\s:,\-/.]+|[\s:,\-/.]+$/g, '' );
+}
+
+/**
  * Remove non-time characters from PHP format string
  *
- * Tokenizes the format so escaped literal characters (such as German '\U\h\r'
- * or Spanish '\d\e') are preserved rather than corrupted. Date characters and
- * timezone characters (from `Utility::non_time_format_chars()`) are stripped,
- * and boundary literals between date and time (such as German '\u\m' in
- * 'j. F Y \u\m H:i') are excluded. Without the editor config the format is
- * left alone.
+ * Leaves the time behind: 'F j, Y g:i a' keeps 'g:i a', and German
+ * 'j. F Y, H:i \U\h\r' keeps 'H:i \U\h\r'. A format with no time keeps
+ * nothing. Without the editor config the format is left alone.
  *
  * @since 0.27.0
  *
@@ -852,103 +942,17 @@ export function dateTimePreview() {
  * @return {string} The PHP time-only format.
  */
 export function removeNonTimePHPFormatChars( format ) {
-	const nonTimeChars = getFromConfig( 'nonTimeFormatChars' );
-
-	if ( ! nonTimeChars ) {
-		return format;
-	}
-
-	const timeChars = getFromConfig( 'timeFormatChars' ) || [
-		'a',
-		'A',
-		'B',
-		'g',
-		'G',
-		'h',
-		'H',
-		'i',
-		's',
-		'u',
-		'v',
-		'e',
-		'I',
-		'O',
-		'P',
-		'p',
-		'T',
-		'Z',
-		'c',
-		'r',
-		'U',
-	];
-	const timezoneChars = nonTimeChars.filter( ( char ) =>
-		timeChars.includes( char ),
-	);
-	const pureDateChars = nonTimeChars.filter(
-		( char ) => ! timezoneChars.includes( char ) && ',' !== char,
-	);
-	const pureTimeChars = timeChars.filter(
-		( char ) => ! timezoneChars.includes( char ),
-	);
-
-	const tokens = tokenizePHPDateFormat( format );
-	let firstTime = null;
-	let firstDate = null;
-
-	tokens.forEach( ( t, idx ) => {
-		if ( 'char' === t.type ) {
-			if ( pureTimeChars.includes( t.value ) ) {
-				if ( null === firstTime ) {
-					firstTime = idx;
-				}
-			} else if ( pureDateChars.includes( t.value ) ) {
-				if ( null === firstDate ) {
-					firstDate = idx;
-				}
-			}
-		}
-	} );
-
-	if ( null === firstTime ) {
-		return '';
-	}
-
-	let slice;
-	if ( null === firstDate ) {
-		slice = tokens;
-	} else if ( firstDate < firstTime ) {
-		slice = tokens.slice( firstTime );
-	} else {
-		slice = tokens.slice( 0, firstDate );
-	}
-
-	return slice
-		.filter(
-			( tok ) =>
-				! (
-					'char' === tok.type &&
-					timezoneChars.includes( tok.value )
-				),
-		)
-		.map( ( tok ) => tok.value )
-		.join( '' )
-		.replace( /^[\s:,\-/.]+|[\s:,\-/.]+$/g, '' );
+	return splitPHPDateTimeFormat( format )?.time ?? format;
 }
 
 /**
  * Strip the time out of a PHP format string.
  *
  * Leaves the date behind, along with whatever separated it from the time:
- * 'F j, Y g:i a' keeps 'F j, Y'. A format that was only ever a time has
- * nothing left to render, so it reports none rather than the punctuation
- * between the parts it lost. Escaped literal characters belonging to the
- * date portion (such as Spanish '\d\e') are preserved, while boundary
- * literals between date and time (such as German '\u\m' in
- * 'j. F Y \u\m H:i \U\h\r') are excluded.
- *
- * The characters come from `Utility::time_format_chars()` through the
- * editor settings, so the two sides of `Event::get_display_formats()` read
- * one list. Without them the format is left alone.
+ * 'F j, Y g:i a' keeps 'F j, Y', and Spanish 'j \d\e F \d\e Y, H:i' keeps
+ * 'j \d\e F \d\e Y'. A format that was only ever a time has nothing left to
+ * render, so it reports none rather than the punctuation between the parts it
+ * lost. Without the editor config the format is left alone.
  *
  * @since 0.36.0
  *
@@ -958,100 +962,7 @@ export function removeNonTimePHPFormatChars( format ) {
  *                  date survives it.
  */
 export function removeTimePHPFormatChars( format ) {
-	const timeChars = getFromConfig( 'timeFormatChars' );
-
-	if ( ! timeChars ) {
-		return format;
-	}
-
-	const nonTimeChars = getFromConfig( 'nonTimeFormatChars' ) || [
-		'd',
-		'D',
-		'j',
-		'l',
-		'N',
-		'S',
-		'w',
-		'z',
-		'W',
-		'F',
-		'm',
-		'M',
-		'n',
-		't',
-		'L',
-		'o',
-		'X',
-		'x',
-		'Y',
-		'y',
-		'e',
-		'I',
-		'O',
-		'P',
-		'p',
-		'T',
-		'Z',
-		'c',
-		'r',
-		'U',
-		',',
-	];
-	const timezoneChars = timeChars.filter( ( char ) =>
-		nonTimeChars.includes( char ),
-	);
-	const pureDateChars = nonTimeChars.filter(
-		( char ) => ! timezoneChars.includes( char ) && ',' !== char,
-	);
-
-	const tokens = tokenizePHPDateFormat( format );
-	let firstTime = null;
-	let firstDate = null;
-	let lastDate = null;
-
-	tokens.forEach( ( t, idx ) => {
-		if ( 'char' === t.type ) {
-			if ( timeChars.includes( t.value ) ) {
-				if ( null === firstTime ) {
-					firstTime = idx;
-				}
-			} else if ( pureDateChars.includes( t.value ) ) {
-				if ( null === firstDate ) {
-					firstDate = idx;
-				}
-				lastDate = idx;
-			}
-		}
-	} );
-
-	if ( null === firstDate || null === lastDate ) {
-		return '';
-	}
-
-	if ( null === firstTime ) {
-		return format.replace( /^[\s:,\-/.]+|[\s:,\-/.]+$/g, '' );
-	}
-
-	let slice =
-		firstDate < firstTime
-			? tokens.slice( 0, firstTime )
-			: tokens.slice( firstDate );
-
-	// Drop escaped words and spaces that lead into the time, such as German
-	// '\u\m'. Unescaped text after the date, such as '日', stays.
-	while (
-		firstDate < firstTime &&
-		slice.length &&
-		( 'literal' === slice[ slice.length - 1 ].type ||
-			'' === slice[ slice.length - 1 ].value.trim() )
-	) {
-		slice.pop();
-	}
-
-	return slice
-		.map( ( tok ) => tok.value )
-		.join( '' )
-		.replace( /^[\s:,\-/.]+|[\s:,\-/.]+$/g, '' );
+	return splitPHPDateTimeFormat( format )?.date ?? format;
 }
 
 /**

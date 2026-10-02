@@ -889,6 +889,16 @@ describe( 'removeNonTimePHPFormatChars', () => {
 		);
 	} );
 
+	test( 'leaves the format alone when the editor sent only one list', () => {
+		getFromConfig.mockImplementation( ( key ) =>
+			'timeFormatChars' === key ? timeChars : undefined,
+		);
+
+		expect( removeNonTimePHPFormatChars( 'F j, Y g:i a' ) ).toBe(
+			'F j, Y g:i a',
+		);
+	} );
+
 	test( 'removes non-time format characters from PHP datetime format', () => {
 		// Format with both date and time characters.
 		const format = 'Y-m-d H:i:s';
@@ -1353,7 +1363,7 @@ describe( 'removeTimePHPFormatChars', () => {
  * Coverage for tokenizePHPDateFormat.
  */
 describe( 'tokenizePHPDateFormat', () => {
-	test( 'tokenizes characters and escaped literals', () => {
+	test( 'keeps a run of escaped characters as one literal', () => {
 		const tokens = tokenizePHPDateFormat( 'j. F Y, H:i \\U\\h\\r' );
 
 		expect( tokens ).toEqual( [
@@ -1369,10 +1379,12 @@ describe( 'tokenizePHPDateFormat', () => {
 			{ type: 'char', value: ':' },
 			{ type: 'char', value: 'i' },
 			{ type: 'char', value: ' ' },
-			{ type: 'literal', value: '\\U' },
-			{ type: 'literal', value: '\\h' },
-			{ type: 'literal', value: '\\r' },
+			{ type: 'literal', value: '\\U\\h\\r' },
 		] );
+	} );
+
+	test( 'returns no tokens for an empty format', () => {
+		expect( tokenizePHPDateFormat( '' ) ).toEqual( [] );
 	} );
 
 	test( 'handles a trailing backslash', () => {
