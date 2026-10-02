@@ -1763,9 +1763,9 @@ class Test_Utility extends Base {
 			'time with escaped Uhr keeps nothing'         => array( 'H:i \U\h\r', '' ),
 			'spanish date with escaped de keeps date'     => array( 'j \d\e F \d\e Y, H:i', 'j \d\e F \d\e Y' ),
 			'reversed order time before date keeps date'  => array( 'H:i, j. F Y', 'j. F Y' ),
-			'datetime with timezone keeps date without timezone' => array( 'D, M j, Y, g:i a T', 'D, M j, Y' ),
-			'german datetime with boundary connector drops um' => array( 'j. F Y \u\m H:i \U\h\r', 'j. F Y' ),
-			'german datetime with Uhr before time drops Uhr' => array( 'j F Y, \U\h\r H:i', 'j F Y' ),
+			'a date, time and timezone keep the date'     => array( 'D, M j, Y, g:i a T', 'D, M j, Y' ),
+			'german um between date and time is dropped'  => array( 'j. F Y \u\m H:i \U\h\r', 'j. F Y' ),
+			'german Uhr before the time is dropped'       => array( 'j F Y, \U\h\r H:i', 'j F Y' ),
 			'japanese datetime keeps day suffix'          => array( 'Y年n月j日 H:i', 'Y年n月j日' ),
 			'korean datetime keeps day suffix'            => array( 'Y년 n월 j일 H:i', 'Y년 n월 j일' ),
 		);
@@ -1813,8 +1813,8 @@ class Test_Utility extends Base {
 			'date and time with leading punctuation trim' => array( 'Y-m-d H:i:s', 'H:i:s' ),
 			'datetime with timezone drops timezone'       => array( 'D, M j, Y, g:i a T', 'g:i a' ),
 			'time only with timezone drops timezone'      => array( 'g:i a T', 'g:i a' ),
-			'german datetime with boundary connector drops um' => array( 'j. F Y \u\m H:i \U\h\r', 'H:i \U\h\r' ),
-			'german datetime with Uhr before time drops Uhr' => array( 'j F Y, \U\h\r H:i', 'H:i' ),
+			'german um between date and time is dropped'  => array( 'j. F Y \u\m H:i \U\h\r', 'H:i \U\h\r' ),
+			'german Uhr before the time is dropped'       => array( 'j F Y, \U\h\r H:i', 'H:i' ),
 		);
 	}
 
