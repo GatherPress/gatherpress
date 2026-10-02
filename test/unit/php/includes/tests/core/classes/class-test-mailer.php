@@ -8,6 +8,7 @@
 
 namespace GatherPress\Tests\Core;
 
+use Exception;
 use GatherPress\Core\Mailer;
 use GatherPress\Tests\Base;
 
@@ -217,6 +218,326 @@ class Test_Mailer extends Base {
 		remove_filter( 'pre_wp_mail', '__return_false' );
 
 		$this->assertFalse( $result );
+	}
+
+	/**
+	 * Check that consent defaults to the recipient's opt-in.
+	 *
+	 * @covers ::has_consent
+	 *
+	 * @return void
+	 */
+	public function test_has_consent_defaults_to_eligibility(): void {
+		$user_id = $this->factory->user->create();
+
+		$this->assertTrue(
+			Mailer::get_instance()->has_consent(
+				$this->recipient( array( 'user_id' => $user_id ) ),
+				'site_message'
+			)
+		);
+	}
+
+	/**
+	 * Check that consent returns false when the recipient is not eligible.
+	 *
+	 * @covers ::has_consent
+	 *
+	 * @return void
+	 */
+	public function test_has_consent_follows_ineligible_recipient(): void {
+		$this->assertFalse(
+			Mailer::get_instance()->has_consent(
+				$this->recipient( array( 'email' => '' ) ),
+				'site_message'
+			)
+		);
+	}
+
+	/**
+	 * Check that the consent filter can grant consent to an ineligible recipient.
+	 *
+	 * @covers ::has_consent
+	 *
+	 * @return void
+	 */
+	public function test_has_consent_filter_can_grant(): void {
+		add_filter( 'gatherpress_mail_recipient_consent', '__return_true' );
+
+		$consent = Mailer::get_instance()->has_consent(
+			$this->recipient( array( 'email' => '' ) ),
+			'event'
+		);
+
+		remove_all_filters( 'gatherpress_mail_recipient_consent' );
+
+		$this->assertTrue( $consent );
+	}
+
+	/**
+	 * Check that the consent filter can withhold consent from an eligible recipient.
+	 *
+	 * @covers ::has_consent
+	 *
+	 * @return void
+	 */
+	public function test_has_consent_filter_can_withhold(): void {
+		$user_id  = $this->factory->user->create();
+		$captured = array();
+		add_filter(
+			'gatherpress_mail_recipient_consent',
+			static function ( $consent, $recipient, $context ) use ( &$captured ) {
+				$captured = array( $consent, $context );
+
+				return false;
+			},
+			10,
+			3
+		);
+
+		$consent = Mailer::get_instance()->has_consent(
+			$this->recipient( array( 'user_id' => $user_id ) ),
+			'site_message'
+		);
+
+		remove_all_filters( 'gatherpress_mail_recipient_consent' );
+
+		$this->assertFalse( $consent );
+		$this->assertSame( array( true, 'site_message' ), $captured );
+	}
+
+	/**
+	 * Check that send composes and delivers for an eligible recipient.
+	 *
+	 * @covers ::send
+	 *
+	 * @return void
+	 */
+	public function test_send_composes_and_delivers(): void {
+		$user_id  = $this->factory->user->create();
+		$captured = array();
+		add_filter(
+			'pre_wp_mail',
+			static function ( $previous, $atts ) use ( &$captured ): bool {
+				$captured = $atts;
+				return true;
+			},
+			10,
+			2
+		);
+
+		$result = Mailer::get_instance()->send(
+			$this->recipient( array( 'user_id' => $user_id ) ),
+			static fn(): array => array(
+				'subject' => 'Hello',
+				'body'    => '<p>Body</p>',
+			)
+		);
+
+		remove_all_filters( 'pre_wp_mail' );
+
+		$this->assertTrue( $result );
+		$this->assertSame( 'recipient@example.test', $captured['to'] );
+		$this->assertSame( 'Hello', $captured['subject'] );
+	}
+
+	/**
+	 * Check that send passes composed headers through to wp_mail.
+	 *
+	 * @covers ::send
+	 *
+	 * @return void
+	 */
+	public function test_send_forwards_composed_headers(): void {
+		$user_id  = $this->factory->user->create();
+		$captured = array();
+		add_filter(
+			'pre_wp_mail',
+			static function ( $previous, $atts ) use ( &$captured ): bool {
+				$captured = $atts;
+				return true;
+			},
+			10,
+			2
+		);
+
+		$result = Mailer::get_instance()->send(
+			$this->recipient( array( 'user_id' => $user_id ) ),
+			static fn(): array => array(
+				'subject' => 'Hello',
+				'body'    => '<p>Body</p>',
+				'headers' => array( 'Content-Type: text/html; charset=UTF-8' ),
+			)
+		);
+
+		remove_all_filters( 'pre_wp_mail' );
+
+		$this->assertTrue( $result );
+		$this->assertSame(
+			array( 'Content-Type: text/html; charset=UTF-8' ),
+			$captured['headers']
+		);
+	}
+
+	/**
+	 * Check that send returns false without composing when consent is withheld.
+	 *
+	 * @covers ::send
+	 *
+	 * @return void
+	 */
+	public function test_send_skips_when_consent_withheld(): void {
+		$user_id  = $this->factory->user->create();
+		$composed = false;
+		add_filter( 'gatherpress_mail_recipient_consent', '__return_false' );
+
+		$result = Mailer::get_instance()->send(
+			$this->recipient( array( 'user_id' => $user_id ) ),
+			static function () use ( &$composed ): array {
+				$composed = true;
+
+				return array(
+					'subject' => 'Hello',
+					'body'    => 'Body',
+				);
+			}
+		);
+
+		remove_all_filters( 'gatherpress_mail_recipient_consent' );
+
+		$this->assertFalse( $result );
+		$this->assertFalse( $composed );
+	}
+
+	/**
+	 * Check that send restores the sender when the compose callback throws.
+	 *
+	 * @covers ::send
+	 *
+	 * @return void
+	 */
+	public function test_send_restores_context_when_compose_throws(): void {
+		$sender_id = $this->factory->user->create();
+		$target_id = $this->factory->user->create();
+		wp_set_current_user( $sender_id );
+
+		try {
+			Mailer::get_instance()->send(
+				$this->recipient( array( 'user_id' => $target_id ) ),
+				static function (): array {
+					throw new Exception( 'Compose failed.' );
+				}
+			);
+			$this->fail( 'Expected the compose exception to propagate.' );
+		} catch ( Exception $exception ) {
+			$this->assertSame( 'Compose failed.', $exception->getMessage() );
+		}
+
+		$this->assertSame( $sender_id, get_current_user_id() );
+	}
+
+	/**
+	 * Check that schedule queues a single event when none is queued.
+	 *
+	 * @covers ::schedule
+	 *
+	 * @return void
+	 */
+	public function test_schedule_queues_job(): void {
+		$args = array( 'Subject', 'Message', 7 );
+
+		$result = Mailer::get_instance()->schedule( 'gatherpress_test_mail_job', $args );
+
+		$this->assertTrue( $result );
+		$this->assertNotFalse( wp_next_scheduled( 'gatherpress_test_mail_job', $args ) );
+	}
+
+	/**
+	 * Check that schedule does not stack a duplicate job for the same args.
+	 *
+	 * @covers ::schedule
+	 *
+	 * @return void
+	 */
+	public function test_schedule_deduplicates(): void {
+		$args = array( 'Subject', 'Message', 8 );
+		wp_schedule_single_event( time() + 60, 'gatherpress_test_mail_job', $args );
+		$scheduled_at = wp_next_scheduled( 'gatherpress_test_mail_job', $args );
+
+		$result = Mailer::get_instance()->schedule( 'gatherpress_test_mail_job', $args );
+
+		$this->assertTrue( $result );
+		$this->assertSame( $scheduled_at, wp_next_scheduled( 'gatherpress_test_mail_job', $args ) );
+	}
+
+	/**
+	 * Check that the pre-enqueue filter short-circuits scheduling.
+	 *
+	 * @covers ::schedule
+	 *
+	 * @return void
+	 */
+	public function test_schedule_honors_short_circuit_filter(): void {
+		$captured = array();
+		add_filter(
+			'gatherpress_mail_pre_enqueue_job',
+			static function ( $short_circuit, $hook, $args ) use ( &$captured ) {
+				$captured = array( $short_circuit, $hook, $args );
+
+				return true;
+			},
+			10,
+			3
+		);
+
+		$result = Mailer::get_instance()->schedule( 'gatherpress_test_mail_job', array( 'A', 'B', 9 ) );
+
+		remove_all_filters( 'gatherpress_mail_pre_enqueue_job' );
+
+		$this->assertTrue( $result );
+		$this->assertSame( array( null, 'gatherpress_test_mail_job', array( 'A', 'B', 9 ) ), $captured );
+		$this->assertFalse( wp_next_scheduled( 'gatherpress_test_mail_job', array( 'A', 'B', 9 ) ) );
+	}
+
+	/**
+	 * Check that schedule returns false when both native attempts fail.
+	 *
+	 * @covers ::schedule
+	 *
+	 * @return void
+	 */
+	public function test_schedule_returns_false_when_enqueue_fails(): void {
+		add_filter( 'pre_schedule_event', '__return_false' );
+
+		$result = Mailer::get_instance()->schedule( 'gatherpress_test_mail_job', array( 'A', 'B', 10 ) );
+
+		remove_all_filters( 'pre_schedule_event' );
+
+		$this->assertFalse( $result );
+	}
+
+	/**
+	 * Check that schedule retries once when the first enqueue fails.
+	 *
+	 * @covers ::schedule
+	 *
+	 * @return void
+	 */
+	public function test_schedule_retries_once(): void {
+		$attempts = 0;
+		$filter   = static function ( $pre ) use ( &$attempts ) {
+			++$attempts;
+
+			return 1 === $attempts ? false : $pre;
+		};
+		add_filter( 'pre_schedule_event', $filter );
+
+		$result = Mailer::get_instance()->schedule( 'gatherpress_test_mail_job', array( 'A', 'B', 11 ) );
+
+		remove_all_filters( 'pre_schedule_event' );
+
+		$this->assertTrue( $result );
+		$this->assertSame( 2, $attempts );
 	}
 
 	/**

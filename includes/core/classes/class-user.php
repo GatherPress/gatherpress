@@ -185,33 +185,21 @@ final class User {
 	 *
 	 * The profile opt-in talks about the content members hear about, which
 	 * follows whatever post type collects RSVPs on this site rather than
-	 * assuming events. Falls back to "events" when nothing collects RSVPs.
+	 * assuming events. Returns an empty string when nothing collects RSVPs;
+	 * the calling template supplies its own translated "events" fallback.
+	 * A site can change the label through the post type's own labels, for
+	 * example via core's `post_type_labels_{$post_type}` filter.
 	 *
 	 * @since TBD
 	 *
-	 * @return string Plural label.
+	 * @return string Plural label, or an empty string when no post type takes RSVPs.
 	 */
 	public function get_rsvp_post_type_plural(): string {
-		$post_types = get_post_types_by_support( Rsvp::SUPPORT );
-		$post_type  = $post_types[0] ?? '';
-
+		$post_types       = get_post_types_by_support( Rsvp::SUPPORT );
+		$post_type        = $post_types[0] ?? '';
 		$post_type_object = $post_type ? get_post_type_object( $post_type ) : null;
-		$plural           = $post_type_object?->labels->name ?? '';
 
-		/**
-		 * Filters the plural label used in the event updates opt-in consent.
-		 *
-		 * Lets a site describe the opt-in with its own content type, for
-		 * example "sessions" or "productions", when a custom post type takes
-		 * RSVPs.
-		 *
-		 * @since TBD
-		 *
-		 * @param string $plural    Plural label.
-		 * @param string $post_type Post type the label came from. Empty when no
-		 *                          post type takes RSVPs.
-		 */
-		return (string) apply_filters( 'gatherpress_event_updates_plural_label', $plural, $post_type );
+		return $post_type_object?->labels->name ?? '';
 	}
 
 	/**

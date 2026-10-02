@@ -243,7 +243,7 @@ final class Send_Email extends Base {
 				'name'       => $user->display_name,
 			);
 
-			if ( $mailer->is_eligible( $recipient ) ) {
+			if ( $mailer->has_consent( $recipient, 'site_message' ) ) {
 				$recipients[] = $recipient;
 			}
 		}
@@ -390,45 +390,13 @@ final class Send_Email extends Base {
 	 * @return bool True when the batch is queued, false when it is not.
 	 */
 	protected function schedule_message_batch( string $subject, string $message, int $last_id ): bool {
-		$args = array( $subject, $message, $last_id );
-
-		/**
-		 * Filter the site message enqueue call to take over scheduling.
-		 *
-		 * Return any non-null value from this filter to suppress both the
-		 * WP-Cron dedup check and the `wp_schedule_single_event()` call. A
-		 * companion plugin that hooks this filter (e.g. one that routes the
-		 * batches through Action Scheduler) owns the full scheduling path
-		 * end-to-end, including its own dedup since the batches by-pass
-		 * `wp_next_scheduled()`. Mirrors the core `pre_*` filter convention:
-		 * `null` means "pass through to the default"; everything else,
-		 * including falsy values like `false`, `0`, and `''`, short-circuits.
-		 *
-			 * @since TBD
-			 *
-			 * @param mixed  $short_circuit Non-null to suppress the default enqueue.
-			 * @param string $hook          Action hook name fired when the job runs.
-			 * @param array  $args          Args passed to the action hook: `array( $subject, $message, $last_id )`.
-			 */
-		$short_circuit = apply_filters(
-			'gatherpress_site_message_pre_enqueue_job',
-			null,
+		// A short delay keeps each batch from running in the same cron pass as
+		// the batch that queued it.
+		return Mailer::get_instance()->schedule(
 			'gatherpress_site_message_send',
-			$args
+			array( $subject, $message, $last_id ),
+			1
 		);
-
-		if ( null !== $short_circuit ) {
-			return true;
-		}
-
-		// A batch already queued for this cursor owns it, so do not stack a
-		// duplicate. The short delay keeps each batch from running in the same
-		// cron pass as the batch that queued it.
-		if ( false !== wp_next_scheduled( 'gatherpress_site_message_send', $args ) ) {
-			return true;
-		}
-
-		return false !== wp_schedule_single_event( time() + 1, 'gatherpress_site_message_send', $args );
 	}
 
 	/**
@@ -452,47 +420,33 @@ final class Send_Email extends Base {
 		$batch = $this->get_recipient_batch( $last_id );
 
 		// Queue the next page before sending this one, so an error part way
-		// through the batch cannot strand recipients after this cursor.
-		// This runs even when the filtered page is empty, since a filter can
-		// narrow one page without ending the chain.
+		// through the batch cannot strand recipients after this cursor. This
+		// runs even when the filtered page is empty, since a filter can narrow
+		// one page without ending the chain.
 		if ( ! $batch['complete'] ) {
-			$next_last_id = $batch['last_id'];
-			if ( ! $this->schedule_message_batch( $subject, $message, $next_last_id ) ) {
-				$this->schedule_message_batch( $subject, $message, $next_last_id );
-			}
+			$this->schedule_message_batch( $subject, $message, $batch['last_id'] );
 		} else {
 			// The last page is done, so the cached count the settings page
 			// showed is stale. Drop it so the next page load recounts.
 			$this->clear_count_cache();
 		}
 
+		$template = sprintf( '%s/includes/templates/admin/emails/site-email.php', GATHERPRESS_CORE_PATH );
+
+		// Build the email inside the callback so the default subject is
+		// translated, and the template rendered, in the recipient's context.
+		$compose = fn(): array => array(
+			'subject' => $this->resolve_subject( $subject ),
+			'body'    => Utility::render_template( $template, array( 'message' => $message ) ),
+			'headers' => array( 'Content-Type: text/html; charset=UTF-8' ),
+		);
+
 		$mailer = Mailer::get_instance();
-		// Cron runs without a logged-in user, so the "sender" to restore to is
-		// the anonymous user this request already runs as.
-		$sender  = wp_get_current_user();
-		$headers = array( 'Content-Type: text/html; charset=UTF-8' );
 
 		foreach ( $batch['recipients'] as $recipient ) {
-			if ( ! $mailer->is_eligible( $recipient ) ) {
-				continue;
-			}
-
-			$switched_locale = $mailer->switch_context( $recipient );
-			$subject_line    = $this->resolve_subject( $subject );
-			$body            = Utility::render_template(
-				sprintf( '%s/includes/templates/admin/emails/site-email.php', GATHERPRESS_CORE_PATH ),
-				array( 'message' => $message ),
-			);
-
-			// Deliver while still in the recipient's context, so wp_mail
-			// filters run with the recipient's locale active. A filter that
-			// throws still has to hand the context back, or the rest of the
-			// batch would be mailed in the wrong locale.
-			try {
-				$mailer->deliver( $recipient['email'], $subject_line, $body, $headers );
-			} finally {
-				$mailer->restore_context( $switched_locale, $sender );
-			}
+			// Mailer re-checks consent at delivery time, so a member who opted
+			// out after queuing is skipped here.
+			$mailer->send( $recipient, $compose, 'site_message' );
 		}
 	}
 

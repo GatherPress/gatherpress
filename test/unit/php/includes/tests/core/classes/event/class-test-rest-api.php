@@ -3227,7 +3227,6 @@ class Test_Rest_Api extends Base {
 				),
 				$event_id,
 				'Test message',
-				wp_get_current_user(),
 				'Test subject',
 			)
 		);
@@ -3265,7 +3264,6 @@ class Test_Rest_Api extends Base {
 				),
 				$event_id,
 				'Test message',
-				wp_get_current_user(),
 			)
 		);
 
@@ -3308,7 +3306,6 @@ class Test_Rest_Api extends Base {
 				),
 				$event_id,
 				'Test message',
-				wp_get_current_user(),
 			)
 		);
 
@@ -3353,7 +3350,6 @@ class Test_Rest_Api extends Base {
 				),
 				$event_id,
 				'Test message',
-				wp_get_current_user(),
 			)
 		);
 
@@ -3414,7 +3410,6 @@ class Test_Rest_Api extends Base {
 				),
 				$event_id,
 				'Upcoming reminder.',
-				wp_get_current_user(),
 			)
 		);
 
@@ -3479,7 +3474,6 @@ class Test_Rest_Api extends Base {
 				),
 				$event_id,
 				'Thanks for coming.',
-				wp_get_current_user(),
 			)
 		);
 
@@ -3553,7 +3547,6 @@ class Test_Rest_Api extends Base {
 				),
 				$event_id,
 				'Event update.',
-				wp_get_current_user(),
 			)
 		);
 
@@ -3593,7 +3586,6 @@ class Test_Rest_Api extends Base {
 				),
 				$event_id,
 				'Test message',
-				wp_get_current_user(),
 			)
 		);
 

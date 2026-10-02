@@ -165,33 +165,6 @@ class Test_User extends Base {
 	}
 
 	/**
-	 * Check that the plural label filter receives the source post type.
-	 *
-	 * @covers ::get_rsvp_post_type_plural
-	 *
-	 * @return void
-	 */
-	public function test_get_rsvp_post_type_plural_filter(): void {
-		$captured = array();
-		add_filter(
-			'gatherpress_event_updates_plural_label',
-			static function ( $plural, $post_type ) use ( &$captured ) {
-				$captured = array( $plural, $post_type );
-
-				return 'Sessions';
-			},
-			10,
-			2
-		);
-
-		$plural = User::get_instance()->get_rsvp_post_type_plural();
-		remove_all_filters( 'gatherpress_event_updates_plural_label' );
-
-		$this->assertSame( 'Sessions', $plural );
-		$this->assertSame( array( 'Events', Event::POST_TYPE ), $captured );
-	}
-
-	/**
 	 * Check that the plural label falls back when no post type takes RSVPs.
 	 *
 	 * @covers ::get_rsvp_post_type_plural

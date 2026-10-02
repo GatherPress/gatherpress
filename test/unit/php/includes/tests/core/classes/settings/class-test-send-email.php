@@ -231,6 +231,39 @@ class Test_Send_Email extends Base_Ajax {
 	}
 
 	/**
+	 * Check that the consent filter narrows the site-message audience.
+	 *
+	 * @covers ::get_recipient_batch
+	 *
+	 * @return void
+	 */
+	public function test_recipient_batch_honors_consent_filter(): void {
+		$kept_id       = $this->factory->user->create( array( 'display_name' => 'Kept' ) );
+		$dropped_id    = $this->factory->user->create( array( 'display_name' => 'Dropped' ) );
+		$contexts      = array();
+		$consent_calls = static function ( $consent, $recipient, $context ) use ( &$contexts, $dropped_id ) {
+			$contexts[] = $context;
+
+			return (int) $recipient['user_id'] !== $dropped_id;
+		};
+
+		add_filter( 'gatherpress_mail_recipient_consent', $consent_calls, 10, 3 );
+
+		$batch = Utility::invoke_hidden_method(
+			Send_Email::get_instance(),
+			'get_recipient_batch',
+			array( 0 )
+		);
+
+		remove_all_filters( 'gatherpress_mail_recipient_consent' );
+
+		$recipient_ids = array_column( $batch['recipients'], 'user_id' );
+		$this->assertContains( $kept_id, $recipient_ids );
+		$this->assertNotContains( $dropped_id, $recipient_ids );
+		$this->assertContains( 'site_message', $contexts );
+	}
+
+	/**
 	 * Check that a full batch reports the list unfinished and advances the cursor.
 	 *
 	 * @covers ::get_recipient_batch
@@ -407,7 +440,7 @@ class Test_Send_Email extends Base_Ajax {
 	public function test_schedule_message_batch_honors_short_circuit_filter(): void {
 		$captured_args = array();
 		add_filter(
-			'gatherpress_site_message_pre_enqueue_job',
+			'gatherpress_mail_pre_enqueue_job',
 			static function ( $short_circuit, $hook, $args ) use ( &$captured_args ) {
 				$captured_args = array( $hook, $args );
 
@@ -422,7 +455,7 @@ class Test_Send_Email extends Base_Ajax {
 			'schedule_message_batch',
 			array( 'Subject', 'Message', 0 )
 		);
-		remove_all_filters( 'gatherpress_site_message_pre_enqueue_job' );
+		remove_all_filters( 'gatherpress_mail_pre_enqueue_job' );
 
 		$this->assertTrue( $scheduled );
 		$this->assertSame(
