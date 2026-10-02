@@ -33,5 +33,5 @@ You will then see the default inner content that you can modify. Be careful!
     - RSVP Template (group)
         - Avatar (If listed as Anonymous, the default "Mystery person" will be displayed instead)
         - Display Name (If listed as Anonymous, the name will be be replaced by Anonymous)
-        - RSVP Guest Count Display (Note: if the event is set not to accept guests, this field is greyed out in the editor and will not display on front end).
+        - RSVP Guest Count Display (Note: if the event is set not to accept guests, this field is grayed out in the editor and will not display on front end).
 - Empty RSVP

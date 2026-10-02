@@ -14,7 +14,7 @@ import { __, sprintf } from '@wordpress/i18n';
  */
 import { createMomentWithTimezone, getTimezone } from './datetime';
 import { getPostTypeLabel } from './editor';
-import { getVenueTaxonomy, getVenuePostType } from './venue';
+import { getVenueTaxonomy, getVenuePostType, getOnlineEventTermId } from './venue';
 
 /**
  * Opacity value for disabled form fields and elements.
@@ -440,20 +440,16 @@ export function hasOnlineEventTerm( postId = null ) {
 		return false;
 	}
 
-	const venueTaxonomy = getVenueTaxonomy( getVenuePostType( eventPostType ) );
-
-	// Get the online-event term ID.
-	const onlineEventTerms = select( 'core' ).getEntityRecords(
-		'taxonomy',
-		venueTaxonomy,
-		{ slug: 'online-event', per_page: 1 },
-	);
-	const onlineEventTermId = onlineEventTerms?.[ 0 ]?.id;
+	// Read the sentinel term ID from editor settings instead of issuing a
+	// taxonomy REST lookup on every render.
+	const venuePostType = getVenuePostType( eventPostType );
+	const onlineEventTermId = getOnlineEventTermId( venuePostType );
 
 	if ( ! onlineEventTermId ) {
 		return false;
 	}
 
+	const venueTaxonomy = getVenueTaxonomy( venuePostType );
 	const venueTaxonomyIds = post
 		? post[ venueTaxonomy ]
 		: select( 'core/editor' ).getEditedPostAttribute( venueTaxonomy );
@@ -522,7 +518,7 @@ export function isOpenRsvpEnabled( enableOpenRsvp ) {
  * @param {number|null} postId     Post ID from context or null.
  * @param {Object}      attributes Block attributes (may contain explicit postId override).
  *
- * @return {Object} Object containing maxGuestLimit, enableRsvp, and enableAnonymousRsvp.
+ * @return {Object} Object containing guestLimit, enableRsvp, and enableAnonymousRsvp.
  */
 export function getEventMeta( selectFunc, postId, attributes ) {
 	let maxLimit;
@@ -538,7 +534,7 @@ export function getEventMeta( selectFunc, postId, attributes ) {
 		// Explicit override - resolve the post across every event-supporting
 		// post type rather than assuming the standard event slug.
 		const post = findEventPostById( selectFunc, postId );
-		maxLimit = post?.meta?.gatherpress_max_guest_limit;
+		maxLimit = post?.meta?.gatherpress_guest_limit;
 		// Stored as integer (0/1); undefined means not yet set, default to enabled.
 		enableRsvp = 0 !== post?.meta?.gatherpress_enable_rsvp;
 		enableAnonymous = Boolean( post?.meta?.gatherpress_enable_anonymous_rsvp );
@@ -549,7 +545,7 @@ export function getEventMeta( selectFunc, postId, attributes ) {
 
 		if ( isCurrentPostEvent ) {
 			const meta = selectFunc( 'core/editor' ).getEditedPostAttribute( 'meta' );
-			maxLimit = meta?.gatherpress_max_guest_limit;
+			maxLimit = meta?.gatherpress_guest_limit;
 			// Stored as integer (0/1); undefined means not yet set, default to enabled.
 			enableRsvp = 0 !== meta?.gatherpress_enable_rsvp;
 			enableAnonymous = Boolean( meta?.gatherpress_enable_anonymous_rsvp );
@@ -557,7 +553,7 @@ export function getEventMeta( selectFunc, postId, attributes ) {
 	}
 
 	return {
-		maxGuestLimit: maxLimit ?? 0,
+		guestLimit: maxLimit ?? 0,
 		enableRsvp: enableRsvp ?? true,
 		enableAnonymousRsvp: enableAnonymous ?? false,
 	};

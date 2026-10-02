@@ -33,6 +33,7 @@
 
 - [`gatherpress_date_format`](gatherpress_date_format.md)
 - [`gatherpress_datetime_format`](gatherpress_datetime_format.md) Filters the format an event's datetime is rendered with.
+- [`gatherpress_datetime_separator`](gatherpress_datetime_separator.md) Filter the separator between start and end dates/times.
 - [`gatherpress_force_online_event_link`](gatherpress_force_online_event_link.md) Filters whether to force the display of the online event link.
 - [`gatherpress_time_format`](gatherpress_time_format.md)
 - [`gatherpress_timezone`](gatherpress_timezone.md)
@@ -104,6 +105,10 @@
 
 - [`gatherpress_roles`](gatherpress_roles.md) Filter the list of roles for GatherPress.
 
+## class-rsvp-form.php
+
+- [`gatherpress_rsvp_form_schemas`](gatherpress_rsvp_form_schemas.md) Filters the RSVP form schemas about to be stored for a post.
+
 ## class-settings.php
 
 - [`gatherpress_interactive_map_tile_attribution`](gatherpress_interactive_map_tile_attribution.md) Filters the attribution HTML rendered with the venue map.
@@ -139,14 +144,16 @@
 
 ## class-utility.php
 
+- [`gatherpress_date_formats`](gatherpress_date_formats.md) Filters the date formats offered as examples in GatherPress.
 - [`gatherpress_pre_get_http_input`](gatherpress_pre_get_http_input.md) Short-circuit filter for HTTP input retrieval during testing.
 - [`gatherpress_pre_get_wp_referer`](gatherpress_pre_get_wp_referer.md) Short-circuit filter for wp_get_referer() during testing.
 - [`gatherpress_template_path`](gatherpress_template_path.md) Filters the resolved template path returned by `Utility::locate_template()`.
+- [`gatherpress_time_formats`](gatherpress_time_formats.md) Filters the time formats offered as examples in GatherPress.
 
 ## gatherpress.php
 
 - [`gatherpress_loaded`](gatherpress_loaded.md) Fires once GatherPress has finished bootstrapping its core classes.
 
-## index.php
+## network-page.php
 
 - [`gatherpress_settings_section`](gatherpress_settings_section.md) Fires so tabs that render via the GatherPress settings section action

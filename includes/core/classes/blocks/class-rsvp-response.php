@@ -225,7 +225,12 @@ final class Rsvp_Response {
 			$tag->set_attribute( 'class', $class_attr . ' gatherpress--is-disabled' );
 
 			$tag->next_token();
-			$trigger_text = sprintf( $tag->get_modifiable_text(), intval( $counts['attending'] ?? 0 ) );
+
+			// Swap the first `%d` literally, as view.js does, so any other `%` in the label is left alone.
+			$trigger_text = implode(
+				(string) intval( $counts['attending'] ?? 0 ),
+				explode( '%d', $tag->get_modifiable_text(), 2 )
+			);
 
 			$tag->set_modifiable_text( $trigger_text );
 		}
@@ -263,11 +268,9 @@ final class Rsvp_Response {
 					$tag->set_attribute( 'data-status', $status );
 				}
 			}
-
-			$block_content = $tag->get_updated_html();
 		}
 
-		return $block_content;
+		return $tag->get_updated_html();
 	}
 
 	/**

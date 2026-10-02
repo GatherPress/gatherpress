@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+RSVP custom fields are now validated before the RSVP is created. A required field left blank, or an answer that fails validation such as a malformed email or an option not in the list, is rejected with a message naming the field, instead of the RSVP being accepted and confirmed by email with the answer quietly missing.

@@ -105,7 +105,7 @@ GatherPress uses custom `post_type_supports` to decouple features from specific 
 
 **Event post type supports** (declared on post types that act as events):
 
-- `gatherpress-event-date`: **Core event identifier.** Datetime storage, the `gatherpress_events` DB table, date-based queries, timezone handling, and related blocks (event-date, add-to-calendar)
+- `gatherpress-event-date`: **Core event identifier.** Datetime storage, the `gatherpress_events` DB table, date-based queries, timezone handling, related blocks (event-date, add-to-calendar), and the Topics taxonomy, which `Topic::register_taxonomy()` attaches to every post type declaring this support at `init` priority 11 (with a `registered_post_type` listener for anything registered later)
 - `gatherpress-rsvp`: Comment-based RSVP system, attendee management, waiting list, RSVP blocks (rsvp, rsvp-form, rsvp-response, rsvp-template)
 - `gatherpress-venue`: Association with a venue post type via the `_gatherpress_venue` taxonomy, venue selector in the editor, and venue block rendering
 - `gatherpress-online-event`: Online event link meta (stored on the event), online-event term in the taxonomy, and online-event block rendering
@@ -386,7 +386,7 @@ Apply to PHP PHPDoc blocks and JS JSDoc blocks alike.
     1. **It cannot have a default value.** `protected ?WP_Post $event = null;` is out; `readonly` forbids defaults, and dropping the default only works if the constructor always assigns.
     2. **It must be assigned unconditionally.** `Calendar\Endpoint` assigns inside `if ( $this->is_valid_registration() )`, so on the failing branch the property stays uninitialized forever, PHPStan flags this as `property.uninitializedReadonly`.
     3. **Nothing may write it from outside the declaring class**: including tests writing to a mock, e.g. `$template->slug = '…';`. That is a fatal `Cannot initialize readonly property … from scope`.
-    4. **The PMC test helpers must not touch it.** `Utility::set_and_get_hidden_property()` writes through reflection, which PHP 8.1 forbids on an initialized readonly property, and `assert_hooks()` re-invokes the constructor on an existing instance, which throws on the *second* assignment. This is what keeps `Settings\Base::$priority` and `Rsvp::$max_attendance_limit` mutable.
+    4. **The PMC test helpers must not touch it.** `Utility::set_and_get_hidden_property()` writes through reflection, which PHP 8.1 forbids on an initialized readonly property, and `assert_hooks()` re-invokes the constructor on an existing instance, which throws on the *second* assignment. This is what keeps `Settings\Base::$priority` and `Rsvp::$capacity` mutable.
     - Before adding the keyword, grep for external writes with POSIX classes, not `\s`: **BSD grep on macOS silently matches nothing for `\s`**, which will tell you a property is safe when it is not: `grep -rnE -- "->[[:space:]]*prop[[:space:]]*=[^=>]" includes test`.
 - **Classes are `final` by default** (#1961). Extensibility flows through hooks, `post_type_supports`, and the abstract provider bases, not through subclassing concrete classes. A new class gets `final` unless it is deliberately an extension point.
     - ✅ Good: `final class Token {`: a leaf class nothing extends.
@@ -572,6 +572,55 @@ When working with JavaScript code:
 - **Stable `Navigator` over `__experimentalNavigatorProvider`** (and the rest of the `__experimentalNavigator*` family). The stable API ships under `Navigator` with the same props (`initialPath`, etc.) and exposes subcomponents as `Navigator.Screen`, `Navigator.Button`, `Navigator.BackButton`. If a file imports both the stable `Navigator` and the experimental `__experimentalNavigatorProvider as NavigatorProvider`, the migration is half-done, drop the experimental import and rename the wrapper.
     - ✅ Good: `import { Navigator } from '@wordpress/components';` then `<Navigator initialPath="/">...</Navigator>`
     - ❌ Bad: `import { __experimentalNavigatorProvider as NavigatorProvider, Navigator } from '@wordpress/components';` then `<NavigatorProvider initialPath="/">...</NavigatorProvider>`
+
+#### Public JavaScript surfaces
+
+Editor code published for companion plugins follows one naming rule, set out in [`docs/developer/hooks-naming-convention.md`](docs/developer/hooks-naming-convention.md#public-javascript-surfaces): a kebab-case surface name `<surface>` appears as the import path `@gatherpress/<surface>`, the global `window.gatherpress.<surfaceInCamelCase>`, and the script handle `gatherpress-<surface>`.
+
+- Publish with `window.gatherpress ??= {};` so other surfaces on the namespace survive.
+- If the publishing script's handle does not already match, add the conventional handle to `Assets::PUBLIC_SCRIPT_HANDLES` as an alias of it, and document only the conventional handle.
+- Add the surface to the table in the naming convention doc.
+- ✅ Good: `window.gatherpress.queryControls`, depended on as `gatherpress-query-controls`.
+- ❌ Bad: telling companion plugins to depend on `gatherpress-query`, which is whatever bundle happens to publish the global today.
+
+### CSS and SCSS Coding Standards
+
+#### Units
+
+Three units, picked by what the value has to track. The split already holds across `src/`: the front-end block stylesheets are `rem`-dominant, the admin and editor stylesheets are `px`-dominant, and `em` shows up only where a value belongs with its text.
+
+- **`rem` for layout and block-level spacing on the front end**: gaps, block margins, widths, max-widths. It does not compound through nesting, so a field wrapper's `margin-bottom` means the same thing wherever the block lands.
+    - ✅ Good: `gap: 0.5rem;` / `margin-bottom: 1rem;` / `max-width: 28rem;`
+    - ❌ Bad: `gap: 8px;` in a front-end block stylesheet.
+- **`em` for values that have to track the text they sit with**: `font-size`, and the tight gap between a control and the caption under it.
+    - ✅ Good: `font-size: 0.875em;` on a caption, and `margin: 0.25em 0 0;` shared by `.gatherpress-help-text` and the validation message that occupies the same slot.
+    - **Know what `em` resolves against before reaching for it.** `font-size` in `em` resolves against the *parent's* font size; every other property resolves against the element's *own*. The Form Field block applies `inputFontSize` as an inline style on the `<input>`, so an `em` on a sibling caption tracks the field wrapper, not the input. It follows the surrounding content, which is usually what you want, but it is not "scales with the field".
+- **`px` for hairlines, chrome, and breakpoints**: borders, `box-shadow`, `outline`, `outline-offset`, small `border-radius`, arrow and caret sizes, media queries, and the `1px` / `-1px` of the screen-reader clip rectangle in `src/utility.scss`.
+    - ✅ Good: `border: 1px solid;` / `box-shadow: 0 2px 8px rgb(0 0 0 / 15%);` / `@media screen and (width <= 782px)`
+    - Also `px` when the number is an asset's intrinsic size rather than a layout measurement, such as capping a Gravatar requested at 96 with `max-width: 96px`. Say so in a comment, because it reads like a layout value otherwise.
+- **`px` throughout admin and editor stylesheets**, matching WordPress core's own pixel grid: `src/admin.scss`, `src/components/PatternPicker/index.scss`, every `editor.scss`, and any rule targeting a `.components-*` class. A `rem` in one of those files is out of place rather than a modernization.
+    - The exception is a value copied from core so the two line up. `src/admin.scss` gives the plugin-row warning `margin-top: 1em` because core's `.requires` uses `1em`, and the comment above it says so. Match core's unit, not the file's.
+
+#### CSS custom properties
+
+Two shapes, and the dash count is the whole distinction:
+
+- **`--gatherpress--{component}--{property}`, two dashes between segments, is the public API.** Themes set these. Every one belongs in [`docs/developer/theme-customizations/README.md`](docs/developer/theme-customizations/README.md); one added without a row in that table is one no theme author will ever find. The shape follows WordPress's own `--wp--preset--color--primary`.
+- **`--gatherpress-{component}-{property}`, single dashes, is internal.** A component defines these for itself, usually to resolve a fallback chain once and then reuse it. Nothing outside the component reads one, and a theme that sets one is leaning on an implementation detail.
+
+The chain runs public property, then WordPress global style, then a hard-coded default:
+
+```scss
+--gatherpress-tooltip-text-color: var(
+	--gatherpress--tooltip--text-color,
+	var(--wp--preset--color--base, var(--wp--preset--color--background, #fff))
+);
+```
+
+Reach for the internal alias only when the value is composed or reused across a lot of rules. A single color read in two or three places should read the public property directly.
+
+- ✅ Good: `color: var(--gatherpress--rsvp-form--error-color, #b32d2e);`
+- ❌ Bad: `color: var(--gatherpress-field-error-color, #b32d2e);`, which invites a theme to set an internal name that is documented nowhere.
 
 ### Accessibility
 

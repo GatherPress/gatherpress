@@ -64,8 +64,8 @@ final class Feed {
 		add_filter( 'the_excerpt_rss', array( $this, 'apply_event_excerpt' ) );
 		add_filter( 'the_content_feed', array( $this, 'apply_event_content' ) );
 
-		// Hook into the main query to handle events feeds.
-		add_action( 'pre_get_posts', array( $this, 'handle_events_feed_query' ) );
+		// Run before Event\Query prepares event sorting and filtering.
+		add_action( 'pre_get_posts', array( $this, 'handle_events_feed_query' ), 9 );
 
 		// Modify feed link for past events page.
 		add_filter( 'post_type_archive_feed_link', array( $this, 'modify_feed_link_for_past_events' ) );
@@ -86,11 +86,13 @@ final class Feed {
 	 */
 	public function handle_events_feed_query( WP_Query $query ): void {
 		// Only run on the main query and if it's a feed.
-		if ( ! $query->is_main_query() || ! is_feed() ) {
+		if ( ! $query->is_main_query() || ! $query->is_feed() ) {
 			return;
 		}
 
-		// Check if this is an events feed request.
+		// Check if this is an events or topic feed request.
+		$is_event_feed = false;
+
 		if ( isset( $_SERVER['REQUEST_URI'] ) ) {
 			$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) );
 
@@ -99,25 +101,33 @@ final class Feed {
 			$rewrite_slug = $settings->get( 'events_url' );
 
 			// Check if this is the events feed URL.
-			if ( str_contains( $request_uri, '/' . $rewrite_slug . '/' . $GLOBALS['wp_rewrite']->feed_base ) ) {
-				// Set the post type and let Event\Query handle the rest.
-				$query->set( 'post_type', Event::POST_TYPE );
+			$is_event_feed = str_contains(
+				$request_uri,
+				'/' . $rewrite_slug . '/' . $GLOBALS['wp_rewrite']->feed_base
+			);
+		}
 
-				// Check for type parameter to determine if we want past or upcoming events.
-				$event_type = 'upcoming';
-				// Default to upcoming events.
-				// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Public feed URL parameter.
-				if (
-					isset( $_GET['type'] ) &&
-					'past' === sanitize_text_field( wp_unslash( $_GET['type'] ) )
-				) {
-					// phpcs:enable WordPress.Security.NonceVerification.Recommended
-					// Nonce verification not required for public feed URLs.
-					$event_type = 'past';
-				}
+		// The calendar endpoint uses the same taxonomy feed state but has its own query.
+		$is_topic_feed = $query->is_tax( Topic::TAXONOMY ) && 'ical' !== $query->get( 'feed' );
 
-				$query->set( 'gatherpress_event_query', $event_type );
+		if ( $is_event_feed || $is_topic_feed ) {
+			// Set the post type and let Event\Query handle the rest.
+			$query->set( 'post_type', Event::POST_TYPE );
+
+			// Check for type parameter to determine if we want past or upcoming events.
+			$event_type = 'upcoming';
+			// Default to upcoming events.
+			// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Public feed URL parameter.
+			if (
+				isset( $_GET['type'] ) &&
+				'past' === sanitize_text_field( wp_unslash( $_GET['type'] ) )
+			) {
+				// phpcs:enable WordPress.Security.NonceVerification.Recommended
+				// Nonce verification not required for public feed URLs.
+				$event_type = 'past';
 			}
+
+			$query->set( 'gatherpress_event_query', $event_type );
 		}
 	}
 

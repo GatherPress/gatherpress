@@ -122,7 +122,7 @@ final class Rsvp {
 	 * @since 0.34.0
 	 * @var int Represents the maximum number of attendees allowed for an event.
 	 */
-	protected int $max_attendance_limit;
+	protected int $capacity;
 
 	/**
 	 * The event post object associated with this RSVP instance.
@@ -164,10 +164,10 @@ final class Rsvp {
 	 * @param int $post_id The event post ID.
 	 */
 	public function __construct( int $post_id ) {
-		$this->post                 = get_post( $post_id );
-		$this->storage              = new Storage( $post_id );
-		$this->max_attendance_limit = (int) get_post_meta( $post_id, 'gatherpress_max_attendance_limit', true );
-		$this->providers            = Provider_Registry::get_instance()->get_all();
+		$this->post      = get_post( $post_id );
+		$this->storage   = new Storage( $post_id );
+		$this->capacity  = (int) get_post_meta( $post_id, 'gatherpress_capacity', true );
+		$this->providers = Provider_Registry::get_instance()->get_all();
 	}
 
 	/**
@@ -392,7 +392,7 @@ final class Rsvp {
 		$waiting_list = $responses->waiting_list();
 
 		// If there is no attendance limit, promote all from waiting list to attending.
-		if ( 0 === $this->max_attendance_limit ) {
+		if ( 0 === $this->capacity ) {
 			$promoted_count = 0;
 
 			foreach ( $waiting_list as $state ) {
@@ -406,7 +406,7 @@ final class Rsvp {
 			return $promoted_count;
 		}
 
-		$remaining_spots = $this->max_attendance_limit - $responses->get_attendee_count();
+		$remaining_spots = $this->capacity - $responses->get_attendee_count();
 
 		// No free spots left.
 		if ( $remaining_spots <= 0 ) {
@@ -533,7 +533,7 @@ final class Rsvp {
 		$responses  = $this->responses();
 		$user_count = 1;
 
-		if ( empty( $this->max_attendance_limit ) ) {
+		if ( empty( $this->capacity ) ) {
 			return false;
 		}
 
@@ -545,7 +545,7 @@ final class Rsvp {
 
 		return (
 			! empty( $responses['attending'] ) &&
-			intval( $responses['attending']['count'] ) + $user_count + $guests > $this->max_attendance_limit
+			intval( $responses['attending']['count'] ) + $user_count + $guests > $this->capacity
 		);
 	}
 
@@ -696,15 +696,15 @@ final class Rsvp {
 	 * @return Intent
 	 */
 	private function constrain_rsvp_intent( Intent $intent, ?State $current_response ): Intent {
-		$post_id         = $this->post->ID ?? 0;
-		$max_guest_limit = intval( get_post_meta( $post_id, 'gatherpress_max_guest_limit', true ) );
+		$post_id     = $this->post->ID ?? 0;
+		$guest_limit = intval( get_post_meta( $post_id, 'gatherpress_guest_limit', true ) );
 
 		$guests    = $intent->data->guests;
 		$anonymous = $intent->data->anonymous;
 		$status    = $intent->data->status;
 
-		if ( $max_guest_limit < $guests ) {
-			$guests = $max_guest_limit;
+		if ( $guest_limit < $guests ) {
+			$guests = $guest_limit;
 		}
 
 		// Check if anonymous RSVP is enabled for this event.

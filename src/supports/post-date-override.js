@@ -146,11 +146,11 @@ const withEventPostDateOverride = createHigherOrderComponent(
 			}
 
 			// Check if the setting is enabled and we are editing an event.
-			const postOrEventDate = getFromSettings(
-				'postOrEventDate',
+			const useEventDateForPublish = getFromSettings(
+				'useEventDateForPublish',
 			);
 
-			if ( ! postOrEventDate || ! isEventPostType() ) {
+			if ( ! useEventDateForPublish || ! isEventPostType() ) {
 				return <BlockEdit { ...props } />;
 			}
 

@@ -19,10 +19,11 @@ use Exception;
 use GatherPress\Core\Calendar;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
+use GatherPress\Core\Setup as Core_Setup;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
-use GatherPress\Core\Venue\Setup;
+use GatherPress\Core\Venue\Setup as Venue_Setup;
 use GatherPress\Core\Venue;
 use WP_Post;
 use WP_Term;
@@ -239,24 +240,47 @@ class Event {
 		string $separator = '',
 		string $show_timezone = ''
 	): string {
+		$parts = array_filter(
+			$this->get_display_datetime_parts(
+				$type,
+				$start_format,
+				$end_format,
+				$separator,
+				$show_timezone
+			)
+		);
+
+		return $parts ? implode( ' ', $parts ) : self::DATETIME_PLACEHOLDER;
+	}
+
+	/**
+	 * Gets raw formatted datetime parts for display.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $type          Display type: 'start', 'end', or 'both'.
+	 * @param string $start_format  PHP display format for start date/time.
+	 * @param string $end_format    PHP display format for end date/time.
+	 * @param string $separator     Separator between start and end dates.
+	 * @param string $show_timezone Show timezone.
+	 *
+	 * @return array<string, string|false> Raw datetime parts.
+	 *
+	 * @throws Exception If date/time formatting fails or settings cannot be retrieved.
+	 */
+	public function get_display_datetime_parts(
+		string $type = '',
+		string $start_format = '',
+		string $end_format = '',
+		string $separator = '',
+		string $show_timezone = ''
+	): array {
 		$settings    = Settings::get_instance();
-		$date_format = apply_filters(
-			'gatherpress_date_format',
-			$settings->get( 'date_format' )
-		);
-		$time_format = apply_filters(
-			'gatherpress_time_format',
-			$settings->get( 'time_format' )
-		);
+		$date_format = apply_filters( 'gatherpress_date_format', $settings->get( 'date_format' ) );
+		$time_format = apply_filters( 'gatherpress_time_format', $settings->get( 'time_format' ) );
 		$timezone    = $settings->get( 'show_timezone' ) ? ' T' : '';
-
-		$show_start = $type
-			? in_array( $type, array( 'start', 'both' ), true )
-			: true;
-
-		$show_end = $type
-			? in_array( $type, array( 'end', 'both' ), true )
-			: true;
+		$show_start  = $type ? in_array( $type, array( 'start', 'both' ), true ) : true;
+		$show_end    = $type ? in_array( $type, array( 'end', 'both' ), true ) : true;
 
 		$formats = $this->get_display_formats(
 			$start_format,
@@ -272,7 +296,22 @@ class Event {
 
 		// Add separator if there's both start and end date/time.
 		$default_separator = $separator ? $separator : __( 'to', 'gatherpress' );
-		$separator         = $start && $end ? $default_separator : false;
+
+		/**
+		 * Filter the separator between start and end dates/times.
+		 *
+		 * @since TBD
+		 *
+		 * @param string $default_separator The separator string.
+		 * @param Event  $event             The event instance.
+		 */
+		$default_separator = apply_filters(
+			'gatherpress_datetime_separator',
+			$default_separator,
+			$this
+		);
+
+		$separator = $start && $end ? $default_separator : false;
 
 		// Add timezone, event first. A block in a site template renders every
 		// event and cannot know which of them want their zone named, so an
@@ -288,38 +327,37 @@ class Event {
 			$timezone = false;
 		}
 
-		$parts = array_filter(
-			array( $start, $separator, $end, $timezone )
+		return array(
+			'start'     => $start,
+			'separator' => $separator,
+			'end'       => $end,
+			'timezone'  => $timezone,
 		);
-
-		// Stick the parts back together.
-		return $parts ? implode( ' ', $parts ) : self::DATETIME_PLACEHOLDER;
 	}
 
 	/**
-	 * Check if the start and end DateTime fall on the same date.
+	 * Check whether the start and end datetimes fall on the same date.
 	 *
-	 * Compares the start and end DateTime objects to determine if they are on the same date.
+	 * Compares the date portion of the unfiltered ISO datetimes, which bypass
+	 * the `gatherpress_datetime_format` filter, so a display-format filter
+	 * that ignores its $format argument cannot make a same-day event compare
+	 * unequal.
 	 *
 	 * @since 0.34.0
 	 *
 	 * @return bool True if start and end are on the same date, false otherwise.
-	 *
-	 * @throws Exception If date comparison fails.
 	 */
 	public function is_same_date(): bool {
-		$datetime_start = $this->get_datetime_start( 'Y-m-d' );
-		$datetime_end   = $this->get_datetime_end( 'Y-m-d' );
+		$datetime_start = $this->get_datetime_start_iso();
+		$datetime_end   = $this->get_datetime_end_iso();
 
 		if ( empty( $datetime_start ) || empty( $datetime_end ) ) {
 			return false;
 		}
 
-		if ( $datetime_start === $datetime_end ) {
-			return true;
-		}
-
-		return false;
+		// Compare only the date portion: the first 10 characters of a `Y-m-d`
+		// ISO string, so the time of day does not affect the result.
+		return substr( $datetime_start, 0, 10 ) === substr( $datetime_end, 0, 10 );
 	}
 
 	/**
@@ -525,14 +563,21 @@ class Event {
 	 *
 	 * @since 0.36.0
 	 *
-	 * @param string               $format The PHP date format.
-	 * @param string               $which  Which datetime to format, 'start' or 'end'.
-	 * @param bool                 $local  Whether the datetime is being rendered in local time.
-	 * @param array<string, mixed> $dt     The event's datetime data.
+	 * @param string               $format         The PHP date format.
+	 * @param string               $which          Which datetime to format, 'start' or 'end'.
+	 * @param bool                 $local          Whether the datetime is being rendered in local time.
+	 * @param array<string, mixed> $dt             The event's datetime data.
+	 * @param bool                 $apply_filters  Whether to apply the gatherpress_datetime_format filter.
 	 *
 	 * @return string The formatted datetime.
 	 */
-	protected function get_formatted_all_day( string $format, string $which, bool $local, array $dt ): string {
+	protected function get_formatted_all_day(
+		string $format,
+		string $which,
+		bool $local,
+		array $dt,
+		bool $apply_filters = true
+	): string {
 		$date = (string) $dt[ sprintf( 'datetime_%s', $which ) ];
 
 		if ( empty( $date ) ) {
@@ -555,8 +600,10 @@ class Event {
 			return '';
 		}
 
-		/** This filter is documented in includes/core/classes/event/class-event.php */
-		$format = apply_filters( 'gatherpress_datetime_format', $format, $which, $local );
+		if ( $apply_filters ) {
+			/** This filter is documented in includes/core/classes/event/class-event.php */
+			$format = apply_filters( 'gatherpress_datetime_format', $format, $which, $local );
+		}
 
 		return trim( (string) wp_date( $format, $parsed->getTimestamp(), $tz ) );
 	}
@@ -686,12 +733,34 @@ class Event {
 		string $which = 'start',
 		bool $local = true
 	): string {
+		return $this->format_datetime( $format, $which, $local, true );
+	}
+
+	/**
+	 * Format a datetime value.
+	 *
+	 * The machine-readable output passed to this method must not be altered by
+	 * the gatherpress_datetime_format filter, so filter application is opt-in via
+	 * $apply_filters. Display formatting enables it; the ISO accessors do not.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $format        PHP date format.
+	 * @param string $which         Datetime field in event table to format ('start' or 'end').
+	 * @param bool   $local         Whether to format the date in local time (true) or GMT (false).
+	 * @param bool   $apply_filters Whether to pass $format through the gatherpress_datetime_format filter.
+	 *
+	 * @return string The formatted datetime value.
+	 *
+	 * @throws Exception If there is an issue while formatting the datetime value.
+	 */
+	private function format_datetime( string $format, string $which, bool $local, bool $apply_filters = true ): string {
 		$dt             = $this->get_datetime();
 		$dt['timezone'] = Utility::maybe_convert_utc_offset( $dt['timezone'] );
 		$tz             = null;
 
 		if ( $this->is_all_day() ) {
-			return $this->get_formatted_all_day( $format, $which, $local, $dt );
+			return $this->get_formatted_all_day( $format, $which, $local, $dt, $apply_filters );
 		}
 
 		$date = $dt[ sprintf( 'datetime_%s_gmt', $which ) ];
@@ -717,30 +786,70 @@ class Event {
 				return '';
 			}
 
-			/**
-			 * Filters the format an event's datetime is rendered with.
-			 *
-			 * Applies to every context an event date is shown in, since they
-			 * all format through this method: the singular event, an archive,
-			 * the Event Date block and a query loop alike.
-			 *
-			 * @since 0.34.0
-			 *
-			 * @param string $format The PHP date format.
-			 * @param string $which  Which datetime is being formatted, 'start' or 'end'.
-			 * @param bool   $local  Whether the datetime is rendered in local time rather than GMT.
-			 */
-			$format = apply_filters( 'gatherpress_datetime_format', $format, $which, $local );
+			if ( $apply_filters ) {
+				/**
+				 * Filters the format an event's datetime is rendered with.
+				 *
+				 * Applies to every context an event date is shown in, since they
+				 * all format through this method: the singular event, an archive,
+				 * the Event Date block and a query loop alike. The machine-readable
+				 * ISO accessors bypass it, so a format filter cannot alter the
+				 * datetime attribute values.
+				 *
+				 * @since 0.34.0
+				 *
+				 * @param string $format The PHP date format.
+				 * @param string $which  Which datetime is being formatted, 'start' or 'end'.
+				 * @param bool   $local  Whether the datetime is rendered in local time rather than GMT.
+				 */
+				$format = apply_filters( 'gatherpress_datetime_format', $format, $which, $local );
+			}
 
 			// wp_date() only returns false for a non-numeric timestamp, which $ts is not.
-			$date = (string) wp_date(
-				$format,
-				$ts,
-				$tz
-			);
+			$date = (string) wp_date( $format, $ts, $tz );
 		}
 
 		return trim( $date );
+	}
+
+	/**
+	 * Get the ISO 8601 start datetime of the event.
+	 *
+	 * Returns the machine-readable start datetime intended for <time datetime>
+	 * attributes. Unlike get_datetime_start(), the format is not passed through
+	 * the gatherpress_datetime_format filter, so the ISO value cannot be changed
+	 * by display-format customization.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The ISO 8601 start datetime, or empty string when unset.
+	 *
+	 * @throws Exception If there is an issue formatting the start datetime.
+	 */
+	public function get_datetime_start_iso(): string {
+		$format = $this->is_all_day() ? 'Y-m-d' : 'c';
+
+		return $this->format_datetime( $format, 'start', true, false );
+	}
+
+	/**
+	 * Get the ISO 8601 end datetime of the event.
+	 *
+	 * Returns the machine-readable end datetime intended for <time datetime>
+	 * attributes. Unlike get_datetime_end(), the format is not passed through
+	 * the gatherpress_datetime_format filter, so the ISO value cannot be changed
+	 * by display-format customization.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The ISO 8601 end datetime, or empty string when unset.
+	 *
+	 * @throws Exception If there is an issue formatting the end datetime.
+	 */
+	public function get_datetime_end_iso(): string {
+		$format = $this->is_all_day() ? 'Y-m-d' : 'c';
+
+		return $this->format_datetime( $format, 'end', true, false );
 	}
 
 	/**
@@ -861,7 +970,7 @@ class Event {
 		}
 
 		$event_post_type = (string) get_post_type( $this->post );
-		$venue_setup     = Setup::get_instance();
+		$venue_setup     = Venue_Setup::get_instance();
 		$taxonomy        = $venue_setup->taxonomy_for_event_post_type( $event_post_type );
 		$venue_terms     = get_the_terms( $this->post, $taxonomy );
 
@@ -1143,5 +1252,104 @@ class Event {
 		}
 
 		return $event_link;
+	}
+
+	/**
+	 * Whether this event is marked online.
+	 *
+	 * Unconditional online-status check: returns true whenever the event
+	 * carries the `online-event` sentinel term in its venue taxonomy, no
+	 * matter the current user's RSVP status, the event's time, or the admin
+	 * context. Distinct from {@see self::maybe_get_online_event_link()}, which
+	 * gates link disclosure on attendance and time.
+	 *
+	 * Requires the post type to declare `gatherpress-online-event` support, the
+	 * same gate {@see \GatherPress\Core\Blocks\Online_Event::render_block()}
+	 * applies, so a post that cannot render the online-event block never
+	 * reports itself as online.
+	 *
+	 * @since TBD
+	 *
+	 * @return bool True if the event has the online-event term, false otherwise.
+	 */
+	public function is_online(): bool {
+		// A post type without online-event support has no online state to
+		// report, whether or not the sentinel term happens to be attached.
+		if ( ! $this->post || ! post_type_supports( $this->post->post_type, Venue::ONLINE_SUPPORT ) ) {
+			return false;
+		}
+
+		$taxonomy = Venue_Setup::get_instance()->taxonomy_for_event_post_type( $this->post->post_type );
+
+		return has_term( Venue_Setup::ONLINE_EVENT_TERM_SLUG, $taxonomy, $this->post );
+	}
+
+	/**
+	 * Mark this event as online or offline and persist the link.
+	 *
+	 * Owns the term-plus-meta pairing so callers do not have to coordinate
+	 * the two writes themselves. Toggle on: the sentinel term is ensured to
+	 * exist in the right venue taxonomy (idempotent with plugin activation)
+	 * and its term ID is appended without removing existing venue terms, so
+	 * hybrid events keep their venue. Toggle off: the sentinel term is
+	 * removed and the link meta is deleted so re-enabling starts blank rather
+	 * than reading a stale URL.
+	 *
+	 * Requires the post type to declare `gatherpress-online-event` support, so
+	 * a write can never land a sentinel term that the online-event block would
+	 * then refuse to render. A post type without that support is reported as
+	 * unsaved, the same answer as a post that does not exist.
+	 *
+	 * @since TBD
+	 *
+	 * @param bool   $is_online True to mark online, false to mark offline.
+	 * @param string $link      Optional URL for the `gatherpress_online_event_link` meta when online. An empty
+	 *                          value preserves an existing link, and so does a value `esc_url_raw()` rejects.
+	 *
+	 * @return bool True when the online status was saved, false otherwise.
+	 */
+	public function set_online( bool $is_online, string $link = '' ): bool {
+		if ( ! $this->post || ! post_type_supports( $this->post->post_type, Venue::ONLINE_SUPPORT ) ) {
+			return false;
+		}
+
+		$venue_setup = Venue_Setup::get_instance();
+		$venue_pt    = $venue_setup->get_venue_post_type( $this->post->post_type );
+		$taxonomy    = $venue_setup->taxonomy_for_event_post_type( $this->post->post_type );
+		$term_id     = $venue_setup->get_online_event_term_id( $venue_pt );
+		$result      = null;
+
+		// Marking online needs the sentinel, so seed it when the taxonomy has none yet.
+		if ( $is_online && null === $term_id ) {
+			Core_Setup::get_instance()->add_online_event_term();
+			$term_id = $venue_setup->get_online_event_term_id( $venue_pt );
+		}
+
+		// Adding or removing only the sentinel leaves any physical venue term in
+		// place, so hybrid events keep their venue. With no sentinel seeded there
+		// is nothing to remove when going offline.
+		if ( null !== $term_id ) {
+			$result = $is_online
+				? wp_add_object_terms( $this->post->ID, $term_id, $taxonomy )
+				: wp_remove_object_terms( $this->post->ID, $term_id, $taxonomy );
+		}
+
+		// Going online without a sentinel means seeding failed. A WP_Error from
+		// the term write only happens on a DB error.
+		if ( ( $is_online && null === $term_id ) || is_wp_error( $result ) ) {
+			return false;
+		}
+
+		$escaped_link = esc_url_raw( $link );
+
+		// Going offline clears the link so re-enabling starts blank. Going online
+		// skips an empty link, or one esc_url_raw() rejects, so a saved link survives.
+		if ( ! $is_online ) {
+			delete_post_meta( $this->post->ID, 'gatherpress_online_event_link' );
+		} elseif ( '' !== $escaped_link ) {
+			update_post_meta( $this->post->ID, 'gatherpress_online_event_link', $escaped_link );
+		}
+
+		return true;
 	}
 }
