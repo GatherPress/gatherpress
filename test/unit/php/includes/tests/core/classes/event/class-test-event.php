@@ -3503,7 +3503,9 @@ class Test_Event extends Base {
 		Event::get_default_datetime_separator();
 
 		$this->assertInstanceOf( Event::class, $captured_event );
-		$this->assertSame( $post_id, $captured_event->get_post_id() );
+		$captured_post = Utility::get_hidden_property( $captured_event, 'post' );
+		$this->assertInstanceOf( WP_Post::class, $captured_post );
+		$this->assertSame( $post_id, $captured_post->ID );
 
 		remove_filter( 'gatherpress_datetime_separator', $filter_with_event, 10 );
 		wp_reset_postdata();
