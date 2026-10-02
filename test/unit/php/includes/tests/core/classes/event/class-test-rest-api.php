@@ -3593,6 +3593,67 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Direct-invoke coverage for `build_event_email` (extracted from
+	 * `send_event_email_to_recipient` so the moved filter docblock stays
+	 * diff context) — a caller-supplied subject skips the default branch.
+	 *
+	 * Reflection-invoked because xdebug doesn't reliably trace lines inside
+	 * same-class private helpers called from a closure.
+	 *
+	 * @covers ::build_event_email
+	 *
+	 * @return void
+	 */
+	public function test_build_event_email_keeps_supplied_subject(): void {
+		$instance = Rest_Api::get_instance();
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => 'Supplied Title',
+			)
+		);
+
+		$email = Utility::invoke_hidden_method(
+			$instance,
+			'build_event_email',
+			array( $event_id, 'Hello there.', 'Custom subject' )
+		);
+
+		$this->assertIsArray( $email );
+		$this->assertSame( 'Custom subject', $email['subject'] );
+		$this->assertStringContainsString( 'Hello there.', $email['body'] );
+		$this->assertSame( array( 'Content-Type: text/html; charset=UTF-8' ), $email['headers'] );
+	}
+
+	/**
+	 * Direct-invoke coverage for `build_event_email` — an empty subject falls
+	 * back to the `📅 {title}` default built from the event title.
+	 *
+	 * @covers ::build_event_email
+	 *
+	 * @return void
+	 */
+	public function test_build_event_email_builds_default_subject_from_title(): void {
+		$instance = Rest_Api::get_instance();
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => 'Default Title Event',
+			)
+		);
+
+		$email = Utility::invoke_hidden_method(
+			$instance,
+			'build_event_email',
+			array( $event_id, '', '' )
+		);
+
+		$this->assertIsArray( $email );
+		$this->assertStringContainsString( 'Default Title Event', $email['subject'] );
+		$this->assertStringContainsString( '📅', $email['subject'] );
+	}
+
+	/**
 	 * Direct-invoke coverage for `build_comment_recipient` (extracted from
 	 * `get_recipients`) — happy path with a registered user pulls email and
 	 * display name from the user record rather than the comment fields.

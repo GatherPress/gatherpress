@@ -519,8 +519,9 @@ final class Rest_Api {
 	 *
 	 * Extracted from `send_emails()` so the outer loop body stays shallow
 	 * enough for SonarCloud's cognitive-complexity gate. Builds the event
-	 * subject and body, then hands the recipient off to `Mailer::send()`,
-	 * which owns the consent check, context switch, delivery, and restore.
+	 * subject and body through `build_event_email()`, then hands the
+	 * recipient off to `Mailer::send()`, which owns the consent check,
+	 * context switch, delivery, and restore.
 	 *
 	 * @since 0.34.0
 	 * @since 0.36.0 Added `$subject` parameter for #827.
@@ -541,43 +542,61 @@ final class Rest_Api {
 		string $message,
 		string $subject = ''
 	): void {
+		// Build the email from the callback so the default subject is
+		// translated, and the template rendered, in the recipient's context.
+		Mailer::get_instance()->send(
+			$recipient,
+			fn(): array => $this->build_event_email( $post_id, $message, $subject ),
+			'event'
+		);
+	}
+
+	/**
+	 * Build the subject and body for an event update email.
+	 *
+	 * Runs while the recipient's context is active so the default subject and
+	 * the template are translated in the recipient's locale and timezone.
+	 *
+	 * @since TBD
+	 *
+	 * @param int    $post_id Event post ID.
+	 * @param string $message Optional editor-supplied message body.
+	 * @param string $subject Optional subject line. Empty falls back to the default template.
+	 *
+	 * @return array{subject: string, body: string, headers: array<int, string>} Composed email.
+	 */
+	private function build_event_email( int $post_id, string $message, string $subject ): array {
 		$template = sprintf( '%s/includes/templates/admin/emails/event-email.php', GATHERPRESS_CORE_PATH );
 
-		// Build the email inside the callback so the default subject is
-		// translated, and the template rendered, in the recipient's context.
-		$compose = static function () use ( $post_id, $message, $subject, $template ): array {
-			if ( '' === $subject ) {
-				$subject = sprintf(
-					// translators: %s: event title.
-					_x( '📅 %s', 'Email notification subject with event title', 'gatherpress' ),
-					get_the_title( $post_id )
-				);
-			}
-
-			/**
-			 * Filters the event update email subject.
-			 *
-			 * @since 0.36.0
-			 *
-			 * @param string $subject Email subject line.
-			 * @param int    $post_id Event post ID.
-			 */
-			$subject = apply_filters( 'gatherpress_email_subject', $subject, $post_id );
-
-			return array(
-				'subject' => $subject,
-				'body'    => Utility::render_template(
-					$template,
-					array(
-						'event_id' => $post_id,
-						'message'  => $message,
-					),
-				),
-				'headers' => array( 'Content-Type: text/html; charset=UTF-8' ),
+		if ( '' === $subject ) {
+			$subject = sprintf(
+				// translators: %s: event title.
+				_x( '📅 %s', 'Email notification subject with event title', 'gatherpress' ),
+				get_the_title( $post_id )
 			);
-		};
+		}
 
-		Mailer::get_instance()->send( $recipient, $compose, 'event' );
+		/**
+		 * Filters the event update email subject.
+		 *
+		 * @since 0.36.0
+		 *
+		 * @param string $subject Email subject line.
+		 * @param int    $post_id Event post ID.
+		 */
+		$subject = apply_filters( 'gatherpress_email_subject', $subject, $post_id );
+
+		return array(
+			'subject' => $subject,
+			'body'    => Utility::render_template(
+				$template,
+				array(
+					'event_id' => $post_id,
+					'message'  => $message,
+				),
+			),
+			'headers' => array( 'Content-Type: text/html; charset=UTF-8' ),
+		);
 	}
 
 	/**
