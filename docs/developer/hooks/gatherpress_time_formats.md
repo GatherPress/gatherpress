@@ -21,7 +21,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-utility.php:497](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-utility.php#L497)
+- [includes/core/classes/class-utility.php:629](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-utility.php#L629)
 ```php
 apply_filters( 'gatherpress_time_formats', $formats )
 ```
