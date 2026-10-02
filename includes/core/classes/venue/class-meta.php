@@ -21,7 +21,7 @@ namespace GatherPress\Core\Venue;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Geo_Sync as Shared_Geo_Sync;
+use GatherPress\Core\Geo_Sync;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
@@ -122,7 +122,7 @@ final class Meta {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'registered_post_type', array( $this, 'register' ) );
-		add_action( 'wp_after_insert_post', array( Shared_Geo_Sync::get_instance(), 'on_venue_saved' ), 10, 2 );
+		add_action( 'wp_after_insert_post', array( Geo_Sync::get_instance(), 'on_venue_saved' ), 10, 2 );
 	}
 
 	/**
@@ -308,7 +308,7 @@ final class Meta {
 	 * @return void
 	 */
 	protected function register_geo_meta( string $post_type ): void {
-		Shared_Geo_Sync::register_meta( $post_type );
+		Geo_Sync::register_meta( $post_type );
 	}
 
 	/**
@@ -379,7 +379,7 @@ final class Meta {
 		// editor-writable fields doesn't fail the whole request.
 		$readonly_keys = array_merge(
 			array( Map::META_KEY ),
-			Shared_Geo_Sync::FIELDS,
+			Geo_Sync::FIELDS,
 			array_map(
 				array( Utility::class, 'prefix_key' ),
 				self::STRUCTURED_ADDRESS_FIELDS

@@ -24,7 +24,7 @@ namespace GatherPress\Core\Event;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
-use GatherPress\Core\Geo_Sync as Shared_Geo_Sync;
+use GatherPress\Core\Geo_Sync;
 use GatherPress\Core\Renamed_Keys;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
@@ -70,7 +70,7 @@ final class Meta {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'registered_post_type', array( $this, 'register' ) );
-		add_action( 'template_redirect', array( Shared_Geo_Sync::get_instance(), 'maybe_refresh_on_view' ) );
+		add_action( 'template_redirect', array( Geo_Sync::get_instance(), 'maybe_refresh_on_view' ) );
 	}
 
 	/**
@@ -213,7 +213,7 @@ final class Meta {
 	protected function register_venue_geo_meta( string $post_type ): void {
 		add_post_type_support( $post_type, 'custom-fields' );
 
-		Shared_Geo_Sync::register_meta( $post_type );
+		Geo_Sync::register_meta( $post_type );
 
 		add_filter(
 			sprintf( 'rest_pre_insert_%s', $post_type ),
@@ -223,7 +223,7 @@ final class Meta {
 		);
 		add_filter(
 			sprintf( 'rest_prepare_%s', $post_type ),
-			array( Shared_Geo_Sync::get_instance(), 'maybe_refresh_on_rest' ),
+			array( Geo_Sync::get_instance(), 'maybe_refresh_on_rest' ),
 			10,
 			3
 		);
@@ -339,7 +339,7 @@ final class Meta {
 				'gatherpress_datetime_end_gmt',
 				'gatherpress_timezone',
 			),
-			Shared_Geo_Sync::FIELDS
+			Geo_Sync::FIELDS
 		);
 
 		$meta = $request->get_param( 'meta' );

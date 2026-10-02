@@ -126,6 +126,24 @@ final class Geo_Sync {
 	}
 
 	/**
+	 * Whether a post's location may be shown publicly.
+	 *
+	 * Only a published post qualifies. Draft, pending, scheduled and private
+	 * posts keep their location but mark it not public.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_Post|null $post The post, or null when there is none.
+	 *
+	 * @phpstan-assert-if-true =WP_Post $post
+	 *
+	 * @return bool Whether the post is published.
+	 */
+	private static function is_public( ?WP_Post $post ): bool {
+		return $post instanceof WP_Post && 'publish' === $post->post_status;
+	}
+
+	/**
 	 * Derives geo_* meta from a saved venue's own fields.
 	 *
 	 * @since TBD
@@ -136,7 +154,8 @@ final class Geo_Sync {
 	 * @return void
 	 */
 	public function on_venue_saved( int $post_id, WP_Post $post ): void {
-		if ( wp_is_post_revision( $post_id )
+		if (
+			wp_is_post_revision( $post_id )
 			|| wp_is_post_autosave( $post_id )
 			|| ! post_type_supports( $post->post_type, Venue::SUPPORT )
 		) {
@@ -145,7 +164,7 @@ final class Geo_Sync {
 
 		$information = ( new Venue( $post_id ) )->get_information();
 
-		self::write( $post_id, self::build_values( $information, 'publish' === $post->post_status ) );
+		self::write( $post_id, self::build_values( $information, self::is_public( $post ) ) );
 	}
 
 	/**
@@ -215,26 +234,24 @@ final class Geo_Sync {
 	 *                                        skipped or already current.
 	 */
 	public function maybe_refresh( int $event_id ): ?array {
-		$event = new Event( $event_id );
-
-		if ( $event->has_event_past() ) {
+		if ( ( new Event( $event_id ) )->has_event_past() ) {
 			return null;
 		}
 
-		$venue_post  = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $event_id );
-		$has_venue   = $venue_post instanceof WP_Post;
-		$venue       = new Venue( $has_venue ? $venue_post->ID : 0 );
-		$information = $venue->get_information();
+		$venue_post = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $event_id );
 
-		// A draft/private venue's real location must not leak through a
-		// published event just because the event itself is public. An
-		// event with no venue at all has nothing to hide.
-		$venue_hides_location = $has_venue && 'publish' !== $venue_post->post_status;
+		// Only a published venue shares its location, so a draft or private
+		// venue's address never leaks through a published event.
+		$information = self::is_public( $venue_post )
+			? ( new Venue( $venue_post->ID ) )->get_information()
+			: array();
 
-		$desired = self::build_values(
-			$venue_hides_location ? array() : $information,
-			! $venue_hides_location && 'publish' === get_post_status( $event_id )
-		);
+		// An event with no venue has no location to hide, so only its own
+		// status counts.
+		$is_public = self::is_public( get_post( $event_id ) )
+			&& ( null === $venue_post || self::is_public( $venue_post ) );
+
+		$desired = self::build_values( $information, $is_public );
 
 		return self::write( $event_id, $desired ) ? $desired : null;
 	}

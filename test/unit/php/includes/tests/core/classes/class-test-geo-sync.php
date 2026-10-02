@@ -13,6 +13,7 @@ use GatherPress\Core\Geo_Sync;
 use GatherPress\Core\Venue;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -532,6 +533,77 @@ class Test_Geo_Sync extends Base {
 			$result
 		);
 		$this->assertSame( '', get_post_meta( $event->ID, 'geo_latitude', true ) );
+	}
+
+	/**
+	 * `maybe_refresh()` leaves an event without a venue empty even while a
+	 * venue is the global post, rather than reading that venue's location.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::maybe_refresh
+	 *
+	 * @return void
+	 */
+	public function test_maybe_refresh_ignores_the_global_venue_without_a_venue(): void {
+		$venue = $this->create_linked_venue(
+			'test-global-venue',
+			array(
+				'latitude'  => '48.8566',
+				'longitude' => '2.3522',
+				'address'   => 'Paris, France',
+			)
+		);
+		$event = $this->create_event( '2099-01-01 10:00:00', '2099-01-01 12:00:00', null );
+
+		$this->go_to( get_permalink( $venue['post'] ) );
+
+		$result = Geo_Sync::get_instance()->maybe_refresh( $event->ID );
+
+		$this->assertSame(
+			'',
+			$result['geo_address'],
+			'Failed to assert the global venue post did not stand in for the missing venue.'
+		);
+	}
+
+	/**
+	 * Only a published post's location is public.
+	 *
+	 * Called directly because the sync methods reach it through same-class
+	 * calls that xdebug does not trace.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::is_public
+	 *
+	 * @return void
+	 */
+	public function test_is_public(): void {
+		$geo_sync = Geo_Sync::get_instance();
+
+		$this->assertFalse(
+			Utility::invoke_hidden_method( $geo_sync, 'is_public', array( null ) ),
+			'Failed to assert a missing post is not public.'
+		);
+
+		foreach ( array( 'draft', 'pending', 'private' ) as $status ) {
+			$post = $this->mock->post( array( 'post_status' => $status ) )->get();
+
+			$this->assertFalse(
+				Utility::invoke_hidden_method( $geo_sync, 'is_public', array( $post ) ),
+				sprintf( 'Failed to assert a %s post is not public.', $status )
+			);
+		}
+
+		$this->assertTrue(
+			Utility::invoke_hidden_method(
+				$geo_sync,
+				'is_public',
+				array( $this->mock->post( array( 'post_status' => 'publish' ) )->get() )
+			),
+			'Failed to assert a published post is public.'
+		);
 	}
 
 	/**
