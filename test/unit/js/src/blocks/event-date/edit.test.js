@@ -80,7 +80,10 @@ jest.mock( '@src/components/DateTimeRange', () => () => null );
 // only pull `SelectControl` into the components mock for no gain.
 jest.mock( '@src/components/FormatControl', () => () => null );
 
+let mockConfig = {};
+
 jest.mock( '@src/helpers/editor-settings', () => ( {
+	getFromConfig: ( key ) => mockConfig[ key ],
 	getFromSettings: ( key ) =>
 		( {
 			dateFormat: 'F j, Y',
@@ -216,11 +219,21 @@ describe( 'Event Date Edit documentation link', () => {
 
 describe( 'Event Date Edit separator control', () => {
 	it( 'offers the localized default as a placeholder when unset', () => {
+		mockConfig = {};
 		const { getByLabelText } = renderEdit( { separator: '' } );
 		const input = getByLabelText( 'Separator' );
 
 		expect( input ).toHaveValue( '' );
 		expect( input ).toHaveAttribute( 'placeholder', 'to' );
+	} );
+
+	it( 'offers the filtered datetimeSeparator from config as a placeholder when unset', () => {
+		mockConfig = { datetimeSeparator: ' - ' };
+		const { getByLabelText } = renderEdit( { separator: '' } );
+		const input = getByLabelText( 'Separator' );
+
+		expect( input ).toHaveValue( '' );
+		expect( input ).toHaveAttribute( 'placeholder', ' - ' );
 	} );
 
 	it( 'shows a custom separator as it was saved', () => {
@@ -240,3 +253,27 @@ describe( 'Event Date Edit separator control', () => {
 		expect( setAttributes ).toHaveBeenCalledWith( { separator: 'bis' } );
 	} );
 } );
+
+describe( 'Event Date Edit display rendering', () => {
+	it( 'renders the default separator when separator attribute is empty', () => {
+		mockConfig = {};
+		const { container } = renderEdit( { separator: '' } );
+
+		expect( container.textContent ).toContain( 'to' );
+	} );
+
+	it( 'renders the filtered datetimeSeparator from config when separator attribute is empty', () => {
+		mockConfig = { datetimeSeparator: ' - ' };
+		const { container } = renderEdit( { separator: '' } );
+
+		expect( container.textContent ).toContain( ' - ' );
+	} );
+
+	it( 'renders the custom separator when separator attribute is specified', () => {
+		mockConfig = { datetimeSeparator: ' - ' };
+		const { container } = renderEdit( { separator: 'until' } );
+
+		expect( container.textContent ).toContain( 'until' );
+	} );
+} );
+

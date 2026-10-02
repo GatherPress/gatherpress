@@ -3461,4 +3461,24 @@ class Test_Event extends Base {
 
 		remove_filter( 'gatherpress_datetime_separator', $filter_callback );
 	}
+
+	/**
+	 * Test get_default_datetime_separator method.
+	 *
+	 * @covers ::get_default_datetime_separator
+	 *
+	 * @return void
+	 */
+	public function test_get_default_datetime_separator(): void {
+		$this->assertSame( 'to', Event::get_default_datetime_separator() );
+
+		$filter_callback = function () {
+			return ' - ';
+		};
+		add_filter( 'gatherpress_datetime_separator', $filter_callback );
+
+		$this->assertSame( ' - ', Event::get_default_datetime_separator() );
+
+		remove_filter( 'gatherpress_datetime_separator', $filter_callback );
+	}
 }

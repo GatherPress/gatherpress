@@ -295,21 +295,16 @@ class Event {
 			: false;
 
 		// Add separator if there's both start and end date/time.
-		$default_separator = $separator ? $separator : __( 'to', 'gatherpress' );
-
-		/**
-		 * Filter the separator between start and end dates/times.
-		 *
-		 * @since TBD
-		 *
-		 * @param string $default_separator The separator string.
-		 * @param Event  $event             The event instance.
-		 */
-		$default_separator = apply_filters(
-			'gatherpress_datetime_separator',
-			$default_separator,
-			$this
-		);
+		if ( $separator ) {
+			/** This filter is documented in includes/core/classes/event/class-event.php */
+			$default_separator = (string) apply_filters(
+				'gatherpress_datetime_separator',
+				$separator,
+				$this
+			);
+		} else {
+			$default_separator = self::get_default_datetime_separator( $this );
+		}
 
 		$separator = $start && $end ? $default_separator : false;
 
@@ -332,6 +327,40 @@ class Event {
 			'separator' => $separator,
 			'end'       => $end,
 			'timezone'  => $timezone,
+		);
+	}
+
+	/**
+	 * Get the default datetime separator, filtered by 'gatherpress_datetime_separator'.
+	 *
+	 * @since TBD
+	 *
+	 * @param Event|null $event Optional. Event instance. Default null.
+	 * @return string The filtered datetime separator.
+	 */
+	public static function get_default_datetime_separator( ?Event $event = null ): string {
+		if ( null === $event ) {
+			$post_id = get_the_ID();
+
+			if ( $post_id && post_type_supports( (string) get_post_type( $post_id ), self::SUPPORT ) ) {
+				$event = new self( $post_id );
+			}
+		}
+
+		$default_separator = __( 'to', 'gatherpress' );
+
+		/**
+		 * Filter the separator between start and end dates/times.
+		 *
+		 * @since TBD
+		 *
+		 * @param string     $default_separator The separator string.
+		 * @param Event|null $event             The event instance.
+		 */
+		return (string) apply_filters(
+			'gatherpress_datetime_separator',
+			$default_separator,
+			$event
 		);
 	}
 

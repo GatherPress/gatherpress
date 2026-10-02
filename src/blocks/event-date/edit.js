@@ -41,7 +41,7 @@ import {
 } from '../../helpers/datetime';
 import DateTimeRange from '../../components/DateTimeRange';
 import FormatControl from '../../components/FormatControl';
-import { getFromSettings } from '../../helpers/editor-settings';
+import { getFromConfig, getFromSettings } from '../../helpers/editor-settings';
 import {
 	isEventPostType,
 	DISABLED_FIELD_OPACITY,
@@ -132,7 +132,10 @@ const displayDateTime = (
 
 	// Add separator if start + end date/time(s).
 	if ( dateTimeStart && dateTimeEnd ) {
-		parts.push( separator || __( 'to', 'gatherpress' ) );
+		const defaultSeparator =
+			getFromConfig( 'datetimeSeparator' ) || __( 'to', 'gatherpress' );
+
+		parts.push( separator || defaultSeparator );
 	}
 
 	// Add end date/time.
@@ -399,7 +402,10 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 							__next40pxDefaultSize
 							label={ __( 'Separator', 'gatherpress' ) }
 							value={ separator }
-							placeholder={ __( 'to', 'gatherpress' ) }
+							placeholder={
+								getFromConfig( 'datetimeSeparator' ) ||
+								__( 'to', 'gatherpress' )
+							}
 							onChange={ ( value ) =>
 								setAttributes( { separator: value } )
 							}
