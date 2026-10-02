@@ -1055,7 +1055,7 @@ class Test_Query extends Base {
 		$this->assertSame(
 			get_author_posts_url( $user_id ),
 			$instance->prepare_rsvp_comment( WP_Comment::get_instance( $anonymous_id ) )->comment_author_url,
-			'A reader who already sees the responder gets the link too.'
+			'A viewer who already sees the responder gets the link too.'
 		);
 
 		wp_set_current_user( 0 );

@@ -68,7 +68,7 @@ const Edit = ( {
 
 	// Show the stored text while editing so the author can see and keep any
 	// placeholder, and the resolved text when they step away so the item
-	// reads the way visitors will see it.
+	// reads the way viewers will see it.
 	const richTextValue = isSelected ? text : displayText;
 
 	return (

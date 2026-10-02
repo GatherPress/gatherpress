@@ -635,7 +635,7 @@ final class Utility {
 	 * Pair each format with the date it renders right now.
 	 *
 	 * Rendered through `wp_date()` so the example arrives in the site's
-	 * locale and zone, which is the whole point: the reader recognizes
+	 * locale and zone, which is the whole point: the viewer recognizes
 	 * the result instead of decoding the format.
 	 *
 	 * @since TBD

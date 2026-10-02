@@ -6,6 +6,17 @@ This file is the canonical project guide for AI coding agents (Claude Code, Curs
 
 Always use **US English** spelling in all code, comments, and documentation. When in doubt, use the spelling WordPress core uses.
 
+### Terminology for People
+
+When referring to people who interact with a GatherPress site, use these terms consistently:
+
+- **`viewer`** - Anyone looking at a page, whether logged in or not. This is the general default term across the codebase, tests, and user-facing copy (`Event::is_viewable()`, event dates, maps, etc.) because it makes no assumptions about whether someone has an account.
+- **`visitor`** - Reserved strictly for contexts where "without a site account" is the specific point (e.g., Open RSVP, anonymous fallbacks, or strings explaining features for people without an account). Not a general synonym for viewer.
+- **`attendee`** - Someone who has submitted an RSVP to an event (e.g., `%d attendees.`, the Attendee column in the RSVP list table). Never use it for someone merely looking at an event.
+- **`guest`** - Additional people an attendee brings (e.g., `Maximum Number of Guests`, `+%d guest`). Never use it for viewers or attendees.
+- **`member`** - A registered site user or site role (`Settings\Roles`, RSVP roles list), not a general audience.
+- **`reader`** - Reserved strictly for assistive technology ("screen reader") and code consumers reading data objects. Never use it for a human viewing or reading a page.
+
 ## Development Commands
 
 ### PHP Development

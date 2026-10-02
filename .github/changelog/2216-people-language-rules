@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Clarify terminology for people across the codebase and document the rules in AGENTS.md. "Viewer" is the general term for anyone looking at a page, "visitor" is reserved for contexts where being without an account is the specific point, and "reader" is reserved for assistive technology and code consumers.

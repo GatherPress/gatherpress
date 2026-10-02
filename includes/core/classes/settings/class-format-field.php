@@ -66,7 +66,7 @@ final class Format_Field {
 	 *
 	 * A `format` field submits two values: the radio group, and the Custom text
 	 * field alongside it. When the radio says Custom the text field is the real
-	 * answer; otherwise the text field is whatever the reader last typed there
+	 * answer; otherwise the text field is whatever the user last typed there
 	 * and is discarded. Either way the companion key is dropped, so nothing
 	 * downstream sees it and nothing stores it.
 	 *
