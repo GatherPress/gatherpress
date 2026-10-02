@@ -19,8 +19,11 @@ The block decides which events the feed contains. In the block sidebar, choose o
 - **An events archive**: the feed for a post type's archive. If your site registers more than one event post type, pick which one; leaving it on the default uses the primary event post type.
 - **Events at one venue**: start typing a venue name and pick it from the suggestions. The feed then contains only events held at that venue.
 - **Events in one topic**: the same idea for a topic.
+- **Feeds for the current event**: the feeds that belong to the event the block sits in. It lists the venue feed and each topic feed the event is tagged with, plus a download of the event itself when the links include iCal. This is the scope to use inside an event template or a Query Loop over events.
 
 The venue and topic pickers only appear for their own scope. If a scope needs an ID and none is selected yet, the block renders nothing in the editor preview and on the front end. Pick a venue or topic and the links appear.
+
+The event scope needs no picker. It reads the event from wherever the block is placed, so the same block works in an event template, in a single event, and in a Query Loop. Outside an event it renders nothing. The venue and topic feeds are labeled with the venue or topic name, so a reader can tell them apart.
 
 ## Link format
 
@@ -30,11 +33,11 @@ A feed can be offered in two flavors, and the **Links to show** setting controls
 - **Subscribe link only**: the same feed with a `webcal://` address. Clicking a `webcal:` link hands the URL straight to the visitor's default calendar app, which is usually the smoother path on desktop.
 - **iCal and subscribe links**: the default. Both links are listed.
 
-Each link has a sensible default label ("iCal feed" and "Subscribe") and each can be renamed with the **iCal link text** and **Subscribe link text** fields, so you can phrase them for your audience.
+Each link has a sensible default label ("iCal feed" and "Subscribe") and each can be renamed with the **iCal link text** and **Subscribe link text** fields, so you can phrase them for your audience. In the event scope the current event's own download is always an iCal link, since a single event is a one-off file rather than a feed to subscribe to.
 
 ## Styling
 
-The block outputs an unstyled list of links that follows the site's theme. Color, spacing, and typography controls are available in the block sidebar like any other block, and both links inherit the theme's link color.
+The block outputs an unstyled list of links that follows the site's theme. Color, spacing (including the space between links), typography, and text alignment controls are available in the block sidebar like any other block, and the links inherit the theme's link color. The **Layout** control lets you switch the list between stacked and side by side.
 
 ## For developers
 

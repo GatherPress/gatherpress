@@ -47,6 +47,10 @@ const SCOPE_OPTIONS = [
 		label: __( 'Events in one topic', 'gatherpress' ),
 		value: 'topic',
 	},
+	{
+		label: __( 'Feeds for the current event', 'gatherpress' ),
+		value: 'event',
+	},
 ];
 
 /**
@@ -115,10 +119,11 @@ function VenueSelect( { value, onChange } ) {
  * @param {Object}   props               Component props.
  * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Setter for the block attributes.
+ * @param {Object}   props.context       Block context supplied by the editor.
  *
  * @return {JSX.Element} The block editor UI.
  */
-export default function Edit( { attributes, setAttributes } ) {
+export default function Edit( { attributes, setAttributes, context } ) {
 	const {
 		scope,
 		postType,
@@ -128,6 +133,10 @@ export default function Edit( { attributes, setAttributes } ) {
 		subscribeText,
 		linkText,
 	} = attributes;
+
+	// The contextual scope renders from the post the block sits in, so the
+	// preview has to ask for that post rather than the one being edited.
+	const contextPostId = context?.postId || 0;
 
 	// Event post types come from the editor config so a companion post type
 	// shows up without anything else declaring it. Read inside the memo so the
@@ -237,6 +246,7 @@ export default function Edit( { attributes, setAttributes } ) {
 				<ServerSideRender
 					block="gatherpress/subscribe-to-events"
 					attributes={ attributes }
+					urlQueryArgs={ contextPostId ? { post_id: contextPostId } : undefined }
 					skipBlockSupportAttributes
 				/>
 			</div>

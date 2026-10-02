@@ -112,11 +112,17 @@ jest.mock( '@wordpress/components', () => ( {
 
 jest.mock( '@wordpress/server-side-render', () => ( {
 	__esModule: true,
-	ServerSideRender: ( { block, attributes, skipBlockSupportAttributes } ) => (
+	ServerSideRender: ( {
+		block,
+		attributes,
+		skipBlockSupportAttributes,
+		urlQueryArgs,
+	} ) => (
 		<div
 			data-testid="ssr-preview"
 			data-block={ block }
 			data-skip-supports={ JSON.stringify( skipBlockSupportAttributes ) }
+			data-url-query-args={ JSON.stringify( urlQueryArgs ) }
 		>
 			{ JSON.stringify( attributes ) }
 		</div>
@@ -156,10 +162,11 @@ import Edit from '@src/blocks/subscribe-to-events/edit';
  * Renders the edit component with the given attributes.
  *
  * @param {Object} attributes Attribute overrides.
+ * @param {Object} context    Block context overrides.
  *
  * @return {Object} The setAttributes mock and render result.
  */
-function renderEdit( attributes = {} ) {
+function renderEdit( attributes = {}, context = undefined ) {
 	const setAttributes = jest.fn();
 
 	const result = render(
@@ -175,6 +182,7 @@ function renderEdit( attributes = {} ) {
 				...attributes,
 			} }
 			setAttributes={ setAttributes }
+			context={ context }
 		/>,
 	);
 
@@ -340,5 +348,50 @@ describe( 'Subscribe to Events edit', () => {
 		expect( setAttributes ).toHaveBeenCalledWith( {
 			subscribeText: 'Follow us',
 		} );
+	} );
+
+	it( 'offers the contextual event scope', () => {
+		const { setAttributes } = renderEdit();
+
+		fireEvent.click(
+			screen.getByRole( 'button', { name: 'Feeds for the current event' } ),
+		);
+
+		expect( setAttributes ).toHaveBeenCalledWith( { scope: 'event' } );
+	} );
+
+	// The event scope reads the post it sits in, so it needs no scope-specific
+	// picker of its own.
+	it( 'shows no scope-specific picker for the event scope', () => {
+		renderEdit( { scope: 'event' } );
+
+		expect( screen.queryByText( 'topic picker' ) ).not.toBeInTheDocument();
+		expect( screen.queryByText( 'Venue' ) ).not.toBeInTheDocument();
+		expect( screen.queryByLabelText( 'Event archive' ) ).not.toBeInTheDocument();
+	} );
+
+	it( 'asks the preview for the contextual post', () => {
+		renderEdit( { scope: 'event' }, { postId: 123 } );
+
+		expect( screen.getByTestId( 'ssr-preview' ) ).toHaveAttribute(
+			'data-url-query-args',
+			JSON.stringify( { post_id: 123 } ),
+		);
+	} );
+
+	it( 'sends no post id when there is no block context', () => {
+		renderEdit( { scope: 'sitewide' } );
+
+		expect( screen.getByTestId( 'ssr-preview' ) ).not.toHaveAttribute(
+			'data-url-query-args',
+		);
+	} );
+
+	it( 'sends no post id when the context carries no post', () => {
+		renderEdit( { scope: 'sitewide' }, { queryId: 1 } );
+
+		expect( screen.getByTestId( 'ssr-preview' ) ).not.toHaveAttribute(
+			'data-url-query-args',
+		);
 	} );
 } );

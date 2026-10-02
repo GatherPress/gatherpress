@@ -8,6 +8,7 @@
 	"icon": "calendar",
 	"description": "Link to a calendar feed so visitors can subscribe to your events.",
 	"keywords": ["calendar", "ical", "subscribe", "feed", "events"],
+	"usesContext": ["postId", "postType", "queryId"],
 	"attributes": {
 		"scope": {
 			"type": "string",
@@ -52,16 +53,19 @@
 			}
 		},
 		"spacing": {
+			"blockGap": true,
 			"margin": true,
 			"padding": true
 		},
 		"typography": {
 			"fontSize": true,
 			"lineHeight": true,
+			"textAlign": true,
 			"__experimentalDefaultControls": {
 				"fontSize": true
 			}
-		}
+		},
+		"layout": true
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",

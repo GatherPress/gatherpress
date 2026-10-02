@@ -12,12 +12,16 @@
 
 namespace GatherPress\Tests\Core\Blocks;
 
+use GatherPress\Core\Calendar\Calendar;
 use GatherPress\Core\Calendar\Feed_Url;
 use GatherPress\Core\Calendar\Setup;
 use GatherPress\Core\Event;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
+use WP_Block;
+use WP_Block_Type_Registry;
+use WP_Post;
 
 /**
  * Class Test_Subscribe_To_Events.
@@ -289,6 +293,425 @@ class Test_Subscribe_To_Events extends Base {
 			'href="https://example.org/companion-feed/"',
 			$output,
 			'The block should render a feed URL the filter supplies for an unknown scope.'
+		);
+	}
+
+	/**
+	 * Render the block with block context the way a template does.
+	 *
+	 * `do_blocks()` renders with no context, so a contextual render needs a
+	 * `WP_Block` whose context is supplied the way a parent block supplies it.
+	 *
+	 * @param array<string, mixed> $attributes Block attributes.
+	 * @param array<string, mixed> $context    Available block context.
+	 *
+	 * @return string Rendered block markup.
+	 */
+	protected function render_with_context( array $attributes, array $context ): string {
+		$block = new WP_Block(
+			array(
+				'blockName' => self::BLOCK_NAME,
+				'attrs'     => $attributes,
+			),
+			$context
+		);
+
+		return $block->render();
+	}
+
+	/**
+	 * Attach a venue post to an event so the contextual feed can resolve it.
+	 *
+	 * @param int $event_id The event post ID.
+	 *
+	 * @return WP_Post The attached venue post.
+	 */
+	protected function attach_venue( int $event_id ): WP_Post {
+		$venue = $this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_name'  => 'contextual-venue',
+				'post_title' => 'Contextual Venue',
+			)
+		)->get();
+
+		$slug = Venue\Setup::get_instance()->term_slug_from_post_name( $venue->post_name );
+		wp_insert_term( $venue->post_title, Venue::TAXONOMY, array( 'slug' => $slug ) );
+		wp_set_post_terms( $event_id, $slug, Venue::TAXONOMY );
+
+		return $venue;
+	}
+
+	/**
+	 * Coverage for the event scope rendering the event, venue, and topic feeds.
+	 *
+	 * @return void
+	 */
+	public function test_render_event_scope_renders_contextual_feeds(): void {
+		$event = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$venue = $this->attach_venue( $event->ID );
+
+		$topic_a = $this->factory->term->create_and_get( array( 'taxonomy' => Topic::TAXONOMY ) );
+		$topic_b = $this->factory->term->create_and_get( array( 'taxonomy' => Topic::TAXONOMY ) );
+		wp_set_post_terms( $event->ID, array( $topic_a->term_id, $topic_b->term_id ), Topic::TAXONOMY );
+
+		$output = $this->render_with_context(
+			array( 'scope' => 'event' ),
+			array( 'postId' => $event->ID )
+		);
+
+		$ical_url  = ( new Calendar( $event->ID ) )->get_ical_url();
+		$venue_url = (string) Feed_Url::get(
+			array(
+				'scope'    => 'venue',
+				'venue_id' => $venue->ID,
+			)
+		);
+
+		$this->assertStringContainsString(
+			sprintf( 'href="%s"', esc_url( (string) $ical_url ) ),
+			$output,
+			'The event scope should link to the event iCal download.'
+		);
+		$this->assertStringContainsString(
+			sprintf( 'href="%s"', esc_url( $venue_url ) ),
+			$output,
+			'The event scope should link to the venue feed.'
+		);
+		$this->assertStringContainsString(
+			'Contextual Venue: iCal feed',
+			$output,
+			'The venue feed link should name the venue.'
+		);
+		$this->assertStringContainsString(
+			esc_url( (string) get_term_feed_link( $topic_a->term_id, Topic::TAXONOMY, Setup::ICAL_SLUG ) ),
+			$output,
+			'The event scope should link to the first topic feed.'
+		);
+		$this->assertStringContainsString(
+			esc_url( (string) get_term_feed_link( $topic_b->term_id, Topic::TAXONOMY, Setup::ICAL_SLUG ) ),
+			$output,
+			'The event scope should link to the second topic feed.'
+		);
+		$this->assertStringContainsString(
+			$topic_a->name . ': iCal feed',
+			$output,
+			'A topic feed link should name the topic.'
+		);
+	}
+
+	/**
+	 * Coverage for the event scope when the event has no venue and no topics.
+	 *
+	 * @return void
+	 */
+	public function test_render_event_scope_without_venue_or_topics(): void {
+		$event = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+
+		$output = $this->render_with_context(
+			array( 'scope' => 'event' ),
+			array( 'postId' => $event->ID )
+		);
+
+		$ical_url = ( new Calendar( $event->ID ) )->get_ical_url();
+
+		$this->assertStringContainsString(
+			sprintf( 'href="%s"', esc_url( (string) $ical_url ) ),
+			$output,
+			'The event scope should still link to the event iCal download.'
+		);
+		$this->assertSame(
+			1,
+			substr_count( $output, '<a ' ),
+			'Only the event download link should render when there is no venue or topic.'
+		);
+	}
+
+	/**
+	 * Coverage for the event scope download getting no subscribe link.
+	 *
+	 * The event iCal is a one-off file, so a webcal-only format leaves only the
+	 * venue and topic subscriptions.
+	 *
+	 * @return void
+	 */
+	public function test_render_event_scope_webcal_only_skips_the_download(): void {
+		$event = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$venue = $this->attach_venue( $event->ID );
+
+		$output = $this->render_with_context(
+			array(
+				'scope'      => 'event',
+				'linkFormat' => 'webcal',
+			),
+			array( 'postId' => $event->ID )
+		);
+
+		$ical_url  = ( new Calendar( $event->ID ) )->get_ical_url();
+		$venue_url = (string) Feed_Url::get(
+			array(
+				'scope'    => 'venue',
+				'venue_id' => $venue->ID,
+			)
+		);
+
+		$this->assertStringNotContainsString(
+			esc_url( (string) $ical_url ),
+			$output,
+			'The event download should not render as a subscribe link.'
+		);
+		$this->assertStringContainsString(
+			esc_url( Feed_Url::to_webcal( $venue_url ) ),
+			$output,
+			'The venue feed should render as a subscribe link.'
+		);
+		$this->assertStringContainsString(
+			'Contextual Venue: Subscribe',
+			$output,
+			'The venue subscribe link should name the venue.'
+		);
+	}
+
+	/**
+	 * Coverage for the event scope with no subscribable feed in webcal-only mode.
+	 *
+	 * The event's own iCal is a download and gets no subscribe link, so an event
+	 * with no venue and no topics leaves nothing to render.
+	 *
+	 * @return void
+	 */
+	public function test_render_event_scope_webcal_only_without_sources_renders_nothing(): void {
+		$event = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+
+		$output = $this->render_with_context(
+			array(
+				'scope'      => 'event',
+				'linkFormat' => 'webcal',
+			),
+			array( 'postId' => $event->ID )
+		);
+
+		$this->assertSame(
+			'',
+			$output,
+			'A webcal-only event scope with no venue or topic has nothing to subscribe to.'
+		);
+	}
+
+	/**
+	 * Coverage for the event scope iCal-only format.
+	 *
+	 * @return void
+	 */
+	public function test_render_event_scope_ical_only_leaves_the_download(): void {
+		$event = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+
+		$output = $this->render_with_context(
+			array(
+				'scope'      => 'event',
+				'linkFormat' => 'ical',
+			),
+			array( 'postId' => $event->ID )
+		);
+
+		$this->assertStringContainsString(
+			esc_url( (string) ( new Calendar( $event->ID ) )->get_ical_url() ),
+			$output,
+			'The iCal-only format should render the event download.'
+		);
+		$this->assertStringNotContainsString(
+			'webcal://',
+			$output,
+			'The iCal-only format should not render a subscribe link.'
+		);
+	}
+
+	/**
+	 * Coverage for the event scope using the custom link labels.
+	 *
+	 * @return void
+	 */
+	public function test_render_event_scope_uses_custom_link_text(): void {
+		$event = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$venue = $this->attach_venue( $event->ID );
+
+		$output = $this->render_with_context(
+			array(
+				'scope'         => 'event',
+				'linkText'      => 'Grab the feed',
+				'subscribeText' => 'Follow us',
+			),
+			array( 'postId' => $event->ID )
+		);
+
+		$this->assertStringContainsString(
+			'Grab the feed',
+			$output,
+			'The custom iCal label should reach the event download.'
+		);
+		$this->assertStringContainsString(
+			$venue->post_title . ': Follow us',
+			$output,
+			'The custom subscribe label should reach the venue feed.'
+		);
+	}
+
+	/**
+	 * Coverage for the event scope outside of any event context.
+	 *
+	 * @return void
+	 */
+	public function test_render_event_scope_without_event_context_renders_nothing(): void {
+		$page = $this->mock->post( array( 'post_type' => 'page' ) )->get();
+
+		$output = $this->render_with_context(
+			array( 'scope' => 'event' ),
+			array( 'postId' => $page->ID )
+		);
+
+		$this->assertSame(
+			'',
+			$output,
+			'The event scope outside an event should render nothing at all.'
+		);
+	}
+
+	/**
+	 * Coverage for the event scope preferring the context post over the queried one.
+	 *
+	 * The request is a different event, so the links can only have come from
+	 * `postId` in context. This is the Query Loop behavior: each instance shows
+	 * the feeds of the event it sits in, not the queried one.
+	 *
+	 * @return void
+	 */
+	public function test_render_event_scope_reads_the_context_post(): void {
+		$context_event = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+				'post_name' => 'context-event',
+			)
+		)->get();
+		$queried_event = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+				'post_name' => 'queried-event-instead',
+			)
+		)->get();
+
+		$this->go_to( get_permalink( $queried_event->ID ) );
+
+		$output = $this->render_with_context(
+			array( 'scope' => 'event' ),
+			array( 'postId' => $context_event->ID )
+		);
+
+		$this->assertStringContainsString(
+			esc_url( (string) ( new Calendar( $context_event->ID ) )->get_ical_url() ),
+			$output,
+			'The event scope should render from the context post.'
+		);
+		$this->assertStringNotContainsString(
+			esc_url( (string) ( new Calendar( $queried_event->ID ) )->get_ical_url() ),
+			$output,
+			'The event scope should not render from the queried post when context supplies one.'
+		);
+	}
+
+	/**
+	 * Coverage for the event scope falling back to the queried post.
+	 *
+	 * @return void
+	 */
+	public function test_render_event_scope_falls_back_to_the_queried_post(): void {
+		$event = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+				'post_name' => 'queried-event',
+			)
+		)->get();
+
+		$this->go_to( get_permalink( $event->ID ) );
+
+		$output = $this->render_with_context( array( 'scope' => 'event' ), array() );
+
+		$this->assertStringContainsString(
+			esc_url( (string) ( new Calendar( $event->ID ) )->get_ical_url() ),
+			$output,
+			'The event scope should fall back to the queried post when there is no context.'
+		);
+	}
+
+	/**
+	 * Coverage for the event scope when no post can be resolved at all.
+	 *
+	 * @return void
+	 */
+	public function test_render_event_scope_without_any_post_renders_nothing(): void {
+		$this->go_to( home_url( '/?p=' . PHP_INT_MAX ) );
+
+		$output = $this->render_with_context( array( 'scope' => 'event' ), array() );
+
+		$this->assertSame(
+			'',
+			$output,
+			'The event scope with no post at all should render nothing at all.'
+		);
+	}
+
+	/**
+	 * Coverage for the text alignment and layout supports decorating the wrapper.
+	 *
+	 * Both are core-supplied: the alignment lands as a class and the layout as
+	 * the flex classes that let the links render side by side. Rendering through
+	 * `do_blocks()` proves the supports reach the frontend markup.
+	 *
+	 * @return void
+	 */
+	public function test_render_decorates_the_wrapper_with_block_supports(): void {
+		$output = do_blocks(
+			sprintf(
+				'<!-- wp:%s {"className":"my-links",' .
+				'"style":{"typography":{"textAlign":"center"}},' .
+				'"layout":{"type":"flex","orientation":"horizontal"}} /-->',
+				self::BLOCK_NAME
+			)
+		);
+
+		$this->assertStringContainsString(
+			'gatherpress-subscribe-to-events',
+			$output,
+			'The wrapper should carry the block class.'
+		);
+		$this->assertStringContainsString( 'my-links', $output, 'The wrapper should carry the custom class name.' );
+		$this->assertStringContainsString(
+			'has-text-align-center',
+			$output,
+			'The text alignment support should decorate the wrapper.'
+		);
+		$this->assertStringContainsString(
+			'is-layout-flex',
+			$output,
+			'The layout support should let the links render side by side.'
+		);
+	}
+
+	/**
+	 * Coverage for the spacing support being declared on the block.
+	 *
+	 * Core emits the block gap as layout CSS through the style engine rather
+	 * than as an attribute on the wrapper, so the declaration on the registered
+	 * block type is what the frontend gap depends on.
+	 *
+	 * @return void
+	 */
+	public function test_block_declares_the_block_gap_support(): void {
+		$block_type = WP_Block_Type_Registry::get_instance()->get_registered( self::BLOCK_NAME );
+
+		$this->assertNotNull( $block_type, 'The block should be registered.' );
+		$this->assertNotEmpty(
+			$block_type->supports['spacing']['blockGap'] ?? null,
+			'The block should declare block gap support so the link list can be spaced.'
 		);
 	}
 }
