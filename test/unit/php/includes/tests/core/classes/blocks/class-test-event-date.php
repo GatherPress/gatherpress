@@ -665,7 +665,7 @@ class Test_Event_Date extends Base {
 			'Viewer Time Custom Separator Event',
 			array(
 				'showViewerTime' => true,
-				'separator'      => ' - ',
+				'separator'      => '-',
 			)
 		);
 
@@ -885,6 +885,8 @@ class Test_Event_Date extends Base {
 	 * @return void
 	 */
 	public function test_render_omits_viewer_time_for_all_day_event(): void {
+		Settings::get_instance()->set( 'show_viewer_timezone', true );
+
 		$event_post = $this->mock->post(
 			array(
 				'post_title' => 'All Day Event With Viewer Time',
@@ -894,12 +896,19 @@ class Test_Event_Date extends Base {
 
 		update_post_meta( $event_post->ID, 'gatherpress_is_all_day', 1 );
 
-		$output = $this->render_viewer_time_block(
-			'All Day Event With Viewer Time',
+		$event = new Event( $event_post->ID );
+		$event->save_datetimes(
 			array(
-				'showViewerTime' => true,
-				'showTimezone'   => 'yes',
+				'datetime_start' => '2030-06-15 00:00:00',
+				'datetime_end'   => '2030-06-15 23:59:59',
+				'timezone'       => 'America/New_York',
 			)
+		);
+
+		$this->go_to( get_permalink( $event_post->ID ) );
+
+		$output = do_blocks(
+			'<!-- wp:gatherpress/event-date {"showViewerTime":true,"showTimezone":"yes"} /-->'
 		);
 
 		$this->assertStringNotContainsString(
