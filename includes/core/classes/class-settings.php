@@ -261,7 +261,7 @@ class Settings {
 				'homeUrl'               => get_home_url(),
 				'mapTileUrl'            => self::get_map_tile_url(),
 				'mapTileAttribution'    => self::get_map_tile_attribution(),
-				'datetimeSeparator'     => Event::get_default_datetime_separator(),
+				'datetimeSeparator'     => Event::get_datetime_separator(),
 				'venuesMapsSettingsUrl' => admin_url(
 					sprintf(
 						'edit.php?post_type=%s&page=%s',

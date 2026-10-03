@@ -295,18 +295,7 @@ class Event {
 			: false;
 
 		// Add separator if there's both start and end date/time.
-		if ( $separator ) {
-			/** This filter is documented in includes/core/classes/event/class-event.php */
-			$default_separator = (string) apply_filters(
-				'gatherpress_datetime_separator',
-				$separator,
-				$this
-			);
-		} else {
-			$default_separator = self::get_default_datetime_separator( $this );
-		}
-
-		$separator = $start && $end ? $default_separator : false;
+		$separator = $start && $end ? self::get_datetime_separator( $this, $separator ) : false;
 
 		// Add timezone, event first. A block in a site template renders every
 		// event and cannot know which of them want their zone named, so an
@@ -331,35 +320,33 @@ class Event {
 	}
 
 	/**
-	 * Get the default datetime separator, filtered by 'gatherpress_datetime_separator'.
+	 * Get the separator between the start and end dates/times.
 	 *
 	 * @since TBD
 	 *
-	 * @param Event|null $event Optional. Event instance. Default null.
-	 * @return string The filtered datetime separator.
+	 * @param Event|null $event     Optional. The event the separator is for. Defaults to the
+	 *                              current post when that is an event.
+	 * @param string     $separator Optional. The separator set on the block. Defaults to 'to'.
+	 *
+	 * @return string The filtered separator.
 	 */
-	public static function get_default_datetime_separator( ?Event $event = null ): string {
-		if ( null === $event ) {
-			$post_id = get_the_ID();
-
-			if ( $post_id && post_type_supports( (string) get_post_type( $post_id ), self::SUPPORT ) ) {
-				$event = new self( $post_id );
-			}
+	public static function get_datetime_separator( ?Event $event = null, string $separator = '' ): string {
+		if ( null === $event && post_type_supports( (string) get_post_type(), self::SUPPORT ) ) {
+			$event = new self( (int) get_the_ID() );
 		}
-
-		$default_separator = __( 'to', 'gatherpress' );
 
 		/**
 		 * Filter the separator between start and end dates/times.
 		 *
 		 * @since TBD
 		 *
-		 * @param string     $default_separator The separator string.
-		 * @param Event|null $event             The event instance.
+		 * @param string     $separator The separator set on the block, or the translated 'to' when it sets none.
+		 * @param Event|null $event     The event, or null where there is none, such as the editor settings
+		 *                              outside an event.
 		 */
 		return (string) apply_filters(
 			'gatherpress_datetime_separator',
-			$default_separator,
+			'' === $separator ? __( 'to', 'gatherpress' ) : $separator,
 			$event
 		);
 	}

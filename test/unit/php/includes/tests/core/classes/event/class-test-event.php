@@ -3463,51 +3463,71 @@ class Test_Event extends Base {
 	}
 
 	/**
-	 * Test get_default_datetime_separator method.
+	 * The separator defaults to 'to', keeps one set on the block, and runs
+	 * through the filter.
 	 *
-	 * @covers ::get_default_datetime_separator
+	 * @since TBD
+	 *
+	 * @covers ::get_datetime_separator
 	 *
 	 * @return void
 	 */
-	public function test_get_default_datetime_separator(): void {
-		$this->assertSame( 'to', Event::get_default_datetime_separator() );
-
-		$filter_callback = function () {
-			return ' - ';
-		};
-		add_filter( 'gatherpress_datetime_separator', $filter_callback );
-
-		$this->assertSame( ' - ', Event::get_default_datetime_separator() );
-
-		remove_filter( 'gatherpress_datetime_separator', $filter_callback );
-
-		// When called within a supported event post context without an explicit event.
-		$post_id = $this->factory()->post->create(
-			array(
-				'post_type' => Event::POST_TYPE,
-			)
+	public function test_get_datetime_separator(): void {
+		$this->assertSame( 'to', Event::get_datetime_separator(), 'Failed to assert the default separator.' );
+		$this->assertSame(
+			'until',
+			Event::get_datetime_separator( null, 'until' ),
+			'Failed to assert a separator set on the block is kept.'
 		);
-		$post    = get_post( $post_id );
 
-		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Required to establish the global post for get_the_ID().
-		$GLOBALS['post'] = $post;
-		setup_postdata( $post );
+		$filter = static fn (): string => '-';
 
-		$captured_event    = null;
-		$filter_with_event = function ( $separator, $event ) use ( &$captured_event ) {
-			$captured_event = $event;
+		add_filter( 'gatherpress_datetime_separator', $filter );
+
+		$this->assertSame( '-', Event::get_datetime_separator(), 'Failed to assert the separator is filtered.' );
+
+		remove_filter( 'gatherpress_datetime_separator', $filter );
+	}
+
+	/**
+	 * The filter gets the event passed in, the current event post when none
+	 * is, and null outside an event.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_datetime_separator
+	 *
+	 * @return void
+	 */
+	public function test_get_datetime_separator_hands_the_filter_its_event(): void {
+		$captured = 'not called';
+		$capture  = static function ( string $separator, ?Event $event ) use ( &$captured ): string {
+			$captured = $event;
+
 			return $separator;
 		};
-		add_filter( 'gatherpress_datetime_separator', $filter_with_event, 10, 2 );
 
-		Event::get_default_datetime_separator();
+		add_filter( 'gatherpress_datetime_separator', $capture, 10, 2 );
 
-		$this->assertInstanceOf( Event::class, $captured_event );
-		$captured_post = Utility::get_hidden_property( $captured_event, 'post' );
-		$this->assertInstanceOf( WP_Post::class, $captured_post );
-		$this->assertSame( $post_id, $captured_post->ID );
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $event_id );
 
-		remove_filter( 'gatherpress_datetime_separator', $filter_with_event, 10 );
-		wp_reset_postdata();
+		Event::get_datetime_separator( $event );
+		$this->assertSame( $event, $captured, 'Failed to assert an event passed in reaches the filter unchanged.' );
+
+		$this->go_to( get_permalink( $event_id ) );
+		Event::get_datetime_separator();
+		$this->assertInstanceOf( Event::class, $captured, 'Failed to assert the current event post is used.' );
+		$this->assertSame(
+			$event_id,
+			Utility::get_hidden_property( $captured, 'post' )->ID,
+			'Failed to assert the event is built from the current post.'
+		);
+
+		$this->go_to( get_permalink( $this->mock->post( array( 'post_type' => 'post' ) )->get()->ID ) );
+		Event::get_datetime_separator();
+		$this->assertNull( $captured, 'Failed to assert a post that is not an event gives the filter null.' );
+
+		remove_filter( 'gatherpress_datetime_separator', $capture );
 	}
 }
