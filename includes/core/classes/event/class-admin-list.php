@@ -412,7 +412,7 @@ final class Admin_List {
 
 		// The Upcoming and Past views travel in a query parameter core's filter
 		// form knows nothing about, so filtering by date from one of those views
-		// would otherwise drop the visitor back to All.
+		// would otherwise drop the user back to All.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$current_view = isset( $_GET[ Query::EVENT_QUERY_PARAM ] )
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended

@@ -896,7 +896,7 @@ final class Geocoding {
 		$too_short = mb_strlen( $query ) < self::ADDRESS_SEARCH_MIN_QUERY_LENGTH;
 		$query     = Query::normalize( $query );
 
-		// The minimum length weighs what the visitor typed, since it is about
+		// The minimum length weighs what the user typed, since it is about
 		// whether they have entered enough to be worth a lookup. The empty
 		// check weighs what would be sent: a search that was nothing but a
 		// postal code normalizes away to nothing, and would otherwise reach

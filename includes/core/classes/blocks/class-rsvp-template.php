@@ -193,7 +193,7 @@ final class Rsvp_Template {
 	 * The front end hands the template back to the REST endpoint verbatim, so
 	 * the endpoint only renders what this class wrote in the first place. The
 	 * key is the site's nonce salt: stable for the site, the same for every
-	 * visitor, and not derived from anything a request can influence.
+	 * viewer, and not derived from anything a request can influence.
 	 *
 	 * The signed message names this use, the site and the event along with the
 	 * template, so a signature is only good for the event it was emitted on.
