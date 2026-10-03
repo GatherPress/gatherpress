@@ -236,6 +236,13 @@ describe( 'Event Date Edit separator control', () => {
 		expect( input ).toHaveAttribute( 'placeholder', ' - ' );
 	} );
 
+	it( 'leaves the placeholder empty when the filtered datetimeSeparator is empty', () => {
+		mockConfig = { datetimeSeparator: '' };
+		const { getByLabelText } = renderEdit( { separator: '' } );
+
+		expect( getByLabelText( 'Separator' ) ).toHaveAttribute( 'placeholder', '' );
+	} );
+
 	it( 'shows a custom separator as it was saved', () => {
 		const { getByLabelText } = renderEdit( { separator: 'UNTIL' } );
 
@@ -255,25 +262,43 @@ describe( 'Event Date Edit separator control', () => {
 } );
 
 describe( 'Event Date Edit display rendering', () => {
+	// The date line on its own. With isLink on it is the only text inside the
+	// pseudo-link, so labels elsewhere in the block can't satisfy a match.
+	const dateLine = ( attributes ) =>
+		renderEdit( { isLink: true, ...attributes } ).container.querySelector(
+			'a[href="#gatherpress-event-date-pseudo-link"]',
+		).textContent;
+
 	it( 'renders the default separator when separator attribute is empty', () => {
 		mockConfig = {};
-		const { container } = renderEdit( { separator: '' } );
 
-		expect( container.textContent ).toContain( 'to' );
+		expect( dateLine( { separator: '' } ) ).toBe(
+			'2026-08-01 18:00 to 2026-08-01 20:00',
+		);
 	} );
 
 	it( 'renders the filtered datetimeSeparator from config when separator attribute is empty', () => {
-		mockConfig = { datetimeSeparator: ' - ' };
-		const { container } = renderEdit( { separator: '' } );
+		mockConfig = { datetimeSeparator: '-' };
 
-		expect( container.textContent ).toContain( ' - ' );
+		expect( dateLine( { separator: '' } ) ).toBe(
+			'2026-08-01 18:00 - 2026-08-01 20:00',
+		);
+	} );
+
+	it( 'renders no separator when the filtered datetimeSeparator is empty', () => {
+		mockConfig = { datetimeSeparator: '' };
+
+		expect( dateLine( { separator: '' } ) ).toBe(
+			'2026-08-01 18:00 2026-08-01 20:00',
+		);
 	} );
 
 	it( 'renders the custom separator when separator attribute is specified', () => {
-		mockConfig = { datetimeSeparator: ' - ' };
-		const { container } = renderEdit( { separator: 'until' } );
+		mockConfig = { datetimeSeparator: '-' };
 
-		expect( container.textContent ).toContain( 'until' );
+		expect( dateLine( { separator: 'until' } ) ).toBe(
+			'2026-08-01 18:00 until 2026-08-01 20:00',
+		);
 	} );
 } );
 
