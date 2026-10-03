@@ -44,7 +44,9 @@ if ( ! isset( $time_format, $timezone, $tz_choices ) ) {
 			<td>
 				<div class="form-wrap">
 					<select name="gatherpress_timezone" id="gatherpress_timezone">
-						<option value="">--</option>
+						<option value="" <?php selected( '', $timezone ); ?>>
+							<?php esc_html_e( 'Default', 'gatherpress' ); ?>
+						</option>
 						<?php
 						foreach ( $tz_choices as $gatherpress_location => $gatherpress_timezones ) {
 							echo wp_kses( '<optgroup label="' . $gatherpress_location . '">', array( 'optgroup' => array( 'label' => array() ) ) );
@@ -59,7 +61,7 @@ if ( ! isset( $time_format, $timezone, $tz_choices ) ) {
 						}
 						?>
 					</select>
-					<p class="description"><?php esc_html_e( 'Set your timezone to see event times in your local time.', 'gatherpress' ); ?></p>
+					<p class="description"><?php esc_html_e( 'Set your timezone to see event times in your local time. Leave it on Default to see each event in its own timezone.', 'gatherpress' ); ?></p>
 				</div>
 			</td>
 		</tr>
