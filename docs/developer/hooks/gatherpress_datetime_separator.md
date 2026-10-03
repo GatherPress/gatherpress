@@ -3,17 +3,20 @@
 
 Filter the separator between start and end dates/times.
 
+
+outside an event.
+
 ## Auto-generated Example
 
 ```php
 add_filter(
    'gatherpress_datetime_separator',
     function(
-        string $default_separator,
-        GatherPress\Event $event
+        string,
+        GatherPress\Event $event = null
     ) {
         // Your code here.
-        return $default_separator;
+        return string;
     },
     10,
     2
@@ -22,17 +25,17 @@ add_filter(
 
 ## Parameters
 
-- *`string`* `$default_separator` The separator string.
-- *`GatherPress\Event`* `$event` The event instance.
+- `string` $separator The separator set on the block, or the translated 'to' when it sets none. Other variable names: `$separator____separator`
+- *`GatherPress\Event|null`* `$event` The event, or null where there is none, such as the editor settings
 
 ## Files
 
-- [includes/core/classes/event/class-event.php:308](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-event.php#L308)
+- [includes/core/classes/event/class-event.php:347](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-event.php#L347)
 ```php
 apply_filters(
 			'gatherpress_datetime_separator',
-			$default_separator,
-			$this
+			'' === $separator ? __( 'to', 'gatherpress' ) : $separator,
+			$event
 		)
 ```
 
