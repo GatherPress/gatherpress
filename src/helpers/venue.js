@@ -10,6 +10,7 @@ import { store as coreStore } from '@wordpress/core-data';
  * Internal dependencies
  */
 import { getFromConfig } from './editor-settings';
+import { findPublishedPostBySupport } from './post';
 
 /**
  * Default venue post type slug used as a fallback when no override is configured.
@@ -522,43 +523,9 @@ export function usePopularVenues( limit = 3, venuePostType = DEFAULT_VENUE_POST_
  *                       found post isn't published.
  */
 export function findVenuePostById( selectFunc, postId ) {
-	if ( ! postId ) {
-		return null;
-	}
-
-	// `context: 'edit'` is required because WP REST only exposes the
-	// `supports` field on post types in the edit context. Without it the
-	// loop below never matches any type and the override silently fails.
-	const postTypes = selectFunc( 'core' ).getPostTypes?.( {
-		per_page: -1,
-		context: 'edit',
-	} );
-	if ( ! Array.isArray( postTypes ) ) {
-		return null;
-	}
-
-	for ( const type of postTypes ) {
-		if ( ! type?.supports?.[ 'gatherpress-venue-information' ] ) {
-			continue;
-		}
-		// Query by `include` filter rather than `getEntityRecord( id )` so a
-		// miss returns an empty array (HTTP 200) instead of a 404. The 404s
-		// are technically accurate but they show up in browser devtools and
-		// look like a real bug to anyone reading the console. Edit context
-		// matches the default `getEntityRecord` uses inside the editor and
-		// keeps the response shape consistent with the event-side helper.
-		const records = selectFunc( 'core' ).getEntityRecords(
-			'postType',
-			type.slug,
-			{ include: [ postId ], context: 'edit', per_page: 1 },
-		);
-		if ( Array.isArray( records ) && 0 < records.length ) {
-			const post = records[ 0 ];
-			if ( 'publish' === post?.status ) {
-				return post;
-			}
-		}
-	}
-
-	return null;
+	return findPublishedPostBySupport(
+		selectFunc,
+		postId,
+		'gatherpress-venue-information',
+	);
 }
