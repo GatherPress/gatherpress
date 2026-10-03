@@ -295,23 +295,7 @@ class Event {
 			: false;
 
 		// Add separator if there's both start and end date/time.
-		$default_separator = $separator ? $separator : __( 'to', 'gatherpress' );
-
-		/**
-		 * Filter the separator between start and end dates/times.
-		 *
-		 * @since TBD
-		 *
-		 * @param string $default_separator The separator string.
-		 * @param Event  $event             The event instance.
-		 */
-		$default_separator = apply_filters(
-			'gatherpress_datetime_separator',
-			$default_separator,
-			$this
-		);
-
-		$separator = $start && $end ? $default_separator : false;
+		$separator = $start && $end ? self::get_datetime_separator( $this, $separator ) : false;
 
 		// Add timezone, event first. A block in a site template renders every
 		// event and cannot know which of them want their zone named, so an
@@ -332,6 +316,38 @@ class Event {
 			'separator' => $separator,
 			'end'       => $end,
 			'timezone'  => $timezone,
+		);
+	}
+
+	/**
+	 * Get the separator between the start and end dates/times.
+	 *
+	 * @since TBD
+	 *
+	 * @param Event|null $event     Optional. The event the separator is for. Defaults to the
+	 *                              current post when that is an event.
+	 * @param string     $separator Optional. The separator set on the block. Defaults to 'to'.
+	 *
+	 * @return string The filtered separator.
+	 */
+	public static function get_datetime_separator( ?Event $event = null, string $separator = '' ): string {
+		if ( null === $event && post_type_supports( (string) get_post_type(), self::SUPPORT ) ) {
+			$event = new self( (int) get_the_ID() );
+		}
+
+		/**
+		 * Filter the separator between start and end dates/times.
+		 *
+		 * @since TBD
+		 *
+		 * @param string     $separator The separator set on the block, or the translated 'to' when it sets none.
+		 * @param Event|null $event     The event, or null where there is none, such as the editor settings
+		 *                              outside an event.
+		 */
+		return (string) apply_filters(
+			'gatherpress_datetime_separator',
+			'' === $separator ? __( 'to', 'gatherpress' ) : $separator,
+			$event
 		);
 	}
 

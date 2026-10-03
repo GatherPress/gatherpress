@@ -3461,4 +3461,73 @@ class Test_Event extends Base {
 
 		remove_filter( 'gatherpress_datetime_separator', $filter_callback );
 	}
+
+	/**
+	 * The separator defaults to 'to', keeps one set on the block, and runs
+	 * through the filter.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_datetime_separator
+	 *
+	 * @return void
+	 */
+	public function test_get_datetime_separator(): void {
+		$this->assertSame( 'to', Event::get_datetime_separator(), 'Failed to assert the default separator.' );
+		$this->assertSame(
+			'until',
+			Event::get_datetime_separator( null, 'until' ),
+			'Failed to assert a separator set on the block is kept.'
+		);
+
+		$filter = static fn (): string => '-';
+
+		add_filter( 'gatherpress_datetime_separator', $filter );
+
+		$this->assertSame( '-', Event::get_datetime_separator(), 'Failed to assert the separator is filtered.' );
+
+		remove_filter( 'gatherpress_datetime_separator', $filter );
+	}
+
+	/**
+	 * The filter gets the event passed in, the current event post when none
+	 * is, and null outside an event.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_datetime_separator
+	 *
+	 * @return void
+	 */
+	public function test_get_datetime_separator_hands_the_filter_its_event(): void {
+		$captured = 'not called';
+		$capture  = static function ( string $separator, ?Event $event ) use ( &$captured ): string {
+			$captured = $event;
+
+			return $separator;
+		};
+
+		add_filter( 'gatherpress_datetime_separator', $capture, 10, 2 );
+
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $event_id );
+
+		Event::get_datetime_separator( $event );
+		$this->assertSame( $event, $captured, 'Failed to assert an event passed in reaches the filter unchanged.' );
+
+		$this->go_to( get_permalink( $event_id ) );
+		Event::get_datetime_separator();
+		$this->assertInstanceOf( Event::class, $captured, 'Failed to assert the current event post is used.' );
+		$this->assertSame(
+			$event_id,
+			Utility::get_hidden_property( $captured, 'post' )->ID,
+			'Failed to assert the event is built from the current post.'
+		);
+
+		$this->go_to( get_permalink( $this->mock->post( array( 'post_type' => 'post' ) )->get()->ID ) );
+		Event::get_datetime_separator();
+		$this->assertNull( $captured, 'Failed to assert a post that is not an event gives the filter null.' );
+
+		remove_filter( 'gatherpress_datetime_separator', $capture );
+	}
 }
