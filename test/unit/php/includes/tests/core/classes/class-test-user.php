@@ -145,6 +145,51 @@ class Test_User extends Base {
 	}
 
 	/**
+	 * A user who never set a timezone sees Default selected, not the site's
+	 * timezone, so saving the profile doesn't pin them to it.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::profile_fields
+	 *
+	 * @return void
+	 */
+	public function test_profile_fields_leaves_an_unset_timezone_on_default(): void {
+		$instance = User::get_instance();
+		$user     = $this->mock->user( true )->get();
+
+		delete_user_meta( $user->ID, 'gatherpress_timezone' );
+
+		$markup = Utility::buffer_and_return( array( $instance, 'profile_fields' ), array( $user ) );
+
+		$this->assertMatchesRegularExpression(
+			'/<option value=""\s+selected=\'selected\'>/',
+			$markup,
+			'Failed to assert Default is selected for a user with no timezone.'
+		);
+		$this->assertStringNotContainsString(
+			'<option value="UTC" selected=\'selected\'>',
+			$markup,
+			'Failed to assert the site timezone is not pre-selected.'
+		);
+
+		update_user_meta( $user->ID, 'gatherpress_timezone', 'America/New_York' );
+
+		$markup = Utility::buffer_and_return( array( $instance, 'profile_fields' ), array( $user ) );
+
+		$this->assertStringContainsString(
+			'<option value="America/New_York" selected=\'selected\'>',
+			$markup,
+			'Failed to assert a saved timezone is selected.'
+		);
+		$this->assertDoesNotMatchRegularExpression(
+			'/<option value=""\s+selected=\'selected\'>/',
+			$markup,
+			'Failed to assert Default is not selected once a timezone is saved.'
+		);
+	}
+
+	/**
 	 * Coverage for user time formatting option
 	 *
 	 * @covers ::user_set_time_format
