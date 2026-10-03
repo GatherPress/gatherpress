@@ -1,0 +1,8 @@
+Significance: minor
+Type: added
+
+A new "Send Email" page under GatherPress settings lets an administrator message every member on the site without going through an event. Members who turned event updates off in their profile are skipped, delivery runs on cron in batches so the page returns right away and a large membership is not sent in a single request, and the audience, batch size, and subject line are filterable through `gatherpress_site_message_recipients`, `gatherpress_site_message_batch_size`, and `gatherpress_site_message_subject`.
+
+A shared `Mailer` class now owns how every GatherPress email is sent and queued. `gatherpress_mail_recipient_consent` lets a site decide per recipient, per mail path, whether a message goes out, and `gatherpress_mail_pre_enqueue_job` lets a companion plugin take over job scheduling.
+
+The profile opt-in now names the post type members actually hear about (the one that takes RSVPs) instead of always saying "events", so a site can change the wording through the post type's own labels.

@@ -12,6 +12,9 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 if ( ! isset( $event_updates_opt_in ) ) {
 	return;
 }
+
+// Callers that do not pass a label fall back to the generic event wording.
+$gatherpress_plural = isset( $plural_label ) && '' !== $plural_label ? $plural_label : __( 'events', 'gatherpress' );
 ?>
 
 <h2 id="gatherpress-user-notifications">
@@ -29,7 +32,15 @@ if ( ! isset( $event_updates_opt_in ) ) {
 					value="1"
 					<?php checked( '1', $event_updates_opt_in ); ?>
 				/>
-				<?php esc_html_e( 'Yes, I want to receive updates and information about events from the organizers.', 'gatherpress' ); ?>
+				<?php
+				echo esc_html(
+					sprintf(
+						/* translators: %s: Plural name of the content type members hear about. */
+						__( 'Yes, I want to receive updates and information about %1$s from the organizers.', 'gatherpress' ),
+						$gatherpress_plural
+					)
+				);
+				?>
 			</label>
 		</td>
 	</tr>

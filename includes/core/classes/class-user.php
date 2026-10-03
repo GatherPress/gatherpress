@@ -16,6 +16,7 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use WP_User;
 
@@ -180,6 +181,28 @@ final class User {
 	}
 
 	/**
+	 * Get the plural label of the post type that takes RSVPs.
+	 *
+	 * The profile opt-in talks about the content members hear about, which
+	 * follows whatever post type collects RSVPs on this site rather than
+	 * assuming events. Returns an empty string when nothing collects RSVPs;
+	 * the calling template supplies its own translated "events" fallback.
+	 * A site can change the label through the post type's own labels, for
+	 * example via core's `post_type_labels_{$post_type}` filter.
+	 *
+	 * @since TBD
+	 *
+	 * @return string Plural label, or an empty string when no post type takes RSVPs.
+	 */
+	public function get_rsvp_post_type_plural(): string {
+		$post_types       = get_post_types_by_support( Rsvp::SUPPORT );
+		$post_type        = $post_types[0] ?? '';
+		$post_type_object = $post_type ? get_post_type_object( $post_type ) : null;
+
+		return $post_type_object?->labels->name ?? '';
+	}
+
+	/**
 	 * Renders the profile fields for user notifications settings.
 	 *
 	 * This method is responsible for displaying the user notification
@@ -198,6 +221,7 @@ final class User {
 			sprintf( '%s/includes/templates/admin/user/notifications.php', GATHERPRESS_CORE_PATH ),
 			array(
 				'event_updates_opt_in' => $event_updates_opt_in,
+				'plural_label'         => $this->get_rsvp_post_type_plural(),
 			),
 			true
 		);
