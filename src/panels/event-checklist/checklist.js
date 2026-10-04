@@ -82,20 +82,29 @@ const ChecklistPanel = () => {
 			<p style={ { marginTop: 0 } }>{ progress }</p>
 
 			{ items.map( ( item, index ) => {
+				// New rows start empty, so a blank row falls back to its position
+				// to keep the three labels below distinct for screen readers.
+				const itemName =
+					item.text.trim() ||
+					sprintf(
+						/* translators: %d: Position of the checklist item. */
+						__( 'Item %d', 'gatherpress' ),
+						index + 1,
+					);
 				const completeLabel = sprintf(
-					/* translators: %s: The checklist item text. */
+					/* translators: %s: The checklist item name. */
 					__( 'Mark "%s" complete', 'gatherpress' ),
-					item.text,
+					itemName,
 				);
 				const itemLabel = sprintf(
-					/* translators: %s: The checklist item text. */
+					/* translators: %s: The checklist item name. */
 					__( 'Checklist item: %s', 'gatherpress' ),
-					item.text,
+					itemName,
 				);
 				const optionsLabel = sprintf(
-					/* translators: %s: The checklist item text. */
+					/* translators: %s: The checklist item name. */
 					__( 'Checklist item options: %s', 'gatherpress' ),
-					item.text,
+					itemName,
 				);
 
 				return (

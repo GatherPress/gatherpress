@@ -237,6 +237,34 @@ describe( 'ChecklistPanel', () => {
 		).toBeInTheDocument();
 	} );
 
+	it( 'names blank rows after their position so the labels stay distinct', () => {
+		renderPanel(
+			'[{"id":"a","text":"","completed":false},' +
+				'{"id":"b","text":"","completed":false}]',
+		);
+
+		expect(
+			screen.getByLabelText( 'Mark "Item 1" complete' ),
+		).toBeInTheDocument();
+		expect(
+			screen.getByLabelText( 'Mark "Item 2" complete' ),
+		).toBeInTheDocument();
+		expect(
+			screen.getByLabelText( 'Checklist item: Item 1' ),
+		).toBeInTheDocument();
+		expect(
+			screen.getByLabelText( 'Checklist item options: Item 2' ),
+		).toBeInTheDocument();
+	} );
+
+	it( 'names a whitespace-only row after its position too', () => {
+		renderPanel( '[{"id":"a","text":"   ","completed":false}]' );
+
+		expect(
+			screen.getByLabelText( 'Mark "Item 1" complete' ),
+		).toBeInTheDocument();
+	} );
+
 	it( 'moves an item up when the up option is clicked', () => {
 		renderPanel(
 			'[{"id":"a","text":"Ask","completed":false},' +
