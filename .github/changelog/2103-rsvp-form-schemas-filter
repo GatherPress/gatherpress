@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+New `gatherpress_rsvp_form_schemas` filter, so RSVP custom-field schemas can come from somewhere other than the block editor. Saving a post no longer deletes a schema it did not create, which previously made externally-stored registration questions disappear on the next save.

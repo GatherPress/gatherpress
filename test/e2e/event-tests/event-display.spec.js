@@ -55,12 +55,12 @@ test.describe( 'Event Display', () => {
 				title: eventTitle,
 				dateTimeStart: startIso,
 				dateTimeEnd: endIso,
-			}
+			},
 		);
 
 		expect(
 			eventId,
-			'event creation via REST returned an id'
+			'event creation via REST returned an id',
 		).toBeTruthy();
 
 		try {
@@ -76,13 +76,13 @@ test.describe( 'Event Display', () => {
 			// Verify the seeded event actually rendered on the frontend
 			// (not just any non-empty page like a 404).
 			await expect(
-				page.locator( 'body' )
+				page.locator( 'body' ),
 			).toContainText( eventTitle );
 
 			// Verify no PHP errors or warnings are visible.
 			const hasError = await page
 				.locator(
-					'body:has-text("Fatal error"), body:has-text("Warning:"), body:has-text("Notice:")'
+					'body:has-text("Fatal error"), body:has-text("Warning:"), body:has-text("Notice:")',
 				)
 				.count();
 			expect( hasError ).toBe( 0 );

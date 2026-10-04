@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Stop pre-selecting the site timezone in the user profile, which saved it as the user's timezone the next time they updated their profile and showed every event in it.

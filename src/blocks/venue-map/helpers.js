@@ -89,7 +89,7 @@ const postVenueMapDescriptors = async ( {
 					},
 				],
 				undefined,
-				false
+				false,
 			);
 		}
 
@@ -153,9 +153,9 @@ export const RegenerateMapButton = ( {
 			select( 'core' ).getEntityRecord(
 				'postType',
 				venuePostType,
-				venuePostId
+				venuePostId,
 			),
-		[ venuePostType, venuePostId ]
+		[ venuePostType, venuePostId ],
 	);
 
 	const handleClick = async () => {
@@ -186,9 +186,9 @@ export const RegenerateMapButton = ( {
 				createErrorNotice?.(
 					__(
 						'The map server could not render the image. Check the tile provider and try again.',
-						'gatherpress'
+						'gatherpress',
 					),
-					{ type: 'snackbar' }
+					{ type: 'snackbar' },
 				);
 			}
 		} catch ( error ) {
@@ -200,9 +200,9 @@ export const RegenerateMapButton = ( {
 				error?.message ||
 					__(
 						'Could not regenerate the map. Please try again.',
-						'gatherpress'
+						'gatherpress',
 					),
-				{ type: 'snackbar' }
+				{ type: 'snackbar' },
 			);
 		} finally {
 			setIsBusy( false );
@@ -459,9 +459,9 @@ export const usePlaceholderPolling = ( {
 			select( 'core' ).getEntityRecord(
 				'postType',
 				venuePostType,
-				venuePostId
+				venuePostId,
 			),
-		[ venuePostType, venuePostId ]
+		[ venuePostType, venuePostId ],
 	);
 
 	useEffect( () => {

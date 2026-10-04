@@ -26,7 +26,7 @@ import { useMemo, useState } from '@wordpress/element';
  */
 import { getCurrentContextualPostId, hasValidBlockContext, isInFSETemplate, usePostTypeLabel } from '../../helpers/editor';
 import { usePostTypeSupports, findEventPostById, DISABLED_FIELD_OPACITY } from '../../helpers/event';
-import { useVenuePostFromTermId, GetVenuePostFromEventId, findVenuePostById, getVenuePostType, getVenueTaxonomy, useVenueTaxonomyIds } from '../../helpers/venue';
+import { useVenuePostFromTermId, GetVenuePostFromEventId, findVenuePostById, getOnlineEventTermId, getVenuePostType, getVenueTaxonomy, useVenueTaxonomyIds } from '../../helpers/venue';
 import VenueNavigator from '../../components/VenueNavigator';
 import PatternPicker, { PatternChooserModal } from '../../components/PatternPicker';
 import { TEMPLATE_WITH_TITLE, TEMPLATE_WITHOUT_TITLE } from './templates/venue-details';
@@ -44,8 +44,8 @@ function templateToBlocks( template ) {
 		createBlock(
 			name,
 			attributes,
-			templateToBlocks( innerBlocks || [] )
-		)
+			templateToBlocks( innerBlocks || [] ),
+		),
 	);
 }
 
@@ -74,7 +74,7 @@ const DEFAULT_PATTERNS = [
 		title: __( 'Venue Details with Title', 'gatherpress' ),
 		description: __(
 			'Post title above the venue address, phone, website, and map. Default for event posts.',
-			'gatherpress'
+			'gatherpress',
 		),
 		template: TEMPLATE_WITH_TITLE,
 	},
@@ -83,7 +83,7 @@ const DEFAULT_PATTERNS = [
 		title: __( 'Venue Details', 'gatherpress' ),
 		description: __(
 			'Address, phone, website, and an embedded map (no post title). Default for venue posts.',
-			'gatherpress'
+			'gatherpress',
 		),
 		template: TEMPLATE_WITHOUT_TITLE,
 	},
@@ -105,7 +105,7 @@ const Edit = ( props ) => {
 	// Resolve the effective post type from context or the current editor post type.
 	const currentEditorPostType = useSelect(
 		( select ) => select( 'core/editor' )?.getCurrentPostType(),
-		[]
+		[],
 	);
 
 	// Resolve the postIdOverride target across event-supporting and venue-
@@ -131,7 +131,7 @@ const Edit = ( props ) => {
 			}
 			return null;
 		},
-		[ overrideId ]
+		[ overrideId ],
 	);
 
 	// When the override resolves to an event, use the override as the event
@@ -187,7 +187,7 @@ const Edit = ( props ) => {
 	const venueTaxonomyIds = useVenueTaxonomyIds(
 		venueTaxonomy,
 		eventId,
-		skipVenueTaxonomyLookup
+		skipVenueTaxonomyLookup,
 	);
 
 	const isEditableEventContext =
@@ -207,17 +207,22 @@ const Edit = ( props ) => {
 					wpSelect( 'core' ).getEntityRecord(
 						'taxonomy',
 						venueTaxonomy,
-						termId
-					)
+						termId,
+					),
 				)
 				.filter( Boolean );
 		},
-		[ isEditableEventContext, venueTaxonomyIds, venueTaxonomy ]
+		[ isEditableEventContext, venueTaxonomyIds, venueTaxonomy ],
 	);
 
-	// Find venue term ID (excluding online-event).
+	// Find venue term ID (excluding the online-event sentinel, matched by its
+	// pre-resolved term ID so we don't string-compare slugs here).
+	const onlineTermId = getOnlineEventTermId( venuePostType );
+	const isOnlineTerm = ( term ) =>
+		null !== onlineTermId && Number( term?.id ) === Number( onlineTermId );
+
 	const venueTermId =
-		venueTerms.find( ( term ) => 'online-event' !== term?.slug )?.id ||
+		venueTerms.find( ( term ) => ! isOnlineTerm( term ) )?.id ||
 		null;
 
 	// Fetch venue post - use different methods for Query Loop vs direct editing.
@@ -227,7 +232,7 @@ const Edit = ( props ) => {
 	const venuePostFromTerm = useVenuePostFromTermId( venueTermId, venuePostType );
 	const venuePostFromEvent = GetVenuePostFromEventId(
 		isDescendentOfQueryLoop ? context?.postId : null,
-		context?.postType
+		context?.postType,
 	);
 
 	// Use Query Loop result if available, otherwise use direct editing result.
@@ -281,7 +286,7 @@ const Edit = ( props ) => {
 	 */
 	const defaultTemplate = applyFilters(
 		'gatherpress.venueDefaultTemplate',
-		isEventContext ? TEMPLATE_WITH_TITLE : TEMPLATE_WITHOUT_TITLE
+		isEventContext ? TEMPLATE_WITH_TITLE : TEMPLATE_WITHOUT_TITLE,
 	);
 
 	/**
@@ -326,15 +331,15 @@ const Edit = ( props ) => {
 			applyFilters(
 				'gatherpress.venuePatterns',
 				DEFAULT_PATTERNS,
-				effectivePostType
+				effectivePostType,
 			),
-		[ effectivePostType ]
+		[ effectivePostType ],
 	);
 
 	const innerBlockCount = useSelect(
 		( select ) =>
 			select( blockEditorStore ).getBlocks( clientId ).length,
-		[ clientId ]
+		[ clientId ],
 	);
 	const showPatternPicker =
 		! patternPicked && 0 === innerBlockCount;
@@ -342,7 +347,7 @@ const Edit = ( props ) => {
 	const handlePatternPick = ( pattern ) => {
 		replaceInnerBlocks(
 			clientId,
-			templateToBlocks( pattern.template )
+			templateToBlocks( pattern.template ),
 		);
 		setAttributes( { patternPicked: true } );
 	};
@@ -371,7 +376,7 @@ const Edit = ( props ) => {
 	const singularLabel = usePostTypeLabel(
 		'singular_name',
 		venuePostType,
-		__( 'Venue', 'gatherpress' )
+		__( 'Venue', 'gatherpress' ),
 	);
 
 	return (
@@ -406,7 +411,7 @@ const Edit = ( props ) => {
 						instructions={ sprintf(
 							/* translators: %s: Singular post type label, e.g. "Venue". */
 							__( 'Choose a pattern for the %s.', 'gatherpress' ),
-							singularLabel
+							singularLabel,
 						) }
 						patterns={ patterns }
 						showStartBlank={ false }
@@ -429,7 +434,7 @@ const Edit = ( props ) => {
 						title={ sprintf(
 							/* translators: %s: Singular post type label, e.g. "Venue". */
 							__( '%s settings', 'gatherpress' ),
-							singularLabel
+							singularLabel,
 						) }
 						initialOpen={ true }
 					>

@@ -1,10 +1,11 @@
 module.exports = {
 	extends: [
+		// stylelint-config-standard already extends the recommended config;
+		// naming it here too only resolved while it happened to be hoisted.
 		'stylelint-config-standard',
-		'stylelint-config-recommended',
-		'stylelint-config-recommended-scss'
+		'stylelint-config-recommended-scss',
 	],
-	plugins: ['stylelint-scss'],
+	plugins: [ 'stylelint-scss' ],
 	ignoreFiles: [
 		'node_modules/**/*',
 		'build/**/*',
@@ -22,9 +23,9 @@ module.exports = {
 		'string-no-newline': true,
 		'block-no-empty': null,
 		'unit-no-unknown': true,
-		'property-no-unknown': [true, {
-			ignoreProperties: ['/^--wp--preset--/']
-		}],
+		'property-no-unknown': [ true, {
+			ignoreProperties: [ '/^--wp--preset--/' ],
+		} ],
 		'custom-property-pattern': null,
 		'at-rule-no-unknown': null,
 		'scss/at-rule-no-unknown': true,

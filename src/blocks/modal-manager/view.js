@@ -11,6 +11,74 @@ import {
 	setupCloseHandlers,
 } from '../../helpers/interactivity';
 
+/**
+ * Checks whether an element is shown, walking up to (but not including) a root.
+ *
+ * Looks only at the `hidden` attribute, GatherPress's hidden class and the
+ * computed `display`/`visibility`, so it works without layout (e.g. in tests)
+ * and while the modal's own open transition is still running.
+ *
+ * @since TBD
+ *
+ * @param {HTMLElement} element The element to check.
+ * @param {HTMLElement} root    The ancestor to stop at.
+ *
+ * @return {boolean} True when nothing between the element and the root hides it.
+ */
+function isShownWithin( element, root ) {
+	for ( let node = element; node && node !== root; node = node.parentElement ) {
+		if ( node.hidden || node.classList.contains( 'gatherpress--is-hidden' ) ) {
+			return false;
+		}
+
+		const style = window.getComputedStyle( node );
+
+		if ( 'none' === style.display || 'hidden' === style.visibility ) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+/**
+ * Names a modal without a custom name after its first visible heading.
+ *
+ * The server gives such a modal the generic "Modal" label and the
+ * `data-gatherpress-default-label` marker. `aria-labelledby` overrides that
+ * label while a visible heading exists; when none does, the attribute is
+ * removed so the generic label applies again.
+ *
+ * @since TBD
+ *
+ * @param {HTMLElement} modal        The modal element (role="dialog").
+ * @param {HTMLElement} modalContent The modal content element.
+ *
+ * @return {void}
+ */
+function labelModalByVisibleHeading( modal, modalContent ) {
+	const heading = Array.from(
+		modalContent.querySelectorAll( 'h1, h2, h3, h4, h5, h6' ),
+	).find( ( el ) => isShownWithin( el, modalContent ) );
+
+	if ( ! heading ) {
+		modal.removeAttribute( 'aria-labelledby' );
+		return;
+	}
+
+	if ( ! heading.id ) {
+		let index = 1;
+
+		while ( document.getElementById( `gatherpress-modal-heading-${ index }` ) ) {
+			index++;
+		}
+
+		heading.id = `gatherpress-modal-heading-${ index }`;
+	}
+
+	modal.setAttribute( 'aria-labelledby', heading.id );
+}
+
 const { actions } = store( 'gatherpress', {
 	actions: {
 		openModal( event = null, element = null ) {
@@ -43,6 +111,10 @@ const { actions } = store( 'gatherpress', {
 					);
 
 					if ( modalContent ) {
+						if ( modal.hasAttribute( 'data-gatherpress-default-label' ) ) {
+							labelModalByVisibleHeading( modal, modalContent );
+						}
+
 						// Define focusable elements inside the modal.
 						const focusableSelectors = [
 							'a[href]',
@@ -210,11 +282,19 @@ const { actions } = store( 'gatherpress', {
 			// Return focus to the open modal trigger only when fully closing.
 			// When switching modals (findActiveSibling=false), don't focus the trigger.
 			if ( findActiveSibling ) {
+				// The trigger class often sits on a block wrapper (for example the
+				// Event Date block's <div>) with the focusable link or button inside it.
+				// A link without an href is focusable only through the tabindex the
+				// server adds, so match that too.
 				let openTrigger = modalManager.querySelector(
-					'.gatherpress-modal--trigger-open button',
+					[
+						'.gatherpress-modal--trigger-open button',
+						'.gatherpress-modal--trigger-open a[href]',
+						'.gatherpress-modal--trigger-open [tabindex]:not([tabindex="-1"])',
+					].join( ', ' ),
 				);
 
-				// If no nested button, try the trigger element itself (could be anchor or button).
+				// If no nested button or link, try the trigger element itself (could be anchor or button).
 				if ( ! openTrigger ) {
 					openTrigger = modalManager.querySelector(
 						'.gatherpress-modal--trigger-open',

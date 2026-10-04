@@ -37,7 +37,7 @@ import { EventPluginDocumentSettings } from './slot';
 const EventSettings = () => {
 	const currentPostType = useSelect(
 		( s ) => s( 'core/editor' )?.getCurrentPostType(),
-		[]
+		[],
 	);
 
 	// Read the singular label so the panel title reflects what the post type
@@ -47,7 +47,7 @@ const EventSettings = () => {
 	const singularLabel = usePostTypeLabel(
 		'singular_name',
 		currentPostType,
-		__( 'Event', 'gatherpress' )
+		__( 'Event', 'gatherpress' ),
 	);
 
 	/**
@@ -84,9 +84,9 @@ const EventSettings = () => {
 		sprintf(
 			/* translators: %s: Singular post type label, e.g. "Event". */
 			__( '%s settings', 'gatherpress' ),
-			singularLabel
+			singularLabel,
 		),
-		currentPostType
+		currentPostType,
 	);
 
 	return (

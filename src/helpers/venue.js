@@ -9,6 +9,8 @@ import { store as coreStore } from '@wordpress/core-data';
 /**
  * Internal dependencies
  */
+import { getFromConfig } from './editor-settings';
+import { findPublishedPostBySupport } from './post';
 
 /**
  * Default venue post type slug used as a fallback when no override is configured.
@@ -57,6 +59,27 @@ export function getVenuePostType( eventPostType = '' ) {
 }
 
 /**
+ * Returns the pre-resolved term ID of the online-event sentinel.
+ *
+ * Reads the map exposed by PHP via the block_editor_settings_all filter
+ * (Venue\Setup::add_editor_settings). Falls back to null when the map is
+ * absent (view scripts, refresh path) or the venue post type hasn't seeded
+ * the sentinel yet — callers handle null by treating "no term known" as
+ * "not online", the same answer today's REST lookups produce when they
+ * come back empty.
+ *
+ * @since TBD
+ *
+ * @param {string} [venuePostType='gatherpress_venue'] The venue post type slug.
+ *
+ * @return {number|null} The pre-resolved term ID, or null when unavailable.
+ */
+export function getOnlineEventTermId( venuePostType = DEFAULT_VENUE_POST_TYPE ) {
+	const map = getFromConfig( 'onlineEventTermIds' ) ?? {};
+	return map[ venuePostType ] ?? null;
+}
+
+/**
  * Check if the current post type is a venue.
  *
  * Uses the WordPress data store to check whether the current editor post type
@@ -98,7 +121,7 @@ export function useVenuePostFromTermId( termId, venuePostType = DEFAULT_VENUE_PO
 			const venueTerm = wpSelect( 'core' ).getEntityRecord(
 				'taxonomy',
 				getVenueTaxonomy( venuePostType ),
-				termId
+				termId,
 			);
 			// If term object exists, strip any leading underscore from its slug.
 			const venueSlug = venueTerm?.slug?.replace( /^_/, '' );
@@ -123,11 +146,11 @@ export function useVenuePostFromTermId( termId, venuePostType = DEFAULT_VENUE_PO
 						...( supportsEventDate && {
 							gatherpress_event_query: 'all',
 						} ),
-					}
+					},
 				),
 			};
 		},
-		[ termId, venuePostType ]
+		[ termId, venuePostType ],
 	);
 
 	return venuePost;
@@ -157,7 +180,7 @@ export function useVenueTermFromPostId( postId = null, venuePostType = DEFAULT_V
 			const venuePost = wpSelect( 'core' ).getEntityRecord(
 				'postType',
 				venuePostType,
-				postId
+				postId,
 			);
 			// Bail when the post hasn't resolved yet (or arrived without a
 			// slug) so the underscore-prefix doesn't produce `_undefined`.
@@ -174,11 +197,11 @@ export function useVenueTermFromPostId( postId = null, venuePostType = DEFAULT_V
 					{
 						per_page: 1,
 						slug: venueSlug,
-					}
+					},
 				),
 			};
 		},
-		[ postId, venuePostType ]
+		[ postId, venuePostType ],
 	);
 
 	return venueTerm;
@@ -225,12 +248,19 @@ export function GetVenuePostFromEventId( eventId, postType = null ) {
 			const venueTerms = wpSelect( 'core' ).getEntityRecords(
 				'taxonomy',
 				venueTax,
-				{ post: eventId, per_page: 10, context: 'view' }
+				{ post: eventId, per_page: 10, context: 'view' },
 			);
 
-			// Find the first non-online-event term.
+			// Find the first non-online-event term. The sentinel ID is read from
+			// editor settings to avoid string-matching the slug here.
+			const onlineTermId =
+				wpSelect( 'core/editor' )?.getEditorSettings?.()?.gatherpress
+					?.config?.onlineEventTermIds?.[ resolvedVenuePostType ] ?? null;
+
 			const venueTerm = venueTerms?.find(
-				( term ) => 'online-event' !== term.slug
+				( term ) =>
+					null === onlineTermId ||
+					Number( term.id ) !== Number( onlineTermId ),
 			);
 
 			return {
@@ -238,7 +268,7 @@ export function GetVenuePostFromEventId( eventId, postType = null ) {
 				venuePostType: resolvedVenuePostType,
 			};
 		},
-		[ eventId, postType ]
+		[ eventId, postType ],
 	);
 
 	// Fetch and return the related venue post using the term ID and resolved venue post type.
@@ -272,10 +302,15 @@ export function getVenueTitle( venue, kind ) {
  * Adapted from useAuthorsQuery()
  * @see gutenberg/packages/editor/src/components/post-author/hook.js
  *
- * @param {string} search  Current search string for venue filtering.
- * @param {number} venueId Currently selected venue, can be either a post ID or a taxonomy term ID.
- * @param {string} kind    Actual kind to query for, could taxonomy (default) or posttype.
- * @param {string} name    Name of the current kind.
+ * @param {string} search                              Current search string for venue filtering.
+ * @param {number} venueId                             Currently selected venue, can be either a post ID or a taxonomy term ID.
+ * @param {string} kind                                Actual kind to query for, could taxonomy (default) or posttype.
+ * @param {string} name                                Name of the current kind.
+ * @param {string} [venuePostType='gatherpress_venue'] Venue post type slug used to resolve
+ *                                                     the online-event sentinel ID. Pass
+ *                                                     it when calling with a non-default
+ *                                                     venue post type so the sentinel
+ *                                                     filter matches the right term.
  *
  * @return {Array} A list options prepared for a typical combobox, with ID and label.
  */
@@ -283,7 +318,8 @@ export function useVenueOptions(
 	search,
 	venueId,
 	kind = 'taxonomy',
-	name = getVenueTaxonomy( DEFAULT_VENUE_POST_TYPE )
+	name = getVenueTaxonomy( DEFAULT_VENUE_POST_TYPE ),
+	venuePostType = DEFAULT_VENUE_POST_TYPE,
 ) {
 	const { venue, venues } = useSelect(
 		( wpSelect ) => {
@@ -305,17 +341,29 @@ export function useVenueOptions(
 				venues: getEntityRecords( kind, name, query ),
 			};
 		},
-		[ kind, name, search, venueId ]
+		[ kind, name, search, venueId ],
 	);
+
+	// Use the pre-resolved sentinel term ID from editor settings so the filter
+	// compares against a single int instead of string-matching the slug. When
+	// the settings have no entry for this venue post type (term not seeded yet),
+	// fall back to slug matching — real venue terms always carry a leading
+	// underscore, so the un-prefixed sentinel slug can never be a physical venue.
+	const onlineTermId = getOnlineEventTermId( venuePostType );
 
 	// Using useMemo will cause a re-render only when the raw venues really change.
 	const venueOptions = useMemo(
 		() => {
+			const isOnline = ( obj ) =>
+				'taxonomy' === kind &&
+				( ( null !== onlineTermId && Number( obj?.id ) === Number( onlineTermId ) ) ||
+					'online-event' === obj?.slug );
+
 			// Create a combobox-friendly list as dropdown
 			// from the array of venues (can be ~posts or ~terms).
 			// Filter out the online-event term since it's controlled by a separate toggle.
 			const fetchedVenues = ( venues ?? [] )
-				.filter( ( venueObj ) => 'online-event' !== venueObj.slug )
+				.filter( ( venueObj ) => ! isOnline( venueObj ) )
 				.map( ( venueObj ) => {
 					return {
 						value: venueObj.id,
@@ -326,11 +374,11 @@ export function useVenueOptions(
 			// Check if the current venue is already included in the list.
 			// Will be -1 if not found.
 			const foundVenue = fetchedVenues.findIndex(
-				( { value } ) => venue?.id === value
+				( { value } ) => venue?.id === value,
 			);
 
 			// Ensure the current venue is included in the list (but not online-event).
-			if ( 0 > foundVenue && venue && 'online-event' !== venue.slug ) {
+			if ( 0 > foundVenue && venue && ! isOnline( venue ) ) {
 				return [
 					{
 						value: venue.id,
@@ -344,7 +392,7 @@ export function useVenueOptions(
 		},
 		// Dependency array, every time venue or venues is updated,
 		//  the useMemo callback will be called.
-		[ venue, venues, kind ]
+		[ venue, venues, kind, onlineTermId ],
 	);
 
 	return { venueOptions };
@@ -391,11 +439,11 @@ export function useVenueTaxonomyIds( venueTaxonomy, postId, skip = false ) {
 			const terms = wpSelect( 'core' ).getEntityRecords(
 				'taxonomy',
 				venueTaxonomy,
-				{ post: postId, per_page: 100, context: 'view' }
+				{ post: postId, per_page: 100, context: 'view' },
 			);
 			return terms?.map( ( t ) => t.id );
 		},
-		[ skip, venueTaxonomy, postId ]
+		[ skip, venueTaxonomy, postId ],
 	);
 }
 
@@ -428,14 +476,24 @@ export function usePopularVenues( limit = 3, venuePostType = DEFAULT_VENUE_POST_
 			const venues = getEntityRecords(
 				'taxonomy',
 				getVenueTaxonomy( venuePostType ),
-				query
+				query,
 			);
+
 			// Filter out the online-event term since it's controlled by a separate toggle.
+			// Use the pre-resolved sentinel ID from editor settings so we don't
+			// string-compare the slug here.
+			const onlineTermId =
+				wpSelect( 'core/editor' )?.getEditorSettings?.()?.gatherpress
+					?.config?.onlineEventTermIds?.[ venuePostType ] ?? null;
+
 			return venues
-				?.filter( ( venue ) => 'online-event' !== venue.slug )
+				?.filter( ( venue ) =>
+					null === onlineTermId ||
+					Number( venue.id ) !== Number( onlineTermId ),
+				)
 				.slice( 0, limit );
 		},
-		[ limit, venuePostType ]
+		[ limit, venuePostType ],
 	);
 
 	return popularVenues ?? [];
@@ -465,43 +523,9 @@ export function usePopularVenues( limit = 3, venuePostType = DEFAULT_VENUE_POST_
  *                       found post isn't published.
  */
 export function findVenuePostById( selectFunc, postId ) {
-	if ( ! postId ) {
-		return null;
-	}
-
-	// `context: 'edit'` is required because WP REST only exposes the
-	// `supports` field on post types in the edit context. Without it the
-	// loop below never matches any type and the override silently fails.
-	const postTypes = selectFunc( 'core' ).getPostTypes?.( {
-		per_page: -1,
-		context: 'edit',
-	} );
-	if ( ! Array.isArray( postTypes ) ) {
-		return null;
-	}
-
-	for ( const type of postTypes ) {
-		if ( ! type?.supports?.[ 'gatherpress-venue-information' ] ) {
-			continue;
-		}
-		// Query by `include` filter rather than `getEntityRecord( id )` so a
-		// miss returns an empty array (HTTP 200) instead of a 404. The 404s
-		// are technically accurate but they show up in browser devtools and
-		// look like a real bug to anyone reading the console. Edit context
-		// matches the default `getEntityRecord` uses inside the editor and
-		// keeps the response shape consistent with the event-side helper.
-		const records = selectFunc( 'core' ).getEntityRecords(
-			'postType',
-			type.slug,
-			{ include: [ postId ], context: 'edit', per_page: 1 }
-		);
-		if ( Array.isArray( records ) && 0 < records.length ) {
-			const post = records[ 0 ];
-			if ( 'publish' === post?.status ) {
-				return post;
-			}
-		}
-	}
-
-	return null;
+	return findPublishedPostBySupport(
+		selectFunc,
+		postId,
+		'gatherpress-venue-information',
+	);
 }

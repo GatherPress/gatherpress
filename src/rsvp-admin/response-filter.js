@@ -35,7 +35,7 @@ export function getResponseLabel( statuses, selected ) {
 			? sprintf(
 				/* translators: %s: an RSVP response, e.g. "Waiting List". */
 				__( 'Filter by response: %s', 'gatherpress' ),
-				match.label
+				match.label,
 			)
 			: __( 'Filter by response', 'gatherpress' );
 	}
@@ -43,7 +43,7 @@ export function getResponseLabel( statuses, selected ) {
 	return sprintf(
 		/* translators: %d: number of selected RSVP responses. */
 		__( 'Filter by response: %d selected', 'gatherpress' ),
-		selected.length
+		selected.length,
 	);
 }
 
@@ -116,7 +116,7 @@ export default function ResponseFilter( { statuses, selected, onChange } ) {
 								checked={ selected.includes( status.value ) }
 								onChange={ () =>
 									onChange(
-										toggleResponse( selected, status.value )
+										toggleResponse( selected, status.value ),
 									)
 								}
 							/>

@@ -666,7 +666,7 @@ final class Setup {
 	 */
 	public function get_the_event_date( string $the_date, string $format = '', $post = null ): string {
 		$settings       = Settings::get_instance();
-		$use_event_date = $settings->get( 'post_or_event_date' );
+		$use_event_date = $settings->get( 'use_event_date_for_publish' );
 
 		// Determine the post type and ID from the post object or global context.
 		$post_type = $post instanceof WP_Post ? $post->post_type : get_post_type();
@@ -712,7 +712,7 @@ final class Setup {
 	 */
 	public function render_event_post_date_block( string $block_content, array $block, WP_Block $instance ): string {
 		$post_id        = $instance->context['postId'] ?? get_the_ID();
-		$use_event_date = Settings::get_instance()->get( 'post_or_event_date' );
+		$use_event_date = Settings::get_instance()->get( 'use_event_date_for_publish' );
 
 		// Bail when there's no post, when the post type doesn't carry event-date
 		// support, or when the "use event date" setting isn't enabled.
@@ -731,7 +731,7 @@ final class Setup {
 		}
 
 		// Replace the datetime attribute and the displayed date text in the block output.
-		$iso_date = $event->get_datetime_start( 'c' );
+		$iso_date = $event->get_datetime_start_iso();
 
 		// A literal pattern cannot fail to compile, so preg_replace() never returns null here.
 		$block_content = (string) preg_replace(

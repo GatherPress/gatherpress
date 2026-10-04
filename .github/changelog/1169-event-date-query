@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Event queries now filter by event date. A date query on a query of event post types resolves against when events happen rather than when their posts were published.

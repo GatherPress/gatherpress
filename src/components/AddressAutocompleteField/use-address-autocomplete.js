@@ -33,7 +33,7 @@ export function shouldShowAddressSuggestionUi(
 	value,
 	suggestions,
 	isLoadingSuggestions,
-	suggestionError
+	suggestionError,
 ) {
 	const meetsMinLength =
 		getAddressSearchMinQueryLength() <=
@@ -120,8 +120,8 @@ export function useAddressAutocomplete( {
 					setSuggestionError(
 						__(
 							'Address suggestions are temporarily unavailable. Try again in a moment, or enter the address manually.',
-							'gatherpress'
-						)
+							'gatherpress',
+						),
 					);
 				} )
 				.finally( () => {
@@ -138,9 +138,8 @@ export function useAddressAutocomplete( {
 			// `getAddressSearchMinQueryLength` / `__` are module-level imports. If you add a
 			// prop or non-setter state reference to this body, drop the disable and let the
 			// exhaustive-deps rule flag it rather than silently going stale.
-			// eslint-disable-next-line react-hooks/exhaustive-deps
 		}, [] ),
-		debounceMs
+		debounceMs,
 	);
 
 	const handleChange = useCallback(
@@ -148,7 +147,7 @@ export function useAddressAutocomplete( {
 			onChange( next );
 			loadSuggestions( next );
 		},
-		[ onChange, loadSuggestions ]
+		[ onChange, loadSuggestions ],
 	);
 
 	const closeSuggestions = useCallback( () => {
@@ -167,7 +166,7 @@ export function useAddressAutocomplete( {
 			onChange( item.label );
 			closeSuggestions();
 		},
-		[ onChange, closeSuggestions ]
+		[ onChange, closeSuggestions ],
 	);
 
 	const handleKeyDown = useCallback(
@@ -186,14 +185,14 @@ export function useAddressAutocomplete( {
 				if ( 'ArrowDown' === event.key ) {
 					event.preventDefault();
 					setActiveIndex( ( i ) =>
-						suggestions.length <= i + 1 ? 0 : i + 1
+						suggestions.length <= i + 1 ? 0 : i + 1,
 					);
 					return;
 				}
 				if ( 'ArrowUp' === event.key ) {
 					event.preventDefault();
 					setActiveIndex( ( i ) =>
-						0 > i - 1 ? suggestions.length - 1 : i - 1
+						0 > i - 1 ? suggestions.length - 1 : i - 1,
 					);
 					return;
 				}
@@ -219,7 +218,7 @@ export function useAddressAutocomplete( {
 			onKeyDown,
 			selectSuggestion,
 			suggestions,
-		]
+		],
 	);
 
 	return {

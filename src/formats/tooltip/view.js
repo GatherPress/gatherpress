@@ -61,14 +61,14 @@ export function initTooltip( tooltip ) {
 	if ( textColor && tooltip.style?.setProperty ) {
 		tooltip.style.setProperty(
 			'--gatherpress-tooltip-text-color',
-			textColor
+			textColor,
 		);
 	}
 
 	if ( bgColor && tooltip.style?.setProperty ) {
 		tooltip.style.setProperty(
 			'--gatherpress-tooltip-bg-color',
-			bgColor
+			bgColor,
 		);
 	}
 
@@ -82,7 +82,7 @@ export function initTooltip( tooltip ) {
 		// mistaken for this one, and a direct child so a nested tooltip's
 		// text is not either.
 		const existingSrText = tooltip.querySelector(
-			`:scope > .${ NOTICE_CLASS }`
+			`:scope > .${ NOTICE_CLASS }`,
 		);
 		if ( ! existingSrText ) {
 			const srText = document.createElement( 'span' );
@@ -102,7 +102,7 @@ export function initTooltips() {
 	}
 
 	const tooltips = document.querySelectorAll(
-		'.gatherpress-tooltip[data-gatherpress-tooltip]'
+		'.gatherpress-tooltip[data-gatherpress-tooltip]',
 	);
 
 	tooltips.forEach( ( tooltip ) => {
@@ -119,7 +119,7 @@ export function closeAllTooltips() {
 	}
 
 	const activeTooltips = document.querySelectorAll(
-		'.gatherpress-tooltip--is-active'
+		'.gatherpress-tooltip--is-active',
 	);
 	activeTooltips.forEach( ( el ) => {
 		el.classList.remove( 'gatherpress-tooltip--is-active' );

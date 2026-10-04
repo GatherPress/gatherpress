@@ -1,11 +1,6 @@
 # RSVP
 
-GatherPress stores RSVPs as WordPress comments with a custom `comment_type` of
-`gatherpress_rsvp`. The comment row is the canonical record — status changes
-(`attending`, `not_attending`, `waiting_list`), guest counts, and anonymous /
-authenticated state all live on the comment and its meta. Reusing the comments
-table means RSVPs inherit WordPress's moderation, capability, and i18n
-infrastructure for free.
+GatherPress stores RSVPs as WordPress comments with a custom `comment_type` of `gatherpress_rsvp`. The comment row is the canonical record: status changes (`attending`, `not_attending`, `waiting_list`), guest counts, and anonymous / authenticated state all live on the comment and its meta. Reusing the comments table means RSVPs inherit WordPress's moderation, capability, and i18n infrastructure for free.
 
 ## Comment-query coexistence
 
@@ -31,13 +26,7 @@ index themselves; once one exists, whether core adds it or the site does, the
 
 ### When the default exclusion gets in the way
 
-The exclusion touches shared query vars, which can conflict with other plugins
-that read or write the same vars on
-`pre_get_comments`. The canonical example is the [ActivityPub
-plugin](https://github.com/Automattic/wordpress-activitypub) — federation
-interactions (likes, boosts, quotes) flow through `wp_comments` with their own
-types, and ActivityPub's own `pre_get_comments` callback assumes the caller's
-`type__in` reflects the original query.
+The exclusion touches shared query vars, which can conflict with other plugins that read or write the same vars on `pre_get_comments`. The canonical example is the [ActivityPub plugin](https://github.com/Automattic/wordpress-activitypub): federation interactions (likes, boosts, quotes) flow through `wp_comments` with their own types, and ActivityPub's own `pre_get_comments` callback assumes the caller's `type__in` reflects the original query.
 
 To opt out of GatherPress's default exclusion for a specific query, return
 false from the `gatherpress_rsvp_comment_query_exclusion` filter. The filter
@@ -49,7 +38,7 @@ add_filter(
     'gatherpress_rsvp_comment_query_exclusion',
     function ( bool $exclude, WP_Comment_Query $query ): bool {
         // Only short-circuit when the caller is asking for federation
-        // interaction types — leave every other comment query alone so
+        // interaction types. Leave every other comment query alone so
         // GatherPress's default RSVP exclusion continues to apply.
         $types = (array) ( $query->query_vars['type__in'] ?? array() );
 
@@ -72,25 +61,20 @@ refactors without code changes on the integration side.
 
 ## RSVP providers (identity sources)
 
-Since 0.35.0 an RSVP response is attributed to a **provider** — the source of
-the responder's identity. GatherPress ships two: `user` (a logged-in WordPress
-account) and `email` (an address supplied through the open RSVP form). Companion
-plugins can add their own — a membership system, an external ticketing platform,
-an SSO directory — so responses from those sources are stored, displayed, and
-de-duplicated alongside the built-in ones.
+Since 0.35.0 an RSVP response is attributed to a **provider**, the source of the responder's identity. GatherPress ships two: `user` (a logged-in WordPress account) and `email` (an address supplied through the open RSVP form). Companion plugins can add their own (a membership system, an external ticketing platform, an SSO directory), so responses from those sources are stored, displayed, and de-duplicated alongside the built-in ones.
 
 ### The pieces
 
-- **`GatherPress\Core\Rsvp\Response\Identity`** — a value object pairing an
+- **`GatherPress\Core\Rsvp\Response\Identity`**: a value object pairing an
   `Identity_Type` with its value (a user ID, an email address, a URL, or an
   external ID). It validates on construction, so an invalid email or a
   non-existent user ID throws rather than persisting a bad row.
-- **`GatherPress\Core\Rsvp\Response\Identity_Type`** — the enum of identity
+- **`GatherPress\Core\Rsvp\Response\Identity_Type`**: the enum of identity
   kinds: `WP_USER_ID`, `EMAIL`, `URL`, `EXTERNAL_ID`.
-- **`GatherPress\Core\Rsvp\Response\Provider\Base`** — the abstract a provider
+- **`GatherPress\Core\Rsvp\Response\Provider\Base`**: the abstract a provider
   extends. It declares what an identity *is* and how to present it; it does not
   touch storage (the repository owns that).
-- **`GatherPress\Core\Rsvp\Response\Provider_Registry`** — the singleton that
+- **`GatherPress\Core\Rsvp\Response\Provider_Registry`**: the singleton that
   holds registered providers and fires the registration hook.
 
 ### The provider contract
@@ -149,15 +133,7 @@ add_action( 'gatherpress_register_rsvp_types', function ( $registry ) {
 
 ### What the provider term is (and isn't) for
 
-On save, GatherPress stamps the provider's slug as a `_gatherpress_rsvp_provider`
-taxonomy term on the RSVP comment. That term is the authoritative record of which
-provider issued a response — and for a custom identity type such as
-`EXTERNAL_ID` it is the **only** way to resolve the provider later, since it
-can't be inferred from a user ID or email. For the two core providers the term
-is an optimization: the admin Type column and hydration both fall back to
-inferring `user` from a real user ID and `email` from a valid author email when
-no term is present, so responses written by paths that don't stamp it (the open
-RSVP form) still resolve.
+On save, GatherPress stamps the provider's slug as a `_gatherpress_rsvp_provider` taxonomy term on the RSVP comment. That term is the authoritative record of which provider issued a response, and for a custom identity type such as `EXTERNAL_ID` it is the **only** way to resolve the provider later, since it can't be inferred from a user ID or email. For the two core providers the term is an optimization: the admin Type column and hydration both fall back to inferring `user` from a real user ID and `email` from a valid author email when no term is present, so responses written by paths that don't stamp it (the open RSVP form) still resolve.
 
 ## RSVP flags
 
@@ -309,7 +285,7 @@ Since 0.34.0 the `rsvp_mode` setting is the master switch for the whole RSVP
 subsystem. When it is set to `disabled`, GatherPress removes the
 `gatherpress-rsvp` post type support from every post type that declares it
 (`Rsvp\Setup::maybe_disable_rsvp()`), so every `post_type_supports()` guard in
-the plugin — and in companion plugins following the same pattern — returns
+the plugin (and in companion plugins following the same pattern) returns
 false without needing its own setting check. The `gatherpress/rsvp*` blocks are
 also filtered out of the block inserter, and the RSVPs admin page is not
 registered.
@@ -318,6 +294,200 @@ Open RSVP has two gates: the sitewide `enable_open_rsvp` setting and a
 per-event `gatherpress_enable_open_rsvp` post meta (unset means enabled).
 `Rsvp::allows_open_rsvp()` resolves both; when it returns false the RSVP Form
 block renders nothing and form or REST submissions are rejected with a 403.
+
+## Custom fields and the form schema
+
+An RSVP Form can carry fields beyond name and email: dietary needs, a t-shirt size, an accessibility request. Those are defined with Form Field blocks inside the form, and what a submission is validated against is not the blocks themselves but a **schema stored in post meta**.
+
+### The schema
+
+`gatherpress_rsvp_form_schemas` on the event post, keyed by form id:
+
+```php
+array(
+    'form_0' => array(
+        'fields' => array(
+            'dietary' => array(
+                'name'        => 'dietary',
+                'type'        => 'text',
+                'required'    => true,
+                'label'       => 'Dietary needs',
+                'placeholder' => '',
+            ),
+            'tshirt'  => array(
+                'name'        => 'tshirt',
+                'type'        => 'select',
+                'required'    => false,
+                'label'       => 'T-shirt size',
+                'placeholder' => '',
+                'options'     => array( 'S', 'M', 'L' ),
+            ),
+        ),
+        'hash'   => '…',
+    ),
+)
+```
+
+Every field carries `name`, `type`, `required`, `label` and `placeholder`. Three keys are added by type: `options` for `select` and `radio`, `max_length` for `textarea`, and `validation` for `email`. A fourth, `input_id`, appears only when the author pinned a fixed id on the field, so generated ids never end up stored.
+
+The form id is `form_<index>`, the index of the RSVP Form block in the post's top-level block list, and a nested form is prefixed with its parent's index. The `hash` is a hash of the field definitions, so a change to the fields changes it.
+
+**This meta is the read surface.** Both submission paths and the REST handler resolve fields from it, not from the post content, so anything present in it is validated and stored like any other field.
+
+### Supplying a schema from elsewhere
+
+The block editor is the default producer, but it is not the only possible one. Group organizers who never open the editor still need registration questions, so a companion plugin may want to define the fields itself.
+
+The obstacle used to be that saving a post asserted sole ownership of the meta: a post with no RSVP Form block produced an empty set and deleted whatever was stored. The `gatherpress_rsvp_form_schemas` filter runs on the derived set before it is written, so a consumer can keep its own:
+
+```php
+add_filter(
+    'gatherpress_rsvp_form_schemas',
+    function ( array $schemas, int $post_id ): array {
+        $mine = my_plugin_get_registration_schema( $post_id );
+
+        return $mine ? array_merge( $schemas, $mine ) : $schemas;
+    },
+    10,
+    2
+);
+```
+
+The meta is only deleted when the filtered result is still empty, so returning anything non-empty keeps it. Two things to know:
+
+- **The filter runs on every save**, so a consumer has to return its schemas each time rather than writing the meta once and expecting it to persist.
+- **Whether to merge or replace is yours.** Returning `$schemas` plus your own keeps an editor-composed form alongside yours. Returning only your own replaces it.
+
+### How a submission is validated
+
+Validation runs **before the RSVP is created**, on both the REST and traditional paths, so a submission that fails is rejected rather than stored with answers missing:
+
+| Type | Accepted |
+|---|---|
+| `text` | Any string, sanitized |
+| `email` | A valid address |
+| `url` | A valid URL |
+| `number` | Anything numeric |
+| `select`, `radio` | A value present in `options` |
+| `textarea` | Up to `max_length`, defaulting to 1000 |
+| `checkbox` | Anything, stored as `1` or `0` |
+
+A required field must be answered. Whitespace does not count, because it sanitizes to nothing. An explicit `"0"` does count, since it is a real option value.
+
+Failures come back one per field. REST answers 400 with a summary `message` and an `errors` map keyed by field name; the traditional path stops the submission with the same messages. Nothing partial is stored and no confirmation email is sent.
+
+### Reading the answers
+
+Each answer is comment meta on the RSVP, prefixed to avoid collisions:
+
+```php
+get_comment_meta( $comment_id, 'gatherpress_custom_dietary', true );
+```
+
+A field the submitter left blank has no meta row, rather than an empty one.
+
+## Acting on an RSVP
+
+GatherPress fires no action of its own when somebody RSVPs or changes their
+answer. It does not need to: an RSVP is a comment, so core's comment and
+term hooks are the integration surface, and pushing a signup to a CRM or a
+mailing list is a matter of listening to the right one.
+
+Which one is the whole question, because a signup and a change are stored
+differently.
+
+### A new RSVP
+
+A first response inserts a comment, so `wp_insert_comment` fires. Filter on
+the comment type, since every comment on the site comes through here:
+
+```php
+use GatherPress\Core\Rsvp;
+
+function my_plugin_on_rsvp_created( int $comment_id, WP_Comment $comment ): void {
+	if ( Rsvp::COMMENT_TYPE !== $comment->comment_type ) {
+		return;
+	}
+
+	my_plugin_push_to_crm( $comment_id );
+}
+add_action( 'wp_insert_comment', 'my_plugin_on_rsvp_created', 10, 2 );
+```
+
+**The RSVP has no status yet at this point.** The comment is inserted first
+and the status term is written immediately afterwards
+(`Rsvp\Storage::save()`), so anything reading the response inside this hook
+gets nothing back. If you need to know what the person answered, use the
+term hook below, which fires for a new RSVP as well.
+
+### A change of answer
+
+Moving from attending to not attending does **not** insert a comment. The
+status is a term on the comment that already exists, so nothing in the
+comment hooks fires at all. An integration built only on
+`wp_insert_comment` records every signup and silently misses every
+cancellation, which is the one failure a CRM sync cannot afford.
+
+The status is written with `wp_set_object_terms()`, so core's
+`set_object_terms` fires:
+
+```php
+use GatherPress\Core\Rsvp\Response\Status;
+
+function my_plugin_on_rsvp_status( int $comment_id, $terms, array $tt_ids, string $taxonomy, bool $append, array $old_tt_ids ): void {
+	if ( Status::TAXONOMY !== $taxonomy ) {
+		return;
+	}
+
+	// Fires on every save, including one that stores the status the RSVP
+	// already had, so compare before treating it as a change. Cast both
+	// sides: core hands back the new IDs as strings and the old ones as
+	// integers, so a strict comparison never matches.
+	if ( array_map( 'intval', $tt_ids ) === array_map( 'intval', $old_tt_ids ) ) {
+		return;
+	}
+
+	$status = (string) ( (array) $terms )[0];
+
+	my_plugin_sync_to_crm( $comment_id, $status );
+}
+add_action( 'set_object_terms', 'my_plugin_on_rsvp_status', 10, 6 );
+```
+
+This one hook covers both events. The status term is written on the same
+line whether the comment was just inserted or already existed, so a new RSVP
+reaches it too, with `$old_tt_ids` empty.
+
+### Which hook to use
+
+| You need | Hook |
+|---|---|
+| Signups only, and nothing about the answer | `wp_insert_comment`, filtered to `Rsvp::COMMENT_TYPE` |
+| The answer, or cancellations, or both | `set_object_terms`, filtered to `Status::TAXONOMY` |
+
+Reach for the second unless you are certain you only care that a comment
+appeared. Starting with the first and adding the second later means going
+back through whatever you already synced.
+
+### The statuses
+
+`attending`, `not_attending` and `waiting_list`, plus `no_status` for a
+response that has none. They are the cases of the `Rsvp\Response\Status`
+enum, so compare against `Status::ATTENDING->value` rather than retyping the
+string.
+
+A waiting-list entry becoming `attending` because a place opened up arrives
+as an ordinary status change, indistinguishable from the person changing
+their own answer. If that distinction matters, read the flags on the RSVP.
+
+### Reading the rest of the response
+
+The comment ID is the RSVP ID everywhere else in this document. Guest counts
+and anonymous state live in comment meta, the identity source is a term
+(see [RSVP providers](#rsvp-providers-identity-sources)), and yes/no markers
+are flags (see [RSVP flags](#rsvp-flags)). Querying alongside ordinary
+comments has its own rules, covered in
+[Comment-query coexistence](#comment-query-coexistence).
 
 ## Further reading
 
