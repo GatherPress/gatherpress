@@ -13,7 +13,7 @@ jest.mock( '@wordpress/i18n', () => ( {
 		return format.replace( /%(?:(\d+)\$)?[ds]/g, ( match, position ) =>
 			undefined === position
 				? args[ sequential++ ]
-				: args[ Number( position ) - 1 ]
+				: args[ Number( position ) - 1 ],
 		);
 	},
 } ) );
@@ -46,7 +46,7 @@ jest.mock( '@wordpress/components', () => ( {
 
 // The sibling panels need the full editor data store, which this test does not
 // stand up. They are covered elsewhere; here they only have to not block the
-// render so the checklist panel's placement can be asserted.
+// render so the panel and its slot can be asserted.
 jest.mock( '@src/panels/event-settings/datetime-range', () => () => (
 	<div data-testid="datetime-range" />
 ) );
@@ -58,10 +58,6 @@ jest.mock( '@src/panels/event-settings/notify-members', () => () => (
 jest.mock( '@src/panels/event-settings/slot', () => ( {
 	EventPluginDocumentSettings: { Slot: () => <div data-testid="slot" /> },
 } ) );
-
-jest.mock( '@src/panels/event-settings/checklist', () => () => (
-	<div data-testid="checklist-panel" />
-) );
 
 let mockIsEventPostType = true;
 
@@ -101,11 +97,10 @@ describe( 'EventSettings', () => {
 		expect( typeof EventSettings ).toBe( 'function' );
 	} );
 
-	it( 'renders the checklist panel inside the event settings panel', () => {
+	it( 'renders the sub-panels inside the event settings panel', () => {
 		render( <EventSettings /> );
 
 		expect( screen.getByText( 'Event settings' ) ).toBeInTheDocument();
-		expect( screen.getByTestId( 'checklist-panel' ) ).toBeInTheDocument();
 		expect( screen.getByTestId( 'datetime-range' ) ).toBeInTheDocument();
 		expect( screen.getByTestId( 'notify-members' ) ).toBeInTheDocument();
 	} );

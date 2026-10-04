@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Event\Checklist.
  *
  * @package GatherPress\Core\Event
- * @since 0.36.0
+ * @since TBD
  */
 
 namespace GatherPress\Tests\Core\Event;
@@ -22,6 +22,13 @@ use WP_REST_Response;
 class Test_Checklist extends Base {
 
 	/**
+	 * Read override installed by `force_prunable_read()`.
+	 *
+	 * @var callable|null
+	 */
+	private $prune_read_filter = null;
+
+	/**
 	 * Coverage for `__construct` and `setup_hooks`.
 	 *
 	 * @covers ::__construct
@@ -37,6 +44,18 @@ class Test_Checklist extends Base {
 				'name'     => 'registered_post_type',
 				'priority' => 10,
 				'callback' => array( $instance, 'register' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'added_post_meta',
+				'priority' => 10,
+				'callback' => array( $instance, 'prune_empty_items' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'updated_post_meta',
+				'priority' => 10,
+				'callback' => array( $instance, 'prune_empty_items' ),
 			),
 		);
 
@@ -782,5 +801,371 @@ class Test_Checklist extends Base {
 			get_post_meta( $post_id, Checklist::META_KEY, true ),
 			'Failed to assert a denied write leaves the checklist unchanged.'
 		);
+	}
+
+	/**
+	 * An empty row is dropped the moment the checklist is stored.
+	 *
+	 * This is the reviewer's scenario: a row is added and never typed into, then
+	 * the event is saved. The sanitizer keeps the row so the editor can round
+	 * trip it while it is being filled in, so it is the prune that has to drop
+	 * it once the list is written.
+	 *
+	 * @covers ::prune_empty_items
+	 *
+	 * @return void
+	 */
+	public function test_prune_empty_items_drops_empty_rows_on_write(): void {
+		$post_id = $this->seed_prune_post();
+
+		update_post_meta(
+			$post_id,
+			Checklist::META_KEY,
+			'[{"id":"a","text":"","completed":false},{"id":"b","text":"Pay","completed":false}]'
+		);
+
+		$this->assertSame(
+			'[{"id":"b","text":"Pay","completed":false}]',
+			get_post_meta( $post_id, Checklist::META_KEY, true ),
+			'Failed to assert an untitled row is pruned from the stored checklist.'
+		);
+	}
+
+	/**
+	 * A whitespace-only row is dropped on a second write.
+	 *
+	 * Exercises the `updated_post_meta` arm rather than `added_post_meta`, and
+	 * pins that blank-but-not-empty text counts as empty.
+	 *
+	 * @covers ::prune_empty_items
+	 *
+	 * @return void
+	 */
+	public function test_prune_empty_items_drops_blank_rows_on_update(): void {
+		$post_id = $this->seed_prune_post();
+
+		update_post_meta(
+			$post_id,
+			Checklist::META_KEY,
+			'[{"id":"b","text":"Pay","completed":false}]'
+		);
+		update_post_meta(
+			$post_id,
+			Checklist::META_KEY,
+			'[{"id":"b","text":"Pay","completed":false},{"id":"c","text":"   ","completed":false}]'
+		);
+
+		$this->assertSame(
+			'[{"id":"b","text":"Pay","completed":false}]',
+			get_post_meta( $post_id, Checklist::META_KEY, true ),
+			'Failed to assert a whitespace-only row is pruned.'
+		);
+	}
+
+	/**
+	 * A checklist with only filled-in rows is left exactly as written.
+	 *
+	 * This is the `$encoded === $stored` guard: there is nothing to drop, so the
+	 * method must not rewrite the meta. It also terminates the re-entry that the
+	 * method's own `update_post_meta()` triggers.
+	 *
+	 * @covers ::prune_empty_items
+	 *
+	 * @return void
+	 */
+	public function test_prune_empty_items_keeps_a_clean_list(): void {
+		$post_id = $this->seed_prune_post();
+		$stored  = '[{"id":"b","text":"Pay","completed":true}]';
+
+		update_post_meta( $post_id, Checklist::META_KEY, $stored );
+
+		$this->assertSame(
+			$stored,
+			get_post_meta( $post_id, Checklist::META_KEY, true ),
+			'Failed to assert a checklist with no empty rows is left alone.'
+		);
+	}
+
+	/**
+	 * A write to any other meta key is ignored.
+	 *
+	 * @covers ::prune_empty_items
+	 *
+	 * @return void
+	 */
+	public function test_prune_empty_items_ignores_other_meta_keys(): void {
+		$post_id  = $this->seed_prune_post();
+		$baseline = $this->seed_stored_checklist( $post_id );
+
+		Checklist::get_instance()->prune_empty_items( 1, $post_id, 'some_other_meta' );
+
+		$this->assertSame(
+			$baseline,
+			get_post_meta( $post_id, Checklist::META_KEY, true ),
+			'Failed to assert a write to another meta key does not prune the checklist.'
+		);
+	}
+
+	/**
+	 * A revision is ignored, which is also what keeps the row alive through an
+	 * autosave (an autosave is stored as a revision).
+	 *
+	 * @covers ::prune_empty_items
+	 *
+	 * @return void
+	 */
+	public function test_prune_empty_items_ignores_revisions(): void {
+		$post_id     = $this->seed_prune_post();
+		$revision_id = (int) $this->factory->post->create(
+			array(
+				'post_type'   => 'revision',
+				'post_parent' => $post_id,
+			)
+		);
+
+		Checklist::get_instance()->prune_empty_items( 1, $revision_id, Checklist::META_KEY );
+
+		$this->assertSame(
+			'',
+			get_post_meta( $revision_id, Checklist::META_KEY, true ),
+			'Failed to assert a revision is left without a pruned checklist.'
+		);
+	}
+
+	/**
+	 * A post type without checklist support is ignored.
+	 *
+	 * @covers ::prune_empty_items
+	 *
+	 * @return void
+	 */
+	public function test_prune_empty_items_ignores_unsupported_post_type(): void {
+		$post_id = (int) $this->factory->post->create( array( 'post_type' => 'post' ) );
+
+		update_post_meta( $post_id, Checklist::META_KEY, '[{"id":"a","text":"","completed":false}]' );
+
+		Checklist::get_instance()->prune_empty_items( 1, $post_id, Checklist::META_KEY );
+
+		$this->assertSame(
+			'[{"id":"a","text":"","completed":false}]',
+			get_post_meta( $post_id, Checklist::META_KEY, true ),
+			'Failed to assert the prune leaves an unsupported post type alone.'
+		);
+	}
+
+	/**
+	 * A stored value that is not a string is ignored.
+	 *
+	 * The registered sanitizer rewrites anything written through
+	 * `update_post_meta()`, so a stored value of the wrong type can only be
+	 * reached by short-circuiting the read.
+	 *
+	 * @covers ::prune_empty_items
+	 *
+	 * @return void
+	 */
+	public function test_prune_empty_items_ignores_non_string_stored_value(): void {
+		$post_id  = $this->seed_prune_post();
+		$baseline = $this->seed_stored_checklist( $post_id );
+
+		$this->force_prunable_read( $post_id, 12345 );
+
+		Checklist::get_instance()->prune_empty_items( 1, $post_id, Checklist::META_KEY );
+
+		$this->release_prunable_read();
+
+		$this->assertSame(
+			$baseline,
+			get_post_meta( $post_id, Checklist::META_KEY, true ),
+			'Failed to assert a non-string stored value is left alone.'
+		);
+	}
+
+	/**
+	 * A stored value that does not decode to a JSON array is ignored.
+	 *
+	 * @covers ::prune_empty_items
+	 *
+	 * @return void
+	 */
+	public function test_prune_empty_items_ignores_malformed_json(): void {
+		$post_id  = $this->seed_prune_post();
+		$baseline = $this->seed_stored_checklist( $post_id );
+
+		$this->force_prunable_read( $post_id, 'not json' );
+
+		Checklist::get_instance()->prune_empty_items( 1, $post_id, Checklist::META_KEY );
+
+		$this->release_prunable_read();
+
+		$this->assertSame(
+			$baseline,
+			get_post_meta( $post_id, Checklist::META_KEY, true ),
+			'Failed to assert malformed JSON is not pruned.'
+		);
+	}
+
+	/**
+	 * A JSON object at the top level is ignored rather than reindexed.
+	 *
+	 * @covers ::prune_empty_items
+	 *
+	 * @return void
+	 */
+	public function test_prune_empty_items_ignores_associative_json(): void {
+		$post_id  = $this->seed_prune_post();
+		$baseline = $this->seed_stored_checklist( $post_id );
+
+		$this->force_prunable_read( $post_id, '{"row":{"id":"a","text":""}}' );
+
+		Checklist::get_instance()->prune_empty_items( 1, $post_id, Checklist::META_KEY );
+
+		$this->release_prunable_read();
+
+		$this->assertSame(
+			$baseline,
+			get_post_meta( $post_id, Checklist::META_KEY, true ),
+			'Failed to assert an associative payload is not reindexed by the prune.'
+		);
+	}
+
+	/**
+	 * An entry that is not shaped like an item is dropped by the prune.
+	 *
+	 * The injected list pairs a non-item entry with an empty-text row, so the
+	 * expected `[]` can only come from the prune. The sanitizer alone keeps the
+	 * empty row, so a passing assertion here is prune-specific rather than the
+	 * sanitizer's doing.
+	 *
+	 * @covers ::prune_empty_items
+	 *
+	 * @return void
+	 */
+	public function test_prune_empty_items_drops_non_array_entries(): void {
+		$post_id = $this->seed_prune_post();
+
+		$this->force_prunable_read(
+			$post_id,
+			'["a string",{"id":"a","text":"","completed":false}]'
+		);
+
+		Checklist::get_instance()->prune_empty_items( 1, $post_id, Checklist::META_KEY );
+
+		$this->release_prunable_read();
+
+		$this->assertSame(
+			'[]',
+			get_post_meta( $post_id, Checklist::META_KEY, true ),
+			'Failed to assert a non-item entry is pruned.'
+		);
+	}
+
+	/**
+	 * An item whose text is not a scalar is dropped by the prune.
+	 *
+	 * `sanitize_item()` coerces a non-scalar text to `''` while keeping the row,
+	 * so a passing assertion is prune-specific: the sanitizer alone would leave
+	 * the coerced empty row in place.
+	 *
+	 * @covers ::prune_empty_items
+	 *
+	 * @return void
+	 */
+	public function test_prune_empty_items_drops_non_scalar_text(): void {
+		$post_id = $this->seed_prune_post();
+
+		$this->force_prunable_read(
+			$post_id,
+			'[{"id":"a","text":{"nested":true},"completed":false},{"id":"b","text":"Keep","completed":false}]'
+		);
+
+		Checklist::get_instance()->prune_empty_items( 1, $post_id, Checklist::META_KEY );
+
+		$this->release_prunable_read();
+
+		$this->assertSame(
+			'[{"id":"b","text":"Keep","completed":false}]',
+			get_post_meta( $post_id, Checklist::META_KEY, true ),
+			'Failed to assert a non-scalar text is pruned.'
+		);
+	}
+
+	/**
+	 * Create an event post with the checklist meta registered on its type.
+	 *
+	 * Registration is forced because the `registered_post_type` listener only
+	 * fires when this class is instantiated before the post type registers.
+	 *
+	 * @return int The event post id.
+	 */
+	private function seed_prune_post(): int {
+		Checklist::get_instance()->register( Event::POST_TYPE );
+
+		return (int) $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+	}
+
+	/**
+	 * Store a filled-in checklist and return what ended up stored.
+	 *
+	 * Reading the value back rather than returning the input keeps the tests
+	 * honest: `update_post_meta()` runs the registered sanitizer, so the stored
+	 * value is what the sanitizer left, not necessarily what was passed in.
+	 *
+	 * @param int $post_id Event post id.
+	 *
+	 * @return string The stored checklist value.
+	 */
+	private function seed_stored_checklist( int $post_id ): string {
+		update_post_meta(
+			$post_id,
+			Checklist::META_KEY,
+			'[{"id":"seed","text":"Seed","completed":false}]'
+		);
+
+		return (string) get_post_meta( $post_id, Checklist::META_KEY, true );
+	}
+
+	/**
+	 * Force the next checklist read to return a fixed value.
+	 *
+	 * Only the first read is intercepted. The prune's own write reads the meta
+	 * again (once for the old-value comparison and once on re-entry), and those
+	 * reads have to see the real stored value or the second pass would keep
+	 * finding the same unpruned list and recurse.
+	 *
+	 * @param int   $post_id Post id to intercept.
+	 * @param mixed $value   Value to hand back.
+	 *
+	 * @return void
+	 */
+	private function force_prunable_read( int $post_id, $value ): void {
+		$reads = 0;
+
+		$this->prune_read_filter = static function ( $check, $object_id, $meta_key ) use ( $post_id, $value, &$reads ) {
+			if ( (int) $object_id === $post_id && Checklist::META_KEY === $meta_key && 0 === $reads++ ) {
+				return $value;
+			}
+
+			return $check;
+		};
+
+		add_filter( 'get_post_metadata', $this->prune_read_filter, 10, 3 );
+	}
+
+	/**
+	 * Remove the read override installed by `force_prunable_read()`.
+	 *
+	 * @return void
+	 */
+	private function release_prunable_read(): void {
+		if ( null !== $this->prune_read_filter ) {
+			remove_filter( 'get_post_metadata', $this->prune_read_filter, 10 );
+			$this->prune_read_filter = null;
+		}
 	}
 }

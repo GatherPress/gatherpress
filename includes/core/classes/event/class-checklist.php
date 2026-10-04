@@ -12,7 +12,7 @@
  * invoice handling, so the data must not ride along on a public post read.
  *
  * @package GatherPress\Core\Event
- * @since 0.36.0
+ * @since TBD
  */
 
 namespace GatherPress\Core\Event;
@@ -33,7 +33,7 @@ use WP_REST_Response;
  * `gatherpress-event-checklist`, including companion-plugin types, gets the
  * same meta shape and sanitizer.
  *
- * @since 0.36.0
+ * @since TBD
  */
 final class Checklist {
 
@@ -45,7 +45,7 @@ final class Checklist {
 	/**
 	 * Post type support that gives a post type a checklist.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @var string
 	 */
 	const SUPPORT = 'gatherpress-event-checklist';
@@ -53,7 +53,7 @@ final class Checklist {
 	/**
 	 * Post meta key holding the JSON-encoded checklist.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @var string
 	 */
 	const META_KEY = 'gatherpress_checklist';
@@ -61,7 +61,7 @@ final class Checklist {
 	/**
 	 * Empty checklist, used as the meta default and the sanitizer fallback.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @var string
 	 */
 	const EMPTY_CHECKLIST = '[]';
@@ -73,7 +73,7 @@ final class Checklist {
 	 * keeps a malformed or hostile payload from writing an unbounded string
 	 * into a single meta row.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @var int
 	 */
 	const MAX_ITEMS = 200;
@@ -81,7 +81,7 @@ final class Checklist {
 	/**
 	 * Maximum number of characters kept per item.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @var int
 	 */
 	const MAX_TEXT_LENGTH = 255;
@@ -95,7 +95,7 @@ final class Checklist {
 	 * REST write from parking a near-request-sized string in a meta row.
 	 * Format is deliberately not validated: any stable id is allowed.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @var int
 	 */
 	const MAX_ID_LENGTH = 64;
@@ -103,7 +103,7 @@ final class Checklist {
 	/**
 	 * Class constructor.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 */
 	public function __construct() {
 		$this->setup_hooks();
@@ -112,18 +112,27 @@ final class Checklist {
 	/**
 	 * Set up hooks for checklist registration.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'registered_post_type', array( $this, 'register' ) );
+
+		// Prune on the checklist meta's own write rather than on
+		// `wp_after_insert_post`: a REST save stores `meta` in
+		// `update_additional_fields_for_object()`, which runs *after*
+		// `wp_after_insert_post`, so pruning there would read the previous
+		// list and be overwritten by the new one. These fire once the
+		// submitted list is stored.
+		add_action( 'added_post_meta', array( $this, 'prune_empty_items' ), 10, 3 );
+		add_action( 'updated_post_meta', array( $this, 'prune_empty_items' ), 10, 3 );
 	}
 
 	/**
 	 * Register the checklist meta on a post type that declares the support.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $post_type The post type that was just registered.
 	 *
@@ -178,7 +187,7 @@ final class Checklist {
 	 * the promise whatever the schema holds, the way
 	 * `Event\Rest_Api::prepare_event_data()` answers the online event link.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param WP_REST_Response $response The response object.
 	 * @param WP_Post          $post     The post the response was prepared for.
@@ -194,13 +203,90 @@ final class Checklist {
 	}
 
 	/**
+	 * Drop checklist items whose text is empty once the list is saved.
+	 *
+	 * An empty row is a natural intermediate state in the editor: a row is
+	 * added before it is typed into. The editor writes on every keystroke, so
+	 * the row has to round-trip while it is being filled in, but it must not
+	 * survive a real save. Pruning here instead of in the sanitizer keeps both
+	 * properties: the sanitizer preserves what the editor just wrote, and this
+	 * runs only on a stored write.
+	 *
+	 * Autosaves and revisions bail out, so a row is never removed while the
+	 * author is still typing into it. The method writes only when the pruned
+	 * list differs from what was stored, which also terminates the re-entry
+	 * that `update_post_meta()` triggers on the second pass.
+	 *
+	 * @since TBD
+	 *
+	 * @param int    $meta_id  Meta row ID. Unused (signature requirement).
+	 * @param int    $post_id  Post ID the checklist belongs to.
+	 * @param string $meta_key Meta key that was written.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) -- $meta_id is required by
+	 * WP's added_post_meta / updated_post_meta action signatures.
+	 */
+	public function prune_empty_items( int $meta_id, int $post_id, string $meta_key ): void {
+		if (
+			self::META_KEY !== $meta_key
+			// Revisions cover autosaves too: an autosave is stored as a revision,
+			// so this one check answers for both. It keeps a row alive while the
+			// author is still typing into it, which is what the editor's
+			// per-keystroke writes would otherwise fight.
+			|| wp_is_post_revision( $post_id )
+			|| ! post_type_supports( (string) get_post_type( $post_id ), self::SUPPORT )
+		) {
+			return;
+		}
+
+		$stored = get_post_meta( $post_id, self::META_KEY, true );
+
+		if ( ! is_string( $stored ) ) {
+			return;
+		}
+
+		$decoded = json_decode( $stored, true );
+
+		if ( ! is_array( $decoded ) || ! array_is_list( $decoded ) ) {
+			return;
+		}
+
+		$kept = array_values(
+			array_filter(
+				$decoded,
+				static function ( $item ): bool {
+					if ( ! is_array( $item ) ) {
+						return false;
+					}
+
+					$text = $item['text'] ?? '';
+
+					// `sanitize_item()` coerces a non-scalar text to '', so a
+					// row carrying one is pruned on the same footing.
+					return is_scalar( $text ) && '' !== trim( (string) $text );
+				}
+			)
+		);
+
+		$encoded = wp_json_encode( $kept );
+
+		if ( false === $encoded || $encoded === $stored ) {
+			return;
+		}
+
+		update_post_meta( $post_id, self::META_KEY, $encoded );
+	}
+
+	/**
 	 * Sanitize a checklist payload.
 	 *
 	 * Anything that is not a JSON array of usable items collapses to an empty
 	 * checklist, so a malformed write cannot strand the editor on data it
 	 * cannot parse.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param mixed $value Raw meta value as submitted.
 	 *
@@ -248,7 +334,7 @@ final class Checklist {
 	 * kept: the editor writes on every keystroke, so a row the author has just
 	 * added and not yet typed into must survive the round trip.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param mixed $item Raw item as submitted.
 	 *

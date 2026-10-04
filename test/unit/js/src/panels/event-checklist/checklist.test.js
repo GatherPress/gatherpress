@@ -19,7 +19,7 @@ jest.mock( '@wordpress/i18n', () => ( {
 		return format.replace( /%(?:(\d+)\$)?[ds]/g, ( match, position ) =>
 			undefined === position
 				? args[ sequential++ ]
-				: args[ Number( position ) - 1 ]
+				: args[ Number( position ) - 1 ],
 		);
 	},
 } ) );
@@ -27,16 +27,20 @@ jest.mock( '@wordpress/i18n', () => ( {
 jest.mock( '@wordpress/icons', () => ( {
 	chevronDown: 'chevronDown',
 	chevronUp: 'chevronUp',
+	dragHandle: 'dragHandle',
+	moreVertical: 'moreVertical',
 	plus: 'plus',
 	trash: 'trash',
 } ) );
 
 jest.mock( '@wordpress/components', () => ( {
-	Button: ( { label, onClick, disabled, children } ) => (
+	Button: ( { label, onClick, disabled, children, draggable, onDragStart } ) => (
 		<button
 			aria-label={ label }
 			onClick={ onClick }
 			disabled={ disabled }
+			draggable={ draggable }
+			onDragStart={ onDragStart }
 		>
 			{ children }
 		</button>
@@ -49,7 +53,26 @@ jest.mock( '@wordpress/components', () => ( {
 			onChange={ ( event ) => onChange( event.target.checked ) }
 		/>
 	),
-	Flex: ( { children } ) => <div>{ children }</div>,
+	DropdownMenu: ( { label, controls } ) => (
+		<div>
+			<button aria-label={ label }>{ label }</button>
+			{ controls.map( ( control ) => (
+				<button
+					key={ control.title }
+					aria-label={ control.title }
+					disabled={ control.isDisabled }
+					onClick={ control.onClick }
+				>
+					{ control.title }
+				</button>
+			) ) }
+		</div>
+	),
+	Flex: ( { children, className, onDragOver, onDrop } ) => (
+		<div className={ className } onDragOver={ onDragOver } onDrop={ onDrop }>
+			{ children }
+		</div>
+	),
 	FlexBlock: ( { children } ) => <div>{ children }</div>,
 	FlexItem: ( { children } ) => <div>{ children }</div>,
 	TextControl: ( { label, value, onChange } ) => (
@@ -64,7 +87,6 @@ jest.mock( '@wordpress/components', () => ( {
 
 const mockEditPost = jest.fn();
 const mockUnlockPostSaving = jest.fn();
-let mockSupportsChecklist = true;
 let mockStoredMeta;
 
 jest.mock( '@wordpress/data', () => ( {
@@ -75,18 +97,14 @@ jest.mock( '@wordpress/data', () => ( {
 	useSelect: jest.fn( ( mapSelect ) =>
 		mapSelect( () => ( {
 			getEditedPostAttribute: () => mockStoredMeta,
-		} ) )
+		} ) ),
 	),
-} ) );
-
-jest.mock( '@src/helpers/event', () => ( {
-	usePostTypeSupports: jest.fn( () => mockSupportsChecklist ),
 } ) );
 
 /**
  * Internal dependencies
  */
-import ChecklistPanel from '@src/panels/event-settings/checklist';
+import ChecklistPanel from '@src/panels/event-checklist/checklist';
 
 /**
  * Render the panel with a given stored checklist value.
@@ -96,31 +114,35 @@ import ChecklistPanel from '@src/panels/event-settings/checklist';
  * @return {Object} The testing-library render result.
  */
 const renderPanel = ( stored ) => {
-	mockStoredMeta = undefined === stored ? {} : { gatherpress_checklist: stored };
+	mockStoredMeta =
+		undefined === stored ? {} : { gatherpress_checklist: stored };
 
 	return render( <ChecklistPanel /> );
 };
 
+/**
+ * Build a data transfer stub that hands back a fixed item id on drop.
+ *
+ * @param {string} id Id reported by `getData()`.
+ *
+ * @return {Object} Data transfer stub.
+ */
+const dataTransferFor = ( id ) => ( {
+	setData: jest.fn(),
+	getData: jest.fn( () => id ),
+} );
+
 describe( 'ChecklistPanel', () => {
 	beforeEach( () => {
 		jest.clearAllMocks();
-		mockSupportsChecklist = true;
 		mockStoredMeta = {};
-	} );
-
-	it( 'renders nothing when the post type lacks checklist support', () => {
-		mockSupportsChecklist = false;
-
-		const { container } = renderPanel( '[]' );
-
-		expect( container ).toBeEmptyDOMElement();
 	} );
 
 	it( 'shows the placeholder copy when the checklist is empty', () => {
 		renderPanel( '[]' );
 
 		expect(
-			screen.getByText( 'Track the steps needed to run this event.' )
+			screen.getByText( 'Track the steps needed to run this event.' ),
 		).toBeInTheDocument();
 	} );
 
@@ -128,14 +150,14 @@ describe( 'ChecklistPanel', () => {
 		renderPanel( undefined );
 
 		expect(
-			screen.getByText( 'Track the steps needed to run this event.' )
+			screen.getByText( 'Track the steps needed to run this event.' ),
 		).toBeInTheDocument();
 	} );
 
 	it( 'shows the progress count when items are stored', () => {
 		renderPanel(
 			'[{"id":"a","text":"Ask","completed":true},' +
-				'{"id":"b","text":"Pay","completed":false}]'
+				'{"id":"b","text":"Pay","completed":false}]',
 		);
 
 		expect( screen.getByText( '1 of 2 complete' ) ).toBeInTheDocument();
@@ -185,10 +207,10 @@ describe( 'ChecklistPanel', () => {
 		} );
 	} );
 
-	it( 'removes the item when the remove button is clicked', () => {
+	it( 'removes the item when the remove option is clicked', () => {
 		renderPanel(
 			'[{"id":"a","text":"Ask","completed":false},' +
-				'{"id":"b","text":"Pay","completed":false}]'
+				'{"id":"b","text":"Pay","completed":false}]',
 		);
 
 		fireEvent.click( screen.getAllByLabelText( 'Remove item' )[ 0 ] );
@@ -201,10 +223,24 @@ describe( 'ChecklistPanel', () => {
 		} );
 	} );
 
-	it( 'moves an item up when the up button is clicked', () => {
+	it( 'names each row options button after its own item', () => {
 		renderPanel(
 			'[{"id":"a","text":"Ask","completed":false},' +
-				'{"id":"b","text":"Pay","completed":false}]'
+				'{"id":"b","text":"Pay","completed":false}]',
+		);
+
+		expect(
+			screen.getByLabelText( 'Checklist item options: Ask' ),
+		).toBeInTheDocument();
+		expect(
+			screen.getByLabelText( 'Checklist item options: Pay' ),
+		).toBeInTheDocument();
+	} );
+
+	it( 'moves an item up when the up option is clicked', () => {
+		renderPanel(
+			'[{"id":"a","text":"Ask","completed":false},' +
+				'{"id":"b","text":"Pay","completed":false}]',
 		);
 
 		fireEvent.click( screen.getAllByLabelText( 'Move up' )[ 1 ] );
@@ -218,10 +254,10 @@ describe( 'ChecklistPanel', () => {
 		} );
 	} );
 
-	it( 'moves an item down when the down button is clicked', () => {
+	it( 'moves an item down when the down option is clicked', () => {
 		renderPanel(
 			'[{"id":"a","text":"Ask","completed":false},' +
-				'{"id":"b","text":"Pay","completed":false}]'
+				'{"id":"b","text":"Pay","completed":false}]',
 		);
 
 		fireEvent.click( screen.getAllByLabelText( 'Move down' )[ 0 ] );
@@ -235,11 +271,11 @@ describe( 'ChecklistPanel', () => {
 		} );
 	} );
 
-	it( 'disables the up button on the first item and the down button on the last', () => {
+	it( 'disables the up option on the first item and the down option on the last', () => {
 		renderPanel(
 			'[{"id":"a","text":"Ask","completed":false},' +
 				'{"id":"b","text":"Pay","completed":false},' +
-				'{"id":"c","text":"Send","completed":false}]'
+				'{"id":"c","text":"Send","completed":false}]',
 		);
 
 		const upButtons = screen.getAllByLabelText( 'Move up' );
@@ -251,5 +287,55 @@ describe( 'ChecklistPanel', () => {
 		expect( downButtons[ 0 ] ).toBeEnabled();
 		expect( downButtons[ 1 ] ).toBeEnabled();
 		expect( downButtons[ 2 ] ).toBeDisabled();
+	} );
+
+	it( 'reorders the list when a row is dropped onto another row', () => {
+		const { container } = renderPanel(
+			'[{"id":"a","text":"Ask","completed":false},' +
+				'{"id":"b","text":"Pay","completed":false}]',
+		);
+
+		const rows = container.querySelectorAll( '.gatherpress-checklist-item' );
+
+		fireEvent.dragStart( screen.getAllByLabelText( 'Drag to reorder' )[ 0 ], {
+			dataTransfer: dataTransferFor( 'a' ),
+		} );
+		// A drop only lands on a row that has called preventDefault() on dragover.
+		fireEvent.dragOver( rows[ 1 ] );
+		fireEvent.drop( rows[ 1 ], { dataTransfer: dataTransferFor( 'a' ) } );
+
+		expect( mockEditPost ).toHaveBeenCalledWith( {
+			meta: {
+				gatherpress_checklist:
+					'[{"id":"b","text":"Pay","completed":false},' +
+					'{"id":"a","text":"Ask","completed":false}]',
+			},
+		} );
+	} );
+
+	it( 'ignores a drop that carries no item id', () => {
+		const { container } = renderPanel(
+			'[{"id":"a","text":"Ask","completed":false},' +
+				'{"id":"b","text":"Pay","completed":false}]',
+		);
+
+		const rows = container.querySelectorAll( '.gatherpress-checklist-item' );
+
+		fireEvent.drop( rows[ 1 ], { dataTransfer: dataTransferFor( '' ) } );
+
+		expect( mockEditPost ).not.toHaveBeenCalled();
+	} );
+
+	it( 'ignores a drop of a row onto itself', () => {
+		const { container } = renderPanel(
+			'[{"id":"a","text":"Ask","completed":false},' +
+				'{"id":"b","text":"Pay","completed":false}]',
+		);
+
+		const rows = container.querySelectorAll( '.gatherpress-checklist-item' );
+
+		fireEvent.drop( rows[ 0 ], { dataTransfer: dataTransferFor( 'a' ) } );
+
+		expect( mockEditPost ).not.toHaveBeenCalled();
 	} );
 } );

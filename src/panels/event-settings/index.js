@@ -17,7 +17,6 @@ import { PluginDocumentSettingPanel } from '@wordpress/editor';
  */
 import { isEventPostType } from '../../helpers/event';
 import { usePostTypeLabel } from '../../helpers/editor';
-import ChecklistPanel from './checklist';
 import DateTimeRangePanel from './datetime-range';
 import NotifyMembersPanel from './notify-members';
 import { EventPluginDocumentSettings } from './slot';
@@ -101,7 +100,6 @@ const EventSettings = () => {
 
 				<VStack spacing={ 4 }>
 					<DateTimeRangePanel />
-					<ChecklistPanel />
 					<NotifyMembersPanel />
 				</VStack>
 			</PluginDocumentSettingPanel>

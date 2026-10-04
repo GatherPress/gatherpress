@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
  * Mirrors `Checklist::MAX_ITEMS` in PHP so the editor and the sanitizer agree
  * on what a checklist can hold.
  *
- * @since 0.36.0
+ * @since TBD
  * @type {number}
  */
 export const MAX_CHECKLIST_ITEMS = 200;
@@ -19,7 +19,7 @@ export const MAX_CHECKLIST_ITEMS = 200;
  *
  * Mirrors `Checklist::MAX_TEXT_LENGTH` in PHP.
  *
- * @since 0.36.0
+ * @since TBD
  * @type {number}
  */
 export const MAX_CHECKLIST_TEXT_LENGTH = 255;
@@ -31,7 +31,7 @@ export const MAX_CHECKLIST_TEXT_LENGTH = 255;
  * the editor rather than only on save, where the PHP sanitizer would silently
  * discard the whole row.
  *
- * @since 0.36.0
+ * @since TBD
  * @type {number}
  */
 export const MAX_CHECKLIST_ID_LENGTH = 64;
@@ -44,7 +44,7 @@ export const MAX_CHECKLIST_ID_LENGTH = 64;
  * as true, so a checklist written by older or external code could show a
  * completed row as still open.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @param {*} value Raw completed value.
  *
@@ -69,7 +69,7 @@ function coerceCompleted( value ) {
  * dropped. Text is trimmed to the stored cap and `completed` is normalized to
  * a boolean so a stored `"1"` or `1` does not leak into the checkbox state.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @param {*} entry Raw entry from a parsed checklist.
  *
@@ -104,7 +104,7 @@ export function sanitizeChecklistItem( entry ) {
  * usable items resolves to an empty list. That keeps a malformed write, or a
  * value the store has not loaded yet, from breaking the editor.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @param {*} raw Raw meta value.
  *
@@ -137,7 +137,7 @@ export function parseChecklist( raw ) {
 /**
  * Encode checklist items for storage.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @param {Object[]} items Checklist items.
  *
@@ -158,7 +158,7 @@ export function serializeChecklist( items ) {
  * The id is generated rather than derived from the text so an item keeps its
  * identity while the author rewrites it, and so React keys stay stable.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @param {string} text Initial item text.
  *
@@ -175,7 +175,7 @@ export function createChecklistItem( text = '' ) {
 /**
  * Count how much of a checklist is done.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @param {Object[]} items Checklist items.
  *
@@ -193,7 +193,7 @@ export function getChecklistProgress( items ) {
 /**
  * Append an item to a checklist.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @param {Object[]} items Checklist items.
  * @param {string}   text  Text for the new item.
@@ -213,7 +213,7 @@ export function addChecklistItem( items, text = '' ) {
 /**
  * Change one item, addressed by id.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @param {Object[]} items  Checklist items.
  * @param {string}   id     Id of the item to change.
@@ -225,14 +225,14 @@ export function updateChecklistItem( items, id, change ) {
 	const list = Array.isArray( items ) ? items : [];
 
 	return list.map( ( item ) =>
-		item.id === id ? { ...item, ...change } : item
+		item.id === id ? { ...item, ...change } : item,
 	);
 }
 
 /**
  * Drop one item, addressed by id.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @param {Object[]} items Checklist items.
  * @param {string}   id    Id of the item to drop.
@@ -252,7 +252,7 @@ export function removeChecklistItem( items, id ) {
  * moved towards, so the buttons can stay enabled without reordering anything
  * unexpected.
  *
- * @since 0.36.0
+ * @since TBD
  *
  * @param {Object[]} items  Checklist items.
  * @param {string}   id     Id of the item to move.
@@ -266,6 +266,37 @@ export function moveChecklistItem( items, id, offset ) {
 	const to = from + offset;
 
 	if ( 0 > from || 0 > to || to >= list.length ) {
+		return list;
+	}
+
+	const next = [ ...list ];
+	const [ moved ] = next.splice( from, 1 );
+	next.splice( to, 0, moved );
+
+	return next;
+}
+
+/**
+ * Move one item to a specific position in the list.
+ *
+ * Used by drag and drop, where the drop target names the destination index
+ * directly rather than an offset from the current position. Returns the list
+ * unchanged when the item is already at the destination, so dropping a row
+ * onto itself is a no-op.
+ *
+ * @since TBD
+ *
+ * @param {Object[]} items Checklist items.
+ * @param {string}   id    Id of the item to move.
+ * @param {number}   to    Destination index.
+ *
+ * @return {Object[]} New checklist.
+ */
+export function moveChecklistItemToIndex( items, id, to ) {
+	const list = Array.isArray( items ) ? items : [];
+	const from = list.findIndex( ( item ) => item.id === id );
+
+	if ( 0 > from || from === to || 0 > to || to >= list.length ) {
 		return list;
 	}
 

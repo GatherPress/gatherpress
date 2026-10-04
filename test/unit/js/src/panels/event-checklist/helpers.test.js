@@ -18,12 +18,13 @@ import {
 	createChecklistItem,
 	getChecklistProgress,
 	moveChecklistItem,
+	moveChecklistItemToIndex,
 	parseChecklist,
 	removeChecklistItem,
 	sanitizeChecklistItem,
 	serializeChecklist,
 	updateChecklistItem,
-} from '@src/panels/event-settings/checklist/helpers';
+} from '@src/panels/event-checklist/helpers';
 
 describe( 'Checklist helpers', () => {
 	describe( 'sanitizeChecklistItem', () => {
@@ -47,7 +48,7 @@ describe( 'Checklist helpers', () => {
 			expect(
 				sanitizeChecklistItem( {
 					id: 'i'.repeat( MAX_CHECKLIST_ID_LENGTH + 1 ),
-				} )
+				} ),
 			).toBeNull();
 		} );
 
@@ -79,7 +80,7 @@ describe( 'Checklist helpers', () => {
 
 		it( 'defaults a non-string text to an empty string', () => {
 			expect( sanitizeChecklistItem( { id: 'a', text: 7 } ).text ).toBe(
-				''
+				'',
 			);
 		} );
 
@@ -96,7 +97,7 @@ describe( 'Checklist helpers', () => {
 			const text = 'x'.repeat( MAX_CHECKLIST_TEXT_LENGTH );
 
 			expect( sanitizeChecklistItem( { id: 'a', text } ).text ).toBe(
-				text
+				text,
 			);
 		} );
 
@@ -106,37 +107,37 @@ describe( 'Checklist helpers', () => {
 					id: 'a',
 					text: '',
 					completed: true,
-				}
+				},
 			);
 		} );
 
 		it( 'coerces a falsy completed value to false', () => {
 			expect(
-				sanitizeChecklistItem( { id: 'a', completed: 0 } ).completed
+				sanitizeChecklistItem( { id: 'a', completed: 0 } ).completed,
 			).toBe( false );
 		} );
 
 		it( 'reads the string "false" as not complete', () => {
 			expect(
-				sanitizeChecklistItem( { id: 'a', completed: 'false' } ).completed
+				sanitizeChecklistItem( { id: 'a', completed: 'false' } ).completed,
 			).toBe( false );
 		} );
 
 		it( 'reads the string "0" as not complete', () => {
 			expect(
-				sanitizeChecklistItem( { id: 'a', completed: '0' } ).completed
+				sanitizeChecklistItem( { id: 'a', completed: '0' } ).completed,
 			).toBe( false );
 		} );
 
 		it( 'reads the string "FALSE" as not complete', () => {
 			expect(
-				sanitizeChecklistItem( { id: 'a', completed: 'FALSE' } ).completed
+				sanitizeChecklistItem( { id: 'a', completed: 'FALSE' } ).completed,
 			).toBe( false );
 		} );
 
 		it( 'reads the string "1" as complete', () => {
 			expect(
-				sanitizeChecklistItem( { id: 'a', completed: '1' } ).completed
+				sanitizeChecklistItem( { id: 'a', completed: '1' } ).completed,
 			).toBe( true );
 		} );
 	} );
@@ -161,14 +162,14 @@ describe( 'Checklist helpers', () => {
 		it( 'parses a stored checklist', () => {
 			expect(
 				parseChecklist(
-					'[{"id":"a","text":"Ask","completed":true}]'
-				)
+					'[{"id":"a","text":"Ask","completed":true}]',
+				),
 			).toEqual( [ { id: 'a', text: 'Ask', completed: true } ] );
 		} );
 
 		it( 'drops unusable entries while parsing', () => {
 			expect(
-				parseChecklist( '["string",{"text":"no id"},{"id":"kept"}]' )
+				parseChecklist( '["string",{"text":"no id"},{"id":"kept"}]' ),
 			).toEqual( [ { id: 'kept', text: '', completed: false } ] );
 		} );
 
@@ -176,11 +177,11 @@ describe( 'Checklist helpers', () => {
 			const stored = JSON.stringify(
 				Array.from( { length: MAX_CHECKLIST_ITEMS + 5 }, ( _, i ) => ( {
 					id: `item-${ i }`,
-				} ) )
+				} ) ),
 			);
 
 			expect( parseChecklist( stored ) ).toHaveLength(
-				MAX_CHECKLIST_ITEMS
+				MAX_CHECKLIST_ITEMS,
 			);
 		} );
 	} );
@@ -190,7 +191,7 @@ describe( 'Checklist helpers', () => {
 			expect(
 				serializeChecklist( [
 					{ id: 'a', text: 'Ask', completed: false },
-				] )
+				] ),
 			).toBe( '[{"id":"a","text":"Ask","completed":false}]' );
 		} );
 
@@ -200,7 +201,7 @@ describe( 'Checklist helpers', () => {
 
 		it( 'drops unusable items before encoding', () => {
 			expect(
-				serializeChecklist( [ { text: 'no id' }, { id: 'kept' } ] )
+				serializeChecklist( [ { text: 'no id' }, { id: 'kept' } ] ),
 			).toBe( '[{"id":"kept","text":"","completed":false}]' );
 		} );
 
@@ -210,7 +211,7 @@ describe( 'Checklist helpers', () => {
 			} ) );
 
 			expect( JSON.parse( serializeChecklist( items ) ) ).toHaveLength(
-				MAX_CHECKLIST_ITEMS
+				MAX_CHECKLIST_ITEMS,
 			);
 		} );
 	} );
@@ -236,7 +237,7 @@ describe( 'Checklist helpers', () => {
 					{ id: 'a', completed: true },
 					{ id: 'b', completed: false },
 					{ id: 'c', completed: true },
-				] )
+				] ),
 			).toEqual( { completed: 2, total: 3 } );
 		} );
 
@@ -289,8 +290,8 @@ describe( 'Checklist helpers', () => {
 						{ id: 'b', text: 'Pay', completed: false },
 					],
 					'b',
-					{ completed: true }
-				)
+					{ completed: true },
+				),
 			).toEqual( [
 				{ id: 'a', text: 'Ask', completed: false },
 				{ id: 'b', text: 'Pay', completed: true },
@@ -301,7 +302,7 @@ describe( 'Checklist helpers', () => {
 			const items = [ { id: 'a', text: 'Ask', completed: false } ];
 
 			expect( updateChecklistItem( items, 'missing', {} ) ).toEqual(
-				items
+				items,
 			);
 		} );
 
@@ -314,7 +315,7 @@ describe( 'Checklist helpers', () => {
 		it( 'drops the matching item', () => {
 			const items = removeChecklistItem(
 				[ { id: 'a' }, { id: 'b' } ],
-				'a'
+				'a',
 			);
 
 			expect( items ).toEqual( [ { id: 'b' } ] );
@@ -330,13 +331,13 @@ describe( 'Checklist helpers', () => {
 
 		it( 'moves an item up', () => {
 			expect( moveChecklistItem( items, 'b', -1 ).map( ( i ) => i.id ) ).toEqual(
-				[ 'b', 'a', 'c' ]
+				[ 'b', 'a', 'c' ],
 			);
 		} );
 
 		it( 'moves an item down', () => {
 			expect( moveChecklistItem( items, 'b', 1 ).map( ( i ) => i.id ) ).toEqual(
-				[ 'a', 'c', 'b' ]
+				[ 'a', 'c', 'b' ],
 			);
 		} );
 
@@ -354,6 +355,44 @@ describe( 'Checklist helpers', () => {
 
 		it( 'handles a non-array value', () => {
 			expect( moveChecklistItem( null, 'a', 1 ) ).toEqual( [] );
+		} );
+	} );
+
+	describe( 'moveChecklistItemToIndex', () => {
+		const items = [ { id: 'a' }, { id: 'b' }, { id: 'c' } ];
+
+		it( 'moves an item to an earlier index', () => {
+			expect(
+				moveChecklistItemToIndex( items, 'c', 0 ).map( ( i ) => i.id ),
+			).toEqual( [ 'c', 'a', 'b' ] );
+		} );
+
+		it( 'moves an item to a later index', () => {
+			expect(
+				moveChecklistItemToIndex( items, 'a', 2 ).map( ( i ) => i.id ),
+			).toEqual( [ 'b', 'c', 'a' ] );
+		} );
+
+		it( 'leaves the list alone when the id is unknown', () => {
+			expect( moveChecklistItemToIndex( items, 'missing', 0 ) ).toBe(
+				items,
+			);
+		} );
+
+		it( 'leaves the list alone when the item is already at the index', () => {
+			expect( moveChecklistItemToIndex( items, 'b', 1 ) ).toBe( items );
+		} );
+
+		it( 'leaves the list alone when the index is negative', () => {
+			expect( moveChecklistItemToIndex( items, 'b', -1 ) ).toBe( items );
+		} );
+
+		it( 'leaves the list alone when the index is past the end', () => {
+			expect( moveChecklistItemToIndex( items, 'b', 3 ) ).toBe( items );
+		} );
+
+		it( 'handles a non-array value', () => {
+			expect( moveChecklistItemToIndex( null, 'a', 0 ) ).toEqual( [] );
 		} );
 	} );
 } );
