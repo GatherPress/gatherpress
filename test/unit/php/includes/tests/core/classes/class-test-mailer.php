@@ -255,13 +255,36 @@ class Test_Mailer extends Base {
 	}
 
 	/**
-	 * Check that the consent filter can grant consent to an ineligible recipient.
+	 * Check that the consent filter can grant consent to a recipient who opted out.
 	 *
 	 * @covers ::has_consent
 	 *
 	 * @return void
 	 */
 	public function test_has_consent_filter_can_grant(): void {
+		$user_id = $this->factory->user->create();
+		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', '0' );
+
+		add_filter( 'gatherpress_mail_recipient_consent', '__return_true' );
+
+		$consent = Mailer::get_instance()->has_consent(
+			$this->recipient( array( 'user_id' => $user_id ) ),
+			'event'
+		);
+
+		remove_all_filters( 'gatherpress_mail_recipient_consent' );
+
+		$this->assertTrue( $consent );
+	}
+
+	/**
+	 * Check that the consent filter cannot grant consent to a recipient without an email.
+	 *
+	 * @covers ::has_consent
+	 *
+	 * @return void
+	 */
+	public function test_has_consent_filter_cannot_grant_without_email(): void {
 		add_filter( 'gatherpress_mail_recipient_consent', '__return_true' );
 
 		$consent = Mailer::get_instance()->has_consent(
@@ -271,7 +294,7 @@ class Test_Mailer extends Base {
 
 		remove_all_filters( 'gatherpress_mail_recipient_consent' );
 
-		$this->assertTrue( $consent );
+		$this->assertFalse( $consent );
 	}
 
 	/**

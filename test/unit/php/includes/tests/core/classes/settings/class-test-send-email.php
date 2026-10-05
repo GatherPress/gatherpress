@@ -626,7 +626,8 @@ class Test_Send_Email extends Base_Ajax {
 
 		$this->assertNotEmpty( $captured );
 		$this->assertFalse(
-			wp_next_scheduled( 'gatherpress_site_message_send', array( 'Subject', 'Message', $cursor ) )
+			wp_next_scheduled( 'gatherpress_site_message_send' ),
+			'No site message job should remain scheduled for any cursor after the final batch.'
 		);
 	}
 

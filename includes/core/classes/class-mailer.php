@@ -73,7 +73,8 @@ final class Mailer {
 	 * Defaults to the recipient's opt-in, so a site that does not filter this
 	 * behaves exactly as `is_eligible()` did. The filter lets a site tighten
 	 * the rule for a specific context, for example a site-wide message that is
-	 * not about events, without touching the other mail paths.
+	 * not about events, without touching the other mail paths. A recipient
+	 * without an email address never consents, whatever the filter returns.
 	 *
 	 * @since TBD
 	 *
@@ -84,6 +85,11 @@ final class Mailer {
 	 * @return bool True when the recipient consents to this email.
 	 */
 	public function has_consent( array $recipient, string $context ): bool {
+		// A missing address is not a consent question, so no filter can override it.
+		if ( empty( $recipient['email'] ) ) {
+			return false;
+		}
+
 		/**
 		 * Filters whether a recipient consents to a GatherPress email.
 		 *
