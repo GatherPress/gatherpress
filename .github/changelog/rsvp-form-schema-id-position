@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+An RSVP form placed after a block that contains other blocks, or inside a block such as a Group, now sends the same form ID that was saved for it. Before, the IDs did not match: answers to custom fields on these forms were dropped without a message, and with the new custom field validation every submission was rejected with "This form could not be verified."
