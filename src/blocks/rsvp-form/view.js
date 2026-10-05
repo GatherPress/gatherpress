@@ -118,6 +118,7 @@ const { state } = store( 'gatherpress', {
 					// Handle blocks with form visibility attributes.
 					const blocksWithVisibility = form.querySelectorAll( '[data-gatherpress-rsvp-form-visibility]' );
 					const isPast = 'past' === form.dataset.gatherpressEventState;
+					let firstShown = null;
 
 					blocksWithVisibility.forEach( ( block ) => {
 						const visibilityAttr = block.dataset.gatherpressRsvpFormVisibility;
@@ -150,11 +151,19 @@ const { state } = store( 'gatherpress', {
 							block.setAttribute( 'aria-hidden', 'false' );
 							block.setAttribute( 'aria-live', 'polite' );
 							block.setAttribute( 'role', 'status' );
+							firstShown = firstShown || block;
 						} else if ( false === shouldShow ) {
 							block.style.display = 'none';
 							block.setAttribute( 'aria-hidden', 'true' );
 						}
 					} );
+
+					// The submit button is usually among the hidden blocks, so
+					// focus would fall to the page. Move it to the message.
+					if ( firstShown ) {
+						firstShown.setAttribute( 'tabindex', '-1' );
+						firstShown.focus();
+					}
 
 					// Update the responses data if available.
 					if ( result.responses ) {
