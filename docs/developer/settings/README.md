@@ -11,7 +11,7 @@ $settings = Settings::get_instance();
 
 // Get a single setting (returns default if not set).
 $map_platform = $settings->get( 'map_platform' ); // 'osm'
-$max_limit    = $settings->get( 'max_attendance_limit' ); // 50
+$capacity     = $settings->get( 'capacity' ); // 50
 
 // Set a single setting. Values matching the default are automatically removed.
 $settings->set( 'map_platform', 'google' );
@@ -39,7 +39,7 @@ The settings page is organized into tabs, each managed by its own class:
 | `date_format` | text | WordPress date format | Date format for events |
 | `time_format` | text | WordPress time format | Time format for events |
 | `show_timezone` | checkbox | `true` | Display timezone for events |
-| `post_or_event_date` | checkbox | `true` | Display event date instead of publish date |
+| `use_event_date_for_publish` | checkbox | `true` | Display event date instead of publish date |
 | `upcoming_events` | autocomplete | `[]` | Page for upcoming events archive |
 | `past_events` | autocomplete | `[]` | Page for past events archive |
 | `events_url` | text | `'event'` | Permalink base for events |
@@ -51,13 +51,13 @@ The settings page is organized into tabs, each managed by its own class:
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `rsvp_mode` | select | `'all_on'` | Controls sitewide RSVP availability. See [RSVP Mode](#rsvp-mode) below. |
-| `max_attendance_limit` | number | `50` | Maximum attendees per event (0 = unlimited) |
-| `max_guest_limit` | number | `0` | Maximum guests per attendee (0-5) |
+| `capacity` | number | `50` | Maximum attendees per event (0 = unlimited). Called `max_attendance_limit` before 0.36.0, which still answers until 0.37.0 |
+| `guest_limit` | number | `0` | Maximum guests per attendee (0-5) |
 | `enable_anonymous_rsvp` | checkbox | `false` | Allow anonymous RSVPs |
 | `enable_open_rsvp` | checkbox | `true` | Allow visitors to RSVP without a site account (email verification). Enabled by default. |
-| `rsvp_cleanup_switch` | select | `'off'` | Enable/disable RSVP cleanup |
+| `enable_rsvp_cleanup` | select | `'off'` | Enable/disable RSVP cleanup |
 | `rsvp_cleanup_frequency` | select | `'daily'` | Cleanup frequency (hourly, daily, weekly, monthly, yearly) |
-| `rsvp_cleanup_interval` | number | `1` | Interval multiplier for cleanup frequency |
+| `rsvp_cleanup_multiplier` | number | `1` | Interval multiplier for cleanup frequency |
 
 #### RSVP Mode
 

@@ -502,7 +502,7 @@ class Test_Rest_Api extends Base {
 		$rsvp     = new Rsvp( $event_id );
 
 		// Force no attendance so responses remain on waiting list.
-		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', -1 );
+		Utility::set_and_get_hidden_property( $rsvp, 'capacity', -1 );
 
 		// Create user RSVP.
 		$user_id = $this->factory->user->create(
@@ -701,6 +701,95 @@ class Test_Rest_Api extends Base {
 		$this->assertTrue( $route['args']['args']['author']['required'] );
 		$this->assertTrue( $route['args']['args']['email']['required'] );
 		$this->assertFalse( $route['args']['args']['gatherpress_event_updates_opt_in']['required'] );
+	}
+
+	/**
+	 * Tests handle_rsvp_form_submission survives a malformed stored schema.
+	 *
+	 * The handler copies the schema's field names off the request before
+	 * process_rsvp() validates anything, so enumerating a scalar there
+	 * fataled with a TypeError before the submission could be rejected.
+	 *
+	 * @since TBD
+	 * @covers ::handle_rsvp_form_submission
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_form_submission_with_a_malformed_schema(): void {
+		$instance = Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		update_post_meta(
+			$post_id,
+			'gatherpress_rsvp_form_schemas',
+			array( 'form_0' => array( 'fields' => 'corrupted' ) )
+		);
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'comment_post_ID', $post_id );
+		$request->set_param( 'author', 'Test Author' );
+		$request->set_param( 'email', 'test@example.com' );
+		$request->set_param( 'gatherpress_form_schema_id', 'form_0' );
+
+		$response = $instance->handle_rsvp_form_submission( $request );
+
+		$this->assertInstanceOf(
+			'WP_REST_Response',
+			$response,
+			'A malformed schema should answer rather than fatal.'
+		);
+	}
+
+	/**
+	 * Tests handle_rsvp_form_submission reports per-field errors.
+	 *
+	 * A custom-field rejection answers 400 and carries one message per
+	 * failing field alongside the summary the form already shows.
+	 *
+	 * @since TBD
+	 * @covers ::handle_rsvp_form_submission
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_form_submission_reports_field_errors(): void {
+		$instance = Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		update_post_meta(
+			$post_id,
+			'gatherpress_rsvp_form_schemas',
+			array(
+				'form_0' => array(
+					'hash'   => 'test_hash',
+					'fields' => array(
+						'dietary' => array(
+							'name'        => 'dietary',
+							'type'        => 'text',
+							'required'    => true,
+							'label'       => 'Dietary needs',
+							'placeholder' => '',
+						),
+					),
+				),
+			)
+		);
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'comment_post_ID', $post_id );
+		$request->set_param( 'author', 'Test Author' );
+		$request->set_param( 'email', 'test@example.com' );
+		$request->set_param( 'gatherpress_form_schema_id', 'form_0' );
+
+		$response = $instance->handle_rsvp_form_submission( $request );
+		$data     = $response->get_data();
+
+		$this->assertSame( 400, $response->get_status(), 'A rejected submission should answer 400.' );
+		$this->assertFalse( $data['success'], 'A rejected submission should not report success.' );
+		$this->assertSame(
+			array( 'dietary' => 'Dietary needs is required.' ),
+			$data['errors'],
+			'The response should name each failing field.'
+		);
 	}
 
 	/**

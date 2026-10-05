@@ -476,7 +476,7 @@ class Test_Utility extends Base {
 	public function test_snake_to_camel(): void {
 		$this->assertSame( 'dateFormat', Utility::snake_to_camel( 'date_format' ) );
 		$this->assertSame( 'enableAnonymousRsvp', Utility::snake_to_camel( 'enable_anonymous_rsvp' ) );
-		$this->assertSame( 'postOrEventDate', Utility::snake_to_camel( 'post_or_event_date' ) );
+		$this->assertSame( 'useEventDateForPublish', Utility::snake_to_camel( 'use_event_date_for_publish' ) );
 		$this->assertSame( 'simple', Utility::snake_to_camel( 'simple' ) );
 	}
 
@@ -1751,14 +1751,23 @@ class Test_Utility extends Base {
 	 */
 	public function data_remove_time_format_chars(): array {
 		return array(
-			'a date and a time keeps the date' => array( 'F j, Y g:i a', 'F j, Y' ),
-			'only a time keeps nothing'        => array( 'g:i a', '' ),
-			'only a date is left alone'        => array( 'M j', 'M j' ),
-			'the timezone goes with the time'  => array( 'F j, Y T', 'F j, Y' ),
-			'an empty format stays empty'      => array( '', '' ),
-			'a dash separator is trimmed off'  => array( 'Y-m-d H:i', 'Y-m-d' ),
-			'a slash separator is trimmed off' => array( 'd/m/Y H:i', 'd/m/Y' ),
-			'punctuation alone keeps nothing'  => array( ':', '' ),
+			'a date and a time keeps the date'            => array( 'F j, Y g:i a', 'F j, Y' ),
+			'only a time keeps nothing'                   => array( 'g:i a', '' ),
+			'only a date is left alone'                   => array( 'M j', 'M j' ),
+			'the timezone goes with the time'             => array( 'F j, Y T', 'F j, Y' ),
+			'an empty format stays empty'                 => array( '', '' ),
+			'a dash separator is trimmed off'             => array( 'Y-m-d H:i', 'Y-m-d' ),
+			'a slash separator is trimmed off'            => array( 'd/m/Y H:i', 'd/m/Y' ),
+			'punctuation alone keeps nothing'             => array( ':', '' ),
+			'german datetime with escaped Uhr keeps date' => array( 'j. F Y, H:i \U\h\r', 'j. F Y' ),
+			'time with escaped Uhr keeps nothing'         => array( 'H:i \U\h\r', '' ),
+			'spanish date with escaped de keeps date'     => array( 'j \d\e F \d\e Y, H:i', 'j \d\e F \d\e Y' ),
+			'reversed order time before date keeps date'  => array( 'H:i, j. F Y', 'j. F Y' ),
+			'a date, time and timezone keep the date'     => array( 'D, M j, Y, g:i a T', 'D, M j, Y' ),
+			'german um between date and time is dropped'  => array( 'j. F Y \u\m H:i \U\h\r', 'j. F Y' ),
+			'german Uhr before the time is dropped'       => array( 'j F Y, \U\h\r H:i', 'j F Y' ),
+			'japanese datetime keeps day suffix'          => array( 'Y年n月j日 H:i', 'Y年n月j日' ),
+			'korean datetime keeps day suffix'            => array( 'Y년 n월 j일 H:i', 'Y년 n월 j일' ),
 		);
 	}
 
@@ -1793,10 +1802,390 @@ class Test_Utility extends Base {
 	 */
 	public function data_remove_non_time_format_chars(): array {
 		return array(
-			'a date and a time keeps the time' => array( 'F j, Y g:i a', 'g:i a' ),
-			'only a date keeps nothing'        => array( 'F j, Y', '' ),
-			'only a time is left alone'        => array( 'g:i a', 'g:i a' ),
-			'an empty format stays empty'      => array( '', '' ),
+			'a date and a time keeps the time'            => array( 'F j, Y g:i a', 'g:i a' ),
+			'only a date keeps nothing'                   => array( 'F j, Y', '' ),
+			'only a time is left alone'                   => array( 'g:i a', 'g:i a' ),
+			'an empty format stays empty'                 => array( '', '' ),
+			'german datetime with escaped Uhr keeps time' => array( 'j. F Y, H:i \U\h\r', 'H:i \U\h\r' ),
+			'time with escaped Uhr is left alone'         => array( 'H:i \U\h\r', 'H:i \U\h\r' ),
+			'spanish date with escaped de keeps time'     => array( 'j \d\e F \d\e Y, H:i', 'H:i' ),
+			'reversed order time before date keeps time'  => array( 'H:i \U\h\r, j. F Y', 'H:i \U\h\r' ),
+			'date and time with leading punctuation trim' => array( 'Y-m-d H:i:s', 'H:i:s' ),
+			'datetime with timezone drops timezone'       => array( 'D, M j, Y, g:i a T', 'g:i a' ),
+			'time only with timezone drops timezone'      => array( 'g:i a T', 'g:i a' ),
+			'german um between date and time is dropped'  => array( 'j. F Y \u\m H:i \U\h\r', 'H:i \U\h\r' ),
+			'german Uhr before the time is dropped'       => array( 'j F Y, \U\h\r H:i', 'H:i' ),
+		);
+	}
+
+	/**
+	 * Coverage for tokenize_date_format.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::tokenize_date_format
+	 *
+	 * @return void
+	 */
+	public function test_tokenize_date_format(): void {
+		$tokens = Utility::tokenize_date_format( 'j. F Y, H:i \U\h\r' );
+
+		$this->assertSame(
+			array(
+				array(
+					'type'  => 'char',
+					'value' => 'j',
+				),
+				array(
+					'type'  => 'char',
+					'value' => '.',
+				),
+				array(
+					'type'  => 'char',
+					'value' => ' ',
+				),
+				array(
+					'type'  => 'char',
+					'value' => 'F',
+				),
+				array(
+					'type'  => 'char',
+					'value' => ' ',
+				),
+				array(
+					'type'  => 'char',
+					'value' => 'Y',
+				),
+				array(
+					'type'  => 'char',
+					'value' => ',',
+				),
+				array(
+					'type'  => 'char',
+					'value' => ' ',
+				),
+				array(
+					'type'  => 'char',
+					'value' => 'H',
+				),
+				array(
+					'type'  => 'char',
+					'value' => ':',
+				),
+				array(
+					'type'  => 'char',
+					'value' => 'i',
+				),
+				array(
+					'type'  => 'char',
+					'value' => ' ',
+				),
+				array(
+					'type'  => 'literal',
+					'value' => '\U\h\r',
+				),
+			),
+			$tokens,
+			'tokenize_date_format should keep a run of escaped characters as one literal and others as characters.'
+		);
+
+		// Trailing backslash edge case.
+		$trailing = Utility::tokenize_date_format( 'H:i\\' );
+		$this->assertSame(
+			array(
+				array(
+					'type'  => 'char',
+					'value' => 'H',
+				),
+				array(
+					'type'  => 'char',
+					'value' => ':',
+				),
+				array(
+					'type'  => 'char',
+					'value' => 'i',
+				),
+				array(
+					'type'  => 'literal',
+					'value' => '\\',
+				),
+			),
+			$trailing,
+			'tokenize_date_format should handle a trailing backslash without error.'
+		);
+	}
+
+	/**
+	 * Splitting a format puts each piece with the date or the time.
+	 *
+	 * Called directly because the strip methods reach it through a same-class
+	 * delegation that xdebug does not trace.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::split_date_time_format
+	 *
+	 * @dataProvider data_split_date_time_format
+	 *
+	 * @param string $format   The format to split.
+	 * @param array  $expected The date part and the time part.
+	 *
+	 * @return void
+	 */
+	public function test_split_date_time_format( string $format, array $expected ): void {
+		$this->assertSame(
+			$expected,
+			PMC_Utility::invoke_hidden_method( new Utility(), 'split_date_time_format', array( $format ) ),
+			'Failed to assert the format was split into its date and time parts.'
+		);
+	}
+
+	/**
+	 * Data provider for split_date_time_format.
+	 *
+	 * @since TBD
+	 *
+	 * @return array[]
+	 */
+	public function data_split_date_time_format(): array {
+		return array(
+			'the date comes first' => array(
+				'j. F Y \u\m H:i \U\h\r',
+				array(
+					'date' => 'j. F Y',
+					'time' => 'H:i \U\h\r',
+				),
+			),
+			'the time comes first' => array(
+				'H:i \U\h\r, j. F Y',
+				array(
+					'date' => 'j. F Y',
+					'time' => 'H:i \U\h\r',
+				),
+			),
+			'only a date'          => array(
+				'Y年n月j日 T',
+				array(
+					'date' => 'Y年n月j日',
+					'time' => '',
+				),
+			),
+			'only a time'          => array(
+				'g:i a T',
+				array(
+					'date' => '',
+					'time' => 'g:i a',
+				),
+			),
+			'no format characters' => array(
+				'\a\t',
+				array(
+					'date' => '',
+					'time' => '',
+				),
+			),
+		);
+	}
+
+	/**
+	 * Finding a format character skips escaped text.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::find_format_char
+	 *
+	 * @return void
+	 */
+	public function test_find_format_char(): void {
+		$tokens = Utility::tokenize_date_format( '\H j H' );
+
+		$this->assertSame(
+			4,
+			PMC_Utility::invoke_hidden_method( new Utility(), 'find_format_char', array( $tokens, array( 'H' ) ) ),
+			'Failed to assert the escaped H was skipped for the format character.'
+		);
+		$this->assertNull(
+			PMC_Utility::invoke_hidden_method( new Utility(), 'find_format_char', array( $tokens, array( 'G' ) ) ),
+			'Failed to assert a character the format does not use is not found.'
+		);
+	}
+
+	/**
+	 * Dropping the lead-in removes the escaped words and spaces ending a date.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::drop_lead_in
+	 *
+	 * @return void
+	 */
+	public function test_drop_lead_in(): void {
+		$this->assertSame(
+			Utility::tokenize_date_format( 'j. F Y' ),
+			PMC_Utility::invoke_hidden_method(
+				new Utility(),
+				'drop_lead_in',
+				array( Utility::tokenize_date_format( 'j. F Y \u\m ' ) )
+			),
+			'Failed to assert the escaped word and spaces before the time were dropped.'
+		);
+		$this->assertSame(
+			array(),
+			PMC_Utility::invoke_hidden_method(
+				new Utility(),
+				'drop_lead_in',
+				array( Utility::tokenize_date_format( ' \u\m' ) )
+			),
+			'Failed to assert a lead-in with nothing before it leaves no tokens.'
+		);
+	}
+
+	/**
+	 * Joining tokens leaves out the skipped characters and trims the ends.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::join_format_tokens
+	 *
+	 * @return void
+	 */
+	public function test_join_format_tokens(): void {
+		$this->assertSame(
+			'g:i a \T',
+			PMC_Utility::invoke_hidden_method(
+				new Utility(),
+				'join_format_tokens',
+				array( Utility::tokenize_date_format( ' - g:i a \T T.' ), array( 'T' ) )
+			),
+			'Failed to assert the skipped character was left out, the escaped one kept, and the ends trimmed.'
+		);
+	}
+
+	/**
+	 * Coverage for date_format_choices.
+	 *
+	 * @covers ::date_format_choices
+	 * @covers ::build_format_choices
+	 *
+	 * @return void
+	 */
+	public function test_date_format_choices(): void {
+		$choices = Utility::date_format_choices();
+		$formats = array_column( $choices, 'format' );
+
+		$this->assertContains(
+			'l, F j, Y',
+			$formats,
+			'Failed to assert the weekday-led default is offered.'
+		);
+		$this->assertContains(
+			'Y-m-d',
+			$formats,
+			'Failed to assert the ISO format is offered.'
+		);
+		$this->assertSame(
+			wp_date( 'Y-m-d' ),
+			$choices[ array_search( 'Y-m-d', $formats, true ) ]['example'],
+			'Failed to assert each format is paired with the date it renders.'
+		);
+	}
+
+	/**
+	 * Coverage for time_format_choices.
+	 *
+	 * @covers ::time_format_choices
+	 *
+	 * @return void
+	 */
+	public function test_time_format_choices(): void {
+		$formats = array_column( Utility::time_format_choices(), 'format' );
+
+		$this->assertContains(
+			'H:i',
+			$formats,
+			'Failed to assert the 24-hour format is offered.'
+		);
+		$this->assertContains(
+			'g:i A',
+			$formats,
+			'Failed to assert the 12-hour format is offered.'
+		);
+	}
+
+	/**
+	 * Adding a format through the filter offers it with its example.
+	 *
+	 * @covers ::date_format_choices
+	 *
+	 * @return void
+	 */
+	public function test_date_format_choices_is_filterable(): void {
+		add_filter(
+			'gatherpress_date_formats',
+			static fn(): array => array( 'D, j M Y' )
+		);
+
+		$choices = Utility::date_format_choices();
+
+		remove_all_filters( 'gatherpress_date_formats' );
+
+		$this->assertSame(
+			array(
+				array(
+					'format'  => 'D, j M Y',
+					'example' => wp_date( 'D, j M Y' ),
+				),
+			),
+			$choices,
+			'Failed to assert the filtered list is the one offered.'
+		);
+	}
+
+	/**
+	 * Coverage for the time format filter.
+	 *
+	 * @covers ::time_format_choices
+	 *
+	 * @return void
+	 */
+	public function test_time_format_choices_is_filterable(): void {
+		add_filter(
+			'gatherpress_time_formats',
+			static fn(): array => array( 'H:i:s' )
+		);
+
+		$formats = array_column( Utility::time_format_choices(), 'format' );
+
+		remove_all_filters( 'gatherpress_time_formats' );
+
+		$this->assertSame(
+			array( 'H:i:s' ),
+			$formats,
+			'Failed to assert the filtered list is the one offered.'
+		);
+	}
+
+	/**
+	 * Empty and duplicate formats are dropped rather than offered twice.
+	 *
+	 * @covers ::build_format_choices
+	 *
+	 * @return void
+	 */
+	public function test_format_choices_drop_empty_and_duplicate_formats(): void {
+		add_filter(
+			'gatherpress_date_formats',
+			static fn(): array => array( 'Y-m-d', '', 'Y-m-d', 'd.m.Y' )
+		);
+
+		$formats = array_column( Utility::date_format_choices(), 'format' );
+
+		remove_all_filters( 'gatherpress_date_formats' );
+
+		$this->assertSame(
+			array( 'Y-m-d', 'd.m.Y' ),
+			$formats,
+			'Failed to assert empties and duplicates were dropped.'
 		);
 	}
 }

@@ -235,7 +235,7 @@ final class User {
 			sprintf( '%s/includes/templates/admin/user/date-time.php', GATHERPRESS_CORE_PATH ),
 			array(
 				'time_format' => $gatherpress_time_format,
-				'timezone'    => $gatherpress_timezone ? $gatherpress_timezone : Utility::get_system_timezone(),
+				'timezone'    => $gatherpress_timezone,
 				'tz_choices'  => $tz_choices,
 			),
 			true

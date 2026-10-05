@@ -2,10 +2,11 @@
 /**
  * Owns the venue post-meta surface.
  *
- * Registers the editor-writable, structured-address, and Map descriptor
- * post meta for any post type that declares `gatherpress-venue-information`
- * support, plus the matching map-display meta for `gatherpress-venue-map`.
- * Also owns the field-list constants and the REST readonly-strip filter.
+ * Registers the editor-writable, structured-address, Map descriptor, and
+ * Geodata-standard (`geo_*`) post meta for any post type that declares
+ * `gatherpress-venue-information` support, plus the matching map-display
+ * meta for `gatherpress-venue-map`. Also owns the field-list constants and
+ * the REST readonly-strip filter.
  *
  * Sibling singleton to `Venue\Setup` — `Setup` keeps post-type / taxonomy
  * registration and lifecycle hooks, `Meta` keeps everything that touches
@@ -20,6 +21,7 @@ namespace GatherPress\Core\Venue;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Geo_Sync;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
@@ -120,6 +122,7 @@ final class Meta {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'registered_post_type', array( $this, 'register' ) );
+		add_action( 'wp_after_insert_post', array( Geo_Sync::get_instance(), 'on_venue_saved' ), 10, 2 );
 	}
 
 	/**
@@ -159,6 +162,7 @@ final class Meta {
 	public function register( string $post_type ): void {
 		if ( post_type_supports( $post_type, Venue::SUPPORT ) ) {
 			$this->register_venue_information_meta( $post_type );
+			$this->register_geo_meta( $post_type );
 		}
 
 		if ( post_type_supports( $post_type, 'gatherpress-venue-map' ) ) {
@@ -295,6 +299,19 @@ final class Meta {
 	}
 
 	/**
+	 * Registers the Geodata standard meta (`geo_*`) as read-only.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $post_type The post type to register against.
+	 *
+	 * @return void
+	 */
+	protected function register_geo_meta( string $post_type ): void {
+		Geo_Sync::register_meta( $post_type );
+	}
+
+	/**
 	 * Registers the venue-map display-settings keys (show / zoom /
 	 * height) for a post type that declares `gatherpress-venue-map`
 	 * support.
@@ -362,6 +379,7 @@ final class Meta {
 		// editor-writable fields doesn't fail the whole request.
 		$readonly_keys = array_merge(
 			array( Map::META_KEY ),
+			Geo_Sync::FIELDS,
 			array_map(
 				array( Utility::class, 'prefix_key' ),
 				self::STRUCTURED_ADDRESS_FIELDS

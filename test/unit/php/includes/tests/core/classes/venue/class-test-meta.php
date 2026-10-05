@@ -8,6 +8,7 @@
 
 namespace GatherPress\Tests\Core\Venue;
 
+use GatherPress\Core\Geo_Sync;
 use GatherPress\Core\Venue\Meta;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
@@ -38,6 +39,12 @@ class Test_Meta extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'register' ),
 			),
+			array(
+				'type'     => 'action',
+				'name'     => 'wp_after_insert_post',
+				'priority' => 10,
+				'callback' => array( Geo_Sync::get_instance(), 'on_venue_saved' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
@@ -65,7 +72,13 @@ class Test_Meta extends Base {
 			'gatherpress_static_map',
 		);
 
+		$geo_keys = array( 'geo_latitude', 'geo_longitude', 'geo_address', 'geo_public' );
+
 		foreach ( $venue_information_keys as $key ) {
+			unregister_post_meta( Venue::POST_TYPE, $key );
+		}
+
+		foreach ( $geo_keys as $key ) {
 			unregister_post_meta( Venue::POST_TYPE, $key );
 		}
 
@@ -74,6 +87,14 @@ class Test_Meta extends Base {
 		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
 
 		foreach ( $venue_information_keys as $key ) {
+			$this->assertArrayNotHasKey(
+				$key,
+				$meta,
+				sprintf( 'Failed to assert that %s is unregistered before re-registration.', $key )
+			);
+		}
+
+		foreach ( $geo_keys as $key ) {
 			$this->assertArrayNotHasKey(
 				$key,
 				$meta,
@@ -92,6 +113,14 @@ class Test_Meta extends Base {
 		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
 
 		foreach ( $venue_information_keys as $key ) {
+			$this->assertArrayHasKey(
+				$key,
+				$meta,
+				sprintf( 'Failed to assert that %s is registered for gatherpress-venue-information support.', $key )
+			);
+		}
+
+		foreach ( $geo_keys as $key ) {
 			$this->assertArrayHasKey(
 				$key,
 				$meta,
@@ -180,6 +209,8 @@ class Test_Meta extends Base {
 						'hash' => 'x',
 					),
 				),
+				'geo_latitude'           => '99.999',
+				'geo_public'             => 1,
 				'gatherpress_address'    => 'Real St',
 				'gatherpress_latitude'   => '12.345',
 			)
@@ -196,6 +227,16 @@ class Test_Meta extends Base {
 			'gatherpress_static_map',
 			$meta,
 			'gatherpress_static_map is server-generated and must not be writable via REST.'
+		);
+		$this->assertArrayNotHasKey(
+			'geo_latitude',
+			$meta,
+			'geo_latitude is derived from the venue\'s own fields and must not be writable via REST.'
+		);
+		$this->assertArrayNotHasKey(
+			'geo_public',
+			$meta,
+			'geo_public is derived from the venue\'s own publish status and must not be writable via REST.'
 		);
 		$this->assertArrayHasKey(
 			'gatherpress_address',
@@ -364,6 +405,47 @@ class Test_Meta extends Base {
 		}
 
 		unregister_post_type( $test_pt );
+	}
+
+	/**
+	 * Direct coverage for `register_geo_meta()` — the Geodata standard
+	 * (`geo_*`) read-only band.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::register_geo_meta
+	 *
+	 * @return void
+	 */
+	public function test_register_geo_meta_direct(): void {
+		$instance = Meta::get_instance();
+		$geo_keys = array( 'geo_latitude', 'geo_longitude', 'geo_address', 'geo_public' );
+
+		foreach ( $geo_keys as $key ) {
+			unregister_post_meta( Venue::POST_TYPE, $key );
+		}
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'register_geo_meta',
+			array( Venue::POST_TYPE )
+		);
+
+		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
+
+		foreach ( $geo_keys as $key ) {
+			$this->assertArrayHasKey(
+				$key,
+				$meta,
+				sprintf( 'Failed to assert %s is registered.', $key )
+			);
+		}
+
+		$this->assertSame(
+			'integer',
+			$meta['geo_public']['type'],
+			'Failed to assert geo_public registers as an integer, matching Simple Location\'s own 0/1/2 semantics.'
+		);
 	}
 
 	/**

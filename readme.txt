@@ -1,10 +1,10 @@
 === GatherPress ===
-Contributors: mauteri, patricia70, hrmervin, jmarx75, carstenbach, supernovia, matthewneilcowan, motylanogha
+Contributors: mauteri, patricia70, hrmervin, jmarx75, carstenbach, supernovia, matthewneilcowan, motylanogha, faisalahammad, bor0
 Tags: events, rsvp, meetup, community, calendar
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 0.36.0-alpha.0
+Stable tag: 0.36.0-alpha.1
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 

@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Support escaped literal text (such as German "Uhr" or Spanish "de") in custom date/time formats without token stripping or corruption.
