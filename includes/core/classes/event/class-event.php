@@ -1230,9 +1230,14 @@ class Event {
 	 * and ensures that the event has not already occurred. It evaluates various conditions
 	 * to determine whether to provide the online event link.
 	 *
+	 * @since TBD Accepts the identifier of the person to check.
+	 *
+	 * @param int|string|null $user_identifier Optional. User ID or magic-link email to check. Defaults to
+	 *                                         the current user or the token in the page URL.
+	 *
 	 * @return string The online event link if all conditions are met; otherwise, an empty string.
 	 */
-	public function maybe_get_online_event_link(): string {
+	public function maybe_get_online_event_link( int|string|null $user_identifier = null ): string {
 		if ( ! $this->post ) {
 			return '';
 		}
@@ -1255,7 +1260,7 @@ class Event {
 		$force_online_event_link = apply_filters( 'gatherpress_force_online_event_link', false );
 
 		if ( ! $force_online_event_link && ! is_admin() ) {
-			$user_identifier = Rsvp_Setup::get_instance()->get_user_identifier();
+			$user_identifier = $user_identifier ?? Rsvp_Setup::get_instance()->get_user_identifier();
 			$response        = ( new Rsvp( $this->post->ID ) )->get( $user_identifier );
 
 			if (

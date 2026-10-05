@@ -2108,7 +2108,7 @@ class Test_Rest_Api extends Base {
 
 		// Create request with token for the event the token was issued against.
 		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
-		$request->set_param( Token::NAME, $token_str );
+		$request->set_param( 'rsvp_token', $token_str );
 		$request->set_param( 'post_id', $post_id );
 
 		// Call the permission callback.
@@ -2116,6 +2116,105 @@ class Test_Rest_Api extends Base {
 		$result              = call_user_func( $permission_callback, $request );
 
 		$this->assertTrue( $result, 'Permission callback should return true with valid RSVP token' );
+	}
+
+	/**
+	 * Tests a magic-link attendee can change their RSVP through the REST route.
+	 *
+	 * The request is dispatched through the REST server, so the permission
+	 * callback runs, with the token in the body parameter the RSVP block sends.
+	 *
+	 * @since TBD
+	 * @covers ::rsvp_route
+	 * @covers ::update_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_route_lets_a_token_holder_change_their_rsvp(): void {
+		$post_id = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		( new Event( $post_id ) )->save_datetimes(
+			array(
+				'datetime_start' => '2099-01-01 10:00:00',
+				'datetime_end'   => '2099-01-01 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$user_record = ( new Rsvp( $post_id ) )->save( 'test@example.com', 'attending' );
+		$rsvp_token  = new Token( $user_record['comment_id'] );
+		$rsvp_token->generate_token();
+
+		wp_set_current_user( 0 );
+
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_body(
+			wp_json_encode(
+				array(
+					'post_id'    => $post_id,
+					'status'     => 'not_attending',
+					'rsvp_token' => sprintf( '%d_%s', $user_record['comment_id'], $rsvp_token->get_token() ),
+				)
+			)
+		);
+
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status(), 'A valid token should authorize the request.' );
+		$this->assertSame( 'not_attending', $response->get_data()['status'] );
+	}
+
+	/**
+	 * Tests a magic-link attendee gets the online event link back after an RSVP change.
+	 *
+	 * The page sends the token in the request body, not in the URL, so the
+	 * link has to be built for the token's attendee.
+	 *
+	 * @since TBD
+	 * @covers ::update_rsvp
+	 * @covers \GatherPress\Core\Event\Event::maybe_get_online_event_link
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_route_returns_online_link_to_a_token_holder(): void {
+		$post_id = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		( new Event( $post_id ) )->save_datetimes(
+			array(
+				'datetime_start' => '2099-01-01 10:00:00',
+				'datetime_end'   => '2099-01-01 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+		update_post_meta( $post_id, 'gatherpress_online_event_link', 'https://meet.example.test/room' );
+
+		$user_record = ( new Rsvp( $post_id ) )->save( 'test@example.com', 'not_attending' );
+		$rsvp_token  = new Token( $user_record['comment_id'] );
+		$rsvp_token->generate_token();
+
+		wp_set_current_user( 0 );
+
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_body(
+			wp_json_encode(
+				array(
+					'post_id'    => $post_id,
+					'status'     => 'attending',
+					'rsvp_token' => sprintf( '%d_%s', $user_record['comment_id'], $rsvp_token->get_token() ),
+				)
+			)
+		);
+
+		$data = rest_do_request( $request )->get_data();
+
+		$this->assertSame( 'attending', $data['status'] );
+		$this->assertSame(
+			'https://meet.example.test/room',
+			$data['online_link'],
+			'An attending token holder should get the online event link.'
+		);
 	}
 
 	/**
@@ -2146,7 +2245,7 @@ class Test_Rest_Api extends Base {
 		wp_set_current_user( 0 );
 
 		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
-		$request->set_param( Token::NAME, $token_str );
+		$request->set_param( 'rsvp_token', $token_str );
 		$request->set_param( 'post_id', $other_event );
 
 		$this->assertFalse(

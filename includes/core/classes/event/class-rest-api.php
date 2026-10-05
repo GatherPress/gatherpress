@@ -227,7 +227,7 @@ final class Rest_Api {
 				'callback'            => array( $this, 'update_rsvp' ),
 				'permission_callback' => function ( WP_REST_Request $request ): bool {
 					$post_id    = (int) $request->get_param( 'post_id' );
-					$rsvp_token = Token::from_token_string( $request->get_param( Token::NAME ) );
+					$rsvp_token = Token::from_token_string( $request->get_param( 'rsvp_token' ) );
 					$token_post = $rsvp_token ? $rsvp_token->get_post() : null;
 
 					// A magic-link token authorizes only the event it was issued for.
@@ -842,6 +842,9 @@ final class Rest_Api {
 			}
 		}
 
+		// A magic-link token arrives in the body, not the URL, so pass its email along.
+		$token_email = is_string( $user_identifier ) ? $user_identifier : null;
+
 		$response = array(
 			'event_id'    => $post_id,
 			'success'     => $success,
@@ -849,7 +852,7 @@ final class Rest_Api {
 			'guests'      => $guests,
 			'anonymous'   => $anonymous,
 			'responses'   => $rsvp->responses(),
-			'online_link' => $event->maybe_get_online_event_link(),
+			'online_link' => $event->maybe_get_online_event_link( $token_email ),
 		);
 
 		return new WP_REST_Response( $response );
