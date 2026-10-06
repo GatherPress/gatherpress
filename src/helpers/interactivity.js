@@ -298,7 +298,7 @@ export async function sendRsvpApiRequest(
 					status: args.status,
 					guests: args.guests,
 					anonymous: args.anonymous,
-					gatherpress_rsvp_token: args.rsvpToken,
+					rsvp_token: args.rsvpToken,
 				} ),
 			},
 		);
