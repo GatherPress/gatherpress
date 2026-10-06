@@ -136,6 +136,19 @@ class Test_Abilities extends Base {
 			'Failed to assert that the RSVP counts ability is exposed over REST.'
 		);
 		$this->assertTrue(
+			$meta['public'],
+			'Failed to assert that the RSVP counts ability is public.'
+		);
+		$this->assertTrue(
+			$meta['mcp']['public'],
+			'Failed to assert that the RSVP counts ability is exposed to MCP.'
+		);
+		$this->assertSame(
+			'tool',
+			$meta['mcp']['type'],
+			'Failed to assert that the RSVP counts ability MCP type is tool.'
+		);
+		$this->assertTrue(
 			$meta['annotations']['readonly'],
 			'Failed to assert that the RSVP counts ability is annotated read-only.'
 		);
