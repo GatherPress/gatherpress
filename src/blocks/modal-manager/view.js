@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies
  */
-import { store } from '@wordpress/interactivity';
+import { store, withSyncEvent } from '@wordpress/interactivity';
 
 /**
  * Internal dependencies
@@ -81,7 +81,7 @@ function labelModalByVisibleHeading( modal, modalContent ) {
 
 const { actions } = store( 'gatherpress', {
 	actions: {
-		openModal( event = null, element = null ) {
+		openModal: withSyncEvent( ( event = null, element = null ) => {
 			if ( event ) {
 				event.preventDefault();
 			}
@@ -175,7 +175,7 @@ const { actions } = store( 'gatherpress', {
 					}
 				}
 			}
-		},
+		} ),
 		/**
 		 * Opens the modal when the Enter or Space key is pressed.
 		 *
@@ -185,16 +185,17 @@ const { actions } = store( 'gatherpress', {
 		 *
 		 * @return {void}
 		 */
-		openModalOnEnter( event ) {
+		openModalOnEnter: withSyncEvent( ( event ) => {
 			if ( 'Enter' === event.key || ' ' === event.key ) {
 				event.preventDefault();
 				actions.openModal( event );
 			}
-		},
-		closeModal( event = null, element = null, findActiveSibling = true ) {
-			if ( event ) {
-				event.preventDefault();
-			}
+		} ),
+		closeModal: withSyncEvent(
+			( event = null, element = null, findActiveSibling = true ) => {
+				if ( event ) {
+					event.preventDefault();
+				}
 
 			// Determine the element to work with.
 			element = element ?? event?.target;
@@ -305,7 +306,7 @@ const { actions } = store( 'gatherpress', {
 					openTrigger.focus();
 				}
 			}
-		},
+		} ),
 		/**
 		 * Closes the modal when the Enter or Space key is pressed.
 		 *
@@ -315,11 +316,11 @@ const { actions } = store( 'gatherpress', {
 		 *
 		 * @return {void}
 		 */
-		closeModalOnEnter( event ) {
+		closeModalOnEnter: withSyncEvent( ( event ) => {
 			if ( 'Enter' === event.key || ' ' === event.key ) {
 				event.preventDefault();
 				actions.closeModal( event );
 			}
-		},
+		} ),
 	},
 } );

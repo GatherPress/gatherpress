@@ -42,6 +42,10 @@ jest.mock(
 			},
 			getElement: jest.fn(),
 			getContext: jest.fn(),
+			withSyncEvent: jest.fn( ( fn ) => {
+				fn.sync = true;
+				return fn;
+			} ),
 		};
 	},
 	{ virtual: true },
