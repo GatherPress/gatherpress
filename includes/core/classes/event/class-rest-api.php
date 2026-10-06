@@ -239,17 +239,17 @@ final class Rest_Api {
 					return is_user_logged_in() && $this->can_read_event_rsvps( $request );
 				},
 				'args'                => array(
-					'post_id'    => array(
+					'post_id'   => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'event_post_id' ),
 					),
-					'rsvp_token' => array(
+					Token::NAME => array(
 						'required'          => false,
 						'validate_callback' => static function ( $param ): bool {
 							return ! empty( Token::parse_token_string( $param ) );
 						},
 					),
-					'status'     => array(
+					'status'    => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'rsvp_status' ),
 					),
@@ -769,7 +769,7 @@ final class Rest_Api {
 		$status          = sanitize_key( $params['status'] );
 		$guests          = intval( $params['guests'] ?? 0 );
 		$anonymous       = intval( $params['anonymous'] ?? 0 );
-		$unparsed_token  = sanitize_text_field( $params['rsvp_token'] ?? '' );
+		$unparsed_token  = sanitize_text_field( $params[ Token::NAME ] ?? '' );
 		$event           = new Event( $post_id );
 		$rsvp            = new Rsvp( $post_id );
 
@@ -842,14 +842,23 @@ final class Rest_Api {
 			}
 		}
 
+		// A magic-link token arrives in the body, not the URL, so pass its email along.
+		$token_email = is_string( $user_identifier ) ? $user_identifier : null;
+
+		// A token authorizes the RSVP change, not the roster: a caller who cannot
+		// read the attendee list gets the counts the block needs, as on the RSVP form route.
+		$responses = Event::can_read_rsvps( $post_id )
+			? $rsvp->responses()
+			: $this->rsvp_response_counts( $rsvp->responses() );
+
 		$response = array(
 			'event_id'    => $post_id,
 			'success'     => $success,
 			'status'      => $status,
 			'guests'      => $guests,
 			'anonymous'   => $anonymous,
-			'responses'   => $rsvp->responses(),
-			'online_link' => $event->maybe_get_online_event_link(),
+			'responses'   => $responses,
+			'online_link' => $event->maybe_get_online_event_link( $token_email ),
 		);
 
 		return new WP_REST_Response( $response );

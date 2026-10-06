@@ -32,12 +32,16 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 final class Token {
 
 	/**
-	 * The parameter name used for RSVP tokens in URLs.
+	 * The RSVP token's name.
+	 *
+	 * REST requests carry the token under this name, like their other
+	 * unprefixed parameters. The magic-link URL and the comment meta key add
+	 * the `gatherpress_` prefix with `Utility::prefix_key()`.
 	 *
 	 * @since 0.34.0
 	 * @var string
 	 */
-	const NAME = 'gatherpress_rsvp_token';
+	const NAME = 'rsvp_token';
 
 	/**
 	 * The length of the generated token.
@@ -182,7 +186,7 @@ final class Token {
 	 * @return string The formatted meta key.
 	 */
 	private function get_meta_key(): string {
-		return sprintf( '%s%s', self::META_KEY_PREFIX, self::NAME );
+		return sprintf( '%s%s', self::META_KEY_PREFIX, Utility::prefix_key( self::NAME ) );
 	}
 
 	/**
@@ -368,7 +372,7 @@ final class Token {
 	 * @return self|null Instance if valid token found, null otherwise.
 	 */
 	public static function from_url_parameter(): ?self {
-		$token_param = Utility::get_http_input( INPUT_GET, self::NAME );
+		$token_param = Utility::get_http_input( INPUT_GET, Utility::prefix_key( self::NAME ) );
 
 		return self::from_token_string( $token_param );
 	}
@@ -397,7 +401,7 @@ final class Token {
 
 		$token_value = $this->format_token_value( (int) $comment->comment_ID, $token );
 
-		return add_query_arg( self::NAME, $token_value, $event_url );
+		return add_query_arg( Utility::prefix_key( self::NAME ), $token_value, $event_url );
 	}
 
 	/**
