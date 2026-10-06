@@ -49,6 +49,12 @@ class Test_Query extends Base {
 				'callback' => array( $instance, 'taxonomy_query' ),
 			),
 			array(
+				'type'     => 'action',
+				'name'     => 'pre_get_comments',
+				'priority' => 10,
+				'callback' => array( $instance, 'vary_cache_key_by_tax_query' ),
+			),
+			array(
 				'type'     => 'filter',
 				'name'     => 'get_comment',
 				'priority' => 10,
@@ -190,6 +196,82 @@ class Test_Query extends Base {
 			),
 			'Failed to assert 2 RSVPs to event.'
 		);
+	}
+
+	/**
+	 * Counts that differ only by response do not share a cached result.
+	 *
+	 * @covers ::vary_cache_key_by_tax_query
+	 *
+	 * @return void
+	 */
+	public function test_get_rsvps_caches_each_tax_query_apart(): void {
+		$instance  = Query::get_instance();
+		$event     = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$attending = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $event->ID,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+		$waiting   = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $event->ID,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		wp_set_object_terms( $attending, Status::ATTENDING->value, Status::TAXONOMY );
+		wp_set_object_terms( $waiting, Status::WAITING_LIST->value, Status::TAXONOMY );
+
+		$count = static fn( Status $status ): int => $instance->get_rsvps(
+			array(
+				'count'     => true,
+				'tax_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+					array(
+						'taxonomy' => Status::TAXONOMY,
+						'field'    => 'slug',
+						'terms'    => array( $status->value ),
+					),
+				),
+			)
+		);
+
+		$this->assertSame( 2, $instance->get_rsvps( array( 'count' => true ) ) );
+		$this->assertSame( 1, $count( Status::ATTENDING ) );
+		$this->assertSame( 1, $count( Status::WAITING_LIST ) );
+
+		// A response change touches only the terms, not the comment.
+		wp_set_object_terms( $waiting, Status::ATTENDING->value, Status::TAXONOMY );
+
+		$this->assertSame( 2, $count( Status::ATTENDING ) );
+		$this->assertSame( 0, $count( Status::WAITING_LIST ) );
+	}
+
+	/**
+	 * The cache domain varies with the tax query and keeps what came before it.
+	 *
+	 * @covers ::vary_cache_key_by_tax_query
+	 *
+	 * @return void
+	 */
+	public function test_vary_cache_key_by_tax_query(): void {
+		$instance = Query::get_instance();
+		$query    = new WP_Comment_Query();
+
+		$query->query_vars = array(
+			'cache_domain' => 'mine',
+			'tax_query'    => array(), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+		);
+		$instance->vary_cache_key_by_tax_query( $query );
+
+		$this->assertSame( 'mine', $query->query_vars['cache_domain'], 'No tax query leaves the domain alone.' );
+
+		// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+		$query->query_vars['tax_query'] = array( array( 'taxonomy' => Status::TAXONOMY ) );
+		$instance->vary_cache_key_by_tax_query( $query );
+
+		$this->assertStringStartsWith( 'mine:gatherpress_', $query->query_vars['cache_domain'] );
 	}
 
 	/**
