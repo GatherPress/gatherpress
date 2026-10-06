@@ -1230,6 +1230,7 @@ class Event {
 	 * and ensures that the event has not already occurred. It evaluates various conditions
 	 * to determine whether to provide the online event link.
 	 *
+	 * @since 0.27.0
 	 * @since TBD Accepts the identifier of the person to check.
 	 *
 	 * @param int|string|null $user_identifier Optional. User ID or magic-link email to check. Defaults to
