@@ -2683,9 +2683,25 @@ class Test_Rest_Api extends Base {
 		$result = call_user_func( $validate_callback, 'form_123' );
 		$this->assertTrue( $result, 'Validate callback should return true for form_123' );
 
+		// Test with nested form IDs, which carry one parent index prefix per level.
+		foreach ( array( '2_form_0', '0_0_0_form_0' ) as $nested_id ) {
+			$this->assertTrue(
+				call_user_func( $validate_callback, $nested_id ),
+				sprintf( 'Validate callback should return true for %s', $nested_id )
+			);
+		}
+
 		// Test with invalid format.
 		$result = call_user_func( $validate_callback, 'invalid' );
 		$this->assertFalse( $result, 'Validate callback should return false for invalid format' );
+
+		// Test with malformed nested and bare IDs.
+		foreach ( array( '2_form_', '_form_0', 'form_', '2form_0', 'form_0_1' ) as $malformed_id ) {
+			$this->assertFalse(
+				call_user_func( $validate_callback, $malformed_id ),
+				sprintf( 'Validate callback should return false for %s', $malformed_id )
+			);
+		}
 
 		// Test with non-string.
 		$result = call_user_func( $validate_callback, 123 );

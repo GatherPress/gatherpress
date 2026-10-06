@@ -296,7 +296,7 @@ final class Rest_Api {
 					'gatherpress_form_schema_id'       => array(
 						'required'          => false,
 						'validate_callback' => function ( $param ) {
-							return is_string( $param ) && preg_match( '/^form_\d+$/', $param );
+							return is_string( $param ) && preg_match( '/^(\d+_)*form_\d+$/', $param );
 						},
 					),
 					'gatherpress_event_updates_opt_in' => array(
