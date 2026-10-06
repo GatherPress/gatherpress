@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies
  */
-import { store } from '@wordpress/interactivity';
+import { store, withSyncEvent } from '@wordpress/interactivity';
 
 /**
  * Internal dependencies
@@ -81,7 +81,7 @@ function labelModalByVisibleHeading( modal, modalContent ) {
 
 const { actions } = store( 'gatherpress', {
 	actions: {
-		openModal( event = null, element = null ) {
+		openModal: withSyncEvent( ( event = null, element = null ) => {
 			if ( event ) {
 				event.preventDefault();
 			}
@@ -175,7 +175,7 @@ const { actions } = store( 'gatherpress', {
 					}
 				}
 			}
-		},
+		} ),
 		/**
 		 * Opens the modal when the Enter or Space key is pressed.
 		 *
@@ -185,127 +185,128 @@ const { actions } = store( 'gatherpress', {
 		 *
 		 * @return {void}
 		 */
-		openModalOnEnter( event ) {
+		openModalOnEnter: withSyncEvent( ( event ) => {
 			if ( 'Enter' === event.key || ' ' === event.key ) {
 				event.preventDefault();
 				actions.openModal( event );
 			}
-		},
-		closeModal( event = null, element = null, findActiveSibling = true ) {
-			if ( event ) {
-				event.preventDefault();
-			}
+		} ),
+		closeModal: withSyncEvent(
+			( event = null, element = null, findActiveSibling = true ) => {
+				if ( event ) {
+					event.preventDefault();
+				}
 
-			// Determine the element to work with.
-			element = element ?? event?.target;
+				// Determine the element to work with.
+				element = element ?? event?.target;
 
-			if ( ! element ) {
-				return;
-			}
+				if ( ! element ) {
+					return;
+				}
 
-			// Find the modal manager and modal.
-			let modalManager = element.closest(
-				'.wp-block-gatherpress-modal-manager',
-			);
-
-			/**
-			 * When switching between RSVP states, modals are hidden/shown dynamically.
-			 * If findActiveSibling=true, this code finds the currently visible modal manager
-			 * when the original one is hidden (has a parent with gatherpress--is-not-visible class).
-			 * This ensures focus and functionality transfer to the currently visible modal.
-			 */
-			if (
-				findActiveSibling &&
-				modalManager.closest( '.gatherpress--is-hidden' )
-			) {
-				const hiddenContainer = modalManager.closest(
-					'.gatherpress--is-hidden',
+				// Find the modal manager and modal.
+				let modalManager = element.closest(
+					'.wp-block-gatherpress-modal-manager',
 				);
-				const parent = hiddenContainer.parentElement;
 
-				// Look for visible siblings (both previous and next).
-				if ( parent ) {
+				/**
+				 * When switching between RSVP states, modals are hidden/shown dynamically.
+				 * If findActiveSibling=true, this code finds the currently visible modal manager
+				 * when the original one is hidden (has a parent with gatherpress--is-not-visible class).
+				 * This ensures focus and functionality transfer to the currently visible modal.
+				 */
+				if (
+					findActiveSibling &&
+				modalManager.closest( '.gatherpress--is-hidden' )
+				) {
+					const hiddenContainer = modalManager.closest(
+						'.gatherpress--is-hidden',
+					);
+					const parent = hiddenContainer.parentElement;
+
+					// Look for visible siblings (both previous and next).
+					if ( parent ) {
 					// Try siblings.
-					for ( const sibling of parent.children ) {
-						if (
-							sibling !== hiddenContainer &&
+						for ( const sibling of parent.children ) {
+							if (
+								sibling !== hiddenContainer &&
 							! sibling.classList.contains(
 								'gatherpress--is-hidden',
 							)
-						) {
-							const visibleModalManager = sibling.querySelector(
-								'.wp-block-gatherpress-modal-manager',
-							);
-							if ( visibleModalManager ) {
-								modalManager = visibleModalManager;
-								break;
+							) {
+								const visibleModalManager = sibling.querySelector(
+									'.wp-block-gatherpress-modal-manager',
+								);
+								if ( visibleModalManager ) {
+									modalManager = visibleModalManager;
+									break;
+								}
 							}
 						}
 					}
 				}
-			}
 
-			if ( ! modalManager ) {
-				return;
-			}
+				if ( ! modalManager ) {
+					return;
+				}
 
-			const modal = modalManager.querySelector(
-				'.wp-block-gatherpress-modal',
-			);
+				const modal = modalManager.querySelector(
+					'.wp-block-gatherpress-modal',
+				);
 
-			if ( ! modal ) {
-				return;
-			}
+				if ( ! modal ) {
+					return;
+				}
 
-			// Handle modal closing.
-			modal.classList.remove( 'gatherpress--is-visible' );
-			modal.setAttribute( 'aria-hidden', 'true' );
+				// Handle modal closing.
+				modal.classList.remove( 'gatherpress--is-visible' );
+				modal.setAttribute( 'aria-hidden', 'true' );
 
-			// Clean up focus trap if applicable.
-			const modalContent = modal.querySelector( '.wp-block-gatherpress-modal-content' );
+				// Clean up focus trap if applicable.
+				const modalContent = modal.querySelector( '.wp-block-gatherpress-modal-content' );
 
-			if (
-				modalContent &&
+				if (
+					modalContent &&
 				'function' === typeof modalContent.cleanupFocusTrap
-			) {
-				modalContent.cleanupFocusTrap();
-			}
+				) {
+					modalContent.cleanupFocusTrap();
+				}
 
-			// Clean up close handlers if applicable.
-			if (
-				modalContent &&
+				// Clean up close handlers if applicable.
+				if (
+					modalContent &&
 				'function' === typeof modalContent.cleanupCloseHandlers
-			) {
-				modalContent.cleanupCloseHandlers();
-			}
+				) {
+					modalContent.cleanupCloseHandlers();
+				}
 
-			// Return focus to the open modal trigger only when fully closing.
-			// When switching modals (findActiveSibling=false), don't focus the trigger.
-			if ( findActiveSibling ) {
+				// Return focus to the open modal trigger only when fully closing.
+				// When switching modals (findActiveSibling=false), don't focus the trigger.
+				if ( findActiveSibling ) {
 				// The trigger class often sits on a block wrapper (for example the
 				// Event Date block's <div>) with the focusable link or button inside it.
 				// A link without an href is focusable only through the tabindex the
 				// server adds, so match that too.
-				let openTrigger = modalManager.querySelector(
-					[
-						'.gatherpress-modal--trigger-open button',
-						'.gatherpress-modal--trigger-open a[href]',
-						'.gatherpress-modal--trigger-open [tabindex]:not([tabindex="-1"])',
-					].join( ', ' ),
-				);
-
-				// If no nested button or link, try the trigger element itself (could be anchor or button).
-				if ( ! openTrigger ) {
-					openTrigger = modalManager.querySelector(
-						'.gatherpress-modal--trigger-open',
+					let openTrigger = modalManager.querySelector(
+						[
+							'.gatherpress-modal--trigger-open button',
+							'.gatherpress-modal--trigger-open a[href]',
+							'.gatherpress-modal--trigger-open [tabindex]:not([tabindex="-1"])',
+						].join( ', ' ),
 					);
-				}
 
-				if ( openTrigger ) {
-					openTrigger.focus();
+					// If no nested button or link, try the trigger element itself (could be anchor or button).
+					if ( ! openTrigger ) {
+						openTrigger = modalManager.querySelector(
+							'.gatherpress-modal--trigger-open',
+						);
+					}
+
+					if ( openTrigger ) {
+						openTrigger.focus();
+					}
 				}
-			}
-		},
+			} ),
 		/**
 		 * Closes the modal when the Enter or Space key is pressed.
 		 *
@@ -315,11 +316,11 @@ const { actions } = store( 'gatherpress', {
 		 *
 		 * @return {void}
 		 */
-		closeModalOnEnter( event ) {
+		closeModalOnEnter: withSyncEvent( ( event ) => {
 			if ( 'Enter' === event.key || ' ' === event.key ) {
 				event.preventDefault();
 				actions.closeModal( event );
 			}
-		},
+		} ),
 	},
 } );

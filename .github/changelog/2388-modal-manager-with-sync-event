@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Wrap modal-manager store actions in withSyncEvent to prevent WordPress 6.8+ Interactivity API deprecation warning when accessing synchronous event.preventDefault().
