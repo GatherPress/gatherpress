@@ -93,7 +93,10 @@ const mockSettings = {
 	showViewerTimezone: true,
 };
 
+let mockConfig = {};
+
 jest.mock( '@src/helpers/editor-settings', () => ( {
+	getFromConfig: ( key ) => mockConfig[ key ],
 	getFromSettings: ( key ) => mockSettings[ key ],
 } ) );
 
@@ -290,11 +293,28 @@ describe( 'Event Date Edit documentation link', () => {
 
 describe( 'Event Date Edit separator control', () => {
 	it( 'offers the localized default as a placeholder when unset', () => {
+		mockConfig = {};
 		const { getByLabelText } = renderEdit( { separator: '' } );
 		const input = getByLabelText( 'Separator' );
 
 		expect( input ).toHaveValue( '' );
 		expect( input ).toHaveAttribute( 'placeholder', 'to' );
+	} );
+
+	it( 'offers the filtered datetimeSeparator from config as a placeholder when unset', () => {
+		mockConfig = { datetimeSeparator: ' - ' };
+		const { getByLabelText } = renderEdit( { separator: '' } );
+		const input = getByLabelText( 'Separator' );
+
+		expect( input ).toHaveValue( '' );
+		expect( input ).toHaveAttribute( 'placeholder', ' - ' );
+	} );
+
+	it( 'leaves the placeholder empty when the filtered datetimeSeparator is empty', () => {
+		mockConfig = { datetimeSeparator: '' };
+		const { getByLabelText } = renderEdit( { separator: '' } );
+
+		expect( getByLabelText( 'Separator' ) ).toHaveAttribute( 'placeholder', '' );
 	} );
 
 	it( 'shows a custom separator as it was saved', () => {
@@ -314,3 +334,45 @@ describe( 'Event Date Edit separator control', () => {
 		expect( setAttributes ).toHaveBeenCalledWith( { separator: 'bis' } );
 	} );
 } );
+
+describe( 'Event Date Edit display rendering', () => {
+	// The date line on its own. With isLink on it is the only text inside the
+	// pseudo-link, so labels elsewhere in the block can't satisfy a match.
+	const dateLine = ( attributes ) =>
+		renderEdit( { isLink: true, ...attributes } ).container.querySelector(
+			'a[href="#gatherpress-event-date-pseudo-link"]',
+		).textContent;
+
+	it( 'renders the default separator when separator attribute is empty', () => {
+		mockConfig = {};
+
+		expect( dateLine( { separator: '' } ) ).toBe(
+			'2026-08-01 18:00 to 2026-08-01 20:00',
+		);
+	} );
+
+	it( 'renders the filtered datetimeSeparator from config when separator attribute is empty', () => {
+		mockConfig = { datetimeSeparator: '-' };
+
+		expect( dateLine( { separator: '' } ) ).toBe(
+			'2026-08-01 18:00 - 2026-08-01 20:00',
+		);
+	} );
+
+	it( 'renders no separator when the filtered datetimeSeparator is empty', () => {
+		mockConfig = { datetimeSeparator: '' };
+
+		expect( dateLine( { separator: '' } ) ).toBe(
+			'2026-08-01 18:00 2026-08-01 20:00',
+		);
+	} );
+
+	it( 'renders the custom separator when separator attribute is specified', () => {
+		mockConfig = { datetimeSeparator: '-' };
+
+		expect( dateLine( { separator: 'until' } ) ).toBe(
+			'2026-08-01 18:00 until 2026-08-01 20:00',
+		);
+	} );
+} );
+
