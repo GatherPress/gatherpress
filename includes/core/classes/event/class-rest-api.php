@@ -845,13 +845,19 @@ final class Rest_Api {
 		// A magic-link token arrives in the body, not the URL, so pass its email along.
 		$token_email = is_string( $user_identifier ) ? $user_identifier : null;
 
+		// A token authorizes the RSVP change, not the roster: a caller who cannot
+		// read the attendee list gets the counts the block needs, as on the RSVP form route.
+		$responses = Event::can_read_rsvps( $post_id )
+			? $rsvp->responses()
+			: $this->rsvp_response_counts( $rsvp->responses() );
+
 		$response = array(
 			'event_id'    => $post_id,
 			'success'     => $success,
 			'status'      => $status,
 			'guests'      => $guests,
 			'anonymous'   => $anonymous,
-			'responses'   => $rsvp->responses(),
+			'responses'   => $responses,
 			'online_link' => $event->maybe_get_online_event_link( $token_email ),
 		);
 

@@ -2162,7 +2162,75 @@ class Test_Rest_Api extends Base {
 		$response = rest_do_request( $request );
 
 		$this->assertSame( 200, $response->get_status(), 'A valid token should authorize the request.' );
+		$this->assertTrue( $response->get_data()['success'], 'The RSVP change should be reported as saved.' );
 		$this->assertSame( 'not_attending', $response->get_data()['status'] );
+		$this->assertSame(
+			'not_attending',
+			( new Rsvp( $post_id ) )->get( 'test@example.com' )['status'],
+			'The stored RSVP should be not attending.'
+		);
+	}
+
+	/**
+	 * Tests a token holder who cannot read the roster gets counts, not attendee records.
+	 *
+	 * A token authorizes the RSVP change only. On a password-protected event an
+	 * anonymous visitor cannot read the attendee list, so the response carries
+	 * the per-status counts the RSVP block needs and drops the records.
+	 *
+	 * @since TBD
+	 * @covers ::update_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_route_gives_counts_only_to_a_token_holder_without_roster_access(): void {
+		$post_id = $this->factory()->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		);
+
+		( new Event( $post_id ) )->save_datetimes(
+			array(
+				'datetime_start' => '2099-01-01 10:00:00',
+				'datetime_end'   => '2099-01-01 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		( new Rsvp( $post_id ) )->save( 'other@example.com', 'attending' );
+
+		$user_record = ( new Rsvp( $post_id ) )->save( 'test@example.com', 'not_attending' );
+		$rsvp_token  = new Token( $user_record['comment_id'] );
+		$rsvp_token->generate_token();
+
+		wp_set_current_user( 0 );
+
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_body(
+			wp_json_encode(
+				array(
+					'post_id'    => $post_id,
+					'status'     => 'attending',
+					'rsvp_token' => sprintf( '%d_%s', $user_record['comment_id'], $rsvp_token->get_token() ),
+				)
+			)
+		);
+
+		$data = rest_do_request( $request )->get_data();
+
+		$this->assertTrue( $data['success'] );
+		$this->assertSame( 2, $data['responses']['attending']['count'] );
+
+		foreach ( $data['responses'] as $status => $group ) {
+			$this->assertSame(
+				array( 'count' ),
+				array_keys( $group ),
+				sprintf( 'The %s group should carry only its count.', $status )
+			);
+		}
 	}
 
 	/**
