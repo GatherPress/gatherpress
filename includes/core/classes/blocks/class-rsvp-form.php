@@ -692,7 +692,8 @@ final class Rsvp_Form {
 	 * builds it, so it names the schema stored for this form: `form_{index}`
 	 * at the top level, prefixed with `{parent index}_` for each nesting level.
 	 *
-	 * @since TBD
+	 * @since 0.33.0
+	 * @since TBD Renamed from find_form_index_in_blocks(), and returns the form schema ID rather than a block index.
 	 *
 	 * @param array<int, array<string, mixed>> $blocks       Array of parsed blocks.
 	 * @param array<string, mixed>             $target_block The block we're looking for.
