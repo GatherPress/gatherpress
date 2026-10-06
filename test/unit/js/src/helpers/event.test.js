@@ -1508,22 +1508,55 @@ describe( 'getEventMeta', () => {
 
 /**
  * Coverage for hasOnlineEventTerm.
+ *
+ * Two sources feed the check: the post's venue terms (from the current editor
+ * post, or from the post an override points at) and the pre-resolved
+ * online-event term ID exposed as
+ * `select('core/editor').getEditorSettings().gatherpress.config.onlineEventTermIds`.
+ * hasOnlineEventTerm reads that field instead of issuing a taxonomy REST
+ * lookup on every render (#2047).
  */
 describe( 'hasOnlineEventTerm', () => {
 	/**
+	 * Builds a `core/editor` store mock whose settings expose the sentinel ID.
+	 *
+	 * @param {number|null} onlineTermId Sentinel term ID, or null for "not seeded".
+	 *
+	 * @return {Object} The `core/editor` store mock.
+	 */
+	const mockEditorWithOnlineId = ( onlineTermId ) => ( {
+		getCurrentPostType: () => 'gatherpress_event',
+		getEditedPostAttribute: () => undefined,
+		getEditorSettings: () => ( {
+			gatherpress: {
+				config: {
+					onlineEventTermIds:
+						null === onlineTermId
+							? {}
+							: { gatherpress_venue: onlineTermId },
+				},
+			},
+		} ),
+	} );
+
+	/**
 	 * Builds a `core` store mock for the override path: the registry declares
 	 * event-date support on the standard event type and a "production"
-	 * companion type, term lookups answer with `terms`, and the `include`
-	 * lookup returns `post` only from the post type that owns it.
+	 * companion type, and the `include` lookup returns `post` only from the
+	 * post type that owns it.
+	 *
+	 * `taxonomies` collects the taxonomy slug of every taxonomy-kind
+	 * `getEntityRecords` call. The merged implementation reads the sentinel ID
+	 * from editor settings, so the collection must stay empty: a non-empty
+	 * array means a REST taxonomy lookup crept back in.
 	 *
 	 * @param {Object}      options            Mock options.
-	 * @param {Array|null}  options.terms      Records returned for the taxonomy lookup.
 	 * @param {Object|null} options.post       The post the override resolves to, if any.
 	 * @param {string[]}    options.taxonomies Collects the taxonomy slug of each term lookup.
 	 *
 	 * @return {Object} The `core` store mock.
 	 */
-	function mockCoreForOverride( { terms, post = null, taxonomies = [] } ) {
+	function mockCoreForOverride( { post = null, taxonomies = [] } = {} ) {
 		return {
 			getPostType: mockGetPostType,
 			getPostTypes: () => [
@@ -1539,7 +1572,7 @@ describe( 'hasOnlineEventTerm', () => {
 			getEntityRecords: ( kind, slug, query ) => {
 				if ( 'taxonomy' === kind ) {
 					taxonomies.push( slug );
-					return terms;
+					return [];
 				}
 
 				return post?.type === slug && query?.include?.includes( post.id )
@@ -1549,17 +1582,20 @@ describe( 'hasOnlineEventTerm', () => {
 		};
 	}
 
-	it( 'returns false when online-event term does not exist', () => {
+	it( 'returns false when the editor settings have no sentinel id', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
 					getPostType: mockGetPostType,
-					getEntityRecords: () => null,
 				};
 			}
 			if ( 'core/editor' === store ) {
 				return {
 					getCurrentPostType: () => 'gatherpress_event',
+					getEditedPostAttribute: () => [ 42 ],
+					getEditorSettings: () => ( {
+						gatherpress: { config: { onlineEventTermIds: {} } },
+					} ),
 				};
 			}
 			return {};
@@ -1568,17 +1604,42 @@ describe( 'hasOnlineEventTerm', () => {
 		expect( hasOnlineEventTerm() ).toBe( false );
 	} );
 
-	it( 'returns false when online-event term array is empty', () => {
+	it( 'returns false when the editor settings have no gatherpress config at all', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
 					getPostType: mockGetPostType,
-					getEntityRecords: () => [],
 				};
 			}
 			if ( 'core/editor' === store ) {
 				return {
 					getCurrentPostType: () => 'gatherpress_event',
+					getEditedPostAttribute: () => [ 42 ],
+					getEditorSettings: () => ( {} ),
+				};
+			}
+			return {};
+		} );
+
+		expect( hasOnlineEventTerm() ).toBe( false );
+	} );
+
+	it( 'returns false when the sentinel map has no entry for the venue post type', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getPostType: mockGetPostType,
+				};
+			}
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostType: () => 'gatherpress_event',
+					getEditedPostAttribute: () => [ 42 ],
+					getEditorSettings: () => ( {
+						gatherpress: {
+							config: { onlineEventTermIds: { location: 42 } },
+						},
+					} ),
 				};
 			}
 			return {};
@@ -1589,43 +1650,53 @@ describe( 'hasOnlineEventTerm', () => {
 
 	it( 'returns false when postId provided but post not found', () => {
 		const taxonomies = [];
+		const getEditorSettings = jest.fn();
 
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
-				return mockCoreForOverride( { terms: [ { id: 1 } ], taxonomies } );
+				return mockCoreForOverride( { taxonomies } );
+			}
+			if ( 'core/editor' === store ) {
+				return { getEditorSettings };
 			}
 			return {};
 		} );
 
 		expect( hasOnlineEventTerm( 123 ) ).toBe( false );
-		// Bails before the term lookup when no event owns the ID.
+		// Bails before reading settings or issuing a taxonomy lookup.
+		expect( getEditorSettings ).not.toHaveBeenCalled();
 		expect( taxonomies ).toEqual( [] );
 	} );
 
 	it( 'returns false when the override points at an unpublished event', () => {
+		const taxonomies = [];
+
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return mockCoreForOverride( {
-					terms: [ { id: 42 } ],
 					post: {
 						id: 123,
 						type: 'gatherpress_event',
 						status: 'draft',
 						_gatherpress_venue: [ 42 ],
 					},
+					taxonomies,
 				} );
+			}
+			if ( 'core/editor' === store ) {
+				return mockEditorWithOnlineId( 42 );
 			}
 			return {};
 		} );
 
 		expect( hasOnlineEventTerm( 123 ) ).toBe( false );
+		expect( taxonomies ).toEqual( [] );
 	} );
 
 	it( 'returns false when postId provided but post has no venue terms', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return mockCoreForOverride( {
-					terms: [ { id: 1 } ],
 					post: {
 						id: 123,
 						type: 'gatherpress_event',
@@ -1633,6 +1704,9 @@ describe( 'hasOnlineEventTerm', () => {
 						_gatherpress_venue: [],
 					},
 				} );
+			}
+			if ( 'core/editor' === store ) {
+				return mockEditorWithOnlineId( 42 );
 			}
 			return {};
 		} );
@@ -1644,9 +1718,11 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return mockCoreForOverride( {
-					terms: [ { id: 1 } ],
 					post: { id: 123, type: 'gatherpress_event', status: 'publish' },
 				} );
+			}
+			if ( 'core/editor' === store ) {
+				return mockEditorWithOnlineId( 42 );
 			}
 			return {};
 		} );
@@ -1656,23 +1732,28 @@ describe( 'hasOnlineEventTerm', () => {
 
 	it( 'returns true when postId provided and has matching online-event term', () => {
 		const onlineTermId = 42;
+		const taxonomies = [];
 
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return mockCoreForOverride( {
-					terms: [ { id: onlineTermId } ],
 					post: {
 						id: 123,
 						type: 'gatherpress_event',
 						status: 'publish',
 						_gatherpress_venue: [ onlineTermId ],
 					},
+					taxonomies,
 				} );
+			}
+			if ( 'core/editor' === store ) {
+				return mockEditorWithOnlineId( onlineTermId );
 			}
 			return {};
 		} );
 
 		expect( hasOnlineEventTerm( 123 ) ).toBe( true );
+		expect( taxonomies ).toEqual( [] );
 	} );
 
 	it( 'derives the venue taxonomy from the post type that owns the override', () => {
@@ -1682,7 +1763,6 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return mockCoreForOverride( {
-					terms: [ { id: onlineTermId } ],
 					post: {
 						id: 123,
 						type: 'production',
@@ -1698,7 +1778,10 @@ describe( 'hasOnlineEventTerm', () => {
 					getCurrentPostType: () => 'page',
 					getEditorSettings: () => ( {
 						gatherpress: {
-							config: { venuePostTypes: { production: 'location' } },
+							config: {
+								venuePostTypes: { production: 'location' },
+								onlineEventTermIds: { location: onlineTermId },
+							},
 						},
 					} ),
 				};
@@ -1707,14 +1790,13 @@ describe( 'hasOnlineEventTerm', () => {
 		} );
 
 		expect( hasOnlineEventTerm( 123 ) ).toBe( true );
-		expect( taxonomies ).toEqual( [ '_location' ] );
+		expect( taxonomies ).toEqual( [] );
 	} );
 
 	it( 'returns false when postId provided but term does not match', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return mockCoreForOverride( {
-					terms: [ { id: 42 } ],
 					post: {
 						id: 123,
 						type: 'gatherpress_event',
@@ -1722,6 +1804,9 @@ describe( 'hasOnlineEventTerm', () => {
 						_gatherpress_venue: [ 99 ], // Different term ID.
 					},
 				} );
+			}
+			if ( 'core/editor' === store ) {
+				return mockEditorWithOnlineId( 42 );
 			}
 			return {};
 		} );
@@ -1734,12 +1819,18 @@ describe( 'hasOnlineEventTerm', () => {
 			if ( 'core' === store ) {
 				return {
 					getPostType: mockGetPostType,
-					getEntityRecords: () => [ { id: 42 } ],
 				};
 			}
 			if ( 'core/editor' === store ) {
 				return {
 					getCurrentPostType: () => 'post',
+					getEditorSettings: () => ( {
+						gatherpress: {
+							config: {
+								onlineEventTermIds: { gatherpress_venue: 42 },
+							},
+						},
+					} ),
 				};
 			}
 			return {};
@@ -1753,13 +1844,19 @@ describe( 'hasOnlineEventTerm', () => {
 			if ( 'core' === store ) {
 				return {
 					getPostType: mockGetPostType,
-					getEntityRecords: () => [ { id: 42 } ],
 				};
 			}
 			if ( 'core/editor' === store ) {
 				return {
 					getCurrentPostType: () => 'gatherpress_event',
 					getEditedPostAttribute: () => [],
+					getEditorSettings: () => ( {
+						gatherpress: {
+							config: {
+								onlineEventTermIds: { gatherpress_venue: 42 },
+							},
+						},
+					} ),
 				};
 			}
 			return {};
@@ -1773,13 +1870,19 @@ describe( 'hasOnlineEventTerm', () => {
 			if ( 'core' === store ) {
 				return {
 					getPostType: mockGetPostType,
-					getEntityRecords: () => [ { id: 42 } ],
 				};
 			}
 			if ( 'core/editor' === store ) {
 				return {
 					getCurrentPostType: () => 'gatherpress_event',
 					getEditedPostAttribute: () => undefined,
+					getEditorSettings: () => ( {
+						gatherpress: {
+							config: {
+								onlineEventTermIds: { gatherpress_venue: 42 },
+							},
+						},
+					} ),
 				};
 			}
 			return {};
@@ -1795,13 +1898,21 @@ describe( 'hasOnlineEventTerm', () => {
 			if ( 'core' === store ) {
 				return {
 					getPostType: mockGetPostType,
-					getEntityRecords: () => [ { id: onlineTermId } ],
 				};
 			}
 			if ( 'core/editor' === store ) {
 				return {
 					getCurrentPostType: () => 'gatherpress_event',
 					getEditedPostAttribute: () => [ onlineTermId ],
+					getEditorSettings: () => ( {
+						gatherpress: {
+							config: {
+								onlineEventTermIds: {
+									gatherpress_venue: onlineTermId,
+								},
+							},
+						},
+					} ),
 				};
 			}
 			return {};
@@ -1815,13 +1926,19 @@ describe( 'hasOnlineEventTerm', () => {
 			if ( 'core' === store ) {
 				return {
 					getPostType: mockGetPostType,
-					getEntityRecords: () => [ { id: 42 } ],
 				};
 			}
 			if ( 'core/editor' === store ) {
 				return {
 					getCurrentPostType: () => 'gatherpress_event',
 					getEditedPostAttribute: () => [ 99 ], // Different term ID.
+					getEditorSettings: () => ( {
+						gatherpress: {
+							config: {
+								onlineEventTermIds: { gatherpress_venue: 42 },
+							},
+						},
+					} ),
 				};
 			}
 			return {};
@@ -1836,13 +1953,19 @@ describe( 'hasOnlineEventTerm', () => {
 			if ( 'core' === store ) {
 				return {
 					getPostType: mockGetPostType,
-					getEntityRecords: () => [ { id: 42 } ], // Number.
 				};
 			}
 			if ( 'core/editor' === store ) {
 				return {
 					getCurrentPostType: () => 'gatherpress_event',
 					getEditedPostAttribute: () => [ '42' ], // String.
+					getEditorSettings: () => ( {
+						gatherpress: {
+							config: {
+								onlineEventTermIds: { gatherpress_venue: 42 },
+							},
+						},
+					} ),
 				};
 			}
 			return {};
@@ -1857,7 +1980,6 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return mockCoreForOverride( {
-					terms: [ { id: onlineTermId } ],
 					post: {
 						id: 123,
 						type: 'gatherpress_event',
@@ -1865,6 +1987,9 @@ describe( 'hasOnlineEventTerm', () => {
 						_gatherpress_venue: [ 10, onlineTermId, 20 ], // Multiple terms.
 					},
 				} );
+			}
+			if ( 'core/editor' === store ) {
+				return mockEditorWithOnlineId( onlineTermId );
 			}
 			return {};
 		} );

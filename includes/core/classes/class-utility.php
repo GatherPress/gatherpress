@@ -23,6 +23,8 @@ use WP_HTML_Tag_Processor;
  * Essential utility functions for the GatherPress plugin.
  *
  * @since 0.27.0
+ *
+ * @phpstan-type FormatToken array{type: 'literal'|'char', value: string}
  */
 final class Utility {
 
@@ -395,10 +397,36 @@ final class Utility {
 	}
 
 	/**
+	 * Tokenize a PHP date format into escaped text and format characters.
+	 *
+	 * A backslash escapes the character after it, so a run of escaped
+	 * characters, such as German '\U\h\r', is one literal token. Every other
+	 * character is a token of its own.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $format The PHP date format to tokenize.
+	 *
+	 * @return array<int, FormatToken> The tokens, in order.
+	 */
+	public static function tokenize_date_format( string $format ): array {
+		preg_match_all( '/(?:\\\\.?)+|./s', $format, $matches );
+
+		return array_map(
+			static fn ( string $value ): array => array(
+				'type'  => str_starts_with( $value, '\\' ) ? 'literal' : 'char',
+				'value' => $value,
+			),
+			$matches[0]
+		);
+	}
+
+	/**
 	 * Strip everything but the time out of a display format.
 	 *
-	 * The inverse of `remove_time_format_chars()`: 'F j, Y g:i a' keeps
-	 * 'g:i a'.
+	 * Leaves the time behind: 'F j, Y g:i a' keeps 'g:i a', and German
+	 * 'j. F Y, H:i \U\h\r' keeps 'H:i \U\h\r'. A format with no time keeps
+	 * nothing.
 	 *
 	 * @since 0.36.0
 	 *
@@ -407,16 +435,17 @@ final class Utility {
 	 * @return string The time-only format.
 	 */
 	public static function remove_non_time_format_chars( string $format ): string {
-		return trim( str_replace( self::non_time_format_chars(), '', $format ) );
+		return self::split_date_time_format( $format )['time'];
 	}
 
 	/**
 	 * Strip the time out of a display format.
 	 *
 	 * Leaves the date behind, along with whatever separated it from the
-	 * time: 'F j, Y g:i a' keeps 'F j, Y'. A format that was only ever a
-	 * time has nothing left to render, so it reports none rather than the
-	 * punctuation between the parts it lost.
+	 * time: 'F j, Y g:i a' keeps 'F j, Y', and Spanish 'j \d\e F \d\e Y, H:i'
+	 * keeps 'j \d\e F \d\e Y'. A format that was only ever a time has nothing
+	 * left to render, so it reports none rather than the punctuation between
+	 * the parts it lost.
 	 *
 	 * @since 0.36.0
 	 *
@@ -426,10 +455,113 @@ final class Utility {
 	 *                no date survives it.
 	 */
 	public static function remove_time_format_chars( string $format ): string {
-		return trim(
-			str_replace( self::time_format_chars(), '', $format ),
-			" \t\n\r\0\x0B:,-/."
+		return self::split_date_time_format( $format )['date'];
+	}
+
+	/**
+	 * Split a display format into its date part and its time part.
+	 *
+	 * The part that comes first ends where the other begins, so escaped text
+	 * stays with the part it sits in: German '\U\h\r' in 'j. F Y, H:i \U\h\r'
+	 * belongs to the time. Escaped words and spaces that lead from the date
+	 * into the time, such as German '\u\m' in 'j. F Y \u\m H:i', belong to
+	 * neither part. Timezone characters are left out of both.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $format A PHP date format.
+	 *
+	 * @return array{date: string, time: string} The date part and the time part.
+	 */
+	private static function split_date_time_format( string $format ): array {
+		$timezone_chars = array_intersect( self::time_format_chars(), self::non_time_format_chars() );
+		$date_chars     = array_diff( self::non_time_format_chars(), $timezone_chars, array( ',' ) );
+		$time_chars     = array_diff( self::time_format_chars(), $timezone_chars );
+		$tokens         = self::tokenize_date_format( $format );
+		$date_at        = self::find_format_char( $tokens, $date_chars );
+		$time_at        = self::find_format_char( $tokens, $time_chars );
+		$date           = null === $date_at ? array() : $tokens;
+		$time           = null === $time_at ? array() : $tokens;
+
+		// With both parts present, the one that comes first ends where the
+		// other one starts.
+		if ( null !== $date_at && null !== $time_at ) {
+			$boundary = max( $date_at, $time_at );
+			$first    = array_slice( $tokens, 0, $boundary );
+			$last     = array_slice( $tokens, $boundary );
+
+			list( $date, $time ) = $date_at < $time_at
+				? array( self::drop_lead_in( $first ), $last )
+				: array( $last, $first );
+		}
+
+		return array(
+			'date' => self::join_format_tokens( $date, $timezone_chars ),
+			'time' => self::join_format_tokens( $time, $timezone_chars ),
 		);
+	}
+
+	/**
+	 * Find the first token that is one of the given format characters.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<int, FormatToken> $tokens The format tokens.
+	 * @param string[]                $chars  The format characters to look for.
+	 *
+	 * @return int|null The token's index, or null when none of them is used.
+	 */
+	private static function find_format_char( array $tokens, array $chars ): ?int {
+		foreach ( $tokens as $index => $token ) {
+			if ( 'char' === $token['type'] && in_array( $token['value'], $chars, true ) ) {
+				return $index;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Drop the escaped words and spaces that end a date and lead into the time.
+	 *
+	 * Unescaped text stays, so the Japanese day suffix '日' in 'Y年n月j日 H:i'
+	 * is still part of the date.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<int, FormatToken> $tokens The date's tokens.
+	 *
+	 * @return array<int, FormatToken> The tokens without the lead-in.
+	 */
+	private static function drop_lead_in( array $tokens ): array {
+		$last = end( $tokens );
+
+		while ( $last && ( 'literal' === $last['type'] || '' === trim( $last['value'] ) ) ) {
+			array_pop( $tokens );
+			$last = end( $tokens );
+		}
+
+		return $tokens;
+	}
+
+	/**
+	 * Join format tokens back into a format, trimming the separators at its ends.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<int, FormatToken> $tokens     The format tokens.
+	 * @param string[]                $skip_chars Format characters to leave out.
+	 *
+	 * @return string The joined format.
+	 */
+	private static function join_format_tokens( array $tokens, array $skip_chars ): string {
+		$kept = array_filter(
+			$tokens,
+			static fn ( array $token ): bool => 'literal' === $token['type']
+				|| ! in_array( $token['value'], $skip_chars, true )
+		);
+
+		return trim( implode( '', array_column( $kept, 'value' ) ), " \t\n\r\0\x0B:,-/." );
 	}
 
 	/**

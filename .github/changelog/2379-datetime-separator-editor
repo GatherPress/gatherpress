@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Expose the `gatherpress_datetime_separator` filter to the block editor, so the Event Date block's preview and separator control placeholder reflect the filtered separator when unset.

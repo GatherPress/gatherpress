@@ -41,13 +41,27 @@ import {
 } from '../../helpers/datetime';
 import DateTimeRange from '../../components/DateTimeRange';
 import FormatControl from '../../components/FormatControl';
-import { getFromSettings } from '../../helpers/editor-settings';
+import { getFromConfig, getFromSettings } from '../../helpers/editor-settings';
 import {
 	isEventPostType,
 	DISABLED_FIELD_OPACITY,
 } from '../../helpers/event';
 import { isInFSETemplate } from '../../helpers/editor';
 import { resolveEventDateData } from './helpers';
+
+/**
+ * The separator shown when the block sets none.
+ *
+ * Comes from `Event::get_datetime_separator()`, so it carries the
+ * `gatherpress_datetime_separator` filter the front end applies. An empty
+ * filtered separator stays empty.
+ *
+ * @since TBD
+ *
+ * @return {string} The default separator.
+ */
+const getDefaultSeparator = () =>
+	getFromConfig( 'datetimeSeparator' ) ?? __( 'to', 'gatherpress' );
 
 /**
  * Similar to get_display_datetime method in class-event.php.
@@ -132,7 +146,7 @@ const displayDateTime = (
 
 	// Add separator if start + end date/time(s).
 	if ( dateTimeStart && dateTimeEnd ) {
-		parts.push( separator || __( 'to', 'gatherpress' ) );
+		parts.push( separator || getDefaultSeparator() );
 	}
 
 	// Add end date/time.
@@ -399,7 +413,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 							__next40pxDefaultSize
 							label={ __( 'Separator', 'gatherpress' ) }
 							value={ separator }
-							placeholder={ __( 'to', 'gatherpress' ) }
+							placeholder={ getDefaultSeparator() }
 							onChange={ ( value ) =>
 								setAttributes( { separator: value } )
 							}

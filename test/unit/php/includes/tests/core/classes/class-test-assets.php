@@ -69,6 +69,12 @@ class Test_Assets extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 11,
+				'callback' => array( $instance, 'register_public_script_handles' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'wp_head',
 				'priority' => 10,
 				'callback' => array( $instance, 'add_interactivity_state' ),
@@ -760,6 +766,66 @@ class Test_Assets extends Base {
 			true,
 			'The register_variation_assets method should execute without error.'
 		);
+	}
+
+	/**
+	 * Coverage for register_public_script_handles.
+	 *
+	 * The public handle has no source of its own; depending on it has to pull
+	 * in the script that writes the global.
+	 *
+	 * @since  TBD
+	 * @covers ::register_public_script_handles
+	 *
+	 * @return void
+	 */
+	public function test_register_public_script_handles_aliases_the_publisher(): void {
+		$instance = Assets::get_instance();
+
+		wp_deregister_script( 'gatherpress-query-controls' );
+		wp_register_script( 'gatherpress-query', 'https://example.test/query.js', array(), '1', true );
+
+		$instance->register_public_script_handles();
+
+		$registered = wp_scripts()->query( 'gatherpress-query-controls', 'registered' );
+
+		$this->assertNotFalse( $registered, 'Failed to assert the public handle is registered.' );
+		$this->assertFalse( $registered->src, 'Failed to assert the public handle is an alias with no source.' );
+		$this->assertSame(
+			array( 'gatherpress-query' ),
+			$registered->deps,
+			'Failed to assert the public handle pulls in the script that publishes the global.'
+		);
+
+		wp_deregister_script( 'gatherpress-query-controls' );
+	}
+
+	/**
+	 * Coverage for register_public_script_handles.
+	 *
+	 * A build without the publishing script should not leave a public handle
+	 * that depends on something missing.
+	 *
+	 * @since  TBD
+	 * @covers ::register_public_script_handles
+	 *
+	 * @return void
+	 */
+	public function test_register_public_script_handles_skips_a_missing_publisher(): void {
+		$instance = Assets::get_instance();
+
+		wp_deregister_script( 'gatherpress-query-controls' );
+		wp_deregister_script( 'gatherpress-query' );
+
+		$instance->register_public_script_handles();
+
+		$this->assertFalse(
+			wp_script_is( 'gatherpress-query-controls', 'registered' ),
+			'Failed to assert no public handle is registered without its publisher.'
+		);
+
+		// Restore the variation for the tests that follow.
+		$instance->register_variation_assets();
 	}
 
 	/**

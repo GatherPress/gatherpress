@@ -4,7 +4,7 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 return array (
-  'version' => '0.36.0-alpha.0',
+  'version' => '0.36.0-alpha.1',
   'leads' => 
   array (
     0 => 
@@ -114,6 +114,32 @@ return array (
         96 => '//www.gravatar.com/avatar/2be80984e145ca2eba53d5c0bd10209b?s=96&#038;r=g&#038;d=mm',
       ),
     ),
+    6 => 
+    array (
+      'id' => 13142018,
+      'name' => 'Faisal Ahammad',
+      'link' => 'https://profiles.wordpress.org/faisalahammad/',
+      'slug' => 'faisalahammad',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/4e58b76dc09fd3191780404344dfe87a?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/4e58b76dc09fd3191780404344dfe87a?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/4e58b76dc09fd3191780404344dfe87a?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    7 => 
+    array (
+      'id' => 15256814,
+      'name' => 'Boro Sitnikovski',
+      'link' => 'https://profiles.wordpress.org/bor0/',
+      'slug' => 'bor0',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/bdf960f676361ad8583435b91d88f9e4?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/bdf960f676361ad8583435b91d88f9e4?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/bdf960f676361ad8583435b91d88f9e4?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
   ),
   'contributors' => 
   array (
@@ -132,18 +158,31 @@ return array (
     ),
     1 => 
     array (
-      'id' => 15256814,
-      'name' => 'Boro Sitnikovski',
-      'link' => 'https://profiles.wordpress.org/bor0/',
-      'slug' => 'bor0',
+      'id' => 20244435,
+      'name' => 'Caleb Matteis',
+      'link' => 'https://profiles.wordpress.org/calebthedev/',
+      'slug' => 'calebthedev',
       'avatar_urls' => 
       array (
-        24 => '//www.gravatar.com/avatar/bdf960f676361ad8583435b91d88f9e4?s=24&#038;r=g&#038;d=mm',
-        48 => '//www.gravatar.com/avatar/bdf960f676361ad8583435b91d88f9e4?s=48&#038;r=g&#038;d=mm',
-        96 => '//www.gravatar.com/avatar/bdf960f676361ad8583435b91d88f9e4?s=96&#038;r=g&#038;d=mm',
+        24 => '//www.gravatar.com/avatar/9e7fee920b635110a2e6a160d323bdd5?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/9e7fee920b635110a2e6a160d323bdd5?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/9e7fee920b635110a2e6a160d323bdd5?s=96&#038;r=g&#038;d=mm',
       ),
     ),
     2 => 
+    array (
+      'id' => 12256569,
+      'name' => 'clk87',
+      'link' => 'https://profiles.wordpress.org/clk87/',
+      'slug' => 'clk87',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/6c9f12ef235fc0811d2c5e48f1cb45e2?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/6c9f12ef235fc0811d2c5e48f1cb45e2?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/6c9f12ef235fc0811d2c5e48f1cb45e2?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    3 => 
     array (
       'id' => 15029042,
       'name' => 'FahimMurshed',
@@ -156,20 +195,33 @@ return array (
         96 => '//www.gravatar.com/avatar/fd11fef5cb83c5448e7b260729a0635d?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    3 => 
+    4 => 
     array (
-      'id' => 13142018,
-      'name' => 'Faisal Ahammad',
-      'link' => 'https://profiles.wordpress.org/faisalahammad/',
-      'slug' => 'faisalahammad',
+      'id' => 6809422,
+      'name' => 'heiglandreas',
+      'link' => 'https://profiles.wordpress.org/heiglandreas/',
+      'slug' => 'heiglandreas',
       'avatar_urls' => 
       array (
-        24 => '//www.gravatar.com/avatar/4e58b76dc09fd3191780404344dfe87a?s=24&#038;r=g&#038;d=mm',
-        48 => '//www.gravatar.com/avatar/4e58b76dc09fd3191780404344dfe87a?s=48&#038;r=g&#038;d=mm',
-        96 => '//www.gravatar.com/avatar/4e58b76dc09fd3191780404344dfe87a?s=96&#038;r=g&#038;d=mm',
+        24 => '//www.gravatar.com/avatar/ff15ee99c7c4802e73f99b12c4681e53?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/ff15ee99c7c4802e73f99b12c4681e53?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/ff15ee99c7c4802e73f99b12c4681e53?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    4 => 
+    5 => 
+    array (
+      'id' => 15768524,
+      'name' => 'Kofi Mokome',
+      'link' => 'https://profiles.wordpress.org/kofimokome/',
+      'slug' => 'kofimokome',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/35d97e8ebb19530c8cb46cb42f5e5c86?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/35d97e8ebb19530c8cb46cb42f5e5c86?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/35d97e8ebb19530c8cb46cb42f5e5c86?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    6 => 
     array (
       'id' => 23534793,
       'name' => 'lheroorg',
@@ -182,7 +234,7 @@ return array (
         96 => '//www.gravatar.com/avatar/ee6cccae40a29f2fc886d06c55b48426?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    5 => 
+    7 => 
     array (
       'id' => 23285232,
       'name' => 'Andrew Matia',
@@ -195,7 +247,33 @@ return array (
         96 => '//www.gravatar.com/avatar/07edde51bd6af2361a1dd84d23b0a180?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    6 => 
+    8 => 
+    array (
+      'id' => 20268498,
+      'name' => 'Noruzzaman',
+      'link' => 'https://profiles.wordpress.org/noruzzaman/',
+      'slug' => 'noruzzaman',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/b747b9a4e84b09dca5d20822bc049559?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/b747b9a4e84b09dca5d20822bc049559?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/b747b9a4e84b09dca5d20822bc049559?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    9 => 
+    array (
+      'id' => 14484135,
+      'name' => 'Oscar Hugo Paz',
+      'link' => 'https://profiles.wordpress.org/oscarhugopaz/',
+      'slug' => 'oscarhugopaz',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/43fefd8c7cba3a0427828114f12283d5?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/43fefd8c7cba3a0427828114f12283d5?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/43fefd8c7cba3a0427828114f12283d5?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    10 => 
     array (
       'id' => 23546338,
       'name' => 'puvaanraaj2001',
@@ -208,7 +286,7 @@ return array (
         96 => '//www.gravatar.com/avatar/3b6c0819f1541912fd4f52ac26985e8a?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    7 => 
+    11 => 
     array (
       'id' => 18295298,
       'name' => 'Cem Ünalan',
@@ -221,7 +299,33 @@ return array (
         96 => '//www.gravatar.com/avatar/37f14f00b51fef688b1735cee466cb30?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    8 => 
+    12 => 
+    array (
+      'id' => 12053379,
+      'name' => 'stein2nd',
+      'link' => 'https://profiles.wordpress.org/stein2nd/',
+      'slug' => 'stein2nd',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/9da98bce48ef2fbdc855bc58b07b3292?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/9da98bce48ef2fbdc855bc58b07b3292?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/9da98bce48ef2fbdc855bc58b07b3292?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    13 => 
+    array (
+      'id' => 7268075,
+      'name' => 'Steve Erdelyi',
+      'link' => 'https://profiles.wordpress.org/stephenerdelyi/',
+      'slug' => 'stephenerdelyi',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/96b3db2b51287c4c0f035717b6aac86e?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/96b3db2b51287c4c0f035717b6aac86e?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/96b3db2b51287c4c0f035717b6aac86e?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    14 => 
     array (
       'id' => 14695490,
       'name' => 'Anton Vanyukov',
@@ -234,7 +338,7 @@ return array (
         96 => '//www.gravatar.com/avatar/8928045986c8be0950657ed9e07e21d9?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    9 => 
+    15 => 
     array (
       'id' => 23532709,
       'name' => 'w3lld1',

@@ -13,13 +13,16 @@ use DateTimeZone;
 // Deep import on purpose: test_prior_fqn_resolves_to_current_class asserts
 // Event::class equals the real FQN, which the BC alias intentionally is not.
 use GatherPress\Core\Event\Event;
+use GatherPress\Core\Setup;
 use GatherPress\Core\Event\Setup as Event_Setup;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use ReflectionClass;
+use WP_Error;
 use WP_Post;
+use WP_Term;
 
 /**
  * Class Test_Event.
@@ -149,6 +152,53 @@ class Test_Event extends Base {
 				'expects' => 'May 12, 2020 5:00pm',
 			),
 		);
+	}
+
+	/**
+	 * Covers raw parts returned for a same-day event.
+	 *
+	 * @covers ::get_display_datetime_parts
+	 *
+	 * @return void
+	 */
+	public function test_get_display_datetime_parts(): void {
+		update_option(
+			'gatherpress_settings',
+			array(
+				'date_format'   => 'l, F j, Y',
+				'time_format'   => 'g:i A',
+				'show_timezone' => false,
+			)
+		);
+
+		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$event = new Event( $post->ID );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2020-05-11 15:00:00',
+				'datetime_end'   => '2020-05-11 17:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$parts = $event->get_display_datetime_parts( '', '', '', 'UNTIL', 'yes' );
+
+		// parts['start'] is the formatted date/time without the timezone suffix;
+		// the timezone lives in its own 'timezone' part so the template can wrap
+		// each segment in a machine-readable <time> tag without nesting the
+		// timezone string inside the start <time> element.
+		$this->assertSame( 'Monday, May 11, 2020 3:00 PM', $parts['start'] );
+		$this->assertSame( 'UNTIL', $parts['separator'] );
+		$this->assertSame( '5:00 PM', $parts['end'] );
+		$this->assertSame( 'EDT', $parts['timezone'] );
+		// get_display_datetime() joins the non-empty parts and is what callers
+		// that want a single human-readable string consume.
+		$this->assertSame(
+			'Monday, May 11, 2020 3:00 PM UNTIL 5:00 PM EDT',
+			$event->get_display_datetime( '', '', '', 'UNTIL', 'yes' )
+		);
+
+		delete_option( 'gatherpress_settings' );
 	}
 
 	/**
@@ -1054,6 +1104,532 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * Coverage for is_online method on an event constructed without a post.
+	 *
+	 * @covers ::is_online
+	 *
+	 * @return void
+	 */
+	public function test_is_online_returns_false_without_event(): void {
+		$event = new Event( 0 );
+
+		$this->assertFalse(
+			$event->is_online(),
+			'is_online should be false when the constructor found no supporting post.'
+		);
+	}
+
+	/**
+	 * Coverage for is_online method when no online-event term is attached.
+	 *
+	 * @covers ::is_online
+	 *
+	 * @return void
+	 */
+	public function test_is_online_returns_false_without_term(): void {
+		$event_id = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get()->ID;
+
+		$event = new Event( $event_id );
+
+		$this->assertFalse(
+			$event->is_online(),
+			'is_online should be false when no online-event term is attached.'
+		);
+	}
+
+	/**
+	 * Coverage for is_online method when the online-event term is attached.
+	 *
+	 * @covers ::is_online
+	 *
+	 * @return void
+	 */
+	public function test_is_online_returns_true_when_term_present(): void {
+		register_taxonomy_for_object_type( Venue::TAXONOMY, Event::POST_TYPE );
+		Setup::get_instance()->add_online_event_term();
+		$event_id = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get()->ID;
+
+		wp_set_post_terms( $event_id, array( Venue\Setup::ONLINE_EVENT_TERM_SLUG ), Venue::TAXONOMY );
+
+		$event = new Event( $event_id );
+
+		$this->assertTrue(
+			$event->is_online(),
+			'is_online should be true when the online-event term is attached.'
+		);
+	}
+
+	/**
+	 * Coverage for is_online on hybrid events (both physical venue + online).
+	 *
+	 * @covers ::is_online
+	 *
+	 * @return void
+	 */
+	public function test_is_online_returns_true_for_hybrid(): void {
+		register_taxonomy_for_object_type( Venue::TAXONOMY, Event::POST_TYPE );
+		Setup::get_instance()->add_online_event_term();
+		$venue    = $this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_title' => 'Hybrid Venue',
+				'post_name'  => 'hybrid-venue',
+			)
+		)->get();
+		$event_id = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get()->ID;
+
+		wp_set_post_terms( $event_id, array( '_hybrid-venue', Venue\Setup::ONLINE_EVENT_TERM_SLUG ), Venue::TAXONOMY );
+
+		$event = new Event( $event_id );
+
+		$this->assertTrue(
+			$event->is_online(),
+			'is_online should be true for hybrid events carrying both venue and online terms.'
+		);
+
+		// Suppress unused-noise from the unused $venue fixture.
+		unset( $venue );
+	}
+
+	/**
+	 * Coverage for is_online on an event with a physical venue term but no
+	 * online-event term.
+	 *
+	 * The sentinel is not present, so the term loop must exhaust without a
+	 * match and report false. This is the canonical non-hybrid venue case:
+	 * a real venue is attached but the event is not online.
+	 *
+	 * @covers ::is_online
+	 *
+	 * @return void
+	 */
+	public function test_is_online_returns_false_for_venue_without_online_term(): void {
+		$venue    = $this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_title' => 'Physical Venue',
+				'post_name'  => 'physical-venue',
+			)
+		)->get();
+		$event_id = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get()->ID;
+
+		wp_set_post_terms( $event_id, array( '_physical-venue' ), Venue::TAXONOMY );
+
+		$event = new Event( $event_id );
+
+		$this->assertFalse(
+			$event->is_online(),
+			'is_online should be false when only a physical venue term is attached.'
+		);
+
+		unset( $venue );
+	}
+
+	/**
+	 * Coverage for set_online method adding term and meta on toggle-on.
+	 *
+	 * @covers ::set_online
+	 *
+	 * @return void
+	 */
+	public function test_set_online_adds_term_and_meta(): void {
+		register_taxonomy_for_object_type( Venue::TAXONOMY, Event::POST_TYPE );
+		Setup::get_instance()->add_online_event_term();
+		$event_id = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get()->ID;
+
+		$event = new Event( $event_id );
+
+		// The shadow-source wiring that attaches `_gatherpress_venue` to
+		// `gatherpress_event` runs on `init` priority 12; in the PHPUnit
+		// bootstrap that wiring lands AFTER each test's first `init` so
+		// `wp_set_post_terms` would otherwise refuse the sentinel assignment.
+		register_taxonomy_for_object_type( Venue::TAXONOMY, Event::POST_TYPE );
+
+		$event = new Event( $event_id );
+		$this->assertTrue( $event->set_online( true, 'https://example.com/meet' ) );
+
+		$terms = wp_get_post_terms( $event_id, Venue::TAXONOMY, array( 'fields' => 'slugs' ) );
+
+		$this->assertContains(
+			Venue\Setup::ONLINE_EVENT_TERM_SLUG,
+			$terms,
+			'set_online(true) should attach the online-event term.'
+		);
+		$this->assertSame(
+			'https://example.com/meet',
+			get_post_meta( $event_id, 'gatherpress_online_event_link', true ),
+			'set_online(true, $link) should persist the link meta.'
+		);
+	}
+
+	/**
+	 * Coverage for set_online method removing term and meta on toggle-off.
+	 *
+	 * @covers ::set_online
+	 *
+	 * @return void
+	 */
+	public function test_set_online_off_removes_term_and_meta(): void {
+		register_taxonomy_for_object_type( Venue::TAXONOMY, Event::POST_TYPE );
+
+		$event_id = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get()->ID;
+
+		$event = new Event( $event_id );
+		$this->assertTrue( $event->set_online( true, 'https://example.com/meet' ) );
+		$this->assertTrue( $event->set_online( false ) );
+
+		$terms = wp_get_post_terms( $event_id, Venue::TAXONOMY, array( 'fields' => 'slugs' ) );
+
+		$this->assertNotContains(
+			Venue\Setup::ONLINE_EVENT_TERM_SLUG,
+			$terms,
+			'set_online(false) should remove the online-event term.'
+		);
+		$this->assertSame(
+			'',
+			get_post_meta( $event_id, 'gatherpress_online_event_link', true ),
+			'set_online(false) should clear the link meta.'
+		);
+	}
+
+	/**
+	 * Coverage for set_online method preserving the physical venue term on toggle-off.
+	 *
+	 * Hybrid events should drop only the sentinel — the real venue term stays.
+	 *
+	 * @covers ::set_online
+	 *
+	 * @return void
+	 */
+	public function test_set_online_off_preserves_venue_term(): void {
+		register_taxonomy_for_object_type( Venue::TAXONOMY, Event::POST_TYPE );
+
+		$venue    = $this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_title' => 'Hybrid Venue',
+				'post_name'  => 'hybrid-venue',
+			)
+		)->get();
+		$event_id = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get()->ID;
+
+		wp_set_post_terms( $event_id, array( '_hybrid-venue' ), Venue::TAXONOMY );
+
+		$event = new Event( $event_id );
+		$this->assertTrue( $event->set_online( true, 'https://example.com/meet' ) );
+		$this->assertTrue( $event->set_online( false ) );
+
+		$terms = wp_get_post_terms( $event_id, Venue::TAXONOMY, array( 'fields' => 'slugs' ) );
+
+		$this->assertContains(
+			'_hybrid-venue',
+			$terms,
+			'set_online(false) on a hybrid should keep the real venue term.'
+		);
+		$this->assertNotContains(
+			Venue\Setup::ONLINE_EVENT_TERM_SLUG,
+			$terms,
+			'set_online(false) on a hybrid should still remove the online-event sentinel.'
+		);
+
+		unset( $venue );
+	}
+
+	/**
+	 * Coverage for set_online clearing stale meta on toggle-off when no sentinel
+	 * has ever been seeded for the venue taxonomy.
+	 *
+	 * With no seeded term the resolved term id is null, so toggle-off has no
+	 * term to remove but still clears any stale gatherpress_online_event_link
+	 * meta and reports success.
+	 *
+	 * @covers ::set_online
+	 *
+	 * @return void
+	 */
+	public function test_set_online_off_clears_meta_when_no_term_seeded(): void {
+		register_taxonomy_for_object_type( Venue::TAXONOMY, Event::POST_TYPE );
+		$event_id = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get()->ID;
+
+		add_post_meta( $event_id, 'gatherpress_online_event_link', 'https://example.com/stale' );
+
+		$this->assertTrue(
+			( new Event( $event_id ) )->set_online( false ),
+			'set_online(false) should succeed and clear stale meta when the venue taxonomy has no sentinel term.'
+		);
+		$this->assertSame(
+			'',
+			get_post_meta( $event_id, 'gatherpress_online_event_link', true ),
+			'set_online(false) should clear the link meta even when no sentinel term exists.'
+		);
+	}
+
+	/**
+	 * Coverage for set_online bailing when seeding the sentinel term fails.
+	 *
+	 * A `pre_insert_term` filter rejecting the online-event term forces
+	 * `add_online_event_term()` to no-op, so the re-resolved term id stays null
+	 * and the toggle-on reports failure without touching the link meta.
+	 *
+	 * @covers ::set_online
+	 *
+	 * @return void
+	 */
+	public function test_set_online_bails_when_term_seeding_fails(): void {
+		register_taxonomy_for_object_type( Venue::TAXONOMY, Event::POST_TYPE );
+
+		// A prior test may have seeded the sentinel; remove it so the seeding
+		// branch below is genuinely exercised rather than short-circuited.
+		$existing = term_exists( Venue\Setup::ONLINE_EVENT_TERM_SLUG, Venue::TAXONOMY );
+
+		if ( $existing ) {
+			wp_delete_term( intval( $existing['term_id'] ), Venue::TAXONOMY );
+		}
+
+		$filter = static function ( $term, $taxonomy, $args ) {
+			if ( Venue\Setup::ONLINE_EVENT_TERM_SLUG === $args['slug'] ) {
+				return new \WP_Error( 'seed_failed', 'Forced seeding failure.' );
+			}
+
+			return $term;
+		};
+
+		add_filter( 'pre_insert_term', $filter, 10, 3 );
+
+		$event_id = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get()->ID;
+
+		$this->assertFalse(
+			( new Event( $event_id ) )->set_online( true, 'https://example.com/meet' ),
+			'set_online(true) should fail when the sentinel term cannot be seeded.'
+		);
+		$this->assertSame(
+			'',
+			get_post_meta( $event_id, 'gatherpress_online_event_link', true ),
+			'The link meta must be untouched when seeding fails.'
+		);
+
+		remove_filter( 'pre_insert_term', $filter );
+	}
+
+	/**
+	 * Coverage for set_online method being idempotent.
+	 *
+	 * @covers ::set_online
+	 *
+	 * @return void
+	 */
+	public function test_set_online_is_idempotent_on(): void {
+		register_taxonomy_for_object_type( Venue::TAXONOMY, Event::POST_TYPE );
+		Setup::get_instance()->add_online_event_term();
+		$event_id = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get()->ID;
+
+		$event = new Event( $event_id );
+		$event->set_online( true, 'https://example.com/meet' );
+		$event->set_online( true );
+
+		$this->assertSame(
+			'https://example.com/meet',
+			get_post_meta( $event_id, 'gatherpress_online_event_link', true ),
+			'Calling set_online(true) without a link should preserve the existing link.'
+		);
+
+		$terms = wp_get_post_terms( $event_id, Venue::TAXONOMY, array( 'fields' => 'slugs' ) );
+
+		$this->assertSame(
+			1,
+			count( array_filter( $terms, fn ( $slug ) => Venue\Setup::ONLINE_EVENT_TERM_SLUG === $slug ) ),
+			'Calling set_online(true) twice should leave exactly one online-event term attached.'
+		);
+	}
+
+	/**
+	 * Coverage for set_online method bailing silently when no post is bound.
+	 *
+	 * @covers ::set_online
+	 *
+	 * @return void
+	 */
+	public function test_set_online_bails_when_no_event(): void {
+		$event = new Event( 0 );
+
+		// The sentinel term may or may not be seeded on the site under test;
+		// what matters is that bailing leaves its existence unchanged.
+		$term_existed = get_term_by( 'slug', Venue\Setup::ONLINE_EVENT_TERM_SLUG, Venue::TAXONOMY ) instanceof WP_Term;
+
+		// Should not error, should not create a term, and should report failure.
+		$this->assertFalse( $event->set_online( true, 'https://example.com/meet' ) );
+
+		$this->assertSame(
+			$term_existed,
+			get_term_by( 'slug', Venue\Setup::ONLINE_EVENT_TERM_SLUG, Venue::TAXONOMY ) instanceof WP_Term,
+			'set_online with no bound event must not change sentinel-term state.'
+		);
+	}
+
+	/**
+	 * Coverage for is_online returning false without online-event support.
+	 *
+	 * The core `post` type is given `gatherpress-event-date` so the Event
+	 * constructor binds the post, but it never declares
+	 * `gatherpress-online-event`. The sentinel term is still attached, so the
+	 * support gate — not an empty term list — is what answers false.
+	 *
+	 * @covers ::is_online
+	 *
+	 * @return void
+	 */
+	public function test_is_online_returns_false_without_online_support(): void {
+		add_post_type_support( 'post', Event::SUPPORT );
+
+		try {
+			register_taxonomy_for_object_type( Venue::TAXONOMY, 'post' );
+			Setup::get_instance()->add_online_event_term();
+			register_taxonomy_for_object_type( Venue::TAXONOMY, 'post' );
+
+			$post_id = $this->mock->post( array( 'post_type' => 'post' ) )->get()->ID;
+
+			wp_set_post_terms( $post_id, array( Venue\Setup::ONLINE_EVENT_TERM_SLUG ), Venue::TAXONOMY );
+
+			$event = new Event( $post_id );
+
+			// Guards the assertion below: an unbound post would also return
+			// false, but for the wrong reason.
+			$this->assertInstanceOf(
+				WP_Post::class,
+				Utility::get_hidden_property( $event, 'post' ),
+				'The post should be bound so the support gate is what returns false.'
+			);
+			$this->assertFalse(
+				$event->is_online(),
+				'is_online should be false for a post type without gatherpress-online-event support.'
+			);
+		} finally {
+			remove_post_type_support( 'post', Event::SUPPORT );
+		}
+	}
+
+	/**
+	 * Coverage for set_online bailing on a post type without online-event support.
+	 *
+	 * Writing the sentinel term here would return true while the online-event
+	 * block refused to render the same post, so the method must report failure
+	 * and leave both the terms and the link meta untouched.
+	 *
+	 * @covers ::set_online
+	 *
+	 * @return void
+	 */
+	public function test_set_online_returns_false_without_online_support(): void {
+		add_post_type_support( 'post', Event::SUPPORT );
+
+		try {
+			register_taxonomy_for_object_type( Venue::TAXONOMY, 'post' );
+			Setup::get_instance()->add_online_event_term();
+			register_taxonomy_for_object_type( Venue::TAXONOMY, 'post' );
+
+			$post_id = $this->mock->post( array( 'post_type' => 'post' ) )->get()->ID;
+			$event   = new Event( $post_id );
+
+			// Guards the assertion below: an unbound post would also return
+			// false, but for the wrong reason.
+			$this->assertInstanceOf(
+				WP_Post::class,
+				Utility::get_hidden_property( $event, 'post' ),
+				'The post should be bound so the support gate is what returns false.'
+			);
+			$this->assertFalse(
+				$event->set_online( true, 'https://example.com/meet' ),
+				'set_online should report failure without gatherpress-online-event support.'
+			);
+
+			$terms = wp_get_post_terms( $post_id, Venue::TAXONOMY, array( 'fields' => 'slugs' ) );
+
+			$this->assertNotContains(
+				Venue\Setup::ONLINE_EVENT_TERM_SLUG,
+				$terms,
+				'set_online should not attach the sentinel term without online-event support.'
+			);
+			$this->assertSame(
+				'',
+				get_post_meta( $post_id, 'gatherpress_online_event_link', true ),
+				'set_online should not write link meta without online-event support.'
+			);
+		} finally {
+			remove_post_type_support( 'post', Event::SUPPORT );
+		}
+	}
+
+	/**
+	 * Coverage for set_online ignoring a link that esc_url_raw rejects.
+	 *
+	 * A rejected URL escapes to an empty string, which would erase a link
+	 * already saved if it were written unconditionally. The status still saves.
+	 *
+	 * @covers ::set_online
+	 *
+	 * @return void
+	 */
+	public function test_set_online_ignores_link_rejected_by_esc_url_raw(): void {
+		register_taxonomy_for_object_type( Venue::TAXONOMY, Event::POST_TYPE );
+		Setup::get_instance()->add_online_event_term();
+		register_taxonomy_for_object_type( Venue::TAXONOMY, Event::POST_TYPE );
+
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $event_id );
+
+		$this->assertTrue( $event->set_online( true, 'https://example.com/meet' ) );
+		$this->assertTrue(
+			$event->set_online( true, 'javascript:alert(1)' ),
+			'set_online should still report the online status as saved.'
+		);
+		$this->assertSame(
+			'https://example.com/meet',
+			get_post_meta( $event_id, 'gatherpress_online_event_link', true ),
+			'set_online should keep the saved link when the new value is unusable.'
+		);
+	}
+
+	/**
 	 * Coverage for is_same_date method.
 	 *
 	 * @covers ::is_same_date
@@ -1117,6 +1693,45 @@ class Test_Event extends Base {
 			$event->is_same_date(),
 			'Failed to assert that an event with no datetimes is not on the same date.'
 		);
+	}
+
+	/**
+	 * Coverage for is_same_date resisting a corrupting datetime format filter.
+	 *
+	 * A filter that ignores its $format argument (returning a fixed
+	 * `Y-m-d H:i`) would previously make a same-day event compare unequal,
+	 * because is_same_date compared filter-passing formatted strings. It now
+	 * compares the unfiltered ISO date portions.
+	 *
+	 * @since TBD
+	 * @covers ::is_same_date
+	 *
+	 * @return void
+	 */
+	public function test_is_same_date_ignores_datetime_format_filter(): void {
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $event_id );
+
+		$start = new DateTime( '2025-06-15 10:00:00' );
+		$end   = new DateTime( '2025-06-15 14:00:00' );
+
+		$event->save_datetimes(
+			array(
+				'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+				'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$filter = static fn () => 'Y-m-d H:i';
+		add_filter( 'gatherpress_datetime_format', $filter );
+
+		$this->assertTrue(
+			$event->is_same_date(),
+			'Failed to assert that a same-day event stays same-day despite a corrupting datetime_format filter.'
+		);
+
+		remove_filter( 'gatherpress_datetime_format', $filter );
 	}
 
 	/**
@@ -1242,6 +1857,54 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * Coverage for get_display_datetime honoring a block-level timezone override.
+	 *
+	 * With the global show_timezone setting off, a block that overrides
+	 * showTimezone to yes must still show the timezone; without any override
+	 * the timezone stays hidden.
+	 *
+	 * @since TBD
+	 * @covers ::get_display_datetime
+	 *
+	 * @return void
+	 */
+	public function test_get_display_datetime_timezone_override_with_global_off(): void {
+		update_option(
+			'gatherpress_settings',
+			array(
+				'date_format'   => 'l, F j, Y',
+				'time_format'   => 'g:i A',
+				'show_timezone' => false,
+			)
+		);
+
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $event_id );
+
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2025-06-15 10:00:00',
+				'datetime_end'   => '2025-06-15 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$this->assertStringContainsString(
+			'EDT',
+			$event->get_display_datetime( '', '', '', '', 'yes' ),
+			'Failed to assert the timezone shows when the block overrides the global setting to yes.'
+		);
+
+		$this->assertStringNotContainsString(
+			'EDT',
+			$event->get_display_datetime(),
+			'Failed to assert the timezone stays hidden when the global setting is off and there is no override.'
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
 	 * A stored datetime that validates but will not parse reports no datetime
 	 * at all, bailing before the format filter rather than falling back to the
 	 * epoch.
@@ -1279,6 +1942,161 @@ class Test_Event extends Base {
 			0,
 			$formatted,
 			'Failed to assert an unparsable stored datetime bails before the datetime format filter runs.'
+		);
+	}
+
+	/**
+	 * Machine-readable datetime accessors bypass display-format filters.
+	 *
+	 * @covers ::get_datetime_start_iso
+	 * @covers ::get_datetime_end_iso
+	 */
+	public function test_get_iso_datetime_accessors(): void {
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $event_id );
+
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2025-06-15 14:30:00',
+				'datetime_end'   => '2025-06-15 16:30:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$empty_event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$empty_event    = new Event( $empty_event_id );
+		$this->assertSame( '', $empty_event->get_datetime_start_iso() );
+		$this->assertSame( '', $empty_event->get_datetime_end_iso() );
+
+		$filter = static function (): string {
+			return 'Y-m-d';
+		};
+		add_filter( 'gatherpress_datetime_format', $filter );
+
+		try {
+			$this->assertSame( '2025-06-15', $event->get_datetime_start( 'c' ) );
+			$this->assertSame( '2025-06-15', $event->get_datetime_end( 'c' ) );
+			$this->assertSame( '2025-06-15T14:30:00-04:00', $event->get_datetime_start_iso() );
+			$this->assertSame( '2025-06-15T16:30:00-04:00', $event->get_datetime_end_iso() );
+
+			$all_day_event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+			update_post_meta( $all_day_event_id, 'gatherpress_is_all_day', true );
+			$all_day_event = new Event( $all_day_event_id );
+			$all_day_event->save_datetimes(
+				array(
+					'datetime_start' => '2025-06-15 14:30:00',
+					'datetime_end'   => '2025-06-15 16:30:00',
+					'timezone'       => 'America/New_York',
+				)
+			);
+			$this->assertSame( '2025-06-15', $all_day_event->get_datetime_start_iso() );
+			$this->assertSame( '2025-06-15', $all_day_event->get_datetime_end_iso() );
+		} finally {
+			remove_filter( 'gatherpress_datetime_format', $filter );
+		}
+	}
+
+	/**
+	 * Branch coverage for the private format_datetime helper.
+	 *
+	 * The format_datetime helper is only reachable through public wrappers,
+	 * which the PMC test framework does not trace into coverage.xml, so each
+	 * branch is invoked directly to record it. Exercises the local-timezone and
+	 * filter path, the GMT path, and the unparsable-datetime bail path.
+	 *
+	 * @since TBD
+	 * @covers ::format_datetime
+	 *
+	 * @return void
+	 */
+	public function test_format_datetime_branches(): void {
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $event_id );
+
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2025-06-15 14:30:00',
+				'datetime_end'   => '2025-06-15 16:30:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		// Local-timezone path with a filter applied.
+		$filtered = 0;
+		$filter   = static function ( $format ) use ( &$filtered ) {
+			++$filtered;
+
+			return $format;
+		};
+		add_filter( 'gatherpress_datetime_format', $filter );
+
+		try {
+			$result = Utility::invoke_hidden_method(
+				$event,
+				'format_datetime',
+				array( 'c', 'start', true, true )
+			);
+		} finally {
+			remove_filter( 'gatherpress_datetime_format', $filter );
+		}
+
+		$this->assertNotSame(
+			0,
+			$filtered,
+			'Failed to assert format_datetime applies the format filter in local time.'
+		);
+		$this->assertMatchesRegularExpression(
+			'/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}-0[45]:00$/',
+			$result,
+			'Failed to assert format_datetime returns a local-time timestamp.'
+		);
+
+		// GMT path with the filter disabled.
+		$result = Utility::invoke_hidden_method(
+			$event,
+			'format_datetime',
+			array( 'c', 'start', false, false )
+		);
+
+		$this->assertMatchesRegularExpression(
+			'/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00$/',
+			$result,
+			'Failed to assert format_datetime returns a GMT timestamp.'
+		);
+
+		// Unparsable stored datetime bails before the filter runs.
+		update_post_meta( $event_id, 'gatherpress_datetime_start_gmt', '2030-06-31 25:00:00' );
+
+		// New instance so it reads the updated meta instead of the cached datetimes.
+		$event = new Event( $event_id );
+
+		$formatted = 0;
+		$counter   = static function ( $format ) use ( &$formatted ) {
+			++$formatted;
+
+			return $format;
+		};
+		add_filter( 'gatherpress_datetime_format', $counter );
+
+		try {
+			$result = Utility::invoke_hidden_method(
+				$event,
+				'format_datetime',
+				array( 'Y-m-d', 'start', false, true )
+			);
+		} finally {
+			remove_filter( 'gatherpress_datetime_format', $counter );
+		}
+
+		$this->assertSame(
+			'',
+			$result,
+			'Failed to assert an unparsable stored datetime reports no datetime at all.'
+		);
+		$this->assertSame(
+			0,
+			$formatted,
+			'Failed to assert an unparsable stored datetime bails before the format filter runs.'
 		);
 	}
 
@@ -2721,6 +3539,137 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * An event that refuses its timezone returns no timezone part.
+	 *
+	 * The block template consumes the parts array rather than the joined
+	 * string, so the refusal has to be visible there too. Invoked directly
+	 * because get_display_datetime() reaches this method inside the class,
+	 * which the PMC test framework does not trace into coverage.xml.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_display_datetime_parts
+	 *
+	 * @return void
+	 */
+	public function test_get_display_datetime_parts_omits_a_refused_timezone(): void {
+		update_option(
+			'gatherpress_settings',
+			array(
+				'date_format'   => 'F j, Y',
+				'time_format'   => 'g:i a',
+				'show_timezone' => true,
+			)
+		);
+
+		$post = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+
+		update_post_meta( $post->ID, 'gatherpress_show_timezone', 'never' );
+
+		( new Event( $post->ID ) )->save_datetimes(
+			array(
+				'datetime_start' => '2026-08-29 09:00:00',
+				'datetime_end'   => '2026-08-29 17:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		// 'yes' is what a block asking for the timezone sends: the event still
+		// overrules it.
+		$parts = ( new Event( $post->ID ) )->get_display_datetime_parts( '', '', '', '', 'yes' );
+
+		$this->assertFalse(
+			$parts['timezone'],
+			'Failed to assert an event that refuses its timezone returns no timezone part.'
+		);
+		$this->assertSame(
+			'August 29, 2026 9:00 am',
+			$parts['start'],
+			'Failed to assert the start part still renders.'
+		);
+		$this->assertSame(
+			'5:00 pm',
+			$parts['end'],
+			'Failed to assert the end part still renders.'
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * An all-day event formats through the all-day branch of format_datetime.
+	 *
+	 * The helper hands an all-day event to get_formatted_all_day() and
+	 * passes on whether the display-format filter applies. Invoked directly for
+	 * the same tracing reason as test_format_datetime_branches().
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::format_datetime
+	 *
+	 * @return void
+	 */
+	public function test_format_datetime_routes_an_all_day_event(): void {
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+
+		update_post_meta( $event_id, 'gatherpress_is_all_day', true );
+
+		( new Event( $event_id ) )->save_datetimes(
+			array(
+				'datetime_start' => '2026-08-29 09:00:00',
+				'datetime_end'   => '2026-08-29 17:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$event = new Event( $event_id );
+
+		$this->assertSame(
+			'August 29, 2026',
+			Utility::invoke_hidden_method(
+				$event,
+				'format_datetime',
+				array( 'F j, Y', 'start', true, false )
+			),
+			'Failed to assert an all-day event formats as the day it falls on.'
+		);
+
+		$filter = static function (): string {
+			return 'Y-m-d';
+		};
+
+		add_filter( 'gatherpress_datetime_format', $filter );
+
+		try {
+			$this->assertSame(
+				'2026-08-29',
+				Utility::invoke_hidden_method(
+					$event,
+					'format_datetime',
+					array( 'F j, Y', 'start', true, true )
+				),
+				'Failed to assert an all-day event applies the display-format filter when asked.'
+			);
+			$this->assertSame(
+				'August 29, 2026',
+				Utility::invoke_hidden_method(
+					$event,
+					'format_datetime',
+					array( 'F j, Y', 'start', true, false )
+				),
+				'Failed to assert an all-day event skips the filter when it is not asked for.'
+			);
+			$this->assertSame(
+				'2026-08-29',
+				$event->get_datetime_start_iso(),
+				'Failed to assert the ISO start of an all-day event ignores the display filter.'
+			);
+		} finally {
+			remove_filter( 'gatherpress_datetime_format', $filter );
+		}
+	}
+
+	/**
 	 * Test that get_display_datetime() respects custom separators, falls back to translatable default,
 	 * and honors the gatherpress_datetime_separator filter.
 	 *
@@ -2788,5 +3737,74 @@ class Test_Event extends Base {
 		$this->assertSame( '18:00 – 19:30', $display_filtered );
 
 		remove_filter( 'gatherpress_datetime_separator', $filter_callback );
+	}
+
+	/**
+	 * The separator defaults to 'to', keeps one set on the block, and runs
+	 * through the filter.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_datetime_separator
+	 *
+	 * @return void
+	 */
+	public function test_get_datetime_separator(): void {
+		$this->assertSame( 'to', Event::get_datetime_separator(), 'Failed to assert the default separator.' );
+		$this->assertSame(
+			'until',
+			Event::get_datetime_separator( null, 'until' ),
+			'Failed to assert a separator set on the block is kept.'
+		);
+
+		$filter = static fn (): string => '-';
+
+		add_filter( 'gatherpress_datetime_separator', $filter );
+
+		$this->assertSame( '-', Event::get_datetime_separator(), 'Failed to assert the separator is filtered.' );
+
+		remove_filter( 'gatherpress_datetime_separator', $filter );
+	}
+
+	/**
+	 * The filter gets the event passed in, the current event post when none
+	 * is, and null outside an event.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_datetime_separator
+	 *
+	 * @return void
+	 */
+	public function test_get_datetime_separator_hands_the_filter_its_event(): void {
+		$captured = 'not called';
+		$capture  = static function ( string $separator, ?Event $event ) use ( &$captured ): string {
+			$captured = $event;
+
+			return $separator;
+		};
+
+		add_filter( 'gatherpress_datetime_separator', $capture, 10, 2 );
+
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $event_id );
+
+		Event::get_datetime_separator( $event );
+		$this->assertSame( $event, $captured, 'Failed to assert an event passed in reaches the filter unchanged.' );
+
+		$this->go_to( get_permalink( $event_id ) );
+		Event::get_datetime_separator();
+		$this->assertInstanceOf( Event::class, $captured, 'Failed to assert the current event post is used.' );
+		$this->assertSame(
+			$event_id,
+			Utility::get_hidden_property( $captured, 'post' )->ID,
+			'Failed to assert the event is built from the current post.'
+		);
+
+		$this->go_to( get_permalink( $this->mock->post( array( 'post_type' => 'post' ) )->get()->ID ) );
+		Event::get_datetime_separator();
+		$this->assertNull( $captured, 'Failed to assert a post that is not an event gives the filter null.' );
+
+		remove_filter( 'gatherpress_datetime_separator', $capture );
 	}
 }
