@@ -1598,7 +1598,7 @@ class Test_Rest_Api extends Base {
 		$request = new WP_REST_Request( 'POST' );
 		$request->set_param( 'post_id', $post_id );
 		$request->set_param( 'status', 'not_attending' );
-		$request->set_param( 'rsvp_token', sprintf( '%d_%s', $user_record['comment_id'], $token_value ) );
+		$request->set_param( Token::NAME, sprintf( '%d_%s', $user_record['comment_id'], $token_value ) );
 
 		$response = $instance->update_rsvp( $request );
 		$data     = $response->get_data();
@@ -2108,7 +2108,7 @@ class Test_Rest_Api extends Base {
 
 		// Create request with token for the event the token was issued against.
 		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
-		$request->set_param( 'rsvp_token', $token_str );
+		$request->set_param( Token::NAME, $token_str );
 		$request->set_param( 'post_id', $post_id );
 
 		// Call the permission callback.
@@ -2152,9 +2152,9 @@ class Test_Rest_Api extends Base {
 		$request->set_body(
 			wp_json_encode(
 				array(
-					'post_id'    => $post_id,
-					'status'     => 'not_attending',
-					'rsvp_token' => sprintf( '%d_%s', $user_record['comment_id'], $rsvp_token->get_token() ),
+					'post_id'   => $post_id,
+					'status'    => 'not_attending',
+					Token::NAME => sprintf( '%d_%s', $user_record['comment_id'], $rsvp_token->get_token() ),
 				)
 			)
 		);
@@ -2212,9 +2212,9 @@ class Test_Rest_Api extends Base {
 		$request->set_body(
 			wp_json_encode(
 				array(
-					'post_id'    => $post_id,
-					'status'     => 'attending',
-					'rsvp_token' => sprintf( '%d_%s', $user_record['comment_id'], $rsvp_token->get_token() ),
+					'post_id'   => $post_id,
+					'status'    => 'attending',
+					Token::NAME => sprintf( '%d_%s', $user_record['comment_id'], $rsvp_token->get_token() ),
 				)
 			)
 		);
@@ -2268,9 +2268,9 @@ class Test_Rest_Api extends Base {
 		$request->set_body(
 			wp_json_encode(
 				array(
-					'post_id'    => $post_id,
-					'status'     => 'attending',
-					'rsvp_token' => sprintf( '%d_%s', $user_record['comment_id'], $rsvp_token->get_token() ),
+					'post_id'   => $post_id,
+					'status'    => 'attending',
+					Token::NAME => sprintf( '%d_%s', $user_record['comment_id'], $rsvp_token->get_token() ),
 				)
 			)
 		);
@@ -2313,7 +2313,7 @@ class Test_Rest_Api extends Base {
 		wp_set_current_user( 0 );
 
 		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
-		$request->set_param( 'rsvp_token', $token_str );
+		$request->set_param( Token::NAME, $token_str );
 		$request->set_param( 'post_id', $other_event );
 
 		$this->assertFalse(
@@ -2612,7 +2612,7 @@ class Test_Rest_Api extends Base {
 		$instance = Rest_Api::get_instance();
 		$route    = Utility::invoke_hidden_method( $instance, 'rsvp_route' );
 
-		$validate_callback = $route['args']['args']['rsvp_token']['validate_callback'];
+		$validate_callback = $route['args']['args'][ Token::NAME ]['validate_callback'];
 		$result            = call_user_func( $validate_callback, '' );
 
 		$this->assertFalse( $result, 'Validate callback should return false for empty token' );

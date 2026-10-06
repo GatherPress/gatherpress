@@ -227,7 +227,7 @@ final class Rest_Api {
 				'callback'            => array( $this, 'update_rsvp' ),
 				'permission_callback' => function ( WP_REST_Request $request ): bool {
 					$post_id    = (int) $request->get_param( 'post_id' );
-					$rsvp_token = Token::from_token_string( $request->get_param( 'rsvp_token' ) );
+					$rsvp_token = Token::from_token_string( $request->get_param( Token::NAME ) );
 					$token_post = $rsvp_token ? $rsvp_token->get_post() : null;
 
 					// A magic-link token authorizes only the event it was issued for.
@@ -239,17 +239,17 @@ final class Rest_Api {
 					return is_user_logged_in() && $this->can_read_event_rsvps( $request );
 				},
 				'args'                => array(
-					'post_id'    => array(
+					'post_id'   => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'event_post_id' ),
 					),
-					'rsvp_token' => array(
+					Token::NAME => array(
 						'required'          => false,
 						'validate_callback' => static function ( $param ): bool {
 							return ! empty( Token::parse_token_string( $param ) );
 						},
 					),
-					'status'     => array(
+					'status'    => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'rsvp_status' ),
 					),
@@ -769,7 +769,7 @@ final class Rest_Api {
 		$status          = sanitize_key( $params['status'] );
 		$guests          = intval( $params['guests'] ?? 0 );
 		$anonymous       = intval( $params['anonymous'] ?? 0 );
-		$unparsed_token  = sanitize_text_field( $params['rsvp_token'] ?? '' );
+		$unparsed_token  = sanitize_text_field( $params[ Token::NAME ] ?? '' );
 		$event           = new Event( $post_id );
 		$rsvp            = new Rsvp( $post_id );
 
