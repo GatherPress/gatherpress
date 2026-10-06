@@ -294,6 +294,16 @@ final class Setup {
 			)
 		);
 
+		register_block_style(
+			'core/post-terms',
+			array(
+				'name'         => 'gatherpress-dot',
+				/* translators: Block style label for post terms status dot indicator. */
+				'label'        => _x( 'Dot', 'block style', 'gatherpress' ),
+				'style_handle' => $handle,
+			)
+		);
+
 		$rules = '';
 
 		foreach ( Status::slugs( Event::POST_TYPE ) as $gatherpress_slug ) {
@@ -309,7 +319,8 @@ final class Setup {
 				'.gatherpress-event-status--is-%1$s, ' .
 				'.wp-block-post-terms.gatherpress-event-status .gatherpress-event-status--is-%1$s, ' .
 				'.wp-block-post-terms.gatherpress-event-status a[href*="%1$s"], ' .
-				'.wp-block-post-terms.is-style-gatherpress-badge a[href*="%1$s"]' .
+				'.wp-block-post-terms.is-style-gatherpress-badge a[href*="%1$s"], ' .
+				'.wp-block-post-terms.is-style-gatherpress-dot a[href*="%1$s"]' .
 				'{--gatherpress-status-color:%2$s}',
 				$slug_class,
 				$color
@@ -981,21 +992,58 @@ final class Setup {
 
 		$hide_when_scheduled = ! empty( $block['attrs']['hideWhenScheduled'] );
 
-		if ( ! $hide_when_scheduled ) {
-			return $block_content;
+		if ( $hide_when_scheduled ) {
+			$post_id = $instance->context['postId'] ?? get_the_ID();
+
+			if ( $post_id ) {
+				$event  = new Event( (int) $post_id );
+				$status = $event->get_status();
+
+				if ( Status::default_slug() === $status ) {
+					return '';
+				}
+			}
 		}
 
-		$post_id = $instance->context['postId'] ?? get_the_ID();
+		// Normalize theme variation class name duplicate suffixes (e.g. is-style-post-terms-1--2).
+		if ( preg_match( '/\bis-style-([a-zA-Z0-9_-]+)--\d+\b/', $block_content, $matches ) ) {
+			$base_class = 'is-style-' . $matches[1];
 
-		if ( ! $post_id ) {
-			return $block_content;
+			if ( ! str_contains( $block_content, $base_class . ' ' ) &&
+				! str_ends_with( $block_content, $base_class )
+			) {
+				$block_content = str_replace( $matches[0], $matches[0] . ' ' . $base_class, $block_content );
+			}
 		}
 
-		$event  = new Event( (int) $post_id );
-		$status = $event->get_status();
+		$is_dot = str_contains( $block['attrs']['className'] ?? '', 'is-style-gatherpress-dot' ) ||
+			str_contains( $block_content, 'is-style-gatherpress-dot' );
 
-		if ( Status::default_slug() === $status ) {
-			return '';
+		// When styled as Dot, hide term text visually and add accessibility attributes.
+		if ( $is_dot ) {
+			$replaced = preg_replace_callback(
+				'/(<a\b[^>]*rel="tag"[^>]*>)(.*?)(<\/a>)/s',
+				static function ( array $tag_matches ): string {
+					$label   = esc_attr( trim( wp_strip_all_tags( $tag_matches[2] ) ) );
+					$opening = preg_replace(
+						'/<a\b/',
+						'<a title="' . $label . '" aria-label="' . $label . '"',
+						$tag_matches[1],
+						1
+					);
+
+					return $opening .
+						'<span class="screen-reader-text gatherpress-event-status__text">' .
+						$tag_matches[2] .
+						'</span>' .
+						$tag_matches[3];
+				},
+				$block_content
+			);
+
+			if ( null !== $replaced ) {
+				$block_content = $replaced;
+			}
 		}
 
 		return $block_content;

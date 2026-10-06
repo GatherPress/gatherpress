@@ -1250,6 +1250,61 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * Tests render_event_status_post_terms_block normalizes duplicate variation classes.
+	 *
+	 * @covers ::render_event_status_post_terms_block
+	 *
+	 * @return void
+	 */
+	public function test_render_event_status_post_terms_block_normalizes_duplicate_variation_class(): void {
+		$instance      = Setup::get_instance();
+		$block_content = '<div class="wp-block-post-terms gatherpress-event-status is-style-post-terms-1--2">' .
+			'<a href="#" rel="tag">Canceled</a></div>';
+		$block         = array(
+			'blockName' => 'core/post-terms',
+			'attrs'     => array(
+				'term' => Event::TAXONOMY_STATUS,
+			),
+		);
+		$wp_block      = new WP_Block( $block, array() );
+
+		$result = $instance->render_event_status_post_terms_block( $block_content, $block, $wp_block );
+
+		$this->assertStringContainsString( 'is-style-post-terms-1', $result );
+		$this->assertStringContainsString( 'is-style-post-terms-1--2', $result );
+	}
+
+	/**
+	 * Tests render_event_status_post_terms_block with dot style hides text visually and adds accessible tooltip.
+	 *
+	 * @covers ::render_event_status_post_terms_block
+	 *
+	 * @return void
+	 */
+	public function test_render_event_status_post_terms_block_dot_style(): void {
+		$instance      = Setup::get_instance();
+		$block_content = '<div class="wp-block-post-terms gatherpress-event-status is-style-gatherpress-dot">' .
+			'<a href="http://example.com/status/postponed" rel="tag">Postponed</a></div>';
+		$block         = array(
+			'blockName' => 'core/post-terms',
+			'attrs'     => array(
+				'term'      => Event::TAXONOMY_STATUS,
+				'className' => 'is-style-gatherpress-dot',
+			),
+		);
+		$wp_block      = new WP_Block( $block, array() );
+
+		$result = $instance->render_event_status_post_terms_block( $block_content, $block, $wp_block );
+
+		$this->assertStringContainsString(
+			'<span class="screen-reader-text gatherpress-event-status__text">Postponed</span>',
+			$result
+		);
+		$this->assertStringContainsString( 'title="Postponed"', $result );
+		$this->assertStringContainsString( 'aria-label="Postponed"', $result );
+	}
+
+	/**
 	 * Coverage for set_event_archive_labels method with no pages set.
 	 *
 	 * @covers ::set_event_archive_labels
@@ -2541,6 +2596,17 @@ class Test_Setup extends Base {
 			'{--gatherpress-status-color:#c5221f}',
 			$rules,
 			'Failed to assert a status carries its color value.'
+		);
+
+		$this->assertStringContainsString(
+			'.wp-block-post-terms.is-style-gatherpress-dot a[href*="canceled"]',
+			$rules,
+			'Failed to assert dot style carries status color rule.'
+		);
+
+		$this->assertTrue(
+			WP_Block_Styles_Registry::get_instance()->is_registered( 'core/post-terms', 'gatherpress-dot' ),
+			'Failed to assert gatherpress-dot style is registered.'
 		);
 
 		foreach ( Status::slugs( Event::POST_TYPE ) as $slug ) {

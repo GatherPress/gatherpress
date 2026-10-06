@@ -1,15 +1,45 @@
 // The Event Status variation of core's Post Terms block.
 // Status colors are provided via the --gatherpress-status-color custom property.
 .wp-block-post-terms.gatherpress-event-status,
-.wp-block-post-terms.is-style-gatherpress-badge {
+.wp-block-post-terms.is-style-gatherpress-badge,
+.wp-block-post-terms.is-style-gatherpress-dot {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
 	gap: 0.5em;
 
+	// Respect textAlign on flex container (editor and frontend).
+	&.has-text-align-center,
+	&[style*="text-align:center"],
+	&[style*="text-align: center"] {
+		justify-content: center;
+		text-align: center;
+	}
+
+	&.has-text-align-right,
+	&[style*="text-align:right"],
+	&[style*="text-align: right"] {
+		justify-content: flex-end;
+		text-align: right;
+	}
+
+	&.has-text-align-left,
+	&[style*="text-align:left"],
+	&[style*="text-align: left"] {
+		justify-content: flex-start;
+		text-align: left;
+	}
+
+	// Default badge typography when not explicitly set on the block.
+	font-size: var(--wp--preset--font-size--small, 0.85em);
+	font-weight: 600;
+	line-height: 1.2;
+	letter-spacing: 0.03em;
+
 	// Badge styling applies to the default variation appearance (when no other
-	// theme block style is chosen) or explicitly when is-style-gatherpress-badge is selected.
-	&:not([class*="is-style-"], .is-style-default),
+	// theme block style is chosen) or explicitly when is-style-gatherpress-badge or is-style-default is selected.
+	&:not([class*="is-style-"]),
+	&.is-style-default,
 	&.is-style-gatherpress-badge {
 		.gatherpress-event-status__term,
 		> a[rel="tag"] {
@@ -17,10 +47,11 @@
 			align-items: center;
 			gap: 0.45em;
 			padding: 0.3em 0.75em;
-			font-size: var(--wp--preset--font-size--small, 0.85em);
-			font-weight: 600;
-			line-height: 1.2;
-			letter-spacing: 0.03em;
+			font-size: inherit;
+			font-weight: inherit;
+			line-height: inherit;
+			letter-spacing: inherit;
+			font-style: inherit;
 			border-radius: 999px;
 			text-decoration: none;
 			border: 1px solid color-mix(in srgb, var(--gatherpress-status-color, currentcolor) 30%, transparent);
@@ -38,6 +69,31 @@
 		}
 
 		// Core separates terms with a comma, which the gap already does.
+		.wp-block-post-terms__separator {
+			display: none;
+		}
+	}
+
+	// Dot style: circular indicator with screen-reader text for accessibility.
+	&.is-style-gatherpress-dot {
+		.gatherpress-event-status__term,
+		> a[rel="tag"] {
+			display: inline-block;
+			width: 0.75em;
+			height: 0.75em;
+			border-radius: 50%;
+			background-color: var(--gatherpress-status-color, currentcolor);
+			border: none;
+			padding: 0;
+			margin: 0;
+			vertical-align: middle;
+			line-height: 1;
+
+			&::before {
+				display: none;
+			}
+		}
+
 		.wp-block-post-terms__separator {
 			display: none;
 		}
