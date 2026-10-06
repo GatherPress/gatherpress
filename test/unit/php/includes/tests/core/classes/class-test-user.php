@@ -182,6 +182,59 @@ class Test_User extends Base {
 	}
 
 	/**
+	 * Check that every post type that takes RSVPs is named, not only the first.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_rsvp_post_type_plural
+	 *
+	 * @return void
+	 */
+	public function test_get_rsvp_post_type_plural_lists_every_rsvp_post_type(): void {
+		register_post_type(
+			'gp_test_session',
+			array(
+				'labels'   => array( 'name' => 'Sessions' ),
+				'supports' => array( Rsvp::SUPPORT ),
+			)
+		);
+
+		$plural = User::get_instance()->get_rsvp_post_type_plural();
+
+		unregister_post_type( 'gp_test_session' );
+
+		$this->assertSame( 'Events and Sessions', $plural );
+	}
+
+	/**
+	 * Check that a post type with an empty plural label is left out of the list.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_rsvp_post_type_plural
+	 *
+	 * @return void
+	 */
+	public function test_get_rsvp_post_type_plural_skips_an_empty_label(): void {
+		// Labels are resolved at registration, so blank the name before registering.
+		$blank_name = static function ( object $labels ): object {
+			$labels->name = '';
+
+			return $labels;
+		};
+
+		add_filter( 'post_type_labels_gp_test_blank', $blank_name );
+		register_post_type( 'gp_test_blank', array( 'supports' => array( Rsvp::SUPPORT ) ) );
+
+		$plural = User::get_instance()->get_rsvp_post_type_plural();
+
+		remove_filter( 'post_type_labels_gp_test_blank', $blank_name );
+		unregister_post_type( 'gp_test_blank' );
+
+		$this->assertSame( 'Events', $plural );
+	}
+
+	/**
 	 * A user who never set a timezone sees Default selected, not the site's
 	 * timezone, so saving the profile doesn't pin them to it.
 	 *

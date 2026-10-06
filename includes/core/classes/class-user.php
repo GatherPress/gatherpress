@@ -181,25 +181,28 @@ final class User {
 	}
 
 	/**
-	 * Get the plural label of the post type that takes RSVPs.
+	 * Get the plural labels of the post types that take RSVPs.
 	 *
 	 * The profile opt-in talks about the content members hear about, which
-	 * follows whatever post type collects RSVPs on this site rather than
-	 * assuming events. Returns an empty string when nothing collects RSVPs;
-	 * the calling template supplies its own translated "events" fallback.
-	 * A site can change the label through the post type's own labels, for
-	 * example via core's `post_type_labels_{$post_type}` filter.
+	 * follows the post types that collect RSVPs on this site rather than
+	 * assuming events. The opt-in covers every one of them, so all labels
+	 * are listed, for example "Events and Sessions". Returns an empty string
+	 * when nothing collects RSVPs; the calling template supplies its own
+	 * translated "events" fallback. A site can change a label through the
+	 * post type's own labels, for example via core's
+	 * `post_type_labels_{$post_type}` filter.
 	 *
 	 * @since TBD
 	 *
-	 * @return string Plural label, or an empty string when no post type takes RSVPs.
+	 * @return string Plural labels as a list, or an empty string when no post type takes RSVPs.
 	 */
 	public function get_rsvp_post_type_plural(): string {
-		$post_types       = get_post_types_by_support( Rsvp::SUPPORT );
-		$post_type        = $post_types[0] ?? '';
-		$post_type_object = $post_type ? get_post_type_object( $post_type ) : null;
+		$labels = array_map(
+			fn( string $post_type ): string => Utility::post_type_label( 'name', $post_type ),
+			get_post_types_by_support( Rsvp::SUPPORT )
+		);
 
-		return $post_type_object?->labels->name ?? '';
+		return wp_sprintf( '%l', array_filter( $labels ) );
 	}
 
 	/**
