@@ -710,7 +710,7 @@ class Test_Online_Event extends Base {
 		$this->assertStringContainsString(
 			'Inner content',
 			$instance->render_block( '<div>x</div>', $block, $block_instance ),
-			'Failed to assert a reader still gets the override.'
+			'Failed to assert a viewer still gets the override.'
 		);
 
 		wp_set_current_user( 0 );

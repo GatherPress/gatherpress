@@ -1420,7 +1420,7 @@ class Test_Rest_Api extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_prepare_event_data_hides_the_link_meta_from_readers(): void {
+	public function test_prepare_event_data_hides_the_link_meta_from_viewers(): void {
 		$instance = Rest_Api::get_instance();
 		$post_id  = $this->factory()->post->create(
 			array(
@@ -1461,7 +1461,7 @@ class Test_Rest_Api extends Base {
 		$this->assertSame(
 			'',
 			$anonymous['gatherpress_online_event_link'],
-			'Failed to assert an anonymous reader gets no link from the meta key.'
+			'Failed to assert an anonymous viewer gets no link from the meta key.'
 		);
 		$this->assertSame(
 			'',
@@ -1471,7 +1471,7 @@ class Test_Rest_Api extends Base {
 		$this->assertSame(
 			'',
 			$subscriber['gatherpress_online_event_link'],
-			'Failed to assert a reader who cannot edit the event gets no link from the meta key.'
+			'Failed to assert a viewer who cannot edit the event gets no link from the meta key.'
 		);
 		$this->assertSame(
 			$link,
@@ -1481,14 +1481,14 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
-	 * The route itself no longer hands the link to an anonymous reader, on a
+	 * The route itself no longer hands the link to an anonymous viewer, on a
 	 * single event or a collection.
 	 *
 	 * @covers ::prepare_event_data
 	 *
 	 * @return void
 	 */
-	public function test_rest_route_hides_the_link_meta_from_readers(): void {
+	public function test_rest_route_hides_the_link_meta_from_viewers(): void {
 		$post_id = $this->factory()->post->create(
 			array(
 				'post_type'   => Event::POST_TYPE,
@@ -1520,13 +1520,13 @@ class Test_Rest_Api extends Base {
 		$this->assertSame(
 			'',
 			$single->get_data()['meta']['gatherpress_online_event_link'] ?? null,
-			'Failed to assert a single event response carries no link for an anonymous reader.'
+			'Failed to assert a single event response carries no link for an anonymous viewer.'
 		);
 		$this->assertNotEmpty( $listed, 'Expected the published event in the collection response.' );
 		$this->assertSame(
 			'',
 			reset( $listed )['meta']['gatherpress_online_event_link'] ?? null,
-			'Failed to assert a collection response carries no link for an anonymous reader.'
+			'Failed to assert a collection response carries no link for an anonymous viewer.'
 		);
 	}
 
@@ -2581,17 +2581,17 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		// A reader who can read private posts but cannot edit this one.
-		$reader_id = $this->factory()->user->create( array( 'role' => 'subscriber' ) );
-		( new WP_User( $reader_id ) )->add_cap( 'read_private_posts' );
-		wp_set_current_user( $reader_id );
+		// A viewer who can read private posts but cannot edit this one.
+		$viewer_id = $this->factory()->user->create( array( 'role' => 'subscriber' ) );
+		( new WP_User( $viewer_id ) )->add_cap( 'read_private_posts' );
+		wp_set_current_user( $viewer_id );
 
 		$request = new WP_REST_Request( 'GET' );
 		$request->set_param( 'post_id', $post_id );
 
 		$this->assertFalse(
 			current_user_can( Event::EDIT_CAPABILITY, $post_id ),
-			'The reader must lack edit access so the read_post branch is the one exercised.'
+			'The viewer must lack edit access so the read_post branch is the one exercised.'
 		);
 		$this->assertTrue(
 			$instance->can_read_event_rsvps( $request ),

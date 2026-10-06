@@ -1143,7 +1143,7 @@ final class Rest_Api {
 		// The link's own meta key is registered with `show_in_rest`, and core
 		// hands a registered value to everyone who can read the post, since
 		// `auth_callback` gates writes rather than reads. Give that key the
-		// same answer, so a reader gets the link on the terms the event sets
+		// same answer, so a viewer gets the link on the terms the event sets
 		// while the editor still loads what it has to save.
 		if (
 			array_key_exists( 'gatherpress_online_event_link', $response->data['meta'] ?? array() )
