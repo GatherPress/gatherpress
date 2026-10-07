@@ -461,6 +461,8 @@ class Test_Abilities extends Base {
 			)
 		)->get();
 
+		update_post_meta( $post->ID, 'gatherpress_guest_limit', 5 );
+
 		$rsvp   = new Rsvp( $post->ID );
 		$user_1 = $this->factory->user->create();
 		$user_2 = $this->factory->user->create();
