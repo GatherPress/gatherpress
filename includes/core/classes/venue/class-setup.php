@@ -520,7 +520,10 @@ final class Setup {
 			$venue_meta['isOnlineEventTerm'] = $is_online;
 			$venue_meta['onlineEventLink']   = $event->maybe_get_online_event_link();
 
-			$venue_post = $this->get_venue_post_from_event_post_id( $post_id );
+			// The venue follows the event's password, like its other details.
+			$venue_post = Event::can_view_venue( $post_id )
+				? $this->get_venue_post_from_event_post_id( $post_id )
+				: null;
 
 			if ( $venue_post instanceof WP_Post ) {
 				$venue = new Venue( $venue_post->ID );

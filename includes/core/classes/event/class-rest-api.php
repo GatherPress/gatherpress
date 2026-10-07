@@ -1152,6 +1152,47 @@ final class Rest_Api {
 			$response->data['meta']['gatherpress_online_event_link'] = $online_event_link;
 		}
 
+		if ( ! Event::can_view_venue( $post_id ) ) {
+			$this->remove_venue_from_response( $response );
+		}
+
 		return $response;
+	}
+
+	/**
+	 * Removes the venue from an event's REST response.
+	 *
+	 * Core hands every reader the post's terms (the taxonomy field, a class
+	 * per term in `class_list`, and a term link per taxonomy), and the venue
+	 * taxonomy is one of them. A viewer who may not see the venue
+	 * ({@see Event::can_view_venue()}) gets the response without it.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_REST_Response $response The response object containing event data.
+	 *
+	 * @return void
+	 */
+	private function remove_venue_from_response( WP_REST_Response $response ): void {
+		$taxonomies = Event::get_shadow_taxonomies();
+
+		foreach ( $taxonomies as $taxonomy ) {
+			$taxonomy_object = get_taxonomy( $taxonomy );
+			$rest_base       = $taxonomy_object && ! empty( $taxonomy_object->rest_base )
+				? $taxonomy_object->rest_base
+				: $taxonomy;
+
+			unset( $response->data[ $rest_base ] );
+		}
+
+		if ( isset( $response->data['class_list'] ) && is_array( $response->data['class_list'] ) ) {
+			$response->data['class_list'] = Event::remove_venue_classes( $response->data['class_list'] );
+		}
+
+		foreach ( $response->get_links()['https://api.w.org/term'] ?? array() as $link ) {
+			if ( in_array( $link['attributes']['taxonomy'] ?? '', $taxonomies, true ) ) {
+				$response->remove_link( 'https://api.w.org/term', $link['href'] );
+			}
+		}
 	}
 }

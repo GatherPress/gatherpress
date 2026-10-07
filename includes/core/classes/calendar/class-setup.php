@@ -602,10 +602,14 @@ final class Setup {
 			return array();
 		}
 
-		$links = array();
+		// The venue follows the event's password, so its feed is not linked either.
+		$hidden = Event::can_view_venue( $event->ID ) ? array() : Event::get_shadow_taxonomies();
+		$links  = array();
 
 		foreach ( $terms as $term ) {
-			$links = array_merge( $links, $this->collect_term_alternate_link( $term, $args ) );
+			if ( ! in_array( $term->taxonomy, $hidden, true ) ) {
+				$links = array_merge( $links, $this->collect_term_alternate_link( $term, $args ) );
+			}
 		}
 
 		return $links;

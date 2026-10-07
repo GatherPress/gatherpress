@@ -172,7 +172,7 @@ final class Feed {
 
 		// The support check above already returned when no post is in context, so get_the_ID() is an ID here.
 		$event = new Event( (int) get_the_ID() );
-		$venue = $event->get_venue_information();
+		$venue = $event->get_viewable_venue_information();
 
 		$event_info = $this->get_event_datetime_info( $event );
 
@@ -225,7 +225,7 @@ final class Feed {
 
 		// The support check above already returned when no post is in context, so get_the_ID() is an ID here.
 		$event = new Event( (int) get_the_ID() );
-		$venue = $event->get_venue_information();
+		$venue = $event->get_viewable_venue_information();
 
 		$event_info = $this->get_event_datetime_info( $event );
 

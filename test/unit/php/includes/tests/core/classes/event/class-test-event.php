@@ -3530,4 +3530,161 @@ class Test_Event extends Base {
 
 		remove_filter( 'gatherpress_datetime_separator', $capture );
 	}
+
+	/**
+	 * Creates a published event linked to a venue, optionally with a password.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $password The event's password, or an empty string for none.
+	 *
+	 * @return int The event post ID.
+	 */
+	private function make_event_with_venue( string $password = '' ): int {
+		$this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_title' => 'Password Test Venue',
+				'post_name'  => 'password-test-venue',
+			)
+		)->get();
+
+		$event_id = $this->mock->post(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_status'   => 'publish',
+				'post_password' => $password,
+			)
+		)->get()->ID;
+
+		wp_set_post_terms( $event_id, '_password-test-venue', Venue::TAXONOMY );
+
+		return $event_id;
+	}
+
+	/**
+	 * The venue follows the event's password, and whoever can edit the event
+	 * always sees it.
+	 *
+	 * @since TBD
+	 * @covers ::can_view_venue
+	 *
+	 * @return void
+	 */
+	public function test_can_view_venue_follows_the_event_password(): void {
+		$public    = $this->make_event_with_venue();
+		$protected = $this->mock->post(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_status'   => 'publish',
+				'post_password' => 'secret',
+			)
+		)->get()->ID;
+		$entered   = static fn(): bool => false;
+
+		wp_set_current_user( 0 );
+
+		$this->assertTrue( Event::can_view_venue( $public ), 'Failed to assert a public event shows its venue.' );
+		$this->assertFalse(
+			Event::can_view_venue( $protected ),
+			'Failed to assert a protected event hides its venue from a visitor.'
+		);
+
+		add_filter( 'post_password_required', $entered );
+		$this->assertTrue(
+			Event::can_view_venue( $protected ),
+			'Failed to assert the venue shows once the password is entered.'
+		);
+		remove_filter( 'post_password_required', $entered );
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertTrue(
+			Event::can_view_venue( $protected ),
+			'Failed to assert whoever can edit the event sees its venue.'
+		);
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * Only the shadow-source taxonomies of an event are listed.
+	 *
+	 * @since TBD
+	 * @covers ::get_shadow_taxonomies
+	 *
+	 * @return void
+	 */
+	public function test_get_shadow_taxonomies(): void {
+		$taxonomies = Event::get_shadow_taxonomies();
+
+		$this->assertContains( Venue::TAXONOMY, $taxonomies, 'Failed to assert the venue taxonomy is listed.' );
+		$this->assertNotContains(
+			'gatherpress_topic',
+			$taxonomies,
+			'Failed to assert a regular taxonomy is not listed.'
+		);
+		$this->assertSame( array_values( $taxonomies ), $taxonomies, 'Failed to assert the list is reindexed.' );
+	}
+
+	/**
+	 * Venue term classes are removed and every other class is kept.
+	 *
+	 * @since TBD
+	 * @covers ::remove_venue_classes
+	 *
+	 * @return void
+	 */
+	public function test_remove_venue_classes(): void {
+		$classes = array(
+			'post-1',
+			'type-gatherpress_event',
+			sanitize_html_class( Venue::TAXONOMY . '-_password-test-venue' ),
+			'gatherpress_topic-meetup',
+		);
+
+		$this->assertSame(
+			array( 'post-1', 'type-gatherpress_event', 'gatherpress_topic-meetup' ),
+			Event::remove_venue_classes( $classes )
+		);
+	}
+
+	/**
+	 * The viewable venue information is empty while the viewer may not see the
+	 * venue, and the full venue otherwise.
+	 *
+	 * @since TBD
+	 * @covers ::get_viewable_venue_information
+	 *
+	 * @return void
+	 */
+	public function test_get_viewable_venue_information(): void {
+		$protected = new Event( $this->make_event_with_venue( 'secret' ) );
+
+		wp_set_current_user( 0 );
+
+		$this->assertSame(
+			Event::EMPTY_VENUE_INFORMATION,
+			$protected->get_viewable_venue_information(),
+			'Failed to assert a protected event hides its venue from a visitor.'
+		);
+		$this->assertSame(
+			'Password Test Venue',
+			$protected->get_venue_information()['name'],
+			'Failed to assert the unfiltered venue information is unchanged.'
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertSame(
+			'Password Test Venue',
+			$protected->get_viewable_venue_information()['name'],
+			'Failed to assert whoever can edit the event sees its venue.'
+		);
+		wp_set_current_user( 0 );
+
+		$this->assertSame(
+			Event::EMPTY_VENUE_INFORMATION,
+			( new Event( 0 ) )->get_viewable_venue_information(),
+			'Failed to assert an event that does not resolve has no venue.'
+		);
+	}
 }

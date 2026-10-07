@@ -157,6 +157,12 @@ class Test_Setup extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'add_editor_settings' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'post_class',
+				'priority' => 10,
+				'callback' => array( $instance, 'filter_post_class' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
@@ -2253,6 +2259,46 @@ class Test_Setup extends Base {
 			Event::POST_TYPE,
 			$settings['gatherpress']['config']['eventPostTypes'],
 			'Failed to assert the event post type reaches the editor settings.'
+		);
+	}
+
+	/**
+	 * A password-protected event's markup leaves out the venue class for a
+	 * visitor, and other posts and public events keep theirs.
+	 *
+	 * @since TBD
+	 * @covers ::filter_post_class
+	 *
+	 * @return void
+	 */
+	public function test_filter_post_class_hides_a_protected_event_venue(): void {
+		$instance  = Setup::get_instance();
+		$classes   = array( 'post', sanitize_html_class( '_gatherpress_venue-_somewhere' ) );
+		$post      = $this->factory->post->create();
+		$public    = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$protected = $this->factory->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		);
+
+		wp_set_current_user( 0 );
+
+		$this->assertSame(
+			$classes,
+			$instance->filter_post_class( $classes, array(), $post ),
+			'Failed to assert other posts are untouched.'
+		);
+		$this->assertSame(
+			$classes,
+			$instance->filter_post_class( $classes, array(), $public ),
+			'Failed to assert a public event is untouched.'
+		);
+		$this->assertSame(
+			array( 'post' ),
+			$instance->filter_post_class( $classes, array(), $protected ),
+			'Failed to assert a protected event loses its venue class.'
 		);
 	}
 }

@@ -4116,4 +4116,125 @@ class Test_Rest_Api extends Base {
 			'Failed to assert a root that is not the RSVP template is refused by the route.'
 		);
 	}
+
+	/**
+	 * A password-protected event's REST item leaves out its venue for a
+	 * visitor, and keeps it for whoever can edit the event.
+	 *
+	 * @since TBD
+	 * @covers ::prepare_event_data
+	 * @covers ::remove_venue_from_response
+	 *
+	 * @return void
+	 */
+	public function test_prepare_event_data_hides_a_protected_event_venue(): void {
+		$this->factory()->post->create(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'rest-protected-venue',
+			)
+		);
+
+		$event_id = $this->factory()->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_status'   => 'publish',
+				'post_password' => 'secret',
+			)
+		);
+		$topic    = $this->factory()->term->create( array( 'taxonomy' => Topic::TAXONOMY ) );
+
+		wp_set_post_terms( $event_id, '_rest-protected-venue', Venue::TAXONOMY );
+		wp_set_post_terms( $event_id, array( $topic ), Topic::TAXONOMY );
+
+		$fetch = static function () use ( $event_id ): array {
+			$response = rest_do_request( new WP_REST_Request( 'GET', '/wp/v2/gatherpress_events/' . $event_id ) );
+
+			return array( $response->get_data(), $response->get_links()['https://api.w.org/term'] ?? array() );
+		};
+
+		wp_set_current_user( 0 );
+		list( $visitor, $visitor_links ) = $fetch();
+
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
+		list( $editor, $editor_links ) = $fetch();
+
+		wp_set_current_user( 0 );
+
+		$venue_class = sanitize_html_class( Venue::TAXONOMY . '-_rest-protected-venue' );
+		$taxonomies  = static fn( array $links ): array => array_column(
+			array_column( $links, 'attributes' ),
+			'taxonomy'
+		);
+
+		$this->assertArrayNotHasKey( Venue::TAXONOMY, $visitor, 'Failed to assert a visitor gets no venue field.' );
+		$this->assertNotContains(
+			$venue_class,
+			$visitor['class_list'],
+			'Failed to assert a visitor gets no venue class.'
+		);
+		$this->assertNotContains(
+			Venue::TAXONOMY,
+			$taxonomies( $visitor_links ),
+			'Failed to assert a visitor gets no venue link.'
+		);
+		$this->assertContains(
+			Topic::TAXONOMY,
+			$taxonomies( $visitor_links ),
+			'Failed to assert other term links stay.'
+		);
+
+		$this->assertArrayHasKey( Venue::TAXONOMY, $editor, 'Failed to assert an editor gets the venue field.' );
+		$this->assertContains(
+			$venue_class,
+			$editor['class_list'],
+			'Failed to assert an editor gets the venue class.'
+		);
+		$this->assertContains(
+			Venue::TAXONOMY,
+			$taxonomies( $editor_links ),
+			'Failed to assert an editor gets the venue link.'
+		);
+	}
+
+	/**
+	 * Removing the venue copes with a response that has no `class_list`, and
+	 * with a venue taxonomy that sets its own REST base.
+	 *
+	 * @since TBD
+	 * @covers ::remove_venue_from_response
+	 *
+	 * @return void
+	 */
+	public function test_remove_venue_from_response_uses_the_rest_base(): void {
+		$event_id = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$taxonomy = get_taxonomy( Venue::TAXONOMY );
+		$original = $taxonomy->rest_base;
+
+		$taxonomy->rest_base = 'venues';
+
+		$response = new WP_REST_Response(
+			array(
+				'id'            => $event_id,
+				'venues'        => array( 1 ),
+				Topic::TAXONOMY => array( 2 ),
+			)
+		);
+
+		Utility::invoke_hidden_method(
+			Rest_Api::get_instance(),
+			'remove_venue_from_response',
+			array( $response )
+		);
+
+		$taxonomy->rest_base = $original;
+
+		$this->assertArrayNotHasKey(
+			'venues',
+			$response->data,
+			'Failed to assert the field is found by its REST base.'
+		);
+		$this->assertArrayHasKey( Topic::TAXONOMY, $response->data, 'Failed to assert other taxonomy fields stay.' );
+		$this->assertArrayNotHasKey( 'class_list', $response->data, 'Failed to assert no class list is added.' );
+	}
 }

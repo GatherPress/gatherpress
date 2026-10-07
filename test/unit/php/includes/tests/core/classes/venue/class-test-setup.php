@@ -1476,4 +1476,48 @@ class Test_Setup extends Base {
 			'Filter callback should pass through unchanged for non-venue sources.'
 		);
 	}
+
+	/**
+	 * A password-protected event's venue stays out of its venue meta for a
+	 * visitor, so the map block has nothing to show.
+	 *
+	 * @since TBD
+	 * @covers ::get_venue_meta
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_meta_hides_a_protected_event_venue(): void {
+		$instance = Setup::get_instance();
+		$venue    = $this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_name'  => 'protected-event-venue',
+				'post_title' => 'Protected Event Venue',
+			)
+		)->get();
+		$event    = $this->mock->post(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_status'   => 'publish',
+				'post_password' => 'secret',
+			)
+		)->get();
+
+		wp_set_post_terms( $event->ID, $instance->term_slug_from_post_name( $venue->post_name ), Venue::TAXONOMY );
+
+		wp_set_current_user( 0 );
+		$visitor = $instance->get_venue_meta( $event->ID, Event::POST_TYPE );
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$editor = $instance->get_venue_meta( $event->ID, Event::POST_TYPE );
+
+		wp_set_current_user( 0 );
+
+		$this->assertArrayNotHasKey( 'name', $visitor, 'Failed to assert a visitor gets no venue.' );
+		$this->assertSame(
+			'Protected Event Venue',
+			$editor['name'] ?? '',
+			'Failed to assert whoever can edit the event gets its venue.'
+		);
+	}
 }
