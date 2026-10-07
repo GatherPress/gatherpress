@@ -465,7 +465,7 @@ class Test_Abilities extends Base {
 		$user_1 = $this->factory->user->create();
 		$user_2 = $this->factory->user->create();
 
-		$rsvp->save( $user_1, 'attending', 2 );
+		$rsvp->save( $user_1, 'attending', 0, 2 );
 		$rsvp->save( $user_2, 'not_attending' );
 
 		$counts = $instance->get_rsvp_counts( array( 'post_id' => $post->ID ) );
@@ -503,29 +503,18 @@ class Test_Abilities extends Base {
 
 		$this->assertSame( 'object', $output_schema['type'], 'Failed to assert output schema type is object.' );
 		$this->assertArrayHasKey(
-			'all',
-			$output_schema['properties'],
-			'Failed to assert that "all" is defined in properties.'
+			'additionalProperties',
+			$output_schema,
+			'Failed to assert output schema defines additionalProperties.'
 		);
-		$this->assertArrayHasKey(
-			'attending',
-			$output_schema['properties'],
-			'Failed to assert that "attending" is defined in properties.'
-		);
-		$this->assertArrayHasKey(
-			'waiting_list',
-			$output_schema['properties'],
-			'Failed to assert that "waiting_list" is defined in properties.'
-		);
-		$this->assertArrayHasKey(
-			'not_attending',
-			$output_schema['properties'],
-			'Failed to assert that "not_attending" is defined in properties.'
+		$this->assertIsArray(
+			$output_schema['additionalProperties'],
+			'Failed to assert additionalProperties is an array.'
 		);
 		$this->assertSame(
 			'integer',
-			$output_schema['properties']['attending']['type'],
-			'Failed to assert attending property type is integer.'
+			$output_schema['additionalProperties']['type'],
+			'Failed to assert output schema additionalProperties type is integer.'
 		);
 	}
 }

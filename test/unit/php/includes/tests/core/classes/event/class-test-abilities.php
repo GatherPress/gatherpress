@@ -320,23 +320,6 @@ class Test_Abilities extends Base {
 	public function test_get_upcoming_events_orders_chronologically(): void {
 		$instance = Abilities::get_instance();
 
-		$later_post  = $this->mock->post(
-			array(
-				'post_type'   => 'gatherpress_event',
-				'post_title'  => 'Later Meetup',
-				'post_status' => 'publish',
-			)
-		)->get();
-		$later_event = new Event( $later_post->ID );
-		$later_date  = new DateTime( '+5 days' );
-		$later_event->save_datetimes(
-			array(
-				'datetime_start' => $later_date->format( 'Y-m-d H:i:s' ),
-				'datetime_end'   => $later_date->modify( '+1 day' )->format( 'Y-m-d H:i:s' ),
-				'timezone'       => 'UTC',
-			)
-		);
-
 		$sooner_post  = $this->mock->post(
 			array(
 				'post_type'   => 'gatherpress_event',
@@ -350,6 +333,23 @@ class Test_Abilities extends Base {
 			array(
 				'datetime_start' => $sooner_date->format( 'Y-m-d H:i:s' ),
 				'datetime_end'   => $sooner_date->modify( '+1 day' )->format( 'Y-m-d H:i:s' ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		$later_post  = $this->mock->post(
+			array(
+				'post_type'   => 'gatherpress_event',
+				'post_title'  => 'Later Meetup',
+				'post_status' => 'publish',
+			)
+		)->get();
+		$later_event = new Event( $later_post->ID );
+		$later_date  = new DateTime( '+5 days' );
+		$later_event->save_datetimes(
+			array(
+				'datetime_start' => $later_date->format( 'Y-m-d H:i:s' ),
+				'datetime_end'   => $later_date->modify( '+1 day' )->format( 'Y-m-d H:i:s' ),
 				'timezone'       => 'UTC',
 			)
 		);
