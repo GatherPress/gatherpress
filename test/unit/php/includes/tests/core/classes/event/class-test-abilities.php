@@ -258,4 +258,192 @@ class Test_Abilities extends Base {
 			'Failed to assert that a non-array input falls back to the default.'
 		);
 	}
+
+	/**
+	 * Test that get_upcoming_events excludes past events and only returns future ones.
+	 *
+	 * @covers ::get_upcoming_events
+	 *
+	 * @return void
+	 */
+	public function test_get_upcoming_events_excludes_past_events(): void {
+		$instance = Abilities::get_instance();
+
+		$past_post  = $this->mock->post(
+			array(
+				'post_type'   => 'gatherpress_event',
+				'post_title'  => 'Past Meetup',
+				'post_status' => 'publish',
+			)
+		)->get();
+		$past_event = new Event( $past_post->ID );
+		$past_date  = new DateTime( '3 days ago' );
+		$past_event->save_datetimes(
+			array(
+				'datetime_start' => $past_date->format( 'Y-m-d H:i:s' ),
+				'datetime_end'   => $past_date->modify( '+1 hour' )->format( 'Y-m-d H:i:s' ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		$future_post  = $this->mock->post(
+			array(
+				'post_type'   => 'gatherpress_event',
+				'post_title'  => 'Future Meetup',
+				'post_status' => 'publish',
+			)
+		)->get();
+		$future_event = new Event( $future_post->ID );
+		$future_date  = new DateTime( '+3 days' );
+		$future_event->save_datetimes(
+			array(
+				'datetime_start' => $future_date->format( 'Y-m-d H:i:s' ),
+				'datetime_end'   => $future_date->modify( '+1 day' )->format( 'Y-m-d H:i:s' ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		$events = $instance->get_upcoming_events( array( 'count' => 10 ) );
+
+		$this->assertCount( 1, $events, 'Failed to assert that past events are excluded.' );
+		$this->assertSame( $future_post->ID, $events[0]['id'], 'Failed to assert that the future event is returned.' );
+		$this->assertSame( 'Future Meetup', $events[0]['title'], 'Failed to assert the event title.' );
+	}
+
+	/**
+	 * Test that get_upcoming_events returns events ordered soonest first.
+	 *
+	 * @covers ::get_upcoming_events
+	 *
+	 * @return void
+	 */
+	public function test_get_upcoming_events_orders_chronologically(): void {
+		$instance = Abilities::get_instance();
+
+		$sooner_post  = $this->mock->post(
+			array(
+				'post_type'   => 'gatherpress_event',
+				'post_title'  => 'Sooner Meetup',
+				'post_status' => 'publish',
+			)
+		)->get();
+		$sooner_event = new Event( $sooner_post->ID );
+		$sooner_date  = new DateTime( '+1 day' );
+		$sooner_event->save_datetimes(
+			array(
+				'datetime_start' => $sooner_date->format( 'Y-m-d H:i:s' ),
+				'datetime_end'   => $sooner_date->modify( '+1 day' )->format( 'Y-m-d H:i:s' ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		$later_post  = $this->mock->post(
+			array(
+				'post_type'   => 'gatherpress_event',
+				'post_title'  => 'Later Meetup',
+				'post_status' => 'publish',
+			)
+		)->get();
+		$later_event = new Event( $later_post->ID );
+		$later_date  = new DateTime( '+5 days' );
+		$later_event->save_datetimes(
+			array(
+				'datetime_start' => $later_date->format( 'Y-m-d H:i:s' ),
+				'datetime_end'   => $later_date->modify( '+1 day' )->format( 'Y-m-d H:i:s' ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		$events = $instance->get_upcoming_events( array( 'count' => 10 ) );
+
+		$this->assertCount( 2, $events, 'Failed to assert that both upcoming events are returned.' );
+		$this->assertSame(
+			$sooner_post->ID,
+			$events[0]['id'],
+			'Failed to assert that the sooner event is listed first.'
+		);
+		$this->assertSame(
+			$later_post->ID,
+			$events[1]['id'],
+			'Failed to assert that the later event is listed second.'
+		);
+	}
+
+	/**
+	 * Test that get_upcoming_events respects the count parameter when multiple events exist.
+	 *
+	 * @covers ::get_upcoming_events
+	 *
+	 * @return void
+	 */
+	public function test_get_upcoming_events_respects_count_limit(): void {
+		$instance = Abilities::get_instance();
+
+		for ( $i = 1; $i <= 3; $i++ ) {
+			$post  = $this->mock->post(
+				array(
+					'post_type'   => 'gatherpress_event',
+					'post_title'  => "Meetup {$i}",
+					'post_status' => 'publish',
+				)
+			)->get();
+			$event = new Event( $post->ID );
+			$date  = new DateTime( "+{$i} days" );
+			$event->save_datetimes(
+				array(
+					'datetime_start' => $date->format( 'Y-m-d H:i:s' ),
+					'datetime_end'   => $date->modify( '+1 hour' )->format( 'Y-m-d H:i:s' ),
+					'timezone'       => 'UTC',
+				)
+			);
+		}
+
+		$events = $instance->get_upcoming_events( array( 'count' => 2 ) );
+
+		$this->assertCount( 2, $events, 'Failed to assert that count limits the number of events returned.' );
+	}
+
+	/**
+	 * Test that ability schemas define expected input and output structures.
+	 *
+	 * @covers ::register_abilities
+	 *
+	 * @return void
+	 */
+	public function test_register_abilities_schema_definitions(): void {
+		$ability = wp_get_ability( 'gatherpress/get-upcoming-events' );
+
+		$this->assertNotNull( $ability, 'Failed to assert that upcoming events ability exists.' );
+
+		$input_schema  = $ability->get_input_schema();
+		$output_schema = $ability->get_output_schema();
+
+		$this->assertSame( 'object', $input_schema['type'], 'Failed to assert input schema type is object.' );
+		$this->assertArrayHasKey(
+			'count',
+			$input_schema['properties'],
+			'Failed to assert count property in input schema.'
+		);
+		$this->assertSame(
+			1,
+			$input_schema['properties']['count']['minimum'],
+			'Failed to assert minimum count is 1.'
+		);
+		$this->assertSame(
+			Abilities::MAX_EVENTS,
+			$input_schema['properties']['count']['maximum'],
+			'Failed to assert maximum count is MAX_EVENTS.'
+		);
+		$this->assertSame( 5, $input_schema['properties']['count']['default'], 'Failed to assert default count is 5.' );
+
+		$this->assertSame( 'array', $output_schema['type'], 'Failed to assert output schema type is array.' );
+		$this->assertArrayHasKey( 'items', $output_schema, 'Failed to assert items key in output schema.' );
+		$item_props = $output_schema['items']['properties'];
+		$this->assertArrayHasKey( 'id', $item_props, 'Failed to assert id in output item properties.' );
+		$this->assertArrayHasKey( 'title', $item_props, 'Failed to assert title in output item properties.' );
+		$this->assertArrayHasKey( 'url', $item_props, 'Failed to assert url in output item properties.' );
+		$this->assertArrayHasKey( 'start', $item_props, 'Failed to assert start in output item properties.' );
+		$this->assertArrayHasKey( 'end', $item_props, 'Failed to assert end in output item properties.' );
+		$this->assertArrayHasKey( 'timezone', $item_props, 'Failed to assert timezone in output item properties.' );
+	}
 }
