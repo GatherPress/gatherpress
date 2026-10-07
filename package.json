@@ -92,7 +92,12 @@
 		"uuid": "$uuid",
 		"webpack-dev-server": "^5.2.4",
 		"@babel/core": "^7.29.6",
-		"markdown-it": "^14.2.0"
+		"markdown-it": "^14.2.0",
+		"proxy-addr": "^2.0.8",
+		"cssnano": "^7.1.9",
+		"lighthouse": {
+			"@sentry/node": "^10.76.1"
+		}
 	},
 	"scripts": {
 		"postinstall": "patch-package",
