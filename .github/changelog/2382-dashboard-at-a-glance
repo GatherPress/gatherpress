@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Add GatherPress items to the WordPress "At a Glance" dashboard widget, displaying upcoming and past event counts, published venues, and attending versus waiting list RSVP figures.
