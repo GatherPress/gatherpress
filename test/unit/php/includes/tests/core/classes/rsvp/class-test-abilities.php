@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Rsvp;
 
 use GatherPress\Core\Event\Abilities as Event_Abilities;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Abilities;
 use GatherPress\Tests\Base;
 
@@ -351,5 +352,180 @@ class Test_Abilities extends Base {
 		$this->assertArrayHasKey( 'attending', $counts, 'Failed to assert that attending is counted.' );
 		$this->assertIsInt( $counts['attending'], 'Failed to assert that counts are integers.' );
 		$this->assertSame( 0, $counts['attending'], 'Failed to assert that a fresh event has no attendees.' );
+	}
+
+	/**
+	 * Coverage for can_read_rsvps with draft events.
+	 *
+	 * @covers ::can_read_rsvps
+	 *
+	 * @return void
+	 */
+	public function test_can_read_rsvps_handles_draft_events(): void {
+		$instance = Abilities::get_instance();
+		$post     = $this->mock->post(
+			array(
+				'post_type'   => 'gatherpress_event',
+				'post_status' => 'draft',
+			)
+		)->get();
+
+		wp_set_current_user( 0 );
+		$this->assertFalse(
+			$instance->can_read_rsvps( array( 'post_id' => $post->ID ) ),
+			'Failed to assert that an unauthenticated user cannot read draft event RSVPs.'
+		);
+
+		$subscriber_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $subscriber_id );
+		$this->assertFalse(
+			$instance->can_read_rsvps( array( 'post_id' => $post->ID ) ),
+			'Failed to assert that a subscriber cannot read draft event RSVPs.'
+		);
+
+		$admin_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $admin_id );
+		$this->assertTrue(
+			$instance->can_read_rsvps( array( 'post_id' => $post->ID ) ),
+			'Failed to assert that an administrator can read draft event RSVPs.'
+		);
+	}
+
+	/**
+	 * Coverage for can_read_rsvps with trashed events.
+	 *
+	 * @covers ::can_read_rsvps
+	 *
+	 * @return void
+	 */
+	public function test_can_read_rsvps_rejects_trashed_events(): void {
+		$instance = Abilities::get_instance();
+		$post     = $this->mock->post(
+			array(
+				'post_type'   => 'gatherpress_event',
+				'post_status' => 'trash',
+			)
+		)->get();
+
+		wp_set_current_user( 0 );
+		$this->assertFalse(
+			$instance->can_read_rsvps( array( 'post_id' => $post->ID ) ),
+			'Failed to assert that a trashed event is rejected.'
+		);
+	}
+
+	/**
+	 * Coverage for can_read_rsvps with private events.
+	 *
+	 * @covers ::can_read_rsvps
+	 *
+	 * @return void
+	 */
+	public function test_can_read_rsvps_handles_private_events(): void {
+		$instance = Abilities::get_instance();
+		$post     = $this->mock->post(
+			array(
+				'post_type'   => 'gatherpress_event',
+				'post_status' => 'private',
+			)
+		)->get();
+
+		$subscriber_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $subscriber_id );
+		$this->assertFalse(
+			$instance->can_read_rsvps( array( 'post_id' => $post->ID ) ),
+			'Failed to assert that a subscriber cannot read private event RSVPs.'
+		);
+
+		$admin_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $admin_id );
+		$this->assertTrue(
+			$instance->can_read_rsvps( array( 'post_id' => $post->ID ) ),
+			'Failed to assert that an administrator can read private event RSVPs.'
+		);
+	}
+
+	/**
+	 * Coverage for get_rsvp_counts with populated attendee responses.
+	 *
+	 * @covers ::get_rsvp_counts
+	 *
+	 * @return void
+	 */
+	public function test_get_rsvp_counts_with_populated_responses(): void {
+		$instance = Abilities::get_instance();
+		$post     = $this->mock->post(
+			array(
+				'post_type'   => 'gatherpress_event',
+				'post_status' => 'publish',
+			)
+		)->get();
+
+		$rsvp   = new Rsvp( $post->ID );
+		$user_1 = $this->factory->user->create();
+		$user_2 = $this->factory->user->create();
+
+		$rsvp->save( $user_1, 'attending', 2 );
+		$rsvp->save( $user_2, 'not_attending' );
+
+		$counts = $instance->get_rsvp_counts( array( 'post_id' => $post->ID ) );
+
+		$this->assertSame(
+			3,
+			$counts['attending'],
+			'Failed to assert attending count includes guests.'
+		);
+		$this->assertSame(
+			1,
+			$counts['not_attending'],
+			'Failed to assert not attending count.'
+		);
+		$this->assertSame(
+			4,
+			$counts['all'],
+			'Failed to assert total count of all responses.'
+		);
+	}
+
+	/**
+	 * Test that get_rsvp_counts ability output schema defines expected properties.
+	 *
+	 * @covers ::register_abilities
+	 *
+	 * @return void
+	 */
+	public function test_register_abilities_output_schema_structure(): void {
+		$ability = wp_get_ability( 'gatherpress/get-rsvp-counts' );
+
+		$this->assertNotNull( $ability, 'Failed to assert that RSVP counts ability is registered.' );
+
+		$output_schema = $ability->get_output_schema();
+
+		$this->assertSame( 'object', $output_schema['type'], 'Failed to assert output schema type is object.' );
+		$this->assertArrayHasKey(
+			'all',
+			$output_schema['properties'],
+			'Failed to assert that "all" is defined in properties.'
+		);
+		$this->assertArrayHasKey(
+			'attending',
+			$output_schema['properties'],
+			'Failed to assert that "attending" is defined in properties.'
+		);
+		$this->assertArrayHasKey(
+			'waiting_list',
+			$output_schema['properties'],
+			'Failed to assert that "waiting_list" is defined in properties.'
+		);
+		$this->assertArrayHasKey(
+			'not_attending',
+			$output_schema['properties'],
+			'Failed to assert that "not_attending" is defined in properties.'
+		);
+		$this->assertSame(
+			'integer',
+			$output_schema['properties']['attending']['type'],
+			'Failed to assert attending property type is integer.'
+		);
 	}
 }
