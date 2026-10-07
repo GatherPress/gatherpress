@@ -415,4 +415,45 @@ class Test_Status extends Base {
 			'Failed to assert an unknown status creates no term.'
 		);
 	}
+
+	/**
+	 * Tests get_event_statuses returns default when post is null or has no terms,
+	 * and returns sorted valid statuses otherwise.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_event_statuses
+	 *
+	 * @return void
+	 */
+	public function test_get_event_statuses(): void {
+		$this->assertSame(
+			array( 'scheduled' ),
+			Status::get_event_statuses( null ),
+			'Failed to assert null post returns default status.'
+		);
+
+		$post = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+
+		$this->assertSame(
+			array( 'scheduled' ),
+			Status::get_event_statuses( $post ),
+			'Failed to assert event with no terms returns default status.'
+		);
+
+		wp_set_object_terms( $post->ID, array( 'postponed', 'canceled' ), Event::TAXONOMY_STATUS );
+
+		$this->assertSame(
+			array( 'canceled', 'postponed' ),
+			Status::get_event_statuses( $post ),
+			'Failed to assert assigned statuses are sorted by priority.'
+		);
+
+		wp_set_object_terms( $post->ID, 'invalid-status', Event::TAXONOMY_STATUS );
+		$this->assertSame(
+			array( 'scheduled' ),
+			Status::get_event_statuses( $post ),
+			'Failed to assert invalid status falls back to default.'
+		);
+	}
 }

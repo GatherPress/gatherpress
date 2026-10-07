@@ -11,6 +11,7 @@ namespace GatherPress\Core\Event;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use WP_Post;
 use WP_Term;
 
 /**
@@ -356,6 +357,51 @@ final class Status {
 		if ( ! $term instanceof WP_Term ) {
 			wp_insert_term( $label, Event::TAXONOMY_STATUS, array( 'slug' => $slug ) );
 		}
+	}
+
+	/**
+	 * Returns the sorted, deduplicated status slugs assigned to an event post.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_Post|null $post The event post object.
+	 *
+	 * @return string[] The status slugs assigned to the event.
+	 */
+	public static function get_event_statuses( ?WP_Post $post ): array {
+		if ( ! $post ) {
+			return array( self::default_slug() );
+		}
+
+		$post_type = (string) $post->post_type;
+		$terms     = get_the_terms( $post->ID, Event::TAXONOMY_STATUS );
+
+		if ( ! is_array( $terms ) || empty( $terms ) ) {
+			return array( self::default_slug( $post_type ) );
+		}
+
+		$valid_statuses = array();
+
+		foreach ( $terms as $term ) {
+			$slug = (string) $term->slug;
+
+			if ( self::exists( $slug, $post_type ) ) {
+				$valid_statuses[] = $slug;
+			}
+		}
+
+		if ( empty( $valid_statuses ) ) {
+			return array( self::default_slug( $post_type ) );
+		}
+
+		usort(
+			$valid_statuses,
+			static function ( string $a, string $b ): int {
+				return self::priority( $b ) <=> self::priority( $a );
+			}
+		);
+
+		return array_values( array_unique( $valid_statuses ) );
 	}
 
 	/**

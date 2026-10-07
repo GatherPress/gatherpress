@@ -681,39 +681,7 @@ class Event {
 	 * @return string[] The status slugs assigned to the event.
 	 */
 	public function get_statuses(): array {
-		if ( ! $this->post ) {
-			return array( Status::default_slug() );
-		}
-
-		$post_type = (string) $this->post->post_type;
-		$terms     = get_the_terms( $this->post->ID, self::TAXONOMY_STATUS );
-
-		if ( ! is_array( $terms ) || empty( $terms ) ) {
-			return array( Status::default_slug( $post_type ) );
-		}
-
-		$valid_statuses = array();
-
-		foreach ( $terms as $term ) {
-			$slug = (string) $term->slug;
-
-			if ( Status::exists( $slug, $post_type ) ) {
-				$valid_statuses[] = $slug;
-			}
-		}
-
-		if ( empty( $valid_statuses ) ) {
-			return array( Status::default_slug( $post_type ) );
-		}
-
-		usort(
-			$valid_statuses,
-			static function ( string $a, string $b ): int {
-				return Status::priority( $b ) <=> Status::priority( $a );
-			}
-		);
-
-		return array_values( array_unique( $valid_statuses ) );
+		return Status::get_event_statuses( $this->post );
 	}
 
 	/**

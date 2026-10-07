@@ -2605,7 +2605,7 @@ class Test_Setup extends Base {
 		);
 
 		$this->assertTrue(
-			WP_Block_Styles_Registry::get_instance()->is_registered( 'core/post-terms', 'gatherpress-dot' ),
+			\WP_Block_Styles_Registry::get_instance()->is_registered( 'core/post-terms', 'gatherpress-dot' ),
 			'Failed to assert gatherpress-dot style is registered.'
 		);
 
