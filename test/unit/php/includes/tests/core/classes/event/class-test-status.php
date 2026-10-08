@@ -45,6 +45,8 @@ class Test_Status extends Base {
 			'Failed to assert the default statuses are offered in order.'
 		);
 
+		$this->assertSame( 'canceled', Status::STATUS_CANCELED );
+
 		foreach ( $statuses as $slug => $status ) {
 			$this->assertNotEmpty( $status['label'], sprintf( '%s should be named.', $slug ) );
 			$this->assertNotEmpty( $status['description'], sprintf( '%s should be explained.', $slug ) );

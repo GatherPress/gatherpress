@@ -47,6 +47,14 @@ final class Status {
 	const DEFAULT_ICAL = 'CONFIRMED';
 
 	/**
+	 * Operational status slug for canceled events.
+	 *
+	 * @since TBD
+	 * @var string
+	 */
+	const STATUS_CANCELED = 'canceled';
+
+	/**
 	 * Every status an event can be in, keyed by the slug that is stored.
 	 *
 	 * Each entry carries the words people read, the color it is shown in and

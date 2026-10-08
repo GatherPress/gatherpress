@@ -3539,6 +3539,28 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * Coverage for is_canceled method.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::is_canceled
+	 *
+	 * @return void
+	 */
+	public function test_is_canceled(): void {
+		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$event = new Event( $post->ID );
+
+		$this->assertFalse( $event->is_canceled() );
+
+		$event->set_status( 'canceled' );
+		$this->assertTrue( $event->is_canceled() );
+
+		$event->set_status( 'scheduled' );
+		$this->assertFalse( $event->is_canceled() );
+	}
+
+	/**
 	 * An event that refuses its timezone returns no timezone part.
 	 *
 	 * The block template consumes the parts array rather than the joined

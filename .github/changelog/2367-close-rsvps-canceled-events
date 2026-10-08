@@ -1,0 +1,4 @@
+Significance: minor
+Type: changed
+
+Close RSVPs for events that have been canceled. When an event is marked as canceled, new RSVPs and status updates are rejected, the RSVP form displays a cancellation notice instead of inputs, and the RSVP block displays a disabled "Event Canceled" button.

@@ -142,7 +142,8 @@ final class Rsvp_Form {
 		// Validate that the post type supports RSVP, that the post is published
 		// (unless previewing), and that RSVP is both enabled and open. A single
 		// Rsvp() so we don't construct it twice on the happy path.
-		$rsvp = new Rsvp( $post_id );
+		$rsvp  = new Rsvp( $post_id );
+		$event = new Event( $post_id );
 
 		if (
 			! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT )
@@ -151,6 +152,18 @@ final class Rsvp_Form {
 			|| ! $rsvp->allows_open_rsvp()
 		) {
 			return '';
+		}
+
+		if ( $event->is_canceled() ) {
+			return sprintf(
+				'<div class="gatherpress-rsvp-form gatherpress-rsvp-form--canceled wp-block-group">'
+				. '<p class="gatherpress-rsvp-form__canceled-message">%s</p>'
+				. '</div>',
+				esc_html__(
+					'Registration for this event is closed because the event has been canceled.',
+					'gatherpress'
+				)
+			);
 		}
 
 		$unique_form_id = $this->generate_form_id();
@@ -187,8 +200,6 @@ final class Rsvp_Form {
 			'data-gatherpress-error-message',
 			__( 'Sorry, there was an issue processing your RSVP. Please try again.', 'gatherpress' )
 		);
-
-		$event = new Event( $post_id );
 
 		// Add event state if the event has passed.
 		if ( $event->has_event_past() ) {

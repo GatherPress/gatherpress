@@ -872,6 +872,7 @@ final class Rest_Api {
 					? is_email( $user_identifier )
 					: is_user_member_of_blog( $user_identifier )
 			) &&
+			! $event->is_canceled() &&
 			! $event->has_event_past()
 		) {
 			if ( 'attending' !== $status ) {
@@ -1052,6 +1053,11 @@ final class Rest_Api {
 			$bail = array( __( 'RSVP is disabled for this event.', 'gatherpress' ), 403 );
 		} elseif ( ! $rsvp->allows_open_rsvp() ) {
 			$bail = array( __( 'Open RSVP is disabled for this event.', 'gatherpress' ), 403 );
+		} elseif ( $event->is_canceled() ) {
+			$bail = array(
+				__( 'Registration for this event is closed because the event has been canceled.', 'gatherpress' ),
+				400,
+			);
 		} elseif ( $event->has_event_past() ) {
 			$bail = array( __( 'Registration for this event is now closed.', 'gatherpress' ), 400 );
 		}

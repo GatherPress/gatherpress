@@ -768,6 +768,19 @@ class Event {
 	}
 
 	/**
+	 * Checks if the event is canceled.
+	 *
+	 * An event is canceled when its operational status list includes 'canceled'.
+	 *
+	 * @since TBD
+	 *
+	 * @return bool True if the event has been canceled.
+	 */
+	public function is_canceled(): bool {
+		return in_array( Status::STATUS_CANCELED, $this->get_statuses(), true );
+	}
+
+	/**
 	 * Resolve the formats one rendered datetime range is built from.
 	 *
 	 * The site keeps its date and time formats separately, so an all-day
