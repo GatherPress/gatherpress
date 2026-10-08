@@ -1059,6 +1059,10 @@ final class Setup {
 	/**
 	 * Check if any post type is registered with a taxonomy.
 	 *
+	 * The implementation lives on `Feed_Url`, which the feed-URL resolver and
+	 * this class both need; kept here as a thin wrapper so the protected method
+	 * the rest of this class calls has a single owner.
+	 *
 	 * @since 0.34.0
 	 *
 	 * @param string $taxonomy   Taxonomy slug.
@@ -1066,14 +1070,7 @@ final class Setup {
 	 * @return bool
 	 */
 	protected function has_post_type_for_taxonomy( string $taxonomy ): bool {
-		$post_types = get_post_types_by_support( Event::SUPPORT );
-		foreach ( $post_types as $post_type ) {
-			if ( is_object_in_taxonomy( $post_type, $taxonomy ) ) {
-				return true;
-			}
-		}
-
-		return false;
+		return Feed_Url::has_post_type_for_taxonomy( $taxonomy );
 	}
 
 	/**
@@ -1089,8 +1086,7 @@ final class Setup {
 	 * @return bool
 	 */
 	protected function is_tax_like_type_for_event_supporting_types( string $post_type ): bool {
-		return post_type_supports( $post_type, Shadow_Source::SUPPORT ) &&
-			$this->has_post_type_for_taxonomy( Shadow_Source::get_instance()->get_taxonomy( $post_type ) );
+		return Feed_Url::is_tax_like_type_for_event_supporting_types( $post_type );
 	}
 
 	/**
@@ -1183,6 +1179,10 @@ final class Setup {
 	 * Dispatches across singular events, shadow-source posts (venues),
 	 * event-bearing taxonomy archives, event post-type archives, and the sitewide feed.
 	 *
+	 * The feed scopes delegate to `Feed_Url` so this dispatcher and the block
+	 * that renders subscribe links cannot drift apart. The singular-event branch
+	 * stays here: it resolves the per-event download URL, which is not a feed.
+	 *
 	 * @since 0.36.0
 	 *
 	 * @return string|false Calendar feed or download URL, or false if not an event-related request.
@@ -1196,23 +1196,38 @@ final class Setup {
 			}
 
 			if ( $this->is_tax_like_type_for_event_supporting_types( $queried->post_type ) ) {
-				return get_post_comments_feed_link( $queried->ID, self::ICAL_SLUG );
+				return Feed_Url::get(
+					array(
+						'scope'    => 'venue',
+						'venue_id' => $queried->ID,
+					)
+				);
 			}
 		}
 
 		if ( is_tax() && $queried instanceof WP_Term && $this->has_post_type_for_taxonomy( $queried->taxonomy ) ) {
-			return get_term_feed_link( $queried->term_id, $queried->taxonomy, self::ICAL_SLUG );
+			return Feed_Url::get(
+				array(
+					'scope'    => 'topic',
+					'topic_id' => $queried->term_id,
+				)
+			);
 		}
 
 		if ( is_post_type_archive() ) {
 			$post_type = get_query_var( 'post_type' );
 			$post_type = is_array( $post_type ) ? reset( $post_type ) : $post_type;
 			if ( is_string( $post_type ) && post_type_supports( $post_type, Event::SUPPORT ) ) {
-				return get_post_type_archive_feed_link( $post_type, self::ICAL_SLUG );
+				return Feed_Url::get(
+					array(
+						'scope'     => 'archive',
+						'post_type' => $post_type,
+					)
+				);
 			}
 		}
 
-		return ( is_front_page() || is_home() ) ? get_feed_link( self::ICAL_SLUG ) : false;
+		return ( is_front_page() || is_home() ) ? Feed_Url::get( array( 'scope' => 'sitewide' ) ) : false;
 	}
 
 	/**
