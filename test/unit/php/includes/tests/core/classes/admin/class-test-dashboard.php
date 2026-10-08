@@ -339,4 +339,222 @@ class Test_Dashboard extends Base {
 		$this->assertStringContainsString( 'Attending RSVP', $joined );
 		$this->assertStringContainsString( 'on Waiting List', $joined );
 	}
+
+	/**
+	 * Verify add_glance_items returns unmodified items when no post types support GP features.
+	 *
+	 * @covers ::add_glance_items
+	 *
+	 * @return void
+	 */
+	public function test_add_glance_items_empty(): void {
+		remove_post_type_support( Event::POST_TYPE, Event::SUPPORT );
+		remove_post_type_support( Event::POST_TYPE, Rsvp::SUPPORT );
+		remove_post_type_support( Venue::POST_TYPE, Venue::SUPPORT );
+
+		$original = array( '<li>Custom</li>' );
+		$result   = $this->instance->add_glance_items( $original );
+
+		add_post_type_support( Event::POST_TYPE, Event::SUPPORT );
+		add_post_type_support( Event::POST_TYPE, Rsvp::SUPPORT );
+		add_post_type_support( Venue::POST_TYPE, Venue::SUPPORT );
+
+		$this->assertSame( $original, $result );
+	}
+
+	/**
+	 * Verify add_glance_items inserts column parity spacer when total count is odd.
+	 *
+	 * @covers ::add_glance_items
+	 *
+	 * @return void
+	 */
+	public function test_add_glance_items_odd_parity_spacer(): void {
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
+
+		// Pass 1 existing item to produce an odd total.
+		$items  = $this->instance->add_glance_items( array( '<li>Core Post</li>' ) );
+		$joined = implode( ' ', $items );
+
+		$this->assertStringContainsString( 'gp-glance-spacer', $joined );
+	}
+
+	/**
+	 * Verify count_core_glance_items counts published posts, pages, and comments.
+	 *
+	 * @covers ::count_core_glance_items
+	 *
+	 * @return void
+	 */
+	public function test_count_core_glance_items(): void {
+		$this->factory()->post->create(
+			array(
+				'post_type'   => 'post',
+				'post_status' => 'publish',
+			)
+		);
+		$this->factory()->post->create(
+			array(
+				'post_type'   => 'page',
+				'post_status' => 'publish',
+			)
+		);
+
+		$post_id = $this->factory()->post->create( array( 'post_type' => 'post' ) );
+		$this->factory()->comment->create(
+			array(
+				'comment_post_ID'  => $post_id,
+				'comment_approved' => 1,
+			)
+		);
+		$this->factory()->comment->create(
+			array(
+				'comment_post_ID'  => $post_id,
+				'comment_approved' => 0,
+			)
+		);
+
+		$count = Utility::invoke_hidden_method( $this->instance, 'count_core_glance_items' );
+		$this->assertGreaterThanOrEqual( 4, $count );
+	}
+
+	/**
+	 * Verify print_glance_styles handles nonexistent post types and missing dashicon codepoints.
+	 *
+	 * @covers ::print_glance_styles
+	 *
+	 * @return void
+	 */
+	public function test_print_glance_styles_edge_cases(): void {
+		add_post_type_support( 'gp_nonexistent_type', Event::SUPPORT );
+		register_post_type(
+			'gp_custom_no_icon',
+			array(
+				'menu_icon' => 'dashicons-invalid-icon-name',
+				'supports'  => array( Event::SUPPORT ),
+			)
+		);
+
+		ob_start();
+		$this->instance->print_glance_styles();
+		$output = (string) ob_get_clean();
+
+		remove_post_type_support( 'gp_nonexistent_type', Event::SUPPORT );
+		unregister_post_type( 'gp_custom_no_icon' );
+
+		$this->assertStringContainsString( '<style>', $output );
+	}
+
+	/**
+	 * Verify get_cached_count falls back to get_transient when object cache misses.
+	 *
+	 * @covers ::get_cached_count
+	 *
+	 * @return void
+	 */
+	public function test_get_cached_count_transient_fallback(): void {
+		$key = 'gp_glance_fallback_test';
+		set_transient( $key, 88, 3600 );
+		wp_cache_delete( $key, Dashboard::CACHE_GROUP );
+
+		$result = Utility::invoke_hidden_method( $this->instance, 'get_cached_count', array( $key ) );
+		$this->assertSame( 88, $result );
+
+		delete_transient( $key );
+	}
+
+	/**
+	 * Verify event_date_items returns empty array for nonexistent post types.
+	 *
+	 * @covers ::event_date_items
+	 *
+	 * @return void
+	 */
+	public function test_event_date_items_invalid_post_type(): void {
+		$result = Utility::invoke_hidden_method( $this->instance, 'event_date_items', array( 'gp_invalid_pt' ) );
+		$this->assertSame( array(), $result );
+	}
+
+	/**
+	 * Verify count_events returns cached count on subsequent calls.
+	 *
+	 * @covers ::count_events
+	 *
+	 * @return void
+	 */
+	public function test_count_events_cache_hit(): void {
+		$first  = Utility::invoke_hidden_method(
+			$this->instance,
+			'count_events',
+			array( Event::POST_TYPE, 'upcoming' )
+		);
+		$second = Utility::invoke_hidden_method(
+			$this->instance,
+			'count_events',
+			array( Event::POST_TYPE, 'upcoming' )
+		);
+		$this->assertSame( $first, $second );
+	}
+
+
+	/**
+	 * Verify venue_item returns empty string for nonexistent post types.
+	 *
+	 * @covers ::venue_item
+	 *
+	 * @return void
+	 */
+	public function test_venue_item_invalid_post_type(): void {
+		$result = Utility::invoke_hidden_method( $this->instance, 'venue_item', array( 'gp_invalid_pt' ) );
+		$this->assertSame( '', $result );
+	}
+
+	/**
+	 * Verify rsvp_items returns empty array for nonexistent post types.
+	 *
+	 * @covers ::rsvp_items
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_items_invalid_post_type(): void {
+		$result = Utility::invoke_hidden_method( $this->instance, 'rsvp_items', array( 'gp_invalid_pt' ) );
+		$this->assertSame( array(), $result );
+	}
+
+	/**
+	 * Verify rsvp_items generates unlinked span elements when user cannot moderate.
+	 *
+	 * @covers ::rsvp_items
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_items_without_moderate_capability(): void {
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'subscriber' ) ) );
+
+		$items = Utility::invoke_hidden_method( $this->instance, 'rsvp_items', array( Event::POST_TYPE ) );
+		$this->assertCount( 2, $items );
+		$this->assertStringStartsWith( '<span', $items[0] );
+		$this->assertStringStartsWith( '<span', $items[1] );
+	}
+
+	/**
+	 * Verify count_rsvps returns cached count on subsequent calls.
+	 *
+	 * @covers ::count_rsvps
+	 *
+	 * @return void
+	 */
+	public function test_count_rsvps_cache_hit(): void {
+		$first  = Utility::invoke_hidden_method(
+			$this->instance,
+			'count_rsvps',
+			array( Event::POST_TYPE, Rsvp_Status::ATTENDING->value )
+		);
+		$second = Utility::invoke_hidden_method(
+			$this->instance,
+			'count_rsvps',
+			array( Event::POST_TYPE, Rsvp_Status::ATTENDING->value )
+		);
+		$this->assertSame( $first, $second );
+	}
 }
