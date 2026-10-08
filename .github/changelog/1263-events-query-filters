@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+The event list query now takes an arguments array alongside the existing positional signature, and a new `gatherpress_events_list_query_args` filter runs over the final `WP_Query` args. Plugins can add meta constraints, extra taxonomies, or custom ordering to the upcoming and past event lists without replacing the whole method, which is what a location filter needs now that venues carry latitude and longitude.
