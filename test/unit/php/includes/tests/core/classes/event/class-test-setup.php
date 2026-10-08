@@ -1275,7 +1275,7 @@ class Test_Setup extends Base {
 	}
 
 	/**
-	 * Tests render_event_status_post_terms_block with dot style hides text visually and adds accessible tooltip.
+	 * Verify render_event_status_post_terms_block preserves dot style markup without regex modification.
 	 *
 	 * @covers ::render_event_status_post_terms_block
 	 *
@@ -1284,7 +1284,8 @@ class Test_Setup extends Base {
 	public function test_render_event_status_post_terms_block_dot_style(): void {
 		$instance      = Setup::get_instance();
 		$block_content = '<div class="wp-block-post-terms gatherpress-event-status is-style-gatherpress-dot">' .
-			'<a href="http://example.com/status/postponed" rel="tag">Postponed</a></div>';
+			'<span class="gatherpress-event-status__term gatherpress-event-status--is-postponed">' .
+			'Postponed</span></div>';
 		$block         = array(
 			'blockName' => 'core/post-terms',
 			'attrs'     => array(
@@ -1296,12 +1297,7 @@ class Test_Setup extends Base {
 
 		$result = $instance->render_event_status_post_terms_block( $block_content, $block, $wp_block );
 
-		$this->assertStringContainsString(
-			'<span class="screen-reader-text gatherpress-event-status__text">Postponed</span>',
-			$result
-		);
-		$this->assertStringContainsString( 'title="Postponed"', $result );
-		$this->assertStringContainsString( 'aria-label="Postponed"', $result );
+		$this->assertSame( $block_content, $result );
 	}
 
 	/**

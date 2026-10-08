@@ -1016,36 +1016,6 @@ final class Setup {
 			}
 		}
 
-		$is_dot = str_contains( $block['attrs']['className'] ?? '', 'is-style-gatherpress-dot' ) ||
-			str_contains( $block_content, 'is-style-gatherpress-dot' );
-
-		// When styled as Dot, hide term text visually and add accessibility attributes.
-		if ( $is_dot ) {
-			$replaced = preg_replace_callback(
-				'/(<a\b[^>]*rel="tag"[^>]*>)(.*?)(<\/a>)/s',
-				static function ( array $tag_matches ): string {
-					$label   = esc_attr( trim( wp_strip_all_tags( $tag_matches[2] ) ) );
-					$opening = preg_replace(
-						'/<a\b/',
-						'<a title="' . $label . '" aria-label="' . $label . '"',
-						$tag_matches[1],
-						1
-					);
-
-					return $opening .
-						'<span class="screen-reader-text gatherpress-event-status__text">' .
-						$tag_matches[2] .
-						'</span>' .
-						$tag_matches[3];
-				},
-				$block_content
-			);
-
-			if ( null !== $replaced ) {
-				$block_content = $replaced;
-			}
-		}
-
 		return $block_content;
 	}
 

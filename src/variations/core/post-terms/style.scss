@@ -74,23 +74,32 @@
 		}
 	}
 
-	// Dot style: circular indicator with screen-reader text for accessibility.
+	// Dot style: circular indicator dot followed by visible status label (no badge pill background/border).
 	&.is-style-gatherpress-dot {
 		.gatherpress-event-status__term,
 		> a[rel="tag"] {
-			display: inline-block;
-			width: 0.75em;
-			height: 0.75em;
-			border-radius: 50%;
-			background-color: var(--gatherpress-status-color, currentcolor);
-			border: none;
+			display: inline-flex;
+			align-items: center;
+			gap: 0.45em;
 			padding: 0;
 			margin: 0;
-			vertical-align: middle;
-			line-height: 1;
+			border: none;
+			background: transparent;
+			color: inherit;
+			font-size: inherit;
+			font-weight: inherit;
+			line-height: inherit;
+			letter-spacing: inherit;
+			font-style: inherit;
+			text-decoration: none;
 
 			&::before {
-				display: none;
+				content: "";
+				display: inline-block;
+				width: 0.5em;
+				height: 0.5em;
+				border-radius: 50%;
+				background-color: var(--gatherpress-status-color, currentcolor);
 			}
 		}
 
@@ -99,3 +108,4 @@
 		}
 	}
 }
+
