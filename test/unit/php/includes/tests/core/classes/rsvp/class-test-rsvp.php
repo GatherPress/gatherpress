@@ -758,7 +758,68 @@ class Test_Rsvp extends Base {
 			'Should return false when mode is disabled regardless of meta.'
 		);
 
+		// Returns false when legacy mode is per_event_off and meta is '0'.
+		update_option(
+			'gatherpress_settings',
+			array(
+				'rsvp_mode' => 'per_event_off',
+			)
+		);
+		update_post_meta( $post_id, 'gatherpress_enable_rsvp', '0' );
+		$this->assertFalse(
+			( new Rsvp( $post_id ) )->is_enabled(),
+			'Should return false when legacy mode is per_event_off and meta is 0.'
+		);
+
+		// Returns true when legacy mode is per_event_off and meta is '1'.
+		update_post_meta( $post_id, 'gatherpress_enable_rsvp', '1' );
+		$this->assertTrue(
+			( new Rsvp( $post_id ) )->is_enabled(),
+			'Should return true when legacy mode is per_event_off and meta is 1.'
+		);
+
+		// Returns false when legacy mode is per_event_off and meta is '' (never set).
+		delete_post_meta( $post_id, 'gatherpress_enable_rsvp' );
+		$this->assertFalse(
+			( new Rsvp( $post_id ) )->is_enabled(),
+			'Should return false when legacy mode is per_event_off and meta is empty.'
+		);
+
+		// Returns false when legacy mode is per_event_on and meta is '0'.
+		update_option(
+			'gatherpress_settings',
+			array(
+				'rsvp_mode' => 'per_event_on',
+			)
+		);
+		update_post_meta( $post_id, 'gatherpress_enable_rsvp', '0' );
+		$this->assertFalse(
+			( new Rsvp( $post_id ) )->is_enabled(),
+			'Should return false when legacy mode is per_event_on and meta is 0.'
+		);
+
+		// Returns true when legacy mode is per_event_on and meta is empty.
+		delete_post_meta( $post_id, 'gatherpress_enable_rsvp' );
+		$this->assertTrue(
+			( new Rsvp( $post_id ) )->is_enabled(),
+			'Should return true when legacy mode is per_event_on and meta is empty.'
+		);
+
+		// Returns true when legacy mode is all_on and meta is '0'.
+		update_option(
+			'gatherpress_settings',
+			array(
+				'rsvp_mode' => 'all_on',
+			)
+		);
+		update_post_meta( $post_id, 'gatherpress_enable_rsvp', '0' );
+		$this->assertTrue(
+			( new Rsvp( $post_id ) )->is_enabled(),
+			'Should return true when legacy mode is all_on regardless of meta.'
+		);
+
 		// Restore default setting.
+		delete_option( 'gatherpress_settings' );
 		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 	}
 

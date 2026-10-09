@@ -226,4 +226,31 @@ class Test_Cleanup extends Base {
 
 		$this->assertCount( 0, $rsvps );
 	}
+
+	/**
+	 * Coverage for schedule_cleanup_cron with legacy rsvp_cleanup_switch setting.
+	 *
+	 * @covers ::schedule_cleanup_cron
+	 * @covers ::convert_to_seconds
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_cleanup_cron_schedules_with_legacy_cleanup_switch_on(): void {
+		wp_clear_scheduled_hook( 'gatherpress_rsvp_cleanup' );
+
+		update_option(
+			'gatherpress_settings',
+			array(
+				'rsvp_cleanup_switch' => 'on',
+			)
+		);
+
+		Cleanup::get_instance()->schedule_cleanup_cron();
+		$next_event = wp_next_scheduled( 'gatherpress_rsvp_cleanup' );
+
+		$this->assertNotEquals( false, $next_event );
+
+		wp_clear_scheduled_hook( 'gatherpress_rsvp_cleanup' );
+		delete_option( 'gatherpress_settings' );
+	}
 }

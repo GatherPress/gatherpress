@@ -1135,7 +1135,7 @@ class Settings {
 		// hands back on single site, so no shape check is needed first.
 		foreach ( Renamed_Keys::option_names( $option ) as $name ) {
 			if ( isset( $options[ $name ] ) && '' !== $options[ $name ] ) {
-				return $options[ $name ];
+				return Renamed_Keys::normalize_value( $option, $options[ $name ] );
 			}
 		}
 
