@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\Venue;
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Setup as Core_Setup;
+use GatherPress\Core\Shadow_Source;
 use GatherPress\Core\Venue\Map\Setup as Map_Setup;
 use GatherPress\Core\Venue\Meta;
 use GatherPress\Core\Venue\Setup;
@@ -107,6 +108,12 @@ class Test_Setup extends Base {
 				'name'     => 'gatherpress_shadow_taxonomy_object_types',
 				'priority' => 10,
 				'callback' => array( $instance, 'attach_venue_taxonomy_to_event_types' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'post_class',
+				'priority' => 10,
+				'callback' => array( $instance, 'filter_event_post_class' ),
 			),
 		);
 
@@ -1518,6 +1525,154 @@ class Test_Setup extends Base {
 			'Protected Event Venue',
 			$editor['name'] ?? '',
 			'Failed to assert whoever can edit the event gets its venue.'
+		);
+	}
+
+	/**
+	 * The venue follows the event's password, and whoever can edit the event
+	 * always sees it.
+	 *
+	 * @since TBD
+	 * @covers ::can_view_event_venue
+	 *
+	 * @return void
+	 */
+	public function test_can_view_event_venue_follows_the_event_password(): void {
+		$instance  = Setup::get_instance();
+		$public    = $this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		)->get()->ID;
+		$protected = $this->mock->post(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_status'   => 'publish',
+				'post_password' => 'secret',
+			)
+		)->get()->ID;
+		$entered   = static fn(): bool => false;
+
+		wp_set_current_user( 0 );
+
+		$this->assertTrue(
+			$instance->can_view_event_venue( $public ),
+			'Failed to assert a public event shows its venue.'
+		);
+		$this->assertFalse(
+			$instance->can_view_event_venue( $protected ),
+			'Failed to assert a protected event hides its venue from a visitor.'
+		);
+
+		add_filter( 'post_password_required', $entered );
+		$this->assertTrue(
+			$instance->can_view_event_venue( $protected ),
+			'Failed to assert the venue shows once the password is entered.'
+		);
+		remove_filter( 'post_password_required', $entered );
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertTrue(
+			$instance->can_view_event_venue( $protected ),
+			'Failed to assert whoever can edit the event sees its venue.'
+		);
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * Only venue taxonomies are listed, not those of other shadow sources.
+	 *
+	 * @since TBD
+	 * @covers ::get_venue_taxonomies
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_taxonomies_lists_only_venues(): void {
+		register_post_type(
+			'gp_test_production',
+			array( 'supports' => array( 'title', Shadow_Source::SUPPORT ) )
+		);
+
+		$taxonomies = Setup::get_instance()->get_venue_taxonomies();
+
+		unregister_post_type( 'gp_test_production' );
+
+		$this->assertContains( Venue::TAXONOMY, $taxonomies, 'Failed to assert the venue taxonomy is listed.' );
+		$this->assertNotContains(
+			'_gp_test_production',
+			$taxonomies,
+			'Failed to assert another shadow source is not listed.'
+		);
+		$this->assertNotContains(
+			'gatherpress_topic',
+			$taxonomies,
+			'Failed to assert a regular taxonomy is not listed.'
+		);
+		$this->assertSame( array_values( $taxonomies ), $taxonomies, 'Failed to assert the list is reindexed.' );
+	}
+
+	/**
+	 * Venue term classes are removed and every other class is kept.
+	 *
+	 * @since TBD
+	 * @covers ::remove_venue_classes
+	 *
+	 * @return void
+	 */
+	public function test_remove_venue_classes(): void {
+		$classes = array(
+			'post-1',
+			'type-gatherpress_event',
+			sanitize_html_class( Venue::TAXONOMY . '-_password-test-venue' ),
+			'gatherpress_topic-meetup',
+			'_gp_test_production-_a-show',
+		);
+
+		$this->assertSame(
+			array( 'post-1', 'type-gatherpress_event', 'gatherpress_topic-meetup', '_gp_test_production-_a-show' ),
+			Setup::get_instance()->remove_venue_classes( $classes )
+		);
+	}
+
+	/**
+	 * A password-protected event's markup leaves out the venue class for a
+	 * visitor, and other posts and public events keep theirs.
+	 *
+	 * @since TBD
+	 * @covers ::filter_event_post_class
+	 *
+	 * @return void
+	 */
+	public function test_filter_event_post_class_hides_a_protected_event_venue(): void {
+		$instance  = Setup::get_instance();
+		$classes   = array( 'post', sanitize_html_class( Venue::TAXONOMY . '-_somewhere' ) );
+		$post      = $this->factory->post->create();
+		$public    = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$protected = $this->factory->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		);
+
+		wp_set_current_user( 0 );
+
+		$this->assertSame(
+			$classes,
+			$instance->filter_event_post_class( $classes, array(), $post ),
+			'Failed to assert other posts are untouched.'
+		);
+		$this->assertSame(
+			$classes,
+			$instance->filter_event_post_class( $classes, array(), $public ),
+			'Failed to assert a public event is untouched.'
+		);
+		$this->assertSame(
+			array( 'post' ),
+			$instance->filter_event_post_class( $classes, array(), $protected ),
+			'Failed to assert a protected event loses its venue class.'
 		);
 	}
 }

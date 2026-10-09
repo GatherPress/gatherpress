@@ -603,8 +603,11 @@ final class Setup {
 		}
 
 		// The venue follows the event's password, so its feed is not linked either.
-		$hidden = Event::can_view_venue( $event->ID ) ? array() : Event::get_shadow_taxonomies();
-		$links  = array();
+		$venue_setup = Venue_Setup::get_instance();
+		$hidden      = $venue_setup->can_view_event_venue( $event->ID )
+			? array()
+			: $venue_setup->get_venue_taxonomies();
+		$links       = array();
 
 		foreach ( $terms as $term ) {
 			if ( ! in_array( $term->taxonomy, $hidden, true ) ) {

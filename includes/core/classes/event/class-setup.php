@@ -120,34 +120,6 @@ final class Setup {
 		add_filter( 'render_block_core/post-date', array( $this, 'render_event_post_date_block' ), 10, 3 );
 		add_filter( 'display_post_states', array( $this, 'set_event_archive_labels' ), 10, 2 );
 		add_filter( 'block_editor_settings_all', array( $this, 'add_editor_settings' ) );
-		add_filter( 'post_class', array( $this, 'filter_post_class' ), 10, 3 );
-	}
-
-	/**
-	 * Keeps the venue out of a password-protected event's post classes.
-	 *
-	 * Core adds a class for each of the post's terms, so an event card names
-	 * its venue in the markup even while the venue block stays hidden.
-	 *
-	 * @since TBD
-	 *
-	 * @param string[]        $classes   The post classes.
-	 * @param string[]|string $css_class Extra classes passed to get_post_class(). Unused, required by the filter.
-	 * @param int             $post_id   The post the classes are for.
-	 *
-	 * @return string[] The classes, without the venue term classes when the viewer may not see the venue.
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-	 */
-	public function filter_post_class( array $classes, $css_class, int $post_id ): array {
-		if (
-			! post_type_supports( (string) get_post_type( $post_id ), Event::SUPPORT )
-			|| Event::can_view_venue( $post_id )
-		) {
-			return $classes;
-		}
-
-		return Event::remove_venue_classes( $classes );
 	}
 
 	/**

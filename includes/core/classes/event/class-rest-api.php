@@ -28,6 +28,7 @@ use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\User;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
+use GatherPress\Core\Venue\Setup as Venue_Setup;
 use WP_Comment;
 use WP_Post;
 use WP_REST_Request;
@@ -1152,7 +1153,7 @@ final class Rest_Api {
 			$response->data['meta']['gatherpress_online_event_link'] = $online_event_link;
 		}
 
-		if ( ! Event::can_view_venue( $post_id ) ) {
+		if ( ! Venue_Setup::get_instance()->can_view_event_venue( $post_id ) ) {
 			$this->remove_venue_from_response( $response );
 		}
 
@@ -1165,7 +1166,7 @@ final class Rest_Api {
 	 * Core hands every reader the post's terms (the taxonomy field, a class
 	 * per term in `class_list`, and a term link per taxonomy), and the venue
 	 * taxonomy is one of them. A viewer who may not see the venue
-	 * ({@see Event::can_view_venue()}) gets the response without it.
+	 * ({@see Venue_Setup::can_view_event_venue()}) gets the response without it.
 	 *
 	 * @since TBD
 	 *
@@ -1174,7 +1175,8 @@ final class Rest_Api {
 	 * @return void
 	 */
 	private function remove_venue_from_response( WP_REST_Response $response ): void {
-		$taxonomies = Event::get_shadow_taxonomies();
+		$venue_setup = Venue_Setup::get_instance();
+		$taxonomies  = $venue_setup->get_venue_taxonomies();
 
 		foreach ( $taxonomies as $taxonomy ) {
 			$taxonomy_object = get_taxonomy( $taxonomy );
@@ -1186,7 +1188,7 @@ final class Rest_Api {
 		}
 
 		if ( isset( $response->data['class_list'] ) && is_array( $response->data['class_list'] ) ) {
-			$response->data['class_list'] = Event::remove_venue_classes( $response->data['class_list'] );
+			$response->data['class_list'] = $venue_setup->remove_venue_classes( $response->data['class_list'] );
 		}
 
 		foreach ( $response->get_links()['https://api.w.org/term'] ?? array() as $link ) {

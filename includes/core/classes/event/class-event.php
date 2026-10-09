@@ -21,7 +21,6 @@ use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
 use GatherPress\Core\Setup as Core_Setup;
 use GatherPress\Core\Settings;
-use GatherPress\Core\Shadow_Source;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
@@ -971,90 +970,21 @@ class Event {
 	}
 
 	/**
-	 * Whether the current viewer may see where an event takes place.
-	 *
-	 * The venue is one of the event's details, so it follows the event's
-	 * password the way the online event link and the RSVP responses do: it
-	 * stays hidden until the password is entered, and whoever can edit the
-	 * event always sees it.
-	 *
-	 * @since TBD
-	 *
-	 * @param int $post_id The event post ID.
-	 *
-	 * @return bool True when the viewer may see the event's venue.
-	 */
-	public static function can_view_venue( int $post_id ): bool {
-		return ! post_password_required( $post_id ) || current_user_can( self::EDIT_CAPABILITY, $post_id );
-	}
-
-	/**
-	 * Lists the shadow-source taxonomies.
-	 *
-	 * These link an event to its venue, or to whatever a companion plugin
-	 * registers as a shadow source, so they name where the event happens.
-	 *
-	 * @since TBD
-	 *
-	 * @return string[] Taxonomy slugs.
-	 */
-	public static function get_shadow_taxonomies(): array {
-		return array_map(
-			array( Shadow_Source::get_instance(), 'get_taxonomy' ),
-			array_values( get_post_types_by_support( Shadow_Source::SUPPORT ) )
-		);
-	}
-
-	/**
-	 * Removes the venue term classes from an event's post classes.
-	 *
-	 * Core adds a `<taxonomy>-<term>` class for every term on a post, which
-	 * spells out the venue. Used for the markup ({@see Setup::filter_post_class()})
-	 * and the REST `class_list`, while the viewer may not see the venue.
-	 *
-	 * @since TBD
-	 *
-	 * @param string[] $classes The post classes.
-	 *
-	 * @return string[] The classes, without the venue term classes.
-	 */
-	public static function remove_venue_classes( array $classes ): array {
-		$prefixes = array_map(
-			static fn( string $taxonomy ): string => sanitize_html_class( $taxonomy . '-' ),
-			self::get_shadow_taxonomies()
-		);
-
-		return array_values(
-			array_filter(
-				$classes,
-				static function ( string $css_class ) use ( $prefixes ): bool {
-					foreach ( $prefixes as $prefix ) {
-						if ( str_starts_with( $css_class, $prefix ) ) {
-							return false;
-						}
-					}
-
-					return true;
-				}
-			)
-		);
-	}
-
-	/**
 	 * Get the venue information the current viewer may see.
 	 *
 	 * Same shape as {@see self::get_venue_information()}, but empty while the
-	 * viewer may not see the venue ({@see self::can_view_venue()}). Use this
-	 * for anything shown to a visitor, such as feeds and calendar output, and
-	 * {@see self::get_venue_information()} for messages sent to the people
-	 * the event was shared with.
+	 * viewer may not see the venue
+	 * ({@see Venue_Setup::can_view_event_venue()}). Use this for anything shown
+	 * to a visitor, such as feeds and calendar output, and
+	 * {@see self::get_venue_information()} for messages sent to the people the
+	 * event was shared with.
 	 *
 	 * @since TBD
 	 *
 	 * @return array<string, string> Venue information, see {@see self::get_venue_information()}.
 	 */
 	public function get_viewable_venue_information(): array {
-		if ( $this->post && ! self::can_view_venue( $this->post->ID ) ) {
+		if ( $this->post && ! Venue_Setup::get_instance()->can_view_event_venue( $this->post->ID ) ) {
 			return self::EMPTY_VENUE_INFORMATION;
 		}
 
