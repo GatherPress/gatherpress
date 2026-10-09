@@ -96,6 +96,7 @@ final class Setup {
 		Meta::get_instance();
 		Query::get_instance();
 		Rest_Api::get_instance();
+		Scheduler::get_instance();
 	}
 
 	/**
