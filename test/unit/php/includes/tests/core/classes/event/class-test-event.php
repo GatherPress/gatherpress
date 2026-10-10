@@ -3530,4 +3530,75 @@ class Test_Event extends Base {
 
 		remove_filter( 'gatherpress_datetime_separator', $capture );
 	}
+
+	/**
+	 * Creates a published event linked to a venue, optionally with a password.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $password The event's password, or an empty string for none.
+	 *
+	 * @return int The event post ID.
+	 */
+	private function make_event_with_venue( string $password = '' ): int {
+		$this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_title' => 'Password Test Venue',
+				'post_name'  => 'password-test-venue',
+			)
+		)->get();
+
+		$event_id = $this->mock->post(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_status'   => 'publish',
+				'post_password' => $password,
+			)
+		)->get()->ID;
+
+		wp_set_post_terms( $event_id, '_password-test-venue', Venue::TAXONOMY );
+
+		return $event_id;
+	}
+
+	/**
+	 * The viewable venue information is empty while the viewer may not see the
+	 * venue, and the full venue otherwise.
+	 *
+	 * @since TBD
+	 * @covers ::get_viewable_venue_information
+	 *
+	 * @return void
+	 */
+	public function test_get_viewable_venue_information(): void {
+		$protected = new Event( $this->make_event_with_venue( 'secret' ) );
+
+		wp_set_current_user( 0 );
+
+		$this->assertSame(
+			Event::EMPTY_VENUE_INFORMATION,
+			$protected->get_viewable_venue_information(),
+			'Failed to assert a protected event hides its venue from a visitor.'
+		);
+		$this->assertSame(
+			'Password Test Venue',
+			$protected->get_venue_information()['name'],
+			'Failed to assert the unfiltered venue information is unchanged.'
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertSame(
+			'Password Test Venue',
+			$protected->get_viewable_venue_information()['name'],
+			'Failed to assert whoever can edit the event sees its venue.'
+		);
+		wp_set_current_user( 0 );
+
+		$this->assertSame(
+			Event::EMPTY_VENUE_INFORMATION,
+			( new Event( 0 ) )->get_viewable_venue_information(),
+			'Failed to assert an event that does not resolve has no venue.'
+		);
+	}
 }

@@ -123,6 +123,104 @@ final class Setup {
 			10,
 			2
 		);
+		add_filter( 'post_class', array( $this, 'filter_event_post_class' ), 10, 3 );
+	}
+
+	/**
+	 * Whether the current viewer may see where an event takes place.
+	 *
+	 * The venue is one of the event's details, so it follows the event's
+	 * password the way the online event link and the RSVP responses do: it
+	 * stays hidden until the password is entered, and whoever can edit the
+	 * event always sees it.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $event_id The event post ID.
+	 *
+	 * @return bool True when the viewer may see the event's venue.
+	 */
+	public function can_view_event_venue( int $event_id ): bool {
+		return ! post_password_required( $event_id ) || current_user_can( Event::EDIT_CAPABILITY, $event_id );
+	}
+
+	/**
+	 * Lists the taxonomies that link events to venues.
+	 *
+	 * One per venue post type, so a custom venue type is included while other
+	 * shadow sources (a production or a tour, say) are not.
+	 *
+	 * @since TBD
+	 *
+	 * @return string[] Taxonomy slugs.
+	 */
+	public function get_venue_taxonomies(): array {
+		return array_map(
+			array( $this, 'get_taxonomy' ),
+			array_values( get_post_types_by_support( Venue::SUPPORT ) )
+		);
+	}
+
+	/**
+	 * Removes the venue term classes from an event's post classes.
+	 *
+	 * Core adds a `<taxonomy>-<term>` class for every term on a post, which
+	 * spells out the venue. Used for the markup ({@see self::filter_event_post_class()})
+	 * and the REST `class_list`, while the viewer may not see the venue.
+	 *
+	 * @since TBD
+	 *
+	 * @param string[] $classes The post classes.
+	 *
+	 * @return string[] The classes, without the venue term classes.
+	 */
+	public function remove_venue_classes( array $classes ): array {
+		$prefixes = array_map(
+			static fn( string $taxonomy ): string => sanitize_html_class( $taxonomy . '-' ),
+			$this->get_venue_taxonomies()
+		);
+
+		return array_values(
+			array_filter(
+				$classes,
+				static function ( string $css_class ) use ( $prefixes ): bool {
+					foreach ( $prefixes as $prefix ) {
+						if ( str_starts_with( $css_class, $prefix ) ) {
+							return false;
+						}
+					}
+
+					return true;
+				}
+			)
+		);
+	}
+
+	/**
+	 * Keeps the venue out of a password-protected event's post classes.
+	 *
+	 * Core adds a class for each of the post's terms, so an event card names
+	 * its venue in the markup even while the venue block stays hidden.
+	 *
+	 * @since TBD
+	 *
+	 * @param string[]        $classes   The post classes.
+	 * @param string[]|string $css_class Extra classes passed to get_post_class(). Unused, required by the filter.
+	 * @param int             $post_id   The post the classes are for.
+	 *
+	 * @return string[] The classes, without the venue term classes when the viewer may not see the venue.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 */
+	public function filter_event_post_class( array $classes, $css_class, int $post_id ): array {
+		if (
+			! post_type_supports( (string) get_post_type( $post_id ), Venue::ASSIGNMENT_SUPPORT )
+			|| $this->can_view_event_venue( $post_id )
+		) {
+			return $classes;
+		}
+
+		return $this->remove_venue_classes( $classes );
 	}
 
 	/**
@@ -520,7 +618,10 @@ final class Setup {
 			$venue_meta['isOnlineEventTerm'] = $is_online;
 			$venue_meta['onlineEventLink']   = $event->maybe_get_online_event_link();
 
-			$venue_post = $this->get_venue_post_from_event_post_id( $post_id );
+			// The venue follows the event's password, like its other details.
+			$venue_post = $this->can_view_event_venue( $post_id )
+				? $this->get_venue_post_from_event_post_id( $post_id )
+				: null;
 
 			if ( $venue_post instanceof WP_Post ) {
 				$venue = new Venue( $venue_post->ID );

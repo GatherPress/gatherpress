@@ -2022,4 +2022,73 @@ class Test_Setup extends Base {
 			'Failed to assert an equally ranked calendar negotiates.'
 		);
 	}
+
+	/**
+	 * A password-protected event's head links leave out its venue feed for a
+	 * visitor, and keep its other term feeds.
+	 *
+	 * @since TBD
+	 * @covers ::collect_event_term_alternate_links
+	 *
+	 * @return void
+	 */
+	public function test_collect_event_term_alternate_links_hides_a_protected_event_venue(): void {
+		$this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_name'  => 'head-link-venue',
+				'post_title' => 'Head Link Venue',
+			)
+		)->get();
+
+		$event_id = $this->mock->post(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		)->get()->ID;
+		$topic_id = $this->factory->term->create(
+			array(
+				'taxonomy' => Topic::TAXONOMY,
+				'name'     => 'Head Link Topic',
+			)
+		);
+
+		wp_set_post_terms( $event_id, '_head-link-venue', Venue::TAXONOMY );
+		wp_set_post_terms( $event_id, array( $topic_id ), Topic::TAXONOMY );
+
+		$instance = Setup::get_instance();
+		$args     = Utility::invoke_hidden_method( $instance, 'alternate_link_label_args' );
+		$collect  = static fn(): string => implode(
+			' ',
+			array_column(
+				Utility::invoke_hidden_method(
+					$instance,
+					'collect_event_term_alternate_links',
+					array( get_post( $event_id ), $args )
+				),
+				'attr'
+			)
+		);
+
+		wp_set_current_user( 0 );
+		$visitor = $collect();
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$editor = $collect();
+
+		wp_set_current_user( 0 );
+
+		$this->assertStringNotContainsString(
+			'Head Link Venue',
+			$visitor,
+			'Failed to assert a visitor gets no venue feed.'
+		);
+		$this->assertStringContainsString( 'Head Link Topic', $visitor, 'Failed to assert other term feeds stay.' );
+		$this->assertStringContainsString(
+			'Head Link Venue',
+			$editor,
+			'Failed to assert an editor gets the venue feed.'
+		);
+	}
 }

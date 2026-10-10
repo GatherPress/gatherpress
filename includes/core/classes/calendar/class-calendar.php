@@ -165,7 +165,7 @@ final class Calendar {
 			$datetime   = sprintf( '%sT%sZ/%sT%sZ', $date_start, $time_start, $date_end, $time_end );
 		}
 
-		$venue       = $this->event->get_venue_information();
+		$venue       = $this->event->get_viewable_venue_information();
 		$location    = $venue['name'];
 		$description = $this->event->get_calendar_description();
 
@@ -243,7 +243,7 @@ final class Calendar {
 			);
 		}
 
-		$venue       = $this->event->get_venue_information();
+		$venue       = $this->event->get_viewable_venue_information();
 		$location    = $venue['name'];
 		$description = $this->event->get_calendar_description();
 
@@ -318,7 +318,7 @@ final class Calendar {
 		$datetime_stamp = sprintf( '%sT%sZ', gmdate( 'Ymd', $modified_gmt ), gmdate( 'His', $modified_gmt ) );
 		$last_modified  = $datetime_stamp;
 		$sequence       = $this->get_sequence();
-		$venue          = $this->event->get_venue_information();
+		$venue          = $this->event->get_viewable_venue_information();
 		$location       = $venue['name'];
 		$description    = $this->event->get_calendar_description();
 
