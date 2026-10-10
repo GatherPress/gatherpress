@@ -18,6 +18,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Blocks\Form_Field;
 use GatherPress\Core\Blocks\General_Block;
+use GatherPress\Core\Capability;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
@@ -447,7 +448,7 @@ final class Rsvp_Form {
 		}
 
 		// Check if user has permission to edit the post.
-		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+		if ( ! current_user_can( Capability::EDIT_POST, $post_id ) ) {
 			return;
 		}
 
