@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\Event;
 
 use DateTime;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Email_Sends;
 use GatherPress\Core\Event\Meta;
 use GatherPress\Core\Event\Rest_Api;
 use GatherPress\Core\Rsvp\Response\Status;
@@ -53,6 +54,7 @@ class Test_Rest_Api extends Base {
 	public function tearDown(): void {
 		Settings::get_instance()->set( 'enable_open_rsvp', true );
 		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
+		wp_clear_scheduled_hook( Email_Sends::PROMOTION_CRON_HOOK );
 		parent::tearDown();
 	}
 
@@ -72,12 +74,6 @@ class Test_Rest_Api extends Base {
 				'name'     => 'rest_api_init',
 				'priority' => 10,
 				'callback' => array( $instance, 'register_endpoints' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'gatherpress_send_emails',
-				'priority' => 10,
-				'callback' => array( $instance, 'handle_email_send_action' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -315,6 +311,72 @@ class Test_Rest_Api extends Base {
 			$captured[3],
 			'Failed to assert the subject was sanitized.'
 		);
+	}
+
+	/**
+	 * A freed spot emails the promoted member through the scheduled send.
+	 *
+	 * @covers \GatherPress\Core\Event\Email_Sends::schedule_waiting_list_promotion_email
+	 *
+	 * @return void
+	 */
+	public function test_waiting_list_promotion_sends_email(): void {
+		$captured = array();
+
+		add_filter(
+			'pre_wp_mail',
+			static function ( $previous, $attributes ) use ( &$captured ): bool {
+				$captured = $attributes;
+				return true;
+			},
+			10,
+			2
+		);
+
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => 'Promotion Event',
+			)
+		);
+		update_post_meta( $event_id, 'gatherpress_capacity', 1 );
+
+		$attendee_id = $this->factory->user->create();
+		$waiter_id   = $this->factory->user->create(
+			array( 'user_email' => 'waiter@example.test' )
+		);
+		$rsvp        = new Rsvp( $event_id );
+		$rsvp->save( $attendee_id, 'attending' );
+		$rsvp->save( $waiter_id, 'attending' );
+
+		// Freeing the spot queues the promotion email rather than sending it.
+		$rsvp->save( $attendee_id, 'not_attending' );
+
+		$rsvp_record = ( new Rsvp( $event_id ) )->get( $waiter_id );
+
+		$this->assertNotFalse(
+			wp_next_scheduled(
+				Email_Sends::PROMOTION_CRON_HOOK,
+				array( $event_id, (int) $rsvp_record['comment_id'] )
+			),
+			'Failed to assert the promotion email was scheduled for the freed spot.'
+		);
+		$this->assertSame(
+			array(),
+			$captured,
+			'Failed to assert nothing is sent during the request that frees the spot.'
+		);
+
+		do_action(
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- Hook name comes from the class constant, so PHPCS cannot read the prefix.
+			Email_Sends::PROMOTION_CRON_HOOK,
+			$event_id,
+			(int) $rsvp_record['comment_id']
+		);
+
+		$this->assertSame( 'waiter@example.test', $captured['to'] );
+		$this->assertStringContainsString( 'Promotion Event', $captured['subject'] );
+		$this->assertStringContainsString( 'now confirmed', $captured['message'] );
 	}
 
 	/**
