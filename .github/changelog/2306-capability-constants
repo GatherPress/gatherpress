@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Move post meta capability constants to neutral Capability class, replacing hardcoded strings and cross-subsystem references across Event, Venue, and REST endpoints.
