@@ -302,7 +302,7 @@ final class Utility {
 		int $object_id,
 		int $user_id
 	): bool {
-		return user_can( $user_id, 'edit_post', $object_id );
+		return user_can( $user_id, Capability::EDIT_POST, $object_id );
 	}
 
 	/**

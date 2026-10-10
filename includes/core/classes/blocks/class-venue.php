@@ -14,6 +14,7 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Capability;
 use GatherPress\Core\Event;
 use GatherPress\Core\Shadow_Source;
 use GatherPress\Core\Traits\Singleton;
@@ -198,7 +199,7 @@ final class Venue {
 			&& ! post_password_required( $candidate )
 			&& (
 				is_post_publicly_viewable( $candidate )
-				|| current_user_can( Event::READ_CAPABILITY, $candidate->ID )
+				|| current_user_can( Capability::READ_POST, $candidate->ID )
 			);
 
 		return $viewable ? $candidate : null;

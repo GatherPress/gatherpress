@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use Exception;
 use GatherPress\Core\Blocks\Rsvp_Form;
 use GatherPress\Core\Blocks\Rsvp_Template;
+use GatherPress\Core\Capability;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Rsvp\Query as Rsvp_Query;
@@ -145,7 +146,7 @@ final class Rest_Api {
 					// send emails about it. Mirrors the meta auth_callback
 					// model so a non-owner Author can't blast emails about
 					// someone else's event via this route.
-					return current_user_can( Event::EDIT_CAPABILITY, (int) $request['post_id'] );
+					return current_user_can( Capability::EDIT_POST, (int) $request['post_id'] );
 				},
 				'args'                => array(
 					'post_id' => array(
@@ -784,7 +785,7 @@ final class Rest_Api {
 			// RSVP someone else into it. The previous flat `edit_posts`
 			// check would have let any Author manage attendees on any
 			// event, including ones they don't own.
-			if ( current_user_can( Event::EDIT_CAPABILITY, $post_id ) ) {
+			if ( current_user_can( Capability::EDIT_POST, $post_id ) ) {
 				$is_managing_other = true;
 			} else {
 				$user_id = 0;
@@ -1147,7 +1148,7 @@ final class Rest_Api {
 		// while the editor still loads what it has to save.
 		if (
 			array_key_exists( 'gatherpress_online_event_link', $response->data['meta'] ?? array() )
-			&& ! current_user_can( Event::EDIT_CAPABILITY, $post_id )
+			&& ! current_user_can( Capability::EDIT_POST, $post_id )
 		) {
 			$response->data['meta']['gatherpress_online_event_link'] = $online_event_link;
 		}

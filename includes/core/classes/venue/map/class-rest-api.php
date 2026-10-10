@@ -17,6 +17,7 @@ namespace GatherPress\Core\Venue\Map;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Capability;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue;
 use WP_REST_Request;
@@ -93,10 +94,10 @@ final class Rest_Api {
 		$permission = static function ( WP_REST_Request $request ): bool {
 			$post_id = (int) $request['id'];
 
-			// Permission scope is the venue post itself — anyone who can
+			// Permission scope is the venue post itself - anyone who can
 			// edit the venue can force its map to regenerate. Admins with
 			// edit_others_posts go through the same check.
-			return current_user_can( 'edit_post', $post_id );
+			return current_user_can( Capability::EDIT_POST, $post_id );
 		};
 
 		$id_arg = array(
