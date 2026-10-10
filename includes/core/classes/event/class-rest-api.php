@@ -18,6 +18,7 @@ use Exception;
 use GatherPress\Core\Blocks\Rsvp_Form;
 use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Event;
+use GatherPress\Core\Mailer;
 use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Rsvp\Query as Rsvp_Query;
 use GatherPress\Core\Rsvp;
@@ -25,7 +26,6 @@ use GatherPress\Core\Rsvp\Setup;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Rsvp\Token;
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\User;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
 use WP_Comment;
@@ -33,7 +33,6 @@ use WP_Post;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
-use WP_User;
 
 /**
  * Class Rest_Api.
@@ -47,7 +46,7 @@ use WP_User;
  *
  * @phpstan-type RouteDefinition array{route: string, args: array<string, mixed>}
  * @phpstan-type SendOptions array{all: bool, attending: bool, waiting_list: bool, not_attending: bool}
- * @phpstan-type Recipient array{is_user: bool, user_id: int, comment_id: int, email: string, name: string}
+ * @phpstan-import-type Recipient from Mailer
  */
 final class Rest_Api {
 
@@ -451,8 +450,7 @@ final class Rest_Api {
 		$message  = $params['message'] ?? '';
 		$subject  = $params['subject'] ?? '';
 		$send     = $params['send'];
-		$success  = wp_schedule_single_event(
-			time(),
+		$success  = Mailer::get_instance()->schedule(
 			'gatherpress_send_emails',
 			array( $post_id, $send, $message, $subject )
 		);
@@ -508,13 +506,10 @@ final class Rest_Api {
 			return false;
 		}
 
-		// Keep the currently logged-in user so per-recipient locale / user
-		// switches inside the loop can restore back to it.
-		$current_user = wp_get_current_user();
-		$recipients   = $this->get_recipients( $send, $post_id );
+		$recipients = $this->get_recipients( $send, $post_id );
 
 		foreach ( $recipients as $recipient ) {
-			$this->send_event_email_to_recipient( $recipient, $post_id, $message, $current_user, $subject );
+			$this->send_event_email_to_recipient( $recipient, $post_id, $message, $subject );
 		}
 
 		return true;
@@ -524,20 +519,20 @@ final class Rest_Api {
 	 * Send the per-event update email to a single recipient.
 	 *
 	 * Extracted from `send_emails()` so the outer loop body stays shallow
-	 * enough for SonarCloud's cognitive-complexity gate. Honors the
-	 * recipient's opt-in (user meta for WP users, comment meta for
-	 * non-user RSVPs) and skips silently when no email is on file.
-	 * Restores the editor's user / locale before returning.
+	 * enough for SonarCloud's cognitive-complexity gate. Builds the event
+	 * subject and body through `build_event_email()`, then hands the
+	 * recipient off to `Mailer::send()`, which owns the consent check,
+	 * context switch, delivery, and restore.
 	 *
 	 * @since 0.34.0
 	 * @since 0.36.0 Added `$subject` parameter for #827.
+	 * @since TBD Mailer owns the per-recipient send sequence.
 	 *
-	 * @param array   $recipient    Recipient row from `get_recipients()`.
-	 * @param int     $post_id      Event post ID.
-	 * @param string  $message      Optional editor-supplied message body.
-	 * @param WP_User $current_user Originating editor (restored after locale/user switch).
-	 * @param string  $subject      Optional subject line. Empty falls back to the default template
-	 *                              and is then filtered via `gatherpress_email_subject`.
+	 * @param array  $recipient Recipient row from `get_recipients()`.
+	 * @param int    $post_id   Event post ID.
+	 * @param string $message   Optional editor-supplied message body.
+	 * @param string $subject   Optional subject line. Empty falls back to the default template
+	 *                          and is then filtered via `gatherpress_email_subject`.
 	 * @phpstan-param Recipient $recipient
 	 *
 	 * @return void
@@ -546,38 +541,33 @@ final class Rest_Api {
 		array $recipient,
 		int $post_id,
 		string $message,
-		WP_User $current_user,
 		string $subject = ''
 	): void {
-		// Check opt-in preference based on recipient type.
-		if ( $recipient['is_user'] ) {
-			if ( ! User::get_instance()->has_event_updates_opt_in( $recipient['user_id'] ) ) {
-				return;
-			}
-		} elseif (
-			'0' === get_comment_meta(
-				$recipient['comment_id'],
-				'gatherpress_event_updates_opt_in',
-				true
-			)
-		) {
-			return;
-		}
+		// Build the email from the callback so the default subject is
+		// translated, and the template rendered, in the recipient's context.
+		Mailer::get_instance()->send(
+			$recipient,
+			fn(): array => $this->build_event_email( $post_id, $message, $subject ),
+			'event'
+		);
+	}
 
-		if ( ! $recipient['email'] ) {
-			return;
-		}
-
-		$switched_locale = false;
-
-		// Set the current user context for templating.
-		if ( $recipient['is_user'] ) {
-			$switched_locale = switch_to_user_locale( $recipient['user_id'] );
-			// Set the current user to the actual member to mail to,
-			// to make sure the GatherPress filters for date- and time- format, as well as the users timezone,
-			// are recognized by the functions inside render_template().
-			wp_set_current_user( $recipient['user_id'] );
-		}
+	/**
+	 * Build the subject and body for an event update email.
+	 *
+	 * Runs while the recipient's context is active so the default subject and
+	 * the template are translated in the recipient's locale and timezone.
+	 *
+	 * @since TBD
+	 *
+	 * @param int    $post_id Event post ID.
+	 * @param string $message Optional editor-supplied message body.
+	 * @param string $subject Optional subject line. Empty falls back to the default template.
+	 *
+	 * @return array{subject: string, body: string, headers: array<int, string>} Composed email.
+	 */
+	private function build_event_email( int $post_id, string $message, string $subject ): array {
+		$template = sprintf( '%s/includes/templates/admin/emails/event-email.php', GATHERPRESS_CORE_PATH );
 
 		if ( '' === $subject ) {
 			$subject = sprintf(
@@ -596,27 +586,18 @@ final class Rest_Api {
 		 * @param int    $post_id Event post ID.
 		 */
 		$subject = apply_filters( 'gatherpress_email_subject', $subject, $post_id );
-		$body    = Utility::render_template(
-			sprintf( '%s/includes/templates/admin/emails/event-email.php', GATHERPRESS_CORE_PATH ),
-			array(
-				'event_id' => $post_id,
-				'message'  => $message,
+
+		return array(
+			'subject' => $subject,
+			'body'    => Utility::render_template(
+				$template,
+				array(
+					'event_id' => $post_id,
+					'message'  => $message,
+				),
 			),
+			'headers' => array( 'Content-Type: text/html; charset=UTF-8' ),
 		);
-		$headers = array( 'Content-Type: text/html; charset=UTF-8' );
-		$subject = stripslashes_deep( html_entity_decode( $subject, ENT_QUOTES, 'UTF-8' ) );
-
-		// Reset the current user to the editor sending the email.
-		wp_set_current_user( $current_user->ID );
-
-		wp_mail( $recipient['email'], $subject, $body, $headers );
-
-		// Cleanup branch only fires when `switch_to_user_locale()` actually
-		// switched, which requires a non-stub `WP_Locale_Switcher` and is not
-		// reachable from the test runner.
-		if ( $switched_locale ) { // @codeCoverageIgnore
-			restore_previous_locale(); // @codeCoverageIgnore
-		}
 	}
 
 	/**
