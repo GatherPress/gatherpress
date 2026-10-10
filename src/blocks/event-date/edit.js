@@ -48,6 +48,7 @@ import {
 } from '../../helpers/event';
 import { isInFSETemplate } from '../../helpers/editor';
 import { resolveEventDateData } from './helpers';
+import { getViewerTimeLabel } from './viewer-time';
 
 /**
  * The separator shown when the block sets none.
@@ -243,11 +244,13 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		endDateFormat,
 		separator,
 		showTimezone,
+		showViewerTime,
 	} = attributes;
 
 	const dateFormat = getFromSettings( 'dateFormat' );
 	const timeFormat = getFromSettings( 'timeFormat' );
 	const defaultShowTimezone = getFromSettings( 'showTimezone' );
+	const globalShowViewerTimezone = getFromSettings( 'showViewerTimezone' );
 
 	// Defer the supports check to useSelect so it stays reactive.
 	const postId = attributes?.postId ?? context?.postId ?? null;
@@ -268,6 +271,11 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		( select ) => resolveEventDateData( select, contextPostType, contextQueryId, postId, hasExplicitOverride ),
 		[ postId, contextPostType, contextQueryId, hasExplicitOverride ],
 	);
+
+	const isTimezoneAppended =
+		'never' !== timezonePreference &&
+		( 'always' === timezonePreference ||
+			( showTimezone ? 'yes' === showTimezone : defaultShowTimezone ) );
 
 	const blockProps = useBlockProps( {
 		style: {
@@ -294,8 +302,14 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const finalDateTimeEnd = dateTimeEnd || fallbackDateTime.clone().add( 1, 'hour' ).format();
 	const finalTimezone = timezone || getTimezone();
 
-	const showStartTime = [ 'start', 'both' ].includes( displayType );
-	const showEndTime = [ 'end', 'both' ].includes( displayType );
+	// An empty displayType means both, matching `Event::get_display_datetime()`
+	// and render.php. block.json defaults the attribute to "both", so only
+	// hand-authored or migrated markup arrives empty, but normalizing it on
+	// both sides is what stops the editor and the frontend disagreeing about
+	// what such a block shows.
+	const effectiveDisplayType = displayType || 'both';
+	const showStartTime = [ 'start', 'both' ].includes( effectiveDisplayType );
+	const showEndTime = [ 'end', 'both' ].includes( effectiveDisplayType );
 
 	// What the format fields fall back to, which is the date alone once the
 	// event is all day.
@@ -325,6 +339,87 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		isAllDay,
 		timezonePreference,
 	);
+
+	// Same label the frontend renders, so the toggle previews its own effect
+	// rather than changing something the author cannot see. Empty when the
+	// author is already in the event's timezone, which is what a viewer there
+	// would get too.
+	const viewerTimeLabel =
+		showViewerTime && isTimezoneAppended && globalShowViewerTimezone && ! isAllDay
+			? getViewerTimeLabel( {
+				startGmt: showStartTime
+					? createMomentWithTimezone( finalDateTimeStart, finalTimezone )
+						.utc()
+						.format( 'YYYY-MM-DD HH:mm:ss' )
+					: '',
+				endGmt: showEndTime
+					? createMomentWithTimezone( finalDateTimeEnd, finalTimezone )
+						.utc()
+						.format( 'YYYY-MM-DD HH:mm:ss' )
+					: '',
+				eventTimezone: finalTimezone,
+				isAllDay,
+				rangeFormat: sprintf(
+					/* translators: 1: event start in the viewer's timezone, 2: separator between start and end, 3: event end in the viewer's timezone. */
+					__( '%1$s %2$s %3$s your time', 'gatherpress' ),
+					'%1$s',
+					separator || __( 'to', 'gatherpress' ),
+					'%2$s',
+				),
+				/* translators: %s: event start in the viewer's timezone. */
+				singleFormat: __( '%s your time', 'gatherpress' ),
+			} )
+			: '';
+
+	let renderedDateTime = displayedDateTime;
+	if ( isLink ) {
+		renderedDateTime = (
+			<a
+				href="#gatherpress-event-date-pseudo-link"
+				onClick={ ( event ) => event.preventDefault() }
+				className={ viewerTimeLabel ? 'gatherpress-tooltip' : undefined }
+				data-gatherpress-tooltip={ viewerTimeLabel || undefined }
+				tabIndex={ viewerTimeLabel ? 0 : undefined }
+			>
+				{ displayedDateTime }
+				{ !! viewerTimeLabel && (
+					<span className="screen-reader-text gatherpress--screen-reader-text gatherpress-tooltip-notice">
+						{ ` (${ viewerTimeLabel })` }
+					</span>
+				) }
+			</a>
+		);
+	} else if ( viewerTimeLabel ) {
+		renderedDateTime = (
+			<span
+				className="gatherpress-tooltip"
+				data-gatherpress-tooltip={ viewerTimeLabel }
+				tabIndex={ 0 }
+			>
+				{ displayedDateTime }
+				<span className="screen-reader-text gatherpress--screen-reader-text gatherpress-tooltip-notice">
+					{ ` (${ viewerTimeLabel })` }
+				</span>
+			</span>
+		);
+	}
+
+	let viewerTimeHelp = __(
+		'Displays the event time converted to each viewer\u2019s local timezone in a tooltip. Viewers in the same timezone see nothing extra.',
+		'gatherpress',
+	);
+
+	if ( isAllDay ) {
+		viewerTimeHelp = __(
+			'All-day events do not show viewer local time.',
+			'gatherpress',
+		);
+	} else if ( ! isTimezoneAppended ) {
+		viewerTimeHelp = __(
+			'Time zone must be appended to show viewer local time.',
+			'gatherpress',
+		);
+	}
 
 	return (
 		<div { ...blockProps }>
@@ -360,16 +455,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 					/>
 				</ToolbarGroup>
 			</BlockControls>
-			{ isLink ? (
-				<a
-					href="#gatherpress-event-date-pseudo-link"
-					onClick={ ( event ) => event.preventDefault() }
-				>
-					{ displayedDateTime }
-				</a>
-			) : (
-				displayedDateTime
-			) }
+			{ renderedDateTime }
 			{ isEventPostType() && (
 				<InspectorControls>
 					<PanelBody>
@@ -386,7 +472,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				>
 					<RadioControl
 						label={ __( 'Display', 'gatherpress' ) }
-						selected={ displayType }
+						selected={ effectiveDisplayType }
 						options={ [
 							{
 								label: __(
@@ -408,7 +494,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 							setAttributes( { displayType: value } )
 						}
 					/>
-					{ 'both' === displayType && (
+					{ 'both' === effectiveDisplayType && (
 						<TextControl
 							__next40pxDefaultSize
 							label={ __( 'Separator', 'gatherpress' ) }
@@ -449,17 +535,24 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 					</p>
 					<ToggleControl
 						label={ __( 'Append time zone', 'gatherpress' ) }
-						checked={
-							showTimezone
-								? 'yes' === showTimezone
-								: defaultShowTimezone
-						}
+						checked={ isTimezoneAppended }
 						onChange={ ( value ) =>
 							setAttributes( {
 								showTimezone: value ? 'yes' : 'no',
 							} )
 						}
 					/>
+					{ globalShowViewerTimezone && (
+						<ToggleControl
+							label={ __( 'Show viewer local time', 'gatherpress' ) }
+							help={ viewerTimeHelp }
+							checked={ !! showViewerTime && isTimezoneAppended && ! isAllDay }
+							disabled={ ! isTimezoneAppended || isAllDay }
+							onChange={ ( value ) =>
+								setAttributes( { showViewerTime: value } )
+							}
+						/>
+					) }
 					<ToggleControl
 						label={ __( 'Link to event', 'gatherpress' ) }
 						help={ __(

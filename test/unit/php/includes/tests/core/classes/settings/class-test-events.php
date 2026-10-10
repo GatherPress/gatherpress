@@ -92,6 +92,11 @@ class Test_Events extends Base {
 			$section['date_time']['options'],
 			'Failed to assert show_timezone option is present.'
 		);
+		$this->assertArrayHasKey(
+			'show_viewer_timezone',
+			$section['date_time']['options'],
+			'Failed to assert show_viewer_timezone option is present.'
+		);
 		$this->assertSame(
 			'Event Display',
 			$section['event_display']['name'],
