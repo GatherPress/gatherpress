@@ -7,12 +7,13 @@ name: Release
 # into CHANGELOG.md under a new version header (and auto-PR'd back to develop
 # for review), and the plugin is deployed to wordpress.org.
 #
-# Pushing a tag like `0.34.0-alpha.1`, `-beta.1`, or `-rc.1` cuts a pre-release:
+# Pushing a tag like `0.34.0-alpha.1` or `0.34.0-beta.1` cuts a pre-release:
 # distro zip is attached to a GitHub Pre-Release (marked NOT-latest), the
 # release body is the SAME rolled-up section that would ship at stable (so
 # testers see what they're testing), but the rollup is computed in an
 # ephemeral checkout — no commit, no PR, no entry files deleted. Pre-releases
-# never deploy to wp.org.
+# never change the version wp.org serves; beta tags only sync SVN trunk and
+# add an SVN tag (see deploy-wporg-trunk).
 #
 # Release-manager docs: docs/contributor/release-process.md.
 
@@ -46,7 +47,7 @@ jobs:
           # not a build: nothing should reach the Releases tab or wp.org under
           # it. Pre-release numbering starts at .1, so no suffix ending in .0
           # is ever a real build.
-          if [[ "${VERSION}" =~ -(alpha|beta|rc)\.0$ ]]; then
+          if [[ "${VERSION}" =~ -(alpha|beta)\.0$ ]]; then
             echo "::error::'${VERSION}' is a cycle marker, not a release. Delete the tag; pre-releases start at .1."
             exit 1
           fi
@@ -57,13 +58,18 @@ jobs:
           version="${GITHUB_REF_NAME}"
           echo "version=${version}" >> "$GITHUB_OUTPUT"
 
-          # Pre-release suffix detection: alpha.N, beta.N, rc.N (per SemVer).
-          if [[ "${version}" =~ -(alpha|beta|rc)\. ]]; then
+          # Pre-releases are alpha.N or beta.N. Any other suffix fails here
+          # instead of falling through to the stable path, which deploys to
+          # wp.org.
+          if [[ "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+-(alpha|beta)\.[0-9]+$ ]]; then
             echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
             echo "Tag ${version} is a pre-release."
-          else
+          elif [[ "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
             echo "Tag ${version} is a stable release."
+          else
+            echo "::error::'${version}' is not a release tag (X.Y.Z, X.Y.Z-alpha.N or X.Y.Z-beta.N). Delete the tag."
+            exit 1
           fi
 
       - name: Abort if a previous rollup PR is still open

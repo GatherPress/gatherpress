@@ -17,8 +17,8 @@ This page is the single source of truth for release managers cutting a stable re
 
 ## What gets automated
 
-Pushing a tag of the form `X.Y.Z` (stable) or `X.Y.Z-alpha.N` / `-beta.N` /
-`-rc.N` (pre-release) triggers `release.yml`. The workflow:
+Pushing a tag of the form `X.Y.Z` (stable) or `X.Y.Z-alpha.N` / `-beta.N`
+(pre-release) triggers `release.yml`. The workflow:
 
 | Tag pattern             | Distro zip                  | GitHub Release entry | Changelog body source                       | wp.org deploy |
 | ----------------------- | --------------------------- | -------------------- | ------------------------------------------- | ------------- |
@@ -94,7 +94,7 @@ git push origin 0.34.0-alpha.1
 
 **What the workflow does:**
 
-1. Detects the tag is a pre-release (the `-alpha.` / `-beta.` / `-rc.` suffix).
+1. Detects the tag is a pre-release (the `-alpha.` / `-beta.` suffix).
 2. Builds `gatherpress.0.34.0-alpha.1.zip` via `npm run plugin-zip`.
 3. Runs the changelog rollup in an ephemeral working copy and extracts the resulting `[0.34.0-alpha.1]` section as the release body. The changes never get committed anywhere, they evaporate when the job ends.
 4. Creates a GitHub **Pre-Release** with the zip attached and the rolled-up body. The Pre-Release is **not** marked as the latest release.
@@ -156,7 +156,7 @@ git push origin X.Y.Z
 
 **What the workflow does:**
 
-1. Detects the tag is stable (no `-alpha.` / `-beta.` / `-rc.` suffix).
+1. Detects the tag is stable (no `-alpha.` / `-beta.` suffix).
 2. Aggregates every entry file in `.github/changelog/` into a new `## [X.Y.Z] - YYYY-MM-DD` section at the top of `CHANGELOG.md`, appending `[#NNNN]` PR references, and **deletes** the entry files (dotfiles like `.gitkeep` survive, which is why the directory persists in git).
 3. Commits that rollup to a new `release/X.Y.Z` branch and **opens an auto-PR back to `develop`** (with the `Skip Changelog` label), carrying the version's credits file along when develop does not have it. On a stable tag it also opens **`sync/X.Y.Z-changelog-parity` against `main`** with the same changelog changes, which is not on auto-merge.
 4. Builds `gatherpress.X.Y.Z.zip` with the rolled-up `CHANGELOG.md` from step 2 in it. The tag commit's own copy predates the rollup, so the build and the wp.org deploy take the rolled file from the rollup job rather than the checkout; before this, every shipped changelog was one release behind.
@@ -496,6 +496,5 @@ that no job ends up with broader scopes than it needs.
 - **Cycle marker**: `0.36.0-alpha.0`. Never tagged, never released. Set on `develop` immediately after a stable ships so the branch names the line being worked on instead of the one that just went out, and retired when `-alpha.1` supersedes it. The `.0` is what distinguishes it from a real build.
 - **Alpha**: `0.34.0-alpha.1`, `0.34.0-alpha.2`. Use for early in-cycle builds; tagged on `develop`. Numbering starts at `.1` because `.0` is the cycle marker above.
 - **Beta**: `0.34.0-beta.1`. Use for feature-complete in-cycle builds where the team is still smoke-testing; tagged on `develop`.
-- **Release candidate**: `0.34.0-rc.1`. Use for "we believe this is shippable, last call for showstoppers"; tagged on `develop`.
 
-The pre-release suffix matches the SemVer spec. Anything outside `-alpha.` / `-beta.` / `-rc.` won't be recognized by the workflow's classifier and will be treated as stable. Don't get creative with the suffix.
+The pre-release suffix matches the SemVer spec. The workflow's classifier only recognizes `-alpha.N` and `-beta.N`, and fails on any other suffix rather than treating the tag as stable. Don't get creative with the suffix.
