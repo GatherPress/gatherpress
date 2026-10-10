@@ -337,7 +337,7 @@ function patch_file( $file, $pattern, $replacement, $label ) {
  * @return void
  */
 function resolve_since_tags( $version ) {
-	if ( preg_match( '/-(alpha|beta|rc)\./', $version ) ) {
+	if ( preg_match( '/-(alpha|beta)\./', $version ) ) {
 		warning( "Leaving @since TBD alone for the {$version} pre-release; only a stable version can answer it." );
 		return;
 	}
@@ -481,9 +481,9 @@ $options = getopt( '', array( 'version:' ) );
 
 if (
 	empty( $options['version'] )
-	|| ! preg_match( '/^\d+\.\d+\.\d+(-(alpha|beta|rc)\.\d+)?$/', $options['version'] )
+	|| ! preg_match( '/^\d+\.\d+\.\d+(-(alpha|beta)\.\d+)?$/', $options['version'] )
 ) {
-	fail( 'Usage: npm run version:bump -- --version=X.Y.Z[-alpha.N|-beta.N|-rc.N]' );
+	fail( 'Usage: npm run version:bump -- --version=X.Y.Z[-alpha.N|-beta.N]' );
 }
 
 $version = $options['version'];

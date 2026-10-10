@@ -24,7 +24,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to bump to (X.Y.Z or X.Y.Z-alpha.N / -beta.N / -rc.N)'
+        description: 'Version to bump to (X.Y.Z or X.Y.Z-alpha.N / -beta.N)'
         required: true
         type: string
 
@@ -45,8 +45,8 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
         run: |
-          if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$ ]]; then
-            echo "::error::'${VERSION}' is not a valid version (X.Y.Z or X.Y.Z-alpha.N/-beta.N/-rc.N)."
+          if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta)\.[0-9]+)?$ ]]; then
+            echo "::error::'${VERSION}' is not a valid version (X.Y.Z or X.Y.Z-alpha.N/-beta.N)."
             exit 1
           fi
 
