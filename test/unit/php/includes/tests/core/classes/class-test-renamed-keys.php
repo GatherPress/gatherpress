@@ -261,4 +261,106 @@ class Test_Renamed_Keys extends Base {
 			'Failed to assert a non-single read is answered as a list.'
 		);
 	}
+
+	/**
+	 * Coverage for normalize_value with legacy rsvp_mode values.
+	 *
+	 * @since  TBD
+	 * @covers ::normalize_value
+	 *
+	 * @return void
+	 */
+	public function test_normalize_value_maps_legacy_rsvp_mode(): void {
+		$this->assertSame(
+			'enabled',
+			Renamed_Keys::normalize_value( 'rsvp_mode', 'all_on' ),
+			'Failed to assert legacy all_on maps to enabled.'
+		);
+
+		$this->assertSame(
+			'per_event_enabled',
+			Renamed_Keys::normalize_value( 'rsvp_mode', 'per_event_on' ),
+			'Failed to assert legacy per_event_on maps to per_event_enabled.'
+		);
+
+		$this->assertSame(
+			'per_event_disabled',
+			Renamed_Keys::normalize_value( 'rsvp_mode', 'per_event_off' ),
+			'Failed to assert legacy per_event_off maps to per_event_disabled.'
+		);
+
+		$this->assertSame(
+			'disabled',
+			Renamed_Keys::normalize_value( 'rsvp_mode', 'disabled' ),
+			'Failed to assert disabled is untouched.'
+		);
+
+		$this->assertSame(
+			'enabled',
+			Renamed_Keys::normalize_value( 'rsvp_mode', 'enabled' ),
+			'Failed to assert current enabled is untouched.'
+		);
+	}
+
+	/**
+	 * Coverage for normalize_value with legacy cleanup values.
+	 *
+	 * @since  TBD
+	 * @covers ::normalize_value
+	 *
+	 * @return void
+	 */
+	public function test_normalize_value_maps_legacy_cleanup_values(): void {
+		$this->assertSame(
+			'enabled',
+			Renamed_Keys::normalize_value( 'enable_rsvp_cleanup', 'on' ),
+			'Failed to assert legacy cleanup on maps to enabled.'
+		);
+
+		$this->assertSame(
+			'disabled',
+			Renamed_Keys::normalize_value( 'enable_rsvp_cleanup', 'off' ),
+			'Failed to assert legacy cleanup off maps to disabled.'
+		);
+
+		$this->assertSame(
+			'enabled',
+			Renamed_Keys::normalize_value( 'rsvp_cleanup_switch', 'on' ),
+			'Failed to assert legacy rsvp_cleanup_switch on maps to enabled.'
+		);
+
+		$this->assertSame(
+			'disabled',
+			Renamed_Keys::normalize_value( 'rsvp_cleanup_switch', 'off' ),
+			'Failed to assert legacy rsvp_cleanup_switch off maps to disabled.'
+		);
+	}
+
+	/**
+	 * Coverage for normalize_value with non-string values or unmapped options.
+	 *
+	 * @since  TBD
+	 * @covers ::normalize_value
+	 *
+	 * @return void
+	 */
+	public function test_normalize_value_leaves_non_strings_and_unmapped_keys_untouched(): void {
+		$this->assertSame(
+			100,
+			Renamed_Keys::normalize_value( 'capacity', 100 ),
+			'Failed to assert numeric capacity value is untouched.'
+		);
+
+		$this->assertSame(
+			123,
+			Renamed_Keys::normalize_value( 'rsvp_mode', 123 ),
+			'Failed to assert non-string rsvp_mode value is untouched.'
+		);
+
+		$this->assertSame(
+			'on',
+			Renamed_Keys::normalize_value( 'unrelated_option', 'on' ),
+			'Failed to assert unmapped option string is untouched.'
+		);
+	}
 }
