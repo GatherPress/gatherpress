@@ -468,19 +468,21 @@ class Test_Scheduler extends Base {
 		$this->assertFalse( $instance->any_post_type_enabled() );
 		$this->assertSame( 'upcoming_' . Event::POST_TYPE . 's', $instance->option_key_for( Event::POST_TYPE ) );
 
-		// Backwards-compatible filter.
-		add_filter( 'gatherpress_upcoming_events_option_tracker_enabled', '__return_true' );
-		$this->assertTrue( $instance->is_tracker_enabled( Event::POST_TYPE ) );
-		$this->assertTrue( $instance->any_post_type_enabled() );
-		remove_all_filters( 'gatherpress_upcoming_events_option_tracker_enabled' );
-
 		// Global filter.
 		add_filter( 'gatherpress_upcoming_tracker_enabled', '__return_true' );
 		$this->assertTrue( $instance->is_tracker_enabled( Event::POST_TYPE ) );
+		$this->assertTrue( $instance->any_post_type_enabled() );
 		remove_all_filters( 'gatherpress_upcoming_tracker_enabled' );
 
-		// Per-post-type filter.
-		add_filter( Event::POST_TYPE . '_upcoming_tracker_enabled', '__return_true' );
+		// Per-post-type filter receives post type argument.
+		add_filter(
+			Event::POST_TYPE . '_upcoming_tracker_enabled',
+			static function ( bool $enabled, string $type ): bool {
+				return Event::POST_TYPE === $type;
+			},
+			10,
+			2
+		);
 		$this->assertTrue( $instance->is_tracker_enabled( Event::POST_TYPE ) );
 		remove_all_filters( Event::POST_TYPE . '_upcoming_tracker_enabled' );
 	}

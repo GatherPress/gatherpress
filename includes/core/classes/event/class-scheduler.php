@@ -324,27 +324,13 @@ final class Scheduler {
 	 */
 	public function is_tracker_enabled( string $post_type ): bool {
 		/**
-		 * Filter whether upcoming events tracking is globally enabled.
-		 *
-		 * Backwards compatibility with the experimental invalidation plugin.
+		 * Filter whether upcoming events tracking is enabled globally.
 		 *
 		 * @since TBD
 		 *
 		 * @param bool $enabled Whether tracking is enabled. Default false.
 		 */
-		if ( apply_filters( 'gatherpress_upcoming_events_option_tracker_enabled', false ) ) {
-			return true;
-		}
-
-		/**
-		 * Filter whether upcoming events tracking is enabled globally.
-		 *
-		 * @since TBD
-		 *
-		 * @param bool   $enabled   Whether tracking is enabled. Default false.
-		 * @param string $post_type The post type currently being evaluated.
-		 */
-		if ( apply_filters( 'gatherpress_upcoming_tracker_enabled', false, $post_type ) ) {
+		if ( apply_filters( 'gatherpress_upcoming_tracker_enabled', false ) ) {
 			return true;
 		}
 
@@ -353,12 +339,14 @@ final class Scheduler {
 		 *
 		 * @since TBD
 		 *
-		 * @param bool $enabled Whether tracking is enabled for this post type. Default false.
+		 * @param bool   $enabled   Whether tracking is enabled for this post type. Default false.
+		 * @param string $post_type The post type currently being evaluated.
 		 */
 		return (bool) apply_filters(
 			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
 			"{$post_type}_upcoming_tracker_enabled",
-			false
+			false,
+			$post_type
 		);
 	}
 
@@ -510,6 +498,7 @@ final class Scheduler {
 				$event = new Event( $post_id );
 
 				if ( $event->has_event_past() ) {
+					/** This action is documented in includes/core/classes/event/class-scheduler.php */
 					do_action( 'gatherpress_event_ended', $post_id );
 				}
 			}
