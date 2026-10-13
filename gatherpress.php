@@ -32,9 +32,14 @@ define( 'GATHERPRESS_CORE_FILE', __FILE__ );
 define( 'GATHERPRESS_CORE_PATH', __DIR__ );
 define( 'GATHERPRESS_CORE_URL', plugin_dir_url( __FILE__ ) );
 define( 'GATHERPRESS_DIR_NAME', dirname( plugin_basename( __FILE__ ) ) );
-define( 'GATHERPRESS_REQUIRES_PHP', current( get_file_data( __FILE__, array( 'Requires PHP' ), 'plugin' ) ) );
+// Headers are read by key: plugins hooking `extra_plugin_headers` push theirs
+// ahead of ours, so `current()` would return one of theirs instead.
+define(
+	'GATHERPRESS_REQUIRES_PHP',
+	get_file_data( __FILE__, array( 'Requires PHP' => 'Requires PHP' ), 'plugin' )['Requires PHP']
+);
 define( 'GATHERPRESS_REST_NAMESPACE', 'gatherpress/v1' );
-define( 'GATHERPRESS_VERSION', current( get_file_data( __FILE__, array( 'Version' ), 'plugin' ) ) );
+define( 'GATHERPRESS_VERSION', get_file_data( __FILE__, array( 'Version' => 'Version' ), 'plugin' )['Version'] );
 
 // Check if the minimum plugin requirements are not met and prevent further execution if necessary.
 if ( ! require_once GATHERPRESS_CORE_PATH . '/includes/core/requirements-check.php' ) {
