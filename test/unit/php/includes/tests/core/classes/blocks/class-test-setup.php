@@ -102,6 +102,7 @@ class Test_Setup extends Base {
 			'gatherpress/rsvp-response',
 			'gatherpress/rsvp-response-toggle',
 			'gatherpress/rsvp-template',
+			'gatherpress/subscribe-to-events',
 			'gatherpress/venue',
 			'gatherpress/venue-detail',
 			'gatherpress/venue-map',
