@@ -24,7 +24,7 @@ import {
  * `gatherpress-query-controls` handle to depend on. Declaring that handle is
  * what guarantees this has run first.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @example
  *   wp_enqueue_script( 'my-calendar', $url, array( 'gatherpress-query-controls' ), $ver, true );

@@ -275,7 +275,7 @@ final class Form_Field {
 	 * instead. It is used as given, and the templates escape it.
 	 *
 	 * @since 0.33.0
-	 * @since TBD Accepts a caller-supplied `inputId`.
+	 * @since 0.36.0 Accepts a caller-supplied `inputId`.
 	 *
 	 * @param array<string, mixed> $raw_attributes The attributes passed to the constructor.
 	 *
@@ -689,7 +689,7 @@ final class Form_Field {
 	/**
 	 * Get the variables the field's template renders with.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return array<string, mixed> The template variables.
 	 */
@@ -713,7 +713,7 @@ final class Form_Field {
 	 * filtering or caching the markup; `render()` echoes the same output for
 	 * the block render callback.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return string The rendered field markup.
 	 */

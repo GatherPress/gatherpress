@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Renamed_Keys.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.36.0
  */
 
 namespace GatherPress\Tests\Core;
@@ -22,7 +22,7 @@ class Test_Renamed_Keys extends Base {
 	/**
 	 * Coverage for setup_hooks.
 	 *
-	 * @since  TBD
+	 * @since  0.36.0
 	 * @covers ::__construct
 	 * @covers ::setup_hooks
 	 *
@@ -45,7 +45,7 @@ class Test_Renamed_Keys extends Base {
 	/**
 	 * Coverage for option_names.
 	 *
-	 * @since  TBD
+	 * @since  0.36.0
 	 * @covers ::option_names
 	 *
 	 * @return void
@@ -61,7 +61,7 @@ class Test_Renamed_Keys extends Base {
 	/**
 	 * Coverage for option_names.
 	 *
-	 * @since  TBD
+	 * @since  0.36.0
 	 * @covers ::option_names
 	 *
 	 * @return void
@@ -81,7 +81,7 @@ class Test_Renamed_Keys extends Base {
 	 * what makes removing its compatibility registration fail the suite
 	 * rather than pass quietly.
 	 *
-	 * @since  TBD
+	 * @since  0.36.0
 	 * @covers ::answer_with_former_name
 	 *
 	 * @return void
@@ -103,7 +103,7 @@ class Test_Renamed_Keys extends Base {
 	/**
 	 * Coverage for answer_with_former_name.
 	 *
-	 * @since  TBD
+	 * @since  0.36.0
 	 * @covers ::answer_with_former_name
 	 *
 	 * @return void
@@ -126,7 +126,7 @@ class Test_Renamed_Keys extends Base {
 	/**
 	 * Coverage for answer_with_former_name.
 	 *
-	 * @since  TBD
+	 * @since  0.36.0
 	 * @covers ::answer_with_former_name
 	 *
 	 * @return void
@@ -148,7 +148,7 @@ class Test_Renamed_Keys extends Base {
 	/**
 	 * Coverage for answer_with_former_name.
 	 *
-	 * @since  TBD
+	 * @since  0.36.0
 	 * @covers ::answer_with_former_name
 	 *
 	 * @return void
@@ -174,7 +174,7 @@ class Test_Renamed_Keys extends Base {
 	 * A zero is a real answer, "no limit", and PHP would call it empty, so the
 	 * filter has to test for the row rather than for a truthy value.
 	 *
-	 * @since  TBD
+	 * @since  0.36.0
 	 * @covers ::answer_with_former_name
 	 *
 	 * @return void
@@ -196,7 +196,7 @@ class Test_Renamed_Keys extends Base {
 	/**
 	 * Coverage for answer_with_former_name.
 	 *
-	 * @since  TBD
+	 * @since  0.36.0
 	 * @covers ::answer_with_former_name
 	 *
 	 * @return void
@@ -221,7 +221,7 @@ class Test_Renamed_Keys extends Base {
 	/**
 	 * Coverage for answer_with_former_name.
 	 *
-	 * @since  TBD
+	 * @since  0.36.0
 	 * @covers ::answer_with_former_name
 	 *
 	 * @return void
@@ -243,7 +243,7 @@ class Test_Renamed_Keys extends Base {
 	/**
 	 * Coverage for answer_with_former_name.
 	 *
-	 * @since  TBD
+	 * @since  0.36.0
 	 * @covers ::answer_with_former_name
 	 *
 	 * @return void

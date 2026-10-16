@@ -1,7 +1,7 @@
 /**
  * Class marking a field the server rejected.
  *
- * @since TBD
+ * @since 0.36.0
  * @type {string}
  */
 export const FIELD_ERROR_CLASS = 'gatherpress-field-error';
@@ -9,7 +9,7 @@ export const FIELD_ERROR_CLASS = 'gatherpress-field-error';
 /**
  * Class marking the form-level message, used when no single field is at fault.
  *
- * @since TBD
+ * @since 0.36.0
  * @type {string}
  */
 export const FORM_ERROR_CLASS = 'gatherpress-form-error';
@@ -20,7 +20,7 @@ export const FORM_ERROR_CLASS = 'gatherpress-form-error';
  * A radio group shares one name across several inputs, so this returns a list
  * rather than a single element.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @param {HTMLFormElement} form      The RSVP form.
  * @param {string}          fieldName The field's name attribute.
@@ -41,7 +41,7 @@ const getFieldInputs = ( form, fieldName ) => {
  * For a radio group that is the fieldset wrapping it, so the message is read
  * once with the group rather than on every option.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @param {HTMLElement[]} inputs The inputs sharing the field's name.
  *
@@ -61,7 +61,7 @@ const getDescribedElement = ( inputs ) => {
  * A field with help text is already described by it, and the error has to join
  * that rather than replace it.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @param {HTMLElement} element The element being described.
  * @param {string}      id      The id to add.
@@ -83,7 +83,7 @@ const addDescribedBy = ( element, id ) => {
 /**
  * Removes an id from an element's aria-describedby, leaving the rest.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @param {HTMLElement} element The element being described.
  * @param {string}      id      The id to remove.
@@ -108,7 +108,7 @@ const removeDescribedBy = ( element, id ) => {
  * Runs before each submission so a fixed field stops being reported, and so a
  * second failure does not stack messages on top of the first.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @param {HTMLFormElement} form The RSVP form.
  *
@@ -146,7 +146,7 @@ export const clearFormErrors = ( form ) => {
  * A duplicate RSVP or a closed event fails the whole submission, so there is
  * no input to attach it to.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @param {HTMLFormElement} form    The RSVP form.
  * @param {string}          message The message to show.
@@ -185,7 +185,7 @@ export const showFormError = ( form, message ) => {
  * schema names a field the rendered form no longer has, falls back to the
  * form-level message so nothing is silently dropped.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @param {HTMLFormElement}       form   The RSVP form.
  * @param {Object<string,string>} errors Messages keyed by field name.
@@ -301,7 +301,7 @@ export const showFieldErrors = ( form, errors ) => {
  * Prefers the per-field messages, and falls back to the summary when the
  * failure does not belong to a field.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @param {HTMLFormElement} form   The RSVP form.
  * @param {Object}          result The server's response.

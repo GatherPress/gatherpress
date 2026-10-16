@@ -411,7 +411,7 @@ class Test_Meta extends Base {
 	 * Direct coverage for `register_geo_meta()` — the Geodata standard
 	 * (`geo_*`) read-only band.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::register_geo_meta
 	 *
