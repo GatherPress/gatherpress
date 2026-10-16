@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use DateTimeZone;
 use Exception;
 use GatherPress\Core\Calendar;
+use GatherPress\Core\Capability;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
 use GatherPress\Core\Setup as Core_Setup;
@@ -84,9 +85,10 @@ class Event {
 	 * resolves through WordPress to the right primitive for the event's status.
 	 *
 	 * @since 0.35.1
+	 * @deprecated TBD Use Capability::READ_POST instead.
 	 * @var string
 	 */
-	const READ_CAPABILITY = 'read_post';
+	const READ_CAPABILITY = Capability::READ_POST;
 
 	/**
 	 * Capability for editing a specific event.
@@ -94,9 +96,10 @@ class Event {
 	 * A meta capability, so it is always paired with the event's post ID.
 	 *
 	 * @since 0.35.1
+	 * @deprecated TBD Use Capability::EDIT_POST instead.
 	 * @var string
 	 */
-	const EDIT_CAPABILITY = 'edit_post';
+	const EDIT_CAPABILITY = Capability::EDIT_POST;
 
 	/**
 	 * Placeholder displayed when no datetime is set.
@@ -179,7 +182,7 @@ class Event {
 		return (
 			( is_preview() && (int) get_queried_object_id() === $post_id )
 			|| 'publish' === get_post_status( $post_id )
-			|| current_user_can( self::READ_CAPABILITY, $post_id )
+			|| current_user_can( Capability::READ_POST, $post_id )
 		);
 	}
 
@@ -204,13 +207,13 @@ class Event {
 			return false;
 		}
 
-		if ( current_user_can( self::EDIT_CAPABILITY, $post->ID ) ) {
+		if ( current_user_can( Capability::EDIT_POST, $post->ID ) ) {
 			return true;
 		}
 
 		return 'publish' === $post->post_status
 			? ! post_password_required( $post )
-			: current_user_can( self::READ_CAPABILITY, $post->ID );
+			: current_user_can( Capability::READ_POST, $post->ID );
 	}
 
 	/**
