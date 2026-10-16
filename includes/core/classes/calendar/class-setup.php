@@ -739,7 +739,7 @@ final class Setup {
 	 * @return string Concatenated VEVENT blocks for the queried events.
 	 */
 	public function get_ical_list(): string {
-		$event_list_type = 'upcoming'; // Keep empty, to get all events from upcoming & past.
+		$event_list_type = 'upcoming'; // Ended events drop out of the feed.
 		$number          = ( is_feed( self::ICAL_SLUG ) ) ? -1 : get_option( 'posts_per_page' );
 		$topics          = array();
 		$venues          = array();
