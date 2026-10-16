@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Event notification emails now embed a bounded, email-safe featured image instead of the full-size original.
