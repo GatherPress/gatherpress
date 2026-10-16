@@ -536,6 +536,7 @@ function getTopMostOpenElement() {
  * handlers are listening: with nested modals, one press closes the inner
  * modal and leaves the outer one open.
  *
+ * @since 0.32.0
  * @since TBD `Escape` closes only the top-most open element.
  *
  * @param {string}   elementSelector - Selector for the parent element (modal or dropdown).
