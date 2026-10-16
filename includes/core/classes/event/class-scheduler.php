@@ -263,6 +263,27 @@ final class Scheduler {
 		/**
 		 * Fires when an event reaches its end time.
 		 *
+		 * Central hook for event end processing and the transition from upcoming to past.
+		 * Triggered automatically via WP-Cron when an event reaches its scheduled end time,
+		 * or via the daily fallback tracking validator for any missed events.
+		 *
+		 * Common use cases:
+		 * - Purging custom caches (object caches, external full-page or CDN/Varnish caches).
+		 * - Sending post-event follow-up emails, thank-you notes, or attendee surveys.
+		 * - Syncing event completion with external calendar services, CRM, or attendance trackers.
+		 * - Adjusting post metadata, archiving event assets, or updating summary statistics.
+		 *
+		 * @example
+		 * ```php
+		 * // Purge external cache and trigger post-event workflows when an event concludes:
+		 * add_action(
+		 *     'gatherpress_event_ended',
+		 *     static function ( int $event_id ): void {
+		 *         wp_cache_delete( "my_custom_cache_{$event_id}", 'my_plugin' );
+		 *     }
+		 * );
+		 * ```
+		 *
 		 * @since TBD
 		 *
 		 * @param int $event_id The post ID of the event that ended.
@@ -316,6 +337,33 @@ final class Scheduler {
 	/**
 	 * Checks if upcoming events tracking is enabled for a given post type.
 	 *
+	 * When tracking is enabled, an option named `upcoming_{$post_type}s` is maintained
+	 * (e.g. `upcoming_gatherpress_events` for the default `gatherpress_event` post type).
+	 *
+	 * The option stores an array of integer post IDs (`int[]`) representing currently
+	 * published upcoming events. When an event concludes or is unpublished, its ID is
+	 * automatically removed from the option.
+	 *
+	 * Developers can use this option to perform high-performance queries for upcoming
+	 * events using `post__in` without needing complex or heavy `meta_query` datetime lookups.
+	 *
+	 * @example
+	 * ```php
+	 * // Enable tracking for all supporting post types:
+	 * add_filter( 'gatherpress_upcoming_tracker_enabled', '__return_true' );
+	 *
+	 * // Query upcoming events using the tracked option:
+	 * $upcoming_ids = get_option( 'upcoming_gatherpress_events', array() );
+	 * if ( ! empty( $upcoming_ids ) ) {
+	 *     $query = new WP_Query(
+	 *         array(
+	 *             'post_type' => 'gatherpress_event',
+	 *             'post__in'  => $upcoming_ids,
+	 *         )
+	 *     );
+	 * }
+	 * ```
+	 *
 	 * @since TBD
 	 *
 	 * @param string $post_type The post type slug to check.
@@ -325,6 +373,14 @@ final class Scheduler {
 	public function is_tracker_enabled( string $post_type ): bool {
 		/**
 		 * Filter whether upcoming events tracking is enabled globally.
+		 *
+		 * When true, every post type declaring `gatherpress-event-date` support is tracked
+		 * in its respective `upcoming_{$post_type}s` option (e.g. `upcoming_gatherpress_events`).
+		 *
+		 * @example
+		 * ```php
+		 * add_filter( 'gatherpress_upcoming_tracker_enabled', '__return_true' );
+		 * ```
 		 *
 		 * @since TBD
 		 *
@@ -336,6 +392,16 @@ final class Scheduler {
 
 		/**
 		 * Filter whether upcoming events tracking is enabled for a specific post type.
+		 *
+		 * When true for `$post_type`, an option named `upcoming_{$post_type}s` (e.g.
+		 * `upcoming_gatherpress_events` or `upcoming_my_cpts`) is populated with
+		 * upcoming event post IDs (`int[]`) and validated via daily cron.
+		 *
+		 * @example
+		 * ```php
+		 * // Enable tracking specifically for 'gatherpress_event':
+		 * add_filter( 'gatherpress_event_upcoming_tracker_enabled', '__return_true' );
+		 * ```
 		 *
 		 * @since TBD
 		 *
