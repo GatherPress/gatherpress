@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Add a no-JavaScript RSVP fallback form for logged-in users so the RSVP trigger still works when JavaScript fails to load.
