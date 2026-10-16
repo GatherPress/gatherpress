@@ -6,7 +6,7 @@
  * and event `Meta` classes own the hookups.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.36.0
  */
 
 namespace GatherPress\Core;
@@ -22,7 +22,7 @@ use WP_REST_Response;
 /**
  * Class Geo_Sync.
  *
- * @since TBD
+ * @since 0.36.0
  */
 final class Geo_Sync {
 
@@ -34,7 +34,7 @@ final class Geo_Sync {
 	/**
 	 * The Geodata standard meta keys, shared by the venue and event bands.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @var string[]
 	 */
@@ -43,7 +43,7 @@ final class Geo_Sync {
 	/**
 	 * Registers the read-only Geodata standard meta for a post type.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param string $post_type The post type to register against.
 	 *
@@ -80,7 +80,7 @@ final class Geo_Sync {
 	/**
 	 * Builds the `geo_*` values from venue information.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param array<string, mixed> $information Venue information; an empty array clears the location.
 	 * @param bool                 $is_public   Whether the location may be shown publicly.
@@ -99,7 +99,7 @@ final class Geo_Sync {
 	/**
 	 * Writes `geo_*` values to a post, skipping keys that are already current.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param int                       $post_id The post ID.
 	 * @param array<string, string|int> $values  Values from {@see self::build_values()}.
@@ -130,7 +130,7 @@ final class Geo_Sync {
 	 * Only a published post qualifies. Draft, pending, scheduled and private
 	 * posts keep their location but mark it not public.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param WP_Post|null $post The post, or null when there is none.
 	 *
@@ -145,7 +145,7 @@ final class Geo_Sync {
 	/**
 	 * Derives geo_* meta from a saved venue's own fields.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param int     $post_id Post ID that just saved.
 	 * @param WP_Post $post    Post object.
@@ -170,7 +170,7 @@ final class Geo_Sync {
 	 * Refreshes the queried event's geo meta before a single front-end
 	 * view renders.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return void
 	 */
@@ -193,7 +193,7 @@ final class Geo_Sync {
 	 * `rest_prepare_` fires after `meta` is already serialized, so
 	 * persisting alone wouldn't show up until the next request.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param WP_REST_Response $response The response object.
 	 * @param WP_Post          $post     The post being returned.
@@ -216,7 +216,7 @@ final class Geo_Sync {
 	 * Refreshes one event's geo_* meta from its venue if stale. Skipped
 	 * for events that already happened.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param int $event_id The event post ID.
 	 *

@@ -910,7 +910,7 @@ class Test_Settings extends Base {
 	/**
 	 * Test that a renamed option is answered by the name it used to have.
 	 *
-	 * @since  TBD
+	 * @since  0.36.0
 	 * @covers ::get
 	 *
 	 * @return void
@@ -937,7 +937,7 @@ class Test_Settings extends Base {
 	/**
 	 * Test that the current name wins over the one it replaced.
 	 *
-	 * @since  TBD
+	 * @since  0.36.0
 	 * @covers ::get
 	 *
 	 * @return void
@@ -965,7 +965,7 @@ class Test_Settings extends Base {
 	/**
 	 * Test that an option with no rename entry is unaffected by the fallback.
 	 *
-	 * @since  TBD
+	 * @since  0.36.0
 	 * @covers ::get
 	 *
 	 * @return void
@@ -1497,7 +1497,7 @@ class Test_Settings extends Base {
 	 * strip-defaults pass removes the current key and leaves the former one
 	 * standing.
 	 *
-	 * @since  TBD
+	 * @since  0.36.0
 	 * @covers ::sanitize_page_settings
 	 *
 	 * @return void
@@ -1529,7 +1529,7 @@ class Test_Settings extends Base {
 	/**
 	 * Test that emptying a renamed setting retires the name it used to have.
 	 *
-	 * @since  TBD
+	 * @since  0.36.0
 	 * @covers ::sanitize_page_settings
 	 *
 	 * @return void
@@ -1561,7 +1561,7 @@ class Test_Settings extends Base {
 	/**
 	 * Test that set() retires a renamed setting's former name.
 	 *
-	 * @since  TBD
+	 * @since  0.36.0
 	 * @covers ::set
 	 *
 	 * @return void
@@ -2875,7 +2875,7 @@ class Test_Settings extends Base {
 	/**
 	 * Coverage for is_option_inherited when the network list predates a rename.
 	 *
-	 * @since   TBD
+	 * @since   0.36.0
 	 * @covers ::is_option_inherited
 	 *
 	 * @group   multisite
@@ -2914,7 +2914,7 @@ class Test_Settings extends Base {
 	/**
 	 * Coverage for get() reading a network value stored under a renamed option's old name.
 	 *
-	 * @since   TBD
+	 * @since   0.36.0
 	 * @covers ::get
 	 *
 	 * @group   multisite

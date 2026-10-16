@@ -43,7 +43,7 @@ final class Assets {
 	 * `jquery-core`, keeps the promised name stable whichever bundle turns out
 	 * to do the publishing.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @var array<string, string>
 	 */
 	const PUBLIC_SCRIPT_HANDLES = array(
@@ -658,7 +658,7 @@ final class Assets {
 	 * the script that publishes the surface. A publisher missing from the build
 	 * leaves its alias unregistered rather than pointing at nothing.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return void
 	 */

@@ -710,7 +710,7 @@ class Test_Rest_Api extends Base {
 	 * process_rsvp() validates anything, so enumerating a scalar there
 	 * fataled with a TypeError before the submission could be rejected.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::handle_rsvp_form_submission
 	 *
 	 * @return void
@@ -746,7 +746,7 @@ class Test_Rest_Api extends Base {
 	 * A custom-field rejection answers 400 and carries one message per
 	 * failing field alongside the summary the form already shows.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::handle_rsvp_form_submission
 	 *
 	 * @return void
@@ -2124,7 +2124,7 @@ class Test_Rest_Api extends Base {
 	 * The request is dispatched through the REST server, so the permission
 	 * callback runs, with the token in the body parameter the RSVP block sends.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::rsvp_route
 	 * @covers ::update_rsvp
 	 *
@@ -2178,7 +2178,7 @@ class Test_Rest_Api extends Base {
 	 * anonymous visitor cannot read the attendee list, so the response carries
 	 * the per-status counts the RSVP block needs and drops the records.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::update_rsvp
 	 *
 	 * @return void
@@ -2239,7 +2239,7 @@ class Test_Rest_Api extends Base {
 	 * The page sends the token in the request body, not in the URL, so the
 	 * link has to be built for the token's attendee.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::update_rsvp
 	 * @covers \GatherPress\Core\Event\Event::maybe_get_online_event_link
 	 *

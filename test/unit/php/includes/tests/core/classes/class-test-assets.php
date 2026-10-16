@@ -774,7 +774,7 @@ class Test_Assets extends Base {
 	 * The public handle has no source of its own; depending on it has to pull
 	 * in the script that writes the global.
 	 *
-	 * @since  TBD
+	 * @since  0.36.0
 	 * @covers ::register_public_script_handles
 	 *
 	 * @return void
@@ -806,7 +806,7 @@ class Test_Assets extends Base {
 	 * A build without the publishing script should not leave a public handle
 	 * that depends on something missing.
 	 *
-	 * @since  TBD
+	 * @since  0.36.0
 	 * @covers ::register_public_script_handles
 	 *
 	 * @return void

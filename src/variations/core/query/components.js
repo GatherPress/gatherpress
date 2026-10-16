@@ -284,7 +284,7 @@ export const EventListTypeControls = ( { attributes, setAttributes } ) => {
  * both follow it. Anything else falls back to venues, the most common way to
  * scope events by source.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @param {Object} context Block context, including post type and ID.
  *
@@ -337,7 +337,7 @@ const useShadowSourceEditor = ( context ) => {
  * own: the toggle can be filtered out of the panel, and a block that already
  * has the filter on still needs its source kept current.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @param {Object}   editor        Result of `useShadowSourceEditor()`.
  * @param {Object}   attributes    Block attributes.
@@ -385,7 +385,7 @@ const useShadowSourceSync = ( editor, attributes, setAttributes, enabled ) => {
  * rather than as one of them, so filtering the toggle out removes the toggle
  * and nothing else.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @param {Object}   props
  * @param {Object}   props.context       Block context, including post type and ID.
@@ -672,7 +672,7 @@ export const EventOrderControls = ( { attributes, setAttributes } ) => {
  * `lazy` hand back objects tagged with `$$typeof`, so a `typeof` check alone
  * would turn those away.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @param {*} value The candidate.
  *
@@ -787,7 +787,7 @@ export const EventQueryControlsSlotFill = () => {
 				 * The inherited variant of the panel has its own filter,
 				 * `gatherpress.eventInheritedQueryControls`.
 				 *
-				 * @since TBD
+				 * @since 0.36.0
 				 *
 				 * Removing `shadowSourceFilter` removes the toggle only. A
 				 * block that already has the filter on keeps its source in
@@ -868,7 +868,7 @@ export const EventInheritedQueryControlsSlotFill = () => {
 				 * different, shorter set and a consumer is unlikely to want
 				 * one rule for both.
 				 *
-				 * @since TBD
+				 * @since 0.36.0
 				 *
 				 * @param {Array}  controls Entries shaped `{ name, Component, props }`,
 				 *                          in render order.

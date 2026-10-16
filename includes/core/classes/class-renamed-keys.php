@@ -3,7 +3,7 @@
  * Holds the 0.36.0 key renames and answers reads with the former name.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.36.0
  */
 
 namespace GatherPress\Core;
@@ -26,7 +26,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * not running it, and the whole class goes away in 0.37.0 along with the old
  * registrations.
  *
- * @since TBD
+ * @since 0.36.0
  */
 final class Renamed_Keys {
 
@@ -38,7 +38,7 @@ final class Renamed_Keys {
 	/**
 	 * Settings renamed in 0.36.0, mapped current name to former name.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @var array<string, string>
 	 */
 	const OPTIONS = array(
@@ -60,7 +60,7 @@ final class Renamed_Keys {
 	/**
 	 * Post meta renamed in 0.36.0, mapped current name to former name.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @var array<string, string>
 	 */
 	const RENAMED = array(
@@ -71,7 +71,7 @@ final class Renamed_Keys {
 	/**
 	 * Keys currently being resolved, so the filter does not re-enter itself.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @var array<string, bool>
 	 */
 	private array $resolving = array();
@@ -84,7 +84,7 @@ final class Renamed_Keys {
 	 * a network that opted the old name into inheritance keeps inheriting it.
 	 * The former name drops out of this list in 0.37.0.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param string $option The option key being resolved.
 	 *
@@ -105,7 +105,7 @@ final class Renamed_Keys {
 	 *
 	 * Goes away in 0.37.0 with the rest of this class.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param array<string, mixed> $options The options about to be stored.
 	 * @param string[]             $written The option keys that were written.
@@ -123,7 +123,7 @@ final class Renamed_Keys {
 	/**
 	 * Class constructor.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 */
 	public function __construct() {
 		$this->setup_hooks();
@@ -132,7 +132,7 @@ final class Renamed_Keys {
 	/**
 	 * Set up hooks.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return void
 	 */
@@ -147,7 +147,7 @@ final class Renamed_Keys {
 	 * makes an unset key indistinguishable from one deliberately set to that
 	 * default, and because 0 is a real answer for both of the limits here.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param mixed  $value     What `get_metadata()` has so far, null when nothing has answered.
 	 * @param int    $object_id The post ID being read.

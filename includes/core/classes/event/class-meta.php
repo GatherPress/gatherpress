@@ -204,7 +204,7 @@ final class Meta {
 	/**
 	 * Registers the Geodata standard meta (`geo_*`) as read-only.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param string $post_type The post type to register against.
 	 *
@@ -322,7 +322,7 @@ final class Meta {
 	 * {@see Geo_Sync}, never through the REST write path.
 	 *
 	 * @since 0.34.0
-	 * @since TBD Also strips the read-only venue-geo fields.
+	 * @since 0.36.0 Also strips the read-only venue-geo fields.
 	 *
 	 * @param stdClass        $prepared_post An object representing a single post prepared for inserting or updating.
 	 * @param WP_REST_Request $request       Request object.

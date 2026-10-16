@@ -148,7 +148,7 @@ class Test_User extends Base {
 	 * A user who never set a timezone sees Default selected, not the site's
 	 * timezone, so saving the profile doesn't pin them to it.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::profile_fields
 	 *

@@ -7,7 +7,7 @@
  * raw PHP format for anything the list does not cover.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.36.0
  *
  * @param string $name         The name attribute for the input field.
  * @param string $label        The label text for the field.

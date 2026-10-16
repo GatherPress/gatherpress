@@ -3,7 +3,7 @@
  * Test class for Geo_Sync.
  *
  * @package GatherPress\Tests\Core
- * @since TBD
+ * @since 0.36.0
  */
 
 namespace GatherPress\Tests\Core;
@@ -19,7 +19,7 @@ use WP_REST_Response;
 /**
  * Class Test_Geo_Sync.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @coversDefaultClass \GatherPress\Core\Geo_Sync
  */
@@ -28,7 +28,7 @@ class Test_Geo_Sync extends Base {
 	/**
 	 * `register_meta()` registers all four Geodata standard keys, read-only.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::register_meta
 	 *
@@ -60,7 +60,7 @@ class Test_Geo_Sync extends Base {
 	 * `register_meta()` registers `geo_public` as an integer, matching
 	 * Simple Location's own 0/1/2 semantics; the other three as strings.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::register_meta
 	 *
@@ -84,7 +84,7 @@ class Test_Geo_Sync extends Base {
 	/**
 	 * Maps venue information onto the `geo_*` keys, with geo_public as 1.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::build_values
 	 *
@@ -114,7 +114,7 @@ class Test_Geo_Sync extends Base {
 	/**
 	 * Empty information clears the location, with geo_public as 0.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::build_values
 	 *
@@ -135,7 +135,7 @@ class Test_Geo_Sync extends Base {
 	/**
 	 * Writes changed values and reports a change.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::write
 	 *
@@ -153,7 +153,7 @@ class Test_Geo_Sync extends Base {
 	/**
 	 * Stores empty/zero values on a post that has no geo meta yet.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::write
 	 *
@@ -170,7 +170,7 @@ class Test_Geo_Sync extends Base {
 	/**
 	 * Reports no change when every value is already current.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::write
 	 *
@@ -538,7 +538,7 @@ class Test_Geo_Sync extends Base {
 	 * `maybe_refresh()` leaves an event without a venue empty even while a
 	 * venue is the global post, rather than reading that venue's location.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::maybe_refresh
 	 *
@@ -572,7 +572,7 @@ class Test_Geo_Sync extends Base {
 	 * Called directly because the sync methods reach it through same-class
 	 * calls that xdebug does not trace.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::is_public
 	 *
