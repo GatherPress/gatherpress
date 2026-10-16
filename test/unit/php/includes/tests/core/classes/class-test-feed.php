@@ -1166,4 +1166,54 @@ class Test_Feed extends Base {
 		unset( $_GET['type'] );
 		delete_option( 'gatherpress_settings' );
 	}
+
+	/**
+	 * A password-protected event's feed item leaves out its venue for a
+	 * visitor, and a public event keeps it.
+	 *
+	 * @since TBD
+	 * @covers ::get_default_event_excerpt
+	 * @covers ::get_default_event_content
+	 *
+	 * @return void
+	 */
+	public function test_feed_hides_a_protected_event_venue(): void {
+		$this->factory->post->create(
+			array(
+				'post_type'  => 'gatherpress_venue',
+				'post_name'  => 'feed-venue',
+				'post_title' => 'Feed Venue',
+			)
+		);
+
+		$public    = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$protected = $this->factory->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		);
+
+		wp_set_post_terms( $public, '_feed-venue', '_gatherpress_venue' );
+		wp_set_post_terms( $protected, '_feed-venue', '_gatherpress_venue' );
+		wp_set_current_user( 0 );
+
+		$render = function ( int $post_id ): string {
+			$this->go_to( get_permalink( $post_id ) );
+			the_post();
+
+			return $this->instance->get_default_event_excerpt( '' ) . $this->instance->get_default_event_content( '' );
+		};
+
+		$this->assertStringContainsString(
+			'Feed Venue',
+			$render( $public ),
+			'Failed to assert a public event keeps its venue.'
+		);
+		$this->assertStringNotContainsString(
+			'Feed Venue',
+			$render( $protected ),
+			'Failed to assert a protected event hides its venue.'
+		);
+	}
 }

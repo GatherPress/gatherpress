@@ -18,6 +18,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Shadow_Source;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue as Venue_Core;
+use GatherPress\Core\Venue\Setup as Venue_Setup;
 use WP_Block;
 use WP_Post;
 
@@ -161,10 +162,14 @@ final class Venue {
 			$post_id   = Setup::get_instance()->get_post_id( $block );
 			$candidate = null;
 
-			// An event only leads to its source when the viewer could open the event.
+			// An event only leads to its source when the viewer could open the
+			// event and see where it takes place.
 			if ( get_post_type( $post_id ) === $source_post_type ) {
 				$candidate = get_post( $post_id );
-			} elseif ( Event::is_viewable( $post_id ) ) {
+			} elseif (
+				Event::is_viewable( $post_id )
+				&& Venue_Setup::get_instance()->can_view_event_venue( $post_id )
+			) {
 				$candidate = Shadow_Source::get_instance()->get_source_post_from_event_post_id(
 					$post_id,
 					$source_post_type

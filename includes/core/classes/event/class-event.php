@@ -99,6 +99,20 @@ class Event {
 	const EDIT_CAPABILITY = 'edit_post';
 
 	/**
+	 * Venue information for an event with no venue to show.
+	 *
+	 * @since TBD
+	 * @var array<string, string>
+	 */
+	const EMPTY_VENUE_INFORMATION = array(
+		'address'   => '',
+		'name'      => '',
+		'permalink' => '',
+		'phone'     => '',
+		'website'   => '',
+	);
+
+	/**
 	 * Placeholder displayed when no datetime is set.
 	 *
 	 * @since 0.34.0
@@ -956,6 +970,28 @@ class Event {
 	}
 
 	/**
+	 * Get the venue information the current viewer may see.
+	 *
+	 * Same shape as {@see self::get_venue_information()}, but empty while the
+	 * viewer may not see the venue
+	 * ({@see Venue_Setup::can_view_event_venue()}). Use this for anything shown
+	 * to a visitor, such as feeds and calendar output, and
+	 * {@see self::get_venue_information()} for messages sent to the people the
+	 * event was shared with.
+	 *
+	 * @since TBD
+	 *
+	 * @return array<string, string> Venue information, see {@see self::get_venue_information()}.
+	 */
+	public function get_viewable_venue_information(): array {
+		if ( $this->post && ! Venue_Setup::get_instance()->can_view_event_venue( $this->post->ID ) ) {
+			return self::EMPTY_VENUE_INFORMATION;
+		}
+
+		return $this->get_venue_information();
+	}
+
+	/**
 	 * Get venue information associated with the event.
 	 *
 	 * This method retrieves information about the venue associated with the event,
@@ -973,13 +1009,7 @@ class Event {
 	 *                               - 'website' (string): The website URL of the venue.
 	 */
 	public function get_venue_information(): array {
-		$venue_information = array(
-			'address'   => '',
-			'name'      => '',
-			'permalink' => '',
-			'phone'     => '',
-			'website'   => '',
-		);
+		$venue_information = self::EMPTY_VENUE_INFORMATION;
 
 		if ( ! $this->post ) {
 			return $venue_information;

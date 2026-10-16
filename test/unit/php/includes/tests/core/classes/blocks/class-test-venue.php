@@ -1535,4 +1535,60 @@ class Test_Venue extends Base {
 			)
 		);
 	}
+
+	/**
+	 * A password-protected event only leads to its venue once the password
+	 * is entered, or for whoever can edit the event.
+	 *
+	 * @since TBD
+	 * @covers ::get_source_post
+	 *
+	 * @return void
+	 */
+	public function test_event_source_follows_event_password(): void {
+		$venue_id  = $this->factory->post->create(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'venue-of-a-protected-event',
+			)
+		);
+		$term_slug = ( new Venue( $venue_id ) )->get_term_slug();
+		$event_id  = $this->factory->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_status'   => 'publish',
+				'post_password' => 'secret',
+			)
+		);
+		$entered   = static fn(): bool => false;
+
+		wp_insert_term( 'Venue of a protected event', Venue::TAXONOMY, array( 'slug' => $term_slug ) );
+		wp_set_post_terms( $event_id, $term_slug, Venue::TAXONOMY );
+
+		$block = $this->make_venue_block( array( 'postId' => $event_id ) );
+
+		wp_set_current_user( 0 );
+		$visitor = Venue_Block::get_instance()->render_inner_blocks( $block );
+
+		add_filter( 'post_password_required', $entered );
+		$entered_password = Venue_Block::get_instance()->render_inner_blocks( $block );
+		remove_filter( 'post_password_required', $entered );
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$editor = Venue_Block::get_instance()->render_inner_blocks( $block );
+
+		wp_set_current_user( 0 );
+
+		$this->assertNull( $visitor, 'Failed to assert a protected event does not lead a visitor to its venue.' );
+		$this->assertStringContainsString(
+			'Inner content',
+			(string) $entered_password,
+			'Failed to assert the venue renders once the password is entered.'
+		);
+		$this->assertStringContainsString(
+			'Inner content',
+			(string) $editor,
+			'Failed to assert whoever can edit the event gets its venue.'
+		);
+	}
 }

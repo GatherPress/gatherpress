@@ -1050,4 +1050,45 @@ class Test_Calendar extends Base {
 			'Multi-day all-day event must have DTEND on the day after the last day.'
 		);
 	}
+
+	/**
+	 * A password-protected event's calendar output leaves out its venue for
+	 * a visitor.
+	 *
+	 * @since TBD
+	 * @covers ::get_ical_event_string
+	 * @covers ::get_google_destination_url
+	 * @covers ::get_yahoo_destination_url
+	 *
+	 * @return void
+	 */
+	public function test_calendar_output_hides_a_protected_event_venue(): void {
+		$event_id = $this->make_event( true );
+
+		wp_update_post(
+			array(
+				'ID'            => $event_id,
+				'post_password' => 'secret',
+			)
+		);
+		wp_set_current_user( 0 );
+
+		$instance = new Calendar( $event_id );
+
+		$this->assertStringContainsString(
+			"LOCATION:\r\n",
+			$instance->get_ical_event_string(),
+			'Failed to assert iCal has an empty location.'
+		);
+		$this->assertStringNotContainsString(
+			'Brooklyn',
+			$instance->get_google_destination_url(),
+			'Failed to assert Google gets no venue.'
+		);
+		$this->assertStringNotContainsString(
+			'Brooklyn',
+			$instance->get_yahoo_destination_url(),
+			'Failed to assert Yahoo gets no venue.'
+		);
+	}
 }
