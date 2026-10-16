@@ -262,7 +262,7 @@ final class Admin_List {
 	 *
 	 * @return array<string, int> Associative array with 'upcoming' and 'past' counts.
 	 */
-	protected function get_event_counts( string $post_type = Event::POST_TYPE ): array {
+	public function get_event_counts( string $post_type = Event::POST_TYPE ): array {
 		if ( isset( $this->event_counts[ $post_type ] ) ) {
 			return $this->event_counts[ $post_type ];
 		}
