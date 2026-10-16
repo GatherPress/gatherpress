@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Normalize legacy rsvp_mode and cleanup settings values on read so per-event RSVP controls and cleanup scheduling function correctly before running GatherPress Alpha.

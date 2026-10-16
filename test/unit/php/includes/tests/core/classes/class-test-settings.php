@@ -963,6 +963,112 @@ class Test_Settings extends Base {
 	}
 
 	/**
+	 * Test that get normalizes legacy rsvp_mode values to current equivalents.
+	 *
+	 * @since  TBD
+	 * @covers ::get
+	 *
+	 * @return void
+	 */
+	public function test_get_normalizes_legacy_rsvp_mode_values(): void {
+		$instance = Settings::get_instance();
+
+		add_option(
+			'gatherpress_settings',
+			array(
+				'rsvp_mode' => 'per_event_off',
+			)
+		);
+
+		$this->assertSame(
+			'per_event_disabled',
+			$instance->get( 'rsvp_mode' ),
+			'Failed to assert legacy per_event_off normalizes to per_event_disabled.'
+		);
+
+		update_option(
+			'gatherpress_settings',
+			array(
+				'rsvp_mode' => 'per_event_on',
+			)
+		);
+
+		$this->assertSame(
+			'per_event_enabled',
+			$instance->get( 'rsvp_mode' ),
+			'Failed to assert legacy per_event_on normalizes to per_event_enabled.'
+		);
+
+		update_option(
+			'gatherpress_settings',
+			array(
+				'rsvp_mode' => 'all_on',
+			)
+		);
+
+		$this->assertSame(
+			'enabled',
+			$instance->get( 'rsvp_mode' ),
+			'Failed to assert legacy all_on normalizes to enabled.'
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Test that get normalizes legacy cleanup values to current equivalents.
+	 *
+	 * @since  TBD
+	 * @covers ::get
+	 *
+	 * @return void
+	 */
+	public function test_get_normalizes_legacy_cleanup_values(): void {
+		$instance = Settings::get_instance();
+
+		add_option(
+			'gatherpress_settings',
+			array(
+				'rsvp_cleanup_switch' => 'on',
+			)
+		);
+
+		$this->assertSame(
+			'enabled',
+			$instance->get( 'enable_rsvp_cleanup' ),
+			'Failed to assert legacy rsvp_cleanup_switch on normalizes to enabled.'
+		);
+
+		update_option(
+			'gatherpress_settings',
+			array(
+				'rsvp_cleanup_switch' => 'off',
+			)
+		);
+
+		$this->assertSame(
+			'disabled',
+			$instance->get( 'enable_rsvp_cleanup' ),
+			'Failed to assert legacy rsvp_cleanup_switch off normalizes to disabled.'
+		);
+
+		update_option(
+			'gatherpress_settings',
+			array(
+				'enable_rsvp_cleanup' => 'on',
+			)
+		);
+
+		$this->assertSame(
+			'enabled',
+			$instance->get( 'enable_rsvp_cleanup' ),
+			'Failed to assert legacy enable_rsvp_cleanup on normalizes to enabled.'
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
 	 * Test that an option with no rename entry is unaffected by the fallback.
 	 *
 	 * @since  TBD

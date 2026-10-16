@@ -69,6 +69,33 @@ final class Renamed_Keys {
 	);
 
 	/**
+	 * Legacy option values mapped to their current values.
+	 *
+	 * When a site upgrades to 0.35.0+ without running GatherPress Alpha, stored
+	 * settings in the database may still contain pre-0.35.0 value strings for
+	 * rsvp_mode and enable_rsvp_cleanup. Normalizing them on read keeps core
+	 * functional without waiting for a database migration.
+	 *
+	 * @since TBD
+	 * @var array<string, array<string, string>>
+	 */
+	const LEGACY_VALUES = array(
+		'rsvp_mode'           => array(
+			'all_on'        => 'enabled',
+			'per_event_on'  => 'per_event_enabled',
+			'per_event_off' => 'per_event_disabled',
+		),
+		'enable_rsvp_cleanup' => array(
+			'on'  => 'enabled',
+			'off' => 'disabled',
+		),
+		'rsvp_cleanup_switch' => array(
+			'on'  => 'enabled',
+			'off' => 'disabled',
+		),
+	);
+
+	/**
 	 * Keys currently being resolved, so the filter does not re-enter itself.
 	 *
 	 * @since TBD
@@ -118,6 +145,31 @@ final class Renamed_Keys {
 		}
 
 		return $options;
+	}
+
+	/**
+	 * Normalize legacy option values to their current representation.
+	 *
+	 * When a site upgrades without running GatherPress Alpha, stored option
+	 * values for rsvp_mode and enable_rsvp_cleanup may still use the pre-0.35.0
+	 * vocabulary (e.g. per_event_off or on). Normalizing on read keeps core
+	 * functional without waiting for a database migration.
+	 *
+	 * Goes away in 0.37.0 with the rest of this class.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $option The option name being retrieved.
+	 * @param mixed  $value  The stored value.
+	 *
+	 * @return mixed Normalized value if mapped, or original value.
+	 */
+	public static function normalize_value( string $option, mixed $value ): mixed {
+		if ( ! is_string( $value ) ) {
+			return $value;
+		}
+
+		return self::LEGACY_VALUES[ $option ][ $value ] ?? $value;
 	}
 
 	/**
