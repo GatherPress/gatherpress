@@ -113,13 +113,13 @@ describe( 'EventQueryControlsPanel', () => {
 		usePostTypeSupports.mockReturnValue( false );
 
 		const { container } = render(
-			<EventQueryControlsPanel { ...baseProps( { postType: 'post' } ) } />
+			<EventQueryControlsPanel { ...baseProps( { postType: 'post' } ) } />,
 		);
 
 		expect( container.firstChild ).toBeNull();
 		expect( usePostTypeSupports ).toHaveBeenCalledWith(
 			'gatherpress-event-date',
-			'post'
+			'post',
 		);
 	} );
 
@@ -131,11 +131,11 @@ describe( 'EventQueryControlsPanel', () => {
 		expect( screen.getByTestId( 'inspector-controls' ) ).toBeInTheDocument();
 		expect( screen.getByTestId( 'panel-body' ) ).toHaveAttribute(
 			'data-title',
-			'Event Query Settings'
+			'Event Query Settings',
 		);
 		expect( usePostTypeSupports ).toHaveBeenCalledWith(
 			'gatherpress-event-date',
-			'gatherpress_event'
+			'gatherpress_event',
 		);
 	} );
 
@@ -143,14 +143,14 @@ describe( 'EventQueryControlsPanel', () => {
 		usePostTypeSupports.mockReturnValue( true );
 
 		render(
-			<EventQueryControlsPanel { ...baseProps( { inherit: false } ) } />
+			<EventQueryControlsPanel { ...baseProps( { inherit: false } ) } />,
 		);
 
 		expect(
-			screen.getByTestId( 'query-controls-slot' )
+			screen.getByTestId( 'query-controls-slot' ),
 		).toBeInTheDocument();
 		expect(
-			screen.queryByTestId( 'inherited-query-controls-slot' )
+			screen.queryByTestId( 'inherited-query-controls-slot' ),
 		).not.toBeInTheDocument();
 	} );
 
@@ -158,14 +158,14 @@ describe( 'EventQueryControlsPanel', () => {
 		usePostTypeSupports.mockReturnValue( true );
 
 		render(
-			<EventQueryControlsPanel { ...baseProps( { inherit: true } ) } />
+			<EventQueryControlsPanel { ...baseProps( { inherit: true } ) } />,
 		);
 
 		expect(
-			screen.getByTestId( 'inherited-query-controls-slot' )
+			screen.getByTestId( 'inherited-query-controls-slot' ),
 		).toBeInTheDocument();
 		expect(
-			screen.queryByTestId( 'query-controls-slot' )
+			screen.queryByTestId( 'query-controls-slot' ),
 		).not.toBeInTheDocument();
 	} );
 
@@ -173,13 +173,13 @@ describe( 'EventQueryControlsPanel', () => {
 		usePostTypeSupports.mockReturnValue( false );
 
 		const { container } = render(
-			<EventQueryControlsPanel attributes={ { query: {} } } />
+			<EventQueryControlsPanel attributes={ { query: {} } } />,
 		);
 
 		expect( container.firstChild ).toBeNull();
 		expect( usePostTypeSupports ).toHaveBeenCalledWith(
 			'gatherpress-event-date',
-			undefined
+			undefined,
 		);
 	} );
 } );
@@ -215,7 +215,7 @@ describe( 'EventQueryControlsPanel query cleanup (#1756)', () => {
 						order: 'asc',
 					},
 				} }
-			/>
+			/>,
 		);
 
 		expect( lastQueryUpdate() ).toEqual( {
@@ -235,7 +235,7 @@ describe( 'EventQueryControlsPanel query cleanup (#1756)', () => {
 				attributes={ {
 					query: { postType: 'page', orderBy: 'rand' },
 				} }
-			/>
+			/>,
 		);
 
 		expect( lastQueryUpdate() ).toEqual( {
@@ -254,7 +254,7 @@ describe( 'EventQueryControlsPanel query cleanup (#1756)', () => {
 				attributes={ {
 					query: { postType: 'post', orderBy: 'title' },
 				} }
-			/>
+			/>,
 		);
 
 		expect( lastQueryUpdate() ).toBeUndefined();
@@ -274,7 +274,7 @@ describe( 'EventQueryControlsPanel query cleanup (#1756)', () => {
 						inherit: false,
 					},
 				} }
-			/>
+			/>,
 		);
 
 		expect( lastQueryUpdate() ).toBeUndefined();
@@ -291,7 +291,7 @@ describe( 'QueryPosttypeObserver auto-transform', () => {
 				name="core/query"
 				attributes={ { namespace, query } }
 				setAttributes={ setAttributes }
-			/>
+			/>,
 		);
 		return setAttributes;
 	};
@@ -335,7 +335,7 @@ describe( 'QueryPosttypeObserver auto-transform', () => {
 
 		const setAttributes = renderQuery(
 			{ postType: 'production' },
-			'advanced-query-loop'
+			'advanced-query-loop',
 		);
 
 		expect( setAttributes ).not.toHaveBeenCalled();

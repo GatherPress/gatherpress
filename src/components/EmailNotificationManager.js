@@ -66,7 +66,7 @@ const EmailNotificationManager = () => {
 							label: __( 'Compose Message', 'gatherpress' ),
 						},
 					],
-				}
+				},
 			);
 
 			noticeExists.current = true;

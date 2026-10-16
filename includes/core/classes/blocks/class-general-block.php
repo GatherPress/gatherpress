@@ -16,9 +16,11 @@ namespace GatherPress\Core\Blocks;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp;
+use GatherPress\Core\Tag_Processor;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
+use GatherPress\Core\Venue;
 use WP_HTML_Tag_Processor;
 
 /**
@@ -36,6 +38,22 @@ final class General_Block {
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
+
+	/**
+	 * Class on the injected notice, mirrored by the front-end script.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const NEW_TAB_CLASS = 'gatherpress-new-tab-notice';
+
+	/**
+	 * Class that hides screen-reader text wherever GatherPress renders it.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const SCREEN_READER_CLASS = 'gatherpress--screen-reader-text';
 
 	/**
 	 * Class constructor.
@@ -62,6 +80,7 @@ final class General_Block {
 		add_filter( 'render_block', array( $this, 'process_registration_block' ), 10, 2 );
 		add_filter( 'render_block', array( $this, 'process_venue_detail_field' ), 10, 2 );
 		add_filter( 'render_block_core/button', array( $this, 'convert_submit_button' ), 10, 2 );
+		add_filter( 'render_block', array( $this, 'announce_new_tab_links' ), 10, 2 );
 	}
 
 	/**
@@ -74,8 +93,8 @@ final class General_Block {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The HTML content of the block.
-	 * @param array  $block         The parsed block data.
+	 * @param string               $block_content The HTML content of the block.
+	 * @param array<string, mixed> $block         The parsed block data.
 	 *
 	 * @return string The modified block content or an empty string if the block should be removed.
 	 */
@@ -108,8 +127,8 @@ final class General_Block {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The HTML content of the block.
-	 * @param array  $block         The parsed block data.
+	 * @param string               $block_content The HTML content of the block.
+	 * @param array<string, mixed> $block         The parsed block data.
 	 *
 	 * @return string The modified block content or an empty string if the block should be removed.
 	 */
@@ -144,8 +163,8 @@ final class General_Block {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param string $block_content The HTML content of the block.
-	 * @param array  $block         The parsed block data.
+	 * @param string               $block_content The HTML content of the block.
+	 * @param array<string, mixed> $block         The parsed block data.
 	 *
 	 * @return string The modified block content or an empty string if the block should be removed.
 	 */
@@ -165,7 +184,7 @@ final class General_Block {
 		// fall back to the current post). Verify it's actually a venue.
 		$venue_post_id = $block['attrs']['postId'] ?? get_the_ID();
 
-		if ( ! post_type_supports( (string) get_post_type( $venue_post_id ), 'gatherpress-venue-information' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $venue_post_id ), Venue::SUPPORT ) ) {
 			return $block_content;
 		}
 
@@ -184,8 +203,8 @@ final class General_Block {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The HTML content of the block.
-	 * @param array  $block         The parsed block data.
+	 * @param string               $block_content The HTML content of the block.
+	 * @param array<string, mixed> $block         The parsed block data.
 	 *
 	 * @return string The modified block content with submit button functionality.
 	 */
@@ -208,7 +227,7 @@ final class General_Block {
 				$processor->remove_attribute( 'role' );
 
 				$content = $processor->get_updated_html();
-				$content = preg_replace( '/<a\b/', '<button', $content );
+				$content = (string) preg_replace( '/<a\b/', '<button', $content );
 				$content = str_replace( '</a>', '</button>', $content );
 				break;
 			}
@@ -231,8 +250,8 @@ final class General_Block {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The block content.
-	 * @param array  $block         The block data.
+	 * @param string               $block_content The block content.
+	 * @param array<string, mixed> $block         The block data.
 	 *
 	 * @return string The processed block content.
 	 */
@@ -243,7 +262,7 @@ final class General_Block {
 
 		// Only process if the post type supports RSVP.
 		if (
-			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
+			! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT ) ||
 			! Event::is_viewable( $post_id )
 		) {
 			return $block_content;
@@ -254,10 +273,10 @@ final class General_Block {
 		}
 
 		// Get max guest limit from event settings.
-		$max_guest_limit = (int) get_post_meta( $post_id, 'gatherpress_max_guest_limit', true );
+		$guest_limit = (int) get_post_meta( $post_id, 'gatherpress_guest_limit', true );
 
 		// Mark the field for removal if guest limit is 0.
-		if ( 0 === $max_guest_limit ) {
+		if ( 0 === $guest_limit ) {
 			$tag = new WP_HTML_Tag_Processor( $block_content );
 
 			while ( $tag->next_tag() ) {
@@ -282,8 +301,8 @@ final class General_Block {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The block content.
-	 * @param array  $block         The block data.
+	 * @param string               $block_content The block content.
+	 * @param array<string, mixed> $block         The block data.
 	 *
 	 * @return string The processed block content.
 	 */
@@ -294,7 +313,7 @@ final class General_Block {
 
 		// Only process if the post type supports RSVP.
 		if (
-			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
+			! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT ) ||
 			! Event::is_viewable( $post_id )
 		) {
 			return $block_content;
@@ -324,5 +343,97 @@ final class General_Block {
 		}
 
 		return $block_content;
+	}
+
+	/**
+	 * Announce GatherPress links that open in a new tab to screen readers.
+	 *
+	 * Sighted users get a visual cue from the new tab itself; screen-reader
+	 * users get nothing unless the link says so. One filter covers every
+	 * GatherPress block rather than each template repeating the markup.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string              $block_content Rendered block markup.
+	 * @param array<string,mixed> $block         Parsed block.
+	 *
+	 * @return string Markup with a notice inside each new-tab link.
+	 */
+	public function announce_new_tab_links( string $block_content, array $block ): string {
+		// Only GatherPress blocks, and only when there is a candidate to find.
+		// Target keywords beginning with an underscore are case-insensitive,
+		// so `_BLANK` opens a new tab just as `_blank` does.
+		if (
+			! str_starts_with( (string) ( $block['blockName'] ?? '' ), 'gatherpress/' )
+			|| false === stripos( $block_content, '_blank' )
+		) {
+			return $block_content;
+		}
+
+		$processor = new Tag_Processor( $block_content );
+		$offsets   = array();
+		$open      = false;
+		$announced = false;
+
+		// The parser decides what is a tag and where each one ends, so case,
+		// whitespace, comments and attribute text are its problem rather than
+		// a string search's. Anchors cannot nest, so an opener starts a fresh
+		// candidate and its closer settles it.
+		while ( $processor->next_tag( array( 'tag_closers' => 'visit' ) ) ) {
+			$tag = $processor->get_tag();
+
+			if ( 'A' === $tag && ! $processor->is_tag_closer() ) {
+				$open      = '_blank' === strtolower( (string) $processor->get_attribute( 'target' ) );
+				$announced = false;
+
+				continue;
+			}
+
+			if ( 'A' === $tag ) {
+				if ( $open && ! $announced ) {
+					$offsets[] = $processor->get_token_start();
+				}
+
+				$open = false;
+
+				continue;
+			}
+
+			// Leave an anchor alone when it is already announced.
+			if ( $open && ! $processor->is_tag_closer() && $processor->has_class( self::NEW_TAB_CLASS ) ) {
+				$announced = true;
+			}
+		}
+
+		return $this->insert_new_tab_notices( $block_content, array_filter( $offsets, 'is_int' ) );
+	}
+
+	/**
+	 * Splice a notice in at each offset, which is where a closing tag starts.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $html    Rendered block markup.
+	 * @param int[]  $offsets Byte offsets of the closers to announce before.
+	 *
+	 * @return string Markup with the notices in place.
+	 */
+	private function insert_new_tab_notices( string $html, array $offsets ): string {
+		// The space sits in the markup rather than the string, as core does, so
+		// the label and the notice cannot run together in the accessible name
+		// and translators have no leading whitespace to preserve.
+		$notice = sprintf(
+			'<span class="screen-reader-text %1$s %2$s"> %3$s</span>',
+			esc_attr( self::SCREEN_READER_CLASS ),
+			esc_attr( self::NEW_TAB_CLASS ),
+			esc_html__( '(opens in a new tab)', 'gatherpress' )
+		);
+
+		// Last first, so each splice leaves the offsets before it untouched.
+		foreach ( array_reverse( $offsets ) as $offset ) {
+			$html = substr( $html, 0, $offset ) . $notice . substr( $html, $offset );
+		}
+
+		return $html;
 	}
 }

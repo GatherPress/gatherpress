@@ -26,7 +26,7 @@ jest.mock(
 			getContext: jest.fn(),
 		};
 	},
-	{ virtual: true }
+	{ virtual: true },
 );
 
 /**
@@ -60,7 +60,7 @@ describe( 'rsvp-template renderBlocks', () => {
 		} );
 
 		global.fetch = jest.fn( () =>
-			Promise.resolve( { json: () => Promise.resolve( { success: false } ) } )
+			Promise.resolve( { json: () => Promise.resolve( { success: false } ) } ),
 		);
 	} );
 

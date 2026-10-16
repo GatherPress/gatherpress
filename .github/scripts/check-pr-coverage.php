@@ -154,7 +154,7 @@ function merge_coverage_data( array $coverage_data_array ): ?array {
 	return array(
 		'covered'         => $covered,
 		'total'           => $total,
-		'percentage'      => $total > 0 ? ( $covered / $total ) * 100 : 0,
+		'percentage'      => $total > 0 ? ( $covered / $total ) * 100 : 100,
 		'uncovered_lines' => $uncovered_in_all,
 	);
 }
@@ -185,8 +185,15 @@ function get_file_coverage( SimpleXMLElement $coverage_xml, string $file_path ):
 			$total   = (int) $metrics['elements'];
 			$covered = (int) $metrics['coveredelements'];
 
+			// A file in the report with nothing executable, such as a class
+			// holding only constants, has nothing left to cover.
 			if ( $total === 0 ) {
-				return null;
+				return array(
+					'covered'         => 0,
+					'total'           => 0,
+					'percentage'      => 100,
+					'uncovered_lines' => array(),
+				);
 			}
 
 			$percentage = ( $covered / $total ) * 100;

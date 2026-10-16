@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+When the RSVP form sends an RSVP without a page reload, focus now moves to the success message, so screen readers read it. Before, the submit button was hidden with the form, focus fell to the page, and the message that asks people to check their email for a confirmation link was not announced.

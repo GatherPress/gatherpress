@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Read-only venue and event geo data (`geo_latitude`, `geo_longitude`, `geo_address`, `geo_public`) for Geodata-aware plugins like Simple Location, kept current without eager updates when a venue's address changes.

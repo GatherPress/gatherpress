@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+The RSVP Template block no longer raises an "Undefined array key" warning when it renders with no post to render for, such as on an archive, search or 404 template.

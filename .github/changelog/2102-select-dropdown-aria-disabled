@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Convey the disabled state of the RSVP response filter to assistive technology, so a collapsed single-option dropdown is no longer announced as an operable button.

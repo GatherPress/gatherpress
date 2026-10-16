@@ -39,8 +39,8 @@ final class Dimensions {
 	 *
 	 * @since 0.35.0
 	 *
-	 * @param array  $attributes Block attributes.
-	 * @param string $dimension  Either `width` or `height`.
+	 * @param array<string, mixed> $attributes Block attributes.
+	 * @param string               $dimension  Either `width` or `height`.
 	 *
 	 * @return string|null The dimension value, or null when unset.
 	 */

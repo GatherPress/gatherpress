@@ -40,12 +40,12 @@ export const VenuePostsCombobox = ( { search, setSearch, ...props } ) => {
 	const singularLabel = usePostTypeLabel(
 		'singular_name',
 		venuePostType,
-		__( 'Venue', 'gatherpress' )
+		__( 'Venue', 'gatherpress' ),
 	);
 	const comboBoxLabel = sprintf(
 		/* translators: %s: Singular post type label, e.g. "Venue". */
 		__( 'Choose a %s', 'gatherpress' ),
-		singularLabel
+		singularLabel,
 	);
 
 	// Fetch available venue options using a custom query hook.
@@ -53,7 +53,7 @@ export const VenuePostsCombobox = ( { search, setSearch, ...props } ) => {
 		search,
 		venueId,
 		'postType',
-		venuePostType
+		venuePostType,
 	);
 
 	/**
@@ -72,7 +72,7 @@ export const VenuePostsCombobox = ( { search, setSearch, ...props } ) => {
 			};
 			props.setAttributes( newAttributes );
 		},
-		[ props, venuePostType ]
+		[ props, venuePostType ],
 	);
 
 	/**

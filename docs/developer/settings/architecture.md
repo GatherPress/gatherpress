@@ -61,9 +61,9 @@ get( 'map_platform' )
 
 ```php
 array(
-    'post_or_event_date'    => 'checkbox',
+    'use_event_date_for_publish'    => 'checkbox',
     'map_platform'          => 'select',
-    'max_attendance_limit'  => 'number',
+    'capacity'              => 'number',
     'date_format'           => 'text',
     'organizer'             => 'autocomplete',
     // ...
@@ -164,17 +164,17 @@ Settings are exposed to the block editor via the `block_editor_settings_all` fil
 
 ```text
 select('core/editor').getEditorSettings().gatherpress
-├── settings   — User-configurable values from the Settings API
+├── settings   : User-configurable values from the Settings API
 │   ├── dateFormat
 │   ├── timeFormat
 │   ├── showTimezone
 │   ├── mapPlatform
-│   ├── maxAttendanceLimit
-│   ├── maxGuestLimit
+│   ├── capacity
+│   ├── guestLimit
 │   ├── enableAnonymousRsvp
-│   ├── postOrEventDate
+│   ├── useEventDateForPublish
 │   └── ... (any new settings are added automatically)
-└── config     — Infrastructure values (not user-configurable)
+└── config     : Infrastructure values (not user-configurable)
     ├── pluginUrl
     ├── homeUrl
     ├── siteTimezone
@@ -209,8 +209,8 @@ const siteTimezone = getFromConfig( 'siteTimezone' );
 
 For frontend view scripts, data is provided through:
 
-- **`wp_interactivity_state('gatherpress', ...)`** in `Assets::add_interactivity_state()` — provides the REST API URL to the interactivity store
-- **Block data attributes** in `render.php` — provides per-block values like `mapPlatform` and `pluginUrl` for the venue map
+- **`wp_interactivity_state('gatherpress', ...)`** in `Assets::add_interactivity_state()`: provides the REST API URL to the interactivity store
+- **Block data attributes** in `render.php`: provides per-block values like `mapPlatform` and `pluginUrl` for the venue map
 
 ## Key Files
 

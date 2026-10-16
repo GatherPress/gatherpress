@@ -11,7 +11,7 @@ namespace GatherPress\Tests\Core\Venue\Map;
 use GatherPress\Core\Venue\Map;
 use GatherPress\Core\Venue\Map\Prewarm;
 use GatherPress\Core\Venue\Setup;
-use GatherPress\Core\Venue\Venue;
+use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 

@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Editor controls are all one height again. WordPress moved its components from 36px to 40px and asked plugins to opt in; only some of ours had, so panels mixed both sizes, most visibly in Form Field settings where a 40px dropdown sat above 36px text inputs. Every control now opts in, which also clears the deprecation warnings WordPress logs for the old size.

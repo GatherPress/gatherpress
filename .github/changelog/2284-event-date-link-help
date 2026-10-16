@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+The Link to event toggle in the Event Date block now explains what it does. Testers could not tell from the label alone that it turns the displayed date into a link to the event page.

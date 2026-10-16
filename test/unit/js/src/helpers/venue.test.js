@@ -20,6 +20,17 @@ jest.mock( '@wordpress/element', () => ( {
 	useMemo: jest.fn( ( fn ) => fn() ),
 } ) );
 
+/**
+ * Default `select` impl used by `getOnlineEventTermId` when an individual
+ * test wants the editor settings without a known online-event sentinel id.
+ * Individual `it()` blocks override when they need a specific id.
+ */
+select.mockImplementation( () => ( {
+	getEditorSettings: () => ( {
+		gatherpress: { config: { onlineEventTermIds: {} } },
+	} ),
+} ) );
+
 jest.mock( '@wordpress/html-entities', () => ( {
 	decodeEntities: jest.fn( ( str ) => str ),
 } ) );
@@ -36,6 +47,7 @@ import {
 	isVenuePostType,
 	getVenuePostType,
 	getVenueTaxonomy,
+	getOnlineEventTermId,
 	useVenuePostFromTermId,
 	useVenueTermFromPostId,
 	GetVenuePostFromEventId,
@@ -65,7 +77,7 @@ describe( 'getVenuePostType', () => {
 			} ),
 		} );
 		expect( getVenuePostType( 'gatherpress_event' ) ).toBe(
-			'gatherpress_venue'
+			'gatherpress_venue',
 		);
 	} );
 
@@ -82,7 +94,7 @@ describe( 'getVenuePostType', () => {
 			} ),
 		} );
 		expect( getVenuePostType( 'unknown_event_type' ) ).toBe(
-			'gatherpress_venue'
+			'gatherpress_venue',
 		);
 	} );
 
@@ -93,7 +105,7 @@ describe( 'getVenuePostType', () => {
 			getEditorSettings: () => ( {} ),
 		} );
 		expect( getVenuePostType( 'gatherpress_event' ) ).toBe(
-			'gatherpress_venue'
+			'gatherpress_venue',
 		);
 	} );
 
@@ -276,7 +288,7 @@ describe( 'useVenuePostFromTermId', () => {
 		} );
 
 		expect( () =>
-			renderHook( () => useVenuePostFromTermId( 1 ) )
+			renderHook( () => useVenuePostFromTermId( 1 ) ),
 		).not.toThrow();
 		expect( capturedSlug ).toBeUndefined();
 	} );
@@ -301,7 +313,7 @@ describe( 'useVenuePostFromTermId', () => {
 		} );
 
 		expect( () =>
-			renderHook( () => useVenuePostFromTermId( 1 ) )
+			renderHook( () => useVenuePostFromTermId( 1 ) ),
 		).not.toThrow();
 		expect( capturedSlug ).toBeUndefined();
 	} );
@@ -416,7 +428,7 @@ describe( 'useVenuePostFromTermId', () => {
 
 		renderHook( () => useVenuePostFromTermId( 1 ) );
 		expect( capturedQuery ).not.toHaveProperty(
-			'gatherpress_event_query'
+			'gatherpress_event_query',
 		);
 	} );
 
@@ -440,7 +452,7 @@ describe( 'useVenuePostFromTermId', () => {
 
 		renderHook( () => useVenuePostFromTermId( 1, 'production' ) );
 		expect( capturedQuery ).not.toHaveProperty(
-			'gatherpress_event_query'
+			'gatherpress_event_query',
 		);
 	} );
 } );
@@ -665,7 +677,7 @@ describe( 'GetVenuePostFromEventId', () => {
 		expect( result.current ).toEqual( mockVenuePost );
 	} );
 
-	it( 'skips the online-event term and uses the physical venue term', () => {
+	it( 'skips the online-event sentinel and uses the physical venue term', () => {
 		const onlineTerm = { id: 1, slug: 'online-event' };
 		const venueTerm = { id: 7, slug: '_venue-seven' };
 		const mockVenuePost = [ { id: 70, title: 'Venue Seven' } ];
@@ -681,7 +693,14 @@ describe( 'GetVenuePostFromEventId', () => {
 							getCurrentPostType: () => 'gatherpress_event',
 							getEditorSettings: () => ( {
 								gatherpress: {
-									config: { venuePostTypes: { gatherpress_event: 'gatherpress_venue' } },
+									config: {
+										venuePostTypes: {
+											gatherpress_event: 'gatherpress_venue',
+										},
+										onlineEventTermIds: {
+											gatherpress_venue: onlineTerm.id,
+										},
+									},
 								},
 							} ),
 						};
@@ -814,7 +833,7 @@ describe( 'GetVenuePostFromEventId', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			GetVenuePostFromEventId( 100, 'gatherpress_event' )
+			GetVenuePostFromEventId( 100, 'gatherpress_event' ),
 		);
 		// No venue terms returned, so result is undefined; the value we care
 		// about is that the helper traversed the fallback paths without throwing.
@@ -847,7 +866,7 @@ describe( 'GetVenuePostFromEventId', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			GetVenuePostFromEventId( 100, 'unknown_event_type' )
+			GetVenuePostFromEventId( 100, 'unknown_event_type' ),
 		);
 		expect( result.current ).toEqual( undefined );
 	} );
@@ -871,7 +890,7 @@ describe( 'useVenueOptions', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useVenueOptions( '', null, 'taxonomy', '_gatherpress_venue' )
+			useVenueOptions( '', null, 'taxonomy', '_gatherpress_venue' ),
 		);
 		expect( result.current.venueOptions ).toEqual( [] );
 	} );
@@ -891,7 +910,7 @@ describe( 'useVenueOptions', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useVenueOptions( '', null, 'taxonomy', '_gatherpress_venue' )
+			useVenueOptions( '', null, 'taxonomy', '_gatherpress_venue' ),
 		);
 
 		expect( result.current.venueOptions ).toEqual( [
@@ -916,7 +935,7 @@ describe( 'useVenueOptions', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useVenueOptions( '', 99, 'taxonomy', '_gatherpress_venue' )
+			useVenueOptions( '', 99, 'taxonomy', '_gatherpress_venue' ),
 		);
 
 		expect( result.current.venueOptions ).toEqual( [
@@ -942,12 +961,95 @@ describe( 'useVenueOptions', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useVenueOptions( '', 1, 'taxonomy', '_gatherpress_venue' )
+			useVenueOptions( '', 1, 'taxonomy', '_gatherpress_venue' ),
 		);
 
 		expect( result.current.venueOptions ).toEqual( [
 			{ value: 1, label: 'Venue One' },
 			{ value: 2, label: 'Venue Two' },
+		] );
+	} );
+
+	it( 'keeps post venues whose ID matches online term ID', () => {
+		select.mockReturnValue( {
+			getEditorSettings: () => ( {
+				gatherpress: { config: { onlineEventTermIds: { gatherpress_venue: 42 } } },
+			} ),
+		} );
+		const mockVenues = [ { id: 42, title: { rendered: 'Post Venue' } } ];
+
+		useSelect.mockImplementation( ( callback ) => {
+			const wpSelect = jest.fn( () => ( {
+				getEntityRecord: jest.fn( () => null ),
+				getEntityRecords: jest.fn( () => mockVenues ),
+			} ) );
+			return callback( wpSelect );
+		} );
+
+		const { result } = renderHook( () =>
+			useVenueOptions( '', null, 'postType', 'gatherpress_venue' ),
+		);
+
+		expect( result.current.venueOptions ).toEqual( [
+			{ value: 42, label: 'Post Venue' },
+		] );
+	} );
+
+	it( 'filters the online-event term by slug when no term id is configured', () => {
+		select.mockReturnValue( {
+			getEditorSettings: () => ( {
+				gatherpress: { config: { onlineEventTermIds: {} } },
+			} ),
+		} );
+		const mockVenues = [
+			{ id: 1, slug: 'online-event', name: 'Online Event' },
+			{ id: 7, slug: '_my-venue', name: 'My Venue' },
+		];
+
+		useSelect.mockImplementation( ( callback ) => {
+			const wpSelect = jest.fn( () => ( {
+				getEntityRecord: jest.fn( () => null ),
+				getEntityRecords: jest.fn( () => mockVenues ),
+			} ) );
+			return callback( wpSelect );
+		} );
+
+		const { result } = renderHook( () =>
+			useVenueOptions( '', null, 'taxonomy', '_gatherpress_venue' ),
+		);
+
+		expect( result.current.venueOptions ).toEqual( [
+			{ value: 7, label: 'My Venue' },
+		] );
+	} );
+
+	it( 'filters the online-event term by resolved id when the term id is configured', () => {
+		select.mockReturnValue( {
+			getEditorSettings: () => ( {
+				gatherpress: { config: { onlineEventTermIds: { gatherpress_venue: 42 } } },
+			} ),
+		} );
+		const mockVenues = [
+			// The sentinel carries a slug other than 'online-event' on purpose,
+			// so only the resolved-id branch can filter it out here.
+			{ id: 42, slug: '_renamed-sentinel', name: 'Online Event' },
+			{ id: 7, slug: '_my-venue', name: 'My Venue' },
+		];
+
+		useSelect.mockImplementation( ( callback ) => {
+			const wpSelect = jest.fn( () => ( {
+				getEntityRecord: jest.fn( () => null ),
+				getEntityRecords: jest.fn( () => mockVenues ),
+			} ) );
+			return callback( wpSelect );
+		} );
+
+		const { result } = renderHook( () =>
+			useVenueOptions( '', null, 'taxonomy', '_gatherpress_venue' ),
+		);
+
+		expect( result.current.venueOptions ).toEqual( [
+			{ value: 7, label: 'My Venue' },
 		] );
 	} );
 
@@ -966,7 +1068,7 @@ describe( 'useVenueOptions', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useVenueOptions( '', null, 'postType', 'gatherpress_venue' )
+			useVenueOptions( '', null, 'postType', 'gatherpress_venue' ),
 		);
 
 		expect( result.current.venueOptions ).toEqual( [
@@ -994,8 +1096,8 @@ describe( 'useVenueOptions', () => {
 				'search term',
 				null,
 				'taxonomy',
-				'_gatherpress_venue'
-			)
+				'_gatherpress_venue',
+			),
 		);
 
 		expect( capturedQuery.search ).toBe( 'search term' );
@@ -1034,9 +1136,19 @@ describe( 'usePopularVenues', () => {
 
 	it( 'returns empty array when no venues found', () => {
 		useSelect.mockImplementation( ( callback ) => {
-			const wpSelect = jest.fn( () => ( {
-				getEntityRecords: jest.fn( () => null ),
-			} ) );
+			const wpSelect = jest.fn( ( store ) => {
+				if ( 'core' === store ) {
+					return { getEntityRecords: jest.fn( () => null ) };
+				}
+				if ( 'core/editor' === store ) {
+					return {
+						getEditorSettings: () => ( {
+							gatherpress: { config: { onlineEventTermIds: {} } },
+						} ),
+					};
+				}
+				return {};
+			} );
 			return callback( wpSelect );
 		} );
 
@@ -1052,9 +1164,19 @@ describe( 'usePopularVenues', () => {
 		];
 
 		useSelect.mockImplementation( ( callback ) => {
-			const wpSelect = jest.fn( () => ( {
-				getEntityRecords: jest.fn( () => mockVenues ),
-			} ) );
+			const wpSelect = jest.fn( ( store ) => {
+				if ( 'core' === store ) {
+					return { getEntityRecords: jest.fn( () => mockVenues ) };
+				}
+				if ( 'core/editor' === store ) {
+					return {
+						getEditorSettings: () => ( {
+							gatherpress: { config: { onlineEventTermIds: {} } },
+						} ),
+					};
+				}
+				return {};
+			} );
 			return callback( wpSelect );
 		} );
 
@@ -1066,12 +1188,24 @@ describe( 'usePopularVenues', () => {
 		let capturedQuery = null;
 
 		useSelect.mockImplementation( ( callback ) => {
-			const wpSelect = jest.fn( () => ( {
-				getEntityRecords: jest.fn( ( type, taxonomy, query ) => {
-					capturedQuery = query;
-					return [];
-				} ),
-			} ) );
+			const wpSelect = jest.fn( ( store ) => {
+				if ( 'core' === store ) {
+					return {
+						getEntityRecords: jest.fn( ( type, taxonomy, query ) => {
+							capturedQuery = query;
+							return [];
+						} ),
+					};
+				}
+				if ( 'core/editor' === store ) {
+					return {
+						getEditorSettings: () => ( {
+							gatherpress: { config: { onlineEventTermIds: {} } },
+						} ),
+					};
+				}
+				return {};
+			} );
 			return callback( wpSelect );
 		} );
 
@@ -1088,12 +1222,24 @@ describe( 'usePopularVenues', () => {
 		let capturedQuery = null;
 
 		useSelect.mockImplementation( ( callback ) => {
-			const wpSelect = jest.fn( () => ( {
-				getEntityRecords: jest.fn( ( type, taxonomy, query ) => {
-					capturedQuery = query;
-					return [];
-				} ),
-			} ) );
+			const wpSelect = jest.fn( ( store ) => {
+				if ( 'core' === store ) {
+					return {
+						getEntityRecords: jest.fn( ( type, taxonomy, query ) => {
+							capturedQuery = query;
+							return [];
+						} ),
+					};
+				}
+				if ( 'core/editor' === store ) {
+					return {
+						getEditorSettings: () => ( {
+							gatherpress: { config: { onlineEventTermIds: {} } },
+						} ),
+					};
+				}
+				return {};
+			} );
 			return callback( wpSelect );
 		} );
 
@@ -1107,18 +1253,59 @@ describe( 'usePopularVenues', () => {
 		let capturedTaxonomy = null;
 
 		useSelect.mockImplementation( ( callback ) => {
-			const wpSelect = jest.fn( () => ( {
-				getEntityRecords: jest.fn( ( type, taxonomy ) => {
-					capturedTaxonomy = taxonomy;
-					return [];
-				} ),
-			} ) );
+			const wpSelect = jest.fn( ( store ) => {
+				if ( 'core/editor' === store ) {
+					return {
+						getEditorSettings: () => ( {
+							gatherpress: { config: { onlineEventTermIds: {} } },
+						} ),
+					};
+				}
+				return {
+					getEntityRecords: jest.fn( ( kind, taxonomy ) => {
+						capturedTaxonomy = taxonomy;
+						return [];
+					} ),
+				};
+			} );
 			return callback( wpSelect );
 		} );
 
 		renderHook( () => usePopularVenues() );
 
 		expect( capturedTaxonomy ).toBe( '_gatherpress_venue' );
+	} );
+
+	it( 'leaves out the online-event term and keeps the limit', () => {
+		useSelect.mockImplementation( ( callback ) => {
+			const wpSelect = jest.fn( ( store ) => {
+				if ( 'core' === store ) {
+					return {
+						getEntityRecords: jest.fn( () => [
+							{ id: 1, name: 'Main Hall', count: 9 },
+							{ id: 7, name: 'Online event', count: 8 },
+							{ id: 2, name: 'Annex', count: 4 },
+							{ id: 3, name: 'Garden', count: 1 },
+						] ),
+					};
+				}
+				if ( 'core/editor' === store ) {
+					return {
+						getEditorSettings: () => ( {
+							gatherpress: {
+								config: { onlineEventTermIds: { gatherpress_venue: 7 } },
+							},
+						} ),
+					};
+				}
+				return {};
+			} );
+			return callback( wpSelect );
+		} );
+
+		const { result } = renderHook( () => usePopularVenues( 2 ) );
+
+		expect( result.current.map( ( venue ) => venue.id ) ).toEqual( [ 1, 2 ] );
 	} );
 } );
 
@@ -1140,7 +1327,7 @@ describe( 'useVenueTaxonomyIds', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useVenueTaxonomyIds( '_gatherpress_venue', 42, true )
+			useVenueTaxonomyIds( '_gatherpress_venue', 42, true ),
 		);
 		expect( result.current ).toBeUndefined();
 	} );
@@ -1157,7 +1344,7 @@ describe( 'useVenueTaxonomyIds', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useVenueTaxonomyIds( '_gatherpress_venue', 42 )
+			useVenueTaxonomyIds( '_gatherpress_venue', 42 ),
 		);
 		expect( result.current ).toEqual( [ 1, 2, 3 ] );
 	} );
@@ -1174,7 +1361,7 @@ describe( 'useVenueTaxonomyIds', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useVenueTaxonomyIds( '_gatherpress_venue', null )
+			useVenueTaxonomyIds( '_gatherpress_venue', null ),
 		);
 		expect( result.current ).toBeUndefined();
 	} );
@@ -1195,7 +1382,7 @@ describe( 'useVenueTaxonomyIds', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useVenueTaxonomyIds( '_gatherpress_venue', 42 )
+			useVenueTaxonomyIds( '_gatherpress_venue', 42 ),
 		);
 		expect( result.current ).toEqual( [ 10, 20 ] );
 	} );
@@ -1212,7 +1399,7 @@ describe( 'useVenueTaxonomyIds', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useVenueTaxonomyIds( '_gatherpress_venue', 42 )
+			useVenueTaxonomyIds( '_gatherpress_venue', 42 ),
 		);
 		expect( result.current ).toBeUndefined();
 	} );
@@ -1392,6 +1579,62 @@ describe( 'findVenuePostById', () => {
 		};
 
 		expect( findVenuePostById( selectFunc, 123 ) ).toBeNull();
+	} );
+} );
+
+/**
+ * Coverage for getOnlineEventTermId.
+ */
+describe( 'getOnlineEventTermId', () => {
+	beforeEach( () => {
+		jest.clearAllMocks();
+		select.mockImplementation( () => ( {
+			getEditorSettings: () => ( {
+				gatherpress: { config: { onlineEventTermIds: {} } },
+			} ),
+		} ) );
+	} );
+
+	/*
+	 * Drives both fallback branches:
+	 *   `getFromConfig( 'onlineEventTermIds' ) ?? {}`
+	 *   and `map[ venuePostType ] ?? null`
+	 */
+	it( 'returns null when gatherpress config is missing entirely', () => {
+		select.mockImplementation( () => ( {
+			getEditorSettings: () => ( {} ),
+		} ) );
+		expect( getOnlineEventTermId( 'gatherpress_venue' ) ).toBeNull();
+	} );
+
+	it( 'returns null when the venue post type is not in the resolved map', () => {
+		expect( getOnlineEventTermId( 'gatherpress_venue' ) ).toBeNull();
+	} );
+
+	it( 'returns the pre-resolved id when the venue post type is in the map', () => {
+		select.mockImplementation( () => ( {
+			getEditorSettings: () => ( {
+				gatherpress: {
+					config: {
+						onlineEventTermIds: { gatherpress_venue: 42 },
+					},
+				},
+			} ),
+		} ) );
+		expect( getOnlineEventTermId( 'gatherpress_venue' ) ).toBe( 42 );
+	} );
+
+	it( 'reads the default venue post type when none is passed', () => {
+		select.mockImplementation( () => ( {
+			getEditorSettings: () => ( {
+				gatherpress: {
+					config: {
+						onlineEventTermIds: { gatherpress_venue: 42 },
+					},
+				},
+			} ),
+		} ) );
+		expect( getOnlineEventTermId() ).toBe( 42 );
 	} );
 } );
 

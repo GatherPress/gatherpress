@@ -100,8 +100,8 @@ final class Dropdown {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The original block content.
-	 * @param array  $block         The parsed block data containing block attributes.
+	 * @param string               $block_content The original block content.
+	 * @param array<string, mixed> $block         The parsed block data containing block attributes.
 	 *
 	 * @return string The modified block content with inline styles.
 	 */
@@ -183,8 +183,8 @@ final class Dropdown {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The original block content.
-	 * @param array  $block         The parsed block data.
+	 * @param string               $block_content The original block content.
+	 * @param array<string, mixed> $block         The parsed block data.
 	 *
 	 * @return string The modified block content with select mode attributes.
 	 */
@@ -251,8 +251,8 @@ final class Dropdown {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The HTML content of the block.
-	 * @param array  $block         The parsed block data.
+	 * @param string               $block_content The HTML content of the block.
+	 * @param array<string, mixed> $block         The parsed block data.
 	 *
 	 * @return string The modified block content with updated attributes.
 	 */

@@ -14,7 +14,7 @@ namespace GatherPress\Core\Commands;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp;
 use WP_CLI;
 
 /**
@@ -49,6 +49,22 @@ final class Event_Cli extends WP_CLI {
 	 *  - attending
 	 *  - not_attending
 	 *  - waiting_list
+	 * ---
+	 *
+	 * [--guests=<guests>]
+	 * : Number of guests accompanying the attendee.
+	 * ---
+	 * default: 0
+	 * ---
+	 *
+	 * [--anonymous=<anonymous>]
+	 * : Whether to hide the attendee's identity from the public response list.
+	 * ---
+	 * default: 0
+	 * options:
+	 *  - 0
+	 *  - 1
+	 * ---
 	 *
 	 * ## EXAMPLES
 	 *
@@ -56,10 +72,14 @@ final class Event_Cli extends WP_CLI {
 	 *    $ wp gatherpress event rsvp --event_id=525 --user_id=1 --status="not_attending"
 	 *    Success: The RSVP status for Event ID "525" has been successfully set to "not_attending" for User ID "1".
 	 *
+	 *    # RSVP with two guests, anonymously.
+	 *    $ wp gatherpress event rsvp --event_id=525 --user_id=1 --guests=2 --anonymous=1
+	 *    Success: The RSVP status for Event ID "525" has been successfully set to "attending" for User ID "1".
+	 *
 	 * @since 0.29.0
 	 *
-	 * @param array $args       Positional arguments for the script.
-	 * @param array $assoc_args Associative arguments for the script.
+	 * @param string[]                   $args       Positional arguments for the script.
+	 * @param array<string, string|bool> $assoc_args Associative arguments for the script.
 	 *
 	 * @return void
 	 *
@@ -71,8 +91,21 @@ final class Event_Cli extends WP_CLI {
 		$guests    = ! empty( $assoc_args['guests'] ) ? (int) $assoc_args['guests'] : 0;
 		$anonymous = ! empty( $assoc_args['anonymous'] ) ? (int) $assoc_args['anonymous'] : 0;
 		$status    = ! empty( $assoc_args['status'] ) ? (string) $assoc_args['status'] : 'attending';
-		$event     = new Event( $event_id );
-		$response  = $event->rsvp->save( $user_id, $status, $anonymous, $guests );
+
+		// The error message names this support, so gate on it rather than on event dates.
+		if ( ! post_type_supports( (string) get_post_type( $event_id ), Rsvp::SUPPORT ) ) {
+			self::error(
+				sprintf(
+					/* translators: %d: event ID. */
+					__( 'Event ID "%d" does not exist or does not support RSVPs.', 'gatherpress' ),
+					$event_id
+				)
+			);
+
+			return; // @phpstan-ignore deadCode.unreachable
+		}
+
+		$response = ( new Rsvp( $event_id ) )->save( $user_id, $status, $anonymous, $guests );
 
 		self::success(
 			sprintf(

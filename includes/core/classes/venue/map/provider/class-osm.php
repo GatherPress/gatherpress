@@ -18,6 +18,7 @@ namespace GatherPress\Core\Venue\Map\Provider;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Settings;
 use GatherPress\Core\Venue\Map;
 use GdImage;
 use Throwable;
@@ -88,8 +89,8 @@ final class OSM extends Base {
 	/**
 	 * Composite OSM tiles around the venue, stamp a marker at the canvas
 	 * center, and return the finished GD image. Returns null when GD is
-	 * unavailable, when the requested density is unsupported, or when the
-	 * retina variant would require a tile zoom past `Map::ZOOM_MAX`.
+	 * unavailable, when the requested dimensions are not positive, or when
+	 * the retina variant would require a tile zoom past `Map::ZOOM_MAX`.
 	 *
 	 * @since 0.34.0
 	 *
@@ -116,6 +117,10 @@ final class OSM extends Base {
 		// PHP built without the GD extension. Can't simulate in a unit test without making the runtime itself broken.
 		if ( ! function_exists( 'imagecreatetruecolor' ) ) { // @codeCoverageIgnore
 			return null; // @codeCoverageIgnore
+		}
+
+		if ( $width < 1 || $height < 1 ) {
+			return null;
 		}
 
 		// Coerce unsupported densities back to 1. Allowing, say, density=3
@@ -152,7 +157,7 @@ final class OSM extends Base {
 		$canvas = imagecreatetruecolor( $canvas_width, $canvas_height );
 
 		// Background: neutral gray so missing tiles blend rather than glaring black.
-		$bg = imagecolorallocate( $canvas, 238, 238, 238 );
+		$bg = (int) imagecolorallocate( $canvas, 238, 238, 238 );
 		imagefilledrectangle( $canvas, 0, 0, $canvas_width - 1, $canvas_height - 1, $bg );
 
 		$tiles = $this->get_tile_url_template();
@@ -349,9 +354,9 @@ final class OSM extends Base {
 	 * @return void
 	 */
 	public function stamp_marker( $canvas, int $x, int $y, float $scale = 1.0 ): void {
-		$white = imagecolorallocate( $canvas, 255, 255, 255 );
-		$red   = imagecolorallocate( $canvas, 220, 53, 69 );
-		$dark  = imagecolorallocate( $canvas, 30, 30, 30 );
+		$white = (int) imagecolorallocate( $canvas, 255, 255, 255 );
+		$red   = (int) imagecolorallocate( $canvas, 220, 53, 69 );
+		$dark  = (int) imagecolorallocate( $canvas, 30, 30, 30 );
 
 		$outer = max( 1, (int) round( 20 * $scale ) );
 		$inner = max( 1, (int) round( 16 * $scale ) );
@@ -364,15 +369,17 @@ final class OSM extends Base {
 	}
 
 	/**
-	 * Tile URL template. Filterable so site owners can repoint at a
-	 * different XYZ provider (self-hosted, Stamen, Maptiler, etc.) without
-	 * forking the provider class.
+	 * Tile URL template, filterable and layered under `custom_map_tile_url`.
 	 *
 	 * @since 0.34.0
+	 * @since 0.36.0 Layered under the `custom_map_tile_url` setting; resolves `{s}`.
 	 *
 	 * @return string
 	 */
 	protected function get_tile_url_template(): string {
+		$custom  = trim( (string) Settings::get_instance()->get( 'custom_map_tile_url' ) );
+		$default = '' !== $custom ? $custom : self::DEFAULT_TILE_URL;
+
 		/**
 		 * Filter the tile URL template used by the OSM static map provider.
 		 *
@@ -380,7 +387,19 @@ final class OSM extends Base {
 		 *
 		 * @param string $template Tile URL with `{z}`, `{x}`, `{y}` placeholders.
 		 */
-		return (string) apply_filters( 'gatherpress_static_map_tile_url', self::DEFAULT_TILE_URL );
+		$template = (string) apply_filters( 'gatherpress_static_map_tile_url', $default );
+
+		// Static compositor makes direct requests, so `{s}` needs resolving.
+		$template = str_replace( '{s}', 'a', $template );
+
+		// The CARTO key belongs only to the built-in default: a custom URL
+		// is documented as overriding CARTO entirely, even when it happens
+		// to resolve to a CARTO-allowlisted host.
+		if ( '' !== $custom ) {
+			return $template;
+		}
+
+		return Settings::add_map_tile_key( $template );
 	}
 
 	/**

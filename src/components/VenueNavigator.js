@@ -10,7 +10,7 @@ import { useState, useCallback, useMemo } from '@wordpress/element';
 /**
  * Internal dependencies
  */
-import { getVenuePostType, getVenueTaxonomy, useVenueTaxonomyIds } from '../helpers/venue';
+import { getOnlineEventTermId, getVenuePostType, getVenueTaxonomy, useVenueTaxonomyIds } from '../helpers/venue';
 import CreateVenueForm from './VenueForm';
 import { VenueComboboxProvider } from './VenueComboboxProvider';
 import PopularVenues from './PopularVenues';
@@ -30,7 +30,7 @@ export default function VenueNavigator( props = null ) {
 		( select ) =>
 			props?.context?.postType ||
 			select( 'core/editor' )?.getCurrentPostType(),
-		[ props?.context?.postType ]
+		[ props?.context?.postType ],
 	);
 	const venuePostType = getVenuePostType( currentPostType );
 	const venueTaxonomy = getVenueTaxonomy( venuePostType );
@@ -42,7 +42,7 @@ export default function VenueNavigator( props = null ) {
 	const addNewItemLabel = usePostTypeLabel(
 		'add_new_item',
 		venuePostType,
-		__( 'Add New Venue', 'gatherpress' )
+		__( 'Add New Venue', 'gatherpress' ),
 	);
 
 	/**
@@ -73,17 +73,14 @@ export default function VenueNavigator( props = null ) {
 
 	const updateVenueTaxonomyIds = useCallback(
 		( newIds ) => editPost( { [ venueTaxonomy ]: newIds } ),
-		[ editPost, venueTaxonomy ]
+		[ editPost, venueTaxonomy ],
 	);
 
-	// Get the online-event term to preserve it when selecting a venue.
-	const onlineEventTermId = useSelect( ( wpSelect ) => {
-		const terms = wpSelect( 'core' ).getEntityRecords( 'taxonomy', venueTaxonomy, {
-			slug: 'online-event',
-			per_page: 1,
-		} );
-		return terms?.[ 0 ]?.id || null;
-	}, [ venueTaxonomy ] );
+	// Get the online-event term ID from pre-resolved editor settings so we
+	// skip the taxonomy REST lookup the navigator used to fire on every
+	// open. Returns null when settings haven't loaded yet — the
+	// below checks short-circuit gracefully in that case.
+	const onlineEventTermId = getOnlineEventTermId( venuePostType );
 
 	// Check if online-event term is currently assigned.
 	const hasOnlineEventTerm = useMemo( () => {
@@ -106,7 +103,7 @@ export default function VenueNavigator( props = null ) {
 				updateVenueTaxonomyIds( save );
 			}
 		},
-		[ isEventContext, updateVenueTaxonomyIds, hasOnlineEventTerm, onlineEventTermId ]
+		[ isEventContext, updateVenueTaxonomyIds, hasOnlineEventTerm, onlineEventTermId ],
 	);
 
 	return (

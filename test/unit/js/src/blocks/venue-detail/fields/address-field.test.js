@@ -124,12 +124,12 @@ describe( 'AddressField', () => {
 		const address = screen.getByRole( 'combobox' ).closest( 'address' );
 		expect( address ).toBeTruthy();
 		expect( address.className ).toBe(
-			'gatherpress-venue-detail__address'
+			'gatherpress-venue-detail__address',
 		);
 
 		const field = screen.getByRole( 'combobox' );
 		expect( field.className ).toBe(
-			'gatherpress-venue-detail__address-input'
+			'gatherpress-venue-detail__address-input',
 		);
 	} );
 
@@ -145,7 +145,7 @@ describe( 'AddressField', () => {
 			<ControlledAddressField
 				{ ...defaultProps }
 				initialValue="123 Main St"
-			/>
+			/>,
 		);
 
 		const field = screen.getByRole( 'combobox' );
@@ -157,7 +157,7 @@ describe( 'AddressField', () => {
 
 		const field = screen.getByRole( 'combobox' );
 		expect( field.getAttribute( 'placeholder' ) ).toBe(
-			'Enter address…'
+			'Enter address…',
 		);
 	} );
 
@@ -169,7 +169,7 @@ describe( 'AddressField', () => {
 				placeholder={ defaultProps.placeholder }
 				onKeyDown={ defaultProps.onKeyDown }
 				disabled={ true }
-			/>
+			/>,
 		);
 
 		expect( screen.queryByRole( 'textbox' ) ).toBeNull();
@@ -177,7 +177,7 @@ describe( 'AddressField', () => {
 		const placeholder = screen.getByText( 'Enter address…' );
 		expect( placeholder ).toBeTruthy();
 		expect( placeholder.className ).toBe(
-			'wp-block-gatherpress-venue-detail__placeholder'
+			'wp-block-gatherpress-venue-detail__placeholder',
 		);
 	} );
 
@@ -197,7 +197,7 @@ describe( 'AddressField', () => {
 			<ControlledAddressField
 				{ ...defaultProps }
 				initialValue="Something"
-			/>
+			/>,
 		);
 		field = screen.getByRole( 'combobox' );
 		expect( field.readOnly ).toBe( false );
@@ -247,7 +247,7 @@ describe( 'AddressField', () => {
 				'123 Main Street',
 				expect.objectContaining( {
 					signal: expect.any( AbortSignal ),
-				} )
+				} ),
 			);
 		} );
 	} );
@@ -267,7 +267,7 @@ describe( 'AddressField', () => {
 
 		await waitFor( () => {
 			expect(
-				screen.getByText( /temporarily unavailable/i )
+				screen.getByText( /temporarily unavailable/i ),
 			).toBeTruthy();
 		} );
 
@@ -281,7 +281,7 @@ describe( 'AddressField', () => {
 			() =>
 				new Promise( ( resolve ) => {
 					resolveFetch = resolve;
-				} )
+				} ),
 		);
 
 		render( <ControlledAddressField { ...defaultProps } /> );
@@ -293,7 +293,7 @@ describe( 'AddressField', () => {
 
 		await waitFor( () => {
 			expect(
-				screen.getByText( 'Searching for addresses…' )
+				screen.getByText( 'Searching for addresses…' ),
 			).toBeTruthy();
 		} );
 
@@ -309,7 +309,7 @@ describe( 'AddressField', () => {
 
 		await waitFor( () => {
 			expect(
-				screen.getByRole( 'option', { name: 'New York, NY' } )
+				screen.getByRole( 'option', { name: 'New York, NY' } ),
 			).toBeTruthy();
 		} );
 	} );
@@ -320,7 +320,7 @@ describe( 'AddressField', () => {
 			() =>
 				new Promise( ( resolve ) => {
 					resolveFetch = resolve;
-				} )
+				} ),
 		);
 
 		render( <ControlledAddressField { ...defaultProps } /> );
@@ -332,7 +332,7 @@ describe( 'AddressField', () => {
 
 		await waitFor( () => {
 			expect(
-				screen.getByText( 'Searching for addresses…' )
+				screen.getByText( 'Searching for addresses…' ),
 			).toBeTruthy();
 		} );
 
@@ -344,7 +344,7 @@ describe( 'AddressField', () => {
 
 		await waitFor( () => {
 			expect(
-				screen.queryByText( 'Searching for addresses…' )
+				screen.queryByText( 'Searching for addresses…' ),
 			).toBeNull();
 		} );
 	} );
@@ -384,7 +384,7 @@ describe( 'AddressField', () => {
 		} );
 
 		expect(
-			screen.queryByRole( 'option', { name: 'Stale Result' } )
+			screen.queryByRole( 'option', { name: 'Stale Result' } ),
 		).toBeNull();
 
 		await act( async () => {
@@ -399,7 +399,7 @@ describe( 'AddressField', () => {
 
 		await waitFor( () => {
 			expect(
-				screen.getByRole( 'option', { name: 'Fresh Result' } )
+				screen.getByRole( 'option', { name: 'Fresh Result' } ),
 			).toBeTruthy();
 		} );
 	} );
@@ -471,10 +471,10 @@ describe( 'AddressField', () => {
 		expect( primeGeocodeCache ).toHaveBeenCalledWith(
 			'Second Ave',
 			'3',
-			'4'
+			'4',
 		);
 		expect( defaultProps.onChange ).toHaveBeenCalledWith(
-			'Second Ave'
+			'Second Ave',
 		);
 	} );
 
@@ -539,7 +539,7 @@ describe( 'AddressField', () => {
 		expect( primeGeocodeCache ).toHaveBeenCalledWith(
 			'Click Me St',
 			'9',
-			'8'
+			'8',
 		);
 		expect( defaultProps.onChange ).toHaveBeenCalledWith( 'Click Me St' );
 	} );
@@ -595,13 +595,13 @@ describe( 'AddressField', () => {
 		fireEvent.click( screen.getByTestId( 'popover-close' ) );
 
 		expect(
-			screen.queryByRole( 'option', { name: 'Close test' } )
+			screen.queryByRole( 'option', { name: 'Close test' } ),
 		).toBeNull();
 	} );
 
 	it( 'runs ResizeObserver callback to adjust textarea height', async () => {
 		render(
-			<ControlledAddressField { ...defaultProps } initialValue="hello" />
+			<ControlledAddressField { ...defaultProps } initialValue="hello" />,
 		);
 		const field = screen.getByRole( 'combobox' );
 
@@ -637,7 +637,7 @@ describe( 'AddressField', () => {
 		fireEvent.keyDown( field, { key: 'Escape', code: 'Escape' } );
 
 		expect(
-			screen.queryByRole( 'option', { name: 'Escape City' } )
+			screen.queryByRole( 'option', { name: 'Escape City' } ),
 		).toBeNull();
 	} );
 } );
@@ -692,7 +692,7 @@ describe( 'AddressAutocompleteField (settings variant)', () => {
 		render( <ControlledSettingsAddressField { ...settingsProps } /> );
 
 		expect(
-			screen.getByRole( 'combobox', { name: /full address/i } )
+			screen.getByRole( 'combobox', { name: /full address/i } ),
 		).toBeTruthy();
 	} );
 
@@ -734,7 +734,7 @@ describe( 'AddressAutocompleteField (settings variant)', () => {
 		expect( primeGeocodeCache ).toHaveBeenCalledWith(
 			'Second Ave',
 			'3',
-			'4'
+			'4',
 		);
 		expect( settingsProps.onChange ).toHaveBeenCalledWith( 'Second Ave' );
 	} );
@@ -760,7 +760,7 @@ describe( 'AddressAutocompleteField (settings variant)', () => {
 		fireEvent.keyDown( field, { key: 'Escape', code: 'Escape' } );
 
 		expect(
-			screen.queryByRole( 'option', { name: 'Escape City' } )
+			screen.queryByRole( 'option', { name: 'Escape City' } ),
 		).toBeNull();
 	} );
 
@@ -770,7 +770,7 @@ describe( 'AddressAutocompleteField (settings variant)', () => {
 			() =>
 				new Promise( ( resolve ) => {
 					resolveFetch = resolve;
-				} )
+				} ),
 		);
 
 		render( <ControlledSettingsAddressField { ...settingsProps } /> );
@@ -782,7 +782,7 @@ describe( 'AddressAutocompleteField (settings variant)', () => {
 
 		await waitFor( () => {
 			expect(
-				screen.getByText( 'Searching for addresses…' )
+				screen.getByText( 'Searching for addresses…' ),
 			).toBeTruthy();
 		} );
 
@@ -798,7 +798,7 @@ describe( 'AddressAutocompleteField (settings variant)', () => {
 
 		await waitFor( () => {
 			expect(
-				screen.getByRole( 'option', { name: 'New York, NY' } )
+				screen.getByRole( 'option', { name: 'New York, NY' } ),
 			).toBeTruthy();
 		} );
 	} );

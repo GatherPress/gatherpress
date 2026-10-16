@@ -14,7 +14,7 @@ The “Add to Calendar” block lets attendees add events to their calendars via
 
 ## 🏆 Is there a PRO version?
 
-Nope — **GatherPress is already the PRO version**. It’s free, open-source, and community-powered. No upsells. No lock-in.
+Nope. **GatherPress is already the PRO version**. It’s free, open-source, and community-powered. No upsells. No lock-in.
 
 ## 🧩 Is GatherPress compatible with WordPress Multisite?
 
@@ -28,4 +28,4 @@ Yes. GatherPress supports both:
 All active development happens on GitHub:
 👉 [https://github.com/GatherPress/gatherpress](https://github.com/GatherPress/gatherpress)
 
-We welcome contributions of all kinds — code, feedback, testing, documentation, and ideas!
+We welcome contributions of all kinds: code, feedback, testing, documentation, and ideas!

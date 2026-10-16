@@ -29,7 +29,7 @@ export function getAddVenueCommand() {
 		/* translators: 1: parent admin menu label (Events), 2: submenu label (Add New Venue). */
 		__( '%1$s > %2$s', 'gatherpress' ),
 		__( 'Events', 'gatherpress' ),
-		__( 'Add New Venue', 'gatherpress' )
+		__( 'Add New Venue', 'gatherpress' ),
 	);
 	/* translators: %s: admin navigation target, e.g. "Events > Add New Venue". */
 	const label = sprintf( __( 'Go to: %s', 'gatherpress' ), target );

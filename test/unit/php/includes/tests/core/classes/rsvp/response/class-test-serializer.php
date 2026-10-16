@@ -16,7 +16,7 @@ use GatherPress\Core\Rsvp\Response\Provider\User;
 use GatherPress\Core\Rsvp\Response\Serializer;
 use GatherPress\Core\Rsvp\Response\State;
 use GatherPress\Core\Rsvp\Response\Status;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Settings\Roles;
 use GatherPress\Tests\Base;
 

@@ -8,7 +8,7 @@
 	"category": "gatherpress",
 	"icon": "external",
 	"example": {},
-	"description": "Enables members to easily confirm their attendance for an event.",
+	"description": "A dialog that opens over the page when one of its triggers is activated.",
 	"attributes": {
 		"zIndex": {
 			"type": "number",

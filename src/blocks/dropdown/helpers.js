@@ -29,7 +29,7 @@ export function getSelectedItemReset(
 	actAsSelect,
 	innerBlocks,
 	selectedIndex,
-	defaultLabel
+	defaultLabel,
 ) {
 	// Only relevant while the dropdown is acting as a select.
 	if ( ! actAsSelect ) {
@@ -87,6 +87,6 @@ export function useIsBlockOrDescendantSelected( clientId ) {
 
 			return selectedBlockParents.includes( clientId );
 		},
-		[ clientId ]
+		[ clientId ],
 	);
 }

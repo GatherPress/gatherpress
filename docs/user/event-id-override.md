@@ -20,7 +20,7 @@ This is found when selecting a block that supports it, clicking "Advanced" and a
 
 The Venue block accepts either an event ID or a venue ID in the override field. When given an event ID, it resolves to that event's associated venue; when given a venue ID, it uses that venue directly.
 
-In the editor, the block dims while no override is set (or the ID is invalid) and lights up to full opacity once a valid published event ID is entered — a quick visual confirmation that the override is wired up correctly.
+In the editor, the block dims while no override is set (or the ID is invalid) and lights up to full opacity once a valid published event ID is entered. A quick visual confirmation that the override is wired up correctly.
 
 ![Screenshot of the settings panel for ID Override](./user-doc-media/20260110162133.png)
 

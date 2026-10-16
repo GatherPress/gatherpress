@@ -77,7 +77,7 @@ final class Tools extends Base {
 	 * @return int The priority for displaying the tools settings page.
 	 */
 	protected function get_priority(): int {
-		return PHP_INT_MAX - 1;
+		return PHP_INT_MAX - 2;
 	}
 
 	/**

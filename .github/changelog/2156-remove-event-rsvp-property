@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Remove Event::$rsvp in favor of direct Rsvp instantiation, and gate Rsvp::is_enabled() on the gatherpress-rsvp post type support.

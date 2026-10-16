@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies
  */
-import { PanelRow, SelectControl } from '@wordpress/components';
+import { SelectControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
 
@@ -37,41 +37,39 @@ const Timezone = () => {
 	const choices = getFromConfig( 'timezoneChoices' );
 
 	return (
-		<PanelRow>
-			<SelectControl
-				__next40pxDefaultSize
-				label={ __( 'Time Zone', 'gatherpress' ) }
-				value={ maybeConvertUtcOffsetForSelect( timezone ) }
-				onChange={ ( value ) => {
-					value = maybeConvertUtcOffsetForDatabase( value );
-					setTimezone( value );
-					enableSave();
-				} }
-				__nexthasnomarginbottom
-			>
-				{ choices &&
-				'object' === typeof choices &&
-				0 < Object.keys( choices ).length ? (
-						Object.keys( choices ).map( ( group ) => {
-							return (
-								<optgroup key={ group } label={ group }>
-									{ Object.keys( choices[ group ] ).map( ( item ) => {
-										return (
-											<option key={ item } value={ item }>
-												{ choices[ group ][ item ] }
-											</option>
-										);
-									} ) }
-								</optgroup>
-							);
-						} )
-					) : (
-						<option value="">
-							{ __( 'Error, no choices available', 'gatherpress' ) }
-						</option>
-					) }
-			</SelectControl>
-		</PanelRow>
+		<SelectControl
+			__next40pxDefaultSize
+			label={ __( 'Time Zone', 'gatherpress' ) }
+			value={ maybeConvertUtcOffsetForSelect( timezone ) }
+			onChange={ ( value ) => {
+				value = maybeConvertUtcOffsetForDatabase( value );
+				setTimezone( value );
+				enableSave();
+			} }
+			__nexthasnomarginbottom
+		>
+			{ choices &&
+			'object' === typeof choices &&
+			0 < Object.keys( choices ).length ? (
+					Object.keys( choices ).map( ( group ) => {
+						return (
+							<optgroup key={ group } label={ group }>
+								{ Object.keys( choices[ group ] ).map( ( item ) => {
+									return (
+										<option key={ item } value={ item }>
+											{ choices[ group ][ item ] }
+										</option>
+									);
+								} ) }
+							</optgroup>
+						);
+					} )
+				) : (
+					<option value="">
+						{ __( 'Error, no choices available', 'gatherpress' ) }
+					</option>
+				) }
+		</SelectControl>
 	);
 };
 

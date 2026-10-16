@@ -35,7 +35,6 @@ jest.mock( '@wordpress/data', () => ( {
 /**
  * WordPress dependencies
  */
-// eslint-disable-next-line import/order
 import { useSelect } from '@wordpress/data';
 
 jest.mock( '@wordpress/compose', () => ( {
@@ -185,7 +184,7 @@ describe( 'withBlockGuard', () => {
 			mapSelect( () => ( {
 				isBlockSelected: () => isSelf,
 				hasSelectedInnerBlock: () => isInner,
-			} ) )
+			} ) ),
 		);
 	};
 
@@ -380,7 +379,7 @@ describe( 'accessibility', () => {
 			mapSelect( () => ( {
 				isBlockSelected: () => isSelf,
 				hasSelectedInnerBlock: () => isInner,
-			} ) )
+			} ) ),
 		);
 
 		return render(
@@ -388,7 +387,7 @@ describe( 'accessibility', () => {
 				name="gatherpress/add-to-calendar"
 				clientId="a11y"
 				wrapperProps={ wrapperProps }
-			/>
+			/>,
 		);
 	};
 
@@ -413,7 +412,7 @@ describe( 'accessibility', () => {
 		renderWith( {} );
 
 		expect(
-			document.querySelectorAll( '#gatherpress-block-guard-hint' )
+			document.querySelectorAll( '#gatherpress-block-guard-hint' ),
 		).toHaveLength( 1 );
 	} );
 
@@ -421,7 +420,7 @@ describe( 'accessibility', () => {
 		renderWith( {} );
 
 		expect( lastProps().wrapperProps[ 'aria-describedby' ] ).toBe(
-			'gatherpress-block-guard-hint'
+			'gatherpress-block-guard-hint',
 		);
 	} );
 
@@ -429,7 +428,7 @@ describe( 'accessibility', () => {
 		renderWith( { wrapperProps: { 'aria-describedby': 'other-id' } } );
 
 		expect( lastProps().wrapperProps[ 'aria-describedby' ] ).toBe(
-			'other-id gatherpress-block-guard-hint'
+			'other-id gatherpress-block-guard-hint',
 		);
 	} );
 
@@ -440,7 +439,6 @@ describe( 'accessibility', () => {
 	} );
 
 	it( 'announces when the block unseals', () => {
-		// eslint-disable-next-line global-require
 		const { speak } = require( '@wordpress/a11y' );
 		const { rerender } = renderWith( {} );
 		speak.mockClear();
@@ -450,24 +448,23 @@ describe( 'accessibility', () => {
 			mapSelect( () => ( {
 				isBlockSelected: () => false,
 				hasSelectedInnerBlock: () => true,
-			} ) )
+			} ) ),
 		);
 		rerender(
 			<Guarded
 				name="gatherpress/add-to-calendar"
 				clientId="a11y"
 				wrapperProps={ {} }
-			/>
+			/>,
 		);
 
 		expect( speak ).toHaveBeenCalledWith(
 			expect.stringContaining( 'unlocked' ),
-			'polite'
+			'polite',
 		);
 	} );
 
 	it( 'does not announce while the block stays sealed', () => {
-		// eslint-disable-next-line global-require
 		const { speak } = require( '@wordpress/a11y' );
 		speak.mockClear();
 
@@ -478,7 +475,6 @@ describe( 'accessibility', () => {
 } );
 
 describe( 'filter registration', () => {
-	// eslint-disable-next-line global-require
 	const hooks = require( '@wordpress/hooks' );
 
 	beforeEach( () => {
@@ -495,7 +491,7 @@ describe( 'filter registration', () => {
 		expect( hooks.addFilter ).toHaveBeenCalledWith(
 			'editor.BlockListBlock',
 			'gatherpress/with-block-guard',
-			expect.anything()
+			expect.anything(),
 		);
 	} );
 
@@ -623,7 +619,7 @@ describe( 'double-click caret forwarding', () => {
 			mapSelect( () => ( {
 				isBlockSelected: () => isSelf,
 				hasSelectedInnerBlock: () => isInner,
-			} ) )
+			} ) ),
 		);
 	};
 
@@ -742,7 +738,7 @@ describe( 'review follow-ups', () => {
 			mapSelect( () => ( {
 				isBlockSelected: () => isSelf,
 				hasSelectedInnerBlock: () => isInner,
-			} ) )
+			} ) ),
 		);
 	};
 
@@ -760,7 +756,7 @@ describe( 'review follow-ups', () => {
 				name="gatherpress/add-to-calendar"
 				clientId="space"
 				wrapperProps={ {} }
-			/>
+			/>,
 		);
 
 		act( () => {
@@ -782,7 +778,7 @@ describe( 'review follow-ups', () => {
 				name="gatherpress/add-to-calendar"
 				clientId="chain"
 				wrapperProps={ { onKeyDown } }
-			/>
+			/>,
 		);
 
 		act( () => {
@@ -816,7 +812,7 @@ describe( 'review follow-ups', () => {
 		handlers.dragend();
 
 		expect( dispatched.some( ( e ) => e instanceof FakePointerEvent ) ).toBe(
-			true
+			true,
 		);
 	} );
 } );

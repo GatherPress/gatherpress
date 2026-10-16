@@ -18,12 +18,9 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/event/class-event.php:202](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-event.php#L202)
+- [includes/core/classes/event/class-event.php:280](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-event.php#L280)
 ```php
-apply_filters(
-			'gatherpress_time_format',
-			$settings->get( 'time_format' )
-		)
+apply_filters( 'gatherpress_time_format', $settings->get( 'time_format' ) )
 ```
 
 

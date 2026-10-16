@@ -164,7 +164,7 @@ jest.mock( '@src/blocks/venue-map/helpers', () => ( {
 	RegenerateMapButton: () => null,
 	buildComboKey: jest.fn(
 		( zoom, width, height, mapType = 'roadmap' ) =>
-			`${ zoom }x${ width }x${ height }x${ mapType || 'roadmap' }`
+			`${ zoom }x${ width }x${ height }x${ mapType || 'roadmap' }`,
 	),
 	parseAspectRatio: jest.fn( () => false ),
 	pickDescriptorForCombo: jest.fn( () => undefined ),
@@ -216,7 +216,7 @@ describe( 'venue-map Edit useSelect selector stability', () => {
 				setAttributes={ jest.fn() }
 				context={ {} }
 				clientId=""
-			/>
+			/>,
 		);
 
 		expect( capturedVenueStateSelector ).not.toBeNull();
@@ -234,7 +234,7 @@ describe( 'venue-map Edit useSelect selector stability', () => {
 				setAttributes={ jest.fn() }
 				context={ {} }
 				clientId=""
-			/>
+			/>,
 		);
 
 		expect( capturedVenueStateSelector ).not.toBeNull();
@@ -252,7 +252,7 @@ describe( 'venue-map Edit useSelect selector stability', () => {
 				setAttributes={ jest.fn() }
 				context={ {} }
 				clientId=""
-			/>
+			/>,
 		);
 
 		expect( capturedVenueStateSelector ).not.toBeNull();
@@ -261,7 +261,7 @@ describe( 'venue-map Edit useSelect selector stability', () => {
 		const result2 = capturedVenueStateSelector( noVenueMockSelect );
 
 		expect( result1.staticMapDescriptors ).toBe(
-			result2.staticMapDescriptors
+			result2.staticMapDescriptors,
 		);
 	} );
 
@@ -302,7 +302,7 @@ describe( 'venue-map Edit useSelect selector stability', () => {
 				setAttributes={ jest.fn() }
 				context={ { postId: 99, postType: 'gatherpress_venue' } }
 				clientId=""
-			/>
+			/>,
 		);
 
 		expect( capturedVenueStateSelector ).not.toBeNull();
@@ -349,7 +349,7 @@ describe( 'venue-map Edit useSelect selector stability', () => {
 				setAttributes={ jest.fn() }
 				context={ { postId: 99, postType: 'gatherpress_venue' } }
 				clientId=""
-			/>
+			/>,
 		);
 
 		expect( capturedVenueStateSelector ).not.toBeNull();
@@ -358,7 +358,7 @@ describe( 'venue-map Edit useSelect selector stability', () => {
 		const result2 = capturedVenueStateSelector( noMapSelect );
 
 		expect( result1.staticMapDescriptors ).toBe(
-			result2.staticMapDescriptors
+			result2.staticMapDescriptors,
 		);
 	} );
 
@@ -398,7 +398,7 @@ describe( 'venue-map Edit useSelect selector stability', () => {
 				setAttributes={ jest.fn() }
 				context={ { postId: 42, postType: 'gatherpress_venue' } }
 				clientId=""
-			/>
+			/>,
 		);
 
 		expect( capturedVenueStateSelector ).not.toBeNull();
@@ -408,7 +408,7 @@ describe( 'venue-map Edit useSelect selector stability', () => {
 
 		expect( result1.savedVenueMeta ).toBe( result2.savedVenueMeta );
 		expect( result1.staticMapDescriptors ).toBe(
-			result2.staticMapDescriptors
+			result2.staticMapDescriptors,
 		);
 	} );
 } );
@@ -440,7 +440,7 @@ describe( 'venue-map Edit Google map type control', () => {
 	 */
 	const getMapTypeControl = () =>
 		mockSelectControlProps.find(
-			( props ) => 'Map type' === props.label
+			( props ) => 'Map type' === props.label,
 		);
 
 	/**
@@ -473,11 +473,11 @@ describe( 'venue-map Edit Google map type control', () => {
 				setAttributes={ jest.fn() }
 				context={ {} }
 				clientId=""
-			/>
+			/>,
 		);
 
 		expect(
-			getMapTypeControl().options.map( ( opt ) => opt.value )
+			getMapTypeControl().options.map( ( opt ) => opt.value ),
 		).toEqual( [ 'roadmap', 'satellite' ] );
 	} );
 
@@ -493,11 +493,11 @@ describe( 'venue-map Edit Google map type control', () => {
 				setAttributes={ jest.fn() }
 				context={ {} }
 				clientId=""
-			/>
+			/>,
 		);
 
 		expect(
-			getMapTypeControl().options.map( ( opt ) => opt.value )
+			getMapTypeControl().options.map( ( opt ) => opt.value ),
 		).toEqual( [ 'roadmap', 'satellite', 'hybrid', 'terrain' ] );
 	} );
 
@@ -510,11 +510,11 @@ describe( 'venue-map Edit Google map type control', () => {
 				setAttributes={ jest.fn() }
 				context={ {} }
 				clientId=""
-			/>
+			/>,
 		);
 
 		expect(
-			getMapTypeControl().options.map( ( opt ) => opt.value )
+			getMapTypeControl().options.map( ( opt ) => opt.value ),
 		).toEqual( [ 'roadmap', 'satellite', 'hybrid', 'terrain' ] );
 	} );
 
@@ -532,7 +532,7 @@ describe( 'venue-map Edit Google map type control', () => {
 				setAttributes={ setAttributes }
 				context={ {} }
 				clientId=""
-			/>
+			/>,
 		);
 
 		runEffects();
@@ -556,7 +556,7 @@ describe( 'venue-map Edit Google map type control', () => {
 				setAttributes={ setAttributes }
 				context={ {} }
 				clientId=""
-			/>
+			/>,
 		);
 
 		runEffects();
@@ -580,7 +580,7 @@ describe( 'venue-map Edit Google map type control', () => {
 				setAttributes={ setAttributes }
 				context={ {} }
 				clientId=""
-			/>
+			/>,
 		);
 
 		runEffects();
@@ -592,7 +592,7 @@ describe( 'venue-map Edit Google map type control', () => {
 
 	it( 'never coerces when the map type control is hidden (OSM platform)', () => {
 		getFromSettings.mockImplementation( ( key ) =>
-			'mapPlatform' === key ? 'osm' : null
+			'mapPlatform' === key ? 'osm' : null,
 		);
 		const setAttributes = jest.fn();
 
@@ -606,7 +606,7 @@ describe( 'venue-map Edit Google map type control', () => {
 				setAttributes={ setAttributes }
 				context={ {} }
 				clientId=""
-			/>
+			/>,
 		);
 
 		expect( getMapTypeControl() ).toBeUndefined();
@@ -637,7 +637,7 @@ describe( 'venue-map Edit sizing', () => {
 				setAttributes={ jest.fn() }
 				context={ {} }
 				clientId=""
-			/>
+			/>,
 		);
 
 		expect( capturedResizableProps.enable ).toEqual( {
@@ -663,7 +663,7 @@ describe( 'venue-map Edit sizing', () => {
 				setAttributes={ jest.fn() }
 				context={ {} }
 				clientId=""
-			/>
+			/>,
 		);
 
 		expect( capturedResizableProps.size ).toEqual( {
@@ -684,7 +684,7 @@ describe( 'venue-map Edit sizing', () => {
 				setAttributes={ setAttributes }
 				context={ {} }
 				clientId=""
-			/>
+			/>,
 		);
 
 		// resolveDimensions is mocked to an effective height of 400; a
@@ -693,7 +693,7 @@ describe( 'venue-map Edit sizing', () => {
 			capturedResizableProps.onResizeStop( null, 'bottom', null, {
 				width: 0,
 				height: 50,
-			} )
+			} ),
 		);
 
 		expect( setAttributes ).toHaveBeenCalledWith( {
@@ -703,7 +703,7 @@ describe( 'venue-map Edit sizing', () => {
 
 	it( 'passes the block wrapper through without custom styling', () => {
 		const { useBlockProps } = jest.requireMock(
-			'@wordpress/block-editor'
+			'@wordpress/block-editor',
 		);
 
 		render(
@@ -715,7 +715,7 @@ describe( 'venue-map Edit sizing', () => {
 				setAttributes={ jest.fn() }
 				context={ {} }
 				clientId=""
-			/>
+			/>,
 		);
 
 		expect( useBlockProps ).toHaveBeenCalledWith();

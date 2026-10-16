@@ -11,7 +11,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Utility;
 
-if ( ! isset( $rsvp_table, $search_term, $status, $event ) ) {
+if ( ! isset( $rsvp_table, $search_term, $status, $post_id, $responses ) ) {
 	return;
 }
 
@@ -41,10 +41,13 @@ $rsvp_table->prepare_items();
 	</h1>
 
 	<?php
-	if ( $gatherpress_post_id ) {
+	// A request can name a post that no longer exists, in which case there is no link to render.
+	$gatherpress_event_link = $gatherpress_post_id ? get_permalink( $gatherpress_post_id ) : false;
+
+	if ( $gatherpress_event_link ) {
 		printf(
 			'<a href="%1$s" class="comments-view-item-link">%2$s</a>',
-			esc_url( get_permalink( $gatherpress_post_id ) ),
+			esc_url( $gatherpress_event_link ),
 			esc_html(
 				sprintf(
 					/* translators: %s: Singular post type label, e.g. "Event". */
@@ -75,8 +78,13 @@ $rsvp_table->prepare_items();
 			<input type="hidden" name="status" value="<?php echo esc_attr( $status ); ?>" />
 		<?php endif; ?>
 
-		<?php if ( ! empty( $event ) ) : ?>
-			<input type="hidden" name="event" value="<?php echo esc_attr( $event ); ?>" />
+		<?php /* Searching from a filtered screen keeps the filter, rather than widening the list. */ ?>
+		<?php if ( ! empty( $post_id ) ) : ?>
+			<input type="hidden" name="post_id" value="<?php echo absint( $post_id ); ?>" />
+		<?php endif; ?>
+
+		<?php if ( ! empty( $responses ) ) : ?>
+			<input type="hidden" name="response" value="<?php echo esc_attr( implode( ',', $responses ) ); ?>" />
 		<?php endif; ?>
 	</form>
 

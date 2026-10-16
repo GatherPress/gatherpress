@@ -34,9 +34,6 @@ const STANDARD_RSVP_FORM_TEMPLATE = [
 						typography: {
 							fontWeight: '600',
 						},
-						color: {
-							text: '#16a085',
-						},
 					},
 				},
 			],

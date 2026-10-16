@@ -23,6 +23,8 @@ use WP_HTML_Tag_Processor;
  * Essential utility functions for the GatherPress plugin.
  *
  * @since 0.27.0
+ *
+ * @phpstan-type FormatToken array{type: 'literal'|'char', value: string}
  */
 final class Utility {
 
@@ -33,9 +35,9 @@ final class Utility {
 	 *
 	 * @since 0.27.0
 	 *
-	 * @param string $path      The path to the template file.
-	 * @param array  $variables An array of variables to pass to the template.
-	 * @param bool   $output    Whether to echo the template (true) or return it (false).
+	 * @param string               $path      The path to the template file.
+	 * @param array<string, mixed> $variables An array of variables to pass to the template.
+	 * @param bool                 $output    Whether to echo the template (true) or return it (false).
 	 *
 	 * @return string The rendered template as a string.
 	 */
@@ -57,7 +59,9 @@ final class Utility {
 		ob_start();
 		// Loading PHP template file, not importing a class.
 		require $path; // NOSONAR.
-		return ob_get_clean();
+
+		// The buffer was opened directly above, so ob_get_clean() always returns its contents.
+		return (string) ob_get_clean();
 	}
 
 	/**
@@ -189,7 +193,8 @@ final class Utility {
 	 * @return string The key with the 'gatherpress_' prefix removed.
 	 */
 	public static function unprefix_key( string $key ): string {
-		return preg_replace( '/^gatherpress_/', '', $key );
+		// A literal pattern cannot fail to compile, so preg_replace() never returns null here.
+		return (string) preg_replace( '/^gatherpress_/', '', $key );
 	}
 
 	/**
@@ -301,6 +306,361 @@ final class Utility {
 	}
 
 	/**
+	 * The PHP DateTime formatting characters that denote a time.
+	 *
+	 * The complement of `non_time_format_chars()`, less the separators. The
+	 * timezone characters are here too: a floating date has no zone to
+	 * name, so the zone goes with the time.
+	 *
+	 * Shared with the editor through `Settings::add_editor_settings()`, so
+	 * the block preview strips a format the same way the rendered event
+	 * does.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string[] The formatting characters.
+	 */
+	public static function time_format_chars(): array {
+		return array(
+			'a',
+			'A',
+			'B',
+			'g',
+			'G',
+			'h',
+			'H',
+			'i',
+			's',
+			'u',
+			'v',
+			'e',
+			'I',
+			'O',
+			'P',
+			'p',
+			'T',
+			'Z',
+			'c',
+			'r',
+			'U',
+		);
+	}
+
+	/**
+	 * The PHP DateTime formatting characters that do not denote a time.
+	 *
+	 * The date, the timezone and the separating comma, so that stripping
+	 * them from a format leaves the time alone.
+	 *
+	 * Shared with the editor through `Settings::add_editor_settings()`, so
+	 * the block preview strips a format the same way the rendered event
+	 * does.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string[] The formatting characters.
+	 */
+	public static function non_time_format_chars(): array {
+		return array(
+			'd',
+			'D',
+			'j',
+			'l',
+			'N',
+			'S',
+			'w',
+			'z',
+			'W',
+			'F',
+			'm',
+			'M',
+			'n',
+			't',
+			'L',
+			'o',
+			'X',
+			'x',
+			'Y',
+			'y',
+			'e',
+			'I',
+			'O',
+			'P',
+			'p',
+			'T',
+			'Z',
+			'c',
+			'r',
+			'U',
+			',',
+		);
+	}
+
+	/**
+	 * Tokenize a PHP date format into escaped text and format characters.
+	 *
+	 * A backslash escapes the character after it, so a run of escaped
+	 * characters, such as German '\U\h\r', is one literal token. Every other
+	 * character is a token of its own.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $format The PHP date format to tokenize.
+	 *
+	 * @return array<int, FormatToken> The tokens, in order.
+	 */
+	public static function tokenize_date_format( string $format ): array {
+		preg_match_all( '/(?:\\\\.?)+|./s', $format, $matches );
+
+		return array_map(
+			static fn ( string $value ): array => array(
+				'type'  => str_starts_with( $value, '\\' ) ? 'literal' : 'char',
+				'value' => $value,
+			),
+			$matches[0]
+		);
+	}
+
+	/**
+	 * Strip everything but the time out of a display format.
+	 *
+	 * Leaves the time behind: 'F j, Y g:i a' keeps 'g:i a', and German
+	 * 'j. F Y, H:i \U\h\r' keeps 'H:i \U\h\r'. A format with no time keeps
+	 * nothing.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $format A PHP date format.
+	 *
+	 * @return string The time-only format.
+	 */
+	public static function remove_non_time_format_chars( string $format ): string {
+		return self::split_date_time_format( $format )['time'];
+	}
+
+	/**
+	 * Strip the time out of a display format.
+	 *
+	 * Leaves the date behind, along with whatever separated it from the
+	 * time: 'F j, Y g:i a' keeps 'F j, Y', and Spanish 'j \d\e F \d\e Y, H:i'
+	 * keeps 'j \d\e F \d\e Y'. A format that was only ever a time has nothing
+	 * left to render, so it reports none rather than the punctuation between
+	 * the parts it lost.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $format A PHP date format.
+	 *
+	 * @return string The format without its time, or an empty string when
+	 *                no date survives it.
+	 */
+	public static function remove_time_format_chars( string $format ): string {
+		return self::split_date_time_format( $format )['date'];
+	}
+
+	/**
+	 * Split a display format into its date part and its time part.
+	 *
+	 * The part that comes first ends where the other begins, so escaped text
+	 * stays with the part it sits in: German '\U\h\r' in 'j. F Y, H:i \U\h\r'
+	 * belongs to the time. Escaped words and spaces that lead from the date
+	 * into the time, such as German '\u\m' in 'j. F Y \u\m H:i', belong to
+	 * neither part. Timezone characters are left out of both.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $format A PHP date format.
+	 *
+	 * @return array{date: string, time: string} The date part and the time part.
+	 */
+	private static function split_date_time_format( string $format ): array {
+		$timezone_chars = array_intersect( self::time_format_chars(), self::non_time_format_chars() );
+		$date_chars     = array_diff( self::non_time_format_chars(), $timezone_chars, array( ',' ) );
+		$time_chars     = array_diff( self::time_format_chars(), $timezone_chars );
+		$tokens         = self::tokenize_date_format( $format );
+		$date_at        = self::find_format_char( $tokens, $date_chars );
+		$time_at        = self::find_format_char( $tokens, $time_chars );
+		$date           = null === $date_at ? array() : $tokens;
+		$time           = null === $time_at ? array() : $tokens;
+
+		// With both parts present, the one that comes first ends where the
+		// other one starts.
+		if ( null !== $date_at && null !== $time_at ) {
+			$boundary = max( $date_at, $time_at );
+			$first    = array_slice( $tokens, 0, $boundary );
+			$last     = array_slice( $tokens, $boundary );
+
+			list( $date, $time ) = $date_at < $time_at
+				? array( self::drop_lead_in( $first ), $last )
+				: array( $last, $first );
+		}
+
+		return array(
+			'date' => self::join_format_tokens( $date, $timezone_chars ),
+			'time' => self::join_format_tokens( $time, $timezone_chars ),
+		);
+	}
+
+	/**
+	 * Find the first token that is one of the given format characters.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<int, FormatToken> $tokens The format tokens.
+	 * @param string[]                $chars  The format characters to look for.
+	 *
+	 * @return int|null The token's index, or null when none of them is used.
+	 */
+	private static function find_format_char( array $tokens, array $chars ): ?int {
+		foreach ( $tokens as $index => $token ) {
+			if ( 'char' === $token['type'] && in_array( $token['value'], $chars, true ) ) {
+				return $index;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Drop the escaped words and spaces that end a date and lead into the time.
+	 *
+	 * Unescaped text stays, so the Japanese day suffix '日' in 'Y年n月j日 H:i'
+	 * is still part of the date.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<int, FormatToken> $tokens The date's tokens.
+	 *
+	 * @return array<int, FormatToken> The tokens without the lead-in.
+	 */
+	private static function drop_lead_in( array $tokens ): array {
+		$last = end( $tokens );
+
+		while ( $last && ( 'literal' === $last['type'] || '' === trim( $last['value'] ) ) ) {
+			array_pop( $tokens );
+			$last = end( $tokens );
+		}
+
+		return $tokens;
+	}
+
+	/**
+	 * Join format tokens back into a format, trimming the separators at its ends.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<int, FormatToken> $tokens     The format tokens.
+	 * @param string[]                $skip_chars Format characters to leave out.
+	 *
+	 * @return string The joined format.
+	 */
+	private static function join_format_tokens( array $tokens, array $skip_chars ): string {
+		$kept = array_filter(
+			$tokens,
+			static fn ( array $token ): bool => 'literal' === $token['type']
+				|| ! in_array( $token['value'], $skip_chars, true )
+		);
+
+		return trim( implode( '', array_column( $kept, 'value' ) ), " \t\n\r\0\x0B:,-/." );
+	}
+
+	/**
+	 * The date formats an organizer picks from, as examples.
+	 *
+	 * The same idea as the radio list on Settings > General: a format is
+	 * chosen by recognizing the date it produces, not by reading its PHP
+	 * format codes. The first entry leads with the weekday because an event
+	 * is a thing that happens on a day of the week, which is also why
+	 * GatherPress defaults to it while WordPress does not.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return array<int, array{format: string, example: string}> The choices.
+	 */
+	public static function date_format_choices(): array {
+		$formats = array(
+			/* translators: PHP date format for a date led by its weekday. Translate to the order your locale writes. */
+			__( 'l, F j, Y', 'gatherpress' ),
+			/* translators: PHP date format for a plain long date. Translate to the order your locale writes. */
+			__( 'F j, Y', 'gatherpress' ),
+			'Y-m-d',
+			'm/d/Y',
+			'd/m/Y',
+			'd.m.Y',
+		);
+
+		/**
+		 * Filters the date formats offered as examples in GatherPress.
+		 *
+		 * A format that is not on this list still saves and still renders;
+		 * it simply arrives through the Custom field rather than the list.
+		 *
+		 * @since 0.36.0
+		 *
+		 * @param string[] $formats PHP date formats.
+		 */
+		$formats = (array) apply_filters( 'gatherpress_date_formats', $formats );
+
+		return self::build_format_choices( $formats );
+	}
+
+	/**
+	 * The time formats an organizer picks from, as examples.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return array<int, array{format: string, example: string}> The choices.
+	 */
+	public static function time_format_choices(): array {
+		$formats = array(
+			/* translators: PHP time format for a 12-hour clock. Translate to the clock your locale reads. */
+			__( 'g:i a', 'gatherpress' ),
+			'g:i A',
+			'H:i',
+		);
+
+		/**
+		 * Filters the time formats offered as examples in GatherPress.
+		 *
+		 * @since 0.36.0
+		 *
+		 * @param string[] $formats PHP time formats.
+		 */
+		$formats = (array) apply_filters( 'gatherpress_time_formats', $formats );
+
+		return self::build_format_choices( $formats );
+	}
+
+	/**
+	 * Pair each format with the date it renders right now.
+	 *
+	 * Rendered through `wp_date()` so the example arrives in the site's
+	 * locale and zone, which is the whole point: the viewer recognizes
+	 * the result instead of decoding the format.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string[] $formats PHP date formats.
+	 *
+	 * @return array<int, array{format: string, example: string}> The choices.
+	 */
+	private static function build_format_choices( array $formats ): array {
+		$choices = array();
+
+		foreach ( array_unique( array_filter( array_map( 'strval', $formats ) ) ) as $format ) {
+			$choices[] = array(
+				'format'  => $format,
+				// `wp_date()` is typed as string|false, but only reports false
+				// for a timestamp it cannot read, and the one it defaults to is
+				// always readable. Cast rather than branch on what cannot happen.
+				'example' => (string) wp_date( $format ),
+			);
+		}
+
+		return $choices;
+	}
+
+	/**
 	 * Retrieve an array of time zone choices.
 	 *
 	 * This method converts the Time Zone markup returned by WordPress into an associative array
@@ -308,7 +668,8 @@ final class Utility {
 	 *
 	 * @since 0.27.0
 	 *
-	 * @return array An array of time zones with labels as keys and time zone choices as values.
+	 * @return array<string, array<string, string>> An array of time zones with labels as keys and time zone choices
+	 *                                             as values.
 	 */
 	public static function timezone_choices(): array {
 		// Parse `wp_timezone_choice()` output through WordPress's HTML tag
@@ -382,7 +743,7 @@ final class Utility {
 	 *
 	 * @since 0.29.0
 	 *
-	 * @return array An array of timezone identifiers and UTC offsets.
+	 * @return string[] An array of timezone identifiers and UTC offsets.
 	 */
 	public static function list_timezone_and_utc_offsets(): array {
 		// Get a list of all available timezone identifiers.
@@ -465,9 +826,7 @@ final class Utility {
 	 */
 	public static function maybe_convert_utc_offset( string $timezone ): string {
 		// Regex: https://regex101.com/r/wxhjIu/1.
-		preg_match( '/^UTC([+-])(\d+)(.\d+)?$/', $timezone, $matches );
-
-		if ( ! count( $matches ) ) {
+		if ( ! preg_match( '/^UTC([+-])(\d+)(.\d+)?$/', $timezone, $matches ) ) {
 			return $timezone;
 		}
 
@@ -601,7 +960,8 @@ final class Utility {
 	 * @return string The login URL for the event.
 	 */
 	public static function get_login_url( int $post_id = 0 ): string {
-		$permalink = get_the_permalink( $post_id );
+		// A post ID with no permalink (no such post, or no post in context) logs in without a redirect.
+		$permalink = (string) get_the_permalink( $post_id );
 
 		return wp_login_url( $permalink );
 	}
@@ -731,16 +1091,23 @@ final class Utility {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string|null $class_string The CSS class string to search in.
-	 * @param string      $target_class The specific class to search for.
+	 * @param string|bool|null $class_string The CSS class string to search in. `WP_HTML_Tag_Processor`
+	 *                                       hands back `true` for a valueless `class` attribute, which
+	 *                                       carries no classes.
+	 * @param string           $target_class The specific class to search for.
 	 *
 	 * @return bool True if the target class is found, false otherwise.
 	 */
-	public static function has_css_class( ?string $class_string, string $target_class ): bool {
-		if ( empty( $class_string ) || empty( $target_class ) ) {
+	public static function has_css_class( string|bool|null $class_string, string $target_class ): bool {
+		if ( ! is_string( $class_string ) || empty( $class_string ) || empty( $target_class ) ) {
 			return false;
 		}
 
+		/**
+		 * Class names split on whitespace.
+		 *
+		 * @var list<string> $classes A literal pattern cannot fail, so preg_split() never returns false.
+		 */
 		$classes = preg_split( '/\s+/', trim( $class_string ) );
 
 		return in_array( $target_class, $classes, true );
@@ -872,9 +1239,9 @@ final class Utility {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $blocks A parsed block, typically including `blockName` and `innerBlocks`.
+	 * @param array<string, mixed> $blocks A parsed block, typically including `blockName` and `innerBlocks`.
 	 *
-	 * @return array An array of block names found within the provided block structure.
+	 * @return string[] An array of block names found within the provided block structure.
 	 */
 	public static function get_block_names( array $blocks ): array {
 		$block_names = array();

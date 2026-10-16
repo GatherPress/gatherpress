@@ -63,6 +63,15 @@ class Test_Rsvp extends Base {
 	}
 
 	/**
+	 * Asserts that the class constants are correctly defined.
+	 *
+	 * @return void
+	 */
+	public function test_constants(): void {
+		$this->assertSame( 'gatherpress-rsvp', Rsvp::SUPPORT );
+	}
+
+	/**
 	 * Coverage for get method.
 	 *
 	 * @covers ::get
@@ -131,7 +140,7 @@ class Test_Rsvp extends Base {
 
 		$rsvp = new Rsvp( $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) ) );
 
-		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 1 );
+		Utility::set_and_get_hidden_property( $rsvp, 'capacity', 1 );
 
 		$user_1_id = $this->factory->user->create();
 		$user_2_id = $this->factory->user->create();
@@ -174,7 +183,7 @@ class Test_Rsvp extends Base {
 		);
 
 		$limit_post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
-		update_post_meta( $limit_post_id, 'gatherpress_max_guest_limit', 2 );
+		update_post_meta( $limit_post_id, 'gatherpress_guest_limit', 2 );
 
 		$rsvp      = new Rsvp( $limit_post_id );
 		$user_1_id = $this->factory->user->create();
@@ -243,7 +252,7 @@ class Test_Rsvp extends Base {
 		$user_2_id = $this->factory->user->create();
 		$user_3_id = $this->factory->user->create();
 
-		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 1 );
+		Utility::set_and_get_hidden_property( $rsvp, 'capacity', 1 );
 
 		// Fill the one spot.
 		$rsvp->save( $user_1_id, 'attending' );
@@ -253,12 +262,96 @@ class Test_Rsvp extends Base {
 		$rsvp->save( $user_3_id, 'attending' );
 
 		// Now remove the limit.
-		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 0 );
+		Utility::set_and_get_hidden_property( $rsvp, 'capacity', 0 );
 
 		$this->assertEquals(
 			2,
 			$rsvp->check_waiting_list(),
 			'Should move all waiting list members to attending when no limit'
+		);
+	}
+
+	/**
+	 * Test check waiting list when the free spots outnumber the waiting list.
+	 *
+	 * The promotion loop walked one index per free spot, so a waiting list
+	 * shorter than the number of open spots ran off the end of the array.
+	 *
+	 * @since  0.36.0
+	 * @covers ::check_waiting_list
+	 *
+	 * @return void
+	 */
+	public function test_check_waiting_list_with_more_spots_than_waiting(): void {
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$rsvp     = new Rsvp( $event_id );
+		$user_id  = $this->factory->user->create();
+
+		Utility::set_and_get_hidden_property( $rsvp, 'capacity', 10 );
+
+		// Saving runs the promotion sweep itself, which is where the overrun
+		// used to raise a TypeError rather than returning.
+		$rsvp->save( $user_id, 'waiting_list' );
+
+		$this->assertSame(
+			'attending',
+			$rsvp->get( $user_id )['status'],
+			'The waiting member should have moved to attending'
+		);
+
+		$this->assertEquals(
+			0,
+			$rsvp->check_waiting_list(),
+			'Should report nothing left to promote once the queue is empty'
+		);
+	}
+
+	/**
+	 * Test check waiting list fills every free spot.
+	 *
+	 * The loop compared its index against the shrinking spot count, so it
+	 * stopped early and left seats empty with people still waiting.
+	 *
+	 * @since  0.36.0
+	 * @covers ::check_waiting_list
+	 *
+	 * @return void
+	 */
+	public function test_check_waiting_list_fills_every_free_spot(): void {
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$rsvp     = new Rsvp( $event_id );
+		$user_ids = array();
+
+		Utility::set_and_get_hidden_property( $rsvp, 'capacity', 1 );
+
+		// Five people queue up behind a single seat.
+		for ( $i = 0; $i < 5; $i++ ) {
+			$user_ids[] = $this->factory->user->create();
+		}
+
+		foreach ( $user_ids as $user_id ) {
+			$rsvp->save( $user_id, 'waiting_list' );
+		}
+
+		// Widen the event to three seats, one of which the first promotion took.
+		Utility::set_and_get_hidden_property( $rsvp, 'capacity', 3 );
+
+		$this->assertEquals(
+			2,
+			$rsvp->check_waiting_list(),
+			'Should fill both remaining spots rather than stopping early'
+		);
+
+		$this->assertSame(
+			'attending',
+			$rsvp->get( $user_ids[2] )['status'],
+			'The third in line should have taken the last free spot'
+		);
+
+		$this->assertSame(
+			'waiting_list',
+			$rsvp->get( $user_ids[3] )['status'],
+			'The fourth in line should still be waiting'
 		);
 	}
 
@@ -276,7 +369,7 @@ class Test_Rsvp extends Base {
 		$user_1_id = $this->factory->user->create();
 		$user_2_id = $this->factory->user->create();
 
-		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 1 );
+		Utility::set_and_get_hidden_property( $rsvp, 'capacity', 1 );
 
 		$rsvp->save( $user_1_id, 'waiting_list' );
 		$rsvp->save( $user_2_id, 'waiting_list' );
@@ -318,7 +411,7 @@ class Test_Rsvp extends Base {
 		$rsvp     = new Rsvp( $event_id );
 		$email    = 'open-rsvp-attendee@example.com';
 
-		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 1 );
+		Utility::set_and_get_hidden_property( $rsvp, 'capacity', 1 );
 
 		// Fill the single spot with a logged-in user, then add an email-keyed
 		// Open RSVP attendee who lands on the waiting list.
@@ -332,7 +425,7 @@ class Test_Rsvp extends Base {
 		);
 
 		// Open the event up and run the promotion sweep.
-		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 0 );
+		Utility::set_and_get_hidden_property( $rsvp, 'capacity', 0 );
 
 		$this->assertSame(
 			1,
@@ -357,7 +450,7 @@ class Test_Rsvp extends Base {
 	public function test_attending_limit_reached(): void {
 		$rsvp = new Rsvp( $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) ) );
 
-		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 1 );
+		Utility::set_and_get_hidden_property( $rsvp, 'capacity', 1 );
 
 		$user_id = $this->factory->user->create();
 
@@ -385,14 +478,14 @@ class Test_Rsvp extends Base {
 			'Failed to assert that limit has been reached.'
 		);
 
-		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 0 );
+		Utility::set_and_get_hidden_property( $rsvp, 'capacity', 0 );
 
 		$this->assertFalse(
 			$rsvp->attending_limit_reached( $current_response, 1 ),
 			'Failed to assert that limit has not been reached.'
 		);
 
-		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 1 );
+		Utility::set_and_get_hidden_property( $rsvp, 'capacity', 1 );
 
 		$this->assertFalse(
 			$rsvp->attending_limit_reached( $current_response ),
@@ -670,6 +763,26 @@ class Test_Rsvp extends Base {
 	}
 
 	/**
+	 * Coverage for is_enabled method on a post type without RSVP support.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::is_enabled
+	 *
+	 * @return void
+	 */
+	public function test_is_enabled_without_rsvp_support(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => 'post' ) );
+
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
+
+		$this->assertFalse(
+			( new Rsvp( $post_id ) )->is_enabled(),
+			'Should return false for a post type that does not support gatherpress-rsvp.'
+		);
+	}
+
+	/**
 	 * Test save method with email identifier.
 	 *
 	 * @covers ::save
@@ -799,7 +912,7 @@ class Test_Rsvp extends Base {
 
 		// Set attendance limit.
 		update_post_meta( $post->ID, 'gatherpress_enable_attendance_limit', 1 );
-		update_post_meta( $post->ID, 'gatherpress_max_attendance_limit', 3 );
+		update_post_meta( $post->ID, 'gatherpress_capacity', 3 );
 
 		$rsvp = new Rsvp( $post->ID );
 
@@ -1079,7 +1192,7 @@ class Test_Rsvp extends Base {
 	 */
 	public function test_save_constrains_guests_and_anonymity(): void {
 		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
-		update_post_meta( $event_id, 'gatherpress_max_guest_limit', 3 );
+		update_post_meta( $event_id, 'gatherpress_guest_limit', 3 );
 
 		$rsvp = new Rsvp( $event_id );
 
@@ -1108,8 +1221,8 @@ class Test_Rsvp extends Base {
 	 */
 	public function test_save_routes_to_waiting_list_when_limit_reached(): void {
 		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
-		update_post_meta( $event_id, 'gatherpress_max_attendance_limit', 1 );
-		update_post_meta( $event_id, 'gatherpress_max_guest_limit', 5 );
+		update_post_meta( $event_id, 'gatherpress_capacity', 1 );
+		update_post_meta( $event_id, 'gatherpress_guest_limit', 5 );
 
 		$first  = ( new Rsvp( $event_id ) )->save( $this->factory->user->create(), 'attending' );
 		$second = ( new Rsvp( $event_id ) )->save( $this->factory->user->create(), 'attending', 0, 2 );
@@ -1138,8 +1251,8 @@ class Test_Rsvp extends Base {
 		// The limit counts the whole party: responder plus guests. A
 		// limit of 4 admits one responder with two guests, and is then
 		// exceeded the moment they ask to grow the party.
-		update_post_meta( $event_id, 'gatherpress_max_attendance_limit', 4 );
-		update_post_meta( $event_id, 'gatherpress_max_guest_limit', 5 );
+		update_post_meta( $event_id, 'gatherpress_capacity', 4 );
+		update_post_meta( $event_id, 'gatherpress_guest_limit', 5 );
 
 		$user_id = $this->factory->user->create();
 
@@ -1162,7 +1275,7 @@ class Test_Rsvp extends Base {
 	 */
 	public function test_check_waiting_list_promotes_on_freed_spot(): void {
 		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
-		update_post_meta( $event_id, 'gatherpress_max_attendance_limit', 1 );
+		update_post_meta( $event_id, 'gatherpress_capacity', 1 );
 
 		$attendee_id = $this->factory->user->create();
 		$waiter_id   = $this->factory->user->create();
@@ -1310,5 +1423,89 @@ class Test_Rsvp extends Base {
 			Utility::invoke_hidden_method( $rsvp, 'resolve_provider', array( $url_identity ) ),
 			'Only user and email identities resolve to core providers.'
 		);
+	}
+
+	/**
+	 * An identity that no registered provider handles records nothing and hands
+	 * back the default save response.
+	 *
+	 * @since 0.36.0
+	 * @covers ::save
+	 *
+	 * @return void
+	 */
+	public function test_save_returns_default_when_no_provider_handles_identity(): void {
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$user_id  = $this->factory->user->create();
+		$registry = Provider_Registry::get_instance();
+		$restore  = Utility::get_hidden_property( $registry, 'providers' );
+
+		// Rsvp snapshots the registry when it is constructed, so blanking the
+		// user provider first leaves an identity that resolves to no provider.
+		Utility::set_and_get_hidden_property(
+			$registry,
+			'providers',
+			array_merge( $restore, array( 'user' => null ) )
+		);
+
+		$rsvp = new Rsvp( $event_id );
+
+		Utility::set_and_get_hidden_property( $registry, 'providers', $restore );
+
+		$response = $rsvp->save( $user_id, 'attending' );
+
+		$this->assertSame(
+			'no_status',
+			$response['status'],
+			'An identity without a provider returns the default save response.'
+		);
+		$this->assertSame(
+			0,
+			$response['comment_id'],
+			'No response is recorded for an identity without a provider.'
+		);
+		$this->assertNull(
+			$rsvp->get( $user_id ),
+			'Nothing is stored for an identity without a provider.'
+		);
+	}
+
+	/**
+	 * Tests Rsvp::is_comment_type with different comment types, nonexistent IDs, and comment objects.
+	 *
+	 * @covers ::is_comment_type
+	 *
+	 * @return void
+	 */
+	public function test_is_comment_type(): void {
+		$post_id = $this->factory->post->create();
+
+		$rsvp_comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		$regular_comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => 'comment',
+			)
+		);
+
+		$rsvp_comment = get_comment( $rsvp_comment_id );
+
+		$this->assertTrue( Rsvp::is_comment_type( $rsvp_comment_id ) );
+		$this->assertTrue( Rsvp::is_comment_type( $rsvp_comment ) );
+		$this->assertFalse( Rsvp::is_comment_type( $regular_comment_id ) );
+		$this->assertFalse( Rsvp::is_comment_type( 0 ) );
+		$this->assertFalse( Rsvp::is_comment_type( 999999 ) );
+		$this->assertFalse( Rsvp::is_comment_type( -1 ) );
+
+		// 0 must not resolve to the global comment even if one is set.
+		$GLOBALS['comment'] = $rsvp_comment; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$this->assertFalse( Rsvp::is_comment_type( 0 ) );
+		unset( $GLOBALS['comment'] );
 	}
 }

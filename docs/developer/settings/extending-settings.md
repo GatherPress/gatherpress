@@ -81,7 +81,7 @@ Your tab will appear in the GatherPress settings page, and your options are auto
 
 - Stored in the shared `gatherpress_settings` option
 - Sanitized based on field type
-- Included in import/export
+- Included in import/export, unless the option opts out (see [exportable and importable](#exportable-and-importable))
 - Stripped when matching their defaults
 
 ## Reading and Writing Your Custom Settings
@@ -223,7 +223,7 @@ Flag fields that affect permalink structure. When these change, rewrite rules ar
 
 ### show_if (conditional visibility)
 
-Show a field only when one or more controlling fields hold a specific value. Useful for "this setting only matters when that other setting is on" relationships — for example, hiding the Google Maps API Key field unless Google is the selected map provider.
+Show a field only when one or more controlling fields hold a specific value, which is useful for "this setting only matters when that other setting is on" relationships. For example, hiding the Google Maps API Key field unless Google is the selected map provider.
 
 `show_if` is a sibling of `field`, not nested inside it. It maps controlling field keys to expected values:
 
@@ -244,19 +244,19 @@ Show a field only when one or more controlling fields hold a specific value. Use
 
 #### Match semantics
 
-- **Scalar value** — string equality after casting. `'map_platform' => 'google'` matches when the controlling field's current value (coerced to string) equals `'google'`.
-- **Array of values** — OR within one key. `'map_platform' => array( 'google', 'mapbox' )` matches when the current value is either.
-- **Negation** — `array( 'not' => value )` or `array( 'not' => array( … ) )` — the inverse: show when the current value is **not** (one of) the given value(s). Useful for "show unless disabled" without enumerating every enabled variant.
-- **Multiple keys** — AND across keys. Every entry in the `show_if` array must be satisfied for the field to be visible.
+- **Scalar value**: string equality after casting. `'map_platform' => 'google'` matches when the controlling field's current value (coerced to string) equals `'google'`.
+- **Array of values**: OR within one key. `'map_platform' => array( 'google', 'mapbox' )` matches when the current value is either.
+- **Negation**: `array( 'not' => value )` or `array( 'not' => array( … ) )`. The inverse: show when the current value is **not** (one of) the given value(s). Useful for "show unless disabled" without enumerating every enabled variant.
+- **Multiple keys**: AND across keys. Every entry in the `show_if` array must be satisfied for the field to be visible.
 
 ```php
 'show_if' => array(
     'map_platform'                  => array( 'google', 'mapbox' ),
-    'venue_map_default_render_mode' => 'interactive',
+    'venue_map_render_mode' => 'interactive',
 ),
 ```
 
-The negation form is what the RSVP settings page uses to hide the mode-dependent fields whenever RSVP Mode is `disabled` — rather than listing `all_on`, `per_event_on`, `per_event_off`, so the intent reads directly and a future mode doesn't silently fall out of the condition:
+The negation form is what the RSVP settings page uses to hide the mode-dependent fields whenever RSVP Mode is `disabled`, rather than listing `all_on`, `per_event_on`, `per_event_off`, so the intent reads directly and a future mode doesn't silently fall out of the condition:
 
 ```php
 'show_if' => array(
@@ -268,15 +268,39 @@ The negation form is available since 0.35.0.
 
 #### Hidden ≠ cleared
 
-Hiding a field is purely visual — its stored value is **never** dropped just because the field is currently hidden. If a user enters a Google Maps API key, switches the platform to OSM, and saves, the key remains in the `gatherpress_settings` option. Switching back to Google reveals the field with its prior value intact.
+Hiding a field is purely visual. Its stored value is **never** dropped just because the field is currently hidden. If a user enters a Google Maps API key, switches the platform to OSM, and saves, the key remains in the `gatherpress_settings` option. Switching back to Google reveals the field with its prior value intact.
 
-This works because (a) the field row is hidden via CSS, so the input still posts its value, and (b) the save path merges submitted input with the previously stored options — any field key not in POST keeps its existing value.
+This works because (a) the field row is hidden via CSS, so the input still posts its value, and (b) the save path merges submitted input with the previously stored options. Any field key not in POST keeps its existing value.
 
 #### Constraints (v1)
 
 - **Same page only.** The controlling field must live on the same settings tab as the dependent field.
 - **Single controller per key.** Each option key on a settings page renders one input; that's the input the JS will resolve.
-- **Comparisons are string-based.** Booleans and numbers are coerced to string before comparing. To match a checkbox stored as `true`, declare `'my_toggle' => 'true'`.
+- **Comparisons are string-based.** Booleans and numbers are coerced to string before comparing.
+- **A checkbox controller compares on what it submits**, not on its `checked` property: `'1'` when it is on and `''` when it is off. PHP stores a checkbox as a bool and compares `(string) $value`, and the JS reports the same two values so both sides agree. To show a field only while a toggle is off, declare `'my_toggle' => ''`.
+
+### exportable and importable
+
+Settings travel between sites through the export and import on the Tools tab. Two flags, both siblings of `field` and both on unless the declaration says otherwise, take an option out of that.
+
+`'exportable' => false` leaves the value out of an export, for something that describes this one site and should not be handed around in a file. It implies the other flag: a value that may not leave here has no business being written into it by a file either.
+
+`'importable' => false` is the narrower one, for a value worth reading in an export but never worth applying on the way back in.
+
+```php
+'uninstall_events' => array(
+    'labels'     => array( 'name' => __( 'Events', 'my-plugin' ) ),
+    'field'      => array(
+        'type'    => 'checkbox',
+        'options' => array( 'default' => false ),
+    ),
+    'exportable' => false,
+),
+```
+
+An import skips these keys and reports them separately from keys it does not recognize, because the two mean different things to whoever reads the result, and the Tools tab says so rather than calling a refusal an unknown key.
+
+Reach for this when the harm of setting an option by accident outweighs the convenience of carrying it between sites. GatherPress uses it for the Uninstall tab. Every other setting shows its effect as soon as it is wrong, so a bad import is visible; a switch that only acts when the plugin is deleted does nothing until much later, possibly for somebody who never ran the import, and what it removes is gone.
 
 ## Key Uniqueness
 

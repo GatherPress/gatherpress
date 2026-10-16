@@ -1,0 +1,4 @@
+Significance: minor
+Type: changed
+
+Expose GatherPress abilities to Model Context Protocol (MCP) clients by setting public and mcp.public in ability metadata. AI agents connecting via MCP Adapter can now discover and call gatherpress/get-upcoming-events and gatherpress/get-rsvp-counts as tools.

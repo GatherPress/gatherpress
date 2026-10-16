@@ -1,0 +1,341 @@
+<?php
+/**
+ * Unit tests for the generated file uninstall task.
+ *
+ * @package GatherPress\Core\Uninstall
+ * @since 0.36.0
+ */
+
+namespace GatherPress\Tests\Core\Uninstall;
+
+use GatherPress\Core\Uninstall\Files;
+use GatherPress\Core\Uninstall\Preferences;
+use GatherPress\Core\Venue\Map\Map;
+use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
+
+/**
+ * Class Test_Files.
+ *
+ * @coversDefaultClass \GatherPress\Core\Uninstall\Files
+ */
+class Test_Files extends Base {
+
+	/**
+	 * Arms and resets the uninstall opt-ins.
+	 */
+	use Preferences_Fixture;
+
+	/**
+	 * Reset the opt-in map between tests.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	public function setUp(): void {
+		parent::setUp();
+
+		$this->reset_uninstall_preferences();
+	}
+
+	/**
+	 * Clean up after each test.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	public function tearDown(): void {
+		$this->remove_directory( $this->plugin_directory() );
+
+		$this->reset_uninstall_preferences();
+
+		parent::tearDown();
+	}
+
+	/**
+	 * The plugin's directory under uploads.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string Absolute path.
+	 */
+	protected function plugin_directory(): string {
+		$uploads = wp_get_upload_dir();
+
+		return trailingslashit( $uploads['basedir'] ) . Files::DIRECTORY;
+	}
+
+	/**
+	 * The directory the static map writer uses.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string Absolute path.
+	 */
+	protected function map_directory(): string {
+		$uploads = wp_get_upload_dir();
+
+		return trailingslashit( $uploads['basedir'] ) . Map::UPLOADS_SUBDIR;
+	}
+
+	/**
+	 * Write a file, creating the directories above it.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $path Absolute path to the file.
+	 *
+	 * @return void
+	 */
+	protected function write_file( string $path ): void {
+		wp_mkdir_p( dirname( $path ) );
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+		file_put_contents( $path, 'png' );
+	}
+
+	/**
+	 * Remove a directory tree left over from a test.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $directory Absolute path to the directory.
+	 *
+	 * @return void
+	 */
+	protected function remove_directory( string $directory ): void {
+		if ( ! is_dir( $directory ) ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_scandir
+		foreach ( array_diff( (array) scandir( $directory ), array( '.', '..' ) ) as $entry ) {
+			$path = trailingslashit( $directory ) . $entry;
+
+			if ( is_dir( $path ) ) {
+				$this->remove_directory( $path );
+
+				continue;
+			}
+
+			wp_delete_file( $path );
+		}
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir
+		rmdir( $directory );
+	}
+
+	/**
+	 * Every writer keeps its files inside the directory this task removes.
+	 *
+	 * @covers ::applies
+	 *
+	 * @return void
+	 */
+	public function test_owns_every_generated_file(): void {
+		$this->assertStringStartsWith(
+			Files::DIRECTORY . '/',
+			Map::UPLOADS_SUBDIR,
+			'A writer that puts files outside this directory leaves them behind at uninstall.'
+		);
+	}
+
+	/**
+	 * The task stays off until it is opted in to.
+	 *
+	 * @covers ::applies
+	 *
+	 * @return void
+	 */
+	public function test_does_not_apply_by_default(): void {
+		$this->assertFalse(
+			( new Files() )->applies(),
+			'Deleting generated files must wait for an explicit opt-in.'
+		);
+	}
+
+	/**
+	 * The task applies once its preference is on.
+	 *
+	 * @covers ::applies
+	 *
+	 * @return void
+	 */
+	public function test_applies_when_opted_in(): void {
+		$this->arm_uninstall( Preferences::TASK_FILES );
+
+		$this->assertTrue( ( new Files() )->applies(), 'The opt-in turns the task on.' );
+	}
+
+	/**
+	 * Generated files survive when the task was never opted in to.
+	 *
+	 * @covers ::applies
+	 * @covers ::uninstall_site
+	 *
+	 * @return void
+	 */
+	public function test_leaves_files_alone_without_opt_in(): void {
+		$file = trailingslashit( $this->map_directory() ) . 'venue-osm-map-15-600-400.png';
+
+		$this->write_file( $file );
+
+		( new Files() )->run();
+
+		$this->assertFileExists( $file, 'A task that was never opted in to must remove nothing.' );
+	}
+
+	/**
+	 * The plugin's whole uploads directory goes once opted in to.
+	 *
+	 * @covers ::uninstall_site
+	 *
+	 * @return void
+	 */
+	public function test_removes_the_plugin_directory(): void {
+		$this->arm_uninstall( Preferences::TASK_FILES );
+
+		$map    = trailingslashit( $this->map_directory() ) . 'venue-osm-map-15-600-400.png';
+		$nested = trailingslashit( $this->map_directory() ) . 'retina/venue-osm-map-15-600-400@2x.png';
+		$other  = trailingslashit( $this->plugin_directory() ) . 'something-else/generated.txt';
+
+		$this->write_file( $map );
+		$this->write_file( $nested );
+		$this->write_file( $other );
+
+		( new Files() )->run();
+
+		$this->assertFileDoesNotExist( $map, 'The generated image is deleted.' );
+		$this->assertFileDoesNotExist(
+			$other,
+			'Anything else the plugin generates lives here too, and goes on the same switch.'
+		);
+		$this->assertDirectoryDoesNotExist(
+			$this->plugin_directory(),
+			'The directory goes with its contents.'
+		);
+	}
+
+	/**
+	 * Other people's uploads are left alone.
+	 *
+	 * @covers ::uninstall_site
+	 *
+	 * @return void
+	 */
+	public function test_leaves_the_rest_of_uploads_alone(): void {
+		$this->arm_uninstall( Preferences::TASK_FILES );
+
+		$uploads   = wp_get_upload_dir();
+		$elsewhere = trailingslashit( $uploads['basedir'] ) . 'not-ours.txt';
+
+		$this->write_file( trailingslashit( $this->map_directory() ) . 'venue-osm-map.png' );
+		$this->write_file( $elsewhere );
+
+		( new Files() )->run();
+
+		$this->assertFileExists( $elsewhere, 'Only the plugin\'s own directory is in scope.' );
+
+		wp_delete_file( $elsewhere );
+	}
+
+	/**
+	 * Nothing happens when the directory was never created.
+	 *
+	 * @covers ::uninstall_site
+	 *
+	 * @return void
+	 */
+	public function test_tolerates_a_missing_directory(): void {
+		$this->arm_uninstall( Preferences::TASK_FILES );
+
+		$this->remove_directory( $this->plugin_directory() );
+
+		( new Files() )->run();
+
+		$this->assertDirectoryDoesNotExist(
+			$this->plugin_directory(),
+			'A site that never generated a file has nothing to delete.'
+		);
+	}
+
+	/**
+	 * An uploads directory that cannot be resolved is left alone.
+	 *
+	 * @covers ::uninstall_site
+	 *
+	 * @return void
+	 */
+	public function test_stops_when_uploads_reports_an_error(): void {
+		$this->arm_uninstall( Preferences::TASK_FILES );
+
+		$file = trailingslashit( $this->map_directory() ) . 'venue-osm-map-15-600-400.png';
+
+		$this->write_file( $file );
+
+		$filter = static function ( array $uploads ): array {
+			$uploads['error'] = 'Unable to create directory.';
+
+			return $uploads;
+		};
+
+		add_filter( 'upload_dir', $filter );
+		( new Files() )->run();
+		remove_filter( 'upload_dir', $filter );
+
+		$this->assertFileExists(
+			$file,
+			'Guessing at a path when uploads cannot answer would delete the wrong thing.'
+		);
+	}
+
+	/**
+	 * A filesystem the site cannot reach without credentials is left alone.
+	 *
+	 * @covers ::uninstall_site
+	 *
+	 * @return void
+	 */
+	public function test_stops_when_the_filesystem_is_unavailable(): void {
+		$this->arm_uninstall( Preferences::TASK_FILES );
+
+		$file = trailingslashit( $this->map_directory() ) . 'venue-osm-map-15-600-400.png';
+
+		$this->write_file( $file );
+
+		// A transport with no class behind it, which is what an uninstall
+		// sees on a site configured for FTP with no credentials to offer.
+		$filter = static function (): string {
+			return 'gatherpress_unavailable';
+		};
+
+		add_filter( 'filesystem_method', $filter );
+		( new Files() )->run();
+		remove_filter( 'filesystem_method', $filter );
+
+		$this->assertFileExists(
+			$file,
+			'Files are inert, so keeping them beats guessing at someone else\'s filesystem.'
+		);
+	}
+
+	/**
+	 * The task names the preference that gates it.
+	 *
+	 * Invoked directly as well as through `applies()`, because xdebug does
+	 * not trace a protected method called from the parent class.
+	 *
+	 * @covers ::preference
+	 *
+	 * @return void
+	 */
+	public function test_preference_names_its_task(): void {
+		$this->assertSame(
+			Preferences::TASK_FILES,
+			Utility::invoke_hidden_method( new Files(), 'preference' ),
+			'The task reads the opt-in for generated files and nothing else.'
+		);
+	}
+}

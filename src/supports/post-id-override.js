@@ -5,12 +5,14 @@ import { useSelect, useDispatch } from '@wordpress/data';
 import { getBlockType } from '@wordpress/blocks';
 import { createHigherOrderComponent } from '@wordpress/compose';
 import { InspectorAdvancedControls } from '@wordpress/block-editor';
-import {
-	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
-	__experimentalNumberControl as NumberControl,
-} from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { addFilter } from '@wordpress/hooks';
+
+/**
+ * Internal dependencies
+ */
+import EventSelect from '../components/EventSelect';
+import { getFromConfig } from '../helpers/editor-settings';
 
 /**
  * Adds `postIdOverride` support to GatherPress blocks.
@@ -98,16 +100,17 @@ const withPostIdOverride = createHigherOrderComponent( ( BlockEdit ) => {
 			<>
 				<BlockEdit { ...props } />
 				<InspectorAdvancedControls>
-					<NumberControl
+					<EventSelect
 						label={ __( 'Post ID Override', 'gatherpress' ) }
 						value={ postId }
+						postTypes={ getFromConfig( 'eventPostTypes' ) }
 						onChange={ ( value ) => {
 							updateBlockAttributes( clientId, {
 								postId: parseInt( value, 10 ) || '',
 							} );
 						} }
 						help={ __(
-							'Specify the post ID of an event to replace the default post ID used by this block.',
+							'Choose the event this block should use instead of the current post.',
 							'gatherpress',
 						) }
 					/>

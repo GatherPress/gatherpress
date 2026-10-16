@@ -64,10 +64,11 @@ jest.mock( '@wordpress/core-data', () => ( {
 /**
  * Internal dependencies
  */
-import { getFromSettings } from '@src/helpers/editor-settings';
+import { getFromConfig, getFromSettings } from '@src/helpers/editor-settings';
 
 jest.mock( '@src/helpers/editor-settings', () => ( {
 	getFromSettings: jest.fn(),
+	getFromConfig: jest.fn(),
 } ) );
 
 jest.mock( '@src/helpers/editor', () => ( {
@@ -94,11 +95,18 @@ import {
 	maybeConvertUtcOffsetForDisplay,
 	maybeConvertUtcOffsetForSelect,
 	removeNonTimePHPFormatChars,
+	removeTimePHPFormatChars,
+	tokenizePHPDateFormat,
 	updateDateTimeEnd,
 	updateDateTimeStart,
 	useMatchedDuration,
+	dateLabelFormat,
+	getTimeOfDay,
+	toDayEnd,
+	toDayStart,
 	validateDateTimeEnd,
 	validateDateTimeStart,
+	withTimeOfDay,
 } from '@src/helpers/datetime';
 
 /**
@@ -519,7 +527,16 @@ test( 'convertPHPToMomentFormat returns correct time format', () => {
 test( 'convertPHPToMomentFormat returns correct format that contains escaped chars, like ES or DE needs', () => {
 	const format = convertPHPToMomentFormat( 'G:i \\U\\h\\r' ); // "20 Uhr" is german for "8 o'clock" (in the evening).
 
-	expect( format ).toBe( 'H:mm \\U\\h\\r' );
+	expect( format ).toBe( 'H:mm [Uhr]' );
+} );
+
+test( 'convertPHPToMomentFormat converts escaped characters in date and time to Moment brackets', () => {
+	expect( convertPHPToMomentFormat( 'j. F Y, H:i \\U\\h\\r' ) ).toBe(
+		'D. MMMM YYYY, HH:mm [Uhr]',
+	);
+	expect( convertPHPToMomentFormat( 'j \\d\\e F \\d\\e Y, H:i' ) ).toBe(
+		'D [de] MMMM [de] YYYY, HH:mm',
+	);
 } );
 
 /**
@@ -680,7 +697,7 @@ describe( 'Relative mode duration tests', () => {
 		global.__gpDatetime.dateTimeEnd = undefined;
 
 		expect( () =>
-			validateDateTimeStart( '2023-11-30 18:00:00', setDateTimeEnd, 2 )
+			validateDateTimeStart( '2023-11-30 18:00:00', setDateTimeEnd, 2 ),
 		).not.toThrow();
 		expect( setDateTimeEnd ).not.toHaveBeenCalled();
 	} );
@@ -821,7 +838,7 @@ describe( 'validateDateTimeEnd', () => {
 		global.__gpDatetime.dateTimeEnd = '2023-11-30 18:17:00';
 
 		expect( () =>
-			validateDateTimeEnd( '2023-11-30 16:00:00', setDateTimeStart )
+			validateDateTimeEnd( '2023-11-30 16:00:00', setDateTimeStart ),
 		).not.toThrow();
 		expect( setDateTimeStart ).not.toHaveBeenCalled();
 	} );
@@ -840,13 +857,55 @@ describe( 'validateDateTimeEnd', () => {
  * Coverage for removeNonTimePHPFormatChars.
  */
 describe( 'removeNonTimePHPFormatChars', () => {
+	// The list PHP sends, from `Utility::non_time_format_chars()`.
+	const nonTimeChars = [
+		'd', 'D', 'j', 'l', 'N', 'S', 'w', 'z', 'W', 'F', 'm', 'M', 'n',
+		't', 'L', 'o', 'X', 'x', 'Y', 'y', 'e', 'I', 'O', 'P', 'p', 'T',
+		'Z', 'c', 'r', 'U', ',',
+	];
+
+	const timeChars = [
+		'a', 'A', 'B', 'g', 'G', 'h', 'H', 'i', 's', 'u', 'v',
+		'e', 'I', 'O', 'P', 'p', 'T', 'Z', 'c', 'r', 'U',
+	];
+
+	beforeEach( () => {
+		getFromConfig.mockImplementation( ( key ) => {
+			if ( 'nonTimeFormatChars' === key ) {
+				return nonTimeChars;
+			}
+			if ( 'timeFormatChars' === key ) {
+				return timeChars;
+			}
+			return undefined;
+		} );
+	} );
+
+	test( 'leaves the format alone when the editor sent no list', () => {
+		getFromConfig.mockReturnValue( undefined );
+
+		expect( removeNonTimePHPFormatChars( 'F j, Y g:i a' ) ).toBe(
+			'F j, Y g:i a',
+		);
+	} );
+
+	test( 'leaves the format alone when the editor sent only one list', () => {
+		getFromConfig.mockImplementation( ( key ) =>
+			'timeFormatChars' === key ? timeChars : undefined,
+		);
+
+		expect( removeNonTimePHPFormatChars( 'F j, Y g:i a' ) ).toBe(
+			'F j, Y g:i a',
+		);
+	} );
+
 	test( 'removes non-time format characters from PHP datetime format', () => {
 		// Format with both date and time characters.
 		const format = 'Y-m-d H:i:s';
 		const result = removeNonTimePHPFormatChars( format );
 
-		// Should remove date characters (Y, m, d) but keep time (H, i, s) and separators.
-		expect( result ).toBe( '-- H:i:s' );
+		// Should remove date characters (Y, m, d) and leading delimiters, keeping time (H:i:s).
+		expect( result ).toBe( 'H:i:s' );
 	} );
 
 	test( 'preserves time format characters', () => {
@@ -863,8 +922,45 @@ describe( 'removeNonTimePHPFormatChars', () => {
 		const format = 'Y-m-d';
 		const result = removeNonTimePHPFormatChars( format );
 
-		// Should remove all date characters, leaving only separators.
-		expect( result ).toBe( '--' );
+		// Should report empty string when no time characters exist.
+		expect( result ).toBe( '' );
+	} );
+
+	test( 'preserves escaped characters belonging to the time', () => {
+		expect( removeNonTimePHPFormatChars( 'j. F Y, H:i \\U\\h\\r' ) ).toBe(
+			'H:i \\U\\h\\r',
+		);
+		expect( removeNonTimePHPFormatChars( 'H:i \\U\\h\\r' ) ).toBe(
+			'H:i \\U\\h\\r',
+		);
+	} );
+
+	test( 'strips escaped characters belonging to the date', () => {
+		expect( removeNonTimePHPFormatChars( 'j \\d\\e F \\d\\e Y, H:i' ) ).toBe(
+			'H:i',
+		);
+	} );
+
+	test( 'drops timezone format tokens from the time portion', () => {
+		expect( removeNonTimePHPFormatChars( 'D, M j, Y, g:i a T' ) ).toBe(
+			'g:i a',
+		);
+		expect( removeNonTimePHPFormatChars( 'g:i a T' ) ).toBe( 'g:i a' );
+	} );
+
+	test( 'excludes boundary literals between date and time', () => {
+		expect(
+			removeNonTimePHPFormatChars( 'j. F Y \\u\\m H:i \\U\\h\\r' ),
+		).toBe( 'H:i \\U\\h\\r' );
+		expect( removeNonTimePHPFormatChars( 'j F Y, \\U\\h\\r H:i' ) ).toBe(
+			'H:i',
+		);
+	} );
+
+	test( 'handles reversed order where time comes before date', () => {
+		expect(
+			removeNonTimePHPFormatChars( 'H:i \\U\\h\\r, j. F Y' ),
+		).toBe( 'H:i \\U\\h\\r' );
 	} );
 
 	test( 'handles format with mixed characters', () => {
@@ -936,7 +1032,7 @@ describe( 'dateTimePreview', () => {
 		// The function execution itself provides coverage.
 		try {
 			dateTimePreview();
-		} catch ( error ) {
+		} catch {
 			// Expected to fail because createRoot isn't properly mocked.
 			// But the lines inside the function are still executed and covered.
 		}
@@ -1110,5 +1206,193 @@ describe( 'getDefaultDuration', () => {
 		);
 
 		expect( getDefaultDuration() ).toBe( 2 );
+	} );
+} );
+
+describe( 'all-day helpers', () => {
+	describe( 'dateLabelFormat', () => {
+		test( 'is the date format with no time in it', () => {
+			// The site keeps its date and time formats separately, so an
+			// all-day event simply uses the date one.
+			getFromSettings.mockImplementation( ( key ) =>
+				( { dateFormat: 'F j, Y', timeFormat: 'g:i a' } )[ key ],
+			);
+
+			expect( dateLabelFormat() ).toBe( 'MMMM D, YYYY' );
+		} );
+	} );
+
+	describe( 'toDayStart', () => {
+		test( 'snaps to the beginning of the day', () => {
+			expect( toDayStart( '2026-08-29 14:30:00' ) ).toBe(
+				'2026-08-29 00:00:00',
+			);
+		} );
+
+		test( 'leaves a datetime already at the beginning alone', () => {
+			expect( toDayStart( '2026-08-29 00:00:00' ) ).toBe(
+				'2026-08-29 00:00:00',
+			);
+		} );
+	} );
+
+	describe( 'toDayEnd', () => {
+		test( 'snaps to the end of the day', () => {
+			expect( toDayEnd( '2026-08-29 14:30:00' ) ).toBe(
+				'2026-08-29 23:59:59',
+			);
+		} );
+
+		test( 'keeps each end on its own day', () => {
+			// A multi-day event ends on the last day, not the first.
+			expect( toDayEnd( '2026-08-31 09:00:00' ) ).toBe(
+				'2026-08-31 23:59:59',
+			);
+		} );
+	} );
+
+	describe( 'getTimeOfDay', () => {
+		test( 'reads the time out of a datetime', () => {
+			expect( getTimeOfDay( '2026-08-29 14:30:15' ) ).toBe( '14:30:15' );
+		} );
+
+		test( 'reads midnight as midnight', () => {
+			expect( getTimeOfDay( '2026-08-29 00:00:00' ) ).toBe( '00:00:00' );
+		} );
+	} );
+
+	describe( 'withTimeOfDay', () => {
+		test( 'puts a time onto the datetime own date', () => {
+			expect( withTimeOfDay( '2026-08-29 00:00:00', '18:00:00' ) ).toBe(
+				'2026-08-29 18:00:00',
+			);
+		} );
+
+		test( 'keeps the date that is selected now', () => {
+			// Restoring a remembered time must not also undo a date the
+			// author changed while the event was all day.
+			expect( withTimeOfDay( '2026-09-04 00:00:00', '09:30:00' ) ).toBe(
+				'2026-09-04 09:30:00',
+			);
+		} );
+	} );
+} );
+
+describe( 'removeTimePHPFormatChars', () => {
+	// The list PHP sends, from `Event::PHP_TIME_FORMAT_CHARS`.
+	const timeChars = [
+		'a', 'A', 'B', 'g', 'G', 'h', 'H', 'i', 's', 'u', 'v',
+		'e', 'I', 'O', 'P', 'p', 'T', 'Z', 'c', 'r', 'U',
+	];
+
+	const nonTimeChars = [
+		'd', 'D', 'j', 'l', 'N', 'S', 'w', 'z', 'W', 'F', 'm', 'M', 'n',
+		't', 'L', 'o', 'X', 'x', 'Y', 'y', 'e', 'I', 'O', 'P', 'p', 'T',
+		'Z', 'c', 'r', 'U', ',',
+	];
+
+	beforeEach( () => {
+		getFromConfig.mockImplementation( ( key ) => {
+			if ( 'timeFormatChars' === key ) {
+				return timeChars;
+			}
+			if ( 'nonTimeFormatChars' === key ) {
+				return nonTimeChars;
+			}
+			return undefined;
+		} );
+	} );
+
+	test( 'leaves the format alone when the editor sent no list', () => {
+		getFromConfig.mockReturnValue( undefined );
+
+		expect( removeTimePHPFormatChars( 'F j, Y g:i a' ) ).toBe( 'F j, Y g:i a' );
+	} );
+
+	test( 'keeps the date and drops the time', () => {
+		expect( removeTimePHPFormatChars( 'F j, Y g:i a' ) ).toBe( 'F j, Y' );
+	} );
+
+	test( 'reports nothing for a format that is only a time', () => {
+		expect( removeTimePHPFormatChars( 'g:i a' ) ).toBe( '' );
+	} );
+
+	test( 'drops the timezone with the time', () => {
+		expect( removeTimePHPFormatChars( 'F j, Y T' ) ).toBe( 'F j, Y' );
+		expect( removeTimePHPFormatChars( 'D, M j, Y, g:i a T' ) ).toBe(
+			'D, M j, Y',
+		);
+	} );
+
+	test( 'leaves a date-only format alone', () => {
+		expect( removeTimePHPFormatChars( 'M j' ) ).toBe( 'M j' );
+	} );
+
+	test( 'handles an empty format', () => {
+		expect( removeTimePHPFormatChars( '' ) ).toBe( '' );
+	} );
+
+	test( 'preserves escaped characters in date and strips time with escaped characters', () => {
+		expect( removeTimePHPFormatChars( 'j. F Y, H:i \\U\\h\\r' ) ).toBe(
+			'j. F Y',
+		);
+		expect( removeTimePHPFormatChars( 'j \\d\\e F \\d\\e Y, H:i' ) ).toBe(
+			'j \\d\\e F \\d\\e Y',
+		);
+		expect( removeTimePHPFormatChars( 'H:i \\U\\h\\r' ) ).toBe( '' );
+	} );
+
+	test( 'excludes boundary literals between date and time', () => {
+		expect(
+			removeTimePHPFormatChars( 'j. F Y \\u\\m H:i \\U\\h\\r' ),
+		).toBe( 'j. F Y' );
+		expect( removeTimePHPFormatChars( 'j F Y, \\U\\h\\r H:i' ) ).toBe(
+			'j F Y',
+		);
+	} );
+
+	test( 'keeps unescaped day suffixes such as Japanese and Korean', () => {
+		expect( removeTimePHPFormatChars( 'Y年n月j日 H:i' ) ).toBe( 'Y年n月j日' );
+		expect( removeTimePHPFormatChars( 'Y년 n월 j일 H:i' ) ).toBe(
+			'Y년 n월 j일',
+		);
+	} );
+} );
+
+/**
+ * Coverage for tokenizePHPDateFormat.
+ */
+describe( 'tokenizePHPDateFormat', () => {
+	test( 'keeps a run of escaped characters as one literal', () => {
+		const tokens = tokenizePHPDateFormat( 'j. F Y, H:i \\U\\h\\r' );
+
+		expect( tokens ).toEqual( [
+			{ type: 'char', value: 'j' },
+			{ type: 'char', value: '.' },
+			{ type: 'char', value: ' ' },
+			{ type: 'char', value: 'F' },
+			{ type: 'char', value: ' ' },
+			{ type: 'char', value: 'Y' },
+			{ type: 'char', value: ',' },
+			{ type: 'char', value: ' ' },
+			{ type: 'char', value: 'H' },
+			{ type: 'char', value: ':' },
+			{ type: 'char', value: 'i' },
+			{ type: 'char', value: ' ' },
+			{ type: 'literal', value: '\\U\\h\\r' },
+		] );
+	} );
+
+	test( 'returns no tokens for an empty format', () => {
+		expect( tokenizePHPDateFormat( '' ) ).toEqual( [] );
+	} );
+
+	test( 'handles a trailing backslash', () => {
+		expect( tokenizePHPDateFormat( 'H:i\\' ) ).toEqual( [
+			{ type: 'char', value: 'H' },
+			{ type: 'char', value: ':' },
+			{ type: 'char', value: 'i' },
+			{ type: 'literal', value: '\\' },
+		] );
 	} );
 } );

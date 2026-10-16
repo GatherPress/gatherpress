@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Setup;
+use GatherPress\Core\Settings;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
@@ -26,6 +27,8 @@ use GatherPress\Core\Utility;
  * Handles the "Events" settings page for GatherPress.
  *
  * @since 0.34.0
+ *
+ * @phpstan-import-type SettingsSection from Settings
  */
 final class Events extends Base {
 
@@ -75,7 +78,7 @@ final class Events extends Base {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array An array of sections and options for the Events settings page.
+	 * @return array<string, SettingsSection> An array of sections and options for the Events settings page.
 	 */
 	protected function get_sections(): array {
 		return array(
@@ -101,10 +104,10 @@ final class Events extends Base {
 								),
 								Utility::post_type_label( 'name', Event::POST_TYPE )
 							),
-							'type'    => 'text',
-							'size'    => 'regular',
+							'type'    => 'format',
 							'options' => array(
 								'default' => get_option( 'date_format', 'l, F j, Y' ),
+								'choices' => 'date',
 							),
 							'preview' => array(
 								'template' => 'datetime-preview',
@@ -124,10 +127,10 @@ final class Events extends Base {
 								),
 								Utility::post_type_label( 'name', Event::POST_TYPE )
 							),
-							'type'    => 'text',
-							'size'    => 'regular',
+							'type'    => 'format',
 							'options' => array(
 								'default' => get_option( 'time_format', 'g:i A' ),
+								'choices' => 'time',
 							),
 							'preview' => array(
 								'template' => 'datetime-preview',
@@ -170,7 +173,7 @@ final class Events extends Base {
 					Utility::post_type_label( 'name', Event::POST_TYPE )
 				),
 				'options'     => array(
-					'post_or_event_date' => array(
+					'use_event_date_for_publish' => array(
 						'labels' => array(
 							'name' => __( 'Publish Date', 'gatherpress' ),
 						),

@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Added an RSVP flag API: a flag is a class extending `Rsvp\Flag\Base` that declares its slug and wraps one RSVP, so GatherPress and companion plugins can store yes/no markers such as check-in in one shared taxonomy without overwriting each other, with `gatherpress_rsvp_flag_added` and `gatherpress_rsvp_flag_removed` actions.

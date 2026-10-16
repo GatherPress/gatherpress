@@ -12,7 +12,7 @@ jest.mock(
 	() => ( {
 		store: 'core/commands',
 	} ),
-	{ virtual: true }
+	{ virtual: true },
 );
 
 /**
@@ -29,13 +29,13 @@ jest.mock(
 			__registerCommand: registerCommand,
 		};
 	},
-	{ virtual: true }
+	{ virtual: true },
 );
 
 /**
  * WordPress dependencies
  */
-// eslint-disable-next-line import/named -- `__registerCommand` only exists on the virtual mock above.
+// `__registerCommand` only exists on the virtual mock above.
 import { __registerCommand as registerCommand } from '@wordpress/data';
 
 /**
@@ -50,7 +50,7 @@ describe( 'add new venue command', () => {
 		// count stays at 1 for the whole suite without any reset.
 		expect( registerCommand ).toHaveBeenCalledTimes( 1 );
 		expect( registerCommand ).toHaveBeenCalledWith(
-			expect.objectContaining( { name: 'gatherpress/add-new-venue' } )
+			expect.objectContaining( { name: 'gatherpress/add-new-venue' } ),
 		);
 	} );
 

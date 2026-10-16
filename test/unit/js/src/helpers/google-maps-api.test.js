@@ -20,7 +20,7 @@ import {
  */
 function getApiScripts( doc = document ) {
 	return Array.from( doc.querySelectorAll( 'script' ) ).filter( ( s ) =>
-		s.src.startsWith( 'https://maps.googleapis.com/maps/api/js' )
+		s.src.startsWith( 'https://maps.googleapis.com/maps/api/js' ),
 	);
 }
 
@@ -51,13 +51,13 @@ describe( 'loadGoogleMapsApi', () => {
 
 	it( 'rejects without a key', async () => {
 		await expect( loadGoogleMapsApi( '', document ) ).rejects.toThrow(
-			'API key is required'
+			'API key is required',
 		);
 		await expect(
-			loadGoogleMapsApi( undefined, document )
+			loadGoogleMapsApi( undefined, document ),
 		).rejects.toThrow( 'API key is required' );
 		await expect( loadGoogleMapsApi( '   ', document ) ).rejects.toThrow(
-			'API key is required'
+			'API key is required',
 		);
 		expect( getApiScripts() ).toHaveLength( 0 );
 	} );
@@ -72,7 +72,7 @@ describe( 'loadGoogleMapsApi', () => {
 		expect( params.get( 'key' ) ).toBe( 'unit-test-key' );
 		expect( params.get( 'loading' ) ).toBe( 'async' );
 		expect( params.get( 'callback' ) ).toMatch(
-			/^gatherpressGoogleMapsApiReady_\d+$/
+			/^gatherpressGoogleMapsApiReady_\d+$/,
 		);
 		expect( scripts[ 0 ].async ).toBe( true );
 
@@ -82,7 +82,7 @@ describe( 'loadGoogleMapsApi', () => {
 		await expect( promise ).resolves.toBe( fakeMaps );
 		// The one-shot global callback is removed once it has fired.
 		expect(
-			window[ params.get( 'callback' ) ]
+			window[ params.get( 'callback' ) ],
 		).toBeUndefined();
 	} );
 
@@ -99,7 +99,7 @@ describe( 'loadGoogleMapsApi', () => {
 		window.google = { maps: fakeMaps };
 
 		await expect(
-			loadGoogleMapsApi( 'unit-test-key', document )
+			loadGoogleMapsApi( 'unit-test-key', document ),
 		).resolves.toBe( fakeMaps );
 		expect( getApiScripts() ).toHaveLength( 0 );
 	} );
@@ -120,7 +120,7 @@ describe( 'loadGoogleMapsApi', () => {
 		window.google = { maps: fakeMaps };
 
 		await expect(
-			loadGoogleMapsApi( 'unit-test-key', detachedDoc )
+			loadGoogleMapsApi( 'unit-test-key', detachedDoc ),
 		).resolves.toBe( fakeMaps );
 	} );
 
@@ -128,7 +128,7 @@ describe( 'loadGoogleMapsApi', () => {
 		const promise = loadGoogleMapsApi( 'unit-test-key', document );
 		const [ script ] = getApiScripts();
 		const callbackName = new URL( script.src ).searchParams.get(
-			'callback'
+			'callback',
 		);
 
 		script.dispatchEvent( new Event( 'error' ) );

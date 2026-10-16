@@ -51,7 +51,7 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
 					rsvpFormParentId: formParentId,
 				};
 			},
-			[ clientId ]
+			[ clientId ],
 		);
 
 		// Don't show controls if this IS the RSVP Form block itself.
@@ -122,7 +122,7 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
 						label={ __( 'On Successful Submission', 'gatherpress' ) }
 						help={ __(
 							'Control visibility when the RSVP form is successfully submitted.',
-							'gatherpress'
+							'gatherpress',
 						) }
 						value={ onSuccess }
 						options={ [
@@ -146,7 +146,7 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
 						label={ __( 'When Event Has Passed', 'gatherpress' ) }
 						help={ __(
 							'Control visibility when the event end time has passed.',
-							'gatherpress'
+							'gatherpress',
 						) }
 						value={ whenPast }
 						options={ [
@@ -238,12 +238,12 @@ function preventNestedRsvpFormInsertion( canInsert, blockType, rootClientId ) {
 addFilter(
 	'editor.BlockEdit',
 	'gatherpress/form-visibility-controls',
-	withFormVisibilityControls
+	withFormVisibilityControls,
 );
 
 // Prevent RSVP Form from being inserted inside another RSVP Form.
 addFilter(
 	'blocks.canInsertBlockType',
 	'gatherpress/prevent-nested-rsvp-form',
-	preventNestedRsvpFormInsertion
+	preventNestedRsvpFormInsertion,
 );

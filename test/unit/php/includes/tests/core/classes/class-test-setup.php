@@ -837,10 +837,10 @@ class Test_Setup extends Base {
 		$instance       = Setup::get_instance();
 		$protected_keys = array(
 			'gatherpress_datetime',
-			'gatherpress_max_guest_limit',
+			'gatherpress_guest_limit',
 			'gatherpress_enable_anonymous_rsvp',
 			'gatherpress_online_event_link',
-			'gatherpress_max_attendance_limit',
+			'gatherpress_capacity',
 		);
 
 		foreach ( $protected_keys as $key ) {

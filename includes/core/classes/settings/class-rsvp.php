@@ -15,6 +15,7 @@ namespace GatherPress\Core\Settings;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 
@@ -24,6 +25,8 @@ use GatherPress\Core\Utility;
  * Handles the "RSVP" settings page for GatherPress.
  *
  * @since 0.34.0
+ *
+ * @phpstan-import-type SettingsSection from Settings
  */
 final class Rsvp extends Base {
 
@@ -70,7 +73,7 @@ final class Rsvp extends Base {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return array An array of sections and options for the RSVP settings page.
+	 * @return array<string, SettingsSection> An array of sections and options for the RSVP settings page.
 	 */
 	protected function get_sections(): array {
 		return array(
@@ -140,9 +143,9 @@ final class Rsvp extends Base {
 							'rsvp_mode' => array( 'not' => 'disabled' ),
 						),
 					),
-					'max_attendance_limit'  => array(
+					'capacity'              => array(
 						'labels'      => array(
-							'name' => __( 'Maximum Attendance Limit', 'gatherpress' ),
+							'name' => __( 'Capacity', 'gatherpress' ),
 						),
 						'description' => sprintf(
 							/* translators: %s: Singular post type label, e.g. "Event". */
@@ -152,7 +155,7 @@ final class Rsvp extends Base {
 						'field'       => array(
 							'label'   => sprintf(
 								/* translators: %s: Singular post type label, e.g. "Event". */
-								__( 'The default maximum limit of attendees per %s.', 'gatherpress' ),
+								__( 'The default capacity per %s.', 'gatherpress' ),
 								Utility::post_type_label( 'singular_name', Event::POST_TYPE )
 							),
 							'type'    => 'number',
@@ -165,7 +168,7 @@ final class Rsvp extends Base {
 							'rsvp_mode' => array( 'not' => 'disabled' ),
 						),
 					),
-					'max_guest_limit'       => array(
+					'guest_limit'           => array(
 						'labels'      => array(
 							'name' => __( 'Maximum Number of Guests', 'gatherpress' ),
 						),
@@ -222,7 +225,7 @@ final class Rsvp extends Base {
 					'gatherpress'
 				),
 				'options'     => array(
-					'rsvp_cleanup_switch'    => array(
+					'enable_rsvp_cleanup'     => array(
 						'labels'      => array(
 							'name' => __( 'Toggle RSVP Cleanup', 'gatherpress' ),
 						),
@@ -242,7 +245,7 @@ final class Rsvp extends Base {
 							),
 						),
 					),
-					'rsvp_cleanup_frequency' => array(
+					'rsvp_cleanup_frequency'  => array(
 						'labels'      => array(
 							'name' => __( 'Cleanup Frequency', 'gatherpress' ),
 						),
@@ -265,10 +268,10 @@ final class Rsvp extends Base {
 							),
 						),
 						'show_if'     => array(
-							'rsvp_cleanup_switch' => array( 'not' => 'disabled' ),
+							'enable_rsvp_cleanup' => array( 'not' => 'disabled' ),
 						),
 					),
-					'rsvp_cleanup_interval'  => array(
+					'rsvp_cleanup_multiplier' => array(
 						'labels'      => array(
 							'name' => __( 'Cleanup Interval', 'gatherpress' ),
 						),
@@ -286,7 +289,7 @@ final class Rsvp extends Base {
 							),
 						),
 						'show_if'     => array(
-							'rsvp_cleanup_switch' => array( 'not' => 'disabled' ),
+							'enable_rsvp_cleanup' => array( 'not' => 'disabled' ),
 						),
 					),
 				),

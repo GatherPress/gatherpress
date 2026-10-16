@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Form Field blocks accept an optional Input ID. Set one to pin a fixed id on the field instead of the generated one, which is what makes the markup stable for caching, testing, or wiring up a label elsewhere.

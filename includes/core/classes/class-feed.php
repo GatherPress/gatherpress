@@ -64,8 +64,8 @@ final class Feed {
 		add_filter( 'the_excerpt_rss', array( $this, 'apply_event_excerpt' ) );
 		add_filter( 'the_content_feed', array( $this, 'apply_event_content' ) );
 
-		// Hook into the main query to handle events feeds.
-		add_action( 'pre_get_posts', array( $this, 'handle_events_feed_query' ) );
+		// Run before Event\Query prepares event sorting and filtering.
+		add_action( 'pre_get_posts', array( $this, 'handle_events_feed_query' ), 9 );
 
 		// Modify feed link for past events page.
 		add_filter( 'post_type_archive_feed_link', array( $this, 'modify_feed_link_for_past_events' ) );
@@ -86,11 +86,13 @@ final class Feed {
 	 */
 	public function handle_events_feed_query( WP_Query $query ): void {
 		// Only run on the main query and if it's a feed.
-		if ( ! $query->is_main_query() || ! is_feed() ) {
+		if ( ! $query->is_main_query() || ! $query->is_feed() ) {
 			return;
 		}
 
-		// Check if this is an events feed request.
+		// Check if this is an events or topic feed request.
+		$is_event_feed = false;
+
 		if ( isset( $_SERVER['REQUEST_URI'] ) ) {
 			$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) );
 
@@ -99,25 +101,33 @@ final class Feed {
 			$rewrite_slug = $settings->get( 'events_url' );
 
 			// Check if this is the events feed URL.
-			if ( str_contains( $request_uri, '/' . $rewrite_slug . '/' . $GLOBALS['wp_rewrite']->feed_base ) ) {
-				// Set the post type and let Event\Query handle the rest.
-				$query->set( 'post_type', Event::POST_TYPE );
+			$is_event_feed = str_contains(
+				$request_uri,
+				'/' . $rewrite_slug . '/' . $GLOBALS['wp_rewrite']->feed_base
+			);
+		}
 
-				// Check for type parameter to determine if we want past or upcoming events.
-				$event_type = 'upcoming';
-				// Default to upcoming events.
-				// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Public feed URL parameter.
-				if (
-					isset( $_GET['type'] ) &&
-					'past' === sanitize_text_field( wp_unslash( $_GET['type'] ) )
-				) {
-					// phpcs:enable WordPress.Security.NonceVerification.Recommended
-					// Nonce verification not required for public feed URLs.
-					$event_type = 'past';
-				}
+		// The calendar endpoint uses the same taxonomy feed state but has its own query.
+		$is_topic_feed = $query->is_tax( Topic::TAXONOMY ) && 'ical' !== $query->get( 'feed' );
 
-				$query->set( 'gatherpress_event_query', $event_type );
+		if ( $is_event_feed || $is_topic_feed ) {
+			// Set the post type and let Event\Query handle the rest.
+			$query->set( 'post_type', Event::POST_TYPE );
+
+			// Check for type parameter to determine if we want past or upcoming events.
+			$event_type = 'upcoming';
+			// Default to upcoming events.
+			// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Public feed URL parameter.
+			if (
+				isset( $_GET['type'] ) &&
+				'past' === sanitize_text_field( wp_unslash( $_GET['type'] ) )
+			) {
+				// phpcs:enable WordPress.Security.NonceVerification.Recommended
+				// Nonce verification not required for public feed URLs.
+				$event_type = 'past';
 			}
+
+			$query->set( 'gatherpress_event_query', $event_type );
 		}
 	}
 
@@ -128,7 +138,7 @@ final class Feed {
 	 *
 	 * @param Event $event The event object.
 	 *
-	 * @return array Array of event information strings.
+	 * @return string[] Array of event information strings.
 	 */
 	private function get_event_datetime_info( Event $event ): array {
 		$event_info       = array();
@@ -156,11 +166,12 @@ final class Feed {
 	 */
 	public function get_default_event_excerpt( string $excerpt ): string {
 		// Only apply to events.
-		if ( ! post_type_supports( (string) get_post_type(), 'gatherpress-event-date' ) ) {
+		if ( ! post_type_supports( (string) get_post_type(), Event::SUPPORT ) ) {
 			return $excerpt;
 		}
 
-		$event = new Event( get_the_ID() );
+		// The support check above already returned when no post is in context, so get_the_ID() is an ID here.
+		$event = new Event( (int) get_the_ID() );
 		$venue = $event->get_venue_information();
 
 		$event_info = $this->get_event_datetime_info( $event );
@@ -185,7 +196,8 @@ final class Feed {
 		// Add the original excerpt if it exists and is different from the content.
 		if ( ! empty( $excerpt ) && get_the_content() !== $excerpt ) {
 			$clean_excerpt = wp_strip_all_tags( $excerpt );
-			$clean_excerpt = preg_replace( '/\s+/', ' ', $clean_excerpt ); // Normalize whitespace.
+			// Normalize whitespace. A literal pattern cannot fail to compile, so preg_replace() never returns null.
+			$clean_excerpt = (string) preg_replace( '/\s+/', ' ', $clean_excerpt );
 			$clean_excerpt = trim( $clean_excerpt );
 
 			if ( ! empty( $clean_excerpt ) ) {
@@ -207,11 +219,12 @@ final class Feed {
 	 */
 	public function get_default_event_content( string $content ): string {
 		// Only apply to events.
-		if ( ! post_type_supports( (string) get_post_type(), 'gatherpress-event-date' ) ) {
+		if ( ! post_type_supports( (string) get_post_type(), Event::SUPPORT ) ) {
 			return $content;
 		}
 
-		$event = new Event( get_the_ID() );
+		// The support check above already returned when no post is in context, so get_the_ID() is an ID here.
+		$event = new Event( (int) get_the_ID() );
 		$venue = $event->get_venue_information();
 
 		$event_info = $this->get_event_datetime_info( $event );
@@ -236,7 +249,8 @@ final class Feed {
 		// For RSS feeds, provide a cleaner version of the content.
 		// Strip out complex HTML and keep only essential information.
 		$clean_content = wp_strip_all_tags( $content );
-		$clean_content = preg_replace( '/\s+/', ' ', $clean_content ); // Normalize whitespace.
+		// Normalize whitespace. A literal pattern cannot fail to compile, so preg_replace() never returns null.
+		$clean_content = (string) preg_replace( '/\s+/', ' ', $clean_content );
 		$clean_content = trim( $clean_content );
 
 		if ( ! empty( $clean_content ) ) {
@@ -257,7 +271,7 @@ final class Feed {
 	 */
 	public function apply_event_excerpt( string $excerpt ): string {
 		// Only apply to events.
-		if ( ! post_type_supports( (string) get_post_type(), 'gatherpress-event-date' ) ) {
+		if ( ! post_type_supports( (string) get_post_type(), Event::SUPPORT ) ) {
 			return $excerpt;
 		}
 
@@ -300,7 +314,7 @@ final class Feed {
 	 */
 	public function apply_event_content( string $content ): string {
 		// Only apply to events.
-		if ( ! post_type_supports( (string) get_post_type(), 'gatherpress-event-date' ) ) {
+		if ( ! post_type_supports( (string) get_post_type(), Event::SUPPORT ) ) {
 			return $content;
 		}
 

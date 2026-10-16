@@ -49,7 +49,7 @@ final class Storage {
 	 *
 	 * @since 0.35.0
 	 *
-	 * @var array
+	 * @var array<string, string>
 	 */
 	private const DEFAULT_SAVE_ARGS = array(
 		'comment_author'       => '',
@@ -131,7 +131,14 @@ final class Storage {
 		$success = true;
 
 		if ( $comment_id ) {
-			$args = get_comment( $comment_id )->to_array();
+			$existing = get_comment( $comment_id );
+
+			// The row can be deleted between the lookup and this save.
+			if ( ! $existing instanceof WP_Comment ) {
+				return false;
+			}
+
+			$args = $existing->to_array();
 
 			if ( $args['comment_author'] ) {
 				$intent->data->identity->display_name = $args['comment_author'];
@@ -188,7 +195,12 @@ final class Storage {
 
 		$comment = get_comment( $comment_id );
 
-		return $this->hydrate( $comment, $intent->data->identity, $intent->provider );
+		// Report a failed save rather than a successful one.
+		if ( ! $comment instanceof WP_Comment ) {
+			return false;
+		}
+
+		return $this->hydrate( $comment, $intent->data->identity, $intent->provider ) ?? false;
 	}
 
 	/**
@@ -235,7 +247,7 @@ final class Storage {
 		?Identity $identity = null,
 		?Provider $provider = null
 	): ?State {
-		if ( Rsvp::COMMENT_TYPE !== $comment->comment_type ) {
+		if ( ! Rsvp::is_comment_type( $comment ) ) {
 			return null;
 		}
 
@@ -433,10 +445,10 @@ final class Storage {
 	 *
 	 * @since 0.35.0
 	 *
-	 * @param array    $args     The current comment data args.
-	 * @param Identity $identity The identity.
+	 * @param array<string, mixed> $args     The current comment data args.
+	 * @param Identity             $identity The identity.
 	 *
-	 * @return array<array<int|string>|int|string> The comment data args including the identity.
+	 * @return array<string, mixed> The comment data args including the identity.
 	 */
 	private function add_identity_comment_data( array $args, Identity $identity ): array {
 		switch ( $identity->type ) {

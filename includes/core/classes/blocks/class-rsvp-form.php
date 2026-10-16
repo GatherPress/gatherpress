@@ -22,6 +22,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
+use WP_Comment;
 use WP_HTML_Tag_Processor;
 
 /**
@@ -29,6 +30,19 @@ use WP_HTML_Tag_Processor;
  * including dynamic rendering and form processing.
  *
  * @since 0.33.0
+ *
+ * @phpstan-type FieldConfig array{
+ *     name: string,
+ *     type: string,
+ *     required: bool,
+ *     label: string,
+ *     placeholder: string,
+ *     validation?: string,
+ *     options?: string[],
+ *     max_length?: int,
+ *     input_id?: string
+ * }
+ * @phpstan-type FormSchema array{fields: array<string, FieldConfig>, hash: string}
  */
 final class Rsvp_Form {
 
@@ -46,12 +60,23 @@ final class Rsvp_Form {
 	const BLOCK_NAME = 'gatherpress/rsvp-form';
 
 	/**
+	 * The hidden input naming which stored schema a submission answers.
+	 *
+	 * Also the key a schema failure is reported under, since that failure
+	 * belongs to the form rather than to any one field.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const SCHEMA_ID_FIELD = 'gatherpress_form_schema_id';
+
+	/**
 	 * Built-in field names that should not be processed as custom fields.
 	 *
 	 * These fields are handled by WordPress core or other parts of the RSVP system.
 	 *
 	 * @since 0.33.0
-	 * @var array
+	 * @var string[]
 	 */
 	const BUILT_IN_FIELDS = array(
 		'author',
@@ -105,8 +130,8 @@ final class Rsvp_Form {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The original block content.
-	 * @param array  $block         The block instance array, used to determine the event.
+	 * @param string               $block_content The original block content.
+	 * @param array<string, mixed> $block         The block instance array, used to determine the event.
 	 *
 	 * @return string The modified block content as a functional RSVP form.
 	 */
@@ -120,7 +145,7 @@ final class Rsvp_Form {
 		$rsvp = new Rsvp( $post_id );
 
 		if (
-			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' )
+			! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT )
 			|| ! Event::is_viewable( $post_id )
 			|| ! $rsvp->is_enabled()
 			|| ! $rsvp->allows_open_rsvp()
@@ -132,8 +157,8 @@ final class Rsvp_Form {
 		$schema_form_id = $this->get_form_schema_id( $post_id, $block );
 
 		$block_content = trim( $block_content );
-		$block_content = preg_replace( '/^<div\b/', '<form', $block_content );
-		$block_content = preg_replace(
+		$block_content = (string) preg_replace( '/^<div\b/', '<form', $block_content );
+		$block_content = (string) preg_replace(
 			'/(<\/div>)$/',
 			'<input type="hidden" name="comment_post_ID" value="' . intval( $post_id ) . '">' .
 			'<input type="hidden" name="' . esc_attr( Rsvp::COMMENT_TYPE ) . '" value="1">' .
@@ -154,6 +179,14 @@ final class Rsvp_Form {
 		$tag->set_attribute( 'data-wp-init', 'callbacks.initRsvpForm' );
 		$tag->set_attribute( 'data-wp-on--submit', 'actions.handleRsvpFormSubmit' );
 		$tag->set_attribute( 'data-wp-context', wp_json_encode( array( 'postId' => $post_id ) ) );
+
+		// The form's error reporting runs in an Interactivity module, which
+		// cannot import @wordpress/i18n, so the fallback message is rendered
+		// here where it can still be translated.
+		$tag->set_attribute(
+			'data-gatherpress-error-message',
+			__( 'Sorry, there was an issue processing your RSVP. Please try again.', 'gatherpress' )
+		);
 
 		$event = new Event( $post_id );
 
@@ -184,8 +217,8 @@ final class Rsvp_Form {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The rendered block content.
-	 * @param array  $block         The block instance array.
+	 * @param string               $block_content The rendered block content.
+	 * @param array<string, mixed> $block         The block instance array.
 	 *
 	 * @return string The modified block content or empty string if block should be hidden.
 	 */
@@ -208,15 +241,17 @@ final class Rsvp_Form {
 		// Check if this is a success redirect (form was just submitted).
 		$is_success = 'true' === Utility::get_http_input( INPUT_GET, 'gatherpress_rsvp_success' );
 
+		$visibility_json = (string) wp_json_encode( $visibility );
+
 		// Determine if block should be visible using centralized logic.
-		$should_show = $this->determine_visibility( wp_json_encode( $visibility ), $is_success, $is_past );
+		$should_show = $this->determine_visibility( $visibility_json, $is_success, $is_past );
 
 		// Add the visibility data attribute(s) to the rendered block.
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
 		if ( $tag->next_tag() ) {
 			// Store visibility as JSON.
-			$tag->set_attribute( 'data-gatherpress-rsvp-form-visibility', wp_json_encode( $visibility ) );
+			$tag->set_attribute( 'data-gatherpress-rsvp-form-visibility', $visibility_json );
 
 			// Add event state for frontend JavaScript.
 			if ( $is_past ) {
@@ -255,7 +290,7 @@ final class Rsvp_Form {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array $block The block instance array.
+	 * @param array<string, mixed> $block The block instance array.
 	 *
 	 * @return int|null The post ID or null if not found.
 	 */
@@ -299,7 +334,8 @@ final class Rsvp_Form {
 		while ( $tag->next_tag() ) {
 			$visibility_attr = $tag->get_attribute( 'data-gatherpress-rsvp-form-visibility' );
 
-			if ( $visibility_attr ) {
+			// A valueless attribute reads back as true.
+			if ( is_string( $visibility_attr ) && '' !== $visibility_attr ) {
 				$this->apply_visibility_rule( $tag, $visibility_attr, $is_success, $is_past );
 			}
 		}
@@ -421,9 +457,49 @@ final class Rsvp_Form {
 			return;
 		}
 
-		// Parse blocks and extract schemas for each RSVP Form.
-		$blocks  = parse_blocks( $post->post_content );
+		// Schema IDs are the list index, so the keys have to stay integers.
+		$blocks  = array_values( parse_blocks( $post->post_content ) );
 		$schemas = $this->extract_form_schemas_from_blocks( $blocks );
+
+		/**
+		 * Filters the RSVP form schemas about to be stored for a post.
+		 *
+		 * `gatherpress_rsvp_form_schemas` post meta is what every consumer
+		 * reads to validate and persist custom fields, but this method is its
+		 * only producer and it derives the set from the post's RSVP Form
+		 * blocks. A post with no such block resolves to an empty set, which
+		 * deletes the meta, so a schema written by anything other than the
+		 * block editor is destroyed the next time the post is saved.
+		 *
+		 * This filter is how a consumer keeps its own schemas: return them
+		 * alongside, or instead of, the block-derived set. The meta is only
+		 * deleted when the filtered result is still empty, so returning
+		 * anything non-empty keeps it.
+		 *
+		 * @example
+		 *   Keep registration questions stored outside the block editor.
+		 *
+		 *   ```php
+		 *   add_filter(
+		 *       'gatherpress_rsvp_form_schemas',
+		 *       function ( array $schemas, int $post_id ): array {
+		 *           $mine = my_plugin_get_registration_schema( $post_id );
+		 *
+		 *           return $mine ? array_merge( $schemas, $mine ) : $schemas;
+		 *       },
+		 *       10,
+		 *       2
+		 *   );
+		 *   ```
+		 *
+		 * @since 0.36.0
+		 *
+		 * @param array<string, mixed> $schemas Schemas derived from the post's RSVP Form blocks, keyed by form id.
+		 * @param int                  $post_id The post being saved.
+		 *
+		 * @return array<string, mixed> The schemas to store, or an empty array to remove the meta.
+		 */
+		$schemas = (array) apply_filters( 'gatherpress_rsvp_form_schemas', $schemas, $post_id );
 
 		if ( ! empty( $schemas ) ) {
 			// Save schemas as post meta.
@@ -442,9 +518,9 @@ final class Rsvp_Form {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array $blocks Array of parsed blocks.
+	 * @param array<int, array<string, mixed>> $blocks Array of parsed blocks.
 	 *
-	 * @return array Array of form schemas keyed by form ID.
+	 * @return array<string, FormSchema> Array of form schemas keyed by form ID.
 	 */
 	private function extract_form_schemas_from_blocks( array $blocks ): array {
 		$schemas = array();
@@ -457,7 +533,7 @@ final class Rsvp_Form {
 				if ( ! empty( $fields ) ) {
 					$schemas[ $form_id ] = array(
 						'fields' => $fields,
-						'hash'   => wp_hash( wp_json_encode( $fields ) ),
+						'hash'   => wp_hash( (string) wp_json_encode( $fields ) ),
 					);
 				}
 			}
@@ -484,9 +560,9 @@ final class Rsvp_Form {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array $inner_blocks Array of inner blocks.
+	 * @param array<int, array<string, mixed>> $inner_blocks Array of inner blocks.
 	 *
-	 * @return array Array of form field configurations.
+	 * @return array<string, FieldConfig> Array of form field configurations keyed by field name.
 	 */
 	private function extract_form_fields_from_inner_blocks( array $inner_blocks ): array {
 		$fields = array();
@@ -505,6 +581,14 @@ final class Rsvp_Form {
 						'placeholder' => sanitize_text_field( $attrs['placeholder'] ?? '' ),
 					);
 
+					// Only carried when the author pinned one, so a schema
+					// stays free of generated ids that change every render.
+					$input_id = trim( sanitize_text_field( $attrs['inputId'] ?? '' ) );
+
+					if ( '' !== $input_id ) {
+						$field_config['input_id'] = $input_id;
+					}
+
 					// Add type-specific validation rules.
 					switch ( $field_config['type'] ) {
 						case 'email':
@@ -512,7 +596,7 @@ final class Rsvp_Form {
 							break;
 						case 'select':
 						case 'radio':
-							$field_config['options'] = array_map( 'sanitize_text_field', $attrs['options'] ?? array() );
+							$field_config['options'] = $this->get_field_options( $attrs );
 							break;
 						case 'textarea':
 							$field_config['max_length'] = intval( $attrs['maxLength'] ?? 1000 );
@@ -536,6 +620,47 @@ final class Rsvp_Form {
 	}
 
 	/**
+	 * Get sanitized options from form field attributes.
+	 *
+	 * Supports the current radioOptions attribute and the legacy options key.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, mixed> $attributes Form field attributes.
+	 *
+	 * @return string[] Sanitized option values.
+	 */
+	private function get_field_options( array $attributes ): array {
+		$options = $attributes['radioOptions'] ?? $attributes['options'] ?? array();
+
+		if ( isset( $attributes['radioOptions'] ) ) {
+			$options = array_map(
+				static function ( $option ): string {
+					if ( ! is_array( $option ) ) {
+						return sanitize_text_field( $option );
+					}
+
+					$value = $option['value'] ?? '';
+					$value = '' === $value ? ( $option['label'] ?? '' ) : $value;
+					return sanitize_text_field( $value );
+				},
+				(array) $options
+			);
+		} else {
+			$options = array_map( 'sanitize_text_field', (array) $options );
+		}
+
+		return array_values(
+			array_filter(
+				$options,
+				static function ( $option ): bool {
+					return '' !== $option;
+				}
+			)
+		);
+	}
+
+	/**
 	 * Get the form schema ID for a specific RSVP Form block.
 	 *
 	 * Determines the position-based schema ID for this form block
@@ -543,10 +668,10 @@ final class Rsvp_Form {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param int   $post_id The post ID.
-	 * @param array $block   The current block being rendered.
+	 * @param int                  $post_id The post ID.
+	 * @param array<string, mixed> $block   The current block being rendered.
 	 *
-	 * @return string The form schema ID (e.g., 'form_0', 'form_2').
+	 * @return string The form schema ID (e.g., 'form_0', 'form_2', '4_form_1' for a nested form).
 	 */
 	private function get_form_schema_id( int $post_id, array $block ): string {
 		$post = get_post( $post_id );
@@ -554,50 +679,46 @@ final class Rsvp_Form {
 			return 'form_0'; // Fallback.
 		}
 
-		$blocks     = parse_blocks( $post->post_content );
-		$form_index = $this->find_form_index_in_blocks( $blocks, $block );
+		$blocks = array_values( parse_blocks( $post->post_content ) );
 
-		return 'form_' . $form_index;
+		return $this->find_form_schema_id_in_blocks( $blocks, $block ) ?? 'form_0';
 	}
 
 	/**
-	 * Find the index of the current form block in the blocks array.
+	 * Find the schema ID of the current form block in the blocks array.
 	 *
 	 * Recursively searches through blocks to find the current RSVP Form
-	 * block and returns its position index.
+	 * block. The ID is built the same way extract_form_schemas_from_blocks()
+	 * builds it, so it names the schema stored for this form: `form_{index}`
+	 * at the top level, prefixed with `{parent index}_` for each nesting level.
 	 *
 	 * @since 0.33.0
+	 * @since 0.36.0 Renamed from find_form_index_in_blocks(), and returns the form schema ID rather than a block index.
 	 *
-	 * @param array $blocks       Array of parsed blocks.
-	 * @param array $target_block The block we're looking for.
-	 * @param int   $base_index   Base index for nested blocks.
+	 * @param array<int, array<string, mixed>> $blocks       Array of parsed blocks.
+	 * @param array<string, mixed>             $target_block The block we're looking for.
 	 *
-	 * @return int The index of the form block.
+	 * @return string|null The form schema ID, or null when the form is not in the blocks.
 	 */
-	private function find_form_index_in_blocks( array $blocks, array $target_block, int $base_index = 0 ): int {
+	private function find_form_schema_id_in_blocks( array $blocks, array $target_block ): ?string {
 		foreach ( $blocks as $index => $block ) {
 			if (
 				self::BLOCK_NAME === $block['blockName'] &&
 				$this->blocks_match( $block, $target_block )
 			) {
-				// Compare block content or attributes to identify the same block.
-				return $base_index + $index;
+				return 'form_' . $index;
 			}
 
-			// Check nested blocks.
 			if ( ! empty( $block['innerBlocks'] ) ) {
-				$nested_index = $this->find_form_index_in_blocks(
-					$block['innerBlocks'],
-					$target_block,
-					$base_index + $index * 100 // Use larger offset for nested blocks.
-				);
-				if ( -1 !== $nested_index ) {
-					return $nested_index;
+				$nested_id = $this->find_form_schema_id_in_blocks( $block['innerBlocks'], $target_block );
+
+				if ( null !== $nested_id ) {
+					return $index . '_' . $nested_id;
 				}
 			}
 		}
 
-		return 0; // Fallback to first form.
+		return null;
 	}
 
 	/**
@@ -608,8 +729,8 @@ final class Rsvp_Form {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array $block1 First block to compare.
-	 * @param array $block2 Second block to compare.
+	 * @param array<string, mixed> $block1 First block to compare.
+	 * @param array<string, mixed> $block2 Second block to compare.
 	 *
 	 * @return bool True if blocks match.
 	 */
@@ -649,37 +770,24 @@ final class Rsvp_Form {
 	 */
 	public function process_custom_fields_for_form( int $comment_id ): void {
 		$comment = get_comment( $comment_id );
-		if ( ! $comment || Rsvp::COMMENT_TYPE !== $comment->comment_type ) {
+		if ( ! $comment instanceof WP_Comment || ! Rsvp::is_comment_type( $comment ) ) {
 			return;
 		}
 
 		$post_id        = (int) $comment->comment_post_ID;
-		$form_schema_id = Utility::get_http_input( INPUT_POST, 'gatherpress_form_schema_id' );
-
-		// Bail when the form-schema id is missing, when no schemas are stored
-		// for this post, when the requested schema id isn't one of them, or
-		// when the matched schema has no field definitions.
-		$schemas = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true );
-
-		if ( empty( $form_schema_id )
-			|| empty( $schemas )
-			|| ! isset( $schemas[ $form_schema_id ] )
-			|| empty( $schemas[ $form_schema_id ]['fields'] )
-		) {
-			return;
-		}
-
-		$schema = $schemas[ $form_schema_id ];
+		$form_schema_id = (string) Utility::get_http_input( INPUT_POST, 'gatherpress_form_schema_id' );
+		$fields         = $this->get_schema_fields( $post_id, $form_schema_id );
 
 		// Process each custom field from the schema.
-		foreach ( $schema['fields'] as $field_name => $field_config ) {
+		foreach ( $fields as $field_name => $field_config ) {
 			// Skip built-in fields.
 			if ( in_array( $field_name, self::BUILT_IN_FIELDS, true ) ) {
 				continue;
 			}
 
-			$field_value = Utility::get_http_input( INPUT_POST, $field_name, null );
-			if ( empty( $field_value ) ) {
+			// get_http_input() returns '' for an absent field, never null.
+			$field_value = Utility::get_http_input( INPUT_POST, $field_name );
+			if ( '' === $field_value ) {
 				continue;
 			}
 
@@ -692,28 +800,269 @@ final class Rsvp_Form {
 	}
 
 	/**
+	 * Get the custom field definitions for a stored form schema.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param int    $post_id        The event post ID the schema belongs to.
+	 * @param string $form_schema_id The submitted form-schema id.
+	 *
+	 * The stored meta is whatever is in the database, so every level is
+	 * type-checked. A schema that has been corrupted, hand-edited, or written
+	 * by an older version yields no fields rather than a fatal downstream.
+	 *
+	 * @return array<string, mixed> The schema's field definitions, or an empty array when there are none.
+	 * @phpstan-return array<string, FieldConfig>
+	 */
+	public function get_schema_fields( int $post_id, string $form_schema_id ): array {
+		// Bail when the form-schema id is missing, when no schemas are stored
+		// for this post, when the requested schema id isn't one of them, or
+		// when the matched schema has no usable field definitions.
+		$schemas = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true );
+
+		if ( '' === $form_schema_id
+			|| ! is_array( $schemas )
+			|| empty( $schemas[ $form_schema_id ]['fields'] )
+			|| ! is_array( $schemas[ $form_schema_id ]['fields'] )
+		) {
+			return array();
+		}
+
+		/**
+		 * Field definitions from the stored schema.
+		 *
+		 * Any field whose config is not an array is dropped, because callers
+		 * pass each one to sanitize_custom_field_value(), which is typed
+		 * `array $config`. Individual keys are still read defensively.
+		 *
+		 * @var array<string, FieldConfig> $fields
+		 */
+		$fields = array_filter( $schemas[ $form_schema_id ]['fields'], 'is_array' );
+
+		return $fields;
+	}
+
+	/**
+	 * Validate submitted values against a form schema's custom fields.
+	 *
+	 * Runs before the RSVP comment is created, so a submission that fails
+	 * here is rejected outright rather than stored with answers missing.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param int                  $post_id        The event post ID the schema belongs to.
+	 * @param string               $form_schema_id The submitted form-schema id.
+	 * @param array<string, mixed> $values         Submitted values keyed by field name.
+	 *
+	 * @return array<string, string> Error messages keyed by field name. Empty when every value is acceptable.
+	 */
+	public function validate_custom_fields( int $post_id, string $form_schema_id, array $values ): array {
+		$errors  = array();
+		$schemas = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true );
+
+		// An event with no stored schemas has no custom fields to answer for.
+		// A schema meta value that is not an array is corrupt rather than
+		// absent, and there is nothing in it to enforce either.
+		if ( ! is_array( $schemas ) || array() === $schemas ) {
+			return $errors;
+		}
+
+		// The event defines at least one form, so the submission has to name
+		// one of its schemas. Without this an unrecognized id resolves to no
+		// fields, which skips every required answer on the form.
+		if ( '' === $form_schema_id || ! isset( $schemas[ $form_schema_id ] ) ) {
+			return array(
+				self::SCHEMA_ID_FIELD => __(
+					'This form could not be verified. Please reload the page and try again.',
+					'gatherpress'
+				),
+			);
+		}
+
+		foreach ( $this->get_schema_fields( $post_id, $form_schema_id ) as $field_name => $field_config ) {
+			// Skip built-in fields, which are validated by the RSVP form itself.
+			if ( in_array( $field_name, self::BUILT_IN_FIELDS, true ) ) {
+				continue;
+			}
+
+			$value    = $values[ $field_name ] ?? null;
+			$required = ! empty( $field_config['required'] );
+
+			// An explicit "0" is a real answer, so only null and '' count as unanswered.
+			if ( null === $value || '' === $value ) {
+				if ( $required ) {
+					$errors[ $field_name ] = $this->get_required_message( $field_name, $field_config );
+				}
+
+				continue;
+			}
+
+			$sanitized = $this->sanitize_custom_field_value( $value, $field_config );
+
+			if ( false === $sanitized ) {
+				$errors[ $field_name ] = $this->get_field_error_message( $field_name, $field_config );
+
+				continue;
+			}
+
+			// A required answer that sanitizes away, whitespace being the
+			// usual case, is not an answer. An explicit "0" survives this
+			// because it sanitizes to the string "0" rather than ''.
+			if ( $required && '' === $sanitized ) {
+				$errors[ $field_name ] = $this->get_required_message( $field_name, $field_config );
+			}
+		}
+
+		return $errors;
+	}
+
+	/**
+	 * Get the message for a required field that was left unanswered.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string               $field_name   The field's name in the schema.
+	 * @param array<string, mixed> $field_config The field configuration from the schema.
+	 *
+	 * @return string The message to show the submitter.
+	 */
+	private function get_required_message( string $field_name, array $field_config ): string {
+		return sprintf(
+			/* translators: %s: The form field's label. */
+			__( '%s is required.', 'gatherpress' ),
+			$this->get_field_label( $field_name, $field_config )
+		);
+	}
+
+	/**
+	 * Validate a traditional form submission's custom fields.
+	 *
+	 * Reads each value the same way the save path does, so validation and
+	 * storage always see the same input.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param int    $post_id        The event post ID the schema belongs to.
+	 * @param string $form_schema_id The submitted form-schema id.
+	 *
+	 * @return array<string, string> Error messages keyed by field name. Empty when every value is acceptable.
+	 */
+	public function validate_custom_fields_from_post( int $post_id, string $form_schema_id ): array {
+		$values = array();
+
+		foreach ( array_keys( $this->get_schema_fields( $post_id, $form_schema_id ) ) as $field_name ) {
+			$values[ $field_name ] = Utility::get_http_input( INPUT_POST, (string) $field_name );
+		}
+
+		return $this->validate_custom_fields( $post_id, $form_schema_id, $values );
+	}
+
+	/**
+	 * Get a field's display label, falling back to its name.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string               $field_name   The field's name in the schema.
+	 * @param array<string, mixed> $field_config The field configuration from the schema.
+	 *
+	 * @return string The label to show the submitter.
+	 */
+	private function get_field_label( string $field_name, array $field_config ): string {
+		$label = trim( (string) ( $field_config['label'] ?? '' ) );
+
+		return '' !== $label ? $label : $field_name;
+	}
+
+	/**
+	 * Get the message explaining why a submitted value was rejected.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string               $field_name   The field's name in the schema.
+	 * @param array<string, mixed> $field_config The field configuration from the schema.
+	 *
+	 * @return string The message to show the submitter.
+	 */
+	private function get_field_error_message( string $field_name, array $field_config ): string {
+		$label = $this->get_field_label( $field_name, $field_config );
+
+		// A type that cannot fail sanitization never reaches here, so the
+		// default arm covers an unknown or absent type rather than `text`.
+		return match ( (string) ( $field_config['type'] ?? 'text' ) ) {
+			'email' => sprintf(
+				/* translators: %s: The form field's label. */
+				__( '%s must be a valid email address.', 'gatherpress' ),
+				$label
+			),
+			'url' => sprintf(
+				/* translators: %s: The form field's label. */
+				__( '%s must be a valid URL.', 'gatherpress' ),
+				$label
+			),
+			'number' => sprintf(
+				/* translators: %s: The form field's label. */
+				__( '%s must be a number.', 'gatherpress' ),
+				$label
+			),
+			'select', 'radio' => sprintf(
+				/* translators: %s: The form field's label. */
+				__( '%s must be one of the available choices.', 'gatherpress' ),
+				$label
+			),
+			'textarea' => sprintf(
+				/* translators: 1: The form field's label, 2: The maximum number of characters allowed. */
+				__( '%1$s must be %2$s characters or fewer.', 'gatherpress' ),
+				$label,
+				number_format_i18n( (int) ( $field_config['max_length'] ?? 1000 ) )
+			),
+			default => sprintf(
+				/* translators: %s: The form field's label. */
+				__( '%s is not valid.', 'gatherpress' ),
+				$label
+			),
+		};
+	}
+
+	/**
 	 * Sanitize a custom field value against its configuration.
 	 *
 	 * Shared sanitization logic for both traditional and Ajax form submissions.
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param mixed $value  The field value to sanitize.
-	 * @param array $config The field configuration from the schema.
+	 * The config is read from post meta, so individual keys are checked
+	 * rather than assumed: a stored schema can carry the wrong type.
+	 *
+	 * @param mixed                $value  The field value to sanitize.
+	 * @param array<string, mixed> $config The field configuration from the schema.
 	 *
 	 * @return mixed|false The sanitized value, or false if sanitization fails.
 	 */
 	public function sanitize_custom_field_value( $value, array $config ): mixed {
-		// Handle required field validation.
-		if ( ! empty( $config['required'] ) && empty( $value ) ) {
+		// A REST submission carries a decoded JSON body, so a field can arrive
+		// as an array or an object. The sanitizers below take strings and
+		// raise a TypeError on anything else, so reject it as a bad answer.
+		// Null is left alone: the required check below is what answers for it.
+		if ( null !== $value && ! is_scalar( $value ) ) {
 			return false;
 		}
+
+		// Handle required field validation. An explicit "0" is a real option
+		// value (the schema preserves it), not an empty submit.
+		if ( ! empty( $config['required'] ) && ( null === $value || '' === $value ) ) {
+			return false;
+		}
+
+		// A scalar is still not a string: a JSON body can carry a bool or a
+		// number, and the sanitizers below only take strings. Cast once, after
+		// the requiredness check has had the raw value.
+		$value = (string) $value;
 
 		// Handle type-specific validation; assign to $result so the switch is a
 		// dispatch (one return) rather than a 7-arm return chain.
 		$result = false;
 
-		switch ( $config['type'] ) {
+		switch ( (string) ( $config['type'] ?? 'text' ) ) {
 			case 'email':
 				$sanitized = sanitize_email( $value );
 				$result    = is_email( $sanitized ) ? $sanitized : false;
@@ -730,8 +1079,12 @@ final class Rsvp_Form {
 
 			case 'select':
 			case 'radio':
+				// `??` only covers a null options key. A stored schema can
+				// carry a scalar there, which in_array() rejects with a
+				// TypeError rather than a false.
+				$options   = $config['options'] ?? array();
 				$sanitized = sanitize_text_field( $value );
-				$result    = in_array( $sanitized, $config['options'] ?? array(), true ) ? $sanitized : false;
+				$result    = is_array( $options ) && in_array( $sanitized, $options, true ) ? $sanitized : false;
 				break;
 
 			case 'checkbox':
@@ -740,7 +1093,7 @@ final class Rsvp_Form {
 
 			case 'textarea':
 				$sanitized  = sanitize_textarea_field( $value );
-				$max_length = $config['max_length'] ?? 1000;
+				$max_length = (int) ( $config['max_length'] ?? 1000 );
 				$result     = strlen( $sanitized ) <= $max_length ? $sanitized : false;
 				break;
 
@@ -760,8 +1113,8 @@ final class Rsvp_Form {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The block content.
-	 * @param array  $block         The block data.
+	 * @param string               $block_content The block content.
+	 * @param array<string, mixed> $block         The block data.
 	 *
 	 * @return string The processed block content.
 	 */
@@ -771,10 +1124,10 @@ final class Rsvp_Form {
 		$post_id        = $block_instance->get_post_id( $block );
 
 		// Get max guest limit from event settings.
-		$max_guest_limit = get_post_meta( $post_id, 'gatherpress_max_guest_limit', true );
+		$guest_limit = get_post_meta( $post_id, 'gatherpress_guest_limit', true );
 
 		// Only process if max guest limit is numeric.
-		if ( ! is_numeric( $max_guest_limit ) ) {
+		if ( ! is_numeric( $guest_limit ) ) {
 			return $block_content;
 		}
 
@@ -785,7 +1138,7 @@ final class Rsvp_Form {
 			$name_attr = $tag->get_attribute( 'name' );
 
 			if ( 'gatherpress_rsvp_form_guests' === $name_attr ) {
-				$tag->set_attribute( 'max', (string) $max_guest_limit );
+				$tag->set_attribute( 'max', (string) $guest_limit );
 			}
 		}
 

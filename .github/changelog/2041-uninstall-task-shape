@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Establish the uninstall task pattern: an abstract base owning the multisite fan-out, one class per cleanup concern, and a registry uninstall.php runs, with the transient wipe as the first task.

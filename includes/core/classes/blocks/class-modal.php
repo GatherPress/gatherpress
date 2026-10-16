@@ -76,10 +76,18 @@ final class Modal {
 	 * Dynamically updates the modal block's rendered content to include necessary
 	 * attributes for improved accessibility and functionality.
 	 *
-	 * @since 0.33.0
+	 * A modal with a custom name (`metadata.name`) uses it as its `aria-label`.
+	 * A modal without one gets the generic "Modal" label and the
+	 * `data-gatherpress-default-label` marker. When the modal opens, the view
+	 * script points `aria-labelledby` at the first heading the user can see,
+	 * which only the browser knows. An RSVP modal without a custom name, for
+	 * example, shows and hides its headings after the page loads.
 	 *
-	 * @param string $block_content The HTML content of the block.
-	 * @param array  $block         The parsed block data.
+	 * @since 0.33.0
+	 * @since 0.36.0 Marks modals that have no custom name.
+	 *
+	 * @param string               $block_content The HTML content of the block.
+	 * @param array<string, mixed> $block         The parsed block data.
 	 *
 	 * @return string The modified block content with updated attributes.
 	 */
@@ -87,7 +95,14 @@ final class Modal {
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
 		if ( $tag->next_tag() ) {
-			$modal_name = $block['attrs']['metadata']['name'] ?? __( 'Modal', 'gatherpress' );
+			$modal_name = $block['attrs']['metadata']['name'] ?? '';
+			$modal_name = is_string( $modal_name ) ? trim( $modal_name ) : '';
+
+			if ( '' === $modal_name ) {
+				$modal_name = __( 'Modal', 'gatherpress' );
+
+				$tag->set_attribute( 'data-gatherpress-default-label', 'true' );
+			}
 
 			$tag->set_attribute( 'role', 'dialog' );
 			$tag->set_attribute( 'aria-modal', 'true' );
@@ -112,8 +127,8 @@ final class Modal {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The HTML content of the block.
-	 * @param array  $block         The parsed block data.
+	 * @param string               $block_content The HTML content of the block.
+	 * @param array<string, mixed> $block         The parsed block data.
 	 *
 	 * @return string The updated block content with the applied `z-index` styling.
 	 */
@@ -121,13 +136,15 @@ final class Modal {
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
 		if ( $tag->next_tag() ) {
-			$z_index               = $block['attrs']['zIndex'] ?? 1000;
-			$existing_styles       = $tag->get_attribute( 'style' ) ?? '';
+			$z_index = $block['attrs']['zIndex'] ?? 1000;
+
+			// A valueless attribute reads back as true.
+			$existing_styles       = $tag->get_attribute( 'style' );
+			$existing_styles       = is_string( $existing_styles ) ? $existing_styles : '';
 			$existing_styles_array = explode( ';', rtrim( $existing_styles, ';' ) );
 			$existing_styles_clean = implode( ';', array_filter( $existing_styles_array ) ) . ';';
-			$updated_styles        = trim(
-				sprintf( $existing_styles_clean . ' z-index: %d;', $z_index )
-			);
+			// Keep existing styles out of the format string, where a gradient stop's `%` reads as a specifier.
+			$updated_styles = trim( $existing_styles_clean . sprintf( ' z-index: %d;', $z_index ) );
 
 			$tag->set_attribute( 'style', $updated_styles );
 		}
@@ -144,8 +161,8 @@ final class Modal {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The HTML content of the block.
-	 * @param array  $block         The parsed block data.
+	 * @param string               $block_content The HTML content of the block.
+	 * @param array<string, mixed> $block         The parsed block data.
 	 *
 	 * @return string The modified block content. Returns an empty string if the block should be removed.
 	 */
@@ -169,8 +186,8 @@ final class Modal {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The HTML content of the block.
-	 * @param array  $block         The parsed block data.
+	 * @param string               $block_content The HTML content of the block.
+	 * @param array<string, mixed> $block         The parsed block data.
 	 *
 	 * @return string The modified block content. Returns an empty string if the block should be removed.
 	 */

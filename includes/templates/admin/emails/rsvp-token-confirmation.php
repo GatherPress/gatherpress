@@ -52,7 +52,7 @@ $gatherpress_venue       = $gatherpress_event->get_venue_information()['name'];
 
 			<div style="text-align: center; margin: 30px 0;">
 				<?php // phpcs:disable Generic.Files.LineLength.TooLong ?>
-				<a href="<?php echo esc_url( $token_url ); ?>" style="background-color: #3498db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+				<a href="<?php echo esc_url( $token_url ); ?>" style="background-color: #0a58ca; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold; font-size: 16px;">
 				<?php // phpcs:enable Generic.Files.LineLength.TooLong ?>
 					<?php esc_html_e( 'Confirm My RSVP', 'gatherpress' ); ?>
 				</a>

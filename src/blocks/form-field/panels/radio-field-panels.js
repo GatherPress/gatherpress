@@ -20,6 +20,11 @@ import {
 } from '@wordpress/components';
 
 /**
+ * Internal dependencies
+ */
+import { getOptionUpdates } from '../helpers';
+
+/**
  * Renders styling and configuration panels for radio button form fields.
  *
  * @param {Object}   props               - Component props.
@@ -44,19 +49,15 @@ export default function RadioFieldPanels( { attributes, setAttributes } ) {
 
 	// Handle radio option changes
 	const updateRadioOption = ( index, field, value ) => {
-		const newOptions = [ ...radioOptions ];
-		newOptions[ index ] = { ...newOptions[ index ], [ field ]: value };
-
-		if ( 'label' === field ) {
-			const cleanValue = value
-				.toLowerCase()
-				.split( /[^a-z0-9]+/ ) // Split on non-alphanumeric sequences.
-				.filter( ( part ) => 0 < part.length ) // Remove empty strings.
-				.join( '-' ); // Join with dashes.
-			newOptions[ index ].value = cleanValue || value;
-		}
-
-		setAttributes( { radioOptions: newOptions } );
+		setAttributes(
+			getOptionUpdates( {
+				options: radioOptions,
+				index,
+				field,
+				value,
+				fieldValue,
+			} ),
+		);
 	};
 
 	const addRadioOption = () => {
@@ -93,6 +94,7 @@ export default function RadioFieldPanels( { attributes, setAttributes } ) {
 						>
 							<FlexItem>
 								<TextControl
+									__next40pxDefaultSize
 									label={ `${ __( 'Option', 'gatherpress' ) } ${ index + 1 }` }
 									value={ option.label }
 									onChange={ ( value ) =>
@@ -161,8 +163,8 @@ export default function RadioFieldPanels( { attributes, setAttributes } ) {
 			<PanelBody title={ __( 'Label Styles', 'gatherpress' ) }>
 				<BaseControl>
 					<FontSizePicker
+						__next40pxDefaultSize
 						withReset={ true }
-						size="__unstable-large"
 						onChange={ ( value ) =>
 							setAttributes( { labelFontSize: value } )
 						}
@@ -170,6 +172,7 @@ export default function RadioFieldPanels( { attributes, setAttributes } ) {
 					/>
 				</BaseControl>
 				<RangeControl
+					__next40pxDefaultSize
 					label={ __( 'Line Height', 'gatherpress' ) }
 					value={ labelLineHeight }
 					onChange={ ( value ) =>
@@ -184,8 +187,8 @@ export default function RadioFieldPanels( { attributes, setAttributes } ) {
 			<PanelBody title={ __( 'Option Styles', 'gatherpress' ) }>
 				<BaseControl>
 					<FontSizePicker
+						__next40pxDefaultSize
 						withReset={ true }
-						size="__unstable-large"
 						onChange={ ( value ) =>
 							setAttributes( { optionFontSize: value } )
 						}
@@ -194,6 +197,7 @@ export default function RadioFieldPanels( { attributes, setAttributes } ) {
 				</BaseControl>
 
 				<RangeControl
+					__next40pxDefaultSize
 					label={ __( 'Line Height', 'gatherpress' ) }
 					value={ optionLineHeight }
 					onChange={ ( value ) =>

@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Add `Event::is_online()` and `Event::set_online()` for owning the online-event term plus `gatherpress_online_event_link` meta as a single coordinated write, plus `Venue\Setup::is_online_event_term_slug()` and `Venue\Setup::get_online_event_term_id()` for direct access. Editor JS now reads the pre-resolved sentinel term id from `gatherpress.config.onlineEventTermIds` instead of issuing a taxonomy REST lookup on every render.

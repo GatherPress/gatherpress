@@ -23,6 +23,7 @@ use GatherPress\Core\Settings;
 use GatherPress\Core\Starter_Pattern_Loader;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
+use GatherPress\Core\Venue;
 use stdClass;
 use WP_Block;
 use WP_Post;
@@ -90,6 +91,7 @@ final class Setup {
 	 * @return void
 	 */
 	protected function instantiate_classes(): void {
+		Abilities::get_instance();
 		Admin_List::get_instance();
 		Meta::get_instance();
 		Query::get_instance();
@@ -117,6 +119,35 @@ final class Setup {
 		add_filter( 'the_time', array( $this, 'get_the_event_date' ) );
 		add_filter( 'render_block_core/post-date', array( $this, 'render_event_post_date_block' ), 10, 3 );
 		add_filter( 'display_post_states', array( $this, 'set_event_archive_labels' ), 10, 2 );
+		add_filter( 'block_editor_settings_all', array( $this, 'add_editor_settings' ) );
+	}
+
+	/**
+	 * Adds GatherPress event configuration to the block editor settings.
+	 *
+	 * Exposes the event post types so the editor can search events without
+	 * hardcoding a post type slug.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, mixed> $settings The block editor settings array.
+	 *
+	 * @return array<string, mixed> The modified block editor settings array.
+	 */
+	public function add_editor_settings( array $settings ): array {
+		if ( ! isset( $settings['gatherpress'] ) ) {
+			$settings['gatherpress'] = array();
+		}
+
+		if ( ! isset( $settings['gatherpress']['config'] ) ) {
+			$settings['gatherpress']['config'] = array();
+		}
+
+		$settings['gatherpress']['config']['eventPostTypes'] = array_values(
+			get_post_types_by_support( Event::SUPPORT )
+		);
+
+		return $settings;
 	}
 
 	/**
@@ -195,10 +226,10 @@ final class Setup {
 					'comments',
 					'revisions',
 					'custom-fields',
-					'gatherpress-event-date',
-					'gatherpress-rsvp',
-					'gatherpress-venue',
-					'gatherpress-online-event',
+					Event::SUPPORT,
+					Rsvp::SUPPORT,
+					Venue::ASSIGNMENT_SUPPORT,
+					Venue::ONLINE_SUPPORT,
 				),
 				'menu_icon'     => 'dashicons-nametag',
 				// Note: has_archive must be true for event feed URLs (/event/feed/) to work.
@@ -279,7 +310,7 @@ final class Setup {
 	 * @return void
 	 */
 	public function register_starter_pattern(): void {
-		$post_types = get_post_types_by_support( 'gatherpress-event-date' );
+		$post_types = get_post_types_by_support( Event::SUPPORT );
 
 		if ( empty( $post_types ) ) {
 			return;
@@ -382,7 +413,7 @@ final class Setup {
 		// event-date support.
 		if ( ! is_post_type_archive()
 			|| ! is_string( $post_type )
-			|| ! post_type_supports( $post_type, 'gatherpress-event-date' )
+			|| ! post_type_supports( $post_type, Event::SUPPORT )
 		) {
 			return;
 		}
@@ -574,7 +605,7 @@ final class Setup {
 	 * @return void
 	 */
 	public function check_waiting_list( int $post_id ): void {
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT ) ) {
 			return;
 		}
 
@@ -598,7 +629,7 @@ final class Setup {
 	public function delete_event( int $post_id ): void {
 		global $wpdb;
 
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), Event::SUPPORT ) ) {
 			return;
 		}
 
@@ -633,14 +664,16 @@ final class Setup {
 	 */
 	public function get_the_event_date( string $the_date, string $format = '', $post = null ): string {
 		$settings       = Settings::get_instance();
-		$use_event_date = $settings->get( 'post_or_event_date' );
+		$use_event_date = $settings->get( 'use_event_date_for_publish' );
 
 		// Determine the post type and ID from the post object or global context.
 		$post_type = $post instanceof WP_Post ? $post->post_type : get_post_type();
 		$post_id   = $post instanceof WP_Post ? $post->ID : get_the_ID();
 
+		// get_the_ID() returns false when there is no post in the loop to date.
 		if (
-			! post_type_supports( (string) $post_type, 'gatherpress-event-date' )
+			false === $post_id
+			|| ! post_type_supports( (string) $post_type, Event::SUPPORT )
 			|| 1 !== intval( $use_event_date )
 		) {
 			return $the_date;
@@ -667,9 +700,9 @@ final class Setup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param string   $block_content The block content.
-	 * @param array    $block         The full block, including name and attributes.
-	 * @param WP_Block $instance      The block instance.
+	 * @param string               $block_content The block content.
+	 * @param array<string, mixed> $block         The full block, including name and attributes.
+	 * @param WP_Block             $instance      The block instance.
 	 *
 	 * @return string The filtered block content with event datetime.
 	 *
@@ -677,12 +710,12 @@ final class Setup {
 	 */
 	public function render_event_post_date_block( string $block_content, array $block, WP_Block $instance ): string {
 		$post_id        = $instance->context['postId'] ?? get_the_ID();
-		$use_event_date = Settings::get_instance()->get( 'post_or_event_date' );
+		$use_event_date = Settings::get_instance()->get( 'use_event_date_for_publish' );
 
 		// Bail when there's no post, when the post type doesn't carry event-date
 		// support, or when the "use event date" setting isn't enabled.
 		if ( ! $post_id
-			|| ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' )
+			|| ! post_type_supports( (string) get_post_type( $post_id ), Event::SUPPORT )
 			|| 1 !== intval( $use_event_date )
 		) {
 			return $block_content;
@@ -696,18 +729,24 @@ final class Setup {
 		}
 
 		// Replace the datetime attribute and the displayed date text in the block output.
-		$iso_date      = $event->get_datetime_start( 'c' );
-		$block_content = preg_replace(
+		$iso_date = $event->get_datetime_start_iso();
+
+		// A literal pattern cannot fail to compile, so preg_replace() never returns null here.
+		$block_content = (string) preg_replace(
 			'/datetime="[^"]*"/',
 			'datetime="' . esc_attr( $iso_date ) . '"',
 			$block_content
 		);
 
-		return preg_replace(
+		$replaced = preg_replace(
 			'|(<time[^>]*>).*?(</time>)|s',
 			'$1' . esc_html( $display_date ) . '$2',
 			$block_content
 		);
+
+		// A null return means PCRE gave up (e.g. the backtrack limit on very large
+		// markup), so the unmodified block content is served instead.
+		return $replaced ?? $block_content;
 	}
 
 	/**
@@ -719,10 +758,10 @@ final class Setup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array   $post_states An array of post display states.
-	 * @param WP_Post $post        The current post object.
+	 * @param array<string, string> $post_states An array of post display states.
+	 * @param WP_Post               $post        The current post object.
 	 *
-	 * @return array An updated array of post display states with custom labels if applicable.
+	 * @return array<string, string> An updated array of post display states with custom labels if applicable.
 	 */
 	public function set_event_archive_labels( array $post_states, WP_Post $post ): array {
 		// Retrieve archive page settings.
@@ -760,7 +799,7 @@ final class Setup {
 	 * @return void
 	 */
 	public function set_datetimes( int $post_id ): void {
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), Event::SUPPORT ) ) {
 			return;
 		}
 
@@ -791,8 +830,10 @@ final class Setup {
 	 *
 	 * @since 0.35.0
 	 *
-	 * @param int   $post_id The post to write.
-	 * @param array $data    Datetime payload keyed dateTimeStart / dateTimeEnd / timezone.
+	 * @param int                                                                    $post_id The post to write.
+	 * @param array{dateTimeStart?: string, dateTimeEnd?: string, timezone?: string} $data    Datetime payload keyed
+	 *                                                                                        dateTimeStart /
+	 *                                                                                        dateTimeEnd / timezone.
 	 *
 	 * @return void
 	 */
@@ -827,7 +868,7 @@ final class Setup {
 		foreach ( array_keys( $pending ) as $post_id ) {
 			// The post can be gone by shutdown -- a duplicate that failed, or
 			// an insert rolled back after this hook ran.
-			if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
+			if ( ! post_type_supports( (string) get_post_type( $post_id ), Event::SUPPORT ) ) {
 				continue;
 			}
 

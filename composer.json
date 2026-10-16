@@ -39,7 +39,7 @@
 		"lint:errors": "@lint -n",
 		"test:phpmd": "phpmd . text phpmd.xml",
 		"test": "@php ./vendor/phpunit/phpunit/phpunit",
-		"test:phpstan": "@php ./vendor/bin/phpstan analyze -vv --memory-limit=2G",
+		"test:phpstan": "@php ./vendor/bin/phpstan analyze -vv --memory-limit=4G",
 		"hooks": "@php ./vendor/bin/extract-wp-hooks.php",
 		"changelog:add": [
 			"composer install",

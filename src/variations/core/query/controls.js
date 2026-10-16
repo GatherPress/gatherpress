@@ -56,7 +56,7 @@ const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
 	const { namespace } = attributes;
 	const supportsEventDate = usePostTypeSupports(
 		'gatherpress-event-date',
-		postType
+		postType,
 	);
 	useEffect( () => {
 		// Only auto-transform blocks without a namespace set.
@@ -103,7 +103,7 @@ export const EventQueryControlsPanel = ( props ) => {
 	const queryPostType = props.attributes?.query?.postType;
 	const queryPostTypeSupportsEvents = usePostTypeSupports(
 		'gatherpress-event-date',
-		queryPostType
+		queryPostType,
 	);
 
 	// Read the plural label so the "Block List" label reflects what the currently
@@ -112,7 +112,7 @@ export const EventQueryControlsPanel = ( props ) => {
 	const pluralLabel = usePostTypeLabel(
 		'name',
 		queryPostType,
-		__( 'Events', 'gatherpress' )
+		__( 'Events', 'gatherpress' ),
 	);
 
 	// Update block name with post type label and query mode
@@ -125,7 +125,7 @@ export const EventQueryControlsPanel = ( props ) => {
 			/* translators: %1$s: 'Upcoming' or 'Past', %2$s: Plural post type label, e.g. "Events". */
 			__( '%1$s %2$s', 'gatherpress' ),
 			queryLabel,
-			pluralLabel
+			pluralLabel,
 		);
 
 		// Unset if not a supporting post type.
@@ -198,7 +198,7 @@ export const EventQueryControlsPanel = ( props ) => {
 	const singularLabel = usePostTypeLabel(
 		'singular_name',
 		queryPostType,
-		__( 'Event', 'gatherpress' )
+		__( 'Event', 'gatherpress' ),
 	);
 
 	if ( ! queryPostTypeSupportsEvents ) {
@@ -210,7 +210,7 @@ export const EventQueryControlsPanel = ( props ) => {
 			<PanelBody title={ sprintf(
 				/* translators: %s: Singular post type label, e.g. "Event". */
 				__( '%s Query Settings', 'gatherpress' ),
-				singularLabel
+				singularLabel,
 			) }>
 				{ false === props.attributes.query.inherit ? (
 					<EventQueryControls.Slot

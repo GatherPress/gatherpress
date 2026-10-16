@@ -21,6 +21,99 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * Class responsible for managing the "FormField" block and its functionality,
  * including dynamic rendering and attribute processing.
  *
+ * ## Public API
+ *
+ * This class is a supported entry point for rendering a single form field,
+ * and is not limited to the block editor. Nothing about it requires a block
+ * context: hand it an attributes array and it returns markup. Companion
+ * plugins that build their own forms are expected to use it.
+ *
+ * ```php
+ * $field = new Form_Field(
+ *     array(
+ *         'fieldType' => 'email',
+ *         'fieldName' => 'contact',
+ *         'label'     => 'Backup email',
+ *         'required'  => true,
+ *     )
+ * );
+ *
+ * echo $field->get_html();
+ * ```
+ *
+ * `get_html()` returns the markup and `render()` echoes it. Everything the
+ * templates need is derived from the attributes, so a partial array is fine.
+ *
+ * ## Rendering a field from a stored RSVP form schema
+ *
+ * A schema field is not an attributes array. It uses the schema's own key
+ * names, and its `options` is a flat list of values where this class expects
+ * `radioOptions` as label/value pairs. Map it:
+ *
+ * ```php
+ * $attributes = array(
+ *     'fieldName'    => $field['name'],
+ *     'fieldType'    => $field['type'],
+ *     'label'        => $field['label'] ?? '',
+ *     'placeholder'  => $field['placeholder'] ?? '',
+ *     'required'     => ! empty( $field['required'] ),
+ *     'inputId'      => $field['input_id'] ?? '',
+ *     'radioOptions' => array_map(
+ *         static fn ( string $value ): array => array(
+ *             'label' => $value,
+ *             'value' => $value,
+ *         ),
+ *         $field['options'] ?? array()
+ *     ),
+ * );
+ * ```
+ *
+ * The schema's `validation` and `max_length` are validation rules rather than
+ * render input, so they have no attribute here. See
+ * [the RSVP docs](../../../../docs/developer/rsvp/README.md) for the schema.
+ *
+ * ## Accepted attributes
+ *
+ * Keys are camelCase, matching the block's own attributes, and every one is
+ * optional. Anything absent falls back to the default below.
+ *
+ * | Key | Default | Notes |
+ * |---|---|---|
+ * | `fieldType` | `text` | One of the supported types, listed under the table |
+ * | `fieldName` | `''` | The input's `name`, and the key an RSVP answer is stored under |
+ * | `fieldValue` | `''` | Initial value |
+ * | `inputId` | generated | Supply one for deterministic markup; otherwise a random id is generated |
+ * | `label` | `''` | Visible label |
+ * | `placeholder` | `''` | Placeholder text |
+ * | `required` | `false` | Adds the `required` attribute. Server-side enforcement is the caller's job |
+ * | `requiredText` | `(required)` | Suffix shown beside the label |
+ * | `helpText` | `''` | Description, wired up with `aria-describedby` |
+ * | `prefillCurrentUser` | `false` | Fills text and email fields from the logged-in user |
+ * | `autocomplete` | derived | Explicit value, else derived from the field name and type |
+ * | `minValue`, `maxValue` | `null` | Numeric bounds |
+ * | `radioOptions` | `array()` | Options for `select` and `radio` |
+ * | `textareaRows` | `4` | Rows for `textarea` |
+ * | `inlineLayout` | `false` | Lays the label beside the input |
+ * | `fieldWidth` | `100` | Percentage width |
+ *
+ * Supported field types: `text`, `email`, `tel`, `url`, `number`,
+ * `textarea`, `checkbox`, `radio`, `select`, `hidden`. Each renders from
+ * its own template, falling back to the shared default.
+ *
+ * Presentation keys follow the same pattern: `labelTextColor`,
+ * `fieldTextColor`, `fieldBackgroundColor`, `borderColor`,
+ * `optionTextColor`, `requiredTextColor`, `labelFontSize`,
+ * `labelLineHeight`, `optionFontSize`, `optionLineHeight`,
+ * `inputFontSize`, `inputLineHeight`, `inputPadding`,
+ * `inputBorderWidth`, `inputBorderRadius`.
+ *
+ * ## Compatibility
+ *
+ * The constructor's attribute array, `get_html()` and `render()` are treated
+ * as a stable surface: accepted keys keep their meaning, and new ones are
+ * added with defaults that preserve current output. The class stays `final`,
+ * so extend it by composing rather than subclassing.
+ *
  * @since 0.33.0
  */
 final class Form_Field {
@@ -30,7 +123,7 @@ final class Form_Field {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @var array
+	 * @var array<string, mixed>
 	 */
 	private array $attributes;
 
@@ -73,7 +166,7 @@ final class Form_Field {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array $attributes The block attributes array.
+	 * @param array<string, mixed> $attributes The block attributes array.
 	 */
 	public function __construct( array $attributes ) {
 		$this->attributes = $this->process_attributes( $attributes );
@@ -91,9 +184,9 @@ final class Form_Field {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array $raw_attributes Raw attributes from the block editor.
+	 * @param array<string, mixed> $raw_attributes Raw attributes from the block editor.
 	 *
-	 * @return array Processed attributes with defaults and proper formatting.
+	 * @return array<string, mixed> Processed attributes with defaults and proper formatting.
 	 */
 	private function process_attributes( array $raw_attributes ): array {
 		return array(
@@ -126,10 +219,48 @@ final class Form_Field {
 			'input_padding'          => $raw_attributes['inputPadding'] ?? 16,
 			'input_border_width'     => $raw_attributes['inputBorderWidth'] ?? 1,
 			'input_border_radius'    => $raw_attributes['inputBorderRadius'] ?? 0,
-			'autocomplete'           => $raw_attributes['autocomplete'] ?? 'on',
+			'autocomplete'           => $this->resolve_autocomplete( $raw_attributes ),
 			'textarea_rows'          => $raw_attributes['textareaRows'] ?? 4,
-			'input_id'               => $this->get_input_id(),
+			'input_id'               => $this->get_input_id( $raw_attributes ),
 		);
+	}
+
+	/**
+	 * Resolve the autocomplete token for the field.
+	 *
+	 * WCAG 1.3.5 (Identify Input Purpose) requires the specific token —
+	 * `email`, `url`, `tel` — rather than the generic `on`. An empty (or
+	 * absent) value means "infer from the field type": block.json defaults
+	 * the attribute to an empty string, and because the serializer never
+	 * persists an attribute equal to its default, content saved under the
+	 * earlier `on` default also arrives empty and gains inference
+	 * retroactively. Any stored token — including `on`, which the editor
+	 * control offers — is an author choice and wins. Types without an
+	 * unambiguous token fall back to `on`.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, mixed> $raw_attributes Raw block attributes.
+	 *
+	 * @return string The autocomplete token for the rendered input.
+	 */
+	private function resolve_autocomplete( array $raw_attributes ): string {
+		$autocomplete = (string) ( $raw_attributes['autocomplete'] ?? '' );
+
+		if ( '' !== $autocomplete ) {
+			return $autocomplete;
+		}
+
+		// `match` rather than a switch: this only produces a value, and the
+		// subject is a string on both sides so the `===` comparison is
+		// equivalent. The `default` arm keeps an unrecognized field type from
+		// raising UnhandledMatchError.
+		return match ( (string) ( $raw_attributes['fieldType'] ?? 'text' ) ) {
+			'email' => 'email',
+			'url'   => 'url',
+			'tel'   => 'tel',
+			default => 'on',
+		};
 	}
 
 	/**
@@ -139,12 +270,21 @@ final class Form_Field {
 	 * a random number to ensure uniqueness across multiple
 	 * form fields on the same page.
 	 *
-	 * @since 0.33.0
+	 * A caller that needs the markup to be deterministic, to cache a
+	 * fragment or to wire up its own `<label for>`, supplies `inputId`
+	 * instead. It is used as given, and the templates escape it.
 	 *
-	 * @return string Unique input ID (e.g., 'gatherpress_123456789').
+	 * @since 0.33.0
+	 * @since 0.36.0 Accepts a caller-supplied `inputId`.
+	 *
+	 * @param array<string, mixed> $raw_attributes The attributes passed to the constructor.
+	 *
+	 * @return string The supplied input ID, or a generated one (e.g. 'gatherpress_123456789').
 	 */
-	private function get_input_id(): string {
-		return sprintf( 'gatherpress_%s', wp_rand() );
+	private function get_input_id( array $raw_attributes ): string {
+		$input_id = trim( (string) ( $raw_attributes['inputId'] ?? '' ) );
+
+		return '' !== $input_id ? $input_id : sprintf( 'gatherpress_%s', wp_rand() );
 	}
 
 	/**
@@ -190,9 +330,9 @@ final class Form_Field {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array  $styles   Reference to the styles array to modify.
-	 * @param string $attr_key The attribute key to check in the attributes array.
-	 * @param string $format   The sprintf format string for the CSS property (e.g., 'color:%s').
+	 * @param string[] $styles   Reference to the styles array to modify.
+	 * @param string   $attr_key The attribute key to check in the attributes array.
+	 * @param string   $format   The sprintf format string for the CSS property (e.g., 'color:%s').
 	 *
 	 * @return void
 	 */
@@ -210,7 +350,7 @@ final class Form_Field {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param array $styles Array of CSS style declarations (e.g., ['color:red', 'font-size:16px']).
+	 * @param string[] $styles Array of CSS style declarations (e.g., ['color:red', 'font-size:16px']).
 	 *
 	 * @return string Formatted style attribute string or empty string if no styles.
 	 */
@@ -364,7 +504,7 @@ final class Form_Field {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @return array Array of CSS class names for the wrapper element.
+	 * @return string[] Array of CSS class names for the wrapper element.
 	 */
 	public function get_wrapper_classes(): array {
 		$field_type = $this->get_field_type();
@@ -436,6 +576,15 @@ final class Form_Field {
 
 				break;
 
+			case 'select':
+				$attributes = array(
+					'id'           => $this->attributes['input_id'],
+					'name'         => $this->attributes['field_name'],
+					'autocomplete' => $this->attributes['autocomplete'],
+				);
+
+				break;
+
 			case 'textarea':
 				$attributes = array(
 					'id'           => $this->attributes['input_id'],
@@ -494,6 +643,16 @@ final class Form_Field {
 			$attributes['required'] = 'required';
 		}
 
+		// Point the input at its rendered help text. Radio groups get the
+		// association on their <fieldset> in the template instead, so the
+		// help is announced once with the group rather than on every radio.
+		if (
+			! in_array( $field_type, array( 'hidden', 'radio' ), true ) &&
+			'' !== (string) $this->attributes['help_text']
+		) {
+			$attributes['aria-describedby'] = $this->attributes['input_id'] . '-help';
+		}
+
 		// Convert array to string.
 		$attrs_string = '';
 
@@ -528,27 +687,56 @@ final class Form_Field {
 	}
 
 	/**
+	 * Get the variables the field's template renders with.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return array<string, mixed> The template variables.
+	 */
+	private function get_template_variables(): array {
+		return array(
+			'attributes'           => $this->attributes,
+			'wrapper_attributes'   => $this->get_wrapper_attributes(),
+			'input_styles'         => $this->get_input_styles(),
+			'label_styles'         => $this->get_label_styles(),
+			'label_wrapper_styles' => $this->get_label_wrapper_styles(),
+			'required_styles'      => $this->get_required_styles(),
+			'option_styles'        => $this->get_option_styles(),
+			'input_attributes'     => $this->get_input_attributes(),
+		);
+	}
+
+	/**
+	 * Get the form field's rendered HTML.
+	 *
+	 * The string-returning half of the pair. Use this when composing,
+	 * filtering or caching the markup; `render()` echoes the same output for
+	 * the block render callback.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return string The rendered field markup.
+	 */
+	public function get_html(): string {
+		return Utility::render_template(
+			$this->get_template_path(),
+			$this->get_template_variables()
+		);
+	}
+
+	/**
 	 * Renders the form field based on its type and attributes.
+	 *
+	 * Echoes what `get_html()` returns.
 	 *
 	 * @since 0.33.0
 	 *
 	 * @return void
 	 */
 	public function render(): void {
-		$template_path = $this->get_template_path();
-
 		Utility::render_template(
-			$template_path,
-			array(
-				'attributes'           => $this->attributes,
-				'wrapper_attributes'   => $this->get_wrapper_attributes(),
-				'input_styles'         => $this->get_input_styles(),
-				'label_styles'         => $this->get_label_styles(),
-				'label_wrapper_styles' => $this->get_label_wrapper_styles(),
-				'required_styles'      => $this->get_required_styles(),
-				'option_styles'        => $this->get_option_styles(),
-				'input_attributes'     => $this->get_input_attributes(),
-			),
+			$this->get_template_path(),
+			$this->get_template_variables(),
 			true
 		);
 	}

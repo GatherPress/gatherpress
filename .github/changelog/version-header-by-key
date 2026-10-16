@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Read the plugin Version and Requires PHP headers by name, so another plugin that adds its own plugin headers can no longer leave GatherPress with an empty version.

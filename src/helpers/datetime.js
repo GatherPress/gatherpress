@@ -14,7 +14,7 @@ import { select, useSelect } from '@wordpress/data';
 /**
  * Internal dependencies
  */
-import { getFromSettings } from './editor-settings';
+import { getFromConfig, getFromSettings } from './editor-settings';
 import { enableSave } from './editor';
 import DateTimePreview from '../components/DateTimePreview';
 
@@ -42,7 +42,7 @@ function getDefaultDateTimeStart() {
 	const timezone = getTimezone();
 	return createMomentWithTimezone(
 		moment().format( 'YYYY-MM-DD HH:mm:ss' ),
-		timezone
+		timezone,
 	)
 		.add( 1, 'day' )
 		.set( 'hour', 18 )
@@ -747,17 +747,38 @@ export function convertPHPToMomentFormat( format ) {
 		r: '', // no equivalent
 		U: 'X',
 	};
-	return String( format )
-		.split( '' )
-		.map( ( chr, index, elements ) => {
-			// Allow the format string to contain escaped chars, like ES or DE needs
-			const last = elements[ index - 1 ];
-			if ( chr in replacements && '\\' !== last ) {
-				return replacements[ chr ];
-			}
-			return chr;
-		} )
+
+	// Moment reads text inside brackets literally, so PHP's escaped text
+	// becomes a bracketed run: '\U\h\r' turns into '[Uhr]'.
+	return tokenizePHPDateFormat( format )
+		.map( ( { type, value } ) =>
+			'literal' === type
+				? `[${ value.replace( /\\(.?)/gs, '$1' ) }]`
+				: ( replacements[ value ] ?? value ),
+		)
 		.join( '' );
+}
+
+/**
+ * Tokenize a PHP datetime format into escaped text and format characters.
+ *
+ * A backslash escapes the character after it, so a run of escaped
+ * characters, such as German '\U\h\r', is one literal token. Every other
+ * character is a token of its own.
+ *
+ * @since 0.36.0
+ *
+ * @param {string} format - The PHP datetime format.
+ *
+ * @return {Array<{type: string, value: string}>} The tokens, in order.
+ */
+export function tokenizePHPDateFormat( format ) {
+	return ( String( format ).match( /(?:\\.?)+|./gs ) ?? [] ).map(
+		( value ) => ( {
+			type: value.startsWith( '\\' ) ? 'literal' : 'char',
+			value,
+		} ),
+	);
 }
 
 /**
@@ -791,50 +812,128 @@ export function dateTimePreview() {
 }
 
 /**
- * Non-time PHP Date format characters
+ * Split a PHP datetime format into its date part and its time part.
  *
- * @since 0.27.0
+ * The part that comes first ends where the other begins, so escaped text stays
+ * with the part it sits in: German '\U\h\r' in 'j. F Y, H:i \U\h\r' belongs to
+ * the time. Escaped words and spaces that lead from the date into the time,
+ * such as German '\u\m' in 'j. F Y \u\m H:i', belong to neither part.
+ * Timezone characters are left out of both.
  *
- * @see https://www.php.net/manual/en/datetime.format.php
+ * Mirrors `Utility::split_date_time_format()`. The characters come from
+ * `Utility::time_format_chars()` and `Utility::non_time_format_chars()`
+ * through the editor settings.
  *
- * @type {Array}
+ * @since 0.36.0
+ *
+ * @param {string} format - The PHP datetime format.
+ *
+ * @return {{date: string, time: string}|null} The two parts, or null without
+ *                                             the editor config.
  */
-export const phpNonTimeFormatChars = [
-	'd',
-	'D',
-	'j',
-	'l',
-	'N',
-	'S',
-	'w',
-	'z',
-	'W',
-	'F',
-	'm',
-	'M',
-	'n',
-	't',
-	'L',
-	'o',
-	'X',
-	'x',
-	'Y',
-	'y',
-	'e',
-	'I',
-	'O',
-	'P',
-	'p',
-	'T',
-	'Z',
-	'c',
-	'r',
-	'U',
-	',',
-];
+function splitPHPDateTimeFormat( format ) {
+	const timeFormatChars = getFromConfig( 'timeFormatChars' );
+	const nonTimeFormatChars = getFromConfig( 'nonTimeFormatChars' );
+
+	if ( ! timeFormatChars || ! nonTimeFormatChars ) {
+		return null;
+	}
+
+	const timezoneChars = timeFormatChars.filter( ( char ) =>
+		nonTimeFormatChars.includes( char ),
+	);
+	const dateChars = nonTimeFormatChars.filter(
+		( char ) => ',' !== char && ! timezoneChars.includes( char ),
+	);
+	const timeChars = timeFormatChars.filter(
+		( char ) => ! timezoneChars.includes( char ),
+	);
+	const tokens = tokenizePHPDateFormat( format );
+	const dateAt = findFormatChar( tokens, dateChars );
+	const timeAt = findFormatChar( tokens, timeChars );
+	let date = -1 === dateAt ? [] : tokens;
+	let time = -1 === timeAt ? [] : tokens;
+
+	// With both parts present, the one that comes first ends where the other
+	// one starts.
+	if ( -1 !== dateAt && -1 !== timeAt ) {
+		const boundary = Math.max( dateAt, timeAt );
+		const first = tokens.slice( 0, boundary );
+		const last = tokens.slice( boundary );
+
+		[ date, time ] =
+			dateAt < timeAt ? [ dropLeadIn( first ), last ] : [ last, first ];
+	}
+
+	return {
+		date: joinFormatTokens( date, timezoneChars ),
+		time: joinFormatTokens( time, timezoneChars ),
+	};
+}
+
+/**
+ * Find the first token that is one of the given format characters.
+ *
+ * @since 0.36.0
+ *
+ * @param {Array<{type: string, value: string}>} tokens - The format tokens.
+ * @param {string[]}                             chars  - The format characters to look for.
+ *
+ * @return {number} The token's index, or -1 when none of them is used.
+ */
+function findFormatChar( tokens, chars ) {
+	return tokens.findIndex(
+		( { type, value } ) => 'char' === type && chars.includes( value ),
+	);
+}
+
+/**
+ * Drop the escaped words and spaces that end a date and lead into the time.
+ *
+ * Unescaped text stays, so the Japanese day suffix '日' in 'Y年n月j日 H:i' is
+ * still part of the date.
+ *
+ * @since 0.36.0
+ *
+ * @param {Array<{type: string, value: string}>} tokens - The date's tokens.
+ *
+ * @return {Array<{type: string, value: string}>} The tokens without the lead-in.
+ */
+function dropLeadIn( tokens ) {
+	const end = tokens.findLastIndex(
+		( { type, value } ) => 'char' === type && '' !== value.trim(),
+	);
+
+	return tokens.slice( 0, end + 1 );
+}
+
+/**
+ * Join format tokens back into a format, trimming the separators at its ends.
+ *
+ * @since 0.36.0
+ *
+ * @param {Array<{type: string, value: string}>} tokens    - The format tokens.
+ * @param {string[]}                             skipChars - Format characters to leave out.
+ *
+ * @return {string} The joined format.
+ */
+function joinFormatTokens( tokens, skipChars ) {
+	return tokens
+		.filter(
+			( { type, value } ) =>
+				'literal' === type || ! skipChars.includes( value ),
+		)
+		.map( ( { value } ) => value )
+		.join( '' )
+		.replace( /^[\s:,\-/.]+|[\s:,\-/.]+$/g, '' );
+}
 
 /**
  * Remove non-time characters from PHP format string
+ *
+ * Leaves the time behind: 'F j, Y g:i a' keeps 'g:i a', and German
+ * 'j. F Y, H:i \U\h\r' keeps 'H:i \U\h\r'. A format with no time keeps
+ * nothing. Without the editor config the format is left alone.
  *
  * @since 0.27.0
  *
@@ -843,9 +942,94 @@ export const phpNonTimeFormatChars = [
  * @return {string} The PHP time-only format.
  */
 export function removeNonTimePHPFormatChars( format ) {
-	return format
-		.split( '' )
-		.filter( ( char ) => ! phpNonTimeFormatChars.includes( char ) )
-		.join( '' )
-		.trim();
+	return splitPHPDateTimeFormat( format )?.time ?? format;
+}
+
+/**
+ * Strip the time out of a PHP format string.
+ *
+ * Leaves the date behind, along with whatever separated it from the time:
+ * 'F j, Y g:i a' keeps 'F j, Y', and Spanish 'j \d\e F \d\e Y, H:i' keeps
+ * 'j \d\e F \d\e Y'. A format that was only ever a time has nothing left to
+ * render, so it reports none rather than the punctuation between the parts it
+ * lost. Without the editor config the format is left alone.
+ *
+ * @since 0.36.0
+ *
+ * @param {string} format - The PHP datetime format.
+ *
+ * @return {string} The format without its time, or an empty string when no
+ *                  date survives it.
+ */
+export function removeTimePHPFormatChars( format ) {
+	return splitPHPDateTimeFormat( format )?.date ?? format;
+}
+
+/**
+ * Moment format for an all-day event's date, with no time.
+ *
+ * @since 0.36.0
+ *
+ * @return {string} The moment format.
+ */
+export function dateLabelFormat() {
+	return convertPHPToMomentFormat( getFromSettings( 'dateFormat' ) );
+}
+
+/**
+ * Snap a datetime to the beginning of its own day.
+ *
+ * Mirrors `Event::to_day_boundary()`, which enforces the same on save.
+ *
+ * @since 0.36.0
+ *
+ * @param {string} dateTime - The datetime, in the database format.
+ *
+ * @return {string} The datetime at the start of its day.
+ */
+export function toDayStart( dateTime ) {
+	return moment( dateTime ).startOf( 'day' ).format( dateTimeDatabaseFormat );
+}
+
+/**
+ * Snap a datetime to the end of its own day.
+ *
+ * @since 0.36.0
+ *
+ * @param {string} dateTime - The datetime, in the database format.
+ *
+ * @return {string} The datetime at the end of its day.
+ */
+export function toDayEnd( dateTime ) {
+	return moment( dateTime ).endOf( 'day' ).format( dateTimeDatabaseFormat );
+}
+
+/**
+ * The time of day from a datetime.
+ *
+ * @since 0.36.0
+ *
+ * @param {string} dateTime - The datetime, in the database format.
+ *
+ * @return {string} The time, as `HH:mm:ss`.
+ */
+export function getTimeOfDay( dateTime ) {
+	return moment( dateTime ).format( 'HH:mm:ss' );
+}
+
+/**
+ * Put a time of day onto a datetime's own date.
+ *
+ * Keeps the date that is currently selected, so restoring a remembered time
+ * does not also undo a date the author changed in the meantime.
+ *
+ * @since 0.36.0
+ *
+ * @param {string} dateTime - The datetime whose date to keep.
+ * @param {string} time     - The time of day, as `HH:mm:ss`.
+ *
+ * @return {string} The datetime, in the database format.
+ */
+export function withTimeOfDay( dateTime, time ) {
+	return `${ moment( dateTime ).format( 'YYYY-MM-DD' ) } ${ time }`;
 }

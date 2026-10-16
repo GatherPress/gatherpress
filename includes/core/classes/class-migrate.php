@@ -27,7 +27,7 @@ class Migrate {
 	 * List of non-existent post_meta keys with array values containing getter and setter callback definitions.
 	 *
 	 * @since 0.30.0
-	 * @var array $pseudopostmetas
+	 * @var array<string, array<string, mixed>> $pseudopostmetas
 	 */
 	protected array $pseudopostmetas = array(
 		'gatherpress_datetimes' => array(
@@ -42,7 +42,7 @@ class Migrate {
 	 *
 	 * @since 0.30.0
 	 *
-	 * @return array
+	 * @return array<string, array<string, mixed>> Export- and import-callback definitions keyed by data-name.
 	 */
 	public function get_pseudopostmetas(): array {
 		/**

@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Narrow the venue map provider contract to GdImage, now that the PHP 7.4 floor that required accepting a resource is gone.

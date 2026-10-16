@@ -10,8 +10,8 @@
  * `L.Icon.Default.imagePath` to resolve at runtime (#2009).
  */
 import 'leaflet/dist/leaflet.css';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import 'leaflet-gesture-handling/dist/leaflet-gesture-handling.css';
+import './leaflet-style.scss';
 
 import 'leaflet/dist/images/marker-icon.png';
 import 'leaflet/dist/images/marker-icon-2x.png';

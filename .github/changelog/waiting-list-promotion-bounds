@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Fixed waiting-list promotion counting off free spots instead of walking the queue. An event with an attendance limit raised a fatal `TypeError` the moment its waiting list was shorter than the number of open spots, which is any event where someone is waiting and a seat frees up. The same loop also stopped before a longer queue had filled the room, leaving seats empty with people still waiting.

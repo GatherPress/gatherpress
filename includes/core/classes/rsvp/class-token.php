@@ -12,6 +12,7 @@
 
 namespace GatherPress\Core\Rsvp;
 
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Utility;
 use WP_Comment;
 use WP_Post;
@@ -31,12 +32,16 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 final class Token {
 
 	/**
-	 * The parameter name used for RSVP tokens in URLs.
+	 * The RSVP token's name.
+	 *
+	 * REST requests carry the token under this name, like their other
+	 * unprefixed parameters. The magic-link URL and the comment meta key add
+	 * the `gatherpress_` prefix with `Utility::prefix_key()`.
 	 *
 	 * @since 0.34.0
 	 * @var string
 	 */
-	const NAME = 'gatherpress_rsvp_token';
+	const NAME = 'rsvp_token';
 
 	/**
 	 * The length of the generated token.
@@ -80,31 +85,11 @@ final class Token {
 	 * @param int $comment_id The ID of the RSVP comment.
 	 */
 	public function __construct( int $comment_id ) {
-		if ( $comment_id <= 0 ) {
+		if ( ! Rsvp::is_comment_type( $comment_id ) ) {
 			return;
 		}
 
-		$comment = get_comment( $comment_id );
-
-		if ( ! $this->is_valid_rsvp_comment( $comment, $comment_id ) ) {
-			return;
-		}
-
-		$this->comment = $comment;
-	}
-
-	/**
-	 * Validates if a comment is a valid RSVP comment.
-	 *
-	 * @since 0.34.0
-	 *
-	 * @param WP_Comment|null $comment The comment object to validate.
-	 * @param int             $comment_id The comment ID for fallback validation.
-	 *
-	 * @return bool True if valid RSVP comment, false otherwise.
-	 */
-	private function is_valid_rsvp_comment( ?WP_Comment $comment, int $comment_id ): bool {
-		return $comment instanceof WP_Comment && Rsvp::COMMENT_TYPE === get_comment_type( $comment_id );
+		$this->comment = get_comment( $comment_id );
 	}
 
 	/**
@@ -201,7 +186,7 @@ final class Token {
 	 * @return string The formatted meta key.
 	 */
 	private function get_meta_key(): string {
-		return sprintf( '%s%s', self::META_KEY_PREFIX, self::NAME );
+		return sprintf( '%s%s', self::META_KEY_PREFIX, Utility::prefix_key( self::NAME ) );
 	}
 
 	/**
@@ -243,6 +228,11 @@ final class Token {
 	 * @return void
 	 */
 	private function save_token_to_meta(): void {
+		// Without a comment there is no meta row to write the token to.
+		if ( ! $this->comment ) {
+			return;
+		}
+
 		update_comment_meta(
 			(int) $this->comment->comment_ID,
 			$this->get_meta_key(),
@@ -277,7 +267,7 @@ final class Token {
 
 		$post = get_post( (int) $comment->comment_post_ID );
 
-		if ( ! $post || ! post_type_supports( (string) get_post_type( $post ), 'gatherpress-rsvp' ) ) {
+		if ( ! $post || ! post_type_supports( (string) get_post_type( $post ), Rsvp::SUPPORT ) ) {
 			return null;
 		}
 
@@ -351,7 +341,8 @@ final class Token {
 	 *
 	 * @param string|null $token_string Raw token string in format "commentId_token".
 	 *
-	 * @return array Array with 'comment_id' and 'token' keys, or empty array if invalid.
+	 * @return array{comment_id: int, token: string}|array{} Array with 'comment_id' and 'token' keys, or empty
+	 *                                                        array if invalid.
 	 */
 	public static function parse_token_string( ?string $token_string ): array {
 		if ( empty( $token_string ) ) {
@@ -381,7 +372,7 @@ final class Token {
 	 * @return self|null Instance if valid token found, null otherwise.
 	 */
 	public static function from_url_parameter(): ?self {
-		$token_param = Utility::get_http_input( INPUT_GET, self::NAME );
+		$token_param = Utility::get_http_input( INPUT_GET, Utility::prefix_key( self::NAME ) );
 
 		return self::from_token_string( $token_param );
 	}
@@ -410,7 +401,7 @@ final class Token {
 
 		$token_value = $this->format_token_value( (int) $comment->comment_ID, $token );
 
-		return add_query_arg( self::NAME, $token_value, $event_url );
+		return add_query_arg( Utility::prefix_key( self::NAME ), $token_value, $event_url );
 	}
 
 	/**
@@ -421,6 +412,9 @@ final class Token {
 	 * @param WP_Post|null    $post The post object.
 	 * @param WP_Comment|null $comment The comment object.
 	 * @param string          $token The token string.
+	 *
+	 * @phpstan-assert-if-true !null $post
+	 * @phpstan-assert-if-true !null $comment
 	 *
 	 * @return bool True if all components are available, false otherwise.
 	 */
@@ -477,7 +471,7 @@ final class Token {
 	 *
 	 * @param WP_Post|null $post The event post object.
 	 *
-	 * @return array Email data with subject, body, and headers.
+	 * @return array{subject: string, body: string, headers: string[]} Email data with subject, body, and headers.
 	 */
 	private function prepare_email_data( ?WP_Post $post ): array {
 		$title = $post ? get_the_title( $post ) : __( 'this event', 'gatherpress' );

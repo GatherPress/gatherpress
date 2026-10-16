@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\Rsvp;
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Cleanup;
+use GatherPress\Core\Rsvp\Flag\Setup as Flag_Setup;
 use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Rsvp\List_Table;
 use GatherPress\Core\Rsvp\Query;
@@ -50,15 +51,19 @@ class Test_Setup extends Base {
 		Utility::invoke_hidden_method( Setup::get_instance(), 'instantiate_classes' );
 
 		$expected_hooks = array(
-			Cleanup::class => array(
+			Cleanup::class    => array(
 				'gatherpress_rsvp_cleanup',
 				array( Cleanup::get_instance(), 'rsvp_cleanup' ),
 			),
-			Form::class    => array(
+			Flag_Setup::class => array(
+				'deleted_comment',
+				array( Flag_Setup::get_instance(), 'delete_flags' ),
+			),
+			Form::class       => array(
 				'init',
 				array( Form::get_instance(), 'initialize_rsvp_form_handling' ),
 			),
-			Query::class   => array(
+			Query::class      => array(
 				'pre_get_comments',
 				array( Query::get_instance(), 'exclude_rsvp_from_comment_query' ),
 			),
@@ -359,7 +364,7 @@ class Test_Setup extends Base {
 		add_filter(
 			'gatherpress_pre_get_http_input',
 			function ( $pre_value, $type, $var_name ) use ( $token_string ) {
-				if ( INPUT_GET === $type && Token::NAME === $var_name ) {
+				if ( INPUT_GET === $type && 'gatherpress_rsvp_token' === $var_name ) {
 					return $token_string;
 				}
 				return null;
@@ -451,7 +456,7 @@ class Test_Setup extends Base {
 		add_filter(
 			'gatherpress_pre_get_http_input',
 			function ( $pre_value, $type, $var_name ) use ( $token_string ) {
-				if ( INPUT_GET === $type && Token::NAME === $var_name ) {
+				if ( INPUT_GET === $type && 'gatherpress_rsvp_token' === $var_name ) {
 					return $token_string;
 				}
 				return null;
@@ -529,7 +534,7 @@ class Test_Setup extends Base {
 		add_filter(
 			'gatherpress_pre_get_http_input',
 			static function ( $pre_value, $type, $var_name ) use ( $token_string ) {
-				if ( INPUT_GET === $type && Token::NAME === $var_name ) {
+				if ( INPUT_GET === $type && 'gatherpress_rsvp_token' === $var_name ) {
 					return $token_string;
 				}
 				return null;
@@ -1142,7 +1147,6 @@ class Test_Setup extends Base {
 		// Set up request parameters.
 		$_REQUEST['s']      = 'test search'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$_REQUEST['status'] = 'attending'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$_REQUEST['event']  = '123'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 		$instance = Setup::get_instance();
 
@@ -1154,7 +1158,7 @@ class Test_Setup extends Base {
 		$this->assertNotEmpty( $output );
 
 		// Clean up.
-		unset( $_REQUEST['s'], $_REQUEST['status'], $_REQUEST['event'] );
+		unset( $_REQUEST['s'], $_REQUEST['status'] );
 		wp_set_current_user( 0 );
 	}
 
@@ -1533,5 +1537,57 @@ class Test_Setup extends Base {
 		);
 
 		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
+	}
+
+	/**
+	 * The RSVP screen loads the filter script and the components stylesheet.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::enqueue_rsvp_admin_assets
+	 *
+	 * @return void
+	 */
+	public function test_enqueue_rsvp_admin_assets(): void {
+		Utility::invoke_hidden_method( Setup::get_instance(), 'enqueue_rsvp_admin_assets' );
+
+		$this->assertTrue(
+			wp_script_is( 'gatherpress-rsvp-admin', 'enqueued' ),
+			'Failed to assert the RSVP screen enqueues its filter script.'
+		);
+
+		// Admin screens do not load the components stylesheet by default.
+		$this->assertTrue(
+			wp_style_is( 'wp-components', 'enqueued' ),
+			'Failed to assert the components stylesheet is enqueued.'
+		);
+	}
+
+	/**
+	 * Opening the RSVP screen loads the filter assets.
+	 *
+	 * Runs the screen's own `load-` callback rather than the enqueue method
+	 * directly, so a callback that stops being called is caught too.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::prepare_rsvp_admin_page
+	 *
+	 * @return void
+	 */
+	public function test_prepare_rsvp_admin_page_loads_the_filter_assets(): void {
+		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
+
+		Setup::get_instance()->prepare_rsvp_admin_page();
+
+		$this->assertTrue(
+			wp_script_is( 'gatherpress-rsvp-admin', 'enqueued' ),
+			'Failed to assert opening the screen enqueues its filter script.'
+		);
+
+		$this->assertTrue(
+			wp_style_is( 'wp-components', 'enqueued' ),
+			'Failed to assert opening the screen enqueues the components stylesheet.'
+		);
 	}
 }

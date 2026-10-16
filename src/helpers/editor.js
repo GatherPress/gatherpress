@@ -153,7 +153,7 @@ export function usePostTypeLabel( key, postType = null, fallback = '' ) {
 
 			return label || fallback;
 		},
-		[ key, postType, fallback ]
+		[ key, postType, fallback ],
 	);
 }
 

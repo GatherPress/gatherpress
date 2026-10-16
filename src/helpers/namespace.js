@@ -21,3 +21,17 @@ export const REST_NAMESPACE = 'gatherpress/v1';
  * @type {string}
  */
 export const EVENT_REST_API = `/${ REST_NAMESPACE }/event`;
+
+/**
+ * Data store holding cached RSVP response counts.
+ *
+ * Lives here rather than in the store module so consumers can name the store
+ * without importing it. The store module calls `register()` at import time,
+ * and importing it from a block entry point would duplicate that call into a
+ * second bundle, which throws and leaves the duplicate's resolvers unwired.
+ *
+ * @since 0.36.0
+ *
+ * @type {string}
+ */
+export const RSVP_COUNTS_STORE = 'gatherpress/rsvp-counts';

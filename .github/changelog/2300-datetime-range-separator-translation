@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Ensure the date/time range separator defaults to the translatable string rather than hardcoded English "to", and add the `gatherpress_datetime_separator` filter for site-level customization.

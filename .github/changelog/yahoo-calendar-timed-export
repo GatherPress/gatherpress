@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Send timed events to Yahoo! Calendar in the event's own local time with an explicit end, instead of a GMT start with a Z suffix Yahoo ignores and a duration that broke on fractional hours.

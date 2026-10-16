@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+People who RSVP with the RSVP form, without an account, can change or cancel their RSVP again from the confirmation link. Before, the request was refused with a 401 error, and the page showed "Sorry, there was an issue processing your RSVP." When such a person changes back to attending an online event, the join link now shows again without a page reload.

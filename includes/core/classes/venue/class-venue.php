@@ -49,6 +49,34 @@ final class Venue {
 	const TAXONOMY = '_gatherpress_venue';
 
 	/**
+	 * Post type support that makes a post type a venue.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const SUPPORT = 'gatherpress-venue-information';
+
+	/**
+	 * Post type support that lets a post type be assigned a venue.
+	 *
+	 * Any post type can declare it; it is what binds `TAXONOMY` to that type.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const ASSIGNMENT_SUPPORT = 'gatherpress-venue';
+
+	/**
+	 * Post type support for a post type whose venue may be online.
+	 *
+	 * A post records it with the `online-event` term in `TAXONOMY`.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const ONLINE_SUPPORT = 'gatherpress-online-event';
+
+	/**
 	 * Venue post object.
 	 *
 	 * Null when the post_id passed to the constructor does not resolve to a
@@ -72,7 +100,7 @@ final class Venue {
 	 * @param int $post_id The venue post ID.
 	 */
 	public function __construct( int $post_id ) {
-		if ( post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-venue-information' ) ) {
+		if ( post_type_supports( (string) get_post_type( $post_id ), self::SUPPORT ) ) {
 			$this->venue = get_post( $post_id );
 		}
 	}

@@ -75,8 +75,8 @@ final class Event_Date {
 	 *
 	 * @since 0.33.0
 	 *
-	 * @param string $block_content The original block content.
-	 * @param array  $block         The block instance array, used to determine the event.
+	 * @param string               $block_content The original block content.
+	 * @param array<string, mixed> $block         The block instance array, used to determine the event.
 	 *
 	 * @return string The block content if valid event, empty string otherwise.
 	 */
@@ -86,7 +86,7 @@ final class Event_Date {
 
 		// Validate that the post type supports event_date.
 		if (
-			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ||
+			! post_type_supports( (string) get_post_type( $post_id ), Event::SUPPORT ) ||
 			! Event::is_viewable( $post_id )
 		) {
 			return '';

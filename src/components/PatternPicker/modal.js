@@ -20,8 +20,8 @@ function templateToBlocks( template ) {
 		createBlock(
 			name,
 			attributes || {},
-			templateToBlocks( innerBlocks || [] )
-		)
+			templateToBlocks( innerBlocks || [] ),
+		),
 	);
 }
 
@@ -48,7 +48,7 @@ const PatternChooserModal = ( { patterns, title, onPick, onClose } ) => {
 				...pattern,
 				previewBlocks: templateToBlocks( pattern.template ),
 			} ) ),
-		[ patterns ]
+		[ patterns ],
 	);
 
 	const handlePick = ( pattern ) => {

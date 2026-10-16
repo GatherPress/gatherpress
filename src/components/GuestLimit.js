@@ -32,11 +32,11 @@ const GuestLimit = () => {
 
 	let defaultGuestLimit = useSelect( ( select ) => {
 		return select( 'core/editor' ).getEditedPostAttribute( 'meta' )
-			.gatherpress_max_guest_limit;
+			.gatherpress_guest_limit;
 	}, [] );
 
 	if ( isNewEvent ) {
-		defaultGuestLimit = getFromSettings( 'maxGuestLimit' );
+		defaultGuestLimit = getFromSettings( 'guestLimit' );
 	}
 
 	if ( false === defaultGuestLimit ) {
@@ -47,7 +47,7 @@ const GuestLimit = () => {
 
 	const updateGuestLimit = useCallback(
 		( value ) => {
-			const meta = { gatherpress_max_guest_limit: Number( value ) };
+			const meta = { gatherpress_guest_limit: Number( value ) };
 
 			setGuestLimit( value );
 			editPost( { meta } );
@@ -63,23 +63,20 @@ const GuestLimit = () => {
 	}, [ isNewEvent, defaultGuestLimit, updateGuestLimit ] );
 
 	return (
-		<>
-			<NumberControl
-				label={ __( 'Maximum Number of Guests', 'gatherpress' ) }
-				value={ guestLimit }
-				min={ 0 }
-				max={ 5 }
-				onChange={ ( value ) => {
-					updateGuestLimit( value );
-				} }
-			/>
-			<p className="description">
-				{ __(
-					'Maximum number of additional people each attendee can bring.',
-					'gatherpress',
-				) }
-			</p>
-		</>
+		<NumberControl
+			__next40pxDefaultSize
+			label={ __( 'Maximum Number of Guests', 'gatherpress' ) }
+			value={ guestLimit }
+			min={ 0 }
+			max={ 5 }
+			help={ __(
+				'Maximum number of additional people each attendee can bring.',
+				'gatherpress',
+			) }
+			onChange={ ( value ) => {
+				updateGuestLimit( value );
+			} }
+		/>
 	);
 };
 

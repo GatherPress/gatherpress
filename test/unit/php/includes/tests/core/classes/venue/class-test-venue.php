@@ -13,6 +13,8 @@
 namespace GatherPress\Tests\Core\Venue;
 
 use GatherPress\Core\Venue\Meta;
+// Deep import on purpose: test_prior_fqn_resolves_to_current_class asserts
+// Venue::class equals the real FQN, which the BC alias intentionally is not.
 use GatherPress\Core\Venue\Venue;
 use GatherPress\Tests\Base;
 use ReflectionClass;
@@ -52,6 +54,17 @@ class Test_Venue extends Base {
 
 		// Read a class constant through the prior FQN to confirm runtime usability.
 		$this->assertSame( Venue::POST_TYPE, constant( $prior_fqn . '::POST_TYPE' ) );
+	}
+
+	/**
+	 * Asserts that the class constants are correctly defined.
+	 *
+	 * @return void
+	 */
+	public function test_constants(): void {
+		$this->assertSame( 'gatherpress-venue-information', Venue::SUPPORT );
+		$this->assertSame( 'gatherpress-venue', Venue::ASSIGNMENT_SUPPORT );
+		$this->assertSame( 'gatherpress-online-event', Venue::ONLINE_SUPPORT );
 	}
 
 	/**

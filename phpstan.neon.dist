@@ -20,14 +20,16 @@ parameters:
 
     # the analysis level, from 0 (loose) to 9 (strict)
     # https://phpstan.org/user-guide/rule-levels
-    level: 5
+    level: 8
 
     paths:
         - includes/
 
     ignoreErrors:
-        # includes/core/classes/class-setup.php and includes/core/classes/class-coexistence-guard.php
+        # includes/core/classes/class-setup.php, includes/core/classes/class-coexistence-guard.php
+        # and includes/core/classes/uninstall/class-files.php
         #
         # Dev-only errors, which can occur if the gatherpress is symlinked into a WP instance or called via wp-env or Playground.
         - '#^Path in require_once\(\) "\./wp-admin/includes/upgrade\.php" is not a file or it does not exist\.$#'
         - '#^Path in require_once\(\) "\./wp-admin/includes/plugin\.php" is not a file or it does not exist\.$#'
+        - '#^Path in require_once\(\) "\./wp-admin/includes/file\.php" is not a file or it does not exist\.$#'

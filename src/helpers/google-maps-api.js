@@ -74,7 +74,7 @@ export function loadGoogleMapsApi( apiKey, doc ) {
 
 	if ( ! key ) {
 		return Promise.reject(
-			new Error( 'A Google Maps API key is required.' )
+			new Error( 'A Google Maps API key is required.' ),
 		);
 	}
 
@@ -123,8 +123,8 @@ export function loadGoogleMapsApi( apiKey, doc ) {
 			script.remove();
 			reject(
 				new Error(
-					'The Google Maps JavaScript API could not be loaded.'
-				)
+					'The Google Maps JavaScript API could not be loaded.',
+				),
 			);
 		} );
 

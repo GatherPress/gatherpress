@@ -81,7 +81,7 @@ export default function AddressAutocompleteField( {
 			value,
 			suggestions,
 			isLoadingSuggestions,
-			suggestionError
+			suggestionError,
 		);
 	const showSuggestionPanel = 0 < suggestions.length;
 	const showSuggestionError =

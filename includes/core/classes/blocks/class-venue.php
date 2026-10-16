@@ -118,7 +118,7 @@ final class Venue {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $block The full block, including name and attributes.
+	 * @param array<string, mixed> $block The full block, including name and attributes.
 	 *
 	 * @return string Shadow-source post type slug.
 	 */
@@ -140,7 +140,7 @@ final class Venue {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $block The full block, including name and attributes.
+	 * @param array<string, mixed> $block The full block, including name and attributes.
 	 *
 	 * @return WP_Post|null The source post or null if not found.
 	 */
@@ -194,7 +194,7 @@ final class Venue {
 	private function get_viewable_source_post( ?WP_Post $candidate, string $source_post_type ): ?WP_Post {
 		$viewable = $candidate instanceof WP_Post
 			&& $source_post_type === $candidate->post_type
-			&& post_type_supports( $source_post_type, 'gatherpress-shadow-source' )
+			&& post_type_supports( $source_post_type, Shadow_Source::SUPPORT )
 			&& ! post_password_required( $candidate )
 			&& (
 				is_post_publicly_viewable( $candidate )

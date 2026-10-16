@@ -1,0 +1,33 @@
+/**
+ * Interactive Leaflet venue map theme styles.
+ *
+ * Themes can customize interactive OpenStreetMap maps with these CSS custom
+ * properties:
+ *
+ *   --gatherpress--venue-map--attribution-link-color: #0073aa;
+ *   --gatherpress--venue-map--marker-filter: brightness(0) saturate(100%);
+ *
+ * The marker is Leaflet's raster image, so its value must be a valid CSS
+ * filter list rather than a color. The default keeps Leaflet's existing
+ * marker appearance; themes can provide a filter that matches their palette
+ * without replacing marker assets.
+ */
+
+.gatherpress-venue-map {
+	--gatherpress-venue-map-attribution-link-color: var(
+		--gatherpress--venue-map--attribution-link-color,
+		var(--wp--preset--color--primary, #0073aa)
+	);
+	--gatherpress-venue-map-marker-filter: var(
+		--gatherpress--venue-map--marker-filter,
+		none
+	);
+
+	.leaflet-control-attribution a {
+		color: var(--gatherpress-venue-map-attribution-link-color);
+	}
+
+	.leaflet-marker-icon {
+		filter: var(--gatherpress-venue-map-marker-filter);
+	}
+}

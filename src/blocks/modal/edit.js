@@ -61,6 +61,7 @@ const Edit = ( { attributes, setAttributes, clientId, isSelected } ) => {
 			<InspectorControls>
 				<PanelBody title={ __( 'Modal Settings', 'gatherpress' ) }>
 					<TextControl
+						__next40pxDefaultSize
 						label={ __( 'Modal Name', 'gatherpress' ) }
 						value={ metadata.name || __( 'Modal', 'gatherpress' ) }
 						onChange={ handleNameChange }
@@ -70,6 +71,7 @@ const Edit = ( { attributes, setAttributes, clientId, isSelected } ) => {
 						) }
 					/>
 					<RangeControl
+						__next40pxDefaultSize
 						label={ __( 'Z-Index', 'gatherpress' ) }
 						value={ zIndex }
 						onChange={ ( newValue ) =>

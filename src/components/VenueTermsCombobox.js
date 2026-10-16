@@ -11,7 +11,7 @@ import { __, sprintf } from '@wordpress/i18n';
  * Internal dependencies
  */
 import { getCurrentContextualPostId, usePostTypeLabel } from '../helpers/editor';
-import { getVenuePostType, getVenueTaxonomy, useVenueOptions, useVenueTaxonomyIds } from '../helpers/venue';
+import { getOnlineEventTermId, getVenuePostType, getVenueTaxonomy, useVenueOptions, useVenueTaxonomyIds } from '../helpers/venue';
 
 /**
  * VenueTermsCombobox component.
@@ -40,7 +40,7 @@ export const VenueTermsCombobox = ( { search, setSearch, ...props } ) => {
 		( select ) =>
 			props?.context?.postType ||
 			select( 'core/editor' )?.getCurrentPostType(),
-		[ props?.context?.postType ]
+		[ props?.context?.postType ],
 	);
 
 	const venuePostType = getVenuePostType( currentPostType );
@@ -52,12 +52,12 @@ export const VenueTermsCombobox = ( { search, setSearch, ...props } ) => {
 	const singularLabel = usePostTypeLabel(
 		'singular_name',
 		venuePostType,
-		__( 'Venue', 'gatherpress' )
+		__( 'Venue', 'gatherpress' ),
 	);
 	const comboBoxLabel = sprintf(
 		/* translators: %s: Singular post type label, e.g. "Venue". */
 		__( 'Choose a %s', 'gatherpress' ),
-		singularLabel
+		singularLabel,
 	);
 
 	// Derive the venue taxonomy from the event post type.
@@ -70,17 +70,14 @@ export const VenueTermsCombobox = ( { search, setSearch, ...props } ) => {
 
 	const updateVenueTaxonomyIds = useCallback(
 		( newIds ) => editPost( { [ venueTaxonomy ]: newIds } ),
-		[ editPost, venueTaxonomy ]
+		[ editPost, venueTaxonomy ],
 	);
 
-	// Get the online-event term to exclude it from venue selection.
-	const onlineEventTermId = useSelect( ( wpSelect ) => {
-		const terms = wpSelect( 'core' ).getEntityRecords( 'taxonomy', venueTaxonomy, {
-			slug: 'online-event',
-			per_page: 1,
-		} );
-		return terms?.[ 0 ]?.id || null;
-	}, [ venueTaxonomy ] );
+	// Get the online-event term ID from pre-resolved editor settings so we
+	// skip the taxonomy REST lookup the combobox used to issue on every
+	// render. Returns null when settings haven't loaded yet — the filter
+	// paths below short-circuit gracefully in that case.
+	const onlineEventTermId = getOnlineEventTermId( venuePostType );
 
 	// Filter out the online-event term to get only physical venue IDs.
 	const physicalVenueIds = useMemo( () => {
@@ -93,7 +90,7 @@ export const VenueTermsCombobox = ( { search, setSearch, ...props } ) => {
 
 	// The currently selected physical venue term ID (if any).
 	const venueId = physicalVenueIds?.[ 0 ];
-	const { venueOptions } = useVenueOptions( search, venueId, 'taxonomy', venueTaxonomy );
+	const { venueOptions } = useVenueOptions( search, venueId, 'taxonomy', venueTaxonomy, venuePostType );
 
 	/**
 	 * Debounced setter for the search input to avoid excessive queries.
@@ -132,7 +129,7 @@ export const VenueTermsCombobox = ( { search, setSearch, ...props } ) => {
 			}
 			updateVenueTaxonomyIds( save );
 		},
-		[ updateVenueTaxonomyIds, hasOnlineEventTerm, onlineEventTermId ]
+		[ updateVenueTaxonomyIds, hasOnlineEventTerm, onlineEventTermId ],
 	);
 
 	/**

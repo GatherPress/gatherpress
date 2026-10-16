@@ -694,14 +694,14 @@ describe( 'Editor helper functions', () => {
 			} );
 
 			expect(
-				getPostTypeLabel( 'name', 'gatherpress_event', 'Default' )
+				getPostTypeLabel( 'name', 'gatherpress_event', 'Default' ),
 			).toBe( 'Default' );
 			expect( __postTypeLabelCache.has( 'gatherpress_event::name' ) ).toBe( false );
 
 			resolved = true;
 
 			expect(
-				getPostTypeLabel( 'name', 'gatherpress_event', 'Default' )
+				getPostTypeLabel( 'name', 'gatherpress_event', 'Default' ),
 			).toBe( 'Events' );
 			expect( __postTypeLabelCache.get( 'gatherpress_event::name' ) ).toBe( 'Events' );
 		} );
@@ -827,13 +827,13 @@ describe( 'Editor helper functions', () => {
 			} );
 
 			expect(
-				usePostTypeLabel( 'name', 'gatherpress_event', 'Default' )
+				usePostTypeLabel( 'name', 'gatherpress_event', 'Default' ),
 			).toBe( 'Default' );
 
 			resolved = true;
 
 			expect(
-				usePostTypeLabel( 'name', 'gatherpress_event', 'Default' )
+				usePostTypeLabel( 'name', 'gatherpress_event', 'Default' ),
 			).toBe( 'Events' );
 		} );
 
@@ -878,7 +878,7 @@ describe( 'Editor helper functions', () => {
 			} );
 
 			expect(
-				usePostTypeLabel( 'name', 'gatherpress_event', 'Default' )
+				usePostTypeLabel( 'name', 'gatherpress_event', 'Default' ),
 			).toBe( 'Default' );
 
 			expect( __postTypeLabelCache.has( 'gatherpress_event::name' ) ).toBe( false );
@@ -886,7 +886,7 @@ describe( 'Editor helper functions', () => {
 			resolved = true;
 
 			expect(
-				usePostTypeLabel( 'name', 'gatherpress_event', 'Default' )
+				usePostTypeLabel( 'name', 'gatherpress_event', 'Default' ),
 			).toBe( 'Events' );
 
 			expect( __postTypeLabelCache.get( 'gatherpress_event::name' ) ).toBe( 'Events' );

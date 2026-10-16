@@ -114,12 +114,12 @@ const NO_STATUS = [
 										'<span class="gatherpress-tooltip" data-gatherpress-tooltip="%1$s">%2$s</span>',
 										__(
 											'Only admins will see your identity.',
-											'gatherpress'
+											'gatherpress',
 										),
 										__(
 											'List me as anonymous',
-											'gatherpress'
-										)
+											'gatherpress',
+										),
 									),
 									autocomplete: 'off',
 								},

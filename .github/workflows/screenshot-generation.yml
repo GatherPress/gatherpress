@@ -147,7 +147,7 @@ jobs:
       if: steps.playwright-cache.outputs.cache-hit != 'true'
       uses: actions/setup-node@v4
       with:
-        node-version: '24.19.0'
+        node-version: '24.20.0'
 
     - name: Install Playwright browser
       timeout-minutes: 15

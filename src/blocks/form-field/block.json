@@ -17,8 +17,15 @@
 			"type": "string",
 			"default": ""
 		},
+		"inputId": {
+			"type": "string",
+			"default": ""
+		},
 		"fieldValue": {
-			"type": ["string", "boolean"],
+			"type": [
+				"string",
+				"boolean"
+			],
 			"default": ""
 		},
 		"label": {
@@ -125,7 +132,11 @@
 		},
 		"autocomplete": {
 			"type": "string",
-			"default": "on"
+			"default": ""
+		},
+		"helpText": {
+			"type": "string",
+			"default": ""
 		}
 	},
 	"supports": {
@@ -136,6 +147,7 @@
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
 	"style": "file:./style-index.css",
 	"render": "file:./render.php"
 }

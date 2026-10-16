@@ -3,8 +3,8 @@
 GatherPress lets developers customize the event **Duration** control in the
 block editor through two JavaScript filters:
 
-1. [`gatherpress.durationOptions`](#gatherpressdurationoptions) — change the list of selectable durations.
-2. [`gatherpress.durationDefault`](#gatherpressdurationdefault) — choose which duration is selected by default.
+1. [`gatherpress.durationOptions`](#gatherpressdurationoptions): change the list of selectable durations.
+2. [`gatherpress.durationDefault`](#gatherpressdurationdefault): choose which duration is selected by default.
 
 Both are registered with `wp.hooks.addFilter` (the `@wordpress/hooks` package)
 and follow the [JavaScript hook naming convention](hooks-naming-convention.md)
@@ -16,14 +16,18 @@ When the editor shows the event date and time, it renders either the
 matches one of the duration options; picking "Set an end time…" switches to the
 absolute picker.
 
+An all-day event has no length in hours, so the Duration select is hidden while
+the **All day** toggle is on and the end date picker takes its place. Both
+filters still run; their result is simply not shown for that event.
+
 ## `gatherpress.durationOptions`
 
 Filters the array of duration presets shown in the Duration select.
 
 Each option is an object with:
 
-- `label` (`string`) — the text shown in the dropdown.
-- `value` (`number | false`) — the duration in hours, or `false` for the
+- `label` (`string`): the text shown in the dropdown.
+- `value` (`number | false`): the duration in hours, or `false` for the
   "Set an end time…" entry that switches to the absolute end-time picker.
 
 ```js
@@ -35,7 +39,7 @@ addFilter(
 	( options ) => [
 		{ label: '3 hours', value: 3 },
 		{ label: '6 hours', value: 6 },
-		{ label: 'All day', value: 24 },
+		{ label: '12 hours', value: 12 },
 		// Keep a "Set an end time…" entry if you still want the absolute
 		// end-time picker to be reachable.
 		{ label: 'Set an end time…', value: false },
@@ -80,6 +84,6 @@ The default duration is resolved against the (possibly filtered) options:
 - With the built-in options unchanged, the default stays `2` hours.
 
 So if you provide a custom `durationOptions` list that does not include `2`, you
-do not have to set `gatherpress.durationDefault` as well — the first duration in
+do not have to set `gatherpress.durationDefault` as well. The first duration in
 your list is used automatically. Set `gatherpress.durationDefault` only when you
 want a specific entry (other than the first) to be the default.

@@ -84,19 +84,19 @@ describe( 'RSVP Form Visibility', () => {
 
 				it( 'hides in default state (not success yet)', () => {
 					expect( shouldHideBlock( visibility, 'default' ) ).toBe(
-						true
+						true,
 					);
 				} );
 
 				it( 'shows in success state', () => {
 					expect( shouldHideBlock( visibility, 'success' ) ).toBe(
-						false
+						false,
 					);
 				} );
 
 				it( 'hides in past state (whenPast takes precedence)', () => {
 					expect( shouldHideBlock( visibility, 'past' ) ).toBe(
-						true
+						true,
 					);
 				} );
 			} );
@@ -106,19 +106,19 @@ describe( 'RSVP Form Visibility', () => {
 
 				it( 'shows in default state', () => {
 					expect( shouldHideBlock( visibility, 'default' ) ).toBe(
-						false
+						false,
 					);
 				} );
 
 				it( 'hides in success state (onSuccess applies)', () => {
 					expect( shouldHideBlock( visibility, 'success' ) ).toBe(
-						true
+						true,
 					);
 				} );
 
 				it( 'hides in past state (whenPast takes precedence)', () => {
 					expect( shouldHideBlock( visibility, 'past' ) ).toBe(
-						true
+						true,
 					);
 				} );
 			} );
@@ -127,14 +127,14 @@ describe( 'RSVP Form Visibility', () => {
 				it( 'uses whenPast when past, ignoring onSuccess', () => {
 					const visibility = { onSuccess: 'hide', whenPast: 'show' };
 					expect( shouldHideBlock( visibility, 'past' ) ).toBe(
-						false
+						false,
 					);
 				} );
 
 				it( 'uses onSuccess when not past, ignoring whenPast', () => {
 					const visibility = { onSuccess: 'show', whenPast: 'hide' };
 					expect( shouldHideBlock( visibility, 'default' ) ).toBe(
-						true
+						true,
 					);
 				} );
 			} );
@@ -144,10 +144,10 @@ describe( 'RSVP Form Visibility', () => {
 			it( 'shows block with no visibility settings', () => {
 				const visibility = {};
 				expect( shouldHideBlock( visibility, 'default' ) ).toBe(
-					false
+					false,
 				);
 				expect( shouldHideBlock( visibility, 'success' ) ).toBe(
-					false
+					false,
 				);
 				expect( shouldHideBlock( visibility, 'past' ) ).toBe( false );
 			} );
@@ -155,10 +155,10 @@ describe( 'RSVP Form Visibility', () => {
 			it( 'shows block with empty string values', () => {
 				const visibility = { onSuccess: '', whenPast: '' };
 				expect( shouldHideBlock( visibility, 'default' ) ).toBe(
-					false
+					false,
 				);
 				expect( shouldHideBlock( visibility, 'success' ) ).toBe(
-					false
+					false,
 				);
 				expect( shouldHideBlock( visibility, 'past' ) ).toBe( false );
 			} );
@@ -166,14 +166,14 @@ describe( 'RSVP Form Visibility', () => {
 			it( 'shows block with only onSuccess empty', () => {
 				const visibility = { onSuccess: '' };
 				expect( shouldHideBlock( visibility, 'default' ) ).toBe(
-					false
+					false,
 				);
 			} );
 
 			it( 'shows block with only whenPast empty', () => {
 				const visibility = { whenPast: '' };
 				expect( shouldHideBlock( visibility, 'default' ) ).toBe(
-					false
+					false,
 				);
 			} );
 		} );
@@ -184,12 +184,12 @@ describe( 'RSVP Form Visibility', () => {
 
 				// Before submission - hidden.
 				expect( shouldHideBlock( visibility, 'default' ) ).toBe(
-					true
+					true,
 				);
 
 				// After submission - shown.
 				expect( shouldHideBlock( visibility, 'success' ) ).toBe(
-					false
+					false,
 				);
 
 				// Event has passed - hidden (whenPast takes precedence).
@@ -201,12 +201,12 @@ describe( 'RSVP Form Visibility', () => {
 
 				// Before submission - shown.
 				expect( shouldHideBlock( visibility, 'default' ) ).toBe(
-					false
+					false,
 				);
 
 				// After submission - hidden.
 				expect( shouldHideBlock( visibility, 'success' ) ).toBe(
-					true
+					true,
 				);
 
 				// Event has passed - hidden.
@@ -218,12 +218,12 @@ describe( 'RSVP Form Visibility', () => {
 
 				// Before event passes - hidden.
 				expect( shouldHideBlock( visibility, 'default' ) ).toBe(
-					true
+					true,
 				);
 
 				// After submission but not past - hidden.
 				expect( shouldHideBlock( visibility, 'success' ) ).toBe(
-					true
+					true,
 				);
 
 				// Event has passed - shown.

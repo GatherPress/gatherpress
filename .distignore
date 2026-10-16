@@ -3,6 +3,7 @@
 # Configuration and Build Files
 .babelrc
 .claude
+.coderabbit.yaml
 .deployignore
 .distignore
 .editorconfig
@@ -26,6 +27,7 @@ README.md
 composer.json
 composer.lock
 dependencies.yml
+eslint.config.js
 Gruntfile.js
 jest.config.js
 jsconfig.json

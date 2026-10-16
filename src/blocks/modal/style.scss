@@ -61,3 +61,17 @@
 		transform: translate(-50%, -50%) scale(1);
 	}
 }
+
+// Respect a reduced-motion preference: drop the scale, keep the fade.
+// The appear animation scales the dialog from 97%, the kind of movement
+// that can trigger symptoms for people with vestibular disorders — the
+// reason they set the OS preference in the first place. Removing the
+// animation leaves the content at its final position (the base transform
+// still centers it), so the dialog simply appears. The opacity
+// transitions above stay: a cross-fade carries no movement, and keeping
+// it avoids replacing gentle motion with an abrupt snap.
+@media (prefers-reduced-motion: reduce) {
+	.wp-block-gatherpress-modal.gatherpress--is-visible > div {
+		animation: none;
+	}
+}

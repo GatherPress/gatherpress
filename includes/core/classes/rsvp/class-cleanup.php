@@ -93,7 +93,8 @@ final class Cleanup {
 			$meta_keys = array_keys( get_comment_meta( $rsvp->comment_ID ) );
 
 			foreach ( $meta_keys as $meta_key ) {
-				delete_comment_meta( $rsvp->comment_ID, $meta_key );
+				// A numeric meta key comes back from `array_keys()` as an int.
+				delete_comment_meta( $rsvp->comment_ID, (string) $meta_key );
 			}
 
 			wp_delete_comment( $rsvp->comment_ID, true );
@@ -113,11 +114,11 @@ final class Cleanup {
 	 */
 	public function schedule_cleanup_cron(): void {
 		$settings = Settings::get_instance();
-		$switch   = $settings->get( 'rsvp_cleanup_switch' );
+		$switch   = $settings->get( 'enable_rsvp_cleanup' );
 
 		if ( 'enabled' === $switch && ! wp_next_scheduled( 'gatherpress_rsvp_cleanup' ) ) {
 			$frequency       = $settings->get( 'rsvp_cleanup_frequency' );
-			$interval        = $settings->get( 'rsvp_cleanup_interval' );
+			$interval        = $settings->get( 'rsvp_cleanup_multiplier' );
 			$time_in_seconds = $this->convert_to_seconds( $frequency, $interval );
 
 			wp_schedule_single_event( time() + $time_in_seconds, 'gatherpress_rsvp_cleanup' );
@@ -162,14 +163,16 @@ final class Cleanup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param array $old_value The previous RSVP cleanup settings including interval and frequency.
-	 * @param array $new_value The updated RSVP cleanup settings including interval and frequency.
+	 * @param array<string, bool|int|string> $old_value The previous RSVP cleanup settings including interval and
+	 *                                                  frequency.
+	 * @param array<string, bool|int|string> $new_value The updated RSVP cleanup settings including interval and
+	 *                                                  frequency.
 	 *
 	 * @return void
 	 */
 	public function reschedule_cleanup_cron( $old_value, $new_value ): void {
-		$old_interval  = $old_value['rsvp_cleanup_interval'] ?? null;
-		$new_interval  = $new_value['rsvp_cleanup_interval'] ?? null;
+		$old_interval  = $old_value['rsvp_cleanup_multiplier'] ?? null;
+		$new_interval  = $new_value['rsvp_cleanup_multiplier'] ?? null;
 		$old_frequency = $old_value['rsvp_cleanup_frequency'] ?? null;
 		$new_frequency = $new_value['rsvp_cleanup_frequency'] ?? null;
 

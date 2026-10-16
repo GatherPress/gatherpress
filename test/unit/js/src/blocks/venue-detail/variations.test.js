@@ -16,7 +16,7 @@ describe( 'venue-detail variations', () => {
 
 	describe( 'venue-address variation', () => {
 		const addressVariation = variations.find(
-			( v ) => 'venue-address' === v.name
+			( v ) => 'venue-address' === v.name,
 		);
 
 		it( 'has correct name and title', () => {
@@ -26,7 +26,7 @@ describe( 'venue-detail variations', () => {
 
 		it( 'has correct description', () => {
 			expect( addressVariation.description ).toBe(
-				'Display the venue address.'
+				'Display the venue address.',
 			);
 		} );
 
@@ -40,7 +40,7 @@ describe( 'venue-detail variations', () => {
 
 		it( 'has correct attributes', () => {
 			expect( addressVariation.attributes.placeholder ).toBe(
-				'Venue address…'
+				'Venue address…',
 			);
 			expect( addressVariation.attributes.fieldType ).toBe( 'address' );
 		} );
@@ -55,7 +55,7 @@ describe( 'venue-detail variations', () => {
 
 	describe( 'venue-phone variation', () => {
 		const phoneVariation = variations.find(
-			( v ) => 'venue-phone' === v.name
+			( v ) => 'venue-phone' === v.name,
 		);
 
 		it( 'has correct name and title', () => {
@@ -65,7 +65,7 @@ describe( 'venue-detail variations', () => {
 
 		it( 'has correct description', () => {
 			expect( phoneVariation.description ).toBe(
-				'Display the venue phone number.'
+				'Display the venue phone number.',
 			);
 		} );
 
@@ -79,7 +79,7 @@ describe( 'venue-detail variations', () => {
 
 		it( 'has correct attributes', () => {
 			expect( phoneVariation.attributes.placeholder ).toBe(
-				'Venue phone…'
+				'Venue phone…',
 			);
 			expect( phoneVariation.attributes.fieldType ).toBe( 'phone' );
 		} );
@@ -94,7 +94,7 @@ describe( 'venue-detail variations', () => {
 
 	describe( 'venue-website variation', () => {
 		const websiteVariation = variations.find(
-			( v ) => 'venue-website' === v.name
+			( v ) => 'venue-website' === v.name,
 		);
 
 		it( 'has correct name and title', () => {
@@ -104,7 +104,7 @@ describe( 'venue-detail variations', () => {
 
 		it( 'has correct description', () => {
 			expect( websiteVariation.description ).toBe(
-				'Display the venue website URL.'
+				'Display the venue website URL.',
 			);
 		} );
 
@@ -118,7 +118,7 @@ describe( 'venue-detail variations', () => {
 
 		it( 'has correct attributes', () => {
 			expect( websiteVariation.attributes.placeholder ).toBe(
-				'Venue website…'
+				'Venue website…',
 			);
 			expect( websiteVariation.attributes.fieldType ).toBe( 'url' );
 		} );
