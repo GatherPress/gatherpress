@@ -227,10 +227,16 @@ jobs:
 
           # File changes from the changelogger run in this working tree:
           # CHANGELOG.md rewritten, consumed entry files deleted.
-          additions=$(jq -n \
+          #
+          # File contents and the arrays built from them reach jq through
+          # --rawfile and --slurpfile, never as arguments: Linux caps a single
+          # argv string at 128 KiB, and the rolled CHANGELOG.md's base64 passed
+          # that in 0.36.0, the same limit #2002 hit in the version bump.
+          base64 -w0 CHANGELOG.md > /tmp/rollup-changelog.b64
+          jq -n \
             --arg path "CHANGELOG.md" \
-            --arg contents "$(base64 -w0 CHANGELOG.md)" \
-            '[{path: $path, contents: $contents}]')
+            --rawfile contents /tmp/rollup-changelog.b64 \
+            '[{path: $path, contents: ($contents | rtrimstr("\n"))}]' > /tmp/rollup-additions.json
 
           # A patch stamps @since on its own branch, so develop still says
           # TBD for the same symbols and the next minor would claim them.
@@ -244,10 +250,10 @@ jobs:
 
           if [ "${carried}" -gt 0 ]; then
             echo "Carrying ${carried} resolved @since tag(s) back to develop."
-            additions=$(jq -n \
-              --argjson additions "${additions}" \
-              --slurpfile carry /tmp/carry-since.json \
-              '$additions + ($carry[0].additions | map({path, contents}))')
+            jq --slurpfile carry /tmp/carry-since.json \
+              '. + ($carry[0].additions | map({path, contents}))' \
+              /tmp/rollup-additions.json > /tmp/rollup-additions.next.json
+            mv /tmp/rollup-additions.next.json /tmp/rollup-additions.json
           fi
 
           since_note=""
@@ -266,14 +272,15 @@ jobs:
 
           if [ -f "${credits}" ] && ! gh api "repos/${REPO}/contents/${credits}?ref=develop" --silent 2>/dev/null; then
             echo "develop is missing ${credits}; adding it to the rollup."
-            additions=$(jq -n \
-              --argjson additions "${additions}" \
-              --arg path "${credits}" \
-              --arg contents "$(base64 -w0 "${credits}")" \
-              '$additions + [{path: $path, contents: $contents}]')
+            base64 -w0 "${credits}" > /tmp/rollup-credits.b64
+            jq --arg path "${credits}" \
+              --rawfile contents /tmp/rollup-credits.b64 \
+              '. + [{path: $path, contents: ($contents | rtrimstr("\n"))}]' \
+              /tmp/rollup-additions.json > /tmp/rollup-additions.next.json
+            mv /tmp/rollup-additions.next.json /tmp/rollup-additions.json
           fi
-          deletions=$(git status --porcelain .github/changelog/ \
-            | awk '$1 == "D" {print $2}' | jq -R '{path: .}' | jq -s .)
+          git status --porcelain .github/changelog/ \
+            | awk '$1 == "D" {print $2}' | jq -R '{path: .}' | jq -s . > /tmp/rollup-deletions.json
 
           jq -n \
             --arg query 'mutation ($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }' \
@@ -281,9 +288,9 @@ jobs:
             --arg branch "${branch}" \
             --arg oid "${GITHUB_SHA}" \
             --arg headline "Roll up changelog for ${VERSION}" \
-            --argjson additions "${additions}" \
-            --argjson deletions "${deletions}" \
-            '{query: $query, variables: {input: {branch: {repositoryNameWithOwner: $repo, branchName: $branch}, expectedHeadOid: $oid, message: {headline: $headline}, fileChanges: {additions: $additions, deletions: $deletions}}}}' \
+            --slurpfile additions /tmp/rollup-additions.json \
+            --slurpfile deletions /tmp/rollup-deletions.json \
+            '{query: $query, variables: {input: {branch: {repositoryNameWithOwner: $repo, branchName: $branch}, expectedHeadOid: $oid, message: {headline: $headline}, fileChanges: {additions: $additions[0], deletions: $deletions[0]}}}}' \
             > /tmp/rollup-commit.json
 
           gh api graphql --input /tmp/rollup-commit.json > /dev/null
@@ -318,12 +325,14 @@ jobs:
           gh api "repos/${REPO}/git/refs" \
             -f ref="refs/heads/${branch}" -f sha="${main_sha}" > /dev/null
 
-          additions=$(jq -n \
+          # Off argv for the same 128 KiB reason as the rollup step above.
+          base64 -w0 CHANGELOG.md > /tmp/parity-changelog.b64
+          jq -n \
             --arg path "CHANGELOG.md" \
-            --arg contents "$(base64 -w0 CHANGELOG.md)" \
-            '[{path: $path, contents: $contents}]')
-          deletions=$(git status --porcelain .github/changelog/ \
-            | awk '$1 == "D" {print $2}' | jq -R '{path: .}' | jq -s .)
+            --rawfile contents /tmp/parity-changelog.b64 \
+            '[{path: $path, contents: ($contents | rtrimstr("\n"))}]' > /tmp/parity-additions.json
+          git status --porcelain .github/changelog/ \
+            | awk '$1 == "D" {print $2}' | jq -R '{path: .}' | jq -s . > /tmp/parity-deletions.json
 
           # expectedHeadOid guards the branch being committed to, which is the
           # new sync branch, so it cannot notice main moving. Re-read main and
@@ -342,9 +351,9 @@ jobs:
             --arg branch "${branch}" \
             --arg oid "${main_sha}" \
             --arg headline "Carry the ${VERSION} changelog to main" \
-            --argjson additions "${additions}" \
-            --argjson deletions "${deletions}" \
-            '{query: $query, variables: {input: {branch: {repositoryNameWithOwner: $repo, branchName: $branch}, expectedHeadOid: $oid, message: {headline: $headline}, fileChanges: {additions: $additions, deletions: $deletions}}}}' \
+            --slurpfile additions /tmp/parity-additions.json \
+            --slurpfile deletions /tmp/parity-deletions.json \
+            '{query: $query, variables: {input: {branch: {repositoryNameWithOwner: $repo, branchName: $branch}, expectedHeadOid: $oid, message: {headline: $headline}, fileChanges: {additions: $additions[0], deletions: $deletions[0]}}}}' \
             > /tmp/parity-commit.json
 
           gh api graphql --input /tmp/parity-commit.json > /dev/null
