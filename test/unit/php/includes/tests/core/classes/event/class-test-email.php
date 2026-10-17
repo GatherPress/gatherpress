@@ -460,7 +460,7 @@ class Test_Email extends Base {
 	/**
 	 * Future-event emails include the RSVP Now CTA.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @covers ::build_event_email
 	 *
@@ -498,7 +498,7 @@ class Test_Email extends Base {
 	/**
 	 * Past-event emails omit the RSVP Now CTA — registration is closed.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @covers ::build_event_email
 	 *
@@ -542,7 +542,7 @@ class Test_Email extends Base {
 	/**
 	 * Emails omit the RSVP Now CTA when RSVP is disabled for the event.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @covers ::build_event_email
 	 *
@@ -1214,7 +1214,7 @@ class Test_Email extends Base {
 	/**
 	 * Test get_recipients skips rows the RSVP query returns that are not comments.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @covers ::get_recipients
 	 *
 	 * @return void
