@@ -198,3 +198,192 @@ describe( 'rsvp updateRsvp post-success modal switch', () => {
 		expect( window.alert ).not.toHaveBeenCalled();
 	} );
 } );
+
+/**
+ * Focus after an RSVP change (#2428). The `renderRsvpBlock` watch shows the
+ * container of the new status some time after the request resolves, so the
+ * post-success modal switch must wait for that, and must follow the status
+ * the server returned rather than the one requested.
+ */
+describe( 'rsvp updateRsvp focus after the status changes (#2428)', () => {
+	const STATUSES = [ 'no_status', 'attending', 'waiting_list', 'not_attending' ];
+	// How long the simulated watch takes to show the new state. Longer than
+	// the 10 ms the old code waited, so a fixed-delay switch loses the race.
+	const WATCH_DELAY = 40;
+
+	let state;
+	let actions;
+	let calls;
+
+	/**
+	 * Whether an element sits in a visible RSVP status container.
+	 *
+	 * @param {HTMLElement} el The element.
+	 * @return {boolean} True when no ancestor carries the hidden class.
+	 */
+	const isShown = ( el ) => ! el.closest( '.gatherpress--is-hidden' );
+
+	/**
+	 * Mirrors what the `renderRsvpBlock` watch does with the status classes.
+	 *
+	 * @param {string} status The status to show.
+	 */
+	const applyStatus = ( status ) => {
+		document.querySelectorAll( '[data-rsvp-status]' ).forEach( ( el ) => {
+			el.classList.toggle(
+				'gatherpress--is-hidden',
+				el.dataset.rsvpStatus !== status,
+			);
+		} );
+	};
+
+	/**
+	 * Builds an RSVP block with one container per status, each with the
+	 * update button its modal holds, and shows `current`.
+	 *
+	 * @param {string} current The status shown on load.
+	 */
+	const setupDom = ( current ) => {
+		const containers = STATUSES.map( ( status ) => {
+			// The no_status modal's button is Attend; the others are Not Attending.
+			const setStatus = 'no_status' === status ? '' : 'not_attending';
+
+			return `<div data-rsvp-status="${ status }">
+				<button type="button" class="gatherpress-rsvp--trigger-update" data-set-status="${ setStatus }">${ status }</button>
+			</div>`;
+		} );
+
+		document.body.innerHTML = `<div class="wp-block-gatherpress-rsvp">${ containers.join( '' ) }</div>`;
+
+		applyStatus( current );
+	};
+
+	const button = ( status ) =>
+		document.querySelector( `[data-rsvp-status="${ status }"] button` );
+
+	/**
+	 * Clicks the update button of `from`; the server answers `to`, and the
+	 * simulated watch shows `to` after WATCH_DELAY (or never, if `show` is false).
+	 *
+	 * @param {string}  from The status whose button is pressed.
+	 * @param {string}  to   The status the server returns.
+	 * @param {boolean} show Whether the watch shows the new status.
+	 * @return {HTMLElement} The pressed button.
+	 */
+	const respond = ( from, to, show = true ) => {
+		global.fetch = jest.fn( ( url ) => {
+			if ( url.endsWith( '/nonce' ) ) {
+				return Promise.resolve( {
+					json: () => Promise.resolve( { nonce: 'test-nonce' } ),
+				} );
+			}
+
+			if ( show ) {
+				setTimeout( () => applyStatus( to ), WATCH_DELAY );
+			}
+
+			return Promise.resolve( {
+				status: 200,
+				json: () =>
+					Promise.resolve( {
+						success: true,
+						status: to,
+						guests: 0,
+						anonymous: false,
+					} ),
+			} );
+		} );
+
+		const trigger = button( from );
+
+		getElement.mockReturnValue( { ref: trigger } );
+		getContext.mockReturnValue( { postId: 321 } );
+		actions.updateRsvp( { preventDefault: jest.fn() } );
+
+		return trigger;
+	};
+
+	beforeEach( () => {
+		( { state, actions } = store( 'gatherpress' ) );
+
+		delete state.posts;
+		state.eventApiUrl = 'https://example.test/wp-json/gatherpress/v1';
+
+		// Record each modal call with whether its element was visible at
+		// that moment: a focus() aimed at a hidden element is lost.
+		calls = [];
+		actions.openModal = jest.fn( ( event, el ) => {
+			calls.push( { action: 'open', el, shown: isShown( el ) } );
+		} );
+		actions.closeModal = jest.fn( ( event, el, findActiveSibling ) => {
+			calls.push( {
+				action: 'close',
+				el,
+				findActiveSibling,
+				shown: isShown( el ),
+			} );
+		} );
+
+		getNonce.clearCache();
+
+		window.alert = jest.fn();
+		jest.spyOn( console, 'warn' ).mockImplementation( () => {} );
+	} );
+
+	afterEach( () => {
+		jest.restoreAllMocks();
+		delete global.fetch;
+	} );
+
+	it( 'opens the waiting list modal when Attend puts the person on the waiting list', async () => {
+		setupDom( 'no_status' );
+		const trigger = respond( 'no_status', 'waiting_list' );
+
+		await waitFor( () => expect( actions.closeModal ).toHaveBeenCalled() );
+
+		const open = calls.find( ( call ) => 'open' === call.action );
+
+		expect( open?.el ).toBe( button( 'waiting_list' ) );
+		expect( open?.shown ).toBe( true );
+		expect( actions.closeModal ).toHaveBeenCalledWith( null, trigger, false );
+	} );
+
+	it( 'opens the attending modal only after the attending state is shown', async () => {
+		setupDom( 'no_status' );
+		respond( 'no_status', 'attending' );
+
+		await waitFor( () => expect( actions.closeModal ).toHaveBeenCalled() );
+
+		const open = calls.find( ( call ) => 'open' === call.action );
+
+		expect( open?.el ).toBe( button( 'attending' ) );
+		expect( open?.shown ).toBe( true );
+	} );
+
+	it( 'fully closes after Not Attending only once the old state is hidden', async () => {
+		setupDom( 'attending' );
+		const trigger = respond( 'attending', 'not_attending' );
+
+		await waitFor( () => expect( actions.closeModal ).toHaveBeenCalled() );
+
+		expect( actions.openModal ).not.toHaveBeenCalled();
+		expect( actions.closeModal ).toHaveBeenCalledWith( null, trigger, true );
+		// closeModal finds the visible sibling to focus only when the
+		// pressed button's container is already hidden.
+		expect( calls[ 0 ].shown ).toBe( false );
+	} );
+
+	it( 'still closes the modal when the new state never shows', async () => {
+		setupDom( 'no_status' );
+		const trigger = respond( 'no_status', 'attending', false );
+
+		await waitFor(
+			() => expect( actions.closeModal ).toHaveBeenCalled(),
+			{ timeout: 3000 },
+		);
+
+		expect( actions.openModal ).not.toHaveBeenCalled();
+		expect( actions.closeModal ).toHaveBeenCalledWith( null, trigger, true );
+		expect( window.alert ).not.toHaveBeenCalled();
+	} );
+} );

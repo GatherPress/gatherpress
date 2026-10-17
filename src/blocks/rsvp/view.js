@@ -12,6 +12,41 @@ import {
 } from '../../helpers/interactivity';
 import { getUrlParam } from '../../helpers/globals';
 
+/**
+ * Runs a callback once an RSVP status container is shown.
+ *
+ * The `renderRsvpBlock` watch shows the container of the new status some
+ * time after the RSVP request resolves, not at a fixed delay. Focus moved
+ * before then lands on a hidden element, and the browser drops it to the
+ * page body (#2428). Checks once per animation frame, and stops waiting
+ * after about a second, so the modal still closes when the container is
+ * missing or never shows.
+ *
+ * @since TBD
+ *
+ * @param {HTMLElement|null} container    The status container to wait for.
+ * @param {Function}         callback     Receives true when the container is
+ *                                        shown, false when waiting stopped.
+ * @param {number}           [framesLeft] Animation frames left to wait.
+ *
+ * @return {void}
+ */
+function whenStatusShown( container, callback, framesLeft = 60 ) {
+	if ( container && ! container.closest( '.gatherpress--is-hidden' ) ) {
+		callback( true );
+		return;
+	}
+
+	if ( ! container || 0 >= framesLeft ) {
+		callback( false );
+		return;
+	}
+
+	window.requestAnimationFrame( () =>
+		whenStatusShown( container, callback, framesLeft - 1 ),
+	);
+}
+
 const { state, actions } = store( 'gatherpress', {
 	actions: {
 		updateGuestCount() {
@@ -106,7 +141,7 @@ const { state, actions } = store( 'gatherpress', {
 					rsvpToken,
 				},
 				state,
-				() => {
+				( response ) => {
 					const parentWithRsvpStatus =
 						element.ref.closest( '[data-rsvp-status]' );
 					const rsvpContainer = parentWithRsvpStatus?.closest(
@@ -123,40 +158,49 @@ const { state, actions } = store( 'gatherpress', {
 					const rsvpStatus =
 						parentWithRsvpStatus.dataset.rsvpStatus;
 
-					if ( [ 'not_attending', 'no_status' ].includes( rsvpStatus ) ) {
-						const attendingStatusButton =
-							rsvpContainer.querySelector(
-								'[data-rsvp-status="attending"] .gatherpress-rsvp--trigger-update',
-							);
+					// Follow the status the server returned, not the one
+					// requested: Attend on a full event returns
+					// `waiting_list` (#2428).
+					const newStatus =
+						response?.status ??
+						state.posts[ postId ].currentUser.status;
+					const newStatusContainer = rsvpContainer.querySelector(
+						`[data-rsvp-status="${ newStatus }"]`,
+					);
 
-						if ( attendingStatusButton ) {
-							actions.openModal( null, attendingStatusButton );
+					// Move focus only once the new state is on screen. Focus
+					// aimed at a hidden state is dropped to the page body.
+					whenStatusShown( newStatusContainer, ( shown ) => {
+						const nextModalButton =
+							shown &&
+							[ 'not_attending', 'no_status' ].includes( rsvpStatus ) &&
+							[ 'attending', 'waiting_list' ].includes( newStatus )
+								? newStatusContainer.querySelector(
+									'.gatherpress-rsvp--trigger-update',
+								)
+								: null;
+
+						if ( nextModalButton ) {
+							actions.openModal( null, nextModalButton );
 						}
 
 						/**
-						 * When switching to the attending modal, close with
+						 * When switching to the new state's modal, close with
 						 * findActiveSibling=false so focus stays on the newly
-						 * opened modal manager. When the attending state's
-						 * markup is missing (malformed or partial block
-						 * content), there is no modal to switch to, so fully
-						 * close the current one instead (#1719).
+						 * opened modal manager. Otherwise fully close with
+						 * findActiveSibling=true, so focus moves to the trigger
+						 * of the visible state. That also covers a new state
+						 * whose markup is missing (malformed or partial block
+						 * content), where there is no modal to switch to (#1719).
 						 */
 						setTimeout( () => {
 							actions.closeModal(
 								null,
 								element.ref,
-								! attendingStatusButton,
+								! nextModalButton,
 							);
 						}, 10 );
-					} else {
-						/**
-						 * When fully closing a modal, use findActiveSibling=true
-						 * to allow focus to move to any visible modal manager in sibling containers.
-						 */
-						setTimeout( () => {
-							actions.closeModal( null, element.ref, true );
-						}, 10 );
-					}
+					} );
 				},
 				triggerElement,
 			);
