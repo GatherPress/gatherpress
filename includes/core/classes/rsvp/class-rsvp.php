@@ -403,12 +403,15 @@ final class Rsvp {
 					++$promoted_count;
 
 					/**
-					 * Fires after a waiting-list RSVP is promoted to attending.
+					 * Fires after an RSVP moves off the waiting list to attending.
+					 *
+					 * Lets a site act on the freed spot, for example to tell the
+					 * attendee. GatherPress queues a confirmation email here.
 					 *
 					 * @since TBD
 					 *
 					 * @param int   $post_id Event post ID.
-					 * @param State $state   Promoted RSVP state.
+					 * @param State $state   The promoted RSVP.
 					 */
 					do_action( 'gatherpress_rsvp_waiting_list_promoted', $post_id, $state );
 				}
@@ -445,14 +448,7 @@ final class Rsvp {
 				++$promoted_count;
 				$remaining_spots -= $state->get_attendee_count();
 
-				/**
-				 * Fires after a waiting-list RSVP is promoted to attending.
-				 *
-				 * @since TBD
-				 *
-				 * @param int   $post_id Event post ID.
-				 * @param State $state   Promoted RSVP state.
-				 */
+				/** This action is documented in includes/core/classes/rsvp/class-rsvp.php */
 				do_action( 'gatherpress_rsvp_waiting_list_promoted', $post_id, $state );
 			}
 		}

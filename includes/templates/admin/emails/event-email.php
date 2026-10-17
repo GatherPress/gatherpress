@@ -29,8 +29,8 @@ $gatherpress_event       = new Event( $event_id );
 $gatherpress_event_image = get_post_thumbnail_id( $event_id );
 $gatherpress_venue       = $gatherpress_event->get_venue_information()['name'];
 
-// A confirmation email for a spot the member already holds, such as a waiting
-// list promotion, passes false so the button does not read as "RSVP again".
+// An email about a spot the attendee already holds, such as a waiting list
+// promotion, passes false so the button does not read as "RSVP again".
 $gatherpress_show_rsvp_button = $show_rsvp_button ?? true;
 ?>
 

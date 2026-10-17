@@ -2,19 +2,21 @@
 /**
  * Class handles unit tests for GatherPress\Core\Event\Email_Sends.
  *
- * @package GatherPress\Core\Event
+ * @package GatherPress\Core
  * @since TBD
  */
 
 namespace GatherPress\Tests\Core\Event;
 
+use DateTime;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Email_Sends;
+use GatherPress\Core\Mailer;
 use GatherPress\Core\Rsvp;
-use GatherPress\Core\Rsvp\Response\State;
-use GatherPress\Core\Rsvp\Response\Status;
+use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
-use WP_Error;
+use PMC\Unit_Test\Utility;
+use WP_Comment;
 
 /**
  * Class Test_Email_Sends.
@@ -24,19 +26,53 @@ use WP_Error;
 class Test_Email_Sends extends Base {
 
 	/**
-	 * Clear any promotion email the tests queued, so one test's schedule does
-	 * not survive into the next.
+	 * Emails sent during a test, as recipient and subject.
+	 *
+	 * @var array<int, array{0: string, 1: string, 2: string}>
+	 */
+	private array $sent = array();
+
+	/**
+	 * Capture outgoing mail instead of sending it.
 	 *
 	 * @return void
 	 */
-	public function tearDown(): void {
-		wp_clear_scheduled_hook( Email_Sends::PROMOTION_CRON_HOOK );
+	public function set_up(): void {
+		parent::set_up();
 
-		parent::tearDown();
+		$this->sent = array();
+
+		add_filter( 'pre_wp_mail', array( $this, 'capture_mail' ), 10, 2 );
 	}
 
 	/**
-	 * Coverage for the email hooks.
+	 * Remove the mail capture and any queued jobs.
+	 *
+	 * @return void
+	 */
+	public function tear_down(): void {
+		remove_filter( 'pre_wp_mail', array( $this, 'capture_mail' ) );
+		wp_unschedule_hook( Mailer::JOB_HOOK );
+
+		parent::tear_down();
+	}
+
+	/**
+	 * Record an outgoing email and stop it from being sent.
+	 *
+	 * @param mixed                $previous Short-circuit value.
+	 * @param array<string, mixed> $atts     The wp_mail() arguments.
+	 *
+	 * @return bool True, so wp_mail() reports success.
+	 */
+	public function capture_mail( $previous, array $atts ): bool {
+		$this->sent[] = array( $atts['to'], $atts['subject'], $atts['message'] );
+
+		return true;
+	}
+
+	/**
+	 * Check the hooks Email_Sends listens on.
 	 *
 	 * @covers ::__construct
 	 * @covers ::setup_hooks
@@ -46,555 +82,730 @@ class Test_Email_Sends extends Base {
 	public function test_setup_hooks(): void {
 		$instance = Email_Sends::get_instance();
 
-		$this->assertSame(
-			10,
-			has_action( 'gatherpress_send_emails', array( $instance, 'handle_email_send_action' ) ),
-			'Failed to assert the event email action is registered.'
-		);
-		$this->assertSame(
-			10,
-			has_action(
-				'gatherpress_rsvp_waiting_list_promoted',
-				array( $instance, 'schedule_waiting_list_promotion_email' )
+		$this->assert_hooks(
+			array(
+				array(
+					'type'     => 'action',
+					'name'     => 'gatherpress_send_emails',
+					'priority' => 10,
+					'callback' => array( $instance, 'handle_email_send_action' ),
+				),
+				array(
+					'type'     => 'action',
+					'name'     => 'gatherpress_rsvp_waiting_list_promoted',
+					'priority' => 10,
+					'callback' => array( $instance, 'queue_promotion_email' ),
+				),
 			),
-			'Failed to assert the waiting list promotion scheduler is registered.'
-		);
-		$this->assertSame(
-			10,
-			has_action(
-				Email_Sends::PROMOTION_CRON_HOOK,
-				array( $instance, 'send_waiting_list_promotion_email' )
-			),
-			'Failed to assert the promotion email cron handler is registered.'
-		);
-		$this->assertSame(
-			1,
-			count( $GLOBALS['wp_filter']['gatherpress_send_emails']->callbacks[10] ?? array() ),
-			'Failed to assert the email action is registered once.'
+			$instance
 		);
 	}
 
 	/**
-	 * Directly exercises the hook registration method.
+	 * Check that send_emails() queues an event update job with Mailer.
 	 *
-	 * @covers ::setup_hooks
-	 *
-	 * @return void
-	 */
-	public function test_setup_hooks_directly(): void {
-		$property = ( new \ReflectionClass( Email_Sends::class ) )->getProperty( 'instance' );
-		$property->setAccessible( true );
-		$property->setValue( null );
-		$instance    = Email_Sends::get_instance();
-		$constructor = new \ReflectionMethod( Email_Sends::class, '__construct' );
-		$constructor->setAccessible( true );
-		$constructor->invoke( $instance );
-		$method = new \ReflectionMethod( Email_Sends::class, 'setup_hooks' );
-		$method->setAccessible( true );
-		$method->invoke( $instance );
-
-		$this->assertSame(
-			10,
-			has_action( 'gatherpress_send_emails', array( $instance, 'handle_email_send_action' ) ),
-			'Failed to assert the event email action is registered.'
-		);
-	}
-
-	/**
-	 * Invalid post IDs do not dispatch event emails.
-	 *
-	 * @covers ::handle_email_send_action
 	 * @covers ::send_emails
 	 *
 	 * @return void
 	 */
-	public function test_send_emails_rejects_non_event_posts(): void {
-		$instance = Email_Sends::get_instance();
-		$post_id  = $this->factory->post->create();
+	public function test_send_emails_queues_a_mailer_job(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$send    = array( 'attending' => true );
 
-		$this->assertFalse(
-			$instance->send_emails(
-				$post_id,
+		$this->assertTrue( Email_Sends::get_instance()->send_emails( $post_id, $send, 'Hello', 'Hi' ) );
+		$this->assertNotFalse(
+			wp_next_scheduled(
+				Mailer::JOB_HOOK,
 				array(
-					'all'           => false,
-					'attending'     => false,
-					'waiting_list'  => false,
-					'not_attending' => false,
-				),
-				'Test message'
+					Email_Sends::EVENT_TYPE,
+					array(
+						'post_id' => $post_id,
+						'send'    => $send,
+						'message' => 'Hello',
+						'subject' => 'Hi',
+					),
+					Mailer::FIRST_BATCH,
+				)
 			)
 		);
+		$this->assertFalse(
+			Email_Sends::get_instance()->send_emails( $this->factory->post->create(), $send, 'Hello' ),
+			'A post without RSVPs should not be queued.'
+		);
 	}
 
 	/**
-	 * Valid events dispatch emails to selected recipients.
+	 * Check that a job on the old hook is queued again with Mailer.
 	 *
 	 * @covers ::handle_email_send_action
-	 * @covers ::send_emails
 	 *
 	 * @return void
 	 */
-	public function test_send_emails_dispatches_to_recipients(): void {
-		$captured = array();
-		$this->capture_mail( $captured );
-		$instance = Email_Sends::get_instance();
-		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
-		$user_id  = $this->factory->user->create(
-			array( 'user_email' => 'attendee@example.test' )
-		);
-		$rsvp     = new Rsvp( $event_id );
-		$rsvp->save( $user_id, 'attending' );
-		$send = array(
-			'all'           => false,
-			'attending'     => true,
-			'waiting_list'  => false,
-			'not_attending' => false,
-		);
-
-		$instance->handle_email_send_action( $event_id, $send, 'Test message' );
-
-		$this->assertSame( 'attendee@example.test', $captured['to'] );
-	}
-
-	/**
-	 * A promotion queues a cron event instead of mailing inside the request.
-	 *
-	 * @covers ::schedule_waiting_list_promotion_email
-	 *
-	 * @return void
-	 */
-	public function test_schedule_waiting_list_promotion_email(): void {
+	public function test_handle_email_send_action(): void {
 		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
-		$state   = $this->create_attending_state( $post_id );
+		$send    = array( 'all' => true );
 
-		Email_Sends::get_instance()->schedule_waiting_list_promotion_email( $post_id, $state );
+		Email_Sends::get_instance()->handle_email_send_action( $post_id, $send, 'Hello', 'Hi' );
 
 		$this->assertNotFalse(
 			wp_next_scheduled(
-				Email_Sends::PROMOTION_CRON_HOOK,
-				array( $post_id, (int) $state->comment->comment_ID )
-			),
-			'Failed to assert the promotion email is scheduled on cron with the event and RSVP comment.'
-		);
-	}
-
-	/**
-	 * A promoted member receives the confirmation email from the cron handler.
-	 *
-	 * @covers ::send_waiting_list_promotion_email
-	 *
-	 * @return void
-	 */
-	public function test_send_waiting_list_promotion_email_for_user_identity(): void {
-		$captured = array();
-		$this->capture_mail( $captured );
-		$post_id    = $this->factory->post->create(
-			array(
-				'post_type'  => Event::POST_TYPE,
-				'post_title' => 'User Promotion',
+				Mailer::JOB_HOOK,
+				array(
+					Email_Sends::EVENT_TYPE,
+					array(
+						'post_id' => $post_id,
+						'send'    => $send,
+						'message' => 'Hello',
+						'subject' => 'Hi',
+					),
+					Mailer::FIRST_BATCH,
+				)
 			)
 		);
-		$state      = $this->create_attending_state( $post_id, $this->create_user( 'waiter@example.test' ) );
-		$comment_id = (int) $state->comment->comment_ID;
-
-		Email_Sends::get_instance()->send_waiting_list_promotion_email( $post_id, $comment_id );
-
-		$this->assertSame( 'waiter@example.test', $captured['to'] );
-		$this->assertStringContainsString( 'User Promotion', $captured['subject'] );
-		$this->assertStringContainsString( 'now confirmed', $captured['message'] );
 	}
 
 	/**
-	 * A promoted open RSVP with an email address is mailed too.
+	 * Check that an attendee moved off the waiting list gets a confirmation, opted out or not.
 	 *
-	 * @covers ::send_waiting_list_promotion_email
+	 * @covers ::queue_promotion_email
+	 * @covers ::get_promoted_attendee
+	 * @covers ::compose_promotion_email
 	 *
 	 * @return void
 	 */
-	public function test_send_waiting_list_promotion_email_for_email_identity(): void {
-		$captured = array();
-		$this->capture_mail( $captured );
-		$post_id    = $this->factory->post->create(
-			array(
-				'post_type'  => Event::POST_TYPE,
-				'post_title' => 'Open RSVP Promotion',
-			)
-		);
-		$comment_id = wp_insert_comment(
-			array(
-				'comment_post_ID'      => $post_id,
-				'comment_author'       => 'Open Guest',
-				'comment_author_email' => 'open-rsvp@example.test',
-				'comment_approved'     => 1,
-			)
-		);
+	public function test_promotion_email_reaches_the_promoted_attendee(): void {
+		$event  = $this->event_with_waiting_list( 'Board game night' );
+		$waiter = $event['waiter'];
 
-		// The promotion sets the attending term; the handler reads it back before sending.
-		wp_set_object_terms( $comment_id, Status::ATTENDING->value, Status::TAXONOMY );
+		update_user_meta( $waiter, 'gatherpress_event_updates_opt_in', '0' );
+		( new Rsvp( $event['id'] ) )->save( $event['attendee'], 'not_attending' );
+		$this->run_mail_jobs();
 
-		Email_Sends::get_instance()->send_waiting_list_promotion_email( $post_id, $comment_id );
-
-		$this->assertSame( 'open-rsvp@example.test', $captured['to'] );
-		$this->assertStringContainsString( 'Open RSVP Promotion', $captured['subject'] );
+		$this->assertCount( 1, $this->sent );
+		$this->assertSame( get_userdata( $waiter )->user_email, $this->sent[0][0] );
+		$this->assertSame( 'Your RSVP for Board game night is confirmed', $this->sent[0][1] );
+		$this->assertStringContainsString( 'your RSVP for Board game night is now confirmed', $this->sent[0][2] );
+		$this->assertStringNotContainsString( 'RSVP Now', $this->sent[0][2], 'The attendee already holds a spot.' );
 	}
 
 	/**
-	 * The promotion email hides the RSVP button the member no longer needs.
+	 * Check that no promotion email goes out when the attendee cancels before the job runs.
 	 *
-	 * @covers ::send_waiting_list_promotion_email
+	 * @covers ::get_promoted_attendee
 	 *
 	 * @return void
 	 */
-	public function test_promotion_email_hides_rsvp_button(): void {
-		$captured = array();
-		$this->capture_mail( $captured );
-		$post_id    = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
-		$state      = $this->create_attending_state( $post_id, $this->create_user( 'button@example.test' ) );
-		$comment_id = (int) $state->comment->comment_ID;
+	public function test_promotion_email_skips_an_attendee_who_cancelled(): void {
+		$event = $this->event_with_waiting_list( 'Book club' );
 
-		Email_Sends::get_instance()->send_waiting_list_promotion_email( $post_id, $comment_id );
+		( new Rsvp( $event['id'] ) )->save( $event['attendee'], 'not_attending' );
+		( new Rsvp( $event['id'] ) )->save( $event['waiter'], 'not_attending' );
+		$this->run_mail_jobs();
 
-		$this->assertStringNotContainsString(
-			'RSVP Now',
-			$captured['message'],
-			'Failed to assert the promotion email omits the RSVP button.'
-		);
+		$this->assertSame( array(), $this->sent );
 	}
 
 	/**
-	 * The bulk event email keeps the RSVP button.
+	 * Check that only the promoted RSVP is picked, and only while it is attending.
 	 *
-	 * @covers ::send_event_email_to_recipient
+	 * Invoked directly because xdebug does not trace same-class helpers
+	 * called by short delegation.
 	 *
-	 * @return void
-	 */
-	public function test_bulk_email_keeps_rsvp_button(): void {
-		$captured = array();
-		$this->capture_mail( $captured );
-		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
-		$user_id = $this->create_user( 'bulk@example.test' );
-
-		Email_Sends::get_instance()->send_event_email_to_recipient(
-			array(
-				'is_user'    => true,
-				'user_id'    => $user_id,
-				'comment_id' => 0,
-				'email'      => 'bulk@example.test',
-				'name'       => 'Bulk',
-			),
-			$post_id,
-			'Test message',
-			wp_get_current_user()
-		);
-
-		$this->assertStringContainsString(
-			'RSVP Now',
-			$captured['message'],
-			'Failed to assert the bulk email still renders the RSVP button.'
-		);
-	}
-
-	/**
-	 * A missing comment is ignored rather than mailed.
-	 *
-	 * @covers ::send_waiting_list_promotion_email
+	 * @covers ::get_promoted_attendee
 	 *
 	 * @return void
 	 */
-	public function test_send_waiting_list_promotion_email_skips_missing_comment(): void {
-		$captured = array();
-		$this->capture_mail( $captured );
-		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
-
-		Email_Sends::get_instance()->send_waiting_list_promotion_email( $post_id, 999999 );
-
-		$this->assertArrayNotHasKey( 'to', $captured );
-	}
-
-	/**
-	 * A comment with no email address is ignored rather than mailed.
-	 *
-	 * @covers ::send_waiting_list_promotion_email
-	 *
-	 * @return void
-	 */
-	public function test_send_waiting_list_promotion_email_skips_missing_email(): void {
-		$captured = array();
-		$this->capture_mail( $captured );
-		$post_id    = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
-		$comment_id = wp_insert_comment(
-			array(
-				'comment_post_ID'      => $post_id,
-				'comment_author'       => 'No Address',
-				'comment_author_email' => '',
-				'comment_approved'     => 1,
-			)
-		);
-
-		// Attending so the handler reaches the recipient build, which is where the empty email is skipped.
-		wp_set_object_terms( $comment_id, Status::ATTENDING->value, Status::TAXONOMY );
-
-		Email_Sends::get_instance()->send_waiting_list_promotion_email( $post_id, $comment_id );
-
-		$this->assertArrayNotHasKey( 'to', $captured );
-	}
-
-	/**
-	 * A member who cancelled after the promotion is not emailed.
-	 *
-	 * The job runs on cron, so the RSVP can change between the promotion and
-	 * the delivery. Only a still-attending RSVP gets the confirmation.
-	 *
-	 * @covers ::send_waiting_list_promotion_email
-	 *
-	 * @return void
-	 */
-	public function test_send_waiting_list_promotion_email_skips_cancelled_member(): void {
-		$captured = array();
-		$this->capture_mail( $captured );
-		$post_id    = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
-		$user_id    = $this->create_user( 'cancelled@example.test' );
-		$state      = $this->create_attending_state( $post_id, $user_id );
-		$comment_id = (int) $state->comment->comment_ID;
-
-		( new Rsvp( $post_id ) )->save( $user_id, 'not_attending' );
-
-		Email_Sends::get_instance()->send_waiting_list_promotion_email( $post_id, $comment_id );
-
-		$this->assertArrayNotHasKey( 'to', $captured );
-	}
-
-	/**
-	 * A failed status read is treated as not attending, so no email goes out.
-	 *
-	 * @covers ::send_waiting_list_promotion_email
-	 *
-	 * @return void
-	 */
-	public function test_send_waiting_list_promotion_email_skips_term_read_failure(): void {
-		$captured = array();
-		$this->capture_mail( $captured );
-		$post_id    = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
-		$state      = $this->create_attending_state( $post_id, $this->create_user( 'term-error@example.test' ) );
-		$comment_id = (int) $state->comment->comment_ID;
-
-		$return_error = static function (): WP_Error {
-			return new WP_Error( 'gatherpress_test_error', 'Term read failed.' );
-		};
-
-		add_filter( 'get_object_terms', $return_error );
-
-		Email_Sends::get_instance()->send_waiting_list_promotion_email( $post_id, $comment_id );
-
-		remove_filter( 'get_object_terms', $return_error );
-
-		$this->assertArrayNotHasKey( 'to', $captured );
-	}
-
-	/**
-	 * Opted-out recipients and incomplete recipients are skipped.
-	 *
-	 * @covers ::send_event_email_to_recipient
-	 *
-	 * @return void
-	 */
-	public function test_send_event_email_to_recipient_skips_opt_out_and_missing_email(): void {
-		$captured = array();
-		$this->capture_mail( $captured );
-		$instance = Email_Sends::get_instance();
+	public function test_get_promoted_attendee(): void {
 		$post_id  = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 		$user_id  = $this->factory->user->create();
-		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', '0' );
+		$other_id = $this->factory->user->create();
+		$rsvp     = new Rsvp( $post_id );
 
-		$instance->send_event_email_to_recipient(
-			array(
-				'is_user'    => true,
-				'user_id'    => $user_id,
-				'comment_id' => 0,
-				'email'      => 'opted-out@example.test',
-				'name'       => 'Opted Out',
-			),
-			$post_id,
-			'Test message',
-			wp_get_current_user()
-		);
+		$rsvp->save( $user_id, 'attending' );
+		$rsvp->save( $other_id, 'attending' );
 
-		$comment_id = wp_insert_comment(
+		$comment_id = (int) $rsvp->find( $user_id )->comment->comment_ID;
+		$attendee   = static fn( int $id ): array => Utility::invoke_hidden_method(
+			Email_Sends::get_instance(),
+			'get_promoted_attendee',
 			array(
-				'comment_post_ID'  => $post_id,
-				'comment_author'   => 'Anonymous',
-				'comment_approved' => 1,
+				array(
+					'post_id'    => $post_id,
+					'comment_id' => $id,
+				),
 			)
 		);
-		update_comment_meta( $comment_id, 'gatherpress_event_updates_opt_in', '0' );
 
-		$instance->send_event_email_to_recipient(
-			array(
-				'is_user'    => false,
-				'user_id'    => 0,
-				'comment_id' => $comment_id,
-				'email'      => 'anon@example.test',
-				'name'       => 'Anonymous',
-			),
-			$post_id,
-			'Test message',
-			wp_get_current_user()
-		);
+		$this->assertSame( array( $comment_id ), wp_list_pluck( $attendee( $comment_id ), 'comment_id' ) );
 
-		$instance->send_event_email_to_recipient(
-			array(
-				'is_user'    => false,
-				'user_id'    => 0,
-				'comment_id' => 0,
-				'email'      => '',
-				'name'       => '',
-			),
-			$post_id,
-			'Test message',
-			wp_get_current_user()
-		);
+		$rsvp->save( $user_id, 'not_attending' );
 
-		$this->assertArrayNotHasKey( 'to', $captured );
+		$this->assertSame( array(), $attendee( $comment_id ) );
 	}
 
 	/**
-	 * Comment recipients preserve anonymous comment details and reject empty email.
+	 * Check the promotion email's subject, message and missing RSVP button.
 	 *
-	 * @covers ::build_comment_recipient
+	 * @covers ::compose_promotion_email
 	 *
 	 * @return void
 	 */
-	public function test_build_comment_recipient_paths(): void {
-		$instance                      = Email_Sends::get_instance();
-		$comment                       = new \stdClass();
-		$comment->comment_ID           = 1;
-		$comment->user_id              = 0;
-		$comment->comment_author_email = 'anon@example.test';
-		$comment->comment_author       = 'Anonymous';
-		$recipient                     = $instance->build_comment_recipient( $comment );
-
-		$this->assertSame( 'anon@example.test', $recipient['email'] );
-		$this->assertSame( 'Anonymous', $recipient['name'] );
-
-		$comment->comment_author_email = '';
-
-		$this->assertNull( $instance->build_comment_recipient( $comment ) );
-
-		$user_id                       = $this->factory->user->create(
+	public function test_compose_promotion_email(): void {
+		$post_id = $this->factory->post->create(
 			array(
-				'user_email'   => 'user-recipient@example.test',
-				'display_name' => 'User Recipient',
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => 'Trivia',
 			)
 		);
-		$comment->user_id              = $user_id;
-		$comment->comment_author_email = 'comment@example.test';
-		$recipient                     = $instance->build_comment_recipient( $comment );
+		$email   = Utility::invoke_hidden_method(
+			Email_Sends::get_instance(),
+			'compose_promotion_email',
+			array( array(), array( 'post_id' => $post_id ) )
+		);
 
-		$this->assertSame( 'user-recipient@example.test', $recipient['email'] );
-		$this->assertSame( 'User Recipient', $recipient['name'] );
+		$this->assertSame( 'Your RSVP for Trivia is confirmed', $email['subject'] );
+		$this->assertStringContainsString( 'your RSVP for Trivia is now confirmed', $email['body'] );
+		$this->assertStringNotContainsString( 'RSVP Now', $email['body'] );
 	}
 
 	/**
-	 * Recipient selection covers all-user, status, and empty selections.
+	 * Check that get_recipients() builds the list for an event update.
 	 *
 	 * @covers ::get_recipients
 	 *
 	 * @return void
 	 */
-	public function test_get_recipients_paths(): void {
+	public function test_get_recipients(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		( new Rsvp( $post_id ) )->save( 'guest@example.test', 'attending', 0, 0 );
+
 		$instance = Email_Sends::get_instance();
-		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
-		$empty    = array(
-			'all'           => false,
-			'attending'     => false,
-			'waiting_list'  => false,
-			'not_attending' => false,
+
+		$this->assertSame(
+			array( 'guest@example.test' ),
+			wp_list_pluck( $instance->get_recipients( array( 'attending' => true ), $post_id ), 'email' )
 		);
-
-		$this->assertEmpty( $instance->get_recipients( $empty, $event_id ) );
-
-		$user_id = $this->factory->user->create();
-		$rsvp    = new Rsvp( $event_id );
-		$rsvp->save( $user_id, 'attending' );
-
-		$attending  = array(
-			'all'           => false,
-			'attending'     => true,
-			'waiting_list'  => false,
-			'not_attending' => false,
+		$this->assertContains(
+			'guest@example.test',
+			wp_list_pluck(
+				$instance->get_recipients(
+					array(
+						'all'       => true,
+						'attending' => true,
+					),
+					$post_id
+				),
+				'email'
+			)
 		);
-		$recipients = $instance->get_recipients( $attending, $event_id );
-
-		$this->assertNotEmpty( $recipients );
-
-		$all = array(
-			'all'           => true,
-			'attending'     => false,
-			'waiting_list'  => false,
-			'not_attending' => false,
-		);
-
-		$this->assertNotEmpty( $instance->get_recipients( $all, $event_id ) );
 	}
 
 	/**
-	 * Capture the arguments handed to wp_mail for the duration of a test.
+	 * Check that event and promotion emails register their mail types with Mailer.
 	 *
-	 * @param array $captured Mail attributes, filled by reference when wp_mail
-	 *                         runs, so a test can assert against the last
-	 *                         message and against no message at all.
+	 * @covers ::__construct
+	 * @covers ::register_mail_types
 	 *
 	 * @return void
 	 */
-	private function capture_mail( array &$captured ): void {
-		$captured = array();
+	public function test_register_mail_types(): void {
+		// The constructor registers at boot, before coverage records, so register again here.
+		Utility::invoke_hidden_method( Email_Sends::get_instance(), 'register_mail_types' );
 
-		add_filter(
-			'pre_wp_mail',
-			static function ( $previous, $attributes ) use ( &$captured ): bool {
-				$captured = $attributes;
-				return true;
-			},
-			10,
-			2
+		$types = Utility::get_hidden_property( Mailer::get_instance(), 'types' );
+
+		$this->assertArrayHasKey( Email_Sends::EVENT_TYPE, $types );
+		$this->assertSame( 'event', $types[ Email_Sends::EVENT_TYPE ]['context'] );
+		$this->assertArrayHasKey( 'users', $types[ Email_Sends::EVENT_TYPE ] );
+		$this->assertArrayHasKey( 'recipients', $types[ Email_Sends::EVENT_TYPE ] );
+		$this->assertArrayHasKey( 'compose', $types[ Email_Sends::EVENT_TYPE ] );
+		$this->assertArrayHasKey( Email_Sends::PROMOTION_TYPE, $types );
+		$this->assertSame(
+			'rsvp',
+			$types[ Email_Sends::PROMOTION_TYPE ]['context'],
+			'A promotion is about the attendee\'s own RSVP, so it should skip the opt-in.'
+		);
+		$this->assertArrayNotHasKey( 'users', $types[ Email_Sends::PROMOTION_TYPE ] );
+	}
+
+	/**
+	 * Check that every user gets an event email only when "all" is picked.
+	 *
+	 * @covers ::get_event_email_users
+	 *
+	 * @return void
+	 */
+	public function test_get_event_email_users(): void {
+		$instance = Email_Sends::get_instance();
+
+		$this->assertSame(
+			array(),
+			Utility::invoke_hidden_method(
+				$instance,
+				'get_event_email_users',
+				array( array( 'send' => array( 'all' => true ) ) )
+			)
+		);
+		$this->assertNull(
+			Utility::invoke_hidden_method(
+				$instance,
+				'get_event_email_users',
+				array( array( 'send' => array( 'attending' => true ) ) )
+			)
 		);
 	}
 
 	/**
-	 * Create a user with a known email address.
+	 * Check that RSVPs from users are left out when every user already gets the email.
 	 *
-	 * @param string $email User email address.
+	 * @covers ::get_event_email_rsvps
+	 * @covers ::get_rsvp_recipients
 	 *
-	 * @return int User ID.
+	 * @return void
 	 */
-	private function create_user( string $email ): int {
-		return (int) $this->factory->user->create( array( 'user_email' => $email ) );
+	public function test_get_event_email_rsvps(): void {
+		$instance = Email_Sends::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$user_id  = $this->factory->user->create();
+		$rsvp     = new Rsvp( $post_id );
+
+		$rsvp->save( $user_id, 'attending' );
+		$rsvp->save( 'guest@example.test', 'attending', 0, 0 );
+
+		$emails = static fn( array $send ): array => wp_list_pluck(
+			Utility::invoke_hidden_method(
+				$instance,
+				'get_event_email_rsvps',
+				array(
+					array(
+						'post_id' => $post_id,
+						'send'    => $send,
+					),
+				)
+			),
+			'email'
+		);
+
+		$attending = $emails( array( 'attending' => true ) );
+
+		sort( $attending );
+
+		$expected = array( get_userdata( $user_id )->user_email, 'guest@example.test' );
+
+		sort( $expected );
+
+		$this->assertSame( $expected, $attending );
+		$this->assertSame(
+			array( 'guest@example.test' ),
+			$emails(
+				array(
+					'all'       => true,
+					'attending' => true,
+				)
+			)
+		);
 	}
 
 	/**
-	 * Build an attending RSVP state for a member.
+	 * Check that no RSVPs are looked up when no status was picked.
 	 *
-	 * Saving through `Rsvp` keeps the stored comment consistent with the
-	 * status and provider terms a hydrated state reads back.
+	 * Invoked directly because xdebug does not trace same-class helpers
+	 * called by short delegation.
 	 *
-	 * @param int      $post_id Event post ID.
-	 * @param int|null $user_id Optional. User to RSVP as. Defaults to a new user.
+	 * @covers ::get_rsvp_recipients
 	 *
-	 * @return State The attending state.
+	 * @return void
 	 */
-	private function create_attending_state( int $post_id, ?int $user_id = null ): State {
-		$user_id = $user_id ?? $this->create_user( 'member@example.test' );
-		$rsvp    = new Rsvp( $post_id );
-		$record  = $rsvp->save( $user_id, 'attending' );
-		$state   = ( new Rsvp( $post_id ) )->find( $user_id );
+	public function test_get_rsvp_recipients_without_statuses(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 
-		$this->assertInstanceOf(
-			State::class,
-			$state,
-			'Failed to save an attending RSVP for the promotion test.'
+		( new Rsvp( $post_id ) )->save( 'guest@example.test', 'attending', 0, 0 );
+
+		$this->assertSame(
+			array(),
+			Utility::invoke_hidden_method(
+				Email_Sends::get_instance(),
+				'get_rsvp_recipients',
+				array( array( 'all' => true ), $post_id )
+			)
 		);
-		$this->assertSame( $record['comment_id'], (int) $state->comment->comment_ID );
+	}
 
-		return $state;
+	/**
+	 * Check that rows the RSVP query returns that are not comments are skipped.
+	 *
+	 * Invoked directly because xdebug does not trace same-class helpers
+	 * called by short delegation.
+	 *
+	 * @covers ::get_rsvp_recipients
+	 *
+	 * @return void
+	 */
+	public function test_get_rsvp_recipients_skips_non_comment_rows(): void {
+		$post_id  = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$injector = static function ( $comments, $query ) {
+			if ( ! empty( $query->query_vars['comment__in'] ) ) {
+				$comments[] = PHP_INT_MAX;
+			}
+
+			return $comments;
+		};
+
+		( new Rsvp( $post_id ) )->save( 'guest@example.test', 'attending', 0, 0 );
+		add_filter( 'the_comments', $injector, 10, 2 );
+
+		$recipients = Utility::invoke_hidden_method(
+			Email_Sends::get_instance(),
+			'get_rsvp_recipients',
+			array( array( 'attending' => true ), $post_id )
+		);
+
+		remove_filter( 'the_comments', $injector, 10 );
+
+		$this->assertSame( array( 'guest@example.test' ), wp_list_pluck( $recipients, 'email' ) );
+	}
+
+	/**
+	 * Check that a queued event email is built from its payload.
+	 *
+	 * @covers ::compose_event_email
+	 *
+	 * @return void
+	 */
+	public function test_compose_event_email(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$email   = Utility::invoke_hidden_method(
+			Email_Sends::get_instance(),
+			'compose_event_email',
+			array(
+				array(),
+				array(
+					'post_id' => $post_id,
+					'message' => 'See you there.',
+					'subject' => 'Reminder',
+				),
+			)
+		);
+
+		$this->assertSame( 'Reminder', $email['subject'] );
+		$this->assertStringContainsString( 'See you there.', $email['body'] );
+	}
+
+	/**
+	 * Future-event emails include the RSVP Now CTA.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::build_event_email
+	 *
+	 * @return void
+	 */
+	public function test_build_event_email_includes_rsvp_cta_for_future_event(): void {
+		$instance = Email_Sends::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$event    = new Event( $event_id );
+		$start    = new DateTime( 'now' );
+		$end      = new DateTime( 'now' );
+
+		$start->modify( '+1 day' );
+		$end->modify( '+1 day +2 hours' );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+				'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			)
+		);
+
+		$captured_body = Utility::invoke_hidden_method(
+			$instance,
+			'build_event_email',
+			array( $event_id, 'Upcoming reminder.', '' )
+		)['body'];
+
+		$this->assertStringContainsString(
+			'RSVP Now',
+			$captured_body,
+			'Future-event email should include the RSVP Now CTA.'
+		);
+	}
+
+	/**
+	 * Past-event emails omit the RSVP Now CTA — registration is closed.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::build_event_email
+	 *
+	 * @return void
+	 */
+	public function test_build_event_email_omits_rsvp_cta_for_past_event(): void {
+		$instance = Email_Sends::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$event    = new Event( $event_id );
+		$start    = new DateTime( 'now' );
+		$end      = new DateTime( 'now' );
+
+		$start->modify( '-2 days' );
+		$end->modify( '-2 days +2 hours' );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+				'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			)
+		);
+
+		$captured_body = Utility::invoke_hidden_method(
+			$instance,
+			'build_event_email',
+			array( $event_id, 'Thanks for coming.', '' )
+		)['body'];
+
+		$this->assertNotEmpty( $captured_body, 'Past-event email body should still be sent.' );
+		$this->assertStringContainsString(
+			'Thanks for coming.',
+			$captured_body,
+			'Past-event email should still include the custom message.'
+		);
+		$this->assertStringNotContainsString(
+			'RSVP Now',
+			$captured_body,
+			'Past-event email must not include the RSVP Now CTA.'
+		);
+	}
+
+	/**
+	 * Emails omit the RSVP Now CTA when RSVP is disabled for the event.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::build_event_email
+	 *
+	 * @return void
+	 */
+	public function test_build_event_email_omits_rsvp_cta_when_rsvp_disabled(): void {
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_enabled' );
+
+		$instance = Email_Sends::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$event    = new Event( $event_id );
+		$start    = new DateTime( 'now' );
+		$end      = new DateTime( 'now' );
+
+		$start->modify( '+1 day' );
+		$end->modify( '+1 day +2 hours' );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+				'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			)
+		);
+		update_post_meta( $event_id, 'gatherpress_enable_rsvp', '0' );
+
+		$captured_body = Utility::invoke_hidden_method(
+			$instance,
+			'build_event_email',
+			array( $event_id, 'Event update.', '' )
+		)['body'];
+
+		$this->assertNotEmpty( $captured_body, 'Email body should still be sent.' );
+		$this->assertStringNotContainsString(
+			'RSVP Now',
+			$captured_body,
+			'Email must not include the RSVP Now CTA when RSVP is disabled.'
+		);
+	}
+
+	/**
+	 * Direct-invoke coverage for `build_event_email`: a caller-supplied
+	 * subject skips the default branch.
+	 *
+	 * Reflection-invoked because xdebug doesn't reliably trace lines inside
+	 * same-class private helpers called from a closure.
+	 *
+	 * @covers ::build_event_email
+	 *
+	 * @return void
+	 */
+	public function test_build_event_email_keeps_supplied_subject(): void {
+		$instance = Email_Sends::get_instance();
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => 'Supplied Title',
+			)
+		);
+
+		$email = Utility::invoke_hidden_method(
+			$instance,
+			'build_event_email',
+			array( $event_id, 'Hello there.', 'Custom subject' )
+		);
+
+		$this->assertIsArray( $email );
+		$this->assertSame( 'Custom subject', $email['subject'] );
+		$this->assertStringContainsString( 'Hello there.', $email['body'] );
+		$this->assertSame( array( 'Content-Type: text/html; charset=UTF-8' ), $email['headers'] );
+	}
+
+	/**
+	 * Direct-invoke coverage for `build_event_email` — an empty subject falls
+	 * back to the `📅 {title}` default built from the event title.
+	 *
+	 * @covers ::build_event_email
+	 *
+	 * @return void
+	 */
+	public function test_build_event_email_builds_default_subject_from_title(): void {
+		$instance = Email_Sends::get_instance();
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => 'Default Title Event',
+			)
+		);
+
+		$email = Utility::invoke_hidden_method(
+			$instance,
+			'build_event_email',
+			array( $event_id, '', '' )
+		);
+
+		$this->assertIsArray( $email );
+		$this->assertStringContainsString( 'Default Title Event', $email['subject'] );
+		$this->assertStringContainsString( '📅', $email['subject'] );
+	}
+
+	/**
+	 * Direct-invoke coverage for `build_comment_recipient` (extracted from
+	 * `get_recipients`) — happy path with a registered user pulls email and
+	 * display name from the user record rather than the comment fields.
+	 *
+	 * Reflection-invoked because xdebug doesn't reliably trace lines inside
+	 * same-class protected helpers called from a foreach in the parent.
+	 *
+	 * @covers ::build_comment_recipient
+	 *
+	 * @return void
+	 */
+	public function test_build_comment_recipient_uses_user_data_when_user_id_present(): void {
+		$instance = Email_Sends::get_instance();
+		$user_id  = $this->factory->user->create(
+			array(
+				'user_email'   => 'user-recipient@example.test',
+				'display_name' => 'User Recipient',
+			)
+		);
+
+		$comment                       = new \stdClass();
+		$comment->comment_ID           = 42;
+		$comment->user_id              = $user_id;
+		$comment->comment_author_email = 'comment-fallback@example.test';
+		$comment->comment_author       = 'Comment Author';
+
+		$recipient = Utility::invoke_hidden_method(
+			$instance,
+			'build_comment_recipient',
+			array( new WP_Comment( $comment ) )
+		);
+
+		$this->assertIsArray( $recipient );
+		$this->assertTrue( $recipient['is_user'] );
+		$this->assertSame( $user_id, $recipient['user_id'] );
+		$this->assertSame( 42, $recipient['comment_id'] );
+		// User data wins over comment-author fields when user_id resolves.
+		$this->assertSame( 'user-recipient@example.test', $recipient['email'] );
+		$this->assertSame( 'User Recipient', $recipient['name'] );
+	}
+
+	/**
+	 * Direct-invoke coverage for `build_comment_recipient` — anonymous-RSVP
+	 * branch (no user_id) keeps the comment's own author email/name.
+	 *
+	 * @covers ::build_comment_recipient
+	 *
+	 * @return void
+	 */
+	public function test_build_comment_recipient_falls_back_to_comment_fields(): void {
+		$instance = Email_Sends::get_instance();
+
+		$comment                       = new \stdClass();
+		$comment->comment_ID           = 7;
+		$comment->user_id              = 0;
+		$comment->comment_author_email = 'anon@example.test';
+		$comment->comment_author       = 'Anon';
+
+		$recipient = Utility::invoke_hidden_method(
+			$instance,
+			'build_comment_recipient',
+			array( new WP_Comment( $comment ) )
+		);
+
+		$this->assertIsArray( $recipient );
+		$this->assertFalse( $recipient['is_user'] );
+		$this->assertSame( 0, $recipient['user_id'] );
+		$this->assertSame( 'anon@example.test', $recipient['email'] );
+		$this->assertSame( 'Anon', $recipient['name'] );
+	}
+
+	/**
+	 * Direct-invoke coverage for `build_comment_recipient` — returns null
+	 * for a comment with no valid email on file so the caller can skip it.
+	 *
+	 * @covers ::build_comment_recipient
+	 *
+	 * @return void
+	 */
+	public function test_build_comment_recipient_returns_null_without_email(): void {
+		$instance = Email_Sends::get_instance();
+
+		$comment                       = new \stdClass();
+		$comment->comment_ID           = 1;
+		$comment->user_id              = 0;
+		$comment->comment_author_email = '';
+		$comment->comment_author       = 'No Email';
+
+		$recipient = Utility::invoke_hidden_method(
+			$instance,
+			'build_comment_recipient',
+			array( new WP_Comment( $comment ) )
+		);
+
+		$this->assertNull( $recipient );
+
+		$comment->comment_author_email = 'jane@example';
+
+		$this->assertNull(
+			Utility::invoke_hidden_method( $instance, 'build_comment_recipient', array( new WP_Comment( $comment ) ) ),
+			'A malformed address should be skipped too.'
+		);
+	}
+
+	/**
+	 * Create an event with one spot taken and one attendee on the waiting list.
+	 *
+	 * @param string $title Event title.
+	 *
+	 * @return array{id: int, attendee: int, waiter: int} The event and the two users.
+	 */
+	private function event_with_waiting_list( string $title ): array {
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => $title,
+			)
+		);
+		$attendee = $this->factory->user->create();
+		$waiter   = $this->factory->user->create();
+
+		update_post_meta( $event_id, 'gatherpress_capacity', 1 );
+		( new Rsvp( $event_id ) )->save( $attendee, 'attending' );
+		( new Rsvp( $event_id ) )->save( $waiter, 'attending' );
+
+		return array(
+			'id'       => $event_id,
+			'attendee' => $attendee,
+			'waiter'   => $waiter,
+		);
 	}
 }
