@@ -10,6 +10,8 @@ namespace GatherPress\Tests\Core\Admin;
 
 use Closure;
 use GatherPress\Core\Admin\Email;
+use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Settings;
 use GatherPress\Core\User;
 use GatherPress\Core\Utility as Core_Utility;
@@ -24,6 +26,13 @@ use WP_REST_Response;
  * @coversDefaultClass \GatherPress\Core\Admin\Email
  */
 class Test_Email extends Base {
+
+	/**
+	 * The audience a message goes to when none is picked.
+	 *
+	 * @var array<string, string>
+	 */
+	private const ALL_MEMBERS = array( 'type' => 'all' );
 
 	/**
 	 * Reusable batch-size filter so the same closure can be removed again.
@@ -180,8 +189,51 @@ class Test_Email extends Base {
 		$response = Utility::buffer_and_return( array( Email::get_instance(), 'render_page' ) );
 
 		$this->assertStringContainsString( '<h1>Email</h1>', $response );
+		$this->assertStringContainsString( 'value="no_rsvp"', $response );
+		$this->assertStringContainsString( 'value="editor"', $response );
 		$this->assertStringContainsString( 'Send Email To Members', $response );
 		$this->assertStringContainsString( 'gatherpress-message-body', $response );
+	}
+
+	/**
+	 * Check that upcoming and past events are offered in the event picker.
+	 *
+	 * @covers ::render_page
+	 * @covers ::get_event_choices
+	 *
+	 * @return void
+	 */
+	public function test_render_page_lists_events(): void {
+		$upcoming = $this->dated_event( 'Upcoming meetup', '+1 week' );
+		$past     = $this->dated_event( 'Past meetup', '-1 week' );
+		$response = Utility::buffer_and_return( array( Email::get_instance(), 'render_page' ) );
+
+		$this->assertStringContainsString( sprintf( 'value="%d">Upcoming meetup (', $upcoming ), $response );
+		$this->assertStringContainsString( sprintf( 'value="%d">Past meetup (', $past ), $response );
+		$this->assertStringContainsString( '<optgroup label="Past events">', $response );
+	}
+
+	/**
+	 * Check that event choices are labeled by title and date, from IDs or posts.
+	 *
+	 * @covers ::get_event_choices
+	 *
+	 * @return void
+	 */
+	public function test_get_event_choices(): void {
+		$event_id = $this->dated_event( 'Book club', '2030-01-15 18:00:00' );
+		$choices  = Utility::invoke_hidden_method(
+			Email::get_instance(),
+			'get_event_choices',
+			array( array( $event_id, get_post( $event_id ) ) )
+		);
+
+		$label = sprintf(
+			'Book club (%s)',
+			gmdate( (string) get_option( 'date_format' ), (int) strtotime( '2030-01-15 18:00:00' ) )
+		);
+
+		$this->assertSame( array( $event_id => $label ), $choices, 'An ID and its post should give one choice.' );
 	}
 
 	/**
@@ -410,6 +462,13 @@ class Test_Email extends Base {
 		$this->assertSame( array( $instance, 'queue_message' ), $route['callback'] );
 		$this->assertSame( 'sanitize_text_field', $route['args']['subject']['sanitize_callback'] );
 		$this->assertSame( 'sanitize_textarea_field', $route['args']['message']['sanitize_callback'] );
+		$this->assertSame( Email::AUDIENCES, $route['args']['audience']['enum'] );
+
+		$count = $server->get_routes()[ sprintf( '/%s/site-message/count', GATHERPRESS_REST_NAMESPACE ) ][0];
+
+		$this->assertSame( array( 'GET' => true ), $count['methods'] );
+		$this->assertSame( array( $instance, 'count_message_recipients' ), $count['callback'] );
+		$this->assertSame( Email::ACTIVE_MONTHS, $count['args']['months']['enum'] );
 
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'subscriber' ) ) );
 		$this->assertFalse(
@@ -419,6 +478,449 @@ class Test_Email extends Base {
 
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 		$this->assertTrue( call_user_func( $route['permission_callback'] ), 'Administrators should be able to send.' );
+	}
+
+	/**
+	 * Check that no audience means every member.
+	 *
+	 * @covers ::resolve_audience
+	 *
+	 * @return void
+	 */
+	public function test_resolve_audience_defaults_to_all_members(): void {
+		$this->assertSame( self::ALL_MEMBERS, $this->resolve_audience( array() ) );
+		$this->assertSame( self::ALL_MEMBERS, $this->resolve_audience( array( 'audience' => 'made_up' ) ) );
+	}
+
+	/**
+	 * Check that only roles the site has are kept, and that at least one is needed.
+	 *
+	 * @covers ::resolve_audience
+	 *
+	 * @return void
+	 */
+	public function test_resolve_audience_keeps_only_roles_the_site_has(): void {
+		$this->assertSame(
+			array(
+				'type'  => 'role',
+				'roles' => array( 'editor' ),
+			),
+			$this->resolve_audience(
+				array(
+					'audience' => 'role',
+					'roles'    => array( 'editor', 'made_up' ),
+				)
+			)
+		);
+
+		$error = $this->resolve_audience(
+			array(
+				'audience' => 'role',
+				'roles'    => array( 'made_up' ),
+			)
+		);
+
+		$this->assertWPError( $error );
+		$this->assertSame( 'Choose at least one role.', $error->get_error_message() );
+		$this->assertSame( 400, $error->get_error_data()['status'] );
+	}
+
+	/**
+	 * Check that the active window is read in months.
+	 *
+	 * @covers ::resolve_audience
+	 *
+	 * @return void
+	 */
+	public function test_resolve_audience_reads_active_months(): void {
+		$this->assertSame(
+			array(
+				'type'   => 'active',
+				'months' => 6,
+			),
+			$this->resolve_audience(
+				array(
+					'audience' => 'active',
+					'months'   => 6,
+				)
+			)
+		);
+	}
+
+	/**
+	 * Check that the "didn't RSVP" audience needs an event that takes RSVPs.
+	 *
+	 * @covers ::resolve_audience
+	 *
+	 * @return void
+	 */
+	public function test_resolve_audience_needs_an_event_that_takes_rsvps(): void {
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		$this->assertSame(
+			array(
+				'type'     => 'no_rsvp',
+				'event_id' => $event_id,
+			),
+			$this->resolve_audience(
+				array(
+					'audience' => 'no_rsvp',
+					'event_id' => $event_id,
+				)
+			)
+		);
+
+		$error = $this->resolve_audience(
+			array(
+				'audience' => 'no_rsvp',
+				'event_id' => $this->factory->post->create(),
+			)
+		);
+
+		$this->assertWPError( $error );
+		$this->assertSame( 'Choose an event.', $error->get_error_message() );
+	}
+
+	/**
+	 * Check the user query arguments each audience adds.
+	 *
+	 * @covers ::get_audience_query_args
+	 *
+	 * @return void
+	 */
+	public function test_get_audience_query_args(): void {
+		$instance = Email::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$user_id  = $this->factory->user->create();
+
+		$rsvp_id = $this->rsvp( $event_id, $user_id );
+
+		$args = static function ( array $audience ) use ( $instance ): array {
+			return Utility::invoke_hidden_method( $instance, 'get_audience_query_args', array( $audience ) );
+		};
+
+		$this->assertSame( array(), $args( self::ALL_MEMBERS ) );
+		$this->assertSame(
+			array( 'role__in' => array( 'editor' ) ),
+			$args(
+				array(
+					'type'  => 'role',
+					'roles' => array( 'editor' ),
+				)
+			)
+		);
+		$this->assertSame(
+			array( 'include' => array( $user_id ) ),
+			$args(
+				array(
+					'type'   => 'active',
+					'months' => 1,
+				)
+			)
+		);
+		$this->assertSame(
+			array( 'exclude' => array( $user_id ) ),
+			$args(
+				array(
+					'type'     => 'no_rsvp',
+					'event_id' => $event_id,
+				)
+			)
+		);
+
+		wp_delete_comment( $rsvp_id, true );
+
+		$this->assertSame(
+			array( 'include' => array( 0 ) ),
+			$args(
+				array(
+					'type'   => 'active',
+					'months' => 1,
+				)
+			),
+			'With no active members, nobody should match.'
+		);
+	}
+
+	/**
+	 * Check that active members are those with a confirmed RSVP inside the window.
+	 *
+	 * @covers ::get_active_member_ids
+	 * @covers ::get_rsvp_user_ids
+	 *
+	 * @return void
+	 */
+	public function test_get_active_member_ids(): void {
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$recent   = $this->factory->user->create();
+		$older    = $this->factory->user->create();
+		$pending  = $this->factory->user->create();
+
+		$this->rsvp( $event_id, $recent );
+		$this->rsvp( $event_id, $recent );
+		$this->rsvp( $event_id, $older, 1, '-8 months' );
+		$this->rsvp( $event_id, $pending, 0 );
+		$this->rsvp( $event_id, 0 );
+
+		$ids = static function ( int $months ): array {
+			$active = Utility::invoke_hidden_method( Email::get_instance(), 'get_active_member_ids', array( $months ) );
+
+			sort( $active );
+
+			return $active;
+		};
+
+		$this->assertSame( array( $recent ), $ids( 6 ) );
+		$this->assertSame( array( $recent, $older ), $ids( 12 ) );
+	}
+
+	/**
+	 * Check that everyone with an RSVP on the event counts as having answered.
+	 *
+	 * @covers ::get_event_responder_ids
+	 * @covers ::get_rsvp_user_ids
+	 *
+	 * @return void
+	 */
+	public function test_get_event_responder_ids(): void {
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$other_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$answered = $this->factory->user->create();
+		$pending  = $this->factory->user->create();
+		$elsewise = $this->factory->user->create();
+
+		$this->rsvp( $event_id, $answered );
+		$this->rsvp( $event_id, $pending, 0 );
+		$this->rsvp( $event_id, 0 );
+		$this->rsvp( $other_id, $elsewise );
+
+		$responders = Utility::invoke_hidden_method(
+			Email::get_instance(),
+			'get_event_responder_ids',
+			array( $event_id )
+		);
+
+		sort( $responders );
+
+		$this->assertSame( array( $answered, $pending ), $responders );
+	}
+
+	/**
+	 * Check that RSVPs are reduced to the members behind them.
+	 *
+	 * Invoked directly because xdebug does not trace same-class helpers
+	 * called by short delegation.
+	 *
+	 * @covers ::get_rsvp_user_ids
+	 *
+	 * @return void
+	 */
+	public function test_get_rsvp_user_ids(): void {
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$user_id  = $this->factory->user->create();
+
+		$this->rsvp( $event_id, $user_id );
+		$this->rsvp( $event_id, 0 );
+
+		$this->assertSame(
+			array( $user_id ),
+			Utility::invoke_hidden_method(
+				Email::get_instance(),
+				'get_rsvp_user_ids',
+				array( array( 'post_id' => $event_id ) )
+			)
+		);
+	}
+
+	/**
+	 * Check the audience arguments both site message routes share.
+	 *
+	 * @covers ::get_audience_args
+	 *
+	 * @return void
+	 */
+	public function test_get_audience_args(): void {
+		$args = Utility::invoke_hidden_method( Email::get_instance(), 'get_audience_args' );
+
+		$this->assertSame( array( 'audience', 'roles', 'months', 'event_id' ), array_keys( $args ) );
+		$this->assertSame( 'all', $args['audience']['default'] );
+		$this->assertSame( 3, $args['months']['default'] );
+	}
+
+	/**
+	 * Check that each audience narrows who a message counts and goes to.
+	 *
+	 * @covers ::count_recipients
+	 * @covers ::get_recipient_batch
+	 *
+	 * @return void
+	 */
+	public function test_count_recipients_by_audience(): void {
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$editor   = $this->factory->user->create( array( 'role' => 'editor' ) );
+		$author   = $this->factory->user->create( array( 'role' => 'author' ) );
+		$instance = Email::get_instance();
+
+		$this->rsvp( $event_id, $editor );
+
+		$all = $instance->count_recipients();
+
+		$this->assertSame(
+			2,
+			$instance->count_recipients(
+				array(
+					'type'  => 'role',
+					'roles' => array( 'editor', 'author' ),
+				)
+			)
+		);
+		$this->assertSame(
+			1,
+			$instance->count_recipients(
+				array(
+					'type'   => 'active',
+					'months' => 1,
+				)
+			)
+		);
+		$this->assertSame(
+			$all - 1,
+			$instance->count_recipients(
+				array(
+					'type'     => 'no_rsvp',
+					'event_id' => $event_id,
+				)
+			)
+		);
+
+		update_user_meta( $author, 'gatherpress_event_updates_opt_in', '0' );
+
+		$this->assertSame(
+			1,
+			$instance->count_recipients(
+				array(
+					'type'  => 'role',
+					'roles' => array( 'editor', 'author' ),
+				)
+			),
+			'Members who turned event updates off should still be skipped.'
+		);
+	}
+
+	/**
+	 * Check that the count route reports the audience's member count.
+	 *
+	 * @covers ::count_message_recipients
+	 *
+	 * @return void
+	 */
+	public function test_count_message_recipients(): void {
+		$this->factory->user->create( array( 'role' => 'editor' ) );
+
+		$request = new WP_REST_Request( 'GET', sprintf( '/%s/site-message/count', GATHERPRESS_REST_NAMESPACE ) );
+		$request->set_param( 'audience', 'role' );
+		$request->set_param( 'roles', array( 'editor' ) );
+
+		$response = Email::get_instance()->count_message_recipients( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertSame( 1, $response->get_data()['count'] );
+		$this->assertSame( 'This will email 1 member.', $response->get_data()['message'] );
+
+		$request->set_param( 'roles', array() );
+
+		$this->assertWPError( Email::get_instance()->count_message_recipients( $request ) );
+	}
+
+	/**
+	 * Check that a message for an incomplete audience is not queued.
+	 *
+	 * @covers ::queue_message
+	 *
+	 * @return void
+	 */
+	public function test_queue_message_rejects_incomplete_audience(): void {
+		$request = $this->site_message_request( 'Subject', 'Message body' );
+		$request->set_param( 'audience', 'no_rsvp' );
+
+		$response = Email::get_instance()->queue_message( $request );
+
+		$this->assertWPError( $response );
+		$this->assertSame( 'gatherpress_site_message_audience', $response->get_error_code() );
+	}
+
+	/**
+	 * Check that the picked audience travels with the queued message.
+	 *
+	 * @covers ::queue_message
+	 * @covers ::schedule_message_batch
+	 *
+	 * @return void
+	 */
+	public function test_queue_message_queues_the_audience(): void {
+		$this->factory->user->create( array( 'role' => 'editor' ) );
+
+		$request = $this->site_message_request( 'Subject', 'Message body' );
+		$request->set_param( 'audience', 'role' );
+		$request->set_param( 'roles', array( 'editor' ) );
+
+		$response = Email::get_instance()->queue_message( $request );
+
+		$this->assertSame( 'Queued for 1 member.', $response->get_data()['message'] );
+		$this->assertNotFalse(
+			wp_next_scheduled(
+				'gatherpress_site_message_send',
+				array(
+					'Subject',
+					'Message body',
+					0,
+					array(
+						'type'  => 'role',
+						'roles' => array( 'editor' ),
+					),
+				)
+			)
+		);
+		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
+	}
+
+	/**
+	 * Check that the next batch keeps the audience of the one before it.
+	 *
+	 * @covers ::process_message
+	 *
+	 * @return void
+	 */
+	public function test_process_message_carries_the_audience_to_the_next_batch(): void {
+		$first    = $this->factory->user->create( array( 'role' => 'editor' ) );
+		$audience = array(
+			'type'  => 'role',
+			'roles' => array( 'editor' ),
+		);
+		$sent     = array();
+
+		add_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
+		add_filter(
+			'pre_wp_mail',
+			static function ( $previous, $atts ) use ( &$sent ): bool {
+				$sent[] = $atts['to'];
+
+				return true;
+			},
+			10,
+			2
+		);
+
+		Email::get_instance()->process_message( 'Subject', 'Message', 0, $audience );
+
+		remove_all_filters( 'pre_wp_mail' );
+		remove_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
+
+		$this->assertSame( array( get_userdata( $first )->user_email ), $sent );
+		$this->assertNotFalse(
+			wp_next_scheduled( 'gatherpress_site_message_send', array( 'Subject', 'Message', $first, $audience ) )
+		);
+		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
 	}
 
 	/**
@@ -472,7 +974,10 @@ class Test_Email extends Base {
 		$this->assertInstanceOf( WP_REST_Response::class, $response );
 		$this->assertStringContainsString( 'Queued for', $response->get_data()['message'] );
 		$this->assertNotFalse(
-			wp_next_scheduled( 'gatherpress_site_message_send', array( 'Subject', 'Message body', 0 ) )
+			wp_next_scheduled(
+				'gatherpress_site_message_send',
+				array( 'Subject', 'Message body', 0, self::ALL_MEMBERS )
+			)
 		);
 		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
 	}
@@ -506,10 +1011,12 @@ class Test_Email extends Base {
 
 		$this->assertTrue( $scheduled );
 		$this->assertSame(
-			array( 'gatherpress_site_message_send', array( 'Subject', 'Message', 0 ) ),
+			array( 'gatherpress_site_message_send', array( 'Subject', 'Message', 0, self::ALL_MEMBERS ) ),
 			$captured_args
 		);
-		$this->assertFalse( wp_next_scheduled( 'gatherpress_site_message_send', array( 'Subject', 'Message', 0 ) ) );
+		$this->assertFalse(
+			wp_next_scheduled( 'gatherpress_site_message_send', array( 'Subject', 'Message', 0, self::ALL_MEMBERS ) )
+		);
 	}
 
 	/**
@@ -528,7 +1035,10 @@ class Test_Email extends Base {
 
 		$this->assertTrue( $result );
 		$this->assertNotFalse(
-			wp_next_scheduled( 'gatherpress_site_message_send', array( 'Unique subject', 'Unique message', 99 ) )
+			wp_next_scheduled(
+				'gatherpress_site_message_send',
+				array( 'Unique subject', 'Unique message', 99, self::ALL_MEMBERS )
+			)
 		);
 		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
 	}
@@ -542,8 +1052,10 @@ class Test_Email extends Base {
 	 */
 	public function test_schedule_message_batch_skips_duplicate_cursor(): void {
 		$instance = Email::get_instance();
-		wp_schedule_single_event( time() + 60, 'gatherpress_site_message_send', array( 'Subject', 'Message', 0 ) );
-		$scheduled_at = wp_next_scheduled( 'gatherpress_site_message_send', array( 'Subject', 'Message', 0 ) );
+		$args     = array( 'Subject', 'Message', 0, self::ALL_MEMBERS );
+
+		wp_schedule_single_event( time() + 60, 'gatherpress_site_message_send', $args );
+		$scheduled_at = wp_next_scheduled( 'gatherpress_site_message_send', $args );
 
 		$result = Utility::invoke_hidden_method(
 			$instance,
@@ -554,7 +1066,7 @@ class Test_Email extends Base {
 		$this->assertTrue( $result );
 		$this->assertSame(
 			$scheduled_at,
-			wp_next_scheduled( 'gatherpress_site_message_send', array( 'Subject', 'Message', 0 ) )
+			wp_next_scheduled( 'gatherpress_site_message_send', array( 'Subject', 'Message', 0, self::ALL_MEMBERS ) )
 		);
 		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
 	}
@@ -615,7 +1127,10 @@ class Test_Email extends Base {
 		$this->assertStringContainsString( 'A site message', $captured[0]['message'] );
 		$this->assertStringContainsString( get_bloginfo( 'name' ), $captured[0]['subject'] );
 		$this->assertNotFalse(
-			wp_next_scheduled( 'gatherpress_site_message_send', array( '', 'A site message', $first_id ) )
+			wp_next_scheduled(
+				'gatherpress_site_message_send',
+				array( '', 'A site message', $first_id, self::ALL_MEMBERS )
+			)
 		);
 		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
 	}
@@ -646,7 +1161,10 @@ class Test_Email extends Base {
 
 		$this->assertSame( 2, $attempts );
 		$this->assertNotFalse(
-			wp_next_scheduled( 'gatherpress_site_message_send', array( 'Subject', 'Message', $first_id ) )
+			wp_next_scheduled(
+				'gatherpress_site_message_send',
+				array( 'Subject', 'Message', $first_id, self::ALL_MEMBERS )
+			)
 		);
 		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
 	}
@@ -704,7 +1222,10 @@ class Test_Email extends Base {
 		remove_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
 
 		$this->assertNotFalse(
-			wp_next_scheduled( 'gatherpress_site_message_send', array( 'Subject', 'Message', $first_id ) )
+			wp_next_scheduled(
+				'gatherpress_site_message_send',
+				array( 'Subject', 'Message', $first_id, self::ALL_MEMBERS )
+			)
 		);
 		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
 	}
@@ -1013,6 +1534,87 @@ class Test_Email extends Base {
 		}
 
 		return $this->batch_size_filter;
+	}
+
+	/**
+	 * Resolve the audience a set of REST params picks.
+	 *
+	 * @param array<string, mixed> $params REST params.
+	 *
+	 * @return array<string, mixed>|\WP_Error The audience, or why it cannot be used.
+	 */
+	private function resolve_audience( array $params ) {
+		$request = new WP_REST_Request( 'GET', sprintf( '/%s/site-message/count', GATHERPRESS_REST_NAMESPACE ) );
+
+		$request->set_default_params(
+			array(
+				'audience' => 'all',
+				'roles'    => array(),
+				'months'   => 3,
+				'event_id' => 0,
+			)
+		);
+
+		foreach ( $params as $key => $value ) {
+			$request->set_param( $key, $value );
+		}
+
+		return Utility::invoke_hidden_method( Email::get_instance(), 'resolve_audience', array( $request ) );
+	}
+
+	/**
+	 * Add an RSVP to an event.
+	 *
+	 * @param int    $event_id Event post ID.
+	 * @param int    $user_id  Member who RSVP'd, or 0 for someone without an account.
+	 * @param int    $approved 1 for a confirmed RSVP, 0 for one awaiting confirmation.
+	 * @param string $when     When the RSVP was made, relative to now.
+	 *
+	 * @return int The RSVP comment ID.
+	 */
+	private function rsvp( int $event_id, int $user_id, int $approved = 1, string $when = 'now' ): int {
+		$date = gmdate( 'Y-m-d H:i:s', (int) strtotime( $when ) );
+
+		return (int) wp_insert_comment(
+			array(
+				'comment_post_ID'      => $event_id,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_approved'     => $approved,
+				'comment_author_email' => 'rsvp@example.test',
+				'user_id'              => $user_id,
+				'comment_date'         => $date,
+				'comment_date_gmt'     => $date,
+			)
+		);
+	}
+
+	/**
+	 * Create an event with a start date.
+	 *
+	 * @param string $title Event title.
+	 * @param string $start Start date, absolute or relative to now.
+	 *
+	 * @return int Event post ID.
+	 */
+	private function dated_event( string $title, string $start ): int {
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_title'  => $title,
+				'post_status' => 'publish',
+			)
+		);
+		$start    = gmdate( 'Y-m-d H:i:s', (int) strtotime( $start ) );
+
+		( new Event( $event_id ) )->save_datetimes(
+			array(
+				'datetime_start' => $start,
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', (int) strtotime( $start . ' +2 hours' ) ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		return $event_id;
 	}
 
 	/**

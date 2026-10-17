@@ -7,7 +7,11 @@
  * @package GatherPress\Core
  * @since TBD
  *
- * @param int $recipient_count Number of members the message would go out to.
+ * @param int                   $recipient_count Number of members the message would go out to.
+ * @param array<string, string> $roles           Role names, keyed by role.
+ * @param int[]                 $active_months   Choices for how far back an active member's last RSVP can be.
+ * @param array<int, string>    $upcoming_events Upcoming event labels, keyed by post ID.
+ * @param array<int, string>    $past_events     Past event labels, keyed by post ID.
  */
 
 // Exit if accessed directly.
@@ -25,31 +29,112 @@ if ( ! isset( $recipient_count ) ) {
 	<p class="description">
 		<?php
 		esc_html_e(
-			'Send a message to every member of this site who has event updates turned on. Members can turn these emails off from their profile, and they are always skipped.',
+			'Send a message to members of this site who have event updates turned on. Members can turn these emails off from their profile, and they are always skipped.',
 			'gatherpress'
-		);
-		?>
-	</p>
-
-	<p class="description">
-		<?php
-		printf(
-			esc_html(
-				/* translators: %d: Number of members the message will be sent to. */
-				_n(
-					'This will email %d member.',
-					'This will email %d members.',
-					$recipient_count,
-					'gatherpress'
-				)
-			),
-			(int) $recipient_count
 		);
 		?>
 	</p>
 
 	<div class="gatherpress-send-email" data-gatherpress_component_name="send-email">
 		<div class="gatherpress-settings-form">
+			<div class="gatherpress-settings-form__row">
+				<div class="gatherpress-settings-form__label">
+					<label for="gatherpress-message-audience"><?php esc_html_e( 'Send this message to', 'gatherpress' ); ?></label>
+				</div>
+				<div class="gatherpress-settings-form__field">
+					<select id="gatherpress-message-audience" aria-describedby="gatherpress-message-count">
+						<option value="all"><?php esc_html_e( 'All members', 'gatherpress' ); ?></option>
+						<option value="role"><?php esc_html_e( 'Members with a role', 'gatherpress' ); ?></option>
+						<option value="active"><?php esc_html_e( 'Active members', 'gatherpress' ); ?></option>
+						<option value="no_rsvp"><?php esc_html_e( "Members who didn't RSVP to an event", 'gatherpress' ); ?></option>
+					</select>
+					<p class="description">
+						<output id="gatherpress-message-count" class="gatherpress-send-email__count">
+							<?php
+							printf(
+								esc_html(
+									/* translators: %d: Number of members the message will be sent to. */
+									_n(
+										'This will email %d member.',
+										'This will email %d members.',
+										$recipient_count,
+										'gatherpress'
+									)
+								),
+								(int) $recipient_count
+							);
+							?>
+						</output>
+					</p>
+				</div>
+			</div>
+			<div class="gatherpress-settings-form__row gatherpress--is-hidden" data-gatherpress_audience="role">
+				<div class="gatherpress-settings-form__label">
+					<span id="gatherpress-message-roles-label"><?php esc_html_e( 'Roles', 'gatherpress' ); ?></span>
+				</div>
+				<div class="gatherpress-settings-form__field">
+					<fieldset aria-labelledby="gatherpress-message-roles-label">
+						<?php foreach ( $roles ?? array() as $gatherpress_role => $gatherpress_role_name ) : ?>
+							<label>
+								<input type="checkbox" name="gatherpress-message-roles" value="<?php echo esc_attr( $gatherpress_role ); ?>" />
+								<?php echo esc_html( $gatherpress_role_name ); ?>
+							</label>
+							<br />
+						<?php endforeach; ?>
+					</fieldset>
+				</div>
+			</div>
+			<div class="gatherpress-settings-form__row gatherpress--is-hidden" data-gatherpress_audience="active">
+				<div class="gatherpress-settings-form__label">
+					<label for="gatherpress-message-months"><?php esc_html_e( "RSVP'd in the past", 'gatherpress' ); ?></label>
+				</div>
+				<div class="gatherpress-settings-form__field">
+					<select id="gatherpress-message-months">
+						<?php foreach ( $active_months ?? array() as $gatherpress_index => $gatherpress_months ) : ?>
+							<option value="<?php echo esc_attr( (string) $gatherpress_months ); ?>" <?php selected( 1, $gatherpress_index ); ?>>
+								<?php
+								echo esc_html(
+									sprintf(
+										/* translators: %d: Number of months. */
+										_n( '%d month', '%d months', $gatherpress_months, 'gatherpress' ),
+										$gatherpress_months
+									)
+								);
+								?>
+							</option>
+						<?php endforeach; ?>
+					</select>
+					<p class="description"><?php esc_html_e( "Members who RSVP'd to any event in that time.", 'gatherpress' ); ?></p>
+				</div>
+			</div>
+			<div class="gatherpress-settings-form__row gatherpress--is-hidden" data-gatherpress_audience="no_rsvp">
+				<div class="gatherpress-settings-form__label">
+					<label for="gatherpress-message-event"><?php esc_html_e( 'Event', 'gatherpress' ); ?></label>
+				</div>
+				<div class="gatherpress-settings-form__field">
+					<select id="gatherpress-message-event">
+						<option value=""><?php esc_html_e( 'Choose an event', 'gatherpress' ); ?></option>
+						<?php
+						foreach (
+							array(
+								__( 'Upcoming events', 'gatherpress' ) => $upcoming_events ?? array(),
+								__( 'Past events', 'gatherpress' )     => $past_events ?? array(),
+							) as $gatherpress_group => $gatherpress_events
+						) :
+							if ( empty( $gatherpress_events ) ) {
+								continue;
+							}
+							?>
+							<optgroup label="<?php echo esc_attr( $gatherpress_group ); ?>">
+								<?php foreach ( $gatherpress_events as $gatherpress_event_id => $gatherpress_event_label ) : ?>
+									<option value="<?php echo esc_attr( (string) $gatherpress_event_id ); ?>"><?php echo esc_html( $gatherpress_event_label ); ?></option>
+								<?php endforeach; ?>
+							</optgroup>
+						<?php endforeach; ?>
+					</select>
+					<p class="description"><?php esc_html_e( "Members who haven't RSVP'd to this event.", 'gatherpress' ); ?></p>
+				</div>
+			</div>
 			<div class="gatherpress-settings-form__row">
 				<div class="gatherpress-settings-form__label">
 					<label for="gatherpress-message-subject"><?php esc_html_e( 'Subject', 'gatherpress' ); ?></label>

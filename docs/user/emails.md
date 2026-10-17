@@ -14,8 +14,12 @@ It covers different needs:
         * Non-attendees (people who RSVPed “no”)
         * Waiting list (when an event has a limit)
 * Site-wide messages to members
-    * From **Events → Email** an administrator can message every member at once, without tying it to an event.
-    * Delivery runs on cron in batches, so a large membership is not sent in a single request and the settings page returns right away.
+    * From **Events → Email** an administrator can message members without tying it to an event. The message can go to:
+        * All members
+        * Members with one or more chosen roles
+        * Active members, who RSVP'd to any event in the past 1, 3, 6 or 12 months
+        * Members who haven't RSVP'd to a chosen event
+    * Delivery runs on cron in batches, so a large membership is not sent in a single request and the page returns right away.
     * Members who turned event updates off in their profile are skipped.
 * RSVP confirmation without an account (email handshake)
   See more under the [RSVP system](./rsvp-system.md) section.
