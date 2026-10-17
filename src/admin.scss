@@ -308,6 +308,10 @@
 }
 
 .gatherpress-send-email {
+	&__role-actions {
+		margin: 0 0 8px;
+	}
+
 	&__status {
 		align-items: center;
 		display: flex;

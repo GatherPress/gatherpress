@@ -23,6 +23,7 @@ import {
 	initSendEmail,
 	readAudience,
 	sendMessage,
+	setAllRoles,
 	showAudienceFields,
 	updateCount,
 } from '@src/helpers/send-email';
@@ -34,36 +35,36 @@ const HIDDEN_CLASS = 'gatherpress--is-hidden';
 /**
  * Render the send form markup the Email page template outputs.
  *
- * @param {string} message The message field value.
+ * @param {string}  message The message field value.
+ * @param {boolean} rsvp    Whether RSVPs are on, which adds the Active members fields.
  *
  * @return {Object} The form elements, as initSendEmail() collects them.
  */
-function renderForm( message = 'Hello members' ) {
+function renderForm( message = 'Hello members', rsvp = true ) {
+	const active = rsvp
+		? `<div class="${ HIDDEN_CLASS }" data-gatherpress_audience="active">
+				<select id="gatherpress-message-months">
+					<option value="1">1</option>
+					<option value="3" selected>3</option>
+				</select>
+			</div>`
+		: '';
+
 	document.body.innerHTML = `
 		<div data-gatherpress_component_name="send-email">
 			<select id="gatherpress-message-audience">
 				<option value="all">All</option>
 				<option value="role">Role</option>
 				<option value="active">Active</option>
-				<option value="no_rsvp">No RSVP</option>
 			</select>
 			<output class="gatherpress-send-email__count">This will email 2 members.</output>
 			<div class="${ HIDDEN_CLASS }" data-gatherpress_audience="role">
+				<button type="button" data-gatherpress_roles="all"></button>
+				<button type="button" data-gatherpress_roles="none"></button>
 				<input type="checkbox" name="gatherpress-message-roles" value="editor" />
 				<input type="checkbox" name="gatherpress-message-roles" value="author" />
 			</div>
-			<div class="${ HIDDEN_CLASS }" data-gatherpress_audience="active">
-				<select id="gatherpress-message-months">
-					<option value="1">1</option>
-					<option value="3" selected>3</option>
-				</select>
-			</div>
-			<div class="${ HIDDEN_CLASS }" data-gatherpress_audience="no_rsvp">
-				<select id="gatherpress-message-event">
-					<option value="">Choose</option>
-					<option value="42">Event</option>
-				</select>
-			</div>
+			${ active }
 			<input id="gatherpress-message-subject" value="Hi" />
 			<textarea id="gatherpress-message-body"></textarea>
 			<output class="gatherpress-send-email__status ${ HIDDEN_CLASS }">
@@ -87,7 +88,6 @@ function renderForm( message = 'Hello members' ) {
 			document.querySelectorAll( '[name="gatherpress-message-roles"]' ),
 		),
 		months: document.getElementById( 'gatherpress-message-months' ),
-		event: document.getElementById( 'gatherpress-message-event' ),
 		audienceRows: Array.from(
 			document.querySelectorAll( '[data-gatherpress_audience]' ),
 		),
@@ -127,49 +127,67 @@ describe( 'send-email', () => {
 	} );
 
 	describe( 'readAudience', () => {
-		it( 'reads the audience, checked roles, months and event', () => {
+		it( 'reads the audience, checked roles and months', () => {
 			const elements = renderForm();
 
 			pick( elements, 'role' );
 			elements.roles[ 1 ].checked = true;
-			elements.event.value = '42';
 
 			expect( readAudience( elements ) ).toEqual( {
 				audience: 'role',
 				roles: [ 'author' ],
 				months: 3,
-				event_id: 42,
+			} );
+		} );
+
+		it( 'leaves out months while RSVPs are off', () => {
+			const elements = renderForm( 'Hello members', false );
+
+			expect( readAudience( elements ) ).toEqual( {
+				audience: 'all',
+				roles: [],
 			} );
 		} );
 	} );
 
 	describe( 'getAudienceError', () => {
 		it( 'asks for a role when none is checked', () => {
-			expect(
-				getAudienceError( { audience: 'role', roles: [], event_id: 0 } ),
-			).toBe( 'Choose at least one role.' );
-		} );
-
-		it( 'asks for an event when none is chosen', () => {
-			expect(
-				getAudienceError( { audience: 'no_rsvp', roles: [], event_id: 0 } ),
-			).toBe( 'Choose an event.' );
+			expect( getAudienceError( { audience: 'role', roles: [] } ) ).toBe(
+				'Choose at least one role.',
+			);
 		} );
 
 		it( 'accepts complete audiences', () => {
 			expect(
-				getAudienceError( {
-					audience: 'role',
-					roles: [ 'editor' ],
-					event_id: 0,
-				} ),
+				getAudienceError( { audience: 'role', roles: [ 'editor' ] } ),
 			).toBe( '' );
-			expect(
-				getAudienceError( { audience: 'no_rsvp', roles: [], event_id: 42 } ),
-			).toBe( '' );
-			expect(
-				getAudienceError( { audience: 'all', roles: [], event_id: 0 } ),
-			).toBe( '' );
+			expect( getAudienceError( { audience: 'all', roles: [] } ) ).toBe(
+				'',
+			);
+		} );
+	} );
+
+	describe( 'setAllRoles', () => {
+		it( 'checks and unchecks every role, then counts again', async () => {
+			const elements = renderForm();
+
+			pick( elements, 'role' );
+			apiFetch.mockResolvedValue( { message: 'This will email 2 members.' } );
+			await setAllRoles( elements, true );
+
+			expect( elements.roles.every( ( role ) => role.checked ) ).toBe(
+				true,
+			);
+			expect( apiFetch ).toHaveBeenCalledTimes( 1 );
+
+			await setAllRoles( elements, false );
+
+			expect( elements.roles.some( ( role ) => role.checked ) ).toBe(
+				false,
+			);
+			expect( elements.count.textContent ).toBe(
+				'Choose at least one role.',
+			);
 		} );
 	} );
 
@@ -184,7 +202,7 @@ describe( 'send-email', () => {
 				elements.audienceRows.map( ( row ) =>
 					row.classList.contains( HIDDEN_CLASS ),
 				),
-			).toEqual( [ true, false, true ] );
+			).toEqual( [ true, false ] );
 		} );
 	} );
 
@@ -197,7 +215,7 @@ describe( 'send-email', () => {
 			await updateCount( elements );
 
 			expect( apiFetch ).toHaveBeenCalledWith( {
-				path: '/gatherpress/v1/site-message/count?audience=active&months=3&event_id=0',
+				path: '/gatherpress/v1/site-message/count?audience=active&months=3',
 			} );
 			expect( elements.count.textContent ).toBe(
 				'This will email 5 members.',
@@ -219,10 +237,10 @@ describe( 'send-email', () => {
 		it( 'shows the error the server returns', async () => {
 			const elements = renderForm();
 
-			apiFetch.mockRejectedValue( { message: 'Choose an event.' } );
+			apiFetch.mockRejectedValue( { message: 'RSVPs are turned off.' } );
 			await updateCount( elements );
 
-			expect( elements.count.textContent ).toBe( 'Choose an event.' );
+			expect( elements.count.textContent ).toBe( 'RSVPs are turned off.' );
 		} );
 
 		it( 'falls back to a generic error without a message', async () => {
@@ -271,17 +289,37 @@ describe( 'send-email', () => {
 
 			apiFetch.mockResolvedValue( { message: 'This will email 1 member.' } );
 			initSendEmail();
-			pick( elements, 'no_rsvp' );
-			elements.event.value = '42';
+			pick( elements, 'active' );
 			elements.audience.dispatchEvent( new Event( 'change' ) );
 
 			await new Promise( process.nextTick );
 
 			expect(
-				elements.audienceRows[ 2 ].classList.contains( HIDDEN_CLASS ),
+				elements.audienceRows[ 1 ].classList.contains( HIDDEN_CLASS ),
 			).toBe( false );
 			expect( elements.count.textContent ).toBe(
 				'This will email 1 member.',
+			);
+		} );
+
+		it( 'checks every role from Select all', async () => {
+			const elements = renderForm( 'Hello members', false );
+
+			apiFetch.mockResolvedValue( { message: 'This will email 2 members.' } );
+			initSendEmail();
+			pick( elements, 'role' );
+			document.querySelector( '[data-gatherpress_roles="all"]' ).click();
+
+			await new Promise( process.nextTick );
+
+			expect( elements.roles.every( ( role ) => role.checked ) ).toBe(
+				true,
+			);
+
+			document.querySelector( '[data-gatherpress_roles="none"]' ).click();
+
+			expect( elements.roles.some( ( role ) => role.checked ) ).toBe(
+				false,
 			);
 		} );
 
@@ -303,7 +341,6 @@ describe( 'send-email', () => {
 					audience: 'all',
 					roles: [],
 					months: 3,
-					event_id: 0,
 				},
 			} );
 		} );
@@ -365,10 +402,10 @@ describe( 'send-email', () => {
 		it( 'asks for a complete audience before sending', async () => {
 			const elements = renderForm();
 
-			pick( elements, 'no_rsvp' );
+			pick( elements, 'role' );
 			await sendMessage( elements );
 
-			expect( statusText() ).toBe( 'Choose an event.' );
+			expect( statusText() ).toBe( 'Choose at least one role.' );
 			expect( window.confirm ).not.toHaveBeenCalled();
 		} );
 

@@ -16,16 +16,12 @@ namespace GatherPress\Core\Admin;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Assets;
-use GatherPress\Core\Event;
-use GatherPress\Core\Event\Query as Event_Query;
 use GatherPress\Core\Mailer;
-use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Query as Rsvp_Query;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_Error;
-use WP_Post;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
@@ -40,7 +36,7 @@ use WP_User_Query;
  *
  * @phpstan-import-type Recipient from Mailer
  * @phpstan-type RecipientBatch array{recipients: array<int, Recipient>, complete: bool, fetched: int, last_id: int}
- * @phpstan-type Audience array{type: string, roles?: list<string>, months?: int, event_id?: int}
+ * @phpstan-type Audience array{type: string, roles?: list<string>, months?: int}
  */
 final class Email {
 
@@ -60,14 +56,13 @@ final class Email {
 
 	/**
 	 * Who a message can be sent to: every member, members with one of the
-	 * chosen roles, members who RSVP'd recently, or members who have not
-	 * RSVP'd to a chosen event.
+	 * chosen roles, or members who RSVP'd recently.
 	 *
 	 * @since TBD
 	 *
 	 * @var string[]
 	 */
-	const AUDIENCES = array( 'all', 'role', 'active', 'no_rsvp' );
+	const AUDIENCES = array( 'all', 'role', 'active' );
 
 	/**
 	 * How far back, in months, an active member's last RSVP can be.
@@ -174,45 +169,51 @@ final class Email {
 	 * @return void
 	 */
 	public function render_page(): void {
-		$event_query = Event_Query::get_instance();
-
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/email.php', GATHERPRESS_CORE_PATH ),
 			array(
 				'recipient_count' => $this->get_cached_recipient_count(),
+				'audiences'       => $this->get_audience_choices(),
 				'roles'           => array_map( 'translate_user_role', wp_roles()->get_names() ),
 				'active_months'   => self::ACTIVE_MONTHS,
-				'upcoming_events' => $this->get_event_choices( $event_query->get_upcoming_events( 50 )->posts ),
-				'past_events'     => $this->get_event_choices( $event_query->get_past_events( 20 )->posts ),
 			),
 			true
 		);
 	}
 
 	/**
-	 * Label events for the "didn't RSVP" audience picker.
+	 * Get the audiences the site can send to, with their labels.
+	 *
+	 * Active members are picked by their RSVPs, so they are only offered
+	 * while RSVPs are turned on.
 	 *
 	 * @since TBD
 	 *
-	 * @param array<int, int|WP_Post> $events Events, as post IDs or posts.
-	 *
-	 * @return array<int, string> Event labels, keyed by post ID.
+	 * @return array<string, string> Audience labels, keyed by audience.
 	 */
-	private function get_event_choices( array $events ): array {
-		$choices = array();
+	private function get_audience_choices(): array {
+		$choices = array(
+			'all'    => __( 'All members', 'gatherpress' ),
+			'role'   => __( 'Members with a role', 'gatherpress' ),
+			'active' => __( 'Active members', 'gatherpress' ),
+		);
 
-		foreach ( $events as $event ) {
-			$event_id = (int) get_post_field( 'ID', $event );
-
-			$choices[ $event_id ] = sprintf(
-				/* translators: 1: Event title, 2: Event start date. */
-				__( '%1$s (%2$s)', 'gatherpress' ),
-				get_the_title( $event_id ),
-				( new Event( $event_id ) )->get_datetime_start( get_option( 'date_format' ) )
-			);
+		if ( ! $this->is_rsvp_enabled() ) {
+			unset( $choices['active'] );
 		}
 
 		return $choices;
+	}
+
+	/**
+	 * Check whether RSVPs are turned on for the site.
+	 *
+	 * @since TBD
+	 *
+	 * @return bool True unless the RSVP mode setting is disabled.
+	 */
+	private function is_rsvp_enabled(): bool {
+		return 'disabled' !== Settings::get_instance()->get( 'rsvp_mode' );
 	}
 
 	/**
@@ -372,8 +373,7 @@ final class Email {
 		 * @param array<int, Recipient> $recipients Recipient rows to email.
 		 * @param int                  $last_id    Last user ID processed before this batch.
 		 * @param array                $audience   Who the message goes to: a `type` of `all`, `role`
-		 *                                         (with `roles`), `active` (with `months`) or
-		 *                                         `no_rsvp` (with `event_id`).
+		 *                                         (with `roles`) or `active` (with `months`).
 		 */
 		$recipients = apply_filters( 'gatherpress_site_message_recipients', $recipients, $last_id, $audience );
 
@@ -403,7 +403,6 @@ final class Email {
 			// An empty include list would match every member. The union only
 			// adds an ID no member has when the list is empty.
 			'active'  => array( 'include' => $this->get_active_member_ids( $audience['months'] ?? 0 ) + array( 0 ) ),
-			'no_rsvp' => array( 'exclude' => $this->get_event_responder_ids( $audience['event_id'] ?? 0 ) ),
 			default   => array(),
 		};
 	}
@@ -427,24 +426,6 @@ final class Email {
 						'column' => 'comment_date_gmt',
 					),
 				),
-			)
-		);
-	}
-
-	/**
-	 * Get the members who have RSVP'd to an event, whatever their response.
-	 *
-	 * @since TBD
-	 *
-	 * @param int $event_id Event post ID.
-	 *
-	 * @return int[] User IDs.
-	 */
-	private function get_event_responder_ids( int $event_id ): array {
-		return $this->get_rsvp_user_ids(
-			array(
-				'post_id' => $event_id,
-				'status'  => 'all',
 			)
 		);
 	}
@@ -590,10 +571,6 @@ final class Email {
 				'enum'    => self::ACTIVE_MONTHS,
 				'default' => self::ACTIVE_MONTHS[1],
 			),
-			'event_id' => array(
-				'type'    => 'integer',
-				'default' => 0,
-			),
 		);
 	}
 
@@ -621,11 +598,9 @@ final class Email {
 			$error             = empty( $audience['roles'] ) ? __( 'Choose at least one role.', 'gatherpress' ) : '';
 		} elseif ( 'active' === $audience['type'] ) {
 			$audience['months'] = (int) $request->get_param( 'months' );
-		} elseif ( 'no_rsvp' === $audience['type'] ) {
-			$audience['event_id'] = (int) $request->get_param( 'event_id' );
-			$error                = post_type_supports( (string) get_post_type( $audience['event_id'] ), Rsvp::SUPPORT )
+			$error              = $this->is_rsvp_enabled()
 				? ''
-				: __( 'Choose an event.', 'gatherpress' );
+				: __( 'RSVPs are turned off, so members cannot be picked by their RSVPs.', 'gatherpress' );
 		}
 
 		return '' === $error

@@ -189,51 +189,30 @@ class Test_Email extends Base {
 		$response = Utility::buffer_and_return( array( Email::get_instance(), 'render_page' ) );
 
 		$this->assertStringContainsString( '<h1>Email</h1>', $response );
-		$this->assertStringContainsString( 'value="no_rsvp"', $response );
+		$this->assertStringContainsString( 'value="active"', $response );
+		$this->assertStringContainsString( 'id="gatherpress-message-months"', $response );
 		$this->assertStringContainsString( 'value="editor"', $response );
+		$this->assertStringContainsString( 'data-gatherpress_roles="all"', $response );
 		$this->assertStringContainsString( 'Send Email To Members', $response );
 		$this->assertStringContainsString( 'gatherpress-message-body', $response );
 	}
 
 	/**
-	 * Check that upcoming and past events are offered in the event picker.
+	 * Check that the Active members fields are left out while RSVPs are off.
 	 *
 	 * @covers ::render_page
-	 * @covers ::get_event_choices
 	 *
 	 * @return void
 	 */
-	public function test_render_page_lists_events(): void {
-		$upcoming = $this->dated_event( 'Upcoming meetup', '+1 week' );
-		$past     = $this->dated_event( 'Past meetup', '-1 week' );
+	public function test_render_page_leaves_out_active_members_while_rsvps_are_off(): void {
+		update_option( Settings::OPTION_NAME, array( 'rsvp_mode' => 'disabled' ) );
+
 		$response = Utility::buffer_and_return( array( Email::get_instance(), 'render_page' ) );
 
-		$this->assertStringContainsString( sprintf( 'value="%d">Upcoming meetup (', $upcoming ), $response );
-		$this->assertStringContainsString( sprintf( 'value="%d">Past meetup (', $past ), $response );
-		$this->assertStringContainsString( '<optgroup label="Past events">', $response );
-	}
+		delete_option( Settings::OPTION_NAME );
 
-	/**
-	 * Check that event choices are labeled by title and date, from IDs or posts.
-	 *
-	 * @covers ::get_event_choices
-	 *
-	 * @return void
-	 */
-	public function test_get_event_choices(): void {
-		$event_id = $this->dated_event( 'Book club', '2030-01-15 18:00:00' );
-		$choices  = Utility::invoke_hidden_method(
-			Email::get_instance(),
-			'get_event_choices',
-			array( array( $event_id, get_post( $event_id ) ) )
-		);
-
-		$label = sprintf(
-			'Book club (%s)',
-			gmdate( (string) get_option( 'date_format' ), (int) strtotime( '2030-01-15 18:00:00' ) )
-		);
-
-		$this->assertSame( array( $event_id => $label ), $choices, 'An ID and its post should give one choice.' );
+		$this->assertStringNotContainsString( 'value="active"', $response );
+		$this->assertStringNotContainsString( 'id="gatherpress-message-months"', $response );
 	}
 
 	/**
@@ -548,37 +527,45 @@ class Test_Email extends Base {
 	}
 
 	/**
-	 * Check that the "didn't RSVP" audience needs an event that takes RSVPs.
+	 * Check that active members cannot be picked while RSVPs are turned off.
 	 *
 	 * @covers ::resolve_audience
+	 * @covers ::is_rsvp_enabled
 	 *
 	 * @return void
 	 */
-	public function test_resolve_audience_needs_an_event_that_takes_rsvps(): void {
-		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+	public function test_resolve_audience_rejects_active_while_rsvps_are_off(): void {
+		update_option( Settings::OPTION_NAME, array( 'rsvp_mode' => 'disabled' ) );
 
-		$this->assertSame(
-			array(
-				'type'     => 'no_rsvp',
-				'event_id' => $event_id,
-			),
-			$this->resolve_audience(
-				array(
-					'audience' => 'no_rsvp',
-					'event_id' => $event_id,
-				)
-			)
-		);
+		$error = $this->resolve_audience( array( 'audience' => 'active' ) );
 
-		$error = $this->resolve_audience(
-			array(
-				'audience' => 'no_rsvp',
-				'event_id' => $this->factory->post->create(),
-			)
-		);
+		delete_option( Settings::OPTION_NAME );
 
 		$this->assertWPError( $error );
-		$this->assertSame( 'Choose an event.', $error->get_error_message() );
+		$this->assertSame( 400, $error->get_error_data()['status'] );
+	}
+
+	/**
+	 * Check that active members are only offered while RSVPs are turned on.
+	 *
+	 * @covers ::get_audience_choices
+	 * @covers ::is_rsvp_enabled
+	 *
+	 * @return void
+	 */
+	public function test_get_audience_choices(): void {
+		$choices = static function (): array {
+			return array_keys( Utility::invoke_hidden_method( Email::get_instance(), 'get_audience_choices' ) );
+		};
+
+		$this->assertSame( array( 'all', 'role', 'active' ), $choices() );
+
+		update_option( Settings::OPTION_NAME, array( 'rsvp_mode' => 'disabled' ) );
+
+		$this->assertSame( array( 'all', 'role' ), $choices() );
+		$this->assertFalse( Utility::invoke_hidden_method( Email::get_instance(), 'is_rsvp_enabled' ) );
+
+		delete_option( Settings::OPTION_NAME );
 	}
 
 	/**
@@ -618,16 +605,6 @@ class Test_Email extends Base {
 				)
 			)
 		);
-		$this->assertSame(
-			array( 'exclude' => array( $user_id ) ),
-			$args(
-				array(
-					'type'     => 'no_rsvp',
-					'event_id' => $event_id,
-				)
-			)
-		);
-
 		wp_delete_comment( $rsvp_id, true );
 
 		$this->assertSame(
@@ -675,37 +652,6 @@ class Test_Email extends Base {
 	}
 
 	/**
-	 * Check that everyone with an RSVP on the event counts as having answered.
-	 *
-	 * @covers ::get_event_responder_ids
-	 * @covers ::get_rsvp_user_ids
-	 *
-	 * @return void
-	 */
-	public function test_get_event_responder_ids(): void {
-		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
-		$other_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
-		$answered = $this->factory->user->create();
-		$pending  = $this->factory->user->create();
-		$elsewise = $this->factory->user->create();
-
-		$this->rsvp( $event_id, $answered );
-		$this->rsvp( $event_id, $pending, 0 );
-		$this->rsvp( $event_id, 0 );
-		$this->rsvp( $other_id, $elsewise );
-
-		$responders = Utility::invoke_hidden_method(
-			Email::get_instance(),
-			'get_event_responder_ids',
-			array( $event_id )
-		);
-
-		sort( $responders );
-
-		$this->assertSame( array( $answered, $pending ), $responders );
-	}
-
-	/**
 	 * Check that RSVPs are reduced to the members behind them.
 	 *
 	 * Invoked directly because xdebug does not trace same-class helpers
@@ -742,7 +688,7 @@ class Test_Email extends Base {
 	public function test_get_audience_args(): void {
 		$args = Utility::invoke_hidden_method( Email::get_instance(), 'get_audience_args' );
 
-		$this->assertSame( array( 'audience', 'roles', 'months', 'event_id' ), array_keys( $args ) );
+		$this->assertSame( array( 'audience', 'roles', 'months' ), array_keys( $args ) );
 		$this->assertSame( 'all', $args['audience']['default'] );
 		$this->assertSame( 3, $args['months']['default'] );
 	}
@@ -763,8 +709,6 @@ class Test_Email extends Base {
 
 		$this->rsvp( $event_id, $editor );
 
-		$all = $instance->count_recipients();
-
 		$this->assertSame(
 			2,
 			$instance->count_recipients(
@@ -783,16 +727,6 @@ class Test_Email extends Base {
 				)
 			)
 		);
-		$this->assertSame(
-			$all - 1,
-			$instance->count_recipients(
-				array(
-					'type'     => 'no_rsvp',
-					'event_id' => $event_id,
-				)
-			)
-		);
-
 		update_user_meta( $author, 'gatherpress_event_updates_opt_in', '0' );
 
 		$this->assertSame(
@@ -841,7 +775,7 @@ class Test_Email extends Base {
 	 */
 	public function test_queue_message_rejects_incomplete_audience(): void {
 		$request = $this->site_message_request( 'Subject', 'Message body' );
-		$request->set_param( 'audience', 'no_rsvp' );
+		$request->set_param( 'audience', 'role' );
 
 		$response = Email::get_instance()->queue_message( $request );
 
@@ -1551,7 +1485,6 @@ class Test_Email extends Base {
 				'audience' => 'all',
 				'roles'    => array(),
 				'months'   => 3,
-				'event_id' => 0,
 			)
 		);
 
@@ -1586,35 +1519,6 @@ class Test_Email extends Base {
 				'comment_date_gmt'     => $date,
 			)
 		);
-	}
-
-	/**
-	 * Create an event with a start date.
-	 *
-	 * @param string $title Event title.
-	 * @param string $start Start date, absolute or relative to now.
-	 *
-	 * @return int Event post ID.
-	 */
-	private function dated_event( string $title, string $start ): int {
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => $title,
-				'post_status' => 'publish',
-			)
-		);
-		$start    = gmdate( 'Y-m-d H:i:s', (int) strtotime( $start ) );
-
-		( new Event( $event_id ) )->save_datetimes(
-			array(
-				'datetime_start' => $start,
-				'datetime_end'   => gmdate( 'Y-m-d H:i:s', (int) strtotime( $start . ' +2 hours' ) ),
-				'timezone'       => 'UTC',
-			)
-		);
-
-		return $event_id;
 	}
 
 	/**

@@ -39,23 +39,26 @@ function showStatus( status, text, busy ) {
  *
  * @since TBD
  *
- * @param {Object}             elements          The Send Email form elements.
- * @param {HTMLSelectElement}  elements.audience The audience select.
- * @param {HTMLInputElement[]} elements.roles    The role checkboxes.
- * @param {HTMLSelectElement}  elements.months   The active member window select.
- * @param {HTMLSelectElement}  elements.event    The event select.
+ * @param {Object}                 elements          The Send Email form elements.
+ * @param {HTMLSelectElement}      elements.audience The audience select.
+ * @param {HTMLInputElement[]}     elements.roles    The role checkboxes.
+ * @param {HTMLSelectElement|null} elements.months   The active member window select, absent while RSVPs are off.
  *
  * @return {Object} The audience, as the site message REST routes take it.
  */
-export function readAudience( { audience, roles, months, event } ) {
-	return {
+export function readAudience( { audience, roles, months } ) {
+	const params = {
 		audience: audience.value,
 		roles: roles
 			.filter( ( role ) => role.checked )
 			.map( ( role ) => role.value ),
-		months: Number( months.value ),
-		event_id: Number( event.value ),
 	};
+
+	if ( months ) {
+		params.months = Number( months.value );
+	}
+
+	return params;
 }
 
 /**
@@ -68,15 +71,9 @@ export function readAudience( { audience, roles, months, event } ) {
  * @return {string} What to fix, or an empty string when nothing is missing.
  */
 export function getAudienceError( params ) {
-	if ( 'role' === params.audience && ! params.roles.length ) {
-		return __( 'Choose at least one role.', 'gatherpress' );
-	}
-
-	if ( 'no_rsvp' === params.audience && ! params.event_id ) {
-		return __( 'Choose an event.', 'gatherpress' );
-	}
-
-	return '';
+	return 'role' === params.audience && ! params.roles.length
+		? __( 'Choose at least one role.', 'gatherpress' )
+		: '';
 }
 
 /**
@@ -97,6 +94,24 @@ export function showAudienceFields( { audience, audienceRows } ) {
 			row.dataset.gatherpress_audience !== audience.value,
 		),
 	);
+}
+
+/**
+ * Check or uncheck every role, then update the count.
+ *
+ * @since TBD
+ *
+ * @param {Object}  elements The Send Email form elements.
+ * @param {boolean} checked  Whether to check every role.
+ *
+ * @return {Promise<void>} Resolves once the count is shown.
+ */
+export function setAllRoles( elements, checked ) {
+	elements.roles.forEach( ( role ) => {
+		role.checked = checked;
+	} );
+
+	return updateCount( elements );
 }
 
 /**
@@ -240,23 +255,30 @@ export function initSendEmail() {
 			container.querySelectorAll( '[name="gatherpress-message-roles"]' ),
 		),
 		months: container.querySelector( '#gatherpress-message-months' ),
-		event: container.querySelector( '#gatherpress-message-event' ),
 		audienceRows: Array.from(
 			container.querySelectorAll( '[data-gatherpress_audience]' ),
 		),
 	};
 
-	[
-		elements.audience,
-		elements.months,
-		elements.event,
-		...elements.roles,
-	].forEach( ( field ) =>
-		field.addEventListener( 'change', () => {
-			showAudienceFields( elements );
-			updateCount( elements );
-		} ),
-	);
+	[ elements.audience, elements.months, ...elements.roles ]
+		.filter( Boolean )
+		.forEach( ( field ) =>
+			field.addEventListener( 'change', () => {
+				showAudienceFields( elements );
+				updateCount( elements );
+			} ),
+		);
+
+	container
+		.querySelectorAll( '[data-gatherpress_roles]' )
+		.forEach( ( toggle ) =>
+			toggle.addEventListener( 'click', () =>
+				setAllRoles(
+					elements,
+					'all' === toggle.dataset.gatherpress_roles,
+				),
+			),
+		);
 
 	elements.button.addEventListener( 'click', () => sendMessage( elements ) );
 }
