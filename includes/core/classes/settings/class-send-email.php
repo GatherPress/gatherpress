@@ -19,6 +19,10 @@ use GatherPress\Core\Mailer;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
+use WP_Error;
+use WP_REST_Request;
+use WP_REST_Response;
+use WP_REST_Server;
 use WP_User_Query;
 
 /**
@@ -67,12 +71,12 @@ final class Send_Email extends Base {
 		parent::setup_hooks();
 
 		add_action( 'gatherpress_settings_section', array( $this, 'settings_section' ), 9 );
-		add_action( 'wp_ajax_gatherpress_send_site_message', array( $this, 'ajax_send' ) );
+		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
 		add_action( 'gatherpress_site_message_send', array( $this, 'process_message' ), 10, 3 );
 
-		foreach ( array( 'added_user_meta', 'updated_user_meta', 'deleted_user_meta' ) as $meta_hook ) {
-			add_action( $meta_hook, array( $this, 'maybe_clear_count_cache' ), 10, 3 );
-		}
+		add_action( 'added_user_meta', array( $this, 'maybe_clear_count_cache' ), 10, 3 );
+		add_action( 'updated_user_meta', array( $this, 'maybe_clear_count_cache' ), 10, 3 );
+		add_action( 'deleted_user_meta', array( $this, 'maybe_clear_count_cache' ), 10, 3 );
 
 		// Membership changes move the count too, so the settings page does not
 		// keep showing a stale number until the transient expires.
@@ -313,51 +317,84 @@ final class Send_Email extends Base {
 	}
 
 	/**
-	 * AJAX handler for queuing a site-wide member message.
-	 *
-	 * Verifies permissions and nonce, then schedules the message for delivery
-	 * on the next cron pass so the request returns without waiting on the
-	 * mail server.
+	 * Register the REST route that queues a site-wide member message.
 	 *
 	 * @since TBD
 	 *
 	 * @return void
 	 */
-	public function ajax_send(): void {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'gatherpress' ) )
-			);
-		}
+	public function register_endpoints(): void {
+		register_rest_route(
+			GATHERPRESS_REST_NAMESPACE,
+			'/site-message',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'queue_message' ),
+				'permission_callback' => static function (): bool {
+					return current_user_can( 'manage_options' );
+				},
+				'args'                => array(
+					'subject' => array(
+						'required'          => false,
+						'type'              => 'string',
+						'default'           => '',
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'message' => array(
+						'required'          => true,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_textarea_field',
+					),
+				),
+			)
+		);
+	}
 
-		check_ajax_referer( 'gatherpress_send_email_nonce', 'nonce' );
-
-		$subject = Utility::get_http_input( INPUT_POST, 'subject' );
-		$message = Utility::get_http_input( INPUT_POST, 'message', 'sanitize_textarea_field' );
+	/**
+	 * Queue a site-wide member message from a REST request.
+	 *
+	 * Schedules the message for delivery on the next cron pass, so the request
+	 * returns without waiting on the mail server.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_REST_Request $request The REST request.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
+	 *
+	 * @return WP_REST_Response|WP_Error The queued confirmation, or why the message was not queued.
+	 */
+	public function queue_message( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+		$subject = (string) $request->get_param( 'subject' );
+		$message = (string) $request->get_param( 'message' );
 
 		if ( '' === trim( $message ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Please write a message before sending.', 'gatherpress' ) )
+			return new WP_Error(
+				'gatherpress_site_message_empty',
+				__( 'Please write a message before sending.', 'gatherpress' ),
+				array( 'status' => 400 )
 			);
 		}
 
 		// Count fresh at send time rather than trusting the cached value the
 		// settings page showed, so the queued count reflects who is eligible now.
 		$recipient_count = $this->count_recipients();
+		$error           = null;
 
 		if ( 0 === $recipient_count ) {
-			wp_send_json_error(
-				array( 'message' => __( 'There are no members to send this message to.', 'gatherpress' ) )
+			$error = new WP_Error(
+				'gatherpress_site_message_no_recipients',
+				__( 'There are no members to send this message to.', 'gatherpress' ),
+				array( 'status' => 400 )
+			);
+		} elseif ( ! $this->schedule_message_batch( $subject, $message, 0 ) ) {
+			$error = new WP_Error(
+				'gatherpress_site_message_not_queued',
+				__( 'The message could not be queued. Please try again.', 'gatherpress' ),
+				array( 'status' => 500 )
 			);
 		}
 
-		if ( ! $this->schedule_message_batch( $subject, $message, 0 ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'The message could not be queued. Please try again.', 'gatherpress' ) )
-			);
-		}
-
-		wp_send_json_success(
+		return $error ?? new WP_REST_Response(
 			array(
 				'message' => sprintf(
 					/* translators: %d: Number of members the message was queued for. */

@@ -67,3 +67,48 @@
 		pointer-events: auto;
 	}
 }
+
+// Label and field grid for settings pages that render their own form instead
+// of the Settings API table.
+.gatherpress-settings-form {
+	margin-top: 1em;
+
+	&__row {
+		display: grid;
+		gap: 0 10px;
+		grid-template-columns: 200px 1fr;
+		padding: 15px 10px;
+
+		@media screen and (width <= 782px) {
+			gap: 6px;
+			grid-template-columns: 1fr;
+		}
+	}
+
+	&__row--full > * {
+		grid-column: 1 / -1;
+	}
+
+	&__label {
+		font-weight: 600;
+		padding-top: 2px;
+	}
+}
+
+.gatherpress-send-email {
+	&__status {
+		align-items: center;
+		display: flex;
+		font-weight: 600;
+		gap: 8px;
+
+		.spinner {
+			float: none;
+			margin: 0;
+
+			&:not(.is-active) {
+				display: none;
+			}
+		}
+	}
+}

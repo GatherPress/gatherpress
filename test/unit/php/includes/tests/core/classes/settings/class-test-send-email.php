@@ -13,15 +13,17 @@ use GatherPress\Core\Settings;
 use GatherPress\Core\Settings\Send_Email;
 use GatherPress\Core\User;
 use GatherPress\Core\Utility as Core_Utility;
-use PMC\Unit_Test\Base_Ajax;
+use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
+use WP_REST_Request;
+use WP_REST_Response;
 
 /**
  * Class Test_Send_Email.
  *
  * @coversDefaultClass \GatherPress\Core\Settings\Send_Email
  */
-class Test_Send_Email extends Base_Ajax {
+class Test_Send_Email extends Base {
 
 	/**
 	 * Reusable batch-size filter so the same closure can be removed again.
@@ -49,9 +51,9 @@ class Test_Send_Email extends Base_Ajax {
 			),
 			array(
 				'type'     => 'action',
-				'name'     => 'wp_ajax_gatherpress_send_site_message',
+				'name'     => 'rest_api_init',
 				'priority' => 10,
-				'callback' => array( $instance, 'ajax_send' ),
+				'callback' => array( $instance, 'register_endpoints' ),
 			),
 			array(
 				'type'     => 'action',
@@ -183,6 +185,8 @@ class Test_Send_Email extends Base_Ajax {
 
 		$this->assertStringContainsString( 'This will email 1 member.', $singular );
 		$this->assertStringContainsString( 'This will email 2 members.', $plural );
+		$this->assertStringNotContainsString( '<style', $plural, 'Styles belong in the settings stylesheet.' );
+		$this->assertStringNotContainsString( '<script', $plural, 'Scripts belong in the settings bundle.' );
 	}
 
 	/**
@@ -356,74 +360,86 @@ class Test_Send_Email extends Base_Ajax {
 	}
 
 	/**
-	 * Check that a user without manage_options is denied.
+	 * Check that the site message route is registered for administrators only.
 	 *
-	 * @covers ::ajax_send
+	 * @covers ::register_endpoints
 	 *
 	 * @return void
 	 */
-	public function test_ajax_send_permission_denied(): void {
+	public function test_register_endpoints(): void {
+		$instance = Send_Email::get_instance();
+
+		// Creating the server fires rest_api_init, so registering again here is allowed.
+		$server = rest_get_server();
+		$instance->register_endpoints();
+
+		$route = $server->get_routes()[ sprintf( '/%s/site-message', GATHERPRESS_REST_NAMESPACE ) ][0];
+
+		$this->assertSame( array( 'POST' => true ), $route['methods'] );
+		$this->assertSame( array( $instance, 'queue_message' ), $route['callback'] );
+		$this->assertSame( 'sanitize_text_field', $route['args']['subject']['sanitize_callback'] );
+		$this->assertSame( 'sanitize_textarea_field', $route['args']['message']['sanitize_callback'] );
+
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'subscriber' ) ) );
-		$_POST['nonce'] = wp_create_nonce( 'gatherpress_send_email_nonce' );
-		$this->mock_input( 'Subject', 'Message body' );
+		$this->assertFalse(
+			call_user_func( $route['permission_callback'] ),
+			'Members without manage_options should not be able to send.'
+		);
 
-		$response = $this->do_ajax( 'gatherpress_send_site_message' );
-		$this->clear_input_mock();
-
-		$this->assertFalse( $response->success );
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertTrue( call_user_func( $route['permission_callback'] ), 'Administrators should be able to send.' );
 	}
 
 	/**
 	 * Check that an empty message is rejected.
 	 *
-	 * @covers ::ajax_send
+	 * @covers ::queue_message
 	 *
 	 * @return void
 	 */
-	public function test_ajax_send_rejects_empty_message(): void {
-		$this->set_admin_user();
-		$this->mock_input( '', '' );
-		$response = $this->do_ajax( 'gatherpress_send_site_message' );
-		$this->clear_input_mock();
+	public function test_queue_message_rejects_empty_message(): void {
+		$response = Send_Email::get_instance()->queue_message( $this->site_message_request( 'Subject', '   ' ) );
 
-		$this->assertFalse( $response->success );
+		$this->assertWPError( $response );
+		$this->assertSame( 'gatherpress_site_message_empty', $response->get_error_code() );
+		$this->assertSame( 400, $response->get_error_data()['status'] );
 	}
 
 	/**
 	 * Check that a message is rejected when no members are eligible.
 	 *
-	 * @covers ::ajax_send
+	 * @covers ::queue_message
 	 *
 	 * @return void
 	 */
-	public function test_ajax_send_rejects_empty_recipient_list(): void {
-		$this->set_admin_user();
-		$users = get_users();
-		foreach ( $users as $user ) {
+	public function test_queue_message_rejects_empty_recipient_list(): void {
+		foreach ( get_users() as $user ) {
 			update_user_meta( $user->ID, 'gatherpress_event_updates_opt_in', '0' );
 		}
-		$this->mock_input( 'Subject', 'Message' );
-		$response = $this->do_ajax( 'gatherpress_send_site_message' );
-		$this->clear_input_mock();
 
-		$this->assertFalse( $response->success );
+		$response = Send_Email::get_instance()->queue_message( $this->site_message_request( 'Subject', 'Message' ) );
+
+		$this->assertWPError( $response );
+		$this->assertSame( 'gatherpress_site_message_no_recipients', $response->get_error_code() );
+		$this->assertSame( 400, $response->get_error_data()['status'] );
 	}
 
 	/**
 	 * Check that a valid message is queued.
 	 *
-	 * @covers ::ajax_send
+	 * @covers ::queue_message
 	 *
 	 * @return void
 	 */
-	public function test_ajax_send_queues_message(): void {
-		$this->set_admin_user();
-		$this->mock_input( 'Subject', 'Message body' );
-		$response = $this->do_ajax( 'gatherpress_send_site_message' );
-		$this->clear_input_mock();
+	public function test_queue_message_queues_message(): void {
+		$this->factory->user->create();
 
-		$this->assertTrue( $response->success );
-		$this->assertStringContainsString( 'Queued for', $response->data->message );
+		$response = Send_Email::get_instance()->queue_message(
+			$this->site_message_request( 'Subject', 'Message body' )
+		);
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertStringContainsString( 'Queued for', $response->get_data()['message'] );
 		$this->assertNotFalse(
 			wp_next_scheduled( 'gatherpress_site_message_send', array( 'Subject', 'Message body', 0 ) )
 		);
@@ -513,21 +529,25 @@ class Test_Send_Email extends Base_Ajax {
 	}
 
 	/**
-	 * Check that scheduling errors return a JSON error.
+	 * Check that a message that cannot be queued reports a server error.
 	 *
-	 * @covers ::ajax_send
+	 * @covers ::queue_message
 	 *
 	 * @return void
 	 */
-	public function test_ajax_send_reports_schedule_failure(): void {
-		$this->set_admin_user();
-		$this->mock_input( 'Subject', 'Message body' );
+	public function test_queue_message_reports_schedule_failure(): void {
+		$this->factory->user->create();
 		add_filter( 'pre_schedule_event', '__return_false' );
-		$response = $this->do_ajax( 'gatherpress_send_site_message' );
-		remove_filter( 'pre_schedule_event', '__return_false' );
-		$this->clear_input_mock();
 
-		$this->assertFalse( $response->success );
+		$response = Send_Email::get_instance()->queue_message(
+			$this->site_message_request( 'Subject', 'Message body' )
+		);
+
+		remove_filter( 'pre_schedule_event', '__return_false' );
+
+		$this->assertWPError( $response );
+		$this->assertSame( 'gatherpress_site_message_not_queued', $response->get_error_code() );
+		$this->assertSame( 500, $response->get_error_data()['status'] );
 	}
 
 	/**
@@ -968,48 +988,19 @@ class Test_Send_Email extends Base_Ajax {
 	}
 
 	/**
-	 * Set an administrator as the current user and provide a nonce.
+	 * Build a site message REST request.
 	 *
-	 * @return void
+	 * @param string $subject Subject param.
+	 * @param string $message Message param.
+	 *
+	 * @return WP_REST_Request The request.
 	 */
-	private function set_admin_user(): void {
-		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+	private function site_message_request( string $subject, string $message ): WP_REST_Request {
+		$request = new WP_REST_Request( 'POST', sprintf( '/%s/site-message', GATHERPRESS_REST_NAMESPACE ) );
 
-		wp_set_current_user( $user_id );
+		$request->set_param( 'subject', $subject );
+		$request->set_param( 'message', $message );
 
-		// The nonce is bound to the current user, so it must come after the switch.
-		$_POST['nonce'] = wp_create_nonce( 'gatherpress_send_email_nonce' );
-	}
-
-	/**
-	 * Mock subject and message HTTP input.
-	 *
-	 * @param string $subject Subject input.
-	 * @param string $message Message input.
-	 *
-	 * @return void
-	 */
-	private function mock_input( string $subject, string $message ): void {
-		add_filter(
-			'gatherpress_pre_get_http_input',
-			static function ( $pre_value, $type, $var_name ) use ( $subject, $message ): ?string {
-				if ( INPUT_POST !== $type ) {
-					return null;
-				}
-				return 'subject' === $var_name ? $subject : ( 'message' === $var_name ? $message : null );
-			},
-			10,
-			3
-		);
-	}
-
-	/**
-	 * Remove mocked HTTP input and nonce data.
-	 *
-	 * @return void
-	 */
-	private function clear_input_mock(): void {
-		remove_all_filters( 'gatherpress_pre_get_http_input' );
-		unset( $_POST['nonce'] );
+		return $request;
 	}
 }
