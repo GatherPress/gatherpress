@@ -1,6 +1,6 @@
 <?php
 /**
- * Template for the GatherPress "Send Email" settings page.
+ * Template for the GatherPress "Email" settings page.
  *
  * Provides a form for sending a message to every opted-in member of the site.
  *

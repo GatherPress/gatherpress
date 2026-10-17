@@ -76,7 +76,7 @@ urlRewritePreview();
 initShowIfDependencies();
 
 /**
- * Queue a site-wide member message from the Send Email settings page.
+ * Queue a site-wide member message from the Email settings page.
  *
  * @since TBD
  */

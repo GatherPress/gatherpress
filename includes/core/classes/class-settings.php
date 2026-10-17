@@ -184,11 +184,11 @@ class Settings {
 	 */
 	protected function instantiate_classes(): void {
 		Settings\Credits::get_instance();
+		Settings\Email::get_instance();
 		Settings\Events::get_instance();
 		Settings\Network::get_instance();
 		Settings\Roles::get_instance();
 		Settings\Rsvp::get_instance();
-		Settings\Send_Email::get_instance();
 		Settings\Tools::get_instance();
 		Settings\Uninstall::get_instance();
 		Settings\Venues::get_instance();

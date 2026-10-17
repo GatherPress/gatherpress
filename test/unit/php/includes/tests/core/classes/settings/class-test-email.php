@@ -1,6 +1,6 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Settings\Send_Email.
+ * Class handles unit tests for GatherPress\Core\Settings\Email.
  *
  * @package GatherPress\Core\Settings
  * @since TBD
@@ -10,7 +10,7 @@ namespace GatherPress\Tests\Core\Settings;
 
 use Closure;
 use GatherPress\Core\Settings;
-use GatherPress\Core\Settings\Send_Email;
+use GatherPress\Core\Settings\Email;
 use GatherPress\Core\User;
 use GatherPress\Core\Utility as Core_Utility;
 use GatherPress\Tests\Base;
@@ -19,11 +19,11 @@ use WP_REST_Request;
 use WP_REST_Response;
 
 /**
- * Class Test_Send_Email.
+ * Class Test_Email.
  *
- * @coversDefaultClass \GatherPress\Core\Settings\Send_Email
+ * @coversDefaultClass \GatherPress\Core\Settings\Email
  */
-class Test_Send_Email extends Base {
+class Test_Email extends Base {
 
 	/**
 	 * Reusable batch-size filter so the same closure can be removed again.
@@ -41,7 +41,7 @@ class Test_Send_Email extends Base {
 	 * @return void
 	 */
 	public function test_setup_hooks(): void {
-		$instance = Send_Email::get_instance();
+		$instance = Email::get_instance();
 		$hooks    = array(
 			array(
 				'type'     => 'action',
@@ -104,9 +104,9 @@ class Test_Send_Email extends Base {
 	 * @return void
 	 */
 	public function test_get_slug(): void {
-		$slug = Utility::invoke_hidden_method( Send_Email::get_instance(), 'get_slug' );
+		$slug = Utility::invoke_hidden_method( Email::get_instance(), 'get_slug' );
 
-		$this->assertSame( 'send_email_settings', $slug );
+		$this->assertSame( 'email_settings', $slug );
 	}
 
 	/**
@@ -117,7 +117,7 @@ class Test_Send_Email extends Base {
 	 * @return void
 	 */
 	public function test_get_name(): void {
-		$this->assertSame( 'Send Email', Utility::invoke_hidden_method( Send_Email::get_instance(), 'get_name' ) );
+		$this->assertSame( 'Email', Utility::invoke_hidden_method( Email::get_instance(), 'get_name' ) );
 	}
 
 	/**
@@ -128,23 +128,23 @@ class Test_Send_Email extends Base {
 	 * @return void
 	 */
 	public function test_get_priority(): void {
-		$priority = Utility::invoke_hidden_method( Send_Email::get_instance(), 'get_priority' );
+		$priority = Utility::invoke_hidden_method( Email::get_instance(), 'get_priority' );
 
 		$this->assertSame( PHP_INT_MAX - 3, $priority );
 	}
 
 	/**
-	 * Coverage for settings_section rendering the send email page.
+	 * Coverage for settings_section rendering the email page.
 	 *
 	 * @covers ::settings_section
 	 *
 	 * @return void
 	 */
-	public function test_settings_section_renders_for_send_email_page(): void {
-		$instance = Send_Email::get_instance();
+	public function test_settings_section_renders_for_email_page(): void {
+		$instance = Email::get_instance();
 		$response = Utility::buffer_and_return(
 			array( $instance, 'settings_section' ),
-			array( 'gatherpress_send_email_settings' )
+			array( 'gatherpress_email_settings' )
 		);
 
 		$this->assertFalse(
@@ -163,7 +163,7 @@ class Test_Send_Email extends Base {
 	 */
 	public function test_settings_section_skips_other_pages(): void {
 		$response = Utility::buffer_and_return(
-			array( Send_Email::get_instance(), 'settings_section' ),
+			array( Email::get_instance(), 'settings_section' ),
 			array( 'gatherpress_events' )
 		);
 
@@ -171,12 +171,12 @@ class Test_Send_Email extends Base {
 	}
 
 	/**
-	 * Check that the send email template handles its count branches.
+	 * Check that the email template handles its count branches.
 	 *
 	 * @return void
 	 */
-	public function test_send_email_template_handles_recipient_count(): void {
-		$template = GATHERPRESS_CORE_PATH . '/includes/templates/admin/settings/send-email.php';
+	public function test_email_template_handles_recipient_count(): void {
+		$template = GATHERPRESS_CORE_PATH . '/includes/templates/admin/settings/email.php';
 
 		$this->assertEmpty( Core_Utility::render_template( $template ) );
 
@@ -223,7 +223,7 @@ class Test_Send_Email extends Base {
 			2
 		);
 
-		$count = Send_Email::get_instance()->count_recipients();
+		$count = Email::get_instance()->count_recipients();
 		remove_all_filters( 'gatherpress_site_message_recipients' );
 		remove_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
 
@@ -254,7 +254,7 @@ class Test_Send_Email extends Base {
 		add_filter( 'gatherpress_mail_recipient_consent', $consent_calls, 10, 3 );
 
 		$batch = Utility::invoke_hidden_method(
-			Send_Email::get_instance(),
+			Email::get_instance(),
 			'get_recipient_batch',
 			array( 0 )
 		);
@@ -279,7 +279,7 @@ class Test_Send_Email extends Base {
 		$first_id  = $this->factory->user->create( array( 'display_name' => 'First' ) );
 		$second_id = $this->factory->user->create( array( 'display_name' => 'Second' ) );
 		add_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
-		$instance = Send_Email::get_instance();
+		$instance = Email::get_instance();
 
 		$first  = Utility::invoke_hidden_method( $instance, 'get_recipient_batch', array( $cursor ) );
 		$second = Utility::invoke_hidden_method( $instance, 'get_recipient_batch', array( $first_id ) );
@@ -303,7 +303,7 @@ class Test_Send_Email extends Base {
 		$first_id  = $this->factory->user->create( array( 'display_name' => 'First' ) );
 		$second_id = $this->factory->user->create( array( 'display_name' => 'Second' ) );
 		add_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
-		$instance = Send_Email::get_instance();
+		$instance = Email::get_instance();
 
 		$first = Utility::invoke_hidden_method( $instance, 'get_recipient_batch', array( $cursor ) );
 		wp_delete_user( $second_id );
@@ -326,7 +326,7 @@ class Test_Send_Email extends Base {
 		$this->factory->user->create( array( 'display_name' => 'Only' ) );
 
 		$batch = Utility::invoke_hidden_method(
-			Send_Email::get_instance(),
+			Email::get_instance(),
 			'get_recipient_batch',
 			array( 0 )
 		);
@@ -348,7 +348,7 @@ class Test_Send_Email extends Base {
 		$cursor = PHP_INT_MAX;
 
 		$batch = Utility::invoke_hidden_method(
-			Send_Email::get_instance(),
+			Email::get_instance(),
 			'get_recipient_batch',
 			array( $cursor )
 		);
@@ -367,7 +367,7 @@ class Test_Send_Email extends Base {
 	 * @return void
 	 */
 	public function test_register_endpoints(): void {
-		$instance = Send_Email::get_instance();
+		$instance = Email::get_instance();
 
 		// Creating the server fires rest_api_init, so registering again here is allowed.
 		$server = rest_get_server();
@@ -398,7 +398,7 @@ class Test_Send_Email extends Base {
 	 * @return void
 	 */
 	public function test_queue_message_rejects_empty_message(): void {
-		$response = Send_Email::get_instance()->queue_message( $this->site_message_request( 'Subject', '   ' ) );
+		$response = Email::get_instance()->queue_message( $this->site_message_request( 'Subject', '   ' ) );
 
 		$this->assertWPError( $response );
 		$this->assertSame( 'gatherpress_site_message_empty', $response->get_error_code() );
@@ -417,7 +417,7 @@ class Test_Send_Email extends Base {
 			update_user_meta( $user->ID, 'gatherpress_event_updates_opt_in', '0' );
 		}
 
-		$response = Send_Email::get_instance()->queue_message( $this->site_message_request( 'Subject', 'Message' ) );
+		$response = Email::get_instance()->queue_message( $this->site_message_request( 'Subject', 'Message' ) );
 
 		$this->assertWPError( $response );
 		$this->assertSame( 'gatherpress_site_message_no_recipients', $response->get_error_code() );
@@ -434,7 +434,7 @@ class Test_Send_Email extends Base {
 	public function test_queue_message_queues_message(): void {
 		$this->factory->user->create();
 
-		$response = Send_Email::get_instance()->queue_message(
+		$response = Email::get_instance()->queue_message(
 			$this->site_message_request( 'Subject', 'Message body' )
 		);
 
@@ -467,7 +467,7 @@ class Test_Send_Email extends Base {
 		);
 
 		$scheduled = Utility::invoke_hidden_method(
-			Send_Email::get_instance(),
+			Email::get_instance(),
 			'schedule_message_batch',
 			array( 'Subject', 'Message', 0 )
 		);
@@ -490,7 +490,7 @@ class Test_Send_Email extends Base {
 	 */
 	public function test_schedule_message_batch_queues_new_cursor(): void {
 		$result = Utility::invoke_hidden_method(
-			Send_Email::get_instance(),
+			Email::get_instance(),
 			'schedule_message_batch',
 			array( 'Unique subject', 'Unique message', 99 )
 		);
@@ -510,7 +510,7 @@ class Test_Send_Email extends Base {
 	 * @return void
 	 */
 	public function test_schedule_message_batch_skips_duplicate_cursor(): void {
-		$instance = Send_Email::get_instance();
+		$instance = Email::get_instance();
 		wp_schedule_single_event( time() + 60, 'gatherpress_site_message_send', array( 'Subject', 'Message', 0 ) );
 		$scheduled_at = wp_next_scheduled( 'gatherpress_site_message_send', array( 'Subject', 'Message', 0 ) );
 
@@ -539,7 +539,7 @@ class Test_Send_Email extends Base {
 		$this->factory->user->create();
 		add_filter( 'pre_schedule_event', '__return_false' );
 
-		$response = Send_Email::get_instance()->queue_message(
+		$response = Email::get_instance()->queue_message(
 			$this->site_message_request( 'Subject', 'Message body' )
 		);
 
@@ -573,7 +573,7 @@ class Test_Send_Email extends Base {
 			2
 		);
 
-		$instance = Send_Email::get_instance();
+		$instance = Email::get_instance();
 		$instance->process_message( '', 'A site message', $cursor );
 		remove_all_filters( 'pre_wp_mail' );
 		remove_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
@@ -609,7 +609,7 @@ class Test_Send_Email extends Base {
 		};
 		add_filter( 'pre_schedule_event', $schedule_filter );
 
-		Send_Email::get_instance()->process_message( 'Subject', 'Message', $cursor );
+		Email::get_instance()->process_message( 'Subject', 'Message', $cursor );
 		remove_filter( 'pre_schedule_event', $schedule_filter );
 		remove_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
 
@@ -641,7 +641,7 @@ class Test_Send_Email extends Base {
 			2
 		);
 
-		Send_Email::get_instance()->process_message( 'Subject', 'Message', $cursor );
+		Email::get_instance()->process_message( 'Subject', 'Message', $cursor );
 		remove_all_filters( 'pre_wp_mail' );
 
 		$this->assertNotEmpty( $captured );
@@ -668,7 +668,7 @@ class Test_Send_Email extends Base {
 		add_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
 		add_filter( 'gatherpress_site_message_recipients', '__return_empty_array' );
 
-		Send_Email::get_instance()->process_message( 'Subject', 'Message', $cursor );
+		Email::get_instance()->process_message( 'Subject', 'Message', $cursor );
 		remove_all_filters( 'gatherpress_site_message_recipients' );
 		remove_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
 
@@ -712,7 +712,7 @@ class Test_Send_Email extends Base {
 			}
 		);
 
-		Send_Email::get_instance()->process_message( 'Subject', 'Message' );
+		Email::get_instance()->process_message( 'Subject', 'Message' );
 		remove_all_filters( 'pre_wp_mail' );
 		remove_all_filters( 'gatherpress_site_message_recipients' );
 
@@ -727,7 +727,7 @@ class Test_Send_Email extends Base {
 	 * @return void
 	 */
 	public function test_resolve_subject(): void {
-		$instance = Send_Email::get_instance();
+		$instance = Email::get_instance();
 		$default  = Utility::invoke_hidden_method( $instance, 'resolve_subject', array( '' ) );
 		$this->assertStringContainsString( get_bloginfo( 'name' ), $default );
 		$this->assertSame( 'Custom', Utility::invoke_hidden_method( $instance, 'resolve_subject', array( 'Custom' ) ) );
@@ -755,7 +755,7 @@ class Test_Send_Email extends Base {
 		$cache_key = 'gatherpress_site_message_count_' . get_current_blog_id();
 		set_transient( $cache_key, 4, HOUR_IN_SECONDS );
 
-		Send_Email::get_instance()->clear_count_cache();
+		Email::get_instance()->clear_count_cache();
 
 		$this->assertFalse( get_transient( $cache_key ), 'Count cache helper should clear the transient.' );
 	}
@@ -839,7 +839,7 @@ class Test_Send_Email extends Base {
 		$cache_key = 'gatherpress_site_message_count_' . get_current_blog_id();
 		delete_transient( $cache_key );
 
-		$count = Utility::invoke_hidden_method( Send_Email::get_instance(), 'get_cached_recipient_count' );
+		$count = Utility::invoke_hidden_method( Email::get_instance(), 'get_cached_recipient_count' );
 
 		$cached = get_transient( $cache_key );
 		delete_transient( $cache_key );
@@ -859,7 +859,7 @@ class Test_Send_Email extends Base {
 		$cache_key = 'gatherpress_site_message_count_' . get_current_blog_id();
 		set_transient( $cache_key, 5, HOUR_IN_SECONDS );
 
-		$count = Utility::invoke_hidden_method( Send_Email::get_instance(), 'get_cached_recipient_count' );
+		$count = Utility::invoke_hidden_method( Email::get_instance(), 'get_cached_recipient_count' );
 
 		delete_transient( $cache_key );
 
@@ -876,13 +876,13 @@ class Test_Send_Email extends Base {
 	public function test_settings_page_count_is_cached(): void {
 		$cache_key = 'gatherpress_site_message_count_' . get_current_blog_id();
 		delete_transient( $cache_key );
-		$instance = Send_Email::get_instance();
+		$instance = Email::get_instance();
 
 		// Seed a sentinel the page could only show if it read the transient.
 		set_transient( $cache_key, 4242, HOUR_IN_SECONDS );
 		$page = Utility::buffer_and_return(
 			array( $instance, 'settings_section' ),
-			array( 'gatherpress_send_email_settings' )
+			array( 'gatherpress_email_settings' )
 		);
 
 		$this->assertStringContainsString( 'This will email 4242 members.', $page );
@@ -908,7 +908,7 @@ class Test_Send_Email extends Base {
 			}
 		);
 
-		Send_Email::get_instance()->process_message( 'Subject', 'Message' );
+		Email::get_instance()->process_message( 'Subject', 'Message' );
 		remove_all_filters( 'pre_wp_mail' );
 
 		$this->assertFalse(
@@ -938,7 +938,7 @@ class Test_Send_Email extends Base {
 			}
 		);
 
-		Send_Email::get_instance()->process_message( 'Subject', 'Message', $cursor );
+		Email::get_instance()->process_message( 'Subject', 'Message', $cursor );
 		remove_all_filters( 'pre_wp_mail' );
 		remove_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
 		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );

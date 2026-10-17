@@ -98,7 +98,7 @@ export async function sendMessage( { button, subject, message, status } ) {
 }
 
 /**
- * Wire up the Send Email settings page.
+ * Wire up the send form on the Email settings page.
  *
  * Does nothing on settings pages without the Send Email form.
  *

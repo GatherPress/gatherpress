@@ -2,7 +2,7 @@
 /**
  * Email template for site-wide member messages.
  *
- * This template generates the body of a message sent from the Send Email
+ * This template generates the body of a message sent from the Email
  * settings page, so it carries no event data.
  *
  * @package GatherPress\Core

@@ -1,8 +1,8 @@
 <?php
 /**
- * Send Email settings page for GatherPress.
+ * Email settings page for GatherPress.
  *
- * This class handles the "Send Email" settings page in GatherPress, which lets
+ * This class handles the "Email" settings page in GatherPress, which lets
  * an administrator send a message to every member of the site who has opted in
  * to GatherPress emails, without going through a single event.
  *
@@ -26,16 +26,16 @@ use WP_REST_Server;
 use WP_User_Query;
 
 /**
- * Class Send_Email.
+ * Class Email.
  *
- * Handles the "Send Email" settings page for GatherPress.
+ * Handles the "Email" settings page for GatherPress.
  *
  * @since TBD
  *
  * @phpstan-import-type Recipient from Mailer
  * @phpstan-type RecipientBatch array{recipients: array<int, Recipient>, complete: bool, fetched: int, last_id: int}
  */
-final class Send_Email extends Base {
+final class Email extends Base {
 
 	/**
 	 * Enforces a single instance of this class.
@@ -85,40 +85,40 @@ final class Send_Email extends Base {
 	}
 
 	/**
-	 * Get the slug for the send email settings page.
+	 * Get the slug for the email settings page.
 	 *
 	 * @since TBD
 	 *
-	 * @return string The slug for the send email settings page.
+	 * @return string The slug for the email settings page.
 	 */
 	protected function get_slug(): string {
-		return 'send_email_settings';
+		return 'email_settings';
 	}
 
 	/**
-	 * Get the name for the send email settings page.
+	 * Get the name for the email settings page.
 	 *
 	 * @since TBD
 	 *
-	 * @return string The localized name for the send email settings page.
+	 * @return string The localized name for the email settings page.
 	 */
 	protected function get_name(): string {
-		return __( 'Send Email', 'gatherpress' );
+		return __( 'Email', 'gatherpress' );
 	}
 
 	/**
-	 * Get the priority for displaying the send email settings page.
+	 * Get the priority for displaying the email settings page.
 	 *
 	 * @since TBD
 	 *
-	 * @return int The priority for displaying the send email settings page.
+	 * @return int The priority for displaying the email settings page.
 	 */
 	protected function get_priority(): int {
 		return PHP_INT_MAX - 3;
 	}
 
 	/**
-	 * Render the send email form instead of the default settings form.
+	 * Render the send form instead of the default settings form.
 	 *
 	 * @since TBD
 	 *
@@ -137,7 +137,7 @@ final class Send_Email extends Base {
 		);
 
 		Utility::render_template(
-			sprintf( '%s/includes/templates/admin/settings/send-email.php', GATHERPRESS_CORE_PATH ),
+			sprintf( '%s/includes/templates/admin/settings/email.php', GATHERPRESS_CORE_PATH ),
 			array( 'recipient_count' => $this->get_cached_recipient_count() ),
 			true
 		);
