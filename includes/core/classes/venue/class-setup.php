@@ -443,8 +443,6 @@ final class Setup {
 			return;
 		}
 
-		$content = apply_block_hooks_to_content( $pattern['content'], $pattern );
-
 		// Prevent infinite recursion when updating the post. If
 		// wp_update_post() throws (strict-typed hook listeners on PHP 8+,
 		// a misbehaving filter, etc.), the try/finally guarantees the
@@ -457,7 +455,7 @@ final class Setup {
 			wp_update_post(
 				array(
 					'ID'           => $post_id,
-					'post_content' => $content,
+					'post_content' => $pattern['content'],
 				)
 			);
 		} finally {
