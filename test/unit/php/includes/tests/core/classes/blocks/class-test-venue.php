@@ -1211,7 +1211,7 @@ class Test_Venue extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_selected_private_source_renders_for_a_reader(): void {
+	public function test_selected_private_source_renders_for_a_viewer(): void {
 		$admin       = $this->factory->user->create( array( 'role' => 'administrator' ) );
 		$selected_id = $this->factory->post->create(
 			array(
@@ -1321,7 +1321,7 @@ class Test_Venue extends Base {
 		$anonymous = Venue_Block::get_instance()->render_inner_blocks( $block );
 
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
-		$reader = Venue_Block::get_instance()->render_inner_blocks( $block );
+		$viewer = Venue_Block::get_instance()->render_inner_blocks( $block );
 
 		wp_set_current_user( 0 );
 
@@ -1331,7 +1331,7 @@ class Test_Venue extends Base {
 		);
 		$this->assertStringContainsString(
 			'Inner content',
-			(string) $reader,
+			(string) $viewer,
 			'Failed to assert a viewer who can read the event gets its venue.'
 		);
 	}
@@ -1443,12 +1443,12 @@ class Test_Venue extends Base {
 		$anonymous = Utility::invoke_hidden_method( $block, 'get_viewable_source_post', $args );
 
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
-		$reader = Utility::invoke_hidden_method( $block, 'get_viewable_source_post', $args );
+		$viewer = Utility::invoke_hidden_method( $block, 'get_viewable_source_post', $args );
 
 		wp_set_current_user( 0 );
 
 		$this->assertNull( $anonymous, 'Failed to assert a draft is refused to an anonymous viewer.' );
-		$this->assertSame( $venue, $reader, 'Failed to assert a draft is returned to a viewer who can read it.' );
+		$this->assertSame( $venue, $viewer, 'Failed to assert a draft is returned to a viewer who can read it.' );
 	}
 
 	/**

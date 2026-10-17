@@ -65,7 +65,7 @@ final class Rsvp_Form {
 	 * Also the key a schema failure is reported under, since that failure
 	 * belongs to the form rather than to any one field.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @var string
 	 */
 	const SCHEMA_ID_FIELD = 'gatherpress_form_schema_id';
@@ -492,7 +492,7 @@ final class Rsvp_Form {
 		 *   );
 		 *   ```
 		 *
-		 * @since TBD
+		 * @since 0.36.0
 		 *
 		 * @param array<string, mixed> $schemas Schemas derived from the post's RSVP Form blocks, keyed by form id.
 		 * @param int                  $post_id The post being saved.
@@ -671,7 +671,7 @@ final class Rsvp_Form {
 	 * @param int                  $post_id The post ID.
 	 * @param array<string, mixed> $block   The current block being rendered.
 	 *
-	 * @return string The form schema ID (e.g., 'form_0', 'form_2').
+	 * @return string The form schema ID (e.g., 'form_0', 'form_2', '4_form_1' for a nested form).
 	 */
 	private function get_form_schema_id( int $post_id, array $block ): string {
 		$post = get_post( $post_id );
@@ -679,50 +679,46 @@ final class Rsvp_Form {
 			return 'form_0'; // Fallback.
 		}
 
-		$blocks     = array_values( parse_blocks( $post->post_content ) );
-		$form_index = $this->find_form_index_in_blocks( $blocks, $block );
+		$blocks = array_values( parse_blocks( $post->post_content ) );
 
-		return 'form_' . $form_index;
+		return $this->find_form_schema_id_in_blocks( $blocks, $block ) ?? 'form_0';
 	}
 
 	/**
-	 * Find the index of the current form block in the blocks array.
+	 * Find the schema ID of the current form block in the blocks array.
 	 *
 	 * Recursively searches through blocks to find the current RSVP Form
-	 * block and returns its position index.
+	 * block. The ID is built the same way extract_form_schemas_from_blocks()
+	 * builds it, so it names the schema stored for this form: `form_{index}`
+	 * at the top level, prefixed with `{parent index}_` for each nesting level.
 	 *
 	 * @since 0.33.0
+	 * @since 0.36.0 Renamed from find_form_index_in_blocks(), and returns the form schema ID rather than a block index.
 	 *
 	 * @param array<int, array<string, mixed>> $blocks       Array of parsed blocks.
 	 * @param array<string, mixed>             $target_block The block we're looking for.
-	 * @param int                              $base_index   Base index for nested blocks.
 	 *
-	 * @return int The index of the form block.
+	 * @return string|null The form schema ID, or null when the form is not in the blocks.
 	 */
-	private function find_form_index_in_blocks( array $blocks, array $target_block, int $base_index = 0 ): int {
+	private function find_form_schema_id_in_blocks( array $blocks, array $target_block ): ?string {
 		foreach ( $blocks as $index => $block ) {
 			if (
 				self::BLOCK_NAME === $block['blockName'] &&
 				$this->blocks_match( $block, $target_block )
 			) {
-				// Compare block content or attributes to identify the same block.
-				return $base_index + $index;
+				return 'form_' . $index;
 			}
 
-			// Check nested blocks.
 			if ( ! empty( $block['innerBlocks'] ) ) {
-				$nested_index = $this->find_form_index_in_blocks(
-					$block['innerBlocks'],
-					$target_block,
-					$base_index + $index * 100 // Use larger offset for nested blocks.
-				);
-				if ( -1 !== $nested_index ) {
-					return $nested_index;
+				$nested_id = $this->find_form_schema_id_in_blocks( $block['innerBlocks'], $target_block );
+
+				if ( null !== $nested_id ) {
+					return $index . '_' . $nested_id;
 				}
 			}
 		}
 
-		return 0; // Fallback to first form.
+		return null;
 	}
 
 	/**
@@ -806,7 +802,7 @@ final class Rsvp_Form {
 	/**
 	 * Get the custom field definitions for a stored form schema.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param int    $post_id        The event post ID the schema belongs to.
 	 * @param string $form_schema_id The submitted form-schema id.
@@ -852,7 +848,7 @@ final class Rsvp_Form {
 	 * Runs before the RSVP comment is created, so a submission that fails
 	 * here is rejected outright rather than stored with answers missing.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param int                  $post_id        The event post ID the schema belongs to.
 	 * @param string               $form_schema_id The submitted form-schema id.
@@ -923,7 +919,7 @@ final class Rsvp_Form {
 	/**
 	 * Get the message for a required field that was left unanswered.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param string               $field_name   The field's name in the schema.
 	 * @param array<string, mixed> $field_config The field configuration from the schema.
@@ -944,7 +940,7 @@ final class Rsvp_Form {
 	 * Reads each value the same way the save path does, so validation and
 	 * storage always see the same input.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param int    $post_id        The event post ID the schema belongs to.
 	 * @param string $form_schema_id The submitted form-schema id.
@@ -964,7 +960,7 @@ final class Rsvp_Form {
 	/**
 	 * Get a field's display label, falling back to its name.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param string               $field_name   The field's name in the schema.
 	 * @param array<string, mixed> $field_config The field configuration from the schema.
@@ -980,7 +976,7 @@ final class Rsvp_Form {
 	/**
 	 * Get the message explaining why a submitted value was rejected.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param string               $field_name   The field's name in the schema.
 	 * @param array<string, mixed> $field_config The field configuration from the schema.

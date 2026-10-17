@@ -256,7 +256,7 @@ class Event {
 	/**
 	 * Gets raw formatted datetime parts for display.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param string $type          Display type: 'start', 'end', or 'both'.
 	 * @param string $start_format  PHP display format for start date/time.
@@ -322,7 +322,7 @@ class Event {
 	/**
 	 * Get the separator between the start and end dates/times.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param Event|null $event     Optional. The event the separator is for. Defaults to the
 	 *                              current post when that is an event.
@@ -338,7 +338,7 @@ class Event {
 		/**
 		 * Filter the separator between start and end dates/times.
 		 *
-		 * @since TBD
+		 * @since 0.36.0
 		 *
 		 * @param string     $separator The separator set on the block, or the translated 'to' when it sets none.
 		 * @param Event|null $event     The event, or null where there is none, such as the editor settings
@@ -759,7 +759,7 @@ class Event {
 	 * the gatherpress_datetime_format filter, so filter application is opt-in via
 	 * $apply_filters. Display formatting enables it; the ISO accessors do not.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param string $format        PHP date format.
 	 * @param string $which         Datetime field in event table to format ('start' or 'end').
@@ -836,7 +836,7 @@ class Event {
 	 * the gatherpress_datetime_format filter, so the ISO value cannot be changed
 	 * by display-format customization.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return string The ISO 8601 start datetime, or empty string when unset.
 	 *
@@ -856,7 +856,7 @@ class Event {
 	 * the gatherpress_datetime_format filter, so the ISO value cannot be changed
 	 * by display-format customization.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return string The ISO 8601 end datetime, or empty string when unset.
 	 *
@@ -1230,9 +1230,15 @@ class Event {
 	 * and ensures that the event has not already occurred. It evaluates various conditions
 	 * to determine whether to provide the online event link.
 	 *
+	 * @since 0.27.0
+	 * @since 0.36.0 Accepts the identifier of the person to check.
+	 *
+	 * @param int|string|null $user_identifier Optional. User ID or magic-link email to check. Defaults to
+	 *                                         the current user or the token in the page URL.
+	 *
 	 * @return string The online event link if all conditions are met; otherwise, an empty string.
 	 */
-	public function maybe_get_online_event_link(): string {
+	public function maybe_get_online_event_link( int|string|null $user_identifier = null ): string {
 		if ( ! $this->post ) {
 			return '';
 		}
@@ -1255,7 +1261,7 @@ class Event {
 		$force_online_event_link = apply_filters( 'gatherpress_force_online_event_link', false );
 
 		if ( ! $force_online_event_link && ! is_admin() ) {
-			$user_identifier = Rsvp_Setup::get_instance()->get_user_identifier();
+			$user_identifier = $user_identifier ?? Rsvp_Setup::get_instance()->get_user_identifier();
 			$response        = ( new Rsvp( $this->post->ID ) )->get( $user_identifier );
 
 			if (
@@ -1284,7 +1290,7 @@ class Event {
 	 * applies, so a post that cannot render the online-event block never
 	 * reports itself as online.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return bool True if the event has the online-event term, false otherwise.
 	 */
@@ -1316,7 +1322,7 @@ class Event {
 	 * then refuse to render. A post type without that support is reported as
 	 * unsaved, the same answer as a post that does not exist.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param bool   $is_online True to mark online, false to mark offline.
 	 * @param string $link      Optional URL for the `gatherpress_online_event_link` meta when online. An empty

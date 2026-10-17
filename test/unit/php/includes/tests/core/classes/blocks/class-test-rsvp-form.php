@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\Rsvp_Form;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Rest_Api;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
@@ -248,7 +249,7 @@ class Test_Rsvp_Form extends Base {
 	 * import @wordpress/i18n, so the generic failure message has to reach the
 	 * browser as a translated attribute on the form.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -353,12 +354,119 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
+	 * Data provider for test_rendered_schema_id_matches_saved_schema.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public function data_rendered_schema_id_matches_saved_schema(): array {
+		$form = '<!-- wp:gatherpress/rsvp-form -->
+<div class="wp-block-gatherpress-rsvp-form">
+<!-- wp:gatherpress/form-field {"fieldName":"dietary","fieldType":"text"} -->
+<div class="wp-block-gatherpress-form-field"></div>
+<!-- /wp:gatherpress/form-field -->
+</div>
+<!-- /wp:gatherpress/rsvp-form -->';
+
+		return array(
+			'after a block with inner blocks' => array(
+				'<!-- wp:group -->
+<div class="wp-block-group"><!-- wp:paragraph -->
+<p>Before the form.</p>
+<!-- /wp:paragraph --></div>
+<!-- /wp:group -->
+
+' . $form,
+			),
+			'nested in a group'               => array(
+				'<!-- wp:paragraph -->
+<p>Before the form.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:group -->
+<div class="wp-block-group">' . $form . '</div>
+<!-- /wp:group -->',
+			),
+		);
+	}
+
+	/**
+	 * Tests the rendered schema id names a schema that save_form_schema stored.
+	 *
+	 * The render side and the save side must agree on the id, or
+	 * validate_custom_fields() rejects every submission of the form.
+	 *
+	 * @since 0.36.0
+	 * @covers ::transform_block_content
+	 * @covers ::get_form_schema_id
+	 * @covers ::find_form_schema_id_in_blocks
+	 * @dataProvider data_rendered_schema_id_matches_saved_schema
+	 *
+	 * @param string $post_content Event content that holds one RSVP form.
+	 *
+	 * @return void
+	 */
+	public function test_rendered_schema_id_matches_saved_schema( string $post_content ): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type'    => Event::POST_TYPE,
+				'post_content' => $post_content,
+			)
+		);
+
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$instance->save_form_schema( $post_id );
+
+		$find_form = static function ( array $blocks ) use ( &$find_form ): ?array {
+			foreach ( $blocks as $block ) {
+				if ( 'gatherpress/rsvp-form' === $block['blockName'] ) {
+					return $block;
+				}
+
+				$found = $find_form( $block['innerBlocks'] ?? array() );
+
+				if ( null !== $found ) {
+					return $found;
+				}
+			}
+
+			return null;
+		};
+
+		$block                    = $find_form( parse_blocks( $post_content ) );
+		$block['attrs']['postId'] = $post_id;
+		$rendered                 = $instance->transform_block_content(
+			'<div class="wp-block-gatherpress-rsvp-form"></div>',
+			$block
+		);
+
+		preg_match( '/name="gatherpress_form_schema_id" value="([^"]*)"/', $rendered, $matches );
+
+		$schemas   = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true );
+		$schema_id = $matches[1] ?? '';
+
+		$this->assertArrayHasKey( $schema_id, $schemas, 'The rendered schema id should name a stored schema.' );
+
+		$route = Utility::invoke_hidden_method( Rest_Api::get_instance(), 'rsvp_form_route' );
+
+		$this->assertTrue(
+			call_user_func( $route['args']['args']['gatherpress_form_schema_id']['validate_callback'], $schema_id ),
+			'The RSVP form REST route should accept the rendered schema id.'
+		);
+		$this->assertSame(
+			array(),
+			$instance->validate_custom_fields( $post_id, $schema_id, array( 'dietary' => 'none' ) ),
+			'A submission from the rendered form should pass schema validation.'
+		);
+	}
+
+	/**
 	 * Tests a pinned input id is carried into the stored schema.
 	 *
 	 * Generated ids change on every render, so only an author-set id is
 	 * worth storing.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::extract_form_fields_from_inner_blocks
 	 *
 	 * @return void
@@ -408,7 +516,7 @@ class Test_Rsvp_Form extends Base {
 	 * no RSVP Form block used to take the delete branch and destroy a schema
 	 * written by anything else.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::save_form_schema
 	 *
 	 * @return void
@@ -477,7 +585,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests the filter receives the block-derived schemas.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::save_form_schema
 	 *
 	 * @return void
@@ -522,7 +630,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests the filter can clear the schemas.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::save_form_schema
 	 *
 	 * @return void
@@ -972,7 +1080,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Create an event carrying a form schema with one field of each shape under test.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return int The event post ID.
 	 */
@@ -1026,7 +1134,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Data provider for custom-field validation.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return array<string, array<int, mixed>>
 	 */
@@ -1086,7 +1194,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests validate_custom_fields against a stored schema.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::validate_custom_fields
 	 * @covers ::get_schema_fields
 	 * @covers ::get_field_label
@@ -1123,7 +1231,7 @@ class Test_Rsvp_Form extends Base {
 	 * The schema carries an `email` field, but that one belongs to the RSVP
 	 * form itself and is validated before custom fields are considered.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::validate_custom_fields
 	 *
 	 * @return void
@@ -1146,7 +1254,7 @@ class Test_Rsvp_Form extends Base {
 	 * Resolving an unknown id to no fields would skip every required answer
 	 * on the form, which is the bypass the validation exists to close.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::validate_custom_fields
 	 *
 	 * @return void
@@ -1169,7 +1277,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests any schema id is accepted when the event defines no form.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::validate_custom_fields
 	 *
 	 * @return void
@@ -1196,7 +1304,7 @@ class Test_Rsvp_Form extends Base {
 	 * Whitespace passes the requiredness check, because it is neither null
 	 * nor '', but sanitizing trims it to nothing.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::validate_custom_fields
 	 *
 	 * @return void
@@ -1220,7 +1328,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Data provider for values that are not scalars.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return array<string, array<int, mixed>>
 	 */
@@ -1239,7 +1347,7 @@ class Test_Rsvp_Form extends Base {
 	 * A REST submission carries a decoded JSON body, so a field can arrive as
 	 * an array. The sanitizers take strings and raise a TypeError otherwise.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::sanitize_custom_field_value
 	 *
 	 * @dataProvider data_non_scalar_values
@@ -1269,7 +1377,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests a non-scalar value is reported against its field.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::validate_custom_fields
 	 *
 	 * @return void
@@ -1293,7 +1401,7 @@ class Test_Rsvp_Form extends Base {
 	 * `in_array()` raises a TypeError when the haystack is not an array, and
 	 * the stored schema can carry a scalar there.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::sanitize_custom_field_value
 	 *
 	 * @return void
@@ -1331,7 +1439,7 @@ class Test_Rsvp_Form extends Base {
 	 *
 	 * The schema is post meta, so its shape is whatever is in the database.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return array<string, array<int, mixed>>
 	 */
@@ -1366,7 +1474,7 @@ class Test_Rsvp_Form extends Base {
 	 * config to `sanitize_custom_field_value()`, which is typed `array`, so an
 	 * unchecked shape here is a fatal rather than a bad answer.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::get_schema_fields
 	 * @covers ::validate_custom_fields
 	 * @covers ::validate_custom_fields_from_post
@@ -1403,7 +1511,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests a usable field survives alongside a malformed sibling.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::get_schema_fields
 	 *
 	 * @return void
@@ -1449,7 +1557,7 @@ class Test_Rsvp_Form extends Base {
 	 * Invoked directly because the helper is private and called from a loop
 	 * in the same class, which xdebug does not trace reliably.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::get_required_message
 	 *
 	 * @return void
@@ -1476,7 +1584,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests validate_custom_fields_from_post reads the submitted values.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::validate_custom_fields_from_post
 	 *
 	 * @return void
@@ -1519,7 +1627,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests the sanitize_custom_field_value method with radio fields.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::sanitize_custom_field_value
 	 *
 	 * @return void
@@ -1546,7 +1654,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests the sanitize_custom_field_value method rejects an empty required value.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::sanitize_custom_field_value
 	 *
 	 * @return void
@@ -3432,11 +3540,11 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
-	 * Tests find_form_index_in_blocks private method.
+	 * Tests find_form_schema_id_in_blocks private method.
 	 *
-	 * @covers ::find_form_index_in_blocks
+	 * @covers ::find_form_schema_id_in_blocks
 	 */
-	public function test_find_form_index_in_blocks(): void {
+	public function test_find_form_schema_id_in_blocks(): void {
 		$instance = Rsvp_Form::get_instance();
 
 		$blocks = array(
@@ -3464,19 +3572,19 @@ class Test_Rsvp_Form extends Base {
 
 		$result = Utility::invoke_hidden_method(
 			$instance,
-			'find_form_index_in_blocks',
+			'find_form_schema_id_in_blocks',
 			array( $blocks, $target_block )
 		);
 
-		$this->assertEquals( 2, $result, 'Should find the second form at index 2' );
+		$this->assertSame( 'form_2', $result, 'Should find the second form at index 2' );
 	}
 
 	/**
-	 * Tests find_form_index_in_blocks with nested blocks.
+	 * Tests find_form_schema_id_in_blocks with nested blocks.
 	 *
-	 * @covers ::find_form_index_in_blocks
+	 * @covers ::find_form_schema_id_in_blocks
 	 */
-	public function test_find_form_index_in_blocks_nested(): void {
+	public function test_find_form_schema_id_in_blocks_nested(): void {
 		$instance = Rsvp_Form::get_instance();
 
 		$target_block = array(
@@ -3501,20 +3609,20 @@ class Test_Rsvp_Form extends Base {
 
 		$result = Utility::invoke_hidden_method(
 			$instance,
-			'find_form_index_in_blocks',
+			'find_form_schema_id_in_blocks',
 			array( $blocks, $target_block )
 		);
 
-		// When found in innerBlocks of block at index 1, result should be: 0 + 1*100 + 0 = 100.
-		$this->assertEquals( 100, $result, 'Should find nested form at calculated index 100' );
+		// Found at index 0 inside the block at index 1, prefixed the way the saved schema is.
+		$this->assertSame( '1_form_0', $result, 'Should find the nested form with a parent-prefixed ID' );
 	}
 
 	/**
-	 * Tests find_form_index_in_blocks returns 0 when block not found.
+	 * Tests find_form_schema_id_in_blocks returns null when block not found.
 	 *
-	 * @covers ::find_form_index_in_blocks
+	 * @covers ::find_form_schema_id_in_blocks
 	 */
-	public function test_find_form_index_in_blocks_not_found(): void {
+	public function test_find_form_schema_id_in_blocks_not_found(): void {
 		$instance = Rsvp_Form::get_instance();
 
 		$blocks = array(
@@ -3532,11 +3640,11 @@ class Test_Rsvp_Form extends Base {
 
 		$result = Utility::invoke_hidden_method(
 			$instance,
-			'find_form_index_in_blocks',
+			'find_form_schema_id_in_blocks',
 			array( $blocks, $target_block )
 		);
 
-		$this->assertEquals( 0, $result, 'Should return 0 fallback when block not found' );
+		$this->assertNull( $result, 'Should return null when block not found' );
 	}
 
 	/**

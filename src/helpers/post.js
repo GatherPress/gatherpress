@@ -8,7 +8,7 @@
  * caller's `useSelect` will re-run once it does, since `getPostTypes` is a
  * subscribed read.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @param {Function} selectFunc WordPress data `select` function.
  * @param {number}   postId     Post ID to resolve.

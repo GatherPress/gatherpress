@@ -27,7 +27,7 @@ It is a good thing to know about before you conclude a URL-related bug is in Gat
 
 ## The demo data
 
-The content lives in its own repository, [gatherpress-demo-data](https://github.com/GatherPress/gatherpress-demo-data), as a WXR file named for the GatherPress version it targets, for example `GatherPress-demo-data-0.35.0.xml`.
+The content lives in its own repository, [gatherpress-demo-data](https://github.com/GatherPress/gatherpress-demo-data), as a WXR file named for the GatherPress version it targets, for example `GatherPress-demo-data-0.36.0.xml`.
 
 It is versioned that way on purpose. Demo content carries block markup, and block markup changes between releases, so a file exported against an older version can produce blocks the current release renders differently. When you bump the file the blueprints point at, check it still renders.
 

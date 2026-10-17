@@ -364,7 +364,7 @@ class Test_Setup extends Base {
 		add_filter(
 			'gatherpress_pre_get_http_input',
 			function ( $pre_value, $type, $var_name ) use ( $token_string ) {
-				if ( INPUT_GET === $type && Token::NAME === $var_name ) {
+				if ( INPUT_GET === $type && 'gatherpress_rsvp_token' === $var_name ) {
 					return $token_string;
 				}
 				return null;
@@ -456,7 +456,7 @@ class Test_Setup extends Base {
 		add_filter(
 			'gatherpress_pre_get_http_input',
 			function ( $pre_value, $type, $var_name ) use ( $token_string ) {
-				if ( INPUT_GET === $type && Token::NAME === $var_name ) {
+				if ( INPUT_GET === $type && 'gatherpress_rsvp_token' === $var_name ) {
 					return $token_string;
 				}
 				return null;
@@ -534,7 +534,7 @@ class Test_Setup extends Base {
 		add_filter(
 			'gatherpress_pre_get_http_input',
 			static function ( $pre_value, $type, $var_name ) use ( $token_string ) {
-				if ( INPUT_GET === $type && Token::NAME === $var_name ) {
+				if ( INPUT_GET === $type && 'gatherpress_rsvp_token' === $var_name ) {
 					return $token_string;
 				}
 				return null;

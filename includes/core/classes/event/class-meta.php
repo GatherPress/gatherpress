@@ -25,7 +25,6 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Geo_Sync;
-use GatherPress\Core\Renamed_Keys;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
@@ -204,7 +203,7 @@ final class Meta {
 	/**
 	 * Registers the Geodata standard meta (`geo_*`) as read-only.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param string $post_type The post type to register against.
 	 *
@@ -295,15 +294,6 @@ final class Meta {
 
 		foreach ( $event_only_meta as $meta_key => $args ) {
 			register_post_meta( Event::POST_TYPE, $meta_key, $args );
-
-			// A key renamed in 0.36.0 keeps its former name registered for a
-			// release, so a REST consumer that has not moved over still finds
-			// the field. Goes away in 0.37.0 with Renamed_Keys itself.
-			$former = Renamed_Keys::RENAMED[ $meta_key ] ?? '';
-
-			if ( $former ) {
-				register_post_meta( Event::POST_TYPE, $former, $args );
-			}
 		}
 	}
 
@@ -322,7 +312,7 @@ final class Meta {
 	 * {@see Geo_Sync}, never through the REST write path.
 	 *
 	 * @since 0.34.0
-	 * @since TBD Also strips the read-only venue-geo fields.
+	 * @since 0.36.0 Also strips the read-only venue-geo fields.
 	 *
 	 * @param stdClass        $prepared_post An object representing a single post prepared for inserting or updating.
 	 * @param WP_REST_Request $request       Request object.

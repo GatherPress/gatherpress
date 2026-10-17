@@ -373,7 +373,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Data provider for trigger labels and the text they render.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return array<string, array<int, mixed>>
 	 */
@@ -397,7 +397,7 @@ class Test_Rsvp_Response extends Base {
 	 * The label is editable, so it can hold a `%` that `sprintf()` would
 	 * reject as an unknown specifier and fatal the render (#2333).
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::attach_dropdown_interactivity
 	 *
 	 * @dataProvider data_trigger_labels

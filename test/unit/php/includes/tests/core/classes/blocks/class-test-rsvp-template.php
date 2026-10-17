@@ -144,7 +144,7 @@ class Test_Rsvp_Template extends Base {
 	/**
 	 * Create a published event with one attending response.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return array{0: int, 1: int} The event ID and the response's comment ID.
 	 */
@@ -174,7 +174,7 @@ class Test_Rsvp_Template extends Base {
 	 * `$available_context` reaches `$context`, and `postId` is never there to
 	 * read however it was passed in.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param array<string, mixed> $available_context Context offered by ancestors.
 	 *
@@ -193,7 +193,7 @@ class Test_Rsvp_Template extends Base {
 	 * The request is a 404, so there is no current post to answer instead: the
 	 * responses can only have come from `postId` in context.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::generate_rsvp_template_block
 	 *
 	 * @return void
@@ -226,7 +226,7 @@ class Test_Rsvp_Template extends Base {
 	 * missing key became post 0, and `get_post( 0 )` resolves to the global
 	 * post. This covers the explicit `get_the_ID()` arm that replaced it.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::generate_rsvp_template_block
 	 *
 	 * @return void
@@ -263,7 +263,7 @@ class Test_Rsvp_Template extends Base {
 	 * called regardless of error_reporting, which is what makes the warning
 	 * observable here.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::generate_rsvp_template_block
 	 *
 	 * @return void

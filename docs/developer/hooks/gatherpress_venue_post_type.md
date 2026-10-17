@@ -27,7 +27,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/venue/class-setup.php:758](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/class-setup.php#L758)
+- [includes/core/classes/venue/class-setup.php:756](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/class-setup.php#L756)
 ```php
 apply_filters(
 			'gatherpress_venue_post_type',

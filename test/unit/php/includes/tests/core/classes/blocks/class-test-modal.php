@@ -157,7 +157,7 @@ class Test_Modal extends Base {
 	/**
 	 * Test an unnamed modal is marked so the view script can name it on open.
 	 *
-	 * @since  TBD
+	 * @since  0.36.0
 	 * @covers ::apply_modal_attributes
 	 *
 	 * @return void
@@ -174,7 +174,7 @@ class Test_Modal extends Base {
 	/**
 	 * Test a custom name is not marked, and a blank name is treated as no name.
 	 *
-	 * @since  TBD
+	 * @since  0.36.0
 	 * @covers ::apply_modal_attributes
 	 *
 	 * @return void
@@ -348,7 +348,7 @@ class Test_Modal extends Base {
 	/**
 	 * Data provider for existing styles that contain a percent sign.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return array<string, array<int, string>>
 	 */
@@ -370,7 +370,7 @@ class Test_Modal extends Base {
 	 * A `%` in the block's own style attribute must not be read as a
 	 * `sprintf()` specifier, which threw a fatal ValueError on gradients.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::adjust_block_z_index
 	 *
 	 * @dataProvider data_styles_with_percent_signs
@@ -399,7 +399,7 @@ class Test_Modal extends Base {
 	/**
 	 * Test a custom z-index is still applied alongside a gradient.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::adjust_block_z_index
 	 *
 	 * @return void
