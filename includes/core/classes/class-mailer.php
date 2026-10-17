@@ -58,6 +58,33 @@ final class Mailer {
 	const JOB_HOOK = 'gatherpress_email_send';
 
 	/**
+	 * Consent context for emails about an event, which follow the opt-in.
+	 *
+	 * @since TBD
+	 *
+	 * @var string
+	 */
+	const CONTEXT_EVENT = 'event';
+
+	/**
+	 * Consent context for site-wide messages, which follow the opt-in.
+	 *
+	 * @since TBD
+	 *
+	 * @var string
+	 */
+	const CONTEXT_SITE_MESSAGE = 'site_message';
+
+	/**
+	 * Consent context for emails about the recipient's own RSVP, which skip the opt-in.
+	 *
+	 * @since TBD
+	 *
+	 * @var string
+	 */
+	const CONTEXT_RSVP = 'rsvp';
+
+	/**
 	 * Where a job starts: the first page of users, then the recipient list.
 	 *
 	 * Each batch carries the last user ID, or the last RSVP comment ID, it
@@ -169,7 +196,7 @@ final class Mailer {
 		 */
 		return (bool) apply_filters(
 			'gatherpress_email_recipient_consent',
-			'rsvp' === $context || $this->is_eligible( $recipient ),
+			self::CONTEXT_RSVP === $context || $this->is_eligible( $recipient ),
 			$recipient,
 			$context
 		);
@@ -267,7 +294,7 @@ final class Mailer {
 	 *
 	 * @return bool True when the email was delivered, false when consent was withheld.
 	 */
-	public function send( array $recipient, callable $compose, string $context = 'event' ): bool {
+	public function send( array $recipient, callable $compose, string $context = self::CONTEXT_EVENT ): bool {
 		if ( ! $this->has_consent( $recipient, $context ) ) {
 			return false;
 		}
@@ -313,7 +340,7 @@ final class Mailer {
 	 *
 	 * @return int How many emails were delivered.
 	 */
-	public function bulk_send( array $recipients, callable $compose, string $context = 'event' ): int {
+	public function bulk_send( array $recipients, callable $compose, string $context = self::CONTEXT_EVENT ): int {
 		$sent = 0;
 
 		foreach ( $recipients as $recipient ) {

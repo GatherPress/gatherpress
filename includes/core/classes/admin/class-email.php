@@ -129,7 +129,7 @@ final class Email {
 		Mailer::get_instance()->register(
 			self::MAIL_TYPE,
 			array(
-				'context' => 'site_message',
+				'context' => Mailer::CONTEXT_SITE_MESSAGE,
 				'users'   => $this->get_audience_query_args( ... ),
 				'compose' => $this->compose_message( ... ),
 			)
