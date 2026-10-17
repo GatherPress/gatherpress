@@ -64,6 +64,10 @@ import { getNonce } from '@src/helpers/interactivity';
 import '@src/blocks/rsvp/view';
 import '@src/blocks/modal-manager/view';
 
+// The real modal actions, kept before any test swaps in a spy.
+const { openModal: realOpenModal, closeModal: realCloseModal } =
+	store( 'gatherpress' ).actions;
+
 /**
  * Regression coverage for #1719 — after a successful RSVP from the
  * `no_status` state, updateRsvp switches to the attending state's modal.
@@ -429,5 +433,170 @@ describe( 'rsvp updateRsvp focus after the status changes (#2428)', () => {
 		expect( actions.openModal ).not.toHaveBeenCalled();
 		expect( actions.closeModal ).toHaveBeenCalledWith( null, trigger, true );
 		expect( window.alert ).not.toHaveBeenCalled();
+	} );
+} );
+
+/**
+ * Where focus lands after an RSVP change, with the real modal actions (#2428).
+ * Each status container holds a modal manager, as on the front end. jsdom has
+ * no layout, so it cannot show focus dropping to the page body; these tests
+ * pin which control receives focus instead.
+ */
+describe( 'rsvp updateRsvp focus target with the real modal actions (#2428)', () => {
+	// The first control in each status's modal, which openModal focuses.
+	const FIRST_CONTROL = {
+		no_status: '<button type="button" class="gatherpress-rsvp--trigger-update" data-set-status="">Attend</button>',
+		attending: '<input type="number" class="guests" /><button type="button" class="gatherpress-rsvp--trigger-update" data-set-status="not_attending">Not Attending</button>',
+		waiting_list: '<input type="checkbox" class="anonymous" /><button type="button" class="gatherpress-rsvp--trigger-update" data-set-status="not_attending">Not Attending</button>',
+		not_attending: '<button type="button" class="gatherpress-rsvp--trigger-update" data-set-status="attending">Attending</button>',
+	};
+
+	let state;
+	let actions;
+
+	const container = ( status ) =>
+		document.querySelector( `[data-rsvp-status="${ status }"]` );
+	const modal = ( status ) =>
+		container( status ).querySelector( '.wp-block-gatherpress-modal' );
+
+	/**
+	 * Builds the RSVP block with a modal manager per status, shows `current`
+	 * and opens its modal with focus on its update button.
+	 *
+	 * @param {string} current The status shown on load.
+	 * @return {HTMLElement} The focused update button.
+	 */
+	const setupDom = ( current ) => {
+		document.body.innerHTML = `<div class="wp-block-gatherpress-rsvp">${ Object.keys(
+			FIRST_CONTROL,
+		)
+			.map(
+				( status ) => `<div data-rsvp-status="${ status }" class="${
+					status === current ? '' : 'gatherpress--is-hidden'
+				}">
+					<div class="wp-block-gatherpress-modal-manager">
+						<div class="gatherpress-modal--trigger-open"><button type="button">Edit RSVP</button></div>
+						<div class="wp-block-gatherpress-modal${
+	status === current ? ' gatherpress--is-visible' : ''
+}" aria-hidden="${ status === current ? 'false' : 'true' }">
+							<div class="wp-block-gatherpress-modal-content">${ FIRST_CONTROL[ status ] }</div>
+						</div>
+					</div>
+				</div>`,
+			)
+			.join( '' ) }</div>`;
+
+		const trigger = modal( current ).querySelector(
+			'.gatherpress-rsvp--trigger-update',
+		);
+
+		trigger.focus();
+
+		return trigger;
+	};
+
+	/**
+	 * Presses `trigger`; the server answers `to`, and the simulated
+	 * renderRsvpBlock watch shows `to` 40 ms later.
+	 *
+	 * @param {HTMLElement} trigger The pressed update button.
+	 * @param {string}      to      The status the server returns.
+	 */
+	const respond = ( trigger, to ) => {
+		global.fetch = jest.fn( ( url ) => {
+			if ( url.endsWith( '/nonce' ) ) {
+				return Promise.resolve( {
+					json: () => Promise.resolve( { nonce: 'test-nonce' } ),
+				} );
+			}
+
+			setTimeout( () => {
+				document.querySelectorAll( '[data-rsvp-status]' ).forEach( ( el ) => {
+					el.classList.toggle(
+						'gatherpress--is-hidden',
+						el.dataset.rsvpStatus !== to,
+					);
+				} );
+			}, 40 );
+
+			return Promise.resolve( {
+				status: 200,
+				json: () =>
+					Promise.resolve( {
+						success: true,
+						status: to,
+						guests: 0,
+						anonymous: false,
+					} ),
+			} );
+		} );
+
+		getElement.mockReturnValue( { ref: trigger } );
+		getContext.mockReturnValue( { postId: 654 } );
+		actions.updateRsvp( { preventDefault: jest.fn() } );
+	};
+
+	beforeEach( () => {
+		( { state, actions } = store( 'gatherpress' ) );
+
+		delete state.posts;
+		state.eventApiUrl = 'https://example.test/wp-json/gatherpress/v1';
+
+		actions.openModal = realOpenModal;
+		actions.closeModal = realCloseModal;
+
+		getNonce.clearCache();
+
+		window.alert = jest.fn();
+		jest.spyOn( console, 'warn' ).mockImplementation( () => {} );
+	} );
+
+	afterEach( () => {
+		jest.restoreAllMocks();
+		delete global.fetch;
+		document.body.innerHTML = '';
+	} );
+
+	it( 'focuses the first control of the waiting list modal when Attend lands on the waiting list', async () => {
+		respond( setupDom( 'no_status' ), 'waiting_list' );
+
+		await waitFor( () =>
+			expect( document.activeElement ).toBe(
+				modal( 'waiting_list' ).querySelector( '.anonymous' ),
+			),
+		);
+
+		expect( modal( 'waiting_list' ).classList ).toContain(
+			'gatherpress--is-visible',
+		);
+		expect( modal( 'no_status' ).classList ).not.toContain(
+			'gatherpress--is-visible',
+		);
+	} );
+
+	it( 'focuses the number of guests in the attending modal after Attend', async () => {
+		respond( setupDom( 'no_status' ), 'attending' );
+
+		await waitFor( () =>
+			expect( document.activeElement ).toBe(
+				modal( 'attending' ).querySelector( '.guests' ),
+			),
+		);
+
+		expect( modal( 'no_status' ).classList ).not.toContain(
+			'gatherpress--is-visible',
+		);
+	} );
+
+	it( 'focuses the Edit RSVP trigger of the not attending state after Not Attending', async () => {
+		respond( setupDom( 'attending' ), 'not_attending' );
+
+		await waitFor( () =>
+			expect( document.activeElement ).toBe(
+				container( 'not_attending' ).querySelector(
+					'.gatherpress-modal--trigger-open button',
+				),
+			),
+		);
 	} );
 } );
