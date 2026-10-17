@@ -753,7 +753,7 @@ class Test_Email extends Base {
 		$sent    = array();
 
 		$this->factory->user->create( array( 'role' => 'author' ) );
-		add_filter( 'gatherpress_mail_batch_size', array( $this, 'one_per_batch' ) );
+		add_filter( 'gatherpress_email_batch_size', array( $this, 'one_per_batch' ) );
 		add_filter(
 			'pre_wp_mail',
 			static function ( $previous, array $atts ) use ( &$sent ): bool {
@@ -773,7 +773,7 @@ class Test_Email extends Base {
 		$this->run_mail_jobs();
 
 		remove_all_filters( 'pre_wp_mail' );
-		remove_filter( 'gatherpress_mail_batch_size', array( $this, 'one_per_batch' ) );
+		remove_filter( 'gatherpress_email_batch_size', array( $this, 'one_per_batch' ) );
 
 		$this->assertSame(
 			array_map(

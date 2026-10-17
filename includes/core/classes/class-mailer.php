@@ -55,7 +55,7 @@ final class Mailer {
 	 *
 	 * @var string
 	 */
-	const JOB_HOOK = 'gatherpress_mail_send';
+	const JOB_HOOK = 'gatherpress_email_send';
 
 	/**
 	 * Where a job starts: the first page of users, then the recipient list.
@@ -168,7 +168,7 @@ final class Mailer {
 		 * @return bool Whether the recipient consents.
 		 */
 		return (bool) apply_filters(
-			'gatherpress_mail_recipient_consent',
+			'gatherpress_email_recipient_consent',
 			'rsvp' === $context || $this->is_eligible( $recipient ),
 			$recipient,
 			$context
@@ -549,7 +549,7 @@ final class Mailer {
 		 * @return array Recipient rows to send this batch to.
 		 */
 		$batch['recipients'] = (array) apply_filters(
-			'gatherpress_mail_recipients',
+			'gatherpress_email_recipients',
 			$batch['recipients'],
 			$type,
 			$payload
@@ -657,7 +657,7 @@ final class Mailer {
 		 *
 		 * @return int Recipients per batch.
 		 */
-		return max( 1, (int) apply_filters( 'gatherpress_mail_batch_size', 50, $type ) );
+		return max( 1, (int) apply_filters( 'gatherpress_email_batch_size', 50, $type ) );
 	}
 
 	/**
@@ -665,7 +665,7 @@ final class Mailer {
 	 *
 	 * Every mail path queues through here so delivery is scheduled the same
 	 * way. A companion plugin can take over scheduling by hooking the
-	 * `gatherpress_mail_pre_enqueue_job` filter; the native WP-Cron path
+	 * `gatherpress_email_pre_enqueue_job` filter; the native WP-Cron path
 	 * deduplicates on the hook and args, and retries once before giving up.
 	 *
 	 * @since TBD
@@ -698,7 +698,7 @@ final class Mailer {
 		 *
 		 * @return mixed Null to let WP-Cron queue the job, anything else when another scheduler took it.
 		 */
-		$short_circuit = apply_filters( 'gatherpress_mail_pre_enqueue_job', null, $hook, $args );
+		$short_circuit = apply_filters( 'gatherpress_email_pre_enqueue_job', null, $hook, $args );
 
 		if ( null !== $short_circuit ) {
 			return true;

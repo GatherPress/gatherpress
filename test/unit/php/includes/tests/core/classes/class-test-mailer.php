@@ -62,8 +62,8 @@ class Test_Mailer extends Base {
 
 		Utility::set_and_get_hidden_property( $mailer, 'types', $types );
 		remove_filter( 'pre_wp_mail', array( $this, 'capture_mail' ) );
-		remove_all_filters( 'gatherpress_mail_batch_size' );
-		remove_all_filters( 'gatherpress_mail_recipients' );
+		remove_all_filters( 'gatherpress_email_batch_size' );
+		remove_all_filters( 'gatherpress_email_recipients' );
 		wp_unschedule_hook( Mailer::JOB_HOOK );
 
 		parent::tear_down();
@@ -350,14 +350,14 @@ class Test_Mailer extends Base {
 		$user_id = $this->factory->user->create();
 		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', '0' );
 
-		add_filter( 'gatherpress_mail_recipient_consent', '__return_true' );
+		add_filter( 'gatherpress_email_recipient_consent', '__return_true' );
 
 		$consent = $this->has_consent(
 			$this->recipient( array( 'user_id' => $user_id ) ),
 			'event'
 		);
 
-		remove_all_filters( 'gatherpress_mail_recipient_consent' );
+		remove_all_filters( 'gatherpress_email_recipient_consent' );
 
 		$this->assertTrue( $consent );
 	}
@@ -370,14 +370,14 @@ class Test_Mailer extends Base {
 	 * @return void
 	 */
 	public function test_has_consent_filter_cannot_grant_without_email(): void {
-		add_filter( 'gatherpress_mail_recipient_consent', '__return_true' );
+		add_filter( 'gatherpress_email_recipient_consent', '__return_true' );
 
 		$consent = $this->has_consent(
 			$this->recipient( array( 'email' => '' ) ),
 			'event'
 		);
 
-		remove_all_filters( 'gatherpress_mail_recipient_consent' );
+		remove_all_filters( 'gatherpress_email_recipient_consent' );
 
 		$this->assertFalse( $consent );
 	}
@@ -390,14 +390,14 @@ class Test_Mailer extends Base {
 	 * @return void
 	 */
 	public function test_has_consent_filter_cannot_grant_malformed_email(): void {
-		add_filter( 'gatherpress_mail_recipient_consent', '__return_true' );
+		add_filter( 'gatherpress_email_recipient_consent', '__return_true' );
 
 		$consent = $this->has_consent(
 			$this->recipient( array( 'email' => 'jane@example' ) ),
 			'event'
 		);
 
-		remove_all_filters( 'gatherpress_mail_recipient_consent' );
+		remove_all_filters( 'gatherpress_email_recipient_consent' );
 
 		$this->assertFalse( $consent );
 	}
@@ -413,7 +413,7 @@ class Test_Mailer extends Base {
 		$user_id  = $this->factory->user->create();
 		$captured = array();
 		add_filter(
-			'gatherpress_mail_recipient_consent',
+			'gatherpress_email_recipient_consent',
 			static function ( $consent, $recipient, $context ) use ( &$captured ) {
 				$captured = array( $consent, $context );
 
@@ -428,7 +428,7 @@ class Test_Mailer extends Base {
 			'site_message'
 		);
 
-		remove_all_filters( 'gatherpress_mail_recipient_consent' );
+		remove_all_filters( 'gatherpress_email_recipient_consent' );
 
 		$this->assertFalse( $consent );
 		$this->assertSame( array( true, 'site_message' ), $captured );
@@ -479,7 +479,7 @@ class Test_Mailer extends Base {
 		$captured = null;
 		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', '0' );
 		add_filter(
-			'gatherpress_mail_recipient_consent',
+			'gatherpress_email_recipient_consent',
 			static function ( $consent ) use ( &$captured ) {
 				$captured = $consent;
 
@@ -492,7 +492,7 @@ class Test_Mailer extends Base {
 			'rsvp'
 		);
 
-		remove_all_filters( 'gatherpress_mail_recipient_consent' );
+		remove_all_filters( 'gatherpress_email_recipient_consent' );
 
 		$this->assertFalse( $consent );
 		$this->assertTrue( $captured, 'The filter should receive consent for an RSVP email.' );
@@ -638,7 +638,7 @@ class Test_Mailer extends Base {
 	public function test_send_skips_when_consent_withheld(): void {
 		$user_id  = $this->factory->user->create();
 		$composed = false;
-		add_filter( 'gatherpress_mail_recipient_consent', '__return_false' );
+		add_filter( 'gatherpress_email_recipient_consent', '__return_false' );
 
 		$result = Mailer::get_instance()->send(
 			$this->recipient( array( 'user_id' => $user_id ) ),
@@ -652,7 +652,7 @@ class Test_Mailer extends Base {
 			}
 		);
 
-		remove_all_filters( 'gatherpress_mail_recipient_consent' );
+		remove_all_filters( 'gatherpress_email_recipient_consent' );
 
 		$this->assertFalse( $result );
 		$this->assertFalse( $composed );
@@ -729,7 +729,7 @@ class Test_Mailer extends Base {
 	public function test_schedule_honors_short_circuit_filter(): void {
 		$captured = array();
 		add_filter(
-			'gatherpress_mail_pre_enqueue_job',
+			'gatherpress_email_pre_enqueue_job',
 			static function ( $short_circuit, $hook, $args ) use ( &$captured ) {
 				$captured = array( $short_circuit, $hook, $args );
 
@@ -741,7 +741,7 @@ class Test_Mailer extends Base {
 
 		$result = $this->schedule( 'gatherpress_test_mail_job', array( 'A', 'B', 9 ) );
 
-		remove_all_filters( 'gatherpress_mail_pre_enqueue_job' );
+		remove_all_filters( 'gatherpress_email_pre_enqueue_job' );
 
 		$this->assertTrue( $result );
 		$this->assertSame( array( null, 'gatherpress_test_mail_job', array( 'A', 'B', 9 ) ), $captured );
@@ -852,7 +852,7 @@ class Test_Mailer extends Base {
 		);
 
 		update_user_meta( $users[1], 'gatherpress_event_updates_opt_in', '0' );
-		add_filter( 'gatherpress_mail_batch_size', array( $this, 'one_per_batch' ) );
+		add_filter( 'gatherpress_email_batch_size', array( $this, 'one_per_batch' ) );
 
 		$type = $this->register_type(
 			array(
@@ -876,7 +876,7 @@ class Test_Mailer extends Base {
 	public function test_process_job_sends_one_batch_and_queues_the_next(): void {
 		$users = $this->factory->user->create_many( 2 );
 
-		add_filter( 'gatherpress_mail_batch_size', array( $this, 'one_per_batch' ) );
+		add_filter( 'gatherpress_email_batch_size', array( $this, 'one_per_batch' ) );
 
 		$type = $this->register_type(
 			array( 'users' => static fn(): array => array( 'include' => $users ) )
@@ -937,7 +937,7 @@ class Test_Mailer extends Base {
 			'last_id' => 2,
 		);
 
-		add_filter( 'gatherpress_mail_batch_size', static fn(): int => 2 );
+		add_filter( 'gatherpress_email_batch_size', static fn(): int => 2 );
 
 		$type = $this->register_type( array( 'recipients' => static fn(): array => $list ) );
 
@@ -967,7 +967,7 @@ class Test_Mailer extends Base {
 	public function test_queued_email_reaches_users_then_the_list(): void {
 		$users = $this->factory->user->create_many( 3 );
 
-		add_filter( 'gatherpress_mail_batch_size', array( $this, 'one_per_batch' ) );
+		add_filter( 'gatherpress_email_batch_size', array( $this, 'one_per_batch' ) );
 
 		$type = $this->register_type(
 			array(
@@ -1012,7 +1012,7 @@ class Test_Mailer extends Base {
 		);
 		$current = array( $row( 30 ), $row( 10 ), $row( 20 ) );
 
-		add_filter( 'gatherpress_mail_batch_size', static fn(): int => 2 );
+		add_filter( 'gatherpress_email_batch_size', static fn(): int => 2 );
 
 		$type = $this->register_type(
 			array(
@@ -1058,7 +1058,7 @@ class Test_Mailer extends Base {
 		$users   = $this->factory->user->create_many( 3 );
 		$lookups = 0;
 
-		add_filter( 'gatherpress_mail_batch_size', array( $this, 'one_per_batch' ) );
+		add_filter( 'gatherpress_email_batch_size', array( $this, 'one_per_batch' ) );
 
 		$type = $this->register_type(
 			array(
@@ -1155,9 +1155,9 @@ class Test_Mailer extends Base {
 		$users    = $this->factory->user->create_many( 2 );
 		$captured = array();
 
-		add_filter( 'gatherpress_mail_batch_size', array( $this, 'one_per_batch' ) );
+		add_filter( 'gatherpress_email_batch_size', array( $this, 'one_per_batch' ) );
 		add_filter(
-			'gatherpress_mail_recipients',
+			'gatherpress_email_recipients',
 			static function ( array $recipients, string $type, array $payload ) use ( &$captured ): array {
 				$captured = array( $type, $payload );
 
@@ -1190,7 +1190,7 @@ class Test_Mailer extends Base {
 
 		update_user_meta( $opted_out, 'gatherpress_event_updates_opt_in', '0' );
 		add_filter(
-			'gatherpress_mail_recipients',
+			'gatherpress_email_recipients',
 			fn(): array => array(
 				$this->recipient(
 					array(
@@ -1321,7 +1321,7 @@ class Test_Mailer extends Base {
 		$this->assertSame( 50, Utility::invoke_hidden_method( $mailer, 'get_batch_size', array( 'event' ) ) );
 
 		add_filter(
-			'gatherpress_mail_batch_size',
+			'gatherpress_email_batch_size',
 			static function ( $size, string $type ) use ( &$captured ): int {
 				$captured = $type;
 
