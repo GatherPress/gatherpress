@@ -51,7 +51,7 @@ final class Mailer {
 	 *
 	 * @return bool True when the recipient can be emailed.
 	 */
-	public function is_eligible( array $recipient ): bool {
+	private function is_eligible( array $recipient ): bool {
 		if ( empty( $recipient['email'] ) ) {
 			return false;
 		}
@@ -70,16 +70,18 @@ final class Mailer {
 	/**
 	 * Check whether a recipient consents to the kind of email being sent.
 	 *
-	 * Defaults to the recipient's opt-in, so a site that does not filter this
-	 * behaves exactly as `is_eligible()` did. The filter lets a site tighten
-	 * the rule for a specific context, for example a site-wide message that is
-	 * not about events, without touching the other mail paths. A recipient
-	 * without an email address never consents, whatever the filter returns.
+	 * Defaults to the recipient's opt-in, which covers the emails a recipient
+	 * can do without. Emails about the recipient's own RSVP, sent with the
+	 * `rsvp` context, default to consent instead, since the confirmation link
+	 * is what approves an open RSVP. The filter lets a site change the rule for
+	 * a specific context, for example a site-wide message that is not about
+	 * events, without touching the other mail paths. A recipient without an
+	 * email address never consents, whatever the filter returns.
 	 *
 	 * @since TBD
 	 *
 	 * @param array  $recipient Recipient row from a mail path.
-	 * @param string $context   Mail path asking for consent, e.g. `event` or `site_message`.
+	 * @param string $context   Mail path asking for consent, e.g. `event`, `site_message` or `rsvp`.
 	 * @phpstan-param Recipient $recipient
 	 *
 	 * @return bool True when the recipient consents to this email.
@@ -95,14 +97,15 @@ final class Mailer {
 		 *
 		 * @since TBD
 		 *
-		 * @param bool   $consent   Whether the recipient consents. Defaults to the opt-in.
+		 * @param bool   $consent   Whether the recipient consents. Defaults to the opt-in, or to
+		 *                          true for the `rsvp` context.
 		 * @param array  $recipient Recipient row from a mail path.
 		 * @param string $context   Mail path asking for consent.
 		 * @phpstan-param Recipient $recipient
 		 */
 		return (bool) apply_filters(
 			'gatherpress_mail_recipient_consent',
-			$this->is_eligible( $recipient ),
+			'rsvp' === $context || $this->is_eligible( $recipient ),
 			$recipient,
 			$context
 		);
@@ -123,7 +126,7 @@ final class Mailer {
 	 *
 	 * @return bool Whether the locale was switched, for `restore_context()`.
 	 */
-	public function switch_context( array $recipient ): bool {
+	private function switch_context( array $recipient ): bool {
 		if ( ! $recipient['is_user'] ) {
 			return false;
 		}
@@ -148,7 +151,7 @@ final class Mailer {
 	 *
 	 * @return void
 	 */
-	public function restore_context( bool $switched_locale, WP_User $sender ): void {
+	private function restore_context( bool $switched_locale, WP_User $sender ): void {
 		// Reset the current user to the sender of the email.
 		wp_set_current_user( $sender->ID );
 
@@ -172,7 +175,7 @@ final class Mailer {
 	 *
 	 * @return bool True when WordPress accepted the email for sending.
 	 */
-	public function deliver( string $email, string $subject, string $body, array $headers = array() ): bool {
+	private function deliver( string $email, string $subject, string $body, array $headers = array() ): bool {
 		// Subject lines arrive from translators and filters, so decode entities
 		// and strip the slashes WordPress adds on input before handing them off.
 		$subject = stripslashes_deep( html_entity_decode( $subject, ENT_QUOTES, 'UTF-8' ) );
@@ -194,7 +197,7 @@ final class Mailer {
 	 * @param array    $recipient Recipient row from a mail path.
 	 * @param callable $compose   Returns `array{subject: string, body: string, headers?: array<int, string>}`
 	 *                            built for the recipient.
-	 * @param string   $context   Mail path asking for consent, e.g. `event` or `site_message`.
+	 * @param string   $context   Mail path asking for consent, e.g. `event`, `site_message` or `rsvp`.
 	 * @phpstan-param Recipient $recipient
 	 * @phpstan-param callable(Recipient): ComposedEmail $compose
 	 *

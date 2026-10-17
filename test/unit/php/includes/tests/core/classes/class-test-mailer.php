@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core;
 use Exception;
 use GatherPress\Core\Mailer;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Mailer.
@@ -29,7 +30,9 @@ class Test_Mailer extends Base {
 	public function test_is_eligible_rejects_empty_email(): void {
 		$recipient = $this->recipient( array( 'email' => '' ) );
 
-		$this->assertFalse( Mailer::get_instance()->is_eligible( $recipient ) );
+		$this->assertFalse(
+			Utility::invoke_hidden_method( Mailer::get_instance(), 'is_eligible', array( $recipient ) )
+		);
 	}
 
 	/**
@@ -43,12 +46,16 @@ class Test_Mailer extends Base {
 		$user_id = $this->factory->user->create();
 
 		$this->assertTrue(
-			Mailer::get_instance()->is_eligible(
-				$this->recipient(
-					array(
-						'user_id' => $user_id,
-						'email'   => get_userdata( $user_id )->user_email,
-					)
+			Utility::invoke_hidden_method(
+				Mailer::get_instance(),
+				'is_eligible',
+				array(
+					$this->recipient(
+						array(
+							'user_id' => $user_id,
+							'email'   => get_userdata( $user_id )->user_email,
+						)
+					),
 				)
 			)
 		);
@@ -66,8 +73,10 @@ class Test_Mailer extends Base {
 		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', '0' );
 
 		$this->assertFalse(
-			Mailer::get_instance()->is_eligible(
-				$this->recipient( array( 'user_id' => $user_id ) )
+			Utility::invoke_hidden_method(
+				Mailer::get_instance(),
+				'is_eligible',
+				array( $this->recipient( array( 'user_id' => $user_id ) ) )
 			)
 		);
 	}
@@ -91,13 +100,17 @@ class Test_Mailer extends Base {
 		update_comment_meta( $comment_id, 'gatherpress_event_updates_opt_in', '0' );
 
 		$this->assertFalse(
-			Mailer::get_instance()->is_eligible(
-				$this->recipient(
-					array(
-						'is_user'    => false,
-						'comment_id' => $comment_id,
-						'email'      => 'anonymous@example.test',
-					)
+			Utility::invoke_hidden_method(
+				Mailer::get_instance(),
+				'is_eligible',
+				array(
+					$this->recipient(
+						array(
+							'is_user'    => false,
+							'comment_id' => $comment_id,
+							'email'      => 'anonymous@example.test',
+						)
+					),
 				)
 			)
 		);
@@ -112,12 +125,16 @@ class Test_Mailer extends Base {
 	 */
 	public function test_is_eligible_accepts_comment_without_opt_out(): void {
 		$this->assertTrue(
-			Mailer::get_instance()->is_eligible(
-				$this->recipient(
-					array(
-						'is_user' => false,
-						'email'   => 'anonymous@example.test',
-					)
+			Utility::invoke_hidden_method(
+				Mailer::get_instance(),
+				'is_eligible',
+				array(
+					$this->recipient(
+						array(
+							'is_user' => false,
+							'email'   => 'anonymous@example.test',
+						)
+					),
 				)
 			)
 		);
@@ -134,7 +151,11 @@ class Test_Mailer extends Base {
 		$before = get_current_user_id();
 
 		$this->assertFalse(
-			Mailer::get_instance()->switch_context( $this->recipient( array( 'is_user' => false ) ) )
+			Utility::invoke_hidden_method(
+				Mailer::get_instance(),
+				'switch_context',
+				array( $this->recipient( array( 'is_user' => false ) ) )
+			)
 		);
 		$this->assertSame( $before, get_current_user_id() );
 	}
@@ -150,7 +171,11 @@ class Test_Mailer extends Base {
 		$user_id = $this->factory->user->create();
 
 		$this->assertFalse(
-			Mailer::get_instance()->switch_context( $this->recipient( array( 'user_id' => $user_id ) ) )
+			Utility::invoke_hidden_method(
+				Mailer::get_instance(),
+				'switch_context',
+				array( $this->recipient( array( 'user_id' => $user_id ) ) )
+			)
 		);
 		$this->assertSame( $user_id, get_current_user_id() );
 	}
@@ -167,7 +192,11 @@ class Test_Mailer extends Base {
 		$target_id = $this->factory->user->create();
 		wp_set_current_user( $target_id );
 
-		Mailer::get_instance()->restore_context( false, get_userdata( $sender_id ) );
+		Utility::invoke_hidden_method(
+			Mailer::get_instance(),
+			'restore_context',
+			array( false, get_userdata( $sender_id ) )
+		);
 
 		$this->assertSame( $sender_id, get_current_user_id() );
 	}
@@ -191,11 +220,15 @@ class Test_Mailer extends Base {
 			2
 		);
 
-		$result = Mailer::get_instance()->deliver(
-			'recipient@example.test',
-			"Tom &amp; Jerry\\'s update",
-			'<p>Message</p>',
-			array( 'Content-Type: text/html; charset=UTF-8' )
+		$result = Utility::invoke_hidden_method(
+			Mailer::get_instance(),
+			'deliver',
+			array(
+				'recipient@example.test',
+				"Tom &amp; Jerry\\'s update",
+				'<p>Message</p>',
+				array( 'Content-Type: text/html; charset=UTF-8' ),
+			)
 		);
 
 		remove_all_filters( 'pre_wp_mail' );
@@ -214,7 +247,11 @@ class Test_Mailer extends Base {
 	 */
 	public function test_deliver_returns_false_when_mail_fails(): void {
 		add_filter( 'pre_wp_mail', '__return_false' );
-		$result = Mailer::get_instance()->deliver( 'recipient@example.test', 'Subject', 'Body' );
+		$result = Utility::invoke_hidden_method(
+			Mailer::get_instance(),
+			'deliver',
+			array( 'recipient@example.test', 'Subject', 'Body' )
+		);
 		remove_filter( 'pre_wp_mail', '__return_false' );
 
 		$this->assertFalse( $result );
@@ -327,6 +364,71 @@ class Test_Mailer extends Base {
 
 		$this->assertFalse( $consent );
 		$this->assertSame( array( true, 'site_message' ), $captured );
+	}
+
+	/**
+	 * Check that emails about a recipient's own RSVP skip the opt-in.
+	 *
+	 * @covers ::has_consent
+	 *
+	 * @return void
+	 */
+	public function test_has_consent_rsvp_skips_opt_in(): void {
+		$comment_id = wp_insert_comment(
+			array(
+				'comment_post_ID'      => $this->factory->post->create(),
+				'comment_author'       => 'Anonymous',
+				'comment_author_email' => 'anonymous@example.test',
+			)
+		);
+		update_comment_meta( $comment_id, 'gatherpress_event_updates_opt_in', '0' );
+
+		$recipient = $this->recipient(
+			array(
+				'is_user'    => false,
+				'comment_id' => $comment_id,
+				'email'      => 'anonymous@example.test',
+			)
+		);
+		$mailer    = Mailer::get_instance();
+
+		$this->assertTrue( $mailer->has_consent( $recipient, 'rsvp' ), 'RSVP emails should skip the opt-in.' );
+		$this->assertFalse( $mailer->has_consent( $recipient, 'event' ), 'Other emails should follow the opt-in.' );
+		$this->assertFalse(
+			$mailer->has_consent( $this->recipient( array( 'email' => '' ) ), 'rsvp' ),
+			'RSVP emails should still need an address.'
+		);
+	}
+
+	/**
+	 * Check that the consent filter can withhold an RSVP email.
+	 *
+	 * @covers ::has_consent
+	 *
+	 * @return void
+	 */
+	public function test_has_consent_filter_can_withhold_rsvp(): void {
+		$user_id  = $this->factory->user->create();
+		$captured = null;
+		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', '0' );
+		add_filter(
+			'gatherpress_mail_recipient_consent',
+			static function ( $consent ) use ( &$captured ) {
+				$captured = $consent;
+
+				return false;
+			}
+		);
+
+		$consent = Mailer::get_instance()->has_consent(
+			$this->recipient( array( 'user_id' => $user_id ) ),
+			'rsvp'
+		);
+
+		remove_all_filters( 'gatherpress_mail_recipient_consent' );
+
+		$this->assertFalse( $consent );
+		$this->assertTrue( $captured, 'The filter should receive consent for an RSVP email.' );
 	}
 
 	/**
