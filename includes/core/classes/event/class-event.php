@@ -72,7 +72,7 @@ class Event {
 	/**
 	 * Post type support that makes a post type an event.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @var string
 	 */
 	const SUPPORT = 'gatherpress-event-date';
@@ -125,7 +125,17 @@ class Event {
 	 */
 	const TEMPLATE_PATTERN = 'gatherpress/event-template';
 
-
+	/**
+	 * Taxonomy that stores which status an event is in.
+	 *
+	 * Private to GatherPress: the leading underscore keeps it out of the
+	 * public taxonomy space, and a status is read and written through
+	 * Event::get_status() and Event::set_status() rather than as terms.
+	 *
+	 * @since TBD
+	 * @var string
+	 */
+	const TAXONOMY_STATUS = '_gatherpress_event_status';
 
 	/**
 	 * The event post.
@@ -500,7 +510,7 @@ class Event {
 	 * shape, so a datetime written as `2026-08-29T09:00:00` would be stored
 	 * and then silently lost.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string       $datetime Any datetime `date_create()` understands.
 	 * @param DateTimeZone $timezone The zone to read the datetime in.
@@ -536,7 +546,7 @@ class Event {
 	 * hiding a time that is still 3pm underneath, so exports, duration and
 	 * date queries stay correct.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * Finds the date rather than assuming where it sits, so the method holds
 	 * on its own instead of depending on having been handed something
@@ -577,7 +587,7 @@ class Event {
 	 * The GMT columns stay a real instant, because ordering upcoming against
 	 * past genuinely wants one.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string               $format         The PHP date format.
 	 * @param string               $which          Which datetime to format, 'start' or 'end'.
@@ -630,7 +640,7 @@ class Event {
 	 * Overrides the block and the site setting, because a block in a site
 	 * template renders every event and cannot answer this per event.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return string 'always', 'never', or an empty string to leave it to the
 	 *                block and the site setting.
@@ -648,7 +658,7 @@ class Event {
 	/**
 	 * Whether this event runs for whole days rather than at a time.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @return bool True when the event is all day.
 	 */
@@ -661,6 +671,116 @@ class Event {
 	}
 
 	/**
+	 * Returns every operational status slug assigned to the event.
+	 *
+	 * Returns all valid status slugs assigned to this event, ordered by
+	 * priority descending. Defaults to the default status slug if none is set.
+	 *
+	 * @since TBD
+	 *
+	 * @return string[] The status slugs assigned to the event.
+	 */
+	public function get_statuses(): array {
+		return Status::get_event_statuses( $this->post );
+	}
+
+	/**
+	 * Returns the event operational status.
+	 *
+	 * When an event holds multiple statuses, the one with the highest priority
+	 * wins for scalar consumers like iCalendar STATUS and Schema.org eventStatus.
+	 * Defaults to 'scheduled' if no custom status has been set.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The event status slug.
+	 */
+	public function get_status(): string {
+		$statuses = $this->get_statuses();
+
+		return $statuses[0] ?? Status::default_slug();
+	}
+
+	/**
+	 * Sets the event operational status.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $status One of the slugs Status::slugs() reports.
+	 * @param bool   $append Optional. When true, appends to existing terms
+	 *                       instead of replacing them. Default false.
+	 *
+	 * @return bool True when the status was stored.
+	 */
+	public function set_status( string $status, bool $append = false ): bool {
+		if ( ! $this->post || ! Status::exists( $status, (string) $this->post->post_type ) ) {
+			return false;
+		}
+
+		Status::ensure_term( $status );
+
+		// A plain string replaces every term in the taxonomy by default, which is
+		// what enforces the statuses being mutually exclusive.
+		$result = wp_set_object_terms( $this->post->ID, $status, self::TAXONOMY_STATUS, $append );
+
+		if ( is_wp_error( $result ) ) {
+			return false;
+		}
+
+		// Terms are written without touching the post row, but the calendar
+		// reads `post_modified_gmt` for a VEVENT's `SEQUENCE`, and a client
+		// ignores an update whose sequence has not advanced. Touching the post
+		// is what tells a subscriber that a cancellation actually happened.
+		return ! is_wp_error( wp_update_post( array( 'ID' => $this->post->ID ), true ) );
+	}
+
+	/**
+	 * The words shown for this event's status.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The status label.
+	 */
+	public function get_status_label(): string {
+		return Status::label( $this->get_status() );
+	}
+
+	/**
+	 * The Schema.org EventStatusType for this event's status.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The Schema.org EventStatusType (e.g. 'EventScheduled').
+	 */
+	public function get_schema_event_status(): string {
+		return Status::schema( $this->get_status() );
+	}
+
+	/**
+	 * The RFC 5545 STATUS property for this event's status.
+	 *
+	 * @since TBD
+	 *
+	 * @return string 'CONFIRMED', 'CANCELLED', or 'TENTATIVE'.
+	 */
+	public function get_ical_status(): string {
+		return Status::ical( $this->get_status() );
+	}
+
+	/**
+	 * Checks if the event is canceled.
+	 *
+	 * An event is canceled when its operational status list includes 'canceled'.
+	 *
+	 * @since TBD
+	 *
+	 * @return bool True if the event has been canceled.
+	 */
+	public function is_canceled(): bool {
+		return in_array( Status::STATUS_CANCELED, $this->get_statuses(), true );
+	}
+
+	/**
 	 * Resolve the formats one rendered datetime range is built from.
 	 *
 	 * The site keeps its date and time formats separately, so an all-day
@@ -668,7 +788,7 @@ class Event {
 	 * format set explicitly on the block keeps its date and loses its time,
 	 * since wanting a time means the event is not all day.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $start_format Explicit start format, or an empty string.
 	 * @param string $end_format   Explicit end format, or an empty string.
@@ -709,7 +829,7 @@ class Event {
 	/**
 	 * The end of a rendered datetime range.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param array{start: string, end: string, end_time: string} $formats   The formats to render with.
 	 * @param bool                                                $same_date Whether the event starts and ends

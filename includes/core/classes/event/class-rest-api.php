@@ -18,6 +18,7 @@ use Exception;
 use GatherPress\Core\Blocks\Rsvp_Form;
 use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status as Event_Status;
 use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Rsvp\Query as Rsvp_Query;
 use GatherPress\Core\Rsvp;
@@ -29,6 +30,7 @@ use GatherPress\Core\User;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
 use WP_Comment;
+use WP_Error;
 use WP_Post;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -78,8 +80,51 @@ final class Rest_Api {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
+		add_action( 'rest_api_init', array( $this, 'register_status_field' ) );
 		add_action( 'gatherpress_send_emails', array( $this, 'handle_email_send_action' ), 10, 4 );
 		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ), 10, 2 );
+	}
+
+	/**
+	 * Registers the event status as a REST field on the event post type.
+	 *
+	 * The status lives in the _gatherpress_event_status taxonomy so events can
+	 * be filtered by it, but a taxonomy reaches the block editor as an array of
+	 * term ids. This field keeps the editor's contract a plain slug, so the
+	 * status panel stays a SelectControl and the taxonomy stays an
+	 * implementation detail with a single write path through Event::set_status().
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function register_status_field(): void {
+		register_rest_field(
+			Event::POST_TYPE,
+			'gatherpress_status',
+			array(
+				'get_callback'    => static function ( array $post ): string {
+					return ( new Event( (int) $post['id'] ) )->get_status();
+				},
+				'update_callback' => static function ( $value, WP_Post $post ) {
+					if ( ! current_user_can( 'edit_post', $post->ID ) ) {
+						return new WP_Error(
+							'gatherpress_status_forbidden',
+							__( 'Sorry, you are not allowed to set the status of this event.', 'gatherpress' ),
+							array( 'status' => rest_authorization_required_code() )
+						);
+					}
+
+					( new Event( $post->ID ) )->set_status( sanitize_key( (string) $value ) );
+				},
+				'schema'          => array(
+					'description' => __( 'The operational status of the event.', 'gatherpress' ),
+					'type'        => 'string',
+					'enum'        => Event_Status::slugs( Event::POST_TYPE ),
+					'context'     => array( 'view', 'edit' ),
+				),
+			)
+		);
 	}
 
 	/**
@@ -471,7 +516,7 @@ final class Rest_Api {
 	 * as it's intended to be called by an action hook.
 	 *
 	 * @since 0.34.0
-	 * @since 0.36.0 Added `$subject` parameter for #827.
+	 * @since TBD Added `$subject` parameter for #827.
 	 *
 	 * @param int    $post_id Post ID.
 	 * @param array  $send    Members to send the email to.
@@ -493,7 +538,7 @@ final class Rest_Api {
 	 * email with the appropriate subject, body, and headers.
 	 *
 	 * @since 0.34.0
-	 * @since 0.36.0 Added `$subject` parameter for #827.
+	 * @since TBD Added `$subject` parameter for #827.
 	 *
 	 * @param int    $post_id Post ID.
 	 * @param array  $send    Members to send the email to.
@@ -530,7 +575,7 @@ final class Rest_Api {
 	 * Restores the editor's user / locale before returning.
 	 *
 	 * @since 0.34.0
-	 * @since 0.36.0 Added `$subject` parameter for #827.
+	 * @since TBD Added `$subject` parameter for #827.
 	 *
 	 * @param array   $recipient    Recipient row from `get_recipients()`.
 	 * @param int     $post_id      Event post ID.
@@ -590,7 +635,7 @@ final class Rest_Api {
 		/**
 		 * Filters the event update email subject.
 		 *
-		 * @since 0.36.0
+		 * @since TBD
 		 *
 		 * @param string $subject Email subject line.
 		 * @param int    $post_id Event post ID.
@@ -827,6 +872,7 @@ final class Rest_Api {
 					? is_email( $user_identifier )
 					: is_user_member_of_blog( $user_identifier )
 			) &&
+			! $event->is_canceled() &&
 			! $event->has_event_past()
 		) {
 			if ( 'attending' !== $status ) {
@@ -1016,6 +1062,11 @@ final class Rest_Api {
 			$bail = array( __( 'RSVP is disabled for this event.', 'gatherpress' ), 403 );
 		} elseif ( ! $rsvp->allows_open_rsvp() ) {
 			$bail = array( __( 'Open RSVP is disabled for this event.', 'gatherpress' ), 403 );
+		} elseif ( $event->is_canceled() ) {
+			$bail = array(
+				__( 'Registration for this event is closed because the event has been canceled.', 'gatherpress' ),
+				400,
+			);
 		} elseif ( $event->has_event_past() ) {
 			$bail = array( __( 'Registration for this event is now closed.', 'gatherpress' ), 400 );
 		}

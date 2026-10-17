@@ -157,7 +157,15 @@ final class Rsvp {
 			);
 			$filtered_status = ! empty( $filtered_data['status'] ) ? $filtered_data['status'] : 'no_status';
 
-			if ( $event->has_event_past() ) {
+			if ( $event->is_canceled() ) {
+				$inner_blocks_markup = sprintf(
+					'<div class="wp-block-buttons is-content-justification-center gatherpress-rsvp--is-canceled">'
+					. '<div class="wp-block-button">'
+					. '<button class="wp-block-button__link gatherpress--is-disabled" disabled>%s</button>'
+					. '</div></div>',
+					esc_html__( 'Event Canceled', 'gatherpress' )
+				);
+			} elseif ( $event->has_event_past() ) {
 				$inner_blocks_markup = do_blocks( $serialized_inner_blocks['past'] ?? '' );
 			} else {
 				unset( $serialized_inner_blocks['past'] );

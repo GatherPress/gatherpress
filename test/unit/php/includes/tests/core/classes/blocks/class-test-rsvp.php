@@ -252,6 +252,70 @@ class Test_Rsvp extends Base {
 	}
 
 	/**
+	 * Tests the transform_block_content method for a canceled event.
+	 *
+	 * Verifies that the RSVP block content displays a disabled "Event Canceled" button
+	 * and excludes interactivity attributes and status-specific inner blocks when the event is canceled.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::transform_block_content
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_canceled_event(): void {
+		$instance = Rsvp::get_instance();
+		$post     = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+
+		$event = new Event( $post->ID );
+		$event->set_status( 'canceled' );
+
+		$block = array(
+			'blockName' => 'gatherpress/rsvp-v2',
+			'attrs'     => array(
+				'postId'                => $post->ID,
+				'serializedInnerBlocks' => wp_json_encode(
+					array(
+						'past'      => '<!-- wp:paragraph --><p>Past content</p><!-- /wp:paragraph -->',
+						'attending' => '<!-- wp:paragraph --><p>Attending content</p><!-- /wp:paragraph -->',
+					)
+				),
+			),
+		);
+
+		$block_content = sprintf( '<div class="wp-block-gatherpress-rsvp" data-post-id="%d"></div>', $post->ID );
+		$result        = $instance->transform_block_content( $block_content, $block );
+
+		$this->assertStringContainsString(
+			'Event Canceled',
+			$result,
+			'The transform_block_content method should include the "Event Canceled" button for a canceled event.'
+		);
+		$this->assertStringContainsString(
+			'gatherpress-rsvp--is-canceled',
+			$result
+		);
+		$this->assertStringNotContainsString(
+			'data-wp-interactive',
+			$result,
+			'The transform_block_content method should not include '
+			. 'the data-wp-interactive attribute for a canceled event.'
+		);
+		$this->assertStringNotContainsString(
+			'Attending content',
+			$result
+		);
+		$this->assertStringNotContainsString(
+			'Past content',
+			$result
+		);
+	}
+
+	/**
 	 * Tests the transform_block_content method when inner blocks are missing.
 	 *
 	 * Verifies that the RSVP block is rendered correctly even if the

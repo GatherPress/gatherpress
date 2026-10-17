@@ -2701,6 +2701,42 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
+	 * Tests transform_block_content with canceled event.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::transform_block_content
+	 */
+	public function test_transform_block_content_canceled_event(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		$event    = new Event( $post_id );
+		$event->set_status( 'canceled' );
+
+		$block_content = '<div class="wp-block-gatherpress-rsvp-form">RSVP Form Content</div>';
+		$block         = array(
+			'blockName' => 'gatherpress/rsvp-form',
+			'attrs'     => array(
+				'postId' => $post_id,
+			),
+		);
+
+		$result = $instance->transform_block_content( $block_content, $block );
+
+		$this->assertStringContainsString( 'gatherpress-rsvp-form--canceled', $result );
+		$this->assertStringContainsString(
+			'Registration for this event is closed because the event has been canceled.',
+			$result
+		);
+		$this->assertStringNotContainsString( '<form', $result );
+	}
+
+	/**
 	 * Tests save_form_schema with autosave.
 	 *
 	 * @covers ::save_form_schema
