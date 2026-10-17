@@ -15,6 +15,7 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
+use GatherPress\Core\Admin\Email;
 use GatherPress\Core\Admin\Notices\Setup as Notices_Setup;
 use GatherPress\Core\Admin\Plugin_Row;
 use GatherPress\Core\Traits\Singleton;
@@ -68,11 +69,13 @@ final class Setup {
 		Calendar\Setup::get_instance();
 		Cli::get_instance();
 		Coexistence_Guard::get_instance();
+		Email::get_instance();
 		Event\Setup::get_instance();
 		Export::get_instance();
 		Feed::get_instance();
 		Geocoding::get_instance();
 		Import::get_instance();
+		Mailer::get_instance();
 		Notices_Setup::get_instance();
 		Plugin_Row::get_instance();
 		Rsvp\Setup::get_instance();
