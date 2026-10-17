@@ -224,15 +224,21 @@ describe( 'rsvp updateRsvp focus after the status changes (#2428)', () => {
 	const isShown = ( el ) => ! el.closest( '.gatherpress--is-hidden' );
 
 	/**
-	 * Mirrors what the `renderRsvpBlock` watch does with the status classes.
+	 * Mirrors what the `renderRsvpBlock` watch does with the status classes,
+	 * including its fallback to no_status when the block has no container
+	 * for the status (#1719).
 	 *
 	 * @param {string} status The status to show.
 	 */
 	const applyStatus = ( status ) => {
+		const shown = document.querySelector( `[data-rsvp-status="${ status }"]` )
+			? status
+			: 'no_status';
+
 		document.querySelectorAll( '[data-rsvp-status]' ).forEach( ( el ) => {
 			el.classList.toggle(
 				'gatherpress--is-hidden',
-				el.dataset.rsvpStatus !== status,
+				el.dataset.rsvpStatus !== shown,
 			);
 		} );
 	};
@@ -241,12 +247,19 @@ describe( 'rsvp updateRsvp focus after the status changes (#2428)', () => {
 	 * Builds an RSVP block with one container per status, each with the
 	 * update button its modal holds, and shows `current`.
 	 *
-	 * @param {string} current The status shown on load.
+	 * @param {string}   current The status shown on load.
+	 * @param {string[]} omit    Statuses to leave out (partial block markup).
 	 */
-	const setupDom = ( current ) => {
-		const containers = STATUSES.map( ( status ) => {
-			// The no_status modal's button is Attend; the others are Not Attending.
-			const setStatus = 'no_status' === status ? '' : 'not_attending';
+	const setupDom = ( current, omit = [] ) => {
+		const containers = STATUSES.filter(
+			( status ) => ! omit.includes( status ),
+		).map( ( status ) => {
+			// The no_status modal's button is Attend, the not_attending one
+			// is Attending, and the others are Not Attending.
+			const setStatus = {
+				no_status: '',
+				not_attending: 'attending',
+			}[ status ] ?? 'not_attending';
 
 			return `<div data-rsvp-status="${ status }">
 				<button type="button" class="gatherpress-rsvp--trigger-update" data-set-status="${ setStatus }">${ status }</button>
@@ -371,6 +384,22 @@ describe( 'rsvp updateRsvp focus after the status changes (#2428)', () => {
 		// closeModal finds the visible sibling to focus only when the
 		// pressed button's container is already hidden.
 		expect( calls[ 0 ].shown ).toBe( false );
+	} );
+
+	it( 'waits for the no_status fallback when the block has no container for the new status', async () => {
+		// Someone who declined presses Attend on a full event, and the block
+		// markup has no waiting_list container (#1719 partial markup).
+		setupDom( 'not_attending', [ 'waiting_list' ] );
+		const trigger = respond( 'not_attending', 'waiting_list' );
+
+		await waitFor( () => expect( actions.closeModal ).toHaveBeenCalled() );
+
+		expect( actions.openModal ).not.toHaveBeenCalled();
+		expect( actions.closeModal ).toHaveBeenCalledWith( null, trigger, true );
+		// The watch has hidden not_attending and shown no_status, so
+		// closeModal moves focus to the visible no_status trigger.
+		expect( calls[ 0 ].shown ).toBe( false );
+		expect( isShown( button( 'no_status' ) ) ).toBe( true );
 	} );
 
 	it( 'still closes the modal when the new state never shows', async () => {

@@ -19,8 +19,9 @@ import { getUrlParam } from '../../helpers/globals';
  * time after the RSVP request resolves, not at a fixed delay. Focus moved
  * before then lands on a hidden element, and the browser drops it to the
  * page body (#2428). Checks once per animation frame, and stops waiting
- * after about a second, so the modal still closes when the container is
- * missing or never shows.
+ * after 60 frames (about a second at 60 Hz), so the modal still closes when
+ * the container never shows. Animation frames pause in a background tab,
+ * so there the callback waits until the tab is visible again.
  *
  * @since TBD
  *
@@ -170,9 +171,21 @@ const { state, actions } = store( 'gatherpress', {
 
 					// Move focus only once the new state is on screen. Focus
 					// aimed at a hidden state is dropped to the page body.
-					whenStatusShown( newStatusContainer, ( shown ) => {
+					// When the block has no container for the new status,
+					// renderRsvpBlock shows the no_status one instead (#1719),
+					// so wait for that.
+					const shownContainer =
+						newStatusContainer ??
+						rsvpContainer.querySelector(
+							'[data-rsvp-status="no_status"]',
+						);
+
+					whenStatusShown( shownContainer, ( shown ) => {
+						// Only a real container of the new status has a modal
+						// to switch to; the no_status fallback never does.
 						const nextModalButton =
 							shown &&
+							newStatusContainer &&
 							[ 'not_attending', 'no_status' ].includes( rsvpStatus ) &&
 							[ 'attending', 'waiting_list' ].includes( newStatus )
 								? newStatusContainer.querySelector(
