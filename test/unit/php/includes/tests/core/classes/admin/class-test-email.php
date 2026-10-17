@@ -93,6 +93,18 @@ class Test_Email extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'clear_count_cache' ),
 			),
+			array(
+				'type'     => 'action',
+				'name'     => 'add_user_to_blog',
+				'priority' => 10,
+				'callback' => array( $instance, 'clear_count_cache' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'remove_user_from_blog',
+				'priority' => 10,
+				'callback' => array( $instance, 'clear_count_cache' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
@@ -689,6 +701,9 @@ class Test_Email extends Base {
 	 * @return void
 	 */
 	public function test_register_mail_type(): void {
+		// The constructor registers at boot, before coverage records, so register again here.
+		Utility::invoke_hidden_method( Email::get_instance(), 'register_mail_type' );
+
 		$types = Utility::get_hidden_property( Mailer::get_instance(), 'types' );
 
 		$this->assertArrayHasKey( Email::MAIL_TYPE, $types );
@@ -926,6 +941,33 @@ class Test_Email extends Base {
 		wp_delete_user( $user_id );
 
 		$this->assertFalse( get_transient( $cache_key ), 'Deleting a user should drop the cached count.' );
+	}
+
+	/**
+	 * Check that adding or removing a site's user on multisite clears the cached count.
+	 *
+	 * Those actions fire without `user_register` or `deleted_user`, so they
+	 * are fired directly here, which also runs on a single-site test run.
+	 *
+	 * @covers ::clear_count_cache
+	 *
+	 * @return void
+	 */
+	public function test_site_membership_changes_clear_count_cache(): void {
+		$cache_key = 'gatherpress_site_message_count_' . get_current_blog_id();
+		$user_id   = $this->factory->user->create();
+
+		set_transient( $cache_key, 4, HOUR_IN_SECONDS );
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core hook, not a GatherPress one.
+		do_action( 'add_user_to_blog', $user_id, 'subscriber', get_current_blog_id() );
+
+		$this->assertFalse( get_transient( $cache_key ), 'Adding a user to the site should drop the cached count.' );
+
+		set_transient( $cache_key, 4, HOUR_IN_SECONDS );
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core hook, not a GatherPress one.
+		do_action( 'remove_user_from_blog', $user_id, get_current_blog_id(), 0 );
+
+		$this->assertFalse( get_transient( $cache_key ), 'Removing a site user should drop the cached count.' );
 	}
 
 	/**

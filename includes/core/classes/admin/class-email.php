@@ -156,6 +156,8 @@ final class Email {
 		// keep showing a stale number until the transient expires.
 		add_action( 'user_register', array( $this, 'clear_count_cache' ) );
 		add_action( 'deleted_user', array( $this, 'clear_count_cache' ) );
+		add_action( 'add_user_to_blog', array( $this, 'clear_count_cache' ) );
+		add_action( 'remove_user_from_blog', array( $this, 'clear_count_cache' ) );
 	}
 
 	/**

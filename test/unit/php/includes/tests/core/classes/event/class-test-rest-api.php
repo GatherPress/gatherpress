@@ -1154,6 +1154,9 @@ class Test_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_register_mail_type(): void {
+		// The constructor registers at boot, before coverage records, so register again here.
+		Utility::invoke_hidden_method( Rest_Api::get_instance(), 'register_mail_type' );
+
 		$types = Utility::get_hidden_property( Mailer::get_instance(), 'types' );
 
 		$this->assertArrayHasKey( 'event', $types );
@@ -1270,6 +1273,65 @@ class Test_Rest_Api extends Base {
 				)
 			)
 		);
+	}
+
+	/**
+	 * Check that no RSVPs are looked up when no status was picked.
+	 *
+	 * Invoked directly because xdebug does not trace same-class helpers
+	 * called by short delegation.
+	 *
+	 * @covers ::get_rsvp_recipients
+	 *
+	 * @return void
+	 */
+	public function test_get_rsvp_recipients_without_statuses(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		( new Rsvp( $post_id ) )->save( 'guest@example.test', 'attending', 0, 0 );
+
+		$this->assertSame(
+			array(),
+			Utility::invoke_hidden_method(
+				Rest_Api::get_instance(),
+				'get_rsvp_recipients',
+				array( array( 'all' => true ), $post_id )
+			)
+		);
+	}
+
+	/**
+	 * Check that rows the RSVP query returns that are not comments are skipped.
+	 *
+	 * Invoked directly because xdebug does not trace same-class helpers
+	 * called by short delegation.
+	 *
+	 * @covers ::get_rsvp_recipients
+	 *
+	 * @return void
+	 */
+	public function test_get_rsvp_recipients_skips_non_comment_rows(): void {
+		$post_id  = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$injector = static function ( $comments, $query ) {
+			if ( ! empty( $query->query_vars['comment__in'] ) ) {
+				$comments[] = PHP_INT_MAX;
+			}
+
+			return $comments;
+		};
+
+		( new Rsvp( $post_id ) )->save( 'guest@example.test', 'attending', 0, 0 );
+		add_filter( 'the_comments', $injector, 10, 2 );
+
+		$recipients = Utility::invoke_hidden_method(
+			Rest_Api::get_instance(),
+			'get_rsvp_recipients',
+			array( array( 'attending' => true ), $post_id )
+		);
+
+		remove_filter( 'the_comments', $injector, 10 );
+
+		$this->assertSame( array( 'guest@example.test' ), wp_list_pluck( $recipients, 'email' ) );
 	}
 
 	/**
@@ -2939,6 +3001,7 @@ class Test_Rest_Api extends Base {
 		);
 
 		$result = $instance->send_emails( $post_id, $send, 'Test message' );
+		$this->run_mail_jobs();
 
 		$this->assertTrue( $result, 'send_emails should return true' );
 		$this->assertFalse( $mail_called, 'wp_mail should not be called for opted-out non-user RSVP' );
@@ -3208,6 +3271,7 @@ class Test_Rest_Api extends Base {
 		);
 
 		$result = $instance->send_emails( $post_id, $send, 'Test message' );
+		$this->run_mail_jobs();
 
 		$this->assertTrue( $result, 'send_emails should return true' );
 		// If this test runs without errors, restore_previous_locale was called correctly.

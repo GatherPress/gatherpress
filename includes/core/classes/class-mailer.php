@@ -38,7 +38,7 @@ use WP_User_Query;
  *     users?: callable(Payload): (array<string, mixed>|null),
  *     recipients?: callable(Payload): array<int, Recipient>
  * }
- * @phpstan-type Cursor array{source: string, position: int}
+ * @phpstan-type Cursor array{source: string, last_id: int}
  * @phpstan-type Batch array{recipients: array<int, Recipient>, next: Cursor|null}
  */
 final class Mailer {
@@ -60,13 +60,16 @@ final class Mailer {
 	/**
 	 * Where a job starts: the first page of users, then the recipient list.
 	 *
+	 * Each batch carries the last user ID, or the last RSVP comment ID, it
+	 * sent to, and the next batch starts after it.
+	 *
 	 * @since TBD
 	 *
-	 * @var array{source: string, position: int}
+	 * @var array{source: string, last_id: int}
 	 */
 	const FIRST_BATCH = array(
-		'source'   => 'users',
-		'position' => 0,
+		'source'  => 'users',
+		'last_id' => 0,
 	);
 
 	/**
@@ -338,7 +341,8 @@ final class Mailer {
 	 *     @type callable $users      Optional. Receives the payload, returns `get_users()` arguments for the
 	 *                                users to email, or null for none. Mailer pages through them by ID.
 	 *     @type callable $recipients Optional. Receives the payload, returns recipient rows to email after the
-	 *                                users, for people a user query cannot reach.
+	 *                                users, for people a user query cannot reach. Each row needs a unique
+	 *                                `comment_id` above 0, which the job pages through the rows by.
 	 * }
 	 * @phpstan-param MailType $definition
 	 *
@@ -370,8 +374,9 @@ final class Mailer {
 	/**
 	 * Count who an email of a registered type would reach.
 	 *
-	 * Walks every batch and counts the recipients who consent, so it costs as
-	 * much as the send's recipient lookups.
+	 * Walks every batch and counts the recipients who consent. The type's
+	 * users and recipient list are looked up once for the whole walk, rather
+	 * than once per batch the way a job looks them up.
 	 *
 	 * @since TBD
 	 *
@@ -382,21 +387,53 @@ final class Mailer {
 	 * @return int Number of recipients the email would go to.
 	 */
 	public function count( string $type, array $payload ): int {
-		$count  = 0;
-		$cursor = isset( $this->types[ $type ] ) ? self::FIRST_BATCH : null;
+		if ( ! isset( $this->types[ $type ] ) ) {
+			return 0;
+		}
+
+		$count      = 0;
+		$cursor     = self::FIRST_BATCH;
+		$definition = $this->resolve_sources( $this->types[ $type ], $payload );
 
 		while ( null !== $cursor ) {
-			$batch  = $this->get_batch( $type, $payload, $cursor );
+			$batch  = $this->get_batch( $type, $definition, $payload, $cursor );
 			$count += count(
 				array_filter(
 					$batch['recipients'],
-					fn( array $recipient ): bool => $this->has_consent( $recipient, $this->types[ $type ]['context'] )
+					fn( array $recipient ): bool => $this->has_consent( $recipient, $definition['context'] )
 				)
 			);
 			$cursor = $batch['next'];
 		}
 
 		return $count;
+	}
+
+	/**
+	 * Look a type's users and recipient list up once, for a walk over every batch.
+	 *
+	 * @since TBD
+	 *
+	 * @param array $definition A registered mail type.
+	 * @param array $payload    Plain data the type needs.
+	 * @phpstan-param MailType $definition
+	 * @phpstan-param Payload $payload
+	 *
+	 * @return array The type, with its sources answering from the one lookup.
+	 * @phpstan-return MailType
+	 */
+	private function resolve_sources( array $definition, array $payload ): array {
+		if ( isset( $definition['users'] ) ) {
+			$users               = $definition['users']( $payload );
+			$definition['users'] = static fn(): ?array => $users;
+		}
+
+		if ( isset( $definition['recipients'] ) ) {
+			$recipients               = $definition['recipients']( $payload );
+			$definition['recipients'] = static fn(): array => $recipients;
+		}
+
+		return $definition;
 	}
 
 	/**
@@ -423,7 +460,7 @@ final class Mailer {
 		}
 
 		$definition = $this->types[ $type ];
-		$batch      = $this->get_batch( $type, $payload, $cursor );
+		$batch      = $this->get_batch( $type, $definition, $payload, $cursor );
 
 		if ( null !== $batch['next'] ) {
 			// A short delay keeps each batch out of the cron pass that queued it.
@@ -440,46 +477,56 @@ final class Mailer {
 	/**
 	 * Get one batch of recipients for a mail type, and where the next starts.
 	 *
-	 * Users come first, paged by ID, then the type's recipient list, paged by
-	 * position.
+	 * Users come first, paged by user ID, then the type's recipient list,
+	 * paged by comment ID. Paging by ID rather than position keeps a row that
+	 * is added or removed between batches from shifting the rest, which would
+	 * skip one recipient or mail another twice.
 	 *
 	 * @since TBD
 	 *
-	 * @param string $type    A registered mail type.
-	 * @param array  $payload Plain data the type needs.
-	 * @param array  $cursor  Where this batch starts.
+	 * @param string $type       The mail type's name.
+	 * @param array  $definition The mail type.
+	 * @param array  $payload    Plain data the type needs.
+	 * @param array  $cursor     Where this batch starts.
+	 * @phpstan-param MailType $definition
 	 * @phpstan-param Payload $payload
 	 * @phpstan-param Cursor $cursor
 	 *
-	 * @return array{recipients: array<int, Recipient>, next: array{source: string, position: int}|null} The batch.
+	 * @return array{recipients: array<int, Recipient>, next: array{source: string, last_id: int}|null} The batch.
 	 */
-	private function get_batch( string $type, array $payload, array $cursor ): array {
-		$definition = $this->types[ $type ];
-		$size       = $this->get_batch_size( $type );
-		$users      = 'users' === $cursor['source'] && isset( $definition['users'] )
+	private function get_batch( string $type, array $definition, array $payload, array $cursor ): array {
+		$size  = $this->get_batch_size( $type );
+		$users = 'users' === $cursor['source'] && isset( $definition['users'] )
 			? $definition['users']( $payload )
 			: null;
 
 		if ( null !== $users ) {
-			$page  = $this->get_user_batch( $users, $cursor['position'], $size );
+			$page  = $this->get_user_batch( $users, $cursor['last_id'], $size );
 			$batch = array(
 				'recipients' => $page['recipients'],
 				'next'       => $page['complete']
 					? $this->get_list_start( $definition )
 					: array(
-						'source'   => 'users',
-						'position' => $page['last_id'],
+						'source'  => 'users',
+						'last_id' => $page['last_id'],
 					),
 			);
 		} else {
-			$list     = isset( $definition['recipients'] ) ? $definition['recipients']( $payload ) : array();
-			$position = 'list' === $cursor['source'] ? $cursor['position'] : 0;
-			$batch    = array(
-				'recipients' => array_slice( $list, $position, $size ),
-				'next'       => $position + $size < count( $list )
+			$after = 'list' === $cursor['source'] ? $cursor['last_id'] : 0;
+			$rest  = array_filter(
+				isset( $definition['recipients'] ) ? $definition['recipients']( $payload ) : array(),
+				static fn( array $row ): bool => $row['comment_id'] > $after
+			);
+
+			usort( $rest, static fn( array $a, array $b ): int => $a['comment_id'] <=> $b['comment_id'] );
+
+			$rows  = array_slice( $rest, 0, $size );
+			$batch = array(
+				'recipients' => $rows,
+				'next'       => count( $rest ) > $size
 					? array(
-						'source'   => 'list',
-						'position' => $position + $size,
+						'source'  => 'list',
+						'last_id' => $rows[ $size - 1 ]['comment_id'],
 					)
 					: null,
 			);
@@ -519,13 +566,13 @@ final class Mailer {
 	 * @param array $definition A registered mail type.
 	 * @phpstan-param MailType $definition
 	 *
-	 * @return array{source: string, position: int}|null The list's first batch, or null.
+	 * @return array{source: string, last_id: int}|null The list's first batch, or null.
 	 */
 	private function get_list_start( array $definition ): ?array {
 		return isset( $definition['recipients'] )
 			? array(
-				'source'   => 'list',
-				'position' => 0,
+				'source'  => 'list',
+				'last_id' => 0,
 			)
 			: null;
 	}

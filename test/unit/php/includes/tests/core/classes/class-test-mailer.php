@@ -845,8 +845,9 @@ class Test_Mailer extends Base {
 		$users = $this->factory->user->create_many( 3 );
 		$guest = $this->recipient(
 			array(
-				'is_user' => false,
-				'email'   => 'guest@example.test',
+				'is_user'    => false,
+				'comment_id' => 1,
+				'email'      => 'guest@example.test',
 			)
 		);
 
@@ -891,8 +892,8 @@ class Test_Mailer extends Base {
 					$type,
 					array(),
 					array(
-						'source'   => 'users',
-						'position' => $users[0],
+						'source'  => 'users',
+						'last_id' => $users[0],
 					),
 				)
 			)
@@ -911,26 +912,29 @@ class Test_Mailer extends Base {
 		$list = array(
 			$this->recipient(
 				array(
-					'is_user' => false,
-					'email'   => 'one@example.test',
+					'is_user'    => false,
+					'comment_id' => 1,
+					'email'      => 'one@example.test',
 				)
 			),
 			$this->recipient(
 				array(
-					'is_user' => false,
-					'email'   => 'two@example.test',
+					'is_user'    => false,
+					'comment_id' => 2,
+					'email'      => 'two@example.test',
 				)
 			),
 			$this->recipient(
 				array(
-					'is_user' => false,
-					'email'   => 'three@example.test',
+					'is_user'    => false,
+					'comment_id' => 3,
+					'email'      => 'three@example.test',
 				)
 			),
 		);
 		$next = array(
-			'source'   => 'list',
-			'position' => 2,
+			'source'  => 'list',
+			'last_id' => 2,
 		);
 
 		add_filter( 'gatherpress_mail_batch_size', static fn(): int => 2 );
@@ -972,7 +976,7 @@ class Test_Mailer extends Base {
 					array(
 						'is_user'    => false,
 						'user_id'    => 0,
-						'comment_id' => 0,
+						'comment_id' => 1,
 						'email'      => 'guest@example.test',
 						'name'       => 'Guest',
 					),
@@ -988,6 +992,141 @@ class Test_Mailer extends Base {
 		$expected[] = 'guest@example.test';
 
 		$this->assertSame( $expected, $this->sent );
+	}
+
+	/**
+	 * Check that list rows are paged by comment ID, so changes between batches do not shift them.
+	 *
+	 * @covers ::process_job
+	 * @covers ::get_batch
+	 *
+	 * @return void
+	 */
+	public function test_list_cursor_survives_rows_changing_between_batches(): void {
+		$row     = fn( int $comment_id ): array => $this->recipient(
+			array(
+				'is_user'    => false,
+				'comment_id' => $comment_id,
+				'email'      => sprintf( 'rsvp%d@example.test', $comment_id ),
+			)
+		);
+		$current = array( $row( 30 ), $row( 10 ), $row( 20 ) );
+
+		add_filter( 'gatherpress_mail_batch_size', static fn(): int => 2 );
+
+		$type = $this->register_type(
+			array(
+				'recipients' => static function () use ( &$current ): array {
+					return $current;
+				},
+			)
+		);
+
+		Mailer::get_instance()->process_job( $type, array() );
+
+		$this->assertSame( array( 'rsvp10@example.test', 'rsvp20@example.test' ), $this->sent );
+
+		// The first row leaves and a new RSVP arrives before the next batch runs.
+		$current = array( $row( 20 ), $row( 30 ), $row( 40 ) );
+
+		wp_unschedule_hook( Mailer::JOB_HOOK );
+		Mailer::get_instance()->process_job(
+			$type,
+			array(),
+			array(
+				'source'  => 'list',
+				'last_id' => 20,
+			)
+		);
+
+		$this->assertSame(
+			array( 'rsvp10@example.test', 'rsvp20@example.test', 'rsvp30@example.test', 'rsvp40@example.test' ),
+			$this->sent,
+			'Nobody should be skipped or mailed twice.'
+		);
+	}
+
+	/**
+	 * Check that count() looks a type's sources up once, while each job looks them up again.
+	 *
+	 * @covers ::count
+	 * @covers ::process_job
+	 *
+	 * @return void
+	 */
+	public function test_count_looks_sources_up_once(): void {
+		$users   = $this->factory->user->create_many( 3 );
+		$lookups = 0;
+
+		add_filter( 'gatherpress_mail_batch_size', array( $this, 'one_per_batch' ) );
+
+		$type = $this->register_type(
+			array(
+				'users' => static function () use ( $users, &$lookups ): array {
+					++$lookups;
+
+					return array( 'include' => $users );
+				},
+			)
+		);
+
+		$this->assertSame( 3, Mailer::get_instance()->count( $type, array() ) );
+		$this->assertSame( 1, $lookups );
+
+		Mailer::get_instance()->process_job( $type, array() );
+
+		$this->assertSame( 2, $lookups, 'A job should look its recipients up fresh.' );
+	}
+
+	/**
+	 * Check that resolved sources answer from one lookup.
+	 *
+	 * Invoked directly because xdebug does not trace same-class helpers
+	 * called by short delegation.
+	 *
+	 * @covers ::resolve_sources
+	 *
+	 * @return void
+	 */
+	public function test_resolve_sources(): void {
+		$lookups    = 0;
+		$definition = Utility::invoke_hidden_method(
+			Mailer::get_instance(),
+			'resolve_sources',
+			array(
+				array(
+					'context'    => 'event',
+					'compose'    => '__return_empty_array',
+					'users'      => static function () use ( &$lookups ): array {
+						++$lookups;
+
+						return array( 'role__in' => array( 'editor' ) );
+					},
+					'recipients' => static function () use ( &$lookups ): array {
+						++$lookups;
+
+						return array();
+					},
+				),
+				array(),
+			)
+		);
+
+		$this->assertSame( 2, $lookups );
+		$this->assertSame( array( 'role__in' => array( 'editor' ) ), $definition['users']() );
+		$this->assertSame( array(), $definition['recipients']() );
+		$this->assertSame( 2, $lookups, 'The resolved sources should not look up again.' );
+
+		$plain = array(
+			'context' => 'event',
+			'compose' => '__return_empty_array',
+		);
+
+		$this->assertSame(
+			$plain,
+			Utility::invoke_hidden_method( Mailer::get_instance(), 'resolve_sources', array( $plain, array() ) ),
+			'A type without sources should come back as it was.'
+		);
 	}
 
 	/**
@@ -1113,7 +1252,12 @@ class Test_Mailer extends Base {
 	 * @return void
 	 */
 	public function test_get_batch_from_the_list(): void {
-		$row  = $this->recipient( array( 'email' => 'list@example.test' ) );
+		$row  = $this->recipient(
+			array(
+				'comment_id' => 5,
+				'email'      => 'list@example.test',
+			)
+		);
 		$type = $this->register_type(
 			array(
 				'users'      => static fn(): array => array(),
@@ -1126,10 +1270,11 @@ class Test_Mailer extends Base {
 			'get_batch',
 			array(
 				$type,
+				Utility::get_hidden_property( Mailer::get_instance(), 'types' )[ $type ],
 				array(),
 				array(
-					'source'   => 'list',
-					'position' => 0,
+					'source'  => 'list',
+					'last_id' => 0,
 				),
 			)
 		);
@@ -1150,8 +1295,8 @@ class Test_Mailer extends Base {
 
 		$this->assertSame(
 			array(
-				'source'   => 'list',
-				'position' => 0,
+				'source'  => 'list',
+				'last_id' => 0,
 			),
 			Utility::invoke_hidden_method(
 				$mailer,
