@@ -18,7 +18,6 @@ use Exception;
 use GatherPress\Core\Blocks\Rsvp_Form;
 use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Event;
-use GatherPress\Core\Mailer;
 use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup;
@@ -43,8 +42,6 @@ use WP_REST_Server;
  * @since 0.34.0
  *
  * @phpstan-type RouteDefinition array{route: string, args: array<string, mixed>}
- * @phpstan-type SendOptions array{all: bool, attending: bool, waiting_list: bool, not_attending: bool}
- * @phpstan-import-type Recipient from Mailer
  */
 final class Rest_Api {
 
@@ -453,74 +450,6 @@ final class Rest_Api {
 		);
 
 		return new WP_REST_Response( $response );
-	}
-
-	/**
-	 * Hooked method to trigger the sending of related emails.
-	 *
-	 * This method hooks into a WordPress action, triggering the `send_emails` method
-	 * to send emails to selected members. It doesn't return any value,
-	 * as it's intended to be called by an action hook.
-	 *
-	 * @since 0.34.0
-	 * @since 0.36.0 Added `$subject` parameter for #827.
-	 * @since TBD Kept for existing callers: `Event\Email` handles the hook and queues the email with Mailer.
-	 *
-	 * @param int    $post_id Post ID.
-	 * @param array  $send    Members to send the email to.
-	 * @param string $message Optional message to include in the email.
-	 * @param string $subject Optional subject line. Defaults to the existing `📅 {title}` template when empty.
-	 * @phpstan-param SendOptions $send
-	 *
-	 * @return void
-	 */
-	public function handle_email_send_action( int $post_id, array $send, string $message, string $subject = '' ): void {
-		Email::get_instance()->send_emails( $post_id, $send, $message, $subject );
-	}
-
-	/**
-	 * Queue an event update email for the selected recipients.
-	 *
-	 * Checks that the given `$post_id` belongs to a post type with RSVP
-	 * support, then queues the email with Mailer, which sends it in batches
-	 * from cron.
-	 *
-	 * @since 0.34.0
-	 * @since 0.36.0 Added `$subject` parameter for #827.
-	 * @since TBD Kept for existing callers: `Event\Email` queues the email with Mailer.
-	 *
-	 * @param int    $post_id Post ID.
-	 * @param array  $send    Members to send the email to.
-	 * @param string $message Optional message to include in the email.
-	 * @param string $subject Optional subject line. Defaults to the existing `📅 {title}` template when empty.
-	 * @phpstan-param SendOptions $send
-	 *
-	 * @return bool True when the email is queued, false otherwise.
-	 */
-	public function send_emails( int $post_id, array $send, string $message, string $subject = '' ): bool {
-		return Email::get_instance()->send_emails( $post_id, $send, $message, $subject );
-	}
-
-	/**
-	 * Get the list of recipients to send event-related emails to.
-	 *
-	 * This method retrieves the list of recipients to whom event-related emails should be sent
-	 * based on the given `$send` parameter and the specified event `$post_id`.
-	 * It checks the `$send` array for specific email recipient categories,
-	 * such as 'all,' 'attending,' 'waiting_list,' and 'not_attending,' and compiles a unified list of recipients
-	 * that includes both WordPress users and non-user RSVPs with their email addresses and metadata.
-	 *
-	 * @since 0.34.0
-	 * @since TBD Kept for existing callers: `Event\Email` builds the list.
-	 *
-	 * @param array $send    An array specifying who to send emails to.
-	 * @param int   $post_id The Event Post ID.
-	 * @phpstan-param SendOptions $send
-	 *
-	 * @return array<int, Recipient> An array containing unified recipient data for both users and non-users.
-	 */
-	public function get_recipients( array $send, int $post_id ): array {
-		return Email::get_instance()->get_recipients( $send, $post_id );
 	}
 
 	/**

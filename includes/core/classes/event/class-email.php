@@ -75,7 +75,6 @@ final class Email {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_action( 'gatherpress_send_emails', array( $this, 'handle_email_send_action' ), 10, 4 );
 		add_action( 'gatherpress_rsvp_waiting_list_promoted', array( $this, 'queue_promotion_email' ), 10, 2 );
 	}
 
@@ -108,27 +107,6 @@ final class Email {
 				'compose'    => $this->compose_promotion_email( ... ),
 			)
 		);
-	}
-
-	/**
-	 * Queue an event update email from a job on the old hook.
-	 *
-	 * Event update jobs went out on `gatherpress_send_emails` before Mailer
-	 * owned the job, so one queued before an update still arrives here and is
-	 * queued again with Mailer.
-	 *
-	 * @since TBD
-	 *
-	 * @param int    $post_id Event post ID.
-	 * @param array  $send    Who to send the email to.
-	 * @param string $message Optional message to include in the email.
-	 * @param string $subject Optional subject line.
-	 * @phpstan-param SendOptions $send
-	 *
-	 * @return void
-	 */
-	public function handle_email_send_action( int $post_id, array $send, string $message, string $subject = '' ): void {
-		$this->send_emails( $post_id, $send, $message, $subject );
 	}
 
 	/**
