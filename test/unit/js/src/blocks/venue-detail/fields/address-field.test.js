@@ -454,8 +454,12 @@ describe( 'AddressField', () => {
 			name: 'Second Ave',
 		} );
 
-		expect( opt1.getAttribute( 'aria-selected' ) ).toBe( 'true' );
+		// No option is active until an arrow key is pressed (#2449).
+		expect( opt1.getAttribute( 'aria-selected' ) ).toBe( 'false' );
 		expect( opt2.getAttribute( 'aria-selected' ) ).toBe( 'false' );
+
+		fireEvent.keyDown( field, { key: 'ArrowDown', code: 'ArrowDown' } );
+		expect( opt1.getAttribute( 'aria-selected' ) ).toBe( 'true' );
 
 		fireEvent.keyDown( field, { key: 'ArrowDown', code: 'ArrowDown' } );
 		expect( opt2.getAttribute( 'aria-selected' ) ).toBe( 'true' );
@@ -476,6 +480,86 @@ describe( 'AddressField', () => {
 		expect( defaultProps.onChange ).toHaveBeenCalledWith(
 			'Second Ave',
 		);
+	} );
+
+	it( 'starts with no active option, so Enter keeps the typed text (#2449)', async () => {
+		fetchAddressSuggestions.mockResolvedValue( [
+			{ label: 'First St', latitude: '1', longitude: '2' },
+			{ label: 'Second Ave', latitude: '3', longitude: '4' },
+		] );
+
+		render( <ControlledAddressField { ...defaultProps } /> );
+		const field = screen.getByRole( 'combobox' );
+
+		fireEvent.focus( field );
+		fireEvent.change( field, { target: { value: 'Find me' } } );
+		await flushMicrotasks();
+
+		await screen.findByRole( 'option', { name: 'First St' } );
+
+		expect(
+			screen
+				.getAllByRole( 'option' )
+				.map( ( option ) => option.getAttribute( 'aria-selected' ) ),
+		).toEqual( [ 'false', 'false' ] );
+		expect( field.hasAttribute( 'aria-activedescendant' ) ).toBe( false );
+
+		fireEvent.keyDown( field, { key: 'Enter', code: 'Enter', shiftKey: false } );
+
+		expect( primeGeocodeCache ).not.toHaveBeenCalled();
+		expect( defaultProps.onChange ).not.toHaveBeenCalledWith( 'First St' );
+		expect( field.value ).toBe( 'Find me' );
+		expect( screen.queryByRole( 'listbox' ) ).toBeNull();
+		expect( defaultProps.onKeyDown ).not.toHaveBeenCalled();
+	} );
+
+	it( 'moves to the last suggestion on ArrowUp when no option is active', async () => {
+		fetchAddressSuggestions.mockResolvedValue( [
+			{ label: 'First St', latitude: '1', longitude: '2' },
+			{ label: 'Second Ave', latitude: '3', longitude: '4' },
+		] );
+
+		render( <ControlledAddressField { ...defaultProps } /> );
+		const field = screen.getByRole( 'combobox' );
+
+		fireEvent.focus( field );
+		fireEvent.change( field, { target: { value: 'Find me' } } );
+		await flushMicrotasks();
+
+		const last = await screen.findByRole( 'option', { name: 'Second Ave' } );
+
+		fireEvent.keyDown( field, { key: 'ArrowUp', code: 'ArrowUp' } );
+
+		expect( last.getAttribute( 'aria-selected' ) ).toBe( 'true' );
+		expect( field.getAttribute( 'aria-activedescendant' ) ).toBe( last.id );
+	} );
+
+	it( 'clears the active option when new suggestions arrive', async () => {
+		fetchAddressSuggestions.mockResolvedValueOnce( [
+			{ label: 'First St', latitude: '1', longitude: '2' },
+		] );
+
+		render( <ControlledAddressField { ...defaultProps } /> );
+		const field = screen.getByRole( 'combobox' );
+
+		fireEvent.focus( field );
+		fireEvent.change( field, { target: { value: 'First' } } );
+		await flushMicrotasks();
+
+		const first = await screen.findByRole( 'option', { name: 'First St' } );
+		fireEvent.keyDown( field, { key: 'ArrowDown', code: 'ArrowDown' } );
+		expect( first.getAttribute( 'aria-selected' ) ).toBe( 'true' );
+
+		fetchAddressSuggestions.mockResolvedValueOnce( [
+			{ label: 'Firstly Rd', latitude: '5', longitude: '6' },
+		] );
+		fireEvent.change( field, { target: { value: 'Firstly' } } );
+		await flushMicrotasks();
+
+		const next = await screen.findByRole( 'option', { name: 'Firstly Rd' } );
+
+		expect( next.getAttribute( 'aria-selected' ) ).toBe( 'false' );
+		expect( field.hasAttribute( 'aria-activedescendant' ) ).toBe( false );
 	} );
 
 	it( 'does not select on Enter when Shift is held and forwards to onKeyDown', async () => {
@@ -568,7 +652,7 @@ describe( 'AddressField', () => {
 		const optA = await screen.findByRole( 'option', { name: 'A' } );
 		const optB = await screen.findByRole( 'option', { name: 'B' } );
 
-		expect( optA.getAttribute( 'aria-selected' ) ).toBe( 'true' );
+		expect( optA.getAttribute( 'aria-selected' ) ).toBe( 'false' );
 
 		fireEvent.mouseEnter( optB );
 		expect( optB.getAttribute( 'aria-selected' ) ).toBe( 'true' );
@@ -724,19 +808,21 @@ describe( 'AddressAutocompleteField (settings variant)', () => {
 			name: 'Second Ave',
 		} );
 
-		expect( opt1.getAttribute( 'aria-selected' ) ).toBe( 'true' );
+		expect( opt1.getAttribute( 'aria-selected' ) ).toBe( 'false' );
+		expect( opt2.getAttribute( 'aria-selected' ) ).toBe( 'false' );
 
+		// One ArrowDown and Enter pick the first suggestion, not the second (#2449).
 		fireEvent.keyDown( field, { key: 'ArrowDown', code: 'ArrowDown' } );
-		expect( opt2.getAttribute( 'aria-selected' ) ).toBe( 'true' );
+		expect( opt1.getAttribute( 'aria-selected' ) ).toBe( 'true' );
 
 		fireEvent.keyDown( field, { key: 'Enter', code: 'Enter', shiftKey: false } );
 
 		expect( primeGeocodeCache ).toHaveBeenCalledWith(
-			'Second Ave',
-			'3',
-			'4',
+			'First St',
+			'1',
+			'2',
 		);
-		expect( settingsProps.onChange ).toHaveBeenCalledWith( 'Second Ave' );
+		expect( settingsProps.onChange ).toHaveBeenCalledWith( 'First St' );
 	} );
 
 	it( 'closes suggestions on Escape when list is open', async () => {

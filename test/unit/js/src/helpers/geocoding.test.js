@@ -521,6 +521,25 @@ describe( 'Geocoding helpers', () => {
 			} );
 		} );
 
+		it( 'drops a suggestion whose label repeats an earlier one', async () => {
+			// Photon can return the same address for several map features.
+			// A list that reads the same text three times is no help (#2449).
+			apiFetch.mockResolvedValue( {
+				suggestions: [
+					{ label: 'Main St 1, Town', latitude: '1', longitude: '2' },
+					{ label: 'Main St 2, Town', latitude: '3', longitude: '4' },
+					{ label: ' Main St 1, Town ', latitude: '5', longitude: '6' },
+				],
+			} );
+
+			const result = await fetchAddressSuggestions( 'Main St' );
+
+			expect( result ).toEqual( [
+				{ label: 'Main St 1, Town', latitude: '1', longitude: '2' },
+				{ label: 'Main St 2, Town', latitude: '3', longitude: '4' },
+			] );
+		} );
+
 		it( 'stringifies latitude and longitude including when missing', async () => {
 			apiFetch.mockResolvedValue( {
 				suggestions: [
