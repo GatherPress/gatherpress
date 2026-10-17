@@ -477,14 +477,12 @@ class Test_Rsvp_Form extends Base {
 	 */
 	public function test_forms_with_the_same_layout_render_their_own_schema_id(): void {
 		$instance     = Rsvp_Form::get_instance();
-		$form         = static function ( string $field ): string {
-			return '<!-- wp:gatherpress/rsvp-form -->
-<div class="wp-block-gatherpress-rsvp-form">
-<!-- wp:gatherpress/form-field ' . $field . ' -->
+		$form         = function ( string $field ): string {
+			return $this->rsvp_form(
+				'<!-- wp:gatherpress/form-field ' . $field . ' -->
 <div class="wp-block-gatherpress-form-field"></div>
-<!-- /wp:gatherpress/form-field -->
-</div>
-<!-- /wp:gatherpress/rsvp-form -->';
+<!-- /wp:gatherpress/form-field -->'
+			);
 		};
 		$post_content = $form( '{"fieldName":"dietary","fieldType":"text","required":true}' )
 			. "\n\n"
@@ -500,23 +498,7 @@ class Test_Rsvp_Form extends Base {
 		$instance->save_form_schema( $post_id );
 
 		$schemas  = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true );
-		$rendered = array();
-
-		foreach ( parse_blocks( $post_content ) as $block ) {
-			if ( 'gatherpress/rsvp-form' !== $block['blockName'] ) {
-				continue;
-			}
-
-			$block['attrs']['postId'] = $post_id;
-
-			preg_match(
-				'/name="gatherpress_form_schema_id" value="([^"]*)"/',
-				$instance->transform_block_content( '<div class="wp-block-gatherpress-rsvp-form"></div>', $block ),
-				$matches
-			);
-
-			$rendered[] = $matches[1] ?? '';
-		}
+		$rendered = $this->render_schema_ids( $post_id, $post_content );
 
 		$this->assertCount( 2, array_unique( $rendered ), 'Each form should render its own schema id.' );
 		$this->assertArrayHasKey(
@@ -534,6 +516,131 @@ class Test_Rsvp_Form extends Base {
 			$instance->validate_custom_fields( $post_id, $rendered[1], array( 'tshirt_size' => 'L' ) ),
 			'The second form should not be held to the first form\'s required field.'
 		);
+	}
+
+	/**
+	 * Data provider for test_forms_with_the_same_wrapper_render_schema_ids.
+	 *
+	 * @return array<string, array{0: string, 1: string, 2: string[]}>
+	 */
+	public function data_forms_with_the_same_wrapper(): array {
+		$block   = static function ( string $name, string $attrs, string $inner = '' ): string {
+			return '<!-- wp:' . $name . ' ' . $attrs . ' -->
+<div>' . $inner . '</div>
+<!-- /wp:' . $name . ' -->';
+		};
+		$dietary = '{"fieldName":"dietary","fieldType":"text"}';
+		$tshirt  = '{"fieldName":"tshirt_size","fieldType":"text"}';
+
+		return array(
+			'inner blocks with different names'  => array(
+				$block( 'gatherpress/form-field', $dietary ),
+				$block( 'paragraph', $dietary ),
+				array( 'form_0', 'form_2' ),
+			),
+			'inner blocks with different markup' => array(
+				$block( 'gatherpress/form-field', $dietary, 'Dietary needs' ),
+				$block( 'gatherpress/form-field', $dietary, 'T-shirt size' ),
+				array( 'form_0', 'form_2' ),
+			),
+			'a difference nested deeper'         => array(
+				$block( 'group', '{}', $block( 'gatherpress/form-field', $dietary ) ),
+				$block( 'group', '{}', $block( 'gatherpress/form-field', $tshirt ) ),
+				array( 'form_0', 'form_2' ),
+			),
+			'identical forms'                    => array(
+				$block( 'gatherpress/form-field', $dietary ),
+				$block( 'gatherpress/form-field', $dietary ),
+				array( 'form_0', 'form_0' ),
+			),
+		);
+	}
+
+	/**
+	 * Tests forms with the same wrapper are told apart by their inner blocks.
+	 *
+	 * Identical forms share the first form's id, whose schema holds the same
+	 * fields as their own.
+	 *
+	 * @since TBD
+	 * @covers ::get_form_schema_id
+	 * @covers ::find_form_schema_id_in_blocks
+	 * @covers ::blocks_match
+	 * @covers ::describe_blocks
+	 * @dataProvider data_forms_with_the_same_wrapper
+	 *
+	 * @param string   $first    Inner markup of the first form.
+	 * @param string   $second   Inner markup of the second form.
+	 * @param string[] $expected The schema ids the forms should render.
+	 *
+	 * @return void
+	 */
+	public function test_forms_with_the_same_wrapper_render_schema_ids(
+		string $first,
+		string $second,
+		array $expected
+	): void {
+		$post_content = $this->rsvp_form( $first ) . "\n\n" . $this->rsvp_form( $second );
+		$post_id      = $this->factory()->post->create(
+			array(
+				'post_type'    => Event::POST_TYPE,
+				'post_content' => $post_content,
+			)
+		);
+
+		$this->assertSame( $expected, $this->render_schema_ids( $post_id, $post_content ) );
+	}
+
+	/**
+	 * Wrap inner block markup in an RSVP Form block.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $inner Inner block markup.
+	 *
+	 * @return string RSVP Form block markup.
+	 */
+	private function rsvp_form( string $inner ): string {
+		return '<!-- wp:gatherpress/rsvp-form -->
+<div class="wp-block-gatherpress-rsvp-form">
+' . $inner . '
+</div>
+<!-- /wp:gatherpress/rsvp-form -->';
+	}
+
+	/**
+	 * Render each top-level RSVP form in the content and collect its schema id.
+	 *
+	 * @since TBD
+	 *
+	 * @param int    $post_id      The event post ID.
+	 * @param string $post_content The event content.
+	 *
+	 * @return string[] One schema id per form, in order.
+	 */
+	private function render_schema_ids( int $post_id, string $post_content ): array {
+		$schema_ids = array();
+
+		foreach ( parse_blocks( $post_content ) as $block ) {
+			if ( 'gatherpress/rsvp-form' !== $block['blockName'] ) {
+				continue;
+			}
+
+			$block['attrs']['postId'] = $post_id;
+
+			preg_match(
+				'/name="gatherpress_form_schema_id" value="([^"]*)"/',
+				Rsvp_Form::get_instance()->transform_block_content(
+					'<div class="wp-block-gatherpress-rsvp-form"></div>',
+					$block
+				),
+				$matches
+			);
+
+			$schema_ids[] = $matches[1] ?? '';
+		}
+
+		return $schema_ids;
 	}
 
 	/**
