@@ -32,8 +32,6 @@ define( 'GATHERPRESS_CORE_FILE', __FILE__ );
 define( 'GATHERPRESS_CORE_PATH', __DIR__ );
 define( 'GATHERPRESS_CORE_URL', plugin_dir_url( __FILE__ ) );
 define( 'GATHERPRESS_DIR_NAME', dirname( plugin_basename( __FILE__ ) ) );
-// Headers are read by key: plugins hooking `extra_plugin_headers` push theirs
-// ahead of ours, so `current()` would return one of theirs instead.
 define(
 	'GATHERPRESS_REQUIRES_PHP',
 	get_file_data( __FILE__, array( 'Requires PHP' => 'Requires PHP' ), 'plugin' )['Requires PHP']
