@@ -863,6 +863,32 @@ class Test_Token extends Base {
 	}
 
 	/**
+	 * Coverage for send_rsvp_confirmation_email method with a malformed email.
+	 *
+	 * @covers ::send_rsvp_confirmation_email
+	 *
+	 * @return void
+	 */
+	public function test_send_rsvp_confirmation_email_with_malformed_email(): void {
+		$post = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID'      => $post->ID,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author_email' => 'jane@example',
+			)
+		);
+
+		$token = new Token( $comment_id );
+		$this->assertFalse( $token->send_rsvp_confirmation_email() );
+	}
+
+	/**
 	 * Coverage for class constants.
 	 *
 	 * @return void

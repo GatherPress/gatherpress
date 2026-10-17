@@ -659,7 +659,7 @@ final class Rest_Api {
 	 *
 	 * @param WP_Comment $comment RSVP comment row from `Rsvp_Query::get_rsvps()`.
 	 *
-	 * @return Recipient|null Recipient row, or null when no email is on file.
+	 * @return Recipient|null Recipient row, or null when no valid email is on file.
 	 */
 	protected function build_comment_recipient( $comment ): ?array {
 		$user_id = intval( $comment->user_id );
@@ -675,7 +675,7 @@ final class Rest_Api {
 			}
 		}
 
-		if ( empty( $email ) ) {
+		if ( ! is_email( $email ) ) {
 			return null;
 		}
 

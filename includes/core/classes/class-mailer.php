@@ -41,8 +41,7 @@ final class Mailer {
 	 * Check whether a recipient should receive an email.
 	 *
 	 * Honors the recipient's opt-in preference: user meta for WordPress users,
-	 * RSVP comment meta for non-user recipients. A recipient without an email
-	 * address is never eligible.
+	 * RSVP comment meta for non-user recipients.
 	 *
 	 * @since TBD
 	 *
@@ -52,10 +51,6 @@ final class Mailer {
 	 * @return bool True when the recipient can be emailed.
 	 */
 	private function is_eligible( array $recipient ): bool {
-		if ( empty( $recipient['email'] ) ) {
-			return false;
-		}
-
 		if ( $recipient['is_user'] ) {
 			return User::get_instance()->has_event_updates_opt_in( $recipient['user_id'] );
 		}
@@ -75,8 +70,8 @@ final class Mailer {
 	 * `rsvp` context, default to consent instead, since the confirmation link
 	 * is what approves an open RSVP. The filter lets a site change the rule for
 	 * a specific context, for example a site-wide message that is not about
-	 * events, without touching the other mail paths. A recipient without an
-	 * email address never consents, whatever the filter returns.
+	 * events, without touching the other mail paths. A recipient without a
+	 * valid email address never consents, whatever the filter returns.
 	 *
 	 * @since TBD
 	 *
@@ -87,8 +82,8 @@ final class Mailer {
 	 * @return bool True when the recipient consents to this email.
 	 */
 	public function has_consent( array $recipient, string $context ): bool {
-		// A missing address is not a consent question, so no filter can override it.
-		if ( empty( $recipient['email'] ) ) {
+		// A missing or malformed address is not a consent question, so no filter can override it.
+		if ( ! is_email( $recipient['email'] ) ) {
 			return false;
 		}
 

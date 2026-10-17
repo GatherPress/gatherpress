@@ -449,7 +449,7 @@ final class Token {
 	public function send_rsvp_confirmation_email(): bool {
 		$to = $this->get_email();
 
-		if ( empty( $to ) ) {
+		if ( ! is_email( $to ) ) {
 			return false;
 		}
 

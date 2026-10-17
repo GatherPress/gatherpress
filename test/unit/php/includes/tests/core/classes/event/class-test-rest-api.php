@@ -3726,7 +3726,7 @@ class Test_Rest_Api extends Base {
 
 	/**
 	 * Direct-invoke coverage for `build_comment_recipient` — returns null
-	 * for a comment with no email on file so the caller can skip it.
+	 * for a comment with no valid email on file so the caller can skip it.
 	 *
 	 * @covers ::build_comment_recipient
 	 *
@@ -3748,6 +3748,13 @@ class Test_Rest_Api extends Base {
 		);
 
 		$this->assertNull( $recipient );
+
+		$comment->comment_author_email = 'jane@example';
+
+		$this->assertNull(
+			Utility::invoke_hidden_method( $instance, 'build_comment_recipient', array( $comment ) ),
+			'A malformed address should be skipped too.'
+		);
 	}
 
 	/**

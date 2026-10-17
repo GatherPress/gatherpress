@@ -21,21 +21,6 @@ use PMC\Unit_Test\Utility;
 class Test_Mailer extends Base {
 
 	/**
-	 * Check that recipients without email addresses are rejected.
-	 *
-	 * @covers ::is_eligible
-	 *
-	 * @return void
-	 */
-	public function test_is_eligible_rejects_empty_email(): void {
-		$recipient = $this->recipient( array( 'email' => '' ) );
-
-		$this->assertFalse(
-			Utility::invoke_hidden_method( Mailer::get_instance(), 'is_eligible', array( $recipient ) )
-		);
-	}
-
-	/**
 	 * Check that users are eligible by default.
 	 *
 	 * @covers ::is_eligible
@@ -326,6 +311,26 @@ class Test_Mailer extends Base {
 
 		$consent = Mailer::get_instance()->has_consent(
 			$this->recipient( array( 'email' => '' ) ),
+			'event'
+		);
+
+		remove_all_filters( 'gatherpress_mail_recipient_consent' );
+
+		$this->assertFalse( $consent );
+	}
+
+	/**
+	 * Check that the consent filter cannot grant consent to a malformed address.
+	 *
+	 * @covers ::has_consent
+	 *
+	 * @return void
+	 */
+	public function test_has_consent_filter_cannot_grant_malformed_email(): void {
+		add_filter( 'gatherpress_mail_recipient_consent', '__return_true' );
+
+		$consent = Mailer::get_instance()->has_consent(
+			$this->recipient( array( 'email' => 'jane@example' ) ),
 			'event'
 		);
 
