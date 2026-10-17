@@ -461,6 +461,128 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
+	 * Tests two forms with the same layout each render their own schema id.
+	 *
+	 * A block's innerHTML holds only its wrapper and one blank line per inner
+	 * block, so two forms with the same wrapper and number of fields used to
+	 * match each other, and the second form rendered the first one's id.
+	 *
+	 * @since TBD
+	 * @covers ::get_form_schema_id
+	 * @covers ::find_form_schema_id_in_blocks
+	 * @covers ::blocks_match
+	 * @covers ::describe_blocks
+	 *
+	 * @return void
+	 */
+	public function test_forms_with_the_same_layout_render_their_own_schema_id(): void {
+		$instance     = Rsvp_Form::get_instance();
+		$form         = static function ( string $field ): string {
+			return '<!-- wp:gatherpress/rsvp-form -->
+<div class="wp-block-gatherpress-rsvp-form">
+<!-- wp:gatherpress/form-field ' . $field . ' -->
+<div class="wp-block-gatherpress-form-field"></div>
+<!-- /wp:gatherpress/form-field -->
+</div>
+<!-- /wp:gatherpress/rsvp-form -->';
+		};
+		$post_content = $form( '{"fieldName":"dietary","fieldType":"text","required":true}' )
+			. "\n\n"
+			. $form( '{"fieldName":"tshirt_size","fieldType":"text"}' );
+		$post_id      = $this->factory()->post->create(
+			array(
+				'post_type'    => Event::POST_TYPE,
+				'post_content' => $post_content,
+			)
+		);
+
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$instance->save_form_schema( $post_id );
+
+		$schemas  = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true );
+		$rendered = array();
+
+		foreach ( parse_blocks( $post_content ) as $block ) {
+			if ( 'gatherpress/rsvp-form' !== $block['blockName'] ) {
+				continue;
+			}
+
+			$block['attrs']['postId'] = $post_id;
+
+			preg_match(
+				'/name="gatherpress_form_schema_id" value="([^"]*)"/',
+				$instance->transform_block_content( '<div class="wp-block-gatherpress-rsvp-form"></div>', $block ),
+				$matches
+			);
+
+			$rendered[] = $matches[1] ?? '';
+		}
+
+		$this->assertCount( 2, array_unique( $rendered ), 'Each form should render its own schema id.' );
+		$this->assertArrayHasKey(
+			'dietary',
+			$schemas[ $rendered[0] ]['fields'],
+			'The first form should name its own schema.'
+		);
+		$this->assertArrayHasKey(
+			'tshirt_size',
+			$schemas[ $rendered[1] ]['fields'],
+			'The second form should name its own schema.'
+		);
+		$this->assertSame(
+			array(),
+			$instance->validate_custom_fields( $post_id, $rendered[1], array( 'tshirt_size' => 'L' ) ),
+			'The second form should not be held to the first form\'s required field.'
+		);
+	}
+
+	/**
+	 * Tests describe_blocks keeps names, attributes, markup and nesting.
+	 *
+	 * @since TBD
+	 * @covers ::describe_blocks
+	 *
+	 * @return void
+	 */
+	public function test_describe_blocks(): void {
+		$described = Utility::invoke_hidden_method(
+			Rsvp_Form::get_instance(),
+			'describe_blocks',
+			array(
+				array(
+					array(
+						'blockName'   => 'core/group',
+						'attrs'       => array( 'tagName' => 'section' ),
+						'innerHTML'   => '<section></section>',
+						'innerBlocks' => array(
+							array(
+								'blockName' => 'core/paragraph',
+								'attrs'     => array(),
+								'innerHTML' => '<p>Hi</p>',
+							),
+						),
+					),
+					array(),
+				),
+			)
+		);
+
+		$this->assertSame(
+			array(
+				array(
+					'core/group',
+					array( 'tagName' => 'section' ),
+					'<section></section>',
+					array( array( 'core/paragraph', array(), '<p>Hi</p>', array() ) ),
+				),
+				array( null, array(), '', array() ),
+			),
+			$described,
+			'Failed to assert each block is described, with missing keys defaulted.'
+		);
+	}
+
+	/**
 	 * Tests a pinned input id is carried into the stored schema.
 	 *
 	 * Generated ids change on every render, so only an author-set id is

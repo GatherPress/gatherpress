@@ -724,10 +724,14 @@ final class Rsvp_Form {
 	/**
 	 * Check if two blocks match based on their content.
 	 *
-	 * Compares blocks to determine if they are the same instance.
-	 * Uses inner HTML content as the primary comparison method.
+	 * Compares blocks to determine if they are the same instance: their own
+	 * markup, and their inner blocks' names, attributes and markup. The form's
+	 * own attributes are left out, because they can be filtered at render.
 	 *
 	 * @since 0.33.0
+	 * @since TBD Also compares inner blocks. A block's innerHTML holds only its
+	 *            wrapper, so two forms with the same wrapper and number of
+	 *            fields matched each other.
 	 *
 	 * @param array<string, mixed> $block1 First block to compare.
 	 * @param array<string, mixed> $block2 Second block to compare.
@@ -735,11 +739,33 @@ final class Rsvp_Form {
 	 * @return bool True if blocks match.
 	 */
 	private function blocks_match( array $block1, array $block2 ): bool {
-		// Compare inner HTML content as a way to identify the same block.
-		$content1 = $block1['innerHTML'] ?? '';
-		$content2 = $block2['innerHTML'] ?? '';
+		return ( $block1['innerHTML'] ?? '' ) === ( $block2['innerHTML'] ?? '' )
+			&& $this->describe_blocks( $block1['innerBlocks'] ?? array() )
+				=== $this->describe_blocks( $block2['innerBlocks'] ?? array() );
+	}
 
-		return $content1 === $content2;
+	/**
+	 * Describe blocks by name, attributes and markup, inner blocks included.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<int, array<string, mixed>> $blocks Parsed blocks.
+	 *
+	 * @return array<int, array<int, mixed>> One entry per block, in order.
+	 */
+	private function describe_blocks( array $blocks ): array {
+		$described = array();
+
+		foreach ( $blocks as $block ) {
+			$described[] = array(
+				$block['blockName'] ?? null,
+				$block['attrs'] ?? array(),
+				$block['innerHTML'] ?? '',
+				$this->describe_blocks( $block['innerBlocks'] ?? array() ),
+			);
+		}
+
+		return $described;
 	}
 
 	/**
