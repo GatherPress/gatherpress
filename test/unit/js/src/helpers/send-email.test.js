@@ -393,18 +393,6 @@ describe( 'send-email', () => {
 			expect( apiFetch ).not.toHaveBeenCalled();
 		} );
 
-		it( 'asks for a subject before sending', async () => {
-			const elements = renderForm();
-
-			elements.subject.value = '  ';
-			await sendMessage( elements );
-
-			expect( statusText() ).toBe(
-				'Please write a subject before sending.',
-			);
-			expect( apiFetch ).not.toHaveBeenCalled();
-		} );
-
 		it( 'does not send when no users would get it', async () => {
 			const elements = renderForm();
 

@@ -441,7 +441,7 @@ class Test_Email extends Base {
 		$this->assertSame( array( $instance, 'queue_message' ), $route['callback'] );
 		$this->assertSame( 'sanitize_text_field', $route['args']['subject']['sanitize_callback'] );
 		$this->assertSame( 'sanitize_textarea_field', $route['args']['message']['sanitize_callback'] );
-		$this->assertTrue( $route['args']['subject']['required'] );
+		$this->assertFalse( $route['args']['subject']['required'] );
 		$this->assertSame( Email::AUDIENCES, $route['args']['audience']['enum'] );
 
 		$count = $server->get_routes()[ sprintf( '/%s/site-message/count', GATHERPRESS_REST_NAMESPACE ) ][0];
@@ -870,21 +870,6 @@ class Test_Email extends Base {
 
 		$this->assertWPError( $response );
 		$this->assertSame( 'gatherpress_site_message_empty', $response->get_error_code() );
-		$this->assertSame( 400, $response->get_error_data()['status'] );
-	}
-
-	/**
-	 * Check that an empty subject is rejected.
-	 *
-	 * @covers ::queue_message
-	 *
-	 * @return void
-	 */
-	public function test_queue_message_rejects_empty_subject(): void {
-		$response = Email::get_instance()->queue_message( $this->site_message_request( '   ', 'Message body' ) );
-
-		$this->assertWPError( $response );
-		$this->assertSame( 'Please write a subject before sending.', $response->get_error_message() );
 		$this->assertSame( 400, $response->get_error_data()['status'] );
 	}
 

@@ -81,19 +81,14 @@ export function getAudienceError( params ) {
  *
  * @since TBD
  *
- * @param {Object}           elements         The Send Email form elements.
- * @param {HTMLInputElement} elements.subject The subject field.
- * @param {HTMLElement}      elements.message The message textarea.
- * @param {HTMLElement}      elements.count   The user count, holding the last count it showed.
- * @param {Object}           audience         The audience, from readAudience().
+ * @param {Object}      elements         The Send Email form elements.
+ * @param {HTMLElement} elements.message The message textarea.
+ * @param {HTMLElement} elements.count   The user count, holding the last count it showed.
+ * @param {Object}      audience         The audience, from readAudience().
  *
  * @return {string} What to fix, or an empty string when nothing is missing.
  */
-export function getFormError( { subject, message, count }, audience ) {
-	if ( ! subject.value.trim() ) {
-		return __( 'Please write a subject before sending.', 'gatherpress' );
-	}
-
+export function getFormError( { message, count }, audience ) {
 	if ( ! message.value.trim() ) {
 		return __( 'Please write a message before sending.', 'gatherpress' );
 	}

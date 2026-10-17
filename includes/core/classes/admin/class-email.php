@@ -519,8 +519,9 @@ final class Email {
 				'args'                => array_merge(
 					array(
 						'subject' => array(
-							'required'          => true,
+							'required'          => false,
 							'type'              => 'string',
+							'default'           => '',
 							'sanitize_callback' => 'sanitize_text_field',
 						),
 						'message' => array(
@@ -652,16 +653,14 @@ final class Email {
 	 * @return WP_REST_Response|WP_Error The queued confirmation, or why the message was not queued.
 	 */
 	public function queue_message( WP_REST_Request $request ): WP_REST_Response|WP_Error {
-		$subject  = trim( (string) $request->get_param( 'subject' ) );
+		$subject  = (string) $request->get_param( 'subject' );
 		$message  = (string) $request->get_param( 'message' );
 		$audience = $this->resolve_audience( $request );
 
-		if ( '' === $subject || '' === trim( $message ) ) {
+		if ( '' === trim( $message ) ) {
 			return new WP_Error(
 				'gatherpress_site_message_empty',
-				'' === $subject
-					? __( 'Please write a subject before sending.', 'gatherpress' )
-					: __( 'Please write a message before sending.', 'gatherpress' ),
+				__( 'Please write a message before sending.', 'gatherpress' ),
 				array( 'status' => 400 )
 			);
 		}

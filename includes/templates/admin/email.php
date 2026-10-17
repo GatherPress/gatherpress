@@ -122,18 +122,18 @@ if ( ! isset( $recipient_count ) ) {
 			<?php endif; ?>
 			<div class="gatherpress-settings-form__row">
 				<div class="gatherpress-settings-form__label">
-					<label for="gatherpress-message-subject">
-						<?php esc_html_e( 'Subject', 'gatherpress' ); ?>
-						<span class="description"><?php esc_html_e( '(required)', 'gatherpress' ); ?></span>
-					</label>
+					<label for="gatherpress-message-subject"><?php esc_html_e( 'Subject', 'gatherpress' ); ?></label>
 				</div>
 				<div class="gatherpress-settings-form__field">
 					<input
 						type="text"
 						id="gatherpress-message-subject"
 						class="large-text"
-						aria-required="true"
+						aria-describedby="gatherpress-message-subject-description"
 					/>
+					<p class="description" id="gatherpress-message-subject-description">
+						<?php esc_html_e( 'Leave blank to use "Message from" and the site name.', 'gatherpress' ); ?>
+					</p>
 				</div>
 			</div>
 			<div class="gatherpress-settings-form__row">
