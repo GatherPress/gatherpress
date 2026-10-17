@@ -25,6 +25,11 @@
 
 - [`gatherpress_calendar_url`](gatherpress_calendar_url.md) Filters the calendar URL for a single event.
 
+## class-email.php
+
+- [`gatherpress_site_message_active_days`](gatherpress_site_message_active_days.md) Filters the choices for how far back an active user's last RSVP can be.
+- [`gatherpress_site_message_subject`](gatherpress_site_message_subject.md) Filters the subject line of a site-wide message.
+
 ## class-event-query.php
 
 - [`gatherpress_query_vars`](gatherpress_query_vars.md) This filter is documented in includes/query-loop.php
@@ -59,6 +64,13 @@
 ## class-import.php
 
 - [`gatherpress_import`](gatherpress_import.md) Fires for every GatherPress data to be imported.
+
+## class-mailer.php
+
+- [`gatherpress_email_batch_size`](gatherpress_email_batch_size.md) Filters how many recipients one GatherPress mail job sends to.
+- [`gatherpress_email_pre_enqueue_job`](gatherpress_email_pre_enqueue_job.md) Filters the mail enqueue call to take over scheduling.
+- [`gatherpress_email_recipient_consent`](gatherpress_email_recipient_consent.md) Filters whether a recipient consents to a GatherPress email.
+- [`gatherpress_email_recipients`](gatherpress_email_recipients.md) Filters one batch of recipients of a GatherPress email.
 
 ## class-manager.php
 
