@@ -20,7 +20,7 @@ use GatherPress\Core\Utility;
 use WP_Comment;
 
 /**
- * Class Email_Sends.
+ * Class Email.
  *
  * Decides who event emails go to and what they say: the update an editor
  * sends from an event, and the confirmation an attendee gets when a spot
@@ -32,7 +32,7 @@ use WP_Comment;
  * @phpstan-import-type Recipient from Mailer
  * @phpstan-import-type Payload from Mailer
  */
-final class Email_Sends {
+final class Email {
 
 	/**
 	 * Enforces a single instance of this class.

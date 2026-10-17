@@ -1,6 +1,6 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Event\Email_Sends.
+ * Class handles unit tests for GatherPress\Core\Event\Email.
  *
  * @package GatherPress\Core
  * @since TBD
@@ -10,7 +10,7 @@ namespace GatherPress\Tests\Core\Event;
 
 use DateTime;
 use GatherPress\Core\Event;
-use GatherPress\Core\Event\Email_Sends;
+use GatherPress\Core\Event\Email;
 use GatherPress\Core\Mailer;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Settings;
@@ -19,11 +19,11 @@ use PMC\Unit_Test\Utility;
 use WP_Comment;
 
 /**
- * Class Test_Email_Sends.
+ * Class Test_Email.
  *
- * @coversDefaultClass \GatherPress\Core\Event\Email_Sends
+ * @coversDefaultClass \GatherPress\Core\Event\Email
  */
-class Test_Email_Sends extends Base {
+class Test_Email extends Base {
 
 	/**
 	 * Emails sent during a test, as recipient and subject.
@@ -72,7 +72,7 @@ class Test_Email_Sends extends Base {
 	}
 
 	/**
-	 * Check the hooks Email_Sends listens on.
+	 * Check the hooks the event email class listens on.
 	 *
 	 * @covers ::__construct
 	 * @covers ::setup_hooks
@@ -80,7 +80,7 @@ class Test_Email_Sends extends Base {
 	 * @return void
 	 */
 	public function test_setup_hooks(): void {
-		$instance = Email_Sends::get_instance();
+		$instance = Email::get_instance();
 
 		$this->assert_hooks(
 			array(
@@ -112,12 +112,12 @@ class Test_Email_Sends extends Base {
 		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 		$send    = array( 'attending' => true );
 
-		$this->assertTrue( Email_Sends::get_instance()->send_emails( $post_id, $send, 'Hello', 'Hi' ) );
+		$this->assertTrue( Email::get_instance()->send_emails( $post_id, $send, 'Hello', 'Hi' ) );
 		$this->assertNotFalse(
 			wp_next_scheduled(
 				Mailer::JOB_HOOK,
 				array(
-					Email_Sends::EVENT_TYPE,
+					Email::EVENT_TYPE,
 					array(
 						'post_id' => $post_id,
 						'send'    => $send,
@@ -129,7 +129,7 @@ class Test_Email_Sends extends Base {
 			)
 		);
 		$this->assertFalse(
-			Email_Sends::get_instance()->send_emails( $this->factory->post->create(), $send, 'Hello' ),
+			Email::get_instance()->send_emails( $this->factory->post->create(), $send, 'Hello' ),
 			'A post without RSVPs should not be queued.'
 		);
 	}
@@ -145,13 +145,13 @@ class Test_Email_Sends extends Base {
 		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 		$send    = array( 'all' => true );
 
-		Email_Sends::get_instance()->handle_email_send_action( $post_id, $send, 'Hello', 'Hi' );
+		Email::get_instance()->handle_email_send_action( $post_id, $send, 'Hello', 'Hi' );
 
 		$this->assertNotFalse(
 			wp_next_scheduled(
 				Mailer::JOB_HOOK,
 				array(
-					Email_Sends::EVENT_TYPE,
+					Email::EVENT_TYPE,
 					array(
 						'post_id' => $post_id,
 						'send'    => $send,
@@ -226,7 +226,7 @@ class Test_Email_Sends extends Base {
 
 		$comment_id = (int) $rsvp->find( $user_id )->comment->comment_ID;
 		$attendee   = static fn( int $id ): array => Utility::invoke_hidden_method(
-			Email_Sends::get_instance(),
+			Email::get_instance(),
 			'get_promoted_attendee',
 			array(
 				array(
@@ -258,7 +258,7 @@ class Test_Email_Sends extends Base {
 			)
 		);
 		$email   = Utility::invoke_hidden_method(
-			Email_Sends::get_instance(),
+			Email::get_instance(),
 			'compose_promotion_email',
 			array( array(), array( 'post_id' => $post_id ) )
 		);
@@ -280,7 +280,7 @@ class Test_Email_Sends extends Base {
 
 		( new Rsvp( $post_id ) )->save( 'guest@example.test', 'attending', 0, 0 );
 
-		$instance = Email_Sends::get_instance();
+		$instance = Email::get_instance();
 
 		$this->assertSame(
 			array( 'guest@example.test' ),
@@ -311,22 +311,22 @@ class Test_Email_Sends extends Base {
 	 */
 	public function test_register_mail_types(): void {
 		// The constructor registers at boot, before coverage records, so register again here.
-		Utility::invoke_hidden_method( Email_Sends::get_instance(), 'register_mail_types' );
+		Utility::invoke_hidden_method( Email::get_instance(), 'register_mail_types' );
 
 		$types = Utility::get_hidden_property( Mailer::get_instance(), 'types' );
 
-		$this->assertArrayHasKey( Email_Sends::EVENT_TYPE, $types );
-		$this->assertSame( 'event', $types[ Email_Sends::EVENT_TYPE ]['context'] );
-		$this->assertArrayHasKey( 'users', $types[ Email_Sends::EVENT_TYPE ] );
-		$this->assertArrayHasKey( 'recipients', $types[ Email_Sends::EVENT_TYPE ] );
-		$this->assertArrayHasKey( 'compose', $types[ Email_Sends::EVENT_TYPE ] );
-		$this->assertArrayHasKey( Email_Sends::PROMOTION_TYPE, $types );
+		$this->assertArrayHasKey( Email::EVENT_TYPE, $types );
+		$this->assertSame( 'event', $types[ Email::EVENT_TYPE ]['context'] );
+		$this->assertArrayHasKey( 'users', $types[ Email::EVENT_TYPE ] );
+		$this->assertArrayHasKey( 'recipients', $types[ Email::EVENT_TYPE ] );
+		$this->assertArrayHasKey( 'compose', $types[ Email::EVENT_TYPE ] );
+		$this->assertArrayHasKey( Email::PROMOTION_TYPE, $types );
 		$this->assertSame(
 			'rsvp',
-			$types[ Email_Sends::PROMOTION_TYPE ]['context'],
+			$types[ Email::PROMOTION_TYPE ]['context'],
 			'A promotion is about the attendee\'s own RSVP, so it should skip the opt-in.'
 		);
-		$this->assertArrayNotHasKey( 'users', $types[ Email_Sends::PROMOTION_TYPE ] );
+		$this->assertArrayNotHasKey( 'users', $types[ Email::PROMOTION_TYPE ] );
 	}
 
 	/**
@@ -337,7 +337,7 @@ class Test_Email_Sends extends Base {
 	 * @return void
 	 */
 	public function test_get_event_email_users(): void {
-		$instance = Email_Sends::get_instance();
+		$instance = Email::get_instance();
 
 		$this->assertSame(
 			array(),
@@ -365,7 +365,7 @@ class Test_Email_Sends extends Base {
 	 * @return void
 	 */
 	public function test_get_event_email_rsvps(): void {
-		$instance = Email_Sends::get_instance();
+		$instance = Email::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 		$user_id  = $this->factory->user->create();
 		$rsvp     = new Rsvp( $post_id );
@@ -425,7 +425,7 @@ class Test_Email_Sends extends Base {
 		$this->assertSame(
 			array(),
 			Utility::invoke_hidden_method(
-				Email_Sends::get_instance(),
+				Email::get_instance(),
 				'get_rsvp_recipients',
 				array( array( 'all' => true ), $post_id )
 			)
@@ -456,7 +456,7 @@ class Test_Email_Sends extends Base {
 		add_filter( 'the_comments', $injector, 10, 2 );
 
 		$recipients = Utility::invoke_hidden_method(
-			Email_Sends::get_instance(),
+			Email::get_instance(),
 			'get_rsvp_recipients',
 			array( array( 'attending' => true ), $post_id )
 		);
@@ -476,7 +476,7 @@ class Test_Email_Sends extends Base {
 	public function test_compose_event_email(): void {
 		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 		$email   = Utility::invoke_hidden_method(
-			Email_Sends::get_instance(),
+			Email::get_instance(),
 			'compose_event_email',
 			array(
 				array(),
@@ -502,7 +502,7 @@ class Test_Email_Sends extends Base {
 	 * @return void
 	 */
 	public function test_build_event_email_includes_rsvp_cta_for_future_event(): void {
-		$instance = Email_Sends::get_instance();
+		$instance = Email::get_instance();
 		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 		$event    = new Event( $event_id );
 		$start    = new DateTime( 'now' );
@@ -540,7 +540,7 @@ class Test_Email_Sends extends Base {
 	 * @return void
 	 */
 	public function test_build_event_email_omits_rsvp_cta_for_past_event(): void {
-		$instance = Email_Sends::get_instance();
+		$instance = Email::get_instance();
 		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 		$event    = new Event( $event_id );
 		$start    = new DateTime( 'now' );
@@ -586,7 +586,7 @@ class Test_Email_Sends extends Base {
 	public function test_build_event_email_omits_rsvp_cta_when_rsvp_disabled(): void {
 		Settings::get_instance()->set( 'rsvp_mode', 'per_event_enabled' );
 
-		$instance = Email_Sends::get_instance();
+		$instance = Email::get_instance();
 		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 		$event    = new Event( $event_id );
 		$start    = new DateTime( 'now' );
@@ -628,7 +628,7 @@ class Test_Email_Sends extends Base {
 	 * @return void
 	 */
 	public function test_build_event_email_keeps_supplied_subject(): void {
-		$instance = Email_Sends::get_instance();
+		$instance = Email::get_instance();
 		$event_id = $this->factory->post->create(
 			array(
 				'post_type'  => Event::POST_TYPE,
@@ -657,7 +657,7 @@ class Test_Email_Sends extends Base {
 	 * @return void
 	 */
 	public function test_build_event_email_builds_default_subject_from_title(): void {
-		$instance = Email_Sends::get_instance();
+		$instance = Email::get_instance();
 		$event_id = $this->factory->post->create(
 			array(
 				'post_type'  => Event::POST_TYPE,
@@ -689,7 +689,7 @@ class Test_Email_Sends extends Base {
 	 * @return void
 	 */
 	public function test_build_comment_recipient_uses_user_data_when_user_id_present(): void {
-		$instance = Email_Sends::get_instance();
+		$instance = Email::get_instance();
 		$user_id  = $this->factory->user->create(
 			array(
 				'user_email'   => 'user-recipient@example.test',
@@ -727,7 +727,7 @@ class Test_Email_Sends extends Base {
 	 * @return void
 	 */
 	public function test_build_comment_recipient_falls_back_to_comment_fields(): void {
-		$instance = Email_Sends::get_instance();
+		$instance = Email::get_instance();
 
 		$comment                       = new \stdClass();
 		$comment->comment_ID           = 7;
@@ -757,7 +757,7 @@ class Test_Email_Sends extends Base {
 	 * @return void
 	 */
 	public function test_build_comment_recipient_returns_null_without_email(): void {
-		$instance = Email_Sends::get_instance();
+		$instance = Email::get_instance();
 
 		$comment                       = new \stdClass();
 		$comment->comment_ID           = 1;

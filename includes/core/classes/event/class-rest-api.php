@@ -444,7 +444,7 @@ final class Rest_Api {
 	public function email( WP_REST_Request $request ): WP_REST_Response {
 		$params   = $request->get_params();
 		$response = array(
-			'success' => Email_Sends::get_instance()->send_emails(
+			'success' => Email::get_instance()->send_emails(
 				intval( $params['post_id'] ),
 				$params['send'],
 				$params['message'] ?? '',
@@ -464,7 +464,7 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 * @since 0.36.0 Added `$subject` parameter for #827.
-	 * @since TBD Kept for existing callers: `Email_Sends` handles the hook and queues the email with Mailer.
+	 * @since TBD Kept for existing callers: `Event\Email` handles the hook and queues the email with Mailer.
 	 *
 	 * @param int    $post_id Post ID.
 	 * @param array  $send    Members to send the email to.
@@ -475,7 +475,7 @@ final class Rest_Api {
 	 * @return void
 	 */
 	public function handle_email_send_action( int $post_id, array $send, string $message, string $subject = '' ): void {
-		Email_Sends::get_instance()->send_emails( $post_id, $send, $message, $subject );
+		Email::get_instance()->send_emails( $post_id, $send, $message, $subject );
 	}
 
 	/**
@@ -487,7 +487,7 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 * @since 0.36.0 Added `$subject` parameter for #827.
-	 * @since TBD Kept for existing callers: `Email_Sends` queues the email with Mailer.
+	 * @since TBD Kept for existing callers: `Event\Email` queues the email with Mailer.
 	 *
 	 * @param int    $post_id Post ID.
 	 * @param array  $send    Members to send the email to.
@@ -498,7 +498,7 @@ final class Rest_Api {
 	 * @return bool True when the email is queued, false otherwise.
 	 */
 	public function send_emails( int $post_id, array $send, string $message, string $subject = '' ): bool {
-		return Email_Sends::get_instance()->send_emails( $post_id, $send, $message, $subject );
+		return Email::get_instance()->send_emails( $post_id, $send, $message, $subject );
 	}
 
 	/**
@@ -511,7 +511,7 @@ final class Rest_Api {
 	 * that includes both WordPress users and non-user RSVPs with their email addresses and metadata.
 	 *
 	 * @since 0.34.0
-	 * @since TBD Kept for existing callers: `Email_Sends` builds the list.
+	 * @since TBD Kept for existing callers: `Event\Email` builds the list.
 	 *
 	 * @param array $send    An array specifying who to send emails to.
 	 * @param int   $post_id The Event Post ID.
@@ -520,7 +520,7 @@ final class Rest_Api {
 	 * @return array<int, Recipient> An array containing unified recipient data for both users and non-users.
 	 */
 	public function get_recipients( array $send, int $post_id ): array {
-		return Email_Sends::get_instance()->get_recipients( $send, $post_id );
+		return Email::get_instance()->get_recipients( $send, $post_id );
 	}
 
 	/**
