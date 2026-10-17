@@ -36,11 +36,11 @@ const HIDDEN_CLASS = 'gatherpress--is-hidden';
  * Render the send form markup the Email page template outputs.
  *
  * @param {string}  message The message field value.
- * @param {boolean} rsvp    Whether RSVPs are on, which adds the Active members fields.
+ * @param {boolean} rsvp    Whether RSVPs are on, which adds the Active users fields.
  *
  * @return {Object} The form elements, as initSendEmail() collects them.
  */
-function renderForm( message = 'Hello members', rsvp = true ) {
+function renderForm( message = 'Hello everyone', rsvp = true ) {
 	const active = rsvp
 		? `<div class="${ HIDDEN_CLASS }" data-gatherpress_audience="active">
 				<select id="gatherpress-message-months">
@@ -57,7 +57,7 @@ function renderForm( message = 'Hello members', rsvp = true ) {
 				<option value="role">Role</option>
 				<option value="active">Active</option>
 			</select>
-			<output class="gatherpress-send-email__count">This will email 2 members.</output>
+			<output class="gatherpress-send-email__count" data-gatherpress_count="2">This will email 2 users.</output>
 			<div class="${ HIDDEN_CLASS }" data-gatherpress_audience="role">
 				<button type="button" data-gatherpress_roles="all"></button>
 				<button type="button" data-gatherpress_roles="none"></button>
@@ -141,7 +141,7 @@ describe( 'send-email', () => {
 		} );
 
 		it( 'leaves out months while RSVPs are off', () => {
-			const elements = renderForm( 'Hello members', false );
+			const elements = renderForm( 'Hello everyone', false );
 
 			expect( readAudience( elements ) ).toEqual( {
 				audience: 'all',
@@ -172,7 +172,7 @@ describe( 'send-email', () => {
 			const elements = renderForm();
 
 			pick( elements, 'role' );
-			apiFetch.mockResolvedValue( { message: 'This will email 2 members.' } );
+			apiFetch.mockResolvedValue( { message: 'This will email 2 users.' } );
 			await setAllRoles( elements, true );
 
 			expect( elements.roles.every( ( role ) => role.checked ) ).toBe(
@@ -211,15 +211,19 @@ describe( 'send-email', () => {
 			const elements = renderForm();
 
 			pick( elements, 'active' );
-			apiFetch.mockResolvedValue( { message: 'This will email 5 members.' } );
+			apiFetch.mockResolvedValue( {
+				message: 'This will email 5 users.',
+				count: 5,
+			} );
 			await updateCount( elements );
 
 			expect( apiFetch ).toHaveBeenCalledWith( {
 				path: '/gatherpress/v1/site-message/count?audience=active&months=3',
 			} );
 			expect( elements.count.textContent ).toBe(
-				'This will email 5 members.',
+				'This will email 5 users.',
 			);
+			expect( elements.count.dataset.gatherpress_count ).toBe( '5' );
 		} );
 
 		it( 'shows what is missing without asking the server', async () => {
@@ -250,8 +254,9 @@ describe( 'send-email', () => {
 			await updateCount( elements );
 
 			expect( elements.count.textContent ).toBe(
-				'The members could not be counted.',
+				'The users could not be counted.',
 			);
+			expect( elements.count.dataset.gatherpress_count ).toBeUndefined();
 		} );
 
 		it( 'only shows the latest count', async () => {
@@ -287,7 +292,7 @@ describe( 'send-email', () => {
 		it( 'updates the fields and count when the audience changes', async () => {
 			const elements = renderForm();
 
-			apiFetch.mockResolvedValue( { message: 'This will email 1 member.' } );
+			apiFetch.mockResolvedValue( { message: 'This will email 1 user.' } );
 			initSendEmail();
 			pick( elements, 'active' );
 			elements.audience.dispatchEvent( new Event( 'change' ) );
@@ -298,14 +303,14 @@ describe( 'send-email', () => {
 				elements.audienceRows[ 1 ].classList.contains( HIDDEN_CLASS ),
 			).toBe( false );
 			expect( elements.count.textContent ).toBe(
-				'This will email 1 member.',
+				'This will email 1 user.',
 			);
 		} );
 
 		it( 'checks every role from Select all', async () => {
-			const elements = renderForm( 'Hello members', false );
+			const elements = renderForm( 'Hello everyone', false );
 
-			apiFetch.mockResolvedValue( { message: 'This will email 2 members.' } );
+			apiFetch.mockResolvedValue( { message: 'This will email 2 users.' } );
 			initSendEmail();
 			pick( elements, 'role' );
 			document.querySelector( '[data-gatherpress_roles="all"]' ).click();
@@ -326,7 +331,7 @@ describe( 'send-email', () => {
 		it( 'sends the message when the button is clicked', async () => {
 			const { button } = renderForm();
 
-			apiFetch.mockResolvedValue( { message: 'Queued for 2 members.' } );
+			apiFetch.mockResolvedValue( { message: 'Queued for 2 users.' } );
 			initSendEmail();
 			button.click();
 
@@ -337,7 +342,7 @@ describe( 'send-email', () => {
 				method: 'POST',
 				data: {
 					subject: 'Hi',
-					message: 'Hello members',
+					message: 'Hello everyone',
 					audience: 'all',
 					roles: [],
 					months: 3,
@@ -350,10 +355,10 @@ describe( 'send-email', () => {
 		it( 'queues the message and clears the field', async () => {
 			const elements = renderForm();
 
-			apiFetch.mockResolvedValue( { message: 'Queued for 2 members.' } );
+			apiFetch.mockResolvedValue( { message: 'Queued for 2 users.' } );
 			await sendMessage( elements );
 
-			expect( statusText() ).toBe( 'Queued for 2 members.' );
+			expect( statusText() ).toBe( 'Queued for 2 users.' );
 			expect( elements.status.classList ).not.toContain( HIDDEN_CLASS );
 			expect(
 				elements.status.querySelector( '.spinner' ).classList,
@@ -386,6 +391,30 @@ describe( 'send-email', () => {
 
 			expect( window.confirm ).not.toHaveBeenCalled();
 			expect( apiFetch ).not.toHaveBeenCalled();
+		} );
+
+		it( 'asks for a subject before sending', async () => {
+			const elements = renderForm();
+
+			elements.subject.value = '  ';
+			await sendMessage( elements );
+
+			expect( statusText() ).toBe(
+				'Please write a subject before sending.',
+			);
+			expect( apiFetch ).not.toHaveBeenCalled();
+		} );
+
+		it( 'does not send when no users would get it', async () => {
+			const elements = renderForm();
+
+			elements.count.dataset.gatherpress_count = '0';
+			await sendMessage( elements );
+
+			expect( statusText() ).toBe(
+				'There are no users to send this message to.',
+			);
+			expect( window.confirm ).not.toHaveBeenCalled();
 		} );
 
 		it( 'asks for a message before sending a blank one', async () => {
@@ -423,14 +452,14 @@ describe( 'send-email', () => {
 			const elements = renderForm();
 
 			apiFetch.mockRejectedValue( {
-				message: 'There are no members to send this message to.',
+				message: 'There are no users to send this message to.',
 			} );
 			await sendMessage( elements );
 
 			expect( statusText() ).toBe(
-				'There are no members to send this message to.',
+				'There are no users to send this message to.',
 			);
-			expect( elements.message.value ).toBe( 'Hello members' );
+			expect( elements.message.value ).toBe( 'Hello everyone' );
 			expect( elements.button.getAttribute( 'aria-disabled' ) ).toBe(
 				'false',
 			);

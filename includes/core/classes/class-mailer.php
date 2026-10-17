@@ -3,7 +3,7 @@
  * Shared email delivery for GatherPress.
  *
  * This file contains the Mailer class, which owns the per-recipient transport
- * shared by the event update emails and the site-wide member message: opt-in
+ * shared by the event update emails and the site-wide message: opt-in
  * eligibility, recipient context switching, and the wp_mail call itself.
  *
  * @package GatherPress\Core
@@ -133,7 +133,7 @@ final class Mailer {
 
 		$switched_locale = switch_to_user_locale( $recipient['user_id'] );
 
-		// Set the current user to the member being mailed, so the GatherPress
+		// Set the current user to the user being mailed, so the GatherPress
 		// filters for date and time format, as well as the user's timezone, are
 		// recognized by the functions inside the template render.
 		wp_set_current_user( $recipient['user_id'] );

@@ -1,6 +1,6 @@
 <?php
 /**
- * Email template for site-wide member messages.
+ * Email template for site-wide messages.
  *
  * This template generates the body of a message sent from the Email
  * settings page, so it carries no event data.

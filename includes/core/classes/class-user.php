@@ -183,7 +183,7 @@ final class User {
 	/**
 	 * Get the plural labels of the post types that take RSVPs.
 	 *
-	 * The profile opt-in talks about the content members hear about, which
+	 * The profile opt-in talks about the content users hear about, which
 	 * follows the post types that collect RSVPs on this site rather than
 	 * assuming events. The opt-in covers every one of them, so all labels
 	 * are listed, for example "Events and Sessions". Returns an empty string

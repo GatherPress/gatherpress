@@ -2,15 +2,15 @@
 /**
  * Template for the GatherPress Email page.
  *
- * Provides a form for sending a message to every opted-in member of the site.
+ * Provides a form for sending a message to the site's opted-in users.
  *
  * @package GatherPress\Core
  * @since TBD
  *
- * @param int                   $recipient_count Number of members the message would go out to.
+ * @param int                   $recipient_count Number of users the message would go out to.
  * @param array<string, string> $audiences       Audience labels, keyed by audience.
  * @param array<string, string> $roles           Role names, keyed by role.
- * @param int[]                 $active_months   Choices for how far back an active member's last RSVP can be.
+ * @param int[]                 $active_months   Choices for how far back an active user's last RSVP can be.
  */
 
 // Exit if accessed directly.
@@ -24,11 +24,11 @@ if ( ! isset( $recipient_count ) ) {
 <div class="wrap">
 	<h1><?php esc_html_e( 'Email', 'gatherpress' ); ?></h1>
 
-	<h2><?php esc_html_e( 'Send Email To Members', 'gatherpress' ); ?></h2>
+	<h2><?php esc_html_e( 'Send Email To Users', 'gatherpress' ); ?></h2>
 	<p class="description">
 		<?php
 		esc_html_e(
-			'Send a message to members of this site who have event updates turned on. Members can turn these emails off from their profile, and they are always skipped.',
+			'Send a message to users of this site who have event updates turned on. Users can turn these emails off from their profile, and they are always skipped.',
 			'gatherpress'
 		);
 		?>
@@ -47,14 +47,18 @@ if ( ! isset( $recipient_count ) ) {
 						<?php endforeach; ?>
 					</select>
 					<p class="description">
-						<output id="gatherpress-message-count" class="gatherpress-send-email__count">
+						<output
+							id="gatherpress-message-count"
+							class="gatherpress-send-email__count"
+							data-gatherpress_count="<?php echo esc_attr( (string) (int) $recipient_count ); ?>"
+						>
 							<?php
 							printf(
 								esc_html(
-									/* translators: %d: Number of members the message will be sent to. */
+									/* translators: %d: Number of users the message will be sent to. */
 									_n(
-										'This will email %d member.',
-										'This will email %d members.',
+										'This will email %d user.',
+										'This will email %d users.',
 										$recipient_count,
 										'gatherpress'
 									)
@@ -112,35 +116,39 @@ if ( ! isset( $recipient_count ) ) {
 							</option>
 						<?php endforeach; ?>
 					</select>
-					<p class="description"><?php esc_html_e( "Members who RSVP'd to any event in that time.", 'gatherpress' ); ?></p>
+					<p class="description"><?php esc_html_e( "Users who RSVP'd to any event in that time.", 'gatherpress' ); ?></p>
 				</div>
 			</div>
 			<?php endif; ?>
 			<div class="gatherpress-settings-form__row">
 				<div class="gatherpress-settings-form__label">
-					<label for="gatherpress-message-subject"><?php esc_html_e( 'Subject', 'gatherpress' ); ?></label>
+					<label for="gatherpress-message-subject">
+						<?php esc_html_e( 'Subject', 'gatherpress' ); ?>
+						<span class="description"><?php esc_html_e( '(required)', 'gatherpress' ); ?></span>
+					</label>
 				</div>
 				<div class="gatherpress-settings-form__field">
 					<input
 						type="text"
 						id="gatherpress-message-subject"
 						class="large-text"
-						aria-describedby="gatherpress-message-subject-description"
+						aria-required="true"
 					/>
-					<p class="description" id="gatherpress-message-subject-description">
-						<?php esc_html_e( 'Leave blank to use "Message from" and the site name.', 'gatherpress' ); ?>
-					</p>
 				</div>
 			</div>
 			<div class="gatherpress-settings-form__row">
 				<div class="gatherpress-settings-form__label">
-					<label for="gatherpress-message-body"><?php esc_html_e( 'Message', 'gatherpress' ); ?></label>
+					<label for="gatherpress-message-body">
+						<?php esc_html_e( 'Message', 'gatherpress' ); ?>
+						<span class="description"><?php esc_html_e( '(required)', 'gatherpress' ); ?></span>
+					</label>
 				</div>
 				<div class="gatherpress-settings-form__field">
 					<textarea
 						id="gatherpress-message-body"
 						class="large-text"
 						rows="8"
+						aria-required="true"
 					></textarea>
 				</div>
 			</div>

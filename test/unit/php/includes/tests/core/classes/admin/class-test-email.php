@@ -32,7 +32,7 @@ class Test_Email extends Base {
 	 *
 	 * @var array<string, string>
 	 */
-	private const ALL_MEMBERS = array( 'type' => 'all' );
+	private const ALL_USERS = array( 'type' => 'all' );
 
 	/**
 	 * Reusable batch-size filter so the same closure can be removed again.
@@ -138,13 +138,13 @@ class Test_Email extends Base {
 	}
 
 	/**
-	 * Check that no page or assets hook is added for a member who cannot send.
+	 * Check that no page or assets hook is added for a user who cannot send.
 	 *
 	 * @covers ::add_submenu_page
 	 *
 	 * @return void
 	 */
-	public function test_add_submenu_page_skips_members_who_cannot_send(): void {
+	public function test_add_submenu_page_skips_users_who_cannot_send(): void {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'subscriber' ) ) );
 		Email::get_instance()->add_submenu_page();
 
@@ -193,18 +193,18 @@ class Test_Email extends Base {
 		$this->assertStringContainsString( 'id="gatherpress-message-months"', $response );
 		$this->assertStringContainsString( 'value="editor"', $response );
 		$this->assertStringContainsString( 'data-gatherpress_roles="all"', $response );
-		$this->assertStringContainsString( 'Send Email To Members', $response );
+		$this->assertStringContainsString( 'Send Email To Users', $response );
 		$this->assertStringContainsString( 'gatherpress-message-body', $response );
 	}
 
 	/**
-	 * Check that the Active members fields are left out while RSVPs are off.
+	 * Check that the Active users fields are left out while RSVPs are off.
 	 *
 	 * @covers ::render_page
 	 *
 	 * @return void
 	 */
-	public function test_render_page_leaves_out_active_members_while_rsvps_are_off(): void {
+	public function test_render_page_leaves_out_active_users_while_rsvps_are_off(): void {
 		update_option( Settings::OPTION_NAME, array( 'rsvp_mode' => 'disabled' ) );
 
 		$response = Utility::buffer_and_return( array( Email::get_instance(), 'render_page' ) );
@@ -245,8 +245,8 @@ class Test_Email extends Base {
 		$singular = Core_Utility::render_template( $template, array( 'recipient_count' => 1 ) );
 		$plural   = Core_Utility::render_template( $template, array( 'recipient_count' => 2 ) );
 
-		$this->assertStringContainsString( 'This will email 1 member.', $singular );
-		$this->assertStringContainsString( 'This will email 2 members.', $plural );
+		$this->assertStringContainsString( 'This will email 1 user.', $singular );
+		$this->assertStringContainsString( 'This will email 2 users.', $plural );
 		$this->assertStringNotContainsString( '<style', $plural, 'Styles belong in the settings stylesheet.' );
 		$this->assertStringNotContainsString( '<script', $plural, 'Scripts belong in the settings bundle.' );
 	}
@@ -260,7 +260,7 @@ class Test_Email extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_count_recipients_pages_and_filters_opted_out_members(): void {
+	public function test_count_recipients_pages_and_filters_opted_out_users(): void {
 		$included_id = $this->factory->user->create( array( 'display_name' => 'Included' ) );
 		$excluded_id = $this->factory->user->create( array( 'display_name' => 'Excluded' ) );
 		$second_id   = $this->factory->user->create( array( 'display_name' => 'Second' ) );
@@ -289,7 +289,7 @@ class Test_Email extends Base {
 		remove_all_filters( 'gatherpress_site_message_recipients' );
 		remove_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
 
-		// The excluded member is dropped, so only the two opted-in users count.
+		// The excluded user is dropped, so only the two opted-in users count.
 		$this->assertSame( 2, $count );
 		// Every page of one was visited, and the next cursor is the first user ID.
 		$this->assertContains( 0, $last_ids );
@@ -354,13 +354,13 @@ class Test_Email extends Base {
 	}
 
 	/**
-	 * Check that membership changes between batches do not skip or duplicate users.
+	 * Check that users joining or leaving between batches are not skipped or duplicated.
 	 *
 	 * @covers ::get_recipient_batch
 	 *
 	 * @return void
 	 */
-	public function test_recipient_batch_handles_membership_changes_with_cursor(): void {
+	public function test_recipient_batch_handles_user_changes_with_cursor(): void {
 		$cursor    = $this->max_user_id();
 		$first_id  = $this->factory->user->create( array( 'display_name' => 'First' ) );
 		$second_id = $this->factory->user->create( array( 'display_name' => 'Second' ) );
@@ -441,6 +441,7 @@ class Test_Email extends Base {
 		$this->assertSame( array( $instance, 'queue_message' ), $route['callback'] );
 		$this->assertSame( 'sanitize_text_field', $route['args']['subject']['sanitize_callback'] );
 		$this->assertSame( 'sanitize_textarea_field', $route['args']['message']['sanitize_callback'] );
+		$this->assertTrue( $route['args']['subject']['required'] );
 		$this->assertSame( Email::AUDIENCES, $route['args']['audience']['enum'] );
 
 		$count = $server->get_routes()[ sprintf( '/%s/site-message/count', GATHERPRESS_REST_NAMESPACE ) ][0];
@@ -452,7 +453,7 @@ class Test_Email extends Base {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'subscriber' ) ) );
 		$this->assertFalse(
 			call_user_func( $route['permission_callback'] ),
-			'Members without manage_options should not be able to send.'
+			'Users without manage_options should not be able to send.'
 		);
 
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
@@ -460,15 +461,15 @@ class Test_Email extends Base {
 	}
 
 	/**
-	 * Check that no audience means every member.
+	 * Check that no audience means every user.
 	 *
 	 * @covers ::resolve_audience
 	 *
 	 * @return void
 	 */
-	public function test_resolve_audience_defaults_to_all_members(): void {
-		$this->assertSame( self::ALL_MEMBERS, $this->resolve_audience( array() ) );
-		$this->assertSame( self::ALL_MEMBERS, $this->resolve_audience( array( 'audience' => 'made_up' ) ) );
+	public function test_resolve_audience_defaults_to_all_users(): void {
+		$this->assertSame( self::ALL_USERS, $this->resolve_audience( array() ) );
+		$this->assertSame( self::ALL_USERS, $this->resolve_audience( array( 'audience' => 'made_up' ) ) );
 	}
 
 	/**
@@ -527,7 +528,7 @@ class Test_Email extends Base {
 	}
 
 	/**
-	 * Check that active members cannot be picked while RSVPs are turned off.
+	 * Check that active users cannot be picked while RSVPs are turned off.
 	 *
 	 * @covers ::resolve_audience
 	 * @covers ::is_rsvp_enabled
@@ -546,7 +547,7 @@ class Test_Email extends Base {
 	}
 
 	/**
-	 * Check that active members are only offered while RSVPs are turned on.
+	 * Check that active users are only offered while RSVPs are turned on.
 	 *
 	 * @covers ::get_audience_choices
 	 * @covers ::is_rsvp_enabled
@@ -586,7 +587,7 @@ class Test_Email extends Base {
 			return Utility::invoke_hidden_method( $instance, 'get_audience_query_args', array( $audience ) );
 		};
 
-		$this->assertSame( array(), $args( self::ALL_MEMBERS ) );
+		$this->assertSame( array(), $args( self::ALL_USERS ) );
 		$this->assertSame(
 			array( 'role__in' => array( 'editor' ) ),
 			$args(
@@ -615,19 +616,19 @@ class Test_Email extends Base {
 					'months' => 1,
 				)
 			),
-			'With no active members, nobody should match.'
+			'With no active users, nobody should match.'
 		);
 	}
 
 	/**
-	 * Check that active members are those with a confirmed RSVP inside the window.
+	 * Check that active users are those with a confirmed RSVP inside the window.
 	 *
-	 * @covers ::get_active_member_ids
+	 * @covers ::get_active_user_ids
 	 * @covers ::get_rsvp_user_ids
 	 *
 	 * @return void
 	 */
-	public function test_get_active_member_ids(): void {
+	public function test_get_active_user_ids(): void {
 		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 		$recent   = $this->factory->user->create();
 		$older    = $this->factory->user->create();
@@ -640,7 +641,7 @@ class Test_Email extends Base {
 		$this->rsvp( $event_id, 0 );
 
 		$ids = static function ( int $months ): array {
-			$active = Utility::invoke_hidden_method( Email::get_instance(), 'get_active_member_ids', array( $months ) );
+			$active = Utility::invoke_hidden_method( Email::get_instance(), 'get_active_user_ids', array( $months ) );
 
 			sort( $active );
 
@@ -652,7 +653,7 @@ class Test_Email extends Base {
 	}
 
 	/**
-	 * Check that RSVPs are reduced to the members behind them.
+	 * Check that RSVPs are reduced to the users behind them.
 	 *
 	 * Invoked directly because xdebug does not trace same-class helpers
 	 * called by short delegation.
@@ -737,12 +738,12 @@ class Test_Email extends Base {
 					'roles' => array( 'editor', 'author' ),
 				)
 			),
-			'Members who turned event updates off should still be skipped.'
+			'Users who turned event updates off should still be skipped.'
 		);
 	}
 
 	/**
-	 * Check that the count route reports the audience's member count.
+	 * Check that the count route reports the audience's user count.
 	 *
 	 * @covers ::count_message_recipients
 	 *
@@ -759,7 +760,7 @@ class Test_Email extends Base {
 
 		$this->assertInstanceOf( WP_REST_Response::class, $response );
 		$this->assertSame( 1, $response->get_data()['count'] );
-		$this->assertSame( 'This will email 1 member.', $response->get_data()['message'] );
+		$this->assertSame( 'This will email 1 user.', $response->get_data()['message'] );
 
 		$request->set_param( 'roles', array() );
 
@@ -800,7 +801,7 @@ class Test_Email extends Base {
 
 		$response = Email::get_instance()->queue_message( $request );
 
-		$this->assertSame( 'Queued for 1 member.', $response->get_data()['message'] );
+		$this->assertSame( 'Queued for 1 user.', $response->get_data()['message'] );
 		$this->assertNotFalse(
 			wp_next_scheduled(
 				'gatherpress_site_message_send',
@@ -873,7 +874,22 @@ class Test_Email extends Base {
 	}
 
 	/**
-	 * Check that a message is rejected when no members are eligible.
+	 * Check that an empty subject is rejected.
+	 *
+	 * @covers ::queue_message
+	 *
+	 * @return void
+	 */
+	public function test_queue_message_rejects_empty_subject(): void {
+		$response = Email::get_instance()->queue_message( $this->site_message_request( '   ', 'Message body' ) );
+
+		$this->assertWPError( $response );
+		$this->assertSame( 'Please write a subject before sending.', $response->get_error_message() );
+		$this->assertSame( 400, $response->get_error_data()['status'] );
+	}
+
+	/**
+	 * Check that a message is rejected when no users are eligible.
 	 *
 	 * @covers ::queue_message
 	 *
@@ -910,7 +926,7 @@ class Test_Email extends Base {
 		$this->assertNotFalse(
 			wp_next_scheduled(
 				'gatherpress_site_message_send',
-				array( 'Subject', 'Message body', 0, self::ALL_MEMBERS )
+				array( 'Subject', 'Message body', 0, self::ALL_USERS )
 			)
 		);
 		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
@@ -945,11 +961,11 @@ class Test_Email extends Base {
 
 		$this->assertTrue( $scheduled );
 		$this->assertSame(
-			array( 'gatherpress_site_message_send', array( 'Subject', 'Message', 0, self::ALL_MEMBERS ) ),
+			array( 'gatherpress_site_message_send', array( 'Subject', 'Message', 0, self::ALL_USERS ) ),
 			$captured_args
 		);
 		$this->assertFalse(
-			wp_next_scheduled( 'gatherpress_site_message_send', array( 'Subject', 'Message', 0, self::ALL_MEMBERS ) )
+			wp_next_scheduled( 'gatherpress_site_message_send', array( 'Subject', 'Message', 0, self::ALL_USERS ) )
 		);
 	}
 
@@ -971,7 +987,7 @@ class Test_Email extends Base {
 		$this->assertNotFalse(
 			wp_next_scheduled(
 				'gatherpress_site_message_send',
-				array( 'Unique subject', 'Unique message', 99, self::ALL_MEMBERS )
+				array( 'Unique subject', 'Unique message', 99, self::ALL_USERS )
 			)
 		);
 		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
@@ -986,7 +1002,7 @@ class Test_Email extends Base {
 	 */
 	public function test_schedule_message_batch_skips_duplicate_cursor(): void {
 		$instance = Email::get_instance();
-		$args     = array( 'Subject', 'Message', 0, self::ALL_MEMBERS );
+		$args     = array( 'Subject', 'Message', 0, self::ALL_USERS );
 
 		wp_schedule_single_event( time() + 60, 'gatherpress_site_message_send', $args );
 		$scheduled_at = wp_next_scheduled( 'gatherpress_site_message_send', $args );
@@ -1000,7 +1016,7 @@ class Test_Email extends Base {
 		$this->assertTrue( $result );
 		$this->assertSame(
 			$scheduled_at,
-			wp_next_scheduled( 'gatherpress_site_message_send', array( 'Subject', 'Message', 0, self::ALL_MEMBERS ) )
+			wp_next_scheduled( 'gatherpress_site_message_send', array( 'Subject', 'Message', 0, self::ALL_USERS ) )
 		);
 		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
 	}
@@ -1063,7 +1079,7 @@ class Test_Email extends Base {
 		$this->assertNotFalse(
 			wp_next_scheduled(
 				'gatherpress_site_message_send',
-				array( '', 'A site message', $first_id, self::ALL_MEMBERS )
+				array( '', 'A site message', $first_id, self::ALL_USERS )
 			)
 		);
 		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
@@ -1097,7 +1113,7 @@ class Test_Email extends Base {
 		$this->assertNotFalse(
 			wp_next_scheduled(
 				'gatherpress_site_message_send',
-				array( 'Subject', 'Message', $first_id, self::ALL_MEMBERS )
+				array( 'Subject', 'Message', $first_id, self::ALL_USERS )
 			)
 		);
 		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
@@ -1158,7 +1174,7 @@ class Test_Email extends Base {
 		$this->assertNotFalse(
 			wp_next_scheduled(
 				'gatherpress_site_message_send',
-				array( 'Subject', 'Message', $first_id, self::ALL_MEMBERS )
+				array( 'Subject', 'Message', $first_id, self::ALL_USERS )
 			)
 		);
 		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
@@ -1247,7 +1263,7 @@ class Test_Email extends Base {
 	}
 
 	/**
-	 * Check that registering a member clears the cached count.
+	 * Check that registering a user clears the cached count.
 	 *
 	 * @return void
 	 */
@@ -1257,11 +1273,11 @@ class Test_Email extends Base {
 
 		$this->factory->user->create();
 
-		$this->assertFalse( get_transient( $cache_key ), 'Registering a member should drop the cached count.' );
+		$this->assertFalse( get_transient( $cache_key ), 'Registering a user should drop the cached count.' );
 	}
 
 	/**
-	 * Check that deleting a member clears the cached count.
+	 * Check that deleting a user clears the cached count.
 	 *
 	 * @return void
 	 */
@@ -1272,7 +1288,7 @@ class Test_Email extends Base {
 
 		wp_delete_user( $user_id );
 
-		$this->assertFalse( get_transient( $cache_key ), 'Deleting a member should drop the cached count.' );
+		$this->assertFalse( get_transient( $cache_key ), 'Deleting a user should drop the cached count.' );
 	}
 
 	/**
@@ -1368,7 +1384,7 @@ class Test_Email extends Base {
 		set_transient( $cache_key, 4242, HOUR_IN_SECONDS );
 		$page = Utility::buffer_and_return( array( $instance, 'render_page' ) );
 
-		$this->assertStringContainsString( 'This will email 4242 members.', $page );
+		$this->assertStringContainsString( 'This will email 4242 users.', $page );
 
 		delete_transient( $cache_key );
 	}
@@ -1436,7 +1452,7 @@ class Test_Email extends Base {
 	}
 
 	/**
-	 * Get the highest existing user ID before creating test members.
+	 * Get the highest existing user ID before creating test users.
 	 *
 	 * @return int Highest existing user ID.
 	 */
@@ -1454,7 +1470,7 @@ class Test_Email extends Base {
 	}
 
 	/**
-	 * Return a shared closure that limits one cron job to a single member.
+	 * Return a shared closure that limits one cron job to a single user.
 	 *
 	 * The same instance is returned on every call so the filter can be removed.
 	 *
@@ -1499,7 +1515,7 @@ class Test_Email extends Base {
 	 * Add an RSVP to an event.
 	 *
 	 * @param int    $event_id Event post ID.
-	 * @param int    $user_id  Member who RSVP'd, or 0 for someone without an account.
+	 * @param int    $user_id  User who RSVP'd, or 0 for someone without an account.
 	 * @param int    $approved 1 for a confirmed RSVP, 0 for one awaiting confirmation.
 	 * @param string $when     When the RSVP was made, relative to now.
 	 *

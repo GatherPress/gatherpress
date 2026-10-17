@@ -42,7 +42,7 @@ function showStatus( status, text, busy ) {
  * @param {Object}                 elements          The Send Email form elements.
  * @param {HTMLSelectElement}      elements.audience The audience select.
  * @param {HTMLInputElement[]}     elements.roles    The role checkboxes.
- * @param {HTMLSelectElement|null} elements.months   The active member window select, absent while RSVPs are off.
+ * @param {HTMLSelectElement|null} elements.months   The active user window select, absent while RSVPs are off.
  *
  * @return {Object} The audience, as the site message REST routes take it.
  */
@@ -74,6 +74,36 @@ export function getAudienceError( params ) {
 	return 'role' === params.audience && ! params.roles.length
 		? __( 'Choose at least one role.', 'gatherpress' )
 		: '';
+}
+
+/**
+ * Explain what the Send Email form is missing before it can be sent.
+ *
+ * @since TBD
+ *
+ * @param {Object}           elements         The Send Email form elements.
+ * @param {HTMLInputElement} elements.subject The subject field.
+ * @param {HTMLElement}      elements.message The message textarea.
+ * @param {HTMLElement}      elements.count   The user count, holding the last count it showed.
+ * @param {Object}           audience         The audience, from readAudience().
+ *
+ * @return {string} What to fix, or an empty string when nothing is missing.
+ */
+export function getFormError( { subject, message, count }, audience ) {
+	if ( ! subject.value.trim() ) {
+		return __( 'Please write a subject before sending.', 'gatherpress' );
+	}
+
+	if ( ! message.value.trim() ) {
+		return __( 'Please write a message before sending.', 'gatherpress' );
+	}
+
+	// A count that is still loading or failed is checked again by the server.
+	if ( '0' === count.dataset.gatherpress_count ) {
+		return __( 'There are no users to send this message to.', 'gatherpress' );
+	}
+
+	return getAudienceError( audience );
 }
 
 /**
@@ -115,7 +145,7 @@ export function setAllRoles( elements, checked ) {
 }
 
 /**
- * Update how many members the picked audience would email.
+ * Update how many users the picked audience would email.
  *
  * @since TBD
  *
@@ -128,14 +158,17 @@ export async function updateCount( elements ) {
 	const error = getAudienceError( params );
 	const request = ++latestCount;
 
+	delete elements.count.dataset.gatherpress_count;
+
 	if ( error ) {
 		elements.count.textContent = error;
 		return;
 	}
 
-	elements.count.textContent = __( 'Counting members…', 'gatherpress' );
+	elements.count.textContent = __( 'Counting users…', 'gatherpress' );
 
 	let text;
+	let total;
 
 	try {
 		const response = await apiFetch( {
@@ -143,14 +176,19 @@ export async function updateCount( elements ) {
 		} );
 
 		text = response.message;
+		total = response.count;
 	} catch ( apiError ) {
 		text =
 			apiError?.message ||
-			__( 'The members could not be counted.', 'gatherpress' );
+			__( 'The users could not be counted.', 'gatherpress' );
 	}
 
 	if ( request === latestCount ) {
 		elements.count.textContent = text;
+
+		if ( undefined !== total ) {
+			elements.count.dataset.gatherpress_count = String( total );
+		}
 	}
 }
 
@@ -177,9 +215,7 @@ export async function sendMessage( elements ) {
 	}
 
 	const audience = readAudience( elements );
-	const error = message.value.trim()
-		? getAudienceError( audience )
-		: __( 'Please write a message before sending.', 'gatherpress' );
+	const error = getFormError( elements, audience );
 
 	if ( error ) {
 		showStatus( status, error, false );
@@ -190,7 +226,7 @@ export async function sendMessage( elements ) {
 		// eslint-disable-next-line no-alert -- Confirmation required before sending mass emails.
 		! window.confirm(
 			__(
-				'Send this message to the selected members? This cannot be undone.',
+				'Send this message to the selected users? This cannot be undone.',
 				'gatherpress',
 			),
 		)

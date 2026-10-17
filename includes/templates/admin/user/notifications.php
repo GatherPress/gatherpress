@@ -35,7 +35,7 @@ $gatherpress_plural = isset( $plural_label ) && '' !== $plural_label ? $plural_l
 				<?php
 				echo esc_html(
 					sprintf(
-						/* translators: %s: Plural name of the content type members hear about. */
+						/* translators: %s: Plural name of the content type users hear about. */
 						__( 'Yes, I want to receive updates and information about %1$s from the organizers.', 'gatherpress' ),
 						$gatherpress_plural
 					)

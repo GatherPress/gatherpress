@@ -3,7 +3,7 @@
  * Email page for GatherPress.
  *
  * This class handles the Email page in the Events menu, which lets an
- * administrator send a message to every member of the site who has opted in
+ * administrator send a message to every user of the site who has opted in
  * to GatherPress emails, without going through a single event.
  *
  * @package GatherPress\Core\Admin
@@ -55,8 +55,8 @@ final class Email {
 	const PAGE_SLUG = 'gatherpress_email';
 
 	/**
-	 * Who a message can be sent to: every member, members with one of the
-	 * chosen roles, or members who RSVP'd recently.
+	 * Who a message can be sent to: every user, users with one of the
+	 * chosen roles, or users who RSVP'd recently.
 	 *
 	 * @since TBD
 	 *
@@ -65,7 +65,7 @@ final class Email {
 	const AUDIENCES = array( 'all', 'role', 'active' );
 
 	/**
-	 * How far back, in months, an active member's last RSVP can be.
+	 * How far back, in months, an active user's last RSVP can be.
 	 *
 	 * @since TBD
 	 *
@@ -117,7 +117,7 @@ final class Email {
 		add_action( 'updated_user_meta', array( $this, 'maybe_clear_count_cache' ), 10, 3 );
 		add_action( 'deleted_user_meta', array( $this, 'maybe_clear_count_cache' ), 10, 3 );
 
-		// Membership changes move the count too, so the Email page does not
+		// Users joining or leaving move the count too, so the Email page does not
 		// keep showing a stale number until the transient expires.
 		add_action( 'user_register', array( $this, 'clear_count_cache' ) );
 		add_action( 'deleted_user', array( $this, 'clear_count_cache' ) );
@@ -184,7 +184,7 @@ final class Email {
 	/**
 	 * Get the audiences the site can send to, with their labels.
 	 *
-	 * Active members are picked by their RSVPs, so they are only offered
+	 * Active users are picked by their RSVPs, so they are only offered
 	 * while RSVPs are turned on.
 	 *
 	 * @since TBD
@@ -193,9 +193,9 @@ final class Email {
 	 */
 	private function get_audience_choices(): array {
 		$choices = array(
-			'all'    => __( 'All members', 'gatherpress' ),
-			'role'   => __( 'Members with a role', 'gatherpress' ),
-			'active' => __( 'Active members', 'gatherpress' ),
+			'all'    => __( 'All users', 'gatherpress' ),
+			'role'   => __( 'Users with a role', 'gatherpress' ),
+			'active' => __( 'Active users', 'gatherpress' ),
 		);
 
 		if ( ! $this->is_rsvp_enabled() ) {
@@ -260,7 +260,7 @@ final class Email {
 	}
 
 	/**
-	 * Clear the cached recipient count when a member changes their opt-in.
+	 * Clear the cached recipient count when a user changes their opt-in.
 	 *
 	 * @since TBD
 	 *
@@ -282,12 +282,12 @@ final class Email {
 	/**
 	 * Get the eligible recipient count from the cache, filling it when empty.
 	 *
-	 * Counting walks every member on the site, so the Email page reads a
+	 * Counting walks every user on the site, so the Email page reads a
 	 * cached count instead of paying that cost on each load.
 	 *
 	 * @since TBD
 	 *
-	 * @return int Number of eligible members.
+	 * @return int Number of eligible users.
 	 */
 	protected function get_cached_recipient_count(): int {
 		$count = get_transient( self::COUNT_CACHE_PREFIX . get_current_blog_id() );
@@ -301,7 +301,7 @@ final class Email {
 	}
 
 	/**
-	 * Get one page of members a site-wide message would go out to.
+	 * Get one page of users a site-wide message would go out to.
 	 *
 	 * @since TBD
 	 *
@@ -363,10 +363,10 @@ final class Email {
 		}
 
 		/**
-		 * Filters the recipients of a site-wide member message batch.
+		 * Filters the recipients of a site-wide message batch.
 		 *
 		 * Lets a site narrow or extend the audience for the current page of
-		 * opted-in members.
+		 * opted-in users.
 		 *
 		 * @since TBD
 		 *
@@ -388,7 +388,7 @@ final class Email {
 	}
 
 	/**
-	 * Get the user query arguments that narrow members down to an audience.
+	 * Get the user query arguments that narrow users down to an audience.
 	 *
 	 * @since TBD
 	 *
@@ -400,15 +400,15 @@ final class Email {
 	private function get_audience_query_args( array $audience ): array {
 		return match ( $audience['type'] ) {
 			'role'    => array( 'role__in' => $audience['roles'] ?? array() ),
-			// An empty include list would match every member. The union only
-			// adds an ID no member has when the list is empty.
-			'active'  => array( 'include' => $this->get_active_member_ids( $audience['months'] ?? 0 ) + array( 0 ) ),
+			// An empty include list would match every user. The union only
+			// adds an ID no user has when the list is empty.
+			'active'  => array( 'include' => $this->get_active_user_ids( $audience['months'] ?? 0 ) + array( 0 ) ),
 			default   => array(),
 		};
 	}
 
 	/**
-	 * Get the members who RSVP'd to any event in the past few months.
+	 * Get the users who RSVP'd to any event in the past few months.
 	 *
 	 * @since TBD
 	 *
@@ -416,7 +416,7 @@ final class Email {
 	 *
 	 * @return int[] User IDs.
 	 */
-	private function get_active_member_ids( int $months ): array {
+	private function get_active_user_ids( int $months ): array {
 		return $this->get_rsvp_user_ids(
 			array(
 				'status'     => 'approve',
@@ -431,7 +431,7 @@ final class Email {
 	}
 
 	/**
-	 * Get the IDs of the members behind a set of RSVPs.
+	 * Get the IDs of the users behind a set of RSVPs.
 	 *
 	 * @since TBD
 	 *
@@ -454,9 +454,9 @@ final class Email {
 	}
 
 	/**
-	 * Get the number of members currently eligible for a site-wide message.
+	 * Get the number of users currently eligible for a site-wide message.
 	 *
-	 * Walks the full member list, so callers that run on every page load
+	 * Walks the full user list, so callers that run on every page load
 	 * should use the cached variant instead.
 	 *
 	 * @since TBD
@@ -464,7 +464,7 @@ final class Email {
 	 * @param array $audience Who the message goes to, from `resolve_audience()`.
 	 * @phpstan-param Audience $audience
 	 *
-	 * @return int Number of eligible members.
+	 * @return int Number of eligible users.
 	 */
 	public function count_recipients( array $audience = array( 'type' => 'all' ) ): int {
 		$count   = 0;
@@ -480,7 +480,7 @@ final class Email {
 	}
 
 	/**
-	 * Get the configured number of members processed by one cron job.
+	 * Get the configured number of users processed by one cron job.
 	 *
 	 * @since TBD
 	 *
@@ -498,7 +498,7 @@ final class Email {
 	}
 
 	/**
-	 * Register the REST routes that count and queue a site-wide member message.
+	 * Register the REST routes that count and queue a site-wide message.
 	 *
 	 * @since TBD
 	 *
@@ -519,9 +519,8 @@ final class Email {
 				'args'                => array_merge(
 					array(
 						'subject' => array(
-							'required'          => false,
+							'required'          => true,
 							'type'              => 'string',
-							'default'           => '',
 							'sanitize_callback' => 'sanitize_text_field',
 						),
 						'message' => array(
@@ -600,7 +599,7 @@ final class Email {
 			$audience['months'] = (int) $request->get_param( 'months' );
 			$error              = $this->is_rsvp_enabled()
 				? ''
-				: __( 'RSVPs are turned off, so members cannot be picked by their RSVPs.', 'gatherpress' );
+				: __( 'RSVPs are turned off, so users cannot be picked by their RSVPs.', 'gatherpress' );
 		}
 
 		return '' === $error
@@ -609,7 +608,7 @@ final class Email {
 	}
 
 	/**
-	 * Count the members a site-wide message would go to, from a REST request.
+	 * Count the users a site-wide message would go to, from a REST request.
 	 *
 	 * @since TBD
 	 *
@@ -631,8 +630,8 @@ final class Email {
 			array(
 				'count'   => $count,
 				'message' => sprintf(
-					/* translators: %d: Number of members the message will be sent to. */
-					_n( 'This will email %d member.', 'This will email %d members.', $count, 'gatherpress' ),
+					/* translators: %d: Number of users the message will be sent to. */
+					_n( 'This will email %d user.', 'This will email %d users.', $count, 'gatherpress' ),
 					$count
 				),
 			)
@@ -640,7 +639,7 @@ final class Email {
 	}
 
 	/**
-	 * Queue a site-wide member message from a REST request.
+	 * Queue a site-wide message from a REST request.
 	 *
 	 * Schedules the message for delivery on the next cron pass, so the request
 	 * returns without waiting on the mail server.
@@ -653,14 +652,16 @@ final class Email {
 	 * @return WP_REST_Response|WP_Error The queued confirmation, or why the message was not queued.
 	 */
 	public function queue_message( WP_REST_Request $request ): WP_REST_Response|WP_Error {
-		$subject  = (string) $request->get_param( 'subject' );
+		$subject  = trim( (string) $request->get_param( 'subject' ) );
 		$message  = (string) $request->get_param( 'message' );
 		$audience = $this->resolve_audience( $request );
 
-		if ( '' === trim( $message ) ) {
+		if ( '' === $subject || '' === trim( $message ) ) {
 			return new WP_Error(
 				'gatherpress_site_message_empty',
-				__( 'Please write a message before sending.', 'gatherpress' ),
+				'' === $subject
+					? __( 'Please write a subject before sending.', 'gatherpress' )
+					: __( 'Please write a message before sending.', 'gatherpress' ),
 				array( 'status' => 400 )
 			);
 		}
@@ -677,7 +678,7 @@ final class Email {
 		if ( 0 === $recipient_count ) {
 			$error = new WP_Error(
 				'gatherpress_site_message_no_recipients',
-				__( 'There are no members to send this message to.', 'gatherpress' ),
+				__( 'There are no users to send this message to.', 'gatherpress' ),
 				array( 'status' => 400 )
 			);
 		} elseif ( ! $this->schedule_message_batch( $subject, $message, 0, $audience ) ) {
@@ -691,10 +692,10 @@ final class Email {
 		return $error ?? new WP_REST_Response(
 			array(
 				'message' => sprintf(
-					/* translators: %d: Number of members the message was queued for. */
+					/* translators: %d: Number of users the message was queued for. */
 					_n(
-						'Queued for %d member.',
-						'Queued for %d members.',
+						'Queued for %d user.',
+						'Queued for %d users.',
 						$recipient_count,
 						'gatherpress'
 					),
@@ -705,12 +706,12 @@ final class Email {
 	}
 
 	/**
-	 * Queue the cron job for one batch of a site-wide member message.
+	 * Queue the cron job for one batch of a site-wide message.
 	 *
 	 * The batches are chained rather than sent in one request: each job sends a
 	 * bounded page of recipients and queues the next cursor. A fatal error part
 	 * way through a page therefore leaves the next page scheduled, so the
-	 * remaining members still receive the message.
+	 * remaining users still receive the message.
 	 *
 	 * @since TBD
 	 *
@@ -740,7 +741,7 @@ final class Email {
 	/**
 	 * Deliver one queued batch of a site-wide message.
 	 *
-	 * Runs from cron so a large membership does not hold up the admin request
+	 * Runs from cron so a large user base does not hold up the admin request
 	 * that queued it, one bounded page per job, with the next page queued
 	 * before this one is sent. Recipients are resolved again here, so anyone
 	 * who opted out between queuing and delivery is skipped.
@@ -789,14 +790,14 @@ final class Email {
 		$mailer = Mailer::get_instance();
 
 		foreach ( $batch['recipients'] as $recipient ) {
-			// Mailer re-checks consent at delivery time, so a member who opted
+			// Mailer re-checks consent at delivery time, so a user who opted
 			// out after queuing is skipped here.
 			$mailer->send( $recipient, $compose, 'site_message' );
 		}
 	}
 
 	/**
-	 * Resolve the subject line for a site-wide member message.
+	 * Resolve the subject line for a site-wide message.
 	 *
 	 * The default is built here rather than up front so it is translated in the
 	 * recipient's locale, matching how the event update email builds its own
@@ -818,7 +819,7 @@ final class Email {
 		}
 
 		/**
-		 * Filters the subject line of a site-wide member message.
+		 * Filters the subject line of a site-wide message.
 		 *
 		 * @since TBD
 		 *
