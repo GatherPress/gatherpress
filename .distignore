@@ -27,6 +27,7 @@ README.md
 composer.json
 composer.lock
 dependencies.yml
+eslint.config.js
 Gruntfile.js
 jest.config.js
 jsconfig.json

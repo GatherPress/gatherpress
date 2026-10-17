@@ -4,6 +4,8 @@ Subscribe once, never miss an event.
 
 GatherPress publishes subscribable calendar feeds in the widely supported iCalendar (`.ics`) format. Attendees can follow a venue, a topic, or all of a site's events in their own calendar app, and the calendar stays up to date automatically: new events appear, and changes to dates, times, or venues flow through without anyone having to download anything again.
 
+A feed carries each event until it ends. Once an event is over it drops out of the feed, so most calendar apps remove it from the subscriber's calendar the next time they refresh.
+
 ## Download once vs. subscribe
 
 There are two ways to get GatherPress events into a calendar app, and they behave differently:

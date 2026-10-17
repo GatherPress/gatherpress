@@ -225,6 +225,39 @@ class Test_Settings extends Base {
 	}
 
 	/**
+	 * Verify that add_editor_settings sends the datetime separator and honors the filter.
+	 *
+	 * @covers ::add_editor_settings
+	 *
+	 * @return void
+	 */
+	public function test_add_editor_settings_sends_the_datetime_separator(): void {
+		$instance = Settings::get_instance();
+		$settings = $instance->add_editor_settings( array() );
+
+		$this->assertSame(
+			'to',
+			$settings['gatherpress']['config']['datetimeSeparator'],
+			'Failed to assert the editor is sent the default datetime separator.'
+		);
+
+		$filter_callback = function () {
+			return ' - ';
+		};
+		add_filter( 'gatherpress_datetime_separator', $filter_callback );
+
+		$filtered_settings = $instance->add_editor_settings( array() );
+
+		$this->assertSame(
+			' - ',
+			$filtered_settings['gatherpress']['config']['datetimeSeparator'],
+			'Failed to assert the editor is sent the filtered datetime separator.'
+		);
+
+		remove_filter( 'gatherpress_datetime_separator', $filter_callback );
+	}
+
+	/**
 	 * Coverage for add_editor_settings method.
 	 *
 	 * @covers ::add_editor_settings
@@ -277,6 +310,7 @@ class Test_Settings extends Base {
 			'homeUrl',
 			'mapTileUrl',
 			'mapTileAttribution',
+			'datetimeSeparator',
 			'venuesMapsSettingsUrl',
 		);
 

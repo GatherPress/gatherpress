@@ -1028,7 +1028,7 @@ class Test_Form_Field extends Base {
 	 * The pair has to agree, since render() is the block path and get_html()
 	 * is what a consumer composing markup calls.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::get_html
 	 * @covers ::render
 	 * @covers ::get_template_variables
@@ -1062,7 +1062,7 @@ class Test_Form_Field extends Base {
 	 * Without one the id is random, which is fine for a single render and
 	 * useless for deterministic markup.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::get_input_id
 	 * @covers ::process_attributes
 	 *
@@ -1087,7 +1087,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests an id is generated when the caller supplies none.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::get_input_id
 	 *
 	 * @return void
@@ -1120,7 +1120,7 @@ class Test_Form_Field extends Base {
 	 * Every key is optional, which is what lets a consumer outside the
 	 * editor hand over only what it knows.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::get_html
 	 *
 	 * @return void

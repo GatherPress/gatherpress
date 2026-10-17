@@ -710,7 +710,7 @@ class Test_Rest_Api extends Base {
 	 * process_rsvp() validates anything, so enumerating a scalar there
 	 * fataled with a TypeError before the submission could be rejected.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::handle_rsvp_form_submission
 	 *
 	 * @return void
@@ -746,7 +746,7 @@ class Test_Rest_Api extends Base {
 	 * A custom-field rejection answers 400 and carries one message per
 	 * failing field alongside the summary the form already shows.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::handle_rsvp_form_submission
 	 *
 	 * @return void
@@ -1420,7 +1420,7 @@ class Test_Rest_Api extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_prepare_event_data_hides_the_link_meta_from_readers(): void {
+	public function test_prepare_event_data_hides_the_link_meta_from_viewers(): void {
 		$instance = Rest_Api::get_instance();
 		$post_id  = $this->factory()->post->create(
 			array(
@@ -1461,7 +1461,7 @@ class Test_Rest_Api extends Base {
 		$this->assertSame(
 			'',
 			$anonymous['gatherpress_online_event_link'],
-			'Failed to assert an anonymous reader gets no link from the meta key.'
+			'Failed to assert an anonymous viewer gets no link from the meta key.'
 		);
 		$this->assertSame(
 			'',
@@ -1471,7 +1471,7 @@ class Test_Rest_Api extends Base {
 		$this->assertSame(
 			'',
 			$subscriber['gatherpress_online_event_link'],
-			'Failed to assert a reader who cannot edit the event gets no link from the meta key.'
+			'Failed to assert a viewer who cannot edit the event gets no link from the meta key.'
 		);
 		$this->assertSame(
 			$link,
@@ -1481,14 +1481,14 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
-	 * The route itself no longer hands the link to an anonymous reader, on a
+	 * The route itself no longer hands the link to an anonymous viewer, on a
 	 * single event or a collection.
 	 *
 	 * @covers ::prepare_event_data
 	 *
 	 * @return void
 	 */
-	public function test_rest_route_hides_the_link_meta_from_readers(): void {
+	public function test_rest_route_hides_the_link_meta_from_viewers(): void {
 		$post_id = $this->factory()->post->create(
 			array(
 				'post_type'   => Event::POST_TYPE,
@@ -1520,13 +1520,13 @@ class Test_Rest_Api extends Base {
 		$this->assertSame(
 			'',
 			$single->get_data()['meta']['gatherpress_online_event_link'] ?? null,
-			'Failed to assert a single event response carries no link for an anonymous reader.'
+			'Failed to assert a single event response carries no link for an anonymous viewer.'
 		);
 		$this->assertNotEmpty( $listed, 'Expected the published event in the collection response.' );
 		$this->assertSame(
 			'',
 			reset( $listed )['meta']['gatherpress_online_event_link'] ?? null,
-			'Failed to assert a collection response carries no link for an anonymous reader.'
+			'Failed to assert a collection response carries no link for an anonymous viewer.'
 		);
 	}
 
@@ -1598,7 +1598,7 @@ class Test_Rest_Api extends Base {
 		$request = new WP_REST_Request( 'POST' );
 		$request->set_param( 'post_id', $post_id );
 		$request->set_param( 'status', 'not_attending' );
-		$request->set_param( 'rsvp_token', sprintf( '%d_%s', $user_record['comment_id'], $token_value ) );
+		$request->set_param( Token::NAME, sprintf( '%d_%s', $user_record['comment_id'], $token_value ) );
 
 		$response = $instance->update_rsvp( $request );
 		$data     = $response->get_data();
@@ -2119,6 +2119,173 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Tests a magic-link attendee can change their RSVP through the REST route.
+	 *
+	 * The request is dispatched through the REST server, so the permission
+	 * callback runs, with the token in the body parameter the RSVP block sends.
+	 *
+	 * @since 0.36.0
+	 * @covers ::rsvp_route
+	 * @covers ::update_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_route_lets_a_token_holder_change_their_rsvp(): void {
+		$post_id = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		( new Event( $post_id ) )->save_datetimes(
+			array(
+				'datetime_start' => '2099-01-01 10:00:00',
+				'datetime_end'   => '2099-01-01 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$user_record = ( new Rsvp( $post_id ) )->save( 'test@example.com', 'attending' );
+		$rsvp_token  = new Token( $user_record['comment_id'] );
+		$rsvp_token->generate_token();
+
+		wp_set_current_user( 0 );
+
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_body(
+			wp_json_encode(
+				array(
+					'post_id'   => $post_id,
+					'status'    => 'not_attending',
+					Token::NAME => sprintf( '%d_%s', $user_record['comment_id'], $rsvp_token->get_token() ),
+				)
+			)
+		);
+
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status(), 'A valid token should authorize the request.' );
+		$this->assertTrue( $response->get_data()['success'], 'The RSVP change should be reported as saved.' );
+		$this->assertSame( 'not_attending', $response->get_data()['status'] );
+		$this->assertSame(
+			'not_attending',
+			( new Rsvp( $post_id ) )->get( 'test@example.com' )['status'],
+			'The stored RSVP should be not attending.'
+		);
+	}
+
+	/**
+	 * Tests a token holder who cannot read the roster gets counts, not attendee records.
+	 *
+	 * A token authorizes the RSVP change only. On a password-protected event an
+	 * anonymous visitor cannot read the attendee list, so the response carries
+	 * the per-status counts the RSVP block needs and drops the records.
+	 *
+	 * @since 0.36.0
+	 * @covers ::update_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_route_gives_counts_only_to_a_token_holder_without_roster_access(): void {
+		$post_id = $this->factory()->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		);
+
+		( new Event( $post_id ) )->save_datetimes(
+			array(
+				'datetime_start' => '2099-01-01 10:00:00',
+				'datetime_end'   => '2099-01-01 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		( new Rsvp( $post_id ) )->save( 'other@example.com', 'attending' );
+
+		$user_record = ( new Rsvp( $post_id ) )->save( 'test@example.com', 'not_attending' );
+		$rsvp_token  = new Token( $user_record['comment_id'] );
+		$rsvp_token->generate_token();
+
+		wp_set_current_user( 0 );
+
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_body(
+			wp_json_encode(
+				array(
+					'post_id'   => $post_id,
+					'status'    => 'attending',
+					Token::NAME => sprintf( '%d_%s', $user_record['comment_id'], $rsvp_token->get_token() ),
+				)
+			)
+		);
+
+		$data = rest_do_request( $request )->get_data();
+
+		$this->assertTrue( $data['success'] );
+		$this->assertSame( 2, $data['responses']['attending']['count'] );
+
+		foreach ( $data['responses'] as $status => $group ) {
+			$this->assertSame(
+				array( 'count' ),
+				array_keys( $group ),
+				sprintf( 'The %s group should carry only its count.', $status )
+			);
+		}
+	}
+
+	/**
+	 * Tests a magic-link attendee gets the online event link back after an RSVP change.
+	 *
+	 * The page sends the token in the request body, not in the URL, so the
+	 * link has to be built for the token's attendee.
+	 *
+	 * @since 0.36.0
+	 * @covers ::update_rsvp
+	 * @covers \GatherPress\Core\Event\Event::maybe_get_online_event_link
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_route_returns_online_link_to_a_token_holder(): void {
+		$post_id = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		( new Event( $post_id ) )->save_datetimes(
+			array(
+				'datetime_start' => '2099-01-01 10:00:00',
+				'datetime_end'   => '2099-01-01 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+		update_post_meta( $post_id, 'gatherpress_online_event_link', 'https://meet.example.test/room' );
+
+		$user_record = ( new Rsvp( $post_id ) )->save( 'test@example.com', 'not_attending' );
+		$rsvp_token  = new Token( $user_record['comment_id'] );
+		$rsvp_token->generate_token();
+
+		wp_set_current_user( 0 );
+
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_body(
+			wp_json_encode(
+				array(
+					'post_id'   => $post_id,
+					'status'    => 'attending',
+					Token::NAME => sprintf( '%d_%s', $user_record['comment_id'], $rsvp_token->get_token() ),
+				)
+			)
+		);
+
+		$data = rest_do_request( $request )->get_data();
+
+		$this->assertSame( 'attending', $data['status'] );
+		$this->assertSame(
+			'https://meet.example.test/room',
+			$data['online_link'],
+			'An attending token holder should get the online event link.'
+		);
+	}
+
+	/**
 	 * A token issued for one event does not authorize a request against a
 	 * different event.
 	 *
@@ -2414,17 +2581,17 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		// A reader who can read private posts but cannot edit this one.
-		$reader_id = $this->factory()->user->create( array( 'role' => 'subscriber' ) );
-		( new WP_User( $reader_id ) )->add_cap( 'read_private_posts' );
-		wp_set_current_user( $reader_id );
+		// A viewer who can read private posts but cannot edit this one.
+		$viewer_id = $this->factory()->user->create( array( 'role' => 'subscriber' ) );
+		( new WP_User( $viewer_id ) )->add_cap( 'read_private_posts' );
+		wp_set_current_user( $viewer_id );
 
 		$request = new WP_REST_Request( 'GET' );
 		$request->set_param( 'post_id', $post_id );
 
 		$this->assertFalse(
 			current_user_can( Event::EDIT_CAPABILITY, $post_id ),
-			'The reader must lack edit access so the read_post branch is the one exercised.'
+			'The viewer must lack edit access so the read_post branch is the one exercised.'
 		);
 		$this->assertTrue(
 			$instance->can_read_event_rsvps( $request ),
@@ -2445,7 +2612,7 @@ class Test_Rest_Api extends Base {
 		$instance = Rest_Api::get_instance();
 		$route    = Utility::invoke_hidden_method( $instance, 'rsvp_route' );
 
-		$validate_callback = $route['args']['args']['rsvp_token']['validate_callback'];
+		$validate_callback = $route['args']['args'][ Token::NAME ]['validate_callback'];
 		$result            = call_user_func( $validate_callback, '' );
 
 		$this->assertFalse( $result, 'Validate callback should return false for empty token' );
@@ -2516,9 +2683,25 @@ class Test_Rest_Api extends Base {
 		$result = call_user_func( $validate_callback, 'form_123' );
 		$this->assertTrue( $result, 'Validate callback should return true for form_123' );
 
+		// Test with nested form IDs, which carry one parent index prefix per level.
+		foreach ( array( '2_form_0', '0_0_0_form_0' ) as $nested_id ) {
+			$this->assertTrue(
+				call_user_func( $validate_callback, $nested_id ),
+				sprintf( 'Validate callback should return true for %s', $nested_id )
+			);
+		}
+
 		// Test with invalid format.
 		$result = call_user_func( $validate_callback, 'invalid' );
 		$this->assertFalse( $result, 'Validate callback should return false for invalid format' );
+
+		// Test with malformed nested and bare IDs.
+		foreach ( array( '2_form_', '_form_0', 'form_', '2form_0', 'form_0_1' ) as $malformed_id ) {
+			$this->assertFalse(
+				call_user_func( $validate_callback, $malformed_id ),
+				sprintf( 'Validate callback should return false for %s', $malformed_id )
+			);
+		}
 
 		// Test with non-string.
 		$result = call_user_func( $validate_callback, 123 );

@@ -6,6 +6,17 @@ This file is the canonical project guide for AI coding agents (Claude Code, Curs
 
 Always use **US English** spelling in all code, comments, and documentation. When in doubt, use the spelling WordPress core uses.
 
+### Terminology for People
+
+When referring to people who interact with a GatherPress site, use these terms consistently:
+
+- **`viewer`**: Anyone looking at a page, whether logged in or not. This is the general default term across the codebase, tests, and user-facing copy (`Event::is_viewable()`, event dates, maps, etc.) because it makes no assumptions about whether someone has an account.
+- **`visitor`**: Reserved strictly for contexts where "without a site account" is the specific point (e.g., Open RSVP, anonymous fallbacks, or strings explaining features for people without an account). Not a general synonym for viewer. When it reads more clearly, say "people without an account" instead.
+- **`attendee`**: Someone who has submitted an RSVP to an event (e.g., `%d attendees.`, the Attendee column in the RSVP list table). Never use it for someone merely looking at an event.
+- **`guest`**: Additional people an attendee brings (e.g., `Maximum Number of Guests`, `+%d guest`). Never use it for viewers or attendees.
+- **`member`**: A role, not an audience: the site role (`Settings\Roles`) and the RSVP roles list. Leave those uses as they are.
+- **`reader`**: Reserved strictly for assistive technology ("screen reader"). Never use it for a human viewing or reading a page. In `Rsvp\Query` and `Rsvp\Storage`, "every reader of a comment" means a code path rather than a person, and can stay.
+
 ## Development Commands
 
 ### PHP Development
@@ -572,6 +583,16 @@ When working with JavaScript code:
 - **Stable `Navigator` over `__experimentalNavigatorProvider`** (and the rest of the `__experimentalNavigator*` family). The stable API ships under `Navigator` with the same props (`initialPath`, etc.) and exposes subcomponents as `Navigator.Screen`, `Navigator.Button`, `Navigator.BackButton`. If a file imports both the stable `Navigator` and the experimental `__experimentalNavigatorProvider as NavigatorProvider`, the migration is half-done, drop the experimental import and rename the wrapper.
     - ✅ Good: `import { Navigator } from '@wordpress/components';` then `<Navigator initialPath="/">...</Navigator>`
     - ❌ Bad: `import { __experimentalNavigatorProvider as NavigatorProvider, Navigator } from '@wordpress/components';` then `<NavigatorProvider initialPath="/">...</NavigatorProvider>`
+
+#### Public JavaScript surfaces
+
+Editor code published for companion plugins follows one naming rule, set out in [`docs/developer/hooks-naming-convention.md`](docs/developer/hooks-naming-convention.md#public-javascript-surfaces): a kebab-case surface name `<surface>` appears as the import path `@gatherpress/<surface>`, the global `window.gatherpress.<surfaceInCamelCase>`, and the script handle `gatherpress-<surface>`.
+
+- Publish with `window.gatherpress ??= {};` so other surfaces on the namespace survive.
+- If the publishing script's handle does not already match, add the conventional handle to `Assets::PUBLIC_SCRIPT_HANDLES` as an alias of it, and document only the conventional handle.
+- Add the surface to the table in the naming convention doc.
+- ✅ Good: `window.gatherpress.queryControls`, depended on as `gatherpress-query-controls`.
+- ❌ Bad: telling companion plugins to depend on `gatherpress-query`, which is whatever bundle happens to publish the global today.
 
 ### CSS and SCSS Coding Standards
 

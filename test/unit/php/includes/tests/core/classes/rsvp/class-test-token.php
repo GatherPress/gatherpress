@@ -712,7 +712,7 @@ class Test_Token extends Base {
 		$this->assertNotEmpty( $url );
 
 		// Check that URL contains the token parameter.
-		$this->assertStringContainsString( Token::NAME, $url );
+		$this->assertStringContainsString( 'gatherpress_rsvp_token=', $url );
 
 		// Check that URL contains the comment ID and token.
 		$expected_token_value = sprintf( '%d_%s', $comment_id, $token->get_token() );
@@ -868,7 +868,7 @@ class Test_Token extends Base {
 	 * @return void
 	 */
 	public function test_constants(): void {
-		$this->assertEquals( 'gatherpress_rsvp_token', Token::NAME );
+		$this->assertEquals( 'rsvp_token', Token::NAME );
 		$this->assertEquals( 32, Token::TOKEN_LENGTH );
 		$this->assertEquals( '_', Token::META_KEY_PREFIX );
 	}
@@ -1191,7 +1191,7 @@ class Test_Token extends Base {
 		// Extract token from URL.
 		$parsed_url = wp_parse_url( $url );
 		parse_str( $parsed_url['query'], $query_args );
-		$token_string = $query_args[ Token::NAME ];
+		$token_string = $query_args['gatherpress_rsvp_token'];
 
 		// Parse should return valid array.
 		$parsed = Token::parse_token_string( $token_string );
@@ -1231,7 +1231,7 @@ class Test_Token extends Base {
 		add_filter(
 			'gatherpress_pre_get_http_input',
 			function ( $pre_value, $type, $var_name ) use ( $token_string ) {
-				if ( INPUT_GET === $type && Token::NAME === $var_name ) {
+				if ( INPUT_GET === $type && 'gatherpress_rsvp_token' === $var_name ) {
 					return $token_string;
 				}
 				return null;

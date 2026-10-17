@@ -124,7 +124,12 @@ final class Rsvp_Template {
 	 * @return string The dynamically generated block content.
 	 */
 	public function generate_rsvp_template_block( string $block_content, array $block, WP_Block $instance ): string {
-		$post_id = (int) $instance->context['postId'];
+		// No ancestor may provide postId (e.g. an archive, search or 404 template), so fall back to the current post.
+		$post_id = (int) ( $instance->context['postId'] ?? get_the_ID() );
+
+		if ( ! $post_id ) {
+			return $block_content;
+		}
 
 		// Only process if the post type supports RSVP. An unpublished event
 		// keeps its responses to viewers allowed to read it, so organizers see
@@ -188,7 +193,7 @@ final class Rsvp_Template {
 	 * The front end hands the template back to the REST endpoint verbatim, so
 	 * the endpoint only renders what this class wrote in the first place. The
 	 * key is the site's nonce salt: stable for the site, the same for every
-	 * visitor, and not derived from anything a request can influence.
+	 * viewer, and not derived from anything a request can influence.
 	 *
 	 * The signed message names this use, the site and the event along with the
 	 * template, so a signature is only good for the event it was emitted on.
