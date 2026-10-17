@@ -47,6 +47,7 @@ use WP_REST_Server;
  * @phpstan-type RouteDefinition array{route: string, args: array<string, mixed>}
  * @phpstan-type SendOptions array{all: bool, attending: bool, waiting_list: bool, not_attending: bool}
  * @phpstan-import-type Recipient from Mailer
+ * @phpstan-import-type Payload from Mailer
  */
 final class Rest_Api {
 
@@ -64,6 +65,26 @@ final class Rest_Api {
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
+		$this->register_mail_type();
+	}
+
+	/**
+	 * Tell Mailer who event update emails go to and what they say.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	private function register_mail_type(): void {
+		Mailer::get_instance()->register(
+			'event',
+			array(
+				'context'    => 'event',
+				'users'      => $this->get_event_email_users( ... ),
+				'recipients' => $this->get_event_email_rsvps( ... ),
+				'compose'    => $this->compose_event_email( ... ),
+			)
+		);
 	}
 
 	/**
@@ -446,16 +467,13 @@ final class Rest_Api {
 	 */
 	public function email( WP_REST_Request $request ): WP_REST_Response {
 		$params   = $request->get_params();
-		$post_id  = intval( $params['post_id'] );
-		$message  = $params['message'] ?? '';
-		$subject  = $params['subject'] ?? '';
-		$send     = $params['send'];
-		$success  = Mailer::get_instance()->schedule(
-			'gatherpress_send_emails',
-			array( $post_id, $send, $message, $subject )
-		);
 		$response = array(
-			'success' => $success,
+			'success' => $this->send_emails(
+				intval( $params['post_id'] ),
+				$params['send'],
+				$params['message'] ?? '',
+				$params['subject'] ?? ''
+			),
 		);
 
 		return new WP_REST_Response( $response );
@@ -470,6 +488,7 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 * @since 0.36.0 Added `$subject` parameter for #827.
+	 * @since TBD Only runs for jobs queued before Mailer owned the event email job, and queues them there.
 	 *
 	 * @param int    $post_id Post ID.
 	 * @param array  $send    Members to send the email to.
@@ -484,14 +503,15 @@ final class Rest_Api {
 	}
 
 	/**
-	 * Send emails to selected members.
+	 * Queue an event update email for the selected recipients.
 	 *
-	 * This method is responsible for sending emails to specific members. It checks that the given
-	 * `$post_id` belongs to a post type with RSVP support, retrieves the list of members to email, and sends the
-	 * email with the appropriate subject, body, and headers.
+	 * Checks that the given `$post_id` belongs to a post type with RSVP
+	 * support, then queues the email with Mailer, which sends it in batches
+	 * from cron.
 	 *
 	 * @since 0.34.0
 	 * @since 0.36.0 Added `$subject` parameter for #827.
+	 * @since TBD Queues the email with Mailer instead of sending it in the same request.
 	 *
 	 * @param int    $post_id Post ID.
 	 * @param array  $send    Members to send the email to.
@@ -499,22 +519,81 @@ final class Rest_Api {
 	 * @param string $subject Optional subject line. Defaults to the existing `📅 {title}` template when empty.
 	 * @phpstan-param SendOptions $send
 	 *
-	 * @return bool True if emails were successfully sent, false otherwise.
+	 * @return bool True when the email is queued, false otherwise.
 	 */
 	public function send_emails( int $post_id, array $send, string $message, string $subject = '' ): bool {
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT ) ) {
-			return false;
+		return post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT )
+			&& Mailer::get_instance()->queue(
+				'event',
+				array(
+					'post_id' => $post_id,
+					'send'    => $send,
+					'message' => $message,
+					'subject' => $subject,
+				)
+			);
+	}
+
+	/**
+	 * Get the users a queued event email goes to.
+	 *
+	 * @since TBD
+	 *
+	 * @param array $payload The queued email: its `send` options.
+	 * @phpstan-param Payload $payload
+	 *
+	 * @return array<string, mixed>|null `get_users()` arguments for every user when "all" was picked, otherwise null.
+	 */
+	private function get_event_email_users( array $payload ): ?array {
+		return empty( $payload['send']['all'] ) ? null : array();
+	}
+
+	/**
+	 * Get the RSVPs a queued event email goes to.
+	 *
+	 * When every user is already getting the email, RSVPs from users are left
+	 * out, so nobody gets it twice.
+	 *
+	 * @since TBD
+	 *
+	 * @param array $payload The queued email: its `post_id` and `send` options.
+	 * @phpstan-param Payload $payload
+	 *
+	 * @return array<int, Recipient> Recipient rows from the event's RSVPs.
+	 */
+	private function get_event_email_rsvps( array $payload ): array {
+		$send       = (array) ( $payload['send'] ?? array() );
+		$recipients = $this->get_rsvp_recipients( $send, (int) ( $payload['post_id'] ?? 0 ) );
+
+		if ( ! empty( $send['all'] ) ) {
+			$recipients = array_values(
+				array_filter( $recipients, static fn( array $recipient ): bool => ! $recipient['is_user'] )
+			);
 		}
 
-		// Build the email from the callback so the default subject is
-		// translated, and the template rendered, in each recipient's context.
-		Mailer::get_instance()->bulk_send(
-			$this->get_recipients( $send, $post_id ),
-			fn(): array => $this->build_event_email( $post_id, $message, $subject ),
-			'event'
-		);
+		return $recipients;
+	}
 
-		return true;
+	/**
+	 * Build a queued event email for one recipient.
+	 *
+	 * @since TBD
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @param array $recipient The recipient, required by Mailer's compose signature.
+	 * @param array $payload   The queued email: its `post_id`, `message` and `subject`.
+	 * @phpstan-param Recipient $recipient
+	 * @phpstan-param Payload $payload
+	 *
+	 * @return array{subject: string, body: string, headers: array<int, string>} The email.
+	 */
+	private function compose_event_email( array $recipient, array $payload ): array {
+		return $this->build_event_email(
+			(int) ( $payload['post_id'] ?? 0 ),
+			(string) ( $payload['message'] ?? '' ),
+			(string) ( $payload['subject'] ?? '' )
+		);
 	}
 
 	/**
@@ -583,8 +662,7 @@ final class Rest_Api {
 	 * @return array<int, Recipient> An array containing unified recipient data for both users and non-users.
 	 */
 	public function get_recipients( array $send, int $post_id ): array {
-		$recipients    = array();
-		$all_responses = ( new Rsvp( $post_id ) )->responses();
+		$recipients = array();
 
 		// Handle 'all' members (WordPress users only) — array_map keeps the
 		// per-user shape declarative.
@@ -602,6 +680,24 @@ final class Rest_Api {
 				get_users()
 			);
 		}
+
+		return array_merge( $recipients, $this->get_rsvp_recipients( $send, $post_id ) );
+	}
+
+	/**
+	 * Get recipient rows for the RSVPs with the requested statuses.
+	 *
+	 * @since TBD
+	 *
+	 * @param array $send    Which RSVP statuses to send to.
+	 * @param int   $post_id The event post ID.
+	 * @phpstan-param array<string, mixed> $send
+	 *
+	 * @return array<int, Recipient> Recipient rows, one per RSVP with a valid email.
+	 */
+	private function get_rsvp_recipients( array $send, int $post_id ): array {
+		$recipients    = array();
+		$all_responses = ( new Rsvp( $post_id ) )->responses();
 
 		// Collect comment IDs for the requested RSVP statuses — `array_column`
 		// flattens each status's records to its commentId list in one pass,

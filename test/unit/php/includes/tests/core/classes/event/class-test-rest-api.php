@@ -12,6 +12,7 @@ use DateTime;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Meta;
 use GatherPress\Core\Event\Rest_Api;
+use GatherPress\Core\Mailer;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Token;
@@ -247,7 +248,7 @@ class Test_Rest_Api extends Base {
 	 *
 	 * Sanitization only runs on dispatch, so this exercises the registered route
 	 * rather than calling the callback directly, and reads the values back off
-	 * the scheduled event the callback hands to cron.
+	 * the Mailer job the callback hands to cron.
 	 *
 	 * @covers ::email
 	 *
@@ -259,7 +260,7 @@ class Test_Rest_Api extends Base {
 		add_filter(
 			'schedule_event',
 			static function ( $event ) use ( &$captured ) {
-				if ( $event && 'gatherpress_send_emails' === $event->hook ) {
+				if ( $event && Mailer::JOB_HOOK === $event->hook ) {
 					$captured = $event->args;
 				}
 
@@ -307,12 +308,12 @@ class Test_Rest_Api extends Base {
 		);
 		$this->assertSame(
 			"First line.\nSecond line.",
-			$captured[2],
+			$captured[1]['message'],
 			'Failed to assert the newline survived sanitization of the message.'
 		);
 		$this->assertSame(
 			'Subject with markup',
-			$captured[3],
+			$captured[1]['subject'],
 			'Failed to assert the subject was sanitized.'
 		);
 	}
@@ -1142,6 +1143,159 @@ class Test_Rest_Api extends Base {
 		$data = $response->get_data();
 		$this->assertFalse( $data['success'] );
 		$this->assertSame( 'RSVP is disabled for this event.', $data['message'] );
+	}
+
+	/**
+	 * Check that event emails register their mail type with Mailer.
+	 *
+	 * @covers ::__construct
+	 * @covers ::register_mail_type
+	 *
+	 * @return void
+	 */
+	public function test_register_mail_type(): void {
+		$types = Utility::get_hidden_property( Mailer::get_instance(), 'types' );
+
+		$this->assertArrayHasKey( 'event', $types );
+		$this->assertSame( 'event', $types['event']['context'] );
+		$this->assertArrayHasKey( 'users', $types['event'] );
+		$this->assertArrayHasKey( 'recipients', $types['event'] );
+		$this->assertArrayHasKey( 'compose', $types['event'] );
+	}
+
+	/**
+	 * Check that send_emails() queues a Mailer job instead of sending.
+	 *
+	 * @covers ::send_emails
+	 *
+	 * @return void
+	 */
+	public function test_send_emails_queues_a_mailer_job(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$send    = array( 'attending' => true );
+
+		$this->assertTrue( Rest_Api::get_instance()->send_emails( $post_id, $send, 'Hello', 'Hi' ) );
+		$this->assertNotFalse(
+			wp_next_scheduled(
+				Mailer::JOB_HOOK,
+				array(
+					'event',
+					array(
+						'post_id' => $post_id,
+						'send'    => $send,
+						'message' => 'Hello',
+						'subject' => 'Hi',
+					),
+					Mailer::FIRST_BATCH,
+				)
+			)
+		);
+
+		wp_unschedule_hook( Mailer::JOB_HOOK );
+	}
+
+	/**
+	 * Check that every user gets an event email only when "all" is picked.
+	 *
+	 * @covers ::get_event_email_users
+	 *
+	 * @return void
+	 */
+	public function test_get_event_email_users(): void {
+		$instance = Rest_Api::get_instance();
+
+		$this->assertSame(
+			array(),
+			Utility::invoke_hidden_method(
+				$instance,
+				'get_event_email_users',
+				array( array( 'send' => array( 'all' => true ) ) )
+			)
+		);
+		$this->assertNull(
+			Utility::invoke_hidden_method(
+				$instance,
+				'get_event_email_users',
+				array( array( 'send' => array( 'attending' => true ) ) )
+			)
+		);
+	}
+
+	/**
+	 * Check that RSVPs from users are left out when every user already gets the email.
+	 *
+	 * @covers ::get_event_email_rsvps
+	 * @covers ::get_rsvp_recipients
+	 *
+	 * @return void
+	 */
+	public function test_get_event_email_rsvps(): void {
+		$instance = Rest_Api::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$user_id  = $this->factory->user->create();
+		$rsvp     = new Rsvp( $post_id );
+
+		$rsvp->save( $user_id, 'attending' );
+		$rsvp->save( 'guest@example.test', 'attending', 0, 0 );
+
+		$emails = static fn( array $send ): array => wp_list_pluck(
+			Utility::invoke_hidden_method(
+				$instance,
+				'get_event_email_rsvps',
+				array(
+					array(
+						'post_id' => $post_id,
+						'send'    => $send,
+					),
+				)
+			),
+			'email'
+		);
+
+		$attending = $emails( array( 'attending' => true ) );
+
+		sort( $attending );
+
+		$expected = array( get_userdata( $user_id )->user_email, 'guest@example.test' );
+
+		sort( $expected );
+
+		$this->assertSame( $expected, $attending );
+		$this->assertSame(
+			array( 'guest@example.test' ),
+			$emails(
+				array(
+					'all'       => true,
+					'attending' => true,
+				)
+			)
+		);
+	}
+
+	/**
+	 * Check that a queued event email is built from its payload.
+	 *
+	 * @covers ::compose_event_email
+	 *
+	 * @return void
+	 */
+	public function test_compose_event_email(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$email   = Utility::invoke_hidden_method(
+			Rest_Api::get_instance(),
+			'compose_event_email',
+			array(
+				array(),
+				array(
+					'post_id' => $post_id,
+					'message' => 'See you there.',
+					'subject' => 'Reminder',
+				),
+			)
+		);
+
+		$this->assertSame( 'Reminder', $email['subject'] );
+		$this->assertStringContainsString( 'See you there.', $email['body'] );
 	}
 
 	/**
@@ -2829,6 +2983,7 @@ class Test_Rest_Api extends Base {
 			'Test message',
 			'Reminder: doors at 7'
 		);
+		$this->run_mail_jobs();
 
 		$this->assertTrue( $result, 'send_emails should return true.' );
 		$this->assertSame(
@@ -2881,6 +3036,7 @@ class Test_Rest_Api extends Base {
 			array( 'attending' => true ),
 			'Test message'
 		);
+		$this->run_mail_jobs();
 
 		$this->assertStringContainsString(
 			'Default Subject Event',
@@ -2938,6 +3094,7 @@ class Test_Rest_Api extends Base {
 			array( 'attending' => true ),
 			'Test message'
 		);
+		$this->run_mail_jobs();
 
 		$this->assertStringStartsWith(
 			'[Community] ',
@@ -2995,6 +3152,7 @@ class Test_Rest_Api extends Base {
 			'Test message',
 			'Custom subject'
 		);
+		$this->run_mail_jobs();
 
 		$this->assertSame(
 			'Custom subject [verified]',

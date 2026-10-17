@@ -8,6 +8,7 @@
 
 namespace GatherPress\Tests;
 
+use GatherPress\Core\Mailer;
 use PMC\Unit_Test\Base as PMC_Base;
 use ReflectionException;
 use ReflectionMethod;
@@ -179,6 +180,30 @@ abstract class Base extends PMC_Base {
 			'actions' => $action_count,
 			'filters' => $filter_count,
 		);
+	}
+
+	/**
+	 * Run every queued Mailer job, including the batches they queue, as cron would.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function run_mail_jobs(): void {
+		do {
+			$jobs = array();
+
+			foreach ( (array) _get_cron_array() as $timestamp => $hooks ) {
+				foreach ( $hooks[ Mailer::JOB_HOOK ] ?? array() as $event ) {
+					$jobs[] = array( $timestamp, $event['args'] );
+				}
+			}
+
+			foreach ( $jobs as $job ) {
+				wp_unschedule_event( $job[0], Mailer::JOB_HOOK, $job[1] );
+				Mailer::get_instance()->process_job( ...$job[1] );
+			}
+		} while ( ! empty( $jobs ) );
 	}
 
 	/**

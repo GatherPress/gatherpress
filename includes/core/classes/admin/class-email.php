@@ -25,7 +25,6 @@ use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
-use WP_User_Query;
 
 /**
  * Class Email.
@@ -35,7 +34,7 @@ use WP_User_Query;
  * @since TBD
  *
  * @phpstan-import-type Recipient from Mailer
- * @phpstan-type RecipientBatch array{recipients: array<int, Recipient>, complete: bool, fetched: int, last_id: int}
+ * @phpstan-import-type Payload from Mailer
  * @phpstan-type Audience array{type: string, roles?: list<string>, months?: int}
  */
 final class Email {
@@ -53,6 +52,15 @@ final class Email {
 	 * @var string
 	 */
 	const PAGE_SLUG = 'gatherpress_email';
+
+	/**
+	 * The Mailer type that sends the Email page's messages.
+	 *
+	 * @since TBD
+	 *
+	 * @var string
+	 */
+	const MAIL_TYPE = 'site_message';
 
 	/**
 	 * Who a message can be sent to: every user, users with one of the
@@ -98,6 +106,25 @@ final class Email {
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
+		$this->register_mail_type();
+	}
+
+	/**
+	 * Tell Mailer who the Email page's messages go to and what they say.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	private function register_mail_type(): void {
+		Mailer::get_instance()->register(
+			self::MAIL_TYPE,
+			array(
+				'context' => 'site_message',
+				'users'   => $this->get_audience_query_args( ... ),
+				'compose' => $this->compose_message( ... ),
+			)
+		);
 	}
 
 	/**
@@ -111,7 +138,6 @@ final class Email {
 		add_action( 'admin_menu', array( $this, 'add_submenu_page' ) );
 		add_filter( 'submenu_file', array( $this, 'select_submenu' ) );
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
-		add_action( 'gatherpress_site_message_send', array( $this, 'process_message' ), 10, 4 );
 
 		add_action( 'added_user_meta', array( $this, 'maybe_clear_count_cache' ), 10, 3 );
 		add_action( 'updated_user_meta', array( $this, 'maybe_clear_count_cache' ), 10, 3 );
@@ -293,7 +319,7 @@ final class Email {
 		$count = get_transient( self::COUNT_CACHE_PREFIX . get_current_blog_id() );
 
 		if ( false === $count ) {
-			$count = $this->count_recipients();
+			$count = Mailer::get_instance()->count( self::MAIL_TYPE, array( 'audience' => array( 'type' => 'all' ) ) );
 			set_transient( self::COUNT_CACHE_PREFIX . get_current_blog_id(), $count, self::COUNT_CACHE_TTL );
 		}
 
@@ -301,103 +327,18 @@ final class Email {
 	}
 
 	/**
-	 * Get one page of users a site-wide message would go out to.
+	 * Get the user query arguments for the audience a message was queued for.
 	 *
 	 * @since TBD
 	 *
-	 * @param int   $last_id  Last user ID processed before this batch.
-	 * @param array $audience Who the message goes to, from `resolve_audience()`.
-	 * @phpstan-param Audience $audience
-	 *
-	 * @return array{recipients: array<int, Recipient>, complete: bool, fetched: int, last_id: int} Recipient batch.
-	 */
-	protected function get_recipient_batch( int $last_id = 0, array $audience = array( 'type' => 'all' ) ): array {
-		$batch_size   = $this->get_batch_size();
-		$after_cursor = static function ( WP_User_Query $query ) use ( $last_id ): WP_User_Query {
-			global $wpdb;
-
-			$query->query_where .= $wpdb->prepare(
-				" AND {$wpdb->users}.ID > %d",
-				$last_id
-			);
-
-			return $query;
-		};
-		add_filter( 'pre_user_query', $after_cursor );
-		$users = get_users(
-			array_merge(
-				array(
-					'number'  => $batch_size,
-					'fields'  => array( 'ID', 'user_email', 'display_name' ),
-					'orderby' => 'ID',
-					'order'   => 'ASC',
-				),
-				$this->get_audience_query_args( $audience )
-			)
-		);
-		remove_filter( 'pre_user_query', $after_cursor );
-		update_meta_cache(
-			'user',
-			array_map(
-				static function ( $user ): int {
-					return (int) $user->ID;
-				},
-				$users
-			)
-		);
-		$mailer     = Mailer::get_instance();
-		$recipients = array();
-
-		foreach ( $users as $user ) {
-			$recipient = array(
-				'is_user'    => true,
-				'user_id'    => (int) $user->ID,
-				'comment_id' => 0,
-				'email'      => $user->user_email,
-				'name'       => $user->display_name,
-			);
-
-			if ( $mailer->has_consent( $recipient, 'site_message' ) ) {
-				$recipients[] = $recipient;
-			}
-		}
-
-		/**
-		 * Filters the recipients of a site-wide message batch.
-		 *
-		 * Lets a site narrow or extend the audience for the current page of
-		 * opted-in users.
-		 *
-		 * @since TBD
-		 *
-		 * @param array<int, Recipient> $recipients Recipient rows to email.
-		 * @param int                  $last_id    Last user ID processed before this batch.
-		 * @param array                $audience   Who the message goes to: a `type` of `all`, `role`
-		 *                                         (with `roles`) or `active` (with `months`).
-		 */
-		$recipients = apply_filters( 'gatherpress_site_message_recipients', $recipients, $last_id, $audience );
-
-		$last_user_id = empty( $users ) ? $last_id : (int) $users[ array_key_last( $users ) ]->ID;
-
-		return array(
-			'recipients' => $recipients,
-			'complete'   => count( $users ) < $batch_size,
-			'fetched'    => count( $users ),
-			'last_id'    => $last_user_id,
-		);
-	}
-
-	/**
-	 * Get the user query arguments that narrow users down to an audience.
-	 *
-	 * @since TBD
-	 *
-	 * @param array $audience Who the message goes to, from `resolve_audience()`.
-	 * @phpstan-param Audience $audience
+	 * @param array $payload The queued message, with its `audience` from `resolve_audience()`.
+	 * @phpstan-param Payload $payload
 	 *
 	 * @return array<string, mixed> Arguments for `get_users()`.
 	 */
-	private function get_audience_query_args( array $audience ): array {
+	private function get_audience_query_args( array $payload ): array {
+		$audience = $payload['audience'] ?? array( 'type' => 'all' );
+
 		return match ( $audience['type'] ) {
 			'role'    => array( 'role__in' => $audience['roles'] ?? array() ),
 			// An empty include list would match every user. The union only
@@ -451,50 +392,6 @@ final class Email {
 		);
 
 		return array_values( array_unique( array_map( 'intval', wp_list_pluck( $rsvps, 'user_id' ) ) ) );
-	}
-
-	/**
-	 * Get the number of users currently eligible for a site-wide message.
-	 *
-	 * Walks the full user list, so callers that run on every page load
-	 * should use the cached variant instead.
-	 *
-	 * @since TBD
-	 *
-	 * @param array $audience Who the message goes to, from `resolve_audience()`.
-	 * @phpstan-param Audience $audience
-	 *
-	 * @return int Number of eligible users.
-	 */
-	public function count_recipients( array $audience = array( 'type' => 'all' ) ): int {
-		$count   = 0;
-		$last_id = 0;
-
-		do {
-			$batch   = $this->get_recipient_batch( $last_id, $audience );
-			$count  += count( $batch['recipients'] );
-			$last_id = $batch['last_id'];
-		} while ( ! $batch['complete'] );
-
-		return $count;
-	}
-
-	/**
-	 * Get the configured number of users processed by one cron job.
-	 *
-	 * @since TBD
-	 *
-	 * @return int Number of users in one batch.
-	 */
-	protected function get_batch_size(): int {
-		/**
-		 * Filters the number of users processed by one site-message cron job.
-		 *
-		 * @since TBD
-		 *
-		 * @param int $batch_size Number of users in one batch. Default 50.
-		 */
-		return max( 1, (int) apply_filters( 'gatherpress_site_message_batch_size', 50 ) );
 	}
 
 	/**
@@ -625,7 +522,7 @@ final class Email {
 			return $audience;
 		}
 
-		$count = $this->count_recipients( $audience );
+		$count = Mailer::get_instance()->count( self::MAIL_TYPE, array( 'audience' => $audience ) );
 
 		return new WP_REST_Response(
 			array(
@@ -669,9 +566,15 @@ final class Email {
 			return $audience;
 		}
 
+		$payload = array(
+			'subject'  => $subject,
+			'message'  => $message,
+			'audience' => $audience,
+		);
+
 		// Count fresh at send time rather than trusting the count the Email
 		// page showed, so the queued count reflects who is eligible now.
-		$recipient_count = $this->count_recipients( $audience );
+		$recipient_count = Mailer::get_instance()->count( self::MAIL_TYPE, $payload );
 		$error           = null;
 
 		if ( 0 === $recipient_count ) {
@@ -680,7 +583,7 @@ final class Email {
 				__( 'There are no users to send this message to.', 'gatherpress' ),
 				array( 'status' => 400 )
 			);
-		} elseif ( ! $this->schedule_message_batch( $subject, $message, 0, $audience ) ) {
+		} elseif ( ! Mailer::get_instance()->queue( self::MAIL_TYPE, $payload ) ) {
 			$error = new WP_Error(
 				'gatherpress_site_message_not_queued',
 				__( 'The message could not be queued. Please try again.', 'gatherpress' ),
@@ -705,90 +608,32 @@ final class Email {
 	}
 
 	/**
-	 * Queue the cron job for one batch of a site-wide message.
+	 * Build a queued message for one recipient.
 	 *
-	 * The batches are chained rather than sent in one request: each job sends a
-	 * bounded page of recipients and queues the next cursor. A fatal error part
-	 * way through a page therefore leaves the next page scheduled, so the
-	 * remaining users still receive the message.
-	 *
-	 * @since TBD
-	 *
-	 * @param string $subject  Message subject.
-	 * @param string $message  Message body.
-	 * @param int    $last_id  Last user ID processed before this batch.
-	 * @param array  $audience Who the message goes to, from `resolve_audience()`.
-	 * @phpstan-param Audience $audience
-	 *
-	 * @return bool True when the batch is queued, false when it is not.
-	 */
-	protected function schedule_message_batch(
-		string $subject,
-		string $message,
-		int $last_id,
-		array $audience = array( 'type' => 'all' )
-	): bool {
-		// A short delay keeps each batch from running in the same cron pass as
-		// the batch that queued it.
-		return Mailer::get_instance()->schedule(
-			'gatherpress_site_message_send',
-			array( $subject, $message, $last_id, $audience ),
-			1
-		);
-	}
-
-	/**
-	 * Deliver one queued batch of a site-wide message.
-	 *
-	 * Runs from cron so a large user base does not hold up the admin request
-	 * that queued it, one bounded page per job, with the next page queued
-	 * before this one is sent. Recipients are resolved again here, so anyone
-	 * who opted out between queuing and delivery is skipped.
+	 * Mailer calls this while the recipient's context is active, so the
+	 * default subject is translated, and the template rendered, in their
+	 * language.
 	 *
 	 * @since TBD
 	 *
-	 * @param string $subject Optional subject line. Empty falls back to a
-	 *                        translatable default built in the recipient's locale.
-	 * @param string $message  Message body.
-	 * @param int    $last_id  Last user ID processed before this batch.
-	 * @param array  $audience Who the message goes to, from `resolve_audience()`.
-	 * @phpstan-param Audience $audience
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
-	 * @return void
+	 * @param array $recipient The recipient, required by Mailer's compose signature.
+	 * @param array $payload   The queued message: its `subject` and `message`.
+	 * @phpstan-param Recipient $recipient
+	 * @phpstan-param Payload $payload
+	 *
+	 * @return array{subject: string, body: string, headers: array<int, string>} The email.
 	 */
-	public function process_message(
-		string $subject,
-		string $message,
-		int $last_id = 0,
-		array $audience = array( 'type' => 'all' )
-	): void {
-		$batch = $this->get_recipient_batch( $last_id, $audience );
-
-		// Queue the next page before sending this one, so an error part way
-		// through the batch cannot strand recipients after this cursor. This
-		// runs even when the filtered page is empty, since a filter can narrow
-		// one page without ending the chain.
-		if ( ! $batch['complete'] ) {
-			$this->schedule_message_batch( $subject, $message, $batch['last_id'], $audience );
-		} else {
-			// The last page is done, so the cached count the Email page
-			// showed is stale. Drop it so the next page load recounts.
-			$this->clear_count_cache();
-		}
-
-		$template = sprintf( '%s/includes/templates/admin/emails/site-email.php', GATHERPRESS_CORE_PATH );
-
-		// Build the email inside the callback so the default subject is
-		// translated, and the template rendered, in the recipient's context.
-		$compose = fn(): array => array(
-			'subject' => $this->resolve_subject( $subject ),
-			'body'    => Utility::render_template( $template, array( 'message' => $message ) ),
+	private function compose_message( array $recipient, array $payload ): array {
+		return array(
+			'subject' => $this->resolve_subject( (string) ( $payload['subject'] ?? '' ) ),
+			'body'    => Utility::render_template(
+				sprintf( '%s/includes/templates/admin/emails/site-email.php', GATHERPRESS_CORE_PATH ),
+				array( 'message' => (string) ( $payload['message'] ?? '' ) )
+			),
 			'headers' => array( 'Content-Type: text/html; charset=UTF-8' ),
 		);
-
-		// Mailer re-checks consent at delivery time, so a user who opted out
-		// after queuing is skipped here.
-		Mailer::get_instance()->bulk_send( $batch['recipients'], $compose, 'site_message' );
 	}
 
 	/**

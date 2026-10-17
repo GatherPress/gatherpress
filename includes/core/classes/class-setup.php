@@ -75,6 +75,7 @@ final class Setup {
 		Feed::get_instance();
 		Geocoding::get_instance();
 		Import::get_instance();
+		Mailer::get_instance();
 		Notices_Setup::get_instance();
 		Plugin_Row::get_instance();
 		Rsvp\Setup::get_instance();

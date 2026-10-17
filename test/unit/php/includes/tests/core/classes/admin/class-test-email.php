@@ -8,9 +8,9 @@
 
 namespace GatherPress\Tests\Core\Admin;
 
-use Closure;
 use GatherPress\Core\Admin\Email;
 use GatherPress\Core\Event;
+use GatherPress\Core\Mailer;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Settings;
 use GatherPress\Core\User;
@@ -33,13 +33,6 @@ class Test_Email extends Base {
 	 * @var array<string, string>
 	 */
 	private const ALL_USERS = array( 'type' => 'all' );
-
-	/**
-	 * Reusable batch-size filter so the same closure can be removed again.
-	 *
-	 * @var Closure|null
-	 */
-	private ?Closure $batch_size_filter = null;
 
 	/**
 	 * Coverage for setup_hooks method.
@@ -69,12 +62,6 @@ class Test_Email extends Base {
 				'name'     => 'rest_api_init',
 				'priority' => 10,
 				'callback' => array( $instance, 'register_endpoints' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'gatherpress_site_message_send',
-				'priority' => 10,
-				'callback' => array( $instance, 'process_message' ),
 			),
 			array(
 				'type'     => 'action',
@@ -252,176 +239,6 @@ class Test_Email extends Base {
 	}
 
 	/**
-	 * Check that paging walks every user and the count only includes eligible ones.
-	 *
-	 * @covers ::get_recipient_batch
-	 * @covers ::count_recipients
-	 * @covers ::get_batch_size
-	 *
-	 * @return void
-	 */
-	public function test_count_recipients_pages_and_filters_opted_out_users(): void {
-		$included_id = $this->factory->user->create( array( 'display_name' => 'Included' ) );
-		$excluded_id = $this->factory->user->create( array( 'display_name' => 'Excluded' ) );
-		$second_id   = $this->factory->user->create( array( 'display_name' => 'Second' ) );
-		update_user_meta( $excluded_id, 'gatherpress_event_updates_opt_in', '0' );
-		add_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
-		$last_ids = array();
-		add_filter(
-			'gatherpress_site_message_recipients',
-			static function ( $recipients, $last_id ) use ( &$last_ids, $included_id, $second_id ) {
-				$last_ids[] = $last_id;
-
-				return array_values(
-					array_filter(
-						$recipients,
-						static function ( $recipient ) use ( $included_id, $second_id ) {
-							return in_array( $recipient['user_id'], array( $included_id, $second_id ), true );
-						}
-					)
-				);
-			},
-			10,
-			2
-		);
-
-		$count = Email::get_instance()->count_recipients();
-		remove_all_filters( 'gatherpress_site_message_recipients' );
-		remove_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
-
-		// The excluded user is dropped, so only the two opted-in users count.
-		$this->assertSame( 2, $count );
-		// Every page of one was visited, and the next cursor is the first user ID.
-		$this->assertContains( 0, $last_ids );
-		$this->assertContains( $included_id, $last_ids );
-	}
-
-	/**
-	 * Check that the consent filter narrows the site-message audience.
-	 *
-	 * @covers ::get_recipient_batch
-	 *
-	 * @return void
-	 */
-	public function test_recipient_batch_honors_consent_filter(): void {
-		$kept_id       = $this->factory->user->create( array( 'display_name' => 'Kept' ) );
-		$dropped_id    = $this->factory->user->create( array( 'display_name' => 'Dropped' ) );
-		$contexts      = array();
-		$consent_calls = static function ( $consent, $recipient, $context ) use ( &$contexts, $dropped_id ) {
-			$contexts[] = $context;
-
-			return (int) $recipient['user_id'] !== $dropped_id;
-		};
-
-		add_filter( 'gatherpress_mail_recipient_consent', $consent_calls, 10, 3 );
-
-		$batch = Utility::invoke_hidden_method(
-			Email::get_instance(),
-			'get_recipient_batch',
-			array( 0 )
-		);
-
-		remove_all_filters( 'gatherpress_mail_recipient_consent' );
-
-		$recipient_ids = array_column( $batch['recipients'], 'user_id' );
-		$this->assertContains( $kept_id, $recipient_ids );
-		$this->assertNotContains( $dropped_id, $recipient_ids );
-		$this->assertContains( 'site_message', $contexts );
-	}
-
-	/**
-	 * Check that a full batch reports the list unfinished and advances the cursor.
-	 *
-	 * @covers ::get_recipient_batch
-	 *
-	 * @return void
-	 */
-	public function test_recipient_batch_reports_incomplete_and_advances_cursor(): void {
-		$cursor    = $this->max_user_id();
-		$first_id  = $this->factory->user->create( array( 'display_name' => 'First' ) );
-		$second_id = $this->factory->user->create( array( 'display_name' => 'Second' ) );
-		add_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
-		$instance = Email::get_instance();
-
-		$first  = Utility::invoke_hidden_method( $instance, 'get_recipient_batch', array( $cursor ) );
-		$second = Utility::invoke_hidden_method( $instance, 'get_recipient_batch', array( $first_id ) );
-		remove_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
-
-		$this->assertSame( 1, $first['fetched'] );
-		$this->assertFalse( $first['complete'] );
-		$this->assertSame( $first_id, $first['last_id'] );
-		$this->assertSame( $second_id, $second['recipients'][0]['user_id'] );
-	}
-
-	/**
-	 * Check that users joining or leaving between batches are not skipped or duplicated.
-	 *
-	 * @covers ::get_recipient_batch
-	 *
-	 * @return void
-	 */
-	public function test_recipient_batch_handles_user_changes_with_cursor(): void {
-		$cursor    = $this->max_user_id();
-		$first_id  = $this->factory->user->create( array( 'display_name' => 'First' ) );
-		$second_id = $this->factory->user->create( array( 'display_name' => 'Second' ) );
-		add_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
-		$instance = Email::get_instance();
-
-		$first = Utility::invoke_hidden_method( $instance, 'get_recipient_batch', array( $cursor ) );
-		wp_delete_user( $second_id );
-		$new_id = $this->factory->user->create( array( 'display_name' => 'Added' ) );
-		$second = Utility::invoke_hidden_method( $instance, 'get_recipient_batch', array( $first_id ) );
-		remove_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
-
-		$this->assertSame( array( $first_id ), array_column( $first['recipients'], 'user_id' ) );
-		$this->assertSame( array( $new_id ), array_column( $second['recipients'], 'user_id' ) );
-	}
-
-	/**
-	 * Check that a page smaller than the batch size reports the list complete.
-	 *
-	 * @covers ::get_recipient_batch
-	 *
-	 * @return void
-	 */
-	public function test_recipient_batch_marks_final_page_complete(): void {
-		$this->factory->user->create( array( 'display_name' => 'Only' ) );
-
-		$batch = Utility::invoke_hidden_method(
-			Email::get_instance(),
-			'get_recipient_batch',
-			array( 0 )
-		);
-
-		$this->assertTrue( $batch['complete'] );
-		$this->assertGreaterThan( 0, $batch['fetched'] );
-		$this->assertLessThan( 50, $batch['fetched'] );
-	}
-
-	/**
-	 * Check that a cursor past the last user returns an empty, complete page.
-	 *
-	 * @covers ::get_recipient_batch
-	 *
-	 * @return void
-	 */
-	public function test_recipient_batch_returns_empty_page_at_end(): void {
-		$this->factory->user->create( array( 'display_name' => 'Only' ) );
-		$cursor = PHP_INT_MAX;
-
-		$batch = Utility::invoke_hidden_method(
-			Email::get_instance(),
-			'get_recipient_batch',
-			array( $cursor )
-		);
-
-		$this->assertSame( array(), $batch['recipients'] );
-		$this->assertSame( 0, $batch['fetched'] );
-		$this->assertTrue( $batch['complete'] );
-		$this->assertSame( $cursor, $batch['last_id'] );
-	}
-
-	/**
 	 * Check that the site message route is registered for administrators only.
 	 *
 	 * @covers ::register_endpoints
@@ -584,10 +401,19 @@ class Test_Email extends Base {
 		$rsvp_id = $this->rsvp( $event_id, $user_id );
 
 		$args = static function ( array $audience ) use ( $instance ): array {
-			return Utility::invoke_hidden_method( $instance, 'get_audience_query_args', array( $audience ) );
+			return Utility::invoke_hidden_method(
+				$instance,
+				'get_audience_query_args',
+				array( array( 'audience' => $audience ) )
+			);
 		};
 
 		$this->assertSame( array(), $args( self::ALL_USERS ) );
+		$this->assertSame(
+			array(),
+			Utility::invoke_hidden_method( $instance, 'get_audience_query_args', array( array() ) ),
+			'A payload without an audience should go to every user.'
+		);
 		$this->assertSame(
 			array( 'role__in' => array( 'editor' ) ),
 			$args(
@@ -697,22 +523,24 @@ class Test_Email extends Base {
 	/**
 	 * Check that each audience narrows who a message counts and goes to.
 	 *
-	 * @covers ::count_recipients
-	 * @covers ::get_recipient_batch
+	 * @covers ::get_audience_query_args
 	 *
 	 * @return void
 	 */
-	public function test_count_recipients_by_audience(): void {
+	public function test_count_by_audience(): void {
 		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 		$editor   = $this->factory->user->create( array( 'role' => 'editor' ) );
 		$author   = $this->factory->user->create( array( 'role' => 'author' ) );
-		$instance = Email::get_instance();
+		$count    = static fn( array $audience ): int => Mailer::get_instance()->count(
+			Email::MAIL_TYPE,
+			array( 'audience' => $audience )
+		);
 
 		$this->rsvp( $event_id, $editor );
 
 		$this->assertSame(
 			2,
-			$instance->count_recipients(
+			$count(
 				array(
 					'type'  => 'role',
 					'roles' => array( 'editor', 'author' ),
@@ -721,7 +549,7 @@ class Test_Email extends Base {
 		);
 		$this->assertSame(
 			1,
-			$instance->count_recipients(
+			$count(
 				array(
 					'type'   => 'active',
 					'months' => 1,
@@ -732,7 +560,7 @@ class Test_Email extends Base {
 
 		$this->assertSame(
 			1,
-			$instance->count_recipients(
+			$count(
 				array(
 					'type'  => 'role',
 					'roles' => array( 'editor', 'author' ),
@@ -788,7 +616,6 @@ class Test_Email extends Base {
 	 * Check that the picked audience travels with the queued message.
 	 *
 	 * @covers ::queue_message
-	 * @covers ::schedule_message_batch
 	 *
 	 * @return void
 	 */
@@ -804,41 +631,87 @@ class Test_Email extends Base {
 		$this->assertSame( 'Queued for 1 user.', $response->get_data()['message'] );
 		$this->assertNotFalse(
 			wp_next_scheduled(
-				'gatherpress_site_message_send',
+				Mailer::JOB_HOOK,
 				array(
-					'Subject',
-					'Message body',
-					0,
+					Email::MAIL_TYPE,
 					array(
-						'type'  => 'role',
-						'roles' => array( 'editor' ),
+						'subject'  => 'Subject',
+						'message'  => 'Message body',
+						'audience' => array(
+							'type'  => 'role',
+							'roles' => array( 'editor' ),
+						),
 					),
+					Mailer::FIRST_BATCH,
 				)
 			)
 		);
-		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
+		wp_unschedule_hook( Mailer::JOB_HOOK );
 	}
 
 	/**
-	 * Check that the next batch keeps the audience of the one before it.
+	 * Check that the Email page registers its mail type with Mailer.
 	 *
-	 * @covers ::process_message
+	 * @covers ::__construct
+	 * @covers ::register_mail_type
 	 *
 	 * @return void
 	 */
-	public function test_process_message_carries_the_audience_to_the_next_batch(): void {
-		$first    = $this->factory->user->create( array( 'role' => 'editor' ) );
-		$audience = array(
-			'type'  => 'role',
-			'roles' => array( 'editor' ),
-		);
-		$sent     = array();
+	public function test_register_mail_type(): void {
+		$types = Utility::get_hidden_property( Mailer::get_instance(), 'types' );
 
-		add_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
+		$this->assertArrayHasKey( Email::MAIL_TYPE, $types );
+		$this->assertSame( 'site_message', $types[ Email::MAIL_TYPE ]['context'] );
+		$this->assertArrayHasKey( 'users', $types[ Email::MAIL_TYPE ] );
+		$this->assertArrayHasKey( 'compose', $types[ Email::MAIL_TYPE ] );
+	}
+
+	/**
+	 * Check that a queued message is built from its subject and message.
+	 *
+	 * @covers ::compose_message
+	 *
+	 * @return void
+	 */
+	public function test_compose_message(): void {
+		$email = Utility::invoke_hidden_method(
+			Email::get_instance(),
+			'compose_message',
+			array(
+				array(),
+				array(
+					'subject' => '',
+					'message' => 'Hello everyone',
+				),
+			)
+		);
+
+		$this->assertSame(
+			sprintf( 'Message from %s', wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ) ),
+			$email['subject']
+		);
+		$this->assertStringContainsString( 'Hello everyone', $email['body'] );
+		$this->assertSame( array( 'Content-Type: text/html; charset=UTF-8' ), $email['headers'] );
+	}
+
+	/**
+	 * Check that a queued message reaches the chosen users, and only them.
+	 *
+	 * @covers ::queue_message
+	 * @covers ::compose_message
+	 *
+	 * @return void
+	 */
+	public function test_queued_message_reaches_the_chosen_users(): void {
+		$editors = $this->factory->user->create_many( 2, array( 'role' => 'editor' ) );
+		$sent    = array();
+
+		$this->factory->user->create( array( 'role' => 'author' ) );
+		add_filter( 'gatherpress_mail_batch_size', array( $this, 'one_per_batch' ) );
 		add_filter(
 			'pre_wp_mail',
-			static function ( $previous, $atts ) use ( &$sent ): bool {
-				$sent[] = $atts['to'];
+			static function ( $previous, array $atts ) use ( &$sent ): bool {
+				$sent[] = array( $atts['to'], $atts['subject'] );
 
 				return true;
 			},
@@ -846,16 +719,23 @@ class Test_Email extends Base {
 			2
 		);
 
-		Email::get_instance()->process_message( 'Subject', 'Message', 0, $audience );
+		$request = $this->site_message_request( 'Board update', 'See you soon.' );
+		$request->set_param( 'audience', 'role' );
+		$request->set_param( 'roles', array( 'editor' ) );
+
+		Email::get_instance()->queue_message( $request );
+		$this->run_mail_jobs();
 
 		remove_all_filters( 'pre_wp_mail' );
-		remove_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
+		remove_filter( 'gatherpress_mail_batch_size', array( $this, 'one_per_batch' ) );
 
-		$this->assertSame( array( get_userdata( $first )->user_email ), $sent );
-		$this->assertNotFalse(
-			wp_next_scheduled( 'gatherpress_site_message_send', array( 'Subject', 'Message', $first, $audience ) )
+		$this->assertSame(
+			array_map(
+				static fn( int $user_id ): array => array( get_userdata( $user_id )->user_email, 'Board update' ),
+				$editors
+			),
+			$sent
 		);
-		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
 	}
 
 	/**
@@ -910,100 +790,19 @@ class Test_Email extends Base {
 		$this->assertStringContainsString( 'Queued for', $response->get_data()['message'] );
 		$this->assertNotFalse(
 			wp_next_scheduled(
-				'gatherpress_site_message_send',
-				array( 'Subject', 'Message body', 0, self::ALL_USERS )
+				Mailer::JOB_HOOK,
+				array(
+					Email::MAIL_TYPE,
+					array(
+						'subject'  => 'Subject',
+						'message'  => 'Message body',
+						'audience' => self::ALL_USERS,
+					),
+					Mailer::FIRST_BATCH,
+				)
 			)
 		);
-		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
-	}
-
-	/**
-	 * Check that the pre-enqueue filter can take over scheduling.
-	 *
-	 * @covers ::schedule_message_batch
-	 *
-	 * @return void
-	 */
-	public function test_schedule_message_batch_honors_short_circuit_filter(): void {
-		$captured_args = array();
-		add_filter(
-			'gatherpress_mail_pre_enqueue_job',
-			static function ( $short_circuit, $hook, $args ) use ( &$captured_args ) {
-				$captured_args = array( $hook, $args );
-
-				return 'action-scheduler-id';
-			},
-			10,
-			3
-		);
-
-		$scheduled = Utility::invoke_hidden_method(
-			Email::get_instance(),
-			'schedule_message_batch',
-			array( 'Subject', 'Message', 0 )
-		);
-		remove_all_filters( 'gatherpress_mail_pre_enqueue_job' );
-
-		$this->assertTrue( $scheduled );
-		$this->assertSame(
-			array( 'gatherpress_site_message_send', array( 'Subject', 'Message', 0, self::ALL_USERS ) ),
-			$captured_args
-		);
-		$this->assertFalse(
-			wp_next_scheduled( 'gatherpress_site_message_send', array( 'Subject', 'Message', 0, self::ALL_USERS ) )
-		);
-	}
-
-	/**
-	 * Check that a new batch is scheduled with its cursor arguments.
-	 *
-	 * @covers ::schedule_message_batch
-	 *
-	 * @return void
-	 */
-	public function test_schedule_message_batch_queues_new_cursor(): void {
-		$result = Utility::invoke_hidden_method(
-			Email::get_instance(),
-			'schedule_message_batch',
-			array( 'Unique subject', 'Unique message', 99 )
-		);
-
-		$this->assertTrue( $result );
-		$this->assertNotFalse(
-			wp_next_scheduled(
-				'gatherpress_site_message_send',
-				array( 'Unique subject', 'Unique message', 99, self::ALL_USERS )
-			)
-		);
-		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
-	}
-
-	/**
-	 * Check that a batch already queued for a cursor is not stacked twice.
-	 *
-	 * @covers ::schedule_message_batch
-	 *
-	 * @return void
-	 */
-	public function test_schedule_message_batch_skips_duplicate_cursor(): void {
-		$instance = Email::get_instance();
-		$args     = array( 'Subject', 'Message', 0, self::ALL_USERS );
-
-		wp_schedule_single_event( time() + 60, 'gatherpress_site_message_send', $args );
-		$scheduled_at = wp_next_scheduled( 'gatherpress_site_message_send', $args );
-
-		$result = Utility::invoke_hidden_method(
-			$instance,
-			'schedule_message_batch',
-			array( 'Subject', 'Message', 0 )
-		);
-
-		$this->assertTrue( $result );
-		$this->assertSame(
-			$scheduled_at,
-			wp_next_scheduled( 'gatherpress_site_message_send', array( 'Subject', 'Message', 0, self::ALL_USERS ) )
-		);
-		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
+		wp_unschedule_hook( Mailer::JOB_HOOK );
 	}
 
 	/**
@@ -1026,184 +825,6 @@ class Test_Email extends Base {
 		$this->assertWPError( $response );
 		$this->assertSame( 'gatherpress_site_message_not_queued', $response->get_error_code() );
 		$this->assertSame( 500, $response->get_error_data()['status'] );
-	}
-
-	/**
-	 * Check that process_message sends one batch and queues the next cursor.
-	 *
-	 * @covers ::process_message
-	 *
-	 * @return void
-	 */
-	public function test_process_message_sends_batch_and_queues_next_cursor(): void {
-		$cursor = $this->max_user_id();
-		add_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
-		$first_id  = $this->factory->user->create( array( 'display_name' => 'First' ) );
-		$second_id = $this->factory->user->create( array( 'display_name' => 'Second' ) );
-		$captured  = array();
-		add_filter(
-			'pre_wp_mail',
-			static function ( $previous, $atts ) use ( &$captured ): bool {
-				$captured[] = $atts;
-				return true;
-			},
-			10,
-			2
-		);
-
-		$instance = Email::get_instance();
-		$instance->process_message( '', 'A site message', $cursor );
-		remove_all_filters( 'pre_wp_mail' );
-		remove_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
-
-		$recipient_emails = array_column( $captured, 'to' );
-		$this->assertCount( 1, $captured );
-		$this->assertNotContains( get_userdata( $second_id )->user_email, $recipient_emails );
-		$this->assertStringContainsString( 'A site message', $captured[0]['message'] );
-		$this->assertStringContainsString( get_bloginfo( 'name' ), $captured[0]['subject'] );
-		$this->assertNotFalse(
-			wp_next_scheduled(
-				'gatherpress_site_message_send',
-				array( '', 'A site message', $first_id, self::ALL_USERS )
-			)
-		);
-		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
-	}
-
-	/**
-	 * Check that a failed continuation enqueue is retried before delivery.
-	 *
-	 * @covers ::process_message
-	 *
-	 * @return void
-	 */
-	public function test_process_message_retries_failed_continuation_enqueue(): void {
-		$cursor = $this->max_user_id();
-		add_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
-		$first_id = $this->factory->user->create( array( 'display_name' => 'First' ) );
-		$this->factory->user->create( array( 'display_name' => 'Second' ) );
-		$attempts        = 0;
-		$schedule_filter = static function () use ( &$attempts ) {
-			++$attempts;
-
-			return 1 === $attempts ? false : null;
-		};
-		add_filter( 'pre_schedule_event', $schedule_filter );
-
-		Email::get_instance()->process_message( 'Subject', 'Message', $cursor );
-		remove_filter( 'pre_schedule_event', $schedule_filter );
-		remove_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
-
-		$this->assertSame( 2, $attempts );
-		$this->assertNotFalse(
-			wp_next_scheduled(
-				'gatherpress_site_message_send',
-				array( 'Subject', 'Message', $first_id, self::ALL_USERS )
-			)
-		);
-		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
-	}
-
-	/**
-	 * Check that the final batch sends without queuing another cursor.
-	 *
-	 * @covers ::process_message
-	 *
-	 * @return void
-	 */
-	public function test_process_message_final_batch_does_not_reschedule(): void {
-		$cursor = $this->max_user_id();
-		$this->factory->user->create( array( 'display_name' => 'Only' ) );
-		$captured = array();
-		add_filter(
-			'pre_wp_mail',
-			static function ( $previous, $atts ) use ( &$captured ): bool {
-				$captured[] = $atts;
-				return true;
-			},
-			10,
-			2
-		);
-
-		Email::get_instance()->process_message( 'Subject', 'Message', $cursor );
-		remove_all_filters( 'pre_wp_mail' );
-
-		$this->assertNotEmpty( $captured );
-		$this->assertFalse(
-			wp_next_scheduled( 'gatherpress_site_message_send' ),
-			'No site message job should remain scheduled for any cursor after the final batch.'
-		);
-	}
-
-	/**
-	 * Check that an empty filtered batch still queues the next cursor.
-	 *
-	 * A filter can narrow one page away without ending the chain, so the next
-	 * cursor is queued even when the current page has no recipients.
-	 *
-	 * @covers ::process_message
-	 *
-	 * @return void
-	 */
-	public function test_process_message_continues_when_filter_empties_page(): void {
-		$cursor   = $this->max_user_id();
-		$first_id = $this->factory->user->create( array( 'display_name' => 'First' ) );
-		$this->factory->user->create( array( 'display_name' => 'Second' ) );
-		add_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
-		add_filter( 'gatherpress_site_message_recipients', '__return_empty_array' );
-
-		Email::get_instance()->process_message( 'Subject', 'Message', $cursor );
-		remove_all_filters( 'gatherpress_site_message_recipients' );
-		remove_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
-
-		$this->assertNotFalse(
-			wp_next_scheduled(
-				'gatherpress_site_message_send',
-				array( 'Subject', 'Message', $first_id, self::ALL_USERS )
-			)
-		);
-		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
-	}
-
-	/**
-	 * Check that process_message skips a recipient who is no longer eligible.
-	 *
-	 * The audience filter can inject rows that `get_recipient_batch()` would not
-	 * build itself, so delivery re-checks eligibility before rendering.
-	 *
-	 * @covers ::process_message
-	 *
-	 * @return void
-	 */
-	public function test_process_message_skips_ineligible_recipient(): void {
-		add_filter(
-			'gatherpress_site_message_recipients',
-			static function (): array {
-				return array(
-					array(
-						'is_user'    => false,
-						'user_id'    => 0,
-						'comment_id' => 0,
-						'email'      => '',
-						'name'       => 'Empty Email',
-					),
-				);
-			}
-		);
-		$mail_called = false;
-		add_filter(
-			'pre_wp_mail',
-			static function () use ( &$mail_called ): bool {
-				$mail_called = true;
-				return true;
-			}
-		);
-
-		Email::get_instance()->process_message( 'Subject', 'Message' );
-		remove_all_filters( 'pre_wp_mail' );
-		remove_all_filters( 'gatherpress_site_message_recipients' );
-
-		$this->assertFalse( $mail_called );
 	}
 
 	/**
@@ -1375,100 +996,12 @@ class Test_Email extends Base {
 	}
 
 	/**
-	 * Check that the final batch clears the cached count.
+	 * Limit each mail job to one recipient.
 	 *
-	 * @covers ::process_message
-	 *
-	 * @return void
+	 * @return int Batch size.
 	 */
-	public function test_process_message_final_batch_clears_count_cache(): void {
-		$cache_key = 'gatherpress_site_message_count_' . get_current_blog_id();
-		$this->factory->user->create( array( 'display_name' => 'Only' ) );
-		set_transient( $cache_key, 7, HOUR_IN_SECONDS );
-		add_filter(
-			'pre_wp_mail',
-			static function (): bool {
-				return true;
-			}
-		);
-
-		Email::get_instance()->process_message( 'Subject', 'Message' );
-		remove_all_filters( 'pre_wp_mail' );
-
-		$this->assertFalse(
-			get_transient( $cache_key ),
-			'Final batch delivery should drop the cached count.'
-		);
-	}
-
-	/**
-	 * Check that the final batch keeps an unrelated cache untouched.
-	 *
-	 * @covers ::process_message
-	 *
-	 * @return void
-	 */
-	public function test_process_message_keeps_cache_when_batch_continues(): void {
-		$cache_key = 'gatherpress_site_message_count_' . get_current_blog_id();
-		$cursor    = $this->max_user_id();
-		$this->factory->user->create( array( 'display_name' => 'First' ) );
-		$this->factory->user->create( array( 'display_name' => 'Second' ) );
-		set_transient( $cache_key, 7, HOUR_IN_SECONDS );
-		add_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
-		add_filter(
-			'pre_wp_mail',
-			static function (): bool {
-				return true;
-			}
-		);
-
-		Email::get_instance()->process_message( 'Subject', 'Message', $cursor );
-		remove_all_filters( 'pre_wp_mail' );
-		remove_filter( 'gatherpress_site_message_batch_size', $this->batch_size_filter() );
-		wp_clear_scheduled_hook( 'gatherpress_site_message_send' );
-
-		$this->assertSame(
-			7,
-			get_transient( $cache_key ),
-			'A continued chain should leave the cached count alone.'
-		);
-
-		delete_transient( $cache_key );
-	}
-
-	/**
-	 * Get the highest existing user ID before creating test users.
-	 *
-	 * @return int Highest existing user ID.
-	 */
-	private function max_user_id(): int {
-		$users = get_users(
-			array(
-				'number'  => 1,
-				'fields'  => array( 'ID' ),
-				'orderby' => 'ID',
-				'order'   => 'DESC',
-			)
-		);
-
-		return empty( $users ) ? 0 : (int) $users[0]->ID;
-	}
-
-	/**
-	 * Return a shared closure that limits one cron job to a single user.
-	 *
-	 * The same instance is returned on every call so the filter can be removed.
-	 *
-	 * @return Closure Batch size filter.
-	 */
-	private function batch_size_filter(): Closure {
-		if ( null === $this->batch_size_filter ) {
-			$this->batch_size_filter = static function (): int {
-				return 1;
-			};
-		}
-
-		return $this->batch_size_filter;
+	public function one_per_batch(): int {
+		return 1;
 	}
 
 	/**

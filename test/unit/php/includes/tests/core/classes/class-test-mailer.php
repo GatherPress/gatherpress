@@ -21,6 +21,69 @@ use PMC\Unit_Test\Utility;
 class Test_Mailer extends Base {
 
 	/**
+	 * Mail types registered by a test, removed again after it.
+	 *
+	 * @var string[]
+	 */
+	private array $registered = array();
+
+	/**
+	 * Emails sent during a test, by recipient address.
+	 *
+	 * @var string[]
+	 */
+	private array $sent = array();
+
+	/**
+	 * Capture outgoing mail instead of sending it.
+	 *
+	 * @return void
+	 */
+	public function set_up(): void {
+		parent::set_up();
+
+		$this->sent = array();
+
+		add_filter( 'pre_wp_mail', array( $this, 'capture_mail' ), 10, 2 );
+	}
+
+	/**
+	 * Remove the test's mail types, mail capture and queued jobs.
+	 *
+	 * @return void
+	 */
+	public function tear_down(): void {
+		$mailer = Mailer::get_instance();
+		$types  = Utility::get_hidden_property( $mailer, 'types' );
+
+		foreach ( $this->registered as $type ) {
+			unset( $types[ $type ] );
+		}
+
+		Utility::set_and_get_hidden_property( $mailer, 'types', $types );
+		remove_filter( 'pre_wp_mail', array( $this, 'capture_mail' ) );
+		remove_all_filters( 'gatherpress_mail_batch_size' );
+		remove_all_filters( 'gatherpress_mail_recipients' );
+		wp_unschedule_hook( Mailer::JOB_HOOK );
+
+		parent::tear_down();
+	}
+
+	/**
+	 * Record an outgoing email and stop it from being sent.
+	 *
+	 * @param mixed                $previous Short-circuit value.
+	 * @param array<string, mixed> $atts     The wp_mail() arguments.
+	 *
+	 * @return bool True, so wp_mail() reports success.
+	 */
+	public function capture_mail( $previous, array $atts ): bool {
+		$this->sent[] = $atts['to'];
+
+		return true;
+	}
+
+	/**
 	 * Check that users are eligible by default.
 	 *
 	 * @covers ::is_eligible
@@ -253,7 +316,7 @@ class Test_Mailer extends Base {
 		$user_id = $this->factory->user->create();
 
 		$this->assertTrue(
-			Mailer::get_instance()->has_consent(
+			$this->has_consent(
 				$this->recipient( array( 'user_id' => $user_id ) ),
 				'site_message'
 			)
@@ -269,7 +332,7 @@ class Test_Mailer extends Base {
 	 */
 	public function test_has_consent_follows_ineligible_recipient(): void {
 		$this->assertFalse(
-			Mailer::get_instance()->has_consent(
+			$this->has_consent(
 				$this->recipient( array( 'email' => '' ) ),
 				'site_message'
 			)
@@ -289,7 +352,7 @@ class Test_Mailer extends Base {
 
 		add_filter( 'gatherpress_mail_recipient_consent', '__return_true' );
 
-		$consent = Mailer::get_instance()->has_consent(
+		$consent = $this->has_consent(
 			$this->recipient( array( 'user_id' => $user_id ) ),
 			'event'
 		);
@@ -309,7 +372,7 @@ class Test_Mailer extends Base {
 	public function test_has_consent_filter_cannot_grant_without_email(): void {
 		add_filter( 'gatherpress_mail_recipient_consent', '__return_true' );
 
-		$consent = Mailer::get_instance()->has_consent(
+		$consent = $this->has_consent(
 			$this->recipient( array( 'email' => '' ) ),
 			'event'
 		);
@@ -329,7 +392,7 @@ class Test_Mailer extends Base {
 	public function test_has_consent_filter_cannot_grant_malformed_email(): void {
 		add_filter( 'gatherpress_mail_recipient_consent', '__return_true' );
 
-		$consent = Mailer::get_instance()->has_consent(
+		$consent = $this->has_consent(
 			$this->recipient( array( 'email' => 'jane@example' ) ),
 			'event'
 		);
@@ -360,7 +423,7 @@ class Test_Mailer extends Base {
 			3
 		);
 
-		$consent = Mailer::get_instance()->has_consent(
+		$consent = $this->has_consent(
 			$this->recipient( array( 'user_id' => $user_id ) ),
 			'site_message'
 		);
@@ -395,12 +458,11 @@ class Test_Mailer extends Base {
 				'email'      => 'anonymous@example.test',
 			)
 		);
-		$mailer    = Mailer::get_instance();
 
-		$this->assertTrue( $mailer->has_consent( $recipient, 'rsvp' ), 'RSVP emails should skip the opt-in.' );
-		$this->assertFalse( $mailer->has_consent( $recipient, 'event' ), 'Other emails should follow the opt-in.' );
+		$this->assertTrue( $this->has_consent( $recipient, 'rsvp' ), 'RSVP emails should skip the opt-in.' );
+		$this->assertFalse( $this->has_consent( $recipient, 'event' ), 'Other emails should follow the opt-in.' );
 		$this->assertFalse(
-			$mailer->has_consent( $this->recipient( array( 'email' => '' ) ), 'rsvp' ),
+			$this->has_consent( $this->recipient( array( 'email' => '' ) ), 'rsvp' ),
 			'RSVP emails should still need an address.'
 		);
 	}
@@ -425,7 +487,7 @@ class Test_Mailer extends Base {
 			}
 		);
 
-		$consent = Mailer::get_instance()->has_consent(
+		$consent = $this->has_consent(
 			$this->recipient( array( 'user_id' => $user_id ) ),
 			'rsvp'
 		);
@@ -633,7 +695,7 @@ class Test_Mailer extends Base {
 	public function test_schedule_queues_job(): void {
 		$args = array( 'Subject', 'Message', 7 );
 
-		$result = Mailer::get_instance()->schedule( 'gatherpress_test_mail_job', $args );
+		$result = $this->schedule( 'gatherpress_test_mail_job', $args );
 
 		$this->assertTrue( $result );
 		$this->assertNotFalse( wp_next_scheduled( 'gatherpress_test_mail_job', $args ) );
@@ -651,7 +713,7 @@ class Test_Mailer extends Base {
 		wp_schedule_single_event( time() + 60, 'gatherpress_test_mail_job', $args );
 		$scheduled_at = wp_next_scheduled( 'gatherpress_test_mail_job', $args );
 
-		$result = Mailer::get_instance()->schedule( 'gatherpress_test_mail_job', $args );
+		$result = $this->schedule( 'gatherpress_test_mail_job', $args );
 
 		$this->assertTrue( $result );
 		$this->assertSame( $scheduled_at, wp_next_scheduled( 'gatherpress_test_mail_job', $args ) );
@@ -677,7 +739,7 @@ class Test_Mailer extends Base {
 			3
 		);
 
-		$result = Mailer::get_instance()->schedule( 'gatherpress_test_mail_job', array( 'A', 'B', 9 ) );
+		$result = $this->schedule( 'gatherpress_test_mail_job', array( 'A', 'B', 9 ) );
 
 		remove_all_filters( 'gatherpress_mail_pre_enqueue_job' );
 
@@ -696,7 +758,7 @@ class Test_Mailer extends Base {
 	public function test_schedule_returns_false_when_enqueue_fails(): void {
 		add_filter( 'pre_schedule_event', '__return_false' );
 
-		$result = Mailer::get_instance()->schedule( 'gatherpress_test_mail_job', array( 'A', 'B', 10 ) );
+		$result = $this->schedule( 'gatherpress_test_mail_job', array( 'A', 'B', 10 ) );
 
 		remove_all_filters( 'pre_schedule_event' );
 
@@ -719,12 +781,497 @@ class Test_Mailer extends Base {
 		};
 		add_filter( 'pre_schedule_event', $filter );
 
-		$result = Mailer::get_instance()->schedule( 'gatherpress_test_mail_job', array( 'A', 'B', 11 ) );
+		$result = $this->schedule( 'gatherpress_test_mail_job', array( 'A', 'B', 11 ) );
 
 		remove_all_filters( 'pre_schedule_event' );
 
 		$this->assertTrue( $result );
 		$this->assertSame( 2, $attempts );
+	}
+
+	/**
+	 * Check that the job hook runs the job handler.
+	 *
+	 * @covers ::__construct
+	 * @covers ::setup_hooks
+	 *
+	 * @return void
+	 */
+	public function test_setup_hooks(): void {
+		$instance = Mailer::get_instance();
+
+		$this->assert_hooks(
+			array(
+				array(
+					'type'     => 'action',
+					'name'     => Mailer::JOB_HOOK,
+					'priority' => 10,
+					'callback' => array( $instance, 'process_job' ),
+				),
+			),
+			$instance
+		);
+	}
+
+	/**
+	 * Check that queue() schedules the first batch of a registered type only.
+	 *
+	 * @covers ::register
+	 * @covers ::queue
+	 *
+	 * @return void
+	 */
+	public function test_queue(): void {
+		$type    = $this->register_type();
+		$payload = array( 'message' => 'Hello' );
+
+		$this->assertTrue( Mailer::get_instance()->queue( $type, $payload ) );
+		$this->assertNotFalse( wp_next_scheduled( Mailer::JOB_HOOK, array( $type, $payload, Mailer::FIRST_BATCH ) ) );
+		$this->assertFalse(
+			Mailer::get_instance()->queue( 'gatherpress_unknown_type', $payload ),
+			'An unknown type should not be queued.'
+		);
+	}
+
+	/**
+	 * Check that count() walks every batch and only counts recipients who consent.
+	 *
+	 * @covers ::count
+	 * @covers ::get_batch
+	 *
+	 * @return void
+	 */
+	public function test_count(): void {
+		$users = $this->factory->user->create_many( 3 );
+		$guest = $this->recipient(
+			array(
+				'is_user' => false,
+				'email'   => 'guest@example.test',
+			)
+		);
+
+		update_user_meta( $users[1], 'gatherpress_event_updates_opt_in', '0' );
+		add_filter( 'gatherpress_mail_batch_size', array( $this, 'one_per_batch' ) );
+
+		$type = $this->register_type(
+			array(
+				'users'      => static fn(): array => array( 'include' => $users ),
+				'recipients' => static fn(): array => array( $guest ),
+			)
+		);
+
+		$this->assertSame( 3, Mailer::get_instance()->count( $type, array() ) );
+		$this->assertSame( 0, Mailer::get_instance()->count( 'gatherpress_unknown_type', array() ) );
+	}
+
+	/**
+	 * Check that a job sends one batch of users and queues the batch after it.
+	 *
+	 * @covers ::process_job
+	 * @covers ::get_batch
+	 *
+	 * @return void
+	 */
+	public function test_process_job_sends_one_batch_and_queues_the_next(): void {
+		$users = $this->factory->user->create_many( 2 );
+
+		add_filter( 'gatherpress_mail_batch_size', array( $this, 'one_per_batch' ) );
+
+		$type = $this->register_type(
+			array( 'users' => static fn(): array => array( 'include' => $users ) )
+		);
+
+		Mailer::get_instance()->process_job( $type, array() );
+
+		$this->assertSame( array( get_userdata( $users[0] )->user_email ), $this->sent );
+		$this->assertNotFalse(
+			wp_next_scheduled(
+				Mailer::JOB_HOOK,
+				array(
+					$type,
+					array(),
+					array(
+						'source'   => 'users',
+						'position' => $users[0],
+					),
+				)
+			)
+		);
+	}
+
+	/**
+	 * Check that a job pages through the recipient list and stops after it.
+	 *
+	 * @covers ::process_job
+	 * @covers ::get_batch
+	 *
+	 * @return void
+	 */
+	public function test_process_job_pages_through_the_recipient_list(): void {
+		$list = array(
+			$this->recipient(
+				array(
+					'is_user' => false,
+					'email'   => 'one@example.test',
+				)
+			),
+			$this->recipient(
+				array(
+					'is_user' => false,
+					'email'   => 'two@example.test',
+				)
+			),
+			$this->recipient(
+				array(
+					'is_user' => false,
+					'email'   => 'three@example.test',
+				)
+			),
+		);
+		$next = array(
+			'source'   => 'list',
+			'position' => 2,
+		);
+
+		add_filter( 'gatherpress_mail_batch_size', static fn(): int => 2 );
+
+		$type = $this->register_type( array( 'recipients' => static fn(): array => $list ) );
+
+		Mailer::get_instance()->process_job( $type, array() );
+
+		$this->assertSame( array( 'one@example.test', 'two@example.test' ), $this->sent );
+		$this->assertNotFalse( wp_next_scheduled( Mailer::JOB_HOOK, array( $type, array(), $next ) ) );
+
+		wp_unschedule_hook( Mailer::JOB_HOOK );
+		Mailer::get_instance()->process_job( $type, array(), $next );
+
+		$this->assertSame( array( 'one@example.test', 'two@example.test', 'three@example.test' ), $this->sent );
+		$this->assertFalse( wp_next_scheduled( Mailer::JOB_HOOK, array( $type, array(), $next ) ) );
+		$this->assertEmpty( $this->queued_jobs(), 'The last batch should not queue another.' );
+	}
+
+	/**
+	 * Check that a queued email reaches every user and then the recipient list.
+	 *
+	 * @covers ::queue
+	 * @covers ::process_job
+	 * @covers ::get_batch
+	 * @covers ::get_list_start
+	 *
+	 * @return void
+	 */
+	public function test_queued_email_reaches_users_then_the_list(): void {
+		$users = $this->factory->user->create_many( 3 );
+
+		add_filter( 'gatherpress_mail_batch_size', array( $this, 'one_per_batch' ) );
+
+		$type = $this->register_type(
+			array(
+				'users'      => static fn(): array => array( 'include' => $users ),
+				'recipients' => static fn(): array => array(
+					array(
+						'is_user'    => false,
+						'user_id'    => 0,
+						'comment_id' => 0,
+						'email'      => 'guest@example.test',
+						'name'       => 'Guest',
+					),
+				),
+			)
+		);
+
+		Mailer::get_instance()->queue( $type, array() );
+		$this->run_mail_jobs();
+
+		$expected = array_map( static fn( int $user_id ): string => get_userdata( $user_id )->user_email, $users );
+
+		$expected[] = 'guest@example.test';
+
+		$this->assertSame( $expected, $this->sent );
+	}
+
+	/**
+	 * Check that a job for an unknown type does nothing.
+	 *
+	 * @covers ::process_job
+	 *
+	 * @return void
+	 */
+	public function test_process_job_skips_an_unknown_type(): void {
+		Mailer::get_instance()->process_job( 'gatherpress_unknown_type', array() );
+
+		$this->assertEmpty( $this->sent );
+		$this->assertEmpty( $this->queued_jobs() );
+	}
+
+	/**
+	 * Check that a filter emptying one batch does not end the job.
+	 *
+	 * @covers ::process_job
+	 * @covers ::get_batch
+	 *
+	 * @return void
+	 */
+	public function test_process_job_keeps_going_when_a_filter_empties_a_batch(): void {
+		$users    = $this->factory->user->create_many( 2 );
+		$captured = array();
+
+		add_filter( 'gatherpress_mail_batch_size', array( $this, 'one_per_batch' ) );
+		add_filter(
+			'gatherpress_mail_recipients',
+			static function ( array $recipients, string $type, array $payload ) use ( &$captured ): array {
+				$captured = array( $type, $payload );
+
+				return array();
+			},
+			10,
+			3
+		);
+
+		$type = $this->register_type(
+			array( 'users' => static fn(): array => array( 'include' => $users ) )
+		);
+
+		Mailer::get_instance()->process_job( $type, array( 'message' => 'Hi' ) );
+
+		$this->assertEmpty( $this->sent );
+		$this->assertSame( array( $type, array( 'message' => 'Hi' ) ), $captured );
+		$this->assertCount( 1, $this->queued_jobs(), 'The next batch should still be queued.' );
+	}
+
+	/**
+	 * Check that a recipient a filter adds is still held to consent.
+	 *
+	 * @covers ::process_job
+	 *
+	 * @return void
+	 */
+	public function test_process_job_skips_a_recipient_without_consent(): void {
+		$opted_out = $this->factory->user->create();
+
+		update_user_meta( $opted_out, 'gatherpress_event_updates_opt_in', '0' );
+		add_filter(
+			'gatherpress_mail_recipients',
+			fn(): array => array(
+				$this->recipient(
+					array(
+						'user_id' => $opted_out,
+						'email'   => 'out@example.test',
+					)
+				),
+			)
+		);
+
+		$type = $this->register_type( array( 'recipients' => static fn(): array => array() ) );
+
+		Mailer::get_instance()->process_job( $type, array() );
+
+		$this->assertEmpty( $this->sent );
+	}
+
+	/**
+	 * Check that users are paged by ID, so pages do not shift between batches.
+	 *
+	 * @covers ::get_user_batch
+	 *
+	 * @return void
+	 */
+	public function test_get_user_batch(): void {
+		$users = $this->factory->user->create_many( 3 );
+		$page  = static fn( int $last_id ): array => Utility::invoke_hidden_method(
+			Mailer::get_instance(),
+			'get_user_batch',
+			array( array( 'include' => $users ), $last_id, 2 )
+		);
+
+		$first = $page( 0 );
+
+		$this->assertSame( array( $users[0], $users[1] ), wp_list_pluck( $first['recipients'], 'user_id' ) );
+		$this->assertFalse( $first['complete'] );
+		$this->assertSame( $users[1], $first['last_id'] );
+
+		// A user leaving after the first page does not shift the second.
+		wp_delete_user( $users[0] );
+
+		$second = $page( $first['last_id'] );
+
+		$this->assertSame( array( $users[2] ), wp_list_pluck( $second['recipients'], 'user_id' ) );
+		$this->assertTrue( $second['complete'] );
+
+		$after = $page( $users[2] );
+
+		$this->assertSame( array(), $after['recipients'] );
+		$this->assertSame( $users[2], $after['last_id'], 'An empty page keeps the cursor.' );
+		$this->assertTrue( $after['complete'] );
+	}
+
+	/**
+	 * Check that a batch starting in the list skips the users.
+	 *
+	 * @covers ::get_batch
+	 *
+	 * @return void
+	 */
+	public function test_get_batch_from_the_list(): void {
+		$row  = $this->recipient( array( 'email' => 'list@example.test' ) );
+		$type = $this->register_type(
+			array(
+				'users'      => static fn(): array => array(),
+				'recipients' => static fn(): array => array( $row ),
+			)
+		);
+
+		$batch = Utility::invoke_hidden_method(
+			Mailer::get_instance(),
+			'get_batch',
+			array(
+				$type,
+				array(),
+				array(
+					'source'   => 'list',
+					'position' => 0,
+				),
+			)
+		);
+
+		$this->assertSame( array( $row ), $batch['recipients'] );
+		$this->assertNull( $batch['next'] );
+	}
+
+	/**
+	 * Check where a type's recipient list starts.
+	 *
+	 * @covers ::get_list_start
+	 *
+	 * @return void
+	 */
+	public function test_get_list_start(): void {
+		$mailer = Mailer::get_instance();
+
+		$this->assertSame(
+			array(
+				'source'   => 'list',
+				'position' => 0,
+			),
+			Utility::invoke_hidden_method(
+				$mailer,
+				'get_list_start',
+				array( array( 'recipients' => '__return_empty_array' ) )
+			)
+		);
+		$this->assertNull( Utility::invoke_hidden_method( $mailer, 'get_list_start', array( array() ) ) );
+	}
+
+	/**
+	 * Check the batch size default and filter.
+	 *
+	 * @covers ::get_batch_size
+	 *
+	 * @return void
+	 */
+	public function test_get_batch_size(): void {
+		$mailer   = Mailer::get_instance();
+		$captured = '';
+
+		$this->assertSame( 50, Utility::invoke_hidden_method( $mailer, 'get_batch_size', array( 'event' ) ) );
+
+		add_filter(
+			'gatherpress_mail_batch_size',
+			static function ( $size, string $type ) use ( &$captured ): int {
+				$captured = $type;
+
+				return 0;
+			},
+			10,
+			2
+		);
+
+		$this->assertSame(
+			1,
+			Utility::invoke_hidden_method( $mailer, 'get_batch_size', array( 'site_message' ) ),
+			'A batch should never be smaller than one.'
+		);
+		$this->assertSame( 'site_message', $captured );
+	}
+
+	/**
+	 * Register a mail type for one test.
+	 *
+	 * @param array<string, mixed> $definition Type settings over a plain default.
+	 *
+	 * @return string The type name.
+	 */
+	private function register_type( array $definition = array() ): string {
+		$type = sprintf( 'gatherpress_test_mail_%d', count( $this->registered ) );
+
+		$this->registered[] = $type;
+
+		Mailer::get_instance()->register(
+			$type,
+			array_merge(
+				array(
+					'context' => 'event',
+					'compose' => static fn(): array => array(
+						'subject' => 'Subject',
+						'body'    => 'Body',
+					),
+				),
+				$definition
+			)
+		);
+
+		return $type;
+	}
+
+	/**
+	 * Limit each mail job to one recipient.
+	 *
+	 * @return int Batch size.
+	 */
+	public function one_per_batch(): int {
+		return 1;
+	}
+
+	/**
+	 * Get the queued Mailer jobs.
+	 *
+	 * @return array<int, array<mixed>> Each job's args.
+	 */
+	private function queued_jobs(): array {
+		$jobs = array();
+
+		foreach ( (array) _get_cron_array() as $hooks ) {
+			foreach ( $hooks[ Mailer::JOB_HOOK ] ?? array() as $event ) {
+				$jobs[] = $event['args'];
+			}
+		}
+
+		return $jobs;
+	}
+
+	/**
+	 * Call the private consent check.
+	 *
+	 * @param array<string, mixed> $recipient Recipient row.
+	 * @param string               $context   Mail path asking for consent.
+	 *
+	 * @return bool Whether the recipient consents.
+	 */
+	private function has_consent( array $recipient, string $context ): bool {
+		return Utility::invoke_hidden_method( Mailer::get_instance(), 'has_consent', array( $recipient, $context ) );
+	}
+
+	/**
+	 * Call the private job scheduler.
+	 *
+	 * @param string       $hook  Action hook.
+	 * @param array<mixed> $args  Hook args.
+	 * @param int          $delay Seconds to wait.
+	 *
+	 * @return bool Whether the job is queued.
+	 */
+	private function schedule( string $hook, array $args, int $delay = 0 ): bool {
+		return Utility::invoke_hidden_method( Mailer::get_instance(), 'schedule', array( $hook, $args, $delay ) );
 	}
 
 	/**
