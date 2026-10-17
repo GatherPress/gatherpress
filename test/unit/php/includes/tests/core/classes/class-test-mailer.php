@@ -432,6 +432,63 @@ class Test_Mailer extends Base {
 	}
 
 	/**
+	 * Check that bulk_send sends to each recipient who consents.
+	 *
+	 * @covers ::bulk_send
+	 *
+	 * @return void
+	 */
+	public function test_bulk_send(): void {
+		$opted_in  = $this->factory->user->create();
+		$opted_out = $this->factory->user->create();
+		$composed  = array();
+		$sent      = array();
+
+		update_user_meta( $opted_out, 'gatherpress_event_updates_opt_in', '0' );
+		add_filter(
+			'pre_wp_mail',
+			static function ( $previous, $atts ) use ( &$sent ): bool {
+				$sent[] = $atts['to'];
+
+				return true;
+			},
+			10,
+			2
+		);
+
+		$count = Mailer::get_instance()->bulk_send(
+			array(
+				$this->recipient(
+					array(
+						'user_id' => $opted_in,
+						'email'   => 'in@example.test',
+					)
+				),
+				$this->recipient(
+					array(
+						'user_id' => $opted_out,
+						'email'   => 'out@example.test',
+					)
+				),
+			),
+			static function ( array $recipient ) use ( &$composed ): array {
+				$composed[] = $recipient['email'];
+
+				return array(
+					'subject' => 'Subject',
+					'body'    => 'Body',
+				);
+			}
+		);
+
+		remove_all_filters( 'pre_wp_mail' );
+
+		$this->assertSame( 1, $count );
+		$this->assertSame( array( 'in@example.test' ), $sent );
+		$this->assertSame( array( 'in@example.test' ), $composed, 'Only consenting recipients get an email built.' );
+	}
+
+	/**
 	 * Check that send composes and delivers for an eligible recipient.
 	 *
 	 * @covers ::send

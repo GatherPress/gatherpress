@@ -233,6 +233,33 @@ final class Mailer {
 	}
 
 	/**
+	 * Send one email to each of a list of recipients.
+	 *
+	 * Runs `send()` for every recipient, so each one gets their own consent
+	 * check and context, and `$compose` builds their copy.
+	 *
+	 * @since TBD
+	 *
+	 * @param array    $recipients Recipient rows from a mail path.
+	 * @param callable $compose    Returns `array{subject: string, body: string, headers?: array<int, string>}`
+	 *                             built for the recipient it receives.
+	 * @param string   $context    Mail path asking for consent, e.g. `event`, `site_message` or `rsvp`.
+	 * @phpstan-param array<int, Recipient> $recipients
+	 * @phpstan-param callable(Recipient): ComposedEmail $compose
+	 *
+	 * @return int How many emails were delivered.
+	 */
+	public function bulk_send( array $recipients, callable $compose, string $context = 'event' ): int {
+		$sent = 0;
+
+		foreach ( $recipients as $recipient ) {
+			$sent += (int) $this->send( $recipient, $compose, $context );
+		}
+
+		return $sent;
+	}
+
+	/**
 	 * Queue a GatherPress mail job on cron.
 	 *
 	 * Every mail path queues through here so delivery is scheduled the same

@@ -506,50 +506,15 @@ final class Rest_Api {
 			return false;
 		}
 
-		$recipients = $this->get_recipients( $send, $post_id );
-
-		foreach ( $recipients as $recipient ) {
-			$this->send_event_email_to_recipient( $recipient, $post_id, $message, $subject );
-		}
-
-		return true;
-	}
-
-	/**
-	 * Send the per-event update email to a single recipient.
-	 *
-	 * Extracted from `send_emails()` so the outer loop body stays shallow
-	 * enough for SonarCloud's cognitive-complexity gate. Builds the event
-	 * subject and body through `build_event_email()`, then hands the
-	 * recipient off to `Mailer::send()`, which owns the consent check,
-	 * context switch, delivery, and restore.
-	 *
-	 * @since 0.34.0
-	 * @since 0.36.0 Added `$subject` parameter for #827.
-	 * @since TBD Mailer owns the per-recipient send sequence.
-	 *
-	 * @param array  $recipient Recipient row from `get_recipients()`.
-	 * @param int    $post_id   Event post ID.
-	 * @param string $message   Optional editor-supplied message body.
-	 * @param string $subject   Optional subject line. Empty falls back to the default template
-	 *                          and is then filtered via `gatherpress_email_subject`.
-	 * @phpstan-param Recipient $recipient
-	 *
-	 * @return void
-	 */
-	protected function send_event_email_to_recipient(
-		array $recipient,
-		int $post_id,
-		string $message,
-		string $subject = ''
-	): void {
 		// Build the email from the callback so the default subject is
-		// translated, and the template rendered, in the recipient's context.
-		Mailer::get_instance()->send(
-			$recipient,
+		// translated, and the template rendered, in each recipient's context.
+		Mailer::get_instance()->bulk_send(
+			$this->get_recipients( $send, $post_id ),
 			fn(): array => $this->build_event_email( $post_id, $message, $subject ),
 			'event'
 		);
+
+		return true;
 	}
 
 	/**

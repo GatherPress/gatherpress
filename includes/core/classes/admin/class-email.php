@@ -786,13 +786,9 @@ final class Email {
 			'headers' => array( 'Content-Type: text/html; charset=UTF-8' ),
 		);
 
-		$mailer = Mailer::get_instance();
-
-		foreach ( $batch['recipients'] as $recipient ) {
-			// Mailer re-checks consent at delivery time, so a user who opted
-			// out after queuing is skipped here.
-			$mailer->send( $recipient, $compose, 'site_message' );
-		}
+		// Mailer re-checks consent at delivery time, so a user who opted out
+		// after queuing is skipped here.
+		Mailer::get_instance()->bulk_send( $batch['recipients'], $compose, 'site_message' );
 	}
 
 	/**
