@@ -48,11 +48,7 @@ if ( ! isset( $recipient_count ) ) {
 						<?php endforeach; ?>
 					</select>
 					<p class="description">
-						<output
-							id="gatherpress-message-count"
-							class="gatherpress-send-email__count"
-							data-gatherpress_count="<?php echo esc_attr( (string) (int) $recipient_count ); ?>"
-						>
+						<output id="gatherpress-message-count" class="gatherpress-send-email__count">
 							<?php
 							printf(
 								esc_html(

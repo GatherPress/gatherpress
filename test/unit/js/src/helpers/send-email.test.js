@@ -57,7 +57,7 @@ function renderForm( message = 'Hello everyone', rsvp = true ) {
 				<option value="role">Role</option>
 				<option value="active">Active</option>
 			</select>
-			<output class="gatherpress-send-email__count" data-gatherpress_count="2">This will email 2 users.</output>
+			<output class="gatherpress-send-email__count">This will email 2 users.</output>
 			<div class="${ HIDDEN_CLASS }" data-gatherpress_audience="role">
 				<button type="button" data-gatherpress_roles="all"></button>
 				<button type="button" data-gatherpress_roles="none"></button>
@@ -391,6 +391,17 @@ describe( 'send-email', () => {
 
 			expect( window.confirm ).not.toHaveBeenCalled();
 			expect( apiFetch ).not.toHaveBeenCalled();
+		} );
+
+		it( 'does not block on a stale cached count from the page', async () => {
+			const elements = renderForm();
+
+			elements.count.textContent = 'This will email 0 users.';
+			apiFetch.mockResolvedValue( { message: 'Queued for 2 users.' } );
+			await sendMessage( elements );
+
+			expect( window.confirm ).toHaveBeenCalled();
+			expect( statusText() ).toBe( 'Queued for 2 users.' );
 		} );
 
 		it( 'does not send when no users would get it', async () => {

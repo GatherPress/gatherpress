@@ -83,7 +83,7 @@ export function getAudienceError( params ) {
  *
  * @param {Object}      elements         The Send Email form elements.
  * @param {HTMLElement} elements.message The message textarea.
- * @param {HTMLElement} elements.count   The user count, holding the last count it showed.
+ * @param {HTMLElement} elements.count   The user count, holding the last live count.
  * @param {Object}      audience         The audience, from readAudience().
  *
  * @return {string} What to fix, or an empty string when nothing is missing.
@@ -93,7 +93,8 @@ export function getFormError( { message, count }, audience ) {
 		return __( 'Please write a message before sending.', 'gatherpress' );
 	}
 
-	// A count that is still loading or failed is checked again by the server.
+	// Only a live count can block a send. The page's first count comes from a
+	// cache that can be stale, and the server recounts before queuing anyway.
 	if ( '0' === count.dataset.gatherpress_count ) {
 		return __( 'There are no users to send this message to.', 'gatherpress' );
 	}
