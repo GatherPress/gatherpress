@@ -402,6 +402,21 @@ describe( 'rsvp updateRsvp focus after the status changes (#2428)', () => {
 		expect( isShown( button( 'no_status' ) ) ).toBe( true );
 	} );
 
+	it( 'fully closes the modal when the block has neither the new status nor a no_status container', async () => {
+		// Partial markup with nothing to wait for: whenStatusShown() gets no
+		// container and gives up at once, so updateRsvp() closes the modal.
+		setupDom( 'not_attending', [ 'attending', 'no_status' ] );
+		const trigger = respond( 'not_attending', 'attending', false );
+
+		expect( actions.closeModal ).not.toHaveBeenCalled();
+
+		await waitFor( () => expect( actions.closeModal ).toHaveBeenCalled() );
+
+		expect( actions.openModal ).not.toHaveBeenCalled();
+		expect( actions.closeModal ).toHaveBeenCalledWith( null, trigger, true );
+		expect( window.alert ).not.toHaveBeenCalled();
+	} );
+
 	it( 'still closes the modal when the new state never shows', async () => {
 		setupDom( 'no_status' );
 		const trigger = respond( 'no_status', 'attending', false );
