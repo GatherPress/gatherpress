@@ -647,6 +647,58 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * Coverage for maybe_apply_venue_template keeping hooked blocks.
+	 *
+	 * A block hooked into the venue template pattern is inserted once, by the
+	 * pattern registry, and survives into the seeded content.
+	 *
+	 * @since TBD
+	 * @covers ::maybe_apply_venue_template
+	 *
+	 * @return void
+	 */
+	public function test_maybe_apply_venue_template_keeps_hooked_blocks(): void {
+		$instance   = Setup::get_instance();
+		$hook_block = static function (
+			array $hooked_block_types,
+			string $relative_position,
+			?string $anchor_block_type,
+			$context
+		): array {
+			if (
+				is_array( $context )
+				&& 'gatherpress/venue-template' === ( $context['name'] ?? '' )
+				&& 'gatherpress/venue' === $anchor_block_type
+				&& 'after' === $relative_position
+			) {
+				$hooked_block_types[] = 'core/separator';
+			}
+
+			return $hooked_block_types;
+		};
+
+		add_filter( 'hooked_block_types', $hook_block, 10, 4 );
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'    => Venue::POST_TYPE,
+				'post_status'  => 'publish',
+				'post_content' => '',
+			)
+		);
+
+		$instance->maybe_apply_venue_template( $post_id, get_post( $post_id ), false );
+
+		remove_filter( 'hooked_block_types', $hook_block, 10 );
+
+		$this->assertSame(
+			1,
+			substr_count( get_post( $post_id )->post_content, '<!-- wp:separator' ),
+			'Failed to assert the hooked block is inserted exactly once.'
+		);
+	}
+
+	/**
 	 * Coverage for maybe_apply_venue_template skipping updates to existing venues.
 	 *
 	 * When a user intentionally clears the content of an existing venue and saves,
