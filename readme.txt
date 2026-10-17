@@ -4,7 +4,7 @@ Tags: events, rsvp, meetup, community, calendar
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 0.36.0
+Stable tag: 0.37.0-alpha.0
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
