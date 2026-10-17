@@ -1,4 +1,4 @@
 Significance: minor
 Type: added
 
-Event update emails and Email page messages now go through a shared `Mailer` class, with `send()` for one recipient and `bulk_send()` for a list. `gatherpress_mail_recipient_consent` decides per recipient and per mail path whether a message goes out. It defaults to the event updates opt-in, except for emails about a user's own RSVP. `gatherpress_mail_pre_enqueue_job` lets a companion plugin take over scheduling.
+A shared `Mailer` class now queues and sends event update emails and Email page messages from cron, in batches of 50 recipients, so a large send never holds up the request that started it. Code registers a mail type with `register()` and queues it with `queue()`. `gatherpress_mail_recipient_consent` decides per recipient whether a message goes out (it defaults to the event updates opt-in, except for emails about a user's own RSVP), `gatherpress_mail_recipients` and `gatherpress_mail_batch_size` adjust each batch, and `gatherpress_mail_pre_enqueue_job` lets a companion plugin take over scheduling.

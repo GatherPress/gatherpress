@@ -1,4 +1,4 @@
 Significance: minor
 Type: added
 
-A new Email page in the Events menu lets an administrator email users without going through an event: all users, users with chosen roles, or, while RSVPs are turned on, users who RSVP'd to any event in the past 1, 3, 6 or 12 months. Users who turned event updates off are skipped, and delivery runs on cron in batches. The audience, batch size and subject are filterable through `gatherpress_site_message_recipients`, `gatherpress_site_message_batch_size` and `gatherpress_site_message_subject`.
+A new Email page in the Events menu lets an administrator email users without going through an event: all users, users with chosen roles, or, while RSVPs are turned on, users who RSVP'd to any event in the past 1, 3, 6 or 12 months. Users who turned event updates off are skipped, the message goes out from cron in batches, and the default subject is filterable through `gatherpress_site_message_subject`.
