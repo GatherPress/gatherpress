@@ -35,7 +35,7 @@ use WP_REST_Server;
  *
  * @phpstan-import-type Recipient from Mailer
  * @phpstan-import-type Payload from Mailer
- * @phpstan-type Audience array{type: string, roles?: list<string>, months?: int}
+ * @phpstan-type Audience array{type: string, roles?: list<string>, days?: int}
  */
 final class Email {
 
@@ -73,13 +73,22 @@ final class Email {
 	const AUDIENCES = array( 'all', 'role', 'active' );
 
 	/**
-	 * How far back, in months, an active user's last RSVP can be.
+	 * How far back, in days, an active user's last RSVP can be, unless filtered.
 	 *
 	 * @since TBD
 	 *
 	 * @var int[]
 	 */
-	const ACTIVE_MONTHS = array( 1, 3, 6, 12 );
+	const ACTIVE_DAYS = array( 30, 90, 180, 365 );
+
+	/**
+	 * The active window picked by default, when it is offered.
+	 *
+	 * @since TBD
+	 *
+	 * @var int
+	 */
+	const DEFAULT_ACTIVE_DAYS = 90;
 
 	/**
 	 * Transient key prefix for the cached eligible recipient count.
@@ -201,7 +210,8 @@ final class Email {
 				'recipient_count' => $this->get_cached_recipient_count(),
 				'audiences'       => $this->get_audience_choices(),
 				'roles'           => array_map( 'translate_user_role', wp_roles()->get_names() ),
-				'active_months'   => self::ACTIVE_MONTHS,
+				'active_days'     => $this->get_active_days(),
+				'default_days'    => $this->get_default_active_days(),
 			),
 			true
 		);
@@ -229,6 +239,46 @@ final class Email {
 		}
 
 		return $choices;
+	}
+
+	/**
+	 * Get the choices for how far back an active user's last RSVP can be.
+	 *
+	 * @since TBD
+	 *
+	 * @return int[] Numbers of days to offer.
+	 */
+	private function get_active_days(): array {
+		/**
+		 * Filters the choices for how far back an active user's last RSVP can be.
+		 *
+		 * Lets a site offer windows that suit how often it holds events, for
+		 * example 7 days for a weekly meetup.
+		 *
+		 * @since TBD
+		 *
+		 * @param int[] $days Numbers of days to offer. Default 30, 90, 180 and 365.
+		 *
+		 * @return int[] Numbers of days to offer.
+		 */
+		$days = (array) apply_filters( 'gatherpress_site_message_active_days', self::ACTIVE_DAYS );
+		$days = array_filter( array_map( 'intval', $days ), static fn( int $day ): bool => $day > 0 );
+		$days = array_values( array_unique( $days ) );
+
+		return empty( $days ) ? self::ACTIVE_DAYS : $days;
+	}
+
+	/**
+	 * Get the active window picked by default.
+	 *
+	 * @since TBD
+	 *
+	 * @return int 90 days when offered, otherwise the first choice.
+	 */
+	private function get_default_active_days(): int {
+		$days = $this->get_active_days();
+
+		return in_array( self::DEFAULT_ACTIVE_DAYS, $days, true ) ? self::DEFAULT_ACTIVE_DAYS : $days[0];
 	}
 
 	/**
@@ -343,27 +393,27 @@ final class Email {
 			'role'    => array( 'role__in' => $audience['roles'] ?? array() ),
 			// An empty include list would match every user. The union only
 			// adds an ID no user has when the list is empty.
-			'active'  => array( 'include' => $this->get_active_user_ids( $audience['months'] ?? 0 ) + array( 0 ) ),
+			'active'  => array( 'include' => $this->get_active_user_ids( $audience['days'] ?? 0 ) + array( 0 ) ),
 			default   => array(),
 		};
 	}
 
 	/**
-	 * Get the users who RSVP'd to any event in the past few months.
+	 * Get the users who RSVP'd to any event in the past few days.
 	 *
 	 * @since TBD
 	 *
-	 * @param int $months How many months back to look.
+	 * @param int $days How many days back to look.
 	 *
 	 * @return int[] User IDs.
 	 */
-	private function get_active_user_ids( int $months ): array {
+	private function get_active_user_ids( int $days ): array {
 		return $this->get_rsvp_user_ids(
 			array(
 				'status'     => 'approve',
 				'date_query' => array(
 					array(
-						'after'  => sprintf( '%d months ago', $months ),
+						'after'  => sprintf( '%d days ago', $days ),
 						'column' => 'comment_date_gmt',
 					),
 				),
@@ -463,10 +513,10 @@ final class Email {
 				'items'   => array( 'type' => 'string' ),
 				'default' => array(),
 			),
-			'months'   => array(
+			'days'     => array(
 				'type'    => 'integer',
-				'enum'    => self::ACTIVE_MONTHS,
-				'default' => self::ACTIVE_MONTHS[1],
+				'enum'    => $this->get_active_days(),
+				'default' => $this->get_default_active_days(),
 			),
 		);
 	}
@@ -494,8 +544,8 @@ final class Email {
 			);
 			$error             = empty( $audience['roles'] ) ? __( 'Choose at least one role.', 'gatherpress' ) : '';
 		} elseif ( 'active' === $audience['type'] ) {
-			$audience['months'] = (int) $request->get_param( 'months' );
-			$error              = $this->is_rsvp_enabled()
+			$audience['days'] = (int) $request->get_param( 'days' );
+			$error            = $this->is_rsvp_enabled()
 				? ''
 				: __( 'RSVPs are turned off, so users cannot be picked by their RSVPs.', 'gatherpress' );
 		}
@@ -661,9 +711,14 @@ final class Email {
 		/**
 		 * Filters the subject line of a site-wide message.
 		 *
+		 * Lets a site brand the subject, for example with a prefix, including
+		 * the "Message from" default used when the sender leaves it blank.
+		 *
 		 * @since TBD
 		 *
 		 * @param string $subject Email subject line.
+		 *
+		 * @return string Email subject line.
 		 */
 		return apply_filters( 'gatherpress_site_message_subject', $subject );
 	}

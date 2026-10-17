@@ -177,7 +177,7 @@ class Test_Email extends Base {
 
 		$this->assertStringContainsString( '<h1>Email</h1>', $response );
 		$this->assertStringContainsString( 'value="active"', $response );
-		$this->assertStringContainsString( 'id="gatherpress-message-months"', $response );
+		$this->assertStringContainsString( 'id="gatherpress-message-days"', $response );
 		$this->assertStringContainsString( 'value="editor"', $response );
 		$this->assertStringContainsString( 'data-gatherpress_roles="all"', $response );
 		$this->assertStringContainsString( 'Send Email To Users', $response );
@@ -199,7 +199,7 @@ class Test_Email extends Base {
 		delete_option( Settings::OPTION_NAME );
 
 		$this->assertStringNotContainsString( 'value="active"', $response );
-		$this->assertStringNotContainsString( 'id="gatherpress-message-months"', $response );
+		$this->assertStringNotContainsString( 'id="gatherpress-message-days"', $response );
 	}
 
 	/**
@@ -265,7 +265,7 @@ class Test_Email extends Base {
 
 		$this->assertSame( array( 'GET' => true ), $count['methods'] );
 		$this->assertSame( array( $instance, 'count_message_recipients' ), $count['callback'] );
-		$this->assertSame( Email::ACTIVE_MONTHS, $count['args']['months']['enum'] );
+		$this->assertSame( Email::ACTIVE_DAYS, $count['args']['days']['enum'] );
 
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'subscriber' ) ) );
 		$this->assertFalse(
@@ -323,25 +323,56 @@ class Test_Email extends Base {
 	}
 
 	/**
-	 * Check that the active window is read in months.
+	 * Check that the active window is read in days.
 	 *
 	 * @covers ::resolve_audience
 	 *
 	 * @return void
 	 */
-	public function test_resolve_audience_reads_active_months(): void {
+	public function test_resolve_audience_reads_active_days(): void {
 		$this->assertSame(
 			array(
-				'type'   => 'active',
-				'months' => 6,
+				'type' => 'active',
+				'days' => 180,
 			),
 			$this->resolve_audience(
 				array(
 					'audience' => 'active',
-					'months'   => 6,
+					'days'     => 180,
 				)
 			)
 		);
+	}
+
+	/**
+	 * Check that the active window choices can be filtered, and stay usable.
+	 *
+	 * @covers ::get_active_days
+	 * @covers ::get_default_active_days
+	 *
+	 * @return void
+	 */
+	public function test_get_active_days(): void {
+		$instance = Email::get_instance();
+		$days     = static fn(): array => Utility::invoke_hidden_method( $instance, 'get_active_days' );
+		$default  = static fn(): int => Utility::invoke_hidden_method( $instance, 'get_default_active_days' );
+
+		$this->assertSame( array( 30, 90, 180, 365 ), $days() );
+		$this->assertSame( 90, $default() );
+
+		$weekly = static fn(): array => array( 7, '14', 7, 0, -5 );
+
+		add_filter( 'gatherpress_site_message_active_days', $weekly );
+
+		$this->assertSame( array( 7, 14 ), $days(), 'Choices should be positive, unique whole days.' );
+		$this->assertSame( 7, $default(), 'Without 90 days on offer, the first choice is the default.' );
+
+		remove_filter( 'gatherpress_site_message_active_days', $weekly );
+		add_filter( 'gatherpress_site_message_active_days', '__return_empty_array' );
+
+		$this->assertSame( Email::ACTIVE_DAYS, $days(), 'An empty list should fall back to the defaults.' );
+
+		remove_filter( 'gatherpress_site_message_active_days', '__return_empty_array' );
 	}
 
 	/**
@@ -427,8 +458,8 @@ class Test_Email extends Base {
 			array( 'include' => array( $user_id ) ),
 			$args(
 				array(
-					'type'   => 'active',
-					'months' => 1,
+					'type' => 'active',
+					'days' => 30,
 				)
 			)
 		);
@@ -438,8 +469,8 @@ class Test_Email extends Base {
 			array( 'include' => array( 0 ) ),
 			$args(
 				array(
-					'type'   => 'active',
-					'months' => 1,
+					'type' => 'active',
+					'days' => 30,
 				)
 			),
 			'With no active users, nobody should match.'
@@ -466,16 +497,16 @@ class Test_Email extends Base {
 		$this->rsvp( $event_id, $pending, 0 );
 		$this->rsvp( $event_id, 0 );
 
-		$ids = static function ( int $months ): array {
-			$active = Utility::invoke_hidden_method( Email::get_instance(), 'get_active_user_ids', array( $months ) );
+		$ids = static function ( int $days ): array {
+			$active = Utility::invoke_hidden_method( Email::get_instance(), 'get_active_user_ids', array( $days ) );
 
 			sort( $active );
 
 			return $active;
 		};
 
-		$this->assertSame( array( $recent ), $ids( 6 ) );
-		$this->assertSame( array( $recent, $older ), $ids( 12 ) );
+		$this->assertSame( array( $recent ), $ids( 180 ) );
+		$this->assertSame( array( $recent, $older ), $ids( 365 ) );
 	}
 
 	/**
@@ -515,9 +546,9 @@ class Test_Email extends Base {
 	public function test_get_audience_args(): void {
 		$args = Utility::invoke_hidden_method( Email::get_instance(), 'get_audience_args' );
 
-		$this->assertSame( array( 'audience', 'roles', 'months' ), array_keys( $args ) );
+		$this->assertSame( array( 'audience', 'roles', 'days' ), array_keys( $args ) );
 		$this->assertSame( 'all', $args['audience']['default'] );
-		$this->assertSame( 3, $args['months']['default'] );
+		$this->assertSame( 90, $args['days']['default'] );
 	}
 
 	/**
@@ -551,8 +582,8 @@ class Test_Email extends Base {
 			1,
 			$count(
 				array(
-					'type'   => 'active',
-					'months' => 1,
+					'type' => 'active',
+					'days' => 30,
 				)
 			)
 		);
@@ -1018,7 +1049,7 @@ class Test_Email extends Base {
 			array(
 				'audience' => 'all',
 				'roles'    => array(),
-				'months'   => 3,
+				'days'     => 90,
 			)
 		);
 

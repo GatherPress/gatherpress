@@ -43,9 +43,9 @@ const HIDDEN_CLASS = 'gatherpress--is-hidden';
 function renderForm( message = 'Hello everyone', rsvp = true ) {
 	const active = rsvp
 		? `<div class="${ HIDDEN_CLASS }" data-gatherpress_audience="active">
-				<select id="gatherpress-message-months">
-					<option value="1">1</option>
-					<option value="3" selected>3</option>
+				<select id="gatherpress-message-days">
+					<option value="30">30</option>
+					<option value="90" selected>90</option>
 				</select>
 			</div>`
 		: '';
@@ -87,7 +87,7 @@ function renderForm( message = 'Hello everyone', rsvp = true ) {
 		roles: Array.from(
 			document.querySelectorAll( '[name="gatherpress-message-roles"]' ),
 		),
-		months: document.getElementById( 'gatherpress-message-months' ),
+		days: document.getElementById( 'gatherpress-message-days' ),
 		audienceRows: Array.from(
 			document.querySelectorAll( '[data-gatherpress_audience]' ),
 		),
@@ -127,7 +127,7 @@ describe( 'send-email', () => {
 	} );
 
 	describe( 'readAudience', () => {
-		it( 'reads the audience, checked roles and months', () => {
+		it( 'reads the audience, checked roles and days', () => {
 			const elements = renderForm();
 
 			pick( elements, 'role' );
@@ -136,11 +136,11 @@ describe( 'send-email', () => {
 			expect( readAudience( elements ) ).toEqual( {
 				audience: 'role',
 				roles: [ 'author' ],
-				months: 3,
+				days: 90,
 			} );
 		} );
 
-		it( 'leaves out months while RSVPs are off', () => {
+		it( 'leaves out days while RSVPs are off', () => {
 			const elements = renderForm( 'Hello everyone', false );
 
 			expect( readAudience( elements ) ).toEqual( {
@@ -218,7 +218,7 @@ describe( 'send-email', () => {
 			await updateCount( elements );
 
 			expect( apiFetch ).toHaveBeenCalledWith( {
-				path: '/gatherpress/v1/site-message/count?audience=active&months=3',
+				path: '/gatherpress/v1/site-message/count?audience=active&days=90',
 			} );
 			expect( elements.count.textContent ).toBe(
 				'This will email 5 users.',
@@ -345,7 +345,7 @@ describe( 'send-email', () => {
 					message: 'Hello everyone',
 					audience: 'all',
 					roles: [],
-					months: 3,
+					days: 90,
 				},
 			} );
 		} );

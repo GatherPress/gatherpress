@@ -17,7 +17,7 @@ It covers different needs:
     * From **Events → Email** an administrator can message users without tying it to an event. The message can go to:
         * All users
         * Users with one or more chosen roles
-        * Active users, who RSVP'd to any event in the past 1, 3, 6 or 12 months (offered while RSVPs are turned on)
+        * Active users, who RSVP'd to any event in the past 30, 90, 180 or 365 days (offered while RSVPs are turned on)
     * Delivery runs on cron in batches, so a large user base is not sent in a single request and the page returns right away.
     * Users who turned event updates off in their profile are skipped.
 * RSVP confirmation without an account (email handshake)

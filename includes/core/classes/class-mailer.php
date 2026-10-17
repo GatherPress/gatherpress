@@ -151,6 +151,9 @@ final class Mailer {
 		/**
 		 * Filters whether a recipient consents to a GatherPress email.
 		 *
+		 * Lets a site set its own consent rule per kind of email, for example
+		 * requiring an explicit opt-in before a site-wide message goes out.
+		 *
 		 * @since TBD
 		 *
 		 * @param bool   $consent   Whether the recipient consents. Defaults to the opt-in, or to
@@ -158,6 +161,8 @@ final class Mailer {
 		 * @param array  $recipient Recipient row from a mail path.
 		 * @param string $context   Mail path asking for consent.
 		 * @phpstan-param Recipient $recipient
+		 *
+		 * @return bool Whether the recipient consents.
 		 */
 		return (bool) apply_filters(
 			'gatherpress_mail_recipient_consent',
@@ -493,6 +498,8 @@ final class Mailer {
 		 * @param array  $payload    Plain data the email was queued with.
 		 * @phpstan-param array<int, Recipient> $recipients
 		 * @phpstan-param Payload $payload
+		 *
+		 * @return array Recipient rows to send this batch to.
 		 */
 		$batch['recipients'] = (array) apply_filters(
 			'gatherpress_mail_recipients',
@@ -593,10 +600,15 @@ final class Mailer {
 		/**
 		 * Filters how many recipients one GatherPress mail job sends to.
 		 *
+		 * Lower it on hosts with a short PHP time limit or a strict mail rate
+		 * limit, so each cron job finishes in time.
+		 *
 		 * @since TBD
 		 *
 		 * @param int    $batch_size Recipients per batch. Default 50.
 		 * @param string $type       The mail type, e.g. `event` or `site_message`.
+		 *
+		 * @return int Recipients per batch.
 		 */
 		return max( 1, (int) apply_filters( 'gatherpress_mail_batch_size', 50, $type ) );
 	}
@@ -636,6 +648,8 @@ final class Mailer {
 		 * @param string $hook          Action hook name fired when the job runs.
 		 * @param array  $args          Args passed to the action hook.
 		 * @phpstan-param list<mixed> $args
+		 *
+		 * @return mixed Null to let WP-Cron queue the job, anything else when another scheduler took it.
 		 */
 		$short_circuit = apply_filters( 'gatherpress_mail_pre_enqueue_job', null, $hook, $args );
 

@@ -42,11 +42,11 @@ function showStatus( status, text, busy ) {
  * @param {Object}                 elements          The Send Email form elements.
  * @param {HTMLSelectElement}      elements.audience The audience select.
  * @param {HTMLInputElement[]}     elements.roles    The role checkboxes.
- * @param {HTMLSelectElement|null} elements.months   The active user window select, absent while RSVPs are off.
+ * @param {HTMLSelectElement|null} elements.days     The active user window select, absent while RSVPs are off.
  *
  * @return {Object} The audience, as the site message REST routes take it.
  */
-export function readAudience( { audience, roles, months } ) {
+export function readAudience( { audience, roles, days } ) {
 	const params = {
 		audience: audience.value,
 		roles: roles
@@ -54,8 +54,8 @@ export function readAudience( { audience, roles, months } ) {
 			.map( ( role ) => role.value ),
 	};
 
-	if ( months ) {
-		params.months = Number( months.value );
+	if ( days ) {
+		params.days = Number( days.value );
 	}
 
 	return params;
@@ -285,13 +285,13 @@ export function initSendEmail() {
 		roles: Array.from(
 			container.querySelectorAll( '[name="gatherpress-message-roles"]' ),
 		),
-		months: container.querySelector( '#gatherpress-message-months' ),
+		days: container.querySelector( '#gatherpress-message-days' ),
 		audienceRows: Array.from(
 			container.querySelectorAll( '[data-gatherpress_audience]' ),
 		),
 	};
 
-	[ elements.audience, elements.months, ...elements.roles ]
+	[ elements.audience, elements.days, ...elements.roles ]
 		.filter( Boolean )
 		.forEach( ( field ) =>
 			field.addEventListener( 'change', () => {

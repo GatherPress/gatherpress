@@ -10,7 +10,8 @@
  * @param int                   $recipient_count Number of users the message would go out to.
  * @param array<string, string> $audiences       Audience labels, keyed by audience.
  * @param array<string, string> $roles           Role names, keyed by role.
- * @param int[]                 $active_months   Choices for how far back an active user's last RSVP can be.
+ * @param int[]                 $active_days     Choices, in days, for how far back an active user's last RSVP can be.
+ * @param int                   $default_days    The choice picked by default.
  */
 
 // Exit if accessed directly.
@@ -98,18 +99,18 @@ if ( ! isset( $recipient_count ) ) {
 			<?php if ( isset( $audiences['active'] ) ) : ?>
 			<div class="gatherpress-settings-form__row gatherpress--is-hidden" data-gatherpress_audience="active">
 				<div class="gatherpress-settings-form__label">
-					<label for="gatherpress-message-months"><?php esc_html_e( "RSVP'd in the past", 'gatherpress' ); ?></label>
+					<label for="gatherpress-message-days"><?php esc_html_e( "RSVP'd in the past", 'gatherpress' ); ?></label>
 				</div>
 				<div class="gatherpress-settings-form__field">
-					<select id="gatherpress-message-months">
-						<?php foreach ( $active_months ?? array() as $gatherpress_index => $gatherpress_months ) : ?>
-							<option value="<?php echo esc_attr( (string) $gatherpress_months ); ?>" <?php selected( 1, $gatherpress_index ); ?>>
+					<select id="gatherpress-message-days">
+						<?php foreach ( $active_days ?? array() as $gatherpress_days ) : ?>
+							<option value="<?php echo esc_attr( (string) $gatherpress_days ); ?>" <?php selected( $default_days ?? 0, $gatherpress_days ); ?>>
 								<?php
 								echo esc_html(
 									sprintf(
-										/* translators: %d: Number of months. */
-										_n( '%d month', '%d months', $gatherpress_months, 'gatherpress' ),
-										$gatherpress_months
+										/* translators: %d: Number of days. */
+										_n( '%d day', '%d days', $gatherpress_days, 'gatherpress' ),
+										$gatherpress_days
 									)
 								);
 								?>
