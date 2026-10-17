@@ -92,7 +92,7 @@ final class Email {
 		$mailer->register(
 			self::EVENT_TYPE,
 			array(
-				'context'    => 'event',
+				'context'    => Mailer::CONTEXT_EVENT,
 				'users'      => $this->get_event_email_users( ... ),
 				'recipients' => $this->get_event_email_rsvps( ... ),
 				'compose'    => $this->compose_event_email( ... ),
@@ -103,7 +103,7 @@ final class Email {
 		$mailer->register(
 			self::PROMOTION_TYPE,
 			array(
-				'context'    => 'rsvp',
+				'context'    => Mailer::CONTEXT_RSVP,
 				'recipients' => $this->get_promoted_attendee( ... ),
 				'compose'    => $this->compose_promotion_email( ... ),
 			)

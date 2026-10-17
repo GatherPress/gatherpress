@@ -316,13 +316,13 @@ class Test_Email extends Base {
 		$types = Utility::get_hidden_property( Mailer::get_instance(), 'types' );
 
 		$this->assertArrayHasKey( Email::EVENT_TYPE, $types );
-		$this->assertSame( 'event', $types[ Email::EVENT_TYPE ]['context'] );
+		$this->assertSame( Mailer::CONTEXT_EVENT, $types[ Email::EVENT_TYPE ]['context'] );
 		$this->assertArrayHasKey( 'users', $types[ Email::EVENT_TYPE ] );
 		$this->assertArrayHasKey( 'recipients', $types[ Email::EVENT_TYPE ] );
 		$this->assertArrayHasKey( 'compose', $types[ Email::EVENT_TYPE ] );
 		$this->assertArrayHasKey( Email::PROMOTION_TYPE, $types );
 		$this->assertSame(
-			'rsvp',
+			Mailer::CONTEXT_RSVP,
 			$types[ Email::PROMOTION_TYPE ]['context'],
 			'A promotion is about the attendee\'s own RSVP, so it should skip the opt-in.'
 		);

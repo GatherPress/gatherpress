@@ -707,7 +707,7 @@ class Test_Email extends Base {
 		$types = Utility::get_hidden_property( Mailer::get_instance(), 'types' );
 
 		$this->assertArrayHasKey( Email::MAIL_TYPE, $types );
-		$this->assertSame( 'site_message', $types[ Email::MAIL_TYPE ]['context'] );
+		$this->assertSame( Mailer::CONTEXT_SITE_MESSAGE, $types[ Email::MAIL_TYPE ]['context'] );
 		$this->assertArrayHasKey( 'users', $types[ Email::MAIL_TYPE ] );
 		$this->assertArrayHasKey( 'compose', $types[ Email::MAIL_TYPE ] );
 	}
