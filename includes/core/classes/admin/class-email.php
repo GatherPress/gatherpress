@@ -1,20 +1,21 @@
 <?php
 /**
- * Email settings page for GatherPress.
+ * Email page for GatherPress.
  *
- * This class handles the "Email" settings page in GatherPress, which lets
- * an administrator send a message to every member of the site who has opted in
+ * This class handles the Email page in the Events menu, which lets an
+ * administrator send a message to every member of the site who has opted in
  * to GatherPress emails, without going through a single event.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Admin
  * @since TBD
  */
 
-namespace GatherPress\Core\Settings;
+namespace GatherPress\Core\Admin;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Assets;
 use GatherPress\Core\Mailer;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
@@ -28,19 +29,28 @@ use WP_User_Query;
 /**
  * Class Email.
  *
- * Handles the "Email" settings page for GatherPress.
+ * Handles the Email page in the Events menu.
  *
  * @since TBD
  *
  * @phpstan-import-type Recipient from Mailer
  * @phpstan-type RecipientBatch array{recipients: array<int, Recipient>, complete: bool, fetched: int, last_id: int}
  */
-final class Email extends Base {
+final class Email {
 
 	/**
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
+
+	/**
+	 * The Email page slug.
+	 *
+	 * @since TBD
+	 *
+	 * @var string
+	 */
+	const PAGE_SLUG = 'gatherpress_email';
 
 	/**
 	 * Transient key prefix for the cached eligible recipient count.
@@ -61,6 +71,15 @@ final class Email extends Base {
 	private const COUNT_CACHE_TTL = 12 * HOUR_IN_SECONDS;
 
 	/**
+	 * Class constructor.
+	 *
+	 * @since TBD
+	 */
+	protected function __construct() {
+		$this->setup_hooks();
+	}
+
+	/**
 	 * Set up hooks for various purposes.
 	 *
 	 * @since TBD
@@ -68,9 +87,8 @@ final class Email extends Base {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		parent::setup_hooks();
-
-		add_action( 'gatherpress_settings_section', array( $this, 'settings_section' ), 9 );
+		add_action( 'admin_menu', array( $this, 'add_submenu_page' ) );
+		add_filter( 'submenu_file', array( $this, 'select_submenu' ) );
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
 		add_action( 'gatherpress_site_message_send', array( $this, 'process_message' ), 10, 3 );
 
@@ -78,68 +96,94 @@ final class Email extends Base {
 		add_action( 'updated_user_meta', array( $this, 'maybe_clear_count_cache' ), 10, 3 );
 		add_action( 'deleted_user_meta', array( $this, 'maybe_clear_count_cache' ), 10, 3 );
 
-		// Membership changes move the count too, so the settings page does not
+		// Membership changes move the count too, so the Email page does not
 		// keep showing a stale number until the transient expires.
 		add_action( 'user_register', array( $this, 'clear_count_cache' ) );
 		add_action( 'deleted_user', array( $this, 'clear_count_cache' ) );
 	}
 
 	/**
-	 * Get the slug for the email settings page.
+	 * Add the Email page to the Events menu, between Venues and Settings.
 	 *
 	 * @since TBD
-	 *
-	 * @return string The slug for the email settings page.
-	 */
-	protected function get_slug(): string {
-		return 'email_settings';
-	}
-
-	/**
-	 * Get the name for the email settings page.
-	 *
-	 * @since TBD
-	 *
-	 * @return string The localized name for the email settings page.
-	 */
-	protected function get_name(): string {
-		return __( 'Email', 'gatherpress' );
-	}
-
-	/**
-	 * Get the priority for displaying the email settings page.
-	 *
-	 * @since TBD
-	 *
-	 * @return int The priority for displaying the email settings page.
-	 */
-	protected function get_priority(): int {
-		return PHP_INT_MAX - 3;
-	}
-
-	/**
-	 * Render the send form instead of the default settings form.
-	 *
-	 * @since TBD
-	 *
-	 * @param string $page The current settings page slug.
 	 *
 	 * @return void
 	 */
-	public function settings_section( string $page ): void {
-		if ( Utility::unprefix_key( $page ) !== $this->slug ) {
-			return;
-		}
-
-		remove_action(
-			'gatherpress_settings_section',
-			array( Settings::get_instance(), 'render_settings_form' )
+	public function add_submenu_page(): void {
+		$hook = add_submenu_page(
+			Settings::PARENT_SLUG,
+			__( 'Email', 'gatherpress' ),
+			__( 'Email', 'gatherpress' ),
+			'manage_options',
+			self::PAGE_SLUG,
+			array( $this, 'render_page' ),
+			6
 		);
 
+		if ( false !== $hook ) {
+			add_action( sprintf( 'load-%s', $hook ), array( $this, 'enqueue_assets' ) );
+		}
+	}
+
+	/**
+	 * Highlight the Email item in the Events menu while the Email page is open.
+	 *
+	 * @since TBD
+	 *
+	 * @param string|null $submenu_file The submenu item to highlight.
+	 *
+	 * @return string|null The Email page slug on the Email page, otherwise unchanged.
+	 */
+	public function select_submenu( ?string $submenu_file ): ?string {
+		global $plugin_page;
+
+		return self::PAGE_SLUG === $plugin_page ? self::PAGE_SLUG : $submenu_file;
+	}
+
+	/**
+	 * Render the Email page.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function render_page(): void {
 		Utility::render_template(
-			sprintf( '%s/includes/templates/admin/settings/email.php', GATHERPRESS_CORE_PATH ),
+			sprintf( '%s/includes/templates/admin/email.php', GATHERPRESS_CORE_PATH ),
 			array( 'recipient_count' => $this->get_cached_recipient_count() ),
 			true
+		);
+	}
+
+	/**
+	 * Load the Email page's script and the utility styles it relies on.
+	 *
+	 * Runs on the page's own `load-` action, so nothing loads on other screens.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function enqueue_assets(): void {
+		$assets  = Assets::get_instance();
+		$script  = $assets->get_asset_data( 'email' );
+		$utility = $assets->get_asset_data( 'utility_style' );
+
+		wp_enqueue_script(
+			'gatherpress-email',
+			GATHERPRESS_CORE_URL . 'build/email.js',
+			$script['dependencies'],
+			$script['version'],
+			true
+		);
+
+		wp_set_script_translations( 'gatherpress-email', 'gatherpress' );
+
+		wp_enqueue_style(
+			'gatherpress-utility-style',
+			GATHERPRESS_CORE_URL . 'build/utility_style.css',
+			$utility['dependencies'],
+			$utility['version']
 		);
 	}
 
@@ -177,7 +221,7 @@ final class Email extends Base {
 	/**
 	 * Get the eligible recipient count from the cache, filling it when empty.
 	 *
-	 * Counting walks every member on the site, so the settings page reads a
+	 * Counting walks every member on the site, so the Email page reads a
 	 * cached count instead of paying that cost on each load.
 	 *
 	 * @since TBD
@@ -376,7 +420,7 @@ final class Email extends Base {
 		}
 
 		// Count fresh at send time rather than trusting the cached value the
-		// settings page showed, so the queued count reflects who is eligible now.
+		// Email page showed, so the queued count reflects who is eligible now.
 		$recipient_count = $this->count_recipients();
 		$error           = null;
 
@@ -463,7 +507,7 @@ final class Email extends Base {
 		if ( ! $batch['complete'] ) {
 			$this->schedule_message_batch( $subject, $message, $batch['last_id'] );
 		} else {
-			// The last page is done, so the cached count the settings page
+			// The last page is done, so the cached count the Email page
 			// showed is stale. Drop it so the next page load recounts.
 			$this->clear_count_cache();
 		}

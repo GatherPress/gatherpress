@@ -624,10 +624,10 @@ Reach for the internal alias only when the value is composed or reused across a 
 
 ### Admin pages
 
-Admin templates under `includes/templates/admin/` hold markup only. The Email settings tab (`email.php`, `src/helpers/settings-send-email.js`) is the reference. Some older templates still carry inline styles and scripts, so don't copy from them.
+Admin templates under `includes/templates/admin/` hold markup only. The Email page (`includes/templates/admin/email.php`, `src/email/index.js`, `src/helpers/send-email.js`) is the reference. Some older templates still carry inline styles and scripts, so don't copy from them.
 
 - **No `<style>` blocks or `style="…"` attributes.** Settings tab styles go in `src/settings/style.scss`, which loads on the GatherPress settings tabs, and styles for other admin screens go in `src/admin.scss`. Show and hide elements with the `gatherpress--is-hidden` utility class, not `style.display`.
-- **No `<script>` blocks.** A page's behavior is a `src/helpers/settings-*.js` module that exports an `init*()` function for `src/settings/index.js` to call. It finds its markup through a `data-gatherpress_component_name` attribute and returns early on pages without it. Pass config through data attributes, and translate strings with `@wordpress/i18n` rather than echoing them through `esc_js( __() )`.
+- **No `<script>` blocks.** A page's behavior is a `src/helpers/` module that exports an `init*()` function for the page's bundle to call: `src/settings/index.js` for a settings tab, or the page's own entry, enqueued from its `load-` action, for anything else. It finds its markup through a `data-gatherpress_component_name` attribute and returns early on pages without it. Pass config through data attributes, and translate strings with `@wordpress/i18n` rather than echoing them through `esc_js( __() )`.
 - **Server calls go through a REST route, not admin-ajax.** Register it under `GATHERPRESS_REST_NAMESPACE` with the capability check in `permission_callback`, and call it with `@wordpress/api-fetch`, which sends the REST nonce for you. Return a `WP_Error` with a `status` when the request fails, and show its `message`.
     - ✅ Good: `register_rest_route( GATHERPRESS_REST_NAMESPACE, '/site-message', … )` called with `apiFetch( { path, method: 'POST', data } )`.
     - ❌ Bad: `add_action( 'wp_ajax_…' )` with `check_ajax_referer()` and `wp_send_json_*()`, called with `fetch( window.ajaxurl )`.
@@ -654,7 +654,7 @@ A11y rules that fire frequently and have known-good fixes specific to this codeb
     </div>
     ```
 
-    The CSS is class-based (`display: grid; grid-template-columns: 200px 1fr;` with a 782px mobile breakpoint that stacks) and lives in `src/settings/style.scss`, so a settings template only needs the markup. Tables emitted by `do_settings_sections()` (WP core) are out of scope. Those need custom section/field renderers to reshape, which isn't worth doing for a Sonar finding.
+    The CSS is class-based (`display: grid; grid-template-columns: 200px 1fr;` with a 782px mobile breakpoint that stacks) and lives in `src/admin.scss`, which loads on every admin screen, so a template only needs the markup. Tables emitted by `do_settings_sections()` (WP core) are out of scope. Those need custom section/field renderers to reshape, which isn't worth doing for a Sonar finding.
 - **ARIA combobox-with-listbox-popup pattern is correct for autocomplete: file Sonar's `<select>`/`<datalist>` suggestion as won't-fix** (`Web:S6817` and friends). Sonar's recommendations don't fit free-text autocomplete with custom-rendered items. The W3C ARIA Authoring Practices Guide combobox pattern is what this codebase uses and what AT expects. Required wiring on the input element:
     - `role="combobox"`, `aria-autocomplete="list"`, `aria-expanded={ panelOpen }`, `aria-controls={ panelOpen ? listboxId : undefined }`, `aria-activedescendant={ activeId }`, plus an accessible name (`aria-label` or wrapped `<label>`).
     - The popup uses `<div role="listbox" id={ listboxId } aria-label="...">` (use a `<div>`, not `<ul>`. See next bullet) with each option as `<button role="option" id={ optionId } aria-selected={ isActive } tabIndex={ -1 }>`.

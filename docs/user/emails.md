@@ -14,7 +14,7 @@ It covers different needs:
         * Non-attendees (people who RSVPed “no”)
         * Waiting list (when an event has a limit)
 * Site-wide messages to members
-    * From **GatherPress → Settings → Email** an administrator can message every member at once, without tying it to an event.
+    * From **Events → Email** an administrator can message every member at once, without tying it to an event.
     * Delivery runs on cron in batches, so a large membership is not sent in a single request and the settings page returns right away.
     * Members who turned event updates off in their profile are skipped.
 * RSVP confirmation without an account (email handshake)

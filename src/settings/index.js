@@ -10,7 +10,6 @@ import Autocomplete from '../components/Autocomplete';
 import { dateTimePreview } from '../helpers/datetime';
 import { urlRewritePreview } from '../helpers/urlrewrite';
 import { initShowIfDependencies } from '../helpers/settings-show-if';
-import { initSendEmail } from '../helpers/settings-send-email';
 
 /**
  * Autocomplete Initialization
@@ -74,10 +73,3 @@ urlRewritePreview();
  * @since 0.27.0
  */
 initShowIfDependencies();
-
-/**
- * Queue a site-wide member message from the Email settings page.
- *
- * @since TBD
- */
-initSendEmail();

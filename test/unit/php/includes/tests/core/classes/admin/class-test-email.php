@@ -1,16 +1,16 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Settings\Email.
+ * Class handles unit tests for GatherPress\Core\Admin\Email.
  *
- * @package GatherPress\Core\Settings
+ * @package GatherPress\Core\Admin
  * @since TBD
  */
 
-namespace GatherPress\Tests\Core\Settings;
+namespace GatherPress\Tests\Core\Admin;
 
 use Closure;
+use GatherPress\Core\Admin\Email;
 use GatherPress\Core\Settings;
-use GatherPress\Core\Settings\Email;
 use GatherPress\Core\User;
 use GatherPress\Core\Utility as Core_Utility;
 use GatherPress\Tests\Base;
@@ -21,7 +21,7 @@ use WP_REST_Response;
 /**
  * Class Test_Email.
  *
- * @coversDefaultClass \GatherPress\Core\Settings\Email
+ * @coversDefaultClass \GatherPress\Core\Admin\Email
  */
 class Test_Email extends Base {
 
@@ -45,9 +45,15 @@ class Test_Email extends Base {
 		$hooks    = array(
 			array(
 				'type'     => 'action',
-				'name'     => 'gatherpress_settings_section',
-				'priority' => 9,
-				'callback' => array( $instance, 'settings_section' ),
+				'name'     => 'admin_menu',
+				'priority' => 10,
+				'callback' => array( $instance, 'add_submenu_page' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'submenu_file',
+				'priority' => 10,
+				'callback' => array( $instance, 'select_submenu' ),
 			),
 			array(
 				'type'     => 'action',
@@ -97,77 +103,102 @@ class Test_Email extends Base {
 	}
 
 	/**
-	 * Coverage for get_slug method.
+	 * Check that the Email page is added to the Events menu with its assets hook.
 	 *
-	 * @covers ::get_slug
-	 *
-	 * @return void
-	 */
-	public function test_get_slug(): void {
-		$slug = Utility::invoke_hidden_method( Email::get_instance(), 'get_slug' );
-
-		$this->assertSame( 'email_settings', $slug );
-	}
-
-	/**
-	 * Coverage for get_name method.
-	 *
-	 * @covers ::get_name
+	 * @covers ::add_submenu_page
 	 *
 	 * @return void
 	 */
-	public function test_get_name(): void {
-		$this->assertSame( 'Email', Utility::invoke_hidden_method( Email::get_instance(), 'get_name' ) );
-	}
+	public function test_add_submenu_page(): void {
+		global $submenu;
 
-	/**
-	 * Coverage for get_priority method.
-	 *
-	 * @covers ::get_priority
-	 *
-	 * @return void
-	 */
-	public function test_get_priority(): void {
-		$priority = Utility::invoke_hidden_method( Email::get_instance(), 'get_priority' );
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		Email::get_instance()->add_submenu_page();
 
-		$this->assertSame( PHP_INT_MAX - 3, $priority );
-	}
+		$slugs = wp_list_pluck( $submenu[ Settings::PARENT_SLUG ] ?? array(), 2 );
+		$hook  = get_plugin_page_hookname( Email::PAGE_SLUG, Settings::PARENT_SLUG );
 
-	/**
-	 * Coverage for settings_section rendering the email page.
-	 *
-	 * @covers ::settings_section
-	 *
-	 * @return void
-	 */
-	public function test_settings_section_renders_for_email_page(): void {
-		$instance = Email::get_instance();
-		$response = Utility::buffer_and_return(
-			array( $instance, 'settings_section' ),
-			array( 'gatherpress_email_settings' )
+		$this->assertContains( Email::PAGE_SLUG, $slugs );
+		$this->assertSame(
+			10,
+			has_action( sprintf( 'load-%s', $hook ), array( Email::get_instance(), 'enqueue_assets' ) )
 		);
+
+		remove_all_actions( sprintf( 'load-%s', $hook ) );
+		unset( $submenu[ Settings::PARENT_SLUG ] );
+	}
+
+	/**
+	 * Check that no page or assets hook is added for a member who cannot send.
+	 *
+	 * @covers ::add_submenu_page
+	 *
+	 * @return void
+	 */
+	public function test_add_submenu_page_skips_members_who_cannot_send(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'subscriber' ) ) );
+		Email::get_instance()->add_submenu_page();
+
+		$hook = get_plugin_page_hookname( Email::PAGE_SLUG, Settings::PARENT_SLUG );
 
 		$this->assertFalse(
-			has_action( 'gatherpress_settings_section', array( Settings::get_instance(), 'render_settings_form' ) )
+			has_action( sprintf( 'load-%s', $hook ), array( Email::get_instance(), 'enqueue_assets' ) )
 		);
+	}
+
+	/**
+	 * Check that the Email item is highlighted only on the Email page.
+	 *
+	 * @covers ::select_submenu
+	 *
+	 * @return void
+	 */
+	public function test_select_submenu(): void {
+		global $plugin_page;
+
+		$instance    = Email::get_instance();
+		$plugin_page = Email::PAGE_SLUG; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		$this->assertSame( Email::PAGE_SLUG, $instance->select_submenu( null ) );
+
+		$plugin_page = 'gatherpress_rsvp'; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		$this->assertSame( 'gatherpress_rsvp', $instance->select_submenu( 'gatherpress_rsvp' ) );
+		$this->assertNull( $instance->select_submenu( null ) );
+
+		$plugin_page = null; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+	}
+
+	/**
+	 * Check that the Email page renders the send form.
+	 *
+	 * @covers ::render_page
+	 *
+	 * @return void
+	 */
+	public function test_render_page(): void {
+		$response = Utility::buffer_and_return( array( Email::get_instance(), 'render_page' ) );
+
+		$this->assertStringContainsString( '<h1>Email</h1>', $response );
 		$this->assertStringContainsString( 'Send Email To Members', $response );
 		$this->assertStringContainsString( 'gatherpress-message-body', $response );
 	}
 
 	/**
-	 * Coverage for settings_section skipping another page.
+	 * Check that the Email page loads its script and the utility styles.
 	 *
-	 * @covers ::settings_section
+	 * @covers ::enqueue_assets
 	 *
 	 * @return void
 	 */
-	public function test_settings_section_skips_other_pages(): void {
-		$response = Utility::buffer_and_return(
-			array( Email::get_instance(), 'settings_section' ),
-			array( 'gatherpress_events' )
-		);
+	public function test_enqueue_assets(): void {
+		Email::get_instance()->enqueue_assets();
 
-		$this->assertEmpty( $response );
+		$this->assertTrue( wp_script_is( 'gatherpress-email', 'enqueued' ) );
+		$this->assertTrue( wp_style_is( 'gatherpress-utility-style', 'enqueued' ) );
+
+		wp_dequeue_script( 'gatherpress-email' );
+		wp_dequeue_style( 'gatherpress-utility-style' );
 	}
 
 	/**
@@ -176,7 +207,7 @@ class Test_Email extends Base {
 	 * @return void
 	 */
 	public function test_email_template_handles_recipient_count(): void {
-		$template = GATHERPRESS_CORE_PATH . '/includes/templates/admin/settings/email.php';
+		$template = GATHERPRESS_CORE_PATH . '/includes/templates/admin/email.php';
 
 		$this->assertEmpty( Core_Utility::render_template( $template ) );
 
@@ -828,7 +859,7 @@ class Test_Email extends Base {
 	/**
 	 * Check that the cached count helper fills the cache when it is empty.
 	 *
-	 * Invoked directly rather than through the settings page because xdebug
+	 * Invoked directly rather than through the Email page because xdebug
 	 * does not trace same-class protected helpers called by short delegation.
 	 *
 	 * @covers ::get_cached_recipient_count
@@ -867,23 +898,20 @@ class Test_Email extends Base {
 	}
 
 	/**
-	 * Check that the settings page count is served from a transient cache.
+	 * Check that the Email page count is served from a transient cache.
 	 *
 	 * @covers ::get_cached_recipient_count
 	 *
 	 * @return void
 	 */
-	public function test_settings_page_count_is_cached(): void {
+	public function test_email_page_count_is_cached(): void {
 		$cache_key = 'gatherpress_site_message_count_' . get_current_blog_id();
 		delete_transient( $cache_key );
 		$instance = Email::get_instance();
 
 		// Seed a sentinel the page could only show if it read the transient.
 		set_transient( $cache_key, 4242, HOUR_IN_SECONDS );
-		$page = Utility::buffer_and_return(
-			array( $instance, 'settings_section' ),
-			array( 'gatherpress_email_settings' )
-		);
+		$page = Utility::buffer_and_return( array( $instance, 'render_page' ) );
 
 		$this->assertStringContainsString( 'This will email 4242 members.', $page );
 

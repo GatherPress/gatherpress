@@ -18,12 +18,12 @@ import apiFetch from '@wordpress/api-fetch';
 /**
  * Internal dependencies
  */
-import { initSendEmail, sendMessage } from '@src/helpers/settings-send-email';
+import { initSendEmail, sendMessage } from '@src/helpers/send-email';
 
 jest.mock( '@wordpress/api-fetch' );
 
 /**
- * Render the Send Email form markup the settings template outputs.
+ * Render the send form markup the Email page template outputs.
  *
  * @param {string} message The message field value.
  *
@@ -62,7 +62,7 @@ function statusText() {
 		.textContent;
 }
 
-describe( 'settings-send-email', () => {
+describe( 'send-email', () => {
 	beforeEach( () => {
 		window.confirm = jest.fn( () => true );
 	} );
