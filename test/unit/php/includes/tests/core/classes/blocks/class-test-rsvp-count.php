@@ -66,7 +66,7 @@ class Test_Rsvp_Count extends Base {
 		$anonymous = $this->render_count( $event_id );
 
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
-		$reader = $this->render_count( $event_id );
+		$viewer = $this->render_count( $event_id );
 
 		wp_set_current_user( 0 );
 
@@ -77,7 +77,7 @@ class Test_Rsvp_Count extends Base {
 		);
 		$this->assertStringContainsString(
 			'gatherpress-rsvp-count__text',
-			$reader,
+			$viewer,
 			'Failed to assert a private event renders for a viewer who can read it.'
 		);
 	}

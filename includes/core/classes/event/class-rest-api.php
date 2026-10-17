@@ -18,8 +18,9 @@ use Exception;
 use GatherPress\Core\Blocks\Rsvp_Form;
 use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Event;
-use GatherPress\Core\Event\Email_Sends;
+use GatherPress\Core\Mailer;
 use GatherPress\Core\Rsvp\Form;
+use GatherPress\Core\Rsvp\Query as Rsvp_Query;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup;
 use GatherPress\Core\Rsvp\Response\Status;
@@ -29,7 +30,6 @@ use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
 use WP_Comment;
 use WP_Post;
-use WP_User;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
@@ -46,7 +46,8 @@ use WP_REST_Server;
  *
  * @phpstan-type RouteDefinition array{route: string, args: array<string, mixed>}
  * @phpstan-type SendOptions array{all: bool, attending: bool, waiting_list: bool, not_attending: bool}
- * @phpstan-type Recipient array{is_user: bool, user_id: int, comment_id: int, email: string, name: string}
+ * @phpstan-import-type Recipient from Mailer
+ * @phpstan-import-type Payload from Mailer
  */
 final class Rest_Api {
 
@@ -64,6 +65,26 @@ final class Rest_Api {
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
+		$this->register_mail_type();
+	}
+
+	/**
+	 * Tell Mailer who event update emails go to and what they say.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	private function register_mail_type(): void {
+		Mailer::get_instance()->register(
+			'event',
+			array(
+				'context'    => 'event',
+				'users'      => $this->get_event_email_users( ... ),
+				'recipients' => $this->get_event_email_rsvps( ... ),
+				'compose'    => $this->compose_event_email( ... ),
+			)
+		);
 	}
 
 	/**
@@ -77,6 +98,7 @@ final class Rest_Api {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
+		add_action( 'gatherpress_send_emails', array( $this, 'handle_email_send_action' ), 10, 4 );
 		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ), 10, 2 );
 	}
 
@@ -237,17 +259,17 @@ final class Rest_Api {
 					return is_user_logged_in() && $this->can_read_event_rsvps( $request );
 				},
 				'args'                => array(
-					'post_id'    => array(
+					'post_id'   => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'event_post_id' ),
 					),
-					'rsvp_token' => array(
+					Token::NAME => array(
 						'required'          => false,
 						'validate_callback' => static function ( $param ): bool {
 							return ! empty( Token::parse_token_string( $param ) );
 						},
 					),
-					'status'     => array(
+					'status'    => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'rsvp_status' ),
 					),
@@ -294,7 +316,7 @@ final class Rest_Api {
 					'gatherpress_form_schema_id'       => array(
 						'required'          => false,
 						'validate_callback' => function ( $param ) {
-							return is_string( $param ) && preg_match( '/^form_\d+$/', $param );
+							return is_string( $param ) && preg_match( '/^(\d+_)*form_\d+$/', $param );
 						},
 					),
 					'gatherpress_event_updates_opt_in' => array(
@@ -445,17 +467,13 @@ final class Rest_Api {
 	 */
 	public function email( WP_REST_Request $request ): WP_REST_Response {
 		$params   = $request->get_params();
-		$post_id  = intval( $params['post_id'] );
-		$message  = $params['message'] ?? '';
-		$subject  = $params['subject'] ?? '';
-		$send     = $params['send'];
-		$success  = wp_schedule_single_event(
-			time(),
-			'gatherpress_send_emails',
-			array( $post_id, $send, $message, $subject )
-		);
 		$response = array(
-			'success' => $success,
+			'success' => $this->send_emails(
+				intval( $params['post_id'] ),
+				$params['send'],
+				$params['message'] ?? '',
+				$params['subject'] ?? ''
+			),
 		);
 
 		return new WP_REST_Response( $response );
@@ -464,107 +482,306 @@ final class Rest_Api {
 	/**
 	 * Hooked method to trigger the sending of related emails.
 	 *
+	 * This method hooks into a WordPress action, triggering the `send_emails` method
+	 * to send emails to selected members. It doesn't return any value,
+	 * as it's intended to be called by an action hook.
+	 *
 	 * @since 0.34.0
-	 * @since TBD Delegated to Email_Sends.
+	 * @since 0.36.0 Added `$subject` parameter for #827.
+	 * @since TBD Only runs for jobs queued before Mailer owned the event email job, and queues them there.
 	 *
 	 * @param int    $post_id Post ID.
-	 * @param array  $send Members to send the email to.
+	 * @param array  $send    Members to send the email to.
 	 * @param string $message Optional message to include in the email.
-	 * @param string $subject Optional subject line.
-	 * @phpstan-param array{all: bool, attending: bool, waiting_list: bool, not_attending: bool} $send
+	 * @param string $subject Optional subject line. Defaults to the existing `📅 {title}` template when empty.
+	 * @phpstan-param SendOptions $send
 	 *
 	 * @return void
 	 */
 	public function handle_email_send_action( int $post_id, array $send, string $message, string $subject = '' ): void {
-		Email_Sends::get_instance()->handle_email_send_action( $post_id, $send, $message, $subject );
+		$this->send_emails( $post_id, $send, $message, $subject );
 	}
 
 	/**
-	 * Send emails to selected members.
+	 * Queue an event update email for the selected recipients.
 	 *
-	 * Kept as a compatibility wrapper for extensions that called the former
-	 * Rest_Api implementation directly.
+	 * Checks that the given `$post_id` belongs to a post type with RSVP
+	 * support, then queues the email with Mailer, which sends it in batches
+	 * from cron.
 	 *
 	 * @since 0.34.0
-	 * @since TBD Delegated to Email_Sends.
+	 * @since 0.36.0 Added `$subject` parameter for #827.
+	 * @since TBD Queues the email with Mailer instead of sending it in the same request.
 	 *
 	 * @param int    $post_id Post ID.
-	 * @param array  $send Members to send the email to.
-	 * @param string $message Optional message.
-	 * @param string $subject Optional subject.
-	 * @phpstan-param array{all: bool, attending: bool, waiting_list: bool, not_attending: bool} $send
+	 * @param array  $send    Members to send the email to.
+	 * @param string $message Optional message to include in the email.
+	 * @param string $subject Optional subject line. Defaults to the existing `📅 {title}` template when empty.
+	 * @phpstan-param SendOptions $send
 	 *
-	 * @return bool True when dispatch was attempted.
+	 * @return bool True when the email is queued, false otherwise.
 	 */
 	public function send_emails( int $post_id, array $send, string $message, string $subject = '' ): bool {
-		return Email_Sends::get_instance()->send_emails( $post_id, $send, $message, $subject );
+		return post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT )
+			&& Mailer::get_instance()->queue(
+				'event',
+				array(
+					'post_id' => $post_id,
+					'send'    => $send,
+					'message' => $message,
+					'subject' => $subject,
+				)
+			);
 	}
 
 	/**
-	 * Get event email recipients.
+	 * Get the users a queued event email goes to.
 	 *
-	 * @since TBD Delegated to Email_Sends.
+	 * @since TBD
 	 *
-	 * @param array $send Recipient groups.
-	 * @param int   $post_id Event post ID.
-	 * @phpstan-param array{all: bool, attending: bool, waiting_list: bool, not_attending: bool} $send
+	 * @param array $payload The queued email: its `send` options.
+	 * @phpstan-param Payload $payload
 	 *
-	 * @return array<int, array{
-	 *     is_user: bool,
-	 *     user_id: int,
-	 *     comment_id: int,
-	 *     email: string,
-	 *     name: string
-	 * }> Recipient data.
+	 * @return array<string, mixed>|null `get_users()` arguments for every user when "all" was picked, otherwise null.
 	 */
-	public function get_recipients( array $send, int $post_id ): array {
-		return Email_Sends::get_instance()->get_recipients( $send, $post_id );
+	private function get_event_email_users( array $payload ): ?array {
+		return empty( $payload['send']['all'] ) ? null : array();
 	}
 
 	/**
-	 * Send one event email to a recipient.
+	 * Get the RSVPs a queued event email goes to.
 	 *
-	 * @since TBD Delegated to Email_Sends.
+	 * When every user is already getting the email, RSVPs from users are left
+	 * out, so nobody gets it twice.
 	 *
-	 * @param array   $recipient Recipient data.
-	 * @param int     $post_id Event post ID.
-	 * @param string  $message Message content.
-	 * @param WP_User $current_user User to restore after rendering.
-	 * @param string  $subject Subject line.
-	 * @param bool    $show_rsvp_button Whether to render the RSVP button.
+	 * @since TBD
+	 *
+	 * @param array $payload The queued email: its `post_id` and `send` options.
+	 * @phpstan-param Payload $payload
+	 *
+	 * @return array<int, Recipient> Recipient rows from the event's RSVPs.
+	 */
+	private function get_event_email_rsvps( array $payload ): array {
+		$send       = (array) ( $payload['send'] ?? array() );
+		$recipients = $this->get_rsvp_recipients( $send, (int) ( $payload['post_id'] ?? 0 ) );
+
+		if ( ! empty( $send['all'] ) ) {
+			$recipients = array_values(
+				array_filter( $recipients, static fn( array $recipient ): bool => ! $recipient['is_user'] )
+			);
+		}
+
+		return $recipients;
+	}
+
+	/**
+	 * Build a queued event email for one recipient.
+	 *
+	 * @since TBD
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @param array $recipient The recipient, required by Mailer's compose signature.
+	 * @param array $payload   The queued email: its `post_id`, `message` and `subject`.
 	 * @phpstan-param Recipient $recipient
+	 * @phpstan-param Payload $payload
 	 *
-	 * @return void
+	 * @return array{subject: string, body: string, headers: array<int, string>} The email.
 	 */
-	protected function send_event_email_to_recipient(
-		array $recipient,
-		int $post_id,
-		string $message,
-		WP_User $current_user,
-		string $subject = '',
-		bool $show_rsvp_button = true
-	): void {
-		Email_Sends::get_instance()->send_event_email_to_recipient(
-			$recipient,
-			$post_id,
-			$message,
-			$current_user,
-			$subject,
-			$show_rsvp_button
+	private function compose_event_email( array $recipient, array $payload ): array {
+		return $this->build_event_email(
+			(int) ( $payload['post_id'] ?? 0 ),
+			(string) ( $payload['message'] ?? '' ),
+			(string) ( $payload['subject'] ?? '' )
 		);
 	}
 
 	/**
-	 * Build one recipient from an RSVP comment.
+	 * Build the subject and body for an event update email.
 	 *
-	 * @since TBD Delegated to Email_Sends.
+	 * Runs while the recipient's context is active so the default subject and
+	 * the template are translated in the recipient's locale and timezone.
 	 *
-	 * @param WP_Comment $comment RSVP comment.
+	 * @since TBD
 	 *
-	 * @return array{is_user: bool, user_id: int, comment_id: int, email: string, name: string}|null Recipient data.
+	 * @param int    $post_id Event post ID.
+	 * @param string $message Optional editor-supplied message body.
+	 * @param string $subject Optional subject line. Empty falls back to the default template.
+	 *
+	 * @return array{subject: string, body: string, headers: array<int, string>} Composed email.
+	 */
+	private function build_event_email( int $post_id, string $message, string $subject ): array {
+		$template = sprintf( '%s/includes/templates/admin/emails/event-email.php', GATHERPRESS_CORE_PATH );
+
+		if ( '' === $subject ) {
+			$subject = sprintf(
+				// translators: %s: event title.
+				_x( '📅 %s', 'Email notification subject with event title', 'gatherpress' ),
+				get_the_title( $post_id )
+			);
+		}
+
+		/**
+		 * Filters the event update email subject.
+		 *
+		 * @since 0.36.0
+		 *
+		 * @param string $subject Email subject line.
+		 * @param int    $post_id Event post ID.
+		 */
+		$subject = apply_filters( 'gatherpress_email_subject', $subject, $post_id );
+
+		return array(
+			'subject' => $subject,
+			'body'    => Utility::render_template(
+				$template,
+				array(
+					'event_id' => $post_id,
+					'message'  => $message,
+				),
+			),
+			'headers' => array( 'Content-Type: text/html; charset=UTF-8' ),
+		);
+	}
+
+	/**
+	 * Get the list of recipients to send event-related emails to.
+	 *
+	 * This method retrieves the list of recipients to whom event-related emails should be sent
+	 * based on the given `$send` parameter and the specified event `$post_id`.
+	 * It checks the `$send` array for specific email recipient categories,
+	 * such as 'all,' 'attending,' 'waiting_list,' and 'not_attending,' and compiles a unified list of recipients
+	 * that includes both WordPress users and non-user RSVPs with their email addresses and metadata.
+	 *
+	 * @since 0.34.0
+	 *
+	 * @param array $send    An array specifying who to send emails to.
+	 * @param int   $post_id The Event Post ID.
+	 * @phpstan-param SendOptions $send
+	 *
+	 * @return array<int, Recipient> An array containing unified recipient data for both users and non-users.
+	 */
+	public function get_recipients( array $send, int $post_id ): array {
+		$recipients = array();
+
+		// Handle 'all' members (WordPress users only) — array_map keeps the
+		// per-user shape declarative.
+		if ( ! empty( $send['all'] ) ) {
+			$recipients = array_map(
+				static function ( $user ): array {
+					return array(
+						'is_user'    => true,
+						'user_id'    => $user->ID,
+						'comment_id' => 0,
+						'email'      => $user->user_email,
+						'name'       => $user->display_name,
+					);
+				},
+				get_users()
+			);
+		}
+
+		return array_merge( $recipients, $this->get_rsvp_recipients( $send, $post_id ) );
+	}
+
+	/**
+	 * Get recipient rows for the RSVPs with the requested statuses.
+	 *
+	 * @since TBD
+	 *
+	 * @param array $send    Which RSVP statuses to send to.
+	 * @param int   $post_id The event post ID.
+	 * @phpstan-param array<string, mixed> $send
+	 *
+	 * @return array<int, Recipient> Recipient rows, one per RSVP with a valid email.
+	 */
+	private function get_rsvp_recipients( array $send, int $post_id ): array {
+		$recipients    = array();
+		$all_responses = ( new Rsvp( $post_id ) )->responses();
+
+		// Collect comment IDs for the requested RSVP statuses — `array_column`
+		// flattens each status's records to its commentId list in one pass,
+		// avoiding the inner foreach.
+		$comment_ids = array();
+		foreach ( array( 'attending', 'waiting_list', 'not_attending' ) as $status ) {
+			if ( ! empty( $send[ $status ] ) ) {
+				$comment_ids = array_merge(
+					$comment_ids,
+					array_column( $all_responses[ $status ]['records'], 'comment_id' )
+				);
+			}
+		}
+
+		if ( empty( $comment_ids ) ) {
+			return $recipients;
+		}
+
+		// Get full comment data for the RSVPs and build recipient rows.
+		$comments = Rsvp_Query::get_instance()->get_rsvps(
+			array(
+				'post_id'     => $post_id,
+				'status'      => 'approve',
+				'comment__in' => $comment_ids,
+			)
+		);
+
+		foreach ( $comments as $comment ) {
+			// get_rsvps() is typed loosely enough to return counts, so only comment rows
+			// are turned into recipients.
+			if ( ! $comment instanceof WP_Comment ) {
+				continue;
+			}
+
+			$recipient = $this->build_comment_recipient( $comment );
+
+			if ( null !== $recipient ) {
+				$recipients[] = $recipient;
+			}
+		}
+
+		return $recipients;
+	}
+
+	/**
+	 * Build a single recipient row from an approved RSVP comment, resolving
+	 * the user's email/display name when the comment is tied to a WordPress
+	 * user. Returns null when no email can be determined so the caller can
+	 * skip the row.
+	 *
+	 * Extracted from `get_recipients()` so the outer dispatch stays under
+	 * SonarCloud's cognitive-complexity threshold.
+	 *
+	 * @since 0.34.0
+	 *
+	 * @param WP_Comment $comment RSVP comment row from `Rsvp_Query::get_rsvps()`.
+	 *
+	 * @return Recipient|null Recipient row, or null when no valid email is on file.
 	 */
 	protected function build_comment_recipient( $comment ): ?array {
-		return Email_Sends::get_instance()->build_comment_recipient( $comment );
+		$user_id = intval( $comment->user_id );
+		$email   = $comment->comment_author_email;
+		$name    = $comment->comment_author;
+
+		if ( $user_id ) {
+			$user = get_userdata( $user_id );
+
+			if ( $user ) {
+				$email = $user->user_email;
+				$name  = $user->display_name;
+			}
+		}
+
+		if ( ! is_email( $email ) ) {
+			return null;
+		}
+
+		return array(
+			'is_user'    => (bool) $user_id,
+			'user_id'    => $user_id,
+			'comment_id' => (int) $comment->comment_ID,
+			'email'      => $email,
+			'name'       => $name,
+		);
 	}
 
 	/**
@@ -594,7 +811,7 @@ final class Rest_Api {
 		$status          = sanitize_key( $params['status'] );
 		$guests          = intval( $params['guests'] ?? 0 );
 		$anonymous       = intval( $params['anonymous'] ?? 0 );
-		$unparsed_token  = sanitize_text_field( $params['rsvp_token'] ?? '' );
+		$unparsed_token  = sanitize_text_field( $params[ Token::NAME ] ?? '' );
 		$event           = new Event( $post_id );
 		$rsvp            = new Rsvp( $post_id );
 
@@ -667,14 +884,23 @@ final class Rest_Api {
 			}
 		}
 
+		// A magic-link token arrives in the body, not the URL, so pass its email along.
+		$token_email = is_string( $user_identifier ) ? $user_identifier : null;
+
+		// A token authorizes the RSVP change, not the roster: a caller who cannot
+		// read the attendee list gets the counts the block needs, as on the RSVP form route.
+		$responses = Event::can_read_rsvps( $post_id )
+			? $rsvp->responses()
+			: $this->rsvp_response_counts( $rsvp->responses() );
+
 		$response = array(
 			'event_id'    => $post_id,
 			'success'     => $success,
 			'status'      => $status,
 			'guests'      => $guests,
 			'anonymous'   => $anonymous,
-			'responses'   => $rsvp->responses(),
-			'online_link' => $event->maybe_get_online_event_link(),
+			'responses'   => $responses,
+			'online_link' => $event->maybe_get_online_event_link( $token_email ),
 		);
 
 		return new WP_REST_Response( $response );
@@ -959,7 +1185,7 @@ final class Rest_Api {
 		// The link's own meta key is registered with `show_in_rest`, and core
 		// hands a registered value to everyone who can read the post, since
 		// `auth_callback` gates writes rather than reads. Give that key the
-		// same answer, so a reader gets the link on the terms the event sets
+		// same answer, so a viewer gets the link on the terms the event sets
 		// while the editor still loads what it has to save.
 		if (
 			array_key_exists( 'gatherpress_online_event_link', $response->data['meta'] ?? array() )

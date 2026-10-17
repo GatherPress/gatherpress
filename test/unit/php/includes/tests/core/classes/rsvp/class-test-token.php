@@ -712,7 +712,7 @@ class Test_Token extends Base {
 		$this->assertNotEmpty( $url );
 
 		// Check that URL contains the token parameter.
-		$this->assertStringContainsString( Token::NAME, $url );
+		$this->assertStringContainsString( 'gatherpress_rsvp_token=', $url );
 
 		// Check that URL contains the comment ID and token.
 		$expected_token_value = sprintf( '%d_%s', $comment_id, $token->get_token() );
@@ -863,12 +863,38 @@ class Test_Token extends Base {
 	}
 
 	/**
+	 * Coverage for send_rsvp_confirmation_email method with a malformed email.
+	 *
+	 * @covers ::send_rsvp_confirmation_email
+	 *
+	 * @return void
+	 */
+	public function test_send_rsvp_confirmation_email_with_malformed_email(): void {
+		$post = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID'      => $post->ID,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author_email' => 'jane@example',
+			)
+		);
+
+		$token = new Token( $comment_id );
+		$this->assertFalse( $token->send_rsvp_confirmation_email() );
+	}
+
+	/**
 	 * Coverage for class constants.
 	 *
 	 * @return void
 	 */
 	public function test_constants(): void {
-		$this->assertEquals( 'gatherpress_rsvp_token', Token::NAME );
+		$this->assertEquals( 'rsvp_token', Token::NAME );
 		$this->assertEquals( 32, Token::TOKEN_LENGTH );
 		$this->assertEquals( '_', Token::META_KEY_PREFIX );
 	}
@@ -1191,7 +1217,7 @@ class Test_Token extends Base {
 		// Extract token from URL.
 		$parsed_url = wp_parse_url( $url );
 		parse_str( $parsed_url['query'], $query_args );
-		$token_string = $query_args[ Token::NAME ];
+		$token_string = $query_args['gatherpress_rsvp_token'];
 
 		// Parse should return valid array.
 		$parsed = Token::parse_token_string( $token_string );
@@ -1231,7 +1257,7 @@ class Test_Token extends Base {
 		add_filter(
 			'gatherpress_pre_get_http_input',
 			function ( $pre_value, $type, $var_name ) use ( $token_string ) {
-				if ( INPUT_GET === $type && Token::NAME === $var_name ) {
+				if ( INPUT_GET === $type && 'gatherpress_rsvp_token' === $var_name ) {
 					return $token_string;
 				}
 				return null;

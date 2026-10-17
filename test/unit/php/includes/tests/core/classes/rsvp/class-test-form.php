@@ -467,7 +467,7 @@ class Test_Form extends Base {
 	/**
 	 * Create an event carrying a form schema with a required custom field.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return int The event post ID.
 	 */
@@ -509,7 +509,7 @@ class Test_Form extends Base {
 	 * The RSVP must not be created, because a stored RSVP triggers a
 	 * confirmation email for an answer the organizer never receives.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::process_rsvp
 	 *
 	 * @return void
@@ -551,7 +551,7 @@ class Test_Form extends Base {
 	/**
 	 * Tests process_rsvp rejects a submission carrying an invalid custom value.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::process_rsvp
 	 *
 	 * @return void
@@ -582,7 +582,7 @@ class Test_Form extends Base {
 	/**
 	 * Tests process_rsvp accepts a submission whose custom fields are valid.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::process_rsvp
 	 *
 	 * @return void
@@ -617,7 +617,7 @@ class Test_Form extends Base {
 	 * defensive half: a rejected value is left unset rather than written
 	 * as the sanitizer's false.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::process_fields
 	 *
 	 * @return void
@@ -664,7 +664,7 @@ class Test_Form extends Base {
 	 * process_fields() in the same class, which xdebug does not trace
 	 * reliably.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::process_custom_fields
 	 *
 	 * @return void
@@ -709,7 +709,7 @@ class Test_Form extends Base {
 	 * The `required` attribute in the markup is browser-side only, so the
 	 * traditional POST path has to enforce it itself.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::preprocess_rsvp_comment
 	 *
 	 * @return void

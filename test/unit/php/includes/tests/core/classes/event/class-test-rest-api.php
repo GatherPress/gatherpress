@@ -10,9 +10,9 @@ namespace GatherPress\Tests\Core\Event;
 
 use DateTime;
 use GatherPress\Core\Event;
-use GatherPress\Core\Event\Email_Sends;
 use GatherPress\Core\Event\Meta;
 use GatherPress\Core\Event\Rest_Api;
+use GatherPress\Core\Mailer;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Token;
@@ -54,7 +54,6 @@ class Test_Rest_Api extends Base {
 	public function tearDown(): void {
 		Settings::get_instance()->set( 'enable_open_rsvp', true );
 		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
-		wp_clear_scheduled_hook( Email_Sends::PROMOTION_CRON_HOOK );
 		parent::tearDown();
 	}
 
@@ -74,6 +73,12 @@ class Test_Rest_Api extends Base {
 				'name'     => 'rest_api_init',
 				'priority' => 10,
 				'callback' => array( $instance, 'register_endpoints' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'gatherpress_send_emails',
+				'priority' => 10,
+				'callback' => array( $instance, 'handle_email_send_action' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -243,7 +248,7 @@ class Test_Rest_Api extends Base {
 	 *
 	 * Sanitization only runs on dispatch, so this exercises the registered route
 	 * rather than calling the callback directly, and reads the values back off
-	 * the scheduled event the callback hands to cron.
+	 * the Mailer job the callback hands to cron.
 	 *
 	 * @covers ::email
 	 *
@@ -255,7 +260,7 @@ class Test_Rest_Api extends Base {
 		add_filter(
 			'schedule_event',
 			static function ( $event ) use ( &$captured ) {
-				if ( $event && 'gatherpress_send_emails' === $event->hook ) {
+				if ( $event && Mailer::JOB_HOOK === $event->hook ) {
 					$captured = $event->args;
 				}
 
@@ -303,80 +308,14 @@ class Test_Rest_Api extends Base {
 		);
 		$this->assertSame(
 			"First line.\nSecond line.",
-			$captured[2],
+			$captured[1]['message'],
 			'Failed to assert the newline survived sanitization of the message.'
 		);
 		$this->assertSame(
 			'Subject with markup',
-			$captured[3],
+			$captured[1]['subject'],
 			'Failed to assert the subject was sanitized.'
 		);
-	}
-
-	/**
-	 * A freed spot emails the promoted member through the scheduled send.
-	 *
-	 * @covers \GatherPress\Core\Event\Email_Sends::schedule_waiting_list_promotion_email
-	 *
-	 * @return void
-	 */
-	public function test_waiting_list_promotion_sends_email(): void {
-		$captured = array();
-
-		add_filter(
-			'pre_wp_mail',
-			static function ( $previous, $attributes ) use ( &$captured ): bool {
-				$captured = $attributes;
-				return true;
-			},
-			10,
-			2
-		);
-
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'  => Event::POST_TYPE,
-				'post_title' => 'Promotion Event',
-			)
-		);
-		update_post_meta( $event_id, 'gatherpress_capacity', 1 );
-
-		$attendee_id = $this->factory->user->create();
-		$waiter_id   = $this->factory->user->create(
-			array( 'user_email' => 'waiter@example.test' )
-		);
-		$rsvp        = new Rsvp( $event_id );
-		$rsvp->save( $attendee_id, 'attending' );
-		$rsvp->save( $waiter_id, 'attending' );
-
-		// Freeing the spot queues the promotion email rather than sending it.
-		$rsvp->save( $attendee_id, 'not_attending' );
-
-		$rsvp_record = ( new Rsvp( $event_id ) )->get( $waiter_id );
-
-		$this->assertNotFalse(
-			wp_next_scheduled(
-				Email_Sends::PROMOTION_CRON_HOOK,
-				array( $event_id, (int) $rsvp_record['comment_id'] )
-			),
-			'Failed to assert the promotion email was scheduled for the freed spot.'
-		);
-		$this->assertSame(
-			array(),
-			$captured,
-			'Failed to assert nothing is sent during the request that frees the spot.'
-		);
-
-		do_action(
-			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- Hook name comes from the class constant, so PHPCS cannot read the prefix.
-			Email_Sends::PROMOTION_CRON_HOOK,
-			$event_id,
-			(int) $rsvp_record['comment_id']
-		);
-
-		$this->assertSame( 'waiter@example.test', $captured['to'] );
-		$this->assertStringContainsString( 'Promotion Event', $captured['subject'] );
-		$this->assertStringContainsString( 'now confirmed', $captured['message'] );
 	}
 
 	/**
@@ -772,7 +711,7 @@ class Test_Rest_Api extends Base {
 	 * process_rsvp() validates anything, so enumerating a scalar there
 	 * fataled with a TypeError before the submission could be rejected.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::handle_rsvp_form_submission
 	 *
 	 * @return void
@@ -808,7 +747,7 @@ class Test_Rest_Api extends Base {
 	 * A custom-field rejection answers 400 and carries one message per
 	 * failing field alongside the summary the form already shows.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::handle_rsvp_form_submission
 	 *
 	 * @return void
@@ -1207,6 +1146,221 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Check that event emails register their mail type with Mailer.
+	 *
+	 * @covers ::__construct
+	 * @covers ::register_mail_type
+	 *
+	 * @return void
+	 */
+	public function test_register_mail_type(): void {
+		// The constructor registers at boot, before coverage records, so register again here.
+		Utility::invoke_hidden_method( Rest_Api::get_instance(), 'register_mail_type' );
+
+		$types = Utility::get_hidden_property( Mailer::get_instance(), 'types' );
+
+		$this->assertArrayHasKey( 'event', $types );
+		$this->assertSame( 'event', $types['event']['context'] );
+		$this->assertArrayHasKey( 'users', $types['event'] );
+		$this->assertArrayHasKey( 'recipients', $types['event'] );
+		$this->assertArrayHasKey( 'compose', $types['event'] );
+	}
+
+	/**
+	 * Check that send_emails() queues a Mailer job instead of sending.
+	 *
+	 * @covers ::send_emails
+	 *
+	 * @return void
+	 */
+	public function test_send_emails_queues_a_mailer_job(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$send    = array( 'attending' => true );
+
+		$this->assertTrue( Rest_Api::get_instance()->send_emails( $post_id, $send, 'Hello', 'Hi' ) );
+		$this->assertNotFalse(
+			wp_next_scheduled(
+				Mailer::JOB_HOOK,
+				array(
+					'event',
+					array(
+						'post_id' => $post_id,
+						'send'    => $send,
+						'message' => 'Hello',
+						'subject' => 'Hi',
+					),
+					Mailer::FIRST_BATCH,
+				)
+			)
+		);
+
+		wp_unschedule_hook( Mailer::JOB_HOOK );
+	}
+
+	/**
+	 * Check that every user gets an event email only when "all" is picked.
+	 *
+	 * @covers ::get_event_email_users
+	 *
+	 * @return void
+	 */
+	public function test_get_event_email_users(): void {
+		$instance = Rest_Api::get_instance();
+
+		$this->assertSame(
+			array(),
+			Utility::invoke_hidden_method(
+				$instance,
+				'get_event_email_users',
+				array( array( 'send' => array( 'all' => true ) ) )
+			)
+		);
+		$this->assertNull(
+			Utility::invoke_hidden_method(
+				$instance,
+				'get_event_email_users',
+				array( array( 'send' => array( 'attending' => true ) ) )
+			)
+		);
+	}
+
+	/**
+	 * Check that RSVPs from users are left out when every user already gets the email.
+	 *
+	 * @covers ::get_event_email_rsvps
+	 * @covers ::get_rsvp_recipients
+	 *
+	 * @return void
+	 */
+	public function test_get_event_email_rsvps(): void {
+		$instance = Rest_Api::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$user_id  = $this->factory->user->create();
+		$rsvp     = new Rsvp( $post_id );
+
+		$rsvp->save( $user_id, 'attending' );
+		$rsvp->save( 'guest@example.test', 'attending', 0, 0 );
+
+		$emails = static fn( array $send ): array => wp_list_pluck(
+			Utility::invoke_hidden_method(
+				$instance,
+				'get_event_email_rsvps',
+				array(
+					array(
+						'post_id' => $post_id,
+						'send'    => $send,
+					),
+				)
+			),
+			'email'
+		);
+
+		$attending = $emails( array( 'attending' => true ) );
+
+		sort( $attending );
+
+		$expected = array( get_userdata( $user_id )->user_email, 'guest@example.test' );
+
+		sort( $expected );
+
+		$this->assertSame( $expected, $attending );
+		$this->assertSame(
+			array( 'guest@example.test' ),
+			$emails(
+				array(
+					'all'       => true,
+					'attending' => true,
+				)
+			)
+		);
+	}
+
+	/**
+	 * Check that no RSVPs are looked up when no status was picked.
+	 *
+	 * Invoked directly because xdebug does not trace same-class helpers
+	 * called by short delegation.
+	 *
+	 * @covers ::get_rsvp_recipients
+	 *
+	 * @return void
+	 */
+	public function test_get_rsvp_recipients_without_statuses(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		( new Rsvp( $post_id ) )->save( 'guest@example.test', 'attending', 0, 0 );
+
+		$this->assertSame(
+			array(),
+			Utility::invoke_hidden_method(
+				Rest_Api::get_instance(),
+				'get_rsvp_recipients',
+				array( array( 'all' => true ), $post_id )
+			)
+		);
+	}
+
+	/**
+	 * Check that rows the RSVP query returns that are not comments are skipped.
+	 *
+	 * Invoked directly because xdebug does not trace same-class helpers
+	 * called by short delegation.
+	 *
+	 * @covers ::get_rsvp_recipients
+	 *
+	 * @return void
+	 */
+	public function test_get_rsvp_recipients_skips_non_comment_rows(): void {
+		$post_id  = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$injector = static function ( $comments, $query ) {
+			if ( ! empty( $query->query_vars['comment__in'] ) ) {
+				$comments[] = PHP_INT_MAX;
+			}
+
+			return $comments;
+		};
+
+		( new Rsvp( $post_id ) )->save( 'guest@example.test', 'attending', 0, 0 );
+		add_filter( 'the_comments', $injector, 10, 2 );
+
+		$recipients = Utility::invoke_hidden_method(
+			Rest_Api::get_instance(),
+			'get_rsvp_recipients',
+			array( array( 'attending' => true ), $post_id )
+		);
+
+		remove_filter( 'the_comments', $injector, 10 );
+
+		$this->assertSame( array( 'guest@example.test' ), wp_list_pluck( $recipients, 'email' ) );
+	}
+
+	/**
+	 * Check that a queued event email is built from its payload.
+	 *
+	 * @covers ::compose_event_email
+	 *
+	 * @return void
+	 */
+	public function test_compose_event_email(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$email   = Utility::invoke_hidden_method(
+			Rest_Api::get_instance(),
+			'compose_event_email',
+			array(
+				array(),
+				array(
+					'post_id' => $post_id,
+					'message' => 'See you there.',
+					'subject' => 'Reminder',
+				),
+			)
+		);
+
+		$this->assertSame( 'Reminder', $email['subject'] );
+		$this->assertStringContainsString( 'See you there.', $email['body'] );
+	}
+
+	/**
 	 * Coverage for handle_email_send_action method.
 	 *
 	 * @covers ::handle_email_send_action
@@ -1482,7 +1636,7 @@ class Test_Rest_Api extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_prepare_event_data_hides_the_link_meta_from_readers(): void {
+	public function test_prepare_event_data_hides_the_link_meta_from_viewers(): void {
 		$instance = Rest_Api::get_instance();
 		$post_id  = $this->factory()->post->create(
 			array(
@@ -1523,7 +1677,7 @@ class Test_Rest_Api extends Base {
 		$this->assertSame(
 			'',
 			$anonymous['gatherpress_online_event_link'],
-			'Failed to assert an anonymous reader gets no link from the meta key.'
+			'Failed to assert an anonymous viewer gets no link from the meta key.'
 		);
 		$this->assertSame(
 			'',
@@ -1533,7 +1687,7 @@ class Test_Rest_Api extends Base {
 		$this->assertSame(
 			'',
 			$subscriber['gatherpress_online_event_link'],
-			'Failed to assert a reader who cannot edit the event gets no link from the meta key.'
+			'Failed to assert a viewer who cannot edit the event gets no link from the meta key.'
 		);
 		$this->assertSame(
 			$link,
@@ -1543,14 +1697,14 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
-	 * The route itself no longer hands the link to an anonymous reader, on a
+	 * The route itself no longer hands the link to an anonymous viewer, on a
 	 * single event or a collection.
 	 *
 	 * @covers ::prepare_event_data
 	 *
 	 * @return void
 	 */
-	public function test_rest_route_hides_the_link_meta_from_readers(): void {
+	public function test_rest_route_hides_the_link_meta_from_viewers(): void {
 		$post_id = $this->factory()->post->create(
 			array(
 				'post_type'   => Event::POST_TYPE,
@@ -1582,13 +1736,13 @@ class Test_Rest_Api extends Base {
 		$this->assertSame(
 			'',
 			$single->get_data()['meta']['gatherpress_online_event_link'] ?? null,
-			'Failed to assert a single event response carries no link for an anonymous reader.'
+			'Failed to assert a single event response carries no link for an anonymous viewer.'
 		);
 		$this->assertNotEmpty( $listed, 'Expected the published event in the collection response.' );
 		$this->assertSame(
 			'',
 			reset( $listed )['meta']['gatherpress_online_event_link'] ?? null,
-			'Failed to assert a collection response carries no link for an anonymous reader.'
+			'Failed to assert a collection response carries no link for an anonymous viewer.'
 		);
 	}
 
@@ -1660,7 +1814,7 @@ class Test_Rest_Api extends Base {
 		$request = new WP_REST_Request( 'POST' );
 		$request->set_param( 'post_id', $post_id );
 		$request->set_param( 'status', 'not_attending' );
-		$request->set_param( 'rsvp_token', sprintf( '%d_%s', $user_record['comment_id'], $token_value ) );
+		$request->set_param( Token::NAME, sprintf( '%d_%s', $user_record['comment_id'], $token_value ) );
 
 		$response = $instance->update_rsvp( $request );
 		$data     = $response->get_data();
@@ -2181,6 +2335,173 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Tests a magic-link attendee can change their RSVP through the REST route.
+	 *
+	 * The request is dispatched through the REST server, so the permission
+	 * callback runs, with the token in the body parameter the RSVP block sends.
+	 *
+	 * @since 0.36.0
+	 * @covers ::rsvp_route
+	 * @covers ::update_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_route_lets_a_token_holder_change_their_rsvp(): void {
+		$post_id = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		( new Event( $post_id ) )->save_datetimes(
+			array(
+				'datetime_start' => '2099-01-01 10:00:00',
+				'datetime_end'   => '2099-01-01 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$user_record = ( new Rsvp( $post_id ) )->save( 'test@example.com', 'attending' );
+		$rsvp_token  = new Token( $user_record['comment_id'] );
+		$rsvp_token->generate_token();
+
+		wp_set_current_user( 0 );
+
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_body(
+			wp_json_encode(
+				array(
+					'post_id'   => $post_id,
+					'status'    => 'not_attending',
+					Token::NAME => sprintf( '%d_%s', $user_record['comment_id'], $rsvp_token->get_token() ),
+				)
+			)
+		);
+
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status(), 'A valid token should authorize the request.' );
+		$this->assertTrue( $response->get_data()['success'], 'The RSVP change should be reported as saved.' );
+		$this->assertSame( 'not_attending', $response->get_data()['status'] );
+		$this->assertSame(
+			'not_attending',
+			( new Rsvp( $post_id ) )->get( 'test@example.com' )['status'],
+			'The stored RSVP should be not attending.'
+		);
+	}
+
+	/**
+	 * Tests a token holder who cannot read the roster gets counts, not attendee records.
+	 *
+	 * A token authorizes the RSVP change only. On a password-protected event an
+	 * anonymous visitor cannot read the attendee list, so the response carries
+	 * the per-status counts the RSVP block needs and drops the records.
+	 *
+	 * @since 0.36.0
+	 * @covers ::update_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_route_gives_counts_only_to_a_token_holder_without_roster_access(): void {
+		$post_id = $this->factory()->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		);
+
+		( new Event( $post_id ) )->save_datetimes(
+			array(
+				'datetime_start' => '2099-01-01 10:00:00',
+				'datetime_end'   => '2099-01-01 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		( new Rsvp( $post_id ) )->save( 'other@example.com', 'attending' );
+
+		$user_record = ( new Rsvp( $post_id ) )->save( 'test@example.com', 'not_attending' );
+		$rsvp_token  = new Token( $user_record['comment_id'] );
+		$rsvp_token->generate_token();
+
+		wp_set_current_user( 0 );
+
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_body(
+			wp_json_encode(
+				array(
+					'post_id'   => $post_id,
+					'status'    => 'attending',
+					Token::NAME => sprintf( '%d_%s', $user_record['comment_id'], $rsvp_token->get_token() ),
+				)
+			)
+		);
+
+		$data = rest_do_request( $request )->get_data();
+
+		$this->assertTrue( $data['success'] );
+		$this->assertSame( 2, $data['responses']['attending']['count'] );
+
+		foreach ( $data['responses'] as $status => $group ) {
+			$this->assertSame(
+				array( 'count' ),
+				array_keys( $group ),
+				sprintf( 'The %s group should carry only its count.', $status )
+			);
+		}
+	}
+
+	/**
+	 * Tests a magic-link attendee gets the online event link back after an RSVP change.
+	 *
+	 * The page sends the token in the request body, not in the URL, so the
+	 * link has to be built for the token's attendee.
+	 *
+	 * @since 0.36.0
+	 * @covers ::update_rsvp
+	 * @covers \GatherPress\Core\Event\Event::maybe_get_online_event_link
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_route_returns_online_link_to_a_token_holder(): void {
+		$post_id = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		( new Event( $post_id ) )->save_datetimes(
+			array(
+				'datetime_start' => '2099-01-01 10:00:00',
+				'datetime_end'   => '2099-01-01 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+		update_post_meta( $post_id, 'gatherpress_online_event_link', 'https://meet.example.test/room' );
+
+		$user_record = ( new Rsvp( $post_id ) )->save( 'test@example.com', 'not_attending' );
+		$rsvp_token  = new Token( $user_record['comment_id'] );
+		$rsvp_token->generate_token();
+
+		wp_set_current_user( 0 );
+
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_body(
+			wp_json_encode(
+				array(
+					'post_id'   => $post_id,
+					'status'    => 'attending',
+					Token::NAME => sprintf( '%d_%s', $user_record['comment_id'], $rsvp_token->get_token() ),
+				)
+			)
+		);
+
+		$data = rest_do_request( $request )->get_data();
+
+		$this->assertSame( 'attending', $data['status'] );
+		$this->assertSame(
+			'https://meet.example.test/room',
+			$data['online_link'],
+			'An attending token holder should get the online event link.'
+		);
+	}
+
+	/**
 	 * A token issued for one event does not authorize a request against a
 	 * different event.
 	 *
@@ -2476,17 +2797,17 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		// A reader who can read private posts but cannot edit this one.
-		$reader_id = $this->factory()->user->create( array( 'role' => 'subscriber' ) );
-		( new WP_User( $reader_id ) )->add_cap( 'read_private_posts' );
-		wp_set_current_user( $reader_id );
+		// A viewer who can read private posts but cannot edit this one.
+		$viewer_id = $this->factory()->user->create( array( 'role' => 'subscriber' ) );
+		( new WP_User( $viewer_id ) )->add_cap( 'read_private_posts' );
+		wp_set_current_user( $viewer_id );
 
 		$request = new WP_REST_Request( 'GET' );
 		$request->set_param( 'post_id', $post_id );
 
 		$this->assertFalse(
 			current_user_can( Event::EDIT_CAPABILITY, $post_id ),
-			'The reader must lack edit access so the read_post branch is the one exercised.'
+			'The viewer must lack edit access so the read_post branch is the one exercised.'
 		);
 		$this->assertTrue(
 			$instance->can_read_event_rsvps( $request ),
@@ -2507,7 +2828,7 @@ class Test_Rest_Api extends Base {
 		$instance = Rest_Api::get_instance();
 		$route    = Utility::invoke_hidden_method( $instance, 'rsvp_route' );
 
-		$validate_callback = $route['args']['args']['rsvp_token']['validate_callback'];
+		$validate_callback = $route['args']['args'][ Token::NAME ]['validate_callback'];
 		$result            = call_user_func( $validate_callback, '' );
 
 		$this->assertFalse( $result, 'Validate callback should return false for empty token' );
@@ -2578,9 +2899,25 @@ class Test_Rest_Api extends Base {
 		$result = call_user_func( $validate_callback, 'form_123' );
 		$this->assertTrue( $result, 'Validate callback should return true for form_123' );
 
+		// Test with nested form IDs, which carry one parent index prefix per level.
+		foreach ( array( '2_form_0', '0_0_0_form_0' ) as $nested_id ) {
+			$this->assertTrue(
+				call_user_func( $validate_callback, $nested_id ),
+				sprintf( 'Validate callback should return true for %s', $nested_id )
+			);
+		}
+
 		// Test with invalid format.
 		$result = call_user_func( $validate_callback, 'invalid' );
 		$this->assertFalse( $result, 'Validate callback should return false for invalid format' );
+
+		// Test with malformed nested and bare IDs.
+		foreach ( array( '2_form_', '_form_0', 'form_', '2form_0', 'form_0_1' ) as $malformed_id ) {
+			$this->assertFalse(
+				call_user_func( $validate_callback, $malformed_id ),
+				sprintf( 'Validate callback should return false for %s', $malformed_id )
+			);
+		}
 
 		// Test with non-string.
 		$result = call_user_func( $validate_callback, 123 );
@@ -2664,6 +3001,7 @@ class Test_Rest_Api extends Base {
 		);
 
 		$result = $instance->send_emails( $post_id, $send, 'Test message' );
+		$this->run_mail_jobs();
 
 		$this->assertTrue( $result, 'send_emails should return true' );
 		$this->assertFalse( $mail_called, 'wp_mail should not be called for opted-out non-user RSVP' );
@@ -2708,6 +3046,7 @@ class Test_Rest_Api extends Base {
 			'Test message',
 			'Reminder: doors at 7'
 		);
+		$this->run_mail_jobs();
 
 		$this->assertTrue( $result, 'send_emails should return true.' );
 		$this->assertSame(
@@ -2760,6 +3099,7 @@ class Test_Rest_Api extends Base {
 			array( 'attending' => true ),
 			'Test message'
 		);
+		$this->run_mail_jobs();
 
 		$this->assertStringContainsString(
 			'Default Subject Event',
@@ -2817,6 +3157,7 @@ class Test_Rest_Api extends Base {
 			array( 'attending' => true ),
 			'Test message'
 		);
+		$this->run_mail_jobs();
 
 		$this->assertStringStartsWith(
 			'[Community] ',
@@ -2874,6 +3215,7 @@ class Test_Rest_Api extends Base {
 			'Test message',
 			'Custom subject'
 		);
+		$this->run_mail_jobs();
 
 		$this->assertSame(
 			'Custom subject [verified]',
@@ -2929,6 +3271,7 @@ class Test_Rest_Api extends Base {
 		);
 
 		$result = $instance->send_emails( $post_id, $send, 'Test message' );
+		$this->run_mail_jobs();
 
 		$this->assertTrue( $result, 'send_emails should return true' );
 		// If this test runs without errors, restore_previous_locale was called correctly.
@@ -3348,193 +3691,15 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
-	 * `send_event_email_to_recipient` happy path for a WordPress user.
-	 * Direct-invokes the protected helper so xdebug traces every line —
-	 * the loop in `send_emails()` does call it, but xdebug's
-	 * line-coverage doesn't trace inside same-class private/protected
-	 * methods reliably (same gap that bit `Osm::paint_tile`).
-	 *
-	 * @covers ::send_event_email_to_recipient
-	 *
-	 * @return void
-	 */
-	public function test_send_event_email_to_recipient_user_full_send(): void {
-		add_filter( 'pre_wp_mail', '__return_false' );
-
-		$instance = Rest_Api::get_instance();
-		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
-		$user     = get_userdata( $this->factory->user->create() );
-
-		Utility::invoke_hidden_method(
-			$instance,
-			'send_event_email_to_recipient',
-			array(
-				array(
-					'is_user'    => true,
-					'user_id'    => $user->ID,
-					'comment_id' => 0,
-					'email'      => $user->user_email,
-					'name'       => $user->display_name,
-				),
-				$event_id,
-				'Test message',
-				wp_get_current_user(),
-				'Test subject',
-			)
-		);
-
-		remove_filter( 'pre_wp_mail', '__return_false' );
-
-		$this->assertTrue( true, 'Helper completed without throwing.' );
-	}
-
-	/**
-	 * `send_event_email_to_recipient` returns silently when the user
-	 * recipient has opted out of event updates.
-	 *
-	 * @covers ::send_event_email_to_recipient
-	 *
-	 * @return void
-	 */
-	public function test_send_event_email_to_recipient_skips_opted_out_user(): void {
-		$instance = Rest_Api::get_instance();
-		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
-		$user_id  = $this->factory->user->create();
-
-		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', 0 );
-
-		Utility::invoke_hidden_method(
-			$instance,
-			'send_event_email_to_recipient',
-			array(
-				array(
-					'is_user'    => true,
-					'user_id'    => $user_id,
-					'comment_id' => 0,
-					'email'      => 'doesnt-matter@example.test',
-					'name'       => 'Opted Out',
-				),
-				$event_id,
-				'Test message',
-				wp_get_current_user(),
-			)
-		);
-
-		$this->assertTrue( true, 'Helper returned without sending mail.' );
-	}
-
-	/**
-	 * `send_event_email_to_recipient` returns silently when a non-user
-	 * recipient (anonymous RSVP) has opt-in comment meta set to '0'.
-	 *
-	 * @covers ::send_event_email_to_recipient
-	 *
-	 * @return void
-	 */
-	public function test_send_event_email_to_recipient_skips_opted_out_comment(): void {
-		$instance   = Rest_Api::get_instance();
-		$event_id   = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
-		$comment_id = wp_insert_comment(
-			array(
-				'comment_post_ID'      => $event_id,
-				'comment_type'         => Rsvp::COMMENT_TYPE,
-				'comment_author'       => 'Anon',
-				'comment_author_email' => 'anon@example.test',
-				'comment_approved'     => 1,
-				'user_id'              => 0,
-			)
-		);
-		update_comment_meta( $comment_id, 'gatherpress_event_updates_opt_in', 0 );
-
-		Utility::invoke_hidden_method(
-			$instance,
-			'send_event_email_to_recipient',
-			array(
-				array(
-					'is_user'    => false,
-					'user_id'    => 0,
-					'comment_id' => $comment_id,
-					'email'      => 'anon@example.test',
-					'name'       => 'Anon',
-				),
-				$event_id,
-				'Test message',
-				wp_get_current_user(),
-			)
-		);
-
-		$this->assertTrue( true, 'Helper returned without sending mail.' );
-	}
-
-	/**
-	 * `send_event_email_to_recipient` happy path for a non-user RSVP
-	 * (anonymous attendee) — exercises the elseif fall-through into the
-	 * email-send block without going through the user-locale switch.
-	 *
-	 * @covers ::send_event_email_to_recipient
-	 *
-	 * @return void
-	 */
-	public function test_send_event_email_to_recipient_comment_full_send(): void {
-		add_filter( 'pre_wp_mail', '__return_false' );
-
-		$instance   = Rest_Api::get_instance();
-		$event_id   = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
-		$comment_id = wp_insert_comment(
-			array(
-				'comment_post_ID'      => $event_id,
-				'comment_type'         => Rsvp::COMMENT_TYPE,
-				'comment_author'       => 'Anon',
-				'comment_author_email' => 'anon-send@example.test',
-				'comment_approved'     => 1,
-				'user_id'              => 0,
-			)
-		);
-
-		Utility::invoke_hidden_method(
-			$instance,
-			'send_event_email_to_recipient',
-			array(
-				array(
-					'is_user'    => false,
-					'user_id'    => 0,
-					'comment_id' => $comment_id,
-					'email'      => 'anon-send@example.test',
-					'name'       => 'Anon',
-				),
-				$event_id,
-				'Test message',
-				wp_get_current_user(),
-			)
-		);
-
-		remove_filter( 'pre_wp_mail', '__return_false' );
-
-		$this->assertTrue( true, 'Helper completed without throwing.' );
-	}
-
-	/**
 	 * Future-event emails include the RSVP Now CTA.
 	 *
 	 * @since 0.36.0
 	 *
-	 * @covers ::send_event_email_to_recipient
+	 * @covers ::build_event_email
 	 *
 	 * @return void
 	 */
-	public function test_send_event_email_includes_rsvp_cta_for_future_event(): void {
-		$captured_body = '';
-		$capture_email = static function ( $preempt, $atts ) use ( &$captured_body ) {
-			$captured_body = $atts['message'] ?? '';
-			return true;
-		};
-		add_filter(
-			'pre_wp_mail',
-			$capture_email,
-			10,
-			2
-		);
-
+	public function test_build_event_email_includes_rsvp_cta_for_future_event(): void {
 		$instance = Rest_Api::get_instance();
 		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 		$event    = new Event( $event_id );
@@ -3550,26 +3715,11 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		$user = get_userdata( $this->factory->user->create() );
-
-		Utility::invoke_hidden_method(
+		$captured_body = Utility::invoke_hidden_method(
 			$instance,
-			'send_event_email_to_recipient',
-			array(
-				array(
-					'is_user'    => true,
-					'user_id'    => $user->ID,
-					'comment_id' => 0,
-					'email'      => $user->user_email,
-					'name'       => $user->display_name,
-				),
-				$event_id,
-				'Upcoming reminder.',
-				wp_get_current_user(),
-			)
-		);
-
-		remove_filter( 'pre_wp_mail', $capture_email );
+			'build_event_email',
+			array( $event_id, 'Upcoming reminder.', '' )
+		)['body'];
 
 		$this->assertStringContainsString(
 			'RSVP Now',
@@ -3583,23 +3733,11 @@ class Test_Rest_Api extends Base {
 	 *
 	 * @since 0.36.0
 	 *
-	 * @covers ::send_event_email_to_recipient
+	 * @covers ::build_event_email
 	 *
 	 * @return void
 	 */
-	public function test_send_event_email_omits_rsvp_cta_for_past_event(): void {
-		$captured_body = '';
-		$capture_email = static function ( $preempt, $atts ) use ( &$captured_body ) {
-			$captured_body = $atts['message'] ?? '';
-			return true;
-		};
-		add_filter(
-			'pre_wp_mail',
-			$capture_email,
-			10,
-			2
-		);
-
+	public function test_build_event_email_omits_rsvp_cta_for_past_event(): void {
 		$instance = Rest_Api::get_instance();
 		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 		$event    = new Event( $event_id );
@@ -3615,26 +3753,11 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		$user = get_userdata( $this->factory->user->create() );
-
-		Utility::invoke_hidden_method(
+		$captured_body = Utility::invoke_hidden_method(
 			$instance,
-			'send_event_email_to_recipient',
-			array(
-				array(
-					'is_user'    => true,
-					'user_id'    => $user->ID,
-					'comment_id' => 0,
-					'email'      => $user->user_email,
-					'name'       => $user->display_name,
-				),
-				$event_id,
-				'Thanks for coming.',
-				wp_get_current_user(),
-			)
-		);
-
-		remove_filter( 'pre_wp_mail', $capture_email );
+			'build_event_email',
+			array( $event_id, 'Thanks for coming.', '' )
+		)['body'];
 
 		$this->assertNotEmpty( $captured_body, 'Past-event email body should still be sent.' );
 		$this->assertStringContainsString(
@@ -3654,23 +3777,11 @@ class Test_Rest_Api extends Base {
 	 *
 	 * @since 0.36.0
 	 *
-	 * @covers ::send_event_email_to_recipient
+	 * @covers ::build_event_email
 	 *
 	 * @return void
 	 */
-	public function test_send_event_email_omits_rsvp_cta_when_rsvp_disabled(): void {
-		$captured_body = '';
-		$capture_email = static function ( $preempt, $atts ) use ( &$captured_body ) {
-			$captured_body = $atts['message'] ?? '';
-			return true;
-		};
-		add_filter(
-			'pre_wp_mail',
-			$capture_email,
-			10,
-			2
-		);
-
+	public function test_build_event_email_omits_rsvp_cta_when_rsvp_disabled(): void {
 		Settings::get_instance()->set( 'rsvp_mode', 'per_event_enabled' );
 
 		$instance = Rest_Api::get_instance();
@@ -3689,26 +3800,11 @@ class Test_Rest_Api extends Base {
 		);
 		update_post_meta( $event_id, 'gatherpress_enable_rsvp', '0' );
 
-		$user = get_userdata( $this->factory->user->create() );
-
-		Utility::invoke_hidden_method(
+		$captured_body = Utility::invoke_hidden_method(
 			$instance,
-			'send_event_email_to_recipient',
-			array(
-				array(
-					'is_user'    => true,
-					'user_id'    => $user->ID,
-					'comment_id' => 0,
-					'email'      => $user->user_email,
-					'name'       => $user->display_name,
-				),
-				$event_id,
-				'Event update.',
-				wp_get_current_user(),
-			)
-		);
-
-		remove_filter( 'pre_wp_mail', $capture_email );
+			'build_event_email',
+			array( $event_id, 'Event update.', '' )
+		)['body'];
 
 		$this->assertNotEmpty( $captured_body, 'Email body should still be sent.' );
 		$this->assertStringNotContainsString(
@@ -3719,36 +3815,63 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
-	 * `send_event_email_to_recipient` returns silently when the recipient
-	 * has no email address — protects against malformed recipient rows.
+	 * Direct-invoke coverage for `build_event_email`: a caller-supplied
+	 * subject skips the default branch.
 	 *
-	 * @covers ::send_event_email_to_recipient
+	 * Reflection-invoked because xdebug doesn't reliably trace lines inside
+	 * same-class private helpers called from a closure.
+	 *
+	 * @covers ::build_event_email
 	 *
 	 * @return void
 	 */
-	public function test_send_event_email_to_recipient_skips_when_email_missing(): void {
+	public function test_build_event_email_keeps_supplied_subject(): void {
 		$instance = Rest_Api::get_instance();
-		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
-		$user     = get_userdata( $this->factory->user->create() );
-
-		Utility::invoke_hidden_method(
-			$instance,
-			'send_event_email_to_recipient',
+		$event_id = $this->factory->post->create(
 			array(
-				array(
-					'is_user'    => true,
-					'user_id'    => $user->ID,
-					'comment_id' => 0,
-					'email'      => '',
-					'name'       => $user->display_name,
-				),
-				$event_id,
-				'Test message',
-				wp_get_current_user(),
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => 'Supplied Title',
 			)
 		);
 
-		$this->assertTrue( true, 'Helper returned without sending mail.' );
+		$email = Utility::invoke_hidden_method(
+			$instance,
+			'build_event_email',
+			array( $event_id, 'Hello there.', 'Custom subject' )
+		);
+
+		$this->assertIsArray( $email );
+		$this->assertSame( 'Custom subject', $email['subject'] );
+		$this->assertStringContainsString( 'Hello there.', $email['body'] );
+		$this->assertSame( array( 'Content-Type: text/html; charset=UTF-8' ), $email['headers'] );
+	}
+
+	/**
+	 * Direct-invoke coverage for `build_event_email` — an empty subject falls
+	 * back to the `📅 {title}` default built from the event title.
+	 *
+	 * @covers ::build_event_email
+	 *
+	 * @return void
+	 */
+	public function test_build_event_email_builds_default_subject_from_title(): void {
+		$instance = Rest_Api::get_instance();
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => 'Default Title Event',
+			)
+		);
+
+		$email = Utility::invoke_hidden_method(
+			$instance,
+			'build_event_email',
+			array( $event_id, '', '' )
+		);
+
+		$this->assertIsArray( $email );
+		$this->assertStringContainsString( 'Default Title Event', $email['subject'] );
+		$this->assertStringContainsString( '📅', $email['subject'] );
 	}
 
 	/**
@@ -3825,7 +3948,7 @@ class Test_Rest_Api extends Base {
 
 	/**
 	 * Direct-invoke coverage for `build_comment_recipient` — returns null
-	 * for a comment with no email on file so the caller can skip it.
+	 * for a comment with no valid email on file so the caller can skip it.
 	 *
 	 * @covers ::build_comment_recipient
 	 *
@@ -3847,6 +3970,13 @@ class Test_Rest_Api extends Base {
 		);
 
 		$this->assertNull( $recipient );
+
+		$comment->comment_author_email = 'jane@example';
+
+		$this->assertNull(
+			Utility::invoke_hidden_method( $instance, 'build_comment_recipient', array( $comment ) ),
+			'A malformed address should be skipped too.'
+		);
 	}
 
 	/**

@@ -24,7 +24,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-utility.php:470](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-utility.php#L470)
+- [includes/core/classes/class-utility.php:602](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-utility.php#L602)
 ```php
 apply_filters( 'gatherpress_date_formats', $formats )
 ```

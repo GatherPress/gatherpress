@@ -23,6 +23,7 @@
     "includes/data/*",
     "src/index.js",
     "src/editor.js",
+    "src/email/index.js",
     "src/profile/index.js",
     "src/settings/index.js",
     "src/blocks/*/index.js",

@@ -89,7 +89,7 @@ final class Welcome extends Base {
 	 * The call to action creates an event, so this is the event post type's
 	 * own create capability rather than a fixed one: a companion plugin that
 	 * gives events their own capabilities should not leave the welcome
-	 * offering something the reader cannot do.
+	 * offering something the user cannot do.
 	 *
 	 * @since 0.36.0
 	 *

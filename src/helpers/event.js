@@ -14,7 +14,8 @@ import { __, sprintf } from '@wordpress/i18n';
  */
 import { createMomentWithTimezone, getTimezone } from './datetime';
 import { getPostTypeLabel } from './editor';
-import { getVenueTaxonomy, getVenuePostType } from './venue';
+import { getVenueTaxonomy, getVenuePostType, getOnlineEventTermId } from './venue';
+import { findPublishedPostBySupport } from './post';
 
 /**
  * Opacity value for disabled form fields and elements.
@@ -144,50 +145,10 @@ export function isRsvpPostType( postType = null ) {
  *                       found post isn't published.
  */
 export function findEventPostById( selectFunc, postId ) {
-	if ( ! postId ) {
-		return null;
-	}
-
-	// `context: 'edit'` is required because WP REST only exposes the
-	// `supports` field on post types in the edit context. Without it the
-	// loop below never matches any type and the override silently fails.
-	const postTypes = selectFunc( 'core' ).getPostTypes?.( {
-		per_page: -1,
-		context: 'edit',
-	} );
-	if ( ! Array.isArray( postTypes ) ) {
-		return null;
-	}
-
-	for ( const type of postTypes ) {
-		if ( ! type?.supports?.[ 'gatherpress-event-date' ] ) {
-			continue;
-		}
-		// Query by `include` filter rather than `getEntityRecord( id )` so a
-		// miss returns an empty array (HTTP 200) instead of a 404. The 404s
-		// are technically accurate but they show up in browser devtools and
-		// look like a real bug to anyone reading the console. Edit context
-		// matches the default `getEntityRecord` uses inside the editor and
-		// guarantees full `meta` in the response — callers like the
-		// event-date block read `post.meta.gatherpress_datetime_start`.
-		//
-		// The `Event_Query` REST filter detects the `include` param and
-		// skips its upcoming/past date filter so this lookup catches past
-		// events too (see `Event_Query::rest_query`).
-		const records = selectFunc( 'core' ).getEntityRecords(
-			'postType',
-			type.slug,
-			{ include: [ postId ], context: 'edit', per_page: 1 },
-		);
-		if ( Array.isArray( records ) && 0 < records.length ) {
-			const post = records[ 0 ];
-			if ( 'publish' === post?.status ) {
-				return post;
-			}
-		}
-	}
-
-	return null;
+	// The `Event_Query` REST filter detects the `include` param the lookup
+	// uses and skips its upcoming/past date filter, so past events are found
+	// too (see `Event_Query::rest_query`).
+	return findPublishedPostBySupport( selectFunc, postId, 'gatherpress-event-date' );
 }
 
 /**
@@ -440,20 +401,16 @@ export function hasOnlineEventTerm( postId = null ) {
 		return false;
 	}
 
-	const venueTaxonomy = getVenueTaxonomy( getVenuePostType( eventPostType ) );
-
-	// Get the online-event term ID.
-	const onlineEventTerms = select( 'core' ).getEntityRecords(
-		'taxonomy',
-		venueTaxonomy,
-		{ slug: 'online-event', per_page: 1 },
-	);
-	const onlineEventTermId = onlineEventTerms?.[ 0 ]?.id;
+	// Read the sentinel term ID from editor settings instead of issuing a
+	// taxonomy REST lookup on every render.
+	const venuePostType = getVenuePostType( eventPostType );
+	const onlineEventTermId = getOnlineEventTermId( venuePostType );
 
 	if ( ! onlineEventTermId ) {
 		return false;
 	}
 
+	const venueTaxonomy = getVenueTaxonomy( venuePostType );
 	const venueTaxonomyIds = post
 		? post[ venueTaxonomy ]
 		: select( 'core/editor' ).getEditedPostAttribute( venueTaxonomy );

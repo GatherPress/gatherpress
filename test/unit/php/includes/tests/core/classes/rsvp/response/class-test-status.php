@@ -55,7 +55,7 @@ class Test_Status extends Base {
 	 * The filterable list omits the absence of a response.
 	 *
 	 * `NO_STATUS` carries no term, so offering it as a filter would produce
-	 * an empty result rather than the RSVPs a reader expects.
+	 * an empty result rather than the RSVPs a user expects.
 	 *
 	 * @since 0.36.0
 	 *
