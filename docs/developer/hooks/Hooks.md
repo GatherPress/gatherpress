@@ -27,6 +27,7 @@
 
 ## class-email.php
 
+- [`gatherpress_email_subject`](gatherpress_email_subject.md) Filters the subject of an event email.
 - [`gatherpress_site_message_active_days`](gatherpress_site_message_active_days.md) Filters the choices for how far back an active user's last RSVP can be.
 - [`gatherpress_site_message_subject`](gatherpress_site_message_subject.md) Filters the subject line of a site-wide message.
 
@@ -109,10 +110,6 @@
 - [`gatherpress_geocode_query`](gatherpress_geocode_query.md) Filters the address sent to the geocoder.
 - [`gatherpress_rsvp_comment_query_exclusion`](gatherpress_rsvp_comment_query_exclusion.md) Filters whether RSVP comments should be excluded from a comment query.
 
-## class-rest-api.php
-
-- [`gatherpress_email_subject`](gatherpress_email_subject.md) Filters the event update email subject.
-
 ## class-roles.php
 
 - [`gatherpress_roles`](gatherpress_roles.md) Filter the list of roles for GatherPress.
@@ -120,6 +117,10 @@
 ## class-rsvp-form.php
 
 - [`gatherpress_rsvp_form_schemas`](gatherpress_rsvp_form_schemas.md) Filters the RSVP form schemas about to be stored for a post.
+
+## class-rsvp.php
+
+- [`gatherpress_rsvp_waiting_list_promoted`](gatherpress_rsvp_waiting_list_promoted.md) This action is documented in includes/core/classes/rsvp/class-rsvp.php
 
 ## class-settings.php
 

@@ -36,7 +36,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-mailer.php:551](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-mailer.php#L551)
+- [includes/core/classes/class-mailer.php:578](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-mailer.php#L578)
 ```php
 apply_filters(
 			'gatherpress_email_recipients',
