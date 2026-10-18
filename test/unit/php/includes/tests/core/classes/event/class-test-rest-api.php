@@ -2260,6 +2260,128 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Tests rsvp_status_html checks the session cookie for a logged-out visitor.
+	 *
+	 * The no-cache headers themselves can't be observed, since the PHPUnit
+	 * runner has already sent headers, so the test checks the cookie is read.
+	 *
+	 * @covers ::rsvp_status_html
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_status_html_reads_session_cookie_when_logged_out(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$read    = $this->watch_session_cookie( $post_id );
+
+		wp_set_current_user( 0 );
+
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp-status-html' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'status', 'attending' );
+		$request->set_param( 'block_data', wp_json_encode( array() ) );
+		$request->set_param(
+			'block_signature',
+			Rsvp_Template::sign_template( (string) wp_json_encode( array() ), $post_id )
+		);
+
+		$this->assertInstanceOf( 'WP_REST_Response', Rest_Api::get_instance()->rsvp_status_html( $request ) );
+		$this->assertTrue( $read->read, 'A logged-out request should check the event\'s session cookie.' );
+	}
+
+	/**
+	 * Tests rsvp_responses checks the session cookie for a logged-out visitor.
+	 *
+	 * @covers ::rsvp_responses
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_responses_reads_session_cookie_when_logged_out(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$read    = $this->watch_session_cookie( $post_id );
+
+		wp_set_current_user( 0 );
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'post_id', $post_id );
+
+		$this->assertTrue( Rest_Api::get_instance()->rsvp_responses( $request )->get_data()['success'] );
+		$this->assertTrue( $read->read, 'A logged-out request should check the event\'s session cookie.' );
+	}
+
+	/**
+	 * Tests an organizer's own session cookie doesn't hijack managing another attendee.
+	 *
+	 * @covers ::update_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_update_rsvp_managing_other_ignores_session_cookie(): void {
+		$editor_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		$target_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		$post_id   = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_author' => $editor_id,
+			)
+		);
+
+		( new Event( $post_id ) )->save_datetimes(
+			array(
+				'datetime_start' => '2099-01-01 10:00:00',
+				'datetime_end'   => '2099-01-01 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$guest = ( new Rsvp( $post_id ) )->save( 'guest@example.com', 'attending' );
+		$token = ( new Token( $guest['comment_id'] ) )->generate_token();
+
+		$this->set_rsvp_session_cookie( $post_id, $token->get_token_string() );
+		wp_set_current_user( $editor_id );
+
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'user_id', $target_id );
+		$request->set_param( 'status', 'not_attending' );
+
+		$this->assertTrue( Rest_Api::get_instance()->update_rsvp( $request )->get_data()['success'] );
+		$this->assertSame( 'not_attending', ( new Rsvp( $post_id ) )->get( $target_id )['status'] );
+		$this->assertSame(
+			'attending',
+			( new Rsvp( $post_id ) )->get( 'guest@example.com' )['status'],
+			'The organizer\'s own guest RSVP should be left alone.'
+		);
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * Record whether a request reads an event's session cookie.
+	 *
+	 * @param int $post_id The event's post ID.
+	 *
+	 * @return object{read: bool} Flips `read` to true once the cookie is read.
+	 */
+	private function watch_session_cookie( int $post_id ): object {
+		$watch = (object) array( 'read' => false );
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) use ( $post_id, $watch ) {
+				if ( INPUT_COOKIE === $type && Token::get_cookie_name( $post_id ) === $var_name ) {
+					$watch->read = true;
+				}
+
+				return $pre_value;
+			},
+			10,
+			3
+		);
+
+		return $watch;
+	}
+
+	/**
 	 * Tests handle_rsvp_form_submission with custom fields.
 	 *
 	 * Covers: adding custom fields with gatherpress_custom_ prefix.

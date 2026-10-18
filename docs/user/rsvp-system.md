@@ -29,7 +29,7 @@ While it is enabled sitewide, it can also be switched off for an individual even
 
 When enabled, visitors can RSVP using only their name and email address. An email with a confirmation link is sent to the visitor, and the RSVP is only confirmed after the link is clicked or an administrator approves it manually.
 
-Clicking the link also lets the visitor change their RSVP in that browser until the browser closes. After that, clicking the link in the email again starts a new session, for up to 24 hours after the RSVP.
+Clicking the link also lets the visitor change their RSVP in that browser until the browser closes or 24 hours have passed since the RSVP, whichever comes first. Within those 24 hours, clicking the link in the email again starts a new session.
 
 When disabled:
 
