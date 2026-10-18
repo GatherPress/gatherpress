@@ -231,40 +231,26 @@ class Test_Query extends Base {
 		$this->assertNotContains( $post_2->ID, $results->posts, 'Failed to assert that post ID was not in array.' );
 
 		$results = $instance->get_events_list(
-			'past',
-			2,
-			array( 'unit-test-topic' )
+			array(
+				'event_list_type' => 'past',
+				'number'          => 2,
+				'topics'          => array( 'unit-test-topic' ),
+			)
 		);
 
 		$this->assertContains( $post_1->ID, $results->posts, 'Failed to assert that post ID was in array.' );
 		$this->assertNotContains( $post_2->ID, $results->posts, 'Failed to assert that post ID was not in array.' );
 
 		$results = $instance->get_events_list(
-			'past',
-			2,
-			array(),
-			array( '_unit-test-venue' )
+			array(
+				'event_list_type' => 'past',
+				'number'          => 2,
+				'venues'          => array( '_unit-test-venue' ),
+			)
 		);
 
 		$this->assertContains( $post_1->ID, $results->posts, 'Failed to assert that post ID was in array.' );
 		$this->assertNotContains( $post_2->ID, $results->posts, 'Failed to assert that post ID was not in array.' );
-	}
-
-	/**
-	 * Coverage for the legacy positional signature of get_events_list.
-	 *
-	 * @covers ::get_events_list
-	 *
-	 * @return void
-	 */
-	public function test_get_events_list_legacy_signature(): void {
-		$instance = Query::get_instance();
-
-		$results = $instance->get_events_list( 'upcoming', 1 );
-
-		$this->assertSame( 'upcoming', $results->query[ Query::EVENT_QUERY_PARAM ] );
-		$this->assertSame( 1, $results->query['posts_per_page'] );
-		$this->assertSame( 'ASC', $results->query['order'] );
 	}
 
 	/**

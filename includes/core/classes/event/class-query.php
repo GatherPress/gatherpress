@@ -140,34 +140,28 @@ final class Query {
 	 * a WordPress query object.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Takes an args array instead of positional parameters.
 	 *
-	 * @param string|array<string, mixed> $args   Event query arguments, or the event list type for the legacy
-	 *                                            positional signature. Recognized keys are `event_list_type`,
-	 *                                            `number`, `topics` and `venues`.
-	 * @param int                         $number Maximum number of events to retrieve.
-	 * @param string[]                    $topics Array of topic slugs for additional filtering.
-	 * @param string[]                    $venues Array of venue slugs for additional filtering.
+	 * @param array<string, mixed> $args {
+	 *     Event query arguments.
+	 *
+	 *     @type string   $event_list_type Type of event list: 'upcoming' or 'past'.
+	 *     @type int      $number          Maximum number of events to retrieve. Default 5.
+	 *     @type string[] $topics          Topic slugs for additional filtering.
+	 *     @type string[] $venues          Venue slugs for additional filtering.
+	 * }
 	 *
 	 * @return WP_Query A WordPress query object containing the list of events.
 	 */
-	public function get_events_list(
-		array|string $args = '',
-		int $number = 5,
-		array $topics = array(),
-		array $venues = array()
-	): WP_Query {
-		if ( is_array( $args ) ) {
-			$event_list_type = isset( $args['event_list_type'] ) && is_string( $args['event_list_type'] )
-				? $args['event_list_type']
-				: '';
-			$number          = isset( $args['number'] ) && is_numeric( $args['number'] )
-				? (int) $args['number']
-				: 5;
-			$topics          = $this->normalize_slug_list( $args['topics'] ?? array() );
-			$venues          = $this->normalize_slug_list( $args['venues'] ?? array() );
-		} else {
-			$event_list_type = $args;
-		}
+	public function get_events_list( array $args = array() ): WP_Query {
+		$event_list_type = isset( $args['event_list_type'] ) && is_string( $args['event_list_type'] )
+			? $args['event_list_type']
+			: '';
+		$number          = isset( $args['number'] ) && is_numeric( $args['number'] )
+			? (int) $args['number']
+			: 5;
+		$topics          = $this->normalize_slug_list( $args['topics'] ?? array() );
+		$venues          = $this->normalize_slug_list( $args['venues'] ?? array() );
 
 		// Past events should be ordered DESC (most recent first),
 		// upcoming events should be ordered ASC (soonest first).
