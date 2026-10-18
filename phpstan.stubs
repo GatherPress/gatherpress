@@ -51,6 +51,7 @@ namespace {
      * current class so `class_alias` can resolve it.
      */
     if ( ! class_exists( 'GatherPress\\Core\\Event', false ) ) {
+        require_once __DIR__ . '/includes/core/classes/traits/class-has-capabilities.php';
         require_once __DIR__ . '/includes/core/classes/event/class-event.php';
         class_alias( 'GatherPress\\Core\\Event\\Event', 'GatherPress\\Core\\Event' );
     }
@@ -66,6 +67,7 @@ namespace {
     }
 
     if ( ! class_exists( 'GatherPress\\Core\\Venue', false ) ) {
+        require_once __DIR__ . '/includes/core/classes/traits/class-has-capabilities.php';
         require_once __DIR__ . '/includes/core/classes/venue/class-venue.php';
         class_alias( 'GatherPress\\Core\\Venue\\Venue', 'GatherPress\\Core\\Venue' );
     }
