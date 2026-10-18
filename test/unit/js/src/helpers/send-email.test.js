@@ -67,7 +67,7 @@ function renderForm( message = 'Hello everyone', rsvp = true ) {
 			${ active }
 			<input id="gatherpress-message-subject" value="Hi" />
 			<textarea id="gatherpress-message-body"></textarea>
-			<output class="gatherpress-send-email__status ${ HIDDEN_CLASS }">
+			<output class="gatherpress-send-email__status">
 				<span class="spinner"></span>
 				<span class="gatherpress-send-email__status-text"></span>
 			</output>
@@ -359,7 +359,6 @@ describe( 'send-email', () => {
 			await sendMessage( elements );
 
 			expect( statusText() ).toBe( 'Queued for 2 users.' );
-			expect( elements.status.classList ).not.toContain( HIDDEN_CLASS );
 			expect(
 				elements.status.querySelector( '.spinner' ).classList,
 			).not.toContain( 'is-active' );
@@ -444,7 +443,7 @@ describe( 'send-email', () => {
 			await sendMessage( elements );
 
 			expect( apiFetch ).not.toHaveBeenCalled();
-			expect( elements.status.classList ).toContain( HIDDEN_CLASS );
+			expect( statusText() ).toBe( '' );
 		} );
 
 		it( 'shows the error the server returns', async () => {

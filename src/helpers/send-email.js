@@ -19,6 +19,9 @@ let latestCount = 0;
 /**
  * Show a status line under the Send Email form.
  *
+ * The status line stays in the page while empty, so a screen reader is
+ * already watching it when the first message arrives.
+ *
  * @since TBD
  *
  * @param {HTMLElement} status The status output element.
@@ -28,7 +31,6 @@ let latestCount = 0;
  * @return {void}
  */
 function showStatus( status, text, busy ) {
-	status.classList.remove( HIDDEN_CLASS );
 	status.querySelector( '.spinner' ).classList.toggle( 'is-active', busy );
 	status.querySelector( '.gatherpress-send-email__status-text' ).textContent =
 		text;
