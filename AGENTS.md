@@ -597,19 +597,19 @@ Editor code published for companion plugins follows one naming rule, set out in 
 
 #### Units
 
-Three units, picked by what the value has to track. The split already holds across `src/`: the front-end block stylesheets are `rem`-dominant, the admin and editor stylesheets are `px`-dominant, and `em` shows up only where a value belongs with its text.
+Three units, picked by what the value has to track. The split holds across `src/`: the front-end block stylesheets and the admin stylesheets use `rem`, the editor stylesheets are `px`-dominant, and `em` shows up only where a value belongs with its text.
 
-- **`rem` for layout and block-level spacing on the front end**: gaps, block margins, widths, max-widths. It does not compound through nesting, so a field wrapper's `margin-bottom` means the same thing wherever the block lands.
+- **`rem` for layout and spacing on the front end and in admin screens**: gaps, margins, padding, widths, max-widths, and font sizes in admin. It does not compound through nesting, so a field wrapper's `margin-bottom` means the same thing wherever the block lands. The admin stylesheets are `src/admin.scss`, `src/settings/style.scss` and `src/profile/style.scss`.
     - ✅ Good: `gap: 0.5rem;` / `margin-bottom: 1rem;` / `max-width: 28rem;`
-    - ❌ Bad: `gap: 8px;` in a front-end block stylesheet.
+    - ❌ Bad: `gap: 8px;` in a front-end block stylesheet or an admin stylesheet.
 - **`em` for values that have to track the text they sit with**: `font-size`, and the tight gap between a control and the caption under it.
     - ✅ Good: `font-size: 0.875em;` on a caption, and `margin: 0.25em 0 0;` shared by `.gatherpress-help-text` and the validation message that occupies the same slot.
     - **Know what `em` resolves against before reaching for it.** `font-size` in `em` resolves against the *parent's* font size; every other property resolves against the element's *own*. The Form Field block applies `inputFontSize` as an inline style on the `<input>`, so an `em` on a sibling caption tracks the field wrapper, not the input. It follows the surrounding content, which is usually what you want, but it is not "scales with the field".
 - **`px` for hairlines, chrome, and breakpoints**: borders, `box-shadow`, `outline`, `outline-offset`, small `border-radius`, arrow and caret sizes, media queries, and the `1px` / `-1px` of the screen-reader clip rectangle in `src/utility.scss`.
     - ✅ Good: `border: 1px solid;` / `box-shadow: 0 2px 8px rgb(0 0 0 / 15%);` / `@media screen and (width <= 782px)`
     - Also `px` when the number is an asset's intrinsic size rather than a layout measurement, such as capping a Gravatar requested at 96 with `max-width: 96px`. Say so in a comment, because it reads like a layout value otherwise.
-- **`px` throughout admin and editor stylesheets**, matching WordPress core's own pixel grid: `src/admin.scss`, `src/components/PatternPicker/index.scss`, every `editor.scss`, and any rule targeting a `.components-*` class. A `rem` in one of those files is out of place rather than a modernization.
-    - The exception is a value copied from core so the two line up. `src/admin.scss` gives the plugin-row warning `margin-top: 1em` because core's `.requires` uses `1em`, and the comment above it says so. Match core's unit, not the file's.
+- **`px` throughout editor stylesheets**, matching the block editor's own pixel grid: every `editor.scss` and `src/components/PatternPicker/index.scss`. A `rem` in one of those files is out of place rather than a modernization.
+- **A value copied from core keeps core's unit, in any stylesheet**, so the two keep lining up, and a comment says so. `src/admin.scss` gives the plugin-row warning `margin-top: 1em` because core's `.requires` uses `1em`, and keeps the RSVP filters' 32px control heights and the Welcome notice's dismiss offsets in `px` to match core's controls and notice padding.
 
 #### CSS custom properties
 
@@ -664,7 +664,7 @@ A11y rules that fire frequently and have known-good fixes specific to this codeb
     </div>
     ```
 
-    The CSS is class-based (`display: grid; grid-template-columns: 200px 1fr;` with a 782px mobile breakpoint that stacks) and lives in `src/admin.scss`, which loads on every admin screen, so a template only needs the markup. Tables emitted by `do_settings_sections()` (WP core) are out of scope. Those need custom section/field renderers to reshape, which isn't worth doing for a Sonar finding.
+    The CSS is class-based (`display: grid; grid-template-columns: 12.5rem 1fr;` with a 782px mobile breakpoint that stacks) and lives in `src/admin.scss`, which loads on every admin screen, so a template only needs the markup. Tables emitted by `do_settings_sections()` (WP core) are out of scope. Those need custom section/field renderers to reshape, which isn't worth doing for a Sonar finding.
 - **ARIA combobox-with-listbox-popup pattern is correct for autocomplete: file Sonar's `<select>`/`<datalist>` suggestion as won't-fix** (`Web:S6817` and friends). Sonar's recommendations don't fit free-text autocomplete with custom-rendered items. The W3C ARIA Authoring Practices Guide combobox pattern is what this codebase uses and what AT expects. Required wiring on the input element:
     - `role="combobox"`, `aria-autocomplete="list"`, `aria-expanded={ panelOpen }`, `aria-controls={ panelOpen ? listboxId : undefined }`, `aria-activedescendant={ activeId }`, plus an accessible name (`aria-label` or wrapped `<label>`).
     - The popup uses `<div role="listbox" id={ listboxId } aria-label="...">` (use a `<div>`, not `<ul>`. See next bullet) with each option as `<button role="option" id={ optionId } aria-selected={ isActive } tabIndex={ -1 }>`.
