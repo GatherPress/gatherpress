@@ -107,6 +107,7 @@
 
 ## class-query.php
 
+- [`gatherpress_event_query_vars`](gatherpress_event_query_vars.md) Filters the query vars of a query that lists upcoming or past events.
 - [`gatherpress_geocode_query`](gatherpress_geocode_query.md) Filters the address sent to the geocoder.
 - [`gatherpress_rsvp_comment_query_exclusion`](gatherpress_rsvp_comment_query_exclusion.md) Filters whether RSVP comments should be excluded from a comment query.
 
