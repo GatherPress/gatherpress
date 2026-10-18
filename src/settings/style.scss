@@ -58,6 +58,18 @@
 	}
 }
 
+// A label stacked above its input, spaced like the rest of the settings table.
+.gatherpress-settings-field__label {
+	display: block;
+	margin-bottom: 0.5rem;
+}
+
+// Core gives the first radio's paragraph a 4px top margin, which together
+// with this makes the same gap as a label's.
+.gatherpress-format-field legend {
+	margin-bottom: 0.25rem;
+}
+
 .gatherpress-field-inherited {
 	opacity: 0.6;
 	pointer-events: none;

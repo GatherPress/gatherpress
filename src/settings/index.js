@@ -10,6 +10,7 @@ import Autocomplete from '../components/Autocomplete';
 import { dateTimePreview } from '../helpers/datetime';
 import { urlRewritePreview } from '../helpers/urlrewrite';
 import { initShowIfDependencies } from '../helpers/settings-show-if';
+import { initFormatFields } from '../helpers/settings-format-field';
 import { initSettingsTools } from '../helpers/settings-tools';
 import { initNetworkAllowlist } from '../helpers/network-allowlist';
 
@@ -75,6 +76,14 @@ urlRewritePreview();
  * @since 0.27.0
  */
 initShowIfDependencies();
+
+/**
+ * Date Format and Time Format fields that fill their Custom field and preview
+ * from the format picked, as on Settings > General.
+ *
+ * @since TBD
+ */
+initFormatFields();
 
 /**
  * Import and export on the Tools tab, per site and at Network Admin.

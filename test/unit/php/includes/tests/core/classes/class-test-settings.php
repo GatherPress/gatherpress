@@ -606,7 +606,7 @@ class Test_Settings extends Base {
 		);
 
 		$this->assertStringContainsString(
-			'<label for="gatherpress_option">Unit test</label>',
+			'<label class="gatherpress-settings-field__label" for="gatherpress_option">Unit test</label>',
 			$text,
 			'Failed to assert that label matches.'
 		);
@@ -828,7 +828,7 @@ class Test_Settings extends Base {
 		);
 
 		$this->assertStringContainsString(
-			'<label for="gatherpress_option">Unit test</label>',
+			'<label class="gatherpress-settings-field__label" for="gatherpress_option">Unit test</label>',
 			$text,
 			'Failed to assert that label matches.'
 		);
@@ -1281,10 +1281,11 @@ class Test_Settings extends Base {
 		);
 
 		$this->assertStringContainsString(
-			'Unit test',
+			'<label class="gatherpress-settings-field__label" for="gatherpress_option">Unit test</label>',
 			$select,
-			'Failed to assert that label matches.'
+			'Failed to assert the select label is spaced like the other fields.'
 		);
+		$this->assertStringNotContainsString( '<br/>', $select, 'Failed to assert the label needs no line break.' );
 	}
 
 	/**
@@ -4155,6 +4156,65 @@ class Test_Settings extends Base {
 			sprintf( 'value="%s" checked', esc_attr( Format_Field::CUSTOM ) ),
 			$collapsed,
 			'Failed to assert the Custom radio is the one selected.'
+		);
+	}
+
+	/**
+	 * A listed format fills the Custom field and the preview too, as on Settings > General.
+	 *
+	 * @covers ::render_field
+	 *
+	 * @return void
+	 */
+	public function test_render_field_format_fills_custom_with_a_listed_format(): void {
+		$instance = Settings::get_instance();
+
+		update_option( 'gatherpress_settings', array( 'date_format' => 'F j, Y' ) );
+
+		$html = Utility::buffer_and_return(
+			array( $instance, 'render_field' ),
+			array(
+				'date_format',
+				array(
+					'field' => array(
+						'type'    => 'format',
+						'label'   => 'Unit test',
+						'options' => array( 'choices' => 'date' ),
+						'preview' => array( 'template' => 'datetime-preview' ),
+					),
+				),
+			)
+		);
+
+		delete_option( 'gatherpress_settings' );
+
+		$collapsed = (string) preg_replace( '/\s+/', ' ', $html );
+
+		$this->assertStringContainsString(
+			'name="gatherpress_settings[date_format_custom]" value="F j, Y"',
+			$collapsed,
+			'Failed to assert the listed format fills the Custom field.'
+		);
+		$this->assertStringContainsString(
+			'data-gatherpress_component_name="format-field"',
+			$collapsed,
+			'Failed to assert the field is wired up for the settings script.'
+		);
+		$this->assertStringContainsString(
+			esc_attr(
+				htmlspecialchars(
+					(string) wp_json_encode(
+						array(
+							'name'  => 'gatherpress_settings[date_format_custom]',
+							'value' => 'F j, Y',
+						)
+					),
+					ENT_QUOTES,
+					'UTF-8'
+				)
+			),
+			$collapsed,
+			'Failed to assert the preview shows the listed format.'
 		);
 	}
 
