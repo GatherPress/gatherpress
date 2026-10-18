@@ -1278,7 +1278,7 @@ class Test_Rest_Api extends Base {
 		$request = new WP_REST_Request( 'POST' );
 		$request->set_param( 'post_id', $post_id );
 		$request->set_param( 'status', 'not_attending' );
-		$request->set_param( Token::NAME, sprintf( '%d_%s', $user_record['comment_id'], $token_value ) );
+		$this->set_rsvp_session_cookie( $post_id, sprintf( '%d_%s', $user_record['comment_id'], $token_value ) );
 
 		$response = $instance->update_rsvp( $request );
 		$data     = $response->get_data();
@@ -1484,9 +1484,9 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
-	 * Tests rsvp_route permission callback with valid RSVP token.
+	 * Tests rsvp_route permission callback with a valid RSVP session cookie.
 	 *
-	 * Covers: permission callback returning true when valid token is provided.
+	 * Covers: permission callback returning true when the cookie holds a valid token.
 	 *
 	 * @covers ::rsvp_route
 	 */
@@ -1511,23 +1511,24 @@ class Test_Rest_Api extends Base {
 		$token_value = $rsvp_token->get_token();
 		$token_str   = sprintf( '%d_%s', $user_record['comment_id'], $token_value );
 
-		// Create request with token for the event the token was issued against.
+		// Send the session cookie for the event the token was issued against.
+		$this->set_rsvp_session_cookie( $post_id, $token_str );
+
 		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
-		$request->set_param( Token::NAME, $token_str );
 		$request->set_param( 'post_id', $post_id );
 
 		// Call the permission callback.
 		$permission_callback = $route['args']['permission_callback'];
 		$result              = call_user_func( $permission_callback, $request );
 
-		$this->assertTrue( $result, 'Permission callback should return true with valid RSVP token' );
+		$this->assertTrue( $result, 'Permission callback should return true with a valid RSVP session cookie' );
 	}
 
 	/**
 	 * Tests a magic-link attendee can change their RSVP through the REST route.
 	 *
 	 * The request is dispatched through the REST server, so the permission
-	 * callback runs, with the token in the body parameter the RSVP block sends.
+	 * callback runs, with the token in the session cookie the browser sends.
 	 *
 	 * @since 0.36.0
 	 * @covers ::rsvp_route
@@ -1551,15 +1552,18 @@ class Test_Rest_Api extends Base {
 		$rsvp_token->generate_token();
 
 		wp_set_current_user( 0 );
+		$this->set_rsvp_session_cookie(
+			$post_id,
+			sprintf( '%d_%s', $user_record['comment_id'], $rsvp_token->get_token() )
+		);
 
 		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
 		$request->set_header( 'Content-Type', 'application/json' );
 		$request->set_body(
 			wp_json_encode(
 				array(
-					'post_id'   => $post_id,
-					'status'    => 'not_attending',
-					Token::NAME => sprintf( '%d_%s', $user_record['comment_id'], $rsvp_token->get_token() ),
+					'post_id' => $post_id,
+					'status'  => 'not_attending',
 				)
 			)
 		);
@@ -1611,15 +1615,18 @@ class Test_Rest_Api extends Base {
 		$rsvp_token->generate_token();
 
 		wp_set_current_user( 0 );
+		$this->set_rsvp_session_cookie(
+			$post_id,
+			sprintf( '%d_%s', $user_record['comment_id'], $rsvp_token->get_token() )
+		);
 
 		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
 		$request->set_header( 'Content-Type', 'application/json' );
 		$request->set_body(
 			wp_json_encode(
 				array(
-					'post_id'   => $post_id,
-					'status'    => 'attending',
-					Token::NAME => sprintf( '%d_%s', $user_record['comment_id'], $rsvp_token->get_token() ),
+					'post_id' => $post_id,
+					'status'  => 'attending',
 				)
 			)
 		);
@@ -1641,8 +1648,8 @@ class Test_Rest_Api extends Base {
 	/**
 	 * Tests a magic-link attendee gets the online event link back after an RSVP change.
 	 *
-	 * The page sends the token in the request body, not in the URL, so the
-	 * link has to be built for the token's attendee.
+	 * The session cookie, not the URL, carries the token, so the link has to
+	 * be built for the token's attendee.
 	 *
 	 * @since 0.36.0
 	 * @covers ::update_rsvp
@@ -1667,15 +1674,18 @@ class Test_Rest_Api extends Base {
 		$rsvp_token->generate_token();
 
 		wp_set_current_user( 0 );
+		$this->set_rsvp_session_cookie(
+			$post_id,
+			sprintf( '%d_%s', $user_record['comment_id'], $rsvp_token->get_token() )
+		);
 
 		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
 		$request->set_header( 'Content-Type', 'application/json' );
 		$request->set_body(
 			wp_json_encode(
 				array(
-					'post_id'   => $post_id,
-					'status'    => 'attending',
-					Token::NAME => sprintf( '%d_%s', $user_record['comment_id'], $rsvp_token->get_token() ),
+					'post_id' => $post_id,
+					'status'  => 'attending',
 				)
 			)
 		);
@@ -1692,7 +1702,7 @@ class Test_Rest_Api extends Base {
 
 	/**
 	 * A token issued for one event does not authorize a request against a
-	 * different event.
+	 * different event, even in that event's cookie.
 	 *
 	 * @covers ::rsvp_route
 	 *
@@ -1717,8 +1727,10 @@ class Test_Rest_Api extends Base {
 
 		wp_set_current_user( 0 );
 
+		// The other event's cookie name, holding this event's token.
+		$this->set_rsvp_session_cookie( $other_event, $token_str );
+
 		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
-		$request->set_param( Token::NAME, $token_str );
 		$request->set_param( 'post_id', $other_event );
 
 		$this->assertFalse(
@@ -2004,23 +2016,6 @@ class Test_Rest_Api extends Base {
 		);
 
 		wp_set_current_user( 0 );
-	}
-
-	/**
-	 * Tests rsvp_route validate callback for rsvp_token with empty token.
-	 *
-	 * Covers: validate callback returning false for empty token.
-	 *
-	 * @covers ::rsvp_route
-	 */
-	public function test_rsvp_route_token_validate_callback_empty(): void {
-		$instance = Rest_Api::get_instance();
-		$route    = Utility::invoke_hidden_method( $instance, 'rsvp_route' );
-
-		$validate_callback = $route['args']['args'][ Token::NAME ]['validate_callback'];
-		$result            = call_user_func( $validate_callback, '' );
-
-		$this->assertFalse( $result, 'Validate callback should return false for empty token' );
 	}
 
 	/**

@@ -244,7 +244,6 @@ export const getNonce = ( () => {
  * @param {string}      args.status            - The RSVP status (`attending`, `not_attending`, etc.).
  * @param {number}      [args.guests=0]        - The number of additional guests.
  * @param {boolean}     [args.anonymous=false] - Whether the RSVP is anonymous.
- * @param {string}      [args.rsvpToken]       - Optional RSVP token for anonymous users.
  * @param {Object}      [state=null]           - A state object to update with the API response data.
  * @param {Function}    [onSuccess=null]       - A callback function to execute on a successful API response.
  *                                             Receives the API response as its argument.
@@ -298,7 +297,6 @@ export async function sendRsvpApiRequest(
 					status: args.status,
 					guests: args.guests,
 					anonymous: args.anonymous,
-					rsvp_token: args.rsvpToken,
 				} ),
 			},
 		);

@@ -798,97 +798,6 @@ class Test_Token extends Base {
 	}
 
 	/**
-	 * Coverage for send_rsvp_confirmation_email method.
-	 *
-	 * @covers ::send_rsvp_confirmation_email
-	 * @covers ::prepare_email_data
-	 * @covers ::render_email_template
-	 *
-	 * @return void
-	 */
-	public function test_send_rsvp_confirmation_email(): void {
-		$post = $this->mock->post(
-			array(
-				'post_type'  => Event::POST_TYPE,
-				'post_title' => 'Test Event',
-			)
-		)->get();
-
-		$email      = 'test@example.com';
-		$comment_id = $this->factory->comment->create(
-			array(
-				'comment_post_ID'      => $post->ID,
-				'comment_type'         => Rsvp::COMMENT_TYPE,
-				'comment_author_email' => $email,
-			)
-		);
-
-		$token = new Token( $comment_id );
-		$token->generate_token();
-
-		// Mock wp_mail to return true.
-		add_filter( 'pre_wp_mail', '__return_true' );
-
-		$result = $token->send_rsvp_confirmation_email();
-		$this->assertTrue( $result );
-
-		// Remove the filter.
-		remove_filter( 'pre_wp_mail', '__return_true' );
-	}
-
-	/**
-	 * Coverage for send_rsvp_confirmation_email method with no email.
-	 *
-	 * @covers ::send_rsvp_confirmation_email
-	 *
-	 * @return void
-	 */
-	public function test_send_rsvp_confirmation_email_with_no_email(): void {
-		$post = $this->mock->post(
-			array(
-				'post_type' => Event::POST_TYPE,
-			)
-		)->get();
-
-		$comment_id = $this->factory->comment->create(
-			array(
-				'comment_post_ID'      => $post->ID,
-				'comment_type'         => Rsvp::COMMENT_TYPE,
-				'comment_author_email' => '',
-			)
-		);
-
-		$token = new Token( $comment_id );
-		$this->assertFalse( $token->send_rsvp_confirmation_email() );
-	}
-
-	/**
-	 * Coverage for send_rsvp_confirmation_email method with a malformed email.
-	 *
-	 * @covers ::send_rsvp_confirmation_email
-	 *
-	 * @return void
-	 */
-	public function test_send_rsvp_confirmation_email_with_malformed_email(): void {
-		$post = $this->mock->post(
-			array(
-				'post_type' => Event::POST_TYPE,
-			)
-		)->get();
-
-		$comment_id = $this->factory->comment->create(
-			array(
-				'comment_post_ID'      => $post->ID,
-				'comment_type'         => Rsvp::COMMENT_TYPE,
-				'comment_author_email' => 'jane@example',
-			)
-		);
-
-		$token = new Token( $comment_id );
-		$this->assertFalse( $token->send_rsvp_confirmation_email() );
-	}
-
-	/**
 	 * Coverage for class constants.
 	 *
 	 * @return void
@@ -897,6 +806,7 @@ class Test_Token extends Base {
 		$this->assertEquals( 'rsvp_token', Token::NAME );
 		$this->assertEquals( 32, Token::TOKEN_LENGTH );
 		$this->assertEquals( '_', Token::META_KEY_PREFIX );
+		$this->assertEquals( 'gatherpress_rsvp_token_', Token::COOKIE_PREFIX );
 	}
 
 	/**
@@ -1285,6 +1195,97 @@ class Test_Token extends Base {
 
 		// Clean up filters.
 		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
+
+	/**
+	 * Coverage for from_cookie, which only accepts a token for its own event.
+	 *
+	 * @covers ::from_cookie
+	 * @covers ::get_cookie_name
+	 *
+	 * @return void
+	 */
+	public function test_from_cookie(): void {
+		$post_id    = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$other_id   = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$comment_id = $this->factory()->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+		$token      = ( new Token( $comment_id ) )->generate_token();
+
+		$this->assertNull( Token::from_cookie( $post_id ), 'No cookie means no token.' );
+
+		$this->set_rsvp_session_cookie( $post_id, $token->get_token_string() );
+		$this->set_rsvp_session_cookie( $other_id, $token->get_token_string() );
+
+		$this->assertSame( $comment_id, (int) Token::from_cookie( $post_id )->get_comment()->comment_ID );
+		$this->assertNull(
+			Token::from_cookie( $other_id ),
+			'A token in another event\'s cookie must not vouch for that event.'
+		);
+		$this->assertSame( 'gatherpress_rsvp_token_' . $post_id, Token::get_cookie_name( $post_id ) );
+	}
+
+	/**
+	 * Coverage for has_session_cookie.
+	 *
+	 * @covers ::has_session_cookie
+	 *
+	 * @return void
+	 */
+	public function test_has_session_cookie(): void {
+		$this->assertFalse( Token::has_session_cookie() );
+
+		$_COOKIE['gatherpress_rsvp_token_123'] = '1_token';
+
+		$this->assertTrue( Token::has_session_cookie() );
+
+		unset( $_COOKIE['gatherpress_rsvp_token_123'] );
+	}
+
+	/**
+	 * Coverage for get_cookie_options.
+	 *
+	 * @covers ::get_cookie_options
+	 *
+	 * @return void
+	 */
+	public function test_get_cookie_options(): void {
+		$options = Token::get_cookie_options();
+
+		$this->assertSame( 0, $options['expires'], 'A session cookie has no expiry.' );
+		$this->assertSame( COOKIEPATH, $options['path'] );
+		$this->assertSame( COOKIE_DOMAIN ? COOKIE_DOMAIN : '', $options['domain'] );
+		$this->assertSame( is_ssl(), $options['secure'] );
+		$this->assertTrue( $options['httponly'] );
+		$this->assertSame( 'Lax', $options['samesite'] );
+	}
+
+	/**
+	 * Coverage for get_token_string.
+	 *
+	 * @covers ::get_token_string
+	 *
+	 * @return void
+	 */
+	public function test_get_token_string(): void {
+		$comment_id = $this->factory()->comment->create(
+			array(
+				'comment_post_ID' => $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) ),
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+		$token      = new Token( $comment_id );
+
+		$this->assertSame( '', $token->get_token_string(), 'Without a token there is nothing to carry.' );
+		$this->assertSame( '', ( new Token( 0 ) )->get_token_string(), 'Without a comment there is nothing to carry.' );
+
+		$token->generate_token();
+
+		$this->assertSame( sprintf( '%d_%s', $comment_id, $token->get_token() ), $token->get_token_string() );
 	}
 
 	/**

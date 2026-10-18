@@ -9,6 +9,7 @@
 namespace GatherPress\Tests;
 
 use GatherPress\Core\Mailer;
+use GatherPress\Core\Rsvp\Token;
 use PMC\Unit_Test\Base as PMC_Base;
 use ReflectionException;
 use ReflectionMethod;
@@ -204,6 +205,26 @@ abstract class Base extends PMC_Base {
 				Mailer::get_instance()->process_job( ...$job[1] );
 			}
 		} while ( ! empty( $jobs ) );
+	}
+
+	/**
+	 * Give the request an event's RSVP session cookie, as the browser sends it.
+	 *
+	 * @since TBD
+	 *
+	 * @param int    $post_id      The event's post ID.
+	 * @param string $token_string The `{comment_id}_{token}` string the cookie holds.
+	 *
+	 * @return void
+	 */
+	public function set_rsvp_session_cookie( int $post_id, string $token_string ): void {
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static fn( $pre_value, int $type, string $var_name ) => INPUT_COOKIE === $type
+				&& Token::get_cookie_name( $post_id ) === $var_name ? $token_string : $pre_value,
+			10,
+			3
+		);
 	}
 
 	/**

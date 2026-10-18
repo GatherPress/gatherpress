@@ -289,9 +289,9 @@ final class Form {
 			// Process all fields.
 			$this->process_fields( $comment_id, $data );
 
-			// Generate and send confirmation email.
-			$rsvp_token = new Token( $comment_id );
-			$rsvp_token->generate_token()->send_rsvp_confirmation_email();
+			// Generate the token and queue the confirmation email.
+			( new Token( $comment_id ) )->generate_token();
+			Email::get_instance()->queue_confirmation( $comment_id );
 		}
 	}
 
@@ -695,9 +695,9 @@ final class Form {
 		// Process all fields.
 		$this->process_fields( $comment_id, $data );
 
-		// Generate and send confirmation email.
-		$rsvp_token = new Token( $comment_id );
-		$rsvp_token->generate_token()->send_rsvp_confirmation_email();
+		// Generate the token and queue the confirmation email.
+		( new Token( $comment_id ) )->generate_token();
+		Email::get_instance()->queue_confirmation( $comment_id );
 
 		return array(
 			'success'    => true,
