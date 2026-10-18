@@ -13,8 +13,14 @@ import { REST_NAMESPACE } from './namespace';
 const HIDDEN_CLASS = 'gatherpress--is-hidden';
 const SETTINGS_PATH = `/${ REST_NAMESPACE }/settings`;
 
+// Each file read takes a number, so a slow read can't replace a newer one.
+let latestPreview = 0;
+
 /**
  * Show a status line under the Import Settings button.
+ *
+ * The status line stays in the page while empty, so a screen reader is
+ * already watching it when the first message arrives.
  *
  * @since TBD
  *
@@ -25,7 +31,6 @@ const SETTINGS_PATH = `/${ REST_NAMESPACE }/settings`;
  * @return {void}
  */
 function showStatus( status, text, busy ) {
-	status.classList.remove( HIDDEN_CLASS );
 	status.querySelector( '.spinner' ).classList.toggle( 'is-active', busy );
 	status.querySelector( '.gatherpress-settings-tools__status-text' ).textContent =
 		text;
@@ -227,6 +232,7 @@ export async function exportSettings( { scope, status } ) {
 export async function previewImport( elements ) {
 	const { file, preview, previewContent, importButton } = elements;
 	const chosen = file.files[ 0 ];
+	const request = ++latestPreview;
 
 	elements.importData = null;
 	importButton.disabled = true;
@@ -236,11 +242,24 @@ export async function previewImport( elements ) {
 		return;
 	}
 
+	let data = null;
+
 	try {
-		elements.importData = JSON.parse( await chosen.text() );
-		renderPreview( previewContent, elements.importData );
-		importButton.disabled = false;
+		data = JSON.parse( await chosen.text() );
 	} catch {
+		// Shown as an invalid file below.
+	}
+
+	// Another file was chosen while this one was read, and that one wins.
+	if ( request !== latestPreview ) {
+		return;
+	}
+
+	if ( data ) {
+		elements.importData = data;
+		renderPreview( previewContent, data );
+		importButton.disabled = false;
+	} else {
 		const error = document.createElement( 'p' );
 
 		error.className = 'gatherpress-settings-tools__error';

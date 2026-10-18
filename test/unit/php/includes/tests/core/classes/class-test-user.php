@@ -149,6 +149,11 @@ class Test_User extends Base {
 			$markup,
 			"12-hour option was expected to be selected but wasn't"
 		);
+		$this->assertStringContainsString(
+			'class="gatherpress-profile__time-formatting"',
+			$markup,
+			'The profile time-formatting wrapper should be present.'
+		);
 	}
 
 	/**

@@ -50,7 +50,7 @@ function renderTools( scope = 'blog' ) {
 				<div class="gatherpress-settings-tools__preview-content"></div>
 			</div>
 			<button type="button" class="gatherpress-settings-tools__import" disabled>Import</button>
-			<output class="gatherpress-settings-tools__status ${ HIDDEN_CLASS }">
+			<output class="gatherpress-settings-tools__status">
 				<span class="spinner"></span>
 				<span class="gatherpress-settings-tools__status-text"></span>
 			</output>
@@ -283,6 +283,35 @@ describe( 'previewImport', () => {
 			).textContent,
 		).toBe( 'Invalid JSON file.' );
 		expect( elements.preview.classList.contains( HIDDEN_CLASS ) ).toBe( false );
+	} );
+
+	it( 'ignores a slow read once a newer file is chosen', async () => {
+		const elements = getElements( renderTools() );
+		let finishOld;
+
+		Object.defineProperty( elements.file, 'files', {
+			configurable: true,
+			value: [
+				{
+					text: () =>
+						new Promise( ( resolve ) => {
+							finishOld = resolve;
+						} ),
+				},
+			],
+		} );
+
+		const oldRead = previewImport( elements );
+
+		chooseFile( elements.file, '{"settings":{"new":1}}' );
+		await previewImport( elements );
+
+		finishOld( '{"settings":{"old":1}}' );
+		await oldRead;
+
+		expect( elements.importData ).toEqual( { settings: { new: 1 } } );
+		expect( elements.previewContent.textContent ).toContain( 'new' );
+		expect( elements.previewContent.textContent ).not.toContain( 'old' );
 	} );
 
 	it( 'hides the preview when the file is cleared', async () => {

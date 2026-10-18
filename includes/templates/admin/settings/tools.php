@@ -78,7 +78,7 @@ $gatherpress_scope = isset( $scope ) && 'network' === $scope ? 'network' : 'blog
 		</button>
 	</p>
 
-	<output class="gatherpress-settings-tools__status gatherpress--is-hidden">
+	<output class="gatherpress-settings-tools__status">
 		<span class="spinner"></span>
 		<span class="gatherpress-settings-tools__status-text"></span>
 	</output>
