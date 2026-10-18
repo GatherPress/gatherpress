@@ -307,6 +307,76 @@
 	}
 }
 
+// The card form of a GatherPress admin notice, the one with a headline. Rules
+// that compete with core's `.notice p` and `div.notice a` are nested under the
+// card so they win on specificity.
+.gatherpress-notice-card {
+	align-items: flex-start;
+	display: flex;
+	gap: 20px;
+	position: relative;
+
+	&__mark {
+		color: var(--wp-admin-theme-color, #1769aa);
+		flex-shrink: 0;
+	}
+
+	& &__headline {
+		color: var(--wp-admin-theme-color, #1769aa);
+		font-size: 14px;
+		font-weight: 600;
+		margin: 0 0 6px;
+	}
+
+	& &__message {
+		margin: 0 0 12px;
+	}
+
+	& &__action {
+		margin: 0;
+	}
+
+	// The offsets cancel the notice's own 8px/12px padding so the control sits
+	// where core's dismiss button does, and the 9px is core's own padding,
+	// which `div.notice a` resets away.
+	& &__dismiss {
+		padding: 9px;
+		right: -12px;
+		text-decoration: none;
+		top: -8px;
+	}
+}
+
+// Inherited settings checklist on the Network tab of the network settings.
+.gatherpress-allowlist {
+	&__options {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+
+		li {
+			margin: 0;
+			padding: 3px 0;
+		}
+
+		label {
+			align-items: center;
+			display: inline-flex;
+			gap: 6px;
+		}
+	}
+
+	&__bulk-actions {
+		font-size: 13px;
+	}
+
+	&__group-actions {
+		font-size: 12px;
+		font-weight: 400;
+		margin-left: 8px;
+	}
+}
+
 .gatherpress-send-email {
 	&__role-actions {
 		margin: 0 0 8px;

@@ -634,7 +634,7 @@ Reach for the internal alias only when the value is composed or reused across a 
 
 ### Admin pages
 
-Admin templates under `includes/templates/admin/` hold markup only. The Email page (`includes/templates/admin/email.php`, `src/email/index.js`, `src/helpers/send-email.js`) is the reference. Some older templates still carry inline styles and scripts, so don't copy from them.
+Admin templates under `includes/templates/admin/` hold markup only. The Email page (`includes/templates/admin/email.php`, `src/email/index.js`, `src/helpers/send-email.js`) is the reference. The email templates under `includes/templates/admin/emails/` are the exception: an email has no stylesheet, so its styles stay inline.
 
 - **No `<style>` blocks or `style="…"` attributes.** Settings tab styles go in `src/settings/style.scss`, which loads on the GatherPress settings tabs, and styles for other admin screens go in `src/admin.scss`. Show and hide elements with the `gatherpress--is-hidden` utility class, not `style.display`.
 - **No `<script>` blocks.** A page's behavior is a `src/helpers/` module that exports an `init*()` function for the page's bundle to call: `src/settings/index.js` for a settings tab, or the page's own entry, enqueued from its `load-` action, for anything else. It finds its markup through a `data-gatherpress_component_name` attribute and returns early on pages without it. Pass config through data attributes, and translate strings with `@wordpress/i18n` rather than echoing them through `esc_js( __() )`.
