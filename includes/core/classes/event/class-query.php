@@ -359,18 +359,17 @@ final class Query {
 		// against event dates too.
 		$this->intercept_date_query( $query );
 
-		switch ( $events_query ) {
-			case 'upcoming':
-				remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_past_events' ) );
-				add_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_upcoming_events' ), 10, 2 );
-				break;
-			case 'past':
-				add_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_past_events' ), 10, 2 );
-				remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_upcoming_events' ) );
-				break;
-			default:
-				remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_past_events' ) );
-				remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_upcoming_events' ) );
+		$sorting = match ( $events_query ) {
+			'upcoming' => 'adjust_sorting_for_upcoming_events',
+			'past'     => 'adjust_sorting_for_past_events',
+			default    => '',
+		};
+
+		remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_upcoming_events' ) );
+		remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_past_events' ) );
+
+		if ( '' !== $sorting ) {
+			add_filter( 'posts_clauses', array( $this, $sorting ), 10, 2 );
 		}
 	}
 
