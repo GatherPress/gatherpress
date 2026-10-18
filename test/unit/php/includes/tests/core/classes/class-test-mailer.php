@@ -318,7 +318,7 @@ class Test_Mailer extends Base {
 		$this->assertTrue(
 			$this->has_consent(
 				$this->recipient( array( 'user_id' => $user_id ) ),
-				'site_message'
+				Mailer::CONTEXT_SITE_MESSAGE
 			)
 		);
 	}
@@ -334,7 +334,7 @@ class Test_Mailer extends Base {
 		$this->assertFalse(
 			$this->has_consent(
 				$this->recipient( array( 'email' => '' ) ),
-				'site_message'
+				Mailer::CONTEXT_SITE_MESSAGE
 			)
 		);
 	}
@@ -354,7 +354,7 @@ class Test_Mailer extends Base {
 
 		$consent = $this->has_consent(
 			$this->recipient( array( 'user_id' => $user_id ) ),
-			'event'
+			Mailer::CONTEXT_EVENT
 		);
 
 		remove_all_filters( 'gatherpress_email_recipient_consent' );
@@ -374,7 +374,7 @@ class Test_Mailer extends Base {
 
 		$consent = $this->has_consent(
 			$this->recipient( array( 'email' => '' ) ),
-			'event'
+			Mailer::CONTEXT_EVENT
 		);
 
 		remove_all_filters( 'gatherpress_email_recipient_consent' );
@@ -394,7 +394,7 @@ class Test_Mailer extends Base {
 
 		$consent = $this->has_consent(
 			$this->recipient( array( 'email' => 'jane@example' ) ),
-			'event'
+			Mailer::CONTEXT_EVENT
 		);
 
 		remove_all_filters( 'gatherpress_email_recipient_consent' );
@@ -425,13 +425,13 @@ class Test_Mailer extends Base {
 
 		$consent = $this->has_consent(
 			$this->recipient( array( 'user_id' => $user_id ) ),
-			'site_message'
+			Mailer::CONTEXT_SITE_MESSAGE
 		);
 
 		remove_all_filters( 'gatherpress_email_recipient_consent' );
 
 		$this->assertFalse( $consent );
-		$this->assertSame( array( true, 'site_message' ), $captured );
+		$this->assertSame( array( true, Mailer::CONTEXT_SITE_MESSAGE ), $captured );
 	}
 
 	/**
@@ -459,10 +459,16 @@ class Test_Mailer extends Base {
 			)
 		);
 
-		$this->assertTrue( $this->has_consent( $recipient, 'rsvp' ), 'RSVP emails should skip the opt-in.' );
-		$this->assertFalse( $this->has_consent( $recipient, 'event' ), 'Other emails should follow the opt-in.' );
+		$this->assertTrue(
+			$this->has_consent( $recipient, Mailer::CONTEXT_RSVP ),
+			'RSVP emails should skip the opt-in.'
+		);
 		$this->assertFalse(
-			$this->has_consent( $this->recipient( array( 'email' => '' ) ), 'rsvp' ),
+			$this->has_consent( $recipient, Mailer::CONTEXT_EVENT ),
+			'Other emails should follow the opt-in.'
+		);
+		$this->assertFalse(
+			$this->has_consent( $this->recipient( array( 'email' => '' ) ), Mailer::CONTEXT_RSVP ),
 			'RSVP emails should still need an address.'
 		);
 	}
@@ -489,7 +495,7 @@ class Test_Mailer extends Base {
 
 		$consent = $this->has_consent(
 			$this->recipient( array( 'user_id' => $user_id ) ),
-			'rsvp'
+			Mailer::CONTEXT_RSVP
 		);
 
 		remove_all_filters( 'gatherpress_email_recipient_consent' );
@@ -1095,7 +1101,7 @@ class Test_Mailer extends Base {
 			'resolve_sources',
 			array(
 				array(
-					'context'    => 'event',
+					'context'    => Mailer::CONTEXT_EVENT,
 					'compose'    => '__return_empty_array',
 					'users'      => static function () use ( &$lookups ): array {
 						++$lookups;
@@ -1118,7 +1124,7 @@ class Test_Mailer extends Base {
 		$this->assertSame( 2, $lookups, 'The resolved sources should not look up again.' );
 
 		$plain = array(
-			'context' => 'event',
+			'context' => Mailer::CONTEXT_EVENT,
 			'compose' => '__return_empty_array',
 		);
 
@@ -1355,7 +1361,7 @@ class Test_Mailer extends Base {
 			$type,
 			array_merge(
 				array(
-					'context' => 'event',
+					'context' => Mailer::CONTEXT_EVENT,
 					'compose' => static fn(): array => array(
 						'subject' => 'Subject',
 						'body'    => 'Body',
