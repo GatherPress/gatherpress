@@ -117,7 +117,12 @@ final class Query {
 	 * @return WP_Query A WordPress query object containing the list of upcoming events.
 	 */
 	public function get_upcoming_events( int $number = 5 ): WP_Query {
-		return $this->get_events_list( 'upcoming', $number );
+		return $this->get_events_list(
+			array(
+				'event_list_type' => 'upcoming',
+				'number'          => $number,
+			)
+		);
 	}
 
 	/**
@@ -132,7 +137,12 @@ final class Query {
 	 * @return WP_Query A WordPress query object containing the list of past events.
 	 */
 	public function get_past_events( int $number = 5 ): WP_Query {
-		return $this->get_events_list( 'past', $number );
+		return $this->get_events_list(
+			array(
+				'event_list_type' => 'past',
+				'number'          => $number,
+			)
+		);
 	}
 
 	/**
@@ -143,25 +153,34 @@ final class Query {
 	 * a WordPress query object.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Takes an args array instead of positional parameters.
 	 *
-	 * @param string   $event_list_type Type of event list: 'upcoming' or 'past'.
-	 * @param int      $number          Maximum number of events to retrieve.
-	 * @param string[] $topics          Array of topic slugs for additional filtering.
-	 * @param string[] $venues          Array of venue slugs for additional filtering.
+	 * @param array<string, mixed> $args {
+	 *     Event query arguments.
+	 *
+	 *     @type string   $event_list_type Type of event list: 'upcoming' or 'past'.
+	 *     @type int      $number          Maximum number of events to retrieve. Default 5.
+	 *     @type string[] $topics          Topic slugs for additional filtering.
+	 *     @type string[] $venues          Venue slugs for additional filtering.
+	 * }
 	 *
 	 * @return WP_Query A WordPress query object containing the list of events.
 	 */
-	public function get_events_list(
-		string $event_list_type = '',
-		int $number = 5,
-		array $topics = array(),
-		array $venues = array()
-	): WP_Query {
+	public function get_events_list( array $args = array() ): WP_Query {
+		$event_list_type = isset( $args['event_list_type'] ) && is_string( $args['event_list_type'] )
+			? $args['event_list_type']
+			: '';
+		$number          = isset( $args['number'] ) && is_numeric( $args['number'] )
+			? (int) $args['number']
+			: 5;
+		$topics          = $this->normalize_slug_list( $args['topics'] ?? array() );
+		$venues          = $this->normalize_slug_list( $args['venues'] ?? array() );
+
 		// Past events should be ordered DESC (most recent first),
 		// upcoming events should be ordered ASC (soonest first).
 		$order = ( 'past' === $event_list_type ) ? 'DESC' : 'ASC';
 
-		$args = array(
+		$query_args = array(
 			'post_type'             => get_post_types_by_support( Event::SUPPORT ),
 			'fields'                => 'ids',
 			'no_found_rows'         => true,
@@ -192,9 +211,9 @@ final class Query {
 			$tax_query[] = $this->build_venue_tax_query( $venues );
 		}
 
-		$args['tax_query'] = $tax_query; //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+		$query_args['tax_query'] = $tax_query; //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 
-		return new WP_Query( $args );
+		return new WP_Query( $query_args );
 	}
 
 	/**
@@ -307,20 +326,57 @@ final class Query {
 			}
 		}
 
+		if ( in_array( $events_query, array( 'upcoming', 'past' ), true ) ) {
+			/**
+			 * Filters the query vars of a query that lists upcoming or past events.
+			 *
+			 * Lets a plugin narrow or reorder event lists, for example by
+			 * location, without replacing the queries that build them. It runs
+			 * on `pre_get_posts` for every such list: the Event Query block,
+			 * event archives and feeds, the iCal feed, `get_events_list()`, and
+			 * the admin's Upcoming and Past views. GatherPress applies the upcoming
+			 * or past date range afterwards, so a constraint added here narrows
+			 * the list rather than replacing it. Check `$query` to act on only
+			 * some lists.
+			 *
+			 * @since TBD
+			 *
+			 * @param array<string, mixed> $query_vars The query's vars, as `WP_Query` reads them.
+			 * @param string               $type       The list type: `upcoming` or `past`.
+			 * @param WP_Query             $query      The query being prepared.
+			 *
+			 * @return array<string, mixed> The query vars to use.
+			 */
+			$query_vars = apply_filters(
+				'gatherpress_event_query_vars',
+				$query->query_vars,
+				$events_query,
+				$query
+			);
+
+			// A callback that forgets to return would wipe the query, whatever the docblock promises.
+			// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPStan annotation.
+			// @phpstan-ignore function.alreadyNarrowedType
+			if ( is_array( $query_vars ) ) {
+				$query->query_vars = $query_vars;
+			}
+		}
+
+		// After the filter, so a `date_query` a plugin adds there is read
+		// against event dates too.
 		$this->intercept_date_query( $query );
 
-		switch ( $events_query ) {
-			case 'upcoming':
-				remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_past_events' ) );
-				add_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_upcoming_events' ), 10, 2 );
-				break;
-			case 'past':
-				add_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_past_events' ), 10, 2 );
-				remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_upcoming_events' ) );
-				break;
-			default:
-				remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_past_events' ) );
-				remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_upcoming_events' ) );
+		$sorting = match ( $events_query ) {
+			'upcoming' => 'adjust_sorting_for_upcoming_events',
+			'past'     => 'adjust_sorting_for_past_events',
+			default    => '',
+		};
+
+		remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_upcoming_events' ) );
+		remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_past_events' ) );
+
+		if ( '' !== $sorting ) {
+			add_filter( 'posts_clauses', array( $this, $sorting ), 10, 2 );
 		}
 	}
 
@@ -801,6 +857,30 @@ final class Query {
 		}
 
 		return $venue_tax_query;
+	}
+
+	/**
+	 * Normalize a list of taxonomy slugs to strings.
+	 *
+	 * Companion plugins pass the values through the args array, so anything can
+	 * arrive here. Non-scalar members are dropped rather than cast, because
+	 * `strval()` on an array raises a warning and on an object throws.
+	 *
+	 * @since TBD
+	 *
+	 * @param mixed $slugs Candidate slug list.
+	 *
+	 * @return string[] Filtered list of slugs.
+	 */
+	private function normalize_slug_list( mixed $slugs ): array {
+		if ( ! is_array( $slugs ) ) {
+			return array();
+		}
+
+		return array_map(
+			'strval',
+			array_filter( $slugs, 'is_scalar' )
+		);
 	}
 
 	/**
