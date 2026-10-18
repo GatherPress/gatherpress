@@ -46,20 +46,4 @@ final class Capability {
 	 * @var string
 	 */
 	const EDIT_POST = 'edit_post';
-
-	/**
-	 * Backward compatibility alias for READ_POST.
-	 *
-	 * @since TBD
-	 * @var string
-	 */
-	const READ_CAPABILITY = self::READ_POST;
-
-	/**
-	 * Backward compatibility alias for EDIT_POST.
-	 *
-	 * @since TBD
-	 * @var string
-	 */
-	const EDIT_CAPABILITY = self::EDIT_POST;
 }

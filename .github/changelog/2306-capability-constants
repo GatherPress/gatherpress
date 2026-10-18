@@ -1,4 +1,4 @@
-Significance: patch
+Significance: minor
 Type: changed
 
-Move post meta capability constants to neutral Capability class, replacing hardcoded strings and cross-subsystem references across Event, Venue, and REST endpoints.
+The `read_post` and `edit_post` capability constants move from `Event` to a new `GatherPress\Core\Capability` class, since they apply to any post type, and the plugin's capability checks use them instead of bare strings. `Event::READ_CAPABILITY` and `Event::EDIT_CAPABILITY` are removed, so code using them should switch to `Capability::READ_POST` and `Capability::EDIT_POST`.

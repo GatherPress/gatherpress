@@ -79,29 +79,6 @@ class Event {
 	const SUPPORT = 'gatherpress-event-date';
 
 	/**
-	 * Capability for reading a specific event.
-	 *
-	 * A meta capability, so it is always paired with the event's post ID and
-	 * resolves through WordPress to the right primitive for the event's status.
-	 *
-	 * @since 0.35.1
-	 * @deprecated TBD Use Capability::READ_POST instead.
-	 * @var string
-	 */
-	const READ_CAPABILITY = Capability::READ_POST;
-
-	/**
-	 * Capability for editing a specific event.
-	 *
-	 * A meta capability, so it is always paired with the event's post ID.
-	 *
-	 * @since 0.35.1
-	 * @deprecated TBD Use Capability::EDIT_POST instead.
-	 * @var string
-	 */
-	const EDIT_CAPABILITY = Capability::EDIT_POST;
-
-	/**
 	 * Placeholder displayed when no datetime is set.
 	 *
 	 * @since 0.34.0
