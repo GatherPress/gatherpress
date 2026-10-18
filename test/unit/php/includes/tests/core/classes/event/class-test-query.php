@@ -409,6 +409,26 @@ class Test_Query extends Base {
 	}
 
 	/**
+	 * A filter callback that returns nothing leaves the query as it was.
+	 *
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_event_query_vars_filter_ignores_a_missing_return(): void {
+		$query = new WP_Query();
+
+		add_filter( 'gatherpress_event_query_vars', '__return_null' );
+
+		$query->set( 'post_type', 'gatherpress_event' );
+		$query->set( 'gatherpress_event_query', 'upcoming' );
+		Query::get_instance()->prepare_event_query_before_execution( $query );
+
+		$this->assertSame( 'gatherpress_event', $query->get( 'post_type' ) );
+		$this->assertSame( 'upcoming', $query->get( 'gatherpress_event_query' ) );
+	}
+
+	/**
 	 * The query vars filter leaves queries that don't list events alone.
 	 *
 	 * @covers ::prepare_event_query_before_execution

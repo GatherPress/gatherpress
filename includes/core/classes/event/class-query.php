@@ -347,12 +347,19 @@ final class Query {
 			 *
 			 * @return array<string, mixed> The query vars to use.
 			 */
-			$query->query_vars = (array) apply_filters(
+			$query_vars = apply_filters(
 				'gatherpress_event_query_vars',
 				$query->query_vars,
 				$events_query,
 				$query
 			);
+
+			// A callback that forgets to return would wipe the query, whatever the docblock promises.
+			// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPStan annotation.
+			// @phpstan-ignore function.alreadyNarrowedType
+			if ( is_array( $query_vars ) ) {
+				$query->query_vars = $query_vars;
+			}
 		}
 
 		// After the filter, so a `date_query` a plugin adds there is read
