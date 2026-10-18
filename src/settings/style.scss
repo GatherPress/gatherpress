@@ -64,7 +64,7 @@
 
 	&__note {
 		font-style: italic;
-		margin-top: 4px;
+		margin-top: 0.25rem;
 		pointer-events: auto;
 	}
 }
@@ -73,15 +73,15 @@
 	&__preview {
 		background: #f9f9f9;
 		border-left: 4px solid #0073aa;
-		margin: 16px 0;
-		padding: 12px;
+		margin: 1rem 0;
+		padding: 0.75rem;
 
 		h3 {
 			margin-top: 0;
 		}
 
 		ul {
-			margin-left: 20px;
+			margin-left: 1.25rem;
 		}
 	}
 
@@ -93,7 +93,7 @@
 		align-items: center;
 		display: flex;
 		font-weight: 600;
-		gap: 8px;
+		gap: 0.5rem;
 
 		.spinner {
 			float: none;
