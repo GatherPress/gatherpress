@@ -200,17 +200,6 @@ final class Query {
 
 		$query_args['tax_query'] = $tax_query; //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 
-		/**
-		 * Filters the arguments used to query the event list.
-		 *
-		 * Use this filter to add query constraints such as location-based filtering.
-		 *
-		 * @since TBD
-		 *
-		 * @param array<string, mixed> $query_args Arguments passed to WP_Query.
-		 */
-		$query_args = apply_filters( 'gatherpress_events_list_query_args', $query_args );
-
 		return new WP_Query( $query_args );
 	}
 
@@ -322,6 +311,35 @@ final class Query {
 				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 				$query->set( 'tax_query', $existing_tax_query );
 			}
+		}
+
+		if ( in_array( $events_query, array( 'upcoming', 'past' ), true ) ) {
+			/**
+			 * Filters the query vars of a query that lists upcoming or past events.
+			 *
+			 * Lets a plugin narrow or reorder event lists, for example by
+			 * location, without replacing the queries that build them. It runs
+			 * on `pre_get_posts` for every such list: the Event Query block,
+			 * event archives and feeds, the iCal feed, `get_events_list()`, and
+			 * the admin's Upcoming and Past views. GatherPress applies the upcoming
+			 * or past date range afterwards, so a constraint added here narrows
+			 * the list rather than replacing it. Check `$query` to act on only
+			 * some lists.
+			 *
+			 * @since TBD
+			 *
+			 * @param array<string, mixed> $query_vars The query's vars, as `WP_Query` reads them.
+			 * @param string               $type       The list type: `upcoming` or `past`.
+			 * @param WP_Query             $query      The query being prepared.
+			 *
+			 * @return array<string, mixed> The query vars to use.
+			 */
+			$query->query_vars = (array) apply_filters(
+				'gatherpress_event_query_vars',
+				$query->query_vars,
+				$events_query,
+				$query
+			);
 		}
 
 		switch ( $events_query ) {

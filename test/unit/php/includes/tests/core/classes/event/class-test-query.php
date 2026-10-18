@@ -371,27 +371,104 @@ class Test_Query extends Base {
 	}
 
 	/**
-	 * Coverage for the gatherpress_events_list_query_args filter.
+	 * The query vars filter gets every upcoming or past event list, with its type and query.
 	 *
-	 * @covers ::get_events_list
+	 * @covers ::prepare_event_query_before_execution
 	 *
 	 * @return void
 	 */
-	public function test_get_events_list_query_args_filter(): void {
-		$instance = Query::get_instance();
-		$callback = static function ( array $query_args ): array {
-			$query_args['orderby'] = 'title';
+	public function test_event_query_vars_filter(): void {
+		$captured = array();
+		$query    = new WP_Query();
 
-			return $query_args;
-		};
+		add_filter(
+			'gatherpress_event_query_vars',
+			static function ( array $query_vars, string $type, WP_Query $filtered ) use ( &$captured ): array {
+				$captured              = array( $type, $filtered );
+				$query_vars['orderby'] = 'title';
 
-		add_filter( 'gatherpress_events_list_query_args', $callback );
+				return $query_vars;
+			},
+			10,
+			3
+		);
 
-		$results = $instance->get_events_list( array( 'event_list_type' => 'upcoming' ) );
+		$query->set( 'post_type', 'gatherpress_event' );
+		$query->set( 'gatherpress_event_query', 'past' );
+		Query::get_instance()->prepare_event_query_before_execution( $query );
 
-		remove_filter( 'gatherpress_events_list_query_args', $callback );
+		$this->assertSame( 'title', $query->get( 'orderby' ), 'The filtered vars should be the query\'s vars.' );
+		$this->assertSame( 'past', $captured[0] );
+		$this->assertSame( $query, $captured[1] );
+	}
 
-		$this->assertSame( 'title', $results->query['orderby'] );
+	/**
+	 * The query vars filter leaves queries that don't list events alone.
+	 *
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_event_query_vars_filter_skips_other_queries(): void {
+		$called = false;
+		$query  = new WP_Query();
+
+		add_filter(
+			'gatherpress_event_query_vars',
+			static function ( array $query_vars ) use ( &$called ): array {
+				$called = true;
+
+				return $query_vars;
+			}
+		);
+
+		$query->set( 'post_type', 'post' );
+		Query::get_instance()->prepare_event_query_before_execution( $query );
+
+		$this->assertFalse( $called );
+	}
+
+	/**
+	 * A list reordered through the filter still only holds events in its date range.
+	 *
+	 * @covers ::get_events_list
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_event_query_vars_filter_keeps_the_date_range(): void {
+		$upcoming = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+		$past     = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+
+		( new Event( $upcoming->ID ) )->save_datetimes(
+			array(
+				'datetime_start' => '2099-01-01 10:00:00',
+				'datetime_end'   => '2099-01-01 12:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+		( new Event( $past->ID ) )->save_datetimes(
+			array(
+				'datetime_start' => '2020-01-01 10:00:00',
+				'datetime_end'   => '2020-01-01 12:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		add_filter(
+			'gatherpress_event_query_vars',
+			static function ( array $query_vars ): array {
+				$query_vars['orderby'] = 'title';
+
+				return $query_vars;
+			}
+		);
+
+		$results = Query::get_instance()->get_events_list( array( 'event_list_type' => 'upcoming' ) );
+
+		$this->assertSame( 'title', $results->get( 'orderby' ) );
+		$this->assertContains( $upcoming->ID, $results->posts );
+		$this->assertNotContains( $past->ID, $results->posts, 'The upcoming date range should still apply.' );
 	}
 
 	/**
