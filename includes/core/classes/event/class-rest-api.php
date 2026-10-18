@@ -511,7 +511,7 @@ final class Rest_Api {
 
 		// The session cookie speaks for the visitor's own RSVP, never for an
 		// attendee an organizer is managing.
-		$rsvp_token = Token::from_cookie( $post_id );
+		$rsvp_token = $is_managing_other ? null : Token::from_cookie( $post_id );
 
 		if ( $rsvp_token ) {
 			$user_identifier = $rsvp_token->get_email();
