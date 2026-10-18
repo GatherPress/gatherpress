@@ -34,7 +34,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-mailer.php:660](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-mailer.php#L660)
+- [includes/core/classes/class-mailer.php:687](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-mailer.php#L687)
 ```php
 apply_filters( 'gatherpress_email_batch_size', 50, $type )
 ```
