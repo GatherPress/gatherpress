@@ -289,8 +289,7 @@ final class Form {
 			// Process all fields.
 			$this->process_fields( $comment_id, $data );
 
-			// Generate the token and queue the confirmation email.
-			( new Token( $comment_id ) )->generate_token();
+			// The email creates the token when it goes out.
 			Email::get_instance()->queue_confirmation( $comment_id );
 		}
 	}
@@ -695,8 +694,7 @@ final class Form {
 		// Process all fields.
 		$this->process_fields( $comment_id, $data );
 
-		// Generate the token and queue the confirmation email.
-		( new Token( $comment_id ) )->generate_token();
+		// The email creates the token when it goes out.
 		Email::get_instance()->queue_confirmation( $comment_id );
 
 		return array(

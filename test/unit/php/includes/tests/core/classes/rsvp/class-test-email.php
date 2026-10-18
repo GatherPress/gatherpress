@@ -104,21 +104,20 @@ class Test_Email extends Base {
 
 		update_comment_meta( $comment_id, 'gatherpress_event_updates_opt_in', '0' );
 
-		$token = ( new Token( $comment_id ) )->generate_token();
-
 		$this->assertTrue( Email::get_instance()->queue_confirmation( $comment_id ) );
 		$this->assertSame( array(), $this->sent, 'The email waits for the job.' );
+		$this->assertSame( '', ( new Token( $comment_id ) )->get_token(), 'The token waits for the email.' );
 
 		$this->run_mail_jobs();
 
 		$this->assertCount( 1, $this->sent );
 		$this->assertSame( 'visitor@example.test', $this->sent[0][0] );
 		$this->assertSame( 'Confirm your RSVP for Board game night', $this->sent[0][1] );
-		$this->assertStringContainsString( esc_url( $token->generate_url() ), $this->sent[0][2] );
+		$this->assertStringContainsString( esc_url( ( new Token( $comment_id ) )->generate_url() ), $this->sent[0][2] );
 	}
 
 	/**
-	 * Check that the recipient is the RSVP's address, and only while it has a token.
+	 * Check that the recipient is the RSVP's address, and nobody once the RSVP is gone.
 	 *
 	 * Invoked directly because xdebug does not trace same-class helpers
 	 * called by short delegation.
@@ -135,11 +134,7 @@ class Test_Email extends Base {
 			array( array( 'comment_id' => $id ) )
 		);
 
-		$this->assertSame( array(), $recipient( $comment_id ), 'Without a token there is no link to send.' );
 		$this->assertSame( array(), $recipient( 0 ), 'Without an RSVP there is nobody to send to.' );
-
-		( new Token( $comment_id ) )->generate_token();
-
 		$this->assertSame(
 			array(
 				array(
@@ -155,7 +150,7 @@ class Test_Email extends Base {
 	}
 
 	/**
-	 * Check that the email names the event and carries the link.
+	 * Check that the email names the event and carries a link issued as it is built.
 	 *
 	 * @covers ::compose_confirmation_email
 	 *
@@ -163,7 +158,6 @@ class Test_Email extends Base {
 	 */
 	public function test_compose_confirmation_email(): void {
 		$comment_id = $this->open_rsvp( 'Trivia night' );
-		$token      = ( new Token( $comment_id ) )->generate_token();
 		$compose    = static fn( int $id ): array => Utility::invoke_hidden_method(
 			Email::get_instance(),
 			'compose_confirmation_email',
@@ -171,9 +165,16 @@ class Test_Email extends Base {
 		);
 
 		$email = $compose( $comment_id );
+		$token = new Token( $comment_id );
 
 		$this->assertSame( 'Confirm your RSVP for Trivia night', $email['subject'] );
 		$this->assertStringContainsString( esc_url( $token->generate_url() ), $email['body'] );
+		$this->assertEqualsWithDelta(
+			time(),
+			$token->get_issued_time(),
+			5,
+			'The link\'s 24 hours start as the email is built.'
+		);
 		$this->assertSame( array( 'Content-Type: text/html; charset=UTF-8' ), $email['headers'] );
 		$this->assertSame(
 			'Confirm your RSVP for this event',

@@ -124,11 +124,11 @@ final class Token {
 			return $this->token;
 		}
 
-		// Reject if there's no comment to read from, or if the comment is more
-		// than 24 hours old. The cached token guard above makes this only fire
-		// once per request anyway.
+		// Reject if there's no comment to read from, or if the token was issued
+		// more than 24 hours ago. The cached token guard above makes this only
+		// fire once per request anyway.
 		if ( ! $this->comment
-			|| ( strtotime( 'now' ) - strtotime( $this->comment->comment_date ) ) >= HOUR_IN_SECONDS * 24
+			|| ( strtotime( 'now' ) - $this->get_issued_time() ) >= HOUR_IN_SECONDS * 24
 		) {
 			return '';
 		}
@@ -208,6 +208,38 @@ final class Token {
 	}
 
 	/**
+	 * Gets the meta key for when the token was issued.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The meta key.
+	 */
+	private function get_issued_meta_key(): string {
+		return sprintf( '%s_issued', $this->get_meta_key() );
+	}
+
+	/**
+	 * Gets when the token was issued, which starts its 24 hours.
+	 *
+	 * The token is issued when the confirmation email goes out. Until then,
+	 * and for tokens issued before this was stored, the RSVP's own date is
+	 * used.
+	 *
+	 * @since TBD
+	 *
+	 * @return int Unix timestamp, or 0 without a comment.
+	 */
+	public function get_issued_time(): int {
+		if ( ! $this->comment ) {
+			return 0;
+		}
+
+		$issued = (int) get_comment_meta( (int) $this->comment->comment_ID, $this->get_issued_meta_key(), true );
+
+		return $issued ? $issued : (int) strtotime( $this->comment->comment_date );
+	}
+
+	/**
 	 * Generates a new secure token for this RSVP comment.
 	 *
 	 * Creates a secure random token and saves it to comment meta.
@@ -239,9 +271,10 @@ final class Token {
 	}
 
 	/**
-	 * Saves the current token to comment meta.
+	 * Saves the current token, and when it was issued, to comment meta.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Also saves when the token was issued.
 	 *
 	 * @return void
 	 */
@@ -256,6 +289,7 @@ final class Token {
 			$this->get_meta_key(),
 			$this->token
 		);
+		update_comment_meta( (int) $this->comment->comment_ID, $this->get_issued_meta_key(), time() );
 	}
 
 	/**

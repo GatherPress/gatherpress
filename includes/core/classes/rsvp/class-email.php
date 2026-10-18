@@ -76,7 +76,7 @@ final class Email {
 	 *
 	 * @since TBD
 	 *
-	 * @param int $comment_id The RSVP comment ID, which already has a token.
+	 * @param int $comment_id The RSVP comment ID.
 	 *
 	 * @return bool True when the email is queued.
 	 */
@@ -92,14 +92,13 @@ final class Email {
 	 * @param array $payload The queued email: its `comment_id`.
 	 * @phpstan-param Payload $payload
 	 *
-	 * @return array<int, Recipient> The RSVP's email address, or nothing when it has no token to send.
+	 * @return array<int, Recipient> The RSVP's email address, or nothing when the RSVP is gone.
 	 */
 	private function get_confirmation_recipient( array $payload ): array {
 		$token   = new Token( (int) ( $payload['comment_id'] ?? 0 ) );
 		$comment = $token->get_comment();
 
-		// The link carries the token, so without one there is nothing to send.
-		if ( ! $comment || '' === $token->get_token() ) {
+		if ( ! $comment ) {
 			return array();
 		}
 
@@ -117,6 +116,10 @@ final class Email {
 	/**
 	 * Build a queued confirmation email.
 	 *
+	 * The token is created here, as the email goes out, so its 24 hours start
+	 * then rather than when the RSVP was made. Mailer only composes for a
+	 * recipient it is about to send to, so counting recipients creates none.
+	 *
 	 * @since TBD
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
@@ -129,7 +132,7 @@ final class Email {
 	 * @return array{subject: string, body: string, headers: array<int, string>} The email.
 	 */
 	private function compose_confirmation_email( array $recipient, array $payload ): array {
-		$token = new Token( (int) ( $payload['comment_id'] ?? 0 ) );
+		$token = ( new Token( (int) ( $payload['comment_id'] ?? 0 ) ) )->generate_token();
 		$post  = $token->get_post();
 		$title = $post ? get_the_title( $post ) : __( 'this event', 'gatherpress' );
 

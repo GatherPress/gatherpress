@@ -279,6 +279,52 @@ class Test_Token extends Base {
 		// Should save to comment meta.
 		$meta_token = get_comment_meta( $comment_id, '_gatherpress_rsvp_token', true );
 		$this->assertEquals( $generated_token, $meta_token );
+
+		// Should save when it was issued.
+		$this->assertEqualsWithDelta(
+			time(),
+			(int) get_comment_meta( $comment_id, '_gatherpress_rsvp_token_issued', true ),
+			5
+		);
+	}
+
+	/**
+	 * Coverage for get_issued_time, and the 24 hours counting from it.
+	 *
+	 * @covers ::get_issued_time
+	 * @covers ::get_issued_meta_key
+	 * @covers ::get_token
+	 *
+	 * @return void
+	 */
+	public function test_get_issued_time(): void {
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID'  => $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) ),
+				'comment_type'     => Rsvp::COMMENT_TYPE,
+				'comment_date'     => '2023-12-25 10:00:00',
+				'comment_date_gmt' => '2023-12-25 10:00:00',
+			)
+		);
+
+		$this->assertSame( 0, ( new Token( 0 ) )->get_issued_time(), 'Without a comment there is no issue time.' );
+		$this->assertSame(
+			strtotime( '2023-12-25 10:00:00' ),
+			( new Token( $comment_id ) )->get_issued_time(),
+			'Before a token is issued, the RSVP date is used.'
+		);
+
+		( new Token( $comment_id ) )->generate_token();
+
+		$this->assertNotEmpty(
+			( new Token( $comment_id ) )->get_token(),
+			'A token issued now is good for 24 hours, however old the RSVP.'
+		);
+
+		update_comment_meta( $comment_id, '_gatherpress_rsvp_token_issued', time() - DAY_IN_SECONDS );
+
+		$this->assertSame( time() - DAY_IN_SECONDS, ( new Token( $comment_id ) )->get_issued_time() );
+		$this->assertSame( '', ( new Token( $comment_id ) )->get_token(), 'A token issued 24 hours ago has expired.' );
 	}
 
 	/**
