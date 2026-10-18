@@ -225,7 +225,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	);
 
 	// Get event data - either from override postId or current post.
-	const { maxGuestLimit: maxNumberOfGuests, enableRsvp, enableAnonymousRsvp } = useSelect(
+	const { guestLimit: maxNumberOfGuests, enableRsvp, enableAnonymousRsvp } = useSelect(
 		( select ) => getEventMeta( select, postId, attributes ),
 		[ postId, attributes ],
 	);

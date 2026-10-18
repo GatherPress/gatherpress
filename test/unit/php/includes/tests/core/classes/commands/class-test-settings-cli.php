@@ -95,7 +95,7 @@ class Test_Settings_Cli extends Base {
 		// Write import file with a different setting.
 		$data = array(
 			'version'  => GATHERPRESS_VERSION,
-			'settings' => array( 'max_attendance_limit' => 100 ),
+			'settings' => array( 'capacity' => 100 ),
 		);
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
@@ -112,7 +112,7 @@ class Test_Settings_Cli extends Base {
 		$settings = get_option( 'gatherpress_settings' );
 
 		$this->assertSame( 'google', $settings['map_platform'], 'Failed to assert existing value preserved.' );
-		$this->assertSame( 100, $settings['max_attendance_limit'], 'Failed to assert imported value.' );
+		$this->assertSame( 100, $settings['capacity'], 'Failed to assert imported value.' );
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
 		unlink( $file );
@@ -134,7 +134,7 @@ class Test_Settings_Cli extends Base {
 
 		$data = array(
 			'version'  => GATHERPRESS_VERSION,
-			'settings' => array( 'max_attendance_limit' => 100 ),
+			'settings' => array( 'capacity' => 100 ),
 		);
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
@@ -157,7 +157,7 @@ class Test_Settings_Cli extends Base {
 		$settings = get_option( 'gatherpress_settings' );
 
 		$this->assertArrayNotHasKey( 'map_platform', $settings, 'Failed to assert old value was removed.' );
-		$this->assertSame( 100, $settings['max_attendance_limit'], 'Failed to assert imported value.' );
+		$this->assertSame( 100, $settings['capacity'], 'Failed to assert imported value.' );
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
 		unlink( $file );

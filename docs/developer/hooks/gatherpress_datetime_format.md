@@ -5,7 +5,9 @@ Filters the format an event's datetime is rendered with.
 
 Applies to every context an event date is shown in, since they
 all format through this method: the singular event, an archive,
-the Event Date block and a query loop alike.
+the Event Date block and a query loop alike. The machine-readable
+ISO accessors bypass it, so a format filter cannot alter the
+datetime attribute values.
 
 ## Auto-generated Example
 
@@ -33,12 +35,12 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/event/class-event.php:559](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-event.php#L559)
+- [includes/core/classes/event/class-event.php:621](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-event.php#L621)
 ```php
 apply_filters( 'gatherpress_datetime_format', $format, $which, $local )
 ```
 
-- [includes/core/classes/event/class-event.php:733](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-event.php#L733)
+- [includes/core/classes/event/class-event.php:821](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-event.php#L821)
 ```php
 apply_filters( 'gatherpress_datetime_format', $format, $which, $local )
 ```

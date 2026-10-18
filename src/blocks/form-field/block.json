@@ -17,6 +17,10 @@
 			"type": "string",
 			"default": ""
 		},
+		"inputId": {
+			"type": "string",
+			"default": ""
+		},
 		"fieldValue": {
 			"type": [
 				"string",

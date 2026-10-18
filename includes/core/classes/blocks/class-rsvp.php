@@ -148,7 +148,7 @@ final class Rsvp {
 			// Serialize the current inner blocks for the saved status.
 			$serialized_inner_blocks[ $saved_status ] = serialize_blocks( $inner_blocks );
 
-			$user_identifier = Rsvp_Setup::get_instance()->get_user_identifier();
+			$user_identifier = Rsvp_Setup::get_instance()->get_user_identifier( $post_id );
 			$user_data       = $rsvp->get( $user_identifier ) ?? array();
 
 			$filtered_data   = array_intersect_key(
@@ -364,7 +364,7 @@ final class Rsvp {
 
 		// Handle guest count field interactivity.
 		if ( 'gatherpress_rsvp_guests' === $field_name ) {
-			$max_guest_limit = get_post_meta( $post_id, 'gatherpress_max_guest_limit', true );
+			$guest_limit = get_post_meta( $post_id, 'gatherpress_guest_limit', true );
 
 			// Apply interactivity attributes and max limit for guest count.
 			$tag = new WP_HTML_Tag_Processor( $block_content );
@@ -376,7 +376,7 @@ final class Rsvp {
 					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 					$tag->set_attribute( 'data-wp-watch', 'callbacks.setGuestCount' );
 					$tag->set_attribute( 'data-wp-on--change', 'actions.updateGuestCount' );
-					$tag->set_attribute( 'max', (string) $max_guest_limit );
+					$tag->set_attribute( 'max', (string) $guest_limit );
 				}
 			}
 

@@ -28,16 +28,28 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  *
  * @package GatherPress\Core\Rsvp
  * @since 0.34.0
+ *
+ * @phpstan-type CookieOptions array{
+ *     expires: int,
+ *     path: string,
+ *     domain: string,
+ *     secure: bool,
+ *     httponly: bool,
+ *     samesite: 'Lax'
+ * }
  */
 final class Token {
 
 	/**
-	 * The parameter name used for RSVP tokens in URLs.
+	 * The RSVP token's name.
+	 *
+	 * The magic-link URL and the comment meta key add the `gatherpress_`
+	 * prefix with `Utility::prefix_key()`.
 	 *
 	 * @since 0.34.0
 	 * @var string
 	 */
-	const NAME = 'gatherpress_rsvp_token';
+	const NAME = 'rsvp_token';
 
 	/**
 	 * The length of the generated token.
@@ -54,6 +66,16 @@ final class Token {
 	 * @var string
 	 */
 	const META_KEY_PREFIX = '_';
+
+	/**
+	 * Prefix of the session cookie that holds an event's token.
+	 *
+	 * Each event gets its own cookie, named with the event's post ID.
+	 *
+	 * @since TBD
+	 * @var string
+	 */
+	const COOKIE_PREFIX = 'gatherpress_rsvp_token_';
 
 	/**
 	 * The comment object associated with this token.
@@ -102,11 +124,11 @@ final class Token {
 			return $this->token;
 		}
 
-		// Reject if there's no comment to read from, or if the comment is more
-		// than 24 hours old. The cached token guard above makes this only fire
-		// once per request anyway.
+		// Reject if there's no comment to read from, or if the token was issued
+		// more than 24 hours ago. The cached token guard above makes this only
+		// fire once per request anyway.
 		if ( ! $this->comment
-			|| ( strtotime( 'now' ) - strtotime( $this->comment->comment_date ) ) >= HOUR_IN_SECONDS * 24
+			|| ( strtotime( 'now' ) - $this->get_issued_time() ) >= HOUR_IN_SECONDS * 24
 		) {
 			return '';
 		}
@@ -182,7 +204,39 @@ final class Token {
 	 * @return string The formatted meta key.
 	 */
 	private function get_meta_key(): string {
-		return sprintf( '%s%s', self::META_KEY_PREFIX, self::NAME );
+		return sprintf( '%s%s', self::META_KEY_PREFIX, Utility::prefix_key( self::NAME ) );
+	}
+
+	/**
+	 * Gets the meta key for when the token was issued.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The meta key.
+	 */
+	private function get_issued_meta_key(): string {
+		return sprintf( '%s_issued', $this->get_meta_key() );
+	}
+
+	/**
+	 * Gets when the token was issued, which starts its 24 hours.
+	 *
+	 * The token is issued when the confirmation email goes out. Until then,
+	 * and for tokens issued before this was stored, the RSVP's own date is
+	 * used.
+	 *
+	 * @since TBD
+	 *
+	 * @return int Unix timestamp, or 0 without a comment.
+	 */
+	public function get_issued_time(): int {
+		if ( ! $this->comment ) {
+			return 0;
+		}
+
+		$issued = (int) get_comment_meta( (int) $this->comment->comment_ID, $this->get_issued_meta_key(), true );
+
+		return $issued ? $issued : (int) strtotime( $this->comment->comment_date );
 	}
 
 	/**
@@ -217,9 +271,10 @@ final class Token {
 	}
 
 	/**
-	 * Saves the current token to comment meta.
+	 * Saves the current token, and when it was issued, to comment meta.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Also saves when the token was issued.
 	 *
 	 * @return void
 	 */
@@ -234,6 +289,7 @@ final class Token {
 			$this->get_meta_key(),
 			$this->token
 		);
+		update_comment_meta( (int) $this->comment->comment_ID, $this->get_issued_meta_key(), time() );
 	}
 
 	/**
@@ -368,9 +424,96 @@ final class Token {
 	 * @return self|null Instance if valid token found, null otherwise.
 	 */
 	public static function from_url_parameter(): ?self {
-		$token_param = Utility::get_http_input( INPUT_GET, self::NAME );
+		$token_param = Utility::get_http_input( INPUT_GET, Utility::prefix_key( self::NAME ) );
 
 		return self::from_token_string( $token_param );
+	}
+
+	/**
+	 * Creates a Token instance from an event's session cookie.
+	 *
+	 * Clicking the magic link moves the token from the URL into this cookie,
+	 * so the RSVP block and REST requests read it from here.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $post_id The event's post ID.
+	 *
+	 * @return self|null Instance if the cookie holds a valid token for this event, null otherwise.
+	 */
+	public static function from_cookie( int $post_id ): ?self {
+		$token = self::from_token_string(
+			Utility::get_http_input( INPUT_COOKIE, self::get_cookie_name( $post_id ) )
+		);
+
+		// A cookie only vouches for the event it was set for.
+		return $token?->get_post()?->ID === $post_id ? $token : null;
+	}
+
+	/**
+	 * Check whether the request carries a session cookie for any event.
+	 *
+	 * @since TBD
+	 *
+	 * @return bool True when at least one event's session cookie is present.
+	 */
+	public static function has_session_cookie(): bool {
+		return (bool) array_filter(
+			array_keys( $_COOKIE ),
+			static fn( $name ): bool => str_starts_with( (string) $name, self::COOKIE_PREFIX )
+		);
+	}
+
+	/**
+	 * Get the name of an event's session cookie.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $post_id The event's post ID.
+	 *
+	 * @return string The cookie name.
+	 */
+	public static function get_cookie_name( int $post_id ): string {
+		return self::COOKIE_PREFIX . $post_id;
+	}
+
+	/**
+	 * Get the options for the session cookie.
+	 *
+	 * The cookie has no expiry, so the browser drops it when it closes. It is
+	 * hidden from scripts and only sent on same-site requests and top-level
+	 * links.
+	 *
+	 * @since TBD
+	 *
+	 * @return CookieOptions The options for `setcookie()`.
+	 */
+	public static function get_cookie_options(): array {
+		return array(
+			'expires'  => 0,
+			'path'     => COOKIEPATH,
+			'domain'   => COOKIE_DOMAIN ? COOKIE_DOMAIN : '',
+			'secure'   => is_ssl(),
+			'httponly' => true,
+			'samesite' => 'Lax',
+		);
+	}
+
+	/**
+	 * Get the token with its comment ID, the way the URL and cookie carry it.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The `{comment_id}_{token}` string, or empty without a comment or token.
+	 */
+	public function get_token_string(): string {
+		$token = $this->get_token();
+
+		if ( ! $this->comment || '' === $token ) {
+			return '';
+		}
+
+		return $this->format_token_value( (int) $this->comment->comment_ID, $token );
 	}
 
 	/**
@@ -397,7 +540,7 @@ final class Token {
 
 		$token_value = $this->format_token_value( (int) $comment->comment_ID, $token );
 
-		return add_query_arg( self::NAME, $token_value, $event_url );
+		return add_query_arg( Utility::prefix_key( self::NAME ), $token_value, $event_url );
 	}
 
 	/**
@@ -430,75 +573,5 @@ final class Token {
 	 */
 	private function format_token_value( int $comment_id, string $token ): string {
 		return sprintf( '%d_%s', $comment_id, $token );
-	}
-
-	/**
-	 * Send RSVP confirmation email with magic link.
-	 *
-	 * Sends an email containing a magic link that allows the user to confirm
-	 * their RSVP and change their response if needed.
-	 *
-	 * @since 0.34.0
-	 *
-	 * @return bool True if email was sent successfully, false otherwise.
-	 */
-	public function send_rsvp_confirmation_email(): bool {
-		$to = $this->get_email();
-
-		if ( empty( $to ) ) {
-			return false;
-		}
-
-		$post       = $this->get_post();
-		$email_data = $this->prepare_email_data( $post );
-
-		return wp_mail(
-			$to,
-			$email_data['subject'],
-			$email_data['body'],
-			$email_data['headers']
-		);
-	}
-
-	/**
-	 * Prepares email data for the confirmation email.
-	 *
-	 * @since 0.34.0
-	 *
-	 * @param WP_Post|null $post The event post object.
-	 *
-	 * @return array{subject: string, body: string, headers: string[]} Email data with subject, body, and headers.
-	 */
-	private function prepare_email_data( ?WP_Post $post ): array {
-		$title = $post ? get_the_title( $post ) : __( 'this event', 'gatherpress' );
-
-		return array(
-			'subject' => sprintf(
-				/* translators: %s: Event title. */
-				__( 'Confirm your RSVP for %s', 'gatherpress' ),
-				$title
-			),
-			'body'    => $this->render_email_template( $post ),
-			'headers' => array( 'Content-Type: text/html; charset=UTF-8' ),
-		);
-	}
-
-	/**
-	 * Renders the email template for the confirmation email.
-	 *
-	 * @since 0.34.0
-	 *
-	 * @param WP_Post|null $post The event post object.
-	 *
-	 * @return string The rendered email body.
-	 */
-	private function render_email_template( ?WP_Post $post ): string {
-		return Utility::render_template(
-			sprintf( '%s/includes/templates/admin/emails/rsvp-token-confirmation.php', GATHERPRESS_CORE_PATH ),
-			array(
-				'event_id'  => $post ? $post->ID : 0,
-				'token_url' => $this->generate_url(),
-			)
-		);
 	}
 }

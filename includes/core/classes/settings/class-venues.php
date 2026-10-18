@@ -95,7 +95,7 @@ final class Venues extends Base {
 					'gatherpress'
 				),
 				'options'     => array(
-					'map_platform'                   => array(
+					'map_platform'                => array(
 						'labels'      => array(
 							'name' => __( 'Mapping Platform', 'gatherpress' ),
 						),
@@ -115,7 +115,7 @@ final class Venues extends Base {
 							),
 						),
 					),
-					'map_tile_url_custom'            => array(
+					'custom_map_tile_url'         => array(
 						'labels'      => array(
 							'name' => __( 'Custom Tile Layer URL', 'gatherpress' ),
 						),
@@ -134,7 +134,7 @@ final class Venues extends Base {
 							'map_platform' => 'osm',
 						),
 					),
-					'map_tile_attribution_custom'    => array(
+					'custom_map_tile_attribution' => array(
 						'labels'      => array(
 							'name' => __( 'Custom Attribution', 'gatherpress' ),
 						),
@@ -153,7 +153,7 @@ final class Venues extends Base {
 							'map_platform' => 'osm',
 						),
 					),
-					'carto_api_key'                  => array(
+					'carto_api_key'               => array(
 						'labels'      => array(
 							'name' => __( 'CARTO API Key', 'gatherpress' ),
 						),
@@ -184,7 +184,7 @@ final class Venues extends Base {
 							'map_platform' => 'osm',
 						),
 					),
-					'google_maps_api_key'            => array(
+					'google_maps_api_key'         => array(
 						'labels'      => array(
 							'name' => __( 'Google Maps API Key', 'gatherpress' ),
 						),
@@ -215,7 +215,7 @@ final class Venues extends Base {
 							'map_platform' => 'google',
 						),
 					),
-					'venue_map_default_type'         => array(
+					'venue_map_type'              => array(
 						'labels'      => array(
 							'name' => __( 'Default Map Type', 'gatherpress' ),
 						),
@@ -240,7 +240,7 @@ final class Venues extends Base {
 							'map_platform' => 'google',
 						),
 					),
-					'venue_map_default_render_mode'  => array(
+					'venue_map_render_mode'       => array(
 						'labels'      => array(
 							'name' => __( 'Default Render Mode', 'gatherpress' ),
 						),
@@ -260,7 +260,7 @@ final class Venues extends Base {
 							),
 						),
 					),
-					'venue_map_default_zoom'         => array(
+					'venue_map_zoom'              => array(
 						'labels'      => array(
 							'name' => __( 'Default Zoom Level', 'gatherpress' ),
 						),
@@ -279,7 +279,7 @@ final class Venues extends Base {
 							),
 						),
 					),
-					'venue_map_default_height'       => array(
+					'venue_map_height'            => array(
 						'labels'      => array(
 							'name' => __( 'Default Height', 'gatherpress' ),
 						),
@@ -300,7 +300,7 @@ final class Venues extends Base {
 							),
 						),
 					),
-					'venue_map_default_aspect_ratio' => array(
+					'venue_map_aspect_ratio'      => array(
 						'labels'      => array(
 							'name' => __( 'Default Aspect Ratio', 'gatherpress' ),
 						),
@@ -323,7 +323,7 @@ final class Venues extends Base {
 							),
 						),
 					),
-					'venue_map_default_scale'        => array(
+					'venue_map_scale'             => array(
 						'labels'      => array(
 							'name' => __( 'Default Scale', 'gatherpress' ),
 						),

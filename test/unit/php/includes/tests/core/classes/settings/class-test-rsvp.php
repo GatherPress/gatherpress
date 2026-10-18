@@ -97,8 +97,8 @@ class Test_Rsvp extends Base {
 
 		$mode_dependent = array(
 			'enable_open_rsvp',
-			'max_attendance_limit',
-			'max_guest_limit',
+			'capacity',
+			'guest_limit',
 			'enable_anonymous_rsvp',
 		);
 		foreach ( $mode_dependent as $option ) {
@@ -109,9 +109,9 @@ class Test_Rsvp extends Base {
 			);
 		}
 
-		foreach ( array( 'rsvp_cleanup_frequency', 'rsvp_cleanup_interval' ) as $option ) {
+		foreach ( array( 'rsvp_cleanup_frequency', 'rsvp_cleanup_multiplier' ) as $option ) {
 			$this->assertSame(
-				array( 'rsvp_cleanup_switch' => array( 'not' => 'disabled' ) ),
+				array( 'enable_rsvp_cleanup' => array( 'not' => 'disabled' ) ),
 				$sections['rsvp_cleanup']['options'][ $option ]['show_if'],
 				sprintf( '%s should hide when cleanup is off.', $option )
 			);

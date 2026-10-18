@@ -167,7 +167,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 	// Venues; unset there too means the aspect ratio shapes the block.
 	const heightValue =
 		getDimensionValue( attributes, 'height' ) ??
-		toSiteDefaultDimension( getFromSettings( 'venueMapDefaultHeight' ) );
+		toSiteDefaultDimension( getFromSettings( 'venueMapHeight' ) );
 	const heightPx = parsePxDimension( heightValue );
 	const blockProps = useBlockProps();
 
@@ -290,7 +290,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 	// and the "has value" check on the Scale ToolsPanelItem mirror what
 	// apply_block_attribute_defaults() stamps on the block. Fall back to
 	// SCALE_DEFAULT if Settings carries anything outside the allow-list.
-	const rawSiteScale = getFromSettings( 'venueMapDefaultScale' );
+	const rawSiteScale = getFromSettings( 'venueMapScale' );
 	const siteScaleDefault = SCALE_OPTIONS.includes( rawSiteScale )
 		? rawSiteScale
 		: SCALE_DEFAULT;

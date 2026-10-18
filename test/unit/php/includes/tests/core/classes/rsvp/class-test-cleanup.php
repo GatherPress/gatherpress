@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core\Rsvp;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Cleanup;
 use GatherPress\Core\Rsvp\Query;
+use GatherPress\Core\Rsvp\Token;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
@@ -66,7 +67,7 @@ class Test_Cleanup extends Base {
 	 */
 	public function test_rsvp_cleanup_job_can_be_scheduled_hourly(): void {
 		$settings = Settings::get_instance();
-		$settings->set( 'rsvp_cleanup_switch', 'enabled' );
+		$settings->set( 'enable_rsvp_cleanup', 'enabled' );
 		$settings->set( 'rsvp_cleanup_frequency', 'hourly' );
 
 		Cleanup::get_instance()->schedule_cleanup_cron();
@@ -84,7 +85,7 @@ class Test_Cleanup extends Base {
 	 */
 	public function test_rsvp_cleanup_job_can_be_scheduled_daily(): void {
 		$settings = Settings::get_instance();
-		$settings->set( 'rsvp_cleanup_switch', 'enabled' );
+		$settings->set( 'enable_rsvp_cleanup', 'enabled' );
 
 		Cleanup::get_instance()->schedule_cleanup_cron();
 		$next_event = wp_next_scheduled( 'gatherpress_rsvp_cleanup' );
@@ -101,7 +102,7 @@ class Test_Cleanup extends Base {
 	 */
 	public function test_rsvp_cleanup_job_can_be_scheduled_weekly(): void {
 		$settings = Settings::get_instance();
-		$settings->set( 'rsvp_cleanup_switch', 'enabled' );
+		$settings->set( 'enable_rsvp_cleanup', 'enabled' );
 		$settings->set( 'rsvp_cleanup_frequency', 'weekly' );
 
 		Cleanup::get_instance()->schedule_cleanup_cron();
@@ -119,7 +120,7 @@ class Test_Cleanup extends Base {
 	 */
 	public function test_rsvp_cleanup_job_can_be_scheduled_yearly(): void {
 		$settings = Settings::get_instance();
-		$settings->set( 'rsvp_cleanup_switch', 'enabled' );
+		$settings->set( 'enable_rsvp_cleanup', 'enabled' );
 		$settings->set( 'rsvp_cleanup_frequency', 'yearly' );
 
 		Cleanup::get_instance()->schedule_cleanup_cron();
@@ -137,7 +138,7 @@ class Test_Cleanup extends Base {
 	 */
 	public function test_rsvp_cleanup_job_can_be_scheduled_monthly(): void {
 		$settings = Settings::get_instance();
-		$settings->set( 'rsvp_cleanup_switch', 'enabled' );
+		$settings->set( 'enable_rsvp_cleanup', 'enabled' );
 		$settings->set( 'rsvp_cleanup_frequency', 'monthly' );
 
 		Cleanup::get_instance()->schedule_cleanup_cron();
@@ -171,13 +172,13 @@ class Test_Cleanup extends Base {
 	 */
 	public function test_rsvp_cleanup_job_is_rescheduled_if_cleanup_settings_change(): void {
 		$settings = Settings::get_instance();
-		$settings->set( 'rsvp_cleanup_switch', 'enabled' );
+		$settings->set( 'enable_rsvp_cleanup', 'enabled' );
 		$settings->set( 'rsvp_cleanup_frequency', 'hourly' );
 
 		Cleanup::get_instance()->schedule_cleanup_cron();
 		$next_event = wp_next_scheduled( 'gatherpress_rsvp_cleanup' );
 
-		$settings->set( 'rsvp_cleanup_interval', 2 );
+		$settings->set( 'rsvp_cleanup_multiplier', 2 );
 		Cleanup::get_instance()->schedule_cleanup_cron();
 		$rescheduled_event = wp_next_scheduled( 'gatherpress_rsvp_cleanup' );
 
@@ -225,5 +226,30 @@ class Test_Cleanup extends Base {
 		$rsvps      = $rsvp_query->get_rsvps( array() );
 
 		$this->assertCount( 0, $rsvps );
+	}
+
+	/**
+	 * An old RSVP whose link went out recently isn't cleaned up yet.
+	 *
+	 * @covers ::rsvp_cleanup
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_cleanup_job_keeps_rsvps_with_a_recent_link(): void {
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID'  => $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) ),
+				'comment_type'     => Rsvp::COMMENT_TYPE,
+				'comment_approved' => 0,
+				'comment_date'     => '2023-12-25 10:00:00',
+				'comment_date_gmt' => '2023-12-25 10:00:00',
+			)
+		);
+
+		( new Token( $comment_id ) )->generate_token();
+
+		Cleanup::get_instance()->rsvp_cleanup();
+
+		$this->assertNotNull( get_comment( $comment_id ), 'The link has 24 hours from when it was sent.' );
 	}
 }

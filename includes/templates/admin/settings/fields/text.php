@@ -16,6 +16,8 @@
  * @param string $size        The size class for styling (e.g., 'regular', 'large', or 'small').
  */
 
+use GatherPress\Core\Utility;
+
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
@@ -28,8 +30,8 @@ if ( ! isset( $name, $label, $option, $value, $description, $size, $preview ) ) 
 // drop inherited values out of the blog option on save.
 $gatherpress_readonly = ! empty( $disabled ) ? ' readonly' : '';
 ?>
-<div class="form-wrap">
-	<label for="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $label ); ?></label>
+<div class="gatherpress-settings-field">
+	<label class="gatherpress-settings-field__label" for="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $label ); ?></label>
 	<input id="<?php echo esc_attr( $option ); ?>" type="text" name="<?php echo esc_attr( $name ); ?>" class="<?php echo esc_attr( $size . '-text' ); ?>" value="<?php echo esc_attr( $value ); ?>"<?php echo $gatherpress_readonly; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static value. ?> />
 	<?php
 	if ( ! empty( $description ) ) {
@@ -39,7 +41,7 @@ $gatherpress_readonly = ! empty( $disabled ) ? ' readonly' : '';
 	}
 
 	if ( ! empty( $preview['template'] ) ) {
-		\GatherPress\Core\Utility::render_template(
+		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/settings/partials/%s.php', GATHERPRESS_CORE_PATH, $preview['template'] ),
 			array_merge(
 				array(

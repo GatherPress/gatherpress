@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Settings fields have room between their labels and inputs, matching the rest of the settings table, and the Date Format and Time Format fields work like the ones on Settings > General: the Custom field and the preview show whichever format is picked, so the preview is never empty.

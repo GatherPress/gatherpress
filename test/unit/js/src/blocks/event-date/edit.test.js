@@ -20,6 +20,12 @@ jest.mock( '@wordpress/data', () => ( {
 
 jest.mock( '@wordpress/i18n', () => ( {
 	__: ( text ) => text,
+	sprintf: ( text, ...args ) =>
+		args.reduce( ( carry, arg ) => carry.replace( '%s', arg ), text ),
+} ) );
+
+jest.mock( '@wordpress/date', () => ( {
+	dateI18n: jest.fn( ( dateFormat ) => `rendered(${ dateFormat })` ),
 } ) );
 
 jest.mock( '@wordpress/block-editor', () => ( {
@@ -40,7 +46,19 @@ jest.mock( '@wordpress/components', () => ( {
 	PanelBody: ( { children } ) => <div>{ children }</div>,
 	RadioControl: () => null,
 	Spinner: () => <div>spinner</div>,
-	TextControl: () => null,
+	// Rendered rather than stubbed so the separator control's value and
+	// placeholder can be asserted. aria-label rather than a wrapping <label>,
+	// which getByLabelText reads just the same without tripping
+	// jsx-a11y/label-has-associated-control on a mock.
+	TextControl: ( { label, value, placeholder, onChange } ) => (
+		<input
+			type="text"
+			aria-label={ label }
+			value={ value }
+			placeholder={ placeholder }
+			onChange={ ( event ) => onChange( event.target.value ) }
+		/>
+	),
 	ToggleControl: ( { label, help, checked, onChange } ) => (
 		<>
 			<button
@@ -58,7 +76,14 @@ jest.mock( '@wordpress/components', () => ( {
 
 jest.mock( '@src/components/DateTimeRange', () => () => null );
 
+// Covered on its own in `components/FormatControl.test.js`; here it would
+// only pull `SelectControl` into the components mock for no gain.
+jest.mock( '@src/components/FormatControl', () => () => null );
+
+let mockConfig = {};
+
 jest.mock( '@src/helpers/editor-settings', () => ( {
+	getFromConfig: ( key ) => mockConfig[ key ],
 	getFromSettings: ( key ) =>
 		( {
 			dateFormat: 'F j, Y',
@@ -191,3 +216,89 @@ describe( 'Event Date Edit documentation link', () => {
 		).toBe( link );
 	} );
 } );
+
+describe( 'Event Date Edit separator control', () => {
+	it( 'offers the localized default as a placeholder when unset', () => {
+		mockConfig = {};
+		const { getByLabelText } = renderEdit( { separator: '' } );
+		const input = getByLabelText( 'Separator' );
+
+		expect( input ).toHaveValue( '' );
+		expect( input ).toHaveAttribute( 'placeholder', 'to' );
+	} );
+
+	it( 'offers the filtered datetimeSeparator from config as a placeholder when unset', () => {
+		mockConfig = { datetimeSeparator: ' - ' };
+		const { getByLabelText } = renderEdit( { separator: '' } );
+		const input = getByLabelText( 'Separator' );
+
+		expect( input ).toHaveValue( '' );
+		expect( input ).toHaveAttribute( 'placeholder', ' - ' );
+	} );
+
+	it( 'leaves the placeholder empty when the filtered datetimeSeparator is empty', () => {
+		mockConfig = { datetimeSeparator: '' };
+		const { getByLabelText } = renderEdit( { separator: '' } );
+
+		expect( getByLabelText( 'Separator' ) ).toHaveAttribute( 'placeholder', '' );
+	} );
+
+	it( 'shows a custom separator as it was saved', () => {
+		const { getByLabelText } = renderEdit( { separator: 'UNTIL' } );
+
+		expect( getByLabelText( 'Separator' ) ).toHaveValue( 'UNTIL' );
+	} );
+
+	it( 'reports what is typed into the separator field', () => {
+		const setAttributes = jest.fn();
+		const { getByLabelText } = renderEdit( { separator: '' }, setAttributes );
+
+		fireEvent.change( getByLabelText( 'Separator' ), {
+			target: { value: 'bis' },
+		} );
+
+		expect( setAttributes ).toHaveBeenCalledWith( { separator: 'bis' } );
+	} );
+} );
+
+describe( 'Event Date Edit display rendering', () => {
+	// The date line on its own. With isLink on it is the only text inside the
+	// pseudo-link, so labels elsewhere in the block can't satisfy a match.
+	const dateLine = ( attributes ) =>
+		renderEdit( { isLink: true, ...attributes } ).container.querySelector(
+			'a[href="#gatherpress-event-date-pseudo-link"]',
+		).textContent;
+
+	it( 'renders the default separator when separator attribute is empty', () => {
+		mockConfig = {};
+
+		expect( dateLine( { separator: '' } ) ).toBe(
+			'2026-08-01 18:00 to 2026-08-01 20:00',
+		);
+	} );
+
+	it( 'renders the filtered datetimeSeparator from config when separator attribute is empty', () => {
+		mockConfig = { datetimeSeparator: '-' };
+
+		expect( dateLine( { separator: '' } ) ).toBe(
+			'2026-08-01 18:00 - 2026-08-01 20:00',
+		);
+	} );
+
+	it( 'renders no separator when the filtered datetimeSeparator is empty', () => {
+		mockConfig = { datetimeSeparator: '' };
+
+		expect( dateLine( { separator: '' } ) ).toBe(
+			'2026-08-01 18:00 2026-08-01 20:00',
+		);
+	} );
+
+	it( 'renders the custom separator when separator attribute is specified', () => {
+		mockConfig = { datetimeSeparator: '-' };
+
+		expect( dateLine( { separator: 'until' } ) ).toBe(
+			'2026-08-01 18:00 until 2026-08-01 20:00',
+		);
+	} );
+} );
+

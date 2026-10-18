@@ -10,7 +10,7 @@ Installing GatherPress, creating events and venues, taking RSVPs, sending email,
 - [Core concepts](user/core-concepts.md): how events, venues, topics and RSVPs fit together
 - [Creating and managing events](user/creating-and-managing-events.md) · [Venues](user/venues.md) · [Topics](user/topics.md)
 - [The RSVP system](user/rsvp-system.md) · [Emails](user/emails.md) · [Calendar feeds](user/calendar-feeds.md)
-- [Blocks](user/blocks/README.md): [Event Date](user/blocks/event-date.md), [Add to Calendar](user/blocks/add-to-calendar.md), [Online Event](user/blocks/online-event.md), [Event Query](user/blocks/event-query.md)
+- [Blocks](user/blocks/README.md): [Event Date](user/blocks/event-date.md), [Add to Calendar](user/blocks/add-to-calendar.md), [Online Event](user/blocks/online-event.md), [Event Query](user/blocks/event-query.md), [Form Field](user/blocks/form-field.md)
 - [Roles and permissions](user/user-roles-and-permissions.md) · [Privacy](user/privacy.md)
 - [FAQ](faq.md) · [Where to get help](user/where-to-get-help.md)
 

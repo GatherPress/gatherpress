@@ -48,7 +48,7 @@ Error: Event ID "525" does not exist or does not support RSVPs.
 ```
 
 > [!IMPORTANT]
-> **`--guests` and `--anonymous` are subject to the event's own settings**, exactly as they are on the front end. Guests are clamped to the event's `gatherpress_max_guest_limit`, which is `0` unless somebody raised it, and `--anonymous=1` is ignored unless the event has `gatherpress_enable_anonymous_rsvp` turned on. In both cases the command still reports success. It has recorded the RSVP, just not the part the event does not allow. If a guest count silently comes back as zero, check the event before suspecting the command.
+> **`--guests` and `--anonymous` are subject to the event's own settings**, exactly as they are on the front end. Guests are clamped to the event's `gatherpress_guest_limit`, which is `0` unless somebody raised it, and `--anonymous=1` is ignored unless the event has `gatherpress_enable_anonymous_rsvp` turned on. In both cases the command still reports success. It has recorded the RSVP, just not the part the event does not allow. If a guest count silently comes back as zero, check the event before suspecting the command.
 
 ## `wp gatherpress settings export`
 

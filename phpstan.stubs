@@ -14,6 +14,12 @@ namespace {
     define( 'GATHERPRESS_REQUIRES_PHP', '');
     define( 'GATHERPRESS_VERSION', '');
 
+    // WordPress cookie constants, used by includes/core/classes/rsvp/class-token.php.
+    // COOKIE_DOMAIN is false unless a site sets it, and the WordPress extension
+    // already treats it as dynamic.
+    define( 'COOKIEPATH', '/' );
+    define( 'COOKIE_DOMAIN', '' );
+
     /**
      * Used in includes/core/classes/class-export.php
      *

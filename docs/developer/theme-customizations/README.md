@@ -84,6 +84,18 @@ Each one falls back to a WordPress global style before falling back to a hard-co
 | `--gatherpress--tooltip--text-color` | `--wp--preset--color--base`, then `--wp--preset--color--background`, then `#fff` |
 | `--gatherpress--tooltip--background-color` | `--wp--preset--color--contrast`, then `--wp--preset--color--primary`, then `#333` |
 
+### RSVP form
+
+Applies to the messages the RSVP form shows when a submission is refused: the one placed against each field at fault, and the one at the top of the form for a failure that belongs to no single field, such as a duplicate RSVP.
+
+| Property | Falls back to |
+| --- | --- |
+| `--gatherpress--rsvp-form--error-color` | `#b32d2e` |
+
+There is no WordPress global style in the chain here, because the standard palette has no error color to reach for. The default is the same red WordPress core uses for its own error notices.
+
+The messages take their size from the text around them rather than from this property. Set a font size on the field or on the form to change it.
+
 ### Venue map
 
 Applies to the interactive (Leaflet) map. Static maps are server-rendered images and are not affected.

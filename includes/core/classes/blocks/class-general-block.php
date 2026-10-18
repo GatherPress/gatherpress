@@ -273,10 +273,10 @@ final class General_Block {
 		}
 
 		// Get max guest limit from event settings.
-		$max_guest_limit = (int) get_post_meta( $post_id, 'gatherpress_max_guest_limit', true );
+		$guest_limit = (int) get_post_meta( $post_id, 'gatherpress_guest_limit', true );
 
 		// Mark the field for removal if guest limit is 0.
-		if ( 0 === $max_guest_limit ) {
+		if ( 0 === $guest_limit ) {
 			$tag = new WP_HTML_Tag_Processor( $block_content );
 
 			while ( $tag->next_tag() ) {

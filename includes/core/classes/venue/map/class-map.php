@@ -387,11 +387,11 @@ final class Map {
 		// the editor's getFromSettings channel). Width has no default at
 		// all: the block always fills its container.
 		$defaults = array(
-			'renderMode'  => (string) $settings->get( 'venue_map_default_render_mode' ),
-			'zoom'        => (int) $settings->get( 'venue_map_default_zoom' ),
-			'aspectRatio' => (string) $settings->get( 'venue_map_default_aspect_ratio' ),
-			'scale'       => (string) $settings->get( 'venue_map_default_scale' ),
-			'type'        => (string) $settings->get( 'venue_map_default_type' ),
+			'renderMode'  => (string) $settings->get( 'venue_map_render_mode' ),
+			'zoom'        => (int) $settings->get( 'venue_map_zoom' ),
+			'aspectRatio' => (string) $settings->get( 'venue_map_aspect_ratio' ),
+			'scale'       => (string) $settings->get( 'venue_map_scale' ),
+			'type'        => (string) $settings->get( 'venue_map_type' ),
 		);
 
 		// Per-attribute validators so a never-written Settings row (empty
@@ -1676,7 +1676,7 @@ final class Map {
 	 * @return int
 	 */
 	protected function get_zoom(): int {
-		$setting = (int) Settings::get_instance()->get( 'venue_map_default_zoom' );
+		$setting = (int) Settings::get_instance()->get( 'venue_map_zoom' );
 		$default = $setting > 0 ? $setting : self::DEFAULT_ZOOM;
 
 		/**
@@ -1706,7 +1706,7 @@ final class Map {
 	 * @return int
 	 */
 	protected function get_height(): int {
-		$setting = (int) Settings::get_instance()->get( 'venue_map_default_height' );
+		$setting = (int) Settings::get_instance()->get( 'venue_map_height' );
 		$default = $setting > 0 ? $setting : self::DEFAULT_HEIGHT;
 
 		/**
@@ -1742,7 +1742,7 @@ final class Map {
 		$map_type = strtolower( trim( $map_type ) );
 
 		if ( '' === $map_type ) {
-			$map_type = (string) Settings::get_instance()->get( 'venue_map_default_type' );
+			$map_type = (string) Settings::get_instance()->get( 'venue_map_type' );
 		}
 
 		if ( ! in_array( $map_type, array( 'roadmap', 'satellite', 'hybrid', 'terrain' ), true ) ) {

@@ -49,6 +49,7 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 		prefillCurrentUser,
 		autocomplete,
 		helpText,
+		inputId,
 	} = attributes;
 
 	// Handle data attributes for conditional rendering.
@@ -228,6 +229,22 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 						) }
 					/>
 
+					<TextControl
+						__next40pxDefaultSize
+						label={ __( 'Input ID', 'gatherpress' ) }
+						value={ inputId }
+						onChange={ ( value ) => {
+							// An HTML id cannot contain whitespace.
+							const sanitized = value.replaceAll( /\s/g, '' );
+
+							setAttributes( { inputId: sanitized } );
+						} }
+						help={ __(
+							'Optional. Sets a fixed id on the field instead of a generated one. Must be unique on the page.',
+							'gatherpress',
+						) }
+					/>
+
 					{ 'hidden' !== fieldType && (
 						<TextControl
 							__next40pxDefaultSize
@@ -277,11 +294,11 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 							help={
 								'email' === fieldType
 									? __(
-										'Prefill with the email address of the logged-in user, overriding the default value. Logged-out visitors see the default value.',
+										'Prefill with the email address of the logged-in user, overriding the default value. Logged-out viewers see the default value.',
 										'gatherpress',
 									)
 									: __(
-										'Prefill with the display name of the logged-in user, overriding the default value. Logged-out visitors see the default value.',
+										'Prefill with the display name of the logged-in user, overriding the default value. Logged-out viewers see the default value.',
 										'gatherpress',
 									)
 							}

@@ -28,6 +28,7 @@ use GatherPress\Core\Traits\Singleton;
  * @phpstan-type SettingsFieldPreview array{template: string, suffix?: string}
  * @phpstan-type SettingsFieldOptions array{
  *     default?: bool|int|string,
+ *     choices?: string,
  *     items?: array<string, string>,
  *     min?: int|string,
  *     max?: int|string,
@@ -252,12 +253,15 @@ class Settings {
 			array(
 				'nonTimeFormatChars'    => Utility::non_time_format_chars(),
 				'timeFormatChars'       => Utility::time_format_chars(),
+				'dateFormatChoices'     => Utility::date_format_choices(),
+				'timeFormatChoices'     => Utility::time_format_choices(),
 				'timezoneChoices'       => Utility::timezone_choices(),
 				'siteTimezone'          => Utility::get_system_timezone(),
 				'pluginUrl'             => GATHERPRESS_CORE_URL,
 				'homeUrl'               => get_home_url(),
 				'mapTileUrl'            => self::get_map_tile_url(),
 				'mapTileAttribution'    => self::get_map_tile_attribution(),
+				'datetimeSeparator'     => Event::get_datetime_separator(),
 				'venuesMapsSettingsUrl' => admin_url(
 					sprintf(
 						'edit.php?post_type=%s&page=%s',
@@ -274,15 +278,15 @@ class Settings {
 	/**
 	 * Returns the map tile layer URL, allowing sites to override the default.
 	 *
-	 * Layers the `map_tile_url_custom` setting under the filter.
+	 * Layers the `custom_map_tile_url` setting under the filter.
 	 *
 	 * @since 0.34.0
-	 * @since 0.36.0 Layered under the `map_tile_url_custom` setting.
+	 * @since 0.36.0 Layered under the `custom_map_tile_url` setting.
 	 *
 	 * @return string Leaflet-compatible tile URL template.
 	 */
 	public static function get_map_tile_url(): string {
-		$custom  = trim( (string) self::get_instance()->get( 'map_tile_url_custom' ) );
+		$custom  = trim( (string) self::get_instance()->get( 'custom_map_tile_url' ) );
 		$default = '' !== $custom ? $custom : self::MAP_TILE_URL;
 
 		/**
@@ -349,15 +353,15 @@ class Settings {
 	/**
 	 * Returns the map attribution string, allowing sites to override the default.
 	 *
-	 * Layers the `map_tile_attribution_custom` setting under the filter.
+	 * Layers the `custom_map_tile_attribution` setting under the filter.
 	 *
 	 * @since 0.34.0
-	 * @since 0.36.0 Layered under the `map_tile_attribution_custom` setting.
+	 * @since 0.36.0 Layered under the `custom_map_tile_attribution` setting.
 	 *
 	 * @return string HTML attribution credit shown on the map.
 	 */
 	public static function get_map_tile_attribution(): string {
-		$custom = trim( (string) self::get_instance()->get( 'map_tile_attribution_custom' ) );
+		$custom = trim( (string) self::get_instance()->get( 'custom_map_tile_attribution' ) );
 
 		$default = '' !== $custom
 			? esc_html( $custom )
@@ -868,6 +872,7 @@ class Settings {
 	public function sanitize_page_settings( array $field_type_map, string $scope = 'blog' ): callable {
 		return function ( $input ) use ( $field_type_map, $scope ): array {
 			$sanitized = array();
+			$input     = Settings\Format_Field::resolve( (array) $input, $field_type_map );
 
 			foreach ( $input as $key => $value ) {
 				$type = $field_type_map[ $key ] ?? 'text';
@@ -1009,6 +1014,19 @@ class Settings {
 			case 'autocomplete':
 				$params['field_options'] = $option_settings['field']['options'] ?? array();
 				break;
+			case 'format':
+				// Resolved here rather than in the settings declaration so the
+				// examples are not rendered on every request that merely walks
+				// the settings tree for defaults, import or export.
+				$params['choices']     = Settings\Format_Field::choices(
+					(string) ( $option_settings['field']['options']['choices'] ?? '' )
+				);
+				$params['custom']      = Settings\Format_Field::CUSTOM;
+				$params['custom_name'] = $this->get_name_field(
+					Settings\Format_Field::custom_key( $option )
+				);
+				$params['preview']     = $option_settings['field']['preview'] ?? array();
+				break;
 			default:
 				// Field types without extra params (checkbox, etc.) render with the base $params.
 				break;
@@ -1110,11 +1128,9 @@ class Settings {
 			? get_site_option( self::OPTION_NAME, array() )
 			: get_option( self::OPTION_NAME, array() );
 
-		if (
-			is_array( $options )
-			&& isset( $options[ $option ] )
-			&& '' !== $options[ $option ]
-		) {
+		// isset() is safe on a non-array, which is what get_site_option()
+		// hands back on single site, so no shape check is needed first.
+		if ( isset( $options[ $option ] ) && '' !== $options[ $option ] ) {
 			return $options[ $option ];
 		}
 

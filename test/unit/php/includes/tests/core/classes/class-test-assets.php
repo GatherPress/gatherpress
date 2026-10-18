@@ -69,6 +69,12 @@ class Test_Assets extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 11,
+				'callback' => array( $instance, 'register_public_script_handles' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'wp_head',
 				'priority' => 10,
 				'callback' => array( $instance, 'add_interactivity_state' ),
@@ -137,20 +143,18 @@ class Test_Assets extends Base {
 	/**
 	 * Coverage for enqueue_timezone_shim in the admin when wp-date is registered.
 	 *
-	 * The admin path enqueues wp-date itself and attaches the inline script
-	 * that normalizes `UTC+0` / `UTC-0`.
+	 * The admin path enqueues wp-date itself, and the shim that normalizes
+	 * `UTC+0` / `UTC-0` after it.
 	 *
 	 * @covers ::enqueue_timezone_shim
 	 *
 	 * @return void
 	 */
-	public function test_enqueue_timezone_shim_enqueues_and_attaches_inline_script_in_admin(): void {
+	public function test_enqueue_timezone_shim_enqueues_the_shim_in_admin(): void {
 		$instance = Assets::get_instance();
 
 		set_current_screen( 'post.php' );
 
-		// Re-register from scratch so any inline data attached by an earlier
-		// test can't stand in for the inline script this one is asserting on.
 		wp_deregister_script( 'wp-date' );
 		// phpcs:ignore WordPress.WP.EnqueuedResourceParameters.NoExplicitVersion -- Test registration; no real asset.
 		wp_register_script( 'wp-date', '', array(), '1', false );
@@ -162,11 +166,7 @@ class Test_Assets extends Base {
 			'Failed to assert wp-date is enqueued in the admin.'
 		);
 
-		$inline = wp_scripts()->get_data( 'wp-date', 'after' );
-		$joined = is_array( $inline ) ? implode( "\n", $inline ) : (string) $inline;
-
-		$this->assertStringContainsString( 'wp.date.setSettings', $joined );
-		$this->assertStringContainsString( 'UTC', $joined );
+		$this->assert_timezone_shim_follows_wp_date();
 
 		// Reset for downstream tests.
 		wp_dequeue_script( 'wp-date' );
@@ -210,11 +210,31 @@ class Test_Assets extends Base {
 	}
 
 	/**
+	 * Assert the shim is enqueued and runs after wp-date, then dequeue it.
+	 *
+	 * @return void
+	 */
+	private function assert_timezone_shim_follows_wp_date(): void {
+		$this->assertTrue(
+			wp_script_is( 'gatherpress-timezone-shim', 'enqueued' ),
+			'Failed to assert the timezone shim is enqueued.'
+		);
+		$this->assertContains(
+			'wp-date',
+			wp_scripts()->registered['gatherpress-timezone-shim']->deps,
+			'Failed to assert the timezone shim runs after wp-date.'
+		);
+
+		wp_dequeue_script( 'gatherpress-timezone-shim' );
+		wp_deregister_script( 'gatherpress-timezone-shim' );
+	}
+
+	/**
 	 * Coverage for enqueue_timezone_shim on the front end when another block or
 	 * plugin already enqueued wp-date.
 	 *
-	 * The timezone patch still applies in that case; the shim simply never
-	 * forces the load itself.
+	 * The timezone shim still loads in that case; it simply never forces the
+	 * load itself.
 	 *
 	 * @covers ::enqueue_timezone_shim
 	 *
@@ -232,11 +252,7 @@ class Test_Assets extends Base {
 
 		$instance->enqueue_timezone_shim();
 
-		$inline = wp_scripts()->get_data( 'wp-date', 'after' );
-		$joined = is_array( $inline ) ? implode( "\n", $inline ) : (string) $inline;
-
-		$this->assertStringContainsString( 'wp.date.setSettings', $joined );
-		$this->assertStringContainsString( 'UTC', $joined );
+		$this->assert_timezone_shim_follows_wp_date();
 
 		// Reset for downstream tests.
 		wp_dequeue_script( 'wp-date' );
@@ -436,6 +452,30 @@ class Test_Assets extends Base {
 		$this->assertFalse( wp_script_is( 'gatherpress-profile', 'enqueued' ) );
 		$instance->admin_enqueue_scripts( 'profile.php' );
 		$this->assertTrue( wp_script_is( 'gatherpress-profile', 'enqueued' ) );
+		$this->assertTrue( wp_style_is( 'gatherpress-profile-style', 'enqueued' ) );
+
+		wp_dequeue_script( 'gatherpress-profile' );
+		wp_dequeue_style( 'gatherpress-profile-style' );
+		$instance->admin_enqueue_scripts( 'user-edit.php' );
+		$this->assertTrue(
+			wp_style_is( 'gatherpress-profile-style', 'enqueued' ),
+			'Failed to assert the profile styles load when editing another user.'
+		);
+	}
+
+	/**
+	 * Coverage for enqueue_settings_assets, which the network settings page calls directly.
+	 *
+	 * @covers ::enqueue_settings_assets
+	 *
+	 * @return void
+	 */
+	public function test_enqueue_settings_assets(): void {
+		Assets::get_instance()->enqueue_settings_assets();
+
+		$this->assertTrue( wp_script_is( 'gatherpress-settings', 'enqueued' ) );
+		$this->assertTrue( wp_style_is( 'gatherpress-settings-style', 'enqueued' ) );
+		$this->assertTrue( wp_style_is( 'gatherpress-utility-style', 'enqueued' ) );
 	}
 
 	/**
@@ -760,6 +800,66 @@ class Test_Assets extends Base {
 			true,
 			'The register_variation_assets method should execute without error.'
 		);
+	}
+
+	/**
+	 * Coverage for register_public_script_handles.
+	 *
+	 * The public handle has no source of its own; depending on it has to pull
+	 * in the script that writes the global.
+	 *
+	 * @since  0.36.0
+	 * @covers ::register_public_script_handles
+	 *
+	 * @return void
+	 */
+	public function test_register_public_script_handles_aliases_the_publisher(): void {
+		$instance = Assets::get_instance();
+
+		wp_deregister_script( 'gatherpress-query-controls' );
+		wp_register_script( 'gatherpress-query', 'https://example.test/query.js', array(), '1', true );
+
+		$instance->register_public_script_handles();
+
+		$registered = wp_scripts()->query( 'gatherpress-query-controls', 'registered' );
+
+		$this->assertNotFalse( $registered, 'Failed to assert the public handle is registered.' );
+		$this->assertFalse( $registered->src, 'Failed to assert the public handle is an alias with no source.' );
+		$this->assertSame(
+			array( 'gatherpress-query' ),
+			$registered->deps,
+			'Failed to assert the public handle pulls in the script that publishes the global.'
+		);
+
+		wp_deregister_script( 'gatherpress-query-controls' );
+	}
+
+	/**
+	 * Coverage for register_public_script_handles.
+	 *
+	 * A build without the publishing script should not leave a public handle
+	 * that depends on something missing.
+	 *
+	 * @since  0.36.0
+	 * @covers ::register_public_script_handles
+	 *
+	 * @return void
+	 */
+	public function test_register_public_script_handles_skips_a_missing_publisher(): void {
+		$instance = Assets::get_instance();
+
+		wp_deregister_script( 'gatherpress-query-controls' );
+		wp_deregister_script( 'gatherpress-query' );
+
+		$instance->register_public_script_handles();
+
+		$this->assertFalse(
+			wp_script_is( 'gatherpress-query-controls', 'registered' ),
+			'Failed to assert no public handle is registered without its publisher.'
+		);
+
+		// Restore the variation for the tests that follow.
+		$instance->register_variation_assets();
 	}
 
 	/**

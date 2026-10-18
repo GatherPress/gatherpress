@@ -7,6 +7,10 @@ import { store, getElement, getContext } from '@wordpress/interactivity';
  * Internal dependencies
  */
 import { initPostContext, getNonce } from '../../helpers/interactivity';
+import {
+	clearFormErrors,
+	reportSubmissionError,
+} from './form-errors';
 const { state } = store( 'gatherpress', {
 	state: {
 		posts: {},
@@ -27,6 +31,11 @@ const { state } = store( 'gatherpress', {
 			if ( state.rsvpForm.isSubmitting ) {
 				return;
 			}
+
+			// Drop anything the previous attempt reported, so a field the
+			// person has since fixed stops being marked while the new
+			// submission is in flight.
+			clearFormErrors( form );
 
 			// Find submit button for loading state.
 			const submitButton = form.querySelector( '.gatherpress-submit-button' );
@@ -109,6 +118,7 @@ const { state } = store( 'gatherpress', {
 					// Handle blocks with form visibility attributes.
 					const blocksWithVisibility = form.querySelectorAll( '[data-gatherpress-rsvp-form-visibility]' );
 					const isPast = 'past' === form.dataset.gatherpressEventState;
+					let firstShown = null;
 
 					blocksWithVisibility.forEach( ( block ) => {
 						const visibilityAttr = block.dataset.gatherpressRsvpFormVisibility;
@@ -141,11 +151,19 @@ const { state } = store( 'gatherpress', {
 							block.setAttribute( 'aria-hidden', 'false' );
 							block.setAttribute( 'aria-live', 'polite' );
 							block.setAttribute( 'role', 'status' );
+							firstShown = firstShown || block;
 						} else if ( false === shouldShow ) {
 							block.style.display = 'none';
 							block.setAttribute( 'aria-hidden', 'true' );
 						}
 					} );
+
+					// The submit button is usually among the hidden blocks, so
+					// focus would fall to the page. Move it to the message.
+					if ( firstShown ) {
+						firstShown.setAttribute( 'tabindex', '-1' );
+						firstShown.focus();
+					}
 
 					// Update the responses data if available.
 					if ( result.responses ) {
@@ -162,12 +180,10 @@ const { state } = store( 'gatherpress', {
 						}
 					}
 				} else {
-					// Error from the server - show alert with server-provided message.
-					// eslint-disable-next-line no-alert
-					alert(
-						result?.message ||
-							'Sorry, there was an issue processing your RSVP. Please try again.',
-					);
+					// Report in the form itself. The server names each failing
+					// field, so the messages go against the inputs rather than
+					// into an alert the person has to dismiss and remember.
+					reportSubmissionError( form, result );
 				}
 			} catch ( error ) {
 				// Network or other errors - fall back to regular form submission.

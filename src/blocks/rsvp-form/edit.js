@@ -121,7 +121,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 		.filter( ( name ) => 'gatherpress/rsvp-form' !== name );
 
 	// Get event data - either from override postId or current post.
-	const { maxGuestLimit: maxAttendanceLimit, enableRsvp, enableAnonymousRsvp } = useSelect(
+	const { guestLimit, enableRsvp, enableAnonymousRsvp } = useSelect(
 		( select ) => getEventMeta( select, postId, attributes ),
 		[ postId, attributes ],
 	);
@@ -175,7 +175,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 
 				// Determine if the field should be disabled based on its field name.
 				if ( 'gatherpress_rsvp_form_guests' === fieldName ) {
-					shouldDisable = 0 === parseInt( maxAttendanceLimit, 10 );
+					shouldDisable = 0 === parseInt( guestLimit, 10 );
 				} else if ( 'gatherpress_rsvp_form_anonymous' === fieldName ) {
 					shouldDisable = ! enableAnonymousRsvp;
 				}
@@ -207,7 +207,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 
 			return block;
 		} );
-	}, [ maxAttendanceLimit, enableAnonymousRsvp ] );
+	}, [ guestLimit, enableAnonymousRsvp ] );
 
 	/**
 	 * Recursively collect visibility styles from blocks with metadata.
@@ -274,7 +274,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 		const styles = [];
 
 		// Hide guest count field if max attendance limit is 0.
-		if ( 0 === parseInt( maxAttendanceLimit, 10 ) ) {
+		if ( 0 === parseInt( guestLimit, 10 ) ) {
 			styles.push( `#block-${ clientId } .gatherpress-rsvp-field-guests { opacity: ${ DISABLED_FIELD_OPACITY }; }` );
 		}
 
@@ -289,7 +289,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 		return () => {
 			styleElement?.remove();
 		};
-	}, [ maxAttendanceLimit, enableAnonymousRsvp, clientId ] );
+	}, [ guestLimit, enableAnonymousRsvp, clientId ] );
 
 	const rsvpMode = getFromSettings( 'rsvpMode' ) ?? 'enabled';
 	const enableOpenRsvp = getFromSettings( 'enableOpenRsvp' ) ?? true;

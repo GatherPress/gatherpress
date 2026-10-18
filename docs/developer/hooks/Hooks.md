@@ -25,6 +25,12 @@
 
 - [`gatherpress_calendar_url`](gatherpress_calendar_url.md) Filters the calendar URL for a single event.
 
+## class-email.php
+
+- [`gatherpress_email_subject`](gatherpress_email_subject.md) Filters the subject of an event email.
+- [`gatherpress_site_message_active_days`](gatherpress_site_message_active_days.md) Filters the choices for how far back an active user's last RSVP can be.
+- [`gatherpress_site_message_subject`](gatherpress_site_message_subject.md) Filters the subject line of a site-wide message.
+
 ## class-event-query.php
 
 - [`gatherpress_query_vars`](gatherpress_query_vars.md) This filter is documented in includes/query-loop.php
@@ -33,6 +39,7 @@
 
 - [`gatherpress_date_format`](gatherpress_date_format.md)
 - [`gatherpress_datetime_format`](gatherpress_datetime_format.md) Filters the format an event's datetime is rendered with.
+- [`gatherpress_datetime_separator`](gatherpress_datetime_separator.md) Filter the separator between start and end dates/times.
 - [`gatherpress_force_online_event_link`](gatherpress_force_online_event_link.md) Filters whether to force the display of the online event link.
 - [`gatherpress_time_format`](gatherpress_time_format.md)
 - [`gatherpress_timezone`](gatherpress_timezone.md)
@@ -58,6 +65,13 @@
 ## class-import.php
 
 - [`gatherpress_import`](gatherpress_import.md) Fires for every GatherPress data to be imported.
+
+## class-mailer.php
+
+- [`gatherpress_email_batch_size`](gatherpress_email_batch_size.md) Filters how many recipients one GatherPress mail job sends to.
+- [`gatherpress_email_pre_enqueue_job`](gatherpress_email_pre_enqueue_job.md) Filters the mail enqueue call to take over scheduling.
+- [`gatherpress_email_recipient_consent`](gatherpress_email_recipient_consent.md) Filters whether a recipient consents to a GatherPress email.
+- [`gatherpress_email_recipients`](gatherpress_email_recipients.md) Filters one batch of recipients of a GatherPress email.
 
 ## class-manager.php
 
@@ -96,13 +110,17 @@
 - [`gatherpress_geocode_query`](gatherpress_geocode_query.md) Filters the address sent to the geocoder.
 - [`gatherpress_rsvp_comment_query_exclusion`](gatherpress_rsvp_comment_query_exclusion.md) Filters whether RSVP comments should be excluded from a comment query.
 
-## class-rest-api.php
-
-- [`gatherpress_email_subject`](gatherpress_email_subject.md) Filters the event update email subject.
-
 ## class-roles.php
 
 - [`gatherpress_roles`](gatherpress_roles.md) Filter the list of roles for GatherPress.
+
+## class-rsvp-form.php
+
+- [`gatherpress_rsvp_form_schemas`](gatherpress_rsvp_form_schemas.md) Filters the RSVP form schemas about to be stored for a post.
+
+## class-rsvp.php
+
+- [`gatherpress_rsvp_waiting_list_promoted`](gatherpress_rsvp_waiting_list_promoted.md) This action is documented in includes/core/classes/rsvp/class-rsvp.php
 
 ## class-settings.php
 
@@ -139,14 +157,16 @@
 
 ## class-utility.php
 
+- [`gatherpress_date_formats`](gatherpress_date_formats.md) Filters the date formats offered as examples in GatherPress.
 - [`gatherpress_pre_get_http_input`](gatherpress_pre_get_http_input.md) Short-circuit filter for HTTP input retrieval during testing.
 - [`gatherpress_pre_get_wp_referer`](gatherpress_pre_get_wp_referer.md) Short-circuit filter for wp_get_referer() during testing.
 - [`gatherpress_template_path`](gatherpress_template_path.md) Filters the resolved template path returned by `Utility::locate_template()`.
+- [`gatherpress_time_formats`](gatherpress_time_formats.md) Filters the time formats offered as examples in GatherPress.
 
 ## gatherpress.php
 
 - [`gatherpress_loaded`](gatherpress_loaded.md) Fires once GatherPress has finished bootstrapping its core classes.
 
-## index.php
+## network-page.php
 
 - [`gatherpress_settings_section`](gatherpress_settings_section.md) Fires so tabs that render via the GatherPress settings section action

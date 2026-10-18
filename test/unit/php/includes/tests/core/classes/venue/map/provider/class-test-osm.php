@@ -722,7 +722,7 @@ class Test_OSM extends Base {
 	}
 
 	/**
-	 * The map_tile_url_custom setting (#1267) is used as the default, but a filter still wins.
+	 * The custom_map_tile_url setting (#1267) is used as the default, but a filter still wins.
 	 *
 	 * @since 0.36.0
 	 *
@@ -733,7 +733,7 @@ class Test_OSM extends Base {
 	public function test_get_tile_url_template_uses_custom_setting(): void {
 		$settings = Settings::get_instance();
 
-		$settings->set( 'map_tile_url_custom', 'https://custom.example.test/{z}/{x}/{y}.png' );
+		$settings->set( 'custom_map_tile_url', 'https://custom.example.test/{z}/{x}/{y}.png' );
 
 		$this->assertSame(
 			'https://custom.example.test/{z}/{x}/{y}.png',
@@ -755,7 +755,7 @@ class Test_OSM extends Base {
 		);
 
 		remove_all_filters( 'gatherpress_static_map_tile_url' );
-		$settings->set( 'map_tile_url_custom', '' );
+		$settings->set( 'custom_map_tile_url', '' );
 	}
 
 	/**
@@ -770,7 +770,7 @@ class Test_OSM extends Base {
 	public function test_get_tile_url_template_resolves_subdomain_placeholder(): void {
 		$settings = Settings::get_instance();
 
-		$settings->set( 'map_tile_url_custom', 'https://{s}.tile.example.test/{z}/{x}/{y}.png' );
+		$settings->set( 'custom_map_tile_url', 'https://{s}.tile.example.test/{z}/{x}/{y}.png' );
 
 		$this->assertSame(
 			'https://a.tile.example.test/{z}/{x}/{y}.png',
@@ -778,7 +778,7 @@ class Test_OSM extends Base {
 			'Failed to assert the {s} placeholder resolves to a fixed subdomain.'
 		);
 
-		$settings->set( 'map_tile_url_custom', '' );
+		$settings->set( 'custom_map_tile_url', '' );
 	}
 
 	/**
@@ -798,7 +798,7 @@ class Test_OSM extends Base {
 		$settings = Settings::get_instance();
 
 		$settings->set( 'carto_api_key', 'abc123' );
-		$settings->set( 'map_tile_url_custom', 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png' );
+		$settings->set( 'custom_map_tile_url', 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png' );
 
 		$this->assertSame(
 			'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
@@ -807,6 +807,6 @@ class Test_OSM extends Base {
 		);
 
 		$settings->set( 'carto_api_key', '' );
-		$settings->set( 'map_tile_url_custom', '' );
+		$settings->set( 'custom_map_tile_url', '' );
 	}
 }

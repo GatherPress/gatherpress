@@ -17,6 +17,7 @@ Standalone guides for customizing specific GatherPress features through hooks:
 - [Event duration filters](event-duration.md): customize the editor's Duration control (`gatherpress.durationOptions`, `gatherpress.durationDefault`).
 - [Venue address format](venue-address-format.md): locale-aware ordering of geocoded address labels via translatable format strings, plus the `gatherpress_formatted_address` filter.
 - [Plugin lifecycle](plugin-lifecycle.md): the load sequence and the `gatherpress_loaded` hook, when GatherPress's classes are ready and how load order affects catching the hook.
+- [Taxonomies](taxonomies/): registering your own taxonomy across every event post type, attaching categories and tags, and renaming or detaching Topics.
 - [WP-CLI commands](wp-cli/README.md): `wp gatherpress event rsvp` and `wp gatherpress settings import|export`, and how to add a command of your own.
 - [Content import and export](content-import-export/README.md): how event dates survive a WXR round trip, and how to carry your own data with them.
 

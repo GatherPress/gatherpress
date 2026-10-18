@@ -52,7 +52,7 @@ The full picture, including how releases are cut, is in the [release process](re
 
 ### Conventions
 
-`AGENTS.md` in the repository root is the house style: US English, WordPress Coding Standards, `@since TBD` on anything new, and a long list of patterns this codebase has settled on. It is written for AI coding agents and is just as useful to people.
+`AGENTS.md` in the repository root is the house style: US English, WordPress Coding Standards, `@since TBD` on anything new, which CSS unit belongs where, and a long list of other patterns this codebase has settled on. It is written for AI coding agents and is just as useful to people.
 
 Run the linters before you push, because CI will:
 

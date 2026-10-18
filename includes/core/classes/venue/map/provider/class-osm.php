@@ -369,15 +369,15 @@ final class OSM extends Base {
 	}
 
 	/**
-	 * Tile URL template, filterable and layered under `map_tile_url_custom`.
+	 * Tile URL template, filterable and layered under `custom_map_tile_url`.
 	 *
 	 * @since 0.34.0
-	 * @since 0.36.0 Layered under the `map_tile_url_custom` setting; resolves `{s}`.
+	 * @since 0.36.0 Layered under the `custom_map_tile_url` setting; resolves `{s}`.
 	 *
 	 * @return string
 	 */
 	protected function get_tile_url_template(): string {
-		$custom  = trim( (string) Settings::get_instance()->get( 'map_tile_url_custom' ) );
+		$custom  = trim( (string) Settings::get_instance()->get( 'custom_map_tile_url' ) );
 		$default = '' !== $custom ? $custom : self::DEFAULT_TILE_URL;
 
 		/**

@@ -225,7 +225,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test topic feeds use the upcoming event query by default.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::handle_events_feed_query
 	 *
@@ -251,7 +251,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test topic calendar feeds are not handled as RSS feeds.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::handle_events_feed_query
 	 *
@@ -271,7 +271,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test topic feeds support past event queries.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::handle_events_feed_query
 	 *
@@ -299,7 +299,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test topic feeds keep the upcoming event query for non-past types.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::handle_events_feed_query
 	 *
