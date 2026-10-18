@@ -66,7 +66,7 @@ final class Rsvp_Form {
 	 * Also the key a schema failure is reported under, since that failure
 	 * belongs to the form rather than to any one field.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @var string
 	 */
 	const SCHEMA_ID_FIELD = 'gatherpress_form_schema_id';
@@ -493,7 +493,7 @@ final class Rsvp_Form {
 		 *   );
 		 *   ```
 		 *
-		 * @since TBD
+		 * @since 0.36.0
 		 *
 		 * @param array<string, mixed> $schemas Schemas derived from the post's RSVP Form blocks, keyed by form id.
 		 * @param int                  $post_id The post being saved.
@@ -694,7 +694,7 @@ final class Rsvp_Form {
 	 * at the top level, prefixed with `{parent index}_` for each nesting level.
 	 *
 	 * @since 0.33.0
-	 * @since TBD Renamed from find_form_index_in_blocks(), and returns the form schema ID rather than a block index.
+	 * @since 0.36.0 Renamed from find_form_index_in_blocks(), and returns the form schema ID rather than a block index.
 	 *
 	 * @param array<int, array<string, mixed>> $blocks       Array of parsed blocks.
 	 * @param array<string, mixed>             $target_block The block we're looking for.
@@ -803,7 +803,7 @@ final class Rsvp_Form {
 	/**
 	 * Get the custom field definitions for a stored form schema.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param int    $post_id        The event post ID the schema belongs to.
 	 * @param string $form_schema_id The submitted form-schema id.
@@ -849,7 +849,7 @@ final class Rsvp_Form {
 	 * Runs before the RSVP comment is created, so a submission that fails
 	 * here is rejected outright rather than stored with answers missing.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param int                  $post_id        The event post ID the schema belongs to.
 	 * @param string               $form_schema_id The submitted form-schema id.
@@ -920,7 +920,7 @@ final class Rsvp_Form {
 	/**
 	 * Get the message for a required field that was left unanswered.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param string               $field_name   The field's name in the schema.
 	 * @param array<string, mixed> $field_config The field configuration from the schema.
@@ -941,7 +941,7 @@ final class Rsvp_Form {
 	 * Reads each value the same way the save path does, so validation and
 	 * storage always see the same input.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param int    $post_id        The event post ID the schema belongs to.
 	 * @param string $form_schema_id The submitted form-schema id.
@@ -961,7 +961,7 @@ final class Rsvp_Form {
 	/**
 	 * Get a field's display label, falling back to its name.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param string               $field_name   The field's name in the schema.
 	 * @param array<string, mixed> $field_config The field configuration from the schema.
@@ -977,7 +977,7 @@ final class Rsvp_Form {
 	/**
 	 * Get the message explaining why a submitted value was rejected.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param string               $field_name   The field's name in the schema.
 	 * @param array<string, mixed> $field_config The field configuration from the schema.

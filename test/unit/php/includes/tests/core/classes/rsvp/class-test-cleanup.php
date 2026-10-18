@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core\Rsvp;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Cleanup;
 use GatherPress\Core\Rsvp\Query;
+use GatherPress\Core\Rsvp\Token;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
@@ -225,5 +226,30 @@ class Test_Cleanup extends Base {
 		$rsvps      = $rsvp_query->get_rsvps( array() );
 
 		$this->assertCount( 0, $rsvps );
+	}
+
+	/**
+	 * An old RSVP whose link went out recently isn't cleaned up yet.
+	 *
+	 * @covers ::rsvp_cleanup
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_cleanup_job_keeps_rsvps_with_a_recent_link(): void {
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID'  => $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) ),
+				'comment_type'     => Rsvp::COMMENT_TYPE,
+				'comment_approved' => 0,
+				'comment_date'     => '2023-12-25 10:00:00',
+				'comment_date_gmt' => '2023-12-25 10:00:00',
+			)
+		);
+
+		( new Token( $comment_id ) )->generate_token();
+
+		Cleanup::get_instance()->rsvp_cleanup();
+
+		$this->assertNotNull( get_comment( $comment_id ), 'The link has 24 hours from when it was sent.' );
 	}
 }

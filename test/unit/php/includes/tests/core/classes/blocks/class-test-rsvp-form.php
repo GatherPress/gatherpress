@@ -249,7 +249,7 @@ class Test_Rsvp_Form extends Base {
 	 * import @wordpress/i18n, so the generic failure message has to reach the
 	 * browser as a translated attribute on the form.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -395,7 +395,7 @@ class Test_Rsvp_Form extends Base {
 	 * The render side and the save side must agree on the id, or
 	 * validate_custom_fields() rejects every submission of the form.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::transform_block_content
 	 * @covers ::get_form_schema_id
 	 * @covers ::find_form_schema_id_in_blocks
@@ -466,7 +466,7 @@ class Test_Rsvp_Form extends Base {
 	 * Generated ids change on every render, so only an author-set id is
 	 * worth storing.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::extract_form_fields_from_inner_blocks
 	 *
 	 * @return void
@@ -516,7 +516,7 @@ class Test_Rsvp_Form extends Base {
 	 * no RSVP Form block used to take the delete branch and destroy a schema
 	 * written by anything else.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::save_form_schema
 	 *
 	 * @return void
@@ -585,7 +585,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests the filter receives the block-derived schemas.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::save_form_schema
 	 *
 	 * @return void
@@ -630,7 +630,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests the filter can clear the schemas.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::save_form_schema
 	 *
 	 * @return void
@@ -1080,7 +1080,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Create an event carrying a form schema with one field of each shape under test.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return int The event post ID.
 	 */
@@ -1134,7 +1134,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Data provider for custom-field validation.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return array<string, array<int, mixed>>
 	 */
@@ -1194,7 +1194,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests validate_custom_fields against a stored schema.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::validate_custom_fields
 	 * @covers ::get_schema_fields
 	 * @covers ::get_field_label
@@ -1231,7 +1231,7 @@ class Test_Rsvp_Form extends Base {
 	 * The schema carries an `email` field, but that one belongs to the RSVP
 	 * form itself and is validated before custom fields are considered.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::validate_custom_fields
 	 *
 	 * @return void
@@ -1254,7 +1254,7 @@ class Test_Rsvp_Form extends Base {
 	 * Resolving an unknown id to no fields would skip every required answer
 	 * on the form, which is the bypass the validation exists to close.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::validate_custom_fields
 	 *
 	 * @return void
@@ -1277,7 +1277,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests any schema id is accepted when the event defines no form.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::validate_custom_fields
 	 *
 	 * @return void
@@ -1304,7 +1304,7 @@ class Test_Rsvp_Form extends Base {
 	 * Whitespace passes the requiredness check, because it is neither null
 	 * nor '', but sanitizing trims it to nothing.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::validate_custom_fields
 	 *
 	 * @return void
@@ -1328,7 +1328,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Data provider for values that are not scalars.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return array<string, array<int, mixed>>
 	 */
@@ -1347,7 +1347,7 @@ class Test_Rsvp_Form extends Base {
 	 * A REST submission carries a decoded JSON body, so a field can arrive as
 	 * an array. The sanitizers take strings and raise a TypeError otherwise.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::sanitize_custom_field_value
 	 *
 	 * @dataProvider data_non_scalar_values
@@ -1377,7 +1377,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests a non-scalar value is reported against its field.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::validate_custom_fields
 	 *
 	 * @return void
@@ -1401,7 +1401,7 @@ class Test_Rsvp_Form extends Base {
 	 * `in_array()` raises a TypeError when the haystack is not an array, and
 	 * the stored schema can carry a scalar there.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::sanitize_custom_field_value
 	 *
 	 * @return void
@@ -1439,7 +1439,7 @@ class Test_Rsvp_Form extends Base {
 	 *
 	 * The schema is post meta, so its shape is whatever is in the database.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return array<string, array<int, mixed>>
 	 */
@@ -1474,7 +1474,7 @@ class Test_Rsvp_Form extends Base {
 	 * config to `sanitize_custom_field_value()`, which is typed `array`, so an
 	 * unchecked shape here is a fatal rather than a bad answer.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::get_schema_fields
 	 * @covers ::validate_custom_fields
 	 * @covers ::validate_custom_fields_from_post
@@ -1511,7 +1511,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests a usable field survives alongside a malformed sibling.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::get_schema_fields
 	 *
 	 * @return void
@@ -1557,7 +1557,7 @@ class Test_Rsvp_Form extends Base {
 	 * Invoked directly because the helper is private and called from a loop
 	 * in the same class, which xdebug does not trace reliably.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::get_required_message
 	 *
 	 * @return void
@@ -1584,7 +1584,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests validate_custom_fields_from_post reads the submitted values.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::validate_custom_fields_from_post
 	 *
 	 * @return void
@@ -1627,7 +1627,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests the sanitize_custom_field_value method with radio fields.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::sanitize_custom_field_value
 	 *
 	 * @return void
@@ -1654,7 +1654,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests the sanitize_custom_field_value method rejects an empty required value.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::sanitize_custom_field_value
 	 *
 	 * @return void

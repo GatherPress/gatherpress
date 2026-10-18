@@ -51,7 +51,7 @@ The settings page is organized into tabs, each managed by its own class:
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `rsvp_mode` | select | `'all_on'` | Controls sitewide RSVP availability. See [RSVP Mode](#rsvp-mode) below. |
-| `capacity` | number | `50` | Maximum attendees per event (0 = unlimited). Called `max_attendance_limit` before 0.36.0, which still answers until 0.37.0 |
+| `capacity` | number | `50` | Maximum attendees per event (0 = unlimited) |
 | `guest_limit` | number | `0` | Maximum guests per attendee (0-5) |
 | `enable_anonymous_rsvp` | checkbox | `false` | Allow anonymous RSVPs |
 | `enable_open_rsvp` | checkbox | `true` | Allow visitors to RSVP without a site account (email verification). Enabled by default. |

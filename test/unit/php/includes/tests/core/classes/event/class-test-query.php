@@ -16,6 +16,7 @@ use GatherPress\Core\Venue;
 use GatherPress\Core\Venue\Setup;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
+use stdClass;
 use WP_Query;
 
 /**
@@ -224,33 +225,276 @@ class Test_Query extends Base {
 		wp_set_post_terms( $post_1->ID, '_unit-test-venue', Venue::TAXONOMY );
 
 		$results = $instance->get_events_list(
-			'past',
-			2,
-			array( 'unit-test-topic' ),
-			array( '_unit-test-venue' )
+			array(
+				'event_list_type' => 'past',
+				'number'          => 2,
+				'topics'          => array( 'unit-test-topic' ),
+				'venues'          => array( '_unit-test-venue' ),
+			)
 		);
 
 		$this->assertContains( $post_1->ID, $results->posts, 'Failed to assert that post ID was in array.' );
 		$this->assertNotContains( $post_2->ID, $results->posts, 'Failed to assert that post ID was not in array.' );
 
 		$results = $instance->get_events_list(
-			'past',
-			2,
-			array( 'unit-test-topic' )
+			array(
+				'event_list_type' => 'past',
+				'number'          => 2,
+				'topics'          => array( 'unit-test-topic' ),
+			)
 		);
 
 		$this->assertContains( $post_1->ID, $results->posts, 'Failed to assert that post ID was in array.' );
 		$this->assertNotContains( $post_2->ID, $results->posts, 'Failed to assert that post ID was not in array.' );
 
 		$results = $instance->get_events_list(
-			'past',
-			2,
+			array(
+				'event_list_type' => 'past',
+				'number'          => 2,
+				'venues'          => array( '_unit-test-venue' ),
+			)
+		);
+
+		$this->assertContains( $post_1->ID, $results->posts, 'Failed to assert that post ID was in array.' );
+		$this->assertNotContains( $post_2->ID, $results->posts, 'Failed to assert that post ID was not in array.' );
+	}
+
+	/**
+	 * Coverage for the args array signature of get_events_list.
+	 *
+	 * @covers ::get_events_list
+	 *
+	 * @return void
+	 */
+	public function test_get_events_list_defaults_to_array_args(): void {
+		$instance = Query::get_instance();
+
+		$results = $instance->get_events_list( array( 'event_list_type' => 'past' ) );
+
+		$this->assertSame( 'past', $results->query[ Query::EVENT_QUERY_PARAM ] );
+		$this->assertSame( 5, $results->query['posts_per_page'] );
+		$this->assertSame( 'DESC', $results->query['order'] );
+	}
+
+	/**
+	 * Coverage for an empty args array falling back to every default.
+	 *
+	 * @covers ::get_events_list
+	 *
+	 * @return void
+	 */
+	public function test_get_events_list_empty_args_array(): void {
+		$instance = Query::get_instance();
+
+		$results = $instance->get_events_list( array() );
+
+		$this->assertSame( '', $results->query[ Query::EVENT_QUERY_PARAM ] );
+		$this->assertSame( 5, $results->query['posts_per_page'] );
+		$this->assertSame( 'ASC', $results->query['order'] );
+		$this->assertSame( array(), $results->query['tax_query'] );
+	}
+
+	/**
+	 * Coverage for args of the wrong type falling back to defaults.
+	 *
+	 * @covers ::get_events_list
+	 *
+	 * @return void
+	 */
+	public function test_get_events_list_invalid_arg_types(): void {
+		$instance = Query::get_instance();
+
+		$results = $instance->get_events_list(
+			array(
+				'event_list_type' => 123,
+				'number'          => 'not-a-number',
+				'topics'          => 'not-an-array',
+				'venues'          => 42,
+			)
+		);
+
+		$this->assertSame( '', $results->query[ Query::EVENT_QUERY_PARAM ] );
+		$this->assertSame( 5, $results->query['posts_per_page'] );
+		$this->assertSame( 'ASC', $results->query['order'] );
+		$this->assertSame( array(), $results->query['tax_query'] );
+	}
+
+	/**
+	 * Coverage for topic and venue slugs being cast to strings.
+	 *
+	 * @covers ::get_events_list
+	 *
+	 * @return void
+	 */
+	public function test_get_events_list_casts_slugs_to_strings(): void {
+		$instance = Query::get_instance();
+
+		$results = $instance->get_events_list(
+			array(
+				'event_list_type' => 'upcoming',
+				'topics'          => array( 123 ),
+			)
+		);
+
+		$this->assertSame( '123', $results->query['tax_query'][0]['terms'][0] );
+	}
+
+	/**
+	 * Coverage for non-scalar slugs being dropped from the list.
+	 *
+	 * @covers ::get_events_list
+	 * @covers ::normalize_slug_list
+	 *
+	 * @return void
+	 */
+	public function test_get_events_list_drops_non_scalar_slugs(): void {
+		$instance = Query::get_instance();
+
+		$results = $instance->get_events_list(
+			array(
+				'event_list_type' => 'upcoming',
+				'topics'          => array( 'kept', array( 'nested' ), new stdClass() ),
+			)
+		);
+
+		$this->assertSame( array( 'kept' ), $results->query['tax_query'][0]['terms'] );
+	}
+
+	/**
+	 * Coverage for normalize_slug_list rejecting a non-array value.
+	 *
+	 * @covers ::normalize_slug_list
+	 *
+	 * @return void
+	 */
+	public function test_normalize_slug_list_returns_empty_for_non_array(): void {
+		$instance = Query::get_instance();
+
+		$this->assertSame(
 			array(),
-			array( '_unit-test-venue' )
+			Utility::invoke_hidden_method( $instance, 'normalize_slug_list', array( 'not-an-array' ) )
+		);
+	}
+
+	/**
+	 * The query vars filter gets every upcoming or past event list, with its type and query.
+	 *
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_event_query_vars_filter(): void {
+		$captured = array();
+		$query    = new WP_Query();
+
+		add_filter(
+			'gatherpress_event_query_vars',
+			static function ( array $query_vars, string $type, WP_Query $filtered ) use ( &$captured ): array {
+				$captured              = array( $type, $filtered );
+				$query_vars['orderby'] = 'title';
+
+				return $query_vars;
+			},
+			10,
+			3
 		);
 
-		$this->assertContains( $post_1->ID, $results->posts, 'Failed to assert that post ID was in array.' );
-		$this->assertNotContains( $post_2->ID, $results->posts, 'Failed to assert that post ID was not in array.' );
+		$query->set( 'post_type', 'gatherpress_event' );
+		$query->set( 'gatherpress_event_query', 'past' );
+		Query::get_instance()->prepare_event_query_before_execution( $query );
+
+		$this->assertSame( 'title', $query->get( 'orderby' ), 'The filtered vars should be the query\'s vars.' );
+		$this->assertSame( 'past', $captured[0] );
+		$this->assertSame( $query, $captured[1] );
+	}
+
+	/**
+	 * A filter callback that returns nothing leaves the query as it was.
+	 *
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_event_query_vars_filter_ignores_a_missing_return(): void {
+		$query = new WP_Query();
+
+		add_filter( 'gatherpress_event_query_vars', '__return_null' );
+
+		$query->set( 'post_type', 'gatherpress_event' );
+		$query->set( 'gatherpress_event_query', 'upcoming' );
+		Query::get_instance()->prepare_event_query_before_execution( $query );
+
+		$this->assertSame( 'gatherpress_event', $query->get( 'post_type' ) );
+		$this->assertSame( 'upcoming', $query->get( 'gatherpress_event_query' ) );
+	}
+
+	/**
+	 * The query vars filter leaves queries that don't list events alone.
+	 *
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_event_query_vars_filter_skips_other_queries(): void {
+		$called = false;
+		$query  = new WP_Query();
+
+		add_filter(
+			'gatherpress_event_query_vars',
+			static function ( array $query_vars ) use ( &$called ): array {
+				$called = true;
+
+				return $query_vars;
+			}
+		);
+
+		$query->set( 'post_type', 'post' );
+		Query::get_instance()->prepare_event_query_before_execution( $query );
+
+		$this->assertFalse( $called );
+	}
+
+	/**
+	 * A list reordered through the filter still only holds events in its date range.
+	 *
+	 * @covers ::get_events_list
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_event_query_vars_filter_keeps_the_date_range(): void {
+		$upcoming = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+		$past     = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+
+		( new Event( $upcoming->ID ) )->save_datetimes(
+			array(
+				'datetime_start' => '2099-01-01 10:00:00',
+				'datetime_end'   => '2099-01-01 12:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+		( new Event( $past->ID ) )->save_datetimes(
+			array(
+				'datetime_start' => '2020-01-01 10:00:00',
+				'datetime_end'   => '2020-01-01 12:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		add_filter(
+			'gatherpress_event_query_vars',
+			static function ( array $query_vars ): array {
+				$query_vars['orderby'] = 'title';
+
+				return $query_vars;
+			}
+		);
+
+		$results = Query::get_instance()->get_events_list( array( 'event_list_type' => 'upcoming' ) );
+
+		$this->assertSame( 'title', $results->get( 'orderby' ) );
+		$this->assertContains( $upcoming->ID, $results->posts );
+		$this->assertNotContains( $past->ID, $results->posts, 'The upcoming date range should still apply.' );
 	}
 
 	/**
@@ -2555,7 +2799,7 @@ class Test_Query extends Base {
 	/**
 	 * Build three events around June 2026, as the site's clock reckons it.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return array<string, int> Post IDs keyed by the part they play.
 	 */
