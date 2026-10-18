@@ -219,12 +219,8 @@ final class Rest_Api {
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'update_rsvp' ),
 				'permission_callback' => function ( WP_REST_Request $request ): bool {
-					$post_id    = (int) $request->get_param( 'post_id' );
-					$rsvp_token = Token::from_token_string( $request->get_param( Token::NAME ) );
-					$token_post = $rsvp_token ? $rsvp_token->get_post() : null;
-
-					// A magic-link token authorizes only the event it was issued for.
-					if ( $token_post instanceof WP_Post && $token_post->ID === $post_id ) {
+					// A magic-link session authorizes only the event it was started for.
+					if ( Token::from_cookie( (int) $request->get_param( 'post_id' ) ) ) {
 						return true;
 					}
 
@@ -232,17 +228,11 @@ final class Rest_Api {
 					return is_user_logged_in() && $this->can_read_event_rsvps( $request );
 				},
 				'args'                => array(
-					'post_id'   => array(
+					'post_id' => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'event_post_id' ),
 					),
-					Token::NAME => array(
-						'required'          => false,
-						'validate_callback' => static function ( $param ): bool {
-							return ! empty( Token::parse_token_string( $param ) );
-						},
-					),
-					'status'    => array(
+					'status'  => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'rsvp_status' ),
 					),
@@ -479,7 +469,6 @@ final class Rest_Api {
 		$status          = sanitize_key( $params['status'] );
 		$guests          = intval( $params['guests'] ?? 0 );
 		$anonymous       = intval( $params['anonymous'] ?? 0 );
-		$unparsed_token  = sanitize_text_field( $params[ Token::NAME ] ?? '' );
 		$event           = new Event( $post_id );
 		$rsvp            = new Rsvp( $post_id );
 
@@ -520,12 +509,12 @@ final class Rest_Api {
 
 		$user_identifier = $user_id;
 
-		if ( ! empty( $unparsed_token ) ) {
-			$rsvp_token = Token::from_token_string( $unparsed_token );
+		// The session cookie speaks for the visitor's own RSVP, never for an
+		// attendee an organizer is managing.
+		$rsvp_token = $is_managing_other ? null : Token::from_cookie( $post_id );
 
-			if ( $rsvp_token ) {
-				$user_identifier = $rsvp_token->get_email();
-			}
+		if ( $rsvp_token ) {
+			$user_identifier = $rsvp_token->get_email();
 		}
 
 		// A magic-link token supplies an email address; every other path supplies a user ID,
@@ -596,11 +585,8 @@ final class Rest_Api {
 	 *                          - content (string): The dynamically rendered HTML markup for the RSVP responses.
 	 */
 	public function rsvp_status_html( WP_REST_Request $request ): WP_REST_Response {
-		// Prevent caching for logged-in users or users with valid RSVP tokens.
-		$unparsed_token = $request->get_param( Token::NAME );
-		$rsvp_token     = Token::from_token_string( $unparsed_token );
-
-		if ( is_user_logged_in() || $rsvp_token ) {
+		// Prevent caching for logged-in users or users with an RSVP session.
+		if ( is_user_logged_in() || Token::from_cookie( (int) $request->get_param( 'post_id' ) ) ) {
 			nocache_headers();
 		}
 
@@ -786,11 +772,8 @@ final class Rest_Api {
 	 * @return WP_REST_Response Response containing success status and RSVP data.
 	 */
 	public function rsvp_responses( WP_REST_Request $request ): WP_REST_Response {
-		// Prevent caching for logged-in users or users with valid RSVP tokens.
-		$unparsed_token = $request->get_param( Token::NAME );
-		$rsvp_token     = Token::from_token_string( $unparsed_token );
-
-		if ( is_user_logged_in() || $rsvp_token ) {
+		// Prevent caching for logged-in users or users with an RSVP session.
+		if ( is_user_logged_in() || Token::from_cookie( (int) $request->get_param( 'post_id' ) ) ) {
 			nocache_headers();
 		}
 

@@ -1261,7 +1261,7 @@ class Event {
 		$force_online_event_link = apply_filters( 'gatherpress_force_online_event_link', false );
 
 		if ( ! $force_online_event_link && ! is_admin() ) {
-			$user_identifier = $user_identifier ?? Rsvp_Setup::get_instance()->get_user_identifier();
+			$user_identifier = $user_identifier ?? Rsvp_Setup::get_instance()->get_user_identifier( $this->post->ID );
 			$response        = ( new Rsvp( $this->post->ID ) )->get( $user_identifier );
 
 			if (
