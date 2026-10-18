@@ -21,6 +21,7 @@ use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
 use GatherPress\Core\Setup as Core_Setup;
 use GatherPress\Core\Settings;
+use GatherPress\Core\Traits\Has_Capabilities;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
@@ -44,6 +45,11 @@ use WP_Term;
  * }
  */
 class Event {
+
+	/**
+	 * Gives the class its read and edit capabilities.
+	 */
+	use Has_Capabilities;
 
 	/**
 	 * Cache key format for storing and retrieving event datetimes.
@@ -76,27 +82,6 @@ class Event {
 	 * @var string
 	 */
 	const SUPPORT = 'gatherpress-event-date';
-
-	/**
-	 * Capability for reading a specific event.
-	 *
-	 * A meta capability, so it is always paired with the event's post ID and
-	 * resolves through WordPress to the right primitive for the event's status.
-	 *
-	 * @since 0.35.1
-	 * @var string
-	 */
-	const READ_CAPABILITY = 'read_post';
-
-	/**
-	 * Capability for editing a specific event.
-	 *
-	 * A meta capability, so it is always paired with the event's post ID.
-	 *
-	 * @since 0.35.1
-	 * @var string
-	 */
-	const EDIT_CAPABILITY = 'edit_post';
 
 	/**
 	 * Placeholder displayed when no datetime is set.
@@ -179,7 +164,7 @@ class Event {
 		return (
 			( is_preview() && (int) get_queried_object_id() === $post_id )
 			|| 'publish' === get_post_status( $post_id )
-			|| current_user_can( self::READ_CAPABILITY, $post_id )
+			|| current_user_can( self::read_capability(), $post_id )
 		);
 	}
 
@@ -204,13 +189,13 @@ class Event {
 			return false;
 		}
 
-		if ( current_user_can( self::EDIT_CAPABILITY, $post->ID ) ) {
+		if ( current_user_can( self::edit_capability(), $post->ID ) ) {
 			return true;
 		}
 
 		return 'publish' === $post->post_status
 			? ! post_password_required( $post )
-			: current_user_can( self::READ_CAPABILITY, $post->ID );
+			: current_user_can( self::read_capability(), $post->ID );
 	}
 
 	/**

@@ -198,7 +198,7 @@ final class Venue {
 			&& ! post_password_required( $candidate )
 			&& (
 				is_post_publicly_viewable( $candidate )
-				|| current_user_can( Event::READ_CAPABILITY, $candidate->ID )
+				|| current_user_can( Venue_Core::read_capability(), $candidate->ID )
 			);
 
 		return $viewable ? $candidate : null;
