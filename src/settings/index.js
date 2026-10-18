@@ -10,6 +10,8 @@ import Autocomplete from '../components/Autocomplete';
 import { dateTimePreview } from '../helpers/datetime';
 import { urlRewritePreview } from '../helpers/urlrewrite';
 import { initShowIfDependencies } from '../helpers/settings-show-if';
+import { initSettingsTools } from '../helpers/settings-tools';
+import { initNetworkAllowlist } from '../helpers/network-allowlist';
 
 /**
  * Autocomplete Initialization
@@ -73,3 +75,17 @@ urlRewritePreview();
  * @since 0.27.0
  */
 initShowIfDependencies();
+
+/**
+ * Import and export on the Tools tab, per site and at Network Admin.
+ *
+ * @since TBD
+ */
+initSettingsTools();
+
+/**
+ * Select all and Deselect all for the network's inherited settings.
+ *
+ * @since TBD
+ */
+initNetworkAllowlist();

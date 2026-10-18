@@ -5,7 +5,7 @@
 
 .gatherpress-attendee-info {
 	display: flex;
-	gap: 8px;
+	gap: 0.5rem;
 }
 
 [data-gatherpress-no-render="true"] {
@@ -19,21 +19,21 @@
 }
 
 .gatherpress-rsvp-approved {
-	font-size: 14px;
+	font-size: 0.875rem;
 	font-weight: bold;
 	text-decoration: none;
 	display: inline-flex;
 	align-items: center;
-	gap: 2px;
+	gap: 0.125rem;
 }
 
 .gatherpress-rsvp-icon {
 	display: inline-block;
-	padding: 4px 8px;
+	padding: 0.25rem 0.5rem;
 	background: #a7aaad;
 	border-radius: 3px;
 	color: #fff;
-	font-size: 11px;
+	font-size: 0.6875rem;
 	font-weight: normal;
 	line-height: 1;
 }
@@ -44,18 +44,18 @@
 
 .gatherpress-rsvp-pending {
 	position: absolute;
-	top: -8px;
-	right: -12px;
+	top: -0.5rem;
+	right: -0.75rem;
 	background: var(--wp-admin-theme-color, #d63638);
 	color: #fff;
 	border-radius: 50%;
-	font-size: 10px;
+	font-size: 0.625rem;
 	font-weight: bold;
-	padding: 2px 4px;
+	padding: 0.125rem 0.25rem;
 	line-height: 1;
-	width: 18px;
-	height: 18px;
-	min-width: 18px;
+	width: 1.125rem;
+	height: 1.125rem;
+	min-width: 1.125rem;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -72,12 +72,12 @@
 
 /* Popular Venues Quick Select */
 .gatherpress-popular-venues {
-	margin: 12px 0;
+	margin: 0.75rem 0;
 }
 
 .gatherpress-popular-venues__label {
 	margin: 0;
-	font-size: 12px;
+	font-size: 0.75rem;
 	color: #757575;
 }
 
@@ -86,7 +86,7 @@
 	padding: 0;
 	height: auto;
 	min-height: 0;
-	margin-right: 8px;
+	margin-right: 0.5rem;
 }
 
 .gatherpress-popular-venue.components-button.is-link:not(:disabled):hover {
@@ -123,7 +123,8 @@
 }
 
 // RSVP screen filters, sized to the bulk actions beside them: admin uses 32px
-// controls where `@wordpress/components` ships 40px. Scoped under
+// controls where `@wordpress/components` ships 40px. The control heights stay
+// in px so they keep lining up with core's. Scoped under
 // `.wp-core-ui .tablenav` throughout because core's own rules at that depth
 // outrank a two-class selector.
 
@@ -132,7 +133,7 @@
 // sit tight against the table.
 @media screen and (width <= 782px) {
 	.wp-core-ui .tablenav.top:has(.gatherpress-rsvp-filters) {
-		margin-bottom: 16px;
+		margin-bottom: 1rem;
 	}
 }
 
@@ -143,7 +144,7 @@
 .wp-core-ui .tablenav.top .gatherpress-rsvp-filters {
 	display: inline-flex;
 	align-items: flex-start;
-	gap: 4px;
+	gap: 0.25rem;
 	vertical-align: top;
 
 	.components-base-control,
@@ -161,7 +162,7 @@
 		display: flex;
 		height: 32px;
 		min-height: 32px;
-		width: 200px;
+		width: 12.5rem;
 	}
 
 	.components-combobox-control__suggestions-container:focus-within {
@@ -190,15 +191,15 @@
 	// lands the text where core's `select` puts its own.
 	.components-form-token-field__input,
 	.components-combobox-control__input {
-		font-size: 14px;
+		font-size: 0.875rem;
 		padding: 0;
 	}
 
 	// Before script takes over there is no flex row to inset the field, so
-	// the written markup carries the same 8px itself. The wrapper is gone
+	// the written markup carries the same inset itself. The wrapper is gone
 	// once the enhanced control replaces it.
 	.gatherpress-rsvp-filters__event .components-combobox-control__input {
-		padding: 0 8px;
+		padding: 0 0.5rem;
 	}
 
 	// Renders inline rather than through a portal, so it needs its own
@@ -208,14 +209,14 @@
 		border: 1px solid #949494;
 		border-top: 0;
 		box-shadow: 0 2px 6px rgb(0 0 0 / 8%);
-		max-height: 240px;
+		max-height: 15rem;
 		z-index: 10;
 	}
 
 	// The option text lines up with the field's own text above it, which the
 	// component's wider default padding does not.
 	.components-form-token-field__suggestion {
-		padding: 8px;
+		padding: 0.5rem;
 	}
 
 	// The reset control, centered against the 32px frame.
@@ -234,7 +235,7 @@
 		height: 32px;
 		line-height: 2.3077;
 		min-height: 32px;
-		padding: 0 10px;
+		padding: 0 0.625rem;
 	}
 
 	// The popover renders inline so tab can leave it, which puts it in reach
@@ -245,21 +246,21 @@
 			border: 1px solid #c3c4c7;
 			border-radius: 4px;
 			box-shadow: 0 2px 6px rgb(0 0 0 / 8%);
-			min-width: 200px;
+			min-width: 12.5rem;
 		}
 
 		// Core zeroes the content padding when a menu group is present.
 		.components-menu-group {
-			padding: 12px;
+			padding: 0.75rem;
 		}
 
 		.components-menu-group__label {
-			margin-bottom: 10px;
+			margin-bottom: 0.625rem;
 		}
 
 		// Otherwise the checkboxes stack flush and read as one block.
 		.components-base-control {
-			margin-bottom: 12px;
+			margin-bottom: 0.75rem;
 		}
 
 		.components-base-control:last-child {
@@ -287,12 +288,12 @@
 
 	&__row {
 		display: grid;
-		gap: 0 10px;
-		grid-template-columns: 200px 1fr;
-		padding: 15px 10px;
+		gap: 0 0.625rem;
+		grid-template-columns: 12.5rem 1fr;
+		padding: 0.9375rem 0.625rem;
 
 		@media screen and (width <= 782px) {
-			gap: 6px;
+			gap: 0.375rem;
 			grid-template-columns: 1fr;
 		}
 	}
@@ -303,20 +304,90 @@
 
 	&__label {
 		font-weight: 600;
-		padding-top: 2px;
+		padding-top: 0.125rem;
+	}
+}
+
+// The card form of a GatherPress admin notice, the one with a headline. Rules
+// that compete with core's `.notice p` and `div.notice a` are nested under the
+// card so they win on specificity.
+.gatherpress-notice-card {
+	align-items: flex-start;
+	display: flex;
+	gap: 1.25rem;
+	position: relative;
+
+	&__mark {
+		color: var(--wp-admin-theme-color, #1769aa);
+		flex-shrink: 0;
+	}
+
+	& &__headline {
+		color: var(--wp-admin-theme-color, #1769aa);
+		font-size: 0.875rem;
+		font-weight: 600;
+		margin: 0 0 0.375rem;
+	}
+
+	& &__message {
+		margin: 0 0 0.75rem;
+	}
+
+	& &__action {
+		margin: 0;
+	}
+
+	// The offsets cancel the notice's own 8px/12px padding so the control sits
+	// where core's dismiss button does, and the 9px is core's own padding,
+	// which `div.notice a` resets away. They stay in px to match core's.
+	& &__dismiss {
+		padding: 9px;
+		right: -12px;
+		text-decoration: none;
+		top: -8px;
+	}
+}
+
+// Inherited settings checklist on the Network tab of the network settings.
+.gatherpress-allowlist {
+	&__options {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+
+		li {
+			margin: 0;
+			padding: 0.1875rem 0;
+		}
+
+		label {
+			align-items: center;
+			display: inline-flex;
+			gap: 0.375rem;
+		}
+	}
+
+	&__bulk-actions {
+		font-size: 0.8125rem;
+	}
+
+	&__group-actions {
+		font-size: 0.75rem;
+		font-weight: 400;
+		margin-left: 0.5rem;
 	}
 }
 
 .gatherpress-send-email {
 	&__role-actions {
-		margin: 0 0 8px;
+		margin: 0 0 0.5rem;
 	}
 
 	&__status {
 		align-items: center;
 		display: flex;
 		font-weight: 600;
-		gap: 8px;
+		gap: 0.5rem;
 
 		.spinner {
 			float: none;

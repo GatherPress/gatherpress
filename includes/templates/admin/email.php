@@ -151,7 +151,7 @@ if ( ! isset( $recipient_count ) ) {
 			</div>
 		</div>
 
-		<output class="gatherpress-send-email__status gatherpress--is-hidden">
+		<output class="gatherpress-send-email__status">
 			<span class="spinner"></span>
 			<span class="gatherpress-send-email__status-text"></span>
 		</output>

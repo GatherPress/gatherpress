@@ -64,6 +64,44 @@
 
 	&__note {
 		font-style: italic;
+		margin-top: 0.25rem;
 		pointer-events: auto;
+	}
+}
+
+.gatherpress-settings-tools {
+	&__preview {
+		background: #f9f9f9;
+		border-left: 4px solid #0073aa;
+		margin: 1rem 0;
+		padding: 0.75rem;
+
+		h3 {
+			margin-top: 0;
+		}
+
+		ul {
+			margin-left: 1.25rem;
+		}
+	}
+
+	&__error {
+		color: #d63638;
+	}
+
+	&__status {
+		align-items: center;
+		display: flex;
+		font-weight: 600;
+		gap: 0.5rem;
+
+		.spinner {
+			float: none;
+			margin: 0;
+
+			&:not(.is-active) {
+				display: none;
+			}
+		}
 	}
 }

@@ -8,6 +8,7 @@
 
 namespace GatherPress\Tests\Core\Settings;
 
+use GatherPress\Core\Assets;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Settings\Network;
 use GatherPress\Tests\Base;
@@ -66,12 +67,6 @@ class Test_Network extends Base {
 				'name'     => 'admin_notices',
 				'priority' => 10,
 				'callback' => array( $instance, 'subsite_inheritance_notice' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'admin_head',
-				'priority' => 10,
-				'callback' => array( $instance, 'print_inherited_styles' ),
 			),
 		);
 
@@ -443,41 +438,6 @@ class Test_Network extends Base {
 	}
 
 	/**
-	 * Coverage for print_inherited_styles — only emits on GatherPress pages.
-	 *
-	 * @covers ::print_inherited_styles
-	 *
-	 * @return void
-	 */
-	public function test_print_inherited_styles_bails_on_non_gatherpress_page(): void {
-		$instance = Network::get_instance();
-
-		unset( $_GET['page'] );
-
-		$output = PMC_Utility::buffer_and_return( array( $instance, 'print_inherited_styles' ) );
-
-		$this->assertSame( '', $output );
-	}
-
-	/**
-	 * Coverage for print_inherited_styles — emits a style block on GatherPress pages.
-	 *
-	 * @covers ::print_inherited_styles
-	 *
-	 * @return void
-	 */
-	public function test_print_inherited_styles_emits_on_gatherpress_page(): void {
-		$instance     = Network::get_instance();
-		$_GET['page'] = 'gatherpress_general';
-
-		$output = PMC_Utility::buffer_and_return( array( $instance, 'print_inherited_styles' ) );
-
-		unset( $_GET['page'] );
-
-		$this->assertStringContainsString( '.gatherpress-field-inherited', $output );
-	}
-
-	/**
 	 * Coverage for scope_read_filter — registers the pre_option filter.
 	 *
 	 * @covers ::scope_read_filter
@@ -686,6 +646,14 @@ class Test_Network extends Base {
 
 		$slugs = array_column( $submenu['settings.php'], 2 );
 		$this->assertContains( Network::PAGE_SLUG, $slugs );
+		$this->assertSame(
+			10,
+			has_action(
+				'load-' . get_plugin_page_hookname( Network::PAGE_SLUG, 'settings.php' ),
+				array( Assets::get_instance(), 'enqueue_settings_assets' )
+			),
+			'The network settings page should load the settings bundle.'
+		);
 
 		revoke_super_admin( $user_id );
 		wp_delete_user( $user_id );

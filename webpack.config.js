@@ -78,6 +78,11 @@ module.exports = [
 				'style.scss',
 			),
 			utility_style: path.resolve( process.cwd(), 'src', 'utility.scss' ),
+			timezone_shim: path.resolve(
+				process.cwd(),
+				'src/timezone-shim',
+				'index.js',
+			),
 			leaflet_style: path.resolve(
 				process.cwd(),
 				'src',
