@@ -53,7 +53,11 @@ jest.mock( '@wordpress/compose', () => {
 	const compose = jest.requireActual( '@wordpress/compose' );
 	return {
 		...compose,
-		useDebounce: ( fn ) => fn,
+		// Runs at once. The real debounce is covered in use-address-autocomplete.test.js.
+		useDebounce: ( fn ) => {
+			fn.cancel = fn.cancel ?? jest.fn();
+			return fn;
+		},
 	};
 } );
 

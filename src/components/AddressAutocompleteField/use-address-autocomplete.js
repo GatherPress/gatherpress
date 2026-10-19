@@ -154,6 +154,10 @@ export function useAddressAutocomplete( {
 	);
 
 	const closeSuggestions = useCallback( () => {
+		// Drop a search that is still waiting for its debounce delay, too.
+		// Otherwise it runs after the list closes and opens it again.
+		loadSuggestions.cancel();
+
 		if ( abortControllerRef.current ) {
 			abortControllerRef.current.abort();
 			abortControllerRef.current = null;
@@ -161,7 +165,7 @@ export function useAddressAutocomplete( {
 		setSuggestions( [] );
 		setSuggestionError( '' );
 		setIsLoadingSuggestions( false );
-	}, [] );
+	}, [ loadSuggestions ] );
 
 	const selectSuggestion = useCallback(
 		( item ) => {
