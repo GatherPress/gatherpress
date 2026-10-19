@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\Modal;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
 use WP_HTML_Tag_Processor;
 
 /**
@@ -736,14 +737,34 @@ class Test_Modal extends Base {
 	}
 
 	/**
+	 * Data provider for the Login modal class names.
+	 *
+	 * @since TBD
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public function data_login_modal_classes(): array {
+		return array(
+			'template class' => array( 'gatherpress-modal--login' ),
+			'type class'     => array( 'gatherpress-modal--type-login' ),
+		);
+	}
+
+	/**
 	 * Test login modal is removed for logged-in users.
+	 *
+	 * The RSVP block template saves `gatherpress-modal--login`, so that class
+	 * has to be removed as well as `gatherpress-modal--type-login`.
 	 *
 	 * @since  0.33.0
 	 * @covers ::filter_login_modal
+	 * @dataProvider data_login_modal_classes
+	 *
+	 * @param string $class_name The Login modal's class.
 	 *
 	 * @return void
 	 */
-	public function test_login_modal_removed_when_logged_in(): void {
+	public function test_login_modal_removed_when_logged_in( string $class_name ): void {
 		$instance = Modal::get_instance();
 		$user_id  = $this->factory->user->create();
 
@@ -752,7 +773,7 @@ class Test_Modal extends Base {
 		$input_html  = '<div>Login Form</div>';
 		$block       = array(
 			'attrs' => array(
-				'className' => 'gatherpress-modal--type-login',
+				'className' => $class_name,
 			),
 		);
 		$output_html = $instance->filter_login_modal( $input_html, $block );
@@ -765,6 +786,42 @@ class Test_Modal extends Base {
 		wp_set_current_user( 0 );
 	}
 
+
+	/**
+	 * Test is_login_modal matches both Login modal classes and nothing else.
+	 *
+	 * @since TBD
+	 * @covers ::is_login_modal
+	 *
+	 * @return void
+	 */
+	public function test_is_login_modal(): void {
+		$instance = Modal::get_instance();
+
+		foreach ( $this->data_login_modal_classes() as $label => $args ) {
+			$this->assertTrue(
+				Utility::invoke_hidden_method(
+					$instance,
+					'is_login_modal',
+					array( array( 'attrs' => array( 'className' => 'is-style-default ' . $args[0] ) ) )
+				),
+				"The {$label} should mark the Login modal."
+			);
+		}
+
+		$this->assertFalse(
+			Utility::invoke_hidden_method(
+				$instance,
+				'is_login_modal',
+				array( array( 'attrs' => array( 'className' => 'gatherpress-modal--type-rsvp' ) ) )
+			),
+			'The RSVP modal is not the Login modal.'
+		);
+		$this->assertFalse(
+			Utility::invoke_hidden_method( $instance, 'is_login_modal', array( array() ) ),
+			'A modal without classes is not the Login modal.'
+		);
+	}
 
 	/**
 	 * Test login modal remains for logged-out users.
