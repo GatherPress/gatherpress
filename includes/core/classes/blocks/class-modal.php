@@ -83,8 +83,17 @@ final class Modal {
 	 * which only the browser knows. An RSVP modal without a custom name, for
 	 * example, shows and hides its headings after the page loads.
 	 *
+	 * The modals of the RSVP block templates are the exception. Their custom
+	 * names ("RSVP Modal", "Login Modal") are names for the editor, and the
+	 * #2366 heading lookup does not reach them. Such a modal is named by its
+	 * title, the first paragraph or heading (a paragraph in the templates),
+	 * and described by the next paragraph (the instructions), with the custom
+	 * name kept as the `aria-label` fallback. This runs at render time, so it
+	 * also covers the markup that existing events saved.
+	 *
 	 * @since 0.33.0
 	 * @since 0.36.0 Marks modals that have no custom name.
+	 * @since TBD    Names RSVP block modals after their title paragraph.
 	 *
 	 * @param string               $block_content The HTML content of the block.
 	 * @param array<string, mixed> $block         The parsed block data.
@@ -110,10 +119,101 @@ final class Modal {
 			$tag->set_attribute( 'aria-label', esc_attr( $modal_name ) );
 			$tag->set_attribute( 'tabindex', '-1' );
 
+			if ( $this->is_rsvp_block_modal( $block ) ) {
+				$this->label_by_paragraphs( $tag );
+			}
+
 			$block_content = $tag->get_updated_html();
 		}
 
 		return $block_content;
+	}
+
+	/**
+	 * Checks whether a modal block is one of the RSVP block template modals.
+	 *
+	 * The RSVP modal has the `gatherpress-modal--type-rsvp` class. The Login
+	 * modal has `gatherpress-modal--login` in the template and
+	 * `gatherpress-modal--type-login` in `filter_login_modal()`, so both count.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $block The parsed block data.
+	 *
+	 * @return bool True if the modal comes from the RSVP block templates.
+	 */
+	private function is_rsvp_block_modal( array $block ): bool {
+		$class_name    = $block['attrs']['className'] ?? null;
+		$modal_classes = array(
+			'gatherpress-modal--type-rsvp',
+			'gatherpress-modal--login',
+			'gatherpress-modal--type-login',
+		);
+
+		foreach ( $modal_classes as $modal_class ) {
+			if ( Utility::has_css_class( $class_name, $modal_class ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Points the modal's `aria-labelledby` and `aria-describedby` at its title and instructions.
+	 *
+	 * The first paragraph or heading (the title) names the dialog, and the
+	 * next paragraph describes it, so a title changed to a Heading block
+	 * still names it. An element without an id gets a unique one; an
+	 * existing id is reused. When an element is missing, the attribute that
+	 * would point at it is not set.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_HTML_Tag_Processor $tag The processor, stopped on the modal's opening tag.
+	 *
+	 * @return void
+	 */
+	private function label_by_paragraphs( WP_HTML_Tag_Processor $tag ): void {
+		$ids     = array();
+		$targets = array(
+			'gatherpress-modal-title-'       => array( 'P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6' ),
+			'gatherpress-modal-description-' => array( 'P' ),
+		);
+
+		$tag->set_bookmark( 'gatherpress-modal' );
+
+		foreach ( $targets as $prefix => $tag_names ) {
+			do {
+				$found = $tag->next_tag();
+			} while ( $found && ! in_array( $tag->get_tag(), $tag_names, true ) );
+
+			if ( ! $found ) {
+				break;
+			}
+
+			$id = $tag->get_attribute( 'id' );
+
+			// A valueless attribute reads back as true.
+			if ( ! is_string( $id ) || '' === trim( $id ) ) {
+				$id = wp_unique_id( $prefix );
+
+				$tag->set_attribute( 'id', $id );
+			}
+
+			$ids[] = $id;
+		}
+
+		$tag->seek( 'gatherpress-modal' );
+		$tag->release_bookmark( 'gatherpress-modal' );
+
+		if ( isset( $ids[0] ) ) {
+			$tag->set_attribute( 'aria-labelledby', $ids[0] );
+		}
+
+		if ( isset( $ids[1] ) ) {
+			$tag->set_attribute( 'aria-describedby', $ids[1] );
+		}
 	}
 
 	/**
