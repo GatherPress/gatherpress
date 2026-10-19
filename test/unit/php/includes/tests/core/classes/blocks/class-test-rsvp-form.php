@@ -15,6 +15,7 @@ use GatherPress\Core\Rsvp;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
+use WP_Post;
 
 /**
  * Class Test_Rsvp_Form.
@@ -471,7 +472,7 @@ class Test_Rsvp_Form extends Base {
 	 * @covers ::get_form_schema_id
 	 * @covers ::find_form_schema_id_in_blocks
 	 * @covers ::blocks_match
-	 * @covers ::describe_blocks
+	 * @covers ::extract_form_fields_from_inner_blocks
 	 *
 	 * @return void
 	 */
@@ -541,7 +542,7 @@ class Test_Rsvp_Form extends Base {
 			'inner blocks with different markup' => array(
 				$block( 'gatherpress/form-field', $dietary, 'Dietary needs' ),
 				$block( 'gatherpress/form-field', $dietary, 'T-shirt size' ),
-				array( 'form_0', 'form_2' ),
+				array( 'form_0', 'form_0' ),
 			),
 			'a difference nested deeper'         => array(
 				$block( 'group', '{}', $block( 'gatherpress/form-field', $dietary ) ),
@@ -557,16 +558,16 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
-	 * Tests forms with the same wrapper are told apart by their inner blocks.
+	 * Tests forms with the same wrapper are told apart by their fields.
 	 *
-	 * Identical forms share the first form's id, whose schema holds the same
-	 * fields as their own.
+	 * Forms with the same fields share the first form's id, whose schema
+	 * holds the same fields as their own.
 	 *
 	 * @since TBD
 	 * @covers ::get_form_schema_id
 	 * @covers ::find_form_schema_id_in_blocks
 	 * @covers ::blocks_match
-	 * @covers ::describe_blocks
+	 * @covers ::extract_form_fields_from_inner_blocks
 	 * @dataProvider data_forms_with_the_same_wrapper
 	 *
 	 * @param string   $first    Inner markup of the first form.
@@ -592,6 +593,84 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
+	 * Data provider for test_hooked_block_in_a_form_keeps_its_schema_id.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public function data_hooked_block_in_a_form(): array {
+		$form      = function ( string $field_name ): string {
+			return $this->rsvp_form(
+				'<!-- wp:gatherpress/form-field {"fieldName":"' . $field_name . '","fieldType":"text"} -->
+<div class="wp-block-gatherpress-form-field"></div>
+<!-- /wp:gatherpress/form-field -->
+
+<!-- wp:button -->
+<div class="wp-block-button"><a class="wp-block-button__link wp-element-button">Submit</a></div>
+<!-- /wp:button -->'
+			);
+		};
+		$paragraph = '<!-- wp:paragraph -->
+<p>Before the form.</p>
+<!-- /wp:paragraph -->';
+		$group     = '<!-- wp:group -->
+<div class="wp-block-group">' . $form( 'dietary' ) . '</div>
+<!-- /wp:group -->';
+
+		return array(
+			'one form, not the first block' => array( $paragraph . "\n\n" . $form( 'dietary' ) ),
+			'one form, nested in a group'   => array( $paragraph . "\n\n" . $group ),
+			'two forms, same layout'        => array( $form( 'dietary' ) . "\n\n" . $form( 'tshirt_size' ) ),
+		);
+	}
+
+	/**
+	 * Tests a block hooked into a form leaves the form on its own schema id.
+	 *
+	 * Block Hooks insert into the content before the form renders, so the
+	 * rendered form has an inner block that the saved one does not.
+	 *
+	 * @since TBD
+	 * @covers ::get_form_schema_id
+	 * @covers ::find_form_schema_id_in_blocks
+	 * @covers ::blocks_match
+	 * @dataProvider data_hooked_block_in_a_form
+	 *
+	 * @param string $post_content Event content holding the forms.
+	 *
+	 * @return void
+	 */
+	public function test_hooked_block_in_a_form_keeps_its_schema_id( string $post_content ): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type'    => Event::POST_TYPE,
+				'post_content' => $post_content,
+			)
+		);
+		$hook     = static function ( array $hooked, string $position, ?string $anchor, $context ): array {
+			if ( 'after' === $position && 'core/button' === $anchor && $context instanceof WP_Post ) {
+				$hooked[] = 'core/paragraph';
+			}
+
+			return $hooked;
+		};
+
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$instance->save_form_schema( $post_id );
+
+		add_filter( 'hooked_block_types', $hook, 10, 4 );
+		$hooked_content = apply_block_hooks_to_content_from_post_object( $post_content, get_post( $post_id ) );
+		remove_filter( 'hooked_block_types', $hook, 10 );
+
+		$this->assertStringContainsString( 'wp:paragraph', $hooked_content );
+		$this->assertSame(
+			array_keys( get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true ) ),
+			$this->render_schema_ids( $post_id, $hooked_content ),
+			'Each form should render the schema id stored for it.'
+		);
+	}
+
+	/**
 	 * Wrap inner block markup in an RSVP Form block.
 	 *
 	 * @since TBD
@@ -609,7 +688,7 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
-	 * Render each top-level RSVP form in the content and collect its schema id.
+	 * Render each RSVP form in the content, nested ones included, and collect its schema id.
 	 *
 	 * @since TBD
 	 *
@@ -619,13 +698,22 @@ class Test_Rsvp_Form extends Base {
 	 * @return string[] One schema id per form, in order.
 	 */
 	private function render_schema_ids( int $post_id, string $post_content ): array {
+		$forms   = array();
+		$collect = static function ( array $blocks ) use ( &$collect, &$forms ): void {
+			foreach ( $blocks as $block ) {
+				if ( 'gatherpress/rsvp-form' === $block['blockName'] ) {
+					$forms[] = $block;
+				} else {
+					$collect( $block['innerBlocks'] ?? array() );
+				}
+			}
+		};
+
+		$collect( parse_blocks( $post_content ) );
+
 		$schema_ids = array();
 
-		foreach ( parse_blocks( $post_content ) as $block ) {
-			if ( 'gatherpress/rsvp-form' !== $block['blockName'] ) {
-				continue;
-			}
-
+		foreach ( $forms as $block ) {
 			$block['attrs']['postId'] = $post_id;
 
 			preg_match(
@@ -641,52 +729,6 @@ class Test_Rsvp_Form extends Base {
 		}
 
 		return $schema_ids;
-	}
-
-	/**
-	 * Tests describe_blocks keeps names, attributes, markup and nesting.
-	 *
-	 * @since TBD
-	 * @covers ::describe_blocks
-	 *
-	 * @return void
-	 */
-	public function test_describe_blocks(): void {
-		$described = Utility::invoke_hidden_method(
-			Rsvp_Form::get_instance(),
-			'describe_blocks',
-			array(
-				array(
-					array(
-						'blockName'   => 'core/group',
-						'attrs'       => array( 'tagName' => 'section' ),
-						'innerHTML'   => '<section></section>',
-						'innerBlocks' => array(
-							array(
-								'blockName' => 'core/paragraph',
-								'attrs'     => array(),
-								'innerHTML' => '<p>Hi</p>',
-							),
-						),
-					),
-					array(),
-				),
-			)
-		);
-
-		$this->assertSame(
-			array(
-				array(
-					'core/group',
-					array( 'tagName' => 'section' ),
-					'<section></section>',
-					array( array( 'core/paragraph', array(), '<p>Hi</p>', array() ) ),
-				),
-				array( null, array(), '', array() ),
-			),
-			$described,
-			'Failed to assert each block is described, with missing keys defaulted.'
-		);
 	}
 
 	/**

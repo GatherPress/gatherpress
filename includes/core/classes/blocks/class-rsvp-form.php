@@ -725,11 +725,13 @@ final class Rsvp_Form {
 	 * Check if two blocks match based on their content.
 	 *
 	 * Compares blocks to determine if they are the same instance: their own
-	 * markup, and their inner blocks' names, attributes and markup. The form's
-	 * own attributes are left out, because they can be filtered at render.
+	 * markup, and the form fields their inner blocks hold. Forms with the same
+	 * fields store the same schema, so either one's id fits both. Other inner
+	 * blocks are left out, because Block Hooks can add them at render, and so
+	 * are the form's own attributes, which can be filtered at render.
 	 *
 	 * @since 0.33.0
-	 * @since TBD Also compares inner blocks. A block's innerHTML holds only its
+	 * @since TBD Also compares form fields. A block's innerHTML holds only its
 	 *            wrapper, so two forms with the same wrapper and number of
 	 *            fields matched each other.
 	 *
@@ -740,32 +742,8 @@ final class Rsvp_Form {
 	 */
 	private function blocks_match( array $block1, array $block2 ): bool {
 		return ( $block1['innerHTML'] ?? '' ) === ( $block2['innerHTML'] ?? '' )
-			&& $this->describe_blocks( $block1['innerBlocks'] ?? array() )
-				=== $this->describe_blocks( $block2['innerBlocks'] ?? array() );
-	}
-
-	/**
-	 * Describe blocks by name, attributes and markup, inner blocks included.
-	 *
-	 * @since TBD
-	 *
-	 * @param array<int, array<string, mixed>> $blocks Parsed blocks.
-	 *
-	 * @return array<int, array<int, mixed>> One entry per block, in order.
-	 */
-	private function describe_blocks( array $blocks ): array {
-		$described = array();
-
-		foreach ( $blocks as $block ) {
-			$described[] = array(
-				$block['blockName'] ?? null,
-				$block['attrs'] ?? array(),
-				$block['innerHTML'] ?? '',
-				$this->describe_blocks( $block['innerBlocks'] ?? array() ),
-			);
-		}
-
-		return $described;
+			&& $this->extract_form_fields_from_inner_blocks( $block1['innerBlocks'] ?? array() )
+				=== $this->extract_form_fields_from_inner_blocks( $block2['innerBlocks'] ?? array() );
 	}
 
 	/**
