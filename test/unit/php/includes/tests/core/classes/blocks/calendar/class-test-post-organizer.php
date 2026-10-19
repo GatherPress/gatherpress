@@ -183,7 +183,6 @@ class Test_Post_Organizer extends Base {
 	 * Coverage for sort_events_for_slotting.
 	 *
 	 * @covers ::sort_events_for_slotting
-	 * @covers ::compare_events_for_slotting
 	 *
 	 * @return void
 	 */

@@ -171,29 +171,9 @@ final class Post_Organizer {
 	}
 
 	/**
-	 * Comparison callback for sorting events for slotting.
+	 * Sorts events for slotting.
 	 *
 	 * Multi-day and all-day events first, then longer before shorter, then start date, then ID.
-	 *
-	 * @since TBD
-	 *
-	 * @param array<string, mixed> $a First event.
-	 * @param array<string, mixed> $b Second event.
-	 * @phpstan-param EventSpan $a
-	 * @phpstan-param EventSpan $b
-	 *
-	 * @return int Comparison result (-1, 0, 1).
-	 */
-	private static function compare_events_for_slotting( array $a, array $b ): int {
-		$a_promoted = $a['total_days'] > 1 || $a['is_all_day'];
-		$b_promoted = $b['total_days'] > 1 || $b['is_all_day'];
-
-		return array( $b_promoted, $b['total_days'], $a['start_date'], $a['id'] )
-			<=> array( $a_promoted, $a['total_days'], $b['start_date'], $b['id'] );
-	}
-
-	/**
-	 * Sorts events for slotting: multi-day events first (descending duration), then start date, then ID.
 	 *
 	 * @since TBD
 	 *
@@ -202,7 +182,16 @@ final class Post_Organizer {
 	 * @return list<EventSpan>
 	 */
 	public static function sort_events_for_slotting( array $events ): array {
-		usort( $events, array( self::class, 'compare_events_for_slotting' ) );
+		usort(
+			$events,
+			static function ( array $a, array $b ): int {
+				$a_promoted = $a['total_days'] > 1 || $a['is_all_day'];
+				$b_promoted = $b['total_days'] > 1 || $b['is_all_day'];
+
+				return array( $b_promoted, $b['total_days'], $a['start_date'], $a['id'] )
+					<=> array( $a_promoted, $a['total_days'], $b['start_date'], $b['id'] );
+			}
+		);
 
 		return $events;
 	}
@@ -445,7 +434,9 @@ final class Post_Organizer {
 		}
 
 		if ( $is_time_grid ) {
-			$posts_by_date = array_map( array( self::class, 'resolve_day_timed_overlaps' ), $posts_by_date );
+			foreach ( $posts_by_date as $date_str => $day_entries ) {
+				$posts_by_date[ $date_str ] = self::resolve_day_timed_overlaps( $day_entries );
+			}
 		}
 
 		return $posts_by_date;

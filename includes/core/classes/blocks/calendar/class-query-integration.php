@@ -425,6 +425,8 @@ final class Query_Integration {
 	 * @param WP_Block|null        $parent_block The parent block instance (if any).
 	 *
 	 * @return array<string, mixed> The updated parsed block data.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) -- $source_block is required by the render_block_data signature.
 	 */
 	public function allow_core_pagination(
 		array $parsed_block,
