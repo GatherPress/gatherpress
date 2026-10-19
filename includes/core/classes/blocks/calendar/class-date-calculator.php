@@ -821,11 +821,12 @@ final class Date_Calculator {
 	 * Retrieves the days of the week considered weekend days.
 	 *
 	 * This filter allows sites to adapt the calendar grid, classes, and weekend-hiding toggle
-	 * to match local cultural and regional norms.
+	 * to match local cultural and regional norms. Filtered values that are not days 0 to 6, and
+	 * repeated days, are dropped, so the column count matches the days that are hidden.
 	 *
 	 * @since TBD
 	 *
-	 * @return int[] Array of day-of-week integers (0 = Sunday, 1 = Monday, ..., 6 = Saturday).
+	 * @return list<int> Day-of-week integers (0 = Sunday, 1 = Monday, ..., 6 = Saturday).
 	 */
 	public static function get_weekend_days(): array {
 		/**
@@ -845,8 +846,23 @@ final class Date_Calculator {
 		 * @param int[] $weekend_days Array of day numbers where 0 = Sunday, 1 = Monday, ..., 6 = Saturday.
 		 */
 		$weekend_days = apply_filters( 'gatherpress_calendar_weekend_days', array( 0, 6 ) );
+		$days         = array();
+		$day_range    = array(
+			'options' => array(
+				'min_range' => 0,
+				'max_range' => 6,
+			),
+		);
 
-		return array_values( array_map( 'absint', (array) $weekend_days ) );
+		foreach ( (array) $weekend_days as $day ) {
+			$valid_day = filter_var( $day, FILTER_VALIDATE_INT, $day_range );
+
+			if ( false !== $valid_day ) {
+				$days[] = $valid_day;
+			}
+		}
+
+		return array_values( array_unique( $days ) );
 	}
 
 	/**

@@ -198,7 +198,7 @@ class Test_Query_Builder extends Base {
 		$this->assertSame( '2026-10-01', $args[ Query_Integration::CALENDAR_QUERY_START_DATE ] );
 		$this->assertSame( '2026-10-31', $args[ Query_Integration::CALENDAR_QUERY_END_DATE ] );
 		$this->assertSame( 500, $args['posts_per_page'] );
-		$this->assertSame( 2, $args['offset'], 'Failed to assert page 1 keeps the offset.' );
+		$this->assertArrayNotHasKey( 'offset', $args, 'Failed to assert page 1 ignores the offset.' );
 		$this->assertArrayNotHasKey( 'post_status', $args, 'Failed to assert scheduled posts are off by default.' );
 		$this->assertSame(
 			array(
@@ -215,7 +215,7 @@ class Test_Query_Builder extends Base {
 		$_GET['query-3-page'] = '2';
 		$args                 = Query_Builder::build_query_args( $block, $range );
 
-		$this->assertArrayNotHasKey( 'offset', $args, 'Failed to assert page 2 drops the offset.' );
+		$this->assertArrayNotHasKey( 'offset', $args, 'Failed to assert page 2 ignores the offset.' );
 	}
 
 	/**

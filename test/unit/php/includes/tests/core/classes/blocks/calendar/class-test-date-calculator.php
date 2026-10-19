@@ -605,16 +605,23 @@ class Test_Date_Calculator extends Base {
 		$this->assertFalse( Date_Calculator::is_weekend_day( 5 ) );
 
 		$friday_saturday = static function () {
-			return array( '5', 6 );
+			return array( '5', 6, 6, 7, -1, 'abc' );
 		};
 		add_filter( 'gatherpress_calendar_weekend_days', $friday_saturday );
 
 		$this->assertSame(
 			array( 5, 6 ),
 			Date_Calculator::get_weekend_days(),
-			'Failed to assert filtered weekend days.'
+			'Failed to assert repeated, out-of-range and non-numeric days are dropped.'
 		);
 		$this->assertFalse( Date_Calculator::is_weekend_day( 0 ) );
+		$this->assertFalse( Date_Calculator::is_weekend_day( 1 ), 'Failed to assert -1 does not become Monday.' );
+		$this->assertSame(
+			5,
+			Date_Calculator::get_columns_count( 'month', false ),
+			'Failed to assert the column count matches the visible days.'
+		);
+		$this->assertCount( 5, Date_Calculator::get_day_names( 1, false ) );
 
 		remove_filter( 'gatherpress_calendar_weekend_days', $friday_saturday );
 	}

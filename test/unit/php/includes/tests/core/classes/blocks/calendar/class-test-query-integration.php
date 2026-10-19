@@ -132,6 +132,12 @@ class Test_Query_Integration extends Base {
 			),
 			array(
 				'type'     => 'filter',
+				'name'     => 'render_block_core/query',
+				'priority' => 10,
+				'callback' => array( $instance, 'forget_calendar_query' ),
+			),
+			array(
+				'type'     => 'filter',
 				'name'     => 'render_block_context',
 				'priority' => 10,
 				'callback' => array( $instance, 'disable_query_pagination_numbers' ),
@@ -525,6 +531,49 @@ class Test_Query_Integration extends Base {
 	}
 
 	/**
+	 * Coverage for forget_calendar_query.
+	 *
+	 * @covers ::forget_calendar_query
+	 *
+	 * @return void
+	 */
+	public function test_forget_calendar_query(): void {
+		$instance = Query_Integration::get_instance();
+		$calendar = array(
+			'blockName' => 'core/query',
+			'attrs'     => array(
+				'queryId' => 5,
+				'query'   => array( Query_Integration::CALENDAR_QUERY_PARAM => true ),
+			),
+		);
+		$plain    = array(
+			'blockName' => 'core/query',
+			'attrs'     => array(
+				'queryId' => 5,
+				'query'   => array( 'perPage' => 1 ),
+			),
+		);
+
+		Utility::set_and_get_hidden_property( $instance, 'calendar_query_ids', array( 5 => true ) );
+
+		$this->assertSame( '<div>plain</div>', $instance->forget_calendar_query( '<div>plain</div>', $plain ) );
+		$this->assertSame(
+			array( 5 => true ),
+			$this->get_calendar_query_ids(),
+			'Failed to assert a plain Query block does not forget a calendar query.'
+		);
+		$this->assertSame( '', $instance->forget_calendar_query( '', array( 'blockName' => 'core/query' ) ) );
+		$this->assertSame( array( 5 => true ), $this->get_calendar_query_ids() );
+
+		$this->assertSame( '<div>cal</div>', $instance->forget_calendar_query( '<div>cal</div>', $calendar ) );
+		$this->assertSame(
+			array(),
+			$this->get_calendar_query_ids(),
+			'Failed to assert the calendar query is forgotten.'
+		);
+	}
+
+	/**
 	 * Coverage for force_pagination_max_pages.
 	 *
 	 * @covers ::force_pagination_max_pages
@@ -683,8 +732,11 @@ class Test_Query_Integration extends Base {
 	 *
 	 * The calendar's Query block is inside a Group, so its pagination blocks get their
 	 * `query` context from attributes that WordPress read before `render_block_data` ran.
+	 * The last plain Query Loop has the same queryId as the calendar, as in an archive that
+	 * shows the content of several posts.
 	 *
 	 * @covers ::allow_core_pagination
+	 * @covers ::forget_calendar_query
 	 * @covers ::query_loop_block_query_vars
 	 * @covers ::force_pagination_max_pages
 	 *
@@ -703,18 +755,27 @@ class Test_Query_Integration extends Base {
 			. '<!-- wp:query {"queryId":7,' . $query . '} -->'
 			. '<div class="wp-block-query">'
 			. '<!-- wp:query-pagination --><!-- wp:query-pagination-next /--><!-- /wp:query-pagination -->'
+			. '</div><!-- /wp:query -->'
+			. '<!-- wp:query {"queryId":8,' . $query . '} -->'
+			. '<div class="wp-block-query">'
+			. '<!-- wp:query-pagination --><!-- wp:query-pagination-next /--><!-- /wp:query-pagination -->'
 			. '</div><!-- /wp:query -->';
 		$output  = do_blocks( $content );
 
-		$this->assertStringContainsString(
-			'query-8-page=2',
-			$output,
-			'Failed to assert the nested calendar links to the next month.'
+		$this->assertSame(
+			1,
+			substr_count( $output, 'query-8-page=2' ),
+			'Failed to assert only the calendar with queryId 8 links to the next month.'
 		);
 		$this->assertStringNotContainsString(
 			'query-7-page=2',
 			$output,
 			'Failed to assert the plain Query Loop has no next page.'
+		);
+		$this->assertSame(
+			array(),
+			$this->get_calendar_query_ids(),
+			'Failed to assert no queryId is left after rendering.'
 		);
 		$this->assertFalse(
 			has_filter( 'the_posts', array( Query_Integration::get_instance(), 'force_pagination_max_pages' ) ),

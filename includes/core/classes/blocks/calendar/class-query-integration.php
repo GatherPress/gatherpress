@@ -91,6 +91,9 @@ final class Query_Integration {
 	 * get their context from attributes that WordPress read before `render_block_data` ran, so
 	 * their `query` context has no calendar marker. Their `queryId` context still matches.
 	 *
+	 * Removed in `forget_calendar_query()` when the Query block has rendered, because a queryId is
+	 * unique only inside one post. An archive that shows the content of several posts can repeat it.
+	 *
 	 * @since TBD
 	 * @var array<int, true>
 	 */
@@ -119,6 +122,7 @@ final class Query_Integration {
 		// Sweep last so post types registered before this class loaded still get their REST filters.
 		add_action( 'init', array( $this, 'register_existing_post_types' ), PHP_INT_MAX );
 		add_filter( 'render_block_data', array( $this, 'allow_core_pagination' ), 10, 3 );
+		add_filter( 'render_block_core/query', array( $this, 'forget_calendar_query' ), 10, 2 );
 		add_filter( 'render_block_context', array( $this, 'disable_query_pagination_numbers' ), 10, 2 );
 		add_filter( 'query_vars', array( $this, 'query_vars' ) );
 		add_filter( 'query_loop_block_query_vars', array( $this, 'query_loop_block_query_vars' ), 10, 2 );
@@ -447,6 +451,32 @@ final class Query_Integration {
 		}
 
 		return $parsed_block;
+	}
+
+	/**
+	 * Forgets the queryId of a calendar Query block when that block has rendered.
+	 *
+	 * The pagination blocks render inside the Query block, so they still find the queryId.
+	 * A later Query block with the same queryId, for example in the content of another post,
+	 * is not a calendar query.
+	 *
+	 * @since TBD
+	 *
+	 * @param string               $block_content The rendered Query block.
+	 * @param array<string, mixed> $parsed_block  The parsed Query block, with the calendar marker.
+	 *
+	 * @return string The rendered Query block, unchanged.
+	 */
+	public function forget_calendar_query( string $block_content, array $parsed_block ): string {
+		$attrs    = is_array( $parsed_block['attrs'] ?? null ) ? $parsed_block['attrs'] : array();
+		$query    = $attrs['query'] ?? null;
+		$query_id = $attrs['queryId'] ?? null;
+
+		if ( is_array( $query ) && ! empty( $query[ self::CALENDAR_QUERY_PARAM ] ) && is_numeric( $query_id ) ) {
+			unset( $this->calendar_query_ids[ (int) $query_id ] );
+		}
+
+		return $block_content;
 	}
 
 	/**

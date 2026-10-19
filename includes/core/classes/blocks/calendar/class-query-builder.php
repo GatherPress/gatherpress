@@ -196,11 +196,8 @@ final class Query_Builder {
 
 		$query_args['date_query'] = array( $date_clause );
 
-		if ( 1 !== $page ) {
-			unset( $query_args['offset'] );
-		}
-
-		unset( $query_args['include_unfinished'] );
+		// A calendar pages by date range, not by posts, so the Query block's offset does not apply.
+		unset( $query_args['offset'], $query_args['include_unfinished'] );
 
 		return $query_args;
 	}
