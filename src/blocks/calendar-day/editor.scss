@@ -1,0 +1,186 @@
+/**
+ * GatherPress Calendar Day Block Editor-Specific Styles
+ *
+ * @package GatherPressCalendar
+ * @since 0.4.0
+ */
+
+.editor-styles-wrapper {
+	.gatherpress-calendar__day {
+		cursor: pointer;
+		transition: outline-color 0.15s ease-in-out;
+
+		/* Ensure Gutenberg layouts fill the day cell */
+		> .block-editor-block-list__layout,
+		> .block-editor-block-preview__live-content {
+			min-height: 100%;
+			min-width: 100%;
+		}
+
+		&:hover:not(:focus-within) {
+			outline: 1px solid var(--wp-admin-theme-color, #007cba);
+			outline-offset: -1px;
+		}
+
+		/* Active cell layout normalization in ribbon or time-grid mode */
+		&.is-style-ribbon,
+		&.has-time-grid {
+			display: flex !important;
+			flex-direction: column !important;
+			align-items: stretch !important;
+			justify-content: flex-start !important;
+			padding: 0 !important;
+			overflow: visible !important;
+
+			/* Normalize Gutenberg's Day innerBlocks layout wrapper */
+			> .block-editor-block-list__layout {
+				display: flex !important;
+				flex-direction: column !important;
+				align-items: stretch !important;
+				justify-content: flex-start !important;
+				width: 100% !important;
+				padding: 0 !important;
+				margin: 0 !important;
+				gap: 0 !important;
+
+				/* Strip Gutenberg block margins on children */
+				> .block-editor-block-list__block {
+					margin: 0 !important;
+					padding: 0 !important;
+					width: 100% !important;
+					box-sizing: border-box;
+				}
+
+				/* Keep Day Number at top-left with minimal margin */
+				> .block-editor-block-list__block:has(.gatherpress-calendar__day-number) {
+					width: auto !important;
+					align-self: flex-start !important;
+					flex: 0 0 auto !important;
+					margin: 0.3rem 0.45rem 0.15rem !important;
+
+					.gatherpress-calendar__day-number {
+						margin: 0 !important;
+						display: block;
+					}
+				}
+
+				/* Let Calendar Entries stretch and fill the remaining cell height */
+				> .block-editor-block-list__block:has(.wp-block-gatherpress-calendar-entries),
+				> .wp-block-gatherpress-calendar-entries {
+					flex: 1 1 auto !important;
+					width: 100% !important;
+				}
+			}
+
+			/* Entries live-template normalization inside ribbon/time-grid days */
+			.wp-block-gatherpress-calendar-entries {
+				overflow: visible !important;
+
+				.block-editor-block-list__layout {
+					margin: 0 !important;
+					padding: 0 !important;
+					gap: 0 !important;
+					overflow: visible !important;
+				}
+
+				.gatherpress-calendar__entry {
+					.gatherpress-calendar__entry-template {
+						display: flex !important;
+						flex-direction: row !important;
+						align-items: center !important;
+						width: 100% !important;
+						height: 100% !important;
+						min-height: 100% !important;
+						min-width: 0 !important;
+						margin: 0 !important;
+						padding: 0 !important;
+					}
+
+					/* Single-column entries are clamped within the cell */
+					&:not([data-row-span]),
+					&[data-row-span="1"],
+					&[data-row-span="0"],
+					&:not(.has-multi-col-span) {
+						overflow: hidden !important;
+
+						.gatherpress-calendar__entry-template {
+							overflow: hidden !important;
+							max-width: 100% !important;
+							width: 100% !important;
+
+							> .block-editor-block-list__block {
+								max-width: 100% !important;
+								width: 100% !important;
+								overflow: hidden !important;
+							}
+
+							.gatherpress-modal--trigger-open,
+							.wp-block-post-title,
+							.wp-block-post-title a {
+								max-width: 100% !important;
+								width: 100% !important;
+								overflow: hidden !important;
+								text-overflow: ellipsis !important;
+								white-space: nowrap !important;
+							}
+						}
+					}
+
+					/* Multi-column entries can span across sibling cells */
+					&[data-row-span]:not([data-row-span="1"], [data-row-span="0"]),
+					&.has-multi-col-span {
+						overflow: visible !important;
+
+						.gatherpress-calendar__entry-template {
+							overflow: visible !important;
+
+							> .block-editor-block-list__block {
+								margin: 0 !important;
+								padding: 0 !important;
+								max-width: calc(var(--gatherpress-calendar-row-span, 1) * 100% + (var(--gatherpress-calendar-row-span, 1) - 1) * var(--gatherpress-calendar-column-gap, 2px)) !important;
+								width: max-content !important;
+								min-width: 0 !important;
+								overflow: hidden !important;
+
+								.gatherpress-modal--trigger-open,
+								.wp-block-post-title,
+								.wp-block-post-title a {
+									max-width: calc(var(--gatherpress-calendar-row-span, 1) * 100% + (var(--gatherpress-calendar-row-span, 1) - 1) * var(--gatherpress-calendar-column-gap, 2px)) !important;
+									width: max-content !important;
+									white-space: nowrap !important;
+								}
+							}
+						}
+					}
+
+					&.is-span-middle,
+					&.is-span-end {
+						&:focus-within,
+						&:has(.is-selected) {
+							.gatherpress-modal--trigger-open > *,
+							.wp-block-post-title,
+							.wp-block-post-title a {
+								opacity: 1 !important;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		/* Hide placeholder entries on empty days when the day is not being edited */
+		&.is-inactive-empty-day {
+			.wp-block-gatherpress-calendar-entries {
+				display: none;
+			}
+		}
+	}
+}
+
+/* Lock Layout UI in Inspector & Toolbar when Ribbon style is selected */
+body:has(.gatherpress-calendar__day.is-style-ribbon.is-selected) .block-editor-block-inspector .components-panel__body:has(.block-editor-hooks__layout-controls),
+body:has(.gatherpress-calendar__day.is-style-ribbon.is-selected) .block-editor-block-toolbar .components-toolbar-group:has([aria-label*="Justification"]),
+body:has(.gatherpress-calendar__day.is-style-ribbon .is-selected) .block-editor-block-inspector .components-panel__body:has(.block-editor-hooks__layout-controls),
+body:has(.gatherpress-calendar__day.is-style-ribbon .is-selected) .block-editor-block-toolbar .components-toolbar-group:has([aria-label*="Justification"]) {
+	display: none !important;
+}

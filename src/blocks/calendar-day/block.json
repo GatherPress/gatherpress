@@ -1,0 +1,128 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "gatherpress/calendar-day",
+  "version": "0.4.0",
+  "title": "Calendar Day",
+  "category": "gatherpress",
+  "icon": "calendar",
+  "description": "An individual day cell inside the GatherPress Calendar grid.",
+  "parent": [
+    "gatherpress/calendar-week",
+    "gatherpress/calendar"
+  ],
+  "usesContext": [
+    "queryId",
+    "query",
+    "gatherpress/year",
+    "gatherpress/month",
+    "gatherpress/dayDate",
+    "gatherpress/dayNumber",
+    "gatherpress/dayPosts",
+    "gatherpress/isEmpty",
+    "gatherpress/isToday",
+    "gatherpress/weekday",
+    "gatherpress/isWeekend",
+    "gatherpress/viewType",
+    "gatherpress/enableTimeGrid",
+    "gatherpress/timeGridConfig",
+    "gatherpress/dayStartHour",
+    "gatherpress/dayEndHour",
+    "gatherpress/numRibbonSlots"
+  ],
+  "providesContext": {
+    "gatherpress/slotHeight": "slotHeight"
+  },
+  "attributes": {
+    "date": {
+      "type": "string",
+      "default": ""
+    },
+    "day": {
+      "type": "number",
+      "default": 0
+    },
+    "isEmpty": {
+      "type": "boolean",
+      "default": false
+    },
+    "isToday": {
+      "type": "boolean",
+      "default": false
+    },
+    "slotHeight": {
+      "type": "number",
+      "default": 48
+    },
+    "layout": {
+      "type": "object",
+      "default": {
+        "type": "flex",
+        "orientation": "horizontal",
+        "justifyContent": "left",
+        "alignItems": "center"
+      }
+    }
+  },
+  "supports": {
+    "interactivity": true,
+    "html": false,
+    "reusable": false,
+    "customClassName": true,
+    "color": {
+      "background": true,
+      "text": true,
+      "gradients": true,
+      "__experimentalDefaultControls": {
+        "background": true,
+        "text": true
+      }
+    },
+    "shadow": true,
+    "contentRole": true,
+    "spacing": {
+      "padding": true,
+      "margin": true,
+      "blockGap": true
+    },
+    "layout": {
+      "allowSwitching": true,
+      "allowInheriting": false,
+      "allowSizingOnChildren": true
+    },
+    "__experimentalBorder": {
+      "color": true,
+      "radius": true,
+      "style": true,
+      "width": true,
+      "__experimentalDefaultControls": {
+        "color": true,
+        "radius": true,
+        "width": true
+      }
+    },
+    "typography": {
+      "fontSize": true,
+      "lineHeight": true,
+      "__experimentalFontFamily": true,
+      "__experimentalFontWeight": true
+    }
+  },
+  "styles": [
+    {
+      "name": "default",
+      "label": "Classic",
+      "isDefault": true
+    },
+    {
+      "name": "ribbon",
+      "label": "Ribbon"
+    }
+  ],
+  "textdomain": "gatherpress",
+  "render": "file:./render.php",
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css",
+  "viewScriptModule": "file:./view.js"
+}

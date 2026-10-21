@@ -1,0 +1,9 @@
+.editor-styles-wrapper .gatherpress-calendar__week {
+	grid-column: 1 / -1;
+	// display: grid;
+	display: contents;
+	grid-template-columns: repeat(var(--gatherpress-calendar-columns, 7), 1fr);
+	width: 100%;
+	position: relative;
+	margin: 0;
+}

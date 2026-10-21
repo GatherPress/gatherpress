@@ -1,0 +1,144 @@
+/* ======================================================================
+    BLOCK STYLE: Circular
+    Giant bold white cutout numerals with entries floating above.
+    ====================================================================== */
+
+.wp-block-gatherpress-calendar.is-style-circular {
+	--gatherpress-calendar-column-gap: clamp(0.5rem, 2vw, 1rem);
+	--gatherpress-calendar-header-bg: transparent;
+	--gatherpress-calendar-header-color: var(--wp--preset--color--primary, currentColor);
+	--gatherpress-calendar-day-bg: color-mix(in srgb, currentcolor 8%, transparent);
+	--gatherpress-calendar-day-has-posts-border: transparent;
+	--gatherpress-calendar-day-today-outline: transparent;
+	--gatherpress-calendar-day-today-color: var(--wp--preset--color--base, #fff);
+
+	.gatherpress-calendar__heading {
+		color: var(--wp--preset--color--primary, currentColor);
+	}
+
+	.gatherpress-calendar__table {
+		gap: var(--gatherpress-calendar-column-gap);
+		background: transparent;
+		border: none;
+		padding: clamp(0.5rem, 2vw, 1rem);
+
+		th {
+			border: none;
+			font-weight: 600;
+			text-transform: none;
+			border-radius: 50%;
+		}
+
+		td {
+			position: relative;
+			overflow: hidden;
+			align-self: center;
+			border-radius: 50%;
+			aspect-ratio: 1;
+			border: none;
+			padding: 0.35rem;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			transition: background-color 0.2s ease, box-shadow 0.2s ease;
+
+			/* Giant bold white cutout day number filling the background */
+			.gatherpress-calendar__day-number {
+				position: absolute;
+				inset: 0;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				margin: 0;
+				font-size: clamp(4.25rem, 5.5vw, 8rem) !important;
+				font-weight: 900;
+				line-height: 1;
+				letter-spacing: -0.05em;
+				color: var(--wp--preset--color--base, #fff);
+				pointer-events: none;
+				user-select: none;
+				// z-index: 0;
+			}
+
+			/* Entries float on top of the cutout numeral */
+			.wp-block-gatherpress-calendar-entries {
+				position: relative;
+				z-index: 1;
+				width: 100%;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+				text-align: center;
+				overflow: hidden;
+
+				.gatherpress-calendar__entry {
+					text-align: center;
+					font-weight: 600;
+					font-size: clamp(0.6875rem, 1.2vw, 0.75rem);
+
+					/* Subtle halo ensures readability over the white cutout numeral */
+					text-shadow:
+						0 0 4px var(--wp--preset--color--base, #fff),
+						0 1px 2px var(--wp--preset--color--base, #fff);
+
+					.wp-block-gatherpress-event-date {
+						font-size: clamp(0.625rem, 1vw, 0.6875rem);
+					}
+				}
+			}
+
+			&.is-empty {
+				background: transparent;
+				opacity: 0;
+				pointer-events: none;
+			}
+
+			&.has-posts {
+				// background: color-mix(in srgb, currentColor 14%, transparent);
+				// box-shadow: 0 2px 8px color-mix(in srgb, currentColor 10%, transparent);
+			}
+
+			&.is-today {
+				background: color-mix(in srgb, currentcolor 23%, transparent);
+
+				/* Invert cutout on the today circle */
+				.gatherpress-calendar__day-number {
+					// color: var(--wp--preset--color--base, #fff);
+					// opacity: 0.3;
+				}
+
+				.wp-block-gatherpress-calendar-entries .gatherpress-calendar__entry {
+					color: var(--wp--preset--color--base, #fff);
+					text-shadow: 0 1px 3px rgb(0 0 0 / 50%);
+
+					a,
+					.wp-block-post-title a {
+						color: var(--wp--preset--color--base, #fff);
+					}
+				}
+			}
+		}
+	}
+
+	/* ======================================================================
+		BLOCK STYLE: Dots (centered over the cutout number)
+		====================================================================== */
+	.wp-block-gatherpress-calendar-entries.is-style-dots {
+		justify-content: center;
+
+		.gatherpress-calendar__entry {
+			justify-content: center;
+
+			.gatherpress-modal--trigger-open:not(.wp-block-gatherpress-modal *) > * {
+				box-shadow: 0 2px 4px color-mix(in srgb, currentcolor 20%, transparent);
+
+				&:hover {
+					box-shadow: 0 4px 8px color-mix(in srgb, currentcolor 40%, transparent);
+					transform: scale(1.4);
+				}
+			}
+		}
+	}
+}

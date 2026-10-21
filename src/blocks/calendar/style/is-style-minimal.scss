@@ -1,0 +1,70 @@
+/* ======================================================================
+    BLOCK STYLE: Minimal
+    Clean, airy layout with hairline dividers that adapt to any background.
+    ====================================================================== */
+
+.wp-block-gatherpress-calendar.is-style-minimal {
+	--gatherpress-calendar-column-gap: 0px;
+	--gatherpress-calendar-header-bg: transparent;
+	--gatherpress-calendar-header-color: color-mix(in srgb, currentcolor 60%, transparent);
+	--gatherpress-calendar-day-bg: transparent;
+	--gatherpress-calendar-day-has-posts-border: transparent;
+	--gatherpress-calendar-day-today-outline: transparent;
+
+	.gatherpress-calendar__table {
+		background: transparent;
+		border: none;
+		gap: var(--gatherpress-calendar-column-gap);
+
+		th {
+			border-bottom: 1px solid color-mix(in srgb, currentcolor 15%, transparent);
+			text-transform: none;
+			letter-spacing: 0;
+			font-weight: 400;
+		}
+
+		td {
+			border-bottom: 1px solid color-mix(in srgb, currentcolor 8%, transparent);
+
+			&.is-empty {
+				opacity: 0.2;
+			}
+
+			&.is-today {
+				.gatherpress-calendar__day-number {
+					width: clamp(24px, 5vw, 32px);
+					height: clamp(24px, 5vw, 32px);
+					display: flex;
+					align-items: center;
+					justify-content: center;
+					margin-inline: auto;
+					font-weight: 500;
+					border: 1px solid currentcolor;
+					transform: translate(calc(clamp(24px, 5vw, 32px) * -0.25), calc(clamp(24px, 5vw, 32px) * -0.25));
+				}
+			}
+		}
+	}
+
+	.gatherpress-calendar__day-number {
+		font-weight: 300;
+	}
+
+	/* ======================================================================
+		BLOCK STYLE: Dots
+		====================================================================== */
+	.wp-block-gatherpress-calendar-entries.is-style-dots {
+		.gatherpress-modal--trigger-open:not(.wp-block-gatherpress-modal *) > * {
+			width: clamp(6px, 2vw, 8px);
+			height: clamp(6px, 2vw, 8px);
+			min-width: clamp(6px, 2vw, 8px);
+			min-height: clamp(6px, 2vw, 8px);
+			opacity: 0.75;
+
+			&:hover {
+				opacity: 1;
+				transform: scale(1.4);
+			}
+		}
+	}
+}

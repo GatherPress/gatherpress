@@ -1,0 +1,36 @@
+/* ======================================================================
+   Container Queries - Hide day names on narrow screens
+   ====================================================================== */
+
+@container calendar (max-width: 400px) {
+	.gatherpress-calendar__table th {
+		display: none;
+	}
+
+	.gatherpress-calendar__day-number {
+		font-size: clamp(0.625rem, 1.5vw, 0.7rem);
+	}
+
+	/* ======================================================================
+		BLOCK STYLE: Dots (style-variation of calendar-entries block)
+		====================================================================== */
+	.wp-block-gatherpress-calendar-entries.is-style-dots {
+		.gatherpress-modal--trigger-open:not(.wp-block-gatherpress-modal .gatherpress-modal--trigger-open) > * {
+			width: clamp(6px, 2vw, 8px);
+			height: clamp(6px, 2vw, 8px);
+			min-width: clamp(6px, 2vw, 8px);
+			min-height: clamp(6px, 2vw, 8px);
+		}
+	}
+
+	.wp-block-gatherpress-calendar.is-style-bold {
+		.wp-block-gatherpress-calendar-entries.is-style-dots {
+			.gatherpress-modal--trigger-open:not(.wp-block-gatherpress-modal .gatherpress-modal--trigger-open) > * {
+				width: clamp(8px, 2.5vw, 10px);
+				height: clamp(8px, 2.5vw, 10px);
+				min-width: clamp(8px, 2.5vw, 10px);
+				min-height: clamp(8px, 2.5vw, 10px);
+			}
+		}
+	}
+}
