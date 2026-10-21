@@ -2,7 +2,7 @@
  * Grid builder functions for calendar units, weeks, and days.
  *
  * @package
- * @since 0.8.0
+ * @since TBD
  */
 
 import { dateI18n, format } from '@wordpress/date';
@@ -11,6 +11,53 @@ import { DATE_FORMAT } from '../constants';
 import { formatDate } from './date-utils';
 import { WEEKDAY_SLUGS, isWeekendDay, getDayNames } from './calendar-utils';
 import { isEventPostType } from '../../../utils/post-types';
+
+/**
+ * Maximum number of days of one event that the calendar places.
+ *
+ * Mirrors Post_Organizer::MAX_EVENT_SPAN_DAYS: twelve months, the largest view.
+ *
+ * @since TBD
+ */
+const MAX_EVENT_SPAN_DAYS = 366;
+
+/**
+ * Milliseconds in one day.
+ *
+ * @since TBD
+ */
+const DAY_MS = 1000 * 60 * 60 * 24;
+
+/**
+ * Create a Date at noon local time from a YYYY-MM-DD string.
+ *
+ * Noon keeps the day the same when daylight saving time changes the clock.
+ *
+ * @since TBD
+ *
+ * @param {string} dateStr Date (YYYY-MM-DD).
+ *
+ * @return {Date} Date at noon.
+ */
+function toNoonDate( dateStr ) {
+	const [ year, month, day ] = dateStr.split( '-' ).map( Number );
+
+	return new Date( year, month - 1, day, 12, 0, 0 );
+}
+
+/**
+ * Count the days from one date to a later date.
+ *
+ * @since TBD
+ *
+ * @param {Date} from Earlier date at noon.
+ * @param {Date} to   Later date at noon.
+ *
+ * @return {number} Number of days.
+ */
+function daysBetween( from, to ) {
+	return Math.round( ( to - from ) / DAY_MS );
+}
 
 /**
  * Classifies the span position for a day within a multi-day event.
@@ -35,10 +82,16 @@ export function determineSpanType( dayIndex, totalDays ) {
 /**
  * Calculates start object, total days, and string dates for a post.
  *
- * @param {Object} post Post entity record.
- * @return {Object|null} PostDateSpan descriptor object.
+ * Mirrors Post_Organizer::calculate_date_span(). `totalDays` is the full length
+ * of the event. `firstDay` (0-based) and `shownDays` give the part of the event
+ * inside the visible range, so an event that starts before the range still
+ * shows on the visible days.
+ *
+ * @param {Object}      post  Post entity record.
+ * @param {Object|null} range Visible range, { startDate, endDate } as YYYY-MM-DD, or null.
+ * @return {Object|null} PostDateSpan descriptor object, or null when the post is outside the range.
  */
-export function resolvePostDateSpan( post ) {
+export function resolvePostDateSpan( post, range = null ) {
 	const isEvent = isEventPostType( post.type );
 	const postDate = isEvent
 		? post.meta?.gatherpress_datetime_start
@@ -47,13 +100,6 @@ export function resolvePostDateSpan( post ) {
 	if ( ! postDate ) {
 		return null;
 	}
-
-	const isAllDay = Boolean(
-		true === post.meta?.gatherpress_is_all_day ||
-		'1' === post.meta?.gatherpress_is_all_day ||
-		1 === post.meta?.gatherpress_is_all_day ||
-		'true' === post.meta?.gatherpress_is_all_day,
-	);
 
 	// When post supports gatherpress-event-date, postDate from meta is a string like:
 	// "2026-09-30 23:30:00" (an event starting at 11:30 PM in its local timezone).
@@ -78,20 +124,46 @@ export function resolvePostDateSpan( post ) {
 		}
 	}
 
-	const [ sY, sM, sD ] = startDateStr.split( '-' ).map( Number );
-	const [ eY, eM, eD ] = endDateStr.split( '-' ).map( Number );
-	const startObj = new Date( sY, sM - 1, sD, 12, 0, 0 );
-	const endObj = new Date( eY, eM - 1, eD, 12, 0, 0 );
+	const startObj = toNoonDate( startDateStr );
+	const totalDays = Math.max(
+		1,
+		daysBetween( startObj, toNoonDate( endDateStr ) ) + 1,
+	);
+	let firstDay = 0;
+	let lastDay = totalDays - 1;
 
-	const totalDays = Math.min(
-		366,
-		Math.max(
-			1,
-			Math.round( ( endObj - startObj ) / ( 1000 * 60 * 60 * 24 ) ) + 1,
-		),
+	if ( 'string' === typeof range?.startDate && 'string' === typeof range?.endDate ) {
+		// YYYY-MM-DD strings compare in date order.
+		if ( endDateStr < range.startDate || startDateStr > range.endDate ) {
+			return null;
+		}
+
+		if ( startDateStr < range.startDate ) {
+			firstDay = daysBetween( startObj, toNoonDate( range.startDate ) );
+		}
+
+		if ( endDateStr > range.endDate ) {
+			lastDay = daysBetween( startObj, toNoonDate( range.endDate ) );
+		}
+	}
+
+	const shownDays = Math.min( MAX_EVENT_SPAN_DAYS, lastDay - firstDay + 1 );
+	const isAllDay = Boolean(
+		true === post.meta?.gatherpress_is_all_day ||
+		'1' === post.meta?.gatherpress_is_all_day ||
+		1 === post.meta?.gatherpress_is_all_day ||
+		'true' === post.meta?.gatherpress_is_all_day,
 	);
 
-	return { post, startObj, startDateStr, totalDays, isAllDay };
+	return {
+		post,
+		startObj,
+		startDateStr,
+		totalDays,
+		firstDay,
+		shownDays,
+		isAllDay,
+	};
 }
 
 /**
@@ -215,18 +287,22 @@ function allocateTimedEvent( rawEvent, gridConfig, grouped ) {
 /**
  * Allocates an all-day or multi-day ribbon event into the daily entries map.
  *
+ * Only the visible days get an entry. Each entry keeps its day number in the
+ * full event.
+ *
  * @param {Object} rawEvent      Event data.
  * @param {Object} grouped       Grouped date entries map.
  * @param {Object} occupiedSlots Map of occupied slots.
  * @return {void}
  */
 function allocateRibbonEvent( rawEvent, grouped, occupiedSlots ) {
-	const { post, startObj, totalDays, isAllDay } = rawEvent;
+	const { post, startObj, totalDays, firstDay, shownDays, isAllDay } =
+		rawEvent;
 
 	const eventDates = [];
-	for ( let i = 0; i < totalDays; i++ ) {
+	for ( let i = 0; i < shownDays; i++ ) {
 		const current = new Date( startObj );
-		current.setDate( startObj.getDate() + i );
+		current.setDate( startObj.getDate() + firstDay + i );
 		eventDates.push( formatDate( current ) );
 	}
 
@@ -238,7 +314,7 @@ function allocateRibbonEvent( rawEvent, grouped, occupiedSlots ) {
 		}
 		occupiedSlots[ dateStr ].add( slot );
 
-		const dayIndex = i + 1;
+		const dayIndex = firstDay + i + 1;
 		const span = determineSpanType( dayIndex, totalDays );
 
 		if ( ! grouped[ dateStr ] ) {
@@ -260,38 +336,56 @@ function allocateRibbonEvent( rawEvent, grouped, occupiedSlots ) {
 /**
  * Resolves concurrent overlapping columns for timed events in a day's entries.
  *
+ * Mirrors Post_Organizer::resolve_day_timed_overlaps(). Timed entries that
+ * overlap, directly or through other entries, form a group. Each entry goes in
+ * the first column of its group that is free at its start time, so no two
+ * overlapping entries share a column and all entries of a group have the same
+ * width.
+ *
  * @param {Array<Object>} dayEntries Entries for a single date.
  * @return {void}
  */
 function resolveDayOverlaps( dayEntries ) {
-	const timedIndices = [];
-	dayEntries.forEach( ( entry, idx ) => {
-		if ( entry.isTimed ) {
-			timedIndices.push( idx );
-		}
-	} );
+	// Array.prototype.sort is stable, so equal entries keep their order.
+	const timed = dayEntries
+		.filter( ( entry ) => entry.isTimed )
+		.sort(
+			( a, b ) =>
+				a.timeRowStart - b.timeRowStart || a.timeRowEnd - b.timeRowEnd,
+		);
+	let group = [];
+	let columnEnds = [];
+	let groupEnd = 0;
 
-	timedIndices.forEach( ( currIdx ) => {
-		const curr = dayEntries[ currIdx ];
-		let overlaps = 0;
-		let overlapIdx = 0;
-
-		timedIndices.forEach( ( otherIdx ) => {
-			const other = dayEntries[ otherIdx ];
-			const isOverlapping =
-				curr.timeRowStart < other.timeRowEnd &&
-				curr.timeRowEnd > other.timeRowStart;
-			if ( isOverlapping ) {
-				overlaps++;
-				if ( otherIdx < currIdx ) {
-					overlapIdx++;
-				}
-			}
+	const assignGroup = () => {
+		group.forEach( ( { entry, column } ) => {
+			entry.overlapTotal = columnEnds.length;
+			entry.overlapIndex = column;
 		} );
+	};
 
-		dayEntries[ currIdx ].overlapTotal = Math.max( 1, overlaps );
-		dayEntries[ currIdx ].overlapIndex = overlapIdx;
+	timed.forEach( ( entry ) => {
+		// An entry that starts after every entry of the group ends starts a new group.
+		if ( entry.timeRowStart >= groupEnd ) {
+			assignGroup();
+			group = [];
+			columnEnds = [];
+		}
+
+		let column = 0;
+		while (
+			column < columnEnds.length &&
+			columnEnds[ column ] > entry.timeRowStart
+		) {
+			column++;
+		}
+
+		columnEnds[ column ] = entry.timeRowEnd;
+		group.push( { entry, column } );
+		groupEnd = Math.max( groupEnd, entry.timeRowEnd );
 	} );
+
+	assignGroup();
 }
 
 /**
@@ -299,18 +393,21 @@ function resolveDayOverlaps( dayEntries ) {
  * spanning multi-day events across all active days
  * and supporting time-grid coordinates.
  *
- * @param {Array}  posts      Raw post entities.
- * @param {Object} gridConfig Time grid configuration.
+ * @param {Array}       posts      Raw post entities.
+ * @param {Object}      gridConfig Time grid configuration.
+ * @param {Object|null} range      Visible range, { startDate, endDate } as YYYY-MM-DD, or null.
  *
  * @return {Object} Posts grouped by date string.
  */
-export function groupPostsByDate( posts = [], gridConfig = {} ) {
+export function groupPostsByDate( posts = [], gridConfig = {}, range = null ) {
 	const grouped = {};
 	if ( ! posts?.length ) {
 		return grouped;
 	}
 
-	const rawEvents = posts.map( resolvePostDateSpan ).filter( Boolean );
+	const rawEvents = posts
+		.map( ( post ) => resolvePostDateSpan( post, range ) )
+		.filter( Boolean );
 	const isTimeGrid = Boolean( gridConfig?.enabled );
 
 	// Sort events: multi-day/all-day first, then start date, then ID
@@ -534,7 +631,7 @@ export function buildConsecutiveDays(
  * Monday spans two ISO weeks, and its fourth day is always in the one that
  * holds most of the row.
  *
- * @since 0.8.0
+ * @since TBD
  *
  * @param {Array}  week        Day entries of the row.
  * @param {number} startOfWeek Start of week (0-6).
@@ -559,7 +656,7 @@ export function getWeekNumber( week, startOfWeek = 0 ) {
 /**
  * Whether any of the given days has posts.
  *
- * @since 0.8.0
+ * @since TBD
  *
  * @param {Array} days Day entries.
  *
@@ -577,7 +674,7 @@ export function hasPosts( days = [] ) {
  * view. In day view the header name of a removed day is removed too, so the
  * columns still line up.
  *
- * @since 0.8.0
+ * @since TBD
  *
  * @param {string} viewType View type.
  * @param {Array}  units    Units to filter.
@@ -654,7 +751,7 @@ export function generateCalendar(
 	timeGridConfig = {},
 	showUnitsWithoutEvents = true,
 ) {
-	const postsByDate = groupPostsByDate( posts, timeGridConfig );
+	const postsByDate = groupPostsByDate( posts, timeGridConfig, dateRange );
 	const viewType = dateRange.viewType || 'month';
 	const requestedCount = Math.max( 1, dateRange.unitCount || 1 );
 	const startObj = dateRange.startDateObj || new Date( dateRange.startDate );
@@ -667,7 +764,7 @@ export function generateCalendar(
 			d.setDate( startObj.getDate() + i );
 			dayNames.push( dateI18n( 'D', d ) );
 		}
-		const weeks = buildConsecutiveDays( startObj, unitCount, postsByDate );
+		const weeks = buildConsecutiveDays( startObj, requestedCount, postsByDate );
 		const numRibbonSlots = getWeekNumRibbonSlots(
 			weeks[ 0 ] || [],
 			isTimeGrid,
@@ -685,7 +782,7 @@ export function generateCalendar(
 			weeks,
 			units,
 			viewType,
-			unitCount,
+			unitCount: requestedCount,
 			numRibbonSlots,
 		};
 	}
@@ -712,7 +809,7 @@ export function generateCalendar(
 				dayNames,
 				weeks,
 				weekNumbers:
-					1 < unitCount
+					1 < requestedCount
 						? weeks.map( ( week ) =>
 							getWeekNumber( week, startOfWeek ),
 						)
@@ -726,14 +823,14 @@ export function generateCalendar(
 			weeks,
 			units,
 			viewType,
-			unitCount,
+			unitCount: requestedCount,
 			numRibbonSlots,
 		};
 	}
 
 	const units = [];
 
-	for ( let i = 0; i < unitCount; i++ ) {
+	for ( let i = 0; i < requestedCount; i++ ) {
 		const monthDate = new Date(
 			startObj.getFullYear(),
 			startObj.getMonth() + i,
@@ -773,28 +870,12 @@ export function generateCalendar(
 			: removeUnitsWithoutPosts( viewType, units );
 	const { dayNames, weeks } = visibleUnits[ 0 ];
 
-	let unitCount = visibleUnits.length;
-	if ( 'week' === viewType ) {
-		unitCount = weeks.length;
-		// Only several week rows need a week number to tell them apart.
-		if ( 1 < unitCount ) {
-			visibleUnits[ 0 ] = {
-				...visibleUnits[ 0 ],
-				weekNumbers: weeks.map( ( week ) =>
-					getWeekNumber( week, startOfWeek ),
-				),
-			};
-		}
-	} else if ( 'day' === viewType ) {
-		unitCount = weeks[ 0 ].length;
-	}
-
 	return {
 		dayNames,
 		weeks,
 		units: visibleUnits,
 		viewType,
-		unitCount,
+		unitCount: visibleUnits.length,
 		numRibbonSlots: 0,
 		hasPosts: anyPosts,
 	};

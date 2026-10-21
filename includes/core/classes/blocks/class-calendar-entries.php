@@ -71,12 +71,28 @@ final class Calendar_Entries {
 	private static array $current_span_data = array();
 
 	/**
+	 * Whether the template of the entry that renders now shows a Post Title outside the modal.
+	 *
+	 * @since TBD
+	 * @var bool
+	 */
+	private static bool $current_shows_post_title = false;
+
+	/**
 	 * Current modal nesting depth to distinguish triggers from modal-content.
 	 *
 	 * @since TBD
 	 * @var int
 	 */
 	private static int $modal_depth = 0;
+
+	/**
+	 * Number of entry templates that render now, more than 1 for a calendar inside an entry.
+	 *
+	 * @since TBD
+	 * @var int
+	 */
+	private static int $render_depth = 0;
 
 	/**
 	 * Render the calendar entries of one day.
@@ -457,8 +473,9 @@ final class Calendar_Entries {
 	/**
 	 * Suppress event-date block outside modal-content on multi-day events.
 	 *
-	 * Hooked only while an entry renders whose template shows the Post Title outside the modal,
-	 * so the title stays as the trigger. Inside modal-content the full date renders normally.
+	 * Hooked only while an entry renders. It acts only when the template shows the Post Title
+	 * outside the modal, so the title stays as the trigger. Inside modal-content the full date
+	 * renders normally.
 	 *
 	 * @since TBD
 	 *
@@ -467,7 +484,7 @@ final class Calendar_Entries {
 	 * @return string The block HTML, or an empty string for a multi-day trigger.
 	 */
 	public static function filter_multiday_event_date( string $block_content ): string {
-		if ( self::$modal_depth > 0 || ! self::is_current_entry_multi_day() ) {
+		if ( ! self::$current_shows_post_title || self::$modal_depth > 0 || ! self::is_current_entry_multi_day() ) {
 			return $block_content;
 		}
 
@@ -480,6 +497,12 @@ final class Calendar_Entries {
 	 * While the template renders, the filters below give its blocks this
 	 * event's context, a placeholder for an empty title, and, when the
 	 * template shows no Post Title, the hidden title in the Event Date link.
+	 *
+	 * An entry template can hold a calendar, for example in its modal. The
+	 * entries of that calendar render inside this entry. Each entry keeps the
+	 * values of the entry around it and puts them back when it is done, and
+	 * only the outermost entry adds and removes the filters. So the rest of
+	 * the outer entry still has its event, its filters and its modal depth.
 	 *
 	 * @since TBD
 	 *
@@ -496,30 +519,23 @@ final class Calendar_Entries {
 		string $post_type,
 		array $span_data
 	): string {
-		// Keep the outer values, in case an entry template renders a calendar.
-		$previous_post_id   = self::$current_post_id;
-		$previous_post_type = self::$current_post_type;
-		$previous_span_data = self::$current_span_data;
-		$shows_post_title   = self::template_shows_post_title( $inner_blocks );
+		$previous_post_id          = self::$current_post_id;
+		$previous_post_type        = self::$current_post_type;
+		$previous_span_data        = self::$current_span_data;
+		$previous_shows_post_title = self::$current_shows_post_title;
+		$previous_modal_depth      = self::$modal_depth;
 
-		self::$current_post_id   = $post_id;
-		self::$current_post_type = $post_type;
-		self::$current_span_data = $span_data;
-		self::$modal_depth       = 0;
+		self::$current_post_id          = $post_id;
+		self::$current_post_type        = $post_type;
+		self::$current_span_data        = $span_data;
+		self::$current_shows_post_title = self::template_shows_post_title( $inner_blocks );
+		self::$modal_depth              = 0;
 
-		add_filter( 'render_block_context', array( self::class, 'filter_entry_context' ), 1 );
-		add_filter( 'the_title', array( self::class, 'filter_empty_title' ), 10, 2 );
-		add_filter( 'pre_render_block', array( self::class, 'track_modal_depth_pre' ), 10, 2 );
-		add_filter( 'render_block', array( self::class, 'track_modal_depth_post' ), 999, 2 );
-		add_filter( 'render_block_core/post-title', array( self::class, 'filter_post_title_span' ) );
-
-		// With the Post Title as the trigger, a multi-day ribbon needs no time. Without it, the
-		// Event Date link is the trigger and must stay, and it gets the hidden title.
-		if ( $shows_post_title ) {
-			add_filter( 'render_block_gatherpress/event-date', array( self::class, 'filter_multiday_event_date' ) );
-		} else {
-			add_filter( 'render_block_gatherpress/event-date', array( self::class, 'filter_event_date_link' ), 10, 2 );
+		if ( 0 === self::$render_depth ) {
+			self::add_entry_filters();
 		}
+
+		++self::$render_depth;
 
 		/**
 		 * Fires before the calendar renders the entry template of one event.
@@ -527,7 +543,8 @@ final class Calendar_Entries {
 		 * The calendar has added its filters for this event. Callbacks can
 		 * add their own filters, or remove one of the calendar's, for example:
 		 * remove_filter( 'the_title', array( Calendar_Entries::class, 'filter_empty_title' ), 10 );
-		 * The calendar removes its own filters after the entry renders. The
+		 * The calendar removes its own filters after the entry renders. For a
+		 * calendar inside an entry template, that is after the outer entry. The
 		 * action can fire more than once for the same event while a day renders.
 		 *
 		 * @since TBD
@@ -541,6 +558,50 @@ final class Calendar_Entries {
 
 		$inner_content = self::render_template( $inner_blocks );
 
+		--self::$render_depth;
+
+		if ( 0 === self::$render_depth ) {
+			self::remove_entry_filters();
+		}
+
+		self::$current_post_id          = $previous_post_id;
+		self::$current_post_type        = $previous_post_type;
+		self::$current_span_data        = $previous_span_data;
+		self::$current_shows_post_title = $previous_shows_post_title;
+		self::$modal_depth              = $previous_modal_depth;
+
+		return $inner_content;
+	}
+
+	/**
+	 * Add the filters that change the blocks of an entry template.
+	 *
+	 * Both Event Date filters are added. With the Post Title as the trigger, a multi-day ribbon
+	 * needs no time. Without it, the Event Date link is the trigger and must stay, and it gets
+	 * the hidden title. Each filter checks the template of the entry that renders now.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	private static function add_entry_filters(): void {
+		add_filter( 'render_block_context', array( self::class, 'filter_entry_context' ), 1 );
+		add_filter( 'the_title', array( self::class, 'filter_empty_title' ), 10, 2 );
+		add_filter( 'pre_render_block', array( self::class, 'track_modal_depth_pre' ), 10, 2 );
+		add_filter( 'render_block', array( self::class, 'track_modal_depth_post' ), 999, 2 );
+		add_filter( 'render_block_core/post-title', array( self::class, 'filter_post_title_span' ) );
+		add_filter( 'render_block_gatherpress/event-date', array( self::class, 'filter_multiday_event_date' ) );
+		add_filter( 'render_block_gatherpress/event-date', array( self::class, 'filter_event_date_link' ), 10, 2 );
+	}
+
+	/**
+	 * Remove the filters that add_entry_filters() added.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	private static function remove_entry_filters(): void {
 		remove_filter( 'render_block_gatherpress/event-date', array( self::class, 'filter_event_date_link' ), 10 );
 		remove_filter( 'render_block_gatherpress/event-date', array( self::class, 'filter_multiday_event_date' ), 10 );
 		remove_filter( 'render_block_core/post-title', array( self::class, 'filter_post_title_span' ), 10 );
@@ -548,13 +609,6 @@ final class Calendar_Entries {
 		remove_filter( 'pre_render_block', array( self::class, 'track_modal_depth_pre' ), 10 );
 		remove_filter( 'the_title', array( self::class, 'filter_empty_title' ), 10 );
 		remove_filter( 'render_block_context', array( self::class, 'filter_entry_context' ), 1 );
-
-		self::$current_post_id   = $previous_post_id;
-		self::$current_post_type = $previous_post_type;
-		self::$current_span_data = $previous_span_data;
-		self::$modal_depth       = 0;
-
-		return $inner_content;
 	}
 
 	/**
@@ -681,7 +735,7 @@ final class Calendar_Entries {
 	 * Add the event title to the Event Date link of an entry.
 	 *
 	 * Hooked to render_block_gatherpress/event-date only while an entry
-	 * renders, and only when its template shows no Post Title.
+	 * renders. It acts only when the template shows no Post Title.
 	 *
 	 * @since TBD
 	 *
@@ -691,6 +745,10 @@ final class Calendar_Entries {
 	 * @return string Block HTML with the hidden title in the link.
 	 */
 	public static function filter_event_date_link( string $block_content, array $parsed_block ): string {
+		if ( self::$current_shows_post_title ) {
+			return $block_content;
+		}
+
 		return self::add_title_to_event_link( $block_content, $parsed_block, self::$current_post_id );
 	}
 

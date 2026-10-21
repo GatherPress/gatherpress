@@ -2,7 +2,7 @@
  * GatherPress Calendar Day Block Editor Component
  *
  * @package
- * @since 0.4.0
+ * @since TBD
  */
 
 import {
@@ -22,6 +22,9 @@ import './editor.scss';
 import { findDayNumberBlock } from '../utils/day-number';
 
 const EMPTY_ARRAY = [];
+
+// The Day Number paragraph and the entries of the day. The calendar renders only these.
+const ALLOWED_BLOCKS = [ 'core/paragraph', 'gatherpress/calendar-entries' ];
 
 /**
  * Edit Component for Calendar Day
@@ -151,6 +154,7 @@ export default memo( function Edit( {
 	const { children, ...innerBlocksWrapperProps } = useInnerBlocksProps(
 		{},
 		{
+			allowedBlocks: ALLOWED_BLOCKS,
 			templateLock: false,
 			renderAppender: false,
 		},

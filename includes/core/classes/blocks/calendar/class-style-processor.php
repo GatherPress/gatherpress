@@ -72,11 +72,11 @@ final class Style_Processor {
 
 		// Handle axial/split (vertical and horizontal) gap objects.
 		if ( is_array( $block_gap ) ) {
-			return sprintf(
-				'%s %s',
-				self::resolve_preset_value( self::get_gap_side( $block_gap, 'top' ) ),
-				self::resolve_preset_value( self::get_gap_side( $block_gap, 'left' ) )
-			);
+			$top  = self::resolve_preset_value( self::get_gap_side( $block_gap, 'top' ) );
+			$left = self::resolve_preset_value( self::get_gap_side( $block_gap, 'left' ) );
+
+			// A side that is not safe CSS drops the whole gap.
+			return '' !== $top && '' !== $left ? "{$top} {$left}" : '';
 		}
 
 		return '';
@@ -120,17 +120,25 @@ final class Style_Processor {
 	/**
 	 * Resolve Gutenberg 'var:preset|spacing|50' shorthand to standard CSS 'var(...)'.
 	 *
+	 * The value goes into a style attribute, so a value that could end the declaration or add
+	 * another one (a semicolon, braces, quotes, a backslash or a comment) gives an empty string.
+	 * Preset slugs keep only lowercase letters, digits, dashes and underscores.
+	 *
 	 * @since TBD
 	 *
 	 * @param string $value Raw attribute value.
 	 *
-	 * @return string Resolved CSS string.
+	 * @return string Resolved CSS string, or an empty string for an unsafe value.
 	 */
 	public static function resolve_preset_value( string $value ): string {
 		$parts = explode( '|', $value );
 
 		if ( 3 === count( $parts ) && 'var:preset' === $parts[0] ) {
-			return sprintf( 'var(--wp--preset--%s--%s)', $parts[1], $parts[2] );
+			return sprintf( 'var(--wp--preset--%s--%s)', sanitize_key( $parts[1] ), sanitize_key( $parts[2] ) );
+		}
+
+		if ( preg_match( '#[;{}\\\\<>"\']|/\*#', $value ) ) {
+			return '';
 		}
 
 		return esc_attr( $value );

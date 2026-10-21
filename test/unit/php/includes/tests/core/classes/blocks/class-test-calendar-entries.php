@@ -42,7 +42,9 @@ class Test_Calendar_Entries extends Base {
 	public function tearDown(): void {
 		Utility::set_and_get_hidden_static_property( Calendar_Entries::class, 'current_post_id', 0 );
 		Utility::set_and_get_hidden_static_property( Calendar_Entries::class, 'current_span_data', array() );
+		Utility::set_and_get_hidden_static_property( Calendar_Entries::class, 'current_shows_post_title', false );
 		Utility::set_and_get_hidden_static_property( Calendar_Entries::class, 'modal_depth', 0 );
+		Utility::set_and_get_hidden_static_property( Calendar_Entries::class, 'render_depth', 0 );
 		parent::tearDown();
 	}
 
@@ -448,6 +450,57 @@ class Test_Calendar_Entries extends Base {
 	}
 
 	/**
+	 * A calendar inside an entry template leaves the filters and the modal depth of the outer entry.
+	 *
+	 * The outer entry has a nested calendar and an Event Date in its modal, and a Post Title after
+	 * the modal. Both come after the nested calendar has rendered its own entries.
+	 *
+	 * @covers ::render_entry_template
+	 * @covers ::add_entry_filters
+	 * @covers ::remove_entry_filters
+	 *
+	 * @return void
+	 */
+	public function test_nested_calendar_keeps_outer_entry_state(): void {
+		$event_id = $this->create_event( 'Retreat' );
+		$template = '<!-- wp:gatherpress/modal --><div class="wp-block-gatherpress-modal">'
+			. '<!-- wp:gatherpress/modal-content --><div class="wp-block-gatherpress-modal-content">'
+			. Test_Calendar::get_calendar_markup()
+			. '<!-- wp:gatherpress/event-date /-->'
+			. '</div><!-- /wp:gatherpress/modal-content --></div><!-- /wp:gatherpress/modal -->'
+			. '<!-- wp:post-title /-->';
+		$entry    = array(
+			'id'         => $event_id,
+			'span'       => 'middle',
+			'day_index'  => 7,
+			'total_days' => 9,
+		);
+		$output   = $this->render_entries( $template, array( $entry ) );
+
+		$this->assertStringContainsString(
+			', day 2 of 3',
+			$output,
+			'Failed to assert the nested calendar renders its own entries.'
+		);
+		$this->assertMatchesRegularExpression(
+			'#Retreat<span class="gatherpress--screen-reader-text">, day 7 of 9</span></h[1-6]>#',
+			$output,
+			'Failed to assert the outer Post Title keeps its filter after the nested calendar.'
+		);
+		$this->assertStringContainsString(
+			'wp-block-gatherpress-event-date',
+			$output,
+			'Failed to assert the outer modal keeps its date after the nested calendar.'
+		);
+		$this->assertSame( 0, Utility::get_hidden_static_property( Calendar_Entries::class, 'render_depth' ) );
+		$this->assertSame( 0, Utility::get_hidden_static_property( Calendar_Entries::class, 'modal_depth' ) );
+		$this->assertFalse(
+			has_filter( 'the_title', array( Calendar_Entries::class, 'filter_empty_title' ) ),
+			'Failed to assert the filters are removed after the outer entry.'
+		);
+	}
+
+	/**
 	 * Entries read their day posts and template safely.
 	 *
 	 * @covers ::render
@@ -575,7 +628,22 @@ class Test_Calendar_Entries extends Base {
 
 		Utility::set_and_get_hidden_static_property( Calendar_Entries::class, 'current_span_data', self::MIDDLE_DAY );
 		$this->assertSame( 'Plain title', Calendar_Entries::filter_post_title_span( 'Plain title' ) );
+		$this->assertSame(
+			'<div>date</div>',
+			Calendar_Entries::filter_multiday_event_date( '<div>date</div>' ),
+			'Failed to assert the date stays when the template shows no Post Title.'
+		);
+
+		Utility::set_and_get_hidden_static_property( Calendar_Entries::class, 'current_shows_post_title', true );
 		$this->assertSame( '', Calendar_Entries::filter_multiday_event_date( '<div>date</div>' ) );
+		$this->assertSame(
+			'<a>10:00</a>',
+			Calendar_Entries::filter_event_date_link(
+				'<a>10:00</a>',
+				array( 'attrs' => array( 'postId' => $titled ) )
+			),
+			'Failed to assert no hidden title when the template shows the Post Title.'
+		);
 
 		Calendar_Entries::track_modal_depth_pre( null, array( 'blockName' => 'gatherpress/modal' ) );
 		$this->assertSame( '<div>date</div>', Calendar_Entries::filter_multiday_event_date( '<div>date</div>' ) );

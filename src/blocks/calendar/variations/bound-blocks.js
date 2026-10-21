@@ -5,7 +5,7 @@
  * calendar block-bindings sources.
  *
  * @package
- * @since 0.8.0
+ * @since TBD
  */
 
 import { registerBlockVariation } from '@wordpress/blocks';

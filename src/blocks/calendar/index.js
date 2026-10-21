@@ -2,7 +2,7 @@
  * GatherPress Calendar Block Registration
  *
  * @package
- * @since 0.1.0
+ * @since TBD
  */
 
 import { registerBlockType } from '@wordpress/blocks';
@@ -40,7 +40,7 @@ registerBlockType( metadata.name, {
  *
  * @see https://github.com/GatherPress/gatherpress/blob/main/docs/developer/blocks/slot-fills/README.md#add-or-remove-ui-elements
  *
- * @since 0.6.0
+ * @since TBD
  */
 addFilter(
 	'gatherpress.eventQueryControls',

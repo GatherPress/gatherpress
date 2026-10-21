@@ -16,7 +16,7 @@ import { DayPreviewCell } from './DayPreviewCell';
  * template inner blocks. Clicking any day activates it, making that week
  * (and that day) the live/editable one.
  *
- * @since 0.4.0
+ * @since TBD
  *
  * @param {Object}   props                     Component props.
  * @param {Array}    props.week                This week's day data entries.

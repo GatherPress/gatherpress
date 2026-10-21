@@ -9,7 +9,7 @@ import { CalendarWeek } from './CalendarWeek';
  * gatherpress/calendar-week (and, within it, gatherpress/calendar-day)
  * blocks. Supports multi-unit layouts (e.g. multi-month display).
  *
- * @since 0.1.0
+ * @since TBD
  *
  * @param {Object}   props                     Component props.
  * @param {Object}   props.calendar            Calendar data structure.

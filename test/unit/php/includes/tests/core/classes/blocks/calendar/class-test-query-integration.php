@@ -138,15 +138,9 @@ class Test_Query_Integration extends Base {
 			),
 			array(
 				'type'     => 'filter',
-				'name'     => 'render_block_context',
+				'name'     => 'render_block_core/query-pagination-numbers',
 				'priority' => 10,
-				'callback' => array( $instance, 'disable_query_pagination_numbers' ),
-			),
-			array(
-				'type'     => 'filter',
-				'name'     => 'query_vars',
-				'priority' => 10,
-				'callback' => array( $instance, 'query_vars' ),
+				'callback' => array( $instance, 'hide_query_pagination_numbers' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -606,61 +600,71 @@ class Test_Query_Integration extends Base {
 	}
 
 	/**
-	 * Coverage for disable_query_pagination_numbers.
+	 * Coverage for hide_query_pagination_numbers.
 	 *
-	 * @covers ::disable_query_pagination_numbers
+	 * @covers ::hide_query_pagination_numbers
 	 *
 	 * @return void
 	 */
-	public function test_disable_query_pagination_numbers(): void {
-		$instance  = Query_Integration::get_instance();
-		$numbers   = array( 'blockName' => 'core/query-pagination-numbers' );
-		$paragraph = array( 'blockName' => 'core/paragraph' );
-		$marked    = array(
-			'queryId' => 5,
-			'query'   => array(
-				'perPage'                               => 3,
-				Query_Integration::CALENDAR_QUERY_PARAM => true,
-			),
+	public function test_hide_query_pagination_numbers(): void {
+		$instance = Query_Integration::get_instance();
+		$numbers  = '<div class="wp-block-query-pagination-numbers">1 2</div>';
+		$marked   = $this->get_block(
+			'core/query-pagination-numbers',
+			array( 'query' => array( Query_Integration::CALENDAR_QUERY_PARAM => true ) )
+		);
+		$plain    = $this->get_block(
+			'core/query-pagination-numbers',
+			array(
+				'queryId' => 5,
+				'query'   => array( 'perPage' => 3 ),
+			)
 		);
 
-		$this->assertSame( $marked, $instance->disable_query_pagination_numbers( $marked, $paragraph ) );
-		$this->assertSame( 0, $instance->disable_query_pagination_numbers( $marked, $numbers )['query']['perPage'] );
-
-		$plain = array(
-			'queryId' => 5,
-			'query'   => array( 'perPage' => 3 ),
-		);
+		$this->assertSame( '', $instance->hide_query_pagination_numbers( $numbers, array(), $marked ) );
 		$this->assertSame(
-			$plain,
-			$instance->disable_query_pagination_numbers( $plain, $numbers ),
+			$numbers,
+			$instance->hide_query_pagination_numbers( $numbers, array(), $plain ),
 			'Failed to assert a plain Query Loop keeps its numbers.'
 		);
 
 		Utility::set_and_get_hidden_property( $instance, 'calendar_query_ids', array( 5 => true ) );
 
-		$no_query = array( 'queryId' => 5 );
-		$this->assertSame( 0, $instance->disable_query_pagination_numbers( $plain, $numbers )['query']['perPage'] );
-		$this->assertSame( $no_query, $instance->disable_query_pagination_numbers( $no_query, $numbers ) );
+		$this->assertSame( '', $instance->hide_query_pagination_numbers( $numbers, array(), $plain ) );
 	}
 
 	/**
-	 * Coverage for query_vars.
+	 * A calendar query renders no Page Numbers, and a plain Query Loop keeps them.
 	 *
-	 * @covers ::query_vars
+	 * @covers ::hide_query_pagination_numbers
 	 *
 	 * @return void
 	 */
-	public function test_query_vars(): void {
-		$this->assertSame(
-			array(
-				'existing',
-				Query_Integration::CALENDAR_QUERY_PARAM,
-				Query_Integration::CALENDAR_QUERY_VIEW_TYPE,
-				Query_Integration::CALENDAR_QUERY_START_DATE,
-				Query_Integration::CALENDAR_QUERY_END_DATE,
-			),
-			Query_Integration::get_instance()->query_vars( array( 'existing' ) )
+	public function test_rendered_page_numbers(): void {
+		$this->mock->post( array( 'post_title' => 'Zyxcalendarnumbers one' ) )->get();
+		$this->mock->post( array( 'post_title' => 'Zyxcalendarnumbers two' ) )->get();
+
+		$query      = '"query":{"perPage":1,"postType":"post","search":"Zyxcalendarnumbers","inherit":false}';
+		$pagination = '<!-- wp:query-pagination --><!-- wp:query-pagination-numbers /--><!-- /wp:query-pagination -->';
+		$calendar   = do_blocks(
+			'<!-- wp:query {"queryId":8,' . $query . '} --><div class="wp-block-query">'
+				. '<!-- wp:gatherpress/calendar {"selectedDate":"2026-10-15"} /-->' . $pagination
+				. '</div><!-- /wp:query -->'
+		);
+		$plain      = do_blocks(
+			'<!-- wp:query {"queryId":7,' . $query . '} --><div class="wp-block-query">' . $pagination
+				. '</div><!-- /wp:query -->'
+		);
+
+		$this->assertStringNotContainsString(
+			'page-numbers',
+			$calendar,
+			'Failed to assert the calendar has no page numbers.'
+		);
+		$this->assertStringContainsString(
+			'page-numbers',
+			$plain,
+			'Failed to assert the plain Query Loop keeps them.'
 		);
 	}
 

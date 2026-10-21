@@ -4,7 +4,7 @@
  * Separates date-anchoring concerns from the Edit layout component.
  *
  * @package
- * @since 0.8.0
+ * @since TBD
  */
 
 import { useEffect, useMemo, useRef } from '@wordpress/element';

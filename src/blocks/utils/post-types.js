@@ -7,7 +7,7 @@ import { select, useSelect } from '@wordpress/data';
  * when they are disabled due to event settings (e.g., when guest limits are 0
  * or anonymous RSVP is disabled).
  *
- * @since 0.27.0
+ * @since TBD
  * @type {number}
  */
 export const DISABLED_FIELD_OPACITY = 0.3;
@@ -19,7 +19,7 @@ export const DISABLED_FIELD_OPACITY = 0.3;
  * Otherwise, queries the current post type using the `select` function from the `core/editor` package.
  * Uses the WordPress data store to check post type supports.
  *
- * @since 0.27.0
+ * @since TBD
  *
  * @param {string}      support  The post type support to check (e.g. 'gatherpress-event-date').
  * @param {string|null} postType Optional post type to check. If not provided, checks current editor post type.
@@ -49,7 +49,7 @@ export function isPostTypeSupporting( support, postType = null ) {
  * the supports become known — which is the difference between a permanently
  * dimmed block in a Query Loop and one that lights up correctly.
  *
- * @since 0.27.0
+ * @since TBD
  *
  * @param {string}      support  The post type support to check.
  * @param {string|null} postType Optional post type to check. Falls back to the editor post type.
@@ -77,7 +77,7 @@ export function usePostTypeSupports( support, postType = null ) {
 /**
  * Checks if a post type supports event_date in the GatherPress application.
  *
- * @since 0.27.0
+ * @since TBD
  *
  * @param {string|null} postType Optional post type to check. If not provided, checks current editor post type.
  *

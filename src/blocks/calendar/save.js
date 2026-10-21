@@ -4,7 +4,7 @@
  * Server-side rendering injects context for calendar-weeks, -days and -entries;
  * this save component preserves the InnerBlocks template structure.
  *
- * @since 0.4.0
+ * @since TBD
  *
  * @return {Element} The React element representing the saved block content.
  */

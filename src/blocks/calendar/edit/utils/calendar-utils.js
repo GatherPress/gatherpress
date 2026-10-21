@@ -2,7 +2,7 @@
  * Core calendar calculation and configuration utilities.
  *
  * @package
- * @since 0.1.0
+ * @since TBD
  */
 
 import { dateI18n, getSettings } from '@wordpress/date';
@@ -126,7 +126,7 @@ export function getColumnsCount(
  * 2. For each day of the week, calculate which day it should be based on startOfWeek
  * 3. Use dateI18n with 'D' format to get the translated abbreviated day name
  *
- * @since 0.1.0
+ * @since TBD
  *
  * @param {number}  startOfWeek  - Start of week (0=Sunday, 1=Monday, 2=Tuesday, etc.).
  * @param {boolean} showWeekends - Whether to include weekend days.
@@ -175,7 +175,7 @@ export function getDayNames( startOfWeek = 0, showWeekends = true ) {
 /**
  * Generate the twelve month options for the month picker.
  *
- * @since 0.1.0
+ * @since TBD
  *
  * @return {Array<Object>} Array of month options, each containing:
  *   - {string} value - Month number in format "MM"

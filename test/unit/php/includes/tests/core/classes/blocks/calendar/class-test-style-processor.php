@@ -117,8 +117,32 @@ class Test_Style_Processor extends Base {
 		);
 		$this->assertSame( 'var:preset|spacing', Style_Processor::resolve_preset_value( 'var:preset|spacing' ) );
 		$this->assertSame( '1rem', Style_Processor::resolve_preset_value( '1rem' ) );
+		$this->assertSame( 'calc(1rem + 2px)', Style_Processor::resolve_preset_value( 'calc(1rem + 2px)' ) );
 		$this->assertSame(
-			'&quot;x&quot;',
+			'',
+			Style_Processor::resolve_preset_value( '1px;position:fixed;inset:0' ),
+			'Failed to assert a value cannot add a declaration.'
+		);
+		$this->assertSame( '', Style_Processor::resolve_preset_value( '1px /* x */' ) );
+		$this->assertSame(
+			'var(--wp--preset--spacing--50colorred)',
+			Style_Processor::resolve_preset_value( 'var:preset|spacing|50;color:red' ),
+			'Failed to assert a preset slug keeps only safe characters.'
+		);
+		$this->assertSame(
+			'',
+			Style_Processor::get_block_gap_value(
+				$this->with_gap(
+					array(
+						'top'  => '2px',
+						'left' => '1px;position:fixed',
+					)
+				)
+			),
+			'Failed to assert an unsafe side drops the whole gap.'
+		);
+		$this->assertSame(
+			'',
 			Style_Processor::resolve_preset_value( '"x"' ),
 			'Failed to assert the value is escaped.'
 		);

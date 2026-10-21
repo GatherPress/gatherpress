@@ -5,7 +5,7 @@
  * wp-block-library for core's .screen-reader-text class. That matters in
  * the grid table: without these rules a caption would take the first cell.
  *
- * @package GatherPressCalendar
+ * @package GatherPress\Core
  */
 @mixin visually-hidden {
 	position: absolute;

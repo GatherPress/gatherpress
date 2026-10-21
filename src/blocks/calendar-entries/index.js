@@ -2,7 +2,7 @@
  * GatherPress Calendar Entries Block Registration
  *
  * @package
- * @since 0.4.0
+ * @since TBD
  */
 
 import { registerBlockType } from '@wordpress/blocks';

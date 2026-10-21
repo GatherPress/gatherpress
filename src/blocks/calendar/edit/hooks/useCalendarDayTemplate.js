@@ -2,7 +2,7 @@
  * Hook to retrieve and stabilize the calendar-week and calendar-day template blocks.
  *
  * @package
- * @since 0.8.0
+ * @since TBD
  */
 
 import { store as blockEditorStore } from '@wordpress/block-editor';

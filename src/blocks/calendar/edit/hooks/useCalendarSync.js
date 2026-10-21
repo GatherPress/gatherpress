@@ -2,7 +2,7 @@
  * Hook to synchronize parent Query Loop, Heading, and Pagination names/labels.
  *
  * @package
- * @since 0.8.0
+ * @since TBD
  */
 
 import { __ } from '@wordpress/i18n';

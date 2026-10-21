@@ -2,7 +2,7 @@
  * GatherPress Calendar Block Bindings and Editor Filters
  *
  * @package
- * @since 0.8.0
+ * @since TBD
  */
 
 import { registerBlockBindingsSource } from '@wordpress/blocks';

@@ -2,7 +2,7 @@
  * GatherPress Calendar Week Block Editor Component
  *
  * @package
- * @since 0.4.0
+ * @since TBD
  */
 
 import { useMemo, memo } from '@wordpress/element';

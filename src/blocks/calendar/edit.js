@@ -2,7 +2,7 @@
  * GatherPress Calendar Block Editor Component
  *
  * @package
- * @since 0.1.0
+ * @since TBD
  */
 
 import { __ } from '@wordpress/i18n';
@@ -41,7 +41,7 @@ import { CalendarTable } from './edit/components/CalendarTable';
  *
  * Main editor component for the GatherPress Calendar block.
  *
- * @since 0.1.0
+ * @since TBD
  *
  * @param {Object}   props               Component props.
  * @param {Object}   props.attributes    Block attributes.
@@ -122,14 +122,13 @@ export default function Edit( {
 			return { enabled: false, slots: [] };
 		}
 
-		const start = Math.max(
-			0,
-			Math.min( 23, Number( dayStartHour ) || 8 ),
-		);
-		const end = Math.max(
-			start + 1,
-			Math.min( 24, Number( dayEndHour ) || 20 ),
-		);
+		// Like the PHP side: a numeric hour stays, 0 included; anything else uses the default.
+		const toHour = ( value, fallback ) =>
+			'' !== value && null !== value && Number.isFinite( Number( value ) )
+				? Number( value )
+				: fallback;
+		const start = Math.max( 0, Math.min( 23, toHour( dayStartHour, 8 ) ) );
+		const end = Math.max( start + 1, Math.min( 24, toHour( dayEndHour, 20 ) ) );
 		const slotHours = 1;
 		const quarterMins = 15;
 		const totalQuarters = Math.ceil(

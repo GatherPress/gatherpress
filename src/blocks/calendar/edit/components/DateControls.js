@@ -2,7 +2,7 @@
  * DateControls component managing calendar navigation and settings.
  *
  * @package
- * @since 0.1.0
+ * @since TBD
  */
 
 import { __ } from '@wordpress/i18n';

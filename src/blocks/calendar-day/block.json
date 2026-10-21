@@ -11,6 +11,10 @@
     "gatherpress/calendar-week",
     "gatherpress/calendar"
   ],
+  "allowedBlocks": [
+    "core/paragraph",
+    "gatherpress/calendar-entries"
+  ],
   "usesContext": [
     "queryId",
     "query",

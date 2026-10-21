@@ -353,6 +353,6 @@ export const QUERY_VARIATION_INNER_BLOCKS = [
  * The date format used throughout the component.
  *
  * @type {string}
- * @since 0.1.0
+ * @since TBD
  */
 export const DATE_FORMAT = 'Y-m-d';

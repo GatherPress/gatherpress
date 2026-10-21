@@ -2,7 +2,7 @@
  * DayPreviewCell Component
  *
  * @package
- * @since 0.4.0
+ * @since TBD
  */
 
 import { memo, useCallback, useMemo } from '@wordpress/element';
@@ -138,7 +138,7 @@ function withResolvedDayContent( blocks, day, isRibbon ) {
  *
  * Clicking the cell activates it, making it the live/editable day.
  *
- * @since 0.4.0
+ * @since TBD
  *
  * @param {Object}   props                    Component props.
  * @param {Object}   props.day                Day data (day, date, posts, isEmpty, isToday).

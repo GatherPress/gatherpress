@@ -75,7 +75,7 @@ final class Registration {
 			array(
 				'label'              => _x( 'Calendar Heading', 'Block Bindings Source', 'gatherpress' ),
 				'get_value_callback' => array( $this, 'get_heading_binding_value' ),
-				'uses_context'       => array( 'query', 'postId', 'postType' ),
+				'uses_context'       => array( 'query', 'queryId', 'postId', 'postType' ),
 			)
 		);
 	}

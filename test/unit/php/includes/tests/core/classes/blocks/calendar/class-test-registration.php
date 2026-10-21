@@ -89,7 +89,11 @@ class Test_Registration extends Base {
 			array( 'gatherpress/dayNumber', 'gatherpress/dayDate', 'gatherpress/isEmpty' ),
 			$day->uses_context
 		);
-		$this->assertSame( array( 'query', 'postId', 'postType' ), $heading->uses_context );
+		$this->assertSame(
+			array( 'query', 'queryId', 'postId', 'postType' ),
+			$heading->uses_context,
+			'Failed to assert the heading reads the page of its own Query block.'
+		);
 	}
 
 	/**

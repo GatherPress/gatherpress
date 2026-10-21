@@ -2,7 +2,7 @@
  * GatherPress Calendar Entries Block Editor Component
  *
  * @package
- * @since 0.4.0
+ * @since TBD
  */
 
 import {
