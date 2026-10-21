@@ -26,6 +26,8 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue;
+use WP_Post;
+use WP_Post_Type;
 
 /**
  * Caching for the iCalendar responses.
@@ -204,6 +206,83 @@ final class Cache {
 		set_transient( $versioned_key, $payload, $max_age );
 
 		return $payload;
+	}
+
+	/**
+	 * Which events the current viewer's calendar lists, as a cache scope.
+	 *
+	 * The events query sets no post status, so WordPress adds the private
+	 * events a logged-in viewer may read: all of them for users who can read
+	 * private posts, and only their own for everyone else. Viewers who get
+	 * the same events share a scope, so the cache stays shared without one
+	 * viewer's events reaching another.
+	 *
+	 * @since TBD
+	 *
+	 * @return string `public` for viewers who see no private events, `private`
+	 *                for those who see all of them, or `user:{id}` for a viewer
+	 *                whose own private events set their calendar apart.
+	 */
+	public function get_viewer_scope(): string {
+		if ( ! is_user_logged_in() ) {
+			return 'public';
+		}
+
+		$post_types = get_post_types_by_support( Event::SUPPORT );
+		$readable   = array_filter(
+			$post_types,
+			static function ( string $post_type ): bool {
+				$post_type_object = get_post_type_object( $post_type );
+
+				return $post_type_object instanceof WP_Post_Type
+					&& current_user_can( $post_type_object->cap->read_private_posts );
+			}
+		);
+
+		if ( count( $readable ) === count( $post_types ) ) {
+			return 'private';
+		}
+
+		// Without the capability, a viewer still sees their own private events.
+		$own_private = get_posts(
+			array(
+				'post_type'      => $post_types,
+				'post_status'    => 'private',
+				'author'         => get_current_user_id(),
+				'fields'         => 'ids',
+				'posts_per_page' => 1,
+				'no_found_rows'  => true,
+			)
+		);
+
+		return empty( $readable ) && empty( $own_private ) ? 'public' : sprintf( 'user:%d', get_current_user_id() );
+	}
+
+	/**
+	 * The `Cache-Control` directive for the current viewer's calendar.
+	 *
+	 * Only the public calendar is the same for every viewer, so shared caches
+	 * may keep it and no other. An unpublished or password-protected queried
+	 * post's calendar is meant only for viewers allowed to see the post, so
+	 * it is private even when the viewer's scope is public. Its cache entry
+	 * can still be shared, because those viewers all get the same body.
+	 *
+	 * @since TBD
+	 *
+	 * @return string `public` for the public scope, `private` for any other or
+	 *                for an unpublished or password-protected queried post.
+	 */
+	public function get_cacheability(): string {
+		$queried = get_queried_object();
+
+		if (
+			$queried instanceof WP_Post
+			&& ( 'publish' !== get_post_status( $queried ) || '' !== $queried->post_password )
+		) {
+			return 'private';
+		}
+
+		return 'public' === $this->get_viewer_scope() ? 'public' : 'private';
 	}
 
 	/**
