@@ -1581,25 +1581,18 @@ class Test_Setup extends Base {
 	}
 
 	/**
-	 * A logged-in viewer's feed is rendered fresh rather than cached, so the
-	 * private events it lists never reach the anonymous body.
+	 * Create an upcoming event.
 	 *
 	 * @since TBD
 	 *
-	 * @covers ::get_ics_body
+	 * @param array<string, mixed> $args Post arguments.
 	 *
-	 * @return void
+	 * @return int The event post ID.
 	 */
-	public function test_get_ics_body_does_not_cache_a_logged_in_feed(): void {
-		$private_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_status' => 'private',
-				'post_title'  => 'Private Board Meeting',
-			)
-		);
+	private function create_upcoming_event( array $args ): int {
+		$post_id = $this->factory->post->create( array_merge( array( 'post_type' => Event::POST_TYPE ), $args ) );
 
-		( new Event( $private_id ) )->save_datetimes(
+		( new Event( $post_id ) )->save_datetimes(
 			array(
 				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week' ) ),
 				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week 2 hours' ) ),
@@ -1607,25 +1600,195 @@ class Test_Setup extends Base {
 			)
 		);
 
-		$feed_link = get_post_type_archive_feed_link( Event::POST_TYPE, Setup::ICAL_SLUG );
+		return $post_id;
+	}
 
-		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
-		$this->go_to( $feed_link );
+	/**
+	 * Viewers who get the same events share a scope; only a viewer whose own
+	 * private events set them apart gets one to themselves.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_ics_viewer_scope
+	 *
+	 * @return void
+	 */
+	public function test_get_ics_viewer_scope(): void {
+		$instance   = Setup::get_instance();
+		$author_id  = $this->factory->user->create( array( 'role' => 'author' ) );
+		$scope_of   = function ( int $user_id ) use ( $instance ): string {
+			wp_set_current_user( $user_id );
 
-		$this->assertStringContainsString(
-			'Private Board Meeting',
-			Setup::get_instance()->get_ics_body(),
-			'An administrator should see the private event in their own feed.'
+			return $instance->get_ics_viewer_scope();
+		};
+		$subscriber = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+
+		$this->assertSame( 'public', $scope_of( 0 ), 'An anonymous viewer gets the public scope.' );
+		$this->assertSame( 'public', $scope_of( $subscriber ), 'A Subscriber sees no private events.' );
+		$this->assertSame( 'public', $scope_of( $author_id ), 'An Author without private events sees public ones.' );
+		$this->assertSame(
+			'private',
+			$scope_of( $this->factory->user->create( array( 'role' => 'editor' ) ) ),
+			'An Editor reads every private event.'
+		);
+		$this->assertSame(
+			'private',
+			$scope_of( $this->factory->user->create( array( 'role' => 'administrator' ) ) ),
+			'An Administrator reads every private event.'
+		);
+
+		$this->create_upcoming_event(
+			array(
+				'post_status' => 'private',
+				'post_author' => $author_id,
+			)
+		);
+
+		$this->assertSame(
+			sprintf( 'user:%d', $author_id ),
+			$scope_of( $author_id ),
+			'An Author with a private event of their own gets their own scope.'
 		);
 
 		wp_set_current_user( 0 );
-		$this->go_to( $feed_link );
+	}
 
+	/**
+	 * A viewer who can read the private events of one event post type but not
+	 * another sees a set nobody else is known to share.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_ics_viewer_scope
+	 *
+	 * @return void
+	 */
+	public function test_get_ics_viewer_scope_with_partial_private_access(): void {
+		register_post_type(
+			'gatherpress_capped',
+			array(
+				'public'          => true,
+				'capability_type' => 'page',
+				'supports'        => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
+
+		$user = $this->factory->user->create_and_get( array( 'role' => 'subscriber' ) );
+
+		$user->add_cap( 'read_private_posts' );
+		wp_set_current_user( $user->ID );
+
+		$scope = Setup::get_instance()->get_ics_viewer_scope();
+
+		unregister_post_type( 'gatherpress_capped' );
+		wp_set_current_user( 0 );
+
+		$this->assertSame(
+			sprintf( 'user:%d', $user->ID ),
+			$scope,
+			'Reading private posts but not private pages should give the viewer their own scope.'
+		);
+	}
+
+	/**
+	 * The cache key carries the viewer scope, so viewers in one scope share an
+	 * entry and viewers in different scopes never do.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_ics_cache_key
+	 *
+	 * @return void
+	 */
+	public function test_get_ics_cache_key_varies_by_viewer_scope(): void {
+		$instance = Setup::get_instance();
+		$author   = $this->factory->user->create( array( 'role' => 'author' ) );
+		$key_for  = function ( int $user_id ) use ( $instance ): string {
+			wp_set_current_user( $user_id );
+
+			return $instance->get_ics_cache_key();
+		};
+
+		$this->create_upcoming_event(
+			array(
+				'post_status' => 'private',
+				'post_author' => $author,
+			)
+		);
+		$this->go_to( get_post_type_archive_feed_link( Event::POST_TYPE, Setup::ICAL_SLUG ) );
+
+		$anonymous = $key_for( 0 );
+		$admin     = $key_for( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$this->assertSame(
+			$anonymous,
+			$key_for( $this->factory->user->create( array( 'role' => 'subscriber' ) ) ),
+			'A Subscriber should share the anonymous entry.'
+		);
+		$this->assertSame(
+			$admin,
+			$key_for( $this->factory->user->create( array( 'role' => 'editor' ) ) ),
+			'An Editor should share the Administrator entry.'
+		);
+		$this->assertNotSame( $anonymous, $admin, 'The private scope should not share the public entry.' );
+		$this->assertNotContains(
+			$key_for( $author ),
+			array( $anonymous, $admin ),
+			'An Author with their own private event should get an entry of their own.'
+		);
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * An Administrator's feed, private events included, is cached under the
+	 * private scope, so an anonymous viewer or a Subscriber never gets it.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_ics_body
+	 *
+	 * @return void
+	 */
+	public function test_get_ics_body_keeps_private_events_out_of_the_public_body(): void {
+		$this->create_upcoming_event(
+			array(
+				'post_status' => 'private',
+				'post_title'  => 'Private Board Meeting',
+			)
+		);
+
+		$feed_link = get_post_type_archive_feed_link( Event::POST_TYPE, Setup::ICAL_SLUG );
+		$body_for  = function ( int $user_id ) use ( $feed_link ): string {
+			wp_set_current_user( $user_id );
+			$this->go_to( $feed_link );
+
+			return Setup::get_instance()->get_ics_body();
+		};
+		$admin     = $this->factory->user->create( array( 'role' => 'administrator' ) );
+
+		$this->assertStringContainsString(
+			'Private Board Meeting',
+			$body_for( $admin ),
+			'An Administrator should see the private event in their own feed.'
+		);
 		$this->assertStringNotContainsString(
 			'Private Board Meeting',
-			Setup::get_instance()->get_ics_body(),
-			'An anonymous viewer should not get the private event from a logged-in viewer\'s render.'
+			$body_for( 0 ),
+			'An anonymous viewer should not get the Administrator\'s cached body.'
 		);
+		$this->assertStringNotContainsString(
+			'Private Board Meeting',
+			$body_for( $this->factory->user->create( array( 'role' => 'subscriber' ) ) ),
+			'A Subscriber should not get the Administrator\'s cached body.'
+		);
+		$this->assertStringContainsString(
+			'Private Board Meeting',
+			$body_for( $admin ),
+			'The Administrator should still get their own body after the public one is cached.'
+		);
+
+		wp_set_current_user( 0 );
 	}
 
 	/**

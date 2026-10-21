@@ -877,9 +877,11 @@ final class Setup {
 		// how long it stays fresh and hands them validators to revalidate with.
 		// A site can opt out entirely by filtering the max age to 0.
 		if ( 0 < $max_age ) {
-			// A logged-in viewer's calendar can carry private events, so shared
-			// caches must not keep it.
-			header( sprintf( 'Cache-Control: %s, max-age=%d', is_user_logged_in() ? 'private' : 'public', $max_age ) );
+			// Only the public calendar is the same for every viewer, so shared
+			// caches may keep it and no other.
+			$visibility = 'public' === $this->get_ics_viewer_scope() ? 'public' : 'private';
+
+			header( sprintf( 'Cache-Control: %s, max-age=%d', $visibility, $max_age ) );
 		} else {
 			header( 'Cache-Control: no-store, no-cache, must-revalidate' );
 			header( 'Pragma: no-cache' );
@@ -908,24 +910,78 @@ final class Setup {
 	 * @return string The complete iCal payload.
 	 */
 	public function get_ics_body(): string {
-		$renderer = function (): string {
-			return (string) ( is_feed() ? $this->get_ical_feed() : $this->get_ical_file() );
-		};
+		return Cache::get_instance()->remember(
+			$this->get_ics_cache_key(),
+			function (): string {
+				return (string) ( is_feed() ? $this->get_ical_feed() : $this->get_ical_file() );
+			}
+		);
+	}
 
-		// The events query depends on who is asking, and the cache key does
-		// not, so only the anonymous body is shared.
-		return is_user_logged_in()
-			? $renderer()
-			: Cache::get_instance()->remember( $this->get_ics_cache_key(), $renderer );
+	/**
+	 * Which events the current viewer's calendar lists, as a cache scope.
+	 *
+	 * The events query sets no post status, so WordPress adds the private
+	 * events a logged-in viewer may read: all of them for users who can read
+	 * private posts, and only their own for everyone else. Viewers who get
+	 * the same events share a scope, so the cache stays shared without one
+	 * viewer's events reaching another.
+	 *
+	 * @since TBD
+	 *
+	 * @return string `public` for viewers who see no private events, `private`
+	 *                for those who see all of them, or `user:{id}` for a viewer
+	 *                whose own private events set their calendar apart.
+	 */
+	public function get_ics_viewer_scope(): string {
+		$scope = 'public';
+
+		if ( is_user_logged_in() ) {
+			$post_types = get_post_types_by_support( Event::SUPPORT );
+			$readable   = array_filter(
+				$post_types,
+				static function ( string $post_type ): bool {
+					$post_type_object = get_post_type_object( $post_type );
+
+					return $post_type_object instanceof WP_Post_Type
+						&& current_user_can( $post_type_object->cap->read_private_posts );
+				}
+			);
+
+			if ( count( $readable ) === count( $post_types ) ) {
+				$scope = 'private';
+			} else {
+				// Without the capability, a viewer still sees their own private events.
+				$own_private = get_posts(
+					array(
+						'post_type'      => $post_types,
+						'post_status'    => 'private',
+						'author'         => get_current_user_id(),
+						'fields'         => 'ids',
+						'posts_per_page' => 1,
+						'no_found_rows'  => true,
+					)
+				);
+
+				if ( ! empty( $readable ) || ! empty( $own_private ) ) {
+					$scope = sprintf( 'user:%d', get_current_user_id() );
+				}
+			}
+		}
+
+		return $scope;
 	}
 
 	/**
 	 * Cache key describing what the current request asks for.
 	 *
 	 * Built from the resolved query rather than the request URI, so unknown
-	 * query parameters cannot fragment the cache into unbounded entries.
+	 * query parameters cannot fragment the cache into unbounded entries. The
+	 * viewer's scope is part of it, because the events query lists private
+	 * events to the viewers allowed to read them.
 	 *
 	 * @since 0.36.0
+	 * @since TBD    Includes the viewer scope from `get_ics_viewer_scope()`.
 	 *
 	 * @return string Scope-specific cache key.
 	 */
@@ -936,6 +992,7 @@ final class Setup {
 			'paged'  => (int) get_query_var( 'paged' ),
 			'object' => 0,
 			'type'   => '',
+			'viewer' => $this->get_ics_viewer_scope(),
 		);
 
 		if ( $queried_object instanceof WP_Post ) {
