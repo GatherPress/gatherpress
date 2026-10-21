@@ -766,6 +766,9 @@ final class Setup {
 				'number'          => $number,
 				'topics'          => $topics,
 				'venues'          => $venues,
+				// A feed is shared by every viewer, so it never lists a
+				// password-protected event's details.
+				'has_password'    => false,
 			)
 		);
 		while ( $query->have_posts() ) {

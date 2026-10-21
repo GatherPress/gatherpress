@@ -69,10 +69,13 @@ final class Post_Type_Single extends Endpoint {
 	 * This method uses the WordPress `is_singular()` function to check if the current request
 	 * is for a single post of the post type provided when registering the endpoint. It ensures
 	 * that the endpoint logic only applies to single posts, not archives or other post type queries.
+	 * A password-protected post only counts once the viewer has entered its password.
 	 *
 	 * @since 0.34.0
+	 * @since TBD    Requires the post's password for a password-protected post.
 	 *
-	 * @return bool True if the current query is for a singular post of the post type, false otherwise.
+	 * @return bool True if the current query is for a singular post of the post type that the
+	 *              viewer may see, false otherwise.
 	 */
 	public function is_valid(): bool {
 		/**
@@ -86,6 +89,6 @@ final class Post_Type_Single extends Endpoint {
 		 */
 		$type_object = $this->type_object;
 
-		return is_singular( $type_object->name );
+		return is_singular( $type_object->name ) && ! post_password_required( get_queried_object_id() );
 	}
 }

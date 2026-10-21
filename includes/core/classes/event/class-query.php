@@ -162,6 +162,8 @@ final class Query {
 	 *     @type int      $number          Maximum number of events to retrieve. Default 5.
 	 *     @type string[] $topics          Topic slugs for additional filtering.
 	 *     @type string[] $venues          Venue slugs for additional filtering.
+	 *     @type bool     $has_password    Optional. False to leave out password-protected
+	 *                                     events, true to get only them. Default both.
 	 * }
 	 *
 	 * @return WP_Query A WordPress query object containing the list of events.
@@ -212,6 +214,10 @@ final class Query {
 		}
 
 		$query_args['tax_query'] = $tax_query; //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+
+		if ( isset( $args['has_password'] ) && is_bool( $args['has_password'] ) ) {
+			$query_args['has_password'] = $args['has_password'];
+		}
 
 		return new WP_Query( $query_args );
 	}
