@@ -26,6 +26,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue;
+use WP_Post;
 use WP_Post_Type;
 
 /**
@@ -214,19 +215,24 @@ final class Cache {
 	 * events a logged-in viewer may read: all of them for users who can read
 	 * private posts, and only their own for everyone else. Viewers who get
 	 * the same events share a scope, so the cache stays shared without one
-	 * viewer's events reaching another.
+	 * viewer's events reaching another. An unpublished queried post, such as
+	 * an Author's own draft event, resolves only for viewers allowed to read
+	 * it, so its calendar belongs to the current viewer alone.
 	 *
 	 * @since TBD
 	 *
 	 * @return string `public` for viewers who see no private events, `private`
 	 *                for those who see all of them, or `user:{id}` for a viewer
-	 *                whose own private events set their calendar apart.
+	 *                whose own private events, or an unpublished queried
+	 *                post, set their calendar apart.
 	 */
 	public function get_viewer_scope(): string {
 		if ( ! is_user_logged_in() ) {
 			return 'public';
 		}
 
+		$queried    = get_queried_object();
+		$restricted = $queried instanceof WP_Post && 'publish' !== get_post_status( $queried );
 		$post_types = get_post_types_by_support( Event::SUPPORT );
 		$readable   = array_filter(
 			$post_types,
@@ -238,7 +244,7 @@ final class Cache {
 			}
 		);
 
-		if ( count( $readable ) === count( $post_types ) ) {
+		if ( ! $restricted && count( $readable ) === count( $post_types ) ) {
 			return 'private';
 		}
 
@@ -254,7 +260,9 @@ final class Cache {
 			)
 		);
 
-		return empty( $readable ) && empty( $own_private ) ? 'public' : sprintf( 'user:%d', get_current_user_id() );
+		return ! $restricted && empty( $readable ) && empty( $own_private )
+			? 'public'
+			: sprintf( 'user:%d', get_current_user_id() );
 	}
 
 	/**

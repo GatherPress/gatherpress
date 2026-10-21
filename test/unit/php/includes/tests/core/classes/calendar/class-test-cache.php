@@ -502,6 +502,66 @@ class Test_Cache extends Base {
 	}
 
 	/**
+	 * Gives an unpublished queried event a scope for the current viewer alone.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_viewer_scope
+	 *
+	 * @return void
+	 */
+	public function test_get_viewer_scope_for_an_unpublished_queried_event(): void {
+		$author_id        = $this->factory->user->create( array( 'role' => 'author' ) );
+		$administrator_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		$draft_id         = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'draft',
+				'post_author' => $author_id,
+			)
+		);
+		$published_id     = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+				'post_author' => $author_id,
+			)
+		);
+		$scope_of         = function ( int $user_id, int $post_id ): string {
+			wp_set_current_user( $user_id );
+			$this->go_to(
+				add_query_arg(
+					array(
+						'p'         => $post_id,
+						'post_type' => Event::POST_TYPE,
+					),
+					home_url( '/' )
+				)
+			);
+
+			return Cache::get_instance()->get_viewer_scope();
+		};
+
+		$this->assertSame(
+			sprintf( 'user:%d', $author_id ),
+			$scope_of( $author_id, $draft_id ),
+			'An Author viewing their own draft event should get their own scope.'
+		);
+		$this->assertSame(
+			sprintf( 'user:%d', $administrator_id ),
+			$scope_of( $administrator_id, $draft_id ),
+			'An Administrator viewing a draft event should get their own scope.'
+		);
+		$this->assertSame(
+			'public',
+			$scope_of( $author_id, $published_id ),
+			'An Author viewing a published event should share the public scope.'
+		);
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
 	 * Only the public calendar may be kept by shared caches; every other
 	 * scope goes out as private.
 	 *
