@@ -132,9 +132,8 @@ final class Modal {
 	/**
 	 * Checks whether a modal block is one of the RSVP block template modals.
 	 *
-	 * The RSVP modal has the `gatherpress-modal--type-rsvp` class. The Login
-	 * modal has `gatherpress-modal--login` in the template and
-	 * `gatherpress-modal--type-login` in `filter_login_modal()`, so both count.
+	 * The RSVP modal has the `gatherpress-modal--type-rsvp` class, and the
+	 * Login modal is matched by `is_login_modal()`.
 	 *
 	 * @since TBD
 	 *
@@ -143,20 +142,28 @@ final class Modal {
 	 * @return bool True if the modal comes from the RSVP block templates.
 	 */
 	private function is_rsvp_block_modal( array $block ): bool {
-		$class_name    = $block['attrs']['className'] ?? null;
-		$modal_classes = array(
-			'gatherpress-modal--type-rsvp',
-			'gatherpress-modal--login',
-			'gatherpress-modal--type-login',
-		);
+		return Utility::has_css_class( $block['attrs']['className'] ?? null, 'gatherpress-modal--type-rsvp' )
+			|| $this->is_login_modal( $block );
+	}
 
-		foreach ( $modal_classes as $modal_class ) {
-			if ( Utility::has_css_class( $class_name, $modal_class ) ) {
-				return true;
-			}
-		}
+	/**
+	 * Checks whether a modal block is the Login modal.
+	 *
+	 * The RSVP block template and saved events use `gatherpress-modal--login`.
+	 * `gatherpress-modal--type-login` is the name from the `--type-` rename,
+	 * which did not reach the template, so both count.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $block The parsed block data.
+	 *
+	 * @return bool True if the modal is the Login modal.
+	 */
+	private function is_login_modal( array $block ): bool {
+		$class_name = $block['attrs']['className'] ?? null;
 
-		return false;
+		return Utility::has_css_class( $class_name, 'gatherpress-modal--login' )
+			|| Utility::has_css_class( $class_name, 'gatherpress-modal--type-login' );
 	}
 
 	/**
@@ -255,11 +262,12 @@ final class Modal {
 	/**
 	 * Filters the output of login modals for logged-in users.
 	 *
-	 * This method checks if the block is a `gatherpress/modal` block with the
-	 * `gatherpress-modal--type-login` class. If the user is logged in, it removes
-	 * the block's output.
+	 * This method checks if the block is the Login modal (see
+	 * `is_login_modal()`). If the user is logged in, it removes the block's
+	 * output.
 	 *
 	 * @since 0.33.0
+	 * @since TBD    Also removes a Login modal with the template's `gatherpress-modal--login` class.
 	 *
 	 * @param string               $block_content The HTML content of the block.
 	 * @param array<string, mixed> $block         The parsed block data.
@@ -268,7 +276,7 @@ final class Modal {
 	 */
 	public function filter_login_modal( string $block_content, array $block ): string {
 		if (
-			Utility::has_css_class( $block['attrs']['className'] ?? null, 'gatherpress-modal--type-login' ) &&
+			$this->is_login_modal( $block ) &&
 			is_user_logged_in()
 		) {
 			return '';
