@@ -877,7 +877,9 @@ final class Setup {
 		// how long it stays fresh and hands them validators to revalidate with.
 		// A site can opt out entirely by filtering the max age to 0.
 		if ( 0 < $max_age ) {
-			header( sprintf( 'Cache-Control: public, max-age=%d', $max_age ) );
+			// A logged-in viewer's calendar can carry private events, so shared
+			// caches must not keep it.
+			header( sprintf( 'Cache-Control: %s, max-age=%d', is_user_logged_in() ? 'private' : 'public', $max_age ) );
 		} else {
 			header( 'Cache-Control: no-store, no-cache, must-revalidate' );
 			header( 'Pragma: no-cache' );
@@ -906,14 +908,16 @@ final class Setup {
 	 * @return string The complete iCal payload.
 	 */
 	public function get_ics_body(): string {
-		$is_feed = is_feed();
+		$is_feed  = is_feed();
+		$renderer = function () use ( $is_feed ): string {
+			return (string) ( $is_feed ? $this->get_ical_feed() : $this->get_ical_file() );
+		};
 
-		return Cache::get_instance()->remember(
-			$this->get_ics_cache_key(),
-			function () use ( $is_feed ): string {
-				return (string) ( $is_feed ? $this->get_ical_feed() : $this->get_ical_file() );
-			}
-		);
+		// The events query depends on who is asking, and the cache key does
+		// not, so only the anonymous body is shared.
+		return is_user_logged_in()
+			? $renderer()
+			: Cache::get_instance()->remember( $this->get_ics_cache_key(), $renderer );
 	}
 
 	/**

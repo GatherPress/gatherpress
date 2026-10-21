@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Calendar feeds loaded while logged in now skip the shared feed cache and are sent with private cache headers.

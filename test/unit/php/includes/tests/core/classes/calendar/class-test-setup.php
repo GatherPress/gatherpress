@@ -1581,6 +1581,79 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * A logged-in viewer's feed is rendered fresh rather than cached, so the
+	 * private events it lists never reach the anonymous body.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_ics_body
+	 *
+	 * @return void
+	 */
+	public function test_get_ics_body_does_not_cache_a_logged_in_feed(): void {
+		$private_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'private',
+				'post_title'  => 'Private Board Meeting',
+			)
+		);
+
+		( new Event( $private_id ) )->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week' ) ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week 2 hours' ) ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		$feed_link = get_post_type_archive_feed_link( Event::POST_TYPE, Setup::ICAL_SLUG );
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$this->go_to( $feed_link );
+
+		$this->assertStringContainsString(
+			'Private Board Meeting',
+			Setup::get_instance()->get_ics_body(),
+			'An administrator should see the private event in their own feed.'
+		);
+
+		wp_set_current_user( 0 );
+		$this->go_to( $feed_link );
+
+		$this->assertStringNotContainsString(
+			'Private Board Meeting',
+			Setup::get_instance()->get_ics_body(),
+			'An anonymous viewer should not get the private event from a logged-in viewer\'s render.'
+		);
+	}
+
+	/**
+	 * A logged-in viewer's calendar goes out with private caching headers.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::send_ics_headers
+	 *
+	 * @return void
+	 */
+	public function test_send_ics_headers_for_a_logged_in_viewer(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		ob_start();
+		Setup::get_instance()->send_ics_headers( 'sample.ics', '"abc123"', '2026-07-31 10:00:00' );
+		$output = ob_get_clean();
+
+		header_remove();
+
+		$this->assertSame(
+			'',
+			$output,
+			'send_ics_headers should not emit body output.'
+		);
+	}
+
+	/**
 	 * `If-None-Match` is the exact validator, so it answers on its own and
 	 * wins when the client sends a timestamp as well.
 	 *
