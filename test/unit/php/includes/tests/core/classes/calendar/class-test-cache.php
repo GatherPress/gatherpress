@@ -502,15 +502,16 @@ class Test_Cache extends Base {
 	}
 
 	/**
-	 * Gives an unpublished queried event a scope for the current viewer alone.
+	 * An unpublished queried event's calendar stays out of shared caches,
+	 * while its viewers keep their usual scope and so share one cache entry.
 	 *
 	 * @since TBD
 	 *
-	 * @covers ::get_viewer_scope
+	 * @covers ::get_cacheability
 	 *
 	 * @return void
 	 */
-	public function test_get_viewer_scope_for_an_unpublished_queried_event(): void {
+	public function test_get_cacheability_for_an_unpublished_queried_event(): void {
 		$author_id        = $this->factory->user->create( array( 'role' => 'author' ) );
 		$administrator_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
 		$draft_id         = $this->factory->post->create(
@@ -527,7 +528,7 @@ class Test_Cache extends Base {
 				'post_author' => $author_id,
 			)
 		);
-		$scope_of         = function ( int $user_id, int $post_id ): string {
+		$view_as          = function ( int $user_id, int $post_id ): Cache {
 			wp_set_current_user( $user_id );
 			$this->go_to(
 				add_query_arg(
@@ -539,23 +540,28 @@ class Test_Cache extends Base {
 				)
 			);
 
-			return Cache::get_instance()->get_viewer_scope();
+			return Cache::get_instance();
 		};
 
 		$this->assertSame(
-			sprintf( 'user:%d', $author_id ),
-			$scope_of( $author_id, $draft_id ),
-			'An Author viewing their own draft event should get their own scope.'
-		);
-		$this->assertSame(
-			sprintf( 'user:%d', $administrator_id ),
-			$scope_of( $administrator_id, $draft_id ),
-			'An Administrator viewing a draft event should get their own scope.'
+			'private',
+			$view_as( $author_id, $draft_id )->get_cacheability(),
+			'An Author viewing their own draft event should get a private calendar.'
 		);
 		$this->assertSame(
 			'public',
-			$scope_of( $author_id, $published_id ),
-			'An Author viewing a published event should share the public scope.'
+			$view_as( $author_id, $draft_id )->get_viewer_scope(),
+			'The Author should keep the public scope, since the draft does not change who shares its body.'
+		);
+		$this->assertSame(
+			'private',
+			$view_as( $administrator_id, $draft_id )->get_cacheability(),
+			'An Administrator viewing a draft event should get a private calendar.'
+		);
+		$this->assertSame(
+			'public',
+			$view_as( $author_id, $published_id )->get_cacheability(),
+			'An Author viewing a published event should get a public calendar.'
 		);
 
 		wp_set_current_user( 0 );

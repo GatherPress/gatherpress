@@ -215,24 +215,19 @@ final class Cache {
 	 * events a logged-in viewer may read: all of them for users who can read
 	 * private posts, and only their own for everyone else. Viewers who get
 	 * the same events share a scope, so the cache stays shared without one
-	 * viewer's events reaching another. An unpublished queried post, such as
-	 * an Author's own draft event, resolves only for viewers allowed to read
-	 * it, so its calendar belongs to the current viewer alone.
+	 * viewer's events reaching another.
 	 *
 	 * @since TBD
 	 *
 	 * @return string `public` for viewers who see no private events, `private`
 	 *                for those who see all of them, or `user:{id}` for a viewer
-	 *                whose own private events, or an unpublished queried
-	 *                post, set their calendar apart.
+	 *                whose own private events set their calendar apart.
 	 */
 	public function get_viewer_scope(): string {
 		if ( ! is_user_logged_in() ) {
 			return 'public';
 		}
 
-		$queried    = get_queried_object();
-		$restricted = $queried instanceof WP_Post && 'publish' !== get_post_status( $queried );
 		$post_types = get_post_types_by_support( Event::SUPPORT );
 		$readable   = array_filter(
 			$post_types,
@@ -244,7 +239,7 @@ final class Cache {
 			}
 		);
 
-		if ( ! $restricted && count( $readable ) === count( $post_types ) ) {
+		if ( count( $readable ) === count( $post_types ) ) {
 			return 'private';
 		}
 
@@ -260,28 +255,30 @@ final class Cache {
 			)
 		);
 
-		return ! $restricted && empty( $readable ) && empty( $own_private )
-			? 'public'
-			: sprintf( 'user:%d', get_current_user_id() );
+		return empty( $readable ) && empty( $own_private ) ? 'public' : sprintf( 'user:%d', get_current_user_id() );
 	}
 
 	/**
 	 * The `Cache-Control` directive for the current viewer's calendar.
 	 *
 	 * Only the public calendar is the same for every viewer, so shared caches
-	 * may keep it and no other. A password-protected post's calendar is meant
-	 * only for viewers who entered the password, so it is private even when
-	 * the viewer's scope is public.
+	 * may keep it and no other. An unpublished or password-protected queried
+	 * post's calendar is meant only for viewers allowed to see the post, so
+	 * it is private even when the viewer's scope is public. Its cache entry
+	 * can still be shared, because those viewers all get the same body.
 	 *
 	 * @since TBD
 	 *
 	 * @return string `public` for the public scope, `private` for any other or
-	 *                for a password-protected queried post.
+	 *                for an unpublished or password-protected queried post.
 	 */
 	public function get_cacheability(): string {
 		$queried = get_queried_object();
 
-		if ( $queried instanceof WP_Post && '' !== $queried->post_password ) {
+		if (
+			$queried instanceof WP_Post
+			&& ( 'publish' !== get_post_status( $queried ) || '' !== $queried->post_password )
+		) {
 			return 'private';
 		}
 
