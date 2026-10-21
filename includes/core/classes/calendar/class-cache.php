@@ -223,42 +223,38 @@ final class Cache {
 	 *                whose own private events set their calendar apart.
 	 */
 	public function get_viewer_scope(): string {
-		$scope = 'public';
-
-		if ( is_user_logged_in() ) {
-			$post_types = get_post_types_by_support( Event::SUPPORT );
-			$readable   = array_filter(
-				$post_types,
-				static function ( string $post_type ): bool {
-					$post_type_object = get_post_type_object( $post_type );
-
-					return $post_type_object instanceof WP_Post_Type
-						&& current_user_can( $post_type_object->cap->read_private_posts );
-				}
-			);
-
-			if ( count( $readable ) === count( $post_types ) ) {
-				$scope = 'private';
-			} else {
-				// Without the capability, a viewer still sees their own private events.
-				$own_private = get_posts(
-					array(
-						'post_type'      => $post_types,
-						'post_status'    => 'private',
-						'author'         => get_current_user_id(),
-						'fields'         => 'ids',
-						'posts_per_page' => 1,
-						'no_found_rows'  => true,
-					)
-				);
-
-				if ( ! empty( $readable ) || ! empty( $own_private ) ) {
-					$scope = sprintf( 'user:%d', get_current_user_id() );
-				}
-			}
+		if ( ! is_user_logged_in() ) {
+			return 'public';
 		}
 
-		return $scope;
+		$post_types = get_post_types_by_support( Event::SUPPORT );
+		$readable   = array_filter(
+			$post_types,
+			static function ( string $post_type ): bool {
+				$post_type_object = get_post_type_object( $post_type );
+
+				return $post_type_object instanceof WP_Post_Type
+					&& current_user_can( $post_type_object->cap->read_private_posts );
+			}
+		);
+
+		if ( count( $readable ) === count( $post_types ) ) {
+			return 'private';
+		}
+
+		// Without the capability, a viewer still sees their own private events.
+		$own_private = get_posts(
+			array(
+				'post_type'      => $post_types,
+				'post_status'    => 'private',
+				'author'         => get_current_user_id(),
+				'fields'         => 'ids',
+				'posts_per_page' => 1,
+				'no_found_rows'  => true,
+			)
+		);
+
+		return empty( $readable ) && empty( $own_private ) ? 'public' : sprintf( 'user:%d', get_current_user_id() );
 	}
 
 	/**
