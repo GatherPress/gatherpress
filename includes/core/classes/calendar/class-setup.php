@@ -908,9 +908,8 @@ final class Setup {
 	 * @return string The complete iCal payload.
 	 */
 	public function get_ics_body(): string {
-		$is_feed  = is_feed();
-		$renderer = function () use ( $is_feed ): string {
-			return (string) ( $is_feed ? $this->get_ical_feed() : $this->get_ical_file() );
+		$renderer = function (): string {
+			return (string) ( is_feed() ? $this->get_ical_feed() : $this->get_ical_file() );
 		};
 
 		// The events query depends on who is asking, and the cache key does
