@@ -232,6 +232,11 @@ final class Shadow_Source {
 				: $post_type,
 		);
 
+		// Without this, the admin column's screen reader text falls back to core's "No tags".
+		if ( $post_type_object instanceof WP_Post_Type ) {
+			$labels['no_terms'] = $post_type_object->labels->not_found;
+		}
+
 		$args = array(
 			'labels'             => $labels,
 			'hierarchical'       => false,

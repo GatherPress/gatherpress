@@ -63,12 +63,15 @@ if ( ! isset( $credits ) ) {
 			$gatherpress_contributor_count = count( $credits['contributors'] ?? array() );
 
 			foreach ( $credits['contributors'] as $gatherpress_key => $gatherpress_contributor ) :
-				$gatherpress_contributor_end = ', ';
+				/* translators: Used between contributor names in a list. */
+				$gatherpress_contributor_end = __( ', ', 'gatherpress' );
 
 				if ( 2 === $gatherpress_contributor_count ) {
-					$gatherpress_contributor_end = ' and ';
+					/* translators: Used between the names of exactly two contributors. */
+					$gatherpress_contributor_end = __( ' and ', 'gatherpress' );
 				} elseif ( $gatherpress_key + 2 === $gatherpress_contributor_count ) {
-					$gatherpress_contributor_end = ', and ';
+					/* translators: Used before the last name in a list of three or more contributors. */
+					$gatherpress_contributor_end = __( ', and ', 'gatherpress' );
 				}
 
 				if ( $gatherpress_key + 1 === $gatherpress_contributor_count ) {
