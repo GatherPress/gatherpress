@@ -269,13 +269,22 @@ final class Cache {
 	 * The `Cache-Control` directive for the current viewer's calendar.
 	 *
 	 * Only the public calendar is the same for every viewer, so shared caches
-	 * may keep it and no other.
+	 * may keep it and no other. A password-protected post's calendar is meant
+	 * only for viewers who entered the password, so it is private even when
+	 * the viewer's scope is public.
 	 *
 	 * @since TBD
 	 *
-	 * @return string `public` for the public scope, `private` for any other.
+	 * @return string `public` for the public scope, `private` for any other or
+	 *                for a password-protected queried post.
 	 */
 	public function get_cacheability(): string {
+		$queried = get_queried_object();
+
+		if ( $queried instanceof WP_Post && '' !== $queried->post_password ) {
+			return 'private';
+		}
+
 		return 'public' === $this->get_viewer_scope() ? 'public' : 'private';
 	}
 

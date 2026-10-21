@@ -605,4 +605,40 @@ class Test_Cache extends Base {
 
 		wp_set_current_user( 0 );
 	}
+
+	/**
+	 * A password-protected event's calendar stays out of shared caches, even
+	 * for a viewer whose scope is public, while an open event's stays public.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_cacheability
+	 *
+	 * @return void
+	 */
+	public function test_get_cacheability_for_a_password_protected_event(): void {
+		$instance  = Cache::get_instance();
+		$open      = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$protected = $this->factory->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		);
+
+		wp_set_current_user( 0 );
+
+		$this->go_to( get_permalink( $protected ) );
+
+		$this->assertSame( 'public', $instance->get_viewer_scope(), 'An anonymous viewer is in the public scope.' );
+		$this->assertSame(
+			'private',
+			$instance->get_cacheability(),
+			'A password-protected event\'s calendar should not be kept by shared caches.'
+		);
+
+		$this->go_to( get_permalink( $open ) );
+
+		$this->assertSame( 'public', $instance->get_cacheability(), 'An open event\'s calendar stays public.' );
+	}
 }
