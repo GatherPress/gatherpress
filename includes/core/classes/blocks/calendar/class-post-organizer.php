@@ -28,14 +28,19 @@ use WP_Query;
  *     start_obj: DateTimeImmutable,
  *     start_date: string,
  *     total_days: int,
+ *     first_day: int,
+ *     shown_days: int,
  *     is_all_day: bool
  * }
+ * @phpstan-type VisibleRange array{start: DateTimeImmutable, end: DateTimeImmutable}
  * @phpstan-type PostsByDate array<string, list<array<string, mixed>>>
  */
 final class Post_Organizer {
 
 	/**
-	 * Maximum number of days an event can span to prevent memory exhaustion from invalid dates.
+	 * Maximum number of days of one event that the calendar places.
+	 *
+	 * Twelve months, the largest view. It also stops invalid dates from exhausting memory.
 	 *
 	 * @since TBD
 	 * @var int
@@ -53,7 +58,45 @@ final class Post_Organizer {
 	 * @return PostsByDate Slotted calendar entries grouped by date.
 	 */
 	public static function organize_posts_by_date( array $query_args, array $grid_config = array() ): array {
-		return self::organize_posts( self::fetch_post_ids_from_query( $query_args ), $grid_config );
+		return self::organize_posts(
+			self::fetch_post_ids_from_query( $query_args ),
+			$grid_config,
+			self::get_visible_range( $query_args )
+		);
+	}
+
+	/**
+	 * Reads the visible date range from calendar query arguments.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $query_args WP_Query arguments.
+	 *
+	 * @return VisibleRange|null The first and last visible day, or null without a valid range.
+	 */
+	public static function get_visible_range( array $query_args ): ?array {
+		$start = $query_args[ Query_Integration::CALENDAR_QUERY_START_DATE ] ?? null;
+		$end   = $query_args[ Query_Integration::CALENDAR_QUERY_END_DATE ] ?? null;
+
+		if ( ! is_string( $start ) || ! is_string( $end ) ) {
+			return null;
+		}
+
+		$start_obj = DateTimeImmutable::createFromFormat( '!Y-m-d', $start, wp_timezone() );
+		$end_obj   = DateTimeImmutable::createFromFormat( '!Y-m-d', $end, wp_timezone() );
+
+		if ( ! $start_obj instanceof DateTimeImmutable || ! $end_obj instanceof DateTimeImmutable ) {
+			return null;
+		}
+
+		if ( $end_obj < $start_obj ) {
+			return null;
+		}
+
+		return array(
+			'start' => $start_obj,
+			'end'   => $end_obj,
+		);
 	}
 
 	/**
@@ -63,15 +106,20 @@ final class Post_Organizer {
 	 *
 	 * @param int[]                $post_ids    Array of post IDs.
 	 * @param array<string, mixed> $grid_config Time grid configuration.
+	 * @param VisibleRange|null    $range       Visible date range, or null to place each event from its start.
 	 *
 	 * @return PostsByDate Slotted calendar entries grouped by date.
 	 */
-	public static function organize_posts( array $post_ids, array $grid_config = array() ): array {
+	public static function organize_posts(
+		array $post_ids,
+		array $grid_config = array(),
+		?array $range = null
+	): array {
 		if ( empty( $post_ids ) ) {
 			return array();
 		}
 
-		$sorted_events = self::sort_events_for_slotting( self::resolve_post_spans( $post_ids ) );
+		$sorted_events = self::sort_events_for_slotting( self::resolve_post_spans( $post_ids, $range ) );
 
 		return self::build_slotted_calendar_entries( $sorted_events, $grid_config );
 	}
@@ -114,16 +162,17 @@ final class Post_Organizer {
 	 *
 	 * @since TBD
 	 *
-	 * @param int[] $post_ids Array of post IDs.
+	 * @param int[]             $post_ids Array of post IDs.
+	 * @param VisibleRange|null $range    Visible date range, or null to place each event from its start.
 	 *
 	 * @return list<EventSpan>
 	 */
-	public static function resolve_post_spans( array $post_ids ): array {
+	public static function resolve_post_spans( array $post_ids, ?array $range = null ): array {
 		$spans = array();
 
 		foreach ( $post_ids as $post_id ) {
 			$dates = self::get_post_dates( $post_id );
-			$span  = self::calculate_date_span( $dates['start'], $dates['end'] );
+			$span  = self::calculate_date_span( $dates['start'], $dates['end'], $range );
 
 			if ( null === $span ) {
 				continue;
@@ -134,6 +183,8 @@ final class Post_Organizer {
 				'start_obj'  => $span['start_obj'],
 				'start_date' => $dates['start'],
 				'total_days' => $span['total_days'],
+				'first_day'  => $span['first_day'],
+				'shown_days' => $span['shown_days'],
 				'is_all_day' => ( new Event\Event( $post_id ) )->is_all_day(),
 			);
 		}
@@ -144,16 +195,20 @@ final class Post_Organizer {
 	/**
 	 * Calculates day duration and start DateTime object from start and end date strings.
 	 *
-	 * Pure date math decoupled from WordPress post data.
+	 * Pure date math decoupled from WordPress post data. `total_days` is the full length of the
+	 * event. `first_day` (0-based) and `shown_days` give the part of the event inside the visible
+	 * range, so an event that starts before the range still shows on the visible days.
 	 *
 	 * @since TBD
 	 *
-	 * @param string $start_date Y-m-d start date string.
-	 * @param string $end_date   Y-m-d end date string.
+	 * @param string            $start_date Y-m-d start date string.
+	 * @param string            $end_date   Y-m-d end date string.
+	 * @param VisibleRange|null $range      Visible date range, or null to start at the first day of the event.
 	 *
-	 * @return array{start_obj: DateTimeImmutable, total_days: int}|null
+	 * @return array{start_obj: DateTimeImmutable, total_days: int, first_day: int, shown_days: int}|null Null
+	 *         when a date is not valid or the event is outside the visible range.
 	 */
-	public static function calculate_date_span( string $start_date, string $end_date ): ?array {
+	public static function calculate_date_span( string $start_date, string $end_date, ?array $range = null ): ?array {
 		$start_obj = DateTimeImmutable::createFromFormat( '!Y-m-d', $start_date, wp_timezone() );
 		$end_obj   = DateTimeImmutable::createFromFormat( '!Y-m-d', $end_date, wp_timezone() );
 
@@ -163,10 +218,28 @@ final class Post_Organizer {
 
 		$end_obj    = max( $start_obj, $end_obj );
 		$total_days = (int) $start_obj->diff( $end_obj )->days + 1;
+		$first_day  = 0;
+		$last_day   = $total_days - 1;
+
+		if ( null !== $range ) {
+			if ( $end_obj < $range['start'] || $start_obj > $range['end'] ) {
+				return null;
+			}
+
+			if ( $start_obj < $range['start'] ) {
+				$first_day = (int) $start_obj->diff( $range['start'] )->days;
+			}
+
+			if ( $end_obj > $range['end'] ) {
+				$last_day = (int) $start_obj->diff( $range['end'] )->days;
+			}
+		}
 
 		return array(
 			'start_obj'  => $start_obj,
-			'total_days' => min( self::MAX_EVENT_SPAN_DAYS, $total_days ),
+			'total_days' => $total_days,
+			'first_day'  => $first_day,
+			'shown_days' => min( self::MAX_EVENT_SPAN_DAYS, $last_day - $first_day + 1 ),
 		);
 	}
 
@@ -328,6 +401,8 @@ final class Post_Organizer {
 	/**
 	 * Allocates ribbon slots for an all-day or multi-day event.
 	 *
+	 * Only the visible days get an entry. Each entry keeps its day number in the full event.
+	 *
 	 * @since TBD
 	 *
 	 * @param array<string, mixed>            $event          Event descriptor.
@@ -343,15 +418,20 @@ final class Post_Organizer {
 		array &$occupied_slots,
 		array &$posts_by_date
 	): void {
-		$event_dates = self::get_span_dates( $event['start_obj'], $event['total_days'] );
+		$first_day   = $event['first_day'];
+		$event_dates = self::get_span_dates(
+			$event['start_obj']->modify( "+{$first_day} days" ),
+			$event['shown_days']
+		);
 		$slot        = self::find_available_slot( $event_dates, $occupied_slots );
 
 		foreach ( $event_dates as $i => $date_str ) {
+			$day_index                            = $first_day + $i + 1;
 			$occupied_slots[ $date_str ][ $slot ] = true;
 			$posts_by_date[ $date_str ][]         = array(
 				'id'         => $event['id'],
-				'span'       => self::determine_span_type( $i + 1, $event['total_days'] ),
-				'day_index'  => $i + 1,
+				'span'       => self::determine_span_type( $day_index, $event['total_days'] ),
+				'day_index'  => $day_index,
 				'total_days' => $event['total_days'],
 				'is_all_day' => $event['is_all_day'],
 				'is_timed'   => false,
@@ -363,8 +443,10 @@ final class Post_Organizer {
 	/**
 	 * Resolves concurrent overlapping columns for timed entries in a single day.
 	 *
-	 * Each timed entry gets the number of timed entries it overlaps (itself included) and its
-	 * position among them.
+	 * Timed entries that overlap, directly or through other entries, form a group. Each entry
+	 * goes in the first column of its group that is free at its start time. Each entry gets
+	 * the number of columns of its group and its column, so no two overlapping entries share
+	 * a column and all entries of a group have the same width.
 	 *
 	 * @since TBD
 	 *
@@ -380,30 +462,64 @@ final class Post_Organizer {
 			}
 		);
 
-		foreach ( $timed as $curr_idx => $curr ) {
-			$overlaps    = 0;
-			$overlap_idx = 0;
+		// Order by start track, then by end track. The keys keep the positions in $day_entries.
+		uasort(
+			$timed,
+			static function ( array $a, array $b ): int {
+				return array( $a['time_row_start'], $a['time_row_end'] )
+					<=> array( $b['time_row_start'], $b['time_row_end'] );
+			}
+		);
 
-			foreach ( $timed as $other_idx => $other ) {
-				$is_before = $curr['time_row_end'] <= $other['time_row_start'];
-				$is_after  = $curr['time_row_start'] >= $other['time_row_end'];
+		$group       = array();
+		$column_ends = array();
+		$group_end   = 0;
 
-				if ( $is_before || $is_after ) {
-					continue;
-				}
+		foreach ( $timed as $idx => $entry ) {
+			$row_start = (int) $entry['time_row_start'];
+			$row_end   = (int) $entry['time_row_end'];
 
-				++$overlaps;
-
-				if ( $other_idx < $curr_idx ) {
-					++$overlap_idx;
-				}
+			// An entry that starts after every entry of the group ends starts a new group.
+			if ( $row_start >= $group_end ) {
+				$day_entries = self::assign_overlap_group( $day_entries, $group, count( $column_ends ) );
+				$group       = array();
+				$column_ends = array();
 			}
 
-			$day_entries[ $curr_idx ]['overlap_total'] = max( 1, $overlaps );
-			$day_entries[ $curr_idx ]['overlap_index'] = $overlap_idx;
+			$column = 0;
+
+			while ( isset( $column_ends[ $column ] ) && $column_ends[ $column ] > $row_start ) {
+				++$column;
+			}
+
+			$column_ends[ $column ] = $row_end;
+			$group[ $idx ]          = $column;
+			$group_end              = max( $group_end, $row_end );
 		}
 
+		$day_entries = self::assign_overlap_group( $day_entries, $group, count( $column_ends ) );
+
 		return array_values( $day_entries );
+	}
+
+	/**
+	 * Writes the overlap column data of one group of timed entries.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<int, array<string, mixed>> $day_entries Day entries list.
+	 * @param array<int, int>                  $group       Map of entry positions to their columns.
+	 * @param int                              $columns     Number of columns the group uses.
+	 *
+	 * @return array<int, array<string, mixed>> Day entries with overlap data on the entries of the group.
+	 */
+	private static function assign_overlap_group( array $day_entries, array $group, int $columns ): array {
+		foreach ( $group as $idx => $column ) {
+			$day_entries[ $idx ]['overlap_total'] = $columns;
+			$day_entries[ $idx ]['overlap_index'] = $column;
+		}
+
+		return $day_entries;
 	}
 
 	/**

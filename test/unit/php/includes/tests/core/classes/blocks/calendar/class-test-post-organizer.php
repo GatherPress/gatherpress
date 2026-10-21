@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\Blocks\Calendar;
 
 use DateTimeImmutable;
 use GatherPress\Core\Blocks\Calendar\Post_Organizer;
+use GatherPress\Core\Blocks\Calendar\Query_Integration;
 use GatherPress\Core\Event;
 use GatherPress\Tests\Base;
 
@@ -80,7 +81,24 @@ class Test_Post_Organizer extends Base {
 			'start_obj'  => new DateTimeImmutable( $start_date, wp_timezone() ),
 			'start_date' => $start_date,
 			'total_days' => $total_days,
+			'first_day'  => 0,
+			'shown_days' => $total_days,
 			'is_all_day' => $is_all_day,
+		);
+	}
+
+	/**
+	 * Build a visible range like get_visible_range() returns.
+	 *
+	 * @param string $start First visible day (Y-m-d).
+	 * @param string $end   Last visible day (Y-m-d).
+	 *
+	 * @return array{start: DateTimeImmutable, end: DateTimeImmutable}
+	 */
+	private function range( string $start, string $end ): array {
+		return array(
+			'start' => new DateTimeImmutable( $start, wp_timezone() ),
+			'end'   => new DateTimeImmutable( $end, wp_timezone() ),
 		);
 	}
 
@@ -127,6 +145,105 @@ class Test_Post_Organizer extends Base {
 	}
 
 	/**
+	 * A long event shows on the visible days, also when it started more than a year before them.
+	 *
+	 * @covers ::organize_posts_by_date
+	 * @covers ::get_visible_range
+	 * @covers ::allocate_ribbon_event_entry
+	 *
+	 * @return void
+	 */
+	public function test_organize_posts_by_date_clips_long_event_to_visible_range(): void {
+		$event_id  = $this->create_event( '2025-01-01 10:00:00', '2026-12-31 16:00:00' );
+		$start_key = Query_Integration::CALENDAR_QUERY_START_DATE;
+		$end_key   = Query_Integration::CALENDAR_QUERY_END_DATE;
+		$entries   = Post_Organizer::organize_posts_by_date(
+			array(
+				'post_type' => Event::POST_TYPE,
+				'post__in'  => array( $event_id ),
+				$start_key  => '2026-10-01',
+				$end_key    => '2026-10-31',
+			)
+		);
+
+		$this->assertCount( 31, $entries, 'Failed to assert one entry for each day of October.' );
+		$this->assertSame( '2026-10-01', array_key_first( $entries ) );
+		$this->assertSame( '2026-10-31', array_key_last( $entries ) );
+		$this->assertSame(
+			array(
+				'id'         => $event_id,
+				'span'       => 'middle',
+				'day_index'  => 639,
+				'total_days' => 730,
+				'is_all_day' => false,
+				'is_timed'   => false,
+				'slot'       => 0,
+			),
+			$entries['2026-10-01'][0],
+			'Failed to assert the first visible day keeps its day number in the full event.'
+		);
+		$this->assertSame( 669, $entries['2026-10-31'][0]['day_index'] );
+
+		$entries = Post_Organizer::organize_posts( array( $event_id ) );
+		$this->assertCount(
+			Post_Organizer::MAX_EVENT_SPAN_DAYS,
+			$entries,
+			'Failed to assert the day limit without a visible range.'
+		);
+		$this->assertSame( 'start', $entries['2025-01-01'][0]['span'] );
+	}
+
+	/**
+	 * Coverage for get_visible_range.
+	 *
+	 * @covers ::get_visible_range
+	 *
+	 * @return void
+	 */
+	public function test_get_visible_range(): void {
+		$start = Query_Integration::CALENDAR_QUERY_START_DATE;
+		$end   = Query_Integration::CALENDAR_QUERY_END_DATE;
+
+		$this->assertNull( Post_Organizer::get_visible_range( array() ) );
+		$this->assertNull(
+			Post_Organizer::get_visible_range(
+				array(
+					$start => '2026-10-01',
+					$end   => 20261031,
+				)
+			),
+			'Failed to assert a date that is not a string gives no range.'
+		);
+		$this->assertNull(
+			Post_Organizer::get_visible_range(
+				array(
+					$start => 'October',
+					$end   => '2026-10-31',
+				)
+			),
+			'Failed to assert a date that is not valid gives no range.'
+		);
+		$this->assertNull(
+			Post_Organizer::get_visible_range(
+				array(
+					$start => '2026-10-31',
+					$end   => '2026-10-01',
+				)
+			),
+			'Failed to assert an end before the start gives no range.'
+		);
+
+		$range = Post_Organizer::get_visible_range(
+			array(
+				$start => '2026-10-01',
+				$end   => '2026-10-31',
+			)
+		);
+		$this->assertSame( '2026-10-01 00:00:00', $range['start']->format( 'Y-m-d H:i:s' ) );
+		$this->assertSame( '2026-10-31 00:00:00', $range['end']->format( 'Y-m-d H:i:s' ) );
+	}
+
+	/**
 	 * Coverage for resolve_post_spans and get_post_dates.
 	 *
 	 * @covers ::resolve_post_spans
@@ -144,10 +261,21 @@ class Test_Post_Organizer extends Base {
 		$this->assertSame( $multi_day, $spans[0]['id'] );
 		$this->assertSame( '2026-10-16', $spans[0]['start_date'] );
 		$this->assertSame( 5, $spans[0]['total_days'] );
+		$this->assertSame( 0, $spans[0]['first_day'] );
+		$this->assertSame( 5, $spans[0]['shown_days'] );
 		$this->assertFalse( $spans[0]['is_all_day'] );
 		$this->assertSame( 1, $spans[1]['total_days'] );
 		$this->assertTrue( $spans[1]['is_all_day'] );
 		$this->assertSame( '2026-10-15', $spans[2]['start_date'], 'Failed to assert a post uses its publish date.' );
+
+		$spans = Post_Organizer::resolve_post_spans(
+			array( $multi_day, $all_day, $post_id ),
+			$this->range( '2026-10-18', '2026-10-31' )
+		);
+		$this->assertCount( 2, $spans, 'Failed to assert a post before the visible range is skipped.' );
+		$this->assertSame( 2, $spans[0]['first_day'] );
+		$this->assertSame( 3, $spans[0]['shown_days'] );
+		$this->assertSame( $all_day, $spans[1]['id'] );
 
 		$this->assertSame(
 			array(
@@ -176,7 +304,28 @@ class Test_Post_Organizer extends Base {
 		$this->assertSame( 1, $span['total_days'], 'Failed to assert an end before the start is one day.' );
 
 		$span = Post_Organizer::calculate_date_span( '2026-01-01', '2027-12-31' );
-		$this->assertSame( Post_Organizer::MAX_EVENT_SPAN_DAYS, $span['total_days'] );
+		$this->assertSame( 730, $span['total_days'], 'Failed to assert the full length of a long event.' );
+		$this->assertSame( 0, $span['first_day'] );
+		$this->assertSame( Post_Organizer::MAX_EVENT_SPAN_DAYS, $span['shown_days'] );
+
+		$october = $this->range( '2026-10-01', '2026-10-31' );
+		$span    = Post_Organizer::calculate_date_span( '2025-01-01', '2026-12-31', $october );
+		$this->assertSame( 730, $span['total_days'] );
+		$this->assertSame( 638, $span['first_day'], 'Failed to assert the first visible day is October 1.' );
+		$this->assertSame( 31, $span['shown_days'], 'Failed to assert the event ends after the visible range.' );
+
+		$span = Post_Organizer::calculate_date_span( '2026-10-16', '2026-10-20', $october );
+		$this->assertSame( 0, $span['first_day'] );
+		$this->assertSame( 5, $span['shown_days'], 'Failed to assert an event inside the range is not clipped.' );
+
+		$this->assertNull(
+			Post_Organizer::calculate_date_span( '2026-09-01', '2026-09-30', $october ),
+			'Failed to assert an event before the range gives no span.'
+		);
+		$this->assertNull(
+			Post_Organizer::calculate_date_span( '2026-11-01', '2026-11-02', $october ),
+			'Failed to assert an event after the range gives no span.'
+		);
 	}
 
 	/**
@@ -329,6 +478,40 @@ class Test_Post_Organizer extends Base {
 		$this->assertSame( $third, $day[3]['id'] );
 		$this->assertSame( 1, $day[3]['overlap_total'], 'Failed to assert an event that touches no other is alone.' );
 		$this->assertSame( 0, $day[3]['overlap_index'] );
+	}
+
+	/**
+	 * Events that overlap through other events never share a column.
+	 *
+	 * B overlaps A and C, and C overlaps D, so the four events form one group of three columns.
+	 *
+	 * @covers ::resolve_day_timed_overlaps
+	 * @covers ::assign_overlap_group
+	 *
+	 * @return void
+	 */
+	public function test_resolve_day_timed_overlaps_assigns_columns_per_group(): void {
+		$a       = $this->create_event( '2026-10-16 09:00:00', '2026-10-16 10:00:00' );
+		$b       = $this->create_event( '2026-10-16 09:30:00', '2026-10-16 10:30:00' );
+		$c       = $this->create_event( '2026-10-16 10:00:00', '2026-10-16 11:00:00' );
+		$d       = $this->create_event( '2026-10-16 10:15:00', '2026-10-16 11:00:00' );
+		$entries = Post_Organizer::organize_posts( array( $d, $c, $b, $a ), self::GRID );
+		$columns = array();
+
+		foreach ( $entries['2026-10-16'] as $entry ) {
+			$columns[ $entry['id'] ] = array( $entry['overlap_index'], $entry['overlap_total'] );
+		}
+
+		$this->assertSame(
+			array(
+				$a => array( 0, 3 ),
+				$b => array( 1, 3 ),
+				$c => array( 0, 3 ),
+				$d => array( 2, 3 ),
+			),
+			$columns,
+			'Failed to assert B and C, which overlap, get different columns.'
+		);
 	}
 
 	/**

@@ -123,8 +123,12 @@ final class Query_Integration {
 		add_action( 'init', array( $this, 'register_existing_post_types' ), PHP_INT_MAX );
 		add_filter( 'render_block_data', array( $this, 'allow_core_pagination' ), 10, 3 );
 		add_filter( 'render_block_core/query', array( $this, 'forget_calendar_query' ), 10, 2 );
-		add_filter( 'render_block_context', array( $this, 'disable_query_pagination_numbers' ), 10, 2 );
-		add_filter( 'query_vars', array( $this, 'query_vars' ) );
+		add_filter(
+			'render_block_core/query-pagination-numbers',
+			array( $this, 'hide_query_pagination_numbers' ),
+			10,
+			3
+		);
 		add_filter( 'query_loop_block_query_vars', array( $this, 'query_loop_block_query_vars' ), 10, 2 );
 	}
 
@@ -507,47 +511,25 @@ final class Query_Integration {
 	/**
 	 * Hides the Page Numbers block of a calendar query.
 	 *
-	 * @see https://developer.wordpress.org/reference/hooks/render_block_context/
+	 * A calendar pages by date range, so page numbers of posts mean nothing there. The other
+	 * pagination blocks do not change.
 	 *
 	 * @since TBD
 	 *
-	 * @param array<string, mixed> $context      Default context.
-	 * @param array<string, mixed> $parsed_block The block being rendered.
+	 * @param string               $block_content The rendered Page Numbers block.
+	 * @param array<string, mixed> $parsed_block  The parsed Page Numbers block.
+	 * @param WP_Block             $instance      The Page Numbers block instance.
 	 *
-	 * @return array<string, mixed> Updated block context.
+	 * @return string An empty string in a calendar query, otherwise the block unchanged.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) -- $parsed_block is required by the filter signature.
 	 */
-	public function disable_query_pagination_numbers( array $context, array $parsed_block ): array {
-		if (
-			'core/query-pagination-numbers' !== ( $parsed_block['blockName'] ?? '' ) ||
-			! is_array( $context['query'] ?? null ) ||
-			! $this->is_calendar_query_context( $context )
-		) {
-			return $context;
-		}
-
-		// With 0 posts per page the Page Numbers block renders nothing.
-		// The other pagination blocks do not change.
-		$context['query']['perPage'] = 0;
-
-		return $context;
-	}
-
-	/**
-	 * Register allowed calendar query vars.
-	 *
-	 * @since TBD
-	 *
-	 * @param string[] $query_vars Allowed query variables.
-	 *
-	 * @return string[]
-	 */
-	public function query_vars( array $query_vars ): array {
-		$query_vars[] = self::CALENDAR_QUERY_PARAM;
-		$query_vars[] = self::CALENDAR_QUERY_VIEW_TYPE;
-		$query_vars[] = self::CALENDAR_QUERY_START_DATE;
-		$query_vars[] = self::CALENDAR_QUERY_END_DATE;
-
-		return $query_vars;
+	public function hide_query_pagination_numbers(
+		string $block_content,
+		array $parsed_block,
+		WP_Block $instance
+	): string {
+		return $this->is_calendar_query_context( $instance->context ) ? '' : $block_content;
 	}
 
 	/**
