@@ -500,4 +500,49 @@ class Test_Cache extends Base {
 			'Reading private posts but not private pages should give the viewer their own scope.'
 		);
 	}
+
+	/**
+	 * Only the public calendar may be kept by shared caches; every other
+	 * scope goes out as private.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_cacheability
+	 *
+	 * @return void
+	 */
+	public function test_get_cacheability(): void {
+		$instance         = Cache::get_instance();
+		$cacheability_of  = function ( int $user_id ) use ( $instance ): string {
+			wp_set_current_user( $user_id );
+
+			return $instance->get_cacheability();
+		};
+		$author_id        = $this->factory->user->create( array( 'role' => 'author' ) );
+		$subscriber_id    = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		$administrator_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+
+		$this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'private',
+				'post_author' => $author_id,
+			)
+		);
+
+		$this->assertSame( 'public', $cacheability_of( 0 ), 'An anonymous viewer gets a public calendar.' );
+		$this->assertSame( 'public', $cacheability_of( $subscriber_id ), 'A Subscriber shares the public calendar.' );
+		$this->assertSame(
+			'private',
+			$cacheability_of( $administrator_id ),
+			'An Administrator\'s calendar lists private events, so it is private.'
+		);
+		$this->assertSame(
+			'private',
+			$cacheability_of( $author_id ),
+			'An Author\'s calendar with their own private event is private.'
+		);
+
+		wp_set_current_user( 0 );
+	}
 }

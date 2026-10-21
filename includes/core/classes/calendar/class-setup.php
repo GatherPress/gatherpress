@@ -877,11 +877,7 @@ final class Setup {
 		// how long it stays fresh and hands them validators to revalidate with.
 		// A site can opt out entirely by filtering the max age to 0.
 		if ( 0 < $max_age ) {
-			// Only the public calendar is the same for every viewer, so shared
-			// caches may keep it and no other.
-			$visibility = 'public' === Cache::get_instance()->get_viewer_scope() ? 'public' : 'private';
-
-			header( sprintf( 'Cache-Control: %s, max-age=%d', $visibility, $max_age ) );
+			header( sprintf( 'Cache-Control: %s, max-age=%d', Cache::get_instance()->get_cacheability(), $max_age ) );
 		} else {
 			header( 'Cache-Control: no-store, no-cache, must-revalidate' );
 			header( 'Pragma: no-cache' );

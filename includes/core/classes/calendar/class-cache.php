@@ -258,6 +258,20 @@ final class Cache {
 	}
 
 	/**
+	 * The `Cache-Control` directive for the current viewer's calendar.
+	 *
+	 * Only the public calendar is the same for every viewer, so shared caches
+	 * may keep it and no other.
+	 *
+	 * @since TBD
+	 *
+	 * @return string `public` for the public scope, `private` for any other.
+	 */
+	public function get_cacheability(): string {
+		return 'public' === $this->get_viewer_scope() ? 'public' : 'private';
+	}
+
+	/**
 	 * Namespace a cache key with the current calendar version stamp.
 	 *
 	 * The scope key and the stamp are hashed together rather than concatenated
