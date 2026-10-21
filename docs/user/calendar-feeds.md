@@ -6,6 +6,8 @@ GatherPress publishes subscribable calendar feeds in the widely supported iCalen
 
 A feed carries each event until it ends. Once an event is over it drops out of the feed, so most calendar apps remove it from the subscriber's calendar the next time they refresh.
 
+Password-protected events are never included in a feed, because anyone with the feed URL can read it. Their Add to Calendar links only work for visitors who have entered the event's password.
+
 ## Download once vs. subscribe
 
 There are two ways to get GatherPress events into a calendar app, and they behave differently:
