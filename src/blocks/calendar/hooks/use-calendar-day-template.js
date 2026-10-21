@@ -8,7 +8,7 @@
 import { store as blockEditorStore } from '@wordpress/block-editor';
 import { useSelect } from '@wordpress/data';
 
-import { useStableValue } from '../../../utils/use-stable-value';
+import { useStableValue } from './use-stable-value';
 
 /**
  * Returns stable references to the week and day template blocks inside the calendar.

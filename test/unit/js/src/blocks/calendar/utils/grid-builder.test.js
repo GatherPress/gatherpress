@@ -1,7 +1,7 @@
 /**
  * External dependencies.
  */
-import { describe, expect, it, jest } from '@jest/globals';
+import { describe, expect, it } from '@jest/globals';
 
 /**
  * Internal dependencies.
@@ -9,12 +9,10 @@ import { describe, expect, it, jest } from '@jest/globals';
 import {
 	generateCalendar,
 	groupPostsByDate,
-} from '@src/blocks/calendar/edit/utils/grid-builder';
+} from '@src/blocks/calendar/utils/grid-builder';
 
-// Only gatherpress_event supports event dates.
-jest.mock( '@src/blocks/utils/post-types', () => ( {
-	isEventPostType: ( type ) => 'gatherpress_event' === type,
-} ) );
+// The post types that support gatherpress-event-date.
+const EVENT_TYPES = [ 'gatherpress_event' ];
 
 /**
  * Build an event post entity record.
@@ -42,6 +40,7 @@ describe( 'groupPostsByDate', () => {
 			[ event( 1, '2025-01-01 10:00:00', '2026-12-31 16:00:00' ) ],
 			{},
 			october,
+			EVENT_TYPES,
 		);
 		const dates = Object.keys( grouped );
 
@@ -61,9 +60,24 @@ describe( 'groupPostsByDate', () => {
 			[ event( 1, '2026-09-01 10:00:00', '2026-09-02 16:00:00' ) ],
 			{},
 			october,
+			EVENT_TYPES,
 		);
 
 		expect( grouped ).toEqual( {} );
+	} );
+
+	it( 'uses the event dates only for the given event post types', () => {
+		const post = {
+			...event( 1, '2026-10-16 10:00:00', '2026-10-16 11:00:00' ),
+			date: '2026-10-05T10:00:00',
+		};
+
+		expect( Object.keys( groupPostsByDate( [ post ], {}, october, EVENT_TYPES ) ) ).toEqual( [
+			'2026-10-16',
+		] );
+		expect( Object.keys( groupPostsByDate( [ post ], {}, october ) ) ).toEqual( [
+			'2026-10-05',
+		] );
 	} );
 
 	it( 'gives timed events that overlap through other events their own columns', () => {
@@ -76,6 +90,8 @@ describe( 'groupPostsByDate', () => {
 				event( 5, '2026-10-16 13:00:00', '2026-10-16 14:00:00' ),
 			],
 			{ enabled: true, startHour: 8, endHour: 20, quarterMins: 15 },
+			null,
+			EVENT_TYPES,
 		);
 		const columns = grouped[ '2026-10-16' ].map( ( entry ) => [
 			entry.id,
@@ -106,7 +122,6 @@ describe( 'generateCalendar', () => {
 		expect( calendar.unitCount ).toBe( 2 );
 		expect( calendar.units ).toHaveLength( 2 );
 		expect( calendar.weeks ).toHaveLength( 5 );
-		expect( calendar.hasPosts ).toBe( false );
 	} );
 
 	it( 'numbers the rows of a view with several weeks', () => {

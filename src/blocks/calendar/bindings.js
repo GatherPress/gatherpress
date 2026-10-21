@@ -18,13 +18,13 @@ import {
 	calculateDateRange,
 	calculatePostSpanUnits,
 	formatHeading,
-} from './edit/utils/date-utils';
-import { getStartOfWeek } from './edit/utils/calendar-utils';
-import { findBlockByName } from './edit/utils/block-sync-utils';
+} from './utils/date-utils';
+import { getStartOfWeek } from './utils/calendar-utils';
+import { findBlockByName } from './utils/block-sync-utils';
 import {
 	resolveSourceEventDates,
 	isPostDateSource,
-} from './edit/utils/source-utils';
+} from './utils/source-utils';
 
 domReady( () => {
 	if ( 'function' !== typeof registerBlockBindingsSource ) {

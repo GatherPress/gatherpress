@@ -1,5 +1,5 @@
 /**
- * DayPreviewCell Component
+ * CalendarDayPreview Component
  *
  * @package
  * @since TBD
@@ -27,7 +27,7 @@ import {
 	isDayNumberBindingBlock,
 	getLayoutProps,
 	FALLBACK_BLOCK_GAP,
-} from '../../../utils/day-number';
+} from '../blocks/calendar/utils/day-number';
 
 /**
  * Strips top-level event-date blocks from entries on multi-day/all-day spans.
@@ -122,7 +122,7 @@ function withResolvedDayContent( blocks, day, isRibbon ) {
 }
 
 /**
- * DayPreviewCell Component
+ * CalendarDayPreview Component
  *
  * Renders a single, non-editable calendar day cell as a virtual instance:
  * a real `<td>` (matching gatherpress/calendar-day's own markup, including
@@ -151,7 +151,7 @@ function withResolvedDayContent( blocks, day, isRibbon ) {
  *
  * @return {Element} Day cell preview element.
  */
-function DayPreviewCellComponent( {
+function CalendarDayPreviewComponent( {
 	day,
 	innerBlocks,
 	dayBlockAttributes,
@@ -301,4 +301,4 @@ function DayPreviewCellComponent( {
 // (useBlockPreview). Without memoization, every unrelated re-render
 // higher up (e.g. selecting any block) would re-render every one of
 // these across the whole grid, which is visibly expensive.
-export const DayPreviewCell = memo( DayPreviewCellComponent );
+export const CalendarDayPreview = memo( CalendarDayPreviewComponent );

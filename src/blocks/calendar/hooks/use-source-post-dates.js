@@ -6,7 +6,7 @@
  */
 
 import { useSelect } from '@wordpress/data';
-import { useEventPostTypes } from './useEventPostTypes';
+import { useEventPostTypes } from './use-event-post-types';
 import {
 	getDefaultEventPostType,
 	resolveSourceEventDates,

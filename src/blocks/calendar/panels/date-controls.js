@@ -18,10 +18,10 @@ import {
 import { useMemo } from '@wordpress/element';
 
 import { calculateTargetDate, formatHeading } from '../utils/date-utils';
-import { useDateOffsetHelp } from '../hooks/useDateOffsetHelp';
-import { MonthPicker } from './MonthPicker';
-import { SourcePostControls } from './SourcePostControls';
-import { ShadowSourceFilterControls } from './ShadowSourceFilterControls';
+import { useDateOffsetHelp } from '../hooks/use-date-offset-help';
+import { MonthPicker } from './month-picker';
+import { SourcePostControls } from './source-post-controls';
+import { ShadowSourceFilterControls } from './shadow-source-filter-controls';
 import {
 	DATE_SOURCE_DEFAULT,
 	isPostDateSource,

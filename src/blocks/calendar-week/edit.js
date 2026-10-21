@@ -18,9 +18,9 @@ import {
 import { PanelBody, RangeControl } from '@wordpress/components';
 import './editor.scss';
 
-import { DAY_TEMPLATE } from '../calendar/edit/constants';
-import { DayPreviewCell } from '../calendar/edit/components/DayPreviewCell';
-import { useStableValue } from '../utils/use-stable-value';
+import { DAY_TEMPLATE } from '../calendar/constants';
+import { CalendarDayPreview } from '../../components/CalendarDayPreview';
+import { useStableValue } from '../calendar/hooks/use-stable-value';
 
 const EMPTY_ARRAY = [];
 const NOOP = () => {};
@@ -263,7 +263,7 @@ export default memo( function Edit( {
 							{ children }
 						</BlockContextProvider>
 					) : (
-						<DayPreviewCell
+						<CalendarDayPreview
 							key={ day.date ?? `empty-${ dayIndex }` }
 							day={ day }
 							innerBlocks={ dayInnerBlocks }

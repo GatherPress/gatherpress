@@ -12,29 +12,8 @@ import {
 	ENTRY_MODAL_MANAGER_ATTRIBUTES,
 	ENTRY_START_TIME,
 	ENTRY_TITLE_TRIGGER,
-} from './edit/constants';
-
-/**
- * Helper to recursively search an innerBlocks tree for a specific block by name.
- *
- * @param {Array}  blocks    Array of block objects.
- * @param {string} blockName Block name to search for.
- * @return {Object|null} Matching block object or null.
- */
-function findBlockByName( blocks = [], blockName ) {
-	for ( const block of blocks ) {
-		if ( block.name === blockName ) {
-			return block;
-		}
-		if ( block.innerBlocks && block.innerBlocks.length ) {
-			const found = findBlockByName( block.innerBlocks, blockName );
-			if ( found ) {
-				return found;
-			}
-		}
-	}
-	return null;
-}
+} from './constants';
+import { findBlockByName } from './utils/block-sync-utils';
 
 /**
  * Wraps content blocks inside the complete calendar template hierarchy.

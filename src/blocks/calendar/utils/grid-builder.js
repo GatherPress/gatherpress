@@ -10,7 +10,6 @@ import { dateI18n, format } from '@wordpress/date';
 import { DATE_FORMAT } from '../constants';
 import { formatDate } from './date-utils';
 import { WEEKDAY_SLUGS, isWeekendDay, getDayNames } from './calendar-utils';
-import { isEventPostType } from '../../../utils/post-types';
 
 /**
  * Maximum number of days of one event that the calendar places.
@@ -87,12 +86,13 @@ export function determineSpanType( dayIndex, totalDays ) {
  * inside the visible range, so an event that starts before the range still
  * shows on the visible days.
  *
- * @param {Object}      post  Post entity record.
- * @param {Object|null} range Visible range, { startDate, endDate } as YYYY-MM-DD, or null.
+ * @param {Object}        post           Post entity record.
+ * @param {Object|null}   range          Visible range, { startDate, endDate } as YYYY-MM-DD, or null.
+ * @param {Array<string>} eventPostTypes Slugs of the post types that support gatherpress-event-date.
  * @return {Object|null} PostDateSpan descriptor object, or null when the post is outside the range.
  */
-export function resolvePostDateSpan( post, range = null ) {
-	const isEvent = isEventPostType( post.type );
+export function resolvePostDateSpan( post, range = null, eventPostTypes = [] ) {
+	const isEvent = eventPostTypes.includes( post.type );
 	const postDate = isEvent
 		? post.meta?.gatherpress_datetime_start
 		: post.date;
@@ -169,17 +169,18 @@ export function resolvePostDateSpan( post, range = null ) {
 /**
  * Computes quarter-slot row tracks for a timed event within configured day boundaries.
  *
- * @param {Object} post       Post entity record.
- * @param {Object} gridConfig Time grid configuration.
+ * @param {Object}        post           Post entity record.
+ * @param {Object}        gridConfig     Time grid configuration.
+ * @param {Array<string>} eventPostTypes Slugs of the post types that support gatherpress-event-date.
  *
  * @return {Object|null} { timeRowStart, timeRowEnd } or null if outside visible window.
  */
-export function calculateTimedEventTracks( post, gridConfig ) {
+export function calculateTimedEventTracks( post, gridConfig, eventPostTypes = [] ) {
 	if ( ! gridConfig?.enabled ) {
 		return null;
 	}
 
-	const isEvent = isEventPostType( post.type );
+	const isEvent = eventPostTypes.includes( post.type );
 	const startTimeStr = isEvent
 		? post.meta?.gatherpress_datetime_start
 		: post.date;
@@ -254,14 +255,15 @@ export function findAvailableSlot( dates, occupiedSlots ) {
 /**
  * Allocates a single timed event into the time grid entries map.
  *
- * @param {Object} rawEvent   Event data.
- * @param {Object} gridConfig Time grid config.
- * @param {Object} grouped    Grouped date entries map.
+ * @param {Object}        rawEvent       Event data.
+ * @param {Object}        gridConfig     Time grid config.
+ * @param {Object}        grouped        Grouped date entries map.
+ * @param {Array<string>} eventPostTypes Slugs of the post types that support gatherpress-event-date.
  * @return {void}
  */
-function allocateTimedEvent( rawEvent, gridConfig, grouped ) {
+function allocateTimedEvent( rawEvent, gridConfig, grouped, eventPostTypes ) {
 	const { post } = rawEvent;
-	const tracks = calculateTimedEventTracks( post, gridConfig );
+	const tracks = calculateTimedEventTracks( post, gridConfig, eventPostTypes );
 	if ( ! tracks ) {
 		return;
 	}
@@ -393,20 +395,26 @@ function resolveDayOverlaps( dayEntries ) {
  * spanning multi-day events across all active days
  * and supporting time-grid coordinates.
  *
- * @param {Array}       posts      Raw post entities.
- * @param {Object}      gridConfig Time grid configuration.
- * @param {Object|null} range      Visible range, { startDate, endDate } as YYYY-MM-DD, or null.
+ * @param {Array}         posts          Raw post entities.
+ * @param {Object}        gridConfig     Time grid configuration.
+ * @param {Object|null}   range          Visible range, { startDate, endDate } as YYYY-MM-DD, or null.
+ * @param {Array<string>} eventPostTypes Slugs of the post types that support gatherpress-event-date.
  *
  * @return {Object} Posts grouped by date string.
  */
-export function groupPostsByDate( posts = [], gridConfig = {}, range = null ) {
+export function groupPostsByDate(
+	posts = [],
+	gridConfig = {},
+	range = null,
+	eventPostTypes = [],
+) {
 	const grouped = {};
 	if ( ! posts?.length ) {
 		return grouped;
 	}
 
 	const rawEvents = posts
-		.map( ( post ) => resolvePostDateSpan( post, range ) )
+		.map( ( post ) => resolvePostDateSpan( post, range, eventPostTypes ) )
 		.filter( Boolean );
 	const isTimeGrid = Boolean( gridConfig?.enabled );
 
@@ -432,7 +440,7 @@ export function groupPostsByDate( posts = [], gridConfig = {}, range = null ) {
 		const isMultiDay = 1 < rawEvent.totalDays || rawEvent.isAllDay;
 
 		if ( isTimeGrid && ! isMultiDay ) {
-			allocateTimedEvent( rawEvent, gridConfig, grouped );
+			allocateTimedEvent( rawEvent, gridConfig, grouped, eventPostTypes );
 		} else {
 			allocateRibbonEvent( rawEvent, grouped, occupiedSlots );
 		}
@@ -654,62 +662,6 @@ export function getWeekNumber( week, startOfWeek = 0 ) {
 }
 
 /**
- * Whether any of the given days has posts.
- *
- * @since TBD
- *
- * @param {Array} days Day entries.
- *
- * @return {boolean} True when at least one day has posts.
- */
-export function hasPosts( days = [] ) {
-	return days.some( ( day ) => 0 < day.posts?.length );
-}
-
-/**
- * Remove the units that have no posts.
- *
- * Mirrors Calendar_Structure_Builder::remove_units_without_posts(). A unit is
- * a month table in month view, a week row in week view and a day cell in day
- * view. In day view the header name of a removed day is removed too, so the
- * columns still line up.
- *
- * @since TBD
- *
- * @param {string} viewType View type.
- * @param {Array}  units    Units to filter.
- *
- * @return {Array} Units that have posts.
- */
-export function removeUnitsWithoutPosts( viewType, units ) {
-	if ( 'month' === viewType ) {
-		return units.filter( ( unit ) => hasPosts( unit.weeks.flat() ) );
-	}
-
-	return units
-		.map( ( unit ) => {
-			if ( 'week' === viewType ) {
-				return {
-					...unit,
-					weeks: unit.weeks.filter( ( week ) => hasPosts( week ) ),
-				};
-			}
-
-			const days = unit.weeks[ 0 ] ?? [];
-			const keep = days.map( ( day ) => hasPosts( [ day ] ) );
-			const visibleDays = days.filter( ( day, index ) => keep[ index ] );
-			return {
-				...unit,
-				dayNames: unit.dayNames.filter(
-					( name, index ) => keep[ index ],
-				),
-				weeks: visibleDays.length ? [ visibleDays ] : [],
-			};
-		} )
-		.filter( ( unit ) => 0 < unit.weeks.length );
-}
-
-/**
  * Calculate maximum ribbon slot index across a week's days.
  *
  * @param {Array<Object>} weekDays   Array of day descriptors.
@@ -734,14 +686,14 @@ function getWeekNumRibbonSlots( weekDays, isTimeGrid ) {
 /**
  * Generate calendar structure for any viewType, calculating week-level ribbon slots.
  *
- * @param {Array<Object>} posts                  Posts from the query.
- * @param {number}        startOfWeek            Start of week (0-6).
- * @param {Object}        dateRange              Resolved date range.
- * @param {boolean}       showWeekends           Weekend visibility.
- * @param {Object}        timeGridConfig         Time grid configuration.
- * @param {boolean}       showUnitsWithoutEvents Whether to keep months, weeks or days that have no posts.
+ * @param {Array<Object>} posts          Posts from the query.
+ * @param {number}        startOfWeek    Start of week (0-6).
+ * @param {Object}        dateRange      Resolved date range.
+ * @param {boolean}       showWeekends   Weekend visibility.
+ * @param {Object}        timeGridConfig Time grid configuration.
+ * @param {Array<string>} eventPostTypes Slugs of the post types that support gatherpress-event-date.
  *
- * @return {Object} Calendar data structure, with hasPosts true when any unit has posts.
+ * @return {Object} Calendar data structure.
  */
 export function generateCalendar(
 	posts = [],
@@ -749,9 +701,14 @@ export function generateCalendar(
 	dateRange,
 	showWeekends = true,
 	timeGridConfig = {},
-	showUnitsWithoutEvents = true,
+	eventPostTypes = [],
 ) {
-	const postsByDate = groupPostsByDate( posts, timeGridConfig, dateRange );
+	const postsByDate = groupPostsByDate(
+		posts,
+		timeGridConfig,
+		dateRange,
+		eventPostTypes,
+	);
 	const viewType = dateRange.viewType || 'month';
 	const requestedCount = Math.max( 1, dateRange.unitCount || 1 );
 	const startObj = dateRange.startDateObj || new Date( dateRange.startDate );
@@ -861,23 +818,15 @@ export function generateCalendar(
 		} );
 	}
 
-	// Unlike the front end, the editor keeps every unit when none has posts,
-	// so the day template can still be edited (also while posts load).
-	const anyPosts = units.some( ( unit ) => hasPosts( unit.weeks.flat() ) );
-	const visibleUnits =
-		showUnitsWithoutEvents || ! anyPosts
-			? units
-			: removeUnitsWithoutPosts( viewType, units );
-	const { dayNames, weeks } = visibleUnits[ 0 ];
+	const { dayNames, weeks } = units[ 0 ];
 
 	return {
 		dayNames,
 		weeks,
-		units: visibleUnits,
+		units,
 		viewType,
-		unitCount: visibleUnits.length,
+		unitCount: requestedCount,
 		numRibbonSlots: 0,
-		hasPosts: anyPosts,
 	};
 }
 

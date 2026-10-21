@@ -1,7 +1,7 @@
 import { useMemo } from '@wordpress/element';
 import { BlockContextProvider } from '@wordpress/block-editor';
 
-import { WeekPreviewRow } from './WeekPreviewRow';
+import { CalendarWeekPreview } from './CalendarWeekPreview';
 
 /**
  * Counts consecutive active (non-empty) columns remaining from current column.
@@ -78,7 +78,7 @@ function annotateDayPosts( day, colIndex, week, totalCols ) {
  * Renders an individual week row within the calendar table.
  *
  * One week is rendered live/editable using `liveWeekChildren`, while all
- * other weeks render as a read-only `WeekPreviewRow`. The context value
+ * other weeks render as a read-only `CalendarWeekPreview`. The context value
  * is memoized per-week so inactive preview rows keep their context reference
  * and bail out of re-rendering during unrelated editor state updates.
  *
@@ -156,7 +156,7 @@ export function CalendarWeek( {
 			{ isActiveWeek ? (
 				liveWeekChildren
 			) : (
-				<WeekPreviewRow
+				<CalendarWeekPreview
 					week={ annotatedWeek }
 					weekNumber={ weekNumber }
 					dayInnerBlocks={ dayInnerBlocks }

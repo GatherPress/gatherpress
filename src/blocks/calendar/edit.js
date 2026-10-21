@@ -16,25 +16,26 @@ import {
 import { Placeholder, PanelBody, ToggleControl } from '@wordpress/components';
 import { useState, useMemo } from '@wordpress/element';
 
-import { CALENDAR_TEMPLATE } from './edit/constants';
+import { CALENDAR_TEMPLATE } from './constants';
 import {
 	calculateDateRange,
 	calculateDateQuery,
 	formatHeading,
-} from './edit/utils/date-utils';
-import { getDatetimeSeparator } from './edit/utils/source-utils';
+} from './utils/date-utils';
+import { getDatetimeSeparator } from './utils/source-utils';
 import {
 	generateCalendar,
 	getDefaultActiveDate,
 	getColumnsCount,
 	getStartOfWeek,
-} from './edit/utils/calendar-utils';
-import { useCalendarSync } from './edit/hooks/useCalendarSync';
-import { useCalendarData } from './edit/hooks/useCalendarData';
-import { useCalendarDayTemplate } from './edit/hooks/useCalendarDayTemplate';
-import { useDateRangeSourceSync } from './edit/hooks/useDateRangeSourceSync';
-import { DateControls } from './edit/components/DateControls';
-import { CalendarTable } from './edit/components/CalendarTable';
+} from './utils/calendar-utils';
+import { useCalendarSync } from './hooks/use-calendar-sync';
+import { useCalendarData } from './hooks/use-calendar-data';
+import { useCalendarDayTemplate } from './hooks/use-calendar-day-template';
+import { useDateRangeSourceSync } from './hooks/use-date-range-source-sync';
+import { useEventPostTypes } from './hooks/use-event-post-types';
+import { DateControls } from './panels/date-controls';
+import { CalendarTable } from '../../components/CalendarTable';
 
 /**
  * Edit Component
@@ -200,6 +201,13 @@ export default function Edit( {
 		showScheduled,
 	);
 
+	// Reactive, so the grid is built again when the post types finish loading.
+	const eventPostTypes = useEventPostTypes();
+	const eventPostTypeSlugs = useMemo(
+		() => eventPostTypes.map( ( postType ) => postType.slug ),
+		[ eventPostTypes ],
+	);
+
 	const calendar = useMemo(
 		() =>
 			generateCalendar(
@@ -208,8 +216,16 @@ export default function Edit( {
 				dateRange,
 				showWeekends,
 				timeGridConfig,
+				eventPostTypeSlugs,
 			),
-		[ posts, startOfWeek, dateRange, showWeekends, timeGridConfig ],
+		[
+			posts,
+			startOfWeek,
+			dateRange,
+			showWeekends,
+			timeGridConfig,
+			eventPostTypeSlugs,
+		],
 	);
 
 	// Table captions, as on the front end: the name of each month grid, or

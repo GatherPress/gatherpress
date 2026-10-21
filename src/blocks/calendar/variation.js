@@ -7,7 +7,7 @@ import { __ } from '@wordpress/i18n';
 /**
  * Internal dependencies
  */
-import { QUERY_VARIATION_INNER_BLOCKS } from './edit/constants';
+import { QUERY_VARIATION_INNER_BLOCKS } from './constants';
 
 registerBlockVariation( 'core/query', {
 	name: 'gatherpress-calendar',

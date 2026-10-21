@@ -19,7 +19,7 @@ import { useMemo, memo } from '@wordpress/element';
 
 import './editor.scss';
 
-import { findDayNumberBlock } from '../utils/day-number';
+import { findDayNumberBlock } from '../calendar/utils/day-number';
 
 const EMPTY_ARRAY = [];
 

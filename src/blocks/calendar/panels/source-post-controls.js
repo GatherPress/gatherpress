@@ -19,7 +19,7 @@ import { useSelect } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
 import { useState, useMemo } from '@wordpress/element';
 
-import { useEventPostTypes } from '../hooks/useEventPostTypes';
+import { useEventPostTypes } from '../hooks/use-event-post-types';
 import {
 	DATE_SOURCE_DEFAULT,
 	DATE_SOURCE_CONTEXT,

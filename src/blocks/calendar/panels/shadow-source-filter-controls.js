@@ -12,7 +12,7 @@ import { useSelect, useDispatch } from '@wordpress/data';
 import { store as blockEditorStore } from '@wordpress/block-editor';
 import { useCallback, useMemo } from '@wordpress/element';
 
-import { ShadowSourceFilterControls as GatherPressShadowSourceControl } from '../../../../variations/core/query/components';
+import { ShadowSourceFilterControls as GatherPressShadowSourceControl } from '../../../variations/core/query/components';
 
 import {
 	isContextDateSource,

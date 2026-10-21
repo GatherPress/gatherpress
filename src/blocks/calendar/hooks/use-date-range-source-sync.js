@@ -8,8 +8,8 @@
  */
 
 import { useEffect, useMemo, useRef } from '@wordpress/element';
-import { usePostTypeSupports } from '../../../utils/post-types';
-import { useSourcePostDates } from './useSourcePostDates';
+import { usePostTypeSupports } from '../../../helpers/event';
+import { useSourcePostDates } from './use-source-post-dates';
 import { calculatePostSpanUnits } from '../utils/date-utils';
 import {
 	DATE_SOURCE_DEFAULT,
