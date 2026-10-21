@@ -149,9 +149,9 @@ final class Modal {
 	/**
 	 * Checks whether a modal block is the Login modal.
 	 *
-	 * The RSVP block template gives it `gatherpress-modal--login`, and the
-	 * class was renamed to `gatherpress-modal--type-login` everywhere else, so
-	 * both count. Saved events keep the template's class.
+	 * The RSVP block template and saved events use `gatherpress-modal--login`.
+	 * `gatherpress-modal--type-login` is the name from the `--type-` rename,
+	 * which did not reach the template, so both count.
 	 *
 	 * @since TBD
 	 *
