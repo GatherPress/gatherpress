@@ -1521,7 +1521,7 @@ class Test_Rest_Api extends Base {
 			'not_attending' => false,
 		);
 
-		$request = new \WP_REST_Request();
+		$request = new WP_REST_Request();
 		$request->set_param( 'send', $send_all );
 
 		wp_set_current_user( $contributor_id );
