@@ -94,13 +94,10 @@ final class Rsvp_Response {
 		$block_instance = Setup::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
-		// Validate that the post type supports RSVP. An unpublished event keeps
-		// its responses to viewers allowed to read it, so organizers see the
-		// roster on a draft or private event rather than an empty block.
-		if (
-			! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT ) ||
-			! Event::is_viewable( $post_id )
-		) {
+		// Validate that the post type supports RSVP and the viewer may read its
+		// roster: the same rule as the REST roster, so an organizer sees it on
+		// a draft or private event and a password still guards it.
+		if ( ! Event::can_read_rsvps( $post_id ) ) {
 			return '';
 		}
 

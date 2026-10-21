@@ -83,6 +83,30 @@ class Test_Rsvp_Count extends Base {
 	}
 
 	/**
+	 * A password-protected event renders nothing until the viewer has the password.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function test_renders_nothing_for_a_password_protected_event(): void {
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		);
+
+		wp_set_current_user( 0 );
+
+		$this->assertSame(
+			'',
+			trim( $this->render_count( $event_id ) ),
+			'Failed to assert a password-protected event renders nothing without the password.'
+		);
+	}
+
+	/**
 	 * A post that does not take RSVPs renders nothing.
 	 *
 	 * @return void

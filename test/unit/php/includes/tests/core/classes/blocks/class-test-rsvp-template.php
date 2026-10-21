@@ -333,6 +333,39 @@ class Test_Rsvp_Template extends Base {
 	}
 
 	/**
+	 * Tests a password-protected event's roster stays behind its password.
+	 *
+	 * A block on another post can name the event through its postId context,
+	 * so the block has to ask for the password the event page would.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::generate_rsvp_template_block
+	 * @return void
+	 */
+	public function test_generate_rsvp_template_block_password_protected_event(): void {
+		$instance   = Rsvp_Template::get_instance();
+		$post_id    = $this->factory->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_status'   => 'publish',
+				'post_password' => 'secret',
+			)
+		);
+		$wp_block   = $this->rsvp_template_instance( array( 'postId' => $post_id ) );
+		$input_html = '<div>Original content</div>';
+
+		( new Rsvp( $post_id ) )->save( $this->factory->user->create(), 'attending', 0, 0 );
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'contributor' ) ) );
+
+		$this->assertSame(
+			$input_html,
+			$instance->generate_rsvp_template_block( $input_html, array(), $wp_block ),
+			'Failed to assert a password-protected event keeps its roster from a viewer without the password.'
+		);
+	}
+
+	/**
 	 * Tests generate_rsvp_template_block with published event.
 	 *
 	 * @covers ::generate_rsvp_template_block

@@ -111,6 +111,41 @@ class Test_Rsvp_Response extends Base {
 	}
 
 	/**
+	 * Tests transform_block_content keeps a password-protected event's responses behind its password.
+	 *
+	 * @since TBD
+	 * @covers ::transform_block_content
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_password_protected_event(): void {
+		$post_id = $this->factory()->post->create(
+			array(
+				'post_type'     => 'gatherpress_event',
+				'post_status'   => 'publish',
+				'post_password' => 'secret',
+			)
+		);
+		$block   = array(
+			'blockName' => 'gatherpress/rsvp-response',
+			'attrs'     => array(
+				'postId' => $post_id,
+			),
+		);
+
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'contributor' ) ) );
+
+		$this->assertSame(
+			'',
+			Rsvp_Response::get_instance()->transform_block_content(
+				'<div class="wp-block-gatherpress-rsvp-response">Content</div>',
+				$block
+			),
+			'A password-protected event should keep its responses from a viewer without the password.'
+		);
+	}
+
+	/**
 	 * Tests transform_block_content returns empty string for non-event post type.
 	 *
 	 * @since 0.33.0
