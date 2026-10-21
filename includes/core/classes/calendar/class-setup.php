@@ -879,7 +879,7 @@ final class Setup {
 		if ( 0 < $max_age ) {
 			// Only the public calendar is the same for every viewer, so shared
 			// caches may keep it and no other.
-			$visibility = 'public' === $this->get_ics_viewer_scope() ? 'public' : 'private';
+			$visibility = 'public' === Cache::get_instance()->get_viewer_scope() ? 'public' : 'private';
 
 			header( sprintf( 'Cache-Control: %s, max-age=%d', $visibility, $max_age ) );
 		} else {
@@ -919,60 +919,6 @@ final class Setup {
 	}
 
 	/**
-	 * Which events the current viewer's calendar lists, as a cache scope.
-	 *
-	 * The events query sets no post status, so WordPress adds the private
-	 * events a logged-in viewer may read: all of them for users who can read
-	 * private posts, and only their own for everyone else. Viewers who get
-	 * the same events share a scope, so the cache stays shared without one
-	 * viewer's events reaching another.
-	 *
-	 * @since TBD
-	 *
-	 * @return string `public` for viewers who see no private events, `private`
-	 *                for those who see all of them, or `user:{id}` for a viewer
-	 *                whose own private events set their calendar apart.
-	 */
-	public function get_ics_viewer_scope(): string {
-		$scope = 'public';
-
-		if ( is_user_logged_in() ) {
-			$post_types = get_post_types_by_support( Event::SUPPORT );
-			$readable   = array_filter(
-				$post_types,
-				static function ( string $post_type ): bool {
-					$post_type_object = get_post_type_object( $post_type );
-
-					return $post_type_object instanceof WP_Post_Type
-						&& current_user_can( $post_type_object->cap->read_private_posts );
-				}
-			);
-
-			if ( count( $readable ) === count( $post_types ) ) {
-				$scope = 'private';
-			} else {
-				// Without the capability, a viewer still sees their own private events.
-				$own_private = get_posts(
-					array(
-						'post_type'      => $post_types,
-						'post_status'    => 'private',
-						'author'         => get_current_user_id(),
-						'fields'         => 'ids',
-						'posts_per_page' => 1,
-						'no_found_rows'  => true,
-					)
-				);
-
-				if ( ! empty( $readable ) || ! empty( $own_private ) ) {
-					$scope = sprintf( 'user:%d', get_current_user_id() );
-				}
-			}
-		}
-
-		return $scope;
-	}
-
-	/**
 	 * Cache key describing what the current request asks for.
 	 *
 	 * Built from the resolved query rather than the request URI, so unknown
@@ -981,7 +927,7 @@ final class Setup {
 	 * events to the viewers allowed to read them.
 	 *
 	 * @since 0.36.0
-	 * @since TBD    Includes the viewer scope from `get_ics_viewer_scope()`.
+	 * @since TBD    Includes the viewer scope from `Cache::get_viewer_scope()`.
 	 *
 	 * @return string Scope-specific cache key.
 	 */
@@ -992,7 +938,7 @@ final class Setup {
 			'paged'  => (int) get_query_var( 'paged' ),
 			'object' => 0,
 			'type'   => '',
-			'viewer' => $this->get_ics_viewer_scope(),
+			'viewer' => Cache::get_instance()->get_viewer_scope(),
 		);
 
 		if ( $queried_object instanceof WP_Post ) {
