@@ -386,7 +386,7 @@ class Test_Rsvp_Template extends Base {
 		$wp_block   = $this->rsvp_template_instance( array( 'postId' => $post_id ) );
 		$input_html = '<div>Original content</div>';
 
-		( new Rsvp( $post_id ) )->save( $this->factory->user->create(), 'attending', 0, 0 );
+		$record = ( new Rsvp( $post_id ) )->save( $this->factory->user->create(), 'attending', 0, 0 );
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'contributor' ) ) );
 		require_once ABSPATH . WPINC . '/class-phpass.php';
 
@@ -398,7 +398,7 @@ class Test_Rsvp_Template extends Base {
 		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
 
 		$this->assertStringContainsString(
-			'data-block-template=',
+			'data-id="rsvp-' . $record['comment_id'] . '"',
 			$result,
 			'Failed to assert a password-protected event renders its roster for a viewer with the password.'
 		);

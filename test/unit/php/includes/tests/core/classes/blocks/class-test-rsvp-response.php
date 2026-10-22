@@ -169,6 +169,7 @@ class Test_Rsvp_Response extends Base {
 			),
 		);
 
+		( new Rsvp( $post_id ) )->save( $this->factory()->user->create(), 'attending', 0, 0 );
 		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'contributor' ) ) );
 		require_once ABSPATH . WPINC . '/class-phpass.php';
 
@@ -182,9 +183,13 @@ class Test_Rsvp_Response extends Base {
 
 		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
 
-		$this->assertStringContainsString(
-			'data-wp-interactive="gatherpress"',
-			$result,
+		$tag = new WP_HTML_Tag_Processor( $result );
+
+		$tag->next_tag();
+
+		$this->assertSame(
+			1,
+			json_decode( (string) $tag->get_attribute( 'data-counts' ), true )['attending'] ?? null,
 			'A password-protected event should show its responses to a viewer with the password.'
 		);
 	}

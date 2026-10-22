@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp;
 use GatherPress\Tests\Base;
 use PasswordHash;
 
@@ -122,6 +123,7 @@ class Test_Rsvp_Count extends Base {
 			)
 		);
 
+		( new Rsvp( $event_id ) )->save( $this->factory->user->create(), 'attending', 0, 0 );
 		wp_set_current_user( 0 );
 		require_once ABSPATH . WPINC . '/class-phpass.php';
 
@@ -133,7 +135,7 @@ class Test_Rsvp_Count extends Base {
 		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
 
 		$this->assertStringContainsString(
-			'gatherpress-rsvp-count__text',
+			'<span class="gatherpress-rsvp-count__text">1 attendee</span>',
 			$output,
 			'Failed to assert a password-protected event renders its count with the password.'
 		);
