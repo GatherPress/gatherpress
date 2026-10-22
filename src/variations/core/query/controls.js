@@ -120,7 +120,10 @@ const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
  * @return {Element|null} The InspectorControls panel, or null when not applicable.
  */
 export const EventQueryControlsPanel = ( props ) => {
-	const { updateBlockAttributes } = useDispatch( 'core/block-editor' );
+	const {
+		updateBlockAttributes,
+		__unstableMarkNextChangeAsNotPersistent: markNextChangeAsNotPersistent,
+	} = useDispatch( 'core/block-editor' );
 	const { clientId } = props;
 	const gatherpressEventQuery = props.attributes?.query?.gatherpress_event_query || 'upcoming';
 	const metadata = props.attributes?.metadata;
@@ -161,6 +164,9 @@ export const EventQueryControlsPanel = ( props ) => {
 		// Names this effect can have generated: for the current post type,
 		// for the post type before a switch, and for the fallback label,
 		// which an earlier version wrote while the post type was loading.
+		// The names are built in the current user's locale and from the
+		// current labels, so a name generated in another locale, or before a
+		// site changed the label, counts as an author's name and stays.
 		const generatedNames = [
 			pluralLabel,
 			lastPluralLabel.current,
@@ -188,13 +194,26 @@ export const EventQueryControlsPanel = ( props ) => {
 			return;
 		}
 
-		// Spread the other metadata (for example block bindings), because
+		// Keep the other metadata (for example block bindings), because
 		// `updateBlockAttributes` replaces the whole `metadata` attribute.
+		// An unset name drops the key, as core's rename modal does, and
+		// metadata with no keys left is removed.
+		const { name: removedName, ...otherMetadata } = metadata ?? {};
+		const nextMetadata = blockName
+			? { ...otherMetadata, name: blockName }
+			: otherMetadata;
+
+		// Naming an unnamed loop fills in a default, so it must not count
+		// as an edit, or opening a loop saved without a name (for example
+		// before 0.34.0, or from a pattern) shows unsaved changes. Core's
+		// Query block marks its own defaults the same way. The name is
+		// saved with the next save.
+		if ( ! currentName ) {
+			markNextChangeAsNotPersistent();
+		}
+
 		updateBlockAttributes( clientId, {
-			metadata: {
-				...metadata,
-				name: blockName,
-			},
+			metadata: Object.keys( nextMetadata ).length ? nextMetadata : undefined,
 		} );
 	}, [
 		isQueryPostTypeLoaded,
@@ -205,6 +224,7 @@ export const EventQueryControlsPanel = ( props ) => {
 		metadata,
 		clientId,
 		updateBlockAttributes,
+		markNextChangeAsNotPersistent,
 	] );
 
 	// Strip the event-only query vars when the selected post type doesn't

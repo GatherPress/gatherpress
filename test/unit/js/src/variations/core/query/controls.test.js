@@ -81,9 +81,11 @@ jest.mock( '@src/helpers/editor', () => ( {
 } ) );
 
 const mockUpdateBlockAttributes = jest.fn();
+const mockMarkNextChangeAsNotPersistent = jest.fn();
 jest.mock( '@wordpress/data', () => ( {
 	useDispatch: jest.fn( () => ( {
 		updateBlockAttributes: mockUpdateBlockAttributes,
+		__unstableMarkNextChangeAsNotPersistent: mockMarkNextChangeAsNotPersistent,
 	} ) ),
 } ) );
 
@@ -360,7 +362,16 @@ describe( 'EventQueryControlsPanel block name (#2495)', () => {
 			( key, postType, fallback ) => fallback,
 		);
 		mockUpdateBlockAttributes.mockClear();
+		mockMarkNextChangeAsNotPersistent.mockClear();
 	} );
+
+	// True when the not-persistent mark ran right before the metadata write.
+	const wasMarkedNotPersistent = () => {
+		const [ markOrder ] =
+			mockMarkNextChangeAsNotPersistent.mock.invocationCallOrder;
+		const [ updateOrder ] = mockUpdateBlockAttributes.mock.invocationCallOrder;
+		return undefined !== markOrder && markOrder < updateOrder;
+	};
 
 	it( 'does not rename the block while the post type is still loading', () => {
 		usePostTypeSupports.mockReturnValue( false );
@@ -377,10 +388,20 @@ describe( 'EventQueryControlsPanel block name (#2495)', () => {
 		expect( metadataUpdates() ).toEqual( [] );
 	} );
 
-	it( 'names an unnamed event loop', () => {
+	it( 'names an unnamed event loop without counting it as an edit', () => {
+		// The name is a default, so opening a loop saved without one must
+		// not show unsaved changes.
 		renderPanel();
 
 		expect( metadataUpdates() ).toEqual( [ { name: 'Upcoming Events' } ] );
+		expect( wasMarkedNotPersistent() ).toBe( true );
+	} );
+
+	it( 'names an event loop saved with an empty name without counting it as an edit', () => {
+		renderPanel( { metadata: { name: '' } } );
+
+		expect( metadataUpdates() ).toEqual( [ { name: 'Upcoming Events' } ] );
+		expect( wasMarkedNotPersistent() ).toBe( true );
 	} );
 
 	it( 'keeps the other metadata when it names the block', () => {
@@ -409,6 +430,8 @@ describe( 'EventQueryControlsPanel block name (#2495)', () => {
 		expect( metadataUpdates() ).toEqual( [
 			{ bindings, name: 'Past Events' },
 		] );
+		// A rename follows the author's change, so it stays an edit.
+		expect( mockMarkNextChangeAsNotPersistent ).not.toHaveBeenCalled();
 	} );
 
 	it( 'replaces a name generated with the fallback label', () => {
@@ -467,7 +490,31 @@ describe( 'EventQueryControlsPanel block name (#2495)', () => {
 			metadata: { name: 'Upcoming Events', bindings },
 		} );
 
-		expect( metadataUpdates() ).toEqual( [ { bindings, name: '' } ] );
+		// The name key is dropped, as core's rename modal does, not saved
+		// as an empty string.
+		expect( metadataUpdates() ).toEqual( [ { bindings } ] );
+		expect( mockMarkNextChangeAsNotPersistent ).not.toHaveBeenCalled();
+	} );
+
+	it( 'removes the metadata when the cleared name was its only key', () => {
+		usePostTypeSupports.mockReturnValue( false );
+
+		renderPanel( {
+			postType: 'post',
+			metadata: { name: 'Upcoming Events' },
+		} );
+
+		expect( metadataUpdates() ).toEqual( [ undefined ] );
+	} );
+
+	it( 'does not rewrite an empty name that an earlier version saved', () => {
+		// Before #2495 the cleared name was saved as "". Opening such a
+		// block must not change it.
+		usePostTypeSupports.mockReturnValue( false );
+
+		renderPanel( { postType: 'post', metadata: { name: '' } } );
+
+		expect( metadataUpdates() ).toEqual( [] );
 	} );
 
 	it( 'keeps an author name when the post type does not support event dates', () => {
