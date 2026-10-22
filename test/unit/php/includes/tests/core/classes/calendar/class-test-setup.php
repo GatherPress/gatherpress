@@ -2171,4 +2171,50 @@ class Test_Setup extends Base {
 			'Failed to assert an equally ranked calendar negotiates.'
 		);
 	}
+
+	/**
+	 * A feed is shared by every viewer, so a password-protected event's
+	 * details stay out of it.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_ical_list
+	 *
+	 * @return void
+	 */
+	public function test_get_ical_list_leaves_out_password_protected_events(): void {
+		$params = array(
+			'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week' ) ),
+			'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week 2 hours' ) ),
+			'timezone'       => 'UTC',
+		);
+
+		$events = array(
+			'Open Meetup'      => '',
+			'Protected Meetup' => 'secret',
+		);
+
+		foreach ( $events as $title => $password ) {
+			$post_id = $this->factory->post->create(
+				array(
+					'post_type'     => Event::POST_TYPE,
+					'post_title'    => $title,
+					'post_password' => $password,
+				)
+			);
+
+			( new Event( $post_id ) )->save_datetimes( $params );
+		}
+
+		$this->go_to( get_post_type_archive_feed_link( Event::POST_TYPE, Setup::ICAL_SLUG ) );
+
+		$list = Setup::get_instance()->get_ical_list();
+
+		$this->assertStringContainsString( 'Open Meetup', $list, 'The open event should be in the feed.' );
+		$this->assertStringNotContainsString(
+			'Protected Meetup',
+			$list,
+			'The password-protected event should not be in the feed.'
+		);
+	}
 }

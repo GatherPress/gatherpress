@@ -760,7 +760,9 @@ final class Setup {
 			$topics = array( $queried_object->slug );
 		}
 
-		$query = Query::get_instance()->get_events_list( $event_list_type, $number, $topics, $venues );
+		// A feed is shared by every viewer, so it never lists a
+		// password-protected event's details.
+		$query = Query::get_instance()->get_events_list( $event_list_type, $number, $topics, $venues, false );
 		while ( $query->have_posts() ) {
 			$query->the_post();
 			$calendar = new Calendar( (int) get_the_ID() );

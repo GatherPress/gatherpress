@@ -144,10 +144,12 @@ final class Query {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param string   $event_list_type Type of event list: 'upcoming' or 'past'.
-	 * @param int      $number          Maximum number of events to retrieve.
-	 * @param string[] $topics          Array of topic slugs for additional filtering.
-	 * @param string[] $venues          Array of venue slugs for additional filtering.
+	 * @param string    $event_list_type Type of event list: 'upcoming' or 'past'.
+	 * @param int       $number          Maximum number of events to retrieve.
+	 * @param string[]  $topics          Array of topic slugs for additional filtering.
+	 * @param string[]  $venues          Array of venue slugs for additional filtering.
+	 * @param bool|null $has_password    Optional. False to leave out password-protected events,
+	 *                                   true to get only them. Default null, both.
 	 *
 	 * @return WP_Query A WordPress query object containing the list of events.
 	 */
@@ -155,7 +157,8 @@ final class Query {
 		string $event_list_type = '',
 		int $number = 5,
 		array $topics = array(),
-		array $venues = array()
+		array $venues = array(),
+		?bool $has_password = null
 	): WP_Query {
 		// Past events should be ordered DESC (most recent first),
 		// upcoming events should be ordered ASC (soonest first).
@@ -193,6 +196,10 @@ final class Query {
 		}
 
 		$args['tax_query'] = $tax_query; //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+
+		if ( null !== $has_password ) {
+			$args['has_password'] = $has_password;
+		}
 
 		return new WP_Query( $args );
 	}

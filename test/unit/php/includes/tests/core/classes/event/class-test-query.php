@@ -2814,4 +2814,47 @@ class Test_Query extends Base {
 			'A query with no post type should fall through to core as well.'
 		);
 	}
+
+	/**
+	 * Password-protected events are left out or kept alone on request, and
+	 * included alongside the others by default.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_events_list
+	 *
+	 * @return void
+	 */
+	public function test_get_events_list_has_password(): void {
+		$instance  = Query::get_instance();
+		$open      = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+		$protected = $this->mock->post(
+			array(
+				'post_type'     => 'gatherpress_event',
+				'post_password' => 'secret',
+			)
+		)->get();
+		$params    = array(
+			'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week' ) ),
+			'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week 2 hours' ) ),
+			'timezone'       => 'UTC',
+		);
+
+		( new Event( $open->ID ) )->save_datetimes( $params );
+		( new Event( $protected->ID ) )->save_datetimes( $params );
+
+		$events_for = static function ( ?bool $has_password ) use ( $instance ): array {
+			return $instance->get_events_list( 'upcoming', -1, array(), array(), $has_password )->posts;
+		};
+
+		$without = $events_for( false );
+		$only    = $events_for( true );
+		$both    = $events_for( null );
+
+		$this->assertContains( $open->ID, $without, 'An open event should be kept when leaving out protected ones.' );
+		$this->assertNotContains( $protected->ID, $without, 'A protected event should be left out.' );
+		$this->assertSame( array( $protected->ID ), $only, 'Only the protected event should be returned.' );
+		$this->assertContains( $open->ID, $both, 'The open event should be listed by default.' );
+		$this->assertContains( $protected->ID, $both, 'The protected event should be listed by default.' );
+	}
 }
