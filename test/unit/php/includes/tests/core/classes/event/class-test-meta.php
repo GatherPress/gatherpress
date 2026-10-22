@@ -11,6 +11,8 @@ namespace GatherPress\Tests\Core\Event;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Meta;
 use GatherPress\Core\Geo_Sync;
+use GatherPress\Core\Venue;
+use GatherPress\Core\Venue\Setup as Venue_Setup;
 use GatherPress\Tests\Base;
 use stdClass;
 use WP_REST_Posts_Controller;
@@ -233,9 +235,10 @@ class Test_Meta extends Base {
 			has_filter( sprintf( 'rest_pre_insert_%s', $test_pt ), array( $instance, 'filter_readonly_meta' ) ),
 			'REST readonly-strip filter should wire on event-date-supporting post types.'
 		);
-		$this->assertNotFalse(
+		$this->assertSame(
+			20,
 			has_filter( sprintf( 'rest_prepare_%s', $test_pt ), array( $instance, 'hide_password_protected_meta' ) ),
-			'The password-protected meta filter should wire on event-date-supporting post types.'
+			'The password-protected meta filter should wire after the geo refresh on event-date-supporting post types.'
 		);
 		$this->assertTrue(
 			post_type_supports( $test_pt, 'custom-fields' ),
@@ -684,6 +687,79 @@ class Test_Meta extends Base {
 			'2026-11-20 18:00:00',
 			$with['meta']['gatherpress_datetime_start'],
 			'The right password should return the date.'
+		);
+	}
+
+	/**
+	 * The place stays hidden on a read where the geo refresh writes fresh
+	 * venue values into the response.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::register_event_date_meta
+	 * @covers ::hide_password_protected_meta
+	 *
+	 * @return void
+	 */
+	public function test_rest_response_hides_a_protected_events_refreshed_place(): void {
+		// Another test in this class leaves the event meta unregistered, and the
+		// point here is what the registered keys do in a response.
+		Meta::get_instance()->register( Event::POST_TYPE );
+
+		$venue = $this->factory()->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_name'   => 'protected-event-venue',
+				'post_status' => 'publish',
+			)
+		);
+
+		update_post_meta( $venue, 'gatherpress_address', 'Tokyo, Japan' );
+		update_post_meta( $venue, 'gatherpress_latitude', '35.6762' );
+		update_post_meta( $venue, 'gatherpress_longitude', '139.6503' );
+
+		$event_id = $this->factory()->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_status'   => 'publish',
+				'post_password' => 'secret',
+			)
+		);
+
+		( new Event( $event_id ) )->save_datetimes(
+			array(
+				'datetime_start' => '2099-01-01 10:00:00',
+				'datetime_end'   => '2099-01-01 12:00:00',
+				'timezone'       => 'UTC',
+			)
+		);
+		wp_set_post_terms(
+			$event_id,
+			Venue_Setup::get_instance()->term_slug_from_post_name( 'protected-event-venue' ),
+			Venue::TAXONOMY
+		);
+
+		wp_set_current_user( 0 );
+
+		$route   = sprintf( '/wp/v2/gatherpress_events/%d', $event_id );
+		$without = rest_do_request( new WP_REST_Request( 'GET', $route ) )->get_data();
+
+		$this->assertSame(
+			'Tokyo, Japan',
+			get_post_meta( $event_id, 'geo_address', true ),
+			'The read should have refreshed the stored place.'
+		);
+		$this->assertSame( '', $without['meta']['geo_address'], 'Anonymous viewers get no address.' );
+		$this->assertSame( '', $without['meta']['geo_latitude'], 'Anonymous viewers get no latitude.' );
+
+		$request = new WP_REST_Request( 'GET', $route );
+
+		$request->set_param( 'password', 'secret' );
+
+		$this->assertSame(
+			'Tokyo, Japan',
+			rest_do_request( $request )->get_data()['meta']['geo_address'],
+			'The right password should return the address.'
 		);
 	}
 }

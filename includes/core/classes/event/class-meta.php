@@ -220,10 +220,12 @@ final class Meta {
 			2
 		);
 
+		// Priority 20 runs after Geo_Sync::maybe_refresh_on_rest() (10), which
+		// writes refreshed geo_* values back into the response.
 		add_filter(
 			sprintf( 'rest_prepare_%s', $post_type ),
 			array( $this, 'hide_password_protected_meta' ),
-			10,
+			20,
 			3
 		);
 	}
