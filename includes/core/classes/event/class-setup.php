@@ -147,6 +147,12 @@ final class Setup {
 			get_post_types_by_support( Event::SUPPORT )
 		);
 
+		// Lets the email modal hide the "All Members" option from users the
+		// email route would refuse it to.
+		$settings['gatherpress']['config']['canEmailAllUsers'] = Rest_Api::can_email_all_users(
+			(string) get_post_type()
+		);
+
 		return $settings;
 	}
 
