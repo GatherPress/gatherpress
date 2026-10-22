@@ -195,7 +195,14 @@ final class Abilities {
 		 *
 		 * @var int[] $post_ids The query runs with `fields => ids`.
 		 */
-		$post_ids = Query::get_instance()->get_upcoming_events( $count )->posts;
+		$post_ids = Query::get_instance()->get_events_list(
+			array(
+				'event_list_type' => 'upcoming',
+				'number'          => $count,
+				// The ability is public, so it never lists a password-protected event's details.
+				'has_password'    => false,
+			)
+		)->posts;
 
 		foreach ( $post_ids as $post_id ) {
 			$datetime = ( new Event( $post_id ) )->get_datetime();
