@@ -16,16 +16,16 @@ describe( 'getRibbonRowsStyle', () => {
 		} );
 	} );
 
-	it( 'leaves the rows out for 0, because repeat() with 0 is not valid CSS', () => {
-		expect( getRibbonRowsStyle( 0 ) ).toEqual( {
+	it( 'sets the rows to initial for 0, because repeat() with 0 is not valid CSS', () => {
+		// `initial` also stops an outer week's rows from passing to a nested calendar.
+		const none = {
 			'--gatherpress-num-ribbon-slots': 0,
-		} );
-		expect( getRibbonRowsStyle( undefined ) ).toEqual( {
-			'--gatherpress-num-ribbon-slots': 0,
-		} );
-		expect( getRibbonRowsStyle( -3 ) ).toEqual( {
-			'--gatherpress-num-ribbon-slots': 0,
-		} );
+			'--gatherpress-ribbon-rows': 'initial',
+		};
+
+		expect( getRibbonRowsStyle( 0 ) ).toEqual( none );
+		expect( getRibbonRowsStyle( undefined ) ).toEqual( none );
+		expect( getRibbonRowsStyle( -3 ) ).toEqual( none );
 	} );
 
 	it( 'counts whole rows only', () => {

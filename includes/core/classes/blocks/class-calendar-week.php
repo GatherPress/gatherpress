@@ -160,9 +160,11 @@ final class Calendar_Week {
 	 * Get the style of a week row with its number of ribbon rows.
 	 *
 	 * The time grid puts the ribbon rows above the quarter rows. Its CSS takes the ribbon rows
-	 * from --gatherpress-ribbon-rows, which is left out for 0: repeat() with a count of 0 is not
-	 * valid CSS and would drop the whole row template. The editor does the same
-	 * (getRibbonRowsStyle() in src/blocks/calendar/utils/ribbon-rows.js).
+	 * from --gatherpress-ribbon-rows. For 0 the value is `initial`, so the CSS uses its empty
+	 * fallback: repeat() with a count of 0 is not valid CSS and would drop the whole row
+	 * template. `initial` also stops the value of an outer week from passing to a calendar
+	 * inside one of its entries. The editor does the same (getRibbonRowsStyle() in
+	 * src/blocks/calendar/utils/ribbon-rows.js).
 	 *
 	 * @since TBD
 	 *
@@ -171,13 +173,11 @@ final class Calendar_Week {
 	 * @return string Inline style declarations.
 	 */
 	private static function get_ribbon_rows_style( int $num_ribbon_slots ): string {
-		$style = sprintf( '--gatherpress-num-ribbon-slots: %d;', $num_ribbon_slots );
-
-		if ( $num_ribbon_slots > 0 ) {
-			$style .= sprintf( ' --gatherpress-ribbon-rows: repeat(%d, 24px);', $num_ribbon_slots );
-		}
-
-		return $style;
+		return sprintf(
+			'--gatherpress-num-ribbon-slots: %d; --gatherpress-ribbon-rows: %s;',
+			$num_ribbon_slots,
+			$num_ribbon_slots > 0 ? sprintf( 'repeat(%d, 24px)', $num_ribbon_slots ) : 'initial'
+		);
 	}
 
 	/**

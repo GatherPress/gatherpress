@@ -580,8 +580,9 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
 		grid-auto-flow: row;
 		grid-auto-rows: unset;
 
-		// --gatherpress-ribbon-rows is "repeat(N, 24px)", set only when the week has ribbon
-		// rows: repeat() with a count of 0 is not valid and would drop the whole template.
+		// --gatherpress-ribbon-rows is "repeat(N, 24px)", or `initial` (so the empty fallback)
+		// when the week has no ribbon rows: repeat() with a count of 0 is not valid and would
+		// drop the whole template.
 		grid-template-rows:
 			var(--gatherpress-ribbon-rows,)
 			repeat(var(--gatherpress-total-quarter-slots, 48), var(--gatherpress-quarter-slot-height));

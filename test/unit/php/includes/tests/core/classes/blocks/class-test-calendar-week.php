@@ -146,7 +146,10 @@ class Test_Calendar_Week extends Base {
 		);
 
 		$this->assertStringContainsString( 'has-time-grid', $output );
-		$this->assertStringContainsString( 'style="--gatherpress-num-ribbon-slots: 0"', $output );
+		$this->assertStringContainsString(
+			'style="--gatherpress-num-ribbon-slots: 0;--gatherpress-ribbon-rows: initial"',
+			$output
+		);
 		$this->assertStringContainsString( 'style="padding-top: calc(28px + 0 * 24px);"', $output );
 		$this->assertStringContainsString( '<div class="gatherpress-calendar__time-slot-label">09:00</div>', $output );
 		$this->assertStringContainsString( '<div class="gatherpress-calendar__time-slot-label"></div>', $output );
@@ -159,7 +162,8 @@ class Test_Calendar_Week extends Base {
 	}
 
 	/**
-	 * A week without days renders an empty row, without ribbon rows: repeat() with 0 is not valid CSS.
+	 * A week without days renders an empty row. Its ribbon rows are `initial`, not repeat(0, …),
+	 * which is not valid CSS; `initial` also stops an outer week's rows from passing down.
 	 *
 	 * @covers ::render
 	 * @covers ::get_ribbon_rows_style
@@ -169,8 +173,11 @@ class Test_Calendar_Week extends Base {
 	public function test_render_without_days(): void {
 		$output = Calendar_Week::render( $this->get_block( array() ) );
 
-		$this->assertStringContainsString( 'style="--gatherpress-num-ribbon-slots: 0"', $output );
-		$this->assertStringNotContainsString( '--gatherpress-ribbon-rows', $output );
+		$this->assertStringContainsString(
+			'style="--gatherpress-num-ribbon-slots: 0;--gatherpress-ribbon-rows: initial"',
+			$output
+		);
+		$this->assertStringNotContainsString( 'repeat(0', $output );
 		$this->assertStringEndsWith( '></tr>', $output );
 	}
 
