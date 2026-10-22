@@ -4,6 +4,7 @@
 import {
 	RangeControl,
 	SelectControl,
+	TextControl,
 	ToggleControl,
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalToggleGroupControl as ToggleGroupControl,
@@ -272,6 +273,101 @@ export const EventListTypeControls = ( { attributes, setAttributes } ) => {
 				label={ __( 'Past', 'gatherpress' ) }
 			/>
 		</ToggleGroupControl>
+	);
+};
+
+/**
+ * EventDateRangeControls component
+ *
+ * Lets the editor limit the query to a date range: a preset such as
+ * "This month" or "Last year", or a custom start and end date. Presets are
+ * stored by name and worked out on the server each time the query runs, so
+ * they never go stale. The range applies on top of the list type.
+ *
+ * @since TBD
+ *
+ * @param {Object}   props
+ * @param {Object}   props.attributes    Block attributes.
+ * @param {Function} props.setAttributes Function to update block attributes.
+ *
+ * @return {Element} Controls for the event date range.
+ */
+export const EventDateRangeControls = ( { attributes, setAttributes } ) => {
+	const {
+		query: {
+			gatherpress_date_range: dateRange = '',
+			gatherpress_date_after: dateAfter = '',
+			gatherpress_date_before: dateBefore = '',
+		} = {},
+	} = attributes;
+
+	// Empty values are removed rather than saved, so clearing the range
+	// leaves the query as it was before a range was picked.
+	const updateQuery = ( changes ) => {
+		const query = { ...attributes.query, ...changes };
+
+		Object.keys( changes ).forEach( ( key ) => {
+			if ( ! changes[ key ] ) {
+				delete query[ key ];
+			}
+		} );
+
+		setAttributes( { query } );
+	};
+
+	return (
+		<>
+			<SelectControl
+				__next40pxDefaultSize
+				label={ __( 'Date Range', 'gatherpress' ) }
+				help={ __(
+					'Combines with the list type, so Upcoming with This year shows the rest of this year.',
+					'gatherpress',
+				) }
+				value={ dateRange }
+				options={ [
+					{ label: __( 'Any time', 'gatherpress' ), value: '' },
+					{ label: __( 'This month', 'gatherpress' ), value: 'this_month' },
+					{ label: __( 'Next month', 'gatherpress' ), value: 'next_month' },
+					{ label: __( 'This year', 'gatherpress' ), value: 'this_year' },
+					{ label: __( 'Last year', 'gatherpress' ), value: 'last_year' },
+					{ label: __( 'Custom range', 'gatherpress' ), value: 'custom' },
+				] }
+				onChange={ ( newRange ) => {
+					// Custom dates only mean something for the custom range.
+					updateQuery( {
+						gatherpress_date_range: newRange,
+						...( 'custom' === newRange
+							? {}
+							: { gatherpress_date_after: '', gatherpress_date_before: '' } ),
+					} );
+				} }
+			/>
+			{ 'custom' === dateRange && (
+				<>
+					<TextControl
+						__next40pxDefaultSize
+						type="date"
+						label={ __( 'Start Date', 'gatherpress' ) }
+						value={ dateAfter }
+						max={ dateBefore || undefined }
+						onChange={ ( newDate ) =>
+							updateQuery( { gatherpress_date_after: newDate } )
+						}
+					/>
+					<TextControl
+						__next40pxDefaultSize
+						type="date"
+						label={ __( 'End Date', 'gatherpress' ) }
+						value={ dateBefore }
+						min={ dateAfter || undefined }
+						onChange={ ( newDate ) =>
+							updateQuery( { gatherpress_date_before: newDate } )
+						}
+					/>
+				</>
+			) }
+		</>
 	);
 };
 
@@ -756,6 +852,7 @@ export const EventQueryControlsSlotFill = () => {
 						name: 'includeUnfinished',
 						Component: EventIncludeUnfinishedControls,
 					},
+					{ name: 'dateRange', Component: EventDateRangeControls },
 					...( showExcludeControl
 						? [ { name: 'exclude', Component: EventExcludeControls } ]
 						: [] ),

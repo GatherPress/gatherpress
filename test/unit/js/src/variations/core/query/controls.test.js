@@ -245,6 +245,44 @@ describe( 'EventQueryControlsPanel query cleanup (#1756)', () => {
 		} );
 	} );
 
+	it( 'strips the date range vars when switching to a non-event post type', () => {
+		usePostTypeSupports.mockReturnValue( false );
+
+		render(
+			<EventQueryControlsPanel
+				clientId="abc"
+				attributes={ {
+					query: {
+						postType: 'post',
+						gatherpress_date_range: 'custom',
+						gatherpress_date_after: '2026-01-01',
+						gatherpress_date_before: '2026-01-31',
+					},
+				} }
+			/>,
+		);
+
+		expect( lastQueryUpdate() ).toEqual( { postType: 'post' } );
+	} );
+
+	it.each( [ 'gatherpress_date_after', 'gatherpress_date_before' ] )(
+		'strips %s on its own when switching to a non-event post type',
+		( key ) => {
+			usePostTypeSupports.mockReturnValue( false );
+
+			render(
+				<EventQueryControlsPanel
+					clientId="abc"
+					attributes={ {
+						query: { postType: 'post', [ key ]: '2026-01-01' },
+					} }
+				/>,
+			);
+
+			expect( lastQueryUpdate() ).toEqual( { postType: 'post' } );
+		},
+	);
+
 	it( 'does not touch the query when no event-only vars are present', () => {
 		usePostTypeSupports.mockReturnValue( false );
 
