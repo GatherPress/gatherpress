@@ -15,6 +15,7 @@ use GatherPress\Core\Venue\Meta;
 use GatherPress\Core\Venue\Setup;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
+use PasswordHash;
 use PMC\Unit_Test\Utility;
 use WP_Block_Patterns_Registry;
 use WP_Query;
@@ -1552,19 +1553,21 @@ class Test_Setup extends Base {
 	/**
 	 * Creates a published venue and an event at it.
 	 *
-	 * @param string $password The event's post password.
+	 * @param string $password       The event's post password.
+	 * @param string $venue_password Optional. The venue's post password.
 	 *
 	 * @return int[] The event ID and the venue term ID.
 	 */
-	private function create_event_at_venue( string $password ): array {
+	private function create_event_at_venue( string $password, string $venue_password = '' ): array {
 		// Another test in this class unregisters the venue taxonomy.
 		register_taxonomy_for_object_type( Venue::TAXONOMY, Event::POST_TYPE );
 
 		$venue_id = $this->factory()->post->create(
 			array(
-				'post_type'   => Venue::POST_TYPE,
-				'post_status' => 'publish',
-				'post_title'  => 'Hidden Hall',
+				'post_type'     => Venue::POST_TYPE,
+				'post_status'   => 'publish',
+				'post_title'    => 'Hidden Hall',
+				'post_password' => $venue_password,
 			)
 		);
 		$event_id = $this->factory()->post->create(
@@ -1826,5 +1829,66 @@ class Test_Setup extends Base {
 			Utility::invoke_hidden_method( $instance, 'tax_query_names_taxonomy', array( $nested, $taxonomies ) ),
 			'The nested group names the venue.'
 		);
+	}
+
+	/**
+	 * An event's venue is hidden by the event's password or by the venue's own.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::is_event_venue_hidden
+	 * @covers ::hide_password_protected_venue
+	 * @covers ::hide_password_protected_venue_class
+	 *
+	 * @return void
+	 */
+	public function test_is_event_venue_hidden(): void {
+		$instance             = Setup::get_instance();
+		list( $protected )    = $this->create_event_at_venue( 'secret' );
+		list( $open )         = $this->create_event_at_venue( '' );
+		list( $at_protected ) = $this->create_event_at_venue( '', 'secret' );
+		$without_venue        = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$hidden               = static function ( int $post_id ) use ( $instance ): bool {
+			return $instance->is_event_venue_hidden( get_post( $post_id ) );
+		};
+
+		wp_set_current_user( 0 );
+
+		$this->assertTrue( $hidden( $protected ), 'A protected event hides its venue.' );
+		$this->assertTrue( $hidden( $at_protected ), 'A protected venue is hidden from an open event.' );
+		$this->assertFalse( $hidden( $open ), 'An open event at an open venue shows it.' );
+		$this->assertFalse( $hidden( $without_venue ), 'An event without a venue has nothing to hide.' );
+
+		rest_get_server();
+		// rest_api_init only fires for the first server a run creates.
+		Setup::get_instance()->register_password_protected_venue_rest_hooks();
+
+		$this->assertSame(
+			array(),
+			rest_do_request( '/wp/v2/gatherpress_events/' . $at_protected )->get_data()[ Venue::TAXONOMY ],
+			'The REST record of an open event leaves a protected venue out.'
+		);
+		$this->assertSame(
+			array(),
+			preg_grep( '/^' . preg_quote( Venue::TAXONOMY . '-', '/' ) . '/', get_post_class( '', $at_protected ) ),
+			'The post classes leave a protected venue out.'
+		);
+
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+
+		// The cookie WordPress sets once a viewer enters the venue's password.
+		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'secret' );
+
+		$with_cookie = $hidden( $at_protected );
+
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+
+		$this->assertFalse( $with_cookie, 'The venue password shows it.' );
+
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'editor' ) ) );
+
+		$this->assertFalse( $hidden( $at_protected ), 'An Editor sees it.' );
+
+		wp_set_current_user( 0 );
 	}
 }

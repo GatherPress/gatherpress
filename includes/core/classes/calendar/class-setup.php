@@ -592,8 +592,8 @@ final class Setup {
 	protected function collect_event_term_alternate_links( WP_Post $event, array $args ): array {
 		$taxonomies = get_object_taxonomies( $event );
 
-		// A protected event's page doesn't give its venue away.
-		if ( Event::is_hidden_by_password( $event ) ) {
+		// A password-protected event or venue doesn't give the venue away.
+		if ( Venue_Setup::get_instance()->is_event_venue_hidden( $event ) ) {
 			$taxonomies = array_values(
 				array_diff(
 					$taxonomies,

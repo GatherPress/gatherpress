@@ -127,19 +127,21 @@ final class Geo_Sync {
 	/**
 	 * Whether a post's location may be shown publicly.
 	 *
-	 * Only a published post qualifies. Draft, pending, scheduled and private
-	 * posts keep their location but mark it not public.
+	 * Only a published post without a password qualifies. Draft, pending,
+	 * scheduled, private and password-protected posts keep their location
+	 * but mark it not public.
 	 *
 	 * @since 0.36.0
+	 * @since TBD A password-protected post is not public.
 	 *
 	 * @param WP_Post|null $post The post, or null when there is none.
 	 *
 	 * @phpstan-assert-if-true =WP_Post $post
 	 *
-	 * @return bool Whether the post is published.
+	 * @return bool Whether the post is published without a password.
 	 */
 	private static function is_public( ?WP_Post $post ): bool {
-		return $post instanceof WP_Post && 'publish' === $post->post_status;
+		return $post instanceof WP_Post && 'publish' === $post->post_status && '' === $post->post_password;
 	}
 
 	/**
@@ -231,8 +233,8 @@ final class Geo_Sync {
 
 		$venue_post = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $event_id );
 
-		// Only a published venue shares its location, so a draft or private
-		// venue's address never leaks through a published event.
+		// Only a published venue without a password shares its location, so a
+		// draft, private or protected venue's address never leaks through an event.
 		$information = self::is_public( $venue_post )
 			? ( new Venue( $venue_post->ID ) )->get_information()
 			: array();

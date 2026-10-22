@@ -18,12 +18,10 @@ use GatherPress\Core\Event\Setup as Event_Setup;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
-use PasswordHash;
 use PMC\Unit_Test\Utility;
 use ReflectionClass;
 use WP_Error;
 use WP_Post;
-use WP_REST_Request;
 use WP_Term;
 
 /**
@@ -2343,65 +2341,6 @@ class Test_Event extends Base {
 	}
 
 	/**
-	 * A post password keeps an event's details from a viewer until they have the
-	 * password, as a cookie or a REST argument, or can edit the event.
-	 *
-	 * @since TBD
-	 *
-	 * @covers ::is_hidden_by_password
-	 *
-	 * @return void
-	 */
-	public function test_is_hidden_by_password(): void {
-		$protected = get_post(
-			$this->factory->post->create(
-				array(
-					'post_type'     => Event::POST_TYPE,
-					'post_password' => 'secret',
-				)
-			)
-		);
-		$open      = get_post( $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) ) );
-		$request   = static function ( string $password ): WP_REST_Request {
-			$request = new WP_REST_Request( 'GET', '/wp/v2/gatherpress_events' );
-
-			$request->set_param( 'password', $password );
-
-			return $request;
-		};
-
-		wp_set_current_user( 0 );
-
-		$this->assertTrue( Event::is_hidden_by_password( $protected ), 'A protected event is hidden.' );
-		$this->assertTrue(
-			Event::is_hidden_by_password( $protected, $request( 'wrong' ) ),
-			'A wrong REST password keeps it hidden.'
-		);
-		$this->assertFalse(
-			Event::is_hidden_by_password( $protected, $request( 'secret' ) ),
-			'The REST password shows it.'
-		);
-		$this->assertFalse( Event::is_hidden_by_password( $open ), 'An open event is never hidden.' );
-
-		require_once ABSPATH . WPINC . '/class-phpass.php';
-
-		// The cookie WordPress sets once a viewer enters the post password.
-		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'secret' );
-
-		$with_cookie = Event::is_hidden_by_password( $protected );
-
-		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
-
-		$this->assertFalse( $with_cookie, 'The password cookie shows it.' );
-
-		wp_set_current_user( $this->factory->user->create( array( 'role' => 'editor' ) ) );
-
-		$this->assertFalse( Event::is_hidden_by_password( $protected ), 'An Editor sees it.' );
-
-		wp_set_current_user( 0 );
-	}
-
-	/**
 	 * An event is not all day unless it says so.
 	 *
 	 * @since 0.36.0
@@ -3590,5 +3529,59 @@ class Test_Event extends Base {
 		$this->assertNull( $captured, 'Failed to assert a post that is not an event gives the filter null.' );
 
 		remove_filter( 'gatherpress_datetime_separator', $capture );
+	}
+
+	/**
+	 * Calendars and feeds get no name or details for a password-protected venue,
+	 * unless the viewer can edit it.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_public_venue_information
+	 *
+	 * @return void
+	 */
+	public function test_get_public_venue_information(): void {
+		register_taxonomy_for_object_type( Venue::TAXONOMY, Event::POST_TYPE );
+
+		$at_venue  = function ( string $password ): Event {
+			$venue_id = $this->factory->post->create(
+				array(
+					'post_type'     => Venue::POST_TYPE,
+					'post_status'   => 'publish',
+					'post_title'    => 'Hidden Hall',
+					'post_password' => $password,
+				)
+			);
+			$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+			update_post_meta( $venue_id, 'gatherpress_address', '1 Main St' );
+			wp_set_post_terms( $event_id, ( new Venue( $venue_id ) )->get_term_slug(), Venue::TAXONOMY );
+
+			return new Event( $event_id );
+		};
+		$protected = $at_venue( 'secret' );
+		$open      = $at_venue( '' );
+
+		wp_set_current_user( 0 );
+
+		$this->assertSame(
+			array_fill_keys( array_keys( $protected->get_venue_information() ), '' ),
+			$protected->get_public_venue_information(),
+			'A protected venue shares nothing.'
+		);
+		$this->assertSame( '1 Main St', $protected->get_venue_information()['address'], 'Emails get the address.' );
+		$this->assertSame( '1 Main St', $open->get_public_venue_information()['address'], 'An open venue shares it.' );
+		$this->assertSame(
+			'',
+			( new Event( $this->factory->post->create() ) )->get_public_venue_information()['name'],
+			'A post that is not an event has no venue.'
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'editor' ) ) );
+
+		$this->assertSame( '1 Main St', $protected->get_public_venue_information()['address'], 'An Editor gets it.' );
+
+		wp_set_current_user( 0 );
 	}
 }

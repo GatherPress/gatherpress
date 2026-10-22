@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+A password-protected venue keeps its name and details private, as the Venue block already did: the REST API, calendars, RSS feeds, its events' location fields and feed links leave them out for viewers without its password, and its taxonomy term no longer starts with "Protected: ".

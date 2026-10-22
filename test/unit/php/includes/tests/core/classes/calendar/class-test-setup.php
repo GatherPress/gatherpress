@@ -535,6 +535,40 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * An open event's page leaves a password-protected venue's feed link out.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::collect_event_term_alternate_links
+	 *
+	 * @return void
+	 */
+	public function test_alternate_links_leave_out_a_protected_venue(): void {
+		add_theme_support( 'automatic-feed-links' );
+
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$this->mock->post(
+			array(
+				'post_type'     => Venue::POST_TYPE,
+				'post_title'    => 'Locked Lodge',
+				'post_name'     => 'locked-lodge',
+				'post_password' => 'secret',
+			)
+		);
+		wp_set_post_terms( $event_id, '_locked-lodge', Venue::TAXONOMY );
+
+		wp_set_current_user( 0 );
+		$this->go_to( get_permalink( $event_id ) );
+
+		ob_start();
+		Setup::get_instance()->alternate_links();
+		$out = (string) ob_get_clean();
+
+		$this->assertStringNotContainsString( 'Locked Lodge', $out, 'The protected venue link should be left out.' );
+		$this->assertStringContainsString( 'iCal Download', $out, 'The event keeps its own download link.' );
+	}
+
+	/**
 	 * Coverage for the venue-null arm of the `_gatherpress_venue` switch case
 	 * inside alternate_links — when an event is tagged with the venue
 	 * taxonomy but no underlying venue post resolves (the online-event case),

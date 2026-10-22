@@ -835,4 +835,49 @@ class Test_Geo_Sync extends Base {
 			'Failed to assert the value was still persisted even though the response had no meta to patch.'
 		);
 	}
+
+	/**
+	 * A password-protected venue keeps its location to itself: its events get
+	 * none, and its own copy is marked not public.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::is_public
+	 * @covers ::maybe_refresh
+	 * @covers ::on_venue_saved
+	 *
+	 * @return void
+	 */
+	public function test_password_protected_venue_keeps_its_location(): void {
+		$venue = $this->create_linked_venue(
+			'protected-venue',
+			array(
+				'latitude'  => '35.6762',
+				'longitude' => '139.6503',
+				'address'   => 'Tokyo, Japan',
+			)
+		);
+		$event = $this->create_event( '2099-01-01 10:00:00', '2099-01-01 12:00:00', $venue['term_slug'] );
+
+		wp_update_post(
+			array(
+				'ID'            => $venue['post']->ID,
+				'post_password' => 'secret',
+			)
+		);
+
+		$instance = Geo_Sync::get_instance();
+
+		$instance->maybe_refresh( $event->ID );
+		$instance->on_venue_saved( $venue['post']->ID, get_post( $venue['post']->ID ) );
+
+		$this->assertSame( '', get_post_meta( $event->ID, 'geo_address', true ), 'The event gets no address.' );
+		$this->assertSame( '', get_post_meta( $event->ID, 'geo_latitude', true ), 'The event gets no latitude.' );
+		$this->assertSame(
+			'Tokyo, Japan',
+			get_post_meta( $venue['post']->ID, 'geo_address', true ),
+			'The venue keeps its own address.'
+		);
+		$this->assertSame( '0', get_post_meta( $venue['post']->ID, 'geo_public', true ), 'The venue is not public.' );
+	}
 }
