@@ -51,6 +51,24 @@ final class Rest_Api {
 	use Singleton;
 
 	/**
+	 * Meta keys that give away a password-protected event's date and place.
+	 *
+	 * @since TBD
+	 * @var string[]
+	 */
+	const PASSWORD_PROTECTED_META = array(
+		'gatherpress_datetime',
+		'gatherpress_datetime_start',
+		'gatherpress_datetime_start_gmt',
+		'gatherpress_datetime_end',
+		'gatherpress_datetime_end_gmt',
+		'gatherpress_timezone',
+		'geo_latitude',
+		'geo_longitude',
+		'geo_address',
+	);
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -72,7 +90,7 @@ final class Rest_Api {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
-		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ), 10, 2 );
+		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ), 10, 3 );
 	}
 
 	/**
@@ -806,13 +824,21 @@ final class Rest_Api {
 	 *
 	 * @since 0.34.0
 	 * @since 0.35.4 Added the `$post` parameter.
+	 * @since TBD    Added the `$request` parameter, and blanks a password-protected
+	 *               event's date and place for viewers who can't see it.
 	 *
-	 * @param WP_REST_Response $response The response object containing event data.
-	 * @param WP_Post|null     $post     The event the response was prepared for.
+	 * @param WP_REST_Response     $response The response object containing event data.
+	 * @param WP_Post|null         $post     The event the response was prepared for.
+	 * @param WP_REST_Request|null $request  The request the response answers.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>>|null $request
 	 *
 	 * @return WP_REST_Response The response object with enhanced event data.
 	 */
-	public function prepare_event_data( WP_REST_Response $response, ?WP_Post $post = null ): WP_REST_Response {
+	public function prepare_event_data(
+		WP_REST_Response $response,
+		?WP_Post $post = null,
+		?WP_REST_Request $request = null
+	): WP_REST_Response {
 		// Core hands the filter the post itself, so the event is known even when
 		// another plugin filters `id` out of the response body. The body is the
 		// fallback for a direct caller: bail rather than emit an undefined-key
@@ -843,6 +869,26 @@ final class Rest_Api {
 			&& ! current_user_can( Event::edit_capability(), $post_id )
 		) {
 			$response->data['meta']['gatherpress_online_event_link'] = $online_event_link;
+		}
+
+		$event_post = $post instanceof WP_Post ? $post : get_post( $post_id );
+		$password   = $request instanceof WP_REST_Request ? (string) $request->get_param( 'password' ) : '';
+
+		// A password-protected event keeps its date and place behind its
+		// password, the way core keeps its content: whoever can edit it, or
+		// sends the password as a cookie or the REST `password` argument,
+		// sees them.
+		if (
+			$event_post instanceof WP_Post
+			&& post_password_required( $event_post )
+			&& ! current_user_can( Event::edit_capability(), $post_id )
+			&& ! hash_equals( $event_post->post_password, $password )
+		) {
+			foreach ( self::PASSWORD_PROTECTED_META as $key ) {
+				if ( array_key_exists( $key, $response->data['meta'] ?? array() ) ) {
+					$response->data['meta'][ $key ] = '';
+				}
+			}
 		}
 
 		return $response;
