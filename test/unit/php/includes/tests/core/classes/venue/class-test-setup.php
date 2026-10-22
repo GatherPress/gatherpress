@@ -1627,6 +1627,8 @@ class Test_Setup extends Base {
 		list( $open, $open_term_id ) = $this->create_event_at_venue( '' );
 
 		rest_get_server();
+		// rest_api_init only fires for the first server a run creates.
+		Setup::get_instance()->register_password_protected_venue_rest_hooks();
 		wp_set_current_user( 0 );
 
 		$get = static function ( string $route, array $params = array() ): array {
