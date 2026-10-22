@@ -13,6 +13,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
+use PasswordHash;
 use WP_HTML_Tag_Processor;
 
 /**
@@ -142,6 +143,49 @@ class Test_Rsvp_Response extends Base {
 				$block
 			),
 			'A password-protected event should keep its responses from a viewer without the password.'
+		);
+	}
+
+	/**
+	 * Tests transform_block_content shows a password-protected event's responses once the viewer has the password.
+	 *
+	 * @since TBD
+	 * @covers ::transform_block_content
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_password_protected_event_with_the_password(): void {
+		$post_id = $this->factory()->post->create(
+			array(
+				'post_type'     => 'gatherpress_event',
+				'post_status'   => 'publish',
+				'post_password' => 'secret',
+			)
+		);
+		$block   = array(
+			'blockName' => 'gatherpress/rsvp-response',
+			'attrs'     => array(
+				'postId' => $post_id,
+			),
+		);
+
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'contributor' ) ) );
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+
+		// The cookie WordPress sets once a viewer enters the post password.
+		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'secret' );
+
+		$result = Rsvp_Response::get_instance()->transform_block_content(
+			'<div class="wp-block-gatherpress-rsvp-response">Content</div>',
+			$block
+		);
+
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+
+		$this->assertStringContainsString(
+			'data-wp-interactive="gatherpress"',
+			$result,
+			'A password-protected event should show its responses to a viewer with the password.'
 		);
 	}
 
