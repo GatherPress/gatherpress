@@ -30,6 +30,10 @@ use GatherPress\Core\Venue\Map\Setup as Map_Setup;
 use stdClass;
 use WP_Block_Patterns_Registry;
 use WP_Post;
+use WP_Query;
+use WP_REST_Request;
+use WP_REST_Response;
+use WP_Taxonomy;
 
 /**
  * Class Setup.
@@ -123,6 +127,10 @@ final class Setup {
 			10,
 			2
 		);
+		add_action( 'rest_api_init', array( $this, 'register_password_protected_venue_rest_hooks' ) );
+		add_filter( 'post_class', array( $this, 'hide_password_protected_venue_class' ), 10, 3 );
+		// Priority 20 so the venue clause Event\Query adds at 10 is already in place.
+		add_action( 'pre_get_posts', array( $this, 'leave_password_protected_events_out' ), 20 );
 	}
 
 	/**
@@ -329,6 +337,210 @@ final class Setup {
 		}
 
 		return $object_types;
+	}
+
+	/**
+	 * Wires the REST filters that keep a password-protected event's venue hidden.
+	 *
+	 * Runs on `rest_api_init`, once every event post type and its venue
+	 * mapping is in place.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function register_password_protected_venue_rest_hooks(): void {
+		foreach ( $this->get_venue_post_type_map() as $event_post_type => $venue_post_type ) {
+			add_filter(
+				sprintf( 'rest_prepare_%s', $event_post_type ),
+				array( $this, 'hide_password_protected_venue' ),
+				10,
+				3
+			);
+			add_filter(
+				sprintf( 'rest_%s_query', $this->get_taxonomy( $venue_post_type ) ),
+				array( $this, 'hide_password_protected_venue_terms' ),
+				10,
+				2
+			);
+		}
+	}
+
+	/**
+	 * Blanks a password-protected event's venue in a REST response.
+	 *
+	 * The venue taxonomy is public, so core lists its term on a protected
+	 * event like any other. It stays behind the event's password, as the
+	 * event's date and place meta do.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_REST_Response $response The response for the event.
+	 * @param WP_Post          $post     The event the response was prepared for.
+	 * @param WP_REST_Request  $request  The request the response answers.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
+	 *
+	 * @return WP_REST_Response The response, with the venue blank for a viewer who can't see it.
+	 */
+	public function hide_password_protected_venue(
+		WP_REST_Response $response,
+		WP_Post $post,
+		WP_REST_Request $request
+	): WP_REST_Response {
+		$taxonomy = get_taxonomy( $this->taxonomy_for_event_post_type( $post->post_type ) );
+
+		if ( $taxonomy instanceof WP_Taxonomy && Event::is_hidden_by_password( $post, $request ) ) {
+			$field = empty( $taxonomy->rest_base ) ? $taxonomy->name : (string) $taxonomy->rest_base;
+
+			if ( is_array( $response->data ) && array_key_exists( $field, $response->data ) ) {
+				$response->data[ $field ] = array();
+			}
+		}
+
+		return $response;
+	}
+
+	/**
+	 * Lists no venue for a password-protected event in the venue terms endpoint.
+	 *
+	 * `/wp/v2/<venue taxonomy>?post=<id>` lists one post's terms, which would
+	 * name a protected event's venue.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $prepared_args The term query arguments.
+	 * @param WP_REST_Request      $request       The terms request.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
+	 *
+	 * @return array<string, mixed> The arguments, matching no term for a protected event the viewer can't see.
+	 */
+	public function hide_password_protected_venue_terms( array $prepared_args, WP_REST_Request $request ): array {
+		$post_id = (int) $request->get_param( 'post' );
+		$post    = $post_id ? get_post( $post_id ) : null;
+
+		if ( $post instanceof WP_Post && Event::is_hidden_by_password( $post ) ) {
+			// Core looks the terms up with wp_get_object_terms( $prepared_args['post'] ), and
+			// no object has ID 0. An empty value would list every venue instead.
+			$prepared_args['post'] = array( 0 );
+		}
+
+		return $prepared_args;
+	}
+
+	/**
+	 * Drops the venue classes from a password-protected event's post classes.
+	 *
+	 * Core adds a `<taxonomy>-<term>` class for each public term, which would
+	 * name the venue in the page markup and in the REST `class_list`.
+	 *
+	 * @since TBD
+	 *
+	 * @param string[] $classes   The post classes.
+	 * @param string[] $css_class Classes passed to get_post_class().
+	 * @param int      $post_id   The post ID.
+	 *
+	 * @return string[] The classes, without the venue ones for a viewer who can't see it.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) -- $css_class is required by the post_class filter signature.
+	 */
+	public function hide_password_protected_venue_class( array $classes, array $css_class, int $post_id ): array {
+		$post = get_post( $post_id );
+
+		if (
+			! $post instanceof WP_Post
+			|| ! post_type_supports( $post->post_type, Venue::ASSIGNMENT_SUPPORT )
+			|| ! Event::is_hidden_by_password( $post )
+		) {
+			return $classes;
+		}
+
+		$prefix = $this->taxonomy_for_event_post_type( $post->post_type ) . '-';
+
+		return array_values(
+			array_filter(
+				$classes,
+				static fn( string $css ): bool => ! str_starts_with( $css, $prefix )
+			)
+		);
+	}
+
+	/**
+	 * Leaves password-protected events out of lists filtered by a venue.
+	 *
+	 * A protected event listed under its venue (on the venue's page, through
+	 * the venue query var or the REST venue filter) would give its place
+	 * away, so those lists skip it for anyone who can't edit others' events.
+	 * Admin screens are left alone.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_Query $query The query about to run.
+	 *
+	 * @return void
+	 */
+	public function leave_password_protected_events_out( WP_Query $query ): void {
+		$event_type = get_post_type_object( Event::POST_TYPE );
+
+		if (
+			is_admin()
+			|| ( null !== $event_type && current_user_can( $event_type->cap->edit_others_posts ) )
+		) {
+			return;
+		}
+
+		$taxonomies = array_unique( array_map( array( $this, 'get_taxonomy' ), $this->get_venue_post_type_map() ) );
+
+		if ( $this->query_filters_by_taxonomy( $query, $taxonomies ) ) {
+			$query->set( 'has_password', false );
+		}
+	}
+
+	/**
+	 * Whether a query filters by any of the given taxonomies.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_Query $query      The query.
+	 * @param string[] $taxonomies Taxonomy slugs.
+	 *
+	 * @return bool True when the query var, `taxonomy` or `tax_query` names one of them.
+	 */
+	private function query_filters_by_taxonomy( WP_Query $query, array $taxonomies ): bool {
+		foreach ( $taxonomies as $taxonomy ) {
+			if ( ! empty( $query->get( $taxonomy ) ) || $taxonomy === $query->get( 'taxonomy' ) ) {
+				return true;
+			}
+		}
+
+		$tax_query = $query->get( 'tax_query' );
+
+		return is_array( $tax_query ) && $this->tax_query_names_taxonomy( $tax_query, $taxonomies );
+	}
+
+	/**
+	 * Whether a tax_query, at any nesting depth, names one of the given taxonomies.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<mixed> $tax_query  The tax_query, or one nested group of it.
+	 * @param string[]     $taxonomies Taxonomy slugs.
+	 *
+	 * @return bool True when a clause names one of them.
+	 */
+	private function tax_query_names_taxonomy( array $tax_query, array $taxonomies ): bool {
+		foreach ( $tax_query as $clause ) {
+			if (
+				is_array( $clause )
+				&& (
+					in_array( $clause['taxonomy'] ?? '', $taxonomies, true )
+					|| $this->tax_query_names_taxonomy( $clause, $taxonomies )
+				)
+			) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
