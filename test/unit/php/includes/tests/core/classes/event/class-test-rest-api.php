@@ -1484,6 +1484,109 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Tests emailing every user takes edit_others_posts, not just edit_post.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::email_route
+	 */
+	public function test_email_route_permission_callback_send_all(): void {
+		$instance = Rest_Api::get_instance();
+		$route    = Utility::invoke_hidden_method( $instance, 'email_route' );
+		$callback = $route['args']['permission_callback'];
+
+		$contributor_id = $this->factory->user->create( array( 'role' => 'contributor' ) );
+		$author_id      = $this->factory->user->create( array( 'role' => 'author' ) );
+		$editor_id      = $this->factory->user->create( array( 'role' => 'editor' ) );
+
+		$draft_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_author' => $contributor_id,
+				'post_status' => 'draft',
+			)
+		);
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_author' => $author_id,
+				'post_status' => 'publish',
+			)
+		);
+
+		$send_all = array(
+			'all'           => true,
+			'attending'     => false,
+			'waiting_list'  => false,
+			'not_attending' => false,
+		);
+
+		$request = new WP_REST_Request();
+		$request->set_param( 'send', $send_all );
+
+		wp_set_current_user( $contributor_id );
+		$request->set_param( 'post_id', $draft_id );
+		$this->assertFalse(
+			call_user_func( $callback, $request ),
+			'Emailing all users should take more than the right to edit the event.'
+		);
+
+		wp_set_current_user( $author_id );
+		$request->set_param( 'post_id', $event_id );
+		$this->assertFalse(
+			call_user_func( $callback, $request ),
+			'An author should not be allowed to email every user from their own event.'
+		);
+
+		$request->set_param(
+			'send',
+			array_merge(
+				$send_all,
+				array(
+					'all'       => false,
+					'attending' => true,
+				)
+			)
+		);
+		$this->assertTrue(
+			call_user_func( $callback, $request ),
+			'An author should still be allowed to email the attendees of their own event.'
+		);
+
+		wp_set_current_user( $editor_id );
+		$request->set_param( 'send', $send_all );
+		$this->assertTrue(
+			call_user_func( $callback, $request ),
+			'An editor should be allowed to email every user.'
+		);
+	}
+
+	/**
+	 * Tests who can email every user about an event.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::can_email_all_users
+	 */
+	public function test_can_email_all_users(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'author' ) ) );
+		$this->assertFalse(
+			Rest_Api::can_email_all_users( Event::POST_TYPE ),
+			'An author should not be allowed to email every user.'
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'editor' ) ) );
+		$this->assertTrue(
+			Rest_Api::can_email_all_users( Event::POST_TYPE ),
+			'An editor should be allowed to email every user.'
+		);
+		$this->assertFalse(
+			Rest_Api::can_email_all_users( 'unregistered_post_type' ),
+			'An unregistered post type should never allow emailing every user.'
+		);
+	}
+
+	/**
 	 * Tests rsvp_route permission callback with a valid RSVP session cookie.
 	 *
 	 * Covers: permission callback returning true when the cookie holds a valid token.

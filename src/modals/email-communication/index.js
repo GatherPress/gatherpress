@@ -20,6 +20,7 @@ import { select, useSelect, useDispatch } from '@wordpress/data';
  * Internal dependencies
  */
 import { EVENT_REST_API } from '../../helpers/namespace';
+import { getFromConfig } from '../../helpers/editor-settings';
 
 /**
  * A modal component for notifying event members via email.
@@ -149,17 +150,19 @@ const EventCommunicationModal = () => {
 						) }
 					</p>
 					<Flex gap="8">
-						<FlexItem>
-							<CheckboxControl
-								label={ _x(
-									'All Members',
-									'Email recipient group option',
-									'gatherpress',
-								) }
-								checked={ isAllChecked }
-								onChange={ setAllChecked }
-							/>
-						</FlexItem>
+						{ getFromConfig( 'canEmailAllUsers' ) && (
+							<FlexItem>
+								<CheckboxControl
+									label={ _x(
+										'All Members',
+										'Email recipient group option',
+										'gatherpress',
+									) }
+									checked={ isAllChecked }
+									onChange={ setAllChecked }
+								/>
+							</FlexItem>
+						) }
 						<FlexItem>
 							<CheckboxControl
 								label={ _x(

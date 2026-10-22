@@ -439,6 +439,36 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * Tests the editor learns whether the current user can email every user.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::add_editor_settings
+	 *
+	 * @return void
+	 */
+	public function test_add_editor_settings_exposes_can_email_all_users(): void {
+		$instance = Setup::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		$this->go_to( get_permalink( $event_id ) );
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'author' ) ) );
+		$settings = $instance->add_editor_settings( array() );
+		$this->assertFalse(
+			$settings['gatherpress']['config']['canEmailAllUsers'],
+			'Failed to assert an author cannot email every user.'
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'editor' ) ) );
+		$settings = $instance->add_editor_settings( array() );
+		$this->assertTrue(
+			$settings['gatherpress']['config']['canEmailAllUsers'],
+			'Failed to assert an editor can email every user.'
+		);
+	}
+
+	/**
 	 * Coverage for add_editor_settings method preserving existing settings.
 	 *
 	 * @since 0.36.0
