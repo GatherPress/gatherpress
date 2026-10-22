@@ -23,6 +23,7 @@ namespace GatherPress\Core\Event;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Capability;
 use GatherPress\Core\Event;
 use GatherPress\Core\Geo_Sync;
 use GatherPress\Core\Settings;
@@ -30,7 +31,9 @@ use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue;
 use stdClass;
+use WP_Post;
 use WP_REST_Request;
+use WP_REST_Response;
 
 /**
  * Class Meta.
@@ -45,6 +48,24 @@ use WP_REST_Request;
  * @since 0.34.0
  */
 final class Meta {
+
+	/**
+	 * Meta keys that give away a password-protected event's date and place.
+	 *
+	 * @since TBD
+	 * @var string[]
+	 */
+	const PASSWORD_PROTECTED_META = array(
+		'gatherpress_datetime',
+		'gatherpress_datetime_start',
+		'gatherpress_datetime_start_gmt',
+		'gatherpress_datetime_end',
+		'gatherpress_datetime_end_gmt',
+		'gatherpress_timezone',
+		'geo_latitude',
+		'geo_longitude',
+		'geo_address',
+	);
 
 	/**
 	 * Enforces a single instance of this class.
@@ -198,6 +219,15 @@ final class Meta {
 			10,
 			2
 		);
+
+		// Priority 20 runs after Geo_Sync::maybe_refresh_on_rest() (10), which
+		// writes refreshed geo_* values back into the response.
+		add_filter(
+			sprintf( 'rest_prepare_%s', $post_type ),
+			array( $this, 'hide_password_protected_meta' ),
+			20,
+			3
+		);
 	}
 
 	/**
@@ -343,5 +373,43 @@ final class Meta {
 		}
 
 		return $prepared_post;
+	}
+
+	/**
+	 * Blanks a password-protected event's date and place in a REST response.
+	 *
+	 * Core hides only a protected post's content and excerpt, but the event's
+	 * date meta and the venue geo fields copied onto it are `show_in_rest`.
+	 * They stay behind the password the way core keeps the content: whoever
+	 * can edit the event, or sends the password as a cookie or as the REST
+	 * `password` argument, sees them.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_REST_Response $response The response for the event.
+	 * @param WP_Post          $post     The event the response was prepared for.
+	 * @param WP_REST_Request  $request  The request the response answers.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
+	 *
+	 * @return WP_REST_Response The response, with the date and place blank for a viewer who can't see them.
+	 */
+	public function hide_password_protected_meta(
+		WP_REST_Response $response,
+		WP_Post $post,
+		WP_REST_Request $request
+	): WP_REST_Response {
+		if (
+			post_password_required( $post )
+			&& ! current_user_can( Capability::EDIT_POST, $post->ID )
+			&& ! hash_equals( $post->post_password, (string) $request->get_param( 'password' ) )
+		) {
+			foreach ( self::PASSWORD_PROTECTED_META as $key ) {
+				if ( array_key_exists( $key, $response->data['meta'] ?? array() ) ) {
+					$response->data['meta'][ $key ] = '';
+				}
+			}
+		}
+
+		return $response;
 	}
 }
