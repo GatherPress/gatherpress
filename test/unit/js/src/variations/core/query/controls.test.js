@@ -36,7 +36,15 @@ jest.mock( '@wordpress/components', () => ( {
 
 jest.mock( '@wordpress/i18n', () => ( {
 	__: ( text ) => text,
-	sprintf: ( fmt, ...args ) => args.reduce( ( s, a ) => s.replace( '%s', a ), fmt ),
+	// Handles both `%s` and positional `%1$s` placeholders, so the generated
+	// block names ("%1$s %2$s") come out as real names in the tests below.
+	sprintf: ( fmt, ...args ) => {
+		let index = 0;
+		return fmt.replace(
+			/%(?:(\d+)\$)?s/g,
+			( match, position ) => args[ position ? position - 1 : index++ ],
+		);
+	},
 } ) );
 
 jest.mock( '@src/variations/core/query/slots/query-controls', () => {
@@ -65,6 +73,7 @@ jest.mock( '@src/variations/core/query/components', () => ( {
 
 jest.mock( '@src/helpers/event', () => ( {
 	usePostTypeSupports: jest.fn(),
+	useIsPostTypeLoaded: jest.fn(),
 } ) );
 
 jest.mock( '@src/helpers/editor', () => ( {
@@ -82,7 +91,8 @@ jest.mock( '@wordpress/data', () => ( {
  * WordPress dependencies
  */
 import { addFilter } from '@wordpress/hooks';
-import { usePostTypeSupports } from '@src/helpers/event';
+import { useIsPostTypeLoaded, usePostTypeSupports } from '@src/helpers/event';
+import { usePostTypeLabel } from '@src/helpers/editor';
 
 /**
  * Internal dependencies
@@ -107,6 +117,7 @@ describe( 'EventQueryControlsPanel', () => {
 
 	beforeEach( () => {
 		usePostTypeSupports.mockReset();
+		useIsPostTypeLoaded.mockReturnValue( true );
 	} );
 
 	it( 'returns null when the queried post type does not support gatherpress-event-date', () => {
@@ -196,7 +207,35 @@ describe( 'EventQueryControlsPanel query cleanup (#1756)', () => {
 
 	beforeEach( () => {
 		usePostTypeSupports.mockReset();
+		useIsPostTypeLoaded.mockReturnValue( true );
 		mockUpdateBlockAttributes.mockClear();
+	} );
+
+	it( 'does not clean up while the post type is still loading (#2495)', () => {
+		// `usePostTypeSupports` is false until `getPostType()` resolves, so
+		// without the load gate an event loop lost its event query vars and
+		// its datetime order when the editor opened.
+		usePostTypeSupports.mockReturnValue( false );
+		useIsPostTypeLoaded.mockReturnValue( false );
+
+		render(
+			<EventQueryControlsPanel
+				clientId="abc"
+				attributes={ {
+					query: {
+						postType: 'gatherpress_event',
+						gatherpress_event_query: 'upcoming',
+						include_unfinished: 1,
+						orderBy: 'datetime',
+						order: 'asc',
+						inherit: false,
+					},
+				} }
+			/>,
+		);
+
+		expect( lastQueryUpdate() ).toBeUndefined();
+		expect( useIsPostTypeLoaded ).toHaveBeenCalledWith( 'gatherpress_event' );
 	} );
 
 	it( 'strips event-only vars and resets orderBy=datetime when switching to a non-event post type', () => {
@@ -278,6 +317,165 @@ describe( 'EventQueryControlsPanel query cleanup (#1756)', () => {
 		);
 
 		expect( lastQueryUpdate() ).toBeUndefined();
+	} );
+} );
+
+describe( 'EventQueryControlsPanel block name (#2495)', () => {
+	// Collect the `metadata` payload of every updateBlockAttributes call that
+	// targeted the metadata (the query cleanup effect also fires).
+	const metadataUpdates = () =>
+		mockUpdateBlockAttributes.mock.calls
+			.filter( ( [ , attrs ] ) => attrs && 'metadata' in attrs )
+			.map( ( [ , attrs ] ) => attrs.metadata );
+
+	const renderPanel = ( {
+		postType = 'gatherpress_event',
+		eventQuery = 'upcoming',
+		metadata,
+	} = {} ) =>
+		render(
+			<EventQueryControlsPanel
+				clientId="abc"
+				attributes={ {
+					metadata,
+					query: {
+						postType,
+						gatherpress_event_query: eventQuery,
+						orderBy: 'datetime',
+						inherit: false,
+					},
+				} }
+			/>,
+		);
+
+	const bindings = {
+		content: { source: 'core/post-meta', args: { key: 'example' } },
+	};
+
+	beforeEach( () => {
+		usePostTypeSupports.mockReset();
+		usePostTypeSupports.mockReturnValue( true );
+		useIsPostTypeLoaded.mockReturnValue( true );
+		usePostTypeLabel.mockImplementation(
+			( key, postType, fallback ) => fallback,
+		);
+		mockUpdateBlockAttributes.mockClear();
+	} );
+
+	it( 'does not rename the block while the post type is still loading', () => {
+		usePostTypeSupports.mockReturnValue( false );
+		useIsPostTypeLoaded.mockReturnValue( false );
+
+		renderPanel( { metadata: { name: 'Upcoming Events' } } );
+
+		expect( metadataUpdates() ).toEqual( [] );
+	} );
+
+	it( 'does not write a name that is already set', () => {
+		renderPanel( { metadata: { name: 'Upcoming Events' } } );
+
+		expect( metadataUpdates() ).toEqual( [] );
+	} );
+
+	it( 'names an unnamed event loop', () => {
+		renderPanel();
+
+		expect( metadataUpdates() ).toEqual( [ { name: 'Upcoming Events' } ] );
+	} );
+
+	it( 'keeps the other metadata when it names the block', () => {
+		renderPanel( { eventQuery: 'past', metadata: { bindings } } );
+
+		expect( metadataUpdates() ).toEqual( [
+			{ bindings, name: 'Past Events' },
+		] );
+	} );
+
+	it( 'keeps a name that the author gave the block', () => {
+		renderPanel( {
+			eventQuery: 'past',
+			metadata: { name: 'Our meetups', bindings },
+		} );
+
+		expect( metadataUpdates() ).toEqual( [] );
+	} );
+
+	it( 'renames a generated name when the query mode changes', () => {
+		renderPanel( {
+			eventQuery: 'past',
+			metadata: { name: 'Upcoming Events', bindings },
+		} );
+
+		expect( metadataUpdates() ).toEqual( [
+			{ bindings, name: 'Past Events' },
+		] );
+	} );
+
+	it( 'replaces a name generated with the fallback label', () => {
+		// An earlier version named the loop with the fallback label when the
+		// post type had not loaded yet.
+		usePostTypeLabel.mockImplementation( ( key, postType, fallback ) =>
+			'production' === postType ? 'Productions' : fallback,
+		);
+
+		renderPanel( {
+			postType: 'production',
+			metadata: { name: 'Upcoming Events' },
+		} );
+
+		expect( metadataUpdates() ).toEqual( [
+			{ name: 'Upcoming Productions' },
+		] );
+	} );
+
+	it( 'renames a name generated for the previous post type after a switch', () => {
+		const labels = { production: 'Productions', show: 'Shows' };
+		usePostTypeLabel.mockImplementation(
+			( key, postType, fallback ) => labels[ postType ] ?? fallback,
+		);
+
+		const { rerender } = renderPanel( {
+			postType: 'production',
+			metadata: { name: 'Upcoming Productions' },
+		} );
+
+		expect( metadataUpdates() ).toEqual( [] );
+
+		rerender(
+			<EventQueryControlsPanel
+				clientId="abc"
+				attributes={ {
+					metadata: { name: 'Upcoming Productions' },
+					query: {
+						postType: 'show',
+						gatherpress_event_query: 'upcoming',
+						orderBy: 'datetime',
+						inherit: false,
+					},
+				} }
+			/>,
+		);
+
+		expect( metadataUpdates() ).toEqual( [ { name: 'Upcoming Shows' } ] );
+	} );
+
+	it( 'clears a generated name when the post type does not support event dates', () => {
+		usePostTypeSupports.mockReturnValue( false );
+
+		renderPanel( {
+			postType: 'post',
+			metadata: { name: 'Upcoming Events', bindings },
+		} );
+
+		expect( metadataUpdates() ).toEqual( [ { bindings, name: '' } ] );
+	} );
+
+	it( 'keeps an author name when the post type does not support event dates', () => {
+		usePostTypeSupports.mockReturnValue( false );
+
+		renderPanel( { postType: 'post', metadata: { name: 'Latest news' } } );
+
+		expect( metadataUpdates() ).toEqual( [] );
 	} );
 } );
 

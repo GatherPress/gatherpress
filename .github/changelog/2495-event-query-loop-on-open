@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Opening the editor no longer changes the order, the upcoming or past setting, or the name of an Event Query Loop. A name that the author gives the loop now stays when the loop's settings change.

@@ -31,6 +31,7 @@ import {
 	hasEventPastNotice,
 	isPostTypeSupporting,
 	usePostTypeSupports,
+	useIsPostTypeLoaded,
 	isEventPostType,
 	isRsvpPostType,
 	hasValidEventId,
@@ -223,6 +224,87 @@ describe( 'usePostTypeSupports', () => {
 		expect(
 			usePostTypeSupports( 'gatherpress-event-date', 'gatherpress_event' ),
 		).toBe( true );
+	} );
+} );
+
+/**
+ * Coverage for useIsPostTypeLoaded — the load gate for effects that act on a
+ * missing support (#2495).
+ */
+describe( 'useIsPostTypeLoaded', () => {
+	/**
+	 * Mocks the `core` store with a post type registry.
+	 *
+	 * @param {Object}   options
+	 * @param {Object}   options.records  Post type records by slug.
+	 * @param {string[]} options.resolved Slugs whose `getPostType()` resolution has finished.
+	 *
+	 * @return {Function} The mocked `hasFinishedResolution` selector.
+	 */
+	const mockCoreStore = ( { records = {}, resolved = [] } = {} ) => {
+		const hasFinishedResolution = jest.fn(
+			( selectorName, [ slug ] ) =>
+				'getPostType' === selectorName && resolved.includes( slug ),
+		);
+
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return { getCurrentPostType: () => 'gatherpress_event' };
+			}
+			if ( 'core' === store ) {
+				return {
+					getPostType: ( slug ) => records[ slug ],
+					hasFinishedResolution,
+				};
+			}
+			return {};
+		} );
+
+		return hasFinishedResolution;
+	};
+
+	it( 'returns false while the post type is still loading', () => {
+		const hasFinishedResolution = mockCoreStore();
+
+		expect( useIsPostTypeLoaded( 'gatherpress_event' ) ).toBe( false );
+		expect( hasFinishedResolution ).toHaveBeenCalledWith( 'getPostType', [
+			'gatherpress_event',
+		] );
+	} );
+
+	it( 'returns true when the post type record is in the store', () => {
+		mockCoreStore( {
+			records: { post: mockGetPostType( 'post' ) },
+		} );
+
+		expect( useIsPostTypeLoaded( 'post' ) ).toBe( true );
+	} );
+
+	it( 'returns true when the resolution finished without a record', () => {
+		// A post type that is not shown in REST never gets a record, so the
+		// finished resolution is what ends the wait.
+		mockCoreStore( { resolved: [ 'not_in_rest' ] } );
+
+		expect( useIsPostTypeLoaded( 'not_in_rest' ) ).toBe( true );
+	} );
+
+	it( 'falls back to the editor post type when no postType is given', () => {
+		mockCoreStore( {
+			records: { gatherpress_event: mockGetPostType( 'gatherpress_event' ) },
+		} );
+
+		expect( useIsPostTypeLoaded() ).toBe( true );
+	} );
+
+	it( 'returns false when no post type can be resolved', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return { getCurrentPostType: () => undefined };
+			}
+			return {};
+		} );
+
+		expect( useIsPostTypeLoaded() ).toBe( false );
 	} );
 } );
 
