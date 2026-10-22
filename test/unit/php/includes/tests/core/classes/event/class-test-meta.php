@@ -13,7 +13,9 @@ use GatherPress\Core\Event\Meta;
 use GatherPress\Core\Geo_Sync;
 use GatherPress\Tests\Base;
 use stdClass;
+use WP_REST_Posts_Controller;
 use WP_REST_Request;
+use WP_REST_Response;
 
 /**
  * Class Test_Meta.
@@ -230,6 +232,10 @@ class Test_Meta extends Base {
 		$this->assertNotFalse(
 			has_filter( sprintf( 'rest_pre_insert_%s', $test_pt ), array( $instance, 'filter_readonly_meta' ) ),
 			'REST readonly-strip filter should wire on event-date-supporting post types.'
+		);
+		$this->assertNotFalse(
+			has_filter( sprintf( 'rest_prepare_%s', $test_pt ), array( $instance, 'hide_password_protected_meta' ) ),
+			'The password-protected meta filter should wire on event-date-supporting post types.'
 		);
 		$this->assertTrue(
 			post_type_supports( $test_pt, 'custom-fields' ),
@@ -536,6 +542,148 @@ class Test_Meta extends Base {
 			'',
 			$meta['gatherpress_show_timezone']['default'],
 			'Failed to assert an event leaves the timezone to the block by default.'
+		);
+	}
+
+	/**
+	 * A password-protected event's date and place are blanked for viewers who
+	 * can't see the event, and kept for those who can.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::hide_password_protected_meta
+	 *
+	 * @return void
+	 */
+	public function test_hide_password_protected_meta(): void {
+		$instance  = Meta::get_instance();
+		$protected = $this->factory()->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		);
+		$open      = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$meta      = array(
+			'gatherpress_datetime_start' => '2026-11-20 18:00:00',
+			'gatherpress_timezone'       => 'UTC',
+			'geo_address'                => '1 Main St',
+			'gatherpress_is_all_day'     => false,
+		);
+		$hide      = static function ( int $post_id, string $password = '' ) use ( $instance, $meta ): array {
+			$request = new WP_REST_Request( 'GET', '/wp/v2/gatherpress_events/' . $post_id );
+
+			if ( '' !== $password ) {
+				$request->set_param( 'password', $password );
+			}
+
+			return $instance->hide_password_protected_meta(
+				new WP_REST_Response( array( 'meta' => $meta ) ),
+				get_post( $post_id ),
+				$request
+			)->data['meta'];
+		};
+
+		wp_set_current_user( 0 );
+
+		$hidden = $hide( $protected );
+
+		$this->assertSame( '', $hidden['gatherpress_datetime_start'], 'The date should be blank without a password.' );
+		$this->assertSame( '', $hidden['gatherpress_timezone'], 'The timezone should be blank without a password.' );
+		$this->assertSame( '', $hidden['geo_address'], 'The address should be blank without a password.' );
+		$this->assertFalse( $hidden['gatherpress_is_all_day'], 'Other meta should be left alone.' );
+		$this->assertSame( '', $hide( $protected, 'wrong' )['geo_address'], 'A wrong password hides the place.' );
+		$this->assertSame(
+			$meta['gatherpress_datetime_start'],
+			$hide( $protected, 'secret' )['gatherpress_datetime_start'],
+			'The REST password argument should reveal the date.'
+		);
+		$this->assertSame( $meta['geo_address'], $hide( $open )['geo_address'], 'An open event keeps its place.' );
+
+		add_filter( 'post_password_required', '__return_false' );
+		$with_cookie = $hide( $protected );
+		remove_filter( 'post_password_required', '__return_false' );
+
+		$this->assertSame(
+			$meta['gatherpress_datetime_start'],
+			$with_cookie['gatherpress_datetime_start'],
+			'A viewer who entered the password should get the date.'
+		);
+
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'editor' ) ) );
+
+		$this->assertSame(
+			$meta['geo_address'],
+			$hide( $protected )['geo_address'],
+			'An Editor should keep the place, so the editor loads what it saves.'
+		);
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * The REST API blanks a password-protected event's date on every post type
+	 * with event-date support, not only the built-in event post type.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::register_event_date_meta
+	 * @covers ::hide_password_protected_meta
+	 *
+	 * @return void
+	 */
+	public function test_rest_response_hides_a_protected_events_date_on_any_event_post_type(): void {
+		$test_pt = 'test_protected_event';
+
+		register_post_type(
+			$test_pt,
+			array(
+				'label'        => 'Test Protected Event',
+				'public'       => true,
+				'show_in_rest' => true,
+				'rest_base'    => 'test-protected-events',
+				'supports'     => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
+
+		// Creating the server fires rest_api_init, so registering the post
+		// type's routes afterwards is allowed.
+		rest_get_server();
+		( new WP_REST_Posts_Controller( $test_pt ) )->register_routes();
+
+		$post_id = $this->factory()->post->create(
+			array(
+				'post_type'     => $test_pt,
+				'post_status'   => 'publish',
+				'post_password' => 'secret',
+			)
+		);
+
+		( new Event( $post_id ) )->save_datetimes(
+			array(
+				'datetime_start' => '2026-11-20 18:00:00',
+				'datetime_end'   => '2026-11-20 20:00:00',
+				'timezone'       => 'UTC',
+			)
+		);
+
+		wp_set_current_user( 0 );
+
+		$route   = sprintf( '/wp/v2/test-protected-events/%d', $post_id );
+		$without = rest_do_request( new WP_REST_Request( 'GET', $route ) )->get_data();
+		$request = new WP_REST_Request( 'GET', $route );
+
+		$request->set_param( 'password', 'secret' );
+
+		$with = rest_do_request( $request )->get_data();
+
+		unregister_post_type( $test_pt );
+
+		$this->assertSame( '', $without['meta']['gatherpress_datetime_start'], 'Anonymous viewers get no date.' );
+		$this->assertSame(
+			'2026-11-20 18:00:00',
+			$with['meta']['gatherpress_datetime_start'],
+			'The right password should return the date.'
 		);
 	}
 }
