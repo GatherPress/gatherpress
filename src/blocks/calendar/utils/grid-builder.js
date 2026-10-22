@@ -8,7 +8,7 @@
 import { dateI18n, format } from '@wordpress/date';
 
 import { DATE_FORMAT } from '../constants';
-import { formatDate } from './date-utils';
+import { formatCalendarDate, formatDate } from './date-utils';
 import { WEEKDAY_SLUGS, isWeekendDay, getDayNames } from './calendar-utils';
 
 /**
@@ -77,6 +77,33 @@ function daysBetween( from, to ) {
 }
 
 /**
+ * Resolves the last calendar day of an event.
+ *
+ * Mirrors Date_Calculator::resolve_end_date(): an event that ends at 00:00 on a
+ * later day does not run on that day, so it ends on the day before. An end
+ * before the start is treated as no end.
+ *
+ * @since TBD
+ *
+ * @param {string} startRaw Start datetime (YYYY-MM-DD HH:MM:SS).
+ * @param {string} endRaw   End datetime (YYYY-MM-DD HH:MM:SS), or an empty string.
+ *
+ * @return {string} Last day of the event (YYYY-MM-DD).
+ */
+export function resolveEndDateStr( startRaw, endRaw = '' ) {
+	const startDateStr = startRaw.slice( 0, 10 );
+	let endDateStr = endRaw ? endRaw.slice( 0, 10 ) : startDateStr;
+
+	if ( endDateStr > startDateStr && '00:00:00' === endRaw.slice( 11, 19 ) ) {
+		const dayBefore = toNoonDate( endDateStr );
+		dayBefore.setDate( dayBefore.getDate() - 1 );
+		endDateStr = formatDate( dayBefore );
+	}
+
+	return endDateStr < startDateStr ? startDateStr : endDateStr;
+}
+
+/**
  * Classifies the span position for a day within a multi-day event.
  *
  * @param {number} dayIndex  1-based day index.
@@ -119,28 +146,18 @@ export function resolvePostDateSpan( post, range = null, eventPostTypes = [] ) {
 		return null;
 	}
 
-	// When post supports gatherpress-event-date, postDate from meta is a string like:
-	// "2026-09-30 23:30:00" (an event starting at 11:30 PM in its local timezone).
-	// Here is why new Date( postDate ) causes the bug in the editor:
-	// new Date( "2026-09-30 23:30:00" ) creates a JavaScript Date object at 23:30 in the browser's timezone.
-	// dateI18n( DATE_FORMAT, ... ) converts that Date object into the WordPress site's timezone.
-	// If the site is just 1 hour ahead of the browser (or the event's local time), 23:30 becomes 00:30 on 2026-10-01.
-	// As a result, dateStr becomes "2026-10-01". The event gets placed into October 1st in the editor grid instead of September 30th!
-	//
-	// We directly take the first 10 characters ("YYYY-MM-DD") from the event's local datetime string,
-	// preventing JavaScript's browser/site timezone conversion from pushing a late-night event into the wrong day.
-	const startDateStr =
-		isEvent && post.meta?.gatherpress_datetime_start
-			? post.meta.gatherpress_datetime_start.slice( 0, 10 )
-			: dateI18n( DATE_FORMAT, new Date( postDate ) );
-
-	let endDateStr = startDateStr;
-	if ( isEvent && post.meta?.gatherpress_datetime_end ) {
-		const rawEnd = post.meta.gatherpress_datetime_end.slice( 0, 10 );
-		if ( rawEnd >= startDateStr ) {
-			endDateStr = rawEnd;
-		}
-	}
+	// Both dates are site-local strings: the event start (as "2026-09-30 23:30:00")
+	// and the REST "date" field of other posts, which is what get_the_date() gives
+	// on the server. Take the day from the string. new Date() would read the string
+	// as browser time, and dateI18n() would then move a late event into the next
+	// day when the site is ahead of the browser.
+	const startDateStr = String( postDate ).slice( 0, 10 );
+	const endDateStr = isEvent
+		? resolveEndDateStr(
+			startDateStr,
+			post.meta?.gatherpress_datetime_end || '',
+		)
+		: startDateStr;
 
 	const startObj = toNoonDate( startDateStr );
 	const totalDays = Math.max(
@@ -212,13 +229,26 @@ export function calculateTimedEventTracks( post, gridConfig, eventPostTypes = []
 	const endHour = toHour( gridConfig.endHour, 20 );
 	const quarterMins = Number( gridConfig.quarterMins ) || 15;
 
+	// Like Date_Calculator::get_post_event_datetimes(): no end, or an end before
+	// the start, gives one hour.
 	const startD = new Date( startTimeStr );
-	const endD = endTimeStr
-		? new Date( endTimeStr )
-		: new Date( startD.getTime() + 3600000 );
+	let endD = endTimeStr ? new Date( endTimeStr ) : null;
+	if ( ! ( endD > startD ) ) {
+		endD = new Date( startD.getTime() + 3600000 );
+	}
 
 	const startMin = ( startD.getHours() * 60 ) + startD.getMinutes();
-	const endMin = ( endD.getHours() * 60 ) + endD.getMinutes();
+	let endMin = ( endD.getHours() * 60 ) + endD.getMinutes();
+
+	// A one-day event that ends on the next day (at 00:00, or one hour after a
+	// late start) runs to the end of its start day, as on the server.
+	const startDateStr = formatDate( startD );
+	if (
+		formatDate( endD ) > startDateStr &&
+		startDateStr === resolveEndDateStr( startTimeStr, endTimeStr || '' )
+	) {
+		endMin = 24 * 60;
+	}
 
 	const dayStartMin = startHour * 60;
 	const dayEndMin = endHour * 60;
@@ -729,7 +759,7 @@ export function generateCalendar(
 	);
 	const viewType = dateRange.viewType || 'month';
 	const requestedCount = Math.max( 1, dateRange.unitCount || 1 );
-	const startObj = dateRange.startDateObj || new Date( dateRange.startDate );
+	const startObj = dateRange.startDateObj || toNoonDate( dateRange.startDate );
 	const isTimeGrid = Boolean( timeGridConfig?.enabled );
 
 	if ( 'day' === viewType ) {
@@ -737,7 +767,7 @@ export function generateCalendar(
 		for ( let i = 0; i < requestedCount; i++ ) {
 			const d = new Date( startObj );
 			d.setDate( startObj.getDate() + i );
-			dayNames.push( dateI18n( 'D', d ) );
+			dayNames.push( formatCalendarDate( 'D', d ) );
 		}
 		const weeks = buildConsecutiveDays( startObj, requestedCount, postsByDate );
 		const numRibbonSlots = getWeekNumRibbonSlots(
@@ -766,7 +796,7 @@ export function generateCalendar(
 		const weekStart =
 			dateRange.rawWeekStart ||
 			dateRange.startDateObj ||
-			new Date( dateRange.startDate );
+			toNoonDate( dateRange.startDate );
 		const dayNames = getDayNames( startOfWeek, showWeekends );
 		const weeks = buildConsecutiveWeeks(
 			weekStart,

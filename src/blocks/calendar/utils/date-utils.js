@@ -4,27 +4,10 @@
  * @package
  */
 
-import { dateI18n } from '@wordpress/date';
+import { date as formatSiteDate, gmdateI18n } from '@wordpress/date';
 import { _x, sprintf } from '@wordpress/i18n';
 import { isWeekendDay } from './calendar-utils';
 import { getDatetimeSeparator } from './source-utils';
-
-/**
- * Normalizes a Date object to 12:00:00 noon to prevent midnight timezone shifts.
- *
- * @param {Date} date Calendar date object.
- * @return {Date} Date object set to noon.
- */
-function atNoon( date ) {
-	return new Date(
-		date.getFullYear(),
-		date.getMonth(),
-		date.getDate(),
-		12,
-		0,
-		0,
-	);
-}
 
 /**
  * Formats a calendar Date object into YYYY-MM-DD without timezone shifting.
@@ -37,6 +20,35 @@ export function formatDate( date ) {
 	const month = String( date.getMonth() + 1 ).padStart( 2, '0' );
 	const day = String( date.getDate() ).padStart( 2, '0' );
 	return `${ year }-${ month }-${ day }`;
+}
+
+/**
+ * Formats a calendar date in the site's locale, without a time zone shift.
+ *
+ * The calendar keeps its dates at browser-local noon. dateI18n() converts a
+ * moment to the site time zone, which moves the date when the browser and
+ * the site are more than 12 hours apart. The same date at noon UTC, formatted
+ * in UTC, keeps its day.
+ *
+ * @param {string} dateFormat PHP-style date format.
+ * @param {Date}   date       Calendar date object.
+ * @return {string} Formatted date.
+ */
+export function formatCalendarDate( dateFormat, date ) {
+	return gmdateI18n( dateFormat, `${ formatDate( date ) }T12:00:00Z` );
+}
+
+/**
+ * Gets today in the site time zone, as the server does with current_datetime().
+ *
+ * @return {Date} Today at browser-local noon.
+ */
+export function getSiteToday() {
+	const [ year, month, day ] = formatSiteDate( 'Y-m-d' )
+		.split( '-' )
+		.map( Number );
+
+	return new Date( year, month - 1, day, 12, 0, 0 );
 }
 
 /**
@@ -62,15 +74,7 @@ export function calculateTargetDate( {
 		const [ year, month ] = selectedDate.split( '-' ).map( Number );
 		targetDate = new Date( year, month - 1, 1, 12, 0, 0 );
 	} else {
-		const now = new Date();
-		targetDate = new Date(
-			now.getFullYear(),
-			now.getMonth(),
-			now.getDate(),
-			12,
-			0,
-			0,
-		);
+		targetDate = getSiteToday();
 	}
 
 	if ( 'month' === viewType ) {
@@ -278,8 +282,8 @@ export function calculateDateQuery( options = {}, startOfWeek = 0 ) {
 /**
  * Formats day or week heading date spans.
  *
- * @param {Date}   start     Range start date at noon.
- * @param {Date}   end       Range end date at noon.
+ * @param {Date}   start     Range start date object.
+ * @param {Date}   end       Range end date object.
  * @param {string} separator Datetime separator.
  * @return {string} Formatted heading.
  */
@@ -335,9 +339,9 @@ function formatDayOrWeekHeading( start, end, separator ) {
 			'Calendar heading: date range',
 			'gatherpress',
 		),
-		dateI18n( startFormat, start ),
+		formatCalendarDate( startFormat, start ),
 		separator,
-		dateI18n( endFormat, end ),
+		formatCalendarDate( endFormat, end ),
 	);
 }
 
@@ -371,7 +375,7 @@ function formatMonthHeading( startDate, endDate, separator ) {
 		start.getFullYear() === end.getFullYear() &&
 		start.getMonth() === end.getMonth()
 	) {
-		return dateI18n(
+		return formatCalendarDate(
 			/* translators: Date format, see https://www.php.net/manual/datetime.format.php */
 			_x(
 				'F Y',
@@ -415,9 +419,9 @@ function formatMonthHeading( startDate, endDate, separator ) {
 			'Calendar heading: date range',
 			'gatherpress',
 		),
-		dateI18n( startFormat, start ),
+		formatCalendarDate( startFormat, start ),
 		separator,
-		dateI18n( endFormat, end ),
+		formatCalendarDate( endFormat, end ),
 	);
 }
 
@@ -434,23 +438,21 @@ export function formatHeading( viewType, startDate, endDate ) {
 	const isSameDay = startDate.toDateString() === endDate.toDateString();
 
 	if ( 'day' === viewType && isSameDay ) {
-		return dateI18n(
+		return formatCalendarDate(
 			/* translators: Date format, see https://www.php.net/manual/datetime.format.php */
 			_x(
 				'l, F j, Y',
 				'Calendar heading: single day',
 				'gatherpress',
 			),
-			atNoon( startDate ),
+			startDate,
 		);
 	}
 
-	const start = atNoon( startDate );
-	const end = atNoon( endDate );
 	const separator = getDatetimeSeparator();
 
 	if ( 'day' === viewType || 'week' === viewType ) {
-		return formatDayOrWeekHeading( start, end, separator );
+		return formatDayOrWeekHeading( startDate, endDate, separator );
 	}
 
 	return formatMonthHeading( startDate, endDate, separator );

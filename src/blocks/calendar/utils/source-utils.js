@@ -6,6 +6,7 @@
  */
 
 import { select as wpSelect } from '@wordpress/data';
+import { decodeEntities } from '@wordpress/html-entities';
 import { _x } from '@wordpress/i18n';
 import { store as coreStore } from '@wordpress/core-data';
 
@@ -90,6 +91,32 @@ export function isContextDateSource( source ) {
  */
 export function isSelectedDateSource( source ) {
 	return DATE_SOURCE_SELECTED === normalizeDateSource( source );
+}
+
+// Shared empty list, so a select returns the same value while the post types load.
+const EMPTY_POST_TYPES = [];
+
+/**
+ * Selects the registered post types that support gatherpress-event-date.
+ *
+ * Queries with context: 'edit', so the REST API includes the supports list.
+ *
+ * @param {Function} select Registry select function.
+ * @return {Array<Object>} Event post type objects. Empty while they load.
+ */
+export function selectEventPostTypes( select ) {
+	const types = select( coreStore ).getPostTypes( {
+		per_page: -1,
+		context: 'edit',
+	} );
+
+	if ( ! Array.isArray( types ) ) {
+		return EMPTY_POST_TYPES;
+	}
+
+	return types.filter(
+		( postType ) => !! postType.supports?.[ 'gatherpress-event-date' ],
+	);
 }
 
 /**
@@ -320,7 +347,8 @@ export function resolveSourceEventDates( select, params = {} ) {
 
 	let title = `#${ effectivePostId }`;
 	if ( post.title?.rendered ) {
-		title = post.title.rendered;
+		// The rendered title has HTML entities, such as &#8217; for an apostrophe.
+		title = decodeEntities( post.title.rendered );
 	} else if ( post.title?.raw ) {
 		title = post.title.raw;
 	}

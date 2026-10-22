@@ -10,11 +10,13 @@ import {
 	useBlockProps,
 	useInnerBlocksProps,
 	InspectorControls,
+	store as blockEditorStore,
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalGetGapCSSValue as getGapCSSValue,
 } from '@wordpress/block-editor';
 import { Placeholder, PanelBody, ToggleControl } from '@wordpress/components';
-import { useState, useMemo } from '@wordpress/element';
+import { useDispatch } from '@wordpress/data';
+import { useCallback, useState, useMemo } from '@wordpress/element';
 
 import { CALENDAR_TEMPLATE } from './constants';
 import {
@@ -104,8 +106,27 @@ export default function Edit( {
 	// Retrieve the real week/day template blocks so previews can clone their
 	// actual inner content (Day Number, Post Title, Event Date, etc.) and
 	// mirror their own color/border styling (e.g. a custom background).
-	const { dayInnerBlocks, dayBlockAttributes, weekBlockAttributes } =
-		useCalendarDayTemplate( clientId );
+	const {
+		dayClientId,
+		dayInnerBlocks,
+		dayBlockAttributes,
+		weekBlockAttributes,
+	} = useCalendarDayTemplate( clientId );
+
+	// The activated preview cell unmounts when the live day takes its place.
+	// Selecting the live day block moves focus to it, so focus does not drop
+	// to the document body.
+	const { selectBlock } = useDispatch( blockEditorStore );
+	const activateDay = useCallback(
+		( date ) => {
+			setActiveDate( date );
+
+			if ( dayClientId ) {
+				selectBlock( dayClientId );
+			}
+		},
+		[ dayClientId, selectBlock ],
+	);
 
 	const dayStartHour = weekBlockAttributes?.dayStartHour ?? 8;
 	const dayEndHour = weekBlockAttributes?.dayEndHour ?? 20;
@@ -473,7 +494,7 @@ export default function Edit( {
 					showWeekdays={ showWeekdays }
 					style={ tableStyle }
 					activeDate={ resolvedActiveDate }
-					setActiveDate={ setActiveDate }
+					setActiveDate={ activateDay }
 					weekContext={ weekContext }
 					liveWeekChildren={ liveWeekChildren }
 					dayInnerBlocks={ dayInnerBlocks }

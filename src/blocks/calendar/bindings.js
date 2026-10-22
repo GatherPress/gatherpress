@@ -22,8 +22,10 @@ import {
 import { getStartOfWeek } from './utils/calendar-utils';
 import { findBlockByName } from './utils/block-sync-utils';
 import {
+	getDefaultEventPostType,
 	resolveSourceEventDates,
 	isPostDateSource,
+	selectEventPostTypes,
 } from './utils/source-utils';
 
 domReady( () => {
@@ -40,11 +42,13 @@ domReady( () => {
 	 * @param {Object}   root0          Parameters object.
 	 * @param {Function} root0.select   Block editor select function.
 	 * @param {string}   root0.clientId Current block client ID.
+	 * @param {Object}   root0.context  Block context: the post of a Query Loop item, or the edited post.
 	 * @return {Object} Content object.
 	 */
 	const getCalendarHeadingValues = ( {
 		select: registrySelect,
 		clientId,
+		context,
 	} ) => {
 		const { getBlockParentsByBlockName, getBlock, getBlocks } =
 			registrySelect( 'core/block-editor' );
@@ -94,10 +98,17 @@ domReady( () => {
 
 		const startOfWeek = getStartOfWeek();
 
+		// The same arguments as the calendar block (hooks/use-source-post-dates.js),
+		// so the heading and the calendar show the same range.
 		const sourceDates = resolveSourceEventDates( registrySelect, {
 			dateRangeSource,
 			postId,
 			sourcePostType,
+			contextPostId: context?.postId,
+			contextPostType: context?.postType,
+			defaultPostType: getDefaultEventPostType(
+				selectEventPostTypes( registrySelect ),
+			),
 		} );
 
 		let effectiveSelectedDate = selectedDate;
@@ -138,7 +149,7 @@ domReady( () => {
 	registerBlockBindingsSource( {
 		name: 'gatherpress/calendar-heading',
 		label: __( 'Calendar Heading', 'gatherpress' ),
-		usesContext: [ 'query' ],
+		usesContext: [ 'query', 'postId', 'postType' ],
 		getValues: getCalendarHeadingValues,
 	} );
 

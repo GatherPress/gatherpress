@@ -79,6 +79,22 @@ $modal-open-state: ".wp-block-gatherpress-modal.gatherpress--is-visible";
 			align-items: center;
 			box-sizing: border-box;
 
+			// Forced colors replace the track color, so the track would not show. A
+			// border keeps its shape, open on the sides where the span goes on.
+			@media (forced-colors: active) {
+				border: 1px solid CanvasText;
+
+				&.is-span-start,
+				&.is-span-middle {
+					border-inline-end: 0;
+				}
+
+				&.is-span-middle,
+				&.is-span-end {
+					border-inline-start: 0;
+				}
+			}
+
 			.wp-block-post-title:not(.wp-block-gatherpress-modal *) a,
 			#{$trigger} {
 				color: var(--gatherpress-calendar-ribbon-color);
@@ -402,6 +418,9 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
    Solid vibrant tracks and dots with full-cell clickability.
    ========================================================================== */
 @mixin apply-compact-dots {
+	// The height of a dot or a track with its margins: the slot rows of a ribbon day.
+	--gatherpress-calendar-slot-row-height: 14px;
+
 	#{$start-time} {
 		@include visually-hidden;
 	}
@@ -451,6 +470,12 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
 				&:focus-visible {
 					outline: 2px solid var(--gatherpress-calendar-focus-outline-color);
 					outline-offset: 2px;
+				}
+
+				// Forced colors replace the dot color, so the dot would not show.
+				@media (forced-colors: active) {
+					box-sizing: border-box;
+					border: 1px solid CanvasText;
 				}
 			}
 		}
@@ -533,12 +558,6 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
 	position: relative;
 }
 
-// // 2. Prevent background entries from showing above the modal
-// .wp-block-gatherpress-calendar:has(#{$modal-open-state}) {
-// 	.gatherpress-calendar__entry:not(:has(#{$modal-open-state})) {
-// 		// z-index: auto;
-// 	}
-// }
 .wp-block-gatherpress-calendar:has(#{$modal-open-state}) {
 	.gatherpress-calendar__entry:has(#{$modal-open-state}) {
 		z-index: 2;
@@ -620,12 +639,6 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
 			width: calc(100% * var(--gatherpress-overlap-total, 1));
 			max-width: calc(100% * var(--gatherpress-overlap-total, 1));
 			margin-inline-start: calc((100% / var(--gatherpress-overlap-total, 1)) * var(--gatherpress-overlap-index, 0) * -1);
-
-			&:hover,
-			&:focus-within {
-				// z-index: 10;
-				// box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-			}
 		}
 	}
 }

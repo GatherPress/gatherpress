@@ -5,7 +5,7 @@
  * @since TBD
  */
 
-import { __, _n, _x, sprintf } from '@wordpress/i18n';
+import { __, _nx, _x, sprintf } from '@wordpress/i18n';
 
 /**
  * Recursively find a block by name within an array of blocks.
@@ -62,7 +62,7 @@ export function findHeadingBlock( blocks = [] ) {
 export function getCalendarBlockName(
 	viewType = 'month',
 	unitCount = 1,
-	name = 'Calendar',
+	name = __( 'Calendar', 'gatherpress' ),
 ) {
 	const count = Number( unitCount ) || 1;
 
@@ -115,8 +115,68 @@ export function getPaginationContainerName(
 }
 
 /**
+ * Gets the pagination label for one unit.
+ *
+ * @param {boolean} isPrevious Whether the link goes back.
+ * @param {string}  unit       'month' | 'week' | 'day'.
+ * @return {string} Localized label (e.g. "Previous Month").
+ */
+function getSingleUnitPaginationLabel( isPrevious, unit ) {
+	if ( isPrevious ) {
+		return {
+			month: _x( 'Previous Month', 'Calendar pagination label', 'gatherpress' ),
+			week: _x( 'Previous Week', 'Calendar pagination label', 'gatherpress' ),
+			day: _x( 'Previous Day', 'Calendar pagination label', 'gatherpress' ),
+		}[ unit ];
+	}
+
+	return {
+		month: _x( 'Next Month', 'Calendar pagination label', 'gatherpress' ),
+		week: _x( 'Next Week', 'Calendar pagination label', 'gatherpress' ),
+		day: _x( 'Next Day', 'Calendar pagination label', 'gatherpress' ),
+	}[ unit ];
+}
+
+/**
+ * Gets the pagination label for more than one unit.
+ *
+ * @param {boolean} isPrevious Whether the link goes back.
+ * @param {string}  unit       'month' | 'week' | 'day'.
+ * @param {number}  count      Number of units.
+ * @return {string} Localized label (e.g. "Next 3 Months").
+ */
+function getMultiUnitPaginationLabel( isPrevious, unit, count ) {
+	let label;
+
+	if ( isPrevious ) {
+		label = {
+			/* translators: %d: Number of months. */
+			month: _nx( 'Previous %d Month', 'Previous %d Months', count, 'Calendar pagination label', 'gatherpress' ),
+			/* translators: %d: Number of weeks. */
+			week: _nx( 'Previous %d Week', 'Previous %d Weeks', count, 'Calendar pagination label', 'gatherpress' ),
+			/* translators: %d: Number of days. */
+			day: _nx( 'Previous %d Day', 'Previous %d Days', count, 'Calendar pagination label', 'gatherpress' ),
+		}[ unit ];
+	} else {
+		label = {
+			/* translators: %d: Number of months. */
+			month: _nx( 'Next %d Month', 'Next %d Months', count, 'Calendar pagination label', 'gatherpress' ),
+			/* translators: %d: Number of weeks. */
+			week: _nx( 'Next %d Week', 'Next %d Weeks', count, 'Calendar pagination label', 'gatherpress' ),
+			/* translators: %d: Number of days. */
+			day: _nx( 'Next %d Day', 'Next %d Days', count, 'Calendar pagination label', 'gatherpress' ),
+		}[ unit ];
+	}
+
+	return sprintf( label, count );
+}
+
+/**
  * Resolves the pagination block label based on direction, viewType, and unitCount.
  * Omits the number when unitCount is 1 (e.g. "Previous Month", "Next 3 Months").
+ *
+ * Each label is one translatable sentence, so a language can put the words and
+ * the number in its own order.
  *
  * @param {string} direction 'previous' | 'next'.
  * @param {string} viewType  'month' | 'week' | 'day'.
@@ -129,35 +189,10 @@ export function getPaginationLabel(
 	unitCount = 1,
 ) {
 	const count = Number( unitCount ) || 1;
+	const isPrevious = 'previous' === direction;
+	const unit = [ 'week', 'day' ].includes( viewType ) ? viewType : 'month';
 
-	const directionLabels = {
-		next: __( 'Next', 'gatherpress' ),
-		previous: __( 'Previous', 'gatherpress' ),
-	};
-
-	const unitLabels = {
-		month: _n( 'Month', 'Months', count, 'gatherpress' ),
-		week: _n( 'Week', 'Weeks', count, 'gatherpress' ),
-		day: _n( 'Day', 'Days', count, 'gatherpress' ),
-	};
-
-	const directionLabel = directionLabels[ direction ] || directionLabels.next;
-	const unitLabel = unitLabels[ viewType ] || unitLabels.month;
-
-	if ( 1 < count ) {
-		return sprintf(
-			/* translators: %1$s: direction label (Next, Previous), %2$d: unit count, %3$s: unit label (Months, Weeks, Days). */
-			_x( '%1$s %2$d %3$s', 'Pagination label', 'gatherpress' ),
-			directionLabel,
-			count,
-			unitLabel,
-		);
-	}
-
-	return sprintf(
-		/* translators: %1$s: direction label (Next, Previous), %2$s: unit label (Month, Week, Day). */
-		_x( '%1$s %2$s', 'Pagination label', 'gatherpress' ),
-		directionLabel,
-		unitLabel,
-	);
+	return 1 < count
+		? getMultiUnitPaginationLabel( isPrevious, unit, count )
+		: getSingleUnitPaginationLabel( isPrevious, unit );
 }

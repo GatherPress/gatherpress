@@ -4,9 +4,6 @@
     ====================================================================== */
 
 .wp-block-gatherpress-calendar.is-style-gradient {
-	// Base container sets color to #fff so currentColor represents the glass tint
-	// color: #fff;
-	// background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 	background: linear-gradient(135deg, color-mix(in srgb, currentcolor 60%, transparent) 0%, color-mix(in srgb, currentcolor 10%, transparent) 100%);
 	border-radius: 16px;
 	padding: clamp(1rem, 4vw, 2rem);
@@ -23,7 +20,6 @@
 	--gatherpress-calendar-time-color: color-mix(in srgb, currentcolor 85%, transparent);
 	--gatherpress-calendar-title-color: currentcolor;
 	--gatherpress-calendar-focus-outline-color: currentcolor;
-	// --gatherpress-calendar-ribbon-color: #fff;
 	--gatherpress-calendar-ribbon-color-intensity: 42%;
 	--gatherpress-calendar-ribbon-mix-target: currentcolor;
 

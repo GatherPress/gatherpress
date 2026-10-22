@@ -7,6 +7,8 @@
  * @since TBD
  */
 
+import { store as coreStore } from '@wordpress/core-data';
+import { useSelect } from '@wordpress/data';
 import { useEffect, useMemo, useRef } from '@wordpress/element';
 import { usePostTypeSupports } from '../../../helpers/event';
 import { useSourcePostDates } from './use-source-post-dates';
@@ -52,12 +54,34 @@ export function useDateRangeSourceSync( {
 		contextPostType || null,
 	);
 
+	// usePostTypeSupports() is also false while the post type loads. Without this
+	// check, a cold editor load resets a saved "Current" source and marks the post dirty.
+	const hasResolvedPostType = useSelect(
+		( wpSelect ) => {
+			const typeToCheck =
+				contextPostType ||
+				wpSelect( 'core/editor' )?.getCurrentPostType();
+
+			return (
+				! typeToCheck ||
+				wpSelect( coreStore ).hasFinishedResolution( 'getPostType', [
+					typeToCheck,
+				] )
+			);
+		},
+		[ contextPostType ],
+	);
+
 	// Fallback to default if context mode is requested on a non-event post type.
 	useEffect( () => {
-		if ( isContextDateSource( dateRangeSource ) && ! hasCurrentSupport ) {
+		if (
+			isContextDateSource( dateRangeSource ) &&
+			hasResolvedPostType &&
+			! hasCurrentSupport
+		) {
 			setAttributes( { dateRangeSource: DATE_SOURCE_DEFAULT } );
 		}
-	}, [ dateRangeSource, hasCurrentSupport, setAttributes ] );
+	}, [ dateRangeSource, hasResolvedPostType, hasCurrentSupport, setAttributes ] );
 
 	const sourcePostDates = useSourcePostDates( {
 		dateRangeSource,

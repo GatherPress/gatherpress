@@ -24,9 +24,7 @@ registerBlockVariation( 'core/query', {
 		__( 'query', 'gatherpress' ),
 	],
 	attributes: {
-		// namespace: 'gatherpress-event-query',
 		enhancedPagination: true,
-		// className: 'gatherpress-event-query',
 		query: {
 			perPage: 5,
 			pages: 0,

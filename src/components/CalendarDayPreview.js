@@ -21,7 +21,8 @@ import {
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalGetGapCSSValue as getGapCSSValue,
 } from '@wordpress/block-editor';
-import { dateI18n } from '@wordpress/date';
+import { dateI18n, getSettings } from '@wordpress/date';
+import { __, sprintf } from '@wordpress/i18n';
 
 import {
 	isDayNumberBindingBlock,
@@ -137,7 +138,9 @@ function withResolvedDayContent( blocks, day, isRibbon ) {
  * renders its own <td> would nest an extra wrapper element inside this
  * <td>, producing invalid table markup.
  *
- * Clicking the cell activates it, making it the live/editable day.
+ * A button over the whole cell activates it, making it the live/editable
+ * day. The cell keeps its table cell role, so table navigation still reads
+ * the column headers.
  *
  * @since TBD
  *
@@ -145,7 +148,7 @@ function withResolvedDayContent( blocks, day, isRibbon ) {
  * @param {Object}   props.day                Day data (day, date, posts, isEmpty, isToday).
  * @param {Array}    props.innerBlocks        The real calendar-day block's inner blocks to preview.
  * @param {Object}   props.dayBlockAttributes The real calendar-day block's own attributes, for style parity.
- * @param {Function} props.onActivateDay      Called with this day's date when the cell is clicked.
+ * @param {Function} props.onActivateDay      Called with this day's date when the cell's button is pressed.
  * @param {number}   props.numRibbonSlots     Number of ribbon slots.
  * @param {boolean}  props.isTimeGrid         Whether time grid is active.
  * @param {Object}   props.timeGridConfig     Time grid configuration object.
@@ -206,12 +209,6 @@ function CalendarDayPreviewComponent( {
 		dayBlockAttributes?.layout,
 		dayBlockAttributes?.style?.spacing?.blockGap,
 	);
-	// console.group("getLayoutProps");
-	// console.log(dayBlockAttributes);
-	// console.log(colorProps.className);
-	// console.log(layoutProps.className);
-	// console.log(layoutProps.style);
-	// console.groupEnd();
 	const isPast = ! day.isEmpty && ! day.isToday && day.isPast;
 	const isFuture = ! day.isEmpty && ! day.isToday && day.isFuture;
 
@@ -275,16 +272,27 @@ function CalendarDayPreviewComponent( {
 		return <td className={ classNames } style={ style } />;
 	}
 
+	const activateLabel = sprintf(
+		/* translators: %s: Date of the calendar day. */
+		__( 'Edit %s', 'gatherpress' ),
+		day.date
+			? dateI18n(
+				getSettings().formats.date,
+				new Date( `${ day.date }T12:00:00Z` ),
+				'UTC',
+			)
+			: String( day.day ?? '' ),
+	);
+
 	return (
 		<BlockContextProvider value={ dayContext }>
-			<td
-				className={ classNames }
-				style={ style }
-				role="button"
-				tabIndex={ 0 }
-				onClick={ onActivate }
-				onKeyPress={ onActivate }
-			>
+			<td className={ classNames } style={ style }>
+				<button
+					type="button"
+					className="gatherpress-calendar__day-activate"
+					aria-label={ activateLabel }
+					onClick={ onActivate }
+				/>
 				{ ! hasDayNumberBlock && (
 					<div className="gatherpress-calendar__day-number">
 						{ day.day }

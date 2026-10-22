@@ -61,7 +61,6 @@
 				color: var(--wp--preset--color--base, #fff);
 				pointer-events: none;
 				user-select: none;
-				// z-index: 0;
 			}
 
 			/* Entries float on top of the cutout numeral */
@@ -98,19 +97,8 @@
 				pointer-events: none;
 			}
 
-			&.has-posts {
-				// background: color-mix(in srgb, currentColor 14%, transparent);
-				// box-shadow: 0 2px 8px color-mix(in srgb, currentColor 10%, transparent);
-			}
-
 			&.is-today {
 				background: color-mix(in srgb, currentcolor 23%, transparent);
-
-				/* Invert cutout on the today circle */
-				.gatherpress-calendar__day-number {
-					// color: var(--wp--preset--color--base, #fff);
-					// opacity: 0.3;
-				}
 
 				.wp-block-gatherpress-calendar-entries .gatherpress-calendar__entry {
 					color: var(--wp--preset--color--base, #fff);

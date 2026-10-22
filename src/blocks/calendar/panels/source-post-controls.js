@@ -17,6 +17,7 @@ import {
 import { useSelect } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
 import { useState, useMemo } from '@wordpress/element';
+import { decodeEntities } from '@wordpress/html-entities';
 
 import { useEventPostTypes } from '../hooks/use-event-post-types';
 import {
@@ -67,9 +68,7 @@ export function SourcePostControls( {
 	const query = useMemo( () => {
 		const baseQuery = {
 			per_page: 100,
-			// context: 'edit',
 			status: [ 'publish' ],
-			// gatherpress_event_query: 'all',
 			orderby: 'title',
 			order: 'asc',
 		};
@@ -113,7 +112,7 @@ export function SourcePostControls( {
 			if ( post.title?.raw ) {
 				title = post.title.raw;
 			} else if ( post.title?.rendered ) {
-				title = post.title.rendered;
+				title = decodeEntities( post.title.rendered );
 			}
 
 			let statusSuffix = '';

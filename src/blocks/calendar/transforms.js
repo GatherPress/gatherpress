@@ -106,6 +106,66 @@ function createCalendarFromTemplate( contentBlocks = [] ) {
 }
 
 /**
+ * Creates the default post template blocks: a linked post title and the excerpt.
+ *
+ * @return {Array} Default post template blocks.
+ */
+function createDefaultTemplateBlocks() {
+	return [
+		createBlock( 'core/post-title', { isLink: true } ),
+		createBlock( 'core/post-excerpt' ),
+	];
+}
+
+/**
+ * Checks if a block is the modal's Close button.
+ *
+ * @param {Object} block Block to check.
+ * @return {boolean} True for the Close button.
+ */
+function isCloseButton( block ) {
+	return Boolean(
+		'core/button' === block.name &&
+			block.attributes?.className?.includes(
+				'gatherpress-modal--trigger-close',
+			),
+	);
+}
+
+/**
+ * Copies a modal content block without the modal's Close button.
+ *
+ * The Close button does nothing outside a modal. Only that button goes: the
+ * other buttons of its group stay, and a group with no buttons left goes too.
+ *
+ * @param {Object} block Modal content block.
+ * @return {Array} The copy, or no block.
+ */
+function copyWithoutCloseButton( block ) {
+	if ( 'core/buttons' !== block.name || ! block.innerBlocks?.length ) {
+		return [ cloneBlock( block ) ];
+	}
+
+	const buttons = block.innerBlocks.filter(
+		( button ) => ! isCloseButton( button ),
+	);
+
+	if ( buttons.length === block.innerBlocks.length ) {
+		return [ cloneBlock( block ) ];
+	}
+
+	return buttons.length
+		? [
+			cloneBlock(
+				block,
+				{},
+				buttons.map( ( button ) => cloneBlock( button ) ),
+			),
+		]
+		: [];
+}
+
+/**
  * Extracts preserved blocks from modal-content inside the calendar hierarchy.
  *
  * @param {Array} calendarInnerBlocks The gatherpress/calendar innerBlocks.
@@ -117,8 +177,8 @@ function extractModalContentBlocks( calendarInnerBlocks = [] ) {
 		'gatherpress/modal-content',
 	);
 
-	if ( ! modalContent || ! modalContent.innerBlocks?.length ) {
-		// Fallback: look for calendar-entries or return default template blocks
+	if ( ! modalContent ) {
+		// Without a modal, keep what the calendar entries hold.
 		const entries = findBlockByName(
 			calendarInnerBlocks,
 			'gatherpress/calendar-entries',
@@ -126,29 +186,17 @@ function extractModalContentBlocks( calendarInnerBlocks = [] ) {
 		if ( entries?.innerBlocks?.length ) {
 			return entries.innerBlocks.map( ( block ) => cloneBlock( block ) );
 		}
-		return [
-			createBlock( 'core/post-title', { isLink: true } ),
-			createBlock( 'core/post-excerpt' ),
-		];
+		return createDefaultTemplateBlocks();
 	}
 
-	// Filter out the modal's Close button since it is no longer inside a modal
-	const preservedBlocks = modalContent.innerBlocks
-		.filter( ( block ) => {
-			const isCloseButtons =
-				'core/buttons' === block.name &&
-				block.innerBlocks?.some( ( btn ) =>
-					btn.attributes?.className?.includes(
-						'gatherpress-modal--trigger-close',
-					),
-				);
-			return ! isCloseButtons;
-		} )
-		.map( ( block ) => cloneBlock( block ) );
+	const preservedBlocks = ( modalContent.innerBlocks ?? [] ).flatMap(
+		copyWithoutCloseButton,
+	);
 
+	// An empty modal gives the default blocks, not a copy of the Modal Manager.
 	return preservedBlocks.length
 		? preservedBlocks
-		: modalContent.innerBlocks.map( ( block ) => cloneBlock( block ) );
+		: createDefaultTemplateBlocks();
 }
 /**
  * Transforming core/post-template ➔ gatherpress/calendar:

@@ -86,15 +86,19 @@ $gap: var(--gatherpress-calendar-column-gap, 2px);
 			line-height: 1.1;
 		}
 
-		/* Convert entries into the 24px slot grid in ribbon mode */
+		/*
+		 * Convert entries into the slot grid in ribbon mode. An empty slot keeps
+		 * its height, so a multi-day ribbon stays on the same row in each of its
+		 * days. A taller event makes its row taller.
+		 */
 		.wp-block-gatherpress-calendar-entries {
 			width: 100%;
 			margin: 0;
 			display: grid;
 			grid-auto-flow: row;
-			grid-auto-rows: min-content; /* Ribbons stay 24px, regular events take natural height */
+			grid-auto-rows: minmax(var(--gatherpress-calendar-slot-row-height, 24px), auto);
 			row-gap: 3px;
-			align-content: start; /* Retains 24px slots while cell expands vertically */
+			align-content: start; /* Retains the slot rows while the cell expands vertically */
 		}
 	}
 }

@@ -14,8 +14,6 @@ import {
 	__experimentalUseColorProps as useColorProps,
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalUseBorderProps as useBorderProps,
-
-	// __experimentalGetSpacingClassesAndStyles as getSpacingClassesAndStyles,
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalGetShadowClassesAndStyles as getShadowClassesAndStyles,
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
@@ -146,7 +144,6 @@ const EventItem = memo( function EventItemComponent( {
 
 	const colorProps = useColorProps( parentAttributes ?? {} );
 	const borderProps = useBorderProps( parentAttributes ?? {} );
-	// const spacingProps = getSpacingClassesAndStyles( parentAttributes ?? {} );
 	const shadowProps = getShadowClassesAndStyles( parentAttributes ?? {} );
 
 	const rowSpan = 'object' === typeof post ? ( post?.rowSpan ?? 1 ) : 1;
@@ -181,7 +178,6 @@ const EventItem = memo( function EventItemComponent( {
 			}
 			: {} ),
 		...borderProps.style,
-		// ...spacingProps.style,
 		...shadowProps.style,
 	};
 

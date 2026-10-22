@@ -18,7 +18,7 @@ const EMPTY_ATTRIBUTES = {};
  * Returns stable references to the week and day template blocks inside the calendar.
  *
  * @param {string} clientId Calendar block client ID.
- * @return {Object} Day template blocks and attributes.
+ * @return {Object} Day template client ID, blocks and attributes.
  */
 export function useCalendarDayTemplate( clientId ) {
 	return useStableValue(
@@ -31,6 +31,7 @@ export function useCalendarDayTemplate( clientId ) {
 					: null;
 
 				return {
+					dayClientId: dayBlock?.clientId ?? '',
 					dayInnerBlocks: dayBlock
 						? getBlocks( dayBlock.clientId )
 						: EMPTY_BLOCKS,
