@@ -232,11 +232,18 @@ export function resolveSourceEventDates( select, params = {} ) {
 	const isSelected = DATE_SOURCE_SELECTED === canonicalSource;
 	const isContext = DATE_SOURCE_CONTEXT === canonicalSource;
 
+	// A template in the site editor has a string ID ("theme//single-…"): it is not a post.
+	const toPostId = ( id ) => {
+		const number = Number( id );
+		return Number.isInteger( number ) && 0 < number ? number : 0;
+	};
+
 	let effectivePostId = 0;
 	if ( isSelected ) {
-		effectivePostId = Number( postId ) || 0;
+		effectivePostId = toPostId( postId );
 	} else if ( isContext ) {
-		effectivePostId = Number( contextPostId ) || currentEditorPostId || 0;
+		effectivePostId =
+			toPostId( contextPostId ) || toPostId( currentEditorPostId );
 	}
 
 	let effectivePostType = defaultPostType;
@@ -257,9 +264,16 @@ export function resolveSourceEventDates( select, params = {} ) {
 		};
 	}
 
-	// 1. Direct-editing: listen live to gatherpress/datetime store and core/editor edited meta.
+	// 1. Direct-editing: listen live to gatherpress/datetime store and core/editor edited meta,
+	// only for the post that the editor edits, and only when it has event dates. A Query Loop
+	// item, or an editor post without event dates, reads its saved dates below.
 	const isTargetCurrentEditorPost =
-		isContext || effectivePostId === currentEditorPostId;
+		effectivePostId === toPostId( currentEditorPostId ) &&
+		Boolean(
+			select( coreStore ).getPostType( editorPostType )?.supports?.[
+				'gatherpress-event-date'
+			],
+		);
 
 	if ( isTargetCurrentEditorPost ) {
 		const liveDates = getLiveEventDates( select );

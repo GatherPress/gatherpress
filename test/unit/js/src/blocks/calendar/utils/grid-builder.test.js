@@ -7,8 +7,10 @@ import { describe, expect, it } from '@jest/globals';
  * Internal dependencies.
  */
 import {
+	calculateTimedEventTracks,
 	generateCalendar,
 	groupPostsByDate,
+	toHour,
 } from '@src/blocks/calendar/utils/grid-builder';
 
 // The post types that support gatherpress-event-date.
@@ -106,6 +108,38 @@ describe( 'groupPostsByDate', () => {
 			[ 4, 2, 3 ],
 			[ 5, 0, 1 ],
 		] );
+	} );
+} );
+
+describe( 'toHour', () => {
+	it( 'keeps 0 and numeric strings, and uses the fallback otherwise', () => {
+		expect( toHour( 0, 8 ) ).toBe( 0 );
+		expect( toHour( '6', 8 ) ).toBe( 6 );
+		expect( toHour( '', 8 ) ).toBe( 8 );
+		expect( toHour( null, 8 ) ).toBe( 8 );
+		expect( toHour( undefined, 20 ) ).toBe( 20 );
+		expect( toHour( 'noon', 20 ) ).toBe( 20 );
+	} );
+} );
+
+describe( 'calculateTimedEventTracks', () => {
+	it( 'counts the tracks from a start hour of 0, as the server does', () => {
+		const grid = { enabled: true, startHour: 0, endHour: 24, quarterMins: 15 };
+
+		expect(
+			calculateTimedEventTracks(
+				event( 1, '2026-10-16 09:00:00', '2026-10-16 10:00:00' ),
+				grid,
+				EVENT_TYPES,
+			),
+		).toEqual( { timeRowStart: 37, timeRowEnd: 41 } );
+		expect(
+			calculateTimedEventTracks(
+				event( 2, '2026-10-16 03:00:00', '2026-10-16 04:00:00' ),
+				grid,
+				EVENT_TYPES,
+			),
+		).toEqual( { timeRowStart: 13, timeRowEnd: 17 } );
 	} );
 } );
 

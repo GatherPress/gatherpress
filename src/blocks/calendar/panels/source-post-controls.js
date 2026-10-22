@@ -10,7 +10,6 @@ import { __ } from '@wordpress/i18n';
 import {
 	SelectControl,
 	ComboboxControl,
-	BaseControl,
 	__experimentalToggleGroupControl as ToggleGroupControl,
 	__experimentalToggleGroupControlOption as ToggleGroupControlOption,
 } from '@wordpress/components';
@@ -141,35 +140,29 @@ export function SourcePostControls( {
 
 	return (
 		<div style={ { marginBottom: '16px' } }>
-			<BaseControl
+			<ToggleGroupControl
+				__nextHasNoMarginBottom
 				label={ __( 'Date Range Source', 'gatherpress' ) }
-				id="gatherpress-calendar-date-source"
+				value={ activeValue }
+				onChange={ handleSourceChange }
+				isBlock
+				isDeselectable={ false }
 			>
-				<ToggleGroupControl
-					__nextHasNoMarginBottom
-					label={ __( 'Date Range Source', 'gatherpress' ) }
-					hideLabelFromVision
-					value={ activeValue }
-					onChange={ handleSourceChange }
-					isBlock
-					isDeselectable={ false }
-				>
+				<ToggleGroupControlOption
+					value={ DATE_SOURCE_DEFAULT }
+					label={ __( 'Default', 'gatherpress' ) }
+				/>
+				{ hasCurrentSupport && (
 					<ToggleGroupControlOption
-						value={ DATE_SOURCE_DEFAULT }
-						label={ __( 'Default', 'gatherpress' ) }
+						value={ DATE_SOURCE_CONTEXT }
+						label={ __( 'Current', 'gatherpress' ) }
 					/>
-					{ hasCurrentSupport && (
-						<ToggleGroupControlOption
-							value={ DATE_SOURCE_CONTEXT }
-							label={ __( 'Current', 'gatherpress' ) }
-						/>
-					) }
-					<ToggleGroupControlOption
-						value={ DATE_SOURCE_SELECTED }
-						label={ __( 'Specific', 'gatherpress' ) }
-					/>
-				</ToggleGroupControl>
-			</BaseControl>
+				) }
+				<ToggleGroupControlOption
+					value={ DATE_SOURCE_SELECTED }
+					label={ __( 'Specific', 'gatherpress' ) }
+				/>
+			</ToggleGroupControl>
 
 			{ isSelected && (
 				<div style={ { marginTop: '12px' } }>

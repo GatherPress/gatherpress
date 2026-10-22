@@ -28,6 +28,7 @@ import {
 	getDefaultActiveDate,
 	getColumnsCount,
 	getStartOfWeek,
+	toHour,
 } from './utils/calendar-utils';
 import { useCalendarSync } from './hooks/use-calendar-sync';
 import { useCalendarData } from './hooks/use-calendar-data';
@@ -123,11 +124,6 @@ export default function Edit( {
 			return { enabled: false, slots: [] };
 		}
 
-		// Like the PHP side: a numeric hour stays, 0 included; anything else uses the default.
-		const toHour = ( value, fallback ) =>
-			'' !== value && null !== value && Number.isFinite( Number( value ) )
-				? Number( value )
-				: fallback;
 		const start = Math.max( 0, Math.min( 23, toHour( dayStartHour, 8 ) ) );
 		const end = Math.max( start + 1, Math.min( 24, toHour( dayEndHour, 20 ) ) );
 		const slotHours = 1;

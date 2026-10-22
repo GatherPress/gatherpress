@@ -537,40 +537,42 @@ final class Calendar_Entries {
 
 		++self::$render_depth;
 
-		/**
-		 * Fires before the calendar renders the entry template of one event.
-		 *
-		 * The calendar has added its filters for this event. Callbacks can
-		 * add their own filters, or remove one of the calendar's, for example:
-		 * remove_filter( 'the_title', array( Calendar_Entries::class, 'filter_empty_title' ), 10 );
-		 * The calendar removes its own filters after the entry renders. For a
-		 * calendar inside an entry template, that is after the outer entry. The
-		 * action can fire more than once for the same event while a day renders.
-		 *
-		 * @since TBD
-		 *
-		 * @param int                              $post_id      Event post ID.
-		 * @param string                           $post_type    Event post type.
-		 * @param array<int, array<string, mixed>> $inner_blocks Parsed blocks of the entry template.
-		 * @param array<string, mixed>             $span_data    Multi-day span descriptors.
-		 */
-		do_action( 'gatherpress_calendar_before_render_entry', $post_id, $post_type, $inner_blocks, $span_data );
+		// Finally: a callback or block that throws must not leave the filters or this entry's state.
+		try {
+			/**
+			 * Fires before the calendar renders the entry template of one event.
+			 *
+			 * The calendar has added its filters for this event. Callbacks can
+			 * add their own filters, or remove one of the calendar's, for example:
+			 * remove_filter( 'the_title', array( Calendar_Entries::class, 'filter_empty_title' ), 10 );
+			 * The calendar removes its own filters after the entry renders. For a
+			 * calendar inside an entry template, that is after the outer entry. The
+			 * action fires once for each entry, so a multi-day event fires it once
+			 * for each of its visible days.
+			 *
+			 * @since TBD
+			 *
+			 * @param int                              $post_id      Event post ID.
+			 * @param string                           $post_type    Event post type.
+			 * @param array<int, array<string, mixed>> $inner_blocks Parsed blocks of the entry template.
+			 * @param array<string, mixed>             $span_data    Multi-day span descriptors.
+			 */
+			do_action( 'gatherpress_calendar_before_render_entry', $post_id, $post_type, $inner_blocks, $span_data );
 
-		$inner_content = self::render_template( $inner_blocks );
+			return self::render_template( $inner_blocks );
+		} finally {
+			--self::$render_depth;
 
-		--self::$render_depth;
+			if ( 0 === self::$render_depth ) {
+				self::remove_entry_filters();
+			}
 
-		if ( 0 === self::$render_depth ) {
-			self::remove_entry_filters();
+			self::$current_post_id          = $previous_post_id;
+			self::$current_post_type        = $previous_post_type;
+			self::$current_span_data        = $previous_span_data;
+			self::$current_shows_post_title = $previous_shows_post_title;
+			self::$modal_depth              = $previous_modal_depth;
 		}
-
-		self::$current_post_id          = $previous_post_id;
-		self::$current_post_type        = $previous_post_type;
-		self::$current_span_data        = $previous_span_data;
-		self::$current_shows_post_title = $previous_shows_post_title;
-		self::$modal_depth              = $previous_modal_depth;
-
-		return $inner_content;
 	}
 
 	/**
@@ -788,7 +790,8 @@ final class Calendar_Entries {
 	 * inside the link, the same way core/read-more does. Where the time is
 	 * visible, it stays first in the name (WCAG 2.5.3); the Dots style hides
 	 * the time, so there the title is the only useful part of the name. On a
-	 * multi-day event, the day of the event follows the title.
+	 * multi-day event, the day of the event follows the title, except inside
+	 * the modal, which shows the full dates.
 	 *
 	 * The title comes from the same post the Event Date block shows, so a
 	 * block with its own `postId` attribute gets that event's title, not
@@ -842,7 +845,10 @@ final class Calendar_Entries {
 			$post_title
 		);
 
-		return self::insert_screen_reader_text( $block_content, $screen_reader_text . self::get_span_text(), '</a>' );
+		// The modal shows the full dates, so it needs no day of the event, as in filter_post_title_span().
+		$span_text = self::$modal_depth > 0 ? '' : self::get_span_text();
+
+		return self::insert_screen_reader_text( $block_content, $screen_reader_text . $span_text, '</a>' );
 	}
 
 	/**

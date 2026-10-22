@@ -122,7 +122,8 @@ final class Style_Processor {
 	 *
 	 * The value goes into a style attribute, so a value that could end the declaration or add
 	 * another one (a semicolon, braces, quotes, a backslash or a comment) gives an empty string.
-	 * Preset slugs keep only lowercase letters, digits, dashes and underscores.
+	 * The preset type and slug go through _wp_to_kebab_case(), as WordPress names the preset
+	 * variables (x_large becomes x-large), which leaves only letters, digits and dashes.
 	 *
 	 * @since TBD
 	 *
@@ -134,7 +135,11 @@ final class Style_Processor {
 		$parts = explode( '|', $value );
 
 		if ( 3 === count( $parts ) && 'var:preset' === $parts[0] ) {
-			return sprintf( 'var(--wp--preset--%s--%s)', sanitize_key( $parts[1] ), sanitize_key( $parts[2] ) );
+			return sprintf(
+				'var(--wp--preset--%s--%s)',
+				_wp_to_kebab_case( $parts[1] ),
+				_wp_to_kebab_case( $parts[2] )
+			);
 		}
 
 		if ( preg_match( '#[;{}\\\\<>"\']|/\*#', $value ) ) {

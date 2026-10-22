@@ -28,6 +28,7 @@ import {
 	getLayoutProps,
 	FALLBACK_BLOCK_GAP,
 } from '../blocks/calendar/utils/day-number';
+import { getRibbonRowsStyle } from '../blocks/calendar/utils/ribbon-rows';
 
 /**
  * Strips top-level event-date blocks from entries on multi-day/all-day spans.
@@ -239,7 +240,7 @@ function CalendarDayPreviewComponent( {
 		...borderProps.style,
 		...spacingProps.style,
 		...shadowProps.style,
-		'--gatherpress-num-ribbon-slots': numRibbonSlots,
+		...getRibbonRowsStyle( numRibbonSlots ),
 	};
 
 	const previewLayoutStyles = isRibbonOrTimeGrid

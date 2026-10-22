@@ -20,6 +20,7 @@ import { useMemo, memo } from '@wordpress/element';
 import './editor.scss';
 
 import { findDayNumberBlock } from '../calendar/utils/day-number';
+import { getRibbonRowsStyle } from '../calendar/utils/ribbon-rows';
 
 const EMPTY_ARRAY = [];
 
@@ -146,9 +147,7 @@ export default memo( function Edit( {
 
 	const blockProps = useBlockProps( {
 		className: classNames,
-		style: {
-			'--gatherpress-num-ribbon-slots': numRibbonSlots,
-		},
+		style: getRibbonRowsStyle( numRibbonSlots ),
 	} );
 
 	const { children, ...innerBlocksWrapperProps } = useInnerBlocksProps(

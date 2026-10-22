@@ -22,14 +22,16 @@ function getBrowserToday() {
 	return `${ year }-${ month }-${ day }`;
 }
 
+// Derived state: the server gives the same values from the site's date
+// (Calendar_Day::register_day_state()), so the server render keeps them.
 store( 'gatherpress/calendar-day', {
-	callbacks: {
+	state: {
 		/**
 		 * True if the cell's date matches today in the visitor's browser.
 		 *
 		 * @return {boolean} True if today.
 		 */
-		isToday() {
+		get isToday() {
 			const ctx = getContext();
 			const date = ctx?.date;
 			if ( ! date ) {
@@ -43,7 +45,7 @@ store( 'gatherpress/calendar-day', {
 		 *
 		 * @return {boolean} True if past.
 		 */
-		isPast() {
+		get isPast() {
 			const ctx = getContext();
 			const date = ctx?.date;
 			if ( ! date ) {
@@ -57,7 +59,7 @@ store( 'gatherpress/calendar-day', {
 		 *
 		 * @return {boolean} True if future.
 		 */
-		isFuture() {
+		get isFuture() {
 			const ctx = getContext();
 			const date = ctx?.date;
 			if ( ! date ) {
@@ -71,7 +73,7 @@ store( 'gatherpress/calendar-day', {
 		 *
 		 * @return {string|false} 'date' or false.
 		 */
-		ariaCurrent() {
+		get ariaCurrent() {
 			const ctx = getContext();
 			const date = ctx?.date;
 			return date && date === getBrowserToday() ? 'date' : false;

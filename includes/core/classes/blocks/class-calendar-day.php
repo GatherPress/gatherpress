@@ -69,13 +69,41 @@ final class Calendar_Day {
 			);
 		}
 
+		$classes = array_merge( self::get_day_cell_classes( $context ), self::get_time_grid_classes( $block ) );
+
 		return sprintf(
 			'<td %1$s>%2$s</td>',
-			get_block_wrapper_attributes(
-				self::build_cell_attributes( self::get_day_cell_classes( $context ), $day_date, $is_empty, $weekday )
-			),
+			get_block_wrapper_attributes( self::build_cell_attributes( $classes, $day_date, $is_empty, $weekday ) ),
 			$cell_content
 		);
+	}
+
+	/**
+	 * Get the Ribbon style class that the time grid needs.
+	 *
+	 * The time grid places its entries with the Ribbon layout, so a day in a time grid gets the
+	 * Ribbon class whichever style it has, as in the editor (calendar-day/edit.js).
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_Block $block Day block instance.
+	 *
+	 * @return list<string> The Ribbon class, or nothing when it is not needed.
+	 */
+	private static function get_time_grid_classes( WP_Block $block ): array {
+		$grid_config = $block->context['gatherpress/timeGridConfig'] ?? null;
+		$class_name  = $block->attributes['className'] ?? '';
+
+		if ( ! is_array( $grid_config ) || empty( $grid_config['enabled'] ) ) {
+			return array();
+		}
+
+		// The author picked the Ribbon style: get_block_wrapper_attributes() adds its class.
+		if ( is_string( $class_name ) && preg_match( '/(^|\s)is-style-ribbon(\s|$)/', $class_name ) ) {
+			return array();
+		}
+
+		return array( 'is-style-ribbon' );
 	}
 
 	/**
@@ -126,14 +154,62 @@ final class Calendar_Day {
 			$attributes['aria-current'] = 'date';
 		}
 
+		self::register_day_state();
+
 		$attributes['data-wp-interactive']        = 'gatherpress/calendar-day';
 		$attributes['data-wp-context']            = (string) wp_json_encode( array( 'date' => $day_date ) );
-		$attributes['data-wp-class--is-today']    = 'callbacks.isToday';
-		$attributes['data-wp-class--is-past']     = 'callbacks.isPast';
-		$attributes['data-wp-class--is-future']   = 'callbacks.isFuture';
-		$attributes['data-wp-bind--aria-current'] = 'callbacks.ariaCurrent';
+		$attributes['data-wp-class--is-today']    = 'state.isToday';
+		$attributes['data-wp-class--is-past']     = 'state.isPast';
+		$attributes['data-wp-class--is-future']   = 'state.isFuture';
+		$attributes['data-wp-bind--aria-current'] = 'state.ariaCurrent';
 
 		return $attributes;
+	}
+
+	/**
+	 * Register the server values of the day state that the cell directives read.
+	 *
+	 * The server processes the directives of the cell when it renders the page. Without these
+	 * values it would remove the is-today, is-past and is-future classes and aria-current that
+	 * PHP set. The server uses the site's date; the view script then uses the visitor's date
+	 * (calendar-day/view.js), which can be another day near midnight.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	private static function register_day_state(): void {
+		wp_interactivity_state(
+			'gatherpress/calendar-day',
+			array(
+				'isToday'     => static function (): bool {
+					return 0 === self::compare_context_date();
+				},
+				'isPast'      => static function (): bool {
+					return -1 === self::compare_context_date();
+				},
+				'isFuture'    => static function (): bool {
+					return 1 === self::compare_context_date();
+				},
+				'ariaCurrent' => static function () {
+					return 0 === self::compare_context_date() ? 'date' : false;
+				},
+			)
+		);
+	}
+
+	/**
+	 * Compare the date of the cell that the server processes now with today's date.
+	 *
+	 * @since TBD
+	 *
+	 * @return int|null -1 for a past day, 0 for today, 1 for a future day, null without a date.
+	 */
+	private static function compare_context_date(): ?int {
+		$context = wp_interactivity_get_context( 'gatherpress/calendar-day' );
+		$date    = is_string( $context['date'] ?? null ) ? $context['date'] : '';
+
+		return '' === $date ? null : $date <=> Date_Calculator::get_today();
 	}
 
 	/**

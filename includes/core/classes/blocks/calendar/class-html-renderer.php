@@ -132,9 +132,15 @@ final class Html_Renderer {
 
 		if ( $is_time_grid ) {
 			$total_quarters = $grid_config['total_quarters'] ?? 48;
+			$slot_height    = $grid_config['slot_height'] ?? 48;
 			$table_styles[] = sprintf(
 				'--gatherpress-total-quarter-slots: %d',
 				is_numeric( $total_quarters ) ? (int) $total_quarters : 48
+			);
+			// The editor sets the same property from the day block's Slot Height control.
+			$table_styles[] = sprintf(
+				'--gatherpress-calendar-slot-height: %dpx',
+				is_numeric( $slot_height ) ? (int) $slot_height : 48
 			);
 		}
 

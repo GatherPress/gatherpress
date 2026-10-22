@@ -163,13 +163,3 @@
 		}
 	}
 }
-
-/*
- * GatherPress core defines .gatherpress--screen-reader-text in its utility
- * stylesheet since 0.36.0. This copy, scoped to the calendar, keeps the
- * table caption and the hidden event title out of the grid on GatherPress
- * 0.35. Remove it when the calendar requires GatherPress 0.36 or later.
- */
-.wp-block-gatherpress-calendar .gatherpress--screen-reader-text {
-	@include visually-hidden;
-}

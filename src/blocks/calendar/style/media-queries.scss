@@ -3,14 +3,6 @@
    ====================================================================== */
 @media (width <= 400px) {
 	@supports not (container-type: inline-size) {
-		.gatherpress-calendar__table th {
-			display: none;
-		}
-
-		.gatherpress-calendar__day-number {
-			font-size: clamp(0.625rem, 1.5vw, 0.7rem);
-		}
-
 		/* ======================================================================
 			BLOCK STYLE: Dots (style-variation of calendar-entries block)
 			====================================================================== */

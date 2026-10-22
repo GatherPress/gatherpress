@@ -2,7 +2,7 @@ import { useSelect } from '@wordpress/data';
 import { getSettings } from '@wordpress/date';
 import { store as coreStore } from '@wordpress/core-data';
 
-import { getPostsPerPage } from '../utils/calendar-utils';
+import { buildTaxQueryArgs, getPostsPerPage } from '../utils/calendar-utils';
 
 const EMPTY_ARRAY = [];
 
@@ -24,7 +24,7 @@ export function useCalendarData( query, dateQuery, showScheduled = false ) {
 				return { posts: [], startOfWeek: 0 };
 			}
 
-			const { getEntityRecords } = select( coreStore );
+			const { getEntityRecords, getTaxonomies } = select( coreStore );
 
 			// Create a clean query object.
 			const cleanQuery = { ...query };
@@ -59,11 +59,19 @@ export function useCalendarData( query, dateQuery, showScheduled = false ) {
 					cleanQuery.gatherpress_shadow_source_post_type;
 			}
 
-			// Add taxonomy query if present.
+			// Add the taxonomy filters by their REST names, as core's Post Template does.
 			if ( cleanQuery.taxQuery ) {
-				Object.keys( cleanQuery.taxQuery ).forEach( ( taxonomy ) => {
-					queryArgs[ taxonomy ] = cleanQuery.taxQuery[ taxonomy ];
-				} );
+				Object.assign(
+					queryArgs,
+					buildTaxQueryArgs(
+						cleanQuery.taxQuery,
+						getTaxonomies( {
+							type: query?.postType || 'post',
+							per_page: -1,
+							context: 'view',
+						} ) ?? EMPTY_ARRAY,
+					),
+				);
 			}
 
 			// Add author query if present.

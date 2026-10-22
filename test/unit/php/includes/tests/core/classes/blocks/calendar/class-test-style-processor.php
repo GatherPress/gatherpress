@@ -125,9 +125,18 @@ class Test_Style_Processor extends Base {
 		);
 		$this->assertSame( '', Style_Processor::resolve_preset_value( '1px /* x */' ) );
 		$this->assertSame(
-			'var(--wp--preset--spacing--50colorred)',
+			'var(--wp--preset--spacing--50-color-red)',
 			Style_Processor::resolve_preset_value( 'var:preset|spacing|50;color:red' ),
 			'Failed to assert a preset slug keeps only safe characters.'
+		);
+		$this->assertSame(
+			'var(--wp--preset--spacing--x-large)',
+			Style_Processor::resolve_preset_value( 'var:preset|spacing|x_large' ),
+			'Failed to assert the slug in kebab case, as WordPress names the preset variable.'
+		);
+		$this->assertSame(
+			'var(--wp--preset--font-size--2-xl)',
+			Style_Processor::resolve_preset_value( 'var:preset|fontSize|2xl' )
 		);
 		$this->assertSame(
 			'',

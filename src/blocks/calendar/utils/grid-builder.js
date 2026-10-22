@@ -28,6 +28,24 @@ const MAX_EVENT_SPAN_DAYS = 366;
 const DAY_MS = 1000 * 60 * 60 * 24;
 
 /**
+ * Read an hour setting, keeping 0.
+ *
+ * Like the PHP side: a numeric hour stays, 0 included; anything else uses the default.
+ *
+ * @since TBD
+ *
+ * @param {*}      value    Hour from an attribute or the time grid configuration.
+ * @param {number} fallback Hour to use when the value is not a number.
+ *
+ * @return {number} The hour.
+ */
+export function toHour( value, fallback ) {
+	return '' !== value && null !== value && Number.isFinite( Number( value ) )
+		? Number( value )
+		: fallback;
+}
+
+/**
  * Create a Date at noon local time from a YYYY-MM-DD string.
  *
  * Noon keeps the day the same when daylight saving time changes the clock.
@@ -190,8 +208,8 @@ export function calculateTimedEventTracks( post, gridConfig, eventPostTypes = []
 		return null;
 	}
 
-	const startHour = Number( gridConfig.startHour ) || 8;
-	const endHour = Number( gridConfig.endHour ) || 20;
+	const startHour = toHour( gridConfig.startHour, 8 );
+	const endHour = toHour( gridConfig.endHour, 20 );
 	const quarterMins = Number( gridConfig.quarterMins ) || 15;
 
 	const startD = new Date( startTimeStr );

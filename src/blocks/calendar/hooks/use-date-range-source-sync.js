@@ -129,7 +129,9 @@ export function useDateRangeSourceSync( {
 	] );
 
 	// Preset viewType based on post duration when a new source post is selected.
-	const lastPresetPostIdRef = useRef( 0 );
+	// The ref starts at the post the block opens with, so opening the editor keeps
+	// the saved view; only a change of source post applies the preset.
+	const lastPresetPostIdRef = useRef( sourcePostDates.effectivePostId );
 	useEffect( () => {
 		if ( ! hasPostDates || ! sourcePostDates.effectivePostId ) {
 			return;

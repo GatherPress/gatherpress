@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core\Blocks;
 use GatherPress\Core\Blocks\Calendar;
 use GatherPress\Core\Event;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
 use WP_Block;
 
 /**
@@ -201,6 +202,104 @@ class Test_Calendar extends Base {
 			$output,
 			'Failed to assert the gutter column.'
 		);
+		$this->assertStringContainsString(
+			'--gatherpress-calendar-slot-height: 48px',
+			$output,
+			'Failed to assert the default slot height.'
+		);
+		$this->assertMatchesRegularExpression(
+			'#<td [^>]*class="gatherpress-calendar__day [^"]*is-style-ribbon#',
+			$output,
+			'Failed to assert a Classic day in a time grid gets the Ribbon class, as in the editor.'
+		);
+	}
+
+	/**
+	 * The time grid takes the slot height of the day block, within the range of its control.
+	 *
+	 * @covers ::render
+	 * @covers ::get_slot_height
+	 * @covers \GatherPress\Core\Blocks\Calendar\Html_Renderer::build_table_style
+	 * @covers \GatherPress\Core\Blocks\Calendar_Day::get_time_grid_classes
+	 *
+	 * @return void
+	 */
+	public function test_render_time_grid_slot_height(): void {
+		$markup   = self::get_calendar_markup(
+			'{"viewType":"week","selectedDate":"2026-10-15","enableTimeGrid":true}',
+			',"orderBy":"datetime"'
+		);
+		$with_day = static function ( string $day_attrs ) use ( $markup ): string {
+			return do_blocks(
+				str_replace(
+					'<!-- wp:gatherpress/calendar-day -->',
+					'<!-- wp:gatherpress/calendar-day ' . $day_attrs . ' -->',
+					$markup
+				)
+			);
+		};
+
+		$this->assertStringContainsString(
+			'--gatherpress-calendar-slot-height: 64px',
+			$with_day( '{"slotHeight":64}' )
+		);
+		$this->assertStringContainsString(
+			'--gatherpress-calendar-slot-height: 120px',
+			$with_day( '{"slotHeight":500}' ),
+			'Failed to assert the largest slot height of the control.'
+		);
+
+		$output = $with_day( '{"className":"is-style-ribbon"}' );
+		$this->assertStringContainsString( 'is-style-ribbon', $output );
+		$this->assertDoesNotMatchRegularExpression(
+			'#is-style-ribbon[^"]*is-style-ribbon#',
+			$output,
+			'Failed to assert a Ribbon day gets the class once.'
+		);
+
+		$this->assertSame(
+			48,
+			Utility::invoke_hidden_static_method( Calendar::class, 'get_slot_height', array( array() ) ),
+			'Failed to assert the default without a day block.'
+		);
+
+		$week = array(
+			'innerBlocks' => array(
+				'not a block',
+				array( 'blockName' => 'core/paragraph' ),
+				array(
+					'blockName' => 'gatherpress/calendar-day',
+					'attrs'     => array( 'slotHeight' => 'tall' ),
+				),
+			),
+		);
+		$this->assertSame(
+			48,
+			Utility::invoke_hidden_static_method( Calendar::class, 'get_slot_height', array( $week ) ),
+			'Failed to assert other blocks are skipped and a height that is not a number gives the default.'
+		);
+	}
+
+	/**
+	 * Each entry template renders once: WordPress does not render the calendar templates first.
+	 *
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_entry_template_renders_once_per_entry(): void {
+		$this->create_event( 'Rendered Once', '2026-10-15 10:00:00', '2026-10-15 12:00:00' );
+
+		$count    = 0;
+		$callback = static function () use ( &$count ) {
+			++$count;
+		};
+
+		add_action( 'gatherpress_calendar_before_render_entry', $callback );
+		do_blocks( self::get_calendar_markup() );
+		remove_action( 'gatherpress_calendar_before_render_entry', $callback );
+
+		$this->assertSame( 1, $count, 'Failed to assert one render for one entry.' );
 	}
 
 	/**

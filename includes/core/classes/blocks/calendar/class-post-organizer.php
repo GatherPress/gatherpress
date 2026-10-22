@@ -12,6 +12,7 @@ namespace GatherPress\Core\Blocks\Calendar;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use DateTimeImmutable;
+use DateTimeZone;
 use GatherPress\Core\Event;
 use WP_Post;
 use WP_Query;
@@ -82,10 +83,10 @@ final class Post_Organizer {
 			return null;
 		}
 
-		$start_obj = DateTimeImmutable::createFromFormat( '!Y-m-d', $start, wp_timezone() );
-		$end_obj   = DateTimeImmutable::createFromFormat( '!Y-m-d', $end, wp_timezone() );
+		$start_obj = self::parse_day( $start );
+		$end_obj   = self::parse_day( $end );
 
-		if ( ! $start_obj instanceof DateTimeImmutable || ! $end_obj instanceof DateTimeImmutable ) {
+		if ( null === $start_obj || null === $end_obj ) {
 			return null;
 		}
 
@@ -97,6 +98,25 @@ final class Post_Organizer {
 			'start' => $start_obj,
 			'end'   => $end_obj,
 		);
+	}
+
+	/**
+	 * Parses a Y-m-d date string into midnight UTC, for counting days.
+	 *
+	 * The strings are already dates in the site's timezone. In UTC every day has 24 hours, so a
+	 * day where daylight saving time starts at midnight (for example in America/Santiago) still
+	 * counts as one day.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $date Y-m-d date string.
+	 *
+	 * @return DateTimeImmutable|null Midnight UTC of that date, or null when the string is not a date.
+	 */
+	private static function parse_day( string $date ): ?DateTimeImmutable {
+		$day = DateTimeImmutable::createFromFormat( '!Y-m-d', $date, new DateTimeZone( 'UTC' ) );
+
+		return $day instanceof DateTimeImmutable ? $day : null;
 	}
 
 	/**
@@ -209,10 +229,10 @@ final class Post_Organizer {
 	 *         when a date is not valid or the event is outside the visible range.
 	 */
 	public static function calculate_date_span( string $start_date, string $end_date, ?array $range = null ): ?array {
-		$start_obj = DateTimeImmutable::createFromFormat( '!Y-m-d', $start_date, wp_timezone() );
-		$end_obj   = DateTimeImmutable::createFromFormat( '!Y-m-d', $end_date, wp_timezone() );
+		$start_obj = self::parse_day( $start_date );
+		$end_obj   = self::parse_day( $end_date );
 
-		if ( ! $start_obj instanceof DateTimeImmutable || ! $end_obj instanceof DateTimeImmutable ) {
+		if ( null === $start_obj || null === $end_obj ) {
 			return null;
 		}
 
@@ -549,10 +569,21 @@ final class Post_Organizer {
 			self::allocate_ribbon_event_entry( $event, $occupied_slots, $posts_by_date );
 		}
 
-		if ( $is_time_grid ) {
-			foreach ( $posts_by_date as $date_str => $day_entries ) {
-				$posts_by_date[ $date_str ] = self::resolve_day_timed_overlaps( $day_entries );
+		foreach ( $posts_by_date as $date_str => $day_entries ) {
+			if ( $is_time_grid ) {
+				$day_entries = self::resolve_day_timed_overlaps( $day_entries );
 			}
+
+			// Slot order, so the reading and tab order match the rows on screen, as in the editor
+			// (grid-builder.js). The sort is stable, so entries in the same slot keep their order.
+			usort(
+				$day_entries,
+				static function ( array $a, array $b ): int {
+					return $a['slot'] <=> $b['slot'];
+				}
+			);
+
+			$posts_by_date[ $date_str ] = $day_entries;
 		}
 
 		return $posts_by_date;

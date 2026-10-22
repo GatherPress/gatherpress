@@ -14,7 +14,9 @@ import { useCallback, useMemo } from '@wordpress/element';
 
 import { ShadowSourceFilterControls as GatherPressShadowSourceControl } from '../../../variations/core/query/components';
 
+import { useEventPostTypes } from '../hooks/use-event-post-types';
 import {
+	getDefaultEventPostType,
 	isContextDateSource,
 	isSelectedDateSource,
 } from '../utils/source-utils';
@@ -74,12 +76,20 @@ export function ShadowSourceFilterControls( {
 		[ parentQueryId, updateBlockAttributes ],
 	);
 
+	const eventPostTypes = useEventPostTypes();
+
+	// The selected post is an event. Without its post type the control would take the
+	// editor's post type, and on a venue it would write the event as the venue source.
 	const effectiveContext = useMemo( () => {
 		if ( isSelected ) {
-			return { ...context, postId, postType: sourcePostType };
+			return {
+				...context,
+				postId,
+				postType: sourcePostType || getDefaultEventPostType( eventPostTypes ),
+			};
 		}
 		return context;
-	}, [ isSelected, context, postId, sourcePostType ] );
+	}, [ isSelected, context, postId, sourcePostType, eventPostTypes ] );
 
 	// Guard checks and early exits are strictly performed after all hooks have executed:
 	if ( ! isPostAnchored || ! parentQueryId || ! parentQueryAttributes ) {

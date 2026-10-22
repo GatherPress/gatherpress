@@ -51,7 +51,10 @@
 				align-items: center;
 				justify-content: center;
 				margin: 0;
-				font-size: clamp(4.25rem, 5.5vw, 8rem) !important;
+				// Sized from the table (the size container), so the numeral fits its circle at
+				// any width. The vw line is for browsers without container units.
+				font-size: clamp(1rem, 5vw, 8rem) !important;
+				font-size: clamp(1rem, 8cqi, 8rem) !important;
 				font-weight: 900;
 				line-height: 1;
 				letter-spacing: -0.05em;

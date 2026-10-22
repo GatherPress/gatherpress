@@ -8,7 +8,11 @@
 import { registerBlockType } from '@wordpress/blocks';
 import { addFilter } from '@wordpress/hooks';
 import { select } from '@wordpress/data';
-import { store as blockEditorStore } from '@wordpress/block-editor';
+import {
+	InnerBlocks,
+	store as blockEditorStore,
+	useBlockProps,
+} from '@wordpress/block-editor';
 
 import './style.scss';
 import Edit from './edit';
@@ -27,6 +31,27 @@ registerBlockType( metadata.name, {
 	edit: Edit,
 	save,
 	transforms,
+	deprecated: [
+		// GatherPress Calendar plugin 0.1.0 to 0.4.1 saved a wrapper around the template.
+		// A deprecation does not inherit attributes or supports, and the wrapper's
+		// style attribute comes from the spacing support, so both are set here.
+		{
+			apiVersion: metadata.apiVersion,
+			attributes: metadata.attributes,
+			supports: metadata.supports,
+			save() {
+				return (
+					<div
+						{ ...useBlockProps.save( {
+							className: 'gatherpress-calendar-block',
+						} ) }
+					>
+						<InnerBlocks.Content />
+					</div>
+				);
+			},
+		},
+	],
 } );
 
 /**

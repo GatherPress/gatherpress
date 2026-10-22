@@ -72,6 +72,7 @@ class Test_Calendar_Week extends Base {
 	 * @covers ::render_days
 	 * @covers ::build_day_context
 	 * @covers ::get_row_key
+	 * @covers ::get_ribbon_rows_style
 	 *
 	 * @return void
 	 */
@@ -109,9 +110,9 @@ class Test_Calendar_Week extends Base {
 		$this->assertStringContainsString( 'gatherpress-calendar__week', $output );
 		$this->assertStringContainsString( 'data-wp-key="week-2026-10-2"', $output );
 		$this->assertStringContainsString(
-			'style="--gatherpress-num-ribbon-slots: 3"',
+			'style="--gatherpress-num-ribbon-slots: 3;--gatherpress-ribbon-rows: repeat(3, 24px)"',
 			$output,
-			'Failed to assert the highest ribbon slot, without timed events.'
+			'Failed to assert the highest ribbon slot, without timed events, and its rows for the time grid.'
 		);
 		$this->assertStringContainsString(
 			'<th scope="row" class="gatherpress--screen-reader-text">Week 42</th>',
@@ -158,9 +159,10 @@ class Test_Calendar_Week extends Base {
 	}
 
 	/**
-	 * A week without days renders an empty row.
+	 * A week without days renders an empty row, without ribbon rows: repeat() with 0 is not valid CSS.
 	 *
 	 * @covers ::render
+	 * @covers ::get_ribbon_rows_style
 	 *
 	 * @return void
 	 */
@@ -168,6 +170,7 @@ class Test_Calendar_Week extends Base {
 		$output = Calendar_Week::render( $this->get_block( array() ) );
 
 		$this->assertStringContainsString( 'style="--gatherpress-num-ribbon-slots: 0"', $output );
+		$this->assertStringNotContainsString( '--gatherpress-ribbon-rows', $output );
 		$this->assertStringEndsWith( '></tr>', $output );
 	}
 

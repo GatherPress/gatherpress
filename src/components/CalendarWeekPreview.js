@@ -6,6 +6,7 @@ import {
 } from '@wordpress/block-editor';
 
 import { CalendarDayPreview } from './CalendarDayPreview';
+import { getRibbonRowsStyle } from '../blocks/calendar/utils/ribbon-rows';
 
 /**
  * CalendarWeekPreview Component
@@ -56,7 +57,7 @@ function CalendarWeekPreviewComponent( {
 
 	const style = {
 		...colorProps.style,
-		'--gatherpress-num-ribbon-slots': numRibbonSlots,
+		...getRibbonRowsStyle( numRibbonSlots ),
 	};
 
 	return (

@@ -501,6 +501,69 @@ class Test_Calendar_Entries extends Base {
 	}
 
 	/**
+	 * A callback that throws while an entry renders leaves no filters and no entry state behind.
+	 *
+	 * @covers ::render_entry_template
+	 *
+	 * @return void
+	 */
+	public function test_throwing_callback_restores_state(): void {
+		$event_id = $this->create_event( 'Retreat' );
+		$callback = static function () {
+			throw new \RuntimeException( 'Calendar entry test' );
+		};
+
+		add_action( 'gatherpress_calendar_before_render_entry', $callback );
+
+		try {
+			$this->render_entries( '<!-- wp:post-title /-->', array( $event_id ) );
+			$this->fail( 'Failed to assert the exception reaches the caller.' );
+		} catch ( \RuntimeException $exception ) {
+			$this->assertSame( 'Calendar entry test', $exception->getMessage() );
+		} finally {
+			remove_action( 'gatherpress_calendar_before_render_entry', $callback );
+		}
+
+		$this->assertSame( 0, Utility::get_hidden_static_property( Calendar_Entries::class, 'render_depth' ) );
+		$this->assertSame( 0, Utility::get_hidden_static_property( Calendar_Entries::class, 'current_post_id' ) );
+		$this->assertFalse(
+			has_filter( 'the_title', array( Calendar_Entries::class, 'filter_empty_title' ) ),
+			'Failed to assert the filters are removed.'
+		);
+	}
+
+	/**
+	 * In the modal, the Event Date link gets the hidden title but not the day, as the Post Title does.
+	 *
+	 * @covers ::add_title_to_event_link
+	 *
+	 * @return void
+	 */
+	public function test_modal_event_date_link_has_no_span_text(): void {
+		$event_id = $this->create_event( 'Retreat' );
+		$template = '<!-- wp:gatherpress/event-date {"isLink":true} /-->'
+			. '<!-- wp:gatherpress/modal --><div class="wp-block-gatherpress-modal">'
+			. '<!-- wp:gatherpress/modal-content --><div class="wp-block-gatherpress-modal-content">'
+			. '<!-- wp:gatherpress/event-date {"isLink":true} /-->'
+			. '</div><!-- /wp:gatherpress/modal-content --></div><!-- /wp:gatherpress/modal -->';
+		$output   = $this->render_entries(
+			$template,
+			array( array_merge( self::MIDDLE_DAY, array( 'id' => $event_id ) ) )
+		);
+
+		$this->assertSame(
+			1,
+			substr_count( $output, ', Retreat, day 2 of 3</span></a>' ),
+			'Failed to assert only the trigger link gets the day.'
+		);
+		$this->assertSame(
+			1,
+			substr_count( $output, ', Retreat</span></a>' ),
+			'Failed to assert the modal link gets the title without the day.'
+		);
+	}
+
+	/**
 	 * Entries read their day posts and template safely.
 	 *
 	 * @covers ::render

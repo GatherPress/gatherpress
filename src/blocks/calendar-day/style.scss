@@ -107,8 +107,7 @@ $gap: var(--gatherpress-calendar-column-gap, 2px);
 }
 
 /* Day View adjustments */
-.wp-block-gatherpress-calendar.is-view-day,
-.gatherpress-calendar.is-view-day {
+.wp-block-gatherpress-calendar.is-view-day {
 	/* Classic / Default style days get generous padding and height */
 	.gatherpress-calendar__day:not(.is-style-ribbon) {
 		aspect-ratio: auto;

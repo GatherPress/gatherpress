@@ -12,6 +12,7 @@ use GatherPress\Core\Blocks\Calendar\Query_Integration;
 use GatherPress\Core\Blocks\Calendar\Registration;
 use GatherPress\Tests\Base;
 use WP_Block;
+use WP_Block_Type_Registry;
 
 /**
  * Class Test_Registration.
@@ -62,9 +63,46 @@ class Test_Registration extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'block_editor_settings_all' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'register_block_type_args',
+				'priority' => 10,
+				'callback' => array( $instance, 'skip_inner_blocks' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
+	}
+
+	/**
+	 * The four calendar blocks render their templates themselves, so WordPress does not render them first.
+	 *
+	 * @covers ::skip_inner_blocks
+	 *
+	 * @return void
+	 */
+	public function test_skip_inner_blocks(): void {
+		$instance = Registration::get_instance();
+
+		$this->assertSame(
+			array(
+				'title'             => 'Day',
+				'skip_inner_blocks' => true,
+			),
+			$instance->skip_inner_blocks( array( 'title' => 'Day' ), 'gatherpress/calendar-day' )
+		);
+		$this->assertSame(
+			array( 'title' => 'Paragraph' ),
+			$instance->skip_inner_blocks( array( 'title' => 'Paragraph' ), 'core/paragraph' ),
+			'Failed to assert other blocks do not change.'
+		);
+
+		foreach ( Registration::SELF_RENDERING_BLOCKS as $block_name ) {
+			$this->assertTrue(
+				WP_Block_Type_Registry::get_instance()->get_registered( $block_name )->skip_inner_blocks,
+				sprintf( 'Failed to assert %s is registered with skip_inner_blocks.', $block_name )
+			);
+		}
 	}
 
 	/**

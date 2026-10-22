@@ -12,6 +12,10 @@ namespace GatherPress\Core\Blocks\Calendar;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use DateTimeZone;
+use GatherPress\Core\Blocks\Calendar;
+use GatherPress\Core\Blocks\Calendar_Day;
+use GatherPress\Core\Blocks\Calendar_Entries;
+use GatherPress\Core\Blocks\Calendar_Week;
 use GatherPress\Core\Traits\Singleton;
 use WP_Block;
 
@@ -25,6 +29,19 @@ use WP_Block;
  * @since TBD
  */
 final class Registration {
+
+	/**
+	 * The calendar blocks, which render their inner blocks themselves.
+	 *
+	 * @since TBD
+	 * @var string[]
+	 */
+	const SELF_RENDERING_BLOCKS = array(
+		Calendar::BLOCK_NAME,
+		Calendar_Week::BLOCK_NAME,
+		Calendar_Day::BLOCK_NAME,
+		Calendar_Entries::BLOCK_NAME,
+	);
 
 	/**
 	 * Enforces a single instance of this class.
@@ -51,6 +68,30 @@ final class Registration {
 		// Priority 11: this class is created on init at priority 10.
 		add_action( 'init', array( $this, 'register_binding_sources' ), 11 );
 		add_filter( 'block_editor_settings_all', array( $this, 'block_editor_settings_all' ) );
+		// The blocks register on init at priority 11, after this class is created.
+		add_filter( 'register_block_type_args', array( $this, 'skip_inner_blocks' ), 10, 2 );
+	}
+
+	/**
+	 * Stop WordPress from rendering the inner blocks of the calendar blocks before their render.
+	 *
+	 * Each calendar block renders its template itself: once for each week, day or entry, with
+	 * that unit's context. Without this, WP_Block::render() also renders the template once
+	 * without that context, and the output is thrown away. Core's Post Template does the same.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $args       Block type arguments.
+	 * @param string               $block_type Block type name.
+	 *
+	 * @return array<string, mixed> Block type arguments.
+	 */
+	public function skip_inner_blocks( array $args, string $block_type ): array {
+		if ( in_array( $block_type, self::SELF_RENDERING_BLOCKS, true ) ) {
+			$args['skip_inner_blocks'] = true;
+		}
+
+		return $args;
 	}
 
 	/**

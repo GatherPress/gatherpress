@@ -8,6 +8,10 @@
 @use "../calendar/style/visually-hidden" as *;
 
 $trigger: ".gatherpress-modal--trigger-open:not(.wp-block-gatherpress-modal *) > *";
+
+// Space above the first hour of the time grid: the time gutter and the day
+// number of each day both take this height, so their hour lines match.
+$time-grid-top: 28px;
 $start-time: ".wp-block-gatherpress-event-date:not(.gatherpress-modal--trigger-open):not(.wp-block-gatherpress-modal *)";
 $gap: var(--gatherpress-calendar-column-gap, 2px);
 
@@ -164,8 +168,12 @@ $modal-open-state: ".wp-block-gatherpress-modal.gatherpress--is-visible";
 
 /* ==========================================================================
    DEFAULT (CLASSIC) VIEW: Vertical stack with times and titles
+   Above 600px, and in a view of one day at any width. Elsewhere at 600px and
+   below, the compact dots below take over.
    ========================================================================== */
-.gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-gatherpress-calendar-entries:not(.is-style-dots) {
+$classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-gatherpress-calendar-entries:not(.is-style-dots)";
+
+@mixin apply-classic-entries {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
@@ -212,6 +220,17 @@ $modal-open-state: ".wp-block-gatherpress-modal.gatherpress--is-visible";
 	}
 }
 
+@container calendar (width > 600px) {
+	#{$classic-entries} {
+		@include apply-classic-entries;
+	}
+}
+
+// One day fills the whole width, so it has room for the event names at any width.
+.wp-block-gatherpress-calendar.is-view-day:not(.has-multiple-units) #{$classic-entries} {
+	@include apply-classic-entries;
+}
+
 /* ==========================================================================
    RIBBON VIEW: Grid Slot Allocation
    ========================================================================== */
@@ -231,7 +250,7 @@ $modal-open-state: ".wp-block-gatherpress-modal.gatherpress--is-visible";
    DESKTOP / WIDE RIBBON VIEW (width > 600px and NOT .is-style-dots)
    Full 24px banners with floating multi-column text
    ========================================================================== */
-@container calendar (min-width: 601px) {
+@container calendar (width > 600px) {
 	.gatherpress-calendar__day.is-style-ribbon .wp-block-gatherpress-calendar-entries:not(.is-style-dots) {
 		.gatherpress-calendar__entry {
 			/* Timed Events */
@@ -367,6 +386,11 @@ $modal-open-state: ".wp-block-gatherpress-modal.gatherpress--is-visible";
 					&:not(.is-span-continued) #{$trigger} {
 						opacity: 0;
 					}
+
+					// The hidden link is still in the tab order: show it while it has focus (WCAG 2.4.7).
+					&:not(.is-span-continued):focus-within #{$trigger} {
+						opacity: 1;
+					}
 				}
 			}
 		}
@@ -383,13 +407,13 @@ $modal-open-state: ".wp-block-gatherpress-modal.gatherpress--is-visible";
 	}
 
 	.gatherpress-calendar__entry {
-		// Cleanly hide title and text OUTSIDE the modal
+		// Cleanly hide title and text OUTSIDE the modal. Size 0 hides the text; the color
+		// stays, because the focus ring and the hover styles use currentcolor.
 		.wp-block-post-title:not(.wp-block-gatherpress-modal *),
 		.wp-block-post-title:not(.wp-block-gatherpress-modal *) a,
 		#{$trigger} {
 			font-size: 0;
 			line-height: 0;
-			color: transparent;
 			text-decoration: none;
 		}
 
@@ -488,7 +512,11 @@ $modal-open-state: ".wp-block-gatherpress-modal.gatherpress--is-visible";
 }
 
 @container calendar (width <= 600px) {
-	.wp-block-gatherpress-calendar-entries {
+	// Not the Classic days of a view of one day: they keep the event names (see above).
+	// :where() keeps the specificity the rules had without this exception.
+	.wp-block-gatherpress-calendar-entries:where(
+		:not(.wp-block-gatherpress-calendar.is-view-day:not(.has-multiple-units) .gatherpress-calendar__day:not(.is-style-ribbon) *)
+	) {
 		@include apply-compact-dots;
 	}
 }
@@ -521,9 +549,8 @@ $modal-open-state: ".wp-block-gatherpress-modal.gatherpress--is-visible";
 	outline: none;
 }
 
-/* Single-day Day View adjustments */
-.wp-block-gatherpress-calendar.is-view-day[style*="--gatherpress-calendar-columns: 1"],
-.gatherpress-calendar.is-view-day[style*="--gatherpress-calendar-columns: 1"] {
+/* Single-day Day View adjustments: one day, without the time gutter (one column) */
+.wp-block-gatherpress-calendar.is-view-day:not(.has-multiple-units, .has-time-grid) {
 	.wp-block-gatherpress-calendar-entries .gatherpress-calendar__entry.is-multi-day {
 		margin-inline: 0;
 		width: 100%;
@@ -552,9 +579,16 @@ $modal-open-state: ".wp-block-gatherpress-modal.gatherpress--is-visible";
 		align-content: normal;
 		grid-auto-flow: row;
 		grid-auto-rows: unset;
+
+		// --gatherpress-ribbon-rows is "repeat(N, 24px)", set only when the week has ribbon
+		// rows: repeat() with a count of 0 is not valid and would drop the whole template.
 		grid-template-rows:
-			repeat(var(--gatherpress-num-ribbon-slots, 0), 24px)
+			var(--gatherpress-ribbon-rows,)
 			repeat(var(--gatherpress-total-quarter-slots, 48), var(--gatherpress-quarter-slot-height));
+
+		// The rows are the clock: a gap would push each quarter down. Important, because
+		// the entries block's own block gap is an inline style.
+		row-gap: 0 !important;
 		position: relative;
 		width: 100%;
 
@@ -565,6 +599,10 @@ $modal-open-state: ".wp-block-gatherpress-modal.gatherpress--is-visible";
 		// Timed events dynamically fill their calculated space
 		.gatherpress-calendar__entry.is-timed-event {
 			grid-row: calc(var(--gatherpress-num-ribbon-slots, 0) + var(--gatherpress-event-time-row-start)) / calc(var(--gatherpress-num-ribbon-slots, 0) + var(--gatherpress-event-time-row-end));
+
+			// Fill the rows from start to end time. The entries block's flex layout sets
+			// align-items, which would otherwise move a short event to the end of its rows.
+			align-self: stretch;
 			position: relative;
 			display: flex;
 			flex-direction: column;
@@ -600,7 +638,7 @@ $modal-open-state: ".wp-block-gatherpress-modal.gatherpress--is-visible";
 	border: none;
 	display: flex;
 	flex-direction: column;
-	padding-top: calc(28px + var(--gatherpress-num-ribbon-slots, 0) * 24px);
+	padding-top: calc(#{$time-grid-top} + var(--gatherpress-num-ribbon-slots, 0) * 24px);
 
 	.gatherpress-calendar__time-slot-label {
 		height: var(--gatherpress-calendar-slot-height, 48px);
@@ -610,5 +648,21 @@ $modal-open-state: ".wp-block-gatherpress-modal.gatherpress--is-visible";
 		color: color-mix(in srgb, currentcolor 60%, transparent);
 		text-align: end;
 		transform: translateY(-50%);
+	}
+}
+
+// Day columns of the time grid: the day number takes the same height as the space above the
+// first hour in the gutter, so the entries grid starts on the gutter's first hour line.
+.has-time-grid .gatherpress-calendar__day.is-style-ribbon {
+	.gatherpress-calendar__day-number {
+		box-sizing: border-box;
+		height: $time-grid-top;
+		margin: 0;
+		padding: 0.3rem 0.45rem 0;
+		overflow: hidden;
+	}
+
+	&:not(:has(.gatherpress-calendar__day-number)) .wp-block-gatherpress-calendar-entries {
+		margin-top: $time-grid-top;
 	}
 }

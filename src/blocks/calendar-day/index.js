@@ -5,11 +5,7 @@
  * @since TBD
  */
 
-import {
-	registerBlockType,
-	registerBlockBindingsSource,
-} from '@wordpress/blocks';
-import { __ } from '@wordpress/i18n';
+import { registerBlockType } from '@wordpress/blocks';
 
 /**
  * Internal dependencies
@@ -19,22 +15,9 @@ import Edit from './edit';
 import save from './save';
 import './style.scss';
 
+// The gatherpress/calendar-day binding source, which reads the Date Format, is in
+// calendar/bindings.js. A second registration here would win, and ignore the format.
 registerBlockType( metadata.name, {
 	edit: Edit,
 	save,
-} );
-
-registerBlockBindingsSource( {
-	name: 'gatherpress/calendar-day',
-	label: __( 'Calendar Day Number', 'gatherpress' ),
-	usesContext: [ 'gatherpress/dayNumber', 'gatherpress/isEmpty' ],
-	getValues( { context } ) {
-		if ( context?.[ 'gatherpress/isEmpty' ] ) {
-			return { content: '' };
-		}
-		const dayNumber = context?.[ 'gatherpress/dayNumber' ];
-		return {
-			content: dayNumber ? String( dayNumber ) : '1',
-		};
-	},
 } );

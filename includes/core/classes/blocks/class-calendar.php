@@ -78,6 +78,9 @@ final class Calendar {
 			$query
 		);
 
+		// The slot height is an attribute of the day block inside the week block.
+		$grid_config['slot_height'] = self::get_slot_height( $week_block );
+
 		$show_weekends = Date_Calculator::show_weekends( $attributes );
 
 		// Context for the week, day and entries blocks inside the calendar.
@@ -101,5 +104,32 @@ final class Calendar {
 		);
 
 		return ( new Html_Renderer( $block ) )->generate_calendar_html( $attributes, $calendar_data, $grid_config );
+	}
+
+	/**
+	 * Get the time grid slot height from the day block of the week template.
+	 *
+	 * The editor uses the same attribute (calendar/edit.js) and the same range as its control.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $week_block Parsed week block of the calendar template.
+	 *
+	 * @return int Height of one hour slot in pixels, 48 by default.
+	 */
+	private static function get_slot_height( array $week_block ): int {
+		$inner_blocks = is_array( $week_block['innerBlocks'] ?? null ) ? $week_block['innerBlocks'] : array();
+
+		foreach ( $inner_blocks as $inner_block ) {
+			if ( ! is_array( $inner_block ) || Calendar_Day::BLOCK_NAME !== ( $inner_block['blockName'] ?? '' ) ) {
+				continue;
+			}
+
+			$slot_height = $inner_block['attrs']['slotHeight'] ?? null;
+
+			return is_numeric( $slot_height ) ? max( 32, min( 120, (int) $slot_height ) ) : 48;
+		}
+
+		return 48;
 	}
 }

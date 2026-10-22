@@ -21,8 +21,10 @@ import './editor.scss';
 import { DAY_TEMPLATE } from '../calendar/constants';
 import { CalendarDayPreview } from '../../components/CalendarDayPreview';
 import { useStableValue } from '../calendar/hooks/use-stable-value';
+import { getRibbonRowsStyle } from '../calendar/utils/ribbon-rows';
 
 const EMPTY_ARRAY = [];
+const EMPTY_ATTRIBUTES = {};
 const NOOP = () => {};
 
 /**
@@ -81,8 +83,8 @@ export default memo( function Edit( {
 				return {
 					dayInnerBlocks: dayBlock
 						? getBlocks( dayBlock.clientId )
-						: [],
-					dayBlockAttributes: dayBlock?.attributes ?? {},
+						: EMPTY_ARRAY,
+					dayBlockAttributes: dayBlock?.attributes ?? EMPTY_ATTRIBUTES,
 				};
 			},
 			[ clientId ],
@@ -121,9 +123,7 @@ export default memo( function Edit( {
 		className: `gatherpress-calendar__week${
 			isTimeGridActive ? ' has-time-grid' : ''
 		}`,
-		style: {
-			'--gatherpress-num-ribbon-slots': numRibbonSlots,
-		},
+		style: getRibbonRowsStyle( numRibbonSlots ),
 	} );
 
 	const { children, ...innerBlocksWrapperProps } = useInnerBlocksProps(

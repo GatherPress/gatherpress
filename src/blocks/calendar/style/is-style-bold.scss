@@ -33,10 +33,16 @@
 			}
 
 			&.is-today {
+				// The entries use the same color as the day number, or they sit at 1:1 on the fill.
+				--gatherpress-calendar-title-color: var(--gatherpress-calendar-day-today-color);
+				--gatherpress-calendar-time-color: var(--gatherpress-calendar-day-today-color);
+
 				background: var(--wp--preset--color--primary, currentColor);
 				box-shadow: inset 0 0 0 clamp(2px, 0.5vw, 4px) color-mix(in srgb, var(--wp--preset--color--base, #fff) 35%, transparent);
 
-				.gatherpress-calendar__day-number {
+				.gatherpress-calendar__day-number,
+				.wp-block-gatherpress-calendar-entries .gatherpress-calendar__entry,
+				.wp-block-gatherpress-calendar-entries .gatherpress-calendar__entry a {
 					color: var(--gatherpress-calendar-day-today-color);
 				}
 			}

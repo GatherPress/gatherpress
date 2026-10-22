@@ -11,4 +11,8 @@
 		}
 	}
 
+	// The dots and tracks are background colors, which browsers drop in print by default.
+	.wp-block-gatherpress-calendar-entries {
+		print-color-adjust: exact;
+	}
 }

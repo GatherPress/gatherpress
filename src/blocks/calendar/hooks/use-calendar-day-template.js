@@ -10,6 +10,10 @@ import { useSelect } from '@wordpress/data';
 
 import { useStableValue } from './use-stable-value';
 
+// Shared empty values, so the selector returns the same values while a block is missing.
+const EMPTY_BLOCKS = [];
+const EMPTY_ATTRIBUTES = {};
+
 /**
  * Returns stable references to the week and day template blocks inside the calendar.
  *
@@ -29,9 +33,9 @@ export function useCalendarDayTemplate( clientId ) {
 				return {
 					dayInnerBlocks: dayBlock
 						? getBlocks( dayBlock.clientId )
-						: [],
-					dayBlockAttributes: dayBlock?.attributes ?? {},
-					weekBlockAttributes: weekBlock?.attributes ?? {},
+						: EMPTY_BLOCKS,
+					dayBlockAttributes: dayBlock?.attributes ?? EMPTY_ATTRIBUTES,
+					weekBlockAttributes: weekBlock?.attributes ?? EMPTY_ATTRIBUTES,
 				};
 			},
 			[ clientId ],

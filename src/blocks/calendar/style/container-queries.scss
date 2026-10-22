@@ -1,16 +1,10 @@
 /* ======================================================================
-   Container Queries - Hide day names on narrow screens
+   Container Queries - Smaller dots on narrow screens
+   The day names stay: display: none would remove the column headers
+   from screen readers too.
    ====================================================================== */
 
 @container calendar (max-width: 400px) {
-	.gatherpress-calendar__table th {
-		display: none;
-	}
-
-	.gatherpress-calendar__day-number {
-		font-size: clamp(0.625rem, 1.5vw, 0.7rem);
-	}
-
 	/* ======================================================================
 		BLOCK STYLE: Dots (style-variation of calendar-entries block)
 		====================================================================== */

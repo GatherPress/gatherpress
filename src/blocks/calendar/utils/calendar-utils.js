@@ -82,6 +82,46 @@ export function getPostsPerPage() {
 }
 
 /**
+ * Builds the REST API taxonomy arguments from a Query Loop taxQuery.
+ *
+ * Mirrors core's Post Template: the REST API takes each taxonomy by its
+ * rest_base, and excluded terms with an "_exclude" suffix. The taxQuery is
+ * { include: { slug: [ ids ] }, exclude: { ... } }, or { slug: [ ids ] } in
+ * Query Loops saved before the include and exclude lists.
+ *
+ * @since TBD
+ *
+ * @param {Object|undefined} taxQuery   Query Loop taxQuery attribute.
+ * @param {Array<Object>}    taxonomies Taxonomy records with slug and rest_base.
+ *
+ * @return {Object} REST arguments, for example { venues: [ 15 ], categories_exclude: [ 3 ] }.
+ */
+export function buildTaxQueryArgs( taxQuery, taxonomies = [] ) {
+	if ( ! taxQuery || 'object' !== typeof taxQuery ) {
+		return {};
+	}
+
+	const hasLists = 'include' in taxQuery || 'exclude' in taxQuery;
+	const build = ( terms, suffix = '' ) =>
+		Object.entries( terms || {} ).reduce( ( args, [ slug, termIds ] ) => {
+			const taxonomy = taxonomies.find( ( item ) => item.slug === slug );
+			if ( taxonomy?.rest_base && termIds?.length ) {
+				args[ taxonomy.rest_base + suffix ] = termIds;
+			}
+			return args;
+		}, {} );
+
+	if ( ! hasLists ) {
+		return build( taxQuery );
+	}
+
+	return {
+		...build( taxQuery.include ),
+		...build( taxQuery.exclude, '_exclude' ),
+	};
+}
+
+/**
  * Computes table grid column count based on view type, weekend visibility, and time grid gutter.
  *
  * @param {string}  viewType      View type ('month', 'week', 'day').

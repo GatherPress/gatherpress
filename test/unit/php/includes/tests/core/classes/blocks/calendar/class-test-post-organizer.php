@@ -329,6 +329,39 @@ class Test_Post_Organizer extends Base {
 	}
 
 	/**
+	 * A day where daylight saving time starts at midnight still counts as a day.
+	 *
+	 * In America/Santiago the clocks go from 00:00 to 01:00 on 2026-09-06, so that day has 23 hours.
+	 *
+	 * @covers ::calculate_date_span
+	 * @covers ::get_visible_range
+	 * @covers ::parse_day
+	 *
+	 * @return void
+	 */
+	public function test_date_span_across_midnight_dst_start(): void {
+		update_option( 'timezone_string', 'America/Santiago' );
+
+		$span = Post_Organizer::calculate_date_span( '2026-09-06', '2026-09-07' );
+		$this->assertSame( 2, $span['total_days'], 'Failed to assert the 23-hour day counts.' );
+
+		$start_key = Query_Integration::CALENDAR_QUERY_START_DATE;
+		$end_key   = Query_Integration::CALENDAR_QUERY_END_DATE;
+		$range     = Post_Organizer::get_visible_range(
+			array(
+				$start_key => '2026-09-07',
+				$end_key   => '2026-09-30',
+			)
+		);
+		$span      = Post_Organizer::calculate_date_span( '2026-09-06', '2026-09-08', $range );
+		$this->assertSame( 3, $span['total_days'] );
+		$this->assertSame( 1, $span['first_day'] );
+		$this->assertSame( 2, $span['shown_days'], 'Failed to assert September 8 is still shown.' );
+
+		$this->assertNull( Post_Organizer::calculate_date_span( 'September', '2026-09-07' ) );
+	}
+
+	/**
 	 * Coverage for sort_events_for_slotting.
 	 *
 	 * @covers ::sort_events_for_slotting
@@ -429,6 +462,29 @@ class Test_Post_Organizer extends Base {
 			'Failed to assert the single event goes below the ribbon.'
 		);
 		$this->assertSame( 'end', $entries['2026-10-18'][0]['span'] );
+	}
+
+	/**
+	 * The entries of a day are in slot order, so the reading order matches the rows on screen.
+	 *
+	 * X (October 5-6) takes slot 0 and Y (October 6-7) slot 1. Z (October 7) fits in slot 0,
+	 * but it is placed after Y.
+	 *
+	 * @covers ::build_slotted_calendar_entries
+	 *
+	 * @return void
+	 */
+	public function test_build_slotted_calendar_entries_sorts_days_by_slot(): void {
+		$entries = Post_Organizer::build_slotted_calendar_entries(
+			array(
+				$this->span( 1, '2026-10-05', 2 ),
+				$this->span( 2, '2026-10-06', 2 ),
+				$this->span( 3, '2026-10-07', 1 ),
+			)
+		);
+
+		$this->assertSame( array( 3, 2 ), array_column( $entries['2026-10-07'], 'id' ) );
+		$this->assertSame( array( 0, 1 ), array_column( $entries['2026-10-07'], 'slot' ) );
 	}
 
 	/**

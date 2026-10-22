@@ -125,7 +125,7 @@ class Test_Calendar_Day extends Base {
 		$this->assertStringContainsString( 'data-wp-key="day-2020-01-15"', $output );
 		$this->assertStringContainsString( 'data-wp-interactive="gatherpress/calendar-day"', $output );
 		$this->assertStringContainsString( 'data-wp-context="{&quot;date&quot;:&quot;2020-01-15&quot;}"', $output );
-		$this->assertStringContainsString( 'data-wp-bind--aria-current="callbacks.ariaCurrent"', $output );
+		$this->assertStringContainsString( 'data-wp-bind--aria-current="state.ariaCurrent"', $output );
 		$this->assertStringNotContainsString( 'aria-current="date"', $output );
 		$this->assertStringContainsString( '>15</p>', $output, 'Failed to assert the bound day number.' );
 		$this->assertStringNotContainsString( 'has-posts', $output );
@@ -160,6 +160,79 @@ class Test_Calendar_Day extends Base {
 			$output,
 			'Failed to assert the weekday from the date.'
 		);
+	}
+
+	/**
+	 * The server render keeps the today and past markers when it processes the cell directives.
+	 *
+	 * @covers ::build_cell_attributes
+	 * @covers ::register_day_state
+	 * @covers ::compare_context_date
+	 *
+	 * @return void
+	 */
+	public function test_server_directives_keep_day_markers(): void {
+		$cell = function ( string $date ): string {
+			return wp_interactivity_process_directives(
+				Calendar_Day::render(
+					$this->get_block(
+						array(
+							'gatherpress/isEmpty'   => false,
+							'gatherpress/dayNumber' => 1,
+							'gatherpress/dayDate'   => $date,
+						)
+					)
+				)
+			);
+		};
+
+		$today = $cell( wp_date( 'Y-m-d' ) );
+		$this->assertMatchesRegularExpression( '#<td [^>]*class="[^"]*\bis-today\b#', $today );
+		$this->assertStringContainsString(
+			'aria-current="date"',
+			$today,
+			'Failed to assert today keeps aria-current.'
+		);
+
+		// For aria-* attributes the processor writes false as "false", as the client does.
+		$past = $cell( '2020-01-15' );
+		$this->assertMatchesRegularExpression( '#<td [^>]*class="[^"]*\bis-past\b#', $past );
+		$this->assertStringContainsString( 'aria-current="false"', $past );
+
+		$this->assertMatchesRegularExpression( '#<td [^>]*class="[^"]*\bis-future\b#', $cell( '2099-10-17' ) );
+
+		// An element in the day namespace without a date is not today.
+		$this->assertDoesNotMatchRegularExpression(
+			'#class="[^"]*is-today#',
+			wp_interactivity_process_directives(
+				'<div data-wp-interactive="gatherpress/calendar-day" data-wp-class--is-today="state.isToday" '
+					. 'class="is-today"></div>'
+			),
+			'Failed to assert no comparison without a date.'
+		);
+	}
+
+	/**
+	 * A day in a time grid gets the Ribbon class, once, as in the editor.
+	 *
+	 * @covers ::render
+	 * @covers ::get_time_grid_classes
+	 *
+	 * @return void
+	 */
+	public function test_time_grid_day_gets_ribbon_class(): void {
+		$context = array(
+			'gatherpress/isEmpty'        => false,
+			'gatherpress/dayNumber'      => 15,
+			'gatherpress/dayDate'        => '2020-01-15',
+			'gatherpress/timeGridConfig' => array( 'enabled' => true ),
+		);
+
+		// A day whose author picked the Ribbon style is in Test_Calendar: only a real render adds its class.
+		$this->assertStringContainsString( 'is-style-ribbon', Calendar_Day::render( $this->get_block( $context ) ) );
+
+		$context['gatherpress/timeGridConfig'] = array( 'enabled' => false );
+		$this->assertStringNotContainsString( 'is-style-ribbon', Calendar_Day::render( $this->get_block( $context ) ) );
 	}
 
 	/**

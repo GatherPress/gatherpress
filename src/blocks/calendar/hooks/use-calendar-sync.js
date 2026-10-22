@@ -28,6 +28,7 @@ import {
  */
 export function useCalendarSync( { clientId, viewType, unitCount } ) {
 	const {
+		isFirstCalendar,
 		parentQueryClientId,
 		parentQueryMetadata,
 		headingClientId,
@@ -75,7 +76,14 @@ export function useCalendarSync( { clientId, viewType, unitCount } ) {
 				)
 				: null;
 
+			// With two calendars in one Query, only the first names its blocks,
+			// so the two do not overwrite each other's names in turn.
+			const firstCalendar = parentBlock?.innerBlocks
+				? findBlockByName( parentBlock.innerBlocks, 'gatherpress/calendar' )
+				: null;
+
 			return {
+				isFirstCalendar: ! firstCalendar || firstCalendar.clientId === clientId,
 				parentQueryClientId: parentId ?? null,
 				parentQueryMetadata: parentBlock?.attributes?.metadata,
 				headingClientId: headingBlock?.clientId ?? null,
@@ -128,8 +136,24 @@ export function useCalendarSync( { clientId, viewType, unitCount } ) {
 	const prevConfigRef = useRef( { viewType, unitCount } );
 
 	useEffect( () => {
-		// Hard overwrite the parent Query block's name,
-		// so the Query block is always named after the calendar it contains.
+		if ( ! isFirstCalendar ) {
+			return;
+		}
+
+		// Only overwrite block names and pagination labels when unitCount or viewType changes,
+		// so opening the editor never writes. (While the post type loads, core's Event Query
+		// controls blank the Query name for a moment, so "no name yet" is not a safe test.)
+		const hasConfigChanged =
+			prevConfigRef.current.viewType !== viewType ||
+			prevConfigRef.current.unitCount !== unitCount;
+
+		if ( ! hasConfigChanged ) {
+			return;
+		}
+
+		prevConfigRef.current = { viewType, unitCount };
+
+		// The Query block is named after the calendar it contains.
 		if (
 			parentQueryClientId &&
 			parentQueryMetadata?.name !== targetQueryName
@@ -141,17 +165,6 @@ export function useCalendarSync( { clientId, viewType, unitCount } ) {
 				},
 			} );
 		}
-
-		// Only overwrite block names and pagination labels when unitCount or viewType changes.
-		const hasConfigChanged =
-			prevConfigRef.current.viewType !== viewType ||
-			prevConfigRef.current.unitCount !== unitCount;
-
-		if ( ! hasConfigChanged ) {
-			return;
-		}
-
-		prevConfigRef.current = { viewType, unitCount };
 
 		if ( headingClientId ) {
 			updateBlockAttributes( headingClientId, {
@@ -191,6 +204,7 @@ export function useCalendarSync( { clientId, viewType, unitCount } ) {
 			} );
 		}
 	}, [
+		isFirstCalendar,
 		parentQueryClientId,
 		parentQueryMetadata,
 		targetQueryName,
