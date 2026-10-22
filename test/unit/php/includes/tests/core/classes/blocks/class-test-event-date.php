@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core\Blocks;
 use GatherPress\Core\Blocks\Event_Date;
 use GatherPress\Core\Event;
 use GatherPress\Tests\Base;
+use PasswordHash;
 
 /**
  * Class Test_Event_Date.
@@ -151,6 +152,58 @@ class Test_Event_Date extends Base {
 			$block_content,
 			$result,
 			'Block content should be returned when postId references a valid event'
+		);
+	}
+
+	/**
+	 * Test validate_event keeps a password-protected event's date behind its password.
+	 *
+	 * A block on another page can name the event through its postId, so the
+	 * block has to ask for the password the event page would.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::validate_event
+	 *
+	 * @return void
+	 */
+	public function test_validate_event_with_password_protected_event(): void {
+		$instance   = Event_Date::get_instance();
+		$event_post = $this->mock->post(
+			array(
+				'post_title'    => 'Unit Test Event',
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		)->get();
+
+		$block_content = '<div class="wp-block-gatherpress-event-date">May 11, 2024</div>';
+		$block         = array(
+			'blockName' => Event_Date::BLOCK_NAME,
+			'attrs'     => array(
+				'postId' => $event_post->ID,
+			),
+		);
+
+		$this->assertSame(
+			'',
+			$instance->validate_event( $block_content, $block ),
+			'A password-protected event should keep its date from a viewer without the password.'
+		);
+
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+
+		// The cookie WordPress sets once a viewer enters the post password.
+		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'secret' );
+
+		$result = $instance->validate_event( $block_content, $block );
+
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+
+		$this->assertSame(
+			$block_content,
+			$result,
+			'A password-protected event should show its date to a viewer with the password.'
 		);
 	}
 
