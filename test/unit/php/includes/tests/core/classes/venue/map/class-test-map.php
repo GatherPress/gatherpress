@@ -227,7 +227,7 @@ class Test_Map extends Base {
 	/**
 	 * A valid aspect ratio from Settings becomes the block attribute default.
 	 *
-	 * @since   TBD
+	 * @since   0.36.0
 	 * @covers ::apply_block_attribute_defaults
 	 *
 	 * @return void
@@ -259,7 +259,7 @@ class Test_Map extends Base {
 	/**
 	 * An unparsable aspect ratio falls through to the block.json default.
 	 *
-	 * @since   TBD
+	 * @since   0.36.0
 	 * @covers ::apply_block_attribute_defaults
 	 *
 	 * @return void

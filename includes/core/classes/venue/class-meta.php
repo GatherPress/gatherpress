@@ -301,7 +301,7 @@ final class Meta {
 	/**
 	 * Registers the Geodata standard meta (`geo_*`) as read-only.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param string $post_type The post type to register against.
 	 *

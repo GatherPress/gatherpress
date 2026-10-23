@@ -167,6 +167,11 @@ class Test_Shadow_Source extends Base {
 			$taxonomy->show_ui,
 			'Taxonomy should remain hidden from admin UI as a shadow taxonomy.'
 		);
+		$this->assertSame(
+			get_post_type_object( Venue::POST_TYPE )->labels->not_found,
+			$taxonomy->labels->no_terms,
+			'Taxonomy should inherit its no-terms label from the post type.'
+		);
 	}
 
 	/**

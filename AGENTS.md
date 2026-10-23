@@ -6,6 +6,17 @@ This file is the canonical project guide for AI coding agents (Claude Code, Curs
 
 Always use **US English** spelling in all code, comments, and documentation. When in doubt, use the spelling WordPress core uses.
 
+### Terminology for People
+
+When referring to people who interact with a GatherPress site, use these terms consistently:
+
+- **`viewer`**: Anyone looking at a page, whether logged in or not. This is the general default term across the codebase, tests, and user-facing copy (`Event::is_viewable()`, event dates, maps, etc.) because it makes no assumptions about whether someone has an account.
+- **`visitor`**: Reserved strictly for contexts where "without a site account" is the specific point (e.g., Open RSVP, anonymous fallbacks, or strings explaining features for people without an account). Not a general synonym for viewer. When it reads more clearly, say "people without an account" instead.
+- **`attendee`**: Someone who has submitted an RSVP to an event (e.g., `%d attendees.`, the Attendee column in the RSVP list table). Never use it for someone merely looking at an event.
+- **`guest`**: Additional people an attendee brings (e.g., `Maximum Number of Guests`, `+%d guest`). Never use it for viewers or attendees.
+- **`member`**: A role, not an audience: the site role (`Settings\Roles`) and the RSVP roles list. Leave those uses as they are.
+- **`reader`**: Reserved strictly for assistive technology ("screen reader"). Never use it for a human viewing or reading a page. In `Rsvp\Query` and `Rsvp\Storage`, "every reader of a comment" means a code path rather than a person, and can stay.
+
 ## Development Commands
 
 ### PHP Development
@@ -367,7 +378,6 @@ Apply to PHP PHPDoc blocks and JS JSDoc blocks alike.
     - **When NOT to merge:** if the bails surround `apply_filters` calls whose docblocks document the shape of each filter and matter to extension authors (e.g. `Geocoding::maybe_schedule_geocode`), keeping per-guard structure preserves the docs. Mark those instances won't-fix in SonarCloud rather than collapsing.
 - **Reduce function cognitive complexity by extracting helpers from tight loops or repeated branches** (`php:S3776`, "Refactor this function to reduce its Cognitive Complexity from N to the 15 allowed"). Each `if`, `for`, `while`, or logical operator inside a loop costs more cognitive points the deeper it nests, so the cheapest reductions are the ones that pull a nested-2-deep block up to a helper called once.
     - ✅ Good (loop body extracted): the inner per-tile `fetch → decode → imagecopy` block in `Osm::render` moved into `paint_tile()`, dropping `render`'s complexity from 16 → ~10.
-    - ✅ Good (per-recipient logic extracted): `Rest_Api::send_emails`'s per-recipient `opt-in / locale-switch / wp_mail` block moved into `send_event_email_to_recipient()`.
     - **Critical follow-up:** extracting a helper from a tight loop in the same class hits a known xdebug coverage gap. See the "Extracted same-class helpers and xdebug coverage tracing" rule in **Test Coverage** below. You must add a direct reflection-invoke test for every helper you extract.
 - **WP callback signatures with required-but-unused params: mark won't-fix in SonarCloud, don't paper over with `unset()`** (`php:S1172`). When a parameter exists only to satisfy a WordPress hook signature (`auth_callback`, `added_post_meta` action, `register_meta` callbacks), the right answer is to mark the Sonar finding as a false positive in the Sonar UI. Do *not* add `unset( $allowed, $meta_key );` lines or rename to `$_allowed` to silence. Those add noise without communicating the constraint, and reviewers don't know whether the workaround can be removed later. The existing `@SuppressWarnings(PHPMD.UnusedFormalParameter)` docblock plus a one-line "required by WP's X signature" comment is enough; the won't-fix in Sonar carries the rest.
     - ✅ Good: `public static function can_edit_post_meta( bool $allowed, string $meta_key, int $object_id, int $user_id ): bool { return user_can( $user_id, 'edit_post', $object_id ); }` plus a `@SuppressWarnings` docblock noting WP's contract, Sonar finding marked won't-fix.
@@ -587,19 +597,19 @@ Editor code published for companion plugins follows one naming rule, set out in 
 
 #### Units
 
-Three units, picked by what the value has to track. The split already holds across `src/`: the front-end block stylesheets are `rem`-dominant, the admin and editor stylesheets are `px`-dominant, and `em` shows up only where a value belongs with its text.
+Three units, picked by what the value has to track. The split holds across `src/`: the front-end block stylesheets and the admin stylesheets use `rem`, the editor stylesheets are `px`-dominant, and `em` shows up only where a value belongs with its text.
 
-- **`rem` for layout and block-level spacing on the front end**: gaps, block margins, widths, max-widths. It does not compound through nesting, so a field wrapper's `margin-bottom` means the same thing wherever the block lands.
+- **`rem` for layout and spacing on the front end and in admin screens**: gaps, margins, padding, widths, max-widths, and font sizes in admin. It does not compound through nesting, so a field wrapper's `margin-bottom` means the same thing wherever the block lands. The admin stylesheets are `src/admin.scss`, `src/settings/style.scss` and `src/profile/style.scss`.
     - ✅ Good: `gap: 0.5rem;` / `margin-bottom: 1rem;` / `max-width: 28rem;`
-    - ❌ Bad: `gap: 8px;` in a front-end block stylesheet.
+    - ❌ Bad: `gap: 8px;` in a front-end block stylesheet or an admin stylesheet.
 - **`em` for values that have to track the text they sit with**: `font-size`, and the tight gap between a control and the caption under it.
     - ✅ Good: `font-size: 0.875em;` on a caption, and `margin: 0.25em 0 0;` shared by `.gatherpress-help-text` and the validation message that occupies the same slot.
     - **Know what `em` resolves against before reaching for it.** `font-size` in `em` resolves against the *parent's* font size; every other property resolves against the element's *own*. The Form Field block applies `inputFontSize` as an inline style on the `<input>`, so an `em` on a sibling caption tracks the field wrapper, not the input. It follows the surrounding content, which is usually what you want, but it is not "scales with the field".
 - **`px` for hairlines, chrome, and breakpoints**: borders, `box-shadow`, `outline`, `outline-offset`, small `border-radius`, arrow and caret sizes, media queries, and the `1px` / `-1px` of the screen-reader clip rectangle in `src/utility.scss`.
     - ✅ Good: `border: 1px solid;` / `box-shadow: 0 2px 8px rgb(0 0 0 / 15%);` / `@media screen and (width <= 782px)`
     - Also `px` when the number is an asset's intrinsic size rather than a layout measurement, such as capping a Gravatar requested at 96 with `max-width: 96px`. Say so in a comment, because it reads like a layout value otherwise.
-- **`px` throughout admin and editor stylesheets**, matching WordPress core's own pixel grid: `src/admin.scss`, `src/components/PatternPicker/index.scss`, every `editor.scss`, and any rule targeting a `.components-*` class. A `rem` in one of those files is out of place rather than a modernization.
-    - The exception is a value copied from core so the two line up. `src/admin.scss` gives the plugin-row warning `margin-top: 1em` because core's `.requires` uses `1em`, and the comment above it says so. Match core's unit, not the file's.
+- **`px` throughout editor stylesheets**, matching the block editor's own pixel grid: every `editor.scss` and `src/components/PatternPicker/index.scss`. A `rem` in one of those files is out of place rather than a modernization.
+- **A value copied from core keeps core's unit, in any stylesheet**, so the two keep lining up, and a comment says so. `src/admin.scss` gives the plugin-row warning `margin-top: 1em` because core's `.requires` uses `1em`, and keeps the RSVP filters' 32px control heights and the Welcome notice's dismiss offsets in `px` to match core's controls and notice padding.
 
 #### CSS custom properties
 
@@ -621,6 +631,16 @@ Reach for the internal alias only when the value is composed or reused across a 
 
 - ✅ Good: `color: var(--gatherpress--rsvp-form--error-color, #b32d2e);`
 - ❌ Bad: `color: var(--gatherpress-field-error-color, #b32d2e);`, which invites a theme to set an internal name that is documented nowhere.
+
+### Admin pages
+
+Admin templates under `includes/templates/admin/` hold markup only. The Email page (`includes/templates/admin/email.php`, `src/email/index.js`, `src/helpers/send-email.js`) is the reference. The email templates under `includes/templates/admin/emails/` are the exception: an email has no stylesheet, so its styles stay inline.
+
+- **No `<style>` blocks or `style="…"` attributes.** Settings tab styles go in `src/settings/style.scss`, which loads on the GatherPress settings tabs, and styles for other admin screens go in `src/admin.scss`. Show and hide elements with the `gatherpress--is-hidden` utility class, not `style.display`.
+- **No `<script>` blocks.** A page's behavior is a `src/helpers/` module that exports an `init*()` function for the page's bundle to call: `src/settings/index.js` for a settings tab, or the page's own entry, enqueued from its `load-` action, for anything else. It finds its markup through a `data-gatherpress_component_name` attribute and returns early on pages without it. Pass config through data attributes, and translate strings with `@wordpress/i18n` rather than echoing them through `esc_js( __() )`.
+- **Server calls go through a REST route, not admin-ajax.** Register it under `GATHERPRESS_REST_NAMESPACE` with the capability check in `permission_callback`, and call it with `@wordpress/api-fetch`, which sends the REST nonce for you. Return a `WP_Error` with a `status` when the request fails, and show its `message`.
+    - ✅ Good: `register_rest_route( GATHERPRESS_REST_NAMESPACE, '/site-message', … )` called with `apiFetch( { path, method: 'POST', data } )`.
+    - ❌ Bad: `add_action( 'wp_ajax_…' )` with `check_ajax_referer()` and `wp_send_json_*()`, called with `fetch( window.ajaxurl )`.
 
 ### Accessibility
 
@@ -644,7 +664,7 @@ A11y rules that fire frequently and have known-good fixes specific to this codeb
     </div>
     ```
 
-    The CSS is class-based (`display: grid; grid-template-columns: 200px 1fr;` with a 782px mobile breakpoint that stacks). It currently lives inline in `network-page.php` and `tools.php`. Duplicate it inline if you need it on a third settings template, or extract to a shared admin CSS file if it grows further. Tables emitted by `do_settings_sections()` (WP core) are out of scope. Those need custom section/field renderers to reshape, which isn't worth doing for a Sonar finding.
+    The CSS is class-based (`display: grid; grid-template-columns: 12.5rem 1fr;` with a 782px mobile breakpoint that stacks) and lives in `src/admin.scss`, which loads on every admin screen, so a template only needs the markup. Tables emitted by `do_settings_sections()` (WP core) are out of scope. Those need custom section/field renderers to reshape, which isn't worth doing for a Sonar finding.
 - **ARIA combobox-with-listbox-popup pattern is correct for autocomplete: file Sonar's `<select>`/`<datalist>` suggestion as won't-fix** (`Web:S6817` and friends). Sonar's recommendations don't fit free-text autocomplete with custom-rendered items. The W3C ARIA Authoring Practices Guide combobox pattern is what this codebase uses and what AT expects. Required wiring on the input element:
     - `role="combobox"`, `aria-autocomplete="list"`, `aria-expanded={ panelOpen }`, `aria-controls={ panelOpen ? listboxId : undefined }`, `aria-activedescendant={ activeId }`, plus an accessible name (`aria-label` or wrapped `<label>`).
     - The popup uses `<div role="listbox" id={ listboxId } aria-label="...">` (use a `<div>`, not `<ul>`. See next bullet) with each option as `<button role="option" id={ optionId } aria-selected={ isActive } tabIndex={ -1 }>`.

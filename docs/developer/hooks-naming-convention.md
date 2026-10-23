@@ -38,6 +38,8 @@ The subsystem segment names a single area of the plugin. The current set:
 | `interactive_map_*` | Leaflet client-side basemap **only** (tile URL, attribution). |
 | `static_map_*` | Server-side OSM tile compositor and PNG output **only**. |
 | `static_map_prewarm_*` | Prewarm cron family (batch sizes, run/sweep actions, enqueue short-circuit). |
+| `email_*` | Mailer: consent, queuing and batching email jobs, who each batch goes to, and the event update email's subject. |
+| `site_message_*` | Messages sent from the Email page in the Events menu. |
 | `settings_*` | Admin settings UI surfaces. |
 | `shadow_*` | Shadow taxonomies (`_<post_type>`) auto-registered for `gatherpress-shadow-source` CPTs and the wiring that attaches them to event-bearing CPTs. |
 | `template_*` | Theme-override-aware template path resolution shared across subsystems (see `Utility::locate_template()`). |

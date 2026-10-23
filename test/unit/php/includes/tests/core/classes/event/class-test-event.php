@@ -1703,7 +1703,7 @@ class Test_Event extends Base {
 	 * because is_same_date compared filter-passing formatted strings. It now
 	 * compares the unfiltered ISO date portions.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::is_same_date
 	 *
 	 * @return void
@@ -1863,7 +1863,7 @@ class Test_Event extends Base {
 	 * showTimezone to yes must still show the timezone; without any override
 	 * the timezone stays hidden.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::get_display_datetime
 	 *
 	 * @return void
@@ -2004,7 +2004,7 @@ class Test_Event extends Base {
 	 * branch is invoked directly to record it. Exercises the local-timezone and
 	 * filter path, the GMT path, and the unparsable-datetime bail path.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::format_datetime
 	 *
 	 * @return void
@@ -3546,7 +3546,7 @@ class Test_Event extends Base {
 	 * because get_display_datetime() reaches this method inside the class,
 	 * which the PMC test framework does not trace into coverage.xml.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::get_display_datetime_parts
 	 *
@@ -3603,7 +3603,7 @@ class Test_Event extends Base {
 	 * passes on whether the display-format filter applies. Invoked directly for
 	 * the same tracing reason as test_format_datetime_branches().
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::format_datetime
 	 *
@@ -3743,7 +3743,7 @@ class Test_Event extends Base {
 	 * The separator defaults to 'to', keeps one set on the block, and runs
 	 * through the filter.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::get_datetime_separator
 	 *
@@ -3770,7 +3770,7 @@ class Test_Event extends Base {
 	 * The filter gets the event passed in, the current event post when none
 	 * is, and null outside an event.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::get_datetime_separator
 	 *

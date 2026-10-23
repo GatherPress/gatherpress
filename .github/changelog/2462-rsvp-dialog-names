@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Screen readers now name the RSVP and Login dialogs after their visible title, for example "RSVP to this event" or "Login Required", and read the instructions below the title when the dialog opens. Before, they said "RSVP Modal" or "Login Modal". Existing events get the change without an edit.

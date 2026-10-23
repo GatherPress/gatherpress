@@ -778,4 +778,50 @@ class Test_Endpoint extends Base {
 		// No assertions beyond the never() expectation above — PHPUnit reports it.
 		$this->assertTrue( true, 'Reached end of test without calling activate().' );
 	}
+
+	/**
+	 * Coverage for template_redirect — bails when the requested slug matches
+	 * none of this endpoint's types.
+	 *
+	 * Every calendar endpoint shares one query var, so a request can pass this
+	 * endpoint's validation while carrying another endpoint's slug. For example,
+	 * `/event/my-event/outlook/?page=2&feed=x` 404s the singular query,
+	 * `set_404()` keeps `is_feed`, and the sitewide feed endpoint (which only
+	 * knows `ical`) validates. `?gatherpress_calendar=nope` gets here too.
+	 *
+	 * @covers ::template_redirect
+	 *
+	 * @return void
+	 */
+	public function test_template_redirect_bails_when_slug_unknown(): void {
+		$template       = $this->getMockBuilder( Template::class )
+			->disableOriginalConstructor()
+			->onlyMethods( array( 'activate' ) )
+			->getMock();
+		$template->slug = 'endpoint_template_1';
+		$template->expects( $this->never() )->method( 'activate' );
+
+		$instance = new Endpoint(
+			'gatherpress_calendar',
+			'gatherpress_event',
+			'__return_true',
+			array( $template ),
+			'reg_ex',
+		);
+
+		$this->mock->wp(
+			array(
+				'query_vars' => array(
+					'gatherpress_calendar' => 'outlook',
+				),
+			)
+		);
+
+		$instance->template_redirect();
+
+		$this->mock->wp()->reset();
+
+		// No assertions beyond the never() expectation above — PHPUnit reports it.
+		$this->assertTrue( true, 'Reached end of test without calling activate().' );
+	}
 }

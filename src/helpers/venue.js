@@ -68,7 +68,7 @@ export function getVenuePostType( eventPostType = '' ) {
  * "not online", the same answer today's REST lookups produce when they
  * come back empty.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @param {string} [venuePostType='gatherpress_venue'] The venue post type slug.
  *

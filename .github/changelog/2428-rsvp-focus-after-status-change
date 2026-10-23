@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Keyboard focus no longer drops to the page after an RSVP change. Attend on a full event now opens the waiting list dialog instead of losing focus, and Attend or Not Attending moves focus only once the new RSVP state is on screen.

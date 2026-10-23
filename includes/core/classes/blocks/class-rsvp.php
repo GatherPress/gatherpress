@@ -148,7 +148,7 @@ final class Rsvp {
 			// Serialize the current inner blocks for the saved status.
 			$serialized_inner_blocks[ $saved_status ] = serialize_blocks( $inner_blocks );
 
-			$user_identifier = Rsvp_Setup::get_instance()->get_user_identifier();
+			$user_identifier = Rsvp_Setup::get_instance()->get_user_identifier( $post_id );
 			$user_data       = $rsvp->get( $user_identifier ) ?? array();
 
 			$filtered_data   = array_intersect_key(

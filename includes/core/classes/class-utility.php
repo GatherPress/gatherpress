@@ -302,7 +302,7 @@ final class Utility {
 		int $object_id,
 		int $user_id
 	): bool {
-		return user_can( $user_id, 'edit_post', $object_id );
+		return user_can( $user_id, Capability::EDIT_POST, $object_id );
 	}
 
 	/**
@@ -403,7 +403,7 @@ final class Utility {
 	 * characters, such as German '\U\h\r', is one literal token. Every other
 	 * character is a token of its own.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param string $format The PHP date format to tokenize.
 	 *
@@ -467,7 +467,7 @@ final class Utility {
 	 * into the time, such as German '\u\m' in 'j. F Y \u\m H:i', belong to
 	 * neither part. Timezone characters are left out of both.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param string $format A PHP date format.
 	 *
@@ -504,7 +504,7 @@ final class Utility {
 	/**
 	 * Find the first token that is one of the given format characters.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param array<int, FormatToken> $tokens The format tokens.
 	 * @param string[]                $chars  The format characters to look for.
@@ -527,7 +527,7 @@ final class Utility {
 	 * Unescaped text stays, so the Japanese day suffix '日' in 'Y年n月j日 H:i'
 	 * is still part of the date.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param array<int, FormatToken> $tokens The date's tokens.
 	 *
@@ -547,7 +547,7 @@ final class Utility {
 	/**
 	 * Join format tokens back into a format, trimming the separators at its ends.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param array<int, FormatToken> $tokens     The format tokens.
 	 * @param string[]                $skip_chars Format characters to leave out.
@@ -573,7 +573,7 @@ final class Utility {
 	 * is a thing that happens on a day of the week, which is also why
 	 * GatherPress defaults to it while WordPress does not.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return array<int, array{format: string, example: string}> The choices.
 	 */
@@ -595,7 +595,7 @@ final class Utility {
 		 * A format that is not on this list still saves and still renders;
 		 * it simply arrives through the Custom field rather than the list.
 		 *
-		 * @since TBD
+		 * @since 0.36.0
 		 *
 		 * @param string[] $formats PHP date formats.
 		 */
@@ -607,7 +607,7 @@ final class Utility {
 	/**
 	 * The time formats an organizer picks from, as examples.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return array<int, array{format: string, example: string}> The choices.
 	 */
@@ -622,7 +622,7 @@ final class Utility {
 		/**
 		 * Filters the time formats offered as examples in GatherPress.
 		 *
-		 * @since TBD
+		 * @since 0.36.0
 		 *
 		 * @param string[] $formats PHP time formats.
 		 */
@@ -635,10 +635,10 @@ final class Utility {
 	 * Pair each format with the date it renders right now.
 	 *
 	 * Rendered through `wp_date()` so the example arrives in the site's
-	 * locale and zone, which is the whole point: the reader recognizes
+	 * locale and zone, which is the whole point: the viewer recognizes
 	 * the result instead of decoding the format.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param string[] $formats PHP date formats.
 	 *

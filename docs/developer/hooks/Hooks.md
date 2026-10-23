@@ -25,6 +25,12 @@
 
 - [`gatherpress_calendar_url`](gatherpress_calendar_url.md) Filters the calendar URL for a single event.
 
+## class-email.php
+
+- [`gatherpress_email_subject`](gatherpress_email_subject.md) Filters the subject of an event email.
+- [`gatherpress_site_message_active_days`](gatherpress_site_message_active_days.md) Filters the choices for how far back an active user's last RSVP can be.
+- [`gatherpress_site_message_subject`](gatherpress_site_message_subject.md) Filters the subject line of a site-wide message.
+
 ## class-event-query.php
 
 - [`gatherpress_query_vars`](gatherpress_query_vars.md) This filter is documented in includes/query-loop.php
@@ -60,6 +66,13 @@
 
 - [`gatherpress_import`](gatherpress_import.md) Fires for every GatherPress data to be imported.
 
+## class-mailer.php
+
+- [`gatherpress_email_batch_size`](gatherpress_email_batch_size.md) Filters how many recipients one GatherPress mail job sends to.
+- [`gatherpress_email_pre_enqueue_job`](gatherpress_email_pre_enqueue_job.md) Filters the mail enqueue call to take over scheduling.
+- [`gatherpress_email_recipient_consent`](gatherpress_email_recipient_consent.md) Filters whether a recipient consents to a GatherPress email.
+- [`gatherpress_email_recipients`](gatherpress_email_recipients.md) Filters one batch of recipients of a GatherPress email.
+
 ## class-manager.php
 
 - [`gatherpress_register_static_map_providers`](gatherpress_register_static_map_providers.md) Fires when venue map providers are being registered.
@@ -94,12 +107,9 @@
 
 ## class-query.php
 
+- [`gatherpress_event_query_vars`](gatherpress_event_query_vars.md) Filters the query vars of a query that lists upcoming or past events.
 - [`gatherpress_geocode_query`](gatherpress_geocode_query.md) Filters the address sent to the geocoder.
 - [`gatherpress_rsvp_comment_query_exclusion`](gatherpress_rsvp_comment_query_exclusion.md) Filters whether RSVP comments should be excluded from a comment query.
-
-## class-rest-api.php
-
-- [`gatherpress_email_subject`](gatherpress_email_subject.md) Filters the event update email subject.
 
 ## class-roles.php
 
@@ -108,6 +118,10 @@
 ## class-rsvp-form.php
 
 - [`gatherpress_rsvp_form_schemas`](gatherpress_rsvp_form_schemas.md) Filters the RSVP form schemas about to be stored for a post.
+
+## class-rsvp.php
+
+- [`gatherpress_rsvp_waiting_list_promoted`](gatherpress_rsvp_waiting_list_promoted.md) This action is documented in includes/core/classes/rsvp/class-rsvp.php
 
 ## class-settings.php
 

@@ -56,7 +56,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/event/class-setup.php:359](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-setup.php#L359)
+- [includes/core/classes/event/class-setup.php:366](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-setup.php#L366)
 ```php
 apply_filters( 'gatherpress_event_starter_patterns', $patterns, $post_types )
 ```

@@ -10,15 +10,16 @@ namespace GatherPress\Tests\Core\Settings;
 
 use GatherPress\Core\Settings;
 use GatherPress\Core\Settings\Tools;
-use PMC\Unit_Test\Base_Ajax;
+use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
+use WP_REST_Request;
 
 /**
  * Class Test_Tools.
  *
  * @coversDefaultClass \GatherPress\Core\Settings\Tools
  */
-class Test_Tools extends Base_Ajax {
+class Test_Tools extends Base {
 
 	/**
 	 * Coverage for setup_hooks method.
@@ -33,15 +34,9 @@ class Test_Tools extends Base_Ajax {
 		$hooks    = array(
 			array(
 				'type'     => 'action',
-				'name'     => 'wp_ajax_gatherpress_export_settings',
+				'name'     => 'rest_api_init',
 				'priority' => 10,
-				'callback' => array( $instance, 'ajax_export' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'wp_ajax_gatherpress_import_settings',
-				'priority' => 10,
-				'callback' => array( $instance, 'ajax_import' ),
+				'callback' => array( $instance, 'register_endpoints' ),
 			),
 			array(
 				'type'     => 'action',
@@ -138,315 +133,239 @@ class Test_Tools extends Base_Ajax {
 	}
 
 	/**
-	 * Coverage for ajax_export with admin permissions.
+	 * Coverage for register_endpoints.
 	 *
-	 * @covers ::ajax_export
+	 * @covers ::register_endpoints
 	 *
 	 * @return void
 	 */
-	public function test_ajax_export(): void {
-		// Set up as admin user.
-		$user_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
-		wp_set_current_user( $user_id );
+	public function test_register_endpoints(): void {
+		Tools::get_instance()->register_endpoints();
 
-		// Set a value so export has data.
+		$routes = rest_get_server()->get_routes();
+
+		$this->assertArrayHasKey( '/gatherpress/v1/settings/export', $routes );
+		$this->assertArrayHasKey( '/gatherpress/v1/settings/import', $routes );
+	}
+
+	/**
+	 * Coverage for export with admin permissions.
+	 *
+	 * @covers ::export
+	 * @covers ::capability_for_scope
+	 *
+	 * @return void
+	 */
+	public function test_export(): void {
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
 		update_option( 'gatherpress_settings', array( 'map_platform' => 'google' ) );
 
-		$_POST['nonce'] = wp_create_nonce( 'gatherpress_tools_nonce' );
+		$response = rest_do_request( new WP_REST_Request( 'GET', '/gatherpress/v1/settings/export' ) );
 
-		$response = $this->do_ajax( 'gatherpress_export_settings' );
-
-		$this->assertTrue( $response->success, 'Failed to assert export was successful.' );
-		$this->assertSame( 'google', $response->data->settings->map_platform, 'Failed to assert exported value.' );
-
-		delete_option( 'gatherpress_settings' );
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( 'blog', $response->get_data()['scope'] );
+		$this->assertSame( 'google', $response->get_data()['settings']['map_platform'] );
 	}
 
 	/**
-	 * Coverage for ajax_export permission denied for non-admin.
+	 * Check that a user who can't manage options can't export.
 	 *
-	 * @covers ::ajax_export
+	 * @covers ::register_endpoints
 	 *
 	 * @return void
 	 */
-	public function test_ajax_export_permission_denied(): void {
-		// Set up as subscriber (no manage_options).
-		$user_id = $this->factory()->user->create( array( 'role' => 'subscriber' ) );
-		wp_set_current_user( $user_id );
+	public function test_export_permission_denied(): void {
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'subscriber' ) ) );
 
-		$response = $this->do_ajax( 'gatherpress_export_settings' );
+		$response = rest_do_request( new WP_REST_Request( 'GET', '/gatherpress/v1/settings/export' ) );
 
-		$this->assertFalse( $response->success, 'Failed to assert export was denied.' );
+		$this->assertSame( 403, $response->get_status() );
 	}
 
 	/**
-	 * Coverage for ajax_import with valid data and admin permissions.
+	 * Coverage for import with admin permissions.
 	 *
-	 * @covers ::ajax_import
-	 *
-	 * @return void
-	 */
-	public function test_ajax_import(): void {
-		$user_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
-		wp_set_current_user( $user_id );
-
-		$_POST['nonce']         = wp_create_nonce( 'gatherpress_tools_nonce' );
-		$_POST['settings_json'] = wp_json_encode(
-			array(
-				'version'  => GATHERPRESS_VERSION,
-				'settings' => array( 'map_platform' => 'google' ),
-			)
-		);
-
-		// Mock the HTTP input for import_mode.
-		add_filter(
-			'gatherpress_pre_get_http_input',
-			static function ( $pre_value, $type, $var_name ): ?string {
-				if ( INPUT_POST === $type && 'import_mode' === $var_name ) {
-					return 'merge';
-				}
-				return null;
-			},
-			10,
-			3
-		);
-
-		$response = $this->do_ajax( 'gatherpress_import_settings' );
-
-		$this->assertTrue( $response->success, 'Failed to assert import was successful.' );
-
-		remove_all_filters( 'gatherpress_pre_get_http_input' );
-		delete_option( 'gatherpress_settings' );
-	}
-
-	/**
-	 * Coverage for ajax_import permission denied for non-admin.
-	 *
-	 * @covers ::ajax_import
+	 * @covers ::import
 	 *
 	 * @return void
 	 */
-	public function test_ajax_import_permission_denied(): void {
-		// Set up as subscriber (no manage_options).
-		$user_id = $this->factory()->user->create( array( 'role' => 'subscriber' ) );
-		wp_set_current_user( $user_id );
+	public function test_import(): void {
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
 
-		$response = $this->do_ajax( 'gatherpress_import_settings' );
-
-		$this->assertFalse( $response->success, 'Failed to assert import was denied.' );
-	}
-
-	/**
-	 * Coverage for ajax_import with empty JSON data.
-	 *
-	 * @covers ::ajax_import
-	 *
-	 * @return void
-	 */
-	public function test_ajax_import_empty_json(): void {
-		$user_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
-		wp_set_current_user( $user_id );
-
-		$_POST['nonce'] = wp_create_nonce( 'gatherpress_tools_nonce' );
-		// Deliberately omit settings_json to test the empty check.
-
-		$response = $this->do_ajax( 'gatherpress_import_settings' );
-
-		$this->assertFalse( $response->success, 'Failed to assert empty JSON was rejected.' );
-	}
-
-	/**
-	 * Coverage for ajax_import with invalid JSON data.
-	 *
-	 * @covers ::ajax_import
-	 *
-	 * @return void
-	 */
-	public function test_ajax_import_invalid_json(): void {
-		$user_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
-		wp_set_current_user( $user_id );
-
-		$_POST['nonce']         = wp_create_nonce( 'gatherpress_tools_nonce' );
-		$_POST['settings_json'] = 'not valid json{';
-
-		$response = $this->do_ajax( 'gatherpress_import_settings' );
-
-		$this->assertFalse( $response->success, 'Failed to assert invalid JSON was rejected.' );
-	}
-
-	/**
-	 * Coverage for ajax_import with data that fails import validation.
-	 *
-	 * Sends valid JSON with no 'settings' key, which passes json_decode
-	 * but fails import_settings validation.
-	 *
-	 * @covers ::ajax_import
-	 *
-	 * @return void
-	 */
-	public function test_ajax_import_failure(): void {
-		$user_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
-		wp_set_current_user( $user_id );
-
-		$_POST['nonce']         = wp_create_nonce( 'gatherpress_tools_nonce' );
-		$_POST['settings_json'] = wp_json_encode( array( 'version' => '1.0.0' ) );
-		// No 'settings' key means validation failure.
-
-		add_filter(
-			'gatherpress_pre_get_http_input',
-			static function ( $pre_value, $type, $var_name ): ?string {
-				if ( INPUT_POST === $type && 'import_mode' === $var_name ) {
-					return 'merge';
-				}
-				return null;
-			},
-			10,
-			3
-		);
-
-		$response = $this->do_ajax( 'gatherpress_import_settings' );
-
-		$this->assertFalse( $response->success, 'Failed to assert import failure for missing settings key.' );
-
-		remove_all_filters( 'gatherpress_pre_get_http_input' );
-	}
-
-	/**
-	 * Coverage for ajax_import with invalid import mode defaulting to merge.
-	 *
-	 * @covers ::ajax_import
-	 *
-	 * @return void
-	 */
-	public function test_ajax_import_invalid_mode(): void {
-		$user_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
-		wp_set_current_user( $user_id );
-
-		try {
-			// Mock the HTTP input for import_mode with invalid value.
-			add_filter(
-				'gatherpress_pre_get_http_input',
-				static function ( $pre_value, $type, $var_name ): ?string {
-					if ( INPUT_POST === $type && 'import_mode' === $var_name ) {
-						return 'invalid';
-					}
-					return null;
-				},
-				10,
-				3
-			);
-
-			$_POST['nonce']         = wp_create_nonce( 'gatherpress_tools_nonce' );
-			$_POST['settings_json'] = wp_json_encode(
+		$response = rest_do_request(
+			$this->import_request(
 				array(
 					'version'  => GATHERPRESS_VERSION,
 					'settings' => array( 'map_platform' => 'google' ),
 				)
-			);
+			)
+		);
 
-			// Should default to merge and succeed.
-			$response = $this->do_ajax( 'gatherpress_import_settings' );
-
-			$this->assertTrue(
-				$response->success,
-				'Failed to assert import succeeded with invalid mode defaulting to merge. Response: '
-				. wp_json_encode( $response )
-			);
-		} finally {
-			remove_all_filters( 'gatherpress_pre_get_http_input' );
-			delete_option( 'gatherpress_settings' );
-			unset( $_POST['nonce'], $_POST['settings_json'] );
-		}
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertContains( 'map_platform', $response->get_data()['imported'] );
+		$this->assertSame( 'google', get_option( 'gatherpress_settings' )['map_platform'] ?? null );
 	}
 
 	/**
-	 * Coverage for ajax_export in the network scope — reads the network
+	 * Check that a user who can't manage options can't import.
+	 *
+	 * @covers ::register_endpoints
+	 *
+	 * @return void
+	 */
+	public function test_import_permission_denied(): void {
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'subscriber' ) ) );
+
+		$response = rest_do_request( $this->import_request( array( 'settings' => array() ) ) );
+
+		$this->assertSame( 403, $response->get_status() );
+	}
+
+	/**
+	 * Check that the import needs a file, and an import mode it knows.
+	 *
+	 * @covers ::register_endpoints
+	 *
+	 * @return void
+	 */
+	public function test_import_rejects_missing_file_and_unknown_mode(): void {
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
+
+		$this->assertSame(
+			400,
+			rest_do_request( new WP_REST_Request( 'POST', '/gatherpress/v1/settings/import' ) )->get_status(),
+			'An import without a file should be rejected.'
+		);
+		$this->assertSame(
+			400,
+			rest_do_request( $this->import_request( array( 'settings' => array() ), 'invalid' ) )->get_status(),
+			'An unknown import mode should be rejected.'
+		);
+	}
+
+	/**
+	 * Check that a file without settings reports why it wasn't imported.
+	 *
+	 * @covers ::import
+	 *
+	 * @return void
+	 */
+	public function test_import_failure(): void {
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
+
+		$response = rest_do_request( $this->import_request( array( 'version' => '1.0.0' ) ) );
+
+		$this->assertSame( 400, $response->get_status() );
+		$this->assertSame( 'gatherpress_settings_import_failed', $response->get_data()['code'] );
+		$this->assertSame( 'Invalid import file: missing settings data.', $response->get_data()['message'] );
+	}
+
+	/**
+	 * Coverage for export in the network scope, which reads the network
 	 * site option rather than the blog option.
 	 *
-	 * @covers ::ajax_export
-	 * @covers ::resolve_scope
+	 * @covers ::export
 	 * @covers ::capability_for_scope
 	 *
 	 * @group   multisite
 	 *
 	 * @return void
 	 */
-	public function test_ajax_export_network_scope(): void {
-		if ( ! is_multisite() ) {
-			$this->markTestSkipped( 'Requires multisite.' );
-		}
-
+	public function test_export_network_scope(): void {
 		$user_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
 		grant_super_admin( $user_id );
 		wp_set_current_user( $user_id );
 
 		update_site_option( 'gatherpress_settings', array( 'map_platform' => 'google' ) );
 
-		$_POST['nonce'] = wp_create_nonce( 'gatherpress_tools_nonce' );
-		$_POST['scope'] = 'network';
+		$request = new WP_REST_Request( 'GET', '/gatherpress/v1/settings/export' );
+		$request->set_param( 'scope', 'network' );
 
-		$response = $this->do_ajax( 'gatherpress_export_settings' );
+		$response = rest_do_request( $request );
 
-		$this->assertTrue( $response->success, 'Network-scope export should succeed.' );
-		$this->assertSame( 'network', $response->data->scope, 'Response should reflect network scope.' );
-		$this->assertSame(
-			'google',
-			$response->data->settings->map_platform,
-			'Exported value should come from the site option.'
-		);
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( 'network', $response->get_data()['scope'] );
+		$this->assertSame( 'google', $response->get_data()['settings']['map_platform'] );
 
-		delete_site_option( 'gatherpress_settings' );
 		revoke_super_admin( $user_id );
-		wp_delete_user( $user_id );
-		unset( $_POST['nonce'], $_POST['scope'] );
 	}
 
 	/**
-	 * Coverage for ajax_import in the network scope — writes to the site
-	 * option, not the blog option, and flushes the Network config cache.
+	 * Check that a site administrator can't export the network settings.
 	 *
-	 * @covers ::ajax_import
-	 * @covers ::resolve_scope
+	 * @covers ::capability_for_scope
 	 *
 	 * @group   multisite
 	 *
 	 * @return void
 	 */
-	public function test_ajax_import_network_scope(): void {
-		if ( ! is_multisite() ) {
-			$this->markTestSkipped( 'Requires multisite.' );
-		}
+	public function test_export_network_scope_needs_a_super_admin(): void {
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
 
+		$request = new WP_REST_Request( 'GET', '/gatherpress/v1/settings/export' );
+		$request->set_param( 'scope', 'network' );
+
+		$this->assertSame( 403, rest_do_request( $request )->get_status() );
+	}
+
+	/**
+	 * Coverage for import in the network scope, which writes to the site
+	 * option, not the blog option.
+	 *
+	 * @covers ::import
+	 *
+	 * @group   multisite
+	 *
+	 * @return void
+	 */
+	public function test_import_network_scope(): void {
 		$user_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
 		grant_super_admin( $user_id );
 		wp_set_current_user( $user_id );
 
-		$payload = array(
-			'version'     => '1.0.0',
-			'exported_at' => '2026-01-01T00:00:00Z',
-			'scope'       => 'network',
-			'settings'    => array( 'map_platform' => 'google' ),
+		$request = $this->import_request(
+			array(
+				'version'     => '1.0.0',
+				'exported_at' => '2026-01-01T00:00:00Z',
+				'scope'       => 'network',
+				'settings'    => array( 'map_platform' => 'google' ),
+			)
 		);
+		$request->set_param( 'scope', 'network' );
 
-		$_POST['nonce']         = wp_create_nonce( 'gatherpress_tools_nonce' );
-		$_POST['scope']         = 'network';
-		$_POST['settings_json'] = wp_json_encode( $payload );
-		$_POST['import_mode']   = 'merge';
+		$response = rest_do_request( $request );
 
-		$response = $this->do_ajax( 'gatherpress_import_settings' );
-
-		$this->assertTrue( $response->success, 'Network-scope import should succeed.' );
-
-		$stored = get_site_option( 'gatherpress_settings' );
+		$this->assertSame( 200, $response->get_status() );
 		$this->assertSame(
 			'google',
-			$stored['map_platform'] ?? null,
+			get_site_option( 'gatherpress_settings' )['map_platform'] ?? null,
 			'Imported value should be written to the site option.'
 		);
 
-		delete_site_option( 'gatherpress_settings' );
 		revoke_super_admin( $user_id );
-		wp_delete_user( $user_id );
-		unset( $_POST['nonce'], $_POST['scope'], $_POST['settings_json'], $_POST['import_mode'] );
+	}
+
+	/**
+	 * Build an import request the way the Tools tab sends it.
+	 *
+	 * @param array  $import The import file's contents.
+	 * @param string $mode   The import mode.
+	 *
+	 * @return WP_REST_Request The request.
+	 */
+	private function import_request( array $import, string $mode = 'merge' ): WP_REST_Request {
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/settings/import' );
+
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_body(
+			(string) wp_json_encode(
+				array(
+					'mode'   => $mode,
+					'import' => $import,
+				)
+			)
+		);
+
+		return $request;
 	}
 }

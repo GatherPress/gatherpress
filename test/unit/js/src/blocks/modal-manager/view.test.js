@@ -33,6 +33,10 @@ jest.mock(
 			},
 			getElement: jest.fn(),
 			getContext: jest.fn(),
+			withSyncEvent: jest.fn( ( fn ) => {
+				fn.sync = true;
+				return fn;
+			} ),
 		};
 	},
 	{ virtual: true },
@@ -41,7 +45,7 @@ jest.mock(
 /**
  * WordPress dependencies
  */
-import { store } from '@wordpress/interactivity';
+import { store, withSyncEvent } from '@wordpress/interactivity';
 
 /**
  * Internal dependencies
@@ -65,6 +69,14 @@ describe( 'modal-manager openModal', () => {
 
 	it( 'bails without throwing when called with no event and no element (#1719)', () => {
 		expect( () => actions.openModal( null, null ) ).not.toThrow();
+	} );
+
+	it( 'wraps synchronous actions in withSyncEvent to prevent WordPress 6.8+ deprecation warnings (#2388)', () => {
+		expect( withSyncEvent ).toHaveBeenCalledWith( expect.any( Function ) );
+		expect( actions.openModal.sync ).toBe( true );
+		expect( actions.openModalOnEnter.sync ).toBe( true );
+		expect( actions.closeModal.sync ).toBe( true );
+		expect( actions.closeModalOnEnter.sync ).toBe( true );
 	} );
 
 	it( 'falls back to event.target when no element is given', () => {

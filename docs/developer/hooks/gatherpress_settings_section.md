@@ -22,7 +22,7 @@ add_action(
 
 ## Files
 
-- [includes/templates/admin/settings/network-page.php:323](https://github.com/GatherPress/gatherpress/blob/develop/includes/templates/admin/settings/network-page.php#L323)
+- [includes/templates/admin/settings/network-page.php:242](https://github.com/GatherPress/gatherpress/blob/develop/includes/templates/admin/settings/network-page.php#L242)
 ```php
 do_action( 'gatherpress_settings_section', $gatherpress_current_page )
 ```

@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Compare RSVP tokens with hash_equals().
