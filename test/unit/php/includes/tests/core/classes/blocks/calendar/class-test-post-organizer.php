@@ -601,6 +601,43 @@ class Test_Post_Organizer extends Base {
 			'Failed to assert an event before the grid gets the first track.'
 		);
 
+		// The grid has 48 tracks, from line 1 (08:00) to line 49 (20:00).
+		$late = $this->create_event( '2026-10-16 21:00:00', '2026-10-16 22:00:00' );
+		$this->assertSame(
+			array(
+				'row_start' => 48,
+				'row_end'   => 49,
+			),
+			Post_Organizer::calculate_timed_event_tracks( $late, self::GRID ),
+			'Failed to assert an event after the grid gets the last track, not a row below the grid.'
+		);
+
+		$at_end = $this->create_event( '2026-10-16 20:00:00', '2026-10-16 20:30:00' );
+		$this->assertSame(
+			array(
+				'row_start' => 48,
+				'row_end'   => 49,
+			),
+			Post_Organizer::calculate_timed_event_tracks( $at_end, self::GRID ),
+			'Failed to assert an event at the last hour gets the last track.'
+		);
+
+		// 3-hour rows give 45-minute steps. From 08:00 they are at 08:45 and 09:30, not at 09:00.
+		$three_hours = array(
+			'start_hour'   => 8,
+			'end_hour'     => 20,
+			'quarter_mins' => 45,
+		);
+		$short       = $this->create_event( '2026-10-16 08:00:00', '2026-10-16 08:50:00' );
+		$this->assertSame(
+			array(
+				'row_start' => 1,
+				'row_end'   => 3,
+			),
+			Post_Organizer::calculate_timed_event_tracks( $short, $three_hours ),
+			'Failed to assert the event ends at the step after 08:50 (09:30), not at 08:45.'
+		);
+
 		$config = array(
 			'start_hour'   => 10,
 			'end_hour'     => 12,

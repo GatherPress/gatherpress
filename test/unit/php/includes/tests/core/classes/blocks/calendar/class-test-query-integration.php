@@ -218,8 +218,25 @@ class Test_Query_Integration extends Base {
 
 		$_REQUEST[ Query_Integration::CALENDAR_QUERY_PARAM ] = '1';
 
+		wp_set_current_user( 0 );
+		$this->assertSame(
+			$params,
+			$instance->filter_rest_collection_params( $params ),
+			'Failed to assert a visitor keeps the core maximum.'
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'subscriber' ) ) );
+		$this->assertSame(
+			$params,
+			$instance->filter_rest_collection_params( $params ),
+			'Failed to assert a user who cannot edit posts keeps the core maximum.'
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'author' ) ) );
 		$this->assertSame( 500, $instance->filter_rest_collection_params( $params )['per_page']['maximum'] );
 		$this->assertSame( array(), $instance->filter_rest_collection_params( array() ) );
+
+		wp_set_current_user( 0 );
 	}
 
 	/**

@@ -79,18 +79,11 @@ final class Post_Organizer {
 		$start = $query_args[ Query_Integration::CALENDAR_QUERY_START_DATE ] ?? null;
 		$end   = $query_args[ Query_Integration::CALENDAR_QUERY_END_DATE ] ?? null;
 
-		if ( ! is_string( $start ) || ! is_string( $end ) ) {
-			return null;
-		}
+		$start_obj = is_string( $start ) ? self::parse_day( $start ) : null;
+		$end_obj   = is_string( $end ) ? self::parse_day( $end ) : null;
 
-		$start_obj = self::parse_day( $start );
-		$end_obj   = self::parse_day( $end );
-
-		if ( null === $start_obj || null === $end_obj ) {
-			return null;
-		}
-
-		if ( $end_obj < $start_obj ) {
+		// Both dates must be valid Y-m-d strings, and the end must not be before the start.
+		if ( null === $start_obj || null === $end_obj || $end_obj < $start_obj ) {
 			return null;
 		}
 
@@ -361,19 +354,12 @@ final class Post_Organizer {
 	 * @return string 'single', 'start', 'middle', or 'end'.
 	 */
 	public static function determine_span_type( int $day_index, int $total_days ): string {
-		if ( $total_days <= 1 ) {
-			return 'single';
-		}
-
-		if ( 1 === $day_index ) {
-			return 'start';
-		}
-
-		if ( $total_days === $day_index ) {
-			return 'end';
-		}
-
-		return 'middle';
+		return match ( true ) {
+			$total_days <= 1           => 'single',
+			1 === $day_index           => 'start',
+			$total_days === $day_index => 'end',
+			default                    => 'middle',
+		};
 	}
 
 	/**
@@ -618,6 +604,10 @@ final class Post_Organizer {
 	/**
 	 * Compute quarter-slot row tracks for a timed event within configured day boundaries.
 	 *
+	 * An event outside the hours of the grid goes to the nearest edge: an event before the
+	 * first hour starts on the first track, and an event at or after the last hour gets the
+	 * last track. So no event shows below the grid.
+	 *
 	 * @since TBD
 	 *
 	 * @param int                  $post_id     Post ID.
@@ -639,25 +629,27 @@ final class Post_Organizer {
 
 		$day_start_min = $start_hour * 60;
 		$day_end_min   = $end_hour * 60;
+		// The same number of tracks as total_quarters in Date_Calculator::get_time_grid_config().
+		$total_tracks = max( 1, (int) ceil( ( $day_end_min - $day_start_min ) / $quarter_mins ) );
 
 		// Clamp the event to the visible day window.
 		$clamped_start = max( $day_start_min, $datetimes['start_min'] );
 		$clamped_end   = min( $day_end_min, $datetimes['end_min'] );
 
-		// Round to 1/4 of slot duration.
-		$rounded_start = Date_Calculator::round_to_quarter_slot( $clamped_start, $quarter_mins );
-		$rounded_end   = Date_Calculator::round_to_quarter_slot( $clamped_end, $quarter_mins, true );
+		// Round to 1/4 of slot duration, counted from the first minute of the grid.
+		$rounded_start = Date_Calculator::round_to_quarter_slot( $clamped_start, $quarter_mins, false, $day_start_min );
+		$rounded_end   = Date_Calculator::round_to_quarter_slot( $clamped_end, $quarter_mins, true, $day_start_min );
 
 		if ( $rounded_end <= $rounded_start ) {
 			$rounded_end = $rounded_start + $quarter_mins;
 		}
 
-		$start_track = (int) ( ( $rounded_start - $day_start_min ) / $quarter_mins ) + 1;
+		$start_track = min( $total_tracks, (int) ( ( $rounded_start - $day_start_min ) / $quarter_mins ) + 1 );
 		$end_track   = (int) ( ( $rounded_end - $day_start_min ) / $quarter_mins ) + 1;
 
 		return array(
 			'row_start' => $start_track,
-			'row_end'   => max( $start_track + 1, $end_track ),
+			'row_end'   => min( $total_tracks + 1, max( $start_track + 1, $end_track ) ),
 		);
 	}
 }
