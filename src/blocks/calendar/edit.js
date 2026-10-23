@@ -30,6 +30,7 @@ import {
 	getDefaultActiveDate,
 	getColumnsCount,
 	getStartOfWeek,
+	getTimeSlotDuration,
 	toHour,
 } from './utils/calendar-utils';
 import { useCalendarSync } from './hooks/use-calendar-sync';
@@ -147,8 +148,9 @@ export default function Edit( {
 
 		const start = Math.max( 0, Math.min( 23, toHour( dayStartHour, 8 ) ) );
 		const end = Math.max( start + 1, Math.min( 24, toHour( dayEndHour, 20 ) ) );
-		const slotHours = 1;
-		const quarterMins = 15;
+		// The same rows and steps as Date_Calculator::get_time_grid_config().
+		const slotHours = getTimeSlotDuration();
+		const quarterMins = Math.max( 1, Math.round( ( slotHours * 60 ) / 4 ) );
 		const totalQuarters = Math.ceil(
 			( ( end - start ) * 60 ) / quarterMins,
 		);

@@ -799,6 +799,33 @@ class Test_Date_Calculator extends Base {
 	}
 
 	/**
+	 * Coverage for get_time_slot_duration.
+	 *
+	 * @covers ::get_time_slot_duration
+	 *
+	 * @return void
+	 */
+	public function test_get_time_slot_duration(): void {
+		$this->assertSame( 1, Date_Calculator::get_time_slot_duration(), 'Failed to assert the default of 1 hour.' );
+
+		$slot_hours = 2;
+		$callback   = static function () use ( &$slot_hours ) {
+			return $slot_hours;
+		};
+		add_filter( 'gatherpress_calendar_time_slot_duration', $callback );
+
+		$this->assertSame( 2, Date_Calculator::get_time_slot_duration() );
+
+		$slot_hours = '3';
+		$this->assertSame( 3, Date_Calculator::get_time_slot_duration(), 'Failed to assert a numeric string.' );
+
+		$slot_hours = 0;
+		$this->assertSame( 1, Date_Calculator::get_time_slot_duration(), 'Failed to assert 0 becomes 1.' );
+
+		remove_filter( 'gatherpress_calendar_time_slot_duration', $callback );
+	}
+
+	/**
 	 * Coverage for round_to_quarter_slot.
 	 *
 	 * @covers ::round_to_quarter_slot

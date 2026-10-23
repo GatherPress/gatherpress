@@ -82,6 +82,22 @@ export function getPostsPerPage() {
 }
 
 /**
+ * Retrieves the hours in each labeled row of the time grid.
+ *
+ * The value comes from the gatherpress_calendar_time_slot_duration filter, as
+ * on the front end. A value below 1 becomes 1, and a fraction is cut to a
+ * whole number, as PHP's (int) cast does.
+ *
+ * @return {number} Hours per row, 1 or more.
+ */
+export function getTimeSlotDuration() {
+	const settings = select( 'core/editor' )?.getEditorSettings?.();
+	const slotHours = Math.floor( Number( settings?.gatherpress?.timeSlotDuration ) );
+
+	return 1 <= slotHours ? slotHours : 1;
+}
+
+/**
  * Builds the REST API taxonomy arguments from a Query Loop taxQuery.
  *
  * Mirrors core's Post Template: the REST API takes each taxonomy by its

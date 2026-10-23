@@ -22,6 +22,7 @@ import {
 	getDayNames,
 	getPostsPerPage,
 	getStartOfWeek,
+	getTimeSlotDuration,
 	getWeekendDays,
 	isWeekendDay,
 } from '@src/blocks/calendar/utils/calendar-utils';
@@ -207,6 +208,34 @@ describe( 'getPostsPerPage', () => {
 			setEditorSettings( { postsPerPage } );
 
 			expect( getPostsPerPage() ).toBe( 500 );
+		} );
+	} );
+} );
+
+describe( 'getTimeSlotDuration', () => {
+	it( 'uses the hours per row that GatherPress gives the editor', () => {
+		setEditorSettings( { timeSlotDuration: 2 } );
+
+		expect( getTimeSlotDuration() ).toBe( 2 );
+
+		setEditorSettings( { timeSlotDuration: '3' } );
+
+		expect( getTimeSlotDuration() ).toBe( 3 );
+	} );
+
+	it( 'cuts a fraction to a whole number, as the PHP (int) cast does', () => {
+		setEditorSettings( { timeSlotDuration: 2.7 } );
+
+		expect( getTimeSlotDuration() ).toBe( 2 );
+	} );
+
+	it( 'uses 1 when the editor value is missing, below 1 or not a number', () => {
+		expect( getTimeSlotDuration() ).toBe( 1 );
+
+		[ undefined, 0, 0.5, -2, 'long' ].forEach( ( timeSlotDuration ) => {
+			setEditorSettings( { timeSlotDuration } );
+
+			expect( getTimeSlotDuration() ).toBe( 1 );
 		} );
 	} );
 } );

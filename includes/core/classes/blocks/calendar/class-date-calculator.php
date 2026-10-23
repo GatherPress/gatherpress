@@ -999,6 +999,32 @@ final class Date_Calculator {
 	}
 
 	/**
+	 * Retrieves the hours in each labeled row of the time grid.
+	 *
+	 * The editor preview reads the same value from the editor settings.
+	 *
+	 * @since TBD
+	 *
+	 * @return int Hours per row, 1 or more.
+	 */
+	public static function get_time_slot_duration(): int {
+		/**
+		 * Filters the hours in each labeled row of the time grid, to make a long day take less height.
+		 *
+		 * Defaults to 1. Each row has four steps. An event starts at the step at or before its start
+		 * time and ends at the step at or after its end time: 15-minute steps for 1-hour rows, 30-minute
+		 * steps for 2-hour rows. Values below 1 become 1.
+		 *
+		 * @since TBD
+		 *
+		 * @param int $slot_hours Hours per slot.
+		 *
+		 * @return int Hours per slot.
+		 */
+		return max( 1, (int) apply_filters( 'gatherpress_calendar_time_slot_duration', 1 ) );
+	}
+
+	/**
 	 * Retrieve time grid configuration respecting attributes, query sorting, and filters.
 	 *
 	 * @since TBD
@@ -1040,20 +1066,7 @@ final class Date_Calculator {
 		$start_hour     = is_numeric( $start_hour_raw ) ? max( 0, min( 23, (int) $start_hour_raw ) ) : 8;
 		$end_hour       = is_numeric( $end_hour_raw ) ? max( $start_hour + 1, min( 24, (int) $end_hour_raw ) ) : 20;
 
-		/**
-		 * Filters the hours in each labeled row of the time grid, to make a long day take less height.
-		 *
-		 * Defaults to 1. Each row has four steps. An event starts at the step at or before its start
-		 * time and ends at the step at or after its end time: 15-minute steps for 1-hour rows, 30-minute
-		 * steps for 2-hour rows. Values below 1 become 1.
-		 *
-		 * @since TBD
-		 *
-		 * @param int $slot_hours Hours per slot.
-		 *
-		 * @return int Hours per slot.
-		 */
-		$slot_hours     = max( 1, (int) apply_filters( 'gatherpress_calendar_time_slot_duration', 1 ) );
+		$slot_hours     = self::get_time_slot_duration();
 		$quarter_mins   = max( 1, (int) round( ( $slot_hours * 60 ) / 4 ) );
 		$total_minutes  = ( $end_hour - $start_hour ) * 60;
 		$total_quarters = (int) ceil( $total_minutes / $quarter_mins );

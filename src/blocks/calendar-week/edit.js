@@ -91,17 +91,23 @@ export default memo( function Edit( {
 		),
 	);
 
+	// Hours in each row of the time grid, from the calendar, as the preview weeks use.
+	const slotHours = Math.max(
+		1,
+		Number( context?.[ 'gatherpress/timeGridConfig' ]?.slotHours ) || 1,
+	);
+
 	// Generate hour slots for the Time Gutter column.
 	const timeSlots = useMemo( () => {
 		if ( ! isTimeGridActive ) {
 			return [];
 		}
 		const slots = [];
-		for ( let h = dayStartHour; h < dayEndHour; h += 1 ) {
+		for ( let h = dayStartHour; h < dayEndHour; h += slotHours ) {
 			slots.push( `${ String( h ).padStart( 2, '0' ) }:00` );
 		}
 		return slots;
-	}, [ isTimeGridActive, dayStartHour, dayEndHour ] );
+	}, [ isTimeGridActive, dayStartHour, dayEndHour, slotHours ] );
 
 	// Calculate maximum ribbon slot index across all days in this week.
 	const numRibbonSlots = useMemo( () => {

@@ -24,7 +24,7 @@ use WP_Block;
  *
  * The binding sources give a Paragraph the day number of its calendar day, and a Heading the
  * date range of its calendar. The editor settings give the editor preview the same week start,
- * weekend days and post limit as the front end.
+ * weekend days, post limit and time grid rows as the front end.
  *
  * @since TBD
  */
@@ -124,8 +124,8 @@ final class Registration {
 	/**
 	 * Pass calendar settings into the block editor settings.
 	 *
-	 * The editor preview then uses the same start of week, weekend days and post limit as the
-	 * front end. Other values under `gatherpress` stay.
+	 * The editor preview then uses the same start of week, weekend days, post limit and hours per
+	 * time grid row as the front end. Other values under `gatherpress` stay.
 	 *
 	 * @since TBD
 	 *
@@ -136,10 +136,11 @@ final class Registration {
 	public function block_editor_settings_all( array $settings ): array {
 		$gatherpress = is_array( $settings['gatherpress'] ?? null ) ? $settings['gatherpress'] : array();
 
-		$gatherpress['weekendDays']  = Date_Calculator::get_weekend_days();
-		$gatherpress['postsPerPage'] = Query_Builder::get_posts_per_page();
-		$gatherpress['startOfWeek']  = Date_Calculator::get_start_of_week();
-		$settings['gatherpress']     = $gatherpress;
+		$gatherpress['weekendDays']      = Date_Calculator::get_weekend_days();
+		$gatherpress['postsPerPage']     = Query_Builder::get_posts_per_page();
+		$gatherpress['startOfWeek']      = Date_Calculator::get_start_of_week();
+		$gatherpress['timeSlotDuration'] = Date_Calculator::get_time_slot_duration();
+		$settings['gatherpress']         = $gatherpress;
 
 		return $settings;
 	}

@@ -152,8 +152,20 @@ class Test_Registration extends Base {
 		$this->assertSame( array( 0, 6 ), $settings['gatherpress']['weekendDays'] );
 		$this->assertSame( 500, $settings['gatherpress']['postsPerPage'] );
 		$this->assertSame( 3, $settings['gatherpress']['startOfWeek'] );
+		$this->assertSame( 1, $settings['gatherpress']['timeSlotDuration'] );
 
+		$two_hours = static function () {
+			return 2;
+		};
+		add_filter( 'gatherpress_calendar_time_slot_duration', $two_hours );
 		$settings = Registration::get_instance()->block_editor_settings_all( array() );
+		remove_filter( 'gatherpress_calendar_time_slot_duration', $two_hours );
+
+		$this->assertSame(
+			2,
+			$settings['gatherpress']['timeSlotDuration'],
+			'Failed to assert the editor gets the filtered hours per time grid row.'
+		);
 
 		$this->assertSame(
 			3,
