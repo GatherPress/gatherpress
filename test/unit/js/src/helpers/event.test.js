@@ -264,12 +264,9 @@ describe( 'useIsPostTypeLoaded', () => {
 	};
 
 	it( 'returns false while the post type is still loading', () => {
-		const hasFinishedResolution = mockCoreStore();
+		mockCoreStore();
 
 		expect( useIsPostTypeLoaded( 'gatherpress_event' ) ).toBe( false );
-		expect( hasFinishedResolution ).toHaveBeenCalledWith( 'getPostType', [
-			'gatherpress_event',
-		] );
 	} );
 
 	it( 'returns true when the post type record is in the store', () => {
@@ -280,12 +277,13 @@ describe( 'useIsPostTypeLoaded', () => {
 		expect( useIsPostTypeLoaded( 'post' ) ).toBe( true );
 	} );
 
-	it( 'returns true when the resolution finished without a record', () => {
-		// A post type that is not shown in REST never gets a record, so the
-		// finished resolution is what ends the wait.
-		mockCoreStore( { resolved: [ 'not_in_rest' ] } );
+	it( 'returns false when the request finished without a record', () => {
+		// A failed request, such as a 403 for a user who cannot edit the post
+		// type, finishes without a record. Its supports are unknown, so it
+		// must not count as loaded.
+		mockCoreStore( { resolved: [ 'gatherpress_event' ] } );
 
-		expect( useIsPostTypeLoaded( 'not_in_rest' ) ).toBe( true );
+		expect( useIsPostTypeLoaded( 'gatherpress_event' ) ).toBe( false );
 	} );
 
 	it( 'falls back to the editor post type when no postType is given', () => {

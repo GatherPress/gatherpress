@@ -99,9 +99,10 @@ export function usePostTypeSupports( support, postType = null ) {
  * this hook first, or it acts on the first render, before the post type
  * loads (#2495).
  *
- * The post type counts as loaded when its record is in the store, or when
- * its `getPostType()` resolution has finished without one (for example, a
- * post type that is not shown in REST).
+ * The post type counts as loaded only once its record is in the store. A
+ * request that fails leaves no record, for example a 403 for a user who
+ * cannot edit that post type, or a post type not shown in REST. Its supports
+ * are unknown then, so code must not act as if they were missing.
  *
  * @since TBD
  *
@@ -119,12 +120,7 @@ export function useIsPostTypeLoaded( postType = null ) {
 				return false;
 			}
 
-			const { getPostType, hasFinishedResolution } = wpSelect( 'core' );
-
-			return (
-				!! getPostType( typeToCheck ) ||
-				hasFinishedResolution( 'getPostType', [ typeToCheck ] )
-			);
+			return !! wpSelect( 'core' ).getPostType( typeToCheck );
 		},
 		[ postType ],
 	);
