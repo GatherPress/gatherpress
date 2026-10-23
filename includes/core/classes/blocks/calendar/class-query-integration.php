@@ -74,7 +74,7 @@ final class Query_Integration {
 	const CALENDAR_QUERY_HEADING = 'gatherpress_calendar_heading';
 
 	/**
-	 * Number of pages the Next Page block of a calendar query can link to.
+	 * Number of pages the Previous Page and Next Page blocks of a calendar query can link to.
 	 *
 	 * A calendar pages by date range, so the number of posts does not limit its pages.
 	 *
@@ -447,9 +447,10 @@ final class Query_Integration {
 			return $this->paginate_calendar_block( $parsed_block, $parent_block );
 		}
 
-		// Only the Next Page block runs a query to decide whether it has a link.
+		// The Previous Page and Next Page blocks run a query to decide whether they have a link.
+		// Since WordPress 6.8, Previous Page links only up to the last page of posts of that query.
 		if (
-			'core/query-pagination-next' === $block_name &&
+			in_array( $block_name, array( 'core/query-pagination-previous', 'core/query-pagination-next' ), true ) &&
 			$parent_block instanceof WP_Block &&
 			$this->is_calendar_query_context( $parent_block->context )
 		) {
@@ -486,10 +487,11 @@ final class Query_Integration {
 	}
 
 	/**
-	 * Lets the Next Page block of a calendar query link to the next date range.
+	 * Lets the Previous Page and Next Page blocks of a calendar query link to the date ranges
+	 * before and after.
 	 *
-	 * Runs once, on the first query after a calendar's Next Page block registered it, which is
-	 * the query of that block.
+	 * Runs once, on the first query after a calendar's Previous Page or Next Page block
+	 * registered it, which is the query of that block.
 	 *
 	 * @since TBD
 	 *

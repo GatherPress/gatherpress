@@ -830,9 +830,10 @@ final class Date_Calculator {
 	 */
 	public static function get_weekend_days(): array {
 		/**
-		 * Filters which days of the week are considered weekend days.
+		 * Filters which days of the week are weekend days, for a site in a region with a different weekend.
 		 *
-		 * Defaults to Sunday (0) and Saturday (6).
+		 * Defaults to Sunday (0) and Saturday (6). Weekend days get the `is-weekend` class, and the
+		 * calendar hides them when Show Weekends is off.
 		 *
 		 * Across different cultures, religions, and regions, the weekend days vary significantly:
 		 * - Western standard: Saturday (6) and Sunday (0).
@@ -844,6 +845,8 @@ final class Date_Calculator {
 		 * @since TBD
 		 *
 		 * @param int[] $weekend_days Array of day numbers where 0 = Sunday, 1 = Monday, ..., 6 = Saturday.
+		 *
+		 * @return int[] Day numbers. Values that are not 0 to 6, and repeated days, are dropped.
 		 */
 		$weekend_days = apply_filters( 'gatherpress_calendar_weekend_days', array( 0, 6 ) );
 		$days         = array();
@@ -1038,13 +1041,17 @@ final class Date_Calculator {
 		$end_hour       = is_numeric( $end_hour_raw ) ? max( $start_hour + 1, min( 24, (int) $end_hour_raw ) ) : 20;
 
 		/**
-		 * Filters the duration of each time slot in hours.
+		 * Filters the hours in each labeled row of the time grid, to make a long day take less height.
 		 *
-		 * Defaults to 1 (1 hour). Can be set to 2, 4, etc. via code.
+		 * Defaults to 1. Each row has four steps. An event starts at the step at or before its start
+		 * time and ends at the step at or after its end time: 15-minute steps for 1-hour rows, 30-minute
+		 * steps for 2-hour rows. Values below 1 become 1.
 		 *
 		 * @since TBD
 		 *
 		 * @param int $slot_hours Hours per slot.
+		 *
+		 * @return int Hours per slot.
 		 */
 		$slot_hours     = max( 1, (int) apply_filters( 'gatherpress_calendar_time_slot_duration', 1 ) );
 		$quarter_mins   = max( 1, (int) round( ( $slot_hours * 60 ) / 4 ) );
