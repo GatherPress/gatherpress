@@ -475,7 +475,7 @@ class Test_Query_Integration extends Base {
 	}
 
 	/**
-	 * Coverage for allow_core_pagination with the Next Page block.
+	 * Coverage for allow_core_pagination with the Next Page and Previous Page blocks.
 	 *
 	 * @covers ::allow_core_pagination
 	 * @covers ::is_calendar_query_context
@@ -516,6 +516,14 @@ class Test_Query_Integration extends Base {
 
 		$instance->allow_core_pagination( $next, $next, $plain );
 		$this->assertSame( 10, has_filter( 'the_posts', $callback ), 'Failed to assert the recorded queryId.' );
+
+		remove_filter( 'the_posts', $callback );
+		$previous = array(
+			'blockName' => 'core/query-pagination-previous',
+			'attrs'     => array(),
+		);
+		$instance->allow_core_pagination( $previous, $previous, $marked );
+		$this->assertSame( 10, has_filter( 'the_posts', $callback ), 'Failed to assert the Previous Page block.' );
 
 		$paragraph = array(
 			'blockName' => 'core/paragraph',
@@ -780,6 +788,53 @@ class Test_Query_Integration extends Base {
 			array(),
 			$this->get_calendar_query_ids(),
 			'Failed to assert no queryId is left after rendering.'
+		);
+		$this->assertFalse(
+			has_filter( 'the_posts', array( Query_Integration::get_instance(), 'force_pagination_max_pages' ) ),
+			'Failed to assert no filter is left after rendering.'
+		);
+	}
+
+	/**
+	 * A calendar on a later page links back to the date range before it.
+	 *
+	 * The Previous Page block links back only up to the last page of posts of its query.
+	 * A calendar pages by date range, so it can have more date ranges than pages of posts.
+	 * A plain Query Loop keeps that limit.
+	 *
+	 * @covers ::allow_core_pagination
+	 * @covers ::force_pagination_max_pages
+	 *
+	 * @return void
+	 */
+	public function test_rendered_previous_link(): void {
+		// Both Query Loops search for this one post, so they have 1 page of posts.
+		$this->mock->post( array( 'post_title' => 'Zyxcalendarprevious' ) )->get();
+
+		$_GET['query-5-page'] = '3';
+
+		$query      = '"query":{"perPage":1,"postType":"post","search":"Zyxcalendarprevious","inherit":false}';
+		$pagination = '<!-- wp:query-pagination --><!-- wp:query-pagination-previous /-->'
+			. '<!-- /wp:query-pagination -->';
+		$calendar   = do_blocks(
+			'<!-- wp:query {"queryId":5,' . $query . '} --><div class="wp-block-query">'
+				. '<!-- wp:gatherpress/calendar {"selectedDate":"2026-10-15"} /-->' . $pagination
+				. '</div><!-- /wp:query -->'
+		);
+		$plain      = do_blocks(
+			'<!-- wp:query {"queryId":5,' . $query . '} --><div class="wp-block-query">' . $pagination
+				. '</div><!-- /wp:query -->'
+		);
+
+		$this->assertStringContainsString(
+			'query-5-page=2',
+			$calendar,
+			'Failed to assert the calendar links back to the date range before it.'
+		);
+		$this->assertStringNotContainsString(
+			'query-5-page=2',
+			$plain,
+			'Failed to assert a plain Query Loop after its last page has no Previous link.'
 		);
 		$this->assertFalse(
 			has_filter( 'the_posts', array( Query_Integration::get_instance(), 'force_pagination_max_pages' ) ),

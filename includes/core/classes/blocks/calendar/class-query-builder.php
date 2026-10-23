@@ -49,13 +49,16 @@ final class Query_Builder {
 	 */
 	public static function get_posts_per_page(): int {
 		/**
-		 * Filters the maximum number of posts queried for calendar display.
+		 * Filters how many posts one calendar view can show, to fit a site with more posts in one view.
 		 *
-		 * Defaults to 500. Values below 1 become 1.
+		 * Defaults to 500. A calendar queries all posts of its date range in one query, so posts
+		 * after this number do not show. Lower it to make the query smaller. Values below 1 become 1.
 		 *
 		 * @since TBD
 		 *
 		 * @param int $posts_per_page Number of posts to query.
+		 *
+		 * @return int Number of posts to query.
 		 */
 		$posts_per_page = (int) apply_filters( 'gatherpress_calendar_posts_per_page', 500 );
 
