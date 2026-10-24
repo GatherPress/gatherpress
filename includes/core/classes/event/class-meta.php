@@ -23,7 +23,6 @@ namespace GatherPress\Core\Event;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Capability;
 use GatherPress\Core\Event;
 use GatherPress\Core\Geo_Sync;
 use GatherPress\Core\Settings;
@@ -398,11 +397,7 @@ final class Meta {
 		WP_Post $post,
 		WP_REST_Request $request
 	): WP_REST_Response {
-		if (
-			post_password_required( $post )
-			&& ! current_user_can( Capability::EDIT_POST, $post->ID )
-			&& ! hash_equals( $post->post_password, (string) $request->get_param( 'password' ) )
-		) {
+		if ( Event::is_hidden_by_password( $post, $request ) ) {
 			foreach ( self::PASSWORD_PROTECTED_META as $key ) {
 				if ( array_key_exists( $key, $response->data['meta'] ?? array() ) ) {
 					$response->data['meta'][ $key ] = '';

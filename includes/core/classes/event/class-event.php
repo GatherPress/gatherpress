@@ -27,6 +27,7 @@ use GatherPress\Core\Validate;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
 use GatherPress\Core\Venue;
 use WP_Post;
+use WP_REST_Request;
 use WP_Term;
 
 /**
@@ -196,6 +197,29 @@ class Event {
 		return 'publish' === $post->post_status
 			? ! post_password_required( $post )
 			: current_user_can( self::read_capability(), $post->ID );
+	}
+
+	/**
+	 * Whether a post password keeps an event's details from the current viewer.
+	 *
+	 * The viewer still needs the password and cannot edit the event. A REST
+	 * request that passes the right `password` argument counts as having it.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_Post              $post    The event post.
+	 * @param WP_REST_Request|null $request Optional. The REST request, for its `password` argument.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>>|null $request
+	 *
+	 * @return bool True when the event's details stay hidden.
+	 */
+	public static function is_hidden_by_password( WP_Post $post, ?WP_REST_Request $request = null ): bool {
+		return post_password_required( $post )
+			&& ! current_user_can( self::edit_capability(), $post->ID )
+			&& (
+				null === $request
+				|| ! hash_equals( $post->post_password, (string) $request->get_param( 'password' ) )
+			);
 	}
 
 	/**
