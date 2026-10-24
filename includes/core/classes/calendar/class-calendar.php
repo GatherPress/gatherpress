@@ -334,6 +334,7 @@ final class Calendar {
 		$args = array(
 			'BEGIN:VEVENT',
 			sprintf( 'URL:%s', esc_url_raw( $permalink ) ),
+			sprintf( 'STATUS:%s', $this->event->get_ical_status() ),
 			$dtstart_line,
 			$dtend_line,
 			sprintf( 'DTSTAMP:%s', sanitize_text_field( $datetime_stamp ) ),
