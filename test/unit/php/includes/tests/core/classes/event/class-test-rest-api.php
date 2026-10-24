@@ -1224,7 +1224,7 @@ class Test_Rest_Api extends Base {
 	 * Comment queries leave RSVPs out by default, so the count turns that
 	 * exclusion off for its own query.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param int $post_id The event's post ID.
 	 *
