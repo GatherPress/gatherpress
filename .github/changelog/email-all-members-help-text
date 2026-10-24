@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-The event email dialog no longer mentions "All Members" to users who can't send to all members, since the option is hidden for them.

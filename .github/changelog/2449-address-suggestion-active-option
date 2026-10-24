@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-The venue address search no longer makes the first suggestion active before an arrow key is pressed. ArrowDown then Enter now chooses the first suggestion, not the second, and Enter with no suggestion chosen keeps the typed address. Suggestions with the same address are shown once.

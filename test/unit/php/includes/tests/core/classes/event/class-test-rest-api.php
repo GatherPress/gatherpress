@@ -857,7 +857,7 @@ class Test_Rest_Api extends Base {
 	 * The form posts to wp-comments-post.php without JavaScript, which refuses
 	 * a password-protected post, so the REST route has to refuse it too.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::handle_rsvp_form_submission
 	 *
@@ -904,7 +904,7 @@ class Test_Rest_Api extends Base {
 	 * Comment queries leave RSVPs out by default, so the count turns that
 	 * exclusion off for its own query.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param int $post_id The event's post ID.
 	 *
@@ -1563,7 +1563,7 @@ class Test_Rest_Api extends Base {
 	/**
 	 * Tests emailing every user takes edit_others_posts, not just edit_post.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::email_route
 	 */
@@ -1641,7 +1641,7 @@ class Test_Rest_Api extends Base {
 	/**
 	 * Tests who can email every user about an event.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::can_email_all_users
 	 */

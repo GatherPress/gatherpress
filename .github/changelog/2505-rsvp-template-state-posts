@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-The RSVP Template block no longer fails to render its list when it loads before the other RSVP blocks, as seen on an events archive in iOS Safari.

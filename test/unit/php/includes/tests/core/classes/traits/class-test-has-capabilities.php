@@ -54,7 +54,7 @@ class Test_Has_Capabilities extends Base {
 	 * A post password keeps a post's details from a viewer until they have the
 	 * password, as a cookie or a REST argument, or can edit the post.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::is_hidden_by_password
 	 *

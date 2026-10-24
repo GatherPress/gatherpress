@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Stop a fatal error on calendar endpoint URLs when the requested calendar slug does not belong to the endpoint handling the request, such as an event's /outlook/ URL with page and feed query parameters.
