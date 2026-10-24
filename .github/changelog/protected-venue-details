@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-A password-protected venue's details, and its link to the events held there, stay private for viewers without its password, as the Venue block already did: the venue's REST record, calendars, RSS feeds, and its events' location fields, REST records and feed links leave them out. The venue's name stays public, as for any password-protected post. New venue terms no longer start with "Protected: "; the GatherPress Alpha 0.36.1 migration renames existing ones.

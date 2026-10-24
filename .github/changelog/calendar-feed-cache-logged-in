@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Calendar feeds are cached separately for viewers who can see private events, so a feed loaded by an administrator is never served to other viewers, and only feeds that list public events alone are sent with public cache headers.
