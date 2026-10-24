@@ -217,13 +217,9 @@ class Cleanup {
 	 * @return bool True if entry is an unreferenced static map image past the race guard window.
 	 */
 	public function is_candidate( string $entry, string $dir, array $in_use, int $now ): bool {
-		if ( '.' === $entry || '..' === $entry || ! $this->is_valid_filename( $entry ) ) {
-			return false;
-		}
-
 		$full_path = trailingslashit( $dir ) . $entry;
 
-		if ( is_dir( $full_path ) || isset( $in_use[ $entry ] ) ) {
+		if ( isset( $in_use[ $entry ] ) ) {
 			return false;
 		}
 
@@ -241,13 +237,8 @@ class Cleanup {
 	 *
 	 * @return bool True if file was deleted, false otherwise.
 	 */
-	protected function unlink_file( string $full_path ): bool {
-		if ( function_exists( 'wp_delete_file' ) ) {
-			$deleted = wp_delete_file( $full_path );
-		} else {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
-			$deleted = unlink( $full_path );
-		}
+	public function unlink_file( string $full_path ): bool {
+		$deleted = wp_delete_file( $full_path );
 
 		return $deleted || ! file_exists( $full_path );
 	}
@@ -304,8 +295,8 @@ class Cleanup {
 				return $result;
 			}
 
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_opendir -- Streaming dir handle avoids glob() memory spikes.
-			$handle = opendir( $dir );
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_opendir, WordPress.PHP.NoSilencedErrors.Discouraged -- Streaming dir handle avoids glob() memory spikes; error suppression handles unreadable dirs.
+			$handle = @opendir( $dir );
 
 			if ( false === $handle ) {
 				return $result;

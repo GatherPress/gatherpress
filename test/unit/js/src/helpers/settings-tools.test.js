@@ -471,6 +471,14 @@ describe( 'initSettingsTools', () => {
 	} );
 
 	describe( 'cleanupMaps', () => {
+		it( 'returns early if required elements are missing', async () => {
+			await cleanupMaps( {} );
+			await cleanupMaps( { cleanupButton: document.createElement( 'button' ) } );
+			await cleanupMaps( { cleanupStatus: document.createElement( 'output' ) } );
+
+			expect( apiFetch ).not.toHaveBeenCalled();
+		} );
+
 		it( 'reports cleaned up files and reclaimed bytes on success', async () => {
 			const cleanupButton = document.createElement( 'button' );
 			const cleanupStatus = document.createElement( 'output' );

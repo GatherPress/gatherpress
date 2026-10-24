@@ -193,4 +193,32 @@ class Test_Venue_Map_Cli extends Base {
 
 		$this->assertStringContainsString( 'Dry run complete.', $force_output );
 	}
+
+	/**
+	 * Coverage for gc command outputting warning when hit_limit is true.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::gc
+	 *
+	 * @return void
+	 */
+	public function test_gc_hit_limit_warning(): void {
+		$cli = new Venue_Map_Cli();
+		$this->create_map_file( 'cli-limit-1-osm-roadmap-15-800-400.png', time() - 600 );
+		$this->create_map_file( 'cli-limit-2-osm-roadmap-15-800-400.png', time() - 600 );
+
+		$output = Utility::buffer_and_return(
+			array( $cli, 'gc' ),
+			array(
+				array(),
+				array(
+					'limit'   => 1,
+					'execute' => true,
+				),
+			)
+		);
+
+		$this->assertStringContainsString( 'Reached per-run deletion limit.', $output );
+	}
 }

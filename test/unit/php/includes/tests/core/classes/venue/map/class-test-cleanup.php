@@ -424,4 +424,177 @@ class Test_Cleanup extends Base {
 		$this->assertSame( 1, $second_run['deleted'] );
 		$this->assertFalse( $second_run['hit_limit'] );
 	}
+
+	/**
+	 * Tests get_uploads_dir returns null on upload directory error.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_uploads_dir
+	 * @covers ::sweep
+	 *
+	 * @return void
+	 */
+	public function test_get_uploads_dir_and_sweep_null_on_error(): void {
+		$filter = static function ( $dirs ) {
+			$dirs['error'] = 'Simulated upload dir failure.';
+			return $dirs;
+		};
+		add_filter( 'upload_dir', $filter );
+
+		$cleanup = Cleanup::get_instance();
+		$this->assertNull( $cleanup->get_uploads_dir() );
+
+		$result = $cleanup->sweep();
+		remove_filter( 'upload_dir', $filter );
+
+		$this->assertSame( 0, $result['scanned'] );
+		$this->assertSame( 0, $result['orphans'] );
+	}
+
+	/**
+	 * Tests get_in_use_basenames returns empty array when no post types support venue.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_in_use_basenames
+	 *
+	 * @return void
+	 */
+	public function test_get_in_use_basenames_empty_when_no_support(): void {
+		remove_post_type_support( Venue::POST_TYPE, Venue::SUPPORT );
+
+		$basenames = Cleanup::get_instance()->get_in_use_basenames();
+
+		add_post_type_support( Venue::POST_TYPE, Venue::SUPPORT );
+
+		$this->assertSame( array(), $basenames );
+	}
+
+	/**
+	 * Tests get_in_use_basenames pagination across multiple pages.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_in_use_basenames
+	 *
+	 * @return void
+	 */
+	public function test_get_in_use_basenames_multipage_scan(): void {
+		$batch_filter = static fn() => 1;
+		add_filter( 'gatherpress_venue_map_gc_scan_batch_size', $batch_filter );
+
+		$venue1   = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$venue2   = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$base_url = 'https://example.com/wp-content/uploads/gatherpress/static-maps/';
+
+		add_post_meta( $venue1, Map::META_KEY, $base_url . 'batch-1-osm-roadmap-15-800-400.png' );
+		add_post_meta( $venue2, Map::META_KEY, $base_url . 'batch-2-osm-roadmap-15-800-400.png' );
+
+		$in_use = Cleanup::get_instance()->get_in_use_basenames();
+
+		remove_filter( 'gatherpress_venue_map_gc_scan_batch_size', $batch_filter );
+
+		$this->assertArrayHasKey( 'batch-1-osm-roadmap-15-800-400.png', $in_use );
+		$this->assertArrayHasKey( 'batch-2-osm-roadmap-15-800-400.png', $in_use );
+	}
+
+	/**
+	 * Tests is_candidate and unlink_file helpers.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::is_candidate
+	 * @covers ::unlink_file
+	 *
+	 * @return void
+	 */
+	public function test_is_candidate_and_unlink_file_helpers(): void {
+		$cleanup = Cleanup::get_instance();
+		$dir     = $cleanup->get_uploads_dir();
+		$now     = time();
+
+		$old_file   = 'candidate-old-osm-roadmap-15-800-400.png';
+		$fresh_file = 'candidate-fresh-osm-roadmap-15-800-400.png';
+
+		$path_old = $this->create_map_file( $old_file, $now - 600 );
+		$this->create_map_file( $fresh_file, $now - 10 );
+
+		$this->assertFalse( $cleanup->is_candidate( $old_file, $dir, array( $old_file => true ), $now ) );
+		$this->assertFalse( $cleanup->is_candidate( $fresh_file, $dir, array(), $now ) );
+		$this->assertTrue( $cleanup->is_candidate( $old_file, $dir, array(), $now ) );
+		$this->assertFalse( $cleanup->is_candidate( 'nonexistent.png', $dir, array(), $now ) );
+
+		$this->assertFileExists( $path_old );
+		$this->assertTrue( $cleanup->unlink_file( $path_old ) );
+		$this->assertFileDoesNotExist( $path_old );
+	}
+
+	/**
+	 * Tests sweep returns early when directory handle cannot be opened.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::sweep
+	 *
+	 * @return void
+	 */
+	public function test_sweep_returns_early_when_dir_unreadable(): void {
+		$cleanup = Cleanup::get_instance();
+		$dir     = $cleanup->get_uploads_dir();
+
+		if ( ! is_dir( $dir ) ) {
+			wp_mkdir_p( $dir );
+		}
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_chmod
+		chmod( $dir, 0000 );
+		$result = $cleanup->sweep();
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_chmod
+		chmod( $dir, 0755 );
+
+		$this->assertSame( 0, $result['scanned'] );
+	}
+
+	/**
+	 * Tests sweep ignores subdirectories inside static-maps folder.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::sweep
+	 *
+	 * @return void
+	 */
+	public function test_sweep_skips_subdirectories(): void {
+		$cleanup = Cleanup::get_instance();
+		$dir     = $cleanup->get_uploads_dir();
+		$subdir  = $dir . '/test-subdir';
+
+		wp_mkdir_p( $subdir );
+		$result = $cleanup->sweep();
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir
+		rmdir( $subdir );
+
+		$this->assertNotContains( 'test-subdir', $result['files'] );
+	}
+
+	/**
+	 * Tests sweep dry run hit_limit detection.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::sweep
+	 *
+	 * @return void
+	 */
+	public function test_sweep_dry_run_hits_limit(): void {
+		$cleanup = Cleanup::get_instance();
+		$this->create_map_file( 'dryrun-limit-1-osm-roadmap-15-800-400.png', time() - 600 );
+		$this->create_map_file( 'dryrun-limit-2-osm-roadmap-15-800-400.png', time() - 600 );
+
+		$result = $cleanup->sweep( true, 1 );
+
+		$this->assertTrue( $result['hit_limit'] );
+		$this->assertCount( 1, $result['files'] );
+	}
 }

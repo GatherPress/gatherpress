@@ -591,6 +591,32 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Tests rest_gc with custom limit and execute flags.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::rest_gc
+	 *
+	 * @return void
+	 */
+	public function test_rest_gc_with_custom_limit_and_execute(): void {
+		Rest_Api::get_instance()->register_endpoints();
+
+		$admin_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $admin_id );
+
+		$request = new \WP_REST_Request( 'POST', sprintf( '/%s/venue-map/gc', GATHERPRESS_REST_NAMESPACE ) );
+		$request->set_param( 'limit', 10 );
+		$request->set_param( 'execute', true );
+
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$data = $response->get_data();
+		$this->assertTrue( $data['success'] );
+	}
+
+	/**
 	 * Tests rest_gc returns 409 conflict when locked.
 	 *
 	 * @since TBD
