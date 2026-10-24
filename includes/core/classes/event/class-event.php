@@ -1020,10 +1020,10 @@ class Event {
 	/**
 	 * Retrieves the venue information calendars and feeds may share.
 	 *
-	 * A password-protected venue keeps its name and details out of them, as
-	 * the Venue block does, unless the viewer can edit the venue. The password
-	 * cookie doesn't count here: a calendar response can be cached and served
-	 * to other viewers.
+	 * A password-protected venue keeps its name and details out of them for
+	 * everyone. Neither the password cookie nor the right to edit the venue
+	 * counts here: a calendar response can be cached and served to other
+	 * viewers, and an Author's lands in the cache for logged-out viewers.
 	 *
 	 * @since TBD
 	 *
@@ -1035,11 +1035,7 @@ class Event {
 			? Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $this->post->ID )
 			: null;
 
-		if (
-			$venue instanceof WP_Post
-			&& '' !== $venue->post_password
-			&& ! current_user_can( Venue::edit_capability(), $venue->ID )
-		) {
+		if ( $venue instanceof WP_Post && '' !== $venue->post_password ) {
 			return array_fill_keys( array_keys( $information ), '' );
 		}
 

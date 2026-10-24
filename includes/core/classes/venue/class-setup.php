@@ -468,7 +468,8 @@ final class Setup {
 	 * Whether an event's venue stays hidden from the current viewer.
 	 *
 	 * The event's own password or its venue's keeps the venue out of sight,
-	 * as the Venue block does.
+	 * as the Venue block does. Whoever can edit the event still sees the venue
+	 * it is saved with, so the editor doesn't drop it on the next save.
 	 *
 	 * @since TBD
 	 *
@@ -481,6 +482,10 @@ final class Setup {
 	public function is_event_venue_hidden( WP_Post $event, ?WP_REST_Request $request = null ): bool {
 		if ( Event::is_hidden_by_password( $event, $request ) ) {
 			return true;
+		}
+
+		if ( current_user_can( Event::edit_capability(), $event->ID ) ) {
+			return false;
 		}
 
 		$venue = $this->get_venue_post_from_event_post_id( $event->ID );

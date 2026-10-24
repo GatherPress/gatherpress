@@ -3533,7 +3533,7 @@ class Test_Event extends Base {
 
 	/**
 	 * Calendars and feeds get no name or details for a password-protected venue,
-	 * unless the viewer can edit it.
+	 * whoever is asking, since a calendar response can be cached for others.
 	 *
 	 * @since TBD
 	 *
@@ -3580,7 +3580,7 @@ class Test_Event extends Base {
 
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'editor' ) ) );
 
-		$this->assertSame( '1 Main St', $protected->get_public_venue_information()['address'], 'An Editor gets it.' );
+		$this->assertSame( '', $protected->get_public_venue_information()['address'], 'Nor does an Editor.' );
 
 		wp_set_current_user( 0 );
 	}

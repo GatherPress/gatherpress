@@ -18,6 +18,7 @@ use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
 use WP_Post;
 use WP_REST_Response;
+use WP_Term;
 
 /**
  * Class Geo_Sync.
@@ -147,7 +148,10 @@ final class Geo_Sync {
 	/**
 	 * Derives geo_* meta from a saved venue's own fields.
 	 *
+	 * A venue that isn't public also clears the location its events copied.
+	 *
 	 * @since 0.36.0
+	 * @since TBD Clears the copies on its events when the venue isn't public.
 	 *
 	 * @param int     $post_id Post ID that just saved.
 	 * @param WP_Post $post    Post object.
@@ -166,6 +170,45 @@ final class Geo_Sync {
 		$information = ( new Venue( $post_id ) )->get_information();
 
 		self::write( $post_id, self::build_values( $information, self::is_public( $post ) ) );
+
+		// A venue that isn't public takes back the location its events copied,
+		// past ones included, since maybe_refresh() never reaches those.
+		if ( ! self::is_public( $post ) ) {
+			$this->clear_event_copies( $post );
+		}
+	}
+
+	/**
+	 * Clears the location every event copied from a venue.
+	 *
+	 * Writes what maybe_refresh() would for an event at a venue that isn't
+	 * public: no location, and not public.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_Post $venue The venue post.
+	 *
+	 * @return void
+	 */
+	private function clear_event_copies( WP_Post $venue ): void {
+		$shadow_source = Shadow_Source::get_instance();
+		$taxonomy      = $shadow_source->get_taxonomy( $venue->post_type );
+		$term          = get_term_by(
+			'slug',
+			$shadow_source->term_slug_from_post_name( $venue->post_name ),
+			$taxonomy
+		);
+
+		// A venue that was never published has no term, so no event points at it.
+		if ( ! $term instanceof WP_Term ) {
+			return;
+		}
+
+		$event_ids = get_objects_in_term( $term->term_id, $taxonomy );
+
+		foreach ( is_array( $event_ids ) ? $event_ids : array() as $event_id ) {
+			self::write( (int) $event_id, self::build_values( array(), false ) );
+		}
 	}
 
 	/**

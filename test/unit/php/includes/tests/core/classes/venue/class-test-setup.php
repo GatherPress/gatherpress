@@ -1889,6 +1889,24 @@ class Test_Setup extends Base {
 
 		$this->assertFalse( $hidden( $at_protected ), 'An Editor sees it.' );
 
+		// An Author who edits their own event at someone else's protected venue
+		// keeps the venue, or the editor would drop it on the next save.
+		$author = $this->factory()->user->create( array( 'role' => 'author' ) );
+
+		wp_update_post(
+			array(
+				'ID'          => $at_protected,
+				'post_author' => $author,
+			)
+		);
+		wp_set_current_user( $author );
+
+		$this->assertFalse( $hidden( $at_protected ), 'The event\'s Author sees it.' );
+		$this->assertNotEmpty(
+			rest_do_request( '/wp/v2/gatherpress_events/' . $at_protected )->get_data()[ Venue::TAXONOMY ],
+			'The event\'s Author gets the venue in REST.'
+		);
+
 		wp_set_current_user( 0 );
 	}
 }

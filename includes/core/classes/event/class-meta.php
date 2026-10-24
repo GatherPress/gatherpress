@@ -29,6 +29,7 @@ use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue;
+use GatherPress\Core\Venue\Setup as Venue_Setup;
 use stdClass;
 use WP_Post;
 use WP_REST_Request;
@@ -381,7 +382,9 @@ final class Meta {
 	 * date meta and the venue geo fields copied onto it are `show_in_rest`.
 	 * They stay behind the password the way core keeps the content: whoever
 	 * can edit the event, or sends the password as a cookie or as the REST
-	 * `password` argument, sees them.
+	 * `password` argument, sees them. An open event at a password-protected
+	 * venue keeps the location copied from that venue hidden, even where an
+	 * earlier copy is still stored (a past event isn't refreshed).
 	 *
 	 * @since TBD
 	 *
@@ -397,11 +400,17 @@ final class Meta {
 		WP_Post $post,
 		WP_REST_Request $request
 	): WP_REST_Response {
+		$keys = array();
+
 		if ( Event::is_hidden_by_password( $post, $request ) ) {
-			foreach ( self::PASSWORD_PROTECTED_META as $key ) {
-				if ( array_key_exists( $key, $response->data['meta'] ?? array() ) ) {
-					$response->data['meta'][ $key ] = '';
-				}
+			$keys = self::PASSWORD_PROTECTED_META;
+		} elseif ( Venue_Setup::get_instance()->is_event_venue_hidden( $post, $request ) ) {
+			$keys = array_diff( Geo_Sync::FIELDS, array( 'geo_public' ) );
+		}
+
+		foreach ( $keys as $key ) {
+			if ( array_key_exists( $key, $response->data['meta'] ?? array() ) ) {
+				$response->data['meta'][ $key ] = '';
 			}
 		}
 
