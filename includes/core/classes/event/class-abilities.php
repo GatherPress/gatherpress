@@ -156,8 +156,8 @@ final class Abilities {
 				),
 				'execute_callback'    => array( $this, 'get_upcoming_events' ),
 				// The listing is the event archive in another shape: the query runs
-				// unauthenticated and WP_Query hands back only what the current
-				// viewer could already read, so the ability adds no gate of its own.
+				// unauthenticated, WP_Query hands back only what the current viewer
+				// could already read, and password-protected events are left out.
 				'permission_callback' => '__return_true',
 				'meta'                => array(
 					'annotations'  => array(
