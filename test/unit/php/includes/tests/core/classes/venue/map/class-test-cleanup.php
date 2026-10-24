@@ -587,6 +587,28 @@ class Test_Cleanup extends Base {
 	}
 
 	/**
+	 * Tests sweep skips non-static-map files in directory.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::sweep
+	 *
+	 * @return void
+	 */
+	public function test_sweep_skips_invalid_filenames(): void {
+		$cleanup = Cleanup::get_instance();
+		$dir     = $cleanup->get_uploads_dir();
+		$file    = $dir . '/invalid-file.txt';
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+		file_put_contents( $file, 'test' );
+		$result = $cleanup->sweep( true );
+		wp_delete_file( $file );
+
+		$this->assertNotContains( 'invalid-file.txt', $result['files'] );
+	}
+
+	/**
 	 * Tests sweep dry run hit_limit detection.
 	 *
 	 * @since TBD
