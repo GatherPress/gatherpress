@@ -397,6 +397,14 @@ class Endpoint {
 				)
 			)
 		);
+
+		// All calendar endpoints share one query var, so the slug may belong to
+		// another endpoint (or be junk from the query string) even when this
+		// endpoint's validation passed. Leave the request to WordPress then.
+		if ( ! $endpoint_type instanceof Endpoint_Type ) {
+			return;
+		}
+
 		$endpoint_type->activate( $this );
 	}
 

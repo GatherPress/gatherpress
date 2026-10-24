@@ -14,6 +14,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
+use PasswordHash;
 use PMC\Unit_Test\Utility;
 use WP_Error;
 
@@ -469,6 +470,150 @@ class Test_Setup extends Base {
 			$out,
 			'Singular event page should add the single-event download link.'
 		);
+	}
+
+	/**
+	 * A protected event's page leaves its venue's feed link out of the head,
+	 * keeps its other terms' links, and shows the venue's once unlocked.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::collect_event_term_alternate_links
+	 *
+	 * @return void
+	 */
+	public function test_alternate_links_leave_out_a_protected_events_venue(): void {
+		add_theme_support( 'automatic-feed-links' );
+
+		$event_id = $this->mock->post(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		)->get()->ID;
+		$this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_title' => 'Hidden Hall',
+				'post_name'  => 'hidden-hall',
+			)
+		);
+		wp_set_post_terms( $event_id, '_hidden-hall', Venue::TAXONOMY );
+
+		$topic_id = $this->factory->term->create(
+			array(
+				'taxonomy' => 'gatherpress_topic',
+				'name'     => 'Secret Topic',
+			)
+		);
+		wp_set_post_terms( $event_id, array( $topic_id ), 'gatherpress_topic' );
+
+		wp_set_current_user( 0 );
+		$this->go_to( get_permalink( $event_id ) );
+
+		$links = static function (): string {
+			ob_start();
+			Setup::get_instance()->alternate_links();
+
+			return (string) ob_get_clean();
+		};
+		$out   = $links();
+
+		$this->assertStringNotContainsString( 'Hidden Hall', $out, 'The venue feed link should be left out.' );
+		$this->assertStringContainsString( 'Secret Topic', $out, 'Other terms keep their feed links.' );
+
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+
+		// The cookie WordPress sets once a viewer enters the post password.
+		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'secret' );
+
+		$out = $links();
+
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+
+		$this->assertStringContainsString( 'Hidden Hall', $out, 'The venue feed link should show with the password.' );
+	}
+
+	/**
+	 * An open event's page leaves a password-protected venue's feed link out.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::collect_event_term_alternate_links
+	 *
+	 * @return void
+	 */
+	public function test_alternate_links_leave_out_a_protected_venue(): void {
+		add_theme_support( 'automatic-feed-links' );
+
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$this->mock->post(
+			array(
+				'post_type'     => Venue::POST_TYPE,
+				'post_title'    => 'Locked Lodge',
+				'post_name'     => 'locked-lodge',
+				'post_password' => 'secret',
+			)
+		);
+		wp_set_post_terms( $event_id, '_locked-lodge', Venue::TAXONOMY );
+
+		wp_set_current_user( 0 );
+		$this->go_to( get_permalink( $event_id ) );
+
+		ob_start();
+		Setup::get_instance()->alternate_links();
+		$out = (string) ob_get_clean();
+
+		$this->assertStringNotContainsString( 'Locked Lodge', $out, 'The protected venue link should be left out.' );
+		$this->assertStringContainsString( 'iCal Download', $out, 'The event keeps its own download link.' );
+	}
+
+	/**
+	 * A protected event whose post type has no taxonomy besides the venue's
+	 * gets no term links, since an empty taxonomy list would match every term.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::collect_event_term_alternate_links
+	 *
+	 * @return void
+	 */
+	public function test_collect_event_term_alternate_links_with_only_the_venue_taxonomy(): void {
+		$event_id = $this->mock->post(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		)->get()->ID;
+		$this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_title' => 'Hidden Hall',
+				'post_name'  => 'hidden-hall',
+			)
+		);
+		wp_set_post_terms( $event_id, '_hidden-hall', Venue::TAXONOMY );
+
+		$others = array_diff( get_object_taxonomies( Event::POST_TYPE ), array( Venue::TAXONOMY ) );
+
+		foreach ( $others as $taxonomy ) {
+			unregister_taxonomy_for_object_type( $taxonomy, Event::POST_TYPE );
+		}
+
+		wp_set_current_user( 0 );
+
+		$instance = Setup::get_instance();
+		$links    = Utility::invoke_hidden_method(
+			$instance,
+			'collect_event_term_alternate_links',
+			array( get_post( $event_id ), Utility::invoke_hidden_method( $instance, 'alternate_link_label_args' ) )
+		);
+
+		foreach ( $others as $taxonomy ) {
+			register_taxonomy_for_object_type( $taxonomy, Event::POST_TYPE );
+		}
+
+		$this->assertSame( array(), $links, 'The venue feed link should be left out.' );
 	}
 
 	/**
@@ -1581,6 +1726,155 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * Create an upcoming event.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @param array<string, mixed> $args Post arguments.
+	 *
+	 * @return int The event post ID.
+	 */
+	private function create_upcoming_event( array $args ): int {
+		$post_id = $this->factory->post->create( array_merge( array( 'post_type' => Event::POST_TYPE ), $args ) );
+
+		( new Event( $post_id ) )->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week' ) ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week 2 hours' ) ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		return $post_id;
+	}
+
+	/**
+	 * The cache key carries the viewer scope, so viewers in one scope share an
+	 * entry and viewers in different scopes never do.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::get_ics_cache_key
+	 *
+	 * @return void
+	 */
+	public function test_get_ics_cache_key_varies_by_viewer_scope(): void {
+		$instance = Setup::get_instance();
+		$author   = $this->factory->user->create( array( 'role' => 'author' ) );
+		$key_for  = function ( int $user_id ) use ( $instance ): string {
+			wp_set_current_user( $user_id );
+
+			return $instance->get_ics_cache_key();
+		};
+
+		$this->create_upcoming_event(
+			array(
+				'post_status' => 'private',
+				'post_author' => $author,
+			)
+		);
+		$this->go_to( get_post_type_archive_feed_link( Event::POST_TYPE, Setup::ICAL_SLUG ) );
+
+		$anonymous = $key_for( 0 );
+		$admin     = $key_for( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$this->assertSame(
+			$anonymous,
+			$key_for( $this->factory->user->create( array( 'role' => 'subscriber' ) ) ),
+			'A Subscriber should share the anonymous entry.'
+		);
+		$this->assertSame(
+			$admin,
+			$key_for( $this->factory->user->create( array( 'role' => 'editor' ) ) ),
+			'An Editor should share the Administrator entry.'
+		);
+		$this->assertNotSame( $anonymous, $admin, 'The private scope should not share the public entry.' );
+		$this->assertNotContains(
+			$key_for( $author ),
+			array( $anonymous, $admin ),
+			'An Author with their own private event should get an entry of their own.'
+		);
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * An Administrator's feed, private events included, is cached under the
+	 * private scope, so an anonymous viewer or a Subscriber never gets it.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::get_ics_body
+	 *
+	 * @return void
+	 */
+	public function test_get_ics_body_keeps_private_events_out_of_the_public_body(): void {
+		$this->create_upcoming_event(
+			array(
+				'post_status' => 'private',
+				'post_title'  => 'Private Board Meeting',
+			)
+		);
+
+		$feed_link = get_post_type_archive_feed_link( Event::POST_TYPE, Setup::ICAL_SLUG );
+		$body_for  = function ( int $user_id ) use ( $feed_link ): string {
+			wp_set_current_user( $user_id );
+			$this->go_to( $feed_link );
+
+			return Setup::get_instance()->get_ics_body();
+		};
+		$admin     = $this->factory->user->create( array( 'role' => 'administrator' ) );
+
+		$this->assertStringContainsString(
+			'Private Board Meeting',
+			$body_for( $admin ),
+			'An Administrator should see the private event in their own feed.'
+		);
+		$this->assertStringNotContainsString(
+			'Private Board Meeting',
+			$body_for( 0 ),
+			'An anonymous viewer should not get the Administrator\'s cached body.'
+		);
+		$this->assertStringNotContainsString(
+			'Private Board Meeting',
+			$body_for( $this->factory->user->create( array( 'role' => 'subscriber' ) ) ),
+			'A Subscriber should not get the Administrator\'s cached body.'
+		);
+		$this->assertStringContainsString(
+			'Private Board Meeting',
+			$body_for( $admin ),
+			'The Administrator should still get their own body after the public one is cached.'
+		);
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * A logged-in viewer's calendar goes out with private caching headers.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::send_ics_headers
+	 *
+	 * @return void
+	 */
+	public function test_send_ics_headers_for_a_logged_in_viewer(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		ob_start();
+		Setup::get_instance()->send_ics_headers( 'sample.ics', '"abc123"', '2026-07-31 10:00:00' );
+		$output = ob_get_clean();
+
+		header_remove();
+
+		$this->assertSame(
+			'',
+			$output,
+			'send_ics_headers should not emit body output.'
+		);
+	}
+
+	/**
 	 * `If-None-Match` is the exact validator, so it answers on its own and
 	 * wins when the client sends a timestamp as well.
 	 *
@@ -2020,6 +2314,52 @@ class Test_Setup extends Base {
 		$this->assertTrue(
 			$instance->is_calendar_negotiated( 'text/html, text/calendar' ),
 			'Failed to assert an equally ranked calendar negotiates.'
+		);
+	}
+
+	/**
+	 * A feed is shared by every viewer, so a password-protected event's
+	 * details stay out of it.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::get_ical_list
+	 *
+	 * @return void
+	 */
+	public function test_get_ical_list_leaves_out_password_protected_events(): void {
+		$params = array(
+			'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week' ) ),
+			'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week 2 hours' ) ),
+			'timezone'       => 'UTC',
+		);
+
+		$events = array(
+			'Open Meetup'      => '',
+			'Protected Meetup' => 'secret',
+		);
+
+		foreach ( $events as $title => $password ) {
+			$post_id = $this->factory->post->create(
+				array(
+					'post_type'     => Event::POST_TYPE,
+					'post_title'    => $title,
+					'post_password' => $password,
+				)
+			);
+
+			( new Event( $post_id ) )->save_datetimes( $params );
+		}
+
+		$this->go_to( get_post_type_archive_feed_link( Event::POST_TYPE, Setup::ICAL_SLUG ) );
+
+		$list = Setup::get_instance()->get_ical_list();
+
+		$this->assertStringContainsString( 'Open Meetup', $list, 'The open event should be in the feed.' );
+		$this->assertStringNotContainsString(
+			'Protected Meetup',
+			$list,
+			'The password-protected event should not be in the feed.'
 		);
 	}
 }

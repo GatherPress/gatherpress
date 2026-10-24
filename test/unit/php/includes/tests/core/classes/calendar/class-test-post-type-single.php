@@ -111,4 +111,50 @@ class Test_Post_Type_Single extends Base {
 			'Failed to assert that is_valid returns false outside a singular post-type request.'
 		);
 	}
+
+	/**
+	 * A password-protected event's calendar links only work once the viewer
+	 * has entered its password.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::is_valid
+	 *
+	 * @return void
+	 */
+	public function test_is_valid_for_a_password_protected_post(): void {
+		$instance = new Post_Type_Single(
+			array(
+				new Template(
+					'ical',
+					static function () {
+						return array( 'file_name' => 'foo.php' );
+					}
+				),
+			),
+			'gatherpress_ext_calendar',
+			'gatherpress_event'
+		);
+		$event_id = $this->mock->post(
+			array(
+				'post_type'     => 'gatherpress_event',
+				'post_password' => 'secret',
+			)
+		)->get()->ID;
+
+		$this->go_to( get_permalink( $event_id ) );
+
+		$this->assertFalse(
+			$instance->is_valid(),
+			'A viewer without the password should not get the calendar links.'
+		);
+
+		add_filter( 'post_password_required', '__return_false' );
+
+		$entered = $instance->is_valid();
+
+		remove_filter( 'post_password_required', '__return_false' );
+
+		$this->assertTrue( $entered, 'A viewer who entered the password should get the calendar links.' );
+	}
 }

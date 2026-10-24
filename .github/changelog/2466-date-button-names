@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Screen readers now read the date on the start and end date buttons in the event settings, for example "Date & time start October 21, 2026 6:00 pm". Before, they read only the label, "Date & time start".

@@ -26,6 +26,7 @@ use GatherPress\Core\Validate;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
 use GatherPress\Core\Venue;
 use WP_Post;
+use WP_REST_Request;
 use WP_Term;
 
 /**
@@ -211,6 +212,29 @@ class Event {
 		return 'publish' === $post->post_status
 			? ! post_password_required( $post )
 			: current_user_can( self::READ_CAPABILITY, $post->ID );
+	}
+
+	/**
+	 * Whether a post password keeps an event's details from the current viewer.
+	 *
+	 * The viewer still needs the password and cannot edit the event. A REST
+	 * request that passes the right `password` argument counts as having it.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @param WP_Post              $post    The event post.
+	 * @param WP_REST_Request|null $request Optional. The REST request, for its `password` argument.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>>|null $request
+	 *
+	 * @return bool True when the event's details stay hidden.
+	 */
+	public static function is_hidden_by_password( WP_Post $post, ?WP_REST_Request $request = null ): bool {
+		return post_password_required( $post )
+			&& ! current_user_can( self::EDIT_CAPABILITY, $post->ID )
+			&& (
+				null === $request
+				|| ! hash_equals( $post->post_password, (string) $request->get_param( 'password' ) )
+			);
 	}
 
 	/**
@@ -1030,6 +1054,31 @@ class Event {
 		}
 
 		return $venue_information;
+	}
+
+	/**
+	 * Retrieves the venue information calendars and feeds may share.
+	 *
+	 * A password-protected venue keeps its name and details out of them for
+	 * everyone. Neither the password cookie nor the right to edit the venue
+	 * counts here: a calendar response can be cached and served to other
+	 * viewers, and an Author's lands in the cache for logged-out viewers.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @return array<string, string> The shape of {@see self::get_venue_information()}, all blank for such a venue.
+	 */
+	public function get_public_venue_information(): array {
+		$information = $this->get_venue_information();
+		$venue       = $this->post
+			? Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $this->post->ID )
+			: null;
+
+		if ( $venue instanceof WP_Post && '' !== $venue->post_password ) {
+			return array_fill_keys( array_keys( $information ), '' );
+		}
+
+		return $information;
 	}
 
 	/**

@@ -145,7 +145,16 @@ final class Rest_Api {
 					// send emails about it. Mirrors the meta auth_callback
 					// model so a non-owner Author can't blast emails about
 					// someone else's event via this route.
-					return current_user_can( Event::EDIT_CAPABILITY, (int) $request['post_id'] );
+					$post_id = (int) $request['post_id'];
+
+					if ( ! current_user_can( Event::EDIT_CAPABILITY, $post_id ) ) {
+						return false;
+					}
+
+					$send = (array) $request['send'];
+
+					return empty( $send['all'] )
+						|| self::can_email_all_users( (string) get_post_type( $post_id ) );
 				},
 				'args'                => array(
 					'post_id' => array(
@@ -167,6 +176,25 @@ final class Rest_Api {
 				),
 			),
 		);
+	}
+
+	/**
+	 * Whether the current user can email every user on the site about an event.
+	 *
+	 * Emailing all users reaches far beyond the event's own attendees, so it
+	 * takes the post type's `edit_others_posts`, as Editors and Administrators
+	 * have, on top of the right to edit the event.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @param string $post_type The event's post type.
+	 *
+	 * @return bool Whether the current user can email all users.
+	 */
+	public static function can_email_all_users( string $post_type ): bool {
+		$post_type_object = get_post_type_object( $post_type );
+
+		return null !== $post_type_object && current_user_can( $post_type_object->cap->edit_others_posts );
 	}
 
 	/**
@@ -1005,13 +1033,17 @@ final class Rest_Api {
 		}
 
 		// Pre-flight: bail with a structured error before processing if the
-		// event is not viewable, open RSVP is disabled or the event has already passed.
+		// event is not viewable, its password hasn't been entered, open RSVP is
+		// disabled or the event has already passed. The password check is the
+		// one wp-comments-post.php makes, which process_rsvp() skips.
 		$event = new Event( $data['post_id'] );
 		$rsvp  = new Rsvp( $data['post_id'] );
 		$bail  = null;
 
 		if ( ! Event::is_viewable( $data['post_id'] ) ) {
 			$bail = array( __( 'Event not found.', 'gatherpress' ), 404 );
+		} elseif ( post_password_required( $data['post_id'] ) ) {
+			$bail = array( __( 'Enter the event password to RSVP.', 'gatherpress' ), 403 );
 		} elseif ( ! $rsvp->is_enabled() ) {
 			$bail = array( __( 'RSVP is disabled for this event.', 'gatherpress' ), 403 );
 		} elseif ( ! $rsvp->allows_open_rsvp() ) {

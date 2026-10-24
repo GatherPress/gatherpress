@@ -140,13 +140,15 @@ final class Rsvp_Form {
 		$post_id        = $block_instance->get_post_id( $block );
 
 		// Validate that the post type supports RSVP, that the post is published
-		// (unless previewing), and that RSVP is both enabled and open. A single
-		// Rsvp() so we don't construct it twice on the happy path.
+		// (unless previewing) and its password entered, and that RSVP is both
+		// enabled and open. A single Rsvp() so we don't construct it twice on
+		// the happy path.
 		$rsvp = new Rsvp( $post_id );
 
 		if (
 			! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT )
 			|| ! Event::is_viewable( $post_id )
+			|| post_password_required( $post_id )
 			|| ! $rsvp->is_enabled()
 			|| ! $rsvp->allows_open_rsvp()
 		) {
@@ -724,10 +726,16 @@ final class Rsvp_Form {
 	/**
 	 * Check if two blocks match based on their content.
 	 *
-	 * Compares blocks to determine if they are the same instance.
-	 * Uses inner HTML content as the primary comparison method.
+	 * Compares blocks to determine if they are the same instance: their own
+	 * markup, and the form fields their inner blocks hold. Forms with the same
+	 * fields store the same schema, so either one's id fits both. Other inner
+	 * blocks are left out, because Block Hooks can add them at render, and so
+	 * are the form's own attributes, which can be filtered at render.
 	 *
 	 * @since 0.33.0
+	 * @since 0.36.1 Also compares form fields. A block's innerHTML holds only its
+	 *            wrapper, so two forms with the same wrapper and number of
+	 *            fields matched each other.
 	 *
 	 * @param array<string, mixed> $block1 First block to compare.
 	 * @param array<string, mixed> $block2 Second block to compare.
@@ -735,11 +743,9 @@ final class Rsvp_Form {
 	 * @return bool True if blocks match.
 	 */
 	private function blocks_match( array $block1, array $block2 ): bool {
-		// Compare inner HTML content as a way to identify the same block.
-		$content1 = $block1['innerHTML'] ?? '';
-		$content2 = $block2['innerHTML'] ?? '';
-
-		return $content1 === $content2;
+		return ( $block1['innerHTML'] ?? '' ) === ( $block2['innerHTML'] ?? '' )
+			&& $this->extract_form_fields_from_inner_blocks( $block1['innerBlocks'] ?? array() )
+				=== $this->extract_form_fields_from_inner_blocks( $block2['innerBlocks'] ?? array() );
 	}
 
 	/**

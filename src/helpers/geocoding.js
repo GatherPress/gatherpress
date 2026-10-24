@@ -258,6 +258,9 @@ export async function geocodeAddress( address ) {
  * dropdown (which is indistinguishable from "no matches"). `AbortError` also
  * propagates so the hook can bail on superseded requests.
  *
+ * A row whose label repeats an earlier row's label is left out, so the list
+ * offers each address once.
+ *
  * @param {string}      query            Partial address input.
  * @param {Object}      [options]        Request options.
  * @param {AbortSignal} [options.signal] Signal used to abort the request when a newer one supersedes it.
@@ -287,13 +290,18 @@ export async function fetchAddressSuggestions( query, { signal } = {} ) {
 	}
 
 	const rows = [];
+	const seenLabels = new Set();
 
 	for ( const raw of response.suggestions ) {
 		const label = 'string' === typeof raw.label ? raw.label.trim() : '';
 
-		if ( ! label ) {
+		// Photon can return the same address for more than one map feature.
+		// Keep the first, so the list does not offer one address several times.
+		if ( ! label || seenLabels.has( label ) ) {
 			continue;
 		}
+
+		seenLabels.add( label );
 
 		rows.push( {
 			label,

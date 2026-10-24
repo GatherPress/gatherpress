@@ -95,8 +95,12 @@ final class Online_Event {
 			return '';
 		}
 
-		// An override is honored on the same terms a direct visit would be.
-		if ( isset( $block['attrs']['postId'] ) && ! $this->can_view_post( $post_id ) ) {
+		// An override is honored on the same terms a direct visit would be, and a
+		// protected event in a Query Loop keeps where it takes place behind its password.
+		if (
+			( isset( $block['attrs']['postId'] ) && ! $this->can_view_post( $post_id ) )
+			|| post_password_required( $post_id )
+		) {
 			return '';
 		}
 

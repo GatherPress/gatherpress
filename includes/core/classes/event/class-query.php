@@ -144,10 +144,12 @@ final class Query {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param string   $event_list_type Type of event list: 'upcoming' or 'past'.
-	 * @param int      $number          Maximum number of events to retrieve.
-	 * @param string[] $topics          Array of topic slugs for additional filtering.
-	 * @param string[] $venues          Array of venue slugs for additional filtering.
+	 * @param string    $event_list_type Type of event list: 'upcoming' or 'past'.
+	 * @param int       $number          Maximum number of events to retrieve.
+	 * @param string[]  $topics          Array of topic slugs for additional filtering.
+	 * @param string[]  $venues          Array of venue slugs for additional filtering.
+	 * @param bool|null $has_password    Optional. False to leave out password-protected events,
+	 *                                   true to get only them. Default null, both.
 	 *
 	 * @return WP_Query A WordPress query object containing the list of events.
 	 */
@@ -155,12 +157,16 @@ final class Query {
 		string $event_list_type = '',
 		int $number = 5,
 		array $topics = array(),
-		array $venues = array()
+		array $venues = array(),
+		?bool $has_password = null
 	): WP_Query {
 		// Past events should be ordered DESC (most recent first),
 		// upcoming events should be ordered ASC (soonest first).
 		$order = ( 'past' === $event_list_type ) ? 'DESC' : 'ASC';
 
+		// Without an explicit `datetime` orderby, adjust_event_sql() keeps
+		// WordPress's publish-date order, so `$number` would pick the events
+		// published first rather than the soonest.
 		$args = array(
 			'post_type'             => get_post_types_by_support( Event::SUPPORT ),
 			'fields'                => 'ids',
@@ -168,6 +174,7 @@ final class Query {
 			'posts_per_page'        => $number,
 			self::EVENT_QUERY_PARAM => $event_list_type,
 			'order'                 => $order,
+			'orderby'               => 'datetime',
 		);
 
 		$tax_query = array();
@@ -193,6 +200,10 @@ final class Query {
 		}
 
 		$args['tax_query'] = $tax_query; //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+
+		if ( null !== $has_password ) {
+			$args['has_password'] = $has_password;
+		}
 
 		return new WP_Query( $args );
 	}
