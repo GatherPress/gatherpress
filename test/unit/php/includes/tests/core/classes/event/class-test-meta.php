@@ -49,6 +49,12 @@ class Test_Meta extends Base {
 				'priority' => 10,
 				'callback' => array( Geo_Sync::get_instance(), 'maybe_refresh_on_view' ),
 			),
+			array(
+				'type'     => 'action',
+				'name'     => 'wp_after_insert_post',
+				'priority' => 10,
+				'callback' => array( Geo_Sync::get_instance(), 'on_event_saved' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );

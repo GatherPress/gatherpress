@@ -92,6 +92,7 @@ final class Meta {
 	protected function setup_hooks(): void {
 		add_action( 'registered_post_type', array( $this, 'register' ) );
 		add_action( 'template_redirect', array( Geo_Sync::get_instance(), 'maybe_refresh_on_view' ) );
+		add_action( 'wp_after_insert_post', array( Geo_Sync::get_instance(), 'on_event_saved' ), 10, 2 );
 	}
 
 	/**

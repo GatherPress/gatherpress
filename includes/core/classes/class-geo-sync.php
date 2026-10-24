@@ -2,8 +2,9 @@
 /**
  * Geodata standard (`geo_*`) logic for venues and events. Venues derive
  * geo_* from their own fields on save; events refresh lazily from their
- * venue on view, since a venue can have ~1,000 linked events. The venue
- * and event `Meta` classes own the hookups.
+ * venue on view, since a venue can have ~1,000 linked events, and only
+ * recheck whether their location is public on save. The venue and event
+ * `Meta` classes own the hookups.
  *
  * @package GatherPress\Core
  * @since 0.36.0
@@ -156,6 +157,23 @@ final class Geo_Sync {
 	}
 
 	/**
+	 * Whether an event's location may be shown publicly.
+	 *
+	 * An event with no venue has no location to hide, so only its own status
+	 * counts.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_Post|null $event      The event post.
+	 * @param WP_Post|null $venue_post The event's venue post, or null when it has none.
+	 *
+	 * @return bool Whether the event, and its venue if it has one, are public.
+	 */
+	private static function is_event_public( ?WP_Post $event, ?WP_Post $venue_post ): bool {
+		return self::is_public( $event ) && ( null === $venue_post || self::is_public( $venue_post ) );
+	}
+
+	/**
 	 * Derives geo_* meta from a saved venue's own fields.
 	 *
 	 * A venue that isn't public also clears the location its events copied.
@@ -288,6 +306,30 @@ final class Geo_Sync {
 	}
 
 	/**
+	 * Marks a saved event's location public or not, past events included.
+	 *
+	 * An event that already happened is never refreshed by maybe_refresh(),
+	 * so this is what catches one that gets a password or is unpublished.
+	 * Only `geo_public` changes, so a past event keeps the location it copied.
+	 *
+	 * @since TBD
+	 *
+	 * @param int     $post_id Post ID that just saved.
+	 * @param WP_Post $post    Post object.
+	 *
+	 * @return void
+	 */
+	public function on_event_saved( int $post_id, WP_Post $post ): void {
+		if ( ! post_type_supports( $post->post_type, Venue::ASSIGNMENT_SUPPORT ) ) {
+			return;
+		}
+
+		$venue_post = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $post_id );
+
+		self::write( $post_id, array( 'geo_public' => self::is_event_public( $post, $venue_post ) ? 1 : 0 ) );
+	}
+
+	/**
 	 * Refreshes the queried event's geo meta before a single front-end
 	 * view renders.
 	 *
@@ -358,12 +400,7 @@ final class Geo_Sync {
 			? ( new Venue( $venue_post->ID ) )->get_information()
 			: array();
 
-		// An event with no venue has no location to hide, so only its own
-		// status counts.
-		$is_public = self::is_public( get_post( $event_id ) )
-			&& ( null === $venue_post || self::is_public( $venue_post ) );
-
-		$desired = self::build_values( $information, $is_public );
+		$desired = self::build_values( $information, self::is_event_public( get_post( $event_id ), $venue_post ) );
 
 		return self::write( $event_id, $desired ) ? $desired : null;
 	}
