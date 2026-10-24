@@ -127,7 +127,7 @@ class Test_Setup extends Base {
 			array(
 				'type'     => 'action',
 				'name'     => 'pre_get_posts',
-				'priority' => 20,
+				'priority' => 11,
 				'callback' => array( $instance, 'leave_password_protected_events_out' ),
 			),
 			array(

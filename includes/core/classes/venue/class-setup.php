@@ -130,8 +130,8 @@ final class Setup {
 		);
 		add_action( 'rest_api_init', array( $this, 'register_password_protected_venue_rest_hooks' ) );
 		add_filter( 'post_class', array( $this, 'hide_password_protected_venue_class' ), 10, 3 );
-		// Priority 20 so the venue clause Event\Query adds at 10 is already in place.
-		add_action( 'pre_get_posts', array( $this, 'leave_password_protected_events_out' ), 20 );
+		// Priority 11 so the venue clause Event\Query adds at the default 10 is already in place.
+		add_action( 'pre_get_posts', array( $this, 'leave_password_protected_events_out' ), 11 );
 		add_filter( 'render_block_core/post-terms', array( $this, 'hide_password_protected_venue_post_terms' ), 10, 3 );
 	}
 
