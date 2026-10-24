@@ -19,6 +19,8 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue;
+use GatherPress\Core\Venue\Map\Cleanup;
+use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
@@ -124,6 +126,30 @@ final class Rest_Api {
 				'args'                => array_merge(
 					array( 'id' => $id_arg ),
 					self::route_args()
+				),
+			)
+		);
+
+		register_rest_route(
+			GATHERPRESS_REST_NAMESPACE,
+			'/venue-map/gc',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'rest_gc' ),
+				'permission_callback' => static function (): bool {
+					return current_user_can( 'manage_options' );
+				},
+				'args'                => array(
+					'execute' => array(
+						'type'        => 'boolean',
+						'default'     => true,
+						'description' => __( 'Whether to unlink orphaned files.', 'gatherpress' ),
+					),
+					'limit'   => array(
+						'type'        => 'integer',
+						'default'     => Cleanup::DEFAULT_LIMIT,
+						'description' => __( 'Maximum number of files to unlink in one run.', 'gatherpress' ),
+					),
 				),
 			)
 		);
@@ -310,5 +336,34 @@ final class Rest_Api {
 			),
 			200
 		);
+	}
+
+	/**
+	 * Run garbage collection on unused venue static-map images from a REST request.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_REST_Request $request The REST request.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
+	 *
+	 * @return WP_REST_Response|WP_Error Garbage collection summary or error.
+	 */
+	public function rest_gc( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+		$execute = (bool) $request->get_param( 'execute' );
+		$limit   = ! empty( $request->get_param( 'limit' ) )
+			? (int) $request->get_param( 'limit' )
+			: Cleanup::DEFAULT_LIMIT;
+
+		$result = Cleanup::get_instance()->sweep( ! $execute, $limit );
+
+		if ( $result['locked'] ) {
+			return new WP_Error(
+				'gatherpress_cleanup_locked',
+				__( 'A static-map cleanup pass is currently in progress.', 'gatherpress' ),
+				array( 'status' => 409 )
+			);
+		}
+
+		return new WP_REST_Response( $result );
 	}
 }
