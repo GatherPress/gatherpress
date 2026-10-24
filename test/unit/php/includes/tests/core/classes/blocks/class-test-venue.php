@@ -12,6 +12,7 @@ use GatherPress\Core\Blocks\Venue as Venue_Block;
 use GatherPress\Core\Event;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
+use PasswordHash;
 use PMC\Unit_Test\Utility;
 use WP_Block;
 
@@ -668,6 +669,82 @@ class Test_Venue extends Base {
 			'Linked Venue For Event Test',
 			$result,
 			'Should render inner blocks with venue context from event.'
+		);
+	}
+
+	/**
+	 * Tests the block keeps a password-protected event's venue behind the event's password.
+	 *
+	 * @since TBD
+	 * @covers ::get_source_post
+	 *
+	 * @return void
+	 */
+	public function test_render_block_with_password_protected_event_linked_to_venue(): void {
+		$instance  = Venue_Block::get_instance();
+		$venue_id  = $this->factory->post->create(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_name'  => 'protected-event-venue',
+				'post_title' => 'Protected Event Venue',
+			)
+		);
+		$term_slug = ( new Venue( $venue_id ) )->get_term_slug();
+
+		wp_insert_term( 'Protected Event Venue', Venue::TAXONOMY, array( 'slug' => $term_slug ) );
+
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_status'   => 'publish',
+				'post_password' => 'secret',
+			)
+		);
+
+		wp_set_post_terms( $event_id, $term_slug, Venue::TAXONOMY );
+		$this->go_to( get_permalink( $event_id ) );
+
+		$render = static function () use ( $instance ): string {
+			return (string) $instance->render_inner_blocks(
+				new WP_Block(
+					array(
+						'blockName'    => 'gatherpress/venue',
+						'attrs'        => array(),
+						'innerBlocks'  => array(
+							array(
+								'blockName'    => 'core/post-title',
+								'attrs'        => array(),
+								'innerBlocks'  => array(),
+								'innerHTML'    => '',
+								'innerContent' => array(),
+							),
+						),
+						'innerHTML'    => '',
+						'innerContent' => array( null ),
+					)
+				)
+			);
+		};
+
+		$this->assertStringNotContainsString(
+			'Protected Event Venue',
+			$render(),
+			'A password-protected event should keep its venue from a viewer without the password.'
+		);
+
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+
+		// The cookie WordPress sets once a viewer enters the post password.
+		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'secret' );
+
+		$result = $render();
+
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+
+		$this->assertStringContainsString(
+			'Protected Event Venue',
+			$result,
+			'A password-protected event should show its venue to a viewer with the password.'
 		);
 	}
 
