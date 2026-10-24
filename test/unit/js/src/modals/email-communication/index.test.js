@@ -82,6 +82,9 @@ describe( 'EventCommunicationModal', () => {
 
 		expect( screen.getByLabelText( 'All Members' ) ).toBeInTheDocument();
 		expect( getFromConfig ).toHaveBeenCalledWith( 'canEmailAllUsers' );
+		expect(
+			screen.getByText( /"All Members" includes site users only\./ ),
+		).toBeInTheDocument();
 	} );
 
 	it( 'hides All Members when the user cannot email every member', async () => {
@@ -91,5 +94,9 @@ describe( 'EventCommunicationModal', () => {
 
 		expect( screen.queryByLabelText( 'All Members' ) ).not.toBeInTheDocument();
 		expect( screen.getByLabelText( 'Attending' ) ).toBeInTheDocument();
+		expect( screen.queryByText( /All Members/ ) ).not.toBeInTheDocument();
+		expect(
+			screen.getByText( /RSVP status options include both site users/ ),
+		).toBeInTheDocument();
 	} );
 } );
