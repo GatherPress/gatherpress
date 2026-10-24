@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Saving an event now marks its location as not public when the event is password-protected, unpublished, or at a venue that isn't public, past events included. Before, a past event's `geo_public` stayed as it was, since only viewing an upcoming event refreshed it.
