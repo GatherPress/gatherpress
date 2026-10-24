@@ -547,11 +547,14 @@ class Test_Cleanup extends Base {
 			wp_mkdir_p( $dir );
 		}
 
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_set_error_handler
+		set_error_handler( static fn() => true );
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_chmod
 		chmod( $dir, 0000 );
 		$result = $cleanup->sweep();
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_chmod
 		chmod( $dir, 0755 );
+		restore_error_handler();
 
 		$this->assertSame( 0, $result['scanned'] );
 	}

@@ -295,8 +295,8 @@ class Cleanup {
 				return $result;
 			}
 
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_opendir, WordPress.PHP.NoSilencedErrors.Discouraged -- Streaming dir handle avoids glob() memory spikes; error suppression handles unreadable dirs.
-			$handle = @opendir( $dir );
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_opendir -- Streaming dir handle avoids glob() memory spikes.
+			$handle = opendir( $dir );
 
 			if ( false === $handle ) {
 				return $result;
