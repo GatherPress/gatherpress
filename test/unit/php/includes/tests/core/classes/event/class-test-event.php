@@ -3591,4 +3591,58 @@ class Test_Event extends Base {
 
 		remove_filter( 'gatherpress_datetime_separator', $capture );
 	}
+
+	/**
+	 * Calendars and feeds get no name or details for a password-protected venue,
+	 * whoever is asking, since a calendar response can be cached for others.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_public_venue_information
+	 *
+	 * @return void
+	 */
+	public function test_get_public_venue_information(): void {
+		register_taxonomy_for_object_type( Venue::TAXONOMY, Event::POST_TYPE );
+
+		$at_venue  = function ( string $password ): Event {
+			$venue_id = $this->factory->post->create(
+				array(
+					'post_type'     => Venue::POST_TYPE,
+					'post_status'   => 'publish',
+					'post_title'    => 'Hidden Hall',
+					'post_password' => $password,
+				)
+			);
+			$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+			update_post_meta( $venue_id, 'gatherpress_address', '1 Main St' );
+			wp_set_post_terms( $event_id, ( new Venue( $venue_id ) )->get_term_slug(), Venue::TAXONOMY );
+
+			return new Event( $event_id );
+		};
+		$protected = $at_venue( 'secret' );
+		$open      = $at_venue( '' );
+
+		wp_set_current_user( 0 );
+
+		$this->assertSame(
+			array_fill_keys( array_keys( $protected->get_venue_information() ), '' ),
+			$protected->get_public_venue_information(),
+			'A protected venue shares nothing.'
+		);
+		$this->assertSame( '1 Main St', $protected->get_venue_information()['address'], 'Emails get the address.' );
+		$this->assertSame( '1 Main St', $open->get_public_venue_information()['address'], 'An open venue shares it.' );
+		$this->assertSame(
+			'',
+			( new Event( $this->factory->post->create() ) )->get_public_venue_information()['name'],
+			'A post that is not an event has no venue.'
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'editor' ) ) );
+
+		$this->assertSame( '', $protected->get_public_venue_information()['address'], 'Nor does an Editor.' );
+
+		wp_set_current_user( 0 );
+	}
 }
