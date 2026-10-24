@@ -439,6 +439,36 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * Tests the editor learns whether the current user can email every user.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::add_editor_settings
+	 *
+	 * @return void
+	 */
+	public function test_add_editor_settings_exposes_can_email_all_users(): void {
+		$instance = Setup::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		$this->go_to( get_permalink( $event_id ) );
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'author' ) ) );
+		$settings = $instance->add_editor_settings( array() );
+		$this->assertFalse(
+			$settings['gatherpress']['config']['canEmailAllUsers'],
+			'Failed to assert an author cannot email every user.'
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'editor' ) ) );
+		$settings = $instance->add_editor_settings( array() );
+		$this->assertTrue(
+			$settings['gatherpress']['config']['canEmailAllUsers'],
+			'Failed to assert an editor can email every user.'
+		);
+	}
+
+	/**
 	 * Coverage for add_editor_settings method preserving existing settings.
 	 *
 	 * @since 0.36.0
@@ -899,6 +929,58 @@ class Test_Setup extends Base {
 			'2025-06-15',
 			$result,
 			'Should contain ISO event date in datetime attribute.'
+		);
+	}
+
+	/**
+	 * Coverage for render_event_post_date_block method with a date that starts with a digit.
+	 *
+	 * @covers ::render_event_post_date_block
+	 *
+	 * @return void
+	 */
+	public function test_render_event_post_date_block_with_numeric_date_format(): void {
+		$instance = Setup::get_instance();
+		$post_id  = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2025-06-15 10:00:00',
+				'datetime_end'   => '2025-06-15 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		update_option(
+			'gatherpress_settings',
+			array(
+				'use_event_date_for_publish' => '1',
+				'date_format'                => 'd/m/Y',
+			)
+		);
+
+		$this->go_to( get_permalink( $post_id ) );
+
+		// phpcs:ignore Generic.Files.LineLength.TooLong -- Block HTML fixture.
+		$block_content = '<div class="wp-block-post-date"><time datetime="2025-03-26T12:00:00+00:00">March 26, 2025</time></div>';
+		$block         = array(
+			'blockName' => 'core/post-date',
+			'attrs'     => array(),
+		);
+		$wp_block      = new WP_Block(
+			$block,
+			array( 'postId' => $post_id )
+		);
+
+		$result = $instance->render_event_post_date_block( $block_content, $block, $wp_block );
+
+		$this->assertStringContainsString(
+			'>15/06/2025',
+			$result,
+			'Should keep the leading digit of the event date.'
 		);
 	}
 

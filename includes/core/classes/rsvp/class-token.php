@@ -299,7 +299,7 @@ final class Token {
 	 * @return bool True if the token is valid, false otherwise.
 	 */
 	public function is_valid( string $token ): bool {
-		return ! empty( $token ) && $this->get_token() === $token;
+		return ! empty( $token ) && hash_equals( $this->get_token(), $token );
 	}
 
 	/**

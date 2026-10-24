@@ -760,7 +760,9 @@ final class Setup {
 			$topics = array( $queried_object->slug );
 		}
 
-		$query = Query::get_instance()->get_events_list( $event_list_type, $number, $topics, $venues );
+		// A feed is shared by every viewer, so it never lists a
+		// password-protected event's details.
+		$query = Query::get_instance()->get_events_list( $event_list_type, $number, $topics, $venues, false );
 		while ( $query->have_posts() ) {
 			$query->the_post();
 			$calendar = new Calendar( (int) get_the_ID() );
@@ -870,7 +872,7 @@ final class Setup {
 		// how long it stays fresh and hands them validators to revalidate with.
 		// A site can opt out entirely by filtering the max age to 0.
 		if ( 0 < $max_age ) {
-			header( sprintf( 'Cache-Control: public, max-age=%d', $max_age ) );
+			header( sprintf( 'Cache-Control: %s, max-age=%d', Cache::get_instance()->get_cacheability(), $max_age ) );
 		} else {
 			header( 'Cache-Control: no-store, no-cache, must-revalidate' );
 			header( 'Pragma: no-cache' );
@@ -899,12 +901,10 @@ final class Setup {
 	 * @return string The complete iCal payload.
 	 */
 	public function get_ics_body(): string {
-		$is_feed = is_feed();
-
 		return Cache::get_instance()->remember(
 			$this->get_ics_cache_key(),
-			function () use ( $is_feed ): string {
-				return (string) ( $is_feed ? $this->get_ical_feed() : $this->get_ical_file() );
+			function (): string {
+				return (string) ( is_feed() ? $this->get_ical_feed() : $this->get_ical_file() );
 			}
 		);
 	}
@@ -913,9 +913,12 @@ final class Setup {
 	 * Cache key describing what the current request asks for.
 	 *
 	 * Built from the resolved query rather than the request URI, so unknown
-	 * query parameters cannot fragment the cache into unbounded entries.
+	 * query parameters cannot fragment the cache into unbounded entries. The
+	 * viewer's scope is part of it, because the events query lists private
+	 * events to the viewers allowed to read them.
 	 *
 	 * @since 0.36.0
+	 * @since TBD    Includes the viewer scope from `Cache::get_viewer_scope()`.
 	 *
 	 * @return string Scope-specific cache key.
 	 */
@@ -926,6 +929,7 @@ final class Setup {
 			'paged'  => (int) get_query_var( 'paged' ),
 			'object' => 0,
 			'type'   => '',
+			'viewer' => Cache::get_instance()->get_viewer_scope(),
 		);
 
 		if ( $queried_object instanceof WP_Post ) {

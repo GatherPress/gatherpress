@@ -6,7 +6,7 @@ GatherPress includes a growing list of features to help communities organize and
 
 - **Event scheduling**: Set dates, times, and detailed event information.
 - **Attendee registration**: Let users RSVP to events.
-- **Configurable RSVP Mode**: Control RSVP sitewide with four modes: enabled for all events, per event (default on), per event (default off), or disabled entirely, with a per-event override toggle in the editor.
+- **Configurable RSVP Mode**: Control RSVP sitewide with four modes: enabled for all events, per event (default enabled), per event (default disabled), or disabled entirely, with a per-event override toggle in the editor.
 - **Open RSVP support**: Allow non-logged-in users to RSVP to events, with a sitewide on/off control.
 - **Guest support**: Allow attendees to include additional guests.
 - **Anonymous RSVPs**: Optionally list attendees as anonymous (only visible to admins).

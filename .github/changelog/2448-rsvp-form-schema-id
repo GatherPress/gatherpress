@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Fix a second RSVP Form with the same layout as an earlier one on the same event using the first form's fields, which rejected its submissions for a field it does not have or dropped its answers.

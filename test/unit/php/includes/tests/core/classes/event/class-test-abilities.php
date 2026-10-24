@@ -404,6 +404,54 @@ class Test_Abilities extends Base {
 	}
 
 	/**
+	 * Test that get_upcoming_events leaves out password-protected events.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_upcoming_events
+	 *
+	 * @return void
+	 */
+	public function test_get_upcoming_events_leaves_out_password_protected_events(): void {
+		$instance  = Abilities::get_instance();
+		$posts     = array();
+		$passwords = array(
+			'Open Meetup'      => '',
+			'Protected Meetup' => 'secret',
+		);
+
+		foreach ( $passwords as $title => $password ) {
+			$post  = $this->mock->post(
+				array(
+					'post_type'     => 'gatherpress_event',
+					'post_title'    => $title,
+					'post_status'   => 'publish',
+					'post_password' => $password,
+				)
+			)->get();
+			$event = new Event( $post->ID );
+			$date  = new DateTime( '+3 days' );
+			$event->save_datetimes(
+				array(
+					'datetime_start' => $date->format( 'Y-m-d H:i:s' ),
+					'datetime_end'   => $date->modify( '+1 hour' )->format( 'Y-m-d H:i:s' ),
+					'timezone'       => 'UTC',
+				)
+			);
+
+			$posts[ $title ] = $post->ID;
+		}
+
+		$ids = wp_list_pluck( $instance->get_upcoming_events( array( 'count' => 10 ) ), 'id' );
+
+		$this->assertSame(
+			array( $posts['Open Meetup'] ),
+			$ids,
+			'Failed to assert that a password-protected event is left out.'
+		);
+	}
+
+	/**
 	 * Test that ability schemas define expected input and output structures.
 	 *
 	 * @covers ::register_abilities

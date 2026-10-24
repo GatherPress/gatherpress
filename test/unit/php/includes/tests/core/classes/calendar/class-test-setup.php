@@ -1581,6 +1581,155 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * Create an upcoming event.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $args Post arguments.
+	 *
+	 * @return int The event post ID.
+	 */
+	private function create_upcoming_event( array $args ): int {
+		$post_id = $this->factory->post->create( array_merge( array( 'post_type' => Event::POST_TYPE ), $args ) );
+
+		( new Event( $post_id ) )->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week' ) ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week 2 hours' ) ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		return $post_id;
+	}
+
+	/**
+	 * The cache key carries the viewer scope, so viewers in one scope share an
+	 * entry and viewers in different scopes never do.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_ics_cache_key
+	 *
+	 * @return void
+	 */
+	public function test_get_ics_cache_key_varies_by_viewer_scope(): void {
+		$instance = Setup::get_instance();
+		$author   = $this->factory->user->create( array( 'role' => 'author' ) );
+		$key_for  = function ( int $user_id ) use ( $instance ): string {
+			wp_set_current_user( $user_id );
+
+			return $instance->get_ics_cache_key();
+		};
+
+		$this->create_upcoming_event(
+			array(
+				'post_status' => 'private',
+				'post_author' => $author,
+			)
+		);
+		$this->go_to( get_post_type_archive_feed_link( Event::POST_TYPE, Setup::ICAL_SLUG ) );
+
+		$anonymous = $key_for( 0 );
+		$admin     = $key_for( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$this->assertSame(
+			$anonymous,
+			$key_for( $this->factory->user->create( array( 'role' => 'subscriber' ) ) ),
+			'A Subscriber should share the anonymous entry.'
+		);
+		$this->assertSame(
+			$admin,
+			$key_for( $this->factory->user->create( array( 'role' => 'editor' ) ) ),
+			'An Editor should share the Administrator entry.'
+		);
+		$this->assertNotSame( $anonymous, $admin, 'The private scope should not share the public entry.' );
+		$this->assertNotContains(
+			$key_for( $author ),
+			array( $anonymous, $admin ),
+			'An Author with their own private event should get an entry of their own.'
+		);
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * An Administrator's feed, private events included, is cached under the
+	 * private scope, so an anonymous viewer or a Subscriber never gets it.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_ics_body
+	 *
+	 * @return void
+	 */
+	public function test_get_ics_body_keeps_private_events_out_of_the_public_body(): void {
+		$this->create_upcoming_event(
+			array(
+				'post_status' => 'private',
+				'post_title'  => 'Private Board Meeting',
+			)
+		);
+
+		$feed_link = get_post_type_archive_feed_link( Event::POST_TYPE, Setup::ICAL_SLUG );
+		$body_for  = function ( int $user_id ) use ( $feed_link ): string {
+			wp_set_current_user( $user_id );
+			$this->go_to( $feed_link );
+
+			return Setup::get_instance()->get_ics_body();
+		};
+		$admin     = $this->factory->user->create( array( 'role' => 'administrator' ) );
+
+		$this->assertStringContainsString(
+			'Private Board Meeting',
+			$body_for( $admin ),
+			'An Administrator should see the private event in their own feed.'
+		);
+		$this->assertStringNotContainsString(
+			'Private Board Meeting',
+			$body_for( 0 ),
+			'An anonymous viewer should not get the Administrator\'s cached body.'
+		);
+		$this->assertStringNotContainsString(
+			'Private Board Meeting',
+			$body_for( $this->factory->user->create( array( 'role' => 'subscriber' ) ) ),
+			'A Subscriber should not get the Administrator\'s cached body.'
+		);
+		$this->assertStringContainsString(
+			'Private Board Meeting',
+			$body_for( $admin ),
+			'The Administrator should still get their own body after the public one is cached.'
+		);
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * A logged-in viewer's calendar goes out with private caching headers.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::send_ics_headers
+	 *
+	 * @return void
+	 */
+	public function test_send_ics_headers_for_a_logged_in_viewer(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		ob_start();
+		Setup::get_instance()->send_ics_headers( 'sample.ics', '"abc123"', '2026-07-31 10:00:00' );
+		$output = ob_get_clean();
+
+		header_remove();
+
+		$this->assertSame(
+			'',
+			$output,
+			'send_ics_headers should not emit body output.'
+		);
+	}
+
+	/**
 	 * `If-None-Match` is the exact validator, so it answers on its own and
 	 * wins when the client sends a timestamp as well.
 	 *
@@ -2020,6 +2169,52 @@ class Test_Setup extends Base {
 		$this->assertTrue(
 			$instance->is_calendar_negotiated( 'text/html, text/calendar' ),
 			'Failed to assert an equally ranked calendar negotiates.'
+		);
+	}
+
+	/**
+	 * A feed is shared by every viewer, so a password-protected event's
+	 * details stay out of it.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_ical_list
+	 *
+	 * @return void
+	 */
+	public function test_get_ical_list_leaves_out_password_protected_events(): void {
+		$params = array(
+			'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week' ) ),
+			'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week 2 hours' ) ),
+			'timezone'       => 'UTC',
+		);
+
+		$events = array(
+			'Open Meetup'      => '',
+			'Protected Meetup' => 'secret',
+		);
+
+		foreach ( $events as $title => $password ) {
+			$post_id = $this->factory->post->create(
+				array(
+					'post_type'     => Event::POST_TYPE,
+					'post_title'    => $title,
+					'post_password' => $password,
+				)
+			);
+
+			( new Event( $post_id ) )->save_datetimes( $params );
+		}
+
+		$this->go_to( get_post_type_archive_feed_link( Event::POST_TYPE, Setup::ICAL_SLUG ) );
+
+		$list = Setup::get_instance()->get_ical_list();
+
+		$this->assertStringContainsString( 'Open Meetup', $list, 'The open event should be in the feed.' );
+		$this->assertStringNotContainsString(
+			'Protected Meetup',
+			$list,
+			'The password-protected event should not be in the feed.'
 		);
 	}
 }
