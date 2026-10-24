@@ -220,7 +220,7 @@ class Event {
 	 * The viewer still needs the password and cannot edit the event. A REST
 	 * request that passes the right `password` argument counts as having it.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param WP_Post              $post    The event post.
 	 * @param WP_REST_Request|null $request Optional. The REST request, for its `password` argument.
@@ -1064,7 +1064,7 @@ class Event {
 	 * counts here: a calendar response can be cached and served to other
 	 * viewers, and an Author's lands in the cache for logged-out viewers.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @return array<string, string> The shape of {@see self::get_venue_information()}, all blank for such a venue.
 	 */

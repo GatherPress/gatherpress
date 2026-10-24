@@ -56,7 +56,7 @@ const mountModal = domReady.mock.calls[ 0 ][ 0 ];
 /**
  * Mount the modal into a fresh wrapper element.
  *
- * @since TBD
+ * @since 0.36.1
  */
 async function renderModal() {
 	document.body.innerHTML =

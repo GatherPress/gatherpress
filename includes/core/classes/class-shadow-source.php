@@ -415,7 +415,7 @@ final class Shadow_Source {
 	 * or "Private: " prefix it adds outside the admin, which isn't part of the
 	 * name.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param WP_Post $post The source post.
 	 *

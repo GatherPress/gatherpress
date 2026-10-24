@@ -341,7 +341,7 @@ class Test_Venue extends Base {
 	 * A post password keeps a venue's details from a viewer until they have the
 	 * password, as a REST argument, or can edit the venue.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::is_hidden_by_password
 	 *

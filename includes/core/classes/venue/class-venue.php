@@ -113,7 +113,7 @@ final class Venue {
 	 * request that passes the right `password` argument counts as having it.
 	 * The same rule as `Event::is_hidden_by_password()`.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param WP_Post              $post    The venue post.
 	 * @param WP_REST_Request|null $request Optional. The REST request, for its `password` argument.

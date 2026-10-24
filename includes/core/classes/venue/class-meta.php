@@ -417,7 +417,7 @@ final class Meta {
 	 * venue, or sends the password as a cookie or as the REST `password`
 	 * argument, sees them.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param WP_REST_Response $response The response for the venue.
 	 * @param WP_Post          $post     The venue the response was prepared for.

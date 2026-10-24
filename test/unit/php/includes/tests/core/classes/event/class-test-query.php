@@ -2819,7 +2819,7 @@ class Test_Query extends Base {
 	 * Password-protected events are left out or kept alone on request, and
 	 * included alongside the others by default.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::get_events_list
 	 *

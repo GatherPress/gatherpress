@@ -417,7 +417,7 @@ class Test_Cache extends Base {
 	 * Viewers who get the same events share a scope; only a viewer whose own
 	 * private events set them apart gets one to themselves.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::get_viewer_scope
 	 *
@@ -468,7 +468,7 @@ class Test_Cache extends Base {
 	 * A viewer who can read the private events of one event post type but not
 	 * another sees a set nobody else is known to share.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::get_viewer_scope
 	 *
@@ -505,7 +505,7 @@ class Test_Cache extends Base {
 	 * An unpublished queried event's calendar stays out of shared caches,
 	 * while its viewers keep their usual scope and so share one cache entry.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::get_cacheability
 	 *
@@ -571,7 +571,7 @@ class Test_Cache extends Base {
 	 * Only the public calendar may be kept by shared caches; every other
 	 * scope goes out as private.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::get_cacheability
 	 *
@@ -616,7 +616,7 @@ class Test_Cache extends Base {
 	 * A password-protected event's calendar stays out of shared caches, even
 	 * for a viewer whose scope is public, while an open event's stays public.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::get_cacheability
 	 *

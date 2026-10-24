@@ -104,7 +104,7 @@ export function usePostTypeSupports( support, postType = null ) {
  * cannot edit that post type, or a post type not shown in REST. Its supports
  * are unknown then, so code must not act as if they were missing.
  *
- * @since TBD
+ * @since 0.36.1
  *
  * @param {string|null} postType Optional post type to check. Falls back to the editor post type.
  *

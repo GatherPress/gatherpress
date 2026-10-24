@@ -2081,7 +2081,7 @@ class Test_Rest_Api extends Base {
 	/**
 	 * Tests emailing every user takes edit_others_posts, not just edit_post.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::email_route
 	 */
@@ -2159,7 +2159,7 @@ class Test_Rest_Api extends Base {
 	/**
 	 * Tests who can email every user about an event.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::can_email_all_users
 	 */

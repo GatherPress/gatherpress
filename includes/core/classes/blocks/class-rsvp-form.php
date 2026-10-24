@@ -731,7 +731,7 @@ final class Rsvp_Form {
 	 * are the form's own attributes, which can be filtered at render.
 	 *
 	 * @since 0.33.0
-	 * @since TBD Also compares form fields. A block's innerHTML holds only its
+	 * @since 0.36.1 Also compares form fields. A block's innerHTML holds only its
 	 *            wrapper, so two forms with the same wrapper and number of
 	 *            fields matched each other.
 	 *

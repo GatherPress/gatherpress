@@ -286,7 +286,7 @@ class Test_Online_Event extends Base {
 	 * In a Query Loop the block reads the event from the loop, so it has no
 	 * override to check, and has to ask for the password the event page would.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::render_block
 	 *
 	 * @return void

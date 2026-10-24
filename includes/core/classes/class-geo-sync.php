@@ -45,7 +45,7 @@ final class Geo_Sync {
 	 * Venue meta keeping the locations a venue cleared from its events when it
 	 * stopped being public, keyed by event post ID, until it is public again.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @var string
 	 */
@@ -143,7 +143,7 @@ final class Geo_Sync {
 	 * but mark it not public.
 	 *
 	 * @since 0.36.0
-	 * @since TBD A password-protected post is not public.
+	 * @since 0.36.1 A password-protected post is not public.
 	 *
 	 * @param WP_Post|null $post The post, or null when there is none.
 	 *
@@ -161,7 +161,7 @@ final class Geo_Sync {
 	 * A venue that isn't public also clears the location its events copied.
 	 *
 	 * @since 0.36.0
-	 * @since TBD Clears the copies on its events when the venue isn't public.
+	 * @since 0.36.1 Clears the copies on its events when the venue isn't public.
 	 *
 	 * @param int     $post_id Post ID that just saved.
 	 * @param WP_Post $post    Post object.
@@ -202,7 +202,7 @@ final class Geo_Sync {
 	 * copy is kept: saving the venue again while it isn't public finds the
 	 * events already blank.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param WP_Post $venue The venue post.
 	 *
@@ -259,7 +259,7 @@ final class Geo_Sync {
 	 * follows the event's own status. An event that has since been deleted or
 	 * moved to another venue is left as it is.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param WP_Post $venue The venue post, now public.
 	 *

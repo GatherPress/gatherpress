@@ -552,7 +552,7 @@ class Test_Meta extends Base {
 	 * A password-protected event's date and place are blanked for viewers who
 	 * can't see the event, and kept for those who can.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::hide_password_protected_meta
 	 *
@@ -628,7 +628,7 @@ class Test_Meta extends Base {
 	 * The REST API blanks a password-protected event's date on every post type
 	 * with event-date support, not only the built-in event post type.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::register_event_date_meta
 	 * @covers ::hide_password_protected_meta
@@ -694,7 +694,7 @@ class Test_Meta extends Base {
 	 * The place stays hidden on a read where the geo refresh writes fresh
 	 * venue values into the response.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::register_event_date_meta
 	 * @covers ::hide_password_protected_meta
@@ -767,7 +767,7 @@ class Test_Meta extends Base {
 	 * An open event at a password-protected venue keeps the location it copied
 	 * from that venue out of REST, and keeps its date.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::hide_password_protected_meta
 	 *

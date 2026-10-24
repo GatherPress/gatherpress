@@ -2346,7 +2346,7 @@ class Test_Event extends Base {
 	 * A post password keeps an event's details from a viewer until they have the
 	 * password, as a cookie or a REST argument, or can edit the event.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::is_hidden_by_password
 	 *
@@ -3596,7 +3596,7 @@ class Test_Event extends Base {
 	 * Calendars and feeds get no name or details for a password-protected venue,
 	 * whoever is asking, since a calendar response can be cached for others.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::get_public_venue_information
 	 *

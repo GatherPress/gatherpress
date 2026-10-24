@@ -23,7 +23,7 @@ import { getUrlParam } from '../../helpers/globals';
  * the container never shows. Animation frames pause in a background tab,
  * so there the callback waits until the tab is visible again.
  *
- * @since TBD
+ * @since 0.36.1
  *
  * @param {HTMLElement|null} container    The status container to wait for.
  * @param {Function}         callback     Receives true when the container is

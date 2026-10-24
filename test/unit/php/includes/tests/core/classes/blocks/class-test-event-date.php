@@ -161,7 +161,7 @@ class Test_Event_Date extends Base {
 	 * A block on another page can name the event through its postId, so the
 	 * block has to ask for the password the event page would.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::validate_event
 	 *

@@ -347,7 +347,7 @@ final class Setup {
 	 * Runs on `rest_api_init`, once every event post type and its venue
 	 * mapping is in place.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @return void
 	 */
@@ -375,7 +375,7 @@ final class Setup {
 	 * It stays behind the event's password, as the event's date and place
 	 * meta do, and behind the venue's own password, as in the Venue block.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param WP_REST_Response $response The response for the event.
 	 * @param WP_Post          $post     The event the response was prepared for.
@@ -408,7 +408,7 @@ final class Setup {
 	 * `/wp/v2/<venue taxonomy>?post=<id>` lists one post's terms, which would
 	 * name the event's venue.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param array<string, mixed> $prepared_args The term query arguments.
 	 * @param WP_REST_Request      $request       The terms request.
@@ -435,7 +435,7 @@ final class Setup {
 	 * Core adds a `<taxonomy>-<term>` class for each public term, which would
 	 * name the venue in the page markup and in the REST `class_list`.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param string[] $classes   The post classes.
 	 * @param string[] $css_class Classes passed to get_post_class().
@@ -473,7 +473,7 @@ final class Setup {
 	 * as the Venue block does. Whoever can edit the event still sees the venue
 	 * it is saved with, so the editor doesn't drop it on the next save.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param WP_Post              $event   The event post.
 	 * @param WP_REST_Request|null $request Optional. The REST request, for the event's `password` argument.
@@ -500,7 +500,7 @@ final class Setup {
 	 * count: only someone who can see the venue itself sees its details, such
 	 * as the location an event copied from it.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param WP_Post $event The event post.
 	 *
@@ -519,7 +519,7 @@ final class Setup {
 	 * prints the terms with get_the_term_list(), which the REST and class
 	 * filters don't reach.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param string               $block_content The block's rendered content.
 	 * @param array<string, mixed> $block         The parsed block.
@@ -555,7 +555,7 @@ final class Setup {
 	 * away, so those lists skip it for anyone who can't edit others' events.
 	 * Admin screens are left alone.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param WP_Query $query The query about to run.
 	 *
@@ -581,7 +581,7 @@ final class Setup {
 	/**
 	 * Whether a query filters by any of the given taxonomies.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param WP_Query $query      The query.
 	 * @param string[] $taxonomies Taxonomy slugs.
@@ -603,7 +603,7 @@ final class Setup {
 	/**
 	 * Whether a tax_query, at any nesting depth, names one of the given taxonomies.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param array<mixed> $tax_query  The tax_query, or one nested group of it.
 	 * @param string[]     $taxonomies Taxonomy slugs.
