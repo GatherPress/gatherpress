@@ -488,7 +488,7 @@ class Test_Meta extends Base {
 	 * A password-protected venue's details are blank in REST for viewers who
 	 * can't see them, and kept for those who can.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::register_venue_information_meta
 	 * @covers ::hide_password_protected_details

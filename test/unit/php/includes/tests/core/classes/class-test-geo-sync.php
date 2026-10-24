@@ -840,7 +840,7 @@ class Test_Geo_Sync extends Base {
 	 * A password-protected venue keeps its location to itself: its events get
 	 * none, and its own copy is marked not public.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::is_public
 	 * @covers ::maybe_refresh
@@ -885,7 +885,7 @@ class Test_Geo_Sync extends Base {
 	 * Saving a venue that isn't public clears the location its events copied,
 	 * past events included, while a public venue's events keep theirs.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::on_venue_saved
 	 * @covers ::clear_event_copies
@@ -929,7 +929,7 @@ class Test_Geo_Sync extends Base {
 	/**
 	 * A venue that was never published has no term, so there is nothing to clear.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::clear_event_copies
 	 *
@@ -954,7 +954,7 @@ class Test_Geo_Sync extends Base {
 	 * event back the exact location it had, even if the venue's address
 	 * changed in between, so a past event keeps where it happened.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::on_venue_saved
 	 * @covers ::clear_event_copies
@@ -1017,7 +1017,7 @@ class Test_Geo_Sync extends Base {
 	/**
 	 * Saving a venue again while it isn't public keeps the first copy, not the blank one.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::clear_event_copies
 	 *
@@ -1058,7 +1058,7 @@ class Test_Geo_Sync extends Base {
 	 * An event deleted or moved to another venue since is left alone, and a
 	 * venue with nothing kept does nothing.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::restore_event_copies
 	 *
@@ -1097,7 +1097,7 @@ class Test_Geo_Sync extends Base {
 	/**
 	 * Saving a past event marks its location public or not, and keeps the location.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::on_event_saved
 	 *
@@ -1162,7 +1162,7 @@ class Test_Geo_Sync extends Base {
 	/**
 	 * Saving an event at a venue that isn't public marks its location not public.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::on_event_saved
 	 *
@@ -1182,7 +1182,7 @@ class Test_Geo_Sync extends Base {
 	/**
 	 * Saving a post type that can't have a venue writes nothing.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::on_event_saved
 	 *
@@ -1202,7 +1202,7 @@ class Test_Geo_Sync extends Base {
 	 * Called directly because `on_event_saved()` and `maybe_refresh()` reach it
 	 * through same-class calls that xdebug does not trace.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::is_event_public
 	 *

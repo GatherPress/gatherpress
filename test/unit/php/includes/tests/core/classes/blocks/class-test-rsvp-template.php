@@ -339,7 +339,7 @@ class Test_Rsvp_Template extends Base {
 	 * A block on another post can name the event through its postId context,
 	 * so the block has to ask for the password the event page would.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::generate_rsvp_template_block
 	 * @return void
@@ -369,7 +369,7 @@ class Test_Rsvp_Template extends Base {
 	/**
 	 * Tests a password-protected event's roster renders once the viewer has the password.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::generate_rsvp_template_block
 	 * @return void

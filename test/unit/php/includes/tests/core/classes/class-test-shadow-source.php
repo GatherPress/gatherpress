@@ -1127,7 +1127,7 @@ class Test_Shadow_Source extends Base {
 	 * A protected or private source's term is named without the "Protected: "
 	 * or "Private: " prefix get_the_title() adds outside the admin.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::add_term
 	 * @covers ::maybe_update_term_slug

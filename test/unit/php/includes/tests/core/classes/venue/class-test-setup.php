@@ -681,7 +681,7 @@ class Test_Setup extends Base {
 	 * A block hooked into the venue template pattern is inserted once, by the
 	 * pattern registry, and survives into the seeded content.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::maybe_apply_venue_template
 	 *
 	 * @return void
@@ -1596,7 +1596,7 @@ class Test_Setup extends Base {
 	/**
 	 * The REST filters that keep a protected event's venue hidden are wired per event post type.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::register_password_protected_venue_rest_hooks
 	 *
@@ -1626,7 +1626,7 @@ class Test_Setup extends Base {
 	 * A protected event's venue stays out of its REST record and the venue terms
 	 * endpoint until the viewer has the password or can edit the event.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::hide_password_protected_venue
 	 * @covers ::hide_password_protected_venue_terms
@@ -1713,7 +1713,7 @@ class Test_Setup extends Base {
 	 * A protected event's venue is blanked under the taxonomy's REST base
 	 * when it has one.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::hide_password_protected_venue
 	 *
@@ -1742,7 +1742,7 @@ class Test_Setup extends Base {
 	/**
 	 * A response without the venue field is returned unchanged.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::hide_password_protected_venue
 	 *
@@ -1765,7 +1765,7 @@ class Test_Setup extends Base {
 	/**
 	 * The venue's class is dropped from a protected event's post classes.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::hide_password_protected_venue_class
 	 *
@@ -1804,7 +1804,7 @@ class Test_Setup extends Base {
 	/**
 	 * Lists filtered by a venue leave protected events out for viewers who can't edit others' events.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::leave_password_protected_events_out
 	 * @covers ::query_filters_by_taxonomy
@@ -1864,7 +1864,7 @@ class Test_Setup extends Base {
 	/**
 	 * A query filters by a venue through its query var, `taxonomy` or a nested tax_query.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::query_filters_by_taxonomy
 	 * @covers ::tax_query_names_taxonomy
@@ -1914,7 +1914,7 @@ class Test_Setup extends Base {
 	/**
 	 * An event's venue is hidden by the event's password or by the venue's own.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::is_event_venue_hidden
 	 * @covers ::is_venue_hidden_by_password
@@ -2003,7 +2003,7 @@ class Test_Setup extends Base {
 	 * A Post Terms block for the venue taxonomy prints nothing for a protected
 	 * event until the viewer has its password.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::hide_password_protected_venue_post_terms
 	 *

@@ -25,7 +25,7 @@ import { usePostTypeLabel } from '../../../helpers/editor';
 /**
  * Builds the block name the event query panel gives an event query loop.
  *
- * @since TBD
+ * @since 0.36.1
  *
  * @param {string} eventQuery  The `gatherpress_event_query` mode, 'upcoming' or 'past'.
  * @param {string} pluralLabel Plural post type label, e.g. "Events".

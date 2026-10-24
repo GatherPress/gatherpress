@@ -217,7 +217,7 @@ final class Cache {
 	 * the same events share a scope, so the cache stays shared without one
 	 * viewer's events reaching another.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @return string `public` for viewers who see no private events, `private`
 	 *                for those who see all of them, or `user:{id}` for a viewer
@@ -267,7 +267,7 @@ final class Cache {
 	 * it is private even when the viewer's scope is public. Its cache entry
 	 * can still be shared, because those viewers all get the same body.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @return string `public` for the public scope, `private` for any other or
 	 *                for an unpublished or password-protected queried post.

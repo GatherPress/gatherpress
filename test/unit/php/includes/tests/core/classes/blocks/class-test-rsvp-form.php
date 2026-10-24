@@ -469,7 +469,7 @@ class Test_Rsvp_Form extends Base {
 	 * block, so two forms with the same wrapper and number of fields used to
 	 * match each other, and the second form rendered the first one's id.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::get_form_schema_id
 	 * @covers ::find_form_schema_id_in_blocks
 	 * @covers ::blocks_match
@@ -564,7 +564,7 @@ class Test_Rsvp_Form extends Base {
 	 * Forms with the same fields share the first form's id, whose schema
 	 * holds the same fields as their own.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::get_form_schema_id
 	 * @covers ::find_form_schema_id_in_blocks
 	 * @covers ::blocks_match
@@ -630,7 +630,7 @@ class Test_Rsvp_Form extends Base {
 	 * Block Hooks insert into the content before the form renders, so the
 	 * rendered form has an inner block that the saved one does not.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::get_form_schema_id
 	 * @covers ::find_form_schema_id_in_blocks
 	 * @covers ::blocks_match
@@ -674,7 +674,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Wrap inner block markup in an RSVP Form block.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param string $inner Inner block markup.
 	 *
@@ -691,7 +691,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Render each RSVP form in the content, nested ones included, and collect its schema id.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param int    $post_id      The event post ID.
 	 * @param string $post_content The event content.
@@ -2937,7 +2937,7 @@ class Test_Rsvp_Form extends Base {
 	 * In a block template the RSVP Form block renders outside the post
 	 * content, where the password form would otherwise hide it.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::transform_block_content
 	 *

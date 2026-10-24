@@ -476,7 +476,7 @@ class Test_Setup extends Base {
 	 * A protected event's page leaves its venue's feed link out of the head,
 	 * keeps its other terms' links, and shows the venue's once unlocked.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::collect_event_term_alternate_links
 	 *
@@ -537,7 +537,7 @@ class Test_Setup extends Base {
 	/**
 	 * An open event's page leaves a password-protected venue's feed link out.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::collect_event_term_alternate_links
 	 *
@@ -572,7 +572,7 @@ class Test_Setup extends Base {
 	 * A protected event whose post type has no taxonomy besides the venue's
 	 * gets no term links, since an empty taxonomy list would match every term.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::collect_event_term_alternate_links
 	 *
@@ -1728,7 +1728,7 @@ class Test_Setup extends Base {
 	/**
 	 * Create an upcoming event.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param array<string, mixed> $args Post arguments.
 	 *
@@ -1752,7 +1752,7 @@ class Test_Setup extends Base {
 	 * The cache key carries the viewer scope, so viewers in one scope share an
 	 * entry and viewers in different scopes never do.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::get_ics_cache_key
 	 *
@@ -1802,7 +1802,7 @@ class Test_Setup extends Base {
 	 * An Administrator's feed, private events included, is cached under the
 	 * private scope, so an anonymous viewer or a Subscriber never gets it.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::get_ics_body
 	 *
@@ -1852,7 +1852,7 @@ class Test_Setup extends Base {
 	/**
 	 * A logged-in viewer's calendar goes out with private caching headers.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::send_ics_headers
 	 *
@@ -2321,7 +2321,7 @@ class Test_Setup extends Base {
 	 * A feed is shared by every viewer, so a password-protected event's
 	 * details stay out of it.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::get_ical_list
 	 *
