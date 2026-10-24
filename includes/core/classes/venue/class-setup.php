@@ -28,6 +28,7 @@ use GatherPress\Core\Utility;
 use GatherPress\Core\Venue;
 use GatherPress\Core\Venue\Map\Setup as Map_Setup;
 use stdClass;
+use WP_Block;
 use WP_Block_Patterns_Registry;
 use WP_Post;
 use WP_Query;
@@ -131,6 +132,7 @@ final class Setup {
 		add_filter( 'post_class', array( $this, 'hide_password_protected_venue_class' ), 10, 3 );
 		// Priority 20 so the venue clause Event\Query adds at 10 is already in place.
 		add_action( 'pre_get_posts', array( $this, 'leave_password_protected_events_out' ), 20 );
+		add_filter( 'render_block_core/post-terms', array( $this, 'hide_password_protected_venue_post_terms' ), 10, 3 );
 	}
 
 	/**
@@ -462,6 +464,41 @@ final class Setup {
 				static fn( string $css ): bool => ! str_starts_with( $css, $prefix )
 			)
 		);
+	}
+
+	/**
+	 * Empties a Post Terms block for the venue taxonomy while a password hides the event's venue.
+	 *
+	 * Core adds a Post Terms variation for each public taxonomy, and the block
+	 * prints the terms with get_the_term_list(), which the REST and class
+	 * filters don't reach.
+	 *
+	 * @since TBD
+	 *
+	 * @param string               $block_content The block's rendered content.
+	 * @param array<string, mixed> $block         The parsed block.
+	 * @param WP_Block             $instance      The block instance, for its post context.
+	 *
+	 * @return string The content, or '' while a password hides the venue.
+	 */
+	public function hide_password_protected_venue_post_terms(
+		string $block_content,
+		array $block,
+		WP_Block $instance
+	): string {
+		$post_id = (int) ( $instance->context['postId'] ?? 0 );
+		$post    = $post_id ? get_post( $post_id ) : null;
+
+		if (
+			$post instanceof WP_Post
+			&& post_type_supports( $post->post_type, Venue::ASSIGNMENT_SUPPORT )
+			&& $this->taxonomy_for_event_post_type( $post->post_type ) === ( $block['attrs']['term'] ?? '' )
+			&& Event::is_hidden_by_password( $post )
+		) {
+			return '';
+		}
+
+		return $block_content;
 	}
 
 	/**

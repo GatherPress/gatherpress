@@ -15,7 +15,9 @@ use GatherPress\Core\Venue\Meta;
 use GatherPress\Core\Venue\Setup;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
+use PasswordHash;
 use PMC\Unit_Test\Utility;
+use WP_Block;
 use WP_Block_Patterns_Registry;
 use WP_Query;
 use WP_REST_Request;
@@ -127,6 +129,12 @@ class Test_Setup extends Base {
 				'name'     => 'pre_get_posts',
 				'priority' => 20,
 				'callback' => array( $instance, 'leave_password_protected_events_out' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'render_block_core/post-terms',
+				'priority' => 10,
+				'callback' => array( $instance, 'hide_password_protected_venue_post_terms' ),
 			),
 		);
 
@@ -1826,5 +1834,69 @@ class Test_Setup extends Base {
 			Utility::invoke_hidden_method( $instance, 'tax_query_names_taxonomy', array( $nested, $taxonomies ) ),
 			'The nested group names the venue.'
 		);
+	}
+
+	/**
+	 * A Post Terms block for the venue taxonomy prints nothing for a protected
+	 * event until the viewer has its password.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::hide_password_protected_venue_post_terms
+	 *
+	 * @return void
+	 */
+	public function test_hide_password_protected_venue_post_terms(): void {
+		list( $protected ) = $this->create_event_at_venue( 'secret' );
+		list( $open )      = $this->create_event_at_venue( '' );
+		$render            = static function ( int $post_id, string $taxonomy = Venue::TAXONOMY ): string {
+			return ( new WP_Block(
+				array(
+					'blockName'    => 'core/post-terms',
+					'attrs'        => array( 'term' => $taxonomy ),
+					'innerBlocks'  => array(),
+					'innerHTML'    => '',
+					'innerContent' => array(),
+				),
+				array(
+					'postId'   => $post_id,
+					'postType' => Event::POST_TYPE,
+				)
+			) )->render();
+		};
+
+		wp_set_current_user( 0 );
+
+		$this->assertSame( '', $render( $protected ), 'A protected event\'s venue should not be printed.' );
+		$this->assertStringContainsString( 'Hidden Hall', $render( $open ), 'An open event\'s venue is printed.' );
+		$this->assertSame(
+			'Topics',
+			Setup::get_instance()->hide_password_protected_venue_post_terms(
+				'Topics',
+				array( 'attrs' => array( 'term' => 'gatherpress_topic' ) ),
+				new WP_Block( array( 'blockName' => 'core/post-terms' ), array( 'postId' => $protected ) )
+			),
+			'Another taxonomy is left alone.'
+		);
+		$this->assertSame(
+			'Venue',
+			Setup::get_instance()->hide_password_protected_venue_post_terms(
+				'Venue',
+				array( 'attrs' => array( 'term' => Venue::TAXONOMY ) ),
+				new WP_Block( array( 'blockName' => 'core/post-terms' ) )
+			),
+			'A block without a post in context is left alone.'
+		);
+
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+
+		// The cookie WordPress sets once a viewer enters the post password.
+		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'secret' );
+
+		$result = $render( $protected );
+
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+
+		$this->assertStringContainsString( 'Hidden Hall', $result, 'The password shows the venue.' );
 	}
 }
