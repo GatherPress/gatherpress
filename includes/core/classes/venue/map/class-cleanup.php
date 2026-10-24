@@ -205,6 +205,54 @@ class Cleanup {
 	}
 
 	/**
+	 * Determine whether an on-disk directory entry is an orphaned static map candidate.
+	 *
+	 * @since TBD
+	 *
+	 * @param string              $entry  Directory entry name.
+	 * @param string              $dir    Uploads directory path.
+	 * @param array<string, bool> $in_use Map of in-use image basenames.
+	 * @param int                 $now    Current Unix timestamp.
+	 *
+	 * @return bool True if entry is an unreferenced static map image past the race guard window.
+	 */
+	public function is_candidate( string $entry, string $dir, array $in_use, int $now ): bool {
+		if ( '.' === $entry || '..' === $entry || ! $this->is_valid_filename( $entry ) ) {
+			return false;
+		}
+
+		$full_path = trailingslashit( $dir ) . $entry;
+
+		if ( is_dir( $full_path ) || isset( $in_use[ $entry ] ) ) {
+			return false;
+		}
+
+		$mtime = filemtime( $full_path );
+
+		return false !== $mtime && $mtime < ( $now - self::RACE_GUARD_SECONDS );
+	}
+
+	/**
+	 * Unlink an orphaned static map image file.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $full_path Absolute path to the file.
+	 *
+	 * @return bool True if file was deleted, false otherwise.
+	 */
+	protected function unlink_file( string $full_path ): bool {
+		if ( function_exists( 'wp_delete_file' ) ) {
+			$deleted = wp_delete_file( $full_path );
+		} else {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
+			$deleted = unlink( $full_path );
+		}
+
+		return $deleted || ! file_exists( $full_path );
+	}
+
+	/**
 	 * Perform garbage-collection sweep of unused static-map images.
 	 *
 	 * @since TBD
@@ -224,6 +272,8 @@ class Cleanup {
 	 *     resumed: bool,
 	 *     hit_limit: bool
 	 * } Sweep summary statistics.
+	 *
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
 	public function sweep( bool $dry_run = true, int $limit = self::DEFAULT_LIMIT, bool $force = false ): array {
 		$result = array(
@@ -271,11 +321,7 @@ class Cleanup {
 
 			// phpcs:ignore Generic.CodeAnalysis.AssignmentInCondition.FoundInWhileCondition, WordPress.WP.AlternativeFunctions.file_system_operations_readdir -- Streaming dir handle avoids glob() memory spikes.
 			while ( false !== ( $entry = readdir( $handle ) ) ) {
-				if ( '.' === $entry || '..' === $entry ) {
-					continue;
-				}
-
-				if ( ! $this->is_valid_filename( $entry ) ) {
+				if ( '.' === $entry || '..' === $entry || ! $this->is_valid_filename( $entry ) ) {
 					continue;
 				}
 
@@ -294,15 +340,7 @@ class Cleanup {
 					continue;
 				}
 
-				// Skip if currently referenced by any venue.
-				if ( isset( $in_use[ $entry ] ) ) {
-					continue;
-				}
-
-				// Race guard: skip files modified in the last 5 minutes.
-				$mtime = filemtime( $full_path );
-
-				if ( false === $mtime || $mtime >= ( $now - self::RACE_GUARD_SECONDS ) ) {
+				if ( ! $this->is_candidate( $entry, $dir, $in_use, $now ) ) {
 					continue;
 				}
 
@@ -311,16 +349,7 @@ class Cleanup {
 				$result['files'][] = $entry;
 
 				if ( ! $dry_run ) {
-					$deleted = false;
-
-					if ( function_exists( 'wp_delete_file' ) ) {
-						$deleted = wp_delete_file( $full_path );
-					} else {
-						// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
-						$deleted = unlink( $full_path );
-					}
-
-					if ( $deleted || ! file_exists( $full_path ) ) {
+					if ( $this->unlink_file( $full_path ) ) {
 						++$result['deleted'];
 						$result['bytes_reclaimed'] += $size;
 
