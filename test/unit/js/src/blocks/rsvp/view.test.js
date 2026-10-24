@@ -601,3 +601,9 @@ describe( 'rsvp updateRsvp focus target with the real modal actions (#2428)', ()
 		);
 	} );
 } );
+
+describe( 'rsvp updateRsvp without JavaScript (#2039)', () => {
+	it( 'is synchronous, so preventDefault() keeps the no-JavaScript form from submitting', () => {
+		expect( store( 'gatherpress' ).actions.updateRsvp.sync ).toBe( true );
+	} );
+} );

@@ -21,6 +21,7 @@ use GatherPress\Core\Utility as GatherPress_Utility;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
+use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
@@ -78,9 +79,133 @@ class Test_Rest_Api extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'prepare_event_data' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'rest_post_dispatch',
+				'priority' => 10,
+				'callback' => array( $instance, 'redirect_rsvp_form_submission' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
+	}
+
+	/**
+	 * An RSVP posted without JavaScript is answered with a 303 back to its
+	 * page, flagged when it failed; anything else is left alone.
+	 *
+	 * @since TBD
+	 * @covers ::redirect_rsvp_form_submission
+	 *
+	 * @return void
+	 */
+	public function test_redirect_rsvp_form_submission(): void {
+		$instance = Rest_Api::get_instance();
+		$server   = rest_get_server();
+		$page     = home_url( '/event/party/' );
+		$redirect = $page . '#gatherpress-rsvp-5-1';
+		$request  = static function ( string $route, array $params ): WP_REST_Request {
+			$request = new WP_REST_Request( 'POST', $route );
+
+			$request->set_body_params( $params );
+
+			return $request;
+		};
+		$rsvp     = static fn( array $params ) => $request( '/gatherpress/v1/event/rsvp', $params );
+		$respond  = static fn( $data = array( 'success' => true ) ) => new WP_REST_Response( $data );
+
+		$other = $instance->redirect_rsvp_form_submission(
+			$respond(),
+			$server,
+			$request( '/gatherpress/v1/event/rsvp-form', array( 'gatherpress_redirect' => $redirect ) )
+		);
+		$this->assertSame( 200, $other->get_status(), 'Another route is left alone.' );
+
+		$script = $instance->redirect_rsvp_form_submission( $respond(), $server, $rsvp( array() ) );
+		$this->assertSame( 200, $script->get_status(), 'A request without a redirect, from a script, is left alone.' );
+
+		$elsewhere = $instance->redirect_rsvp_form_submission(
+			$respond(),
+			$server,
+			$rsvp( array( 'gatherpress_redirect' => 'https://elsewhere.example/' ) )
+		);
+		$this->assertSame( 200, $elsewhere->get_status(), 'A redirect to another host is ignored.' );
+
+		$saved = $instance->redirect_rsvp_form_submission(
+			$respond(),
+			$server,
+			$rsvp( array( 'gatherpress_redirect' => $redirect ) )
+		);
+		$this->assertSame( 303, $saved->get_status() );
+		$this->assertSame( $redirect, $saved->get_headers()['Location'], 'A saved RSVP returns to the page.' );
+
+		$failures = array(
+			'error'        => rest_convert_error_to_response(
+				new WP_Error( 'rest_cookie_invalid_nonce', 'Cookie check failed', array( 'status' => 403 ) )
+			),
+			'unsuccessful' => $respond( array( 'success' => false ) ),
+			'not an array' => $respond( 'unexpected' ),
+		);
+
+		foreach ( $failures as $label => $response ) {
+			$failed = $instance->redirect_rsvp_form_submission(
+				$response,
+				$server,
+				$rsvp(
+					array(
+						'gatherpress_redirect' => $redirect,
+						'post_id'              => 5,
+					)
+				)
+			);
+
+			$this->assertSame( 303, $failed->get_status(), sprintf( 'An %s response still redirects.', $label ) );
+			$this->assertSame(
+				$page . '?gatherpress_rsvp_error=5#gatherpress-rsvp-5-1',
+				$failed->get_headers()['Location'],
+				sprintf( 'An %s response flags the error for the event.', $label )
+			);
+		}
+	}
+
+	/**
+	 * A form posted without JavaScript sends guests and anonymity under the RSVP block's field names.
+	 *
+	 * @since TBD
+	 * @covers ::update_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_update_rsvp_reads_the_rsvp_block_field_names(): void {
+		$user_id  = $this->factory->user->create();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		wp_set_current_user( $user_id );
+		update_post_meta( $event_id, 'gatherpress_guest_limit', 2 );
+		update_post_meta( $event_id, 'gatherpress_enable_anonymous_rsvp', 1 );
+		( new Event( $event_id ) )->save_datetimes(
+			array(
+				'datetime_start' => gmdate( Event::DATETIME_FORMAT, strtotime( '+1 day' ) ),
+				'datetime_end'   => gmdate( Event::DATETIME_FORMAT, strtotime( '+2 day' ) ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		$request = new WP_REST_Request( 'POST' );
+
+		$request->set_body_params(
+			array(
+				'post_id'                    => $event_id,
+				'status'                     => 'attending',
+				'gatherpress_rsvp_guests'    => '2',
+				'gatherpress_rsvp_anonymous' => '1',
+			)
+		);
+
+		$response = Rest_Api::get_instance()->update_rsvp( $request );
+
+		$this->assertSame( 2, $response->data['guests'], 'The guest count is read from the block field.' );
+		$this->assertSame( 1, $response->data['anonymous'], 'Anonymity is read from the block field.' );
 	}
 
 	/**

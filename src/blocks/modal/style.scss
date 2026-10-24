@@ -27,6 +27,32 @@
 	}
 }
 
+// Without JavaScript, opening and closing a modal reloads the page on its
+// modal manager, so leave room for the admin bar above it.
+.wp-block-gatherpress-modal-manager {
+	scroll-margin-top: calc(var(--wp-admin--admin-bar--height, 0px) + 1rem);
+}
+
+// A modal opened on page load, without JavaScript, closes from its overlay
+// and, when it has no close trigger, from a Close link in the corner.
+.gatherpress-modal__backdrop {
+	position: absolute;
+	inset: 0;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	cursor: default;
+}
+
+.gatherpress-modal__close {
+	position: absolute;
+	top: 1rem;
+	right: 1rem;
+	padding: 0.5rem 1rem;
+	background-color: var(--wp--preset--color--base, #fff);
+	color: var(--wp--preset--color--contrast, #000);
+}
+
 // Editor: disable transitions and keep content visible.
 // stylelint-disable-next-line selector-class-pattern
 .editor-styles-wrapper .wp-block-gatherpress-modal {
