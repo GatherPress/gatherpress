@@ -253,39 +253,20 @@ final class Modal_Manager {
 			$tag->set_attribute( 'id', $anchor );
 		}
 
-		$page_url      = Utility::get_current_url( array( self::OPEN_QUERY_ARG ) );
-		$form_id       = sprintf( 'gatherpress-modal-%s-%s', $is_open ? 'close' : 'open', $key );
-		$url           = $is_open ? $page_url : add_query_arg( self::OPEN_QUERY_ARG, $key, $page_url );
-		$url          .= '#' . $anchor;
-		$trigger       = $is_open ? 'gatherpress-modal--trigger-close' : 'gatherpress-modal--trigger-open';
-		$modal_pending = $is_open;
-		$has_trigger   = false;
-		$has_form      = false;
-
-		while ( $tag->next_tag() ) {
-			$class_attr = $tag->get_attribute( 'class' );
-
-			if ( $modal_pending && Utility::has_css_class( $class_attr, 'wp-block-gatherpress-modal' ) ) {
-				// The view script opens the first modal in its manager, so the server does too.
-				$modal_pending = false;
-
-				$tag->add_class( 'gatherpress--is-visible' );
-				$tag->set_attribute( 'aria-hidden', 'false' );
-				$tag->set_attribute( self::OPENED_ATTRIBUTE, 'true' );
-			} elseif ( Utility::has_css_class( $class_attr, $trigger ) && $this->seek_actionable_element( $tag ) ) {
-				$has_trigger = true;
-				$has_form    = $this->navigate_on_click( $tag, $form_id, $url ) || $has_form;
-			}
-		}
+		$page_url = Utility::get_current_url( array( self::OPEN_QUERY_ARG ) );
+		$form_id  = sprintf( 'gatherpress-modal-%s-%s', $is_open ? 'close' : 'open', $key );
+		$url      = $is_open ? $page_url : add_query_arg( self::OPEN_QUERY_ARG, $key, $page_url );
+		$url     .= '#' . $anchor;
+		$result   = $this->apply_to_tags( $tag, $is_open, $form_id, $url );
 
 		$block_content = $tag->get_updated_html();
 
-		if ( $is_open && ! $modal_pending ) {
-			$block_content = $this->add_ways_out( $block_content, $form_id, $url, ! $has_trigger );
-			$has_form      = true;
+		if ( $result['opened'] ) {
+			$block_content = $this->add_ways_out( $block_content, $form_id, $url, ! $result['has_trigger'] );
 		}
 
-		if ( $has_form ) {
+		// The overlay of an opened modal submits the close form too.
+		if ( $result['opened'] || $result['has_form'] ) {
 			$block_content = $this->insert_before_closing_tag(
 				$block_content,
 				$this->get_navigation_form( $form_id, $url )
@@ -293,6 +274,52 @@ final class Modal_Manager {
 		}
 
 		return $block_content;
+	}
+
+	/**
+	 * Opens the modal manager's modal and wires its triggers, tag by tag.
+	 *
+	 * When the request asks for this modal manager, its first modal renders
+	 * open and the close triggers load the URL that closes it. Otherwise the
+	 * open triggers load the URL that opens it.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_HTML_Tag_Processor $tag     Processor positioned on the modal manager's wrapper.
+	 * @param bool                  $is_open Whether the request asks for this modal manager's modal.
+	 * @param string                $form_id The id of the navigation form.
+	 * @param string                $url     The URL the triggers load.
+	 *
+	 * @return array{opened: bool, has_trigger: bool, has_form: bool} Whether the modal opened,
+	 *                                                                 whether a trigger was found,
+	 *                                                                 and whether one needs the form.
+	 */
+	private function apply_to_tags( WP_HTML_Tag_Processor $tag, bool $is_open, string $form_id, string $url ): array {
+		$trigger = $is_open ? 'gatherpress-modal--trigger-close' : 'gatherpress-modal--trigger-open';
+		$result  = array(
+			'opened'      => false,
+			'has_trigger' => false,
+			'has_form'    => false,
+		);
+
+		while ( $tag->next_tag() ) {
+			$class_attr = $tag->get_attribute( 'class' );
+			$is_modal   = Utility::has_css_class( $class_attr, 'wp-block-gatherpress-modal' );
+
+			if ( $is_open && ! $result['opened'] && $is_modal ) {
+				// The view script opens the first modal in its manager, so the server does too.
+				$result['opened'] = true;
+
+				$tag->add_class( 'gatherpress--is-visible' );
+				$tag->set_attribute( 'aria-hidden', 'false' );
+				$tag->set_attribute( self::OPENED_ATTRIBUTE, 'true' );
+			} elseif ( Utility::has_css_class( $class_attr, $trigger ) && $this->seek_actionable_element( $tag ) ) {
+				$result['has_trigger'] = true;
+				$result['has_form']    = $this->navigate_on_click( $tag, $form_id, $url ) || $result['has_form'];
+			}
+		}
+
+		return $result;
 	}
 
 	/**

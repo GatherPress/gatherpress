@@ -611,6 +611,7 @@ class Test_Modal_Manager extends Base {
 	 *
 	 * @since TBD
 	 * @covers ::open_modal_without_javascript
+	 * @covers ::apply_to_tags
 	 * @covers ::get_modal_key
 	 * @covers ::get_navigation_form
 	 * @covers ::insert_before_closing_tag
@@ -692,6 +693,7 @@ class Test_Modal_Manager extends Base {
 	 *
 	 * @since TBD
 	 * @covers ::open_modal_without_javascript
+	 * @covers ::apply_to_tags
 	 * @covers ::add_ways_out
 	 *
 	 * @return void
@@ -750,6 +752,7 @@ class Test_Modal_Manager extends Base {
 	 *
 	 * @since TBD
 	 * @covers ::open_modal_without_javascript
+	 * @covers ::apply_to_tags
 	 * @covers ::add_ways_out
 	 *
 	 * @return void
@@ -938,5 +941,39 @@ class Test_Modal_Manager extends Base {
 			Utility::invoke_hidden_method( $instance, 'insert_before_closing_tag', array( '<div>a', '<b></b>' ) ),
 			'Without a closing tag, the HTML goes at the end.'
 		);
+	}
+
+	/**
+	 * Calls apply_to_tags() directly for each outcome, so its coverage is traced.
+	 *
+	 * @since TBD
+	 * @covers ::apply_to_tags
+	 *
+	 * @return void
+	 */
+	public function test_apply_to_tags(): void {
+		$instance = Modal_Manager::get_instance();
+		$open     = '<div class="gatherpress-modal--trigger-open"><button>RSVP</button></div>';
+		$close    = '<div class="gatherpress-modal--trigger-close"><button>Close</button></div>';
+		$modal    = '<div class="wp-block-gatherpress-modal">' . $close . '</div>';
+		$link     = '<a class="gatherpress-modal--trigger-open">RSVP</a>';
+		$cases    = array(
+			'button trigger'      => array( $open . $modal, false, array( false, true, true ) ),
+			'link trigger'        => array( $link, false, array( false, true, false ) ),
+			'opened modal'        => array( $open . $modal, true, array( true, true, true ) ),
+			'requested, no modal' => array( $open, true, array( false, false, false ) ),
+			'no trigger'          => array( '<p>Text</p>', false, array( false, false, false ) ),
+		);
+
+		foreach ( $cases as $label => list( $inner, $is_open, $expected ) ) {
+			$tag = new WP_HTML_Tag_Processor( '<div class="wp-block-gatherpress-modal-manager">' . $inner . '</div>' );
+			$tag->next_tag();
+
+			$this->assertSame(
+				array_combine( array( 'opened', 'has_trigger', 'has_form' ), $expected ),
+				Utility::invoke_hidden_method( $instance, 'apply_to_tags', array( $tag, $is_open, 'f', '/url/' ) ),
+				sprintf( 'Failed for the %s case.', $label )
+			);
+		}
 	}
 }
