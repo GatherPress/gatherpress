@@ -462,11 +462,16 @@ class Test_Cleanup extends Base {
 	 * @return void
 	 */
 	public function test_get_in_use_basenames_empty_when_no_support(): void {
-		remove_post_type_support( Venue::POST_TYPE, Venue::SUPPORT );
+		$types = get_post_types_by_support( Venue::SUPPORT );
+		foreach ( $types as $type ) {
+			remove_post_type_support( $type, Venue::SUPPORT );
+		}
 
 		$basenames = Cleanup::get_instance()->get_in_use_basenames();
 
-		add_post_type_support( Venue::POST_TYPE, Venue::SUPPORT );
+		foreach ( $types as $type ) {
+			add_post_type_support( $type, Venue::SUPPORT );
+		}
 
 		$this->assertSame( array(), $basenames );
 	}

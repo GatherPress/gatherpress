@@ -308,13 +308,17 @@ class Cleanup {
 
 			// phpcs:ignore Generic.CodeAnalysis.AssignmentInCondition.FoundInWhileCondition, WordPress.WP.AlternativeFunctions.file_system_operations_readdir -- Streaming dir handle avoids glob() memory spikes.
 			while ( false !== ( $entry = readdir( $handle ) ) ) {
-				if ( '.' === $entry || '..' === $entry || ! $this->is_valid_filename( $entry ) ) {
+				if ( '.' === $entry || '..' === $entry ) {
 					continue;
 				}
 
 				$full_path = trailingslashit( $dir ) . $entry;
 
 				if ( is_dir( $full_path ) ) {
+					continue;
+				}
+
+				if ( ! $this->is_valid_filename( $entry ) ) {
 					continue;
 				}
 

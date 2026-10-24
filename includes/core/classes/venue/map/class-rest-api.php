@@ -349,10 +349,9 @@ final class Rest_Api {
 	 * @return WP_REST_Response|WP_Error Garbage collection summary or error.
 	 */
 	public function rest_gc( WP_REST_Request $request ): WP_REST_Response|WP_Error {
-		$execute = (bool) $request->get_param( 'execute' );
-		$limit   = ! empty( $request->get_param( 'limit' ) )
-			? (int) $request->get_param( 'limit' )
-			: Cleanup::DEFAULT_LIMIT;
+		$execute   = (bool) $request->get_param( 'execute' );
+		$raw_limit = $request->get_param( 'limit' );
+		$limit     = ! empty( $raw_limit ) ? (int) $raw_limit : Cleanup::DEFAULT_LIMIT;
 
 		$result = Cleanup::get_instance()->sweep( ! $execute, $limit );
 
