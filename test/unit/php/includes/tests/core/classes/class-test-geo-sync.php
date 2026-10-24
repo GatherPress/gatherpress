@@ -948,4 +948,149 @@ class Test_Geo_Sync extends Base {
 
 		$this->assertNull( term_exists( '_never-published', Venue::TAXONOMY ), 'No term was created or touched.' );
 	}
+
+	/**
+	 * A venue that stops being public and becomes public again gives each
+	 * event back the exact location it had, even if the venue's address
+	 * changed in between, so a past event keeps where it happened.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::on_venue_saved
+	 * @covers ::clear_event_copies
+	 * @covers ::restore_event_copies
+	 *
+	 * @return void
+	 */
+	public function test_on_venue_saved_restores_cleared_copies(): void {
+		$information = array(
+			'latitude'  => '35.6762',
+			'longitude' => '139.6503',
+			'address'   => 'Tokyo, Japan',
+		);
+		$venue       = $this->create_linked_venue( 'round-trip-venue', $information );
+		$past        = $this->create_event( '2001-01-01 10:00:00', '2001-01-01 12:00:00', $venue['term_slug'] );
+		$draft       = $this->create_event(
+			'2001-02-01 10:00:00',
+			'2001-02-01 12:00:00',
+			$venue['term_slug'],
+			'draft'
+		);
+		$instance    = Geo_Sync::get_instance();
+		$post        = get_post( $venue['post']->ID );
+
+		Geo_Sync::write( $past->ID, Geo_Sync::build_values( $information, true ) );
+		Geo_Sync::write( $draft->ID, Geo_Sync::build_values( $information, false ) );
+
+		$post->post_status = 'draft';
+		$instance->on_venue_saved( $post->ID, $post );
+
+		$this->assertSame( '', get_post_meta( $past->ID, 'geo_address', true ), 'The draft venue clears the copy.' );
+		$this->assertSame(
+			array( $past->ID, $draft->ID ),
+			array_keys( get_post_meta( $post->ID, Geo_Sync::CLEARED_COPIES_META_KEY, true ) ),
+			'The venue keeps the copies it cleared.'
+		);
+
+		update_post_meta( $post->ID, 'gatherpress_address', 'Osaka, Japan' );
+
+		$post->post_status = 'publish';
+		$instance->on_venue_saved( $post->ID, $post );
+
+		$this->assertSame(
+			'Tokyo, Japan',
+			get_post_meta( $past->ID, 'geo_address', true ),
+			'The past event keeps where it happened.'
+		);
+		$this->assertSame( '35.6762', get_post_meta( $past->ID, 'geo_latitude', true ) );
+		$this->assertSame( '139.6503', get_post_meta( $past->ID, 'geo_longitude', true ) );
+		$this->assertSame( '1', get_post_meta( $past->ID, 'geo_public', true ), 'A published event is public again.' );
+		$this->assertSame( 'Tokyo, Japan', get_post_meta( $draft->ID, 'geo_address', true ) );
+		$this->assertSame( '0', get_post_meta( $draft->ID, 'geo_public', true ), 'A draft event stays not public.' );
+		$this->assertSame(
+			'',
+			get_post_meta( $post->ID, Geo_Sync::CLEARED_COPIES_META_KEY, true ),
+			'The venue lets go of the copies once they are back.'
+		);
+	}
+
+	/**
+	 * Saving a venue again while it isn't public keeps the first copy, not the blank one.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::clear_event_copies
+	 *
+	 * @return void
+	 */
+	public function test_clear_event_copies_keeps_the_first_copy(): void {
+		$information = array(
+			'latitude'  => '48.8566',
+			'longitude' => '2.3522',
+			'address'   => 'Paris, France',
+		);
+		$venue       = $this->create_linked_venue( 'twice-hidden-venue', $information );
+		$past        = $this->create_event( '2001-01-01 10:00:00', '2001-01-01 12:00:00', $venue['term_slug'] );
+		$empty       = $this->create_event( '2001-03-01 10:00:00', '2001-03-01 12:00:00', $venue['term_slug'] );
+		$instance    = Geo_Sync::get_instance();
+		$post        = get_post( $venue['post']->ID );
+
+		Geo_Sync::write( $past->ID, Geo_Sync::build_values( $information, true ) );
+
+		Utility::invoke_hidden_method( $instance, 'clear_event_copies', array( $post ) );
+		Utility::invoke_hidden_method( $instance, 'clear_event_copies', array( $post ) );
+
+		$this->assertSame(
+			array(
+				$past->ID => array(
+					'latitude'  => '48.8566',
+					'longitude' => '2.3522',
+					'address'   => 'Paris, France',
+				),
+			),
+			get_post_meta( $post->ID, Geo_Sync::CLEARED_COPIES_META_KEY, true ),
+			'The first copy is kept, and an event without a location has nothing to keep.'
+		);
+		$this->assertSame( '', get_post_meta( $empty->ID, 'geo_address', true ) );
+	}
+
+	/**
+	 * An event deleted or moved to another venue since is left alone, and a
+	 * venue with nothing kept does nothing.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::restore_event_copies
+	 *
+	 * @return void
+	 */
+	public function test_restore_event_copies_skips_events_no_longer_at_the_venue(): void {
+		$venue    = $this->create_linked_venue( 'left-venue' );
+		$other    = $this->create_linked_venue( 'other-venue' );
+		$moved    = $this->create_event( '2001-01-01 10:00:00', '2001-01-01 12:00:00', $other['term_slug'] );
+		$instance = Geo_Sync::get_instance();
+		$location = array(
+			'latitude'  => '1',
+			'longitude' => '2',
+			'address'   => 'Old Hall',
+		);
+
+		Utility::invoke_hidden_method( $instance, 'restore_event_copies', array( $venue['post'] ) );
+
+		$this->assertSame( '', get_post_meta( $moved->ID, 'geo_address', true ), 'Nothing kept, nothing restored.' );
+
+		update_post_meta(
+			$venue['post']->ID,
+			Geo_Sync::CLEARED_COPIES_META_KEY,
+			array(
+				$moved->ID => $location,
+				999999     => $location,
+			)
+		);
+		Utility::invoke_hidden_method( $instance, 'restore_event_copies', array( $venue['post'] ) );
+
+		$this->assertSame( '', get_post_meta( $moved->ID, 'geo_address', true ), 'A moved event keeps what it has.' );
+		$this->assertSame( '', get_post_meta( 999999, 'geo_address', true ), 'A deleted event gets nothing.' );
+		$this->assertSame( '', get_post_meta( $venue['post']->ID, Geo_Sync::CLEARED_COPIES_META_KEY, true ) );
+	}
 }

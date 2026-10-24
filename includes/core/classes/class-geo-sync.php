@@ -42,6 +42,16 @@ final class Geo_Sync {
 	const FIELDS = array( 'geo_latitude', 'geo_longitude', 'geo_address', 'geo_public' );
 
 	/**
+	 * Venue meta keeping the locations a venue cleared from its events when it
+	 * stopped being public, keyed by event post ID, until it is public again.
+	 *
+	 * @since TBD
+	 *
+	 * @var string
+	 */
+	const CLEARED_COPIES_META_KEY = '_gatherpress_geo_cleared_copies';
+
+	/**
 	 * Registers the read-only Geodata standard meta for a post type.
 	 *
 	 * @since 0.36.0
@@ -168,12 +178,16 @@ final class Geo_Sync {
 		}
 
 		$information = ( new Venue( $post_id ) )->get_information();
+		$is_public   = self::is_public( $post );
 
-		self::write( $post_id, self::build_values( $information, self::is_public( $post ) ) );
+		self::write( $post_id, self::build_values( $information, $is_public ) );
 
 		// A venue that isn't public takes back the location its events copied,
-		// past ones included, since maybe_refresh() never reaches those.
-		if ( ! self::is_public( $post ) ) {
+		// past ones included, since maybe_refresh() never reaches those, and
+		// gives it back once it is public again.
+		if ( $is_public ) {
+			$this->restore_event_copies( $post );
+		} else {
 			$this->clear_event_copies( $post );
 		}
 	}
@@ -182,7 +196,11 @@ final class Geo_Sync {
 	 * Clears the location every event copied from a venue.
 	 *
 	 * Writes what maybe_refresh() would for an event at a venue that isn't
-	 * public: no location, and not public.
+	 * public: no location, and not public. The locations it clears are kept
+	 * on the venue (`CLEARED_COPIES_META_KEY`) for `restore_event_copies()`,
+	 * since a past event's location records where it happened. Only the first
+	 * copy is kept: saving the venue again while it isn't public finds the
+	 * events already blank.
 	 *
 	 * @since TBD
 	 *
@@ -210,9 +228,63 @@ final class Geo_Sync {
 		// One query for every event's meta, rather than one per event in write().
 		update_meta_cache( 'post', $event_ids );
 
+		$cleared = get_post_meta( $venue->ID, self::CLEARED_COPIES_META_KEY, true );
+		$cleared = is_array( $cleared ) ? $cleared : array();
+
 		foreach ( $event_ids as $event_id ) {
+			$location = array(
+				'latitude'  => (string) get_post_meta( $event_id, 'geo_latitude', true ),
+				'longitude' => (string) get_post_meta( $event_id, 'geo_longitude', true ),
+				'address'   => (string) get_post_meta( $event_id, 'geo_address', true ),
+			);
+
+			if ( ! isset( $cleared[ $event_id ] ) && '' !== implode( '', $location ) ) {
+				$cleared[ $event_id ] = $location;
+			}
+
 			self::write( $event_id, self::build_values( array(), false ) );
 		}
+
+		if ( array() !== $cleared ) {
+			update_post_meta( $venue->ID, self::CLEARED_COPIES_META_KEY, $cleared );
+		}
+	}
+
+	/**
+	 * Gives events back the location a venue cleared from them.
+	 *
+	 * Each event at the venue gets the exact location it had, not the
+	 * venue's current one, so a past event keeps the place it happened even
+	 * if the venue's address changed in the meantime. Whether it is public
+	 * follows the event's own status. An event that has since been deleted or
+	 * moved to another venue is left as it is.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_Post $venue The venue post, now public.
+	 *
+	 * @return void
+	 */
+	private function restore_event_copies( WP_Post $venue ): void {
+		$cleared = get_post_meta( $venue->ID, self::CLEARED_COPIES_META_KEY, true );
+
+		if ( ! is_array( $cleared ) ) {
+			return;
+		}
+
+		$shadow_source = Shadow_Source::get_instance();
+		$taxonomy      = $shadow_source->get_taxonomy( $venue->post_type );
+		$term_slug     = $shadow_source->term_slug_from_post_name( $venue->post_name );
+
+		foreach ( $cleared as $event_id => $location ) {
+			$event = get_post( (int) $event_id );
+
+			if ( $event instanceof WP_Post && has_term( $term_slug, $taxonomy, $event ) ) {
+				self::write( $event->ID, self::build_values( (array) $location, self::is_public( $event ) ) );
+			}
+		}
+
+		delete_post_meta( $venue->ID, self::CLEARED_COPIES_META_KEY );
 	}
 
 	/**
