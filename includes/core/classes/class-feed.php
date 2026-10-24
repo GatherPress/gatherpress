@@ -165,8 +165,9 @@ final class Feed {
 	 * @return string The customized excerpt.
 	 */
 	public function get_default_event_excerpt( string $excerpt ): string {
-		// Only apply to events.
-		if ( ! post_type_supports( (string) get_post_type(), Event::SUPPORT ) ) {
+		// Only apply to events, and keep a password-protected event's date and venue
+		// out of the feed, as core keeps its excerpt out.
+		if ( ! post_type_supports( (string) get_post_type(), Event::SUPPORT ) || post_password_required() ) {
 			return $excerpt;
 		}
 
@@ -218,8 +219,9 @@ final class Feed {
 	 * @return string The customized content.
 	 */
 	public function get_default_event_content( string $content ): string {
-		// Only apply to events.
-		if ( ! post_type_supports( (string) get_post_type(), Event::SUPPORT ) ) {
+		// Only apply to events, and keep a password-protected event's date and venue
+		// out of the feed, as core keeps its content out.
+		if ( ! post_type_supports( (string) get_post_type(), Event::SUPPORT ) || post_password_required() ) {
 			return $content;
 		}
 

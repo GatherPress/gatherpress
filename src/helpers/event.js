@@ -91,6 +91,42 @@ export function usePostTypeSupports( support, postType = null ) {
 }
 
 /**
+ * Reports whether a post type's definition has loaded.
+ *
+ * `usePostTypeSupports` returns `false` both for a post type without the
+ * support and for one whose definition `getPostType()` has not resolved yet.
+ * Code that changes block attributes when a support is missing must check
+ * this hook first, or it acts on the first render, before the post type
+ * loads (#2495).
+ *
+ * The post type counts as loaded only once its record is in the store. A
+ * request that fails leaves no record, for example a 403 for a user who
+ * cannot edit that post type, or a post type not shown in REST. Its supports
+ * are unknown then, so code must not act as if they were missing.
+ *
+ * @since TBD
+ *
+ * @param {string|null} postType Optional post type to check. Falls back to the editor post type.
+ *
+ * @return {boolean} True when the post type's definition has loaded, false otherwise.
+ */
+export function useIsPostTypeLoaded( postType = null ) {
+	return useSelect(
+		( wpSelect ) => {
+			const typeToCheck =
+				postType ?? wpSelect( 'core/editor' )?.getCurrentPostType();
+
+			if ( ! typeToCheck ) {
+				return false;
+			}
+
+			return !! wpSelect( 'core' ).getPostType( typeToCheck );
+		},
+		[ postType ],
+	);
+}
+
+/**
  * Checks if a post type supports event_date in the GatherPress application.
  *
  * @since 0.27.0

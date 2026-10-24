@@ -29,7 +29,7 @@ apply_filters(
 		)
 ```
 
-- [includes/core/classes/venue/class-setup.php:814](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/class-setup.php#L814)
+- [includes/core/classes/venue/class-setup.php:1063](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/class-setup.php#L1063)
 ```php
 apply_filters(
 			sprintf( // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
