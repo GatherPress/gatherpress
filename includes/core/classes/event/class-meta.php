@@ -383,8 +383,9 @@ final class Meta {
 	 * They stay behind the password the way core keeps the content: whoever
 	 * can edit the event, or sends the password as a cookie or as the REST
 	 * `password` argument, sees them. An open event at a password-protected
-	 * venue keeps the location copied from that venue hidden, even where an
-	 * earlier copy is still stored (a past event isn't refreshed).
+	 * venue keeps the location copied from that venue hidden from whoever
+	 * can't see the venue, even its own editor, where an earlier copy is
+	 * still stored (a past event isn't refreshed).
 	 *
 	 * @since TBD
 	 *
@@ -404,7 +405,7 @@ final class Meta {
 
 		if ( Event::is_hidden_by_password( $post, $request ) ) {
 			$keys = self::PASSWORD_PROTECTED_META;
-		} elseif ( Venue_Setup::get_instance()->is_event_venue_hidden( $post, $request ) ) {
+		} elseif ( Venue_Setup::get_instance()->is_venue_hidden_by_password( $post ) ) {
 			$keys = array_diff( Geo_Sync::FIELDS, array( 'geo_public' ) );
 		}
 

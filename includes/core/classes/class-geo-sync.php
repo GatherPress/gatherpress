@@ -205,9 +205,13 @@ final class Geo_Sync {
 		}
 
 		$event_ids = get_objects_in_term( $term->term_id, $taxonomy );
+		$event_ids = array_map( 'intval', is_array( $event_ids ) ? $event_ids : array() );
 
-		foreach ( is_array( $event_ids ) ? $event_ids : array() as $event_id ) {
-			self::write( (int) $event_id, self::build_values( array(), false ) );
+		// One query for every event's meta, rather than one per event in write().
+		update_meta_cache( 'post', $event_ids );
+
+		foreach ( $event_ids as $event_id ) {
+			self::write( $event_id, self::build_values( array(), false ) );
 		}
 	}
 

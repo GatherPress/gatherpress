@@ -821,6 +821,20 @@ class Test_Meta extends Base {
 		$this->assertSame( 1, $hidden['geo_public'], 'The public flag is left alone.' );
 		$this->assertSame( $meta, $hide( $at_open ), 'An open venue\'s event keeps its location.' );
 
+		// The event's own Author keeps the venue, but not the location copied
+		// from a venue they can't see.
+		$author = $this->factory->user->create( array( 'role' => 'author' ) );
+
+		wp_update_post(
+			array(
+				'ID'          => $at_protected,
+				'post_author' => $author,
+			)
+		);
+		wp_set_current_user( $author );
+
+		$this->assertSame( '', $hide( $at_protected )['geo_address'], 'The event\'s Author gets no copied address.' );
+
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'editor' ) ) );
 
 		$this->assertSame( $meta, $hide( $at_protected ), 'An Editor sees the location.' );

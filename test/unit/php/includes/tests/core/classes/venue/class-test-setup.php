@@ -1837,6 +1837,7 @@ class Test_Setup extends Base {
 	 * @since TBD
 	 *
 	 * @covers ::is_event_venue_hidden
+	 * @covers ::is_venue_hidden_by_password
 	 * @covers ::hide_password_protected_venue
 	 * @covers ::hide_password_protected_venue_class
 	 *
@@ -1905,6 +1906,14 @@ class Test_Setup extends Base {
 		$this->assertNotEmpty(
 			rest_do_request( '/wp/v2/gatherpress_events/' . $at_protected )->get_data()[ Venue::TAXONOMY ],
 			'The event\'s Author gets the venue in REST.'
+		);
+		$this->assertTrue(
+			$instance->is_venue_hidden_by_password( get_post( $at_protected ) ),
+			'The venue\'s own password still hides its details from the event\'s Author.'
+		);
+		$this->assertFalse(
+			$instance->is_venue_hidden_by_password( get_post( $open ) ),
+			'An open venue hides nothing.'
 		);
 
 		wp_set_current_user( 0 );

@@ -488,6 +488,23 @@ final class Setup {
 			return false;
 		}
 
+		return $this->is_venue_hidden_by_password( $event );
+	}
+
+	/**
+	 * Whether an event's venue is hidden from the current viewer by the venue's own password.
+	 *
+	 * Unlike {@see self::is_event_venue_hidden()}, editing the event doesn't
+	 * count: only someone who can see the venue itself sees its details, such
+	 * as the location an event copied from it.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_Post $event The event post.
+	 *
+	 * @return bool True when the venue's password hides it.
+	 */
+	public function is_venue_hidden_by_password( WP_Post $event ): bool {
 		$venue = $this->get_venue_post_from_event_post_id( $event->ID );
 
 		return $venue instanceof WP_Post && Venue::is_hidden_by_password( $venue );
