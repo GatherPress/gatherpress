@@ -1,0 +1,129 @@
+/* ==========================================================================
+   Day Cell Layout & Intrinsic Aspect Ratio
+   ========================================================================== */
+
+// Set on the table by the block styles and by the block's spacing setting.
+$columns: var(--gatherpress-calendar-columns, 7);
+$gap: var(--gatherpress-calendar-column-gap, 2px);
+
+.gatherpress-calendar__day {
+	position: relative;
+
+	/*
+	 * At least as tall as a column is wide, so an empty cell is square. The
+	 * table is the size container, so 100cqi is the table width; the gaps
+	 * between the columns are subtracted. A cell with more events grows,
+	 * and the other cells of its row grow with it.
+	 */
+	box-sizing: border-box;
+	min-height: calc((100cqi - (#{$columns} - 1) * #{$gap}) / #{$columns});
+	height: 100%;
+	min-width: 0;
+	background: var(--gatherpress-calendar-day-bg);
+	color: var(--gatherpress-calendar-day-color);
+
+	/* ------------------------------------------------------------------------
+	   DEFAULT (CLASSIC) STYLE: Vertical flow, auto-growing, clean containment
+	   ------------------------------------------------------------------------ */
+	&:not(.is-style-ribbon) {
+		display: flex;
+		flex-direction: column;
+		align-items: stretch;
+		justify-content: flex-start;
+		padding: 0.35rem;
+		overflow: hidden;
+
+		.gatherpress-calendar__day-number {
+			align-self: flex-start;
+			margin: 0 0 0.25rem;
+			display: block;
+			line-height: 1.1;
+			font-size: clamp(0.75rem, 1.5vw, 0.875rem);
+		}
+	}
+
+	/* 1. Inactive / Leading / Trailing Days */
+	&.is-empty {
+		opacity: 0.15;
+		pointer-events: none;
+	}
+
+	/* 2. Days with Posts: Tokenized inset border */
+	&.has-posts {
+		box-shadow: inset 0 0 0 1px var(--gatherpress-calendar-day-has-posts-border);
+
+		.gatherpress-calendar__day-number {
+			font-weight: 700;
+		}
+	}
+
+	/* 3. Today's Date: Tokenized outline & color */
+	&.is-today {
+		outline: 2px solid var(--gatherpress-calendar-day-today-outline);
+		outline-offset: -2px;
+
+		.gatherpress-calendar__day-number {
+			color: var(--gatherpress-calendar-day-today-color);
+			font-weight: 800;
+		}
+	}
+
+	/* ------------------------------------------------------------------------
+	   RIBBON STYLE: Cascade root for multi-day slots
+	   ------------------------------------------------------------------------ */
+	&.is-style-ribbon {
+		display: flex;
+		flex-direction: column;
+		align-items: stretch;
+		justify-content: flex-start;
+		padding: 0;
+		overflow: visible; /* Allows ribbon text to float across columns */
+
+		.gatherpress-calendar__day-number {
+			align-self: flex-start;
+			margin: 0.3rem 0.45rem 0.15rem;
+			display: block;
+			line-height: 1.1;
+		}
+
+		/*
+		 * Convert entries into the slot grid in ribbon mode. An empty slot keeps
+		 * its height, so a multi-day ribbon stays on the same row in each of its
+		 * days. A taller event makes its row taller.
+		 */
+		.wp-block-gatherpress-calendar-entries {
+			width: 100%;
+			margin: 0;
+			display: grid;
+			grid-auto-flow: row;
+			grid-auto-rows: minmax(var(--gatherpress-calendar-slot-row-height, 24px), auto);
+			row-gap: 3px;
+			align-content: start; /* Retains the slot rows while the cell expands vertically */
+		}
+	}
+}
+
+/* Browsers without container units */
+@supports not (min-height: 1cqi) {
+	.gatherpress-calendar__day {
+		aspect-ratio: 1;
+	}
+}
+
+/* Day View adjustments */
+.wp-block-gatherpress-calendar.is-view-day {
+	/* Classic / Default style days get generous padding and height */
+	.gatherpress-calendar__day:not(.is-style-ribbon) {
+		aspect-ratio: auto;
+		min-height: 140px;
+		align-items: flex-start;
+		padding: 1rem;
+	}
+
+	/* Ribbon style days maintain edge-to-edge padding to permit gap bridging */
+	.gatherpress-calendar__day.is-style-ribbon {
+		aspect-ratio: auto;
+		min-height: 140px;
+		padding: 0 !important;
+	}
+}
