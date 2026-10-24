@@ -488,8 +488,8 @@ class Test_Cleanup extends Base {
 		$venue2   = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 		$base_url = 'https://example.com/wp-content/uploads/gatherpress/static-maps/';
 
-		add_post_meta( $venue1, Map::META_KEY, $base_url . 'batch-1-osm-roadmap-15-800-400.png' );
-		add_post_meta( $venue2, Map::META_KEY, $base_url . 'batch-2-osm-roadmap-15-800-400.png' );
+		add_post_meta( $venue1, Map::META_KEY, array( 'url' => $base_url . 'batch-1-osm-roadmap-15-800-400.png' ) );
+		add_post_meta( $venue2, Map::META_KEY, array( 'url' => $base_url . 'batch-2-osm-roadmap-15-800-400.png' ) );
 
 		$in_use = Cleanup::get_instance()->get_in_use_basenames();
 
