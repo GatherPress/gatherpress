@@ -162,7 +162,7 @@ final class Geo_Sync {
 	 * An event with no venue has no location to hide, so only its own status
 	 * counts.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param WP_Post|null $event      The event post.
 	 * @param WP_Post|null $venue_post The event's venue post, or null when it has none.
@@ -312,7 +312,7 @@ final class Geo_Sync {
 	 * so this is what catches one that gets a password or is unpublished.
 	 * Only `geo_public` changes, so a past event keeps the location it copied.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param int     $post_id Post ID that just saved.
 	 * @param WP_Post $post    Post object.
