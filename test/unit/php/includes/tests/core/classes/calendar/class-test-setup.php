@@ -14,6 +14,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
+use PasswordHash;
 use PMC\Unit_Test\Utility;
 use WP_Error;
 
@@ -469,6 +470,116 @@ class Test_Setup extends Base {
 			$out,
 			'Singular event page should add the single-event download link.'
 		);
+	}
+
+	/**
+	 * A protected event's page leaves its venue's feed link out of the head,
+	 * keeps its other terms' links, and shows the venue's once unlocked.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::collect_event_term_alternate_links
+	 *
+	 * @return void
+	 */
+	public function test_alternate_links_leave_out_a_protected_events_venue(): void {
+		add_theme_support( 'automatic-feed-links' );
+
+		$event_id = $this->mock->post(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		)->get()->ID;
+		$this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_title' => 'Hidden Hall',
+				'post_name'  => 'hidden-hall',
+			)
+		);
+		wp_set_post_terms( $event_id, '_hidden-hall', Venue::TAXONOMY );
+
+		$topic_id = $this->factory->term->create(
+			array(
+				'taxonomy' => 'gatherpress_topic',
+				'name'     => 'Secret Topic',
+			)
+		);
+		wp_set_post_terms( $event_id, array( $topic_id ), 'gatherpress_topic' );
+
+		wp_set_current_user( 0 );
+		$this->go_to( get_permalink( $event_id ) );
+
+		$links = static function (): string {
+			ob_start();
+			Setup::get_instance()->alternate_links();
+
+			return (string) ob_get_clean();
+		};
+		$out   = $links();
+
+		$this->assertStringNotContainsString( 'Hidden Hall', $out, 'The venue feed link should be left out.' );
+		$this->assertStringContainsString( 'Secret Topic', $out, 'Other terms keep their feed links.' );
+
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+
+		// The cookie WordPress sets once a viewer enters the post password.
+		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'secret' );
+
+		$out = $links();
+
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+
+		$this->assertStringContainsString( 'Hidden Hall', $out, 'The venue feed link should show with the password.' );
+	}
+
+	/**
+	 * A protected event whose post type has no taxonomy besides the venue's
+	 * gets no term links, since an empty taxonomy list would match every term.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::collect_event_term_alternate_links
+	 *
+	 * @return void
+	 */
+	public function test_collect_event_term_alternate_links_with_only_the_venue_taxonomy(): void {
+		$event_id = $this->mock->post(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		)->get()->ID;
+		$this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_title' => 'Hidden Hall',
+				'post_name'  => 'hidden-hall',
+			)
+		);
+		wp_set_post_terms( $event_id, '_hidden-hall', Venue::TAXONOMY );
+
+		$others = array_diff( get_object_taxonomies( Event::POST_TYPE ), array( Venue::TAXONOMY ) );
+
+		foreach ( $others as $taxonomy ) {
+			unregister_taxonomy_for_object_type( $taxonomy, Event::POST_TYPE );
+		}
+
+		wp_set_current_user( 0 );
+
+		$instance = Setup::get_instance();
+		$links    = Utility::invoke_hidden_method(
+			$instance,
+			'collect_event_term_alternate_links',
+			array( get_post( $event_id ), Utility::invoke_hidden_method( $instance, 'alternate_link_label_args' ) )
+		);
+
+		foreach ( $others as $taxonomy ) {
+			register_taxonomy_for_object_type( $taxonomy, Event::POST_TYPE );
+		}
+
+		$this->assertSame( array(), $links, 'The venue feed link should be left out.' );
 	}
 
 	/**
