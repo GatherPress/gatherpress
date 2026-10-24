@@ -167,7 +167,7 @@ class Test_Add_To_Calendar extends Base {
 	/**
 	 * Tests replace_calendar_placeholders keeps a password-protected event's links behind its password.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::replace_calendar_placeholders
 	 *

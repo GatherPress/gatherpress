@@ -441,7 +441,7 @@ class Test_Setup extends Base {
 	/**
 	 * Tests the editor learns whether the current user can email every user.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::add_editor_settings
 	 *

@@ -675,7 +675,7 @@ class Test_Venue extends Base {
 	/**
 	 * Tests the block keeps a password-protected event's venue behind the event's password.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::get_source_post
 	 *
 	 * @return void

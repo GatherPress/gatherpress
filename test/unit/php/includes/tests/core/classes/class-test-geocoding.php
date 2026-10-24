@@ -1479,7 +1479,7 @@ class Test_Geocoding extends Base {
 	/**
 	 * A repeated label is suggested once, and the 5-row cap counts unique labels (#2449).
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::search_addresses
 	 * @covers ::build_search_suggestions_response
