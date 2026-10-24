@@ -4,7 +4,7 @@
  *
  * @package GatherPress
  * @subpackage Tests\Pure
- * @since 0.38.0
+ * @since TBD
  */
 
 namespace GatherPress\Tests\Pure\Core;
@@ -19,14 +19,14 @@ use Yoast\PHPUnitPolyfills\TestCases\TestCase;
  * without loading WordPress, wp-env, or Docker.
  *
  * @coversDefaultClass \GatherPress\Core\Validate
- * @since 0.38.0
+ * @since TBD
  */
 class Test_Validate extends TestCase {
 
 	/**
 	 * Coverage for rsvp_status method.
 	 *
-	 * @since 0.38.0
+	 * @since TBD
 	 * @covers ::rsvp_status
 	 *
 	 * @return void
@@ -69,7 +69,7 @@ class Test_Validate extends TestCase {
 	/**
 	 * Data provider for positive_number tests.
 	 *
-	 * @since 0.38.0
+	 * @since TBD
 	 *
 	 * @return array<string, array<mixed>>
 	 */
@@ -92,7 +92,7 @@ class Test_Validate extends TestCase {
 	/**
 	 * Coverage for positive_number method.
 	 *
-	 * @since 0.38.0
+	 * @since TBD
 	 * @dataProvider data_positive_number
 	 * @covers ::positive_number
 	 *
@@ -108,7 +108,7 @@ class Test_Validate extends TestCase {
 	/**
 	 * Data provider for non_negative_number tests.
 	 *
-	 * @since 0.38.0
+	 * @since TBD
 	 *
 	 * @return array<string, array<mixed>>
 	 */
@@ -131,7 +131,7 @@ class Test_Validate extends TestCase {
 	/**
 	 * Coverage for non_negative_number method.
 	 *
-	 * @since 0.38.0
+	 * @since TBD
 	 * @dataProvider data_non_negative_number
 	 * @covers ::non_negative_number
 	 *
@@ -147,7 +147,7 @@ class Test_Validate extends TestCase {
 	/**
 	 * Data provider for coordinate tests.
 	 *
-	 * @since 0.38.0
+	 * @since TBD
 	 *
 	 * @return array<string, array<mixed>>
 	 */
@@ -174,7 +174,7 @@ class Test_Validate extends TestCase {
 	/**
 	 * Coverage for coordinate method.
 	 *
-	 * @since 0.38.0
+	 * @since TBD
 	 * @dataProvider data_coordinate
 	 * @covers ::coordinate
 	 *
@@ -190,7 +190,7 @@ class Test_Validate extends TestCase {
 	/**
 	 * Data provider for boolean validation tests.
 	 *
-	 * @since 0.38.0
+	 * @since TBD
 	 *
 	 * @return array<string, array<mixed>>
 	 */
@@ -215,7 +215,7 @@ class Test_Validate extends TestCase {
 	/**
 	 * Coverage for boolean method.
 	 *
-	 * @since 0.38.0
+	 * @since TBD
 	 * @dataProvider data_boolean
 	 * @covers ::boolean
 	 *
@@ -231,7 +231,7 @@ class Test_Validate extends TestCase {
 	/**
 	 * Data provider for send method tests.
 	 *
-	 * @since 0.38.0
+	 * @since TBD
 	 *
 	 * @return array<string, array<mixed>>
 	 */
@@ -304,7 +304,7 @@ class Test_Validate extends TestCase {
 	/**
 	 * Coverage for send method.
 	 *
-	 * @since 0.38.0
+	 * @since TBD
 	 * @dataProvider data_send
 	 * @covers ::send
 	 *
@@ -320,7 +320,7 @@ class Test_Validate extends TestCase {
 	/**
 	 * Coverage for event_list_type method.
 	 *
-	 * @since 0.38.0
+	 * @since TBD
 	 * @covers ::event_list_type
 	 *
 	 * @return void
@@ -347,7 +347,7 @@ class Test_Validate extends TestCase {
 	/**
 	 * Coverage for datetime method.
 	 *
-	 * @since 0.38.0
+	 * @since TBD
 	 * @covers ::datetime
 	 *
 	 * @return void
@@ -394,7 +394,7 @@ class Test_Validate extends TestCase {
 	/**
 	 * Coverage for timezone method.
 	 *
-	 * @since 0.38.0
+	 * @since TBD
 	 * @covers ::timezone
 	 *
 	 * @return void
@@ -445,7 +445,7 @@ class Test_Validate extends TestCase {
 	/**
 	 * Test valid block data with all required properties.
 	 *
-	 * @since 0.38.0
+	 * @since TBD
 	 * @covers ::block_data
 	 *
 	 * @return void
@@ -466,7 +466,7 @@ class Test_Validate extends TestCase {
 	/**
 	 * Test complex nested block data structure.
 	 *
-	 * @since 0.38.0
+	 * @since TBD
 	 * @covers ::block_data
 	 *
 	 * @return void
@@ -493,7 +493,7 @@ class Test_Validate extends TestCase {
 	/**
 	 * Only the RSVP template is a valid root block for block_data.
 	 *
-	 * @since 0.38.0
+	 * @since TBD
 	 * @covers ::block_data
 	 *
 	 * @return void
@@ -514,7 +514,7 @@ class Test_Validate extends TestCase {
 	/**
 	 * Test invalid JSON strings for block_data.
 	 *
-	 * @since 0.38.0
+	 * @since TBD
 	 * @covers ::block_data
 	 *
 	 * @return void
@@ -527,7 +527,7 @@ class Test_Validate extends TestCase {
 	/**
 	 * Data provider for invalid block data structures.
 	 *
-	 * @since 0.38.0
+	 * @since TBD
 	 *
 	 * @return array<string, array<mixed>>
 	 */
@@ -578,7 +578,7 @@ class Test_Validate extends TestCase {
 	/**
 	 * Test invalid property structures and types for block_data.
 	 *
-	 * @since 0.38.0
+	 * @since TBD
 	 * @dataProvider data_invalid_block_data_structures
 	 * @covers ::block_data
 	 *
@@ -595,7 +595,7 @@ class Test_Validate extends TestCase {
 	/**
 	 * Coverage for block_signature method.
 	 *
-	 * @since 0.38.0
+	 * @since TBD
 	 * @covers ::block_signature
 	 *
 	 * @return void

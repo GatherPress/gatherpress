@@ -7,7 +7,7 @@
  *
  * @package GatherPress
  * @subpackage Tests\Pure
- * @since 0.38.0
+ * @since TBD
  */
 
 // phpcs:disable Squiz.Commenting.FileComment.Missing
