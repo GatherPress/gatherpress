@@ -14,6 +14,7 @@ use GatherPress\Core\Event\Rest_Api;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
+use PasswordHash;
 use PMC\Unit_Test\Utility;
 use WP_Post;
 
@@ -2928,6 +2929,57 @@ class Test_Rsvp_Form extends Base {
 
 		// Should return empty string for unpublished events (when not in preview mode).
 		$this->assertEmpty( $result );
+	}
+
+	/**
+	 * Tests transform_block_content keeps a password-protected event's form behind its password.
+	 *
+	 * In a block template the RSVP Form block renders outside the post
+	 * content, where the password form would otherwise hide it.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::transform_block_content
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_password_protected_event(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		);
+
+		$block_content = '<div class="wp-block-gatherpress-rsvp-form">RSVP Form Content</div>';
+		$block         = array(
+			'blockName' => 'gatherpress/rsvp-form',
+			'attrs'     => array(
+				'postId' => $post_id,
+			),
+		);
+
+		$this->assertSame(
+			'',
+			$instance->transform_block_content( $block_content, $block ),
+			'A password-protected event should keep its RSVP form from a viewer without the password.'
+		);
+
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+
+		// The cookie WordPress sets once a viewer enters the post password.
+		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'secret' );
+
+		$result = $instance->transform_block_content( $block_content, $block );
+
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+
+		$this->assertStringStartsWith(
+			'<form',
+			$result,
+			'A password-protected event should show its RSVP form to a viewer with the password.'
+		);
 	}
 
 	/**

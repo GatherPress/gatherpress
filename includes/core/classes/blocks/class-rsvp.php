@@ -103,10 +103,12 @@ final class Rsvp {
 		$block_instance = Setup::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
-		// Validate that the post type supports RSVP.
+		// Validate that the post type supports RSVP and the viewer could open the
+		// event: Event::is_viewable() does not ask about a password.
 		if (
 			! post_type_supports( (string) get_post_type( $post_id ), Core_Rsvp::SUPPORT ) ||
-			! Event::is_viewable( $post_id )
+			! Event::is_viewable( $post_id ) ||
+			post_password_required( $post_id )
 		) {
 			return '';
 		}
