@@ -602,6 +602,11 @@ final class Setup {
 			);
 		}
 
+		// An empty list would match every term on the event, the venue's included.
+		if ( array() === $taxonomies ) {
+			return array();
+		}
+
 		$terms = get_terms(
 			array(
 				'taxonomy'   => $taxonomies,

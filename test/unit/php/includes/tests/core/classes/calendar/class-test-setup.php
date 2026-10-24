@@ -569,6 +569,54 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * A protected event whose post type has no taxonomy besides the venue's
+	 * gets no term links, since an empty taxonomy list would match every term.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::collect_event_term_alternate_links
+	 *
+	 * @return void
+	 */
+	public function test_collect_event_term_alternate_links_with_only_the_venue_taxonomy(): void {
+		$event_id = $this->mock->post(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		)->get()->ID;
+		$this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_title' => 'Hidden Hall',
+				'post_name'  => 'hidden-hall',
+			)
+		);
+		wp_set_post_terms( $event_id, '_hidden-hall', Venue::TAXONOMY );
+
+		$others = array_diff( get_object_taxonomies( Event::POST_TYPE ), array( Venue::TAXONOMY ) );
+
+		foreach ( $others as $taxonomy ) {
+			unregister_taxonomy_for_object_type( $taxonomy, Event::POST_TYPE );
+		}
+
+		wp_set_current_user( 0 );
+
+		$instance = Setup::get_instance();
+		$links    = Utility::invoke_hidden_method(
+			$instance,
+			'collect_event_term_alternate_links',
+			array( get_post( $event_id ), Utility::invoke_hidden_method( $instance, 'alternate_link_label_args' ) )
+		);
+
+		foreach ( $others as $taxonomy ) {
+			register_taxonomy_for_object_type( $taxonomy, Event::POST_TYPE );
+		}
+
+		$this->assertSame( array(), $links, 'The venue feed link should be left out.' );
+	}
+
+	/**
 	 * Coverage for the venue-null arm of the `_gatherpress_venue` switch case
 	 * inside alternate_links — when an event is tagged with the venue
 	 * taxonomy but no underlying venue post resolves (the online-event case),
