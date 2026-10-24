@@ -52,7 +52,7 @@ final class Meta {
 	/**
 	 * Meta keys that give away a password-protected event's date and place.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @var string[]
 	 */
 	const PASSWORD_PROTECTED_META = array(
@@ -388,7 +388,7 @@ final class Meta {
 	 * can't see the venue, even its own editor, where an earlier copy is
 	 * still stored (a past event isn't refreshed).
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param WP_REST_Response $response The response for the event.
 	 * @param WP_Post          $post     The event the response was prepared for.

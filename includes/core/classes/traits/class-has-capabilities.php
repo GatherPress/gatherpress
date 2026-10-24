@@ -62,7 +62,7 @@ trait Has_Capabilities {
 	 * The viewer still needs the password and cannot edit the post. A REST
 	 * request that passes the right `password` argument counts as having it.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param WP_Post              $post    The post.
 	 * @param WP_REST_Request|null $request Optional. The REST request, for its `password` argument.

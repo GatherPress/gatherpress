@@ -3063,7 +3063,7 @@ class Test_Query extends Base {
 	 * Password-protected events are left out or kept alone on request, and
 	 * included alongside the others by default.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::get_events_list
 	 *
@@ -3117,7 +3117,7 @@ class Test_Query extends Base {
 	 * place, and a list cut to one event shows which one the limit keeps:
 	 * the soonest upcoming event and the most recent past one.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::get_events_list
 	 *
@@ -3175,7 +3175,7 @@ class Test_Query extends Base {
 	/**
 	 * Creates a published event with a given publish date, lasting two hours from a relative start.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param string $published The publish date, MySQL format.
 	 * @param string $start     The start, relative to now (e.g. `+1 day`).

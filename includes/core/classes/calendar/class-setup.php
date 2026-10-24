@@ -943,7 +943,7 @@ final class Setup {
 	 * events to the viewers allowed to read them.
 	 *
 	 * @since 0.36.0
-	 * @since TBD    Includes the viewer scope from `Cache::get_viewer_scope()`.
+	 * @since 0.36.1    Includes the viewer scope from `Cache::get_viewer_scope()`.
 	 *
 	 * @return string Scope-specific cache key.
 	 */

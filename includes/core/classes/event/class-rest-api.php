@@ -178,7 +178,7 @@ final class Rest_Api {
 	 * takes the post type's `edit_others_posts`, as Editors and Administrators
 	 * have, on top of the right to edit the event.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param string $post_type The event's post type.
 	 *

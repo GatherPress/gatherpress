@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Only users who can edit other people's events, such as Editors and Administrators, can send an event update to All Members. Anyone who can edit an event can still email its attendees, and the email dialog only offers All Members to users who can use it.

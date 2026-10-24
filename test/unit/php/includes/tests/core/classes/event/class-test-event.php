@@ -3535,7 +3535,7 @@ class Test_Event extends Base {
 	 * Calendars and feeds get no name or details for a password-protected venue,
 	 * whoever is asking, since a calendar response can be cached for others.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::get_public_venue_information
 	 *

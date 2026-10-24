@@ -1025,7 +1025,7 @@ class Event {
 	 * counts here: a calendar response can be cached and served to other
 	 * viewers, and an Author's lands in the cache for logged-out viewers.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @return array<string, string> The shape of {@see self::get_venue_information()}, all blank for such a venue.
 	 */
