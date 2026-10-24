@@ -395,7 +395,7 @@ class Test_Cleanup extends Base {
 	}
 
 	/**
-	 * Tests sweep limits unlinks per run and records resume position.
+	 * Tests sweep limits unlinks per run and handles sequential sweeps.
 	 *
 	 * @since TBD
 	 *
@@ -403,7 +403,7 @@ class Test_Cleanup extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_sweep_limit_and_resume(): void {
+	public function test_sweep_limit_and_sequential_runs(): void {
 		$cleanup = Cleanup::get_instance();
 
 		$this->create_map_file( 'orphan-a-osm-roadmap-15-800-400.png', time() - 600 );
@@ -416,15 +416,12 @@ class Test_Cleanup extends Base {
 		$this->assertTrue( $first_run['success'] );
 		$this->assertSame( 2, $first_run['deleted'] );
 		$this->assertTrue( $first_run['hit_limit'] );
-		$this->assertNotEmpty( get_transient( Cleanup::RESUME_TRANSIENT ) );
 
 		// Second run picks up remaining file.
 		$second_run = $cleanup->sweep( false, 2 );
 
 		$this->assertTrue( $second_run['success'] );
 		$this->assertSame( 1, $second_run['deleted'] );
-		$this->assertTrue( $second_run['resumed'] );
 		$this->assertFalse( $second_run['hit_limit'] );
-		$this->assertEmpty( get_transient( Cleanup::RESUME_TRANSIENT ) );
 	}
 }

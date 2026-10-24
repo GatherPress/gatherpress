@@ -315,10 +315,6 @@ class Cleanup {
 			$limit  = max( 1, $limit );
 			$now    = time();
 
-			$resume_file        = $dry_run ? '' : (string) get_transient( self::RESUME_TRANSIENT );
-			$skip_until_resumed = ( '' !== $resume_file );
-			$result['resumed']  = $skip_until_resumed;
-
 			// phpcs:ignore Generic.CodeAnalysis.AssignmentInCondition.FoundInWhileCondition, WordPress.WP.AlternativeFunctions.file_system_operations_readdir -- Streaming dir handle avoids glob() memory spikes.
 			while ( false !== ( $entry = readdir( $handle ) ) ) {
 				if ( '.' === $entry || '..' === $entry || ! $this->is_valid_filename( $entry ) ) {
@@ -332,13 +328,6 @@ class Cleanup {
 				}
 
 				++$result['scanned'];
-
-				if ( $skip_until_resumed ) {
-					if ( $entry === $resume_file ) {
-						$skip_until_resumed = false;
-					}
-					continue;
-				}
 
 				if ( ! $this->is_candidate( $entry, $dir, $in_use, $now ) ) {
 					continue;
@@ -355,7 +344,6 @@ class Cleanup {
 
 						if ( $result['deleted'] >= $limit ) {
 							$result['hit_limit'] = true;
-							set_transient( self::RESUME_TRANSIENT, $entry, HOUR_IN_SECONDS );
 							break;
 						}
 					}
@@ -371,10 +359,6 @@ class Cleanup {
 
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_closedir -- Streaming dir handle.
 			closedir( $handle );
-
-			if ( ! $dry_run && ! $result['hit_limit'] ) {
-				delete_transient( self::RESUME_TRANSIENT );
-			}
 		} finally {
 			delete_transient( self::LOCK_TRANSIENT );
 		}
