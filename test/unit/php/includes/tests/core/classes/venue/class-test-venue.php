@@ -18,6 +18,7 @@ use GatherPress\Core\Venue\Meta;
 use GatherPress\Core\Venue\Venue;
 use GatherPress\Tests\Base;
 use ReflectionClass;
+use WP_REST_Request;
 use WP_Term;
 
 /**
@@ -334,5 +335,53 @@ class Test_Venue extends Base {
 			( new Venue( $post_id ) )->get_term(),
 			'Expected get_term to return null when no matching term exists.'
 		);
+	}
+
+	/**
+	 * A post password keeps a venue's details from a viewer until they have the
+	 * password, as a REST argument, or can edit the venue.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::is_hidden_by_password
+	 *
+	 * @return void
+	 */
+	public function test_is_hidden_by_password(): void {
+		$protected = get_post(
+			$this->factory->post->create(
+				array(
+					'post_type'     => Venue::POST_TYPE,
+					'post_password' => 'secret',
+				)
+			)
+		);
+		$open      = get_post( $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) ) );
+		$request   = static function ( string $password ): WP_REST_Request {
+			$request = new WP_REST_Request( 'GET', '/wp/v2/gatherpress_venue' );
+
+			$request->set_param( 'password', $password );
+
+			return $request;
+		};
+
+		wp_set_current_user( 0 );
+
+		$this->assertTrue( Venue::is_hidden_by_password( $protected ), 'A protected venue is hidden.' );
+		$this->assertTrue(
+			Venue::is_hidden_by_password( $protected, $request( 'wrong' ) ),
+			'A wrong REST password keeps it hidden.'
+		);
+		$this->assertFalse(
+			Venue::is_hidden_by_password( $protected, $request( 'secret' ) ),
+			'The REST password shows it.'
+		);
+		$this->assertFalse( Venue::is_hidden_by_password( $open ), 'An open venue is never hidden.' );
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'editor' ) ) );
+
+		$this->assertFalse( Venue::is_hidden_by_password( $protected ), 'An Editor sees it.' );
+
+		wp_set_current_user( 0 );
 	}
 }

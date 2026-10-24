@@ -369,11 +369,11 @@ final class Setup {
 	}
 
 	/**
-	 * Blanks a password-protected event's venue in a REST response.
+	 * Blanks an event's venue in a REST response while a password hides it.
 	 *
-	 * The venue taxonomy is public, so core lists its term on a protected
-	 * event like any other. It stays behind the event's password, as the
-	 * event's date and place meta do.
+	 * The venue taxonomy is public, so core lists its term like any other.
+	 * It stays behind the event's password, as the event's date and place
+	 * meta do, and behind the venue's own password, as in the Venue block.
 	 *
 	 * @since TBD
 	 *
@@ -391,7 +391,7 @@ final class Setup {
 	): WP_REST_Response {
 		$taxonomy = get_taxonomy( $this->taxonomy_for_event_post_type( $post->post_type ) );
 
-		if ( $taxonomy instanceof WP_Taxonomy && Event::is_hidden_by_password( $post, $request ) ) {
+		if ( $taxonomy instanceof WP_Taxonomy && $this->is_event_venue_hidden( $post, $request ) ) {
 			$field = empty( $taxonomy->rest_base ) ? $taxonomy->name : (string) $taxonomy->rest_base;
 
 			if ( is_array( $response->data ) && array_key_exists( $field, $response->data ) ) {
@@ -403,10 +403,10 @@ final class Setup {
 	}
 
 	/**
-	 * Lists no venue for a password-protected event in the venue terms endpoint.
+	 * Lists no venue in the venue terms endpoint while a password hides it.
 	 *
 	 * `/wp/v2/<venue taxonomy>?post=<id>` lists one post's terms, which would
-	 * name a protected event's venue.
+	 * name the event's venue.
 	 *
 	 * @since TBD
 	 *
@@ -414,13 +414,13 @@ final class Setup {
 	 * @param WP_REST_Request      $request       The terms request.
 	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
-	 * @return array<string, mixed> The arguments, matching no term for a protected event the viewer can't see.
+	 * @return array<string, mixed> The arguments, matching no term while a password hides the venue.
 	 */
 	public function hide_password_protected_venue_terms( array $prepared_args, WP_REST_Request $request ): array {
 		$post_id = (int) $request->get_param( 'post' );
 		$post    = $post_id ? get_post( $post_id ) : null;
 
-		if ( $post instanceof WP_Post && Event::is_hidden_by_password( $post, $request ) ) {
+		if ( $post instanceof WP_Post && $this->is_event_venue_hidden( $post, $request ) ) {
 			// Core looks the terms up with wp_get_object_terms( $prepared_args['post'] ), and
 			// no object has ID 0. An empty value would list every venue instead.
 			$prepared_args['post'] = array( 0 );
@@ -430,7 +430,7 @@ final class Setup {
 	}
 
 	/**
-	 * Drops the venue classes from a password-protected event's post classes.
+	 * Drops the venue classes from an event's post classes while a password hides the venue.
 	 *
 	 * Core adds a `<taxonomy>-<term>` class for each public term, which would
 	 * name the venue in the page markup and in the REST `class_list`.
@@ -451,7 +451,7 @@ final class Setup {
 		if (
 			! $post instanceof WP_Post
 			|| ! post_type_supports( $post->post_type, Venue::ASSIGNMENT_SUPPORT )
-			|| ! Event::is_hidden_by_password( $post )
+			|| ! $this->is_event_venue_hidden( $post )
 		) {
 			return $classes;
 		}
@@ -464,6 +464,52 @@ final class Setup {
 				static fn( string $css ): bool => ! str_starts_with( $css, $prefix )
 			)
 		);
+	}
+
+	/**
+	 * Whether an event's venue stays hidden from the current viewer.
+	 *
+	 * The event's own password or its venue's keeps the venue out of sight,
+	 * as the Venue block does. Whoever can edit the event still sees the venue
+	 * it is saved with, so the editor doesn't drop it on the next save.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_Post              $event   The event post.
+	 * @param WP_REST_Request|null $request Optional. The REST request, for the event's `password` argument.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>>|null $request
+	 *
+	 * @return bool True when the venue stays hidden.
+	 */
+	public function is_event_venue_hidden( WP_Post $event, ?WP_REST_Request $request = null ): bool {
+		if ( Event::is_hidden_by_password( $event, $request ) ) {
+			return true;
+		}
+
+		if ( current_user_can( Event::EDIT_CAPABILITY, $event->ID ) ) {
+			return false;
+		}
+
+		return $this->is_venue_hidden_by_password( $event );
+	}
+
+	/**
+	 * Whether an event's venue is hidden from the current viewer by the venue's own password.
+	 *
+	 * Unlike {@see self::is_event_venue_hidden()}, editing the event doesn't
+	 * count: only someone who can see the venue itself sees its details, such
+	 * as the location an event copied from it.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_Post $event The event post.
+	 *
+	 * @return bool True when the venue's password hides it.
+	 */
+	public function is_venue_hidden_by_password( WP_Post $event ): bool {
+		$venue = $this->get_venue_post_from_event_post_id( $event->ID );
+
+		return $venue instanceof WP_Post && Venue::is_hidden_by_password( $venue );
 	}
 
 	/**
@@ -493,7 +539,7 @@ final class Setup {
 			$post instanceof WP_Post
 			&& post_type_supports( $post->post_type, Venue::ASSIGNMENT_SUPPORT )
 			&& $this->taxonomy_for_event_post_type( $post->post_type ) === ( $block['attrs']['term'] ?? '' )
-			&& Event::is_hidden_by_password( $post )
+			&& $this->is_event_venue_hidden( $post )
 		) {
 			return '';
 		}
