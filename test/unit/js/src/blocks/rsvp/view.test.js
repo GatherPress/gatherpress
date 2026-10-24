@@ -560,16 +560,17 @@ describe( 'rsvp updateRsvp focus target with the real modal actions (#2428)', ()
 	it( 'focuses the first control of the waiting list modal when Attend lands on the waiting list', async () => {
 		respond( setupDom( 'no_status' ), 'waiting_list' );
 
-		await waitFor( () =>
+		// The starting modal closes on its own timer, just after focus moves.
+		await waitFor( () => {
 			expect( document.activeElement ).toBe(
 				modal( 'waiting_list' ).querySelector( '.anonymous' ),
-			),
-		);
+			);
+			expect( modal( 'no_status' ).classList ).not.toContain(
+				'gatherpress--is-visible',
+			);
+		} );
 
 		expect( modal( 'waiting_list' ).classList ).toContain(
-			'gatherpress--is-visible',
-		);
-		expect( modal( 'no_status' ).classList ).not.toContain(
 			'gatherpress--is-visible',
 		);
 	} );
@@ -577,15 +578,15 @@ describe( 'rsvp updateRsvp focus target with the real modal actions (#2428)', ()
 	it( 'focuses the number of guests in the attending modal after Attend', async () => {
 		respond( setupDom( 'no_status' ), 'attending' );
 
-		await waitFor( () =>
+		// The starting modal closes on its own timer, just after focus moves.
+		await waitFor( () => {
 			expect( document.activeElement ).toBe(
 				modal( 'attending' ).querySelector( '.guests' ),
-			),
-		);
-
-		expect( modal( 'no_status' ).classList ).not.toContain(
-			'gatherpress--is-visible',
-		);
+			);
+			expect( modal( 'no_status' ).classList ).not.toContain(
+				'gatherpress--is-visible',
+			);
+		} );
 	} );
 
 	it( 'focuses the Edit RSVP trigger of the not attending state after Not Attending', async () => {
