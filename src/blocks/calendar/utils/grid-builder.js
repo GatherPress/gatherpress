@@ -204,11 +204,16 @@ export function resolvePostDateSpan( post, range = null, eventPostTypes = [] ) {
 /**
  * Computes quarter-slot row tracks for a timed event within configured day boundaries.
  *
+ * Mirrors Post_Organizer::calculate_timed_event_tracks(). An event outside the
+ * hours of the grid goes to the nearest edge: an event before the first hour
+ * starts on the first track, and an event at or after the last hour gets the
+ * last track. The steps count from the first minute of the grid.
+ *
  * @param {Object}        post           Post entity record.
  * @param {Object}        gridConfig     Time grid configuration.
  * @param {Array<string>} eventPostTypes Slugs of the post types that support gatherpress-event-date.
  *
- * @return {Object|null} { timeRowStart, timeRowEnd } or null if outside visible window.
+ * @return {Object|null} { timeRowStart, timeRowEnd }, or null when the grid is off or the post has no start.
  */
 export function calculateTimedEventTracks( post, gridConfig, eventPostTypes = [] ) {
 	if ( ! gridConfig?.enabled ) {
@@ -252,30 +257,36 @@ export function calculateTimedEventTracks( post, gridConfig, eventPostTypes = []
 
 	const dayStartMin = startHour * 60;
 	const dayEndMin = endHour * 60;
-
-	// Skip if entirely outside the visible day window
-	if ( endMin <= dayStartMin || startMin >= dayEndMin ) {
-		return null;
-	}
+	// The same number of tracks as total_quarters in Date_Calculator::get_time_grid_config().
+	const totalTracks = Math.max(
+		1,
+		Math.ceil( ( dayEndMin - dayStartMin ) / quarterMins ),
+	);
 
 	// Clamp to visible day boundaries
 	const clampedStart = Math.max( dayStartMin, startMin );
 	const clampedEnd = Math.min( dayEndMin, Math.max( startMin + 15, endMin ) );
 
-	// Round to 1/4 of slot duration
-	const roundedStart = Math.floor( clampedStart / quarterMins ) * quarterMins;
-	const roundedEnd = Math.ceil( clampedEnd / quarterMins ) * quarterMins;
+	// Round to 1/4 of slot duration, counted from the first minute of the grid.
+	const roundedStart =
+		dayStartMin +
+		( Math.floor( ( clampedStart - dayStartMin ) / quarterMins ) * quarterMins );
+	const roundedEnd =
+		dayStartMin +
+		( Math.ceil( ( clampedEnd - dayStartMin ) / quarterMins ) * quarterMins );
 
 	const finalEnd =
 		roundedEnd <= roundedStart ? roundedStart + quarterMins : roundedEnd;
 
-	const startTrack =
-		Math.floor( ( roundedStart - dayStartMin ) / quarterMins ) + 1;
+	const startTrack = Math.min(
+		totalTracks,
+		Math.floor( ( roundedStart - dayStartMin ) / quarterMins ) + 1,
+	);
 	const endTrack = Math.floor( ( finalEnd - dayStartMin ) / quarterMins ) + 1;
 
 	return {
 		timeRowStart: startTrack,
-		timeRowEnd: Math.max( startTrack + 1, endTrack ),
+		timeRowEnd: Math.min( totalTracks + 1, Math.max( startTrack + 1, endTrack ) ),
 	};
 }
 
@@ -311,10 +322,9 @@ export function findAvailableSlot( dates, occupiedSlots ) {
  */
 function allocateTimedEvent( rawEvent, gridConfig, grouped, eventPostTypes ) {
 	const { post } = rawEvent;
+	// Always set: the time grid is on, resolvePostDateSpan() already left out a
+	// post without a start, and an event outside the hours goes to an edge.
 	const tracks = calculateTimedEventTracks( post, gridConfig, eventPostTypes );
-	if ( ! tracks ) {
-		return;
-	}
 
 	const dateStr = rawEvent.startDateStr;
 	if ( ! grouped[ dateStr ] ) {

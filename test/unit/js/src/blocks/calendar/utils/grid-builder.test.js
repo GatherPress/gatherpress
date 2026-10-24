@@ -346,7 +346,7 @@ describe( 'groupPostsByDate', () => {
 		] );
 	} );
 
-	it( 'shows an all-day event as a ribbon and leaves out a timed event outside the visible hours', () => {
+	it( 'shows an all-day event as a ribbon and a timed event before the visible hours on the first track', () => {
 		const grouped = groupPostsByDate(
 			[
 				event( 1, '2026-10-16 09:00:00', '2026-10-16 10:00:00' ),
@@ -357,9 +357,16 @@ describe( 'groupPostsByDate', () => {
 			october,
 			EVENT_TYPES,
 		);
-		const [ ribbon, timed, ...others ] = grouped[ '2026-10-16' ];
+		const [ ribbon, timed, early, ...others ] = grouped[ '2026-10-16' ];
 
 		expect( others ).toEqual( [] );
+		// 6:00 to 7:00 is before the 8:00 start, so it gets the first track, as on the server.
+		expect( early ).toMatchObject( {
+			id: 3,
+			isTimed: true,
+			timeRowStart: 1,
+			timeRowEnd: 2,
+		} );
 		expect( ribbon ).toMatchObject( {
 			id: 2,
 			span: 'single',
@@ -600,7 +607,8 @@ describe( 'calculateTimedEventTracks', () => {
 		).toEqual( { timeRowStart: 5, timeRowEnd: 9 } );
 	} );
 
-	it( 'gives null for an event outside the visible hours', () => {
+	it( 'puts an event outside the visible hours on the nearest edge, as the server does', () => {
+		// 48 tracks, from line 1 (8:00) to line 49 (20:00).
 		const grid = { enabled: true, startHour: 8, endHour: 20 };
 
 		expect(
@@ -609,14 +617,32 @@ describe( 'calculateTimedEventTracks', () => {
 				grid,
 				EVENT_TYPES,
 			),
-		).toBeNull();
+		).toEqual( { timeRowStart: 1, timeRowEnd: 2 } );
 		expect(
 			calculateTimedEventTracks(
 				event( 2, '2026-10-16 20:00:00', '2026-10-16 21:00:00' ),
 				grid,
 				EVENT_TYPES,
 			),
-		).toBeNull();
+		).toEqual( { timeRowStart: 48, timeRowEnd: 49 } );
+		expect(
+			calculateTimedEventTracks(
+				event( 3, '2026-10-16 21:00:00', '2026-10-16 22:00:00' ),
+				grid,
+				EVENT_TYPES,
+			),
+		).toEqual( { timeRowStart: 48, timeRowEnd: 49 } );
+	} );
+
+	it( 'counts the steps from the first hour of the grid', () => {
+		// 3-hour rows give 45-minute steps: from 8:00 they are at 8:45 and 9:30.
+		expect(
+			calculateTimedEventTracks(
+				event( 1, '2026-10-16 08:00:00', '2026-10-16 08:50:00' ),
+				{ enabled: true, startHour: 8, endHour: 20, quarterMins: 45 },
+				EVENT_TYPES,
+			),
+		).toEqual( { timeRowStart: 1, timeRowEnd: 3 } );
 	} );
 
 	it( 'cuts an event to the visible hours', () => {

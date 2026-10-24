@@ -102,15 +102,13 @@ final class Query_Builder {
 	 * @return bool True if all post types support 'gatherpress-event-date'.
 	 */
 	public static function is_event_post_type( $post_type ): bool {
-		if ( is_string( $post_type ) ) {
-			return post_type_supports( $post_type, Event\Event::SUPPORT );
-		}
+		$post_types = is_string( $post_type ) ? array( $post_type ) : $post_type;
 
-		if ( ! is_array( $post_type ) || empty( $post_type ) ) {
+		if ( ! is_array( $post_types ) || empty( $post_types ) ) {
 			return false;
 		}
 
-		foreach ( $post_type as $type ) {
+		foreach ( $post_types as $type ) {
 			if ( ! is_string( $type ) || ! post_type_supports( $type, Event\Event::SUPPORT ) ) {
 				return false;
 			}

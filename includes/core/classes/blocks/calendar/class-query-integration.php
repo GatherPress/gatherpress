@@ -186,6 +186,9 @@ final class Query_Integration {
 	/**
 	 * Raises the REST API per_page maximum to the calendar's query limit for calendar requests.
 	 *
+	 * Only the editor preview needs the higher limit, so only users who can edit posts get it.
+	 * Other callers keep the core maximum of 100.
+	 *
 	 * @since TBD
 	 *
 	 * @param array<string, mixed> $query_params Endpoint collection parameters.
@@ -194,7 +197,7 @@ final class Query_Integration {
 	 */
 	public function filter_rest_collection_params( array $query_params ): array {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( empty( $_REQUEST[ self::CALENDAR_QUERY_PARAM ] ) ) {
+		if ( empty( $_REQUEST[ self::CALENDAR_QUERY_PARAM ] ) || ! current_user_can( 'edit_posts' ) ) {
 			return $query_params;
 		}
 

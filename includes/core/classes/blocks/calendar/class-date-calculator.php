@@ -1090,21 +1090,30 @@ final class Date_Calculator {
 	/**
 	 * Round minute timestamp offset to the nearest 1/4 slot duration.
 	 *
+	 * The steps count from the origin, the first minute of the time grid. With 3-hour rows a step
+	 * is 45 minutes, and a grid from 08:00 has steps at 08:45 and 09:30, not at 09:00.
+	 *
 	 * @since TBD
 	 *
 	 * @param int  $minutes      Minutes past midnight.
 	 * @param int  $quarter_mins Minutes per quarter-slot.
 	 * @param bool $is_end       Whether rounding end time (ceils to prevent zero-length events).
+	 * @param int  $origin       Minutes past midnight where the steps start. Defaults to midnight.
 	 *
 	 * @return int Rounded minutes.
 	 */
-	public static function round_to_quarter_slot( int $minutes, int $quarter_mins, bool $is_end = false ): int {
+	public static function round_to_quarter_slot(
+		int $minutes,
+		int $quarter_mins,
+		bool $is_end = false,
+		int $origin = 0
+	): int {
 		if ( $quarter_mins <= 0 ) {
 			return $minutes;
 		}
 
-		return $is_end
-			? (int) ( ceil( $minutes / $quarter_mins ) * $quarter_mins )
-			: (int) ( floor( $minutes / $quarter_mins ) * $quarter_mins );
+		$steps = ( $minutes - $origin ) / $quarter_mins;
+
+		return $origin + (int) ( ( $is_end ? ceil( $steps ) : floor( $steps ) ) * $quarter_mins );
 	}
 }

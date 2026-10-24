@@ -836,5 +836,14 @@ class Test_Date_Calculator extends Base {
 		$this->assertSame( 60, Date_Calculator::round_to_quarter_slot( 65, 15 ) );
 		$this->assertSame( 75, Date_Calculator::round_to_quarter_slot( 65, 15, true ) );
 		$this->assertSame( 65, Date_Calculator::round_to_quarter_slot( 65, 0 ) );
+
+		// 45-minute steps from 08:00 (480): 480, 525, 570. 08:50 (530) lies between 525 and 570.
+		$this->assertSame( 525, Date_Calculator::round_to_quarter_slot( 530, 45, false, 480 ) );
+		$this->assertSame( 570, Date_Calculator::round_to_quarter_slot( 530, 45, true, 480 ) );
+		$this->assertSame(
+			540,
+			Date_Calculator::round_to_quarter_slot( 530, 45, true ),
+			'Failed to assert that without an origin the steps count from midnight.'
+		);
 	}
 }
