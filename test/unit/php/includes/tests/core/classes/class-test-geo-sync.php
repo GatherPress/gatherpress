@@ -1093,4 +1093,148 @@ class Test_Geo_Sync extends Base {
 		$this->assertSame( '', get_post_meta( 999999, 'geo_address', true ), 'A deleted event gets nothing.' );
 		$this->assertSame( '', get_post_meta( $venue['post']->ID, Geo_Sync::CLEARED_COPIES_META_KEY, true ) );
 	}
+
+	/**
+	 * Saving a past event marks its location public or not, and keeps the location.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::on_event_saved
+	 *
+	 * @return void
+	 */
+	public function test_on_event_saved_marks_a_past_event_public_or_not(): void {
+		$information = array(
+			'latitude'  => '40.7128',
+			'longitude' => '-74.006',
+			'address'   => '123 Main St, New York, NY',
+		);
+		$venue       = $this->create_linked_venue( 'past-event-saved-venue', $information );
+		$event       = $this->create_event( '2020-01-01 10:00:00', '2020-01-01 12:00:00', $venue['term_slug'] );
+
+		Geo_Sync::write( $event->ID, Geo_Sync::build_values( $information, true ) );
+
+		wp_update_post(
+			array(
+				'ID'            => $event->ID,
+				'post_password' => 'secret',
+			)
+		);
+
+		$this->assertSame(
+			'0',
+			get_post_meta( $event->ID, 'geo_public', true ),
+			'Failed to assert a protected past event is not public.'
+		);
+		$this->assertSame(
+			'123 Main St, New York, NY',
+			get_post_meta( $event->ID, 'geo_address', true ),
+			'Failed to assert the past event keeps its location.'
+		);
+
+		wp_update_post(
+			array(
+				'ID'            => $event->ID,
+				'post_password' => '',
+			)
+		);
+
+		$this->assertSame(
+			'1',
+			get_post_meta( $event->ID, 'geo_public', true ),
+			'Failed to assert the past event is public again without the password.'
+		);
+
+		wp_update_post(
+			array(
+				'ID'          => $event->ID,
+				'post_status' => 'draft',
+			)
+		);
+
+		$this->assertSame(
+			'0',
+			get_post_meta( $event->ID, 'geo_public', true ),
+			'Failed to assert an unpublished past event is not public.'
+		);
+	}
+
+	/**
+	 * Saving an event at a venue that isn't public marks its location not public.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::on_event_saved
+	 *
+	 * @return void
+	 */
+	public function test_on_event_saved_follows_the_venue(): void {
+		$venue = $this->create_linked_venue( 'draft-event-saved-venue', array(), 'draft' );
+		$event = $this->create_event( '2020-01-01 10:00:00', '2020-01-01 12:00:00', $venue['term_slug'] );
+
+		update_post_meta( $event->ID, 'geo_public', 1 );
+
+		Geo_Sync::get_instance()->on_event_saved( $event->ID, get_post( $event->ID ) );
+
+		$this->assertSame( '0', get_post_meta( $event->ID, 'geo_public', true ) );
+	}
+
+	/**
+	 * Saving a post type that can't have a venue writes nothing.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::on_event_saved
+	 *
+	 * @return void
+	 */
+	public function test_on_event_saved_ignores_unrelated_post_type(): void {
+		$post = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+
+		Geo_Sync::get_instance()->on_event_saved( $post->ID, $post );
+
+		$this->assertFalse( metadata_exists( 'post', $post->ID, 'geo_public' ) );
+	}
+
+	/**
+	 * Covers `is_event_public()` directly.
+	 *
+	 * Called directly because `on_event_saved()` and `maybe_refresh()` reach it
+	 * through same-class calls that xdebug does not trace.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::is_event_public
+	 *
+	 * @return void
+	 */
+	public function test_is_event_public(): void {
+		$geo_sync    = Geo_Sync::get_instance();
+		$event       = $this->mock->post( array( 'post_status' => 'publish' ) )->get();
+		$protected   = $this->mock->post(
+			array(
+				'post_status'   => 'publish',
+				'post_password' => 'secret',
+			)
+		)->get();
+		$venue       = $this->mock->post( array( 'post_status' => 'publish' ) )->get();
+		$draft_venue = $this->mock->post( array( 'post_status' => 'draft' ) )->get();
+
+		$this->assertTrue(
+			Utility::invoke_hidden_method( $geo_sync, 'is_event_public', array( $event, null ) ),
+			'Failed to assert a public event without a venue is public.'
+		);
+		$this->assertTrue(
+			Utility::invoke_hidden_method( $geo_sync, 'is_event_public', array( $event, $venue ) ),
+			'Failed to assert a public event at a public venue is public.'
+		);
+		$this->assertFalse(
+			Utility::invoke_hidden_method( $geo_sync, 'is_event_public', array( $event, $draft_venue ) ),
+			'Failed to assert an event at a venue that is not public is not public.'
+		);
+		$this->assertFalse(
+			Utility::invoke_hidden_method( $geo_sync, 'is_event_public', array( $protected, null ) ),
+			'Failed to assert a password-protected event is not public.'
+		);
+	}
 }
