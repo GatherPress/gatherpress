@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+The events calendar feed, the upcoming events ability, and `get_upcoming_events()` and `get_past_events()` list events by their date again, instead of by when they were published. With a limit, they now keep the soonest upcoming events, or the most recent past ones, rather than the ones published first.
