@@ -1,7 +1,12 @@
 /**
  * WordPress dependencies
  */
-import { store, getElement, getContext } from '@wordpress/interactivity';
+import {
+	store,
+	getElement,
+	getContext,
+	withSyncEvent,
+} from '@wordpress/interactivity';
 
 /**
  * Internal dependencies
@@ -91,7 +96,8 @@ const { state, actions } = store( 'gatherpress', {
 				}, 10 );
 			}, triggerElement );
 		},
-		updateRsvp( event = null ) {
+		// Synchronous, so preventDefault() stops the no-JavaScript form from submitting (#2039).
+		updateRsvp: withSyncEvent( ( event = null ) => {
 			if ( event ) {
 				event.preventDefault();
 			}
@@ -212,7 +218,7 @@ const { state, actions } = store( 'gatherpress', {
 				},
 				triggerElement,
 			);
-		},
+		} ),
 	},
 	callbacks: {
 		monitorAnonymousStatus() {

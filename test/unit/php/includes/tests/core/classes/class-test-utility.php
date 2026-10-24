@@ -2188,4 +2188,69 @@ class Test_Utility extends Base {
 			'Failed to assert empties and duplicates were dropped.'
 		);
 	}
+
+	/**
+	 * The current URL comes from the home URL's scheme, host and port, plus the request's path and query.
+	 *
+	 * @since TBD
+	 * @covers ::get_current_url
+	 *
+	 * @return void
+	 */
+	public function test_get_current_url(): void {
+		$set_home = static fn() => 'https://example.org:8443/site';
+
+		$_SERVER['REQUEST_URI'] = '/site/event/party/?a=1&gatherpress_modal=1-1&b=2';
+		add_filter( 'home_url', $set_home );
+
+		$this->assertSame(
+			'https://example.org:8443/site/event/party/?a=1&gatherpress_modal=1-1&b=2',
+			Utility::get_current_url(),
+			'The URL keeps the request path and query.'
+		);
+		$this->assertSame(
+			'https://example.org:8443/site/event/party/?a=1&b=2',
+			Utility::get_current_url( array( 'gatherpress_modal' ) ),
+			'Query args to remove are left out.'
+		);
+
+		remove_filter( 'home_url', $set_home );
+		unset( $_SERVER['REQUEST_URI'] );
+
+		$this->assertSame(
+			home_url( '/' ),
+			Utility::get_current_url(),
+			'Without a request URI, the URL is the home page.'
+		);
+	}
+
+	/**
+	 * Only a front-end page request counts as one.
+	 *
+	 * @since TBD
+	 * @covers ::is_page_request
+	 *
+	 * @return void
+	 */
+	public function test_is_page_request(): void {
+		$this->go_to( home_url( '/' ) );
+
+		$this->assertTrue( Utility::is_page_request(), 'A front-end page is a page request.' );
+
+		add_filter( 'wp_doing_ajax', '__return_true' );
+		$ajax = Utility::is_page_request();
+		remove_filter( 'wp_doing_ajax', '__return_true' );
+
+		$this->assertFalse( $ajax, 'An Ajax request is not.' );
+
+		$this->go_to( get_feed_link() );
+
+		$this->assertFalse( Utility::is_page_request(), 'A feed is not.' );
+
+		set_current_screen( 'dashboard' );
+		$admin = Utility::is_page_request();
+		set_current_screen( 'front' );
+
+		$this->assertFalse( $admin, 'The admin is not.' );
+	}
 }
