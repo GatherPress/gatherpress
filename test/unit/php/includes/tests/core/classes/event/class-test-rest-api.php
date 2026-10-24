@@ -1177,7 +1177,7 @@ class Test_Rest_Api extends Base {
 	 * The form posts to wp-comments-post.php without JavaScript, which refuses
 	 * a password-protected post, so the REST route has to refuse it too.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::handle_rsvp_form_submission
 	 *

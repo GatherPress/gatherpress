@@ -2937,7 +2937,7 @@ class Test_Rsvp_Form extends Base {
 	 * In a block template the RSVP Form block renders outside the post
 	 * content, where the password form would otherwise hide it.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::transform_block_content
 	 *
