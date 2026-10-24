@@ -1202,18 +1202,7 @@ class Test_Rest_Api extends Base {
 		$this->assertSame( 403, $response->get_status() );
 		$this->assertFalse( $response->get_data()['success'] );
 		$this->assertSame( 'Enter the event password to RSVP.', $response->get_data()['message'] );
-		$this->assertSame(
-			0,
-			get_comments(
-				array(
-					'post_id' => $post_id,
-					'type'    => Rsvp::COMMENT_TYPE,
-					'status'  => 'all',
-					'count'   => true,
-				)
-			),
-			'Failed to assert no RSVP was saved.'
-		);
+		$this->assertSame( 0, $this->count_rsvp_comments( $post_id ), 'Failed to assert no RSVP was saved.' );
 
 		require_once ABSPATH . WPINC . '/class-phpass.php';
 
@@ -1226,6 +1215,36 @@ class Test_Rest_Api extends Base {
 
 		$this->assertSame( 200, $response->get_status(), 'Failed to assert the RSVP is accepted with the password.' );
 		$this->assertTrue( $response->get_data()['success'] );
+		$this->assertSame( 1, $this->count_rsvp_comments( $post_id ), 'Failed to assert the accepted RSVP was saved.' );
+	}
+
+	/**
+	 * Counts an event's RSVP comments in any status, unapproved ones included.
+	 *
+	 * Comment queries leave RSVPs out by default, so the count turns that
+	 * exclusion off for its own query.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $post_id The event's post ID.
+	 *
+	 * @return int The number of RSVP comments.
+	 */
+	private function count_rsvp_comments( int $post_id ): int {
+		add_filter( 'gatherpress_rsvp_comment_query_exclusion', '__return_false' );
+
+		$count = get_comments(
+			array(
+				'post_id' => $post_id,
+				'type'    => Rsvp::COMMENT_TYPE,
+				'status'  => 'all',
+				'count'   => true,
+			)
+		);
+
+		remove_filter( 'gatherpress_rsvp_comment_query_exclusion', '__return_false' );
+
+		return (int) $count;
 	}
 
 	/**
