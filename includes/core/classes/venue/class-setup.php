@@ -420,7 +420,7 @@ final class Setup {
 		$post_id = (int) $request->get_param( 'post' );
 		$post    = $post_id ? get_post( $post_id ) : null;
 
-		if ( $post instanceof WP_Post && Event::is_hidden_by_password( $post ) ) {
+		if ( $post instanceof WP_Post && Event::is_hidden_by_password( $post, $request ) ) {
 			// Core looks the terms up with wp_get_object_terms( $prepared_args['post'] ), and
 			// no object has ID 0. An empty value would list every venue instead.
 			$prepared_args['post'] = array( 0 );

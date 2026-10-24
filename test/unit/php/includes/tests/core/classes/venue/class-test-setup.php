@@ -21,6 +21,7 @@ use WP_Block;
 use WP_Block_Patterns_Registry;
 use WP_Query;
 use WP_REST_Request;
+use WP_REST_Response;
 
 /**
  * Class Test_Setup.
@@ -1671,9 +1672,28 @@ class Test_Setup extends Base {
 			'The terms endpoint should list no venue.'
 		);
 		$this->assertSame(
+			array( $term_id ),
+			wp_list_pluck(
+				$get(
+					$terms_route,
+					array(
+						'post'     => $protected,
+						'password' => 'secret',
+					)
+				),
+				'id'
+			),
+			'The right password should list the venue.'
+		);
+		$this->assertSame(
 			array( $open_term_id ),
 			wp_list_pluck( $get( $terms_route, array( 'post' => $open ) ), 'id' ),
 			'The terms endpoint should list an open event\'s venue.'
+		);
+		$this->assertContains(
+			$term_id,
+			wp_list_pluck( $get( $terms_route ), 'id' ),
+			'A terms request without a post should list the venue.'
 		);
 
 		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'editor' ) ) );
@@ -1685,6 +1705,59 @@ class Test_Setup extends Base {
 		);
 
 		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * A protected event's venue is blanked under the taxonomy's REST base
+	 * when it has one.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::hide_password_protected_venue
+	 *
+	 * @return void
+	 */
+	public function test_hide_password_protected_venue_with_rest_base(): void {
+		list( $protected ) = $this->create_event_at_venue( 'secret' );
+		$taxonomy          = get_taxonomy( Venue::TAXONOMY );
+		$rest_base         = $taxonomy->rest_base;
+
+		$taxonomy->rest_base = 'venues';
+
+		wp_set_current_user( 0 );
+
+		$response = Setup::get_instance()->hide_password_protected_venue(
+			new WP_REST_Response( array( 'venues' => array( 1 ) ) ),
+			get_post( $protected ),
+			new WP_REST_Request( 'GET', '/wp/v2/gatherpress_events/' . $protected )
+		);
+
+		$taxonomy->rest_base = $rest_base;
+
+		$this->assertSame( array(), $response->data['venues'], 'The venue should be blank under the REST base.' );
+	}
+
+	/**
+	 * A response without the venue field is returned unchanged.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::hide_password_protected_venue
+	 *
+	 * @return void
+	 */
+	public function test_hide_password_protected_venue_without_venue_field(): void {
+		list( $protected ) = $this->create_event_at_venue( 'secret' );
+
+		wp_set_current_user( 0 );
+
+		$response = Setup::get_instance()->hide_password_protected_venue(
+			new WP_REST_Response( array( 'id' => $protected ) ),
+			get_post( $protected ),
+			new WP_REST_Request( 'GET', '/wp/v2/gatherpress_events/' . $protected )
+		);
+
+		$this->assertSame( array( 'id' => $protected ), $response->data, 'The response should be unchanged.' );
 	}
 
 	/**
