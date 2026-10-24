@@ -590,9 +590,26 @@ final class Setup {
 	 * @return array<int,array{url:string,attr:string}>
 	 */
 	protected function collect_event_term_alternate_links( WP_Post $event, array $args ): array {
+		$taxonomies = get_object_taxonomies( $event );
+
+		// A protected event's page doesn't give its venue away.
+		if ( Event::is_hidden_by_password( $event ) ) {
+			$taxonomies = array_values(
+				array_diff(
+					$taxonomies,
+					array( Venue_Setup::get_instance()->taxonomy_for_event_post_type( $event->post_type ) )
+				)
+			);
+		}
+
+		// An empty list would match every term on the event, the venue's included.
+		if ( array() === $taxonomies ) {
+			return array();
+		}
+
 		$terms = get_terms(
 			array(
-				'taxonomy'   => get_object_taxonomies( $event ),
+				'taxonomy'   => $taxonomies,
 				'object_ids' => $event->ID,
 			)
 		);

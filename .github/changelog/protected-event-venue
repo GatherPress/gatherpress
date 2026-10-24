@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+A password-protected event no longer gives its venue away: the REST API, the venue terms endpoint, the post classes and the head feed links leave it out, and lists filtered by a venue leave out password-protected events for anyone who cannot edit others' events.
