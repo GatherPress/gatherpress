@@ -88,6 +88,14 @@ final class Rsvp_Form {
 	);
 
 	/**
+	 * Form ids given out on this page, so a repeated form gets its own.
+	 *
+	 * @since TBD
+	 * @var array<string, true>
+	 */
+	private array $form_ids = array();
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -156,8 +164,8 @@ final class Rsvp_Form {
 			return '';
 		}
 
-		$unique_form_id = $this->generate_form_id();
 		$schema_form_id = $this->get_form_schema_id( $post_id, $block );
+		$unique_form_id = $this->generate_form_id( $post_id, $schema_form_id );
 
 		$block_content = trim( $block_content );
 		$block_content = (string) preg_replace( '/^<div\b/', '<form', $block_content );
@@ -752,15 +760,29 @@ final class Rsvp_Form {
 	/**
 	 * Generate a unique form ID for RSVP redirect handling.
 	 *
-	 * Creates a unique identifier that can be used to track form submissions
-	 * and handle redirects back to the correct page location.
+	 * The success redirect's anchor points at this id, so it is the same on
+	 * every render of the page: built from the event and the form's schema
+	 * id, with a numbered suffix when the form repeats on the page.
 	 *
 	 * @since 0.33.0
+	 * @since TBD Built from the event and form schema id rather than uniqid().
+	 *
+	 * @param int    $post_id        The event post ID.
+	 * @param string $form_schema_id The form's schema id.
 	 *
 	 * @return string Unique form ID.
 	 */
-	private function generate_form_id(): string {
-		return uniqid( 'gatherpress_rsvp_' );
+	private function generate_form_id( int $post_id, string $form_schema_id ): string {
+		$base    = sprintf( 'gatherpress_rsvp_%d_%s', $post_id, $form_schema_id );
+		$form_id = $base;
+
+		for ( $copy = 2; isset( $this->form_ids[ $form_id ] ); $copy++ ) {
+			$form_id = $base . '-' . $copy;
+		}
+
+		$this->form_ids[ $form_id ] = true;
+
+		return $form_id;
 	}
 
 	/**
