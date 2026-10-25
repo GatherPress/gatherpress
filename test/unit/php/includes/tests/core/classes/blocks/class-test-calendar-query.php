@@ -180,18 +180,18 @@ class Test_Calendar_Query extends Base {
 	public function test_register_rest_hooks(): void {
 		$instance = Calendar_Query::get_instance();
 
-		remove_filter( 'rest_post_query', array( $instance, 'rest_post_type_query' ), 20 );
+		remove_filter( 'rest_post_query', array( $instance, 'rest_post_type_query' ), 11 );
 		remove_filter( 'rest_post_collection_params', array( $instance, 'filter_rest_collection_params' ) );
 
 		$instance->register_existing_post_types();
 
-		$this->assertSame( 20, has_filter( 'rest_post_query', array( $instance, 'rest_post_type_query' ) ) );
+		$this->assertSame( 11, has_filter( 'rest_post_query', array( $instance, 'rest_post_type_query' ) ) );
 		$this->assertSame(
 			10,
 			has_filter( 'rest_post_collection_params', array( $instance, 'filter_rest_collection_params' ) )
 		);
 		$this->assertSame(
-			20,
+			11,
 			has_filter( sprintf( 'rest_%s_query', Event::POST_TYPE ), array( $instance, 'rest_post_type_query' ) )
 		);
 

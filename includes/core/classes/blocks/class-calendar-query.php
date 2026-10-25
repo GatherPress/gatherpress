@@ -141,8 +141,8 @@ final class Calendar_Query {
 			sprintf( 'rest_%s_collection_params', $post_type ),
 			array( $this, 'filter_rest_collection_params' )
 		);
-		// Priority 20 runs after Event_Query::rest_query(), so the calendar can drop its upcoming/past filter.
-		add_filter( sprintf( 'rest_%s_query', $post_type ), array( $this, 'rest_post_type_query' ), 20, 2 );
+		// Runs after Event_Query::rest_query(), so the calendar can drop its upcoming/past filter.
+		add_filter( sprintf( 'rest_%s_query', $post_type ), array( $this, 'rest_post_type_query' ), 11, 2 );
 	}
 
 	/**
