@@ -396,20 +396,29 @@ Then apply the rollup by hand:
 1. Add the rollup commit's `## [X.Y.Z]` section and its `[X.Y.Z]:` link line
    to develop's `CHANGELOG.md`.
 2. Delete the consumed entry files the rollup commit deletes.
-3. Carry the `@since` tags. From a checkout of the tag, with
-   `origin/develop` pointing at this branch, run
-   `php .github/scripts/release/carry-since.php --version=X.Y.Z` and write
-   each `additions[].contents` (base64) to its `path`. Don't take these from
-   the rollup commit's diff: a file whose carried copy matches `main`'s shows
-   no change there, which is how 0.36.1 lost 94 tags (#2527).
+3. Carry the `@since` tags. In a separate checkout of the tag, with
+   develop fetched, run
+   `php .github/scripts/release/carry-since.php --version=X.Y.Z > carry.json`.
+   Base64-decode each `additions[].contents` and write it to its `path` in
+   the rebuilt branch's worktree, not in the tag checkout. Don't take these
+   from the rollup commit's diff: a file whose carried copy matches `main`'s
+   shows no change there, which is how 0.36.1 lost 94 tags (#2527).
 4. Copy `.github/scripts/release/credits/X.Y.Z.json` from `main` if develop
    lacks it.
 
-Check that `git diff origin/develop` holds only those changes, and that a
-rerun of `carry-since.php` reports no additions, only the docblocks the
-rollup PR listed as unmatched. Then
-`git push --force-with-lease origin release/X.Y.Z`, and auto-merge takes it
-from there.
+Commit the result, and check that `git diff origin/develop` holds only those
+changes. Then confirm every carried file landed. Run this in the rebuilt
+branch's worktree; it should print nothing:
+
+```bash
+jq -r '.additions[].path' carry.json | while read -r file; do
+	jq -r --arg file "$file" '.additions[] | select(.path == $file) | .contents' carry.json \
+		| base64 --decode | cmp -s - "$file" || echo "not carried: $file"
+done
+```
+
+Then `git push --force-with-lease origin release/X.Y.Z`, and auto-merge
+takes it from there.
 
 Never resolve it by merging `main` into `develop` through this PR: that would
 carry the release's version strings, credits, and rollups onto `develop`.
