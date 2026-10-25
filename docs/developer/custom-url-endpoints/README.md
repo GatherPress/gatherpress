@@ -179,7 +179,7 @@ public function get_office365_calendar_link(): string {
 For the calendar endpoints shipped by core, instantiate the [`External`](../../../includes/core/classes/calendar/external/class-external.php) class with the event ID and call the matching getter:
 
 ```php
-use GatherPress\Core\Calendar\External\External;
+use GatherPress\Core\Calendar\External;
 
 $calendar = new External( $event_id );
 $ical_url    = $calendar->get_ical_url();
