@@ -8,8 +8,8 @@
 
 namespace GatherPress\Tests\Core\Calendar\External;
 
-// Deep import on purpose: test_short_and_prior_names_resolve_to_current_class
-// asserts External::class equals the real FQN, which the aliases are not.
+// Deep import on purpose: test_short_name_resolves_to_current_class asserts
+// External::class equals the real FQN, which the alias is not.
 use GatherPress\Core\Calendar\External\External;
 use GatherPress\Core\Calendar\External\Setup;
 use GatherPress\Core\Event;
@@ -28,26 +28,24 @@ use WP_Post;
 class Test_External extends Base {
 
 	/**
-	 * Asserts that the short name `GatherPress\Core\Calendar\External` and the prior name
-	 * `GatherPress\Core\Calendar` resolve to `GatherPress\Core\Calendar\External\External`
-	 * through the alias map in `includes/core/register-class-aliases.php`.
+	 * Asserts that the short name `GatherPress\Core\Calendar\External` resolves to
+	 * `GatherPress\Core\Calendar\External\External` through the alias map in
+	 * `includes/core/register-class-aliases.php`.
 	 *
 	 * @since TBD
 	 *
 	 * @return void
 	 */
-	public function test_short_and_prior_names_resolve_to_current_class(): void {
-		$event_id = $this->make_event();
+	public function test_short_name_resolves_to_current_class(): void {
+		$alias = 'GatherPress\\Core\\Calendar\\External';
 
-		foreach ( array( 'GatherPress\\Core\\Calendar\\External', 'GatherPress\\Core\\Calendar' ) as $alias ) {
-			$this->assertTrue( class_exists( $alias ), sprintf( '%s should resolve via the alias map.', $alias ) );
-			$this->assertSame(
-				External::class,
-				( new ReflectionClass( $alias ) )->getName(),
-				sprintf( '%s should resolve to the current class.', $alias )
-			);
-			$this->assertInstanceOf( External::class, new $alias( $event_id ) );
-		}
+		$this->assertTrue( class_exists( $alias ), 'The short name should resolve via the alias map.' );
+		$this->assertSame(
+			External::class,
+			( new ReflectionClass( $alias ) )->getName(),
+			'The short name should resolve to the current class.'
+		);
+		$this->assertInstanceOf( External::class, new $alias( $this->make_event() ) );
 	}
 
 	/**

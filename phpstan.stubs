@@ -56,11 +56,6 @@ namespace {
         class_alias( 'GatherPress\\Core\\Event\\Event', 'GatherPress\\Core\\Event' );
     }
 
-    if ( ! class_exists( 'GatherPress\\Core\\Calendar', false ) ) {
-        require_once __DIR__ . '/includes/core/classes/calendar/external/class-external.php';
-        class_alias( 'GatherPress\\Core\\Calendar\\External\\External', 'GatherPress\\Core\\Calendar' );
-    }
-
     if ( ! class_exists( 'GatherPress\\Core\\Calendar\\External', false ) ) {
         require_once __DIR__ . '/includes/core/classes/calendar/external/class-external.php';
         class_alias( 'GatherPress\\Core\\Calendar\\External\\External', 'GatherPress\\Core\\Calendar\\External' );
