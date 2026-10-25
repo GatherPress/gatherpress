@@ -61,6 +61,11 @@ namespace {
         class_alias( 'GatherPress\\Core\\External_Calendar\\External_Calendar', 'GatherPress\\Core\\Calendar' );
     }
 
+    if ( ! class_exists( 'GatherPress\\Core\\External_Calendar', false ) ) {
+        require_once __DIR__ . '/includes/core/classes/external-calendar/class-external-calendar.php';
+        class_alias( 'GatherPress\\Core\\External_Calendar\\External_Calendar', 'GatherPress\\Core\\External_Calendar' );
+    }
+
     if ( ! class_exists( 'GatherPress\\Core\\Rsvp', false ) ) {
         require_once __DIR__ . '/includes/core/classes/rsvp/class-rsvp.php';
         class_alias( 'GatherPress\\Core\\Rsvp\\Rsvp', 'GatherPress\\Core\\Rsvp' );

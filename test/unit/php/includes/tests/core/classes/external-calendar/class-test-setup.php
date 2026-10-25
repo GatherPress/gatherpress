@@ -8,7 +8,7 @@
 
 namespace GatherPress\Tests\Core\External_Calendar;
 
-use GatherPress\Core\External_Calendar\External_Calendar;
+use GatherPress\Core\External_Calendar;
 use GatherPress\Core\External_Calendar\Setup;
 use GatherPress\Core\Event;
 use GatherPress\Core\Topic;

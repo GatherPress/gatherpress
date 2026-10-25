@@ -8,21 +8,47 @@
 
 namespace GatherPress\Tests\Core\External_Calendar;
 
+// Deep import on purpose: test_short_and_prior_names_resolve_to_current_class
+// asserts External_Calendar::class equals the real FQN, which the aliases are not.
 use GatherPress\Core\External_Calendar\External_Calendar;
 use GatherPress\Core\External_Calendar\Setup;
 use GatherPress\Core\Event;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
+use ReflectionClass;
 use WP_Post;
 
 /**
- * Class Test_Calendar.
+ * Class Test_External_Calendar.
  *
  * @coversDefaultClass \GatherPress\Core\External_Calendar\External_Calendar
  * @group              endpoints
  */
 class Test_External_Calendar extends Base {
+
+	/**
+	 * Asserts that the short name `GatherPress\Core\External_Calendar` and the prior name
+	 * `GatherPress\Core\Calendar` resolve to `GatherPress\Core\External_Calendar\External_Calendar`
+	 * through the alias map in `includes/core/register-class-aliases.php`.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function test_short_and_prior_names_resolve_to_current_class(): void {
+		$event_id = $this->make_event();
+
+		foreach ( array( 'GatherPress\\Core\\External_Calendar', 'GatherPress\\Core\\Calendar' ) as $alias ) {
+			$this->assertTrue( class_exists( $alias ), sprintf( '%s should resolve via the alias map.', $alias ) );
+			$this->assertSame(
+				External_Calendar::class,
+				( new ReflectionClass( $alias ) )->getName(),
+				sprintf( '%s should resolve to the current class.', $alias )
+			);
+			$this->assertInstanceOf( External_Calendar::class, new $alias( $event_id ) );
+		}
+	}
 
 	/**
 	 * Build a published event with datetimes and (optionally) a venue with
