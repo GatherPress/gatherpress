@@ -148,7 +148,7 @@ describe( 'modal-manager openModal', () => {
 		document.body.innerHTML = `
 			<div class="wp-block-gatherpress-modal-manager">
 				<button type="button">Close</button>
-				<dialog class="wp-block-gatherpress-modal" open></div>
+				<dialog class="wp-block-gatherpress-modal" open></dialog>
 			</div>
 		`;
 
