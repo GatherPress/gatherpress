@@ -44,6 +44,7 @@ class Test_Rsvp_Form extends Base {
 	public function tearDown(): void {
 		Settings::get_instance()->set( 'enable_open_rsvp', true );
 		$this->reset_returned_state();
+		Utility::set_and_get_hidden_property( Rsvp_Form::get_instance(), 'form_ids', array() );
 		parent::tearDown();
 	}
 
@@ -114,7 +115,8 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests the generate_form_id method.
 	 *
-	 * Verifies that the method generates unique form IDs with the correct prefix.
+	 * Verifies that the id comes from the event and the form's schema id, and
+	 * that a form repeated on the page gets its own.
 	 *
 	 * @since 0.33.0
 	 * @covers ::generate_form_id
@@ -124,14 +126,90 @@ class Test_Rsvp_Form extends Base {
 	public function test_generate_form_id(): void {
 		$instance = Rsvp_Form::get_instance();
 
-		$form_id_1 = Utility::invoke_hidden_method( $instance, 'generate_form_id' );
-		$form_id_2 = Utility::invoke_hidden_method( $instance, 'generate_form_id' );
+		Utility::set_and_get_hidden_property( $instance, 'form_ids', array() );
 
-		$this->assertIsString( $form_id_1 );
-		$this->assertIsString( $form_id_2 );
-		$this->assertStringStartsWith( 'gatherpress_rsvp_', $form_id_1 );
-		$this->assertStringStartsWith( 'gatherpress_rsvp_', $form_id_2 );
-		$this->assertNotEquals( $form_id_1, $form_id_2 );
+		$this->assertSame(
+			'gatherpress_rsvp_974_form_2',
+			Utility::invoke_hidden_method( $instance, 'generate_form_id', array( 974, 'form_2' ) )
+		);
+		$this->assertSame(
+			'gatherpress_rsvp_974_form_2-2',
+			Utility::invoke_hidden_method( $instance, 'generate_form_id', array( 974, 'form_2' ) ),
+			'A second copy of the form on the page should get its own id.'
+		);
+		$this->assertSame(
+			'gatherpress_rsvp_974_form_2-3',
+			Utility::invoke_hidden_method( $instance, 'generate_form_id', array( 974, 'form_2' ) )
+		);
+		$this->assertSame(
+			'gatherpress_rsvp_974_4_form_1',
+			Utility::invoke_hidden_method( $instance, 'generate_form_id', array( 974, '4_form_1' ) ),
+			'Another form on the event keeps its own base id.'
+		);
+	}
+
+	/**
+	 * Tests the success redirect's anchor finds the form on the page it returns to.
+	 *
+	 * Without JavaScript the form posts to wp-comments-post.php and comes back
+	 * with `#<form id>`, so the id has to survive into the next render.
+	 *
+	 * @since TBD
+	 * @covers ::transform_block_content
+	 * @covers ::generate_form_id
+	 *
+	 * @return void
+	 */
+	public function test_success_redirect_anchor_matches_the_next_render(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$comment  = $this->factory()->comment->create_and_get(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+		$content  = '<div class="wp-block-gatherpress-rsvp-form">RSVP Form Content</div>';
+		$block    = array(
+			'blockName' => 'gatherpress/rsvp-form',
+			'attrs'     => array( 'postId' => $post_id ),
+		);
+		$matches  = array();
+
+		preg_match(
+			'/name="gatherpress_rsvp_form_id" value="([^"]+)"/',
+			$instance->transform_block_content( $content, $block ),
+			$matches
+		);
+
+		$posted_form_id = $matches[1];
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) use ( $posted_form_id ) {
+				return INPUT_POST === $type && 'gatherpress_rsvp_form_id' === $var_name ? $posted_form_id : $pre_value;
+			},
+			10,
+			3
+		);
+		add_filter(
+			'gatherpress_pre_get_wp_referer',
+			static function () use ( $post_id ) {
+				return get_permalink( $post_id );
+			}
+		);
+
+		$location = Form::get_instance()->handle_rsvp_comment_redirect( 'https://example.com/original', $comment );
+
+		// The page after the redirect is a new request.
+		Utility::set_and_get_hidden_property( $instance, 'form_ids', array() );
+
+		$this->assertStringEndsWith( '#' . $posted_form_id, $location );
+		$this->assertStringContainsString(
+			'id="' . $posted_form_id . '"',
+			$instance->transform_block_content( $content, $block ),
+			'The form on the page the redirect returns to should carry the anchor\'s id.'
+		);
 	}
 
 	/**
