@@ -2,8 +2,9 @@
 /**
  * Geodata standard (`geo_*`) logic for venues and events. Venues derive
  * geo_* from their own fields on save; events refresh lazily from their
- * venue on view, since a venue can have ~1,000 linked events. The venue
- * and event `Meta` classes own the hookups.
+ * venue on view, since a venue can have ~1,000 linked events, and only
+ * recheck whether their location is public on save. The venue and event
+ * `Meta` classes own the hookups.
  *
  * @package GatherPress\Core
  * @since 0.36.0
@@ -18,6 +19,7 @@ use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
 use WP_Post;
 use WP_REST_Response;
+use WP_Term;
 
 /**
  * Class Geo_Sync.
@@ -39,6 +41,16 @@ final class Geo_Sync {
 	 * @var string[]
 	 */
 	const FIELDS = array( 'geo_latitude', 'geo_longitude', 'geo_address', 'geo_public' );
+
+	/**
+	 * Venue meta keeping the locations a venue cleared from its events when it
+	 * stopped being public, keyed by event post ID, until it is public again.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @var string
+	 */
+	const CLEARED_COPIES_META_KEY = '_gatherpress_geo_cleared_copies';
 
 	/**
 	 * Registers the read-only Geodata standard meta for a post type.
@@ -127,25 +139,47 @@ final class Geo_Sync {
 	/**
 	 * Whether a post's location may be shown publicly.
 	 *
-	 * Only a published post qualifies. Draft, pending, scheduled and private
-	 * posts keep their location but mark it not public.
+	 * Only a published post without a password qualifies. Draft, pending,
+	 * scheduled, private and password-protected posts keep their location
+	 * but mark it not public.
 	 *
 	 * @since 0.36.0
+	 * @since 0.36.1 A password-protected post is not public.
 	 *
 	 * @param WP_Post|null $post The post, or null when there is none.
 	 *
 	 * @phpstan-assert-if-true =WP_Post $post
 	 *
-	 * @return bool Whether the post is published.
+	 * @return bool Whether the post is published without a password.
 	 */
 	private static function is_public( ?WP_Post $post ): bool {
-		return $post instanceof WP_Post && 'publish' === $post->post_status;
+		return $post instanceof WP_Post && 'publish' === $post->post_status && '' === $post->post_password;
+	}
+
+	/**
+	 * Whether an event's location may be shown publicly.
+	 *
+	 * An event with no venue has no location to hide, so only its own status
+	 * counts.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @param WP_Post|null $event      The event post.
+	 * @param WP_Post|null $venue_post The event's venue post, or null when it has none.
+	 *
+	 * @return bool Whether the event, and its venue if it has one, are public.
+	 */
+	private static function is_event_public( ?WP_Post $event, ?WP_Post $venue_post ): bool {
+		return self::is_public( $event ) && ( null === $venue_post || self::is_public( $venue_post ) );
 	}
 
 	/**
 	 * Derives geo_* meta from a saved venue's own fields.
 	 *
+	 * A venue that isn't public also clears the location its events copied.
+	 *
 	 * @since 0.36.0
+	 * @since 0.36.1 Clears the copies on its events when the venue isn't public.
 	 *
 	 * @param int     $post_id Post ID that just saved.
 	 * @param WP_Post $post    Post object.
@@ -162,8 +196,137 @@ final class Geo_Sync {
 		}
 
 		$information = ( new Venue( $post_id ) )->get_information();
+		$is_public   = self::is_public( $post );
 
-		self::write( $post_id, self::build_values( $information, self::is_public( $post ) ) );
+		self::write( $post_id, self::build_values( $information, $is_public ) );
+
+		// A venue that isn't public takes back the location its events copied,
+		// past ones included, since maybe_refresh() never reaches those, and
+		// gives it back once it is public again.
+		if ( $is_public ) {
+			$this->restore_event_copies( $post );
+		} else {
+			$this->clear_event_copies( $post );
+		}
+	}
+
+	/**
+	 * Clears the location every event copied from a venue.
+	 *
+	 * Writes what maybe_refresh() would for an event at a venue that isn't
+	 * public: no location, and not public. The locations it clears are kept
+	 * on the venue (`CLEARED_COPIES_META_KEY`) for `restore_event_copies()`,
+	 * since a past event's location records where it happened. Only the first
+	 * copy is kept: saving the venue again while it isn't public finds the
+	 * events already blank.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @param WP_Post $venue The venue post.
+	 *
+	 * @return void
+	 */
+	private function clear_event_copies( WP_Post $venue ): void {
+		$shadow_source = Shadow_Source::get_instance();
+		$taxonomy      = $shadow_source->get_taxonomy( $venue->post_type );
+		$term          = get_term_by(
+			'slug',
+			$shadow_source->term_slug_from_post_name( $venue->post_name ),
+			$taxonomy
+		);
+
+		// A venue that was never published has no term, so no event points at it.
+		if ( ! $term instanceof WP_Term ) {
+			return;
+		}
+
+		$event_ids = get_objects_in_term( $term->term_id, $taxonomy );
+		$event_ids = array_map( 'intval', is_array( $event_ids ) ? $event_ids : array() );
+
+		// One query for every event's meta, rather than one per event in write().
+		update_meta_cache( 'post', $event_ids );
+
+		$cleared = get_post_meta( $venue->ID, self::CLEARED_COPIES_META_KEY, true );
+		$cleared = is_array( $cleared ) ? $cleared : array();
+
+		foreach ( $event_ids as $event_id ) {
+			$location = array(
+				'latitude'  => (string) get_post_meta( $event_id, 'geo_latitude', true ),
+				'longitude' => (string) get_post_meta( $event_id, 'geo_longitude', true ),
+				'address'   => (string) get_post_meta( $event_id, 'geo_address', true ),
+			);
+
+			if ( ! isset( $cleared[ $event_id ] ) && '' !== implode( '', $location ) ) {
+				$cleared[ $event_id ] = $location;
+			}
+
+			self::write( $event_id, self::build_values( array(), false ) );
+		}
+
+		if ( array() !== $cleared ) {
+			update_post_meta( $venue->ID, self::CLEARED_COPIES_META_KEY, $cleared );
+		}
+	}
+
+	/**
+	 * Gives events back the location a venue cleared from them.
+	 *
+	 * Each event at the venue gets the exact location it had, not the
+	 * venue's current one, so a past event keeps the place it happened even
+	 * if the venue's address changed in the meantime. Whether it is public
+	 * follows the event's own status. An event that has since been deleted or
+	 * moved to another venue is left as it is.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @param WP_Post $venue The venue post, now public.
+	 *
+	 * @return void
+	 */
+	private function restore_event_copies( WP_Post $venue ): void {
+		$cleared = get_post_meta( $venue->ID, self::CLEARED_COPIES_META_KEY, true );
+
+		if ( ! is_array( $cleared ) ) {
+			return;
+		}
+
+		$shadow_source = Shadow_Source::get_instance();
+		$taxonomy      = $shadow_source->get_taxonomy( $venue->post_type );
+		$term_slug     = $shadow_source->term_slug_from_post_name( $venue->post_name );
+
+		foreach ( $cleared as $event_id => $location ) {
+			$event = get_post( (int) $event_id );
+
+			if ( $event instanceof WP_Post && has_term( $term_slug, $taxonomy, $event ) ) {
+				self::write( $event->ID, self::build_values( (array) $location, self::is_public( $event ) ) );
+			}
+		}
+
+		delete_post_meta( $venue->ID, self::CLEARED_COPIES_META_KEY );
+	}
+
+	/**
+	 * Marks a saved event's location public or not, past events included.
+	 *
+	 * An event that already happened is never refreshed by maybe_refresh(),
+	 * so this is what catches one that gets a password or is unpublished.
+	 * Only `geo_public` changes, so a past event keeps the location it copied.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @param int     $post_id Post ID that just saved.
+	 * @param WP_Post $post    Post object.
+	 *
+	 * @return void
+	 */
+	public function on_event_saved( int $post_id, WP_Post $post ): void {
+		if ( ! post_type_supports( $post->post_type, Venue::ASSIGNMENT_SUPPORT ) ) {
+			return;
+		}
+
+		$venue_post = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $post_id );
+
+		self::write( $post_id, array( 'geo_public' => self::is_event_public( $post, $venue_post ) ? 1 : 0 ) );
 	}
 
 	/**
@@ -231,18 +394,13 @@ final class Geo_Sync {
 
 		$venue_post = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $event_id );
 
-		// Only a published venue shares its location, so a draft or private
-		// venue's address never leaks through a published event.
+		// Only a published venue without a password shares its location, so a
+		// draft, private or protected venue's address never leaks through an event.
 		$information = self::is_public( $venue_post )
 			? ( new Venue( $venue_post->ID ) )->get_information()
 			: array();
 
-		// An event with no venue has no location to hide, so only its own
-		// status counts.
-		$is_public = self::is_public( get_post( $event_id ) )
-			&& ( null === $venue_post || self::is_public( $venue_post ) );
-
-		$desired = self::build_values( $information, $is_public );
+		$desired = self::build_values( $information, self::is_event_public( get_post( $event_id ), $venue_post ) );
 
 		return self::write( $event_id, $desired ) ? $desired : null;
 	}

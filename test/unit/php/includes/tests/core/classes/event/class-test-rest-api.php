@@ -20,6 +20,7 @@ use GatherPress\Core\Topic;
 use GatherPress\Core\Utility as GatherPress_Utility;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
+use PasswordHash;
 use PMC\Unit_Test\Utility;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -851,6 +852,82 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Tests handle_rsvp_form_submission refuses a password-protected event until its password is entered.
+	 *
+	 * The form posts to wp-comments-post.php without JavaScript, which refuses
+	 * a password-protected post, so the REST route has to refuse it too.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::handle_rsvp_form_submission
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_form_submission_password_protected_event(): void {
+		$instance = Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		);
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'comment_post_ID', $post_id );
+		$request->set_param( 'author', 'Test Author' );
+		$request->set_param( 'email', 'test@example.com' );
+
+		$response = $instance->handle_rsvp_form_submission( $request );
+
+		$this->assertSame( 403, $response->get_status() );
+		$this->assertFalse( $response->get_data()['success'] );
+		$this->assertSame( 'Enter the event password to RSVP.', $response->get_data()['message'] );
+		$this->assertSame( 0, $this->count_rsvp_comments( $post_id ), 'Failed to assert no RSVP was saved.' );
+
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+
+		// The cookie WordPress sets once a viewer enters the post password.
+		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'secret' );
+
+		$response = $instance->handle_rsvp_form_submission( $request );
+
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+
+		$this->assertSame( 200, $response->get_status(), 'Failed to assert the RSVP is accepted with the password.' );
+		$this->assertTrue( $response->get_data()['success'] );
+		$this->assertSame( 1, $this->count_rsvp_comments( $post_id ), 'Failed to assert the accepted RSVP was saved.' );
+	}
+
+	/**
+	 * Counts an event's RSVP comments in any status, unapproved ones included.
+	 *
+	 * Comment queries leave RSVPs out by default, so the count turns that
+	 * exclusion off for its own query.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @param int $post_id The event's post ID.
+	 *
+	 * @return int The number of RSVP comments.
+	 */
+	private function count_rsvp_comments( int $post_id ): int {
+		add_filter( 'gatherpress_rsvp_comment_query_exclusion', '__return_false' );
+
+		$count = get_comments(
+			array(
+				'post_id' => $post_id,
+				'type'    => Rsvp::COMMENT_TYPE,
+				'status'  => 'all',
+				'count'   => true,
+			)
+		);
+
+		remove_filter( 'gatherpress_rsvp_comment_query_exclusion', '__return_false' );
+
+		return (int) $count;
+	}
+
+	/**
 	 * Coverage for rsvp_responses method.
 	 *
 	 * @covers ::rsvp_responses
@@ -1480,6 +1557,109 @@ class Test_Rest_Api extends Base {
 		$this->assertFalse(
 			call_user_func( $callback, $request ),
 			'A logged-out user should not be allowed to email about any event.'
+		);
+	}
+
+	/**
+	 * Tests emailing every user takes edit_others_posts, not just edit_post.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::email_route
+	 */
+	public function test_email_route_permission_callback_send_all(): void {
+		$instance = Rest_Api::get_instance();
+		$route    = Utility::invoke_hidden_method( $instance, 'email_route' );
+		$callback = $route['args']['permission_callback'];
+
+		$contributor_id = $this->factory->user->create( array( 'role' => 'contributor' ) );
+		$author_id      = $this->factory->user->create( array( 'role' => 'author' ) );
+		$editor_id      = $this->factory->user->create( array( 'role' => 'editor' ) );
+
+		$draft_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_author' => $contributor_id,
+				'post_status' => 'draft',
+			)
+		);
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_author' => $author_id,
+				'post_status' => 'publish',
+			)
+		);
+
+		$send_all = array(
+			'all'           => true,
+			'attending'     => false,
+			'waiting_list'  => false,
+			'not_attending' => false,
+		);
+
+		$request = new WP_REST_Request();
+		$request->set_param( 'send', $send_all );
+
+		wp_set_current_user( $contributor_id );
+		$request->set_param( 'post_id', $draft_id );
+		$this->assertFalse(
+			call_user_func( $callback, $request ),
+			'Emailing all users should take more than the right to edit the event.'
+		);
+
+		wp_set_current_user( $author_id );
+		$request->set_param( 'post_id', $event_id );
+		$this->assertFalse(
+			call_user_func( $callback, $request ),
+			'An author should not be allowed to email every user from their own event.'
+		);
+
+		$request->set_param(
+			'send',
+			array_merge(
+				$send_all,
+				array(
+					'all'       => false,
+					'attending' => true,
+				)
+			)
+		);
+		$this->assertTrue(
+			call_user_func( $callback, $request ),
+			'An author should still be allowed to email the attendees of their own event.'
+		);
+
+		wp_set_current_user( $editor_id );
+		$request->set_param( 'send', $send_all );
+		$this->assertTrue(
+			call_user_func( $callback, $request ),
+			'An editor should be allowed to email every user.'
+		);
+	}
+
+	/**
+	 * Tests who can email every user about an event.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::can_email_all_users
+	 */
+	public function test_can_email_all_users(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'author' ) ) );
+		$this->assertFalse(
+			Rest_Api::can_email_all_users( Event::POST_TYPE ),
+			'An author should not be allowed to email every user.'
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'editor' ) ) );
+		$this->assertTrue(
+			Rest_Api::can_email_all_users( Event::POST_TYPE ),
+			'An editor should be allowed to email every user.'
+		);
+		$this->assertFalse(
+			Rest_Api::can_email_all_users( 'unregistered_post_type' ),
+			'An unregistered post type should never allow emailing every user.'
 		);
 	}
 

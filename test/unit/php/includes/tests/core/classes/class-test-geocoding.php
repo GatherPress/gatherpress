@@ -1471,9 +1471,68 @@ class Test_Geocoding extends Base {
 			$captured_url,
 			'Failed to assert URL contains Photon domain.'
 		);
-		$this->assertStringContainsString( 'limit=5', $captured_url, 'Failed to assert limit=5.' );
+		$this->assertStringContainsString( 'limit=10', $captured_url, 'Failed to assert limit=10.' );
 		$this->assertStringContainsString( 'lang=', $captured_url, 'Failed to assert lang.' );
 		$this->assertStringContainsString( 'q=Test', $captured_url, 'Failed to assert query string.' );
+	}
+
+	/**
+	 * A repeated label is suggested once, and the 5-row cap counts unique labels (#2449).
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::search_addresses
+	 * @covers ::build_search_suggestions_response
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_skips_repeated_labels(): void {
+		$instance  = Geocoding::get_instance();
+		$cache_key = 'gatherpress_photon_search_' . md5( 'Repeated label test|default' );
+		delete_transient( $cache_key );
+
+		$first  = $this->build_photon_feature( array( 'city' => 'Repeated City' ) );
+		$repeat = $this->build_photon_feature( array( 'city' => 'Repeated City' ) );
+
+		$first['geometry']['coordinates']  = array( 1.5, 2.5 );
+		$repeat['geometry']['coordinates'] = array( 3.5, 4.5 );
+
+		$features = array( $first, $repeat );
+
+		foreach ( range( 1, 5 ) as $i ) {
+			$features[] = $this->build_photon_feature( array( 'city' => "City {$i}" ) );
+		}
+		$this->mock_photon_response( $features );
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Repeated label test' );
+
+		$suggestions = $instance->search_addresses( $request )->get_data()['suggestions'];
+		$labels      = array_column( $suggestions, 'label' );
+
+		$this->assertCount( 5, $suggestions, 'Failed to assert the cap still fills 5 suggestions.' );
+		$this->assertSame(
+			$labels,
+			array_values( array_unique( $labels ) ),
+			'Failed to assert each label is suggested once.'
+		);
+		$this->assertStringContainsString(
+			'Repeated City',
+			$labels[0],
+			'Failed to assert the first row keeps its place.'
+		);
+		$this->assertSame(
+			'2.5',
+			$suggestions[0]['latitude'],
+			'Failed to assert the first of the repeated rows is kept.'
+		);
+		$this->assertStringContainsString(
+			'City 4',
+			$labels[4],
+			'Failed to assert the repeat does not use up a place.'
+		);
+
+		delete_transient( $cache_key );
 	}
 
 	/**

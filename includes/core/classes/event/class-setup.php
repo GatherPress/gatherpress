@@ -148,6 +148,12 @@ final class Setup {
 			get_post_types_by_support( Event::SUPPORT )
 		);
 
+		// Lets the email modal hide the "All Members" option from users the
+		// email route would refuse it to.
+		$settings['gatherpress']['config']['canEmailAllUsers'] = Rest_Api::can_email_all_users(
+			(string) get_post_type()
+		);
+
 		return $settings;
 	}
 
@@ -739,9 +745,11 @@ final class Setup {
 			$block_content
 		);
 
-		$replaced = preg_replace(
+		// A callback keeps the date literal: in a replacement string, a date that starts
+		// with a digit (e.g. "21/10/2026") turns `$1` into the nonexistent group `$12`.
+		$replaced = preg_replace_callback(
 			'|(<time[^>]*>).*?(</time>)|s',
-			'$1' . esc_html( $display_date ) . '$2',
+			static fn( array $matches ): string => $matches[1] . esc_html( $display_date ) . $matches[2],
 			$block_content
 		);
 

@@ -730,7 +730,14 @@ final class List_Table extends WP_List_Table {
 					: '-';
 				break;
 			case 'date':
-				$output = get_comment_date( 'Y/m/d \a\t g:i a', $comment_id );
+				$output = sprintf(
+					/* translators: 1: RSVP date, 2: RSVP time. */
+					__( '%1$s at %2$s', 'gatherpress' ),
+					/* translators: RSVP date format. See https://www.php.net/manual/datetime.format.php */
+					get_comment_date( __( 'Y/m/d', 'gatherpress' ), $comment_id ),
+					/* translators: RSVP time format. See https://www.php.net/manual/datetime.format.php */
+					get_comment_date( __( 'g:i a', 'gatherpress' ), $comment_id )
+				);
 				break;
 			case 'type':
 				$terms = wp_get_object_terms( $comment_id, Provider::TAXONOMY );

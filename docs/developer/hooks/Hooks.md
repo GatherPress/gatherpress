@@ -19,11 +19,7 @@
 
 ## class-cache.php
 
-- [`gatherpress_calendar_max_age`](gatherpress_calendar_max_age.md) Filters how long calendar responses may be reused by clients and caches.
-
-## class-calendar.php
-
-- [`gatherpress_calendar_url`](gatherpress_calendar_url.md) Filters the calendar URL for a single event.
+- [`gatherpress_calendar_external_max_age`](gatherpress_calendar_external_max_age.md) Filters how long calendar responses may be reused by clients and caches.
 
 ## class-email.php
 
@@ -43,6 +39,10 @@
 - [`gatherpress_force_online_event_link`](gatherpress_force_online_event_link.md) Filters whether to force the display of the online event link.
 - [`gatherpress_time_format`](gatherpress_time_format.md)
 - [`gatherpress_timezone`](gatherpress_timezone.md)
+
+## class-external.php
+
+- [`gatherpress_calendar_external_url`](gatherpress_calendar_external_url.md) Filters the calendar URL for a single event.
 
 ## class-feed.php
 
@@ -143,6 +143,7 @@
 
 - [`gatherpress_shadow_taxonomy_args`](gatherpress_shadow_taxonomy_args.md) Filters the taxonomy registration args for a shadow-source post type.
 - [`gatherpress_shadow_taxonomy_object_types`](gatherpress_shadow_taxonomy_object_types.md) Filters which event post types the shadow taxonomy should be
+- [`the_title`](the_title.md)
 
 ## class-storage.php
 
