@@ -78,7 +78,7 @@ final class Date_Calculator {
 	 */
 	public static function get_datetime_separator(): string {
 		$default_separator = _x( '–', 'Calendar heading date range separator', 'gatherpress' );
-		$separator         = trim( Event\Event::get_datetime_separator( null, $default_separator ) );
+		$separator         = trim( Event::get_datetime_separator( null, $default_separator ) );
 
 		return '' !== $separator ? $separator : $default_separator;
 	}
@@ -290,11 +290,11 @@ final class Date_Calculator {
 		}
 
 		$post_type = get_post_type( $post_id );
-		if ( ! is_string( $post_type ) || ! post_type_supports( $post_type, Event\Event::SUPPORT ) ) {
+		if ( ! is_string( $post_type ) || ! post_type_supports( $post_type, Event::SUPPORT ) ) {
 			return null;
 		}
 
-		$datetimes = ( new Event\Event( $post_id ) )->get_datetime();
+		$datetimes = ( new Event( $post_id ) )->get_datetime();
 
 		if ( '' === $datetimes['datetime_start'] ) {
 			return null;

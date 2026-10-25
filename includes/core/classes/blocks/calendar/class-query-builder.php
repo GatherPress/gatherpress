@@ -109,7 +109,7 @@ final class Query_Builder {
 		}
 
 		foreach ( $post_types as $type ) {
-			if ( ! is_string( $type ) || ! post_type_supports( $type, Event\Event::SUPPORT ) ) {
+			if ( ! is_string( $type ) || ! post_type_supports( $type, Event::SUPPORT ) ) {
 				return false;
 			}
 		}

@@ -198,7 +198,7 @@ final class Post_Organizer {
 				'total_days' => $span['total_days'],
 				'first_day'  => $span['first_day'],
 				'shown_days' => $span['shown_days'],
-				'is_all_day' => ( new Event\Event( $post_id ) )->is_all_day(),
+				'is_all_day' => ( new Event( $post_id ) )->is_all_day(),
 			);
 		}
 

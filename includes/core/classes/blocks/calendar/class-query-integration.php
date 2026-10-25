@@ -143,7 +143,7 @@ final class Query_Integration {
 	 * @return string[] Array of post type slugs.
 	 */
 	public static function get_calendar_post_types(): array {
-		$event_types = get_post_types_by_support( Event\Event::SUPPORT );
+		$event_types = get_post_types_by_support( Event::SUPPORT );
 
 		return array_values( array_unique( array_merge( array( 'post' ), $event_types ) ) );
 	}
@@ -171,7 +171,7 @@ final class Query_Integration {
 	 * @return void
 	 */
 	public function maybe_register_rest_hooks( string $post_type ): void {
-		if ( 'post' !== $post_type && ! post_type_supports( $post_type, Event\Event::SUPPORT ) ) {
+		if ( 'post' !== $post_type && ! post_type_supports( $post_type, Event::SUPPORT ) ) {
 			return;
 		}
 
