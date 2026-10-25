@@ -1,21 +1,21 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Blocks\Calendar\Structure_Builder.
+ * Class handles unit tests for GatherPress\Core\Calendar\Structure_Builder.
  *
  * @package GatherPress\Core
  * @since TBD
  */
 
-namespace GatherPress\Tests\Core\Blocks\Calendar;
+namespace GatherPress\Tests\Core\Calendar;
 
-use GatherPress\Core\Blocks\Calendar\Date_Calculator;
-use GatherPress\Core\Blocks\Calendar\Structure_Builder;
+use GatherPress\Core\Calendar\Date_Range;
+use GatherPress\Core\Calendar\Structure_Builder;
 use GatherPress\Tests\Base;
 
 /**
  * Class Test_Structure_Builder.
  *
- * @coversDefaultClass \GatherPress\Core\Blocks\Calendar\Structure_Builder
+ * @coversDefaultClass \GatherPress\Core\Calendar\Structure_Builder
  */
 class Test_Structure_Builder extends Base {
 
@@ -46,28 +46,28 @@ class Test_Structure_Builder extends Base {
 	}
 
 	/**
-	 * Coverage for build_structure in month view.
+	 * Coverage for build in month view.
 	 *
 	 * October 2026 starts on a Thursday and ends on a Saturday.
 	 *
-	 * @covers ::build_structure
+	 * @covers ::__construct
+	 * @covers ::build
 	 * @covers ::build_month_units
 	 * @covers ::build_month_weeks
-	 * @covers ::get_active_week_columns
 	 * @covers ::create_day_entry
 	 * @covers ::create_empty_day_entry
 	 *
 	 * @return void
 	 */
-	public function test_build_structure_month(): void {
-		$range     = Date_Calculator::calculate_date_range(
+	public function test_build_month(): void {
+		$range     = Date_Range::from_attributes(
 			array(
 				'viewType'     => 'month',
 				'selectedDate' => '2026-10-15',
 				'unitCount'    => 2,
 			)
 		);
-		$structure = Structure_Builder::build_structure( $range, 1, array( '2026-10-15' => array( 11 ) ) );
+		$structure = ( new Structure_Builder( $range ) )->build( array( '2026-10-15' => array( 11 ) ) );
 
 		$this->assertSame( 'October – November 2026', $structure['heading'] );
 		$this->assertSame( 'month', $structure['view_type'] );
@@ -116,9 +116,9 @@ class Test_Structure_Builder extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_build_structure_month_without_padding(): void {
-		$range = Date_Calculator::calculate_date_range( array( 'selectedDate' => '2027-02' ) );
-		$weeks = Structure_Builder::build_structure( $range, 1, array() )['weeks'];
+	public function test_build_month_without_padding(): void {
+		$range = Date_Range::from_attributes( array( 'selectedDate' => '2027-02' ) );
+		$weeks = ( new Structure_Builder( $range ) )->build( array() )['weeks'];
 
 		$this->assertCount( 4, $weeks );
 		$this->assertSame( array( 1, 2, 3, 4, 5, 6, 7 ), $this->get_days( $weeks[0] ) );
@@ -129,13 +129,17 @@ class Test_Structure_Builder extends Base {
 	 * Coverage for build_month_weeks without weekends.
 	 *
 	 * @covers ::build_month_weeks
-	 * @covers ::get_active_week_columns
 	 *
 	 * @return void
 	 */
-	public function test_build_structure_month_without_weekends(): void {
-		$range     = Date_Calculator::calculate_date_range( array( 'selectedDate' => '2026-10' ) );
-		$structure = Structure_Builder::build_structure( $range, 1, array(), false );
+	public function test_build_month_without_weekends(): void {
+		$range     = Date_Range::from_attributes(
+			array(
+				'selectedDate' => '2026-10',
+				'showWeekends' => false,
+			)
+		);
+		$structure = ( new Structure_Builder( $range ) )->build( array() );
 		$weeks     = $structure['weeks'];
 
 		$this->assertSame( array( 'Mon', 'Tue', 'Wed', 'Thu', 'Fri' ), $structure['day_names'] );
@@ -155,14 +159,19 @@ class Test_Structure_Builder extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_build_structure_month_without_visible_days(): void {
+	public function test_build_month_without_visible_days(): void {
 		$all_days = static function () {
 			return array( 0, 1, 2, 3, 4, 5, 6 );
 		};
 		add_filter( 'gatherpress_calendar_weekend_days', $all_days );
 
-		$range = Date_Calculator::calculate_date_range( array( 'selectedDate' => '2026-10' ) );
-		$weeks = Structure_Builder::build_structure( $range, 1, array(), false )['weeks'];
+		$range = Date_Range::from_attributes(
+			array(
+				'selectedDate' => '2026-10',
+				'showWeekends' => false,
+			)
+		);
+		$weeks = ( new Structure_Builder( $range ) )->build( array() )['weeks'];
 
 		remove_filter( 'gatherpress_calendar_weekend_days', $all_days );
 
@@ -170,53 +179,54 @@ class Test_Structure_Builder extends Base {
 	}
 
 	/**
-	 * Coverage for build_structure in week view.
+	 * Coverage for build in week view.
 	 *
-	 * @covers ::build_structure
+	 * @covers ::build
 	 * @covers ::build_consecutive_weeks
 	 *
 	 * @return void
 	 */
-	public function test_build_structure_week(): void {
-		$range     = Date_Calculator::calculate_date_range(
-			array(
-				'viewType'     => 'week',
-				'selectedDate' => '2026-10-29',
-				'unitCount'    => 2,
-			)
+	public function test_build_week(): void {
+		$attributes = array(
+			'viewType'     => 'week',
+			'selectedDate' => '2026-10-29',
+			'unitCount'    => 2,
 		);
-		$structure = Structure_Builder::build_structure( $range, 1, array( '2026-11-01' => array( 12 ) ) );
+		$range      = Date_Range::from_attributes( $attributes );
+		$structure  = ( new Structure_Builder( $range ) )->build( array( '2026-11-01' => array( 12 ) ) );
 
 		$this->assertCount( 1, $structure['units'] );
-		$this->assertSame( $range['heading'], $structure['units'][0]['caption'] );
+		$this->assertSame( $range->heading, $structure['units'][0]['caption'] );
 		$this->assertCount( 2, $structure['weeks'] );
 		$this->assertSame( array( 26, 27, 28, 29, 30, 31, 1 ), $this->get_days( $structure['weeks'][0] ) );
 		$this->assertSame( array( 2, 3, 4, 5, 6, 7, 8 ), $this->get_days( $structure['weeks'][1] ) );
 		$this->assertSame( array( 12 ), $structure['weeks'][0][6]['posts'] );
 
-		$structure = Structure_Builder::build_structure( $range, 1, array(), false );
+		$attributes['showWeekends'] = false;
+		$range                      = Date_Range::from_attributes( $attributes );
+		$structure                  = ( new Structure_Builder( $range ) )->build( array() );
 
 		$this->assertSame( array( 26, 27, 28, 29, 30 ), $this->get_days( $structure['weeks'][0] ) );
 		$this->assertSame( array( 'Mon', 'Tue', 'Wed', 'Thu', 'Fri' ), $structure['day_names'] );
 	}
 
 	/**
-	 * Coverage for build_structure in day view.
+	 * Coverage for build in day view.
 	 *
-	 * @covers ::build_structure
+	 * @covers ::build
 	 * @covers ::build_consecutive_days
 	 *
 	 * @return void
 	 */
-	public function test_build_structure_day(): void {
-		$range     = Date_Calculator::calculate_date_range(
+	public function test_build_day(): void {
+		$range     = Date_Range::from_attributes(
 			array(
 				'viewType'     => 'day',
 				'selectedDate' => '2026-10-15',
 				'unitCount'    => 3,
 			)
 		);
-		$structure = Structure_Builder::build_structure( $range, 1, array( '2026-10-16' => array( 13 ) ) );
+		$structure = ( new Structure_Builder( $range ) )->build( array( '2026-10-16' => array( 13 ) ) );
 
 		$this->assertSame( 'day', $structure['view_type'] );
 		$this->assertSame( array( 'Thu', 'Fri', 'Sat' ), $structure['day_names'] );

@@ -6,11 +6,13 @@
  * @since TBD
  */
 
-namespace GatherPress\Core\Blocks\Calendar;
+namespace GatherPress\Core\Blocks;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Calendar\Date_Range;
+use GatherPress\Core\Calendar\Query_Builder;
 use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
 use WP_Block;
@@ -19,59 +21,19 @@ use WP_Query;
 use WP_REST_Request;
 
 /**
- * Class Query_Integration.
+ * Class Calendar_Query.
  *
  * Marks Query Loop blocks that contain a calendar, pages them by date range instead of by
  * posts, and lets the REST API return a full date range for the editor preview.
  *
  * @since TBD
  */
-final class Query_Integration {
+final class Calendar_Query {
 
 	/**
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
-
-	/**
-	 * Query parameter that marks a query as a calendar query.
-	 *
-	 * @since TBD
-	 * @var string
-	 */
-	const CALENDAR_QUERY_PARAM = 'gatherpress_calendar_query';
-
-	/**
-	 * Query parameter for the view type of a calendar query.
-	 *
-	 * @since TBD
-	 * @var string
-	 */
-	const CALENDAR_QUERY_VIEW_TYPE = 'gatherpress_calendar_view_type';
-
-	/**
-	 * Query parameter for the first day of a calendar query.
-	 *
-	 * @since TBD
-	 * @var string
-	 */
-	const CALENDAR_QUERY_START_DATE = 'gatherpress_calendar_start_date';
-
-	/**
-	 * Query parameter for the last day of a calendar query.
-	 *
-	 * @since TBD
-	 * @var string
-	 */
-	const CALENDAR_QUERY_END_DATE = 'gatherpress_calendar_end_date';
-
-	/**
-	 * Query parameter for the heading of a calendar query.
-	 *
-	 * @since TBD
-	 * @var string
-	 */
-	const CALENDAR_QUERY_HEADING = 'gatherpress_calendar_heading';
 
 	/**
 	 * Number of pages the Previous Page and Next Page blocks of a calendar query can link to.
@@ -142,7 +104,7 @@ final class Query_Integration {
 	 *
 	 * @return string[] Array of post type slugs.
 	 */
-	public static function get_calendar_post_types(): array {
+	private function get_calendar_post_types(): array {
 		$event_types = get_post_types_by_support( Event::SUPPORT );
 
 		return array_values( array_unique( array_merge( array( 'post' ), $event_types ) ) );
@@ -156,7 +118,7 @@ final class Query_Integration {
 	 * @return void
 	 */
 	public function register_existing_post_types(): void {
-		foreach ( self::get_calendar_post_types() as $post_type ) {
+		foreach ( $this->get_calendar_post_types() as $post_type ) {
 			$this->maybe_register_rest_hooks( $post_type );
 		}
 	}
@@ -197,7 +159,7 @@ final class Query_Integration {
 	 */
 	public function filter_rest_collection_params( array $query_params ): array {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( empty( $_REQUEST[ self::CALENDAR_QUERY_PARAM ] ) || ! current_user_can( 'edit_posts' ) ) {
+		if ( empty( $_REQUEST[ Query_Builder::CALENDAR_QUERY_PARAM ] ) || ! current_user_can( 'edit_posts' ) ) {
 			return $query_params;
 		}
 
@@ -274,7 +236,7 @@ final class Query_Integration {
 	public function rest_post_type_query( array $args, WP_REST_Request $request ): array {
 		$parameters = $request->get_params();
 
-		if ( empty( $parameters[ self::CALENDAR_QUERY_PARAM ] ) ) {
+		if ( empty( $parameters[ Query_Builder::CALENDAR_QUERY_PARAM ] ) ) {
 			return $args;
 		}
 
@@ -305,7 +267,7 @@ final class Query_Integration {
 	 *
 	 * @return array<string, mixed>|null The matching block's attributes or null.
 	 */
-	public static function find_inner_block_attrs( string $block_name, array $inner_blocks ): ?array {
+	private function find_inner_block_attrs( string $block_name, array $inner_blocks ): ?array {
 		foreach ( $inner_blocks as $block ) {
 			if ( ! is_array( $block ) ) {
 				continue;
@@ -323,7 +285,7 @@ final class Query_Integration {
 			}
 
 			if ( is_array( $block['innerBlocks'] ?? null ) ) {
-				$found = self::find_inner_block_attrs( $block_name, $block['innerBlocks'] );
+				$found = $this->find_inner_block_attrs( $block_name, $block['innerBlocks'] );
 
 				if ( null !== $found ) {
 					return $found;
@@ -346,7 +308,7 @@ final class Query_Integration {
 	private function is_calendar_query_context( array $context ): bool {
 		$query = $context['query'] ?? null;
 
-		if ( is_array( $query ) && ! empty( $query[ self::CALENDAR_QUERY_PARAM ] ) ) {
+		if ( is_array( $query ) && ! empty( $query[ Query_Builder::CALENDAR_QUERY_PARAM ] ) ) {
 			return true;
 		}
 
@@ -367,7 +329,7 @@ final class Query_Integration {
 	 */
 	private function paginate_query_block( array $parsed_block, ?WP_Block $parent_block ): array {
 		$inner_blocks   = is_array( $parsed_block['innerBlocks'] ?? null ) ? $parsed_block['innerBlocks'] : array();
-		$calendar_attrs = self::find_inner_block_attrs( 'gatherpress/calendar', $inner_blocks );
+		$calendar_attrs = $this->find_inner_block_attrs( 'gatherpress/calendar', $inner_blocks );
 		$attrs          = $parsed_block['attrs'] ?? null;
 
 		if ( null === $calendar_attrs || ! is_array( $attrs ) || ! is_array( $attrs['query'] ?? null ) ) {
@@ -380,16 +342,15 @@ final class Query_Integration {
 			$this->calendar_query_ids[ (int) $query_id ] = true;
 		}
 
-		$page           = Query_Builder::get_requested_page( $query_id );
-		$source_post_id = Date_Calculator::resolve_source_post_id( $calendar_attrs, $parent_block );
-		$range          = Date_Calculator::calculate_date_range( $calendar_attrs, $page, $source_post_id );
+		$page  = Query_Builder::get_requested_page( $query_id );
+		$range = Date_Range::from_attributes( $calendar_attrs, $page, $parent_block );
 
-		$attrs['query'][ self::CALENDAR_QUERY_PARAM ]      = true;
-		$attrs['query'][ self::CALENDAR_QUERY_VIEW_TYPE ]  = $range['view_type'];
-		$attrs['query'][ self::CALENDAR_QUERY_START_DATE ] = $range['start_date'];
-		$attrs['query'][ self::CALENDAR_QUERY_END_DATE ]   = $range['end_date'];
-		$attrs['query'][ self::CALENDAR_QUERY_HEADING ]    = $range['heading'];
-		$parsed_block['attrs']                             = $attrs;
+		$attrs['query'][ Query_Builder::CALENDAR_QUERY_PARAM ]      = true;
+		$attrs['query'][ Query_Builder::CALENDAR_QUERY_VIEW_TYPE ]  = $range->view_type;
+		$attrs['query'][ Query_Builder::CALENDAR_QUERY_START_DATE ] = $range->start_date;
+		$attrs['query'][ Query_Builder::CALENDAR_QUERY_END_DATE ]   = $range->end_date;
+		$attrs['query'][ Query_Builder::CALENDAR_QUERY_HEADING ]    = $range->heading;
+		$parsed_block['attrs']                                      = $attrs;
 
 		return $parsed_block;
 	}
@@ -406,14 +367,14 @@ final class Query_Integration {
 	 */
 	private function paginate_calendar_block( array $parsed_block, ?WP_Block $parent_block ): array {
 		$query      = $parent_block instanceof WP_Block ? ( $parent_block->attributes['query'] ?? null ) : null;
-		$start_date = is_array( $query ) ? ( $query[ self::CALENDAR_QUERY_START_DATE ] ?? null ) : null;
+		$start_date = is_array( $query ) ? ( $query[ Query_Builder::CALENDAR_QUERY_START_DATE ] ?? null ) : null;
 
 		if ( ! is_array( $query ) || ! is_string( $start_date ) ) {
 			return $parsed_block;
 		}
 
 		$attrs     = is_array( $parsed_block['attrs'] ?? null ) ? $parsed_block['attrs'] : array();
-		$view_type = $query[ self::CALENDAR_QUERY_VIEW_TYPE ] ?? $attrs['viewType'] ?? 'month';
+		$view_type = $query[ Query_Builder::CALENDAR_QUERY_VIEW_TYPE ] ?? $attrs['viewType'] ?? 'month';
 
 		$attrs['selectedDate'] = $start_date;
 		$attrs['viewType']     = is_string( $view_type ) ? $view_type : 'month';
@@ -482,7 +443,11 @@ final class Query_Integration {
 		$query    = $attrs['query'] ?? null;
 		$query_id = $attrs['queryId'] ?? null;
 
-		if ( is_array( $query ) && ! empty( $query[ self::CALENDAR_QUERY_PARAM ] ) && is_numeric( $query_id ) ) {
+		if (
+			is_array( $query ) &&
+			! empty( $query[ Query_Builder::CALENDAR_QUERY_PARAM ] ) &&
+			is_numeric( $query_id )
+		) {
 			unset( $this->calendar_query_ids[ (int) $query_id ] );
 		}
 
@@ -506,7 +471,7 @@ final class Query_Integration {
 	public function force_pagination_max_pages( array $posts, WP_Query $query ): array {
 		remove_filter( 'the_posts', array( $this, 'force_pagination_max_pages' ) );
 
-		if ( ! empty( $query->query[ self::CALENDAR_QUERY_PARAM ] ) ) {
+		if ( ! empty( $query->query[ Query_Builder::CALENDAR_QUERY_PARAM ] ) ) {
 			$query->max_num_pages = self::MAX_PAGINATION_PAGES;
 		}
 
@@ -553,7 +518,7 @@ final class Query_Integration {
 		}
 
 		$block_query = is_array( $block->context['query'] ?? null ) ? $block->context['query'] : array();
-		$query_args  = array( self::CALENDAR_QUERY_PARAM => true );
+		$query_args  = array( Query_Builder::CALENDAR_QUERY_PARAM => true );
 
 		/** This filter is documented in includes/core/classes/blocks/class-event-query.php */
 		$filtered_query_args = apply_filters( 'gatherpress_query_vars', $query_args, $block_query, false );

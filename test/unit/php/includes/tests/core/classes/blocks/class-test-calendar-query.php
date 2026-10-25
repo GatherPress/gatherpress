@@ -1,14 +1,15 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Blocks\Calendar\Query_Integration.
+ * Class handles unit tests for GatherPress\Core\Blocks\Calendar_Query.
  *
  * @package GatherPress\Core
  * @since TBD
  */
 
-namespace GatherPress\Tests\Core\Blocks\Calendar;
+namespace GatherPress\Tests\Core\Blocks;
 
-use GatherPress\Core\Blocks\Calendar\Query_Integration;
+use GatherPress\Core\Blocks\Calendar_Query;
+use GatherPress\Core\Calendar\Query_Builder;
 use GatherPress\Core\Event;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -17,11 +18,11 @@ use WP_Query;
 use WP_REST_Request;
 
 /**
- * Class Test_Query_Integration.
+ * Class Test_Calendar_Query.
  *
- * @coversDefaultClass \GatherPress\Core\Blocks\Calendar\Query_Integration
+ * @coversDefaultClass \GatherPress\Core\Blocks\Calendar_Query
  */
-class Test_Query_Integration extends Base {
+class Test_Calendar_Query extends Base {
 
 	/**
 	 * Clear the per-request state of the singleton.
@@ -31,7 +32,7 @@ class Test_Query_Integration extends Base {
 	public function setUp(): void {
 		parent::setUp();
 		update_option( 'start_of_week', 1 );
-		Utility::set_and_get_hidden_property( Query_Integration::get_instance(), 'calendar_query_ids', array() );
+		Utility::set_and_get_hidden_property( Calendar_Query::get_instance(), 'calendar_query_ids', array() );
 	}
 
 	/**
@@ -40,11 +41,11 @@ class Test_Query_Integration extends Base {
 	 * @return void
 	 */
 	public function tearDown(): void {
-		$instance = Query_Integration::get_instance();
+		$instance = Calendar_Query::get_instance();
 
 		Utility::set_and_get_hidden_property( $instance, 'calendar_query_ids', array() );
 		remove_filter( 'the_posts', array( $instance, 'force_pagination_max_pages' ) );
-		unset( $_REQUEST[ Query_Integration::CALENDAR_QUERY_PARAM ], $_GET['query-5-page'] );
+		unset( $_REQUEST[ Query_Builder::CALENDAR_QUERY_PARAM ], $_GET['query-5-page'] );
 		parent::tearDown();
 	}
 
@@ -54,7 +55,7 @@ class Test_Query_Integration extends Base {
 	 * @return array<int, true>
 	 */
 	private function get_calendar_query_ids(): array {
-		return Utility::get_hidden_property( Query_Integration::get_instance(), 'calendar_query_ids' );
+		return Utility::get_hidden_property( Calendar_Query::get_instance(), 'calendar_query_ids' );
 	}
 
 	/**
@@ -110,7 +111,7 @@ class Test_Query_Integration extends Base {
 	 * @return void
 	 */
 	public function test_setup_hooks(): void {
-		$instance = Query_Integration::get_instance();
+		$instance = Calendar_Query::get_instance();
 		$hooks    = array(
 			array(
 				'type'     => 'action',
@@ -161,7 +162,7 @@ class Test_Query_Integration extends Base {
 	 * @return void
 	 */
 	public function test_get_calendar_post_types(): void {
-		$post_types = Query_Integration::get_calendar_post_types();
+		$post_types = Utility::invoke_hidden_method( Calendar_Query::get_instance(), 'get_calendar_post_types' );
 
 		$this->assertSame( 'post', $post_types[0] );
 		$this->assertContains( Event::POST_TYPE, $post_types );
@@ -177,7 +178,7 @@ class Test_Query_Integration extends Base {
 	 * @return void
 	 */
 	public function test_register_rest_hooks(): void {
-		$instance = Query_Integration::get_instance();
+		$instance = Calendar_Query::get_instance();
 
 		remove_filter( 'rest_post_query', array( $instance, 'rest_post_type_query' ), 20 );
 		remove_filter( 'rest_post_collection_params', array( $instance, 'filter_rest_collection_params' ) );
@@ -207,7 +208,7 @@ class Test_Query_Integration extends Base {
 	 * @return void
 	 */
 	public function test_filter_rest_collection_params(): void {
-		$instance = Query_Integration::get_instance();
+		$instance = Calendar_Query::get_instance();
 		$params   = array( 'per_page' => array( 'maximum' => 100 ) );
 
 		$this->assertSame(
@@ -216,7 +217,7 @@ class Test_Query_Integration extends Base {
 			'Failed to assert no change without the marker.'
 		);
 
-		$_REQUEST[ Query_Integration::CALENDAR_QUERY_PARAM ] = '1';
+		$_REQUEST[ Query_Builder::CALENDAR_QUERY_PARAM ] = '1';
 
 		wp_set_current_user( 0 );
 		$this->assertSame(
@@ -249,7 +250,7 @@ class Test_Query_Integration extends Base {
 	 * @return void
 	 */
 	public function test_rest_post_type_query(): void {
-		$instance = Query_Integration::get_instance();
+		$instance = Calendar_Query::get_instance();
 		$args     = array(
 			'post_type'                    => Event::POST_TYPE,
 			Event\Query::EVENT_QUERY_PARAM => 'upcoming',
@@ -263,7 +264,7 @@ class Test_Query_Integration extends Base {
 			'Failed to assert no change without the marker.'
 		);
 
-		$request->set_param( Query_Integration::CALENDAR_QUERY_PARAM, 1 );
+		$request->set_param( Query_Builder::CALENDAR_QUERY_PARAM, 1 );
 		$request->set_param( 'start_date', '2026-10-01' );
 		$request->set_param( 'end_date', '2026-10-31' );
 		$result = $instance->rest_post_type_query( $args, $request );
@@ -287,7 +288,7 @@ class Test_Query_Integration extends Base {
 		);
 
 		$request = new WP_REST_Request( 'GET', '/wp/v2/posts' );
-		$request->set_param( Query_Integration::CALENDAR_QUERY_PARAM, 1 );
+		$request->set_param( Query_Builder::CALENDAR_QUERY_PARAM, 1 );
 		$request->set_param( 'after', '2026-10-01' );
 		$request->set_param( 'before', '2026-10-31' );
 		$result = $instance->rest_post_type_query( array( 'post_type' => 'post' ), $request );
@@ -305,7 +306,7 @@ class Test_Query_Integration extends Base {
 		);
 
 		$request = new WP_REST_Request( 'GET', '/wp/v2/posts' );
-		$request->set_param( Query_Integration::CALENDAR_QUERY_PARAM, 1 );
+		$request->set_param( Query_Builder::CALENDAR_QUERY_PARAM, 1 );
 		$request->set_param( 'start_date', '2026-10-01' );
 		$request->set_param( 'end_date', array( 'not', 'a', 'date' ) );
 
@@ -342,12 +343,23 @@ class Test_Query_Integration extends Base {
 			),
 		);
 
+		$instance = Calendar_Query::get_instance();
+
 		$this->assertSame(
 			array( 'viewType' => 'week' ),
-			Query_Integration::find_inner_block_attrs( 'gatherpress/calendar', $blocks )
+			Utility::invoke_hidden_method(
+				$instance,
+				'find_inner_block_attrs',
+				array( 'gatherpress/calendar', $blocks )
+			)
 		);
-		$this->assertSame( array(), Query_Integration::find_inner_block_attrs( 'core/heading', $blocks ) );
-		$this->assertNull( Query_Integration::find_inner_block_attrs( 'core/image', $blocks ) );
+		$this->assertSame(
+			array(),
+			Utility::invoke_hidden_method( $instance, 'find_inner_block_attrs', array( 'core/heading', $blocks ) )
+		);
+		$this->assertNull(
+			Utility::invoke_hidden_method( $instance, 'find_inner_block_attrs', array( 'core/image', $blocks ) )
+		);
 	}
 
 	/**
@@ -359,7 +371,7 @@ class Test_Query_Integration extends Base {
 	 * @return void
 	 */
 	public function test_allow_core_pagination_for_query_blocks(): void {
-		$instance = Query_Integration::get_instance();
+		$instance = Calendar_Query::get_instance();
 		$plain    = array(
 			'blockName'   => 'core/query',
 			'attrs'       => array( 'query' => array( 'perPage' => 1 ) ),
@@ -385,21 +397,21 @@ class Test_Query_Integration extends Base {
 		);
 		$query                = $instance->allow_core_pagination( $block, $block )['attrs']['query'];
 
-		$this->assertTrue( $query[ Query_Integration::CALENDAR_QUERY_PARAM ] );
-		$this->assertSame( 'month', $query[ Query_Integration::CALENDAR_QUERY_VIEW_TYPE ] );
+		$this->assertTrue( $query[ Query_Builder::CALENDAR_QUERY_PARAM ] );
+		$this->assertSame( 'month', $query[ Query_Builder::CALENDAR_QUERY_VIEW_TYPE ] );
 		$this->assertSame(
 			'2026-11-01',
-			$query[ Query_Integration::CALENDAR_QUERY_START_DATE ],
+			$query[ Query_Builder::CALENDAR_QUERY_START_DATE ],
 			'Failed to assert page 2 is the next month.'
 		);
-		$this->assertSame( '2026-11-30', $query[ Query_Integration::CALENDAR_QUERY_END_DATE ] );
-		$this->assertSame( 'November 2026', $query[ Query_Integration::CALENDAR_QUERY_HEADING ] );
+		$this->assertSame( '2026-11-30', $query[ Query_Builder::CALENDAR_QUERY_END_DATE ] );
+		$this->assertSame( 'November 2026', $query[ Query_Builder::CALENDAR_QUERY_HEADING ] );
 		$this->assertSame( array( 5 => true ), $this->get_calendar_query_ids() );
 
 		$block = $this->get_calendar_query_block( array( 'query' => array() ) );
 		$query = $instance->allow_core_pagination( $block, $block )['attrs']['query'];
 
-		$this->assertSame( '2026-10-01', $query[ Query_Integration::CALENDAR_QUERY_START_DATE ] );
+		$this->assertSame( '2026-10-01', $query[ Query_Builder::CALENDAR_QUERY_START_DATE ] );
 		$this->assertSame(
 			array( 5 => true ),
 			$this->get_calendar_query_ids(),
@@ -416,7 +428,7 @@ class Test_Query_Integration extends Base {
 	 * @return void
 	 */
 	public function test_allow_core_pagination_for_calendar_blocks(): void {
-		$instance = Query_Integration::get_instance();
+		$instance = Calendar_Query::get_instance();
 		$calendar = array(
 			'blockName' => 'gatherpress/calendar',
 			'attrs'     => array( 'viewType' => 'day' ),
@@ -441,8 +453,8 @@ class Test_Query_Integration extends Base {
 				'blockName' => 'core/query',
 				'attrs'     => array(
 					'query' => array(
-						Query_Integration::CALENDAR_QUERY_START_DATE => '2026-11-01',
-						Query_Integration::CALENDAR_QUERY_VIEW_TYPE  => 'week',
+						Query_Builder::CALENDAR_QUERY_START_DATE => '2026-11-01',
+						Query_Builder::CALENDAR_QUERY_VIEW_TYPE  => 'week',
 					),
 				),
 			)
@@ -456,7 +468,7 @@ class Test_Query_Integration extends Base {
 			array(
 				'blockName' => 'core/query',
 				'attrs'     => array(
-					'query' => array( Query_Integration::CALENDAR_QUERY_START_DATE => '2026-11-01' ),
+					'query' => array( Query_Builder::CALENDAR_QUERY_START_DATE => '2026-11-01' ),
 				),
 			)
 		);
@@ -477,8 +489,8 @@ class Test_Query_Integration extends Base {
 				'blockName' => 'core/query',
 				'attrs'     => array(
 					'query' => array(
-						Query_Integration::CALENDAR_QUERY_START_DATE => '2026-11-01',
-						Query_Integration::CALENDAR_QUERY_VIEW_TYPE  => 5,
+						Query_Builder::CALENDAR_QUERY_START_DATE => '2026-11-01',
+						Query_Builder::CALENDAR_QUERY_VIEW_TYPE  => 5,
 					),
 				),
 			)
@@ -500,7 +512,7 @@ class Test_Query_Integration extends Base {
 	 * @return void
 	 */
 	public function test_allow_core_pagination_for_next_page_blocks(): void {
-		$instance = Query_Integration::get_instance();
+		$instance = Calendar_Query::get_instance();
 		$next     = array(
 			'blockName' => 'core/query-pagination-next',
 			'attrs'     => array(),
@@ -523,7 +535,7 @@ class Test_Query_Integration extends Base {
 
 		$marked = $this->get_block(
 			'core/query-pagination',
-			array( 'query' => array( Query_Integration::CALENDAR_QUERY_PARAM => true ) )
+			array( 'query' => array( Query_Builder::CALENDAR_QUERY_PARAM => true ) )
 		);
 		$instance->allow_core_pagination( $next, $next, $marked );
 		$this->assertSame( 10, has_filter( 'the_posts', $callback ), 'Failed to assert the calendar marker.' );
@@ -557,12 +569,12 @@ class Test_Query_Integration extends Base {
 	 * @return void
 	 */
 	public function test_forget_calendar_query(): void {
-		$instance = Query_Integration::get_instance();
+		$instance = Calendar_Query::get_instance();
 		$calendar = array(
 			'blockName' => 'core/query',
 			'attrs'     => array(
 				'queryId' => 5,
-				'query'   => array( Query_Integration::CALENDAR_QUERY_PARAM => true ),
+				'query'   => array( Query_Builder::CALENDAR_QUERY_PARAM => true ),
 			),
 		);
 		$plain    = array(
@@ -600,16 +612,16 @@ class Test_Query_Integration extends Base {
 	 * @return void
 	 */
 	public function test_force_pagination_max_pages(): void {
-		$instance = Query_Integration::get_instance();
+		$instance = Calendar_Query::get_instance();
 		$callback = array( $instance, 'force_pagination_max_pages' );
 		$query    = new WP_Query();
 
 		$query->max_num_pages = 1;
-		$query->query         = array( Query_Integration::CALENDAR_QUERY_PARAM => true );
+		$query->query         = array( Query_Builder::CALENDAR_QUERY_PARAM => true );
 		add_filter( 'the_posts', $callback, 10, 2 );
 
 		$this->assertSame( array( 3 ), $instance->force_pagination_max_pages( array( 3 ), $query ) );
-		$this->assertSame( Query_Integration::MAX_PAGINATION_PAGES, $query->max_num_pages );
+		$this->assertSame( Calendar_Query::MAX_PAGINATION_PAGES, $query->max_num_pages );
 		$this->assertFalse( has_filter( 'the_posts', $callback ), 'Failed to assert the filter runs once.' );
 
 		$query->max_num_pages = 1;
@@ -632,11 +644,11 @@ class Test_Query_Integration extends Base {
 	 * @return void
 	 */
 	public function test_hide_query_pagination_numbers(): void {
-		$instance = Query_Integration::get_instance();
+		$instance = Calendar_Query::get_instance();
 		$numbers  = '<div class="wp-block-query-pagination-numbers">1 2</div>';
 		$marked   = $this->get_block(
 			'core/query-pagination-numbers',
-			array( 'query' => array( Query_Integration::CALENDAR_QUERY_PARAM => true ) )
+			array( 'query' => array( Query_Builder::CALENDAR_QUERY_PARAM => true ) )
 		);
 		$plain    = $this->get_block(
 			'core/query-pagination-numbers',
@@ -702,7 +714,7 @@ class Test_Query_Integration extends Base {
 	 * @return void
 	 */
 	public function test_query_loop_block_query_vars(): void {
-		$instance = Query_Integration::get_instance();
+		$instance = Calendar_Query::get_instance();
 		$query    = array( 'post_type' => 'post' );
 		$block    = $this->get_block(
 			'core/post-template',
@@ -733,7 +745,7 @@ class Test_Query_Integration extends Base {
 		remove_filter( 'gatherpress_query_vars', $callback, 99 );
 
 		$this->assertSame( 'post', $result['post_type'] );
-		$this->assertTrue( $result[ Query_Integration::CALENDAR_QUERY_PARAM ] );
+		$this->assertTrue( $result[ Query_Builder::CALENDAR_QUERY_PARAM ] );
 		$this->assertSame( 'value', $result['extra'] );
 		$this->assertSame( array( 'perPage' => 3 ), $received, 'Failed to assert the filter gets the block query.' );
 
@@ -749,8 +761,8 @@ class Test_Query_Integration extends Base {
 
 		$this->assertSame(
 			array(
-				'post_type'                             => 'post',
-				Query_Integration::CALENDAR_QUERY_PARAM => true,
+				'post_type'                         => 'post',
+				Query_Builder::CALENDAR_QUERY_PARAM => true,
 			),
 			$result
 		);
@@ -807,7 +819,7 @@ class Test_Query_Integration extends Base {
 			'Failed to assert no queryId is left after rendering.'
 		);
 		$this->assertFalse(
-			has_filter( 'the_posts', array( Query_Integration::get_instance(), 'force_pagination_max_pages' ) ),
+			has_filter( 'the_posts', array( Calendar_Query::get_instance(), 'force_pagination_max_pages' ) ),
 			'Failed to assert no filter is left after rendering.'
 		);
 	}
@@ -854,7 +866,7 @@ class Test_Query_Integration extends Base {
 			'Failed to assert a plain Query Loop after its last page has no Previous link.'
 		);
 		$this->assertFalse(
-			has_filter( 'the_posts', array( Query_Integration::get_instance(), 'force_pagination_max_pages' ) ),
+			has_filter( 'the_posts', array( Calendar_Query::get_instance(), 'force_pagination_max_pages' ) ),
 			'Failed to assert no filter is left after rendering.'
 		);
 	}

@@ -1,25 +1,25 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Blocks\Calendar\Query_Builder.
+ * Class handles unit tests for GatherPress\Core\Calendar\Query_Builder.
  *
  * @package GatherPress\Core
  * @since TBD
  */
 
-namespace GatherPress\Tests\Core\Blocks\Calendar;
+namespace GatherPress\Tests\Core\Calendar;
 
-use GatherPress\Core\Blocks\Calendar\Date_Calculator;
-use GatherPress\Core\Blocks\Calendar\Query_Builder;
-use GatherPress\Core\Blocks\Calendar\Query_Integration;
+use GatherPress\Core\Calendar\Date_Range;
+use GatherPress\Core\Calendar\Query_Builder;
 use GatherPress\Core\Event;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use WP_Block;
+use WP_Query;
 
 /**
  * Class Test_Query_Builder.
  *
- * @coversDefaultClass \GatherPress\Core\Blocks\Calendar\Query_Builder
+ * @coversDefaultClass \GatherPress\Core\Calendar\Query_Builder
  */
 class Test_Query_Builder extends Base {
 
@@ -170,14 +170,15 @@ class Test_Query_Builder extends Base {
 	}
 
 	/**
-	 * Coverage for build_query_args with an event post type.
+	 * Coverage for get_args with an event post type.
 	 *
-	 * @covers ::build_query_args
+	 * @covers ::__construct
+	 * @covers ::get_args
 	 *
 	 * @return void
 	 */
-	public function test_build_query_args_for_events(): void {
-		$range = Date_Calculator::calculate_date_range(
+	public function test_get_args_for_events(): void {
+		$range = Date_Range::from_attributes(
 			array(
 				'viewType'     => 'month',
 				'selectedDate' => '2026-10-15',
@@ -190,13 +191,13 @@ class Test_Query_Builder extends Base {
 				'offset'   => 2,
 			)
 		);
-		$args  = Query_Builder::build_query_args( $block, $range );
+		$args  = ( new Query_Builder( $block, $range ) )->get_args();
 
 		$this->assertSame( 'all', $args[ Event\Query::EVENT_QUERY_PARAM ] );
-		$this->assertTrue( $args[ Query_Integration::CALENDAR_QUERY_PARAM ] );
-		$this->assertSame( 'month', $args[ Query_Integration::CALENDAR_QUERY_VIEW_TYPE ] );
-		$this->assertSame( '2026-10-01', $args[ Query_Integration::CALENDAR_QUERY_START_DATE ] );
-		$this->assertSame( '2026-10-31', $args[ Query_Integration::CALENDAR_QUERY_END_DATE ] );
+		$this->assertTrue( $args[ Query_Builder::CALENDAR_QUERY_PARAM ] );
+		$this->assertSame( 'month', $args[ Query_Builder::CALENDAR_QUERY_VIEW_TYPE ] );
+		$this->assertSame( '2026-10-01', $args[ Query_Builder::CALENDAR_QUERY_START_DATE ] );
+		$this->assertSame( '2026-10-31', $args[ Query_Builder::CALENDAR_QUERY_END_DATE ] );
 		$this->assertSame( 500, $args['posts_per_page'] );
 		$this->assertArrayNotHasKey( 'offset', $args, 'Failed to assert page 1 ignores the offset.' );
 		$this->assertArrayNotHasKey( 'post_status', $args, 'Failed to assert scheduled posts are off by default.' );
@@ -213,26 +214,26 @@ class Test_Query_Builder extends Base {
 		);
 
 		$_GET['query-3-page'] = '2';
-		$args                 = Query_Builder::build_query_args( $block, $range );
+		$args                 = ( new Query_Builder( $block, $range ) )->get_args();
 
 		$this->assertArrayNotHasKey( 'offset', $args, 'Failed to assert page 2 ignores the offset.' );
 	}
 
 	/**
-	 * Coverage for build_query_args with posts.
+	 * Coverage for get_args with posts.
 	 *
-	 * @covers ::build_query_args
+	 * @covers ::get_args
 	 *
 	 * @return void
 	 */
-	public function test_build_query_args_for_posts(): void {
-		$range = Date_Calculator::calculate_date_range(
+	public function test_get_args_for_posts(): void {
+		$range = Date_Range::from_attributes(
 			array(
 				'viewType'     => 'day',
 				'selectedDate' => '2026-10-15',
 			)
 		);
-		$args  = Query_Builder::build_query_args( $this->get_block( array( 'postType' => 'post' ) ), $range );
+		$args  = ( new Query_Builder( $this->get_block( array( 'postType' => 'post' ) ), $range ) )->get_args();
 
 		$this->assertSame(
 			array(
@@ -248,19 +249,19 @@ class Test_Query_Builder extends Base {
 	}
 
 	/**
-	 * Coverage for build_query_args and include_scheduled_posts.
+	 * Coverage for get_args and include_scheduled_posts.
 	 *
-	 * @covers ::build_query_args
+	 * @covers ::get_args
 	 * @covers ::include_scheduled_posts
 	 *
 	 * @return void
 	 */
-	public function test_build_query_args_with_scheduled_posts(): void {
-		$range = Date_Calculator::calculate_date_range( array( 'selectedDate' => '2026-10-15' ) );
-		$block = $this->get_block( array( 'postType' => 'post' ), true );
+	public function test_get_args_with_scheduled_posts(): void {
+		$range   = Date_Range::from_attributes( array( 'selectedDate' => '2026-10-15' ) );
+		$builder = new Query_Builder( $this->get_block( array( 'postType' => 'post' ), true ), $range );
 
 		wp_set_current_user( 0 );
-		$args = Query_Builder::build_query_args( $block, $range );
+		$args = $builder->get_args();
 
 		$this->assertSame(
 			array( 'publish', 'future' ),
@@ -270,13 +271,13 @@ class Test_Query_Builder extends Base {
 		$this->assertSame( 'readable', $args['perm'] );
 
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
-		$args = Query_Builder::build_query_args( $block, $range );
+		$args = $builder->get_args();
 
 		$this->assertSame( array( 'publish', 'future', 'private' ), $args['post_status'] );
 		$this->assertArrayNotHasKey( 'perm', $args, 'Failed to assert an administrator reads all private posts.' );
 
-		$args = Utility::invoke_hidden_static_method(
-			Query_Builder::class,
+		$args = Utility::invoke_hidden_method(
+			$builder,
 			'include_scheduled_posts',
 			array( array( 'post_type' => array( 5 ) ) )
 		);
@@ -284,5 +285,47 @@ class Test_Query_Builder extends Base {
 		$this->assertSame( 'readable', $args['perm'], 'Failed to assert an unknown post type limits private posts.' );
 
 		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * Coverage for get_post_ids.
+	 *
+	 * @covers ::get_post_ids
+	 *
+	 * @return void
+	 */
+	public function test_get_post_ids(): void {
+		$post_id = $this->mock->post(
+			array(
+				'post_title' => 'Zyxcalendarids',
+				'post_date'  => '2026-10-15 10:00:00',
+			)
+		)->get()->ID;
+		$range   = Date_Range::from_attributes( array( 'selectedDate' => '2026-10-15' ) );
+		$vars    = array();
+		$capture = static function ( WP_Query $query ) use ( &$vars ): void {
+			$vars = $query->query_vars;
+		};
+		add_action( 'pre_get_posts', $capture );
+
+		$query    = array(
+			'postType' => 'post',
+			'search'   => 'Zyxcalendarids',
+		);
+		$post_ids = ( new Query_Builder( $this->get_block( $query ), $range ) )->get_post_ids();
+
+		remove_action( 'pre_get_posts', $capture );
+
+		$this->assertSame( array( $post_id ), $post_ids );
+		$this->assertSame( 'ids', $vars['fields'] );
+		$this->assertTrue( $vars['no_found_rows'], 'Failed to assert the query counts no rows.' );
+
+		$query['search'] = 'Zyxcalendarnothing';
+
+		$this->assertSame(
+			array(),
+			( new Query_Builder( $this->get_block( $query ), $range ) )->get_post_ids(),
+			'Failed to assert an empty query gives no IDs.'
+		);
 	}
 }
