@@ -159,7 +159,8 @@ final class Rsvp_Form {
 		$render_block_hook = sprintf( 'render_block_%s', self::BLOCK_NAME );
 
 		add_filter( 'render_block_data', array( $this, 'begin_returned_form' ) );
-		add_filter( $render_block_hook, array( $this, 'transform_block_content' ), 5, 2 );
+		// Builds the <form> before the field filters below adjust its fields.
+		add_filter( $render_block_hook, array( $this, 'transform_block_content' ), 9, 2 );
 		add_filter( 'render_block', array( $this, 'apply_visibility_attribute' ), 10, 2 );
 		add_action( 'save_post', array( $this, 'save_form_schema' ) );
 

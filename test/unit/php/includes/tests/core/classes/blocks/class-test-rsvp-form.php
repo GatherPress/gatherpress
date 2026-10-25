@@ -74,7 +74,7 @@ class Test_Rsvp_Form extends Base {
 			array(
 				'type'     => 'filter',
 				'name'     => $render_block_hook,
-				'priority' => 5,
+				'priority' => 9,
 				'callback' => array( $instance, 'transform_block_content' ),
 			),
 			array(
