@@ -21,6 +21,16 @@ use PMC\Unit_Test\Utility;
 class Test_Form_Field extends Base {
 
 	/**
+	 * Clears any returned submission a test left on the RSVP Form block.
+	 *
+	 * @return void
+	 */
+	public function tearDown(): void {
+		$this->clear_returned_form();
+		parent::tearDown();
+	}
+
+	/**
 	 * Tests the constructor and attribute processing.
 	 *
 	 * @since 0.33.0
@@ -1917,8 +1927,6 @@ class Test_Form_Field extends Base {
 			$second->get_input_attributes(),
 			'Without help text the error is the whole description.'
 		);
-
-		$this->clear_returned_form();
 	}
 
 	/**
@@ -1985,8 +1993,6 @@ class Test_Form_Field extends Base {
 			$hidden->get_html(),
 			'A hidden field has nothing to correct.'
 		);
-
-		$this->clear_returned_form();
 	}
 
 	/**
@@ -1994,7 +2000,7 @@ class Test_Form_Field extends Base {
 	 *
 	 * @since TBD
 	 *
-	 * @return array<string, array{0: array<string, mixed>}>
+	 * @return array<string, array{0: array<string, mixed>, 1: string}>
 	 */
 	public function data_returned_submission_renders_the_error(): array {
 		$options = array(
@@ -2009,14 +2015,21 @@ class Test_Form_Field extends Base {
 		);
 
 		return array(
-			'textarea' => array( array( 'fieldType' => 'textarea' ) ),
+			'textarea' => array(
+				array( 'fieldType' => 'textarea' ),
+				'/<textarea[^>]*>large<\/textarea>/',
+			),
 			'select'   => array(
 				array(
 					'fieldType'    => 'select',
 					'radioOptions' => $options,
 				),
+				'/<option value="large" selected=\'selected\'/',
 			),
-			'checkbox' => array( array( 'fieldType' => 'checkbox' ) ),
+			'checkbox' => array(
+				array( 'fieldType' => 'checkbox' ),
+				'/<input[^>]*name="answer"[^>]*checked=\'checked\'/',
+			),
 		);
 	}
 
@@ -2029,10 +2042,11 @@ class Test_Form_Field extends Base {
 	 * @covers ::get_input_attributes
 	 *
 	 * @param array<string, mixed> $attributes The field's block attributes.
+	 * @param string               $restored   Pattern matching the submitted value restored.
 	 *
 	 * @return void
 	 */
-	public function test_returned_submission_renders_the_error( array $attributes ): void {
+	public function test_returned_submission_renders_the_error( array $attributes, string $restored ): void {
 		$this->set_returned_form( array( 'answer' => 'Answer is required.' ), array( 'answer' => 'large' ) );
 
 		$html = ( new Form_Field(
@@ -2045,6 +2059,7 @@ class Test_Form_Field extends Base {
 			)
 		) )->get_html();
 
+		$this->assertMatchesRegularExpression( $restored, $html, 'The submitted value should be restored.' );
 		$this->assertMatchesRegularExpression(
 			'/aria-invalid="true"[^>]*aria-describedby="answer-input-error"/',
 			$html
@@ -2053,8 +2068,37 @@ class Test_Form_Field extends Base {
 			'/<p class="gatherpress-field-error" id="answer-input-error">\s*Answer is required.\s*<\/p>\s*<\/div>$/',
 			trim( $html )
 		);
+	}
+
+	/**
+	 * Tests a textarea holds exactly its value, so a returned answer is not padded.
+	 *
+	 * @since TBD
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_render_textarea_holds_only_its_value(): void {
+		$this->set_returned_form( array(), array( 'notes' => "Line one\nLine two" ) );
+
+		$html = ( new Form_Field(
+			array(
+				'fieldType' => 'textarea',
+				'fieldName' => 'notes',
+			)
+		) )->get_html();
+
+		$this->assertMatchesRegularExpression( "/<textarea[^>]*>Line one\nLine two<\\/textarea>/", $html );
 
 		$this->clear_returned_form();
+
+		$html = ( new Form_Field( array( 'fieldType' => 'textarea' ) ) )->get_html();
+
+		$this->assertMatchesRegularExpression(
+			'/<textarea[^>]*><\\/textarea>/',
+			$html,
+			'An empty textarea should be empty, so its placeholder shows.'
+		);
 	}
 
 	/**
@@ -2122,7 +2166,5 @@ class Test_Form_Field extends Base {
 		);
 		$this->assertStringNotContainsString( 'aria-invalid', $html );
 		$this->assertStringNotContainsString( 'autofocus', $html );
-
-		$this->clear_returned_form();
 	}
 }

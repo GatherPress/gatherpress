@@ -73,6 +73,16 @@ final class Form {
 	const RETURN_EXPIRATION = 10 * MINUTE_IN_SECONDS;
 
 	/**
+	 * Characters a returned value keeps, unless its field allows more.
+	 *
+	 * Matches the default length limit of a text field.
+	 *
+	 * @since TBD
+	 * @var int
+	 */
+	const RETURN_VALUE_MAX_LENGTH = 1000;
+
+	/**
 	 * The rejected submission this request returned to its form.
 	 *
 	 * @since TBD
@@ -412,12 +422,14 @@ final class Form {
 			return;
 		}
 
-		wp_safe_redirect( $url, 303 );
-		// Tests stop at wp_safe_redirect() through its wp_redirect filter.
-		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation.
-		// @codeCoverageIgnoreStart
-		exit;
-		// @codeCoverageIgnoreEnd
+		// A wp_redirect filter can cancel the redirect, which leaves the
+		// caller's error page. Tests stop inside that filter.
+		if ( wp_safe_redirect( $url, 303 ) ) {
+			// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation.
+			// @codeCoverageIgnoreStart
+			exit;
+			// @codeCoverageIgnoreEnd
+		}
 	}
 
 	/**
@@ -425,8 +437,7 @@ final class Form {
 	 *
 	 * The errors and the submitted values go in a transient under a random
 	 * token, and only the token goes in the URL, so a name or email address
-	 * never ends up in browser history or server logs. The values kept are
-	 * the ones the form's schema names, hidden fields aside.
+	 * never ends up in browser history or server logs.
 	 *
 	 * @since TBD
 	 *
@@ -446,21 +457,7 @@ final class Form {
 		$form_schema_id = Utility::get_http_input( INPUT_POST, 'gatherpress_form_schema_id' );
 		$form_id        = Utility::get_http_input( INPUT_POST, 'gatherpress_rsvp_form_id' );
 		$form_id        = preg_match( '/^gatherpress_rsvp_[0-9a-f]+$/', $form_id ) ? $form_id : '';
-		$values         = array();
-
-		foreach ( Rsvp_Form::get_instance()->get_schema_fields( $post_id, $form_schema_id ) as $field_name => $field ) {
-			$type = $field['type'];
-
-			if ( 'hidden' !== $type ) {
-				$values[ (string) $field_name ] = Utility::get_http_input(
-					INPUT_POST,
-					(string) $field_name,
-					'textarea' === $type ? 'sanitize_textarea_field' : null
-				);
-			}
-		}
-
-		$token = wp_generate_password( 20, false );
+		$token          = wp_generate_password( 20, false );
 
 		set_transient(
 			self::RETURN_TRANSIENT_PREFIX . $token,
@@ -470,7 +467,7 @@ final class Form {
 				'form_id'        => $form_id,
 				'errors'         => $field_errors,
 				'form_error'     => $form_error,
-				'values'         => $values,
+				'values'         => $this->get_return_values( $post_id, $form_schema_id ),
 			),
 			self::RETURN_EXPIRATION
 		);
@@ -485,10 +482,58 @@ final class Form {
 	}
 
 	/**
+	 * Returns the submitted values a rejected submission keeps for its form.
+	 *
+	 * These are the fields the form's schema names, hidden fields aside, and
+	 * the built-in fields, which come back even for an event with no stored
+	 * schema. Each value is cut to its field's length limit, 1000 characters
+	 * unless the field allows more, so a refused submission stays small.
+	 *
+	 * @since TBD
+	 *
+	 * @param int    $post_id        The event post ID.
+	 * @param string $form_schema_id The submitted form-schema id.
+	 *
+	 * @return array<string, string> Submitted values keyed by field name.
+	 */
+	private function get_return_values( int $post_id, string $form_schema_id ): array {
+		$fields = array_fill_keys(
+			Rsvp_Form::BUILT_IN_FIELDS,
+			array(
+				'type'       => 'text',
+				'max_length' => self::RETURN_VALUE_MAX_LENGTH,
+			)
+		);
+
+		foreach ( Rsvp_Form::get_instance()->get_schema_fields( $post_id, $form_schema_id ) as $field_name => $field ) {
+			$fields[ (string) $field_name ] = array(
+				'type'       => $field['type'],
+				'max_length' => max( self::RETURN_VALUE_MAX_LENGTH, (int) ( $field['max_length'] ?? 0 ) ),
+			);
+		}
+
+		$values = array();
+
+		foreach ( $fields as $field_name => $field ) {
+			if ( 'hidden' !== $field['type'] ) {
+				$value = Utility::get_http_input(
+					INPUT_POST,
+					$field_name,
+					'textarea' === $field['type'] ? 'sanitize_textarea_field' : null
+				);
+
+				$values[ $field_name ] = mb_substr( $value, 0, $field['max_length'] );
+			}
+		}
+
+		return $values;
+	}
+
+	/**
 	 * Returns the rejected submission whose token is in the URL.
 	 *
-	 * Looked up once per request, so the form still has it after its
-	 * transient is deleted.
+	 * Looked up once per request, since the headers need it before the form
+	 * renders and deletes its transient.
 	 *
 	 * @since TBD
 	 *
@@ -551,7 +596,8 @@ final class Form {
 	 * Keeps a page showing a rejected submission out of page caches.
 	 *
 	 * The page holds what the submitter typed, their name and email
-	 * included, so no cache may keep a copy of it.
+	 * included, so no cache may keep a copy of it. Page cache plugins
+	 * look for `DONOTCACHEPAGE` rather than the headers.
 	 *
 	 * @since TBD
 	 *
@@ -562,6 +608,11 @@ final class Form {
 	public function prevent_caching_returned_submission( array $headers ): array {
 		if ( null !== $this->get_returned_submission() ) {
 			$headers = array_merge( $headers, wp_get_nocache_headers() );
+
+			if ( ! defined( 'DONOTCACHEPAGE' ) ) {
+				// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- Read by page cache plugins.
+				define( 'DONOTCACHEPAGE', true );
+			}
 		}
 
 		return $headers;

@@ -101,6 +101,17 @@ final class Rsvp_Form {
 	private ?array $returned_form = null;
 
 	/**
+	 * Whether a form on this page has taken the rejected submission.
+	 *
+	 * Identical forms for one event share a schema, so only the first is
+	 * given the submission, and its id stays unique on the page.
+	 *
+	 * @since TBD
+	 * @var bool
+	 */
+	private bool $returned_form_taken = false;
+
+	/**
 	 * Field names whose error a field of the returned form has shown.
 	 *
 	 * @since TBD
@@ -258,7 +269,7 @@ final class Rsvp_Form {
 	 *
 	 * Runs before the form's fields render, so each field can show its own
 	 * value and error. Only the form the submission came from matches: the
-	 * same event and the same form schema.
+	 * same event and the same form schema, and the first such form on the page.
 	 *
 	 * @since TBD
 	 *
@@ -280,11 +291,13 @@ final class Rsvp_Form {
 		$post_id    = Setup::get_instance()->get_post_id( $parsed_block );
 
 		if (
-			null !== $submission
+			! $this->returned_form_taken
+			&& null !== $submission
 			&& $submission['post_id'] === $post_id
 			&& $submission['form_schema_id'] === $this->get_form_schema_id( $post_id, $parsed_block )
 		) {
-			$this->returned_form = $submission;
+			$this->returned_form       = $submission;
+			$this->returned_form_taken = true;
 			$form->consume_returned_submission();
 		}
 
@@ -306,17 +319,10 @@ final class Rsvp_Form {
 	 */
 	public function get_returned_field( string $field_name ): array {
 		$returned = array(
-			'value'     => null,
-			'error'     => '',
+			'value'     => $this->returned_form['values'][ $field_name ] ?? null,
+			'error'     => $this->returned_form['errors'][ $field_name ] ?? '',
 			'autofocus' => false,
 		);
-
-		if ( null === $this->returned_form ) {
-			return $returned;
-		}
-
-		$returned['value'] = $this->returned_form['values'][ $field_name ] ?? null;
-		$returned['error'] = $this->returned_form['errors'][ $field_name ] ?? '';
 
 		if ( '' !== $returned['error'] ) {
 			$returned['autofocus']             = ! $this->autofocus_claimed;

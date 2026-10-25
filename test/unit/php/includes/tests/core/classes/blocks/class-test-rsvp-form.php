@@ -43,6 +43,7 @@ class Test_Rsvp_Form extends Base {
 	 */
 	public function tearDown(): void {
 		Settings::get_instance()->set( 'enable_open_rsvp', true );
+		$this->reset_returned_state();
 		parent::tearDown();
 	}
 
@@ -4420,6 +4421,7 @@ class Test_Rsvp_Form extends Base {
 		);
 		Utility::set_and_get_hidden_property( $form, 'returned_submission', null );
 		Utility::set_and_get_hidden_property( $form, 'returned_submission_read', false );
+		Utility::set_and_get_hidden_property( Rsvp_Form::get_instance(), 'returned_form_taken', false );
 	}
 
 	/**
@@ -4433,6 +4435,7 @@ class Test_Rsvp_Form extends Base {
 		$form = Form::get_instance();
 
 		$this->set_returned_form( null );
+		Utility::set_and_get_hidden_property( Rsvp_Form::get_instance(), 'returned_form_taken', false );
 		Utility::set_and_get_hidden_property( $form, 'returned_submission', null );
 		Utility::set_and_get_hidden_property( $form, 'returned_submission_read', false );
 	}
@@ -4477,8 +4480,6 @@ class Test_Rsvp_Form extends Base {
 			Utility::get_hidden_property( $instance, 'returned_form' ),
 			'A field inside the form should not end the returned form.'
 		);
-
-		$this->reset_returned_state();
 	}
 
 	/**
@@ -4514,8 +4515,6 @@ class Test_Rsvp_Form extends Base {
 			get_transient( Form::RETURN_TRANSIENT_PREFIX . $submission['token'] ),
 			'The submission should be shown once.'
 		);
-
-		$this->reset_returned_state();
 	}
 
 	/**
@@ -4562,8 +4561,53 @@ class Test_Rsvp_Form extends Base {
 			get_transient( Form::RETURN_TRANSIENT_PREFIX . 'abcdefghijABCDEFGHIJ' ),
 			'The submission should wait for its own form.'
 		);
+	}
 
-		$this->reset_returned_state();
+	/**
+	 * Tests only the first of two identical forms takes the submission, so its id stays unique.
+	 *
+	 * @since TBD
+	 * @covers ::begin_returned_form
+	 *
+	 * @return void
+	 */
+	public function test_begin_returned_form_takes_the_first_identical_form(): void {
+		$content = $this->get_returned_form_content() . "\n\n" . $this->get_returned_form_content();
+		$post_id = $this->factory()->post->create(
+			array(
+				'post_type'    => Event::POST_TYPE,
+				'post_content' => $content,
+			)
+		);
+
+		$this->go_to( get_permalink( $post_id ) );
+		$this->store_returned_submission(
+			$this->make_returned_submission(
+				array(
+					'post_id' => $post_id,
+					'errors'  => array( 'dietary' => 'Dietary needs is required.' ),
+				)
+			)
+		);
+
+		$html = do_blocks( $content );
+
+		$this->assertSame(
+			2,
+			substr_count( $html, 'class="wp-block-gatherpress-rsvp-form"' ),
+			'Both forms should render.'
+		);
+		$this->assertSame(
+			1,
+			substr_count( $html, 'id="gatherpress_rsvp_6718a2b4c3d5e"' ),
+			'Only one form should take the submitted id.'
+		);
+		$this->assertSame(
+			1,
+			substr_count( $html, '<p class="gatherpress-field-error"' ),
+			'Only one form should show the error.'
+		);
+		$this->assertSame( 1, substr_count( $html, 'autofocus="autofocus"' ), 'Only one field should take the focus.' );
 	}
 
 	/**
@@ -4644,8 +4688,6 @@ class Test_Rsvp_Form extends Base {
 			Utility::get_hidden_property( $instance, 'shown_errors' ),
 			'Each error a field showed should be recorded.'
 		);
-
-		$this->reset_returned_state();
 	}
 
 	/**
@@ -4710,8 +4752,6 @@ class Test_Rsvp_Form extends Base {
 			),
 			'Only the error no field showed should reach the form, without taking the focus.'
 		);
-
-		$this->reset_returned_state();
 	}
 
 	/**
@@ -4764,8 +4804,6 @@ class Test_Rsvp_Form extends Base {
 			'Without a submitted id the form gets a new one.'
 		);
 		$this->assertStringNotContainsString( 'gatherpress-form-error', $html, 'Without a message nothing is added.' );
-
-		$this->reset_returned_state();
 	}
 
 	/**
@@ -4815,7 +4853,5 @@ class Test_Rsvp_Form extends Base {
 			'The valid field should keep its value.'
 		);
 		$this->assertStringNotContainsString( 'gatherpress-form-error', $html, 'Every error had a field to show it.' );
-
-		$this->reset_returned_state();
 	}
 }

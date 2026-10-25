@@ -37,9 +37,8 @@ if ( ! isset(
 		}
 		?>
 	</div>
-	<textarea<?php echo wp_kses_data( $input_attributes . $input_styles ); ?>>
-		<?php echo esc_textarea( $attributes['field_value'] ); ?>
-	</textarea>
+	<?php // A textarea's content is its value, so nothing may sit around the value. ?>
+	<textarea<?php echo wp_kses_data( $input_attributes . $input_styles ); ?>><?php echo esc_textarea( $attributes['field_value'] ); ?></textarea>
 	<?php if ( '' !== (string) $attributes['help_text'] ) : ?>
 		<p class="gatherpress-help-text" id="<?php echo esc_attr( $attributes['input_id'] . '-help' ); ?>">
 			<?php echo wp_kses_post( $attributes['help_text'] ); ?>

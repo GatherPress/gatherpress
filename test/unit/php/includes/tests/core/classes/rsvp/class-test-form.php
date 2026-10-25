@@ -40,6 +40,7 @@ class Test_Form extends Base {
 	 */
 	public function tearDown(): void {
 		Settings::get_instance()->set( 'enable_open_rsvp', true );
+		$this->reset_returned_submission();
 		parent::tearDown();
 	}
 
@@ -3548,8 +3549,13 @@ class Test_Form extends Base {
 				'errors'         => array( 'dietary' => 'Dietary needs is required.' ),
 				'form_error'     => '',
 				'values'         => array(
-					'dietary' => '',
-					'contact' => 'backup@example.com',
+					'author'                           => 'Test Author',
+					'email'                            => 'test@example.com',
+					'gatherpress_rsvp_form_guests'     => '',
+					'gatherpress_rsvp_form_anonymous'  => '',
+					'gatherpress_event_updates_opt_in' => '',
+					'dietary'                          => '',
+					'contact'                          => 'backup@example.com',
 				),
 			),
 			get_transient( Form::RETURN_TRANSIENT_PREFIX . $redirect['token'] ),
@@ -3600,6 +3606,96 @@ class Test_Form extends Base {
 			'The duplicate should be reported for the whole form.'
 		);
 		$this->assertSame( array(), $returned['errors'], 'No field is at fault.' );
+		$this->assertSame(
+			'test@example.com',
+			$returned['values']['email'],
+			'An event without a schema keeps the built-in fields.'
+		);
+	}
+
+	/**
+	 * Tests a cancelled redirect falls back to the error page.
+	 *
+	 * @since TBD
+	 * @covers ::preprocess_rsvp_comment
+	 * @covers ::return_to_form
+	 *
+	 * @return void
+	 */
+	public function test_preprocess_rsvp_comment_falls_back_when_the_redirect_is_cancelled(): void {
+		$post_id = $this->create_event_with_required_field();
+
+		$this->mock_submission(
+			array(
+				'author'                     => 'Test Author',
+				'email'                      => 'test@example.com',
+				'gatherpress_form_schema_id' => 'form_0',
+			),
+			get_permalink( $post_id )
+		);
+		add_filter( 'wp_redirect', '__return_empty_string' );
+
+		$this->expectException( 'WPDieException' );
+		Form::get_instance()->preprocess_rsvp_comment( array( 'comment_post_ID' => $post_id ) );
+	}
+
+	/**
+	 * Tests get_return_values cuts each value to its field's length limit.
+	 *
+	 * @since TBD
+	 * @covers ::get_return_values
+	 *
+	 * @return void
+	 */
+	public function test_get_return_values_caps_each_value(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		update_post_meta(
+			$post_id,
+			'gatherpress_rsvp_form_schemas',
+			array(
+				'form_0' => array(
+					'hash'   => 'test',
+					'fields' => array(
+						'bio'      => array(
+							'name'       => 'bio',
+							'type'       => 'textarea',
+							'max_length' => 5000,
+						),
+						'nickname' => array(
+							'name' => 'nickname',
+							'type' => 'text',
+						),
+					),
+				),
+			)
+		);
+		$this->mock_submission(
+			array(
+				'author'   => str_repeat( 'a', 1200 ),
+				'bio'      => str_repeat( 'b', 3000 ),
+				'nickname' => str_repeat( 'c', 1500 ),
+			),
+			false
+		);
+
+		$instance = Form::get_instance();
+		$values   = Utility::invoke_hidden_method( $instance, 'get_return_values', array( $post_id, 'form_0' ) );
+
+		$this->assertSame( 1000, strlen( $values['author'] ), 'A built-in field keeps the default limit.' );
+		$this->assertSame( 3000, strlen( $values['bio'] ), 'A field allowing more keeps its whole answer.' );
+		$this->assertSame( 1000, strlen( $values['nickname'] ), 'A field without a limit keeps the default limit.' );
+		$this->assertSame(
+			array(
+				'author',
+				'email',
+				'gatherpress_rsvp_form_guests',
+				'gatherpress_rsvp_form_anonymous',
+				'gatherpress_event_updates_opt_in',
+			),
+			array_keys( Utility::invoke_hidden_method( $instance, 'get_return_values', array( $post_id, 'form_9' ) ) ),
+			'Without a schema only the built-in fields come back.'
+		);
 	}
 
 	/**
@@ -3715,8 +3811,12 @@ class Test_Form extends Base {
 
 		$this->assertSame(
 			array(
-				'author' => 'Test Author',
-				'notes'  => "Line one\nLine two",
+				'author'                           => 'Test Author',
+				'email'                            => '',
+				'gatherpress_rsvp_form_guests'     => '',
+				'gatherpress_rsvp_form_anonymous'  => '',
+				'gatherpress_event_updates_opt_in' => '',
+				'notes'                            => "Line one\nLine two",
 			),
 			$returned['values'],
 			'Visible fields should keep their values, line breaks only in a textarea, and hidden fields none.'
@@ -3801,8 +3901,6 @@ class Test_Form extends Base {
 			$instance->get_returned_submission(),
 			'The submission should outlive its transient for the request.'
 		);
-
-		$this->reset_returned_submission();
 	}
 
 	/**
@@ -3832,8 +3930,6 @@ class Test_Form extends Base {
 			),
 			Form::get_instance()->get_returned_submission()
 		);
-
-		$this->reset_returned_submission();
 	}
 
 	/**
@@ -3857,8 +3953,6 @@ class Test_Form extends Base {
 		$this->reset_returned_submission();
 		$this->mock_return_token( 'ZZZZZZZZZZZZZZZZZZZZ' );
 		$this->assertNull( $instance->get_returned_submission(), 'An expired token should find nothing.' );
-
-		$this->reset_returned_submission();
 	}
 
 	/**
@@ -3887,8 +3981,6 @@ class Test_Form extends Base {
 			get_transient( Form::RETURN_TRANSIENT_PREFIX . $token ),
 			'The submission should be gone once its form has it.'
 		);
-
-		$this->reset_returned_submission();
 	}
 
 	/**
@@ -3920,8 +4012,7 @@ class Test_Form extends Base {
 			$instance->prevent_caching_returned_submission( $headers ),
 			'A page showing a submission should not be cached.'
 		);
-
-		$this->reset_returned_submission();
+		$this->assertTrue( defined( 'DONOTCACHEPAGE' ), 'Page cache plugins should skip the page too.' );
 	}
 
 	/**
