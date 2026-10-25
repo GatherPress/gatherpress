@@ -3444,7 +3444,7 @@ class Test_Form extends Base {
 	 *
 	 * @param callable $callback The callback.
 	 *
-	 * @return array{location: string, status: int, token: string, fragment: string} The redirect.
+	 * @return array{location: string, status: int, token: string} The redirect.
 	 *
 	 * @throws \Exception When the callback fails other than by redirecting.
 	 */
@@ -3478,8 +3478,7 @@ class Test_Form extends Base {
 
 		wp_parse_str( (string) wp_parse_url( $redirect['location'], PHP_URL_QUERY ), $query );
 
-		$redirect['token']    = (string) ( $query[ Form::RETURN_QUERY_ARG ] ?? '' );
-		$redirect['fragment'] = (string) wp_parse_url( $redirect['location'], PHP_URL_FRAGMENT );
+		$redirect['token'] = (string) ( $query[ Form::RETURN_QUERY_ARG ] ?? '' );
 
 		return $redirect;
 	}
@@ -3536,16 +3535,15 @@ class Test_Form extends Base {
 			(string) wp_parse_url( $redirect['location'], PHP_URL_QUERY ),
 			'No submitted value should be in the URL.'
 		);
-		$this->assertSame(
-			'gatherpress_rsvp_6718a2b4c3d5e',
-			$redirect['fragment'],
-			'The URL should point at the form.'
+		$this->assertStringNotContainsString(
+			'#',
+			$redirect['location'],
+			'An anchor would stop the browser honoring autofocus.'
 		);
 		$this->assertSame(
 			array(
 				'post_id'        => $post_id,
 				'form_schema_id' => 'form_0',
-				'form_id'        => 'gatherpress_rsvp_6718a2b4c3d5e',
 				'errors'         => array( 'dietary' => 'Dietary needs is required.' ),
 				'form_error'     => '',
 				'values'         => array(
@@ -3599,7 +3597,6 @@ class Test_Form extends Base {
 		$returned = get_transient( Form::RETURN_TRANSIENT_PREFIX . $redirect['token'] );
 
 		$this->assertSame( 303, $redirect['status'], 'The form should be reloaded with a GET.' );
-		$this->assertSame( '', $redirect['fragment'], 'Without a form id there is nothing to point at.' );
 		$this->assertSame(
 			Utility::invoke_hidden_method( $instance, 'get_duplicate_rsvp_message' ),
 			$returned['form_error'],
@@ -3785,7 +3782,6 @@ class Test_Form extends Base {
 		$this->mock_submission(
 			array(
 				'gatherpress_form_schema_id' => 'form_0',
-				'gatherpress_rsvp_form_id'   => 'gatherpress_rsvp_abc123',
 				'author'                     => "Test\nAuthor",
 				'notes'                      => "Line one\nLine two",
 				'source'                     => 'newsletter',
@@ -3805,7 +3801,6 @@ class Test_Form extends Base {
 			$query[ Form::RETURN_QUERY_ARG ],
 			'An earlier token should be replaced.'
 		);
-		$this->assertStringEndsWith( '#gatherpress_rsvp_abc123', $url, 'The URL should point at the form.' );
 
 		$returned = get_transient( Form::RETURN_TRANSIENT_PREFIX . $query[ Form::RETURN_QUERY_ARG ] );
 
@@ -3820,33 +3815,6 @@ class Test_Form extends Base {
 			),
 			$returned['values'],
 			'Visible fields should keep their values, line breaks only in a textarea, and hidden fields none.'
-		);
-	}
-
-	/**
-	 * Tests get_return_url drops a form id that is not one the block generates.
-	 *
-	 * @since TBD
-	 * @covers ::get_return_url
-	 *
-	 * @return void
-	 */
-	public function test_get_return_url_drops_a_malformed_form_id(): void {
-		$this->mock_submission(
-			array( 'gatherpress_rsvp_form_id' => 'gatherpress_rsvp_x"><b>' ),
-			home_url( '/' )
-		);
-
-		$url   = Form::get_instance()->get_return_url( 1, array(), 'Message.' );
-		$query = array();
-
-		wp_parse_str( (string) wp_parse_url( $url, PHP_URL_QUERY ), $query );
-
-		$this->assertStringNotContainsString( '#', $url, 'A malformed form id should not become the anchor.' );
-		$this->assertSame(
-			'',
-			get_transient( Form::RETURN_TRANSIENT_PREFIX . $query[ Form::RETURN_QUERY_ARG ] )['form_id'],
-			'A malformed form id should not be kept.'
 		);
 	}
 
@@ -3870,7 +3838,6 @@ class Test_Form extends Base {
 			array(
 				'post_id'        => '12',
 				'form_schema_id' => 'form_0',
-				'form_id'        => 'gatherpress_rsvp_abc123',
 				'errors'         => array( 'dietary' => 'Dietary needs is required.' ),
 				'form_error'     => '',
 				'values'         => array( 'dietary' => '' ),
@@ -3882,7 +3849,6 @@ class Test_Form extends Base {
 			'token'          => $token,
 			'post_id'        => 12,
 			'form_schema_id' => 'form_0',
-			'form_id'        => 'gatherpress_rsvp_abc123',
 			'errors'         => array( 'dietary' => 'Dietary needs is required.' ),
 			'form_error'     => '',
 			'values'         => array( 'dietary' => '' ),
@@ -3923,7 +3889,6 @@ class Test_Form extends Base {
 				'token'          => $token,
 				'post_id'        => 5,
 				'form_schema_id' => '',
-				'form_id'        => '',
 				'errors'         => array(),
 				'form_error'     => '',
 				'values'         => array(),

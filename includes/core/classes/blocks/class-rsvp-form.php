@@ -104,7 +104,7 @@ final class Rsvp_Form {
 	 * Whether a form on this page has taken the rejected submission.
 	 *
 	 * Identical forms for one event share a schema, so only the first is
-	 * given the submission, and its id stays unique on the page.
+	 * given the submission, rather than every copy showing its errors.
 	 *
 	 * @since TBD
 	 * @var bool
@@ -202,11 +202,7 @@ final class Rsvp_Form {
 			return '';
 		}
 
-		// A form sent back keeps the id it was submitted with, which the
-		// redirect's anchor points at.
-		$unique_form_id = null !== $returned && '' !== $returned['form_id']
-			? $returned['form_id']
-			: $this->generate_form_id();
+		$unique_form_id = $this->generate_form_id();
 		$schema_form_id = $this->get_form_schema_id( $post_id, $block );
 
 		$block_content = trim( $block_content );

@@ -1838,7 +1838,6 @@ class Test_Form_Field extends Base {
 				'token'          => 'abcdefghijABCDEFGHIJ',
 				'post_id'        => 1,
 				'form_schema_id' => 'form_0',
-				'form_id'        => 'gatherpress_rsvp_abc123',
 				'errors'         => $errors,
 				'form_error'     => '',
 				'values'         => $values,

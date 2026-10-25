@@ -35,7 +35,6 @@ use WP_User;
  *     token: string,
  *     post_id: int,
  *     form_schema_id: string,
- *     form_id: string,
  *     errors: array<string, string>,
  *     form_error: string,
  *     values: array<string, string>
@@ -455,8 +454,6 @@ final class Form {
 		}
 
 		$form_schema_id = Utility::get_http_input( INPUT_POST, 'gatherpress_form_schema_id' );
-		$form_id        = Utility::get_http_input( INPUT_POST, 'gatherpress_rsvp_form_id' );
-		$form_id        = preg_match( '/^gatherpress_rsvp_[0-9a-f]+$/', $form_id ) ? $form_id : '';
 		$token          = wp_generate_password( 20, false );
 
 		set_transient(
@@ -464,7 +461,6 @@ final class Form {
 			array(
 				'post_id'        => $post_id,
 				'form_schema_id' => $form_schema_id,
-				'form_id'        => $form_id,
 				'errors'         => $field_errors,
 				'form_error'     => $form_error,
 				'values'         => $this->get_return_values( $post_id, $form_schema_id ),
@@ -472,13 +468,13 @@ final class Form {
 			self::RETURN_EXPIRATION
 		);
 
-		$url = add_query_arg(
+		// No #anchor: a URL fragment stops browsers honoring autofocus, which
+		// already scrolls the field to fix into view.
+		return add_query_arg(
 			self::RETURN_QUERY_ARG,
 			$token,
 			remove_query_arg( array( self::RETURN_QUERY_ARG, 'gatherpress_rsvp_success' ), $referer )
 		);
-
-		return '' !== $form_id ? $url . '#' . $form_id : $url;
 	}
 
 	/**
@@ -569,7 +565,6 @@ final class Form {
 			'token'          => $token,
 			'post_id'        => (int) ( $submission['post_id'] ?? 0 ),
 			'form_schema_id' => (string) ( $submission['form_schema_id'] ?? '' ),
-			'form_id'        => (string) ( $submission['form_id'] ?? '' ),
 			'errors'         => array_map( 'strval', (array) ( $submission['errors'] ?? array() ) ),
 			'form_error'     => (string) ( $submission['form_error'] ?? '' ),
 			'values'         => array_map( 'strval', (array) ( $submission['values'] ?? array() ) ),

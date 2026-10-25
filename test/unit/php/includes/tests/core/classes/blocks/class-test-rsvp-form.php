@@ -4370,7 +4370,6 @@ class Test_Rsvp_Form extends Base {
 				'token'          => 'abcdefghijABCDEFGHIJ',
 				'post_id'        => 0,
 				'form_schema_id' => 'form_0',
-				'form_id'        => 'gatherpress_rsvp_6718a2b4c3d5e',
 				'errors'         => array(),
 				'form_error'     => '',
 				'values'         => array(),
@@ -4564,7 +4563,7 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
-	 * Tests only the first of two identical forms takes the submission, so its id stays unique.
+	 * Tests only the first of two identical forms takes the submission.
 	 *
 	 * @since TBD
 	 * @covers ::begin_returned_form
@@ -4596,11 +4595,6 @@ class Test_Rsvp_Form extends Base {
 			2,
 			substr_count( $html, 'class="wp-block-gatherpress-rsvp-form"' ),
 			'Both forms should render.'
-		);
-		$this->assertSame(
-			1,
-			substr_count( $html, 'id="gatherpress_rsvp_6718a2b4c3d5e"' ),
-			'Only one form should take the submitted id.'
 		);
 		$this->assertSame(
 			1,
@@ -4755,7 +4749,7 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
-	 * Tests transform_block_content keeps the submitted form id and ends the returned form.
+	 * Tests transform_block_content adds the returned form's message and ends the returned form.
 	 *
 	 * @since TBD
 	 * @covers ::transform_block_content
@@ -4776,16 +4770,6 @@ class Test_Rsvp_Form extends Base {
 		$html = $instance->transform_block_content( $content, $block );
 
 		$this->assertStringContainsString(
-			'id="gatherpress_rsvp_6718a2b4c3d5e"',
-			$html,
-			'The form should keep the id the redirect points at.'
-		);
-		$this->assertStringContainsString(
-			'name="gatherpress_rsvp_form_id" value="gatherpress_rsvp_6718a2b4c3d5e"',
-			$html,
-			'A resubmission should carry the same form id.'
-		);
-		$this->assertStringContainsString(
 			'<div class="gatherpress-form-error" role="alert" tabindex="-1" autofocus>Duplicate.</div>',
 			$html
 		);
@@ -4794,15 +4778,10 @@ class Test_Rsvp_Form extends Base {
 			'The next form should start clean.'
 		);
 
-		$this->set_returned_form( $this->make_returned_submission( array( 'form_id' => '' ) ) );
+		$this->set_returned_form( $this->make_returned_submission() );
 
 		$html = $instance->transform_block_content( $content, $block );
 
-		$this->assertMatchesRegularExpression(
-			'/id="gatherpress_rsvp_[0-9a-f]+"/',
-			$html,
-			'Without a submitted id the form gets a new one.'
-		);
 		$this->assertStringNotContainsString( 'gatherpress-form-error', $html, 'Without a message nothing is added.' );
 	}
 
@@ -4838,7 +4817,6 @@ class Test_Rsvp_Form extends Base {
 
 		$html = do_blocks( $this->get_returned_form_content() );
 
-		$this->assertStringContainsString( 'id="gatherpress_rsvp_6718a2b4c3d5e"', $html );
 		$this->assertMatchesRegularExpression(
 			'/<input[^>]*name="dietary"[^>]*aria-invalid="true"'
 				. '[^>]*aria-describedby="dietary-input-error"[^>]*autofocus="autofocus"/',
