@@ -144,9 +144,10 @@ const { actions } = store( 'gatherpress', {
 				}
 
 				// Find the modal manager and modal.
-				let modalManager = element.closest(
+				const ownModalManager = element.closest(
 					'.wp-block-gatherpress-modal-manager',
 				);
+				let modalManager = ownModalManager;
 
 				/**
 				 * When switching between RSVP states, modals are hidden/shown dynamically.
@@ -189,7 +190,10 @@ const { actions } = store( 'gatherpress', {
 					return;
 				}
 
-				const modal = modalManager.querySelector(
+				// Close the modal around the element, even when focus moves on
+				// to a visible sibling's trigger: an open modal <dialog> left in
+				// a hidden container would keep the rest of the page inert.
+				const modal = ownModalManager.querySelector(
 					'.wp-block-gatherpress-modal',
 				);
 

@@ -591,6 +591,10 @@ describe( 'rsvp updateRsvp focus target with the real modal actions (#2428)', ()
 				),
 			),
 		);
+
+		// The attending modal closes even though its state is now hidden: an
+		// open modal dialog there would leave the rest of the page inert.
+		expect( modal( 'attending' ).open ).toBe( false );
 	} );
 } );
 
