@@ -1,4 +1,0 @@
-Significance: minor
-Type: changed
-
-The add-to-calendar links and iCalendar feeds moved from the `GatherPress\Core\Calendar` namespace to `GatherPress\Core\External_Calendar`, and their filters are now `gatherpress_external_calendar_url` and `gatherpress_external_calendar_max_age`. Code that uses the old class names or filter names needs updating. Feed and download URLs do not change.

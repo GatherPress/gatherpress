@@ -394,7 +394,7 @@ Apply to PHP PHPDoc blocks and JS JSDoc blocks alike.
     - Look for `use Singleton;` trait to determine if `::get_instance()` should be used
 - **`readonly` where a property is genuinely write-once** (#1961), which lets the type system enforce immutability instead of convention. The surface is far smaller than it looks, four conditions each disqualify a property, and three of them are invisible in the class itself:
     1. **It cannot have a default value.** `protected ?WP_Post $event = null;` is out; `readonly` forbids defaults, and dropping the default only works if the constructor always assigns.
-    2. **It must be assigned unconditionally.** `External_Calendar\Endpoint` assigns inside `if ( $this->is_valid_registration() )`, so on the failing branch the property stays uninitialized forever, PHPStan flags this as `property.uninitializedReadonly`.
+    2. **It must be assigned unconditionally.** `Calendar\External\Endpoint` assigns inside `if ( $this->is_valid_registration() )`, so on the failing branch the property stays uninitialized forever, PHPStan flags this as `property.uninitializedReadonly`.
     3. **Nothing may write it from outside the declaring class**: including tests writing to a mock, e.g. `$template->slug = '…';`. That is a fatal `Cannot initialize readonly property … from scope`.
     4. **The PMC test helpers must not touch it.** `Utility::set_and_get_hidden_property()` writes through reflection, which PHP 8.1 forbids on an initialized readonly property, and `assert_hooks()` re-invokes the constructor on an existing instance, which throws on the *second* assignment. This is what keeps `Settings\Base::$priority` and `Rsvp::$capacity` mutable.
     - Before adding the keyword, grep for external writes with POSIX classes, not `\s`: **BSD grep on macOS silently matches nothing for `\s`**, which will tell you a property is safe when it is not: `grep -rnE -- "->[[:space:]]*prop[[:space:]]*=[^=>]" includes test`.
@@ -403,8 +403,8 @@ Apply to PHP PHPDoc blocks and JS JSDoc blocks alike.
     - ✅ Good: `abstract class Base {`: the documented extension point for settings pages / RSVP response providers / venue map providers.
     - ❌ Bad: a plain `class Foo {` that nothing extends and that isn't meant to be extended.
     - **Four things must stay non-final**, and the reasons are worth knowing before you add the keyword:
-        1. Abstract bases (`Settings\Base`, `External_Calendar\Endpoint_Type`, `Rsvp\Response\Provider\Base`, `Venue\Map\Provider\Base`).
-        2. Anything actually extended in `includes/`: currently `External_Calendar\Endpoint` and `Migrate`.
+        1. Abstract bases (`Settings\Base`, `Calendar\External\Endpoint_Type`, `Rsvp\Response\Provider\Base`, `Venue\Map\Provider\Base`).
+        2. Anything actually extended in `includes/`: currently `Calendar\External\Endpoint` and `Migrate`.
         3. **Anything mocked in tests.** PHPUnit cannot mock a `final` class, so `createMock( Foo::class )` / `getMockBuilder( Foo::class )` and `final` are mutually exclusive. This is what keeps `Event`, `Settings`, `Template`, and `Endpoint` non-final. Check `grep -rn "createMock\|getMockBuilder" test/unit/php` before finalizing.
         4. Anything a test subclasses, including anonymous `new class() extends Foo` doubles.
     - `final` makes PHPStan's inference precise: it can prove a return type is never returned, where before a hypothetical subclass kept the union alive. Expect the analyzer to surface dead types when you add the keyword, fix them rather than widening the signature back.

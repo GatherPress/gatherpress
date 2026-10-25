@@ -14,11 +14,11 @@
  * transients are object cache entries anyway; without one, they persist in the
  * options table instead of evaporating at the end of the request.
  *
- * @package GatherPress\Core\External_Calendar
+ * @package GatherPress\Core\Calendar\External
  * @since 0.36.0
  */
 
-namespace GatherPress\Core\External_Calendar;
+namespace GatherPress\Core\Calendar\External;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
@@ -138,7 +138,7 @@ final class Cache {
 		 *
 		 * @return int Seconds a calendar response stays fresh.
 		 */
-		return max( 0, (int) apply_filters( 'gatherpress_external_calendar_max_age', self::DEFAULT_MAX_AGE ) );
+		return max( 0, (int) apply_filters( 'gatherpress_calendar_external_max_age', self::DEFAULT_MAX_AGE ) );
 	}
 
 	/**

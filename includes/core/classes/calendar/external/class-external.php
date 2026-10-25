@@ -2,7 +2,7 @@
 /**
  * Per-event calendar URL and iCal data wrapper for GatherPress.
  *
- * This file defines the `External_Calendar` class, instantiated with an event post ID
+ * This file defines the `External` class, instantiated with an event post ID
  * to expose per-event calendar surfaces: subscribe / download URLs for the
  * four supported calendar services (Google, Yahoo, iCal, Outlook) and the
  * VEVENT iCal string for this event's data.
@@ -12,11 +12,11 @@
  * taxonomy-term feeds) live on the sibling `Calendar\Setup` class because
  * they operate on `get_queried_object()` rather than a single specific post.
  *
- * @package GatherPress\Core\External_Calendar
+ * @package GatherPress\Core\Calendar\External
  * @since 0.34.0
  */
 
-namespace GatherPress\Core\External_Calendar;
+namespace GatherPress\Core\Calendar\External;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
@@ -34,7 +34,7 @@ use GatherPress\Core\Event;
  *
  * @since 0.34.0
  */
-final class External_Calendar {
+final class External {
 
 	/**
 	 * Epoch the VEVENT `SEQUENCE` counts from, as a Unix timestamp.
@@ -103,7 +103,7 @@ final class External_Calendar {
 	 * endpoint callback in `Calendar\Setup`.
 	 *
 	 * Front-end calendar UIs link to this on-site URL rather than the
-	 * direct Google URL so themes, the `gatherpress_external_calendar_url` filter,
+	 * direct Google URL so themes, the `gatherpress_calendar_external_url` filter,
 	 * and any CDN/federation tooling see a stable canonical link.
 	 *
 	 * @since 0.34.0
@@ -503,7 +503,7 @@ final class External_Calendar {
 		 */
 		$endpoint_url = sanitize_url(
 			apply_filters(
-				'gatherpress_external_calendar_url',
+				'gatherpress_calendar_external_url',
 				$endpoint_url,
 				$post
 			)

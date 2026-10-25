@@ -59,7 +59,7 @@ get_term_link( $term, 'gatherpress_topic' );
 
 ## The `ical` slug is deliberately not translated
 
-Everything else is localizable. `ical` is not: it is a hardcoded constant, `External_Calendar\Setup::ICAL_SLUG`.
+Everything else is localizable. `ical` is not: it is a hardcoded constant, `Calendar\External\Setup::ICAL_SLUG`.
 
 That is on purpose. A calendar subscription URL is stored by the subscriber's calendar application and re-fetched for years. If the slug moved with the site's locale, changing the site language would silently break every subscription that already existed.
 
@@ -94,7 +94,7 @@ The calendar routes are not special-cased anywhere. They are built from a small 
 Almost always one of three things:
 
 1. **Rules were not flushed.** Visiting Settings, Permalinks and saving forces a rebuild. If this fixes it permanently, something registered a rewrite without flushing.
-2. **Registration order.** Feed endpoints have to be registered before single endpoints, or the rules are saved in an order where the single rule matches first and swallows the feed. `External_Calendar\Setup` registers them in that order deliberately, and the code says so.
+2. **Registration order.** Feed endpoints have to be registered before single endpoints, or the rules are saved in an order where the single rule matches first and swallows the feed. `Calendar\External\Setup` registers them in that order deliberately, and the code says so.
 3. **Plain permalinks.** With `permalink_structure` empty, WordPress has no pretty URLs to attach to and none of these routes exist.
 
 To see what actually got registered:

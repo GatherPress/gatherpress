@@ -1,21 +1,21 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\External_Calendar\Template.
+ * Class handles unit tests for GatherPress\Core\Calendar\External\Template.
  *
- * @package GatherPress\Core\External_Calendar
+ * @package GatherPress\Core\Calendar\External
  * @since 0.34.0
  */
 
-namespace GatherPress\Tests\Core\External_Calendar;
+namespace GatherPress\Tests\Core\Calendar\External;
 
-use GatherPress\Core\External_Calendar\Template;
+use GatherPress\Core\Calendar\External\Template;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Template.
  *
- * @coversDefaultClass \GatherPress\Core\External_Calendar\Template
+ * @coversDefaultClass \GatherPress\Core\Calendar\External\Template
  * @group              endpoints
  */
 class Test_Template extends Base {
@@ -41,7 +41,7 @@ class Test_Template extends Base {
 		$this->assertNotEmpty( Utility::get_hidden_property( $instance, 'plugin_template_dir' ) );
 		$this->assertSame(
 			sprintf(
-				'%s/includes/templates/external-calendar',
+				'%s/includes/templates/calendar/external',
 				GATHERPRESS_CORE_PATH
 			),
 			Utility::get_hidden_property( $instance, 'plugin_template_dir' ),
@@ -106,7 +106,7 @@ class Test_Template extends Base {
 		$instance = new Template( $slug, $callback );
 
 		// Stand in for the Endpoint dependency just enough to satisfy activate().
-		$endpoint = $this->getMockBuilder( \GatherPress\Core\External_Calendar\Endpoint::class )
+		$endpoint = $this->getMockBuilder( \GatherPress\Core\Calendar\External\Endpoint::class )
 			->disableOriginalConstructor()
 			->getMock();
 		$endpoint->method( 'has_feed' )->willReturn( 'ical' );
@@ -179,7 +179,7 @@ class Test_Template extends Base {
 		$template = $instance->template_include( $template_default );
 
 		$this->assertSame(
-			sprintf( '%s/includes/templates/external-calendar/ical-download.php', GATHERPRESS_CORE_PATH ),
+			sprintf( '%s/includes/templates/calendar/external/ical-download.php', GATHERPRESS_CORE_PATH ),
 			$template,
 			'template_include should return the bundled plugin template when it exists.'
 		);

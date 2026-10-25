@@ -106,13 +106,13 @@ class Test_Utility extends Base {
 	 * @return void
 	 */
 	public function test_locate_template_resolves_plugin_fallback(): void {
-		$expected = sprintf( '%s/includes/templates/external-calendar/ical-download.php', GATHERPRESS_CORE_PATH );
+		$expected = sprintf( '%s/includes/templates/calendar/external/ical-download.php', GATHERPRESS_CORE_PATH );
 
 		$this->assertSame(
 			$expected,
 			Utility::locate_template(
 				'gatherpress_ical-download.php',
-				sprintf( '%s/includes/templates/external-calendar', GATHERPRESS_CORE_PATH )
+				sprintf( '%s/includes/templates/calendar/external', GATHERPRESS_CORE_PATH )
 			),
 			'locate_template should return the bundled plugin template and strip the gatherpress_ prefix.'
 		);
@@ -218,7 +218,7 @@ class Test_Utility extends Base {
 	 * @return void
 	 */
 	public function test_resolve_fallback_template_path_strips_prefix(): void {
-		$fallback_dir = sprintf( '%s/includes/templates/external-calendar', GATHERPRESS_CORE_PATH );
+		$fallback_dir = sprintf( '%s/includes/templates/calendar/external', GATHERPRESS_CORE_PATH );
 		$expected     = sprintf( '%s/ical-download.php', $fallback_dir );
 
 		$this->assertSame(

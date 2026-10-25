@@ -1,21 +1,21 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\External_Calendar\Taxonomy_Feed.
+ * Class handles unit tests for GatherPress\Core\Calendar\External\Taxonomy_Feed.
  *
- * @package GatherPress\Core\External_Calendar
+ * @package GatherPress\Core\Calendar\External
  * @since 0.34.0
  */
 
-namespace GatherPress\Tests\Core\External_Calendar;
+namespace GatherPress\Tests\Core\Calendar\External;
 
-use GatherPress\Core\External_Calendar\Taxonomy_Feed;
-use GatherPress\Core\External_Calendar\Template;
+use GatherPress\Core\Calendar\External\Taxonomy_Feed;
+use GatherPress\Core\Calendar\External\Template;
 use GatherPress\Tests\Base;
 
 /**
  * Class Test_Taxonomy_Feed.
  *
- * @coversDefaultClass \GatherPress\Core\External_Calendar\Taxonomy_Feed
+ * @coversDefaultClass \GatherPress\Core\Calendar\External\Taxonomy_Feed
  * @group              endpoints
  */
 class Test_Taxonomy_Feed extends Base {

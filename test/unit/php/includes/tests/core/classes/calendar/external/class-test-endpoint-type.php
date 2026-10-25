@@ -1,23 +1,23 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\External_Calendar\Endpoint_Type.
+ * Class handles unit tests for GatherPress\Core\Calendar\External\Endpoint_Type.
  *
- * @package GatherPress\Core\External_Calendar
+ * @package GatherPress\Core\Calendar\External
  * @since 0.34.0
  */
 
-namespace GatherPress\Tests\Core\External_Calendar;
+namespace GatherPress\Tests\Core\Calendar\External;
 
-use GatherPress\Core\External_Calendar\Endpoint_Type;
-use GatherPress\Core\External_Calendar\Redirect;
-use GatherPress\Core\External_Calendar\Template;
+use GatherPress\Core\Calendar\External\Endpoint_Type;
+use GatherPress\Core\Calendar\External\Redirect;
+use GatherPress\Core\Calendar\External\Template;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Endpoint_Type.
  *
- * @coversDefaultClass \GatherPress\Core\External_Calendar\Endpoint_Type
+ * @coversDefaultClass \GatherPress\Core\Calendar\External\Endpoint_Type
  * @group              endpoints
  */
 class Test_Endpoint_Type extends Base {
@@ -59,7 +59,7 @@ class Test_Endpoint_Type extends Base {
 			Utility::invoke_hidden_method(
 				$instance,
 				'is_of_class',
-				array( 'GatherPress\Core\External_Calendar\Redirect' )
+				array( 'GatherPress\Core\Calendar\External\Redirect' )
 			),
 			'Failed to validate class in namespace.'
 		);
@@ -68,7 +68,7 @@ class Test_Endpoint_Type extends Base {
 			Utility::invoke_hidden_method(
 				$instance,
 				'is_of_class',
-				array( 'GatherPress\Core\External_Calendar\Template' )
+				array( 'GatherPress\Core\Calendar\External\Template' )
 			),
 			'Failed to validate non-used class in namespace.'
 		);
@@ -88,7 +88,7 @@ class Test_Endpoint_Type extends Base {
 			Utility::invoke_hidden_method(
 				$instance,
 				'is_in_class',
-				array( 'GatherPress\Core\External_Calendar\Redirect' )
+				array( 'GatherPress\Core\Calendar\External\Redirect' )
 			),
 			'Failed to validate class in namespace.'
 		);
@@ -97,7 +97,7 @@ class Test_Endpoint_Type extends Base {
 			Utility::invoke_hidden_method(
 				$instance,
 				'is_in_class',
-				array( 'GatherPress\Core\External_Calendar\Template' )
+				array( 'GatherPress\Core\Calendar\External\Template' )
 			),
 			'Failed to validate class in namespace.'
 		);

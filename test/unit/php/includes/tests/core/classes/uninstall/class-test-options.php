@@ -8,7 +8,7 @@
 
 namespace GatherPress\Tests\Core\Uninstall;
 
-use GatherPress\Core\External_Calendar\Cache;
+use GatherPress\Core\Calendar\External\Cache;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Settings\Network;
 use GatherPress\Core\Uninstall\Options;

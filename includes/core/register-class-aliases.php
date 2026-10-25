@@ -21,12 +21,12 @@ spl_autoload_register(
 	static function ( string $class_string ): void {
 		// Map of short and prior fully-qualified class names to their current fully-qualified class names.
 		$aliases = array(
-			'GatherPress\\Core\\Calendar'          => 'GatherPress\\Core\\External_Calendar\\External_Calendar',
-			'GatherPress\\Core\\External_Calendar' => 'GatherPress\\Core\\External_Calendar\\External_Calendar',
-			'GatherPress\\Core\\Event'             => 'GatherPress\\Core\\Event\\Event',
-			'GatherPress\\Core\\Rsvp'              => 'GatherPress\\Core\\Rsvp\\Rsvp',
-			'GatherPress\\Core\\Venue'             => 'GatherPress\\Core\\Venue\\Venue',
-			'GatherPress\\Core\\Venue\\Map'        => 'GatherPress\\Core\\Venue\\Map\\Map',
+			'GatherPress\\Core\\Calendar'           => 'GatherPress\\Core\\Calendar\\External\\External',
+			'GatherPress\\Core\\Calendar\\External' => 'GatherPress\\Core\\Calendar\\External\\External',
+			'GatherPress\\Core\\Event'              => 'GatherPress\\Core\\Event\\Event',
+			'GatherPress\\Core\\Rsvp'               => 'GatherPress\\Core\\Rsvp\\Rsvp',
+			'GatherPress\\Core\\Venue'              => 'GatherPress\\Core\\Venue\\Venue',
+			'GatherPress\\Core\\Venue\\Map'         => 'GatherPress\\Core\\Venue\\Map\\Map',
 		);
 
 		if ( ! isset( $aliases[ $class_string ] ) ) {

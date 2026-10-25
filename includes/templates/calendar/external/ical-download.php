@@ -8,14 +8,14 @@
  *
  * @see /docs/developer/theme-customizations/README.md
  *
- * @package GatherPress\Core\External_Calendar
+ * @package GatherPress\Core\Calendar\External
  * @since 0.34.0
  */
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\External_Calendar\Setup;
+use GatherPress\Core\Calendar\External\Setup;
 
 // Output the .ics file for the queried event.
 Setup::get_instance()->send_ics_file();

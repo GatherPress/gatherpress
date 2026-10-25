@@ -6,11 +6,11 @@
  * `Endpoint` class to handle custom feeds attached to a single post (e.g.,
  * `/event/my-event/feed/ical`). It allows theme overrides for feed templates.
  *
- * @package GatherPress\Core\External_Calendar
+ * @package GatherPress\Core\Calendar\External
  * @since 0.34.0
  */
 
-namespace GatherPress\Core\External_Calendar;
+namespace GatherPress\Core\Calendar\External;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore

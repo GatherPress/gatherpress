@@ -16,7 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use DateTimeZone;
 use Exception;
-use GatherPress\Core\External_Calendar;
+use GatherPress\Core\Calendar\External;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
 use GatherPress\Core\Setup as Core_Setup;
@@ -1065,7 +1065,7 @@ class Event {
 			return array();
 		}
 
-		$calendar = new External_Calendar( $this->post->ID );
+		$calendar = new External( $this->post->ID );
 
 		// Each URL getter only reports false when its event post cannot be resolved, and the
 		// calendar was built from the post resolved directly above.

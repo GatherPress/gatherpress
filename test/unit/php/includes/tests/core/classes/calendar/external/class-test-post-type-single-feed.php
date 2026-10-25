@@ -1,24 +1,24 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\External_Calendar\Post_Type_Feed.
+ * Class handles unit tests for GatherPress\Core\Calendar\External\Post_Type_Single_Feed.
  *
- * @package GatherPress\Core\External_Calendar
+ * @package GatherPress\Core\Calendar\External
  * @since 0.34.0
  */
 
-namespace GatherPress\Tests\Core\External_Calendar;
+namespace GatherPress\Tests\Core\Calendar\External;
 
-use GatherPress\Core\External_Calendar\Post_Type_Feed;
-use GatherPress\Core\External_Calendar\Template;
+use GatherPress\Core\Calendar\External\Post_Type_Single_Feed;
+use GatherPress\Core\Calendar\External\Template;
 use GatherPress\Tests\Base;
 
 /**
- * Class Test_Post_Type_Feed.
+ * Class Test_Post_Type_Single_Feed.
  *
- * @coversDefaultClass \GatherPress\Core\External_Calendar\Post_Type_Feed
+ * @coversDefaultClass \GatherPress\Core\Calendar\External\Post_Type_Single_Feed
  * @group              endpoints
  */
-class Test_Post_Type_Feed extends Base {
+class Test_Post_Type_Single_Feed extends Base {
 
 	/**
 	 * Coverage for __construct method.
@@ -29,7 +29,7 @@ class Test_Post_Type_Feed extends Base {
 	 */
 	public function test___construct(): void {
 		$query_var = 'gatherpress_ext_calendar';
-		$post_type = 'gatherpress_event';
+		$post_type = 'gatherpress_venue';
 		$types     = array(
 			new Template(
 				'ical',
@@ -38,7 +38,8 @@ class Test_Post_Type_Feed extends Base {
 				}
 			),
 		);
-		$instance  = new Post_Type_Feed( $types, $query_var, $post_type );
+		// Default post type defaults to gatherpress_venue when not supplied.
+		$instance = new Post_Type_Single_Feed( $types, $query_var );
 
 		$this->assertSame(
 			$query_var,
@@ -48,7 +49,7 @@ class Test_Post_Type_Feed extends Base {
 		$this->assertSame(
 			get_post_type_object( $post_type ),
 			$instance->type_object,
-			'Failed to assert that type_object is persisted.'
+			'Failed to assert that type_object defaults to gatherpress_venue.'
 		);
 		$this->assertSame(
 			array( $instance, 'is_valid' ),
@@ -61,9 +62,9 @@ class Test_Post_Type_Feed extends Base {
 			'Failed to assert that endpoint types are persisted.'
 		);
 		$this->assertSame(
-			'%s/feed/(%s)/?$',
+			'%s/([^/]+)/feed/(%s)/?$',
 			$instance->reg_ex,
-			'Failed to assert that reg_ex matches the post-type feed pattern.'
+			'Failed to assert that reg_ex matches the singular post-type feed pattern.'
 		);
 		$this->assertSame(
 			'post_type',
@@ -81,7 +82,7 @@ class Test_Post_Type_Feed extends Base {
 	 */
 	public function test_is_valid(): void {
 		$query_var = 'gatherpress_ext_calendar';
-		$post_type = 'gatherpress_event';
+		$post_type = 'gatherpress_venue';
 		$types     = array(
 			new Template(
 				'ical',
@@ -90,23 +91,27 @@ class Test_Post_Type_Feed extends Base {
 				}
 			),
 		);
-		$instance  = new Post_Type_Feed( $types, $query_var, $post_type );
+		$instance  = new Post_Type_Single_Feed( $types, $query_var, $post_type );
 
-		// Positive branch: post type archive in feed mode.
-		$this->go_to( get_post_type_archive_link( $post_type ) );
+		// Positive branch: singular venue in feed mode. Set is_feed directly
+		// since the test env doesn't register the custom `ical` feed.
+		$venue_id = $this->mock->post(
+			array( 'post_type' => $post_type )
+		)->get()->ID;
+		$this->go_to( get_permalink( $venue_id ) );
 		$GLOBALS['wp_query']->is_feed = true;
 
 		$this->assertTrue(
 			$instance->is_valid(),
-			'Failed to assert that is_valid returns true for a post-type archive feed.'
+			'Failed to assert that is_valid returns true for a singular venue feed request.'
 		);
 
-		// Negative branch: home page (neither archive nor feed).
+		// Negative branch: home page.
 		$this->go_to( home_url( '/' ) );
 
 		$this->assertFalse(
 			$instance->is_valid(),
-			'Failed to assert that is_valid returns false outside an archive feed.'
+			'Failed to assert that is_valid returns false outside a singular venue feed.'
 		);
 	}
 
@@ -119,7 +124,7 @@ class Test_Post_Type_Feed extends Base {
 	 */
 	public function test_get_rewrite_atts(): void {
 		$query_var = 'gatherpress_ext_calendar';
-		$post_type = 'gatherpress_event';
+		$post_type = 'gatherpress_venue';
 		$types     = array(
 			new Template(
 				'ical',
@@ -128,16 +133,17 @@ class Test_Post_Type_Feed extends Base {
 				}
 			),
 		);
-		$instance  = new Post_Type_Feed( $types, $query_var, $post_type );
+		$instance  = new Post_Type_Single_Feed( $types, $query_var, $post_type );
 
 		$this->assertSame(
 			array(
-				'post_type' => 'gatherpress_event',
-				'feed'      => '$matches[1]',
-				$query_var  => '$matches[1]',
+				'post_type'         => 'gatherpress_venue',
+				'gatherpress_venue' => '$matches[1]',
+				'feed'              => '$matches[2]',
+				$query_var          => '$matches[2]',
 			),
 			$instance->get_rewrite_atts(),
-			'Failed to assert that rewrite attributes match the post-type feed shape.'
+			'Failed to assert that rewrite attributes match the singular post-type feed shape.'
 		);
 	}
 }

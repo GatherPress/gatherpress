@@ -1,23 +1,23 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\External_Calendar\Endpoint.
+ * Class handles unit tests for GatherPress\Core\Calendar\External\Endpoint.
  *
- * @package GatherPress\Core\External_Calendar
+ * @package GatherPress\Core\Calendar\External
  * @since 0.34.0
  */
 
-namespace GatherPress\Tests\Core\External_Calendar;
+namespace GatherPress\Tests\Core\Calendar\External;
 
-use GatherPress\Core\External_Calendar\Endpoint;
-use GatherPress\Core\External_Calendar\Redirect;
-use GatherPress\Core\External_Calendar\Template;
+use GatherPress\Core\Calendar\External\Endpoint;
+use GatherPress\Core\Calendar\External\Redirect;
+use GatherPress\Core\Calendar\External\Template;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Endpoint.
  *
- * @coversDefaultClass \GatherPress\Core\External_Calendar\Endpoint
+ * @coversDefaultClass \GatherPress\Core\Calendar\External\Endpoint
  * @group              endpoints
  */
 class Test_Endpoint extends Base {

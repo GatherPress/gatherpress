@@ -7,11 +7,11 @@
  * feed URLs (e.g., RSS feeds) for post types such as `gatherpress_event`, while also allowing
  * theme overrides for feed templates.
  *
- * @package GatherPress\Core\External_Calendar
+ * @package GatherPress\Core\Calendar\External
  * @since 0.34.0
  */
 
-namespace GatherPress\Core\External_Calendar;
+namespace GatherPress\Core\Calendar\External;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
