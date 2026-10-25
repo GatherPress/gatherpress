@@ -1122,4 +1122,45 @@ class Test_Shadow_Source extends Base {
 
 		wp_delete_post( $venue_post_id, true );
 	}
+
+	/**
+	 * A protected or private source's term is named without the "Protected: "
+	 * or "Private: " prefix get_the_title() adds outside the admin.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::add_term
+	 * @covers ::maybe_update_term_slug
+	 * @covers ::get_term_name
+	 *
+	 * @return void
+	 */
+	public function test_term_name_leaves_out_the_title_prefix(): void {
+		$instance = Shadow_Source::get_instance();
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'     => Venue::POST_TYPE,
+				'post_status'   => 'publish',
+				'post_title'    => 'Hidden Hall',
+				'post_name'     => 'hidden-hall',
+				'post_password' => 'secret',
+			)
+		);
+		$name     = static function () use ( $instance ): string {
+			$term = get_term_by( 'slug', $instance->term_slug_from_post_name( 'hidden-hall' ), Venue::TAXONOMY );
+
+			return $term ? $term->name : '';
+		};
+
+		$this->assertSame( 'Hidden Hall', $name(), 'The new term has no prefix.' );
+
+		wp_update_post(
+			array(
+				'ID'         => $venue_id,
+				'post_title' => 'Hidden Hall East',
+			)
+		);
+
+		$this->assertSame( 'Hidden Hall East', $name(), 'The renamed term has no prefix.' );
+	}
 }

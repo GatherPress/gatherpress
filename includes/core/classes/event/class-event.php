@@ -1018,6 +1018,31 @@ class Event {
 	}
 
 	/**
+	 * Retrieves the venue information calendars and feeds may share.
+	 *
+	 * A password-protected venue keeps its name and details out of them for
+	 * everyone. Neither the password cookie nor the right to edit the venue
+	 * counts here: a calendar response can be cached and served to other
+	 * viewers, and an Author's lands in the cache for logged-out viewers.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @return array<string, string> The shape of {@see self::get_venue_information()}, all blank for such a venue.
+	 */
+	public function get_public_venue_information(): array {
+		$information = $this->get_venue_information();
+		$venue       = $this->post
+			? Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $this->post->ID )
+			: null;
+
+		if ( $venue instanceof WP_Post && '' !== $venue->post_password ) {
+			return array_fill_keys( array_keys( $information ), '' );
+		}
+
+		return $information;
+	}
+
+	/**
 	 * Retrieve all supported add to calendar links for the event.
 	 *
 	 * This method generates and returns an array of supported add to calendar links for the event,

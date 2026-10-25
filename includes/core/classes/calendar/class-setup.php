@@ -590,9 +590,26 @@ final class Setup {
 	 * @return array<int,array{url:string,attr:string}>
 	 */
 	protected function collect_event_term_alternate_links( WP_Post $event, array $args ): array {
+		$taxonomies = get_object_taxonomies( $event );
+
+		// A password-protected event or venue doesn't give the venue away.
+		if ( Venue_Setup::get_instance()->is_event_venue_hidden( $event ) ) {
+			$taxonomies = array_values(
+				array_diff(
+					$taxonomies,
+					array( Venue_Setup::get_instance()->taxonomy_for_event_post_type( $event->post_type ) )
+				)
+			);
+		}
+
+		// An empty list would match every term on the event, the venue's included.
+		if ( array() === $taxonomies ) {
+			return array();
+		}
+
 		$terms = get_terms(
 			array(
-				'taxonomy'   => get_object_taxonomies( $event ),
+				'taxonomy'   => $taxonomies,
 				'object_ids' => $event->ID,
 			)
 		);
@@ -926,7 +943,7 @@ final class Setup {
 	 * events to the viewers allowed to read them.
 	 *
 	 * @since 0.36.0
-	 * @since TBD    Includes the viewer scope from `Cache::get_viewer_scope()`.
+	 * @since 0.36.1    Includes the viewer scope from `Cache::get_viewer_scope()`.
 	 *
 	 * @return string Scope-specific cache key.
 	 */

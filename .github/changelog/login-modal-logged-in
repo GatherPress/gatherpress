@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Remove the RSVP block's Login dialog for logged-in viewers. The dialog's class in the RSVP block template did not match the one checked when removing it, so it stayed in the page, hidden and unused.

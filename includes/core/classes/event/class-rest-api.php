@@ -229,7 +229,7 @@ final class Rest_Api {
 	 * takes the post type's `edit_others_posts`, as Editors and Administrators
 	 * have, on top of the right to edit the event.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param string $post_type The event's post type.
 	 *
@@ -781,13 +781,17 @@ final class Rest_Api {
 		}
 
 		// Pre-flight: bail with a structured error before processing if the
-		// event is not viewable, open RSVP is disabled or the event has already passed.
+		// event is not viewable, its password hasn't been entered, open RSVP is
+		// disabled or the event has already passed. The password check is the
+		// one wp-comments-post.php makes, which process_rsvp() skips.
 		$event = new Event( $data['post_id'] );
 		$rsvp  = new Rsvp( $data['post_id'] );
 		$bail  = null;
 
 		if ( ! Event::is_viewable( $data['post_id'] ) ) {
 			$bail = array( __( 'Event not found.', 'gatherpress' ), 404 );
+		} elseif ( post_password_required( $data['post_id'] ) ) {
+			$bail = array( __( 'Enter the event password to RSVP.', 'gatherpress' ), 403 );
 		} elseif ( ! $rsvp->is_enabled() ) {
 			$bail = array( __( 'RSVP is disabled for this event.', 'gatherpress' ), 403 );
 		} elseif ( ! $rsvp->allows_open_rsvp() ) {

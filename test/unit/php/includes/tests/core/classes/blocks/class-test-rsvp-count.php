@@ -87,7 +87,7 @@ class Test_Rsvp_Count extends Base {
 	/**
 	 * A password-protected event renders nothing until the viewer has the password.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @return void
 	 */
@@ -111,7 +111,7 @@ class Test_Rsvp_Count extends Base {
 	/**
 	 * A password-protected event renders its count once the viewer has the password.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @return void
 	 */

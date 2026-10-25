@@ -141,13 +141,15 @@ final class Rsvp_Form {
 		$post_id        = $block_instance->get_post_id( $block );
 
 		// Validate that the post type supports RSVP, that the post is published
-		// (unless previewing), and that RSVP is both enabled and open. A single
-		// Rsvp() so we don't construct it twice on the happy path.
+		// (unless previewing) and its password entered, and that RSVP is both
+		// enabled and open. A single Rsvp() so we don't construct it twice on
+		// the happy path.
 		$rsvp = new Rsvp( $post_id );
 
 		if (
 			! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT )
 			|| ! Event::is_viewable( $post_id )
+			|| post_password_required( $post_id )
 			|| ! $rsvp->is_enabled()
 			|| ! $rsvp->allows_open_rsvp()
 		) {
@@ -732,7 +734,7 @@ final class Rsvp_Form {
 	 * are the form's own attributes, which can be filtered at render.
 	 *
 	 * @since 0.33.0
-	 * @since TBD Also compares form fields. A block's innerHTML holds only its
+	 * @since 0.36.1 Also compares form fields. A block's innerHTML holds only its
 	 *            wrapper, so two forms with the same wrapper and number of
 	 *            fields matched each other.
 	 *

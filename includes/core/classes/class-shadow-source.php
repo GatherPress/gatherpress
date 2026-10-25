@@ -277,6 +277,8 @@ final class Shadow_Source {
 	 * @param bool    $update  Whether this is an existing post being updated.
 	 *
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) -- $post_id is required by the save_post_{$post_type} signature.
 	 */
 	public function add_term( int $post_id, WP_Post $post, bool $update ): void {
 		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) { // @codeCoverageIgnore
@@ -302,7 +304,7 @@ final class Shadow_Source {
 		}
 
 		wp_insert_term(
-			html_entity_decode( get_the_title( $post_id ) ),
+			$this->get_term_name( $post ),
 			$taxonomy,
 			array( 'slug' => $term_slug )
 		);
@@ -348,7 +350,7 @@ final class Shadow_Source {
 		$taxonomy      = $this->get_taxonomy( $post_type );
 		$old_term_slug = $this->term_slug_from_post_name( $post_before->post_name );
 		$new_term_slug = $this->term_slug_from_post_name( $post_after->post_name );
-		$title         = html_entity_decode( get_the_title( $post_id ) );
+		$title         = $this->get_term_name( $post_after );
 
 		$term = term_exists( $old_term_slug, $taxonomy );
 
@@ -404,6 +406,24 @@ final class Shadow_Source {
 		if ( $term instanceof WP_Term ) {
 			wp_delete_term( $term->term_id, $taxonomy );
 		}
+	}
+
+	/**
+	 * Gets the term name for a source post.
+	 *
+	 * The post's title as get_the_title() formats it, minus the "Protected: "
+	 * or "Private: " prefix it adds outside the admin, which isn't part of the
+	 * name.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @param WP_Post $post The source post.
+	 *
+	 * @return string The term name.
+	 */
+	private function get_term_name( WP_Post $post ): string {
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core's filter, applied as get_the_title() applies it.
+		return html_entity_decode( (string) apply_filters( 'the_title', $post->post_title, $post->ID ) );
 	}
 
 	/**

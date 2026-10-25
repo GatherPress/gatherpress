@@ -14,6 +14,7 @@ use GatherPress\Core\Event\Rest_Api;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
+use PasswordHash;
 use PMC\Unit_Test\Utility;
 use WP_Post;
 
@@ -468,7 +469,7 @@ class Test_Rsvp_Form extends Base {
 	 * block, so two forms with the same wrapper and number of fields used to
 	 * match each other, and the second form rendered the first one's id.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::get_form_schema_id
 	 * @covers ::find_form_schema_id_in_blocks
 	 * @covers ::blocks_match
@@ -563,7 +564,7 @@ class Test_Rsvp_Form extends Base {
 	 * Forms with the same fields share the first form's id, whose schema
 	 * holds the same fields as their own.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::get_form_schema_id
 	 * @covers ::find_form_schema_id_in_blocks
 	 * @covers ::blocks_match
@@ -629,7 +630,7 @@ class Test_Rsvp_Form extends Base {
 	 * Block Hooks insert into the content before the form renders, so the
 	 * rendered form has an inner block that the saved one does not.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::get_form_schema_id
 	 * @covers ::find_form_schema_id_in_blocks
 	 * @covers ::blocks_match
@@ -673,7 +674,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Wrap inner block markup in an RSVP Form block.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param string $inner Inner block markup.
 	 *
@@ -690,7 +691,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Render each RSVP form in the content, nested ones included, and collect its schema id.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param int    $post_id      The event post ID.
 	 * @param string $post_content The event content.
@@ -2928,6 +2929,57 @@ class Test_Rsvp_Form extends Base {
 
 		// Should return empty string for unpublished events (when not in preview mode).
 		$this->assertEmpty( $result );
+	}
+
+	/**
+	 * Tests transform_block_content keeps a password-protected event's form behind its password.
+	 *
+	 * In a block template the RSVP Form block renders outside the post
+	 * content, where the password form would otherwise hide it.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::transform_block_content
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_password_protected_event(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		);
+
+		$block_content = '<div class="wp-block-gatherpress-rsvp-form">RSVP Form Content</div>';
+		$block         = array(
+			'blockName' => 'gatherpress/rsvp-form',
+			'attrs'     => array(
+				'postId' => $post_id,
+			),
+		);
+
+		$this->assertSame(
+			'',
+			$instance->transform_block_content( $block_content, $block ),
+			'A password-protected event should keep its RSVP form from a viewer without the password.'
+		);
+
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+
+		// The cookie WordPress sets once a viewer enters the post password.
+		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'secret' );
+
+		$result = $instance->transform_block_content( $block_content, $block );
+
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+
+		$this->assertStringStartsWith(
+			'<form',
+			$result,
+			'A password-protected event should show its RSVP form to a viewer with the password.'
+		);
 	}
 
 	/**

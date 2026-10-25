@@ -72,7 +72,7 @@ final class Post_Type_Single extends Endpoint {
 	 * A password-protected post only counts once the viewer has entered its password.
 	 *
 	 * @since 0.34.0
-	 * @since TBD    Requires the post's password for a password-protected post.
+	 * @since 0.36.1    Requires the post's password for a password-protected post.
 	 *
 	 * @return bool True if the current query is for a singular post of the post type that the
 	 *              viewer may see, false otherwise.

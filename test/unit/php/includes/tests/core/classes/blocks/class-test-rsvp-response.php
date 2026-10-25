@@ -114,7 +114,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests transform_block_content keeps a password-protected event's responses behind its password.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -149,7 +149,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests transform_block_content shows a password-protected event's responses once the viewer has the password.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::transform_block_content
 	 *
 	 * @return void

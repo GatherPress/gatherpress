@@ -1059,7 +1059,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test the feed keeps a password-protected event's date and venue behind its password.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::get_default_event_excerpt
 	 * @covers ::get_default_event_content

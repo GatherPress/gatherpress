@@ -116,7 +116,7 @@ class Test_Post_Type_Single extends Base {
 	 * A password-protected event's calendar links only work once the viewer
 	 * has entered its password.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::is_valid
 	 *
