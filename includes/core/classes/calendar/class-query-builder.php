@@ -12,6 +12,7 @@ namespace GatherPress\Core\Calendar;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Utility;
 use WP_Block;
 use WP_Post;
 use WP_Query;
@@ -133,14 +134,9 @@ final class Query_Builder {
 	 */
 	public static function get_requested_page( $query_id ): int {
 		$page_key = is_numeric( $query_id ) ? 'query-' . (int) $query_id . '-page' : 'query-page';
+		$page     = (int) Utility::get_http_input( INPUT_GET, $page_key );
 
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended
-		if ( ! isset( $_GET[ $page_key ] ) || ! is_scalar( $_GET[ $page_key ] ) ) {
-			return 1;
-		}
-
-		return min( self::MAX_PAGE, max( 1, (int) $_GET[ $page_key ] ) );
-		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+		return min( self::MAX_PAGE, max( 1, $page ) );
 	}
 
 	/**

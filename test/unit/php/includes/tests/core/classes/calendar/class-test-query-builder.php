@@ -52,13 +52,12 @@ class Test_Query_Builder extends Base {
 	}
 
 	/**
-	 * Remove the test block type and the page parameters.
+	 * Remove the test block type.
 	 *
 	 * @return void
 	 */
 	public function tearDown(): void {
 		unregister_block_type( self::TEST_BLOCK );
-		unset( $_GET['query-3-page'], $_GET['query-6-page'], $_GET['query-1-page'], $_GET['query-page'] );
 		parent::tearDown();
 	}
 
@@ -118,24 +117,24 @@ class Test_Query_Builder extends Base {
 	public function test_get_requested_page(): void {
 		$this->assertSame( 1, Query_Builder::get_requested_page( 3 ), 'Failed to assert page 1 without a parameter.' );
 
-		$_GET['query-3-page'] = '4';
+		$this->set_url_params( array( 'query-3-page' => '4' ) );
 		$this->assertSame( 4, Query_Builder::get_requested_page( 3 ) );
 		$this->assertSame( 4, Query_Builder::get_requested_page( '3' ) );
 
-		$_GET['query-page'] = '2';
+		$this->set_url_params( array( 'query-page' => '2' ) );
 		$this->assertSame(
 			2,
 			Query_Builder::get_requested_page( null ),
 			'Failed to assert the key without a queryId.'
 		);
 
-		$_GET['query-3-page'] = '999999';
+		$this->set_url_params( array( 'query-3-page' => '999999' ) );
 		$this->assertSame( Query_Builder::MAX_PAGE, Query_Builder::get_requested_page( 3 ) );
 
-		$_GET['query-3-page'] = '-5';
+		$this->set_url_params( array( 'query-3-page' => '-5' ) );
 		$this->assertSame( 1, Query_Builder::get_requested_page( 3 ) );
 
-		$_GET['query-3-page'] = array( '2' );
+		$this->set_url_params( array( 'query-3-page' => false ) );
 		$this->assertSame( 1, Query_Builder::get_requested_page( 3 ), 'Failed to assert an array is ignored.' );
 	}
 
@@ -147,7 +146,7 @@ class Test_Query_Builder extends Base {
 	 * @return void
 	 */
 	public function test_get_requested_page_ignores_other_query_loops(): void {
-		$_GET['query-1-page'] = '3';
+		$this->set_url_params( array( 'query-1-page' => '3' ) );
 
 		$this->assertSame( 1, Query_Builder::get_requested_page( 6 ) );
 	}
@@ -213,8 +212,8 @@ class Test_Query_Builder extends Base {
 			$args['date_query']
 		);
 
-		$_GET['query-3-page'] = '2';
-		$args                 = ( new Query_Builder( $block, $range ) )->get_args();
+		$this->set_url_params( array( 'query-3-page' => '2' ) );
+		$args = ( new Query_Builder( $block, $range ) )->get_args();
 
 		$this->assertArrayNotHasKey( 'offset', $args, 'Failed to assert page 2 ignores the offset.' );
 	}

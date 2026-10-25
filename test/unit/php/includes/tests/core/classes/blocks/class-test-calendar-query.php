@@ -394,14 +394,14 @@ class Test_Calendar_Query extends Base {
 		$this->assertSame( $no_query, $instance->allow_core_pagination( $no_query, $no_query ) );
 		$this->assertSame( array(), $this->get_calendar_query_ids() );
 
-		$_GET['query-5-page'] = '2';
-		$block                = $this->get_calendar_query_block(
+		$this->set_url_params( array( 'query-5-page' => '2' ) );
+		$block = $this->get_calendar_query_block(
 			array(
 				'queryId' => 5,
 				'query'   => array( 'perPage' => 1 ),
 			)
 		);
-		$query                = $instance->allow_core_pagination( $block, $block )['attrs']['query'];
+		$query = $instance->allow_core_pagination( $block, $block )['attrs']['query'];
 
 		$this->assertTrue( $query[ Query_Builder::CALENDAR_QUERY_PARAM ] );
 		$this->assertSame( 'month', $query[ Query_Builder::CALENDAR_QUERY_VIEW_TYPE ] );
@@ -846,7 +846,9 @@ class Test_Calendar_Query extends Base {
 		// Both Query Loops search for this one post, so they have 1 page of posts.
 		$this->mock->post( array( 'post_title' => 'Zyxcalendarprevious' ) )->get();
 
+		// Core's Previous Page block reads $_GET, and the calendar reads the request input.
 		$_GET['query-5-page'] = '3';
+		$this->set_url_params( array( 'query-5-page' => '3' ) );
 
 		$query      = '"query":{"perPage":1,"postType":"post","search":"Zyxcalendarprevious","inherit":false}';
 		$pagination = '<!-- wp:query-pagination --><!-- wp:query-pagination-previous /-->'
