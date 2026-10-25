@@ -53,7 +53,9 @@ The sidebar also has controls for label, field, option and required-marker color
 
 ## When an answer is refused
 
-If somebody submits the form with a required field empty, or with an answer that does not fit its type, the RSVP is not recorded. They stay on the form and each field at fault is marked with a message explaining what to fix. Correcting a field clears its message.
+If somebody submits the form with a required field empty, or with an answer that does not fit its type, the RSVP is not recorded. They stay on the form and each field at fault is marked with a message explaining what to fix. Correcting a field clears its message. An RSVP from an email address that has already responded gets a message at the top of the form instead.
+
+Without JavaScript the page reloads to show the same messages, with everything they typed still in the form. The page is not cached, and what they typed is kept on the site for ten minutes at most, only until the form is shown again.
 
 Nothing is saved until everything is acceptable, so you will not end up with an RSVP that is missing an answer you asked for.
 

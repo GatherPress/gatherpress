@@ -60,6 +60,12 @@ class Test_Form extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'initialize_rsvp_form_handling' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'wp_headers',
+				'priority' => 10,
+				'callback' => array( $instance, 'prevent_caching_returned_submission' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
@@ -3366,6 +3372,581 @@ class Test_Form extends Base {
 			'Custom Value',
 			get_comment_meta( $comment_id, 'gatherpress_custom_my_custom_field', true ),
 			'Custom field should be saved with custom prefix'
+		);
+	}
+
+	/**
+	 * Clears the rejected submission the Form singleton keeps for the request.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	private function reset_returned_submission(): void {
+		$instance = Form::get_instance();
+
+		Utility::set_and_get_hidden_property( $instance, 'returned_submission', null );
+		Utility::set_and_get_hidden_property( $instance, 'returned_submission_read', false );
+	}
+
+	/**
+	 * Mocks the posted values and the referer of an RSVP Form submission.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, string> $post    Posted values keyed by name.
+	 * @param string|false          $referer The page the form was on, or false when unknown.
+	 *
+	 * @return void
+	 */
+	private function mock_submission( array $post, string|false $referer ): void {
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) use ( $post ) {
+				return INPUT_POST === $type ? ( $post[ $var_name ] ?? '' ) : $pre_value;
+			},
+			10,
+			3
+		);
+		add_filter(
+			'gatherpress_pre_get_wp_referer',
+			static function () use ( $referer ) {
+				return $referer;
+			}
+		);
+	}
+
+	/**
+	 * Mocks the token of a returned submission in the URL.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $token The token.
+	 *
+	 * @return void
+	 */
+	private function mock_return_token( string $token ): void {
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) use ( $token ) {
+				return INPUT_GET === $type && Form::RETURN_QUERY_ARG === $var_name ? $token : $pre_value;
+			},
+			10,
+			3
+		);
+	}
+
+	/**
+	 * Runs a callback expected to redirect, and returns where it went.
+	 *
+	 * @since TBD
+	 *
+	 * @param callable $callback The callback.
+	 *
+	 * @return array{location: string, status: int, token: string, fragment: string} The redirect.
+	 *
+	 * @throws \Exception When the callback fails other than by redirecting.
+	 */
+	private function capture_redirect( callable $callback ): array {
+		$redirect = array(
+			'location' => '',
+			'status'   => 0,
+		);
+		$filter   = static function ( $location, $status ) use ( &$redirect ) {
+			$redirect = array(
+				'location' => $location,
+				'status'   => $status,
+			);
+
+			throw new \Exception( 'gatherpress_test_redirect' );
+		};
+
+		add_filter( 'wp_redirect', $filter, 9999, 2 );
+
+		try {
+			$callback();
+		} catch ( \Exception $exception ) {
+			if ( 'gatherpress_test_redirect' !== $exception->getMessage() ) {
+				throw $exception;
+			}
+		} finally {
+			remove_filter( 'wp_redirect', $filter, 9999 );
+		}
+
+		$query = array();
+
+		wp_parse_str( (string) wp_parse_url( $redirect['location'], PHP_URL_QUERY ), $query );
+
+		$redirect['token']    = (string) ( $query[ Form::RETURN_QUERY_ARG ] ?? '' );
+		$redirect['fragment'] = (string) wp_parse_url( $redirect['location'], PHP_URL_FRAGMENT );
+
+		return $redirect;
+	}
+
+	/**
+	 * Tests a no-JavaScript submission missing a required answer goes back to its form.
+	 *
+	 * @since TBD
+	 * @covers ::preprocess_rsvp_comment
+	 * @covers ::return_to_form
+	 * @covers ::get_return_url
+	 *
+	 * @return void
+	 */
+	public function test_preprocess_rsvp_comment_returns_field_errors_to_form(): void {
+		$post_id   = $this->create_event_with_required_field();
+		$event_url = get_permalink( $post_id );
+
+		$this->mock_submission(
+			array(
+				'author'                     => 'Test Author',
+				'email'                      => 'test@example.com',
+				'gatherpress_form_schema_id' => 'form_0',
+				'gatherpress_rsvp_form_id'   => 'gatherpress_rsvp_6718a2b4c3d5e',
+				'contact'                    => 'backup@example.com',
+			),
+			$event_url
+		);
+
+		$redirect = $this->capture_redirect(
+			static function () use ( $post_id ): void {
+				Form::get_instance()->preprocess_rsvp_comment(
+					array(
+						'comment_post_ID' => $post_id,
+						'comment_content' => 'RSVP comment',
+					)
+				);
+			}
+		);
+
+		$this->assertSame( 303, $redirect['status'], 'The form should be reloaded with a GET.' );
+		$this->assertStringStartsWith(
+			$event_url,
+			$redirect['location'],
+			'The submitter should go back to the event.'
+		);
+		$this->assertMatchesRegularExpression(
+			'/^[A-Za-z0-9]{20}$/',
+			$redirect['token'],
+			'Only a token should be in the URL.'
+		);
+		$this->assertStringNotContainsString(
+			'example.com',
+			(string) wp_parse_url( $redirect['location'], PHP_URL_QUERY ),
+			'No submitted value should be in the URL.'
+		);
+		$this->assertSame(
+			'gatherpress_rsvp_6718a2b4c3d5e',
+			$redirect['fragment'],
+			'The URL should point at the form.'
+		);
+		$this->assertSame(
+			array(
+				'post_id'        => $post_id,
+				'form_schema_id' => 'form_0',
+				'form_id'        => 'gatherpress_rsvp_6718a2b4c3d5e',
+				'errors'         => array( 'dietary' => 'Dietary needs is required.' ),
+				'form_error'     => '',
+				'values'         => array(
+					'dietary' => '',
+					'contact' => 'backup@example.com',
+				),
+			),
+			get_transient( Form::RETURN_TRANSIENT_PREFIX . $redirect['token'] ),
+			'The errors and the values should wait for the form under the token.'
+		);
+	}
+
+	/**
+	 * Tests a no-JavaScript duplicate RSVP goes back to its form with a form-level message.
+	 *
+	 * @since TBD
+	 * @covers ::preprocess_rsvp_comment
+	 * @covers ::return_to_form
+	 *
+	 * @return void
+	 */
+	public function test_preprocess_rsvp_comment_returns_duplicate_rsvp_to_form(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		$this->factory->comment->create(
+			array(
+				'comment_post_ID'      => $post_id,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author_email' => 'test@example.com',
+			)
+		);
+		$this->mock_submission(
+			array(
+				'author' => 'Test Author',
+				'email'  => 'test@example.com',
+			),
+			get_permalink( $post_id )
+		);
+
+		$instance = Form::get_instance();
+		$redirect = $this->capture_redirect(
+			static function () use ( $instance, $post_id ): void {
+				$instance->preprocess_rsvp_comment( array( 'comment_post_ID' => $post_id ) );
+			}
+		);
+		$returned = get_transient( Form::RETURN_TRANSIENT_PREFIX . $redirect['token'] );
+
+		$this->assertSame( 303, $redirect['status'], 'The form should be reloaded with a GET.' );
+		$this->assertSame( '', $redirect['fragment'], 'Without a form id there is nothing to point at.' );
+		$this->assertSame(
+			Utility::invoke_hidden_method( $instance, 'get_duplicate_rsvp_message' ),
+			$returned['form_error'],
+			'The duplicate should be reported for the whole form.'
+		);
+		$this->assertSame( array(), $returned['errors'], 'No field is at fault.' );
+	}
+
+	/**
+	 * Tests return_to_form leaves the caller to show an error page when the form's page is unknown.
+	 *
+	 * @since TBD
+	 * @covers ::return_to_form
+	 *
+	 * @return void
+	 */
+	public function test_return_to_form_without_referer(): void {
+		$this->mock_submission( array(), false );
+
+		$this->assert_not_redirect(
+			static function (): void {
+				Utility::invoke_hidden_method(
+					Form::get_instance(),
+					'return_to_form',
+					array( 1, array(), 'Message.' )
+				);
+			}
+		);
+	}
+
+	/**
+	 * Tests get_return_url returns nothing when the page the form was on is unknown.
+	 *
+	 * @since TBD
+	 * @covers ::get_return_url
+	 *
+	 * @return void
+	 */
+	public function test_get_return_url_without_referer(): void {
+		$this->mock_submission( array( 'gatherpress_form_schema_id' => 'form_0' ), false );
+
+		$this->assertSame(
+			'',
+			Form::get_instance()->get_return_url( 1, array( 'dietary' => 'Required.' ), '' ),
+			'Without a referer the caller falls back to an error page.'
+		);
+	}
+
+	/**
+	 * Tests get_return_url keeps the values the schema names, and replaces old return args.
+	 *
+	 * @since TBD
+	 * @covers ::get_return_url
+	 *
+	 * @return void
+	 */
+	public function test_get_return_url_keeps_the_schema_values(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		update_post_meta(
+			$post_id,
+			'gatherpress_rsvp_form_schemas',
+			array(
+				'form_0' => array(
+					'hash'   => 'test',
+					'fields' => array(
+						'author' => array(
+							'name' => 'author',
+							'type' => 'text',
+						),
+						'notes'  => array(
+							'name' => 'notes',
+							'type' => 'textarea',
+						),
+						'source' => array(
+							'name' => 'source',
+							'type' => 'hidden',
+						),
+					),
+				),
+			)
+		);
+
+		$referer = add_query_arg(
+			array(
+				'page_id'                  => '7',
+				Form::RETURN_QUERY_ARG     => 'AAAAAAAAAAAAAAAAAAAA',
+				'gatherpress_rsvp_success' => 'true',
+			),
+			home_url( '/' )
+		);
+
+		$this->mock_submission(
+			array(
+				'gatherpress_form_schema_id' => 'form_0',
+				'gatherpress_rsvp_form_id'   => 'gatherpress_rsvp_abc123',
+				'author'                     => "Test\nAuthor",
+				'notes'                      => "Line one\nLine two",
+				'source'                     => 'newsletter',
+			),
+			$referer
+		);
+
+		$url   = Form::get_instance()->get_return_url( $post_id, array(), '' );
+		$query = array();
+
+		wp_parse_str( (string) wp_parse_url( $url, PHP_URL_QUERY ), $query );
+
+		$this->assertSame( '7', $query['page_id'], 'The rest of the page URL should be kept.' );
+		$this->assertArrayNotHasKey( 'gatherpress_rsvp_success', $query, 'An earlier success should not be reported.' );
+		$this->assertNotSame(
+			'AAAAAAAAAAAAAAAAAAAA',
+			$query[ Form::RETURN_QUERY_ARG ],
+			'An earlier token should be replaced.'
+		);
+		$this->assertStringEndsWith( '#gatherpress_rsvp_abc123', $url, 'The URL should point at the form.' );
+
+		$returned = get_transient( Form::RETURN_TRANSIENT_PREFIX . $query[ Form::RETURN_QUERY_ARG ] );
+
+		$this->assertSame(
+			array(
+				'author' => 'Test Author',
+				'notes'  => "Line one\nLine two",
+			),
+			$returned['values'],
+			'Visible fields should keep their values, line breaks only in a textarea, and hidden fields none.'
+		);
+	}
+
+	/**
+	 * Tests get_return_url drops a form id that is not one the block generates.
+	 *
+	 * @since TBD
+	 * @covers ::get_return_url
+	 *
+	 * @return void
+	 */
+	public function test_get_return_url_drops_a_malformed_form_id(): void {
+		$this->mock_submission(
+			array( 'gatherpress_rsvp_form_id' => 'gatherpress_rsvp_x"><b>' ),
+			home_url( '/' )
+		);
+
+		$url   = Form::get_instance()->get_return_url( 1, array(), 'Message.' );
+		$query = array();
+
+		wp_parse_str( (string) wp_parse_url( $url, PHP_URL_QUERY ), $query );
+
+		$this->assertStringNotContainsString( '#', $url, 'A malformed form id should not become the anchor.' );
+		$this->assertSame(
+			'',
+			get_transient( Form::RETURN_TRANSIENT_PREFIX . $query[ Form::RETURN_QUERY_ARG ] )['form_id'],
+			'A malformed form id should not be kept.'
+		);
+	}
+
+	/**
+	 * Tests get_returned_submission reads the token's transient once per request.
+	 *
+	 * @since TBD
+	 * @covers ::get_returned_submission
+	 * @covers ::read_returned_submission
+	 *
+	 * @return void
+	 */
+	public function test_get_returned_submission_reads_the_token_once(): void {
+		$token    = 'abcdefghijABCDEFGHIJ';
+		$instance = Form::get_instance();
+
+		$this->reset_returned_submission();
+		$this->mock_return_token( $token );
+		set_transient(
+			Form::RETURN_TRANSIENT_PREFIX . $token,
+			array(
+				'post_id'        => '12',
+				'form_schema_id' => 'form_0',
+				'form_id'        => 'gatherpress_rsvp_abc123',
+				'errors'         => array( 'dietary' => 'Dietary needs is required.' ),
+				'form_error'     => '',
+				'values'         => array( 'dietary' => '' ),
+			),
+			Form::RETURN_EXPIRATION
+		);
+
+		$expected = array(
+			'token'          => $token,
+			'post_id'        => 12,
+			'form_schema_id' => 'form_0',
+			'form_id'        => 'gatherpress_rsvp_abc123',
+			'errors'         => array( 'dietary' => 'Dietary needs is required.' ),
+			'form_error'     => '',
+			'values'         => array( 'dietary' => '' ),
+		);
+
+		$this->assertSame(
+			$expected,
+			$instance->get_returned_submission(),
+			'The stored submission should be returned.'
+		);
+
+		delete_transient( Form::RETURN_TRANSIENT_PREFIX . $token );
+
+		$this->assertSame(
+			$expected,
+			$instance->get_returned_submission(),
+			'The submission should outlive its transient for the request.'
+		);
+
+		$this->reset_returned_submission();
+	}
+
+	/**
+	 * Tests get_returned_submission fills in what a stored submission lacks.
+	 *
+	 * @since TBD
+	 * @covers ::read_returned_submission
+	 *
+	 * @return void
+	 */
+	public function test_get_returned_submission_normalizes_a_partial_transient(): void {
+		$token = 'KLMNOPQRSTklmnopqrst';
+
+		$this->reset_returned_submission();
+		$this->mock_return_token( $token );
+		set_transient( Form::RETURN_TRANSIENT_PREFIX . $token, array( 'post_id' => 5 ), Form::RETURN_EXPIRATION );
+
+		$this->assertSame(
+			array(
+				'token'          => $token,
+				'post_id'        => 5,
+				'form_schema_id' => '',
+				'form_id'        => '',
+				'errors'         => array(),
+				'form_error'     => '',
+				'values'         => array(),
+			),
+			Form::get_instance()->get_returned_submission()
+		);
+
+		$this->reset_returned_submission();
+	}
+
+	/**
+	 * Tests get_returned_submission ignores a malformed or expired token.
+	 *
+	 * @since TBD
+	 * @covers ::read_returned_submission
+	 *
+	 * @return void
+	 */
+	public function test_get_returned_submission_ignores_a_bad_token(): void {
+		$instance = Form::get_instance();
+
+		set_transient( Form::RETURN_TRANSIENT_PREFIX . 'short', array( 'post_id' => 5 ), Form::RETURN_EXPIRATION );
+
+		$this->reset_returned_submission();
+		$this->mock_return_token( 'short' );
+		$this->assertNull( $instance->get_returned_submission(), 'A malformed token should not be looked up.' );
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+		$this->reset_returned_submission();
+		$this->mock_return_token( 'ZZZZZZZZZZZZZZZZZZZZ' );
+		$this->assertNull( $instance->get_returned_submission(), 'An expired token should find nothing.' );
+
+		$this->reset_returned_submission();
+	}
+
+	/**
+	 * Tests consume_returned_submission deletes the transient, so it is shown once.
+	 *
+	 * @since TBD
+	 * @covers ::consume_returned_submission
+	 *
+	 * @return void
+	 */
+	public function test_consume_returned_submission(): void {
+		$token    = 'abcdefghij0123456789';
+		$instance = Form::get_instance();
+
+		$this->reset_returned_submission();
+		$instance->consume_returned_submission();
+
+		$this->mock_return_token( $token );
+		set_transient( Form::RETURN_TRANSIENT_PREFIX . $token, array( 'post_id' => 5 ), Form::RETURN_EXPIRATION );
+
+		$this->reset_returned_submission();
+		$instance->get_returned_submission();
+		$instance->consume_returned_submission();
+
+		$this->assertFalse(
+			get_transient( Form::RETURN_TRANSIENT_PREFIX . $token ),
+			'The submission should be gone once its form has it.'
+		);
+
+		$this->reset_returned_submission();
+	}
+
+	/**
+	 * Tests prevent_caching_returned_submission adds no-cache headers only to a returned form.
+	 *
+	 * @since TBD
+	 * @covers ::prevent_caching_returned_submission
+	 *
+	 * @return void
+	 */
+	public function test_prevent_caching_returned_submission(): void {
+		$token    = '0123456789abcdefghij';
+		$instance = Form::get_instance();
+		$headers  = array( 'Content-Type' => 'text/html; charset=UTF-8' );
+
+		$this->reset_returned_submission();
+		$this->assertSame(
+			$headers,
+			$instance->prevent_caching_returned_submission( $headers ),
+			'An ordinary page should keep its headers.'
+		);
+
+		$this->mock_return_token( $token );
+		set_transient( Form::RETURN_TRANSIENT_PREFIX . $token, array( 'post_id' => 5 ), Form::RETURN_EXPIRATION );
+		$this->reset_returned_submission();
+
+		$this->assertSame(
+			array_merge( $headers, wp_get_nocache_headers() ),
+			$instance->prevent_caching_returned_submission( $headers ),
+			'A page showing a submission should not be cached.'
+		);
+
+		$this->reset_returned_submission();
+	}
+
+	/**
+	 * Tests handle_rsvp_comment_redirect drops the token of an earlier rejection.
+	 *
+	 * @since TBD
+	 * @covers ::handle_rsvp_comment_redirect
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_comment_redirect_drops_the_return_token(): void {
+		$post_id   = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$comment   = $this->factory->comment->create_and_get(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+		$event_url = get_permalink( $post_id );
+
+		$this->mock_submission( array(), add_query_arg( Form::RETURN_QUERY_ARG, 'abcdefghijABCDEFGHIJ', $event_url ) );
+
+		$this->assertSame(
+			add_query_arg( 'gatherpress_rsvp_success', 'true', $event_url ),
+			Form::get_instance()->handle_rsvp_comment_redirect( 'https://example.com/original', $comment )
 		);
 	}
 }

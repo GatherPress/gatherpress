@@ -9,7 +9,9 @@
 namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\Form_Field;
+use GatherPress\Core\Blocks\Rsvp_Form;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Form_Field.
@@ -1804,5 +1806,323 @@ class Test_Form_Field extends Base {
 		);
 
 		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * Puts the RSVP Form block in the middle of rendering a returned submission.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, string> $errors Error messages keyed by field name.
+	 * @param array<string, string> $values Submitted values keyed by field name.
+	 *
+	 * @return void
+	 */
+	private function set_returned_form( array $errors, array $values ): void {
+		$instance = Rsvp_Form::get_instance();
+
+		Utility::set_and_get_hidden_property(
+			$instance,
+			'returned_form',
+			array(
+				'token'          => 'abcdefghijABCDEFGHIJ',
+				'post_id'        => 1,
+				'form_schema_id' => 'form_0',
+				'form_id'        => 'gatherpress_rsvp_abc123',
+				'errors'         => $errors,
+				'form_error'     => '',
+				'values'         => $values,
+			)
+		);
+		Utility::set_and_get_hidden_property( $instance, 'shown_errors', array() );
+		Utility::set_and_get_hidden_property( $instance, 'autofocus_claimed', false );
+	}
+
+	/**
+	 * Clears the returned submission the RSVP Form block was rendering.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	private function clear_returned_form(): void {
+		Utility::set_and_get_hidden_property( Rsvp_Form::get_instance(), 'returned_form', null );
+	}
+
+	/**
+	 * Tests a field takes its value and error from a returned submission.
+	 *
+	 * @since TBD
+	 * @covers ::maybe_restore_returned_submission
+	 * @covers ::get_input_attributes
+	 *
+	 * @return void
+	 */
+	public function test_returned_submission_marks_an_invalid_field(): void {
+		$this->set_returned_form(
+			array( 'dietary' => 'Dietary needs is required.' ),
+			array( 'dietary' => 'None' )
+		);
+
+		$form_field = new Form_Field(
+			array(
+				'fieldType'  => 'text',
+				'fieldName'  => 'dietary',
+				'fieldValue' => 'Default',
+				'helpText'   => 'Tell us about allergies.',
+				'inputId'    => 'dietary-input',
+			)
+		);
+		$attributes = $form_field->get_input_attributes();
+		$html       = $form_field->get_html();
+
+		$this->assertStringContainsString(
+			'value="None"',
+			$attributes,
+			'The submitted value should replace the default.'
+		);
+		$this->assertStringContainsString( 'aria-invalid="true"', $attributes );
+		$this->assertStringContainsString(
+			'aria-describedby="dietary-input-help dietary-input-error"',
+			$attributes,
+			'The error should join the help text in the description.'
+		);
+		$this->assertStringContainsString(
+			'autofocus="autofocus"',
+			$attributes,
+			'The first invalid field should take the focus.'
+		);
+		$this->assertMatchesRegularExpression(
+			'/<p class="gatherpress-field-error" id="dietary-input-error">'
+				. '\s*Dietary needs is required.\s*<\/p>\s*<\/div>$/',
+			trim( $html ),
+			'The error should close the field.'
+		);
+
+		$second = new Form_Field(
+			array(
+				'fieldType' => 'text',
+				'fieldName' => 'dietary',
+				'inputId'   => 'dietary-again',
+			)
+		);
+
+		$this->assertStringNotContainsString(
+			'autofocus',
+			$second->get_input_attributes(),
+			'Only one field should take the focus.'
+		);
+		$this->assertStringContainsString(
+			'aria-describedby="dietary-again-error"',
+			$second->get_input_attributes(),
+			'Without help text the error is the whole description.'
+		);
+
+		$this->clear_returned_form();
+	}
+
+	/**
+	 * Tests a field the submission has no value for keeps its default, and a hidden field its own value.
+	 *
+	 * @since TBD
+	 * @covers ::maybe_restore_returned_submission
+	 *
+	 * @return void
+	 */
+	public function test_returned_submission_keeps_unsubmitted_and_hidden_values(): void {
+		$this->set_returned_form(
+			array( 'source' => 'Source is invalid.' ),
+			array(
+				'contact' => 'backup@example.com',
+				'source'  => 'tampered',
+			)
+		);
+
+		$valid = new Form_Field(
+			array(
+				'fieldType' => 'email',
+				'fieldName' => 'contact',
+			)
+		);
+
+		$this->assertStringContainsString( 'value="backup@example.com"', $valid->get_input_attributes() );
+		$this->assertStringNotContainsString(
+			'aria-invalid',
+			$valid->get_input_attributes(),
+			'A valid field is not marked.'
+		);
+		$this->assertStringNotContainsString( 'gatherpress-field-error', $valid->get_html() );
+
+		$unsubmitted = new Form_Field(
+			array(
+				'fieldType'  => 'text',
+				'fieldName'  => 'nickname',
+				'fieldValue' => 'Default',
+			)
+		);
+
+		$this->assertStringContainsString(
+			'value="Default"',
+			$unsubmitted->get_input_attributes(),
+			'A field the submission lacks keeps its default.'
+		);
+
+		$hidden = new Form_Field(
+			array(
+				'fieldType'  => 'hidden',
+				'fieldName'  => 'source',
+				'fieldValue' => 'newsletter',
+			)
+		);
+
+		$this->assertStringContainsString(
+			'value="newsletter"',
+			$hidden->get_html(),
+			'A hidden field keeps its own value.'
+		);
+		$this->assertStringNotContainsString(
+			'aria-invalid',
+			$hidden->get_html(),
+			'A hidden field has nothing to correct.'
+		);
+
+		$this->clear_returned_form();
+	}
+
+	/**
+	 * Data provider for test_returned_submission_renders_the_error.
+	 *
+	 * @since TBD
+	 *
+	 * @return array<string, array{0: array<string, mixed>}>
+	 */
+	public function data_returned_submission_renders_the_error(): array {
+		$options = array(
+			array(
+				'label' => 'Small',
+				'value' => 'small',
+			),
+			array(
+				'label' => 'Large',
+				'value' => 'large',
+			),
+		);
+
+		return array(
+			'textarea' => array( array( 'fieldType' => 'textarea' ) ),
+			'select'   => array(
+				array(
+					'fieldType'    => 'select',
+					'radioOptions' => $options,
+				),
+			),
+			'checkbox' => array( array( 'fieldType' => 'checkbox' ) ),
+		);
+	}
+
+	/**
+	 * Tests each field template closes with a returned error.
+	 *
+	 * @since TBD
+	 * @dataProvider data_returned_submission_renders_the_error
+	 * @covers ::maybe_restore_returned_submission
+	 * @covers ::get_input_attributes
+	 *
+	 * @param array<string, mixed> $attributes The field's block attributes.
+	 *
+	 * @return void
+	 */
+	public function test_returned_submission_renders_the_error( array $attributes ): void {
+		$this->set_returned_form( array( 'answer' => 'Answer is required.' ), array( 'answer' => 'large' ) );
+
+		$html = ( new Form_Field(
+			array_merge(
+				$attributes,
+				array(
+					'fieldName' => 'answer',
+					'inputId'   => 'answer-input',
+				)
+			)
+		) )->get_html();
+
+		$this->assertMatchesRegularExpression(
+			'/aria-invalid="true"[^>]*aria-describedby="answer-input-error"/',
+			$html
+		);
+		$this->assertMatchesRegularExpression(
+			'/<p class="gatherpress-field-error" id="answer-input-error">\s*Answer is required.\s*<\/p>\s*<\/div>$/',
+			trim( $html )
+		);
+
+		$this->clear_returned_form();
+	}
+
+	/**
+	 * Tests a radio group carries a returned error on its fieldset, and focuses its first option.
+	 *
+	 * @since TBD
+	 * @covers ::maybe_restore_returned_submission
+	 * @covers ::get_input_attributes
+	 *
+	 * @return void
+	 */
+	public function test_returned_submission_marks_a_radio_group(): void {
+		$attributes = array(
+			'fieldType'    => 'radio',
+			'fieldName'    => 'size',
+			'inputId'      => 'size-input',
+			'radioOptions' => array(
+				array(
+					'label' => 'Small',
+					'value' => 'small',
+				),
+				array(
+					'label' => 'Large',
+					'value' => 'large',
+				),
+			),
+		);
+
+		$this->set_returned_form( array( 'size' => 'Size is required.' ), array( 'size' => 'large' ) );
+
+		$form_field = new Form_Field( array_merge( $attributes, array( 'helpText' => 'Pick one.' ) ) );
+		$html       = $form_field->get_html();
+
+		$this->assertStringNotContainsString(
+			'aria-invalid',
+			$form_field->get_input_attributes(),
+			'The options leave the error to the fieldset.'
+		);
+		$this->assertMatchesRegularExpression(
+			'/<fieldset class="gatherpress-fieldset"\s+'
+				. 'aria-describedby="size-input-help size-input-error"\s+aria-invalid="true"\s*>/',
+			$html
+		);
+		$this->assertSame( 1, substr_count( $html, 'autofocus' ), 'Only the first option should take the focus.' );
+		$this->assertMatchesRegularExpression( '/id="size-input-0"[^>]*autofocus/', $html );
+		$this->assertMatchesRegularExpression(
+			'/value="large"\s+checked=\'checked\'/',
+			$html,
+			'The submitted option should stay chosen.'
+		);
+		$this->assertMatchesRegularExpression(
+			'/<\/fieldset>\s*<p class="gatherpress-field-error" id="size-input-error">'
+				. '\s*Size is required.\s*<\/p>\s*<\/div>$/',
+			trim( $html )
+		);
+
+		$this->set_returned_form( array( 'other' => 'Required.' ), array() );
+
+		$html = ( new Form_Field( $attributes ) )->get_html();
+
+		$this->assertStringNotContainsString(
+			'aria-describedby',
+			$html,
+			'Without help text or an error nothing describes the group.'
+		);
+		$this->assertStringNotContainsString( 'aria-invalid', $html );
+		$this->assertStringNotContainsString( 'autofocus', $html );
+
+		$this->clear_returned_form();
 	}
 }
