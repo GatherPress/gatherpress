@@ -7,11 +7,11 @@
  * to create custom rewrite rules for singular post types, allowing for additional
  * functionality (e.g., event-based URLs like `event/my-sample-event/custom-endpoint`).
  *
- * @package GatherPress\Core\Calendar
+ * @package GatherPress\Core\Calendar\External
  * @since 0.34.0
  */
 
-namespace GatherPress\Core\Calendar;
+namespace GatherPress\Core\Calendar\External;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore

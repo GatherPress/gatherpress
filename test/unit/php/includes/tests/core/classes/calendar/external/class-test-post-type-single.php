@@ -1,21 +1,21 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Calendar\Post_Type_Single.
+ * Class handles unit tests for GatherPress\Core\Calendar\External\Post_Type_Single.
  *
- * @package GatherPress\Core\Calendar
+ * @package GatherPress\Core\Calendar\External
  * @since 0.34.0
  */
 
-namespace GatherPress\Tests\Core\Calendar;
+namespace GatherPress\Tests\Core\Calendar\External;
 
-use GatherPress\Core\Calendar\Post_Type_Single;
-use GatherPress\Core\Calendar\Template;
+use GatherPress\Core\Calendar\External\Post_Type_Single;
+use GatherPress\Core\Calendar\External\Template;
 use GatherPress\Tests\Base;
 
 /**
  * Class Test_Post_Type_Single.
  *
- * @coversDefaultClass \GatherPress\Core\Calendar\Post_Type_Single
+ * @coversDefaultClass \GatherPress\Core\Calendar\External\Post_Type_Single
  * @group              endpoints
  */
 class Test_Post_Type_Single extends Base {

@@ -6,11 +6,11 @@
  * and manages custom templates for endpoints. It allows themes to override the default plugin
  * templates by checking the theme's template directory before falling back to the plugin's template.
  *
- * @package GatherPress\Core\Calendar
+ * @package GatherPress\Core\Calendar\External
  * @since 0.34.0
  */
 
-namespace GatherPress\Core\Calendar;
+namespace GatherPress\Core\Calendar\External;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
@@ -57,7 +57,7 @@ class Template extends Endpoint_Type {
 	public function __construct( string $slug, callable $callback, string $plugin_template_dir = '' ) {
 		parent::__construct( $slug, $callback );
 		$this->plugin_template_dir = ( ! empty( $plugin_template_dir ) ) ? $plugin_template_dir : sprintf(
-			'%s/includes/templates/calendar',
+			'%s/includes/templates/calendar/external',
 			GATHERPRESS_CORE_PATH
 		);
 	}

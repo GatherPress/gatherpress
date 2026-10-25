@@ -1,21 +1,21 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Calendar\Redirect.
+ * Class handles unit tests for GatherPress\Core\Calendar\External\Redirect.
  *
- * @package GatherPress\Core\Calendar
+ * @package GatherPress\Core\Calendar\External
  * @since 0.34.0
  */
 
-namespace GatherPress\Tests\Core\Calendar;
+namespace GatherPress\Tests\Core\Calendar\External;
 
-use GatherPress\Core\Calendar\Redirect;
+use GatherPress\Core\Calendar\External\Redirect;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Redirect.
  *
- * @coversDefaultClass \GatherPress\Core\Calendar\Redirect
+ * @coversDefaultClass \GatherPress\Core\Calendar\External\Redirect
  * @group              endpoints
  */
 class Test_Redirect extends Base {

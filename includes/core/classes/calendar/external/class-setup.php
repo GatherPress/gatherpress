@@ -9,13 +9,13 @@
  * filename/header/wrapping helpers).
  *
  * Per-event data (URL builders, VEVENT string) lives on the sibling
- * `Calendar` class, which is instantiated with an event post ID.
+ * `External` class, which is instantiated with an event post ID.
  *
- * @package GatherPress\Core\Calendar
+ * @package GatherPress\Core\Calendar\External
  * @since 0.34.0
  */
 
-namespace GatherPress\Core\Calendar;
+namespace GatherPress\Core\Calendar\External;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
@@ -38,7 +38,7 @@ use WP_Term;
  * Singleton that wires up calendar endpoints, renders alternate-link tags
  * in `<head>`, and serves the .ics download/feed responses. Per-event data
  * surfaces (`get_google_url`, `get_ical_event_string`, etc.) live on the
- * sibling `Calendar` class, instantiated as `new Calendar( $event_id )`.
+ * sibling `External` class, instantiated as `new External( $event_id )`.
  *
  * @since 0.34.0
  *
@@ -286,7 +286,7 @@ final class Setup {
 	 * @return string The Google Calendar add-event URL for the queried event.
 	 */
 	public function queried_event_google_url(): string {
-		$calendar = new Calendar( (int) get_queried_object_id() );
+		$calendar = new External( (int) get_queried_object_id() );
 		return $calendar->get_google_destination_url();
 	}
 
@@ -301,7 +301,7 @@ final class Setup {
 	 * @return string The Yahoo! Calendar add-event URL for the queried event.
 	 */
 	public function queried_event_yahoo_url(): string {
-		$calendar = new Calendar( (int) get_queried_object_id() );
+		$calendar = new External( (int) get_queried_object_id() );
 		return $calendar->get_yahoo_destination_url();
 	}
 
@@ -493,7 +493,7 @@ final class Setup {
 		$title = the_title_attribute( array( 'echo' => false ) );
 		$title = is_string( $title ) ? $title : '';
 
-		$calendar = new Calendar( $event->ID );
+		$calendar = new External( $event->ID );
 		$ical_url = $calendar->get_ical_url();
 		$links    = array();
 
@@ -790,7 +790,7 @@ final class Setup {
 		);
 		while ( $query->have_posts() ) {
 			$query->the_post();
-			$calendar = new Calendar( (int) get_the_ID() );
+			$calendar = new External( (int) get_the_ID() );
 			$output[] = $calendar->get_ical_event_string();
 		}
 
@@ -803,7 +803,7 @@ final class Setup {
 	/**
 	 * Complete iCal file content for the queried single event.
 	 *
-	 * Builds the VEVENT for the queried event via `Calendar::get_ical_event_string()`
+	 * Builds the VEVENT for the queried event via `External::get_ical_event_string()`
 	 * and wraps it in the VCALENDAR envelope.
 	 *
 	 * @since 0.34.0
@@ -811,7 +811,7 @@ final class Setup {
 	 * @return string The complete iCal file content for the queried event.
 	 */
 	public function get_ical_file(): string {
-		$calendar = new Calendar( (int) get_queried_object_id() );
+		$calendar = new External( (int) get_queried_object_id() );
 		return $this->get_ical_wrap( $calendar->get_ical_event_string() );
 	}
 
@@ -841,7 +841,7 @@ final class Setup {
 
 		if ( is_singular() && $queried_object instanceof WP_Post ) {
 			if ( post_type_supports( $queried_object->post_type, Event::SUPPORT ) ) {
-				$calendar  = new Calendar( $queried_object->ID );
+				$calendar  = new External( $queried_object->ID );
 				$date      = $calendar->event->get_datetime_start( 'Y-m-d' );
 				$post_name = $queried_object->post_name;
 				$filename  = $date . '_' . $post_name;
@@ -1053,7 +1053,7 @@ final class Setup {
 		// HTML), so HTML-sanitizers like `wp_kses_post()` are the wrong tool
 		// here — they would encode `&` into `&amp;` and produce broken .ics
 		// files. The TEXT-property values inside are already escaped at build
-		// time via `Calendar::escape_ical_text()` / sanitized via
+		// time via `External::escape_ical_text()` / sanitized via
 		// `sanitize_text_field()`.
 		$ics_content   = $this->get_ics_body();
 		$etag          = $this->get_etag( $ics_content );
@@ -1221,7 +1221,7 @@ final class Setup {
 
 		if ( is_singular() && $queried instanceof WP_Post ) {
 			if ( post_type_supports( $queried->post_type, Event::SUPPORT ) ) {
-				return ( new Calendar( $queried->ID ) )->get_ical_url();
+				return ( new External( $queried->ID ) )->get_ical_url();
 			}
 
 			if ( $this->is_tax_like_type_for_event_supporting_types( $queried->post_type ) ) {

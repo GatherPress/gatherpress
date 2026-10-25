@@ -1,28 +1,52 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Calendar\Calendar.
+ * Class handles unit tests for GatherPress\Core\Calendar\External\External.
  *
- * @package GatherPress\Core\Calendar
+ * @package GatherPress\Core\Calendar\External
  * @since 0.34.0
  */
 
-namespace GatherPress\Tests\Core\Calendar;
+namespace GatherPress\Tests\Core\Calendar\External;
 
-use GatherPress\Core\Calendar;
-use GatherPress\Core\Calendar\Setup;
+// Deep import on purpose: test_short_name_resolves_to_current_class asserts
+// External::class equals the real FQN, which the alias is not.
+use GatherPress\Core\Calendar\External\External;
+use GatherPress\Core\Calendar\External\Setup;
 use GatherPress\Core\Event;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
+use ReflectionClass;
 use WP_Post;
 
 /**
- * Class Test_Calendar.
+ * Class Test_External.
  *
- * @coversDefaultClass \GatherPress\Core\Calendar\Calendar
+ * @coversDefaultClass \GatherPress\Core\Calendar\External\External
  * @group              endpoints
  */
-class Test_Calendar extends Base {
+class Test_External extends Base {
+
+	/**
+	 * Asserts that the short name `GatherPress\Core\Calendar\External` resolves to
+	 * `GatherPress\Core\Calendar\External\External` through the alias map in
+	 * `includes/core/register-class-aliases.php`.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function test_short_name_resolves_to_current_class(): void {
+		$alias = 'GatherPress\\Core\\Calendar\\External';
+
+		$this->assertTrue( class_exists( $alias ), 'The short name should resolve via the alias map.' );
+		$this->assertSame(
+			External::class,
+			( new ReflectionClass( $alias ) )->getName(),
+			'The short name should resolve to the current class.'
+		);
+		$this->assertInstanceOf( External::class, new $alias( $this->make_event() ) );
+	}
 
 	/**
 	 * Build a published event with datetimes and (optionally) a venue with
@@ -74,7 +98,7 @@ class Test_Calendar extends Base {
 	 */
 	public function test___construct(): void {
 		$event_id = $this->make_event();
-		$instance = new Calendar( $event_id );
+		$instance = new External( $event_id );
 
 		$this->assertInstanceOf(
 			Event::class,
@@ -103,7 +127,7 @@ class Test_Calendar extends Base {
 	 * @return void
 	 */
 	public function test_get_ical_url(): void {
-		$instance = new Calendar( $this->make_event() );
+		$instance = new External( $this->make_event() );
 
 		$url = $instance->get_ical_url();
 
@@ -136,12 +160,12 @@ class Test_Calendar extends Base {
 		add_filter( 'post_link', $path_filter );
 		add_filter( 'post_type_link', $path_filter );
 
-		$pretty_url = ( new Calendar( $event_id ) )->get_ical_url();
+		$pretty_url = ( new External( $event_id ) )->get_ical_url();
 
 		remove_filter( 'post_link', $path_filter );
 		remove_filter( 'post_type_link', $path_filter );
 
-		$plain_url = ( new Calendar( $event_id ) )->get_ical_url();
+		$plain_url = ( new External( $event_id ) )->get_ical_url();
 
 		$this->assertIsString( $pretty_url );
 		$this->assertStringContainsString( 'sample-event/ical', $pretty_url );
@@ -162,7 +186,7 @@ class Test_Calendar extends Base {
 	 * @return void
 	 */
 	public function test_get_outlook_url(): void {
-		$instance = new Calendar( $this->make_event() );
+		$instance = new External( $this->make_event() );
 
 		$url = $instance->get_outlook_url();
 
@@ -184,7 +208,7 @@ class Test_Calendar extends Base {
 	 */
 	public function test_get_google_url_returns_endpoint_url(): void {
 		$event_id = $this->make_event();
-		$instance = new Calendar( $event_id );
+		$instance = new External( $event_id );
 		$slug     = get_post_field( 'post_name', $event_id );
 
 		$this->assertSame(
@@ -209,7 +233,7 @@ class Test_Calendar extends Base {
 	 */
 	public function test_get_yahoo_url_returns_endpoint_url(): void {
 		$event_id = $this->make_event();
-		$instance = new Calendar( $event_id );
+		$instance = new External( $event_id );
 		$slug     = get_post_field( 'post_name', $event_id );
 
 		$this->assertSame(
@@ -234,7 +258,7 @@ class Test_Calendar extends Base {
 	 * @return void
 	 */
 	public function test_get_google_destination_url_without_venue_address(): void {
-		$instance = new Calendar( $this->make_event() );
+		$instance = new External( $this->make_event() );
 		$url      = $instance->get_google_destination_url();
 
 		$this->assertStringStartsWith(
@@ -263,7 +287,7 @@ class Test_Calendar extends Base {
 	 * @return void
 	 */
 	public function test_get_google_destination_url_with_venue_address(): void {
-		$instance = new Calendar( $this->make_event( true ) );
+		$instance = new External( $this->make_event( true ) );
 		$url      = $instance->get_google_destination_url();
 
 		$this->assertStringContainsString(
@@ -285,7 +309,7 @@ class Test_Calendar extends Base {
 	 */
 	public function test_get_google_destination_url_returns_empty_without_post(): void {
 		$post     = $this->mock->post( array( 'post_type' => 'post' ) )->get();
-		$instance = new Calendar( $post->ID );
+		$instance = new External( $post->ID );
 
 		$this->assertSame(
 			'',
@@ -302,7 +326,7 @@ class Test_Calendar extends Base {
 	 * @return void
 	 */
 	public function test_get_yahoo_destination_url_without_venue_address(): void {
-		$instance = new Calendar( $this->make_event() );
+		$instance = new External( $this->make_event() );
 		$url      = $instance->get_yahoo_destination_url();
 
 		$this->assertStringStartsWith(
@@ -370,7 +394,7 @@ class Test_Calendar extends Base {
 			)
 		);
 
-		$url = ( new Calendar( $event_id ) )->get_yahoo_destination_url();
+		$url = ( new External( $event_id ) )->get_yahoo_destination_url();
 
 		$this->assertStringContainsString(
 			'st=20300615T190000',
@@ -392,7 +416,7 @@ class Test_Calendar extends Base {
 	 * @return void
 	 */
 	public function test_get_yahoo_destination_url_with_venue_address(): void {
-		$instance = new Calendar( $this->make_event( true ) );
+		$instance = new External( $this->make_event( true ) );
 		$url      = $instance->get_yahoo_destination_url();
 
 		$this->assertStringContainsString(
@@ -413,7 +437,7 @@ class Test_Calendar extends Base {
 	 */
 	public function test_get_yahoo_destination_url_returns_empty_without_post(): void {
 		$post     = $this->mock->post( array( 'post_type' => 'post' ) )->get();
-		$instance = new Calendar( $post->ID );
+		$instance = new External( $post->ID );
 
 		$this->assertSame(
 			'',
@@ -434,7 +458,7 @@ class Test_Calendar extends Base {
 	 * @return void
 	 */
 	public function test_get_ical_event_string_with_venue_address(): void {
-		$instance = new Calendar( $this->make_event( true ) );
+		$instance = new External( $this->make_event( true ) );
 		$vevent   = $instance->get_ical_event_string();
 
 		$this->assertStringStartsWith( 'BEGIN:VEVENT', $vevent );
@@ -461,7 +485,7 @@ class Test_Calendar extends Base {
 	 * @return void
 	 */
 	public function test_get_ical_event_string_sequence_and_last_modified(): void {
-		$instance = new Calendar( $this->make_event() );
+		$instance = new External( $this->make_event() );
 
 		$instance->event->post->post_modified_gmt = '2030-01-01 10:00:00';
 
@@ -505,7 +529,7 @@ class Test_Calendar extends Base {
 		$original_tz = get_option( 'timezone_string' );
 		update_option( 'timezone_string', 'America/New_York' );
 
-		$instance = new Calendar( $this->make_event() );
+		$instance = new External( $this->make_event() );
 
 		// Site-local modification time and its GMT counterpart differ by the offset.
 		$instance->event->post->post_modified     = '2030-01-01 05:00:00';
@@ -541,7 +565,7 @@ class Test_Calendar extends Base {
 	 */
 	public function test_get_sequence_grows_when_event_is_edited(): void {
 		$event_id = $this->make_event();
-		$instance = new Calendar( $event_id );
+		$instance = new External( $event_id );
 
 		$instance->event->post->post_modified_gmt = '2030-01-01 11:00:00';
 
@@ -569,7 +593,7 @@ class Test_Calendar extends Base {
 	 * @return void
 	 */
 	public function test_get_sequence_returns_zero_for_unparsable_date(): void {
-		$instance = new Calendar( $this->make_event() );
+		$instance = new External( $this->make_event() );
 
 		$instance->event->post->post_modified_gmt = 'not a date';
 
@@ -591,7 +615,7 @@ class Test_Calendar extends Base {
 	 */
 	public function test_get_sequence_returns_zero_without_post(): void {
 		$post     = $this->mock->post( array( 'post_type' => 'post' ) )->get();
-		$instance = new Calendar( $post->ID );
+		$instance = new External( $post->ID );
 
 		$this->assertSame(
 			0,
@@ -609,7 +633,7 @@ class Test_Calendar extends Base {
 	 * @return void
 	 */
 	public function test_get_sequence_clamps_to_rfc_integer_ceiling(): void {
-		$instance = new Calendar( $this->make_event() );
+		$instance = new External( $this->make_event() );
 
 		$instance->event->post->post_modified_gmt = '2100-01-01 00:00:00';
 
@@ -630,7 +654,7 @@ class Test_Calendar extends Base {
 	 * @return void
 	 */
 	public function test_get_ical_event_string_without_venue(): void {
-		$instance = new Calendar( $this->make_event() );
+		$instance = new External( $this->make_event() );
 		$vevent   = $instance->get_ical_event_string();
 
 		$this->assertStringContainsString( 'SUMMARY:Sample Event', $vevent );
@@ -648,7 +672,7 @@ class Test_Calendar extends Base {
 	 */
 	public function test_get_ical_event_string_returns_empty_without_post(): void {
 		$post     = $this->mock->post( array( 'post_type' => 'post' ) )->get();
-		$instance = new Calendar( $post->ID );
+		$instance = new External( $post->ID );
 
 		$this->assertSame(
 			'',
@@ -668,7 +692,7 @@ class Test_Calendar extends Base {
 	 * @return void
 	 */
 	public function test_get_ical_event_string_stamps_now_for_unparsable_modified_date(): void {
-		$instance = new Calendar( $this->make_event() );
+		$instance = new External( $this->make_event() );
 
 		$instance->event->post->post_modified_gmt = '9999-99-99 99:99:99';
 
@@ -709,7 +733,7 @@ class Test_Calendar extends Base {
 	 * @return void
 	 */
 	public function test_fold_ical_text_wraps_long_strings(): void {
-		$instance = new Calendar( $this->make_event() );
+		$instance = new External( $this->make_event() );
 
 		$short = Utility::invoke_hidden_method( $instance, 'fold_ical_text', array( 'short text' ) );
 		$this->assertSame( 'short text', $short, 'Short text should pass through unchanged.' );
@@ -732,7 +756,7 @@ class Test_Calendar extends Base {
 	 * @return void
 	 */
 	public function test_escape_ical_text_escapes_special_chars(): void {
-		$instance = new Calendar( $this->make_event() );
+		$instance = new External( $this->make_event() );
 
 		$escaped = Utility::invoke_hidden_method(
 			$instance,
@@ -759,7 +783,7 @@ class Test_Calendar extends Base {
 	public function test_get_endpoint_url_returns_false_without_post(): void {
 		// Make a Calendar whose Event has a null post (non-event ID).
 		$post     = $this->mock->post( array( 'post_type' => 'post' ) )->get();
-		$instance = new Calendar( $post->ID );
+		$instance = new External( $post->ID );
 
 		// The Event's `event` property stays null when the source post isn't
 		// of the supported type — get_endpoint_url short-circuits on that.
@@ -778,7 +802,7 @@ class Test_Calendar extends Base {
 	 * @return void
 	 */
 	public function test_get_endpoint_url_handles_feed_slug(): void {
-		$instance = new Calendar( $this->make_event() );
+		$instance = new External( $this->make_event() );
 
 		$url = Utility::invoke_hidden_method(
 			$instance,
@@ -795,7 +819,7 @@ class Test_Calendar extends Base {
 	}
 
 	/**
-	 * The gatherpress_calendar_url filter runs against the resolved URL and
+	 * The gatherpress_calendar_external_url filter runs against the resolved URL and
 	 * the post object — verifies both the filter contract and that
 	 * integrator overrides flow back through the final sanitize_url().
 	 *
@@ -804,7 +828,7 @@ class Test_Calendar extends Base {
 	 * @return void
 	 */
 	public function test_get_endpoint_url_filter_is_applied(): void {
-		$instance      = new Calendar( $this->make_event() );
+		$instance      = new External( $this->make_event() );
 		$captured_post = null;
 		$captured_url  = null;
 		$override_url  = 'https://override.example/custom/path';
@@ -815,9 +839,9 @@ class Test_Calendar extends Base {
 			return $override_url;
 		};
 
-		add_filter( 'gatherpress_calendar_url', $filter, 10, 2 );
+		add_filter( 'gatherpress_calendar_external_url', $filter, 10, 2 );
 		$result = $instance->get_ical_url();
-		remove_filter( 'gatherpress_calendar_url', $filter, 10 );
+		remove_filter( 'gatherpress_calendar_external_url', $filter, 10 );
 
 		$this->assertSame(
 			$override_url,
@@ -844,7 +868,7 @@ class Test_Calendar extends Base {
 	 * @return void
 	 */
 	public function test_get_endpoint_url_falls_back_on_path_conflict(): void {
-		$instance = new Calendar( $this->make_event() );
+		$instance = new External( $this->make_event() );
 
 		// Force the path-style branch: filter get_permalink so the post URL
 		// has no `?`. Then make `get_page_by_path()` return a non-null hit so
@@ -925,7 +949,7 @@ class Test_Calendar extends Base {
 	 */
 	public function test_get_google_destination_url_with_all_day_event(): void {
 		$event_id = $this->make_all_day_event( 'Asia/Tokyo', '2030-06-15', '2030-06-15' );
-		$instance = new Calendar( $event_id );
+		$instance = new External( $event_id );
 		$url      = $instance->get_google_destination_url();
 
 		$this->assertStringContainsString(
@@ -935,7 +959,7 @@ class Test_Calendar extends Base {
 		);
 
 		$multi_day_id = $this->make_all_day_event( 'Asia/Tokyo', '2030-06-15', '2030-06-17' );
-		$multi_inst   = new Calendar( $multi_day_id );
+		$multi_inst   = new External( $multi_day_id );
 		$multi_url    = $multi_inst->get_google_destination_url();
 
 		$this->assertStringContainsString(
@@ -958,7 +982,7 @@ class Test_Calendar extends Base {
 	 */
 	public function test_get_yahoo_destination_url_with_all_day_event(): void {
 		$event_id = $this->make_all_day_event( 'Asia/Tokyo', '2030-06-15', '2030-06-15' );
-		$instance = new Calendar( $event_id );
+		$instance = new External( $event_id );
 		$url      = $instance->get_yahoo_destination_url();
 
 		$this->assertStringContainsString(
@@ -978,7 +1002,7 @@ class Test_Calendar extends Base {
 		);
 
 		$multi_day_id = $this->make_all_day_event( 'Asia/Tokyo', '2030-06-15', '2030-06-16' );
-		$multi_inst   = new Calendar( $multi_day_id );
+		$multi_inst   = new External( $multi_day_id );
 		$multi_url    = $multi_inst->get_yahoo_destination_url();
 
 		// A span goes out as the timed stretch it is stored as. Yahoo cannot
@@ -1016,7 +1040,7 @@ class Test_Calendar extends Base {
 	public function test_get_ical_event_string_with_all_day_event(): void {
 		// Non-UTC timezone (Asia/Tokyo is UTC+9) where GMT start would fall on the previous day.
 		$event_id = $this->make_all_day_event( 'Asia/Tokyo', '2030-06-15', '2030-06-15' );
-		$instance = new Calendar( $event_id );
+		$instance = new External( $event_id );
 		$vevent   = $instance->get_ical_event_string();
 
 		$this->assertStringContainsString(
@@ -1037,7 +1061,7 @@ class Test_Calendar extends Base {
 
 		// Multi-day all-day event.
 		$multi_day_id = $this->make_all_day_event( 'Asia/Tokyo', '2030-06-15', '2030-06-17' );
-		$multi_inst   = new Calendar( $multi_day_id );
+		$multi_inst   = new External( $multi_day_id );
 		$multi_vevent = $multi_inst->get_ical_event_string();
 
 		$this->assertStringContainsString(
