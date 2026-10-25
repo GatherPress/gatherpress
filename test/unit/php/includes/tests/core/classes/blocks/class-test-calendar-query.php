@@ -45,7 +45,7 @@ class Test_Calendar_Query extends Base {
 
 		Utility::set_and_get_hidden_property( $instance, 'calendar_query_ids', array() );
 		remove_filter( 'the_posts', array( $instance, 'force_pagination_max_pages' ) );
-		unset( $_REQUEST[ Query_Builder::CALENDAR_QUERY_PARAM ], $_GET['query-5-page'] );
+		unset( $_GET['query-5-page'] );
 		parent::tearDown();
 	}
 
@@ -217,7 +217,13 @@ class Test_Calendar_Query extends Base {
 			'Failed to assert no change without the marker.'
 		);
 
-		$_REQUEST[ Query_Builder::CALENDAR_QUERY_PARAM ] = '1';
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static fn( $pre_value, int $type, string $var_name ) => INPUT_GET === $type
+				&& Query_Builder::CALENDAR_QUERY_PARAM === $var_name ? '1' : $pre_value,
+			10,
+			3
+		);
 
 		wp_set_current_user( 0 );
 		$this->assertSame(

@@ -15,6 +15,7 @@ use GatherPress\Core\Calendar\Date_Range;
 use GatherPress\Core\Calendar\Query_Builder;
 use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
 use WP_Block;
 use WP_Post;
 use WP_Query;
@@ -158,8 +159,9 @@ final class Calendar_Query {
 	 * @return array<string, mixed> Filtered collection parameters.
 	 */
 	public function filter_rest_collection_params( array $query_params ): array {
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( empty( $_REQUEST[ Query_Builder::CALENDAR_QUERY_PARAM ] ) || ! current_user_can( 'edit_posts' ) ) {
+		$is_calendar = ! empty( Utility::get_http_input( INPUT_GET, Query_Builder::CALENDAR_QUERY_PARAM ) );
+
+		if ( ! $is_calendar || ! current_user_can( 'edit_posts' ) ) {
 			return $query_params;
 		}
 
