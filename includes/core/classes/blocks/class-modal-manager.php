@@ -176,9 +176,16 @@ final class Modal_Manager {
 	 * - Sets `role="button"`, plus `tabindex="0"` on elements that are not focusable on their own
 	 *   (anything except a `<button>` or a link with an `href`).
 	 *
+	 * The modal itself closes on Escape and on a click on its overlay, which
+	 * is the dialog around the modal's content. Escape goes through the same
+	 * close action as a close button rather than the browser's own close, so
+	 * focus returns the same way, which matters once the RSVP block has moved
+	 * on to another status's modal.
+	 *
 	 * @since 0.33.0
 	 * @since 0.36.0 Links acting as buttons also close the modal on Space. Links without an
 	 *            `href` get `tabindex`.
+	 * @since TBD    The modal closes on Escape and on an overlay click.
 	 *
 	 * @param string $block_content The original block HTML content.
 	 *
@@ -187,9 +194,15 @@ final class Modal_Manager {
 	public function attach_modal_close_behavior( string $block_content ): string {
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
-		// Process only tags with the specific class 'gatherpress-modal--trigger-close'.
+		// Process the modal and its close triggers.
 		while ( $tag->next_tag() ) {
 			$class_attr = $tag->get_attribute( 'class' );
+
+			if ( Utility::has_css_class( $class_attr, 'wp-block-gatherpress-modal' ) ) {
+				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+				$tag->set_attribute( 'data-wp-on--cancel', 'actions.closeModal' );
+				$tag->set_attribute( 'data-wp-on--click', 'actions.closeModalOnOverlay' );
+			}
 
 			if ( Utility::has_css_class( $class_attr, 'gatherpress-modal--trigger-close' ) ) {
 				// @phpstan-ignore-next-line
@@ -308,10 +321,10 @@ final class Modal_Manager {
 
 			if ( $is_open && ! $result['opened'] && $is_modal ) {
 				// The view script opens the first modal in its manager, so the server does too.
+				// Without a script to call showModal(), the dialog opens as non-modal.
 				$result['opened'] = true;
 
-				$tag->add_class( 'gatherpress--is-visible' );
-				$tag->set_attribute( 'aria-hidden', 'false' );
+				$tag->set_attribute( 'open', true );
 				$tag->set_attribute( self::OPENED_ATTRIBUTE, 'true' );
 			} elseif ( Utility::has_css_class( $class_attr, $trigger ) && $this->seek_actionable_element( $tag ) ) {
 				$result['has_trigger'] = true;

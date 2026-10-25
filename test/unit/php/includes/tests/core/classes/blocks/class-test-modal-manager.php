@@ -388,6 +388,64 @@ class Test_Modal_Manager extends Base {
 	}
 
 	/**
+	 * Tests the modal closes on Escape and on an overlay click.
+	 *
+	 * @since TBD
+	 * @covers ::attach_modal_close_behavior
+	 *
+	 * @return void
+	 */
+	public function test_close_behavior_closes_the_dialog_on_escape_and_overlay_click(): void {
+		$output_html = Modal_Manager::get_instance()->attach_modal_close_behavior(
+			'<dialog class="wp-block-gatherpress-modal"><div class="wp-block-gatherpress-modal-content"></div></dialog>'
+		);
+
+		$this->assertMatchesRegularExpression(
+			'#<dialog (?=[^>]*data-wp-interactive="gatherpress")'
+			. '(?=[^>]*data-wp-on--cancel="actions\.closeModal")'
+			. '(?=[^>]*data-wp-on--click="actions\.closeModalOnOverlay")[^>]*>'
+			. '<div class="wp-block-gatherpress-modal-content"></div>#',
+			$output_html,
+			'Only the dialog gets the Escape and overlay handlers.'
+		);
+	}
+
+	/**
+	 * Tests saved Modal Manager markup renders its modal as a <dialog> that closes on Escape.
+	 *
+	 * The Modal block turns into a <dialog> as it renders, before the Modal
+	 * Manager around it adds the close handlers, so the handlers land on it.
+	 *
+	 * @since TBD
+	 * @coversNothing
+	 *
+	 * @return void
+	 */
+	public function test_saved_modal_renders_as_a_dialog(): void {
+		$output = do_blocks(
+			implode(
+				'',
+				array(
+					'<!-- wp:gatherpress/modal-manager --><div class="wp-block-gatherpress-modal-manager">',
+					'<!-- wp:gatherpress/modal --><div class="wp-block-gatherpress-modal">',
+					'<!-- wp:gatherpress/modal-content --><div class="wp-block-gatherpress-modal-content">',
+					'<!-- wp:paragraph --><p>Details</p><!-- /wp:paragraph -->',
+					'</div><!-- /wp:gatherpress/modal-content --></div><!-- /wp:gatherpress/modal -->',
+					'</div><!-- /wp:gatherpress/modal-manager -->',
+				)
+			)
+		);
+
+		$this->assertMatchesRegularExpression(
+			'#<dialog (?=[^>]*class="wp-block-gatherpress-modal")'
+			. '(?=[^>]*data-wp-on--cancel="actions\.closeModal")[^>]*>'
+			. '<div class="wp-block-gatherpress-modal-content"><p[^>]*>Details</p></div></dialog>#',
+			$output
+		);
+		$this->assertStringNotContainsString( 'role="dialog"', $output );
+	}
+
+	/**
 	 * Test close behavior is not applied to elements without close modal class.
 	 *
 	 * @since  0.33.0
@@ -710,8 +768,8 @@ class Test_Modal_Manager extends Base {
 		$output  = Modal_Manager::get_instance()->open_modal_without_javascript( $markup, array() );
 
 		$this->assertMatchesRegularExpression(
-			'#<div (?=[^>]*aria-hidden="false")(?=[^>]*data-gatherpress-opened-on-load="true")'
-			. '(?=[^>]*class="wp-block-gatherpress-modal gatherpress--is-visible")[^>]*>'
+			'#<div (?=[^>]*\sopen[\s>])(?=[^>]*data-gatherpress-opened-on-load="true")'
+			. '(?=[^>]*class="wp-block-gatherpress-modal")(?![^>]*aria-hidden)[^>]*>'
 			. '<button type="submit" form="gatherpress-modal-close-' . $key . '" class="gatherpress-modal__backdrop" '
 			. 'tabindex="-1" aria-hidden="true" data-close-modal></button>'
 			. '<div class="wp-block-gatherpress-modal-content">#',
