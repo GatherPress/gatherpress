@@ -45,7 +45,7 @@ jest.mock(
 /**
  * WordPress dependencies
  */
-import { store, withSyncEvent } from '@wordpress/interactivity';
+import { getElement, store, withSyncEvent } from '@wordpress/interactivity';
 
 /**
  * Internal dependencies
@@ -441,5 +441,115 @@ describe( 'modal-manager dialog', () => {
 
 		expect( event.preventDefault ).not.toHaveBeenCalled();
 		expect( modal.open ).toBe( true );
+	} );
+} );
+
+/**
+ * Without JavaScript, the server opens a modal a reload asks for with the
+ * `open` attribute, which leaves it non-modal. With JavaScript, the view
+ * script takes it over and reopens it as a modal dialog.
+ */
+describe( 'modal-manager takeOverOpenedModal', () => {
+	let callbacks;
+	let showModal;
+
+	const render = ( containerClass = '', modalAttrs = 'open data-gatherpress-opened-on-load="true"' ) => {
+		document.body.innerHTML = `
+			<div class="${ containerClass }">
+				<div class="wp-block-gatherpress-modal-manager">
+					<button type="button" class="gatherpress-modal--trigger-open">Open</button>
+					<dialog class="wp-block-gatherpress-modal" ${ modalAttrs }>
+						<button type="submit" class="gatherpress-modal__backdrop" tabindex="-1" aria-hidden="true"></button>
+						<div class="wp-block-gatherpress-modal-content">
+							<button type="button" class="close">Close</button>
+						</div>
+					</dialog>
+				</div>
+			</div>
+		`;
+
+		const modal = document.querySelector( 'dialog' );
+
+		getElement.mockReturnValue( { ref: modal } );
+
+		return modal;
+	};
+
+	beforeEach( () => {
+		jest.useFakeTimers();
+		( { callbacks } = store( 'gatherpress' ) );
+		showModal = jest.spyOn( window.HTMLDialogElement.prototype, 'showModal' );
+		window.history.replaceState( null, '', '/event/?gatherpress_modal=42-1&ref=x#gatherpress-modal-manager-42-1' );
+	} );
+
+	afterEach( () => {
+		jest.useRealTimers();
+		jest.restoreAllMocks();
+		window.history.replaceState( null, '', '/' );
+	} );
+
+	it( 'reopens the modal with showModal() once hydration is done, and steps the overlay button aside', () => {
+		const modal = render();
+
+		callbacks.takeOverOpenedModal();
+
+		// Hydration would move a dialog made modal right away out of the top layer.
+		expect( showModal ).not.toHaveBeenCalled();
+
+		jest.runAllTimers();
+
+		expect( showModal ).toHaveBeenCalledTimes( 1 );
+		expect( modal.open ).toBe( true );
+		expect( document.querySelector( '.gatherpress-modal__backdrop' ).hidden ).toBe( true );
+		expect( document.activeElement ).toBe( document.querySelector( '.close' ) );
+	} );
+
+	it( 'drops the query arg so a reload does not open the modal again', () => {
+		render();
+
+		callbacks.takeOverOpenedModal();
+
+		expect( window.location.search ).toBe( '?ref=x' );
+		expect( window.location.hash ).toBe( '#gatherpress-modal-manager-42-1' );
+	} );
+
+	it( 'leaves a modal the server did not open alone', () => {
+		render( '', '' );
+
+		callbacks.takeOverOpenedModal();
+
+		expect( showModal ).not.toHaveBeenCalled();
+		expect( window.location.search ).toBe( '?gatherpress_modal=42-1&ref=x' );
+	} );
+
+	it( 'leaves a modal inside a hidden RSVP status as the server rendered it', () => {
+		const modal = render( 'gatherpress--is-hidden' );
+
+		callbacks.takeOverOpenedModal();
+
+		expect( showModal ).not.toHaveBeenCalled();
+		expect( modal.open ).toBe( true );
+	} );
+
+	it( 'works without a no-JavaScript overlay button', () => {
+		const modal = render();
+
+		document.querySelector( '.gatherpress-modal__backdrop' ).remove();
+		callbacks.takeOverOpenedModal();
+		jest.runAllTimers();
+
+		expect( modal.open ).toBe( true );
+		expect( showModal ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	it( 'does not reopen a modal that closed before the next task', () => {
+		const modal = render();
+
+		callbacks.takeOverOpenedModal();
+		modal.close();
+		jest.runAllTimers();
+
+		expect( showModal ).not.toHaveBeenCalled();
+		expect( modal.open ).toBe( false );
 	} );
 } );

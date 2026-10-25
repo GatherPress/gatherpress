@@ -1,7 +1,15 @@
 /**
  * WordPress dependencies
  */
-import { store, withSyncEvent } from '@wordpress/interactivity';
+import { getElement, store, withSyncEvent } from '@wordpress/interactivity';
+
+/**
+ * Query arg that opens a modal on page load, as `Modal_Manager::OPEN_QUERY_ARG`.
+ *
+ * @since TBD
+ * @type {string}
+ */
+const OPEN_QUERY_ARG = 'gatherpress_modal';
 
 /**
  * Checks whether an element is shown, walking up to (but not including) a root.
@@ -71,6 +79,31 @@ function labelModalByVisibleHeading( modal, modalContent ) {
 	modal.setAttribute( 'aria-labelledby', heading.id );
 }
 
+/**
+ * Opens a modal as a modal dialog.
+ *
+ * A modal without a custom name is named after its visible heading first.
+ *
+ * @since TBD
+ *
+ * @param {HTMLDialogElement} modal The modal element.
+ *
+ * @return {void}
+ */
+function showModal( modal ) {
+	const modalContent = modal.querySelector(
+		'.wp-block-gatherpress-modal-content',
+	);
+
+	if ( modalContent && modal.hasAttribute( 'data-gatherpress-default-label' ) ) {
+		labelModalByVisibleHeading( modal, modalContent );
+	}
+
+	// The browser focuses the first focusable element, keeps focus inside the
+	// dialog and makes the rest of the page inert.
+	modal.showModal();
+}
+
 const { actions } = store( 'gatherpress', {
 	actions: {
 		openModal: withSyncEvent( ( event = null, element = null ) => {
@@ -98,20 +131,7 @@ const { actions } = store( 'gatherpress', {
 				// A modal already open, such as one the server opened without
 				// JavaScript, stays as it is: showModal() would throw.
 				if ( modal && ! modal.open ) {
-					const modalContent = modal.querySelector(
-						'.wp-block-gatherpress-modal-content',
-					);
-
-					if (
-						modalContent &&
-						modal.hasAttribute( 'data-gatherpress-default-label' )
-					) {
-						labelModalByVisibleHeading( modal, modalContent );
-					}
-
-					// The browser focuses the first focusable element, keeps focus
-					// inside the dialog and makes the rest of the page inert.
-					modal.showModal();
+					showModal( modal );
 				}
 			}
 		} ),
@@ -264,5 +284,51 @@ const { actions } = store( 'gatherpress', {
 				actions.closeModal( event );
 			}
 		} ),
+	},
+	callbacks: {
+		/**
+		 * Makes a modal the server opened on page load a modal dialog.
+		 *
+		 * The server opens the modal a reload asks for with the `open`
+		 * attribute, which leaves it non-modal. With JavaScript it reopens
+		 * with showModal(), so it traps focus and closes on Escape like any
+		 * other modal. The no-JavaScript overlay button steps aside for the
+		 * overlay click handler, and the query arg comes off the URL so a
+		 * reload does not open the modal again.
+		 *
+		 * @since TBD
+		 *
+		 * @return {void}
+		 */
+		takeOverOpenedModal() {
+			const modal = getElement().ref;
+
+			// A modal inside a hidden RSVP status would make the page inert
+			// with nothing on screen, so it stays as the server rendered it.
+			if ( ! modal?.open || ! isShownWithin( modal, document.body ) ) {
+				return;
+			}
+
+			const backdrop = modal.querySelector( '.gatherpress-modal__backdrop' );
+
+			if ( backdrop ) {
+				backdrop.hidden = true;
+			}
+
+			// Hydration re-inserts the dialog after init callbacks run, and moving
+			// a modal dialog drops it out of the top layer, so reopen it on the
+			// next task. An open dialog cannot become modal, so it closes first.
+			setTimeout( () => {
+				if ( modal.open ) {
+					modal.close();
+					showModal( modal );
+				}
+			}, 0 );
+
+			const url = new URL( window.location.href );
+
+			url.searchParams.delete( OPEN_QUERY_ARG );
+			window.history.replaceState( window.history.state, '', url );
+		},
 	},
 } );

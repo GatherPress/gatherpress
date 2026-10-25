@@ -769,6 +769,7 @@ class Test_Modal_Manager extends Base {
 
 		$this->assertMatchesRegularExpression(
 			'#<div (?=[^>]*\sopen[\s>])(?=[^>]*data-gatherpress-opened-on-load="true")'
+			. '(?=[^>]*data-wp-init="callbacks\.takeOverOpenedModal")'
 			. '(?=[^>]*class="wp-block-gatherpress-modal")(?![^>]*aria-hidden)[^>]*>'
 			. '<button type="submit" form="gatherpress-modal-close-' . $key . '" class="gatherpress-modal__backdrop" '
 			. 'tabindex="-1" aria-hidden="true" data-close-modal></button>'
@@ -825,13 +826,14 @@ class Test_Modal_Manager extends Base {
 		$this->assertStringContainsString(
 			sprintf(
 				'data-close-modal></button>'
-				. '<a class="gatherpress-modal__close" href="%s#gatherpress-modal-manager-%d-1">Close</a>'
+				. '<a class="gatherpress-modal__close" href="%s#gatherpress-modal-manager-%d-1" '
+				. 'data-wp-interactive="gatherpress" data-wp-on--click="actions.closeModal">Close</a>'
 				. '<div>Content</div>',
 				esc_url( add_query_arg( 'ref', 'x', get_permalink( $post_id ) ) ),
 				$post_id
 			),
 			$output,
-			'The Close link comes after the overlay, before the content.'
+			'The Close link comes after the overlay, before the content, and closes in place with JavaScript.'
 		);
 	}
 
