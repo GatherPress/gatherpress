@@ -1,14 +1,14 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Calendar\Cache.
+ * Class handles unit tests for GatherPress\Core\External_Calendar\Cache.
  *
- * @package GatherPress\Core\Calendar
+ * @package GatherPress\Core\External_Calendar
  * @since 0.36.0
  */
 
-namespace GatherPress\Tests\Core\Calendar;
+namespace GatherPress\Tests\Core\External_Calendar;
 
-use GatherPress\Core\Calendar\Cache;
+use GatherPress\Core\External_Calendar\Cache;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Venue;
@@ -17,7 +17,7 @@ use GatherPress\Tests\Base;
 /**
  * Class Test_Cache.
  *
- * @coversDefaultClass \GatherPress\Core\Calendar\Cache
+ * @coversDefaultClass \GatherPress\Core\External_Calendar\Cache
  * @group              endpoints
  */
 class Test_Cache extends Base {
@@ -244,14 +244,14 @@ class Test_Cache extends Base {
 			return 'uncached';
 		};
 
-		add_filter( 'gatherpress_calendar_max_age', '__return_zero' );
+		add_filter( 'gatherpress_external_calendar_max_age', '__return_zero' );
 
 		$max_age = $instance->get_max_age();
 
 		$instance->remember( 'ics:test-c', $renderer );
 		$instance->remember( 'ics:test-c', $renderer );
 
-		remove_filter( 'gatherpress_calendar_max_age', '__return_zero' );
+		remove_filter( 'gatherpress_external_calendar_max_age', '__return_zero' );
 
 		$this->assertSame( 0, $max_age, 'The filter should be able to disable caching.' );
 		$this->assertSame( 2, $calls, 'With caching off the renderer should run every time.' );
@@ -266,7 +266,7 @@ class Test_Cache extends Base {
 	 */
 	public function test_negative_max_age_is_clamped(): void {
 		add_filter(
-			'gatherpress_calendar_max_age',
+			'gatherpress_external_calendar_max_age',
 			static function (): int {
 				return -100;
 			}
@@ -274,7 +274,7 @@ class Test_Cache extends Base {
 
 		$max_age = Cache::get_instance()->get_max_age();
 
-		remove_all_filters( 'gatherpress_calendar_max_age' );
+		remove_all_filters( 'gatherpress_external_calendar_max_age' );
 
 		$this->assertSame( 0, $max_age, 'A negative max age should clamp to zero.' );
 	}

@@ -7,11 +7,11 @@
  * to external URLs based on the logic provided by the callback function, while ensuring
  * the redirection is secure and follows WordPress's allowed hosts policy.
  *
- * @package GatherPress\Core\Calendar
+ * @package GatherPress\Core\External_Calendar
  * @since 0.34.0
  */
 
-namespace GatherPress\Core\Calendar;
+namespace GatherPress\Core\External_Calendar;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore

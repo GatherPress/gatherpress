@@ -66,7 +66,7 @@ final class Setup {
 	protected function instantiate_classes(): void {
 		Assets::get_instance();
 		Blocks\Setup::get_instance();
-		Calendar\Setup::get_instance();
+		External_Calendar\Setup::get_instance();
 		Cli::get_instance();
 		Coexistence_Guard::get_instance();
 		Email::get_instance();

@@ -1,16 +1,17 @@
 <?php
 /**
- * Handles feed-based endpoints for single posts of custom post types in GatherPress.
+ * Handles feed-based endpoints for custom post types in GatherPress.
  *
- * This file defines the `Post_Type_Single_Feed` class, which extends the base
- * `Endpoint` class to handle custom feeds attached to a single post (e.g.,
- * `/event/my-event/feed/ical`). It allows theme overrides for feed templates.
+ * This file defines the `Post_Type_Feed` class, which extends the base `Endpoint`
+ * class to handle custom feeds for post type archives. It allows users to define custom
+ * feed URLs (e.g., RSS feeds) for post types such as `gatherpress_event`, while also allowing
+ * theme overrides for feed templates.
  *
- * @package GatherPress\Core\Calendar
+ * @package GatherPress\Core\External_Calendar
  * @since 0.34.0
  */
 
-namespace GatherPress\Core\Calendar;
+namespace GatherPress\Core\External_Calendar;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
@@ -20,20 +21,22 @@ use WP_Post_Type;
 /**
  * Manages custom feed endpoints for post types in GatherPress.
  *
- * The `Post_Type_Single_Feed` class extends the base `Endpoint` class to create
+ * The `Post_Type_Feed` class extends the base `Endpoint` class to create
  * custom feed URLs for post types. It handles URL rewriting for feeds and
- * ensures that WordPress hooks into the appropriate feed template.
+ * ensures that WordPress hooks into the appropriate feed template. The class also
+ * supports theme overrides, allowing developers to customize feed templates for
+ * specific post types.
  *
  * @since 0.34.0
  */
-final class Post_Type_Single_Feed extends Endpoint {
+final class Post_Type_Feed extends Endpoint {
 
 	/**
 	 * Class constructor.
 	 *
-	 * Initializes the `Post_Type_Single_Feed` for handling custom feeds for the
+	 * Initializes the `Post_Type_Feed` for handling custom feeds for the
 	 * specified post type. It sets up a regular expression to match custom feed
-	 * URLs (e.g., `venue/bangkok/feed/custom-endpoint`) and hooks into WordPress to load
+	 * URLs (e.g., `event/feed/custom-endpoint`) and hooks into WordPress to load
 	 * the appropriate feed template.
 	 *
 	 * @since 0.34.0
@@ -41,16 +44,16 @@ final class Post_Type_Single_Feed extends Endpoint {
 	 * @param Endpoint_Type[] $types      List of endpoint types (templates/redirects) for the feed.
 	 * @param string          $query_var  The query variable used to identify the feed endpoint in the URL.
 	 * @param string          $post_type  (Optional) The post type for which the feed endpoint is being created.
-	 *                                    Default is `gatherpress_venue`.
+	 *                                    Default is `gatherpress_event`.
 	 */
 	public function __construct(
 		array $types,
 		string $query_var,
-		string $post_type = 'gatherpress_venue'
+		string $post_type = 'gatherpress_event'
 	) {
 		// Expression for the post type archive feeds,
-		// for example 'venue/bangkok/feed/(custom-endpoint)(/)'.
-		$reg_ex = '%s/([^/]+)/feed/(%s)/?$';
+		// for example 'event/feed/(custom-endpoint)(/)'.
+		$reg_ex = '%s/feed/(%s)/?$';
 
 		parent::__construct(
 			$query_var,
@@ -62,14 +65,14 @@ final class Post_Type_Single_Feed extends Endpoint {
 	}
 
 	/**
-	 * Validates if the current request is for a post type singular feed.
+	 * Validates if the current request is for a post type archive feed.
 	 *
-	 * This method checks if the current request is for an singular page of the specified
+	 * This method checks if the current request is for an archive page of the specified
 	 * post type and if it is a valid feed request (i.e., `is_feed()` returns true).
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return bool True if the current request is a valid feed request for the post type singular.
+	 * @return bool True if the current request is a valid feed request for the post type archive.
 	 */
 	public function is_valid(): bool {
 		/**
@@ -80,7 +83,7 @@ final class Post_Type_Single_Feed extends Endpoint {
 		 */
 		$type_object = $this->type_object;
 
-		return is_singular( $type_object->name ) && is_feed();
+		return is_post_type_archive( $type_object->name ) && is_feed();
 	}
 
 	/**
@@ -104,9 +107,8 @@ final class Post_Type_Single_Feed extends Endpoint {
 
 		return array(
 			$this->object_type => $type_object->name,
-			$type_object->name => '$matches[1]',
-			'feed'             => '$matches[2]',
-			$this->query_var   => '$matches[2]',
+			'feed'             => '$matches[1]',
+			$this->query_var   => '$matches[1]',
 		);
 	}
 }

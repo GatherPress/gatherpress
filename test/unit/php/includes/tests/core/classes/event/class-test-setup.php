@@ -15,6 +15,7 @@ use GatherPress\Core\Event\Query;
 use GatherPress\Core\Event\Rest_Api;
 use GatherPress\Core\Event\Setup;
 use GatherPress\Core\Settings;
+use GatherPress\Core\Shadow_Source;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use stdClass;
@@ -30,6 +31,19 @@ use WP_REST_Request;
  * @coversDefaultClass \GatherPress\Core\Event\Setup
  */
 class Test_Setup extends Base {
+
+	/**
+	 * Wires the venue taxonomy back onto the event post types.
+	 *
+	 * Unregistering the event post type drops it from every taxonomy, and
+	 * later test classes need venues to stay attached to events.
+	 *
+	 * @return void
+	 */
+	public function tearDown(): void {
+		parent::tearDown();
+		Shadow_Source::get_instance()->attach_taxonomies_to_object_types();
+	}
 
 	/**
 	 * Event\Setup now owns the instantiation of the Event\* sibling

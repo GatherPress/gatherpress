@@ -25,6 +25,19 @@ use WP_Post;
 class Test_Shadow_Source extends Base {
 
 	/**
+	 * Wires the venue taxonomy back onto the event post types.
+	 *
+	 * Some tests detach it or register it again from scratch, and later test
+	 * classes need venues to stay attached to events.
+	 *
+	 * @return void
+	 */
+	public function tearDown(): void {
+		parent::tearDown();
+		Shadow_Source::get_instance()->attach_taxonomies_to_object_types();
+	}
+
+	/**
 	 * Coverage for __construct and setup_hooks.
 	 *
 	 * @covers ::__construct

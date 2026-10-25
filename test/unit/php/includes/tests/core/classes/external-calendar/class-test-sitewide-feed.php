@@ -1,22 +1,22 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Calendar\Sitewide_Feed.
+ * Class handles unit tests for GatherPress\Core\External_Calendar\Sitewide_Feed.
  *
- * @package GatherPress\Core\Calendar
+ * @package GatherPress\Core\External_Calendar
  * @since 0.34.0
  */
 
-namespace GatherPress\Tests\Core\Calendar;
+namespace GatherPress\Tests\Core\External_Calendar;
 
-use GatherPress\Core\Calendar\Sitewide_Feed;
-use GatherPress\Core\Calendar\Template;
+use GatherPress\Core\External_Calendar\Sitewide_Feed;
+use GatherPress\Core\External_Calendar\Template;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Sitewide_Feed.
  *
- * @coversDefaultClass \GatherPress\Core\Calendar\Sitewide_Feed
+ * @coversDefaultClass \GatherPress\Core\External_Calendar\Sitewide_Feed
  * @group              endpoints
  */
 class Test_Sitewide_Feed extends Base {

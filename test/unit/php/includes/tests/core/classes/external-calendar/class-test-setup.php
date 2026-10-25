@@ -1,15 +1,15 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Calendar\Setup.
+ * Class handles unit tests for GatherPress\Core\External_Calendar\Setup.
  *
- * @package GatherPress\Core\Calendar
+ * @package GatherPress\Core\External_Calendar
  * @since 0.34.0
  */
 
-namespace GatherPress\Tests\Core\Calendar;
+namespace GatherPress\Tests\Core\External_Calendar;
 
-use GatherPress\Core\Calendar\Calendar;
-use GatherPress\Core\Calendar\Setup;
+use GatherPress\Core\External_Calendar\External_Calendar;
+use GatherPress\Core\External_Calendar\Setup;
 use GatherPress\Core\Event;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Venue;
@@ -21,7 +21,7 @@ use WP_Error;
 /**
  * Class Test_Setup.
  *
- * @coversDefaultClass \GatherPress\Core\Calendar\Setup
+ * @coversDefaultClass \GatherPress\Core\External_Calendar\Setup
  * @group              endpoints
  */
 class Test_Setup extends Base {
@@ -1615,13 +1615,13 @@ class Test_Setup extends Base {
 	 * @return void
 	 */
 	public function test_send_ics_headers_without_caching(): void {
-		add_filter( 'gatherpress_calendar_max_age', '__return_zero' );
+		add_filter( 'gatherpress_external_calendar_max_age', '__return_zero' );
 
 		ob_start();
 		Setup::get_instance()->send_ics_headers( 'sample.ics', '"abc123"', '2026-07-31 10:00:00' );
 		$output = ob_get_clean();
 
-		remove_filter( 'gatherpress_calendar_max_age', '__return_zero' );
+		remove_filter( 'gatherpress_external_calendar_max_age', '__return_zero' );
 		header_remove();
 
 		$this->assertSame(
@@ -2133,7 +2133,7 @@ class Test_Setup extends Base {
 		$wp_query->is_single         = true;
 		$wp_query->queried_object_id = $event_post->ID;
 
-		$expected = ( new Calendar( $event_post->ID ) )->get_ical_url();
+		$expected = ( new External_Calendar( $event_post->ID ) )->get_ical_url();
 
 		// An HTML request is left alone.
 		$_SERVER['HTTP_ACCEPT'] = 'text/html';
