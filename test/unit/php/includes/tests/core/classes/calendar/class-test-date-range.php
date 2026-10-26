@@ -44,13 +44,12 @@ class Test_Date_Range extends Base {
 	}
 
 	/**
-	 * Remove the test block type and the current post.
+	 * Remove the test block type.
 	 *
 	 * @return void
 	 */
 	public function tearDown(): void {
 		unregister_block_type( self::TEST_BLOCK );
-		unset( $GLOBALS['post'] );
 		parent::tearDown();
 	}
 
@@ -449,8 +448,8 @@ class Test_Date_Range extends Base {
 			'Failed to assert 0 without a current post.'
 		);
 
-		$post_id         = $this->mock->post()->get()->ID;
-		$GLOBALS['post'] = get_post( $post_id ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$post_id = $this->mock->post()->get()->ID;
+		$this->go_to( get_permalink( $post_id ) );
 
 		$this->assertSame(
 			$post_id,
