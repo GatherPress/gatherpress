@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Stop calling the private WordPress function apply_block_hooks_to_content() when a new venue is seeded from the venue template. The pattern registry already applies hooked blocks to that content.

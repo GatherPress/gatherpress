@@ -43,7 +43,7 @@ The most obvious WordPress core functions for this are [`add_feed()`](https://de
 
 ## GatherPress' own Endpoint API
 
-The endpoint classes live under `GatherPress\Core\Calendar` ([`includes/core/classes/calendar/`](../../../includes/core/classes/calendar/)). Companion plugins can use them to declare endpoints against their own post types or taxonomies. The API isn't calendar-specific despite living in that namespace.
+The endpoint classes live under `GatherPress\Core\Calendar\External` ([`includes/core/classes/calendar/external/`](../../../includes/core/classes/calendar/external/)). Companion plugins can use them to declare endpoints against their own post types or taxonomies. The API isn't calendar-specific despite living in that namespace.
 
 In general, one endpoint can be created …
 
@@ -62,35 +62,35 @@ It can be either …
 
 ### Setup new endpoints
 
-To create a new endpoint, instantiate one of the [`Endpoint`](../../../includes/core/classes/calendar/class-endpoint.php) subclasses:
+To create a new endpoint, instantiate one of the [`Endpoint`](../../../includes/core/classes/calendar/external/class-endpoint.php) subclasses:
 
-- [`Post_Type_Single`](../../../includes/core/classes/calendar/class-post-type-single.php)
+- [`Post_Type_Single`](../../../includes/core/classes/calendar/external/class-post-type-single.php)
 
    for endpoints like `example.org/cpt/my-custom-post-type/new-endpoint`
 
-- [`Post_Type_Single_Feed`](../../../includes/core/classes/calendar/class-post-type-single-feed.php)
+- [`Post_Type_Single_Feed`](../../../includes/core/classes/calendar/external/class-post-type-single-feed.php)
 
    for endpoints like `example.org/cpt/my-custom-post-type/feed/new-endpoint`
 
-- [`Post_Type_Feed`](../../../includes/core/classes/calendar/class-post-type-feed.php)
+- [`Post_Type_Feed`](../../../includes/core/classes/calendar/external/class-post-type-feed.php)
 
    for endpoints like `example.org/cpt/feed/new-endpoint`
 
-- [`Taxonomy_Feed`](../../../includes/core/classes/calendar/class-taxonomy-feed.php)
+- [`Taxonomy_Feed`](../../../includes/core/classes/calendar/external/class-taxonomy-feed.php)
 
    for endpoints like `example.org/ctax/feed/new-endpoint`
 
-- [`Sitewide_Feed`](../../../includes/core/classes/calendar/class-sitewide-feed.php)
+- [`Sitewide_Feed`](../../../includes/core/classes/calendar/external/class-sitewide-feed.php)
 
    for endpoints like `example.org/feed/new-endpoint`
 
 These pick *where* an endpoint runs. To become callable, each endpoint also needs at least one of:
 
-- [`Redirect`](../../../includes/core/classes/calendar/class-redirect.php): for off-site redirects
+- [`Redirect`](../../../includes/core/classes/calendar/external/class-redirect.php): for off-site redirects
 
   *or*
 
-- [`Template`](../../../includes/core/classes/calendar/class-template.php): for theme-overridable template output
+- [`Template`](../../../includes/core/classes/calendar/external/class-template.php): for theme-overridable template output
 
 ## Example | Add events to *Office365 Calendar*
 
@@ -98,11 +98,11 @@ Example for a new redirection endpoint like `example.org/event/my-sample-event/o
 
 ### 1. Setup a new endpoint
 
-Set up a single-event endpoint via [`Post_Type_Single`](../../../includes/core/classes/calendar/class-post-type-single.php). Run it on `init` at a very high priority so every relevant post type and shadow taxonomy has finished registering. GatherPress core uses `PHP_INT_MAX` for this (see `Calendar\Setup::setup_hooks()`); companion plugins can pick any similarly high priority, with `99` being a safe default that still leaves room for downstream observers to hook after.
+Set up a single-event endpoint via [`Post_Type_Single`](../../../includes/core/classes/calendar/external/class-post-type-single.php). Run it on `init` at a very high priority so every relevant post type and shadow taxonomy has finished registering. GatherPress core uses `PHP_INT_MAX` for this (see `Calendar\External\Setup::setup_hooks()`); companion plugins can pick any similarly high priority, with `99` being a safe default that still leaves room for downstream observers to hook after.
 
 ```php
-use GatherPress\Core\Calendar\Post_Type_Single;
-use GatherPress\Core\Calendar\Redirect;
+use GatherPress\Core\Calendar\External\Post_Type_Single;
+use GatherPress\Core\Calendar\External\Redirect;
 
 add_action(
     'init',
@@ -176,27 +176,27 @@ public function get_office365_calendar_link(): string {
 
 ### 3. Retrieve the endpoint URL
 
-For the calendar endpoints shipped by core, instantiate the [`Calendar`](../../../includes/core/classes/calendar/class-calendar.php) class with the event ID and call the matching getter:
+For the calendar endpoints shipped by core, instantiate the [`External`](../../../includes/core/classes/calendar/external/class-external.php) class with the event ID and call the matching getter:
 
 ```php
-use GatherPress\Core\Calendar\Calendar;
+use GatherPress\Core\Calendar\External;
 
-$calendar = new Calendar( $event_id );
+$calendar = new External( $event_id );
 $ical_url    = $calendar->get_ical_url();
 $outlook_url = $calendar->get_outlook_url();
 $google_url  = $calendar->get_google_url();
 $yahoo_url   = $calendar->get_yahoo_url();
 ```
 
-For companion-plugin endpoints (the Office 365 example above), build the URL the same way GatherPress does internally, wrap a small helper class around the post ID and concatenate the slug onto the post permalink, falling back to a query-arg form when permalinks are off or a path conflict exists. The shape of `Calendar::get_endpoint_url()` is the reference implementation.
+For companion-plugin endpoints (the Office 365 example above), build the URL the same way GatherPress does internally, wrap a small helper class around the post ID and concatenate the slug onto the post permalink, falling back to a query-arg form when permalinks are off or a path conflict exists. The shape of `External::get_endpoint_url()` is the reference implementation.
 
 ## Filtering calendar URLs
 
-Calendar URLs flow through the `gatherpress_calendar_url` filter before they leave the builder, so integrators can rewrite them without subclassing. The filter receives the full URL and the originating `WP_Post`:
+Calendar URLs flow through the `gatherpress_calendar_external_url` filter before they leave the builder, so integrators can rewrite them without subclassing. The filter receives the full URL and the originating `WP_Post`:
 
 ```php
 add_filter(
-    'gatherpress_calendar_url',
+    'gatherpress_calendar_external_url',
     function ( string $endpoint_url, WP_Post $post ): string {
         // Route every calendar URL through a tracking-friendly subdomain.
         return str_replace( 'example.org', 'cal.example.org', $endpoint_url );

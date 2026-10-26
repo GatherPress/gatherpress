@@ -218,12 +218,27 @@ jobs:
         run: |
           branch="release/${VERSION}"
 
-          # Branch off the tag via the API, then create the rollup commit
-          # with createCommitOnBranch so GitHub signs it — develop requires
+          # Branch off develop, so the PR holds only the rollup and stays
+          # mergeable after develop moves past the release. Branching off the
+          # tag carried main's whole state, which conflicted with develop in
+          # 0.36.1 (#2528). The rolled CHANGELOG.md is written from the tag's
+          # copy, so that only works while develop's copy matches it, which
+          # the previous release's parity step keeps true. When it doesn't,
+          # fall back to the tag and say so, rather than hold up the release.
+          git fetch --quiet origin develop
+          base_sha="$(git rev-parse origin/develop)"
+
+          if ! git diff --quiet "${GITHUB_SHA}" "${base_sha}" -- CHANGELOG.md; then
+            echo "::warning::develop's CHANGELOG.md differs from the tag's, so the rollup branches off the tag and its PR may conflict. See \"The rollup PR is DIRTY\" in docs/contributor/release-process.md."
+            base_sha="${GITHUB_SHA}"
+          fi
+
+          # Create the branch via the API, then the rollup commit with
+          # createCommitOnBranch so GitHub signs it — develop requires
           # signed commits, and a signed head is what lets the PR auto-merge
           # with no admin override (#1921).
           gh api "repos/${REPO}/git/refs" \
-            -f ref="refs/heads/${branch}" -f sha="${GITHUB_SHA}" > /dev/null
+            -f ref="refs/heads/${branch}" -f sha="${base_sha}" > /dev/null
 
           # File changes from the changelogger run in this working tree:
           # CHANGELOG.md rewritten, consumed entry files deleted.
@@ -242,7 +257,6 @@ jobs:
           # TBD for the same symbols and the next minor would claim them.
           # Only docblocks that are byte-identical apart from the tag are
           # carried; anything else is reported for a human (#2222).
-          git fetch --quiet origin develop
           php .github/scripts/release/carry-since.php --version="${VERSION}" > /tmp/carry-since.json
 
           carried=$(jq '[.additions[].resolved] | add // 0' /tmp/carry-since.json)
@@ -279,14 +293,23 @@ jobs:
               /tmp/rollup-additions.json > /tmp/rollup-additions.next.json
             mv /tmp/rollup-additions.next.json /tmp/rollup-additions.json
           fi
+
+          # Delete only the consumed entry files the branch has. One that
+          # never reached develop has nothing to remove there.
           git status --porcelain .github/changelog/ \
-            | awk '$1 == "D" {print $2}' | jq -R '{path: .}' | jq -s . > /tmp/rollup-deletions.json
+            | awk '$1 == "D" {print $2}' \
+            | while read -r path; do
+              if git cat-file -e "${base_sha}:${path}" 2>/dev/null; then
+                printf '%s\n' "${path}"
+              fi
+            done \
+            | jq -R '{path: .}' | jq -s . > /tmp/rollup-deletions.json
 
           jq -n \
             --arg query 'mutation ($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }' \
             --arg repo "${REPO}" \
             --arg branch "${branch}" \
-            --arg oid "${GITHUB_SHA}" \
+            --arg oid "${base_sha}" \
             --arg headline "Roll up changelog for ${VERSION}" \
             --slurpfile additions /tmp/rollup-additions.json \
             --slurpfile deletions /tmp/rollup-deletions.json \

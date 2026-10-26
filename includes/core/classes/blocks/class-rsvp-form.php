@@ -88,6 +88,14 @@ final class Rsvp_Form {
 	);
 
 	/**
+	 * Form ids given out on this page, so a repeated form gets its own.
+	 *
+	 * @since TBD
+	 * @var array<string, true>
+	 */
+	private array $form_ids = array();
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -141,21 +149,23 @@ final class Rsvp_Form {
 		$post_id        = $block_instance->get_post_id( $block );
 
 		// Validate that the post type supports RSVP, that the post is published
-		// (unless previewing), and that RSVP is both enabled and open. A single
-		// Rsvp() so we don't construct it twice on the happy path.
+		// (unless previewing) and its password entered, and that RSVP is both
+		// enabled and open. A single Rsvp() so we don't construct it twice on
+		// the happy path.
 		$rsvp = new Rsvp( $post_id );
 
 		if (
 			! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT )
 			|| ! Event::is_viewable( $post_id )
+			|| post_password_required( $post_id )
 			|| ! $rsvp->is_enabled()
 			|| ! $rsvp->allows_open_rsvp()
 		) {
 			return '';
 		}
 
-		$unique_form_id = $this->generate_form_id();
 		$schema_form_id = $this->get_form_schema_id( $post_id, $block );
+		$unique_form_id = $this->generate_form_id( $post_id, $schema_form_id );
 
 		$block_content = trim( $block_content );
 		$block_content = (string) preg_replace( '/^<div\b/', '<form', $block_content );
@@ -725,10 +735,16 @@ final class Rsvp_Form {
 	/**
 	 * Check if two blocks match based on their content.
 	 *
-	 * Compares blocks to determine if they are the same instance.
-	 * Uses inner HTML content as the primary comparison method.
+	 * Compares blocks to determine if they are the same instance: their own
+	 * markup, and the form fields their inner blocks hold. Forms with the same
+	 * fields store the same schema, so either one's id fits both. Other inner
+	 * blocks are left out, because Block Hooks can add them at render, and so
+	 * are the form's own attributes, which can be filtered at render.
 	 *
 	 * @since 0.33.0
+	 * @since 0.36.1 Also compares form fields. A block's innerHTML holds only its
+	 *            wrapper, so two forms with the same wrapper and number of
+	 *            fields matched each other.
 	 *
 	 * @param array<string, mixed> $block1 First block to compare.
 	 * @param array<string, mixed> $block2 Second block to compare.
@@ -736,25 +752,37 @@ final class Rsvp_Form {
 	 * @return bool True if blocks match.
 	 */
 	private function blocks_match( array $block1, array $block2 ): bool {
-		// Compare inner HTML content as a way to identify the same block.
-		$content1 = $block1['innerHTML'] ?? '';
-		$content2 = $block2['innerHTML'] ?? '';
-
-		return $content1 === $content2;
+		return ( $block1['innerHTML'] ?? '' ) === ( $block2['innerHTML'] ?? '' )
+			&& $this->extract_form_fields_from_inner_blocks( $block1['innerBlocks'] ?? array() )
+				=== $this->extract_form_fields_from_inner_blocks( $block2['innerBlocks'] ?? array() );
 	}
 
 	/**
 	 * Generate a unique form ID for RSVP redirect handling.
 	 *
-	 * Creates a unique identifier that can be used to track form submissions
-	 * and handle redirects back to the correct page location.
+	 * The success redirect's anchor points at this id, so it is the same on
+	 * every render of the page: built from the event and the form's schema
+	 * id, with a numbered suffix when the form repeats on the page.
 	 *
 	 * @since 0.33.0
+	 * @since TBD Built from the event and form schema id rather than uniqid().
+	 *
+	 * @param int    $post_id        The event post ID.
+	 * @param string $form_schema_id The form's schema id.
 	 *
 	 * @return string Unique form ID.
 	 */
-	private function generate_form_id(): string {
-		return uniqid( 'gatherpress_rsvp_' );
+	private function generate_form_id( int $post_id, string $form_schema_id ): string {
+		$base    = sprintf( 'gatherpress_rsvp_%d_%s', $post_id, $form_schema_id );
+		$form_id = $base;
+
+		for ( $copy = 2; isset( $this->form_ids[ $form_id ] ); $copy++ ) {
+			$form_id = $base . '-' . $copy;
+		}
+
+		$this->form_ids[ $form_id ] = true;
+
+		return $form_id;
 	}
 
 	/**

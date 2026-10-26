@@ -228,6 +228,25 @@ abstract class Base extends PMC_Base {
 	}
 
 	/**
+	 * Give the request URL parameters, as `Utility::get_http_input()` reads them.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $params URL parameters, with false for one that is not a string.
+	 *
+	 * @return void
+	 */
+	public function set_url_params( array $params ): void {
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static fn( $pre_value, int $type, string $var_name ) => INPUT_GET === $type
+				&& array_key_exists( $var_name, $params ) ? $params[ $var_name ] : $pre_value,
+			10,
+			3
+		);
+	}
+
+	/**
 	 * Mock a function's return value for testing.
 	 *
 	 * @since 0.33.0
