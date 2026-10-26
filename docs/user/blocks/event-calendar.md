@@ -69,6 +69,7 @@ When the time grid is on:
 - In List View, select a Calendar Day block. In the **Time Grid Sizing** panel, set **Slot Height (Vertical Space)**, from 32 to 120 pixels. The default is 48.
 - All-day events and events of more than one day show as bars above the hours.
 - Events that overlap show side by side.
+- An event outside the hours shows at the nearest edge of the grid. An event that starts before the first hour starts at the top. An event that starts at or after the last hour shows at the bottom.
 
 ### Show Weekdays
 
