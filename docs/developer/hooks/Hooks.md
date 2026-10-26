@@ -29,7 +29,7 @@
 
 ## class-event-query.php
 
-- [`gatherpress_query_vars`](gatherpress_query_vars.md) This filter is documented in includes/query-loop.php
+- [`gatherpress_query_vars`](gatherpress_query_vars.md) This filter is documented in includes/core/classes/blocks/class-event-query.php
 
 ## class-event.php
 
@@ -105,6 +105,10 @@
 
 - [`gatherpress_register_rsvp_types`](gatherpress_register_rsvp_types.md) Fires so plugins can register custom RSVP providers.
 
+## class-query-builder.php
+
+- [`gatherpress_calendar_posts_per_page`](gatherpress_calendar_posts_per_page.md) Filters how many posts one calendar view can show, to fit a site with more posts in one view.
+
 ## class-query.php
 
 - [`gatherpress_event_query_vars`](gatherpress_event_query_vars.md) Filters the query vars of a query that lists upcoming or past events.
@@ -149,6 +153,10 @@
 
 - [`gatherpress_save_rsvp`](gatherpress_save_rsvp.md)
 
+## class-time-grid.php
+
+- [`gatherpress_calendar_time_slot_duration`](gatherpress_calendar_time_slot_duration.md) Filters the hours in each labeled row of the time grid, to make a long day take less height.
+
 ## class-topic.php
 
 - [`taxonomy_labels_%s`](taxonomy_labels_%s.md)
@@ -164,6 +172,10 @@
 - [`gatherpress_pre_get_wp_referer`](gatherpress_pre_get_wp_referer.md) Short-circuit filter for wp_get_referer() during testing.
 - [`gatherpress_template_path`](gatherpress_template_path.md) Filters the resolved template path returned by `Utility::locate_template()`.
 - [`gatherpress_time_formats`](gatherpress_time_formats.md) Filters the time formats offered as examples in GatherPress.
+
+## class-week.php
+
+- [`gatherpress_calendar_weekend_days`](gatherpress_calendar_weekend_days.md) Filters which days of the week are weekend days, for a site in a region with a different weekend.
 
 ## gatherpress.php
 
