@@ -43,7 +43,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/blocks/class-rsvp-form.php:503](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/blocks/class-rsvp-form.php#L503)
+- [includes/core/classes/blocks/class-rsvp-form.php:513](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/blocks/class-rsvp-form.php#L513)
 ```php
 apply_filters( 'gatherpress_rsvp_form_schemas', $schemas, $post_id )
 ```

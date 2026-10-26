@@ -1,7 +1,7 @@
 # gatherpress_query_vars
 
 
-This filter is documented in includes/query-loop.php
+This filter is documented in includes/core/classes/blocks/class-event-query.php
 
 ## Auto-generated Example
 
@@ -63,6 +63,11 @@ apply_filters(
 			$request->get_params(),
 			false,
 		)
+```
+
+- [includes/core/classes/blocks/class-calendar-query.php:526](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/blocks/class-calendar-query.php#L526)
+```php
+apply_filters( 'gatherpress_query_vars', $query_args, $block_query, false )
 ```
 
 

@@ -39,6 +39,7 @@ const EventCommunicationModal = () => {
 		isSaving: wpSelect( 'gatherpress/email-modal' ).isSaving(),
 	} ), [] );
 	const { closeModal } = useDispatch( 'gatherpress/email-modal' );
+	const canEmailAllUsers = getFromConfig( 'canEmailAllUsers' );
 
 	// Shown as a placeholder only. Leaving the field empty lets the server
 	// compose the default subject once per recipient, inside that recipient's
@@ -144,13 +145,18 @@ const EventCommunicationModal = () => {
 						ref={ textareaRef }
 					/>
 					<p className="description">
-						{ __(
-							'Select the recipients for your message by checking the relevant boxes. "All Members" includes site users only. RSVP status options include both site users and non-user RSVPs.',
-							'gatherpress',
-						) }
+						{ canEmailAllUsers
+							? __(
+								'Select the recipients for your message by checking the relevant boxes. "All Members" includes site users only. RSVP status options include both site users and non-user RSVPs.',
+								'gatherpress',
+							)
+							: __(
+								'Select the recipients for your message by checking the relevant boxes. RSVP status options include both site users and non-user RSVPs.',
+								'gatherpress',
+							) }
 					</p>
 					<Flex gap="8">
-						{ getFromConfig( 'canEmailAllUsers' ) && (
+						{ canEmailAllUsers && (
 							<FlexItem>
 								<CheckboxControl
 									label={ _x(

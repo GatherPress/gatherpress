@@ -49,6 +49,12 @@ class Test_Meta extends Base {
 				'priority' => 10,
 				'callback' => array( Geo_Sync::get_instance(), 'maybe_refresh_on_view' ),
 			),
+			array(
+				'type'     => 'action',
+				'name'     => 'wp_after_insert_post',
+				'priority' => 10,
+				'callback' => array( Geo_Sync::get_instance(), 'on_event_saved' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
@@ -552,7 +558,7 @@ class Test_Meta extends Base {
 	 * A password-protected event's date and place are blanked for viewers who
 	 * can't see the event, and kept for those who can.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::hide_password_protected_meta
 	 *
@@ -628,7 +634,7 @@ class Test_Meta extends Base {
 	 * The REST API blanks a password-protected event's date on every post type
 	 * with event-date support, not only the built-in event post type.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::register_event_date_meta
 	 * @covers ::hide_password_protected_meta
@@ -694,7 +700,7 @@ class Test_Meta extends Base {
 	 * The place stays hidden on a read where the geo refresh writes fresh
 	 * venue values into the response.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::register_event_date_meta
 	 * @covers ::hide_password_protected_meta
@@ -761,5 +767,84 @@ class Test_Meta extends Base {
 			rest_do_request( $request )->get_data()['meta']['geo_address'],
 			'The right password should return the address.'
 		);
+	}
+
+	/**
+	 * An open event at a password-protected venue keeps the location it copied
+	 * from that venue out of REST, and keeps its date.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::hide_password_protected_meta
+	 *
+	 * @return void
+	 */
+	public function test_hide_password_protected_meta_for_a_protected_venue(): void {
+		register_taxonomy_for_object_type( Venue::TAXONOMY, Event::POST_TYPE );
+
+		$instance     = Meta::get_instance();
+		$meta         = array(
+			'gatherpress_datetime_start' => '2026-11-20 18:00:00',
+			'geo_address'                => '1 Main St',
+			'geo_latitude'               => '35.6762',
+			'geo_public'                 => 1,
+		);
+		$at_venue     = function ( string $password ): int {
+			$venue_id = $this->factory->post->create(
+				array(
+					'post_type'     => Venue::POST_TYPE,
+					'post_status'   => 'publish',
+					'post_password' => $password,
+				)
+			);
+			$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+			wp_set_post_terms( $event_id, ( new Venue( $venue_id ) )->get_term_slug(), Venue::TAXONOMY );
+
+			return $event_id;
+		};
+		$hide         = static function ( int $post_id ) use ( $instance, $meta ): array {
+			return $instance->hide_password_protected_meta(
+				new WP_REST_Response( array( 'meta' => $meta ) ),
+				get_post( $post_id ),
+				new WP_REST_Request( 'GET', '/wp/v2/gatherpress_events/' . $post_id )
+			)->data['meta'];
+		};
+		$at_protected = $at_venue( 'secret' );
+		$at_open      = $at_venue( '' );
+
+		wp_set_current_user( 0 );
+
+		$hidden = $hide( $at_protected );
+
+		$this->assertSame( '', $hidden['geo_address'], 'The copied address should be blank.' );
+		$this->assertSame( '', $hidden['geo_latitude'], 'The copied latitude should be blank.' );
+		$this->assertSame(
+			$meta['gatherpress_datetime_start'],
+			$hidden['gatherpress_datetime_start'],
+			'The date stays.'
+		);
+		$this->assertSame( 1, $hidden['geo_public'], 'The public flag is left alone.' );
+		$this->assertSame( $meta, $hide( $at_open ), 'An open venue\'s event keeps its location.' );
+
+		// The event's own Author keeps the venue, but not the location copied
+		// from a venue they can't see.
+		$author = $this->factory->user->create( array( 'role' => 'author' ) );
+
+		wp_update_post(
+			array(
+				'ID'          => $at_protected,
+				'post_author' => $author,
+			)
+		);
+		wp_set_current_user( $author );
+
+		$this->assertSame( '', $hide( $at_protected )['geo_address'], 'The event\'s Author gets no copied address.' );
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'editor' ) ) );
+
+		$this->assertSame( $meta, $hide( $at_protected ), 'An Editor sees the location.' );
+
+		wp_set_current_user( 0 );
 	}
 }

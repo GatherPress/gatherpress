@@ -20,6 +20,7 @@ use GatherPress\Core\Topic;
 use GatherPress\Core\Utility as GatherPress_Utility;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
+use PasswordHash;
 use PMC\Unit_Test\Utility;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -851,6 +852,82 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Tests handle_rsvp_form_submission refuses a password-protected event until its password is entered.
+	 *
+	 * The form posts to wp-comments-post.php without JavaScript, which refuses
+	 * a password-protected post, so the REST route has to refuse it too.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::handle_rsvp_form_submission
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_form_submission_password_protected_event(): void {
+		$instance = Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		);
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'comment_post_ID', $post_id );
+		$request->set_param( 'author', 'Test Author' );
+		$request->set_param( 'email', 'test@example.com' );
+
+		$response = $instance->handle_rsvp_form_submission( $request );
+
+		$this->assertSame( 403, $response->get_status() );
+		$this->assertFalse( $response->get_data()['success'] );
+		$this->assertSame( 'Enter the event password to RSVP.', $response->get_data()['message'] );
+		$this->assertSame( 0, $this->count_rsvp_comments( $post_id ), 'Failed to assert no RSVP was saved.' );
+
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+
+		// The cookie WordPress sets once a viewer enters the post password.
+		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'secret' );
+
+		$response = $instance->handle_rsvp_form_submission( $request );
+
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+
+		$this->assertSame( 200, $response->get_status(), 'Failed to assert the RSVP is accepted with the password.' );
+		$this->assertTrue( $response->get_data()['success'] );
+		$this->assertSame( 1, $this->count_rsvp_comments( $post_id ), 'Failed to assert the accepted RSVP was saved.' );
+	}
+
+	/**
+	 * Counts an event's RSVP comments in any status, unapproved ones included.
+	 *
+	 * Comment queries leave RSVPs out by default, so the count turns that
+	 * exclusion off for its own query.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @param int $post_id The event's post ID.
+	 *
+	 * @return int The number of RSVP comments.
+	 */
+	private function count_rsvp_comments( int $post_id ): int {
+		add_filter( 'gatherpress_rsvp_comment_query_exclusion', '__return_false' );
+
+		$count = get_comments(
+			array(
+				'post_id' => $post_id,
+				'type'    => Rsvp::COMMENT_TYPE,
+				'status'  => 'all',
+				'count'   => true,
+			)
+		);
+
+		remove_filter( 'gatherpress_rsvp_comment_query_exclusion', '__return_false' );
+
+		return (int) $count;
+	}
+
+	/**
 	 * Coverage for rsvp_responses method.
 	 *
 	 * @covers ::rsvp_responses
@@ -1486,7 +1563,7 @@ class Test_Rest_Api extends Base {
 	/**
 	 * Tests emailing every user takes edit_others_posts, not just edit_post.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::email_route
 	 */
@@ -1564,7 +1641,7 @@ class Test_Rest_Api extends Base {
 	/**
 	 * Tests who can email every user about an event.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::can_email_all_users
 	 */

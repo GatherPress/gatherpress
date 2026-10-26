@@ -9,6 +9,38 @@ Pending entries for the next release live as individual files under
 [`.github/changelog/`](.github/changelog/) and get rolled up into a new
 version section by `composer changelog:write` at release time.
 
+## [0.36.1] - 2026-10-24
+### Changed
+- Compare RSVP tokens with hash_equals(). [#2475](https://github.com/GatherPress/gatherpress/pull/2475)
+- Updated the configuration, settings and RSVP docs for the current setting names and RSVP Mode values, and the installation page for the WordPress 7.0 minimum. [#2506](https://github.com/GatherPress/gatherpress/pull/2506)
+
+### Fixed
+- A password-protected event's RSVP and RSVP Form blocks stay hidden until the viewer enters its password, as its date and venue already do, including when they sit in a block template rather than the event's content. The RSVP form no longer accepts a response for a password-protected event without its password. [#2520](https://github.com/GatherPress/gatherpress/pull/2520)
+- A password-protected event no longer gives its venue away: the REST API, the venue terms endpoint, the post classes and the head feed links leave it out, and lists filtered by a venue leave out password-protected events for anyone who cannot edit others' events. [#2500](https://github.com/GatherPress/gatherpress/pull/2500)
+- A password-protected venue's details, and its link to the events held there, stay private for viewers without its password, as the Venue block already did: the venue's REST record, calendars, RSS feeds, and its events' location fields, REST records and feed links leave them out. The venue's name stays public, as for any password-protected post. New venue terms no longer start with "Protected: "; the GatherPress Alpha 0.36.1 migration renames existing ones. [#2501](https://github.com/GatherPress/gatherpress/pull/2501)
+- Calendar feeds are cached separately for viewers who can see private events, so a feed loaded by an administrator is never served to other viewers, and only feeds that list public events alone are sent with public cache headers. [#2473](https://github.com/GatherPress/gatherpress/pull/2473)
+- Event RSS feeds no longer add a password-protected event's date and venue to its excerpt and content. [#2499](https://github.com/GatherPress/gatherpress/pull/2499)
+- Fix a second RSVP Form with the same layout as an earlier one on the same event using the first form's fields, which rejected its submissions for a field it does not have or dropped its answers. [#2450](https://github.com/GatherPress/gatherpress/pull/2450)
+- Fix the event date in the Post Date block losing its first digit, and its time element, when the date format starts with a number, such as d/m/Y. [#2478](https://github.com/GatherPress/gatherpress/pull/2478)
+- Keyboard focus no longer drops to the page after an RSVP change. Attend on a full event now opens the waiting list dialog instead of losing focus, and Attend or Not Attending moves focus only once the new RSVP state is on screen. [#2447](https://github.com/GatherPress/gatherpress/pull/2447)
+- Make strings that stayed in English in translated sites translatable: the Venue block placeholders, the required field marker, the Dropdown block title, the Modal Content width settings, the RSVP list date, the separators in the Credits list, and the screen reader text of the Venues column. [#2479](https://github.com/GatherPress/gatherpress/pull/2479)
+- Only users who can edit other people's events, such as Editors and Administrators, can send an event update to All Members. Anyone who can edit an event can still email its attendees, and the email dialog only offers All Members to users who can use it. [#2472](https://github.com/GatherPress/gatherpress/pull/2472)
+- Opening the editor no longer changes the order, the upcoming or past setting, or the name of an Event Query Loop, and no longer shows unsaved changes for it. A loop without a name still gets a name, such as "Upcoming Events". A name that the author gives the loop now stays when the loop's settings change. [#2496](https://github.com/GatherPress/gatherpress/pull/2496)
+- Password-protected events no longer appear in calendar feeds, their Add to Calendar links (iCal, Outlook, Google and Yahoo) only work for visitors who have entered the event's password, and the REST API leaves out their date, time and location for those visitors. Before, all three showed the event's date, time and location to anyone. [#2481](https://github.com/GatherPress/gatherpress/pull/2481)
+- Remove the RSVP block's Login dialog for logged-in viewers. The dialog's class in the RSVP block template did not match the one checked when removing it, so it stayed in the page, hidden and unused. [#2465](https://github.com/GatherPress/gatherpress/pull/2465)
+- Saving an event now marks its location as not public when the event is password-protected, unpublished, or at a venue that isn't public, past events included. Before, a past event's `geo_public` stayed as it was, since only viewing an upcoming event refreshed it. [#2519](https://github.com/GatherPress/gatherpress/pull/2519)
+- Screen readers now name the RSVP and Login dialogs after their visible title, for example "RSVP to this event" or "Login Required", and read the instructions below the title when the dialog opens. Before, they said "RSVP Modal" or "Login Modal". Existing events get the change without an edit. [#2463](https://github.com/GatherPress/gatherpress/pull/2463)
+- Screen readers now read the date on the start and end date buttons in the event settings, for example "Date & time start October 21, 2026 6:00 pm". Before, they read only the label, "Date & time start". [#2467](https://github.com/GatherPress/gatherpress/pull/2467)
+- Stop a fatal error on calendar endpoint URLs when the requested calendar slug does not belong to the endpoint handling the request, such as an event's /outlook/ URL with page and feed query parameters. [#2489](https://github.com/GatherPress/gatherpress/pull/2489)
+- Stop calling the private WordPress function apply_block_hooks_to_content() when a new venue is seeded from the venue template. The pattern registry already applies hooked blocks to that content. [#2444](https://github.com/GatherPress/gatherpress/pull/2444)
+- The Event Date, Add to Calendar and Venue blocks keep a password-protected event's date, calendar links and venue hidden until the viewer enters the password, including in a Query Loop on another page. [#2498](https://github.com/GatherPress/gatherpress/pull/2498)
+- The event email dialog no longer mentions "All Members" to users who can't send to all members, since the option is hidden for them. [#2510](https://github.com/GatherPress/gatherpress/pull/2510)
+- The events calendar feed, the upcoming events ability, and `get_upcoming_events()` and `get_past_events()` list events by their date again, instead of by when they were published. With a limit, they now keep the soonest upcoming events, or the most recent past ones, rather than the ones published first. [#2521](https://github.com/GatherPress/gatherpress/pull/2521)
+- The public Get upcoming events ability leaves out password-protected events, so it no longer lists their date and time. [#2497](https://github.com/GatherPress/gatherpress/pull/2497)
+- The RSVP Response, RSVP Template and RSVP Count blocks now respect an event's post password, the same way the attendee list in the REST API does. [#2474](https://github.com/GatherPress/gatherpress/pull/2474)
+- The RSVP Template block no longer fails to render its list when it loads before the other RSVP blocks, as seen on an events archive in iOS Safari. [#2509](https://github.com/GatherPress/gatherpress/pull/2509)
+- The venue address search no longer makes the first suggestion active before an arrow key is pressed. ArrowDown then Enter now chooses the first suggestion, not the second, and Enter with no suggestion chosen keeps the typed address. Suggestions with the same address are shown once. [#2461](https://github.com/GatherPress/gatherpress/pull/2461)
+
 ## [0.36.0] - 2026-10-16
 ### Added
 - A CARTO API key setting for OpenStreetMap venue maps. Without a key, map tiles are watermarked. [#2259](https://github.com/GatherPress/gatherpress/pull/2259)
@@ -635,6 +667,7 @@ Initial public release. Represents 18+ months of pre-1.0 development and ships t
 - Initial unit test suite with code coverage via SonarCloud.
 - Multilingual screenshots and i18n scaffolding.
 
+[0.36.1]: https://github.com/GatherPress/gatherpress/compare/0.36.0...0.36.1
 [0.36.0]: https://github.com/GatherPress/gatherpress/compare/0.35.4...0.36.0
 [0.35.4]: https://github.com/GatherPress/gatherpress/compare/0.35.3...0.35.4
 [0.35.3]: https://github.com/GatherPress/gatherpress/compare/0.35.2...0.35.3

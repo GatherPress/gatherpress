@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Fix the event date in the Post Date block losing its first digit, and its time element, when the date format starts with a number, such as d/m/Y.

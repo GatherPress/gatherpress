@@ -135,7 +135,7 @@ final class Geocoding {
 	 * More than the 5 suggestions shown, so that rows left out by the country
 	 * filter or by a repeated label can be replaced.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 */
 	private const SEARCH_CANDIDATE_LIMIT = 10;
 
@@ -1000,7 +1000,7 @@ final class Geocoding {
 	 *
 	 * @since 0.34.0
 	 * @since 0.36.0 Added `$country_filter`.
-	 * @since TBD Skips a feature whose label repeats an earlier suggestion.
+	 * @since 0.36.1 Skips a feature whose label repeats an earlier suggestion.
 	 *
 	 * @param mixed    $data           Decoded JSON body. Treated as "no results"
 	 *                                 when not an array or missing `features`.

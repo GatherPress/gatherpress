@@ -201,7 +201,7 @@ class Test_Modal extends Base {
 	/**
 	 * Returns the text of the element an ARIA attribute on the dialog points at.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param string $html      Rendered modal markup.
 	 * @param string $attribute The dialog attribute that holds an element id.
@@ -233,7 +233,7 @@ class Test_Modal extends Base {
 	/**
 	 * Data provider for the classes of the modals in the RSVP block templates.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @return array<string, array<int, string>>
 	 */
@@ -253,7 +253,7 @@ class Test_Modal extends Base {
 	 * (the visible title) and its description from the second, and keeps the
 	 * template name as the `aria-label` fallback.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::apply_modal_attributes
 	 * @covers ::is_rsvp_block_modal
 	 * @covers ::label_by_paragraphs
@@ -301,7 +301,7 @@ class Test_Modal extends Base {
 	 * heading then names the dialog, and the first paragraph after it (the
 	 * instructions) describes it, so the instructions do not become the name.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::apply_modal_attributes
 	 * @covers ::is_rsvp_block_modal
 	 * @covers ::label_by_paragraphs
@@ -329,7 +329,7 @@ class Test_Modal extends Base {
 	/**
 	 * Test an RSVP block modal reuses ids its paragraphs already have.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::apply_modal_attributes
 	 * @covers ::is_rsvp_block_modal
 	 * @covers ::label_by_paragraphs
@@ -356,7 +356,7 @@ class Test_Modal extends Base {
 	 * With one paragraph the dialog gets a name but no description. With none
 	 * it keeps the `aria-label` alone.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::apply_modal_attributes
 	 * @covers ::is_rsvp_block_modal
 	 * @covers ::label_by_paragraphs
@@ -389,7 +389,7 @@ class Test_Modal extends Base {
 	 *
 	 * The RSVP block renders one modal per status, so a page has several.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::apply_modal_attributes
 	 * @covers ::is_rsvp_block_modal
 	 * @covers ::label_by_paragraphs
@@ -420,7 +420,7 @@ class Test_Modal extends Base {
 	/**
 	 * Test a modal that is not from the RSVP block is not labeled by its paragraphs.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::apply_modal_attributes
 	 * @covers ::is_rsvp_block_modal
 	 * @covers ::label_by_paragraphs
@@ -452,7 +452,7 @@ class Test_Modal extends Base {
 	 * Uses the markup the RSVP block saves for existing events, rendered
 	 * through `do_blocks()`, so it covers events made before this change.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @coversNothing
 	 *
 	 * @return void
@@ -739,7 +739,7 @@ class Test_Modal extends Base {
 	/**
 	 * Data provider for the Login modal class names.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @return array<string, array{0: string}>
 	 */
@@ -790,7 +790,7 @@ class Test_Modal extends Base {
 	/**
 	 * Test is_login_modal matches both Login modal classes and nothing else.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::is_login_modal
 	 *
 	 * @return void
