@@ -192,7 +192,7 @@ final class Date_Range {
 			$view_type,
 			$unit_count,
 			self::parse_date_or_current( $start_date ),
-			self::parse_date_or_current( $end_date ),
+			self::parse_date_or_current( $end_date )->setTime( 23, 59, 59 ),
 			$week,
 			null,
 			is_string( $heading ) ? $heading : null

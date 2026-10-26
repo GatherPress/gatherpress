@@ -549,6 +549,11 @@ class Test_Date_Range extends Base {
 		$this->assertSame( 5, $range->unit_count, 'Failed to assert the unit count is clamped.' );
 		$this->assertSame( '2026-10-14', $range->start_date );
 		$this->assertSame( '2026-10-20', $range->end_date );
+		$this->assertSame(
+			'2026-10-20 23:59:59',
+			$range->end->format( 'Y-m-d H:i:s' ),
+			'Failed to assert the end of the last day.'
+		);
 		$this->assertSame( 2026, $range->year );
 		$this->assertSame( 10, $range->month );
 		$this->assertSame( 'Custom heading', $range->heading );
