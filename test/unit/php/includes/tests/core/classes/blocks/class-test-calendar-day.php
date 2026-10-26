@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\Calendar_Day;
+use GatherPress\Core\Calendar\Time_Grid;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use WP_Block;
@@ -225,13 +226,13 @@ class Test_Calendar_Day extends Base {
 			'gatherpress/isEmpty'        => false,
 			'gatherpress/dayNumber'      => 15,
 			'gatherpress/dayDate'        => '2020-01-15',
-			'gatherpress/timeGridConfig' => array( 'enabled' => true ),
+			'gatherpress/timeGridConfig' => new Time_Grid( true ),
 		);
 
 		// A day whose author picked the Ribbon style is in Test_Calendar: only a real render adds its class.
 		$this->assertStringContainsString( 'is-style-ribbon', Calendar_Day::render( $this->get_block( $context ) ) );
 
-		$context['gatherpress/timeGridConfig'] = array( 'enabled' => false );
+		$context['gatherpress/timeGridConfig'] = new Time_Grid();
 		$this->assertStringNotContainsString( 'is-style-ribbon', Calendar_Day::render( $this->get_block( $context ) ) );
 	}
 

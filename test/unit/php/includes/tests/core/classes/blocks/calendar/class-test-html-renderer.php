@@ -9,6 +9,8 @@
 namespace GatherPress\Tests\Core\Blocks\Calendar;
 
 use GatherPress\Core\Blocks\Calendar\Html_Renderer;
+use GatherPress\Core\Calendar\Date_Range;
+use GatherPress\Core\Calendar\Time_Grid;
 use GatherPress\Tests\Base;
 use WP_Block;
 
@@ -64,7 +66,7 @@ class Test_Html_Renderer extends Base {
 	}
 
 	/**
-	 * Coverage for generate_calendar_html with a time grid without a quarter count.
+	 * Coverage for generate_calendar_html with a time grid.
 	 *
 	 * @covers ::__construct
 	 * @covers ::generate_calendar_html
@@ -75,9 +77,18 @@ class Test_Html_Renderer extends Base {
 	 * @return void
 	 */
 	public function test_generate_calendar_html(): void {
-		$renderer = new Html_Renderer( new WP_Block( array( 'blockName' => 'gatherpress/calendar' ) ) );
+		$renderer = new Html_Renderer(
+			new WP_Block( array( 'blockName' => 'gatherpress/calendar' ) ),
+			Date_Range::from_attributes(
+				array(
+					'viewType'     => 'day',
+					'selectedDate' => '2026-10-15',
+				)
+			),
+			new Time_Grid( true )
+		);
 		$output   = $renderer->generate_calendar_html(
-			array( 'showWeekends' => true ),
+			array(),
 			array(
 				'heading'    => '',
 				'day_names'  => array( 'Thu' ),
@@ -92,13 +103,16 @@ class Test_Html_Renderer extends Base {
 					),
 				),
 			),
-			array(
-				'enabled'        => true,
-				'total_quarters' => 'many',
-			)
+			60
 		);
 
 		$this->assertStringContainsString( '--gatherpress-total-quarter-slots: 48', $output );
+		$this->assertStringContainsString( '--gatherpress-calendar-slot-height: 60px', $output );
+		$this->assertStringContainsString(
+			'--gatherpress-calendar-columns: 2',
+			$output,
+			'Failed to assert the time gutter column.'
+		);
 		$this->assertStringContainsString(
 			'data-wp-key="calendar-"',
 			$output,

@@ -12,6 +12,7 @@ namespace GatherPress\Core\Blocks;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Blocks\Calendar\Style_Processor;
+use GatherPress\Core\Calendar\Time_Grid;
 use WP_Block;
 use WP_Post;
 
@@ -110,10 +111,8 @@ final class Calendar_Entries {
 		$day_posts    = is_array( $block->context['gatherpress/dayPosts'] ?? null )
 			? $block->context['gatherpress/dayPosts']
 			: array();
-		$grid_config  = is_array( $block->context['gatherpress/timeGridConfig'] ?? null )
-			? $block->context['gatherpress/timeGridConfig']
-			: array();
-		$is_time_grid = ! empty( $grid_config['enabled'] );
+		$time_grid    = $block->context['gatherpress/timeGridConfig'] ?? null;
+		$is_time_grid = $time_grid instanceof Time_Grid && $time_grid->enabled;
 
 		// A time grid keeps its day column even without entries.
 		if ( empty( $day_posts ) && ! $is_time_grid ) {

@@ -16,6 +16,10 @@ use GatherPress\Core\Blocks\Calendar;
 use GatherPress\Core\Blocks\Calendar_Day;
 use GatherPress\Core\Blocks\Calendar_Entries;
 use GatherPress\Core\Blocks\Calendar_Week;
+use GatherPress\Core\Calendar\Date_Range;
+use GatherPress\Core\Calendar\Query_Builder;
+use GatherPress\Core\Calendar\Time_Grid;
+use GatherPress\Core\Calendar\Week;
 use GatherPress\Core\Traits\Singleton;
 use WP_Block;
 
@@ -135,11 +139,12 @@ final class Registration {
 	 */
 	public function block_editor_settings_all( array $settings ): array {
 		$gatherpress = is_array( $settings['gatherpress'] ?? null ) ? $settings['gatherpress'] : array();
+		$week        = new Week();
 
-		$gatherpress['weekendDays']      = Date_Calculator::get_weekend_days();
+		$gatherpress['weekendDays']      = $week->weekend_days;
 		$gatherpress['postsPerPage']     = Query_Builder::get_posts_per_page();
-		$gatherpress['startOfWeek']      = Date_Calculator::get_start_of_week();
-		$gatherpress['timeSlotDuration'] = Date_Calculator::get_time_slot_duration();
+		$gatherpress['startOfWeek']      = $week->start_of_week;
+		$gatherpress['timeSlotDuration'] = Time_Grid::get_slot_duration();
 		$settings['gatherpress']         = $gatherpress;
 
 		return $settings;
@@ -190,7 +195,7 @@ final class Registration {
 	/**
 	 * Calendar heading binding value callback. Supports month, week, and day views.
 	 *
-	 * Reads the same Query pagination that Query_Integration uses to page the calendar,
+	 * Reads the same Query pagination that Calendar_Query uses to page the calendar,
 	 * so a heading bound to this source (anywhere inside the same Query block) always
 	 * shows the date range that the calendar shows.
 	 *
@@ -228,9 +233,8 @@ final class Registration {
 		 *
 		 * @var array<string, mixed> $query
 		 */
-		$page           = Query_Builder::get_requested_page( $block_instance->context['queryId'] ?? null );
-		$source_post_id = Date_Calculator::resolve_source_post_id( array(), $block_instance );
+		$page = Query_Builder::get_requested_page( $block_instance->context['queryId'] ?? null );
 
-		return Date_Calculator::get_range_from_query( $query, array(), $page, $source_post_id )['heading'];
+		return Date_Range::from_query( $query, array(), $page )->heading;
 	}
 }

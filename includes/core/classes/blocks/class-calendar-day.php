@@ -11,8 +11,10 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Blocks\Calendar\Date_Calculator;
 use GatherPress\Core\Blocks\Calendar\Html_Renderer;
+use GatherPress\Core\Calendar\Date_Range;
+use GatherPress\Core\Calendar\Time_Grid;
+use GatherPress\Core\Calendar\Week;
 use WP_Block;
 
 /**
@@ -91,10 +93,10 @@ final class Calendar_Day {
 	 * @return list<string> The Ribbon class, or nothing when it is not needed.
 	 */
 	private static function get_time_grid_classes( WP_Block $block ): array {
-		$grid_config = $block->context['gatherpress/timeGridConfig'] ?? null;
-		$class_name  = $block->attributes['className'] ?? '';
+		$time_grid  = $block->context['gatherpress/timeGridConfig'] ?? null;
+		$class_name = $block->attributes['className'] ?? '';
 
-		if ( ! is_array( $grid_config ) || empty( $grid_config['enabled'] ) ) {
+		if ( ! $time_grid instanceof Time_Grid || ! $time_grid->enabled ) {
 			return array();
 		}
 
@@ -150,7 +152,7 @@ final class Calendar_Day {
 			return $attributes;
 		}
 
-		if ( Date_Calculator::get_today() === $day_date ) {
+		if ( (string) wp_date( Date_Range::DATE_FORMAT ) === $day_date ) {
 			$attributes['aria-current'] = 'date';
 		}
 
@@ -209,7 +211,7 @@ final class Calendar_Day {
 		$context = wp_interactivity_get_context( 'gatherpress/calendar-day' );
 		$date    = is_string( $context['date'] ?? null ) ? $context['date'] : '';
 
-		return '' === $date ? null : $date <=> Date_Calculator::get_today();
+		return '' === $date ? null : $date <=> (string) wp_date( Date_Range::DATE_FORMAT );
 	}
 
 	/**
@@ -296,8 +298,8 @@ final class Calendar_Day {
 
 		if ( '' === $weekday && '' !== $day_date ) {
 			$dow        = (int) gmdate( 'w', (int) strtotime( $day_date ) );
-			$weekday    = Date_Calculator::get_weekday_slug( $dow );
-			$is_weekend = Date_Calculator::is_weekend_day( $dow );
+			$weekday    = Week::DAY_SLUGS[ $dow ];
+			$is_weekend = ( new Week() )->is_weekend( $dow );
 		}
 
 		return array( $weekday, $is_weekend );
@@ -317,7 +319,7 @@ final class Calendar_Day {
 			return array();
 		}
 
-		$today = Date_Calculator::get_today();
+		$today = (string) wp_date( Date_Range::DATE_FORMAT );
 
 		if ( $day_date === $today ) {
 			return array( 'is-today' );

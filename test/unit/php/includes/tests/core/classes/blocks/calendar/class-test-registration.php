@@ -8,8 +8,8 @@
 
 namespace GatherPress\Tests\Core\Blocks\Calendar;
 
-use GatherPress\Core\Blocks\Calendar\Query_Integration;
 use GatherPress\Core\Blocks\Calendar\Registration;
+use GatherPress\Core\Calendar\Query_Builder;
 use GatherPress\Tests\Base;
 use WP_Block;
 use WP_Block_Type_Registry;
@@ -241,9 +241,9 @@ class Test_Registration extends Base {
 			array(
 				'queryId' => 3,
 				'query'   => array(
-					Query_Integration::CALENDAR_QUERY_START_DATE => '2026-10-01',
-					Query_Integration::CALENDAR_QUERY_END_DATE   => '2026-10-31',
-					Query_Integration::CALENDAR_QUERY_HEADING    => 'October 2026',
+					Query_Builder::CALENDAR_QUERY_START_DATE => '2026-10-01',
+					Query_Builder::CALENDAR_QUERY_END_DATE => '2026-10-31',
+					Query_Builder::CALENDAR_QUERY_HEADING  => 'October 2026',
 				),
 			)
 		);

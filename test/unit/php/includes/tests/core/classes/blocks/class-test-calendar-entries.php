@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\Calendar_Entries;
+use GatherPress\Core\Calendar\Time_Grid;
 use GatherPress\Core\Event;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -116,7 +117,7 @@ class Test_Calendar_Entries extends Base {
 			'',
 			array(),
 			array(),
-			array( 'gatherpress/timeGridConfig' => array( 'enabled' => true ) )
+			array( 'gatherpress/timeGridConfig' => new Time_Grid( true ) )
 		);
 
 		$this->assertStringContainsString( 'has-time-grid', $output );
@@ -575,7 +576,7 @@ class Test_Calendar_Entries extends Base {
 	 */
 	public function test_render_with_missing_context_and_template(): void {
 		$block          = new WP_Block( array( 'blockName' => Calendar_Entries::BLOCK_NAME ) );
-		$block->context = array( 'gatherpress/timeGridConfig' => array( 'enabled' => true ) );
+		$block->context = array( 'gatherpress/timeGridConfig' => new Time_Grid( true ) );
 
 		$this->assertStringContainsString( 'has-time-grid', Calendar_Entries::render( array(), $block ) );
 

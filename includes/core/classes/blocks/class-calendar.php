@@ -11,11 +11,12 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Blocks\Calendar\Date_Calculator;
 use GatherPress\Core\Blocks\Calendar\Html_Renderer;
-use GatherPress\Core\Blocks\Calendar\Post_Organizer;
-use GatherPress\Core\Blocks\Calendar\Query_Builder;
-use GatherPress\Core\Blocks\Calendar\Structure_Builder;
+use GatherPress\Core\Calendar\Date_Range;
+use GatherPress\Core\Calendar\Post_Organizer;
+use GatherPress\Core\Calendar\Query_Builder;
+use GatherPress\Core\Calendar\Structure_Builder;
+use GatherPress\Core\Calendar\Time_Grid;
 use WP_Block;
 
 /**
@@ -60,14 +61,13 @@ final class Calendar {
 		 *
 		 * @var array<string, mixed> $query
 		 */
-		$page           = Query_Builder::get_requested_page( $block->context['queryId'] ?? null );
-		$source_post_id = Date_Calculator::resolve_source_post_id( $attributes, $block );
-		$date_range     = Date_Calculator::get_range_from_query( $query, $attributes, $page, $source_post_id );
+		$page       = Query_Builder::get_requested_page( $block->context['queryId'] ?? null );
+		$date_range = Date_Range::from_query( $query, $attributes, $page, $block );
 
 		// The time grid hours are attributes of the inner week block.
-		$week_block  = Html_Renderer::get_inner_template_block( $block, Calendar_Week::BLOCK_NAME );
-		$week_attrs  = $week_block['attrs'] ?? array();
-		$grid_config = Date_Calculator::get_time_grid_config(
+		$week_block = Html_Renderer::get_inner_template_block( $block, Calendar_Week::BLOCK_NAME );
+		$week_attrs = $week_block['attrs'] ?? array();
+		$time_grid  = Time_Grid::from_attributes(
 			array_merge(
 				$attributes,
 				array(
@@ -78,32 +78,22 @@ final class Calendar {
 			$query
 		);
 
-		// The slot height is an attribute of the day block inside the week block.
-		$grid_config['slot_height'] = self::get_slot_height( $week_block );
-
-		$show_weekends = Date_Calculator::show_weekends( $attributes );
-
 		// Context for the week, day and entries blocks inside the calendar.
-		$block->context['gatherpress/viewType']       = $date_range['view_type'];
-		$block->context['gatherpress/year']           = $date_range['year'];
-		$block->context['gatherpress/month']          = $date_range['month'];
-		$block->context['gatherpress/startDate']      = $date_range['start_date'];
-		$block->context['gatherpress/endDate']        = $date_range['end_date'];
-		$block->context['gatherpress/showWeekends']   = $show_weekends;
-		$block->context['gatherpress/timeGridConfig'] = $grid_config;
+		$block->context['gatherpress/viewType']       = $date_range->view_type;
+		$block->context['gatherpress/year']           = $date_range->year;
+		$block->context['gatherpress/month']          = $date_range->month;
+		$block->context['gatherpress/startDate']      = $date_range->start_date;
+		$block->context['gatherpress/endDate']        = $date_range->end_date;
+		$block->context['gatherpress/showWeekends']   = $date_range->week->show_weekends;
+		$block->context['gatherpress/timeGridConfig'] = $time_grid;
 
-		$posts_by_date = Post_Organizer::organize_posts_by_date(
-			Query_Builder::build_query_args( $block, $date_range ),
-			$grid_config
-		);
-		$calendar_data = Structure_Builder::build_structure(
-			$date_range,
-			Date_Calculator::get_start_of_week(),
-			$posts_by_date,
-			$show_weekends
-		);
+		$post_ids      = ( new Query_Builder( $block, $date_range ) )->get_post_ids();
+		$posts_by_date = ( new Post_Organizer( $date_range, $time_grid ) )->organize( $post_ids );
+		$calendar_data = ( new Structure_Builder( $date_range ) )->build( $posts_by_date );
+		$renderer      = new Html_Renderer( $block, $date_range, $time_grid );
 
-		return ( new Html_Renderer( $block ) )->generate_calendar_html( $attributes, $calendar_data, $grid_config );
+		// The slot height is an attribute of the day block inside the week block.
+		return $renderer->generate_calendar_html( $attributes, $calendar_data, self::get_slot_height( $week_block ) );
 	}
 
 	/**

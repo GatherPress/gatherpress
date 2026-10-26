@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\Calendar_Week;
+use GatherPress\Core\Calendar\Time_Grid;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use WP_Block;
@@ -137,10 +138,7 @@ class Test_Calendar_Week extends Base {
 			$this->get_block(
 				array(
 					'gatherpress/weekDays'       => array( $this->day( 15 ) ),
-					'gatherpress/timeGridConfig' => array(
-						'enabled' => true,
-						'slots'   => array( '09:00', '10:00', array( 'not a label' ) ),
-					),
+					'gatherpress/timeGridConfig' => new Time_Grid( true, 9, 11 ),
 				)
 			)
 		);
@@ -152,7 +150,7 @@ class Test_Calendar_Week extends Base {
 		);
 		$this->assertStringContainsString( 'style="padding-top: calc(28px + 0 * 24px);"', $output );
 		$this->assertStringContainsString( '<div class="gatherpress-calendar__time-slot-label">09:00</div>', $output );
-		$this->assertStringContainsString( '<div class="gatherpress-calendar__time-slot-label"></div>', $output );
+		$this->assertStringContainsString( '<div class="gatherpress-calendar__time-slot-label">10:00</div>', $output );
 		$this->assertStringContainsString(
 			'data-wp-key="week-0-0-0"',
 			$output,

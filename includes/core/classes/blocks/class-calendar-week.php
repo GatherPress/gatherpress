@@ -11,8 +11,9 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Blocks\Calendar\Date_Calculator;
 use GatherPress\Core\Blocks\Calendar\Html_Renderer;
+use GatherPress\Core\Calendar\Date_Range;
+use GatherPress\Core\Calendar\Time_Grid;
 use WP_Block;
 
 /**
@@ -66,19 +67,18 @@ final class Calendar_Week {
 	 *
 	 * @since TBD
 	 *
-	 * @param array<string, mixed> $grid_config      Time grid configuration.
-	 * @param int                  $num_ribbon_slots Number of ribbon slots.
+	 * @param Time_Grid $time_grid        The time grid of the calendar.
+	 * @param int       $num_ribbon_slots Number of ribbon slots.
 	 *
 	 * @return string Rendered time gutter HTML.
 	 */
-	private static function render_time_gutter( array $grid_config, int $num_ribbon_slots ): string {
+	private static function render_time_gutter( Time_Grid $time_grid, int $num_ribbon_slots ): string {
 		$slot_labels = '';
-		$slots       = is_array( $grid_config['slots'] ?? null ) ? $grid_config['slots'] : array();
 
-		foreach ( $slots as $slot_label ) {
+		foreach ( $time_grid->slots as $slot_label ) {
 			$slot_labels .= sprintf(
 				'<div class="gatherpress-calendar__time-slot-label">%s</div>',
-				esc_html( is_scalar( $slot_label ) ? (string) $slot_label : '' )
+				esc_html( $slot_label )
 			);
 		}
 
@@ -108,20 +108,14 @@ final class Calendar_Week {
 			: array();
 		$day_template = Html_Renderer::get_inner_template_block( $block, Calendar_Day::BLOCK_NAME );
 
-		/**
-		 * The time grid configuration from Date_Calculator::get_time_grid_config().
-		 *
-		 * @var array<string, mixed> $grid_config
-		 */
-		$grid_config  = is_array( $block->context['gatherpress/timeGridConfig'] ?? null )
-			? $block->context['gatherpress/timeGridConfig']
-			: array();
-		$is_time_grid = ! empty( $grid_config['enabled'] );
+		$time_grid    = $block->context['gatherpress/timeGridConfig'] ?? null;
+		$time_grid    = $time_grid instanceof Time_Grid ? $time_grid : new Time_Grid();
+		$is_time_grid = $time_grid->enabled;
 
 		$num_ribbon_slots                             = self::calculate_max_ribbon_slot( $week_days ) + 1;
 		$block->context['gatherpress/numRibbonSlots'] = $num_ribbon_slots;
 
-		$today       = Date_Calculator::get_today();
+		$today       = (string) wp_date( Date_Range::DATE_FORMAT );
 		$days_html   = self::render_days( $week_days, $block, $day_template, $today, $num_ribbon_slots );
 		$week_number = is_numeric( $block->context['gatherpress/weekNumber'] ?? null )
 			? (int) $block->context['gatherpress/weekNumber']
@@ -151,7 +145,7 @@ final class Calendar_Week {
 		return sprintf(
 			'<tr %1$s>%2$s%3$s</tr>',
 			$wrapper_attributes,
-			$is_time_grid ? self::render_time_gutter( $grid_config, $num_ribbon_slots ) : '',
+			$is_time_grid ? self::render_time_gutter( $time_grid, $num_ribbon_slots ) : '',
 			$days_html
 		);
 	}

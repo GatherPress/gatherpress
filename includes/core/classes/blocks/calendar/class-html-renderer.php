@@ -12,6 +12,8 @@ namespace GatherPress\Core\Blocks\Calendar;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Blocks\Calendar_Week;
+use GatherPress\Core\Calendar\Date_Range;
+use GatherPress\Core\Calendar\Time_Grid;
 use WP_Block;
 
 /**
@@ -22,7 +24,7 @@ use WP_Block;
  *
  * @since TBD
  *
- * @phpstan-import-type CalendarUnit from Structure_Builder
+ * @phpstan-import-type CalendarUnit from \GatherPress\Core\Calendar\Structure_Builder
  * @phpstan-type CalendarData array{
  *     heading: string,
  *     day_names: list<string>,
@@ -50,14 +52,34 @@ final class Html_Renderer {
 	private WP_Block $block;
 
 	/**
+	 * The date range of the calendar.
+	 *
+	 * @since TBD
+	 * @var Date_Range
+	 */
+	private Date_Range $date_range;
+
+	/**
+	 * The time grid of the calendar.
+	 *
+	 * @since TBD
+	 * @var Time_Grid
+	 */
+	private Time_Grid $time_grid;
+
+	/**
 	 * Constructor.
 	 *
 	 * @since TBD
 	 *
-	 * @param WP_Block $block The gatherpress/calendar block instance.
+	 * @param WP_Block   $block      The gatherpress/calendar block instance.
+	 * @param Date_Range $date_range The date range of the calendar.
+	 * @param Time_Grid  $time_grid  The time grid of the calendar.
 	 */
-	public function __construct( WP_Block $block ) {
-		$this->block = $block;
+	public function __construct( WP_Block $block, Date_Range $date_range, Time_Grid $time_grid ) {
+		$this->block      = $block;
+		$this->date_range = $date_range;
+		$this->time_grid  = $time_grid;
 	}
 
 	/**
@@ -106,17 +128,11 @@ final class Html_Renderer {
 	 *
 	 * @param array<string, mixed> $attributes    Block attributes.
 	 * @param int                  $columns_count Number of table columns.
-	 * @param array<string, mixed> $grid_config   Time grid configuration.
-	 * @param bool                 $is_time_grid  Whether time grid is enabled.
+	 * @param int                  $slot_height   Height of one hour slot of the time grid, in pixels.
 	 *
 	 * @return string Inline style attribute (e.g. style="...").
 	 */
-	private function build_table_style(
-		array $attributes,
-		int $columns_count,
-		array $grid_config,
-		bool $is_time_grid
-	): string {
+	private function build_table_style( array $attributes, int $columns_count, int $slot_height ): string {
 		$grid_gap     = Style_Processor::get_block_gap_value( $attributes );
 		$column_gap   = Style_Processor::get_block_column_gap_value( $attributes );
 		$table_styles = array( sprintf( '--gatherpress-calendar-columns: %d', $columns_count ) );
@@ -130,18 +146,10 @@ final class Html_Renderer {
 			$table_styles[] = sprintf( '--gatherpress-calendar-column-gap: %s', $column_gap );
 		}
 
-		if ( $is_time_grid ) {
-			$total_quarters = $grid_config['total_quarters'] ?? 48;
-			$slot_height    = $grid_config['slot_height'] ?? 48;
-			$table_styles[] = sprintf(
-				'--gatherpress-total-quarter-slots: %d',
-				is_numeric( $total_quarters ) ? (int) $total_quarters : 48
-			);
+		if ( $this->time_grid->enabled ) {
+			$table_styles[] = sprintf( '--gatherpress-total-quarter-slots: %d', $this->time_grid->total_quarters );
 			// The editor sets the same property from the day block's Slot Height control.
-			$table_styles[] = sprintf(
-				'--gatherpress-calendar-slot-height: %dpx',
-				is_numeric( $slot_height ) ? (int) $slot_height : 48
-			);
+			$table_styles[] = sprintf( '--gatherpress-calendar-slot-height: %dpx', $slot_height );
 		}
 
 		return sprintf( 'style="%s;"', esc_attr( implode( '; ', $table_styles ) ) );
@@ -208,26 +216,21 @@ final class Html_Renderer {
 	 *
 	 * @param array<string, mixed> $attributes    Block attributes.
 	 * @param array<string, mixed> $calendar_data Calendar structure.
-	 * @param array<string, mixed> $grid_config   Time grid configuration.
+	 * @param int                  $slot_height   Height of one hour slot of the time grid, in pixels.
 	 * @phpstan-param CalendarData $calendar_data
 	 *
 	 * @return string Calendar HTML.
 	 */
-	public function generate_calendar_html(
-		array $attributes,
-		array $calendar_data,
-		array $grid_config = array()
-	): string {
+	public function generate_calendar_html( array $attributes, array $calendar_data, int $slot_height = 48 ): string {
 		$view_type     = $calendar_data['view_type'];
 		$unit_count    = $calendar_data['unit_count'];
-		$show_weekends = is_bool( $attributes['showWeekends'] ?? null ) ? $attributes['showWeekends'] : true;
 		$show_weekdays = is_bool( $attributes['showWeekdays'] ?? null ) ? $attributes['showWeekdays'] : true;
-		$is_time_grid  = ! empty( $grid_config['enabled'] );
-		$columns_count = Date_Calculator::get_columns_count( $view_type, $show_weekends, $unit_count, $is_time_grid );
+		$is_time_grid  = $this->time_grid->enabled;
+		$columns_count = $this->date_range->get_columns_count( $is_time_grid );
 
 		// Only views with several week rows need to tell the rows apart.
 		$render_week_numbers = 'month' === $view_type || ( 'week' === $view_type && $unit_count > 1 );
-		$table_style         = $this->build_table_style( $attributes, $columns_count, $grid_config, $is_time_grid );
+		$table_style         = $this->build_table_style( $attributes, $columns_count, $slot_height );
 		$tables              = '';
 
 		foreach ( $calendar_data['units'] as $unit ) {
@@ -293,11 +296,10 @@ final class Html_Renderer {
 	 */
 	private function render_calendar_weeks( array $weeks, bool $render_week_numbers ): string {
 		$week_template = self::get_inner_template_block( $this->block, Calendar_Week::BLOCK_NAME );
-		$start_of_week = Date_Calculator::get_start_of_week();
 		$html          = '';
 
 		foreach ( $weeks as $week_index => $week_days ) {
-			$week_number  = $render_week_numbers ? Date_Calculator::get_week_number( $week_days, $start_of_week ) : 0;
+			$week_number  = $render_week_numbers ? $this->date_range->week->get_number( $week_days ) : 0;
 			$week_context = array_merge(
 				$this->block->context,
 				array(
