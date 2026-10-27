@@ -18,7 +18,7 @@ The Venue block allows you to add/edit:
 - Phone number  
 - Website  
 - Whether you want to display the map, with its zoom level and map height  
-- Latitude / Longitude are filled by default, but you can use custom ones
+- Latitude and longitude, found from the full address. For a venue without a street address, like a park entrance or a trailhead, turn on **Set coordinates manually** in the venue settings and enter them yourself. The address then no longer moves the map pin.
 
 Standard content blocks allow you to add any other content.
 
