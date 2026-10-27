@@ -26,7 +26,7 @@ import {
  * A select shows one option at a time, so the options are only editable while
  * the block is selected: the field then expands into the list a browser shows
  * when the control is open, and collapses back to the closed control when
- * selection moves away. That keeps the canvas showing what the visitor sees
+ * selection moves away. That keeps the canvas showing what the viewer sees
  * without hiding the options from the author.
  *
  * @param {Object}   props                   - Component props.

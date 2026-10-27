@@ -51,6 +51,7 @@ Before writing a feature, check whether an extension point already covers it. Mo
 | You want to | Start here |
 |---|---|
 | Put event or venue features on your own post types | [Post type supports](../post-type-supports/README.md) |
+| Narrow or reorder event lists, for example by location | The `gatherpress_event_query_vars` filter, which every upcoming and past event list passes through |
 | Act when somebody RSVPs or changes their answer | [RSVP system](../rsvp/README.md#acting-on-an-rsvp) |
 | Add your own RSVP status source or yes/no marker | [RSVP providers and flags](../rsvp/README.md) |
 | Add a settings tab or fields | [Extending settings](../settings/extending-settings.md) |

@@ -458,4 +458,33 @@ class Test_Status extends Base {
 			'Failed to assert invalid status falls back to default.'
 		);
 	}
+
+	/**
+	 * Tests set_event_status sets operational status on event post.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::set_event_status
+	 *
+	 * @return void
+	 */
+	public function test_set_event_status(): void {
+		$this->assertFalse(
+			Status::set_event_status( null, 'canceled' ),
+			'Failed to assert null post returns false.'
+		);
+
+		$post = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+
+		$this->assertTrue(
+			Status::set_event_status( $post, 'canceled' ),
+			'Failed to assert setting status on event succeeds.'
+		);
+
+		$this->assertSame(
+			array( 'canceled' ),
+			Status::get_event_statuses( $post ),
+			'Failed to assert stored status matches.'
+		);
+	}
 }

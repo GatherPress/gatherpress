@@ -55,7 +55,7 @@ final class Cleanup {
 	 *
 	 * This method performs the following steps:
 	 * 1. Retrieves all RSVPs with a comment status of 'hold' and a date before today.
-	 * 2. Filters the retrieved RSVPs to include only those that are more than 24 hours old.
+	 * 2. Filters the retrieved RSVPs to those whose confirmation link went out more than 24 hours ago.
 	 * 3. Deletes the filtered RSVP comments along with their associated metadata.
 	 *
 	 * @since 0.34.0
@@ -79,11 +79,12 @@ final class Cleanup {
 			)
 		);
 
-		// 2. Further filter by those that are more than 24hrs old.
+		// 2. Further filter by those whose link went out more than 24hrs ago,
+		// so a link sent late isn't left pointing at a deleted RSVP.
 		$rsvps = array_filter(
 			$rsvps,
 			static function ( $rsvp ): bool {
-				$diff = strtotime( 'now' ) - strtotime( $rsvp->comment_date );
+				$diff = strtotime( 'now' ) - ( new Token( (int) $rsvp->comment_ID ) )->get_issued_time();
 				return $diff >= HOUR_IN_SECONDS * 24;
 			}
 		);

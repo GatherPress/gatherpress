@@ -18,6 +18,7 @@ namespace GatherPress\Core\Venue;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Traits\Has_Capabilities;
 use GatherPress\Core\Utility;
 use WP_Post;
 use WP_Term;
@@ -31,6 +32,11 @@ use WP_Term;
  * @since 0.34.0
  */
 final class Venue {
+
+	/**
+	 * Gives the class its read and edit capabilities.
+	 */
+	use Has_Capabilities;
 
 	/**
 	 * Default venue post type slug.

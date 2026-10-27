@@ -413,6 +413,40 @@ final class Status {
 	}
 
 	/**
+	 * Sets the operational status for an event post.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_Post|null $post   The event post object.
+	 * @param string       $status One of the slugs Status::slugs() reports.
+	 * @param bool         $append Optional. When true, appends to existing terms
+	 *                             instead of replacing them. Default false.
+	 *
+	 * @return bool True when the status was stored.
+	 */
+	public static function set_event_status( ?WP_Post $post, string $status, bool $append = false ): bool {
+		if ( ! $post || ! self::exists( $status, (string) $post->post_type ) ) {
+			return false;
+		}
+
+		self::ensure_term( $status );
+
+		// A plain string replaces every term in the taxonomy by default, which is
+		// what enforces the statuses being mutually exclusive.
+		$result = wp_set_object_terms( $post->ID, $status, Event::TAXONOMY_STATUS, $append );
+
+		if ( is_wp_error( $result ) ) {
+			return false;
+		}
+
+		// Terms are written without touching the post row, but the calendar
+		// reads `post_modified_gmt` for a VEVENT's `SEQUENCE`, and a client
+		// ignores an update whose sequence has not advanced. Touching the post
+		// is what tells a subscriber that a cancellation actually happened.
+		return ! is_wp_error( wp_update_post( array( 'ID' => $post->ID ), true ) );
+	}
+
+	/**
 	 * One status's definition, falling back to the default one.
 	 *
 	 * @since TBD

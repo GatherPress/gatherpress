@@ -1703,7 +1703,7 @@ class Test_Event extends Base {
 	 * because is_same_date compared filter-passing formatted strings. It now
 	 * compares the unfiltered ISO date portions.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::is_same_date
 	 *
 	 * @return void
@@ -1863,7 +1863,7 @@ class Test_Event extends Base {
 	 * showTimezone to yes must still show the timezone; without any override
 	 * the timezone stays hidden.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::get_display_datetime
 	 *
 	 * @return void
@@ -2004,7 +2004,7 @@ class Test_Event extends Base {
 	 * branch is invoked directly to record it. Exercises the local-timezone and
 	 * filter path, the GMT path, and the unparsable-datetime bail path.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::format_datetime
 	 *
 	 * @return void
@@ -3568,7 +3568,7 @@ class Test_Event extends Base {
 	 * because get_display_datetime() reaches this method inside the class,
 	 * which the PMC test framework does not trace into coverage.xml.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::get_display_datetime_parts
 	 *
@@ -3625,7 +3625,7 @@ class Test_Event extends Base {
 	 * passes on whether the display-format filter applies. Invoked directly for
 	 * the same tracing reason as test_format_datetime_branches().
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::format_datetime
 	 *
@@ -3765,7 +3765,7 @@ class Test_Event extends Base {
 	 * The separator defaults to 'to', keeps one set on the block, and runs
 	 * through the filter.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::get_datetime_separator
 	 *
@@ -3792,7 +3792,7 @@ class Test_Event extends Base {
 	 * The filter gets the event passed in, the current event post when none
 	 * is, and null outside an event.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::get_datetime_separator
 	 *
@@ -3828,5 +3828,59 @@ class Test_Event extends Base {
 		$this->assertNull( $captured, 'Failed to assert a post that is not an event gives the filter null.' );
 
 		remove_filter( 'gatherpress_datetime_separator', $capture );
+	}
+
+	/**
+	 * Calendars and feeds get no name or details for a password-protected venue,
+	 * whoever is asking, since a calendar response can be cached for others.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::get_public_venue_information
+	 *
+	 * @return void
+	 */
+	public function test_get_public_venue_information(): void {
+		register_taxonomy_for_object_type( Venue::TAXONOMY, Event::POST_TYPE );
+
+		$at_venue  = function ( string $password ): Event {
+			$venue_id = $this->factory->post->create(
+				array(
+					'post_type'     => Venue::POST_TYPE,
+					'post_status'   => 'publish',
+					'post_title'    => 'Hidden Hall',
+					'post_password' => $password,
+				)
+			);
+			$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+			update_post_meta( $venue_id, 'gatherpress_address', '1 Main St' );
+			wp_set_post_terms( $event_id, ( new Venue( $venue_id ) )->get_term_slug(), Venue::TAXONOMY );
+
+			return new Event( $event_id );
+		};
+		$protected = $at_venue( 'secret' );
+		$open      = $at_venue( '' );
+
+		wp_set_current_user( 0 );
+
+		$this->assertSame(
+			array_fill_keys( array_keys( $protected->get_venue_information() ), '' ),
+			$protected->get_public_venue_information(),
+			'A protected venue shares nothing.'
+		);
+		$this->assertSame( '1 Main St', $protected->get_venue_information()['address'], 'Emails get the address.' );
+		$this->assertSame( '1 Main St', $open->get_public_venue_information()['address'], 'An open venue shares it.' );
+		$this->assertSame(
+			'',
+			( new Event( $this->factory->post->create() ) )->get_public_venue_information()['name'],
+			'A post that is not an event has no venue.'
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'editor' ) ) );
+
+		$this->assertSame( '', $protected->get_public_venue_information()['address'], 'Nor does an Editor.' );
+
+		wp_set_current_user( 0 );
 	}
 }

@@ -84,7 +84,7 @@ final class Modal_Manager {
 	 *   (anything except a `<button>` or a link with an `href`).
 	 *
 	 * @since 0.33.0
-	 * @since TBD Links acting as buttons also open the modal on Space. Links without an
+	 * @since 0.36.0 Links acting as buttons also open the modal on Space. Links without an
 	 *            `href` get `tabindex`.
 	 *
 	 * @param string $block_content The original block HTML content.
@@ -149,7 +149,7 @@ final class Modal_Manager {
 	 *   (anything except a `<button>` or a link with an `href`).
 	 *
 	 * @since 0.33.0
-	 * @since TBD Links acting as buttons also close the modal on Space. Links without an
+	 * @since 0.36.0 Links acting as buttons also close the modal on Space. Links without an
 	 *            `href` get `tabindex`.
 	 *
 	 * @param string $block_content The original block HTML content.
@@ -193,7 +193,7 @@ final class Modal_Manager {
 	 * `href` (a Button block with no URL renders one) is not in the tab order.
 	 * A valueless `href` still counts, because browsers treat it as a link.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param WP_HTML_Tag_Processor $tag Processor positioned on the tag to check.
 	 *

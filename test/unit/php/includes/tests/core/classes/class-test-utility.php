@@ -106,13 +106,13 @@ class Test_Utility extends Base {
 	 * @return void
 	 */
 	public function test_locate_template_resolves_plugin_fallback(): void {
-		$expected = sprintf( '%s/includes/templates/calendar/ical-download.php', GATHERPRESS_CORE_PATH );
+		$expected = sprintf( '%s/includes/templates/calendar/external/ical-download.php', GATHERPRESS_CORE_PATH );
 
 		$this->assertSame(
 			$expected,
 			Utility::locate_template(
 				'gatherpress_ical-download.php',
-				sprintf( '%s/includes/templates/calendar', GATHERPRESS_CORE_PATH )
+				sprintf( '%s/includes/templates/calendar/external', GATHERPRESS_CORE_PATH )
 			),
 			'locate_template should return the bundled plugin template and strip the gatherpress_ prefix.'
 		);
@@ -218,7 +218,7 @@ class Test_Utility extends Base {
 	 * @return void
 	 */
 	public function test_resolve_fallback_template_path_strips_prefix(): void {
-		$fallback_dir = sprintf( '%s/includes/templates/calendar', GATHERPRESS_CORE_PATH );
+		$fallback_dir = sprintf( '%s/includes/templates/calendar/external', GATHERPRESS_CORE_PATH );
 		$expected     = sprintf( '%s/ical-download.php', $fallback_dir );
 
 		$this->assertSame(
@@ -1821,7 +1821,7 @@ class Test_Utility extends Base {
 	/**
 	 * Coverage for tokenize_date_format.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::tokenize_date_format
 	 *
@@ -1921,7 +1921,7 @@ class Test_Utility extends Base {
 	 * Called directly because the strip methods reach it through a same-class
 	 * delegation that xdebug does not trace.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::split_date_time_format
 	 *
@@ -1943,7 +1943,7 @@ class Test_Utility extends Base {
 	/**
 	 * Data provider for split_date_time_format.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return array[]
 	 */
@@ -1990,7 +1990,7 @@ class Test_Utility extends Base {
 	/**
 	 * Finding a format character skips escaped text.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::find_format_char
 	 *
@@ -2013,7 +2013,7 @@ class Test_Utility extends Base {
 	/**
 	 * Dropping the lead-in removes the escaped words and spaces ending a date.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::drop_lead_in
 	 *
@@ -2043,7 +2043,7 @@ class Test_Utility extends Base {
 	/**
 	 * Joining tokens leaves out the skipped characters and trims the ends.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::join_format_tokens
 	 *

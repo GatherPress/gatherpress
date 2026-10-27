@@ -766,7 +766,7 @@ export function convertPHPToMomentFormat( format ) {
  * characters, such as German '\U\h\r', is one literal token. Every other
  * character is a token of its own.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @param {string} format - The PHP datetime format.
  *
@@ -824,7 +824,7 @@ export function dateTimePreview() {
  * `Utility::time_format_chars()` and `Utility::non_time_format_chars()`
  * through the editor settings.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @param {string} format - The PHP datetime format.
  *
@@ -874,7 +874,7 @@ function splitPHPDateTimeFormat( format ) {
 /**
  * Find the first token that is one of the given format characters.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @param {Array<{type: string, value: string}>} tokens - The format tokens.
  * @param {string[]}                             chars  - The format characters to look for.
@@ -893,7 +893,7 @@ function findFormatChar( tokens, chars ) {
  * Unescaped text stays, so the Japanese day suffix '日' in 'Y年n月j日 H:i' is
  * still part of the date.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @param {Array<{type: string, value: string}>} tokens - The date's tokens.
  *
@@ -910,7 +910,7 @@ function dropLeadIn( tokens ) {
 /**
  * Join format tokens back into a format, trimming the separators at its ends.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @param {Array<{type: string, value: string}>} tokens    - The format tokens.
  * @param {string[]}                             skipChars - Format characters to leave out.
