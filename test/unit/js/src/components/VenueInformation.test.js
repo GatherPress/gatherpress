@@ -239,3 +239,59 @@ test( 'skips a pending geocode once the coordinates are manual', async () => {
 	expect( editor.editPost ).not.toHaveBeenCalled();
 	expect( editor.unlockPostSaving ).toHaveBeenCalledWith( 'gatherpress/venue-geocoding' );
 } );
+
+test( 'skips a lookup that finishes after the coordinates turn manual', async () => {
+	let resolveGeocode;
+
+	geocodeAddress.mockReturnValueOnce(
+		new Promise( ( resolve ) => {
+			resolveGeocode = resolve;
+		} ),
+	);
+	meta = { gatherpress_address: '1 Main St' };
+
+	const { rerender } = await renderVenueInformation();
+
+	meta = { ...meta, gatherpress_manual_coordinates: true };
+	rerender( <VenueInformation /> );
+
+	await act( async () => {
+		resolveGeocode( { latitude: '3', longitude: '4' } );
+	} );
+
+	expect( venueStore.updateVenueLatitude ).not.toHaveBeenCalled();
+	expect( venueStore.updateVenueLongitude ).not.toHaveBeenCalled();
+	expect( editor.editPost ).not.toHaveBeenCalled();
+} );
+
+test( 'skips a lookup that finishes after the address changes', async () => {
+	let resolveGeocode;
+
+	geocodeAddress.mockReturnValueOnce(
+		new Promise( ( resolve ) => {
+			resolveGeocode = resolve;
+		} ),
+	);
+	meta = { gatherpress_address: '1 Main St' };
+
+	const { rerender } = await renderVenueInformation();
+
+	meta = { gatherpress_address: '2 Main St' };
+
+	await act( async () => {
+		rerender( <VenueInformation /> );
+	} );
+
+	await act( async () => {
+		resolveGeocode( { latitude: '3', longitude: '4' } );
+	} );
+
+	expect( geocodeAddress ).toHaveBeenCalledWith( '2 Main St' );
+	expect( editor.editPost ).toHaveBeenCalledWith( {
+		meta: { gatherpress_latitude: '1', gatherpress_longitude: '2' },
+	} );
+	expect( venueStore.updateVenueLatitude ).not.toHaveBeenCalledWith( '3' );
+	expect( editor.editPost ).not.toHaveBeenCalledWith( {
+		meta: { gatherpress_latitude: '3', gatherpress_longitude: '4' },
+	} );
+} );

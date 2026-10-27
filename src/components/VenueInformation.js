@@ -105,6 +105,14 @@ const VenueInformation = () => {
 
 			const { latitude, longitude } = await geocodeAddress( currentAddress );
 
+			// Skip a stale lookup if manual coordinates or the address changed while it ran.
+			if (
+				manualCoordinatesRef.current ||
+				addressRef.current !== currentAddress
+			) {
+				return;
+			}
+
 			updateVenueLatitude( latitude || null );
 			updateVenueLongitude( longitude || null );
 			updateVenueField( {
