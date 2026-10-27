@@ -593,14 +593,9 @@ final class Rest_Api {
 		// A magic-link token supplies an email address; every other path supplies a user ID,
 		// so each identifier is checked against the one thing it can be.
 		if (
-			$user_identifier &&
-			(
-				is_string( $user_identifier )
-					? is_email( $user_identifier )
-					: is_user_member_of_blog( $user_identifier )
-			) &&
-			! $event->is_canceled() &&
-			! $event->has_event_past()
+			$this->is_valid_rsvp_identifier( $user_identifier )
+			&& ! $event->is_canceled()
+			&& ! $event->has_event_past()
 		) {
 			if ( 'attending' !== $status ) {
 				$guests = 0;
@@ -929,5 +924,29 @@ final class Rest_Api {
 		}
 
 		return $response;
+	}
+
+	/**
+	 * Determines if a given RSVP user identifier is valid.
+	 *
+	 * A magic-link token supplies an email address; every other path supplies a user ID,
+	 * so each identifier is checked against the one thing it can be.
+	 *
+	 * @since TBD
+	 *
+	 * @param string|int|null $identifier The user ID or email address.
+	 *
+	 * @return bool True if valid, false otherwise.
+	 */
+	private function is_valid_rsvp_identifier( string|int|null $identifier ): bool {
+		if ( ! $identifier ) {
+			return false;
+		}
+
+		if ( is_string( $identifier ) ) {
+			return (bool) is_email( $identifier );
+		}
+
+		return is_user_member_of_blog( $identifier );
 	}
 }
