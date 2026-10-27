@@ -1114,7 +1114,7 @@ class Test_External extends Base {
 
 		clean_post_cache( $event_id );
 
-		$before = ( new Calendar( $event_id ) )->get_ical_event_string();
+		$before = ( new External( $event_id ) )->get_ical_event_string();
 
 		$this->assertStringContainsString(
 			'STATUS:CONFIRMED',
@@ -1124,7 +1124,7 @@ class Test_External extends Base {
 
 		( new Event( $event_id ) )->set_status( 'canceled' );
 
-		$after = ( new Calendar( $event_id ) )->get_ical_event_string();
+		$after = ( new External( $event_id ) )->get_ical_event_string();
 
 		$this->assertStringContainsString(
 			'STATUS:CANCELLED',
