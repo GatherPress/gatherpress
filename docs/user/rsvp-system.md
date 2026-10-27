@@ -7,8 +7,8 @@ This section explains how RSVPs work from both the visitor and organizer perspec
 Site administrators can control how RSVP works across the entire site from **Events → Settings → RSVP**. Four modes are available:
 
 - **All Events**: RSVP is enabled for every event. No per-event toggle is shown in the editor. This is the default behavior.
-- **Per Event (default on)**: An **Enable RSVP** checkbox appears in the RSVP settings panel of the editor for each event. New events default to RSVP enabled; editors can disable it per event.
-- **Per Event (default off)**: Same as above, but new events default to RSVP disabled. Editors must explicitly enable RSVP for each event.
+- **Per Event (default enabled)**: An **Enable RSVP** checkbox appears in the RSVP settings panel of the editor for each event. New events default to RSVP enabled; editors can disable it per event.
+- **Per Event (default disabled)**: Same as above, but new events default to RSVP disabled. Editors must explicitly enable RSVP for each event.
 - **Disabled**: RSVP is turned off sitewide. RSVP blocks are removed from the block inserter, the RSVPs admin menu is hidden, and the RSVP Settings panel no longer appears in the editor.
 
 ## RSVP functionality
@@ -28,6 +28,8 @@ Open RSVP is enabled by default. Site administrators can disable it sitewide fro
 While it is enabled sitewide, it can also be switched off for an individual event with the **Enable Open RSVP** checkbox in the RSVP settings panel of the editor. Open RSVP itself shipped in 0.33.0, what 0.34.0 adds is this sitewide on/off control and the per-event override.
 
 When enabled, visitors can RSVP using only their name and email address. An email with a confirmation link is sent to the visitor, and the RSVP is only confirmed after the link is clicked or an administrator approves it manually.
+
+The link works for 24 hours from when the email was sent. An RSVP that isn't confirmed by then is removed. Clicking the link also lets the visitor change their RSVP in that browser until the browser closes or those 24 hours are up, whichever comes first. Within the 24 hours, clicking the link in the email again starts a new session.
 
 When disabled:
 

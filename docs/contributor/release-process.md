@@ -17,14 +17,14 @@ This page is the single source of truth for release managers cutting a stable re
 
 ## What gets automated
 
-Pushing a tag of the form `X.Y.Z` (stable) or `X.Y.Z-alpha.N` / `-beta.N` /
-`-rc.N` (pre-release) triggers `release.yml`. The workflow:
+Pushing a tag of the form `X.Y.Z` (stable) or `X.Y.Z-alpha.N` / `-beta.N`
+(pre-release) triggers `release.yml`. The workflow:
 
 | Tag pattern             | Distro zip                  | GitHub Release entry | Changelog body source                       | wp.org deploy |
 | ----------------------- | --------------------------- | -------------------- | ------------------------------------------- | ------------- |
 | `0.34.0`                | `gatherpress.0.34.0.zip`    | Release (latest)     | Rolled-up `[0.34.0]` section, committed back to `CHANGELOG.md` via auto-PR | Yes |
 | `0.34.0-alpha.1`        | `gatherpress.0.34.0-alpha.1.zip` | Pre-Release    | Rolled-up `[0.34.0-alpha.1]` section computed in an ephemeral checkout (no commit) | No |
-| `0.34.0-beta.1` / `-rc.1` | Same shape as alpha       | Pre-Release          | Same shape as alpha                         | No            |
+| `0.34.0-beta.1`         | Same shape as alpha         | Pre-Release          | Same shape as alpha                         | SVN trunk sync and `tags/0.34.0-beta.1` only; `Stable tag:` stays pinned, so the served version doesn't change |
 
 The distro zip's outer filename carries the version; the inner layout is
 always `gatherpress/...` so it installs cleanly under the right slug.
@@ -94,12 +94,12 @@ git push origin 0.34.0-alpha.1
 
 **What the workflow does:**
 
-1. Detects the tag is a pre-release (the `-alpha.` / `-beta.` / `-rc.` suffix).
+1. Detects the tag is a pre-release (the `-alpha.` / `-beta.` suffix).
 2. Builds `gatherpress.0.34.0-alpha.1.zip` via `npm run plugin-zip`.
 3. Runs the changelog rollup in an ephemeral working copy and extracts the resulting `[0.34.0-alpha.1]` section as the release body. The changes never get committed anywhere, they evaporate when the job ends.
 4. Creates a GitHub **Pre-Release** with the zip attached and the rolled-up body. The Pre-Release is **not** marked as the latest release.
 5. **`.github/changelog/*` entries are left in place** in the repository so the eventual stable release still has them.
-6. Skips the wp.org deploy entirely.
+6. Skips the wp.org deploy for alpha tags. Beta tags sync SVN trunk and create a matching SVN tag instead, without changing the served version (see the beta check below).
 
 Testers downloading the pre-release zip see the same changelog body they'd see at stable release time, minus any further entries that land between now and then.
 
@@ -156,7 +156,7 @@ git push origin X.Y.Z
 
 **What the workflow does:**
 
-1. Detects the tag is stable (no `-alpha.` / `-beta.` / `-rc.` suffix).
+1. Detects the tag is stable (no `-alpha.` / `-beta.` suffix).
 2. Aggregates every entry file in `.github/changelog/` into a new `## [X.Y.Z] - YYYY-MM-DD` section at the top of `CHANGELOG.md`, appending `[#NNNN]` PR references, and **deletes** the entry files (dotfiles like `.gitkeep` survive, which is why the directory persists in git).
 3. Commits that rollup to a new `release/X.Y.Z` branch and **opens an auto-PR back to `develop`** (with the `Skip Changelog` label), carrying the version's credits file along when develop does not have it. On a stable tag it also opens **`sync/X.Y.Z-changelog-parity` against `main`** with the same changelog changes, which is not on auto-merge.
 4. Builds `gatherpress.X.Y.Z.zip` with the rolled-up `CHANGELOG.md` from step 2 in it. The tag commit's own copy predates the rollup, so the build and the wp.org deploy take the rolled file from the rollup job rather than the checkout; before this, every shipped changelog was one release behind.
@@ -173,13 +173,14 @@ Every one of these is required; skipping any of them bites the next release:
 - [ ] **Confirm the `release/X.Y.Z` rollup PR auto-merged into develop.** The workflow creates its commit via the API (GitHub-signed) and enables auto-merge (squash), so it lands on its own once checks pass, this brings the rolled-up `CHANGELOG.md` to develop and removes the consumed entry files. If it's still open, see Troubleshooting.
 
   Know what that PR is before you touch it: the workflow branches
-  `release/X.Y.Z` **off the tag commit on `main`**, so GitHub's diff view
-  shows everything `main` gained since the last release merge, often
-  dozens of commits and a hundred files. Almost all of it is
-  content-identical to what `develop` already has. The only real change is
-  the rollup commit itself: the new section, its link line, and the deleted
-  entry files. If the PR is `DIRTY`, do **not** resolve it by merging
-  `main`'s state into `develop`; see "The rollup PR is DIRTY" below.
+  `release/X.Y.Z` **off `develop`** and commits only the rollup onto it:
+  the new section and its link line, the deleted entry files, any `@since`
+  tags it carries back, and the credits file when develop lacks it. That
+  needs develop's `CHANGELOG.md` to match the tag's, which the previous
+  release's parity step keeps true. If it doesn't, the run warns and
+  branches off the tag instead, and the PR can go `DIRTY`. Do **not**
+  resolve that by merging `main`'s state into `develop`; see "The rollup PR
+  is DIRTY" below.
 - [ ] **Check `CHANGELOG.md` on both branches has exactly one `## [X.Y.Z]`
   heading and a matching `[X.Y.Z]:` link line**, and that `main` has no
   duplicate headings. A re-run of the tag after the entries were consumed
@@ -373,21 +374,51 @@ bypass setting works too but changes the standing policy.
 
 ### The rollup PR is DIRTY (or shows hundreds of files)
 
-`release/X.Y.Z` is branched off the tag commit, so it carries `main`'s whole
-state. That merged cleanly while `develop` had not moved past the release,
-but once the next cycle is open (`X.Y+1.0-alpha.0` on develop) the version
-strings conflict and the PR goes `DIRTY`, and auto-merge cannot fire.
+The workflow branches `release/X.Y.Z` off `develop`, but falls back to the
+tag commit, with a warning in the run, when develop's `CHANGELOG.md` differs
+from the tag's. A branch off the tag carries `main`'s whole state, so once
+`develop` has moved past the release (`X.Y+1.0-alpha.0`, or any develop-only
+change to a file the release touched), the PR goes `DIRTY` and auto-merge
+cannot fire. Before #2528 every rollup branched off the tag.
 
-Rebuild the branch as `develop` plus only the rollup commit, and let
-auto-merge take it from there:
+Rebuild the branch as `develop` plus the rollup's changes. Don't cherry-pick
+the rollup commit: the `@since` files it carries are develop's whole
+contents, so its diff is against `main` and conflicts throughout. Start from
+develop:
 
 ```bash
 git fetch origin
 git checkout -B release/X.Y.Z origin/develop
-git cherry-pick -x <rollup commit sha>   # "Roll up changelog for X.Y.Z" on release/X.Y.Z
-git diff --stat origin/develop..HEAD      # must be CHANGELOG.md + deleted entry files, nothing else
-git push --force-with-lease origin release/X.Y.Z
 ```
+
+Then apply the rollup by hand:
+
+1. Add the rollup commit's `## [X.Y.Z]` section and its `[X.Y.Z]:` link line
+   to develop's `CHANGELOG.md`.
+2. Delete the consumed entry files the rollup commit deletes.
+3. Carry the `@since` tags. In a separate checkout of the tag, with
+   develop fetched, run
+   `php .github/scripts/release/carry-since.php --version=X.Y.Z > carry.json`.
+   Base64-decode each `additions[].contents` and write it to its `path` in
+   the rebuilt branch's worktree, not in the tag checkout. Don't take these
+   from the rollup commit's diff: a file whose carried copy matches `main`'s
+   shows no change there, which is how 0.36.1 lost 94 tags (#2527).
+4. Copy `.github/scripts/release/credits/X.Y.Z.json` from `main` if develop
+   lacks it.
+
+Commit the result, and check that `git diff origin/develop` holds only those
+changes. Then confirm every carried file landed. Run this in the rebuilt
+branch's worktree; it should print nothing:
+
+```bash
+jq -r '.additions[].path' carry.json | while read -r file; do
+	jq -r --arg file "$file" '.additions[] | select(.path == $file) | .contents' carry.json \
+		| base64 --decode | cmp -s - "$file" || echo "not carried: $file"
+done
+```
+
+Then `git push --force-with-lease origin release/X.Y.Z`, and auto-merge
+takes it from there.
 
 Never resolve it by merging `main` into `develop` through this PR: that would
 carry the release's version strings, credits, and rollups onto `develop`.
@@ -496,6 +527,5 @@ that no job ends up with broader scopes than it needs.
 - **Cycle marker**: `0.36.0-alpha.0`. Never tagged, never released. Set on `develop` immediately after a stable ships so the branch names the line being worked on instead of the one that just went out, and retired when `-alpha.1` supersedes it. The `.0` is what distinguishes it from a real build.
 - **Alpha**: `0.34.0-alpha.1`, `0.34.0-alpha.2`. Use for early in-cycle builds; tagged on `develop`. Numbering starts at `.1` because `.0` is the cycle marker above.
 - **Beta**: `0.34.0-beta.1`. Use for feature-complete in-cycle builds where the team is still smoke-testing; tagged on `develop`.
-- **Release candidate**: `0.34.0-rc.1`. Use for "we believe this is shippable, last call for showstoppers"; tagged on `develop`.
 
-The pre-release suffix matches the SemVer spec. Anything outside `-alpha.` / `-beta.` / `-rc.` won't be recognized by the workflow's classifier and will be treated as stable. Don't get creative with the suffix.
+The pre-release suffix matches the SemVer spec. The workflow's classifier only recognizes `-alpha.N` and `-beta.N`, and fails on any other suffix rather than treating the tag as stable. Don't get creative with the suffix.

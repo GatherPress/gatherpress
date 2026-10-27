@@ -1,4 +1,0 @@
-Significance: patch
-Type: changed
-
-Rename the WP_Post property on Event and Rsvp from $event to $post, so a chained read says what it holds.

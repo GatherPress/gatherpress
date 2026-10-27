@@ -10,7 +10,42 @@ import {
 	initPostContext,
 	sendRsvpApiRequest,
 } from '../../helpers/interactivity';
-import { getUrlParam } from '../../helpers/globals';
+
+/**
+ * Runs a callback once an RSVP status container is shown.
+ *
+ * The `renderRsvpBlock` watch shows the container of the new status some
+ * time after the RSVP request resolves, not at a fixed delay. Focus moved
+ * before then lands on a hidden element, and the browser drops it to the
+ * page body (#2428). Checks once per animation frame, and stops waiting
+ * after 60 frames (about a second at 60 Hz), so the modal still closes when
+ * the container never shows. Animation frames pause in a background tab,
+ * so there the callback waits until the tab is visible again.
+ *
+ * @since 0.36.1
+ *
+ * @param {HTMLElement|null} container    The status container to wait for.
+ * @param {Function}         callback     Receives true when the container is
+ *                                        shown, false when waiting stopped.
+ * @param {number}           [framesLeft] Animation frames left to wait.
+ *
+ * @return {void}
+ */
+function whenStatusShown( container, callback, framesLeft = 60 ) {
+	if ( container && ! container.closest( '.gatherpress--is-hidden' ) ) {
+		callback( true );
+		return;
+	}
+
+	if ( ! container || 0 >= framesLeft ) {
+		callback( false );
+		return;
+	}
+
+	window.requestAnimationFrame( () =>
+		whenStatusShown( container, callback, framesLeft - 1 ),
+	);
+}
 
 const { state, actions } = store( 'gatherpress', {
 	actions: {
@@ -24,7 +59,6 @@ const { state, actions } = store( 'gatherpress', {
 			const currentUser = state.posts[ postId ].currentUser;
 
 			currentUser.guests = parseInt( element.ref.value, 10 );
-			currentUser.rsvpToken = getUrlParam( 'gatherpress_rsvp_token' );
 
 			// Find the closest trigger element for loading state.
 			const triggerElement = element.ref.closest( '.gatherpress-rsvp--trigger-update' );
@@ -46,7 +80,6 @@ const { state, actions } = store( 'gatherpress', {
 			const currentUser = state.posts[ postId ].currentUser;
 
 			currentUser.anonymous = element.ref.checked ? 1 : 0;
-			currentUser.rsvpToken = getUrlParam( 'gatherpress_rsvp_token' );
 
 			// Find the closest trigger element for loading state.
 			const triggerElement = element.ref.closest( '.gatherpress-rsvp--trigger-update' );
@@ -92,7 +125,6 @@ const { state, actions } = store( 'gatherpress', {
 
 			const guests = state.posts[ postId ].currentUser.guests;
 			const anonymous = state.posts[ postId ].currentUser.anonymous;
-			const rsvpToken = getUrlParam( 'gatherpress_rsvp_token' );
 
 			// Find the closest trigger element for loading state.
 			const triggerElement = element.ref.closest( '.gatherpress-rsvp--trigger-update' );
@@ -103,10 +135,9 @@ const { state, actions } = store( 'gatherpress', {
 					status,
 					guests,
 					anonymous,
-					rsvpToken,
 				},
 				state,
-				() => {
+				( response ) => {
 					const parentWithRsvpStatus =
 						element.ref.closest( '[data-rsvp-status]' );
 					const rsvpContainer = parentWithRsvpStatus?.closest(
@@ -123,40 +154,61 @@ const { state, actions } = store( 'gatherpress', {
 					const rsvpStatus =
 						parentWithRsvpStatus.dataset.rsvpStatus;
 
-					if ( [ 'not_attending', 'no_status' ].includes( rsvpStatus ) ) {
-						const attendingStatusButton =
-							rsvpContainer.querySelector(
-								'[data-rsvp-status="attending"] .gatherpress-rsvp--trigger-update',
-							);
+					// Follow the status the server returned, not the one
+					// requested: Attend on a full event returns
+					// `waiting_list` (#2428).
+					const newStatus =
+						response?.status ??
+						state.posts[ postId ].currentUser.status;
+					const newStatusContainer = rsvpContainer.querySelector(
+						`[data-rsvp-status="${ newStatus }"]`,
+					);
 
-						if ( attendingStatusButton ) {
-							actions.openModal( null, attendingStatusButton );
+					// Move focus only once the new state is on screen. Focus
+					// aimed at a hidden state is dropped to the page body.
+					// When the block has no container for the new status,
+					// renderRsvpBlock shows the no_status one instead (#1719),
+					// so wait for that.
+					const shownContainer =
+						newStatusContainer ??
+						rsvpContainer.querySelector(
+							'[data-rsvp-status="no_status"]',
+						);
+
+					whenStatusShown( shownContainer, ( shown ) => {
+						// Only a real container of the new status has a modal
+						// to switch to; the no_status fallback never does.
+						const nextModalButton =
+							shown &&
+							newStatusContainer &&
+							[ 'not_attending', 'no_status' ].includes( rsvpStatus ) &&
+							[ 'attending', 'waiting_list' ].includes( newStatus )
+								? newStatusContainer.querySelector(
+									'.gatherpress-rsvp--trigger-update',
+								)
+								: null;
+
+						if ( nextModalButton ) {
+							actions.openModal( null, nextModalButton );
 						}
 
 						/**
-						 * When switching to the attending modal, close with
+						 * When switching to the new state's modal, close with
 						 * findActiveSibling=false so focus stays on the newly
-						 * opened modal manager. When the attending state's
-						 * markup is missing (malformed or partial block
-						 * content), there is no modal to switch to, so fully
-						 * close the current one instead (#1719).
+						 * opened modal manager. Otherwise fully close with
+						 * findActiveSibling=true, so focus moves to the trigger
+						 * of the visible state. That also covers a new state
+						 * whose markup is missing (malformed or partial block
+						 * content), where there is no modal to switch to (#1719).
 						 */
 						setTimeout( () => {
 							actions.closeModal(
 								null,
 								element.ref,
-								! attendingStatusButton,
+								! nextModalButton,
 							);
 						}, 10 );
-					} else {
-						/**
-						 * When fully closing a modal, use findActiveSibling=true
-						 * to allow focus to move to any visible modal manager in sibling containers.
-						 */
-						setTimeout( () => {
-							actions.closeModal( null, element.ref, true );
-						}, 10 );
-					}
+					} );
 				},
 				triggerElement,
 			);

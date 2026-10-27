@@ -103,10 +103,12 @@ final class Rsvp {
 		$block_instance = Setup::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
-		// Validate that the post type supports RSVP.
+		// Validate that the post type supports RSVP and the viewer could open the
+		// event: Event::is_viewable() does not ask about a password.
 		if (
 			! post_type_supports( (string) get_post_type( $post_id ), Core_Rsvp::SUPPORT ) ||
-			! Event::is_viewable( $post_id )
+			! Event::is_viewable( $post_id ) ||
+			post_password_required( $post_id )
 		) {
 			return '';
 		}
@@ -148,7 +150,7 @@ final class Rsvp {
 			// Serialize the current inner blocks for the saved status.
 			$serialized_inner_blocks[ $saved_status ] = serialize_blocks( $inner_blocks );
 
-			$user_identifier = Rsvp_Setup::get_instance()->get_user_identifier();
+			$user_identifier = Rsvp_Setup::get_instance()->get_user_identifier( $post_id );
 			$user_data       = $rsvp->get( $user_identifier ) ?? array();
 
 			$filtered_data   = array_intersect_key(

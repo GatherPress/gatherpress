@@ -57,7 +57,7 @@ import { getViewerTimeLabel } from './viewer-time';
  * `gatherpress_datetime_separator` filter the front end applies. An empty
  * filtered separator stays empty.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @return {string} The default separator.
  */
