@@ -163,6 +163,28 @@ test( 'turns on manual coordinates', async () => {
 	} );
 } );
 
+test( 'geocodes the address again when manual coordinates turn off', async () => {
+	meta = {
+		gatherpress_address: '1 Main St',
+		gatherpress_manual_coordinates: true,
+	};
+
+	const { rerender } = await renderVenueInformation();
+
+	expect( geocodeAddress ).not.toHaveBeenCalled();
+
+	meta = { ...meta, gatherpress_manual_coordinates: false };
+
+	await act( async () => {
+		rerender( <VenueInformation /> );
+	} );
+
+	expect( geocodeAddress ).toHaveBeenCalledWith( '1 Main St' );
+	expect( editor.editPost ).toHaveBeenCalledWith( {
+		meta: { gatherpress_latitude: '1', gatherpress_longitude: '2' },
+	} );
+} );
+
 test( 'keeps manual coordinates and edits them by hand', async () => {
 	meta = {
 		gatherpress_address: '1 Main St',
