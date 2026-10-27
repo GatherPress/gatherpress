@@ -229,6 +229,8 @@ const { state, actions } = store( 'gatherpress', {
 			initPostContext( state, postId );
 
 			element.ref.checked = state.posts[ postId ].currentUser.anonymous;
+			// Saved as it changes, so Enter must not submit the no-JavaScript form (#2039).
+			element.ref.removeAttribute( 'form' );
 		},
 		setGuestCount() {
 			const element = getElement();
@@ -238,6 +240,8 @@ const { state, actions } = store( 'gatherpress', {
 			initPostContext( state, postId );
 
 			element.ref.value = state.posts[ postId ].currentUser.guests;
+			// Saved as it changes, so Enter must not submit the no-JavaScript form (#2039).
+			element.ref.removeAttribute( 'form' );
 		},
 		renderRsvpBlock() {
 			const element = getElement();
