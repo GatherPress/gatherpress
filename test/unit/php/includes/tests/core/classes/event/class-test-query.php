@@ -3063,7 +3063,7 @@ class Test_Query extends Base {
 	 * Password-protected events are left out or kept alone on request, and
 	 * included alongside the others by default.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::get_events_list
 	 *
@@ -3108,5 +3108,97 @@ class Test_Query extends Base {
 		$this->assertSame( array( $protected->ID ), $only, 'Only the protected event should be returned.' );
 		$this->assertContains( $open->ID, $both, 'The open event should be listed by default.' );
 		$this->assertContains( $protected->ID, $both, 'The protected event should be listed by default.' );
+	}
+
+	/**
+	 * Events are listed by their date, not by when they were published.
+	 *
+	 * Each event here was published in the opposite order to when it takes
+	 * place, and a list cut to one event shows which one the limit keeps:
+	 * the soonest upcoming event and the most recent past one.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::get_events_list
+	 *
+	 * @return void
+	 */
+	public function test_get_events_list_orders_by_event_date(): void {
+		$instance        = Query::get_instance();
+		$later_upcoming  = $this->create_dated_event( '2026-01-01 00:00:00', '+5 days' );
+		$sooner_upcoming = $this->create_dated_event( '2026-01-02 00:00:00', '+1 day' );
+		$recent_past     = $this->create_dated_event( '2026-01-03 00:00:00', '-3 days' );
+		$older_past      = $this->create_dated_event( '2026-01-04 00:00:00', '-10 days' );
+
+		$this->assertSame(
+			array( $sooner_upcoming, $later_upcoming ),
+			$instance->get_events_list(
+				array(
+					'event_list_type' => 'upcoming',
+					'number'          => 2,
+				)
+			)->posts,
+			'Failed to assert upcoming events are listed soonest first.'
+		);
+		$this->assertSame(
+			array( $sooner_upcoming ),
+			$instance->get_events_list(
+				array(
+					'event_list_type' => 'upcoming',
+					'number'          => 1,
+				)
+			)->posts,
+			'Failed to assert the limit keeps the soonest upcoming event.'
+		);
+		$this->assertSame(
+			array( $recent_past, $older_past ),
+			$instance->get_events_list(
+				array(
+					'event_list_type' => 'past',
+					'number'          => 2,
+				)
+			)->posts,
+			'Failed to assert past events are listed most recent first.'
+		);
+		$this->assertSame(
+			array( $recent_past ),
+			$instance->get_events_list(
+				array(
+					'event_list_type' => 'past',
+					'number'          => 1,
+				)
+			)->posts,
+			'Failed to assert the limit keeps the most recent past event.'
+		);
+	}
+
+	/**
+	 * Creates a published event with a given publish date, lasting two hours from a relative start.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @param string $published The publish date, MySQL format.
+	 * @param string $start     The start, relative to now (e.g. `+1 day`).
+	 *
+	 * @return int The event's post ID.
+	 */
+	private function create_dated_event( string $published, string $start ): int {
+		$post_id    = $this->mock->post(
+			array(
+				'post_type' => 'gatherpress_event',
+				'post_date' => $published,
+			)
+		)->get()->ID;
+		$start_date = new DateTime( $start );
+
+		( new Event( $post_id ) )->save_datetimes(
+			array(
+				'datetime_start' => $start_date->format( 'Y-m-d H:i:s' ),
+				'datetime_end'   => $start_date->modify( '+2 hours' )->format( 'Y-m-d H:i:s' ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		return $post_id;
 	}
 }

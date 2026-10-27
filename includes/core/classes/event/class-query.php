@@ -182,6 +182,9 @@ final class Query {
 		// upcoming events should be ordered ASC (soonest first).
 		$order = ( 'past' === $event_list_type ) ? 'DESC' : 'ASC';
 
+		// Without an explicit `datetime` orderby, adjust_event_sql() keeps
+		// WordPress's publish-date order, so `$number` would pick the events
+		// published first rather than the soonest.
 		$query_args = array(
 			'post_type'             => get_post_types_by_support( Event::SUPPORT ),
 			'fields'                => 'ids',
@@ -189,6 +192,7 @@ final class Query {
 			'posts_per_page'        => $number,
 			self::EVENT_QUERY_PARAM => $event_list_type,
 			'order'                 => $order,
+			'orderby'               => 'datetime',
 		);
 
 		$tax_query = array();

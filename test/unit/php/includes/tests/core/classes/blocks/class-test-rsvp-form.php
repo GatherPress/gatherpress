@@ -12,8 +12,10 @@ use GatherPress\Core\Blocks\Rsvp_Form;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Rest_Api;
 use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
+use PasswordHash;
 use PMC\Unit_Test\Utility;
 use WP_Post;
 
@@ -41,6 +43,7 @@ class Test_Rsvp_Form extends Base {
 	 */
 	public function tearDown(): void {
 		Settings::get_instance()->set( 'enable_open_rsvp', true );
+		Utility::set_and_get_hidden_property( Rsvp_Form::get_instance(), 'form_ids', array() );
 		parent::tearDown();
 	}
 
@@ -105,7 +108,8 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests the generate_form_id method.
 	 *
-	 * Verifies that the method generates unique form IDs with the correct prefix.
+	 * Verifies that the id comes from the event and the form's schema id, and
+	 * that a form repeated on the page gets its own.
 	 *
 	 * @since 0.33.0
 	 * @covers ::generate_form_id
@@ -115,14 +119,90 @@ class Test_Rsvp_Form extends Base {
 	public function test_generate_form_id(): void {
 		$instance = Rsvp_Form::get_instance();
 
-		$form_id_1 = Utility::invoke_hidden_method( $instance, 'generate_form_id' );
-		$form_id_2 = Utility::invoke_hidden_method( $instance, 'generate_form_id' );
+		Utility::set_and_get_hidden_property( $instance, 'form_ids', array() );
 
-		$this->assertIsString( $form_id_1 );
-		$this->assertIsString( $form_id_2 );
-		$this->assertStringStartsWith( 'gatherpress_rsvp_', $form_id_1 );
-		$this->assertStringStartsWith( 'gatherpress_rsvp_', $form_id_2 );
-		$this->assertNotEquals( $form_id_1, $form_id_2 );
+		$this->assertSame(
+			'gatherpress_rsvp_974_form_2',
+			Utility::invoke_hidden_method( $instance, 'generate_form_id', array( 974, 'form_2' ) )
+		);
+		$this->assertSame(
+			'gatherpress_rsvp_974_form_2-2',
+			Utility::invoke_hidden_method( $instance, 'generate_form_id', array( 974, 'form_2' ) ),
+			'A second copy of the form on the page should get its own id.'
+		);
+		$this->assertSame(
+			'gatherpress_rsvp_974_form_2-3',
+			Utility::invoke_hidden_method( $instance, 'generate_form_id', array( 974, 'form_2' ) )
+		);
+		$this->assertSame(
+			'gatherpress_rsvp_974_4_form_1',
+			Utility::invoke_hidden_method( $instance, 'generate_form_id', array( 974, '4_form_1' ) ),
+			'Another form on the event keeps its own base id.'
+		);
+	}
+
+	/**
+	 * Tests the success redirect's anchor finds the form on the page it returns to.
+	 *
+	 * Without JavaScript the form posts to wp-comments-post.php and comes back
+	 * with `#<form id>`, so the id has to survive into the next render.
+	 *
+	 * @since TBD
+	 * @covers ::transform_block_content
+	 * @covers ::generate_form_id
+	 *
+	 * @return void
+	 */
+	public function test_success_redirect_anchor_matches_the_next_render(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$comment  = $this->factory()->comment->create_and_get(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+		$content  = '<div class="wp-block-gatherpress-rsvp-form">RSVP Form Content</div>';
+		$block    = array(
+			'blockName' => 'gatherpress/rsvp-form',
+			'attrs'     => array( 'postId' => $post_id ),
+		);
+		$matches  = array();
+
+		preg_match(
+			'/name="gatherpress_rsvp_form_id" value="([^"]+)"/',
+			$instance->transform_block_content( $content, $block ),
+			$matches
+		);
+
+		$posted_form_id = $matches[1];
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) use ( $posted_form_id ) {
+				return INPUT_POST === $type && 'gatherpress_rsvp_form_id' === $var_name ? $posted_form_id : $pre_value;
+			},
+			10,
+			3
+		);
+		add_filter(
+			'gatherpress_pre_get_wp_referer',
+			static function () use ( $post_id ) {
+				return get_permalink( $post_id );
+			}
+		);
+
+		$location = Form::get_instance()->handle_rsvp_comment_redirect( 'https://example.com/original', $comment );
+
+		// The page after the redirect is a new request.
+		Utility::set_and_get_hidden_property( $instance, 'form_ids', array() );
+
+		$this->assertStringEndsWith( '#' . $posted_form_id, $location );
+		$this->assertStringContainsString(
+			'id="' . $posted_form_id . '"',
+			$instance->transform_block_content( $content, $block ),
+			'The form on the page the redirect returns to should carry the anchor\'s id.'
+		);
 	}
 
 	/**
@@ -468,7 +548,7 @@ class Test_Rsvp_Form extends Base {
 	 * block, so two forms with the same wrapper and number of fields used to
 	 * match each other, and the second form rendered the first one's id.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::get_form_schema_id
 	 * @covers ::find_form_schema_id_in_blocks
 	 * @covers ::blocks_match
@@ -563,7 +643,7 @@ class Test_Rsvp_Form extends Base {
 	 * Forms with the same fields share the first form's id, whose schema
 	 * holds the same fields as their own.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::get_form_schema_id
 	 * @covers ::find_form_schema_id_in_blocks
 	 * @covers ::blocks_match
@@ -629,7 +709,7 @@ class Test_Rsvp_Form extends Base {
 	 * Block Hooks insert into the content before the form renders, so the
 	 * rendered form has an inner block that the saved one does not.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::get_form_schema_id
 	 * @covers ::find_form_schema_id_in_blocks
 	 * @covers ::blocks_match
@@ -673,7 +753,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Wrap inner block markup in an RSVP Form block.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param string $inner Inner block markup.
 	 *
@@ -690,7 +770,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Render each RSVP form in the content, nested ones included, and collect its schema id.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param int    $post_id      The event post ID.
 	 * @param string $post_content The event content.
@@ -2928,6 +3008,57 @@ class Test_Rsvp_Form extends Base {
 
 		// Should return empty string for unpublished events (when not in preview mode).
 		$this->assertEmpty( $result );
+	}
+
+	/**
+	 * Tests transform_block_content keeps a password-protected event's form behind its password.
+	 *
+	 * In a block template the RSVP Form block renders outside the post
+	 * content, where the password form would otherwise hide it.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::transform_block_content
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_password_protected_event(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		);
+
+		$block_content = '<div class="wp-block-gatherpress-rsvp-form">RSVP Form Content</div>';
+		$block         = array(
+			'blockName' => 'gatherpress/rsvp-form',
+			'attrs'     => array(
+				'postId' => $post_id,
+			),
+		);
+
+		$this->assertSame(
+			'',
+			$instance->transform_block_content( $block_content, $block ),
+			'A password-protected event should keep its RSVP form from a viewer without the password.'
+		);
+
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+
+		// The cookie WordPress sets once a viewer enters the post password.
+		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'secret' );
+
+		$result = $instance->transform_block_content( $block_content, $block );
+
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+
+		$this->assertStringStartsWith(
+			'<form',
+			$result,
+			'A password-protected event should show its RSVP form to a viewer with the password.'
+		);
 	}
 
 	/**

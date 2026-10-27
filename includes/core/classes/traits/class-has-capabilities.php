@@ -12,6 +12,8 @@ namespace GatherPress\Core\Traits;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Capability;
+use WP_Post;
+use WP_REST_Request;
 
 /**
  * Has_Capabilities Trait.
@@ -52,5 +54,28 @@ trait Has_Capabilities {
 	 */
 	public static function edit_capability(): string {
 		return Capability::EDIT_POST;
+	}
+
+	/**
+	 * Whether a post password keeps one of this class's posts from the current viewer.
+	 *
+	 * The viewer still needs the password and cannot edit the post. A REST
+	 * request that passes the right `password` argument counts as having it.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @param WP_Post              $post    The post.
+	 * @param WP_REST_Request|null $request Optional. The REST request, for its `password` argument.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>>|null $request
+	 *
+	 * @return bool True when the post's details stay hidden.
+	 */
+	public static function is_hidden_by_password( WP_Post $post, ?WP_REST_Request $request = null ): bool {
+		return post_password_required( $post )
+			&& ! current_user_can( self::edit_capability(), $post->ID )
+			&& (
+				null === $request
+				|| ! hash_equals( $post->post_password, (string) $request->get_param( 'password' ) )
+			);
 	}
 }

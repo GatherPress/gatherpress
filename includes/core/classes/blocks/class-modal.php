@@ -93,7 +93,7 @@ final class Modal {
 	 *
 	 * @since 0.33.0
 	 * @since 0.36.0 Marks modals that have no custom name.
-	 * @since TBD    Names RSVP block modals after their title paragraph.
+	 * @since 0.36.1    Names RSVP block modals after their title paragraph.
 	 *
 	 * @param string               $block_content The HTML content of the block.
 	 * @param array<string, mixed> $block         The parsed block data.
@@ -135,7 +135,7 @@ final class Modal {
 	 * The RSVP modal has the `gatherpress-modal--type-rsvp` class, and the
 	 * Login modal is matched by `is_login_modal()`.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param array<string, mixed> $block The parsed block data.
 	 *
@@ -153,7 +153,7 @@ final class Modal {
 	 * `gatherpress-modal--type-login` is the name from the `--type-` rename,
 	 * which did not reach the template, so both count.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param array<string, mixed> $block The parsed block data.
 	 *
@@ -175,7 +175,7 @@ final class Modal {
 	 * existing id is reused. When an element is missing, the attribute that
 	 * would point at it is not set.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param WP_HTML_Tag_Processor $tag The processor, stopped on the modal's opening tag.
 	 *
@@ -267,7 +267,7 @@ final class Modal {
 	 * output.
 	 *
 	 * @since 0.33.0
-	 * @since TBD    Also removes a Login modal with the template's `gatherpress-modal--login` class.
+	 * @since 0.36.1    Also removes a Login modal with the template's `gatherpress-modal--login` class.
 	 *
 	 * @param string               $block_content The HTML content of the block.
 	 * @param array<string, mixed> $block         The parsed block data.
