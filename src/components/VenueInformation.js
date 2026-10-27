@@ -1,7 +1,12 @@
 /**
  * WordPress dependencies
  */
-import { TextControl, ToggleControl } from '@wordpress/components';
+import {
+	TextControl,
+	ToggleControl,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalVStack as VStack,
+} from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { useEffect, useCallback, useRef } from '@wordpress/element';
@@ -147,7 +152,7 @@ const VenueInformation = () => {
 	}, [ address, manualCoordinates ] ); // Not debouncedGetData.
 
 	return (
-		<>
+		<VStack spacing={ 4 }>
 			<AddressAutocompleteField
 				variant="settings"
 				value={ address }
@@ -209,7 +214,7 @@ const VenueInformation = () => {
 					updateVenueField( { gatherpress_website: value } );
 				} }
 			/>
-		</>
+		</VStack>
 	);
 };
 

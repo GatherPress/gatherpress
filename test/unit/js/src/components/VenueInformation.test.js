@@ -18,6 +18,7 @@ jest.mock( '@wordpress/compose', () => ( {
 } ) );
 
 jest.mock( '@wordpress/components', () => ( {
+	__experimentalVStack: ( { children } ) => <div>{ children }</div>,
 	TextControl: ( { label, value, onChange } ) => (
 		<div>
 			<label htmlFor={ label }>{ label }</label>
