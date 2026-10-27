@@ -698,25 +698,7 @@ class Event {
 	 * @return bool True when the status was stored.
 	 */
 	public function set_status( string $status, bool $append = false ): bool {
-		if ( ! $this->post || ! Status::exists( $status, (string) $this->post->post_type ) ) {
-			return false;
-		}
-
-		Status::ensure_term( $status );
-
-		// A plain string replaces every term in the taxonomy by default, which is
-		// what enforces the statuses being mutually exclusive.
-		$result = wp_set_object_terms( $this->post->ID, $status, self::TAXONOMY_STATUS, $append );
-
-		if ( is_wp_error( $result ) ) {
-			return false;
-		}
-
-		// Terms are written without touching the post row, but the calendar
-		// reads `post_modified_gmt` for a VEVENT's `SEQUENCE`, and a client
-		// ignores an update whose sequence has not advanced. Touching the post
-		// is what tells a subscriber that a cancellation actually happened.
-		return ! is_wp_error( wp_update_post( array( 'ID' => $this->post->ID ), true ) );
+		return Status::set_event_status( $this->post, $status, $append );
 	}
 
 	/**
