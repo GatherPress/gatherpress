@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Event;
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Setup as Event_Setup;
 use GatherPress\Core\Event\Status;
 use GatherPress\Tests\Base;
 
@@ -484,5 +485,14 @@ class Test_Status extends Base {
 			Status::get_event_statuses( $post ),
 			'Failed to assert stored status matches.'
 		);
+
+		unregister_taxonomy( Event::TAXONOMY_STATUS );
+
+		$this->assertFalse(
+			Status::set_event_status( $post, 'canceled' ),
+			'Failed to assert an unwritable status is refused.'
+		);
+
+		Event_Setup::get_instance()->register_status_taxonomy();
 	}
 }
