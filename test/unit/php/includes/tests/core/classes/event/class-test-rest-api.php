@@ -3231,4 +3231,39 @@ class Test_Rest_Api extends Base {
 		$event    = new Event( $event_id );
 		$this->assertSame( 'canceled', $event->get_status() );
 	}
+
+	/**
+	 * Tests RSVP identifier validation logic.
+	 *
+	 * @covers ::is_valid_rsvp_identifier
+	 *
+	 * @return void
+	 */
+	public function test_is_valid_rsvp_identifier(): void {
+		$instance = Rest_Api::get_instance();
+
+		$this->assertFalse(
+			Utility::invoke_hidden_method( $instance, 'is_valid_rsvp_identifier', array( null ) )
+		);
+		$this->assertFalse(
+			Utility::invoke_hidden_method( $instance, 'is_valid_rsvp_identifier', array( 0 ) )
+		);
+		$this->assertFalse(
+			Utility::invoke_hidden_method( $instance, 'is_valid_rsvp_identifier', array( '' ) )
+		);
+		$this->assertTrue(
+			Utility::invoke_hidden_method( $instance, 'is_valid_rsvp_identifier', array( 'valid@example.com' ) )
+		);
+		$this->assertFalse(
+			Utility::invoke_hidden_method( $instance, 'is_valid_rsvp_identifier', array( 'invalid-email' ) )
+		);
+
+		$user = $this->mock->user( 'subscriber' );
+		$this->assertTrue(
+			Utility::invoke_hidden_method( $instance, 'is_valid_rsvp_identifier', array( $user->ID ) )
+		);
+		$this->assertFalse(
+			Utility::invoke_hidden_method( $instance, 'is_valid_rsvp_identifier', array( 999999 ) )
+		);
+	}
 }
