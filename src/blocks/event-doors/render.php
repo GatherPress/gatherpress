@@ -12,6 +12,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Blocks\Setup;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Doors;
 
 $gatherpress_post_id = Setup::get_instance()->get_post_id( $block->parsed_block );
 
@@ -24,15 +25,15 @@ if (
 	return;
 }
 
-$gatherpress_event = new Event( $gatherpress_post_id );
-$gatherpress_parts = array();
-$gatherpress_doors = array(
+$gatherpress_doors  = new Doors( new Event( $gatherpress_post_id ) );
+$gatherpress_parts  = array();
+$gatherpress_labels = array(
 	'open'  => __( 'Doors open', 'gatherpress' ),
 	'close' => __( 'Doors close', 'gatherpress' ),
 );
 
-foreach ( $gatherpress_doors as $gatherpress_which => $gatherpress_label ) {
-	$gatherpress_datetime = $gatherpress_event->get_doors_datetime( $gatherpress_which );
+foreach ( $gatherpress_labels as $gatherpress_which => $gatherpress_label ) {
+	$gatherpress_datetime = $gatherpress_doors->get_datetime( $gatherpress_which );
 
 	if ( null === $gatherpress_datetime ) {
 		continue;
@@ -43,7 +44,7 @@ foreach ( $gatherpress_doors as $gatherpress_which => $gatherpress_label ) {
 		esc_attr( $gatherpress_which ),
 		esc_html( $gatherpress_label ),
 		esc_attr( $gatherpress_datetime->format( 'c' ) ),
-		esc_html( $gatherpress_event->get_doors_time( $gatherpress_which ) )
+		esc_html( $gatherpress_doors->get_time( $gatherpress_which ) )
 	);
 }
 
