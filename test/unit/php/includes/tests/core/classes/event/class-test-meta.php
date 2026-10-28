@@ -847,4 +847,65 @@ class Test_Meta extends Base {
 
 		wp_set_current_user( 0 );
 	}
+
+	/**
+	 * The doors times are registered as editable strings that default to empty.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::register_event_date_meta
+	 *
+	 * @return void
+	 */
+	public function test_registers_the_doors_meta(): void {
+		unregister_post_meta( Event::POST_TYPE, 'gatherpress_doors_open' );
+		unregister_post_meta( Event::POST_TYPE, 'gatherpress_doors_close' );
+
+		Meta::get_instance()->register( Event::POST_TYPE );
+
+		$meta = get_registered_meta_keys( 'post', Event::POST_TYPE );
+
+		foreach ( array( 'gatherpress_doors_open', 'gatherpress_doors_close' ) as $key ) {
+			$this->assertArrayHasKey( $key, $meta, sprintf( 'Failed to assert %s is registered.', $key ) );
+			$this->assertSame( '', $meta[ $key ]['default'], sprintf( 'Failed to assert %s is empty.', $key ) );
+			$this->assertSame( 'string', $meta[ $key ]['type'], sprintf( 'Failed to assert %s is a string.', $key ) );
+			$this->assertContains(
+				$key,
+				Meta::PASSWORD_PROTECTED_META,
+				sprintf( 'Failed to assert %s is hidden on a password-protected event.', $key )
+			);
+		}
+
+		$post_id = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		update_post_meta( $post_id, 'gatherpress_doors_open', '18:30' );
+		update_post_meta( $post_id, 'gatherpress_doors_close', 'late' );
+
+		$this->assertSame(
+			'18:30',
+			get_post_meta( $post_id, 'gatherpress_doors_open', true ),
+			'Failed to assert a valid time is stored.'
+		);
+		$this->assertSame(
+			'',
+			get_post_meta( $post_id, 'gatherpress_doors_close', true ),
+			'Failed to assert an invalid time is dropped.'
+		);
+	}
+
+	/**
+	 * A doors time keeps only a valid 'H:i' value.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::sanitize_doors_time
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_doors_time(): void {
+		$this->assertSame( '18:30', Meta::sanitize_doors_time( ' 18:30 ' ), 'Failed to assert a time is trimmed.' );
+		$this->assertSame( '', Meta::sanitize_doors_time( '25:00' ), 'Failed to assert a bad time is dropped.' );
+		$this->assertSame( '', Meta::sanitize_doors_time( '' ), 'Failed to assert an empty value clears it.' );
+		$this->assertSame( '', Meta::sanitize_doors_time( array( '18:30' ) ), 'Failed to assert an array is dropped.' );
+	}
 }

@@ -28,6 +28,7 @@ use GatherPress\Core\Geo_Sync;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
+use GatherPress\Core\Validate;
 use GatherPress\Core\Venue;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
 use stdClass;
@@ -62,6 +63,8 @@ final class Meta {
 		'gatherpress_datetime_end',
 		'gatherpress_datetime_end_gmt',
 		'gatherpress_timezone',
+		'gatherpress_doors_open',
+		'gatherpress_doors_close',
 		'geo_latitude',
 		'geo_longitude',
 		'geo_address',
@@ -207,6 +210,24 @@ final class Meta {
 				'type'              => 'string',
 				'default'           => '',
 			),
+			// When the doors open and close, as an 'H:i' time. Kept as a time
+			// rather than a datetime so it follows the event when its date moves.
+			'gatherpress_doors_open'         => array(
+				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
+				'sanitize_callback' => array( self::class, 'sanitize_doors_time' ),
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+				'default'           => '',
+			),
+			'gatherpress_doors_close'        => array(
+				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
+				'sanitize_callback' => array( self::class, 'sanitize_doors_time' ),
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+				'default'           => '',
+			),
 		);
 
 		foreach ( $event_date_meta as $meta_key => $args ) {
@@ -326,6 +347,21 @@ final class Meta {
 		foreach ( $event_only_meta as $meta_key => $args ) {
 			register_post_meta( Event::POST_TYPE, $meta_key, $args );
 		}
+	}
+
+	/**
+	 * Sanitize a doors open or close time.
+	 *
+	 * @since TBD
+	 *
+	 * @param mixed $value The submitted value.
+	 *
+	 * @return string The 'H:i' time, or an empty string when the value is not one.
+	 */
+	public static function sanitize_doors_time( $value ): string {
+		$value = is_string( $value ) ? trim( $value ) : '';
+
+		return Validate::time( $value ) ? $value : '';
 	}
 
 	/**

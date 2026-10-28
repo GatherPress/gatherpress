@@ -18,6 +18,8 @@ See details on [Creating and managing events](../creating-and-managing-events.md
 
 [Event Date](./event-date.md)
 
+[Event Doors](./event-doors.md)
+
 [Venue](./venue-v2/README.md)
 
 [Online Event](./online-event.md)

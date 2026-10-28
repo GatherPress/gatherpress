@@ -212,6 +212,22 @@ final class Validate {
 	}
 
 	/**
+	 * Validate a 24-hour clock time.
+	 *
+	 * Validates whether the given string is a time in the 'H:i' format, such as '18:30'.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $param The time string to validate.
+	 *
+	 * @return bool True if the parameter is a valid time, false otherwise.
+	 */
+	public static function time( string $param ): bool {
+		// The D modifier keeps $ from matching before a trailing newline.
+		return (bool) preg_match( '/^([01]\d|2[0-3]):[0-5]\d$/D', $param );
+	}
+
+	/**
 	 * Validate a timezone identifier.
 	 *
 	 * Validates whether the given timezone identifier parameter is valid.

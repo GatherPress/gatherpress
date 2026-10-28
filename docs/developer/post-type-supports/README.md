@@ -10,19 +10,21 @@ These supports are declared on post types that act as **events**.
 
 The core identifier for event post types. Enables event datetime storage and display. This includes:
 
-- Registration of datetime meta fields (`gatherpress_datetime`, `gatherpress_datetime_start`, `gatherpress_datetime_end`, `gatherpress_timezone`, `gatherpress_is_all_day`, `gatherpress_show_timezone`, etc.). GatherPress also auto-adds WordPress's `custom-fields` support to the post type so the REST controller actually attaches the `meta` field to the schema (without it, `register_post_meta()` quietly registers the keys but the editor's PUT silently strips them)
+- Registration of datetime meta fields (`gatherpress_datetime`, `gatherpress_datetime_start`, `gatherpress_datetime_end`, `gatherpress_timezone`, `gatherpress_is_all_day`, `gatherpress_show_timezone`, `gatherpress_doors_open`, `gatherpress_doors_close`, etc.). GatherPress also auto-adds WordPress's `custom-fields` support to the post type so the REST controller actually attaches the `meta` field to the schema (without it, `register_post_meta()` quietly registers the keys but the editor's PUT silently strips them)
 - Storage in the `gatherpress_events` database table
 - Date-based query ordering (upcoming/past)
 - Event Date block rendering
+- Event Doors block rendering
 - Add to Calendar block rendering
 - RSS feed enrichment with event date information
 - Post date override with event date (when enabled in settings)
 - The Topics taxonomy (`gatherpress_topic`), attached to every post type declaring this support — see [Taxonomies](../taxonomies/README.md)
 
-Two of those meta keys are editor-writable settings rather than storage:
+Four of those meta keys are editor-writable settings rather than storage:
 
 - `gatherpress_is_all_day` (`boolean`, default `false`): the event runs for whole days rather than at a time. The stored span is snapped to `00:00:00` and `23:59:59` in the event's own timezone on save, so date queries and ordering keep working unchanged, and the event renders date-only in its own zone rather than converting through GMT. Read it with `Event::is_all_day()`.
 - `gatherpress_show_timezone` (`string`, default `''`): whether this event appends its timezone name: `'always'`, `'never'`, or `''` to defer to the Event Date block and the site setting. It lives on the event so it still applies where the date is rendered from a site template with no block to configure.
+- `gatherpress_doors_open`, `gatherpress_doors_close` (`string`, default `''`): when the doors open and close, as an `'H:i'` time. Anything else is stored as `''`. Doors open on the start date and close on the end date, except that a doors open time later than the start means the day before and a doors close time earlier than the end means the day after. All-day events skip that shift. Read them with `Event::get_doors_datetime()` or `Event::get_doors_time()`.
 
 #### Usage for gatherpress-event-date
 

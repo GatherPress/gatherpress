@@ -802,4 +802,22 @@ class Test_Validate extends Base {
 			'Failed to assert null is not a valid boolean.'
 		);
 	}
+
+	/**
+	 * Coverage for time method.
+	 *
+	 * @since TBD
+	 * @covers ::time
+	 *
+	 * @return void
+	 */
+	public function test_time(): void {
+		$this->assertTrue( Validate::time( '00:00' ), 'Failed to assert midnight is a valid time.' );
+		$this->assertTrue( Validate::time( '23:59' ), 'Failed to assert 23:59 is a valid time.' );
+		$this->assertFalse( Validate::time( '24:00' ), 'Failed to assert 24:00 is not a valid time.' );
+		$this->assertFalse( Validate::time( '9:30' ), 'Failed to assert a single-digit hour is not valid.' );
+		$this->assertFalse( Validate::time( '18:30:00' ), 'Failed to assert seconds are not accepted.' );
+		$this->assertFalse( Validate::time( '' ), 'Failed to assert an empty string is not a valid time.' );
+		$this->assertFalse( Validate::time( "18:30\n" ), 'Failed to assert a trailing newline is not accepted.' );
+	}
 }

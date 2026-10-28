@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Events can now set optional Doors open and Doors close times in the date and time settings, and a new Event Doors block shows them. The times follow the event when its date moves, and doors that fall on another day than the start or end, such as doors that open the night before, are shown with their date.

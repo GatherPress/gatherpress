@@ -69,6 +69,17 @@ The setting lives on the event rather than the block, so Always and Never still 
 Turning on All day moves the setting from Default to Never, since a bare date has no time for a timezone to qualify. Turning it back off returns it to Default. Always is left alone in both directions.
 
 
+### Doors open and close
+
+Doors open and Doors close are optional times for when people can come in before the event starts and when they need to leave after it ends. Leave a field empty to not show that time.
+
+* Doors open is on the start date, and Doors close is on the end date. Moving the event to another date moves the doors times with it.
+* A Doors open time later than the start time means the day before, so doors at 11:30 PM for an event starting at 12:30 AM open the night before.
+* A Doors close time earlier than the end time means the day after, so doors closing at 1:00 AM for an event ending at 11:00 PM close the next morning.
+* On an all day event, the doors open on the first day and close on the last one.
+
+Add the [Event Doors](./blocks/event-doors.md) block to show these times. It uses the time format from settings, adds the date when the doors fall on another day, and shows nothing when neither time is set.
+
 ![Screenshot of the WordPress editor with Event time](./user-doc-media/20260110153038.png)
 
 ## Assigning a venue

@@ -40,6 +40,7 @@ The three RSVP taxonomies are on *comments*, not posts, because an RSVP is a com
 | `gatherpress_datetime_start_gmt`, `gatherpress_datetime_end_gmt` | UTC equivalents |
 | `gatherpress_timezone`, `gatherpress_show_timezone` | The event's zone, and whether to print it |
 | `gatherpress_is_all_day` | All-day events skip the time entirely |
+| `gatherpress_doors_open`, `gatherpress_doors_close` | Optional `H:i` times, placed on the start and end dates |
 | `gatherpress_enable_rsvp` | Whether RSVPs are open |
 | `gatherpress_enable_anonymous_rsvp` | Whether a person may hide their name |
 | `gatherpress_enable_open_rsvp` | Whether logged-out visitors may RSVP by email |
