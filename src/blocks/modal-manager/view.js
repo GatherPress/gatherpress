@@ -294,7 +294,9 @@ const { actions } = store( 'gatherpress', {
 		 * with showModal(), so it traps focus and closes on Escape like any
 		 * other modal. The no-JavaScript overlay button steps aside for the
 		 * overlay click handler, and the query arg comes off the URL so a
-		 * reload does not open the modal again.
+		 * reload does not open the modal again. A modal inside a hidden RSVP
+		 * status closes instead, so openModal() can show it when its status
+		 * shows.
 		 *
 		 * @since TBD
 		 *
@@ -303,9 +305,7 @@ const { actions } = store( 'gatherpress', {
 		takeOverOpenedModal() {
 			const modal = getElement().ref;
 
-			// A modal inside a hidden RSVP status would make the page inert
-			// with nothing on screen, so it stays as the server rendered it.
-			if ( ! modal?.open || ! isShownWithin( modal, document.body ) ) {
+			if ( ! modal?.open ) {
 				return;
 			}
 
@@ -313,6 +313,18 @@ const { actions } = store( 'gatherpress', {
 
 			if ( backdrop ) {
 				backdrop.hidden = true;
+			}
+
+			const url = new URL( window.location.href );
+
+			url.searchParams.delete( OPEN_QUERY_ARG );
+			window.history.replaceState( window.history.state, '', url );
+
+			// As a modal dialog in a hidden RSVP status, it would make the page
+			// inert with nothing on screen.
+			if ( ! isShownWithin( modal, document.body ) ) {
+				modal.close();
+				return;
 			}
 
 			// Hydration re-inserts the dialog after init callbacks run, and moving
@@ -324,11 +336,6 @@ const { actions } = store( 'gatherpress', {
 					showModal( modal );
 				}
 			}, 0 );
-
-			const url = new URL( window.location.href );
-
-			url.searchParams.delete( OPEN_QUERY_ARG );
-			window.history.replaceState( window.history.state, '', url );
 		},
 	},
 } );

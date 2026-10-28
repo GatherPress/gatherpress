@@ -522,12 +522,21 @@ describe( 'modal-manager takeOverOpenedModal', () => {
 		expect( window.location.search ).toBe( '?gatherpress_modal=42-1&ref=x' );
 	} );
 
-	it( 'leaves a modal inside a hidden RSVP status as the server rendered it', () => {
+	it( 'closes a modal inside a hidden RSVP status, so it opens as a modal dialog when the status shows', () => {
 		const modal = render( 'gatherpress--is-hidden' );
 
 		callbacks.takeOverOpenedModal();
+		jest.runAllTimers();
 
 		expect( showModal ).not.toHaveBeenCalled();
+		expect( modal.open ).toBe( false );
+		expect( document.querySelector( '.gatherpress-modal__backdrop' ).hidden ).toBe( true );
+		expect( window.location.search ).toBe( '?ref=x' );
+
+		document.querySelector( '.gatherpress--is-hidden' ).classList.remove( 'gatherpress--is-hidden' );
+		store( 'gatherpress' ).actions.openModal( null, document.querySelector( '.gatherpress-modal--trigger-open' ) );
+
+		expect( showModal ).toHaveBeenCalledTimes( 1 );
 		expect( modal.open ).toBe( true );
 	} );
 
