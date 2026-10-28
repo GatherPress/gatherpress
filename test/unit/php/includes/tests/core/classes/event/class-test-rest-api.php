@@ -3258,9 +3258,9 @@ class Test_Rest_Api extends Base {
 			Utility::invoke_hidden_method( $instance, 'is_valid_rsvp_identifier', array( 'invalid-email' ) )
 		);
 
-		$user = $this->mock->user( 'subscriber' );
+		$user_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
 		$this->assertTrue(
-			Utility::invoke_hidden_method( $instance, 'is_valid_rsvp_identifier', array( $user->ID ) )
+			Utility::invoke_hidden_method( $instance, 'is_valid_rsvp_identifier', array( $user_id ) )
 		);
 		$this->assertFalse(
 			Utility::invoke_hidden_method( $instance, 'is_valid_rsvp_identifier', array( 999999 ) )
