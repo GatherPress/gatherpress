@@ -140,7 +140,6 @@ export function SourcePostControls( {
 	return (
 		<div style={ { marginBottom: '16px' } }>
 			<ToggleGroupControl
-				__nextHasNoMarginBottom
 				label={ __( 'Date Range Source', 'gatherpress' ) }
 				value={ activeValue }
 				onChange={ handleSourceChange }

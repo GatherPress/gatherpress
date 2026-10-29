@@ -48,7 +48,7 @@ export function useCalendarSync( { clientId, viewType, unitCount } ) {
 				clientId,
 				'core/query',
 			);
-			const parentId = parents?.[ parents.length - 1 ];
+			const parentId = parents?.at( -1 );
 			const parentBlock = parentId ? getBlock( parentId ) : null;
 
 			const headingBlock = parentBlock?.innerBlocks

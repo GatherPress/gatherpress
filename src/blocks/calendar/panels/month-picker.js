@@ -61,7 +61,6 @@ export function MonthPicker( { selectedMonth, dateModifier = 0, onChange } ) {
 					options={ monthOptions }
 					onChange={ ( value ) => onChange( `${ year }-${ value }` ) }
 					__next40pxDefaultSize
-					__nextHasNoMarginBottom
 				/>
 			</FlexBlock>
 			<FlexBlock>

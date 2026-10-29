@@ -61,9 +61,7 @@ domReady( () => {
 
 		// 1. Search inside the same parent Query block.
 		if ( parentQueryIds && parentQueryIds.length ) {
-			const parentQuery = getBlock(
-				parentQueryIds[ parentQueryIds.length - 1 ],
-			);
+			const parentQuery = getBlock( parentQueryIds.at( -1 ) );
 			if ( parentQuery?.innerBlocks ) {
 				calendarBlock = findBlockByName(
 					parentQuery.innerBlocks,

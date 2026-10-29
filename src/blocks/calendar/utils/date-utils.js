@@ -189,7 +189,7 @@ function calculateWeekViewBounds(
 	if ( 0 < visibleDays.length ) {
 		return {
 			startDate: visibleDays[ 0 ],
-			endDate: visibleDays[ visibleDays.length - 1 ],
+			endDate: visibleDays.at( -1 ),
 			rawWeekStart,
 		};
 	}

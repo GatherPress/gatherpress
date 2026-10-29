@@ -1007,7 +1007,7 @@ final class Calendar_Entries {
 			return null;
 		}
 
-		if ( 0 === strpos( $shadow, 'var:preset|' ) || false !== strpos( $shadow, ' ' ) ) {
+		if ( str_starts_with( $shadow, 'var:preset|' ) || str_contains( $shadow, ' ' ) ) {
 			return $shadow;
 		}
 
