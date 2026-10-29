@@ -19,52 +19,50 @@ use GatherPress\Tests\Base;
 class Test_Style_Processor extends Base {
 
 	/**
-	 * Build block attributes with a blockGap value.
+	 * Build a style processor for block attributes with a blockGap value.
 	 *
 	 * @param mixed $block_gap The blockGap value.
 	 *
-	 * @return array<string, mixed>
+	 * @return Style_Processor
 	 */
-	private function with_gap( $block_gap ): array {
-		return array( 'style' => array( 'spacing' => array( 'blockGap' => $block_gap ) ) );
+	private function with_gap( $block_gap ): Style_Processor {
+		return new Style_Processor( array( 'style' => array( 'spacing' => array( 'blockGap' => $block_gap ) ) ) );
 	}
 
 	/**
 	 * Coverage for get_block_gap_value.
 	 *
 	 * @covers ::get_block_gap_value
-	 * @covers ::get_raw_block_gap
+	 * @covers ::__construct
 	 * @covers ::get_gap_side
 	 *
 	 * @return void
 	 */
 	public function test_get_block_gap_value(): void {
-		$this->assertSame( '', Style_Processor::get_block_gap_value( array() ) );
-		$this->assertSame( '', Style_Processor::get_block_gap_value( array( 'style' => 'not an array' ) ) );
+		$this->assertSame( '', ( new Style_Processor( array() ) )->get_block_gap_value() );
+		$this->assertSame( '', ( new Style_Processor( array( 'style' => 'not an array' ) ) )->get_block_gap_value() );
 		$this->assertSame(
 			'var(--wp--preset--spacing--50)',
-			Style_Processor::get_block_gap_value( $this->with_gap( 'var:preset|spacing|50' ) )
+			$this->with_gap( 'var:preset|spacing|50' )->get_block_gap_value()
 		);
-		$this->assertSame( '10px', Style_Processor::get_block_gap_value( $this->with_gap( '10px' ) ) );
+		$this->assertSame( '10px', $this->with_gap( '10px' )->get_block_gap_value() );
 		$this->assertSame(
 			'2px var(--wp--preset--spacing--20)',
-			Style_Processor::get_block_gap_value(
-				$this->with_gap(
-					array(
-						'top'  => '2px',
-						'left' => 'var:preset|spacing|20',
-					)
+			$this->with_gap(
+				array(
+					'top'  => '2px',
+					'left' => 'var:preset|spacing|20',
 				)
-			)
+			)->get_block_gap_value()
 		);
 		$this->assertSame(
 			'1px 3px',
-			Style_Processor::get_block_gap_value( $this->with_gap( array( 'left' => '3px' ) ) ),
+			$this->with_gap( array( 'left' => '3px' ) )->get_block_gap_value(),
 			'Failed to assert a missing side defaults to 1px.'
 		);
 		$this->assertSame(
 			'',
-			Style_Processor::get_block_gap_value( $this->with_gap( 5 ) ),
+			$this->with_gap( 5 )->get_block_gap_value(),
 			'Failed to assert a number is ignored.'
 		);
 	}
@@ -77,30 +75,28 @@ class Test_Style_Processor extends Base {
 	 * @return void
 	 */
 	public function test_get_block_column_gap_value(): void {
-		$this->assertSame( '', Style_Processor::get_block_column_gap_value( array() ) );
-		$this->assertSame( '20px', Style_Processor::get_block_column_gap_value( $this->with_gap( '20px' ) ) );
+		$this->assertSame( '', ( new Style_Processor( array() ) )->get_block_column_gap_value() );
+		$this->assertSame( '20px', $this->with_gap( '20px' )->get_block_column_gap_value() );
 		$this->assertSame(
 			'var(--wp--preset--spacing--30)',
-			Style_Processor::get_block_column_gap_value(
-				$this->with_gap(
-					array(
-						'top'  => '2px',
-						'left' => 'var:preset|spacing|30',
-					)
+			$this->with_gap(
+				array(
+					'top'  => '2px',
+					'left' => 'var:preset|spacing|30',
 				)
-			),
+			)->get_block_column_gap_value(),
 			'Failed to assert the column gap is the left side.'
 		);
 		$this->assertSame(
 			'1px',
-			Style_Processor::get_block_column_gap_value( $this->with_gap( array( 'top' => '2px' ) ) )
+			$this->with_gap( array( 'top' => '2px' ) )->get_block_column_gap_value()
 		);
 		$this->assertSame(
 			'0px',
-			Style_Processor::get_block_column_gap_value( $this->with_gap( array( 'left' => '0' ) ) ),
+			$this->with_gap( array( 'left' => '0' ) )->get_block_column_gap_value(),
 			'Failed to assert 0 becomes a length for calc().'
 		);
-		$this->assertSame( '', Style_Processor::get_block_column_gap_value( $this->with_gap( 5 ) ) );
+		$this->assertSame( '', $this->with_gap( 5 )->get_block_column_gap_value() );
 	}
 
 	/**
@@ -140,14 +136,12 @@ class Test_Style_Processor extends Base {
 		);
 		$this->assertSame(
 			'',
-			Style_Processor::get_block_gap_value(
-				$this->with_gap(
-					array(
-						'top'  => '2px',
-						'left' => '1px;position:fixed',
-					)
+			$this->with_gap(
+				array(
+					'top'  => '2px',
+					'left' => '1px;position:fixed',
 				)
-			),
+			)->get_block_gap_value(),
 			'Failed to assert an unsafe side drops the whole gap.'
 		);
 		$this->assertSame(

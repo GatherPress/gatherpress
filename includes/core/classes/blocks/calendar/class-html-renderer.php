@@ -133,9 +133,10 @@ final class Html_Renderer {
 	 * @return string Inline style attribute (e.g. style="...").
 	 */
 	private function build_table_style( array $attributes, int $columns_count, int $slot_height ): string {
-		$grid_gap     = Style_Processor::get_block_gap_value( $attributes );
-		$column_gap   = Style_Processor::get_block_column_gap_value( $attributes );
-		$table_styles = array( sprintf( '--gatherpress-calendar-columns: %d', $columns_count ) );
+		$style_processor = new Style_Processor( $attributes );
+		$grid_gap        = $style_processor->get_block_gap_value();
+		$column_gap      = $style_processor->get_block_column_gap_value();
+		$table_styles    = array( sprintf( '--gatherpress-calendar-columns: %d', $columns_count ) );
 
 		if ( '' !== $grid_gap ) {
 			$table_styles[] = sprintf( 'gap: %s', $grid_gap );

@@ -119,7 +119,7 @@ final class Calendar_Entries {
 			return '';
 		}
 
-		$grid_gap   = Style_Processor::get_block_gap_value( $attributes );
+		$grid_gap   = ( new Style_Processor( $attributes ) )->get_block_gap_value();
 		$items_html = '';
 
 		foreach ( $day_posts as $entry ) {
