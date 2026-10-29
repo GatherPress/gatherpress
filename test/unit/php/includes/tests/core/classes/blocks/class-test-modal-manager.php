@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\Modal_Manager;
+use GatherPress\Core\Blocks\Rsvp;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use WP_HTML_Tag_Processor;
@@ -618,7 +619,7 @@ class Test_Modal_Manager extends Base {
 	}
 
 	/**
-	 * Loads a post's page with a `ref` query arg and resets the modal keys.
+	 * Loads a post's page with a `ref` query arg and a failed RSVP's error, and resets the modal keys.
 	 *
 	 * @since TBD
 	 *
@@ -630,7 +631,15 @@ class Test_Modal_Manager extends Base {
 		$post_id = $this->factory->post->create();
 		$key     = sprintf( '%d-1', $post_id );
 
-		$this->go_to( add_query_arg( 'ref', 'x', get_permalink( $post_id ) ) );
+		$this->go_to(
+			add_query_arg(
+				array(
+					'ref'                 => 'x',
+					Rsvp::ERROR_QUERY_ARG => $post_id,
+				),
+				get_permalink( $post_id )
+			)
+		);
 
 		Utility::set_and_get_hidden_property( Modal_Manager::get_instance(), 'render_counts', array() );
 
@@ -701,7 +710,7 @@ class Test_Modal_Manager extends Base {
 				$this->get_page_inputs( $post_id )
 			),
 			$output,
-			'The open form loads the page at the modal manager, keeps the query args, and ends the modal manager.'
+			'The open form loads the page at the modal manager, keeps the other query args, and ends the modal manager.'
 		);
 		$this->assertStringNotContainsString( 'gatherpress--is-visible', $output, 'The modal stays closed.' );
 		$this->assertStringNotContainsString(
@@ -742,6 +751,7 @@ class Test_Modal_Manager extends Base {
 			'A link without an href gets the URL that opens the modal.'
 		);
 		$this->assertStringContainsString( 'href="https://example.org/"', $output, 'A link with an href keeps it.' );
+		$this->assertStringNotContainsString( Rsvp::ERROR_QUERY_ARG, $output, 'The URL drops the RSVP error.' );
 		$this->assertStringNotContainsString( '<form', $output, 'Links need no form.' );
 	}
 
@@ -802,7 +812,7 @@ class Test_Modal_Manager extends Base {
 				$this->get_page_inputs( $post_id )
 			),
 			$output,
-			'The close form keeps the other query args and drops the open one.'
+			'The close form keeps the other query args and drops the open one and the RSVP error.'
 		);
 	}
 

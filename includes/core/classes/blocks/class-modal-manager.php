@@ -237,7 +237,8 @@ final class Modal_Manager {
 	 * button cannot navigate on its own. Both URLs end in this modal
 	 * manager's id, so the page lands where the visitor clicked rather than
 	 * at the top: the modal itself is fixed in place, so it cannot scroll
-	 * the page. A modal rendered open also gets ways out (`add_ways_out()`).
+	 * the page. Both URLs drop a failed RSVP's error, so its alert shows
+	 * once. A modal rendered open also gets ways out (`add_ways_out()`).
 	 * With JavaScript, the click handlers cancel the navigation.
 	 *
 	 * @since TBD
@@ -266,7 +267,7 @@ final class Modal_Manager {
 			$tag->set_attribute( 'id', $anchor );
 		}
 
-		$page_url = Utility::get_current_url( array( self::OPEN_QUERY_ARG ) );
+		$page_url = Utility::get_current_url( array( self::OPEN_QUERY_ARG, Rsvp::ERROR_QUERY_ARG ) );
 		$form_id  = sprintf( 'gatherpress-modal-%s-%s', $is_open ? 'close' : 'open', $key );
 		$url      = $is_open ? $page_url : add_query_arg( self::OPEN_QUERY_ARG, $key, $page_url );
 		$url     .= '#' . $anchor;
