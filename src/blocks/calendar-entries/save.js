@@ -1,5 +1,5 @@
 /**
- * GatherPress Calendar Entries Block Save Component
+ * Calendar Entries Block Save Component
  *
  * Server-side rendering injects context per calendar-entry (event, production, post, ...);
  * this save component preserves the InnerBlocks template structure.

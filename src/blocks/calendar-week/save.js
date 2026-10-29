@@ -1,5 +1,5 @@
 /**
- * GatherPress Calendar Week Block Save Component
+ * Calendar Week Block Save Component
  *
  * Server-side rendering generates the <tr> container and injects context;
  * this save component preserves the InnerBlocks template structure.

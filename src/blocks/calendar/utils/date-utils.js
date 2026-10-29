@@ -1,5 +1,5 @@
 /**
- * Date utility functions for GatherPress Calendar.
+ * Date utility functions for Calendar.
  *
  * @package
  */

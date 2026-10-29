@@ -1,5 +1,5 @@
 /**
- * GatherPress Calendar Day Interactivity Store
+ * Calendar Day Interactivity Store
  *
  * Updates today, past, and future classes on calendar day cells
  * based on the visitor's local browser time to support static page caches.

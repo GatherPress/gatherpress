@@ -1,5 +1,5 @@
 /**
- * GatherPress Calendar Day Block Save Component
+ * Calendar Day Block Save Component
  *
  * Server-side rendering generates the <td> container and injects context;
  * this save component preserves the InnerBlocks template structure.

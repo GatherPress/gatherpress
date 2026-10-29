@@ -1,5 +1,5 @@
 /**
- * GatherPress Calendar Bound Block Variations
+ * Calendar Bound Block Variations
  *
  * Registers variations of core/heading and core/paragraph bound to
  * calendar block-bindings sources.

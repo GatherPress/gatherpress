@@ -3,7 +3,7 @@
 	"apiVersion": 3,
 	"name": "gatherpress/calendar",
 	"version": "1.0.0",
-	"title": "GatherPress Calendar",
+	"title": "Calendar",
 	"category": "gatherpress",
 	"icon": "calendar-alt",
 	"description": "Display query loop posts in a monthly, weekly, or daily calendar format.",

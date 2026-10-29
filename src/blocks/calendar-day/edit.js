@@ -1,5 +1,5 @@
 /**
- * GatherPress Calendar Day Block Editor Component
+ * Calendar Day Block Editor Component
  *
  * @package
  * @since TBD

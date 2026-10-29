@@ -1,5 +1,5 @@
 /**
- * GatherPress Calendar Block Editor Component
+ * Calendar Block Editor Component
  *
  * @package
  * @since TBD
@@ -44,7 +44,7 @@ import { CalendarTable } from '../../components/CalendarTable';
 /**
  * Edit Component
  *
- * Main editor component for the GatherPress Calendar block.
+ * Main editor component for the Calendar block.
  *
  * @since TBD
  *
@@ -361,10 +361,7 @@ export default function Edit( {
 			<div { ...blockProps }>
 				<Placeholder
 					icon="calendar-alt"
-					label={ __(
-						'GatherPress Calendar',
-						'gatherpress',
-					) }
+					label={ __( 'Calendar', 'gatherpress' ) }
 					instructions={ __(
 						'This block must be used inside a Query Loop block.',
 						'gatherpress',

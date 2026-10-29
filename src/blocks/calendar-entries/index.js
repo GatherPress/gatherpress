@@ -1,5 +1,5 @@
 /**
- * GatherPress Calendar Entries Block Registration
+ * Calendar Entries Block Registration
  *
  * @package
  * @since TBD

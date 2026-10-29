@@ -1,5 +1,5 @@
 /**
- * GatherPress Calendar Week Block Editor Component
+ * Calendar Week Block Editor Component
  *
  * @package
  * @since TBD

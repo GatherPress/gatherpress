@@ -1,5 +1,5 @@
 /**
- * GatherPress Calendar Interactivity Store
+ * Calendar Interactivity Store
  *
  * Moves keyboard focus to the month heading after "Previous Month" or
  * "Next Month" changes the calendar without a page reload.

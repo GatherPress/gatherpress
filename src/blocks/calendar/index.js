@@ -1,5 +1,5 @@
 /**
- * GatherPress Calendar Block Registration
+ * Calendar Block Registration
  *
  * @package
  * @since TBD
@@ -25,7 +25,7 @@ import './variations/bound-blocks';
 import './bindings';
 
 /**
- * Register the GatherPress Calendar block type
+ * Register the Calendar block type
  */
 registerBlockType( metadata.name, {
 	edit: Edit,

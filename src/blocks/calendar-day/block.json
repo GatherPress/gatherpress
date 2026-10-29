@@ -6,7 +6,7 @@
 	"title": "Calendar Day",
 	"category": "gatherpress",
 	"icon": "calendar",
-	"description": "An individual day cell inside the GatherPress Calendar grid.",
+	"description": "An individual day cell inside the calendar grid.",
 	"parent": [
 		"gatherpress/calendar-week",
 		"gatherpress/calendar"

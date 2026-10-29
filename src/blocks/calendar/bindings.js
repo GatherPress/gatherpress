@@ -1,5 +1,5 @@
 /**
- * GatherPress Calendar Block Bindings and Editor Filters
+ * Calendar Block Bindings and Editor Filters
  *
  * @package
  * @since TBD

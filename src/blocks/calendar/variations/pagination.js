@@ -1,5 +1,5 @@
 /**
- * GatherPress Calendar Pagination Block Variations
+ * Calendar Pagination Block Variations
  *
  * Registers calendar variations of core/query-pagination,
  * core/query-pagination-previous, and core/query-pagination-next.

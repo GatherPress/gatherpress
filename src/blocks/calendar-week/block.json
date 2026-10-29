@@ -6,7 +6,7 @@
 	"title": "Calendar Week",
 	"category": "gatherpress",
 	"icon": "table-row-after",
-	"description": "A week row container in the GatherPress Calendar grid.",
+	"description": "A week row container in the calendar grid.",
 	"parent": [
 		"gatherpress/calendar"
 	],
