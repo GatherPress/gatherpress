@@ -52,6 +52,22 @@ class Test_Calendar_Entries extends Base {
 	}
 
 	/**
+	 * The constructor hooks nothing: render.php calls render(), and the entry filters are added only
+	 * while an entry renders.
+	 *
+	 * @covers ::__construct
+	 *
+	 * @return void
+	 */
+	public function test_constructor_registers_no_hooks(): void {
+		$instance = Calendar_Entries::get_instance();
+
+		Utility::invoke_hidden_method( $instance, '__construct' );
+
+		$this->assertFalse( has_filter( 'the_title', array( $instance, 'filter_empty_title' ) ) );
+	}
+
+	/**
 	 * Create an event.
 	 *
 	 * @param string $title Event title.

@@ -168,6 +168,7 @@ class Test_Calendar_Week extends Base {
 	 * A week without days renders an empty row. Its ribbon rows are `initial`, not repeat(0, …),
 	 * which is not valid CSS; `initial` also stops an outer week's rows from passing down.
 	 *
+	 * @covers ::__construct
 	 * @covers ::render
 	 * @covers ::get_ribbon_rows_style
 	 *

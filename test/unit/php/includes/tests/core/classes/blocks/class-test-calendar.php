@@ -329,6 +329,7 @@ class Test_Calendar extends Base {
 	/**
 	 * A calendar outside a Query Loop renders nothing.
 	 *
+	 * @covers ::__construct
 	 * @covers ::render
 	 *
 	 * @return void

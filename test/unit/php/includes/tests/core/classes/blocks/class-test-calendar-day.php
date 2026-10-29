@@ -343,5 +343,13 @@ class Test_Calendar_Day extends Base {
 			),
 			$found
 		);
+
+		$block->parsed_block['innerBlocks'] = 'not a list';
+
+		$this->assertSame(
+			$found,
+			Utility::invoke_hidden_method( new Calendar_Day( $block ), 'find_day_inner_blocks' ),
+			'Failed to assert inner blocks that are not a list count as none.'
+		);
 	}
 }
