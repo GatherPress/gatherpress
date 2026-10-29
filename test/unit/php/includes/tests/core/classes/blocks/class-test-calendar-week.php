@@ -68,6 +68,7 @@ class Test_Calendar_Week extends Base {
 	/**
 	 * A week renders one row with a cell per day and a hidden week number.
 	 *
+	 * @covers ::__construct
 	 * @covers ::render
 	 * @covers ::calculate_max_ribbon_slot
 	 * @covers ::render_days
@@ -78,7 +79,7 @@ class Test_Calendar_Week extends Base {
 	 * @return void
 	 */
 	public function test_render(): void {
-		$output = Calendar_Week::render(
+		$calendar_week = new Calendar_Week(
 			$this->get_block(
 				array(
 					'gatherpress/year'       => 2026,
@@ -107,6 +108,8 @@ class Test_Calendar_Week extends Base {
 			)
 		);
 
+		$output = $calendar_week->render();
+
 		$this->assertStringStartsWith( '<tr ', $output );
 		$this->assertStringContainsString( 'gatherpress-calendar__week', $output );
 		$this->assertStringContainsString( 'data-wp-key="week-2026-10-2"', $output );
@@ -134,7 +137,7 @@ class Test_Calendar_Week extends Base {
 	 * @return void
 	 */
 	public function test_render_time_grid(): void {
-		$output = Calendar_Week::render(
+		$calendar_week = new Calendar_Week(
 			$this->get_block(
 				array(
 					'gatherpress/weekDays'       => array( $this->day( 15 ) ),
@@ -142,6 +145,8 @@ class Test_Calendar_Week extends Base {
 				)
 			)
 		);
+
+		$output = $calendar_week->render();
 
 		$this->assertStringContainsString( 'has-time-grid', $output );
 		$this->assertStringContainsString(
@@ -169,7 +174,7 @@ class Test_Calendar_Week extends Base {
 	 * @return void
 	 */
 	public function test_render_without_days(): void {
-		$output = Calendar_Week::render( $this->get_block( array() ) );
+		$output = ( new Calendar_Week( $this->get_block( array() ) ) )->render();
 
 		$this->assertStringContainsString(
 			'style="--gatherpress-num-ribbon-slots: 0;--gatherpress-ribbon-rows: initial"',
@@ -205,11 +210,9 @@ class Test_Calendar_Week extends Base {
 			'not an entry',
 		);
 
-		$first = Utility::invoke_hidden_static_method(
-			Calendar_Week::class,
-			'annotate_day_posts',
-			array( $posts, 1, $week, count( $week ) )
-		);
+		$calendar_week = new Calendar_Week( $this->get_block( array( 'gatherpress/weekDays' => $week ) ) );
+
+		$first = Utility::invoke_hidden_method( $calendar_week, 'annotate_day_posts', array( $posts, 1 ) );
 
 		$this->assertTrue( $first[0]['is_continued'], 'Failed to assert the day after an empty cell starts the row.' );
 		$this->assertFalse( $first[0]['is_continues'] );
@@ -218,18 +221,14 @@ class Test_Calendar_Week extends Base {
 		$this->assertArrayNotHasKey( 'is_continued', $first[1] );
 		$this->assertSame( 'not an entry', $first[2] );
 
-		$last = Utility::invoke_hidden_static_method(
-			Calendar_Week::class,
-			'annotate_day_posts',
-			array( array( $posts[0] ), 3, $week, count( $week ) )
-		);
+		$last = Utility::invoke_hidden_method( $calendar_week, 'annotate_day_posts', array( array( $posts[0] ), 3 ) );
 
 		$this->assertFalse( $last[0]['is_continued'] );
 		$this->assertTrue( $last[0]['is_continues'], 'Failed to assert the day before an empty cell ends the row.' );
 		$this->assertSame( 1, $last[0]['row_span'] );
 
-		$end = Utility::invoke_hidden_static_method(
-			Calendar_Week::class,
+		$end = Utility::invoke_hidden_method(
+			$calendar_week,
 			'annotate_post_entry',
 			array(
 				array(

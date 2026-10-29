@@ -11,5 +11,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Blocks\Calendar_Day;
 
+$gatherpress_calendar_day = new Calendar_Day( $block );
+
 // The day cell escapes the markup it builds, and its inner blocks escape their own output.
-echo Calendar_Day::render( $block ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+echo $gatherpress_calendar_day->render(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped

@@ -11,5 +11,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Blocks\Calendar_Week;
 
+$gatherpress_calendar_week = new Calendar_Week( $block );
+
 // The week row escapes the markup it builds, and the day blocks escape their own output.
-echo Calendar_Week::render( $block ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+echo $gatherpress_calendar_week->render(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped

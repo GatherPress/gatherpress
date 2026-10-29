@@ -48,14 +48,27 @@ class Test_Calendar_Day extends Base {
 	}
 
 	/**
+	 * Render a day block with the given context.
+	 *
+	 * @param array<string, mixed> $context  Day context.
+	 * @param string               $template Block markup of the day.
+	 *
+	 * @return string
+	 */
+	private function render_day( array $context, string $template = self::TEMPLATE ): string {
+		return ( new Calendar_Day( $this->get_block( $context, $template ) ) )->render();
+	}
+
+	/**
 	 * A day block outside a calendar week renders nothing.
 	 *
+	 * @covers ::__construct
 	 * @covers ::render
 	 *
 	 * @return void
 	 */
 	public function test_render_outside_week(): void {
-		$this->assertSame( '', Calendar_Day::render( $this->get_block( array() ) ) );
+		$this->assertSame( '', $this->render_day( array() ) );
 	}
 
 	/**
@@ -68,12 +81,10 @@ class Test_Calendar_Day extends Base {
 	 * @return void
 	 */
 	public function test_render_empty_cell(): void {
-		$output = Calendar_Day::render(
-			$this->get_block(
-				array(
-					'gatherpress/isEmpty' => true,
-					'gatherpress/weekday' => 'monday',
-				)
+		$output = $this->render_day(
+			array(
+				'gatherpress/isEmpty' => true,
+				'gatherpress/weekday' => 'monday',
 			)
 		);
 
@@ -84,7 +95,7 @@ class Test_Calendar_Day extends Base {
 		$this->assertStringNotContainsString( 'data-wp-interactive', $output );
 		$this->assertStringEndsWith( '></td>', $output, 'Failed to assert an empty cell has no content.' );
 
-		$output = Calendar_Day::render( $this->get_block( array( 'gatherpress/isEmpty' => true ) ) );
+		$output = $this->render_day( array( 'gatherpress/isEmpty' => true ) );
 
 		$this->assertMatchesRegularExpression(
 			'/data-wp-key="empty-[0-9a-f]{13}"/',
@@ -109,14 +120,12 @@ class Test_Calendar_Day extends Base {
 	 * @return void
 	 */
 	public function test_render_past_day(): void {
-		$output = Calendar_Day::render(
-			$this->get_block(
-				array(
-					'gatherpress/isEmpty'   => false,
-					'gatherpress/dayNumber' => 15,
-					'gatherpress/dayDate'   => '2020-01-15',
-					'gatherpress/weekday'   => 'wednesday',
-				)
+		$output = $this->render_day(
+			array(
+				'gatherpress/isEmpty'   => false,
+				'gatherpress/dayNumber' => 15,
+				'gatherpress/dayDate'   => '2020-01-15',
+				'gatherpress/weekday'   => 'wednesday',
 			)
 		);
 
@@ -144,13 +153,11 @@ class Test_Calendar_Day extends Base {
 	 */
 	public function test_render_today(): void {
 		$today  = wp_date( 'Y-m-d' );
-		$output = Calendar_Day::render(
-			$this->get_block(
-				array(
-					'gatherpress/isEmpty'   => false,
-					'gatherpress/dayNumber' => (int) wp_date( 'j' ),
-					'gatherpress/dayDate'   => $today,
-				)
+		$output = $this->render_day(
+			array(
+				'gatherpress/isEmpty'   => false,
+				'gatherpress/dayNumber' => (int) wp_date( 'j' ),
+				'gatherpress/dayDate'   => $today,
 			)
 		);
 
@@ -175,13 +182,11 @@ class Test_Calendar_Day extends Base {
 	public function test_server_directives_keep_day_markers(): void {
 		$cell = function ( string $date ): string {
 			return wp_interactivity_process_directives(
-				Calendar_Day::render(
-					$this->get_block(
-						array(
-							'gatherpress/isEmpty'   => false,
-							'gatherpress/dayNumber' => 1,
-							'gatherpress/dayDate'   => $date,
-						)
+				$this->render_day(
+					array(
+						'gatherpress/isEmpty'   => false,
+						'gatherpress/dayNumber' => 1,
+						'gatherpress/dayDate'   => $date,
 					)
 				)
 			);
@@ -230,10 +235,10 @@ class Test_Calendar_Day extends Base {
 		);
 
 		// A day whose author picked the Ribbon style is in Test_Calendar: only a real render adds its class.
-		$this->assertStringContainsString( 'is-style-ribbon', Calendar_Day::render( $this->get_block( $context ) ) );
+		$this->assertStringContainsString( 'is-style-ribbon', $this->render_day( $context ) );
 
 		$context['gatherpress/timeGridConfig'] = new Time_Grid();
-		$this->assertStringNotContainsString( 'is-style-ribbon', Calendar_Day::render( $this->get_block( $context ) ) );
+		$this->assertStringNotContainsString( 'is-style-ribbon', $this->render_day( $context ) );
 	}
 
 	/**
@@ -254,7 +259,7 @@ class Test_Calendar_Day extends Base {
 			'gatherpress/dayDate'   => '2099-10-17',
 			'gatherpress/dayPosts'  => array( 'not an entry', array( 'total_days' => 3 ) ),
 		);
-		$output  = Calendar_Day::render( $this->get_block( $context ) );
+		$output  = $this->render_day( $context );
 
 		$this->assertStringContainsString( 'has-posts', $output );
 		$this->assertStringContainsString( 'has-multi-day-event', $output );
@@ -269,13 +274,13 @@ class Test_Calendar_Day extends Base {
 		$context['gatherpress/dayPosts'] = array( array( 'is_all_day' => true ) );
 		$this->assertStringContainsString(
 			'has-multi-day-event',
-			Calendar_Day::render( $this->get_block( $context ) )
+			$this->render_day( $context )
 		);
 
 		$context['gatherpress/dayPosts'] = array( array( 'total_days' => 1 ) );
 		$this->assertStringNotContainsString(
 			'has-multi-day-event',
-			Calendar_Day::render( $this->get_block( $context ) )
+			$this->render_day( $context )
 		);
 	}
 
@@ -292,16 +297,14 @@ class Test_Calendar_Day extends Base {
 	public function test_render_without_bound_day_number(): void {
 		$template = '<!-- wp:gatherpress/calendar-day --><!-- wp:paragraph --><p>Not bound</p><!-- /wp:paragraph -->'
 			. '<!-- /wp:gatherpress/calendar-day -->';
-		$output   = Calendar_Day::render(
-			$this->get_block(
-				array(
-					'gatherpress/isEmpty'   => false,
-					'gatherpress/dayNumber' => 9,
-					'gatherpress/dayDate'   => '2020-01-09',
-					'gatherpress/weekday'   => 'thursday',
-				),
-				$template
-			)
+		$output   = $this->render_day(
+			array(
+				'gatherpress/isEmpty'   => false,
+				'gatherpress/dayNumber' => 9,
+				'gatherpress/dayDate'   => '2020-01-09',
+				'gatherpress/weekday'   => 'thursday',
+			),
+			$template
 		);
 
 		$this->assertStringContainsString( '<p class="gatherpress-calendar__day-number">9</p>', $output );
@@ -322,17 +325,16 @@ class Test_Calendar_Day extends Base {
 	 * @return void
 	 */
 	public function test_day_without_date_and_odd_inner_blocks(): void {
-		$output = Calendar_Day::render( $this->get_block( array( 'gatherpress/isEmpty' => false ) ) );
+		$output = $this->render_day( array( 'gatherpress/isEmpty' => false ) );
 
 		$this->assertStringNotContainsString( 'past', $output );
 		$this->assertStringNotContainsString( 'future', $output );
 		$this->assertStringNotContainsString( 'is-today', $output );
 
-		$found = Utility::invoke_hidden_static_method(
-			Calendar_Day::class,
-			'find_day_inner_blocks',
-			array( array( 'not a block' ) )
-		);
+		$block                              = $this->get_block( array() );
+		$block->parsed_block['innerBlocks'] = array( 'not a block' );
+
+		$found = Utility::invoke_hidden_method( new Calendar_Day( $block ), 'find_day_inner_blocks' );
 
 		$this->assertSame(
 			array(

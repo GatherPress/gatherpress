@@ -257,9 +257,11 @@ class Test_Calendar extends Base {
 			'Failed to assert a Ribbon day gets the class once.'
 		);
 
+		$calendar = new Calendar( array(), new WP_Block( array( 'blockName' => Calendar::BLOCK_NAME ) ) );
+
 		$this->assertSame(
 			48,
-			Utility::invoke_hidden_static_method( Calendar::class, 'get_slot_height', array( array() ) ),
+			Utility::invoke_hidden_method( $calendar, 'get_slot_height', array( array() ) ),
 			'Failed to assert the default without a day block.'
 		);
 
@@ -275,7 +277,7 @@ class Test_Calendar extends Base {
 		);
 		$this->assertSame(
 			48,
-			Utility::invoke_hidden_static_method( Calendar::class, 'get_slot_height', array( $week ) ),
+			Utility::invoke_hidden_method( $calendar, 'get_slot_height', array( $week ) ),
 			'Failed to assert other blocks are skipped and a height that is not a number gives the default.'
 		);
 	}
@@ -339,6 +341,6 @@ class Test_Calendar extends Base {
 			)
 		);
 
-		$this->assertSame( '', Calendar::render( array(), $block ) );
+		$this->assertSame( '', ( new Calendar( array(), $block ) )->render() );
 	}
 }

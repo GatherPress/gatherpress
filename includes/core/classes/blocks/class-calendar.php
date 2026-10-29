@@ -38,19 +38,45 @@ final class Calendar {
 	const BLOCK_NAME = 'gatherpress/calendar';
 
 	/**
+	 * Block attributes.
+	 *
+	 * @since TBD
+	 * @var array<string, mixed>
+	 */
+	private readonly array $attributes;
+
+	/**
+	 * Block instance.
+	 *
+	 * @since TBD
+	 * @var WP_Block
+	 */
+	private readonly WP_Block $block;
+
+	/**
+	 * Class constructor.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $attributes Block attributes.
+	 * @param WP_Block             $block      Block instance.
+	 */
+	public function __construct( array $attributes, WP_Block $block ) {
+		$this->attributes = $attributes;
+		$this->block      = $block;
+	}
+
+	/**
 	 * Render the calendar block.
 	 *
 	 * Called from the block's render.php.
 	 *
 	 * @since TBD
 	 *
-	 * @param array<string, mixed> $attributes Block attributes.
-	 * @param WP_Block             $block      Block instance.
-	 *
 	 * @return string Rendered HTML, or an empty string outside a Query Loop.
 	 */
-	public static function render( array $attributes, WP_Block $block ): string {
-		$query = $block->context['query'] ?? null;
+	public function render(): string {
+		$query = $this->block->context['query'] ?? null;
 
 		if ( ! is_array( $query ) || empty( $query ) ) {
 			return '';
@@ -61,15 +87,15 @@ final class Calendar {
 		 *
 		 * @var array<string, mixed> $query
 		 */
-		$page       = Query_Builder::get_requested_page( $block->context['queryId'] ?? null );
-		$date_range = Date_Range::from_query( $query, $attributes, $page, $block );
+		$page       = Query_Builder::get_requested_page( $this->block->context['queryId'] ?? null );
+		$date_range = Date_Range::from_query( $query, $this->attributes, $page, $this->block );
 
 		// The time grid hours are attributes of the inner week block.
-		$week_block = Html_Renderer::get_inner_template_block( $block, Calendar_Week::BLOCK_NAME );
+		$week_block = Html_Renderer::get_inner_template_block( $this->block, Calendar_Week::BLOCK_NAME );
 		$week_attrs = $week_block['attrs'] ?? array();
 		$time_grid  = Time_Grid::from_attributes(
 			array_merge(
-				$attributes,
+				$this->attributes,
 				array(
 					'dayStartHour' => $week_attrs['dayStartHour'] ?? 8,
 					'dayEndHour'   => $week_attrs['dayEndHour'] ?? 20,
@@ -79,21 +105,25 @@ final class Calendar {
 		);
 
 		// Context for the week, day and entries blocks inside the calendar.
-		$block->context['gatherpress/viewType']       = $date_range->view_type;
-		$block->context['gatherpress/year']           = $date_range->year;
-		$block->context['gatherpress/month']          = $date_range->month;
-		$block->context['gatherpress/startDate']      = $date_range->start_date;
-		$block->context['gatherpress/endDate']        = $date_range->end_date;
-		$block->context['gatherpress/showWeekends']   = $date_range->week->show_weekends;
-		$block->context['gatherpress/timeGridConfig'] = $time_grid;
+		$this->block->context['gatherpress/viewType']       = $date_range->view_type;
+		$this->block->context['gatherpress/year']           = $date_range->year;
+		$this->block->context['gatherpress/month']          = $date_range->month;
+		$this->block->context['gatherpress/startDate']      = $date_range->start_date;
+		$this->block->context['gatherpress/endDate']        = $date_range->end_date;
+		$this->block->context['gatherpress/showWeekends']   = $date_range->week->show_weekends;
+		$this->block->context['gatherpress/timeGridConfig'] = $time_grid;
 
-		$post_ids      = ( new Query_Builder( $block, $date_range ) )->get_post_ids();
+		$post_ids      = ( new Query_Builder( $this->block, $date_range ) )->get_post_ids();
 		$posts_by_date = ( new Post_Organizer( $date_range, $time_grid ) )->organize( $post_ids );
 		$calendar_data = ( new Structure_Builder( $date_range ) )->build( $posts_by_date );
-		$renderer      = new Html_Renderer( $block, $date_range, $time_grid );
+		$renderer      = new Html_Renderer( $this->block, $date_range, $time_grid );
 
 		// The slot height is an attribute of the day block inside the week block.
-		return $renderer->generate_calendar_html( $attributes, $calendar_data, self::get_slot_height( $week_block ) );
+		return $renderer->generate_calendar_html(
+			$this->attributes,
+			$calendar_data,
+			$this->get_slot_height( $week_block )
+		);
 	}
 
 	/**
@@ -107,7 +137,7 @@ final class Calendar {
 	 *
 	 * @return int Height of one hour slot in pixels, 48 by default.
 	 */
-	private static function get_slot_height( array $week_block ): int {
+	private function get_slot_height( array $week_block ): int {
 		$inner_blocks = is_array( $week_block['innerBlocks'] ?? null ) ? $week_block['innerBlocks'] : array();
 
 		foreach ( $inner_blocks as $inner_block ) {
