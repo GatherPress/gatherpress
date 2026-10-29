@@ -601,3 +601,28 @@ describe( 'rsvp updateRsvp focus target with the real modal actions (#2428)', ()
 		);
 	} );
 } );
+
+describe( 'rsvp updateRsvp without JavaScript (#2039)', () => {
+	it( 'is synchronous, so preventDefault() keeps the no-JavaScript form from submitting', () => {
+		expect( store( 'gatherpress' ).actions.updateRsvp.sync ).toBe( true );
+	} );
+
+	it( 'takes the guest count and anonymity fields out of the no-JavaScript form, so Enter does not submit it', () => {
+		const { callbacks } = store( 'gatherpress' );
+		const guests = document.createElement( 'input' );
+		const anonymous = document.createElement( 'input' );
+
+		anonymous.type = 'checkbox';
+		guests.setAttribute( 'form', 'gatherpress-rsvp-form-987-1' );
+		anonymous.setAttribute( 'form', 'gatherpress-rsvp-form-987-1' );
+		getContext.mockReturnValue( { postId: 987 } );
+
+		getElement.mockReturnValue( { ref: guests } );
+		callbacks.setGuestCount();
+		getElement.mockReturnValue( { ref: anonymous } );
+		callbacks.monitorAnonymousStatus();
+
+		expect( guests.hasAttribute( 'form' ) ).toBe( false );
+		expect( anonymous.hasAttribute( 'form' ) ).toBe( false );
+	} );
+} );
