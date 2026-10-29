@@ -1117,6 +1117,26 @@ describe( 'generateCalendar', () => {
 				.numRibbonSlots,
 		).toBe( 0 );
 	} );
+
+	it( 'counts the ribbon rows of each week in a week view', () => {
+		const calendar = generateCalendar(
+			[ allDayEvent( 1, '2026-10-21 00:00:00', '2026-10-21 23:59:00', true ) ],
+			1,
+			{
+				viewType: 'week',
+				unitCount: 2,
+				startDate: '2026-10-12',
+				endDate: '2026-10-25',
+				rawWeekStart: new Date( 2026, 9, 12 ),
+			},
+			true,
+			{ enabled: true },
+			EVENT_TYPES,
+		);
+
+		expect( calendar.units[ 0 ].weekRibbonSlots ).toEqual( [ 0, 1 ] );
+		expect( calendar.numRibbonSlots ).toBe( 1 );
+	} );
 } );
 
 describe( 'getDefaultActiveDate', () => {

@@ -114,6 +114,7 @@ export function CalendarTable( {
 								dayBlockAttributes={ dayBlockAttributes }
 								timeGridConfig={ timeGridConfig }
 								numRibbonSlots={
+									unit.weekRibbonSlots?.[ weekIndex ] ??
 									unit.numRibbonSlots ??
 									calendar.numRibbonSlots ??
 									0

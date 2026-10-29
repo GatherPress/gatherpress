@@ -814,10 +814,11 @@ export function generateCalendar(
 			postsByDate,
 			showWeekends,
 		);
-		const numRibbonSlots = getWeekNumRibbonSlots(
-			weeks[ 0 ] || [],
-			isTimeGrid,
+		// Each week row sizes its own ribbon rows, as Calendar_Week does.
+		const weekRibbonSlots = weeks.map( ( week ) =>
+			getWeekNumRibbonSlots( week, isTimeGrid ),
 		);
+		const numRibbonSlots = Math.max( 0, ...weekRibbonSlots );
 		// Only several week rows need a week number to tell them apart.
 		const units = [
 			{
@@ -830,6 +831,7 @@ export function generateCalendar(
 						)
 						: undefined,
 				numRibbonSlots,
+				weekRibbonSlots,
 			},
 		];
 
