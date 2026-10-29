@@ -14,6 +14,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Blocks\Calendar_Week;
 use GatherPress\Core\Calendar\Date_Range;
 use GatherPress\Core\Calendar\Time_Grid;
+use GatherPress\Core\Utility;
 use WP_Block;
 
 /**
@@ -177,37 +178,21 @@ final class Html_Renderer {
 		bool $render_week_numbers,
 		bool $is_time_grid
 	): string {
-		$table_class = 'gatherpress-calendar__table' . ( $is_time_grid ? ' has-time-grid' : '' );
-		// Without "Show Weekdays", the header row is only hidden on screen: screen readers
-		// still read the weekday of each cell.
-		$thead_class = $show_weekdays ? '' : ' class="gatherpress--screen-reader-text"';
-
-		ob_start();
-		?>
-		<?php // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- build_table_style() escapes it. ?>
-		<table class="<?php echo esc_attr( $table_class ); ?>" <?php echo $table_style; ?>>
-			<?php if ( '' !== $unit['caption'] ) { ?>
-				<caption class="gatherpress--screen-reader-text"><?php echo esc_html( $unit['caption'] ); ?></caption>
-			<?php } ?>
-			<thead<?php echo $thead_class; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-				<tr>
-					<?php
-					// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-					echo $this->render_header_cells( $unit['day_names'], $render_week_numbers, $is_time_grid );
-					?>
-				</tr>
-			</thead>
-			<tbody>
-				<?php
-				// Rendered blocks escape their own output. wp_kses_post() here would remove
-				// aria-modal from modals, and SVG, form and iframe markup.
-				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-				echo $this->render_calendar_weeks( $unit['weeks'], $render_week_numbers );
-				?>
-			</tbody>
-		</table>
-		<?php
-		return (string) ob_get_clean();
+		return Utility::render_template(
+			sprintf( '%s/includes/templates/blocks/calendar/table.php', GATHERPRESS_CORE_PATH ),
+			array(
+				'table_class'   => 'gatherpress-calendar__table' . ( $is_time_grid ? ' has-time-grid' : '' ),
+				'table_style'   => $table_style,
+				'caption'       => $unit['caption'],
+				'show_weekdays' => $show_weekdays,
+				'header_cells'  => $this->render_header_cells(
+					$unit['day_names'],
+					$render_week_numbers,
+					$is_time_grid
+				),
+				'weeks'         => $this->render_calendar_weeks( $unit['weeks'], $render_week_numbers ),
+			)
+		);
 	}
 
 	/**
