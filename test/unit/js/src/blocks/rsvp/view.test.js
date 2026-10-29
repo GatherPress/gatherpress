@@ -476,11 +476,9 @@ describe( 'rsvp updateRsvp focus target with the real modal actions (#2428)', ()
 				}">
 					<div class="wp-block-gatherpress-modal-manager">
 						<div class="gatherpress-modal--trigger-open"><button type="button">Edit RSVP</button></div>
-						<div class="wp-block-gatherpress-modal${
-	status === current ? ' gatherpress--is-visible' : ''
-}" aria-hidden="${ status === current ? 'false' : 'true' }">
+						<dialog class="wp-block-gatherpress-modal"${ status === current ? ' open' : '' }>
 							<div class="wp-block-gatherpress-modal-content">${ FIRST_CONTROL[ status ] }</div>
-						</div>
+						</dialog>
 					</div>
 				</div>`,
 			)
@@ -565,14 +563,10 @@ describe( 'rsvp updateRsvp focus target with the real modal actions (#2428)', ()
 			expect( document.activeElement ).toBe(
 				modal( 'waiting_list' ).querySelector( '.anonymous' ),
 			);
-			expect( modal( 'no_status' ).classList ).not.toContain(
-				'gatherpress--is-visible',
-			);
+			expect( modal( 'no_status' ).open ).toBe( false );
 		} );
 
-		expect( modal( 'waiting_list' ).classList ).toContain(
-			'gatherpress--is-visible',
-		);
+		expect( modal( 'waiting_list' ).open ).toBe( true );
 	} );
 
 	it( 'focuses the number of guests in the attending modal after Attend', async () => {
@@ -583,9 +577,7 @@ describe( 'rsvp updateRsvp focus target with the real modal actions (#2428)', ()
 			expect( document.activeElement ).toBe(
 				modal( 'attending' ).querySelector( '.guests' ),
 			);
-			expect( modal( 'no_status' ).classList ).not.toContain(
-				'gatherpress--is-visible',
-			);
+			expect( modal( 'no_status' ).open ).toBe( false );
 		} );
 	} );
 
@@ -599,6 +591,16 @@ describe( 'rsvp updateRsvp focus target with the real modal actions (#2428)', ()
 				),
 			),
 		);
+
+		// The attending modal closes even though its state is now hidden: an
+		// open modal dialog there would leave the rest of the page inert.
+		expect( modal( 'attending' ).open ).toBe( false );
+	} );
+} );
+
+describe( 'rsvp updateRsvp without JavaScript (#2039)', () => {
+	it( 'is synchronous, so preventDefault() keeps the no-JavaScript form from submitting', () => {
+		expect( store( 'gatherpress' ).actions.updateRsvp.sync ).toBe( true );
 	} );
 } );
 

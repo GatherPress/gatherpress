@@ -176,9 +176,16 @@ final class Modal_Manager {
 	 * - Sets `role="button"`, plus `tabindex="0"` on elements that are not focusable on their own
 	 *   (anything except a `<button>` or a link with an `href`).
 	 *
+	 * The modal itself closes on Escape and on a click on its overlay, which
+	 * is the dialog around the modal's content. Escape goes through the same
+	 * close action as a close button rather than the browser's own close, so
+	 * focus returns the same way, which matters once the RSVP block has moved
+	 * on to another status's modal.
+	 *
 	 * @since 0.33.0
 	 * @since 0.36.0 Links acting as buttons also close the modal on Space. Links without an
 	 *            `href` get `tabindex`.
+	 * @since TBD    The modal closes on Escape and on an overlay click.
 	 *
 	 * @param string $block_content The original block HTML content.
 	 *
@@ -187,9 +194,15 @@ final class Modal_Manager {
 	public function attach_modal_close_behavior( string $block_content ): string {
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
-		// Process only tags with the specific class 'gatherpress-modal--trigger-close'.
+		// Process the modal and its close triggers.
 		while ( $tag->next_tag() ) {
 			$class_attr = $tag->get_attribute( 'class' );
+
+			if ( Utility::has_css_class( $class_attr, 'wp-block-gatherpress-modal' ) ) {
+				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+				$tag->set_attribute( 'data-wp-on--cancel', 'actions.closeModal' );
+				$tag->set_attribute( 'data-wp-on--click', 'actions.closeModalOnOverlay' );
+			}
 
 			if ( Utility::has_css_class( $class_attr, 'gatherpress-modal--trigger-close' ) ) {
 				// @phpstan-ignore-next-line
@@ -309,11 +322,13 @@ final class Modal_Manager {
 
 			if ( $is_open && ! $result['opened'] && $is_modal ) {
 				// The view script opens the first modal in its manager, so the server does too.
+				// Without a script to call showModal(), the dialog opens as non-modal; with
+				// one, the script reopens it as a modal.
 				$result['opened'] = true;
 
-				$tag->add_class( 'gatherpress--is-visible' );
-				$tag->set_attribute( 'aria-hidden', 'false' );
+				$tag->set_attribute( 'open', true );
 				$tag->set_attribute( self::OPENED_ATTRIBUTE, 'true' );
+				$tag->set_attribute( 'data-wp-init', 'callbacks.takeOverOpenedModal' );
 			} elseif ( Utility::has_css_class( $class_attr, $trigger ) && $this->seek_actionable_element( $tag ) ) {
 				$result['has_trigger'] = true;
 				$result['has_form']    = $this->navigate_on_click( $tag, $form_id, $url ) || $result['has_form'];
@@ -444,7 +459,9 @@ final class Modal_Manager {
 	 * closes it. It stays out of the tab order and hidden from assistive
 	 * technology, like the overlay. Its `data-close-modal` lets the RSVP
 	 * block treat it like a close button. A modal with no close trigger
-	 * also gets a Close link, so the keyboard has a way out too.
+	 * also gets a Close link, so the keyboard has a way out too. With
+	 * JavaScript, the view script hides the button in favor of its own
+	 * overlay handling, and the link closes the modal without a reload.
 	 *
 	 * @since TBD
 	 *
@@ -469,8 +486,9 @@ final class Modal_Manager {
 
 		if ( $needs_close_link ) {
 			$html .= sprintf(
-				'<a class="gatherpress-modal__close" href="%s">%s</a>',
+				'<a class="gatherpress-modal__close" href="%s" %s>%s</a>',
 				esc_url( $url ),
+				'data-wp-interactive="gatherpress" data-wp-on--click="actions.closeModal"',
 				esc_html( _x( 'Close', 'Button label for closing modal dialog', 'gatherpress' ) )
 			);
 		}
