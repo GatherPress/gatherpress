@@ -36,16 +36,18 @@ class Test_Calendar_Entries extends Base {
 	);
 
 	/**
-	 * Clear the static state of the entries class.
+	 * Clear the render state of the entries class.
 	 *
 	 * @return void
 	 */
 	public function tearDown(): void {
-		Utility::set_and_get_hidden_static_property( Calendar_Entries::class, 'current_post_id', 0 );
-		Utility::set_and_get_hidden_static_property( Calendar_Entries::class, 'current_span_data', array() );
-		Utility::set_and_get_hidden_static_property( Calendar_Entries::class, 'current_shows_post_title', false );
-		Utility::set_and_get_hidden_static_property( Calendar_Entries::class, 'modal_depth', 0 );
-		Utility::set_and_get_hidden_static_property( Calendar_Entries::class, 'render_depth', 0 );
+		$instance = Calendar_Entries::get_instance();
+
+		Utility::set_and_get_hidden_property( $instance, 'current_post_id', 0 );
+		Utility::set_and_get_hidden_property( $instance, 'current_span_data', array() );
+		Utility::set_and_get_hidden_property( $instance, 'current_shows_post_title', false );
+		Utility::set_and_get_hidden_property( $instance, 'modal_depth', 0 );
+		Utility::set_and_get_hidden_property( $instance, 'render_depth', 0 );
 		parent::tearDown();
 	}
 
@@ -100,7 +102,7 @@ class Test_Calendar_Entries extends Base {
 		$block          = new WP_Block( parse_blocks( $markup )[0] );
 		$block->context = array_merge( array( 'gatherpress/dayPosts' => $day_posts ), $context );
 
-		return Calendar_Entries::render( $block->attributes, $block );
+		return Calendar_Entries::get_instance()->render( $block->attributes, $block );
 	}
 
 	/**
@@ -442,8 +444,8 @@ class Test_Calendar_Entries extends Base {
 			'Failed to assert a Post Title in a Group is also a trigger.'
 		);
 		$this->assertTrue(
-			Utility::invoke_hidden_static_method(
-				Calendar_Entries::class,
+			Utility::invoke_hidden_method(
+				Calendar_Entries::get_instance(),
 				'template_shows_post_title',
 				array( array( 'not a block', array( 'blockName' => 'core/post-title' ) ) )
 			)
@@ -463,6 +465,8 @@ class Test_Calendar_Entries extends Base {
 	 * @return void
 	 */
 	public function test_nested_calendar_keeps_outer_entry_state(): void {
+		$instance = Calendar_Entries::get_instance();
+
 		$event_id = $this->create_event( 'Retreat' );
 		$template = '<!-- wp:gatherpress/modal --><div class="wp-block-gatherpress-modal">'
 			. '<!-- wp:gatherpress/modal-content --><div class="wp-block-gatherpress-modal-content">'
@@ -493,10 +497,10 @@ class Test_Calendar_Entries extends Base {
 			$output,
 			'Failed to assert the outer modal keeps its date after the nested calendar.'
 		);
-		$this->assertSame( 0, Utility::get_hidden_static_property( Calendar_Entries::class, 'render_depth' ) );
-		$this->assertSame( 0, Utility::get_hidden_static_property( Calendar_Entries::class, 'modal_depth' ) );
+		$this->assertSame( 0, Utility::get_hidden_property( $instance, 'render_depth' ) );
+		$this->assertSame( 0, Utility::get_hidden_property( $instance, 'modal_depth' ) );
 		$this->assertFalse(
-			has_filter( 'the_title', array( Calendar_Entries::class, 'filter_empty_title' ) ),
+			has_filter( 'the_title', array( $instance, 'filter_empty_title' ) ),
 			'Failed to assert the filters are removed after the outer entry.'
 		);
 	}
@@ -509,6 +513,8 @@ class Test_Calendar_Entries extends Base {
 	 * @return void
 	 */
 	public function test_throwing_callback_restores_state(): void {
+		$instance = Calendar_Entries::get_instance();
+
 		$event_id = $this->create_event( 'Retreat' );
 		$callback = static function () {
 			throw new \RuntimeException( 'Calendar entry test' );
@@ -525,10 +531,10 @@ class Test_Calendar_Entries extends Base {
 			remove_action( 'gatherpress_calendar_before_render_entry', $callback );
 		}
 
-		$this->assertSame( 0, Utility::get_hidden_static_property( Calendar_Entries::class, 'render_depth' ) );
-		$this->assertSame( 0, Utility::get_hidden_static_property( Calendar_Entries::class, 'current_post_id' ) );
+		$this->assertSame( 0, Utility::get_hidden_property( $instance, 'render_depth' ) );
+		$this->assertSame( 0, Utility::get_hidden_property( $instance, 'current_post_id' ) );
 		$this->assertFalse(
-			has_filter( 'the_title', array( Calendar_Entries::class, 'filter_empty_title' ) ),
+			has_filter( 'the_title', array( $instance, 'filter_empty_title' ) ),
 			'Failed to assert the filters are removed.'
 		);
 	}
@@ -575,13 +581,15 @@ class Test_Calendar_Entries extends Base {
 	 * @return void
 	 */
 	public function test_render_with_missing_context_and_template(): void {
+		$instance = Calendar_Entries::get_instance();
+
 		$block          = new WP_Block( array( 'blockName' => Calendar_Entries::BLOCK_NAME ) );
 		$block->context = array( 'gatherpress/timeGridConfig' => new Time_Grid( true ) );
 
-		$this->assertStringContainsString( 'has-time-grid', Calendar_Entries::render( array(), $block ) );
+		$this->assertStringContainsString( 'has-time-grid', $instance->render( array(), $block ) );
 
 		$block->context = array( 'gatherpress/dayPosts' => array( $this->mock->post()->get()->ID ) );
-		$output         = Calendar_Entries::render( array(), $block );
+		$output         = $instance->render( array(), $block );
 
 		$this->assertStringContainsString(
 			'gatherpress-calendar__entry',
@@ -600,6 +608,8 @@ class Test_Calendar_Entries extends Base {
 	 * @return void
 	 */
 	public function test_empty_title_and_global_post(): void {
+		$instance = Calendar_Entries::get_instance();
+
 		$untitled        = $this->mock->post( array( 'post_title' => '' ) )->get();
 		$page_post       = $this->mock->post( array( 'post_title' => 'The Page' ) )->get();
 		$GLOBALS['post'] = $page_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
@@ -611,11 +621,11 @@ class Test_Calendar_Entries extends Base {
 
 		unset( $GLOBALS['post'] );
 
-		Utility::set_and_get_hidden_static_property( Calendar_Entries::class, 'current_post_id', $untitled->ID );
+		Utility::set_and_get_hidden_property( $instance, 'current_post_id', $untitled->ID );
 
-		$this->assertSame( 'Other', Calendar_Entries::filter_empty_title( 'Other', $page_post->ID ) );
-		$this->assertSame( 'Kept', Calendar_Entries::filter_empty_title( 'Kept', $untitled->ID ) );
-		$this->assertSame( '(no title)', Calendar_Entries::filter_empty_title( null, $untitled->ID ) );
+		$this->assertSame( 'Other', $instance->filter_empty_title( 'Other', $page_post->ID ) );
+		$this->assertSame( 'Kept', $instance->filter_empty_title( 'Kept', $untitled->ID ) );
+		$this->assertSame( '(no title)', $instance->filter_empty_title( null, $untitled->ID ) );
 	}
 
 	/**
@@ -671,66 +681,68 @@ class Test_Calendar_Entries extends Base {
 	 * @return void
 	 */
 	public function test_filters_leave_other_content(): void {
+		$instance = Calendar_Entries::get_instance();
+
 		$titled   = $this->mock->post( array( 'post_title' => 'Titled' ) )->get()->ID;
 		$untitled = $this->mock->post( array( 'post_title' => '' ) )->get()->ID;
 
-		Utility::set_and_get_hidden_static_property( Calendar_Entries::class, 'current_post_id', $untitled );
+		Utility::set_and_get_hidden_property( $instance, 'current_post_id', $untitled );
 
-		$this->assertSame( '10:00', Calendar_Entries::filter_event_date_link( '10:00', array() ) );
-		$this->assertSame( '<a>10:00</a>', Calendar_Entries::filter_event_date_link( '<a>10:00</a>', array() ) );
+		$this->assertSame( '10:00', $instance->filter_event_date_link( '10:00', array() ) );
+		$this->assertSame( '<a>10:00</a>', $instance->filter_event_date_link( '<a>10:00</a>', array() ) );
 		$this->assertSame(
 			'<a>10:00<span class="gatherpress--screen-reader-text">, Titled</span></a>',
-			Calendar_Entries::filter_event_date_link(
+			$instance->filter_event_date_link(
 				'<a>10:00</a>',
 				array( 'attrs' => array( 'postId' => $titled ) )
 			),
 			'Failed to assert a postId attribute names its own event.'
 		);
 
-		Utility::set_and_get_hidden_static_property( Calendar_Entries::class, 'current_post_id', PHP_INT_MAX );
-		$this->assertSame( '<a>10:00</a>', Calendar_Entries::filter_event_date_link( '<a>10:00</a>', array() ) );
+		Utility::set_and_get_hidden_property( $instance, 'current_post_id', PHP_INT_MAX );
+		$this->assertSame( '<a>10:00</a>', $instance->filter_event_date_link( '<a>10:00</a>', array() ) );
 
-		Utility::set_and_get_hidden_static_property( Calendar_Entries::class, 'current_span_data', self::MIDDLE_DAY );
-		$this->assertSame( 'Plain title', Calendar_Entries::filter_post_title_span( 'Plain title' ) );
+		Utility::set_and_get_hidden_property( $instance, 'current_span_data', self::MIDDLE_DAY );
+		$this->assertSame( 'Plain title', $instance->filter_post_title_span( 'Plain title' ) );
 		$this->assertSame(
 			'<div>date</div>',
-			Calendar_Entries::filter_multiday_event_date( '<div>date</div>' ),
+			$instance->filter_multiday_event_date( '<div>date</div>' ),
 			'Failed to assert the date stays when the template shows no Post Title.'
 		);
 
-		Utility::set_and_get_hidden_static_property( Calendar_Entries::class, 'current_shows_post_title', true );
-		$this->assertSame( '', Calendar_Entries::filter_multiday_event_date( '<div>date</div>' ) );
+		Utility::set_and_get_hidden_property( $instance, 'current_shows_post_title', true );
+		$this->assertSame( '', $instance->filter_multiday_event_date( '<div>date</div>' ) );
 		$this->assertSame(
 			'<a>10:00</a>',
-			Calendar_Entries::filter_event_date_link(
+			$instance->filter_event_date_link(
 				'<a>10:00</a>',
 				array( 'attrs' => array( 'postId' => $titled ) )
 			),
 			'Failed to assert no hidden title when the template shows the Post Title.'
 		);
 
-		Calendar_Entries::track_modal_depth_pre( null, array( 'blockName' => 'gatherpress/modal' ) );
-		$this->assertSame( '<div>date</div>', Calendar_Entries::filter_multiday_event_date( '<div>date</div>' ) );
+		$instance->track_modal_depth_pre( null, array( 'blockName' => 'gatherpress/modal' ) );
+		$this->assertSame( '<div>date</div>', $instance->filter_multiday_event_date( '<div>date</div>' ) );
 		$this->assertSame(
 			'x',
-			Calendar_Entries::track_modal_depth_post( 'x', array( 'blockName' => 'core/paragraph' ) )
+			$instance->track_modal_depth_post( 'x', array( 'blockName' => 'core/paragraph' ) )
 		);
-		$this->assertSame( 1, Utility::get_hidden_static_property( Calendar_Entries::class, 'modal_depth' ) );
-		Calendar_Entries::track_modal_depth_post( '', array( 'blockName' => 'gatherpress/modal' ) );
-		Calendar_Entries::track_modal_depth_post( '', array( 'blockName' => 'gatherpress/modal' ) );
-		$this->assertSame( 0, Utility::get_hidden_static_property( Calendar_Entries::class, 'modal_depth' ) );
+		$this->assertSame( 1, Utility::get_hidden_property( $instance, 'modal_depth' ) );
+		$instance->track_modal_depth_post( '', array( 'blockName' => 'gatherpress/modal' ) );
+		$instance->track_modal_depth_post( '', array( 'blockName' => 'gatherpress/modal' ) );
+		$this->assertSame( 0, Utility::get_hidden_property( $instance, 'modal_depth' ) );
 
-		$context = Calendar_Entries::filter_entry_context( array() );
+		$context = $instance->filter_entry_context( array() );
 		$this->assertSame( 1, $context['gatherpress/eventSlot'] );
 		$this->assertSame( 'middle', $context['gatherpress/eventSpan'] );
 
-		Utility::set_and_get_hidden_static_property( Calendar_Entries::class, 'current_span_data', array() );
+		Utility::set_and_get_hidden_property( $instance, 'current_span_data', array() );
 		$this->assertSame(
 			array(
 				'postType' => '',
 				'postId'   => PHP_INT_MAX,
 			),
-			Calendar_Entries::filter_entry_context( array() )
+			$instance->filter_entry_context( array() )
 		);
 	}
 }

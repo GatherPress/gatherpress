@@ -13,6 +13,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Blocks\Calendar\Style_Processor;
 use GatherPress\Core\Calendar\Time_Grid;
+use GatherPress\Core\Traits\Singleton;
 use WP_Block;
 use WP_Post;
 
@@ -25,6 +26,11 @@ use WP_Post;
  * @since TBD
  */
 final class Calendar_Entries {
+
+	/**
+	 * Enforces a single instance of this class.
+	 */
+	use Singleton;
 
 	/**
 	 * Constant representing the Block Name.
@@ -47,13 +53,10 @@ final class Calendar_Entries {
 	/**
 	 * ID of the event whose entry renders now; 0 between entries.
 	 *
-	 * The public filter methods below read it, so they can be static and
-	 * other code can remove them by name.
-	 *
 	 * @since TBD
 	 * @var int
 	 */
-	private static int $current_post_id = 0;
+	private int $current_post_id = 0;
 
 	/**
 	 * Post type of the event whose entry renders now; '' between entries.
@@ -61,7 +64,7 @@ final class Calendar_Entries {
 	 * @since TBD
 	 * @var string
 	 */
-	private static string $current_post_type = '';
+	private string $current_post_type = '';
 
 	/**
 	 * Span data of the event whose entry renders now; empty between entries.
@@ -69,7 +72,7 @@ final class Calendar_Entries {
 	 * @since TBD
 	 * @var array<string, mixed>
 	 */
-	private static array $current_span_data = array();
+	private array $current_span_data = array();
 
 	/**
 	 * Whether the template of the entry that renders now shows a Post Title outside the modal.
@@ -77,7 +80,7 @@ final class Calendar_Entries {
 	 * @since TBD
 	 * @var bool
 	 */
-	private static bool $current_shows_post_title = false;
+	private bool $current_shows_post_title = false;
 
 	/**
 	 * Current modal nesting depth to distinguish triggers from modal-content.
@@ -85,7 +88,7 @@ final class Calendar_Entries {
 	 * @since TBD
 	 * @var int
 	 */
-	private static int $modal_depth = 0;
+	private int $modal_depth = 0;
 
 	/**
 	 * Number of entry templates that render now, more than 1 for a calendar inside an entry.
@@ -93,7 +96,18 @@ final class Calendar_Entries {
 	 * @since TBD
 	 * @var int
 	 */
-	private static int $render_depth = 0;
+	private int $render_depth = 0;
+
+	/**
+	 * Class constructor.
+	 *
+	 * The block needs no hooks: `render.php` calls {@see self::render()}
+	 * directly, and the entry filters are added only while an entry renders.
+	 *
+	 * @since TBD
+	 */
+	protected function __construct() {
+	}
 
 	/**
 	 * Render the calendar entries of one day.
@@ -107,7 +121,7 @@ final class Calendar_Entries {
 	 *
 	 * @return string Rendered HTML.
 	 */
-	public static function render( array $attributes, WP_Block $block ): string {
+	public function render( array $attributes, WP_Block $block ): string {
 		$day_posts    = is_array( $block->context['gatherpress/dayPosts'] ?? null )
 			? $block->context['gatherpress/dayPosts']
 			: array();
@@ -133,7 +147,7 @@ final class Calendar_Entries {
 			$span_data = is_array( $entry ) ? $entry : array();
 
 			if ( is_int( $post_id ) && $post_id > 0 ) {
-				$items_html .= self::render_entry( $post_id, $block, $span_data );
+				$items_html .= $this->render_entry( $post_id, $block, $span_data );
 			}
 		}
 
@@ -156,7 +170,7 @@ final class Calendar_Entries {
 	 *
 	 * @return array<string, mixed> Block attributes.
 	 */
-	private static function get_block_attributes( WP_Block $block ): array {
+	private function get_block_attributes( WP_Block $block ): array {
 		/**
 		 * Parsed block attributes are keyed by attribute name.
 		 *
@@ -176,7 +190,7 @@ final class Calendar_Entries {
 	 *
 	 * @return string CSS variable declarations string or empty string.
 	 */
-	private static function build_timed_event_style( array $span_data ): string {
+	private function build_timed_event_style( array $span_data ): string {
 		if ( empty( $span_data['is_timed'] ) || ! isset( $span_data['time_row_start'], $span_data['time_row_end'] ) ) {
 			return '';
 		}
@@ -184,10 +198,10 @@ final class Calendar_Entries {
 		return sprintf(
 			'--gatherpress-event-time-row-start: %d; --gatherpress-event-time-row-end: %d; '
 				. '--gatherpress-overlap-total: %d; --gatherpress-overlap-index: %d;',
-			self::get_int( $span_data, 'time_row_start', 0 ),
-			self::get_int( $span_data, 'time_row_end', 0 ),
-			self::get_int( $span_data, 'overlap_total', 1 ),
-			self::get_int( $span_data, 'overlap_index', 0 )
+			$this->get_int( $span_data, 'time_row_start', 0 ),
+			$this->get_int( $span_data, 'time_row_end', 0 ),
+			$this->get_int( $span_data, 'overlap_total', 1 ),
+			$this->get_int( $span_data, 'overlap_index', 0 )
 		);
 	}
 
@@ -202,7 +216,7 @@ final class Calendar_Entries {
 	 *
 	 * @return int The integer.
 	 */
-	private static function get_int( array $span_data, string $key, int $fallback ): int {
+	private function get_int( array $span_data, string $key, int $fallback ): int {
 		return is_numeric( $span_data[ $key ] ?? null ) ? (int) $span_data[ $key ] : $fallback;
 	}
 
@@ -218,7 +232,7 @@ final class Calendar_Entries {
 	 *
 	 * @return string Style attribute HTML string (e.g. ' style="..."').
 	 */
-	private static function build_entry_style_attribute(
+	private function build_entry_style_attribute(
 		string $inline_styles,
 		array $span_data,
 		int $row_span,
@@ -250,18 +264,18 @@ final class Calendar_Entries {
 	 *
 	 * @return string Event HTML with innerBlocks rendered.
 	 */
-	private static function render_entry( int $post_id, WP_Block $block, array $span_data ): string {
+	private function render_entry( int $post_id, WP_Block $block, array $span_data ): string {
 		$post = get_post( $post_id );
 
 		if ( ! $post instanceof WP_Post ) {
 			return '';
 		}
 
-		$inner_content = self::render_entry_inner_content( $post, $block, $span_data );
-		$entry_styles  = self::get_entry_styles_and_classes( self::get_block_attributes( $block ) );
-		$row_span      = self::get_int( $span_data, 'row_span', 1 );
-		$extra_classes = self::build_span_classes( $span_data, $row_span );
-		$timed_style   = self::build_timed_event_style( $span_data );
+		$inner_content = $this->render_entry_inner_content( $post, $block, $span_data );
+		$entry_styles  = $this->get_entry_styles_and_classes( $this->get_block_attributes( $block ) );
+		$row_span      = $this->get_int( $span_data, 'row_span', 1 );
+		$extra_classes = $this->build_span_classes( $span_data, $row_span );
+		$timed_style   = $this->build_timed_event_style( $span_data );
 
 		if ( '' !== $timed_style ) {
 			$extra_classes[] = 'is-timed-event';
@@ -272,9 +286,9 @@ final class Calendar_Entries {
 		return sprintf(
 			'<div class="%1$s"%2$s%3$s%4$s>%5$s</div>',
 			esc_attr( implode( ' ', get_post_class( $classnames, $post_id ) ) ),
-			self::build_entry_style_attribute( $entry_styles['inline_styles'], $span_data, $row_span, $timed_style ),
-			self::build_entry_data_attributes( $span_data, $row_span ),
-			self::build_entry_iapi_directives( $post_id ),
+			$this->build_entry_style_attribute( $entry_styles['inline_styles'], $span_data, $row_span, $timed_style ),
+			$this->build_entry_data_attributes( $span_data, $row_span ),
+			$this->build_entry_iapi_directives( $post_id ),
 			$inner_content
 		);
 	}
@@ -290,7 +304,7 @@ final class Calendar_Entries {
 	 *
 	 * @return string Rendered inner content.
 	 */
-	private static function render_entry_inner_content( WP_Post $post, WP_Block $block, array $span_data ): string {
+	private function render_entry_inner_content( WP_Post $post, WP_Block $block, array $span_data ): string {
 		$original_post = ( isset( $GLOBALS['post'] ) && $GLOBALS['post'] instanceof WP_Post ) ? $GLOBALS['post'] : null;
 
 		if ( isset( $GLOBALS['post'] ) ) {
@@ -307,7 +321,7 @@ final class Calendar_Entries {
 		$inner_blocks  = is_array( $block->parsed_block['innerBlocks'] ?? null )
 			? $block->parsed_block['innerBlocks']
 			: array();
-		$inner_content = self::render_entry_template( $inner_blocks, $post->ID, $post->post_type, $span_data );
+		$inner_content = $this->render_entry_template( $inner_blocks, $post->ID, $post->post_type, $span_data );
 
 		wp_reset_postdata();
 
@@ -328,7 +342,7 @@ final class Calendar_Entries {
 	 *
 	 * @return list<string> Extra CSS classes.
 	 */
-	private static function build_span_classes( array $span_data, int $row_span ): array {
+	private function build_span_classes( array $span_data, int $row_span ): array {
 		$is_all_day = ! empty( $span_data['is_all_day'] );
 		$classes    = array();
 
@@ -340,7 +354,7 @@ final class Calendar_Entries {
 			$classes[] = 'is-all-day';
 		}
 
-		if ( self::get_int( $span_data, 'total_days', 1 ) > 1 || $is_all_day ) {
+		if ( $this->get_int( $span_data, 'total_days', 1 ) > 1 || $is_all_day ) {
 			$classes[] = 'is-multi-day';
 		}
 
@@ -369,7 +383,7 @@ final class Calendar_Entries {
 	 *
 	 * @return string Data attributes string.
 	 */
-	private static function build_entry_data_attributes( array $span_data, int $row_span ): string {
+	private function build_entry_data_attributes( array $span_data, int $row_span ): string {
 		$attrs = '';
 
 		if ( ! empty( $span_data['span'] ) && is_scalar( $span_data['span'] ) ) {
@@ -394,7 +408,7 @@ final class Calendar_Entries {
 	 *
 	 * @return string Directives string.
 	 */
-	private static function build_entry_iapi_directives( int $post_id ): string {
+	private function build_entry_iapi_directives( int $post_id ): string {
 		return ' data-wp-interactive="gatherpress/calendar"'
 			. sprintf( ' data-wp-context="%s"', esc_attr( (string) wp_json_encode( array( 'eventId' => $post_id ) ) ) )
 			. ' data-wp-on--mouseenter="actions.hoverEvent"'
@@ -414,7 +428,7 @@ final class Calendar_Entries {
 	 *
 	 * @return bool True for gatherpress/modal and gatherpress/modal-content.
 	 */
-	private static function is_modal_block( array $parsed_block ): bool {
+	private function is_modal_block( array $parsed_block ): bool {
 		$modal_blocks = array( 'gatherpress/modal', 'gatherpress/modal-content' );
 
 		return in_array( $parsed_block['blockName'] ?? '', $modal_blocks, true );
@@ -430,9 +444,9 @@ final class Calendar_Entries {
 	 *
 	 * @return mixed The pre-render value, unchanged.
 	 */
-	public static function track_modal_depth_pre( $pre_render, array $parsed_block ) {
-		if ( self::is_modal_block( $parsed_block ) ) {
-			++self::$modal_depth;
+	public function track_modal_depth_pre( $pre_render, array $parsed_block ) {
+		if ( $this->is_modal_block( $parsed_block ) ) {
+			++$this->modal_depth;
 		}
 
 		return $pre_render;
@@ -448,9 +462,9 @@ final class Calendar_Entries {
 	 *
 	 * @return string The rendered HTML, unchanged.
 	 */
-	public static function track_modal_depth_post( string $block_content, array $parsed_block ): string {
-		if ( self::is_modal_block( $parsed_block ) && self::$modal_depth > 0 ) {
-			--self::$modal_depth;
+	public function track_modal_depth_post( string $block_content, array $parsed_block ): string {
+		if ( $this->is_modal_block( $parsed_block ) && $this->modal_depth > 0 ) {
+			--$this->modal_depth;
 		}
 
 		return $block_content;
@@ -463,10 +477,10 @@ final class Calendar_Entries {
 	 *
 	 * @return bool True for a multi-day or all-day event.
 	 */
-	private static function is_current_entry_multi_day(): bool {
-		$total_days = self::get_int( self::$current_span_data, 'total_days', 1 );
+	private function is_current_entry_multi_day(): bool {
+		$total_days = $this->get_int( $this->current_span_data, 'total_days', 1 );
 
-		return $total_days > 1 || ! empty( self::$current_span_data['is_all_day'] );
+		return $total_days > 1 || ! empty( $this->current_span_data['is_all_day'] );
 	}
 
 	/**
@@ -482,8 +496,8 @@ final class Calendar_Entries {
 	 *
 	 * @return string The block HTML, or an empty string for a multi-day trigger.
 	 */
-	public static function filter_multiday_event_date( string $block_content ): string {
-		if ( ! self::$current_shows_post_title || self::$modal_depth > 0 || ! self::is_current_entry_multi_day() ) {
+	public function filter_multiday_event_date( string $block_content ): string {
+		if ( ! $this->current_shows_post_title || $this->modal_depth > 0 || ! $this->is_current_entry_multi_day() ) {
 			return $block_content;
 		}
 
@@ -512,29 +526,29 @@ final class Calendar_Entries {
 	 *
 	 * @return string Rendered HTML.
 	 */
-	private static function render_entry_template(
+	private function render_entry_template(
 		array $inner_blocks,
 		int $post_id,
 		string $post_type,
 		array $span_data
 	): string {
-		$previous_post_id          = self::$current_post_id;
-		$previous_post_type        = self::$current_post_type;
-		$previous_span_data        = self::$current_span_data;
-		$previous_shows_post_title = self::$current_shows_post_title;
-		$previous_modal_depth      = self::$modal_depth;
+		$previous_post_id          = $this->current_post_id;
+		$previous_post_type        = $this->current_post_type;
+		$previous_span_data        = $this->current_span_data;
+		$previous_shows_post_title = $this->current_shows_post_title;
+		$previous_modal_depth      = $this->modal_depth;
 
-		self::$current_post_id          = $post_id;
-		self::$current_post_type        = $post_type;
-		self::$current_span_data        = $span_data;
-		self::$current_shows_post_title = self::template_shows_post_title( $inner_blocks );
-		self::$modal_depth              = 0;
+		$this->current_post_id          = $post_id;
+		$this->current_post_type        = $post_type;
+		$this->current_span_data        = $span_data;
+		$this->current_shows_post_title = $this->template_shows_post_title( $inner_blocks );
+		$this->modal_depth              = 0;
 
-		if ( 0 === self::$render_depth ) {
-			self::add_entry_filters();
+		if ( 0 === $this->render_depth ) {
+			$this->add_entry_filters();
 		}
 
-		++self::$render_depth;
+		++$this->render_depth;
 
 		// Finally: a callback or block that throws must not leave the filters or this entry's state.
 		try {
@@ -543,7 +557,7 @@ final class Calendar_Entries {
 			 *
 			 * The calendar has added its filters for this event. Callbacks can
 			 * add their own filters, or remove one of the calendar's, for example:
-			 * remove_filter( 'the_title', array( Calendar_Entries::class, 'filter_empty_title' ), 10 );
+			 * remove_filter( 'the_title', array( Calendar_Entries::get_instance(), 'filter_empty_title' ), 10 );
 			 * The calendar removes its own filters after the entry renders. For a
 			 * calendar inside an entry template, that is after the outer entry. The
 			 * action fires once for each entry, so a multi-day event fires it once
@@ -558,19 +572,19 @@ final class Calendar_Entries {
 			 */
 			do_action( 'gatherpress_calendar_before_render_entry', $post_id, $post_type, $inner_blocks, $span_data );
 
-			return self::render_template( $inner_blocks );
+			return $this->render_template( $inner_blocks );
 		} finally {
-			--self::$render_depth;
+			--$this->render_depth;
 
-			if ( 0 === self::$render_depth ) {
-				self::remove_entry_filters();
+			if ( 0 === $this->render_depth ) {
+				$this->remove_entry_filters();
 			}
 
-			self::$current_post_id          = $previous_post_id;
-			self::$current_post_type        = $previous_post_type;
-			self::$current_span_data        = $previous_span_data;
-			self::$current_shows_post_title = $previous_shows_post_title;
-			self::$modal_depth              = $previous_modal_depth;
+			$this->current_post_id          = $previous_post_id;
+			$this->current_post_type        = $previous_post_type;
+			$this->current_span_data        = $previous_span_data;
+			$this->current_shows_post_title = $previous_shows_post_title;
+			$this->modal_depth              = $previous_modal_depth;
 		}
 	}
 
@@ -585,14 +599,14 @@ final class Calendar_Entries {
 	 *
 	 * @return void
 	 */
-	private static function add_entry_filters(): void {
-		add_filter( 'render_block_context', array( self::class, 'filter_entry_context' ), 1 );
-		add_filter( 'the_title', array( self::class, 'filter_empty_title' ), 10, 2 );
-		add_filter( 'pre_render_block', array( self::class, 'track_modal_depth_pre' ), 10, 2 );
-		add_filter( 'render_block', array( self::class, 'track_modal_depth_post' ), 999, 2 );
-		add_filter( 'render_block_core/post-title', array( self::class, 'filter_post_title_span' ) );
-		add_filter( 'render_block_gatherpress/event-date', array( self::class, 'filter_multiday_event_date' ) );
-		add_filter( 'render_block_gatherpress/event-date', array( self::class, 'filter_event_date_link' ), 10, 2 );
+	private function add_entry_filters(): void {
+		add_filter( 'render_block_context', array( $this, 'filter_entry_context' ), 1 );
+		add_filter( 'the_title', array( $this, 'filter_empty_title' ), 10, 2 );
+		add_filter( 'pre_render_block', array( $this, 'track_modal_depth_pre' ), 10, 2 );
+		add_filter( 'render_block', array( $this, 'track_modal_depth_post' ), 999, 2 );
+		add_filter( 'render_block_core/post-title', array( $this, 'filter_post_title_span' ) );
+		add_filter( 'render_block_gatherpress/event-date', array( $this, 'filter_multiday_event_date' ) );
+		add_filter( 'render_block_gatherpress/event-date', array( $this, 'filter_event_date_link' ), 10, 2 );
 	}
 
 	/**
@@ -602,14 +616,14 @@ final class Calendar_Entries {
 	 *
 	 * @return void
 	 */
-	private static function remove_entry_filters(): void {
-		remove_filter( 'render_block_gatherpress/event-date', array( self::class, 'filter_event_date_link' ), 10 );
-		remove_filter( 'render_block_gatherpress/event-date', array( self::class, 'filter_multiday_event_date' ), 10 );
-		remove_filter( 'render_block_core/post-title', array( self::class, 'filter_post_title_span' ), 10 );
-		remove_filter( 'render_block', array( self::class, 'track_modal_depth_post' ), 999 );
-		remove_filter( 'pre_render_block', array( self::class, 'track_modal_depth_pre' ), 10 );
-		remove_filter( 'the_title', array( self::class, 'filter_empty_title' ), 10 );
-		remove_filter( 'render_block_context', array( self::class, 'filter_entry_context' ), 1 );
+	private function remove_entry_filters(): void {
+		remove_filter( 'render_block_gatherpress/event-date', array( $this, 'filter_event_date_link' ), 10 );
+		remove_filter( 'render_block_gatherpress/event-date', array( $this, 'filter_multiday_event_date' ), 10 );
+		remove_filter( 'render_block_core/post-title', array( $this, 'filter_post_title_span' ), 10 );
+		remove_filter( 'render_block', array( $this, 'track_modal_depth_post' ), 999 );
+		remove_filter( 'pre_render_block', array( $this, 'track_modal_depth_pre' ), 10 );
+		remove_filter( 'the_title', array( $this, 'filter_empty_title' ), 10 );
+		remove_filter( 'render_block_context', array( $this, 'filter_entry_context' ), 1 );
 	}
 
 	/**
@@ -623,21 +637,21 @@ final class Calendar_Entries {
 	 *
 	 * @return array<string, mixed> Context with this event's postId and postType.
 	 */
-	public static function filter_entry_context( array $context ): array {
-		$context['postType'] = self::$current_post_type;
-		$context['postId']   = self::$current_post_id;
+	public function filter_entry_context( array $context ): array {
+		$context['postType'] = $this->current_post_type;
+		$context['postId']   = $this->current_post_id;
 
-		if ( empty( self::$current_span_data ) ) {
+		if ( empty( $this->current_span_data ) ) {
 			return $context;
 		}
 
-		$context['gatherpress/eventSpan']      = self::$current_span_data['span'] ?? 'single';
-		$context['gatherpress/eventDayIndex']  = self::$current_span_data['day_index'] ?? 1;
-		$context['gatherpress/eventTotalDays'] = self::$current_span_data['total_days'] ?? 1;
-		$context['gatherpress/isAllDay']       = ! empty( self::$current_span_data['is_all_day'] );
+		$context['gatherpress/eventSpan']      = $this->current_span_data['span'] ?? 'single';
+		$context['gatherpress/eventDayIndex']  = $this->current_span_data['day_index'] ?? 1;
+		$context['gatherpress/eventTotalDays'] = $this->current_span_data['total_days'] ?? 1;
+		$context['gatherpress/isAllDay']       = ! empty( $this->current_span_data['is_all_day'] );
 
-		if ( isset( self::$current_span_data['slot'] ) ) {
-			$context['gatherpress/eventSlot'] = self::$current_span_data['slot'];
+		if ( isset( $this->current_span_data['slot'] ) ) {
+			$context['gatherpress/eventSlot'] = $this->current_span_data['slot'];
 		}
 
 		return $context;
@@ -650,8 +664,8 @@ final class Calendar_Entries {
 	 *
 	 * @return string For example ", day 2 of 5", or an empty string for a one-day event.
 	 */
-	private static function get_span_text(): string {
-		$total_days = self::get_int( self::$current_span_data, 'total_days', 1 );
+	private function get_span_text(): string {
+		$total_days = $this->get_int( $this->current_span_data, 'total_days', 1 );
 
 		if ( $total_days <= 1 ) {
 			return '';
@@ -660,7 +674,7 @@ final class Calendar_Entries {
 		return sprintf(
 			/* translators: 1: Day of the event, 2: Number of days of the event. Read by screen readers. */
 			__( ', day %1$d of %2$d', 'gatherpress' ),
-			self::get_int( self::$current_span_data, 'day_index', 1 ),
+			$this->get_int( $this->current_span_data, 'day_index', 1 ),
 			$total_days
 		);
 	}
@@ -676,7 +690,7 @@ final class Calendar_Entries {
 	 *
 	 * @return string Block HTML with the text, or unchanged when the tag is missing.
 	 */
-	private static function insert_screen_reader_text(
+	private function insert_screen_reader_text(
 		string $block_content,
 		string $text,
 		string $closing_tag
@@ -711,11 +725,11 @@ final class Calendar_Entries {
 	 *
 	 * @return string Block HTML with the day as screen reader text.
 	 */
-	public static function filter_post_title_span( string $block_content ): string {
-		$text = self::$modal_depth > 0 ? '' : self::get_span_text();
+	public function filter_post_title_span( string $block_content ): string {
+		$text = $this->modal_depth > 0 ? '' : $this->get_span_text();
 
 		if ( false !== stripos( $block_content, '</a>' ) ) {
-			return self::insert_screen_reader_text( $block_content, $text, '</a>' );
+			return $this->insert_screen_reader_text( $block_content, $text, '</a>' );
 		}
 
 		$last_close = strrpos( $block_content, '</' );
@@ -745,12 +759,12 @@ final class Calendar_Entries {
 	 *
 	 * @return string Block HTML with the hidden title in the link.
 	 */
-	public static function filter_event_date_link( string $block_content, array $parsed_block ): string {
-		if ( self::$current_shows_post_title ) {
+	public function filter_event_date_link( string $block_content, array $parsed_block ): string {
+		if ( $this->current_shows_post_title ) {
 			return $block_content;
 		}
 
-		return self::add_title_to_event_link( $block_content, $parsed_block, self::$current_post_id );
+		return $this->add_title_to_event_link( $block_content, $parsed_block, $this->current_post_id );
 	}
 
 	/**
@@ -771,8 +785,8 @@ final class Calendar_Entries {
 	 *
 	 * @return mixed The title, or the placeholder for this event's empty title.
 	 */
-	public static function filter_empty_title( $title, $id = 0 ) {
-		$is_this_post = is_numeric( $id ) && (int) $id === self::$current_post_id;
+	public function filter_empty_title( $title, $id = 0 ) {
+		$is_this_post = is_numeric( $id ) && (int) $id === $this->current_post_id;
 		$is_empty     = ! is_string( $title ) || '' === trim( wp_strip_all_tags( $title ) );
 
 		return $is_this_post && $is_empty ? __( '(no title)', 'gatherpress' ) : $title;
@@ -813,7 +827,7 @@ final class Calendar_Entries {
 	 *
 	 * @return string Block HTML with the hidden title in the link.
 	 */
-	private static function add_title_to_event_link(
+	private function add_title_to_event_link(
 		string $block_content,
 		array $parsed_block,
 		int $default_post_id
@@ -845,9 +859,9 @@ final class Calendar_Entries {
 		);
 
 		// The modal shows the full dates, so it needs no day of the event, as in filter_post_title_span().
-		$span_text = self::$modal_depth > 0 ? '' : self::get_span_text();
+		$span_text = $this->modal_depth > 0 ? '' : $this->get_span_text();
 
-		return self::insert_screen_reader_text( $block_content, $screen_reader_text . $span_text, '</a>' );
+		return $this->insert_screen_reader_text( $block_content, $screen_reader_text . $span_text, '</a>' );
 	}
 
 	/**
@@ -864,7 +878,7 @@ final class Calendar_Entries {
 	 *
 	 * @return bool True if a core/post-title block is outside every modal.
 	 */
-	private static function template_shows_post_title( array $blocks ): bool {
+	private function template_shows_post_title( array $blocks ): bool {
 		foreach ( $blocks as $block ) {
 			if ( ! is_array( $block ) ) {
 				continue;
@@ -878,7 +892,7 @@ final class Calendar_Entries {
 
 			$inner_blocks = is_array( $block['innerBlocks'] ?? null ) ? $block['innerBlocks'] : array();
 
-			if ( 'gatherpress/modal' !== $block_name && self::template_shows_post_title( $inner_blocks ) ) {
+			if ( 'gatherpress/modal' !== $block_name && $this->template_shows_post_title( $inner_blocks ) ) {
 				return true;
 			}
 		}
@@ -899,7 +913,7 @@ final class Calendar_Entries {
 	 *
 	 * @return string Resolved CSS value or empty string.
 	 */
-	private static function resolve_color_value(
+	private function resolve_color_value(
 		array $attributes,
 		array $style_color,
 		string $named_attr,
@@ -925,7 +939,7 @@ final class Calendar_Entries {
 	 *
 	 * @return array<mixed> The nested array, or an empty array.
 	 */
-	private static function get_style_array( array $attributes, string ...$keys ): array {
+	private function get_style_array( array $attributes, string ...$keys ): array {
 		$value = $attributes['style'] ?? null;
 
 		foreach ( $keys as $key ) {
@@ -944,9 +958,9 @@ final class Calendar_Entries {
 	 *
 	 * @return array<string, string>
 	 */
-	private static function extract_color_styles( array $attributes ): array {
+	private function extract_color_styles( array $attributes ): array {
 		$color_styles = array();
-		$style_color  = self::get_style_array( $attributes, 'color' );
+		$style_color  = $this->get_style_array( $attributes, 'color' );
 		$mapping      = array(
 			'text'       => array( 'textColor', 'text', 'color' ),
 			'background' => array( 'backgroundColor', 'background', 'color' ),
@@ -954,7 +968,7 @@ final class Calendar_Entries {
 		);
 
 		foreach ( $mapping as $prop => $config ) {
-			$value = self::resolve_color_value( $attributes, $style_color, $config[0], $config[1], $config[2] );
+			$value = $this->resolve_color_value( $attributes, $style_color, $config[0], $config[1], $config[2] );
 
 			if ( '' !== $value ) {
 				$color_styles[ $prop ] = $value;
@@ -973,7 +987,7 @@ final class Calendar_Entries {
 	 *
 	 * @return array<string, mixed>
 	 */
-	private static function extract_border_styles( array $attributes ): array {
+	private function extract_border_styles( array $attributes ): array {
 		$border_styles = array();
 		$border_color  = is_string( $attributes['borderColor'] ?? null ) ? $attributes['borderColor'] : '';
 
@@ -981,7 +995,7 @@ final class Calendar_Entries {
 			$border_styles['color'] = "var:preset|color|{$border_color}";
 		}
 
-		foreach ( self::get_style_array( $attributes, 'border' ) as $key => $val ) {
+		foreach ( $this->get_style_array( $attributes, 'border' ) as $key => $val ) {
 			if ( is_string( $key ) ) {
 				$border_styles[ $key ] = $val;
 			}
@@ -999,7 +1013,7 @@ final class Calendar_Entries {
 	 *
 	 * @return string|null Resolved shadow style or null.
 	 */
-	private static function extract_shadow_style( array $attributes ): ?string {
+	private function extract_shadow_style( array $attributes ): ?string {
 		$style  = is_array( $attributes['style'] ?? null ) ? $attributes['style'] : array();
 		$shadow = $style['shadow'] ?? $attributes['shadow'] ?? null;
 
@@ -1023,8 +1037,8 @@ final class Calendar_Entries {
 	 *
 	 * @return array<string, mixed> Spacing styles.
 	 */
-	private static function extract_spacing_styles( array $attributes ): array {
-		$spacing = self::get_style_array( $attributes, 'spacing' );
+	private function extract_spacing_styles( array $attributes ): array {
+		$spacing = $this->get_style_array( $attributes, 'spacing' );
 
 		return array_filter(
 			array(
@@ -1043,8 +1057,8 @@ final class Calendar_Entries {
 	 *
 	 * @return array{classnames: string, inline_styles: string} Resolved CSS class names and inline style values.
 	 */
-	private static function get_entry_styles_and_classes( array $attributes ): array {
-		$link_color    = self::get_style_array( $attributes, 'elements', 'link', 'color' );
+	private function get_entry_styles_and_classes( array $attributes ): array {
+		$link_color    = $this->get_style_array( $attributes, 'elements', 'link', 'color' );
 		$extra_classes = array( 'gatherpress-calendar__entry' );
 
 		if ( ! empty( $link_color['text'] ) ) {
@@ -1053,10 +1067,10 @@ final class Calendar_Entries {
 
 		$block_styles = array_filter(
 			array(
-				'color'   => self::extract_color_styles( $attributes ),
-				'border'  => self::extract_border_styles( $attributes ),
-				'shadow'  => self::extract_shadow_style( $attributes ),
-				'spacing' => self::extract_spacing_styles( $attributes ),
+				'color'   => $this->extract_color_styles( $attributes ),
+				'border'  => $this->extract_border_styles( $attributes ),
+				'shadow'  => $this->extract_shadow_style( $attributes ),
+				'spacing' => $this->extract_spacing_styles( $attributes ),
 			)
 		);
 
@@ -1098,7 +1112,7 @@ final class Calendar_Entries {
 	 *
 	 * @return string Rendered HTML.
 	 */
-	private static function render_template( array $parsed_blocks ): string {
+	private function render_template( array $parsed_blocks ): string {
 		if ( empty( $parsed_blocks ) ) {
 			return '';
 		}
