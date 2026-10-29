@@ -3637,6 +3637,45 @@ class Test_Form extends Base {
 	}
 
 	/**
+	 * Tests a submission naming a form schema the event no longer has keeps the error page.
+	 *
+	 * @since TBD
+	 * @covers ::preprocess_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_preprocess_rsvp_comment_keeps_the_error_page_for_an_unknown_form(): void {
+		$post_id    = $this->create_event_with_required_field();
+		$redirected = false;
+
+		$this->mock_submission(
+			array(
+				'author'                     => 'Test Author',
+				'email'                      => 'test@example.com',
+				'gatherpress_form_schema_id' => 'form_9',
+			),
+			get_permalink( $post_id )
+		);
+		add_filter(
+			'wp_redirect',
+			static function () use ( &$redirected ) {
+				$redirected = true;
+
+				return '';
+			}
+		);
+
+		try {
+			Form::get_instance()->preprocess_rsvp_comment( array( 'comment_post_ID' => $post_id ) );
+			$this->fail( 'An unknown form should end on an error page.' );
+		} catch ( \WPDieException $exception ) {
+			$this->assertStringContainsString( 'This form could not be verified.', $exception->getMessage() );
+		}
+
+		$this->assertFalse( $redirected, 'No form on the page can show the submission.' );
+	}
+
+	/**
 	 * Tests get_return_values cuts each value to its field's length limit.
 	 *
 	 * @since TBD

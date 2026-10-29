@@ -277,9 +277,12 @@ final class Form {
 			Utility::get_http_input( INPUT_POST, 'gatherpress_form_schema_id' )
 		);
 
-		if ( ! empty( $field_errors ) ) {
+		// No form on the page has an unknown schema id, so that one stays an error page.
+		if ( ! empty( $field_errors ) && ! isset( $field_errors[ Rsvp_Form::SCHEMA_ID_FIELD ] ) ) {
 			$this->return_to_form( $post_id, $field_errors, '' );
+		}
 
+		if ( ! empty( $field_errors ) ) {
 			wp_die(
 				esc_html( implode( ' ', $field_errors ) ),
 				esc_html__( 'RSVP Incomplete', 'gatherpress' ),
