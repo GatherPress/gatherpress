@@ -13,7 +13,7 @@ registerBlockVariation( 'core/query', {
 	name: 'gatherpress-calendar',
 	title: __( 'Event Calendar', 'gatherpress' ),
 	description: __(
-		'Show GatherPress events in a monthly calendar format.',
+		'Show events in a monthly calendar format.',
 		'gatherpress',
 	),
 	icon: 'calendar-alt',

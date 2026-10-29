@@ -33,7 +33,7 @@ describe( 'core/query Event Calendar variation', () => {
 	it( 'shows the variation in the inserter, in the GatherPress category', () => {
 		expect( variation.title ).toBe( 'Event Calendar' );
 		expect( variation.description ).toBe(
-			'Show GatherPress events in a monthly calendar format.',
+			'Show events in a monthly calendar format.',
 		);
 		expect( variation.icon ).toBe( 'calendar-alt' );
 		expect( variation.category ).toBe( 'gatherpress' );
