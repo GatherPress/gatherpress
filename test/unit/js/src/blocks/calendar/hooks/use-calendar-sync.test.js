@@ -29,18 +29,19 @@ const updateBlockAttributes = jest.fn();
 /**
  * Give the calendar block its parent Query blocks, outermost first.
  *
- * @param {Array<string>} parents Client IDs of the parent Query blocks.
+ * @param {Array<string>} parents     Client IDs of the parent Query blocks.
+ * @param {Array<Object>} innerBlocks Inner blocks of each Query block.
  *
  * @return {void}
  */
-const giveParents = ( parents ) => {
+const giveParents = ( parents, innerBlocks = [] ) => {
 	useSelect.mockImplementation( ( callback ) =>
 		callback( () => ( {
 			getBlockParentsByBlockName: () => parents,
 			getBlock: ( clientId ) => ( {
 				clientId,
 				attributes: { metadata: {} },
-				innerBlocks: [],
+				innerBlocks,
 			} ),
 		} ) ),
 	);
@@ -79,6 +80,17 @@ describe( 'useCalendarSync', () => {
 
 	it( 'names nothing without a parent Query block', () => {
 		giveParents( [] );
+
+		switchToWeekView();
+
+		expect( updateBlockAttributes ).not.toHaveBeenCalled();
+	} );
+
+	it( 'leaves the names to the first calendar in the Query block', () => {
+		giveParents( [ 'query' ], [
+			{ clientId: 'first-calendar', name: 'gatherpress/calendar', innerBlocks: [] },
+			{ clientId: 'calendar', name: 'gatherpress/calendar', innerBlocks: [] },
+		] );
 
 		switchToWeekView();
 
