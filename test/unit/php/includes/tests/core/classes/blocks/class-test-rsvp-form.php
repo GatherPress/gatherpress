@@ -256,6 +256,38 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
+	 * Tests transform_block_content names the form's page for wp_get_referer().
+	 *
+	 * @since TBD
+	 * @covers ::transform_block_content
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_adds_the_referer_field(): void {
+		$post_id = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		$request_uri = $_SERVER['REQUEST_URI'] ?? null;
+
+		$_SERVER['REQUEST_URI'] = '/event/price-$1/';
+
+		$transformed_content = Rsvp_Form::get_instance()->transform_block_content(
+			'<div class="wp-block-gatherpress-rsvp-form">RSVP Form Content</div>',
+			array(
+				'blockName' => 'gatherpress/rsvp-form',
+				'attrs'     => array( 'postId' => $post_id ),
+			)
+		);
+
+		$_SERVER['REQUEST_URI'] = $request_uri;
+
+		$this->assertStringContainsString(
+			'<input type="hidden" name="_wp_http_referer" value="/event/price-$1/" /></form>',
+			$transformed_content,
+			'The page URL should go in as it is, not as a pattern backreference.'
+		);
+	}
+
+	/**
 	 * Tests that transform_block_content preserves original div attributes.
 	 *
 	 * Verifies that when transforming the div to a form, existing attributes

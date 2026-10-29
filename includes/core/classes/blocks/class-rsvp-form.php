@@ -216,13 +216,16 @@ final class Rsvp_Form {
 
 		$block_content = trim( $block_content );
 		$block_content = (string) preg_replace( '/^<div\b/', '<form', $block_content );
-		$block_content = (string) preg_replace(
-			'/(<\/div>)$/',
-			'<input type="hidden" name="comment_post_ID" value="' . intval( $post_id ) . '">' .
+		$hidden_fields = '<input type="hidden" name="comment_post_ID" value="' . intval( $post_id ) . '">' .
 			'<input type="hidden" name="' . esc_attr( Rsvp::COMMENT_TYPE ) . '" value="1">' .
 			'<input type="hidden" name="gatherpress_rsvp_form_id" value="' . esc_attr( $unique_form_id ) . '">' .
 			'<input type="hidden" name="gatherpress_form_schema_id" value="' . esc_attr( $schema_form_id ) . '">' .
-			'</form>',
+			// Names the form's page for wp_get_referer(), which a Referer
+			// header cut to the origin by the Referrer-Policy cannot.
+			wp_referer_field( false );
+		$block_content = (string) preg_replace_callback(
+			'/<\/div>$/',
+			static fn() => $hidden_fields . '</form>',
 			$block_content
 		);
 		$tag           = new WP_HTML_Tag_Processor( $block_content );
