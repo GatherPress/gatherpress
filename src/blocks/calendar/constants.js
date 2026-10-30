@@ -101,13 +101,20 @@ export const ENTRIES_TEMPLATE = [
 								{
 									layout: {
 										type: 'flex',
-										flexWrap: 'nowrap',
+										orientation: 'vertical',
+									},
+									style: {
+										spacing: {
+											blockGap: '0.25rem',
+										},
 									},
 								},
 								[
 									[
-										'gatherpress/event-date',
+										'core/post-title',
 										{
+											level: 3,
+											isLink: true,
 											style: {
 												spacing: {
 													padding: {
@@ -124,14 +131,12 @@ export const ENTRIES_TEMPLATE = [
 													},
 												},
 											},
-											fontSize: 'small',
+											fontSize: 'medium',
 										},
 									],
 									[
-										'core/post-title',
+										'gatherpress/event-date',
 										{
-											level: 3,
-											isLink: true,
 											style: {
 												spacing: {
 													padding: {
@@ -156,13 +161,7 @@ export const ENTRIES_TEMPLATE = [
 							[ 'core/post-excerpt', {} ],
 							[
 								'core/buttons',
-								{
-									align: 'center',
-									layout: {
-										type: 'flex',
-										justifyContent: 'center',
-									},
-								},
+								{},
 								[
 									[
 										'core/button',
