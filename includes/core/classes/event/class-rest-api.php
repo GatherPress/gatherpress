@@ -15,6 +15,7 @@ namespace GatherPress\Core\Event;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
+use GatherPress\Core\Blocks\Rsvp as Rsvp_Block;
 use GatherPress\Core\Blocks\Rsvp_Form;
 use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Event;
@@ -28,6 +29,7 @@ use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
 use WP_Error;
+use WP_HTTP_Response;
 use WP_Post;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -76,6 +78,55 @@ final class Rest_Api {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
 		add_action( 'rest_api_init', array( $this, 'register_status_field' ) );
 		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ), 10, 2 );
+		add_filter( 'rest_post_dispatch', array( $this, 'redirect_rsvp_form_submission' ), 10, 3 );
+	}
+
+	/**
+	 * Sends an RSVP posted without JavaScript back to the page it came from.
+	 *
+	 * The RSVP block's no-JavaScript form (see
+	 * `Blocks\Rsvp::submit_rsvp_without_javascript()`) posts to the RSVP
+	 * route with a `gatherpress_redirect` URL. Rather than the JSON a script
+	 * reads, the browser gets a 303 to that URL. A failed RSVP adds
+	 * `Blocks\Rsvp::ERROR_QUERY_ARG`, so the block can say so. That
+	 * includes a stale nonce, which WordPress rejects before the route's
+	 * callback runs, so this runs on `rest_post_dispatch`, after every
+	 * outcome. A URL on another host is ignored.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_HTTP_Response $response The response to send.
+	 * @param WP_REST_Server   $server   The REST server.
+	 * @param WP_REST_Request  $request  The request.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Required by WP's rest_post_dispatch hook signature.
+	 *
+	 * @return WP_HTTP_Response The response, as a redirect for a no-JavaScript RSVP.
+	 */
+	public function redirect_rsvp_form_submission(
+		WP_HTTP_Response $response,
+		WP_REST_Server $server,
+		WP_REST_Request $request
+	): WP_HTTP_Response {
+		$redirect = sprintf( '/%s/event/rsvp', GATHERPRESS_REST_NAMESPACE ) === $request->get_route()
+			? wp_validate_redirect( (string) $request->get_param( 'gatherpress_redirect' ), '' )
+			: '';
+
+		if ( '' === $redirect ) {
+			return $response;
+		}
+
+		$data = $response->get_data();
+
+		if ( 400 <= $response->get_status() || ! is_array( $data ) || empty( $data['success'] ) ) {
+			$redirect = add_query_arg( Rsvp_Block::ERROR_QUERY_ARG, (int) $request->get_param( 'post_id' ), $redirect );
+		}
+
+		$response->set_status( 303 );
+		$response->header( 'Location', $redirect );
+
+		return $response;
 	}
 
 	/**
@@ -533,6 +584,7 @@ final class Rest_Api {
 		// Prevent caching of RSVP updates.
 		nocache_headers();
 
+		// A form posted without JavaScript sends guests and anonymity under the RSVP block's own field names.
 		$params          = $request->get_params();
 		$success         = false;
 		$current_user_id = get_current_user_id();
@@ -540,8 +592,8 @@ final class Rest_Api {
 		$user_id         = isset( $params['user_id'] ) ? intval( $params['user_id'] ) : $current_user_id;
 		$post_id         = intval( $params['post_id'] );
 		$status          = sanitize_key( $params['status'] );
-		$guests          = intval( $params['guests'] ?? 0 );
-		$anonymous       = intval( $params['anonymous'] ?? 0 );
+		$guests          = intval( $params['guests'] ?? $params['gatherpress_rsvp_guests'] ?? 0 );
+		$anonymous       = intval( $params['anonymous'] ?? $params['gatherpress_rsvp_anonymous'] ?? 0 );
 		$event           = new Event( $post_id );
 		$rsvp            = new Rsvp( $post_id );
 

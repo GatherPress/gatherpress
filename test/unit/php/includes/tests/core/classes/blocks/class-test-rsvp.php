@@ -15,6 +15,8 @@ use GatherPress\Core\Event\Setup;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 use PasswordHash;
+use PMC\Unit_Test\Utility;
+use WP_HTML_Tag_Processor;
 
 /**
  * Class Test_Rsvp.
@@ -63,6 +65,12 @@ class Test_Rsvp extends Base {
 				'name'     => $render_block_hook,
 				'priority' => 9,
 				'callback' => array( $instance, 'apply_guests_input_interactivity' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => $render_block_hook,
+				'priority' => 12,
+				'callback' => array( $instance, 'submit_rsvp_without_javascript' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -1091,5 +1099,352 @@ class Test_Rsvp extends Base {
 
 		// Clean up.
 		remove_filter( $form_field_hook, array( $instance, 'handle_rsvp_form_fields' ) );
+	}
+
+	/**
+	 * Creates an upcoming event, loads its page as a logged-in user, and resets the RSVP block counts.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $status The RSVP to save for the user first, if any.
+	 * @param int    $guests The guest count to save with it.
+	 *
+	 * @return int The event's post ID.
+	 */
+	private function set_up_upcoming_event( string $status = '', int $guests = 0 ): int {
+		$post_id = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$user_id = $this->factory()->user->create();
+
+		update_post_meta( $post_id, 'gatherpress_guest_limit', 2 );
+		update_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', 1 );
+		( new Event( $post_id ) )->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week' ) ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week 2 hours' ) ),
+				'timezone'       => 'UTC',
+			)
+		);
+		wp_set_current_user( $user_id );
+
+		if ( '' !== $status ) {
+			( new Core_Rsvp( $post_id ) )->save( $user_id, $status, 1, $guests );
+		}
+
+		$this->go_to( get_permalink( $post_id ) );
+
+		Utility::set_and_get_hidden_property( Rsvp::get_instance(), 'render_counts', array() );
+
+		return $post_id;
+	}
+
+	/**
+	 * Builds RSVP block markup as the earlier render filters leave it.
+	 *
+	 * Each status container holds an RSVP button that toggles, one that sets
+	 * the waiting list, the guest count and anonymity fields, a close button
+	 * and a link acting as an RSVP button.
+	 *
+	 * @since TBD
+	 *
+	 * @param string[] $statuses The statuses of the containers, in order.
+	 *
+	 * @return string The RSVP block markup.
+	 */
+	private function get_rsvp_markup( array $statuses = array( 'attending', 'no_status' ) ): string {
+		$html = '<div class="wp-block-gatherpress-rsvp">';
+
+		foreach ( $statuses as $status ) {
+			$html .= sprintf( '<div data-rsvp-status="%s">', $status )
+				. '<button type="button" data-wp-on--click="actions.updateRsvp">Toggle</button>'
+				. '<button type="button" data-wp-on--click="actions.updateRsvp" data-set-status="waiting_list">'
+				. 'Wait</button>'
+				. '<input type="number" name="gatherpress_rsvp_guests" value="0">'
+				. '<input type="checkbox" name="gatherpress_rsvp_anonymous" value="1" checked>'
+				. '<button type="button" data-close-modal>Close</button>'
+				. '<a data-wp-on--click="actions.updateRsvp">Link</a>'
+				. '</div>';
+		}
+
+		return $html . '</div>';
+	}
+
+	/**
+	 * Asserts that a button submits a status to the given form, whatever the attribute order.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $html    The HTML to search.
+	 * @param string $form_id The form's id.
+	 * @param string $status  The status the button submits.
+	 * @param string $label   The button's label.
+	 *
+	 * @return void
+	 */
+	private function assert_submits_status( string $html, string $form_id, string $status, string $label ): void {
+		$this->assertMatchesRegularExpression(
+			sprintf(
+				'#<button (?=[^>]*form="%s")(?=[^>]*name="status")(?=[^>]*value="%s")(?=[^>]*type="submit")[^>]*>%s#',
+				$form_id,
+				$status,
+				$label
+			),
+			$html,
+			sprintf( 'Failed to assert that %s submits %s.', $label, $status )
+		);
+	}
+
+	/**
+	 * Without an RSVP, the buttons attend or set their status, closing saves
+	 * nothing, and only the shown container joins the form.
+	 *
+	 * @since TBD
+	 * @covers ::submit_rsvp_without_javascript
+	 * @covers ::join_rsvp_form
+	 * @covers ::submit_rsvp_status
+	 * @covers ::get_rsvp_form
+	 *
+	 * @return void
+	 */
+	public function test_submit_rsvp_without_javascript_without_an_rsvp(): void {
+		$post_id = $this->set_up_upcoming_event();
+		$form_id = sprintf( 'gatherpress-rsvp-form-%d-1', $post_id );
+		$output  = Rsvp::get_instance()->submit_rsvp_without_javascript(
+			$this->get_rsvp_markup(),
+			array( 'attrs' => array( 'postId' => $post_id ) )
+		);
+		$shown   = substr( $output, (int) strpos( $output, 'data-rsvp-status="no_status"' ) );
+
+		$this->assertStringStartsWith(
+			sprintf(
+				'<div id="gatherpress-rsvp-%1$d-1" class="wp-block-gatherpress-rsvp">'
+				. '<form id="%2$s" method="post" action="%3$s" hidden>'
+				. '<input type="hidden" name="post_id" value="%1$d">',
+				$post_id,
+				$form_id,
+				esc_url( rest_url( 'gatherpress/v1/event/rsvp' ) )
+			),
+			$output,
+			'The form opens the block, with no default button before there is an RSVP.'
+		);
+		$this->assertStringContainsString(
+			sprintf( '#gatherpress-rsvp-%d-1">', $post_id ),
+			$output,
+			'The redirect returns to the block.'
+		);
+		$this->assertStringContainsString( 'name="_wpnonce"', $output, 'A logged-in visitor sends the REST nonce.' );
+		$this->assert_submits_status( $shown, $form_id, 'attending', 'Toggle' );
+		$this->assert_submits_status( $shown, $form_id, 'waiting_list', 'Wait' );
+		$this->assertMatchesRegularExpression(
+			sprintf( '#<input form="%s" type="checkbox" name="gatherpress_rsvp_anonymous" value="1"\s*>#', $form_id ),
+			$shown,
+			'The anonymity field joins the form, showing the saved value.'
+		);
+		$this->assertStringContainsString(
+			'<button type="button" data-close-modal>',
+			$shown,
+			'Closing saves nothing yet.'
+		);
+		$this->assertStringContainsString(
+			'<a data-wp-on--click="actions.updateRsvp">',
+			$shown,
+			'A link cannot submit.'
+		);
+		$this->assertSame(
+			4,
+			substr_count( $output, sprintf( 'form="%s"', $form_id ) ),
+			'Only the shown container joins the form: its two RSVP buttons and two fields.'
+		);
+	}
+
+	/**
+	 * While attending, the toggle leaves, closing saves the current status,
+	 * Enter keeps it, and the fields show the saved values.
+	 *
+	 * @since TBD
+	 * @covers ::submit_rsvp_without_javascript
+	 * @covers ::join_rsvp_form
+	 * @covers ::get_rsvp_form
+	 *
+	 * @return void
+	 */
+	public function test_submit_rsvp_without_javascript_while_attending(): void {
+		$post_id = $this->set_up_upcoming_event( 'attending', 2 );
+		$form_id = sprintf( 'gatherpress-rsvp-form-%d-1', $post_id );
+		$output  = Rsvp::get_instance()->submit_rsvp_without_javascript(
+			$this->get_rsvp_markup(),
+			array( 'attrs' => array( 'postId' => $post_id ) )
+		);
+		$shown   = substr( $output, 0, (int) strpos( $output, 'data-rsvp-status="no_status"' ) );
+
+		$this->assertStringContainsString(
+			sprintf(
+				'<form id="%s" method="post" action="%s" hidden>'
+				. '<button type="submit" name="status" value="attending" tabindex="-1"></button>',
+				$form_id,
+				esc_url( rest_url( 'gatherpress/v1/event/rsvp' ) )
+			),
+			$output,
+			'The default button keeps the current status for Enter.'
+		);
+		$this->assert_submits_status( $shown, $form_id, 'not_attending', 'Toggle' );
+		$this->assert_submits_status( $shown, $form_id, 'attending', 'Close' );
+		$this->assertStringContainsString( 'name="gatherpress_rsvp_guests" value="2"', $shown );
+		$this->assertMatchesRegularExpression(
+			'#<input (?=[^>]*name="gatherpress_rsvp_anonymous")(?=[^>]*\bchecked\b)[^>]*>#',
+			$shown,
+			'The anonymity field shows the saved value.'
+		);
+		$this->assertStringContainsString(
+			'<div data-rsvp-status="no_status"><button type="button" data-wp-on--click="actions.updateRsvp">',
+			$output,
+			'The hidden container is left alone.'
+		);
+	}
+
+	/**
+	 * An existing block id is kept, and Not Attending toggles back to Attending.
+	 *
+	 * @since TBD
+	 * @covers ::submit_rsvp_without_javascript
+	 * @covers ::join_rsvp_form
+	 *
+	 * @return void
+	 */
+	public function test_submit_rsvp_without_javascript_keeps_id_and_toggles_back(): void {
+		$post_id = $this->set_up_upcoming_event( 'not_attending' );
+		$markup  = str_replace(
+			'class="wp-block-gatherpress-rsvp"',
+			'id="custom" class="wp-block-gatherpress-rsvp"',
+			$this->get_rsvp_markup( array( 'not_attending' ) )
+		);
+		$output  = Rsvp::get_instance()->submit_rsvp_without_javascript(
+			$markup,
+			array( 'attrs' => array( 'postId' => $post_id ) )
+		);
+
+		$this->assertStringContainsString( '#custom">', $output, 'The redirect returns to the existing id.' );
+		$form_id = sprintf( 'gatherpress-rsvp-form-%d-1', $post_id );
+
+		$this->assert_submits_status( $output, $form_id, 'attending', 'Toggle' );
+	}
+
+	/**
+	 * Logged-out visitors, past events and other requests get no form; an error shows only on its own event.
+	 *
+	 * @since TBD
+	 * @covers ::submit_rsvp_without_javascript
+	 *
+	 * @return void
+	 */
+	public function test_submit_rsvp_without_javascript_guards_and_error(): void {
+		$instance = Rsvp::get_instance();
+		$post_id  = $this->set_up_upcoming_event();
+		$block    = array( 'attrs' => array( 'postId' => $post_id ) );
+		$markup   = $this->get_rsvp_markup();
+		$error_id = (string) $post_id;
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) use ( &$error_id ) {
+				return INPUT_GET === $type && Rsvp::ERROR_QUERY_ARG === $var_name ? $error_id : $pre_value;
+			},
+			10,
+			3
+		);
+
+		$this->assertStringContainsString(
+			'</form><p class="gatherpress-rsvp__notice" role="alert">'
+			. 'Your RSVP could not be saved. Please try again.</p><div data-rsvp-status',
+			$instance->submit_rsvp_without_javascript( $markup, $block ),
+			'The error shows on its own event, after the form.'
+		);
+
+		$error_id = '999999';
+
+		$this->assertStringNotContainsString(
+			'gatherpress-rsvp__notice',
+			$instance->submit_rsvp_without_javascript( $markup, $block ),
+			'The error does not show on another event.'
+		);
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+
+		$this->assertSame( '', $instance->submit_rsvp_without_javascript( '', $block ), 'Empty markup is left alone.' );
+
+		add_filter( 'wp_doing_ajax', '__return_true' );
+		$ajax = $instance->submit_rsvp_without_javascript( $markup, $block );
+		remove_filter( 'wp_doing_ajax', '__return_true' );
+
+		$this->assertSame( $markup, $ajax, 'An Ajax request is left alone.' );
+
+		wp_set_current_user( 0 );
+
+		$this->assertSame(
+			$markup,
+			$instance->submit_rsvp_without_javascript( $markup, $block ),
+			'A logged-out visitor is left alone.'
+		);
+
+		wp_set_current_user( $this->factory()->user->create() );
+		( new Event( $post_id ) )->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '-1 week' ) ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '-1 week +2 hours' ) ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		$this->assertSame(
+			$markup,
+			$instance->submit_rsvp_without_javascript( $markup, $block ),
+			'A past event is left alone.'
+		);
+	}
+
+	/**
+	 * Calls the helpers directly, so their coverage is traced.
+	 *
+	 * @since TBD
+	 * @covers ::join_rsvp_form
+	 * @covers ::submit_rsvp_status
+	 * @covers ::get_rsvp_form
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_form_helpers(): void {
+		$instance = Rsvp::get_instance();
+		$toggle   = '<button data-wp-on--click="actions.updateRsvp">';
+		$cases    = array(
+			array( $toggle, 'no_status', array(), 'value="attending"' ),
+			array( $toggle, 'waiting_list', array(), 'value="not_attending"' ),
+			array( '<button data-close-modal>', 'attending', array(), 'value="attending"' ),
+			array( '<input name="gatherpress_rsvp_guests">', 'attending', array( 'guests' => 1 ), 'value="1"' ),
+			array( '<input name="gatherpress_rsvp_anonymous">', 'attending', array( 'anonymous' => 1 ), 'checked' ),
+			array( '<input name="other">', 'attending', array(), '<input name="other">' ),
+		);
+
+		foreach ( $cases as list( $markup, $status, $user_data, $expected ) ) {
+			$tag = new WP_HTML_Tag_Processor( $markup );
+			$tag->next_tag();
+
+			Utility::invoke_hidden_method( $instance, 'join_rsvp_form', array( $tag, 'f', $status, $user_data ) );
+
+			$this->assertStringContainsString(
+				$expected,
+				$tag->get_updated_html(),
+				sprintf( 'Failed for %s with %s.', $markup, $status )
+			);
+		}
+
+		wp_set_current_user( 0 );
+
+		$form = Utility::invoke_hidden_method( $instance, 'get_rsvp_form', array( 'f', 1, 'attending', 'a' ) );
+
+		$this->assertStringNotContainsString( '_wpnonce', $form, 'A magic-link session sends no nonce.' );
+		$this->assertStringContainsString(
+			'<button type="submit" name="status" value="attending" tabindex="-1">',
+			$form,
+			'The default button keeps the current status.'
+		);
 	}
 }
