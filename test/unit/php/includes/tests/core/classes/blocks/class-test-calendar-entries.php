@@ -536,7 +536,7 @@ class Test_Calendar_Entries extends Base {
 			throw new \RuntimeException( 'Calendar entry test' );
 		};
 
-		add_action( 'gatherpress_calendar_before_render_entry', $callback );
+		add_action( 'gatherpress_calendar_entry_render', $callback );
 
 		try {
 			$this->render_entries( '<!-- wp:post-title /-->', array( $event_id ) );
@@ -544,7 +544,7 @@ class Test_Calendar_Entries extends Base {
 		} catch ( \RuntimeException $exception ) {
 			$this->assertSame( 'Calendar entry test', $exception->getMessage() );
 		} finally {
-			remove_action( 'gatherpress_calendar_before_render_entry', $callback );
+			remove_action( 'gatherpress_calendar_entry_render', $callback );
 		}
 
 		$this->assertSame( 0, Utility::get_hidden_property( $instance, 'render_depth' ) );
@@ -651,16 +651,16 @@ class Test_Calendar_Entries extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_before_render_entry_action(): void {
+	public function test_entry_render_action(): void {
 		$post_id  = $this->mock->post()->get()->ID;
 		$received = array();
 		$callback = static function ( ...$args ) use ( &$received ) {
 			$received = $args;
 		};
 
-		add_action( 'gatherpress_calendar_before_render_entry', $callback, 10, 4 );
+		add_action( 'gatherpress_calendar_entry_render', $callback, 10, 4 );
 		$this->render_entries( '<!-- wp:post-title /-->', array( array( 'id' => $post_id ) ) );
-		remove_action( 'gatherpress_calendar_before_render_entry', $callback, 10 );
+		remove_action( 'gatherpress_calendar_entry_render', $callback, 10 );
 
 		$this->assertSame( $post_id, $received[0] );
 		$this->assertSame( 'post', $received[1] );

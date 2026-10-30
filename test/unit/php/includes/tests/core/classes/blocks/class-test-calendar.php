@@ -297,9 +297,9 @@ class Test_Calendar extends Base {
 			++$count;
 		};
 
-		add_action( 'gatherpress_calendar_before_render_entry', $callback );
+		add_action( 'gatherpress_calendar_entry_render', $callback );
 		do_blocks( self::get_calendar_markup() );
-		remove_action( 'gatherpress_calendar_before_render_entry', $callback );
+		remove_action( 'gatherpress_calendar_entry_render', $callback );
 
 		$this->assertSame( 1, $count, 'Failed to assert one render for one entry.' );
 	}

@@ -570,7 +570,7 @@ final class Calendar_Entries {
 			 * @param array<int, array<string, mixed>> $inner_blocks Parsed blocks of the entry template.
 			 * @param array<string, mixed>             $span_data    Multi-day span descriptors.
 			 */
-			do_action( 'gatherpress_calendar_before_render_entry', $post_id, $post_type, $inner_blocks, $span_data );
+			do_action( 'gatherpress_calendar_entry_render', $post_id, $post_type, $inner_blocks, $span_data );
 
 			return $this->render_template( $inner_blocks );
 		} finally {
