@@ -536,6 +536,7 @@ function getTopMostOpenElement() {
  *
  * @since 0.32.0
  * @since 0.36.0 `Escape` closes only the top-most open element.
+ * @since TBD    `Escape` is cancelled once handled, so a modal `<dialog>` around the element stays open.
  *
  * @param {string}   elementSelector - Selector for the parent element (modal or dropdown).
  * @param {string}   contentSelector - Selector for the inner content element.
@@ -568,6 +569,8 @@ export function setupCloseHandlers( elementSelector, contentSelector, onClose ) 
 		}
 
 		event.gatherpressEscapeHandled = true;
+		// The key closed this element, so a modal <dialog> around it stays open.
+		event.preventDefault();
 		handleClose( topMost );
 	};
 

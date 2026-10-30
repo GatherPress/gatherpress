@@ -139,6 +139,7 @@ Everything is under the `gatherpress/v1` namespace, defined as `GATHERPRESS_REST
 A few notes for anyone calling these:
 
 - **`/event/rsvp-form` is deliberately public.** Open RSVP means a visitor who is not logged in can respond, so the permission callback lets everyone through and the validation happens inside. Treat its input as untrusted, because it is.
+- **`/event/rsvp` also takes a plain HTML form.** The RSVP block posts one when JavaScript is unavailable. It sends guests and anonymity as `gatherpress_rsvp_guests` and `gatherpress_rsvp_anonymous`, the block's own field names, and a `gatherpress_redirect` URL on the site. With that URL, the endpoint answers with a 303 back to it instead of JSON, adding `gatherpress_rsvp_error=<event ID>` when the RSVP was not saved, including when the nonce was stale.
 - **`/event/nonce` is same-origin only**, checked with `Utility::is_same_origin_request()`. It exists so cached front-end pages can fetch a fresh nonce; it is not a general-purpose token endpoint.
 - The event routes are registered from a single array in `Event\Rest_Api::get_event_routes()`. Adding one means adding an entry there, not another `register_rest_route()` call.
 
