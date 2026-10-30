@@ -12,6 +12,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Blocks\Setup;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status;
 
 $gatherpress_block_instance = Setup::get_instance();
 $gatherpress_post_id        = $gatherpress_block_instance->get_post_id( $block->parsed_block );
@@ -65,8 +66,20 @@ if ( ! empty( $attributes['isLink'] ) ) {
 		$gatherpress_display
 	);
 }
+
+$gatherpress_status       = $gatherpress_event->get_status();
+$gatherpress_status_label = '';
+$gatherpress_classes      = array();
+if ( Status::default_slug( (string) get_post_type( $gatherpress_post_id ) ) !== $gatherpress_status ) {
+	$gatherpress_classes[]    = sprintf( 'gatherpress-event-date--is-%s', sanitize_html_class( $gatherpress_status ) );
+	$gatherpress_status_label = Status::label( $gatherpress_status );
+}
+
+$gatherpress_wrapper_attributes = empty( $gatherpress_classes )
+	? get_block_wrapper_attributes()
+	: get_block_wrapper_attributes( array( 'class' => implode( ' ', $gatherpress_classes ) ) );
 ?>
-<div <?php echo wp_kses_data( get_block_wrapper_attributes() ); ?>>
+<div <?php echo wp_kses_data( $gatherpress_wrapper_attributes ); ?>>
 	<?php
 	echo wp_kses(
 		$gatherpress_display,
@@ -76,4 +89,7 @@ if ( ! empty( $attributes['isLink'] ) ) {
 		)
 	);
 	?>
+	<?php if ( '' !== $gatherpress_status_label ) : ?>
+		<span class="screen-reader-text gatherpress--screen-reader-text"><?php echo esc_html( sprintf( ' (%s)', $gatherpress_status_label ) ); ?></span>
+	<?php endif; ?>
 </div>
