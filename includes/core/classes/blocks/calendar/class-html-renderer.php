@@ -123,7 +123,7 @@ final class Html_Renderer {
 	}
 
 	/**
-	 * Build inline style attribute string for a calendar table.
+	 * Build the inline style of a calendar table.
 	 *
 	 * @since TBD
 	 *
@@ -131,7 +131,7 @@ final class Html_Renderer {
 	 * @param int                  $columns_count Number of table columns.
 	 * @param int                  $slot_height   Height of one hour slot of the time grid, in pixels.
 	 *
-	 * @return string Inline style attribute (e.g. style="...").
+	 * @return string CSS declarations for the table's style attribute.
 	 */
 	private function build_table_style( array $attributes, int $columns_count, int $slot_height ): string {
 		$style_processor = new Style_Processor( $attributes );
@@ -154,7 +154,7 @@ final class Html_Renderer {
 			$table_styles[] = sprintf( '--gatherpress-calendar-slot-height: %dpx', $slot_height );
 		}
 
-		return sprintf( 'style="%s;"', esc_attr( implode( '; ', $table_styles ) ) );
+		return implode( '; ', $table_styles ) . ';';
 	}
 
 	/**
@@ -163,7 +163,7 @@ final class Html_Renderer {
 	 * @since TBD
 	 *
 	 * @param array<string, mixed> $unit                Individual calendar unit data.
-	 * @param string               $table_style         Inline style attribute string.
+	 * @param string               $table_style         CSS declarations for the style attribute.
 	 * @param bool                 $show_weekdays       Whether weekdays header is visible.
 	 * @param bool                 $render_week_numbers Whether row headers for weeks are output.
 	 * @param bool                 $is_time_grid        Whether time grid is enabled.
