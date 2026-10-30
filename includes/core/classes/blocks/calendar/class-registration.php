@@ -69,10 +69,9 @@ final class Registration {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		// Priority 11: this class is created on init at priority 10.
+		// Priority 11: Blocks\Setup creates this class during init at priority 10, too late for a callback at 10.
 		add_action( 'init', array( $this, 'register_binding_sources' ), 11 );
 		add_filter( 'block_editor_settings_all', array( $this, 'block_editor_settings_all' ) );
-		// The blocks register on init at priority 11, after this class is created.
 		add_filter( 'register_block_type_args', array( $this, 'skip_inner_blocks' ), 10, 2 );
 	}
 
