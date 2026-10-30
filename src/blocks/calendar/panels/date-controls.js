@@ -288,34 +288,35 @@ export function DateControls( {
 					min={ 1 }
 					max={ maxUnits }
 					step={ 1 }
-					style={ { marginBottom: '16px' } }
+					style={ { marginBottom: '1rem' } }
 				/>
 			) }
 
-			<div
+			<dl
 				style={ {
-					marginBottom: '16px',
-					padding: '8px',
+					margin: '0 0 1rem',
+					padding: '0.5rem',
 					background: '#f0f0f1',
 					borderRadius: '4px',
 				} }
 			>
-				<strong>
-					{ __( 'Current Selection:', 'gatherpress' ) }
-				</strong>
-				<br />
-				{ selectionLabel }
-				{ /* Blocks saved before 0.9.0 can have a date and an offset. */ }
-				{ isDefaultMode && 0 !== dateModifier && (
-					<>
-						{ ' ' }
-						{ 0 < dateModifier
-							? `+${ dateModifier }`
-							: dateModifier }{ ' ' }
-						{ unitLabel }
-					</>
-				) }
-			</div>
+				<dt style={ { fontWeight: '600' } }>
+					{ __( 'Current Selection', 'gatherpress' ) }
+				</dt>
+				<dd style={ { margin: 0 } }>
+					{ selectionLabel }
+					{ /* Blocks saved before 0.9.0 can have a date and an offset. */ }
+					{ isDefaultMode && 0 !== dateModifier && (
+						<>
+							{ ' ' }
+							{ 0 < dateModifier
+								? `+${ dateModifier }`
+								: dateModifier }{ ' ' }
+							{ unitLabel }
+						</>
+					) }
+				</dd>
+			</dl>
 
 			{ isDefaultMode && (
 				<>
@@ -334,7 +335,7 @@ export function DateControls( {
 							type="date"
 							value={ selectedDate }
 							onChange={ onDateChange }
-							style={ { marginBottom: '8px' } }
+							style={ { marginBottom: '0.5rem' } }
 						/>
 					) }
 
@@ -345,7 +346,7 @@ export function DateControls( {
 						disabled={ ! selectedDate }
 						accessibleWhenDisabled
 						__next40pxDefaultSize
-						style={ { width: '100%', marginBottom: '8px' } }
+						style={ { width: '100%', marginBottom: '0.5rem' } }
 					>
 						{ __( 'Reset to Current', 'gatherpress' ) }
 					</Button>
@@ -354,8 +355,8 @@ export function DateControls( {
 						<>
 							<p
 								style={ {
-									marginTop: '16px',
-									marginBottom: '8px',
+									marginTop: '1rem',
+									marginBottom: '0.5rem',
 									fontWeight: '500',
 								} }
 							>
@@ -380,7 +381,7 @@ export function DateControls( {
 								__next40pxDefaultSize
 								style={ {
 									width: '100%',
-									marginBottom: '8px',
+									marginBottom: '0.5rem',
 								} }
 							>
 								{ __( 'Reset Offset', 'gatherpress' ) }
