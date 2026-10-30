@@ -144,6 +144,7 @@ final class Style_Processor {
 			);
 		}
 
+		// Rejects any of ; { } \ < > " ' or the start of a CSS comment (/*).
 		if ( preg_match( '#[;{}\\\\<>"\']|/\*#', $value ) ) {
 			return '';
 		}
