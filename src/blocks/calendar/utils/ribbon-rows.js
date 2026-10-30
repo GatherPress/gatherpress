@@ -26,6 +26,6 @@ export function getRibbonRowsStyle( numRibbonSlots ) {
 	return {
 		'--gatherpress-num-ribbon-slots': count,
 		'--gatherpress-ribbon-rows':
-			0 < count ? `repeat(${ count }, 24px)` : 'initial',
+			0 < count ? `repeat(${ count }, 1.5rem)` : 'initial',
 	};
 }

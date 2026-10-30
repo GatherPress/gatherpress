@@ -96,7 +96,7 @@ $gap: var(--gatherpress-calendar-column-gap, 2px);
 			margin: 0;
 			display: grid;
 			grid-auto-flow: row;
-			grid-auto-rows: minmax(var(--gatherpress-calendar-slot-row-height, 24px), auto);
+			grid-auto-rows: minmax(var(--gatherpress-calendar-slot-row-height, 1.5rem), auto);
 			row-gap: 3px;
 			align-content: start; /* Retains the slot rows while the cell expands vertically */
 		}
@@ -115,7 +115,7 @@ $gap: var(--gatherpress-calendar-column-gap, 2px);
 	/* Classic / Default style days get generous padding and height */
 	.gatherpress-calendar__day:not(.is-style-ribbon) {
 		aspect-ratio: auto;
-		min-height: 140px;
+		min-height: 8.75rem;
 		align-items: flex-start;
 		padding: 1rem;
 	}
@@ -123,7 +123,7 @@ $gap: var(--gatherpress-calendar-column-gap, 2px);
 	/* Ribbon style days maintain edge-to-edge padding to permit gap bridging */
 	.gatherpress-calendar__day.is-style-ribbon {
 		aspect-ratio: auto;
-		min-height: 140px;
+		min-height: 8.75rem;
 		padding: 0 !important;
 	}
 }

@@ -127,11 +127,8 @@ final class Calendar_Week {
 			);
 		}
 
-		// 28px accounts for the day-number row, plus any ribbon slots above the time grid.
 		return sprintf(
-			'<th scope="row" class="gatherpress-calendar__time-gutter" aria-hidden="true" '
-				. 'style="padding-top: calc(28px + %d * 24px);">%s</th>',
-			$this->num_ribbon_slots,
+			'<th scope="row" class="gatherpress-calendar__time-gutter" aria-hidden="true">%s</th>',
 			$slot_labels
 		);
 	}
@@ -204,7 +201,7 @@ final class Calendar_Week {
 		return sprintf(
 			'--gatherpress-num-ribbon-slots: %d; --gatherpress-ribbon-rows: %s;',
 			$this->num_ribbon_slots,
-			$this->num_ribbon_slots > 0 ? sprintf( 'repeat(%d, 24px)', $this->num_ribbon_slots ) : 'initial'
+			$this->num_ribbon_slots > 0 ? sprintf( 'repeat(%d, 1.5rem)', $this->num_ribbon_slots ) : 'initial'
 		);
 	}
 

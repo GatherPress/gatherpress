@@ -114,7 +114,7 @@ class Test_Calendar_Week extends Base {
 		$this->assertStringContainsString( 'gatherpress-calendar__week', $output );
 		$this->assertStringContainsString( 'data-wp-key="week-2026-10-2"', $output );
 		$this->assertStringContainsString(
-			'style="--gatherpress-num-ribbon-slots: 3;--gatherpress-ribbon-rows: repeat(3, 24px)"',
+			'style="--gatherpress-num-ribbon-slots: 3;--gatherpress-ribbon-rows: repeat(3, 1.5rem)"',
 			$output,
 			'Failed to assert the highest ribbon slot, without timed events, and its rows for the time grid.'
 		);
@@ -153,7 +153,10 @@ class Test_Calendar_Week extends Base {
 			'style="--gatherpress-num-ribbon-slots: 0;--gatherpress-ribbon-rows: initial"',
 			$output
 		);
-		$this->assertStringContainsString( 'style="padding-top: calc(28px + 0 * 24px);"', $output );
+		$this->assertStringContainsString(
+			'<th scope="row" class="gatherpress-calendar__time-gutter" aria-hidden="true">',
+			$output
+		);
 		$this->assertStringContainsString( '<div class="gatherpress-calendar__time-slot-label">09:00</div>', $output );
 		$this->assertStringContainsString( '<div class="gatherpress-calendar__time-slot-label">10:00</div>', $output );
 		$this->assertStringContainsString(

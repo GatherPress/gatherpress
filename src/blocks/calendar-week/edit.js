@@ -235,9 +235,6 @@ export default memo( function Edit( {
 						scope="row"
 						className="gatherpress-calendar__time-gutter"
 						aria-hidden="true"
-						style={ {
-							paddingTop: `calc(28px + ${ numRibbonSlots } * 24px)`,
-						} }
 					>
 						{ timeSlots.map( ( slot ) => (
 							<div

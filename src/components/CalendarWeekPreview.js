@@ -68,9 +68,6 @@ function CalendarWeekPreviewComponent( {
 					scope="row"
 					className="gatherpress-calendar__time-gutter"
 					aria-hidden="true"
-					style={ {
-						paddingTop: `calc(28px + ${ numRibbonSlots } * 24px)`,
-					} }
 				>
 					{ ( timeGridConfig.slots || [] ).map( ( slot ) => (
 						<div

@@ -12,7 +12,7 @@ describe( 'getRibbonRowsStyle', () => {
 	it( 'gives the ribbon rows for the time grid template', () => {
 		expect( getRibbonRowsStyle( 2 ) ).toEqual( {
 			'--gatherpress-num-ribbon-slots': 2,
-			'--gatherpress-ribbon-rows': 'repeat(2, 24px)',
+			'--gatherpress-ribbon-rows': 'repeat(2, 1.5rem)',
 		} );
 	} );
 
@@ -31,7 +31,7 @@ describe( 'getRibbonRowsStyle', () => {
 	it( 'counts whole rows only', () => {
 		expect( getRibbonRowsStyle( '2.7' ) ).toEqual( {
 			'--gatherpress-num-ribbon-slots': 2,
-			'--gatherpress-ribbon-rows': 'repeat(2, 24px)',
+			'--gatherpress-ribbon-rows': 'repeat(2, 1.5rem)',
 		} );
 	} );
 } );
