@@ -259,6 +259,7 @@ export function DateControls( {
 			/>
 
 			<SelectControl
+				__next40pxDefaultSize
 				label={ __( 'Calendar View', 'gatherpress' ) }
 				value={ viewType }
 				options={ [
@@ -280,6 +281,7 @@ export function DateControls( {
 
 			{ isDefaultMode && (
 				<NumberControl
+					__next40pxDefaultSize
 					label={ unitCountLabel }
 					labelPosition="side"
 					type="number"
@@ -328,6 +330,7 @@ export function DateControls( {
 						/>
 					) : (
 						<TextControl
+							__next40pxDefaultSize
 							label={ __(
 								'Specific Date (YYYY-MM-DD)',
 								'gatherpress',
@@ -363,6 +366,7 @@ export function DateControls( {
 								{ __( 'Date Offset', 'gatherpress' ) }
 							</p>
 							<NumberControl
+								__next40pxDefaultSize
 								label={ stepLabel }
 								labelPosition="side"
 								type="number"
