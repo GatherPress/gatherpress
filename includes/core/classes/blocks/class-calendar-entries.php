@@ -600,10 +600,12 @@ final class Calendar_Entries {
 	 * @return void
 	 */
 	private function add_entry_filters(): void {
-		add_filter( 'render_block_context', array( $this, 'filter_entry_context' ), 1 );
+		// PHP_INT_MIN: set the event's context first, so later context filters can read or change it.
+		add_filter( 'render_block_context', array( $this, 'filter_entry_context' ), PHP_INT_MIN );
 		add_filter( 'the_title', array( $this, 'filter_empty_title' ), 10, 2 );
 		add_filter( 'pre_render_block', array( $this, 'track_modal_depth_pre' ), 10, 2 );
-		add_filter( 'render_block', array( $this, 'track_modal_depth_post' ), 999, 2 );
+		// PHP_INT_MAX: the modal depth drops only after every other render_block filter runs.
+		add_filter( 'render_block', array( $this, 'track_modal_depth_post' ), PHP_INT_MAX, 2 );
 		add_filter( 'render_block_core/post-title', array( $this, 'filter_post_title_span' ) );
 		add_filter( 'render_block_gatherpress/event-date', array( $this, 'filter_multiday_event_date' ) );
 		add_filter( 'render_block_gatherpress/event-date', array( $this, 'filter_event_date_link' ), 10, 2 );
@@ -620,10 +622,10 @@ final class Calendar_Entries {
 		remove_filter( 'render_block_gatherpress/event-date', array( $this, 'filter_event_date_link' ), 10 );
 		remove_filter( 'render_block_gatherpress/event-date', array( $this, 'filter_multiday_event_date' ), 10 );
 		remove_filter( 'render_block_core/post-title', array( $this, 'filter_post_title_span' ), 10 );
-		remove_filter( 'render_block', array( $this, 'track_modal_depth_post' ), 999 );
+		remove_filter( 'render_block', array( $this, 'track_modal_depth_post' ), PHP_INT_MAX );
 		remove_filter( 'pre_render_block', array( $this, 'track_modal_depth_pre' ), 10 );
 		remove_filter( 'the_title', array( $this, 'filter_empty_title' ), 10 );
-		remove_filter( 'render_block_context', array( $this, 'filter_entry_context' ), 1 );
+		remove_filter( 'render_block_context', array( $this, 'filter_entry_context' ), PHP_INT_MIN );
 	}
 
 	/**
