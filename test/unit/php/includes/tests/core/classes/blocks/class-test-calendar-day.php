@@ -108,7 +108,6 @@ class Test_Calendar_Day extends Base {
 	 * A past day shows its number and gets the interactivity directives.
 	 *
 	 * @covers ::render
-	 * @covers ::get_day_number
 	 * @covers ::build_cell_attributes
 	 * @covers ::get_day_cell_classes
 	 * @covers ::resolve_weekday_and_weekend

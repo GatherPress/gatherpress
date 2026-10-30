@@ -11,6 +11,7 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Blocks\Calendar\Base;
 use GatherPress\Core\Blocks\Calendar\Html_Renderer;
 use GatherPress\Core\Calendar\Date_Range;
 use GatherPress\Core\Calendar\Time_Grid;
@@ -26,7 +27,7 @@ use WP_Block;
  *
  * @phpstan-import-type TemplateBlock from Html_Renderer
  */
-final class Calendar_Week {
+final class Calendar_Week extends Base {
 
 	/**
 	 * Constant representing the Block Name.
@@ -35,14 +36,6 @@ final class Calendar_Week {
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress/calendar-week';
-
-	/**
-	 * Block instance.
-	 *
-	 * @since TBD
-	 * @var WP_Block
-	 */
-	private readonly WP_Block $block;
 
 	/**
 	 * Day entries of the week, from the block context.
@@ -76,13 +69,10 @@ final class Calendar_Week {
 	 * @param WP_Block $block Block instance.
 	 */
 	public function __construct( WP_Block $block ) {
-		$time_grid = $block->context['gatherpress/timeGridConfig'] ?? null;
+		parent::__construct( $block );
 
-		$this->block            = $block;
-		$this->week_days        = is_array( $block->context['gatherpress/weekDays'] ?? null )
-			? $block->context['gatherpress/weekDays']
-			: array();
-		$this->time_grid        = $time_grid instanceof Time_Grid ? $time_grid : new Time_Grid();
+		$this->week_days        = $this->get_context_array( 'gatherpress/weekDays' );
+		$this->time_grid        = $this->get_time_grid();
 		$this->num_ribbon_slots = $this->calculate_max_ribbon_slot() + 1;
 	}
 
@@ -143,16 +133,13 @@ final class Calendar_Week {
 	 * @return string Rendered HTML <tr> row.
 	 */
 	public function render(): string {
-		$context      = $this->block->context;
+		$week_number  = $this->get_context_int( 'gatherpress/weekNumber' );
 		$day_template = Html_Renderer::get_inner_template_block( $this->block, Calendar_Day::BLOCK_NAME );
 		$is_time_grid = $this->time_grid->enabled;
 
 		$this->block->context['gatherpress/numRibbonSlots'] = $this->num_ribbon_slots;
 
-		$days_html   = $this->render_days( $day_template, (string) wp_date( Date_Range::DATE_FORMAT ) );
-		$week_number = is_numeric( $context['gatherpress/weekNumber'] ?? null )
-			? (int) $context['gatherpress/weekNumber']
-			: 0;
+		$days_html = $this->render_days( $day_template, (string) wp_date( Date_Range::DATE_FORMAT ) );
 
 		if ( $week_number > 0 ) {
 			$days_html = sprintf(
@@ -360,13 +347,11 @@ final class Calendar_Week {
 	 * @return string Row key.
 	 */
 	private function get_row_key(): string {
-		$context    = $this->block->context;
-		$year       = is_numeric( $context['gatherpress/year'] ?? null ) ? (int) $context['gatherpress/year'] : 0;
-		$month      = is_numeric( $context['gatherpress/month'] ?? null ) ? (int) $context['gatherpress/month'] : 0;
-		$week_index = is_numeric( $context['gatherpress/weekIndex'] ?? null )
-			? (int) $context['gatherpress/weekIndex']
-			: 0;
-
-		return sprintf( 'week-%d-%d-%d', $year, $month, $week_index );
+		return sprintf(
+			'week-%d-%d-%d',
+			$this->get_context_int( 'gatherpress/year' ),
+			$this->get_context_int( 'gatherpress/month' ),
+			$this->get_context_int( 'gatherpress/weekIndex' )
+		);
 	}
 }

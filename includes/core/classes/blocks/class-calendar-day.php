@@ -11,9 +11,9 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Blocks\Calendar\Base;
 use GatherPress\Core\Blocks\Calendar\Html_Renderer;
 use GatherPress\Core\Calendar\Date_Range;
-use GatherPress\Core\Calendar\Time_Grid;
 use GatherPress\Core\Calendar\Week;
 use WP_Block;
 
@@ -26,7 +26,7 @@ use WP_Block;
  *
  * @phpstan-import-type TemplateBlock from Html_Renderer
  */
-final class Calendar_Day {
+final class Calendar_Day extends Base {
 
 	/**
 	 * Constant representing the Block Name.
@@ -35,34 +35,6 @@ final class Calendar_Day {
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress/calendar-day';
-
-	/**
-	 * Block instance.
-	 *
-	 * @since TBD
-	 * @var WP_Block
-	 */
-	private readonly WP_Block $block;
-
-	/**
-	 * Day context the week block passes to the day block.
-	 *
-	 * @since TBD
-	 * @var array<string, mixed>
-	 */
-	private readonly array $context;
-
-	/**
-	 * Class constructor.
-	 *
-	 * @since TBD
-	 *
-	 * @param WP_Block $block Block instance.
-	 */
-	public function __construct( WP_Block $block ) {
-		$this->block   = $block;
-		$this->context = $block->context;
-	}
 
 	/**
 	 * Render the calendar day cell.
@@ -74,16 +46,14 @@ final class Calendar_Day {
 	 * @return string Rendered HTML, or an empty string outside a calendar week.
 	 */
 	public function render(): string {
-		$context = $this->context;
-
-		if ( ! isset( $context['gatherpress/isEmpty'] ) ) {
+		if ( ! isset( $this->block->context['gatherpress/isEmpty'] ) ) {
 			return '';
 		}
 
-		$is_empty     = ! empty( $context['gatherpress/isEmpty'] );
-		$day_number   = $this->get_day_number();
-		$day_date     = is_string( $context['gatherpress/dayDate'] ?? null ) ? $context['gatherpress/dayDate'] : '';
-		$weekday      = is_string( $context['gatherpress/weekday'] ?? null ) ? $context['gatherpress/weekday'] : '';
+		$is_empty     = ! empty( $this->block->context['gatherpress/isEmpty'] );
+		$day_number   = $this->get_context_int( 'gatherpress/dayNumber' );
+		$day_date     = $this->get_context_string( 'gatherpress/dayDate' );
+		$weekday      = $this->get_context_string( 'gatherpress/weekday' );
 		$cell_content = '';
 
 		if ( ! $is_empty && $day_number > 0 ) {
@@ -111,10 +81,9 @@ final class Calendar_Day {
 	 * @return list<string> The Ribbon class, or nothing when it is not needed.
 	 */
 	private function get_time_grid_classes(): array {
-		$time_grid  = $this->context['gatherpress/timeGridConfig'] ?? null;
 		$class_name = $this->block->attributes['className'] ?? '';
 
-		if ( ! $time_grid instanceof Time_Grid || ! $time_grid->enabled ) {
+		if ( ! $this->get_time_grid()->enabled ) {
 			return array();
 		}
 
@@ -124,19 +93,6 @@ final class Calendar_Day {
 		}
 
 		return array( 'is-style-ribbon' );
-	}
-
-	/**
-	 * Get the day of the month from the day context.
-	 *
-	 * @since TBD
-	 *
-	 * @return int Day of the month, or 0 when the context has none.
-	 */
-	private function get_day_number(): int {
-		$day_number = $this->context['gatherpress/dayNumber'] ?? null;
-
-		return is_numeric( $day_number ) ? (int) $day_number : 0;
 	}
 
 	/**
@@ -265,15 +221,15 @@ final class Calendar_Day {
 	 * @return string[] Array of CSS classes.
 	 */
 	private function get_day_cell_classes(): array {
-		$context   = $this->context;
+		$is_empty  = ! empty( $this->block->context['gatherpress/isEmpty'] );
 		$classes   = array( 'gatherpress-calendar__day' );
-		$day_posts = $context['gatherpress/dayPosts'] ?? null;
+		$day_posts = $this->get_context_array( 'gatherpress/dayPosts' );
 
-		if ( ! empty( $context['gatherpress/isEmpty'] ) ) {
+		if ( $is_empty ) {
 			$classes[] = 'is-empty';
 		}
 
-		if ( is_array( $day_posts ) && ! empty( $day_posts ) ) {
+		if ( ! empty( $day_posts ) ) {
 			$classes[] = 'has-posts';
 
 			if ( $this->has_multi_day_event( $day_posts ) ) {
@@ -291,8 +247,8 @@ final class Calendar_Day {
 			$classes[] = 'is-' . sanitize_html_class( strtolower( $weekday ) );
 		}
 
-		if ( empty( $context['gatherpress/isEmpty'] ) ) {
-			$day_date = is_string( $context['gatherpress/dayDate'] ?? null ) ? $context['gatherpress/dayDate'] : '';
+		if ( ! $is_empty ) {
+			$day_date = $this->get_context_string( 'gatherpress/dayDate' );
 			$classes  = array_merge( $classes, $this->get_temporal_classes( $day_date ) );
 		}
 
@@ -307,10 +263,9 @@ final class Calendar_Day {
 	 * @return array{0: string, 1: bool} Weekday slug and is_weekend flag.
 	 */
 	private function resolve_weekday_and_weekend(): array {
-		$context    = $this->context;
-		$weekday    = is_string( $context['gatherpress/weekday'] ?? null ) ? $context['gatherpress/weekday'] : '';
-		$is_weekend = ! empty( $context['gatherpress/isWeekend'] );
-		$day_date   = is_string( $context['gatherpress/dayDate'] ?? null ) ? $context['gatherpress/dayDate'] : '';
+		$weekday    = $this->get_context_string( 'gatherpress/weekday' );
+		$is_weekend = ! empty( $this->block->context['gatherpress/isWeekend'] );
+		$day_date   = $this->get_context_string( 'gatherpress/dayDate' );
 
 		if ( '' === $weekday && '' !== $day_date ) {
 			$dow        = (int) gmdate( 'w', (int) strtotime( $day_date ) );
@@ -416,11 +371,13 @@ final class Calendar_Day {
 	 * @return string Rendered HTML.
 	 */
 	private function render_day_cell_content( ?array $day_number_block, ?array $entries_block ): string {
-		$day_number      = $this->get_day_number();
+		$day_number      = $this->get_context_int( 'gatherpress/dayNumber' );
 		$day_number_html = null !== $day_number_block
-			? ( new WP_Block( $day_number_block, $this->context ) )->render()
+			? ( new WP_Block( $day_number_block, $this->block->context ) )->render()
 			: sprintf( '<p class="gatherpress-calendar__day-number">%s</p>', esc_html( (string) $day_number ) );
-		$entries_html    = null !== $entries_block ? ( new WP_Block( $entries_block, $this->context ) )->render() : '';
+		$entries_html    = null !== $entries_block
+			? ( new WP_Block( $entries_block, $this->block->context ) )->render()
+			: '';
 
 		return $day_number_html . $entries_html;
 	}

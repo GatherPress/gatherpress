@@ -11,6 +11,7 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Blocks\Calendar\Base;
 use GatherPress\Core\Blocks\Calendar\Html_Renderer;
 use GatherPress\Core\Calendar\Date_Range;
 use GatherPress\Core\Calendar\Post_Organizer;
@@ -27,7 +28,7 @@ use WP_Block;
  *
  * @since TBD
  */
-final class Calendar {
+final class Calendar extends Base {
 
 	/**
 	 * Constant representing the Block Name.
@@ -46,14 +47,6 @@ final class Calendar {
 	private readonly array $attributes;
 
 	/**
-	 * Block instance.
-	 *
-	 * @since TBD
-	 * @var WP_Block
-	 */
-	private readonly WP_Block $block;
-
-	/**
 	 * Class constructor.
 	 *
 	 * @since TBD
@@ -62,8 +55,9 @@ final class Calendar {
 	 * @param WP_Block             $block      Block instance.
 	 */
 	public function __construct( array $attributes, WP_Block $block ) {
+		parent::__construct( $block );
+
 		$this->attributes = $attributes;
-		$this->block      = $block;
 	}
 
 	/**
@@ -76,9 +70,9 @@ final class Calendar {
 	 * @return string Rendered HTML, or an empty string outside a Query Loop.
 	 */
 	public function render(): string {
-		$query = $this->block->context['query'] ?? null;
+		$query = $this->get_context_array( 'query' );
 
-		if ( ! is_array( $query ) || empty( $query ) ) {
+		if ( empty( $query ) ) {
 			return '';
 		}
 

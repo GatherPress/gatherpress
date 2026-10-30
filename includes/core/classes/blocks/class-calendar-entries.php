@@ -125,8 +125,7 @@ final class Calendar_Entries {
 		$day_posts    = is_array( $block->context['gatherpress/dayPosts'] ?? null )
 			? $block->context['gatherpress/dayPosts']
 			: array();
-		$time_grid    = $block->context['gatherpress/timeGridConfig'] ?? null;
-		$is_time_grid = $time_grid instanceof Time_Grid && $time_grid->enabled;
+		$is_time_grid = Time_Grid::from_context( $block->context )->enabled;
 
 		// A time grid keeps its day column even without entries.
 		if ( empty( $day_posts ) && ! $is_time_grid ) {
