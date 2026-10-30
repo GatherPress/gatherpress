@@ -114,6 +114,38 @@ class Test_Calendar extends Base {
 	}
 
 	/**
+	 * The week markup is escaped, with the allowlist widened only while the table renders.
+	 *
+	 * @covers ::render
+	 * @covers \GatherPress\Core\Blocks\Calendar\Html_Renderer::render_unit_table
+	 * @covers \GatherPress\Core\Blocks\Calendar\Html_Renderer::allow_block_markup
+	 *
+	 * @return void
+	 */
+	public function test_render_escapes_the_weeks(): void {
+		$this->create_event( 'Escaped Entry', '2026-10-15 10:00:00', '2026-10-15 12:00:00' );
+
+		$markup = str_replace(
+			'<!-- wp:post-title {"isLink":true} /-->',
+			'<!-- wp:html --><div role="dialog" aria-modal="true"><script>alert(1)</script>'
+				. '<input type="text" name="field" onfocus="alert(2)"></div><!-- /wp:html -->',
+			self::get_calendar_markup()
+		);
+
+		$output = do_blocks( $markup );
+
+		$this->assertStringContainsString( 'aria-modal="true"', $output, 'Failed to assert aria-modal is kept.' );
+		$this->assertStringContainsString( '<input type="text" name="field">', $output );
+		$this->assertStringNotContainsString( '<script>', $output, 'Failed to assert a script is removed.' );
+		$this->assertStringNotContainsString( 'onfocus', $output, 'Failed to assert an event handler is removed.' );
+		$this->assertArrayNotHasKey(
+			'aria-modal',
+			wp_kses_allowed_html( 'post' )['div'],
+			'Failed to assert the allowlist is back to normal after the render.'
+		);
+	}
+
+	/**
 	 * A two-week view gets week numbers; weekdays can be hidden on screen.
 	 *
 	 * @covers ::render

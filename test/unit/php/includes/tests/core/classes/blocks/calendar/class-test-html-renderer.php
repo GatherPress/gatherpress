@@ -120,4 +120,40 @@ class Test_Html_Renderer extends Base {
 		);
 		$this->assertStringNotContainsString( '<caption', $output, 'Failed to assert an empty caption is left out.' );
 	}
+
+	/**
+	 * Coverage for allow_block_markup.
+	 *
+	 * @covers ::allow_block_markup
+	 *
+	 * @return void
+	 */
+	public function test_allow_block_markup(): void {
+		$renderer = new Html_Renderer(
+			new WP_Block( array( 'blockName' => 'gatherpress/calendar' ) ),
+			Date_Range::from_attributes( array( 'selectedDate' => '2026-10-15' ) ),
+			new Time_Grid( false )
+		);
+		$tags     = array( 'textarea' => array( 'cols' => true ) );
+
+		$this->assertSame(
+			$tags,
+			$renderer->allow_block_markup( $tags, 'data' ),
+			'Failed to assert other contexts are left alone.'
+		);
+
+		$allowed = $renderer->allow_block_markup( $tags, 'post' );
+
+		$this->assertTrue( $allowed['div']['aria-modal'] );
+		$this->assertTrue( $allowed['form']['action'] );
+		$this->assertTrue( $allowed['input']['type'] );
+		$this->assertTrue( $allowed['select']['name'] );
+		$this->assertTrue( $allowed['option']['value'] );
+		$this->assertTrue( $allowed['textarea']['cols'], 'Failed to assert existing textarea attributes are kept.' );
+		$this->assertTrue( $allowed['textarea']['placeholder'] );
+		$this->assertTrue( $allowed['svg']['viewbox'] );
+		$this->assertTrue( $allowed['path']['d'] );
+		$this->assertTrue( $allowed['iframe']['src'] );
+		$this->assertArrayNotHasKey( 'script', $allowed );
+	}
 }

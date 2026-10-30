@@ -31,11 +31,6 @@ if ( ! isset(
 		</tr>
 	</thead>
 	<tbody>
-		<?php
-		// Rendered blocks escape their own output. wp_kses_post() here would remove
-		// aria-modal from modals, and SVG, form and iframe markup.
-		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		echo $weeks;
-		?>
+		<?php echo wp_kses_post( $weeks ); ?>
 	</tbody>
 </table>

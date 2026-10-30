@@ -178,7 +178,10 @@ final class Html_Renderer {
 		bool $render_week_numbers,
 		bool $is_time_grid
 	): string {
-		return Utility::render_template(
+		// The template runs the weeks through wp_kses_post(). Widen the allowlist for this call only.
+		add_filter( 'wp_kses_allowed_html', array( $this, 'allow_block_markup' ), 10, 2 );
+
+		$table = Utility::render_template(
 			sprintf( '%s/includes/templates/blocks/calendar/table.php', GATHERPRESS_CORE_PATH ),
 			array(
 				'table_class'   => 'gatherpress-calendar__table' . ( $is_time_grid ? ' has-time-grid' : '' ),
@@ -193,6 +196,124 @@ final class Html_Renderer {
 				'weeks'         => $this->render_calendar_weeks( $unit['weeks'], $render_week_numbers ),
 			)
 		);
+
+		remove_filter( 'wp_kses_allowed_html', array( $this, 'allow_block_markup' ) );
+
+		return $table;
+	}
+
+	/**
+	 * Permit the markup of the blocks in a calendar through wp_kses_post().
+	 *
+	 * Added immediately before a calendar table renders and removed immediately after, so the
+	 * widened allowlist never applies to anything else. Covers what wp_kses_post() would strip
+	 * from the calendar's blocks: aria-modal on modals, the RSVP form and its fields, SVG icons
+	 * and embeds.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $tags    Allowed HTML tags and their attributes.
+	 * @param string               $context The context the allowlist is being used in.
+	 *
+	 * @return array<string, mixed> Allowed tags, widened in the post context.
+	 */
+	public function allow_block_markup( array $tags, string $context ): array {
+		if ( 'post' !== $context ) {
+			return $tags;
+		}
+
+		$global_attributes = array(
+			'aria-describedby' => true,
+			'aria-hidden'      => true,
+			'aria-label'       => true,
+			'aria-labelledby'  => true,
+			'class'            => true,
+			'data-*'           => true,
+			'id'               => true,
+			'role'             => true,
+			'style'            => true,
+			'title'            => true,
+		);
+		$field_attributes  = array_merge(
+			$global_attributes,
+			array(
+				'autocomplete' => true,
+				'disabled'     => true,
+				'name'         => true,
+				'required'     => true,
+			)
+		);
+
+		$tags['div']['aria-modal'] = true;
+		$tags['form']              = array_merge(
+			$global_attributes,
+			array(
+				'action'     => true,
+				'method'     => true,
+				'novalidate' => true,
+			)
+		);
+		$tags['input']             = array_merge(
+			$field_attributes,
+			array(
+				'checked'     => true,
+				'max'         => true,
+				'maxlength'   => true,
+				'min'         => true,
+				'minlength'   => true,
+				'pattern'     => true,
+				'placeholder' => true,
+				'step'        => true,
+				'type'        => true,
+				'value'       => true,
+			)
+		);
+		$tags['select']            = array_merge( $field_attributes, array( 'multiple' => true ) );
+		$tags['option']            = array(
+			'disabled' => true,
+			'selected' => true,
+			'value'    => true,
+		);
+		$tags['textarea']          = array_merge(
+			$tags['textarea'] ?? array(),
+			$field_attributes,
+			array(
+				'maxlength'   => true,
+				'placeholder' => true,
+				'rows'        => true,
+			)
+		);
+		$tags['svg']               = array_merge(
+			$global_attributes,
+			array(
+				'focusable' => true,
+				'height'    => true,
+				'version'   => true,
+				'viewbox'   => true,
+				'width'     => true,
+				'xmlns'     => true,
+			)
+		);
+		$tags['path']              = array(
+			'd'    => true,
+			'fill' => true,
+		);
+		$tags['iframe']            = array_merge(
+			$global_attributes,
+			array(
+				'allow'           => true,
+				'allowfullscreen' => true,
+				'frameborder'     => true,
+				'height'          => true,
+				'loading'         => true,
+				'referrerpolicy'  => true,
+				'sandbox'         => true,
+				'src'             => true,
+				'width'           => true,
+			)
+		);
+
+		return $tags;
 	}
 
 	/**
