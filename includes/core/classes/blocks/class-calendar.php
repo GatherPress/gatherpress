@@ -18,6 +18,7 @@ use GatherPress\Core\Calendar\Post_Organizer;
 use GatherPress\Core\Calendar\Query_Builder;
 use GatherPress\Core\Calendar\Structure_Builder;
 use GatherPress\Core\Calendar\Time_Grid;
+use GatherPress\Core\Utility;
 use WP_Block;
 
 /**
@@ -133,17 +134,9 @@ final class Calendar extends Base {
 	 */
 	private function get_slot_height( array $week_block ): int {
 		$inner_blocks = is_array( $week_block['innerBlocks'] ?? null ) ? $week_block['innerBlocks'] : array();
+		$day_block    = Utility::find_block( $inner_blocks, Calendar_Day::BLOCK_NAME );
+		$slot_height  = $day_block['attrs']['slotHeight'] ?? null;
 
-		foreach ( $inner_blocks as $inner_block ) {
-			if ( ! is_array( $inner_block ) || Calendar_Day::BLOCK_NAME !== ( $inner_block['blockName'] ?? '' ) ) {
-				continue;
-			}
-
-			$slot_height = $inner_block['attrs']['slotHeight'] ?? null;
-
-			return is_numeric( $slot_height ) ? max( 32, min( 120, (int) $slot_height ) ) : 48;
-		}
-
-		return 48;
+		return is_numeric( $slot_height ) ? max( 32, min( 120, (int) $slot_height ) ) : 48;
 	}
 }

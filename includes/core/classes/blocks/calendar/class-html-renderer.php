@@ -437,15 +437,15 @@ final class Html_Renderer {
 		$parsed       = $block->parsed_block;
 		$inner_blocks = is_array( $parsed['innerBlocks'] ?? null ) ? $parsed['innerBlocks'] : array();
 
-		foreach ( $inner_blocks as $inner_block ) {
-			if ( is_array( $inner_block ) && ( $inner_block['blockName'] ?? '' ) === $block_name ) {
-				/**
-				 * A parsed block.
-				 *
-				 * @var TemplateBlock $inner_block
-				 */
-				return $inner_block;
-			}
+		$inner_block = Utility::find_block( $inner_blocks, $block_name );
+
+		if ( null !== $inner_block ) {
+			/**
+			 * A parsed block.
+			 *
+			 * @var TemplateBlock $inner_block
+			 */
+			return $inner_block;
 		}
 
 		return array(

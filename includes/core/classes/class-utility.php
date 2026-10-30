@@ -1258,4 +1258,36 @@ final class Utility {
 
 		return $block_names;
 	}
+
+	/**
+	 * Finds the first block with a given name in a list of parsed blocks.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<mixed> $blocks     Parsed blocks.
+	 * @param string       $block_name Name of the block to find.
+	 * @param bool         $recursive  Whether to search the inner blocks too.
+	 *
+	 * @return array<string, mixed>|null The parsed block, or null when none has the name.
+	 */
+	public static function find_block( array $blocks, string $block_name, bool $recursive = false ): ?array {
+		foreach ( $blocks as $block ) {
+			if ( ! is_array( $block ) ) {
+				continue;
+			}
+
+			if ( ( $block['blockName'] ?? '' ) === $block_name ) {
+				return $block;
+			}
+
+			$inner_blocks = is_array( $block['innerBlocks'] ?? null ) ? $block['innerBlocks'] : array();
+			$found        = $recursive ? self::find_block( $inner_blocks, $block_name, true ) : null;
+
+			if ( null !== $found ) {
+				return $found;
+			}
+		}
+
+		return null;
+	}
 }

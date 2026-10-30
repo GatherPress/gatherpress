@@ -15,6 +15,7 @@ use GatherPress\Core\Blocks\Calendar\Base;
 use GatherPress\Core\Blocks\Calendar\Html_Renderer;
 use GatherPress\Core\Calendar\Date_Range;
 use GatherPress\Core\Calendar\Week;
+use GatherPress\Core\Utility;
 use WP_Block;
 
 /**
@@ -331,26 +332,21 @@ final class Calendar_Day extends Base {
 			? $this->block->parsed_block['innerBlocks']
 			: array();
 		$day_number_block = null;
-		$entries_block    = null;
 
 		foreach ( $inner_blocks as $inner ) {
-			if ( ! is_array( $inner ) ) {
-				continue;
-			}
-
-			/**
-			 * A parsed block.
-			 *
-			 * @var TemplateBlock $inner
-			 */
-			if ( null === $day_number_block && $this->is_day_number_block( $inner ) ) {
+			if ( is_array( $inner ) && $this->is_day_number_block( $inner ) ) {
 				$day_number_block = $inner;
-			}
-
-			if ( null === $entries_block && Calendar_Entries::BLOCK_NAME === ( $inner['blockName'] ?? '' ) ) {
-				$entries_block = $inner;
+				break;
 			}
 		}
+
+		/**
+		 * Parsed blocks.
+		 *
+		 * @var TemplateBlock|null $day_number_block
+		 * @var TemplateBlock|null $entries_block
+		 */
+		$entries_block = Utility::find_block( $inner_blocks, Calendar_Entries::BLOCK_NAME );
 
 		return array(
 			'day_number' => $day_number_block,
