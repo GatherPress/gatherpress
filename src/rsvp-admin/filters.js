@@ -85,8 +85,8 @@ export default function Filters( {
 	eventLabel,
 	statuses,
 	initialResponses,
-	checkInStates = [],
-	initialCheckIn = '',
+	checkInStates,
+	initialCheckIn,
 } ) {
 	const [ postId, setPostId ] = useState( initialPostId );
 	const [ responses, setResponses ] = useState( initialResponses );

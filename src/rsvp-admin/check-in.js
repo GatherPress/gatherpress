@@ -39,7 +39,7 @@ function StateIcon( { html } ) {
  * @param {Object}   props              Component props.
  * @param {number}   props.rsvpId       The RSVP comment ID.
  * @param {string}   props.initialState The state the page loaded with.
- * @param {Object[]} props.states       Every state, each `{ value, label, icon }`, not recorded last.
+ * @param {Object[]} props.states       Every state, each `{ value, label, icon }`, not recorded last. Never empty.
  *
  * @return {JSX.Element} The dropdown.
  */
@@ -101,19 +101,19 @@ export default function CheckIn( { rsvpId, initialState, states } ) {
 					<Button
 						variant="tertiary"
 						size="compact"
-						icon={ <StateIcon html={ current?.icon ?? '' } /> }
+						icon={ <StateIcon html={ current.icon } /> }
 						onClick={ onToggle }
 						aria-expanded={ isOpen }
 						aria-label={ sprintf(
 							/* translators: %s: a check-in state, e.g. "Checked in". */
 							__( 'Check-in: %s', 'gatherpress' ),
-							current?.label ?? '',
+							current.label,
 						) }
 						isBusy={ isSaving }
 						disabled={ isSaving }
 						accessibleWhenDisabled
 					>
-						{ current?.label }
+						{ current.label }
 					</Button>
 				) }
 				renderContent={ ( { onClose } ) => (

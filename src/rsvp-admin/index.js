@@ -68,7 +68,7 @@ function mountFilters() {
 /**
  * Turn each approved RSVP's check-in cell into a dropdown.
  *
- * `List_Table::render_check_in()` writes the state's icon and name, which stay
+ * `Check_In_Controls::render_cell()` writes the state's icon and name, which stay
  * in place without script. The states come from the filters, which list the
  * same ones with their icons.
  *
@@ -76,7 +76,7 @@ function mountFilters() {
  *
  * @return {void}
  */
-function mountCheckIns() {
+export function mountCheckIns() {
 	let states = [];
 
 	try {

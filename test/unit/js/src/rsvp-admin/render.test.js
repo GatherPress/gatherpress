@@ -150,6 +150,7 @@ describe( 'Filters', () => {
 			{ value: 'no-show', label: 'No-show' },
 			{ value: 'not-recorded', label: 'Not recorded' },
 		],
+		initialCheckIn: '',
 	};
 
 	/**
