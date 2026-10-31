@@ -21,7 +21,11 @@ import {
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalGetGapCSSValue as getGapCSSValue,
 } from '@wordpress/block-editor';
-import { dateI18n, getSettings } from '@wordpress/date';
+import {
+	date as formatSiteDate,
+	dateI18n,
+	getSettings,
+} from '@wordpress/date';
 import { __, sprintf } from '@wordpress/i18n';
 
 import {
@@ -30,6 +34,7 @@ import {
 	FALLBACK_BLOCK_GAP,
 } from '../blocks/calendar/utils/day-number';
 import { getRibbonRowsStyle } from '../blocks/calendar/utils/ribbon-rows';
+import { getDayClassNames } from '../blocks/calendar/utils/day-classes';
 
 /**
  * Strips top-level event-date blocks from entries on multi-day/all-day spans.
@@ -209,23 +214,11 @@ function CalendarDayPreviewComponent( {
 		dayBlockAttributes?.layout,
 		dayBlockAttributes?.style?.spacing?.blockGap,
 	);
-	const isPast = ! day.isEmpty && ! day.isToday && day.isPast;
-	const isFuture = ! day.isEmpty && ! day.isToday && day.isFuture;
-
 	const classNames = [
-		'gatherpress-calendar__day',
-		day.isEmpty ? 'is-empty' : '',
-		day.isToday ? 'is-today' : '',
-		isPast ? 'is-past' : '',
-		isFuture ? 'is-future' : '',
-		0 < day.posts?.length ? 'has-posts' : '',
-		day.posts?.some( ( p ) => 1 < ( p.totalDays ?? 1 ) || p.isAllDay )
-			? 'has-multi-day-event'
-			: '',
-		day.isWeekend ? 'is-weekend' : '',
-		day.weekday ? `is-${ day.weekday }` : '',
-		isRibbonOrTimeGrid ? 'is-style-ribbon' : '',
-		isTimeGrid ? 'has-time-grid' : '',
+		...getDayClassNames( day, formatSiteDate( 'Y-m-d' ), {
+			ribbon: isRibbon,
+			grid: isTimeGrid,
+		} ),
 		colorProps.className,
 		borderProps.className,
 	]

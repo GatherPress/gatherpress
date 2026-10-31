@@ -16,11 +16,13 @@ import { PanelBody, RangeControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useSelect } from '@wordpress/data';
 import { useMemo, memo } from '@wordpress/element';
+import { date as formatSiteDate } from '@wordpress/date';
 
 import './editor.scss';
 
 import { findDayNumberBlock } from '../calendar/utils/day-number';
 import { getRibbonRowsStyle } from '../calendar/utils/ribbon-rows';
+import { getDayClassNames } from '../calendar/utils/day-classes';
 
 const EMPTY_ARRAY = [];
 
@@ -72,7 +74,6 @@ export default memo( function Edit( {
 	const isRibbon = Boolean(
 		attributes?.className?.includes( 'is-style-ribbon' ),
 	);
-	const isRibbonOrTimeGrid = isRibbon || isTimeGridActive;
 
 	// block.json's own providesContext only re-exposes values stored in
 	// this block's *attributes*, which we never set (day number etc. are
@@ -132,14 +133,11 @@ export default memo( function Edit( {
 	);
 
 	const classNames = [
-		'gatherpress-calendar__day',
-		isEmpty ? 'is-empty' : '',
-		isToday ? 'is-today' : '',
-		0 < posts.length ? 'has-posts' : '',
-		isWeekend ? 'is-weekend' : '',
-		weekday ? `is-${ weekday }` : '',
-		isRibbonOrTimeGrid ? 'is-style-ribbon' : '',
-		isTimeGridActive ? 'has-time-grid' : '',
+		...getDayClassNames(
+			{ date: dayDate, isEmpty, isWeekend, weekday, posts },
+			formatSiteDate( 'Y-m-d' ),
+			{ ribbon: isRibbon, grid: isTimeGridActive },
+		),
 		! isDayActive && 0 === posts.length ? 'is-inactive-empty-day' : '',
 	]
 		.filter( Boolean )
