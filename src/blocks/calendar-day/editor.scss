@@ -39,6 +39,25 @@ $span-width: calc(var(--gatherpress-calendar-row-span, 1) * 100% + (var(--gather
 	}
 }
 
+// A classic day stacks its Day Number above its entries, as calendar-day/style.scss does on
+// the front end. In the editor the block's layout classes sit on the inner blocks wrapper.
+#{$day}:not(.is-style-ribbon, .gatherpress--has-time-grid) > :is(.block-editor-block-list__layout, .is-layout-flex) {
+	flex-direction: column;
+	align-items: stretch;
+
+	> .gatherpress-calendar__day-number {
+		align-self: flex-start;
+	}
+
+	// The editor wraps each entry's blocks. The wrapper shrinks to the entry, so long
+	// titles end in an ellipsis as on the front end.
+	.gatherpress-calendar__entry-template {
+		flex: 1 1 auto;
+		min-width: 0;
+		max-width: 100%;
+	}
+}
+
 #{$grid-day} {
 	display: flex !important;
 	flex-direction: column !important;
@@ -173,6 +192,12 @@ $span-width: calc(var(--gatherpress-calendar-row-span, 1) * 100% + (var(--gather
 			}
 		}
 	}
+}
+
+// A multi-day entry that shows its title hides its start time, as on the front end
+// (Calendar_Entries::filter_multiday_event_date()). The editable entry keeps the block.
+#{$day} .gatherpress-calendar__entry.gatherpress--is-multi-day:has(.wp-block-post-title:not(.wp-block-gatherpress-modal *)) .wp-block-gatherpress-event-date:not(.wp-block-gatherpress-modal *) {
+	display: none;
 }
 
 // Placeholder entries stay hidden on an empty day that is not being edited.

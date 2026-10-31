@@ -18,7 +18,6 @@ export const ENTRY_START_TIME = [
 				margin: { top: '0', bottom: '0', left: '0', right: '0' },
 			},
 		},
-		fontSize: 'small',
 	},
 ];
 
@@ -57,7 +56,6 @@ export const ENTRY_TITLE_TRIGGER = [
 				margin: { top: '0', bottom: '0', left: '0', right: '0' },
 			},
 		},
-		fontSize: 'small',
 	},
 ];
 

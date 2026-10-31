@@ -55,6 +55,13 @@ $wide-ribbon-entry: ".gatherpress-calendar__day.is-style-ribbon .wp-block-gather
 			text-decoration: underline;
 		}
 	}
+
+	// A start time or title wider than the entry ends in an ellipsis. Without a cap,
+	// a centered entry grows to fit them and cuts them off at its edges.
+	#{$start-time},
+	.wp-block-post-title:not(.wp-block-gatherpress-modal *) {
+		max-width: 100%;
+	}
 }
 
 // The span geometry of multi-day and all-day entries, shared by the ribbon and dots styles.
