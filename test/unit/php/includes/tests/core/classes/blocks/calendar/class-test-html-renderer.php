@@ -134,7 +134,10 @@ class Test_Html_Renderer extends Base {
 			Date_Range::from_attributes( array( 'selectedDate' => '2026-10-15' ) ),
 			new Time_Grid( false )
 		);
-		$tags     = array( 'textarea' => array( 'cols' => true ) );
+		$tags     = array(
+			'button'   => array( 'type' => true ),
+			'textarea' => array( 'cols' => true ),
+		);
 
 		$this->assertSame(
 			$tags,
@@ -146,6 +149,10 @@ class Test_Html_Renderer extends Base {
 
 		$this->assertTrue( $allowed['div']['aria-modal'] );
 		$this->assertTrue( $allowed['form']['action'] );
+		$this->assertTrue( $allowed['form']['hidden'] );
+		$this->assertTrue( $allowed['button']['form'] );
+		$this->assertTrue( $allowed['button']['type'], 'Failed to assert existing button attributes are kept.' );
+		$this->assertTrue( $allowed['input']['form'] );
 		$this->assertTrue( $allowed['input']['type'] );
 		$this->assertTrue( $allowed['select']['name'] );
 		$this->assertTrue( $allowed['option']['value'] );
@@ -153,6 +160,7 @@ class Test_Html_Renderer extends Base {
 		$this->assertTrue( $allowed['textarea']['placeholder'] );
 		$this->assertTrue( $allowed['svg']['viewbox'] );
 		$this->assertTrue( $allowed['path']['d'] );
+		$this->assertTrue( $allowed['path']['fill-rule'] );
 		$this->assertTrue( $allowed['iframe']['src'] );
 		$this->assertArrayNotHasKey( 'script', $allowed );
 	}

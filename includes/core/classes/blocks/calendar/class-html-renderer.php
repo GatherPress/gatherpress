@@ -207,8 +207,8 @@ final class Html_Renderer {
 	 *
 	 * Added immediately before a calendar table renders and removed immediately after, so the
 	 * widened allowlist never applies to anything else. Covers what wp_kses_post() would strip
-	 * from the calendar's blocks: aria-modal on modals, the RSVP form and its fields, SVG icons
-	 * and embeds.
+	 * from the calendar's blocks: aria-modal on modals, the RSVP form and its fields, the forms
+	 * and `form` attributes that open and close modals without JavaScript, SVG icons and embeds.
 	 *
 	 * @since TBD
 	 *
@@ -229,6 +229,7 @@ final class Html_Renderer {
 			'aria-labelledby'  => true,
 			'class'            => true,
 			'data-*'           => true,
+			'hidden'           => true,
 			'id'               => true,
 			'role'             => true,
 			'style'            => true,
@@ -239,12 +240,14 @@ final class Html_Renderer {
 			array(
 				'autocomplete' => true,
 				'disabled'     => true,
+				'form'         => true,
 				'name'         => true,
 				'required'     => true,
 			)
 		);
 
 		$tags['div']['aria-modal'] = true;
+		$tags['button']            = array_merge( $tags['button'] ?? array(), $field_attributes );
 		$tags['form']              = array_merge(
 			$global_attributes,
 			array(
@@ -295,8 +298,9 @@ final class Html_Renderer {
 			)
 		);
 		$tags['path']              = array(
-			'd'    => true,
-			'fill' => true,
+			'd'         => true,
+			'fill'      => true,
+			'fill-rule' => true,
 		);
 		$tags['iframe']            = array_merge(
 			$global_attributes,
