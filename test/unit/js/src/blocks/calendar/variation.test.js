@@ -15,7 +15,7 @@ import { registerBlockVariation } from '@wordpress/blocks';
 /**
  * Internal dependencies.
  */
-import { QUERY_VARIATION_INNER_BLOCKS } from '@src/blocks/calendar/constants';
+import QUERY_VARIATION from '@src/blocks/calendar/templates/query-variation';
 // Importing the module registers the variation as a side effect.
 import '@src/blocks/calendar/variation';
 
@@ -60,7 +60,7 @@ describe( 'core/query Event Calendar variation', () => {
 	} );
 
 	it( 'inserts the calendar heading, the calendar pagination and the calendar', () => {
-		expect( variation.innerBlocks ).toBe( QUERY_VARIATION_INNER_BLOCKS );
+		expect( variation.innerBlocks ).toBe( QUERY_VARIATION );
 
 		const [ heading, pagination, calendar ] = variation.innerBlocks;
 

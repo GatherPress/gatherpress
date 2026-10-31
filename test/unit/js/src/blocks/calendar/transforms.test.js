@@ -25,12 +25,12 @@ import { cloneBlock, createBlock } from '@wordpress/blocks';
  * Internal dependencies.
  */
 import transforms from '@src/blocks/calendar/transforms';
+import { DAY_NUMBER } from '@src/blocks/calendar-day/template';
 import {
-	DAY_NUMBER,
 	ENTRY_MODAL_MANAGER_ATTRIBUTES,
 	ENTRY_START_TIME,
 	ENTRY_TITLE_TRIGGER,
-} from '@src/blocks/calendar/constants';
+} from '@src/blocks/calendar-entries/template';
 
 /**
  * Build a block in the shape that the createBlock mock returns.

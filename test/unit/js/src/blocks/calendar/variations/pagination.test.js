@@ -15,7 +15,7 @@ import { registerBlockVariation } from '@wordpress/blocks';
 /**
  * Internal dependencies.
  */
-import { QUERY_VARIATION_INNER_BLOCKS } from '@src/blocks/calendar/constants';
+import QUERY_VARIATION from '@src/blocks/calendar/templates/query-variation';
 // Importing the module registers the variations as a side effect.
 import '@src/blocks/calendar/variations/pagination';
 
@@ -168,7 +168,7 @@ describe( 'calendar pagination variations', () => {
 
 	it( 'recognizes the pagination blocks of the Event Calendar query as these variations', () => {
 		const [ , [ containerName, containerAttributes, links ] ] =
-			QUERY_VARIATION_INNER_BLOCKS;
+			QUERY_VARIATION;
 		const [ [ , previousAttributes ], [ , nextAttributes ] ] = links;
 
 		expect( containerName ).toBe( 'core/query-pagination' );

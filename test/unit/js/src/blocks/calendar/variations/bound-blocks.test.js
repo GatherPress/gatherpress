@@ -15,7 +15,7 @@ import { registerBlockVariation } from '@wordpress/blocks';
 /**
  * Internal dependencies.
  */
-import { DAY_NUMBER } from '@src/blocks/calendar/constants';
+import { DAY_NUMBER } from '@src/blocks/calendar-day/template';
 // Importing the module registers the variation as a side effect.
 import '@src/blocks/calendar/variations/bound-blocks';
 

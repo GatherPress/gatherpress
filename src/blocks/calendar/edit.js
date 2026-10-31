@@ -18,7 +18,7 @@ import { Placeholder, PanelBody, ToggleControl } from '@wordpress/components';
 import { useDispatch } from '@wordpress/data';
 import { useCallback, useState, useMemo } from '@wordpress/element';
 
-import { CALENDAR_TEMPLATE } from './constants';
+import CALENDAR from './templates/calendar';
 import {
 	calculateDateRange,
 	calculateDateQuery,
@@ -282,7 +282,7 @@ export default function Edit( {
 		},
 		{
 			allowedBlocks: [ 'gatherpress/calendar-week' ],
-			template: CALENDAR_TEMPLATE,
+			template: CALENDAR,
 			templateLock: false, // TODO: Consider 'contentOnly', which is nice here.
 			renderAppender: false,
 		},

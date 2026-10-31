@@ -7,12 +7,12 @@ import { __ } from '@wordpress/i18n';
 /**
  * Internal dependencies
  */
+import { DAY_NUMBER } from '../calendar-day/template';
 import {
-	DAY_NUMBER,
 	ENTRY_MODAL_MANAGER_ATTRIBUTES,
 	ENTRY_START_TIME,
 	ENTRY_TITLE_TRIGGER,
-} from './constants';
+} from '../calendar-entries/template';
 import { findBlockByName } from './utils/block-sync-utils';
 
 /**
@@ -62,7 +62,7 @@ function createCalendarFromTemplate( contentBlocks = [] ) {
 
 	const modal = createBlock( 'gatherpress/modal', {}, [ modalContent ] );
 
-	// Same blocks as ENTRIES_TEMPLATE; the linked title opens the modal.
+	// Same blocks as the calendar-entries template; the linked title opens the modal.
 	const startTime = createBlock( ...ENTRY_START_TIME );
 	const trigger = createBlock( ...ENTRY_TITLE_TRIGGER );
 
@@ -92,7 +92,7 @@ function createCalendarFromTemplate( contentBlocks = [] ) {
 		[ modalManager ],
 	);
 
-	// Same paragraph as DAY_TEMPLATE, with the class that block styles use.
+	// Same paragraph as the calendar-day template, with the class that block styles use.
 	const dayNumber = createBlock( ...DAY_NUMBER );
 
 	const day = createBlock( 'gatherpress/calendar-day', {}, [

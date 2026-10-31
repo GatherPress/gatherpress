@@ -18,7 +18,7 @@ import {
 import { PanelBody, RangeControl } from '@wordpress/components';
 import './editor.scss';
 
-import { DAY_TEMPLATE } from '../calendar/constants';
+import TEMPLATE from './template';
 import { CalendarDayPreview } from '../../components/CalendarDayPreview';
 import { useStableValue } from '../calendar/hooks/use-stable-value';
 import { getRibbonRowsStyle } from '../calendar/utils/ribbon-rows';
@@ -113,7 +113,7 @@ export default memo( function Edit( {
 		blockProps,
 		{
 			allowedBlocks: [ 'gatherpress/calendar-day' ],
-			template: DAY_TEMPLATE,
+			template: TEMPLATE,
 			templateLock: false,
 			renderAppender: false,
 		},

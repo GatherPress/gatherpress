@@ -7,7 +7,7 @@ import { __ } from '@wordpress/i18n';
 /**
  * Internal dependencies
  */
-import { QUERY_VARIATION_INNER_BLOCKS } from './constants';
+import QUERY_VARIATION from './templates/query-variation';
 
 registerBlockVariation( 'core/query', {
 	name: 'gatherpress-calendar',
@@ -41,6 +41,6 @@ registerBlockVariation( 'core/query', {
 			include_unfinished: 1,
 		},
 	},
-	innerBlocks: QUERY_VARIATION_INNER_BLOCKS,
+	innerBlocks: QUERY_VARIATION,
 	scope: [ 'inserter' ],
 } );
