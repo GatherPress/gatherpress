@@ -12,9 +12,9 @@ const STATUSES = JSON.stringify( [
 ] );
 
 const CHECK_IN_STATES = JSON.stringify( [
-	{ value: 'checked-in', label: 'Checked in' },
-	{ value: 'no-show', label: 'No-show' },
-	{ value: 'not-recorded', label: 'Not recorded' },
+	{ value: 'checked-in', label: 'Checked in', icon: '<svg></svg>' },
+	{ value: 'no-show', label: 'No-show', icon: '<svg></svg>' },
+	{ value: 'not-recorded', label: 'Not recorded', icon: '<svg></svg>' },
 ] );
 
 const MOUNTS = {
@@ -55,6 +55,14 @@ const mountAll = async () => {
 
 		nodes[ name ] = node;
 	} );
+
+	const cell = document.createElement( 'div' );
+
+	cell.className = 'gatherpress-rsvp-check-in';
+	cell.dataset.rsvpId = '7';
+	cell.dataset.state = 'no-show';
+	document.body.appendChild( cell );
+	nodes.cell = cell;
 
 	await act( async () => {
 		await import( '@src/rsvp-admin' );
@@ -103,6 +111,14 @@ describe( 'rsvp-admin entry point', () => {
 		);
 
 		expect( within( select ).getAllByRole( 'option' ) ).toHaveLength( 1 );
+	} );
+
+	it( 'turns a check-in cell into a dropdown', () => {
+		expect(
+			within( nodes.cell ).getByRole( 'button', {
+				name: 'Check-in: No-show',
+			} ),
+		).toBeInTheDocument();
 	} );
 
 	it( 'mounts every mount point on the screen', () => {

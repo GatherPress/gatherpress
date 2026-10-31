@@ -646,56 +646,11 @@ class Test_List_Table extends Base {
 			$attendee_col,
 			'Failed to assert attendee column does not contain Approve action for approved RSVP.'
 		);
-		$this->assertStringContainsString(
-			'>Check in<',
-			$attendee_col,
-			'Failed to assert attendee column contains Check in action for approved, not recorded RSVP.'
-		);
-		$this->assertStringContainsString(
-			'>Mark as no-show<',
-			$attendee_col,
-			'Failed to assert attendee column contains the no-show action for approved, not recorded RSVP.'
-		);
 		$this->assertStringNotContainsString(
-			'>Clear check-in<',
+			'check_in',
 			$attendee_col,
-			'Failed to assert a not recorded RSVP has nothing to clear.'
+			'Failed to assert check-in moved out of the row actions, to the Check-in column.'
 		);
-
-		( new Check_In( (int) $this->rsvp['comment_ID'] ) )->add();
-		$attendee_col = $this->list_table->column_attendee( $this->rsvp );
-
-		$this->assertStringContainsString(
-			'>Clear check-in<',
-			$attendee_col,
-			'Failed to assert attendee column contains Clear check-in action for checked-in RSVP.'
-		);
-		$this->assertStringContainsString(
-			'>Mark as no-show<',
-			$attendee_col,
-			'Failed to assert a checked-in RSVP can still be marked as a no-show.'
-		);
-		$this->assertStringNotContainsString(
-			'>Check in<',
-			$attendee_col,
-			'Failed to assert attendee column does not contain Check in action for already checked-in RSVP.'
-		);
-
-		( new No_Show( (int) $this->rsvp['comment_ID'] ) )->add();
-		$attendee_col = $this->list_table->column_attendee( $this->rsvp );
-
-		$this->assertStringContainsString(
-			'>Check in<',
-			$attendee_col,
-			'Failed to assert a no-show RSVP can still be checked in.'
-		);
-		$this->assertStringNotContainsString(
-			'>Mark as no-show<',
-			$attendee_col,
-			'Failed to assert a no-show RSVP has no no-show action.'
-		);
-
-		Check_In_Registry::get_instance()->clear( (int) $this->rsvp['comment_ID'] );
 	}
 
 	/**
@@ -958,10 +913,12 @@ class Test_List_Table extends Base {
 	}
 
 	/**
-	 * The check-in column shows the check-in state of an approved RSVP, and a
-	 * dash for any other RSVP without one.
+	 * The check-in column shows the state's icon and name. An approved RSVP's
+	 * cell carries what the dropdown needs; another shows its state read-only,
+	 * or a dash without one.
 	 *
 	 * @covers ::column_default
+	 * @covers ::render_check_in
 	 *
 	 * @return void
 	 */
@@ -970,31 +927,41 @@ class Test_List_Table extends Base {
 
 		$this->rsvp['comment_approved'] = '1';
 
-		$this->assertSame(
-			'Not recorded',
-			$this->list_table->column_default( $this->rsvp, 'checked_in' ),
-			'Failed to assert an approved RSVP without a record shows Not recorded.'
-		);
+		$cell = $this->list_table->column_default( $this->rsvp, 'checked_in' );
 
-		( new Check_In( $rsvp_id ) )->add();
-
-		$this->assertSame(
-			'Checked in',
-			$this->list_table->column_default( $this->rsvp, 'checked_in' ),
-			'Failed to assert the column shows Checked in after check-in.'
+		$this->assertStringContainsString( sprintf( 'data-rsvp-id="%d"', $rsvp_id ), $cell );
+		$this->assertStringContainsString( 'data-state="not-recorded"', $cell );
+		$this->assertStringContainsString(
+			'<path d="M5 11.25h14v1.5H5z"></path>',
+			$cell,
+			'Failed to assert the icon shows.'
 		);
+		$this->assertStringContainsString( '<span>Not recorded</span>', $cell );
 
 		( new No_Show( $rsvp_id ) )->add();
 
-		$this->assertSame(
-			'No-show',
+		$this->assertStringContainsString(
+			'<span>No-show</span>',
 			$this->list_table->column_default( $this->rsvp, 'checked_in' ),
 			'Failed to assert the column shows No-show.'
 		);
 
-		Check_In_Registry::get_instance()->clear( $rsvp_id );
-
 		$this->rsvp['comment_approved'] = '0';
+
+		$cell = $this->list_table->column_default( $this->rsvp, 'checked_in' );
+
+		$this->assertStringContainsString(
+			'<span>No-show</span>',
+			$cell,
+			'Failed to assert a pending RSVP shows its state.'
+		);
+		$this->assertStringNotContainsString(
+			'data-rsvp-id',
+			$cell,
+			'Failed to assert a pending RSVP gets no dropdown.'
+		);
+
+		Check_In_Registry::get_instance()->clear( $rsvp_id );
 
 		$this->assertSame(
 			'-',
@@ -1024,10 +991,9 @@ class Test_List_Table extends Base {
 	 * A check-in state a plugin registers shows in the column, actions and filter.
 	 *
 	 * @covers ::column_default
-	 * @covers ::column_attendee
+	 * @covers ::render_check_in
 	 * @covers ::get_bulk_actions
 	 * @covers ::get_check_in_actions
-	 * @covers ::get_check_in_options
 	 * @covers ::set_check_in
 	 *
 	 * @return void
@@ -1048,18 +1014,10 @@ class Test_List_Table extends Base {
 			$this->list_table->get_bulk_actions()['check_in-checked-in-online'] ?? null,
 			'Failed to assert the state has a bulk action.'
 		);
-		$this->assertStringContainsString(
-			'>Check in online<',
-			$this->list_table->column_attendee( $this->rsvp ),
-			'Failed to assert the state has a row action.'
-		);
 		$this->assertContains(
-			array(
-				'value' => 'checked-in-online',
-				'label' => 'Checked in online',
-			),
-			Utility::invoke_hidden_method( $this->list_table, 'get_check_in_options' ),
-			'Failed to assert the filter offers the state.'
+			'checked-in-online',
+			wp_list_pluck( $registry->get_options(), 'value' ),
+			'Failed to assert the filter and dropdown offer the state.'
 		);
 
 		Utility::invoke_hidden_method(
@@ -1068,8 +1026,8 @@ class Test_List_Table extends Base {
 			array( $rsvp_id, 'check_in-checked-in-online' )
 		);
 
-		$this->assertSame(
-			'Checked in online',
+		$this->assertStringContainsString(
+			'<span>Checked in online</span>',
 			$this->list_table->column_default( $this->rsvp, 'checked_in' ),
 			'Failed to assert the column shows the state.'
 		);
@@ -2636,7 +2594,6 @@ class Test_List_Table extends Base {
 	 * @covers ::render_event_field
 	 * @covers ::render_response_toggle
 	 * @covers ::render_check_in_field
-	 * @covers ::get_check_in_options
 	 *
 	 * @return void
 	 */

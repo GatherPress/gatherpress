@@ -399,3 +399,30 @@
 		}
 	}
 }
+
+// The Check-in column: the state's icon beside its name, read-only until the
+// script makes it a dropdown.
+.gatherpress-rsvp-check-in {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25rem;
+
+	svg {
+		fill: currentcolor;
+		flex-shrink: 0;
+	}
+
+	.components-button {
+		color: inherit;
+	}
+}
+
+.gatherpress-rsvp-check-in__icon {
+	display: inline-flex;
+}
+
+.gatherpress-rsvp-check-in__error {
+	color: #b32d2e;
+	flex-basis: 100%;
+}

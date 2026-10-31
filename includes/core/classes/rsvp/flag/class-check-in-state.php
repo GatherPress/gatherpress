@@ -54,6 +54,19 @@ abstract class Check_In_State extends Base {
 	abstract public function attended(): bool;
 
 	/**
+	 * Gets the icon of the state, shown with its name on the RSVP screen.
+	 *
+	 * SVG markup of a 24 by 24 icon, drawn like the `@wordpress/icons` set. It
+	 * goes through `Check_In_Registry::kses_icon()`, which keeps `svg`, `path`,
+	 * `g`, `circle` and `rect`.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The SVG markup.
+	 */
+	abstract public function icon(): string;
+
+	/**
 	 * Sets the RSVP to this state, and removes its other check-in states.
 	 *
 	 * @since TBD

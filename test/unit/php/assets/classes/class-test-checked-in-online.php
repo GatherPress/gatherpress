@@ -61,4 +61,16 @@ final class Test_Checked_In_Online extends Check_In_State {
 	public function attended(): bool {
 		return true;
 	}
+
+	/**
+	 * Gets the icon of the state, with markup the icon escaping must remove.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The SVG markup.
+	 */
+	public function icon(): string {
+		return '<svg viewBox="0 0 24 24" onload="alert(1)"><script>alert(1)</script>' .
+			'<circle cx="12" cy="12" r="6"></circle></svg>';
+	}
 }

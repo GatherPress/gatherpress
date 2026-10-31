@@ -118,6 +118,8 @@ class Test_Check_In_State extends Base_Unit_Test {
 	 * @covers \GatherPress\Core\Rsvp\Flag\No_Show::label
 	 * @covers \GatherPress\Core\Rsvp\Flag\No_Show::action_label
 	 * @covers \GatherPress\Core\Rsvp\Flag\No_Show::attended
+	 * @covers \GatherPress\Core\Rsvp\Flag\Check_In::icon
+	 * @covers \GatherPress\Core\Rsvp\Flag\No_Show::icon
 	 *
 	 * @return void
 	 */
@@ -132,5 +134,10 @@ class Test_Check_In_State extends Base_Unit_Test {
 		$this->assertSame( 'No-show', $no_show->label() );
 		$this->assertSame( 'Mark as no-show', $no_show->action_label() );
 		$this->assertFalse( $no_show->attended() );
+		$this->assertStringContainsString(
+			'<path d="M16.5 7.5 10 13.9l-2.5-2.4-1 1 3.5 3.6 7.5-7.6z">',
+			$check_in->icon()
+		);
+		$this->assertStringContainsString( '<path d="M12 13.06l3.712 3.713', $no_show->icon() );
 	}
 }

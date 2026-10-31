@@ -163,6 +163,15 @@ class Test_Check_In_Registry extends Base_Unit_Test {
 			public function attended(): bool {
 				return false;
 			}
+
+			/**
+			 * Gets the icon of the state.
+			 *
+			 * @return string The SVG markup.
+			 */
+			public function icon(): string {
+				return '';
+			}
 		};
 
 		$this->assertFalse( Check_In_Registry::get_instance()->register( $state::class ) );
@@ -206,5 +215,57 @@ class Test_Check_In_Registry extends Base_Unit_Test {
 		remove_action( 'gatherpress_register_rsvp_check_in_states', $callback );
 
 		$this->assertArrayHasKey( 'checked-in-online', Check_In_Registry::get_instance()->get_all() );
+	}
+
+	/**
+	 * The choices are each state, then not recorded, with escaped icons.
+	 *
+	 * @covers ::get_options
+	 * @covers ::describe
+	 * @covers ::kses_icon
+	 *
+	 * @return void
+	 */
+	public function test_get_options(): void {
+		$registry = Check_In_Registry::get_instance();
+
+		$registry->register( Test_Checked_In_Online::class );
+
+		$options = $registry->get_options();
+
+		$this->assertSame(
+			array( 'checked-in', 'no-show', 'checked-in-online', 'not-recorded' ),
+			wp_list_pluck( $options, 'value' )
+		);
+		$this->assertSame( 'Not recorded', $options[3]['label'] );
+		// wp_kses() lowercases attribute names; the HTML parser restores viewBox on an SVG element.
+		$this->assertSame(
+			str_replace( 'viewBox', 'viewbox', Check_In_Registry::NOT_RECORDED_ICON ),
+			$options[3]['icon'],
+			'Core icons survive the escaping.'
+		);
+		$this->assertSame(
+			'<svg viewbox="0 0 24 24">alert(1)<circle cx="12" cy="12" r="6"></circle></svg>',
+			$options[2]['icon'],
+			'A script and event handlers are removed from an icon.'
+		);
+	}
+
+	/**
+	 * A state is set by its slug, cleared with not recorded, and refused when unknown.
+	 *
+	 * @covers ::set_state
+	 *
+	 * @return void
+	 */
+	public function test_set_state(): void {
+		$registry = Check_In_Registry::get_instance();
+		$rsvp_id  = $this->make_rsvp();
+
+		$this->assertFalse( $registry->set_state( $rsvp_id, 'unknown' ) );
+		$this->assertTrue( $registry->set_state( $rsvp_id, 'checked-in' ) );
+		$this->assertInstanceOf( Check_In::class, $registry->get_state( $rsvp_id ) );
+		$this->assertTrue( $registry->set_state( $rsvp_id, Check_In_Registry::NOT_RECORDED ) );
+		$this->assertNull( $registry->get_state( $rsvp_id ) );
 	}
 }

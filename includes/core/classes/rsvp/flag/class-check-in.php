@@ -68,4 +68,19 @@ final class Check_In extends Check_In_State {
 	public function attended(): bool {
 		return true;
 	}
+
+	/**
+	 * Gets the icon of the state.
+	 *
+	 * A check mark, the `check` icon of `@wordpress/icons`.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The SVG markup.
+	 */
+	public function icon(): string {
+		return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"' .
+			' aria-hidden="true" focusable="false">' .
+			'<path d="M16.5 7.5 10 13.9l-2.5-2.4-1 1 3.5 3.6 7.5-7.6z"></path></svg>';
+	}
 }
