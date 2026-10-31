@@ -327,9 +327,9 @@ final class External {
 		}
 
 		$permalink   = (string) get_permalink( $post );
-		$summary     = $this->fold_ical_text( $this->escape_ical_text( $post->post_title ) );
-		$description = $this->fold_ical_text( $this->escape_ical_text( $description ) );
-		$location    = $this->fold_ical_text( $this->escape_ical_text( $location ) );
+		$summary     = $this->escape_ical_text( $post->post_title );
+		$description = $this->escape_ical_text( $description );
+		$location    = $this->escape_ical_text( $location );
 
 		$args = array(
 			'BEGIN:VEVENT',
@@ -346,7 +346,10 @@ final class External {
 			'END:VEVENT',
 		);
 
-		return implode( "\r\n", $args );
+		return implode(
+			"\r\n",
+			array_map( fn( string $line ): string => $this->fold_ical_line( $line ), $args )
+		);
 	}
 
 	/**
@@ -513,35 +516,43 @@ final class External {
 	}
 
 	/**
-	 * Fold text per [iCal specifications](http://www.ietf.org/rfc/rfc2445.txt).
+	 * Fold a content line per RFC 5545 §3.1.
 	 *
-	 * Lines of text SHOULD NOT be longer than 75 octets, excluding the line
-	 * break. Long content lines SHOULD be split into a multiple line
-	 * representations using a line "folding" technique. That is, a long
-	 * line can be split between any two characters by inserting a CRLF
-	 * immediately followed by a single linear white space character (i.e.,
-	 * SPACE, US-ASCII decimal 32 or HTAB, US-ASCII decimal 9). Any sequence
-	 * of CRLF followed immediately by a single linear white space character
-	 * is ignored (i.e., removed) when processing the content type.
+	 * A content line SHOULD NOT be longer than 75 octets, excluding the line
+	 * break. A longer line is split by inserting a CRLF immediately followed
+	 * by a single space, which a client removes again when it reads the line.
 	 *
-	 * @author Stephen Harris (@stephenharris)
-	 * @source https://github.com/stephenharris/Event-Organiser/blob/develop/includes/event-organiser-utility-functions.php#L1663
+	 * The limit counts octets, not characters, and the whole line counts, so
+	 * the property name and colon take their share of the first line, and each
+	 * continuation line spends one octet on its leading space. The line is cut
+	 * between UTF-8 characters, so a multi-octet character moves whole to the
+	 * next line instead of being split in two.
 	 *
-	 * @since 0.34.0
+	 * @since TBD
 	 *
-	 * @param string $text The string to be escaped.
+	 * @param string $line The content line, with its value already escaped.
 	 *
-	 * @return string The escaped string.
+	 * @return string The line, folded where it is longer than 75 octets.
 	 */
-	private function fold_ical_text( string $text ): string {
-		$text_arr = array();
+	private function fold_ical_line( string $line ): string {
+		$folded = '';
+		$limit  = 75;
+		$length = strlen( $line );
 
-		$lines = ceil( mb_strlen( $text ) / 75 );
+		while ( $length > $limit ) {
+			$cut = $limit;
 
-		for ( $i = 0; $i < $lines; $i++ ) {
-			$text_arr[ $i ] = mb_substr( $text, $i * 75, 75 );
+			// Back up past UTF-8 continuation octets (10xxxxxx), at most three for a four-octet character.
+			while ( $cut > $limit - 3 && 0x80 === ( ord( $line[ $cut ] ) & 0xC0 ) ) {
+				--$cut;
+			}
+
+			$folded .= substr( $line, 0, $cut ) . "\r\n ";
+			$line    = substr( $line, $cut );
+			$length -= $cut;
+			$limit   = 74;
 		}
 
-		return join( "\r\n ", $text_arr );
+		return $folded . $line;
 	}
 }
