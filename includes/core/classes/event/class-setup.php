@@ -377,7 +377,10 @@ final class Setup {
 			$link = $variation['elements']['link'] ?? null;
 
 			// Badge and Dot are styled by the plugin stylesheet, even when customized.
-			if ( ! is_array( $link ) || in_array( $gatherpress_slug, array( 'gatherpress-badge', 'gatherpress-dot' ), true ) ) {
+			if (
+				! is_array( $link )
+				|| in_array( $gatherpress_slug, array( 'gatherpress-badge', 'gatherpress-dot' ), true )
+			) {
 				continue;
 			}
 
