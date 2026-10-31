@@ -1077,8 +1077,8 @@ describe( 'generateCalendar', () => {
 			] ),
 		).toEqual( [
 			[ 1, false ],
-			[ 3, true ],
 			[ 2, false ],
+			[ 3, true ],
 		] );
 	} );
 

@@ -30,8 +30,8 @@ import {
 	getDefaultActiveDate,
 	getColumnsCount,
 	getStartOfWeek,
+	getTimeGridConfig,
 	getTimeSlotDuration,
-	toHour,
 } from './utils/calendar-utils';
 import { useCalendarSync } from './hooks/use-calendar-sync';
 import { useCalendarData } from './hooks/use-calendar-data';
@@ -141,36 +141,17 @@ export default function Edit( {
 		isDatetimeOrdered &&
 		Boolean( enableTimeGrid );
 
-	const timeGridConfig = useMemo( () => {
-		if ( ! isTimeGridActive ) {
-			return { enabled: false, slots: [] };
-		}
-
-		const start = Math.max( 0, Math.min( 23, toHour( dayStartHour, 8 ) ) );
-		const end = Math.max( start + 1, Math.min( 24, toHour( dayEndHour, 20 ) ) );
-		// The same rows and steps as Date_Calculator::get_time_grid_config().
-		const slotHours = getTimeSlotDuration();
-		const quarterMins = Math.max( 1, Math.round( ( slotHours * 60 ) / 4 ) );
-		const totalQuarters = Math.ceil(
-			( ( end - start ) * 60 ) / quarterMins,
-		);
-
-		const slots = [];
-		for ( let h = start; h < end; h += slotHours ) {
-			slots.push( `${ String( h ).padStart( 2, '0' ) }:00` );
-		}
-
-		return {
-			enabled: true,
-			startHour: start,
-			endHour: end,
-			slotHours,
-			quarterMins,
-			totalQuarters,
-			slots,
-			slotHeight,
-		};
-	}, [ isTimeGridActive, dayStartHour, dayEndHour, slotHeight ] );
+	const timeGridConfig = useMemo(
+		() =>
+			getTimeGridConfig( {
+				enabled: isTimeGridActive,
+				startHour: dayStartHour,
+				endHour: dayEndHour,
+				slotHours: getTimeSlotDuration(),
+				slotHeight,
+			} ),
+		[ isTimeGridActive, dayStartHour, dayEndHour, slotHeight ],
+	);
 
 	const dateRange = useMemo(
 		() =>

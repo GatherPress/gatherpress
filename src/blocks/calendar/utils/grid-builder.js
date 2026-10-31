@@ -46,6 +46,55 @@ export function toHour( value, fallback ) {
 }
 
 /**
+ * Build the time grid of a day or week view.
+ *
+ * Mirrors Time_Grid: the same hours, rows and steps.
+ *
+ * @since TBD
+ *
+ * @param {Object}  options            Time grid settings.
+ * @param {boolean} options.enabled    Whether the calendar shows the time grid.
+ * @param {*}       options.startHour  First hour of the grid.
+ * @param {*}       options.endHour    Hour the grid ends at.
+ * @param {number}  options.slotHours  Hours in each labeled row.
+ * @param {number}  options.slotHeight Height of one row in pixels.
+ *
+ * @return {Object} Time grid configuration.
+ */
+export function getTimeGridConfig( {
+	enabled,
+	startHour,
+	endHour,
+	slotHours,
+	slotHeight,
+} ) {
+	if ( ! enabled ) {
+		return { enabled: false, slots: [] };
+	}
+
+	const start = Math.max( 0, Math.min( 23, toHour( startHour, 8 ) ) );
+	const end = Math.max( start + 1, Math.min( 24, toHour( endHour, 20 ) ) );
+	const quarterMins = Math.max( 1, Math.round( ( slotHours * 60 ) / 4 ) );
+	const totalQuarters = Math.ceil( ( ( end - start ) * 60 ) / quarterMins );
+
+	const slots = [];
+	for ( let h = start; h < end; h += slotHours ) {
+		slots.push( `${ String( h ).padStart( 2, '0' ) }:00` );
+	}
+
+	return {
+		enabled: true,
+		startHour: start,
+		endHour: end,
+		slotHours,
+		quarterMins,
+		totalQuarters,
+		slots,
+		slotHeight,
+	};
+}
+
+/**
  * Create a Date at noon local time from a YYYY-MM-DD string.
  *
  * Noon keeps the day the same when daylight saving time changes the clock.
@@ -314,19 +363,42 @@ export function findAvailableSlot( dates, occupiedSlots ) {
 /**
  * Allocates a single timed event into the time grid entries map.
  *
+ * Like Post_Organizer::allocate_timed_entry(), only events go on the time
+ * tracks, and the entry takes the first free slot of its day, after the
+ * ribbons, so the entries keep the same order.
+ *
  * @param {Object}        rawEvent       Event data.
  * @param {Object}        gridConfig     Time grid config.
  * @param {Object}        grouped        Grouped date entries map.
+ * @param {Object}        occupiedSlots  Map of occupied slots.
  * @param {Array<string>} eventPostTypes Slugs of the post types that support gatherpress-event-date.
  * @return {void}
  */
-function allocateTimedEvent( rawEvent, gridConfig, grouped, eventPostTypes ) {
+function allocateTimedEvent(
+	rawEvent,
+	gridConfig,
+	grouped,
+	occupiedSlots,
+	eventPostTypes,
+) {
 	const { post } = rawEvent;
+
+	if ( ! eventPostTypes.includes( post.type ) ) {
+		return;
+	}
+
 	// Always set: the time grid is on, resolvePostDateSpan() already left out a
 	// post without a start, and an event outside the hours goes to an edge.
 	const tracks = calculateTimedEventTracks( post, gridConfig, eventPostTypes );
 
 	const dateStr = rawEvent.startDateStr;
+	const slot = findAvailableSlot( [ dateStr ], occupiedSlots );
+
+	if ( ! occupiedSlots[ dateStr ] ) {
+		occupiedSlots[ dateStr ] = new Set();
+	}
+	occupiedSlots[ dateStr ].add( slot );
+
 	if ( ! grouped[ dateStr ] ) {
 		grouped[ dateStr ] = [];
 	}
@@ -340,7 +412,7 @@ function allocateTimedEvent( rawEvent, gridConfig, grouped, eventPostTypes ) {
 		isTimed: true,
 		timeRowStart: tracks.timeRowStart,
 		timeRowEnd: tracks.timeRowEnd,
-		slot: 0,
+		slot,
 	} );
 }
 
@@ -498,7 +570,13 @@ export function groupPostsByDate(
 		const isMultiDay = 1 < rawEvent.totalDays || rawEvent.isAllDay;
 
 		if ( isTimeGrid && ! isMultiDay ) {
-			allocateTimedEvent( rawEvent, gridConfig, grouped, eventPostTypes );
+			allocateTimedEvent(
+				rawEvent,
+				gridConfig,
+				grouped,
+				occupiedSlots,
+				eventPostTypes,
+			);
 		} else {
 			allocateRibbonEvent( rawEvent, grouped, occupiedSlots );
 		}
@@ -726,7 +804,7 @@ export function getWeekNumber( week, startOfWeek = 0 ) {
  * @param {boolean}       isTimeGrid Whether time grid is enabled.
  * @return {number} Number of ribbon slots.
  */
-function getWeekNumRibbonSlots( weekDays, isTimeGrid ) {
+export function getWeekNumRibbonSlots( weekDays, isTimeGrid ) {
 	if ( ! isTimeGrid ) {
 		return 0;
 	}

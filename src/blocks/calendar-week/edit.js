@@ -22,6 +22,7 @@ import { DAY_TEMPLATE } from '../calendar/constants';
 import { CalendarDayPreview } from '../../components/CalendarDayPreview';
 import { useStableValue } from '../calendar/hooks/use-stable-value';
 import { getRibbonRowsStyle } from '../calendar/utils/ribbon-rows';
+import { getWeekNumRibbonSlots } from '../calendar/utils/grid-builder';
 
 const EMPTY_ARRAY = [];
 const EMPTY_ATTRIBUTES = {};
@@ -91,39 +92,15 @@ export default memo( function Edit( {
 		),
 	);
 
-	// Hours in each row of the time grid, from the calendar, as the preview weeks use.
-	const slotHours = Math.max(
-		1,
-		Number( context?.[ 'gatherpress/timeGridConfig' ]?.slotHours ) || 1,
+	// The hour rows of the Time Gutter column, as the calendar built them.
+	const timeSlots = isTimeGridActive
+		? context?.[ 'gatherpress/timeGridConfig' ]?.slots ?? EMPTY_ARRAY
+		: EMPTY_ARRAY;
+
+	const numRibbonSlots = useMemo(
+		() => getWeekNumRibbonSlots( weekDays, isTimeGridActive ),
+		[ isTimeGridActive, weekDays ],
 	);
-
-	// Generate hour slots for the Time Gutter column.
-	const timeSlots = useMemo( () => {
-		if ( ! isTimeGridActive ) {
-			return [];
-		}
-		const slots = [];
-		for ( let h = dayStartHour; h < dayEndHour; h += slotHours ) {
-			slots.push( `${ String( h ).padStart( 2, '0' ) }:00` );
-		}
-		return slots;
-	}, [ isTimeGridActive, dayStartHour, dayEndHour, slotHours ] );
-
-	// Calculate maximum ribbon slot index across all days in this week.
-	const numRibbonSlots = useMemo( () => {
-		if ( ! isTimeGridActive ) {
-			return 0;
-		}
-		let maxSlot = -1;
-		weekDays.forEach( ( day ) => {
-			( day.posts || [] ).forEach( ( p ) => {
-				if ( ! p.isTimed ) {
-					maxSlot = Math.max( maxSlot, Number( p.slot ) || 0 );
-				}
-			} );
-		} );
-		return maxSlot + 1;
-	}, [ isTimeGridActive, weekDays ] );
 
 	const blockProps = useBlockProps( {
 		className: `gatherpress-calendar__week${
