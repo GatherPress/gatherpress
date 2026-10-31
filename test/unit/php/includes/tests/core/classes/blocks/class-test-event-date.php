@@ -883,17 +883,14 @@ class Test_Event_Date extends Base {
 			array( 'showViewerTime' => true )
 		);
 
-		// Now disable the global setting.
+		$this->assertStringContainsString(
+			'data-wp-class--gatherpress-tooltip',
+			$output,
+			'The dated event should carry the tooltip while the global setting is on.'
+		);
+
+		// The same dated event, rendered again with the global setting off.
 		Settings::get_instance()->set( 'show_viewer_timezone', false );
-
-		$event_post = $this->mock->post(
-			array(
-				'post_title' => 'Global Disabled Event',
-				'post_type'  => Event::POST_TYPE,
-			)
-		)->get();
-
-		$this->go_to( get_permalink( $event_post->ID ) );
 
 		$output = do_blocks( '<!-- wp:gatherpress/event-date {"showViewerTime":true} /-->' );
 
