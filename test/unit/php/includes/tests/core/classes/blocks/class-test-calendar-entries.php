@@ -257,7 +257,11 @@ class Test_Calendar_Entries extends Base {
 		);
 
 		$this->assertStringContainsString( 'gatherpress--is-all-day', $output );
-		$this->assertStringContainsString( 'gatherpress--is-multi-day', $output, 'Failed to assert all-day events are ribbons.' );
+		$this->assertStringContainsString(
+			'gatherpress--is-multi-day',
+			$output,
+			'Failed to assert all-day events are ribbons.'
+		);
 		$this->assertStringNotContainsString(
 			'gatherpress--is-timed-event',
 			$output,

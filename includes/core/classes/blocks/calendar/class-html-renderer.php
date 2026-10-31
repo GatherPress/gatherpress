@@ -181,11 +181,13 @@ final class Html_Renderer {
 		// The template runs the weeks through wp_kses_post(). Widen the allowlist for this call only.
 		add_filter( 'wp_kses_allowed_html', array( $this, 'allow_block_markup' ), 10, 2 );
 
+		$table_class = 'gatherpress-calendar__table' . ( $is_time_grid ? ' gatherpress--has-time-grid' : '' );
+
 		try {
 			return Utility::render_template(
 				sprintf( '%s/includes/templates/blocks/calendar/table.php', GATHERPRESS_CORE_PATH ),
 				array(
-					'table_class'   => 'gatherpress-calendar__table' . ( $is_time_grid ? ' gatherpress--has-time-grid' : '' ),
+					'table_class'   => $table_class,
 					'table_style'   => $table_style,
 					'caption'       => $unit['caption'],
 					'show_weekdays' => $show_weekdays,

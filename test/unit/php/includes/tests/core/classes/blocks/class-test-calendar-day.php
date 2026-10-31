@@ -210,8 +210,8 @@ class Test_Calendar_Day extends Base {
 		$this->assertDoesNotMatchRegularExpression(
 			'#class="[^"]*gatherpress--is-today#',
 			wp_interactivity_process_directives(
-				'<div data-wp-interactive="gatherpress/calendar-day" data-wp-class--gatherpress--is-today="state.isToday" '
-					. 'class="gatherpress--is-today"></div>'
+				'<div data-wp-interactive="gatherpress/calendar-day" '
+					. 'data-wp-class--gatherpress--is-today="state.isToday" class="gatherpress--is-today"></div>'
 			),
 			'Failed to assert no comparison without a date.'
 		);

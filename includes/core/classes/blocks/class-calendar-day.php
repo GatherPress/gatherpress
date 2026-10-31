@@ -133,12 +133,12 @@ final class Calendar_Day extends Base {
 
 		self::register_day_state();
 
-		$attributes['data-wp-interactive']        = 'gatherpress/calendar-day';
-		$attributes['data-wp-context']            = (string) wp_json_encode( array( 'date' => $day_date ) );
-		$attributes['data-wp-class--gatherpress--is-today']    = 'state.isToday';
-		$attributes['data-wp-class--gatherpress--is-past']     = 'state.isPast';
-		$attributes['data-wp-class--gatherpress--is-future']   = 'state.isFuture';
-		$attributes['data-wp-bind--aria-current'] = 'state.ariaCurrent';
+		$attributes['data-wp-interactive']                   = 'gatherpress/calendar-day';
+		$attributes['data-wp-context']                       = (string) wp_json_encode( array( 'date' => $day_date ) );
+		$attributes['data-wp-class--gatherpress--is-today']  = 'state.isToday';
+		$attributes['data-wp-class--gatherpress--is-past']   = 'state.isPast';
+		$attributes['data-wp-class--gatherpress--is-future'] = 'state.isFuture';
+		$attributes['data-wp-bind--aria-current']            = 'state.ariaCurrent';
 
 		return $attributes;
 	}
