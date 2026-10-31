@@ -6,6 +6,40 @@
 .gatherpress-attendee-info {
 	display: flex;
 	gap: 0.5rem;
+
+	// A long name or email wraps inside the column rather than running into the next.
+	> div:last-child {
+		min-width: 0;
+		overflow-wrap: anywhere;
+	}
+}
+
+// The fixed table layout gives each column without a width the same share, which
+// squeezes the attendee and leaves the short columns too wide. Below 783px core
+// stacks the table, so the widths apply only above it.
+@media screen and (width > 782px) {
+	.wp-list-table.rsvps {
+		.column-attendee {
+			width: 25%;
+		}
+
+		.column-response {
+			width: 8rem;
+		}
+
+		.column-type {
+			width: 6rem;
+		}
+
+		.column-approved {
+			width: 7rem;
+		}
+
+		.column-checked_in,
+		.column-date {
+			width: 10rem;
+		}
+	}
 }
 
 [data-gatherpress-no-render="true"] {
