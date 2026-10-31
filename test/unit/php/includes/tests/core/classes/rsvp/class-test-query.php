@@ -114,6 +114,54 @@ class Test_Query extends Base {
 	}
 
 	/**
+	 * Queries that differ only by their tax_query do not share a cached result.
+	 *
+	 * Core caches comment queries by its own query vars, which leave out the
+	 * tax_query that this class grafts on.
+	 *
+	 * @covers ::get_rsvps
+	 *
+	 * @return void
+	 */
+	public function test_get_rsvps_caches_each_tax_query_apart(): void {
+		$event    = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$rsvp_ids = array();
+
+		foreach ( array( Status::ATTENDING, Status::NOT_ATTENDING ) as $status ) {
+			$rsvp_ids[ $status->value ] = (int) wp_insert_comment(
+				array(
+					'comment_post_ID' => $event->ID,
+					'comment_type'    => Rsvp::COMMENT_TYPE,
+				)
+			);
+
+			wp_set_object_terms( $rsvp_ids[ $status->value ], $status->value, Status::TAXONOMY );
+		}
+
+		foreach ( $rsvp_ids as $status => $rsvp_id ) {
+			$found = Query::get_instance()->get_rsvps(
+				array(
+					'post_id'   => $event->ID,
+					'fields'    => 'ids',
+					'tax_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+						array(
+							'taxonomy' => Status::TAXONOMY,
+							'field'    => 'slug',
+							'terms'    => $status,
+						),
+					),
+				)
+			);
+
+			$this->assertSame(
+				array( $rsvp_id ),
+				array_map( 'intval', $found ),
+				sprintf( 'Failed to assert the %s query found only its RSVP.', $status )
+			);
+		}
+	}
+
+	/**
 	 * Coverage for get_rsvp and get_rsvps method.
 	 *
 	 * @covers ::get_rsvp

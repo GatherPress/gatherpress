@@ -47,6 +47,22 @@ describe( 'buildFilterUrl', () => {
 		);
 	} );
 
+	it( 'carries the chosen check-in state', () => {
+		expect( buildFilterUrl( SCREEN, null, [], 'not-recorded' ) ).toContain(
+			'check_in=not-recorded',
+		);
+	} );
+
+	it( 'omits an empty check-in state, which means every state', () => {
+		expect( buildFilterUrl( SCREEN, 11, [] ) ).not.toContain( 'check_in' );
+	} );
+
+	it( 'drops a check-in filter that was previously applied', () => {
+		expect(
+			buildFilterUrl( `${ SCREEN }&check_in=no-show`, null, [], '' ),
+		).not.toContain( 'check_in' );
+	} );
+
 	it( 'resets paging, which rarely survives a narrower result', () => {
 		expect( buildFilterUrl( `${ SCREEN }&paged=4`, 11, [] ) ).not.toContain(
 			'paged',

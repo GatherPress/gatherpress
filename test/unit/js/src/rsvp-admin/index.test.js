@@ -11,6 +11,12 @@ const STATUSES = JSON.stringify( [
 	{ value: 'waiting_list', label: 'Waiting List' },
 ] );
 
+const CHECK_IN_STATES = JSON.stringify( [
+	{ value: 'checked-in', label: 'Checked in' },
+	{ value: 'no-show', label: 'No-show' },
+	{ value: 'not-recorded', label: 'Not recorded' },
+] );
+
 const MOUNTS = {
 	full: {
 		postTypes: 'gatherpress_event',
@@ -18,9 +24,15 @@ const MOUNTS = {
 		label: 'Pick an event',
 		statuses: STATUSES,
 		selected: 'attending',
+		checkInStates: CHECK_IN_STATES,
+		checkIn: 'no-show',
 	},
 	bare: {},
-	malformed: { postTypes: 'gatherpress_event', statuses: '{"attending"' },
+	malformed: {
+		postTypes: 'gatherpress_event',
+		statuses: '{"attending"',
+		checkInStates: '[{"value"',
+	},
 };
 
 const nodes = {};
@@ -77,6 +89,20 @@ describe( 'rsvp-admin entry point', () => {
 		expect(
 			within( nodes.malformed ).getByLabelText( 'Filter by event' ),
 		).toBeInTheDocument();
+	} );
+
+	it( 'selects the check-in state carried in from the request', () => {
+		expect(
+			within( nodes.full ).getByLabelText( 'Filter by check-in' ),
+		).toHaveValue( 'no-show' );
+	} );
+
+	it( 'offers only all check-ins when the states are malformed', () => {
+		const select = within( nodes.malformed ).getByLabelText(
+			'Filter by check-in',
+		);
+
+		expect( within( select ).getAllByRole( 'option' ) ).toHaveLength( 1 );
 	} );
 
 	it( 'mounts every mount point on the screen', () => {

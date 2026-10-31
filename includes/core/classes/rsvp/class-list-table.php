@@ -22,7 +22,8 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
 use GatherPress\Core\Rsvp;
-use GatherPress\Core\Rsvp\Flag\Check_In;
+use GatherPress\Core\Rsvp\Flag\Base as Flag;
+use GatherPress\Core\Rsvp\Flag\Check_In_State;
 use GatherPress\Core\Rsvp\Response\Status;
 use WP_List_Table;
 
@@ -121,7 +122,7 @@ final class List_Table extends WP_List_Table {
 			'type'       => __( 'Type', 'gatherpress' ),
 			'event'      => Utility::post_type_label( 'singular_name', $this->post_type ),
 			'approved'   => __( 'Status', 'gatherpress' ),
-			'checked_in' => __( 'Checked in', 'gatherpress' ),
+			'checked_in' => __( 'Check-in', 'gatherpress' ),
 			'date'       => __( 'Date', 'gatherpress' ),
 		);
 	}
@@ -173,9 +174,11 @@ final class List_Table extends WP_List_Table {
 			return;
 		}
 
-		$statuses  = array();
-		$responses = $this->get_filtered_responses();
-		$post_id   = $this->get_filtered_post_id();
+		$statuses        = array();
+		$check_in_states = array();
+		$responses       = $this->get_filtered_responses();
+		$post_id         = $this->get_filtered_post_id();
+		$check_in        = $this->get_filtered_check_in();
 
 		foreach ( Status::filterable() as $status ) {
 			$statuses[] = array(
@@ -184,19 +187,31 @@ final class List_Table extends WP_List_Table {
 			);
 		}
 
+		foreach ( Check_In_State::cases() as $state ) {
+			$check_in_states[] = array(
+				'value' => $state->value,
+				'label' => $state->label(),
+			);
+		}
+
 		printf(
 			'<div class="alignleft actions gatherpress-rsvp-filters"' .
 			' data-post-types="%1$s" data-post-id="%2$s" data-label="%3$s"' .
-			' data-statuses="%4$s" data-selected="%5$s">%6$s%7$s%8$s</div>',
+			' data-statuses="%4$s" data-selected="%5$s" data-check-in-states="%6$s"' .
+			' data-check-in="%7$s">%8$s%9$s%10$s%11$s</div>',
 			esc_attr( implode( ',', get_post_types_by_support( Event::SUPPORT ) ) ),
 			absint( $post_id ),
 			esc_attr__( 'Filter by event', 'gatherpress' ),
 			esc_attr( (string) wp_json_encode( $statuses ) ),
 			esc_attr( implode( ',', $responses ) ),
+			esc_attr( (string) wp_json_encode( $check_in_states ) ),
+			esc_attr( $check_in ? $check_in->value : '' ),
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in the method.
 			$this->render_event_field(),
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in the method.
 			$this->render_response_toggle( $responses ),
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in the method.
+			$this->render_check_in_field( $check_in ),
 			sprintf(
 				'<button type="button" class="components-button is-secondary">%s</button>',
 				esc_html__( 'Filter', 'gatherpress' )
@@ -223,6 +238,36 @@ final class List_Table extends WP_List_Table {
 			' autocomplete="off" />' .
 			'</div></div>',
 			esc_html__( 'Filter by event', 'gatherpress' )
+		);
+	}
+
+	/**
+	 * The check-in field, before script takes it over.
+	 *
+	 * @since TBD
+	 *
+	 * @param Check_In_State|null $selected The state the request is filtered to, if any.
+	 *
+	 * @return string The field markup.
+	 */
+	protected function render_check_in_field( ?Check_In_State $selected ): string {
+		$options = sprintf( '<option value="">%s</option>', esc_html__( 'All check-ins', 'gatherpress' ) );
+
+		foreach ( Check_In_State::cases() as $state ) {
+			$options .= sprintf(
+				'<option value="%1$s"%2$s>%3$s</option>',
+				esc_attr( $state->value ),
+				selected( $selected?->value, $state->value, false ),
+				esc_html( $state->label() )
+			);
+		}
+
+		return sprintf(
+			'<div class="gatherpress-rsvp-filters__check-in">' .
+			'<label class="screen-reader-text" for="gatherpress-rsvp-check-in">%1$s</label>' .
+			'<select id="gatherpress-rsvp-check-in">%2$s</select></div>',
+			esc_html__( 'Filter by check-in', 'gatherpress' ),
+			$options
 		);
 	}
 
@@ -339,6 +384,62 @@ final class List_Table extends WP_List_Table {
 		);
 
 		return array_values( array_intersect( $requested, $allowed ) );
+	}
+
+	/**
+	 * Adds the check-in filter to a comment query, when one is requested.
+	 *
+	 * Not recorded means neither check-in flag. The clause joins any response
+	 * filter already on the query, and both must match.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $args The comment query arguments.
+	 *
+	 * @return array<string, mixed> The arguments, filtered when a check-in state was requested.
+	 */
+	protected function add_check_in_filter( array $args ): array {
+		$state = $this->get_filtered_check_in();
+
+		if ( null === $state ) {
+			return $args;
+		}
+
+		$clause = array(
+			'taxonomy' => Flag::TAXONOMY,
+			'field'    => 'slug',
+			'terms'    => $state->value,
+		);
+
+		if ( Check_In_State::NOT_RECORDED === $state ) {
+			$clause['terms']    = array( Check_In_State::CHECKED_IN->value, Check_In_State::NO_SHOW->value );
+			$clause['operator'] = 'NOT IN';
+		}
+
+		$tax_query   = is_array( $args['tax_query'] ?? null ) ? $args['tax_query'] : array();
+		$tax_query[] = $clause;
+
+		$tax_query['relation'] = 'AND';
+		$args['tax_query']     = $tax_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+
+		return $args;
+	}
+
+	/**
+	 * The check-in state the current request is filtered to, if any.
+	 *
+	 * @since TBD
+	 *
+	 * @return Check_In_State|null The state, or null when unfiltered or unknown.
+	 */
+	public function get_filtered_check_in(): ?Check_In_State {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( empty( $_REQUEST['check_in'] ) || ! is_string( $_REQUEST['check_in'] ) ) {
+			return null;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		return Check_In_State::tryFrom( sanitize_key( wp_unslash( $_REQUEST['check_in'] ) ) );
 	}
 
 	/**
@@ -587,7 +688,7 @@ final class List_Table extends WP_List_Table {
 		$args['orderby'] = $orderby;
 		$args['order']   = $order;
 
-		$items = $rsvp_query->get_rsvps( $this->add_response_filter( $args ) );
+		$items = $rsvp_query->get_rsvps( $this->add_check_in_filter( $this->add_response_filter( $args ) ) );
 
 		return array_map(
 			static function ( $item ): array {
@@ -651,7 +752,7 @@ final class List_Table extends WP_List_Table {
 			}
 		}
 
-		return $rsvp_query->get_rsvps( $this->add_response_filter( $args ) );
+		return $rsvp_query->get_rsvps( $this->add_check_in_filter( $this->add_response_filter( $args ) ) );
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
@@ -725,9 +826,12 @@ final class List_Table extends WP_List_Table {
 				$output = $statuses[ $approved ] ?? '-';
 				break;
 			case 'checked_in':
-				$output = ( new Check_In( (int) $item['comment_ID'] ) )->has()
-					? __( 'Yes', 'gatherpress' )
-					: '-';
+				$state = Check_In_State::for_rsvp( (int) $item['comment_ID'] );
+
+				// Only an approved RSVP can be checked in, so another with no record has nothing to show.
+				$output = Check_In_State::NOT_RECORDED === $state && '1' !== $item['comment_approved']
+					? '-'
+					: $state->label();
 				break;
 			case 'date':
 				$output = sprintf(
@@ -878,45 +982,50 @@ final class List_Table extends WP_List_Table {
 	public function column_attendee( array $item ): string {
 		// Use current URL to preserve all filtering parameters.
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		$current_url   = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
-		$nonce         = wp_create_nonce( Rsvp::COMMENT_TYPE );
-		$actions       = array();
-		$is_approved   = ( '1' === $item['comment_approved'] );
-		$is_spam       = ( 'spam' === $item['comment_approved'] );
-		$is_checked_in = ( new Check_In( (int) $item['comment_ID'] ) )->has();
+		$current_url = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
+		$nonce       = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$actions     = array();
+		$is_approved = ( '1' === $item['comment_approved'] );
+		$is_spam     = ( 'spam' === $item['comment_approved'] );
+		$check_in    = Check_In_State::for_rsvp( (int) $item['comment_ID'] );
 
 		$action_definitions = array(
-			'approve'    => array(
+			'approve'        => array(
 				'condition' => ! $is_approved && ! $is_spam,
 				'label'     => __( 'Approve', 'gatherpress' ),
 				'action'    => 'approve',
 			),
-			'unapprove'  => array(
+			'unapprove'      => array(
 				'condition' => $is_approved,
 				'label'     => __( 'Unapprove', 'gatherpress' ),
 				'action'    => 'unapprove',
 			),
-			'check_in'   => array(
-				'condition' => $is_approved && ! $is_checked_in,
+			'check_in'       => array(
+				'condition' => $is_approved && Check_In_State::CHECKED_IN !== $check_in,
 				'label'     => __( 'Check in', 'gatherpress' ),
 				'action'    => 'check_in',
 			),
-			'uncheck_in' => array(
-				'condition' => $is_approved && $is_checked_in,
-				'label'     => __( 'Not Checked In', 'gatherpress' ),
-				'action'    => 'uncheck_in',
+			'no_show'        => array(
+				'condition' => $is_approved && Check_In_State::NO_SHOW !== $check_in,
+				'label'     => __( 'Mark as no-show', 'gatherpress' ),
+				'action'    => 'no_show',
 			),
-			'spam'       => array(
+			'clear_check_in' => array(
+				'condition' => $is_approved && Check_In_State::NOT_RECORDED !== $check_in,
+				'label'     => __( 'Clear check-in', 'gatherpress' ),
+				'action'    => 'clear_check_in',
+			),
+			'spam'           => array(
 				'condition' => ! $is_spam,
 				'label'     => __( 'Spam', 'gatherpress' ),
 				'action'    => 'spam',
 			),
-			'not-spam'   => array(
+			'not-spam'       => array(
 				'condition' => $is_spam,
 				'label'     => __( 'Not Spam', 'gatherpress' ),
 				'action'    => 'unspam',
 			),
-			'delete'     => array(
+			'delete'         => array(
 				'condition'    => true,
 				'label'        => __( 'Delete', 'gatherpress' ),
 				'action'       => 'delete',
@@ -995,13 +1104,14 @@ final class List_Table extends WP_List_Table {
 		}
 
 		return array(
-			'approve'    => __( 'Approve', 'gatherpress' ),
-			'unapprove'  => __( 'Unapprove', 'gatherpress' ),
-			'check_in'   => __( 'Mark as Checked In', 'gatherpress' ),
-			'uncheck_in' => __( 'Not Checked In', 'gatherpress' ),
-			'spam'       => __( 'Mark as Spam', 'gatherpress' ),
-			'unspam'     => __( 'Not Spam', 'gatherpress' ),
-			'delete'     => __( 'Delete', 'gatherpress' ),
+			'approve'        => __( 'Approve', 'gatherpress' ),
+			'unapprove'      => __( 'Unapprove', 'gatherpress' ),
+			'check_in'       => __( 'Mark as Checked In', 'gatherpress' ),
+			'no_show'        => __( 'Mark as No-Show', 'gatherpress' ),
+			'clear_check_in' => __( 'Clear Check-In', 'gatherpress' ),
+			'spam'           => __( 'Mark as Spam', 'gatherpress' ),
+			'unspam'         => __( 'Not Spam', 'gatherpress' ),
+			'delete'         => __( 'Delete', 'gatherpress' ),
 		);
 	}
 
@@ -1111,6 +1221,11 @@ final class List_Table extends WP_List_Table {
 		}
 
 		$current_action    = $this->current_action();
+		$check_in_states   = array(
+			'check_in'       => Check_In_State::CHECKED_IN,
+			'no_show'        => Check_In_State::NO_SHOW,
+			'clear_check_in' => Check_In_State::NOT_RECORDED,
+		);
 		$action_status_map = array(
 			'approve'   => 'approve',
 			'unapprove' => 'hold',
@@ -1122,17 +1237,9 @@ final class List_Table extends WP_List_Table {
 			foreach ( $rsvp_ids as $rsvp_id ) {
 				wp_delete_comment( $rsvp_id, true );
 			}
-		} elseif ( 'check_in' === $current_action || 'uncheck_in' === $current_action ) {
+		} elseif ( isset( $check_in_states[ $current_action ] ) ) {
 			foreach ( $rsvp_ids as $rsvp_id ) {
-				$check_in = new Check_In( $rsvp_id );
-
-				if ( 'check_in' === $current_action ) {
-					$check_in->add();
-
-					continue;
-				}
-
-				$check_in->remove();
+				$check_in_states[ $current_action ]->apply( $rsvp_id );
 			}
 		} elseif ( isset( $action_status_map[ $current_action ] ) ) {
 			$status = $action_status_map[ $current_action ];
@@ -1214,14 +1321,22 @@ final class List_Table extends WP_List_Table {
 			$base_url_args['response'] = implode( ',', $responses );
 		}
 
+		$check_in = $this->get_filtered_check_in();
+
+		if ( null !== $check_in ) {
+			$base_url_args['check_in'] = $check_in->value;
+		}
+
 		$base_url = add_query_arg( $base_url_args, admin_url( 'edit.php' ) );
 
-		// The response filter applies to the counts too, so the views agree
-		// with the table below them.
-		$count_base_args = $this->add_response_filter(
-			array(
-				'count'     => true,
-				'post_type' => $this->post_type,
+		// The response and check-in filters apply to the counts too, so the
+		// views agree with the table below them.
+		$count_base_args = $this->add_check_in_filter(
+			$this->add_response_filter(
+				array(
+					'count'     => true,
+					'post_type' => $this->post_type,
+				)
 			)
 		);
 

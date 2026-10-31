@@ -145,6 +145,11 @@ describe( 'Filters', () => {
 		eventLabel: 'Filter by event',
 		statuses: STATUSES,
 		initialResponses: [],
+		checkInStates: [
+			{ value: 'checked-in', label: 'Checked in' },
+			{ value: 'no-show', label: 'No-show' },
+			{ value: 'not-recorded', label: 'Not recorded' },
+		],
 	};
 
 	/**
@@ -172,6 +177,31 @@ describe( 'Filters', () => {
 		expect(
 			screen.getByRole( 'button', { name: 'Filter' } ),
 		).toBeInTheDocument();
+	} );
+
+	it( 'offers every check-in state, starting from all', async () => {
+		await renderSettled( <Filters { ...defaults } /> );
+
+		const select = screen.getByLabelText( 'Filter by check-in' );
+
+		expect( select ).toHaveValue( '' );
+		expect(
+			screen.getAllByRole( 'option' ).map( ( option ) => option.textContent ),
+		).toEqual( [ 'All check-ins', 'Checked in', 'No-show', 'Not recorded' ] );
+	} );
+
+	it( 'submits a check-in state chosen in the select', async () => {
+		await renderSettled( <Filters { ...defaults } /> );
+
+		const select = screen.getByLabelText( 'Filter by check-in' );
+
+		await act( async () => {
+			fireEvent.change( select, { target: { value: 'not-recorded' } } );
+		} );
+
+		expect( select ).toHaveValue( 'not-recorded' );
+
+		await pressFilter();
 	} );
 
 	it( 'reflects an event carried in from the request', async () => {

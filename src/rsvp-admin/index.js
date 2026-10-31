@@ -30,15 +30,24 @@ function mountFilters() {
 				label = '',
 				statuses = '[]',
 				selected = '',
+				checkInStates = '[]',
+				checkIn = '',
 			} = root.dataset;
 
 			let parsedStatuses = [];
+			let parsedCheckInStates = [];
 
 			try {
 				parsedStatuses = JSON.parse( statuses );
 			} catch {
 				// Malformed payload: the response filter has nothing to offer,
 				// and the event picker still works.
+			}
+
+			try {
+				parsedCheckInStates = JSON.parse( checkInStates );
+			} catch {
+				// Malformed payload: the check-in filter offers only "All".
 			}
 
 			createRoot( root ).render(
@@ -48,6 +57,8 @@ function mountFilters() {
 					eventLabel={ label || __( 'Filter by event', 'gatherpress' ) }
 					statuses={ parsedStatuses }
 					initialResponses={ selected ? selected.split( ',' ) : [] }
+					checkInStates={ parsedCheckInStates }
+					initialCheckIn={ checkIn }
 				/>,
 			);
 		} );

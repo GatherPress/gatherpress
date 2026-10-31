@@ -2,6 +2,7 @@
  * WordPress dependencies
  */
 import { Button } from '@wordpress/components';
+import { useInstanceId } from '@wordpress/compose';
 import { useState } from '@wordpress/element';
 import { addQueryArgs, removeQueryArgs } from '@wordpress/url';
 import { __ } from '@wordpress/i18n';
@@ -23,11 +24,18 @@ import ResponseFilter from './response-filter';
  * @param {string}      href      The current URL.
  * @param {number|null} postId    Selected event ID, if any.
  * @param {string[]}    responses Selected response statuses.
+ * @param {string}      checkIn   Selected check-in state, or an empty string for all.
  *
  * @return {string} The URL to navigate to.
  */
-export function buildFilterUrl( href, postId, responses ) {
-	const base = removeQueryArgs( href, 'post_id', 'response', 'paged' );
+export function buildFilterUrl( href, postId, responses, checkIn = '' ) {
+	const base = removeQueryArgs(
+		href,
+		'post_id',
+		'response',
+		'check_in',
+		'paged',
+	);
 	const args = {};
 
 	if ( postId ) {
@@ -38,13 +46,17 @@ export function buildFilterUrl( href, postId, responses ) {
 		args.response = responses.join( ',' );
 	}
 
+	if ( checkIn ) {
+		args.check_in = checkIn;
+	}
+
 	return Object.keys( args ).length ? addQueryArgs( base, args ) : base;
 }
 
 /**
  * The RSVP screen's filters.
  *
- * Both controls compose into one Filter button. Submitting navigates rather
+ * The controls compose into one Filter button. Submitting navigates rather
  * than posting the surrounding bulk-actions form, which would leave the URL
  * unchanged and lose the filter on refresh and pagination.
  *
@@ -56,6 +68,8 @@ export function buildFilterUrl( href, postId, responses ) {
  * @param {string}   props.eventLabel       Label for the event picker.
  * @param {Object[]} props.statuses         Selectable response statuses.
  * @param {string[]} props.initialResponses Response statuses from the current request.
+ * @param {Object[]} props.checkInStates    Selectable check-in states, each `{ value, label }`.
+ * @param {string}   props.initialCheckIn   Check-in state from the current request.
  *
  * @return {JSX.Element} The filter controls.
  */
@@ -65,9 +79,13 @@ export default function Filters( {
 	eventLabel,
 	statuses,
 	initialResponses,
+	checkInStates = [],
+	initialCheckIn = '',
 } ) {
 	const [ postId, setPostId ] = useState( initialPostId );
 	const [ responses, setResponses ] = useState( initialResponses );
+	const [ checkIn, setCheckIn ] = useState( initialCheckIn );
+	const checkInId = useInstanceId( Filters, 'gatherpress-rsvp-check-in' );
 
 	/**
 	 * Reload the screen with both filters applied.
@@ -79,6 +97,7 @@ export default function Filters( {
 			window.location.href,
 			postId,
 			responses,
+			checkIn,
 		);
 	};
 
@@ -97,6 +116,26 @@ export default function Filters( {
 				selected={ responses }
 				onChange={ setResponses }
 			/>
+
+			<div className="gatherpress-rsvp-filters__check-in">
+				<label className="screen-reader-text" htmlFor={ checkInId }>
+					{ __( 'Filter by check-in', 'gatherpress' ) }
+				</label>
+				<select
+					id={ checkInId }
+					value={ checkIn }
+					onChange={ ( event ) => setCheckIn( event.target.value ) }
+				>
+					<option value="">
+						{ __( 'All check-ins', 'gatherpress' ) }
+					</option>
+					{ checkInStates.map( ( state ) => (
+						<option key={ state.value } value={ state.value }>
+							{ state.label }
+						</option>
+					) ) }
+				</select>
+			</div>
 
 			<Button variant="secondary" onClick={ applyFilters }>
 				{ __( 'Filter', 'gatherpress' ) }

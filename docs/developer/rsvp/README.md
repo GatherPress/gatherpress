@@ -155,9 +155,38 @@ own.
   stores, reads, and counts the flag, and fires the flag hooks.
 - **`GatherPress\Core\Rsvp\Flag\Check_In`**: the `checked-in` flag, the first
   one GatherPress ships.
+- **`GatherPress\Core\Rsvp\Flag\No_Show`**: the `no-show` flag, for an RSVP
+  that did not turn up.
+- **`GatherPress\Core\Rsvp\Flag\Check_In_State`**: an enum of the three
+  check-in states. See [Check-in](#check-in).
 - **`GatherPress\Core\Rsvp\Flag\Setup`**: what belongs to every flag rather
   than one. It registers the taxonomy, reads all flags on an RSVP, and sweeps
   them when the RSVP is deleted.
+
+### Check-in
+
+An RSVP has one of three check-in states:
+
+| State | Stored as | `Check_In_State` case |
+| --- | --- | --- |
+| Checked in | the `checked-in` flag | `CHECKED_IN` |
+| No-show | the `no-show` flag | `NO_SHOW` |
+| Not recorded | neither flag | `NOT_RECORDED` |
+
+The two flags never sit on one RSVP together: adding one removes the other. An
+RSVP starts not recorded, so RSVPs from before the no-show flag need no
+backfill. A report of who turns up should leave not recorded RSVPs out, rather
+than count them as either.
+
+```php
+use GatherPress\Core\Rsvp\Flag\Check_In_State;
+
+Check_In_State::NO_SHOW->apply( $rsvp_id );
+
+if ( Check_In_State::NOT_RECORDED === Check_In_State::for_rsvp( $rsvp_id ) ) {
+	// Nobody recorded whether this person came.
+}
+```
 
 ### Adding a flag
 
@@ -235,7 +264,8 @@ function my_plugin_on_flag_added( int $rsvp_id, string $flag ): void {
 add_action( 'gatherpress_rsvp_flag_added', 'my_plugin_on_flag_added', 10, 2 );
 ```
 
-The same pattern reacts to a check-in, with `Check_In::SLUG`.
+The same pattern reacts to a check-in, with `Check_In::SLUG`, or to a no-show,
+with `No_Show::SLUG`.
 
 ### Slugs
 

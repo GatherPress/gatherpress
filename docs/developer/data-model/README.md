@@ -23,7 +23,7 @@ Two are public. The rest are internal plumbing, hidden from the UI, and are pref
 | `_gatherpress_venue` | Events | No | Ties an event to its venue. One term per published venue post |
 | `_gatherpress_rsvp_status` | RSVP comments | No | The response: `attending`, `not_attending`, `waiting_list`, `no_status` |
 | `_gatherpress_rsvp_provider` | RSVP comments | No | How the person was identified. One term per provider class |
-| `_gatherpress_rsvp_flag` | RSVP comments | No | Yes/no markers such as `checked-in` |
+| `_gatherpress_rsvp_flag` | RSVP comments | No | Yes/no markers such as `checked-in` and `no-show` |
 
 The three RSVP taxonomies are on *comments*, not posts, because an RSVP is a comment. [The RSVP docs](../rsvp/README.md) cover that in full.
 
