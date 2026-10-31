@@ -59,11 +59,11 @@
 			height: clamp(6px, 2vw, 8px);
 			min-width: clamp(6px, 2vw, 8px);
 			min-height: clamp(6px, 2vw, 8px);
-			opacity: 0.75;
-			border: 2px solid var(--wp--preset--color--contrast, #000);
+			background: color-mix(in srgb, var(--gatherpress-slot-color) 75%, transparent);
+			border: 2px solid var(--wp--preset--color--contrast, currentcolor);
 
 			&:hover {
-				opacity: 1;
+				background: var(--gatherpress-slot-color);
 				transform: scale(1.4);
 			}
 		}

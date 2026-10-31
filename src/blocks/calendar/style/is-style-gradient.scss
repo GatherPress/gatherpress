@@ -15,7 +15,7 @@
 
 	// Use the theme's base and contrast colors on opposite surfaces.
 	--gatherpress-calendar-column-gap: clamp(0.5rem, 1.5vw, 0.75rem);
-	--gatherpress-calendar-header-bg: color-mix(in srgb, var(--wp--preset--color--base, #fff) 85%, transparent);
+	--gatherpress-calendar-header-bg: var(--wp--preset--color--base, #fff);
 	--gatherpress-calendar-header-color: var(--wp--preset--color--contrast, #000);
 	--gatherpress-calendar-day-bg: color-mix(in srgb, var(--wp--preset--color--base, #fff) 85%, transparent);
 	--gatherpress-calendar-day-color: var(--wp--preset--color--contrast, #000);
