@@ -47,8 +47,13 @@ import {
 	DISABLED_FIELD_OPACITY,
 } from '../../helpers/event';
 import { isInFSETemplate } from '../../helpers/editor';
-import { resolveEventDateData } from './helpers';
-import { getViewerTimeLabel } from './viewer-time';
+import {
+	getViewerTimeHelp,
+	getViewerTimePreview,
+	isTimezoneAppended,
+	resolveEventDateData,
+} from './helpers';
+import ViewerTimeTooltip from './viewer-time-tooltip';
 
 /**
  * The separator shown when the block sets none.
@@ -272,10 +277,11 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		[ postId, contextPostType, contextQueryId, hasExplicitOverride ],
 	);
 
-	const isTimezoneAppended =
-		'never' !== timezonePreference &&
-		( 'always' === timezonePreference ||
-			( showTimezone ? 'yes' === showTimezone : defaultShowTimezone ) );
+	const timezoneAppended = isTimezoneAppended(
+		timezonePreference,
+		showTimezone,
+		defaultShowTimezone,
+	);
 
 	const blockProps = useBlockProps( {
 		style: {
@@ -340,86 +346,14 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		timezonePreference,
 	);
 
-	// Same label the frontend renders, so the toggle previews its own effect
-	// rather than changing something the author cannot see. Empty when the
-	// author is already in the event's timezone, which is what a viewer there
-	// would get too.
-	const viewerTimeLabel =
-		showViewerTime && isTimezoneAppended && globalShowViewerTimezone && ! isAllDay
-			? getViewerTimeLabel( {
-				startGmt: showStartTime
-					? createMomentWithTimezone( finalDateTimeStart, finalTimezone )
-						.utc()
-						.format( 'YYYY-MM-DD HH:mm:ss' )
-					: '',
-				endGmt: showEndTime
-					? createMomentWithTimezone( finalDateTimeEnd, finalTimezone )
-						.utc()
-						.format( 'YYYY-MM-DD HH:mm:ss' )
-					: '',
-				eventTimezone: finalTimezone,
-				isAllDay,
-				rangeFormat: sprintf(
-					/* translators: 1: event start in the viewer's timezone, 2: separator between start and end, 3: event end in the viewer's timezone. */
-					__( '%1$s %2$s %3$s your time', 'gatherpress' ),
-					'%1$s',
-					separator || __( 'to', 'gatherpress' ),
-					'%2$s',
-				),
-				/* translators: %s: event start in the viewer's timezone. */
-				singleFormat: __( '%s your time', 'gatherpress' ),
-			} )
-			: '';
-
-	let renderedDateTime = displayedDateTime;
-	if ( isLink ) {
-		renderedDateTime = (
-			<a
-				href="#gatherpress-event-date-pseudo-link"
-				onClick={ ( event ) => event.preventDefault() }
-				className={ viewerTimeLabel ? 'gatherpress-tooltip' : undefined }
-				data-gatherpress-tooltip={ viewerTimeLabel || undefined }
-				tabIndex={ viewerTimeLabel ? 0 : undefined }
-			>
-				{ displayedDateTime }
-				{ !! viewerTimeLabel && (
-					<span className="screen-reader-text gatherpress--screen-reader-text gatherpress-tooltip-notice">
-						{ ` (${ viewerTimeLabel })` }
-					</span>
-				) }
-			</a>
-		);
-	} else if ( viewerTimeLabel ) {
-		renderedDateTime = (
-			<span
-				className="gatherpress-tooltip"
-				data-gatherpress-tooltip={ viewerTimeLabel }
-				tabIndex={ 0 }
-			>
-				{ displayedDateTime }
-				<span className="screen-reader-text gatherpress--screen-reader-text gatherpress-tooltip-notice">
-					{ ` (${ viewerTimeLabel })` }
-				</span>
-			</span>
-		);
-	}
-
-	let viewerTimeHelp = __(
-		'Displays the event time converted to each viewer\u2019s local timezone in a tooltip. Viewers in the same timezone see nothing extra.',
-		'gatherpress',
-	);
-
-	if ( isAllDay ) {
-		viewerTimeHelp = __(
-			'All-day events do not show viewer local time.',
-			'gatherpress',
-		);
-	} else if ( ! isTimezoneAppended ) {
-		viewerTimeHelp = __(
-			'Time zone must be appended to show viewer local time.',
-			'gatherpress',
-		);
-	}
+	const viewerTimeLabel = getViewerTimePreview( {
+		isEnabled: showViewerTime && timezoneAppended && globalShowViewerTimezone,
+		start: showStartTime ? finalDateTimeStart : null,
+		end: showEndTime ? finalDateTimeEnd : null,
+		timezone: finalTimezone,
+		separator,
+		isAllDay,
+	} );
 
 	return (
 		<div { ...blockProps }>
@@ -455,7 +389,9 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 					/>
 				</ToolbarGroup>
 			</BlockControls>
-			{ renderedDateTime }
+			<ViewerTimeTooltip isLink={ isLink } label={ viewerTimeLabel }>
+				{ displayedDateTime }
+			</ViewerTimeTooltip>
 			{ isEventPostType() && (
 				<InspectorControls>
 					<PanelBody>
@@ -535,7 +471,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 					</p>
 					<ToggleControl
 						label={ __( 'Append time zone', 'gatherpress' ) }
-						checked={ isTimezoneAppended }
+						checked={ timezoneAppended }
 						onChange={ ( value ) =>
 							setAttributes( {
 								showTimezone: value ? 'yes' : 'no',
@@ -545,9 +481,12 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 					{ globalShowViewerTimezone && (
 						<ToggleControl
 							label={ __( 'Show viewer local time', 'gatherpress' ) }
-							help={ viewerTimeHelp }
-							checked={ !! showViewerTime && isTimezoneAppended && ! isAllDay }
-							disabled={ ! isTimezoneAppended || isAllDay }
+							help={ getViewerTimeHelp( {
+								isAllDay,
+								isTimezoneAppended: timezoneAppended,
+							} ) }
+							checked={ !! showViewerTime && timezoneAppended && ! isAllDay }
+							disabled={ ! timezoneAppended || isAllDay }
 							onChange={ ( value ) =>
 								setAttributes( { showViewerTime: value } )
 							}

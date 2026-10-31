@@ -123,7 +123,10 @@ jest.mock( '@src/helpers/datetime', () => {
 	};
 } );
 
+// Only the data selector is stubbed: the viewer time helpers run for real, so
+// the preview and the toggle are tested as the editor renders them.
 jest.mock( '@src/blocks/event-date/helpers', () => ( {
+	...jest.requireActual( '@src/blocks/event-date/helpers' ),
 	resolveEventDateData: jest.fn(),
 } ) );
 
