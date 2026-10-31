@@ -2854,6 +2854,35 @@ class Test_List_Table extends Base {
 	}
 
 	/**
+	 * Switching view keeps the check-in filter, and its counts follow it.
+	 *
+	 * @covers ::get_views
+	 *
+	 * @return void
+	 */
+	public function test_get_views_preserves_the_check_in_filter(): void {
+		( new No_Show( (int) $this->rsvp['comment_ID'] ) )->add();
+
+		$_REQUEST['check_in'] = No_Show::SLUG;
+
+		$views = $this->list_table->get_views();
+
+		$this->assertStringContainsString(
+			'check_in=no-show',
+			$views['all'],
+			'Failed to assert the view links carry the check-in filter.'
+		);
+		$this->assertStringContainsString(
+			'<span class="count">(1)</span>',
+			$views['all'],
+			'Failed to assert the view counts follow the check-in filter.'
+		);
+
+		unset( $_REQUEST['check_in'] );
+		Check_In_Registry::get_instance()->clear( (int) $this->rsvp['comment_ID'] );
+	}
+
+	/**
 	 * Filtering by event returns that event's RSVPs and no others.
 	 *
 	 * @since 0.36.0
