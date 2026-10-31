@@ -97,10 +97,23 @@ final class Scheduler {
 		add_action( self::ACTION_HOOK, array( $this, 'clear_scheduled_cron' ) );
 		add_action( self::ACTION_HOOK, array( $this, 'remove_from_tracking' ) );
 		add_action( self::VALIDATE_CRON_HOOK, array( $this, 'validate_events_ended' ) );
+		// Priority 11: the event post types register on init at 10, and the check reads them.
+		add_action( 'init', array( $this, 'schedule_validation' ), 11 );
+	}
 
-		if ( $this->any_post_type_enabled() && ! wp_next_scheduled( self::VALIDATE_CRON_HOOK ) ) {
-			wp_schedule_event( time(), 'daily', self::VALIDATE_CRON_HOOK );
+	/**
+	 * Schedules the daily check for ended events, when a post type tracks upcoming events.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function schedule_validation(): void {
+		if ( wp_next_scheduled( self::VALIDATE_CRON_HOOK ) || ! $this->any_post_type_enabled() ) {
+			return;
 		}
+
+		wp_schedule_event( time(), 'daily', self::VALIDATE_CRON_HOOK );
 	}
 
 	/**
@@ -115,28 +128,16 @@ final class Scheduler {
 	 * @return void
 	 */
 	public function handle_transition_post_status( string $new_status, string $old_status, WP_Post $post ): void {
-		if ( ! post_type_supports( $post->post_type, Event::SUPPORT ) ) {
+		// Only publishing or unpublishing an event changes whether its end is scheduled.
+		if (
+			$new_status === $old_status
+			|| ! in_array( 'publish', array( $new_status, $old_status ), true )
+			|| ! post_type_supports( $post->post_type, Event::SUPPORT )
+		) {
 			return;
 		}
 
-		if ( ! in_array( 'publish', array( $new_status, $old_status ), true ) ) {
-			return;
-		}
-
-		if ( 'publish' === $new_status && 'publish' !== $old_status ) {
-			if ( $this->is_valid_future_event( $post->ID ) ) {
-				$this->add_scheduled_cron( $post->ID );
-				$this->add_to_tracking( $post->ID );
-			}
-
-			return;
-		}
-
-		if ( 'publish' === $old_status && 'publish' !== $new_status ) {
-			$this->clear_scheduled_cron( $post->ID );
-			$this->remove_from_tracking( $post->ID );
-			$this->invalidate_caches( $post->ID );
-		}
+		$this->sync_event( $post->ID, $new_status );
 	}
 
 	/**
@@ -153,28 +154,34 @@ final class Scheduler {
 	 * @return void
 	 */
 	public function handle_updated_postmeta( int $meta_id, int $object_id, string $meta_key ): void {
-		if ( self::POST_META_KEY !== $meta_key ) {
+		if ( self::POST_META_KEY !== $meta_key || ! $this->is_event( $object_id ) ) {
 			return;
 		}
 
-		$post = get_post( $object_id );
+		$this->sync_event( $object_id, (string) get_post_status( $object_id ) );
+	}
 
-		if ( ! $post instanceof WP_Post || ! post_type_supports( $post->post_type, Event::SUPPORT ) ) {
+	/**
+	 * Schedules and tracks the end of a published upcoming event, or clears them otherwise.
+	 *
+	 * @since TBD
+	 *
+	 * @param int    $post_id The event post ID.
+	 * @param string $status  The event's post status.
+	 *
+	 * @return void
+	 */
+	private function sync_event( int $post_id, string $status ): void {
+		if ( 'publish' === $status && $this->is_valid_future_event( $post_id ) ) {
+			$this->add_scheduled_cron( $post_id );
+			$this->add_to_tracking( $post_id );
+
 			return;
 		}
 
-		if ( 'publish' !== $post->post_status ) {
-			return;
-		}
-
-		if ( $this->is_valid_future_event( $object_id ) ) {
-			$this->add_scheduled_cron( $object_id );
-			$this->add_to_tracking( $object_id );
-		} elseif ( $this->is_valid_past_event( $object_id ) ) {
-			$this->clear_scheduled_cron( $object_id );
-			$this->remove_from_tracking( $object_id );
-			$this->invalidate_caches( $object_id );
-		}
+		$this->clear_scheduled_cron( $post_id );
+		$this->remove_from_tracking( $post_id );
+		$this->invalidate_caches( $post_id );
 	}
 
 	/**
@@ -187,9 +194,7 @@ final class Scheduler {
 	 * @return void
 	 */
 	public function handle_before_delete_post( int $post_id ): void {
-		$post = get_post( $post_id );
-
-		if ( ! $post instanceof WP_Post || ! post_type_supports( $post->post_type, Event::SUPPORT ) ) {
+		if ( ! $this->is_event( $post_id ) ) {
 			return;
 		}
 
@@ -207,13 +212,8 @@ final class Scheduler {
 	 * @return void
 	 */
 	public function add_scheduled_cron( int $post_id ): void {
-		$end_date = get_post_meta( $post_id, self::POST_META_KEY, true );
-
-		if ( ! is_string( $end_date ) || empty( $end_date ) ) {
-			return;
-		}
-
-		$end_timestamp = strtotime( $end_date );
+		$end_date      = get_post_meta( $post_id, self::POST_META_KEY, true );
+		$end_timestamp = is_string( $end_date ) ? strtotime( $end_date ) : false;
 
 		if ( false === $end_timestamp || $end_timestamp <= time() ) {
 			return;
@@ -234,11 +234,7 @@ final class Scheduler {
 	 * @return void
 	 */
 	public function clear_scheduled_cron( int $post_id ): void {
-		$timestamp = wp_next_scheduled( self::CRON_HOOK, array( $post_id ) );
-
-		if ( is_int( $timestamp ) && $timestamp > 0 ) {
-			wp_unschedule_event( $timestamp, self::CRON_HOOK, array( $post_id ) );
-		}
+		wp_clear_scheduled_hook( self::CRON_HOOK, array( $post_id ) );
 	}
 
 	/**
@@ -318,14 +314,13 @@ final class Scheduler {
 			$event_id
 		);
 
-		if ( ! is_array( $cache_keys ) ) {
-			$cache_keys = $default_keys;
-		}
+		$cache_keys = array_filter(
+			is_array( $cache_keys ) ? $cache_keys : $default_keys,
+			static fn( mixed $key ): bool => is_string( $key ) && '' !== $key
+		);
 
 		foreach ( $cache_keys as $key ) {
-			if ( is_string( $key ) && ! empty( $key ) ) {
-				wp_cache_delete( $key, 'gatherpress' );
-			}
+			wp_cache_delete( $key, 'gatherpress' );
 		}
 
 		clean_post_cache( $event_id );
@@ -453,21 +448,18 @@ final class Scheduler {
 	 * @return void
 	 */
 	public function add_to_tracking( int $post_id ): void {
-		$post = get_post( $post_id );
+		$post_type = $this->tracked_post_type( $post_id );
 
-		if ( ! $post instanceof WP_Post || ! $this->is_tracker_enabled( $post->post_type ) ) {
+		if ( '' === $post_type ) {
 			return;
 		}
 
-		$tracked_ids   = $this->get_tracked_ids( $post->post_type );
+		$tracked_ids   = $this->get_tracked_ids( $post_type );
 		$tracked_ids[] = $post_id;
 		$tracked_ids   = array_values( array_unique( $tracked_ids ) );
 
-		update_option( $this->option_key_for( $post->post_type ), $tracked_ids, false );
-
-		if ( ! wp_next_scheduled( self::VALIDATE_CRON_HOOK ) ) {
-			wp_schedule_event( time(), 'daily', self::VALIDATE_CRON_HOOK );
-		}
+		update_option( $this->option_key_for( $post_type ), $tracked_ids, false );
+		$this->schedule_validation();
 	}
 
 	/**
@@ -480,13 +472,28 @@ final class Scheduler {
 	 * @return void
 	 */
 	public function remove_from_tracking( int $post_id ): void {
-		$post = get_post( $post_id );
+		$post_type = $this->tracked_post_type( $post_id );
 
-		if ( ! $post instanceof WP_Post || ! $this->is_tracker_enabled( $post->post_type ) ) {
+		if ( '' === $post_type ) {
 			return;
 		}
 
-		$this->remove_id_from_option( $post_id, $post->post_type );
+		$this->remove_id_from_option( $post_id, $post_type );
+	}
+
+	/**
+	 * Returns the post type of an event whose upcoming IDs are tracked.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $post_id The post ID.
+	 *
+	 * @return string The post type, or an empty string when the post is not a tracked event.
+	 */
+	private function tracked_post_type( int $post_id ): string {
+		$post_type = (string) get_post_type( $post_id );
+
+		return $this->is_event( $post_id ) && $this->is_tracker_enabled( $post_type ) ? $post_type : '';
 	}
 
 	/**
@@ -543,29 +550,52 @@ final class Scheduler {
 	 * @return void
 	 */
 	public function validate_events_ended(): void {
-		foreach ( get_post_types_by_support( Event::SUPPORT ) as $post_type ) {
-			if ( ! $this->is_tracker_enabled( $post_type ) ) {
-				continue;
-			}
+		$post_types = array_filter(
+			get_post_types_by_support( Event::SUPPORT ),
+			array( $this, 'is_tracker_enabled' )
+		);
 
-			$tracked_ids = $this->get_tracked_ids( $post_type );
-
-			foreach ( $tracked_ids as $post_id ) {
-				$post = get_post( $post_id );
-
-				if ( ! $post instanceof WP_Post || $post->post_type !== $post_type ) {
-					$this->remove_id_from_option( $post_id, $post_type );
-					continue;
-				}
-
-				$event = new Event( $post_id );
-
-				if ( $event->has_event_past() ) {
-					/** This action is documented in includes/core/classes/event/class-scheduler.php */
-					do_action( 'gatherpress_event_ended', $post_id );
-				}
+		foreach ( $post_types as $post_type ) {
+			foreach ( $this->get_tracked_ids( $post_type ) as $post_id ) {
+				$this->validate_tracked_id( $post_id, $post_type );
 			}
 		}
+	}
+
+	/**
+	 * Drops a tracked ID that no longer belongs to its post type, or ends it if its event is past.
+	 *
+	 * @since TBD
+	 *
+	 * @param int    $post_id   The tracked post ID.
+	 * @param string $post_type The post type it is tracked under.
+	 *
+	 * @return void
+	 */
+	private function validate_tracked_id( int $post_id, string $post_type ): void {
+		if ( get_post_type( $post_id ) !== $post_type ) {
+			$this->remove_id_from_option( $post_id, $post_type );
+
+			return;
+		}
+
+		if ( ( new Event( $post_id ) )->has_event_past() ) {
+			/** This action is documented in includes/core/classes/event/class-scheduler.php */
+			do_action( 'gatherpress_event_ended', $post_id );
+		}
+	}
+
+	/**
+	 * Checks whether a post ID belongs to a post type with event dates.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $post_id Post ID to check.
+	 *
+	 * @return bool True if the post is an event, false otherwise.
+	 */
+	public function is_event( int $post_id ): bool {
+		return post_type_supports( (string) get_post_type( $post_id ), Event::SUPPORT );
 	}
 
 	/**
@@ -578,15 +608,7 @@ final class Scheduler {
 	 * @return bool True if post is a valid future event, false otherwise.
 	 */
 	public function is_valid_future_event( int $post_id ): bool {
-		$post = get_post( $post_id );
-
-		if ( ! $post instanceof WP_Post || ! post_type_supports( $post->post_type, Event::SUPPORT ) ) {
-			return false;
-		}
-
-		$event = new Event( $post_id );
-
-		return ! $event->has_event_past();
+		return $this->is_event( $post_id ) && ! ( new Event( $post_id ) )->has_event_past();
 	}
 
 	/**
@@ -599,14 +621,6 @@ final class Scheduler {
 	 * @return bool True if post is a valid past event, false otherwise.
 	 */
 	public function is_valid_past_event( int $post_id ): bool {
-		$post = get_post( $post_id );
-
-		if ( ! $post instanceof WP_Post || ! post_type_supports( $post->post_type, Event::SUPPORT ) ) {
-			return false;
-		}
-
-		$event = new Event( $post_id );
-
-		return $event->has_event_past();
+		return $this->is_event( $post_id ) && ( new Event( $post_id ) )->has_event_past();
 	}
 }

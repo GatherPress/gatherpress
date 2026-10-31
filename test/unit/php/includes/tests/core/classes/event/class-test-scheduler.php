@@ -11,7 +11,6 @@ namespace GatherPress\Tests\Core\Event;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Scheduler;
 use GatherPress\Tests\Base;
-use PMC\Unit_Test\Utility;
 use WP_Post;
 
 /**
@@ -119,33 +118,48 @@ class Test_Scheduler extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'validate_events_ended' ),
 			),
+			array(
+				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 11,
+				'callback' => array( $instance, 'schedule_validation' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
 	}
 
 	/**
-	 * Test setup_hooks schedules daily validate cron when tracking is enabled.
+	 * Test schedule_validation schedules the daily check once, only while tracking is enabled.
 	 *
-	 * @covers ::setup_hooks
+	 * @covers ::schedule_validation
 	 *
 	 * @return void
 	 */
-	public function test_setup_hooks_schedules_daily_cron_when_enabled(): void {
+	public function test_schedule_validation(): void {
 		$instance = Scheduler::get_instance();
 		wp_clear_scheduled_hook( Scheduler::VALIDATE_CRON_HOOK );
 
+		$instance->schedule_validation();
+		$this->assertFalse( wp_next_scheduled( Scheduler::VALIDATE_CRON_HOOK ), 'Not scheduled while off.' );
+
 		add_filter( 'gatherpress_upcoming_tracker_enabled', '__return_true' );
 
-		Utility::invoke_hidden_method( $instance, 'setup_hooks' );
+		$instance->schedule_validation();
+		$timestamp = wp_next_scheduled( Scheduler::VALIDATE_CRON_HOOK );
+		$this->assertNotEmpty( $timestamp );
 
-		$this->assertNotEmpty( wp_next_scheduled( Scheduler::VALIDATE_CRON_HOOK ) );
+		$instance->schedule_validation();
+		$this->assertSame( $timestamp, wp_next_scheduled( Scheduler::VALIDATE_CRON_HOOK ), 'The schedule is kept.' );
+
+		wp_clear_scheduled_hook( Scheduler::VALIDATE_CRON_HOOK );
 	}
 
 	/**
 	 * Test handle_transition_post_status ignores unsupported post types and non-publish transitions.
 	 *
 	 * @covers ::handle_transition_post_status
+	 * @covers ::sync_event
 	 *
 	 * @return void
 	 */
@@ -173,6 +187,7 @@ class Test_Scheduler extends Base {
 	 * Test handle_transition_post_status schedules future events when published.
 	 *
 	 * @covers ::handle_transition_post_status
+	 * @covers ::sync_event
 	 *
 	 * @return void
 	 */
@@ -196,6 +211,7 @@ class Test_Scheduler extends Base {
 	 * Test handle_transition_post_status does not schedule past events when published.
 	 *
 	 * @covers ::handle_transition_post_status
+	 * @covers ::sync_event
 	 *
 	 * @return void
 	 */
@@ -219,6 +235,7 @@ class Test_Scheduler extends Base {
 	 * Test handle_transition_post_status clears schedule when unpublishing an event.
 	 *
 	 * @covers ::handle_transition_post_status
+	 * @covers ::sync_event
 	 *
 	 * @return void
 	 */
@@ -244,6 +261,7 @@ class Test_Scheduler extends Base {
 	 * Test handle_updated_postmeta schedules future event and unschedules past event.
 	 *
 	 * @covers ::handle_updated_postmeta
+	 * @covers ::sync_event
 	 *
 	 * @return void
 	 */
@@ -281,6 +299,7 @@ class Test_Scheduler extends Base {
 	 * Test handle_before_delete_post clears scheduled cron and tracking.
 	 *
 	 * @covers ::handle_before_delete_post
+	 * @covers ::is_event
 	 *
 	 * @return void
 	 */
@@ -492,6 +511,7 @@ class Test_Scheduler extends Base {
 	 *
 	 * @covers ::add_to_tracking
 	 * @covers ::remove_from_tracking
+	 * @covers ::tracked_post_type
 	 * @covers ::get_tracked_ids
 	 *
 	 * @return void
@@ -571,6 +591,7 @@ class Test_Scheduler extends Base {
 	 * Test validate_events_ended daily cron checks.
 	 *
 	 * @covers ::validate_events_ended
+	 * @covers ::validate_tracked_id
 	 * @covers ::remove_id_from_option
 	 *
 	 * @return void
@@ -617,6 +638,7 @@ class Test_Scheduler extends Base {
 	 *
 	 * @covers ::is_valid_future_event
 	 * @covers ::is_valid_past_event
+	 * @covers ::is_event
 	 *
 	 * @return void
 	 */
