@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Uninstall;
 
 use GatherPress\Core\Calendar\Cache;
+use GatherPress\Core\Event\Scheduler;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Settings\Network;
 use GatherPress\Core\Uninstall\Options;
@@ -158,6 +159,26 @@ class Test_Options extends Base {
 		$this->assertFalse(
 			get_option( Cache::LAST_MODIFIED_OPTION ),
 			'The calendar last-modified stamp is removed.'
+		);
+	}
+
+	/**
+	 * The tracked upcoming event IDs go with the rest of the options.
+	 *
+	 * @covers ::uninstall_site
+	 *
+	 * @return void
+	 */
+	public function test_removes_the_tracked_upcoming_events(): void {
+		$this->arm_uninstall( Preferences::TASK_OPTIONS );
+
+		update_option( Scheduler::OPTION_NAME, array( 'gatherpress_event' => array( 1 ) ) );
+
+		( new Options() )->run();
+
+		$this->assertFalse(
+			get_option( Scheduler::OPTION_NAME ),
+			'The tracked upcoming event IDs are removed.'
 		);
 	}
 

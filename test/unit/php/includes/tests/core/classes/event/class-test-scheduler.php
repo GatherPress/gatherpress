@@ -26,13 +26,11 @@ class Test_Scheduler extends Base {
 	 * @return void
 	 */
 	public function tear_down(): void {
-		wp_clear_scheduled_hook( Scheduler::CRON_HOOK );
-		wp_clear_scheduled_hook( Scheduler::VALIDATE_CRON_HOOK );
+		wp_clear_scheduled_hook( Scheduler::CRON_ACTION );
+		wp_clear_scheduled_hook( Scheduler::SWEEP_ACTION );
 		remove_all_filters( 'gatherpress_event_end_cache_keys' );
-		remove_all_filters( 'gatherpress_upcoming_events_option_tracker_enabled' );
-		remove_all_filters( 'gatherpress_upcoming_tracker_enabled' );
-		remove_all_filters( Event::POST_TYPE . '_upcoming_tracker_enabled' );
-		delete_option( 'upcoming_' . Event::POST_TYPE . 's' );
+		remove_all_filters( 'gatherpress_event_upcoming_tracking_enabled' );
+		delete_option( Scheduler::OPTION_NAME );
 
 		parent::tear_down();
 	}
@@ -74,13 +72,13 @@ class Test_Scheduler extends Base {
 				'type'     => 'action',
 				'name'     => 'added_post_meta',
 				'priority' => 10,
-				'callback' => array( $instance, 'handle_updated_postmeta' ),
+				'callback' => array( $instance, 'handle_end_meta_change' ),
 			),
 			array(
 				'type'     => 'action',
 				'name'     => 'updated_postmeta',
 				'priority' => 10,
-				'callback' => array( $instance, 'handle_updated_postmeta' ),
+				'callback' => array( $instance, 'handle_end_meta_change' ),
 			),
 			array(
 				'type'     => 'action',
@@ -90,39 +88,39 @@ class Test_Scheduler extends Base {
 			),
 			array(
 				'type'     => 'action',
-				'name'     => Scheduler::CRON_HOOK,
+				'name'     => Scheduler::CRON_ACTION,
 				'priority' => 10,
-				'callback' => array( $instance, 'handle_event_ended_cron' ),
+				'callback' => array( $instance, 'handle_end_run' ),
 			),
 			array(
 				'type'     => 'action',
-				'name'     => Scheduler::ACTION_HOOK,
+				'name'     => Scheduler::ENDED_ACTION,
 				'priority' => 10,
 				'callback' => array( $instance, 'invalidate_caches' ),
 			),
 			array(
 				'type'     => 'action',
-				'name'     => Scheduler::ACTION_HOOK,
+				'name'     => Scheduler::ENDED_ACTION,
 				'priority' => 10,
 				'callback' => array( $instance, 'clear_scheduled_cron' ),
 			),
 			array(
 				'type'     => 'action',
-				'name'     => Scheduler::ACTION_HOOK,
+				'name'     => Scheduler::ENDED_ACTION,
 				'priority' => 10,
 				'callback' => array( $instance, 'remove_from_tracking' ),
 			),
 			array(
 				'type'     => 'action',
-				'name'     => Scheduler::VALIDATE_CRON_HOOK,
+				'name'     => Scheduler::SWEEP_ACTION,
 				'priority' => 10,
-				'callback' => array( $instance, 'validate_events_ended' ),
+				'callback' => array( $instance, 'sweep_ended_events' ),
 			),
 			array(
 				'type'     => 'action',
 				'name'     => 'init',
 				'priority' => 11,
-				'callback' => array( $instance, 'schedule_validation' ),
+				'callback' => array( $instance, 'schedule_sweep' ),
 			),
 		);
 
@@ -130,29 +128,29 @@ class Test_Scheduler extends Base {
 	}
 
 	/**
-	 * Test schedule_validation schedules the daily check once, only while tracking is enabled.
+	 * Test schedule_sweep schedules the daily check once, only while tracking is enabled.
 	 *
-	 * @covers ::schedule_validation
+	 * @covers ::schedule_sweep
 	 *
 	 * @return void
 	 */
-	public function test_schedule_validation(): void {
+	public function test_schedule_sweep(): void {
 		$instance = Scheduler::get_instance();
-		wp_clear_scheduled_hook( Scheduler::VALIDATE_CRON_HOOK );
+		wp_clear_scheduled_hook( Scheduler::SWEEP_ACTION );
 
-		$instance->schedule_validation();
-		$this->assertFalse( wp_next_scheduled( Scheduler::VALIDATE_CRON_HOOK ), 'Not scheduled while off.' );
+		$instance->schedule_sweep();
+		$this->assertFalse( wp_next_scheduled( Scheduler::SWEEP_ACTION ), 'Not scheduled while off.' );
 
-		add_filter( 'gatherpress_upcoming_tracker_enabled', '__return_true' );
+		add_filter( 'gatherpress_event_upcoming_tracking_enabled', '__return_true' );
 
-		$instance->schedule_validation();
-		$timestamp = wp_next_scheduled( Scheduler::VALIDATE_CRON_HOOK );
+		$instance->schedule_sweep();
+		$timestamp = wp_next_scheduled( Scheduler::SWEEP_ACTION );
 		$this->assertNotEmpty( $timestamp );
 
-		$instance->schedule_validation();
-		$this->assertSame( $timestamp, wp_next_scheduled( Scheduler::VALIDATE_CRON_HOOK ), 'The schedule is kept.' );
+		$instance->schedule_sweep();
+		$this->assertSame( $timestamp, wp_next_scheduled( Scheduler::SWEEP_ACTION ), 'The schedule is kept.' );
 
-		wp_clear_scheduled_hook( Scheduler::VALIDATE_CRON_HOOK );
+		wp_clear_scheduled_hook( Scheduler::SWEEP_ACTION );
 	}
 
 	/**
@@ -172,7 +170,7 @@ class Test_Scheduler extends Base {
 		$this->assertInstanceOf( WP_Post::class, $post );
 
 		$instance->handle_transition_post_status( 'publish', 'draft', $post );
-		$this->assertFalse( wp_next_scheduled( Scheduler::CRON_HOOK, array( $post_id ) ) );
+		$this->assertFalse( wp_next_scheduled( Scheduler::CRON_ACTION, array( $post_id ) ) );
 
 		// Event post transitioning between draft and pending (neither is publish).
 		$event_id = $this->create_test_event( array( 'post_status' => 'draft' ) );
@@ -180,7 +178,7 @@ class Test_Scheduler extends Base {
 		$this->assertInstanceOf( WP_Post::class, $event );
 
 		$instance->handle_transition_post_status( 'pending', 'draft', $event );
-		$this->assertFalse( wp_next_scheduled( Scheduler::CRON_HOOK, array( $event_id ) ) );
+		$this->assertFalse( wp_next_scheduled( Scheduler::CRON_ACTION, array( $event_id ) ) );
 	}
 
 	/**
@@ -206,7 +204,7 @@ class Test_Scheduler extends Base {
 
 		$this->assertSame(
 			strtotime( $future_end ) + 1,
-			wp_next_scheduled( Scheduler::CRON_HOOK, array( $post_id ) ),
+			wp_next_scheduled( Scheduler::CRON_ACTION, array( $post_id ) ),
 			'The cron runs one second after the end, once the event counts as past.'
 		);
 	}
@@ -232,7 +230,7 @@ class Test_Scheduler extends Base {
 
 		$instance->handle_transition_post_status( 'publish', 'draft', $post );
 
-		$this->assertFalse( wp_next_scheduled( Scheduler::CRON_HOOK, array( $post_id ) ) );
+		$this->assertFalse( wp_next_scheduled( Scheduler::CRON_ACTION, array( $post_id ) ) );
 	}
 
 	/**
@@ -251,52 +249,52 @@ class Test_Scheduler extends Base {
 		update_post_meta( $post_id, Scheduler::POST_META_KEY, $future_end );
 
 		$instance->add_scheduled_cron( $post_id );
-		$this->assertNotEmpty( wp_next_scheduled( Scheduler::CRON_HOOK, array( $post_id ) ) );
+		$this->assertNotEmpty( wp_next_scheduled( Scheduler::CRON_ACTION, array( $post_id ) ) );
 
 		$post = get_post( $post_id );
 		$this->assertInstanceOf( WP_Post::class, $post );
 
 		$instance->handle_transition_post_status( 'draft', 'publish', $post );
 
-		$this->assertFalse( wp_next_scheduled( Scheduler::CRON_HOOK, array( $post_id ) ) );
+		$this->assertFalse( wp_next_scheduled( Scheduler::CRON_ACTION, array( $post_id ) ) );
 	}
 
 	/**
-	 * Test handle_updated_postmeta schedules future event and unschedules past event.
+	 * Test handle_end_meta_change schedules future event and unschedules past event.
 	 *
-	 * @covers ::handle_updated_postmeta
+	 * @covers ::handle_end_meta_change
 	 * @covers ::sync_event
 	 *
 	 * @return void
 	 */
-	public function test_handle_updated_postmeta(): void {
+	public function test_handle_end_meta_change(): void {
 		$instance = Scheduler::get_instance();
 
 		// Ignores other meta keys.
-		$instance->handle_updated_postmeta( 1, 1, 'some_other_key' );
+		$instance->handle_end_meta_change( 1, 1, 'some_other_key' );
 
 		// Ignores non-existing or unsupported posts.
 		$post_id = $this->factory()->post->create( array( 'post_type' => 'post' ) );
-		$instance->handle_updated_postmeta( 1, $post_id, Scheduler::POST_META_KEY );
+		$instance->handle_end_meta_change( 1, $post_id, Scheduler::POST_META_KEY );
 
 		// Ignores non-published events.
 		$draft_id = $this->create_test_event( array( 'post_status' => 'draft' ) );
-		$instance->handle_updated_postmeta( 1, $draft_id, Scheduler::POST_META_KEY );
+		$instance->handle_end_meta_change( 1, $draft_id, Scheduler::POST_META_KEY );
 
 		// Published event with future end date schedules cron.
 		$event_id   = $this->create_test_event( array( 'post_status' => 'publish' ) );
 		$future_end = gmdate( 'Y-m-d H:i:s', time() + HOUR_IN_SECONDS );
 		update_post_meta( $event_id, Scheduler::POST_META_KEY, $future_end );
 
-		$instance->handle_updated_postmeta( 1, $event_id, Scheduler::POST_META_KEY );
-		$this->assertNotEmpty( wp_next_scheduled( Scheduler::CRON_HOOK, array( $event_id ) ) );
+		$instance->handle_end_meta_change( 1, $event_id, Scheduler::POST_META_KEY );
+		$this->assertNotEmpty( wp_next_scheduled( Scheduler::CRON_ACTION, array( $event_id ) ) );
 
 		// Published event updated with past end date clears schedule.
 		$past_end = gmdate( 'Y-m-d H:i:s', time() - HOUR_IN_SECONDS );
 		update_post_meta( $event_id, Scheduler::POST_META_KEY, $past_end );
 
-		$instance->handle_updated_postmeta( 1, $event_id, Scheduler::POST_META_KEY );
-		$this->assertFalse( wp_next_scheduled( Scheduler::CRON_HOOK, array( $event_id ) ) );
+		$instance->handle_end_meta_change( 1, $event_id, Scheduler::POST_META_KEY );
+		$this->assertFalse( wp_next_scheduled( Scheduler::CRON_ACTION, array( $event_id ) ) );
 	}
 
 	/**
@@ -320,10 +318,10 @@ class Test_Scheduler extends Base {
 		update_post_meta( $event_id, Scheduler::POST_META_KEY, $future_end );
 
 		$instance->add_scheduled_cron( $event_id );
-		$this->assertNotEmpty( wp_next_scheduled( Scheduler::CRON_HOOK, array( $event_id ) ) );
+		$this->assertNotEmpty( wp_next_scheduled( Scheduler::CRON_ACTION, array( $event_id ) ) );
 
 		$instance->handle_before_delete_post( $event_id );
-		$this->assertFalse( wp_next_scheduled( Scheduler::CRON_HOOK, array( $event_id ) ) );
+		$this->assertFalse( wp_next_scheduled( Scheduler::CRON_ACTION, array( $event_id ) ) );
 	}
 
 	/**
@@ -340,23 +338,23 @@ class Test_Scheduler extends Base {
 		// Empty end date.
 		delete_post_meta( $post_id, Scheduler::POST_META_KEY );
 		$instance->add_scheduled_cron( $post_id );
-		$this->assertFalse( wp_next_scheduled( Scheduler::CRON_HOOK, array( $post_id ) ) );
+		$this->assertFalse( wp_next_scheduled( Scheduler::CRON_ACTION, array( $post_id ) ) );
 
 		// Invalid date string.
 		update_post_meta( $post_id, Scheduler::POST_META_KEY, 'not-a-valid-date' );
 		$instance->add_scheduled_cron( $post_id );
-		$this->assertFalse( wp_next_scheduled( Scheduler::CRON_HOOK, array( $post_id ) ) );
+		$this->assertFalse( wp_next_scheduled( Scheduler::CRON_ACTION, array( $post_id ) ) );
 
 		// Past date timestamp.
 		update_post_meta( $post_id, Scheduler::POST_META_KEY, gmdate( 'Y-m-d H:i:s', time() - 100 ) );
 		$instance->add_scheduled_cron( $post_id );
-		$this->assertFalse( wp_next_scheduled( Scheduler::CRON_HOOK, array( $post_id ) ) );
+		$this->assertFalse( wp_next_scheduled( Scheduler::CRON_ACTION, array( $post_id ) ) );
 
 		// Future date timestamp schedules cron.
 		$future_end = gmdate( 'Y-m-d H:i:s', time() + HOUR_IN_SECONDS );
 		update_post_meta( $post_id, Scheduler::POST_META_KEY, $future_end );
 		$instance->add_scheduled_cron( $post_id );
-		$this->assertNotEmpty( wp_next_scheduled( Scheduler::CRON_HOOK, array( $post_id ) ) );
+		$this->assertNotEmpty( wp_next_scheduled( Scheduler::CRON_ACTION, array( $post_id ) ) );
 	}
 
 	/**
@@ -372,30 +370,30 @@ class Test_Scheduler extends Base {
 
 		// No scheduled event - no error.
 		$instance->clear_scheduled_cron( $post_id );
-		$this->assertFalse( wp_next_scheduled( Scheduler::CRON_HOOK, array( $post_id ) ) );
+		$this->assertFalse( wp_next_scheduled( Scheduler::CRON_ACTION, array( $post_id ) ) );
 
 		// Scheduled event unscheduled.
-		wp_schedule_single_event( time() + HOUR_IN_SECONDS, Scheduler::CRON_HOOK, array( $post_id ) );
-		$this->assertNotEmpty( wp_next_scheduled( Scheduler::CRON_HOOK, array( $post_id ) ) );
+		wp_schedule_single_event( time() + HOUR_IN_SECONDS, Scheduler::CRON_ACTION, array( $post_id ) );
+		$this->assertNotEmpty( wp_next_scheduled( Scheduler::CRON_ACTION, array( $post_id ) ) );
 
 		$instance->clear_scheduled_cron( $post_id );
-		$this->assertFalse( wp_next_scheduled( Scheduler::CRON_HOOK, array( $post_id ) ) );
+		$this->assertFalse( wp_next_scheduled( Scheduler::CRON_ACTION, array( $post_id ) ) );
 	}
 
 	/**
-	 * Test handle_event_ended_cron verifies event is past before firing action.
+	 * Test handle_end_run verifies event is past before firing action.
 	 *
-	 * @covers ::handle_event_ended_cron
+	 * @covers ::handle_end_run
 	 *
 	 * @return void
 	 */
-	public function test_handle_event_ended_cron(): void {
+	public function test_handle_end_run(): void {
 		$instance = Scheduler::get_instance();
 		$post_id  = $this->create_test_event();
 
 		$fired = false;
 		add_action(
-			Scheduler::ACTION_HOOK,
+			Scheduler::ENDED_ACTION,
 			static function ( int $event_id ) use ( &$fired, $post_id ): void {
 				if ( $event_id === $post_id ) {
 					$fired = true;
@@ -405,12 +403,12 @@ class Test_Scheduler extends Base {
 
 		// Event with future end date does not fire action.
 		update_post_meta( $post_id, Scheduler::POST_META_KEY, gmdate( 'Y-m-d H:i:s', time() + HOUR_IN_SECONDS ) );
-		$instance->handle_event_ended_cron( $post_id );
+		$instance->handle_end_run( $post_id );
 		$this->assertFalse( $fired );
 
 		// Event with past end date fires action.
 		update_post_meta( $post_id, Scheduler::POST_META_KEY, gmdate( 'Y-m-d H:i:s', time() - HOUR_IN_SECONDS ) );
-		$instance->handle_event_ended_cron( $post_id );
+		$instance->handle_end_run( $post_id );
 		$this->assertTrue( $fired );
 	}
 
@@ -480,7 +478,6 @@ class Test_Scheduler extends Base {
 	 *
 	 * @covers ::is_tracker_enabled
 	 * @covers ::any_post_type_enabled
-	 * @covers ::option_key_for
 	 *
 	 * @return void
 	 */
@@ -489,17 +486,16 @@ class Test_Scheduler extends Base {
 
 		$this->assertFalse( $instance->is_tracker_enabled( Event::POST_TYPE ) );
 		$this->assertFalse( $instance->any_post_type_enabled() );
-		$this->assertSame( 'upcoming_' . Event::POST_TYPE . 's', $instance->option_key_for( Event::POST_TYPE ) );
 
-		// Global filter.
-		add_filter( 'gatherpress_upcoming_tracker_enabled', '__return_true' );
+		// Every post type.
+		add_filter( 'gatherpress_event_upcoming_tracking_enabled', '__return_true' );
 		$this->assertTrue( $instance->is_tracker_enabled( Event::POST_TYPE ) );
 		$this->assertTrue( $instance->any_post_type_enabled() );
-		remove_all_filters( 'gatherpress_upcoming_tracker_enabled' );
+		remove_all_filters( 'gatherpress_event_upcoming_tracking_enabled' );
 
-		// Per-post-type filter receives post type argument.
+		// One post type, through the post type argument.
 		add_filter(
-			Event::POST_TYPE . '_upcoming_tracker_enabled',
+			'gatherpress_event_upcoming_tracking_enabled',
 			static function ( bool $enabled, string $type ): bool {
 				return Event::POST_TYPE === $type;
 			},
@@ -507,7 +503,7 @@ class Test_Scheduler extends Base {
 			2
 		);
 		$this->assertTrue( $instance->is_tracker_enabled( Event::POST_TYPE ) );
-		remove_all_filters( Event::POST_TYPE . '_upcoming_tracker_enabled' );
+		$this->assertFalse( $instance->is_tracker_enabled( 'post' ) );
 	}
 
 	/**
@@ -516,6 +512,7 @@ class Test_Scheduler extends Base {
 	 * @covers ::add_to_tracking
 	 * @covers ::remove_from_tracking
 	 * @covers ::tracked_post_type
+	 * @covers ::set_tracked_ids
 	 * @covers ::get_tracked_ids
 	 *
 	 * @return void
@@ -532,7 +529,7 @@ class Test_Scheduler extends Base {
 		$this->assertEmpty( $instance->get_tracked_ids( Event::POST_TYPE ) );
 
 		// Enable tracker.
-		add_filter( 'gatherpress_upcoming_tracker_enabled', '__return_true' );
+		add_filter( 'gatherpress_event_upcoming_tracking_enabled', '__return_true' );
 
 		// Non-existent post ID returns early.
 		$instance->add_to_tracking( 9999999 );
@@ -558,55 +555,73 @@ class Test_Scheduler extends Base {
 	 * Test get_tracked_ids sanitizes non-array and invalid entries.
 	 *
 	 * @covers ::get_tracked_ids
+	 * @covers ::get_tracking
 	 *
 	 * @return void
 	 */
 	public function test_get_tracked_ids_sanitizes_option_data(): void {
-		$instance   = Scheduler::get_instance();
-		$option_key = $instance->option_key_for( Event::POST_TYPE );
+		$instance = Scheduler::get_instance();
 
-		// Non-array value returns empty array.
-		update_option( $option_key, 'not_an_array' );
+		// Non-array option returns empty array.
+		update_option( Scheduler::OPTION_NAME, 'not_an_array' );
+		$this->assertEmpty( $instance->get_tracked_ids( Event::POST_TYPE ) );
+
+		// Non-array post type entry returns empty array.
+		update_option( Scheduler::OPTION_NAME, array( Event::POST_TYPE => 'not_an_array' ) );
 		$this->assertEmpty( $instance->get_tracked_ids( Event::POST_TYPE ) );
 
 		// Array with strings, zeroes, and non-scalar data.
-		update_option( $option_key, array( '12', 0, -5, array(), 'abc', 45 ) );
+		update_option( Scheduler::OPTION_NAME, array( Event::POST_TYPE => array( '12', 0, -5, array(), 'abc', 45 ) ) );
 		$this->assertSame( array( 12, 45 ), $instance->get_tracked_ids( Event::POST_TYPE ) );
 	}
 
 	/**
-	 * Test remove_id_from_option removes target ID from option array.
+	 * Test remove_tracked_id removes target ID from option array.
 	 *
-	 * @covers ::remove_id_from_option
+	 * @covers ::remove_tracked_id
+	 * @covers ::set_tracked_ids
 	 *
 	 * @return void
 	 */
-	public function test_remove_id_from_option(): void {
-		$instance   = Scheduler::get_instance();
-		$option_key = 'upcoming_' . Event::POST_TYPE . 's';
+	public function test_remove_tracked_id(): void {
+		$instance = Scheduler::get_instance();
 
-		update_option( $option_key, array( 10, 20, 30 ), false );
-		$instance->remove_id_from_option( 20, Event::POST_TYPE );
+		update_option(
+			Scheduler::OPTION_NAME,
+			array(
+				Event::POST_TYPE => array( 10, 20, 30 ),
+				'other_event'    => array( 20 ),
+			),
+			false
+		);
+		$instance->remove_tracked_id( 20, Event::POST_TYPE );
 
-		$this->assertSame( array( 10, 30 ), get_option( $option_key ) );
+		$this->assertSame(
+			array(
+				Event::POST_TYPE => array( 10, 30 ),
+				'other_event'    => array( 20 ),
+			),
+			get_option( Scheduler::OPTION_NAME ),
+			'Only the given post type changes.'
+		);
 	}
 
 	/**
-	 * Test validate_events_ended daily cron checks.
+	 * Test sweep_ended_events daily cron checks.
 	 *
-	 * @covers ::validate_events_ended
-	 * @covers ::validate_tracked_id
-	 * @covers ::remove_id_from_option
+	 * @covers ::sweep_ended_events
+	 * @covers ::sweep_tracked_id
+	 * @covers ::remove_tracked_id
 	 *
 	 * @return void
 	 */
-	public function test_validate_events_ended(): void {
+	public function test_sweep_ended_events(): void {
 		$instance = Scheduler::get_instance();
 
 		// When tracker disabled, does nothing.
-		$instance->validate_events_ended();
+		$instance->sweep_ended_events();
 
-		add_filter( 'gatherpress_upcoming_tracker_enabled', '__return_true' );
+		add_filter( 'gatherpress_event_upcoming_tracking_enabled', '__return_true' );
 
 		// Create past event and future event.
 		$past_id   = $this->create_test_event();
@@ -615,19 +630,18 @@ class Test_Scheduler extends Base {
 		update_post_meta( $past_id, Scheduler::POST_META_KEY, gmdate( 'Y-m-d H:i:s', time() - HOUR_IN_SECONDS ) );
 		update_post_meta( $future_id, Scheduler::POST_META_KEY, gmdate( 'Y-m-d H:i:s', time() + HOUR_IN_SECONDS ) );
 
-		$option_key = $instance->option_key_for( Event::POST_TYPE );
 		// Include an invalid/deleted post ID 88888.
-		update_option( $option_key, array( $past_id, $future_id, 88888 ) );
+		update_option( Scheduler::OPTION_NAME, array( Event::POST_TYPE => array( $past_id, $future_id, 88888 ) ) );
 
 		$ended_posts = array();
 		add_action(
-			Scheduler::ACTION_HOOK,
+			Scheduler::ENDED_ACTION,
 			static function ( int $post_id ) use ( &$ended_posts ): void {
 				$ended_posts[] = $post_id;
 			}
 		);
 
-		$instance->validate_events_ended();
+		$instance->sweep_ended_events();
 
 		// Past event fired action.
 		$this->assertContains( $past_id, $ended_posts );

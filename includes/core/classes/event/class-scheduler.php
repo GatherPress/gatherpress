@@ -37,7 +37,7 @@ final class Scheduler {
 	 * @since TBD
 	 * @var string
 	 */
-	const ACTION_HOOK = 'gatherpress_event_ended';
+	const ENDED_ACTION = 'gatherpress_event_ended';
 
 	/**
 	 * WP-Cron hook name for single event end action.
@@ -45,7 +45,7 @@ final class Scheduler {
 	 * @since TBD
 	 * @var string
 	 */
-	const CRON_HOOK = 'gatherpress_event_ended_cron';
+	const CRON_ACTION = 'gatherpress_event_end_run';
 
 	/**
 	 * WP-Cron hook name for daily validation fallback check.
@@ -53,7 +53,7 @@ final class Scheduler {
 	 * @since TBD
 	 * @var string
 	 */
-	const VALIDATE_CRON_HOOK = 'gatherpress_validate_events_ended';
+	const SWEEP_ACTION = 'gatherpress_event_end_sweep';
 
 	/**
 	 * Post meta key storing the GMT end datetime.
@@ -64,12 +64,12 @@ final class Scheduler {
 	const POST_META_KEY = 'gatherpress_datetime_end_gmt';
 
 	/**
-	 * Prefix for the per-post-type upcoming tracking options.
+	 * Option holding the tracked upcoming event IDs, keyed by post type.
 	 *
 	 * @since TBD
 	 * @var string
 	 */
-	const OPTION_KEY_PREFIX = 'upcoming_';
+	const OPTION_NAME = 'gatherpress_event_upcoming_ids';
 
 	/**
 	 * Class constructor.
@@ -89,31 +89,31 @@ final class Scheduler {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'transition_post_status', array( $this, 'handle_transition_post_status' ), 10, 3 );
-		add_action( 'added_post_meta', array( $this, 'handle_updated_postmeta' ), 10, 3 );
-		add_action( 'updated_postmeta', array( $this, 'handle_updated_postmeta' ), 10, 3 );
+		add_action( 'added_post_meta', array( $this, 'handle_end_meta_change' ), 10, 3 );
+		add_action( 'updated_postmeta', array( $this, 'handle_end_meta_change' ), 10, 3 );
 		add_action( 'before_delete_post', array( $this, 'handle_before_delete_post' ) );
-		add_action( self::CRON_HOOK, array( $this, 'handle_event_ended_cron' ) );
-		add_action( self::ACTION_HOOK, array( $this, 'invalidate_caches' ) );
-		add_action( self::ACTION_HOOK, array( $this, 'clear_scheduled_cron' ) );
-		add_action( self::ACTION_HOOK, array( $this, 'remove_from_tracking' ) );
-		add_action( self::VALIDATE_CRON_HOOK, array( $this, 'validate_events_ended' ) );
+		add_action( self::CRON_ACTION, array( $this, 'handle_end_run' ) );
+		add_action( self::ENDED_ACTION, array( $this, 'invalidate_caches' ) );
+		add_action( self::ENDED_ACTION, array( $this, 'clear_scheduled_cron' ) );
+		add_action( self::ENDED_ACTION, array( $this, 'remove_from_tracking' ) );
+		add_action( self::SWEEP_ACTION, array( $this, 'sweep_ended_events' ) );
 		// Priority 11: the event post types register on init at 10, and the check reads them.
-		add_action( 'init', array( $this, 'schedule_validation' ), 11 );
+		add_action( 'init', array( $this, 'schedule_sweep' ), 11 );
 	}
 
 	/**
-	 * Schedules the daily check for ended events, when a post type tracks upcoming events.
+	 * Schedules the daily sweep for missed event ends, when a post type tracks upcoming events.
 	 *
 	 * @since TBD
 	 *
 	 * @return void
 	 */
-	public function schedule_validation(): void {
-		if ( wp_next_scheduled( self::VALIDATE_CRON_HOOK ) || ! $this->any_post_type_enabled() ) {
+	public function schedule_sweep(): void {
+		if ( wp_next_scheduled( self::SWEEP_ACTION ) || ! $this->any_post_type_enabled() ) {
 			return;
 		}
 
-		wp_schedule_event( time(), 'daily', self::VALIDATE_CRON_HOOK );
+		wp_schedule_event( time(), 'daily', self::SWEEP_ACTION );
 	}
 
 	/**
@@ -153,7 +153,7 @@ final class Scheduler {
 	 *
 	 * @return void
 	 */
-	public function handle_updated_postmeta( int $meta_id, int $object_id, string $meta_key ): void {
+	public function handle_end_meta_change( int $meta_id, int $object_id, string $meta_key ): void {
 		if ( self::POST_META_KEY !== $meta_key || ! $this->is_event( $object_id ) ) {
 			return;
 		}
@@ -222,7 +222,7 @@ final class Scheduler {
 		$this->clear_scheduled_cron( $post_id );
 
 		// One second late: Event::has_event_past() needs time() to be strictly after the end.
-		wp_schedule_single_event( $end_timestamp + 1, self::CRON_HOOK, array( $post_id ) );
+		wp_schedule_single_event( $end_timestamp + 1, self::CRON_ACTION, array( $post_id ) );
 	}
 
 	/**
@@ -235,7 +235,7 @@ final class Scheduler {
 	 * @return void
 	 */
 	public function clear_scheduled_cron( int $post_id ): void {
-		wp_clear_scheduled_hook( self::CRON_HOOK, array( $post_id ) );
+		wp_clear_scheduled_hook( self::CRON_ACTION, array( $post_id ) );
 	}
 
 	/**
@@ -249,7 +249,7 @@ final class Scheduler {
 	 *
 	 * @return void
 	 */
-	public function handle_event_ended_cron( int $post_id ): void {
+	public function handle_end_run( int $post_id ): void {
 		if ( ! $this->is_valid_past_event( $post_id ) ) {
 			return;
 		}
@@ -330,32 +330,10 @@ final class Scheduler {
 	/**
 	 * Checks if upcoming events tracking is enabled for a given post type.
 	 *
-	 * When tracking is enabled, an option named `upcoming_{$post_type}s` is maintained
-	 * (e.g. `upcoming_gatherpress_events` for the default `gatherpress_event` post type).
-	 *
-	 * The option stores an array of integer post IDs (`int[]`) representing currently
-	 * published upcoming events. When an event concludes or is unpublished, its ID is
-	 * automatically removed from the option.
-	 *
-	 * Developers can use this option to perform high-performance queries for upcoming
-	 * events using `post__in` without needing complex or heavy `meta_query` datetime lookups.
-	 *
-	 * @example
-	 * ```php
-	 * // Enable tracking for all supporting post types:
-	 * add_filter( 'gatherpress_upcoming_tracker_enabled', '__return_true' );
-	 *
-	 * // Query upcoming events using the tracked option:
-	 * $upcoming_ids = get_option( 'upcoming_gatherpress_events', array() );
-	 * if ( ! empty( $upcoming_ids ) ) {
-	 *     $query = new WP_Query(
-	 *         array(
-	 *             'post_type' => 'gatherpress_event',
-	 *             'post__in'  => $upcoming_ids,
-	 *         )
-	 *     );
-	 * }
-	 * ```
+	 * Tracked post types keep their published upcoming event IDs in the
+	 * `gatherpress_event_upcoming_ids` option, keyed by post type. An ID is
+	 * removed when its event ends, is unpublished or is deleted, so the list
+	 * can feed a `post__in` query instead of a `meta_query` on the dates.
 	 *
 	 * @since TBD
 	 *
@@ -365,48 +343,45 @@ final class Scheduler {
 	 */
 	public function is_tracker_enabled( string $post_type ): bool {
 		/**
-		 * Filter whether upcoming events tracking is enabled globally.
+		 * Filters whether the upcoming event IDs of a post type are tracked.
 		 *
-		 * When true, every post type declaring `gatherpress-event-date` support is tracked
-		 * in its respective `upcoming_{$post_type}s` option (e.g. `upcoming_gatherpress_events`).
+		 * Tracked IDs are stored in the `gatherpress_event_upcoming_ids` option as
+		 * `array<string, int[]>`, keyed by post type, and checked by a daily sweep
+		 * that fires `gatherpress_event_ended` for any end that WP-Cron missed.
+		 * Read them with `Scheduler::get_tracked_ids()`.
 		 *
 		 * @example
 		 * ```php
-		 * add_filter( 'gatherpress_upcoming_tracker_enabled', '__return_true' );
+		 * // Track every post type with event dates:
+		 * add_filter( 'gatherpress_event_upcoming_tracking_enabled', '__return_true' );
+		 *
+		 * // Or only one post type:
+		 * add_filter(
+		 *     'gatherpress_event_upcoming_tracking_enabled',
+		 *     static fn( bool $enabled, string $post_type ): bool => $enabled || 'gatherpress_event' === $post_type,
+		 *     10,
+		 *     2
+		 * );
+		 *
+		 * // Query the upcoming events without a meta_query:
+		 * $upcoming_ids = \GatherPress\Core\Event\Scheduler::get_instance()->get_tracked_ids( 'gatherpress_event' );
+		 *
+		 * if ( ! empty( $upcoming_ids ) ) {
+		 *     $query = new WP_Query(
+		 *         array(
+		 *             'post_type' => 'gatherpress_event',
+		 *             'post__in'  => $upcoming_ids,
+		 *         )
+		 *     );
+		 * }
 		 * ```
 		 *
 		 * @since TBD
 		 *
-		 * @param bool $enabled Whether tracking is enabled. Default false.
+		 * @param bool   $enabled   Whether tracking is enabled. Default false.
+		 * @param string $post_type The post type being checked.
 		 */
-		if ( apply_filters( 'gatherpress_upcoming_tracker_enabled', false ) ) {
-			return true;
-		}
-
-		/**
-		 * Filter whether upcoming events tracking is enabled for a specific post type.
-		 *
-		 * When true for `$post_type`, an option named `upcoming_{$post_type}s` (e.g.
-		 * `upcoming_gatherpress_events` or `upcoming_my_cpts`) is populated with
-		 * upcoming event post IDs (`int[]`) and validated via daily cron.
-		 *
-		 * @example
-		 * ```php
-		 * // Enable tracking specifically for 'gatherpress_event':
-		 * add_filter( 'gatherpress_event_upcoming_tracker_enabled', '__return_true' );
-		 * ```
-		 *
-		 * @since TBD
-		 *
-		 * @param bool   $enabled   Whether tracking is enabled for this post type. Default false.
-		 * @param string $post_type The post type currently being evaluated.
-		 */
-		return (bool) apply_filters(
-			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
-			"{$post_type}_upcoming_tracker_enabled",
-			false,
-			$post_type
-		);
+		return (bool) apply_filters( 'gatherpress_event_upcoming_tracking_enabled', false, $post_type );
 	}
 
 	/**
@@ -427,20 +402,7 @@ final class Scheduler {
 	}
 
 	/**
-	 * Returns the wp_option key for tracking upcoming IDs of a given post type.
-	 *
-	 * @since TBD
-	 *
-	 * @param string $post_type The post type slug.
-	 *
-	 * @return string The option key.
-	 */
-	public function option_key_for( string $post_type ): string {
-		return self::OPTION_KEY_PREFIX . $post_type . 's';
-	}
-
-	/**
-	 * Adds an event post ID to the upcoming tracking option for its post type.
+	 * Adds an event post ID to the upcoming tracking for its post type.
 	 *
 	 * @since TBD
 	 *
@@ -457,14 +419,13 @@ final class Scheduler {
 
 		$tracked_ids   = $this->get_tracked_ids( $post_type );
 		$tracked_ids[] = $post_id;
-		$tracked_ids   = array_values( array_unique( $tracked_ids ) );
 
-		update_option( $this->option_key_for( $post_type ), $tracked_ids, false );
-		$this->schedule_validation();
+		$this->set_tracked_ids( $post_type, array_unique( $tracked_ids ) );
+		$this->schedule_sweep();
 	}
 
 	/**
-	 * Removes an event post ID from the upcoming tracking option for its post type.
+	 * Removes an event post ID from the upcoming tracking for its post type.
 	 *
 	 * @since TBD
 	 *
@@ -479,7 +440,7 @@ final class Scheduler {
 			return;
 		}
 
-		$this->remove_id_from_option( $post_id, $post_type );
+		$this->remove_tracked_id( $post_id, $post_type );
 	}
 
 	/**
@@ -498,7 +459,7 @@ final class Scheduler {
 	}
 
 	/**
-	 * Removes a post ID from the tracking option for a specific post type.
+	 * Removes a post ID from the tracked IDs of a post type.
 	 *
 	 * @since TBD
 	 *
@@ -507,15 +468,15 @@ final class Scheduler {
 	 *
 	 * @return void
 	 */
-	public function remove_id_from_option( int $post_id, string $post_type ): void {
-		$tracked_ids = $this->get_tracked_ids( $post_type );
-		$tracked_ids = array_values( array_diff( $tracked_ids, array( $post_id ) ) );
-
-		update_option( $this->option_key_for( $post_type ), $tracked_ids, false );
+	public function remove_tracked_id( int $post_id, string $post_type ): void {
+		$this->set_tracked_ids(
+			$post_type,
+			array_diff( $this->get_tracked_ids( $post_type ), array( $post_id ) )
+		);
 	}
 
 	/**
-	 * Retrieves and normalizes the tracked IDs for a given post type.
+	 * Retrieves and normalizes the tracked upcoming event IDs of a post type.
 	 *
 	 * @since TBD
 	 *
@@ -524,7 +485,7 @@ final class Scheduler {
 	 * @return array<int> Array of positive integer post IDs.
 	 */
 	public function get_tracked_ids( string $post_type ): array {
-		$raw = get_option( $this->option_key_for( $post_type ), array() );
+		$raw = $this->get_tracking()[ $post_type ] ?? array();
 
 		if ( ! is_array( $raw ) ) {
 			return array();
@@ -544,13 +505,43 @@ final class Scheduler {
 	}
 
 	/**
+	 * Stores the tracked upcoming event IDs of a post type.
+	 *
+	 * @since TBD
+	 *
+	 * @param string     $post_type The post type slug.
+	 * @param array<int> $ids       The post IDs.
+	 *
+	 * @return void
+	 */
+	private function set_tracked_ids( string $post_type, array $ids ): void {
+		$tracking               = $this->get_tracking();
+		$tracking[ $post_type ] = array_values( $ids );
+
+		update_option( self::OPTION_NAME, $tracking, false );
+	}
+
+	/**
+	 * Returns the stored tracking, keyed by post type.
+	 *
+	 * @since TBD
+	 *
+	 * @return array<mixed> The option value, or an empty array when it is not an array.
+	 */
+	private function get_tracking(): array {
+		$tracking = get_option( self::OPTION_NAME, array() );
+
+		return is_array( $tracking ) ? $tracking : array();
+	}
+
+	/**
 	 * Daily fallback check to detect events whose end time passed without being processed.
 	 *
 	 * @since TBD
 	 *
 	 * @return void
 	 */
-	public function validate_events_ended(): void {
+	public function sweep_ended_events(): void {
 		$post_types = array_filter(
 			get_post_types_by_support( Event::SUPPORT ),
 			array( $this, 'is_tracker_enabled' )
@@ -558,7 +549,7 @@ final class Scheduler {
 
 		foreach ( $post_types as $post_type ) {
 			foreach ( $this->get_tracked_ids( $post_type ) as $post_id ) {
-				$this->validate_tracked_id( $post_id, $post_type );
+				$this->sweep_tracked_id( $post_id, $post_type );
 			}
 		}
 	}
@@ -573,9 +564,9 @@ final class Scheduler {
 	 *
 	 * @return void
 	 */
-	private function validate_tracked_id( int $post_id, string $post_type ): void {
+	private function sweep_tracked_id( int $post_id, string $post_type ): void {
 		if ( get_post_type( $post_id ) !== $post_type ) {
-			$this->remove_id_from_option( $post_id, $post_type );
+			$this->remove_tracked_id( $post_id, $post_type );
 
 			return;
 		}
