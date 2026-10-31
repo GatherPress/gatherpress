@@ -317,7 +317,7 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
 		#{$trigger} {
 			@include text-truncate;
 
-			color: inherit;
+				color: var(--gatherpress-calendar-ribbon-color);
 			padding-inline: 0.375rem;
 			display: block;
 			min-width: 0;
