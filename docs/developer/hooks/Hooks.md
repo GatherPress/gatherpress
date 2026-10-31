@@ -131,6 +131,12 @@
 
 - [`gatherpress_rsvp_waiting_list_promoted`](gatherpress_rsvp_waiting_list_promoted.md) This action is documented in includes/core/classes/rsvp/class-rsvp.php
 
+## class-scheduler.php
+
+- [`gatherpress_event_end_cache_keys`](gatherpress_event_end_cache_keys.md) Filters cache keys to invalidate when an event ends.
+- [`gatherpress_event_ended`](gatherpress_event_ended.md) This action is documented in includes/core/classes/event/class-scheduler.php
+- [`gatherpress_event_upcoming_tracking_enabled`](gatherpress_event_upcoming_tracking_enabled.md) Filters whether the upcoming event IDs of every post type with event dates are tracked.
+
 ## class-settings.php
 
 - [`gatherpress_interactive_map_tile_attribution`](gatherpress_interactive_map_tile_attribution.md) Filters the attribution HTML rendered with the venue map.
