@@ -13,6 +13,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Blocks\Setup;
 use GatherPress\Core\Event;
 use GatherPress\Core\Settings;
+use GatherPress\Core\User;
 
 $gatherpress_block_instance = Setup::get_instance();
 $gatherpress_post_id        = $gatherpress_block_instance->get_post_id( $block->parsed_block );
@@ -76,6 +77,8 @@ if (
 	&& $gatherpress_is_timezone_active
 	&& $gatherpress_settings->get( 'show_viewer_timezone' )
 	&& ! $gatherpress_event->is_all_day()
+	// A saved timezone already converts the main line, and the browser's guess must not contradict it.
+	&& '' === User::get_instance()->get_saved_timezone()
 ) {
 	// Mirrors get_display_datetime(): the local-time tooltip covers the same parts
 	// of the range the block itself displays, so the two cannot disagree. An

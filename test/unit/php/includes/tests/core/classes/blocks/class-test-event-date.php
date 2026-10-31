@@ -972,6 +972,33 @@ class Test_Event_Date extends Base {
 	}
 
 	/**
+	 * A viewer with a saved timezone gets no tooltip: the main line is already in that timezone.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function test_render_omits_viewer_time_for_a_saved_timezone(): void {
+		$user = $this->mock->user( true )->get();
+
+		update_user_meta( $user->ID, 'gatherpress_timezone', 'Europe/London' );
+
+		$output = $this->render_viewer_time_block(
+			'Viewer Time Saved Timezone Event',
+			array(
+				'showViewerTime' => true,
+				'showTimezone'   => 'yes',
+			)
+		);
+
+		$this->assertStringNotContainsString(
+			'data-wp-class--gatherpress-tooltip',
+			$output,
+			'A saved timezone should leave out the viewer time tooltip.'
+		);
+	}
+
+	/**
 	 * Clean up tooltip assets after tests.
 	 *
 	 * @since TBD
