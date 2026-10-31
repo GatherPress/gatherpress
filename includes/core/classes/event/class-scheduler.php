@@ -244,12 +244,12 @@ final class Scheduler {
 	 *
 	 * @since TBD
 	 *
-	 * @param int $event_id The ID of the event that ended.
+	 * @param int $post_id The ID of the event that ended.
 	 *
 	 * @return void
 	 */
-	public function handle_event_ended_cron( int $event_id ): void {
-		if ( ! $this->is_valid_past_event( $event_id ) ) {
+	public function handle_event_ended_cron( int $post_id ): void {
+		if ( ! $this->is_valid_past_event( $post_id ) ) {
 			return;
 		}
 
@@ -271,17 +271,17 @@ final class Scheduler {
 		 * // Purge external cache and trigger post-event workflows when an event concludes:
 		 * add_action(
 		 *     'gatherpress_event_ended',
-		 *     static function ( int $event_id ): void {
-		 *         wp_cache_delete( "my_custom_cache_{$event_id}", 'my_plugin' );
+		 *     static function ( int $post_id ): void {
+		 *         wp_cache_delete( "my_custom_cache_{$post_id}", 'my_plugin' );
 		 *     }
 		 * );
 		 * ```
 		 *
 		 * @since TBD
 		 *
-		 * @param int $event_id The post ID of the event that ended.
+		 * @param int $post_id The post ID of the event that ended.
 		 */
-		do_action( 'gatherpress_event_ended', $event_id );
+		do_action( 'gatherpress_event_ended', $post_id );
 	}
 
 	/**
@@ -289,13 +289,13 @@ final class Scheduler {
 	 *
 	 * @since TBD
 	 *
-	 * @param int $event_id The ID of the event to invalidate caches for.
+	 * @param int $post_id The ID of the event to invalidate caches for.
 	 *
 	 * @return void
 	 */
-	public function invalidate_caches( int $event_id ): void {
+	public function invalidate_caches( int $post_id ): void {
 		$default_keys = array(
-			"gatherpress_event_{$event_id}",
+			"gatherpress_event_{$post_id}",
 			'gatherpress_upcoming_events',
 			'gatherpress_past_events',
 		);
@@ -306,12 +306,12 @@ final class Scheduler {
 		 * @since TBD
 		 *
 		 * @param array<string>|mixed $cache_keys Array of cache keys to invalidate.
-		 * @param int           $event_id   The event post ID.
+		 * @param int                 $post_id    The event post ID.
 		 */
 		$cache_keys = apply_filters(
 			'gatherpress_event_end_cache_keys',
 			$default_keys,
-			$event_id
+			$post_id
 		);
 
 		$cache_keys = array_filter(
@@ -323,7 +323,7 @@ final class Scheduler {
 			wp_cache_delete( $key, 'gatherpress' );
 		}
 
-		clean_post_cache( $event_id );
+		clean_post_cache( $post_id );
 	}
 
 	/**
