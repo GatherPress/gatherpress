@@ -11,7 +11,7 @@ namespace GatherPress\Core\Uninstall;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Calendar\Cache;
+use GatherPress\Core\Calendar\External\Cache;
 use GatherPress\Core\Event\Scheduler;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Settings\Network;

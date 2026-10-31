@@ -97,7 +97,7 @@ In the event settings panel, below the time and venue options, you will find:
 * Enable RSVP: only shown when the sitewide [RSVP Mode](./rsvp-system.md#rsvp-mode) is set to one of the per-event modes; turns RSVP on or off for this event
 * Enable Open RSVP: lets visitors without an account RSVP to this event, see [Open RSVP](./rsvp-system.md#open-rsvp-without-an-account)
 * Maximum number of guests  
-* Maximum attendance limit
+* Capacity
 * Enable Anonymous RSVP
 
 Defaults come from GatherPress settings, but all of these can be overridden for each event.

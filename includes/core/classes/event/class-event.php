@@ -16,11 +16,12 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use DateTimeZone;
 use Exception;
-use GatherPress\Core\Calendar;
+use GatherPress\Core\Calendar\External;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
 use GatherPress\Core\Setup as Core_Setup;
 use GatherPress\Core\Settings;
+use GatherPress\Core\Traits\Has_Capabilities;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
@@ -44,6 +45,11 @@ use WP_Term;
  * }
  */
 class Event {
+
+	/**
+	 * Gives the class its read and edit capabilities.
+	 */
+	use Has_Capabilities;
 
 	/**
 	 * Cache key format for storing and retrieving event datetimes.
@@ -76,27 +82,6 @@ class Event {
 	 * @var string
 	 */
 	const SUPPORT = 'gatherpress-event-date';
-
-	/**
-	 * Capability for reading a specific event.
-	 *
-	 * A meta capability, so it is always paired with the event's post ID and
-	 * resolves through WordPress to the right primitive for the event's status.
-	 *
-	 * @since 0.35.1
-	 * @var string
-	 */
-	const READ_CAPABILITY = 'read_post';
-
-	/**
-	 * Capability for editing a specific event.
-	 *
-	 * A meta capability, so it is always paired with the event's post ID.
-	 *
-	 * @since 0.35.1
-	 * @var string
-	 */
-	const EDIT_CAPABILITY = 'edit_post';
 
 	/**
 	 * Placeholder displayed when no datetime is set.
@@ -179,7 +164,7 @@ class Event {
 		return (
 			( is_preview() && (int) get_queried_object_id() === $post_id )
 			|| 'publish' === get_post_status( $post_id )
-			|| current_user_can( self::READ_CAPABILITY, $post_id )
+			|| current_user_can( self::read_capability(), $post_id )
 		);
 	}
 
@@ -204,13 +189,13 @@ class Event {
 			return false;
 		}
 
-		if ( current_user_can( self::EDIT_CAPABILITY, $post->ID ) ) {
+		if ( current_user_can( self::edit_capability(), $post->ID ) ) {
 			return true;
 		}
 
 		return 'publish' === $post->post_status
 			? ! post_password_required( $post )
-			: current_user_can( self::READ_CAPABILITY, $post->ID );
+			: current_user_can( self::read_capability(), $post->ID );
 	}
 
 	/**
@@ -256,7 +241,7 @@ class Event {
 	/**
 	 * Gets raw formatted datetime parts for display.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param string $type          Display type: 'start', 'end', or 'both'.
 	 * @param string $start_format  PHP display format for start date/time.
@@ -322,7 +307,7 @@ class Event {
 	/**
 	 * Get the separator between the start and end dates/times.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param Event|null $event     Optional. The event the separator is for. Defaults to the
 	 *                              current post when that is an event.
@@ -338,7 +323,7 @@ class Event {
 		/**
 		 * Filter the separator between start and end dates/times.
 		 *
-		 * @since TBD
+		 * @since 0.36.0
 		 *
 		 * @param string     $separator The separator set on the block, or the translated 'to' when it sets none.
 		 * @param Event|null $event     The event, or null where there is none, such as the editor settings
@@ -759,7 +744,7 @@ class Event {
 	 * the gatherpress_datetime_format filter, so filter application is opt-in via
 	 * $apply_filters. Display formatting enables it; the ISO accessors do not.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param string $format        PHP date format.
 	 * @param string $which         Datetime field in event table to format ('start' or 'end').
@@ -836,7 +821,7 @@ class Event {
 	 * the gatherpress_datetime_format filter, so the ISO value cannot be changed
 	 * by display-format customization.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return string The ISO 8601 start datetime, or empty string when unset.
 	 *
@@ -856,7 +841,7 @@ class Event {
 	 * the gatherpress_datetime_format filter, so the ISO value cannot be changed
 	 * by display-format customization.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return string The ISO 8601 end datetime, or empty string when unset.
 	 *
@@ -1033,6 +1018,31 @@ class Event {
 	}
 
 	/**
+	 * Retrieves the venue information calendars and feeds may share.
+	 *
+	 * A password-protected venue keeps its name and details out of them for
+	 * everyone. Neither the password cookie nor the right to edit the venue
+	 * counts here: a calendar response can be cached and served to other
+	 * viewers, and an Author's lands in the cache for logged-out viewers.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @return array<string, string> The shape of {@see self::get_venue_information()}, all blank for such a venue.
+	 */
+	public function get_public_venue_information(): array {
+		$information = $this->get_venue_information();
+		$venue       = $this->post
+			? Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $this->post->ID )
+			: null;
+
+		if ( $venue instanceof WP_Post && '' !== $venue->post_password ) {
+			return array_fill_keys( array_keys( $information ), '' );
+		}
+
+		return $information;
+	}
+
+	/**
 	 * Retrieve all supported add to calendar links for the event.
 	 *
 	 * This method generates and returns an array of supported add to calendar links for the event,
@@ -1055,7 +1065,7 @@ class Event {
 			return array();
 		}
 
-		$calendar = new Calendar( $this->post->ID );
+		$calendar = new External( $this->post->ID );
 
 		// Each URL getter only reports false when its event post cannot be resolved, and the
 		// calendar was built from the post resolved directly above.
@@ -1231,7 +1241,7 @@ class Event {
 	 * to determine whether to provide the online event link.
 	 *
 	 * @since 0.27.0
-	 * @since TBD Accepts the identifier of the person to check.
+	 * @since 0.36.0 Accepts the identifier of the person to check.
 	 *
 	 * @param int|string|null $user_identifier Optional. User ID or magic-link email to check. Defaults to
 	 *                                         the current user or the token in the page URL.
@@ -1261,7 +1271,7 @@ class Event {
 		$force_online_event_link = apply_filters( 'gatherpress_force_online_event_link', false );
 
 		if ( ! $force_online_event_link && ! is_admin() ) {
-			$user_identifier = $user_identifier ?? Rsvp_Setup::get_instance()->get_user_identifier();
+			$user_identifier = $user_identifier ?? Rsvp_Setup::get_instance()->get_user_identifier( $this->post->ID );
 			$response        = ( new Rsvp( $this->post->ID ) )->get( $user_identifier );
 
 			if (
@@ -1290,7 +1300,7 @@ class Event {
 	 * applies, so a post that cannot render the online-event block never
 	 * reports itself as online.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return bool True if the event has the online-event term, false otherwise.
 	 */
@@ -1322,7 +1332,7 @@ class Event {
 	 * then refuse to render. A post type without that support is reported as
 	 * unsaved, the same answer as a post that does not exist.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param bool   $is_online True to mark online, false to mark offline.
 	 * @param string $link      Optional URL for the `gatherpress_online_event_link` meta when online. An empty

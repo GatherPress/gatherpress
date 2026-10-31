@@ -9,6 +9,8 @@
 namespace GatherPress\Tests\Core\Rsvp;
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Mailer;
+use GatherPress\Core\Rsvp\Email;
 use GatherPress\Core\Rsvp\Cleanup;
 use GatherPress\Core\Rsvp\Flag\Setup as Flag_Setup;
 use GatherPress\Core\Rsvp\Form;
@@ -77,6 +79,12 @@ class Test_Setup extends Base {
 				sprintf( '%s must be instantiated so its %s hook registers.', $class_name, $hook )
 			);
 		}
+
+		$this->assertArrayHasKey(
+			Email::CONFIRMATION_TYPE,
+			Utility::get_hidden_property( Mailer::get_instance(), 'types' ),
+			'Rsvp\\Email must be instantiated so its mail type registers.'
+		);
 	}
 
 	/**
@@ -334,7 +342,7 @@ class Test_Setup extends Base {
 	}
 
 	/**
-	 * Coverage for get_user_identifier method with token in URL.
+	 * Coverage for get_user_identifier method with a session cookie.
 	 *
 	 * @covers ::get_user_identifier
 	 *
@@ -355,32 +363,27 @@ class Test_Setup extends Base {
 			)
 		);
 
-		// Create a proper token and mock it via filter.
 		$token = new Token( $comment_id );
 		$token->generate_token();
-		$token_value  = $token->get_token();
-		$token_string = sprintf( '%d_%s', $comment_id, $token_value );
 
-		add_filter(
-			'gatherpress_pre_get_http_input',
-			function ( $pre_value, $type, $var_name ) use ( $token_string ) {
-				if ( INPUT_GET === $type && 'gatherpress_rsvp_token' === $var_name ) {
-					return $token_string;
-				}
-				return null;
-			},
-			10,
-			3
-		);
+		$this->set_rsvp_session_cookie( $post_id, $token->get_token_string() );
 
 		$instance = Setup::get_instance();
-		$result   = $instance->get_user_identifier();
 
-		// Should return the email from the token.
-		$this->assertSame( 'test@example.com', $result );
+		$this->assertSame( 'test@example.com', $instance->get_user_identifier( $post_id ) );
+		$this->assertSame(
+			0,
+			$instance->get_user_identifier( $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) ) ),
+			'Another event has no session, so nobody is identified there.'
+		);
 
-		// Clean up.
-		remove_all_filters( 'gatherpress_pre_get_http_input' );
+		$this->go_to( get_permalink( $post_id ) );
+
+		$this->assertSame(
+			'test@example.com',
+			$instance->get_user_identifier(),
+			'Without a post ID the current post is used.'
+		);
 	}
 
 	/**
@@ -497,51 +500,21 @@ class Test_Setup extends Base {
 	}
 
 	/**
-	 * Whenever the token query var is present the handler must queue
-	 * `nocache_headers()` onto WP's `send_headers` action so the magic-
-	 * link URL is treated as per-user by any host-level page cache.
-	 * Without this, an aggressive page cache either leaks one user's
-	 * authenticated view to another or pins a stale RSVP-list render to
-	 * the URL (#1626). The deferred dispatch is what makes this
-	 * observable in tests — `nocache_headers()` called inline early-
-	 * returns under `headers_sent()`, which is always true in the
-	 * PHPUnit runner.
+	 * Whenever the request carries an RSVP session cookie the handler must
+	 * queue `nocache_headers()` onto WP's `send_headers` action, since the
+	 * page shows that person's RSVP (#1626). The deferred dispatch is what
+	 * makes this observable in tests, since `nocache_headers()` called
+	 * inline early-returns under `headers_sent()`, which is always true in
+	 * the PHPUnit runner.
 	 *
 	 * @covers ::handle_rsvp_token
 	 *
 	 * @return void
 	 */
 	public function test_handle_rsvp_token_defers_nocache_headers(): void {
-		$post_id = $this->factory->post->create(
-			array(
-				'post_type' => Event::POST_TYPE,
-			)
-		);
+		$cookie_name = Token::get_cookie_name( 123 );
 
-		$comment_id = $this->factory->comment->create(
-			array(
-				'comment_post_ID'      => $post_id,
-				'comment_type'         => Rsvp::COMMENT_TYPE,
-				'comment_author_email' => 'test@example.com',
-				'comment_approved'     => 0,
-			)
-		);
-
-		$token = new Token( $comment_id );
-		$token->generate_token();
-		$token_string = sprintf( '%d_%s', $comment_id, $token->get_token() );
-
-		add_filter(
-			'gatherpress_pre_get_http_input',
-			static function ( $pre_value, $type, $var_name ) use ( $token_string ) {
-				if ( INPUT_GET === $type && 'gatherpress_rsvp_token' === $var_name ) {
-					return $token_string;
-				}
-				return null;
-			},
-			10,
-			3
-		);
+		$_COOKIE[ $cookie_name ] = '1_token';
 
 		// Ensure baseline: no nocache_headers wiring before the call.
 		remove_action( 'send_headers', 'nocache_headers' );
@@ -551,18 +524,53 @@ class Test_Setup extends Base {
 		$has_action = has_action( 'send_headers', 'nocache_headers' );
 
 		remove_action( 'send_headers', 'nocache_headers' );
-		remove_all_filters( 'gatherpress_pre_get_http_input' );
+		unset( $_COOKIE[ $cookie_name ] );
 
 		$this->assertNotFalse(
 			$has_action,
-			'`send_headers` must be wired to `nocache_headers` on every token-bearing request.'
+			'`send_headers` must be wired to `nocache_headers` on every request with a session cookie.'
 		);
 	}
 
 	/**
-	 * Without a token in the URL the handler must NOT queue no-cache
-	 * headers — otherwise every page request would become uncacheable,
-	 * defeating the host's page cache for the vast majority of traffic.
+	 * A valid token on a post without RSVP support approves nothing.
+	 *
+	 * @covers ::handle_rsvp_token
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_token_skips_post_without_rsvp_support(): void {
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID'      => $this->factory->post->create(),
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author_email' => 'test@example.com',
+				'comment_approved'     => 0,
+			)
+		);
+
+		$token = new Token( $comment_id );
+		$token->generate_token();
+		$token_string = $token->get_token_string();
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) use ( $token_string ) {
+				return INPUT_GET === $type && 'gatherpress_rsvp_token' === $var_name ? $token_string : $pre_value;
+			},
+			10,
+			3
+		);
+
+		Setup::get_instance()->handle_rsvp_token();
+
+		$this->assertSame( '0', get_comment( $comment_id )->comment_approved );
+	}
+
+	/**
+	 * Without a session cookie the handler must NOT queue no-cache headers,
+	 * otherwise every page request would become uncacheable, defeating the
+	 * host's page cache for the vast majority of traffic.
 	 *
 	 * @covers ::handle_rsvp_token
 	 *
@@ -578,7 +586,7 @@ class Test_Setup extends Base {
 
 		$this->assertFalse(
 			$has_action,
-			'`send_headers` must not be wired to `nocache_headers` on requests that carry no RSVP token.'
+			'`send_headers` must not be wired to `nocache_headers` on requests that carry no session cookie.'
 		);
 	}
 

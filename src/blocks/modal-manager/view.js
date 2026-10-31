@@ -1,15 +1,15 @@
 /**
  * WordPress dependencies
  */
-import { store, withSyncEvent } from '@wordpress/interactivity';
+import { getElement, store, withSyncEvent } from '@wordpress/interactivity';
 
 /**
- * Internal dependencies
+ * Query arg that opens a modal on page load, as `Modal_Manager::OPEN_QUERY_ARG`.
+ *
+ * @since TBD
+ * @type {string}
  */
-import {
-	manageFocusTrap,
-	setupCloseHandlers,
-} from '../../helpers/interactivity';
+const OPEN_QUERY_ARG = 'gatherpress_modal';
 
 /**
  * Checks whether an element is shown, walking up to (but not including) a root.
@@ -18,7 +18,7 @@ import {
  * computed `display`/`visibility`, so it works without layout (e.g. in tests)
  * and while the modal's own open transition is still running.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @param {HTMLElement} element The element to check.
  * @param {HTMLElement} root    The ancestor to stop at.
@@ -49,7 +49,7 @@ function isShownWithin( element, root ) {
  * label while a visible heading exists; when none does, the attribute is
  * removed so the generic label applies again.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @param {HTMLElement} modal        The modal element (role="dialog").
  * @param {HTMLElement} modalContent The modal content element.
@@ -79,6 +79,31 @@ function labelModalByVisibleHeading( modal, modalContent ) {
 	modal.setAttribute( 'aria-labelledby', heading.id );
 }
 
+/**
+ * Opens a modal as a modal dialog.
+ *
+ * A modal without a custom name is named after its visible heading first.
+ *
+ * @since TBD
+ *
+ * @param {HTMLDialogElement} modal The modal element.
+ *
+ * @return {void}
+ */
+function showModal( modal ) {
+	const modalContent = modal.querySelector(
+		'.wp-block-gatherpress-modal-content',
+	);
+
+	if ( modalContent && modal.hasAttribute( 'data-gatherpress-default-label' ) ) {
+		labelModalByVisibleHeading( modal, modalContent );
+	}
+
+	// The browser focuses the first focusable element, keeps focus inside the
+	// dialog and makes the rest of the page inert.
+	modal.showModal();
+}
+
 const { actions } = store( 'gatherpress', {
 	actions: {
 		openModal: withSyncEvent( ( event = null, element = null ) => {
@@ -103,76 +128,10 @@ const { actions } = store( 'gatherpress', {
 					'.wp-block-gatherpress-modal',
 				);
 
-				if ( modal ) {
-					modal.classList.add( 'gatherpress--is-visible' );
-
-					const modalContent = modal.querySelector(
-						'.wp-block-gatherpress-modal-content',
-					);
-
-					if ( modalContent ) {
-						if ( modal.hasAttribute( 'data-gatherpress-default-label' ) ) {
-							labelModalByVisibleHeading( modal, modalContent );
-						}
-
-						// Define focusable elements inside the modal.
-						const focusableSelectors = [
-							'a[href]',
-							'button:not([disabled])',
-							'textarea:not([disabled])',
-							'input[type="text"]:not([disabled])',
-							'input[type="number"]:not([disabled])',
-							'input[type="radio"]:not([disabled])',
-							'input[type="checkbox"]:not([disabled])',
-							'select:not([disabled])',
-							'[tabindex]:not([tabindex="-1"])',
-						];
-
-						const focusableElements = Array.from(
-							modalContent.querySelectorAll(
-								focusableSelectors.join( ',' ),
-							),
-						).filter( ( el ) => {
-							// Exclude if element itself is hidden.
-							if ( el.classList.contains( 'gatherpress--is-hidden' ) ) {
-								return false;
-							}
-							// Exclude if there's a hidden container between element and modalContent.
-							let parent = el.parentElement;
-							while ( parent && parent !== modalContent ) {
-								if ( parent.classList.contains( 'gatherpress--is-hidden' ) ) {
-									return false;
-								}
-								parent = parent.parentElement;
-							}
-							return true;
-						} );
-
-						// Focus the first focusable element, if available.
-						if ( focusableElements[ 0 ] ) {
-							setTimeout( () => {
-								modal.setAttribute( 'aria-hidden', 'false' );
-								focusableElements[ 0 ].focus();
-							}, 10 );
-						}
-
-						// Set up focus trap using the helper function and store cleanup.
-						// Use 11ms to ensure this runs AFTER the initial focus (10ms above).
-						// This prevents focus trap conflicts when switching between RSVP modal states.
-						setTimeout( () => {
-							modalContent.cleanupFocusTrap =
-								manageFocusTrap( focusableElements );
-						}, 11 );
-
-						// Set up close handlers and store cleanup function.
-						modalContent.cleanupCloseHandlers = setupCloseHandlers(
-							'.wp-block-gatherpress-modal',
-							'.wp-block-gatherpress-modal-content',
-							( e ) => {
-								actions.closeModal( null, e );
-							},
-						);
-					}
+				// A modal already open, such as one the server opened without
+				// JavaScript, stays as it is: showModal() would throw.
+				if ( modal && ! modal.open ) {
+					showModal( modal );
 				}
 			}
 		} ),
@@ -205,9 +164,10 @@ const { actions } = store( 'gatherpress', {
 				}
 
 				// Find the modal manager and modal.
-				let modalManager = element.closest(
+				const ownModalManager = element.closest(
 					'.wp-block-gatherpress-modal-manager',
 				);
+				let modalManager = ownModalManager;
 
 				/**
 				 * When switching between RSVP states, modals are hidden/shown dynamically.
@@ -250,7 +210,10 @@ const { actions } = store( 'gatherpress', {
 					return;
 				}
 
-				const modal = modalManager.querySelector(
+				// Close the modal around the element, even when focus moves on
+				// to a visible sibling's trigger: an open modal <dialog> left in
+				// a hidden container would keep the rest of the page inert.
+				const modal = ownModalManager.querySelector(
 					'.wp-block-gatherpress-modal',
 				);
 
@@ -258,26 +221,8 @@ const { actions } = store( 'gatherpress', {
 					return;
 				}
 
-				// Handle modal closing.
-				modal.classList.remove( 'gatherpress--is-visible' );
-				modal.setAttribute( 'aria-hidden', 'true' );
-
-				// Clean up focus trap if applicable.
-				const modalContent = modal.querySelector( '.wp-block-gatherpress-modal-content' );
-
-				if (
-					modalContent &&
-				'function' === typeof modalContent.cleanupFocusTrap
-				) {
-					modalContent.cleanupFocusTrap();
-				}
-
-				// Clean up close handlers if applicable.
-				if (
-					modalContent &&
-				'function' === typeof modalContent.cleanupCloseHandlers
-				) {
-					modalContent.cleanupCloseHandlers();
+				if ( modal.open ) {
+					modal.close();
 				}
 
 				// Return focus to the open modal trigger only when fully closing.
@@ -322,5 +267,75 @@ const { actions } = store( 'gatherpress', {
 				actions.closeModal( event );
 			}
 		} ),
+		/**
+		 * Closes the modal when its overlay is clicked.
+		 *
+		 * The dialog spans the viewport behind the modal's content, so a
+		 * click that lands on the dialog itself is a click outside the content.
+		 *
+		 * @since TBD
+		 *
+		 * @param {MouseEvent} event The click event.
+		 *
+		 * @return {void}
+		 */
+		closeModalOnOverlay: withSyncEvent( ( event ) => {
+			if ( event.target === event.currentTarget ) {
+				actions.closeModal( event );
+			}
+		} ),
+	},
+	callbacks: {
+		/**
+		 * Makes a modal the server opened on page load a modal dialog.
+		 *
+		 * The server opens the modal a reload asks for with the `open`
+		 * attribute, which leaves it non-modal. With JavaScript it reopens
+		 * with showModal(), so it traps focus and closes on Escape like any
+		 * other modal. The no-JavaScript overlay button steps aside for the
+		 * overlay click handler, and the query arg comes off the URL so a
+		 * reload does not open the modal again. A modal inside a hidden RSVP
+		 * status closes instead, so openModal() can show it when its status
+		 * shows.
+		 *
+		 * @since TBD
+		 *
+		 * @return {void}
+		 */
+		takeOverOpenedModal() {
+			const modal = getElement().ref;
+
+			if ( ! modal?.open ) {
+				return;
+			}
+
+			const backdrop = modal.querySelector( '.gatherpress-modal__backdrop' );
+
+			if ( backdrop ) {
+				backdrop.hidden = true;
+			}
+
+			const url = new URL( window.location.href );
+
+			url.searchParams.delete( OPEN_QUERY_ARG );
+			window.history.replaceState( window.history.state, '', url );
+
+			// As a modal dialog in a hidden RSVP status, it would make the page
+			// inert with nothing on screen.
+			if ( ! isShownWithin( modal, document.body ) ) {
+				modal.close();
+				return;
+			}
+
+			// Hydration re-inserts the dialog after init callbacks run, and moving
+			// a modal dialog drops it out of the top layer, so reopen it on the
+			// next task. An open dialog cannot become modal, so it closes first.
+			setTimeout( () => {
+				if ( modal.open ) {
+					modal.close();
+					showModal( modal );
+				}
+			}, 0 );
+		},
 	},
 } );

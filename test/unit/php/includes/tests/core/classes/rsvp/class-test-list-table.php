@@ -363,6 +363,18 @@ class Test_List_Table extends Base {
 			$date_col,
 			'Failed to assert date column is not empty.'
 		);
+
+		$comment_id = (int) $this->rsvp['comment_ID'];
+
+		$this->assertSame(
+			sprintf(
+				'%1$s at %2$s',
+				get_comment_date( 'Y/m/d', $comment_id ),
+				get_comment_date( 'g:i a', $comment_id )
+			),
+			$date_col,
+			'Failed to assert date column uses the translatable date and time formats.'
+		);
 	}
 
 	/**
