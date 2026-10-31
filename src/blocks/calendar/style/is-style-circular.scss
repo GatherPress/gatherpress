@@ -5,6 +5,7 @@
 
 .wp-block-gatherpress-calendar.is-style-circular {
 	color: var(--wp--preset--color--contrast, #000);
+
 	--gatherpress-calendar-column-gap: clamp(0.5rem, 2vw, 1rem);
 	--gatherpress-calendar-header-bg: transparent;
 	--gatherpress-calendar-header-color: var(--wp--preset--color--primary, currentColor);
