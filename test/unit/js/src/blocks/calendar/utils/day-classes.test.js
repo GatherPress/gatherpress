@@ -15,20 +15,20 @@ describe( 'getDayClassNames', () => {
 	it( 'marks today, past and future days', () => {
 		expect( getDayClassNames( { date: TODAY }, TODAY, FLAT ) ).toEqual( [
 			'gatherpress-calendar__day',
-			'is-today',
+			'gatherpress--is-today',
 		] );
 		expect(
 			getDayClassNames( { date: '2026-10-14' }, TODAY, FLAT ),
-		).toContain( 'is-past' );
+		).toContain( 'gatherpress--is-past' );
 		expect(
 			getDayClassNames( { date: '2026-10-16' }, TODAY, FLAT ),
-		).toContain( 'is-future' );
+		).toContain( 'gatherpress--is-future' );
 	} );
 
 	it( 'gives an empty cell no date classes', () => {
 		expect(
 			getDayClassNames( { date: TODAY, isEmpty: true }, TODAY, FLAT ),
-		).toEqual( [ 'gatherpress-calendar__day', 'is-empty' ] );
+		).toEqual( [ 'gatherpress-calendar__day', 'gatherpress--is-empty' ] );
 	} );
 
 	it( 'marks the entries, weekday and multi-day events', () => {
@@ -45,10 +45,10 @@ describe( 'getDayClassNames', () => {
 
 		expect( classes ).toEqual(
 			expect.arrayContaining( [
-				'has-posts',
-				'has-multi-day-event',
-				'is-weekend',
-				'is-saturday',
+				'gatherpress--has-posts',
+				'gatherpress--has-multi-day-event',
+				'gatherpress--is-weekend',
+				'gatherpress--is-saturday',
 			] ),
 		);
 		expect(
@@ -57,10 +57,10 @@ describe( 'getDayClassNames', () => {
 				TODAY,
 				FLAT,
 			),
-		).toContain( 'has-multi-day-event' );
+		).toContain( 'gatherpress--has-multi-day-event' );
 		expect(
 			getDayClassNames( { date: TODAY, posts: [ {} ] }, TODAY, FLAT ),
-		).not.toContain( 'has-multi-day-event' );
+		).not.toContain( 'gatherpress--has-multi-day-event' );
 	} );
 
 	it( 'gives the time grid the Ribbon layout', () => {
@@ -71,6 +71,6 @@ describe( 'getDayClassNames', () => {
 		).toContain( 'is-style-ribbon' );
 		expect(
 			getDayClassNames( day, TODAY, { ribbon: false, grid: true } ),
-		).toEqual( expect.arrayContaining( [ 'is-style-ribbon', 'has-time-grid' ] ) );
+		).toEqual( expect.arrayContaining( [ 'is-style-ribbon', 'gatherpress--has-time-grid' ] ) );
 	} );
 } );

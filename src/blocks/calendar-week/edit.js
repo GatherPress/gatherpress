@@ -104,7 +104,7 @@ export default memo( function Edit( {
 
 	const blockProps = useBlockProps( {
 		className: `gatherpress-calendar__week${
-			isTimeGridActive ? ' has-time-grid' : ''
+			isTimeGridActive ? ' gatherpress--has-time-grid' : ''
 		}`,
 		style: getRibbonRowsStyle( numRibbonSlots ),
 	} );

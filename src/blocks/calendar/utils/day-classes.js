@@ -29,17 +29,17 @@ export function getDayClassNames( day, today, { ribbon, grid } ) {
 
 	return [
 		'gatherpress-calendar__day',
-		day.isEmpty ? 'is-empty' : '',
-		isDated && day.date === today ? 'is-today' : '',
-		isDated && day.date < today ? 'is-past' : '',
-		isDated && day.date > today ? 'is-future' : '',
-		0 < posts.length ? 'has-posts' : '',
+		day.isEmpty ? 'gatherpress--is-empty' : '',
+		isDated && day.date === today ? 'gatherpress--is-today' : '',
+		isDated && day.date < today ? 'gatherpress--is-past' : '',
+		isDated && day.date > today ? 'gatherpress--is-future' : '',
+		0 < posts.length ? 'gatherpress--has-posts' : '',
 		posts.some( ( p ) => 1 < ( p.totalDays ?? 1 ) || p.isAllDay )
-			? 'has-multi-day-event'
+			? 'gatherpress--has-multi-day-event'
 			: '',
-		day.isWeekend ? 'is-weekend' : '',
-		day.weekday ? `is-${ day.weekday }` : '',
+		day.isWeekend ? 'gatherpress--is-weekend' : '',
+		day.weekday ? `gatherpress--is-${ day.weekday }` : '',
 		ribbon || grid ? 'is-style-ribbon' : '',
-		grid ? 'has-time-grid' : '',
+		grid ? 'gatherpress--has-time-grid' : '',
 	].filter( Boolean );
 }

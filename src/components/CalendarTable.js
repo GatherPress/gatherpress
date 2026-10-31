@@ -53,7 +53,7 @@ export function CalendarTable( {
 			{ units.map( ( unit, unitIndex ) => (
 				<table
 					key={ unitIndex }
-					className={ `gatherpress-calendar__table${ isTimeGrid ? ' has-time-grid' : '' }` }
+					className={ `gatherpress-calendar__table${ isTimeGrid ? ' gatherpress--has-time-grid' : '' }` }
 					style={ style }
 				>
 					{ captions[ unitIndex ] && (

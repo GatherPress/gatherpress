@@ -89,8 +89,8 @@ class Test_Calendar_Day extends Base {
 		);
 
 		$this->assertStringStartsWith( '<td ', $output );
-		$this->assertStringContainsString( 'is-empty', $output );
-		$this->assertStringContainsString( 'is-monday', $output );
+		$this->assertStringContainsString( 'gatherpress--is-empty', $output );
+		$this->assertStringContainsString( 'gatherpress--is-monday', $output );
 		$this->assertStringContainsString( 'data-wp-key="empty-monday"', $output );
 		$this->assertStringNotContainsString( 'data-wp-interactive', $output );
 		$this->assertStringEndsWith( '></td>', $output, 'Failed to assert an empty cell has no content.' );
@@ -129,15 +129,15 @@ class Test_Calendar_Day extends Base {
 		);
 
 		$this->assertStringContainsString( 'gatherpress-calendar__day', $output );
-		$this->assertStringContainsString( 'is-wednesday', $output );
-		$this->assertStringContainsString( 'is-past past', $output );
+		$this->assertStringContainsString( 'gatherpress--is-wednesday', $output );
+		$this->assertStringContainsString( 'gatherpress--is-past', $output );
 		$this->assertStringContainsString( 'data-wp-key="day-2020-01-15"', $output );
 		$this->assertStringContainsString( 'data-wp-interactive="gatherpress/calendar-day"', $output );
 		$this->assertStringContainsString( 'data-wp-context="{&quot;date&quot;:&quot;2020-01-15&quot;}"', $output );
 		$this->assertStringContainsString( 'data-wp-bind--aria-current="state.ariaCurrent"', $output );
 		$this->assertStringNotContainsString( 'aria-current="date"', $output );
 		$this->assertStringContainsString( '>15</p>', $output, 'Failed to assert the bound day number.' );
-		$this->assertStringNotContainsString( 'has-posts', $output );
+		$this->assertStringNotContainsString( 'gatherpress--has-posts', $output );
 	}
 
 	/**
@@ -161,7 +161,7 @@ class Test_Calendar_Day extends Base {
 		);
 
 		$this->assertStringContainsString( 'aria-current="date"', $output );
-		$this->assertStringContainsString( 'is-today', $output );
+		$this->assertStringContainsString( 'gatherpress--is-today', $output );
 		$this->assertStringContainsString(
 			'is-' . strtolower( gmdate( 'l', (int) strtotime( $today ) ) ),
 			$output,
@@ -208,10 +208,10 @@ class Test_Calendar_Day extends Base {
 
 		// An element in the day namespace without a date is not today.
 		$this->assertDoesNotMatchRegularExpression(
-			'#class="[^"]*is-today#',
+			'#class="[^"]*gatherpress--is-today#',
 			wp_interactivity_process_directives(
-				'<div data-wp-interactive="gatherpress/calendar-day" data-wp-class--is-today="state.isToday" '
-					. 'class="is-today"></div>'
+				'<div data-wp-interactive="gatherpress/calendar-day" data-wp-class--gatherpress--is-today="state.isToday" '
+					. 'class="gatherpress--is-today"></div>'
 			),
 			'Failed to assert no comparison without a date.'
 		);
@@ -260,25 +260,25 @@ class Test_Calendar_Day extends Base {
 		);
 		$output  = $this->render_day( $context );
 
-		$this->assertStringContainsString( 'has-posts', $output );
-		$this->assertStringContainsString( 'has-multi-day-event', $output );
+		$this->assertStringContainsString( 'gatherpress--has-posts', $output );
+		$this->assertStringContainsString( 'gatherpress--has-multi-day-event', $output );
 		$this->assertStringContainsString(
-			'is-weekend',
+			'gatherpress--is-weekend',
 			$output,
 			'Failed to assert Saturday 2099-10-17 is a weekend day.'
 		);
-		$this->assertStringContainsString( 'is-saturday', $output );
-		$this->assertStringContainsString( 'is-future future', $output );
+		$this->assertStringContainsString( 'gatherpress--is-saturday', $output );
+		$this->assertStringContainsString( 'gatherpress--is-future', $output );
 
 		$context['gatherpress/dayPosts'] = array( array( 'is_all_day' => true ) );
 		$this->assertStringContainsString(
-			'has-multi-day-event',
+			'gatherpress--has-multi-day-event',
 			$this->render_day( $context )
 		);
 
 		$context['gatherpress/dayPosts'] = array( array( 'total_days' => 1 ) );
 		$this->assertStringNotContainsString(
-			'has-multi-day-event',
+			'gatherpress--has-multi-day-event',
 			$this->render_day( $context )
 		);
 	}
@@ -328,7 +328,7 @@ class Test_Calendar_Day extends Base {
 
 		$this->assertStringNotContainsString( 'past', $output );
 		$this->assertStringNotContainsString( 'future', $output );
-		$this->assertStringNotContainsString( 'is-today', $output );
+		$this->assertStringNotContainsString( 'gatherpress--is-today', $output );
 
 		$block                              = $this->get_block( array() );
 		$block->parsed_block['innerBlocks'] = array( 'not a block' );

@@ -49,7 +49,7 @@ $wide-ribbon-entry: ".gatherpress-calendar__day.is-style-ribbon .wp-block-gather
 		outline-offset: 1px;
 	}
 
-	&.is-js-hovered {
+	&.gatherpress--is-js-hovered {
 		.wp-block-post-title:not(.wp-block-gatherpress-modal *) a,
 		#{$trigger} {
 			text-decoration: underline;
@@ -58,8 +58,8 @@ $wide-ribbon-entry: ".gatherpress-calendar__day.is-style-ribbon .wp-block-gather
 }
 
 // The span geometry of multi-day and all-day entries, shared by the ribbon and dots styles.
-#{$entry}.is-multi-day,
-#{$entry}.is-all-day {
+#{$entry}.gatherpress--is-multi-day,
+#{$entry}.gatherpress--is-all-day {
 	height: var(--gatherpress-entry-track-height, 1.5rem);
 	min-height: var(--gatherpress-entry-track-height, 1.5rem);
 	background: var(--gatherpress-entry-track-bg, var(--gatherpress-ribbon-bg));
@@ -72,13 +72,13 @@ $wide-ribbon-entry: ".gatherpress-calendar__day.is-style-ribbon .wp-block-gather
 	@media (forced-colors: active) {
 		border: 1px solid CanvasText;
 
-		&.is-span-start,
-		&.is-span-middle {
+		&.gatherpress--is-span-start,
+		&.gatherpress--is-span-middle {
 			border-inline-end: 0;
 		}
 
-		&.is-span-middle,
-		&.is-span-end {
+		&.gatherpress--is-span-middle,
+		&.gatherpress--is-span-end {
 			border-inline-start: 0;
 		}
 	}
@@ -88,14 +88,14 @@ $wide-ribbon-entry: ".gatherpress-calendar__day.is-style-ribbon .wp-block-gather
 		color: var(--gatherpress-calendar-ribbon-color);
 	}
 
-	&.is-span-single,
-	&:not(.is-span-start, .is-span-middle, .is-span-end) {
+	&.gatherpress--is-span-single,
+	&:not(.gatherpress--is-span-start, .gatherpress--is-span-middle, .gatherpress--is-span-end) {
 		border-radius: var(--gatherpress-entry-track-radius, 4px);
 		width: 100%;
 	}
 
 	// The start, middle and end of a span reach across the column gaps to join up.
-	&.is-span-start {
+	&.gatherpress--is-span-start {
 		border-start-start-radius: var(--gatherpress-entry-track-radius, 4px);
 		border-end-start-radius: var(--gatherpress-entry-track-radius, 4px);
 		border-start-end-radius: 0;
@@ -105,7 +105,7 @@ $wide-ribbon-entry: ".gatherpress-calendar__day.is-style-ribbon .wp-block-gather
 		padding-inline-end: #{$gap};
 	}
 
-	&.is-span-middle {
+	&.gatherpress--is-span-middle {
 		border-radius: 0;
 		width: calc(100% + (2 * #{$gap}));
 		max-width: calc(100% + (2 * #{$gap}));
@@ -113,7 +113,7 @@ $wide-ribbon-entry: ".gatherpress-calendar__day.is-style-ribbon .wp-block-gather
 		padding-inline: #{$gap};
 	}
 
-	&.is-span-end {
+	&.gatherpress--is-span-end {
 		border-start-start-radius: 0;
 		border-end-start-radius: 0;
 		border-start-end-radius: var(--gatherpress-entry-track-radius, 4px);
@@ -124,7 +124,7 @@ $wide-ribbon-entry: ".gatherpress-calendar__day.is-style-ribbon .wp-block-gather
 	}
 
 	// The span goes on in the next week row: stop at the row's end with an arrow.
-	&.is-span-continues {
+	&.gatherpress--is-span-continues {
 		margin-inline-end: 0;
 		width: calc(100% + #{$gap});
 		border-start-end-radius: 0;
@@ -145,7 +145,7 @@ $wide-ribbon-entry: ".gatherpress-calendar__day.is-style-ribbon .wp-block-gather
 	}
 
 	// The span comes from the previous week row: start at the row's start with an arrow.
-	&.is-span-continued {
+	&.gatherpress--is-span-continued {
 		margin-inline-start: 0;
 		padding-inline-start: 0.375rem;
 		border-start-start-radius: 0;
@@ -223,7 +223,7 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
 }
 
 // One day fills the whole width, so it has room for the event names at any width.
-.wp-block-gatherpress-calendar.is-view-day:not(.has-multiple-units) #{$classic-entries} {
+.wp-block-gatherpress-calendar.gatherpress--is-view-day:not(.gatherpress--has-multiple-units) #{$classic-entries} {
 	@include apply-classic-entries;
 }
 
@@ -232,8 +232,8 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
 		grid-row-start: calc(var(--gatherpress-calendar-entry-slot, 0) + 1);
 		z-index: 1;
 
-		&.is-span-start,
-		&.is-span-continued {
+		&.gatherpress--is-span-start,
+		&.gatherpress--is-span-continued {
 			z-index: 2;
 		}
 	}
@@ -241,7 +241,7 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
 
 // Wide ribbon view: full-height ribbons, with titles that run across the days of a span.
 @container calendar (width > 600px) {
-	#{$wide-ribbon-entry}:not(.is-multi-day, .is-all-day) {
+	#{$wide-ribbon-entry}:not(.gatherpress--is-multi-day, .gatherpress--is-all-day) {
 		height: auto;
 		min-height: 0;
 		padding: 0.125rem 0.375rem;
@@ -278,8 +278,8 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
 		}
 	}
 
-	#{$wide-ribbon-entry}.is-multi-day,
-	#{$wide-ribbon-entry}.is-all-day {
+	#{$wide-ribbon-entry}.gatherpress--is-multi-day,
+	#{$wide-ribbon-entry}.gatherpress--is-all-day {
 		--gatherpress-entry-track-height: 1.5rem;
 		--gatherpress-entry-track-radius: 4px;
 		--gatherpress-entry-track-bg: var(--gatherpress-ribbon-bg);
@@ -292,7 +292,7 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
 			display: none;
 		}
 
-		&.is-span-start #{$start-time} {
+		&.gatherpress--is-span-start #{$start-time} {
 			display: block;
 			font-weight: 700;
 			padding-inline: 0.375rem;
@@ -316,7 +316,7 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
 			min-width: 0;
 		}
 
-		&:not(.has-multi-col-span) {
+		&:not(.gatherpress--has-multi-col-span) {
 			overflow: hidden;
 
 			.wp-block-gatherpress-modal-manager {
@@ -332,8 +332,8 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
 	}
 
 	// A ribbon over several columns lets its title run across them.
-	#{$wide-ribbon-entry}.is-multi-day.has-multi-col-span,
-	#{$wide-ribbon-entry}.is-all-day.has-multi-col-span {
+	#{$wide-ribbon-entry}.gatherpress--is-multi-day.gatherpress--has-multi-col-span,
+	#{$wide-ribbon-entry}.gatherpress--is-all-day.gatherpress--has-multi-col-span {
 		overflow: visible;
 
 		.wp-block-gatherpress-modal-manager {
@@ -360,7 +360,7 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
 			width: max-content;
 		}
 
-		&.is-span-continues {
+		&.gatherpress--is-span-continues {
 			.wp-block-post-title:not(.wp-block-gatherpress-modal *) a,
 			#{$trigger} {
 				max-width: calc(var(--gatherpress-calendar-row-span, 1) * 100% + (var(--gatherpress-calendar-row-span, 1) - 1) * #{$gap} - 14px);
@@ -368,16 +368,16 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
 		}
 	}
 
-	#{$wide-ribbon-entry}.is-multi-day,
-	#{$wide-ribbon-entry}.is-all-day {
-		&.is-span-middle,
-		&.is-span-end {
-			&:not(.is-span-continued) #{$trigger} {
+	#{$wide-ribbon-entry}.gatherpress--is-multi-day,
+	#{$wide-ribbon-entry}.gatherpress--is-all-day {
+		&.gatherpress--is-span-middle,
+		&.gatherpress--is-span-end {
+			&:not(.gatherpress--is-span-continued) #{$trigger} {
 				opacity: 0;
 			}
 
 			// The hidden link is still in the tab order: show it while it has focus (WCAG 2.4.7).
-			&:not(.is-span-continued):focus-within #{$trigger} {
+			&:not(.gatherpress--is-span-continued):focus-within #{$trigger} {
 				opacity: 1;
 			}
 		}
@@ -406,7 +406,7 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
 		}
 	}
 
-	.gatherpress-calendar__entry:not(.is-multi-day, .is-all-day) {
+	.gatherpress-calendar__entry:not(.gatherpress--is-multi-day, .gatherpress--is-all-day) {
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -449,8 +449,8 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
 		}
 	}
 
-	.gatherpress-calendar__entry.is-multi-day,
-	.gatherpress-calendar__entry.is-all-day {
+	.gatherpress-calendar__entry.gatherpress--is-multi-day,
+	.gatherpress-calendar__entry.gatherpress--is-all-day {
 		--gatherpress-entry-track-height: 10px;
 		--gatherpress-entry-track-radius: 9999px;
 		--gatherpress-entry-track-bg: var(--gatherpress-slot-color);
@@ -482,8 +482,8 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
 	// Overrides the ribbon day's track.
 	.gatherpress-calendar__day.is-style-ribbon & {
 		.gatherpress-calendar__entry {
-			&.is-multi-day,
-			&.is-all-day {
+			&.gatherpress--is-multi-day,
+			&.gatherpress--is-all-day {
 				--gatherpress-entry-track-height: 10px;
 				--gatherpress-entry-track-radius: 9999px;
 				--gatherpress-entry-track-bg: var(--gatherpress-slot-color);
@@ -502,7 +502,7 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
 	// Not the Classic days of a view of one day: they keep the event names (see above).
 	// :where() keeps the specificity the rules had without this exception.
 	.wp-block-gatherpress-calendar-entries:where(
-		:not(.wp-block-gatherpress-calendar.is-view-day:not(.has-multiple-units) .gatherpress-calendar__day:not(.is-style-ribbon) *)
+		:not(.wp-block-gatherpress-calendar.gatherpress--is-view-day:not(.gatherpress--has-multiple-units) .gatherpress-calendar__day:not(.is-style-ribbon) *)
 	) {
 		@include apply-compact-dots;
 	}
@@ -525,8 +525,8 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
 }
 
 // A view of one day without the time grid has one column, so spans do not reach across gaps.
-.wp-block-gatherpress-calendar.is-view-day:not(.has-multiple-units, .has-time-grid) {
-	.wp-block-gatherpress-calendar-entries .gatherpress-calendar__entry.is-multi-day {
+.wp-block-gatherpress-calendar.gatherpress--is-view-day:not(.gatherpress--has-multiple-units, .gatherpress--has-time-grid) {
+	.wp-block-gatherpress-calendar-entries .gatherpress-calendar__entry.gatherpress--is-multi-day {
 		margin-inline: 0;
 		width: 100%;
 		border-radius: 4px;
@@ -542,7 +542,7 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
 }
 
 .gatherpress-calendar__day.is-style-ribbon .wp-block-gatherpress-calendar-entries {
-	.has-time-grid & {
+	.gatherpress--has-time-grid & {
 		--gatherpress-quarter-slot-height: calc(var(--gatherpress-calendar-slot-height, 48px) / 4);
 
 		display: grid;
@@ -567,7 +567,7 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
 		background-image: repeating-linear-gradient(to bottom, transparent, transparent calc(var(--gatherpress-calendar-slot-height, 48px) - 1px), color-mix(in srgb, currentcolor 8%, transparent) calc(var(--gatherpress-calendar-slot-height, 48px) - 1px), color-mix(in srgb, currentcolor 8%, transparent) var(--gatherpress-calendar-slot-height, 48px));
 		background-position: 0 calc(var(--gatherpress-num-ribbon-slots, 0) * 1.5rem);
 
-		.gatherpress-calendar__entry.is-timed-event {
+		.gatherpress-calendar__entry.gatherpress--is-timed-event {
 			grid-row: calc(var(--gatherpress-num-ribbon-slots, 0) + var(--gatherpress-event-time-row-start)) / calc(var(--gatherpress-num-ribbon-slots, 0) + var(--gatherpress-event-time-row-end));
 
 			// Fill the rows from start to end time. The entries block's flex layout sets
@@ -595,7 +595,7 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
 
 // Day columns of the time grid: the day number takes the same height as the space above the
 // first hour in the gutter, so the entries grid starts on the gutter's first hour line.
-.has-time-grid .gatherpress-calendar__day.is-style-ribbon {
+.gatherpress--has-time-grid .gatherpress-calendar__day.is-style-ribbon {
 	.gatherpress-calendar__day-number {
 		box-sizing: border-box;
 		height: $time-grid-top;

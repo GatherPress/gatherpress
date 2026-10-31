@@ -148,7 +148,7 @@ class Test_Calendar_Week extends Base {
 
 		$output = $calendar_week->render();
 
-		$this->assertStringContainsString( 'has-time-grid', $output );
+		$this->assertStringContainsString( 'gatherpress--has-time-grid', $output );
 		$this->assertStringContainsString(
 			'style="--gatherpress-num-ribbon-slots: 0;--gatherpress-ribbon-rows: initial"',
 			$output

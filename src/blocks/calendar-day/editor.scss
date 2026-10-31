@@ -1,7 +1,7 @@
 @use "sass:selector";
 
 $day: ".editor-styles-wrapper .gatherpress-calendar__day";
-$grid-day: "#{$day}.is-style-ribbon, #{$day}.has-time-grid";
+$grid-day: "#{$day}.is-style-ribbon, #{$day}.gatherpress--has-time-grid";
 $titles: ".gatherpress-modal--trigger-open, .wp-block-post-title, .wp-block-post-title a";
 $span-width: calc(var(--gatherpress-calendar-row-span, 1) * 100% + (var(--gatherpress-calendar-row-span, 1) - 1) * var(--gatherpress-calendar-column-gap, 2px));
 
@@ -112,7 +112,7 @@ $span-width: calc(var(--gatherpress-calendar-row-span, 1) * 100% + (var(--gather
 			&:not([data-row-span]),
 			&[data-row-span="1"],
 			&[data-row-span="0"],
-			&:not(.has-multi-col-span) {
+			&:not(.gatherpress--has-multi-col-span) {
 				overflow: hidden !important;
 
 				.gatherpress-calendar__entry-template {
@@ -138,7 +138,7 @@ $span-width: calc(var(--gatherpress-calendar-row-span, 1) * 100% + (var(--gather
 
 			// An entry of several columns spans into the cells next to it.
 			&[data-row-span]:not([data-row-span="1"], [data-row-span="0"]),
-			&.has-multi-col-span {
+			&.gatherpress--has-multi-col-span {
 				overflow: visible !important;
 
 				.gatherpress-calendar__entry-template {
@@ -161,10 +161,10 @@ $span-width: calc(var(--gatherpress-calendar-row-span, 1) * 100% + (var(--gather
 				}
 			}
 
-			&.is-span-middle:focus-within,
-			&.is-span-middle:has(.is-selected),
-			&.is-span-end:focus-within,
-			&.is-span-end:has(.is-selected) {
+			&.gatherpress--is-span-middle:focus-within,
+			&.gatherpress--is-span-middle:has(.is-selected),
+			&.gatherpress--is-span-end:focus-within,
+			&.gatherpress--is-span-end:has(.is-selected) {
 				.gatherpress-modal--trigger-open > *,
 				.wp-block-post-title,
 				.wp-block-post-title a {
@@ -176,7 +176,7 @@ $span-width: calc(var(--gatherpress-calendar-row-span, 1) * 100% + (var(--gather
 }
 
 // Placeholder entries stay hidden on an empty day that is not being edited.
-#{$day}.is-inactive-empty-day .wp-block-gatherpress-calendar-entries {
+#{$day}.gatherpress--is-inactive-empty-day .wp-block-gatherpress-calendar-entries {
 	display: none;
 }
 

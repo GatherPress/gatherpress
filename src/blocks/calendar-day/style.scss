@@ -43,13 +43,13 @@ $gap: var(--gatherpress-calendar-column-gap, 2px);
 	}
 
 	/* 1. Inactive / Leading / Trailing Days */
-	&.is-empty {
+	&.gatherpress--is-empty {
 		opacity: 0.15;
 		pointer-events: none;
 	}
 
 	/* 2. Days with Posts: Tokenized inset border */
-	&.has-posts {
+	&.gatherpress--has-posts {
 		box-shadow: inset 0 0 0 1px var(--gatherpress-calendar-day-has-posts-border);
 
 		.gatherpress-calendar__day-number {
@@ -58,7 +58,7 @@ $gap: var(--gatherpress-calendar-column-gap, 2px);
 	}
 
 	/* 3. Today's Date: Tokenized outline & color */
-	&.is-today {
+	&.gatherpress--is-today {
 		outline: 2px solid var(--gatherpress-calendar-day-today-outline);
 		outline-offset: -2px;
 
@@ -111,7 +111,7 @@ $gap: var(--gatherpress-calendar-column-gap, 2px);
 }
 
 /* Day View adjustments */
-.wp-block-gatherpress-calendar.is-view-day {
+.wp-block-gatherpress-calendar.gatherpress--is-view-day {
 	/* Classic / Default style days get generous padding and height */
 	.gatherpress-calendar__day:not(.is-style-ribbon) {
 		aspect-ratio: auto;

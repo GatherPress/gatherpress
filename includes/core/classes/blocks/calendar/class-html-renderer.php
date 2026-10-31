@@ -95,14 +95,14 @@ final class Html_Renderer {
 	 * @return string HTML attribute string.
 	 */
 	private function build_wrapper_attributes( string $view_type, int $unit_count, bool $is_time_grid ): string {
-		$classes = array( 'is-view-' . $view_type );
+		$classes = array( 'gatherpress--is-view-' . $view_type );
 
 		if ( $unit_count > 1 ) {
-			$classes[] = 'has-multiple-units';
+			$classes[] = 'gatherpress--has-multiple-units';
 		}
 
 		if ( $is_time_grid ) {
-			$classes[] = 'has-time-grid';
+			$classes[] = 'gatherpress--has-time-grid';
 		}
 
 		// A new key per date range makes client-side navigation mount a new
@@ -185,7 +185,7 @@ final class Html_Renderer {
 			return Utility::render_template(
 				sprintf( '%s/includes/templates/blocks/calendar/table.php', GATHERPRESS_CORE_PATH ),
 				array(
-					'table_class'   => 'gatherpress-calendar__table' . ( $is_time_grid ? ' has-time-grid' : '' ),
+					'table_class'   => 'gatherpress-calendar__table' . ( $is_time_grid ? ' gatherpress--has-time-grid' : '' ),
 					'table_style'   => $table_style,
 					'caption'       => $unit['caption'],
 					'show_weekdays' => $show_weekdays,

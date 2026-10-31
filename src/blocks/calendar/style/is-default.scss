@@ -54,7 +54,7 @@
 	width: 100%;
 	margin-inline: auto;
 
-	&.has-multiple-units.is-view-month {
+	&.gatherpress--has-multiple-units.gatherpress--is-view-month {
 		display: flex;
 		flex-wrap: wrap;
 		gap: var(--wp--style--block-gap, 1.5rem);
@@ -88,7 +88,7 @@
 
 		// When Time Grid is active: 3.25rem for the time gutter column,
 		// remaining columns for days.
-		&.has-time-grid {
+		&.gatherpress--has-time-grid {
 			grid-template-columns: 3.25rem repeat(calc(var(--gatherpress-calendar-columns, 7) - 1), minmax(0, 1fr));
 		}
 
@@ -157,7 +157,7 @@
 	}
 
 	/* Day View adjustments */
-	&.is-view-day {
+	&.gatherpress--is-view-day {
 		th {
 			aspect-ratio: auto;
 			min-height: 8.75rem;

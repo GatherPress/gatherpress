@@ -26,11 +26,11 @@
 		td {
 			border-bottom: 1px solid color-mix(in srgb, currentcolor 8%, transparent);
 
-			&.is-empty {
+			&.gatherpress--is-empty {
 				opacity: 0.2;
 			}
 
-			&.is-today {
+			&.gatherpress--is-today {
 				.gatherpress-calendar__day-number {
 					width: clamp(24px, 5vw, 32px);
 					height: clamp(24px, 5vw, 32px);

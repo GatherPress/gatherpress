@@ -151,13 +151,13 @@ const EventItem = memo( function EventItemComponent( {
 	const classNames = [
 		'gatherpress-calendar__entry',
 		postId ? `post-${ postId }` : '',
-		isAllDay ? 'is-all-day' : '',
-		isMultiDay ? 'is-multi-day' : '',
-		isTimed ? 'is-timed-event' : '',
-		span ? `is-span-${ span }` : '',
-		isContinued ? 'is-span-continued' : '',
-		isContinues ? 'is-span-continues' : '',
-		2 <= rowSpan ? 'has-multi-col-span' : '',
+		isAllDay ? 'gatherpress--is-all-day' : '',
+		isMultiDay ? 'gatherpress--is-multi-day' : '',
+		isTimed ? 'gatherpress--is-timed-event' : '',
+		span ? `gatherpress--is-span-${ span }` : '',
+		isContinued ? 'gatherpress--is-span-continued' : '',
+		isContinues ? 'gatherpress--is-span-continues' : '',
+		2 <= rowSpan ? 'gatherpress--has-multi-col-span' : '',
 		colorProps.className,
 		borderProps.className,
 	]
@@ -220,7 +220,7 @@ export default function Edit( { attributes, clientId, context } ) {
 
 	const blockProps = useBlockProps( {
 		className: `wp-block-gatherpress-calendar-entries${
-			isTimeGridActive ? ' has-time-grid' : ''
+			isTimeGridActive ? ' gatherpress--has-time-grid' : ''
 		}`,
 		style: {
 			gap: blockGap ? getGapCSSValue( blockGap ) : undefined,

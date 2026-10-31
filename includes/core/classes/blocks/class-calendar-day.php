@@ -135,9 +135,9 @@ final class Calendar_Day extends Base {
 
 		$attributes['data-wp-interactive']        = 'gatherpress/calendar-day';
 		$attributes['data-wp-context']            = (string) wp_json_encode( array( 'date' => $day_date ) );
-		$attributes['data-wp-class--is-today']    = 'state.isToday';
-		$attributes['data-wp-class--is-past']     = 'state.isPast';
-		$attributes['data-wp-class--is-future']   = 'state.isFuture';
+		$attributes['data-wp-class--gatherpress--is-today']    = 'state.isToday';
+		$attributes['data-wp-class--gatherpress--is-past']     = 'state.isPast';
+		$attributes['data-wp-class--gatherpress--is-future']   = 'state.isFuture';
 		$attributes['data-wp-bind--aria-current'] = 'state.ariaCurrent';
 
 		return $attributes;
@@ -147,9 +147,10 @@ final class Calendar_Day extends Base {
 	 * Register the server values of the day state that the cell directives read.
 	 *
 	 * The server processes the directives of the cell when it renders the page. Without these
-	 * values it would remove the is-today, is-past and is-future classes and aria-current that
-	 * PHP set. The server uses the site's date; the view script then uses the visitor's date
-	 * (calendar-day/view.js), which can be another day near midnight.
+	 * values it would remove the gatherpress--is-today, gatherpress--is-past and
+	 * gatherpress--is-future classes and aria-current that PHP set. The server uses the site's
+	 * date; the view script then uses the visitor's date (calendar-day/view.js), which can be
+	 * another day near midnight.
 	 *
 	 * @since TBD
 	 *
@@ -227,25 +228,25 @@ final class Calendar_Day extends Base {
 		$day_posts = $this->get_context_array( 'gatherpress/dayPosts' );
 
 		if ( $is_empty ) {
-			$classes[] = 'is-empty';
+			$classes[] = 'gatherpress--is-empty';
 		}
 
 		if ( ! empty( $day_posts ) ) {
-			$classes[] = 'has-posts';
+			$classes[] = 'gatherpress--has-posts';
 
 			if ( $this->has_multi_day_event( $day_posts ) ) {
-				$classes[] = 'has-multi-day-event';
+				$classes[] = 'gatherpress--has-multi-day-event';
 			}
 		}
 
 		list( $weekday, $is_weekend ) = $this->resolve_weekday_and_weekend();
 
 		if ( $is_weekend ) {
-			$classes[] = 'is-weekend';
+			$classes[] = 'gatherpress--is-weekend';
 		}
 
 		if ( '' !== $weekday ) {
-			$classes[] = 'is-' . sanitize_html_class( strtolower( $weekday ) );
+			$classes[] = 'gatherpress--is-' . sanitize_html_class( strtolower( $weekday ) );
 		}
 
 		if ( ! $is_empty ) {
@@ -278,7 +279,7 @@ final class Calendar_Day extends Base {
 	}
 
 	/**
-	 * Resolve temporal CSS classes (is-today, past, future).
+	 * Resolve temporal CSS classes (today, past, future).
 	 *
 	 * @since TBD
 	 *
@@ -294,12 +295,12 @@ final class Calendar_Day extends Base {
 		$today = (string) wp_date( Date_Range::DATE_FORMAT );
 
 		if ( $day_date === $today ) {
-			return array( 'is-today' );
+			return array( 'gatherpress--is-today' );
 		}
 
 		return $day_date < $today
-			? array( 'is-past', 'past' )
-			: array( 'is-future', 'future' );
+			? array( 'gatherpress--is-past' )
+			: array( 'gatherpress--is-future' );
 	}
 
 	/**

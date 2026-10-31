@@ -156,7 +156,7 @@ final class Calendar_Week extends Base {
 
 		$wrapper_attributes = get_block_wrapper_attributes(
 			array(
-				'class'       => 'gatherpress-calendar__week' . ( $is_time_grid ? ' has-time-grid' : '' ),
+				'class'       => 'gatherpress-calendar__week' . ( $is_time_grid ? ' gatherpress--has-time-grid' : '' ),
 				'style'       => $this->get_ribbon_rows_style(),
 				'data-wp-key' => $this->get_row_key(),
 			)

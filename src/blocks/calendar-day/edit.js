@@ -138,7 +138,7 @@ export default memo( function Edit( {
 			formatSiteDate( 'Y-m-d' ),
 			{ ribbon: isRibbon, grid: isTimeGridActive },
 		),
-		! isDayActive && 0 === posts.length ? 'is-inactive-empty-day' : '',
+		! isDayActive && 0 === posts.length ? 'gatherpress--is-inactive-empty-day' : '',
 	]
 		.filter( Boolean )
 		.join( ' ' );

@@ -23,15 +23,15 @@
 		td {
 			background: var(--wp--preset--color--base, canvas);
 
-			&.is-empty {
+			&.gatherpress--is-empty {
 				background: color-mix(in srgb, currentcolor 15%, transparent);
 			}
 
-			&.has-posts {
+			&.gatherpress--has-posts {
 				background: var(--wp--preset--color--base, canvas);
 			}
 
-			&.is-today {
+			&.gatherpress--is-today {
 				// The entries use the same color as the day number, or they sit at 1:1 on the fill.
 				--gatherpress-calendar-title-color: var(--gatherpress-calendar-day-today-color);
 				--gatherpress-calendar-time-color: var(--gatherpress-calendar-day-today-color);

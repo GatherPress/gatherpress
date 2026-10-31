@@ -138,7 +138,7 @@ class Test_Calendar_Entries extends Base {
 			array( 'gatherpress/timeGridConfig' => new Time_Grid( true ) )
 		);
 
-		$this->assertStringContainsString( 'has-time-grid', $output );
+		$this->assertStringContainsString( 'gatherpress--has-time-grid', $output );
 		$this->assertStringEndsWith( '></div>', $output, 'Failed to assert an empty time grid column.' );
 	}
 
@@ -190,11 +190,11 @@ class Test_Calendar_Entries extends Base {
 		);
 		$this->assertStringContainsString( 'Plain Calendar Post', $output );
 		$this->assertStringContainsString( 'Calendar Entries Test Event', $output );
-		$this->assertStringContainsString( 'is-span-middle', $output );
-		$this->assertStringContainsString( 'is-multi-day', $output );
-		$this->assertStringContainsString( 'is-span-continued', $output );
-		$this->assertStringContainsString( 'is-span-continues', $output );
-		$this->assertStringContainsString( 'has-multi-col-span', $output );
+		$this->assertStringContainsString( 'gatherpress--is-span-middle', $output );
+		$this->assertStringContainsString( 'gatherpress--is-multi-day', $output );
+		$this->assertStringContainsString( 'gatherpress--is-span-continued', $output );
+		$this->assertStringContainsString( 'gatherpress--is-span-continues', $output );
+		$this->assertStringContainsString( 'gatherpress--has-multi-col-span', $output );
 		$this->assertStringContainsString(
 			'data-span="middle" data-day-index="2" data-total-days="3" data-slot="1" data-row-span="2"',
 			$output
@@ -238,7 +238,7 @@ class Test_Calendar_Entries extends Base {
 			)
 		);
 
-		$this->assertStringContainsString( 'is-timed-event', $output );
+		$this->assertStringContainsString( 'gatherpress--is-timed-event', $output );
 		$this->assertStringContainsString(
 			'--gatherpress-event-time-row-start: 9; --gatherpress-event-time-row-end: 13; '
 				. '--gatherpress-overlap-total: 2; --gatherpress-overlap-index: 1;',
@@ -256,10 +256,10 @@ class Test_Calendar_Entries extends Base {
 			)
 		);
 
-		$this->assertStringContainsString( 'is-all-day', $output );
-		$this->assertStringContainsString( 'is-multi-day', $output, 'Failed to assert all-day events are ribbons.' );
+		$this->assertStringContainsString( 'gatherpress--is-all-day', $output );
+		$this->assertStringContainsString( 'gatherpress--is-multi-day', $output, 'Failed to assert all-day events are ribbons.' );
 		$this->assertStringNotContainsString(
-			'is-timed-event',
+			'gatherpress--is-timed-event',
 			$output,
 			'Failed to assert a timed entry needs its rows.'
 		);
@@ -602,7 +602,7 @@ class Test_Calendar_Entries extends Base {
 		$block          = new WP_Block( array( 'blockName' => Calendar_Entries::BLOCK_NAME ) );
 		$block->context = array( 'gatherpress/timeGridConfig' => new Time_Grid( true ) );
 
-		$this->assertStringContainsString( 'has-time-grid', $instance->render( array(), $block ) );
+		$this->assertStringContainsString( 'gatherpress--has-time-grid', $instance->render( array(), $block ) );
 
 		$block->context = array( 'gatherpress/dayPosts' => array( $this->mock->post()->get()->ID ) );
 		$output         = $instance->render( array(), $block );

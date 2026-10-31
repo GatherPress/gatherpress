@@ -49,7 +49,7 @@ function CalendarWeekPreviewComponent( {
 
 	const classNames = [
 		'gatherpress-calendar__week',
-		isTimeGrid ? 'has-time-grid' : '',
+		isTimeGrid ? 'gatherpress--has-time-grid' : '',
 		colorProps.className,
 	]
 		.filter( Boolean )

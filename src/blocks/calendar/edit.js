@@ -259,9 +259,9 @@ export default function Edit( {
 	}, [ calendar, activeDate ] );
 
 	const blockClasses = [
-		`is-view-${ viewType }`,
-		1 < dateRange.unitCount ? 'has-multiple-units' : '',
-		isTimeGridActive ? 'has-time-grid' : '',
+		`gatherpress--is-view-${ viewType }`,
+		1 < dateRange.unitCount ? 'gatherpress--has-multiple-units' : '',
+		isTimeGridActive ? 'gatherpress--has-time-grid' : '',
 	]
 		.filter( Boolean )
 		.join( ' ' );

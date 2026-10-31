@@ -91,13 +91,13 @@
 				}
 			}
 
-			&.is-empty {
+			&.gatherpress--is-empty {
 				background: transparent;
 				opacity: 0;
 				pointer-events: none;
 			}
 
-			&.is-today {
+			&.gatherpress--is-today {
 				background: color-mix(in srgb, currentcolor 23%, transparent);
 
 				.wp-block-gatherpress-calendar-entries .gatherpress-calendar__entry {

@@ -152,7 +152,7 @@ final class Calendar_Entries {
 
 		$wrapper_attributes = get_block_wrapper_attributes(
 			array(
-				'class' => $is_time_grid ? 'has-time-grid' : '',
+				'class' => $is_time_grid ? 'gatherpress--has-time-grid' : '',
 				'style' => '' !== $grid_gap ? sprintf( 'gap: %s', $grid_gap ) : '',
 			)
 		);
@@ -277,7 +277,7 @@ final class Calendar_Entries {
 		$timed_style   = $this->build_timed_event_style( $span_data );
 
 		if ( '' !== $timed_style ) {
-			$extra_classes[] = 'is-timed-event';
+			$extra_classes[] = 'gatherpress--is-timed-event';
 		}
 
 		$classnames = trim( $entry_styles['classnames'] . ' ' . implode( ' ', $extra_classes ) );
@@ -346,27 +346,27 @@ final class Calendar_Entries {
 		$classes    = array();
 
 		if ( is_string( $span_data['span'] ?? null ) && '' !== $span_data['span'] ) {
-			$classes[] = 'is-span-' . sanitize_html_class( $span_data['span'] );
+			$classes[] = 'gatherpress--is-span-' . sanitize_html_class( $span_data['span'] );
 		}
 
 		if ( $is_all_day ) {
-			$classes[] = 'is-all-day';
+			$classes[] = 'gatherpress--is-all-day';
 		}
 
 		if ( $this->get_int( $span_data, 'total_days', 1 ) > 1 || $is_all_day ) {
-			$classes[] = 'is-multi-day';
+			$classes[] = 'gatherpress--is-multi-day';
 		}
 
 		if ( ! empty( $span_data['is_continued'] ) ) {
-			$classes[] = 'is-span-continued';
+			$classes[] = 'gatherpress--is-span-continued';
 		}
 
 		if ( ! empty( $span_data['is_continues'] ) ) {
-			$classes[] = 'is-span-continues';
+			$classes[] = 'gatherpress--is-span-continues';
 		}
 
 		if ( $row_span >= 2 ) {
-			$classes[] = 'has-multi-col-span';
+			$classes[] = 'gatherpress--has-multi-col-span';
 		}
 
 		return $classes;
@@ -414,8 +414,8 @@ final class Calendar_Entries {
 			. ' data-wp-on--mouseleave="actions.unhoverEvent"'
 			. ' data-wp-on--focusin="actions.focusEvent"'
 			. ' data-wp-on--focusout="actions.unfocusEvent"'
-			. ' data-wp-class--is-js-hovered="callbacks.isEventHovered"'
-			. ' data-wp-class--is-js-focused="callbacks.isEventFocused"';
+			. ' data-wp-class--gatherpress--is-js-hovered="callbacks.isEventHovered"'
+			. ' data-wp-class--gatherpress--is-js-focused="callbacks.isEventFocused"';
 	}
 
 	/**

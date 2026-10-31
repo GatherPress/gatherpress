@@ -165,8 +165,8 @@ class Test_Calendar extends Base {
 			)
 		);
 
-		$this->assertStringContainsString( 'is-view-week', $output );
-		$this->assertStringContainsString( 'has-multiple-units', $output );
+		$this->assertStringContainsString( 'gatherpress--is-view-week', $output );
+		$this->assertStringContainsString( 'gatherpress--has-multiple-units', $output );
 		$this->assertStringContainsString( '<thead class="gatherpress--screen-reader-text">', $output );
 		$this->assertStringContainsString(
 			'<th scope="col" class="gatherpress--screen-reader-text">Week</th>',
@@ -195,7 +195,7 @@ class Test_Calendar extends Base {
 			)
 		);
 
-		$this->assertStringContainsString( 'is-view-day', $output );
+		$this->assertStringContainsString( 'gatherpress--is-view-day', $output );
 		$this->assertStringNotContainsString( 'Week', $output );
 		$this->assertStringContainsString(
 			'<th scope="col">Thu</th><th scope="col">Fri</th><th scope="col">Sat</th>',
@@ -226,7 +226,7 @@ class Test_Calendar extends Base {
 			)
 		);
 
-		$this->assertStringContainsString( 'has-time-grid', $output );
+		$this->assertStringContainsString( 'gatherpress--has-time-grid', $output );
 		$this->assertStringContainsString( 'gatherpress-calendar__time-gutter-header', $output );
 		$this->assertStringContainsString( '--gatherpress-total-quarter-slots: 48', $output );
 		$this->assertStringContainsString(
