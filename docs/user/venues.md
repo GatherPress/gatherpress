@@ -18,7 +18,7 @@ The Venue block allows you to add/edit:
 - Phone number  
 - Website  
 - Whether you want to display the map, with its zoom level and map height  
-- Latitude / Longitude are filled by default, but you can use custom ones
+- Latitude and longitude, found from the full address. For a venue without a street address, like a park entrance or a trailhead, turn on **Set coordinates manually** in the venue settings and enter them yourself. The address then no longer moves the map pin.
 
 Standard content blocks allow you to add any other content.
 
@@ -97,4 +97,4 @@ Drop the snippet into a must-use plugin, a site-specific plugin, or your theme's
 
 ### Privacy of static map URLs
 
-Because static maps live under `wp-content/uploads/gatherpress/static-maps/`, anyone with the direct URL can fetch one. The same is true of any image in your uploads directory. To keep those URLs from being guessable, each filename includes a random per-venue salt generated the first time a map is rendered; two different venues at the same address produce different filenames. If you need stronger isolation (for example, venues whose coordinates should stay hidden until the event is public), restrict access to the static-maps subdirectory with an `.htaccess` or Nginx rule, or keep the venue unpublished until you're ready.
+Because static maps live under `wp-content/uploads/gatherpress/static-maps/`, anyone with the direct URL can fetch one. The same is true of any image in your uploads directory. Each filename is built from the venue's address and coordinates, the map provider and type, the zoom and the size, so anyone who knows those can work out the URL. Two venues with the same address and coordinates share one image. If you need stronger isolation (for example, venues whose coordinates should stay hidden until the event is public), restrict access to the static-maps subdirectory with an `.htaccess` or Nginx rule, or keep the venue unpublished until you're ready.

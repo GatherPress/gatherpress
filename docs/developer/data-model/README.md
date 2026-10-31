@@ -56,6 +56,8 @@ The two limit keys are enforced server-side on every write, including from WP-CL
 
 Five keys are editor-writable, registered `show_in_rest` so they can be bound to blocks through `core/post-meta`: `gatherpress_address`, `gatherpress_latitude`, `gatherpress_longitude`, `gatherpress_phone`, `gatherpress_website`.
 
+`gatherpress_manual_coordinates` is an editor-writable boolean. While it is true, the coordinates are set by hand: neither the editor nor the geocode cron overwrites `gatherpress_latitude` and `gatherpress_longitude` from the address.
+
 Eight more hold the structured address the geocoder derives from `gatherpress_address`: `gatherpress_house_number`, `gatherpress_street`, `gatherpress_city`, `gatherpress_county`, `gatherpress_state`, `gatherpress_postcode`, `gatherpress_country`, `gatherpress_country_code`. These are readable over REST but **not writable**. REST writes are silently stripped, because the geocode cron owns them. Write `gatherpress_address` and let the cron fill the rest.
 
 Both lists exist as constants (`Venue\Meta::EDITOR_WRITABLE_FIELDS` and `::STRUCTURED_ADDRESS_FIELDS`) and are the single source of truth. Read them rather than retyping the keys.

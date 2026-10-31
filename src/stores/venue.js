@@ -6,7 +6,6 @@ import { createReduxStore, register } from '@wordpress/data';
 const DEFAULT_STATE = {
 	latitude: 0,
 	longitude: 0,
-	mapCustomLatLong: false,
 };
 
 const actions = {
@@ -47,9 +46,6 @@ const selectors = {
 	},
 	getVenueLongitude( state ) {
 		return state.longitude;
-	},
-	getMapCustomLatLong( state ) {
-		return state.mapCustomLatLong;
 	},
 };
 
