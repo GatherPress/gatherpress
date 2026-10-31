@@ -30,6 +30,7 @@
 	--gatherpress-calendar-title-color: var(--wp--preset--color--contrast, #000);
 	--gatherpress-calendar-focus-outline-color: var(--wp--preset--color--contrast, #000);
 	--gatherpress-calendar-ribbon-color: var(--wp--preset--color--base, #fff);
+	--gatherpress-calendar-dot-contrast-color: var(--wp--preset--color--contrast, #000);
 	--gatherpress-calendar-ribbon-color-intensity: 42%;
 	--gatherpress-calendar-ribbon-mix-target: var(--wp--preset--color--contrast, #000);
 
@@ -92,10 +93,10 @@
 	.wp-block-gatherpress-calendar-entries.is-style-dots {
 		.gatherpress-modal--trigger-open:not(.wp-block-gatherpress-modal *) > * {
 			box-shadow: 0 2px 6px rgb(0 0 0 / 20%);
-			border: 2px solid var(--wp--preset--color--contrast, #000);
+			border: 2px solid var(--gatherpress-calendar-dot-contrast-color);
 
 			&:hover {
-				background: var(--wp--preset--color--contrast, #000);
+				background: var(--gatherpress-calendar-dot-contrast-color);
 				transform: scale(1.3);
 				box-shadow: 0 4px 12px rgb(0 0 0 / 30%);
 			}
