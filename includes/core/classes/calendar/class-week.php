@@ -104,7 +104,7 @@ final class Week {
 		/**
 		 * Filters which days of the week are weekend days, for a site in a region with a different weekend.
 		 *
-		 * Defaults to Sunday (0) and Saturday (6). Weekend days get the `is-weekend` class, and the
+		 * Defaults to Sunday (0) and Saturday (6). Weekend days get the `gatherpress--is-weekend` class, and the
 		 * calendar hides them when Show Weekends is off.
 		 *
 		 * Across different cultures, religions, and regions, the weekend days vary significantly:

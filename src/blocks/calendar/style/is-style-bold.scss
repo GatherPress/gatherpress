@@ -1,0 +1,73 @@
+/* ======================================================================
+    BLOCK STYLE: Bold
+    Heavy contrast graphic style with thick borders and 900 typography.
+    ====================================================================== */
+
+.wp-block-gatherpress-calendar.is-style-bold {
+	--gatherpress-calendar-column-gap: clamp(2px, 0.5vw, 4px);
+	--gatherpress-calendar-header-color: var(--wp--preset--color--base, canvas);
+	--gatherpress-calendar-day-today-outline: transparent;
+	--gatherpress-calendar-day-today-color: var(--wp--preset--color--base, #fff);
+	--gatherpress-calendar-ribbon-mix-target: currentcolor;
+
+	.gatherpress-calendar__table {
+		gap: var(--gatherpress-calendar-column-gap);
+		background: currentcolor;
+		border: clamp(2px, 0.5vw, 4px) solid currentcolor;
+
+		th {
+			font-weight: 900;
+			letter-spacing: 0.08em;
+		}
+
+		td {
+			background: var(--wp--preset--color--base, canvas);
+
+			&.gatherpress--is-empty {
+				background: color-mix(in srgb, currentcolor 15%, transparent);
+			}
+
+			&.gatherpress--has-posts {
+				background: var(--wp--preset--color--base, canvas);
+			}
+
+			&.gatherpress--is-today {
+				// The entries use the same color as the day number, or they sit at 1:1 on the fill.
+				--gatherpress-calendar-title-color: var(--gatherpress-calendar-day-today-color);
+				--gatherpress-calendar-time-color: var(--gatherpress-calendar-day-today-color);
+
+				background: var(--wp--preset--color--primary, currentColor);
+				box-shadow: inset 0 0 0 clamp(2px, 0.5vw, 4px) color-mix(in srgb, var(--wp--preset--color--base, #fff) 35%, transparent);
+
+				.gatherpress-calendar__day-number,
+				.wp-block-gatherpress-calendar-entries .gatherpress-calendar__entry,
+				.wp-block-gatherpress-calendar-entries .gatherpress-calendar__entry a {
+					color: var(--gatherpress-calendar-day-today-color);
+				}
+			}
+		}
+	}
+
+	.gatherpress-calendar__day-number {
+		font-weight: 900;
+		color: currentcolor;
+	}
+
+	/* ======================================================================
+		BLOCK STYLE: Dots
+		====================================================================== */
+	.wp-block-gatherpress-calendar-entries.is-style-dots {
+		.gatherpress-modal--trigger-open:not(.wp-block-gatherpress-modal *) > * {
+			width: clamp(12px, 2.8vw, 16px);
+			height: clamp(12px, 2.8vw, 16px);
+			min-width: clamp(12px, 2.8vw, 16px);
+			min-height: clamp(12px, 2.8vw, 16px);
+			border: 2px solid var(--wp--preset--color--base, #fff);
+			box-shadow: 0 2px 4px color-mix(in srgb, currentcolor 30%, transparent);
+
+			&:hover {
+				transform: scale(1.2) rotate(45deg);
+			}
+		}
+	}
+}

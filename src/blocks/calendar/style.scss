@@ -1,0 +1,21 @@
+/**
+ * Calendar Block Styles
+ *
+ * CSS-first approach with progressive enhancement.
+ * Leverages modern CSS features:
+ * - Container queries for responsive behavior
+ * - CSS Grid for layout
+ * - Intrinsic sizing with clamp()
+ * - aspect-ratio for consistent shapes
+ *
+ * @package GatherPress\Core
+ * @since TBD
+ */
+@use "style/is-default";
+@use "style/is-style-minimal";
+@use "style/is-style-bold";
+@use "style/is-style-circular";
+@use "style/is-style-gradient";
+@use "style/container-queries";
+@use "style/media-queries";
+@use "style/print";

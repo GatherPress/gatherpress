@@ -14,6 +14,7 @@ use GatherPress\Core\Event\Admin_List;
 use GatherPress\Core\Event\Meta;
 use GatherPress\Core\Event\Query;
 use GatherPress\Core\Event\Rest_Api;
+use GatherPress\Core\Event\Scheduler;
 use GatherPress\Core\Event\Setup;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Shadow_Source;
@@ -86,6 +87,10 @@ class Test_Setup extends Base {
 			Rest_Api::class   => array(
 				'rest_api_init',
 				array( Rest_Api::get_instance(), 'register_endpoints' ),
+			),
+			Scheduler::class  => array(
+				'transition_post_status',
+				array( Scheduler::get_instance(), 'handle_transition_post_status' ),
 			),
 		);
 

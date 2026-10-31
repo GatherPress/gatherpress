@@ -27,6 +27,7 @@
 - Open RSVP support (non-logged-in users)
 - Attendees can bring guests
 - Email notifications for attendees and non-attendees
+- Event calendar blocks (month, week and day views)
 - Online and in-person event support (with mapping)
 - Full block editor support
 - Multisite-ready and fully internationalized

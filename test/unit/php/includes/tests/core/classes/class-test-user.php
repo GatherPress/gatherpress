@@ -317,6 +317,7 @@ class Test_User extends Base {
 	 * Coverage for timezone getter
 	 *
 	 * @covers ::user_set_timezone
+	 * @covers ::get_saved_timezone
 	 *
 	 * @return void
 	 */
@@ -333,6 +334,29 @@ class Test_User extends Base {
 			'Hammer Time',
 			$instance->user_set_timezone( 'ET-or-whatever' )
 		);
+		$this->assertSame( 'Hammer Time', $instance->get_saved_timezone() );
+	}
+
+	/**
+	 * The saved timezone is empty when logged out and in the admin.
+	 *
+	 * @covers ::get_saved_timezone
+	 *
+	 * @return void
+	 */
+	public function test_get_saved_timezone_outside_the_frontend(): void {
+		$instance = User::get_instance();
+		$user     = $this->mock->user( true )->get();
+
+		update_user_meta( $user->ID, 'gatherpress_timezone', 'Europe/London' );
+		set_current_screen( 'dashboard' );
+
+		$this->assertSame( '', $instance->get_saved_timezone(), 'The admin has no saved timezone.' );
+
+		set_current_screen( 'front' );
+		wp_set_current_user( 0 );
+
+		$this->assertSame( '', $instance->get_saved_timezone(), 'A logged-out visitor has no saved timezone.' );
 	}
 
 	/**
