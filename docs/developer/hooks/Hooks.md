@@ -21,6 +21,10 @@
 
 - [`gatherpress_calendar_external_max_age`](gatherpress_calendar_external_max_age.md) Filters how long calendar responses may be reused by clients and caches.
 
+## class-calendar-entries.php
+
+- [`gatherpress_calendar_entry_render`](gatherpress_calendar_entry_render.md) Fires before the calendar renders the entry template of one event.
+
 ## class-email.php
 
 - [`gatherpress_email_subject`](gatherpress_email_subject.md) Filters the subject of an event email.
