@@ -18,6 +18,8 @@ import ResponseFilter from './response-filter';
  *
  * An empty value drops its parameter, which is how a filter is removed, and
  * paging resets because the current page rarely exists in the narrower result.
+ * A row action leaves its action, RSVP and nonce in the URL; they are dropped
+ * so filtering does not run that action again.
  *
  * @since 0.36.0
  *
@@ -35,6 +37,10 @@ export function buildFilterUrl( href, postId, responses, checkIn = '' ) {
 		'response',
 		'check_in',
 		'paged',
+		'action',
+		'action2',
+		'gatherpress_rsvp_id',
+		'_wpnonce',
 	);
 	const args = {};
 
