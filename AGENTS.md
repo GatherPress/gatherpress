@@ -39,6 +39,7 @@ When referring to people who interact with a GatherPress site, use these terms c
 
 - `npm run test:e2e` - Run Playwright end-to-end tests
 - `npm run test:unit:php` - Run PHP unit tests with coverage (requires wp-env)
+- `npm run test:unit:php:pure` - Run pure PHP unit tests without WordPress (runs bare PHPUnit in milliseconds)
 - `npm run test:unit:js` - Run JavaScript unit tests with coverage
 
 ### WordPress Environment
@@ -184,10 +185,18 @@ add_filter( 'gatherpress_venue_post_type', function( $post_type, $event_post_typ
 
 ### Testing Structure
 
-- **PHP tests**: `test/unit/php/` using PHPUnit
+- **PHP tests (integration)**: `test/unit/php/` using PHPUnit and PMC Unit Test framework (requires wp-env)
+- **PHP tests (pure logic)**: `test/unit/php-pure/` using bare PHPUnit without WordPress (pure domain and validation logic)
 - **JavaScript tests**: `test/unit/js/` using Jest
 - **E2E tests**: `test/e2e/` using Playwright
-- Test configuration: `phpunit.xml.dist`, `jest.config.js`, `playwright.config.js`
+- Test configuration: `phpunit.xml.dist` (integration), `phpunit-pure.xml.dist` (pure unit tests), `jest.config.js`, `playwright.config.js`
+
+#### PHP Testing Philosophy
+
+Mirroring the JavaScript testing strategy, separate pure domain/utility logic from WordPress-coupled execution:
+
+- **Pure logic → `test/unit/php-pure/`**: For self-contained validators, helpers, and domain classes that do not require WordPress runtime or database. These tests run in milliseconds without environment spin-up (`npm run test:unit:php:pure`).
+- **WordPress behavior → `test/unit/php/`**: For classes that interact with WordPress post types, taxonomies, options, hooks, or REST endpoints (`npm run test:unit:php`).
 
 ### Dependencies
 
