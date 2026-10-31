@@ -10,6 +10,7 @@
 	--gatherpress-calendar-header-bg: transparent;
 	--gatherpress-calendar-header-color: var(--wp--preset--color--primary, currentColor);
 	--gatherpress-calendar-day-bg: color-mix(in srgb, currentcolor 8%, transparent);
+	--gatherpress-calendar-day-color: var(--wp--preset--color--contrast, #000);
 	--gatherpress-calendar-day-has-posts-border: transparent;
 	--gatherpress-calendar-day-today-outline: transparent;
 	--gatherpress-calendar-day-today-color: var(--wp--preset--color--base, #fff);
