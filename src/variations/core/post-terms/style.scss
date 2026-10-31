@@ -36,11 +36,11 @@
 	line-height: 1.2;
 	letter-spacing: 0.03em;
 
-	// Badge styling applies to the default variation appearance (when no other
-	// theme block style is chosen) or explicitly when is-style-gatherpress-badge or is-style-default is selected.
-	&:not([class*="is-style-"]),
-	&.is-style-default,
-	&.is-style-gatherpress-badge {
+	// Badge styling applies to every style but Dot, so a theme style with no
+	// style data still looks like a status. A theme style with data gets its
+	// own rule from `Setup::add_theme_status_styles()`, which wins because
+	// `:where()` keeps this selector one class lighter.
+	&:where(:not(.is-style-gatherpress-dot)) {
 		.gatherpress-event-status__term,
 		> a[rel="tag"] {
 			display: inline-flex;
@@ -101,32 +101,6 @@
 				border-radius: 50%;
 				background-color: var(--gatherpress-status-color, currentcolor);
 			}
-		}
-
-		.wp-block-post-terms__separator {
-			display: none;
-		}
-	}
-
-	// Pill shape and theme style variations: when a theme block style (e.g. TT5 post-terms-1 or TT4 pill)
-	// styles terms, ensure unlinked status terms (<span>) receive the pill shape and styling.
-	&[class*="is-style-post-terms-"],
-	&[class*="is-style-pill"] {
-		.gatherpress-event-status__term,
-		> a[rel="tag"] {
-			display: inline-flex;
-			align-items: center;
-			gap: 0.45em;
-			padding: 5px 10px;
-			border-radius: 20px;
-			border: 0.8px solid var(--wp--preset--color--accent-6, currentColor);
-			font-size: inherit;
-			font-weight: 400;
-			line-height: inherit;
-			letter-spacing: inherit;
-			font-style: inherit;
-			text-decoration: none;
-			color: inherit;
 		}
 
 		.wp-block-post-terms__separator {

@@ -68,6 +68,15 @@ final class Setup {
 	protected array $pending_datetimes = array();
 
 	/**
+	 * Whether the theme Post Terms style rules were added in this request.
+	 *
+	 * @since TBD
+	 *
+	 * @var bool
+	 */
+	protected bool $theme_status_styles_added = false;
+
+	/**
 	 * Class constructor.
 	 *
 	 * Instantiates the sibling Event\* singletons before wiring hooks so
@@ -131,6 +140,7 @@ final class Setup {
 		add_filter( 'get_term', array( $this, 'filter_event_status_term' ), 10, 2 );
 		add_filter( 'get_block_type_variations', array( $this, 'filter_post_terms_block_variations' ), 10, 2 );
 		add_action( 'init', array( $this, 'register_status_style' ) );
+		add_action( 'enqueue_block_assets', array( $this, 'add_theme_status_styles' ) );
 	}
 
 	/**
@@ -330,6 +340,75 @@ final class Setup {
 
 		if ( '' !== $rules ) {
 			wp_add_inline_style( $handle, $rules );
+		}
+	}
+
+	/**
+	 * Give the status the look of the theme's own Post Terms styles.
+	 *
+	 * A theme style such as the Twenty Twenty-Five Pill shape styles the links
+	 * of the Post Terms block, and a status is text, so that CSS never reaches
+	 * it. This reads the style data, including changes made in the Site
+	 * Editor, and prints it again for the status. A style with no data, such
+	 * as one a theme adds only as CSS, keeps the Badge look from the
+	 * stylesheet. The hover state is left out, because a status is not a link.
+	 *
+	 * The rules come from saved data, so in the Site Editor a change to the
+	 * style shows on the status after the change is saved and the page reloads.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function add_theme_status_styles(): void {
+		// The editor fires enqueue_block_assets a second time for its iframe.
+		if ( $this->theme_status_styles_added ) {
+			return;
+		}
+
+		$this->theme_status_styles_added = true;
+
+		// Read the full tree: for a missing path, wp_get_global_styles() returns every style.
+		$variations = wp_get_global_styles()['blocks']['core/post-terms']['variations'] ?? array();
+		$rules      = '';
+
+		foreach ( (array) $variations as $gatherpress_slug => $variation ) {
+			$link = $variation['elements']['link'] ?? null;
+
+			// Badge and Dot are styled by the plugin stylesheet, even when customized.
+			if ( ! is_array( $link ) || in_array( $gatherpress_slug, array( 'gatherpress-badge', 'gatherpress-dot' ), true ) ) {
+				continue;
+			}
+
+			unset( $link[':hover'] );
+
+			// Core drops the css key when there are no declarations.
+			$styles = wp_style_engine_get_styles( $link );
+
+			if ( empty( $styles['css'] ) ) {
+				continue;
+			}
+
+			// The term is a span on the front end and a link in the editor.
+			$parent = sprintf(
+				'.wp-block-post-terms.gatherpress-event-status.is-style-%s',
+				sanitize_html_class( (string) $gatherpress_slug )
+			);
+
+			// Lay the terms out as core does, so the line height sizes the line
+			// and not the pill, then reset the Badge look and apply the theme style.
+			$rules .= sprintf(
+				'%1$s{display:block}%1$s .wp-block-post-terms__separator{display:inline}' .
+				'%1$s .gatherpress-event-status__term,%1$s > a[rel="tag"]' .
+				'{display:inline;background-color:transparent;border:0;border-radius:0;padding:0;%2$s}' .
+				'%1$s .gatherpress-event-status__term::before,%1$s > a[rel="tag"]::before{content:none}',
+				$parent,
+				$styles['css']
+			);
+		}
+
+		if ( '' !== $rules ) {
+			wp_add_inline_style( 'gatherpress-event-status', $rules );
 		}
 	}
 

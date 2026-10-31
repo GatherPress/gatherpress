@@ -25,6 +25,8 @@ use WP_Block;
 use WP_Block_Editor_Context;
 use WP_Block_Patterns_Registry;
 use WP_REST_Request;
+use WP_Theme_JSON_Data;
+use WP_Theme_JSON_Resolver;
 
 /**
  * Class Test_Setup.
@@ -191,6 +193,12 @@ class Test_Setup extends Base {
 				'name'     => 'init',
 				'priority' => 10,
 				'callback' => array( $instance, 'register_status_style' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'enqueue_block_assets',
+				'priority' => 10,
+				'callback' => array( $instance, 'add_theme_status_styles' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -2738,6 +2746,249 @@ class Test_Setup extends Base {
 			'--is-plain',
 			implode( '', (array) wp_styles()->get_data( $handle, 'after' ) ),
 			'Failed to assert a status with no color adds no rule.'
+		);
+	}
+
+	/**
+	 * Runs add_theme_status_styles() against a fresh stylesheet and returns
+	 * the inline CSS it added.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The inline CSS added by the method.
+	 */
+	private function get_theme_status_styles(): string {
+		$handle   = 'gatherpress-event-status';
+		$instance = Setup::get_instance();
+
+		wp_deregister_style( $handle );
+		$instance->register_status_style();
+		Utility::set_and_get_hidden_property( $instance, 'theme_status_styles_added', false );
+		WP_Theme_JSON_Resolver::clean_cached_data();
+
+		$before = implode( '', (array) wp_styles()->get_data( $handle, 'after' ) );
+
+		$instance->add_theme_status_styles();
+
+		return str_replace( $before, '', implode( '', (array) wp_styles()->get_data( $handle, 'after' ) ) );
+	}
+
+	/**
+	 * A Post Terms style with link style data is printed again for the
+	 * status, without its hover state.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::add_theme_status_styles
+	 *
+	 * @return void
+	 */
+	public function test_add_theme_status_styles(): void {
+		register_block_style(
+			'core/post-terms',
+			array(
+				'name'       => 'gatherpress-test-pill',
+				'label'      => 'Test pill',
+				'style_data' => array(
+					'elements' => array(
+						'link' => array(
+							'border'     => array(
+								'radius' => '20px',
+								'width'  => '1px',
+								'style'  => 'solid',
+							),
+							'typography' => array(
+								'lineHeight'     => '2.8',
+								'textDecoration' => 'none',
+							),
+							':hover'     => array(
+								'typography' => array( 'textDecoration' => 'underline' ),
+							),
+						),
+					),
+				),
+			)
+		);
+
+		$css = $this->get_theme_status_styles();
+
+		unregister_block_style( 'core/post-terms', 'gatherpress-test-pill' );
+		WP_Theme_JSON_Resolver::clean_cached_data();
+
+		$parent = '.wp-block-post-terms.gatherpress-event-status.is-style-gatherpress-test-pill';
+
+		$this->assertStringContainsString(
+			$parent . '{display:block}' . $parent . ' .wp-block-post-terms__separator{display:inline}',
+			$css,
+			'Failed to assert the terms are laid out as core does.'
+		);
+		$this->assertStringContainsString(
+			$parent . ' .gatherpress-event-status__term,' . $parent . ' > a[rel="tag"]' .
+			'{display:inline;background-color:transparent;border:0;border-radius:0;padding:0;',
+			$css,
+			'Failed to assert the rule targets the status and resets the Badge look.'
+		);
+		$this->assertStringContainsString( 'border-radius:20px;', $css, 'Failed to assert the border radius.' );
+		$this->assertStringContainsString( 'line-height:2.8;', $css, 'Failed to assert the line height.' );
+		$this->assertStringContainsString(
+			$parent . ' .gatherpress-event-status__term::before,' . $parent . ' > a[rel="tag"]::before{content:none}',
+			$css,
+			'Failed to assert the Badge dot is removed.'
+		);
+		$this->assertStringNotContainsString( 'underline', $css, 'Failed to assert the hover state is skipped.' );
+	}
+
+	/**
+	 * A Post Terms style without link style data adds no rule, so the status
+	 * keeps the Badge look.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::add_theme_status_styles
+	 *
+	 * @return void
+	 */
+	public function test_add_theme_status_styles_skips_a_style_without_link_data(): void {
+		register_block_style(
+			'core/post-terms',
+			array(
+				'name'       => 'gatherpress-test-color',
+				'label'      => 'Test color',
+				'style_data' => array( 'color' => array( 'text' => '#123456' ) ),
+			)
+		);
+		register_block_style(
+			'core/post-terms',
+			array(
+				'name'       => 'gatherpress-test-hover',
+				'label'      => 'Test hover',
+				'style_data' => array(
+					'elements' => array(
+						'link' => array(
+							':hover' => array(
+								'typography' => array( 'textDecoration' => 'underline' ),
+							),
+						),
+					),
+				),
+			)
+		);
+
+		$css = $this->get_theme_status_styles();
+
+		unregister_block_style( 'core/post-terms', 'gatherpress-test-color' );
+		unregister_block_style( 'core/post-terms', 'gatherpress-test-hover' );
+		WP_Theme_JSON_Resolver::clean_cached_data();
+
+		$this->assertStringNotContainsString(
+			'is-style-gatherpress-test-color',
+			$css,
+			'Failed to assert a style with no link data adds no rule.'
+		);
+		$this->assertStringNotContainsString(
+			'is-style-gatherpress-test-hover',
+			$css,
+			'Failed to assert a style with only hover data adds no rule.'
+		);
+	}
+
+	/**
+	 * Badge and Dot keep the plugin look, even with style data from the
+	 * Site Editor.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::add_theme_status_styles
+	 *
+	 * @return void
+	 */
+	public function test_add_theme_status_styles_skips_badge_and_dot(): void {
+		$link     = array( 'elements' => array( 'link' => array( 'border' => array( 'radius' => '3px' ) ) ) );
+		$callback = static function ( WP_Theme_JSON_Data $data ) use ( $link ): WP_Theme_JSON_Data {
+			return $data->update_with(
+				array(
+					'version' => 3,
+					'styles'  => array(
+						'blocks' => array(
+							'core/post-terms' => array(
+								'variations' => array(
+									'gatherpress-badge' => $link,
+									'gatherpress-dot'   => $link,
+								),
+							),
+						),
+					),
+				)
+			);
+		};
+
+		add_filter( 'wp_theme_json_data_theme', $callback );
+
+		$css = $this->get_theme_status_styles();
+
+		remove_filter( 'wp_theme_json_data_theme', $callback );
+		WP_Theme_JSON_Resolver::clean_cached_data();
+
+		$this->assertStringNotContainsString(
+			'is-style-gatherpress-badge',
+			$css,
+			'Failed to assert Badge is skipped.'
+		);
+		$this->assertStringNotContainsString(
+			'is-style-gatherpress-dot',
+			$css,
+			'Failed to assert Dot is skipped.'
+		);
+	}
+
+	/**
+	 * Without any Post Terms style data, nothing is added to the stylesheet.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::add_theme_status_styles
+	 *
+	 * @return void
+	 */
+	public function test_add_theme_status_styles_without_style_data(): void {
+		$callback = static function (): WP_Theme_JSON_Data {
+			return new WP_Theme_JSON_Data( array( 'version' => 3 ), 'theme' );
+		};
+
+		add_filter( 'wp_theme_json_data_theme', $callback );
+
+		$css = $this->get_theme_status_styles();
+
+		remove_filter( 'wp_theme_json_data_theme', $callback );
+		WP_Theme_JSON_Resolver::clean_cached_data();
+
+		$this->assertSame( '', $css, 'Failed to assert no rules are added.' );
+	}
+
+	/**
+	 * The rules are added once, though the editor fires enqueue_block_assets
+	 * again for its iframe.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::add_theme_status_styles
+	 *
+	 * @return void
+	 */
+	public function test_add_theme_status_styles_runs_once(): void {
+		$handle   = 'gatherpress-event-status';
+		$instance = Setup::get_instance();
+
+		$this->get_theme_status_styles();
+
+		$after = (array) wp_styles()->get_data( $handle, 'after' );
+
+		$instance->add_theme_status_styles();
+
+		$this->assertSame(
+			$after,
+			(array) wp_styles()->get_data( $handle, 'after' ),
+			'Failed to assert the rules are not added twice.'
 		);
 	}
 
