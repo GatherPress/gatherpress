@@ -8,7 +8,8 @@
 	--gatherpress-calendar-header-color: var(--wp--preset--color--base, canvas);
 	--gatherpress-calendar-day-today-outline: transparent;
 	--gatherpress-calendar-day-today-color: var(--wp--preset--color--base, #fff);
-	--gatherpress-calendar-ribbon-mix-target: currentcolor;
+	--gatherpress-calendar-ribbon-color: var(--wp--preset--color--base, #fff);
+	--gatherpress-calendar-ribbon-mix-target: var(--wp--preset--color--contrast, #000);
 
 	.gatherpress-calendar__table {
 		gap: var(--gatherpress-calendar-column-gap);

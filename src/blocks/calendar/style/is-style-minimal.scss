@@ -10,6 +10,7 @@
 	--gatherpress-calendar-day-bg: transparent;
 	--gatherpress-calendar-day-has-posts-border: transparent;
 	--gatherpress-calendar-day-today-outline: transparent;
+	--gatherpress-calendar-dot-contrast-color: var(--wp--preset--color--contrast, currentcolor);
 
 	.gatherpress-calendar__table {
 		background: transparent;
@@ -59,10 +60,11 @@
 			height: clamp(6px, 2vw, 8px);
 			min-width: clamp(6px, 2vw, 8px);
 			min-height: clamp(6px, 2vw, 8px);
-			opacity: 0.75;
+			background: color-mix(in srgb, var(--gatherpress-slot-color) 75%, transparent);
+			border: 2px solid var(--gatherpress-calendar-dot-contrast-color);
 
 			&:hover {
-				opacity: 1;
+				background: var(--gatherpress-slot-color);
 				transform: scale(1.4);
 			}
 		}

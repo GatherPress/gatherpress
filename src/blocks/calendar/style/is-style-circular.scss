@@ -1,13 +1,16 @@
 /* ======================================================================
     BLOCK STYLE: Circular
-    Giant bold white cutout numerals with entries floating above.
+    Giant bold theme-contrast numerals with entries floating above.
     ====================================================================== */
 
 .wp-block-gatherpress-calendar.is-style-circular {
+	color: var(--wp--preset--color--contrast, #000);
+
 	--gatherpress-calendar-column-gap: clamp(0.5rem, 2vw, 1rem);
 	--gatherpress-calendar-header-bg: transparent;
 	--gatherpress-calendar-header-color: var(--wp--preset--color--primary, currentColor);
 	--gatherpress-calendar-day-bg: color-mix(in srgb, currentcolor 8%, transparent);
+	--gatherpress-calendar-day-color: var(--wp--preset--color--contrast, #000);
 	--gatherpress-calendar-day-has-posts-border: transparent;
 	--gatherpress-calendar-day-today-outline: transparent;
 	--gatherpress-calendar-day-today-color: var(--wp--preset--color--base, #fff);
@@ -43,7 +46,7 @@
 			justify-content: center;
 			transition: background-color 0.2s ease, box-shadow 0.2s ease;
 
-			/* Giant bold white cutout day number filling the background */
+			/* Giant bold theme-contrast day number filling the background */
 			.gatherpress-calendar__day-number {
 				position: absolute;
 				inset: 0;
@@ -58,7 +61,6 @@
 				font-weight: 900;
 				line-height: 1;
 				letter-spacing: -0.05em;
-				color: var(--wp--preset--color--base, #fff);
 				pointer-events: none;
 				user-select: none;
 			}
@@ -80,7 +82,7 @@
 					font-weight: 600;
 					font-size: clamp(0.6875rem, 1.2vw, 0.75rem);
 
-					/* Subtle halo ensures readability over the white cutout numeral */
+					/* A theme-base halo softens text over the day numeral. */
 					text-shadow:
 						0 0 4px var(--wp--preset--color--base, #fff),
 						0 1px 2px var(--wp--preset--color--base, #fff);
@@ -98,7 +100,14 @@
 			}
 
 			&.gatherpress--is-today {
-				background: color-mix(in srgb, currentcolor 23%, transparent);
+				--gatherpress-calendar-title-color: var(--wp--preset--color--base, #fff);
+				--gatherpress-calendar-time-color: var(--wp--preset--color--base, #fff);
+
+				background: color-mix(in srgb, currentcolor 85%, transparent);
+
+				.gatherpress-calendar__day-number {
+					color: var(--wp--preset--color--base, #fff);
+				}
 
 				.wp-block-gatherpress-calendar-entries .gatherpress-calendar__entry {
 					color: var(--wp--preset--color--base, #fff);
