@@ -40,7 +40,7 @@ The blocks render on the server. Each calendar block renders its inner blocks it
 
 | Block | Title | Parent | Inner blocks | Block styles |
 | --- | --- | --- | --- | --- |
-| `gatherpress/calendar` | GatherPress Calendar | Ancestor: `core/query` | `gatherpress/calendar-week` | `default` (Classic), `minimal`, `bold`, `circular`, `gradient` |
+| `gatherpress/calendar` | Calendar | Ancestor: `core/query` | `gatherpress/calendar-week` | `default` (Classic), `minimal`, `bold`, `circular`, `gradient` |
 | `gatherpress/calendar-week` | Calendar Week | `gatherpress/calendar` | `gatherpress/calendar-day` | None |
 | `gatherpress/calendar-day` | Calendar Day | `gatherpress/calendar-week`, `gatherpress/calendar` | `core/paragraph`, `gatherpress/calendar-entries` | `default` (Classic), `ribbon` |
 | `gatherpress/calendar-entries` | Calendar Entries | Ancestor: `gatherpress/calendar-day` | The entry template | `default` (Classic), `dots` (Colored Dots) |
@@ -157,9 +157,9 @@ The `gatherpress/calendar` wrapper has these classes:
 
 | Class | When |
 | --- | --- |
-| `is-view-month`, `is-view-week`, `is-view-day` | The view. |
-| `has-multiple-units` | More than one month, week or day. |
-| `has-time-grid` | The time grid is on. |
+| `gatherpress--is-view-month`, `gatherpress--is-view-week`, `gatherpress--is-view-day` | The view. |
+| `gatherpress--has-multiple-units` | More than one month, week or day. |
+| `gatherpress--has-time-grid` | The time grid is on. The tables and the week rows also have this class. |
 
 Each month, or each range of weeks or days, is a `<table class="gatherpress-calendar__table">` with a `<caption>` that has the `gatherpress--screen-reader-text` class. In month views, and in week views with more than one week, each row starts with a hidden row header, for example "Week 43".
 
@@ -168,14 +168,14 @@ Each month, or each range of weeks or days, is a `<table class="gatherpress-cale
 | Class | When |
 | --- | --- |
 | `gatherpress-calendar__day` | All day cells. |
-| `is-empty` | A cell before the first day or after the last day of a month. |
-| `has-posts` | The day has one or more posts. |
-| `has-multi-day-event` | The day has an all-day event or an event of more than one day. |
-| `is-weekend` | A weekend day. |
-| `is-monday` … `is-sunday` | The weekday. |
-| `is-today`, `is-past` and `past`, `is-future` and `future` | The day compared with today. |
+| `gatherpress--is-empty` | A cell before the first day or after the last day of a month. |
+| `gatherpress--has-posts` | The day has one or more posts. |
+| `gatherpress--has-multi-day-event` | The day has an all-day event or an event of more than one day. |
+| `gatherpress--is-weekend` | A weekend day. |
+| `gatherpress--is-monday` … `gatherpress--is-sunday` | The weekday. |
+| `gatherpress--is-today`, `gatherpress--is-past`, `gatherpress--is-future` | The day compared with today. |
 
-The cell of today also has `aria-current="date"`. The server sets `is-today`, `is-past`, `is-future` and `aria-current` from the date of the site. In the browser, the `gatherpress/calendar-day` store changes them to the date of the visitor, so a cached page stays correct. The server-only classes `past` and `future` do not change in the browser.
+The cell of today also has `aria-current="date"`. The server sets `gatherpress--is-today`, `gatherpress--is-past`, `gatherpress--is-future` and `aria-current` from the date of the site. In the browser, the `gatherpress/calendar-day` store changes them to the date of the visitor, so a cached page stays correct.
 
 ### Entries
 
@@ -184,14 +184,14 @@ Each entry is a `<div>` with the classes of `get_post_class()`, for example `pos
 | Class | When |
 | --- | --- |
 | `gatherpress-calendar__entry` | All entries. |
-| `is-all-day` | An all-day event. |
-| `is-multi-day` | An all-day event or an event of more than one day. |
-| `is-span-single`, `is-span-start`, `is-span-middle`, `is-span-end` | The part of the event on this day. |
-| `is-span-continued` | The event continues from the previous week row. |
-| `is-span-continues` | The event continues in the next week row. |
-| `has-multi-col-span` | The entry spans two or more columns. |
-| `is-timed-event` | The entry is on the time grid. |
-| `is-js-hovered`, `is-js-focused` | The pointer or the focus is on an entry of the same event. The calendar styles only `is-js-hovered`. |
+| `gatherpress--is-all-day` | An all-day event. |
+| `gatherpress--is-multi-day` | An all-day event or an event of more than one day. |
+| `gatherpress--is-span-single`, `gatherpress--is-span-start`, `gatherpress--is-span-middle`, `gatherpress--is-span-end` | The part of the event on this day. |
+| `gatherpress--is-span-continued` | The event continues from the previous week row. |
+| `gatherpress--is-span-continues` | The event continues in the next week row. |
+| `gatherpress--has-multi-col-span` | The entry spans two or more columns. |
+| `gatherpress--is-timed-event` | The entry is on the time grid. |
+| `gatherpress--is-js-hovered`, `gatherpress--is-js-focused` | The pointer or the focus is on an entry of the same event. The calendar styles only `gatherpress--is-js-hovered`. |
 
 Entries also have the data attributes `data-span`, `data-day-index`, `data-total-days`, `data-slot` and `data-row-span`.
 
@@ -220,7 +220,7 @@ add_filter(
 
 ### Action
 
-`gatherpress_calendar_before_render_entry` fires before the calendar renders the entry template of one post. The calendar has added its filters for the entry at that time, and removes them after the entry. The action fires one time for each entry, so an event of more than one day fires it one time for each of its visible days.
+`gatherpress_calendar_entry_render` fires before the calendar renders the entry template of one post. The calendar has added its filters for the entry at that time, and removes them after the entry. The action fires one time for each entry, so an event of more than one day fires it one time for each of its visible days.
 
 Parameters: the post ID, the post type, the parsed blocks of the entry template, and the span data of the entry, for example `span`, `day_index` and `total_days`.
 
@@ -228,11 +228,11 @@ This example shows an untitled event with an empty title, and not "(no title)":
 
 ```php
 add_action(
-	'gatherpress_calendar_before_render_entry',
+	'gatherpress_calendar_entry_render',
 	static function (): void {
 		remove_filter(
 			'the_title',
-			array( \GatherPress\Core\Blocks\Calendar_Entries::class, 'filter_empty_title' ),
+			array( \GatherPress\Core\Blocks\Calendar_Entries::get_instance(), 'filter_empty_title' ),
 			10
 		);
 	}
@@ -245,6 +245,8 @@ The calendar does not have public CSS custom properties yet. The `--gatherpress-
 
 ## Content from the GatherPress Calendar plugin
 
-The blocks come from the [GatherPress Calendar](https://github.com/carstingaxion/gatherpress-calendar) plugin. The block names, variation names, binding sources and CSS classes did not change, so content saved with the plugin continues to work. A calendar saved with plugin versions 0.1.0 to 0.4.1 has a block deprecation.
+The blocks come from the [GatherPress Calendar](https://github.com/carstingaxion/gatherpress-calendar) plugin. The block names, variation names and binding sources did not change, so content saved with the plugin continues to work. A calendar saved with plugin versions 0.1.0 to 0.4.1 has a block deprecation.
+
+The state classes now have the `gatherpress--` prefix, for example `gatherpress--is-today` in place of `is-today`. Update theme CSS that styles the classes of the plugin.
 
 The plugin registers the same blocks, so deactivate it.

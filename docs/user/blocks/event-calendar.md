@@ -13,7 +13,7 @@ The Event Calendar adds these blocks inside a Query Loop block:
 
 - A heading that shows the dates of the calendar, for example "October 2026".
 - The Previous Month and Next Month links.
-- The calendar, which is the **GatherPress Calendar** block.
+- The calendar, which is the **Calendar** block.
 
 The calendar shows the events of the current month. It shows past events and upcoming events.
 
@@ -21,7 +21,7 @@ The settings of the Query Loop block apply to the calendar, for example the post
 
 ## Calendar Settings
 
-Select the GatherPress Calendar block. The block sidebar shows the **Calendar Settings** panel.
+Select the Calendar block. The block sidebar shows the **Calendar Settings** panel.
 
 ### Date Range Source
 
@@ -100,7 +100,7 @@ A day accepts only paragraphs and Calendar Entries blocks. On the front end, a d
 
 The Calendar Entries block works like a Post Template block. Its inner blocks are the template for one event. The calendar shows this template one time for each event of the day.
 
-The default template shows the start time and the title of the event. The title opens a popover with the event date, the title, the excerpt and a Close button. You can change the template, for example to add the featured image to the popover.
+The default template shows the start time and the title of the event. The title opens a popover with the title, the event date, the excerpt and a Close button. You can change the template, for example to add the featured image to the popover.
 
 An all-day event, or an event of more than one day, shows on each of its days.
 
@@ -108,7 +108,7 @@ An all-day event, or an event of more than one day, shows on each of its days.
 
 Select a block, then select a style in the **Styles** panel.
 
-### Styles of the GatherPress Calendar block
+### Styles of the Calendar block
 
 - **Classic**: the default style.
 - **Minimal**: no background, with thin lines between the rows.
@@ -151,9 +151,9 @@ The blocks also have the usual design tools, for example colors, borders and spa
 A Query Loop block with a Post Template block can become a calendar:
 
 1. Select the Post Template block.
-2. In the block toolbar, select the block icon, then select **GatherPress Calendar**.
+2. In the block toolbar, select the block icon, then select **Calendar**.
 
-The blocks of the Post Template move into the popover of each event. To change the calendar back into a list, transform the GatherPress Calendar block into a Post Template. The blocks of the popover move back, without the Close button.
+The blocks of the Post Template move into the popover of each event. To change the calendar back into a list, transform the Calendar block into a Post Template. The blocks of the popover move back, without the Close button.
 
 ## Content from the GatherPress Calendar plugin
 
