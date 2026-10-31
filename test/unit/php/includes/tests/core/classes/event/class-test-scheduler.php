@@ -30,6 +30,7 @@ class Test_Scheduler extends Base {
 		wp_clear_scheduled_hook( Scheduler::SWEEP_ACTION );
 		remove_all_filters( 'gatherpress_event_end_cache_keys' );
 		remove_all_filters( 'gatherpress_event_upcoming_tracking_enabled' );
+		remove_all_filters( 'gatherpress_event_upcoming_tracking_enabled_' . Event::POST_TYPE );
 		delete_option( Scheduler::OPTION_NAME );
 
 		parent::tear_down();
@@ -493,17 +494,22 @@ class Test_Scheduler extends Base {
 		$this->assertTrue( $instance->any_post_type_enabled() );
 		remove_all_filters( 'gatherpress_event_upcoming_tracking_enabled' );
 
-		// One post type, through the post type argument.
+		// One post type, which receives its slug.
+		$received = '';
 		add_filter(
-			'gatherpress_event_upcoming_tracking_enabled',
-			static function ( bool $enabled, string $type ): bool {
-				return Event::POST_TYPE === $type;
+			'gatherpress_event_upcoming_tracking_enabled_' . Event::POST_TYPE,
+			static function ( bool $enabled, string $type ) use ( &$received ): bool {
+				$received = $type;
+
+				return true;
 			},
 			10,
 			2
 		);
 		$this->assertTrue( $instance->is_tracker_enabled( Event::POST_TYPE ) );
+		$this->assertSame( Event::POST_TYPE, $received );
 		$this->assertFalse( $instance->is_tracker_enabled( 'post' ) );
+		remove_all_filters( 'gatherpress_event_upcoming_tracking_enabled_' . Event::POST_TYPE );
 	}
 
 	/**

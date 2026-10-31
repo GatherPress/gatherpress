@@ -343,25 +343,17 @@ final class Scheduler {
 	 */
 	public function is_tracker_enabled( string $post_type ): bool {
 		/**
-		 * Filters whether the upcoming event IDs of a post type are tracked.
+		 * Filters whether the upcoming event IDs of every post type with event dates are tracked.
 		 *
 		 * Tracked IDs are stored in the `gatherpress_event_upcoming_ids` option as
 		 * `array<string, int[]>`, keyed by post type, and checked by a daily sweep
 		 * that fires `gatherpress_event_ended` for any end that WP-Cron missed.
-		 * Read them with `Scheduler::get_tracked_ids()`.
+		 * Read them with `Scheduler::get_tracked_ids()`. To track a single post type,
+		 * use `gatherpress_event_upcoming_tracking_enabled_{$post_type}` instead.
 		 *
 		 * @example
 		 * ```php
-		 * // Track every post type with event dates:
 		 * add_filter( 'gatherpress_event_upcoming_tracking_enabled', '__return_true' );
-		 *
-		 * // Or only one post type:
-		 * add_filter(
-		 *     'gatherpress_event_upcoming_tracking_enabled',
-		 *     static fn( bool $enabled, string $post_type ): bool => $enabled || 'gatherpress_event' === $post_type,
-		 *     10,
-		 *     2
-		 * );
 		 *
 		 * // Query the upcoming events without a meta_query:
 		 * $upcoming_ids = \GatherPress\Core\Event\Scheduler::get_instance()->get_tracked_ids( 'gatherpress_event' );
@@ -378,10 +370,36 @@ final class Scheduler {
 		 *
 		 * @since TBD
 		 *
-		 * @param bool   $enabled   Whether tracking is enabled. Default false.
+		 * @param bool $enabled Whether tracking is enabled. Default false.
+		 */
+		if ( apply_filters( 'gatherpress_event_upcoming_tracking_enabled', false ) ) {
+			return true;
+		}
+
+		/**
+		 * Filters whether the upcoming event IDs of one post type are tracked.
+		 *
+		 * The dynamic part of the name is the post type slug. A tracked post type gets
+		 * its own `gatherpress_event_upcoming_ids` entry, keyed by its slug, read with
+		 * `Scheduler::get_tracked_ids( $post_type )`.
+		 *
+		 * @example
+		 * ```php
+		 * // Track only the default event post type:
+		 * add_filter( 'gatherpress_event_upcoming_tracking_enabled_gatherpress_event', '__return_true' );
+		 * ```
+		 *
+		 * @since TBD
+		 *
+		 * @param bool   $enabled   Whether tracking is enabled for this post type. Default false.
 		 * @param string $post_type The post type being checked.
 		 */
-		return (bool) apply_filters( 'gatherpress_event_upcoming_tracking_enabled', false, $post_type );
+		return (bool) apply_filters(
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
+			"gatherpress_event_upcoming_tracking_enabled_{$post_type}",
+			false,
+			$post_type
+		);
 	}
 
 	/**
