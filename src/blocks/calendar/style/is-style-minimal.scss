@@ -60,6 +60,7 @@
 			min-width: clamp(6px, 2vw, 8px);
 			min-height: clamp(6px, 2vw, 8px);
 			opacity: 0.75;
+			border: 2px solid var(--wp--preset--color--contrast, #000);
 
 			&:hover {
 				opacity: 1;

@@ -4,6 +4,7 @@
     ====================================================================== */
 
 .wp-block-gatherpress-calendar.is-style-circular {
+	color: var(--wp--preset--color--contrast, #000);
 	--gatherpress-calendar-column-gap: clamp(0.5rem, 2vw, 1rem);
 	--gatherpress-calendar-header-bg: transparent;
 	--gatherpress-calendar-header-color: var(--wp--preset--color--primary, currentColor);
@@ -58,7 +59,7 @@
 				font-weight: 900;
 				line-height: 1;
 				letter-spacing: -0.05em;
-				color: var(--wp--preset--color--base, #fff);
+				color: var(--wp--preset--color--contrast, #000);
 				pointer-events: none;
 				user-select: none;
 			}
@@ -98,7 +99,10 @@
 			}
 
 			&.gatherpress--is-today {
-				background: color-mix(in srgb, currentcolor 23%, transparent);
+				--gatherpress-calendar-title-color: var(--wp--preset--color--base, #fff);
+				--gatherpress-calendar-time-color: var(--wp--preset--color--base, #fff);
+
+				background: color-mix(in srgb, currentcolor 85%, transparent);
 
 				.wp-block-gatherpress-calendar-entries .gatherpress-calendar__entry {
 					color: var(--wp--preset--color--base, #fff);
