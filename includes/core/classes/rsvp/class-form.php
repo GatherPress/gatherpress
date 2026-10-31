@@ -30,6 +30,15 @@ use WP_User;
  *
  * @package GatherPress\Core\Rsvp
  * @since 0.34.0
+ *
+ * @phpstan-type ReturnedSubmission array{
+ *     token: string,
+ *     post_id: int,
+ *     form_schema_id: string,
+ *     errors: array<string, string>,
+ *     form_error: string,
+ *     values: array<string, string>
+ * }
  */
 final class Form {
 
@@ -37,6 +46,56 @@ final class Form {
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
+
+	/**
+	 * Query arg carrying the token of a rejected submission back to its form.
+	 *
+	 * @since TBD
+	 * @var string
+	 */
+	const RETURN_QUERY_ARG = 'gatherpress_rsvp_form_error';
+
+	/**
+	 * Prefix of the transient holding a rejected submission's errors and values.
+	 *
+	 * @since TBD
+	 * @var string
+	 */
+	const RETURN_TRANSIENT_PREFIX = 'gatherpress_rsvp_form_return_';
+
+	/**
+	 * Seconds a rejected submission waits for its form to load again.
+	 *
+	 * @since TBD
+	 * @var int
+	 */
+	const RETURN_EXPIRATION = 10 * MINUTE_IN_SECONDS;
+
+	/**
+	 * Characters a returned value keeps, unless its field allows more.
+	 *
+	 * Matches the default length limit of a text field.
+	 *
+	 * @since TBD
+	 * @var int
+	 */
+	const RETURN_VALUE_MAX_LENGTH = 1000;
+
+	/**
+	 * The rejected submission this request returned to its form.
+	 *
+	 * @since TBD
+	 * @var ReturnedSubmission|null
+	 */
+	private ?array $returned_submission = null;
+
+	/**
+	 * Whether the token in the URL has been looked up yet.
+	 *
+	 * @since TBD
+	 * @var bool
+	 */
+	private bool $returned_submission_read = false;
 
 	/**
 	 * Class constructor.
@@ -60,6 +119,7 @@ final class Form {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'initialize_rsvp_form_handling' ) );
+		add_filter( 'wp_headers', array( $this, 'prevent_caching_returned_submission' ) );
 	}
 
 	/**
@@ -196,8 +256,11 @@ final class Form {
 			);
 		}
 
-		// Check for duplicate RSVP.
+		// Check for duplicate RSVP. The form is still on the page, so the
+		// submitter goes back to it rather than to an error page.
 		if ( $this->has_duplicate_rsvp( $post_id, $email ) ) {
+			$this->return_to_form( $post_id, array(), $this->get_duplicate_rsvp_message() );
+
 			wp_die(
 				esc_html( $this->get_duplicate_rsvp_message() ),
 				esc_html__( 'Duplicate RSVP', 'gatherpress' ),
@@ -213,6 +276,11 @@ final class Form {
 			$post_id,
 			Utility::get_http_input( INPUT_POST, 'gatherpress_form_schema_id' )
 		);
+
+		// No form on the page has an unknown schema id, so that one stays an error page.
+		if ( ! empty( $field_errors ) && ! isset( $field_errors[ Rsvp_Form::SCHEMA_ID_FIELD ] ) ) {
+			$this->return_to_form( $post_id, $field_errors, '' );
+		}
 
 		if ( ! empty( $field_errors ) ) {
 			wp_die(
@@ -289,9 +357,8 @@ final class Form {
 			// Process all fields.
 			$this->process_fields( $comment_id, $data );
 
-			// Generate and send confirmation email.
-			$rsvp_token = new Token( $comment_id );
-			$rsvp_token->generate_token()->send_rsvp_confirmation_email();
+			// The email creates the token when it goes out.
+			Email::get_instance()->queue_confirmation( $comment_id );
 		}
 	}
 
@@ -320,11 +387,13 @@ final class Form {
 			return $location;
 		}
 
+		// A submission that succeeds after being sent back carries the earlier
+		// token, which has nothing left to show.
 		$redirect_url = add_query_arg(
 			array(
 				'gatherpress_rsvp_success' => 'true',
 			),
-			$referer
+			remove_query_arg( self::RETURN_QUERY_ARG, $referer )
 		);
 
 		if ( ! empty( $form_id ) ) {
@@ -332,6 +401,219 @@ final class Form {
 		}
 
 		return $redirect_url;
+	}
+
+	/**
+	 * Sends a rejected submission back to its form.
+	 *
+	 * Returns without redirecting when the page the form was on is unknown,
+	 * so the caller can fall back to an error page.
+	 *
+	 * @since TBD
+	 *
+	 * @param int                   $post_id      The event post ID.
+	 * @param array<string, string> $field_errors Error messages keyed by field name.
+	 * @param string                $form_error   A message for the whole form, or ''.
+	 *
+	 * @return void
+	 */
+	private function return_to_form( int $post_id, array $field_errors, string $form_error ): void {
+		$url = $this->get_return_url( $post_id, $field_errors, $form_error );
+
+		if ( '' === $url ) {
+			return;
+		}
+
+		// A wp_redirect filter can cancel the redirect, which leaves the
+		// caller's error page. Tests stop inside that filter.
+		if ( wp_safe_redirect( $url, 303 ) ) {
+			// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation.
+			// @codeCoverageIgnoreStart
+			exit;
+			// @codeCoverageIgnoreEnd
+		}
+	}
+
+	/**
+	 * Stores a rejected submission and returns the URL that brings it back.
+	 *
+	 * The errors and the submitted values go in a transient under a random
+	 * token, and only the token goes in the URL, so a name or email address
+	 * never ends up in browser history or server logs.
+	 *
+	 * @since TBD
+	 *
+	 * @param int                   $post_id      The event post ID.
+	 * @param array<string, string> $field_errors Error messages keyed by field name.
+	 * @param string                $form_error   A message for the whole form, or ''.
+	 *
+	 * @return string The form's URL with the token, or '' when the page the form was on is unknown.
+	 */
+	public function get_return_url( int $post_id, array $field_errors, string $form_error ): string {
+		$referer = Utility::get_wp_referer();
+
+		if ( ! $referer ) {
+			return '';
+		}
+
+		$form_schema_id = Utility::get_http_input( INPUT_POST, 'gatherpress_form_schema_id' );
+		$token          = wp_generate_password( 20, false );
+
+		set_transient(
+			self::RETURN_TRANSIENT_PREFIX . $token,
+			array(
+				'post_id'        => $post_id,
+				'form_schema_id' => $form_schema_id,
+				'errors'         => $field_errors,
+				'form_error'     => $form_error,
+				'values'         => $this->get_return_values( $post_id, $form_schema_id ),
+			),
+			self::RETURN_EXPIRATION
+		);
+
+		// No #anchor: a URL fragment stops browsers honoring autofocus, which
+		// already scrolls the field to fix into view.
+		return add_query_arg(
+			self::RETURN_QUERY_ARG,
+			$token,
+			remove_query_arg( array( self::RETURN_QUERY_ARG, 'gatherpress_rsvp_success' ), $referer )
+		);
+	}
+
+	/**
+	 * Returns the submitted values a rejected submission keeps for its form.
+	 *
+	 * These are the fields the form's schema names, hidden fields aside, and
+	 * the built-in fields, which come back even for an event with no stored
+	 * schema. Each value is cut to its field's length limit, 1000 characters
+	 * unless the field allows more, so a refused submission stays small.
+	 *
+	 * @since TBD
+	 *
+	 * @param int    $post_id        The event post ID.
+	 * @param string $form_schema_id The submitted form-schema id.
+	 *
+	 * @return array<string, string> Submitted values keyed by field name.
+	 */
+	private function get_return_values( int $post_id, string $form_schema_id ): array {
+		$fields = array_fill_keys(
+			Rsvp_Form::BUILT_IN_FIELDS,
+			array(
+				'type'       => 'text',
+				'max_length' => self::RETURN_VALUE_MAX_LENGTH,
+			)
+		);
+
+		foreach ( Rsvp_Form::get_instance()->get_schema_fields( $post_id, $form_schema_id ) as $field_name => $field ) {
+			$fields[ (string) $field_name ] = array(
+				'type'       => $field['type'],
+				'max_length' => max( self::RETURN_VALUE_MAX_LENGTH, (int) ( $field['max_length'] ?? 0 ) ),
+			);
+		}
+
+		$values = array();
+
+		foreach ( $fields as $field_name => $field ) {
+			if ( 'hidden' !== $field['type'] ) {
+				$value = Utility::get_http_input(
+					INPUT_POST,
+					$field_name,
+					'textarea' === $field['type'] ? 'sanitize_textarea_field' : null
+				);
+
+				$values[ $field_name ] = mb_substr( $value, 0, $field['max_length'] );
+			}
+		}
+
+		return $values;
+	}
+
+	/**
+	 * Returns the rejected submission whose token is in the URL.
+	 *
+	 * Looked up once per request, since the headers need it before the form
+	 * renders and deletes its transient.
+	 *
+	 * @since TBD
+	 *
+	 * @return ReturnedSubmission|null The submission, or null when there is none.
+	 */
+	public function get_returned_submission(): ?array {
+		if ( ! $this->returned_submission_read ) {
+			$this->returned_submission_read = true;
+			$this->returned_submission      = $this->read_returned_submission();
+		}
+
+		return $this->returned_submission;
+	}
+
+	/**
+	 * Reads the rejected submission whose token is in the URL.
+	 *
+	 * @since TBD
+	 *
+	 * @return ReturnedSubmission|null The submission, or null when the token is missing, malformed or expired.
+	 */
+	private function read_returned_submission(): ?array {
+		$token      = Utility::get_http_input( INPUT_GET, self::RETURN_QUERY_ARG );
+		$submission = preg_match( '/^[A-Za-z0-9]{20}$/', $token )
+			? get_transient( self::RETURN_TRANSIENT_PREFIX . $token )
+			: false;
+
+		if ( ! is_array( $submission ) ) {
+			return null;
+		}
+
+		return array(
+			'token'          => $token,
+			'post_id'        => (int) ( $submission['post_id'] ?? 0 ),
+			'form_schema_id' => (string) ( $submission['form_schema_id'] ?? '' ),
+			'errors'         => array_map( 'strval', (array) ( $submission['errors'] ?? array() ) ),
+			'form_error'     => (string) ( $submission['form_error'] ?? '' ),
+			'values'         => array_map( 'strval', (array) ( $submission['values'] ?? array() ) ),
+		);
+	}
+
+	/**
+	 * Deletes the returned submission once its form has picked it up.
+	 *
+	 * It is shown once, so a later visit to the same URL, from history or a
+	 * shared link, finds nothing.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function consume_returned_submission(): void {
+		if ( null !== $this->returned_submission ) {
+			delete_transient( self::RETURN_TRANSIENT_PREFIX . $this->returned_submission['token'] );
+		}
+	}
+
+	/**
+	 * Keeps a page showing a rejected submission out of page caches.
+	 *
+	 * The page holds what the submitter typed, their name and email
+	 * included, so no cache may keep a copy of it. Page cache plugins
+	 * look for `DONOTCACHEPAGE` rather than the headers.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, string|false> $headers The headers about to be sent.
+	 *
+	 * @return array<string, string|false> The headers, with no-cache headers when a submission is shown.
+	 */
+	public function prevent_caching_returned_submission( array $headers ): array {
+		if ( null !== $this->get_returned_submission() ) {
+			$headers = array_merge( $headers, wp_get_nocache_headers() );
+
+			if ( ! defined( 'DONOTCACHEPAGE' ) ) {
+				// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- Read by page cache plugins.
+				define( 'DONOTCACHEPAGE', true );
+			}
+		}
+
+		return $headers;
 	}
 
 
@@ -695,9 +977,8 @@ final class Form {
 		// Process all fields.
 		$this->process_fields( $comment_id, $data );
 
-		// Generate and send confirmation email.
-		$rsvp_token = new Token( $comment_id );
-		$rsvp_token->generate_token()->send_rsvp_confirmation_email();
+		// The email creates the token when it goes out.
+		Email::get_instance()->queue_confirmation( $comment_id );
 
 		return array(
 			'success'    => true,

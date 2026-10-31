@@ -1275,6 +1275,38 @@ describe( 'usePopularVenues', () => {
 
 		expect( capturedTaxonomy ).toBe( '_gatherpress_venue' );
 	} );
+
+	it( 'leaves out the online-event term and keeps the limit', () => {
+		useSelect.mockImplementation( ( callback ) => {
+			const wpSelect = jest.fn( ( store ) => {
+				if ( 'core' === store ) {
+					return {
+						getEntityRecords: jest.fn( () => [
+							{ id: 1, name: 'Main Hall', count: 9 },
+							{ id: 7, name: 'Online event', count: 8 },
+							{ id: 2, name: 'Annex', count: 4 },
+							{ id: 3, name: 'Garden', count: 1 },
+						] ),
+					};
+				}
+				if ( 'core/editor' === store ) {
+					return {
+						getEditorSettings: () => ( {
+							gatherpress: {
+								config: { onlineEventTermIds: { gatherpress_venue: 7 } },
+							},
+						} ),
+					};
+				}
+				return {};
+			} );
+			return callback( wpSelect );
+		} );
+
+		const { result } = renderHook( () => usePopularVenues( 2 ) );
+
+		expect( result.current.map( ( venue ) => venue.id ) ).toEqual( [ 1, 2 ] );
+	} );
 } );
 
 /**
@@ -1590,6 +1622,19 @@ describe( 'getOnlineEventTermId', () => {
 			} ),
 		} ) );
 		expect( getOnlineEventTermId( 'gatherpress_venue' ) ).toBe( 42 );
+	} );
+
+	it( 'reads the default venue post type when none is passed', () => {
+		select.mockImplementation( () => ( {
+			getEditorSettings: () => ( {
+				gatherpress: {
+					config: {
+						onlineEventTermIds: { gatherpress_venue: 42 },
+					},
+				},
+			} ),
+		} ) );
+		expect( getOnlineEventTermId() ).toBe( 42 );
 	} );
 } );
 

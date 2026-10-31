@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Venue address autocomplete and save-time geocoding no longer fail on sites whose language the geocoder does not serve, such as Japanese, Chinese and Korean.

@@ -35,7 +35,7 @@ $gatherpress_fallback = ! empty( $disabled ) ? (string) $value : '0';
 // overrides the select and the saved value is always the fallback.
 ?>
 <input type="hidden" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( $gatherpress_fallback ); ?>" />
-<label for="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $label ); ?></label><br/>
+<label class="gatherpress-settings-field__label" for="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $label ); ?></label>
 <select id="<?php echo esc_attr( $option ); ?>" name="<?php echo esc_attr( $name ); ?>"<?php echo $gatherpress_disabled; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static value. ?>>
 	<?php
 	foreach ( $options['items'] as $gatherpress_key => $gatherpress_label ) :

@@ -7,12 +7,13 @@ name: Release
 # into CHANGELOG.md under a new version header (and auto-PR'd back to develop
 # for review), and the plugin is deployed to wordpress.org.
 #
-# Pushing a tag like `0.34.0-alpha.1`, `-beta.1`, or `-rc.1` cuts a pre-release:
+# Pushing a tag like `0.34.0-alpha.1` or `0.34.0-beta.1` cuts a pre-release:
 # distro zip is attached to a GitHub Pre-Release (marked NOT-latest), the
 # release body is the SAME rolled-up section that would ship at stable (so
 # testers see what they're testing), but the rollup is computed in an
 # ephemeral checkout — no commit, no PR, no entry files deleted. Pre-releases
-# never deploy to wp.org.
+# never change the version wp.org serves; beta tags only sync SVN trunk and
+# add an SVN tag (see deploy-wporg-trunk).
 #
 # Release-manager docs: docs/contributor/release-process.md.
 
@@ -46,7 +47,7 @@ jobs:
           # not a build: nothing should reach the Releases tab or wp.org under
           # it. Pre-release numbering starts at .1, so no suffix ending in .0
           # is ever a real build.
-          if [[ "${VERSION}" =~ -(alpha|beta|rc)\.0$ ]]; then
+          if [[ "${VERSION}" =~ -(alpha|beta)\.0$ ]]; then
             echo "::error::'${VERSION}' is a cycle marker, not a release. Delete the tag; pre-releases start at .1."
             exit 1
           fi
@@ -57,13 +58,18 @@ jobs:
           version="${GITHUB_REF_NAME}"
           echo "version=${version}" >> "$GITHUB_OUTPUT"
 
-          # Pre-release suffix detection: alpha.N, beta.N, rc.N (per SemVer).
-          if [[ "${version}" =~ -(alpha|beta|rc)\. ]]; then
+          # Pre-releases are alpha.N or beta.N. Any other suffix fails here
+          # instead of falling through to the stable path, which deploys to
+          # wp.org.
+          if [[ "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+-(alpha|beta)\.[0-9]+$ ]]; then
             echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
             echo "Tag ${version} is a pre-release."
-          else
+          elif [[ "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
             echo "Tag ${version} is a stable release."
+          else
+            echo "::error::'${version}' is not a release tag (X.Y.Z, X.Y.Z-alpha.N or X.Y.Z-beta.N). Delete the tag."
+            exit 1
           fi
 
       - name: Abort if a previous rollup PR is still open
@@ -212,25 +218,45 @@ jobs:
         run: |
           branch="release/${VERSION}"
 
-          # Branch off the tag via the API, then create the rollup commit
-          # with createCommitOnBranch so GitHub signs it — develop requires
+          # Branch off develop, so the PR holds only the rollup and stays
+          # mergeable after develop moves past the release. Branching off the
+          # tag carried main's whole state, which conflicted with develop in
+          # 0.36.1 (#2528). The rolled CHANGELOG.md is written from the tag's
+          # copy, so that only works while develop's copy matches it, which
+          # the previous release's parity step keeps true. When it doesn't,
+          # fall back to the tag and say so, rather than hold up the release.
+          git fetch --quiet origin develop
+          base_sha="$(git rev-parse origin/develop)"
+
+          if ! git diff --quiet "${GITHUB_SHA}" "${base_sha}" -- CHANGELOG.md; then
+            echo "::warning::develop's CHANGELOG.md differs from the tag's, so the rollup branches off the tag and its PR may conflict. See \"The rollup PR is DIRTY\" in docs/contributor/release-process.md."
+            base_sha="${GITHUB_SHA}"
+          fi
+
+          # Create the branch via the API, then the rollup commit with
+          # createCommitOnBranch so GitHub signs it — develop requires
           # signed commits, and a signed head is what lets the PR auto-merge
           # with no admin override (#1921).
           gh api "repos/${REPO}/git/refs" \
-            -f ref="refs/heads/${branch}" -f sha="${GITHUB_SHA}" > /dev/null
+            -f ref="refs/heads/${branch}" -f sha="${base_sha}" > /dev/null
 
           # File changes from the changelogger run in this working tree:
           # CHANGELOG.md rewritten, consumed entry files deleted.
-          additions=$(jq -n \
+          #
+          # File contents and the arrays built from them reach jq through
+          # --rawfile and --slurpfile, never as arguments: Linux caps a single
+          # argv string at 128 KiB, and the rolled CHANGELOG.md's base64 passed
+          # that in 0.36.0, the same limit #2002 hit in the version bump.
+          base64 -w0 CHANGELOG.md > /tmp/rollup-changelog.b64
+          jq -n \
             --arg path "CHANGELOG.md" \
-            --arg contents "$(base64 -w0 CHANGELOG.md)" \
-            '[{path: $path, contents: $contents}]')
+            --rawfile contents /tmp/rollup-changelog.b64 \
+            '[{path: $path, contents: ($contents | rtrimstr("\n"))}]' > /tmp/rollup-additions.json
 
           # A patch stamps @since on its own branch, so develop still says
           # TBD for the same symbols and the next minor would claim them.
           # Only docblocks that are byte-identical apart from the tag are
           # carried; anything else is reported for a human (#2222).
-          git fetch --quiet origin develop
           php .github/scripts/release/carry-since.php --version="${VERSION}" > /tmp/carry-since.json
 
           carried=$(jq '[.additions[].resolved] | add // 0' /tmp/carry-since.json)
@@ -238,10 +264,10 @@ jobs:
 
           if [ "${carried}" -gt 0 ]; then
             echo "Carrying ${carried} resolved @since tag(s) back to develop."
-            additions=$(jq -n \
-              --argjson additions "${additions}" \
-              --slurpfile carry /tmp/carry-since.json \
-              '$additions + ($carry[0].additions | map({path, contents}))')
+            jq --slurpfile carry /tmp/carry-since.json \
+              '. + ($carry[0].additions | map({path, contents}))' \
+              /tmp/rollup-additions.json > /tmp/rollup-additions.next.json
+            mv /tmp/rollup-additions.next.json /tmp/rollup-additions.json
           fi
 
           since_note=""
@@ -260,24 +286,34 @@ jobs:
 
           if [ -f "${credits}" ] && ! gh api "repos/${REPO}/contents/${credits}?ref=develop" --silent 2>/dev/null; then
             echo "develop is missing ${credits}; adding it to the rollup."
-            additions=$(jq -n \
-              --argjson additions "${additions}" \
-              --arg path "${credits}" \
-              --arg contents "$(base64 -w0 "${credits}")" \
-              '$additions + [{path: $path, contents: $contents}]')
+            base64 -w0 "${credits}" > /tmp/rollup-credits.b64
+            jq --arg path "${credits}" \
+              --rawfile contents /tmp/rollup-credits.b64 \
+              '. + [{path: $path, contents: ($contents | rtrimstr("\n"))}]' \
+              /tmp/rollup-additions.json > /tmp/rollup-additions.next.json
+            mv /tmp/rollup-additions.next.json /tmp/rollup-additions.json
           fi
-          deletions=$(git status --porcelain .github/changelog/ \
-            | awk '$1 == "D" {print $2}' | jq -R '{path: .}' | jq -s .)
+
+          # Delete only the consumed entry files the branch has. One that
+          # never reached develop has nothing to remove there.
+          git status --porcelain .github/changelog/ \
+            | awk '$1 == "D" {print $2}' \
+            | while read -r path; do
+              if git cat-file -e "${base_sha}:${path}" 2>/dev/null; then
+                printf '%s\n' "${path}"
+              fi
+            done \
+            | jq -R '{path: .}' | jq -s . > /tmp/rollup-deletions.json
 
           jq -n \
             --arg query 'mutation ($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }' \
             --arg repo "${REPO}" \
             --arg branch "${branch}" \
-            --arg oid "${GITHUB_SHA}" \
+            --arg oid "${base_sha}" \
             --arg headline "Roll up changelog for ${VERSION}" \
-            --argjson additions "${additions}" \
-            --argjson deletions "${deletions}" \
-            '{query: $query, variables: {input: {branch: {repositoryNameWithOwner: $repo, branchName: $branch}, expectedHeadOid: $oid, message: {headline: $headline}, fileChanges: {additions: $additions, deletions: $deletions}}}}' \
+            --slurpfile additions /tmp/rollup-additions.json \
+            --slurpfile deletions /tmp/rollup-deletions.json \
+            '{query: $query, variables: {input: {branch: {repositoryNameWithOwner: $repo, branchName: $branch}, expectedHeadOid: $oid, message: {headline: $headline}, fileChanges: {additions: $additions[0], deletions: $deletions[0]}}}}' \
             > /tmp/rollup-commit.json
 
           gh api graphql --input /tmp/rollup-commit.json > /dev/null
@@ -312,12 +348,14 @@ jobs:
           gh api "repos/${REPO}/git/refs" \
             -f ref="refs/heads/${branch}" -f sha="${main_sha}" > /dev/null
 
-          additions=$(jq -n \
+          # Off argv for the same 128 KiB reason as the rollup step above.
+          base64 -w0 CHANGELOG.md > /tmp/parity-changelog.b64
+          jq -n \
             --arg path "CHANGELOG.md" \
-            --arg contents "$(base64 -w0 CHANGELOG.md)" \
-            '[{path: $path, contents: $contents}]')
-          deletions=$(git status --porcelain .github/changelog/ \
-            | awk '$1 == "D" {print $2}' | jq -R '{path: .}' | jq -s .)
+            --rawfile contents /tmp/parity-changelog.b64 \
+            '[{path: $path, contents: ($contents | rtrimstr("\n"))}]' > /tmp/parity-additions.json
+          git status --porcelain .github/changelog/ \
+            | awk '$1 == "D" {print $2}' | jq -R '{path: .}' | jq -s . > /tmp/parity-deletions.json
 
           # expectedHeadOid guards the branch being committed to, which is the
           # new sync branch, so it cannot notice main moving. Re-read main and
@@ -336,9 +374,9 @@ jobs:
             --arg branch "${branch}" \
             --arg oid "${main_sha}" \
             --arg headline "Carry the ${VERSION} changelog to main" \
-            --argjson additions "${additions}" \
-            --argjson deletions "${deletions}" \
-            '{query: $query, variables: {input: {branch: {repositoryNameWithOwner: $repo, branchName: $branch}, expectedHeadOid: $oid, message: {headline: $headline}, fileChanges: {additions: $additions, deletions: $deletions}}}}' \
+            --slurpfile additions /tmp/parity-additions.json \
+            --slurpfile deletions /tmp/parity-deletions.json \
+            '{query: $query, variables: {input: {branch: {repositoryNameWithOwner: $repo, branchName: $branch}, expectedHeadOid: $oid, message: {headline: $headline}, fileChanges: {additions: $additions[0], deletions: $deletions[0]}}}}' \
             > /tmp/parity-commit.json
 
           gh api graphql --input /tmp/parity-commit.json > /dev/null

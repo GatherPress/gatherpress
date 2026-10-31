@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Autoloader.
  *
  * @package GatherPress\Tests\Core
- * @since TBD
+ * @since 0.36.0
  */
 
 namespace GatherPress\Tests\Core;
@@ -49,7 +49,7 @@ class Test_Autoloader extends Base {
 	/**
 	 * Test that register adds an autoloader closure to the SPL stack.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::register
 	 *
@@ -68,7 +68,7 @@ class Test_Autoloader extends Base {
 	/**
 	 * Test that empty class strings or whitespace strings are ignored safely.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::register
 	 *
@@ -89,7 +89,7 @@ class Test_Autoloader extends Base {
 	/**
 	 * Test that classes without namespaces (global classes) are ignored.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::register
 	 *
@@ -109,7 +109,7 @@ class Test_Autoloader extends Base {
 	/**
 	 * Test that classes in unrelated namespaces are ignored.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::register
 	 *
@@ -134,7 +134,7 @@ class Test_Autoloader extends Base {
 	 *
 	 * For instance, 'GatherPressExtra\Class' when root is 'GatherPress\'.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::register
 	 *
@@ -156,7 +156,7 @@ class Test_Autoloader extends Base {
 	/**
 	 * Test that leading backslashes are trimmed properly and class is successfully loaded.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::register
 	 *
@@ -197,7 +197,7 @@ class Test_Autoloader extends Base {
 	/**
 	 * Test that nonexistent class within GatherPress namespace does not error or throw.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::register
 	 *
@@ -219,7 +219,7 @@ class Test_Autoloader extends Base {
 	/**
 	 * Test that custom namespaces can be registered via the gatherpress_autoloader filter (Layout A).
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::register
 	 *
@@ -248,7 +248,7 @@ class Test_Autoloader extends Base {
 	/**
 	 * Test nested subdirectories and underscore to hyphen conversion in class and directory names.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::register
 	 *
@@ -279,7 +279,7 @@ class Test_Autoloader extends Base {
 	 *
 	 * In Layout B, 'classes' lands at the end of the namespace path directly before the filename.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::register
 	 *
@@ -308,7 +308,7 @@ class Test_Autoloader extends Base {
 	/**
 	 * Test that validate_file blocks invalid or traversal paths.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::register
 	 *

@@ -165,14 +165,15 @@ final class Feed {
 	 * @return string The customized excerpt.
 	 */
 	public function get_default_event_excerpt( string $excerpt ): string {
-		// Only apply to events.
-		if ( ! post_type_supports( (string) get_post_type(), Event::SUPPORT ) ) {
+		// Only apply to events, and keep a password-protected event's date and venue
+		// out of the feed, as core keeps its excerpt out.
+		if ( ! post_type_supports( (string) get_post_type(), Event::SUPPORT ) || post_password_required() ) {
 			return $excerpt;
 		}
 
 		// The support check above already returned when no post is in context, so get_the_ID() is an ID here.
 		$event = new Event( (int) get_the_ID() );
-		$venue = $event->get_venue_information();
+		$venue = $event->get_public_venue_information();
 
 		$event_info = $this->get_event_datetime_info( $event );
 
@@ -218,14 +219,15 @@ final class Feed {
 	 * @return string The customized content.
 	 */
 	public function get_default_event_content( string $content ): string {
-		// Only apply to events.
-		if ( ! post_type_supports( (string) get_post_type(), Event::SUPPORT ) ) {
+		// Only apply to events, and keep a password-protected event's date and venue
+		// out of the feed, as core keeps its content out.
+		if ( ! post_type_supports( (string) get_post_type(), Event::SUPPORT ) || post_password_required() ) {
 			return $content;
 		}
 
 		// The support check above already returned when no post is in context, so get_the_ID() is an ID here.
 		$event = new Event( (int) get_the_ID() );
-		$venue = $event->get_venue_information();
+		$venue = $event->get_public_venue_information();
 
 		$event_info = $this->get_event_datetime_info( $event );
 

@@ -19,6 +19,7 @@ namespace GatherPress\Core\Settings;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Assets;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
@@ -116,31 +117,6 @@ final class Network {
 		add_action( 'network_admin_edit_' . self::EDIT_ACTION, array( $this, 'handle_save' ) );
 		add_action( 'network_admin_edit_' . self::VALUES_EDIT_ACTION, array( $this, 'handle_values_save' ) );
 		add_action( 'admin_notices', array( $this, 'subsite_inheritance_notice' ) );
-		add_action( 'admin_head', array( $this, 'print_inherited_styles' ) );
-	}
-
-	/**
-	 * Print inline styles that dim inherited fields on subsite settings pages.
-	 *
-	 * Runs on every admin_head so the styling is applied whether or not the
-	 * built SCSS bundle is available.
-	 *
-	 * @since 0.34.0
-	 *
-	 * @return void
-	 */
-	public function print_inherited_styles(): void {
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check.
-		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
-
-		if ( '' === $page || ! str_starts_with( $page, 'gatherpress_' ) ) {
-			return;
-		}
-
-		echo '<style>
-			.gatherpress-field-inherited { opacity: 0.6; pointer-events: none; }
-			.gatherpress-field-inherited__note { font-style: italic; margin-top: 4px; pointer-events: auto; }
-		</style>';
 	}
 
 	/**
@@ -247,6 +223,7 @@ final class Network {
 		if ( $hook ) {
 			add_action( 'load-' . $hook, array( $this, 'scope_read_filter' ) );
 			add_action( 'load-' . $hook, array( $this, 'maybe_redirect_to_default_tab' ) );
+			add_action( 'load-' . $hook, array( Assets::get_instance(), 'enqueue_settings_assets' ) );
 		}
 	}
 
@@ -337,8 +314,8 @@ final class Network {
 	}
 
 	/**
-	 * Sub-pages shown at network admin: existing sub-pages minus Tools
-	 * (import/export is blog-scoped), plus the special "Network" tab.
+	 * Sub-pages shown at network admin: every per-site sub-page, plus the
+	 * special "Network" tab. Tools imports and exports the network values.
 	 *
 	 * @since 0.34.0
 	 *

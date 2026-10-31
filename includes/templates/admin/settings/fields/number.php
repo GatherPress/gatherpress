@@ -35,8 +35,8 @@ $gatherpress_placeholder = $placeholder ?? '';
 $gatherpress_readonly = ! empty( $disabled ) ? ' readonly' : '';
 
 ?>
-<div class="form-wrap">
-	<label for="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $label ); ?></label>
+<div class="gatherpress-settings-field">
+	<label class="gatherpress-settings-field__label" for="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $label ); ?></label>
 	<input id="<?php echo esc_attr( $option ); ?>" type="number" name="<?php echo esc_attr( $name ); ?>" class="<?php echo esc_attr( $size . '-text' ); ?>" value="<?php echo esc_attr( $value ); ?>" min="<?php echo esc_attr( $min ); ?>" max="<?php echo esc_attr( $max ); ?>"<?php echo '' !== $gatherpress_placeholder ? ' placeholder="' . esc_attr( $gatherpress_placeholder ) . '"' : ''; ?><?php echo $gatherpress_readonly; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static value. ?> />
 	<?php
 	if ( ! empty( $description ) ) {

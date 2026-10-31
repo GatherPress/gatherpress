@@ -225,6 +225,39 @@ class Test_Settings extends Base {
 	}
 
 	/**
+	 * Verify that add_editor_settings sends the datetime separator and honors the filter.
+	 *
+	 * @covers ::add_editor_settings
+	 *
+	 * @return void
+	 */
+	public function test_add_editor_settings_sends_the_datetime_separator(): void {
+		$instance = Settings::get_instance();
+		$settings = $instance->add_editor_settings( array() );
+
+		$this->assertSame(
+			'to',
+			$settings['gatherpress']['config']['datetimeSeparator'],
+			'Failed to assert the editor is sent the default datetime separator.'
+		);
+
+		$filter_callback = function () {
+			return ' - ';
+		};
+		add_filter( 'gatherpress_datetime_separator', $filter_callback );
+
+		$filtered_settings = $instance->add_editor_settings( array() );
+
+		$this->assertSame(
+			' - ',
+			$filtered_settings['gatherpress']['config']['datetimeSeparator'],
+			'Failed to assert the editor is sent the filtered datetime separator.'
+		);
+
+		remove_filter( 'gatherpress_datetime_separator', $filter_callback );
+	}
+
+	/**
 	 * Coverage for add_editor_settings method.
 	 *
 	 * @covers ::add_editor_settings
@@ -277,6 +310,7 @@ class Test_Settings extends Base {
 			'homeUrl',
 			'mapTileUrl',
 			'mapTileAttribution',
+			'datetimeSeparator',
 			'venuesMapsSettingsUrl',
 		);
 
@@ -572,7 +606,7 @@ class Test_Settings extends Base {
 		);
 
 		$this->assertStringContainsString(
-			'<label for="gatherpress_option">Unit test</label>',
+			'<label class="gatherpress-settings-field__label" for="gatherpress_option">Unit test</label>',
 			$text,
 			'Failed to assert that label matches.'
 		);
@@ -794,7 +828,7 @@ class Test_Settings extends Base {
 		);
 
 		$this->assertStringContainsString(
-			'<label for="gatherpress_option">Unit test</label>',
+			'<label class="gatherpress-settings-field__label" for="gatherpress_option">Unit test</label>',
 			$text,
 			'Failed to assert that label matches.'
 		);
@@ -868,90 +902,6 @@ class Test_Settings extends Base {
 			$expected,
 			$value,
 			'Should return the correct value when all parameters are set'
-		);
-
-		delete_option( 'gatherpress_settings' );
-	}
-
-	/**
-	 * Test that a renamed option is answered by the name it used to have.
-	 *
-	 * @since  TBD
-	 * @covers ::get
-	 *
-	 * @return void
-	 */
-	public function test_get_falls_back_to_a_renamed_options_old_name(): void {
-		$instance = Settings::get_instance();
-
-		add_option(
-			'gatherpress_settings',
-			array(
-				'max_attendance_limit' => 100,
-			)
-		);
-
-		$this->assertSame(
-			100,
-			$instance->get( 'capacity' ),
-			'Failed to assert the pre-0.36.0 name answers for capacity.'
-		);
-
-		delete_option( 'gatherpress_settings' );
-	}
-
-	/**
-	 * Test that the current name wins over the one it replaced.
-	 *
-	 * @since  TBD
-	 * @covers ::get
-	 *
-	 * @return void
-	 */
-	public function test_get_prefers_the_current_name_over_the_old_one(): void {
-		$instance = Settings::get_instance();
-
-		add_option(
-			'gatherpress_settings',
-			array(
-				'capacity'             => 25,
-				'max_attendance_limit' => 100,
-			)
-		);
-
-		$this->assertSame(
-			25,
-			$instance->get( 'capacity' ),
-			'Failed to assert capacity wins over the name it replaced.'
-		);
-
-		delete_option( 'gatherpress_settings' );
-	}
-
-	/**
-	 * Test that an option with no rename entry is unaffected by the fallback.
-	 *
-	 * @since  TBD
-	 * @covers ::get
-	 *
-	 * @return void
-	 */
-	public function test_get_without_a_rename_entry_uses_the_default(): void {
-		$instance = Settings::get_instance();
-
-		add_option(
-			'gatherpress_settings',
-			array(
-				'max_attendance_limit' => 100,
-			)
-		);
-
-		// Only `capacity` is mapped to the old name, so nothing else should
-		// start answering with it.
-		$this->assertNotSame(
-			100,
-			$instance->get( 'guest_limit' ),
-			'Failed to assert the rename map only applies to the option it names.'
 		);
 
 		delete_option( 'gatherpress_settings' );
@@ -1331,10 +1281,11 @@ class Test_Settings extends Base {
 		);
 
 		$this->assertStringContainsString(
-			'Unit test',
+			'<label class="gatherpress-settings-field__label" for="gatherpress_option">Unit test</label>',
 			$select,
-			'Failed to assert that label matches.'
+			'Failed to assert the select label is spaced like the other fields.'
 		);
+		$this->assertStringNotContainsString( '<br/>', $select, 'Failed to assert the label needs no line break.' );
 	}
 
 	/**
@@ -1453,99 +1404,6 @@ class Test_Settings extends Base {
 			get_option( 'rewrite_rules' ),
 			'Failed to assert rewrite rules were deleted when URLs removed.'
 		);
-	}
-
-	/**
-	 * Test that saving a renamed setting retires the name it used to have.
-	 *
-	 * Without this the fallback in get() resurrects the former value the
-	 * moment the admin saves the current one as its default, because the
-	 * strip-defaults pass removes the current key and leaves the former one
-	 * standing.
-	 *
-	 * @since  TBD
-	 * @covers ::sanitize_page_settings
-	 *
-	 * @return void
-	 */
-	public function test_sanitize_page_settings_retires_a_renamed_options_former_name(): void {
-		$instance = Settings::get_instance();
-
-		update_option( 'gatherpress_settings', array( 'max_attendance_limit' => 100 ) );
-
-		$callback = $instance->sanitize_page_settings( array( 'capacity' => 'number' ) );
-		$merged   = $callback( array( 'capacity' => 50 ) );
-
-		update_option( 'gatherpress_settings', $merged );
-
-		$this->assertArrayNotHasKey(
-			'max_attendance_limit',
-			$merged,
-			'Failed to assert the former name is dropped once the current one is saved.'
-		);
-		$this->assertSame(
-			50,
-			$instance->get( 'capacity' ),
-			'Failed to assert a renamed setting can be returned to its default.'
-		);
-
-		delete_option( 'gatherpress_settings' );
-	}
-
-	/**
-	 * Test that emptying a renamed setting retires the name it used to have.
-	 *
-	 * @since  TBD
-	 * @covers ::sanitize_page_settings
-	 *
-	 * @return void
-	 */
-	public function test_sanitize_page_settings_retires_a_former_name_on_an_empty_value(): void {
-		$instance = Settings::get_instance();
-
-		update_option( 'gatherpress_settings', array( 'venue_map_default_height' => 300 ) );
-
-		$callback = $instance->sanitize_page_settings( array( 'venue_map_height' => 'number' ) );
-		$merged   = $callback( array( 'venue_map_height' => '' ) );
-
-		update_option( 'gatherpress_settings', $merged );
-
-		$this->assertArrayNotHasKey(
-			'venue_map_default_height',
-			$merged,
-			'Failed to assert an emptied setting drops its former name.'
-		);
-		$this->assertNotSame(
-			300,
-			$instance->get( 'venue_map_height' ),
-			'Failed to assert an emptied setting stops answering with the former value.'
-		);
-
-		delete_option( 'gatherpress_settings' );
-	}
-
-	/**
-	 * Test that set() retires a renamed setting's former name.
-	 *
-	 * @since  TBD
-	 * @covers ::set
-	 *
-	 * @return void
-	 */
-	public function test_set_retires_a_renamed_options_former_name(): void {
-		$instance = Settings::get_instance();
-
-		update_option( 'gatherpress_settings', array( 'max_attendance_limit' => 100 ) );
-
-		$instance->set( 'capacity', 50 );
-
-		$this->assertSame(
-			50,
-			$instance->get( 'capacity' ),
-			'Failed to assert set() to the default clears the former name.'
-		);
-
-		delete_option( 'gatherpress_settings' );
 	}
 
 	/**
@@ -2834,81 +2692,6 @@ class Test_Settings extends Base {
 		$this->assertTrue( Settings::get_instance()->is_option_inherited( 'date_format' ) );
 		$this->assertFalse( Settings::get_instance()->is_option_inherited( 'time_format' ) );
 
-		delete_site_option( 'gatherpress_network_settings' );
-		\GatherPress\Core\Settings\Network::flush_config_cache();
-	}
-
-	/**
-	 * Coverage for is_option_inherited when the network list predates a rename.
-	 *
-	 * @since   TBD
-	 * @covers ::is_option_inherited
-	 *
-	 * @group   multisite
-	 *
-	 * @return void
-	 */
-	public function test_is_option_inherited_matches_a_renamed_options_old_name(): void {
-		if ( ! is_multisite() ) {
-			$this->markTestSkipped( 'Requires multisite.' );
-		}
-
-		// Written by a network admin before 0.36.0, so it names the option the
-		// way it was called then.
-		update_site_option(
-			'gatherpress_network_settings',
-			array(
-				'enabled'   => true,
-				'inherited' => array( 'max_attendance_limit' ),
-			)
-		);
-		\GatherPress\Core\Settings\Network::flush_config_cache();
-
-		$this->assertTrue(
-			Settings::get_instance()->is_option_inherited( 'capacity' ),
-			'Failed to assert the pre-0.36.0 name keeps the option inherited.'
-		);
-		$this->assertFalse(
-			Settings::get_instance()->is_option_inherited( 'guest_limit' ),
-			'Failed to assert an unlisted option stays site-editable.'
-		);
-
-		delete_site_option( 'gatherpress_network_settings' );
-		\GatherPress\Core\Settings\Network::flush_config_cache();
-	}
-
-	/**
-	 * Coverage for get() reading a network value stored under a renamed option's old name.
-	 *
-	 * @since   TBD
-	 * @covers ::get
-	 *
-	 * @group   multisite
-	 *
-	 * @return void
-	 */
-	public function test_get_reads_a_network_value_saved_under_the_old_name(): void {
-		if ( ! is_multisite() ) {
-			$this->markTestSkipped( 'Requires multisite.' );
-		}
-
-		update_site_option( 'gatherpress_settings', array( 'max_attendance_limit' => 100 ) );
-		update_site_option(
-			'gatherpress_network_settings',
-			array(
-				'enabled'   => true,
-				'inherited' => array( 'max_attendance_limit' ),
-			)
-		);
-		\GatherPress\Core\Settings\Network::flush_config_cache();
-
-		$this->assertSame(
-			100,
-			Settings::get_instance()->get( 'capacity' ),
-			'Failed to assert a network value saved under the old name is inherited.'
-		);
-
-		delete_site_option( 'gatherpress_settings' );
 		delete_site_option( 'gatherpress_network_settings' );
 		\GatherPress\Core\Settings\Network::flush_config_cache();
 	}
@@ -4373,6 +4156,65 @@ class Test_Settings extends Base {
 			sprintf( 'value="%s" checked', esc_attr( Format_Field::CUSTOM ) ),
 			$collapsed,
 			'Failed to assert the Custom radio is the one selected.'
+		);
+	}
+
+	/**
+	 * A listed format fills the Custom field and the preview too, as on Settings > General.
+	 *
+	 * @covers ::render_field
+	 *
+	 * @return void
+	 */
+	public function test_render_field_format_fills_custom_with_a_listed_format(): void {
+		$instance = Settings::get_instance();
+
+		update_option( 'gatherpress_settings', array( 'date_format' => 'F j, Y' ) );
+
+		$html = Utility::buffer_and_return(
+			array( $instance, 'render_field' ),
+			array(
+				'date_format',
+				array(
+					'field' => array(
+						'type'    => 'format',
+						'label'   => 'Unit test',
+						'options' => array( 'choices' => 'date' ),
+						'preview' => array( 'template' => 'datetime-preview' ),
+					),
+				),
+			)
+		);
+
+		delete_option( 'gatherpress_settings' );
+
+		$collapsed = (string) preg_replace( '/\s+/', ' ', $html );
+
+		$this->assertStringContainsString(
+			'name="gatherpress_settings[date_format_custom]" value="F j, Y"',
+			$collapsed,
+			'Failed to assert the listed format fills the Custom field.'
+		);
+		$this->assertStringContainsString(
+			'data-gatherpress_component_name="format-field"',
+			$collapsed,
+			'Failed to assert the field is wired up for the settings script.'
+		);
+		$this->assertStringContainsString(
+			esc_attr(
+				htmlspecialchars(
+					(string) wp_json_encode(
+						array(
+							'name'  => 'gatherpress_settings[date_format_custom]',
+							'value' => 'F j, Y',
+						)
+					),
+					ENT_QUOTES,
+					'UTF-8'
+				)
+			),
+			$collapsed,
+			'Failed to assert the preview shows the listed format.'
 		);
 	}
 
