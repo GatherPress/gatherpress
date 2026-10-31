@@ -1,7 +1,14 @@
 /**
+ * WordPress dependencies
+ */
+import { __, sprintf } from '@wordpress/i18n';
+
+/**
  * Internal dependencies
  */
+import { createMomentWithTimezone } from '../../helpers/datetime';
 import { findEventPostById } from '../../helpers/event';
+import { getViewerTimeLabel } from './viewer-time';
 
 /**
  * Resolves the event datetime data for the event-date block editor.
@@ -125,4 +132,96 @@ export function resolveEventDateData( select, contextPostType, contextQueryId, p
 		isLoading: false,
 		isValidEvent: !! post && 'publish' === post?.status,
 	};
+}
+
+/**
+ * Whether the block appends the timezone, so whichever time it shows is labeled.
+ *
+ * The event's own preference wins, then the block's "Append time zone", then the
+ * site setting. Mirrors `Html_Renderer::is_timezone_shown()`.
+ *
+ * @since TBD
+ *
+ * @param {string}  timezonePreference  The event's preference: 'always', 'never' or ''.
+ * @param {string}  showTimezone        The block attribute: 'yes', 'no' or ''.
+ * @param {boolean} defaultShowTimezone The site's "Show Timezone" setting.
+ *
+ * @return {boolean} True when the timezone is shown.
+ */
+export function isTimezoneAppended( timezonePreference, showTimezone, defaultShowTimezone ) {
+	if ( 'always' === timezonePreference || 'never' === timezonePreference ) {
+		return 'always' === timezonePreference;
+	}
+
+	return showTimezone ? 'yes' === showTimezone : Boolean( defaultShowTimezone );
+}
+
+/**
+ * The help text of the "Show viewer local time" toggle.
+ *
+ * @since TBD
+ *
+ * @param {Object}  args                    Toggle state.
+ * @param {boolean} args.isAllDay           Whether the event is all day.
+ * @param {boolean} args.isTimezoneAppended Whether the block appends the timezone.
+ *
+ * @return {string} The help text.
+ */
+export function getViewerTimeHelp( { isAllDay, isTimezoneAppended: timezoneAppended } ) {
+	if ( isAllDay ) {
+		return __( 'All-day events do not show viewer local time.', 'gatherpress' );
+	}
+
+	if ( ! timezoneAppended ) {
+		return __( 'Time zone must be appended to show viewer local time.', 'gatherpress' );
+	}
+
+	return __(
+		'Displays the event time converted to each viewer\u2019s local timezone in a tooltip. Viewers in the same timezone see nothing extra.',
+		'gatherpress',
+	);
+}
+
+/**
+ * The viewer time label the editor previews, the same one the frontend shows.
+ *
+ * Empty when the author is already in the event's timezone, as it is for a
+ * viewer there.
+ *
+ * @since TBD
+ *
+ * @param {Object}      args           Label inputs.
+ * @param {boolean}     args.isEnabled Whether the block shows the viewer time.
+ * @param {string|null} args.start     The start the block shows, in the event timezone, or null.
+ * @param {string|null} args.end       The end the block shows, in the event timezone, or null.
+ * @param {string}      args.timezone  The event timezone.
+ * @param {string}      args.separator The block's separator.
+ * @param {boolean}     args.isAllDay  Whether the event is all day.
+ *
+ * @return {string} The label, or an empty string when there is nothing to add.
+ */
+export function getViewerTimePreview( { isEnabled, start, end, timezone, separator, isAllDay } ) {
+	if ( ! isEnabled || isAllDay ) {
+		return '';
+	}
+
+	const toGmt = ( datetime ) =>
+		datetime
+			? createMomentWithTimezone( datetime, timezone ).utc().format( 'YYYY-MM-DD HH:mm:ss' )
+			: '';
+
+	return getViewerTimeLabel( {
+		startGmt: toGmt( start ),
+		endGmt: toGmt( end ),
+		eventTimezone: timezone,
+		rangeFormat: sprintf(
+			/* translators: 1: start in the viewer's timezone, 2: separator, 3: end in the viewer's timezone. */
+			__( '%1$s %2$s %3$s your time', 'gatherpress' ),
+			'%1$s',
+			separator || __( 'to', 'gatherpress' ),
+			'%2$s',
+		),
+		/* translators: %s: event start in the viewer's timezone. */
+		singleFormat: __( '%s your time', 'gatherpress' ),
+	} );
 }

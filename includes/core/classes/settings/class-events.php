@@ -91,7 +91,7 @@ final class Events extends Base {
 					'gatherpress'
 				),
 				'options'     => array(
-					'date_format'   => array(
+					'date_format'          => array(
 						'labels' => array(
 							'name' => __( 'Date Format', 'gatherpress' ),
 						),
@@ -114,7 +114,7 @@ final class Events extends Base {
 							),
 						),
 					),
-					'time_format'   => array(
+					'time_format'          => array(
 						'labels' => array(
 							'name' => __( 'Time Format', 'gatherpress' ),
 						),
@@ -137,7 +137,7 @@ final class Events extends Base {
 							),
 						),
 					),
-					'show_timezone' => array(
+					'show_timezone'        => array(
 						'labels' => array(
 							'name' => __( 'Show Timezone', 'gatherpress' ),
 						),
@@ -154,6 +154,24 @@ final class Events extends Base {
 							'options' => array(
 								'default' => true,
 							),
+						),
+					),
+					'show_viewer_timezone' => array(
+						'labels'  => array(
+							'name' => __( 'Show Viewer Timezone', 'gatherpress' ),
+						),
+						'field'   => array(
+							'label'   => __(
+								'Display the event time in the viewer\'s timezone in a tooltip on the event datetime.',
+								'gatherpress'
+							),
+							'type'    => 'checkbox',
+							'options' => array(
+								'default' => false,
+							),
+						),
+						'show_if' => array(
+							'show_timezone' => array( 'not' => false ),
 						),
 					),
 				),
