@@ -64,6 +64,7 @@
 			}
 
 			&.gatherpress--is-today {
+				--gatherpress-calendar-day-color: var(--wp--preset--color--base, #fff);
 				--gatherpress-calendar-title-color: var(--wp--preset--color--base, #fff);
 				--gatherpress-calendar-time-color: var(--wp--preset--color--base, #fff);
 
@@ -82,7 +83,7 @@
 	}
 
 	.gatherpress-calendar__day-number {
-		color: currentcolor;
+		color: var(--gatherpress-calendar-day-color, currentcolor);
 		font-weight: 700;
 		text-shadow: 0 1px 3px rgb(0 0 0 / 20%);
 	}
