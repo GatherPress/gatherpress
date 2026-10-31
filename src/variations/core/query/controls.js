@@ -233,9 +233,11 @@ export const EventQueryControlsPanel = ( props ) => {
 	// plain post/page/venue query makes the core endpoint reject the request
 	// (rest_invalid_param) and the Query Loop spins forever (#1756). The
 	// gatherpress_event_query / include_unfinished vars are harmless on those
-	// endpoints but meaningless there, so drop them too. Guarded on the vars
-	// still being present so this doesn't re-fire in a loop, and on the post
-	// type having loaded so an event loop isn't stripped on open (#2495).
+	// endpoints but meaningless there, so drop them too. The date range vars
+	// go as well, since on a plain post type the date query would filter by
+	// publish date instead. Guarded on the vars still being present so this
+	// doesn't re-fire in a loop, and on the post type having loaded so an
+	// event loop isn't stripped on open (#2495).
 	useEffect( () => {
 		if ( ! isQueryPostTypeLoaded || queryPostTypeSupportsEvents ) {
 			return;
@@ -247,6 +249,9 @@ export const EventQueryControlsPanel = ( props ) => {
 		const hasEventOnlyVars =
 			undefined !== query.gatherpress_event_query ||
 			undefined !== query.include_unfinished ||
+			undefined !== query.gatherpress_date_range ||
+			undefined !== query.gatherpress_date_after ||
+			undefined !== query.gatherpress_date_before ||
 			hasEventOnlyOrderBy;
 
 		if ( ! hasEventOnlyVars ) {
@@ -256,6 +261,9 @@ export const EventQueryControlsPanel = ( props ) => {
 		const {
 			gatherpress_event_query: removedEventQuery,
 			include_unfinished: removedIncludeUnfinished,
+			gatherpress_date_range: removedDateRange,
+			gatherpress_date_after: removedDateAfter,
+			gatherpress_date_before: removedDateBefore,
 			...remainingQuery
 		} = query;
 
