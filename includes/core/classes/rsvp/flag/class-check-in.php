@@ -19,14 +19,13 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 /**
  * Class Check_In.
  *
- * The `checked-in` flag. An RSVP with neither this flag nor `no-show` is not
- * recorded, so existing RSVPs need no backfill. Adding this flag removes the
- * `no-show` flag. To react to a check-in, hook `gatherpress_rsvp_flag_added`
- * and compare the slug with `Check_In::SLUG`.
+ * The `checked-in` check-in state. An RSVP without a check-in state is not
+ * recorded, so existing RSVPs need no backfill. To react to a check-in, hook
+ * `gatherpress_rsvp_flag_added` and compare the slug with `Check_In::SLUG`.
  *
  * @since 0.36.0
  */
-final class Check_In extends Base {
+final class Check_In extends Check_In_State {
 
 	/**
 	 * The check-in flag slug.
@@ -38,13 +37,35 @@ final class Check_In extends Base {
 	public const SLUG = 'checked-in';
 
 	/**
-	 * Checks the RSVP in, and removes its no-show.
+	 * Gets the name of the state.
 	 *
 	 * @since TBD
 	 *
-	 * @return bool True when the RSVP is checked in and not a no-show.
+	 * @return string The translated name.
 	 */
-	public function add(): bool {
-		return parent::add() && ( new No_Show( $this->rsvp_id ) )->remove();
+	public function label(): string {
+		return __( 'Checked in', 'gatherpress' );
+	}
+
+	/**
+	 * Gets the name of the action that sets the state.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The translated action name.
+	 */
+	public function action_label(): string {
+		return __( 'Check in', 'gatherpress' );
+	}
+
+	/**
+	 * Whether the state means the person attended.
+	 *
+	 * @since TBD
+	 *
+	 * @return bool True: a checked-in person attended.
+	 */
+	public function attended(): bool {
+		return true;
 	}
 }

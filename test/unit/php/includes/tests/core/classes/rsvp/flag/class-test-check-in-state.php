@@ -11,10 +11,11 @@ namespace GatherPress\Tests\Core\Rsvp\Flag;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Flag\Check_In;
-use GatherPress\Core\Rsvp\Flag\Check_In_State;
+use GatherPress\Core\Rsvp\Flag\Check_In_Registry;
 use GatherPress\Core\Rsvp\Flag\No_Show;
 use GatherPress\Core\Rsvp\Flag\Setup;
 use GatherPress\Tests\Base as Base_Unit_Test;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Check_In_State.
@@ -24,13 +25,35 @@ use GatherPress\Tests\Base as Base_Unit_Test;
 class Test_Check_In_State extends Base_Unit_Test {
 
 	/**
-	 * Set up the test environment before each test.
+	 * The registered states before the test.
+	 *
+	 * @var array<string, string>
+	 */
+	private array $registered = array();
+
+	/**
+	 * Register the taxonomy and a third state, as a companion plugin would.
 	 *
 	 * @return void
 	 */
 	public function set_up(): void {
 		parent::set_up();
 		Setup::get_instance()->register_taxonomy();
+
+		$registry         = Check_In_Registry::get_instance();
+		$this->registered = $registry->get_all();
+
+		$registry->register( Test_Checked_In_Online::class );
+	}
+
+	/**
+	 * Restore the registered states.
+	 *
+	 * @return void
+	 */
+	public function tear_down(): void {
+		Utility::set_and_get_hidden_property( Check_In_Registry::get_instance(), 'states', $this->registered );
+		parent::tear_down();
 	}
 
 	/**
@@ -52,62 +75,62 @@ class Test_Check_In_State extends Base_Unit_Test {
 	}
 
 	/**
-	 * The flag states use the slugs of their flags.
+	 * Adding a state removes every other registered state, a plugin's included.
 	 *
-	 * @coversNothing
-	 *
-	 * @return void
-	 */
-	public function test_values_match_the_flag_slugs(): void {
-		$this->assertSame( Check_In::SLUG, Check_In_State::CHECKED_IN->value );
-		$this->assertSame( No_Show::SLUG, Check_In_State::NO_SHOW->value );
-	}
-
-	/**
-	 * Each state sets an RSVP to itself, and reads back from it.
-	 *
-	 * @covers ::apply
-	 * @covers ::for_rsvp
+	 * @covers ::add
 	 *
 	 * @return void
 	 */
-	public function test_apply_and_for_rsvp(): void {
+	public function test_add_removes_the_other_states(): void {
 		$rsvp_id = $this->make_rsvp();
+		$states  = array( Check_In::class, Test_Checked_In_Online::class, No_Show::class, Check_In::class );
 
-		$this->assertSame(
-			Check_In_State::NOT_RECORDED,
-			Check_In_State::for_rsvp( $rsvp_id ),
-			'A new RSVP should not be recorded.'
-		);
-
-		$states = array( Check_In_State::CHECKED_IN, Check_In_State::NO_SHOW, Check_In_State::NOT_RECORDED );
-
-		foreach ( $states as $state ) {
-			$this->assertTrue( $state->apply( $rsvp_id ), sprintf( 'Setting %s should succeed.', $state->value ) );
+		foreach ( $states as $state_class ) {
+			$this->assertTrue(
+				( new $state_class( $rsvp_id ) )->add(),
+				sprintf( 'Adding %s should succeed.', $state_class )
+			);
 			$this->assertSame(
-				$state,
-				Check_In_State::for_rsvp( $rsvp_id ),
-				sprintf( 'The RSVP should be %s.', $state->value )
+				array( $state_class::SLUG ),
+				Setup::get_instance()->get_flags( $rsvp_id ),
+				sprintf( '%s should be the only check-in state.', $state_class )
 			);
 		}
-
-		$this->assertSame(
-			array(),
-			Setup::get_instance()->get_flags( $rsvp_id ),
-			'Not recorded should remove both flags.'
-		);
 	}
 
 	/**
-	 * Each state has a label.
+	 * A state that cannot be written leaves the others alone.
 	 *
-	 * @covers ::label
+	 * @covers ::add
 	 *
 	 * @return void
 	 */
-	public function test_label(): void {
-		$this->assertSame( 'Checked in', Check_In_State::CHECKED_IN->label() );
-		$this->assertSame( 'No-show', Check_In_State::NO_SHOW->label() );
-		$this->assertSame( 'Not recorded', Check_In_State::NOT_RECORDED->label() );
+	public function test_add_fails_without_an_rsvp(): void {
+		$this->assertFalse( ( new No_Show( 0 ) )->add(), 'A no-show needs an RSVP.' );
+	}
+
+	/**
+	 * Core's states name themselves and say whether the person attended.
+	 *
+	 * @covers \GatherPress\Core\Rsvp\Flag\Check_In::label
+	 * @covers \GatherPress\Core\Rsvp\Flag\Check_In::action_label
+	 * @covers \GatherPress\Core\Rsvp\Flag\Check_In::attended
+	 * @covers \GatherPress\Core\Rsvp\Flag\No_Show::label
+	 * @covers \GatherPress\Core\Rsvp\Flag\No_Show::action_label
+	 * @covers \GatherPress\Core\Rsvp\Flag\No_Show::attended
+	 *
+	 * @return void
+	 */
+	public function test_core_states(): void {
+		$check_in = new Check_In( 0 );
+		$no_show  = new No_Show( 0 );
+
+		$this->assertSame( 'no-show', No_Show::SLUG );
+		$this->assertSame( 'Checked in', $check_in->label() );
+		$this->assertSame( 'Check in', $check_in->action_label() );
+		$this->assertTrue( $check_in->attended() );
+		$this->assertSame( 'No-show', $no_show->label() );
+		$this->assertSame( 'Mark as no-show', $no_show->action_label() );
+		$this->assertFalse( $no_show->attended() );
 	}
 }

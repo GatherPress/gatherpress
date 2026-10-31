@@ -10,7 +10,7 @@ namespace GatherPress\Tests\Core\Rsvp;
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Flag\Check_In;
-use GatherPress\Core\Rsvp\Flag\Check_In_State;
+use GatherPress\Core\Rsvp\Flag\Check_In_Registry;
 use GatherPress\Core\Rsvp\Flag\No_Show;
 use GatherPress\Core\Rsvp\List_Table;
 use GatherPress\Core\Rsvp;
@@ -18,6 +18,7 @@ use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
 use GatherPress\Core\Rsvp\Response\Provider_Registry;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Tests\Base;
+use GatherPress\Tests\Core\Rsvp\Flag\Test_Checked_In_Online;
 use PMC\Unit_Test\Utility;
 use WP_Screen;
 
@@ -694,7 +695,7 @@ class Test_List_Table extends Base {
 			'Failed to assert a no-show RSVP has no no-show action.'
 		);
 
-		Check_In_State::NOT_RECORDED->apply( (int) $this->rsvp['comment_ID'] );
+		Check_In_Registry::get_instance()->clear( (int) $this->rsvp['comment_ID'] );
 	}
 
 	/**
@@ -991,7 +992,7 @@ class Test_List_Table extends Base {
 			'Failed to assert the column shows No-show.'
 		);
 
-		Check_In_State::NOT_RECORDED->apply( $rsvp_id );
+		Check_In_Registry::get_instance()->clear( $rsvp_id );
 
 		$this->rsvp['comment_approved'] = '0';
 
@@ -1014,27 +1015,75 @@ class Test_List_Table extends Base {
 
 		$actions = $this->list_table->get_bulk_actions();
 
-		$this->assertArrayHasKey(
-			'check_in',
-			$actions,
-			'Failed to assert bulk actions contain check_in.'
+		$this->assertSame( 'Check in', $actions['check_in-checked-in'] ?? null );
+		$this->assertSame( 'Mark as no-show', $actions['check_in-no-show'] ?? null );
+		$this->assertSame( 'Clear check-in', $actions['clear_check_in'] ?? null );
+	}
+
+	/**
+	 * A check-in state a plugin registers shows in the column, actions and filter.
+	 *
+	 * @covers ::column_default
+	 * @covers ::column_attendee
+	 * @covers ::get_bulk_actions
+	 * @covers ::get_check_in_actions
+	 * @covers ::get_check_in_options
+	 * @covers ::set_check_in
+	 *
+	 * @return void
+	 */
+	public function test_a_registered_check_in_state_reaches_the_screen(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$registry   = Check_In_Registry::get_instance();
+		$registered = $registry->get_all();
+		$rsvp_id    = (int) $this->rsvp['comment_ID'];
+
+		$registry->register( Test_Checked_In_Online::class );
+
+		$this->rsvp['comment_approved'] = '1';
+
+		$this->assertSame(
+			'Check in online',
+			$this->list_table->get_bulk_actions()['check_in-checked-in-online'] ?? null,
+			'Failed to assert the state has a bulk action.'
 		);
-		$this->assertArrayHasKey(
-			'no_show',
-			$actions,
-			'Failed to assert bulk actions contain no_show.'
+		$this->assertStringContainsString(
+			'>Check in online<',
+			$this->list_table->column_attendee( $this->rsvp ),
+			'Failed to assert the state has a row action.'
 		);
-		$this->assertArrayHasKey(
-			'clear_check_in',
-			$actions,
-			'Failed to assert bulk actions contain clear_check_in.'
+		$this->assertContains(
+			array(
+				'value' => 'checked-in-online',
+				'label' => 'Checked in online',
+			),
+			Utility::invoke_hidden_method( $this->list_table, 'get_check_in_options' ),
+			'Failed to assert the filter offers the state.'
 		);
+
+		Utility::invoke_hidden_method(
+			$this->list_table,
+			'set_check_in',
+			array( $rsvp_id, 'check_in-checked-in-online' )
+		);
+
+		$this->assertSame(
+			'Checked in online',
+			$this->list_table->column_default( $this->rsvp, 'checked_in' ),
+			'Failed to assert the column shows the state.'
+		);
+
+		$registry->clear( $rsvp_id );
+		Utility::set_and_get_hidden_property( $registry, 'states', $registered );
 	}
 
 	/**
 	 * The check-in bulk actions set each check-in state.
 	 *
 	 * @covers ::process_bulk_action
+	 * @covers ::get_check_in_actions
+	 * @covers ::set_check_in
 	 *
 	 * @return void
 	 */
@@ -1047,19 +1096,22 @@ class Test_List_Table extends Base {
 		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
 
 		$expected = array(
-			'check_in'       => Check_In_State::CHECKED_IN,
-			'no_show'        => Check_In_State::NO_SHOW,
-			'clear_check_in' => Check_In_State::NOT_RECORDED,
+			'check_in-checked-in' => 'checked-in',
+			'check_in-no-show'    => 'no-show',
+			'check_in-unknown'    => 'no-show',
+			'clear_check_in'      => null,
 		);
 
-		foreach ( $expected as $action => $state ) {
+		foreach ( $expected as $action => $slug ) {
 			$_REQUEST['action'] = $action;
 
 			$this->list_table->process_bulk_action();
 
+			$state = Check_In_Registry::get_instance()->get_state( $rsvp_id );
+
 			$this->assertSame(
-				$state,
-				Check_In_State::for_rsvp( $rsvp_id ),
+				$slug,
+				null === $state ? null : $state::SLUG,
 				sprintf( 'Failed to assert the %s bulk action sets its state.', $action )
 			);
 		}
@@ -2476,7 +2528,7 @@ class Test_List_Table extends Base {
 			'Failed to assert an unknown state adds no taxonomy query.'
 		);
 
-		$_REQUEST['check_in'] = Check_In_State::NO_SHOW->value;
+		$_REQUEST['check_in'] = 'no-show';
 
 		$this->assertSame(
 			array(
@@ -2491,7 +2543,7 @@ class Test_List_Table extends Base {
 			'Failed to assert a flag state matches its flag.'
 		);
 
-		$_REQUEST['check_in'] = Check_In_State::NOT_RECORDED->value;
+		$_REQUEST['check_in'] = Check_In_Registry::NOT_RECORDED;
 		$_REQUEST['response'] = Status::ATTENDING->value;
 
 		$filtered = Utility::invoke_hidden_method(
@@ -2531,20 +2583,22 @@ class Test_List_Table extends Base {
 	 */
 	public function test_check_in_filter_finds_rsvps(): void {
 		$rsvp_ids = array();
+		$states   = array( Check_In::SLUG, No_Show::SLUG, Check_In_Registry::NOT_RECORDED );
 
-		foreach ( Check_In_State::cases() as $state ) {
-			$rsvp_ids[ $state->value ] = $this->factory->comment->create(
+		foreach ( $states as $state ) {
+			$rsvp_ids[ $state ] = $this->factory->comment->create(
 				array(
 					'comment_post_ID' => $this->event_id,
 					'comment_type'    => Rsvp::COMMENT_TYPE,
 				)
 			);
-
-			$state->apply( $rsvp_ids[ $state->value ] );
 		}
 
-		foreach ( Check_In_State::cases() as $state ) {
-			$_REQUEST['check_in'] = $state->value;
+		( new Check_In( $rsvp_ids[ Check_In::SLUG ] ) )->add();
+		( new No_Show( $rsvp_ids[ No_Show::SLUG ] ) )->add();
+
+		foreach ( $states as $state ) {
+			$_REQUEST['check_in'] = $state;
 
 			$found = Rsvp\Query::get_instance()->get_rsvps(
 				Utility::invoke_hidden_method(
@@ -2559,11 +2613,11 @@ class Test_List_Table extends Base {
 				)
 			);
 
-			$this->assertContains( $rsvp_ids[ $state->value ], array_map( 'intval', $found ) );
+			$this->assertContains( $rsvp_ids[ $state ], array_map( 'intval', $found ) );
 			$this->assertCount(
-				Check_In_State::NOT_RECORDED === $state ? 2 : 1,
+				Check_In_Registry::NOT_RECORDED === $state ? 2 : 1,
 				$found,
-				sprintf( 'Failed to assert the %s filter finds only its RSVPs.', $state->value )
+				sprintf( 'Failed to assert the %s filter finds only its RSVPs.', $state )
 			);
 		}
 
@@ -2582,11 +2636,12 @@ class Test_List_Table extends Base {
 	 * @covers ::render_event_field
 	 * @covers ::render_response_toggle
 	 * @covers ::render_check_in_field
+	 * @covers ::get_check_in_options
 	 *
 	 * @return void
 	 */
 	public function test_extra_tablenav_writes_the_controls(): void {
-		$_REQUEST['check_in'] = Check_In_State::NO_SHOW->value;
+		$_REQUEST['check_in'] = 'no-show';
 
 		$output = Utility::buffer_and_return(
 			static function (): void {

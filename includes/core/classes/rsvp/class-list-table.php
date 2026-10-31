@@ -23,7 +23,7 @@ use GatherPress\Core\Utility;
 use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Flag\Base as Flag;
-use GatherPress\Core\Rsvp\Flag\Check_In_State;
+use GatherPress\Core\Rsvp\Flag\Check_In_Registry;
 use GatherPress\Core\Rsvp\Response\Status;
 use WP_List_Table;
 
@@ -52,6 +52,24 @@ final class List_Table extends WP_List_Table {
 	 * @var string
 	 */
 	const STATUS_LINK_TEMPLATE = '<a href="%s"%s>%s <span class="count">(%s)</span></a>';
+
+	/**
+	 * Prefix of the action that sets a check-in state, followed by the state's slug.
+	 *
+	 * @since TBD
+	 *
+	 * @var string
+	 */
+	const CHECK_IN_ACTION_PREFIX = 'check_in-';
+
+	/**
+	 * Action that removes an RSVP's check-in state.
+	 *
+	 * @since TBD
+	 *
+	 * @var string
+	 */
+	const CLEAR_CHECK_IN_ACTION = 'clear_check_in';
 
 	/**
 	 * Post type whose RSVPs this table lists.
@@ -174,23 +192,15 @@ final class List_Table extends WP_List_Table {
 			return;
 		}
 
-		$statuses        = array();
-		$check_in_states = array();
-		$responses       = $this->get_filtered_responses();
-		$post_id         = $this->get_filtered_post_id();
-		$check_in        = $this->get_filtered_check_in();
+		$statuses  = array();
+		$responses = $this->get_filtered_responses();
+		$post_id   = $this->get_filtered_post_id();
+		$check_in  = $this->get_filtered_check_in();
 
 		foreach ( Status::filterable() as $status ) {
 			$statuses[] = array(
 				'value' => $status->value,
 				'label' => $status->label(),
-			);
-		}
-
-		foreach ( Check_In_State::cases() as $state ) {
-			$check_in_states[] = array(
-				'value' => $state->value,
-				'label' => $state->label(),
 			);
 		}
 
@@ -204,8 +214,8 @@ final class List_Table extends WP_List_Table {
 			esc_attr__( 'Filter by event', 'gatherpress' ),
 			esc_attr( (string) wp_json_encode( $statuses ) ),
 			esc_attr( implode( ',', $responses ) ),
-			esc_attr( (string) wp_json_encode( $check_in_states ) ),
-			esc_attr( $check_in ? $check_in->value : '' ),
+			esc_attr( (string) wp_json_encode( $this->get_check_in_options() ) ),
+			esc_attr( $check_in ),
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in the method.
 			$this->render_event_field(),
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in the method.
@@ -242,23 +252,48 @@ final class List_Table extends WP_List_Table {
 	}
 
 	/**
+	 * The check-in states the filter offers: the registered states, then not recorded.
+	 *
+	 * @since TBD
+	 *
+	 * @return list<array{value: string, label: string}> The options.
+	 */
+	protected function get_check_in_options(): array {
+		$options = array();
+
+		foreach ( Check_In_Registry::get_instance()->get_all() as $slug => $state_class ) {
+			$options[] = array(
+				'value' => $slug,
+				'label' => ( new $state_class( 0 ) )->label(),
+			);
+		}
+
+		$options[] = array(
+			'value' => Check_In_Registry::NOT_RECORDED,
+			'label' => __( 'Not recorded', 'gatherpress' ),
+		);
+
+		return $options;
+	}
+
+	/**
 	 * The check-in field, before script takes it over.
 	 *
 	 * @since TBD
 	 *
-	 * @param Check_In_State|null $selected The state the request is filtered to, if any.
+	 * @param string $selected The state the request is filtered to, or an empty string.
 	 *
 	 * @return string The field markup.
 	 */
-	protected function render_check_in_field( ?Check_In_State $selected ): string {
+	protected function render_check_in_field( string $selected ): string {
 		$options = sprintf( '<option value="">%s</option>', esc_html__( 'All check-ins', 'gatherpress' ) );
 
-		foreach ( Check_In_State::cases() as $state ) {
+		foreach ( $this->get_check_in_options() as $option ) {
 			$options .= sprintf(
 				'<option value="%1$s"%2$s>%3$s</option>',
-				esc_attr( $state->value ),
-				selected( $selected?->value, $state->value, false ),
-				esc_html( $state->label() )
+				esc_attr( $option['value'] ),
+				selected( $selected, $option['value'], false ),
+				esc_html( $option['label'] )
 			);
 		}
 
@@ -389,8 +424,8 @@ final class List_Table extends WP_List_Table {
 	/**
 	 * Adds the check-in filter to a comment query, when one is requested.
 	 *
-	 * Not recorded means neither check-in flag. The clause joins any response
-	 * filter already on the query, and both must match.
+	 * Not recorded means none of the registered check-in states. The clause joins
+	 * any response filter already on the query, and both must match.
 	 *
 	 * @since TBD
 	 *
@@ -401,18 +436,18 @@ final class List_Table extends WP_List_Table {
 	protected function add_check_in_filter( array $args ): array {
 		$state = $this->get_filtered_check_in();
 
-		if ( null === $state ) {
+		if ( '' === $state ) {
 			return $args;
 		}
 
 		$clause = array(
 			'taxonomy' => Flag::TAXONOMY,
 			'field'    => 'slug',
-			'terms'    => $state->value,
+			'terms'    => $state,
 		);
 
-		if ( Check_In_State::NOT_RECORDED === $state ) {
-			$clause['terms']    = array( Check_In_State::CHECKED_IN->value, Check_In_State::NO_SHOW->value );
+		if ( Check_In_Registry::NOT_RECORDED === $state ) {
+			$clause['terms']    = array_keys( Check_In_Registry::get_instance()->get_all() );
 			$clause['operator'] = 'NOT IN';
 		}
 
@@ -428,18 +463,23 @@ final class List_Table extends WP_List_Table {
 	/**
 	 * The check-in state the current request is filtered to, if any.
 	 *
+	 * Unknown values are dropped so a hand-edited URL cannot query arbitrary terms.
+	 *
 	 * @since TBD
 	 *
-	 * @return Check_In_State|null The state, or null when unfiltered or unknown.
+	 * @return string A registered state's slug, `not-recorded`, or an empty string when unfiltered.
 	 */
-	public function get_filtered_check_in(): ?Check_In_State {
+	public function get_filtered_check_in(): string {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( empty( $_REQUEST['check_in'] ) || ! is_string( $_REQUEST['check_in'] ) ) {
-			return null;
+			return '';
 		}
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		return Check_In_State::tryFrom( sanitize_key( wp_unslash( $_REQUEST['check_in'] ) ) );
+		$state   = sanitize_key( wp_unslash( $_REQUEST['check_in'] ) );
+		$allowed = wp_list_pluck( $this->get_check_in_options(), 'value' );
+
+		return in_array( $state, $allowed, true ) ? $state : '';
 	}
 
 	/**
@@ -826,12 +866,14 @@ final class List_Table extends WP_List_Table {
 				$output = $statuses[ $approved ] ?? '-';
 				break;
 			case 'checked_in':
-				$state = Check_In_State::for_rsvp( (int) $item['comment_ID'] );
+				$state = Check_In_Registry::get_instance()->get_state( (int) $item['comment_ID'] );
 
-				// Only an approved RSVP can be checked in, so another with no record has nothing to show.
-				$output = Check_In_State::NOT_RECORDED === $state && '1' !== $item['comment_approved']
-					? '-'
-					: $state->label();
+				if ( null !== $state ) {
+					$output = $state->label();
+				} else {
+					// Only an approved RSVP can be checked in, so another with no record has nothing to show.
+					$output = '1' === $item['comment_approved'] ? __( 'Not recorded', 'gatherpress' ) : '-';
+				}
 				break;
 			case 'date':
 				$output = sprintf(
@@ -987,45 +1029,48 @@ final class List_Table extends WP_List_Table {
 		$actions     = array();
 		$is_approved = ( '1' === $item['comment_approved'] );
 		$is_spam     = ( 'spam' === $item['comment_approved'] );
-		$check_in    = Check_In_State::for_rsvp( (int) $item['comment_ID'] );
+		$check_in    = Check_In_Registry::get_instance()->get_state( (int) $item['comment_ID'] );
 
 		$action_definitions = array(
-			'approve'        => array(
+			'approve'   => array(
 				'condition' => ! $is_approved && ! $is_spam,
 				'label'     => __( 'Approve', 'gatherpress' ),
 				'action'    => 'approve',
 			),
-			'unapprove'      => array(
+			'unapprove' => array(
 				'condition' => $is_approved,
 				'label'     => __( 'Unapprove', 'gatherpress' ),
 				'action'    => 'unapprove',
 			),
-			'check_in'       => array(
-				'condition' => $is_approved && Check_In_State::CHECKED_IN !== $check_in,
-				'label'     => __( 'Check in', 'gatherpress' ),
-				'action'    => 'check_in',
-			),
-			'no_show'        => array(
-				'condition' => $is_approved && Check_In_State::NO_SHOW !== $check_in,
-				'label'     => __( 'Mark as no-show', 'gatherpress' ),
-				'action'    => 'no_show',
-			),
-			'clear_check_in' => array(
-				'condition' => $is_approved && Check_In_State::NOT_RECORDED !== $check_in,
-				'label'     => __( 'Clear check-in', 'gatherpress' ),
-				'action'    => 'clear_check_in',
-			),
-			'spam'           => array(
+		);
+
+		foreach ( $this->get_check_in_actions() as $action => $label ) {
+			$slug = substr( $action, strlen( self::CHECK_IN_ACTION_PREFIX ) );
+
+			$action_definitions[ $action ] = array(
+				// Clearing applies to a recorded RSVP; each state, to an RSVP not already in it.
+				'condition' => $is_approved && (
+					self::CLEAR_CHECK_IN_ACTION === $action
+						? null !== $check_in
+						: null === $check_in || $slug !== $check_in::SLUG
+				),
+				'label'     => $label,
+				'action'    => $action,
+			);
+		}
+
+		$action_definitions += array(
+			'spam'     => array(
 				'condition' => ! $is_spam,
 				'label'     => __( 'Spam', 'gatherpress' ),
 				'action'    => 'spam',
 			),
-			'not-spam'       => array(
+			'not-spam' => array(
 				'condition' => $is_spam,
 				'label'     => __( 'Not Spam', 'gatherpress' ),
 				'action'    => 'unspam',
 			),
-			'delete'         => array(
+			'delete'   => array(
 				'condition'    => true,
 				'label'        => __( 'Delete', 'gatherpress' ),
 				'action'       => 'delete',
@@ -1104,15 +1149,58 @@ final class List_Table extends WP_List_Table {
 		}
 
 		return array(
-			'approve'        => __( 'Approve', 'gatherpress' ),
-			'unapprove'      => __( 'Unapprove', 'gatherpress' ),
-			'check_in'       => __( 'Mark as Checked In', 'gatherpress' ),
-			'no_show'        => __( 'Mark as No-Show', 'gatherpress' ),
-			'clear_check_in' => __( 'Clear Check-In', 'gatherpress' ),
-			'spam'           => __( 'Mark as Spam', 'gatherpress' ),
-			'unspam'         => __( 'Not Spam', 'gatherpress' ),
-			'delete'         => __( 'Delete', 'gatherpress' ),
+			'approve'   => __( 'Approve', 'gatherpress' ),
+			'unapprove' => __( 'Unapprove', 'gatherpress' ),
+			...$this->get_check_in_actions(),
+			'spam'      => __( 'Mark as Spam', 'gatherpress' ),
+			'unspam'    => __( 'Not Spam', 'gatherpress' ),
+			'delete'    => __( 'Delete', 'gatherpress' ),
 		);
+	}
+
+	/**
+	 * The check-in actions: one for each registered state, then Clear check-in.
+	 *
+	 * @since TBD
+	 *
+	 * @return array<string, string> Action labels, keyed by action.
+	 */
+	protected function get_check_in_actions(): array {
+		$actions = array();
+
+		foreach ( Check_In_Registry::get_instance()->get_all() as $slug => $state_class ) {
+			$actions[ self::CHECK_IN_ACTION_PREFIX . $slug ] = ( new $state_class( 0 ) )->action_label();
+		}
+
+		$actions[ self::CLEAR_CHECK_IN_ACTION ] = __( 'Clear check-in', 'gatherpress' );
+
+		return $actions;
+	}
+
+	/**
+	 * Sets the check-in state of an RSVP from a check-in action.
+	 *
+	 * @since TBD
+	 *
+	 * @param int    $rsvp_id The RSVP comment ID.
+	 * @param string $action  A key of `get_check_in_actions()`.
+	 *
+	 * @return void
+	 */
+	protected function set_check_in( int $rsvp_id, string $action ): void {
+		$registry = Check_In_Registry::get_instance();
+
+		if ( self::CLEAR_CHECK_IN_ACTION === $action ) {
+			$registry->clear( $rsvp_id );
+
+			return;
+		}
+
+		$state_class = $registry->get_all()[ substr( $action, strlen( self::CHECK_IN_ACTION_PREFIX ) ) ] ?? null;
+
+		if ( null !== $state_class ) {
+			( new $state_class( $rsvp_id ) )->add();
+		}
 	}
 
 	/**
@@ -1221,11 +1309,6 @@ final class List_Table extends WP_List_Table {
 		}
 
 		$current_action    = $this->current_action();
-		$check_in_states   = array(
-			'check_in'       => Check_In_State::CHECKED_IN,
-			'no_show'        => Check_In_State::NO_SHOW,
-			'clear_check_in' => Check_In_State::NOT_RECORDED,
-		);
 		$action_status_map = array(
 			'approve'   => 'approve',
 			'unapprove' => 'hold',
@@ -1237,9 +1320,9 @@ final class List_Table extends WP_List_Table {
 			foreach ( $rsvp_ids as $rsvp_id ) {
 				wp_delete_comment( $rsvp_id, true );
 			}
-		} elseif ( isset( $check_in_states[ $current_action ] ) ) {
+		} elseif ( is_string( $current_action ) && isset( $this->get_check_in_actions()[ $current_action ] ) ) {
 			foreach ( $rsvp_ids as $rsvp_id ) {
-				$check_in_states[ $current_action ]->apply( $rsvp_id );
+				$this->set_check_in( $rsvp_id, $current_action );
 			}
 		} elseif ( isset( $action_status_map[ $current_action ] ) ) {
 			$status = $action_status_map[ $current_action ];
@@ -1323,8 +1406,8 @@ final class List_Table extends WP_List_Table {
 
 		$check_in = $this->get_filtered_check_in();
 
-		if ( null !== $check_in ) {
-			$base_url_args['check_in'] = $check_in->value;
+		if ( '' !== $check_in ) {
+			$base_url_args['check_in'] = $check_in;
 		}
 
 		$base_url = add_query_arg( $base_url_args, admin_url( 'edit.php' ) );

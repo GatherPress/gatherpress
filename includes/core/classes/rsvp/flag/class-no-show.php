@@ -2,10 +2,9 @@
 /**
  * Records which RSVPs did not turn up.
  *
- * This file defines the `No_Show` flag. With `Check_In` it gives an RSVP one of
- * three check-in states: checked in, a no-show, or not recorded when it has
- * neither flag. Leaving unrecorded RSVPs out keeps the no-show rate honest when
- * an organizer did not record every attendee.
+ * This file defines the `No_Show` check-in state. An RSVP without a check-in
+ * state is not recorded rather than a no-show, which keeps the no-show rate
+ * honest when an organizer did not record every attendee.
  *
  * @package GatherPress\Core\Rsvp\Flag
  * @since TBD
@@ -19,12 +18,11 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 /**
  * Class No_Show.
  *
- * The `no-show` flag. An RSVP is never both checked in and a no-show: adding
- * this flag removes the `checked-in` flag.
+ * The `no-show` flag: the person had an RSVP but did not come.
  *
  * @since TBD
  */
-final class No_Show extends Base {
+final class No_Show extends Check_In_State {
 
 	/**
 	 * The no-show flag slug.
@@ -36,13 +34,35 @@ final class No_Show extends Base {
 	public const SLUG = 'no-show';
 
 	/**
-	 * Marks the RSVP as a no-show, and removes its check-in.
+	 * Gets the name of the state.
 	 *
 	 * @since TBD
 	 *
-	 * @return bool True when the RSVP is a no-show and not checked in.
+	 * @return string The translated name.
 	 */
-	public function add(): bool {
-		return parent::add() && ( new Check_In( $this->rsvp_id ) )->remove();
+	public function label(): string {
+		return __( 'No-show', 'gatherpress' );
+	}
+
+	/**
+	 * Gets the name of the action that sets the state.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The translated action name.
+	 */
+	public function action_label(): string {
+		return __( 'Mark as no-show', 'gatherpress' );
+	}
+
+	/**
+	 * Whether the state means the person attended.
+	 *
+	 * @since TBD
+	 *
+	 * @return bool False: a no-show did not attend.
+	 */
+	public function attended(): bool {
+		return false;
 	}
 }

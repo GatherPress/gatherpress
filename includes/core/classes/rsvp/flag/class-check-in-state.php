@@ -1,6 +1,6 @@
 <?php
 /**
- * The check-in state of an RSVP.
+ * A check-in state of an RSVP.
  *
  * @package GatherPress\Core\Rsvp\Flag
  * @since TBD
@@ -12,69 +12,67 @@ namespace GatherPress\Core\Rsvp\Flag;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 /**
- * Enum Check_In_State.
+ * Class Check_In_State.
  *
- * Whether an RSVP was checked in, was a no-show, or has no record. The first
- * two are the `Check_In` and `No_Show` flags; an RSVP with neither is not
- * recorded. Reports should leave unrecorded RSVPs out rather than count them
- * as either.
+ * A flag that records what happened when the event took place, for example
+ * `Check_In` or `No_Show`. An RSVP has at most one check-in state: adding one
+ * removes the others. An RSVP with none is not recorded. Register a state with
+ * `Check_In_Registry` so the RSVP screen offers it.
  *
  * @since TBD
  */
-enum Check_In_State: string {
-
-	case CHECKED_IN   = 'checked-in';
-	case NO_SHOW      = 'no-show';
-	case NOT_RECORDED = 'not-recorded';
+abstract class Check_In_State extends Base {
 
 	/**
-	 * Gets the check-in state of an RSVP.
+	 * Gets the name of the state, for example "Checked in".
 	 *
 	 * @since TBD
 	 *
-	 * @param int $rsvp_id The RSVP comment ID.
-	 *
-	 * @return self The state.
+	 * @return string The translated name.
 	 */
-	public static function for_rsvp( int $rsvp_id ): self {
-		if ( ( new Check_In( $rsvp_id ) )->has() ) {
-			return self::CHECKED_IN;
+	abstract public function label(): string;
+
+	/**
+	 * Gets the name of the action that sets the state, for example "Check in".
+	 *
+	 * @since TBD
+	 *
+	 * @return string The translated action name.
+	 */
+	abstract public function action_label(): string;
+
+	/**
+	 * Whether the state means the person attended.
+	 *
+	 * Reports count the attended states as present and the others as absent,
+	 * and leave out RSVPs that are not recorded.
+	 *
+	 * @since TBD
+	 *
+	 * @return bool True when the person attended.
+	 */
+	abstract public function attended(): bool;
+
+	/**
+	 * Sets the RSVP to this state, and removes its other check-in states.
+	 *
+	 * @since TBD
+	 *
+	 * @return bool True when the RSVP has this state and no other.
+	 */
+	public function add(): bool {
+		if ( ! parent::add() ) {
+			return false;
 		}
 
-		return ( new No_Show( $rsvp_id ) )->has() ? self::NO_SHOW : self::NOT_RECORDED;
-	}
+		$cleared = true;
 
-	/**
-	 * Gets the label of the state.
-	 *
-	 * @since TBD
-	 *
-	 * @return string The translated label.
-	 */
-	public function label(): string {
-		// phpcs:ignore PHPCompatibility.Variables.ForbiddenThisUseContexts.OutsideObjectContext -- Enum instance methods have $this; the sniff reads this enum's first non-static method as a plain function.
-		return match ( $this ) {
-			self::CHECKED_IN   => __( 'Checked in', 'gatherpress' ),
-			self::NO_SHOW      => __( 'No-show', 'gatherpress' ),
-			self::NOT_RECORDED => __( 'Not recorded', 'gatherpress' ),
-		};
-	}
+		foreach ( Check_In_Registry::get_instance()->get_all() as $state_class ) {
+			if ( static::class !== $state_class ) {
+				$cleared = ( new $state_class( $this->rsvp_id ) )->remove() && $cleared;
+			}
+		}
 
-	/**
-	 * Sets an RSVP to this state.
-	 *
-	 * @since TBD
-	 *
-	 * @param int $rsvp_id The RSVP comment ID.
-	 *
-	 * @return bool True when the RSVP is in this state.
-	 */
-	public function apply( int $rsvp_id ): bool {
-		// phpcs:ignore PHPCompatibility.Variables.ForbiddenThisUseContexts.OutsideObjectContext -- Enum instance methods have $this.
-		return match ( $this ) {
-			self::CHECKED_IN   => ( new Check_In( $rsvp_id ) )->add(),
-			self::NO_SHOW      => ( new No_Show( $rsvp_id ) )->add(),
-			self::NOT_RECORDED => ( new Check_In( $rsvp_id ) )->remove() && ( new No_Show( $rsvp_id ) )->remove(),
-		};
+		return $cleared;
 	}
 }

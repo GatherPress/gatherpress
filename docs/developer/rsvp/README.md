@@ -153,40 +153,91 @@ own.
 
 - **`GatherPress\Core\Rsvp\Flag\Base`**: the abstract class a flag extends. It
   stores, reads, and counts the flag, and fires the flag hooks.
-- **`GatherPress\Core\Rsvp\Flag\Check_In`**: the `checked-in` flag, the first
-  one GatherPress ships.
-- **`GatherPress\Core\Rsvp\Flag\No_Show`**: the `no-show` flag, for an RSVP
+- **`GatherPress\Core\Rsvp\Flag\Check_In_State`**: the abstract class a
+  check-in state extends. See [Check-in](#check-in).
+- **`GatherPress\Core\Rsvp\Flag\Check_In`**: the `checked-in` state, the
+  first flag GatherPress shipped.
+- **`GatherPress\Core\Rsvp\Flag\No_Show`**: the `no-show` state, for an RSVP
   that did not turn up.
-- **`GatherPress\Core\Rsvp\Flag\Check_In_State`**: an enum of the three
-  check-in states. See [Check-in](#check-in).
+- **`GatherPress\Core\Rsvp\Flag\Check_In_Registry`**: the check-in states
+  the RSVP screen offers.
 - **`GatherPress\Core\Rsvp\Flag\Setup`**: what belongs to every flag rather
   than one. It registers the taxonomy, reads all flags on an RSVP, and sweeps
   them when the RSVP is deleted.
 
 ### Check-in
 
-An RSVP has one of three check-in states:
+A check-in state records what happened when the event took place. Core has two:
 
-| State | Stored as | `Check_In_State` case |
+| State | Flag | Attended |
 | --- | --- | --- |
-| Checked in | the `checked-in` flag | `CHECKED_IN` |
-| No-show | the `no-show` flag | `NO_SHOW` |
-| Not recorded | neither flag | `NOT_RECORDED` |
+| Checked in | `checked-in` | Yes |
+| No-show | `no-show` | No |
 
-The two flags never sit on one RSVP together: adding one removes the other. An
-RSVP starts not recorded, so RSVPs from before the no-show flag need no
-backfill. A report of who turns up should leave not recorded RSVPs out, rather
-than count them as either.
+An RSVP has at most one check-in state: adding one removes the others. An RSVP
+with none is **not recorded**, which is where every RSVP starts, so RSVPs from
+before the no-show state need no backfill. A report of who turns up should
+count the states whose `attended()` is true as present and the others as
+absent, and leave not recorded RSVPs out.
 
 ```php
-use GatherPress\Core\Rsvp\Flag\Check_In_State;
+use GatherPress\Core\Rsvp\Flag\Check_In_Registry;
+use GatherPress\Core\Rsvp\Flag\No_Show;
 
-Check_In_State::NO_SHOW->apply( $rsvp_id );
+( new No_Show( $rsvp_id ) )->add();
 
-if ( Check_In_State::NOT_RECORDED === Check_In_State::for_rsvp( $rsvp_id ) ) {
+$state = Check_In_Registry::get_instance()->get_state( $rsvp_id );
+
+if ( null === $state ) {
 	// Nobody recorded whether this person came.
+} elseif ( $state->attended() ) {
+	// The person came.
 }
 ```
+
+### Adding a check-in state
+
+A check-in state is a flag that extends `Check_In_State`. Beyond its slug, it
+names itself, names the action that sets it, and says whether the person
+attended. Register it on `gatherpress_register_rsvp_check_in_states`, and the
+Events > RSVPs screen shows it in the Check-in column, the row and bulk
+actions, and the check-in filter.
+
+```php
+<?php
+
+namespace My_Plugin\Flag;
+
+use GatherPress\Core\Rsvp\Flag\Check_In_State;
+
+class Checked_In_Online extends Check_In_State {
+	public const SLUG = 'my-plugin-checked-in-online';
+
+	public function label(): string {
+		return __( 'Checked in online', 'my-plugin' );
+	}
+
+	public function action_label(): string {
+		return __( 'Check in online', 'my-plugin' );
+	}
+
+	public function attended(): bool {
+		return true;
+	}
+}
+
+add_action(
+	'gatherpress_register_rsvp_check_in_states',
+	function ( $registry ) {
+		$registry->register( Checked_In_Online::class );
+	}
+);
+```
+
+Adding this state removes any other check-in state on the RSVP, and adding
+another one removes it. The slug follows the same rules as any flag, and
+cannot be `not-recorded`, which the RSVP screen's filter uses for an RSVP with
+no state.
 
 ### Adding a flag
 
