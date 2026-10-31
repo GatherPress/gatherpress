@@ -1,6 +1,6 @@
 /* ======================================================================
     BLOCK STYLE: Gradient
-    Glassmorphic translucent surfaces that adapt to the calendar text color.
+    Glassmorphic surfaces that pair the theme's base and contrast colors.
     ====================================================================== */
 
 .wp-block-gatherpress-calendar.is-style-gradient {
@@ -64,7 +64,6 @@
 			}
 
 			&.gatherpress--is-today {
-				--gatherpress-calendar-day-color: var(--wp--preset--color--base, #fff);
 				--gatherpress-calendar-title-color: var(--wp--preset--color--base, #fff);
 				--gatherpress-calendar-time-color: var(--wp--preset--color--base, #fff);
 
@@ -83,7 +82,6 @@
 	}
 
 	.gatherpress-calendar__day-number {
-		color: var(--gatherpress-calendar-day-color, currentcolor);
 		font-weight: 700;
 		text-shadow: 0 1px 3px rgb(0 0 0 / 20%);
 	}

@@ -1,6 +1,6 @@
 /* ======================================================================
     BLOCK STYLE: Circular
-    Giant bold white cutout numerals with entries floating above.
+    Giant bold theme-contrast numerals with entries floating above.
     ====================================================================== */
 
 .wp-block-gatherpress-calendar.is-style-circular {
@@ -82,7 +82,7 @@
 					font-weight: 600;
 					font-size: clamp(0.6875rem, 1.2vw, 0.75rem);
 
-					/* Subtle halo ensures readability over the white cutout numeral */
+					/* A theme-base halo softens text over the day numeral. */
 					text-shadow:
 						0 0 4px var(--wp--preset--color--base, #fff),
 						0 1px 2px var(--wp--preset--color--base, #fff);
