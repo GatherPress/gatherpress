@@ -59,7 +59,7 @@
 			}
 
 			&.gatherpress--has-posts {
-				background: color-mix(in srgb, currentcolor 20%, transparent);
+				background: color-mix(in srgb, var(--wp--preset--color--base, #fff) 75%, transparent);
 				border-color: var(--gatherpress-calendar-day-has-posts-border);
 			}
 
@@ -96,7 +96,7 @@
 			border: 2px solid var(--wp--preset--color--contrast, #000);
 
 			&:hover {
-				background: currentcolor;
+				background: var(--wp--preset--color--contrast, #000);
 				transform: scale(1.3);
 				box-shadow: 0 4px 12px rgb(0 0 0 / 30%);
 			}
