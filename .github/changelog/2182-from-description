@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Fix editor accessibility: associate help text with controls, restore visible focus indicators, and guard RSVP template key handler to Enter and Space only.

@@ -1,4 +1,0 @@
-Significance: minor
-Type: changed
-
-Interactive OpenStreetMap venue maps now let themes customize Leaflet marker filters and attribution link colors without replacing map assets.

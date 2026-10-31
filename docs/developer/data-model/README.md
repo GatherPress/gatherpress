@@ -43,7 +43,7 @@ The three RSVP taxonomies are on *comments*, not posts, because an RSVP is a com
 | `gatherpress_enable_rsvp` | Whether RSVPs are open |
 | `gatherpress_enable_anonymous_rsvp` | Whether a person may hide their name |
 | `gatherpress_enable_open_rsvp` | Whether logged-out visitors may RSVP by email |
-| `gatherpress_capacity` | Capacity. `0` means unlimited. Called `gatherpress_max_attendance_limit` before 0.36.0, which still answers until 0.37.0 |
+| `gatherpress_capacity` | Capacity. `0` means unlimited |
 | `gatherpress_guest_limit` | Guests per RSVP. `0` means none |
 | `gatherpress_online_event_link` | The joining link, shown only to attendees |
 | `gatherpress_rsvp_form_schemas` | The RSVP form's custom field definitions, keyed by form id |
@@ -139,6 +139,7 @@ Everything is under the `gatherpress/v1` namespace, defined as `GATHERPRESS_REST
 A few notes for anyone calling these:
 
 - **`/event/rsvp-form` is deliberately public.** Open RSVP means a visitor who is not logged in can respond, so the permission callback lets everyone through and the validation happens inside. Treat its input as untrusted, because it is.
+- **`/event/rsvp` also takes a plain HTML form.** The RSVP block posts one when JavaScript is unavailable. It sends guests and anonymity as `gatherpress_rsvp_guests` and `gatherpress_rsvp_anonymous`, the block's own field names, and a `gatherpress_redirect` URL on the site. With that URL, the endpoint answers with a 303 back to it instead of JSON, adding `gatherpress_rsvp_error=<event ID>` when the RSVP was not saved, including when the nonce was stale.
 - **`/event/nonce` is same-origin only**, checked with `Utility::is_same_origin_request()`. It exists so cached front-end pages can fetch a fresh nonce; it is not a general-purpose token endpoint.
 - The event routes are registered from a single array in `Event\Rest_Api::get_event_routes()`. Adding one means adding an entry there, not another `register_rest_route()` call.
 

@@ -156,8 +156,8 @@ final class Abilities {
 				),
 				'execute_callback'    => array( $this, 'get_upcoming_events' ),
 				// The listing is the event archive in another shape: the query runs
-				// unauthenticated and WP_Query hands back only what the current
-				// viewer could already read, so the ability adds no gate of its own.
+				// unauthenticated, WP_Query hands back only what the current viewer
+				// could already read, and password-protected events are left out.
 				'permission_callback' => '__return_true',
 				'meta'                => array(
 					'annotations'  => array(
@@ -166,6 +166,11 @@ final class Abilities {
 						'idempotent'  => true,
 					),
 					'show_in_rest' => true,
+					'public'       => true,
+					'mcp'          => array(
+						'public' => true,
+						'type'   => 'tool',
+					),
 				),
 			)
 		);
@@ -190,7 +195,14 @@ final class Abilities {
 		 *
 		 * @var int[] $post_ids The query runs with `fields => ids`.
 		 */
-		$post_ids = Query::get_instance()->get_upcoming_events( $count )->posts;
+		$post_ids = Query::get_instance()->get_events_list(
+			array(
+				'event_list_type' => 'upcoming',
+				'number'          => $count,
+				// The ability is public, so it never lists a password-protected event's details.
+				'has_password'    => false,
+			)
+		)->posts;
 
 		foreach ( $post_ids as $post_id ) {
 			$datetime = ( new Event( $post_id ) )->get_datetime();

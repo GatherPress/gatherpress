@@ -12,6 +12,7 @@ use GatherPress\Core\Blocks\Venue as Venue_Block;
 use GatherPress\Core\Event;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
+use PasswordHash;
 use PMC\Unit_Test\Utility;
 use WP_Block;
 
@@ -672,6 +673,82 @@ class Test_Venue extends Base {
 	}
 
 	/**
+	 * Tests the block keeps a password-protected event's venue behind the event's password.
+	 *
+	 * @since 0.36.1
+	 * @covers ::get_source_post
+	 *
+	 * @return void
+	 */
+	public function test_render_block_with_password_protected_event_linked_to_venue(): void {
+		$instance  = Venue_Block::get_instance();
+		$venue_id  = $this->factory->post->create(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_name'  => 'protected-event-venue',
+				'post_title' => 'Protected Event Venue',
+			)
+		);
+		$term_slug = ( new Venue( $venue_id ) )->get_term_slug();
+
+		wp_insert_term( 'Protected Event Venue', Venue::TAXONOMY, array( 'slug' => $term_slug ) );
+
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_status'   => 'publish',
+				'post_password' => 'secret',
+			)
+		);
+
+		wp_set_post_terms( $event_id, $term_slug, Venue::TAXONOMY );
+		$this->go_to( get_permalink( $event_id ) );
+
+		$render = static function () use ( $instance ): string {
+			return (string) $instance->render_inner_blocks(
+				new WP_Block(
+					array(
+						'blockName'    => 'gatherpress/venue',
+						'attrs'        => array(),
+						'innerBlocks'  => array(
+							array(
+								'blockName'    => 'core/post-title',
+								'attrs'        => array(),
+								'innerBlocks'  => array(),
+								'innerHTML'    => '',
+								'innerContent' => array(),
+							),
+						),
+						'innerHTML'    => '',
+						'innerContent' => array( null ),
+					)
+				)
+			);
+		};
+
+		$this->assertStringNotContainsString(
+			'Protected Event Venue',
+			$render(),
+			'A password-protected event should keep its venue from a viewer without the password.'
+		);
+
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+
+		// The cookie WordPress sets once a viewer enters the post password.
+		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'secret' );
+
+		$result = $render();
+
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+
+		$this->assertStringContainsString(
+			'Protected Event Venue',
+			$result,
+			'A password-protected event should show its venue to a viewer with the password.'
+		);
+	}
+
+	/**
 	 * Tests render_block when event has venue term but no matching venue post.
 	 *
 	 * @since 0.34.0
@@ -1211,7 +1288,7 @@ class Test_Venue extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_selected_private_source_renders_for_a_reader(): void {
+	public function test_selected_private_source_renders_for_a_viewer(): void {
 		$admin       = $this->factory->user->create( array( 'role' => 'administrator' ) );
 		$selected_id = $this->factory->post->create(
 			array(
@@ -1321,7 +1398,7 @@ class Test_Venue extends Base {
 		$anonymous = Venue_Block::get_instance()->render_inner_blocks( $block );
 
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
-		$reader = Venue_Block::get_instance()->render_inner_blocks( $block );
+		$viewer = Venue_Block::get_instance()->render_inner_blocks( $block );
 
 		wp_set_current_user( 0 );
 
@@ -1331,7 +1408,7 @@ class Test_Venue extends Base {
 		);
 		$this->assertStringContainsString(
 			'Inner content',
-			(string) $reader,
+			(string) $viewer,
 			'Failed to assert a viewer who can read the event gets its venue.'
 		);
 	}
@@ -1443,12 +1520,12 @@ class Test_Venue extends Base {
 		$anonymous = Utility::invoke_hidden_method( $block, 'get_viewable_source_post', $args );
 
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
-		$reader = Utility::invoke_hidden_method( $block, 'get_viewable_source_post', $args );
+		$viewer = Utility::invoke_hidden_method( $block, 'get_viewable_source_post', $args );
 
 		wp_set_current_user( 0 );
 
 		$this->assertNull( $anonymous, 'Failed to assert a draft is refused to an anonymous viewer.' );
-		$this->assertSame( $venue, $reader, 'Failed to assert a draft is returned to a viewer who can read it.' );
+		$this->assertSame( $venue, $viewer, 'Failed to assert a draft is returned to a viewer who can read it.' );
 	}
 
 	/**

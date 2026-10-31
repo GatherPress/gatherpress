@@ -20,6 +20,7 @@ import { select, useSelect, useDispatch } from '@wordpress/data';
  * Internal dependencies
  */
 import { EVENT_REST_API } from '../../helpers/namespace';
+import { getFromConfig } from '../../helpers/editor-settings';
 
 /**
  * A modal component for notifying event members via email.
@@ -38,6 +39,7 @@ const EventCommunicationModal = () => {
 		isSaving: wpSelect( 'gatherpress/email-modal' ).isSaving(),
 	} ), [] );
 	const { closeModal } = useDispatch( 'gatherpress/email-modal' );
+	const canEmailAllUsers = getFromConfig( 'canEmailAllUsers' );
 
 	// Shown as a placeholder only. Leaving the field empty lets the server
 	// compose the default subject once per recipient, inside that recipient's
@@ -143,23 +145,30 @@ const EventCommunicationModal = () => {
 						ref={ textareaRef }
 					/>
 					<p className="description">
-						{ __(
-							'Select the recipients for your message by checking the relevant boxes. "All Members" includes site users only. RSVP status options include both site users and non-user RSVPs.',
-							'gatherpress',
-						) }
+						{ canEmailAllUsers
+							? __(
+								'Select the recipients for your message by checking the relevant boxes. "All Members" includes site users only. RSVP status options include both site users and non-user RSVPs.',
+								'gatherpress',
+							)
+							: __(
+								'Select the recipients for your message by checking the relevant boxes. RSVP status options include both site users and non-user RSVPs.',
+								'gatherpress',
+							) }
 					</p>
 					<Flex gap="8">
-						<FlexItem>
-							<CheckboxControl
-								label={ _x(
-									'All Members',
-									'Email recipient group option',
-									'gatherpress',
-								) }
-								checked={ isAllChecked }
-								onChange={ setAllChecked }
-							/>
-						</FlexItem>
+						{ canEmailAllUsers && (
+							<FlexItem>
+								<CheckboxControl
+									label={ _x(
+										'All Members',
+										'Email recipient group option',
+										'gatherpress',
+									) }
+									checked={ isAllChecked }
+									onChange={ setAllChecked }
+								/>
+							</FlexItem>
+						) }
 						<FlexItem>
 							<CheckboxControl
 								label={ _x(

@@ -12,6 +12,7 @@ use GatherPress\Core\Assets;
 use GatherPress\Core\Event;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Setup;
+use GatherPress\Core\Shadow_Source;
 use GatherPress\Core\Utility as GatherPress_Utility;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
@@ -23,6 +24,22 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Setup
  */
 class Test_Setup extends Base {
+
+	/**
+	 * Wires the venue taxonomy back onto the event post types.
+	 *
+	 * Activation adds the online-event term, which registers the venue
+	 * taxonomy again from scratch, and later test classes need venues to
+	 * stay attached to events.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function tearDown(): void {
+		parent::tearDown();
+		Shadow_Source::get_instance()->attach_taxonomies_to_object_types();
+	}
 
 	/**
 	 * Coverage for setup_hooks.

@@ -18,7 +18,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/event/class-setup.php:275](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-setup.php#L275)
+- [includes/core/classes/event/class-setup.php:282](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-setup.php#L282)
 ```php
 apply_filters(
 			sprintf( // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
@@ -29,7 +29,7 @@ apply_filters(
 		)
 ```
 
-- [includes/core/classes/venue/class-setup.php:816](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/class-setup.php#L816)
+- [includes/core/classes/venue/class-setup.php:1109](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/class-setup.php#L1109)
 ```php
 apply_filters(
 			sprintf( // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
