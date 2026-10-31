@@ -7,8 +7,8 @@ This section explains how RSVPs work from both the visitor and organizer perspec
 Site administrators can control how RSVP works across the entire site from **Events → Settings → RSVP**. Four modes are available:
 
 - **All Events**: RSVP is enabled for every event. No per-event toggle is shown in the editor. This is the default behavior.
-- **Per Event (default on)**: An **Enable RSVP** checkbox appears in the RSVP settings panel of the editor for each event. New events default to RSVP enabled; editors can disable it per event.
-- **Per Event (default off)**: Same as above, but new events default to RSVP disabled. Editors must explicitly enable RSVP for each event.
+- **Per Event (default enabled)**: An **Enable RSVP** checkbox appears in the RSVP settings panel of the editor for each event. New events default to RSVP enabled; editors can disable it per event.
+- **Per Event (default disabled)**: Same as above, but new events default to RSVP disabled. Editors must explicitly enable RSVP for each event.
 - **Disabled**: RSVP is turned off sitewide. RSVP blocks are removed from the block inserter, the RSVPs admin menu is hidden, and the RSVP Settings panel no longer appears in the editor.
 
 ## RSVP functionality
@@ -20,6 +20,16 @@ What is known and visible in the UI:
 - The presence of the RSVP block allows users to RSVP  
 - Default RSVP behavior comes from GatherPress settings.  
 - Event-level settings override global defaults when a per-event mode is active.
+
+## Without JavaScript
+
+If JavaScript is turned off or fails to load, for example because of a blocked script or a browser extension, the RSVP block still works:
+
+- The **RSVP** or **Edit RSVP** button reloads the page with the RSVP modal open, at the spot where it was clicked.
+- **Attend** and **Not Attending** save the RSVP, along with the guest count and the anonymous option, and bring the visitor back to the RSVP block.
+- **Close**, or a click outside the modal, saves guest count and anonymous changes and closes it. A modal without a Close button gets a Close link in its corner, and the browser's Back button also closes it.
+
+A few things work differently without JavaScript. The Escape key does not close the modal, and guest count and anonymous changes save when the modal closes rather than as they are made. If an RSVP could not be saved, for example because the page was left open too long, the block says so and the visitor can try again.
 
 ## Open RSVP (without an account)
 

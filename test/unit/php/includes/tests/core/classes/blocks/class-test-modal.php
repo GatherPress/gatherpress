@@ -40,6 +40,12 @@ class Test_Modal extends Base {
 				'type'     => 'filter',
 				'name'     => $render_block_hook,
 				'priority' => 10,
+				'callback' => array( $instance, 'render_as_dialog' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => $render_block_hook,
+				'priority' => 10,
 				'callback' => array( $instance, 'apply_modal_attributes' ),
 			),
 			array(
@@ -86,30 +92,17 @@ class Test_Modal extends Base {
 		$output_html = $instance->apply_modal_attributes( $input_html, $block );
 
 		$this->assertStringContainsString(
-			'role="dialog"',
-			$output_html,
-			'Output should contain dialog role'
-		);
-		$this->assertStringContainsString(
-			'aria-modal="true"',
-			$output_html,
-			'Output should contain aria-modal attribute'
-		);
-		$this->assertStringContainsString(
-			'aria-hidden="true"',
-			$output_html,
-			'Output should contain aria-hidden attribute'
-		);
-		$this->assertStringContainsString(
 			'aria-label="Custom Modal Name"',
 			$output_html,
 			'Output should contain custom aria-label'
 		);
-		$this->assertStringContainsString(
-			'tabindex="-1"',
-			$output_html,
-			'Output should contain negative tabindex'
-		);
+		foreach ( array( 'role=', 'aria-modal=', 'aria-hidden=', 'tabindex=' ) as $attribute ) {
+			$this->assertStringNotContainsString(
+				$attribute,
+				$output_html,
+				'The <dialog> carries its own role, and showModal() makes it modal.'
+			);
+		}
 	}
 
 	/**
@@ -129,29 +122,49 @@ class Test_Modal extends Base {
 		$output_html = $instance->apply_modal_attributes( $input_html, $block );
 
 		$this->assertStringContainsString(
-			'role="dialog"',
-			$output_html,
-			'Output should contain dialog role'
-		);
-		$this->assertStringContainsString(
-			'aria-modal="true"',
-			$output_html,
-			'Output should contain aria-modal attribute'
-		);
-		$this->assertStringContainsString(
-			'aria-hidden="true"',
-			$output_html,
-			'Output should contain aria-hidden attribute'
-		);
-		$this->assertStringContainsString(
 			'aria-label="Modal"',
 			$output_html,
 			'Output should contain default aria-label'
 		);
-		$this->assertStringContainsString(
-			'tabindex="-1"',
-			$output_html,
-			'Output should contain negative tabindex'
+		foreach ( array( 'role=', 'aria-modal=', 'aria-hidden=', 'tabindex=' ) as $attribute ) {
+			$this->assertStringNotContainsString(
+				$attribute,
+				$output_html,
+				'The <dialog> carries its own role, and showModal() makes it modal.'
+			);
+		}
+	}
+
+	/**
+	 * Tests render_as_dialog turns the saved <div> into a <dialog>.
+	 *
+	 * @since TBD
+	 * @covers ::render_as_dialog
+	 *
+	 * @return void
+	 */
+	public function test_render_as_dialog(): void {
+		$instance = Modal::get_instance();
+
+		$this->assertSame(
+			'<dialog class="wp-block-gatherpress-modal" style="z-index: 1000;">'
+				. '<div class="wp-block-gatherpress-modal-content"><p>Hi</p></div></dialog>',
+			$instance->render_as_dialog(
+				"\n<div class=\"wp-block-gatherpress-modal\" style=\"z-index: 1000;\">"
+				. "<div class=\"wp-block-gatherpress-modal-content\"><p>Hi</p></div></div>\n"
+			),
+			'Only the outer <div> becomes the <dialog>.'
+		);
+		$this->assertSame( '', $instance->render_as_dialog( '' ), 'A removed modal stays removed.' );
+		$this->assertSame(
+			'<section class="wp-block-gatherpress-modal"></section>',
+			$instance->render_as_dialog( '<section class="wp-block-gatherpress-modal"></section>' ),
+			'Markup that is not a <div> is left alone.'
+		);
+		$this->assertSame(
+			'<div class="wp-block-gatherpress-modal">',
+			$instance->render_as_dialog( '<div class="wp-block-gatherpress-modal">' ),
+			'An unclosed <div> is left alone.'
 		);
 	}
 
@@ -201,7 +214,7 @@ class Test_Modal extends Base {
 	/**
 	 * Returns the text of the element an ARIA attribute on the dialog points at.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param string $html      Rendered modal markup.
 	 * @param string $attribute The dialog attribute that holds an element id.
@@ -233,7 +246,7 @@ class Test_Modal extends Base {
 	/**
 	 * Data provider for the classes of the modals in the RSVP block templates.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @return array<string, array<int, string>>
 	 */
@@ -253,7 +266,7 @@ class Test_Modal extends Base {
 	 * (the visible title) and its description from the second, and keeps the
 	 * template name as the `aria-label` fallback.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::apply_modal_attributes
 	 * @covers ::is_rsvp_block_modal
 	 * @covers ::label_by_paragraphs
@@ -301,7 +314,7 @@ class Test_Modal extends Base {
 	 * heading then names the dialog, and the first paragraph after it (the
 	 * instructions) describes it, so the instructions do not become the name.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::apply_modal_attributes
 	 * @covers ::is_rsvp_block_modal
 	 * @covers ::label_by_paragraphs
@@ -329,7 +342,7 @@ class Test_Modal extends Base {
 	/**
 	 * Test an RSVP block modal reuses ids its paragraphs already have.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::apply_modal_attributes
 	 * @covers ::is_rsvp_block_modal
 	 * @covers ::label_by_paragraphs
@@ -356,7 +369,7 @@ class Test_Modal extends Base {
 	 * With one paragraph the dialog gets a name but no description. With none
 	 * it keeps the `aria-label` alone.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::apply_modal_attributes
 	 * @covers ::is_rsvp_block_modal
 	 * @covers ::label_by_paragraphs
@@ -389,7 +402,7 @@ class Test_Modal extends Base {
 	 *
 	 * The RSVP block renders one modal per status, so a page has several.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::apply_modal_attributes
 	 * @covers ::is_rsvp_block_modal
 	 * @covers ::label_by_paragraphs
@@ -420,7 +433,7 @@ class Test_Modal extends Base {
 	/**
 	 * Test a modal that is not from the RSVP block is not labeled by its paragraphs.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::apply_modal_attributes
 	 * @covers ::is_rsvp_block_modal
 	 * @covers ::label_by_paragraphs
@@ -452,7 +465,7 @@ class Test_Modal extends Base {
 	 * Uses the markup the RSVP block saves for existing events, rendered
 	 * through `do_blocks()`, so it covers events made before this change.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @coversNothing
 	 *
 	 * @return void
@@ -739,7 +752,7 @@ class Test_Modal extends Base {
 	/**
 	 * Data provider for the Login modal class names.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @return array<string, array{0: string}>
 	 */
@@ -790,7 +803,7 @@ class Test_Modal extends Base {
 	/**
 	 * Test is_login_modal matches both Login modal classes and nothing else.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::is_login_modal
 	 *
 	 * @return void

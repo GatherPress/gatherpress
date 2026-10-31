@@ -162,6 +162,8 @@ final class Query {
 	 *     @type int      $number          Maximum number of events to retrieve. Default 5.
 	 *     @type string[] $topics          Topic slugs for additional filtering.
 	 *     @type string[] $venues          Venue slugs for additional filtering.
+	 *     @type bool     $has_password    Optional. False to leave out password-protected
+	 *                                     events, true to get only them. Default both.
 	 * }
 	 *
 	 * @return WP_Query A WordPress query object containing the list of events.
@@ -180,6 +182,9 @@ final class Query {
 		// upcoming events should be ordered ASC (soonest first).
 		$order = ( 'past' === $event_list_type ) ? 'DESC' : 'ASC';
 
+		// Without an explicit `datetime` orderby, adjust_event_sql() keeps
+		// WordPress's publish-date order, so `$number` would pick the events
+		// published first rather than the soonest.
 		$query_args = array(
 			'post_type'             => get_post_types_by_support( Event::SUPPORT ),
 			'fields'                => 'ids',
@@ -187,6 +192,7 @@ final class Query {
 			'posts_per_page'        => $number,
 			self::EVENT_QUERY_PARAM => $event_list_type,
 			'order'                 => $order,
+			'orderby'               => 'datetime',
 		);
 
 		$tax_query = array();
@@ -212,6 +218,10 @@ final class Query {
 		}
 
 		$query_args['tax_query'] = $tax_query; //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+
+		if ( isset( $args['has_password'] ) && is_bool( $args['has_password'] ) ) {
+			$query_args['has_password'] = $args['has_password'];
+		}
 
 		return new WP_Query( $query_args );
 	}

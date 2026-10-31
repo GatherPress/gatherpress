@@ -12,8 +12,10 @@ use GatherPress\Core\Blocks\Rsvp_Form;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Rest_Api;
 use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
+use PasswordHash;
 use PMC\Unit_Test\Utility;
 use WP_Post;
 
@@ -41,6 +43,8 @@ class Test_Rsvp_Form extends Base {
 	 */
 	public function tearDown(): void {
 		Settings::get_instance()->set( 'enable_open_rsvp', true );
+		$this->reset_returned_state();
+		Utility::set_and_get_hidden_property( Rsvp_Form::get_instance(), 'form_ids', array() );
 		parent::tearDown();
 	}
 
@@ -63,8 +67,14 @@ class Test_Rsvp_Form extends Base {
 		$hooks             = array(
 			array(
 				'type'     => 'filter',
+				'name'     => 'render_block_data',
+				'priority' => 10,
+				'callback' => array( $instance, 'begin_returned_form' ),
+			),
+			array(
+				'type'     => 'filter',
 				'name'     => $render_block_hook,
-				'priority' => 5,
+				'priority' => 9,
 				'callback' => array( $instance, 'transform_block_content' ),
 			),
 			array(
@@ -105,7 +115,8 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests the generate_form_id method.
 	 *
-	 * Verifies that the method generates unique form IDs with the correct prefix.
+	 * Verifies that the id comes from the event and the form's schema id, and
+	 * that a form repeated on the page gets its own.
 	 *
 	 * @since 0.33.0
 	 * @covers ::generate_form_id
@@ -115,14 +126,90 @@ class Test_Rsvp_Form extends Base {
 	public function test_generate_form_id(): void {
 		$instance = Rsvp_Form::get_instance();
 
-		$form_id_1 = Utility::invoke_hidden_method( $instance, 'generate_form_id' );
-		$form_id_2 = Utility::invoke_hidden_method( $instance, 'generate_form_id' );
+		Utility::set_and_get_hidden_property( $instance, 'form_ids', array() );
 
-		$this->assertIsString( $form_id_1 );
-		$this->assertIsString( $form_id_2 );
-		$this->assertStringStartsWith( 'gatherpress_rsvp_', $form_id_1 );
-		$this->assertStringStartsWith( 'gatherpress_rsvp_', $form_id_2 );
-		$this->assertNotEquals( $form_id_1, $form_id_2 );
+		$this->assertSame(
+			'gatherpress_rsvp_974_form_2',
+			Utility::invoke_hidden_method( $instance, 'generate_form_id', array( 974, 'form_2' ) )
+		);
+		$this->assertSame(
+			'gatherpress_rsvp_974_form_2-2',
+			Utility::invoke_hidden_method( $instance, 'generate_form_id', array( 974, 'form_2' ) ),
+			'A second copy of the form on the page should get its own id.'
+		);
+		$this->assertSame(
+			'gatherpress_rsvp_974_form_2-3',
+			Utility::invoke_hidden_method( $instance, 'generate_form_id', array( 974, 'form_2' ) )
+		);
+		$this->assertSame(
+			'gatherpress_rsvp_974_4_form_1',
+			Utility::invoke_hidden_method( $instance, 'generate_form_id', array( 974, '4_form_1' ) ),
+			'Another form on the event keeps its own base id.'
+		);
+	}
+
+	/**
+	 * Tests the success redirect's anchor finds the form on the page it returns to.
+	 *
+	 * Without JavaScript the form posts to wp-comments-post.php and comes back
+	 * with `#<form id>`, so the id has to survive into the next render.
+	 *
+	 * @since TBD
+	 * @covers ::transform_block_content
+	 * @covers ::generate_form_id
+	 *
+	 * @return void
+	 */
+	public function test_success_redirect_anchor_matches_the_next_render(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$comment  = $this->factory()->comment->create_and_get(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+		$content  = '<div class="wp-block-gatherpress-rsvp-form">RSVP Form Content</div>';
+		$block    = array(
+			'blockName' => 'gatherpress/rsvp-form',
+			'attrs'     => array( 'postId' => $post_id ),
+		);
+		$matches  = array();
+
+		preg_match(
+			'/name="gatherpress_rsvp_form_id" value="([^"]+)"/',
+			$instance->transform_block_content( $content, $block ),
+			$matches
+		);
+
+		$posted_form_id = $matches[1];
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) use ( $posted_form_id ) {
+				return INPUT_POST === $type && 'gatherpress_rsvp_form_id' === $var_name ? $posted_form_id : $pre_value;
+			},
+			10,
+			3
+		);
+		add_filter(
+			'gatherpress_pre_get_wp_referer',
+			static function () use ( $post_id ) {
+				return get_permalink( $post_id );
+			}
+		);
+
+		$location = Form::get_instance()->handle_rsvp_comment_redirect( 'https://example.com/original', $comment );
+
+		// The page after the redirect is a new request.
+		Utility::set_and_get_hidden_property( $instance, 'form_ids', array() );
+
+		$this->assertStringEndsWith( '#' . $posted_form_id, $location );
+		$this->assertStringContainsString(
+			'id="' . $posted_form_id . '"',
+			$instance->transform_block_content( $content, $block ),
+			'The form on the page the redirect returns to should carry the anchor\'s id.'
+		);
 	}
 
 	/**
@@ -166,6 +253,38 @@ class Test_Rsvp_Form extends Base {
 		$this->assertStringContainsString( 'name="gatherpress_rsvp" value="1"', $transformed_content );
 		$this->assertStringContainsString( 'name="gatherpress_rsvp_form_id"', $transformed_content );
 		$this->assertStringContainsString( 'value="gatherpress_rsvp_', $transformed_content );
+	}
+
+	/**
+	 * Tests transform_block_content names the form's page for wp_get_referer().
+	 *
+	 * @since TBD
+	 * @covers ::transform_block_content
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_adds_the_referer_field(): void {
+		$post_id = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		$request_uri = $_SERVER['REQUEST_URI'] ?? null;
+
+		$_SERVER['REQUEST_URI'] = '/event/price-$1/';
+
+		$transformed_content = Rsvp_Form::get_instance()->transform_block_content(
+			'<div class="wp-block-gatherpress-rsvp-form">RSVP Form Content</div>',
+			array(
+				'blockName' => 'gatherpress/rsvp-form',
+				'attrs'     => array( 'postId' => $post_id ),
+			)
+		);
+
+		$_SERVER['REQUEST_URI'] = $request_uri;
+
+		$this->assertStringContainsString(
+			'<input type="hidden" name="_wp_http_referer" value="/event/price-$1/" /></form>',
+			$transformed_content,
+			'The page URL should go in as it is, not as a pattern backreference.'
+		);
 	}
 
 	/**
@@ -468,7 +587,7 @@ class Test_Rsvp_Form extends Base {
 	 * block, so two forms with the same wrapper and number of fields used to
 	 * match each other, and the second form rendered the first one's id.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::get_form_schema_id
 	 * @covers ::find_form_schema_id_in_blocks
 	 * @covers ::blocks_match
@@ -563,7 +682,7 @@ class Test_Rsvp_Form extends Base {
 	 * Forms with the same fields share the first form's id, whose schema
 	 * holds the same fields as their own.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::get_form_schema_id
 	 * @covers ::find_form_schema_id_in_blocks
 	 * @covers ::blocks_match
@@ -629,7 +748,7 @@ class Test_Rsvp_Form extends Base {
 	 * Block Hooks insert into the content before the form renders, so the
 	 * rendered form has an inner block that the saved one does not.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @covers ::get_form_schema_id
 	 * @covers ::find_form_schema_id_in_blocks
 	 * @covers ::blocks_match
@@ -673,7 +792,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Wrap inner block markup in an RSVP Form block.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param string $inner Inner block markup.
 	 *
@@ -690,7 +809,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Render each RSVP form in the content, nested ones included, and collect its schema id.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param int    $post_id      The event post ID.
 	 * @param string $post_content The event content.
@@ -2931,6 +3050,57 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
+	 * Tests transform_block_content keeps a password-protected event's form behind its password.
+	 *
+	 * In a block template the RSVP Form block renders outside the post
+	 * content, where the password form would otherwise hide it.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::transform_block_content
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_password_protected_event(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		);
+
+		$block_content = '<div class="wp-block-gatherpress-rsvp-form">RSVP Form Content</div>';
+		$block         = array(
+			'blockName' => 'gatherpress/rsvp-form',
+			'attrs'     => array(
+				'postId' => $post_id,
+			),
+		);
+
+		$this->assertSame(
+			'',
+			$instance->transform_block_content( $block_content, $block ),
+			'A password-protected event should keep its RSVP form from a viewer without the password.'
+		);
+
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+
+		// The cookie WordPress sets once a viewer enters the post password.
+		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'secret' );
+
+		$result = $instance->transform_block_content( $block_content, $block );
+
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+
+		$this->assertStringStartsWith(
+			'<form',
+			$result,
+			'A password-protected event should show its RSVP form to a viewer with the password.'
+		);
+	}
+
+	/**
 	 * Tests transform_block_content with past event.
 	 *
 	 * @covers ::transform_block_content
@@ -4293,5 +4463,483 @@ class Test_Rsvp_Form extends Base {
 		$result = $instance->transform_block_content( $block_content, $block );
 
 		$this->assertSame( '', $result, 'Should return empty string when open RSVP is disabled for this event.' );
+	}
+
+	/**
+	 * Builds a returned submission the way Rsvp\Form reads one back.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $overrides Keys to change.
+	 *
+	 * @return array<string, mixed> The submission.
+	 */
+	private function make_returned_submission( array $overrides = array() ): array {
+		return array_merge(
+			array(
+				'token'          => 'abcdefghijABCDEFGHIJ',
+				'post_id'        => 0,
+				'form_schema_id' => 'form_0',
+				'errors'         => array(),
+				'form_error'     => '',
+				'values'         => array(),
+			),
+			$overrides
+		);
+	}
+
+	/**
+	 * Sets the returned submission the RSVP Form block is rendering.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed>|null $submission The submission, or null for none.
+	 *
+	 * @return void
+	 */
+	private function set_returned_form( ?array $submission ): void {
+		$instance = Rsvp_Form::get_instance();
+
+		Utility::set_and_get_hidden_property( $instance, 'returned_form', $submission );
+		Utility::set_and_get_hidden_property( $instance, 'shown_errors', array() );
+		Utility::set_and_get_hidden_property( $instance, 'autofocus_claimed', false );
+	}
+
+	/**
+	 * Stores a submission under a token in the URL, the way a rejected submission does.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $submission The submission.
+	 *
+	 * @return void
+	 */
+	private function store_returned_submission( array $submission ): void {
+		$form  = Form::get_instance();
+		$token = $submission['token'];
+
+		unset( $submission['token'] );
+		set_transient( Form::RETURN_TRANSIENT_PREFIX . $token, $submission, Form::RETURN_EXPIRATION );
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) use ( $token ) {
+				return INPUT_GET === $type && Form::RETURN_QUERY_ARG === $var_name ? $token : $pre_value;
+			},
+			10,
+			3
+		);
+		Utility::set_and_get_hidden_property( $form, 'returned_submission', null );
+		Utility::set_and_get_hidden_property( $form, 'returned_submission_read', false );
+		Utility::set_and_get_hidden_property( Rsvp_Form::get_instance(), 'returned_form_taken', false );
+	}
+
+	/**
+	 * Clears the returned submission state of both singletons.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	private function reset_returned_state(): void {
+		$form = Form::get_instance();
+
+		$this->set_returned_form( null );
+		Utility::set_and_get_hidden_property( Rsvp_Form::get_instance(), 'returned_form_taken', false );
+		Utility::set_and_get_hidden_property( $form, 'returned_submission', null );
+		Utility::set_and_get_hidden_property( $form, 'returned_submission_read', false );
+	}
+
+	/**
+	 * Returns the content of an event with one RSVP Form holding two fields.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The post content.
+	 */
+	private function get_returned_form_content(): string {
+		return '<!-- wp:gatherpress/rsvp-form -->
+<div class="wp-block-gatherpress-rsvp-form">
+<!-- wp:gatherpress/form-field {"fieldName":"dietary","fieldType":"text","inputId":"dietary-input"} /-->
+<!-- wp:gatherpress/form-field {"fieldName":"contact","fieldType":"email","inputId":"contact-input"} /-->
+</div>
+<!-- /wp:gatherpress/rsvp-form -->';
+	}
+
+	/**
+	 * Tests begin_returned_form leaves other blocks alone.
+	 *
+	 * @since TBD
+	 * @covers ::begin_returned_form
+	 *
+	 * @return void
+	 */
+	public function test_begin_returned_form_ignores_other_blocks(): void {
+		$instance   = Rsvp_Form::get_instance();
+		$submission = $this->make_returned_submission();
+		$block      = array(
+			'blockName' => 'core/paragraph',
+			'attrs'     => array(),
+		);
+
+		$this->set_returned_form( $submission );
+
+		$this->assertSame( $block, $instance->begin_returned_form( $block ), 'The block should come back unchanged.' );
+		$this->assertSame(
+			$submission,
+			Utility::get_hidden_property( $instance, 'returned_form' ),
+			'A field inside the form should not end the returned form.'
+		);
+	}
+
+	/**
+	 * Tests begin_returned_form picks up the submission of the form it came from.
+	 *
+	 * @since TBD
+	 * @covers ::begin_returned_form
+	 *
+	 * @return void
+	 */
+	public function test_begin_returned_form_matches_the_submitted_form(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type'    => Event::POST_TYPE,
+				'post_content' => $this->get_returned_form_content(),
+			)
+		);
+		$block    = parse_blocks( $this->get_returned_form_content() )[0];
+
+		$block['attrs']['postId'] = $post_id;
+
+		$submission = $this->make_returned_submission( array( 'post_id' => $post_id ) );
+
+		$this->store_returned_submission( $submission );
+		$this->assertSame( $block, $instance->begin_returned_form( $block ), 'The block should come back unchanged.' );
+		$this->assertSame(
+			$submission,
+			Utility::get_hidden_property( $instance, 'returned_form' ),
+			'The form should take the submission.'
+		);
+		$this->assertFalse(
+			get_transient( Form::RETURN_TRANSIENT_PREFIX . $submission['token'] ),
+			'The submission should be shown once.'
+		);
+	}
+
+	/**
+	 * Tests begin_returned_form leaves a submission from another form waiting.
+	 *
+	 * @since TBD
+	 * @covers ::begin_returned_form
+	 *
+	 * @return void
+	 */
+	public function test_begin_returned_form_skips_another_form(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type'    => Event::POST_TYPE,
+				'post_content' => $this->get_returned_form_content(),
+			)
+		);
+		$block    = parse_blocks( $this->get_returned_form_content() )[0];
+
+		$block['attrs']['postId'] = $post_id;
+
+		$this->store_returned_submission( $this->make_returned_submission( array( 'post_id' => $post_id + 1 ) ) );
+		$instance->begin_returned_form( $block );
+		$this->assertNull(
+			Utility::get_hidden_property( $instance, 'returned_form' ),
+			'Another event\'s submission should not be shown.'
+		);
+
+		$this->store_returned_submission(
+			$this->make_returned_submission(
+				array(
+					'post_id'        => $post_id,
+					'form_schema_id' => 'form_2',
+				)
+			)
+		);
+		$instance->begin_returned_form( $block );
+		$this->assertNull(
+			Utility::get_hidden_property( $instance, 'returned_form' ),
+			'Another form\'s submission should not be shown.'
+		);
+		$this->assertNotFalse(
+			get_transient( Form::RETURN_TRANSIENT_PREFIX . 'abcdefghijABCDEFGHIJ' ),
+			'The submission should wait for its own form.'
+		);
+	}
+
+	/**
+	 * Tests only the first of two identical forms takes the submission.
+	 *
+	 * @since TBD
+	 * @covers ::begin_returned_form
+	 *
+	 * @return void
+	 */
+	public function test_begin_returned_form_takes_the_first_identical_form(): void {
+		$content = $this->get_returned_form_content() . "\n\n" . $this->get_returned_form_content();
+		$post_id = $this->factory()->post->create(
+			array(
+				'post_type'    => Event::POST_TYPE,
+				'post_content' => $content,
+			)
+		);
+
+		$this->go_to( get_permalink( $post_id ) );
+		$this->store_returned_submission(
+			$this->make_returned_submission(
+				array(
+					'post_id' => $post_id,
+					'errors'  => array( 'dietary' => 'Dietary needs is required.' ),
+				)
+			)
+		);
+
+		$html = do_blocks( $content );
+
+		$this->assertSame(
+			2,
+			substr_count( $html, 'class="wp-block-gatherpress-rsvp-form"' ),
+			'Both forms should render.'
+		);
+		$this->assertSame(
+			1,
+			substr_count( $html, '<p class="gatherpress-field-error"' ),
+			'Only one form should show the error.'
+		);
+		$this->assertSame( 1, substr_count( $html, 'autofocus="autofocus"' ), 'Only one field should take the focus.' );
+	}
+
+	/**
+	 * Tests get_returned_field hands each field its value and error, and the first error the focus.
+	 *
+	 * @since TBD
+	 * @covers ::get_returned_field
+	 *
+	 * @return void
+	 */
+	public function test_get_returned_field(): void {
+		$instance = Rsvp_Form::get_instance();
+		$none     = array(
+			'value'     => null,
+			'error'     => '',
+			'autofocus' => false,
+		);
+
+		$this->set_returned_form( null );
+		$this->assertSame(
+			$none,
+			$instance->get_returned_field( 'dietary' ),
+			'Outside a returned form a field keeps its own state.'
+		);
+
+		$this->set_returned_form(
+			$this->make_returned_submission(
+				array(
+					'errors' => array(
+						'dietary' => 'Dietary needs is required.',
+						'size'    => 'Size is required.',
+					),
+					'values' => array(
+						'dietary' => '',
+						'contact' => 'backup@example.com',
+					),
+				)
+			)
+		);
+
+		$this->assertSame(
+			array(
+				'value'     => 'backup@example.com',
+				'error'     => '',
+				'autofocus' => false,
+			),
+			$instance->get_returned_field( 'contact' ),
+			'A valid field should get its value back.'
+		);
+		$this->assertSame(
+			array(
+				'value'     => '',
+				'error'     => 'Dietary needs is required.',
+				'autofocus' => true,
+			),
+			$instance->get_returned_field( 'dietary' ),
+			'The first invalid field should take the focus.'
+		);
+		$this->assertSame(
+			array(
+				'value'     => null,
+				'error'     => 'Size is required.',
+				'autofocus' => false,
+			),
+			$instance->get_returned_field( 'size' ),
+			'Only one field should take the focus.'
+		);
+		$this->assertSame(
+			$none,
+			$instance->get_returned_field( 'unknown' ),
+			'A field the submission lacks keeps its own state.'
+		);
+		$this->assertSame(
+			array(
+				'dietary' => true,
+				'size'    => true,
+			),
+			Utility::get_hidden_property( $instance, 'shown_errors' ),
+			'Each error a field showed should be recorded.'
+		);
+	}
+
+	/**
+	 * Tests add_returned_form_error shows the form message and any error no field showed.
+	 *
+	 * @since TBD
+	 * @covers ::add_returned_form_error
+	 *
+	 * @return void
+	 */
+	public function test_add_returned_form_error(): void {
+		$instance = Rsvp_Form::get_instance();
+		$html     = '<form class="wp-block-gatherpress-rsvp-form" data-label="a &gt; b"><input name="author" /></form>';
+
+		$this->set_returned_form( null );
+		$this->assertSame(
+			$html,
+			Utility::invoke_hidden_method(
+				$instance,
+				'add_returned_form_error',
+				array( $html, $this->make_returned_submission() )
+			),
+			'Without a message the form should be unchanged.'
+		);
+
+		$this->assertSame(
+			'<form class="wp-block-gatherpress-rsvp-form" data-label="a &gt; b">'
+				. '<div class="gatherpress-form-error" role="alert" tabindex="-1" autofocus>'
+				. 'You&#039;ve already RSVP&#039;d &lt;here&gt;.</div><input name="author" /></form>',
+			Utility::invoke_hidden_method(
+				$instance,
+				'add_returned_form_error',
+				array(
+					$html,
+					$this->make_returned_submission( array( 'form_error' => 'You\'ve already RSVP\'d <here>.' ) ),
+				)
+			),
+			'The message should open the form and take the focus.'
+		);
+
+		Utility::set_and_get_hidden_property( $instance, 'shown_errors', array( 'dietary' => true ) );
+		Utility::set_and_get_hidden_property( $instance, 'autofocus_claimed', true );
+
+		$this->assertSame(
+			'<form class="wp-block-gatherpress-rsvp-form" data-label="a &gt; b">'
+				. '<div class="gatherpress-form-error" role="alert" tabindex="-1">'
+				. 'Size is required.</div><input name="author" /></form>',
+			Utility::invoke_hidden_method(
+				$instance,
+				'add_returned_form_error',
+				array(
+					$html,
+					$this->make_returned_submission(
+						array(
+							'errors' => array(
+								'dietary' => 'Dietary needs is required.',
+								'size'    => 'Size is required.',
+							),
+						)
+					),
+				)
+			),
+			'Only the error no field showed should reach the form, without taking the focus.'
+		);
+	}
+
+	/**
+	 * Tests transform_block_content adds the returned form's message and ends the returned form.
+	 *
+	 * @since TBD
+	 * @covers ::transform_block_content
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_returned_form(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$content  = '<div class="wp-block-gatherpress-rsvp-form">Fields</div>';
+		$block    = array(
+			'blockName' => 'gatherpress/rsvp-form',
+			'attrs'     => array( 'postId' => $post_id ),
+		);
+
+		$this->set_returned_form( $this->make_returned_submission( array( 'form_error' => 'Duplicate.' ) ) );
+
+		$html = $instance->transform_block_content( $content, $block );
+
+		$this->assertStringContainsString(
+			'<div class="gatherpress-form-error" role="alert" tabindex="-1" autofocus>Duplicate.</div>',
+			$html
+		);
+		$this->assertNull(
+			Utility::get_hidden_property( $instance, 'returned_form' ),
+			'The next form should start clean.'
+		);
+
+		$this->set_returned_form( $this->make_returned_submission() );
+
+		$html = $instance->transform_block_content( $content, $block );
+
+		$this->assertStringNotContainsString( 'gatherpress-form-error', $html, 'Without a message nothing is added.' );
+	}
+
+	/**
+	 * Tests a rejected submission renders back into its form with its values and errors.
+	 *
+	 * @since TBD
+	 * @coversNothing
+	 *
+	 * @return void
+	 */
+	public function test_returned_form_renders_values_and_errors(): void {
+		$post_id = $this->factory()->post->create(
+			array(
+				'post_type'    => Event::POST_TYPE,
+				'post_content' => $this->get_returned_form_content(),
+			)
+		);
+
+		$this->go_to( get_permalink( $post_id ) );
+		$this->store_returned_submission(
+			$this->make_returned_submission(
+				array(
+					'post_id' => $post_id,
+					'errors'  => array( 'dietary' => 'Dietary needs is required.' ),
+					'values'  => array(
+						'dietary' => '',
+						'contact' => 'backup@example.com',
+					),
+				)
+			)
+		);
+
+		$html = do_blocks( $this->get_returned_form_content() );
+
+		$this->assertMatchesRegularExpression(
+			'/<input[^>]*name="dietary"[^>]*aria-invalid="true"'
+				. '[^>]*aria-describedby="dietary-input-error"[^>]*autofocus="autofocus"/',
+			$html,
+			'The invalid field should be marked, described by its error and focused.'
+		);
+		$this->assertStringContainsString( '<p class="gatherpress-field-error" id="dietary-input-error">', $html );
+		$this->assertStringContainsString( 'Dietary needs is required.', $html );
+		$this->assertMatchesRegularExpression(
+			'/<input[^>]*name="contact"[^>]*value="backup@example.com"/',
+			$html,
+			'The valid field should keep its value.'
+		);
+		$this->assertStringNotContainsString( 'gatherpress-form-error', $html, 'Every error had a field to show it.' );
 	}
 }

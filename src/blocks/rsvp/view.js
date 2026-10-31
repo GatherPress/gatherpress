@@ -1,7 +1,12 @@
 /**
  * WordPress dependencies
  */
-import { store, getElement, getContext } from '@wordpress/interactivity';
+import {
+	store,
+	getElement,
+	getContext,
+	withSyncEvent,
+} from '@wordpress/interactivity';
 
 /**
  * Internal dependencies
@@ -22,7 +27,7 @@ import {
  * the container never shows. Animation frames pause in a background tab,
  * so there the callback waits until the tab is visible again.
  *
- * @since TBD
+ * @since 0.36.1
  *
  * @param {HTMLElement|null} container    The status container to wait for.
  * @param {Function}         callback     Receives true when the container is
@@ -91,7 +96,8 @@ const { state, actions } = store( 'gatherpress', {
 				}, 10 );
 			}, triggerElement );
 		},
-		updateRsvp( event = null ) {
+		// Synchronous, so preventDefault() stops the no-JavaScript form from submitting (#2039).
+		updateRsvp: withSyncEvent( ( event = null ) => {
 			if ( event ) {
 				event.preventDefault();
 			}
@@ -212,7 +218,7 @@ const { state, actions } = store( 'gatherpress', {
 				},
 				triggerElement,
 			);
-		},
+		} ),
 	},
 	callbacks: {
 		monitorAnonymousStatus() {
@@ -223,6 +229,8 @@ const { state, actions } = store( 'gatherpress', {
 			initPostContext( state, postId );
 
 			element.ref.checked = state.posts[ postId ].currentUser.anonymous;
+			// Saved as it changes, so Enter must not submit the no-JavaScript form (#2039).
+			element.ref.removeAttribute( 'form' );
 		},
 		setGuestCount() {
 			const element = getElement();
@@ -232,6 +240,8 @@ const { state, actions } = store( 'gatherpress', {
 			initPostContext( state, postId );
 
 			element.ref.value = state.posts[ postId ].currentUser.guests;
+			// Saved as it changes, so Enter must not submit the no-JavaScript form (#2039).
+			element.ref.removeAttribute( 'form' );
 		},
 		renderRsvpBlock() {
 			const element = getElement();

@@ -102,6 +102,8 @@ final class Setup {
 	 */
 	public function register_block_classes(): void {
 		Add_To_Calendar::get_instance();
+		Calendar_Query::get_instance();
+		Calendar\Registration::get_instance();
 		Dropdown::get_instance();
 		Dropdown_Item::get_instance();
 		Event_Date::get_instance();

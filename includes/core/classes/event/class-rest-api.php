@@ -15,6 +15,7 @@ namespace GatherPress\Core\Event;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
+use GatherPress\Core\Blocks\Rsvp as Rsvp_Block;
 use GatherPress\Core\Blocks\Rsvp_Form;
 use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Event;
@@ -26,6 +27,7 @@ use GatherPress\Core\Rsvp\Token;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
+use WP_HTTP_Response;
 use WP_Post;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -73,6 +75,55 @@ final class Rest_Api {
 	protected function setup_hooks(): void {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
 		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ), 10, 2 );
+		add_filter( 'rest_post_dispatch', array( $this, 'redirect_rsvp_form_submission' ), 10, 3 );
+	}
+
+	/**
+	 * Sends an RSVP posted without JavaScript back to the page it came from.
+	 *
+	 * The RSVP block's no-JavaScript form (see
+	 * `Blocks\Rsvp::submit_rsvp_without_javascript()`) posts to the RSVP
+	 * route with a `gatherpress_redirect` URL. Rather than the JSON a script
+	 * reads, the browser gets a 303 to that URL. A failed RSVP adds
+	 * `Blocks\Rsvp::ERROR_QUERY_ARG`, so the block can say so. That
+	 * includes a stale nonce, which WordPress rejects before the route's
+	 * callback runs, so this runs on `rest_post_dispatch`, after every
+	 * outcome. A URL on another host is ignored.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_HTTP_Response $response The response to send.
+	 * @param WP_REST_Server   $server   The REST server.
+	 * @param WP_REST_Request  $request  The request.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Required by WP's rest_post_dispatch hook signature.
+	 *
+	 * @return WP_HTTP_Response The response, as a redirect for a no-JavaScript RSVP.
+	 */
+	public function redirect_rsvp_form_submission(
+		WP_HTTP_Response $response,
+		WP_REST_Server $server,
+		WP_REST_Request $request
+	): WP_HTTP_Response {
+		$redirect = sprintf( '/%s/event/rsvp', GATHERPRESS_REST_NAMESPACE ) === $request->get_route()
+			? wp_validate_redirect( (string) $request->get_param( 'gatherpress_redirect' ), '' )
+			: '';
+
+		if ( '' === $redirect ) {
+			return $response;
+		}
+
+		$data = $response->get_data();
+
+		if ( 400 <= $response->get_status() || ! is_array( $data ) || empty( $data['success'] ) ) {
+			$redirect = add_query_arg( Rsvp_Block::ERROR_QUERY_ARG, (int) $request->get_param( 'post_id' ), $redirect );
+		}
+
+		$response->set_status( 303 );
+		$response->header( 'Location', $redirect );
+
+		return $response;
 	}
 
 	/**
@@ -138,7 +189,16 @@ final class Rest_Api {
 					// send emails about it. Mirrors the meta auth_callback
 					// model so a non-owner Author can't blast emails about
 					// someone else's event via this route.
-					return current_user_can( Event::edit_capability(), (int) $request['post_id'] );
+					$post_id = (int) $request['post_id'];
+
+					if ( ! current_user_can( Event::edit_capability(), $post_id ) ) {
+						return false;
+					}
+
+					$send = (array) $request['send'];
+
+					return empty( $send['all'] )
+						|| self::can_email_all_users( (string) get_post_type( $post_id ) );
 				},
 				'args'                => array(
 					'post_id' => array(
@@ -160,6 +220,25 @@ final class Rest_Api {
 				),
 			),
 		);
+	}
+
+	/**
+	 * Whether the current user can email every user on the site about an event.
+	 *
+	 * Emailing all users reaches far beyond the event's own attendees, so it
+	 * takes the post type's `edit_others_posts`, as Editors and Administrators
+	 * have, on top of the right to edit the event.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @param string $post_type The event's post type.
+	 *
+	 * @return bool Whether the current user can email all users.
+	 */
+	public static function can_email_all_users( string $post_type ): bool {
+		$post_type_object = get_post_type_object( $post_type );
+
+		return null !== $post_type_object && current_user_can( $post_type_object->cap->edit_others_posts );
 	}
 
 	/**
@@ -460,6 +539,7 @@ final class Rest_Api {
 		// Prevent caching of RSVP updates.
 		nocache_headers();
 
+		// A form posted without JavaScript sends guests and anonymity under the RSVP block's own field names.
 		$params          = $request->get_params();
 		$success         = false;
 		$current_user_id = get_current_user_id();
@@ -467,8 +547,8 @@ final class Rest_Api {
 		$user_id         = isset( $params['user_id'] ) ? intval( $params['user_id'] ) : $current_user_id;
 		$post_id         = intval( $params['post_id'] );
 		$status          = sanitize_key( $params['status'] );
-		$guests          = intval( $params['guests'] ?? 0 );
-		$anonymous       = intval( $params['anonymous'] ?? 0 );
+		$guests          = intval( $params['guests'] ?? $params['gatherpress_rsvp_guests'] ?? 0 );
+		$anonymous       = intval( $params['anonymous'] ?? $params['gatherpress_rsvp_anonymous'] ?? 0 );
 		$event           = new Event( $post_id );
 		$rsvp            = new Rsvp( $post_id );
 
@@ -701,13 +781,17 @@ final class Rest_Api {
 		}
 
 		// Pre-flight: bail with a structured error before processing if the
-		// event is not viewable, open RSVP is disabled or the event has already passed.
+		// event is not viewable, its password hasn't been entered, open RSVP is
+		// disabled or the event has already passed. The password check is the
+		// one wp-comments-post.php makes, which process_rsvp() skips.
 		$event = new Event( $data['post_id'] );
 		$rsvp  = new Rsvp( $data['post_id'] );
 		$bail  = null;
 
 		if ( ! Event::is_viewable( $data['post_id'] ) ) {
 			$bail = array( __( 'Event not found.', 'gatherpress' ), 404 );
+		} elseif ( post_password_required( $data['post_id'] ) ) {
+			$bail = array( __( 'Enter the event password to RSVP.', 'gatherpress' ), 403 );
 		} elseif ( ! $rsvp->is_enabled() ) {
 			$bail = array( __( 'RSVP is disabled for this event.', 'gatherpress' ), 403 );
 		} elseif ( ! $rsvp->allows_open_rsvp() ) {

@@ -20,7 +20,9 @@ use GatherPress\Core\Topic;
 use GatherPress\Core\Utility as GatherPress_Utility;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
+use PasswordHash;
 use PMC\Unit_Test\Utility;
+use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
@@ -78,9 +80,133 @@ class Test_Rest_Api extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'prepare_event_data' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'rest_post_dispatch',
+				'priority' => 10,
+				'callback' => array( $instance, 'redirect_rsvp_form_submission' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
+	}
+
+	/**
+	 * An RSVP posted without JavaScript is answered with a 303 back to its
+	 * page, flagged when it failed; anything else is left alone.
+	 *
+	 * @since TBD
+	 * @covers ::redirect_rsvp_form_submission
+	 *
+	 * @return void
+	 */
+	public function test_redirect_rsvp_form_submission(): void {
+		$instance = Rest_Api::get_instance();
+		$server   = rest_get_server();
+		$page     = home_url( '/event/party/' );
+		$redirect = $page . '#gatherpress-rsvp-5-1';
+		$request  = static function ( string $route, array $params ): WP_REST_Request {
+			$request = new WP_REST_Request( 'POST', $route );
+
+			$request->set_body_params( $params );
+
+			return $request;
+		};
+		$rsvp     = static fn( array $params ) => $request( '/gatherpress/v1/event/rsvp', $params );
+		$respond  = static fn( $data = array( 'success' => true ) ) => new WP_REST_Response( $data );
+
+		$other = $instance->redirect_rsvp_form_submission(
+			$respond(),
+			$server,
+			$request( '/gatherpress/v1/event/rsvp-form', array( 'gatherpress_redirect' => $redirect ) )
+		);
+		$this->assertSame( 200, $other->get_status(), 'Another route is left alone.' );
+
+		$script = $instance->redirect_rsvp_form_submission( $respond(), $server, $rsvp( array() ) );
+		$this->assertSame( 200, $script->get_status(), 'A request without a redirect, from a script, is left alone.' );
+
+		$elsewhere = $instance->redirect_rsvp_form_submission(
+			$respond(),
+			$server,
+			$rsvp( array( 'gatherpress_redirect' => 'https://elsewhere.example/' ) )
+		);
+		$this->assertSame( 200, $elsewhere->get_status(), 'A redirect to another host is ignored.' );
+
+		$saved = $instance->redirect_rsvp_form_submission(
+			$respond(),
+			$server,
+			$rsvp( array( 'gatherpress_redirect' => $redirect ) )
+		);
+		$this->assertSame( 303, $saved->get_status() );
+		$this->assertSame( $redirect, $saved->get_headers()['Location'], 'A saved RSVP returns to the page.' );
+
+		$failures = array(
+			'error'        => rest_convert_error_to_response(
+				new WP_Error( 'rest_cookie_invalid_nonce', 'Cookie check failed', array( 'status' => 403 ) )
+			),
+			'unsuccessful' => $respond( array( 'success' => false ) ),
+			'not an array' => $respond( 'unexpected' ),
+		);
+
+		foreach ( $failures as $label => $response ) {
+			$failed = $instance->redirect_rsvp_form_submission(
+				$response,
+				$server,
+				$rsvp(
+					array(
+						'gatherpress_redirect' => $redirect,
+						'post_id'              => 5,
+					)
+				)
+			);
+
+			$this->assertSame( 303, $failed->get_status(), sprintf( 'An %s response still redirects.', $label ) );
+			$this->assertSame(
+				$page . '?gatherpress_rsvp_error=5#gatherpress-rsvp-5-1',
+				$failed->get_headers()['Location'],
+				sprintf( 'An %s response flags the error for the event.', $label )
+			);
+		}
+	}
+
+	/**
+	 * A form posted without JavaScript sends guests and anonymity under the RSVP block's field names.
+	 *
+	 * @since TBD
+	 * @covers ::update_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_update_rsvp_reads_the_rsvp_block_field_names(): void {
+		$user_id  = $this->factory->user->create();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		wp_set_current_user( $user_id );
+		update_post_meta( $event_id, 'gatherpress_guest_limit', 2 );
+		update_post_meta( $event_id, 'gatherpress_enable_anonymous_rsvp', 1 );
+		( new Event( $event_id ) )->save_datetimes(
+			array(
+				'datetime_start' => gmdate( Event::DATETIME_FORMAT, strtotime( '+1 day' ) ),
+				'datetime_end'   => gmdate( Event::DATETIME_FORMAT, strtotime( '+2 day' ) ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		$request = new WP_REST_Request( 'POST' );
+
+		$request->set_body_params(
+			array(
+				'post_id'                    => $event_id,
+				'status'                     => 'attending',
+				'gatherpress_rsvp_guests'    => '2',
+				'gatherpress_rsvp_anonymous' => '1',
+			)
+		);
+
+		$response = Rest_Api::get_instance()->update_rsvp( $request );
+
+		$this->assertSame( 2, $response->data['guests'], 'The guest count is read from the block field.' );
+		$this->assertSame( 1, $response->data['anonymous'], 'Anonymity is read from the block field.' );
 	}
 
 	/**
@@ -851,6 +977,82 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Tests handle_rsvp_form_submission refuses a password-protected event until its password is entered.
+	 *
+	 * The form posts to wp-comments-post.php without JavaScript, which refuses
+	 * a password-protected post, so the REST route has to refuse it too.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::handle_rsvp_form_submission
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_form_submission_password_protected_event(): void {
+		$instance = Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		);
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'comment_post_ID', $post_id );
+		$request->set_param( 'author', 'Test Author' );
+		$request->set_param( 'email', 'test@example.com' );
+
+		$response = $instance->handle_rsvp_form_submission( $request );
+
+		$this->assertSame( 403, $response->get_status() );
+		$this->assertFalse( $response->get_data()['success'] );
+		$this->assertSame( 'Enter the event password to RSVP.', $response->get_data()['message'] );
+		$this->assertSame( 0, $this->count_rsvp_comments( $post_id ), 'Failed to assert no RSVP was saved.' );
+
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+
+		// The cookie WordPress sets once a viewer enters the post password.
+		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'secret' );
+
+		$response = $instance->handle_rsvp_form_submission( $request );
+
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+
+		$this->assertSame( 200, $response->get_status(), 'Failed to assert the RSVP is accepted with the password.' );
+		$this->assertTrue( $response->get_data()['success'] );
+		$this->assertSame( 1, $this->count_rsvp_comments( $post_id ), 'Failed to assert the accepted RSVP was saved.' );
+	}
+
+	/**
+	 * Counts an event's RSVP comments in any status, unapproved ones included.
+	 *
+	 * Comment queries leave RSVPs out by default, so the count turns that
+	 * exclusion off for its own query.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @param int $post_id The event's post ID.
+	 *
+	 * @return int The number of RSVP comments.
+	 */
+	private function count_rsvp_comments( int $post_id ): int {
+		add_filter( 'gatherpress_rsvp_comment_query_exclusion', '__return_false' );
+
+		$count = get_comments(
+			array(
+				'post_id' => $post_id,
+				'type'    => Rsvp::COMMENT_TYPE,
+				'status'  => 'all',
+				'count'   => true,
+			)
+		);
+
+		remove_filter( 'gatherpress_rsvp_comment_query_exclusion', '__return_false' );
+
+		return (int) $count;
+	}
+
+	/**
 	 * Coverage for rsvp_responses method.
 	 *
 	 * @covers ::rsvp_responses
@@ -1480,6 +1682,109 @@ class Test_Rest_Api extends Base {
 		$this->assertFalse(
 			call_user_func( $callback, $request ),
 			'A logged-out user should not be allowed to email about any event.'
+		);
+	}
+
+	/**
+	 * Tests emailing every user takes edit_others_posts, not just edit_post.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::email_route
+	 */
+	public function test_email_route_permission_callback_send_all(): void {
+		$instance = Rest_Api::get_instance();
+		$route    = Utility::invoke_hidden_method( $instance, 'email_route' );
+		$callback = $route['args']['permission_callback'];
+
+		$contributor_id = $this->factory->user->create( array( 'role' => 'contributor' ) );
+		$author_id      = $this->factory->user->create( array( 'role' => 'author' ) );
+		$editor_id      = $this->factory->user->create( array( 'role' => 'editor' ) );
+
+		$draft_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_author' => $contributor_id,
+				'post_status' => 'draft',
+			)
+		);
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_author' => $author_id,
+				'post_status' => 'publish',
+			)
+		);
+
+		$send_all = array(
+			'all'           => true,
+			'attending'     => false,
+			'waiting_list'  => false,
+			'not_attending' => false,
+		);
+
+		$request = new WP_REST_Request();
+		$request->set_param( 'send', $send_all );
+
+		wp_set_current_user( $contributor_id );
+		$request->set_param( 'post_id', $draft_id );
+		$this->assertFalse(
+			call_user_func( $callback, $request ),
+			'Emailing all users should take more than the right to edit the event.'
+		);
+
+		wp_set_current_user( $author_id );
+		$request->set_param( 'post_id', $event_id );
+		$this->assertFalse(
+			call_user_func( $callback, $request ),
+			'An author should not be allowed to email every user from their own event.'
+		);
+
+		$request->set_param(
+			'send',
+			array_merge(
+				$send_all,
+				array(
+					'all'       => false,
+					'attending' => true,
+				)
+			)
+		);
+		$this->assertTrue(
+			call_user_func( $callback, $request ),
+			'An author should still be allowed to email the attendees of their own event.'
+		);
+
+		wp_set_current_user( $editor_id );
+		$request->set_param( 'send', $send_all );
+		$this->assertTrue(
+			call_user_func( $callback, $request ),
+			'An editor should be allowed to email every user.'
+		);
+	}
+
+	/**
+	 * Tests who can email every user about an event.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::can_email_all_users
+	 */
+	public function test_can_email_all_users(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'author' ) ) );
+		$this->assertFalse(
+			Rest_Api::can_email_all_users( Event::POST_TYPE ),
+			'An author should not be allowed to email every user.'
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'editor' ) ) );
+		$this->assertTrue(
+			Rest_Api::can_email_all_users( Event::POST_TYPE ),
+			'An editor should be allowed to email every user.'
+		);
+		$this->assertFalse(
+			Rest_Api::can_email_all_users( 'unregistered_post_type' ),
+			'An unregistered post type should never allow emailing every user.'
 		);
 	}
 

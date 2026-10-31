@@ -41,7 +41,7 @@ These settings choose the mapping platform and the defaults applied to newly add
 - **Custom Tile Layer URL** and **Custom Attribution** point OpenStreetMap maps at a self-hosted or third-party XYZ tile server instead of the built-in CARTO tiles, and let you replace the credit line shown alongside the map. Leave both empty to use the defaults.
 - **CARTO API Key** is required for the default (unmodified) OpenStreetMap tiles; it's ignored once a custom tile layer URL is set.
 - **Default Render Mode** chooses between an interactive map and a static map image for new blocks.
-- **Default Zoom Level**, **Default Height**, **Default Width**, **Default Aspect Ratio**, and **Default Scale** set the initial appearance of new venue map blocks. Height and width can be left empty for automatic sizing derived from the aspect ratio.
+- **Default Map Type** (Google Maps only), **Default Zoom Level**, **Default Height**, **Default Aspect Ratio**, and **Default Scale** set the initial appearance of new venue map blocks. Height can be left empty for automatic sizing derived from the aspect ratio.
 
 ### Geocoding
 
@@ -64,11 +64,11 @@ Default RSVP settings for new events; most can be overridden per event.
 
 - **RSVP Mode** controls how RSVP works across your site (see [RSVP system](user/rsvp-system.md#rsvp-mode)):
     - **All Events**: RSVP is enabled for every event.
-    - **Per event (default on)**: each event gets its own toggle in the editor; new events start with RSVP enabled.
-    - **Per event (default off)**: each event gets its own toggle; new events start with RSVP disabled.
+    - **Per Event (default enabled)**: each event gets its own toggle in the editor; new events start with RSVP enabled.
+    - **Per Event (default disabled)**: each event gets its own toggle; new events start with RSVP disabled.
     - **Disabled**: RSVP is turned off sitewide, and the RSVP blocks and admin screens are hidden.
 - **Open RSVP** allows visitors to RSVP without a site account, using email verification (see [Open RSVP](user/rsvp-system.md#open-rsvp-without-an-account)).
-- **Maximum Attendance Limit** caps the total number of people per event. Set to 0 for no limit.
+- **Capacity** caps the total number of people per event. Set to 0 for no limit.
 - **Maximum Number of Guests** sets how many additional guests each attendee may bring.
 - **Anonymous RSVP** allows users to RSVP without revealing their identity.
 
