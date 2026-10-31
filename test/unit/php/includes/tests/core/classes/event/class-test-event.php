@@ -3597,6 +3597,49 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * Covers a start-only block that turns the timezone off.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_display_datetime_parts
+	 *
+	 * @return void
+	 */
+	public function test_get_display_datetime_parts_start_only_without_timezone(): void {
+		update_option(
+			'gatherpress_settings',
+			array(
+				'date_format'   => 'F j, Y',
+				'time_format'   => 'g:i a',
+				'show_timezone' => true,
+			)
+		);
+
+		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$event = new Event( $post->ID );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2026-08-29 09:00:00',
+				'datetime_end'   => '2026-08-29 17:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$parts = $event->get_display_datetime_parts( 'start', '', '', '', 'no' );
+
+		$this->assertSame(
+			'August 29, 2026 9:00 am',
+			$parts['start'],
+			'Failed to assert the start part renders.'
+		);
+		$this->assertFalse( $parts['end'], 'Failed to assert a start-only block has no end part.' );
+		$this->assertFalse( $parts['separator'], 'Failed to assert a start-only block has no separator.' );
+		$this->assertFalse( $parts['timezone'], 'Failed to assert the block can turn the timezone off.' );
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
 	 * An all-day event formats through the all-day branch of format_datetime.
 	 *
 	 * The helper hands an all-day event to get_formatted_all_day() and
