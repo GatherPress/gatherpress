@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+On the Events > RSVPs screen, an RSVP can now be marked as a no-show as well as checked in. RSVPs that were never marked show as "Not recorded", and a new filter lists the RSVPs in each check-in state, so the remaining ones can be marked as no-shows together. Companion plugins can add their own check-in states, such as a check-in for people who joined online.

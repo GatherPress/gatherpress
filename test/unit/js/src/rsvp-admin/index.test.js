@@ -11,6 +11,12 @@ const STATUSES = JSON.stringify( [
 	{ value: 'waiting_list', label: 'Waiting List' },
 ] );
 
+const CHECK_IN_STATES = JSON.stringify( [
+	{ value: 'checked-in', label: 'Checked in', icon: '<svg></svg>' },
+	{ value: 'no-show', label: 'No-show', icon: '<svg></svg>' },
+	{ value: 'not-recorded', label: 'Not recorded', icon: '<svg></svg>' },
+] );
+
 const MOUNTS = {
 	full: {
 		postTypes: 'gatherpress_event',
@@ -18,9 +24,15 @@ const MOUNTS = {
 		label: 'Pick an event',
 		statuses: STATUSES,
 		selected: 'attending',
+		checkInStates: CHECK_IN_STATES,
+		checkIn: 'no-show',
 	},
 	bare: {},
-	malformed: { postTypes: 'gatherpress_event', statuses: '{"attending"' },
+	malformed: {
+		postTypes: 'gatherpress_event',
+		statuses: '{"attending"',
+		checkInStates: '[{"value"',
+	},
 };
 
 const nodes = {};
@@ -43,6 +55,14 @@ const mountAll = async () => {
 
 		nodes[ name ] = node;
 	} );
+
+	const cell = document.createElement( 'div' );
+
+	cell.className = 'gatherpress-rsvp-check-in';
+	cell.dataset.rsvpId = '7';
+	cell.dataset.state = 'no-show';
+	document.body.appendChild( cell );
+	nodes.cell = cell;
 
 	await act( async () => {
 		await import( '@src/rsvp-admin' );
@@ -78,6 +98,78 @@ describe( 'rsvp-admin entry point', () => {
 			within( nodes.malformed ).getByLabelText( 'Filter by event' ),
 		).toBeInTheDocument();
 	} );
+
+	it( 'selects the check-in state carried in from the request', () => {
+		expect(
+			within( nodes.full ).getByLabelText( 'Filter by check-in' ),
+		).toHaveValue( 'no-show' );
+	} );
+
+	it( 'offers only all check-ins when the states are malformed', () => {
+		const select = within( nodes.malformed ).getByLabelText(
+			'Filter by check-in',
+		);
+
+		expect( within( select ).getAllByRole( 'option' ) ).toHaveLength( 1 );
+	} );
+
+	it( 'turns a check-in cell into a dropdown', () => {
+		expect(
+			within( nodes.cell ).getByRole( 'button', {
+				name: 'Check-in: No-show',
+			} ),
+		).toBeInTheDocument();
+	} );
+
+	it( 'leaves the check-in cells read-only without the filters', async () => {
+		const { mountCheckIns } = await import( '@src/rsvp-admin' );
+		const filters = [
+			...document.querySelectorAll( '.gatherpress-rsvp-filters' ),
+		];
+		const cell = document.createElement( 'div' );
+
+		cell.className = 'gatherpress-rsvp-check-in';
+		cell.dataset.rsvpId = '8';
+		cell.textContent = 'Not recorded';
+		document.body.appendChild( cell );
+		filters.forEach( ( node ) =>
+			node.classList.remove( 'gatherpress-rsvp-filters' ),
+		);
+
+		mountCheckIns();
+
+		filters.forEach( ( node ) =>
+			node.classList.add( 'gatherpress-rsvp-filters' ),
+		);
+		cell.remove();
+
+		expect( cell.textContent ).toBe( 'Not recorded' );
+	} );
+
+	it.each( [
+		[ 'malformed', '{"value"' ],
+		[ 'empty', '[]' ],
+	] )(
+		'leaves the check-in cells read-only when the states are %s',
+		async ( name, payload ) => {
+			const { mountCheckIns } = await import( '@src/rsvp-admin' );
+			const saved = nodes.full.dataset.checkInStates;
+			const cell = document.createElement( 'div' );
+
+			cell.className = 'gatherpress-rsvp-check-in';
+			cell.dataset.rsvpId = '8';
+			cell.textContent = 'Not recorded';
+			document.body.appendChild( cell );
+			nodes.full.dataset.checkInStates = payload;
+
+			mountCheckIns();
+
+			nodes.full.dataset.checkInStates = saved;
+			cell.remove();
+
+			expect( cell.textContent ).toBe( 'Not recorded' );
+		},
+	);
 
 	it( 'mounts every mount point on the screen', () => {
 		// `extra_tablenav()` prints one above the table and one below it.

@@ -22,7 +22,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
 use GatherPress\Core\Rsvp;
-use GatherPress\Core\Rsvp\Flag\Check_In;
+use GatherPress\Core\Rsvp\Flag\Check_In_Registry;
 use GatherPress\Core\Rsvp\Response\Status;
 use WP_List_Table;
 
@@ -51,6 +51,7 @@ final class List_Table extends WP_List_Table {
 	 * @var string
 	 */
 	const STATUS_LINK_TEMPLATE = '<a href="%s"%s>%s <span class="count">(%s)</span></a>';
+
 
 	/**
 	 * Post type whose RSVPs this table lists.
@@ -121,7 +122,7 @@ final class List_Table extends WP_List_Table {
 			'type'       => __( 'Type', 'gatherpress' ),
 			'event'      => Utility::post_type_label( 'singular_name', $this->post_type ),
 			'approved'   => __( 'Status', 'gatherpress' ),
-			'checked_in' => __( 'Checked in', 'gatherpress' ),
+			'checked_in' => __( 'Check-in', 'gatherpress' ),
 			'date'       => __( 'Date', 'gatherpress' ),
 		);
 	}
@@ -176,6 +177,7 @@ final class List_Table extends WP_List_Table {
 		$statuses  = array();
 		$responses = $this->get_filtered_responses();
 		$post_id   = $this->get_filtered_post_id();
+		$check_in  = Check_In_Controls::get_filtered();
 
 		foreach ( Status::filterable() as $status ) {
 			$statuses[] = array(
@@ -187,16 +189,21 @@ final class List_Table extends WP_List_Table {
 		printf(
 			'<div class="alignleft actions gatherpress-rsvp-filters"' .
 			' data-post-types="%1$s" data-post-id="%2$s" data-label="%3$s"' .
-			' data-statuses="%4$s" data-selected="%5$s">%6$s%7$s%8$s</div>',
+			' data-statuses="%4$s" data-selected="%5$s" data-check-in-states="%6$s"' .
+			' data-check-in="%7$s">%8$s%9$s%10$s%11$s</div>',
 			esc_attr( implode( ',', get_post_types_by_support( Event::SUPPORT ) ) ),
 			absint( $post_id ),
 			esc_attr__( 'Filter by event', 'gatherpress' ),
 			esc_attr( (string) wp_json_encode( $statuses ) ),
 			esc_attr( implode( ',', $responses ) ),
+			esc_attr( (string) wp_json_encode( Check_In_Registry::get_instance()->get_options() ) ),
+			esc_attr( $check_in ),
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in the method.
 			$this->render_event_field(),
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in the method.
 			$this->render_response_toggle( $responses ),
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in the method.
+			Check_In_Controls::render_filter( $check_in ),
 			sprintf(
 				'<button type="button" class="components-button is-secondary">%s</button>',
 				esc_html__( 'Filter', 'gatherpress' )
@@ -587,7 +594,7 @@ final class List_Table extends WP_List_Table {
 		$args['orderby'] = $orderby;
 		$args['order']   = $order;
 
-		$items = $rsvp_query->get_rsvps( $this->add_response_filter( $args ) );
+		$items = $rsvp_query->get_rsvps( Check_In_Controls::filter_query( $this->add_response_filter( $args ) ) );
 
 		return array_map(
 			static function ( $item ): array {
@@ -651,7 +658,7 @@ final class List_Table extends WP_List_Table {
 			}
 		}
 
-		return $rsvp_query->get_rsvps( $this->add_response_filter( $args ) );
+		return $rsvp_query->get_rsvps( Check_In_Controls::filter_query( $this->add_response_filter( $args ) ) );
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
@@ -725,9 +732,7 @@ final class List_Table extends WP_List_Table {
 				$output = $statuses[ $approved ] ?? '-';
 				break;
 			case 'checked_in':
-				$output = ( new Check_In( (int) $item['comment_ID'] ) )->has()
-					? __( 'Yes', 'gatherpress' )
-					: '-';
+				$output = Check_In_Controls::render_cell( $item );
 				break;
 			case 'date':
 				$output = sprintf(
@@ -878,45 +883,34 @@ final class List_Table extends WP_List_Table {
 	public function column_attendee( array $item ): string {
 		// Use current URL to preserve all filtering parameters.
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		$current_url   = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
-		$nonce         = wp_create_nonce( Rsvp::COMMENT_TYPE );
-		$actions       = array();
-		$is_approved   = ( '1' === $item['comment_approved'] );
-		$is_spam       = ( 'spam' === $item['comment_approved'] );
-		$is_checked_in = ( new Check_In( (int) $item['comment_ID'] ) )->has();
+		$current_url = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
+		$nonce       = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$actions     = array();
+		$is_approved = ( '1' === $item['comment_approved'] );
+		$is_spam     = ( 'spam' === $item['comment_approved'] );
 
 		$action_definitions = array(
-			'approve'    => array(
+			'approve'   => array(
 				'condition' => ! $is_approved && ! $is_spam,
 				'label'     => __( 'Approve', 'gatherpress' ),
 				'action'    => 'approve',
 			),
-			'unapprove'  => array(
+			'unapprove' => array(
 				'condition' => $is_approved,
 				'label'     => __( 'Unapprove', 'gatherpress' ),
 				'action'    => 'unapprove',
 			),
-			'check_in'   => array(
-				'condition' => $is_approved && ! $is_checked_in,
-				'label'     => __( 'Check in', 'gatherpress' ),
-				'action'    => 'check_in',
-			),
-			'uncheck_in' => array(
-				'condition' => $is_approved && $is_checked_in,
-				'label'     => __( 'Not Checked In', 'gatherpress' ),
-				'action'    => 'uncheck_in',
-			),
-			'spam'       => array(
+			'spam'      => array(
 				'condition' => ! $is_spam,
 				'label'     => __( 'Spam', 'gatherpress' ),
 				'action'    => 'spam',
 			),
-			'not-spam'   => array(
+			'not-spam'  => array(
 				'condition' => $is_spam,
 				'label'     => __( 'Not Spam', 'gatherpress' ),
 				'action'    => 'unspam',
 			),
-			'delete'     => array(
+			'delete'    => array(
 				'condition'    => true,
 				'label'        => __( 'Delete', 'gatherpress' ),
 				'action'       => 'delete',
@@ -995,13 +989,12 @@ final class List_Table extends WP_List_Table {
 		}
 
 		return array(
-			'approve'    => __( 'Approve', 'gatherpress' ),
-			'unapprove'  => __( 'Unapprove', 'gatherpress' ),
-			'check_in'   => __( 'Mark as Checked In', 'gatherpress' ),
-			'uncheck_in' => __( 'Not Checked In', 'gatherpress' ),
-			'spam'       => __( 'Mark as Spam', 'gatherpress' ),
-			'unspam'     => __( 'Not Spam', 'gatherpress' ),
-			'delete'     => __( 'Delete', 'gatherpress' ),
+			'approve'   => __( 'Approve', 'gatherpress' ),
+			'unapprove' => __( 'Unapprove', 'gatherpress' ),
+			...Check_In_Controls::get_actions(),
+			'spam'      => __( 'Mark as Spam', 'gatherpress' ),
+			'unspam'    => __( 'Not Spam', 'gatherpress' ),
+			'delete'    => __( 'Delete', 'gatherpress' ),
 		);
 	}
 
@@ -1122,17 +1115,9 @@ final class List_Table extends WP_List_Table {
 			foreach ( $rsvp_ids as $rsvp_id ) {
 				wp_delete_comment( $rsvp_id, true );
 			}
-		} elseif ( 'check_in' === $current_action || 'uncheck_in' === $current_action ) {
+		} elseif ( is_string( $current_action ) && isset( Check_In_Controls::get_actions()[ $current_action ] ) ) {
 			foreach ( $rsvp_ids as $rsvp_id ) {
-				$check_in = new Check_In( $rsvp_id );
-
-				if ( 'check_in' === $current_action ) {
-					$check_in->add();
-
-					continue;
-				}
-
-				$check_in->remove();
+				Check_In_Controls::apply_action( $rsvp_id, $current_action );
 			}
 		} elseif ( isset( $action_status_map[ $current_action ] ) ) {
 			$status = $action_status_map[ $current_action ];
@@ -1214,14 +1199,22 @@ final class List_Table extends WP_List_Table {
 			$base_url_args['response'] = implode( ',', $responses );
 		}
 
+		$check_in = Check_In_Controls::get_filtered();
+
+		if ( '' !== $check_in ) {
+			$base_url_args['check_in'] = $check_in;
+		}
+
 		$base_url = add_query_arg( $base_url_args, admin_url( 'edit.php' ) );
 
-		// The response filter applies to the counts too, so the views agree
-		// with the table below them.
-		$count_base_args = $this->add_response_filter(
-			array(
-				'count'     => true,
-				'post_type' => $this->post_type,
+		// The response and check-in filters apply to the counts too, so the
+		// views agree with the table below them.
+		$count_base_args = Check_In_Controls::filter_query(
+			$this->add_response_filter(
+				array(
+					'count'     => true,
+					'post_type' => $this->post_type,
+				)
 			)
 		);
 

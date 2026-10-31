@@ -153,11 +153,103 @@ own.
 
 - **`GatherPress\Core\Rsvp\Flag\Base`**: the abstract class a flag extends. It
   stores, reads, and counts the flag, and fires the flag hooks.
-- **`GatherPress\Core\Rsvp\Flag\Check_In`**: the `checked-in` flag, the first
-  one GatherPress ships.
+- **`GatherPress\Core\Rsvp\Flag\Check_In_State`**: the abstract class a
+  check-in state extends. See [Check-in](#check-in).
+- **`GatherPress\Core\Rsvp\Flag\Check_In`**: the `checked-in` state, the
+  first flag GatherPress shipped.
+- **`GatherPress\Core\Rsvp\Flag\No_Show`**: the `no-show` state, for an RSVP
+  that did not turn up.
+- **`GatherPress\Core\Rsvp\Flag\Check_In_Registry`**: the check-in states
+  the RSVP screen offers.
 - **`GatherPress\Core\Rsvp\Flag\Setup`**: what belongs to every flag rather
   than one. It registers the taxonomy, reads all flags on an RSVP, and sweeps
   them when the RSVP is deleted.
+
+### Check-in
+
+A check-in state records what happened when the event took place. Core has two:
+
+| State | Flag | Attended |
+| --- | --- | --- |
+| Checked in | `checked-in` | Yes |
+| No-show | `no-show` | No |
+
+An RSVP has at most one check-in state: adding one removes the others. An RSVP
+with none is **not recorded**, which is where every RSVP starts, so RSVPs from
+before the no-show state need no backfill. A report of who turns up should
+count the states whose `attended()` is true as present and the others as
+absent, and leave not recorded RSVPs out.
+
+```php
+use GatherPress\Core\Rsvp\Flag\Check_In_Registry;
+use GatherPress\Core\Rsvp\Flag\No_Show;
+
+( new No_Show( $rsvp_id ) )->add();
+
+$state = Check_In_Registry::get_instance()->get_state( $rsvp_id );
+
+if ( null === $state ) {
+	// Nobody recorded whether this person came.
+} elseif ( $state->attended() ) {
+	// The person came.
+}
+```
+
+### Adding a check-in state
+
+A check-in state is a flag that extends `Check_In_State`. Beyond its slug, it
+names itself, names the action that sets it, says whether the person attended,
+and has an icon. Register it on `gatherpress_register_rsvp_check_in_states`,
+and the Events > RSVPs screen offers it in the Check-in column's dropdown, the
+bulk actions, and the check-in filter.
+
+The icon is the SVG markup of a 24 by 24 icon, drawn like the
+[`@wordpress/icons`](https://wordpress.github.io/gutenberg/?path=/docs/icons-icon--default)
+set that core's states use. It goes through `Check_In_Registry::kses_icon()`,
+which keeps `svg`, `path`, `g`, `circle` and `rect` and drops everything else,
+event handlers included.
+
+```php
+<?php
+
+namespace My_Plugin\Flag;
+
+use GatherPress\Core\Rsvp\Flag\Check_In_State;
+
+class Checked_In_Online extends Check_In_State {
+	public const SLUG = 'my-plugin-checked-in-online';
+
+	public function label(): string {
+		return __( 'Checked in online', 'my-plugin' );
+	}
+
+	public function action_label(): string {
+		return __( 'Check in online', 'my-plugin' );
+	}
+
+	public function attended(): bool {
+		return true;
+	}
+
+	public function icon(): string {
+		return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">'
+			. '<path d="M20.5 16h-.7V8c0-1.1-.9-2-2-2H6.2c-1.1 0-2 .9-2 2v8h-.7c-.8 0-1.5.7-1.5 1.5h20c0-.8-.7-1.5-1.5-1.5zM5.7 8c0-.3.2-.5.5-.5h11.6c.3 0 .5.2.5.5v7.6H5.7V8z"></path>'
+			. '</svg>';
+	}
+}
+
+add_action(
+	'gatherpress_register_rsvp_check_in_states',
+	function ( $registry ) {
+		$registry->register( Checked_In_Online::class );
+	}
+);
+```
+
+Adding this state removes any other check-in state on the RSVP, and adding
+another one removes it. The slug follows the same rules as any flag, and
+cannot be `not-recorded`, which the RSVP screen's filter uses for an RSVP with
+no state.
 
 ### Adding a flag
 
@@ -235,7 +327,8 @@ function my_plugin_on_flag_added( int $rsvp_id, string $flag ): void {
 add_action( 'gatherpress_rsvp_flag_added', 'my_plugin_on_flag_added', 10, 2 );
 ```
 
-The same pattern reacts to a check-in, with `Check_In::SLUG`.
+The same pattern reacts to a check-in, with `Check_In::SLUG`, or to a no-show,
+with `No_Show::SLUG`.
 
 ### Slugs
 

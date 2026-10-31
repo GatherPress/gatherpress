@@ -113,6 +113,13 @@ final class Query {
 			$args['post_type'] = array_values( get_post_types_by_support( Rsvp::SUPPORT ) );
 		}
 
+		// Core caches comment queries by its own query vars, which leave out the
+		// grafted tax_query. Its cache domain is one of them, so queries that
+		// differ only by taxonomy terms get their own cache entries.
+		if ( ! empty( $args['tax_query'] ) ) {
+			$args['cache_domain'] = 'gatherpress_rsvp_' . md5( (string) wp_json_encode( $args['tax_query'] ) );
+		}
+
 		remove_action( 'pre_get_comments', array( $this, 'exclude_rsvp_from_comment_query' ) );
 
 		$rsvps = get_comments( $args );
