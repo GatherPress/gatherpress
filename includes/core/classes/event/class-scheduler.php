@@ -92,13 +92,10 @@ final class Scheduler {
 		add_action( 'added_post_meta', array( $this, 'handle_updated_postmeta' ), 10, 3 );
 		add_action( 'updated_postmeta', array( $this, 'handle_updated_postmeta' ), 10, 3 );
 		add_action( 'before_delete_post', array( $this, 'handle_before_delete_post' ) );
-
-		add_action( self::CRON_HOOK, array( $this, 'handle_event_ended_cron' ), 10, 1 );
-
-		add_action( self::ACTION_HOOK, array( $this, 'invalidate_caches' ), 10, 1 );
-		add_action( self::ACTION_HOOK, array( $this, 'clear_scheduled_cron' ), 10, 1 );
-		add_action( self::ACTION_HOOK, array( $this, 'remove_from_tracking' ), 10, 1 );
-
+		add_action( self::CRON_HOOK, array( $this, 'handle_event_ended_cron' ) );
+		add_action( self::ACTION_HOOK, array( $this, 'invalidate_caches' ) );
+		add_action( self::ACTION_HOOK, array( $this, 'clear_scheduled_cron' ) );
+		add_action( self::ACTION_HOOK, array( $this, 'remove_from_tracking' ) );
 		add_action( self::VALIDATE_CRON_HOOK, array( $this, 'validate_events_ended' ) );
 
 		if ( $this->any_post_type_enabled() && ! wp_next_scheduled( self::VALIDATE_CRON_HOOK ) ) {
