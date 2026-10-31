@@ -1,6 +1,6 @@
 <?php
 /**
- * Event scheduler for event end actions, cache invalidation, and optional tracking.
+ * Event scheduler for event start and end actions, cache invalidation, and optional tracking.
  *
  * @package GatherPress\Core\Event
  * @since TBD
@@ -18,9 +18,11 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 /**
  * Class Scheduler.
  *
- * Manages WP-Cron scheduling for event end times. When an event concludes,
- * triggers cache invalidation and custom action hooks. Also optionally tracks
- * upcoming event IDs per post type and runs a daily fallback check.
+ * Manages WP-Cron scheduling for event start and end times. Ahead of an
+ * event's start, fires an action other code can hook, such as the reminder
+ * email. When an event concludes, triggers cache invalidation and custom
+ * action hooks. Also optionally tracks upcoming event IDs per post type and
+ * runs a daily fallback check.
  *
  * @since TBD
  */
@@ -38,6 +40,30 @@ final class Scheduler {
 	 * @var string
 	 */
 	const ENDED_ACTION = 'gatherpress_event_ended';
+
+	/**
+	 * Action hook fired ahead of an event's start.
+	 *
+	 * @since TBD
+	 * @var string
+	 */
+	const STARTING_ACTION = 'gatherpress_event_starting';
+
+	/**
+	 * WP-Cron hook name for single event start action.
+	 *
+	 * @since TBD
+	 * @var string
+	 */
+	const START_CRON_ACTION = 'gatherpress_event_start_run';
+
+	/**
+	 * Post meta key storing the GMT start datetime.
+	 *
+	 * @since TBD
+	 * @var string
+	 */
+	const START_META_KEY = 'gatherpress_datetime_start_gmt';
 
 	/**
 	 * WP-Cron hook name for single event end action.
@@ -89,9 +115,10 @@ final class Scheduler {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'transition_post_status', array( $this, 'handle_transition_post_status' ), 10, 3 );
-		add_action( 'added_post_meta', array( $this, 'handle_end_meta_change' ), 10, 3 );
-		add_action( 'updated_postmeta', array( $this, 'handle_end_meta_change' ), 10, 3 );
+		add_action( 'added_post_meta', array( $this, 'handle_datetime_meta_change' ), 10, 3 );
+		add_action( 'updated_postmeta', array( $this, 'handle_datetime_meta_change' ), 10, 3 );
 		add_action( 'before_delete_post', array( $this, 'handle_before_delete_post' ) );
+		add_action( self::START_CRON_ACTION, array( $this, 'handle_start_run' ) );
 		add_action( self::CRON_ACTION, array( $this, 'handle_end_run' ) );
 		add_action( self::ENDED_ACTION, array( $this, 'invalidate_caches' ) );
 		add_action( self::ENDED_ACTION, array( $this, 'clear_scheduled_cron' ) );
@@ -141,7 +168,7 @@ final class Scheduler {
 	}
 
 	/**
-	 * Handles post meta additions and updates for event end datetime.
+	 * Handles post meta additions and updates for event start and end datetimes.
 	 *
 	 * @since TBD
 	 *
@@ -153,8 +180,11 @@ final class Scheduler {
 	 *
 	 * @return void
 	 */
-	public function handle_end_meta_change( int $meta_id, int $object_id, string $meta_key ): void {
-		if ( self::POST_META_KEY !== $meta_key || ! $this->is_event( $object_id ) ) {
+	public function handle_datetime_meta_change( int $meta_id, int $object_id, string $meta_key ): void {
+		if (
+			! in_array( $meta_key, array( self::START_META_KEY, self::POST_META_KEY ), true )
+			|| ! $this->is_event( $object_id )
+		) {
 			return;
 		}
 
@@ -162,7 +192,7 @@ final class Scheduler {
 	}
 
 	/**
-	 * Schedules and tracks the end of a published upcoming event, or clears them otherwise.
+	 * Schedules and tracks the start and end of a published upcoming event, or clears them otherwise.
 	 *
 	 * @since TBD
 	 *
@@ -173,12 +203,14 @@ final class Scheduler {
 	 */
 	private function sync_event( int $post_id, string $status ): void {
 		if ( 'publish' === $status && $this->is_valid_future_event( $post_id ) ) {
+			$this->add_start_cron( $post_id );
 			$this->add_scheduled_cron( $post_id );
 			$this->add_to_tracking( $post_id );
 
 			return;
 		}
 
+		$this->clear_start_cron( $post_id );
 		$this->clear_scheduled_cron( $post_id );
 		$this->remove_from_tracking( $post_id );
 		$this->invalidate_caches( $post_id );
@@ -198,8 +230,156 @@ final class Scheduler {
 			return;
 		}
 
+		$this->clear_start_cron( $post_id );
 		$this->clear_scheduled_cron( $post_id );
 		$this->remove_from_tracking( $post_id );
+	}
+
+	/**
+	 * Returns how many seconds before an event's start the starting action fires.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $post_id The event post ID.
+	 *
+	 * @return int Seconds before the start, never negative.
+	 */
+	public function get_start_lead_time( int $post_id ): int {
+		/**
+		 * Filters how many seconds before an event's start `gatherpress_event_starting` fires.
+		 *
+		 * Defaults to 0, so the action fires when the event starts. The reminder
+		 * email sets it to the lead time chosen on the RSVP settings page while
+		 * reminders are on, so code hooked to the action runs at that time too.
+		 *
+		 * @since TBD
+		 *
+		 * @param int $lead_time Seconds before the start. Default 0.
+		 * @param int $post_id   The event post ID.
+		 *
+		 * @return int Seconds before the start.
+		 */
+		return max( 0, (int) apply_filters( 'gatherpress_event_starting_lead_time', 0, $post_id ) );
+	}
+
+	/**
+	 * Schedules a single WP-Cron event ahead of an event's start time.
+	 *
+	 * Clears any earlier run first, so a changed start or lead time moves it.
+	 * Nothing is scheduled when that time has already passed.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $post_id The event post ID to schedule.
+	 *
+	 * @return void
+	 */
+	public function add_start_cron( int $post_id ): void {
+		$this->clear_start_cron( $post_id );
+
+		$start_date      = get_post_meta( $post_id, self::START_META_KEY, true );
+		$start_timestamp = is_string( $start_date ) ? strtotime( $start_date ) : false;
+
+		if ( false === $start_timestamp ) {
+			return;
+		}
+
+		$run_at = $start_timestamp - $this->get_start_lead_time( $post_id );
+
+		if ( $run_at > time() ) {
+			wp_schedule_single_event( $run_at, self::START_CRON_ACTION, array( $post_id ) );
+		}
+	}
+
+	/**
+	 * Clears any scheduled event start cron job for a given event.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $post_id Post ID to clear scheduling for.
+	 *
+	 * @return void
+	 */
+	public function clear_start_cron( int $post_id ): void {
+		wp_clear_scheduled_hook( self::START_CRON_ACTION, array( $post_id ) );
+	}
+
+	/**
+	 * Reschedules the start cron of every published upcoming event.
+	 *
+	 * Used when the lead time changes, so events already scheduled move to the
+	 * new time.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function reschedule_upcoming_starts(): void {
+		$post_ids = get_posts(
+			array(
+				'post_type'        => get_post_types_by_support( Event::SUPPORT ),
+				'post_status'      => 'publish',
+				'fields'           => 'ids',
+				'posts_per_page'   => -1,
+				'no_found_rows'    => true,
+				'suppress_filters' => true,
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+				'meta_query'       => array(
+					array(
+						'key'     => self::START_META_KEY,
+						'value'   => gmdate( 'Y-m-d H:i:s' ),
+						'compare' => '>',
+						'type'    => 'DATETIME',
+					),
+				),
+			)
+		);
+
+		foreach ( $post_ids as $post_id ) {
+			$this->add_start_cron( (int) $post_id );
+		}
+	}
+
+	/**
+	 * Handles the WP-Cron execution ahead of an event's start time.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $post_id The ID of the event about to start.
+	 *
+	 * @return void
+	 */
+	public function handle_start_run( int $post_id ): void {
+		if ( 'publish' !== get_post_status( $post_id ) || ! $this->is_valid_future_event( $post_id ) ) {
+			return;
+		}
+
+		/**
+		 * Fires ahead of an event's start time.
+		 *
+		 * Runs through WP-Cron, `gatherpress_event_starting_lead_time` seconds
+		 * before the start. The lead time is 0 unless something sets it, such
+		 * as the reminder email while reminders are on, which moves the run for
+		 * every listener. Changing the start or the lead time moves the run, and
+		 * unpublishing, trashing or deleting the event cancels it. When that
+		 * time has already passed, for example an event published inside the
+		 * lead time, the action does not fire for that start.
+		 *
+		 * @example
+		 * ```php
+		 * add_action(
+		 *     'gatherpress_event_starting',
+		 *     static function ( int $post_id ): void {
+		 *         // Post the event to a chat channel.
+		 *     }
+		 * );
+		 * ```
+		 *
+		 * @since TBD
+		 *
+		 * @param int $post_id The post ID of the event about to start.
+		 */
+		do_action( 'gatherpress_event_starting', $post_id );
 	}
 
 	/**

@@ -181,6 +181,39 @@ final class User {
 	}
 
 	/**
+	 * Check if a user has opted in to event reminder emails.
+	 *
+	 * Kept apart from the event updates opt-in, so a user can get reminders
+	 * for events they attend without the updates organizers send.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $user_id The user ID to check.
+	 *
+	 * @return bool True if the user has opted in, false otherwise.
+	 */
+	public function has_event_reminders_opt_in( int $user_id ): bool {
+		$opt_in = get_user_meta( $user_id, 'gatherpress_event_reminders_opt_in', true );
+
+		if ( '' === $opt_in ) {
+			/**
+			 * Filters the default state of the event reminders opt-in.
+			 *
+			 * Lets a site that needs explicit consent, for example under the
+			 * GDPR, leave reminders off until a user turns them on.
+			 *
+			 * @since TBD
+			 *
+			 * @param string $default_opt_in Default opt-in state ('1' for opted in, '0' for opted out).
+			 * @param int    $user_id        The user ID.
+			 */
+			$opt_in = apply_filters( 'gatherpress_event_reminders_default_opt_in', '1', $user_id );
+		}
+
+		return '1' === (string) $opt_in;
+	}
+
+	/**
 	 * Get the plural labels of the post types that take RSVPs.
 	 *
 	 * The profile opt-in talks about the content users hear about, which
@@ -218,13 +251,15 @@ final class User {
 	 */
 	public function profile_fields( WP_User $user ): void {
 		// Use the helper method to determine opt-in status, then convert to string for the form.
-		$event_updates_opt_in = $this->has_event_updates_opt_in( $user->ID ) ? '1' : '0';
+		$event_updates_opt_in   = $this->has_event_updates_opt_in( $user->ID ) ? '1' : '0';
+		$event_reminders_opt_in = $this->has_event_reminders_opt_in( $user->ID ) ? '1' : '0';
 
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/user/notifications.php', GATHERPRESS_CORE_PATH ),
 			array(
-				'event_updates_opt_in' => $event_updates_opt_in,
-				'plural_label'         => $this->get_rsvp_post_type_plural(),
+				'event_updates_opt_in'   => $event_updates_opt_in,
+				'event_reminders_opt_in' => $event_reminders_opt_in,
+				'plural_label'           => $this->get_rsvp_post_type_plural(),
 			),
 			true
 		);
@@ -274,6 +309,11 @@ final class User {
 			$user_id,
 			'gatherpress_event_updates_opt_in',
 			intval( Utility::get_http_input( INPUT_POST, 'gatherpress_event_updates_opt_in' ) )
+		);
+		update_user_meta(
+			$user_id,
+			'gatherpress_event_reminders_opt_in',
+			intval( Utility::get_http_input( INPUT_POST, 'gatherpress_event_reminders_opt_in' ) )
 		);
 		update_user_meta(
 			$user_id,

@@ -12,6 +12,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Event\Admin_List;
 use GatherPress\Core\Event\Meta;
 use GatherPress\Core\Event\Query;
+use GatherPress\Core\Event\Reminder;
 use GatherPress\Core\Event\Rest_Api;
 use GatherPress\Core\Event\Scheduler;
 use GatherPress\Core\Event\Setup;
@@ -80,6 +81,10 @@ class Test_Setup extends Base {
 			Query::class      => array(
 				'pre_get_posts',
 				array( Query::get_instance(), 'prepare_event_query_before_execution' ),
+			),
+			Reminder::class   => array(
+				'gatherpress_event_starting',
+				array( Reminder::get_instance(), 'queue_reminder' ),
 			),
 			Rest_Api::class   => array(
 				'rest_api_init',

@@ -32,6 +32,14 @@ Drop the snippet into a must-use plugin, a site-specific plugin, or your theme's
 
 The filter only controls the default for users who have never touched the setting. Anyone who has explicitly saved a preference in their profile keeps it. See the [`gatherpress_event_updates_default_opt_in`](../developer/hooks/gatherpress_event_updates_default_opt_in.md) hook reference for details.
 
+Event reminder emails have their own checkbox in the profile and are also on by default. To default them off too:
+
+```php
+add_filter( 'gatherpress_event_reminders_default_opt_in', static function () {
+    return '0';
+} );
+```
+
 ## Redacting RSVP IP addresses and user agents
 
 RSVPs are stored as WordPress comments, so the visitor's IP address and browser user agent are recorded by default. To help comply with GDPR/DSGVO or other privacy regulations, you can redact this information with the same WordPress-native filters that apply to regular comments:

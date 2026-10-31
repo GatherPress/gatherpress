@@ -77,7 +77,7 @@ final class Rsvp extends Base {
 	 */
 	protected function get_sections(): array {
 		return array(
-			'rsvp_defaults' => array(
+			'rsvp_defaults'  => array(
 				'name'        => __( 'RSVP Defaults', 'gatherpress' ),
 				'description' => sprintf(
 					// phpcs:ignore Generic.Files.LineLength.TooLong
@@ -218,7 +218,63 @@ final class Rsvp extends Base {
 					),
 				),
 			),
-			'rsvp_cleanup'  => array(
+			'rsvp_reminders' => array(
+				'name'        => __( 'Reminders', 'gatherpress' ),
+				'description' => __(
+					'Email attendees a reminder before an event starts.',
+					'gatherpress'
+				),
+				'options'     => array(
+					'enable_event_reminders' => array(
+						'labels'      => array(
+							'name' => __( 'Reminder Emails', 'gatherpress' ),
+						),
+						'description' => __(
+							// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string, kept whole.
+							'Users can turn reminders off in their profile. An RSVP without an account follows its email updates choice.',
+							// phpcs:enable Generic.Files.LineLength.TooLong
+							'gatherpress'
+						),
+						'field'       => array(
+							'label'   => sprintf(
+								/* translators: %s: Plural post type label, e.g. "Events". */
+								__( 'Send attendees a reminder email before %s start.', 'gatherpress' ),
+								Utility::post_type_label( 'name', Event::POST_TYPE )
+							),
+							'type'    => 'checkbox',
+							'options' => array(
+								'default' => false,
+							),
+						),
+						'show_if'     => array(
+							'rsvp_mode' => array( 'not' => 'disabled' ),
+						),
+					),
+					'event_reminder_hours'   => array(
+						'labels'      => array(
+							'name' => __( 'Reminder Timing', 'gatherpress' ),
+						),
+						'description' => __(
+							'How many hours before the start the reminder goes out.',
+							'gatherpress'
+						),
+						'field'       => array(
+							'type'    => 'number',
+							'size'    => 'small',
+							'label'   => __( 'Hours before start:', 'gatherpress' ),
+							'options' => array(
+								'min'     => 1,
+								'default' => 24,
+							),
+						),
+						'show_if'     => array(
+							'rsvp_mode'              => array( 'not' => 'disabled' ),
+							'enable_event_reminders' => '1',
+						),
+					),
+				),
+			),
+			'rsvp_cleanup'   => array(
 				'name'        => __( 'Cleanup', 'gatherpress' ),
 				'description' => __(
 					'Schedule automatic cleanup of unverified RSVPs.',

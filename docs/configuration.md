@@ -72,6 +72,13 @@ Default RSVP settings for new events; most can be overridden per event.
 - **Maximum Number of Guests** sets how many additional guests each attendee may bring.
 - **Anonymous RSVP** allows users to RSVP without revealing their identity.
 
+### Reminders
+
+Attendees can get an email reminder before an event starts (see [Emails](user/emails.md)).
+
+- **Reminder Emails** turns the reminders on. It is off by default.
+- **Reminder Timing** sets how many hours before the start the reminder goes out. The default is 24.
+
 ### Cleanup
 
 Unverified Open RSVPs can be removed automatically on a schedule.
