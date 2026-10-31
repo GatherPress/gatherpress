@@ -1,0 +1,214 @@
+@use "sass:selector";
+
+$day: ".editor-styles-wrapper .gatherpress-calendar__day";
+$grid-day: "#{$day}.is-style-ribbon, #{$day}.gatherpress--has-time-grid";
+$titles: ".gatherpress-modal--trigger-open, .wp-block-post-title, .wp-block-post-title a";
+$span-width: calc(var(--gatherpress-calendar-row-span, 1) * 100% + (var(--gatherpress-calendar-row-span, 1) - 1) * var(--gatherpress-calendar-column-gap, 2px));
+
+#{$day} {
+	cursor: pointer;
+	transition: outline-color 0.15s ease-in-out;
+
+	// Gutenberg layouts fill the day cell.
+	> .block-editor-block-list__layout,
+	> .block-editor-block-preview__live-content {
+		min-height: 100%;
+		min-width: 100%;
+	}
+
+	&:hover:not(:focus-within) {
+		outline: 1px solid var(--wp-admin-theme-color, #007cba);
+		outline-offset: -1px;
+	}
+
+	// Makes a preview day the live day. Covers the cell, so a click anywhere hits it.
+	> .gatherpress-calendar__day-activate {
+		position: absolute;
+		inset: 0;
+		z-index: 1;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		cursor: pointer;
+
+		&:focus-visible {
+			outline: 2px solid var(--wp-admin-theme-color, #007cba);
+			outline-offset: -2px;
+		}
+	}
+}
+
+// A classic day stacks its Day Number above its entries, as calendar-day/style.scss does on
+// the front end. In the editor the block's layout classes sit on the inner blocks wrapper.
+#{$day}:not(.is-style-ribbon, .gatherpress--has-time-grid) > :is(.block-editor-block-list__layout, .is-layout-flex) {
+	flex-direction: column;
+	align-items: stretch;
+
+	> .gatherpress-calendar__day-number {
+		align-self: flex-start;
+	}
+
+	// The editor wraps each entry's blocks. The wrapper shrinks to the entry, so long
+	// titles end in an ellipsis as on the front end.
+	.gatherpress-calendar__entry-template {
+		flex: 1 1 auto;
+		min-width: 0;
+		max-width: 100%;
+	}
+}
+
+#{$grid-day} {
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: stretch !important;
+	justify-content: flex-start !important;
+	padding: 0 !important;
+	overflow: visible !important;
+
+	> .block-editor-block-list__layout {
+		display: flex !important;
+		flex-direction: column !important;
+		align-items: stretch !important;
+		justify-content: flex-start !important;
+		width: 100% !important;
+		padding: 0 !important;
+		margin: 0 !important;
+		gap: 0 !important;
+
+		> .block-editor-block-list__block {
+			margin: 0 !important;
+			padding: 0 !important;
+			width: 100% !important;
+			box-sizing: border-box;
+		}
+
+		// The day number stays at the top left.
+		> .block-editor-block-list__block:has(.gatherpress-calendar__day-number) {
+			width: auto !important;
+			align-self: flex-start !important;
+			flex: 0 0 auto !important;
+			margin: 0.3rem 0.45rem 0.15rem !important;
+
+			.gatherpress-calendar__day-number {
+				margin: 0 !important;
+				display: block;
+			}
+		}
+
+		// Calendar Entries fills the rest of the cell.
+		> .block-editor-block-list__block:has(.wp-block-gatherpress-calendar-entries),
+		> .wp-block-gatherpress-calendar-entries {
+			flex: 1 1 auto !important;
+			width: 100% !important;
+		}
+	}
+
+	.wp-block-gatherpress-calendar-entries {
+		overflow: visible !important;
+
+		.block-editor-block-list__layout {
+			margin: 0 !important;
+			padding: 0 !important;
+			gap: 0 !important;
+			overflow: visible !important;
+		}
+
+		.gatherpress-calendar__entry {
+			.gatherpress-calendar__entry-template {
+				display: flex !important;
+				flex-direction: row !important;
+				align-items: center !important;
+				width: 100% !important;
+				height: 100% !important;
+				min-height: 100% !important;
+				min-width: 0 !important;
+				margin: 0 !important;
+				padding: 0 !important;
+			}
+
+			// An entry of one column stays inside its cell.
+			&:not([data-row-span]),
+			&[data-row-span="1"],
+			&[data-row-span="0"],
+			&:not(.gatherpress--has-multi-col-span) {
+				overflow: hidden !important;
+
+				.gatherpress-calendar__entry-template {
+					overflow: hidden !important;
+					max-width: 100% !important;
+					width: 100% !important;
+				}
+
+				.gatherpress-calendar__entry-template > .block-editor-block-list__block {
+					max-width: 100% !important;
+					width: 100% !important;
+					overflow: hidden !important;
+				}
+
+				#{selector.nest(".gatherpress-calendar__entry-template", $titles)} {
+					max-width: 100% !important;
+					width: 100% !important;
+					overflow: hidden !important;
+					text-overflow: ellipsis !important;
+					white-space: nowrap !important;
+				}
+			}
+
+			// An entry of several columns spans into the cells next to it.
+			&[data-row-span]:not([data-row-span="1"], [data-row-span="0"]),
+			&.gatherpress--has-multi-col-span {
+				overflow: visible !important;
+
+				.gatherpress-calendar__entry-template {
+					overflow: visible !important;
+				}
+
+				.gatherpress-calendar__entry-template > .block-editor-block-list__block {
+					margin: 0 !important;
+					padding: 0 !important;
+					max-width: $span-width !important;
+					width: max-content !important;
+					min-width: 0 !important;
+					overflow: hidden !important;
+				}
+
+				#{selector.nest(".gatherpress-calendar__entry-template > .block-editor-block-list__block", $titles)} {
+					max-width: $span-width !important;
+					width: max-content !important;
+					white-space: nowrap !important;
+				}
+			}
+
+			&.gatherpress--is-span-middle:focus-within,
+			&.gatherpress--is-span-middle:has(.is-selected),
+			&.gatherpress--is-span-end:focus-within,
+			&.gatherpress--is-span-end:has(.is-selected) {
+				.gatherpress-modal--trigger-open > *,
+				.wp-block-post-title,
+				.wp-block-post-title a {
+					opacity: 1 !important;
+				}
+			}
+		}
+	}
+}
+
+// A multi-day entry that shows its title hides its start time, as on the front end
+// (Calendar_Entries::filter_multiday_event_date()). The editable entry keeps the block.
+#{$day} .gatherpress-calendar__entry.gatherpress--is-multi-day:has(.wp-block-post-title:not(.wp-block-gatherpress-modal *)) .wp-block-gatherpress-event-date:not(.wp-block-gatherpress-modal *) {
+	display: none;
+}
+
+// Placeholder entries stay hidden on an empty day that is not being edited.
+#{$day}.gatherpress--is-inactive-empty-day .wp-block-gatherpress-calendar-entries {
+	display: none;
+}
+
+// A Ribbon day controls its own layout, so its layout controls are hidden.
+body:has(.gatherpress-calendar__day.is-style-ribbon.is-selected) .block-editor-block-inspector .components-panel__body:has(.block-editor-hooks__layout-controls),
+body:has(.gatherpress-calendar__day.is-style-ribbon.is-selected) .block-editor-block-toolbar .components-toolbar-group:has([aria-label*="Justification"]),
+body:has(.gatherpress-calendar__day.is-style-ribbon .is-selected) .block-editor-block-inspector .components-panel__body:has(.block-editor-hooks__layout-controls),
+body:has(.gatherpress-calendar__day.is-style-ribbon .is-selected) .block-editor-block-toolbar .components-toolbar-group:has([aria-label*="Justification"]) {
+	display: none !important;
+}

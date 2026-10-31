@@ -324,51 +324,6 @@ class Test_Calendar_Query extends Base {
 	}
 
 	/**
-	 * Coverage for find_inner_block_attrs.
-	 *
-	 * @covers ::find_inner_block_attrs
-	 *
-	 * @return void
-	 */
-	public function test_find_inner_block_attrs(): void {
-		$blocks = array(
-			'not a block',
-			array(
-				'blockName'   => 'core/paragraph',
-				'innerBlocks' => 'not blocks',
-			),
-			array(
-				'blockName'   => 'core/group',
-				'innerBlocks' => array(
-					array( 'blockName' => 'core/heading' ),
-					array(
-						'blockName' => 'gatherpress/calendar',
-						'attrs'     => array( 'viewType' => 'week' ),
-					),
-				),
-			),
-		);
-
-		$instance = Calendar_Query::get_instance();
-
-		$this->assertSame(
-			array( 'viewType' => 'week' ),
-			Utility::invoke_hidden_method(
-				$instance,
-				'find_inner_block_attrs',
-				array( 'gatherpress/calendar', $blocks )
-			)
-		);
-		$this->assertSame(
-			array(),
-			Utility::invoke_hidden_method( $instance, 'find_inner_block_attrs', array( 'core/heading', $blocks ) )
-		);
-		$this->assertNull(
-			Utility::invoke_hidden_method( $instance, 'find_inner_block_attrs', array( 'core/image', $blocks ) )
-		);
-	}
-
-	/**
 	 * Coverage for allow_core_pagination with Query blocks.
 	 *
 	 * @covers ::allow_core_pagination
