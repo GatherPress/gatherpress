@@ -3,7 +3,7 @@
  * Class handles unit tests for the Subscribe to Events block.
  *
  * The block has no PHP class of its own — render.php resolves the feed URL
- * through GatherPress\Core\Calendar\Feed_Url and prints the markup — so these
+ * through GatherPress\Core\Calendar\External\Feed_Url and prints the markup — so these
  * tests drive it through the block registry the way the frontend does.
  *
  * @package GatherPress\Core
@@ -12,9 +12,9 @@
 
 namespace GatherPress\Tests\Core\Blocks;
 
-use GatherPress\Core\Calendar\Calendar;
-use GatherPress\Core\Calendar\Feed_Url;
-use GatherPress\Core\Calendar\Setup;
+use GatherPress\Core\Calendar\External\External;
+use GatherPress\Core\Calendar\External\Feed_Url;
+use GatherPress\Core\Calendar\External\Setup;
 use GatherPress\Core\Event;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Venue;
@@ -360,7 +360,7 @@ class Test_Subscribe_To_Events extends Base {
 			array( 'postId' => $event->ID )
 		);
 
-		$ical_url  = ( new Calendar( $event->ID ) )->get_ical_url();
+		$ical_url  = ( new External( $event->ID ) )->get_ical_url();
 		$venue_url = (string) Feed_Url::get(
 			array(
 				'scope'    => 'venue',
@@ -372,6 +372,16 @@ class Test_Subscribe_To_Events extends Base {
 			sprintf( 'href="%s"', esc_url( (string) $ical_url ) ),
 			$output,
 			'The event scope should link to the event iCal download.'
+		);
+		$this->assertStringContainsString(
+			'Add this event to your calendar',
+			$output,
+			'The event download should have its own text, apart from the feed links.'
+		);
+		$this->assertSame(
+			3,
+			substr_count( $output, 'iCal feed' ),
+			'Only the venue feed and the two topic feeds should use the iCal feed text.'
 		);
 		$this->assertStringContainsString(
 			sprintf( 'href="%s"', esc_url( $venue_url ) ),
@@ -413,7 +423,7 @@ class Test_Subscribe_To_Events extends Base {
 			array( 'postId' => $event->ID )
 		);
 
-		$ical_url = ( new Calendar( $event->ID ) )->get_ical_url();
+		$ical_url = ( new External( $event->ID ) )->get_ical_url();
 
 		$this->assertStringContainsString(
 			sprintf( 'href="%s"', esc_url( (string) $ical_url ) ),
@@ -447,7 +457,7 @@ class Test_Subscribe_To_Events extends Base {
 			array( 'postId' => $event->ID )
 		);
 
-		$ical_url  = ( new Calendar( $event->ID ) )->get_ical_url();
+		$ical_url  = ( new External( $event->ID ) )->get_ical_url();
 		$venue_url = (string) Feed_Url::get(
 			array(
 				'scope'    => 'venue',
@@ -515,7 +525,7 @@ class Test_Subscribe_To_Events extends Base {
 		);
 
 		$this->assertStringContainsString(
-			esc_url( (string) ( new Calendar( $event->ID ) )->get_ical_url() ),
+			esc_url( (string) ( new External( $event->ID ) )->get_ical_url() ),
 			$output,
 			'The iCal-only format should render the event download.'
 		);
@@ -545,9 +555,19 @@ class Test_Subscribe_To_Events extends Base {
 		);
 
 		$this->assertStringContainsString(
-			'Grab the feed',
+			$venue->post_title . ': Grab the feed',
 			$output,
-			'The custom iCal label should reach the event download.'
+			'The custom iCal label should reach the venue feed.'
+		);
+		$this->assertSame(
+			1,
+			substr_count( $output, 'Grab the feed' ),
+			'The custom iCal label should not reach the event download.'
+		);
+		$this->assertStringContainsString(
+			'Add this event to your calendar',
+			$output,
+			'The event download should keep its own text when the iCal label is custom.'
 		);
 		$this->assertStringContainsString(
 			$venue->post_title . ': Follow us',
@@ -607,12 +627,12 @@ class Test_Subscribe_To_Events extends Base {
 		);
 
 		$this->assertStringContainsString(
-			esc_url( (string) ( new Calendar( $context_event->ID ) )->get_ical_url() ),
+			esc_url( (string) ( new External( $context_event->ID ) )->get_ical_url() ),
 			$output,
 			'The event scope should render from the context post.'
 		);
 		$this->assertStringNotContainsString(
-			esc_url( (string) ( new Calendar( $queried_event->ID ) )->get_ical_url() ),
+			esc_url( (string) ( new External( $queried_event->ID ) )->get_ical_url() ),
 			$output,
 			'The event scope should not render from the queried post when context supplies one.'
 		);
@@ -636,7 +656,7 @@ class Test_Subscribe_To_Events extends Base {
 		$output = $this->render_with_context( array( 'scope' => 'event' ), array() );
 
 		$this->assertStringContainsString(
-			esc_url( (string) ( new Calendar( $event->ID ) )->get_ical_url() ),
+			esc_url( (string) ( new External( $event->ID ) )->get_ical_url() ),
 			$output,
 			'The event scope should fall back to the queried post when there is no context.'
 		);

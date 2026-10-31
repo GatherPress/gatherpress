@@ -1,15 +1,15 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Calendar\Feed_Url.
+ * Class handles unit tests for GatherPress\Core\Calendar\External\Feed_Url.
  *
- * @package GatherPress\Core\Calendar
+ * @package GatherPress\Core\Calendar\External
  * @since TBD
  */
 
-namespace GatherPress\Tests\Core\Calendar;
+namespace GatherPress\Tests\Core\Calendar\External;
 
-use GatherPress\Core\Calendar\Feed_Url;
-use GatherPress\Core\Calendar\Setup;
+use GatherPress\Core\Calendar\External\Feed_Url;
+use GatherPress\Core\Calendar\External\Setup;
 use GatherPress\Core\Event;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Venue;
@@ -18,7 +18,7 @@ use GatherPress\Tests\Base;
 /**
  * Class Test_Feed_Url.
  *
- * @coversDefaultClass \GatherPress\Core\Calendar\Feed_Url
+ * @coversDefaultClass \GatherPress\Core\Calendar\External\Feed_Url
  * @group              endpoints
  */
 class Test_Feed_Url extends Base {

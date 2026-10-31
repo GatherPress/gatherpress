@@ -33,7 +33,7 @@ A feed can be offered in two flavors, and the **Links to show** setting controls
 - **Subscribe link only**: the same feed with a `webcal://` address. Clicking a `webcal:` link hands the URL straight to the visitor's default calendar app, which is usually the smoother path on desktop.
 - **iCal and subscribe links**: the default. Both links are listed.
 
-Each link has a sensible default label ("iCal feed" and "Subscribe") and each can be renamed with the **iCal link text** and **Subscribe link text** fields, so you can phrase them for your audience. In the event scope the current event's own download is always an iCal link, since a single event is a one-off file rather than a feed to subscribe to.
+Each link has a sensible default label ("iCal feed" and "Subscribe") and each can be renamed with the **iCal link text** and **Subscribe link text** fields, so you can phrase them for your audience. In the event scope the current event's own download is always an iCal link, since a single event is a one-off file rather than a feed to subscribe to. That download has its own label, "Add this event to your calendar", which the **iCal link text** field does not change, so it never reads the same as the venue and topic feeds.
 
 ## Styling
 

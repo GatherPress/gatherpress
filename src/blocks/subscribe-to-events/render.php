@@ -3,7 +3,7 @@
  * Render Subscribe to Events block.
  *
  * Resolves calendar feed URLs from the block's scope attributes and links to
- * them. Feed URLs come from `Calendar\Feed_Url`, so the block honors the
+ * them. Feed URLs come from `Calendar\External\Feed_Url`, so the block honors the
  * `gatherpress_calendar_feed_url` filter.
  *
  * The `event` scope is context-aware: it reads the post ID from block context
@@ -18,8 +18,8 @@
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Calendar\Calendar;
-use GatherPress\Core\Calendar\Feed_Url;
+use GatherPress\Core\Calendar\External\External;
+use GatherPress\Core\Calendar\External\Feed_Url;
 use GatherPress\Core\Event;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
@@ -36,6 +36,10 @@ $gatherpress_subscribe   = trim( (string) ( $attributes['subscribeText'] ?? '' )
 $gatherpress_ical_label  = '' !== $gatherpress_link_text ? $gatherpress_link_text : __( 'iCal feed', 'gatherpress' );
 $gatherpress_webcal_text = '' !== $gatherpress_subscribe ? $gatherpress_subscribe : __( 'Subscribe', 'gatherpress' );
 
+// The event's own download is a single file, not a feed, so it keeps its own
+// text. The iCal link text renames the feed links only, so the two never match.
+$gatherpress_download_text = __( 'Add this event to your calendar', 'gatherpress' );
+
 // Feeds to link to, each as url / source name / whether it is a one-off download.
 $gatherpress_feeds = array();
 
@@ -48,7 +52,7 @@ if ( 'event' === $gatherpress_scope ) {
 	if ( post_type_supports( (string) get_post_type( $gatherpress_post_id ), Event::SUPPORT ) ) {
 		// The event's own iCal is a download, so it gets no subscribe link.
 		$gatherpress_feeds[] = array(
-			'url'      => (string) ( new Calendar( $gatherpress_post_id ) )->get_ical_url(),
+			'url'      => (string) ( new External( $gatherpress_post_id ) )->get_ical_url(),
 			'source'   => '',
 			'download' => true,
 		);
@@ -112,16 +116,18 @@ foreach ( $gatherpress_feeds as $gatherpress_feed ) {
 	$gatherpress_source = (string) $gatherpress_feed['source'];
 
 	if ( in_array( $gatherpress_link_format, array( 'ical', 'both' ), true ) ) {
+		$gatherpress_ical_text = '' === $gatherpress_source
+			? $gatherpress_ical_label
+			: sprintf(
+				/* translators: 1: Feed source name (venue or topic), 2: Link label. */
+				__( '%1$s: %2$s', 'gatherpress' ),
+				$gatherpress_source,
+				$gatherpress_ical_label
+			);
+
 		$gatherpress_links[] = array(
 			'url'  => $gatherpress_feed['url'],
-			'text' => '' === $gatherpress_source
-				? $gatherpress_ical_label
-				: sprintf(
-					/* translators: 1: Feed source name (venue or topic), 2: Link label. */
-					__( '%1$s: %2$s', 'gatherpress' ),
-					$gatherpress_source,
-					$gatherpress_ical_label
-				),
+			'text' => $gatherpress_feed['download'] ? $gatherpress_download_text : $gatherpress_ical_text,
 		);
 	}
 

@@ -11,14 +11,14 @@
  *
  * The block that renders subscribe links needs that dispatch, which is why it
  * lives here rather than in the block. The `<link rel="alternate">` tags in
- * `<head>` are built separately by `Calendar\Setup` and do not pass through
+ * `<head>` are built separately by `Calendar\External\Setup` and do not pass through
  * this resolver.
  *
- * @package GatherPress\Core\Calendar
+ * @package GatherPress\Core\Calendar\External
  * @since TBD
  */
 
-namespace GatherPress\Core\Calendar;
+namespace GatherPress\Core\Calendar\External;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
