@@ -19,7 +19,7 @@ import {
 	plus,
 	trash,
 } from '@wordpress/icons';
-import { useCallback } from '@wordpress/element';
+import { useCallback, useEffect, useRef } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
 
 /**
@@ -35,6 +35,17 @@ import {
 	serializeChecklist,
 	updateChecklistItem,
 } from './helpers';
+
+/**
+ * Focus target that stands for the Add item button rather than a row.
+ *
+ * A symbol, so no stored row id can ever match it.
+ *
+ * @since TBD
+ *
+ * @type {symbol}
+ */
+const ADD_ITEM_FOCUS = Symbol( 'add-item' );
 
 /**
  * The checklist list rendered inside the "Checklist" panel.
@@ -59,6 +70,28 @@ const ChecklistPanel = () => {
 
 	const items = parseChecklist( stored );
 	const { completed, total } = getChecklistProgress( items );
+
+	const fieldRefs = useRef( new Map() );
+	const addButtonRef = useRef( null );
+	const pendingFocus = useRef( null );
+
+	// Adding or removing a row unmounts the control that had focus, so move
+	// focus once the changed rows render instead of dropping it to the page body.
+	useEffect( () => {
+		if ( ! pendingFocus.current ) {
+			return;
+		}
+
+		const target =
+			ADD_ITEM_FOCUS === pendingFocus.current
+				? addButtonRef.current
+				: fieldRefs.current.get( pendingFocus.current );
+
+		if ( target ) {
+			target.focus();
+			pendingFocus.current = null;
+		}
+	} );
 
 	const commit = useCallback(
 		( next ) => {
@@ -136,6 +169,9 @@ const ChecklistPanel = () => {
 								className="gatherpress-checklist-item__handle"
 								icon={ dragHandle }
 								label={ __( 'Drag to reorder', 'gatherpress' ) }
+								// Pointer only, like core's block mover. Keyboard users
+								// move rows from the options menu.
+								tabIndex={ -1 }
 								size="compact"
 								draggable
 								style={ { cursor: 'grab' } }
@@ -167,6 +203,9 @@ const ChecklistPanel = () => {
 								__next40pxDefaultSize
 								label={ itemLabel }
 								hideLabelFromVision
+								ref={ ( node ) => {
+									fieldRefs.current.set( item.id, node );
+								} }
 								value={ item.text }
 								onChange={ ( value ) =>
 									commit(
@@ -218,13 +257,21 @@ const ChecklistPanel = () => {
 											'Remove item',
 											'gatherpress',
 										),
-										onClick: () =>
+										onClick: () => {
+											// Next row, else the previous one, else Add item.
+											const neighbor =
+												items[ index + 1 ] ??
+												items[ index - 1 ];
+
+											pendingFocus.current =
+												neighbor?.id ?? ADD_ITEM_FOCUS;
 											commit(
 												removeChecklistItem(
 													items,
 													item.id,
 												),
-											),
+											);
+										},
 									},
 								] }
 							/>
@@ -234,9 +281,19 @@ const ChecklistPanel = () => {
 			} ) }
 
 			<Button
+				ref={ addButtonRef }
 				variant="secondary"
 				icon={ plus }
-				onClick={ () => commit( addChecklistItem( items ) ) }
+				onClick={ () => {
+					const next = addChecklistItem( items );
+
+					// At the item cap no row is added, so there is nothing to focus.
+					if ( next !== items ) {
+						pendingFocus.current = next.at( -1 ).id;
+					}
+
+					commit( next );
+				} }
 			>
 				{ __( 'Add item', 'gatherpress' ) }
 			</Button>

@@ -33,57 +33,78 @@ jest.mock( '@wordpress/icons', () => ( {
 	trash: 'trash',
 } ) );
 
-jest.mock( '@wordpress/components', () => ( {
-	Button: ( { label, onClick, disabled, children, draggable, onDragStart } ) => (
-		<button
-			aria-label={ label }
-			onClick={ onClick }
-			disabled={ disabled }
-			draggable={ draggable }
-			onDragStart={ onDragStart }
-		>
-			{ children }
-		</button>
-	),
-	CheckboxControl: ( { 'aria-label': ariaLabel, checked, onChange } ) => (
-		<input
-			type="checkbox"
-			aria-label={ ariaLabel }
-			checked={ checked }
-			onChange={ ( event ) => onChange( event.target.checked ) }
-		/>
-	),
-	DropdownMenu: ( { label, controls } ) => (
-		<div>
-			<button aria-label={ label }>{ label }</button>
-			{ controls.map( ( control ) => (
+jest.mock( '@wordpress/components', () => {
+	// The panel passes refs to Button and TextControl, so the mocks forward them.
+	const { forwardRef } = jest.requireActual( 'react' );
+
+	return {
+		Button: forwardRef(
+			(
+				{
+					label,
+					onClick,
+					disabled,
+					children,
+					draggable,
+					onDragStart,
+					tabIndex,
+				},
+				ref,
+			) => (
 				<button
-					key={ control.title }
-					aria-label={ control.title }
-					disabled={ control.isDisabled }
-					onClick={ control.onClick }
+					ref={ ref }
+					aria-label={ label }
+					onClick={ onClick }
+					disabled={ disabled }
+					draggable={ draggable }
+					onDragStart={ onDragStart }
+					tabIndex={ tabIndex }
 				>
-					{ control.title }
+					{ children }
 				</button>
-			) ) }
-		</div>
-	),
-	Flex: ( { children, className, onDragOver, onDrop } ) => (
-		<div className={ className } onDragOver={ onDragOver } onDrop={ onDrop }>
-			{ children }
-		</div>
-	),
-	FlexBlock: ( { children } ) => <div>{ children }</div>,
-	FlexItem: ( { children } ) => <div>{ children }</div>,
-	TextControl: ( { label, value, onChange } ) => (
-		<input
-			type="text"
-			aria-label={ label }
-			value={ value }
-			onChange={ ( event ) => onChange( event.target.value ) }
-		/>
-	),
-} ) );
+			),
+		),
+		CheckboxControl: ( { 'aria-label': ariaLabel, checked, onChange } ) => (
+			<input
+				type="checkbox"
+				aria-label={ ariaLabel }
+				checked={ checked }
+				onChange={ ( event ) => onChange( event.target.checked ) }
+			/>
+		),
+		DropdownMenu: ( { label, controls } ) => (
+			<div>
+				<button aria-label={ label }>{ label }</button>
+				{ controls.map( ( control ) => (
+					<button
+						key={ control.title }
+						aria-label={ control.title }
+						disabled={ control.isDisabled }
+						onClick={ control.onClick }
+					>
+						{ control.title }
+					</button>
+				) ) }
+			</div>
+		),
+		Flex: ( { children, className, onDragOver, onDrop } ) => (
+			<div className={ className } onDragOver={ onDragOver } onDrop={ onDrop }>
+				{ children }
+			</div>
+		),
+		FlexBlock: ( { children } ) => <div>{ children }</div>,
+		FlexItem: ( { children } ) => <div>{ children }</div>,
+		TextControl: forwardRef( ( { label, value, onChange }, ref ) => (
+			<input
+				ref={ ref }
+				type="text"
+				aria-label={ label }
+				value={ value }
+				onChange={ ( event ) => onChange( event.target.value ) }
+			/>
+		) ),
+	};
+} );
 
 const mockEditPost = jest.fn();
 const mockUnlockPostSaving = jest.fn();
@@ -365,5 +386,102 @@ describe( 'ChecklistPanel', () => {
 		fireEvent.drop( rows[ 0 ], { dataTransfer: dataTransferFor( 'a' ) } );
 
 		expect( mockEditPost ).not.toHaveBeenCalled();
+	} );
+
+	it( 'keeps the drag handle out of the tab order', () => {
+		renderPanel( '[{"id":"a","text":"Ask","completed":false}]' );
+
+		expect( screen.getByLabelText( 'Drag to reorder' ) ).toHaveAttribute(
+			'tabindex',
+			'-1',
+		);
+	} );
+
+	it( 'focuses the new row text field after Add item', () => {
+		const { rerender } = renderPanel(
+			'[{"id":"a","text":"Ask","completed":false}]',
+		);
+
+		fireEvent.click( screen.getByText( 'Add item' ) );
+
+		// A render before the new row arrives keeps the focus request pending.
+		rerender( <ChecklistPanel /> );
+		expect( screen.getByText( 'Add item' ) ).not.toHaveFocus();
+
+		mockStoredMeta = {
+			gatherpress_checklist:
+				'[{"id":"a","text":"Ask","completed":false},' +
+				'{"id":"generated-id","text":"","completed":false}]',
+		};
+		rerender( <ChecklistPanel /> );
+
+		expect( screen.getByLabelText( 'Checklist item: Item 2' ) ).toHaveFocus();
+	} );
+
+	it( 'leaves focus alone when Add item is clicked at the item cap', () => {
+		const full = JSON.stringify(
+			Array.from( { length: 200 }, ( _, i ) => ( {
+				id: `id-${ i }`,
+				text: `Step ${ i + 1 }`,
+				completed: false,
+			} ) ),
+		);
+		const { rerender } = renderPanel( full );
+		const addButton = screen.getByText( 'Add item' );
+
+		addButton.focus();
+		fireEvent.click( addButton );
+		rerender( <ChecklistPanel /> );
+
+		expect( addButton ).toHaveFocus();
+	} );
+
+	it( 'focuses the next row text field after a remove', () => {
+		const { rerender } = renderPanel(
+			'[{"id":"a","text":"Ask","completed":false},' +
+				'{"id":"b","text":"Pay","completed":false},' +
+				'{"id":"c","text":"Send","completed":false}]',
+		);
+
+		fireEvent.click( screen.getAllByLabelText( 'Remove item' )[ 1 ] );
+
+		mockStoredMeta = {
+			gatherpress_checklist:
+				'[{"id":"a","text":"Ask","completed":false},' +
+				'{"id":"c","text":"Send","completed":false}]',
+		};
+		rerender( <ChecklistPanel /> );
+
+		expect( screen.getByLabelText( 'Checklist item: Send' ) ).toHaveFocus();
+	} );
+
+	it( 'focuses the previous row text field when the last row is removed', () => {
+		const { rerender } = renderPanel(
+			'[{"id":"a","text":"Ask","completed":false},' +
+				'{"id":"b","text":"Pay","completed":false}]',
+		);
+
+		fireEvent.click( screen.getAllByLabelText( 'Remove item' )[ 1 ] );
+
+		mockStoredMeta = {
+			gatherpress_checklist:
+				'[{"id":"a","text":"Ask","completed":false}]',
+		};
+		rerender( <ChecklistPanel /> );
+
+		expect( screen.getByLabelText( 'Checklist item: Ask' ) ).toHaveFocus();
+	} );
+
+	it( 'focuses Add item when the only row is removed', () => {
+		const { rerender } = renderPanel(
+			'[{"id":"a","text":"Ask","completed":false}]',
+		);
+
+		fireEvent.click( screen.getByLabelText( 'Remove item' ) );
+
+		mockStoredMeta = { gatherpress_checklist: '[]' };
+		rerender( <ChecklistPanel /> );
+
+		expect( screen.getByText( 'Add item' ) ).toHaveFocus();
 	} );
 } );
