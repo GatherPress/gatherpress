@@ -29,9 +29,9 @@
 	--gatherpress-calendar-time-color: color-mix(in srgb, var(--wp--preset--color--contrast, #000) 85%, transparent);
 	--gatherpress-calendar-title-color: var(--wp--preset--color--contrast, #000);
 	--gatherpress-calendar-focus-outline-color: var(--wp--preset--color--contrast, #000);
-	--gatherpress-calendar-ribbon-color: var(--wp--preset--color--contrast, #000);
+	--gatherpress-calendar-ribbon-color: var(--wp--preset--color--base, #fff);
 	--gatherpress-calendar-ribbon-color-intensity: 42%;
-	--gatherpress-calendar-ribbon-mix-target: var(--wp--preset--color--base, #fff);
+	--gatherpress-calendar-ribbon-mix-target: var(--wp--preset--color--contrast, #000);
 
 	.gatherpress-calendar__table {
 		gap: var(--gatherpress-calendar-column-gap);
