@@ -204,7 +204,11 @@ class Test_Scheduler extends Base {
 
 		$instance->handle_transition_post_status( 'publish', 'draft', $post );
 
-		$this->assertNotEmpty( wp_next_scheduled( Scheduler::CRON_HOOK, array( $post_id ) ) );
+		$this->assertSame(
+			strtotime( $future_end ) + 1,
+			wp_next_scheduled( Scheduler::CRON_HOOK, array( $post_id ) ),
+			'The cron runs one second after the end, once the event counts as past.'
+		);
 	}
 
 	/**

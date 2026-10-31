@@ -221,7 +221,8 @@ final class Scheduler {
 
 		$this->clear_scheduled_cron( $post_id );
 
-		wp_schedule_single_event( $end_timestamp, self::CRON_HOOK, array( $post_id ) );
+		// One second late: Event::has_event_past() needs time() to be strictly after the end.
+		wp_schedule_single_event( $end_timestamp + 1, self::CRON_HOOK, array( $post_id ) );
 	}
 
 	/**
