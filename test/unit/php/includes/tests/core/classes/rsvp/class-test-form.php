@@ -805,6 +805,38 @@ class Test_Form extends Base {
 	}
 
 	/**
+	 * Tests preprocess_rsvp_comment keeps a backslash in the attendee name.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::preprocess_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_preprocess_rsvp_comment_keeps_backslash_in_author(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$this->set_post_params(
+			array(
+				'author' => 'O\\Brien',
+				'email'  => 'obrien@example.com',
+			)
+		);
+
+		$result = Form::get_instance()->preprocess_rsvp_comment(
+			array( 'comment_post_ID' => $post_id )
+		);
+
+		// wp_insert_comment() unslashes the data, so this is the name it stores.
+		$this->assertSame( 'O\\Brien', wp_unslash( $result['comment_author'] ) );
+		$this->assertSame( 'obrien@example.com', wp_unslash( $result['comment_author_email'] ) );
+	}
+
+	/**
 	 * Coverage for handle_rsvp_comment_post method.
 	 *
 	 * @covers ::handle_rsvp_comment_post

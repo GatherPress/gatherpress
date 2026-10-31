@@ -303,10 +303,12 @@ final class Form {
 		) {
 			add_filter( 'pre_comment_approved', '__return_zero' );
 
+			// The comment data here is slashed, and wp_insert_comment() unslashes
+			// it, so the raw input is slashed to keep its backslashes.
 			$comment_data['user_id']              = 0;
 			$comment_data['comment_author_url']   = '';
-			$comment_data['comment_author']       = $author;
-			$comment_data['comment_author_email'] = $email;
+			$comment_data['comment_author']       = wp_slash( $author );
+			$comment_data['comment_author_email'] = wp_slash( $email );
 		}
 
 		return $comment_data;
@@ -343,7 +345,8 @@ final class Form {
 				),
 			);
 
-			// Add custom fields to data.
+			// Add custom fields to data. The field names are not known up front,
+			// so this walks $_POST instead of reading one name at a time.
 			foreach ( $_POST as $key => $value ) {
 				if ( str_starts_with( $key, 'gatherpress_custom_' ) ) {
 					$data[ $key ] = $value;

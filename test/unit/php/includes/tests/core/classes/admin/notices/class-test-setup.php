@@ -28,8 +28,6 @@ class Test_Setup extends Test_Base {
 	public function tearDown(): void {
 		delete_option( Base::OPTION_NAME );
 
-		unset( $_GET[ Setup::DISMISS_QUERY_ARG ], $_GET['_wpnonce'] );
-
 		parent::tearDown();
 	}
 
@@ -226,7 +224,7 @@ class Test_Setup extends Test_Base {
 	 * @return void
 	 */
 	public function test_handle_dismissal_with_an_unknown_slug(): void {
-		$_GET[ Setup::DISMISS_QUERY_ARG ] = 'gatherpress_not_registered';
+		$this->set_url_params( array( Setup::DISMISS_QUERY_ARG => 'gatherpress_not_registered' ) );
 
 		Setup::get_instance()->handle_dismissal();
 
@@ -276,8 +274,12 @@ class Test_Setup extends Test_Base {
 
 		$slug = $notice->get_slug();
 
-		$_GET[ Setup::DISMISS_QUERY_ARG ] = $slug;
-		$_GET['_wpnonce']                 = wp_create_nonce( 'gatherpress_dismiss_notice_' . $slug );
+		$this->set_url_params(
+			array(
+				Setup::DISMISS_QUERY_ARG => $slug,
+				'_wpnonce'               => wp_create_nonce( 'gatherpress_dismiss_notice_' . $slug ),
+			)
+		);
 
 		$instance->handle_dismissal();
 
@@ -307,8 +309,12 @@ class Test_Setup extends Test_Base {
 			array( 'gatherpress_test' => $this->make_persistent_notice() )
 		);
 
-		$_GET[ Setup::DISMISS_QUERY_ARG ] = 'gatherpress_test';
-		$_GET['_wpnonce']                 = 'not-a-valid-nonce';
+		$this->set_url_params(
+			array(
+				Setup::DISMISS_QUERY_ARG => 'gatherpress_test',
+				'_wpnonce'               => 'not-a-valid-nonce',
+			)
+		);
 
 		$instance->handle_dismissal();
 
@@ -334,8 +340,12 @@ class Test_Setup extends Test_Base {
 			array( 'gatherpress_test' => $this->make_persistent_notice() )
 		);
 
-		$_GET[ Setup::DISMISS_QUERY_ARG ] = 'gatherpress_test';
-		$_GET['_wpnonce']                 = wp_create_nonce( 'gatherpress_dismiss_notice_gatherpress_test' );
+		$this->set_url_params(
+			array(
+				Setup::DISMISS_QUERY_ARG => 'gatherpress_test',
+				'_wpnonce'               => wp_create_nonce( 'gatherpress_dismiss_notice_gatherpress_test' ),
+			)
+		);
 
 		$instance->handle_dismissal();
 

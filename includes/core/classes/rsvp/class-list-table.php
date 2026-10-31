@@ -326,13 +326,13 @@ final class List_Table extends WP_List_Table {
 	 * @return string[] Status slugs, empty when unfiltered.
 	 */
 	public function get_filtered_responses(): array {
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( empty( $_REQUEST['response'] ) || ! is_string( $_REQUEST['response'] ) ) {
+		$response = Utility::get_request_input( 'response' );
+
+		if ( empty( $response ) ) {
 			return array();
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$requested = explode( ',', sanitize_text_field( wp_unslash( $_REQUEST['response'] ) ) );
+		$requested = explode( ',', $response );
 		$allowed   = array_map(
 			static fn( Status $status ): string => $status->value,
 			Status::filterable()
@@ -352,13 +352,8 @@ final class List_Table extends WP_List_Table {
 	 * @return int The event post ID, or 0 when unfiltered.
 	 */
 	public function get_filtered_post_id(): int {
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( ! isset( $_REQUEST['post_id'] ) || ! is_scalar( $_REQUEST['post_id'] ) ) {
-			return 0;
-		}
-
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		return absint( wp_unslash( $_REQUEST['post_id'] ) );
+		// get_http_input() reads a non-scalar as '', which absint() turns into 0.
+		return absint( Utility::get_request_input( 'post_id' ) );
 	}
 
 	/**
@@ -514,7 +509,6 @@ final class List_Table extends WP_List_Table {
 	private function get_rsvps( ?int $per_page = null, int $page_number = 1 ): array {
 		$rsvp_query = Query::get_instance();
 
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended
 		if ( null === $per_page ) {
 			$per_page = self::DEFAULT_PER_PAGE;
 		}
@@ -528,9 +522,9 @@ final class List_Table extends WP_List_Table {
 			'post_type' => $this->post_type,
 		);
 
-		if ( isset( $_REQUEST['s'] ) && ! empty( $_REQUEST['s'] ) ) {
-			$search = sanitize_text_field( wp_unslash( $_REQUEST['s'] ) );
+		$search = Utility::get_request_input( 's' );
 
+		if ( ! empty( $search ) ) {
 			if ( filter_var( $search, FILTER_VALIDATE_IP ) ) {
 				$args['author_ip'] = $search;
 			} else {
@@ -554,8 +548,10 @@ final class List_Table extends WP_List_Table {
 			}
 		}
 
-		if ( isset( $_REQUEST['user_id'] ) && ! empty( $_REQUEST['user_id'] ) ) {
-			$args['user_id'] = intval( $_REQUEST['user_id'] );
+		$user_id = Utility::get_request_input( 'user_id' );
+
+		if ( ! empty( $user_id ) ) {
+			$args['user_id'] = intval( $user_id );
 		}
 
 		$post_id = $this->get_filtered_post_id();
@@ -564,12 +560,9 @@ final class List_Table extends WP_List_Table {
 			$args['post_id'] = $post_id;
 		}
 
-		if (
-			isset( $_REQUEST['status'] ) &&
-			in_array( $_REQUEST['status'], array( 'approved', 'pending', 'spam' ), true )
-		) {
-			$status = sanitize_text_field( wp_unslash( $_REQUEST['status'] ) );
+		$status = Utility::get_request_input( 'status' );
 
+		if ( in_array( $status, array( 'approved', 'pending', 'spam' ), true ) ) {
 			if ( 'approved' === $status ) {
 				$args['status'] = 'approve';
 			} elseif ( 'spam' === $status ) {
@@ -579,13 +572,11 @@ final class List_Table extends WP_List_Table {
 			}
 		}
 
-		$orderby = isset( $_REQUEST['orderby'] )
-			? sanitize_text_field( wp_unslash( $_REQUEST['orderby'] ) )
-			: 'comment_date';
-		$order   = isset( $_REQUEST['order'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['order'] ) ) : 'DESC';
+		$orderby = Utility::get_request_input( 'orderby' );
+		$order   = Utility::get_request_input( 'order' );
 
-		$args['orderby'] = $orderby;
-		$args['order']   = $order;
+		$args['orderby'] = '' !== $orderby ? $orderby : 'comment_date';
+		$args['order']   = '' !== $order ? $order : 'DESC';
 
 		$items = $rsvp_query->get_rsvps( $this->add_response_filter( $args ) );
 
@@ -598,7 +589,6 @@ final class List_Table extends WP_List_Table {
 			},
 			$items
 		);
-		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
 	/**
@@ -613,7 +603,6 @@ final class List_Table extends WP_List_Table {
 	 * @return int The total number of RSVP comments matching the current filters.
 	 */
 	private function get_rsvp_count(): int {
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended
 		$rsvp_query = Query::get_instance();
 		$args       = array(
 			'count'     => true,
@@ -621,12 +610,15 @@ final class List_Table extends WP_List_Table {
 			'post_type' => $this->post_type,
 		);
 
-		if ( isset( $_REQUEST['user_id'] ) && ! empty( $_REQUEST['user_id'] ) ) {
-			$args['user_id'] = intval( $_REQUEST['user_id'] );
+		$user_id = Utility::get_request_input( 'user_id' );
+
+		if ( ! empty( $user_id ) ) {
+			$args['user_id'] = intval( $user_id );
 		}
 
-		if ( isset( $_REQUEST['s'] ) && ! empty( $_REQUEST['s'] ) ) {
-			$search_term    = sanitize_text_field( wp_unslash( $_REQUEST['s'] ) );
+		$search_term = Utility::get_request_input( 's' );
+
+		if ( ! empty( $search_term ) ) {
 			$args['search'] = $search_term;
 		}
 
@@ -636,12 +628,9 @@ final class List_Table extends WP_List_Table {
 			$args['post_id'] = $post_id;
 		}
 
-		if (
-			isset( $_REQUEST['status'] ) &&
-			in_array( $_REQUEST['status'], array( 'approved', 'pending', 'spam' ), true )
-		) {
-			$status = sanitize_text_field( wp_unslash( $_REQUEST['status'] ) );
+		$status = Utility::get_request_input( 'status' );
 
+		if ( in_array( $status, array( 'approved', 'pending', 'spam' ), true ) ) {
 			if ( 'approved' === $status ) {
 				$args['status'] = 'approve';
 			} elseif ( 'spam' === $status ) {
@@ -652,7 +641,6 @@ final class List_Table extends WP_List_Table {
 		}
 
 		return $rsvp_query->get_rsvps( $this->add_response_filter( $args ) );
-		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
 	/**
@@ -1067,8 +1055,10 @@ final class List_Table extends WP_List_Table {
 		// action.
 		$nonces = array();
 
-		if ( isset( $_REQUEST['_wpnonce'] ) ) {
-			$nonces[] = sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) );
+		$nonce = Utility::get_request_input( '_wpnonce' );
+
+		if ( '' !== $nonce ) {
+			$nonces[] = $nonce;
 		}
 
 		$nonce_actions = array(
@@ -1098,6 +1088,8 @@ final class List_Table extends WP_List_Table {
 
 		$rsvp_ids = array();
 
+		// Direct read on purpose: the value can be an array, and
+		// Utility::get_http_input() only returns strings.
 		if ( isset( $_REQUEST['gatherpress_rsvp_id'] ) ) {
 			// `map_deep` casts via intval on every leaf — handles both the
 			// scalar (single-row delete link) and array (bulk-action checkbox)
@@ -1183,18 +1175,17 @@ final class List_Table extends WP_List_Table {
 
 		$post_id = $this->get_filtered_post_id();
 
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- View state only, no data modification.
 		// Check for current view status (doesn't require nonce).
-		if ( isset( $_REQUEST['user_id'] ) ) {
-			$user_id = absint( $_REQUEST['user_id'] );
+		$user_id = Utility::get_request_input( 'user_id' );
+		$status  = Utility::get_request_input( 'status', 'sanitize_key' );
 
-			if ( get_current_user_id() === $user_id ) {
+		if ( '' !== $user_id ) {
+			if ( get_current_user_id() === absint( $user_id ) ) {
 				$current = 'mine';
 			}
-		} elseif ( isset( $_REQUEST['status'] ) ) {
-			$current = sanitize_key( wp_unslash( $_REQUEST['status'] ) );
+		} elseif ( '' !== $status ) {
+			$current = $status;
 		}
-		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		$base_url_args = array(
 			'post_type' => $this->post_type,
