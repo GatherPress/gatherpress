@@ -125,6 +125,13 @@ export default function CheckIn( { rsvpId, initialState, states } ) {
 								iconPosition="left"
 								role="menuitemradio"
 								isSelected={ option.value === state }
+								// The state icons fill the icon slot, so the
+								// current state shows by its weight.
+								className={
+									option.value === state
+										? 'is-selected'
+										: undefined
+								}
 								onClick={ () => {
 									onClose();
 

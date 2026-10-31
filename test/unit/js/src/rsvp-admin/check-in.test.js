@@ -81,6 +81,18 @@ describe( 'CheckIn', () => {
 		expect( toggle.querySelector( '[data-icon="check"]' ) ).toBeInTheDocument();
 	} );
 
+	it( 'marks the current state in the menu', async () => {
+		await renderCheckIn( 'no-show' );
+
+		const current = screen.getByRole( 'menuitemradio', { name: 'No-show' } );
+
+		expect( current ).toHaveAttribute( 'aria-checked', 'true' );
+		expect( current ).toHaveClass( 'is-selected' );
+		expect(
+			screen.getByRole( 'menuitemradio', { name: 'Checked in' } ),
+		).not.toHaveClass( 'is-selected' );
+	} );
+
 	it( 'falls back to the last state for an unknown value', async () => {
 		await renderCheckIn( 'gone' );
 
