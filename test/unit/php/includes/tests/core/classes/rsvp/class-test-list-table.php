@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Rsvp;
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp\Check_In_Controls;
 use GatherPress\Core\Rsvp\Flag\Check_In;
 use GatherPress\Core\Rsvp\Flag\Check_In_Registry;
 use GatherPress\Core\Rsvp\Flag\No_Show;
@@ -918,7 +919,7 @@ class Test_List_Table extends Base {
 	 * or a dash without one.
 	 *
 	 * @covers ::column_default
-	 * @covers ::render_check_in
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::render_cell
 	 *
 	 * @return void
 	 */
@@ -974,6 +975,7 @@ class Test_List_Table extends Base {
 	 * The check-in bulk actions are offered alongside the moderation ones.
 	 *
 	 * @covers ::get_bulk_actions
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::get_actions
 	 *
 	 * @return void
 	 */
@@ -991,10 +993,10 @@ class Test_List_Table extends Base {
 	 * A check-in state a plugin registers shows in the column, actions and filter.
 	 *
 	 * @covers ::column_default
-	 * @covers ::render_check_in
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::render_cell
 	 * @covers ::get_bulk_actions
-	 * @covers ::get_check_in_actions
-	 * @covers ::set_check_in
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::get_actions
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::apply_action
 	 *
 	 * @return void
 	 */
@@ -1020,11 +1022,7 @@ class Test_List_Table extends Base {
 			'Failed to assert the filter and dropdown offer the state.'
 		);
 
-		Utility::invoke_hidden_method(
-			$this->list_table,
-			'set_check_in',
-			array( $rsvp_id, 'check_in-checked-in-online' )
-		);
+		Check_In_Controls::apply_action( $rsvp_id, 'check_in-checked-in-online' );
 
 		$this->assertStringContainsString(
 			'<span>Checked in online</span>',
@@ -1040,8 +1038,8 @@ class Test_List_Table extends Base {
 	 * The check-in bulk actions set each check-in state.
 	 *
 	 * @covers ::process_bulk_action
-	 * @covers ::get_check_in_actions
-	 * @covers ::set_check_in
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::get_actions
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::apply_action
 	 *
 	 * @return void
 	 */
@@ -2464,17 +2462,17 @@ class Test_List_Table extends Base {
 	 * Each check-in state narrows the comment query, and joins a response
 	 * filter rather than replacing it.
 	 *
-	 * @covers ::add_check_in_filter
-	 * @covers ::get_filtered_check_in
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::filter_query
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::get_filtered
 	 *
 	 * @return void
 	 */
-	public function test_add_check_in_filter(): void {
+	public function test_check_in_filter_query(): void {
 		$args = array( 'number' => 20 );
 
 		$this->assertSame(
 			$args,
-			Utility::invoke_hidden_method( $this->list_table, 'add_check_in_filter', array( $args ) ),
+			Check_In_Controls::filter_query( $args ),
 			'Failed to assert an unfiltered request adds no taxonomy query.'
 		);
 
@@ -2482,7 +2480,7 @@ class Test_List_Table extends Base {
 
 		$this->assertSame(
 			$args,
-			Utility::invoke_hidden_method( $this->list_table, 'add_check_in_filter', array( $args ) ),
+			Check_In_Controls::filter_query( $args ),
 			'Failed to assert an unknown state adds no taxonomy query.'
 		);
 
@@ -2497,17 +2495,15 @@ class Test_List_Table extends Base {
 				),
 				'relation' => 'AND',
 			),
-			Utility::invoke_hidden_method( $this->list_table, 'add_check_in_filter', array( $args ) )['tax_query'],
+			Check_In_Controls::filter_query( $args )['tax_query'],
 			'Failed to assert a flag state matches its flag.'
 		);
 
 		$_REQUEST['check_in'] = Check_In_Registry::NOT_RECORDED;
 		$_REQUEST['response'] = Status::ATTENDING->value;
 
-		$filtered = Utility::invoke_hidden_method(
-			$this->list_table,
-			'add_check_in_filter',
-			array( Utility::invoke_hidden_method( $this->list_table, 'add_response_filter', array( $args ) ) )
+		$filtered = Check_In_Controls::filter_query(
+			Utility::invoke_hidden_method( $this->list_table, 'add_response_filter', array( $args ) )
 		);
 
 		$this->assertSame(
@@ -2535,7 +2531,7 @@ class Test_List_Table extends Base {
 	/**
 	 * The check-in filter finds the RSVPs in each state.
 	 *
-	 * @covers ::add_check_in_filter
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::filter_query
 	 *
 	 * @return void
 	 */
@@ -2559,14 +2555,10 @@ class Test_List_Table extends Base {
 			$_REQUEST['check_in'] = $state;
 
 			$found = Rsvp\Query::get_instance()->get_rsvps(
-				Utility::invoke_hidden_method(
-					$this->list_table,
-					'add_check_in_filter',
+				Check_In_Controls::filter_query(
 					array(
-						array(
-							'post_id' => $this->event_id,
-							'fields'  => 'ids',
-						),
+						'post_id' => $this->event_id,
+						'fields'  => 'ids',
 					)
 				)
 			);
@@ -2593,7 +2585,7 @@ class Test_List_Table extends Base {
 	 * @covers ::extra_tablenav
 	 * @covers ::render_event_field
 	 * @covers ::render_response_toggle
-	 * @covers ::render_check_in_field
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::render_filter
 	 *
 	 * @return void
 	 */
@@ -2814,6 +2806,8 @@ class Test_List_Table extends Base {
 	 * Switching view keeps the check-in filter, and its counts follow it.
 	 *
 	 * @covers ::get_views
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::get_filtered
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::filter_query
 	 *
 	 * @return void
 	 */
