@@ -94,6 +94,7 @@ class Test_Status extends Base {
 		$this->assertStringContainsString( 'awaiting confirmation', Status::description( 'tentative' ) );
 		$this->assertSame( 'EventScheduled', Status::schema( 'tentative' ) );
 		$this->assertSame( 'TENTATIVE', Status::ical( 'tentative' ) );
+		$this->assertSame( '#ea8600', Status::color( 'tentative' ) );
 		$this->assertSame( 10, Status::priority( 'tentative' ) );
 	}
 
@@ -304,6 +305,40 @@ class Test_Status extends Base {
 		);
 
 		remove_filter( 'gatherpress_event_statuses', $callback, 10 );
+	}
+
+	/**
+	 * A status is shown in its own color, and anything that could break out
+	 * of a style attribute is refused.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::color
+	 *
+	 * @return void
+	 */
+	public function test_color_accepts_only_what_is_safe_to_render(): void {
+		$this->assertSame( '#c5221f', Status::color( 'canceled' ) );
+
+		$callback = static function ( array $statuses ): array {
+			$statuses['token']  = array( 'color' => 'var(--wp--preset--color--accent-1, #000)' );
+			$statuses['broken'] = array( 'color' => 'red;} body { display: none' );
+			$statuses['named']  = array( 'color' => 'rebeccapurple' );
+
+			return $statuses;
+		};
+
+		add_filter( 'gatherpress_event_statuses', $callback );
+
+		$this->assertSame(
+			'var(--wp--preset--color--accent-1, #000)',
+			Status::color( 'token' ),
+			'Failed to assert a custom property reference is allowed.'
+		);
+		$this->assertSame( '', Status::color( 'broken' ), 'Failed to assert an escape attempt is refused.' );
+		$this->assertSame( '', Status::color( 'named' ), 'Failed to assert an unrecognized form is refused.' );
+
+		remove_filter( 'gatherpress_event_statuses', $callback );
 	}
 
 	/**

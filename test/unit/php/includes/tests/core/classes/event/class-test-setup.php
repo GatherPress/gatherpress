@@ -175,6 +175,12 @@ class Test_Setup extends Base {
 			),
 			array(
 				'type'     => 'filter',
+				'name'     => 'render_block_core/post-terms',
+				'priority' => 10,
+				'callback' => array( $instance, 'render_event_status_post_terms_block' ),
+			),
+			array(
+				'type'     => 'filter',
 				'name'     => 'display_post_states',
 				'priority' => 10,
 				'callback' => array( $instance, 'set_event_archive_labels' ),
@@ -186,6 +192,12 @@ class Test_Setup extends Base {
 				'callback' => array( $instance, 'add_editor_settings' ),
 			),
 			array(
+				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 10,
+				'callback' => array( $instance, 'register_status_style' ),
+			),
+			array(
 				'type'     => 'filter',
 				'name'     => 'post_class',
 				'priority' => 10,
@@ -193,9 +205,21 @@ class Test_Setup extends Base {
 			),
 			array(
 				'type'     => 'filter',
+				'name'     => 'term_links-' . Event::TAXONOMY_STATUS,
+				'priority' => 10,
+				'callback' => array( $instance, 'unlink_status_terms' ),
+			),
+			array(
+				'type'     => 'filter',
 				'name'     => 'get_term',
 				'priority' => 10,
 				'callback' => array( $instance, 'filter_event_status_term' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'get_block_type_variations',
+				'priority' => 10,
+				'callback' => array( $instance, 'filter_post_terms_block_variations' ),
 			),
 		);
 
@@ -570,13 +594,16 @@ class Test_Setup extends Base {
 			$taxonomy->public,
 			'Failed to assert the status taxonomy is not public.'
 		);
-		$this->assertFalse(
+		// Core's Post Terms block refuses to render a taxonomy that is not
+		// viewable, and the editor only offers a queryable one, so the Event
+		// Status variation depends on both of these.
+		$this->assertTrue(
 			$taxonomy->publicly_queryable,
-			'Failed to assert the status taxonomy has no archive.'
+			'Failed to assert the status taxonomy is publicly queryable.'
 		);
-		$this->assertFalse(
+		$this->assertTrue(
 			$taxonomy->show_in_rest,
-			'Failed to assert the status is written only through its REST field.'
+			'Failed to assert the status taxonomy reaches REST.'
 		);
 		$this->assertFalse(
 			$taxonomy->show_ui,
@@ -1204,6 +1231,186 @@ class Test_Setup extends Base {
 		);
 
 		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Tests render_event_status_post_terms_block returns content unchanged when not status taxonomy.
+	 *
+	 * @covers ::render_event_status_post_terms_block
+	 *
+	 * @return void
+	 */
+	public function test_render_event_status_post_terms_block_non_status(): void {
+		$instance      = Setup::get_instance();
+		$block_content = '<div class="wp-block-post-terms">Category</div>';
+		$block         = array(
+			'blockName' => 'core/post-terms',
+			'attrs'     => array( 'term' => 'category' ),
+		);
+		$wp_block      = new WP_Block( $block, array() );
+
+		$result = $instance->render_event_status_post_terms_block( $block_content, $block, $wp_block );
+
+		$this->assertSame( $block_content, $result );
+	}
+
+	/**
+	 * Tests render_event_status_post_terms_block returns content unchanged when hideWhenScheduled is off.
+	 *
+	 * @covers ::render_event_status_post_terms_block
+	 *
+	 * @return void
+	 */
+	public function test_render_event_status_post_terms_block_hide_disabled(): void {
+		$instance      = Setup::get_instance();
+		$post_id       = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$block_content = '<div class="wp-block-post-terms gatherpress-event-status">Scheduled</div>';
+		$block         = array(
+			'blockName' => 'core/post-terms',
+			'attrs'     => array(
+				'term'              => Event::TAXONOMY_STATUS,
+				'hideWhenScheduled' => false,
+			),
+		);
+		$wp_block      = new WP_Block( $block, array( 'postId' => $post_id ) );
+
+		$result = $instance->render_event_status_post_terms_block( $block_content, $block, $wp_block );
+
+		$this->assertSame( $block_content, $result );
+	}
+
+	/**
+	 * Tests render_event_status_post_terms_block hides block when event is scheduled and hideWhenScheduled is on.
+	 *
+	 * @covers ::render_event_status_post_terms_block
+	 *
+	 * @return void
+	 */
+	public function test_render_event_status_post_terms_block_hides_scheduled(): void {
+		$instance      = Setup::get_instance();
+		$post_id       = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$block_content = '<div class="wp-block-post-terms gatherpress-event-status">Scheduled</div>';
+		$block         = array(
+			'blockName' => 'core/post-terms',
+			'attrs'     => array(
+				'term'              => Event::TAXONOMY_STATUS,
+				'hideWhenScheduled' => true,
+			),
+		);
+		$wp_block      = new WP_Block( $block, array( 'postId' => $post_id ) );
+
+		$result = $instance->render_event_status_post_terms_block( $block_content, $block, $wp_block );
+
+		$this->assertSame( '', $result );
+	}
+
+	/**
+	 * Tests render_event_status_post_terms_block shows block when event has non-scheduled status.
+	 *
+	 * @covers ::render_event_status_post_terms_block
+	 *
+	 * @return void
+	 */
+	public function test_render_event_status_post_terms_block_shows_non_scheduled(): void {
+		$instance = Setup::get_instance();
+		$post_id  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $post_id );
+		$event->set_status( 'canceled' );
+
+		$block_content = '<div class="wp-block-post-terms gatherpress-event-status">Canceled</div>';
+		$block         = array(
+			'blockName' => 'core/post-terms',
+			'attrs'     => array(
+				'term'              => Event::TAXONOMY_STATUS,
+				'hideWhenScheduled' => true,
+			),
+		);
+		$wp_block      = new WP_Block( $block, array( 'postId' => $post_id ) );
+
+		$result = $instance->render_event_status_post_terms_block( $block_content, $block, $wp_block );
+
+		$this->assertSame( $block_content, $result );
+	}
+
+	/**
+	 * Tests render_event_status_post_terms_block returns content unchanged when post ID cannot be resolved.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::render_event_status_post_terms_block
+	 *
+	 * @return void
+	 */
+	public function test_render_event_status_post_terms_block_without_post_id(): void {
+		$instance = Setup::get_instance();
+
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Ensure global post is not set.
+		$GLOBALS['post'] = null;
+
+		$block_content = '<div class="wp-block-post-terms gatherpress-event-status">Scheduled</div>';
+		$block         = array(
+			'blockName' => 'core/post-terms',
+			'attrs'     => array(
+				'term'              => Event::TAXONOMY_STATUS,
+				'hideWhenScheduled' => true,
+			),
+		);
+		$wp_block      = new WP_Block( $block, array() );
+
+		$result = $instance->render_event_status_post_terms_block( $block_content, $block, $wp_block );
+
+		$this->assertSame( $block_content, $result );
+	}
+
+	/**
+	 * Tests render_event_status_post_terms_block normalizes duplicate variation classes.
+	 *
+	 * @covers ::render_event_status_post_terms_block
+	 *
+	 * @return void
+	 */
+	public function test_render_event_status_post_terms_block_normalizes_duplicate_variation_class(): void {
+		$instance      = Setup::get_instance();
+		$block_content = '<div class="wp-block-post-terms gatherpress-event-status is-style-post-terms-1--2">' .
+			'<a href="#" rel="tag">Canceled</a></div>';
+		$block         = array(
+			'blockName' => 'core/post-terms',
+			'attrs'     => array(
+				'term' => Event::TAXONOMY_STATUS,
+			),
+		);
+		$wp_block      = new WP_Block( $block, array() );
+
+		$result = $instance->render_event_status_post_terms_block( $block_content, $block, $wp_block );
+
+		$this->assertStringContainsString( 'is-style-post-terms-1', $result );
+		$this->assertStringContainsString( 'is-style-post-terms-1--2', $result );
+	}
+
+	/**
+	 * Verify render_event_status_post_terms_block preserves dot style markup without regex modification.
+	 *
+	 * @covers ::render_event_status_post_terms_block
+	 *
+	 * @return void
+	 */
+	public function test_render_event_status_post_terms_block_dot_style(): void {
+		$instance      = Setup::get_instance();
+		$block_content = '<div class="wp-block-post-terms gatherpress-event-status is-style-gatherpress-dot">' .
+			'<span class="gatherpress-event-status__term gatherpress-event-status--is-postponed">' .
+			'Postponed</span></div>';
+		$block         = array(
+			'blockName' => 'core/post-terms',
+			'attrs'     => array(
+				'term'      => Event::TAXONOMY_STATUS,
+				'className' => 'is-style-gatherpress-dot',
+			),
+		);
+		$wp_block      = new WP_Block( $block, array() );
+
+		$result = $instance->render_event_status_post_terms_block( $block_content, $block, $wp_block );
+
+		$this->assertSame( $block_content, $result );
 	}
 
 	/**
@@ -2465,6 +2672,120 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * The status stylesheet loads with the block it styles, carrying a color
+	 * for every status.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::register_status_style
+	 *
+	 * @return void
+	 */
+	public function test_register_status_style(): void {
+		$handle = 'gatherpress-event-status';
+
+		wp_deregister_style( $handle );
+
+		Setup::get_instance()->register_status_style();
+
+		$this->assertTrue(
+			wp_style_is( $handle, 'registered' ),
+			'Failed to assert the status stylesheet is registered.'
+		);
+
+		$after = (array) wp_styles()->get_data( $handle, 'after' );
+		$rules = implode( '', $after );
+
+		$this->assertStringContainsString(
+			'.gatherpress-event-status--is-canceled',
+			$rules,
+			'Failed to assert a status carries its own color.'
+		);
+		$this->assertStringContainsString(
+			'{--gatherpress-status-color:#c5221f}',
+			$rules,
+			'Failed to assert a status carries its color value.'
+		);
+
+		$this->assertStringContainsString(
+			'.wp-block-post-terms.is-style-gatherpress-dot a[href*="canceled"]',
+			$rules,
+			'Failed to assert dot style carries status color rule.'
+		);
+
+		$this->assertTrue(
+			\WP_Block_Styles_Registry::get_instance()->is_registered( 'core/post-terms', 'gatherpress-dot' ),
+			'Failed to assert gatherpress-dot style is registered.'
+		);
+
+		foreach ( Status::slugs() as $slug ) {
+			$this->assertStringContainsString(
+				sprintf( '--is-%s', $slug ),
+				$rules,
+				sprintf( 'Failed to assert %s is given a color.', $slug )
+			);
+		}
+	}
+
+	/**
+	 * A status with no color of its own adds no rule, rather than an empty one.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::register_status_style
+	 *
+	 * @return void
+	 */
+	public function test_register_status_style_skips_a_colorless_status(): void {
+		$handle   = 'gatherpress-event-status';
+		$callback = static function (): array {
+			return array( 'plain' => array( 'label' => 'Plain' ) );
+		};
+
+		add_filter( 'gatherpress_event_statuses', $callback );
+		wp_deregister_style( $handle );
+
+		Setup::get_instance()->register_status_style();
+
+		remove_filter( 'gatherpress_event_statuses', $callback );
+
+		$this->assertStringNotContainsString(
+			'--is-plain',
+			implode( '', (array) wp_styles()->get_data( $handle, 'after' ) ),
+			'Failed to assert a status with no color adds no rule.'
+		);
+	}
+
+	/**
+	 * Status terms are shown without links so they act as states rather than
+	 * taxonomy archives.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::unlink_status_terms
+	 *
+	 * @return void
+	 */
+	public function test_unlink_status_terms(): void {
+		$result = Setup::get_instance()->unlink_status_terms(
+			array(
+				'<a href="https://example.org/event-status/canceled/" rel="tag">Canceled</a>',
+				'<a href="https://example.org/event-status/moved-online/" rel="tag">Moved online</a>',
+			)
+		);
+
+		$this->assertSame(
+			array(
+				'<span class="gatherpress-event-status__term gatherpress-event-status--is-canceled">Canceled</span>',
+				'<span class="gatherpress-event-status__term gatherpress-event-status--is-moved-online">'
+				. 'Moved online</span>',
+			),
+			$result,
+			'Failed to assert a status is shown without a link.'
+		);
+	}
+
+	/**
 	 * Tests filter_event_status_term translates status term names dynamically.
 	 *
 	 * @since TBD
@@ -2512,5 +2833,46 @@ class Test_Setup extends Base {
 		);
 		$unchanged    = $instance->filter_event_status_term( $unknown_term, Event::TAXONOMY_STATUS );
 		$this->assertSame( 'Scheduled', $unchanged->name );
+	}
+
+	/**
+	 * Tests filter_post_terms_block_variations strips core Event Statuses variation.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::filter_post_terms_block_variations
+	 *
+	 * @return void
+	 */
+	public function test_filter_post_terms_block_variations(): void {
+		$instance = Setup::get_instance();
+
+		$variations = array(
+			array(
+				'name'  => 'category',
+				'title' => 'Categories',
+			),
+			array(
+				'name'  => Event::TAXONOMY_STATUS,
+				'title' => 'Event Statuses',
+			),
+			array(
+				'name'  => 'post_tag',
+				'title' => 'Tags',
+			),
+		);
+
+		// Non-matching block type leaves variations unchanged.
+		$paragraph_type = new \WP_Block_Type( 'core/paragraph', array() );
+		$result         = $instance->filter_post_terms_block_variations( $variations, $paragraph_type );
+		$this->assertSame( $variations, $result );
+
+		// core/post-terms removes the Event::TAXONOMY_STATUS variation.
+		$post_terms_type = new \WP_Block_Type( 'core/post-terms', array() );
+		$filtered        = $instance->filter_post_terms_block_variations( $variations, $post_terms_type );
+
+		$this->assertCount( 2, $filtered );
+		$this->assertSame( 'category', $filtered[0]['name'] );
+		$this->assertSame( 'post_tag', $filtered[1]['name'] );
 	}
 }
