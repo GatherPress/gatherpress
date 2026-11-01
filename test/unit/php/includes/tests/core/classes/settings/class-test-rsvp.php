@@ -109,6 +109,8 @@ class Test_Rsvp extends Base {
 			$options['event_reminder_hour_before']['labels']['name'],
 			'Only the first row is headed.'
 		);
+		$this->assertSame( '', $options['event_reminder_day_before']['description'] );
+		$this->assertSame( '', $options['event_reminder_hour_before']['description'] );
 		$this->assertSame( 'checkbox', $options['event_reminder_day_before']['field']['type'] );
 		$this->assertTrue( $options['event_reminder_day_before']['field']['options']['default'] );
 		$this->assertFalse( $options['event_reminder_hour_before']['field']['options']['default'] );

@@ -369,16 +369,15 @@ final class Rsvp extends Base {
 	 * @return array<string, SettingsOption> The checkbox options, keyed by setting.
 	 */
 	private function get_reminder_timing_options(): array {
-		$options     = array();
-		$heading     = __( 'Reminder Timing', 'gatherpress' );
-		$description = __( 'Check more than one to remind attendees more than once.', 'gatherpress' );
+		$options = array();
+		$heading = __( 'Reminder Timing', 'gatherpress' );
 
 		foreach ( Reminder::get_instance()->get_timings() as $timing => $config ) {
 			$options[ Reminder::get_timing_setting( (string) $timing ) ] = array(
 				'labels'      => array(
 					'name' => $heading,
 				),
-				'description' => $description,
+				'description' => '',
 				'field'       => array(
 					'label'   => $config['label'],
 					'type'    => 'checkbox',
@@ -392,9 +391,8 @@ final class Rsvp extends Base {
 				),
 			);
 
-			// Only the first row is headed and described, so the checkboxes read as one group.
-			$heading     = '';
-			$description = '';
+			// Only the first row is headed, so the checkboxes read as one group.
+			$heading = '';
 		}
 
 		return $options;
