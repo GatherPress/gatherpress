@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Events can say they are canceled, postponed, rescheduled, moved or tentative, rather than leaving people to guess from a note in the description. The status is set from the event's Date & Time settings and reaches calendar apps as a real cancellation. Companion plugins and site owners can add statuses of their own with the gatherpress_event_statuses filter.
