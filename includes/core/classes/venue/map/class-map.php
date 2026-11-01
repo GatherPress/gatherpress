@@ -1369,15 +1369,7 @@ final class Map {
 
 			$url = $this->save_image(
 				$image,
-				$address,
-				$zoom,
-				$width,
-				$height,
-				1,
-				$slug,
-				$map_type,
-				$latitude,
-				$longitude
+				$this->filename_for( $address, $latitude, $longitude, $zoom, $width, $height, $slug, 1, $map_type )
 			);
 			unset( $image );
 
@@ -1404,15 +1396,17 @@ final class Map {
 			if ( null !== $image_2x ) {
 				$saved_2x = $this->save_image(
 					$image_2x,
-					$address,
-					$zoom,
-					$width,
-					$height,
-					self::RETINA_DENSITY,
-					$slug,
-					$map_type,
-					$latitude,
-					$longitude
+					$this->filename_for(
+						$address,
+						$latitude,
+						$longitude,
+						$zoom,
+						$width,
+						$height,
+						$slug,
+						self::RETINA_DENSITY,
+						$map_type
+					)
 				);
 				unset( $image_2x );
 				if ( null !== $saved_2x ) {
@@ -1649,39 +1643,21 @@ final class Map {
 	/**
 	 * Save a finished GD image to the uploads directory and return its URL.
 	 *
-	 * Filename is derived from `(address, provider, zoom, width, height)` so
-	 * different providers' PNG files coexist on disk and two venues at the same
-	 * address share one file at matching dimensions. `imagepng` overwrites
-	 * in place, which is fine for the regenerate flow since the inputs
-	 * that'd change visible output also change the hash in the descriptor.
+	 * The filename comes from {@see self::filename_for()}, so different
+	 * providers' PNG files coexist on disk and two venues at the same address
+	 * and coordinates share one file at matching dimensions. `imagepng`
+	 * overwrites in place, which is fine for the regenerate flow since the
+	 * inputs that'd change visible output also change the hash in the descriptor.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Takes the filename instead of the pieces it is built from.
 	 *
-	 * @param GdImage $image     Finished image from a provider's `render()`.
-	 * @param string  $address   Venue address (slugified for the filename).
-	 * @param int     $zoom      Map zoom level.
-	 * @param int     $width     Output width (at density 1).
-	 * @param int     $height    Output height (at density 1).
-	 * @param int     $density   Pixel-density multiplier. 1 = standard, 2 = retina.
-	 * @param string  $provider  Provider slug.
-	 * @param string  $map_type  Map type slug.
-	 * @param float   $latitude  Venue latitude, for the filename.
-	 * @param float   $longitude Venue longitude, for the filename.
+	 * @param GdImage $image    Finished image from a provider's `render()`.
+	 * @param string  $filename Filename from {@see self::filename_for()}.
 	 *
 	 * @return string|null Public URL of the saved file, or null on failure.
 	 */
-	public function save_image(
-		GdImage $image,
-		string $address,
-		int $zoom,
-		int $width,
-		int $height,
-		int $density,
-		string $provider,
-		string $map_type = self::DEFAULT_MAP_TYPE,
-		float $latitude = 0.0,
-		float $longitude = 0.0
-	): ?string {
+	public function save_image( GdImage $image, string $filename ): ?string {
 		$dirs = wp_get_upload_dir();
 
 		if ( ! empty( $dirs['error'] ) ) {
@@ -1690,17 +1666,6 @@ final class Map {
 
 		$base_dir = trailingslashit( $dirs['basedir'] ) . self::UPLOADS_SUBDIR;
 		$base_url = trailingslashit( $dirs['baseurl'] ) . self::UPLOADS_SUBDIR;
-		$filename = $this->filename_for(
-			$address,
-			$latitude,
-			$longitude,
-			$zoom,
-			$width,
-			$height,
-			$provider,
-			$density,
-			$map_type
-		);
 		$path     = trailingslashit( $base_dir ) . $filename;
 
 		// Filesystem failure modes — uploads/ not writable, disk full, or

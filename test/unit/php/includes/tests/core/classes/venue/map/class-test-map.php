@@ -1790,9 +1790,8 @@ class Test_Map extends Base {
 	}
 
 	/**
-	 * Writes the PNG and returns a URL inside the plugin uploads subdir.
-	 * Provider slug is baked into the filename so two providers' files for
-	 * the same venue + dimensions can coexist on disk.
+	 * Writes the PNG under the given filename and returns a URL inside the
+	 * plugin uploads subdir.
 	 *
 	 * @covers ::save_image
 	 *
@@ -1802,12 +1801,12 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 		$canvas   = imagecreatetruecolor( 10, 10 );
 
-		$url = $instance->save_image( $canvas, '1 Infinite Loop', 15, 800, 400, 1, 'osm' );
+		$url = $instance->save_image( $canvas, 'save-image-test-osm-roadmap-15-800-400.png' );
 		unset( $canvas );
 
 		$this->assertNotNull( $url, 'save_image should return a URL on success.' );
 		$this->assertStringContainsString( Map::UPLOADS_SUBDIR, $url );
-		$this->assertStringEndsWith( '1-infinite-loop-0.000000_0.000000-osm-roadmap-15-800-400.png', $url );
+		$this->assertStringEndsWith( 'save-image-test-osm-roadmap-15-800-400.png', $url );
 
 		$path = $this->path_for_url( $url );
 		$this->assertFileExists( $path );
@@ -2098,7 +2097,7 @@ class Test_Map extends Base {
 		};
 		add_filter( 'upload_dir', $force_error );
 
-		$url = $instance->save_image( $canvas, 'test address', 15, 800, 400, 1, 'osm' );
+		$url = $instance->save_image( $canvas, 'test-address-osm-roadmap-15-800-400.png' );
 
 		remove_filter( 'upload_dir', $force_error );
 		unset( $canvas );
