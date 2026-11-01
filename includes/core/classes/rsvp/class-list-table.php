@@ -865,6 +865,7 @@ final class List_Table extends WP_List_Table {
 	 */
 	public function column_attendee( array $item ): string {
 		// Use current URL to preserve all filtering parameters.
+		// INPUT_SERVER is unreliable under FastCGI.
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		$current_url   = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
 		$nonce         = wp_create_nonce( Rsvp::COMMENT_TYPE );

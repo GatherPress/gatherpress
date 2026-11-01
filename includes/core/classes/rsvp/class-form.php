@@ -144,7 +144,7 @@ final class Form {
 	 * @return bool True if this is an RSVP form submission, false otherwise.
 	 */
 	public function is_rsvp_form_submission(): bool {
-		// phpcs:disable WordPress.Security.NonceVerification.Missing
+		// INPUT_SERVER is unreliable under FastCGI.
 		$request_method = isset( $_SERVER['REQUEST_METHOD'] )
 			? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) )
 			: '';
@@ -153,7 +153,6 @@ final class Form {
 			! empty( Utility::get_http_input( INPUT_POST, 'comment_post_ID' ) ) &&
 			! empty( Utility::get_http_input( INPUT_POST, 'gatherpress_rsvp_form_id' ) )
 		);
-		// phpcs:enable WordPress.Security.NonceVerification.Missing
 	}
 
 	/**
@@ -776,6 +775,7 @@ final class Form {
 		);
 
 		// Set remote IP if available.
+		// INPUT_SERVER is unreliable under FastCGI.
 		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
 			$remote_ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
 

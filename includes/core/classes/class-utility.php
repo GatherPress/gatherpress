@@ -1180,8 +1180,9 @@ final class Utility {
 	 * Get request input from POST or GET, the way `$_REQUEST` merges them.
 	 *
 	 * There is no INPUT_REQUEST, so this reads POST first and falls back to GET.
-	 * That matches PHP's default `request_order`, where POST wins over GET. One
-	 * difference: an empty POST value falls back to GET instead of winning.
+	 * That matches wp_magic_quotes(), which rebuilds `$_REQUEST` as
+	 * `array_merge( $_GET, $_POST )`, so POST wins over GET. One difference:
+	 * an empty POST value falls back to GET instead of winning.
 	 *
 	 * @since TBD
 	 *
@@ -1244,6 +1245,7 @@ final class Utility {
 	 * @return string The current URL.
 	 */
 	public static function get_current_url( array $remove_query_args = array() ): string {
+		// INPUT_SERVER is unreliable under FastCGI.
 		$request = isset( $_SERVER['REQUEST_URI'] )
 			? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) )
 			: '/';

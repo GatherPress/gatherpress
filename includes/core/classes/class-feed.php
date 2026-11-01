@@ -93,6 +93,7 @@ final class Feed {
 		// Check if this is an events or topic feed request.
 		$is_event_feed = false;
 
+		// INPUT_SERVER is unreliable under FastCGI.
 		if ( isset( $_SERVER['REQUEST_URI'] ) ) {
 			$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) );
 
