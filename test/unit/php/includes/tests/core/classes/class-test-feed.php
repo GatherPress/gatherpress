@@ -12,6 +12,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Feed;
 use GatherPress\Core\Topic;
 use GatherPress\Tests\Base;
+use PasswordHash;
 use WP_Query;
 
 /**
@@ -204,7 +205,7 @@ class Test_Feed extends Base {
 	public function test_handle_events_feed_query_with_type_parameter(): void {
 		// Mock the request URI for events feed with type=past.
 		$_SERVER['REQUEST_URI'] = '/events/feed/';
-		$_GET['type']           = 'past';
+		$this->set_url_params( array( 'type' => 'past' ) );
 
 		// Create a mock query for event feed.
 		$query = $this->createMock( WP_Query::class );
@@ -219,21 +220,18 @@ class Test_Feed extends Base {
 
 		// Clean up.
 		unset( $_SERVER['REQUEST_URI'] );
-		unset( $_GET['type'] );
 	}
 
 	/**
 	 * Test topic feeds use the upcoming event query by default.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::handle_events_feed_query
 	 *
 	 * @return void
 	 */
 	public function test_handle_topic_feed_query(): void {
-		unset( $_GET['type'] );
-
 		$query = $this->createMock( WP_Query::class );
 		$query->method( 'is_main_query' )->willReturn( true );
 		$query->method( 'is_feed' )->willReturn( true );
@@ -251,7 +249,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test topic calendar feeds are not handled as RSS feeds.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::handle_events_feed_query
 	 *
@@ -271,14 +269,14 @@ class Test_Feed extends Base {
 	/**
 	 * Test topic feeds support past event queries.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::handle_events_feed_query
 	 *
 	 * @return void
 	 */
 	public function test_handle_topic_feed_query_with_past_type(): void {
-		$_GET['type'] = 'past';
+		$this->set_url_params( array( 'type' => 'past' ) );
 
 		$query = $this->createMock( WP_Query::class );
 		$query->method( 'is_main_query' )->willReturn( true );
@@ -292,21 +290,19 @@ class Test_Feed extends Base {
 			);
 
 		$this->instance->handle_events_feed_query( $query );
-
-		unset( $_GET['type'] );
 	}
 
 	/**
 	 * Test topic feeds keep the upcoming event query for non-past types.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::handle_events_feed_query
 	 *
 	 * @return void
 	 */
 	public function test_handle_topic_feed_query_with_non_past_type(): void {
-		$_GET['type'] = 'future';
+		$this->set_url_params( array( 'type' => 'future' ) );
 
 		$query = $this->createMock( WP_Query::class );
 		$query->method( 'is_main_query' )->willReturn( true );
@@ -320,8 +316,6 @@ class Test_Feed extends Base {
 			);
 
 		$this->instance->handle_events_feed_query( $query );
-
-		unset( $_GET['type'] );
 	}
 
 	/**
@@ -1056,6 +1050,55 @@ class Test_Feed extends Base {
 	}
 
 	/**
+	 * Test the feed keeps a password-protected event's date and venue behind its password.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::get_default_event_excerpt
+	 * @covers ::get_default_event_content
+	 *
+	 * @return void
+	 */
+	public function test_feed_keeps_a_password_protected_events_details_out(): void {
+		$event_id   = $this->mock->post(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		)->get()->ID;
+		$venue_term = wp_insert_term( 'Hidden Hall', '_gatherpress_venue' );
+
+		wp_set_object_terms( $event_id, $venue_term['term_id'], '_gatherpress_venue' );
+		add_post_meta( $event_id, 'gatherpress_datetime_start', '2025-12-25 10:00:00' );
+		add_post_meta( $event_id, 'gatherpress_datetime_end', '2025-12-25 12:00:00' );
+		$this->go_to( get_permalink( $event_id ) );
+
+		$this->assertSame(
+			'There is no excerpt because this is a protected post.',
+			$this->instance->get_default_event_excerpt( 'There is no excerpt because this is a protected post.' ),
+			'The excerpt should be left as core wrote it without the password.'
+		);
+		$this->assertSame(
+			'Protected content.',
+			$this->instance->get_default_event_content( 'Protected content.' ),
+			'The content should be left as core wrote it without the password.'
+		);
+
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+
+		// The cookie WordPress sets once a viewer enters the post password.
+		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'secret' );
+
+		$excerpt = $this->instance->get_default_event_excerpt( 'An excerpt.' );
+		$content = $this->instance->get_default_event_content( 'Some content.' );
+
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+
+		$this->assertStringContainsString( 'Hidden Hall', $excerpt, 'The excerpt should name the venue.' );
+		$this->assertStringContainsString( 'Hidden Hall', $content, 'The content should name the venue.' );
+	}
+
+	/**
 	 * Test handle_events_feed_query actually modifies query.
 	 *
 	 * @since 0.33.0
@@ -1134,7 +1177,7 @@ class Test_Feed extends Base {
 
 		// Set up the environment to simulate a feed request with type=past.
 		$_SERVER['REQUEST_URI'] = '/events/feed/';
-		$_GET['type']           = 'past';
+		$this->set_url_params( array( 'type' => 'past' ) );
 
 		// Ensure wp_rewrite is initialized with feed_base.
 		if ( ! isset( $wp_rewrite->feed_base ) ) {
@@ -1163,57 +1206,6 @@ class Test_Feed extends Base {
 
 		// Clean up.
 		unset( $_SERVER['REQUEST_URI'] );
-		unset( $_GET['type'] );
 		delete_option( 'gatherpress_settings' );
-	}
-
-	/**
-	 * A password-protected event's feed item leaves out its venue for a
-	 * visitor, and a public event keeps it.
-	 *
-	 * @since TBD
-	 * @covers ::get_default_event_excerpt
-	 * @covers ::get_default_event_content
-	 *
-	 * @return void
-	 */
-	public function test_feed_hides_a_protected_event_venue(): void {
-		$this->factory->post->create(
-			array(
-				'post_type'  => 'gatherpress_venue',
-				'post_name'  => 'feed-venue',
-				'post_title' => 'Feed Venue',
-			)
-		);
-
-		$public    = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
-		$protected = $this->factory->post->create(
-			array(
-				'post_type'     => Event::POST_TYPE,
-				'post_password' => 'secret',
-			)
-		);
-
-		wp_set_post_terms( $public, '_feed-venue', '_gatherpress_venue' );
-		wp_set_post_terms( $protected, '_feed-venue', '_gatherpress_venue' );
-		wp_set_current_user( 0 );
-
-		$render = function ( int $post_id ): string {
-			$this->go_to( get_permalink( $post_id ) );
-			the_post();
-
-			return $this->instance->get_default_event_excerpt( '' ) . $this->instance->get_default_event_content( '' );
-		};
-
-		$this->assertStringContainsString(
-			'Feed Venue',
-			$render( $public ),
-			'Failed to assert a public event keeps its venue.'
-		);
-		$this->assertStringNotContainsString(
-			'Feed Venue',
-			$render( $protected ),
-			'Failed to assert a protected event hides its venue.'
-		);
 	}
 }

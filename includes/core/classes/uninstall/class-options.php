@@ -11,7 +11,8 @@ namespace GatherPress\Core\Uninstall;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Calendar\Cache;
+use GatherPress\Core\Calendar\External\Cache;
+use GatherPress\Core\Event\Scheduler;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Settings\Network;
 
@@ -63,6 +64,7 @@ final class Options extends Base {
 		delete_option( Settings::OPTION_NAME );
 		delete_option( self::VERSION_OPTION );
 		delete_option( Cache::LAST_MODIFIED_OPTION );
+		delete_option( Scheduler::OPTION_NAME );
 	}
 
 	/**

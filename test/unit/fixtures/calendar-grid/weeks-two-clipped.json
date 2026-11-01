@@ -1,0 +1,149 @@
+{
+	"description": "Two weeks, with an event that starts before the range and one that ends after it.",
+	"startOfWeek": 0,
+	"attributes": {
+		"viewType": "week",
+		"unitCount": 2,
+		"selectedDate": "2026-06-10",
+		"showWeekends": true
+	},
+	"events": [
+		{
+			"key": "before",
+			"start": "2026-06-04 09:00:00",
+			"end": "2026-06-08 17:00:00"
+		},
+		{
+			"key": "after",
+			"start": "2026-06-19 09:00:00",
+			"end": "2026-06-24 17:00:00"
+		}
+	],
+	"expected": {
+		"range": {
+			"start": "2026-06-07",
+			"end": "2026-06-20",
+			"unitCount": 2
+		},
+		"units": [
+			{
+				"weeks": [
+					[
+						{
+							"date": "2026-06-07",
+							"isWeekend": true,
+							"posts": [
+								{
+									"event": "before",
+									"span": "middle",
+									"dayIndex": 4,
+									"totalDays": 5,
+									"slot": 0,
+									"allDay": false
+								}
+							]
+						},
+						{
+							"date": "2026-06-08",
+							"isWeekend": false,
+							"posts": [
+								{
+									"event": "before",
+									"span": "end",
+									"dayIndex": 5,
+									"totalDays": 5,
+									"slot": 0,
+									"allDay": false
+								}
+							]
+						},
+						{
+							"date": "2026-06-09",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-06-10",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-06-11",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-06-12",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-06-13",
+							"isWeekend": true,
+							"posts": []
+						}
+					],
+					[
+						{
+							"date": "2026-06-14",
+							"isWeekend": true,
+							"posts": []
+						},
+						{
+							"date": "2026-06-15",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-06-16",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-06-17",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-06-18",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-06-19",
+							"isWeekend": false,
+							"posts": [
+								{
+									"event": "after",
+									"span": "start",
+									"dayIndex": 1,
+									"totalDays": 6,
+									"slot": 0,
+									"allDay": false
+								}
+							]
+						},
+						{
+							"date": "2026-06-20",
+							"isWeekend": true,
+							"posts": [
+								{
+									"event": "after",
+									"span": "middle",
+									"dayIndex": 2,
+									"totalDays": 6,
+									"slot": 0,
+									"allDay": false
+								}
+							]
+						}
+					]
+				],
+				"weekNumbers": [
+					24,
+					25
+				]
+			}
+		]
+	}
+}

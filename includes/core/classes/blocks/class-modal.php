@@ -64,6 +64,7 @@ final class Modal {
 	protected function setup_hooks(): void {
 		$render_block_hook = sprintf( 'render_block_%s', self::BLOCK_NAME );
 
+		add_filter( $render_block_hook, array( $this, 'render_as_dialog' ) );
 		add_filter( $render_block_hook, array( $this, 'apply_modal_attributes' ), 10, 2 );
 		add_filter( $render_block_hook, array( $this, 'adjust_block_z_index' ), 10, 2 );
 		add_filter( $render_block_hook, array( $this, 'filter_login_modal' ), 10, 2 );
@@ -71,10 +72,35 @@ final class Modal {
 	}
 
 	/**
+	 * Renders the modal as a native `<dialog>`.
+	 *
+	 * The block saves a `<div>`, so this runs at render time and existing
+	 * content needs no migration. Opened with `showModal()`, the browser
+	 * keeps focus inside the dialog, makes the page behind it inert, and
+	 * closes it on Escape.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $block_content The HTML content of the block.
+	 *
+	 * @return string The block content as a `<dialog>`, or unchanged when it is not a `<div>`.
+	 */
+	public function render_as_dialog( string $block_content ): string {
+		$block_content = trim( $block_content );
+
+		if ( ! preg_match( '/^<div\b/', $block_content ) || ! str_ends_with( $block_content, '</div>' ) ) {
+			return $block_content;
+		}
+
+		return '<dialog' . substr( $block_content, 4, -6 ) . '</dialog>';
+	}
+
+	/**
 	 * Modifies the modal block's attributes for accessibility.
 	 *
 	 * Dynamically updates the modal block's rendered content to include necessary
-	 * attributes for improved accessibility and functionality.
+	 * attributes for improved accessibility and functionality. The `<dialog>`
+	 * element carries the dialog role itself, and `showModal()` makes it modal.
 	 *
 	 * A modal with a custom name (`metadata.name`) uses it as its `aria-label`.
 	 * A modal without one gets the generic "Modal" label and the
@@ -83,8 +109,18 @@ final class Modal {
 	 * which only the browser knows. An RSVP modal without a custom name, for
 	 * example, shows and hides its headings after the page loads.
 	 *
+	 * The modals of the RSVP block templates are the exception. Their custom
+	 * names ("RSVP Modal", "Login Modal") are names for the editor, and the
+	 * #2366 heading lookup does not reach them. Such a modal is named by its
+	 * title, the first paragraph or heading (a paragraph in the templates),
+	 * and described by the next paragraph (the instructions), with the custom
+	 * name kept as the `aria-label` fallback. This runs at render time, so it
+	 * also covers the markup that existing events saved.
+	 *
 	 * @since 0.33.0
-	 * @since TBD Marks modals that have no custom name.
+	 * @since 0.36.0 Marks modals that have no custom name.
+	 * @since 0.36.1    Names RSVP block modals after their title paragraph.
+	 * @since TBD       No longer sets `role`, `aria-modal`, `aria-hidden` or `tabindex`, which the `<dialog>` covers.
 	 *
 	 * @param string               $block_content The HTML content of the block.
 	 * @param array<string, mixed> $block         The parsed block data.
@@ -104,16 +140,110 @@ final class Modal {
 				$tag->set_attribute( 'data-gatherpress-default-label', 'true' );
 			}
 
-			$tag->set_attribute( 'role', 'dialog' );
-			$tag->set_attribute( 'aria-modal', 'true' );
-			$tag->set_attribute( 'aria-hidden', 'true' );
 			$tag->set_attribute( 'aria-label', esc_attr( $modal_name ) );
-			$tag->set_attribute( 'tabindex', '-1' );
+
+			if ( $this->is_rsvp_block_modal( $block ) ) {
+				$this->label_by_paragraphs( $tag );
+			}
 
 			$block_content = $tag->get_updated_html();
 		}
 
 		return $block_content;
+	}
+
+	/**
+	 * Checks whether a modal block is one of the RSVP block template modals.
+	 *
+	 * The RSVP modal has the `gatherpress-modal--type-rsvp` class, and the
+	 * Login modal is matched by `is_login_modal()`.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @param array<string, mixed> $block The parsed block data.
+	 *
+	 * @return bool True if the modal comes from the RSVP block templates.
+	 */
+	private function is_rsvp_block_modal( array $block ): bool {
+		return Utility::has_css_class( $block['attrs']['className'] ?? null, 'gatherpress-modal--type-rsvp' )
+			|| $this->is_login_modal( $block );
+	}
+
+	/**
+	 * Checks whether a modal block is the Login modal.
+	 *
+	 * The RSVP block template and saved events use `gatherpress-modal--login`.
+	 * `gatherpress-modal--type-login` is the name from the `--type-` rename,
+	 * which did not reach the template, so both count.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @param array<string, mixed> $block The parsed block data.
+	 *
+	 * @return bool True if the modal is the Login modal.
+	 */
+	private function is_login_modal( array $block ): bool {
+		$class_name = $block['attrs']['className'] ?? null;
+
+		return Utility::has_css_class( $class_name, 'gatherpress-modal--login' )
+			|| Utility::has_css_class( $class_name, 'gatherpress-modal--type-login' );
+	}
+
+	/**
+	 * Points the modal's `aria-labelledby` and `aria-describedby` at its title and instructions.
+	 *
+	 * The first paragraph or heading (the title) names the dialog, and the
+	 * next paragraph describes it, so a title changed to a Heading block
+	 * still names it. An element without an id gets a unique one; an
+	 * existing id is reused. When an element is missing, the attribute that
+	 * would point at it is not set.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @param WP_HTML_Tag_Processor $tag The processor, stopped on the modal's opening tag.
+	 *
+	 * @return void
+	 */
+	private function label_by_paragraphs( WP_HTML_Tag_Processor $tag ): void {
+		$ids     = array();
+		$targets = array(
+			'gatherpress-modal-title-'       => array( 'P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6' ),
+			'gatherpress-modal-description-' => array( 'P' ),
+		);
+
+		$tag->set_bookmark( 'gatherpress-modal' );
+
+		foreach ( $targets as $prefix => $tag_names ) {
+			do {
+				$found = $tag->next_tag();
+			} while ( $found && ! in_array( $tag->get_tag(), $tag_names, true ) );
+
+			if ( ! $found ) {
+				break;
+			}
+
+			$id = $tag->get_attribute( 'id' );
+
+			// A valueless attribute reads back as true.
+			if ( ! is_string( $id ) || '' === trim( $id ) ) {
+				$id = wp_unique_id( $prefix );
+
+				$tag->set_attribute( 'id', $id );
+			}
+
+			$ids[] = $id;
+		}
+
+		$tag->seek( 'gatherpress-modal' );
+		$tag->release_bookmark( 'gatherpress-modal' );
+
+		if ( isset( $ids[0] ) ) {
+			$tag->set_attribute( 'aria-labelledby', $ids[0] );
+		}
+
+		if ( isset( $ids[1] ) ) {
+			$tag->set_attribute( 'aria-describedby', $ids[1] );
+		}
 	}
 
 	/**
@@ -155,11 +285,12 @@ final class Modal {
 	/**
 	 * Filters the output of login modals for logged-in users.
 	 *
-	 * This method checks if the block is a `gatherpress/modal` block with the
-	 * `gatherpress-modal--type-login` class. If the user is logged in, it removes
-	 * the block's output.
+	 * This method checks if the block is the Login modal (see
+	 * `is_login_modal()`). If the user is logged in, it removes the block's
+	 * output.
 	 *
 	 * @since 0.33.0
+	 * @since 0.36.1    Also removes a Login modal with the template's `gatherpress-modal--login` class.
 	 *
 	 * @param string               $block_content The HTML content of the block.
 	 * @param array<string, mixed> $block         The parsed block data.
@@ -168,7 +299,7 @@ final class Modal {
 	 */
 	public function filter_login_modal( string $block_content, array $block ): string {
 		if (
-			Utility::has_css_class( $block['attrs']['className'] ?? null, 'gatherpress-modal--type-login' ) &&
+			$this->is_login_modal( $block ) &&
 			is_user_logged_in()
 		) {
 			return '';

@@ -383,6 +383,7 @@ final class Rsvp {
 	public function check_waiting_list(): int {
 		$states    = $this->storage->all();
 		$responses = new Collection( $states );
+		$post_id   = $this->post instanceof WP_Post ? $this->post->ID : 0;
 
 		// If no RSVP responses are on the waiting list, quit.
 		if ( ! $responses->has_waiting_list() ) {
@@ -400,6 +401,19 @@ final class Rsvp {
 
 				if ( $state instanceof State ) {
 					++$promoted_count;
+
+					/**
+					 * Fires after an RSVP moves off the waiting list to attending.
+					 *
+					 * Lets a site act on the freed spot, for example to tell the
+					 * attendee. GatherPress queues a confirmation email here.
+					 *
+					 * @since TBD
+					 *
+					 * @param int   $post_id Event post ID.
+					 * @param State $state   The promoted RSVP.
+					 */
+					do_action( 'gatherpress_rsvp_waiting_list_promoted', $post_id, $state );
 				}
 			}
 
@@ -433,6 +447,9 @@ final class Rsvp {
 			if ( $state instanceof State ) {
 				++$promoted_count;
 				$remaining_spots -= $state->get_attendee_count();
+
+				/** This action is documented in includes/core/classes/rsvp/class-rsvp.php */
+				do_action( 'gatherpress_rsvp_waiting_list_promoted', $post_id, $state );
 			}
 		}
 

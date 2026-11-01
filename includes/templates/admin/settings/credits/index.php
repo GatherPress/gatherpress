@@ -60,30 +60,27 @@ if ( ! isset( $credits ) ) {
 		</h3>
 		<div class="gatherpress-settings__credits-list">
 			<?php
-			$gatherpress_contributor_count = count( $credits['contributors'] ?? array() );
+			$gatherpress_contributor_links = array();
 
-			foreach ( $credits['contributors'] as $gatherpress_key => $gatherpress_contributor ) :
-				$gatherpress_contributor_end = ', ';
-
-				if ( 2 === $gatherpress_contributor_count ) {
-					$gatherpress_contributor_end = ' and ';
-				} elseif ( $gatherpress_key + 2 === $gatherpress_contributor_count ) {
-					$gatherpress_contributor_end = ', and ';
-				}
-
-				if ( $gatherpress_key + 1 === $gatherpress_contributor_count ) {
-					$gatherpress_contributor_end = '.';
-				}
-
-				Utility::render_template(
-					sprintf( '%s/includes/templates/admin/settings/credits/contributor-link.php', GATHERPRESS_CORE_PATH ),
-					array(
-						'gatherpress_contributor'     => $gatherpress_contributor,
-						'gatherpress_contributor_end' => $gatherpress_contributor_end,
-					),
-					true
+			foreach ( $credits['contributors'] ?? array() as $gatherpress_contributor ) :
+				$gatherpress_contributor_links[] = trim(
+					Utility::render_template(
+						sprintf( '%s/includes/templates/admin/settings/credits/contributor-link.php', GATHERPRESS_CORE_PATH ),
+						array( 'gatherpress_contributor' => $gatherpress_contributor )
+					)
 				);
 			endforeach;
+
+			if ( ! empty( $gatherpress_contributor_links ) ) {
+				// Core's list separators are already translated in every locale.
+				echo wp_kses_post(
+					sprintf(
+						/* translators: %s: List of contributor names. */
+						__( '%s.', 'gatherpress' ),
+						wp_sprintf_l( '%l', $gatherpress_contributor_links )
+					)
+				);
+			}
 			?>
 		</div>
 	</div>

@@ -16,6 +16,7 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use WP_User;
 
@@ -134,14 +135,28 @@ final class User {
 	 * @return string The user's timezone preference or the default if not set.
 	 */
 	public function user_set_timezone( $timezone ): string {
+		$saved_timezone = $this->get_saved_timezone();
+
+		return '' !== $saved_timezone ? $saved_timezone : $timezone;
+	}
+
+	/**
+	 * Get the timezone the current user saved in their profile.
+	 *
+	 * Only applies on the frontend, where `user_set_timezone()` shows event times in it.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The saved timezone, or an empty string when there is none.
+	 */
+	public function get_saved_timezone(): string {
 		$user_id = get_current_user_id();
 
-		if ( ! is_admin() && $user_id ) {
-			$gatherpress_timezone = get_user_meta( $user_id, 'gatherpress_timezone', true );
-			$timezone             = ! empty( $gatherpress_timezone ) ? $gatherpress_timezone : $timezone;
+		if ( is_admin() || ! $user_id ) {
+			return '';
 		}
 
-		return $timezone;
+		return (string) get_user_meta( $user_id, 'gatherpress_timezone', true );
 	}
 
 	/**
@@ -180,6 +195,31 @@ final class User {
 	}
 
 	/**
+	 * Get the plural labels of the post types that take RSVPs.
+	 *
+	 * The profile opt-in talks about the content users hear about, which
+	 * follows the post types that collect RSVPs on this site rather than
+	 * assuming events. The opt-in covers every one of them, so all labels
+	 * are listed, for example "Events and Sessions". Returns an empty string
+	 * when nothing collects RSVPs; the calling template supplies its own
+	 * translated "events" fallback. A site can change a label through the
+	 * post type's own labels, for example via core's
+	 * `post_type_labels_{$post_type}` filter.
+	 *
+	 * @since TBD
+	 *
+	 * @return string Plural labels as a list, or an empty string when no post type takes RSVPs.
+	 */
+	public function get_rsvp_post_type_plural(): string {
+		$labels = array_map(
+			fn( string $post_type ): string => Utility::post_type_label( 'name', $post_type ),
+			get_post_types_by_support( Rsvp::SUPPORT )
+		);
+
+		return wp_sprintf( '%l', array_filter( $labels ) );
+	}
+
+	/**
 	 * Renders the profile fields for user notifications settings.
 	 *
 	 * This method is responsible for displaying the user notification
@@ -198,6 +238,7 @@ final class User {
 			sprintf( '%s/includes/templates/admin/user/notifications.php', GATHERPRESS_CORE_PATH ),
 			array(
 				'event_updates_opt_in' => $event_updates_opt_in,
+				'plural_label'         => $this->get_rsvp_post_type_plural(),
 			),
 			true
 		);

@@ -4,7 +4,7 @@ Tags: events, rsvp, meetup, community, calendar
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 0.36.0-alpha.2
+Stable tag: 0.37.0-alpha.0
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -26,6 +26,7 @@ GatherPress is built by the WordPress community for the people who organize it: 
 - Let attendees bring guests
 - Email everyone who is coming, or everyone who is not, without leaving WordPress
 - Run events in person, online, or both, with maps for physical venues
+- Show your events in a month, week or day calendar
 - Build and arrange it all in the block editor
 - Multisite ready and fully translatable
 

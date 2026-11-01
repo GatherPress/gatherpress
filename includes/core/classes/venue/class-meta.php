@@ -28,7 +28,9 @@ use GatherPress\Core\Validate;
 use GatherPress\Core\Venue;
 use GatherPress\Core\Venue\Map;
 use stdClass;
+use WP_Post;
 use WP_REST_Request;
+use WP_REST_Response;
 
 /**
  * Class Meta.
@@ -149,7 +151,8 @@ final class Meta {
 	 *
 	 * - `gatherpress-venue-information` gets the editor-writable address /
 	 *   contact keys, the read-only structured-address keys, the static-
-	 *   map descriptor key, and the REST readonly-strip filter.
+	 *   map descriptor key, the REST readonly-strip filter, and the filter
+	 *   that keeps a password-protected venue's details out of REST.
 	 * - `gatherpress-venue-map` gets the map display-settings keys
 	 *   (show / zoom / height).
 	 *
@@ -172,9 +175,9 @@ final class Meta {
 
 	/**
 	 * Registers the editor-writable venue keys, the structured-address
-	 * keys, the static-map descriptor key, and the REST readonly-strip
-	 * filter for a post type that declares `gatherpress-venue-information`
-	 * support.
+	 * keys, the static-map descriptor key, the REST readonly-strip filter
+	 * and the protected-details filter for a post type that declares
+	 * `gatherpress-venue-information` support.
 	 *
 	 * @since 0.34.0
 	 *
@@ -296,12 +299,18 @@ final class Meta {
 			10,
 			2
 		);
+		add_filter(
+			sprintf( 'rest_prepare_%s', $post_type ),
+			array( $this, 'hide_password_protected_details' ),
+			10,
+			3
+		);
 	}
 
 	/**
 	 * Registers the Geodata standard meta (`geo_*`) as read-only.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param string $post_type The post type to register against.
 	 *
@@ -397,5 +406,53 @@ final class Meta {
 		}
 
 		return $prepared_post;
+	}
+
+	/**
+	 * Blanks a password-protected venue's details in a REST response.
+	 *
+	 * The address, contact, structured-address, geo and static-map meta are
+	 * `show_in_rest`, so core hands them to anyone. They stay behind the
+	 * venue's password, as the Venue block keeps them: whoever can edit the
+	 * venue, or sends the password as a cookie or as the REST `password`
+	 * argument, sees them.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @param WP_REST_Response $response The response for the venue.
+	 * @param WP_Post          $post     The venue the response was prepared for.
+	 * @param WP_REST_Request  $request  The request the response answers.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
+	 *
+	 * @return WP_REST_Response The response, with the details blank for a viewer who can't see them.
+	 */
+	public function hide_password_protected_details(
+		WP_REST_Response $response,
+		WP_Post $post,
+		WP_REST_Request $request
+	): WP_REST_Response {
+		if ( ! Venue::is_hidden_by_password( $post, $request ) || ! is_array( $response->data['meta'] ?? null ) ) {
+			return $response;
+		}
+
+		$keys = array_merge(
+			array_map(
+				array( Utility::class, 'prefix_key' ),
+				array_merge( self::EDITOR_WRITABLE_FIELDS, self::STRUCTURED_ADDRESS_FIELDS )
+			),
+			array_diff( Geo_Sync::FIELDS, array( 'geo_public' ) )
+		);
+
+		foreach ( $keys as $key ) {
+			if ( array_key_exists( $key, $response->data['meta'] ) ) {
+				$response->data['meta'][ $key ] = '';
+			}
+		}
+
+		if ( array_key_exists( Map::META_KEY, $response->data['meta'] ) ) {
+			$response->data['meta'][ Map::META_KEY ] = array();
+		}
+
+		return $response;
 	}
 }

@@ -3,9 +3,10 @@
  * Render the GatherPress Network Settings page.
  *
  * Rendered under Network Admin → Settings → GatherPress. Presents the same
- * tabs as the per-site GatherPress settings (minus Tools), saving values to
- * a network-wide site option. A final "Network" tab configures which
- * settings subsites are forced to inherit from the network.
+ * tabs as the per-site GatherPress settings, saving values to a network-wide
+ * site option, and Tools imports and exports those network values. A
+ * "Network" tab configures which settings subsites are forced to inherit
+ * from the network.
  *
  * @package GatherPress\Core
  * @param array  $sub_pages   Tabs to render, keyed by slug.
@@ -28,56 +29,12 @@ $gatherpress_network_url = network_admin_url( 'settings.php' );
 $gatherpress_is_network  = Network::NETWORK_TAB === $current_tab;
 ?>
 
-<style>
-	.gatherpress-allowlist__options {
-		list-style: none;
-		margin: 0;
-		padding: 0;
-	}
-	.gatherpress-allowlist__options li {
-		margin: 0;
-		padding: 3px 0;
-	}
-	.gatherpress-allowlist__options label {
-		align-items: center;
-		display: inline-flex;
-		gap: 6px;
-	}
-	.gatherpress-allowlist__bulk-actions {
-		font-size: 13px;
-	}
-	.gatherpress-allowlist__group-actions {
-		font-size: 12px;
-		font-weight: 400;
-		margin-left: 8px;
-	}
-	.gatherpress-settings-form {
-		margin-top: 1em;
-	}
-	.gatherpress-settings-form__row {
-		display: grid;
-		grid-template-columns: 200px 1fr;
-		gap: 0 10px;
-		padding: 15px 10px;
-	}
-	.gatherpress-settings-form__label {
-		font-weight: 600;
-		padding-top: 2px;
-	}
-	@media screen and (max-width: 782px) {
-		.gatherpress-settings-form__row {
-			grid-template-columns: 1fr;
-			gap: 6px;
-		}
-	}
-</style>
-
 <div class="wrap gatherpress-settings">
 	<h1 class="wp-heading-inline">
 		<?php esc_html_e( 'GatherPress Network Settings', 'gatherpress' ); ?>
 	</h1>
 
-	<?php if ( isset( $_GET['updated'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+	<?php if ( '' !== Utility::get_http_input( INPUT_GET, 'updated' ) ) : ?>
 		<div class="notice notice-success is-dismissible">
 			<p><?php esc_html_e( 'Settings saved.', 'gatherpress' ); ?></p>
 		</div>
@@ -145,7 +102,11 @@ $gatherpress_is_network  = Network::NETWORK_TAB === $current_tab;
 		}
 		?>
 
-		<form method="post" action="<?php echo esc_url( network_admin_url( 'edit.php?action=' . Network::EDIT_ACTION ) ); ?>">
+		<form
+			method="post"
+			action="<?php echo esc_url( network_admin_url( 'edit.php?action=' . Network::EDIT_ACTION ) ); ?>"
+			data-gatherpress_component_name="network-allowlist"
+		>
 			<?php wp_nonce_field( Network::NONCE_ACTION ); ?>
 
 			<h2><?php esc_html_e( 'Network Inheritance', 'gatherpress' ); ?></h2>
@@ -199,13 +160,13 @@ $gatherpress_is_network  = Network::NETWORK_TAB === $current_tab;
 			</p>
 
 			<p class="gatherpress-allowlist__bulk-actions">
-				<a href="#" data-gatherpress-toggle="all" data-gatherpress-state="1">
+				<button type="button" class="button-link" data-gatherpress_select="all">
 					<?php esc_html_e( 'Select all', 'gatherpress' ); ?>
-				</a>
+				</button>
 				<span aria-hidden="true"> | </span>
-				<a href="#" data-gatherpress-toggle="all" data-gatherpress-state="0">
+				<button type="button" class="button-link" data-gatherpress_select="none">
 					<?php esc_html_e( 'Deselect all', 'gatherpress' ); ?>
-				</a>
+				</button>
 			</p>
 
 			<?php foreach ( $gatherpress_groups as $gatherpress_group ) : ?>
@@ -213,13 +174,13 @@ $gatherpress_is_network  = Network::NETWORK_TAB === $current_tab;
 					<h3>
 						<?php echo esc_html( $gatherpress_group['name'] ); ?>
 						<span class="gatherpress-allowlist__group-actions">
-							(<a href="#" data-gatherpress-toggle="group" data-gatherpress-state="1">
+							(<button type="button" class="button-link" data-gatherpress_select="all">
 								<?php esc_html_e( 'select all', 'gatherpress' ); ?>
-							</a>
+							</button>
 							<span aria-hidden="true">|</span>
-							<a href="#" data-gatherpress-toggle="group" data-gatherpress-state="0">
+							<button type="button" class="button-link" data-gatherpress_select="none">
 								<?php esc_html_e( 'deselect all', 'gatherpress' ); ?>
-							</a>)
+							</button>)
 						</span>
 					</h3>
 					<div class="gatherpress-settings-form">
@@ -254,48 +215,6 @@ $gatherpress_is_network  = Network::NETWORK_TAB === $current_tab;
 			<?php submit_button( __( 'Save Network Settings', 'gatherpress' ) ); ?>
 		</form>
 
-		<script>
-			( function () {
-				var container = document.querySelector( '.gatherpress-settings' );
-
-				if ( ! container ) {
-					return;
-				}
-
-				var inheritedName = <?php echo wp_json_encode( sprintf( '%s[inherited][]', Network::OPTION_NAME ) ); ?>;
-
-				function setAll( nodeList, checked ) {
-					Array.prototype.forEach.call( nodeList, function ( cb ) {
-						cb.checked = checked;
-					} );
-				}
-
-				container.addEventListener( 'click', function ( event ) {
-					var trigger = event.target.closest( '[data-gatherpress-toggle]' );
-
-					if ( ! trigger ) {
-						return;
-					}
-
-					event.preventDefault();
-
-					var scope   = trigger.getAttribute( 'data-gatherpress-toggle' );
-					var checked = '1' === trigger.getAttribute( 'data-gatherpress-state' );
-					var root    = 'group' === scope
-						? trigger.closest( '.gatherpress-allowlist__group' )
-						: container;
-
-					if ( ! root ) {
-						return;
-					}
-
-					setAll(
-						root.querySelectorAll( 'input[type="checkbox"][name="' + inheritedName + '"]' ),
-						checked
-					);
-				} );
-			} )();
-		</script>
 	<?php else : ?>
 		<?php
 		$gatherpress_current_page = Utility::prefix_key( $current_tab );

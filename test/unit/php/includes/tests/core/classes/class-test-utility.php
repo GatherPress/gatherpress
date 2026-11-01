@@ -106,13 +106,13 @@ class Test_Utility extends Base {
 	 * @return void
 	 */
 	public function test_locate_template_resolves_plugin_fallback(): void {
-		$expected = sprintf( '%s/includes/templates/calendar/ical-download.php', GATHERPRESS_CORE_PATH );
+		$expected = sprintf( '%s/includes/templates/calendar/external/ical-download.php', GATHERPRESS_CORE_PATH );
 
 		$this->assertSame(
 			$expected,
 			Utility::locate_template(
 				'gatherpress_ical-download.php',
-				sprintf( '%s/includes/templates/calendar', GATHERPRESS_CORE_PATH )
+				sprintf( '%s/includes/templates/calendar/external', GATHERPRESS_CORE_PATH )
 			),
 			'locate_template should return the bundled plugin template and strip the gatherpress_ prefix.'
 		);
@@ -218,7 +218,7 @@ class Test_Utility extends Base {
 	 * @return void
 	 */
 	public function test_resolve_fallback_template_path_strips_prefix(): void {
-		$fallback_dir = sprintf( '%s/includes/templates/calendar', GATHERPRESS_CORE_PATH );
+		$fallback_dir = sprintf( '%s/includes/templates/calendar/external', GATHERPRESS_CORE_PATH );
 		$expected     = sprintf( '%s/ical-download.php', $fallback_dir );
 
 		$this->assertSame(
@@ -1452,9 +1452,9 @@ class Test_Utility extends Base {
 		$result = Utility::get_http_input( INPUT_POST, 'quoted_field' );
 		$this->assertEquals( 'Test with "quotes" and \'apostrophes\'', $result );
 
-		// Test handling of slashes.
+		// Backslashes are kept, since filter_input() input was never slashed.
 		$result = Utility::get_http_input( INPUT_POST, 'slashed_field' );
-		$this->assertEquals( 'Test with backslashes and /forward/', $result );
+		$this->assertEquals( 'Test with \\backslashes\\ and /forward/', $result );
 
 		// Test handling of unicode.
 		$result = Utility::get_http_input( INPUT_POST, 'unicode_field' );
@@ -1466,6 +1466,51 @@ class Test_Utility extends Base {
 
 		// Clean up.
 		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
+
+	/**
+	 * Tests get_request_input reads POST first and falls back to GET.
+	 *
+	 * @since TBD
+	 * @covers ::get_request_input
+	 *
+	 * @return void
+	 */
+	public function test_get_request_input(): void {
+		$this->set_url_params(
+			array(
+				'both'     => 'from get',
+				'get_only' => 'from get',
+				'get_dash' => 'get-dash',
+			)
+		);
+		$this->set_post_params(
+			array(
+				'both'      => 'from post',
+				'post_only' => 'from post',
+				'post_dash' => 'post-dash',
+				'path'      => 'C:\\Users',
+			)
+		);
+
+		$this->assertSame( 'from post', Utility::get_request_input( 'both' ), 'Failed to assert POST wins.' );
+		$this->assertSame( 'from get', Utility::get_request_input( 'get_only' ), 'Failed to assert GET is read.' );
+		$this->assertSame( 'from post', Utility::get_request_input( 'post_only' ), 'Failed to assert POST is read.' );
+		$this->assertSame( '', Utility::get_request_input( 'missing' ), 'Failed to assert a missing key is empty.' );
+		$this->assertSame( 'C:\\Users', Utility::get_request_input( 'path' ), 'Failed to assert backslashes stay.' );
+
+		$sanitizer = static fn( string $value ): string => str_replace( '-', '_', $value );
+
+		$this->assertSame(
+			'post_dash',
+			Utility::get_request_input( 'post_dash', $sanitizer ),
+			'Failed to assert the sanitizer runs on POST.'
+		);
+		$this->assertSame(
+			'get_dash',
+			Utility::get_request_input( 'get_dash', $sanitizer ),
+			'Failed to assert the sanitizer runs on GET.'
+		);
 	}
 
 	/**
@@ -1821,7 +1866,7 @@ class Test_Utility extends Base {
 	/**
 	 * Coverage for tokenize_date_format.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::tokenize_date_format
 	 *
@@ -1921,7 +1966,7 @@ class Test_Utility extends Base {
 	 * Called directly because the strip methods reach it through a same-class
 	 * delegation that xdebug does not trace.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::split_date_time_format
 	 *
@@ -1943,7 +1988,7 @@ class Test_Utility extends Base {
 	/**
 	 * Data provider for split_date_time_format.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return array[]
 	 */
@@ -1990,7 +2035,7 @@ class Test_Utility extends Base {
 	/**
 	 * Finding a format character skips escaped text.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::find_format_char
 	 *
@@ -2013,7 +2058,7 @@ class Test_Utility extends Base {
 	/**
 	 * Dropping the lead-in removes the escaped words and spaces ending a date.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::drop_lead_in
 	 *
@@ -2043,7 +2088,7 @@ class Test_Utility extends Base {
 	/**
 	 * Joining tokens leaves out the skipped characters and trims the ends.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::join_format_tokens
 	 *
@@ -2187,5 +2232,103 @@ class Test_Utility extends Base {
 			$formats,
 			'Failed to assert empties and duplicates were dropped.'
 		);
+	}
+
+	/**
+	 * Coverage for find_block.
+	 *
+	 * @covers ::find_block
+	 *
+	 * @return void
+	 */
+	public function test_find_block(): void {
+		$calendar = array(
+			'blockName' => 'gatherpress/calendar',
+			'attrs'     => array( 'viewType' => 'week' ),
+		);
+		$blocks   = array(
+			'not a block',
+			array(
+				'blockName'   => 'core/paragraph',
+				'innerBlocks' => 'not blocks',
+			),
+			array(
+				'blockName'   => 'core/group',
+				'innerBlocks' => array( $calendar ),
+			),
+		);
+
+		$this->assertSame( $calendar, Utility::find_block( $blocks, 'gatherpress/calendar', true ) );
+		$this->assertNull(
+			Utility::find_block( $blocks, 'gatherpress/calendar' ),
+			'Failed to assert only the top level is searched by default.'
+		);
+		$this->assertSame( $blocks[1], Utility::find_block( $blocks, 'core/paragraph' ) );
+		$this->assertNull( Utility::find_block( $blocks, 'core/image', true ) );
+	}
+
+	/**
+	 * The current URL comes from the home URL's scheme, host and port, plus the request's path and query.
+	 *
+	 * @since TBD
+	 * @covers ::get_current_url
+	 *
+	 * @return void
+	 */
+	public function test_get_current_url(): void {
+		$set_home = static fn() => 'https://example.org:8443/site';
+
+		$_SERVER['REQUEST_URI'] = '/site/event/party/?a=1&gatherpress_modal=1-1&b=2';
+		add_filter( 'home_url', $set_home );
+
+		$this->assertSame(
+			'https://example.org:8443/site/event/party/?a=1&gatherpress_modal=1-1&b=2',
+			Utility::get_current_url(),
+			'The URL keeps the request path and query.'
+		);
+		$this->assertSame(
+			'https://example.org:8443/site/event/party/?a=1&b=2',
+			Utility::get_current_url( array( 'gatherpress_modal' ) ),
+			'Query args to remove are left out.'
+		);
+
+		remove_filter( 'home_url', $set_home );
+		unset( $_SERVER['REQUEST_URI'] );
+
+		$this->assertSame(
+			home_url( '/' ),
+			Utility::get_current_url(),
+			'Without a request URI, the URL is the home page.'
+		);
+	}
+
+	/**
+	 * Only a front-end page request counts as one.
+	 *
+	 * @since TBD
+	 * @covers ::is_page_request
+	 *
+	 * @return void
+	 */
+	public function test_is_page_request(): void {
+		$this->go_to( home_url( '/' ) );
+
+		$this->assertTrue( Utility::is_page_request(), 'A front-end page is a page request.' );
+
+		add_filter( 'wp_doing_ajax', '__return_true' );
+		$ajax = Utility::is_page_request();
+		remove_filter( 'wp_doing_ajax', '__return_true' );
+
+		$this->assertFalse( $ajax, 'An Ajax request is not.' );
+
+		$this->go_to( get_feed_link() );
+
+		$this->assertFalse( Utility::is_page_request(), 'A feed is not.' );
+
+		set_current_screen( 'dashboard' );
+		$admin = Utility::is_page_request();
+		set_current_screen( 'front' );
+
+		$this->assertFalse( $admin, 'The admin is not.' );
 	}
 }
