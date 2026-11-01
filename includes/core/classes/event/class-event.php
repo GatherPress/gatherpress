@@ -78,7 +78,7 @@ class Event {
 	/**
 	 * Post type support that makes a post type an event.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @var string
 	 */
 	const SUPPORT = 'gatherpress-event-date';
@@ -495,7 +495,7 @@ class Event {
 	 * shape, so a datetime written as `2026-08-29T09:00:00` would be stored
 	 * and then silently lost.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param string       $datetime Any datetime `date_create()` understands.
 	 * @param DateTimeZone $timezone The zone to read the datetime in.
@@ -531,7 +531,7 @@ class Event {
 	 * hiding a time that is still 3pm underneath, so exports, duration and
 	 * date queries stay correct.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * Finds the date rather than assuming where it sits, so the method holds
 	 * on its own instead of depending on having been handed something
@@ -572,7 +572,7 @@ class Event {
 	 * The GMT columns stay a real instant, because ordering upcoming against
 	 * past genuinely wants one.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param string               $format         The PHP date format.
 	 * @param string               $which          Which datetime to format, 'start' or 'end'.
@@ -625,7 +625,7 @@ class Event {
 	 * Overrides the block and the site setting, because a block in a site
 	 * template renders every event and cannot answer this per event.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return string 'always', 'never', or an empty string to leave it to the
 	 *                block and the site setting.
@@ -643,7 +643,7 @@ class Event {
 	/**
 	 * Whether this event runs for whole days rather than at a time.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return bool True when the event is all day.
 	 */
@@ -742,7 +742,7 @@ class Event {
 	 * format set explicitly on the block keeps its date and loses its time,
 	 * since wanting a time means the event is not all day.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param string $start_format Explicit start format, or an empty string.
 	 * @param string $end_format   Explicit end format, or an empty string.
@@ -783,7 +783,7 @@ class Event {
 	/**
 	 * The end of a rendered datetime range.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param array{start: string, end: string, end_time: string} $formats   The formats to render with.
 	 * @param bool                                                $same_date Whether the event starts and ends

@@ -130,7 +130,7 @@ final class Rest_Api {
 	}
 
 	/**
-	 * Registers the event status as a REST field on the event post type.
+	 * Registers the event status as a REST field on every post type that supports events.
 	 *
 	 * The status lives in the _gatherpress_event_status taxonomy so events can
 	 * be filtered by it, but a taxonomy reaches the block editor as an array of
@@ -143,32 +143,34 @@ final class Rest_Api {
 	 * @return void
 	 */
 	public function register_status_field(): void {
-		register_rest_field(
-			Event::POST_TYPE,
-			'gatherpress_status',
-			array(
-				'get_callback'    => static function ( array $post ): string {
-					return ( new Event( (int) $post['id'] ) )->get_status();
-				},
-				'update_callback' => static function ( $value, WP_Post $post ) {
-					if ( ! current_user_can( 'edit_post', $post->ID ) ) {
-						return new WP_Error(
-							'gatherpress_status_forbidden',
-							__( 'Sorry, you are not allowed to set the status of this event.', 'gatherpress' ),
-							array( 'status' => rest_authorization_required_code() )
-						);
-					}
+		foreach ( get_post_types_by_support( Event::SUPPORT ) as $post_type ) {
+			register_rest_field(
+				$post_type,
+				'gatherpress_status',
+				array(
+					'get_callback'    => static function ( array $post ): string {
+						return ( new Event( (int) $post['id'] ) )->get_status();
+					},
+					'update_callback' => static function ( $value, WP_Post $post ) {
+						if ( ! current_user_can( 'edit_post', $post->ID ) ) {
+							return new WP_Error(
+								'gatherpress_status_forbidden',
+								__( 'Sorry, you are not allowed to set the status of this event.', 'gatherpress' ),
+								array( 'status' => rest_authorization_required_code() )
+							);
+						}
 
-					( new Event( $post->ID ) )->set_status( sanitize_key( (string) $value ) );
-				},
-				'schema'          => array(
-					'description' => __( 'The operational status of the event.', 'gatherpress' ),
-					'type'        => 'string',
-					'enum'        => Event_Status::slugs( Event::POST_TYPE ),
-					'context'     => array( 'view', 'edit' ),
-				),
-			)
-		);
+						( new Event( $post->ID ) )->set_status( sanitize_key( (string) $value ) );
+					},
+					'schema'          => array(
+						'description' => __( 'The operational status of the event.', 'gatherpress' ),
+						'type'        => 'string',
+						'enum'        => Event_Status::slugs( $post_type ),
+						'context'     => array( 'view', 'edit' ),
+					),
+				)
+			);
+		}
 	}
 
 	/**

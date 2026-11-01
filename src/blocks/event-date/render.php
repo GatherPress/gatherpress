@@ -1,9 +1,10 @@
 <?php
 /**
- * Event Date Block.
+ * Render Event Date block.
  *
- * @package GatherPress\Core
- * @since 0.28.0
+ * @package GatherPress
+ * @subpackage Core
+ * @since 0.27.0
  */
 
 // Exit if accessed directly.

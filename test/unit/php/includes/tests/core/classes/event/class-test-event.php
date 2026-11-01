@@ -202,6 +202,34 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * A start-only display has no end, and no time zone when the block turns it off.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_display_datetime_parts
+	 *
+	 * @return void
+	 */
+	public function test_get_display_datetime_parts_start_only_without_timezone(): void {
+		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$event = new Event( $post->ID );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2020-05-11 15:00:00',
+				'datetime_end'   => '2020-05-11 17:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$parts = $event->get_display_datetime_parts( 'start', '', '', '', 'no' );
+
+		$this->assertNotEmpty( $parts['start'], 'Failed to assert the start is shown.' );
+		$this->assertFalse( $parts['end'], 'Failed to assert a start-only display has no end.' );
+		$this->assertFalse( $parts['separator'], 'Failed to assert there is no separator without an end.' );
+		$this->assertFalse( $parts['timezone'], 'Failed to assert the block can turn the time zone off.' );
+	}
+
+	/**
 	 * Coverage for get_display_datetime method.
 	 *
 	 * @param array  $params   Parameters for datetimes.
@@ -337,7 +365,7 @@ class Test_Event extends Base {
 	 * A post that is not an event has nothing to attach datetimes to, so the
 	 * save reports failure and writes no meta.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::save_datetimes
 	 *
 	 * @return void
@@ -687,7 +715,7 @@ class Test_Event extends Base {
 	 * A post that is not an event has no venue to report, and must not fall
 	 * through to the venue of whatever post is globally queried.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::get_venue_information
 	 *
 	 * @return void
@@ -1086,7 +1114,7 @@ class Test_Event extends Base {
 	 * A post that is not an event never surfaces an online event link, even
 	 * when the meta happens to be present on the post.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::maybe_get_online_event_link
 	 *
 	 * @return void
@@ -1909,7 +1937,7 @@ class Test_Event extends Base {
 	 * at all, bailing before the format filter rather than falling back to the
 	 * epoch.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::get_formatted_datetime
 	 *
 	 * @return void
@@ -2162,7 +2190,7 @@ class Test_Event extends Base {
 	 * client at, so the description is empty rather than pointing at whatever
 	 * post is globally queried.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::get_calendar_description
 	 *
 	 * @return void
@@ -2343,7 +2371,7 @@ class Test_Event extends Base {
 	/**
 	 * An event is not all day unless it says so.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::is_all_day
 	 *
@@ -2366,7 +2394,7 @@ class Test_Event extends Base {
 	/**
 	 * A post ID that is not an event is not an all-day one either.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::is_all_day
 	 *
@@ -2382,7 +2410,7 @@ class Test_Event extends Base {
 	/**
 	 * A datetime snaps to the beginning or the end of its own day.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::to_day_boundary
 	 *
@@ -2423,7 +2451,7 @@ class Test_Event extends Base {
 	 * The method finds the date rather than assuming where it sits, so it
 	 * cannot silently slice ten characters off something in another shape.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::to_day_boundary
 	 *
@@ -2458,7 +2486,7 @@ class Test_Event extends Base {
 	 * `get_datetime()` discards what it reads back in any other shape, so the
 	 * conversion happens once on the way in.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @dataProvider data_normalize_datetime
 	 *
@@ -2487,7 +2515,7 @@ class Test_Event extends Base {
 	/**
 	 * Data provider for datetime conversion.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return array<string, array<int, string>> Cases.
 	 */
@@ -2576,7 +2604,7 @@ class Test_Event extends Base {
 	/**
 	 * Saving an all-day event stores a span that covers the day.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::save_datetimes
 	 *
@@ -2614,7 +2642,7 @@ class Test_Event extends Base {
 	/**
 	 * A timed event keeps the times it was given.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::save_datetimes
 	 *
@@ -2642,7 +2670,7 @@ class Test_Event extends Base {
 	/**
 	 * An all-day event renders its date and nothing else.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::get_display_datetime
 	 * @covers ::get_display_formats
@@ -2694,7 +2722,7 @@ class Test_Event extends Base {
 	 * which has already been said, so nothing follows it whatever format
 	 * the block saved.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::get_display_datetime
 	 * @covers ::get_display_formats
@@ -2735,7 +2763,7 @@ class Test_Event extends Base {
 	/**
 	 * A multi-day all-day event still honors a block's end format.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::get_display_end
 	 *
@@ -2779,7 +2807,7 @@ class Test_Event extends Base {
 	 * date and loses its time, rather than printing 12:00 am and 11:59 pm
 	 * as though someone had chosen them.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::get_display_datetime
 	 * @covers ::get_display_formats
@@ -2832,7 +2860,7 @@ class Test_Event extends Base {
 	/**
 	 * Data provider for all-day display formats.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return array[]
 	 */
@@ -2880,7 +2908,7 @@ class Test_Event extends Base {
 	/**
 	 * A timed event still uses the formats it was given, time and all.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::get_display_datetime
 	 * @covers ::get_display_formats
@@ -2918,7 +2946,7 @@ class Test_Event extends Base {
 	/**
 	 * An all-day event spanning days still says when it ends.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::get_display_end
 	 *
@@ -2961,7 +2989,7 @@ class Test_Event extends Base {
 	 * stored GMT would land the day before or after depending on which side
 	 * of the meridian the event sits.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::get_formatted_all_day
 	 * @covers ::get_formatted_datetime
@@ -3013,7 +3041,7 @@ class Test_Event extends Base {
 	/**
 	 * An all-day event with no stored datetime renders nothing.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::get_formatted_all_day
 	 *
@@ -3038,7 +3066,7 @@ class Test_Event extends Base {
 	 * accepts, which is wider than a real date, so a value like June 31st at
 	 * 25:00 survives `get_datetime()`. Constructing a date from it throws.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::get_formatted_all_day
 	 *
@@ -3067,7 +3095,7 @@ class Test_Event extends Base {
 	 * the only way an unusable one reaches here is the `gatherpress_timezone`
 	 * filter, which anything can set.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::get_formatted_all_day
 	 *
@@ -3104,7 +3132,7 @@ class Test_Event extends Base {
 	/**
 	 * An event says whether it names its timezone, or leaves it to the block.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::get_timezone_preference
 	 *
@@ -3142,7 +3170,7 @@ class Test_Event extends Base {
 	/**
 	 * A post ID that is not an event has no preference.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::get_timezone_preference
 	 *
@@ -3164,7 +3192,7 @@ class Test_Event extends Base {
 	 * of its own to configure. Always and never overrule the block. Saying
 	 * nothing leaves the block to it, all day or not.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @dataProvider data_timezone_precedence
 	 *
@@ -3216,7 +3244,7 @@ class Test_Event extends Base {
 	/**
 	 * Data provider for timezone precedence.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return array<string, array<int, bool|string>> Cases.
 	 */

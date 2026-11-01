@@ -302,7 +302,7 @@ class Test_External extends Base {
 	 * underlying Event has no post — a Calendar built from a post type that
 	 * does not support `gatherpress-event-date` never resolves one.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::get_google_destination_url
 	 *
 	 * @return void
@@ -430,7 +430,7 @@ class Test_External extends Base {
 	 * Returns an empty string from get_yahoo_destination_url when the
 	 * underlying Event has no post.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::get_yahoo_destination_url
 	 *
 	 * @return void
@@ -608,7 +608,7 @@ class Test_External extends Base {
 	 * Coverage for the get_sequence guard when the underlying Event has no
 	 * post: there is no post_modified_gmt to derive a revision from.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::get_sequence
 	 *
 	 * @return void
@@ -665,7 +665,7 @@ class Test_External extends Base {
 	 * Returns an empty string from get_ical_event_string when the underlying
 	 * Event has no post, so nothing malformed lands inside a VCALENDAR wrap.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::get_ical_event_string
 	 *
 	 * @return void
@@ -686,7 +686,7 @@ class Test_External extends Base {
 	 * RFC-required DTSTAMP, stamped at generation time rather than at the
 	 * Unix epoch.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::get_ical_event_string
 	 *
 	 * @return void
@@ -941,7 +941,7 @@ class Test_External extends Base {
 	 * All-day events must serialize as floating dates with exclusive end date (YYYYMMDD/YYYYMMDD)
 	 * and no time/UTC offset component.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @ticket 2225
 	 * @covers ::get_google_destination_url
 	 *
@@ -974,7 +974,7 @@ class Test_External extends Base {
 	 *
 	 * All-day events serialize start date as YYYYMMDD and duration as whole-day hours (2400 per day).
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @ticket 2225
 	 * @covers ::get_yahoo_destination_url
 	 *
@@ -1031,7 +1031,7 @@ class Test_External extends Base {
 	 * Per RFC 5545 §3.6.1, all-day events must use DTSTART;VALUE=DATE and DTEND;VALUE=DATE
 	 * with exclusive end date in local time without UTC offset drift.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @ticket 2225
 	 * @covers ::get_ical_event_string
 	 *
