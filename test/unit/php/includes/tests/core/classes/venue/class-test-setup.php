@@ -1369,6 +1369,39 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * Tests get_venue_meta leaves out a venue a password hides.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_venue_meta
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_meta_leaves_out_a_hidden_venue(): void {
+		$instance             = Setup::get_instance();
+		list( $protected )    = $this->create_event_at_venue( 'secret' );
+		list( $open )         = $this->create_event_at_venue( '' );
+		list( $at_protected ) = $this->create_event_at_venue( '', 'secret' );
+		$protected_venue      = $instance->get_venue_post_from_event_post_id( $at_protected );
+		$missing_post_id      = $at_protected + 1000;
+		$venue_name           = static fn( int $post_id, string $post_type ): ?string
+			=> $instance->get_venue_meta( $post_id, $post_type )['name'] ?? null;
+
+		wp_set_current_user( 0 );
+
+		$this->assertNull( $venue_name( $protected, Event::POST_TYPE ), 'A protected event hides it.' );
+		$this->assertNull( $venue_name( $at_protected, Event::POST_TYPE ), 'A protected venue stays out.' );
+		$this->assertSame( 'Hidden Hall', $venue_name( $open, Event::POST_TYPE ), 'An open venue shows.' );
+		$this->assertNull( $venue_name( $protected_venue->ID, Venue::POST_TYPE ), 'A protected venue page hides it.' );
+		$this->assertNull( $venue_name( $missing_post_id, Event::POST_TYPE ), 'A missing event has no venue.' );
+		$this->assertNull( $venue_name( $missing_post_id, Venue::POST_TYPE ), 'A missing venue has no details.' );
+
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'editor' ) ) );
+
+		$this->assertSame( 'Hidden Hall', $venue_name( $protected, Event::POST_TYPE ), 'An Editor sees the venue.' );
+	}
+
+	/**
 	 * Coverage for get_venue_post_from_event_post_id when all attached terms are
 	 * non-`_`-prefixed sentinels (e.g. only `online-event`).
 	 *

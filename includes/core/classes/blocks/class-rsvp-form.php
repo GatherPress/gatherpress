@@ -989,8 +989,9 @@ final class Rsvp_Form {
 
 			// Validate and sanitize the field value using the same logic as the Ajax handler.
 			$validated_value = $this->sanitize_custom_field_value( $field_value, $field_config );
+			// update_comment_meta() unslashes, so slash to keep backslashes.
 			if ( false !== $validated_value ) {
-				update_comment_meta( $comment_id, 'gatherpress_custom_' . $field_name, $validated_value );
+				update_comment_meta( $comment_id, 'gatherpress_custom_' . $field_name, wp_slash( $validated_value ) );
 			}
 		}
 	}

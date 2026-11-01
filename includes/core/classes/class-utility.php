@@ -1171,12 +1171,34 @@ final class Utility {
 			$sanitizer = 'sanitize_text_field';
 		}
 
-		// For WordPress sanitizers, unslash first.
-		if ( in_array( $sanitizer, array( 'sanitize_text_field', 'sanitize_email' ), true ) ) {
-			$value = wp_unslash( $value );
+		// No wp_unslash() here: filter_input() reads the raw request, which
+		// WordPress never slashed, so unslashing would strip real backslashes.
+		return (string) call_user_func( $sanitizer, $value );
+	}
+
+	/**
+	 * Get request input from POST or GET, the way `$_REQUEST` merges them.
+	 *
+	 * There is no INPUT_REQUEST, so this reads POST first and falls back to GET.
+	 * That matches wp_magic_quotes(), which rebuilds `$_REQUEST` as
+	 * `array_merge( $_GET, $_POST )`, so POST wins over GET. One difference:
+	 * an empty POST value falls back to GET instead of winning.
+	 *
+	 * @since TBD
+	 *
+	 * @param string        $var_name  Variable name to retrieve.
+	 * @param callable|null $sanitizer Sanitization function to apply. Defaults to sanitize_text_field.
+	 *
+	 * @return string Sanitized input value or empty string if not found.
+	 */
+	public static function get_request_input( string $var_name, ?callable $sanitizer = null ): string {
+		$value = self::get_http_input( INPUT_POST, $var_name, $sanitizer );
+
+		if ( '' === $value ) {
+			$value = self::get_http_input( INPUT_GET, $var_name, $sanitizer );
 		}
 
-		return (string) call_user_func( $sanitizer, $value );
+		return $value;
 	}
 
 	/**
@@ -1223,6 +1245,7 @@ final class Utility {
 	 * @return string The current URL.
 	 */
 	public static function get_current_url( array $remove_query_args = array() ): string {
+		// INPUT_SERVER is unreliable under FastCGI.
 		$request = isset( $_SERVER['REQUEST_URI'] )
 			? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) )
 			: '/';

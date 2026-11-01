@@ -42,6 +42,7 @@ const Edit = ( {
 	const {
 		venuePostId,
 		isEditingCurrentPost,
+		venueMeta,
 		fieldValue,
 		updateFieldValue,
 		updateWebsiteUrl,
@@ -52,11 +53,12 @@ const Edit = ( {
 	// Skip when the block edits the same venue post the user is already editing:
 	// in that context the VenueInformation sidebar owns the geocoding and running
 	// it here too would double-fire the network call for every keystroke.
+	// Also skip when the venue sets its coordinates by hand.
 	useGeocoding(
 		fieldType,
 		fieldValue,
 		updateVenueField,
-		! isEditingCurrentPost,
+		! isEditingCurrentPost && ! venueMeta.gatherpress_manual_coordinates,
 	);
 
 	// Handle Enter key block insertion.

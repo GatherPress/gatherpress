@@ -103,6 +103,17 @@ final class Meta {
 	);
 
 	/**
+	 * Meta key that marks the coordinates of a venue as set by hand.
+	 *
+	 * While it is true, geocoding the address leaves `gatherpress_latitude`
+	 * and `gatherpress_longitude` alone, for venues without a street address.
+	 *
+	 * @since TBD
+	 * @var string
+	 */
+	public const MANUAL_COORDINATES_KEY = 'gatherpress_manual_coordinates';
+
+	/**
 	 * Class constructor.
 	 *
 	 * Wires the `registered_post_type` listener so any post type that
@@ -247,6 +258,21 @@ final class Meta {
 
 			register_post_meta( $post_type, Utility::prefix_key( $field ), $args );
 		}
+
+		$manual_coordinates_args = array(
+			'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
+			'sanitize_callback' => 'rest_sanitize_boolean',
+			'show_in_rest'      => true,
+			'single'            => true,
+			'type'              => 'boolean',
+			'default'           => false,
+		);
+
+		if ( $supports_revisions ) {
+			$manual_coordinates_args['revisions_enabled'] = true;
+		}
+
+		register_post_meta( $post_type, self::MANUAL_COORDINATES_KEY, $manual_coordinates_args );
 
 		// Map descriptors register on their own — different shape (object
 		// schema, no sanitize_callback) and not editor-writable.
