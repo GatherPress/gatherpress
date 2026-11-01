@@ -167,9 +167,10 @@ class Test_Calendar extends Base {
 
 		$this->assertStringContainsString( 'gatherpress--is-view-week', $output );
 		$this->assertStringContainsString( 'gatherpress--has-multiple-units', $output );
-		$this->assertStringContainsString( '<thead class="gatherpress--screen-reader-text">', $output );
+		$this->assertStringContainsString( '<thead role="rowgroup" class="gatherpress--screen-reader-text">', $output );
+		$this->assertStringContainsString( '<tr role="row">', $output, 'Failed to assert the header row role.' );
 		$this->assertStringContainsString(
-			'<th scope="col" class="gatherpress--screen-reader-text">Week</th>',
+			'<th scope="col" role="columnheader" class="gatherpress--screen-reader-text">Week</th>',
 			$output
 		);
 		$this->assertStringContainsString( 'Week 44</th>', $output );
@@ -198,7 +199,8 @@ class Test_Calendar extends Base {
 		$this->assertStringContainsString( 'gatherpress--is-view-day', $output );
 		$this->assertStringNotContainsString( 'Week', $output );
 		$this->assertStringContainsString(
-			'<th scope="col">Thu</th><th scope="col">Fri</th><th scope="col">Sat</th>',
+			'<th scope="col" role="columnheader">Thu</th><th scope="col" role="columnheader">Fri</th>'
+				. '<th scope="col" role="columnheader">Sat</th>',
 			$output
 		);
 		$this->assertStringContainsString( 'gap: 4px var(--wp--preset--spacing--20)', $output );
@@ -227,7 +229,10 @@ class Test_Calendar extends Base {
 		);
 
 		$this->assertStringContainsString( 'gatherpress--has-time-grid', $output );
-		$this->assertStringContainsString( 'gatherpress-calendar__time-gutter-header', $output );
+		$this->assertStringContainsString(
+			'<th scope="col" role="columnheader" class="gatherpress-calendar__time-gutter-header" aria-hidden="true">',
+			$output
+		);
 		$this->assertStringContainsString( '--gatherpress-total-quarter-slots: 48', $output );
 		$this->assertStringContainsString(
 			'--gatherpress-calendar-columns: 8',
@@ -349,13 +354,18 @@ class Test_Calendar extends Base {
 			self::get_calendar_markup( '{"unitCount":2,"selectedDate":"2026-10-15","showWeekends":false}' )
 		);
 
-		$this->assertSame( 2, substr_count( $output, '<table ' ) );
+		$this->assertSame( 2, substr_count( $output, '<table role="table" ' ) );
+		$this->assertSame(
+			2,
+			substr_count( $output, '<tbody role="rowgroup">' ),
+			'Failed to assert a body row group per table.'
+		);
 		$this->assertStringContainsString(
 			'<caption class="gatherpress--screen-reader-text">November 2026</caption>',
 			$output
 		);
 		$this->assertStringContainsString( '--gatherpress-calendar-columns: 5', $output );
-		$this->assertStringNotContainsString( '<th scope="col">Sat</th>', $output );
+		$this->assertStringNotContainsString( '>Sat</th>', $output );
 	}
 
 	/**

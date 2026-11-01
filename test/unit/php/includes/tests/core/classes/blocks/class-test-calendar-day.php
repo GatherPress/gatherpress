@@ -88,7 +88,7 @@ class Test_Calendar_Day extends Base {
 			)
 		);
 
-		$this->assertStringStartsWith( '<td ', $output );
+		$this->assertStringStartsWith( '<td role="cell" ', $output );
 		$this->assertStringContainsString( 'gatherpress--is-empty', $output );
 		$this->assertStringContainsString( 'gatherpress--is-monday', $output );
 		$this->assertStringContainsString( 'data-wp-key="empty-monday"', $output );

@@ -379,19 +379,20 @@ final class Html_Renderer {
 
 		// Prepend empty header for the time gutter column.
 		if ( $is_time_grid ) {
-			$cells .= '<th scope="col" class="gatherpress-calendar__time-gutter-header" aria-hidden="true"></th>';
+			$cells .= '<th scope="col" role="columnheader" class="gatherpress-calendar__time-gutter-header"'
+				. ' aria-hidden="true"></th>';
 		}
 
 		// Header for the hidden week number column, so the row headers line up.
 		if ( $render_week_numbers ) {
 			$cells .= sprintf(
-				'<th scope="col" class="gatherpress--screen-reader-text">%s</th>',
+				'<th scope="col" role="columnheader" class="gatherpress--screen-reader-text">%s</th>',
 				esc_html_x( 'Week', 'week number column header', 'gatherpress' )
 			);
 		}
 
 		foreach ( $day_names as $day_name ) {
-			$cells .= sprintf( '<th scope="col">%s</th>', esc_html( $day_name ) );
+			$cells .= sprintf( '<th scope="col" role="columnheader">%s</th>', esc_html( $day_name ) );
 		}
 
 		return $cells;

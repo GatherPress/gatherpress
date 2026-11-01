@@ -118,7 +118,7 @@ final class Calendar_Week extends Base {
 		}
 
 		return sprintf(
-			'<th scope="row" class="gatherpress-calendar__time-gutter" aria-hidden="true">%s</th>',
+			'<th scope="row" role="rowheader" class="gatherpress-calendar__time-gutter" aria-hidden="true">%s</th>',
 			$slot_labels
 		);
 	}
@@ -143,7 +143,7 @@ final class Calendar_Week extends Base {
 
 		if ( $week_number > 0 ) {
 			$days_html = sprintf(
-				'<th scope="row" class="gatherpress--screen-reader-text">%s</th>',
+				'<th scope="row" role="rowheader" class="gatherpress--screen-reader-text">%s</th>',
 				esc_html(
 					sprintf(
 						/* translators: %d: ISO 8601 week number. */
@@ -163,7 +163,7 @@ final class Calendar_Week extends Base {
 		);
 
 		return sprintf(
-			'<tr %1$s>%2$s%3$s</tr>',
+			'<tr role="row" %1$s>%2$s%3$s</tr>',
 			$wrapper_attributes,
 			$is_time_grid ? $this->render_time_gutter() : '',
 			$days_html

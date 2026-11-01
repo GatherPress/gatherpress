@@ -65,7 +65,7 @@ final class Calendar_Day extends Base {
 		$classes = array_merge( $this->get_day_cell_classes(), $this->get_time_grid_classes() );
 
 		return sprintf(
-			'<td %1$s>%2$s</td>',
+			'<td role="cell" %1$s>%2$s</td>',
 			get_block_wrapper_attributes( $this->build_cell_attributes( $classes, $day_date, $is_empty, $weekday ) ),
 			$cell_content
 		);
