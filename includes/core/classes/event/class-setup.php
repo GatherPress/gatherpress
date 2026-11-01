@@ -1007,8 +1007,7 @@ final class Setup {
 			$post_id = $instance->context['postId'] ?? get_the_ID();
 
 			if ( $post_id ) {
-				$event  = new Event( (int) $post_id );
-				$status = $event->get_status();
+				$status = ( new Status( (int) $post_id ) )->get();
 
 				if ( Status::default_slug() === $status ) {
 					return '';

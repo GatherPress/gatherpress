@@ -1314,8 +1314,7 @@ class Test_Setup extends Base {
 	public function test_render_event_status_post_terms_block_shows_non_scheduled(): void {
 		$instance = Setup::get_instance();
 		$post_id  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
-		$event    = new Event( $post_id );
-		$event->set_status( 'canceled' );
+		( new Status( $post_id ) )->set( 'canceled' );
 
 		$block_content = '<div class="wp-block-post-terms gatherpress-event-status">Canceled</div>';
 		$block         = array(

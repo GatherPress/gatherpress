@@ -294,7 +294,7 @@ final class Status {
 	 * @return string The color, or an empty string when there is none to use.
 	 */
 	public static function color( string $slug ): string {
-		$color = (string) ( self::get( $slug )['color'] ?? '' );
+		$color = (string) ( self::definition( $slug )['color'] ?? '' );
 
 		$hex = sanitize_hex_color( $color );
 

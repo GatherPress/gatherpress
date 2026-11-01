@@ -3283,7 +3283,6 @@ class Test_Rest_Api extends Base {
 		$this->assertSame( 201, $response->get_status() );
 
 		$event_id = (int) $response->get_data()['id'];
-		$event    = new Event( $event_id );
-		$this->assertSame( 'canceled', $event->get_status() );
+		$this->assertSame( 'canceled', ( new Event_Status( $event_id ) )->get() );
 	}
 }
