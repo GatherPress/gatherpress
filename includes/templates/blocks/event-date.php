@@ -9,7 +9,7 @@
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-if ( ! isset( $wrapper_attributes, $datetime, $link, $has_viewer_time ) ) {
+if ( ! isset( $wrapper_attributes, $datetime, $link, $has_viewer_time, $status_label ) ) {
 	return;
 }
 ?>
@@ -30,5 +30,8 @@ if ( ! isset( $wrapper_attributes, $datetime, $link, $has_viewer_time ) ) {
 		</a>
 	<?php } elseif ( $has_viewer_time ) { ?>
 		</span>
+	<?php } ?>
+	<?php if ( '' !== $status_label ) { ?>
+		<span class="screen-reader-text gatherpress--screen-reader-text"><?php echo esc_html( sprintf( ' (%s)', $status_label ) ); ?></span>
 	<?php } ?>
 </div>

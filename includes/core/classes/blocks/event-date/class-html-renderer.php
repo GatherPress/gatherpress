@@ -13,6 +13,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Blocks\Setup;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status;
 use GatherPress\Core\Settings;
 use GatherPress\Core\User;
 use GatherPress\Core\Utility;
@@ -74,8 +75,18 @@ final class Html_Renderer {
 	 * @return string The block markup.
 	 */
 	public function render(): string {
-		$context            = $this->get_viewer_time_context();
-		$wrapper_attributes = get_block_wrapper_attributes();
+		$context      = $this->get_viewer_time_context();
+		$status       = $this->event->get_status();
+		$status_label = '';
+		$extra        = array();
+
+		// A date whose event is not going ahead says so, for stylesheets and screen readers.
+		if ( Status::default_slug( (string) get_post_type( $this->post_id ) ) !== $status ) {
+			$extra['class'] = sprintf( 'gatherpress-event-date--is-%s', sanitize_html_class( $status ) );
+			$status_label   = Status::label( $status );
+		}
+
+		$wrapper_attributes = get_block_wrapper_attributes( $extra );
 
 		if ( ! empty( $context ) ) {
 			$wrapper_attributes .= ' data-wp-interactive="gatherpress" ' . wp_interactivity_data_wp_context( $context );
@@ -88,6 +99,7 @@ final class Html_Renderer {
 				'datetime'           => $this->get_datetime_markup(),
 				'link'               => $this->get_link(),
 				'has_viewer_time'    => ! empty( $context ),
+				'status_label'       => $status_label,
 			)
 		);
 	}
