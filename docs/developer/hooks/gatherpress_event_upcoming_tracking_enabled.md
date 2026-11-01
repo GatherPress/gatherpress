@@ -33,7 +33,7 @@ if ( ! empty( $upcoming_ids ) ) {
 
 ## Files
 
-- [includes/core/classes/event/class-scheduler.php:375](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-scheduler.php#L375)
+- [includes/core/classes/event/class-scheduler.php:486](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-scheduler.php#L486)
 ```php
 apply_filters( 'gatherpress_event_upcoming_tracking_enabled', false )
 ```
