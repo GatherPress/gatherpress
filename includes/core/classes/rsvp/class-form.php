@@ -676,8 +676,10 @@ final class Form {
 			);
 		}
 
-		// Prepare comment data.
-		$comment_data = $this->prepare_comment_data( $post_id, $author, $email );
+		// Prepare comment data. wp_filter_comment() and wp_insert_comment()
+		// expect slashed data, as wp_new_comment() passes it, so slash it to
+		// keep backslashes.
+		$comment_data = wp_slash( $this->prepare_comment_data( $post_id, $author, $email ) );
 
 		// Run WordPress-native comment filters so sites can honor
 		// pre_comment_user_ip, pre_comment_user_agent, etc. for privacy.

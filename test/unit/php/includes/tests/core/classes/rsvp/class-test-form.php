@@ -177,6 +177,33 @@ class Test_Form extends Base {
 	}
 
 	/**
+	 * Tests process_rsvp keeps a backslash in the attendee name.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::process_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_process_rsvp_keeps_backslash_in_author(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$result = Form::get_instance()->process_rsvp(
+			array(
+				'post_id' => $post_id,
+				'author'  => 'D\\Angelo',
+				'email'   => 'dangelo@example.com',
+			)
+		);
+
+		$this->assertSame( 'D\\Angelo', get_comment( $result['comment_id'] )->comment_author );
+	}
+
+	/**
 	 * Coverage for process_rsvp method with duplicate detection.
 	 *
 	 * @covers ::process_rsvp
