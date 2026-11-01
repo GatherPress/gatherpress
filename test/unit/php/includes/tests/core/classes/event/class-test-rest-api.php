@@ -125,7 +125,7 @@ class Test_Rest_Api extends Base {
 
 		$field = $wp_rest_additional_fields[ Event::POST_TYPE ]['gatherpress_status'];
 		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
-		$event = new Event( $post->ID );
+		$event = new Event_Status( $post->ID );
 
 		$this->assertSame(
 			'scheduled',
@@ -140,7 +140,7 @@ class Test_Rest_Api extends Base {
 
 		$this->assertSame(
 			'canceled',
-			$event->get_status(),
+			$event->get(),
 			'Failed to assert the update callback stores the status.'
 		);
 		$this->assertSame(
@@ -165,7 +165,7 @@ class Test_Rest_Api extends Base {
 		);
 		$this->assertSame(
 			'canceled',
-			$event->get_status(),
+			$event->get(),
 			'Failed to assert a refused update leaves the status alone.'
 		);
 
@@ -3201,7 +3201,7 @@ class Test_Rest_Api extends Base {
 		Rest_Api::get_instance()->register_status_field();
 
 		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
-		$event = new Event( $post->ID );
+		$event = new Event_Status( $post->ID );
 		// The post type publishes itself under a plural rest_base.
 		$route = sprintf(
 			'/wp/v2/%s/%d',
@@ -3231,7 +3231,7 @@ class Test_Rest_Api extends Base {
 		);
 		$this->assertSame(
 			'canceled',
-			$event->get_status(),
+			$event->get(),
 			'Failed to assert the route stored the status.'
 		);
 
@@ -3249,7 +3249,7 @@ class Test_Rest_Api extends Base {
 		);
 		$this->assertSame(
 			'canceled',
-			$event->get_status(),
+			$event->get(),
 			'Failed to assert a refused request leaves the stored status alone.'
 		);
 	}

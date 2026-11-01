@@ -136,7 +136,7 @@ final class Rest_Api {
 	 * be filtered by it, but a taxonomy reaches the block editor as an array of
 	 * term ids. This field keeps the editor's contract a plain slug, so the
 	 * status panel stays a SelectControl and the taxonomy stays an
-	 * implementation detail with a single write path through Event::set_status().
+	 * implementation detail with a single write path through Event\Status::set().
 	 *
 	 * @since TBD
 	 *
@@ -149,7 +149,7 @@ final class Rest_Api {
 				'gatherpress_status',
 				array(
 					'get_callback'    => static function ( array $post ): string {
-						return ( new Event( (int) $post['id'] ) )->get_status();
+						return ( new Event_Status( (int) $post['id'] ) )->get();
 					},
 					'update_callback' => static function ( $value, WP_Post $post ) {
 						if ( ! current_user_can( 'edit_post', $post->ID ) ) {
@@ -160,7 +160,7 @@ final class Rest_Api {
 							);
 						}
 
-						( new Event( $post->ID ) )->set_status( sanitize_key( (string) $value ) );
+						( new Event_Status( $post->ID ) )->set( sanitize_key( (string) $value ) );
 					},
 					'schema'          => array(
 						'description' => __( 'The operational status of the event.', 'gatherpress' ),

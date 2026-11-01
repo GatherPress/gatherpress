@@ -2665,8 +2665,7 @@ class Test_Setup extends Base {
 		$this->assertContains( 'gatherpress-event-status--is-scheduled', $classes );
 
 		// Cancelled event gets the status class.
-		$event = new Event( $event_id );
-		$event->set_status( 'canceled' );
+		( new Status( $event_id ) )->set( 'canceled' );
 		$classes = $setup->add_status_post_class( array( 'hentry' ), array(), $event_id );
 		$this->assertContains( 'gatherpress-event-status--is-canceled', $classes );
 	}

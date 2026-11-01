@@ -12,6 +12,7 @@ use GatherPress\Core\Assets;
 use GatherPress\Core\Blocks\Event_Date;
 use GatherPress\Core\Blocks\Event_Date\Html_Renderer;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 use PasswordHash;
@@ -403,7 +404,7 @@ class Test_Event_Date extends Base {
 
 		$event_post = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
 
-		$this->assertTrue( ( new Event( $event_post->ID ) )->set_status( 'canceled' ) );
+		$this->assertTrue( ( new Status( $event_post->ID ) )->set( 'canceled' ) );
 
 		$this->go_to( get_permalink( $event_post->ID ) );
 
