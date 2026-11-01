@@ -65,14 +65,6 @@ class Cleanup {
 	const DEFAULT_LIMIT = 1000;
 
 	/**
-	 * Transient key storing the resume filename after hitting per-run cap.
-	 *
-	 * @since TBD
-	 * @var string
-	 */
-	const RESUME_TRANSIENT = 'gatherpress_venue_map_gc_resume';
-
-	/**
 	 * Default number of posts to inspect per page when scanning venue metadata.
 	 *
 	 * @since TBD
@@ -86,7 +78,7 @@ class Cleanup {
 	 * @since TBD
 	 * @var string
 	 */
-	const FILENAME_REGEX = '/^[a-z0-9_-]+-\d+-\d+-\d+(@\d+x)?\.png$/i';
+	const FILENAME_REGEX = '/^[a-z0-9_.-]+-\d+-\d+-\d+(@\d+x)?\.png$/i';
 
 	/**
 	 * Check if a filename matches the static map naming convention.
@@ -260,7 +252,6 @@ class Cleanup {
 	 *     deleted: int,
 	 *     bytes_reclaimed: int,
 	 *     files: string[],
-	 *     resumed: bool,
 	 *     hit_limit: bool
 	 * } Sweep summary statistics.
 	 *
@@ -275,7 +266,6 @@ class Cleanup {
 			'deleted'         => 0,
 			'bytes_reclaimed' => 0,
 			'files'           => array(),
-			'resumed'         => false,
 			'hit_limit'       => false,
 		);
 

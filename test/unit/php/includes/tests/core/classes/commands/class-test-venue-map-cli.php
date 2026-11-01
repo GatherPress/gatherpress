@@ -55,7 +55,6 @@ class Test_Venue_Map_Cli extends Base {
 	 */
 	public function tear_down(): void {
 		delete_transient( Cleanup::LOCK_TRANSIENT );
-		delete_transient( Cleanup::RESUME_TRANSIENT );
 
 		if ( is_dir( $this->static_dir ) ) {
 			$files = (array) glob( $this->static_dir . '/*' );

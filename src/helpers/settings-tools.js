@@ -276,6 +276,41 @@ export async function previewImport( elements ) {
 }
 
 /**
+ * Check if a button is currently busy (marked with aria-disabled="true").
+ *
+ * @since TBD
+ *
+ * @param {HTMLElement|null} button The button element to check.
+ *
+ * @return {boolean} True if button is busy, false otherwise.
+ */
+export function isButtonBusy( button ) {
+	return 'true' === button?.getAttribute( 'aria-disabled' );
+}
+
+/**
+ * Toggle the busy state of a button using aria-disabled to preserve keyboard focus.
+ *
+ * @since TBD
+ *
+ * @param {HTMLElement|null} button The button element.
+ * @param {boolean}          busy   Whether the button is busy.
+ *
+ * @return {void}
+ */
+export function setButtonBusy( button, busy ) {
+	if ( ! button ) {
+		return;
+	}
+
+	if ( busy ) {
+		button.setAttribute( 'aria-disabled', 'true' );
+	} else {
+		button.removeAttribute( 'aria-disabled' );
+	}
+}
+
+/**
  * Import the previewed file.
  *
  * @since TBD
@@ -292,11 +327,11 @@ export async function previewImport( elements ) {
 export async function importSettings( elements ) {
 	const { scope, importData, root, importButton, status } = elements;
 
-	if ( ! importData ) {
+	if ( ! importData || isButtonBusy( importButton ) ) {
 		return;
 	}
 
-	importButton.disabled = true;
+	setButtonBusy( importButton, true );
 	showStatus( status, __( 'Importing settings…', 'gatherpress' ), true );
 
 	try {
@@ -319,7 +354,7 @@ export async function importSettings( elements ) {
 			false,
 		);
 	} finally {
-		importButton.disabled = false;
+		setButtonBusy( importButton, false );
 	}
 }
 
@@ -359,11 +394,11 @@ export function formatBytes( bytes ) {
  * @return {Promise<void>}
  */
 export async function cleanupMaps( { cleanupButton, cleanupStatus } ) {
-	if ( ! cleanupButton || ! cleanupStatus ) {
+	if ( ! cleanupButton || ! cleanupStatus || isButtonBusy( cleanupButton ) ) {
 		return;
 	}
 
-	cleanupButton.disabled = true;
+	setButtonBusy( cleanupButton, true );
 	showStatus(
 		cleanupStatus,
 		__( 'Cleaning up unused static maps…', 'gatherpress' ),
@@ -405,7 +440,7 @@ export async function cleanupMaps( { cleanupButton, cleanupStatus } ) {
 			false,
 		);
 	} finally {
-		cleanupButton.disabled = false;
+		setButtonBusy( cleanupButton, false );
 	}
 }
 

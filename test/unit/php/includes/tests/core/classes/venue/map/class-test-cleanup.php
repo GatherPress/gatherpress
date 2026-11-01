@@ -54,7 +54,6 @@ class Test_Cleanup extends Base {
 	 */
 	public function tear_down(): void {
 		delete_transient( Cleanup::LOCK_TRANSIENT );
-		delete_transient( Cleanup::RESUME_TRANSIENT );
 
 		if ( is_dir( $this->static_dir ) ) {
 			$files = (array) glob( $this->static_dir . '/*' );
@@ -111,6 +110,10 @@ class Test_Cleanup extends Base {
 			'1-infinite-loop-osm-roadmap-15-800-400.png',
 			'1-infinite-loop-osm-roadmap-15-800-400@2x.png',
 			'my-venue-name-google-satellite-12-600-300.png',
+			'vondelpark-amsterdam-52.362100_4.882900-osm-roadmap-16-600-300.png',
+			'vondelpark-amsterdam-52.362100_4.882900-osm-roadmap-16-600-300@2x.png',
+			'venue-37.774929_-122.419416-google-satellite-12-600-300.png',
+			'venue-37.774929_-122.419416-google-satellite-12-600-300@2x.png',
 		);
 
 		foreach ( $valid as $filename ) {
