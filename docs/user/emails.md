@@ -25,7 +25,8 @@ It covers different needs:
     * Because it is about their own RSVP, it goes out even if they turned event updates off.
     * It is on by default, and can be turned off under **Settings → RSVP → Notifications**.
 * Event reminders
-    * Attendees get an email a day or an hour before an event starts, a day by default. Reminders are on by default, and the timing can be changed or the reminders turned off under **Settings → RSVP → Notifications**.
+    * Attendees get an email a day before an event starts by default, and can also get one an hour before. Reminders are on by default. The timings can be changed, or the reminders turned off, under **Settings → RSVP → Notifications**.
+    * When more than one reminder is due at once, for example for an event published an hour before it starts, attendees get one email.
     * It goes to people who RSVPed "yes" only, not to the waiting list or people who declined.
     * It shows the date and time, the venue or the online link, add to calendar links, and a link to change the RSVP.
     * Users can turn reminders off in the **Notifications** section of their profile, separate from event updates. People who RSVPed without an account follow their "email me updates" choice.

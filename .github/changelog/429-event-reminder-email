@@ -1,4 +1,4 @@
 Significance: minor
 Type: added
 
-Attendees now get an email reminder before an event starts, a day or an hour ahead, a day by default. Change the timing or turn reminders off under Settings > RSVP > Notifications, where waiting list emails can now be turned off too. Users can opt out of reminders in their profile, and the new `gatherpress_event_starting` action lets other code run when an event starts.
+Attendees now get an email reminder before an event starts, a day ahead by default, and an hour ahead as well if chosen. Change the timing or turn reminders off under Settings > RSVP > Notifications, where waiting list emails can now be turned off too. Users can opt out of reminders in their profile, and the new `gatherpress_event_starting` action lets other code run when an event starts.

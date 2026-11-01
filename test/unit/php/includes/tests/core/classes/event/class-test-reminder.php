@@ -15,6 +15,7 @@ use GatherPress\Core\Mailer;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Reminder.
@@ -73,15 +74,20 @@ class Test_Reminder extends Base {
 	}
 
 	/**
-	 * Turn reminders on, sent at the given timing.
+	 * Turn reminders on, sent at the given timings only.
 	 *
-	 * @param string $timing A key from Reminder::get_timings().
+	 * @param string[] $timings Timing names from Reminder::get_timings().
 	 *
 	 * @return void
 	 */
-	private function enable_reminders( string $timing = Reminder::DEFAULT_TIMING ): void {
+	private function enable_reminders( array $timings = array( 'day_before' ) ): void {
 		Settings::get_instance()->set( 'enable_event_reminders', true );
-		Settings::get_instance()->set( 'event_reminder_timing', $timing );
+
+		foreach ( array_keys( Reminder::get_instance()->get_timings() ) as $timing ) {
+			$checked = in_array( $timing, $timings, true );
+
+			Settings::get_instance()->set( Reminder::get_timing_setting( $timing ), $checked );
+		}
 	}
 
 	/**
@@ -97,14 +103,14 @@ class Test_Reminder extends Base {
 	 * Create a published event lasting two hours.
 	 *
 	 * @param string $title        Event title.
-	 * @param int    $start_offset Seconds from now to the start. Defaults to two days.
+	 * @param int    $start_offset Seconds from now to the start. Defaults to five hours, inside a day.
 	 * @param string $status       Post status.
 	 *
 	 * @return int The event post ID.
 	 */
 	private function create_event(
 		string $title = 'Meetup',
-		int $start_offset = 2 * DAY_IN_SECONDS,
+		int $start_offset = 5 * HOUR_IN_SECONDS,
 		string $status = 'publish'
 	): int {
 		$post_id = $this->factory->post->create(
@@ -155,48 +161,181 @@ class Test_Reminder extends Base {
 	}
 
 	/**
-	 * Check that the timings offer a day and an hour before, and can be filtered.
+	 * Check the default timings, their settings keys and the filter.
 	 *
 	 * @covers ::get_timings
+	 * @covers ::get_timing_setting
 	 *
 	 * @return void
 	 */
 	public function test_get_timings(): void {
 		$instance = Reminder::get_instance();
+		$timings  = $instance->get_timings();
 
-		$this->assertSame( array( 'day_before', 'hour_before' ), array_keys( $instance->get_timings() ) );
-		$this->assertSame( DAY_IN_SECONDS, $instance->get_timings()['day_before']['seconds'] );
-		$this->assertSame( HOUR_IN_SECONDS, $instance->get_timings()['hour_before']['seconds'] );
+		$this->assertSame( array( 'day_before', 'hour_before' ), array_keys( $timings ) );
+		$this->assertSame( DAY_IN_SECONDS, $timings['day_before']['seconds'] );
+		$this->assertTrue( $timings['day_before']['default'], 'A day before is checked by default.' );
+		$this->assertSame( HOUR_IN_SECONDS, $timings['hour_before']['seconds'] );
+		$this->assertFalse( $timings['hour_before']['default'] );
+		$this->assertSame( 'event_reminder_day_before', Reminder::get_timing_setting( 'day_before' ) );
 
-		$week = static fn( array $timings ): array => $timings + array(
-			'week_before' => array(
+		$filter = static function ( array $timings ): array {
+			unset( $timings['hour_before'] );
+
+			$timings['week_before'] = array(
 				'label'   => 'A week before',
 				'seconds' => WEEK_IN_SECONDS,
-			),
-		);
+				'default' => false,
+			);
 
-		add_filter( 'gatherpress_event_reminder_timings', $week );
-		$this->assertArrayHasKey( 'week_before', $instance->get_timings() );
-		remove_filter( 'gatherpress_event_reminder_timings', $week );
+			return $timings;
+		};
+
+		add_filter( 'gatherpress_event_reminder_timings', $filter );
+		$this->assertSame( array( 'day_before', 'week_before' ), array_keys( $instance->get_timings() ) );
+		remove_filter( 'gatherpress_event_reminder_timings', $filter );
 	}
 
 	/**
-	 * Check that the lead time follows the timing setting, and falls back to a day.
+	 * Check that only checked timings count, a day before by default.
 	 *
-	 * @covers ::get_lead_time
+	 * @covers ::get_checked_timings
 	 *
 	 * @return void
 	 */
-	public function test_get_lead_time(): void {
+	public function test_get_checked_timings(): void {
 		$instance = Reminder::get_instance();
 
-		$this->assertSame( DAY_IN_SECONDS, $instance->get_lead_time(), 'A day before by default.' );
+		$this->assertSame( array( 'day_before' => DAY_IN_SECONDS ), $instance->get_checked_timings() );
 
-		$this->enable_reminders( 'hour_before' );
-		$this->assertSame( HOUR_IN_SECONDS, $instance->get_lead_time() );
+		$this->enable_reminders( array( 'day_before', 'hour_before' ) );
+		$this->assertSame(
+			array(
+				'day_before'  => DAY_IN_SECONDS,
+				'hour_before' => HOUR_IN_SECONDS,
+			),
+			$instance->get_checked_timings()
+		);
 
-		Settings::get_instance()->set( 'event_reminder_timing', 'gone' );
-		$this->assertSame( DAY_IN_SECONDS, $instance->get_lead_time(), 'An unknown timing falls back to a day.' );
+		$this->enable_reminders( array() );
+		$this->assertSame( array(), $instance->get_checked_timings() );
+	}
+
+	/**
+	 * Check which checked timings are due for a start.
+	 *
+	 * Invoked directly because xdebug does not trace same-class helpers
+	 * called from a closure.
+	 *
+	 * @covers ::get_due_timings
+	 *
+	 * @return void
+	 */
+	public function test_get_due_timings(): void {
+		$this->enable_reminders( array( 'day_before', 'hour_before' ) );
+
+		$due   = static fn( string $start, array $sent = array() ): array => Utility::invoke_hidden_method(
+			Reminder::get_instance(),
+			'get_due_timings',
+			array( $start, $sent )
+		);
+		$soon  = gmdate( 'Y-m-d H:i:s', time() + 30 * MINUTE_IN_SECONDS );
+		$later = gmdate( 'Y-m-d H:i:s', time() + 5 * HOUR_IN_SECONDS );
+
+		$this->assertSame( array(), $due( gmdate( 'Y-m-d H:i:s', time() - MINUTE_IN_SECONDS ) ), 'Started.' );
+		$this->assertSame( array(), $due( gmdate( 'Y-m-d H:i:s', time() + 2 * DAY_IN_SECONDS ) ), 'Not due yet.' );
+		$this->assertSame( array( 'day_before' ), $due( $later ) );
+		$this->assertSame( array( 'day_before', 'hour_before' ), $due( $soon ) );
+		$this->assertSame( array( 'hour_before' ), $due( $soon, array( 'day_before' => $soon ) ), 'Sent is skipped.' );
+	}
+
+	/**
+	 * Check that the sweep does nothing while no timing is checked.
+	 *
+	 * @covers ::sweep
+	 *
+	 * @return void
+	 */
+	public function test_sweep_does_nothing_without_timings(): void {
+		$this->enable_reminders( array() );
+
+		$post_id = $this->create_event();
+
+		( new Rsvp( $post_id ) )->save( 'guest@example.test', 'attending', 0, 0 );
+
+		Reminder::get_instance()->sweep();
+		$this->run_mail_jobs();
+
+		$this->assertSame( array(), $this->sent );
+	}
+
+	/**
+	 * Check that an event reminded a day before is reminded again an hour before.
+	 *
+	 * @covers ::queue_reminder
+	 * @covers ::get_due_timings
+	 *
+	 * @return void
+	 */
+	public function test_reminds_a_day_and_an_hour_before(): void {
+		$this->enable_reminders( array( 'day_before', 'hour_before' ) );
+
+		$post_id = $this->create_event( 'Meetup', 5 * HOUR_IN_SECONDS );
+		$start   = (string) get_post_meta( $post_id, Scheduler::START_META_KEY, true );
+
+		( new Rsvp( $post_id ) )->save( 'guest@example.test', 'attending', 0, 0 );
+
+		Reminder::get_instance()->queue_reminder( $post_id );
+		$this->run_mail_jobs();
+
+		$this->assertCount( 1, $this->sent, 'Five hours out, only the day before is due.' );
+		$this->assertSame( array( 'day_before' => $start ), get_post_meta( $post_id, Reminder::SENT_META_KEY, true ) );
+
+		// Forty minutes out, as an hour later in the event's countdown would be.
+		$soon = $this->create_event( 'Meetup', 40 * MINUTE_IN_SECONDS );
+
+		( new Rsvp( $soon ) )->save( 'soon@example.test', 'attending', 0, 0 );
+		update_post_meta(
+			$soon,
+			Reminder::SENT_META_KEY,
+			array( 'day_before' => (string) get_post_meta( $soon, Scheduler::START_META_KEY, true ) )
+		);
+
+		Reminder::get_instance()->queue_reminder( $soon );
+		$this->run_mail_jobs();
+
+		$this->assertSame( 'soon@example.test', $this->sent[1][0], 'The hour before goes out once it is due.' );
+		$this->assertArrayHasKey( 'hour_before', get_post_meta( $soon, Reminder::SENT_META_KEY, true ) );
+	}
+
+	/**
+	 * Check that an event inside both windows gets one email, not two.
+	 *
+	 * @covers ::queue_reminder
+	 * @covers ::get_due_timings
+	 *
+	 * @return void
+	 */
+	public function test_one_email_when_several_timings_are_due(): void {
+		$this->enable_reminders( array( 'day_before', 'hour_before' ) );
+
+		$post_id = $this->create_event( 'Meetup', 30 * MINUTE_IN_SECONDS );
+		$start   = (string) get_post_meta( $post_id, Scheduler::START_META_KEY, true );
+
+		( new Rsvp( $post_id ) )->save( 'guest@example.test', 'attending', 0, 0 );
+
+		Reminder::get_instance()->queue_reminder( $post_id );
+		Reminder::get_instance()->queue_reminder( $post_id );
+		$this->run_mail_jobs();
+
+		$this->assertCount( 1, $this->sent );
+		$this->assertSame(
+			array(
+				'day_before'  => $start,
+				'hour_before' => $start,
+			),
+			get_post_meta( $post_id, Reminder::SENT_META_KEY, true )
+		);
 	}
 
 	/**
@@ -207,7 +346,7 @@ class Test_Reminder extends Base {
 	 * @return void
 	 */
 	public function test_sweep_follows_the_timing(): void {
-		$this->enable_reminders( 'hour_before' );
+		$this->enable_reminders( array( 'hour_before' ) );
 
 		$soon  = $this->create_event( 'Soon', 30 * MINUTE_IN_SECONDS );
 		$later = $this->create_event( 'Later', 5 * HOUR_IN_SECONDS );
@@ -384,13 +523,13 @@ class Test_Reminder extends Base {
 		Reminder::get_instance()->queue_reminder( $post_id );
 		$this->run_mail_jobs();
 		$this->assertCount( 1, $this->sent );
-		$this->assertSame( $start, get_post_meta( $post_id, Reminder::SENT_META_KEY, true ) );
+		$this->assertSame( array( 'day_before' => $start ), get_post_meta( $post_id, Reminder::SENT_META_KEY, true ) );
 
 		Reminder::get_instance()->queue_reminder( $post_id );
 		$this->run_mail_jobs();
 		$this->assertCount( 1, $this->sent, 'The same start is not reminded twice.' );
 
-		update_post_meta( $post_id, Scheduler::START_META_KEY, gmdate( 'Y-m-d H:i:s', time() + WEEK_IN_SECONDS ) );
+		update_post_meta( $post_id, Scheduler::START_META_KEY, gmdate( 'Y-m-d H:i:s', time() + 6 * HOUR_IN_SECONDS ) );
 
 		Reminder::get_instance()->queue_reminder( $post_id );
 		$this->run_mail_jobs();

@@ -47,7 +47,7 @@ The three RSVP taxonomies are on *comments*, not posts, because an RSVP is a com
 | `gatherpress_guest_limit` | Guests per RSVP. `0` means none |
 | `gatherpress_online_event_link` | The joining link, shown only to attendees |
 | `gatherpress_rsvp_form_schemas` | The RSVP form's custom field definitions, keyed by form id |
-| `gatherpress_event_reminder_sent` | The UTC start the last reminder email was queued for, so one start is reminded once |
+| `gatherpress_event_reminder_sent` | For each reminder timing, the UTC start it was last queued for, so each timing reminds one start once |
 
 `gatherpress_datetime` is the canonical value the editor and REST write. The [events table](#the-events-table) is derived from it and is what queries read.
 
