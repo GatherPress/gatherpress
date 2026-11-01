@@ -23,8 +23,9 @@ It covers different needs:
 * Waiting list promotions
     * When spots open up on a full event, people on the waiting list move to attending, and each one gets an email confirming their spot.
     * Because it is about their own RSVP, it goes out even if they turned event updates off.
+    * It is on by default, and can be turned off under **Settings → RSVP → Notifications**.
 * Event reminders
-    * When turned on under **Settings → RSVP → Reminders**, attendees get an email a set number of hours before an event starts, 24 by default.
+    * When turned on under **Settings → RSVP → Notifications**, attendees get an email a set number of hours before an event starts, 24 by default.
     * It goes to people who RSVPed "yes" only, not to the waiting list or people who declined.
     * It shows the date and time, the venue or the online link, add to calendar links, and a link to change the RSVP.
     * Users can turn reminders off in the **Notifications** section of their profile, separate from event updates. People who RSVPed without an account follow their "email me updates" choice.

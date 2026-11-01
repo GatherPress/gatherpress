@@ -72,11 +72,12 @@ Default RSVP settings for new events; most can be overridden per event.
 - **Maximum Number of Guests** sets how many additional guests each attendee may bring.
 - **Anonymous RSVP** allows users to RSVP without revealing their identity.
 
-### Reminders
+### Notifications
 
-Attendees can get an email reminder before an event starts (see [Emails](user/emails.md)).
+The emails GatherPress sends attendees on its own (see [Emails](user/emails.md)).
 
-- **Reminder Emails** turns the reminders on. It is off by default.
+- **Waiting List Emails** emails attendees when a spot opens up and they move off the waiting list. It is on by default.
+- **Reminder Emails** sends attendees a reminder before an event starts. It is off by default.
 - **Reminder Timing** sets how many hours before the start the reminder goes out. The default is 24.
 
 ### Cleanup

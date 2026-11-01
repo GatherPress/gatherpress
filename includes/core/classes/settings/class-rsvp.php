@@ -77,7 +77,7 @@ final class Rsvp extends Base {
 	 */
 	protected function get_sections(): array {
 		return array(
-			'rsvp_defaults'  => array(
+			'rsvp_defaults'      => array(
 				'name'        => __( 'RSVP Defaults', 'gatherpress' ),
 				'description' => sprintf(
 					// phpcs:ignore Generic.Files.LineLength.TooLong
@@ -218,14 +218,33 @@ final class Rsvp extends Base {
 					),
 				),
 			),
-			'rsvp_reminders' => array(
-				'name'        => __( 'Reminders', 'gatherpress' ),
+			'rsvp_notifications' => array(
+				'name'        => __( 'Notifications', 'gatherpress' ),
 				'description' => __(
-					'Email attendees a reminder before an event starts.',
+					'Emails GatherPress sends attendees on its own, without an organizer sending them.',
 					'gatherpress'
 				),
 				'options'     => array(
-					'enable_event_reminders' => array(
+					'enable_waiting_list_emails' => array(
+						'labels'      => array(
+							'name' => __( 'Waiting List Emails', 'gatherpress' ),
+						),
+						'description' => __(
+							'Sent when a spot opens up and an RSVP moves off the waiting list.',
+							'gatherpress'
+						),
+						'field'       => array(
+							'label'   => __( 'Email attendees when they move off the waiting list.', 'gatherpress' ),
+							'type'    => 'checkbox',
+							'options' => array(
+								'default' => true,
+							),
+						),
+						'show_if'     => array(
+							'rsvp_mode' => array( 'not' => 'disabled' ),
+						),
+					),
+					'enable_event_reminders'     => array(
 						'labels'      => array(
 							'name' => __( 'Reminder Emails', 'gatherpress' ),
 						),
@@ -250,7 +269,7 @@ final class Rsvp extends Base {
 							'rsvp_mode' => array( 'not' => 'disabled' ),
 						),
 					),
-					'event_reminder_hours'   => array(
+					'event_reminder_hours'       => array(
 						'labels'      => array(
 							'name' => __( 'Reminder Timing', 'gatherpress' ),
 						),
@@ -274,7 +293,7 @@ final class Rsvp extends Base {
 					),
 				),
 			),
-			'rsvp_cleanup'   => array(
+			'rsvp_cleanup'       => array(
 				'name'        => __( 'Cleanup', 'gatherpress' ),
 				'description' => __(
 					'Schedule automatic cleanup of unverified RSVPs.',

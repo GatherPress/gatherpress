@@ -55,6 +55,7 @@ The settings page is organized into tabs, each managed by its own class:
 | `guest_limit` | number | `0` | Maximum guests per attendee (0-5) |
 | `enable_anonymous_rsvp` | checkbox | `false` | Allow anonymous RSVPs |
 | `enable_open_rsvp` | checkbox | `true` | Allow visitors to RSVP without a site account (email verification). Enabled by default. |
+| `enable_waiting_list_emails` | checkbox | `true` | Email attendees when they move off the waiting list |
 | `enable_event_reminders` | checkbox | `false` | Email attendees a reminder before an event starts |
 | `event_reminder_hours` | number | `24` | Hours before the start the reminder goes out (minimum 1) |
 | `enable_rsvp_cleanup` | select | `'disabled'` | Enable/disable RSVP cleanup |

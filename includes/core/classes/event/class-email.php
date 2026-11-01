@@ -15,6 +15,7 @@ use GatherPress\Core\Mailer;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Query as Rsvp_Query;
 use GatherPress\Core\Rsvp\Response\State;
+use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_Comment;
@@ -159,7 +160,8 @@ final class Email {
 	 *
 	 * Runs from the request that freed the spot, whether an attendee
 	 * cancelling or an editor raising the limit, so the email is queued
-	 * rather than sent while that request waits.
+	 * rather than sent while that request waits. Nothing is queued while
+	 * waiting list emails are turned off under Notifications.
 	 *
 	 * @since TBD
 	 *
@@ -169,6 +171,10 @@ final class Email {
 	 * @return void
 	 */
 	public function queue_promotion_email( int $post_id, State $state ): void {
+		if ( ! Settings::get_instance()->get( 'enable_waiting_list_emails' ) ) {
+			return;
+		}
+
 		Mailer::get_instance()->queue(
 			self::PROMOTION_TYPE,
 			array(
@@ -266,8 +272,9 @@ final class Email {
 	 * Get the attendees a queued reminder email goes to.
 	 *
 	 * Looked up when each batch runs, so an RSVP changed after the reminder
-	 * was queued is respected. Nobody gets it once the start has moved, since
-	 * the new start gets its own reminder.
+	 * was queued is respected. Nobody gets it once the event is no longer
+	 * published, once it has started, or once its start has moved, since the
+	 * new start gets its own reminder.
 	 *
 	 * @since TBD
 	 *
@@ -278,8 +285,13 @@ final class Email {
 	 */
 	private function get_reminder_attendees( array $payload ): array {
 		$post_id = (int) ( $payload['post_id'] ?? 0 );
+		$start   = (string) ( $payload['start'] ?? '' );
 
-		if ( ( $payload['start'] ?? '' ) !== get_post_meta( $post_id, Scheduler::START_META_KEY, true ) ) {
+		if (
+			'publish' !== get_post_status( $post_id )
+			|| (int) strtotime( $start ) <= time()
+			|| get_post_meta( $post_id, Scheduler::START_META_KEY, true ) !== $start
+		) {
 			return array();
 		}
 

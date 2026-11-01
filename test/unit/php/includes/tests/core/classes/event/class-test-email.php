@@ -155,6 +155,26 @@ class Test_Email extends Base {
 	}
 
 	/**
+	 * Check that no promotion email goes out while waiting list emails are off.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::queue_promotion_email
+	 *
+	 * @return void
+	 */
+	public function test_promotion_email_skipped_while_turned_off(): void {
+		$event = $this->event_with_waiting_list( 'Board game night' );
+
+		Settings::get_instance()->set( 'enable_waiting_list_emails', false );
+		( new Rsvp( $event['id'] ) )->save( $event['attendee'], 'not_attending' );
+		$this->run_mail_jobs();
+		delete_option( Settings::OPTION_NAME );
+
+		$this->assertSame( array(), $this->sent );
+	}
+
+	/**
 	 * Check that no promotion email goes out when the attendee cancels before the job runs.
 	 *
 	 * @covers ::get_promoted_attendee
@@ -293,6 +313,24 @@ class Test_Email extends Base {
 		$this->assertSame( array( 'yes@example.test' ), array_column( $attendees( $start ), 'email' ) );
 		$this->assertSame( array(), $attendees( '2000-01-01 00:00:00' ), 'A moved start gets nobody.' );
 		$this->assertTrue( Email::get_instance()->queue_reminder_email( $post_id, $start ) );
+
+		wp_update_post(
+			array(
+				'ID'          => $post_id,
+				'post_status' => 'draft',
+			)
+		);
+		$this->assertSame( array(), $attendees( $start ), 'An unpublished event gets nobody.' );
+
+		wp_update_post(
+			array(
+				'ID'          => $post_id,
+				'post_status' => 'publish',
+			)
+		);
+		$started = gmdate( 'Y-m-d H:i:s', time() - MINUTE_IN_SECONDS );
+		update_post_meta( $post_id, Scheduler::START_META_KEY, $started );
+		$this->assertSame( array(), $attendees( $started ), 'An event that has started gets nobody.' );
 	}
 
 	/**
