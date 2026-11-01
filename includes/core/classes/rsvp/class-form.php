@@ -942,8 +942,9 @@ final class Form {
 			}
 
 			// Save the sanitized field value with prefix to avoid conflicts.
+			// update_comment_meta() unslashes, so slash to keep backslashes.
 			$meta_key = 'gatherpress_custom_' . sanitize_key( $field_name );
-			update_comment_meta( $comment_id, $meta_key, $sanitized_value );
+			update_comment_meta( $comment_id, $meta_key, wp_slash( $sanitized_value ) );
 		}
 	}
 

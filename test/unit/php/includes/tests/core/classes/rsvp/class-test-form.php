@@ -2919,7 +2919,7 @@ class Test_Form extends Base {
 
 		$data = array(
 			'gatherpress_form_schema_id' => $form_schema_id,
-			'custom_field_1'             => 'Test Value',
+			'custom_field_1'             => 'C:\\Test Value',
 			'custom_field_2'             => '42',
 		);
 
@@ -2934,7 +2934,7 @@ class Test_Form extends Base {
 		$custom_value_1 = get_comment_meta( $comment_id, 'gatherpress_custom_custom_field_1', true );
 		$custom_value_2 = get_comment_meta( $comment_id, 'gatherpress_custom_custom_field_2', true );
 
-		$this->assertEquals( 'Test Value', $custom_value_1, 'Custom field 1 should be saved' );
+		$this->assertSame( 'C:\\Test Value', $custom_value_1, 'Custom field 1 should keep its backslash' );
 		$this->assertEquals( '42', $custom_value_2, 'Custom field 2 should be saved' );
 	}
 
