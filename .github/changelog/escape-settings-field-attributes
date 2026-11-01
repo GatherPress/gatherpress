@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Settings fields print their locked state through WordPress's own escaping helpers instead of unescaped output.
