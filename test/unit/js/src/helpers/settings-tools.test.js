@@ -19,13 +19,17 @@ import apiFetch from '@wordpress/api-fetch';
  * Internal dependencies
  */
 import {
+	cleanupMaps,
 	describeImport,
 	downloadJson,
 	exportSettings,
+	formatBytes,
 	importSettings,
 	initSettingsTools,
+	isButtonBusy,
 	previewImport,
 	renderPreview,
+	setButtonBusy,
 } from '@src/helpers/settings-tools';
 
 jest.mock( '@wordpress/api-fetch' );
@@ -53,6 +57,11 @@ function renderTools( scope = 'blog' ) {
 			<output class="gatherpress-settings-tools__status">
 				<span class="spinner"></span>
 				<span class="gatherpress-settings-tools__status-text"></span>
+			</output>
+			<button type="button" class="gatherpress-settings-tools__cleanup-maps">Clean up unused venue-map images</button>
+			<output class="gatherpress-settings-tools__cleanup-status">
+				<span class="spinner"></span>
+				<span class="gatherpress-settings-tools__cleanup-status-text"></span>
 			</output>
 		</div>
 	`;
@@ -340,6 +349,17 @@ describe( 'importSettings', () => {
 		expect( apiFetch ).not.toHaveBeenCalled();
 	} );
 
+	it( 'returns early if the import button is busy', async () => {
+		const elements = getElements( renderTools() );
+
+		elements.importData = { settings: { a: 1 } };
+		setButtonBusy( elements.importButton, true );
+
+		await importSettings( elements );
+
+		expect( apiFetch ).not.toHaveBeenCalled();
+	} );
+
 	it( 'imports with the picked mode and shows the result', async () => {
 		const elements = getElements( renderTools( 'network' ) );
 
@@ -359,7 +379,7 @@ describe( 'importSettings', () => {
 			},
 		} );
 		expect( statusText( elements ) ).toBe( '1 setting imported.' );
-		expect( elements.importButton.disabled ).toBe( false );
+		expect( elements.importButton.getAttribute( 'aria-disabled' ) ).toBeNull();
 	} );
 
 	it( 'shows why the import failed', async () => {
@@ -380,7 +400,7 @@ describe( 'importSettings', () => {
 		await importSettings( elements );
 
 		expect( statusText( elements ) ).toBe( 'Import failed.' );
-		expect( elements.importButton.disabled ).toBe( false );
+		expect( elements.importButton.getAttribute( 'aria-disabled' ) ).toBeNull();
 	} );
 } );
 
@@ -435,5 +455,141 @@ describe( 'initSettingsTools', () => {
 				path: '/gatherpress/v1/settings/import',
 			} ),
 		);
+
+		const cleanupButton = root.querySelector(
+			'.gatherpress-settings-tools__cleanup-maps',
+		);
+
+		cleanupButton.click();
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+
+		expect( apiFetch ).toHaveBeenLastCalledWith(
+			expect.objectContaining( {
+				path: '/gatherpress/v1/venue-map/gc',
+			} ),
+		);
+	} );
+
+	describe( 'formatBytes', () => {
+		it( 'formats 0 bytes correctly', () => {
+			expect( formatBytes( 0 ) ).toBe( '0 B' );
+			expect( formatBytes( -10 ) ).toBe( '0 B' );
+		} );
+
+		it( 'formats bytes, kilobytes, and megabytes', () => {
+			expect( formatBytes( 500 ) ).toBe( '500 B' );
+			expect( formatBytes( 1024 ) ).toBe( '1.0 KB' );
+			expect( formatBytes( 1048576 ) ).toBe( '1.0 MB' );
+		} );
+	} );
+
+	describe( 'cleanupMaps', () => {
+		it( 'returns early if required elements are missing', async () => {
+			await cleanupMaps( {} );
+			await cleanupMaps( { cleanupButton: document.createElement( 'button' ) } );
+			await cleanupMaps( { cleanupStatus: document.createElement( 'output' ) } );
+
+			expect( apiFetch ).not.toHaveBeenCalled();
+		} );
+
+		it( 'returns early if the cleanup button is busy', async () => {
+			const cleanupButton = document.createElement( 'button' );
+			const cleanupStatus = document.createElement( 'output' );
+
+			setButtonBusy( cleanupButton, true );
+
+			await cleanupMaps( { cleanupButton, cleanupStatus } );
+
+			expect( apiFetch ).not.toHaveBeenCalled();
+		} );
+
+		it( 'reports cleaned up files and reclaimed bytes on success', async () => {
+			const cleanupButton = document.createElement( 'button' );
+			const cleanupStatus = document.createElement( 'output' );
+			cleanupStatus.innerHTML =
+				'<span class="spinner"></span><span class="gatherpress-settings-tools__cleanup-status-text"></span>';
+
+			apiFetch.mockResolvedValue( {
+				deleted: 3,
+				bytes_reclaimed: 15360,
+			} );
+
+			await cleanupMaps( { cleanupButton, cleanupStatus } );
+
+			expect( apiFetch ).toHaveBeenCalledWith( {
+				path: '/gatherpress/v1/venue-map/gc',
+				method: 'POST',
+				data: { execute: true },
+			} );
+
+			const cleanupText = cleanupStatus.querySelector(
+				'.gatherpress-settings-tools__cleanup-status-text',
+			).textContent;
+
+			expect( cleanupText ).toContain( 'Cleanup complete: removed 3 files' );
+			expect( cleanupText ).toContain( '15.0 KB reclaimed' );
+			expect( cleanupButton.getAttribute( 'aria-disabled' ) ).toBeNull();
+		} );
+
+		it( 'reports when no unused images are found', async () => {
+			const cleanupButton = document.createElement( 'button' );
+			const cleanupStatus = document.createElement( 'output' );
+			cleanupStatus.innerHTML =
+				'<span class="spinner"></span><span class="gatherpress-settings-tools__cleanup-status-text"></span>';
+
+			apiFetch.mockResolvedValue( {
+				deleted: 0,
+				bytes_reclaimed: 0,
+			} );
+
+			await cleanupMaps( { cleanupButton, cleanupStatus } );
+
+			const cleanupText = cleanupStatus.querySelector(
+				'.gatherpress-settings-tools__cleanup-status-text',
+			).textContent;
+
+			expect( cleanupText ).toBe( 'No unused static-map images found.' );
+		} );
+
+		it( 'reports error on failure', async () => {
+			const cleanupButton = document.createElement( 'button' );
+			const cleanupStatus = document.createElement( 'output' );
+			cleanupStatus.innerHTML =
+				'<span class="spinner"></span><span class="gatherpress-settings-tools__cleanup-status-text"></span>';
+
+			apiFetch.mockRejectedValue( new Error( 'Network error' ) );
+
+			await cleanupMaps( { cleanupButton, cleanupStatus } );
+
+			const cleanupText = cleanupStatus.querySelector(
+				'.gatherpress-settings-tools__cleanup-status-text',
+			).textContent;
+
+			expect( cleanupText ).toBe( 'Network error' );
+			expect( cleanupButton.getAttribute( 'aria-disabled' ) ).toBeNull();
+		} );
+	} );
+
+	describe( 'isButtonBusy and setButtonBusy', () => {
+		it( 'handles null or undefined button gracefully', () => {
+			expect( isButtonBusy( null ) ).toBe( false );
+			expect( isButtonBusy( undefined ) ).toBe( false );
+			expect( () => setButtonBusy( null, true ) ).not.toThrow();
+			expect( () => setButtonBusy( undefined, false ) ).not.toThrow();
+		} );
+
+		it( 'sets and removes aria-disabled attribute', () => {
+			const button = document.createElement( 'button' );
+
+			expect( isButtonBusy( button ) ).toBe( false );
+
+			setButtonBusy( button, true );
+			expect( button.getAttribute( 'aria-disabled' ) ).toBe( 'true' );
+			expect( isButtonBusy( button ) ).toBe( true );
+
+			setButtonBusy( button, false );
+			expect( button.getAttribute( 'aria-disabled' ) ).toBeNull();
+			expect( isButtonBusy( button ) ).toBe( false );
+		} );
 	} );
 } );

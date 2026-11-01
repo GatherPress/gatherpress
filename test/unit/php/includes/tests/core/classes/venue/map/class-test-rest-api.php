@@ -542,4 +542,127 @@ class Test_Rest_Api extends Base {
 		$data = $response->get_data();
 		$this->assertSame( 'awaiting_geocode', $data['reason'] );
 	}
+
+	/**
+	 * Tests rest_gc requires manage_options capability.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::register_endpoints
+	 * @covers ::rest_gc
+	 *
+	 * @return void
+	 */
+	public function test_rest_gc_requires_manage_options(): void {
+		Rest_Api::get_instance()->register_endpoints();
+
+		$subscriber_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $subscriber_id );
+
+		$request  = new \WP_REST_Request( 'POST', sprintf( '/%s/venue-map/gc', GATHERPRESS_REST_NAMESPACE ) );
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 403, $response->get_status() );
+	}
+
+	/**
+	 * Tests rest_gc runs successfully for administrator.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::rest_gc
+	 *
+	 * @return void
+	 */
+	public function test_rest_gc_succeeds_for_admin(): void {
+		Rest_Api::get_instance()->register_endpoints();
+
+		$admin_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $admin_id );
+
+		$request  = new \WP_REST_Request( 'POST', sprintf( '/%s/venue-map/gc', GATHERPRESS_REST_NAMESPACE ) );
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$data = $response->get_data();
+		$this->assertTrue( $data['success'] );
+		$this->assertArrayHasKey( 'deleted', $data );
+		$this->assertArrayHasKey( 'bytes_reclaimed', $data );
+	}
+
+	/**
+	 * Tests rest_gc with custom limit and execute flags.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::rest_gc
+	 *
+	 * @return void
+	 */
+	public function test_rest_gc_with_custom_limit_and_execute(): void {
+		Rest_Api::get_instance()->register_endpoints();
+
+		$admin_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $admin_id );
+
+		$request = new \WP_REST_Request( 'POST', sprintf( '/%s/venue-map/gc', GATHERPRESS_REST_NAMESPACE ) );
+		$request->set_param( 'limit', 10 );
+		$request->set_param( 'execute', true );
+
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$data = $response->get_data();
+		$this->assertTrue( $data['success'] );
+	}
+
+	/**
+	 * Tests rest_gc falls back to default limit when limit parameter is empty.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::rest_gc
+	 *
+	 * @return void
+	 */
+	public function test_rest_gc_falls_back_to_default_limit_when_empty(): void {
+		Rest_Api::get_instance()->register_endpoints();
+
+		$admin_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $admin_id );
+
+		$request = new \WP_REST_Request( 'POST', sprintf( '/%s/venue-map/gc', GATHERPRESS_REST_NAMESPACE ) );
+		$request->set_param( 'limit', 0 );
+
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$data = $response->get_data();
+		$this->assertTrue( $data['success'] );
+	}
+
+	/**
+	 * Tests rest_gc returns 409 conflict when locked.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::rest_gc
+	 *
+	 * @return void
+	 */
+	public function test_rest_gc_returns_409_when_locked(): void {
+		Rest_Api::get_instance()->register_endpoints();
+
+		$admin_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $admin_id );
+
+		set_transient( \GatherPress\Core\Venue\Map\Cleanup::LOCK_TRANSIENT, time(), 60 );
+
+		$request  = new \WP_REST_Request( 'POST', sprintf( '/%s/venue-map/gc', GATHERPRESS_REST_NAMESPACE ) );
+		$response = rest_do_request( $request );
+
+		delete_transient( \GatherPress\Core\Venue\Map\Cleanup::LOCK_TRANSIENT );
+
+		$this->assertSame( 409, $response->get_status() );
+	}
 }
