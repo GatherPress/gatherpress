@@ -18,8 +18,8 @@ use WP_Term;
  * Class Status.
  *
  * One place that says what statuses exist and what each one means, so PHP,
- * the editor, the stylesheet and the calendar all read the same list rather
- * than keeping their own copies in step.
+ * the editor and the calendar all read the same list rather than keeping
+ * their own copies in step.
  *
  * Nothing here is fixed. The list below is a starting point a site can add
  * to, take from, or replace outright through `gatherpress_event_statuses`,
@@ -49,11 +49,9 @@ final class Status {
 	/**
 	 * Every status an event can be in, keyed by the slug that is stored.
 	 *
-	 * Each entry carries the words people read, the color it is shown in and
-	 * the values the standards expect, so a status is one array entry rather
-	 * than an edit in four places.
-	 *
-	 * @since TBD
+	 * Each entry carries the words people read and the values the standards
+	 * expect, so a status is one array entry rather than an edit in several
+	 * places.
 	 *
 	 * A status can name the post type support it depends on, so one that only
 	 * makes sense for events that can be held online is not offered on a post
@@ -71,7 +69,6 @@ final class Status {
 				/* translators: Event operational status label. */
 				'label'       => _x( 'Scheduled', 'event status', 'gatherpress' ),
 				'description' => __( 'Event is planned and confirmed to take place.', 'gatherpress' ),
-				'color'       => '#137333',
 				'schema'      => 'EventScheduled',
 				'ical'        => 'CONFIRMED',
 				'priority'    => 0,
@@ -83,7 +80,6 @@ final class Status {
 					'Event will not take place. Calendar feeds will mark it as canceled.',
 					'gatherpress'
 				),
-				'color'       => '#c5221f',
 				'schema'      => 'EventCancelled',
 				'ical'        => 'CANCELLED',
 				'priority'    => 50,
@@ -92,7 +88,6 @@ final class Status {
 				/* translators: Event operational status label. */
 				'label'       => _x( 'Postponed', 'event status', 'gatherpress' ),
 				'description' => __( 'Event is delayed to a future unconfirmed date.', 'gatherpress' ),
-				'color'       => '#b06000',
 				'schema'      => 'EventPostponed',
 				'ical'        => 'TENTATIVE',
 				'priority'    => 40,
@@ -101,7 +96,6 @@ final class Status {
 				/* translators: Event operational status label. */
 				'label'       => _x( 'Rescheduled', 'event status', 'gatherpress' ),
 				'description' => __( 'Event date and time have been changed.', 'gatherpress' ),
-				'color'       => '#1a73e8',
 				'schema'      => 'EventRescheduled',
 				'ical'        => 'TENTATIVE',
 				'priority'    => 30,
@@ -113,7 +107,6 @@ final class Status {
 					'Event venue has changed to an online meeting.',
 					'gatherpress'
 				),
-				'color'       => '#7627bb',
 				'schema'      => 'EventMovedOnline',
 				'ical'        => 'CONFIRMED',
 				'priority'    => 20,
@@ -127,7 +120,6 @@ final class Status {
 					'Event is planned provisionally and awaiting confirmation.',
 					'gatherpress'
 				),
-				'color'       => '#ea8600',
 				'schema'      => 'EventScheduled',
 				'ical'        => 'TENTATIVE',
 				'priority'    => 10,
@@ -159,9 +151,8 @@ final class Status {
 		 * Filters the operational statuses an event can be in.
 		 *
 		 * Each status is keyed by the slug stored against the event. An entry
-		 * holds the `label` and `description` people read, the `color` it is
-		 * shown in, the `priority` used to resolve precedence among multiple
-		 * statuses, and the `schema` (Schema.org EventStatusType) and `ical`
+		 * holds the `label` and `description` people read, the `priority` used
+		 * to resolve precedence among multiple statuses, and the `schema` (Schema.org EventStatusType) and `ical`
 		 * (RFC 5545 STATUS) values published for it. Anything omitted falls
 		 * back to something that says the event is going ahead, so a status
 		 * never tells a calendar client something untrue.
@@ -253,36 +244,6 @@ final class Status {
 	 */
 	public static function description( string $slug ): string {
 		return (string) ( self::get( $slug )['description'] ?? '' );
-	}
-
-	/**
-	 * The color a status is shown in.
-	 *
-	 * The badge derives its fill and border from this one value, so a status
-	 * a site registers looks like its own rather than borrowing the default's
-	 * color. Anything that is not a hex color or a CSS custom property is
-	 * refused, since the value reaches a style attribute.
-	 *
-	 * @since TBD
-	 *
-	 * @param string $slug The status slug.
-	 *
-	 * @return string The color, or an empty string when there is none to use.
-	 */
-	public static function color( string $slug ): string {
-		$color = (string) ( self::get( $slug )['color'] ?? '' );
-
-		$hex = sanitize_hex_color( $color );
-
-		if ( ! empty( $hex ) ) {
-			return $hex;
-		}
-
-		if ( preg_match( '/^var\(\s*--[\w-]+\s*(?:,[^;()]*)?\)$/', $color ) ) {
-			return $color;
-		}
-
-		return '';
 	}
 
 	/**

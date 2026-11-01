@@ -4,15 +4,6 @@
 import { getFromConfig } from './editor-settings';
 
 /**
- * Taxonomy the status is stored in, mirrored from Event::TAXONOMY_STATUS.
- *
- * @since TBD
- *
- * @type {string}
- */
-export const TAXONOMY_STATUS = '_gatherpress_event_status';
-
-/**
  * Slug reported for an event that has no status of its own.
  *
  * @since TBD
