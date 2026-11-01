@@ -7,11 +7,21 @@ jest.mock( '@src/helpers/event', () => ( {
 	findEventPostById: jest.fn(),
 } ) );
 
+jest.mock( '@src/blocks/event-date/viewer-time', () => ( {
+	getViewerTimeLabel: jest.fn( () => 'converted' ),
+} ) );
+
 /**
  * Internal dependencies
  */
 import { findEventPostById } from '@src/helpers/event';
-import { resolveEventDateData } from '@src/blocks/event-date/helpers';
+import { getViewerTimeLabel } from '@src/blocks/event-date/viewer-time';
+import {
+	getViewerTimeHelp,
+	getViewerTimePreview,
+	isTimezoneAppended,
+	resolveEventDateData,
+} from '@src/blocks/event-date/helpers';
 
 /**
  * Regression coverage for #1733 — event-date block uses the live datetime
@@ -457,5 +467,78 @@ describe( 'resolveEventDateData', () => {
 					.timezonePreference,
 			).toBe( 'always' );
 		} );
+	} );
+} );
+
+describe( 'isTimezoneAppended', () => {
+	it( 'follows the event preference first', () => {
+		expect( isTimezoneAppended( 'always', 'no', false ) ).toBe( true );
+		expect( isTimezoneAppended( 'never', 'yes', true ) ).toBe( false );
+	} );
+
+	it( 'follows the block attribute, then the site setting', () => {
+		expect( isTimezoneAppended( '', 'yes', false ) ).toBe( true );
+		expect( isTimezoneAppended( '', 'no', true ) ).toBe( false );
+		expect( isTimezoneAppended( '', '', true ) ).toBe( true );
+		expect( isTimezoneAppended( '', '', undefined ) ).toBe( false );
+	} );
+} );
+
+describe( 'getViewerTimeHelp', () => {
+	it( 'explains why the toggle is disabled, or what it does', () => {
+		expect( getViewerTimeHelp( { isAllDay: true, isTimezoneAppended: true } ) ).toBe(
+			'All-day events do not show viewer local time.',
+		);
+		expect( getViewerTimeHelp( { isAllDay: false, isTimezoneAppended: false } ) ).toBe(
+			'Time zone must be appended to show viewer local time.',
+		);
+		expect( getViewerTimeHelp( { isAllDay: false, isTimezoneAppended: true } ) ).toContain(
+			'in a tooltip',
+		);
+	} );
+} );
+
+describe( 'getViewerTimePreview', () => {
+	const args = {
+		isEnabled: true,
+		start: '2030-06-15 18:00:00',
+		end: '2030-06-15 20:00:00',
+		timezone: 'America/New_York',
+		separator: '',
+		isAllDay: false,
+	};
+
+	beforeEach( () => {
+		getViewerTimeLabel.mockClear();
+	} );
+
+	it( 'is empty when the block shows no viewer time', () => {
+		expect( getViewerTimePreview( { ...args, isEnabled: false } ) ).toBe( '' );
+		expect( getViewerTimePreview( { ...args, isAllDay: true } ) ).toBe( '' );
+		expect( getViewerTimeLabel ).not.toHaveBeenCalled();
+	} );
+
+	it( 'converts the shown times to GMT for the label', () => {
+		expect( getViewerTimePreview( args ) ).toBe( 'converted' );
+		expect( getViewerTimeLabel ).toHaveBeenCalledWith(
+			expect.objectContaining( {
+				startGmt: '2030-06-15 22:00:00',
+				endGmt: '2030-06-16 00:00:00',
+				eventTimezone: 'America/New_York',
+				rangeFormat: '%1$s to %2$s your time',
+				singleFormat: '%s your time',
+			} ),
+		);
+	} );
+
+	it( 'leaves out a time the block does not show, and uses the block separator', () => {
+		getViewerTimePreview( { ...args, end: null, separator: 'until' } );
+
+		expect( getViewerTimeLabel ).toHaveBeenCalledWith(
+			expect.objectContaining( {
+				endGmt: '',
+				rangeFormat: '%1$s until %2$s your time',
+			} ),
+		);
 	} );
 } );
