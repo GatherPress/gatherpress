@@ -13,6 +13,7 @@ namespace GatherPress\Tests\Core\Calendar\External;
 use GatherPress\Core\Calendar\External\External;
 use GatherPress\Core\Calendar\External\Setup;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -1122,7 +1123,7 @@ class Test_External extends Base {
 			'Failed to assert a scheduled event is published as confirmed.'
 		);
 
-		( new Event( $event_id ) )->set_status( 'canceled' );
+		( new Status( $event_id ) )->set( 'canceled' );
 
 		$after = ( new External( $event_id ) )->get_ical_event_string();
 

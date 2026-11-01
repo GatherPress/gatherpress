@@ -76,13 +76,14 @@ final class Html_Renderer {
 	 */
 	public function render(): string {
 		$context      = $this->get_viewer_time_context();
-		$status       = $this->event->get_status();
+		$event_status = new Status( $this->post_id );
+		$status       = $event_status->get();
 		$status_label = '';
 		$classes      = array();
 
 		if ( Status::default_slug( (string) get_post_type( $this->post_id ) ) !== $status ) {
 			$classes[]    = sprintf( 'gatherpress-event-date--is-%s', sanitize_html_class( $status ) );
-			$status_label = Status::label( $status );
+			$status_label = $event_status->get_label();
 		}
 
 		$wrapper_attributes = empty( $classes )

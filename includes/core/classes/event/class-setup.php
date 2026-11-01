@@ -198,8 +198,7 @@ final class Setup {
 			return $classes;
 		}
 
-		$event     = new Event( $post_id );
-		$status    = $event->get_status();
+		$status    = ( new Status( $post_id ) )->get();
 		$classes[] = sprintf( 'gatherpress-event-status--is-%s', sanitize_html_class( $status ) );
 
 		return $classes;
