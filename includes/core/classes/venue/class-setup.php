@@ -802,6 +802,7 @@ final class Setup {
 		);
 
 		$venue = null;
+		$post  = get_post( $post_id );
 
 		if ( post_type_supports( $post_type, Venue::ASSIGNMENT_SUPPORT ) ) {
 			$event = new Event( $post_id );
@@ -813,12 +814,19 @@ final class Setup {
 			$venue_meta['isOnlineEventTerm'] = $is_online;
 			$venue_meta['onlineEventLink']   = $event->maybe_get_online_event_link();
 
-			$venue_post = $this->get_venue_post_from_event_post_id( $post_id );
+			// A password on the event or its venue hides the venue, as in the Venue block.
+			$venue_post = $post instanceof WP_Post && ! $this->is_event_venue_hidden( $post )
+				? $this->get_venue_post_from_event_post_id( $post_id )
+				: null;
 
 			if ( $venue_post instanceof WP_Post ) {
 				$venue = new Venue( $venue_post->ID );
 			}
-		} elseif ( post_type_supports( $post_type, Venue::SUPPORT ) ) {
+		} elseif (
+			post_type_supports( $post_type, Venue::SUPPORT )
+			&& $post instanceof WP_Post
+			&& ! Venue::is_hidden_by_password( $post )
+		) {
 			$venue = new Venue( $post_id );
 		}
 
