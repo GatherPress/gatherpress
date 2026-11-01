@@ -831,9 +831,10 @@ class Test_Form extends Base {
 			array( 'comment_post_ID' => $post_id )
 		);
 
-		// wp_insert_comment() unslashes the data, so this is the name it stores.
-		$this->assertSame( 'O\\Brien', wp_unslash( $result['comment_author'] ) );
-		$this->assertSame( 'obrien@example.com', wp_unslash( $result['comment_author_email'] ) );
+		$comment = get_comment( wp_insert_comment( $result ) );
+
+		$this->assertSame( 'O\\Brien', $comment->comment_author );
+		$this->assertSame( 'obrien@example.com', $comment->comment_author_email );
 	}
 
 	/**
