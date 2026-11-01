@@ -59,11 +59,11 @@ The settings page is organized into tabs, each managed by its own class:
 | `enable_event_reminders` | checkbox | `true` | Email attendees a reminder before an event starts |
 | `event_reminder_day_before` | checkbox | `true` | Send a reminder a day before the start |
 | `event_reminder_hour_before` | checkbox | `false` | Send a reminder an hour before the start |
-
-The `gatherpress_event_reminder_timings` filter can add or remove reminder timings. Each one gets an `event_reminder_{timing}` checkbox.
 | `enable_rsvp_cleanup` | select | `'disabled'` | Enable/disable RSVP cleanup |
 | `rsvp_cleanup_frequency` | select | `'daily'` | Cleanup frequency (hourly, daily, weekly, monthly, yearly) |
 | `rsvp_cleanup_multiplier` | number | `1` | Interval multiplier for cleanup frequency |
+
+The `gatherpress_event_reminder_timings` filter can add or remove reminder timings. Each one gets an `event_reminder_{timing}` checkbox.
 
 #### RSVP Mode
 
