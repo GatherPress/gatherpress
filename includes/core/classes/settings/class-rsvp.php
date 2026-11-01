@@ -262,7 +262,7 @@ final class Rsvp extends Base {
 							),
 							'type'    => 'checkbox',
 							'options' => array(
-								'default' => false,
+								'default' => true,
 							),
 						),
 						'show_if'     => array(

@@ -85,6 +85,15 @@ class Test_Reminder extends Base {
 	}
 
 	/**
+	 * Turn reminders off, since they are on by default.
+	 *
+	 * @return void
+	 */
+	private function disable_reminders(): void {
+		Settings::get_instance()->set( 'enable_event_reminders', false );
+	}
+
+	/**
 	 * Create a published event lasting two hours.
 	 *
 	 * @param string $title        Event title.
@@ -171,6 +180,9 @@ class Test_Reminder extends Base {
 	public function test_schedule_sweep(): void {
 		$instance = Reminder::get_instance();
 
+		$this->assertTrue( $instance->is_enabled(), 'Reminders are on by default.' );
+
+		$this->disable_reminders();
 		$instance->schedule_sweep();
 		$this->assertFalse( wp_next_scheduled( Reminder::SWEEP_ACTION ), 'Not scheduled while off.' );
 
@@ -228,6 +240,8 @@ class Test_Reminder extends Base {
 	 * @return void
 	 */
 	public function test_sweep_does_nothing_while_off(): void {
+		$this->disable_reminders();
+
 		$post_id = $this->create_event( 'Soon', 5 * HOUR_IN_SECONDS );
 
 		( new Rsvp( $post_id ) )->save( 'guest@example.test', 'attending', 0, 0 );
@@ -345,6 +359,7 @@ class Test_Reminder extends Base {
 		( new Rsvp( $started ) )->save( 'late@example.test', 'attending', 0, 0 );
 		( new Rsvp( $post_id ) )->save( 'guest@example.test', 'attending', 0, 0 );
 
+		$this->disable_reminders();
 		Reminder::get_instance()->queue_reminder( $post_id );
 		$this->run_mail_jobs();
 		$this->assertSame( array(), $this->sent, 'Reminders are off.' );
