@@ -76,6 +76,15 @@ final class Mailer {
 	const CONTEXT_SITE_MESSAGE = 'site_message';
 
 	/**
+	 * Consent context for event reminders, which follow the reminder opt-in.
+	 *
+	 * @since TBD
+	 *
+	 * @var string
+	 */
+	const CONTEXT_REMINDER = 'reminder';
+
+	/**
 	 * Consent context for emails about the recipient's own RSVP, which skip the opt-in.
 	 *
 	 * @since TBD
@@ -132,18 +141,24 @@ final class Mailer {
 	 * Check whether a recipient should receive an email.
 	 *
 	 * Honors the recipient's opt-in preference: user meta for WordPress users,
-	 * RSVP comment meta for non-user recipients.
+	 * RSVP comment meta for non-user recipients. Users have a separate opt-in
+	 * for reminders; an RSVP without an account has one opt-in for both.
 	 *
 	 * @since TBD
 	 *
-	 * @param array $recipient Recipient row from a mail path.
+	 * @param array  $recipient Recipient row from a mail path.
+	 * @param string $context   Mail path asking for consent.
 	 * @phpstan-param Recipient $recipient
 	 *
 	 * @return bool True when the recipient can be emailed.
 	 */
-	private function is_eligible( array $recipient ): bool {
+	private function is_eligible( array $recipient, string $context ): bool {
 		if ( $recipient['is_user'] ) {
-			return User::get_instance()->has_event_updates_opt_in( $recipient['user_id'] );
+			$user = User::get_instance();
+
+			return self::CONTEXT_REMINDER === $context
+				? $user->has_event_reminders_opt_in( $recipient['user_id'] )
+				: $user->has_event_updates_opt_in( $recipient['user_id'] );
 		}
 
 		return '0' !== get_comment_meta(
@@ -157,8 +172,9 @@ final class Mailer {
 	 * Check whether a recipient consents to the kind of email being sent.
 	 *
 	 * Defaults to the recipient's opt-in, which covers the emails a recipient
-	 * can do without. Emails about the recipient's own RSVP, sent with the
-	 * `rsvp` context, default to consent instead, since the confirmation link
+	 * can do without. Reminders follow the user's reminder opt-in. Emails
+	 * about the recipient's own RSVP, sent with the `rsvp` context, default
+	 * to consent instead, since the confirmation link
 	 * is what approves an open RSVP. The filter lets a site change the rule for
 	 * a specific context, for example a site-wide message that is not about
 	 * events, without touching the other mail paths. A recipient without a
@@ -167,7 +183,7 @@ final class Mailer {
 	 * @since TBD
 	 *
 	 * @param array  $recipient Recipient row from a mail path.
-	 * @param string $context   Mail path asking for consent, e.g. `event`, `site_message` or `rsvp`.
+	 * @param string $context   Mail path asking for consent, e.g. `event`, `site_message`, `reminder` or `rsvp`.
 	 * @phpstan-param Recipient $recipient
 	 *
 	 * @return bool True when the recipient consents to this email.
@@ -196,7 +212,7 @@ final class Mailer {
 		 */
 		return (bool) apply_filters(
 			'gatherpress_email_recipient_consent',
-			self::CONTEXT_RSVP === $context || $this->is_eligible( $recipient ),
+			self::CONTEXT_RSVP === $context || $this->is_eligible( $recipient, $context ),
 			$recipient,
 			$context
 		);

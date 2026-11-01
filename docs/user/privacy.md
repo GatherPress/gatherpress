@@ -23,14 +23,18 @@ GatherPress can [email members about event updates](./emails.md). Out of the box
 The GDPR (the European Union's privacy regulation, known in Germany as the DSGVO) requires affirmative consent for this kind of communication. An opt-out default generally does not qualify, so if your site operates under the GDPR or a similar privacy law, you should flip the default so users are **opted out** until they actively opt in:
 
 ```php
-add_filter( 'gatherpress_event_updates_default_opt_in', static function () {
-    return '0';
-} );
+add_filter( 'gatherpress_event_updates_default_opt_in', '__return_zero' );
 ```
 
 Drop the snippet into a must-use plugin, a site-specific plugin, or your theme's `functions.php`.
 
 The filter only controls the default for users who have never touched the setting. Anyone who has explicitly saved a preference in their profile keeps it. See the [`gatherpress_event_updates_default_opt_in`](../developer/hooks/gatherpress_event_updates_default_opt_in.md) hook reference for details.
+
+Event reminder emails have their own checkbox in the profile and are also on by default. To default them off too:
+
+```php
+add_filter( 'gatherpress_event_reminders_default_opt_in', '__return_zero' );
+```
 
 ## Redacting RSVP IP addresses and user agents
 

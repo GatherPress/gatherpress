@@ -96,6 +96,7 @@ final class Setup {
 		Email::get_instance();
 		Meta::get_instance();
 		Query::get_instance();
+		Reminder::get_instance();
 		Rest_Api::get_instance();
 		Scheduler::get_instance();
 	}
