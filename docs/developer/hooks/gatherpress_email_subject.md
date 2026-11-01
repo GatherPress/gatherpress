@@ -3,9 +3,10 @@
 
 Filters the subject of an event email.
 
-Covers the update an editor sends from an event and the confirmation
-an attendee gets when they move off the waiting list. Lets a site
-brand or reword the subject, for example with a site prefix.
+Covers the update an editor sends from an event, the confirmation an
+attendee gets when they move off the waiting list, and the reminder
+attendees get before an event starts. Lets a site brand or reword the
+subject, for example with a site prefix.
 
 ## Auto-generated Example
 
@@ -35,7 +36,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/event/class-email.php:332](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-email.php#L332)
+- [includes/core/classes/event/class-email.php:455](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-email.php#L455)
 ```php
 apply_filters( 'gatherpress_email_subject', $subject, $post_id )
 ```

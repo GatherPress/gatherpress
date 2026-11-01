@@ -119,6 +119,10 @@
 - [`gatherpress_geocode_query`](gatherpress_geocode_query.md) Filters the address sent to the geocoder.
 - [`gatherpress_rsvp_comment_query_exclusion`](gatherpress_rsvp_comment_query_exclusion.md) Filters whether RSVP comments should be excluded from a comment query.
 
+## class-reminder.php
+
+- [`gatherpress_event_reminder_timings`](gatherpress_event_reminder_timings.md) Filters the timings an event reminder can go out at.
+
 ## class-roles.php
 
 - [`gatherpress_roles`](gatherpress_roles.md) Filter the list of roles for GatherPress.
@@ -135,6 +139,7 @@
 
 - [`gatherpress_event_end_cache_keys`](gatherpress_event_end_cache_keys.md) Filters cache keys to invalidate when an event ends.
 - [`gatherpress_event_ended`](gatherpress_event_ended.md) This action is documented in includes/core/classes/event/class-scheduler.php
+- [`gatherpress_event_starting`](gatherpress_event_starting.md) Fires when an event starts, for code that acts on it then.
 - [`gatherpress_event_upcoming_tracking_enabled`](gatherpress_event_upcoming_tracking_enabled.md) Filters whether the upcoming event IDs of every post type with event dates are tracked.
 
 ## class-settings.php
@@ -173,6 +178,7 @@
 
 ## class-user.php
 
+- [`gatherpress_event_reminders_default_opt_in`](gatherpress_event_reminders_default_opt_in.md) Filters the default state of the event reminders opt-in.
 - [`gatherpress_event_updates_default_opt_in`](gatherpress_event_updates_default_opt_in.md) Filters the default state of the event updates opt-in.
 
 ## class-utility.php

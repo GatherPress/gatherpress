@@ -32,7 +32,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/event/class-setup.php:598](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-setup.php#L598)
+- [includes/core/classes/event/class-setup.php:599](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-setup.php#L599)
 ```php
 apply_filters( 'gatherpress_event_archive_mode', $mode, $post_type )
 ```
