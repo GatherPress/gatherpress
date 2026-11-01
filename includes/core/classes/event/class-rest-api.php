@@ -160,7 +160,15 @@ final class Rest_Api {
 							);
 						}
 
-						( new Event_Status( $post->ID ) )->set( sanitize_key( (string) $value ) );
+						if ( ! ( new Event_Status( $post->ID ) )->set( sanitize_key( (string) $value ) ) ) {
+							return new WP_Error(
+								'gatherpress_status_not_saved',
+								__( 'The status of this event could not be saved.', 'gatherpress' ),
+								array( 'status' => 500 )
+							);
+						}
+
+						return true;
 					},
 					'schema'          => array(
 						'description' => __( 'The operational status of the event.', 'gatherpress' ),

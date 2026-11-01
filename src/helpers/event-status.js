@@ -13,7 +13,7 @@ import { getFromConfig } from './editor-settings';
 export const TAXONOMY_STATUS = '_gatherpress_event_status';
 
 /**
- * Slug reported for an event that has no status of its own.
+ * Slug reported for an event that has no status of its own, before settings load.
  *
  * @since TBD
  *
@@ -51,6 +51,19 @@ function getStatus( slug ) {
 	const statuses = getStatuses();
 
 	return statuses[ slug ] || statuses[ DEFAULT_STATUS ] || {};
+}
+
+/**
+ * The status an event reports when it has none of its own.
+ *
+ * The first status PHP offers, matching `Status::default_slug()`.
+ *
+ * @since TBD
+ *
+ * @return {string} The default status slug.
+ */
+export function getDefaultStatus() {
+	return Object.keys( getStatuses() )[ 0 ] || DEFAULT_STATUS;
 }
 
 /**

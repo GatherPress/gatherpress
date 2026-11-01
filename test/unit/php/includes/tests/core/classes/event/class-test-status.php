@@ -12,6 +12,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Event\Setup as Event_Setup;
 use GatherPress\Core\Event\Status;
 use GatherPress\Tests\Base;
+use WP_Term;
 
 /**
  * Class Test_Status.
@@ -361,13 +362,16 @@ class Test_Status extends Base {
 
 		Status::ensure_term( 'canceled' );
 
-		$term = get_term_by( 'slug', 'canceled', Event::TAXONOMY_STATUS );
-
-		$this->assertSame( 'Canceled', $term->name, 'Failed to assert the term carries the label.' );
+		$this->assertSame(
+			'Canceled',
+			$this->get_stored_name( 'canceled' ),
+			'Failed to assert the term carries the label.'
+		);
 	}
 
 	/**
-	 * A term whose name has drifted from the vocabulary is put right.
+	 * A term that already exists keeps its stored name, so saving an event in
+	 * one locale never renames a status for everyone else.
 	 *
 	 * @since TBD
 	 *
@@ -375,7 +379,7 @@ class Test_Status extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_ensure_term_corrects_a_stale_name(): void {
+	public function test_ensure_term_leaves_an_existing_name_alone(): void {
 		Status::ensure_term( 'postponed' );
 
 		$term = get_term_by( 'slug', 'postponed', Event::TAXONOMY_STATUS );
@@ -385,9 +389,9 @@ class Test_Status extends Base {
 		Status::ensure_term( 'postponed' );
 
 		$this->assertSame(
-			'Postponed',
-			get_term_by( 'slug', 'postponed', Event::TAXONOMY_STATUS )->name,
-			'Failed to assert a drifted name is corrected.'
+			'Put off',
+			$this->get_stored_name( 'postponed' ),
+			'Failed to assert an existing term keeps its stored name.'
 		);
 	}
 
@@ -401,15 +405,7 @@ class Test_Status extends Base {
 	 * @return void
 	 */
 	public function test_ensure_term_ignores_an_unknown_status(): void {
-		$callback = static function (): array {
-			return array();
-		};
-
-		add_filter( 'gatherpress_event_statuses', $callback );
-
 		Status::ensure_term( 'nothing-at-all' );
-
-		remove_filter( 'gatherpress_event_statuses', $callback );
 
 		$this->assertFalse(
 			get_term_by( 'slug', 'nothing-at-all', Event::TAXONOMY_STATUS ),
@@ -692,5 +688,24 @@ class Test_Status extends Base {
 
 		$status->set( 'tentative' );
 		$this->assertSame( 'TENTATIVE', $status->get_ical() );
+	}
+
+	/**
+	 * The term name as stored, rather than as the localizing filter reports it.
+	 *
+	 * @param string $slug The status slug.
+	 *
+	 * @return string The stored term name.
+	 */
+	private function get_stored_name( string $slug ): string {
+		$setup = Event_Setup::get_instance();
+
+		remove_filter( 'get_term', array( $setup, 'filter_event_status_term' ), 10 );
+
+		$term = get_term_by( 'slug', $slug, Event::TAXONOMY_STATUS );
+
+		add_filter( 'get_term', array( $setup, 'filter_event_status_term' ), 10, 2 );
+
+		return $term instanceof WP_Term ? $term->name : '';
 	}
 }

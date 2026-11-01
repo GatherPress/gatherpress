@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core\Event;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Meta;
 use GatherPress\Core\Event\Rest_Api;
+use GatherPress\Core\Event\Setup as Event_Setup;
 use GatherPress\Core\Event\Status as Event_Status;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Mailer;
@@ -147,6 +148,20 @@ class Test_Rest_Api extends Base {
 			'canceled',
 			call_user_func( $field['get_callback'], array( 'id' => $post->ID ) ),
 			'Failed to assert the get callback reads the stored status.'
+		);
+
+		// A write that does not stick is reported rather than passed off as saved.
+		unregister_taxonomy( Event::TAXONOMY_STATUS );
+
+		$unsaved = call_user_func( $field['update_callback'], 'postponed', $post );
+
+		Event_Setup::get_instance()->register_status_taxonomy();
+
+		$this->assertWPError( $unsaved, 'Failed to assert a failed write is reported.' );
+		$this->assertSame(
+			'gatherpress_status_not_saved',
+			$unsaved->get_error_code(),
+			'Failed to assert the error names the failed save.'
 		);
 
 		// A visitor with no editing rights may not.

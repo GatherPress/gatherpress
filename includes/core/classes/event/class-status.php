@@ -370,16 +370,14 @@ final class Status {
 	 * @return void
 	 */
 	public static function ensure_term( string $slug ): void {
-		$label = self::label( $slug );
-
-		if ( '' === $label ) {
+		if ( ! self::exists( $slug ) ) {
 			return;
 		}
 
 		$term = get_term_by( 'slug', $slug, Event::TAXONOMY_STATUS );
 
 		if ( ! $term instanceof WP_Term ) {
-			wp_insert_term( $label, Event::TAXONOMY_STATUS, array( 'slug' => $slug ) );
+			wp_insert_term( self::label( $slug ), Event::TAXONOMY_STATUS, array( 'slug' => $slug ) );
 		}
 	}
 

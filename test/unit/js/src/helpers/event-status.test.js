@@ -14,6 +14,7 @@ jest.mock( '@src/helpers/editor-settings', () => ( {
  * Internal dependencies
  */
 import {
+	getDefaultStatus,
 	getStatusDescription,
 	getStatusOptions,
 } from '@src/helpers/event-status';
@@ -54,5 +55,20 @@ describe( 'event status helpers', () => {
 
 		expect( getStatusOptions() ).toEqual( [] );
 		expect( getStatusDescription( 'scheduled' ) ).toBe( '' );
+	} );
+
+	it( 'treats the first status PHP offers as the default', () => {
+		mockConfig = {
+			tentative: { label: 'Tentative' },
+			scheduled: { label: 'Scheduled' },
+		};
+
+		expect( getDefaultStatus() ).toBe( 'tentative' );
+	} );
+
+	it( 'falls back to scheduled as the default before the editor settings arrive', () => {
+		mockConfig = undefined;
+
+		expect( getDefaultStatus() ).toBe( 'scheduled' );
 	} );
 } );
