@@ -73,15 +73,15 @@ class Test_Reminder extends Base {
 	}
 
 	/**
-	 * Turn reminders on, sent the given number of hours ahead.
+	 * Turn reminders on, sent at the given timing.
 	 *
-	 * @param int $hours Hours before the start.
+	 * @param string $timing A key from Reminder::get_timings().
 	 *
 	 * @return void
 	 */
-	private function enable_reminders( int $hours = 24 ): void {
+	private function enable_reminders( string $timing = Reminder::DEFAULT_TIMING ): void {
 		Settings::get_instance()->set( 'enable_event_reminders', true );
-		Settings::get_instance()->set( 'event_reminder_hours', $hours );
+		Settings::get_instance()->set( 'event_reminder_timing', $timing );
 	}
 
 	/**
@@ -155,18 +155,71 @@ class Test_Reminder extends Base {
 	}
 
 	/**
-	 * Check that the lead time follows the hours setting, at least one hour.
+	 * Check that the timings offer a day and an hour before, and can be filtered.
+	 *
+	 * @covers ::get_timings
+	 *
+	 * @return void
+	 */
+	public function test_get_timings(): void {
+		$instance = Reminder::get_instance();
+
+		$this->assertSame( array( 'day_before', 'hour_before' ), array_keys( $instance->get_timings() ) );
+		$this->assertSame( DAY_IN_SECONDS, $instance->get_timings()['day_before']['seconds'] );
+		$this->assertSame( HOUR_IN_SECONDS, $instance->get_timings()['hour_before']['seconds'] );
+
+		$week = static fn( array $timings ): array => $timings + array(
+			'week_before' => array(
+				'label'   => 'A week before',
+				'seconds' => WEEK_IN_SECONDS,
+			),
+		);
+
+		add_filter( 'gatherpress_event_reminder_timings', $week );
+		$this->assertArrayHasKey( 'week_before', $instance->get_timings() );
+		remove_filter( 'gatherpress_event_reminder_timings', $week );
+	}
+
+	/**
+	 * Check that the lead time follows the timing setting, and falls back to a day.
 	 *
 	 * @covers ::get_lead_time
 	 *
 	 * @return void
 	 */
 	public function test_get_lead_time(): void {
-		$this->enable_reminders( 2 );
-		$this->assertSame( 2 * HOUR_IN_SECONDS, Reminder::get_instance()->get_lead_time() );
+		$instance = Reminder::get_instance();
 
-		Settings::get_instance()->set( 'event_reminder_hours', 0 );
-		$this->assertSame( HOUR_IN_SECONDS, Reminder::get_instance()->get_lead_time() );
+		$this->assertSame( DAY_IN_SECONDS, $instance->get_lead_time(), 'A day before by default.' );
+
+		$this->enable_reminders( 'hour_before' );
+		$this->assertSame( HOUR_IN_SECONDS, $instance->get_lead_time() );
+
+		Settings::get_instance()->set( 'event_reminder_timing', 'gone' );
+		$this->assertSame( DAY_IN_SECONDS, $instance->get_lead_time(), 'An unknown timing falls back to a day.' );
+	}
+
+	/**
+	 * Check that an hour-before reminder only picks up events starting within the hour.
+	 *
+	 * @covers ::sweep
+	 *
+	 * @return void
+	 */
+	public function test_sweep_follows_the_timing(): void {
+		$this->enable_reminders( 'hour_before' );
+
+		$soon  = $this->create_event( 'Soon', 30 * MINUTE_IN_SECONDS );
+		$later = $this->create_event( 'Later', 5 * HOUR_IN_SECONDS );
+
+		foreach ( array( $soon, $later ) as $post_id ) {
+			( new Rsvp( $post_id ) )->save( sprintf( 'guest-%d@example.test', $post_id ), 'attending', 0, 0 );
+		}
+
+		Reminder::get_instance()->sweep();
+		$this->run_mail_jobs();
+
+		$this->assertSame( array( sprintf( 'guest-%d@example.test', $soon ) ), array_column( $this->sent, 0 ) );
 	}
 
 	/**
@@ -210,7 +263,7 @@ class Test_Reminder extends Base {
 	 * @return void
 	 */
 	public function test_sweep_reminds_events_in_the_window(): void {
-		$this->enable_reminders( 24 );
+		$this->enable_reminders();
 
 		$soon    = $this->create_event( 'Soon', 5 * HOUR_IN_SECONDS );
 		$later   = $this->create_event( 'Later', 3 * DAY_IN_SECONDS );
@@ -260,7 +313,7 @@ class Test_Reminder extends Base {
 	 * @return void
 	 */
 	public function test_sweep_reads_every_page(): void {
-		$this->enable_reminders( 24 );
+		$this->enable_reminders();
 
 		$post_ids = array();
 

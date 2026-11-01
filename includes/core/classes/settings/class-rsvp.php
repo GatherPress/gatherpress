@@ -15,6 +15,7 @@ namespace GatherPress\Core\Settings;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Reminder;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
@@ -269,21 +270,19 @@ final class Rsvp extends Base {
 							'rsvp_mode' => array( 'not' => 'disabled' ),
 						),
 					),
-					'event_reminder_hours'       => array(
+					'event_reminder_timing'      => array(
 						'labels'      => array(
 							'name' => __( 'Reminder Timing', 'gatherpress' ),
 						),
 						'description' => __(
-							'How many hours before the start the reminder goes out.',
+							'When the reminder goes out before the start.',
 							'gatherpress'
 						),
 						'field'       => array(
-							'type'    => 'number',
-							'size'    => 'small',
-							'label'   => __( 'Hours before start:', 'gatherpress' ),
+							'type'    => 'select',
 							'options' => array(
-								'min'     => 1,
-								'default' => 24,
+								'default' => Reminder::DEFAULT_TIMING,
+								'items'   => wp_list_pluck( Reminder::get_instance()->get_timings(), 'label' ),
 							),
 						),
 						'show_if'     => array(

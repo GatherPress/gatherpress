@@ -78,7 +78,7 @@ The emails GatherPress sends attendees on its own (see [Emails](user/emails.md))
 
 - **Waiting List Emails** emails attendees when a spot opens up and they move off the waiting list. It is on by default.
 - **Reminder Emails** sends attendees a reminder before an event starts. It is on by default.
-- **Reminder Timing** sets how many hours before the start the reminder goes out. The default is 24.
+- **Reminder Timing** sets whether the reminder goes out a day or an hour before the start. The default is a day. The `gatherpress_event_reminder_timings` filter can add other choices.
 
 ### Cleanup
 

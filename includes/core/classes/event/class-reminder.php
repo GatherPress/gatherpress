@@ -52,6 +52,15 @@ final class Reminder {
 	const SWEEP_ACTION = 'gatherpress_event_reminder_sweep';
 
 	/**
+	 * The reminder timing used when the setting holds no known option.
+	 *
+	 * @since TBD
+	 *
+	 * @var string
+	 */
+	const DEFAULT_TIMING = 'day_before';
+
+	/**
 	 * How many events the sweep reads at a time.
 	 *
 	 * @since TBD
@@ -93,14 +102,57 @@ final class Reminder {
 	}
 
 	/**
+	 * The choices for when a reminder goes out, keyed by setting value.
+	 *
+	 * @since TBD
+	 *
+	 * @return array<string, array{label: string, seconds: int}> Each choice's label and seconds before the start.
+	 */
+	public function get_timings(): array {
+		/**
+		 * Filters the choices for when an event reminder goes out.
+		 *
+		 * Lets a site offer another timing, such as a week before, in the
+		 * Reminder Timing setting. The sweep runs hourly, so a reminder goes
+		 * out within an hour after its time.
+		 *
+		 * @since TBD
+		 *
+		 * @param array<string, array{label: string, seconds: int}> $timings Each choice's label and seconds
+		 *                                                                    before the start, keyed by setting value.
+		 *
+		 * @return array<string, array{label: string, seconds: int}> The choices.
+		 */
+		return (array) apply_filters(
+			'gatherpress_event_reminder_timings',
+			array(
+				self::DEFAULT_TIMING => array(
+					'label'   => __( 'A day before', 'gatherpress' ),
+					'seconds' => DAY_IN_SECONDS,
+				),
+				'hour_before'        => array(
+					'label'   => __( 'An hour before', 'gatherpress' ),
+					'seconds' => HOUR_IN_SECONDS,
+				),
+			)
+		);
+	}
+
+	/**
 	 * How many seconds before an event's start its reminder is due.
+	 *
+	 * An unknown setting value, such as one whose filtered choice is gone,
+	 * falls back to a day before.
 	 *
 	 * @since TBD
 	 *
 	 * @return int Seconds before the start.
 	 */
 	public function get_lead_time(): int {
-		return max( 1, (int) Settings::get_instance()->get( 'event_reminder_hours' ) ) * HOUR_IN_SECONDS;
+		$timings = $this->get_timings();
+		$timing  = (string) Settings::get_instance()->get( 'event_reminder_timing' );
+
+		return max( 1, (int) ( $timings[ $timing ]['seconds'] ?? DAY_IN_SECONDS ) );
 	}
 
 	/**
