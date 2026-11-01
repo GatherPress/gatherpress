@@ -2385,7 +2385,7 @@ class Test_Rsvp_Form extends Base {
 		// Mock POST data using the test filter.
 		$mock_post_data = array(
 			'gatherpress_form_schema_id' => 'form_0',
-			'custom_text_field'          => 'Test Value',
+			'custom_text_field'          => 'C:\\Test Value',
 			'custom_email_field'         => 'test@example.com',
 			'author'                     => 'Built-in field', // Should be ignored.
 		);
@@ -2403,8 +2403,8 @@ class Test_Rsvp_Form extends Base {
 		$instance->process_custom_fields_for_form( $comment_id );
 
 		// Check that custom fields were saved.
-		$this->assertEquals(
-			'Test Value',
+		$this->assertSame(
+			'C:\\Test Value',
 			get_comment_meta( $comment_id, 'gatherpress_custom_custom_text_field', true )
 		);
 		$this->assertEquals(

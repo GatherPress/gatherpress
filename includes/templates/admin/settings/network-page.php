@@ -34,7 +34,7 @@ $gatherpress_is_network  = Network::NETWORK_TAB === $current_tab;
 		<?php esc_html_e( 'GatherPress Network Settings', 'gatherpress' ); ?>
 	</h1>
 
-	<?php if ( isset( $_GET['updated'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+	<?php if ( '' !== Utility::get_http_input( INPUT_GET, 'updated' ) ) : ?>
 		<div class="notice notice-success is-dismissible">
 			<p><?php esc_html_e( 'Settings saved.', 'gatherpress' ); ?></p>
 		</div>

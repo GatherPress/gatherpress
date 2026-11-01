@@ -15,6 +15,7 @@ namespace GatherPress\Core\Admin\Notices;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
 
 /**
  * Class Setup.
@@ -136,10 +137,8 @@ final class Setup {
 	 * @return void
 	 */
 	public function handle_dismissal(): void {
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- the nonce is checked below, once the slug identifies a real notice.
-		$requested = isset( $_GET[ self::DISMISS_QUERY_ARG ] )
-			? sanitize_key( wp_unslash( $_GET[ self::DISMISS_QUERY_ARG ] ) )
-			: '';
+		// The nonce is checked below, once the slug identifies a real notice.
+		$requested = Utility::get_http_input( INPUT_GET, self::DISMISS_QUERY_ARG, 'sanitize_key' );
 
 		if ( '' === $requested || ! isset( $this->notices[ $requested ] ) ) {
 			return;
@@ -150,7 +149,7 @@ final class Setup {
 		// wp_verify_nonce rather than check_admin_referer: the latter calls
 		// wp_die() on a bad nonce, so a stale dismiss link would replace the
 		// admin screen with an error page instead of being quietly ignored.
-		$nonce = isset( $_GET['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ) : '';
+		$nonce = Utility::get_http_input( INPUT_GET, '_wpnonce' );
 
 		if ( ! $notice->is_persistent() || ! wp_verify_nonce( $nonce, 'gatherpress_dismiss_notice_' . $requested ) ) {
 			return;

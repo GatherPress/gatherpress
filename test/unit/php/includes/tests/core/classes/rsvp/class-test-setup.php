@@ -1100,8 +1100,8 @@ class Test_Setup extends Base {
 	 * @return void
 	 */
 	public function test_add_rsvp_screen_options_with_page_parameter(): void {
-		// Set up the $_GET parameter for the RSVP page.
-		$_GET['page'] = Rsvp::COMMENT_TYPE; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		// Set the page URL parameter for the RSVP page.
+		$this->set_url_params( array( 'page' => Rsvp::COMMENT_TYPE ) );
 
 		$instance = Setup::get_instance();
 
@@ -1116,7 +1116,6 @@ class Test_Setup extends Base {
 		$this->assertNotNull( $screen );
 
 		// Clean up.
-		unset( $_GET['page'] );
 		set_current_screen( 'front' );
 	}
 
@@ -1128,9 +1127,6 @@ class Test_Setup extends Base {
 	 * @return void
 	 */
 	public function test_add_rsvp_screen_options_without_page_returns_early(): void {
-		// Ensure $_GET['page'] is not set.
-		unset( $_GET['page'] );
-
 		$instance = Setup::get_instance();
 
 		// Should return early without doing anything.
@@ -1153,8 +1149,12 @@ class Test_Setup extends Base {
 		wp_set_current_user( $user_id );
 
 		// Set up request parameters.
-		$_REQUEST['s']      = 'test search'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$_REQUEST['status'] = 'attending'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$this->set_url_params(
+			array(
+				's'      => 'test search',
+				'status' => 'attending',
+			)
+		);
 
 		$instance = Setup::get_instance();
 
@@ -1166,7 +1166,6 @@ class Test_Setup extends Base {
 		$this->assertNotEmpty( $output );
 
 		// Clean up.
-		unset( $_REQUEST['s'], $_REQUEST['status'] );
 		wp_set_current_user( 0 );
 	}
 

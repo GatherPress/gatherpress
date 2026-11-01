@@ -304,7 +304,7 @@ class Test_Admin_List extends Base {
 		set_current_screen( 'edit-' . Event::POST_TYPE );
 
 		// Simulate an active upcoming view via GET parameter.
-		$_GET['gatherpress_event_query'] = 'upcoming'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$this->set_url_params( array( 'gatherpress_event_query' => 'upcoming' ) );
 
 		// WordPress marks "All" as current by default.
 		$view_links = array(
@@ -339,8 +339,6 @@ class Test_Admin_List extends Base {
 		);
 
 		// Clean up.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		unset( $_GET['gatherpress_event_query'] );
 		set_current_screen( 'front' );
 	}
 
@@ -357,7 +355,7 @@ class Test_Admin_List extends Base {
 		set_current_screen( 'edit-' . Event::POST_TYPE );
 
 		// Simulate an active past view via GET parameter.
-		$_GET['gatherpress_event_query'] = 'past'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$this->set_url_params( array( 'gatherpress_event_query' => 'past' ) );
 
 		$view_links = array(
 			'all' => '<a href="#">All</a>',
@@ -379,8 +377,6 @@ class Test_Admin_List extends Base {
 		);
 
 		// Clean up.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		unset( $_GET['gatherpress_event_query'] );
 		set_current_screen( 'front' );
 	}
 
@@ -397,8 +393,6 @@ class Test_Admin_List extends Base {
 		set_current_screen( 'edit-' . Event::POST_TYPE );
 
 		// Ensure no event query filter is set.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		unset( $_GET['gatherpress_event_query'] );
 
 		// WordPress marks "All" as current by default.
 		$view_links = array(
@@ -446,8 +440,6 @@ class Test_Admin_List extends Base {
 		set_current_screen( 'edit-' . Event::POST_TYPE );
 
 		// Ensure no event query filter is set.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		unset( $_GET['gatherpress_event_query'] );
 
 		// Simulate WordPress not adding current class because extra $_GET
 		// params break is_base_request().
@@ -486,9 +478,6 @@ class Test_Admin_List extends Base {
 		$instance = Admin_List::get_instance();
 
 		set_current_screen( 'edit-' . Event::POST_TYPE );
-
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		unset( $_GET['gatherpress_event_query'] );
 
 		// Simulate WordPress's view-link output when the user is on the
 		// Published filter: "All" is plain, "publish" carries `current`.
@@ -1938,13 +1927,11 @@ class Test_Admin_List extends Base {
 			)
 		);
 
-		$_GET['gatherpress_event_date'] = '202506'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$this->set_url_params( array( 'gatherpress_event_date' => '202506' ) );
 
 		ob_start();
 		$instance->render_date_filters( Event::POST_TYPE );
 		$output = ob_get_clean();
-
-		unset( $_GET['gatherpress_event_date'] );
 
 		$this->assertMatchesRegularExpression(
 			'/<option value="202506" ?selected/',
@@ -1980,13 +1967,11 @@ class Test_Admin_List extends Base {
 			'The All view has no view parameter to carry through the filter form.'
 		);
 
-		$_GET['gatherpress_event_query'] = 'upcoming'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$this->set_url_params( array( 'gatherpress_event_query' => 'upcoming' ) );
 
 		ob_start();
 		$instance->render_date_filters( Event::POST_TYPE );
 		$with_view = ob_get_clean();
-
-		unset( $_GET['gatherpress_event_query'] );
 
 		$this->assertStringContainsString(
 			'<input type="hidden" name="gatherpress_event_query" value="upcoming" />',
@@ -2096,11 +2081,9 @@ class Test_Admin_List extends Base {
 			'Views other than Trash should hide trashed posts and auto-drafts.'
 		);
 
-		$_GET['post_status'] = 'trash'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$this->set_url_params( array( 'post_status' => 'trash' ) );
 
 		$trash = Utility::invoke_hidden_method( $instance, 'get_months_status_clause' );
-
-		unset( $_GET['post_status'] );
 
 		$this->assertSame(
 			" AND post_status = 'trash'",
@@ -2199,13 +2182,11 @@ class Test_Admin_List extends Base {
 			)
 		);
 
-		$_GET[ Topic::TAXONOMY ] = 'accessibility'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$this->set_url_params( array( Topic::TAXONOMY => 'accessibility' ) );
 
 		ob_start();
 		$instance->render_taxonomy_filters( Event::POST_TYPE );
 		$output = ob_get_clean();
-
-		unset( $_GET[ Topic::TAXONOMY ] );
 
 		$this->assertMatchesRegularExpression(
 			'/<option class="level-0" value="accessibility" ?selected/',

@@ -144,7 +144,7 @@ final class Form {
 	 * @return bool True if this is an RSVP form submission, false otherwise.
 	 */
 	public function is_rsvp_form_submission(): bool {
-		// phpcs:disable WordPress.Security.NonceVerification.Missing
+		// INPUT_SERVER is unreliable under FastCGI.
 		$request_method = isset( $_SERVER['REQUEST_METHOD'] )
 			? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) )
 			: '';
@@ -153,7 +153,6 @@ final class Form {
 			! empty( Utility::get_http_input( INPUT_POST, 'comment_post_ID' ) ) &&
 			! empty( Utility::get_http_input( INPUT_POST, 'gatherpress_rsvp_form_id' ) )
 		);
-		// phpcs:enable WordPress.Security.NonceVerification.Missing
 	}
 
 	/**
@@ -303,10 +302,12 @@ final class Form {
 		) {
 			add_filter( 'pre_comment_approved', '__return_zero' );
 
+			// The comment data here is slashed, and wp_insert_comment() unslashes
+			// it, so the raw input is slashed to keep its backslashes.
 			$comment_data['user_id']              = 0;
 			$comment_data['comment_author_url']   = '';
-			$comment_data['comment_author']       = $author;
-			$comment_data['comment_author_email'] = $email;
+			$comment_data['comment_author']       = wp_slash( $author );
+			$comment_data['comment_author_email'] = wp_slash( $email );
 		}
 
 		return $comment_data;
@@ -343,7 +344,8 @@ final class Form {
 				),
 			);
 
-			// Add custom fields to data.
+			// Add custom fields to data. The field names are not known up front,
+			// so this walks $_POST instead of reading one name at a time.
 			foreach ( $_POST as $key => $value ) {
 				if ( str_starts_with( $key, 'gatherpress_custom_' ) ) {
 					$data[ $key ] = $value;
@@ -674,8 +676,10 @@ final class Form {
 			);
 		}
 
-		// Prepare comment data.
-		$comment_data = $this->prepare_comment_data( $post_id, $author, $email );
+		// Prepare comment data. wp_filter_comment() and wp_insert_comment()
+		// expect slashed data, as wp_new_comment() passes it, so slash it to
+		// keep backslashes.
+		$comment_data = wp_slash( $this->prepare_comment_data( $post_id, $author, $email ) );
 
 		// Run WordPress-native comment filters so sites can honor
 		// pre_comment_user_ip, pre_comment_user_agent, etc. for privacy.
@@ -773,6 +777,7 @@ final class Form {
 		);
 
 		// Set remote IP if available.
+		// INPUT_SERVER is unreliable under FastCGI.
 		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
 			$remote_ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
 
@@ -939,8 +944,9 @@ final class Form {
 			}
 
 			// Save the sanitized field value with prefix to avoid conflicts.
+			// update_comment_meta() unslashes, so slash to keep backslashes.
 			$meta_key = 'gatherpress_custom_' . sanitize_key( $field_name );
-			update_comment_meta( $comment_id, $meta_key, $sanitized_value );
+			update_comment_meta( $comment_id, $meta_key, wp_slash( $sanitized_value ) );
 		}
 	}
 
