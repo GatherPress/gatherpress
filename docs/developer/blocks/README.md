@@ -8,3 +8,5 @@
     - JS filters for adding starter patterns to GatherPress blocks (RSVP Response and others)
 5. [Sharing the GatherPress utility stylesheet with your own blocks](./sharing-utility-styles.md)
     - Opt a companion plugin's block prefix into GatherPress's shared utility CSS so blocks can reuse helpers like `gatherpress--is-hidden` without duplicating the stylesheet.
+6. [Calendar blocks](./calendar.md)
+    - Block attributes, binding sources, CSS classes and hooks of the month, week and day calendar.

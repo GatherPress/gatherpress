@@ -1,0 +1,286 @@
+{
+	"description": "A week time grid with overlapping events, events outside the hours, a ribbon, and a post that is not an event.",
+	"startOfWeek": 1,
+	"attributes": {
+		"viewType": "week",
+		"unitCount": 1,
+		"selectedDate": "2026-10-14",
+		"showWeekends": true,
+		"enableTimeGrid": true
+	},
+	"week": {
+		"dayStartHour": 8,
+		"dayEndHour": 20
+	},
+	"events": [
+		{
+			"key": "a",
+			"start": "2026-10-14 09:00:00",
+			"end": "2026-10-14 11:00:00"
+		},
+		{
+			"key": "b",
+			"start": "2026-10-14 10:00:00",
+			"end": "2026-10-14 12:00:00"
+		},
+		{
+			"key": "c",
+			"start": "2026-10-14 10:30:00",
+			"end": "2026-10-14 10:45:00"
+		},
+		{
+			"key": "d",
+			"start": "2026-10-14 13:00:00",
+			"end": "2026-10-14 14:00:00"
+		},
+		{
+			"key": "early",
+			"start": "2026-10-15 06:00:00",
+			"end": "2026-10-15 07:00:00"
+		},
+		{
+			"key": "late",
+			"start": "2026-10-15 21:00:00",
+			"end": "2026-10-15 22:00:00"
+		},
+		{
+			"key": "to-midnight",
+			"start": "2026-10-16 18:00:00",
+			"end": "2026-10-17 00:00:00"
+		},
+		{
+			"key": "no-end",
+			"start": "2026-10-16 09:20:00",
+			"end": ""
+		},
+		{
+			"key": "ribbon",
+			"start": "2026-10-13 09:00:00",
+			"end": "2026-10-14 17:00:00"
+		},
+		{
+			"key": "post",
+			"type": "post",
+			"start": "2026-10-16 15:00:00",
+			"end": ""
+		}
+	],
+	"expected": {
+		"range": {
+			"start": "2026-10-12",
+			"end": "2026-10-18",
+			"unitCount": 1
+		},
+		"units": [
+			{
+				"weeks": [
+					[
+						{
+							"date": "2026-10-12",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-10-13",
+							"isWeekend": false,
+							"posts": [
+								{
+									"event": "ribbon",
+									"span": "start",
+									"dayIndex": 1,
+									"totalDays": 2,
+									"slot": 0,
+									"allDay": false
+								}
+							]
+						},
+						{
+							"date": "2026-10-14",
+							"isWeekend": false,
+							"posts": [
+								{
+									"event": "ribbon",
+									"span": "end",
+									"dayIndex": 2,
+									"totalDays": 2,
+									"slot": 0,
+									"allDay": false
+								},
+								{
+									"event": "a",
+									"span": "single",
+									"dayIndex": 1,
+									"totalDays": 1,
+									"slot": 1,
+									"allDay": false,
+									"rows": [
+										5,
+										13
+									],
+									"overlap": [
+										0,
+										3
+									]
+								},
+								{
+									"event": "b",
+									"span": "single",
+									"dayIndex": 1,
+									"totalDays": 1,
+									"slot": 2,
+									"allDay": false,
+									"rows": [
+										9,
+										17
+									],
+									"overlap": [
+										1,
+										3
+									]
+								},
+								{
+									"event": "c",
+									"span": "single",
+									"dayIndex": 1,
+									"totalDays": 1,
+									"slot": 3,
+									"allDay": false,
+									"rows": [
+										11,
+										12
+									],
+									"overlap": [
+										2,
+										3
+									]
+								},
+								{
+									"event": "d",
+									"span": "single",
+									"dayIndex": 1,
+									"totalDays": 1,
+									"slot": 4,
+									"allDay": false,
+									"rows": [
+										21,
+										25
+									],
+									"overlap": [
+										0,
+										1
+									]
+								}
+							]
+						},
+						{
+							"date": "2026-10-15",
+							"isWeekend": false,
+							"posts": [
+								{
+									"event": "early",
+									"span": "single",
+									"dayIndex": 1,
+									"totalDays": 1,
+									"slot": 0,
+									"allDay": false,
+									"rows": [
+										1,
+										2
+									],
+									"overlap": [
+										0,
+										1
+									]
+								},
+								{
+									"event": "late",
+									"span": "single",
+									"dayIndex": 1,
+									"totalDays": 1,
+									"slot": 1,
+									"allDay": false,
+									"rows": [
+										48,
+										49
+									],
+									"overlap": [
+										0,
+										1
+									]
+								}
+							]
+						},
+						{
+							"date": "2026-10-16",
+							"isWeekend": false,
+							"posts": [
+								{
+									"event": "to-midnight",
+									"span": "single",
+									"dayIndex": 1,
+									"totalDays": 1,
+									"slot": 0,
+									"allDay": false,
+									"rows": [
+										41,
+										49
+									],
+									"overlap": [
+										0,
+										1
+									]
+								},
+								{
+									"event": "no-end",
+									"span": "single",
+									"dayIndex": 1,
+									"totalDays": 1,
+									"slot": 1,
+									"allDay": false,
+									"rows": [
+										6,
+										11
+									],
+									"overlap": [
+										0,
+										1
+									]
+								}
+							]
+						},
+						{
+							"date": "2026-10-17",
+							"isWeekend": true,
+							"posts": []
+						},
+						{
+							"date": "2026-10-18",
+							"isWeekend": true,
+							"posts": []
+						}
+					]
+				],
+				"weekNumbers": [
+					42
+				]
+			}
+		],
+		"timeGrid": {
+			"slots": [
+				"08:00",
+				"09:00",
+				"10:00",
+				"11:00",
+				"12:00",
+				"13:00",
+				"14:00",
+				"15:00",
+				"16:00",
+				"17:00",
+				"18:00",
+				"19:00"
+			],
+			"totalQuarters": 48
+		}
+	}
+}

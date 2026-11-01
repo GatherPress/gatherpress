@@ -21,6 +21,10 @@
 
 - [`gatherpress_calendar_external_max_age`](gatherpress_calendar_external_max_age.md) Filters how long calendar responses may be reused by clients and caches.
 
+## class-calendar-entries.php
+
+- [`gatherpress_calendar_entry_render`](gatherpress_calendar_entry_render.md) Fires before the calendar renders the entry template of one event.
+
 ## class-email.php
 
 - [`gatherpress_email_subject`](gatherpress_email_subject.md) Filters the subject of an event email.
@@ -35,7 +39,7 @@
 
 - [`gatherpress_date_format`](gatherpress_date_format.md)
 - [`gatherpress_datetime_format`](gatherpress_datetime_format.md) Filters the format an event's datetime is rendered with.
-- [`gatherpress_datetime_separator`](gatherpress_datetime_separator.md) Filter the separator between start and end dates/times.
+- [`gatherpress_datetime_separator`](gatherpress_datetime_separator.md) This filter is documented in includes/core/classes/event/class-event.php
 - [`gatherpress_force_online_event_link`](gatherpress_force_online_event_link.md) Filters whether to force the display of the online event link.
 - [`gatherpress_time_format`](gatherpress_time_format.md)
 - [`gatherpress_timezone`](gatherpress_timezone.md)
@@ -126,6 +130,12 @@
 ## class-rsvp.php
 
 - [`gatherpress_rsvp_waiting_list_promoted`](gatherpress_rsvp_waiting_list_promoted.md) This action is documented in includes/core/classes/rsvp/class-rsvp.php
+
+## class-scheduler.php
+
+- [`gatherpress_event_end_cache_keys`](gatherpress_event_end_cache_keys.md) Filters cache keys to invalidate when an event ends.
+- [`gatherpress_event_ended`](gatherpress_event_ended.md) This action is documented in includes/core/classes/event/class-scheduler.php
+- [`gatherpress_event_upcoming_tracking_enabled`](gatherpress_event_upcoming_tracking_enabled.md) Filters whether the upcoming event IDs of every post type with event dates are tracked.
 
 ## class-settings.php
 

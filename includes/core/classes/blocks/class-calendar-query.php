@@ -260,45 +260,6 @@ final class Calendar_Query {
 	}
 
 	/**
-	 * Recursively find the attributes of the first inner block with a given name.
-	 *
-	 * @since TBD
-	 *
-	 * @param string       $block_name   The block name to search for.
-	 * @param array<mixed> $inner_blocks Array of parsed inner blocks.
-	 *
-	 * @return array<string, mixed>|null The matching block's attributes or null.
-	 */
-	private function find_inner_block_attrs( string $block_name, array $inner_blocks ): ?array {
-		foreach ( $inner_blocks as $block ) {
-			if ( ! is_array( $block ) ) {
-				continue;
-			}
-
-			if ( ( $block['blockName'] ?? '' ) === $block_name ) {
-				/**
-				 * Parsed block attributes are keyed by attribute name.
-				 *
-				 * @var array<string, mixed> $attrs
-				 */
-				$attrs = is_array( $block['attrs'] ?? null ) ? $block['attrs'] : array();
-
-				return $attrs;
-			}
-
-			if ( is_array( $block['innerBlocks'] ?? null ) ) {
-				$found = $this->find_inner_block_attrs( $block_name, $block['innerBlocks'] );
-
-				if ( null !== $found ) {
-					return $found;
-				}
-			}
-		}
-
-		return null;
-	}
-
-	/**
 	 * Checks whether a block context belongs to a Query block that contains a calendar.
 	 *
 	 * @since TBD
@@ -330,11 +291,11 @@ final class Calendar_Query {
 	 * @return array<string, mixed> Updated block data.
 	 */
 	private function paginate_query_block( array $parsed_block, ?WP_Block $parent_block ): array {
-		$inner_blocks   = is_array( $parsed_block['innerBlocks'] ?? null ) ? $parsed_block['innerBlocks'] : array();
-		$calendar_attrs = $this->find_inner_block_attrs( 'gatherpress/calendar', $inner_blocks );
-		$attrs          = $parsed_block['attrs'] ?? null;
+		$inner_blocks = is_array( $parsed_block['innerBlocks'] ?? null ) ? $parsed_block['innerBlocks'] : array();
+		$calendar     = Utility::find_block( $inner_blocks, Calendar::BLOCK_NAME, true );
+		$attrs        = $parsed_block['attrs'] ?? null;
 
-		if ( null === $calendar_attrs || ! is_array( $attrs ) || ! is_array( $attrs['query'] ?? null ) ) {
+		if ( null === $calendar || ! is_array( $attrs ) || ! is_array( $attrs['query'] ?? null ) ) {
 			return $parsed_block;
 		}
 
@@ -345,7 +306,11 @@ final class Calendar_Query {
 		}
 
 		$page  = Query_Builder::get_requested_page( $query_id );
-		$range = Date_Range::from_attributes( $calendar_attrs, $page, $parent_block );
+		$range = Date_Range::from_attributes(
+			is_array( $calendar['attrs'] ?? null ) ? $calendar['attrs'] : array(),
+			$page,
+			$parent_block
+		);
 
 		$attrs['query'][ Query_Builder::CALENDAR_QUERY_PARAM ]      = true;
 		$attrs['query'][ Query_Builder::CALENDAR_QUERY_VIEW_TYPE ]  = $range->view_type;

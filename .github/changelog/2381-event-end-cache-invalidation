@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Add event-end scheduler and cache invalidation. Schedules a single WP-Cron job at the event end timestamp to fire the `gatherpress_event_ended` action and invalidate post and query caches when an event concludes.
