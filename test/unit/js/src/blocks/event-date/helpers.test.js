@@ -273,6 +273,7 @@ describe( 'resolveEventDateData', () => {
 				timezone: undefined,
 				isAllDay: false,
 				timezonePreference: '',
+				status: '',
 				isLoading: true,
 				isValidEvent: false,
 			} );
@@ -297,6 +298,7 @@ describe( 'resolveEventDateData', () => {
 				timezone: undefined,
 				isAllDay: false,
 				timezonePreference: '',
+				status: '',
 				isLoading: false,
 				isValidEvent: false,
 			} );
@@ -421,6 +423,51 @@ describe( 'resolveEventDateData', () => {
 			expect(
 				resolveEventDateData( mockSelect, 'page', undefined, 99, true ).isAllDay,
 			).toBe( true );
+		} );
+	} );
+
+	describe( 'status', () => {
+		it( 'reads the edited status while the event is being edited', () => {
+			const editorSelect = ( store ) =>
+				'core/editor' === store
+					? {
+						getCurrentPostType: () => 'gatherpress_event',
+						getCurrentPostId: () => 42,
+						getEditedPostAttribute: ( key ) =>
+							'gatherpress_status' === key ? 'canceled' : mockEditedMeta,
+					}
+					: mockSelect( store );
+
+			expect(
+				resolveEventDateData( editorSelect, 'gatherpress_event', undefined, 42, false ).status,
+			).toBe( 'canceled' );
+		} );
+
+		it( 'reads a queried event from its own record', () => {
+			mockCoreStore.getEntityRecord = jest.fn( () => ( {
+				status: 'publish',
+				gatherpress_status: 'postponed',
+				meta: {},
+			} ) );
+
+			expect(
+				resolveEventDateData( mockSelect, 'gatherpress_event', 1, 99, false ).status,
+			).toBe( 'postponed' );
+		} );
+
+		it( 'reads an override target from its own record', () => {
+			mockCoreStore.getPostType.mockReturnValue( { supports: {} } );
+			findEventPostById.mockReturnValue( { gatherpress_status: 'canceled', meta: {} } );
+
+			expect(
+				resolveEventDateData( mockSelect, 'page', undefined, 99, true ).status,
+			).toBe( 'canceled' );
+		} );
+
+		it( 'reports no status when the record has none', () => {
+			expect(
+				resolveEventDateData( mockSelect, 'gatherpress_event', 1, 99, false ).status,
+			).toBe( '' );
 		} );
 	} );
 
