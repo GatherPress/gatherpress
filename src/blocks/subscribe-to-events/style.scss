@@ -1,0 +1,14 @@
+/**
+ * The following styles get applied both on the front of your site
+ * and in the editor.
+ */
+
+.gatherpress-subscribe-to-events {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+
+	&__link {
+		text-decoration: underline;
+	}
+}
