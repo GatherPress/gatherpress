@@ -122,6 +122,21 @@ final class Time_Grid {
 	}
 
 	/**
+	 * Gets the time grid that the calendar block passes to its inner blocks.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $context Block context.
+	 *
+	 * @return self The time grid, or a disabled one outside a calendar.
+	 */
+	public static function from_context( array $context ): self {
+		$time_grid = $context['gatherpress/timeGridConfig'] ?? null;
+
+		return $time_grid instanceof self ? $time_grid : new self();
+	}
+
+	/**
 	 * Retrieves the hours in each labeled row of the time grid.
 	 *
 	 * The editor preview reads the same value from the editor settings.

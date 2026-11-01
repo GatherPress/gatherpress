@@ -8,10 +8,15 @@
 
 namespace GatherPress\Tests\Core\Blocks;
 
+use GatherPress\Core\Assets;
 use GatherPress\Core\Blocks\Event_Date;
+use GatherPress\Core\Blocks\Event_Date\Html_Renderer;
 use GatherPress\Core\Event;
+use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 use PasswordHash;
+use PMC\Unit_Test\Utility;
+use WP_Block;
 
 /**
  * Class Test_Event_Date.
@@ -316,6 +321,7 @@ class Test_Event_Date extends Base {
 	 * wrapped in a link to the event.
 	 *
 	 * @since 0.35.0
+	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
 	 *
 	 * @return void
 	 */
@@ -342,6 +348,7 @@ class Test_Event_Date extends Base {
 	 * Coverage for the rendered block without the isLink attribute.
 	 *
 	 * @since 0.35.0
+	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
 	 *
 	 * @return void
 	 */
@@ -426,6 +433,7 @@ class Test_Event_Date extends Base {
 	 * even though the final output allows the block's own anchor and time tags.
 	 *
 	 * @since 0.36.0
+	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
 	 *
 	 * @return void
 	 */
@@ -476,6 +484,7 @@ class Test_Event_Date extends Base {
 	 * setting off) that previously diverged between the two.
 	 *
 	 * @since 0.36.0
+	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
 	 *
 	 * @return void
 	 */
@@ -533,45 +542,25 @@ class Test_Event_Date extends Base {
 				array( 'displayType' => 'end' ),
 				array( 'end' ),
 			),
-			'linked'             => array(
-				array(
-					'displayType' => 'both',
-					'isLink'      => true,
-				),
-				array( 'both' ),
-			),
-			'custom separator'   => array(
-				array(
-					'displayType' => 'both',
-					'separator'   => ' — ',
-				),
-				array( 'both', '', '', ' — ' ),
-			),
 		);
 
-		foreach ( $combinations as $label => $data ) {
-			list( $attributes, $method_args ) = $data;
-			$block                            = sprintf(
-				'<!-- wp:gatherpress/event-date %s /-->',
-				wp_json_encode( $attributes )
+		foreach ( $combinations as $label => list( $block_attrs, $event_args ) ) {
+			$render = do_blocks(
+				sprintf(
+					'<!-- wp:gatherpress/event-date %s /-->',
+					wp_json_encode( $block_attrs )
+				)
 			);
-			$render                           = do_blocks( $block );
 
-			// Strip <time>/<a> markup to compare the human text only.
-			$rendered_text = trim( wp_strip_all_tags( $render ) );
-
-			$expected = $event->get_display_datetime(
-				$method_args[0] ?? '',
-				$method_args[1] ?? '',
-				$method_args[2] ?? '',
-				$method_args[3] ?? '',
-				$method_args[4] ?? ''
+			$expected = call_user_func_array(
+				array( $event, 'get_display_datetime' ),
+				$event_args
 			);
 
 			$this->assertSame(
 				$expected,
-				$rendered_text,
-				sprintf( 'Block text should match get_display_datetime for "%s".', $label )
+				wp_strip_all_tags( $render ),
+				sprintf( 'Rendered text diverged from get_display_datetime() for %s.', $label )
 			);
 		}
 
@@ -586,6 +575,7 @@ class Test_Event_Date extends Base {
 	 * value, while the no-datetime placeholder emits none.
 	 *
 	 * @since 0.36.0
+	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
 	 *
 	 * @return void
 	 */
@@ -635,10 +625,11 @@ class Test_Event_Date extends Base {
 	/**
 	 * Coverage for the no-datetime placeholder.
 	 *
-	 * An event without saved datetimes renders the em-dash placeholder with no
+	 * An event without saved datetimes renders the placeholder with no
 	 * <time datetime> element.
 	 *
 	 * @since 0.36.0
+	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
 	 *
 	 * @return void
 	 */
@@ -656,5 +647,561 @@ class Test_Event_Date extends Base {
 
 		$this->assertStringContainsString( esc_html( Event::DATETIME_PLACEHOLDER ), $render );
 		$this->assertStringNotContainsString( '<time ', $render );
+	}
+
+	/**
+	 * Render the block for an event fixed at 18:00 to 20:00 New York time.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $title               Post title, so each test gets its own event.
+	 * @param array  $attributes          Block attributes to render with.
+	 * @param string $timezone_preference The event's own timezone preference: 'always', 'never' or ''.
+	 *
+	 * @return string The rendered block.
+	 */
+	private function render_viewer_time_block(
+		string $title,
+		array $attributes,
+		string $timezone_preference = ''
+	): string {
+		Settings::get_instance()->set( 'show_viewer_timezone', true );
+
+		$event_post = $this->mock->post(
+			array(
+				'post_title' => $title,
+				'post_type'  => Event::POST_TYPE,
+			)
+		)->get();
+
+		update_post_meta( $event_post->ID, 'gatherpress_show_timezone', $timezone_preference );
+
+		$event = new Event( $event_post->ID );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2030-06-15 18:00:00',
+				'datetime_end'   => '2030-06-15 20:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$this->go_to( get_permalink( $event_post->ID ) );
+
+		return do_blocks(
+			sprintf(
+				'<!-- wp:gatherpress/event-date %s /-->',
+				wp_json_encode( $attributes )
+			)
+		);
+	}
+
+	/**
+	 * Read back the Interactivity API context the block wrapper carries.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $output Rendered block.
+	 *
+	 * @return array|null The decoded context, or null when no context was rendered.
+	 */
+	private function get_viewer_time_context( string $output ): ?array {
+		if ( ! preg_match( '/data-wp-context=\'([^\']*)\'/', $output, $matches ) ) {
+			return null;
+		}
+
+		return json_decode( html_entity_decode( $matches[1] ), true );
+	}
+
+	/**
+	 * The showViewerTime attribute emits the tooltip markup and context for the
+	 * view module, carrying the event's GMT datetimes and its own timezone.
+	 *
+	 * @since TBD
+	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
+	 *
+	 * @return void
+	 */
+	public function test_render_emits_viewer_time_tooltip(): void {
+		$output = $this->render_viewer_time_block(
+			'Viewer Time Unit Test Event',
+			array( 'showViewerTime' => true )
+		);
+
+		$this->assertStringContainsString(
+			'data-wp-class--gatherpress-tooltip="state.hasViewerTime"',
+			$output,
+			'The datetime element should bind the tooltip class.'
+		);
+		$this->assertStringContainsString(
+			'data-wp-bind--data-gatherpress-tooltip="state.viewerTimeLabel"',
+			$output,
+			'The datetime element should bind the tooltip label.'
+		);
+		$this->assertStringContainsString(
+			'data-wp-interactive="gatherpress"',
+			$output,
+			'The wrapper should join the gatherpress interactivity store.'
+		);
+		$this->assertStringContainsString(
+			'data-wp-text="state.viewerTimeSrLabel"',
+			$output,
+			'The screen reader label should be bound to derived state.'
+		);
+
+		$context = $this->get_viewer_time_context( $output );
+
+		$this->assertSame(
+			'2030-06-15 22:00:00',
+			$context['startGmt'] ?? null,
+			'The context should carry the GMT start so the browser can convert it.'
+		);
+		$this->assertSame(
+			'2030-06-16 00:00:00',
+			$context['endGmt'] ?? null,
+			'The context should carry the GMT end.'
+		);
+		$this->assertSame(
+			'America/New_York',
+			$context['eventTimezone'] ?? null,
+			'The context should carry the event timezone to compare against.'
+		);
+		$this->assertSame(
+			'%1$s to %2$s your time',
+			$context['rangeFormat'] ?? null,
+			'The sentence is translated server-side because a script module cannot import @wordpress/i18n.'
+		);
+		$this->assertSame(
+			'%s your time',
+			$context['singleFormat'] ?? null,
+			'The start-only sentence is translated server-side too.'
+		);
+	}
+
+	/**
+	 * The rangeFormat honors custom separator attributes and the gatherpress_datetime_separator filter.
+	 *
+	 * @since TBD
+	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
+	 *
+	 * @return void
+	 */
+	public function test_render_viewer_time_honors_custom_separator_and_filter(): void {
+		$output = $this->render_viewer_time_block(
+			'Viewer Time Custom Separator Event',
+			array(
+				'showViewerTime' => true,
+				'separator'      => '-',
+			)
+		);
+
+		$context = $this->get_viewer_time_context( $output );
+
+		$this->assertSame(
+			'%1$s - %2$s your time',
+			$context['rangeFormat'] ?? null,
+			'The rangeFormat should incorporate the custom separator attribute.'
+		);
+
+		$filter_callback = function () {
+			return 'until';
+		};
+		add_filter( 'gatherpress_datetime_separator', $filter_callback );
+
+		$output_filtered  = $this->render_viewer_time_block(
+			'Viewer Time Filtered Separator Event',
+			array( 'showViewerTime' => true )
+		);
+		$context_filtered = $this->get_viewer_time_context( $output_filtered );
+
+		$this->assertSame(
+			'%1$s until %2$s your time',
+			$context_filtered['rangeFormat'] ?? null,
+			'The rangeFormat should honor the gatherpress_datetime_separator filter.'
+		);
+
+		remove_filter( 'gatherpress_datetime_separator', $filter_callback );
+	}
+
+	/**
+	 * A block showing only the start says only the start in local time too,
+	 * rather than announcing a range the block itself never displays.
+	 *
+	 * @since TBD
+	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
+	 *
+	 * @return void
+	 */
+	public function test_render_viewer_time_omits_end_when_display_type_is_start(): void {
+		$output = $this->render_viewer_time_block(
+			'Viewer Time Start Only Unit Test Event',
+			array(
+				'showViewerTime' => true,
+				'displayType'    => 'start',
+			)
+		);
+
+		$context = $this->get_viewer_time_context( $output );
+
+		$this->assertSame(
+			'2030-06-15 22:00:00',
+			$context['startGmt'] ?? null,
+			'The context should still carry the GMT start.'
+		);
+		$this->assertSame(
+			'',
+			$context['endGmt'] ?? null,
+			'The context should carry no end when the block does not display one.'
+		);
+	}
+
+	/**
+	 * A block showing only the end converts that end.
+	 *
+	 * The end is the only time such a block displays, so it is the one the
+	 * viewer needs converting. Mirrors get_display_datetime(), which shows the
+	 * end alone for this display type rather than showing nothing.
+	 *
+	 * @since TBD
+	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
+	 *
+	 * @return void
+	 */
+	public function test_render_viewer_time_converts_end_when_display_type_is_end(): void {
+		$output = $this->render_viewer_time_block(
+			'Viewer Time End Only Unit Test Event',
+			array(
+				'showViewerTime' => true,
+				'displayType'    => 'end',
+			)
+		);
+
+		$this->assertStringContainsString(
+			'data-wp-class--gatherpress-tooltip="state.hasViewerTime"',
+			$output,
+			'The tooltip should be enabled for an end-only block.'
+		);
+
+		$context = $this->get_viewer_time_context( $output );
+
+		$this->assertSame(
+			'',
+			$context['startGmt'] ?? null,
+			'The context should carry no start when the block does not display one.'
+		);
+		$this->assertSame(
+			'2030-06-16 00:00:00',
+			$context['endGmt'] ?? null,
+			'The context should carry the GMT end for the browser to convert.'
+		);
+	}
+
+	/**
+	 * No tooltip without the attribute, so nothing changes for the blocks
+	 * already out there.
+	 *
+	 * @since TBD
+	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
+	 *
+	 * @return void
+	 */
+	public function test_render_omits_viewer_time_tooltip_by_default(): void {
+		$event_post = $this->mock->post(
+			array(
+				'post_title' => 'No Viewer Time Unit Test Event',
+				'post_type'  => Event::POST_TYPE,
+			)
+		)->get();
+
+		$this->go_to( get_permalink( $event_post->ID ) );
+
+		$output = do_blocks( '<!-- wp:gatherpress/event-date /-->' );
+
+		$this->assertStringNotContainsString(
+			'data-wp-class--gatherpress-tooltip',
+			$output,
+			'The viewer time tooltip should be absent by default.'
+		);
+	}
+
+	/**
+	 * Disabling the global setting suppresses the tooltip context even when
+	 * the block-level attribute is enabled.
+	 *
+	 * @since TBD
+	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
+	 *
+	 * @return void
+	 */
+	public function test_render_omits_viewer_time_when_global_setting_is_disabled(): void {
+		$output = $this->render_viewer_time_block(
+			'Disabled Global Setting Event',
+			array( 'showViewerTime' => true )
+		);
+
+		$this->assertStringContainsString(
+			'data-wp-class--gatherpress-tooltip',
+			$output,
+			'The dated event should carry the tooltip while the global setting is on.'
+		);
+
+		// The same dated event, rendered again with the global setting off.
+		Settings::get_instance()->set( 'show_viewer_timezone', false );
+
+		$output = do_blocks( '<!-- wp:gatherpress/event-date {"showViewerTime":true} /-->' );
+
+		$this->assertStringNotContainsString(
+			'data-wp-class--gatherpress-tooltip',
+			$output,
+			'The viewer time tooltip should be absent when global setting is disabled.'
+		);
+	}
+
+	/**
+	 * Turning off timezone appending suppresses the tooltip.
+	 *
+	 * @since TBD
+	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
+	 *
+	 * @return void
+	 */
+	public function test_render_omits_viewer_time_when_timezone_is_not_appended(): void {
+		$output = $this->render_viewer_time_block(
+			'No Timezone Appended Event',
+			array(
+				'showViewerTime' => true,
+				'showTimezone'   => 'no',
+			)
+		);
+
+		$this->assertStringNotContainsString(
+			'data-wp-class--gatherpress-tooltip',
+			$output,
+			'The viewer time tooltip should be absent when timezone is not appended.'
+		);
+	}
+
+	/**
+	 * When isLink is enabled alongside showViewerTime, the tooltip bindings
+	 * attach directly to the anchor.
+	 *
+	 * @since TBD
+	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
+	 *
+	 * @return void
+	 */
+	public function test_render_with_is_link_carries_tooltip_on_anchor(): void {
+		$output = $this->render_viewer_time_block(
+			'Linked Event With Viewer Time',
+			array(
+				'showViewerTime' => true,
+				'isLink'         => true,
+			)
+		);
+
+		$this->assertMatchesRegularExpression(
+			'/<a\s[^>]*data-wp-class--gatherpress-tooltip="state\.hasViewerTime"/',
+			$output,
+			'The anchor should carry the tooltip binding when isLink is set.'
+		);
+	}
+
+	/**
+	 * All-day events do not display viewer time tooltips.
+	 *
+	 * @since TBD
+	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
+	 *
+	 * @return void
+	 */
+	public function test_render_omits_viewer_time_for_all_day_event(): void {
+		Settings::get_instance()->set( 'show_viewer_timezone', true );
+
+		$event_post = $this->mock->post(
+			array(
+				'post_title' => 'All Day Event With Viewer Time',
+				'post_type'  => Event::POST_TYPE,
+			)
+		)->get();
+
+		update_post_meta( $event_post->ID, 'gatherpress_is_all_day', 1 );
+
+		$event = new Event( $event_post->ID );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2030-06-15 00:00:00',
+				'datetime_end'   => '2030-06-15 23:59:59',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$this->go_to( get_permalink( $event_post->ID ) );
+
+		$output = do_blocks(
+			'<!-- wp:gatherpress/event-date {"showViewerTime":true,"showTimezone":"yes"} /-->'
+		);
+
+		$this->assertStringNotContainsString(
+			'data-wp-class--gatherpress-tooltip',
+			$output,
+			'All-day events should not carry the viewer time tooltip.'
+		);
+	}
+
+	/**
+	 * A viewer with a saved timezone gets no tooltip: the main line is already in that timezone.
+	 *
+	 * @since TBD
+	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
+	 *
+	 * @return void
+	 */
+	public function test_render_omits_viewer_time_for_a_saved_timezone(): void {
+		$user = $this->mock->user( true )->get();
+
+		update_user_meta( $user->ID, 'gatherpress_timezone', 'Europe/London' );
+
+		$output = $this->render_viewer_time_block(
+			'Viewer Time Saved Timezone Event',
+			array(
+				'showViewerTime' => true,
+				'showTimezone'   => 'yes',
+			)
+		);
+
+		$this->assertStringNotContainsString(
+			'data-wp-class--gatherpress-tooltip',
+			$output,
+			'A saved timezone should leave out the viewer time tooltip.'
+		);
+	}
+
+	/**
+	 * The event's own timezone preference wins over the block's "Append time zone".
+	 *
+	 * @since TBD
+	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
+	 *
+	 * @return void
+	 */
+	public function test_render_viewer_time_follows_the_event_timezone_preference(): void {
+		$output = $this->render_viewer_time_block(
+			'Always Timezone Event',
+			array(
+				'showViewerTime' => true,
+				'showTimezone'   => 'no',
+			),
+			'always'
+		);
+
+		$this->assertStringContainsString(
+			'data-wp-class--gatherpress-tooltip',
+			$output,
+			'An event that always shows its timezone should carry the tooltip.'
+		);
+
+		$output = $this->render_viewer_time_block(
+			'Never Timezone Event',
+			array(
+				'showViewerTime' => true,
+				'showTimezone'   => 'yes',
+			),
+			'never'
+		);
+
+		$this->assertStringNotContainsString(
+			'data-wp-class--gatherpress-tooltip',
+			$output,
+			'An event that never shows its timezone should leave out the tooltip.'
+		);
+	}
+
+	/**
+	 * An empty display type converts both the start and the end, as the block shows both.
+	 *
+	 * @since TBD
+	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
+	 *
+	 * @return void
+	 */
+	public function test_render_viewer_time_treats_an_empty_display_type_as_both(): void {
+		$context = $this->get_viewer_time_context(
+			$this->render_viewer_time_block(
+				'Empty Display Type Event',
+				array(
+					'showViewerTime' => true,
+					'displayType'    => '',
+				)
+			)
+		);
+
+		$this->assertSame( '2030-06-15 22:00:00', $context['startGmt'] ?? null );
+		$this->assertSame( '2030-06-16 00:00:00', $context['endGmt'] ?? null );
+	}
+
+	/**
+	 * An event without dates has no time to convert.
+	 *
+	 * @since TBD
+	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
+	 *
+	 * @return void
+	 */
+	public function test_render_omits_viewer_time_without_dates(): void {
+		Settings::get_instance()->set( 'show_viewer_timezone', true );
+
+		$event_post = $this->mock->post(
+			array(
+				'post_title' => 'Undated Event With Viewer Time',
+				'post_type'  => Event::POST_TYPE,
+			)
+		)->get();
+
+		$this->go_to( get_permalink( $event_post->ID ) );
+
+		$output = do_blocks(
+			'<!-- wp:gatherpress/event-date {"showViewerTime":true,"showTimezone":"yes"} /-->'
+		);
+
+		$this->assertStringNotContainsString(
+			'data-wp-class--gatherpress-tooltip',
+			$output,
+			'An event without dates should leave out the tooltip.'
+		);
+	}
+
+	/**
+	 * A date without an ISO 8601 datetime is shown as plain text.
+	 *
+	 * @since TBD
+	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer::render_time
+	 *
+	 * @return void
+	 */
+	public function test_render_time_without_an_iso_datetime(): void {
+		$renderer = new Html_Renderer(
+			array(),
+			new WP_Block( array( 'blockName' => Event_Date::BLOCK_NAME ) )
+		);
+
+		$this->assertSame(
+			'Soon &amp; later',
+			Utility::invoke_hidden_method( $renderer, 'render_time', array( 'Soon & later', '' ) )
+		);
+		$this->assertSame( '', Utility::invoke_hidden_method( $renderer, 'render_time', array( '', '' ) ) );
+	}
+
+	/**
+	 * Clean up tooltip assets after tests.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function tear_down(): void {
+		wp_dequeue_style( 'gatherpress-utility-style' );
+		wp_dequeue_script( 'gatherpress-tooltip-view' );
+		Utility::set_and_get_hidden_property( Assets::get_instance(), 'tooltip_assets_enqueued', false );
+		Settings::get_instance()->set( 'show_viewer_timezone', false );
+		parent::tear_down();
 	}
 }

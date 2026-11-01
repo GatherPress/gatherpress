@@ -2190,6 +2190,39 @@ class Test_Utility extends Base {
 	}
 
 	/**
+	 * Coverage for find_block.
+	 *
+	 * @covers ::find_block
+	 *
+	 * @return void
+	 */
+	public function test_find_block(): void {
+		$calendar = array(
+			'blockName' => 'gatherpress/calendar',
+			'attrs'     => array( 'viewType' => 'week' ),
+		);
+		$blocks   = array(
+			'not a block',
+			array(
+				'blockName'   => 'core/paragraph',
+				'innerBlocks' => 'not blocks',
+			),
+			array(
+				'blockName'   => 'core/group',
+				'innerBlocks' => array( $calendar ),
+			),
+		);
+
+		$this->assertSame( $calendar, Utility::find_block( $blocks, 'gatherpress/calendar', true ) );
+		$this->assertNull(
+			Utility::find_block( $blocks, 'gatherpress/calendar' ),
+			'Failed to assert only the top level is searched by default.'
+		);
+		$this->assertSame( $blocks[1], Utility::find_block( $blocks, 'core/paragraph' ) );
+		$this->assertNull( Utility::find_block( $blocks, 'core/image', true ) );
+	}
+
+	/**
 	 * The current URL comes from the home URL's scheme, host and port, plus the request's path and query.
 	 *
 	 * @since TBD
