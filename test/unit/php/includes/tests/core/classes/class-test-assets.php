@@ -541,7 +541,7 @@ class Test_Assets extends Base {
 	 * without checking, so a missing metadata file resolves to usable
 	 * defaults rather than to an undefined-key warning.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @covers ::get_asset_data
 	 *
 	 * @return void
@@ -1366,6 +1366,7 @@ class Test_Assets extends Base {
 
 		$this->assertSame(
 			array(
+				'post-terms',
 				'query',
 				'query-no-results',
 				'query-pagination',
