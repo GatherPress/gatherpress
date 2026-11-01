@@ -11,6 +11,7 @@ namespace GatherPress\Core\Event;
 use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
 use WP_Post;
+use WP_Query;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
@@ -56,6 +57,22 @@ final class Scheduler {
 	 * @var string
 	 */
 	const START_CRON_ACTION = 'gatherpress_event_start_run';
+
+	/**
+	 * WP-Cron hook name for the batched reschedule of upcoming event starts.
+	 *
+	 * @since TBD
+	 * @var string
+	 */
+	const START_SWEEP_ACTION = 'gatherpress_event_start_sweep';
+
+	/**
+	 * How many events each start sweep run reschedules.
+	 *
+	 * @since TBD
+	 * @var int
+	 */
+	const START_SWEEP_BATCH_SIZE = 100;
 
 	/**
 	 * Post meta key storing the GMT start datetime.
@@ -119,6 +136,7 @@ final class Scheduler {
 		add_action( 'updated_postmeta', array( $this, 'handle_datetime_meta_change' ), 10, 3 );
 		add_action( 'before_delete_post', array( $this, 'handle_before_delete_post' ) );
 		add_action( self::START_CRON_ACTION, array( $this, 'handle_start_run' ) );
+		add_action( self::START_SWEEP_ACTION, array( $this, 'reschedule_upcoming_starts' ) );
 		add_action( self::CRON_ACTION, array( $this, 'handle_end_run' ) );
 		add_action( self::ENDED_ACTION, array( $this, 'invalidate_caches' ) );
 		add_action( self::ENDED_ACTION, array( $this, 'clear_scheduled_cron' ) );
@@ -305,38 +323,56 @@ final class Scheduler {
 	}
 
 	/**
-	 * Reschedules the start cron of every published upcoming event.
+	 * Starts rescheduling the start cron of every published upcoming event.
 	 *
 	 * Used when the lead time changes, so events already scheduled move to the
-	 * new time.
+	 * new time. The work runs in batches through WP-Cron, so a site with many
+	 * events never reschedules them all in one request. A sweep already under
+	 * way starts over.
 	 *
 	 * @since TBD
 	 *
 	 * @return void
 	 */
-	public function reschedule_upcoming_starts(): void {
-		$post_ids = get_posts(
+	public function schedule_start_sweep(): void {
+		wp_unschedule_hook( self::START_SWEEP_ACTION );
+		wp_schedule_single_event( time(), self::START_SWEEP_ACTION, array( 1 ) );
+	}
+
+	/**
+	 * Reschedules the start cron of one page of published upcoming events.
+	 *
+	 * Reads the events table through the upcoming event query, then schedules
+	 * the next page while this one was full.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $page The page of upcoming events to reschedule.
+	 *
+	 * @return void
+	 */
+	public function reschedule_upcoming_starts( int $page = 1 ): void {
+		$query    = new WP_Query(
 			array(
-				'post_type'        => get_post_types_by_support( Event::SUPPORT ),
-				'post_status'      => 'publish',
-				'fields'           => 'ids',
-				'posts_per_page'   => -1,
-				'no_found_rows'    => true,
-				'suppress_filters' => true,
-				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-				'meta_query'       => array(
-					array(
-						'key'     => self::START_META_KEY,
-						'value'   => gmdate( 'Y-m-d H:i:s' ),
-						'compare' => '>',
-						'type'    => 'DATETIME',
-					),
-				),
+				'post_type'              => get_post_types_by_support( Event::SUPPORT ),
+				'post_status'            => 'publish',
+				'fields'                 => 'ids',
+				'no_found_rows'          => true,
+				'posts_per_page'         => self::START_SWEEP_BATCH_SIZE,
+				'paged'                  => $page,
+				Query::EVENT_QUERY_PARAM => 'upcoming',
+				'orderby'                => 'datetime',
+				'order'                  => 'ASC',
 			)
 		);
+		$post_ids = wp_parse_id_list( $query->posts );
 
 		foreach ( $post_ids as $post_id ) {
-			$this->add_start_cron( (int) $post_id );
+			$this->add_start_cron( $post_id );
+		}
+
+		if ( self::START_SWEEP_BATCH_SIZE === count( $post_ids ) ) {
+			wp_schedule_single_event( time(), self::START_SWEEP_ACTION, array( $page + 1 ) );
 		}
 	}
 

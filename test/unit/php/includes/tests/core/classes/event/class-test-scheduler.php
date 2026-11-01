@@ -27,7 +27,7 @@ class Test_Scheduler extends Base {
 	 */
 	public function tear_down(): void {
 		wp_clear_scheduled_hook( Scheduler::CRON_ACTION );
-		wp_clear_scheduled_hook( Scheduler::START_CRON_ACTION );
+		wp_unschedule_hook( Scheduler::START_CRON_ACTION );
 		wp_clear_scheduled_hook( Scheduler::SWEEP_ACTION );
 		remove_all_filters( 'gatherpress_event_starting_lead_time' );
 		remove_all_filters( 'gatherpress_event_end_cache_keys' );
@@ -94,6 +94,12 @@ class Test_Scheduler extends Base {
 				'name'     => Scheduler::START_CRON_ACTION,
 				'priority' => 10,
 				'callback' => array( $instance, 'handle_start_run' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => Scheduler::START_SWEEP_ACTION,
+				'priority' => 10,
+				'callback' => array( $instance, 'reschedule_upcoming_starts' ),
 			),
 			array(
 				'type'     => 'action',
@@ -830,7 +836,53 @@ class Test_Scheduler extends Base {
 	}
 
 	/**
+	 * Gives an event a start and an end, in the events table and its meta.
+	 *
+	 * @param int $post_id      The event post ID.
+	 * @param int $start_offset Seconds from now to the start.
+	 *
+	 * @return string The GMT start.
+	 */
+	private function set_event_dates( int $post_id, int $start_offset ): string {
+		( new Event( $post_id ) )->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', time() + $start_offset ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', time() + $start_offset + HOUR_IN_SECONDS ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		return (string) get_post_meta( $post_id, Scheduler::START_META_KEY, true );
+	}
+
+	/**
+	 * Test schedule_start_sweep queues the first page and restarts a sweep under way.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::schedule_start_sweep
+	 *
+	 * @return void
+	 */
+	public function test_schedule_start_sweep(): void {
+		$instance = Scheduler::get_instance();
+
+		wp_schedule_single_event( time() + HOUR_IN_SECONDS, Scheduler::START_SWEEP_ACTION, array( 3 ) );
+		$instance->schedule_start_sweep();
+
+		$this->assertNotFalse( wp_next_scheduled( Scheduler::START_SWEEP_ACTION, array( 1 ) ) );
+		$this->assertFalse(
+			wp_next_scheduled( Scheduler::START_SWEEP_ACTION, array( 3 ) ),
+			'A sweep under way starts over.'
+		);
+
+		wp_unschedule_hook( Scheduler::START_SWEEP_ACTION );
+	}
+
+	/**
 	 * Test reschedule_upcoming_starts moves only published upcoming events.
+	 *
+	 * @since TBD
 	 *
 	 * @covers ::reschedule_upcoming_starts
 	 *
@@ -838,14 +890,14 @@ class Test_Scheduler extends Base {
 	 */
 	public function test_reschedule_upcoming_starts(): void {
 		$instance = Scheduler::get_instance();
-		$start    = gmdate( 'Y-m-d H:i:s', time() + DAY_IN_SECONDS );
 		$upcoming = $this->create_test_event();
 		$draft    = $this->create_test_event( array( 'post_status' => 'draft' ) );
 		$past     = $this->create_test_event();
+		$start    = $this->set_event_dates( $upcoming, DAY_IN_SECONDS );
 
-		update_post_meta( $upcoming, Scheduler::START_META_KEY, $start );
-		update_post_meta( $draft, Scheduler::START_META_KEY, $start );
-		update_post_meta( $past, Scheduler::START_META_KEY, gmdate( 'Y-m-d H:i:s', time() - DAY_IN_SECONDS ) );
+		$this->set_event_dates( $draft, DAY_IN_SECONDS );
+		$this->set_event_dates( $past, -DAY_IN_SECONDS );
+		wp_unschedule_hook( Scheduler::START_CRON_ACTION );
 
 		add_filter( 'gatherpress_event_starting_lead_time', static fn(): int => HOUR_IN_SECONDS );
 		$instance->reschedule_upcoming_starts();
@@ -856,6 +908,47 @@ class Test_Scheduler extends Base {
 		);
 		$this->assertFalse( wp_next_scheduled( Scheduler::START_CRON_ACTION, array( $draft ) ) );
 		$this->assertFalse( wp_next_scheduled( Scheduler::START_CRON_ACTION, array( $past ) ) );
+		$this->assertFalse(
+			wp_next_scheduled( Scheduler::START_SWEEP_ACTION, array( 2 ) ),
+			'A page that was not full ends the sweep.'
+		);
+	}
+
+	/**
+	 * Test reschedule_upcoming_starts queues the next page after a full one.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::reschedule_upcoming_starts
+	 *
+	 * @return void
+	 */
+	public function test_reschedule_upcoming_starts_pages(): void {
+		$instance = Scheduler::get_instance();
+		$post_ids = array();
+
+		for ( $i = 1; $i <= Scheduler::START_SWEEP_BATCH_SIZE + 1; $i++ ) {
+			$post_ids[ $i ] = $this->create_test_event();
+			$this->set_event_dates( $post_ids[ $i ], $i * HOUR_IN_SECONDS * 2 );
+		}
+
+		wp_unschedule_hook( Scheduler::START_CRON_ACTION );
+		$instance->reschedule_upcoming_starts( 1 );
+
+		$this->assertNotFalse(
+			wp_next_scheduled( Scheduler::START_SWEEP_ACTION, array( 2 ) ),
+			'A full page queues the next.'
+		);
+		$this->assertFalse(
+			wp_next_scheduled( Scheduler::START_CRON_ACTION, array( end( $post_ids ) ) ),
+			'The last event waits for the next page.'
+		);
+
+		$instance->reschedule_upcoming_starts( 2 );
+
+		$this->assertNotFalse( wp_next_scheduled( Scheduler::START_CRON_ACTION, array( end( $post_ids ) ) ) );
+
+		wp_unschedule_hook( Scheduler::START_SWEEP_ACTION );
 	}
 
 	/**

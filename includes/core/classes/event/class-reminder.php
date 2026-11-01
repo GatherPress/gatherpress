@@ -150,7 +150,7 @@ final class Reminder {
 
 		foreach ( array( 'enable_event_reminders', 'event_reminder_hours' ) as $key ) {
 			if ( ( $old_value[ $key ] ?? null ) !== ( $new_value[ $key ] ?? null ) ) {
-				Scheduler::get_instance()->reschedule_upcoming_starts();
+				Scheduler::get_instance()->schedule_start_sweep();
 
 				return;
 			}
@@ -202,25 +202,39 @@ final class Reminder {
 			return;
 		}
 
-		if ( Mailer::get_instance()->queue( self::MAIL_TYPE, array( 'post_id' => $post_id ) ) ) {
-			update_post_meta( $post_id, self::SENT_META_KEY, $start );
+		$payload = array(
+			'post_id' => $post_id,
+			'start'   => $start,
+		);
+
+		if ( ! Mailer::get_instance()->queue( self::MAIL_TYPE, $payload ) ) {
+			return;
 		}
+
+		update_post_meta( $post_id, self::SENT_META_KEY, $start );
 	}
 
 	/**
 	 * Get the attendees a queued reminder goes to.
 	 *
 	 * Looked up when the job runs, so an RSVP changed after the reminder was
-	 * queued is respected.
+	 * queued is respected. Nobody gets it once the start has moved, since the
+	 * new start queues its own reminder.
 	 *
 	 * @since TBD
 	 *
-	 * @param array $payload The queued email: its `post_id`.
+	 * @param array $payload The queued email: its `post_id` and the `start` it was queued for.
 	 * @phpstan-param Payload $payload
 	 *
 	 * @return array<int, Recipient> Recipient rows for the attending RSVPs.
 	 */
 	private function get_recipients( array $payload ): array {
+		$post_id = (int) ( $payload['post_id'] ?? 0 );
+
+		if ( ( $payload['start'] ?? '' ) !== get_post_meta( $post_id, Scheduler::START_META_KEY, true ) ) {
+			return array();
+		}
+
 		return Email::get_instance()->get_recipients(
 			array(
 				'all'           => false,
@@ -228,7 +242,7 @@ final class Reminder {
 				'waiting_list'  => false,
 				'not_attending' => false,
 			),
-			(int) ( $payload['post_id'] ?? 0 )
+			$post_id
 		);
 	}
 

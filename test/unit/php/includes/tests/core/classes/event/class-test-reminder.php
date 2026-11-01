@@ -118,6 +118,18 @@ class Test_Reminder extends Base {
 	}
 
 	/**
+	 * Run the queued start sweep, as WP-Cron would.
+	 *
+	 * @return void
+	 */
+	private function run_start_sweep(): void {
+		$this->assertNotFalse( wp_next_scheduled( Scheduler::START_SWEEP_ACTION, array( 1 ) ), 'A sweep is queued.' );
+
+		wp_unschedule_hook( Scheduler::START_SWEEP_ACTION );
+		Scheduler::get_instance()->reschedule_upcoming_starts( 1 );
+	}
+
+	/**
 	 * Check the hooks the reminder class listens on.
 	 *
 	 * @covers ::__construct
@@ -211,6 +223,7 @@ class Test_Reminder extends Base {
 
 		// The first save adds the option, which fires add_option_gatherpress_settings.
 		$this->enable_reminders( 24 );
+		$this->run_start_sweep();
 
 		$this->assertSame(
 			$start - DAY_IN_SECONDS,
@@ -222,10 +235,13 @@ class Test_Reminder extends Base {
 		wp_clear_scheduled_hook( Scheduler::START_CRON_ACTION, array( $post_id ) );
 		$instance->maybe_reschedule( array( 'rsvp_mode' => 'a' ), array( 'rsvp_mode' => 'b' ) );
 
+		$this->assertFalse( wp_next_scheduled( Scheduler::START_SWEEP_ACTION, array( 1 ) ), 'No sweep is queued.' );
+
 		$this->assertFalse( wp_next_scheduled( Scheduler::START_CRON_ACTION, array( $post_id ) ) );
 
 		// Changing the hours once the option exists goes through update_option.
 		Settings::get_instance()->set( 'event_reminder_hours', 2 );
+		$this->run_start_sweep();
 
 		$this->assertSame(
 			$start - 2 * HOUR_IN_SECONDS,
@@ -416,13 +432,44 @@ class Test_Reminder extends Base {
 		$rsvp->save( 'yes@example.test', 'attending', 0, 0 );
 		$rsvp->save( 'no@example.test', 'not_attending', 0, 0 );
 
-		$recipients = Utility::invoke_hidden_method(
+		$recipients = static fn( string $start ): array => Utility::invoke_hidden_method(
 			Reminder::get_instance(),
 			'get_recipients',
-			array( array( 'post_id' => $post_id ) )
+			array(
+				array(
+					'post_id' => $post_id,
+					'start'   => $start,
+				),
+			)
 		);
+		$start      = (string) get_post_meta( $post_id, Scheduler::START_META_KEY, true );
 
-		$this->assertSame( array( 'yes@example.test' ), array_column( $recipients, 'email' ) );
+		$this->assertSame( array( 'yes@example.test' ), array_column( $recipients( $start ), 'email' ) );
+		$this->assertSame( array(), $recipients( '2000-01-01 00:00:00' ), 'A moved start gets nobody.' );
+	}
+
+	/**
+	 * Check that a reminder queued before the start moved is not sent.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::queue_reminder
+	 * @covers ::get_recipients
+	 *
+	 * @return void
+	 */
+	public function test_queued_reminder_skips_a_moved_start(): void {
+		$this->enable_reminders();
+
+		$post_id = $this->create_event();
+
+		( new Rsvp( $post_id ) )->save( 'guest@example.test', 'attending', 0, 0 );
+
+		Reminder::get_instance()->queue_reminder( $post_id );
+		update_post_meta( $post_id, Scheduler::START_META_KEY, gmdate( 'Y-m-d H:i:s', time() + WEEK_IN_SECONDS ) );
+		$this->run_mail_jobs();
+
+		$this->assertSame( array(), $this->sent );
 	}
 
 	/**

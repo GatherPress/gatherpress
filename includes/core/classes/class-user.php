@@ -206,6 +206,8 @@ final class User {
 			 *
 			 * @param string $default_opt_in Default opt-in state ('1' for opted in, '0' for opted out).
 			 * @param int    $user_id        The user ID.
+			 *
+			 * @return string Default opt-in state.
 			 */
 			$opt_in = apply_filters( 'gatherpress_event_reminders_default_opt_in', '1', $user_id );
 		}
