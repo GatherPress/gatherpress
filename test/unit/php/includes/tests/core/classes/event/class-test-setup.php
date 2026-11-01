@@ -83,8 +83,8 @@ class Test_Setup extends Base {
 				array( Query::get_instance(), 'prepare_event_query_before_execution' ),
 			),
 			Reminder::class   => array(
-				'gatherpress_event_starting',
-				array( Reminder::get_instance(), 'queue_reminder' ),
+				Reminder::SWEEP_ACTION,
+				array( Reminder::get_instance(), 'sweep' ),
 			),
 			Rest_Api::class   => array(
 				'rest_api_init',

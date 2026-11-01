@@ -11,23 +11,20 @@ namespace GatherPress\Core\Event;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Mailer;
+use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Utility;
+use WP_Query;
 
 /**
  * Class Reminder.
  *
- * Emails attendees a reminder before an event starts. Scheduler runs
- * `gatherpress_event_starting` at the lead time this class sets, and the
- * reminder is queued on Mailer from there.
+ * Emails attendees a reminder before an event starts. An hourly sweep finds
+ * the events starting within the reminder window and queues each one's
+ * reminder once, through Email.
  *
  * @since TBD
- *
- * @phpstan-import-type Recipient from Mailer
- * @phpstan-import-type Payload from Mailer
  */
 final class Reminder {
 
@@ -35,15 +32,6 @@ final class Reminder {
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
-
-	/**
-	 * The Mailer type for reminder emails.
-	 *
-	 * @since TBD
-	 *
-	 * @var string
-	 */
-	const MAIL_TYPE = 'event_reminder';
 
 	/**
 	 * Post meta key holding the start time the last reminder was queued for.
@@ -55,13 +43,30 @@ final class Reminder {
 	const SENT_META_KEY = 'gatherpress_event_reminder_sent';
 
 	/**
+	 * WP-Cron hook name for the hourly reminder sweep.
+	 *
+	 * @since TBD
+	 *
+	 * @var string
+	 */
+	const SWEEP_ACTION = 'gatherpress_event_reminder_sweep';
+
+	/**
+	 * How many events the sweep reads at a time.
+	 *
+	 * @since TBD
+	 *
+	 * @var int
+	 */
+	const BATCH_SIZE = 100;
+
+	/**
 	 * Class constructor.
 	 *
 	 * @since TBD
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
-		$this->register_mail_type();
 	}
 
 	/**
@@ -72,38 +77,8 @@ final class Reminder {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_filter( 'gatherpress_event_starting_lead_time', array( $this, 'get_lead_time' ) );
-		add_action( Scheduler::STARTING_ACTION, array( $this, 'queue_reminder' ) );
-		add_action(
-			sprintf( 'add_option_%s', Settings::OPTION_NAME ),
-			array( $this, 'maybe_reschedule_on_add' ),
-			10,
-			2
-		);
-		add_action(
-			sprintf( 'update_option_%s', Settings::OPTION_NAME ),
-			array( $this, 'maybe_reschedule' ),
-			10,
-			2
-		);
-	}
-
-	/**
-	 * Tell Mailer who reminders go to and what they say.
-	 *
-	 * @since TBD
-	 *
-	 * @return void
-	 */
-	private function register_mail_type(): void {
-		Mailer::get_instance()->register(
-			self::MAIL_TYPE,
-			array(
-				'context'    => Mailer::CONTEXT_REMINDER,
-				'recipients' => $this->get_recipients( ... ),
-				'compose'    => $this->compose( ... ),
-			)
-		);
+		add_action( 'init', array( $this, 'schedule_sweep' ) );
+		add_action( self::SWEEP_ACTION, array( $this, 'sweep' ) );
 	}
 
 	/**
@@ -118,71 +93,100 @@ final class Reminder {
 	}
 
 	/**
-	 * Move the starting action to the reminder time while reminders are on.
+	 * How many seconds before an event's start its reminder is due.
 	 *
 	 * @since TBD
 	 *
-	 * @param int $lead_time Seconds before the start.
-	 *
 	 * @return int Seconds before the start.
 	 */
-	public function get_lead_time( int $lead_time ): int {
-		if ( ! $this->is_enabled() ) {
-			return $lead_time;
-		}
-
+	public function get_lead_time(): int {
 		return max( 1, (int) Settings::get_instance()->get( 'event_reminder_hours' ) ) * HOUR_IN_SECONDS;
 	}
 
 	/**
-	 * Reschedule upcoming events when the reminder settings change.
+	 * Keep the hourly sweep scheduled while reminders are on, and remove it once they are off.
 	 *
 	 * @since TBD
 	 *
-	 * @param mixed $old_value The previous settings.
-	 * @param mixed $new_value The updated settings.
-	 *
 	 * @return void
 	 */
-	public function maybe_reschedule( mixed $old_value, mixed $new_value ): void {
-		$old_value = (array) $old_value;
-		$new_value = (array) $new_value;
+	public function schedule_sweep(): void {
+		$scheduled = false !== wp_next_scheduled( self::SWEEP_ACTION );
 
-		foreach ( array( 'enable_event_reminders', 'event_reminder_hours' ) as $key ) {
-			if ( ( $old_value[ $key ] ?? null ) !== ( $new_value[ $key ] ?? null ) ) {
-				Scheduler::get_instance()->schedule_start_sweep();
-
-				return;
-			}
+		if ( $this->is_enabled() === $scheduled ) {
+			return;
 		}
+
+		if ( $scheduled ) {
+			wp_unschedule_hook( self::SWEEP_ACTION );
+
+			return;
+		}
+
+		wp_schedule_event( time(), 'hourly', self::SWEEP_ACTION );
 	}
 
 	/**
-	 * Reschedule upcoming events when the first settings save turns reminders on.
+	 * Queue the reminders of events starting within the reminder window.
 	 *
-	 * A site that never saved its settings adds the option rather than
-	 * updating it, which fires a different hook.
+	 * Runs hourly, so a reminder goes out within an hour after it is due, and
+	 * an event published inside the window still gets one. The events come
+	 * from the events table a page at a time, and queue_reminder() skips an
+	 * event whose reminder is already queued.
 	 *
 	 * @since TBD
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-	 *
-	 * @param string $option The option name, required by the add_option hook signature.
-	 * @param mixed  $value  The new settings.
-	 *
 	 * @return void
 	 */
-	public function maybe_reschedule_on_add( string $option, mixed $value ): void {
-		$this->maybe_reschedule( array(), $value );
+	public function sweep(): void {
+		if ( ! $this->is_enabled() ) {
+			return;
+		}
+
+		$now  = time();
+		$page = 1;
+
+		do {
+			$query    = new WP_Query(
+				array(
+					'post_type'              => get_post_types_by_support( Event::SUPPORT ),
+					'post_status'            => 'publish',
+					'fields'                 => 'ids',
+					'no_found_rows'          => true,
+					'posts_per_page'         => self::BATCH_SIZE,
+					'paged'                  => $page,
+					Query::EVENT_QUERY_PARAM => 'upcoming',
+					'orderby'                => 'datetime',
+					'order'                  => 'ASC',
+					// Event queries read a date query against the events table, in site time.
+					'date_query'             => array(
+						array(
+							'column'    => 'datetime_start_gmt',
+							'after'     => wp_date( 'Y-m-d H:i:s', $now ),
+							'before'    => wp_date( 'Y-m-d H:i:s', $now + $this->get_lead_time() ),
+							'inclusive' => true,
+						),
+					),
+				)
+			);
+			$post_ids = wp_parse_id_list( $query->posts );
+
+			$is_full = self::BATCH_SIZE === count( $post_ids );
+
+			foreach ( $post_ids as $post_id ) {
+				$this->queue_reminder( $post_id );
+			}
+
+			++$page;
+		} while ( $is_full );
 	}
 
 	/**
 	 * Queue the reminder for an event about to start.
 	 *
-	 * The start time it was queued for is stored, so a second cron run for
-	 * the same start sends nothing, while a moved start can send again. A
-	 * cron run that only happens after the start, on a quiet site, sends
-	 * nothing either.
+	 * The start time it was queued for is stored, so the next sweep for the
+	 * same start sends nothing, while a moved start can send again. An event
+	 * that has already started gets nothing.
 	 *
 	 * @since TBD
 	 *
@@ -202,115 +206,10 @@ final class Reminder {
 			return;
 		}
 
-		$payload = array(
-			'post_id' => $post_id,
-			'start'   => $start,
-		);
-
-		if ( ! Mailer::get_instance()->queue( self::MAIL_TYPE, $payload ) ) {
+		if ( ! Email::get_instance()->queue_reminder_email( $post_id, $start ) ) {
 			return;
 		}
 
 		update_post_meta( $post_id, self::SENT_META_KEY, $start );
-	}
-
-	/**
-	 * Get the attendees a queued reminder goes to.
-	 *
-	 * Looked up when the job runs, so an RSVP changed after the reminder was
-	 * queued is respected. Nobody gets it once the start has moved, since the
-	 * new start queues its own reminder.
-	 *
-	 * @since TBD
-	 *
-	 * @param array $payload The queued email: its `post_id` and the `start` it was queued for.
-	 * @phpstan-param Payload $payload
-	 *
-	 * @return array<int, Recipient> Recipient rows for the attending RSVPs.
-	 */
-	private function get_recipients( array $payload ): array {
-		$post_id = (int) ( $payload['post_id'] ?? 0 );
-
-		if ( ( $payload['start'] ?? '' ) !== get_post_meta( $post_id, Scheduler::START_META_KEY, true ) ) {
-			return array();
-		}
-
-		return Email::get_instance()->get_recipients(
-			array(
-				'all'           => false,
-				'attending'     => true,
-				'waiting_list'  => false,
-				'not_attending' => false,
-			),
-			$post_id
-		);
-	}
-
-	/**
-	 * Build a reminder for one attendee.
-	 *
-	 * Mailer calls this while the attendee's language and timezone are
-	 * active, so the subject and the event time are shown for them.
-	 *
-	 * @since TBD
-	 *
-	 * @param array $recipient The attendee.
-	 * @param array $payload   The queued email: its `post_id`.
-	 * @phpstan-param Recipient $recipient
-	 * @phpstan-param Payload $payload
-	 *
-	 * @return array{subject: string, body: string, headers: array<int, string>} The email.
-	 */
-	private function compose( array $recipient, array $payload ): array {
-		$post_id = (int) ( $payload['post_id'] ?? 0 );
-
-		/**
-		 * Filters the subject of an event reminder email.
-		 *
-		 * @since TBD
-		 *
-		 * @param string $subject   Email subject line.
-		 * @param int    $post_id   Event post ID.
-		 * @param array  $recipient The attendee the reminder goes to.
-		 *
-		 * @return string Email subject line.
-		 */
-		$subject = (string) apply_filters(
-			'gatherpress_event_reminder_subject',
-			sprintf(
-				/* translators: %s: Event title. */
-				_x( 'Reminder: %s', 'Event reminder email subject', 'gatherpress' ),
-				get_the_title( $post_id )
-			),
-			$post_id,
-			$recipient
-		);
-
-		/**
-		 * Filters the body of an event reminder email.
-		 *
-		 * @since TBD
-		 *
-		 * @param string $body      Rendered HTML email body.
-		 * @param int    $post_id   Event post ID.
-		 * @param array  $recipient The attendee the reminder goes to.
-		 *
-		 * @return string Rendered HTML email body.
-		 */
-		$body = (string) apply_filters(
-			'gatherpress_event_reminder_body',
-			Utility::render_template(
-				sprintf( '%s/includes/templates/admin/emails/event-reminder.php', GATHERPRESS_CORE_PATH ),
-				array( 'event_id' => $post_id )
-			),
-			$post_id,
-			$recipient
-		);
-
-		return array(
-			'subject' => $subject,
-			'body'    => $body,
-			'headers' => array( 'Content-Type: text/html; charset=UTF-8' ),
-		);
 	}
 }

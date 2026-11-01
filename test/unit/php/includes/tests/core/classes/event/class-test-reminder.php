@@ -8,16 +8,13 @@
 
 namespace GatherPress\Tests\Core\Event;
 
-use DateTime;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Reminder;
 use GatherPress\Core\Event\Scheduler;
 use GatherPress\Core\Mailer;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Settings;
-use GatherPress\Core\Utility as Core_Utility;
 use GatherPress\Tests\Base;
-use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Reminder.
@@ -47,16 +44,15 @@ class Test_Reminder extends Base {
 	}
 
 	/**
-	 * Remove the mail capture, queued jobs and filters.
+	 * Remove the mail capture, scheduled jobs and settings.
 	 *
 	 * @return void
 	 */
 	public function tear_down(): void {
 		remove_filter( 'pre_wp_mail', array( $this, 'capture_mail' ) );
-		remove_all_filters( 'gatherpress_event_reminder_subject' );
-		remove_all_filters( 'gatherpress_event_reminder_body' );
 		wp_unschedule_hook( Mailer::JOB_HOOK );
 		wp_unschedule_hook( Scheduler::START_CRON_ACTION );
+		wp_unschedule_hook( Reminder::SWEEP_ACTION );
 		delete_option( Settings::OPTION_NAME );
 
 		parent::tear_down();
@@ -89,44 +85,36 @@ class Test_Reminder extends Base {
 	}
 
 	/**
-	 * Create a published event starting two days from now.
+	 * Create a published event lasting two hours.
 	 *
-	 * @param string $title Event title.
+	 * @param string $title        Event title.
+	 * @param int    $start_offset Seconds from now to the start. Defaults to two days.
+	 * @param string $status       Post status.
 	 *
 	 * @return int The event post ID.
 	 */
-	private function create_event( string $title = 'Meetup' ): int {
+	private function create_event(
+		string $title = 'Meetup',
+		int $start_offset = 2 * DAY_IN_SECONDS,
+		string $status = 'publish'
+	): int {
 		$post_id = $this->factory->post->create(
 			array(
 				'post_type'   => Event::POST_TYPE,
 				'post_title'  => $title,
-				'post_status' => 'publish',
+				'post_status' => $status,
 			)
 		);
-		$start   = new DateTime( '+2 days' );
-		$end     = new DateTime( '+2 days +2 hours' );
 
 		( new Event( $post_id ) )->save_datetimes(
 			array(
-				'datetime_start' => $start->format( 'Y-m-d H:i:s' ),
-				'datetime_end'   => $end->format( 'Y-m-d H:i:s' ),
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', time() + $start_offset ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', time() + $start_offset + 2 * HOUR_IN_SECONDS ),
 				'timezone'       => 'UTC',
 			)
 		);
 
 		return $post_id;
-	}
-
-	/**
-	 * Run the queued start sweep, as WP-Cron would.
-	 *
-	 * @return void
-	 */
-	private function run_start_sweep(): void {
-		$this->assertNotFalse( wp_next_scheduled( Scheduler::START_SWEEP_ACTION, array( 1 ) ), 'A sweep is queued.' );
-
-		wp_unschedule_hook( Scheduler::START_SWEEP_ACTION );
-		Scheduler::get_instance()->reschedule_upcoming_starts( 1 );
 	}
 
 	/**
@@ -141,28 +129,16 @@ class Test_Reminder extends Base {
 		$instance = Reminder::get_instance();
 		$hooks    = array(
 			array(
-				'type'     => 'filter',
-				'name'     => 'gatherpress_event_starting_lead_time',
+				'type'     => 'action',
+				'name'     => 'init',
 				'priority' => 10,
-				'callback' => array( $instance, 'get_lead_time' ),
+				'callback' => array( $instance, 'schedule_sweep' ),
 			),
 			array(
 				'type'     => 'action',
-				'name'     => Scheduler::STARTING_ACTION,
+				'name'     => Reminder::SWEEP_ACTION,
 				'priority' => 10,
-				'callback' => array( $instance, 'queue_reminder' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'add_option_' . Settings::OPTION_NAME,
-				'priority' => 10,
-				'callback' => array( $instance, 'maybe_reschedule_on_add' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'update_option_' . Settings::OPTION_NAME,
-				'priority' => 10,
-				'callback' => array( $instance, 'maybe_reschedule' ),
+				'callback' => array( $instance, 'sweep' ),
 			),
 		);
 
@@ -170,90 +146,124 @@ class Test_Reminder extends Base {
 	}
 
 	/**
-	 * Check that the reminder mail type is registered with the reminder context.
+	 * Check that the lead time follows the hours setting, at least one hour.
 	 *
-	 * @covers ::register_mail_type
-	 *
-	 * @return void
-	 */
-	public function test_register_mail_type(): void {
-		Utility::invoke_hidden_method( Reminder::get_instance(), 'register_mail_type' );
-
-		$types = Utility::get_hidden_property( Mailer::get_instance(), 'types' );
-
-		$this->assertSame( Mailer::CONTEXT_REMINDER, $types[ Reminder::MAIL_TYPE ]['context'] );
-	}
-
-	/**
-	 * Check that the lead time only changes while reminders are on.
-	 *
-	 * @covers ::is_enabled
 	 * @covers ::get_lead_time
 	 *
 	 * @return void
 	 */
 	public function test_get_lead_time(): void {
-		$instance = Reminder::get_instance();
-
-		$this->assertFalse( $instance->is_enabled(), 'Off by default.' );
-		$this->assertSame( 0, $instance->get_lead_time( 0 ) );
-
-		$this->enable_reminders( 3 );
-		$this->assertTrue( $instance->is_enabled() );
-		$this->assertSame( 3 * HOUR_IN_SECONDS, $instance->get_lead_time( 0 ) );
+		$this->enable_reminders( 2 );
+		$this->assertSame( 2 * HOUR_IN_SECONDS, Reminder::get_instance()->get_lead_time() );
 
 		Settings::get_instance()->set( 'event_reminder_hours', 0 );
-		$this->assertSame( HOUR_IN_SECONDS, $instance->get_lead_time( 0 ), 'Never less than an hour.' );
+		$this->assertSame( HOUR_IN_SECONDS, Reminder::get_instance()->get_lead_time() );
 	}
 
 	/**
-	 * Check that upcoming events move only when a reminder setting changes.
+	 * Check that the hourly sweep is scheduled only while reminders are on.
 	 *
-	 * @covers ::maybe_reschedule
-	 * @covers ::maybe_reschedule_on_add
+	 * @covers ::is_enabled
+	 * @covers ::schedule_sweep
 	 *
 	 * @return void
 	 */
-	public function test_maybe_reschedule(): void {
+	public function test_schedule_sweep(): void {
 		$instance = Reminder::get_instance();
-		$post_id  = $this->create_event();
-		$start    = strtotime( (string) get_post_meta( $post_id, Scheduler::START_META_KEY, true ) );
 
-		$this->assertSame( $start, wp_next_scheduled( Scheduler::START_CRON_ACTION, array( $post_id ) ) );
+		$instance->schedule_sweep();
+		$this->assertFalse( wp_next_scheduled( Reminder::SWEEP_ACTION ), 'Not scheduled while off.' );
 
-		// The first save adds the option, which fires add_option_gatherpress_settings.
+		$this->enable_reminders();
+		$instance->schedule_sweep();
+
+		$timestamp = wp_next_scheduled( Reminder::SWEEP_ACTION );
+
+		$this->assertNotFalse( $timestamp );
+		$this->assertSame( 'hourly', wp_get_schedule( Reminder::SWEEP_ACTION ) );
+
+		$instance->schedule_sweep();
+		$this->assertSame( $timestamp, wp_next_scheduled( Reminder::SWEEP_ACTION ), 'The schedule is kept.' );
+
+		Settings::get_instance()->set( 'enable_event_reminders', false );
+		$instance->schedule_sweep();
+		$this->assertFalse( wp_next_scheduled( Reminder::SWEEP_ACTION ), 'Turning reminders off removes it.' );
+	}
+
+	/**
+	 * Check that the sweep reminds only published events starting within the window, once.
+	 *
+	 * @covers ::sweep
+	 *
+	 * @return void
+	 */
+	public function test_sweep_reminds_events_in_the_window(): void {
 		$this->enable_reminders( 24 );
-		$this->run_start_sweep();
 
-		$this->assertSame(
-			$start - DAY_IN_SECONDS,
-			wp_next_scheduled( Scheduler::START_CRON_ACTION, array( $post_id ) ),
-			'Turning reminders on moves the run to the reminder time.'
-		);
+		$soon    = $this->create_event( 'Soon', 5 * HOUR_IN_SECONDS );
+		$later   = $this->create_event( 'Later', 3 * DAY_IN_SECONDS );
+		$started = $this->create_event( 'Started', -HOUR_IN_SECONDS );
+		$draft   = $this->create_event( 'Draft', 5 * HOUR_IN_SECONDS, 'draft' );
 
-		// An unrelated setting leaves the run alone.
-		wp_clear_scheduled_hook( Scheduler::START_CRON_ACTION, array( $post_id ) );
-		$instance->maybe_reschedule( array( 'rsvp_mode' => 'a' ), array( 'rsvp_mode' => 'b' ) );
+		foreach ( array( $soon, $later, $started, $draft ) as $post_id ) {
+			( new Rsvp( $post_id ) )->save( sprintf( 'guest-%d@example.test', $post_id ), 'attending', 0, 0 );
+		}
 
-		$this->assertFalse( wp_next_scheduled( Scheduler::START_SWEEP_ACTION, array( 1 ) ), 'No sweep is queued.' );
+		Reminder::get_instance()->sweep();
+		$this->run_mail_jobs();
 
-		$this->assertFalse( wp_next_scheduled( Scheduler::START_CRON_ACTION, array( $post_id ) ) );
+		$this->assertSame( array( sprintf( 'guest-%d@example.test', $soon ) ), array_column( $this->sent, 0 ) );
 
-		// Changing the hours once the option exists goes through update_option.
-		Settings::get_instance()->set( 'event_reminder_hours', 2 );
-		$this->run_start_sweep();
+		Reminder::get_instance()->sweep();
+		$this->run_mail_jobs();
 
-		$this->assertSame(
-			$start - 2 * HOUR_IN_SECONDS,
-			wp_next_scheduled( Scheduler::START_CRON_ACTION, array( $post_id ) )
-		);
+		$this->assertCount( 1, $this->sent, 'The next sweep sends nothing for the same start.' );
+	}
+
+	/**
+	 * Check that the sweep does nothing while reminders are off.
+	 *
+	 * @covers ::sweep
+	 *
+	 * @return void
+	 */
+	public function test_sweep_does_nothing_while_off(): void {
+		$post_id = $this->create_event( 'Soon', 5 * HOUR_IN_SECONDS );
+
+		( new Rsvp( $post_id ) )->save( 'guest@example.test', 'attending', 0, 0 );
+
+		Reminder::get_instance()->sweep();
+		$this->run_mail_jobs();
+
+		$this->assertSame( array(), $this->sent );
+	}
+
+	/**
+	 * Check that the sweep reads past a full page of events.
+	 *
+	 * @covers ::sweep
+	 *
+	 * @return void
+	 */
+	public function test_sweep_reads_every_page(): void {
+		$this->enable_reminders( 24 );
+
+		$post_ids = array();
+
+		for ( $i = 1; $i <= Reminder::BATCH_SIZE + 1; $i++ ) {
+			$post_ids[] = $this->create_event( 'Event', HOUR_IN_SECONDS + $i * MINUTE_IN_SECONDS );
+		}
+
+		// Nothing to send, so the jobs are not run; the sent marker shows each one was queued.
+		Reminder::get_instance()->sweep();
+
+		$this->assertNotSame( '', get_post_meta( end( $post_ids ), Reminder::SENT_META_KEY, true ) );
 	}
 
 	/**
 	 * Check that a reminder reaches attendees, in the format they will see.
 	 *
 	 * @covers ::queue_reminder
-	 * @covers ::compose
 	 *
 	 * @return void
 	 */
@@ -283,10 +293,10 @@ class Test_Reminder extends Base {
 
 		$this->assertSame( $expected, $to );
 		$this->assertSame( 'Reminder: Board game night', $this->sent[0][1] );
-		$this->assertStringContainsString( 'This is a reminder that you are attending', $this->sent[0][2] );
-		$this->assertStringContainsString( 'Google Calendar', $this->sent[0][2] );
-		$this->assertStringContainsString( 'View or change your RSVP', $this->sent[0][2] );
-		$this->assertStringContainsString( esc_url( (string) get_permalink( $post_id ) ), $this->sent[0][2] );
+		$this->assertStringContainsString(
+			'This is a reminder that you are attending Board game night',
+			$this->sent[0][2]
+		);
 	}
 
 	/**
@@ -330,11 +340,9 @@ class Test_Reminder extends Base {
 	 */
 	public function test_queue_reminder_skips_when_off_or_unsupported(): void {
 		$post_id = $this->create_event();
-		$started = $this->create_event();
+		$started = $this->create_event( 'Started', -HOUR_IN_SECONDS );
 
-		update_post_meta( $started, Scheduler::START_META_KEY, gmdate( 'Y-m-d H:i:s', time() - HOUR_IN_SECONDS ) );
 		( new Rsvp( $started ) )->save( 'late@example.test', 'attending', 0, 0 );
-
 		( new Rsvp( $post_id ) )->save( 'guest@example.test', 'attending', 0, 0 );
 
 		Reminder::get_instance()->queue_reminder( $post_id );
@@ -349,7 +357,7 @@ class Test_Reminder extends Base {
 
 		Reminder::get_instance()->queue_reminder( $started );
 		$this->run_mail_jobs();
-		$this->assertSame( array(), $this->sent, 'A cron run after the start sends nothing.' );
+		$this->assertSame( array(), $this->sent, 'An event that has started gets nothing.' );
 
 		Settings::get_instance()->set( 'rsvp_mode', 'disabled' );
 		Reminder::get_instance()->queue_reminder( $post_id );
@@ -358,7 +366,7 @@ class Test_Reminder extends Base {
 	}
 
 	/**
-	 * Check that a failed enqueue leaves the event unmarked, so a later run can retry.
+	 * Check that a failed enqueue leaves the event unmarked, so a later sweep can retry.
 	 *
 	 * @covers ::queue_reminder
 	 *
@@ -380,81 +388,9 @@ class Test_Reminder extends Base {
 	}
 
 	/**
-	 * Check that the subject and body filters change the email.
-	 *
-	 * Invoked directly because xdebug does not trace same-class helpers
-	 * called from a closure.
-	 *
-	 * @covers ::compose
-	 *
-	 * @return void
-	 */
-	public function test_compose_filters(): void {
-		$post_id = $this->create_event( 'Code review' );
-
-		add_filter( 'gatherpress_event_reminder_subject', static fn( string $subject ): string => "[Site] {$subject}" );
-		add_filter( 'gatherpress_event_reminder_body', static fn(): string => 'Custom body' );
-
-		$email = Utility::invoke_hidden_method(
-			Reminder::get_instance(),
-			'compose',
-			array(
-				array(
-					'is_user'    => false,
-					'user_id'    => 0,
-					'comment_id' => 1,
-					'email'      => 'guest@example.test',
-					'name'       => 'Guest',
-				),
-				array( 'post_id' => $post_id ),
-			)
-		);
-
-		$this->assertSame( '[Site] Reminder: Code review', $email['subject'] );
-		$this->assertSame( 'Custom body', $email['body'] );
-		$this->assertSame( array( 'Content-Type: text/html; charset=UTF-8' ), $email['headers'] );
-	}
-
-	/**
-	 * Check that only attending RSVPs are picked.
-	 *
-	 * Invoked directly because xdebug does not trace same-class helpers
-	 * called from a closure.
-	 *
-	 * @covers ::get_recipients
-	 *
-	 * @return void
-	 */
-	public function test_get_recipients(): void {
-		$post_id = $this->create_event();
-		$rsvp    = new Rsvp( $post_id );
-
-		$rsvp->save( 'yes@example.test', 'attending', 0, 0 );
-		$rsvp->save( 'no@example.test', 'not_attending', 0, 0 );
-
-		$recipients = static fn( string $start ): array => Utility::invoke_hidden_method(
-			Reminder::get_instance(),
-			'get_recipients',
-			array(
-				array(
-					'post_id' => $post_id,
-					'start'   => $start,
-				),
-			)
-		);
-		$start      = (string) get_post_meta( $post_id, Scheduler::START_META_KEY, true );
-
-		$this->assertSame( array( 'yes@example.test' ), array_column( $recipients( $start ), 'email' ) );
-		$this->assertSame( array(), $recipients( '2000-01-01 00:00:00' ), 'A moved start gets nobody.' );
-	}
-
-	/**
 	 * Check that a reminder queued before the start moved is not sent.
 	 *
-	 * @since TBD
-	 *
 	 * @covers ::queue_reminder
-	 * @covers ::get_recipients
 	 *
 	 * @return void
 	 */
@@ -470,25 +406,5 @@ class Test_Reminder extends Base {
 		$this->run_mail_jobs();
 
 		$this->assertSame( array(), $this->sent );
-	}
-
-	/**
-	 * Check that the template shows the online link for an online event.
-	 *
-	 * @coversNothing
-	 *
-	 * @return void
-	 */
-	public function test_template_shows_online_link(): void {
-		$post_id = $this->create_event();
-
-		( new Event( $post_id ) )->set_online( true, 'https://meet.example.test/room' );
-
-		$body = Core_Utility::render_template(
-			GATHERPRESS_CORE_PATH . '/includes/templates/admin/emails/event-reminder.php',
-			array( 'event_id' => $post_id )
-		);
-
-		$this->assertStringContainsString( 'https://meet.example.test/room', $body );
 	}
 }

@@ -11,7 +11,6 @@ namespace GatherPress\Core\Event;
 use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
 use WP_Post;
-use WP_Query;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
@@ -19,10 +18,9 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 /**
  * Class Scheduler.
  *
- * Manages WP-Cron scheduling for event start and end times. Ahead of an
- * event's start, fires an action other code can hook, such as the reminder
- * email. When an event concludes, triggers cache invalidation and custom
- * action hooks. Also optionally tracks upcoming event IDs per post type and
+ * Manages WP-Cron scheduling for event start and end times. When an event
+ * starts, fires an action other code can hook. When an event concludes,
+ * triggers cache invalidation and custom action hooks. Also optionally tracks upcoming event IDs per post type and
  * runs a daily fallback check.
  *
  * @since TBD
@@ -43,7 +41,7 @@ final class Scheduler {
 	const ENDED_ACTION = 'gatherpress_event_ended';
 
 	/**
-	 * Action hook fired ahead of an event's start.
+	 * Action hook fired when an event starts.
 	 *
 	 * @since TBD
 	 * @var string
@@ -57,22 +55,6 @@ final class Scheduler {
 	 * @var string
 	 */
 	const START_CRON_ACTION = 'gatherpress_event_start_run';
-
-	/**
-	 * WP-Cron hook name for the batched reschedule of upcoming event starts.
-	 *
-	 * @since TBD
-	 * @var string
-	 */
-	const START_SWEEP_ACTION = 'gatherpress_event_start_sweep';
-
-	/**
-	 * How many events each start sweep run reschedules.
-	 *
-	 * @since TBD
-	 * @var int
-	 */
-	const START_SWEEP_BATCH_SIZE = 100;
 
 	/**
 	 * Post meta key storing the GMT start datetime.
@@ -136,7 +118,6 @@ final class Scheduler {
 		add_action( 'updated_postmeta', array( $this, 'handle_datetime_meta_change' ), 10, 3 );
 		add_action( 'before_delete_post', array( $this, 'handle_before_delete_post' ) );
 		add_action( self::START_CRON_ACTION, array( $this, 'handle_start_run' ) );
-		add_action( self::START_SWEEP_ACTION, array( $this, 'reschedule_upcoming_starts' ) );
 		add_action( self::CRON_ACTION, array( $this, 'handle_end_run' ) );
 		add_action( self::ENDED_ACTION, array( $this, 'invalidate_caches' ) );
 		add_action( self::ENDED_ACTION, array( $this, 'clear_scheduled_cron' ) );
@@ -254,37 +235,10 @@ final class Scheduler {
 	}
 
 	/**
-	 * Returns how many seconds before an event's start the starting action fires.
+	 * Schedules a single WP-Cron event for an event's start time.
 	 *
-	 * @since TBD
-	 *
-	 * @param int $post_id The event post ID.
-	 *
-	 * @return int Seconds before the start, never negative.
-	 */
-	public function get_start_lead_time( int $post_id ): int {
-		/**
-		 * Filters how many seconds before an event's start `gatherpress_event_starting` fires.
-		 *
-		 * Defaults to 0, so the action fires when the event starts. The reminder
-		 * email sets it to the lead time chosen on the RSVP settings page while
-		 * reminders are on, so code hooked to the action runs at that time too.
-		 *
-		 * @since TBD
-		 *
-		 * @param int $lead_time Seconds before the start. Default 0.
-		 * @param int $post_id   The event post ID.
-		 *
-		 * @return int Seconds before the start.
-		 */
-		return max( 0, (int) apply_filters( 'gatherpress_event_starting_lead_time', 0, $post_id ) );
-	}
-
-	/**
-	 * Schedules a single WP-Cron event ahead of an event's start time.
-	 *
-	 * Clears any earlier run first, so a changed start or lead time moves it.
-	 * Nothing is scheduled when that time has already passed.
+	 * Clears any earlier run first, so a changed start moves it. Nothing is
+	 * scheduled once the start has passed.
 	 *
 	 * @since TBD
 	 *
@@ -302,10 +256,8 @@ final class Scheduler {
 			return;
 		}
 
-		$run_at = $start_timestamp - $this->get_start_lead_time( $post_id );
-
-		if ( $run_at > time() ) {
-			wp_schedule_single_event( $run_at, self::START_CRON_ACTION, array( $post_id ) );
+		if ( $start_timestamp > time() ) {
+			wp_schedule_single_event( $start_timestamp, self::START_CRON_ACTION, array( $post_id ) );
 		}
 	}
 
@@ -323,65 +275,11 @@ final class Scheduler {
 	}
 
 	/**
-	 * Starts rescheduling the start cron of every published upcoming event.
-	 *
-	 * Used when the lead time changes, so events already scheduled move to the
-	 * new time. The work runs in batches through WP-Cron, so a site with many
-	 * events never reschedules them all in one request. A sweep already under
-	 * way starts over.
+	 * Handles the WP-Cron execution at an event's start time.
 	 *
 	 * @since TBD
 	 *
-	 * @return void
-	 */
-	public function schedule_start_sweep(): void {
-		wp_unschedule_hook( self::START_SWEEP_ACTION );
-		wp_schedule_single_event( time(), self::START_SWEEP_ACTION, array( 1 ) );
-	}
-
-	/**
-	 * Reschedules the start cron of one page of published upcoming events.
-	 *
-	 * Reads the events table through the upcoming event query, then schedules
-	 * the next page while this one was full.
-	 *
-	 * @since TBD
-	 *
-	 * @param int $page The page of upcoming events to reschedule.
-	 *
-	 * @return void
-	 */
-	public function reschedule_upcoming_starts( int $page = 1 ): void {
-		$query    = new WP_Query(
-			array(
-				'post_type'              => get_post_types_by_support( Event::SUPPORT ),
-				'post_status'            => 'publish',
-				'fields'                 => 'ids',
-				'no_found_rows'          => true,
-				'posts_per_page'         => self::START_SWEEP_BATCH_SIZE,
-				'paged'                  => $page,
-				Query::EVENT_QUERY_PARAM => 'upcoming',
-				'orderby'                => 'datetime',
-				'order'                  => 'ASC',
-			)
-		);
-		$post_ids = wp_parse_id_list( $query->posts );
-
-		foreach ( $post_ids as $post_id ) {
-			$this->add_start_cron( $post_id );
-		}
-
-		if ( self::START_SWEEP_BATCH_SIZE === count( $post_ids ) ) {
-			wp_schedule_single_event( time(), self::START_SWEEP_ACTION, array( $page + 1 ) );
-		}
-	}
-
-	/**
-	 * Handles the WP-Cron execution ahead of an event's start time.
-	 *
-	 * @since TBD
-	 *
-	 * @param int $post_id The ID of the event about to start.
+	 * @param int $post_id The ID of the event that is starting.
 	 *
 	 * @return void
 	 */
@@ -391,15 +289,12 @@ final class Scheduler {
 		}
 
 		/**
-		 * Fires ahead of an event's start time.
+		 * Fires when an event starts, for code that acts on it then.
 		 *
-		 * Runs through WP-Cron, `gatherpress_event_starting_lead_time` seconds
-		 * before the start. The lead time is 0 unless something sets it, such
-		 * as the reminder email while reminders are on, which moves the run for
-		 * every listener. Changing the start or the lead time moves the run, and
-		 * unpublishing, trashing or deleting the event cancels it. When that
-		 * time has already passed, for example an event published inside the
-		 * lead time, the action does not fire for that start.
+		 * Runs through WP-Cron at the start time, so on a quiet site it can run
+		 * a little late. Changing the start moves the run, and unpublishing,
+		 * trashing or deleting the event cancels it. An event published after
+		 * its start does not fire it.
 		 *
 		 * @example
 		 * ```php
@@ -413,7 +308,7 @@ final class Scheduler {
 		 *
 		 * @since TBD
 		 *
-		 * @param int $post_id The post ID of the event about to start.
+		 * @param int $post_id The post ID of the event that is starting.
 		 */
 		do_action( 'gatherpress_event_starting', $post_id );
 	}

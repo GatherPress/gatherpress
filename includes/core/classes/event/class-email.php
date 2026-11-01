@@ -1,6 +1,6 @@
 <?php
 /**
- * Event update and waiting list promotion emails.
+ * Event update, waiting list promotion and reminder emails.
  *
  * @package GatherPress\Core\Event
  * @since TBD
@@ -23,8 +23,9 @@ use WP_Comment;
  * Class Email.
  *
  * Decides who event emails go to and what they say: the update an editor
- * sends from an event, and the confirmation an attendee gets when a spot
- * opens up and they move off the waiting list. Mailer queues and sends them.
+ * sends from an event, the confirmation an attendee gets when a spot opens
+ * up and they move off the waiting list, and the reminder attendees get
+ * before an event starts. Mailer queues and sends them.
  *
  * @since TBD
  *
@@ -56,6 +57,15 @@ final class Email {
 	 * @var string
 	 */
 	const PROMOTION_TYPE = 'waiting_list_promotion';
+
+	/**
+	 * The Mailer type for event reminder emails.
+	 *
+	 * @since TBD
+	 *
+	 * @var string
+	 */
+	const REMINDER_TYPE = 'event_reminder';
 
 	/**
 	 * Class constructor.
@@ -107,6 +117,15 @@ final class Email {
 				'compose'    => $this->compose_promotion_email( ... ),
 			)
 		);
+
+		$mailer->register(
+			self::REMINDER_TYPE,
+			array(
+				'context'    => Mailer::CONTEXT_REMINDER,
+				'recipients' => $this->get_reminder_attendees( ... ),
+				'compose'    => $this->compose_reminder_email( ... ),
+			)
+		);
 	}
 
 	/**
@@ -155,6 +174,26 @@ final class Email {
 			array(
 				'post_id'    => $post_id,
 				'comment_id' => (int) $state->comment->comment_ID,
+			)
+		);
+	}
+
+	/**
+	 * Queue the reminder email for an event about to start.
+	 *
+	 * @since TBD
+	 *
+	 * @param int    $post_id Event post ID.
+	 * @param string $start   The GMT start the reminder is for.
+	 *
+	 * @return bool True when the email is queued.
+	 */
+	public function queue_reminder_email( int $post_id, string $start ): bool {
+		return Mailer::get_instance()->queue(
+			self::REMINDER_TYPE,
+			array(
+				'post_id' => $post_id,
+				'start'   => $start,
 			)
 		);
 	}
@@ -224,6 +263,30 @@ final class Email {
 	}
 
 	/**
+	 * Get the attendees a queued reminder email goes to.
+	 *
+	 * Looked up when each batch runs, so an RSVP changed after the reminder
+	 * was queued is respected. Nobody gets it once the start has moved, since
+	 * the new start gets its own reminder.
+	 *
+	 * @since TBD
+	 *
+	 * @param array $payload The queued email: its `post_id` and the `start` it was queued for.
+	 * @phpstan-param Payload $payload
+	 *
+	 * @return array<int, Recipient> The attending RSVPs, or nobody.
+	 */
+	private function get_reminder_attendees( array $payload ): array {
+		$post_id = (int) ( $payload['post_id'] ?? 0 );
+
+		if ( ( $payload['start'] ?? '' ) !== get_post_meta( $post_id, Scheduler::START_META_KEY, true ) ) {
+			return array();
+		}
+
+		return $this->get_rsvp_recipients( array( 'attending' => true ), $post_id );
+	}
+
+	/**
 	 * Build a queued event update email for one recipient.
 	 *
 	 * @since TBD
@@ -285,6 +348,49 @@ final class Email {
 	}
 
 	/**
+	 * Build a queued reminder email for one attendee.
+	 *
+	 * Mailer calls this while the attendee's language and timezone are
+	 * active, so the subject and the event time are shown for them. The
+	 * button leads back to the event, where the attendee can change their RSVP.
+	 *
+	 * @since TBD
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @param array $recipient The attendee, required by Mailer's compose signature.
+	 * @param array $payload   The queued email: its `post_id`.
+	 * @phpstan-param Recipient $recipient
+	 * @phpstan-param Payload $payload
+	 *
+	 * @return array{subject: string, body: string, headers: array<int, string>} The email.
+	 */
+	private function compose_reminder_email( array $recipient, array $payload ): array {
+		$post_id = (int) ( $payload['post_id'] ?? 0 );
+		$title   = get_the_title( $post_id );
+
+		return $this->build_event_email(
+			$post_id,
+			sprintf(
+				/* translators: %s: Event title. */
+				__( 'This is a reminder that you are attending %s.', 'gatherpress' ),
+				$title
+			),
+			sprintf(
+				/* translators: %s: Event title. */
+				_x( 'Reminder: %s', 'Event reminder email subject', 'gatherpress' ),
+				$title
+			),
+			true,
+			array(
+				'show_online_link'    => true,
+				'show_calendar_links' => true,
+				'rsvp_button_label'   => __( 'View or change your RSVP', 'gatherpress' ),
+			)
+		);
+	}
+
+	/**
 	 * Build the subject and body for an event email.
 	 *
 	 * Runs while the recipient's context is active so the default subject and
@@ -296,6 +402,9 @@ final class Email {
 	 * @param string $message          Optional message for the email body.
 	 * @param string $subject          Optional subject line. Empty falls back to the default template.
 	 * @param bool   $show_rsvp_button Whether the body offers the RSVP button. Default true.
+	 * @param array  $sections         Optional. More of the template to show: `show_online_link`,
+	 *                                 `show_calendar_links` and `rsvp_button_label`.
+	 * @phpstan-param array{show_online_link?: bool, show_calendar_links?: bool, rsvp_button_label?: string} $sections
 	 *
 	 * @return array{subject: string, body: string, headers: array<int, string>} Composed email.
 	 */
@@ -303,7 +412,8 @@ final class Email {
 		int $post_id,
 		string $message,
 		string $subject,
-		bool $show_rsvp_button = true
+		bool $show_rsvp_button = true,
+		array $sections = array()
 	): array {
 		$template = sprintf( '%s/includes/templates/admin/emails/event-email.php', GATHERPRESS_CORE_PATH );
 
@@ -318,9 +428,10 @@ final class Email {
 		/**
 		 * Filters the subject of an event email.
 		 *
-		 * Covers the update an editor sends from an event and the confirmation
-		 * an attendee gets when they move off the waiting list. Lets a site
-		 * brand or reword the subject, for example with a site prefix.
+		 * Covers the update an editor sends from an event, the confirmation an
+		 * attendee gets when they move off the waiting list, and the reminder
+		 * attendees get before an event starts. Lets a site brand or reword the
+		 * subject, for example with a site prefix.
 		 *
 		 * @since 0.36.0
 		 *
@@ -335,10 +446,13 @@ final class Email {
 			'subject' => $subject,
 			'body'    => Utility::render_template(
 				$template,
-				array(
-					'event_id'         => $post_id,
-					'message'          => $message,
-					'show_rsvp_button' => $show_rsvp_button,
+				array_merge(
+					$sections,
+					array(
+						'event_id'         => $post_id,
+						'message'          => $message,
+						'show_rsvp_button' => $show_rsvp_button,
+					)
 				),
 			),
 			'headers' => array( 'Content-Type: text/html; charset=UTF-8' ),
