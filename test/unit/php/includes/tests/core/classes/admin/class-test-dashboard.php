@@ -299,7 +299,8 @@ class Test_Dashboard extends Base {
 
 		$this->assertStringContainsString( 'gatherpress_event:before{content:"\f484";content:"\f484" / ""}', $output );
 		$this->assertStringContainsString( 'gatherpress_venue:before{content:"\f230";content:"\f230" / ""}', $output );
-		$this->assertStringContainsString( '-rsvp:before{content:"\f101";content:"\f101" / ""}', $output );
+		$this->assertStringContainsString( '-rsvp-attending:before{content:"\f307";content:"\f307" / ""}', $output );
+		$this->assertStringContainsString( '-rsvp-waiting-list:before{content:"\f469";content:"\f469" / ""}', $output );
 		$this->assertStringContainsString( '.gatherpress-glance-spacer{visibility:hidden}', $output );
 		// Unknown menu icons keep the default bullet.
 		$this->assertStringNotContainsString( 'gp_test_glance', $output );
