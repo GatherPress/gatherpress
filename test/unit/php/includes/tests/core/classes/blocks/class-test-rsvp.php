@@ -264,12 +264,14 @@ class Test_Rsvp extends Base {
 	/**
 	 * Tests the transform_block_content method for a canceled event.
 	 *
-	 * Verifies that the RSVP block content displays a disabled "Event Canceled" button
-	 * and excludes interactivity attributes and status-specific inner blocks when the event is canceled.
+	 * Verifies that a canceled event renders the block's canceled template, or
+	 * the default disabled button for a block saved without one, and excludes
+	 * interactivity attributes and the other statuses' inner blocks.
 	 *
 	 * @since TBD
 	 *
 	 * @covers ::transform_block_content
+	 * @covers ::get_default_canceled_template
 	 *
 	 * @return void
 	 */
@@ -300,14 +302,11 @@ class Test_Rsvp extends Base {
 		$result        = $instance->transform_block_content( $block_content, $block );
 
 		$this->assertStringContainsString(
-			'Event Canceled',
+			'<button type="button" class="wp-block-button__link wp-element-button">Canceled</button>',
 			$result,
-			'The transform_block_content method should include the "Event Canceled" button for a canceled event.'
+			'A block saved without a canceled template shows the default disabled button.'
 		);
-		$this->assertStringContainsString(
-			'gatherpress-rsvp--is-canceled',
-			$result
-		);
+		$this->assertStringContainsString( 'gatherpress--is-disabled', $result );
 		$this->assertStringNotContainsString(
 			'data-wp-interactive',
 			$result,
@@ -322,6 +321,18 @@ class Test_Rsvp extends Base {
 			'Past content',
 			$result
 		);
+
+		$block['attrs']['serializedInnerBlocks'] = wp_json_encode(
+			array(
+				'canceled'  => '<!-- wp:paragraph --><p>Canceled content</p><!-- /wp:paragraph -->',
+				'attending' => '<!-- wp:paragraph --><p>Attending content</p><!-- /wp:paragraph -->',
+			)
+		);
+
+		$result = $instance->transform_block_content( $block_content, $block );
+
+		$this->assertStringContainsString( 'Canceled content', $result, 'The saved canceled template renders.' );
+		$this->assertStringNotContainsString( 'Attending content', $result );
 	}
 
 	/**
@@ -1329,7 +1340,9 @@ class Test_Rsvp extends Base {
 	}
 
 	/**
-	 * Logged-out visitors, past events and other requests get no form; an error shows only on its own event.
+	 * Logged-out visitors, past or canceled events and other requests get no form.
+	 *
+	 * An error shows only on its own event.
 	 *
 	 * @since TBD
 	 * @covers ::submit_rsvp_without_javascript
@@ -1386,6 +1399,15 @@ class Test_Rsvp extends Base {
 		);
 
 		wp_set_current_user( $this->factory()->user->create() );
+		( new Event_Status( $post_id ) )->set( 'canceled' );
+
+		$this->assertSame(
+			$markup,
+			$instance->submit_rsvp_without_javascript( $markup, $block ),
+			'A canceled event is left alone.'
+		);
+
+		( new Event_Status( $post_id ) )->set( 'scheduled' );
 		( new Event( $post_id ) )->save_datetimes(
 			array(
 				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '-1 week' ) ),

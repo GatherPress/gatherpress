@@ -181,17 +181,13 @@ final class Rsvp {
 			$filtered_status = ! empty( $filtered_data['status'] ) ? $filtered_data['status'] : 'no_status';
 
 			if ( ( new Event_Status( $post_id ) )->is_canceled() ) {
-				$inner_blocks_markup = sprintf(
-					'<div class="wp-block-buttons is-content-justification-center gatherpress-rsvp--is-canceled">'
-					. '<div class="wp-block-button">'
-					. '<button class="wp-block-button__link gatherpress--is-disabled" disabled>%s</button>'
-					. '</div></div>',
-					esc_html__( 'Event Canceled', 'gatherpress' )
+				$inner_blocks_markup = do_blocks(
+					$serialized_inner_blocks['canceled'] ?? $this->get_default_canceled_template()
 				);
 			} elseif ( $event->has_event_past() ) {
 				$inner_blocks_markup = do_blocks( $serialized_inner_blocks['past'] ?? '' );
 			} else {
-				unset( $serialized_inner_blocks['past'] );
+				unset( $serialized_inner_blocks['past'], $serialized_inner_blocks['canceled'] );
 				// Render inner blocks for all statuses.
 				$inner_blocks_markup = '';
 
@@ -314,6 +310,27 @@ final class Rsvp {
 	}
 
 	/**
+	 * The canceled template for an RSVP block saved before it had one.
+	 *
+	 * Matches the editor's default canceled template, a disabled button.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The serialized blocks.
+	 */
+	private function get_default_canceled_template(): string {
+		return sprintf(
+			'<!-- wp:buttons {"align":"center","layout":{"type":"flex","justifyContent":"center"}} -->'
+			. '<div class="wp-block-buttons aligncenter">'
+			. '<!-- wp:button {"tagName":"button","className":"gatherpress--is-disabled"} -->'
+			. '<div class="wp-block-button gatherpress--is-disabled">'
+			. '<button type="button" class="wp-block-button__link wp-element-button">%s</button>'
+			. '</div><!-- /wp:button --></div><!-- /wp:buttons -->',
+			esc_html_x( 'Canceled', 'Button label for canceled RSVP', 'gatherpress' )
+		);
+	}
+
+	/**
 	 * Lets the RSVP block save an RSVP when JavaScript is unavailable.
 	 *
 	 * The block gets a hidden POST form for the RSVP REST endpoint, and the
@@ -324,8 +341,8 @@ final class Rsvp {
 	 * renders the new status. With JavaScript, the click handlers cancel the
 	 * submission.
 	 *
-	 * Logged-out visitors get the Login modal instead, and a past event
-	 * takes no RSVPs, so neither gets the form.
+	 * Logged-out visitors get the Login modal instead, and a past or
+	 * canceled event takes no RSVPs, so none of them gets the form.
 	 *
 	 * @since TBD
 	 *
@@ -345,6 +362,7 @@ final class Rsvp {
 			|| ! Utility::is_page_request()
 			|| ! $user_identifier
 			|| ( new Event( $post_id ) )->has_event_past()
+			|| ( new Event_Status( $post_id ) )->is_canceled()
 		) {
 			return $block_content;
 		}
