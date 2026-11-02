@@ -11,6 +11,19 @@ import { findEventPostById } from '../../helpers/event';
 import { getViewerTimeLabel } from './viewer-time';
 
 /**
+ * An event's operational status slug, or an empty string when there is none.
+ *
+ * @since TBD
+ *
+ * @param {*} value The `gatherpress_status` value from the REST field.
+ *
+ * @return {string} The status slug.
+ */
+function toStatus( value ) {
+	return 'string' === typeof value ? value : '';
+}
+
+/**
  * Resolves the event datetime data for the event-date block editor.
  *
  * Extracted from the useSelect callback in edit.js so the routing logic can be
@@ -25,7 +38,7 @@ import { getViewerTimeLabel } from './viewer-time';
  * @param {number}           postId              Resolved post ID (attribute override or context).
  * @param {boolean}          hasExplicitOverride Whether postId comes from block attributes.
  *
- * @return {Object} Datetime data: dateTimeStart, dateTimeEnd, timezone, isValidEvent, isLoading.
+ * @return {Object} Datetime data: dateTimeStart, dateTimeEnd, timezone, status, isValidEvent, isLoading.
  */
 export function resolveEventDateData( select, contextPostType, contextQueryId, postId, hasExplicitOverride ) {
 	const postType =
@@ -43,7 +56,7 @@ export function resolveEventDateData( select, contextPostType, contextQueryId, p
 		.getPostType( editorPostType )?.supports?.[ 'gatherpress-event-date' ];
 
 	if ( ! postId ) {
-		return { dateTimeStart: undefined, dateTimeEnd: undefined, timezone: undefined, isAllDay: false, timezonePreference: '', isLoading: false, isValidEvent: false };
+		return { dateTimeStart: undefined, dateTimeEnd: undefined, timezone: undefined, isAllDay: false, timezonePreference: '', status: '', isLoading: false, isValidEvent: false };
 	}
 
 	// When editing an event directly (not inside a query loop), use the
@@ -78,6 +91,11 @@ export function resolveEventDateData( select, contextPostType, contextQueryId, p
 			timezonePreference:
 				select( 'core/editor' )?.getEditedPostAttribute?.( 'meta' )
 					?.gatherpress_show_timezone || '',
+			// The edited status, so the preview follows the Event status
+			// control before a save.
+			status: toStatus(
+				select( 'core/editor' )?.getEditedPostAttribute?.( 'gatherpress_status' ),
+			),
 			isLoading: false,
 			isValidEvent: true,
 		};
@@ -89,7 +107,7 @@ export function resolveEventDateData( select, contextPostType, contextQueryId, p
 	if ( hasExplicitOverride && ! supportsEventDate ) {
 		const overridePost = findEventPostById( select, postId );
 		if ( ! overridePost ) {
-			return { dateTimeStart: undefined, dateTimeEnd: undefined, timezone: undefined, isAllDay: false, timezonePreference: '', isLoading: false, isValidEvent: false };
+			return { dateTimeStart: undefined, dateTimeEnd: undefined, timezone: undefined, isAllDay: false, timezonePreference: '', status: '', isLoading: false, isValidEvent: false };
 		}
 		const overrideMeta = overridePost.meta;
 		return {
@@ -98,6 +116,7 @@ export function resolveEventDateData( select, contextPostType, contextQueryId, p
 			timezone: overrideMeta?.gatherpress_timezone,
 			isAllDay: Boolean( overrideMeta?.gatherpress_is_all_day ),
 			timezonePreference: overrideMeta?.gatherpress_show_timezone || '',
+			status: toStatus( overridePost.gatherpress_status ),
 			isLoading: false,
 			isValidEvent: true,
 		};
@@ -107,7 +126,7 @@ export function resolveEventDateData( select, contextPostType, contextQueryId, p
 	// doesn't support event-date we never call getEntityRecord, so its
 	// resolver never fires and hasFinishedResolution would stay false forever.
 	if ( ! supportsEventDate ) {
-		return { dateTimeStart: undefined, dateTimeEnd: undefined, timezone: undefined, isAllDay: false, timezonePreference: '', isLoading: false, isValidEvent: false };
+		return { dateTimeStart: undefined, dateTimeEnd: undefined, timezone: undefined, isAllDay: false, timezonePreference: '', status: '', isLoading: false, isValidEvent: false };
 	}
 
 	// For Query Loop and override contexts, fetch from entity record.
@@ -117,7 +136,7 @@ export function resolveEventDateData( select, contextPostType, contextQueryId, p
 	);
 
 	if ( ! hasResolved ) {
-		return { dateTimeStart: undefined, dateTimeEnd: undefined, timezone: undefined, isAllDay: false, timezonePreference: '', isLoading: true, isValidEvent: false };
+		return { dateTimeStart: undefined, dateTimeEnd: undefined, timezone: undefined, isAllDay: false, timezonePreference: '', status: '', isLoading: true, isValidEvent: false };
 	}
 
 	const post = select( 'core' ).getEntityRecord( 'postType', postType, postId );
@@ -129,6 +148,7 @@ export function resolveEventDateData( select, contextPostType, contextQueryId, p
 		timezone: meta?.gatherpress_timezone,
 		isAllDay: Boolean( meta?.gatherpress_is_all_day ),
 		timezonePreference: meta?.gatherpress_show_timezone || '',
+		status: toStatus( post?.gatherpress_status ),
 		isLoading: false,
 		isValidEvent: !! post && 'publish' === post?.status,
 	};
