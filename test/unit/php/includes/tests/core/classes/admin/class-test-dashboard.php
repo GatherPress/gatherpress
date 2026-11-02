@@ -200,7 +200,7 @@ class Test_Dashboard extends Base {
 
 		$this->assertStringNotContainsString( '<a ', $html );
 		$this->assertStringContainsString( '-gatherpress_event">0 Upcoming Events</span>', $html );
-		$this->assertStringContainsString( '-rsvp">0 Attending RSVPs (Event)</span>', $html );
+		$this->assertStringContainsString( '-rsvp-attending">0 Attending RSVPs (Event)</span>', $html );
 		$this->assertStringContainsString( '-gatherpress_venue">0 Published Venues</span>', $html );
 	}
 
