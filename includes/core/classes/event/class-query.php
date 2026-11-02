@@ -981,7 +981,7 @@ final class Query {
 	 * adds, while sentinels such as the venue subsystem's `online-event`
 	 * deliberately do not.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $taxonomy Shadow taxonomy to read term slugs from.
 	 * @param bool   $upcoming Whether to match upcoming events rather than past ones.
@@ -1016,7 +1016,7 @@ final class Query {
 	/**
 	 * Build the statement behind get_active_shadow_term_slugs().
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string   $taxonomy         Shadow taxonomy slug.
 	 * @param bool     $upcoming         True for upcoming events, false for past.
@@ -1054,6 +1054,7 @@ final class Query {
 			$wpdb->prepare( 'tt.taxonomy = %s', $taxonomy ),
 			'p.post_type ' . $this->prepare_in_list( $event_post_types ),
 			$this->prepare_readable_status_clause( $event_post_types ),
+			$wpdb->prepare( 'p.post_password = %s', '' ),
 			$wpdb->prepare( 't.slug LIKE %s', $wpdb->esc_like( '_' ) . '%' ),
 			$upcoming
 				? $wpdb->prepare( 'e.%i >= %s', $column, $now )
@@ -1070,7 +1071,7 @@ final class Query {
 	/**
 	 * Build the prepared readable-status condition for event post types.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string[] $event_post_types Event post type slugs, never empty.
 	 *
@@ -1106,7 +1107,7 @@ final class Query {
 	/**
 	 * Build a prepared IN list for string values.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string[] $values Values to match, never empty.
 	 *
