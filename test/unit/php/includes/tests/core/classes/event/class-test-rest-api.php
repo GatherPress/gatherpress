@@ -2927,6 +2927,44 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Tests update_rsvp leaves site membership alone for a canceled event in multisite.
+	 *
+	 * @since TBD
+	 *
+	 * @group multisite
+	 * @covers ::update_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_update_rsvp_canceled_event_adds_no_membership_multisite(): void {
+		$user_id   = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		$site_2_id = $this->factory->blog->create();
+
+		switch_to_blog( $site_2_id );
+		Utility::invoke_hidden_method( Setup::get_instance(), 'create_tables' );
+
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		( new Event_Status( $post_id ) )->set( 'canceled' );
+		wp_set_current_user( $user_id );
+
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'status', 'attending' );
+		$request->set_param( 'user_id', $user_id );
+
+		$response = Rest_Api::get_instance()->update_rsvp( $request );
+
+		$this->assertFalse( $response->get_data()['success'] );
+		$this->assertFalse(
+			is_user_member_of_blog( $user_id, $site_2_id ),
+			'A canceled event does not add the user to the site.'
+		);
+
+		restore_current_blog();
+	}
+
+	/**
 	 * Tests update_rsvp adds user to blog in multisite when not a member.
 	 *
 	 * Covers: add_user_to_blog when user RSVPs to event on different site.
@@ -3339,6 +3377,8 @@ class Test_Rest_Api extends Base {
 
 	/**
 	 * Tests RSVP identifier validation logic.
+	 *
+	 * @since TBD
 	 *
 	 * @covers ::is_valid_rsvp_identifier
 	 *

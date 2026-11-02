@@ -636,6 +636,7 @@ final class Rest_Api {
 		// any membership.
 		if (
 			intval( $user_id )
+			&& ! ( new Event_Status( $post_id ) )->is_canceled()
 			&& ! is_user_member_of_blog( $user_id )
 			&& ( ! $is_managing_other || ( current_user_can( 'promote_users' ) && get_userdata( $user_id ) ) )
 		) {
