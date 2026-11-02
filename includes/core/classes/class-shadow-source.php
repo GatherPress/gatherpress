@@ -135,7 +135,7 @@ final class Shadow_Source {
 	/**
 	 * Pass shadow-source activity parameters through REST queries.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param array<string, mixed> $args    Query arguments.
 	 * @param WP_REST_Request      $request REST request.
@@ -170,7 +170,7 @@ final class Shadow_Source {
 	/**
 	 * Add shadow-source activity parameters to a REST collection schema.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param array<string, array<string, mixed>> $query_params Collection parameters.
 	 *
@@ -733,24 +733,13 @@ final class Shadow_Source {
 	}
 
 	/**
-	 * Return the source-post IDs whose shadow terms are attached to an
-	 * upcoming or a past event.
+	 * Get the source post IDs whose shadow terms are on an upcoming or past event.
 	 *
-	 * Powers the "filter by event activity" query for a shadow-source post
-	 * type (venues, productions, …): given a source post type and whether to
-	 * keep only source posts with upcoming events, it asks
-	 * {@see \GatherPress\Core\Event\Query::get_active_shadow_term_slugs()} for the
-	 * shadow term slugs sitting on matching events and resolves those slugs back
-	 * to source posts. The inner query returns distinct term slugs and the outer
-	 * lookup returns at most one post per slug, so both result sets stay small.
+	 * Returns null when the source's shadow taxonomy is not on any event post
+	 * type, so the filter does not apply. An empty array means it applied and
+	 * matched nothing.
 	 *
-	 * The filter only applies when the source's shadow taxonomy is actually
-	 * registered on an event post type; when it isn't (the taxonomy missing,
-	 * or no event object type), the method returns null and the caller treats
-	 * the filter as inapplicable. An empty array, by contrast, means the
-	 * filter ran and genuinely matched no source posts.
-	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param string $source_post_type    Shadow-source post type slug to resolve source posts for.
 	 * @param bool   $upcoming_events_only Whether to keep only source posts with upcoming events.
@@ -786,11 +775,7 @@ final class Shadow_Source {
 			return array();
 		}
 
-		// Shadow term slugs are the source post_name with exactly one leading
-		// underscore, so strip one prefix and run a single post_name__in lookup
-		// for the whole batch. ltrim( $slug, '_' ) would also strip a
-		// post_name that itself starts with an underscore, silently dropping
-		// those source posts from the activity filter.
+		// Strip only the one leading underscore, since a post name can start with one too.
 		$post_names = array_map(
 			static function ( string $slug ): string {
 				return str_starts_with( $slug, '_' ) ? substr( $slug, 1 ) : $slug;
