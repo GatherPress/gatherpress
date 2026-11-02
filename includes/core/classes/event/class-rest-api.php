@@ -848,8 +848,15 @@ final class Rest_Api {
 		} elseif ( ! $rsvp->allows_open_rsvp() ) {
 			$bail = array( __( 'Open RSVP is disabled for this event.', 'gatherpress' ), 403 );
 		} elseif ( ( new Event_Status( (int) $data['post_id'] ) )->is_canceled() ) {
-			$bail = array(
-				__( 'Registration for this event is closed because the event has been canceled.', 'gatherpress' ),
+			$singular = strtolower(
+				Utility::post_type_label( 'singular_name', (string) get_post_type( (int) $data['post_id'] ) )
+			);
+			$bail     = array(
+				sprintf(
+					/* translators: %1$s: Singular post type label, e.g. "event". */
+					__( 'Registration for this %1$s is closed because the %1$s has been canceled.', 'gatherpress' ),
+					$singular
+				),
 				400,
 			);
 		} elseif ( $event->has_event_past() ) {

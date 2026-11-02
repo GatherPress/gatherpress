@@ -99,7 +99,7 @@ final class Status {
 	 */
 	public static function all( string $post_type = '' ): array {
 		$statuses = array(
-			'scheduled'    => array(
+			'scheduled'           => array(
 				/* translators: Event operational status label. */
 				'label'       => _x( 'Scheduled', 'event status', 'gatherpress' ),
 				'description' => __( 'Event is planned and confirmed to take place.', 'gatherpress' ),
@@ -107,7 +107,7 @@ final class Status {
 				'ical'        => 'CONFIRMED',
 				'priority'    => 0,
 			),
-			'canceled'     => array(
+			self::STATUS_CANCELED => array(
 				/* translators: Event operational status label. */
 				'label'       => _x( 'Canceled', 'event status', 'gatherpress' ),
 				'description' => __(
@@ -119,7 +119,7 @@ final class Status {
 				'priority'    => 50,
 				'strike_date' => true,
 			),
-			'postponed'    => array(
+			'postponed'           => array(
 				/* translators: Event operational status label. */
 				'label'       => _x( 'Postponed', 'event status', 'gatherpress' ),
 				'description' => __( 'Event is delayed to a future unconfirmed date.', 'gatherpress' ),
@@ -128,7 +128,7 @@ final class Status {
 				'priority'    => 40,
 				'strike_date' => true,
 			),
-			'rescheduled'  => array(
+			'rescheduled'         => array(
 				/* translators: Event operational status label. */
 				'label'       => _x( 'Rescheduled', 'event status', 'gatherpress' ),
 				'description' => __( 'Event date and time have been changed.', 'gatherpress' ),
@@ -136,7 +136,7 @@ final class Status {
 				'ical'        => 'TENTATIVE',
 				'priority'    => 30,
 			),
-			'moved-online' => array(
+			'moved-online'        => array(
 				/* translators: Event operational status label. */
 				'label'       => _x( 'Moved online', 'event status', 'gatherpress' ),
 				'description' => __(
@@ -149,7 +149,7 @@ final class Status {
 				// An event can only have moved online if it supports online events.
 				'supports'    => array( 'gatherpress-online-event' ),
 			),
-			'tentative'    => array(
+			'tentative'           => array(
 				/* translators: Event operational status label. */
 				'label'       => _x( 'Tentative', 'event status', 'gatherpress' ),
 				'description' => __(

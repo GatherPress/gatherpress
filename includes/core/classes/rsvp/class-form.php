@@ -241,9 +241,8 @@ final class Form {
 			wp_die(
 				esc_html(
 					sprintf(
-						/* translators: 1: Singular post type label, 2: Singular post type label, e.g. "event". */
-						__( 'Registration for this %1$s is closed because the %2$s has been canceled.', 'gatherpress' ),
-						strtolower( $singular ),
+						/* translators: %1$s: Singular post type label, e.g. "event". */
+						__( 'Registration for this %1$s is closed because the %1$s has been canceled.', 'gatherpress' ),
 						strtolower( $singular )
 					)
 				),
