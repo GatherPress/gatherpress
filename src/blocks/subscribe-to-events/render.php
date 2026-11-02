@@ -23,7 +23,6 @@ use GatherPress\Core\Calendar\External\Feed_Url;
 use GatherPress\Core\Event;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
-use WP_Post;
 
 if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 	return;
