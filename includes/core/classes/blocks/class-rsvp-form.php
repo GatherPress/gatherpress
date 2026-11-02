@@ -18,6 +18,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Blocks\Form_Field;
 use GatherPress\Core\Blocks\General_Block;
+use GatherPress\Core\Blocks\Rsvp_Form\Visibility;
 use GatherPress\Core\Capability;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Status as Event_Status;
@@ -213,17 +214,7 @@ final class Rsvp_Form {
 			return '';
 		}
 
-		if ( ( new Event_Status( $post_id ) )->is_canceled() ) {
-			return sprintf(
-				'<div class="gatherpress-rsvp-form gatherpress-rsvp-form--canceled wp-block-group">'
-				. '<p class="gatherpress-rsvp-form__canceled-message">%s</p>'
-				. '</div>',
-				esc_html__(
-					'Registration for this event is closed because the event has been canceled.',
-					'gatherpress'
-				)
-			);
-		}
+		$is_canceled = ( new Event_Status( $post_id ) )->is_canceled();
 
 		$schema_form_id = $this->get_form_schema_id( $post_id, $block );
 		$unique_form_id = $this->generate_form_id( $post_id, $schema_form_id );
@@ -242,7 +233,18 @@ final class Rsvp_Form {
 			static fn() => $hidden_fields . '</form>',
 			$block_content
 		);
-		$tag           = new WP_HTML_Tag_Processor( $block_content );
+
+		// A form saved before canceled events had their own notice gets a default one.
+		if ( $is_canceled && ! Visibility::has_canceled_notice( (array) ( $block['innerBlocks'] ?? array() ) ) ) {
+			$notice        = $this->get_canceled_notice( $post_id );
+			$block_content = (string) preg_replace_callback(
+				'/^<form\b[^>]*>/',
+				static fn( array $matches ): string => $matches[0] . $notice,
+				$block_content
+			);
+		}
+
+		$tag = new WP_HTML_Tag_Processor( $block_content );
 
 		$tag->next_tag();
 		$tag->set_attribute( 'action', site_url( 'wp-comments-post.php' ) );
@@ -263,8 +265,10 @@ final class Rsvp_Form {
 			__( 'Sorry, there was an issue processing your RSVP. Please try again.', 'gatherpress' )
 		);
 
-		// Add event state if the event has passed.
-		if ( $event->has_event_past() ) {
+		// Add the event state when the event is canceled or has passed.
+		if ( $is_canceled ) {
+			$tag->set_attribute( 'data-gatherpress-event-state', 'canceled' );
+		} elseif ( $event->has_event_past() ) {
 			$tag->set_attribute( 'data-gatherpress-event-state', 'past' );
 		}
 
@@ -420,12 +424,14 @@ final class Rsvp_Form {
 			return $block_content;
 		}
 
-		// Check if event has passed.
-		$is_past = false;
-		$post_id = $this->get_post_id_from_context( $block );
+		// Check if event is canceled or has passed.
+		$is_past     = false;
+		$is_canceled = false;
+		$post_id     = $this->get_post_id_from_context( $block );
 		if ( $post_id ) {
-			$event   = new Event( $post_id );
-			$is_past = $event->has_event_past();
+			$event       = new Event( $post_id );
+			$is_past     = $event->has_event_past();
+			$is_canceled = ( new Event_Status( $post_id ) )->is_canceled();
 		}
 
 		// Check if this is a success redirect (form was just submitted).
@@ -434,7 +440,7 @@ final class Rsvp_Form {
 		$visibility_json = (string) wp_json_encode( $visibility );
 
 		// Determine if block should be visible using centralized logic.
-		$should_show = $this->determine_visibility( $visibility_json, $is_success, $is_past );
+		$should_show = ( new Visibility( $is_success, $is_past, $is_canceled ) )->should_show( $visibility_json );
 
 		// Add the visibility data attribute(s) to the rendered block.
 		$tag = new WP_HTML_Tag_Processor( $block_content );
@@ -444,7 +450,9 @@ final class Rsvp_Form {
 			$tag->set_attribute( 'data-gatherpress-rsvp-form-visibility', $visibility_json );
 
 			// Add event state for frontend JavaScript.
-			if ( $is_past ) {
+			if ( $is_canceled ) {
+				$tag->set_attribute( 'data-gatherpress-event-state', 'canceled' );
+			} elseif ( $is_past ) {
 				$tag->set_attribute( 'data-gatherpress-event-state', 'past' );
 			}
 
@@ -512,12 +520,13 @@ final class Rsvp_Form {
 	private function handle_form_visibility( string $html, bool $is_success ): string {
 		$tag = new WP_HTML_Tag_Processor( $html );
 
-		// Check if event has passed by looking for the data attribute on the form element.
-		$is_past = false;
+		// Read the event state from the data attribute on the form element.
+		$event_state = null;
 		if ( $tag->next_tag( array( 'tag_name' => 'form' ) ) ) {
 			$event_state = $tag->get_attribute( 'data-gatherpress-event-state' );
-			$is_past     = 'past' === $event_state;
 		}
+		$is_past     = 'past' === $event_state;
+		$is_canceled = 'canceled' === $event_state;
 
 		// Reset to beginning and loop through all elements.
 		$tag = new WP_HTML_Tag_Processor( $html );
@@ -526,7 +535,7 @@ final class Rsvp_Form {
 
 			// A valueless attribute reads back as true.
 			if ( is_string( $visibility_attr ) && '' !== $visibility_attr ) {
-				$this->apply_visibility_rule( $tag, $visibility_attr, $is_success, $is_past );
+				$this->apply_visibility_rule( $tag, $visibility_attr, $is_success, $is_past, $is_canceled );
 			}
 		}
 
@@ -543,6 +552,7 @@ final class Rsvp_Form {
 	 * @param string                $visibility_rule The visibility rule as a JSON object.
 	 * @param bool                  $is_success      Whether the form was successfully submitted.
 	 * @param bool                  $is_past         Whether the event has passed.
+	 * @param bool                  $is_canceled     Whether the event is canceled.
 	 *
 	 * @return void
 	 */
@@ -550,13 +560,14 @@ final class Rsvp_Form {
 		WP_HTML_Tag_Processor $tag,
 		?string $visibility_rule,
 		bool $is_success,
-		bool $is_past
+		bool $is_past,
+		bool $is_canceled = false
 	): void {
 		if ( ! $visibility_rule ) {
 			return;
 		}
 
-		$should_show = $this->determine_visibility( $visibility_rule, $is_success, $is_past );
+		$should_show = ( new Visibility( $is_success, $is_past, $is_canceled ) )->should_show( $visibility_rule );
 
 		// Apply visibility if determined.
 		if ( false === $should_show ) {
@@ -578,43 +589,29 @@ final class Rsvp_Form {
 	}
 
 	/**
-	 * Determine if a block should be visible based on visibility rules and current state.
+	 * The default notice for a canceled event, rendered as a paragraph block.
 	 *
-	 * @since 0.33.0
+	 * @since TBD
 	 *
-	 * @param string $visibility_rule The visibility rule as a JSON object.
-	 * @param bool   $is_success      Whether the form was successfully submitted.
-	 * @param bool   $is_past         Whether the event has passed.
+	 * @param int $post_id The event post ID.
 	 *
-	 * @return bool|null True to show, false to hide, null for no change (always visible).
+	 * @return string The notice markup.
 	 */
-	private function determine_visibility( string $visibility_rule, bool $is_success, bool $is_past ): ?bool {
-		// Decode JSON object format.
-		$visibility = json_decode( $visibility_rule, true );
+	private function get_canceled_notice( int $post_id ): string {
+		$singular = strtolower( Utility::post_type_label( 'singular_name', (string) get_post_type( $post_id ) ) );
 
-		if ( ! is_array( $visibility ) ) {
-			return null;
-		}
-
-		// Object format with onSuccess and whenPast.
-		$on_success = $visibility['onSuccess'] ?? '';
-		$when_past  = $visibility['whenPast'] ?? '';
-
-		$result = null;
-
-		if ( $is_past && ! empty( $when_past ) ) {
-			// When event is past, whenPast takes precedence.
-			$result = 'show' === $when_past;
-		} elseif ( ! $is_past && ! empty( $when_past ) && empty( $on_success ) ) {
-			// Not past but block has ONLY whenPast: hide-if-set-to-show
-			// (it shouldn't appear yet).
-			$result = 'show' !== $when_past;
-		} elseif ( ! empty( $on_success ) ) {
-			// Success: show-if-set-to-show. Not success: hide-if-set-to-show.
-			$result = $is_success ? ( 'show' === $on_success ) : ( 'show' !== $on_success );
-		}
-
-		return $result;
+		return do_blocks(
+			sprintf(
+				'<!-- wp:paragraph --><p>%s</p><!-- /wp:paragraph -->',
+				esc_html(
+					sprintf(
+						/* translators: %1$s: Singular post type label, e.g. "event". */
+						__( 'Registration for this %1$s is closed because the %1$s has been canceled.', 'gatherpress' ),
+						$singular
+					)
+				)
+			)
+		);
 	}
 
 	/**

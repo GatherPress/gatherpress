@@ -2,7 +2,7 @@
  * Determines if a block should be hidden based on visibility rules and form state.
  *
  * This function implements the visibility logic for RSVP Form blocks, supporting
- * conditional display based on form submission success and event past status.
+ * conditional display based on form submission success and event past or canceled status.
  *
  * Visibility rules:
  * - onSuccess: 'show' | 'hide' | '' (empty = always visible)
@@ -11,24 +11,43 @@
  * - whenPast: 'show' | 'hide' | '' (empty = always visible)
  *   - 'show' = show when past, hide when not past
  *   - 'hide' = hide when past, show when not past
+ * - whenCanceled: 'show' | 'hide' | '' (empty = see below)
+ *   - 'show' = show when canceled, hide when not canceled
+ *   - 'hide' = hide when canceled
  *
  * Precedence:
+ * - When event is canceled: whenCanceled decides; without it, blocks with
+ *   onSuccess or whenPast are hidden, since a canceled event takes no RSVPs
  * - When event is past: whenPast takes precedence
  * - When event is not past: onSuccess is used (if set)
  * - Blocks with ONLY whenPast (no onSuccess) are hidden when not past if set to 'show'
  *
- * @param {Object} visibility           The visibility configuration object.
- * @param {string} visibility.onSuccess Show/hide on form success ('show'|'hide'|'').
- * @param {string} visibility.whenPast  Show/hide when event has passed ('show'|'hide'|'').
- * @param {string} formState            Current form state ('default'|'success'|'past').
+ * @param {Object} visibility              The visibility configuration object.
+ * @param {string} visibility.onSuccess    Show/hide on form success ('show'|'hide'|'').
+ * @param {string} visibility.whenPast     Show/hide when event has passed ('show'|'hide'|'').
+ * @param {string} visibility.whenCanceled Show/hide when event is canceled ('show'|'hide'|'').
+ * @param {string} formState               Current form state ('default'|'success'|'past'|'canceled').
  *
  * @return {boolean} True if block should be hidden, false if it should be shown.
  */
 export const shouldHideBlock = ( visibility, formState ) => {
-	const { onSuccess = '', whenPast = '' } = visibility;
+	const { onSuccess = '', whenPast = '', whenCanceled = '' } = visibility;
 
 	const isPast = 'past' === formState;
 	const isSuccess = 'success' === formState;
+
+	if ( 'canceled' === formState ) {
+		if ( whenCanceled ) {
+			return 'show' !== whenCanceled;
+		}
+
+		return !! ( onSuccess || whenPast );
+	}
+
+	// A block meant only for a canceled event stays hidden otherwise.
+	if ( 'show' === whenCanceled ) {
+		return true;
+	}
 
 	// When event is past, check whenPast (takes precedence when past).
 	if ( isPast && whenPast ) {

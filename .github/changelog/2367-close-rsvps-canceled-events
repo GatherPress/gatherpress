@@ -1,4 +1,4 @@
 Significance: minor
 Type: added
 
-Close RSVPs for events that have been canceled. When an event is marked as canceled, new RSVPs and status updates are rejected, the RSVP form displays a cancellation notice instead of inputs, and the RSVP block displays a disabled "Event Canceled" button.
+Close RSVPs for events that have been canceled. New RSVPs and status changes are refused, and reminder emails are not sent. The RSVP block gets an editable Canceled template, a disabled "Canceled" button by default, and the RSVP Form gets a "When Event Is Canceled" visibility setting with a canceled notice in its default template. Blocks saved before this show a default canceled button or notice.
