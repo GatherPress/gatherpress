@@ -6,11 +6,12 @@ import NO_STATUS from './no-status';
 import NOT_ATTENDING from './not-attending';
 import WAITING_LIST from './waiting-list';
 import PAST from './past';
+import CANCELED from './canceled';
 
 /**
  * RSVP Button with Modal — bundle of per-status templates that drive the
- * five RSVP block states (no_status, attending, waiting_list, not_attending,
- * past). Picking this pattern from the picker seeds all five templates into
+ * six RSVP block states (no_status, attending, waiting_list, not_attending,
+ * past, canceled). Picking this pattern from the picker seeds all six templates into
  * `serializedInnerBlocks`; the editor then renders the active status's tree
  * as inner blocks and switches between them via the inspector dropdown.
  *
@@ -22,6 +23,7 @@ const RSVP_BUTTON_WITH_MODAL_TEMPLATES = {
 	waiting_list: WAITING_LIST,
 	not_attending: NOT_ATTENDING,
 	past: PAST,
+	canceled: CANCELED,
 };
 
 export default RSVP_BUTTON_WITH_MODAL_TEMPLATES;

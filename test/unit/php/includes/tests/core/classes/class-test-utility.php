@@ -1452,9 +1452,9 @@ class Test_Utility extends Base {
 		$result = Utility::get_http_input( INPUT_POST, 'quoted_field' );
 		$this->assertEquals( 'Test with "quotes" and \'apostrophes\'', $result );
 
-		// Test handling of slashes.
+		// Backslashes are kept, since filter_input() input was never slashed.
 		$result = Utility::get_http_input( INPUT_POST, 'slashed_field' );
-		$this->assertEquals( 'Test with backslashes and /forward/', $result );
+		$this->assertEquals( 'Test with \\backslashes\\ and /forward/', $result );
 
 		// Test handling of unicode.
 		$result = Utility::get_http_input( INPUT_POST, 'unicode_field' );
@@ -1466,6 +1466,51 @@ class Test_Utility extends Base {
 
 		// Clean up.
 		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
+
+	/**
+	 * Tests get_request_input reads POST first and falls back to GET.
+	 *
+	 * @since TBD
+	 * @covers ::get_request_input
+	 *
+	 * @return void
+	 */
+	public function test_get_request_input(): void {
+		$this->set_url_params(
+			array(
+				'both'     => 'from get',
+				'get_only' => 'from get',
+				'get_dash' => 'get-dash',
+			)
+		);
+		$this->set_post_params(
+			array(
+				'both'      => 'from post',
+				'post_only' => 'from post',
+				'post_dash' => 'post-dash',
+				'path'      => 'C:\\Users',
+			)
+		);
+
+		$this->assertSame( 'from post', Utility::get_request_input( 'both' ), 'Failed to assert POST wins.' );
+		$this->assertSame( 'from get', Utility::get_request_input( 'get_only' ), 'Failed to assert GET is read.' );
+		$this->assertSame( 'from post', Utility::get_request_input( 'post_only' ), 'Failed to assert POST is read.' );
+		$this->assertSame( '', Utility::get_request_input( 'missing' ), 'Failed to assert a missing key is empty.' );
+		$this->assertSame( 'C:\\Users', Utility::get_request_input( 'path' ), 'Failed to assert backslashes stay.' );
+
+		$sanitizer = static fn( string $value ): string => str_replace( '-', '_', $value );
+
+		$this->assertSame(
+			'post_dash',
+			Utility::get_request_input( 'post_dash', $sanitizer ),
+			'Failed to assert the sanitizer runs on POST.'
+		);
+		$this->assertSame(
+			'get_dash',
+			Utility::get_request_input( 'get_dash', $sanitizer ),
+			'Failed to assert the sanitizer runs on GET.'
+		);
 	}
 
 	/**

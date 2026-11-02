@@ -231,4 +231,29 @@ describe( 'RSVP Form Visibility', () => {
 			} );
 		} );
 	} );
+
+	describe( 'canceled events', () => {
+		it( 'follows whenCanceled when it is set', () => {
+			expect( shouldHideBlock( { whenCanceled: 'show' }, 'canceled' ) ).toBe( false );
+			expect( shouldHideBlock( { whenCanceled: 'hide', whenPast: 'show' }, 'canceled' ) ).toBe( true );
+		} );
+
+		it( 'hides blocks tied to the RSVP flow without whenCanceled', () => {
+			expect( shouldHideBlock( { onSuccess: 'hide', whenPast: 'hide' }, 'canceled' ) ).toBe( true );
+			expect( shouldHideBlock( { whenPast: 'show' }, 'canceled' ) ).toBe( true );
+			expect( shouldHideBlock( { onSuccess: 'show' }, 'canceled' ) ).toBe( true );
+		} );
+
+		it( 'leaves a block with no rules visible', () => {
+			expect( shouldHideBlock( {}, 'canceled' ) ).toBe( false );
+		} );
+
+		it( 'hides a canceled-only block in every other state', () => {
+			const visibility = { whenCanceled: 'show' };
+
+			expect( shouldHideBlock( visibility, 'default' ) ).toBe( true );
+			expect( shouldHideBlock( visibility, 'success' ) ).toBe( true );
+			expect( shouldHideBlock( visibility, 'past' ) ).toBe( true );
+		} );
+	} );
 } );

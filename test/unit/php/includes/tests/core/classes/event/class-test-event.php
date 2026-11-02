@@ -202,6 +202,34 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * A start-only display has no end, and no time zone when the block turns it off.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_display_datetime_parts
+	 *
+	 * @return void
+	 */
+	public function test_get_display_datetime_parts_start_only_without_timezone(): void {
+		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$event = new Event( $post->ID );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2020-05-11 15:00:00',
+				'datetime_end'   => '2020-05-11 17:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$parts = $event->get_display_datetime_parts( 'start', '', '', '', 'no' );
+
+		$this->assertNotEmpty( $parts['start'], 'Failed to assert the start is shown.' );
+		$this->assertFalse( $parts['end'], 'Failed to assert a start-only display has no end.' );
+		$this->assertFalse( $parts['separator'], 'Failed to assert there is no separator without an end.' );
+		$this->assertFalse( $parts['timezone'], 'Failed to assert the block can turn the time zone off.' );
+	}
+
+	/**
 	 * Coverage for get_display_datetime method.
 	 *
 	 * @param array  $params   Parameters for datetimes.

@@ -1330,7 +1330,17 @@ final class Map {
 
 		$retina_enabled = $this->should_generate_retina();
 
-		$expected_url = $this->build_image_url( $address, $zoom, $width, $height, $slug, 1, $map_type );
+		$expected_url = $this->build_image_url(
+			$address,
+			$latitude,
+			$longitude,
+			$zoom,
+			$width,
+			$height,
+			$slug,
+			1,
+			$map_type
+		);
 		$has_valid_1x = null !== $existing
 			&& $existing['hash'] === $hash
 			&& $existing['url'] === $expected_url;
@@ -1357,7 +1367,10 @@ final class Map {
 				return null;
 			}
 
-			$url = $this->save_image( $image, $address, $zoom, $width, $height, 1, $slug, $map_type );
+			$url = $this->save_image(
+				$image,
+				$this->filename_for( $address, $latitude, $longitude, $zoom, $width, $height, $slug, 1, $map_type )
+			);
 			unset( $image );
 
 			if ( null === $url ) {
@@ -1383,13 +1396,17 @@ final class Map {
 			if ( null !== $image_2x ) {
 				$saved_2x = $this->save_image(
 					$image_2x,
-					$address,
-					$zoom,
-					$width,
-					$height,
-					self::RETINA_DENSITY,
-					$slug,
-					$map_type
+					$this->filename_for(
+						$address,
+						$latitude,
+						$longitude,
+						$zoom,
+						$width,
+						$height,
+						$slug,
+						self::RETINA_DENSITY,
+						$map_type
+					)
 				);
 				unset( $image_2x );
 				if ( null !== $saved_2x ) {
@@ -1503,28 +1520,32 @@ final class Map {
 	}
 
 	/**
-	 * Build the deterministic URL for a given (address, zoom, width, height).
+	 * Build the deterministic URL for a given (address, coordinates, zoom, width, height).
 	 *
 	 * Mirrors {@see self::save_image()}'s filename composition so callers can
 	 * compare an existing descriptor's URL against the expected URL without
-	 * touching the filesystem. Two venues at the same address share the same
-	 * URL at matching dimensions — intentional dedupe. `$density > 1` appends
-	 * the `@{density}x` suffix used by the retina variants.
+	 * touching the filesystem. Two venues at the same address and coordinates
+	 * share the same URL at matching dimensions — intentional dedupe.
+	 * `$density > 1` appends the `@{density}x` suffix used by the retina variants.
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param string $address  Venue address string.
-	 * @param int    $zoom     Map zoom level.
-	 * @param int    $width    Output width (at density 1).
-	 * @param int    $height   Output height (at density 1).
-	 * @param string $provider Provider slug (e.g. `osm`).
-	 * @param int    $density  Pixel-density multiplier. 1 = standard, 2 = retina.
-	 * @param string $map_type Map type slug.
+	 * @param string $address   Venue address string.
+	 * @param float  $latitude  Venue latitude.
+	 * @param float  $longitude Venue longitude.
+	 * @param int    $zoom      Map zoom level.
+	 * @param int    $width     Output width (at density 1).
+	 * @param int    $height    Output height (at density 1).
+	 * @param string $provider  Provider slug (e.g. `osm`).
+	 * @param int    $density   Pixel-density multiplier. 1 = standard, 2 = retina.
+	 * @param string $map_type  Map type slug.
 	 *
 	 * @return string Full public URL for the PNG.
 	 */
 	protected function build_image_url(
 		string $address,
+		float $latitude,
+		float $longitude,
 		int $zoom,
 		int $width,
 		int $height,
@@ -1534,36 +1555,53 @@ final class Map {
 	): string {
 		$dirs     = wp_get_upload_dir();
 		$base_url = trailingslashit( $dirs['baseurl'] ) . self::UPLOADS_SUBDIR;
-		$filename = $this->filename_for( $address, $zoom, $width, $height, $provider, $density, $map_type );
+		$filename = $this->filename_for(
+			$address,
+			$latitude,
+			$longitude,
+			$zoom,
+			$width,
+			$height,
+			$provider,
+			$density,
+			$map_type
+		);
 
 		return trailingslashit( $base_url ) . $filename;
 	}
 
 	/**
-	 * Compose a filesystem-safe filename from the address + dimensions.
+	 * Compose a filesystem-safe filename from the address, coordinates and dimensions.
+	 *
+	 * The coordinates keep two venues at one address apart when their
+	 * coordinates differ, for example when one sets them by hand.
 	 *
 	 * Address gets slugified via `sanitize_title()` and capped at 150 chars
 	 * so the full filename stays comfortably under the 255-byte cap common
 	 * to most filesystems. An empty or all-special-character address falls
 	 * back to `venue` so there's always something before the dimension
 	 * suffix. `$density > 1` appends the `@{density}x` suffix used by the
-	 * retina variants, e.g. `venue-12-800-300@2x.png`.
+	 * retina variants, e.g. `venue-52.358000_4.881000-osm-roadmap-12-800-300@2x.png`.
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param string $address  Venue address.
-	 * @param int    $zoom     Map zoom level.
-	 * @param int    $width    Output width (at density 1).
-	 * @param int    $height   Output height (at density 1).
-	 * @param string $provider Provider slug (e.g. `osm`) — namespaces the file
-	 *                         so OSM and Google PNG files can coexist on disk.
-	 * @param int    $density  Pixel-density multiplier. 1 = standard, 2 = retina.
-	 * @param string $map_type Map type slug.
+	 * @param string $address   Venue address.
+	 * @param float  $latitude  Venue latitude.
+	 * @param float  $longitude Venue longitude.
+	 * @param int    $zoom      Map zoom level.
+	 * @param int    $width     Output width (at density 1).
+	 * @param int    $height    Output height (at density 1).
+	 * @param string $provider  Provider slug (e.g. `osm`) — namespaces the file
+	 *                          so OSM and Google PNG files can coexist on disk.
+	 * @param int    $density   Pixel-density multiplier. 1 = standard, 2 = retina.
+	 * @param string $map_type  Map type slug.
 	 *
 	 * @return string Filename including the `.png` extension.
 	 */
 	protected function filename_for(
 		string $address,
+		float $latitude,
+		float $longitude,
 		int $zoom,
 		int $width,
 		int $height,
@@ -1588,41 +1626,38 @@ final class Map {
 
 		$suffix = $density > 1 ? sprintf( '@%dx', $density ) : '';
 
-		return sprintf( '%s-%s-%s-%d-%d-%d%s.png', $slug, $provider, $map_type, $zoom, $width, $height, $suffix );
+		return sprintf(
+			'%s-%.6F_%.6F-%s-%s-%d-%d-%d%s.png',
+			$slug,
+			$latitude,
+			$longitude,
+			$provider,
+			$map_type,
+			$zoom,
+			$width,
+			$height,
+			$suffix
+		);
 	}
 
 	/**
 	 * Save a finished GD image to the uploads directory and return its URL.
 	 *
-	 * Filename is derived from `(address, provider, zoom, width, height)` so
-	 * different providers' PNG files coexist on disk and two venues at the same
-	 * address share one file at matching dimensions. `imagepng` overwrites
-	 * in place, which is fine for the regenerate flow since the inputs
-	 * that'd change visible output also change the hash in the descriptor.
+	 * The filename comes from {@see self::filename_for()}, so different
+	 * providers' PNG files coexist on disk and two venues at the same address
+	 * and coordinates share one file at matching dimensions. `imagepng`
+	 * overwrites in place, which is fine for the regenerate flow since the
+	 * inputs that'd change visible output also change the hash in the descriptor.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Takes the filename instead of the pieces it is built from.
 	 *
 	 * @param GdImage $image    Finished image from a provider's `render()`.
-	 * @param string  $address  Venue address (slugified for the filename).
-	 * @param int     $zoom     Map zoom level.
-	 * @param int     $width    Output width (at density 1).
-	 * @param int     $height   Output height (at density 1).
-	 * @param int     $density  Pixel-density multiplier. 1 = standard, 2 = retina.
-	 * @param string  $provider Provider slug.
-	 * @param string  $map_type Map type slug.
+	 * @param string  $filename Filename from {@see self::filename_for()}.
 	 *
 	 * @return string|null Public URL of the saved file, or null on failure.
 	 */
-	public function save_image(
-		GdImage $image,
-		string $address,
-		int $zoom,
-		int $width,
-		int $height,
-		int $density,
-		string $provider,
-		string $map_type = self::DEFAULT_MAP_TYPE
-	): ?string {
+	public function save_image( GdImage $image, string $filename ): ?string {
 		$dirs = wp_get_upload_dir();
 
 		if ( ! empty( $dirs['error'] ) ) {
@@ -1631,7 +1666,6 @@ final class Map {
 
 		$base_dir = trailingslashit( $dirs['basedir'] ) . self::UPLOADS_SUBDIR;
 		$base_url = trailingslashit( $dirs['baseurl'] ) . self::UPLOADS_SUBDIR;
-		$filename = $this->filename_for( $address, $zoom, $width, $height, $provider, $density, $map_type );
 		$path     = trailingslashit( $base_dir ) . $filename;
 
 		// Filesystem failure modes — uploads/ not writable, disk full, or

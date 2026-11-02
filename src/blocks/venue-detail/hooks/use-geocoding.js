@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies
  */
-import { useSelect, useDispatch } from '@wordpress/data';
+import { useDispatch } from '@wordpress/data';
 import { useCallback, useEffect, useRef } from '@wordpress/element';
 import { useDebounce } from '@wordpress/compose';
 
@@ -31,23 +31,14 @@ import { geocodeAddress } from '../../../helpers/geocoding';
  * @param {string}   fieldType        - The type of field (only 'address' triggers geocoding).
  * @param {string}   fieldValue       - The current field value.
  * @param {Function} updateVenueField - Function to update venue meta fields.
- * @param {boolean}  [enabled=true]   - When false, the hook skips firing geocode requests. Callers pass false in contexts where another component (e.g. the VenueInformation sidebar panel) already geocodes the same address, to avoid double requests.
+ * @param {boolean}  [enabled=true]   - When false, the hook skips firing geocode requests. Callers pass false in contexts where another component (e.g. the VenueInformation sidebar panel) already geocodes the same address, to avoid double requests, and when the venue sets its coordinates by hand.
  *
- * @return {Object} Geocoding state and handlers.
+ * @return {void}
  */
 export function useGeocoding( fieldType, fieldValue, updateVenueField, enabled = true ) {
 	// Get dispatch functions for venue store.
 	const { updateVenueLatitude, updateVenueLongitude } =
 		useDispatch( 'gatherpress/venue' );
-
-	// Get mapCustomLatLong setting from venue store.
-	const { mapCustomLatLong } = useSelect(
-		( selectData ) => ( {
-			mapCustomLatLong:
-				selectData( 'gatherpress/venue' ).getMapCustomLatLong(),
-		} ),
-		[],
-	);
 
 	// Track address for geocoding.
 	const addressRef = useRef( 'address' === fieldType ? fieldValue : '' );
@@ -65,36 +56,31 @@ export function useGeocoding( fieldType, fieldValue, updateVenueField, enabled =
 
 		// If address is empty, clear lat/long.
 		if ( ! address ) {
-			if ( ! mapCustomLatLong ) {
-				// Clear venue store for live preview.
-				updateVenueLatitude( '' );
-				updateVenueLongitude( '' );
+			// Clear venue store for live preview.
+			updateVenueLatitude( '' );
+			updateVenueLongitude( '' );
 
-				// Clear meta for the venue post.
-				updateVenueField( {
-					gatherpress_latitude: '',
-					gatherpress_longitude: '',
-				} );
-			}
+			// Clear meta for the venue post.
+			updateVenueField( {
+				gatherpress_latitude: '',
+				gatherpress_longitude: '',
+			} );
 			return;
 		}
 
 		const { latitude, longitude } = await geocodeAddress( address );
 
-		if ( ! mapCustomLatLong ) {
-			// Update venue store for live preview.
-			updateVenueLatitude( latitude || null );
-			updateVenueLongitude( longitude || null );
+		// Update venue store for live preview.
+		updateVenueLatitude( latitude || null );
+		updateVenueLongitude( longitude || null );
 
-			// Update meta for the venue post.
-			updateVenueField( {
-				gatherpress_latitude: latitude || '',
-				gatherpress_longitude: longitude || '',
-			} );
-		}
+		// Update meta for the venue post.
+		updateVenueField( {
+			gatherpress_latitude: latitude || '',
+			gatherpress_longitude: longitude || '',
+		} );
 	}, [
 		fieldType,
-		mapCustomLatLong,
 		updateVenueLatitude,
 		updateVenueLongitude,
 		updateVenueField,
@@ -112,8 +98,4 @@ export function useGeocoding( fieldType, fieldValue, updateVenueField, enabled =
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [ fieldValue, fieldType, enabled ] );
-
-	return {
-		mapCustomLatLong,
-	};
 }

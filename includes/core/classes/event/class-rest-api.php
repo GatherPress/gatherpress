@@ -19,6 +19,7 @@ use GatherPress\Core\Blocks\Rsvp as Rsvp_Block;
 use GatherPress\Core\Blocks\Rsvp_Form;
 use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status as Event_Status;
 use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup;
@@ -27,6 +28,7 @@ use GatherPress\Core\Rsvp\Token;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
+use WP_Error;
 use WP_HTTP_Response;
 use WP_Post;
 use WP_REST_Request;
@@ -74,6 +76,7 @@ final class Rest_Api {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
+		add_action( 'rest_api_init', array( $this, 'register_status_field' ) );
 		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ), 10, 2 );
 		add_filter( 'rest_post_dispatch', array( $this, 'redirect_rsvp_form_submission' ), 10, 3 );
 	}
@@ -124,6 +127,58 @@ final class Rest_Api {
 		$response->header( 'Location', $redirect );
 
 		return $response;
+	}
+
+	/**
+	 * Registers the event status as a REST field on every post type that supports events.
+	 *
+	 * The status lives in the _gatherpress_event_status taxonomy so events can
+	 * be filtered by it, but a taxonomy reaches the block editor as an array of
+	 * term ids. This field keeps the editor's contract a plain slug, so the
+	 * status panel stays a SelectControl and the taxonomy stays an
+	 * implementation detail with a single write path through Event\Status::set().
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function register_status_field(): void {
+		foreach ( get_post_types_by_support( Event::SUPPORT ) as $post_type ) {
+			register_rest_field(
+				$post_type,
+				'gatherpress_status',
+				array(
+					'get_callback'    => static function ( array $post ): string {
+						return ( new Event_Status( (int) $post['id'] ) )->get();
+					},
+					'update_callback' => static function ( $value, WP_Post $post ) {
+						if ( ! current_user_can( 'edit_post', $post->ID ) ) {
+							return new WP_Error(
+								'gatherpress_status_forbidden',
+								__( 'Sorry, you are not allowed to set the status of this event.', 'gatherpress' ),
+								array( 'status' => rest_authorization_required_code() )
+							);
+						}
+
+						if ( ! ( new Event_Status( $post->ID ) )->set( sanitize_key( (string) $value ) ) ) {
+							return new WP_Error(
+								'gatherpress_status_not_saved',
+								__( 'The status of this event could not be saved.', 'gatherpress' ),
+								array( 'status' => 500 )
+							);
+						}
+
+						return true;
+					},
+					'schema'          => array(
+						'description' => __( 'The operational status of the event.', 'gatherpress' ),
+						'type'        => 'string',
+						'enum'        => Event_Status::slugs( $post_type ),
+						'context'     => array( 'view', 'edit' ),
+					),
+				)
+			);
+		}
 	}
 
 	/**
@@ -581,6 +636,7 @@ final class Rest_Api {
 		// any membership.
 		if (
 			intval( $user_id )
+			&& ! ( new Event_Status( $post_id ) )->is_canceled()
 			&& ! is_user_member_of_blog( $user_id )
 			&& ( ! $is_managing_other || ( current_user_can( 'promote_users' ) && get_userdata( $user_id ) ) )
 		) {
@@ -600,13 +656,9 @@ final class Rest_Api {
 		// A magic-link token supplies an email address; every other path supplies a user ID,
 		// so each identifier is checked against the one thing it can be.
 		if (
-			$user_identifier &&
-			(
-				is_string( $user_identifier )
-					? is_email( $user_identifier )
-					: is_user_member_of_blog( $user_identifier )
-			) &&
-			! $event->has_event_past()
+			$this->is_valid_rsvp_identifier( $user_identifier )
+			&& ! ( new Event_Status( $post_id ) )->is_canceled()
+			&& ! $event->has_event_past()
 		) {
 			if ( 'attending' !== $status ) {
 				$guests = 0;
@@ -796,6 +848,18 @@ final class Rest_Api {
 			$bail = array( __( 'RSVP is disabled for this event.', 'gatherpress' ), 403 );
 		} elseif ( ! $rsvp->allows_open_rsvp() ) {
 			$bail = array( __( 'Open RSVP is disabled for this event.', 'gatherpress' ), 403 );
+		} elseif ( ( new Event_Status( (int) $data['post_id'] ) )->is_canceled() ) {
+			$singular = strtolower(
+				Utility::post_type_label( 'singular_name', (string) get_post_type( (int) $data['post_id'] ) )
+			);
+			$bail     = array(
+				sprintf(
+					/* translators: %1$s: Singular post type label, e.g. "event". */
+					__( 'Registration for this %1$s is closed because the %1$s has been canceled.', 'gatherpress' ),
+					$singular
+				),
+				400,
+			);
 		} elseif ( $event->has_event_past() ) {
 			$bail = array( __( 'Registration for this event is now closed.', 'gatherpress' ), 400 );
 		}
@@ -930,5 +994,29 @@ final class Rest_Api {
 		}
 
 		return $response;
+	}
+
+	/**
+	 * Determines if a given RSVP user identifier is valid.
+	 *
+	 * A magic-link token supplies an email address; every other path supplies a user ID,
+	 * so each identifier is checked against the one thing it can be.
+	 *
+	 * @since TBD
+	 *
+	 * @param string|int|null $identifier The user ID or email address.
+	 *
+	 * @return bool True if valid, false otherwise.
+	 */
+	private function is_valid_rsvp_identifier( string|int|null $identifier ): bool {
+		if ( ! $identifier ) {
+			return false;
+		}
+
+		if ( is_string( $identifier ) ) {
+			return (bool) is_email( $identifier );
+		}
+
+		return is_user_member_of_blog( $identifier );
 	}
 }

@@ -469,7 +469,6 @@ final class Setup {
 	 * @return void
 	 */
 	public function render_rsvp_admin_page(): void {
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended
 		if ( ! current_user_can( Rsvp::CAPABILITY ) ) {
 			wp_die( esc_html__( 'Sorry, you are not allowed to manage RSVPs.', 'gatherpress' ), 403 );
 		}
@@ -478,8 +477,8 @@ final class Setup {
 		// current screen's post type; fall back to a default instance when
 		// called outside that flow (#1849).
 		$rsvp_table  = $this->list_table ?? new List_Table();
-		$search_term = isset( $_REQUEST['s'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['s'] ) ) : '';
-		$status      = isset( $_REQUEST['status'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['status'] ) ) : '';
+		$search_term = Utility::get_request_input( 's' );
+		$status      = Utility::get_request_input( 'status' );
 
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/rsvp/list-table.php', GATHERPRESS_CORE_PATH ),
@@ -492,7 +491,6 @@ final class Setup {
 			),
 			true
 		);
-		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
 	/**
@@ -533,8 +531,7 @@ final class Setup {
 	 * @return void
 	 */
 	public function add_rsvp_screen_options(): void {
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended
-		if ( ! isset( $_GET['page'] ) || Rsvp::COMMENT_TYPE !== $_GET['page'] ) {
+		if ( Rsvp::COMMENT_TYPE !== Utility::get_http_input( INPUT_GET, 'page' ) ) {
 			return;
 		}
 
@@ -552,7 +549,6 @@ final class Setup {
 		if ( $screen ) {
 			$screen->add_option( 'columns', array() );
 		}
-		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
 	/**

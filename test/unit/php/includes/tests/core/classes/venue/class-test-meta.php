@@ -333,6 +333,7 @@ class Test_Meta extends Base {
 		foreach ( Meta::EDITOR_WRITABLE_FIELDS as $field ) {
 			unregister_post_meta( Venue::POST_TYPE, 'gatherpress_' . $field );
 		}
+		unregister_post_meta( Venue::POST_TYPE, Meta::MANUAL_COORDINATES_KEY );
 		unregister_post_meta( Venue::POST_TYPE, 'gatherpress_static_map' );
 		foreach ( Meta::STRUCTURED_ADDRESS_FIELDS as $field ) {
 			unregister_post_meta( Venue::POST_TYPE, 'gatherpress_' . $field );
@@ -353,6 +354,13 @@ class Test_Meta extends Base {
 				sprintf( 'Editor-writable key %s should be registered.', $field )
 			);
 		}
+		$this->assertSame( 'boolean', $meta[ Meta::MANUAL_COORDINATES_KEY ]['type'] );
+		$this->assertFalse( $meta[ Meta::MANUAL_COORDINATES_KEY ]['default'] );
+		$this->assertTrue( $meta[ Meta::MANUAL_COORDINATES_KEY ]['show_in_rest'] );
+		$this->assertTrue(
+			$meta[ Meta::MANUAL_COORDINATES_KEY ]['revisions_enabled'],
+			'Failed to assert the manual coordinates setting has revisions.'
+		);
 		$this->assertArrayHasKey( 'gatherpress_static_map', $meta );
 		foreach ( Meta::STRUCTURED_ADDRESS_FIELDS as $field ) {
 			$this->assertArrayHasKey(
@@ -405,6 +413,11 @@ class Test_Meta extends Base {
 		foreach ( Meta::EDITOR_WRITABLE_FIELDS as $field ) {
 			$this->assertArrayHasKey( 'gatherpress_' . $field, $meta );
 		}
+
+		$this->assertFalse(
+			$meta[ Meta::MANUAL_COORDINATES_KEY ]['revisions_enabled'],
+			'Failed to assert the manual coordinates setting has no revisions without revisions support.'
+		);
 
 		unregister_post_type( $test_pt );
 	}

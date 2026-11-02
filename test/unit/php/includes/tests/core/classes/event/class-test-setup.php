@@ -9,10 +9,13 @@
 namespace GatherPress\Tests\Core\Event;
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status;
 use GatherPress\Core\Event\Admin_List;
 use GatherPress\Core\Event\Meta;
 use GatherPress\Core\Event\Query;
+use GatherPress\Core\Event\Reminder;
 use GatherPress\Core\Event\Rest_Api;
+use GatherPress\Core\Event\Scheduler;
 use GatherPress\Core\Event\Setup;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Shadow_Source;
@@ -80,9 +83,17 @@ class Test_Setup extends Base {
 				'pre_get_posts',
 				array( Query::get_instance(), 'prepare_event_query_before_execution' ),
 			),
+			Reminder::class   => array(
+				Reminder::SWEEP_ACTION,
+				array( Reminder::get_instance(), 'sweep' ),
+			),
 			Rest_Api::class   => array(
 				'rest_api_init',
 				array( Rest_Api::get_instance(), 'register_endpoints' ),
+			),
+			Scheduler::class  => array(
+				'transition_post_status',
+				array( Scheduler::get_instance(), 'handle_transition_post_status' ),
 			),
 		);
 
@@ -112,6 +123,12 @@ class Test_Setup extends Base {
 				'name'     => 'init',
 				'priority' => 10,
 				'callback' => array( $instance, 'register_post_type' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 11,
+				'callback' => array( $instance, 'register_status_taxonomy' ),
 			),
 			array(
 				'type'     => 'action',
@@ -172,6 +189,18 @@ class Test_Setup extends Base {
 				'name'     => 'block_editor_settings_all',
 				'priority' => 10,
 				'callback' => array( $instance, 'add_editor_settings' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'post_class',
+				'priority' => 10,
+				'callback' => array( $instance, 'add_status_post_class' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'get_term',
+				'priority' => 10,
+				'callback' => array( $instance, 'filter_event_status_term' ),
 			),
 		);
 
@@ -513,6 +542,65 @@ class Test_Setup extends Base {
 			array( 'gatherpress_venue' ),
 			$settings['gatherpress']['config']['venuePostTypes'],
 			'Failed to assert a sibling config key survives.'
+		);
+	}
+
+	/**
+	 * Coverage for register_status_taxonomy method.
+	 *
+	 * @covers ::register_status_taxonomy
+	 *
+	 * @return void
+	 */
+	public function test_register_status_taxonomy(): void {
+		$instance = Setup::get_instance();
+
+		unregister_taxonomy( Event::TAXONOMY_STATUS );
+
+		$this->assertFalse(
+			taxonomy_exists( Event::TAXONOMY_STATUS ),
+			'Failed to assert the status taxonomy is unregistered to begin with.'
+		);
+
+		$instance->register_status_taxonomy();
+
+		$this->assertTrue(
+			taxonomy_exists( Event::TAXONOMY_STATUS ),
+			'Failed to assert the status taxonomy is registered.'
+		);
+
+		$taxonomy = get_taxonomy( Event::TAXONOMY_STATUS );
+
+		$this->assertFalse(
+			$taxonomy->public,
+			'Failed to assert the status taxonomy is not public.'
+		);
+		$this->assertFalse(
+			$taxonomy->publicly_queryable,
+			'Failed to assert the status taxonomy has no archive.'
+		);
+		$this->assertFalse(
+			$taxonomy->show_in_rest,
+			'Failed to assert the status is written only through its REST field.'
+		);
+		$this->assertFalse(
+			$taxonomy->show_ui,
+			'Failed to assert the vocabulary is not editable in the admin.'
+		);
+		$this->assertSame(
+			'Scheduled',
+			$taxonomy->default_term['name'],
+			'Failed to assert the default term is named after the default status.'
+		);
+		$this->assertSame(
+			'scheduled',
+			$taxonomy->default_term['slug'],
+			'Failed to assert the default term is the default status.'
+		);
+		$this->assertContains(
+			Event::POST_TYPE,
+			$taxonomy->object_type,
+			'Failed to assert the status taxonomy applies to events.'
 		);
 	}
 
@@ -2352,5 +2440,83 @@ class Test_Setup extends Base {
 			$settings['gatherpress']['config']['eventPostTypes'],
 			'Failed to assert the event post type reaches the editor settings.'
 		);
+	}
+
+	/**
+	 * Tests adding status classes to post_class for events.
+	 *
+	 * @covers ::add_status_post_class
+	 *
+	 * @return void
+	 */
+	public function test_add_status_post_class(): void {
+		$setup = Setup::get_instance();
+
+		// Non-event post should remain unchanged.
+		$post_id = $this->factory->post->create( array( 'post_type' => 'post' ) );
+		$classes = $setup->add_status_post_class( array( 'hentry' ), array(), $post_id );
+		$this->assertSame( array( 'hentry' ), $classes );
+
+		// Scheduled event gets the scheduled status class.
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$classes  = $setup->add_status_post_class( array( 'hentry' ), array(), $event_id );
+		$this->assertContains( 'gatherpress-event-status--is-scheduled', $classes );
+		$this->assertNotContains( 'gatherpress-event-status--is-struck', $classes );
+
+		// Cancelled event gets the status class.
+		( new Status( $event_id ) )->set( 'canceled' );
+		$classes = $setup->add_status_post_class( array( 'hentry' ), array(), $event_id );
+		$this->assertContains( 'gatherpress-event-status--is-canceled', $classes );
+		$this->assertContains( 'gatherpress-event-status--is-struck', $classes );
+	}
+
+	/**
+	 * Tests filter_event_status_term translates status term names dynamically.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::filter_event_status_term
+	 *
+	 * @return void
+	 */
+	public function test_filter_event_status_term(): void {
+		$instance = Setup::get_instance();
+
+		// Non-status taxonomy should remain untouched.
+		$tag_term = (object) array(
+			'term_id' => 123,
+			'name'    => 'Old Tag',
+			'slug'    => 'old-tag',
+		);
+		$result   = $instance->filter_event_status_term( $tag_term, 'post_tag' );
+		$this->assertSame( 'Old Tag', $result->name );
+
+		// Non-WP_Term should remain untouched.
+		$null_result = $instance->filter_event_status_term( null, Event::TAXONOMY_STATUS );
+		$this->assertNull( $null_result );
+
+		// Status taxonomy term with known status should update label.
+		$term       = new \WP_Term(
+			(object) array(
+				'term_id'  => 456,
+				'name'     => 'canceled',
+				'slug'     => 'canceled',
+				'taxonomy' => Event::TAXONOMY_STATUS,
+			)
+		);
+		$translated = $instance->filter_event_status_term( $term, Event::TAXONOMY_STATUS );
+		$this->assertSame( 'Canceled', $translated->name );
+
+		// Status taxonomy term with unknown status falls back to the default status label.
+		$unknown_term = new \WP_Term(
+			(object) array(
+				'term_id'  => 789,
+				'name'     => 'Unknown',
+				'slug'     => 'unknown-status',
+				'taxonomy' => Event::TAXONOMY_STATUS,
+			)
+		);
+		$unchanged    = $instance->filter_event_status_term( $unknown_term, Event::TAXONOMY_STATUS );
+		$this->assertSame( 'Scheduled', $unchanged->name );
 	}
 }
