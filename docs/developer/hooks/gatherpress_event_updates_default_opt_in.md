@@ -31,7 +31,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-user.php:176](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-user.php#L176)
+- [includes/core/classes/class-user.php:191](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-user.php#L191)
 ```php
 apply_filters( 'gatherpress_event_updates_default_opt_in', '1', $user_id )
 ```

@@ -124,5 +124,5 @@ const withAQLEventControls = ( BlockEdit ) => ( props ) => {
 addFilter(
 	'editor.BlockEdit',
 	'gatherpress/aql-integration',
-	withAQLEventControls
+	withAQLEventControls,
 );

@@ -31,34 +31,37 @@ Notes:
 
 ## RSVP permissions
 
-RSVP permissions follow a model similar to commenting in WordPress.
+RSVP permissions follow a model similar to commenting in WordPress. RSVPs are stored as comments, so managing them follows the same rule as moderating comments.
 
 What this means:
 
 * RSVPs can be open to everyone, including visitors without an account.  
 * Logged-in users can RSVP using their existing account.  
-* Anonymous RSVPs (listed without a name) are still visible to event organizers.  
+* Anonymous RSVPs are listed without a name. Editors and administrators can still see who they are.  
 * Guest RSVPs may collect minimal information (such as email), depending on event settings
 
 Who can manage RSVPs:
 
-* Administrators  
-* Editors  
-* Users who have permission to edit the event  
-* Subscribers can edit or cancel their own RSVP
+Editors and administrators, or anyone else who can moderate comments, can:
 
-These users can:
+* View every RSVP on the Events > RSVPs screen  
+* Approve or unapprove RSVPs, and mark them as spam  
+* Check in attendees  
+* Delete RSVPs  
+* See the names and email addresses behind anonymous RSVPs
 
-* View RSVP lists (event editors only)  
-* Unapprove RSVPs (event editors only)  
-* Approve or unapprove RSVPs (event editors only)  
-* Manage attendance limits (event editors only)  
-* Edit or cancel their own RSVP (subscribers and logged-in users)
+Anyone who can edit an event, including the Author who created it, can:
+
+* Add or remove members from the event's attendee list in the editor  
+* Email the event's attendees  
+* Set the event's capacity and guest limit
+
+Anyone who has RSVPed can change or cancel their own RSVP. Logged-in users do it on the event, and people without an account use the link in their confirmation email.
 
 Notes:
 
-* RSVP permissions are tied to event editing rights, not a separate role.  
-* Changing who can edit an event directly affects who can manage its RSVPs
+* Approving, checking in, and the Events > RSVPs screen follow the WordPress `moderate_comments` capability, not the right to edit an event. An Author can run their own event's attendee list and emails, but not approve or check in its RSVPs.  
+* Plugins that change who can moderate comments also change who can manage RSVPs
 
 ## Following WordPress defaults
 

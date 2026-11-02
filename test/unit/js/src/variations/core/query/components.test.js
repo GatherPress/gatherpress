@@ -1,7 +1,14 @@
 /**
  * External dependencies
  */
-import { describe, expect, it, jest, beforeEach } from '@jest/globals';
+import {
+	describe,
+	expect,
+	it,
+	jest,
+	beforeEach,
+	afterEach,
+} from '@jest/globals';
 import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
@@ -45,7 +52,7 @@ jest.mock( '@wordpress/i18n', () => ( {
 		// sequential (%s) placeholders so help copy interpolates correctly.
 		let sequential = 0;
 		return fmt.replace( /%(\d+)\$s|%s/g, ( match, position ) =>
-			position ? args[ position - 1 ] : args[ sequential++ ]
+			position ? args[ position - 1 ] : args[ sequential++ ],
 		);
 	},
 } ) );
@@ -101,6 +108,9 @@ jest.mock( '@src/helpers/editor', () => ( {
 /**
  * WordPress dependencies
  */
+import { useSelect } from '@wordpress/data';
+import { memo } from '@wordpress/element';
+import { addFilter, removeFilter } from '@wordpress/hooks';
 import {
 	isEventPostType,
 	useHasEventActivityFilterSupport,
@@ -113,7 +123,9 @@ import { isInFSETemplate, usePostTypeLabel } from '@src/helpers/editor';
  */
 import {
 	EventQueryControlsSlotFill,
+	EventInheritedQueryControlsSlotFill,
 	HasEventsFilterControls,
+	ShadowSourceFilterControls,
 } from '@src/variations/core/query/components';
 
 const venueToggleLabel = 'Filter by Current Venue';
@@ -156,7 +168,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 		expect( screen.queryByText( venueToggleLabel ) ).not.toBeInTheDocument();
 		expect( usePostTypeSupports ).toHaveBeenCalledWith(
 			'gatherpress-shadow-source',
-			'gatherpress_event'
+			'gatherpress_event',
 		);
 	} );
 
@@ -241,7 +253,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 		usePostTypeSupports.mockImplementation(
 			( support, postType ) =>
 				'gatherpress-event-date' === support &&
-				'gatherpress_event' === postType
+				'gatherpress_event' === postType,
 		);
 		useHasEventActivityFilterSupport.mockReturnValue( false );
 		isInFSETemplate.mockReturnValue( false );
@@ -274,7 +286,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 		usePostTypeSupports.mockImplementation(
 			( support, postType ) =>
 				'gatherpress-event-date' === support &&
-				'gatherpress_event' === postType
+				'gatherpress_event' === postType,
 		);
 		useHasEventActivityFilterSupport.mockReturnValue( false );
 		isInFSETemplate.mockReturnValue( false );
@@ -283,7 +295,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 
 		expect( screen.getByText( 'Event List Type' ) ).toBeInTheDocument();
 		expect(
-			screen.getByText( 'Include Unfinished Events' )
+			screen.getByText( 'Include Unfinished Events' ),
 		).toBeInTheDocument();
 		expect( screen.getByText( 'Events Per Page' ) ).toBeInTheDocument();
 		expect( screen.getByText( 'Event Offset' ) ).toBeInTheDocument();
@@ -312,10 +324,10 @@ describe( 'EventQueryControlsSlotFill', () => {
 		usePostTypeSupports.mockImplementation(
 			( support, postType ) =>
 				'gatherpress-shadow-source' === support &&
-				'gatherpress_venue' === postType
+				'gatherpress_venue' === postType,
 		);
 		useHasEventActivityFilterSupport.mockImplementation(
-			( postType ) => 'gatherpress_venue' === postType
+			( postType ) => 'gatherpress_venue' === postType,
 		);
 		isInFSETemplate.mockReturnValue( false );
 
@@ -323,7 +335,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 
 		expect( screen.queryByText( 'Event List Type' ) ).not.toBeInTheDocument();
 		expect(
-			screen.queryByText( 'Include Unfinished Events' )
+			screen.queryByText( 'Include Unfinished Events' ),
 		).not.toBeInTheDocument();
 		expect( screen.queryByText( 'Events Per Page' ) ).not.toBeInTheDocument();
 		expect( screen.queryByText( 'Event Offset' ) ).not.toBeInTheDocument();
@@ -394,20 +406,20 @@ describe( 'EventQueryControlsSlotFill', () => {
 		usePostTypeSupports.mockImplementation(
 			( support, postType ) =>
 				'gatherpress-shadow-source' === support &&
-				'gatherpress_venue' === postType
+				'gatherpress_venue' === postType,
 		);
 		useHasEventActivityFilterSupport.mockImplementation(
-			( postType ) => 'gatherpress_venue' === postType
+			( postType ) => 'gatherpress_venue' === postType,
 		);
 		isInFSETemplate.mockReturnValue( false );
 
 		render( <EventQueryControlsSlotFill /> );
 
 		expect(
-			screen.getByText( 'Filter by event activity' )
+			screen.getByText( 'Filter by event activity' ),
 		).toBeInTheDocument();
 		expect(
-			screen.queryByText( 'Upcoming events only' )
+			screen.queryByText( 'Upcoming events only' ),
 		).not.toBeInTheDocument();
 	} );
 
@@ -433,7 +445,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 		render( <EventQueryControlsSlotFill /> );
 
 		expect(
-			screen.queryByText( 'Filter by event activity' )
+			screen.queryByText( 'Filter by event activity' ),
 		).not.toBeInTheDocument();
 	} );
 
@@ -455,7 +467,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 		usePostTypeSupports.mockImplementation(
 			( support, postType ) =>
 				'gatherpress-shadow-source' === support &&
-				'gatherpress_venue' === postType
+				'gatherpress_venue' === postType,
 		);
 		useHasEventActivityFilterSupport.mockReturnValue( false );
 		isInFSETemplate.mockReturnValue( false );
@@ -463,10 +475,10 @@ describe( 'EventQueryControlsSlotFill', () => {
 		render( <EventQueryControlsSlotFill /> );
 
 		expect(
-			screen.queryByText( 'Filter by event activity' )
+			screen.queryByText( 'Filter by event activity' ),
 		).not.toBeInTheDocument();
 		expect( useHasEventActivityFilterSupport ).toHaveBeenCalledWith(
-			'gatherpress_venue'
+			'gatherpress_venue',
 		);
 	} );
 
@@ -485,17 +497,17 @@ describe( 'EventQueryControlsSlotFill', () => {
 		usePostTypeSupports.mockImplementation(
 			( support, postType ) =>
 				'gatherpress-shadow-source' === support &&
-				'gatherpress_venue' === postType
+				'gatherpress_venue' === postType,
 		);
 		useHasEventActivityFilterSupport.mockImplementation(
-			( postType ) => 'gatherpress_venue' === postType
+			( postType ) => 'gatherpress_venue' === postType,
 		);
 		isInFSETemplate.mockReturnValue( true );
 
 		render( <EventQueryControlsSlotFill /> );
 
 		expect(
-			screen.getByText( 'Filter by event activity' )
+			screen.getByText( 'Filter by event activity' ),
 		).toBeInTheDocument();
 	} );
 
@@ -514,7 +526,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 		usePostTypeSupports.mockImplementation(
 			( support, postType ) =>
 				'gatherpress-shadow-source' === support &&
-				'gatherpress_venue' === postType
+				'gatherpress_venue' === postType,
 		);
 		useHasEventActivityFilterSupport.mockReturnValue( false );
 		isInFSETemplate.mockReturnValue( true );
@@ -522,7 +534,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 		render( <EventQueryControlsSlotFill /> );
 
 		expect(
-			screen.queryByText( 'Filter by event activity' )
+			screen.queryByText( 'Filter by event activity' ),
 		).not.toBeInTheDocument();
 	} );
 
@@ -548,7 +560,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 		render( <EventQueryControlsSlotFill /> );
 
 		expect(
-			screen.getByText( 'Filter by event activity' )
+			screen.getByText( 'Filter by event activity' ),
 		).toBeInTheDocument();
 	} );
 
@@ -568,17 +580,17 @@ describe( 'EventQueryControlsSlotFill', () => {
 		usePostTypeSupports.mockImplementation(
 			( support, postType ) =>
 				'gatherpress-shadow-source' === support &&
-				'gatherpress_venue' === postType
+				'gatherpress_venue' === postType,
 		);
 		useHasEventActivityFilterSupport.mockImplementation(
-			( postType ) => 'gatherpress_venue' === postType
+			( postType ) => 'gatherpress_venue' === postType,
 		);
 		isInFSETemplate.mockReturnValue( false );
 
 		render( <EventQueryControlsSlotFill /> );
 
 		expect(
-			screen.getByText( 'Filter by event activity' )
+			screen.getByText( 'Filter by event activity' ),
 		).toBeInTheDocument();
 	} );
 
@@ -602,7 +614,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 		usePostTypeSupports.mockImplementation(
 			( support, postType ) =>
 				'gatherpress-event-date' === support &&
-				'gatherpress_venue' === postType
+				'gatherpress_venue' === postType,
 		);
 		useHasEventActivityFilterSupport.mockReturnValue( true );
 		isInFSETemplate.mockReturnValue( false );
@@ -610,7 +622,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 		render( <EventQueryControlsSlotFill /> );
 
 		expect(
-			screen.queryByText( 'Filter by event activity' )
+			screen.queryByText( 'Filter by event activity' ),
 		).not.toBeInTheDocument();
 		expect( screen.queryByText( 'Event List Type' ) ).not.toBeInTheDocument();
 		expect( screen.queryByText( 'Events Per Page' ) ).not.toBeInTheDocument();
@@ -621,7 +633,7 @@ describe( 'HasEventsFilterControls', () => {
 	beforeEach( () => {
 		usePostTypeLabel.mockReset();
 		usePostTypeLabel.mockImplementation(
-			( key, postType, fallback ) => fallback
+			( key, postType, fallback ) => fallback,
 		);
 	} );
 
@@ -646,7 +658,7 @@ describe( 'HasEventsFilterControls', () => {
 					},
 				} }
 				setAttributes={ setAttributes }
-			/>
+			/>,
 		);
 
 		expect( screen.getByText( activityLabel ) ).toBeInTheDocument();
@@ -664,13 +676,13 @@ describe( 'HasEventsFilterControls', () => {
 					query: { postType: 'production', has_events_filter: 1 },
 				} }
 				setAttributes={ jest.fn() }
-			/>
+			/>,
 		);
 
 		expect(
 			screen.getByText(
-				'Only shows Productions that have upcoming or past events attached.'
-			)
+				'Only shows Productions that have upcoming or past events attached.',
+			),
 		).toBeInTheDocument();
 	} );
 
@@ -684,7 +696,7 @@ describe( 'HasEventsFilterControls', () => {
 			<HasEventsFilterControls
 				attributes={ { query } }
 				setAttributes={ setAttributes }
-			/>
+			/>,
 		);
 
 		fireEvent.click( screen.getByRole( 'button', { name: activityLabel } ) );
@@ -708,14 +720,14 @@ describe( 'HasEventsFilterControls', () => {
 					},
 				} }
 				setAttributes={ jest.fn() }
-			/>
+			/>,
 		);
 
 		expect( screen.getByText( upcomingLabel ) ).toBeInTheDocument();
 		expect( screen.getByText( upcomingHelp ) ).toBeInTheDocument();
 		expect( screen.queryByText( pastLabel ) ).not.toBeInTheDocument();
 		expect(
-			screen.getByRole( 'button', { name: upcomingLabel } )
+			screen.getByRole( 'button', { name: upcomingLabel } ),
 		).toHaveAttribute( 'aria-pressed', 'true' );
 	} );
 
@@ -730,7 +742,7 @@ describe( 'HasEventsFilterControls', () => {
 					},
 				} }
 				setAttributes={ jest.fn() }
-			/>
+			/>,
 		);
 
 		expect( screen.getByText( pastLabel ) ).toBeInTheDocument();
@@ -738,7 +750,7 @@ describe( 'HasEventsFilterControls', () => {
 		expect( screen.queryByText( upcomingLabel ) ).not.toBeInTheDocument();
 		expect( screen.getByRole( 'button', { name: pastLabel } ) ).toHaveAttribute(
 			'aria-pressed',
-			'false'
+			'false',
 		);
 	} );
 
@@ -755,7 +767,7 @@ describe( 'HasEventsFilterControls', () => {
 					},
 				} }
 				setAttributes={ setAttributes }
-			/>
+			/>,
 		);
 
 		fireEvent.click( screen.getByRole( 'button', { name: upcomingLabel } ) );
@@ -782,7 +794,7 @@ describe( 'HasEventsFilterControls', () => {
 					},
 				} }
 				setAttributes={ setAttributes }
-			/>
+			/>,
 		);
 
 		fireEvent.click( screen.getByRole( 'button', { name: pastLabel } ) );
@@ -809,7 +821,7 @@ describe( 'HasEventsFilterControls', () => {
 					},
 				} }
 				setAttributes={ setAttributes }
-			/>
+			/>,
 		);
 
 		fireEvent.click( screen.getByRole( 'button', { name: activityLabel } ) );
@@ -838,7 +850,7 @@ describe( 'HasEventsFilterControls', () => {
 					},
 				} }
 				setAttributes={ setAttributes }
-			/>
+			/>,
 		);
 
 		fireEvent.click( screen.getByRole( 'button', { name: activityLabel } ) );
@@ -850,5 +862,341 @@ describe( 'HasEventsFilterControls', () => {
 				upcoming_events_only: undefined,
 			},
 		} );
+	} );
+} );
+
+describe( 'gatherpress.eventQueryControls', () => {
+	const NAMESPACE = 'test/query-controls';
+
+	beforeEach( () => {
+		mockQueryControlsProps = {
+			...mockQueryControlsProps,
+			context: { postType: 'gatherpress_event' },
+			attributes: {
+				query: { postType: 'gatherpress_event', inherit: false },
+			},
+		};
+
+		usePostTypeSupports.mockImplementation(
+			( support ) => 'gatherpress-event-date' === support,
+		);
+		useHasEventActivityFilterSupport.mockReturnValue( false );
+		isInFSETemplate.mockReturnValue( false );
+	} );
+
+	afterEach( () => {
+		removeFilter( 'gatherpress.eventQueryControls', NAMESPACE );
+		removeFilter( 'gatherpress.eventInheritedQueryControls', NAMESPACE );
+	} );
+
+	it( 'hands the filter every control that would render, in order', () => {
+		let seen = [];
+
+		addFilter(
+			'gatherpress.eventQueryControls',
+			NAMESPACE,
+			( controls ) => {
+				seen = controls.map( ( { name } ) => name );
+				return controls;
+			},
+		);
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect( seen ).toEqual( [
+			'listType',
+			'includeUnfinished',
+			'exclude',
+			'count',
+			'offset',
+			'order',
+		] );
+	} );
+
+	it( 'hands the filter the query block\'s own props, so it can scope itself', () => {
+		let received = null;
+
+		mockQueryControlsProps = {
+			...mockQueryControlsProps,
+			clientId: 'query-block-1',
+		};
+
+		addFilter(
+			'gatherpress.eventQueryControls',
+			NAMESPACE,
+			( controls, props ) => {
+				received = props;
+				return controls;
+			},
+		);
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect( received.clientId ).toBe( 'query-block-1' );
+		expect( received.attributes.query.postType ).toBe( 'gatherpress_event' );
+	} );
+
+	it( 'leaves the panel alone for a block the filter does not claim', () => {
+		mockQueryControlsProps = {
+			...mockQueryControlsProps,
+			clientId: 'someone-elses-query',
+		};
+
+		addFilter( 'gatherpress.eventQueryControls', NAMESPACE, ( controls, { clientId } ) =>
+			'my-calendar-query' === clientId
+				? controls.filter( ( { name } ) => 'offset' !== name )
+				: controls,
+		);
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect( screen.getByText( 'Event Offset' ) ).toBeInTheDocument();
+	} );
+
+	it( 'lets a filter drop a control', () => {
+		addFilter( 'gatherpress.eventQueryControls', NAMESPACE, ( controls ) =>
+			controls.filter( ( { name } ) => 'offset' !== name ),
+		);
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect( screen.queryByText( 'Event Offset' ) ).not.toBeInTheDocument();
+		expect( screen.getByText( 'Events Per Page' ) ).toBeInTheDocument();
+	} );
+
+	it( 'lets a filter add a control of its own', () => {
+		addFilter( 'gatherpress.eventQueryControls', NAMESPACE, ( controls ) => [
+			...controls,
+			{
+				name: 'test/extra',
+				Component: () => <div>Extra Control</div>,
+			},
+		] );
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect( screen.getByText( 'Extra Control' ) ).toBeInTheDocument();
+	} );
+
+	it( 'passes the block edit props through to a filtered-in control', () => {
+		let received = null;
+
+		addFilter( 'gatherpress.eventQueryControls', NAMESPACE, ( controls ) => [
+			{
+				name: 'test/probe',
+				Component: ( props ) => {
+					received = props;
+					return null;
+				},
+				props: { extra: 'from-entry' },
+			},
+			...controls,
+		] );
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect( received.attributes.query.postType ).toBe( 'gatherpress_event' );
+		expect( received.extra ).toBe( 'from-entry' );
+	} );
+
+	it( 'survives a filter returning entries it cannot render', () => {
+		addFilter( 'gatherpress.eventQueryControls', NAMESPACE, () => [
+			null,
+			{ name: 'no-component' },
+			{ Component: () => <div>No Name</div> },
+			{ name: 'test/ok', Component: () => <div>Still Here</div> },
+		] );
+
+		expect( () => render( <EventQueryControlsSlotFill /> ) ).not.toThrow();
+		expect( screen.getByText( 'Still Here' ) ).toBeInTheDocument();
+		expect( screen.queryByText( 'No Name' ) ).not.toBeInTheDocument();
+	} );
+
+	it( 'survives a filter returning something that is not an array', () => {
+		addFilter( 'gatherpress.eventQueryControls', NAMESPACE, () => null );
+
+		expect( () => render( <EventQueryControlsSlotFill /> ) ).not.toThrow();
+		expect( screen.queryByText( 'Event Offset' ) ).not.toBeInTheDocument();
+	} );
+
+	it( 'filters the inherited panel through its own hook', () => {
+		let seen = [];
+
+		addFilter(
+			'gatherpress.eventInheritedQueryControls',
+			NAMESPACE,
+			( controls ) => {
+				seen = controls.map( ( { name } ) => name );
+				return controls.filter( ( { name } ) => 'order' !== name );
+			},
+		);
+
+		render( <EventInheritedQueryControlsSlotFill /> );
+
+		expect( seen ).toEqual( [ 'listType', 'includeUnfinished', 'order' ] );
+		expect( screen.queryByText( 'Order Events by' ) ).not.toBeInTheDocument();
+	} );
+
+	it( 'leaves the main panel alone when only the inherited hook is filtered', () => {
+		addFilter(
+			'gatherpress.eventInheritedQueryControls',
+			NAMESPACE,
+			() => [],
+		);
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect( screen.getByText( 'Event Offset' ) ).toBeInTheDocument();
+	} );
+} );
+
+describe( 'gatherpress.eventQueryControls component validation', () => {
+	const NAMESPACE = 'test/component-validation';
+
+	beforeEach( () => {
+		mockQueryControlsProps = {
+			...mockQueryControlsProps,
+			context: { postType: 'gatherpress_event' },
+			attributes: {
+				query: { postType: 'gatherpress_event', inherit: false },
+			},
+		};
+
+		usePostTypeSupports.mockImplementation(
+			( support ) => 'gatherpress-event-date' === support,
+		);
+		useHasEventActivityFilterSupport.mockReturnValue( false );
+		isInFSETemplate.mockReturnValue( false );
+	} );
+
+	afterEach( () => {
+		removeFilter( 'gatherpress.eventQueryControls', NAMESPACE );
+	} );
+
+	it( 'skips an entry whose Component is not something React can render', () => {
+		addFilter( 'gatherpress.eventQueryControls', NAMESPACE, () => [
+			{ name: 'number', Component: 42 },
+			{ name: 'string', Component: 'not a component' },
+			{ name: 'plain-object', Component: {} },
+			{ name: 'test/ok', Component: () => <div>Still Here</div> },
+		] );
+
+		expect( () => render( <EventQueryControlsSlotFill /> ) ).not.toThrow();
+		expect( screen.getByText( 'Still Here' ) ).toBeInTheDocument();
+	} );
+
+	it( 'still renders a memoized component, which is an object rather than a function', () => {
+		const Memoized = memo( () => <div>Memoized Control</div> );
+
+		addFilter( 'gatherpress.eventQueryControls', NAMESPACE, ( controls ) => [
+			...controls,
+			{ name: 'test/memo', Component: Memoized },
+		] );
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect( screen.getByText( 'Memoized Control' ) ).toBeInTheDocument();
+	} );
+} );
+
+describe( 'shadow-source sync', () => {
+	const NAMESPACE = 'test/shadow-source-sync';
+	const HOST_ID = 42;
+	const HOST_TYPE = 'gatherpress_venue';
+
+	// A shadow-source host querying events, with the filter switched on but
+	// the source IDs never written: the case the sync exists for.
+	const staleQuery = {
+		postType: 'gatherpress_event',
+		inherit: false,
+		shadow_filter: 1,
+		gatherpress_shadow_source_post_id: null,
+		gatherpress_shadow_source_post_type: null,
+	};
+
+	const fakeSelect = ( store ) => {
+		if ( 'core/editor' === store ) {
+			return {
+				getCurrentPostId: () => HOST_ID,
+				getCurrentPostType: () => HOST_TYPE,
+				getCurrentPost: () => ( { id: HOST_ID } ),
+			};
+		}
+
+		if ( 'core' === store ) {
+			return {
+				getPostType: () => ( {
+					supports: { 'gatherpress-shadow-source': true },
+				} ),
+			};
+		}
+
+		return {};
+	};
+
+	let setAttributes;
+
+	beforeEach( () => {
+		setAttributes = jest.fn();
+
+		mockQueryControlsProps = {
+			context: { postType: HOST_TYPE, postId: HOST_ID },
+			attributes: { query: { ...staleQuery } },
+			setAttributes,
+		};
+
+		useSelect.mockImplementation( ( callback ) => callback( fakeSelect ) );
+		usePostTypeSupports.mockImplementation(
+			( support, postType ) =>
+				( 'gatherpress-event-date' === support &&
+					'gatherpress_event' === postType ) ||
+				( 'gatherpress-shadow-source' === support &&
+					HOST_TYPE === postType ),
+		);
+		useHasEventActivityFilterSupport.mockReturnValue( false );
+		isInFSETemplate.mockReturnValue( false );
+	} );
+
+	afterEach( () => {
+		removeFilter( 'gatherpress.eventQueryControls', NAMESPACE );
+		useSelect.mockImplementation( () => ( { id: 1 } ) );
+	} );
+
+	const backfillCalls = () =>
+		setAttributes.mock.calls.filter(
+			( [ next ] ) =>
+				HOST_ID === next?.query?.gatherpress_shadow_source_post_id &&
+				HOST_TYPE === next?.query?.gatherpress_shadow_source_post_type,
+		);
+
+	it( 'backfills the source when the toggle is in the panel', () => {
+		render( <EventQueryControlsSlotFill /> );
+
+		expect( backfillCalls() ).toHaveLength( 1 );
+	} );
+
+	it( 'still backfills when a plugin removes the toggle', () => {
+		addFilter( 'gatherpress.eventQueryControls', NAMESPACE, ( controls ) =>
+			controls.filter( ( { name } ) => 'shadowSourceFilter' !== name ),
+		);
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect(
+			screen.queryByText( 'Filter by Current Venue' ),
+		).not.toBeInTheDocument();
+		expect( backfillCalls() ).toHaveLength( 1 );
+	} );
+
+	it( 'backfills when the published toggle is rendered in a panel of its own', () => {
+		render(
+			<ShadowSourceFilterControls
+				context={ { postType: HOST_TYPE, postId: HOST_ID } }
+				attributes={ { query: { ...staleQuery } } }
+				setAttributes={ setAttributes }
+			/>,
+		);
+
+		expect( backfillCalls() ).toHaveLength( 1 );
 	} );
 } );

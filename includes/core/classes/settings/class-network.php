@@ -19,6 +19,7 @@ namespace GatherPress\Core\Settings;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Assets;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
@@ -116,31 +117,6 @@ final class Network {
 		add_action( 'network_admin_edit_' . self::EDIT_ACTION, array( $this, 'handle_save' ) );
 		add_action( 'network_admin_edit_' . self::VALUES_EDIT_ACTION, array( $this, 'handle_values_save' ) );
 		add_action( 'admin_notices', array( $this, 'subsite_inheritance_notice' ) );
-		add_action( 'admin_head', array( $this, 'print_inherited_styles' ) );
-	}
-
-	/**
-	 * Print inline styles that dim inherited fields on subsite settings pages.
-	 *
-	 * Runs on every admin_head so the styling is applied whether or not the
-	 * built SCSS bundle is available.
-	 *
-	 * @since 0.34.0
-	 *
-	 * @return void
-	 */
-	public function print_inherited_styles(): void {
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check.
-		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
-
-		if ( '' === $page || ! str_starts_with( $page, 'gatherpress_' ) ) {
-			return;
-		}
-
-		echo '<style>
-			.gatherpress-field-inherited { opacity: 0.6; pointer-events: none; }
-			.gatherpress-field-inherited__note { font-style: italic; margin-top: 4px; pointer-events: auto; }
-		</style>';
 	}
 
 	/**
@@ -171,8 +147,7 @@ final class Network {
 		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
 		// @codeCoverageIgnoreEnd
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check.
-		$page     = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		$page     = Utility::get_http_input( INPUT_GET, 'page', 'sanitize_key' );
 		$config   = self::get_config();
 		$settings = Settings::get_instance();
 		$locked   = array_filter(
@@ -247,6 +222,7 @@ final class Network {
 		if ( $hook ) {
 			add_action( 'load-' . $hook, array( $this, 'scope_read_filter' ) );
 			add_action( 'load-' . $hook, array( $this, 'maybe_redirect_to_default_tab' ) );
+			add_action( 'load-' . $hook, array( Assets::get_instance(), 'enqueue_settings_assets' ) );
 		}
 	}
 
@@ -259,8 +235,7 @@ final class Network {
 	 * @return void
 	 */
 	public function maybe_redirect_to_default_tab(): void {
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only check on a navigation parameter.
-		if ( isset( $_GET['tab'] ) ) {
+		if ( '' !== Utility::get_http_input( INPUT_GET, 'tab' ) ) {
 			return;
 		}
 
@@ -337,8 +312,8 @@ final class Network {
 	}
 
 	/**
-	 * Sub-pages shown at network admin: existing sub-pages minus Tools
-	 * (import/export is blog-scoped), plus the special "Network" tab.
+	 * Sub-pages shown at network admin: every per-site sub-page, plus the
+	 * special "Network" tab. Tools imports and exports the network values.
 	 *
 	 * @since 0.34.0
 	 *
@@ -369,8 +344,7 @@ final class Network {
 	 * @return string
 	 */
 	protected function get_current_tab( array $sub_pages ): string {
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Tab selection is a navigation parameter.
-		$tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : '';
+		$tab = Utility::get_http_input( INPUT_GET, 'tab', 'sanitize_key' );
 
 		if ( '' !== $tab && isset( $sub_pages[ $tab ] ) ) {
 			return $tab;
@@ -398,6 +372,8 @@ final class Network {
 		// subprocess isolation.
 		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
 		// @codeCoverageIgnoreStart
+		// Direct read on purpose: the option is an array, and
+		// Utility::get_http_input() only returns strings.
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Validated above.
 		$raw = isset( $_POST[ self::OPTION_NAME ] ) && is_array( $_POST[ self::OPTION_NAME ] )
 			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.NonceVerification.Missing
@@ -436,16 +412,15 @@ final class Network {
 		// subprocess isolation.
 		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
 		// @codeCoverageIgnoreStart
+		// Direct read on purpose: the option is an array, and
+		// Utility::get_http_input() only returns strings.
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Validated above.
 		$raw = isset( $_POST[ Settings::OPTION_NAME ] ) && is_array( $_POST[ Settings::OPTION_NAME ] )
 			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.NonceVerification.Missing
 			? wp_unslash( $_POST[ Settings::OPTION_NAME ] )
 			: array();
 
-		$submitted = sanitize_key(
-			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Validated above.
-			isset( $_POST['gatherpress_tab'] ) ? wp_unslash( $_POST['gatherpress_tab'] ) : ''
-		);
+		$submitted = Utility::get_http_input( INPUT_POST, 'gatherpress_tab', 'sanitize_key' );
 
 		$settings       = Settings::get_instance();
 		$sub_pages      = $settings->get_sub_pages();

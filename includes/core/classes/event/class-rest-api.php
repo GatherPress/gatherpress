@@ -15,24 +15,25 @@ namespace GatherPress\Core\Event;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
+use GatherPress\Core\Blocks\Rsvp as Rsvp_Block;
+use GatherPress\Core\Blocks\Rsvp_Form;
 use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status as Event_Status;
 use GatherPress\Core\Rsvp\Form;
-use GatherPress\Core\Rsvp\Query as Rsvp_Query;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Rsvp\Token;
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\User;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
-use WP_Comment;
+use WP_Error;
+use WP_HTTP_Response;
 use WP_Post;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
-use WP_User;
 
 /**
  * Class Rest_Api.
@@ -45,8 +46,6 @@ use WP_User;
  * @since 0.34.0
  *
  * @phpstan-type RouteDefinition array{route: string, args: array<string, mixed>}
- * @phpstan-type SendOptions array{all: bool, attending: bool, waiting_list: bool, not_attending: bool}
- * @phpstan-type Recipient array{is_user: bool, user_id: int, comment_id: int, email: string, name: string}
  */
 final class Rest_Api {
 
@@ -77,8 +76,109 @@ final class Rest_Api {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
-		add_action( 'gatherpress_send_emails', array( $this, 'handle_email_send_action' ), 10, 4 );
-		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ) );
+		add_action( 'rest_api_init', array( $this, 'register_status_field' ) );
+		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ), 10, 2 );
+		add_filter( 'rest_post_dispatch', array( $this, 'redirect_rsvp_form_submission' ), 10, 3 );
+	}
+
+	/**
+	 * Sends an RSVP posted without JavaScript back to the page it came from.
+	 *
+	 * The RSVP block's no-JavaScript form (see
+	 * `Blocks\Rsvp::submit_rsvp_without_javascript()`) posts to the RSVP
+	 * route with a `gatherpress_redirect` URL. Rather than the JSON a script
+	 * reads, the browser gets a 303 to that URL. A failed RSVP adds
+	 * `Blocks\Rsvp::ERROR_QUERY_ARG`, so the block can say so. That
+	 * includes a stale nonce, which WordPress rejects before the route's
+	 * callback runs, so this runs on `rest_post_dispatch`, after every
+	 * outcome. A URL on another host is ignored.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_HTTP_Response $response The response to send.
+	 * @param WP_REST_Server   $server   The REST server.
+	 * @param WP_REST_Request  $request  The request.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Required by WP's rest_post_dispatch hook signature.
+	 *
+	 * @return WP_HTTP_Response The response, as a redirect for a no-JavaScript RSVP.
+	 */
+	public function redirect_rsvp_form_submission(
+		WP_HTTP_Response $response,
+		WP_REST_Server $server,
+		WP_REST_Request $request
+	): WP_HTTP_Response {
+		$redirect = sprintf( '/%s/event/rsvp', GATHERPRESS_REST_NAMESPACE ) === $request->get_route()
+			? wp_validate_redirect( (string) $request->get_param( 'gatherpress_redirect' ), '' )
+			: '';
+
+		if ( '' === $redirect ) {
+			return $response;
+		}
+
+		$data = $response->get_data();
+
+		if ( 400 <= $response->get_status() || ! is_array( $data ) || empty( $data['success'] ) ) {
+			$redirect = add_query_arg( Rsvp_Block::ERROR_QUERY_ARG, (int) $request->get_param( 'post_id' ), $redirect );
+		}
+
+		$response->set_status( 303 );
+		$response->header( 'Location', $redirect );
+
+		return $response;
+	}
+
+	/**
+	 * Registers the event status as a REST field on every post type that supports events.
+	 *
+	 * The status lives in the _gatherpress_event_status taxonomy so events can
+	 * be filtered by it, but a taxonomy reaches the block editor as an array of
+	 * term ids. This field keeps the editor's contract a plain slug, so the
+	 * status panel stays a SelectControl and the taxonomy stays an
+	 * implementation detail with a single write path through Event\Status::set().
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function register_status_field(): void {
+		foreach ( get_post_types_by_support( Event::SUPPORT ) as $post_type ) {
+			register_rest_field(
+				$post_type,
+				'gatherpress_status',
+				array(
+					'get_callback'    => static function ( array $post ): string {
+						return ( new Event_Status( (int) $post['id'] ) )->get();
+					},
+					'update_callback' => static function ( $value, WP_Post $post ) {
+						if ( ! current_user_can( 'edit_post', $post->ID ) ) {
+							return new WP_Error(
+								'gatherpress_status_forbidden',
+								__( 'Sorry, you are not allowed to set the status of this event.', 'gatherpress' ),
+								array( 'status' => rest_authorization_required_code() )
+							);
+						}
+
+						if ( ! ( new Event_Status( $post->ID ) )->set( sanitize_key( (string) $value ) ) ) {
+							return new WP_Error(
+								'gatherpress_status_not_saved',
+								__( 'The status of this event could not be saved.', 'gatherpress' ),
+								array( 'status' => 500 )
+							);
+						}
+
+						return true;
+					},
+					'schema'          => array(
+						'description' => __( 'The operational status of the event.', 'gatherpress' ),
+						'type'        => 'string',
+						'enum'        => Event_Status::slugs( $post_type ),
+						'context'     => array( 'view', 'edit' ),
+					),
+				)
+			);
+		}
 	}
 
 	/**
@@ -144,7 +244,16 @@ final class Rest_Api {
 					// send emails about it. Mirrors the meta auth_callback
 					// model so a non-owner Author can't blast emails about
 					// someone else's event via this route.
-					return current_user_can( Event::EDIT_CAPABILITY, (int) $request['post_id'] );
+					$post_id = (int) $request['post_id'];
+
+					if ( ! current_user_can( Event::edit_capability(), $post_id ) ) {
+						return false;
+					}
+
+					$send = (array) $request['send'];
+
+					return empty( $send['all'] )
+						|| self::can_email_all_users( (string) get_post_type( $post_id ) );
 				},
 				'args'                => array(
 					'post_id' => array(
@@ -169,10 +278,30 @@ final class Rest_Api {
 	}
 
 	/**
+	 * Whether the current user can email every user on the site about an event.
+	 *
+	 * Emailing all users reaches far beyond the event's own attendees, so it
+	 * takes the post type's `edit_others_posts`, as Editors and Administrators
+	 * have, on top of the right to edit the event.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @param string $post_type The event's post type.
+	 *
+	 * @return bool Whether the current user can email all users.
+	 */
+	public static function can_email_all_users( string $post_type ): bool {
+		$post_type_object = get_post_type_object( $post_type );
+
+		return null !== $post_type_object && current_user_can( $post_type_object->cap->edit_others_posts );
+	}
+
+	/**
 	 * Define REST API route for generating nonce.
 	 *
-	 * Creates a publicly accessible endpoint that generates a fresh nonce
-	 * for authenticated REST API requests.
+	 * Creates an endpoint that generates a fresh nonce for authenticated REST
+	 * API requests. The nonce is for the site's own pages, so the endpoint
+	 * only answers requests from the site's origin.
 	 *
 	 * @since 0.34.0
 	 *
@@ -184,11 +313,15 @@ final class Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => static function () {
+					// The site's own pages need no CORS headers to read the nonce.
+					remove_filter( 'rest_pre_serve_request', 'rest_send_cors_headers' );
+
 					// Short-term caching (30 seconds) to prevent endpoint hammering while maintaining security.
 					// WordPress nonces are valid for ~12 hours, so 30 seconds of caching has no UX impact
 					// but protects against rapid successive requests that could overwhelm the server.
 					header( 'Cache-Control: private, max-age=30' );
 					header( 'Expires: ' . gmdate( 'D, d M Y H:i:s', time() + 30 ) . ' GMT' );
+					header( 'Vary: Origin' );
 
 					// Ensure proper user authentication for nonce generation.
 					Utility::ensure_user_authentication();
@@ -199,7 +332,7 @@ final class Rest_Api {
 
 					return new WP_REST_Response( $response );
 				},
-				'permission_callback' => '__return_true',
+				'permission_callback' => array( Utility::class, 'is_same_origin_request' ),
 			),
 		);
 	}
@@ -220,12 +353,8 @@ final class Rest_Api {
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'update_rsvp' ),
 				'permission_callback' => function ( WP_REST_Request $request ): bool {
-					$post_id    = (int) $request->get_param( 'post_id' );
-					$rsvp_token = Token::from_token_string( $request->get_param( Token::NAME ) );
-					$token_post = $rsvp_token ? $rsvp_token->get_post() : null;
-
-					// A magic-link token authorizes only the event it was issued for.
-					if ( $token_post instanceof WP_Post && $token_post->ID === $post_id ) {
+					// A magic-link session authorizes only the event it was started for.
+					if ( Token::from_cookie( (int) $request->get_param( 'post_id' ) ) ) {
 						return true;
 					}
 
@@ -233,17 +362,11 @@ final class Rest_Api {
 					return is_user_logged_in() && $this->can_read_event_rsvps( $request );
 				},
 				'args'                => array(
-					'post_id'    => array(
+					'post_id' => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'event_post_id' ),
 					),
-					'rsvp_token' => array(
-						'required'          => false,
-						'validate_callback' => static function ( $param ): bool {
-							return ! empty( Token::parse_token_string( $param ) );
-						},
-					),
-					'status'     => array(
+					'status'  => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'rsvp_status' ),
 					),
@@ -290,7 +413,7 @@ final class Rest_Api {
 					'gatherpress_form_schema_id'       => array(
 						'required'          => false,
 						'validate_callback' => function ( $param ) {
-							return is_string( $param ) && preg_match( '/^form_\d+$/', $param );
+							return is_string( $param ) && preg_match( '/^(\d+_)*form_\d+$/', $param );
 						},
 					),
 					'gatherpress_event_updates_opt_in' => array(
@@ -441,299 +564,16 @@ final class Rest_Api {
 	 */
 	public function email( WP_REST_Request $request ): WP_REST_Response {
 		$params   = $request->get_params();
-		$post_id  = intval( $params['post_id'] );
-		$message  = $params['message'] ?? '';
-		$subject  = $params['subject'] ?? '';
-		$send     = $params['send'];
-		$success  = wp_schedule_single_event(
-			time(),
-			'gatherpress_send_emails',
-			array( $post_id, $send, $message, $subject )
-		);
 		$response = array(
-			'success' => $success,
+			'success' => Email::get_instance()->send_emails(
+				intval( $params['post_id'] ),
+				$params['send'],
+				$params['message'] ?? '',
+				$params['subject'] ?? ''
+			),
 		);
 
 		return new WP_REST_Response( $response );
-	}
-
-	/**
-	 * Hooked method to trigger the sending of related emails.
-	 *
-	 * This method hooks into a WordPress action, triggering the `send_emails` method
-	 * to send emails to selected members. It doesn't return any value,
-	 * as it's intended to be called by an action hook.
-	 *
-	 * @since 0.34.0
-	 * @since 0.36.0 Added `$subject` parameter for #827.
-	 *
-	 * @param int    $post_id Post ID.
-	 * @param array  $send    Members to send the email to.
-	 * @param string $message Optional message to include in the email.
-	 * @param string $subject Optional subject line. Defaults to the existing `📅 {title}` template when empty.
-	 * @phpstan-param SendOptions $send
-	 *
-	 * @return void
-	 */
-	public function handle_email_send_action( int $post_id, array $send, string $message, string $subject = '' ): void {
-		$this->send_emails( $post_id, $send, $message, $subject );
-	}
-
-	/**
-	 * Send emails to selected members.
-	 *
-	 * This method is responsible for sending emails to specific members. It checks if the given
-	 * `$post_id` corresponds to a specific post type, retrieves the list of members to email, and sends the email with
-	 * the appropriate subject, body, and headers.
-	 *
-	 * @since 0.34.0
-	 * @since 0.36.0 Added `$subject` parameter for #827.
-	 *
-	 * @param int    $post_id Post ID.
-	 * @param array  $send    Members to send the email to.
-	 * @param string $message Optional message to include in the email.
-	 * @param string $subject Optional subject line. Defaults to the existing `📅 {title}` template when empty.
-	 * @phpstan-param SendOptions $send
-	 *
-	 * @return bool True if emails were successfully sent, false otherwise.
-	 */
-	public function send_emails( int $post_id, array $send, string $message, string $subject = '' ): bool {
-		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
-			return false;
-		}
-
-		// Keep the currently logged-in user so per-recipient locale / user
-		// switches inside the loop can restore back to it.
-		$current_user = wp_get_current_user();
-		$recipients   = $this->get_recipients( $send, $post_id );
-
-		foreach ( $recipients as $recipient ) {
-			$this->send_event_email_to_recipient( $recipient, $post_id, $message, $current_user, $subject );
-		}
-
-		return true;
-	}
-
-	/**
-	 * Send the per-event update email to a single recipient.
-	 *
-	 * Extracted from `send_emails()` so the outer loop body stays shallow
-	 * enough for SonarCloud's cognitive-complexity gate. Honors the
-	 * recipient's opt-in (user meta for WP users, comment meta for
-	 * non-user RSVPs) and skips silently when no email is on file.
-	 * Restores the editor's user / locale before returning.
-	 *
-	 * @since 0.34.0
-	 * @since 0.36.0 Added `$subject` parameter for #827.
-	 *
-	 * @param array   $recipient    Recipient row from `get_recipients()`.
-	 * @param int     $post_id      Event post ID.
-	 * @param string  $message      Optional editor-supplied message body.
-	 * @param WP_User $current_user Originating editor (restored after locale/user switch).
-	 * @param string  $subject      Optional subject line. Empty falls back to the default template
-	 *                              and is then filtered via `gatherpress_email_subject`.
-	 * @phpstan-param Recipient $recipient
-	 *
-	 * @return void
-	 */
-	protected function send_event_email_to_recipient(
-		array $recipient,
-		int $post_id,
-		string $message,
-		WP_User $current_user,
-		string $subject = ''
-	): void {
-		// Check opt-in preference based on recipient type.
-		if ( $recipient['is_user'] ) {
-			if ( ! User::get_instance()->has_event_updates_opt_in( $recipient['user_id'] ) ) {
-				return;
-			}
-		} elseif (
-			'0' === get_comment_meta(
-				$recipient['comment_id'],
-				'gatherpress_event_updates_opt_in',
-				true
-			)
-		) {
-			return;
-		}
-
-		if ( ! $recipient['email'] ) {
-			return;
-		}
-
-		$switched_locale = false;
-
-		// Set the current user context for templating.
-		if ( $recipient['is_user'] ) {
-			$switched_locale = switch_to_user_locale( $recipient['user_id'] );
-			// Set the current user to the actual member to mail to,
-			// to make sure the GatherPress filters for date- and time- format, as well as the users timezone,
-			// are recognized by the functions inside render_template().
-			wp_set_current_user( $recipient['user_id'] );
-		}
-
-		if ( '' === $subject ) {
-			$subject = sprintf(
-				// translators: %s: event title.
-				_x( '📅 %s', 'Email notification subject with event title', 'gatherpress' ),
-				get_the_title( $post_id )
-			);
-		}
-
-		/**
-		 * Filters the event update email subject.
-		 *
-		 * @since 0.36.0
-		 *
-		 * @param string $subject Email subject line.
-		 * @param int    $post_id Event post ID.
-		 */
-		$subject = apply_filters( 'gatherpress_email_subject', $subject, $post_id );
-		$body    = Utility::render_template(
-			sprintf( '%s/includes/templates/admin/emails/event-email.php', GATHERPRESS_CORE_PATH ),
-			array(
-				'event_id' => $post_id,
-				'message'  => $message,
-			),
-		);
-		$headers = array( 'Content-Type: text/html; charset=UTF-8' );
-		$subject = stripslashes_deep( html_entity_decode( $subject, ENT_QUOTES, 'UTF-8' ) );
-
-		// Reset the current user to the editor sending the email.
-		wp_set_current_user( $current_user->ID );
-
-		wp_mail( $recipient['email'], $subject, $body, $headers );
-
-		// Cleanup branch only fires when `switch_to_user_locale()` actually
-		// switched, which requires a non-stub `WP_Locale_Switcher` and is not
-		// reachable from the test runner.
-		if ( $switched_locale ) { // @codeCoverageIgnore
-			restore_previous_locale(); // @codeCoverageIgnore
-		}
-	}
-
-	/**
-	 * Get the list of recipients to send event-related emails to.
-	 *
-	 * This method retrieves the list of recipients to whom event-related emails should be sent
-	 * based on the given `$send` parameter and the specified event `$post_id`.
-	 * It checks the `$send` array for specific email recipient categories,
-	 * such as 'all,' 'attending,' 'waiting_list,' and 'not_attending,' and compiles a unified list of recipients
-	 * that includes both WordPress users and non-user RSVPs with their email addresses and metadata.
-	 *
-	 * @since 0.34.0
-	 *
-	 * @param array $send    An array specifying who to send emails to.
-	 * @param int   $post_id The Event Post ID.
-	 * @phpstan-param SendOptions $send
-	 *
-	 * @return array<int, Recipient> An array containing unified recipient data for both users and non-users.
-	 */
-	public function get_recipients( array $send, int $post_id ): array {
-		$recipients    = array();
-		$all_responses = ( new Rsvp( $post_id ) )->responses();
-
-		// Handle 'all' members (WordPress users only) — array_map keeps the
-		// per-user shape declarative.
-		if ( ! empty( $send['all'] ) ) {
-			$recipients = array_map(
-				static function ( $user ): array {
-					return array(
-						'is_user'    => true,
-						'user_id'    => $user->ID,
-						'comment_id' => 0,
-						'email'      => $user->user_email,
-						'name'       => $user->display_name,
-					);
-				},
-				get_users()
-			);
-		}
-
-		// Collect comment IDs for the requested RSVP statuses — `array_column`
-		// flattens each status's records to its commentId list in one pass,
-		// avoiding the inner foreach.
-		$comment_ids = array();
-		foreach ( array( 'attending', 'waiting_list', 'not_attending' ) as $status ) {
-			if ( ! empty( $send[ $status ] ) ) {
-				$comment_ids = array_merge(
-					$comment_ids,
-					array_column( $all_responses[ $status ]['records'], 'comment_id' )
-				);
-			}
-		}
-
-		if ( empty( $comment_ids ) ) {
-			return $recipients;
-		}
-
-		// Get full comment data for the RSVPs and build recipient rows.
-		$comments = Rsvp_Query::get_instance()->get_rsvps(
-			array(
-				'post_id'     => $post_id,
-				'status'      => 'approve',
-				'comment__in' => $comment_ids,
-			)
-		);
-
-		foreach ( $comments as $comment ) {
-			// get_rsvps() is typed loosely enough to return counts, so only comment rows
-			// are turned into recipients.
-			if ( ! $comment instanceof WP_Comment ) {
-				continue;
-			}
-
-			$recipient = $this->build_comment_recipient( $comment );
-
-			if ( null !== $recipient ) {
-				$recipients[] = $recipient;
-			}
-		}
-
-		return $recipients;
-	}
-
-	/**
-	 * Build a single recipient row from an approved RSVP comment, resolving
-	 * the user's email/display name when the comment is tied to a WordPress
-	 * user. Returns null when no email can be determined so the caller can
-	 * skip the row.
-	 *
-	 * Extracted from `get_recipients()` so the outer dispatch stays under
-	 * SonarCloud's cognitive-complexity threshold.
-	 *
-	 * @since 0.34.0
-	 *
-	 * @param WP_Comment $comment RSVP comment row from `Rsvp_Query::get_rsvps()`.
-	 *
-	 * @return Recipient|null Recipient row, or null when no email is on file.
-	 */
-	protected function build_comment_recipient( $comment ): ?array {
-		$user_id = intval( $comment->user_id );
-		$email   = $comment->comment_author_email;
-		$name    = $comment->comment_author;
-
-		if ( $user_id ) {
-			$user = get_userdata( $user_id );
-
-			if ( $user ) {
-				$email = $user->user_email;
-				$name  = $user->display_name;
-			}
-		}
-
-		if ( empty( $email ) ) {
-			return null;
-		}
-
-		return array(
-			'is_user'    => (bool) $user_id,
-			'user_id'    => $user_id,
-			'comment_id' => (int) $comment->comment_ID,
-			'email'      => $email,
-			'name'       => $name,
-		);
 	}
 
 	/**
@@ -754,6 +594,7 @@ final class Rest_Api {
 		// Prevent caching of RSVP updates.
 		nocache_headers();
 
+		// A form posted without JavaScript sends guests and anonymity under the RSVP block's own field names.
 		$params          = $request->get_params();
 		$success         = false;
 		$current_user_id = get_current_user_id();
@@ -761,9 +602,8 @@ final class Rest_Api {
 		$user_id         = isset( $params['user_id'] ) ? intval( $params['user_id'] ) : $current_user_id;
 		$post_id         = intval( $params['post_id'] );
 		$status          = sanitize_key( $params['status'] );
-		$guests          = intval( $params['guests'] ?? 0 );
-		$anonymous       = intval( $params['anonymous'] ?? 0 );
-		$unparsed_token  = sanitize_text_field( $params['rsvp_token'] ?? '' );
+		$guests          = intval( $params['guests'] ?? $params['gatherpress_rsvp_guests'] ?? 0 );
+		$anonymous       = intval( $params['anonymous'] ?? $params['gatherpress_rsvp_anonymous'] ?? 0 );
 		$event           = new Event( $post_id );
 		$rsvp            = new Rsvp( $post_id );
 
@@ -778,7 +618,7 @@ final class Rest_Api {
 			// RSVP someone else into it. The previous flat `edit_posts`
 			// check would have let any Author manage attendees on any
 			// event, including ones they don't own.
-			if ( current_user_can( Event::EDIT_CAPABILITY, $post_id ) ) {
+			if ( current_user_can( Event::edit_capability(), $post_id ) ) {
 				$is_managing_other = true;
 			} else {
 				$user_id = 0;
@@ -796,6 +636,7 @@ final class Rest_Api {
 		// any membership.
 		if (
 			intval( $user_id )
+			&& ! ( new Event_Status( $post_id ) )->is_canceled()
 			&& ! is_user_member_of_blog( $user_id )
 			&& ( ! $is_managing_other || ( current_user_can( 'promote_users' ) && get_userdata( $user_id ) ) )
 		) {
@@ -804,24 +645,20 @@ final class Rest_Api {
 
 		$user_identifier = $user_id;
 
-		if ( ! empty( $unparsed_token ) ) {
-			$rsvp_token = Token::from_token_string( $unparsed_token );
+		// The session cookie speaks for the visitor's own RSVP, never for an
+		// attendee an organizer is managing.
+		$rsvp_token = $is_managing_other ? null : Token::from_cookie( $post_id );
 
-			if ( $rsvp_token ) {
-				$user_identifier = $rsvp_token->get_email();
-			}
+		if ( $rsvp_token ) {
+			$user_identifier = $rsvp_token->get_email();
 		}
 
 		// A magic-link token supplies an email address; every other path supplies a user ID,
 		// so each identifier is checked against the one thing it can be.
 		if (
-			$user_identifier &&
-			(
-				is_string( $user_identifier )
-					? is_email( $user_identifier )
-					: is_user_member_of_blog( $user_identifier )
-			) &&
-			! $event->has_event_past()
+			$this->is_valid_rsvp_identifier( $user_identifier )
+			&& ! ( new Event_Status( $post_id ) )->is_canceled()
+			&& ! $event->has_event_past()
 		) {
 			if ( 'attending' !== $status ) {
 				$guests = 0;
@@ -836,14 +673,23 @@ final class Rest_Api {
 			}
 		}
 
+		// A magic-link token arrives in the body, not the URL, so pass its email along.
+		$token_email = is_string( $user_identifier ) ? $user_identifier : null;
+
+		// A token authorizes the RSVP change, not the roster: a caller who cannot
+		// read the attendee list gets the counts the block needs, as on the RSVP form route.
+		$responses = Event::can_read_rsvps( $post_id )
+			? $rsvp->responses()
+			: $this->rsvp_response_counts( $rsvp->responses() );
+
 		$response = array(
 			'event_id'    => $post_id,
 			'success'     => $success,
 			'status'      => $status,
 			'guests'      => $guests,
 			'anonymous'   => $anonymous,
-			'responses'   => $rsvp->responses(),
-			'online_link' => $event->maybe_get_online_event_link(),
+			'responses'   => $responses,
+			'online_link' => $event->maybe_get_online_event_link( $token_email ),
 		);
 
 		return new WP_REST_Response( $response );
@@ -871,22 +717,22 @@ final class Rest_Api {
 	 *                          - content (string): The dynamically rendered HTML markup for the RSVP responses.
 	 */
 	public function rsvp_status_html( WP_REST_Request $request ): WP_REST_Response {
-		// Prevent caching for logged-in users or users with valid RSVP tokens.
-		$unparsed_token = $request->get_param( Token::NAME );
-		$rsvp_token     = Token::from_token_string( $unparsed_token );
-
-		if ( is_user_logged_in() || $rsvp_token ) {
+		// Prevent caching for logged-in users or users with an RSVP session.
+		if ( is_user_logged_in() || Token::from_cookie( (int) $request->get_param( 'post_id' ) ) ) {
 			nocache_headers();
 		}
 
 		$rsvp_template = Rsvp_Template::get_instance();
 		$params        = $request->get_params();
+		$post_id       = intval( $params['post_id'] );
 
-		// Only a template the server emitted is rendered. The block tree is
-		// handed back verbatim from the markup Rsvp_Template wrote, and it is
-		// that markup, not the request, which decides what gets rendered.
+		// Only a template the server emitted for this event is rendered. The
+		// block tree is handed back verbatim from the markup Rsvp_Template
+		// wrote, and it is that markup, not the request, which decides what
+		// gets rendered.
 		$emitted = Rsvp_Template::verify_template(
 			(string) $params['block_data'],
+			$post_id,
 			(string) $params['block_signature']
 		);
 
@@ -900,7 +746,6 @@ final class Rest_Api {
 			);
 		}
 
-		$post_id    = intval( $params['post_id'] );
 		$status     = $params['status'];
 		$block_data = json_decode( $params['block_data'], true );
 		$rsvp       = new Rsvp( $post_id );
@@ -971,31 +816,50 @@ final class Rest_Api {
 		$form_schema_id = $data['gatherpress_form_schema_id'] ?? '';
 
 		if ( ! empty( $form_schema_id ) ) {
-			$post_id = $data['post_id'];
-			$schemas = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true );
+			// Read the schema through the shared accessor, which type-checks
+			// the stored meta. Enumerating it directly meant array_keys()
+			// raised a TypeError on a scalar, before process_rsvp() ever got
+			// the chance to reject the submission.
+			$fields = Rsvp_Form::get_instance()->get_schema_fields(
+				(int) $data['post_id'],
+				(string) $form_schema_id
+			);
 
-			if ( is_array( $schemas ) && isset( $schemas[ $form_schema_id ]['fields'] ) ) {
-				$fields = $schemas[ $form_schema_id ]['fields'];
-				foreach ( array_keys( $fields ) as $field_name ) {
-					if ( isset( $params[ $field_name ] ) ) {
-						$data[ $field_name ] = $params[ $field_name ];
-					}
+			foreach ( array_keys( $fields ) as $field_name ) {
+				if ( isset( $params[ $field_name ] ) ) {
+					$data[ $field_name ] = $params[ $field_name ];
 				}
 			}
 		}
 
 		// Pre-flight: bail with a structured error before processing if the
-		// event is not viewable, open RSVP is disabled or the event has already passed.
+		// event is not viewable, its password hasn't been entered, open RSVP is
+		// disabled or the event has already passed. The password check is the
+		// one wp-comments-post.php makes, which process_rsvp() skips.
 		$event = new Event( $data['post_id'] );
 		$rsvp  = new Rsvp( $data['post_id'] );
 		$bail  = null;
 
 		if ( ! Event::is_viewable( $data['post_id'] ) ) {
 			$bail = array( __( 'Event not found.', 'gatherpress' ), 404 );
+		} elseif ( post_password_required( $data['post_id'] ) ) {
+			$bail = array( __( 'Enter the event password to RSVP.', 'gatherpress' ), 403 );
 		} elseif ( ! $rsvp->is_enabled() ) {
 			$bail = array( __( 'RSVP is disabled for this event.', 'gatherpress' ), 403 );
 		} elseif ( ! $rsvp->allows_open_rsvp() ) {
 			$bail = array( __( 'Open RSVP is disabled for this event.', 'gatherpress' ), 403 );
+		} elseif ( ( new Event_Status( (int) $data['post_id'] ) )->is_canceled() ) {
+			$singular = strtolower(
+				Utility::post_type_label( 'singular_name', (string) get_post_type( (int) $data['post_id'] ) )
+			);
+			$bail     = array(
+				sprintf(
+					/* translators: %1$s: Singular post type label, e.g. "event". */
+					__( 'Registration for this %1$s is closed because the %1$s has been canceled.', 'gatherpress' ),
+					$singular
+				),
+				400,
+			);
 		} elseif ( $event->has_event_past() ) {
 			$bail = array( __( 'Registration for this event is now closed.', 'gatherpress' ), 400 );
 		}
@@ -1029,7 +893,14 @@ final class Rest_Api {
 				'success' => false,
 				'message' => $result['message'],
 			);
-			$status   = $result['error_code'] ?? 500;
+
+			// Custom-field rejections carry one message per failing field so a
+			// client can mark the inputs rather than only show the summary.
+			if ( ! empty( $result['errors'] ) ) {
+				$response['errors'] = $result['errors'];
+			}
+
+			$status = $result['error_code'] ?? 500;
 		}
 
 		return new WP_REST_Response( $response, $status );
@@ -1039,7 +910,7 @@ final class Rest_Api {
 	 * Handle RSVP responses REST endpoint request.
 	 *
 	 * Retrieves RSVP response data for a given event post ID. Validates that the post
-	 * is an event type before returning response data.
+	 * type declares RSVP support before returning response data.
 	 *
 	 * @since 0.34.0
 	 *
@@ -1049,11 +920,8 @@ final class Rest_Api {
 	 * @return WP_REST_Response Response containing success status and RSVP data.
 	 */
 	public function rsvp_responses( WP_REST_Request $request ): WP_REST_Response {
-		// Prevent caching for logged-in users or users with valid RSVP tokens.
-		$unparsed_token = $request->get_param( Token::NAME );
-		$rsvp_token     = Token::from_token_string( $unparsed_token );
-
-		if ( is_user_logged_in() || $rsvp_token ) {
+		// Prevent caching for logged-in users or users with an RSVP session.
+		if ( is_user_logged_in() || Token::from_cookie( (int) $request->get_param( 'post_id' ) ) ) {
 			nocache_headers();
 		}
 
@@ -1062,7 +930,7 @@ final class Rest_Api {
 		$success   = false;
 		$responses = array();
 
-		if ( Event::POST_TYPE === get_post_type( $post_id ) ) {
+		if ( post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT ) ) {
 			$success   = true;
 			$rsvp      = new Rsvp( $post_id );
 			$responses = $rsvp->responses();
@@ -1085,17 +953,19 @@ final class Rest_Api {
 	 * The enhanced data is then added to the response.
 	 *
 	 * @since 0.34.0
+	 * @since 0.35.4 Added the `$post` parameter.
 	 *
 	 * @param WP_REST_Response $response The response object containing event data.
+	 * @param WP_Post|null     $post     The event the response was prepared for.
 	 *
 	 * @return WP_REST_Response The response object with enhanced event data.
 	 */
-	public function prepare_event_data( WP_REST_Response $response ): WP_REST_Response {
-		// The response data shape depends on what the controller included: a
-		// `_fields=` request that drops `id`, or another plugin filtering the
-		// response, can leave it absent. Bail rather than emit an undefined-key
+	public function prepare_event_data( WP_REST_Response $response, ?WP_Post $post = null ): WP_REST_Response {
+		// Core hands the filter the post itself, so the event is known even when
+		// another plugin filters `id` out of the response body. The body is the
+		// fallback for a direct caller: bail rather than emit an undefined-key
 		// notice and construct Event( 0 ), which would silently do nothing.
-		$post_id = $response->data['id'] ?? 0;
+		$post_id = $post instanceof WP_Post ? $post->ID : (int) ( $response->data['id'] ?? 0 );
 
 		if ( ! $post_id ) {
 			return $response;
@@ -1107,8 +977,46 @@ final class Rest_Api {
 		// - The user is attending the event.
 		// - The event is in the future.
 		// - The code is not in an admin context.
-		$response->data['meta']['online_event_link'] = $event->maybe_get_online_event_link();
+		$online_event_link = $event->maybe_get_online_event_link();
+
+		$response->data['meta']['online_event_link'] = $online_event_link;
+
+		// The link's own meta key is registered with `show_in_rest`, and core
+		// hands a registered value to everyone who can read the post, since
+		// `auth_callback` gates writes rather than reads. Give that key the
+		// same answer, so a viewer gets the link on the terms the event sets
+		// while the editor still loads what it has to save.
+		if (
+			array_key_exists( 'gatherpress_online_event_link', $response->data['meta'] ?? array() )
+			&& ! current_user_can( Event::edit_capability(), $post_id )
+		) {
+			$response->data['meta']['gatherpress_online_event_link'] = $online_event_link;
+		}
 
 		return $response;
+	}
+
+	/**
+	 * Determines if a given RSVP user identifier is valid.
+	 *
+	 * A magic-link token supplies an email address; every other path supplies a user ID,
+	 * so each identifier is checked against the one thing it can be.
+	 *
+	 * @since TBD
+	 *
+	 * @param string|int|null $identifier The user ID or email address.
+	 *
+	 * @return bool True if valid, false otherwise.
+	 */
+	private function is_valid_rsvp_identifier( string|int|null $identifier ): bool {
+		if ( ! $identifier ) {
+			return false;
+		}
+
+		if ( is_string( $identifier ) ) {
+			return (bool) is_email( $identifier );
+		}
+
+		return is_user_member_of_blog( $identifier );
 	}
 }

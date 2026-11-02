@@ -35,9 +35,9 @@ Option: Selected Mapping Platform
 
 Override per event: No (this is a global display choice).
 
-### 3. Maximum attendance limit
+### 3. Capacity
 
-Option: Maximum Attendance Limit
+Option: Capacity
 
 * Sets the default maximum number of attendees for new events.  
 * This is the total number of people allowed at an event.  
@@ -106,9 +106,9 @@ Override per event: Yes.
 
 Controls what visitors see when they hit the events archive URL (defaults to `/event/`).
 
-* **Event Archive** — what `/event/` displays by default when no custom page is assigned. Choose **Upcoming Events** (default), **Past Events**, or **None** (return 404). When set to *None*, GatherPress only serves the archive URL if you've created a published page at the event slug.
-* **Upcoming Events page** — assign a custom page to act as the upcoming events archive. When set, visiting that page renders the upcoming events list (regardless of the *Event Archive* mode above).
-* **Past Events page** — same shape, for past events.
+* **Event Archive**: what `/event/` displays by default when no custom page is assigned. Choose **Upcoming Events** (default), **Past Events**, or **None** (return 404). When set to *None*, GatherPress only serves the archive URL if you've created a published page at the event slug.
+* **Upcoming Events page**: assign a custom page to act as the upcoming events archive. When set, visiting that page renders the upcoming events list (regardless of the *Event Archive* mode above).
+* **Past Events page**: same shape, for past events.
 
 The custom-page selectors take precedence over the *Event Archive* default, so you can mix-and-match.
 

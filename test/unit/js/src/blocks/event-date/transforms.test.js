@@ -57,7 +57,7 @@ describe( 'gatherpress/event-date transforms', () => {
 			expect( postDateTransform.isMatch() ).toBe( true );
 			expect( isPostTypeSupporting ).toHaveBeenCalledWith(
 				'gatherpress-event-date',
-				'gatherpress_event'
+				'gatherpress_event',
 			);
 		} );
 
@@ -104,7 +104,7 @@ describe( 'gatherpress/event-date transforms', () => {
 				{
 					startDateFormat: 'F j, Y g:i a',
 					endDateFormat: 'F j, Y g:i a',
-				}
+				},
 			);
 			expect( result ).toEqual( {
 				name: 'gatherpress/event-date',
@@ -123,7 +123,7 @@ describe( 'gatherpress/event-date transforms', () => {
 				{
 					startDateFormat: '',
 					endDateFormat: '',
-				}
+				},
 			);
 		} );
 	} );

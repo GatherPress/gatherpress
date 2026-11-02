@@ -59,7 +59,7 @@ function buildFixture( {
 	// markup puts a hidden fallback BEFORE the live control (select /
 	// checkbox), so the last match is the one actually wired to events.
 	const candidates = document.querySelectorAll(
-		'[name="gatherpress_settings[map_platform]"]'
+		'[name="gatherpress_settings[map_platform]"]',
 	);
 
 	return {
@@ -101,7 +101,7 @@ function renderControllingInput( type, value ) {
 		const fallback = 'true' === value ? '1' : '0';
 		return `
 			<input type="hidden" name="gatherpress_settings[map_platform]" value="${ fallback }" />
-			<input type="checkbox" name="gatherpress_settings[map_platform]"${ checked } />
+			<input type="checkbox" name="gatherpress_settings[map_platform]" value="1"${ checked } />
 		`;
 	}
 	return `<input type="text" name="gatherpress_settings[map_platform]" value="${ value }" />`;
@@ -119,9 +119,8 @@ describe( 'settings-show-if helper', () => {
 		} );
 
 		it( 'coerces booleans and numbers to strings for comparison', () => {
-			// Checkbox booleans round-trip through String() so a stored
-			// checkbox value can be matched against '1'/'true' as the
-			// declared expected.
+			// Values arrive as strings from the DOM, but a declaration can
+			// still name a bool or a number as the expected value.
 			expect( matches( true, 'true' ) ).toBe( true );
 			expect( matches( false, 'false' ) ).toBe( true );
 			expect( matches( 5, '5' ) ).toBe( true );
@@ -143,10 +142,10 @@ describe( 'settings-show-if helper', () => {
 
 		it( 'negates with { not: array } — false when the value is any of the listed', () => {
 			expect(
-				matches( 'per_event_disabled', { not: [ 'disabled', 'per_event_disabled' ] } )
+				matches( 'per_event_disabled', { not: [ 'disabled', 'per_event_disabled' ] } ),
 			).toBe( false );
 			expect(
-				matches( 'enabled', { not: [ 'disabled', 'per_event_disabled' ] } )
+				matches( 'enabled', { not: [ 'disabled', 'per_event_disabled' ] } ),
 			).toBe( true );
 		} );
 	} );
@@ -160,12 +159,20 @@ describe( 'settings-show-if helper', () => {
 			expect( readControlValue( input ) ).toBe( 'hello' );
 		} );
 
-		it( 'returns the checked state for checkboxes', () => {
+		it( 'returns what a checkbox would submit, not its checked property', () => {
+			// PHP stores a checkbox as a bool and compares `(string) $value`,
+			// so it sees '1' when on and '' when off. Reporting true / false
+			// here would compare 'true' against '1' and never match.
 			const input = document.createElement( 'input' );
 			input.type = 'checkbox';
+			input.value = '1';
 			input.checked = true;
 
-			expect( readControlValue( input ) ).toBe( true );
+			expect( readControlValue( input ) ).toBe( '1' );
+
+			input.checked = false;
+
+			expect( readControlValue( input ) ).toBe( '' );
 		} );
 	} );
 
@@ -286,11 +293,11 @@ describe( 'settings-show-if helper', () => {
 			expect( dependent.classList.contains( HIDDEN_CLASS ) ).toBe( true );
 		} );
 
-		it( 'reads checkbox controls via .checked rather than .value', () => {
+		it( 'drives a dependent row from a checkbox controller', () => {
 			const { controlling, dependent, marker } = buildFixture( {
 				controllingType: 'checkbox',
 				controllingValue: 'true',
-				conditions: { map_platform: 'true' },
+				conditions: { map_platform: '1' },
 				initiallyHidden: true,
 			} );
 
@@ -308,7 +315,7 @@ describe( 'settings-show-if helper', () => {
 					data-show-if='{"map_platform":"google"}' />
 			`;
 			const marker = document.querySelector(
-				'.gatherpress-show-if-marker'
+				'.gatherpress-show-if-marker',
 			);
 
 			// Should not throw despite the missing tr.
@@ -327,7 +334,7 @@ describe( 'settings-show-if helper', () => {
 				</table>
 			`;
 			const marker = document.querySelector(
-				'.gatherpress-show-if-marker'
+				'.gatherpress-show-if-marker',
 			);
 			const row = document.querySelector( 'tr' );
 
@@ -351,7 +358,7 @@ describe( 'settings-show-if helper', () => {
 				</table>
 			`;
 			const marker = document.querySelector(
-				'.gatherpress-show-if-marker'
+				'.gatherpress-show-if-marker',
 			);
 			const row = document.querySelector( 'tr' );
 
@@ -400,12 +407,12 @@ describe( 'settings-show-if helper', () => {
 			expect(
 				document
 					.getElementById( 'row-google' )
-					.classList.contains( HIDDEN_CLASS )
+					.classList.contains( HIDDEN_CLASS ),
 			).toBe( false );
 			expect(
 				document
 					.getElementById( 'row-osm' )
-					.classList.contains( HIDDEN_CLASS )
+					.classList.contains( HIDDEN_CLASS ),
 			).toBe( true );
 		} );
 

@@ -15,6 +15,7 @@ use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
+use PasswordHash;
 use ReflectionClass;
 use WP_Block;
 use WP_Block_Type_Registry;
@@ -129,10 +130,7 @@ class Test_Rsvp_Template extends Base {
 	public function test_generate_rsvp_template_block_non_event(): void {
 		$instance   = Rsvp_Template::get_instance();
 		$post_id    = $this->factory->post->create( array( 'post_type' => 'post' ) );
-		$wp_block   = new WP_Block(
-			array(),
-			array( 'postId' => $post_id )
-		);
+		$wp_block   = $this->rsvp_template_instance( array( 'postId' => $post_id ) );
 		$block      = array();
 		$input_html = '<div>Original content</div>';
 		$result     = $instance->generate_rsvp_template_block( $input_html, $block, $wp_block );
@@ -141,6 +139,171 @@ class Test_Rsvp_Template extends Base {
 			$input_html,
 			$result,
 			'Failed to assert non-event post returns original content.'
+		);
+	}
+
+	/**
+	 * Create a published event with one attending response.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return array{0: int, 1: int} The event ID and the response's comment ID.
+	 */
+	private function create_event_with_attendee(): array {
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		$rsvp     = new Rsvp( $event_id );
+
+		// Through the RSVP API rather than a bare comment, so it counts as a
+		// response the way the rendered roster reads them.
+		$rsvp->save( $this->factory->user->create(), 'attending' );
+
+		return array(
+			$event_id,
+			(int) $rsvp->responses()['attending']['records'][0]['commentId'],
+		);
+	}
+
+	/**
+	 * Build the block instance the way rendering does.
+	 *
+	 * The block name matters. Without it there is no block type, so nothing in
+	 * `$available_context` reaches `$context`, and `postId` is never there to
+	 * read however it was passed in.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, mixed> $available_context Context offered by ancestors.
+	 *
+	 * @return WP_Block The block instance.
+	 */
+	private function rsvp_template_instance( array $available_context ): WP_Block {
+		return new WP_Block(
+			array( 'blockName' => 'gatherpress/rsvp-template' ),
+			$available_context
+		);
+	}
+
+	/**
+	 * Tests generate_rsvp_template_block reading the post from context.
+	 *
+	 * The request is a 404, so there is no current post to answer instead: the
+	 * responses can only have come from `postId` in context.
+	 *
+	 * @since 0.36.0
+	 * @covers ::generate_rsvp_template_block
+	 *
+	 * @return void
+	 */
+	public function test_generate_rsvp_template_block_reads_post_id_from_context(): void {
+		$instance = Rsvp_Template::get_instance();
+
+		list( $event_id, $comment_id ) = $this->create_event_with_attendee();
+
+		$this->go_to( home_url( '/?p=' . PHP_INT_MAX ) );
+
+		$result = $instance->generate_rsvp_template_block(
+			'',
+			array( 'innerBlocks' => array() ),
+			$this->rsvp_template_instance( array( 'postId' => $event_id ) )
+		);
+
+		$this->assertStringContainsString(
+			'data-id="rsvp-' . $comment_id . '"',
+			$result,
+			'Failed to assert the response is rendered for the post in context.'
+		);
+	}
+
+	/**
+	 * Tests generate_rsvp_template_block falling back to the current post.
+	 *
+	 * With no ancestor providing `postId`, the block renders for the post
+	 * being viewed. The original code reached the same result by accident: a
+	 * missing key became post 0, and `get_post( 0 )` resolves to the global
+	 * post. This covers the explicit `get_the_ID()` arm that replaced it.
+	 *
+	 * @since 0.36.0
+	 * @covers ::generate_rsvp_template_block
+	 *
+	 * @return void
+	 */
+	public function test_generate_rsvp_template_block_falls_back_to_the_current_post(): void {
+		$instance = Rsvp_Template::get_instance();
+
+		list( $event_id, $comment_id ) = $this->create_event_with_attendee();
+
+		$this->go_to( get_permalink( $event_id ) );
+
+		$result = $instance->generate_rsvp_template_block(
+			'',
+			array( 'innerBlocks' => array() ),
+			$this->rsvp_template_instance( array() )
+		);
+
+		$this->assertStringContainsString(
+			'data-id="rsvp-' . $comment_id . '"',
+			$result,
+			'Failed to assert the response is rendered for the current post when context has no postId.'
+		);
+	}
+
+	/**
+	 * Tests generate_rsvp_template_block with no post to render for.
+	 *
+	 * An archive, search or 404 template can hold the block with no ancestor
+	 * providing `postId` and no current post to fall back to. Reading the
+	 * missing context key raised an undefined array key warning.
+	 *
+	 * The suite runs with E_WARNING excluded from error_reporting, so PHPUnit
+	 * never converts that warning into a failure. A handler of its own is
+	 * called regardless of error_reporting, which is what makes the warning
+	 * observable here.
+	 *
+	 * @since 0.36.0
+	 * @covers ::generate_rsvp_template_block
+	 *
+	 * @return void
+	 */
+	public function test_generate_rsvp_template_block_without_post_context(): void {
+		$instance   = Rsvp_Template::get_instance();
+		$wp_block   = $this->rsvp_template_instance( array() );
+		$input_html = '<div>Original content</div>';
+		$warnings   = array();
+
+		$this->go_to( home_url( '/?p=' . PHP_INT_MAX ) );
+
+		$this->assertFalse( get_the_ID(), 'Failed to assert the request has no current post.' );
+
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_set_error_handler -- Capturing the warning is the point of the test.
+		set_error_handler(
+			static function ( int $errno, string $errstr ) use ( &$warnings ): bool {
+				$warnings[] = $errstr;
+
+				return true;
+			},
+			E_WARNING
+		);
+
+		try {
+			$result = $instance->generate_rsvp_template_block( $input_html, array(), $wp_block );
+		} finally {
+			restore_error_handler();
+		}
+
+		$this->assertSame(
+			array(),
+			$warnings,
+			'Failed to assert rendering without postId raises no warning.'
+		);
+		$this->assertSame(
+			$input_html,
+			$result,
+			'Failed to assert the block is left alone when there is no post to render for.'
 		);
 	}
 
@@ -158,10 +321,7 @@ class Test_Rsvp_Template extends Base {
 				'post_status' => 'draft',
 			)
 		);
-		$wp_block   = new WP_Block(
-			array(),
-			array( 'postId' => $post_id )
-		);
+		$wp_block   = $this->rsvp_template_instance( array( 'postId' => $post_id ) );
 		$block      = array();
 		$input_html = '<div>Original content</div>';
 		$result     = $instance->generate_rsvp_template_block( $input_html, $block, $wp_block );
@@ -170,6 +330,77 @@ class Test_Rsvp_Template extends Base {
 			$input_html,
 			$result,
 			'Failed to assert unpublished event returns original content.'
+		);
+	}
+
+	/**
+	 * Tests a password-protected event's roster stays behind its password.
+	 *
+	 * A block on another post can name the event through its postId context,
+	 * so the block has to ask for the password the event page would.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::generate_rsvp_template_block
+	 * @return void
+	 */
+	public function test_generate_rsvp_template_block_password_protected_event(): void {
+		$instance   = Rsvp_Template::get_instance();
+		$post_id    = $this->factory->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_status'   => 'publish',
+				'post_password' => 'secret',
+			)
+		);
+		$wp_block   = $this->rsvp_template_instance( array( 'postId' => $post_id ) );
+		$input_html = '<div>Original content</div>';
+
+		( new Rsvp( $post_id ) )->save( $this->factory->user->create(), 'attending', 0, 0 );
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'contributor' ) ) );
+
+		$this->assertSame(
+			$input_html,
+			$instance->generate_rsvp_template_block( $input_html, array(), $wp_block ),
+			'Failed to assert a password-protected event keeps its roster from a viewer without the password.'
+		);
+	}
+
+	/**
+	 * Tests a password-protected event's roster renders once the viewer has the password.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::generate_rsvp_template_block
+	 * @return void
+	 */
+	public function test_generate_rsvp_template_block_password_protected_event_with_the_password(): void {
+		$instance   = Rsvp_Template::get_instance();
+		$post_id    = $this->factory->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_status'   => 'publish',
+				'post_password' => 'secret',
+			)
+		);
+		$wp_block   = $this->rsvp_template_instance( array( 'postId' => $post_id ) );
+		$input_html = '<div>Original content</div>';
+
+		$record = ( new Rsvp( $post_id ) )->save( $this->factory->user->create(), 'attending', 0, 0 );
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'contributor' ) ) );
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+
+		// The cookie WordPress sets once a viewer enters the post password.
+		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'secret' );
+
+		$result = $instance->generate_rsvp_template_block( $input_html, array(), $wp_block );
+
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+
+		$this->assertStringContainsString(
+			'data-id="rsvp-' . $record['comment_id'] . '"',
+			$result,
+			'Failed to assert a password-protected event renders its roster for a viewer with the password.'
 		);
 	}
 
@@ -763,19 +994,80 @@ class Test_Rsvp_Template extends Base {
 	 */
 	public function test_sign_and_verify_template(): void {
 		$template  = '{"blockName":"gatherpress/rsvp-template","attrs":{},"innerBlocks":[]}';
-		$signature = Rsvp_Template::sign_template( $template );
+		$signature = Rsvp_Template::sign_template( $template, 12 );
 
 		$this->assertMatchesRegularExpression( '/^[a-f0-9]{64}$/', $signature );
-		$this->assertTrue( Rsvp_Template::verify_template( $template, $signature ) );
+		$this->assertTrue( Rsvp_Template::verify_template( $template, 12, $signature ) );
 		$this->assertFalse(
-			Rsvp_Template::verify_template( $template . ' ', $signature ),
+			Rsvp_Template::verify_template( $template . ' ', 12, $signature ),
 			'Failed to assert a changed template does not verify.'
 		);
 		$this->assertFalse(
-			Rsvp_Template::verify_template( $template, strrev( $signature ) ),
+			Rsvp_Template::verify_template( $template, 12, strrev( $signature ) ),
 			'Failed to assert a changed signature does not verify.'
 		);
-		$this->assertFalse( Rsvp_Template::verify_template( $template, '' ) );
+		$this->assertFalse( Rsvp_Template::verify_template( $template, 12, '' ) );
+		$this->assertFalse(
+			Rsvp_Template::verify_template( $template, 13, $signature ),
+			'Failed to assert a signature does not verify for another event.'
+		);
+		$this->assertNotSame(
+			hash_hmac( 'sha256', $template, wp_salt( 'nonce' ) ),
+			$signature,
+			'Failed to assert the signature covers more than the template.'
+		);
+	}
+
+	/**
+	 * A signature is tied to the site it was emitted on.
+	 *
+	 * @covers ::sign_template
+	 *
+	 * @return void
+	 */
+	public function test_sign_template_differs_per_site(): void {
+		global $blog_id;
+
+		$template = '{"blockName":"gatherpress/rsvp-template","attrs":{},"innerBlocks":[]}';
+		$original = $blog_id;
+		$here     = Rsvp_Template::sign_template( $template, 12 );
+
+		$blog_id = $original + 1; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$there   = Rsvp_Template::sign_template( $template, 12 );
+		$blog_id = $original; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		$this->assertNotSame( $here, $there, 'Failed to assert a signature differs between sites.' );
+	}
+
+	/**
+	 * A signature emitted on one site does not verify on another.
+	 *
+	 * @group multisite
+	 *
+	 * @covers ::sign_template
+	 * @covers ::verify_template
+	 *
+	 * @return void
+	 */
+	public function test_signature_does_not_carry_across_sites(): void {
+		$template  = '{"blockName":"gatherpress/rsvp-template","attrs":{},"innerBlocks":[]}';
+		$signature = Rsvp_Template::sign_template( $template, 12 );
+		$blog_id   = $this->factory()->blog->create();
+
+		switch_to_blog( $blog_id );
+
+		$verified_elsewhere = Rsvp_Template::verify_template( $template, 12, $signature );
+
+		restore_current_blog();
+
+		$this->assertTrue(
+			Rsvp_Template::verify_template( $template, 12, $signature ),
+			'Failed to assert the signature verifies on the site that emitted it.'
+		);
+		$this->assertFalse(
+			$verified_elsewhere,
+			'Failed to assert the signature does not verify on another site of the network.'
+		);
 	}
 
 	/**
@@ -795,7 +1087,7 @@ class Test_Rsvp_Template extends Base {
 		$result  = Rsvp_Template::get_instance()->generate_rsvp_template_block(
 			'',
 			array( 'innerBlocks' => array() ),
-			new WP_Block( array(), array( 'postId' => $post_id ) )
+			new WP_Block( array( 'blockName' => Rsvp_Template::BLOCK_NAME ), array( 'postId' => $post_id ) )
 		);
 
 		$tags = new WP_HTML_Tag_Processor( $result );
@@ -805,7 +1097,7 @@ class Test_Rsvp_Template extends Base {
 		$signature = (string) $tags->get_attribute( 'data-block-signature' );
 
 		$this->assertNotSame( '', $template );
-		$this->assertTrue( Rsvp_Template::verify_template( $template, $signature ) );
+		$this->assertTrue( Rsvp_Template::verify_template( $template, $post_id, $signature ) );
 
 		$request = new WP_REST_Request( 'POST' );
 		$request->set_param( 'post_id', $post_id );

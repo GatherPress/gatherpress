@@ -1,0 +1,40 @@
+{
+	"$schema": "https://gatherpress.org/playground-preview/pr-override-schema.json",
+	"appendSteps": [
+		{
+			"step": "installPlugin",
+			"pluginData": {
+				"resource": "url",
+				"url": "https://github.com/carstingaxion/gatherpress-calendar/releases/latest/download/gatherpress-calendar.zip"
+			},
+			"options": {
+				"activate": true
+			}
+		},
+		{
+			"step": "installPlugin",
+			"pluginData": {
+				"resource": "wordpress.org/plugins",
+				"slug": "advanced-query-loop"
+			},
+			"options": {
+				"activate": true
+			}
+		},
+		{
+			"step": "installPlugin",
+			"pluginData": {
+				"resource": "wordpress.org/plugins",
+				"slug": "query-monitor"
+			},
+			"options": {
+				"activate": true
+			}
+		},
+		{
+			"step": "writeFile",
+			"path": "/wordpress/wp-content/mu-plugins/disable-gatherpress-calendar-filter.php",
+			"data": "<?php\n/**\n * Plugin Name: Disables GatherPress Calendar posts_where filter\n * Description: Forces the calendar to use gatherpress core event query capabilities\n */\nadd_action( 'plugins_loaded', function() {\n\tremove_filter( 'posts_where', 'GatherPress\\Calendar\\posts_where', 10 );\n\t} );\n"
+		}
+	]
+}

@@ -86,6 +86,10 @@ class Test_Setup extends Base {
 		$instance            = Setup::get_instance();
 		$blocks              = array(
 			'gatherpress/add-to-calendar',
+			'gatherpress/calendar',
+			'gatherpress/calendar-day',
+			'gatherpress/calendar-entries',
+			'gatherpress/calendar-week',
 			'gatherpress/dropdown',
 			'gatherpress/dropdown-item',
 			'gatherpress/event-date',

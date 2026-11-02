@@ -41,7 +41,7 @@ const Edit = ( { attributes, context } ) => {
 			hasExplicitOverride,
 			isDescendentOfQueryLoop,
 			isEventContext,
-		]
+		],
 	);
 
 	const blockProps = useBlockProps( {

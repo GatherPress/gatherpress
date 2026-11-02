@@ -38,6 +38,9 @@
 		img {
 			border-radius: 999rem;
 			margin-bottom: 0.5rem;
+
+			// The avatar is requested from Gravatar at 96, so the cap is the
+			// image's own size rather than a layout measurement.
 			max-width: 96px;
 		}
 
@@ -55,12 +58,62 @@
 	}
 }
 
+// A label stacked above its input, spaced like the rest of the settings table.
+.gatherpress-settings-field__label {
+	display: block;
+	margin-bottom: 0.5rem;
+}
+
+// Core gives the first radio's paragraph a 4px top margin, which together
+// with this makes the same gap as a label's.
+.gatherpress-format-field legend {
+	margin-bottom: 0.25rem;
+}
+
 .gatherpress-field-inherited {
 	opacity: 0.6;
 	pointer-events: none;
 
 	&__note {
 		font-style: italic;
+		margin-top: 0.25rem;
 		pointer-events: auto;
+	}
+}
+
+.gatherpress-settings-tools {
+	&__preview {
+		background: #f9f9f9;
+		border-left: 4px solid #0073aa;
+		margin: 1rem 0;
+		padding: 0.75rem;
+
+		h3 {
+			margin-top: 0;
+		}
+
+		ul {
+			margin-left: 1.25rem;
+		}
+	}
+
+	&__error {
+		color: #d63638;
+	}
+
+	&__status {
+		align-items: center;
+		display: flex;
+		font-weight: 600;
+		gap: 0.5rem;
+
+		.spinner {
+			float: none;
+			margin: 0;
+
+			&:not(.is-active) {
+				display: none;
+			}
+		}
 	}
 }

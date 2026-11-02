@@ -1,4 +1,0 @@
-Significance: patch
-Type: changed
-
-Let a lead queue a noteworthy-group promotion in credits/unreleased.json when they decide it, instead of having to remember it at the next version bump.

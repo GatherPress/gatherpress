@@ -59,6 +59,18 @@ final class Query {
 	const EVENT_DATE_QUERY_PARAM = 'gatherpress_event_date';
 
 	/**
+	 * Query variable carrying a resolved event date window between hooks.
+	 *
+	 * Set on the query by `intercept_date_query()` during `pre_get_posts` and
+	 * read back by `adjust_event_date_window_sql()` on `posts_clauses`. Never
+	 * registered as a public query var, so it cannot arrive from a URL.
+	 *
+	 * @since 0.36.0
+	 * @var string
+	 */
+	const EVENT_DATE_WINDOW_PARAM = 'gatherpress_event_date_window';
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -82,6 +94,7 @@ final class Query {
 		add_action( 'pre_get_posts', array( $this, 'prepare_event_query_before_execution' ) );
 		// Priority 9 to run before the upcoming/past adjustments at priority 10.
 		add_filter( 'posts_clauses', array( $this, 'adjust_admin_event_sorting' ), 9, 2 );
+		add_filter( 'posts_clauses', array( $this, 'adjust_event_date_window_sql' ), 10, 2 );
 
 		// Filter adjacent post queries to join and sort by event datetime.
 		add_filter( 'get_previous_post_join', array( $this, 'get_adjacent_post_join' ), 10, 5 );
@@ -104,7 +117,12 @@ final class Query {
 	 * @return WP_Query A WordPress query object containing the list of upcoming events.
 	 */
 	public function get_upcoming_events( int $number = 5 ): WP_Query {
-		return $this->get_events_list( 'upcoming', $number );
+		return $this->get_events_list(
+			array(
+				'event_list_type' => 'upcoming',
+				'number'          => $number,
+			)
+		);
 	}
 
 	/**
@@ -119,7 +137,12 @@ final class Query {
 	 * @return WP_Query A WordPress query object containing the list of past events.
 	 */
 	public function get_past_events( int $number = 5 ): WP_Query {
-		return $this->get_events_list( 'past', $number );
+		return $this->get_events_list(
+			array(
+				'event_list_type' => 'past',
+				'number'          => $number,
+			)
+		);
 	}
 
 	/**
@@ -130,31 +153,46 @@ final class Query {
 	 * a WordPress query object.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Takes an args array instead of positional parameters.
 	 *
-	 * @param string   $event_list_type Type of event list: 'upcoming' or 'past'.
-	 * @param int      $number          Maximum number of events to retrieve.
-	 * @param string[] $topics          Array of topic slugs for additional filtering.
-	 * @param string[] $venues          Array of venue slugs for additional filtering.
+	 * @param array<string, mixed> $args {
+	 *     Event query arguments.
+	 *
+	 *     @type string   $event_list_type Type of event list: 'upcoming' or 'past'.
+	 *     @type int      $number          Maximum number of events to retrieve. Default 5.
+	 *     @type string[] $topics          Topic slugs for additional filtering.
+	 *     @type string[] $venues          Venue slugs for additional filtering.
+	 *     @type bool     $has_password    Optional. False to leave out password-protected
+	 *                                     events, true to get only them. Default both.
+	 * }
 	 *
 	 * @return WP_Query A WordPress query object containing the list of events.
 	 */
-	public function get_events_list(
-		string $event_list_type = '',
-		int $number = 5,
-		array $topics = array(),
-		array $venues = array()
-	): WP_Query {
+	public function get_events_list( array $args = array() ): WP_Query {
+		$event_list_type = isset( $args['event_list_type'] ) && is_string( $args['event_list_type'] )
+			? $args['event_list_type']
+			: '';
+		$number          = isset( $args['number'] ) && is_numeric( $args['number'] )
+			? (int) $args['number']
+			: 5;
+		$topics          = $this->normalize_slug_list( $args['topics'] ?? array() );
+		$venues          = $this->normalize_slug_list( $args['venues'] ?? array() );
+
 		// Past events should be ordered DESC (most recent first),
 		// upcoming events should be ordered ASC (soonest first).
 		$order = ( 'past' === $event_list_type ) ? 'DESC' : 'ASC';
 
-		$args = array(
+		// Without an explicit `datetime` orderby, adjust_event_sql() keeps
+		// WordPress's publish-date order, so `$number` would pick the events
+		// published first rather than the soonest.
+		$query_args = array(
 			'post_type'             => get_post_types_by_support( Event::SUPPORT ),
 			'fields'                => 'ids',
 			'no_found_rows'         => true,
 			'posts_per_page'        => $number,
 			self::EVENT_QUERY_PARAM => $event_list_type,
 			'order'                 => $order,
+			'orderby'               => 'datetime',
 		);
 
 		$tax_query = array();
@@ -179,9 +217,13 @@ final class Query {
 			$tax_query[] = $this->build_venue_tax_query( $venues );
 		}
 
-		$args['tax_query'] = $tax_query; //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+		$query_args['tax_query'] = $tax_query; //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 
-		return new WP_Query( $args );
+		if ( isset( $args['has_password'] ) && is_bool( $args['has_password'] ) ) {
+			$query_args['has_password'] = $args['has_password'];
+		}
+
+		return new WP_Query( $query_args );
 	}
 
 	/**
@@ -342,18 +384,57 @@ final class Query {
 			}
 		}
 
-		switch ( $events_query ) {
-			case 'upcoming':
-				remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_past_events' ) );
-				add_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_upcoming_events' ), 10, 2 );
-				break;
-			case 'past':
-				add_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_past_events' ), 10, 2 );
-				remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_upcoming_events' ) );
-				break;
-			default:
-				remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_past_events' ) );
-				remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_upcoming_events' ) );
+		if ( in_array( $events_query, array( 'upcoming', 'past' ), true ) ) {
+			/**
+			 * Filters the query vars of a query that lists upcoming or past events.
+			 *
+			 * Lets a plugin narrow or reorder event lists, for example by
+			 * location, without replacing the queries that build them. It runs
+			 * on `pre_get_posts` for every such list: the Event Query block,
+			 * event archives and feeds, the iCal feed, `get_events_list()`, and
+			 * the admin's Upcoming and Past views. GatherPress applies the upcoming
+			 * or past date range afterwards, so a constraint added here narrows
+			 * the list rather than replacing it. Check `$query` to act on only
+			 * some lists.
+			 *
+			 * @since TBD
+			 *
+			 * @param array<string, mixed> $query_vars The query's vars, as `WP_Query` reads them.
+			 * @param string               $type       The list type: `upcoming` or `past`.
+			 * @param WP_Query             $query      The query being prepared.
+			 *
+			 * @return array<string, mixed> The query vars to use.
+			 */
+			$query_vars = apply_filters(
+				'gatherpress_event_query_vars',
+				$query->query_vars,
+				$events_query,
+				$query
+			);
+
+			// A callback that forgets to return would wipe the query, whatever the docblock promises.
+			// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPStan annotation.
+			// @phpstan-ignore function.alreadyNarrowedType
+			if ( is_array( $query_vars ) ) {
+				$query->query_vars = $query_vars;
+			}
+		}
+
+		// After the filter, so a `date_query` a plugin adds there is read
+		// against event dates too.
+		$this->intercept_date_query( $query );
+
+		$sorting = match ( $events_query ) {
+			'upcoming' => 'adjust_sorting_for_upcoming_events',
+			'past'     => 'adjust_sorting_for_past_events',
+			default    => '',
+		};
+
+		remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_upcoming_events' ) );
+		remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_past_events' ) );
+
+		if ( '' !== $sorting ) {
+			add_filter( 'posts_clauses', array( $this, $sorting ), 10, 2 );
 		}
 	}
 
@@ -600,9 +681,8 @@ final class Query {
 		 */
 		$posts_table = esc_sql( $wpdb->posts );
 
-		$pieces['join'] .= ' LEFT JOIN ' . $events_table . ' ON ' . $posts_table . '.ID='
-						. $events_table . '.post_id';
-		$order           = strtoupper( $order );
+		$pieces = $this->ensure_events_join( $pieces );
+		$order  = strtoupper( $order );
 
 		if ( in_array( $order, array( 'DESC', 'ASC' ), true ) ) {
 			// ORDERBY is an array, which allows to orderby multiple values.
@@ -656,6 +736,160 @@ final class Query {
 	}
 
 	/**
+	 * Join the events table onto a query once.
+	 *
+	 * Both the upcoming/past handlers and the date window handler need the
+	 * join, and either may run without the other, so each asks for it here
+	 * rather than appending its own and doubling the alias when both run.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, string> $pieces An array of query pieces, including join, where, orderby, and more.
+	 *
+	 * @return array<string, string> The pieces, with the events table joined.
+	 */
+	private function ensure_events_join( array $pieces ): array {
+		global $wpdb;
+
+		/**
+		 * Escaped events table name.
+		 *
+		 * @var string $events_table esc_sql() only returns an array when it is handed one.
+		 */
+		$events_table = esc_sql( sprintf( Event::TABLE_FORMAT, $wpdb->prefix ) );
+
+		/**
+		 * Escaped posts table name.
+		 *
+		 * @var string $posts_table esc_sql() only returns an array when it is handed one.
+		 */
+		$posts_table = esc_sql( $wpdb->posts );
+		$join        = (string) ( $pieces['join'] ?? '' );
+
+		if ( ! str_contains( $join, $events_table ) ) {
+			$join .= ' LEFT JOIN ' . $events_table . ' ON ' . $posts_table . '.ID=' . $events_table . '.post_id';
+		}
+
+		$pieces['join'] = $join;
+
+		return $pieces;
+	}
+
+	/**
+	 * Point a `date_query` at event dates rather than publish dates.
+	 *
+	 * WordPress reads `date_query` against `post_date`, which for an event is
+	 * the day its post was written. For a query made up entirely of event post
+	 * types the argument is lifted out here, before core turns it into SQL,
+	 * resolved into a window by `Date_Query`, and carried to `posts_clauses`
+	 * under `EVENT_DATE_WINDOW_PARAM`, where it is compared against the events
+	 * table instead.
+	 *
+	 * Three things are left for core to handle the way it always has: a clause
+	 * naming a core column such as `post_date`, which is how to keep filtering
+	 * an event query by publish date; a clause `Date_Query` cannot read; and a
+	 * query mixing event and non-event post types, whose non-event rows have no
+	 * event dates and would silently drop out.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param WP_Query $query The query being prepared.
+	 *
+	 * @return void
+	 */
+	private function intercept_date_query( WP_Query $query ): void {
+		$date_query = $query->get( 'date_query' );
+
+		if ( empty( $date_query ) || ! is_array( $date_query ) || ! $this->queries_event_post_types_only( $query ) ) {
+			return;
+		}
+
+		$window = Date_Query::resolve( $date_query );
+
+		if ( null === $window ) {
+			return;
+		}
+
+		$query->set( self::EVENT_DATE_WINDOW_PARAM, $window );
+		$query->set( 'date_query', array() );
+	}
+
+	/**
+	 * Whether every post type a query asks for carries event dates.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param WP_Query $query The query to inspect.
+	 *
+	 * @return bool True when the query is made up of event post types alone.
+	 */
+	private function queries_event_post_types_only( WP_Query $query ): bool {
+		$post_types = array_filter( (array) $query->get( 'post_type' ) );
+
+		if ( empty( $post_types ) ) {
+			return false;
+		}
+
+		foreach ( $post_types as $post_type ) {
+			if ( ! is_string( $post_type ) || ! post_type_supports( $post_type, Event::SUPPORT ) ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Narrow a query to events touching the window a `date_query` resolved to.
+	 *
+	 * An event belongs to the window when it overlaps it: its start falls
+	 * before the window closes and its end falls after the window opens. An
+	 * open-ended window drops the bound it lacks. Compares the GMT pair or the
+	 * local pair according to the column the window was resolved for.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<string, string> $query_pieces An array containing pieces of the SQL query.
+	 * @param WP_Query              $query        The WP_Query instance (passed by reference).
+	 *
+	 * @return array<string, string> The query pieces, narrowed when the query carries a window.
+	 */
+	public function adjust_event_date_window_sql( array $query_pieces, WP_Query $query ): array {
+		global $wpdb;
+
+		$window = $query->get( self::EVENT_DATE_WINDOW_PARAM );
+
+		if ( empty( $window ) || ! is_array( $window ) || empty( $window['column'] ) ) {
+			return $query_pieces;
+		}
+
+		$query_pieces = $this->ensure_events_join( $query_pieces );
+		$table        = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$start_column = (string) $window['column'];
+		$end_column   = str_replace( 'datetime_start', 'datetime_end', $start_column );
+
+		if ( ! empty( $window['end'] ) ) {
+			$query_pieces['where'] .= $wpdb->prepare(
+				' AND %i.%i <= %s',
+				$table,
+				$start_column,
+				$window['end']
+			);
+		}
+
+		if ( ! empty( $window['start'] ) ) {
+			$query_pieces['where'] .= $wpdb->prepare(
+				' AND %i.%i >= %s',
+				$table,
+				$end_column,
+				$window['start']
+			);
+		}
+
+		return $query_pieces;
+	}
+
+	/**
 	 * Builds a WP_Query compatible tax_query array for filtering events by venue slugs.
 	 *
 	 * Creates an OR relation across all registered venue post type taxonomies, allowing
@@ -681,6 +915,30 @@ final class Query {
 		}
 
 		return $venue_tax_query;
+	}
+
+	/**
+	 * Normalize a list of taxonomy slugs to strings.
+	 *
+	 * Companion plugins pass the values through the args array, so anything can
+	 * arrive here. Non-scalar members are dropped rather than cast, because
+	 * `strval()` on an array raises a warning and on an object throws.
+	 *
+	 * @since TBD
+	 *
+	 * @param mixed $slugs Candidate slug list.
+	 *
+	 * @return string[] Filtered list of slugs.
+	 */
+	private function normalize_slug_list( mixed $slugs ): array {
+		if ( ! is_array( $slugs ) ) {
+			return array();
+		}
+
+		return array_map(
+			'strval',
+			array_filter( $slugs, 'is_scalar' )
+		);
 	}
 
 	/**

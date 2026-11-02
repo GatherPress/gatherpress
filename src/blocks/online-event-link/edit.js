@@ -45,7 +45,7 @@ const Edit = ( { context, attributes, setAttributes } ) => {
 			currentPostId: select( editorStore )?.getCurrentPostId(),
 			currentPostType: select( editorStore )?.getCurrentPostType(),
 		} ),
-		[]
+		[],
 	);
 
 	// Determine which post and meta field to use (only online-event-supporting types have online links).
@@ -82,7 +82,7 @@ const Edit = ( { context, attributes, setAttributes } ) => {
 				metaKey: null,
 			};
 		},
-		[ contextPostId, currentPostId, currentPostType ]
+		[ contextPostId, currentPostId, currentPostType ],
 	);
 
 	// Get the URL from the meta field.
@@ -97,7 +97,7 @@ const Edit = ( { context, attributes, setAttributes } ) => {
 
 			return post?.meta?.[ metaKey ] || '';
 		},
-		[ postId, postType, metaKey ]
+		[ postId, postType, metaKey ],
 	);
 
 	// Update the link text (stored in block attributes).

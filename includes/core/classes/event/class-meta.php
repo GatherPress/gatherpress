@@ -3,10 +3,12 @@
  * Owns the event post-meta surface.
  *
  * Registers the read-only datetime / timezone meta on any post type that
- * declares `gatherpress-event-date` support, plus the always-on
- * RSVP / attendance / online-event-link meta on the built-in event post
- * type. Also owns the REST readonly-strip filter that pairs with the
- * `__return_false` auth callbacks.
+ * declares `gatherpress-event-date` support, the read-only Geodata
+ * standard (`geo_*`) meta on any post type that declares `gatherpress-venue`
+ * (assignment) support, plus the always-on RSVP / attendance /
+ * online-event-link meta on the built-in event post type. Also owns the
+ * REST readonly-strip filter that pairs with the `__return_false` auth
+ * callbacks.
  *
  * Sibling singleton to `Event\Setup` — `Setup` keeps post-type
  * registration and date-formatting filters; `Meta` keeps everything
@@ -22,11 +24,16 @@ namespace GatherPress\Core\Event;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Geo_Sync;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
+use GatherPress\Core\Venue;
+use GatherPress\Core\Venue\Setup as Venue_Setup;
 use stdClass;
+use WP_Post;
 use WP_REST_Request;
+use WP_REST_Response;
 
 /**
  * Class Meta.
@@ -41,6 +48,24 @@ use WP_REST_Request;
  * @since 0.34.0
  */
 final class Meta {
+
+	/**
+	 * Meta keys that give away a password-protected event's date and place.
+	 *
+	 * @since 0.36.1
+	 * @var string[]
+	 */
+	const PASSWORD_PROTECTED_META = array(
+		'gatherpress_datetime',
+		'gatherpress_datetime_start',
+		'gatherpress_datetime_start_gmt',
+		'gatherpress_datetime_end',
+		'gatherpress_datetime_end_gmt',
+		'gatherpress_timezone',
+		'geo_latitude',
+		'geo_longitude',
+		'geo_address',
+	);
 
 	/**
 	 * Enforces a single instance of this class.
@@ -65,6 +90,8 @@ final class Meta {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'registered_post_type', array( $this, 'register' ) );
+		add_action( 'template_redirect', array( Geo_Sync::get_instance(), 'maybe_refresh_on_view' ) );
+		add_action( 'wp_after_insert_post', array( Geo_Sync::get_instance(), 'on_event_saved' ), 10, 2 );
 	}
 
 	/**
@@ -88,6 +115,10 @@ final class Meta {
 	public function register( string $post_type ): void {
 		if ( post_type_supports( $post_type, Event::SUPPORT ) ) {
 			$this->register_event_date_meta( $post_type );
+		}
+
+		if ( post_type_supports( $post_type, Venue::ASSIGNMENT_SUPPORT ) ) {
+			$this->register_venue_geo_meta( $post_type );
 		}
 
 		if ( Event::POST_TYPE === $post_type ) {
@@ -189,6 +220,43 @@ final class Meta {
 			10,
 			2
 		);
+
+		// Priority 20 runs after Geo_Sync::maybe_refresh_on_rest() (10), which
+		// writes refreshed geo_* values back into the response.
+		add_filter(
+			sprintf( 'rest_prepare_%s', $post_type ),
+			array( $this, 'hide_password_protected_meta' ),
+			20,
+			3
+		);
+	}
+
+	/**
+	 * Registers the Geodata standard meta (`geo_*`) as read-only.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $post_type The post type to register against.
+	 *
+	 * @return void
+	 */
+	protected function register_venue_geo_meta( string $post_type ): void {
+		add_post_type_support( $post_type, 'custom-fields' );
+
+		Geo_Sync::register_meta( $post_type );
+
+		add_filter(
+			sprintf( 'rest_pre_insert_%s', $post_type ),
+			array( $this, 'filter_readonly_meta' ),
+			10,
+			2
+		);
+		add_filter(
+			sprintf( 'rest_prepare_%s', $post_type ),
+			array( Geo_Sync::get_instance(), 'maybe_refresh_on_rest' ),
+			10,
+			2
+		);
 	}
 
 	/**
@@ -211,13 +279,13 @@ final class Meta {
 				'type'              => 'integer',
 				'default'           => 1,
 			),
-			'gatherpress_max_guest_limit'       => array(
+			'gatherpress_guest_limit'           => array(
 				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'absint',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'integer',
-				'default'           => (int) Settings::get_instance()->get( 'max_guest_limit' ),
+				'default'           => (int) Settings::get_instance()->get( 'guest_limit' ),
 			),
 			'gatherpress_enable_anonymous_rsvp' => array(
 				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
@@ -245,13 +313,13 @@ final class Meta {
 				'type'              => 'string',
 				'default'           => '',
 			),
-			'gatherpress_max_attendance_limit'  => array(
+			'gatherpress_capacity'              => array(
 				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'absint',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'integer',
-				'default'           => (int) Settings::get_instance()->get( 'max_attendance_limit' ),
+				'default'           => (int) Settings::get_instance()->get( 'capacity' ),
 			),
 		);
 
@@ -270,9 +338,12 @@ final class Meta {
 	 *
 	 * The derived datetime fields are populated programmatically via the
 	 * `Event\Setup::set_datetimes()` method when gatherpress_datetime is saved,
-	 * so any values sent via REST API should be silently discarded.
+	 * so any values sent via REST API should be silently discarded. The
+	 * venue-geo fields are populated lazily at view time by
+	 * {@see Geo_Sync}, never through the REST write path.
 	 *
 	 * @since 0.34.0
+	 * @since 0.36.0 Also strips the read-only venue-geo fields.
 	 *
 	 * @param stdClass        $prepared_post An object representing a single post prepared for inserting or updating.
 	 * @param WP_REST_Request $request       Request object.
@@ -281,12 +352,15 @@ final class Meta {
 	 * @return stdClass The prepared post object.
 	 */
 	public function filter_readonly_meta( stdClass $prepared_post, WP_REST_Request $request ): stdClass {
-		$readonly_keys = array(
-			'gatherpress_datetime_start',
-			'gatherpress_datetime_start_gmt',
-			'gatherpress_datetime_end',
-			'gatherpress_datetime_end_gmt',
-			'gatherpress_timezone',
+		$readonly_keys = array_merge(
+			array(
+				'gatherpress_datetime_start',
+				'gatherpress_datetime_start_gmt',
+				'gatherpress_datetime_end',
+				'gatherpress_datetime_end_gmt',
+				'gatherpress_timezone',
+			),
+			Geo_Sync::FIELDS
 		);
 
 		$meta = $request->get_param( 'meta' );
@@ -300,5 +374,48 @@ final class Meta {
 		}
 
 		return $prepared_post;
+	}
+
+	/**
+	 * Blanks a password-protected event's date and place in a REST response.
+	 *
+	 * Core hides only a protected post's content and excerpt, but the event's
+	 * date meta and the venue geo fields copied onto it are `show_in_rest`.
+	 * They stay behind the password the way core keeps the content: whoever
+	 * can edit the event, or sends the password as a cookie or as the REST
+	 * `password` argument, sees them. An open event at a password-protected
+	 * venue keeps the location copied from that venue hidden from whoever
+	 * can't see the venue, even its own editor, where an earlier copy is
+	 * still stored (a past event isn't refreshed).
+	 *
+	 * @since 0.36.1
+	 *
+	 * @param WP_REST_Response $response The response for the event.
+	 * @param WP_Post          $post     The event the response was prepared for.
+	 * @param WP_REST_Request  $request  The request the response answers.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
+	 *
+	 * @return WP_REST_Response The response, with the date and place blank for a viewer who can't see them.
+	 */
+	public function hide_password_protected_meta(
+		WP_REST_Response $response,
+		WP_Post $post,
+		WP_REST_Request $request
+	): WP_REST_Response {
+		$keys = array();
+
+		if ( Event::is_hidden_by_password( $post, $request ) ) {
+			$keys = self::PASSWORD_PROTECTED_META;
+		} elseif ( Venue_Setup::get_instance()->is_venue_hidden_by_password( $post ) ) {
+			$keys = array_diff( Geo_Sync::FIELDS, array( 'geo_public' ) );
+		}
+
+		foreach ( $keys as $key ) {
+			if ( array_key_exists( $key, $response->data['meta'] ?? array() ) ) {
+				$response->data['meta'][ $key ] = '';
+			}
+		}
+
+		return $response;
 	}
 }

@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Modals and RSVPs work without JavaScript. A modal opens and closes by reloading the page where it was clicked, and the RSVP block saves an RSVP, guest count and anonymity through the RSVP REST endpoint, then returns to the block.

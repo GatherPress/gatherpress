@@ -1,0 +1,141 @@
+{
+	"description": "Three days with a time grid of 6 to 12, and hours that do not divide evenly.",
+	"startOfWeek": 1,
+	"attributes": {
+		"viewType": "day",
+		"unitCount": 3,
+		"selectedDate": "2026-08-03",
+		"showWeekends": true,
+		"enableTimeGrid": true
+	},
+	"week": {
+		"dayStartHour": 6,
+		"dayEndHour": 12
+	},
+	"events": [
+		{
+			"key": "morning",
+			"start": "2026-08-03 07:10:00",
+			"end": "2026-08-03 08:05:00"
+		},
+		{
+			"key": "overlap",
+			"start": "2026-08-03 07:30:00",
+			"end": "2026-08-03 09:00:00"
+		},
+		{
+			"key": "all-day",
+			"start": "2026-08-04 00:00:00",
+			"end": "2026-08-04 23:59:00",
+			"allDay": true
+		},
+		{
+			"key": "noon",
+			"start": "2026-08-05 11:45:00",
+			"end": "2026-08-05 13:00:00"
+		}
+	],
+	"expected": {
+		"range": {
+			"start": "2026-08-03",
+			"end": "2026-08-05",
+			"unitCount": 3
+		},
+		"units": [
+			{
+				"weeks": [
+					[
+						{
+							"date": "2026-08-03",
+							"isWeekend": false,
+							"posts": [
+								{
+									"event": "morning",
+									"span": "single",
+									"dayIndex": 1,
+									"totalDays": 1,
+									"slot": 0,
+									"allDay": false,
+									"rows": [
+										5,
+										10
+									],
+									"overlap": [
+										0,
+										2
+									]
+								},
+								{
+									"event": "overlap",
+									"span": "single",
+									"dayIndex": 1,
+									"totalDays": 1,
+									"slot": 1,
+									"allDay": false,
+									"rows": [
+										7,
+										13
+									],
+									"overlap": [
+										1,
+										2
+									]
+								}
+							]
+						},
+						{
+							"date": "2026-08-04",
+							"isWeekend": false,
+							"posts": [
+								{
+									"event": "all-day",
+									"span": "single",
+									"dayIndex": 1,
+									"totalDays": 1,
+									"slot": 0,
+									"allDay": true
+								}
+							]
+						},
+						{
+							"date": "2026-08-05",
+							"isWeekend": false,
+							"posts": [
+								{
+									"event": "noon",
+									"span": "single",
+									"dayIndex": 1,
+									"totalDays": 1,
+									"slot": 0,
+									"allDay": false,
+									"rows": [
+										24,
+										25
+									],
+									"overlap": [
+										0,
+										1
+									]
+								}
+							]
+						}
+					]
+				],
+				"weekNumbers": [
+					32
+				]
+			}
+		],
+		"timeGrid": {
+			"slots": [
+				"06:00",
+				"07:00",
+				"08:00",
+				"09:00",
+				"10:00",
+				"11:00"
+			],
+			"totalQuarters": 24
+		}
+	}
+}

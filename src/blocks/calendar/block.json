@@ -1,0 +1,137 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "gatherpress/calendar",
+	"version": "1.0.0",
+	"title": "Calendar",
+	"category": "gatherpress",
+	"icon": "calendar-alt",
+	"description": "Display query loop posts in a monthly, weekly, or daily calendar format.",
+	"ancestor": [
+		"core/query"
+	],
+	"allowedBlocks": [
+		"gatherpress/calendar-week"
+	],
+	"usesContext": [
+		"queryId",
+		"query",
+		"queryContext",
+		"displayLayout",
+		"templateSlug",
+		"previewPostType",
+		"postId",
+		"postType"
+	],
+	"providesContext": {
+		"gatherpress/viewType": "viewType",
+		"gatherpress/showWeekends": "showWeekends",
+		"gatherpress/enableTimeGrid": "enableTimeGrid"
+	},
+	"attributes": {
+		"viewType": {
+			"type": "string",
+			"enum": [ "month", "week", "day" ],
+			"default": "month"
+		},
+		"unitCount": {
+			"type": "number",
+			"default": 1
+		},
+		"selectedDate": {
+			"type": "string",
+			"default": ""
+		},
+		"dateModifier": {
+			"type": "number",
+			"default": 0
+		},
+		"showWeekdays": {
+			"type": "boolean",
+			"default": true
+		},
+		"showWeekends": {
+			"type": "boolean",
+			"default": true
+		},
+		"showScheduled": {
+			"type": "boolean",
+			"default": false
+		},
+		"dateRangeSource": {
+			"type": "string",
+			"enum": [ "default", "context", "selected" ],
+			"default": "default"
+		},
+		"postId": {
+			"type": "number",
+			"default": 0
+		},
+		"sourcePostType": {
+			"type": "string",
+			"default": ""
+		},
+		"enableTimeGrid": {
+			"type": "boolean",
+			"default": false
+		}
+	},
+	"supports": {
+		"interactivity": true,
+		"reusable": false,
+		"html": false,
+		"align": true,
+		"alignWide": true,
+		"customClassName": true,
+		"color": {
+			"gradients": true,
+			"link": false,
+			"text": false,
+			"__experimentalDefaultControls": {
+				"background": true
+			}
+		},
+		"spacing": {
+			"margin": true,
+			"padding": true,
+			"blockGap": [ "horizontal", "vertical" ]
+		},
+		"__experimentalBorder": {
+			"color": true,
+			"radius": false,
+			"style": true,
+			"width": true
+		},
+		"layout": {
+			"allowEditing": false
+		}
+	},
+	"styles": [
+		{
+			"name": "default",
+			"label": "Classic",
+			"isDefault": true
+		},
+		{
+			"name": "minimal",
+			"label": "Minimal"
+		},
+		{
+			"name": "bold",
+			"label": "Bold"
+		},
+		{
+			"name": "circular",
+			"label": "Circular"
+		},
+		{
+			"name": "gradient",
+			"label": "Gradient"
+		}
+	],
+	"textdomain": "gatherpress",
+	"render": "file:./render.php",
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"viewScriptModule": "file:./view.js"
+}

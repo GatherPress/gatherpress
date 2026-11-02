@@ -1,0 +1,18 @@
+/* ======================================================================
+   Print Styles
+   ====================================================================== */
+
+@media print {
+	.gatherpress-calendar__table {
+		break-inside: avoid;
+
+		td {
+			break-inside: avoid;
+		}
+	}
+
+	// The dots and tracks are background colors, which browsers drop in print by default.
+	.wp-block-gatherpress-calendar-entries {
+		print-color-adjust: exact;
+	}
+}

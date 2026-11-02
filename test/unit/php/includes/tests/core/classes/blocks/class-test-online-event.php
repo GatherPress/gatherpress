@@ -12,6 +12,7 @@ use GatherPress\Core\Blocks\Online_Event;
 use GatherPress\Core\Event;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
+use PasswordHash;
 use WP_Block;
 
 /**
@@ -276,6 +277,68 @@ class Test_Online_Event extends Base {
 			$block_content,
 			$result,
 			'Should return block content when event has online-event term and no postId override.'
+		);
+	}
+
+	/**
+	 * Tests render_block keeps a protected online event behind its password without a postId override.
+	 *
+	 * In a Query Loop the block reads the event from the loop, so it has no
+	 * override to check, and has to ask for the password the event page would.
+	 *
+	 * @since 0.36.1
+	 * @covers ::render_block
+	 *
+	 * @return void
+	 */
+	public function test_render_block_hides_a_password_protected_event_without_override(): void {
+		$instance = Online_Event::get_instance();
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		);
+		$term     = term_exists( 'online-event', Venue::TAXONOMY );
+
+		if ( ! $term ) {
+			$term = wp_insert_term( 'Online Event', Venue::TAXONOMY, array( 'slug' => 'online-event' ) );
+		}
+
+		wp_set_object_terms( $event_id, (int) ( is_array( $term ) ? $term['term_id'] : $term ), Venue::TAXONOMY );
+		$this->go_to( get_permalink( $event_id ) );
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/online-event',
+				'attrs'        => array(),
+				'innerBlocks'  => array(),
+				'innerHTML'    => '',
+				'innerContent' => array(),
+			)
+		);
+		$block_content  = '<div class="online-event-content">Online event</div>';
+		$block          = array( 'attrs' => array() );
+
+		$this->assertSame(
+			'',
+			$instance->render_block( $block_content, $block, $block_instance ),
+			'A protected online event should render nothing without the password.'
+		);
+
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+
+		// The cookie WordPress sets once a viewer enters the post password.
+		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'secret' );
+
+		$result = $instance->render_block( $block_content, $block, $block_instance );
+
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+
+		$this->assertSame(
+			$block_content,
+			$result,
+			'A protected online event should render once the viewer has the password.'
 		);
 	}
 
@@ -710,7 +773,7 @@ class Test_Online_Event extends Base {
 		$this->assertStringContainsString(
 			'Inner content',
 			$instance->render_block( '<div>x</div>', $block, $block_instance ),
-			'Failed to assert a reader still gets the override.'
+			'Failed to assert a viewer still gets the override.'
 		);
 
 		wp_set_current_user( 0 );

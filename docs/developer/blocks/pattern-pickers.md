@@ -1,12 +1,12 @@
 # Pattern pickers
 
-Several GatherPress blocks open a pattern picker on insert — a placeholder UI
-with a **Choose** button that surfaces a modal of named starter layouts. The
-picker is powered by the reusable [`PatternPicker`](../../../src/components/PatternPicker/)
-component and each consuming block exposes a JS filter so third parties can
-register their own patterns without forking the block.
+Several GatherPress blocks open a pattern picker on insert, a placeholder UI with a
+**Choose** button that surfaces a modal of named starter layouts. The picker is
+powered by the reusable [`PatternPicker`](../../../src/components/PatternPicker/)
+component and each consuming block exposes a JS filter so third parties can register
+their own patterns without forking the block.
 
-## RSVP Response — `gatherpress.rsvpResponsePatterns`
+## RSVP Response: `gatherpress.rsvpResponsePatterns`
 
 Filters the array of starter patterns shown in the RSVP Response block's
 picker. Each entry is an object:
@@ -16,7 +16,7 @@ picker. Each entry is an object:
 | `name` | `string` | Stable identifier. Use a plugin namespace, e.g. `my-plugin/compact`. |
 | `title` | `string` | Translated, human-readable label shown beneath the preview thumbnail. |
 | `description` | `string` | Translated sentence-length summary. Surfaced for screen readers. |
-| `template` | `Array` | `InnerBlocks` tuple tree — `[ blockName, attributes, innerBlocks ]` — used to seed the block when the pattern is picked. |
+| `template` | `Array` | `InnerBlocks` tuple tree (`[ blockName, attributes, innerBlocks ]`), used to seed the block when the pattern is picked. |
 
 The bundled default (_Attendee Grid with Filter_) is the only entry registered
 out of the box. Add your own:
@@ -34,7 +34,7 @@ addFilter(
             name: 'my-plugin/compact',
             title: __( 'Compact', 'my-plugin' ),
             description: __(
-                'Avatar grid only — no status filter.',
+                'Avatar grid only, no status filter.',
                 'my-plugin'
             ),
             template: [
@@ -52,13 +52,12 @@ addFilter(
 ### Auto-loaded RSVP Response instances
 
 The RSVP Response block seeded into a new event post (via the
-`gatherpress/event-with-rsvp` starter pattern surfaced in the new-event
-chooser modal) carries `patternPicked: true` so the picker is suppressed
-and the block seeds the default template directly. Authors can still swap
-layouts via the block toolbar's **Choose pattern** action — that opens
-the same modal your filter contributes to.
+`gatherpress/event-with-rsvp` starter pattern surfaced in the new-event chooser
+modal) carries `patternPicked: true` so the picker is suppressed and the block seeds
+the default template directly. Authors can still swap layouts via the block toolbar's
+**Choose pattern** action. That opens the same modal your filter contributes to.
 
-### Swapping the auto-loaded template — `gatherpress.rsvpResponseDefaultTemplate`
+### Swapping the auto-loaded template: `gatherpress.rsvpResponseDefaultTemplate`
 
 To change what auto-loaded instances seed (without going through the picker
 flow), filter the default template directly. The filter receives an
@@ -84,7 +83,7 @@ addFilter(
 This only affects the auto-loaded path. Manual inserts still go through the
 picker, which is filtered separately via `gatherpress.rsvpResponsePatterns`.
 
-## RSVP Form — `gatherpress.rsvpFormPatterns`
+## RSVP Form: `gatherpress.rsvpFormPatterns`
 
 Same shape as RSVP Response. Filters the array of starter patterns shown in
 the RSVP Form block's picker. Each entry is `{ name, title, description, template }`.
@@ -116,14 +115,14 @@ addFilter(
 );
 ```
 
-### Swapping the RSVP Form auto-loaded template — `gatherpress.rsvpFormDefaultTemplate`
+### Swapping the RSVP Form auto-loaded template: `gatherpress.rsvpFormDefaultTemplate`
 
-Parallel to `gatherpress.rsvpResponseDefaultTemplate` — filters the template
-seeded into auto-loaded RSVP Form blocks (currently a no-op since the block
-isn't auto-included by the event post type's `template` arg, but kept for
-parity in case future patterns add it).
+Parallel to `gatherpress.rsvpResponseDefaultTemplate`. Filters the template seeded
+into auto-loaded RSVP Form blocks (currently a no-op since the block isn't
+auto-included by the event post type's `template` arg, but kept for parity in case
+future patterns add it).
 
-## Venue — `gatherpress.venuePatterns`
+## Venue: `gatherpress.venuePatterns`
 
 Same shape as RSVP Response and RSVP Form. Filters the array of starter
 patterns shown in the Venue block's picker. Each entry is
@@ -131,20 +130,19 @@ patterns shown in the Venue block's picker. Each entry is
 
 Two patterns ship by default, both always available in the chooser:
 
-- **Venue Details with Title** — prepends a `core/post-title` to the
+- **Venue Details with Title**: prepends a `core/post-title` to the
   address + phone + website + map. Default for event posts (the title
   names the event hosting the venue).
-- **Venue Details** — the same address + phone + website + map without a
+- **Venue Details**: the same address + phone + website + map without a
   title. Default for venue posts (the host post itself names the venue).
 
-Authors can pick either regardless of host post type — the auto-load just
-picks the context-appropriate one when the picker is suppressed.
+Authors can pick either regardless of host post type. The auto-load just picks the
+context-appropriate one when the picker is suppressed.
 
-The second callback argument is the **host post type** — the post type of
-the post being edited (resolved from block context, falling back to the
-editor's current post type). Branch on it to scope a pattern to a specific
-host (e.g. only on a companion plugin's `production` post type) without
-affecting the standard event/venue picker.
+The second callback argument is the **host post type**. The post type of the post
+being edited (resolved from block context, falling back to the editor's current post
+type). Branch on it to scope a pattern to a specific host (e.g. only on a companion
+plugin's `production` post type) without affecting the standard event/venue picker.
 
 ```js
 import { addFilter } from '@wordpress/hooks';
@@ -177,32 +175,30 @@ addFilter(
 
 Two paths seed the picker as already-picked:
 
-- The `gatherpress/event-with-rsvp` starter pattern (surfaced in the
-  new-event chooser modal) includes `gatherpress/venue` with
-  `patternPicked: true` — picking it from the modal pre-populates the
-  with-title venue layout.
-- The `gatherpress/venue-with-map` starter pattern (surfaced in the
-  new-venue chooser modal) carries the same `patternPicked: true` —
-  picking it pre-populates the without-title layout.
+- The `gatherpress/event-with-rsvp` starter pattern (surfaced in the new-event
+  chooser modal) includes `gatherpress/venue` with `patternPicked: true`. Picking it
+  from the modal pre-populates the with-title venue layout.
+- The `gatherpress/venue-with-map` starter pattern (surfaced in the new-venue chooser
+  modal) carries the same `patternPicked: true`. Picking it pre-populates the
+  without-title layout.
 
 Manual venue inserts on other post types still hit the picker.
 
-### Swapping the venue auto-loaded template — `gatherpress.venueDefaultTemplate`
+### Swapping the venue auto-loaded template: `gatherpress.venueDefaultTemplate`
 
 Parallel to the RSVP Response/Form variants. Filters the template seeded
 into auto-loaded Venue blocks. Receives the context-resolved template
 (with-title or without-title).
 
-## RSVP — `gatherpress.rsvpPatterns`
+## RSVP: `gatherpress.rsvpPatterns`
 
-The RSVP block carries **five** inner-block templates — one per RSVP status
-(`no_status`, `attending`, `waiting_list`, `not_attending`, `past`) — that
-get serialized into the `serializedInnerBlocks` attribute. A pattern entry
-therefore has a richer shape than the other blocks: alongside `template`
-(used for the modal's `<BlockPreview>` thumbnail and as the initial active
-inner blocks), it exposes `statusTemplates` — a map of status → template
-tuple tree — that the RSVP-specific pick handler uses to seed all five
-statuses at once.
+The RSVP block carries **five** inner-block templates (one per RSVP status
+(`no_status`, `attending`, `waiting_list`, `not_attending`, `past`)), that get
+serialized into the `serializedInnerBlocks` attribute. A pattern entry therefore has
+a richer shape than the other blocks: alongside `template` (used for the modal's
+`<BlockPreview>` thumbnail and as the initial active inner blocks), it exposes
+`statusTemplates` (a map of status → template tuple tree), that the RSVP-specific
+pick handler uses to seed all five statuses at once.
 
 The bundled default (_RSVP Button with Modal_) is the only entry registered
 out of the box. Add your own:
@@ -246,11 +242,11 @@ chooser modal) carries `patternPicked: true` so the picker is suppressed
 and the existing hydration `useEffect` seeds the default status templates
 directly.
 
-### Swapping the RSVP auto-loaded bundle — `gatherpress.rsvpDefaultStatusTemplates`
+### Swapping the RSVP auto-loaded bundle: `gatherpress.rsvpDefaultStatusTemplates`
 
-Parallel to the other auto-load filters, but receives the **per-status
-template map** rather than a single template — the RSVP block's hydration
-logic loops over its keys to populate `serializedInnerBlocks`.
+Parallel to the other auto-load filters, but receives the **per-status template map**
+rather than a single template, the RSVP block's hydration logic loops over its keys
+to populate `serializedInnerBlocks`.
 
 ## Adding a picker to a new block
 

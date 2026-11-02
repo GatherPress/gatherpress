@@ -17,8 +17,8 @@ use GatherPress\Core\Rsvp;
 $gatherpress_block_instance = Setup::get_instance();
 $gatherpress_post_id        = $gatherpress_block_instance->get_post_id( $block->parsed_block );
 
-// Only render for events.
-if ( Event::POST_TYPE !== get_post_type( $gatherpress_post_id ) ) {
+// Only render for events that take RSVPs and whose responses the viewer may read.
+if ( ! Event::can_read_rsvps( $gatherpress_post_id ) ) {
 	return;
 }
 

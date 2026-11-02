@@ -33,7 +33,7 @@ export function shouldShowAddressSuggestionUi(
 	value,
 	suggestions,
 	isLoadingSuggestions,
-	suggestionError
+	suggestionError,
 ) {
 	const meetsMinLength =
 		getAddressSearchMinQueryLength() <=
@@ -62,13 +62,16 @@ export function useAddressAutocomplete( {
 	debounceMs = 400,
 } ) {
 	const [ suggestions, setSuggestions ] = useState( [] );
-	const [ activeIndex, setActiveIndex ] = useState( 0 );
+	// -1 means no option is active. As in the ARIA combobox pattern, the first
+	// arrow key makes an option active, so ArrowDown + Enter picks the first
+	// suggestion (#2449).
+	const [ activeIndex, setActiveIndex ] = useState( -1 );
 	const [ isLoadingSuggestions, setIsLoadingSuggestions ] = useState( false );
 	const [ suggestionError, setSuggestionError ] = useState( '' );
 	const abortControllerRef = useRef( null );
 
 	useEffect( () => {
-		setActiveIndex( 0 );
+		setActiveIndex( -1 );
 	}, [ suggestions ] );
 
 	// Abort any in-flight suggestion request on unmount.
@@ -120,8 +123,8 @@ export function useAddressAutocomplete( {
 					setSuggestionError(
 						__(
 							'Address suggestions are temporarily unavailable. Try again in a moment, or enter the address manually.',
-							'gatherpress'
-						)
+							'gatherpress',
+						),
 					);
 				} )
 				.finally( () => {
@@ -138,9 +141,8 @@ export function useAddressAutocomplete( {
 			// `getAddressSearchMinQueryLength` / `__` are module-level imports. If you add a
 			// prop or non-setter state reference to this body, drop the disable and let the
 			// exhaustive-deps rule flag it rather than silently going stale.
-			// eslint-disable-next-line react-hooks/exhaustive-deps
 		}, [] ),
-		debounceMs
+		debounceMs,
 	);
 
 	const handleChange = useCallback(
@@ -148,10 +150,14 @@ export function useAddressAutocomplete( {
 			onChange( next );
 			loadSuggestions( next );
 		},
-		[ onChange, loadSuggestions ]
+		[ onChange, loadSuggestions ],
 	);
 
 	const closeSuggestions = useCallback( () => {
+		// Drop a search that is still waiting for its debounce delay, too.
+		// Otherwise it runs after the list closes and opens it again.
+		loadSuggestions.cancel();
+
 		if ( abortControllerRef.current ) {
 			abortControllerRef.current.abort();
 			abortControllerRef.current = null;
@@ -159,7 +165,7 @@ export function useAddressAutocomplete( {
 		setSuggestions( [] );
 		setSuggestionError( '' );
 		setIsLoadingSuggestions( false );
-	}, [] );
+	}, [ loadSuggestions ] );
 
 	const selectSuggestion = useCallback(
 		( item ) => {
@@ -167,7 +173,7 @@ export function useAddressAutocomplete( {
 			onChange( item.label );
 			closeSuggestions();
 		},
-		[ onChange, closeSuggestions ]
+		[ onChange, closeSuggestions ],
 	);
 
 	const handleKeyDown = useCallback(
@@ -186,23 +192,26 @@ export function useAddressAutocomplete( {
 				if ( 'ArrowDown' === event.key ) {
 					event.preventDefault();
 					setActiveIndex( ( i ) =>
-						suggestions.length <= i + 1 ? 0 : i + 1
+						suggestions.length <= i + 1 ? 0 : i + 1,
 					);
 					return;
 				}
 				if ( 'ArrowUp' === event.key ) {
 					event.preventDefault();
 					setActiveIndex( ( i ) =>
-						0 > i - 1 ? suggestions.length - 1 : i - 1
+						0 > i - 1 ? suggestions.length - 1 : i - 1,
 					);
 					return;
 				}
 				if ( 'Enter' === event.key && ! event.shiftKey ) {
 					event.preventDefault();
 					event.stopPropagation();
-					const item = suggestions[ activeIndex ] ?? suggestions[ 0 ];
+					const item = suggestions[ activeIndex ];
 					if ( item ) {
 						selectSuggestion( item );
+					} else {
+						// No option is active: keep the typed address.
+						closeSuggestions();
 					}
 					return;
 				}
@@ -219,7 +228,7 @@ export function useAddressAutocomplete( {
 			onKeyDown,
 			selectSuggestion,
 			suggestions,
-		]
+		],
 	);
 
 	return {

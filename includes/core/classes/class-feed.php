@@ -64,8 +64,8 @@ final class Feed {
 		add_filter( 'the_excerpt_rss', array( $this, 'apply_event_excerpt' ) );
 		add_filter( 'the_content_feed', array( $this, 'apply_event_content' ) );
 
-		// Hook into the main query to handle events feeds.
-		add_action( 'pre_get_posts', array( $this, 'handle_events_feed_query' ) );
+		// Run before Event\Query prepares event sorting and filtering.
+		add_action( 'pre_get_posts', array( $this, 'handle_events_feed_query' ), 9 );
 
 		// Modify feed link for past events page.
 		add_filter( 'post_type_archive_feed_link', array( $this, 'modify_feed_link_for_past_events' ) );
@@ -86,11 +86,14 @@ final class Feed {
 	 */
 	public function handle_events_feed_query( WP_Query $query ): void {
 		// Only run on the main query and if it's a feed.
-		if ( ! $query->is_main_query() || ! is_feed() ) {
+		if ( ! $query->is_main_query() || ! $query->is_feed() ) {
 			return;
 		}
 
-		// Check if this is an events feed request.
+		// Check if this is an events or topic feed request.
+		$is_event_feed = false;
+
+		// INPUT_SERVER is unreliable under FastCGI.
 		if ( isset( $_SERVER['REQUEST_URI'] ) ) {
 			$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) );
 
@@ -99,25 +102,28 @@ final class Feed {
 			$rewrite_slug = $settings->get( 'events_url' );
 
 			// Check if this is the events feed URL.
-			if ( str_contains( $request_uri, '/' . $rewrite_slug . '/' . $GLOBALS['wp_rewrite']->feed_base ) ) {
-				// Set the post type and let Event\Query handle the rest.
-				$query->set( 'post_type', Event::POST_TYPE );
+			$is_event_feed = str_contains(
+				$request_uri,
+				'/' . $rewrite_slug . '/' . $GLOBALS['wp_rewrite']->feed_base
+			);
+		}
 
-				// Check for type parameter to determine if we want past or upcoming events.
-				$event_type = 'upcoming';
-				// Default to upcoming events.
-				// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Public feed URL parameter.
-				if (
-					isset( $_GET['type'] ) &&
-					'past' === sanitize_text_field( wp_unslash( $_GET['type'] ) )
-				) {
-					// phpcs:enable WordPress.Security.NonceVerification.Recommended
-					// Nonce verification not required for public feed URLs.
-					$event_type = 'past';
-				}
+		// The calendar endpoint uses the same taxonomy feed state but has its own query.
+		$is_topic_feed = $query->is_tax( Topic::TAXONOMY ) && 'ical' !== $query->get( 'feed' );
 
-				$query->set( 'gatherpress_event_query', $event_type );
+		if ( $is_event_feed || $is_topic_feed ) {
+			// Set the post type and let Event\Query handle the rest.
+			$query->set( 'post_type', Event::POST_TYPE );
+
+			// Check for type parameter to determine if we want past or upcoming events.
+			$event_type = 'upcoming';
+			// Default to upcoming events.
+			// Nonce verification not required for public feed URLs.
+			if ( 'past' === Utility::get_http_input( INPUT_GET, 'type' ) ) {
+				$event_type = 'past';
 			}
+
+			$query->set( 'gatherpress_event_query', $event_type );
 		}
 	}
 
@@ -155,14 +161,15 @@ final class Feed {
 	 * @return string The customized excerpt.
 	 */
 	public function get_default_event_excerpt( string $excerpt ): string {
-		// Only apply to events.
-		if ( ! post_type_supports( (string) get_post_type(), Event::SUPPORT ) ) {
+		// Only apply to events, and keep a password-protected event's date and venue
+		// out of the feed, as core keeps its excerpt out.
+		if ( ! post_type_supports( (string) get_post_type(), Event::SUPPORT ) || post_password_required() ) {
 			return $excerpt;
 		}
 
 		// The support check above already returned when no post is in context, so get_the_ID() is an ID here.
 		$event = new Event( (int) get_the_ID() );
-		$venue = $event->get_venue_information();
+		$venue = $event->get_public_venue_information();
 
 		$event_info = $this->get_event_datetime_info( $event );
 
@@ -208,14 +215,15 @@ final class Feed {
 	 * @return string The customized content.
 	 */
 	public function get_default_event_content( string $content ): string {
-		// Only apply to events.
-		if ( ! post_type_supports( (string) get_post_type(), Event::SUPPORT ) ) {
+		// Only apply to events, and keep a password-protected event's date and venue
+		// out of the feed, as core keeps its content out.
+		if ( ! post_type_supports( (string) get_post_type(), Event::SUPPORT ) || post_password_required() ) {
 			return $content;
 		}
 
 		// The support check above already returned when no post is in context, so get_the_ID() is an ID here.
 		$event = new Event( (int) get_the_ID() );
-		$venue = $event->get_venue_information();
+		$venue = $event->get_public_venue_information();
 
 		$event_info = $this->get_event_datetime_info( $event );
 

@@ -63,6 +63,9 @@ const updateEmptyResponseMessages = (
 };
 
 const { state } = store( 'gatherpress', {
+	state: {
+		posts: {},
+	},
 	callbacks: {
 		renderBlocks() {
 			const context = getContext();

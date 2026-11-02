@@ -78,7 +78,7 @@ export default function Filters( {
 		window.location.href = buildFilterUrl(
 			window.location.href,
 			postId,
-			responses
+			responses,
 		);
 	};
 

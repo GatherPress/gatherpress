@@ -12,7 +12,7 @@ You can see different states of the RSVP block by choosing in the dropdown:
 - Not attending: what they will see if they change from Attending to Not Attending, or if an admin changed it for them
 - Past event: what they will see for past events
 
-Double-click the block to work inside it, or expand it in the List view and select an inner block directly. Either way you can then edit the inner blocks — for example the content of the Modal windows, such as the buttons. Modify with care.
+Double-click the block to work inside it, or expand it in the List view and select an inner block directly. Either way you can then edit the inner blocks: for example the content of the Modal windows, such as the buttons. Modify with care.
 
 Note that moving the RSVP block re-protects it, so double-click it again if you want to keep editing inside.
 
@@ -28,7 +28,7 @@ Note that moving the RSVP block re-protects it, so double-click it again if you 
         - Row
             - Icon  (by default, it shows the checkmark on Attending more, the clock icon on Waiting list mode, or the X icon on the Not attending mode)
             - RSVP Status (by default, it shows "Attending", "Waiting List" or "Not Attending")
-        - RSVP Guest Count Display. Note: if the event is set not to accept guests, this field is greyed out in the editor and will not display on front end.
+        - RSVP Guest Count Display. Note: if the event is set not to accept guests, this field is grayed out in the editor and will not display on front end.
     - RSVP Modal
         - Modal Content
             - RSVP Heading

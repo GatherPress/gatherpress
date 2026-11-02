@@ -1,2 +1,5 @@
+// Without JavaScript, the page lands on the RSVP block after an RSVP is
+// saved, so leave room for the admin bar above it.
 .wp-block-gatherpress-rsvp {
+	scroll-margin-top: calc(var(--wp-admin--admin-bar--height, 0px) + 1rem);
 }

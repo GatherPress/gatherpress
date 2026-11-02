@@ -92,6 +92,49 @@ const STANDARD_RSVP_FORM_TEMPLATE = [
 		],
 	],
 	[
+		'core/group',
+		{
+			metadata: {
+				gatherpressRsvpFormVisibility: {
+					whenCanceled: 'show',
+				},
+			},
+			style: {
+				spacing: {
+					margin: {
+						bottom: '1rem',
+					},
+				},
+			},
+		},
+		[
+			[
+				'core/heading',
+				{
+					content: __(
+						'This event has been canceled.',
+						'gatherpress',
+					),
+					level: 3,
+					style: {
+						typography: {
+							fontWeight: '600',
+						},
+					},
+				},
+			],
+			[
+				'core/paragraph',
+				{
+					content: __(
+						'Registration for this event is closed.',
+						'gatherpress',
+					),
+				},
+			],
+		],
+	],
+	[
 		'gatherpress/form-field',
 		{
 			metadata: {

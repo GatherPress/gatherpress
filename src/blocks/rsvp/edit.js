@@ -18,7 +18,7 @@ import { __ } from '@wordpress/i18n';
 import { applyFilters } from '@wordpress/hooks';
 import { useEffect, useCallback, useState } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
-import { createBlock, parse, serialize } from '@wordpress/blocks';
+import { serialize } from '@wordpress/blocks';
 
 /**
  * Internal dependencies
@@ -28,18 +28,18 @@ import PatternPicker, { PatternChooserModal } from '../../components/PatternPick
 import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, usePostTypeSupports, isRsvpEnabledForEvent } from '../../helpers/event';
 import { isInFSETemplate, getEditorDocument } from '../../helpers/editor';
 import { getFromSettings } from '../../helpers/editor-settings';
-import { parseSerializedInnerBlocks } from './helpers';
+import { getStatusInnerBlocks, parseSerializedInnerBlocks, templateToBlocks } from './helpers';
 
 /**
  * Starter patterns offered by the RSVP block's pattern picker.
  *
- * Unlike single-template blocks, RSVP carries five inner-block templates
+ * Unlike single-template blocks, RSVP carries six inner-block templates
  * (one per status) that get serialized into the `serializedInnerBlocks`
  * attribute. A pattern entry therefore exposes both `template` (the
  * `no_status` tree, used by the modal's `<BlockPreview>` thumbnail and as
  * the initially-active inner blocks on insert) and `statusTemplates` (a map
  * of status → template tuple tree, used by `handlePatternPick` to seed all
- * five statuses at once).
+ * six statuses at once).
  *
  * Filterable via `gatherpress.rsvpPatterns` so other plugins or themes can
  * register their own RSVP layouts. Each entry is shaped
@@ -66,6 +66,7 @@ import { parseSerializedInnerBlocks } from './helpers';
  *         waiting_list: [],
  *         not_attending: [],
  *         past: [],
+ *         canceled: [],
  *       },
  *     } ]
  *   );
@@ -75,8 +76,8 @@ const PATTERNS = applyFilters( 'gatherpress.rsvpPatterns', [
 		name: 'gatherpress/rsvp-button-with-modal',
 		title: __( 'RSVP Button with Modal', 'gatherpress' ),
 		description: __(
-			'An RSVP button that opens a modal — five inner-block layouts, one per RSVP status (no response, attending, waiting list, not attending, past).',
-			'gatherpress'
+			'An RSVP button that opens a modal — six inner-block layouts, one per RSVP status (no response, attending, waiting list, not attending, past, canceled).',
+			'gatherpress',
 		),
 		template: RSVP_BUTTON_WITH_MODAL_TEMPLATES.no_status,
 		statusTemplates: RSVP_BUTTON_WITH_MODAL_TEMPLATES,
@@ -101,25 +102,8 @@ const PATTERNS = applyFilters( 'gatherpress.rsvpPatterns', [
  */
 const DEFAULT_STATUS_TEMPLATES = applyFilters(
 	'gatherpress.rsvpDefaultStatusTemplates',
-	RSVP_BUTTON_WITH_MODAL_TEMPLATES
+	RSVP_BUTTON_WITH_MODAL_TEMPLATES,
 );
-
-/**
- * Helper function to convert a template to blocks.
- *
- * @param {Array} template The block template structure.
- *
- * @return {Array} Array of blocks created from the template.
- */
-function templateToBlocks( template ) {
-	return template.map( ( [ name, attributes, innerBlocks ] ) => {
-		return createBlock(
-			name,
-			attributes,
-			templateToBlocks( innerBlocks || [] ),
-		);
-	} );
-}
 
 /**
  * Edit component for the GatherPress RSVP block.
@@ -154,7 +138,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	const handlePatternPick = ( pattern ) => {
 		// RSVP patterns carry a per-status `statusTemplates` map (alongside
 		// the `template` used by the modal preview). Serialize every status
-		// up front so all five inspector tabs are pre-populated, then
+		// up front so all six inspector tabs are pre-populated, then
 		// replaceInnerBlocks for the active status so the canvas shows
 		// content immediately.
 		const bundle = pattern.statusTemplates || {
@@ -164,7 +148,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 			Object.entries( bundle ).map( ( [ status, template ] ) => [
 				status,
 				serialize( templateToBlocks( template ) ),
-			] )
+			] ),
 		);
 
 		setAttributes( {
@@ -215,7 +199,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 			hasExplicitOverride,
 			isDescendentOfQueryLoop,
 			isEventContext,
-		]
+		],
 	);
 
 	// Get the current inner blocks
@@ -225,9 +209,9 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	);
 
 	// Get event data - either from override postId or current post.
-	const { maxGuestLimit: maxNumberOfGuests, enableRsvp, enableAnonymousRsvp } = useSelect(
+	const { guestLimit: maxNumberOfGuests, enableRsvp, enableAnonymousRsvp } = useSelect(
 		( select ) => getEventMeta( select, postId, attributes ),
-		[ postId, attributes ]
+		[ postId, attributes ],
 	);
 
 	const rsvpMode = getFromSettings( 'rsvpMode' ) ?? 'enabled';
@@ -319,10 +303,10 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	// Load inner blocks for a given state
 	const loadInnerBlocksForState = useCallback(
 		( state ) => {
-			const savedBlocks =
-				parseSerializedInnerBlocks( serializedInnerBlocks )[ state ];
-			if ( savedBlocks && 0 < savedBlocks.length ) {
-				replaceInnerBlocks( clientId, parse( savedBlocks, {} ) );
+			const blocks = getStatusInnerBlocks( serializedInnerBlocks, state, DEFAULT_STATUS_TEMPLATES );
+
+			if ( blocks ) {
+				replaceInnerBlocks( clientId, blocks );
 			}
 		},
 		[ clientId, replaceInnerBlocks, serializedInnerBlocks ],
@@ -360,7 +344,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 
 					if ( templateKey !== selectedStatus ) {
 						const blocks = templateToBlocks(
-							DEFAULT_STATUS_TEMPLATES[ templateKey ]
+							DEFAULT_STATUS_TEMPLATES[ templateKey ],
 						);
 
 						updatedSerializedBlocks[ templateKey ] =
@@ -471,6 +455,10 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 										label: __( 'Past Event', 'gatherpress' ),
 										value: 'past',
 									},
+									{
+										label: __( 'Canceled Event', 'gatherpress' ),
+										value: 'canceled',
+									},
 								] }
 								onChange={ handleStatusChange }
 							/>
@@ -492,7 +480,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 						icon="insert"
 						instructions={ __(
 							'Choose a pattern for the RSVP block.',
-							'gatherpress'
+							'gatherpress',
 						) }
 						patterns={ PATTERNS }
 						showStartBlank={ false }

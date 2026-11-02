@@ -71,12 +71,12 @@ test.describe( '#1607 datetime picker year-down regression', () => {
 
 		expect(
 			eventId,
-			'event creation via REST returned an id'
+			'event creation via REST returned an id',
 		).toBeTruthy();
 
 		try {
 			await page.goto(
-				`/wp-admin/post.php?post=${ eventId }&action=edit`
+				`/wp-admin/post.php?post=${ eventId }&action=edit`,
 			);
 			await page.waitForLoadState( 'load' );
 
@@ -116,7 +116,7 @@ test.describe( '#1607 datetime picker year-down regression', () => {
 			if ( 0 < ( await eventSettingsButton.count() ) ) {
 				const expanded =
 					await eventSettingsButton.getAttribute(
-						'aria-expanded'
+						'aria-expanded',
 					);
 				if ( 'true' !== expanded ) {
 					await eventSettingsButton.click();
@@ -153,8 +153,8 @@ test.describe( '#1607 datetime picker year-down regression', () => {
 			// the fix.
 			await expect(
 				page.getByText(
-					/editor has encountered an unexpected error/i
-				)
+					/editor has encountered an unexpected error/i,
+				),
 			).toHaveCount( 0 );
 
 			// Close the picker so the start label sits in the foreground

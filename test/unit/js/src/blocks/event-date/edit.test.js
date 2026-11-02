@@ -2,7 +2,14 @@
  * External dependencies
  */
 import { describe, expect, it, jest } from '@jest/globals';
+import '@testing-library/jest-dom';
 import { render, fireEvent } from '@testing-library/react';
+
+/**
+ * WordPress dependencies
+ */
+import { useSelect } from '@wordpress/data';
+import { useBlockProps } from '@wordpress/block-editor';
 
 /**
  * Mocks
@@ -19,6 +26,12 @@ jest.mock( '@wordpress/data', () => ( {
 
 jest.mock( '@wordpress/i18n', () => ( {
 	__: ( text ) => text,
+	sprintf: ( text, ...args ) =>
+		args.reduce( ( carry, arg ) => carry.replace( '%s', arg ), text ),
+} ) );
+
+jest.mock( '@wordpress/date', () => ( {
+	dateI18n: jest.fn( ( dateFormat ) => `rendered(${ dateFormat })` ),
 } ) );
 
 jest.mock( '@wordpress/block-editor', () => ( {
@@ -29,17 +42,40 @@ jest.mock( '@wordpress/block-editor', () => ( {
 
 jest.mock( '@wordpress/components', () => ( {
 	__experimentalVStack: ( { children } ) => <div>{ children }</div>,
+	// What core's ExternalLink renders, so the test sees what the link does.
+	ExternalLink: ( { href, children } ) => (
+		<a href={ href } target="_blank" rel="external noreferrer noopener">
+			{ children }
+			<span aria-label="(opens in a new tab)">&#8599;</span>
+		</a>
+	),
 	PanelBody: ( { children } ) => <div>{ children }</div>,
 	RadioControl: () => null,
 	Spinner: () => <div>spinner</div>,
-	TextControl: () => null,
-	ToggleControl: ( { label, checked, onChange } ) => (
-		<button
-			aria-pressed={ checked }
-			onClick={ () => onChange( ! checked ) }
-		>
-			{ label }
-		</button>
+	// Rendered rather than stubbed so the separator control's value and
+	// placeholder can be asserted. aria-label rather than a wrapping <label>,
+	// which getByLabelText reads just the same without tripping
+	// jsx-a11y/label-has-associated-control on a mock.
+	TextControl: ( { label, value, placeholder, onChange } ) => (
+		<input
+			type="text"
+			aria-label={ label }
+			value={ value }
+			placeholder={ placeholder }
+			onChange={ ( event ) => onChange( event.target.value ) }
+		/>
+	),
+	ToggleControl: ( { label, help, checked, onChange, disabled } ) => (
+		<>
+			<button
+				aria-pressed={ checked }
+				disabled={ disabled }
+				onClick={ () => ! disabled && onChange( ! checked ) }
+			>
+				{ label }
+			</button>
+			{ help && <p>{ help }</p> }
+		</>
 	),
 	ToolbarButton: ( { text } ) => <button>{ text }</button>,
 	ToolbarGroup: ( { children } ) => <div>{ children }</div>,
@@ -47,13 +83,22 @@ jest.mock( '@wordpress/components', () => ( {
 
 jest.mock( '@src/components/DateTimeRange', () => () => null );
 
+// Covered on its own in `components/FormatControl.test.js`; here it would
+// only pull `SelectControl` into the components mock for no gain.
+jest.mock( '@src/components/FormatControl', () => () => null );
+
+const mockSettings = {
+	dateFormat: 'F j, Y',
+	timeFormat: 'g:i a',
+	showTimezone: false,
+	showViewerTimezone: true,
+};
+
+let mockConfig = {};
+
 jest.mock( '@src/helpers/editor-settings', () => ( {
-	getFromSettings: ( key ) =>
-		( {
-			dateFormat: 'F j, Y',
-			timeFormat: 'g:i a',
-			showTimezone: false,
-		} )[ key ],
+	getFromConfig: ( key ) => mockConfig[ key ],
+	getFromSettings: ( key ) => mockSettings[ key ],
 } ) );
 
 jest.mock( '@src/helpers/event', () => ( {
@@ -75,10 +120,14 @@ jest.mock( '@src/helpers/datetime', () => {
 		getUtcOffset: () => '',
 		isManualOffset: () => false,
 		removeNonTimePHPFormatChars: ( format ) => format,
+		removeTimePHPFormatChars: ( format ) => format,
 	};
 } );
 
+// Only the data selector is stubbed: the viewer time helpers run for real, so
+// the preview and the toggle are tested as the editor renders them.
 jest.mock( '@src/blocks/event-date/helpers', () => ( {
+	...jest.requireActual( '@src/blocks/event-date/helpers' ),
 	resolveEventDateData: jest.fn(),
 } ) );
 
@@ -102,7 +151,7 @@ const renderEdit = ( attributes = {}, setAttributes = jest.fn() ) =>
 			attributes={ { ...baseAttributes, ...attributes } }
 			setAttributes={ setAttributes }
 			context={ {} }
-		/>
+		/>,
 	);
 
 describe( 'Event Date Edit isLink', () => {
@@ -110,7 +159,7 @@ describe( 'Event Date Edit isLink', () => {
 		const { container } = renderEdit();
 
 		expect(
-			container.querySelector( 'a[href="#gatherpress-event-date-pseudo-link"]' )
+			container.querySelector( 'a[href="#gatherpress-event-date-pseudo-link"]' ),
 		).toBeNull();
 	} );
 
@@ -118,7 +167,7 @@ describe( 'Event Date Edit isLink', () => {
 		const { container } = renderEdit( { isLink: true } );
 
 		const anchor = container.querySelector(
-			'a[href="#gatherpress-event-date-pseudo-link"]'
+			'a[href="#gatherpress-event-date-pseudo-link"]',
 		);
 
 		expect( anchor ).not.toBeNull();
@@ -129,7 +178,7 @@ describe( 'Event Date Edit isLink', () => {
 		const { container } = renderEdit( { isLink: true } );
 
 		const anchor = container.querySelector(
-			'a[href="#gatherpress-event-date-pseudo-link"]'
+			'a[href="#gatherpress-event-date-pseudo-link"]',
 		);
 
 		// fireEvent returns false when preventDefault was called.
@@ -152,5 +201,236 @@ describe( 'Event Date Edit isLink', () => {
 		fireEvent.click( getByText( 'Link to event' ) );
 
 		expect( setAttributes ).toHaveBeenCalledWith( { isLink: false } );
+	} );
+
+	it( 'describes what the Link to event toggle does', () => {
+		const { getByText } = renderEdit();
+
+		expect(
+			getByText( 'Make the date a link to the event page.' ),
+		).toBeInTheDocument();
+	} );
+} );
+
+describe( 'Event Date Edit displayType', () => {
+	it( 'reads an empty displayType as both, the way render.php does', () => {
+		// Unreachable through the UI, since block.json defaults displayType to
+		// "both", but hand-authored and migrated markup can carry the empty
+		// string. `Event::get_display_datetime()` renders a full range for it,
+		// so the editor has to preview one or the author is shown something no
+		// viewer will get.
+		const { container } = renderEdit( { displayType: '' } );
+
+		expect( container.textContent ).toContain(
+			'2026-08-01 18:00 to 2026-08-01 20:00',
+		);
+	} );
+} );
+
+describe( 'Event Date Edit showViewerTime', () => {
+	it( 'renders the toggle disabled when timezone is not appended', () => {
+		const { getByText } = renderEdit( { showTimezone: 'no' } );
+		const toggle = getByText( 'Show viewer local time' );
+
+		expect( toggle ).toBeDefined();
+		expect( toggle.hasAttribute( 'disabled' ) ).toBe( true );
+	} );
+
+	it( 'renders the toggle enabled when timezone is appended', () => {
+		const setAttributes = jest.fn();
+		const { getByText } = renderEdit(
+			{ showTimezone: 'yes', showViewerTime: false },
+			setAttributes,
+		);
+		const toggle = getByText( 'Show viewer local time' );
+
+		expect( toggle.hasAttribute( 'disabled' ) ).toBe( false );
+		fireEvent.click( toggle );
+		expect( setAttributes ).toHaveBeenCalledWith( { showViewerTime: true } );
+	} );
+
+	it( 'renders the toggle disabled when event is all day', () => {
+		useSelect.mockReturnValueOnce( {
+			dateTimeStart: '2026-08-01 00:00:00',
+			dateTimeEnd: '2026-08-01 23:59:59',
+			timezone: 'UTC',
+			isAllDay: true,
+			isLoading: false,
+			isValidEvent: true,
+		} );
+
+		const { getByText } = renderEdit( { showTimezone: 'yes' } );
+		const toggle = getByText( 'Show viewer local time' );
+
+		expect( toggle.hasAttribute( 'disabled' ) ).toBe( true );
+		expect(
+			getByText( 'All-day events do not show viewer local time.' ),
+		).toBeInTheDocument();
+	} );
+
+	it( 'does not render the toggle when showViewerTimezone is disabled globally', () => {
+		mockSettings.showViewerTimezone = false;
+		const { queryByText } = renderEdit( { showTimezone: 'yes' } );
+
+		expect( queryByText( 'Show viewer local time' ) ).toBeNull();
+		mockSettings.showViewerTimezone = true;
+	} );
+} );
+
+describe( 'Event Date Edit documentation link', () => {
+	it( 'opens the formatting documentation in a new tab and says so', () => {
+		const { getByRole } = renderEdit();
+		const link = getByRole( 'link', {
+			name: /Date\/time formatting documentation/,
+		} );
+
+		expect( link.getAttribute( 'href' ) ).toBe(
+			'https://wordpress.org/documentation/article/customize-date-and-time-format/',
+		);
+		expect( link.getAttribute( 'target' ) ).toBe( '_blank' );
+		expect( link.getAttribute( 'rel' ) ).toContain( 'noopener' );
+		expect(
+			getByRole( 'link', { name: /opens in a new tab/ } ),
+		).toBe( link );
+	} );
+} );
+
+describe( 'Event Date Edit separator control', () => {
+	it( 'offers the localized default as a placeholder when unset', () => {
+		mockConfig = {};
+		const { getByLabelText } = renderEdit( { separator: '' } );
+		const input = getByLabelText( 'Separator' );
+
+		expect( input ).toHaveValue( '' );
+		expect( input ).toHaveAttribute( 'placeholder', 'to' );
+	} );
+
+	it( 'offers the filtered datetimeSeparator from config as a placeholder when unset', () => {
+		mockConfig = { datetimeSeparator: ' - ' };
+		const { getByLabelText } = renderEdit( { separator: '' } );
+		const input = getByLabelText( 'Separator' );
+
+		expect( input ).toHaveValue( '' );
+		expect( input ).toHaveAttribute( 'placeholder', ' - ' );
+	} );
+
+	it( 'leaves the placeholder empty when the filtered datetimeSeparator is empty', () => {
+		mockConfig = { datetimeSeparator: '' };
+		const { getByLabelText } = renderEdit( { separator: '' } );
+
+		expect( getByLabelText( 'Separator' ) ).toHaveAttribute( 'placeholder', '' );
+	} );
+
+	it( 'shows a custom separator as it was saved', () => {
+		const { getByLabelText } = renderEdit( { separator: 'UNTIL' } );
+
+		expect( getByLabelText( 'Separator' ) ).toHaveValue( 'UNTIL' );
+	} );
+
+	it( 'reports what is typed into the separator field', () => {
+		const setAttributes = jest.fn();
+		const { getByLabelText } = renderEdit( { separator: '' }, setAttributes );
+
+		fireEvent.change( getByLabelText( 'Separator' ), {
+			target: { value: 'bis' },
+		} );
+
+		expect( setAttributes ).toHaveBeenCalledWith( { separator: 'bis' } );
+	} );
+} );
+
+describe( 'Event Date Edit display rendering', () => {
+	// The date line on its own. With isLink on it is the only text inside the
+	// pseudo-link, so labels elsewhere in the block can't satisfy a match.
+	const dateLine = ( attributes ) =>
+		renderEdit( { isLink: true, ...attributes } ).container.querySelector(
+			'a[href="#gatherpress-event-date-pseudo-link"]',
+		).textContent;
+
+	it( 'renders the default separator when separator attribute is empty', () => {
+		mockConfig = {};
+
+		expect( dateLine( { separator: '' } ) ).toBe(
+			'2026-08-01 18:00 to 2026-08-01 20:00',
+		);
+	} );
+
+	it( 'renders the filtered datetimeSeparator from config when separator attribute is empty', () => {
+		mockConfig = { datetimeSeparator: '-' };
+
+		expect( dateLine( { separator: '' } ) ).toBe(
+			'2026-08-01 18:00 - 2026-08-01 20:00',
+		);
+	} );
+
+	it( 'renders no separator when the filtered datetimeSeparator is empty', () => {
+		mockConfig = { datetimeSeparator: '' };
+
+		expect( dateLine( { separator: '' } ) ).toBe(
+			'2026-08-01 18:00 2026-08-01 20:00',
+		);
+	} );
+
+	it( 'renders the custom separator when separator attribute is specified', () => {
+		mockConfig = { datetimeSeparator: '-' };
+
+		expect( dateLine( { separator: 'until' } ) ).toBe(
+			'2026-08-01 18:00 until 2026-08-01 20:00',
+		);
+	} );
+} );
+
+describe( 'Event Date Edit status', () => {
+	const eventData = {
+		dateTimeStart: '2026-08-01 18:00:00',
+		dateTimeEnd: '2026-08-01 20:00:00',
+		timezone: 'UTC',
+		isLoading: false,
+		isValidEvent: true,
+	};
+
+	it( 'marks a canceled date the way the frontend does', () => {
+		mockConfig = {
+			eventStatuses: {
+				scheduled: { label: 'Scheduled' },
+				canceled: { label: 'Canceled', strike_date: true },
+			},
+		};
+		useSelect.mockReturnValueOnce( { ...eventData, status: 'canceled' } );
+
+		renderEdit();
+
+		expect( useBlockProps ).toHaveBeenLastCalledWith(
+			expect.objectContaining( {
+				className: 'gatherpress-event-date--is-canceled gatherpress-event-date--is-struck',
+			} ),
+		);
+	} );
+
+	it( 'leaves a date uncrossed when its status does not strike it', () => {
+		mockConfig = {
+			eventStatuses: {
+				scheduled: { label: 'Scheduled' },
+				tentative: { label: 'Tentative' },
+			},
+		};
+		useSelect.mockReturnValueOnce( { ...eventData, status: 'tentative' } );
+
+		renderEdit();
+
+		expect( useBlockProps ).toHaveBeenLastCalledWith(
+			expect.objectContaining( { className: 'gatherpress-event-date--is-tentative' } ),
+		);
+	} );
+
+	it( 'leaves a scheduled date unmarked', () => {
+		mockConfig = {};
+		useSelect.mockReturnValueOnce( { ...eventData, status: 'scheduled' } );
+
+		renderEdit();
+
+		expect( useBlockProps ).toHaveBeenLastCalledWith(
+			expect.objectContaining( { className: undefined } ),
+		);
 	} );
 } );

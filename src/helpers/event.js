@@ -14,7 +14,8 @@ import { __, sprintf } from '@wordpress/i18n';
  */
 import { createMomentWithTimezone, getTimezone } from './datetime';
 import { getPostTypeLabel } from './editor';
-import { getVenueTaxonomy, getVenuePostType } from './venue';
+import { getVenueTaxonomy, getVenuePostType, getOnlineEventTermId } from './venue';
+import { findPublishedPostBySupport } from './post';
 
 /**
  * Opacity value for disabled form fields and elements.
@@ -85,7 +86,43 @@ export function usePostTypeSupports( support, postType = null ) {
 				support
 			];
 		},
-		[ support, postType ]
+		[ support, postType ],
+	);
+}
+
+/**
+ * Reports whether a post type's definition has loaded.
+ *
+ * `usePostTypeSupports` returns `false` both for a post type without the
+ * support and for one whose definition `getPostType()` has not resolved yet.
+ * Code that changes block attributes when a support is missing must check
+ * this hook first, or it acts on the first render, before the post type
+ * loads (#2495).
+ *
+ * The post type counts as loaded only once its record is in the store. A
+ * request that fails leaves no record, for example a 403 for a user who
+ * cannot edit that post type, or a post type not shown in REST. Its supports
+ * are unknown then, so code must not act as if they were missing.
+ *
+ * @since 0.36.1
+ *
+ * @param {string|null} postType Optional post type to check. Falls back to the editor post type.
+ *
+ * @return {boolean} True when the post type's definition has loaded, false otherwise.
+ */
+export function useIsPostTypeLoaded( postType = null ) {
+	return useSelect(
+		( wpSelect ) => {
+			const typeToCheck =
+				postType ?? wpSelect( 'core/editor' )?.getCurrentPostType();
+
+			if ( ! typeToCheck ) {
+				return false;
+			}
+
+			return !! wpSelect( 'core' ).getPostType( typeToCheck );
+		},
+		[ postType ],
 	);
 }
 
@@ -189,7 +226,7 @@ export function useHasEventActivityFilterSupport( sourcePostType ) {
 	return useSelect(
 		( wpSelect ) =>
 			resolveEventActivityFilterSupport( wpSelect, sourcePostType ),
-		[ sourcePostType ]
+		[ sourcePostType ],
 	);
 }
 
@@ -235,50 +272,10 @@ export function isRsvpPostType( postType = null ) {
  *                       found post isn't published.
  */
 export function findEventPostById( selectFunc, postId ) {
-	if ( ! postId ) {
-		return null;
-	}
-
-	// `context: 'edit'` is required because WP REST only exposes the
-	// `supports` field on post types in the edit context. Without it the
-	// loop below never matches any type and the override silently fails.
-	const postTypes = selectFunc( 'core' ).getPostTypes?.( {
-		per_page: -1,
-		context: 'edit',
-	} );
-	if ( ! Array.isArray( postTypes ) ) {
-		return null;
-	}
-
-	for ( const type of postTypes ) {
-		if ( ! type?.supports?.[ 'gatherpress-event-date' ] ) {
-			continue;
-		}
-		// Query by `include` filter rather than `getEntityRecord( id )` so a
-		// miss returns an empty array (HTTP 200) instead of a 404. The 404s
-		// are technically accurate but they show up in browser devtools and
-		// look like a real bug to anyone reading the console. Edit context
-		// matches the default `getEntityRecord` uses inside the editor and
-		// guarantees full `meta` in the response — callers like the
-		// event-date block read `post.meta.gatherpress_datetime_start`.
-		//
-		// The `Event_Query` REST filter detects the `include` param and
-		// skips its upcoming/past date filter so this lookup catches past
-		// events too (see `Event_Query::rest_query`).
-		const records = selectFunc( 'core' ).getEntityRecords(
-			'postType',
-			type.slug,
-			{ include: [ postId ], context: 'edit', per_page: 1 }
-		);
-		if ( Array.isArray( records ) && 0 < records.length ) {
-			const post = records[ 0 ];
-			if ( 'publish' === post?.status ) {
-				return post;
-			}
-		}
-	}
-
-	return null;
+	// The `Event_Query` REST filter detects the `include` param the lookup
+	// uses and skips its upcoming/past date filter, so past events are found
+	// too (see `Event_Query::rest_query`).
+	return findPublishedPostBySupport( selectFunc, postId, 'gatherpress-event-date' );
 }
 
 /**
@@ -351,7 +348,7 @@ const verifyPostIdIsValidEvent = ( selectFunc, postId, postType ) => {
 		const post = selectFunc( 'core' ).getEntityRecord(
 			'postType',
 			currentPostType,
-			postId
+			postId,
 		);
 		return !! post;
 	}
@@ -362,7 +359,7 @@ const verifyPostIdIsValidEvent = ( selectFunc, postId, postType ) => {
 		const post = selectFunc( 'core' ).getEntityRecord(
 			'postType',
 			lookupType,
-			postId
+			postId,
 		);
 		return !! post && 'publish' === post.status;
 	}
@@ -405,7 +402,7 @@ const verifyPostIdIsValidEvent = ( selectFunc, postId, postType ) => {
 export function hasValidEventId(
 	selectFuncOrPostId = null,
 	maybePostId = null,
-	maybePostType = null
+	maybePostType = null,
 ) {
 	// Back-compat shim: if the first argument isn't a function, assume the
 	// older `hasValidEventId( postId, postType )` shape and fall back to the
@@ -448,13 +445,13 @@ export function hasEventPast() {
 	const timezone = getTimezone();
 	const dateTimeEnd = createMomentWithTimezone(
 		select( 'gatherpress/datetime' )?.getDateTimeEnd?.() ?? '',
-		timezone
+		timezone,
 	);
 
 	// Get current time in the event timezone.
 	const now = createMomentWithTimezone(
 		moment().format( 'YYYY-MM-DD HH:mm:ss' ),
-		timezone
+		timezone,
 	);
 
 	return isEventPostType() && now.valueOf() > dateTimeEnd.valueOf();
@@ -484,7 +481,7 @@ export function hasEventPastNotice() {
 		const singularLabel = getPostTypeLabel(
 			'singular_name',
 			null,
-			__( 'Event', 'gatherpress' )
+			__( 'Event', 'gatherpress' ),
 		);
 
 		notices.createNotice(
@@ -492,12 +489,12 @@ export function hasEventPastNotice() {
 			sprintf(
 				/* translators: %s: Singular post type label, e.g. "Event". */
 				__( '%s has already passed.', 'gatherpress' ),
-				singularLabel
+				singularLabel,
 			),
 			{
 				id,
 				isDismissible: false,
-			}
+			},
 		);
 	}
 }
@@ -515,54 +512,44 @@ export function hasEventPastNotice() {
  * @return {boolean} True if the event has the online-event term, false otherwise.
  */
 export function hasOnlineEventTerm( postId = null ) {
-	// Derive the venue taxonomy from the current editor post type.
-	const currentPostType = select( 'core/editor' )?.getCurrentPostType?.();
-	const venueTaxonomy = getVenueTaxonomy( getVenuePostType( currentPostType ) );
+	let post = null;
+	let eventPostType = select( 'core/editor' )?.getCurrentPostType?.();
 
-	// Get the online-event term ID.
-	const onlineEventTerms = select( 'core' ).getEntityRecords(
-		'taxonomy',
-		venueTaxonomy,
-		{ slug: 'online-event', per_page: 1 }
-	);
-	const onlineEventTermId = onlineEventTerms?.[ 0 ]?.id;
+	// An override resolves the post across every event-supporting post
+	// type, so the venue taxonomy has to come from the post that was
+	// found rather than from whatever post type the editor has open.
+	if ( postId ) {
+		post = findEventPostById( select, postId );
+
+		if ( ! post ) {
+			return false;
+		}
+
+		eventPostType = post.type;
+	} else if ( ! isEventPostType() ) {
+		return false;
+	}
+
+	// Read the sentinel term ID from editor settings instead of issuing a
+	// taxonomy REST lookup on every render.
+	const venuePostType = getVenuePostType( eventPostType );
+	const onlineEventTermId = getOnlineEventTermId( venuePostType );
 
 	if ( ! onlineEventTermId ) {
 		return false;
 	}
 
-	// If postId is provided, check that specific post.
-	if ( postId ) {
-		const post = select( 'core' ).getEntityRecord(
-			'postType',
-			currentPostType || 'gatherpress_event',
-			postId
-		);
-		const venueTaxonomyIds = post?.[ venueTaxonomy ];
-
-		if ( ! venueTaxonomyIds?.length ) {
-			return false;
-		}
-
-		return venueTaxonomyIds.some(
-			( id ) => String( id ) === String( onlineEventTermId )
-		);
-	}
-
-	// Otherwise, check current post if it's an event.
-	if ( ! isEventPostType() ) {
-		return false;
-	}
-
-	const venueTaxonomyIds =
-		select( 'core/editor' ).getEditedPostAttribute( venueTaxonomy );
+	const venueTaxonomy = getVenueTaxonomy( venuePostType );
+	const venueTaxonomyIds = post
+		? post[ venueTaxonomy ]
+		: select( 'core/editor' ).getEditedPostAttribute( venueTaxonomy );
 
 	if ( ! venueTaxonomyIds?.length ) {
 		return false;
 	}
 
 	return venueTaxonomyIds.some(
-		( id ) => String( id ) === String( onlineEventTermId )
+		( id ) => String( id ) === String( onlineEventTermId ),
 	);
 }
 
@@ -622,7 +609,7 @@ export function isOpenRsvpEnabled( enableOpenRsvp ) {
  * @param {number|null} postId     Post ID from context or null.
  * @param {Object}      attributes Block attributes (may contain explicit postId override).
  *
- * @return {Object} Object containing maxGuestLimit, enableRsvp, and enableAnonymousRsvp.
+ * @return {Object} Object containing guestLimit, enableRsvp, and enableAnonymousRsvp.
  */
 export function getEventMeta( selectFunc, postId, attributes ) {
 	let maxLimit;
@@ -635,27 +622,23 @@ export function getEventMeta( selectFunc, postId, attributes ) {
 	const hasExplicitOverride = !! attributes?.postId;
 
 	if ( hasExplicitOverride && postId ) {
-		// Explicit override - fetch from post via core data store.
-		const post = selectFunc( 'core' ).getEntityRecord(
-			'postType',
-			'gatherpress_event',
-			postId
-		);
-		maxLimit = post?.meta?.gatherpress_max_guest_limit;
+		// Explicit override - resolve the post across every event-supporting
+		// post type rather than assuming the standard event slug.
+		const post = findEventPostById( selectFunc, postId );
+		maxLimit = post?.meta?.gatherpress_guest_limit;
 		// Stored as integer (0/1); undefined means not yet set, default to enabled.
 		enableRsvp = 0 !== post?.meta?.gatherpress_enable_rsvp;
 		enableAnonymous = Boolean(
-			post?.meta?.gatherpress_enable_anonymous_rsvp
+			post?.meta?.gatherpress_enable_anonymous_rsvp,
 		);
 	} else {
 		// No override - check if current post is an event and use editor for live edits.
 		const currentPostType = selectFunc( 'core/editor' )?.getCurrentPostType();
-		const isCurrentPostEvent = isEventPostType( currentPostType );
+		const isCurrentPostEvent = isEventSupportingType( selectFunc, currentPostType );
 
 		if ( isCurrentPostEvent ) {
-			const meta =
-				selectFunc( 'core/editor' ).getEditedPostAttribute( 'meta' );
-			maxLimit = meta?.gatherpress_max_guest_limit;
+			const meta = selectFunc( 'core/editor' ).getEditedPostAttribute( 'meta' );
+			maxLimit = meta?.gatherpress_guest_limit;
 			// Stored as integer (0/1); undefined means not yet set, default to enabled.
 			enableRsvp = 0 !== meta?.gatherpress_enable_rsvp;
 			enableAnonymous = Boolean( meta?.gatherpress_enable_anonymous_rsvp );
@@ -663,7 +646,7 @@ export function getEventMeta( selectFunc, postId, attributes ) {
 	}
 
 	return {
-		maxGuestLimit: maxLimit ?? 0,
+		guestLimit: maxLimit ?? 0,
 		enableRsvp: enableRsvp ?? true,
 		enableAnonymousRsvp: enableAnonymous ?? false,
 	};

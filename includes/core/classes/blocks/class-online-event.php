@@ -95,8 +95,12 @@ final class Online_Event {
 			return '';
 		}
 
-		// An override is honored on the same terms a direct visit would be.
-		if ( isset( $block['attrs']['postId'] ) && ! $this->can_view_post( $post_id ) ) {
+		// An override is honored on the same terms a direct visit would be, and a
+		// protected event in a Query Loop keeps where it takes place behind its password.
+		if (
+			( isset( $block['attrs']['postId'] ) && ! $this->can_view_post( $post_id ) )
+			|| post_password_required( $post_id )
+		) {
 			return '';
 		}
 
@@ -131,13 +135,20 @@ final class Online_Event {
 			return false;
 		}
 
-		return in_array( 'online-event', wp_list_pluck( $venue_terms, 'slug' ), true );
+		return ! empty(
+			array_filter(
+				$venue_terms,
+				static function ( $term ): bool {
+					return Setup::get_instance()->is_online_event_term_slug( $term->slug );
+				}
+			)
+		);
 	}
 
 	/**
 	 * Whether the current viewer could open an event directly.
 	 *
-	 * @since 0.36.0
+	 * @since 0.35.3
 	 *
 	 * @param int $post_id The post to check.
 	 *

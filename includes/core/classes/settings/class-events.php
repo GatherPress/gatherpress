@@ -91,7 +91,7 @@ final class Events extends Base {
 					'gatherpress'
 				),
 				'options'     => array(
-					'date_format'   => array(
+					'date_format'          => array(
 						'labels' => array(
 							'name' => __( 'Date Format', 'gatherpress' ),
 						),
@@ -104,17 +104,17 @@ final class Events extends Base {
 								),
 								Utility::post_type_label( 'name', Event::POST_TYPE )
 							),
-							'type'    => 'text',
-							'size'    => 'regular',
+							'type'    => 'format',
 							'options' => array(
 								'default' => get_option( 'date_format', 'l, F j, Y' ),
+								'choices' => 'date',
 							),
 							'preview' => array(
 								'template' => 'datetime-preview',
 							),
 						),
 					),
-					'time_format'   => array(
+					'time_format'          => array(
 						'labels' => array(
 							'name' => __( 'Time Format', 'gatherpress' ),
 						),
@@ -127,17 +127,17 @@ final class Events extends Base {
 								),
 								Utility::post_type_label( 'name', Event::POST_TYPE )
 							),
-							'type'    => 'text',
-							'size'    => 'regular',
+							'type'    => 'format',
 							'options' => array(
 								'default' => get_option( 'time_format', 'g:i A' ),
+								'choices' => 'time',
 							),
 							'preview' => array(
 								'template' => 'datetime-preview',
 							),
 						),
 					),
-					'show_timezone' => array(
+					'show_timezone'        => array(
 						'labels' => array(
 							'name' => __( 'Show Timezone', 'gatherpress' ),
 						),
@@ -154,6 +154,24 @@ final class Events extends Base {
 							'options' => array(
 								'default' => true,
 							),
+						),
+					),
+					'show_viewer_timezone' => array(
+						'labels'  => array(
+							'name' => __( 'Show Viewer Timezone', 'gatherpress' ),
+						),
+						'field'   => array(
+							'label'   => __(
+								'Display the event time in the viewer\'s timezone in a tooltip on the event datetime.',
+								'gatherpress'
+							),
+							'type'    => 'checkbox',
+							'options' => array(
+								'default' => false,
+							),
+						),
+						'show_if' => array(
+							'show_timezone' => array( 'not' => false ),
 						),
 					),
 				),
@@ -173,7 +191,7 @@ final class Events extends Base {
 					Utility::post_type_label( 'name', Event::POST_TYPE )
 				),
 				'options'     => array(
-					'post_or_event_date' => array(
+					'use_event_date_for_publish' => array(
 						'labels' => array(
 							'name' => __( 'Publish Date', 'gatherpress' ),
 						),

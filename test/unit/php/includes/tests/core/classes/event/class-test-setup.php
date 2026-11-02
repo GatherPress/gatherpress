@@ -9,12 +9,16 @@
 namespace GatherPress\Tests\Core\Event;
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status;
 use GatherPress\Core\Event\Admin_List;
 use GatherPress\Core\Event\Meta;
 use GatherPress\Core\Event\Query;
+use GatherPress\Core\Event\Reminder;
 use GatherPress\Core\Event\Rest_Api;
+use GatherPress\Core\Event\Scheduler;
 use GatherPress\Core\Event\Setup;
 use GatherPress\Core\Settings;
+use GatherPress\Core\Shadow_Source;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use stdClass;
@@ -30,6 +34,21 @@ use WP_REST_Request;
  * @coversDefaultClass \GatherPress\Core\Event\Setup
  */
 class Test_Setup extends Base {
+
+	/**
+	 * Wires the venue taxonomy back onto the event post types.
+	 *
+	 * Unregistering the event post type drops it from every taxonomy, and
+	 * later test classes need venues to stay attached to events.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function tearDown(): void {
+		parent::tearDown();
+		Shadow_Source::get_instance()->attach_taxonomies_to_object_types();
+	}
 
 	/**
 	 * Event\Setup now owns the instantiation of the Event\* sibling
@@ -64,9 +83,17 @@ class Test_Setup extends Base {
 				'pre_get_posts',
 				array( Query::get_instance(), 'prepare_event_query_before_execution' ),
 			),
+			Reminder::class   => array(
+				Reminder::SWEEP_ACTION,
+				array( Reminder::get_instance(), 'sweep' ),
+			),
 			Rest_Api::class   => array(
 				'rest_api_init',
 				array( Rest_Api::get_instance(), 'register_endpoints' ),
+			),
+			Scheduler::class  => array(
+				'transition_post_status',
+				array( Scheduler::get_instance(), 'handle_transition_post_status' ),
 			),
 		);
 
@@ -96,6 +123,12 @@ class Test_Setup extends Base {
 				'name'     => 'init',
 				'priority' => 10,
 				'callback' => array( $instance, 'register_post_type' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 11,
+				'callback' => array( $instance, 'register_status_taxonomy' ),
 			),
 			array(
 				'type'     => 'action',
@@ -156,6 +189,18 @@ class Test_Setup extends Base {
 				'name'     => 'block_editor_settings_all',
 				'priority' => 10,
 				'callback' => array( $instance, 'add_editor_settings' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'post_class',
+				'priority' => 10,
+				'callback' => array( $instance, 'add_status_post_class' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'get_term',
+				'priority' => 10,
+				'callback' => array( $instance, 'filter_event_status_term' ),
 			),
 		);
 
@@ -439,6 +484,36 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * Tests the editor learns whether the current user can email every user.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::add_editor_settings
+	 *
+	 * @return void
+	 */
+	public function test_add_editor_settings_exposes_can_email_all_users(): void {
+		$instance = Setup::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		$this->go_to( get_permalink( $event_id ) );
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'author' ) ) );
+		$settings = $instance->add_editor_settings( array() );
+		$this->assertFalse(
+			$settings['gatherpress']['config']['canEmailAllUsers'],
+			'Failed to assert an author cannot email every user.'
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'editor' ) ) );
+		$settings = $instance->add_editor_settings( array() );
+		$this->assertTrue(
+			$settings['gatherpress']['config']['canEmailAllUsers'],
+			'Failed to assert an editor can email every user.'
+		);
+	}
+
+	/**
 	 * Coverage for add_editor_settings method preserving existing settings.
 	 *
 	 * @since 0.36.0
@@ -467,6 +542,65 @@ class Test_Setup extends Base {
 			array( 'gatherpress_venue' ),
 			$settings['gatherpress']['config']['venuePostTypes'],
 			'Failed to assert a sibling config key survives.'
+		);
+	}
+
+	/**
+	 * Coverage for register_status_taxonomy method.
+	 *
+	 * @covers ::register_status_taxonomy
+	 *
+	 * @return void
+	 */
+	public function test_register_status_taxonomy(): void {
+		$instance = Setup::get_instance();
+
+		unregister_taxonomy( Event::TAXONOMY_STATUS );
+
+		$this->assertFalse(
+			taxonomy_exists( Event::TAXONOMY_STATUS ),
+			'Failed to assert the status taxonomy is unregistered to begin with.'
+		);
+
+		$instance->register_status_taxonomy();
+
+		$this->assertTrue(
+			taxonomy_exists( Event::TAXONOMY_STATUS ),
+			'Failed to assert the status taxonomy is registered.'
+		);
+
+		$taxonomy = get_taxonomy( Event::TAXONOMY_STATUS );
+
+		$this->assertFalse(
+			$taxonomy->public,
+			'Failed to assert the status taxonomy is not public.'
+		);
+		$this->assertFalse(
+			$taxonomy->publicly_queryable,
+			'Failed to assert the status taxonomy has no archive.'
+		);
+		$this->assertFalse(
+			$taxonomy->show_in_rest,
+			'Failed to assert the status is written only through its REST field.'
+		);
+		$this->assertFalse(
+			$taxonomy->show_ui,
+			'Failed to assert the vocabulary is not editable in the admin.'
+		);
+		$this->assertSame(
+			'Scheduled',
+			$taxonomy->default_term['name'],
+			'Failed to assert the default term is named after the default status.'
+		);
+		$this->assertSame(
+			'scheduled',
+			$taxonomy->default_term['slug'],
+			'Failed to assert the default term is the default status.'
+		);
+		$this->assertContains(
+			Event::POST_TYPE,
+			$taxonomy->object_type,
+			'Failed to assert the status taxonomy applies to events.'
 		);
 	}
 
@@ -746,7 +880,7 @@ class Test_Setup extends Base {
 		update_option(
 			'gatherpress_settings',
 			array(
-				'post_or_event_date' => '1',
+				'use_event_date_for_publish' => '1',
 			)
 		);
 
@@ -785,7 +919,7 @@ class Test_Setup extends Base {
 		update_option(
 			'gatherpress_settings',
 			array(
-				'post_or_event_date' => '1',
+				'use_event_date_for_publish' => '1',
 			)
 		);
 
@@ -816,7 +950,7 @@ class Test_Setup extends Base {
 		update_option(
 			'gatherpress_settings',
 			array(
-				'post_or_event_date' => '0',
+				'use_event_date_for_publish' => '0',
 			)
 		);
 
@@ -875,7 +1009,7 @@ class Test_Setup extends Base {
 		update_option(
 			'gatherpress_settings',
 			array(
-				'post_or_event_date' => '1',
+				'use_event_date_for_publish' => '1',
 			)
 		);
 
@@ -903,6 +1037,58 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * Coverage for render_event_post_date_block method with a date that starts with a digit.
+	 *
+	 * @covers ::render_event_post_date_block
+	 *
+	 * @return void
+	 */
+	public function test_render_event_post_date_block_with_numeric_date_format(): void {
+		$instance = Setup::get_instance();
+		$post_id  = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2025-06-15 10:00:00',
+				'datetime_end'   => '2025-06-15 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		update_option(
+			'gatherpress_settings',
+			array(
+				'use_event_date_for_publish' => '1',
+				'date_format'                => 'd/m/Y',
+			)
+		);
+
+		$this->go_to( get_permalink( $post_id ) );
+
+		// phpcs:ignore Generic.Files.LineLength.TooLong -- Block HTML fixture.
+		$block_content = '<div class="wp-block-post-date"><time datetime="2025-03-26T12:00:00+00:00">March 26, 2025</time></div>';
+		$block         = array(
+			'blockName' => 'core/post-date',
+			'attrs'     => array(),
+		);
+		$wp_block      = new WP_Block(
+			$block,
+			array( 'postId' => $post_id )
+		);
+
+		$result = $instance->render_event_post_date_block( $block_content, $block, $wp_block );
+
+		$this->assertStringContainsString(
+			'>15/06/2025',
+			$result,
+			'Should keep the leading digit of the event date.'
+		);
+	}
+
+	/**
 	 * Coverage for render_event_post_date_block method with setting disabled.
 	 *
 	 * @covers ::render_event_post_date_block
@@ -919,7 +1105,7 @@ class Test_Setup extends Base {
 		update_option(
 			'gatherpress_settings',
 			array(
-				'post_or_event_date' => '0',
+				'use_event_date_for_publish' => '0',
 			)
 		);
 
@@ -997,7 +1183,7 @@ class Test_Setup extends Base {
 		update_option(
 			'gatherpress_settings',
 			array(
-				'post_or_event_date' => '1',
+				'use_event_date_for_publish' => '1',
 			)
 		);
 
@@ -1492,7 +1678,7 @@ class Test_Setup extends Base {
 	 * string conversion" warning when `get_query_var( 'post_type' )` returns an
 	 * array on a multi-post-type archive query.
 	 *
-	 * @since 0.36.0
+	 * @since 0.35.4
 	 *
 	 * @covers ::handle_event_archive_redirect
 	 * @return void
@@ -2254,5 +2440,83 @@ class Test_Setup extends Base {
 			$settings['gatherpress']['config']['eventPostTypes'],
 			'Failed to assert the event post type reaches the editor settings.'
 		);
+	}
+
+	/**
+	 * Tests adding status classes to post_class for events.
+	 *
+	 * @covers ::add_status_post_class
+	 *
+	 * @return void
+	 */
+	public function test_add_status_post_class(): void {
+		$setup = Setup::get_instance();
+
+		// Non-event post should remain unchanged.
+		$post_id = $this->factory->post->create( array( 'post_type' => 'post' ) );
+		$classes = $setup->add_status_post_class( array( 'hentry' ), array(), $post_id );
+		$this->assertSame( array( 'hentry' ), $classes );
+
+		// Scheduled event gets the scheduled status class.
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$classes  = $setup->add_status_post_class( array( 'hentry' ), array(), $event_id );
+		$this->assertContains( 'gatherpress-event-status--is-scheduled', $classes );
+		$this->assertNotContains( 'gatherpress-event-status--is-struck', $classes );
+
+		// Cancelled event gets the status class.
+		( new Status( $event_id ) )->set( 'canceled' );
+		$classes = $setup->add_status_post_class( array( 'hentry' ), array(), $event_id );
+		$this->assertContains( 'gatherpress-event-status--is-canceled', $classes );
+		$this->assertContains( 'gatherpress-event-status--is-struck', $classes );
+	}
+
+	/**
+	 * Tests filter_event_status_term translates status term names dynamically.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::filter_event_status_term
+	 *
+	 * @return void
+	 */
+	public function test_filter_event_status_term(): void {
+		$instance = Setup::get_instance();
+
+		// Non-status taxonomy should remain untouched.
+		$tag_term = (object) array(
+			'term_id' => 123,
+			'name'    => 'Old Tag',
+			'slug'    => 'old-tag',
+		);
+		$result   = $instance->filter_event_status_term( $tag_term, 'post_tag' );
+		$this->assertSame( 'Old Tag', $result->name );
+
+		// Non-WP_Term should remain untouched.
+		$null_result = $instance->filter_event_status_term( null, Event::TAXONOMY_STATUS );
+		$this->assertNull( $null_result );
+
+		// Status taxonomy term with known status should update label.
+		$term       = new \WP_Term(
+			(object) array(
+				'term_id'  => 456,
+				'name'     => 'canceled',
+				'slug'     => 'canceled',
+				'taxonomy' => Event::TAXONOMY_STATUS,
+			)
+		);
+		$translated = $instance->filter_event_status_term( $term, Event::TAXONOMY_STATUS );
+		$this->assertSame( 'Canceled', $translated->name );
+
+		// Status taxonomy term with unknown status falls back to the default status label.
+		$unknown_term = new \WP_Term(
+			(object) array(
+				'term_id'  => 789,
+				'name'     => 'Unknown',
+				'slug'     => 'unknown-status',
+				'taxonomy' => Event::TAXONOMY_STATUS,
+			)
+		);
+		$unchanged    = $instance->filter_event_status_term( $unknown_term, Event::TAXONOMY_STATUS );
+		$this->assertSame( 'Scheduled', $unchanged->name );
 	}
 }

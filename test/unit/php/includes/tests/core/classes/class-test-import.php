@@ -134,6 +134,25 @@ class Test_Import extends Base {
 			Utility::invoke_hidden_method( $instance, 'validate', array( $post_data_raw ) ),
 			'Failed to assert that validation passes for valid post data.'
 		);
+
+		$post_data_raw = array( 'post_type' => 'post' );
+		$this->assertFalse(
+			Utility::invoke_hidden_method( $instance, 'validate', array( $post_data_raw ) ),
+			'Failed to assert that validation fails for a post type without event-date support.'
+		);
+
+		$post_type = 'gp_import_custom';
+		register_post_type( $post_type, array( 'supports' => array( 'title', Event::SUPPORT ) ) );
+
+		$post_data_raw = array( 'post_type' => $post_type );
+		$valid         = Utility::invoke_hidden_method( $instance, 'validate', array( $post_data_raw ) );
+
+		unregister_post_type( $post_type );
+
+		$this->assertTrue(
+			$valid,
+			'Failed to assert that validation passes for a custom post type with event-date support.'
+		);
 	}
 
 	/**

@@ -15,6 +15,7 @@ namespace GatherPress\Core\Settings;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Geocoding;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
@@ -87,14 +88,14 @@ final class Venues extends Base {
 	 */
 	protected function get_sections(): array {
 		return array(
-			'maps' => array(
+			'maps'      => array(
 				'name'        => __( 'Maps', 'gatherpress' ),
 				'description' => __(
 					'Configure the mapping platform and defaults applied to new venue map blocks.',
 					'gatherpress'
 				),
 				'options'     => array(
-					'map_platform'                   => array(
+					'map_platform'                => array(
 						'labels'      => array(
 							'name' => __( 'Mapping Platform', 'gatherpress' ),
 						),
@@ -114,7 +115,45 @@ final class Venues extends Base {
 							),
 						),
 					),
-					'carto_api_key'                  => array(
+					'custom_map_tile_url'         => array(
+						'labels'      => array(
+							'name' => __( 'Custom Tile Layer URL', 'gatherpress' ),
+						),
+						'description' => __(
+							// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string for the full guidance sentence.
+							'Optional. XYZ tile URL template (e.g. https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png) for a self-hosted or third-party tile server. Leave empty to use the built-in CARTO tiles.',
+							// phpcs:enable Generic.Files.LineLength.TooLong
+							'gatherpress'
+						),
+						'field'       => array(
+							'label' => __( 'Tile layer URL:', 'gatherpress' ),
+							'type'  => 'text',
+							'size'  => 'regular',
+						),
+						'show_if'     => array(
+							'map_platform' => 'osm',
+						),
+					),
+					'custom_map_tile_attribution' => array(
+						'labels'      => array(
+							'name' => __( 'Custom Attribution', 'gatherpress' ),
+						),
+						'description' => __(
+							// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string for the full guidance sentence.
+							'Optional. Plain-text attribution shown alongside the map. Leave empty for the built-in OpenStreetMap/CARTO credit.',
+							// phpcs:enable Generic.Files.LineLength.TooLong
+							'gatherpress'
+						),
+						'field'       => array(
+							'label' => __( 'Attribution text:', 'gatherpress' ),
+							'type'  => 'text',
+							'size'  => 'regular',
+						),
+						'show_if'     => array(
+							'map_platform' => 'osm',
+						),
+					),
+					'carto_api_key'               => array(
 						'labels'      => array(
 							'name' => __( 'CARTO API Key', 'gatherpress' ),
 						),
@@ -122,7 +161,7 @@ final class Venues extends Base {
 							sprintf(
 								// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string for the full key guidance sentence.
 								/* translators: %s: link to CARTO's free basemap key request form. */
-								__( 'Required. Without a key, map tiles are watermarked. Free up to 5 million tiles a month. %s.', 'gatherpress' ),
+								__( 'Required for the default tile provider. Without a key, map tiles are watermarked. Free up to 5 million tiles a month. Ignored when a custom tile layer URL is set above. %s.', 'gatherpress' ),
 								// phpcs:enable Generic.Files.LineLength.TooLong
 								'<a href="https://carto.com/basemaps/apikey/"'
 								. ' target="_blank" rel="noopener noreferrer">'
@@ -145,7 +184,7 @@ final class Venues extends Base {
 							'map_platform' => 'osm',
 						),
 					),
-					'google_maps_api_key'            => array(
+					'google_maps_api_key'         => array(
 						'labels'      => array(
 							'name' => __( 'Google Maps API Key', 'gatherpress' ),
 						),
@@ -176,7 +215,7 @@ final class Venues extends Base {
 							'map_platform' => 'google',
 						),
 					),
-					'venue_map_default_type'         => array(
+					'venue_map_type'              => array(
 						'labels'      => array(
 							'name' => __( 'Default Map Type', 'gatherpress' ),
 						),
@@ -201,7 +240,7 @@ final class Venues extends Base {
 							'map_platform' => 'google',
 						),
 					),
-					'venue_map_default_render_mode'  => array(
+					'venue_map_render_mode'       => array(
 						'labels'      => array(
 							'name' => __( 'Default Render Mode', 'gatherpress' ),
 						),
@@ -221,7 +260,7 @@ final class Venues extends Base {
 							),
 						),
 					),
-					'venue_map_default_zoom'         => array(
+					'venue_map_zoom'              => array(
 						'labels'      => array(
 							'name' => __( 'Default Zoom Level', 'gatherpress' ),
 						),
@@ -240,7 +279,7 @@ final class Venues extends Base {
 							),
 						),
 					),
-					'venue_map_default_height'       => array(
+					'venue_map_height'            => array(
 						'labels'      => array(
 							'name' => __( 'Default Height', 'gatherpress' ),
 						),
@@ -261,7 +300,7 @@ final class Venues extends Base {
 							),
 						),
 					),
-					'venue_map_default_aspect_ratio' => array(
+					'venue_map_aspect_ratio'      => array(
 						'labels'      => array(
 							'name' => __( 'Default Aspect Ratio', 'gatherpress' ),
 						),
@@ -284,7 +323,7 @@ final class Venues extends Base {
 							),
 						),
 					),
-					'venue_map_default_scale'        => array(
+					'venue_map_scale'             => array(
 						'labels'      => array(
 							'name' => __( 'Default Scale', 'gatherpress' ),
 						),
@@ -307,7 +346,51 @@ final class Venues extends Base {
 					),
 				),
 			),
-			'urls' => array(
+			'geocoding' => array(
+				'name'        => __( 'Geocoding', 'gatherpress' ),
+				'description' => __(
+					'Configure the address lookup service used for venue autocomplete and geocoding.',
+					'gatherpress'
+				),
+				'options'     => array(
+					'geocoding_provider_url'   => array(
+						'labels'      => array(
+							'name' => __( 'Geocoding API URL', 'gatherpress' ),
+						),
+						'description' => __(
+							// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string for the full guidance sentence.
+							'Base URL of a Photon-API-compatible geocoding service (a self-hosted Photon instance or compatible drop-in). Leave empty to use the public Photon service.',
+							// phpcs:enable Generic.Files.LineLength.TooLong
+							'gatherpress'
+						),
+						'field'       => array(
+							'label'   => __( 'Geocoding API URL:', 'gatherpress' ),
+							'type'    => 'text',
+							'size'    => 'regular',
+							'options' => array(
+								'default' => Geocoding::PHOTON_API_URL,
+							),
+						),
+					),
+					'geocoding_country_filter' => array(
+						'labels'      => array(
+							'name' => __( 'Country Code Filter', 'gatherpress' ),
+						),
+						'description' => __(
+							// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string for the full guidance sentence.
+							'Optional. Comma-separated ISO 3166-1 alpha-2 country codes (e.g. "us,ca") to restrict geocoding results to. Leave empty for no restriction.',
+							// phpcs:enable Generic.Files.LineLength.TooLong
+							'gatherpress'
+						),
+						'field'       => array(
+							'label' => __( 'Country codes:', 'gatherpress' ),
+							'type'  => 'text',
+							'size'  => 'regular',
+						),
+					),
+				),
+			),
+			'urls'      => array(
 				'name'        => __( 'Permalinks', 'gatherpress' ),
 				'description' => __( 'Change permalink bases.', 'gatherpress' ),
 				'options'     => array(

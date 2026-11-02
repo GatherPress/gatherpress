@@ -22,6 +22,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
 use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Flag\Check_In;
 use GatherPress\Core\Rsvp\Response\Status;
 use WP_List_Table;
 
@@ -114,13 +115,14 @@ final class List_Table extends WP_List_Table {
 	 */
 	public function get_columns(): array {
 		return array(
-			'cb'       => '<input type="checkbox" />',
-			'attendee' => __( 'Attendee', 'gatherpress' ),
-			'response' => __( 'Response', 'gatherpress' ),
-			'type'     => __( 'Type', 'gatherpress' ),
-			'event'    => Utility::post_type_label( 'singular_name', $this->post_type ),
-			'approved' => __( 'Status', 'gatherpress' ),
-			'date'     => __( 'Date', 'gatherpress' ),
+			'cb'         => '<input type="checkbox" />',
+			'attendee'   => __( 'Attendee', 'gatherpress' ),
+			'response'   => __( 'Response', 'gatherpress' ),
+			'type'       => __( 'Type', 'gatherpress' ),
+			'event'      => Utility::post_type_label( 'singular_name', $this->post_type ),
+			'approved'   => __( 'Status', 'gatherpress' ),
+			'checked_in' => __( 'Checked in', 'gatherpress' ),
+			'date'       => __( 'Date', 'gatherpress' ),
 		);
 	}
 
@@ -324,13 +326,13 @@ final class List_Table extends WP_List_Table {
 	 * @return string[] Status slugs, empty when unfiltered.
 	 */
 	public function get_filtered_responses(): array {
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( empty( $_REQUEST['response'] ) || ! is_string( $_REQUEST['response'] ) ) {
+		$response = Utility::get_request_input( 'response' );
+
+		if ( empty( $response ) ) {
 			return array();
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$requested = explode( ',', sanitize_text_field( wp_unslash( $_REQUEST['response'] ) ) );
+		$requested = explode( ',', $response );
 		$allowed   = array_map(
 			static fn( Status $status ): string => $status->value,
 			Status::filterable()
@@ -350,13 +352,8 @@ final class List_Table extends WP_List_Table {
 	 * @return int The event post ID, or 0 when unfiltered.
 	 */
 	public function get_filtered_post_id(): int {
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( ! isset( $_REQUEST['post_id'] ) || ! is_scalar( $_REQUEST['post_id'] ) ) {
-			return 0;
-		}
-
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		return absint( wp_unslash( $_REQUEST['post_id'] ) );
+		// get_http_input() reads a non-scalar as '', which absint() turns into 0.
+		return absint( Utility::get_request_input( 'post_id' ) );
 	}
 
 	/**
@@ -512,7 +509,6 @@ final class List_Table extends WP_List_Table {
 	private function get_rsvps( ?int $per_page = null, int $page_number = 1 ): array {
 		$rsvp_query = Query::get_instance();
 
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended
 		if ( null === $per_page ) {
 			$per_page = self::DEFAULT_PER_PAGE;
 		}
@@ -526,9 +522,9 @@ final class List_Table extends WP_List_Table {
 			'post_type' => $this->post_type,
 		);
 
-		if ( isset( $_REQUEST['s'] ) && ! empty( $_REQUEST['s'] ) ) {
-			$search = sanitize_text_field( wp_unslash( $_REQUEST['s'] ) );
+		$search = Utility::get_request_input( 's' );
 
+		if ( ! empty( $search ) ) {
 			if ( filter_var( $search, FILTER_VALIDATE_IP ) ) {
 				$args['author_ip'] = $search;
 			} else {
@@ -552,8 +548,10 @@ final class List_Table extends WP_List_Table {
 			}
 		}
 
-		if ( isset( $_REQUEST['user_id'] ) && ! empty( $_REQUEST['user_id'] ) ) {
-			$args['user_id'] = intval( $_REQUEST['user_id'] );
+		$user_id = Utility::get_request_input( 'user_id' );
+
+		if ( ! empty( $user_id ) ) {
+			$args['user_id'] = intval( $user_id );
 		}
 
 		$post_id = $this->get_filtered_post_id();
@@ -562,12 +560,9 @@ final class List_Table extends WP_List_Table {
 			$args['post_id'] = $post_id;
 		}
 
-		if (
-			isset( $_REQUEST['status'] ) &&
-			in_array( $_REQUEST['status'], array( 'approved', 'pending', 'spam' ), true )
-		) {
-			$status = sanitize_text_field( wp_unslash( $_REQUEST['status'] ) );
+		$status = Utility::get_request_input( 'status' );
 
+		if ( in_array( $status, array( 'approved', 'pending', 'spam' ), true ) ) {
 			if ( 'approved' === $status ) {
 				$args['status'] = 'approve';
 			} elseif ( 'spam' === $status ) {
@@ -577,13 +572,11 @@ final class List_Table extends WP_List_Table {
 			}
 		}
 
-		$orderby = isset( $_REQUEST['orderby'] )
-			? sanitize_text_field( wp_unslash( $_REQUEST['orderby'] ) )
-			: 'comment_date';
-		$order   = isset( $_REQUEST['order'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['order'] ) ) : 'DESC';
+		$orderby = Utility::get_request_input( 'orderby' );
+		$order   = Utility::get_request_input( 'order' );
 
-		$args['orderby'] = $orderby;
-		$args['order']   = $order;
+		$args['orderby'] = '' !== $orderby ? $orderby : 'comment_date';
+		$args['order']   = '' !== $order ? $order : 'DESC';
 
 		$items = $rsvp_query->get_rsvps( $this->add_response_filter( $args ) );
 
@@ -596,7 +589,6 @@ final class List_Table extends WP_List_Table {
 			},
 			$items
 		);
-		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
 	/**
@@ -611,7 +603,6 @@ final class List_Table extends WP_List_Table {
 	 * @return int The total number of RSVP comments matching the current filters.
 	 */
 	private function get_rsvp_count(): int {
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended
 		$rsvp_query = Query::get_instance();
 		$args       = array(
 			'count'     => true,
@@ -619,12 +610,15 @@ final class List_Table extends WP_List_Table {
 			'post_type' => $this->post_type,
 		);
 
-		if ( isset( $_REQUEST['user_id'] ) && ! empty( $_REQUEST['user_id'] ) ) {
-			$args['user_id'] = intval( $_REQUEST['user_id'] );
+		$user_id = Utility::get_request_input( 'user_id' );
+
+		if ( ! empty( $user_id ) ) {
+			$args['user_id'] = intval( $user_id );
 		}
 
-		if ( isset( $_REQUEST['s'] ) && ! empty( $_REQUEST['s'] ) ) {
-			$search_term    = sanitize_text_field( wp_unslash( $_REQUEST['s'] ) );
+		$search_term = Utility::get_request_input( 's' );
+
+		if ( ! empty( $search_term ) ) {
 			$args['search'] = $search_term;
 		}
 
@@ -634,12 +628,9 @@ final class List_Table extends WP_List_Table {
 			$args['post_id'] = $post_id;
 		}
 
-		if (
-			isset( $_REQUEST['status'] ) &&
-			in_array( $_REQUEST['status'], array( 'approved', 'pending', 'spam' ), true )
-		) {
-			$status = sanitize_text_field( wp_unslash( $_REQUEST['status'] ) );
+		$status = Utility::get_request_input( 'status' );
 
+		if ( in_array( $status, array( 'approved', 'pending', 'spam' ), true ) ) {
 			if ( 'approved' === $status ) {
 				$args['status'] = 'approve';
 			} elseif ( 'spam' === $status ) {
@@ -650,7 +641,6 @@ final class List_Table extends WP_List_Table {
 		}
 
 		return $rsvp_query->get_rsvps( $this->add_response_filter( $args ) );
-		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
 	/**
@@ -722,26 +712,38 @@ final class List_Table extends WP_List_Table {
 				// this table has no label for.
 				$output = $statuses[ $approved ] ?? '-';
 				break;
+			case 'checked_in':
+				$output = ( new Check_In( (int) $item['comment_ID'] ) )->has()
+					? __( 'Yes', 'gatherpress' )
+					: '-';
+				break;
 			case 'date':
-				return get_comment_date( 'Y/m/d \a\t g:i a', $comment_id );
+				$output = sprintf(
+					/* translators: 1: RSVP date, 2: RSVP time. */
+					__( '%1$s at %2$s', 'gatherpress' ),
+					/* translators: RSVP date format. See https://www.php.net/manual/datetime.format.php */
+					get_comment_date( __( 'Y/m/d', 'gatherpress' ), $comment_id ),
+					/* translators: RSVP time format. See https://www.php.net/manual/datetime.format.php */
+					get_comment_date( __( 'g:i a', 'gatherpress' ), $comment_id )
+				);
+				break;
 			case 'type':
 				$terms = wp_get_object_terms( $comment_id, Provider::TAXONOMY );
 
 				// Prefer the authoritative provider term when present, but
 				// fall back to inferring the provider from the comment so
 				// the column is correct for rows that never carried the
-				// term — the open/email front-end form doesn't stamp it,
+				// term - the open/email front-end form doesn't stamp it,
 				// and RSVPs saved before the term existed predate it.
 				// An unregistered taxonomy yields WP_Error rather than a term list.
 				if ( is_wp_error( $terms ) || empty( $terms ) ) {
 					$provider = $this->infer_provider_from_item( $item );
-
-					return $provider ? $provider::get_label() : '';
+					$output   = $provider ? $provider::get_label() : '';
+				} else {
+					$provider = Provider_Registry::get_instance()->get( $terms[0]->slug );
+					$output   = $provider ? $provider::get_label() : '-';
 				}
-
-				$provider = Provider_Registry::get_instance()->get( $terms[0]->slug );
-
-				return $provider ? $provider::get_label() : '-';
+				break;
 			default:
 				// Default assignment already covers this arm.
 				break;
@@ -863,35 +865,47 @@ final class List_Table extends WP_List_Table {
 	 */
 	public function column_attendee( array $item ): string {
 		// Use current URL to preserve all filtering parameters.
+		// INPUT_SERVER is unreliable under FastCGI.
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		$current_url = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
-		$nonce       = wp_create_nonce( Rsvp::COMMENT_TYPE );
-		$actions     = array();
-		$is_approved = ( '1' === $item['comment_approved'] );
-		$is_spam     = ( 'spam' === $item['comment_approved'] );
+		$current_url   = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
+		$nonce         = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$actions       = array();
+		$is_approved   = ( '1' === $item['comment_approved'] );
+		$is_spam       = ( 'spam' === $item['comment_approved'] );
+		$is_checked_in = ( new Check_In( (int) $item['comment_ID'] ) )->has();
 
 		$action_definitions = array(
-			'approve'   => array(
+			'approve'    => array(
 				'condition' => ! $is_approved && ! $is_spam,
 				'label'     => __( 'Approve', 'gatherpress' ),
 				'action'    => 'approve',
 			),
-			'unapprove' => array(
+			'unapprove'  => array(
 				'condition' => $is_approved,
 				'label'     => __( 'Unapprove', 'gatherpress' ),
 				'action'    => 'unapprove',
 			),
-			'spam'      => array(
+			'check_in'   => array(
+				'condition' => $is_approved && ! $is_checked_in,
+				'label'     => __( 'Check in', 'gatherpress' ),
+				'action'    => 'check_in',
+			),
+			'uncheck_in' => array(
+				'condition' => $is_approved && $is_checked_in,
+				'label'     => __( 'Not Checked In', 'gatherpress' ),
+				'action'    => 'uncheck_in',
+			),
+			'spam'       => array(
 				'condition' => ! $is_spam,
 				'label'     => __( 'Spam', 'gatherpress' ),
 				'action'    => 'spam',
 			),
-			'not-spam'  => array(
+			'not-spam'   => array(
 				'condition' => $is_spam,
 				'label'     => __( 'Not Spam', 'gatherpress' ),
 				'action'    => 'unspam',
 			),
-			'delete'    => array(
+			'delete'     => array(
 				'condition'    => true,
 				'label'        => __( 'Delete', 'gatherpress' ),
 				'action'       => 'delete',
@@ -970,11 +984,13 @@ final class List_Table extends WP_List_Table {
 		}
 
 		return array(
-			'approve'   => __( 'Approve', 'gatherpress' ),
-			'unapprove' => __( 'Unapprove', 'gatherpress' ),
-			'spam'      => __( 'Mark as Spam', 'gatherpress' ),
-			'unspam'    => __( 'Not Spam', 'gatherpress' ),
-			'delete'    => __( 'Delete', 'gatherpress' ),
+			'approve'    => __( 'Approve', 'gatherpress' ),
+			'unapprove'  => __( 'Unapprove', 'gatherpress' ),
+			'check_in'   => __( 'Mark as Checked In', 'gatherpress' ),
+			'uncheck_in' => __( 'Not Checked In', 'gatherpress' ),
+			'spam'       => __( 'Mark as Spam', 'gatherpress' ),
+			'unspam'     => __( 'Not Spam', 'gatherpress' ),
+			'delete'     => __( 'Delete', 'gatherpress' ),
 		);
 	}
 
@@ -1040,8 +1056,10 @@ final class List_Table extends WP_List_Table {
 		// action.
 		$nonces = array();
 
-		if ( isset( $_REQUEST['_wpnonce'] ) ) {
-			$nonces[] = sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) );
+		$nonce = Utility::get_request_input( '_wpnonce' );
+
+		if ( '' !== $nonce ) {
+			$nonces[] = $nonce;
 		}
 
 		$nonce_actions = array(
@@ -1071,6 +1089,8 @@ final class List_Table extends WP_List_Table {
 
 		$rsvp_ids = array();
 
+		// Direct read on purpose: the value can be an array, and
+		// Utility::get_http_input() only returns strings.
 		if ( isset( $_REQUEST['gatherpress_rsvp_id'] ) ) {
 			// `map_deep` casts via intval on every leaf — handles both the
 			// scalar (single-row delete link) and array (bulk-action checkbox)
@@ -1094,6 +1114,18 @@ final class List_Table extends WP_List_Table {
 		if ( 'delete' === $current_action ) {
 			foreach ( $rsvp_ids as $rsvp_id ) {
 				wp_delete_comment( $rsvp_id, true );
+			}
+		} elseif ( 'check_in' === $current_action || 'uncheck_in' === $current_action ) {
+			foreach ( $rsvp_ids as $rsvp_id ) {
+				$check_in = new Check_In( $rsvp_id );
+
+				if ( 'check_in' === $current_action ) {
+					$check_in->add();
+
+					continue;
+				}
+
+				$check_in->remove();
 			}
 		} elseif ( isset( $action_status_map[ $current_action ] ) ) {
 			$status = $action_status_map[ $current_action ];
@@ -1144,18 +1176,17 @@ final class List_Table extends WP_List_Table {
 
 		$post_id = $this->get_filtered_post_id();
 
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- View state only, no data modification.
 		// Check for current view status (doesn't require nonce).
-		if ( isset( $_REQUEST['user_id'] ) ) {
-			$user_id = absint( $_REQUEST['user_id'] );
+		$user_id = Utility::get_request_input( 'user_id' );
+		$status  = Utility::get_request_input( 'status', 'sanitize_key' );
 
-			if ( get_current_user_id() === $user_id ) {
+		if ( '' !== $user_id ) {
+			if ( get_current_user_id() === absint( $user_id ) ) {
 				$current = 'mine';
 			}
-		} elseif ( isset( $_REQUEST['status'] ) ) {
-			$current = sanitize_key( wp_unslash( $_REQUEST['status'] ) );
+		} elseif ( '' !== $status ) {
+			$current = $status;
 		}
-		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		$base_url_args = array(
 			'post_type' => $this->post_type,

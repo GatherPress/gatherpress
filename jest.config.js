@@ -23,7 +23,7 @@ module.exports = {
 	transform: {
 		...defaultConfig.transform,
 		'\\.mjs$': require.resolve(
-			'@wordpress/scripts/config/babel-transform'
+			'@wordpress/scripts/config/babel-transform',
 		),
 	},
 	moduleFileExtensions: [ 'js', 'jsx', 'mjs', 'ts', 'tsx', 'json', 'node' ],

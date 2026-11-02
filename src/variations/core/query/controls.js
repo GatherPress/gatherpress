@@ -5,7 +5,7 @@ import { addFilter } from '@wordpress/hooks';
 import { InspectorControls } from '@wordpress/block-editor';
 import { PanelBody } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
-import { useEffect } from '@wordpress/element';
+import { useEffect, useRef } from '@wordpress/element';
 import { registerPlugin } from '@wordpress/plugins';
 import { useDispatch } from '@wordpress/data';
 
@@ -19,8 +19,31 @@ import {
 	EventQueryControlsSlotFill,
 	EventInheritedQueryControlsSlotFill,
 } from './components';
-import { usePostTypeSupports } from '../../../helpers/event';
+import { useIsPostTypeLoaded, usePostTypeSupports } from '../../../helpers/event';
 import { usePostTypeLabel } from '../../../helpers/editor';
+
+/**
+ * Builds the block name the event query panel gives an event query loop.
+ *
+ * @since 0.36.1
+ *
+ * @param {string} eventQuery  The `gatherpress_event_query` mode, 'upcoming' or 'past'.
+ * @param {string} pluralLabel Plural post type label, e.g. "Events".
+ *
+ * @return {string} The block name, e.g. "Upcoming Events".
+ */
+const getEventQueryBlockName = ( eventQuery, pluralLabel ) => {
+	const queryLabel = ( 'upcoming' === eventQuery )
+		? __( 'Upcoming', 'gatherpress' )
+		: __( 'Past', 'gatherpress' );
+
+	return sprintf(
+		/* translators: %1$s: 'Upcoming' or 'Past', %2$s: Plural post type label, e.g. "Events". */
+		__( '%1$s %2$s', 'gatherpress' ),
+		queryLabel,
+		pluralLabel,
+	);
+};
 
 /**
  * Determines if the current block instance is the GatherPress event query variation.
@@ -56,11 +79,11 @@ const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
 	const { namespace } = attributes;
 	const supportsEventDate = usePostTypeSupports(
 		'gatherpress-event-date',
-		postType
+		postType,
 	);
 	const supportsShadowSource = usePostTypeSupports(
 		'gatherpress-shadow-source',
-		postType
+		postType,
 	);
 	const supportsGatherPressQuery = supportsEventDate || supportsShadowSource;
 	useEffect( () => {
@@ -113,76 +136,133 @@ const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
  * @return {Element|null} The InspectorControls panel, or null when not applicable.
  */
 export const EventQueryControlsPanel = ( props ) => {
-	const { updateBlockAttributes } = useDispatch( 'core/block-editor' );
+	const {
+		updateBlockAttributes,
+		__unstableMarkNextChangeAsNotPersistent: markNextChangeAsNotPersistent,
+	} = useDispatch( 'core/block-editor' );
 	const { clientId } = props;
-	const gatherpressEventQuery =
-		props.attributes?.query?.gatherpress_event_query || 'upcoming';
+	const gatherpressEventQuery = props.attributes?.query?.gatherpress_event_query || 'upcoming';
+	const metadata = props.attributes?.metadata;
 	const queryPostType = props.attributes?.query?.postType;
 	const queryPostTypeSupportsEvents = usePostTypeSupports(
 		'gatherpress-event-date',
-		queryPostType
+		queryPostType,
 	);
 	const queryPostTypeSupportsShadowSource = usePostTypeSupports(
 		'gatherpress-shadow-source',
-		queryPostType
+		queryPostType,
 	);
+
+	// `usePostTypeSupports` is also false while the post type is still
+	// loading, so both effects below wait for the post type before they
+	// change the block. Without this, opening the editor could strip the
+	// event query vars and the block name from an event loop (#2495).
+	const isQueryPostTypeLoaded = useIsPostTypeLoaded( queryPostType );
 
 	// Read the plural label so the "Block List" label reflects what the currently
 	// selected post type is actually called — a custom event-supporting post type with
 	// `name => 'Productions'` shows "Upcoming (or Past) Productions".
+	const fallbackPluralLabel = __( 'Events', 'gatherpress' );
 	const pluralLabel = usePostTypeLabel(
 		'name',
 		queryPostType,
-		__( 'Events', 'gatherpress' )
+		fallbackPluralLabel,
 	);
+
+	// The plural label of the last naming pass, so a name generated for the
+	// previous post type is still recognized after a post type switch.
+	const lastPluralLabel = useRef( null );
 
 	// Update block name with post type label and query mode
 	useEffect( () => {
-		const queryLabel =
-			'upcoming' === gatherpressEventQuery
-				? __( 'Upcoming', 'gatherpress' )
-				: __( 'Past', 'gatherpress' );
+		if ( ! isQueryPostTypeLoaded ) {
+			return;
+		}
 
-		let blockName = sprintf(
-			/* translators: %1$s: 'Upcoming' or 'Past', %2$s: Plural post type label, e.g. "Events". */
-			__( '%1$s %2$s', 'gatherpress' ),
-			queryLabel,
-			pluralLabel
-		);
+		const currentName = metadata?.name ?? '';
+
+		// Names this effect can have generated: for the current post type,
+		// for the post type before a switch, and for the fallback label,
+		// which an earlier version wrote while the post type was loading.
+		// The names are built in the current user's locale and from the
+		// current labels, so a name generated in another locale, or before a
+		// site changed the label, counts as an author's name and stays.
+		const generatedNames = [
+			pluralLabel,
+			lastPluralLabel.current,
+			fallbackPluralLabel,
+		]
+			.filter( Boolean )
+			.flatMap( ( label ) => [
+				getEventQueryBlockName( 'upcoming', label ),
+				getEventQueryBlockName( 'past', label ),
+			] );
+
+		lastPluralLabel.current = pluralLabel;
+
+		// Keep a name that the author gave the block.
+		if ( currentName && ! generatedNames.includes( currentName ) ) {
+			return;
+		}
 
 		// Unset if not a supporting post type.
-		if ( ! queryPostTypeSupportsEvents ) {
-			blockName = '';
+		const blockName = queryPostTypeSupportsEvents
+			? getEventQueryBlockName( gatherpressEventQuery, pluralLabel )
+			: '';
+
+		if ( blockName === currentName ) {
+			return;
+		}
+
+		// Keep the other metadata (for example block bindings), because
+		// `updateBlockAttributes` replaces the whole `metadata` attribute.
+		// An unset name drops the key, as core's rename modal does, and
+		// metadata with no keys left is removed.
+		const { name: removedName, ...otherMetadata } = metadata ?? {};
+		const nextMetadata = blockName
+			? { ...otherMetadata, name: blockName }
+			: otherMetadata;
+
+		// Naming an unnamed loop fills in a default, so it must not count
+		// as an edit, or opening a loop saved without a name (for example
+		// before 0.34.0, or from a pattern) shows unsaved changes. Core's
+		// Query block marks its own defaults the same way. The name is
+		// saved with the next save.
+		if ( ! currentName ) {
+			markNextChangeAsNotPersistent();
 		}
 
 		updateBlockAttributes( clientId, {
-			metadata: {
-				name: blockName,
-			},
+			metadata: Object.keys( nextMetadata ).length ? nextMetadata : undefined,
 		} );
 	}, [
+		isQueryPostTypeLoaded,
 		queryPostTypeSupportsEvents,
 		pluralLabel,
+		fallbackPluralLabel,
 		gatherpressEventQuery,
+		metadata,
 		clientId,
 		updateBlockAttributes,
+		markNextChangeAsNotPersistent,
 	] );
 
 	// Strip the event-only query vars when the selected post type doesn't
 	// support event dates, and the activity-filter vars when it doesn't
-	// support shadow sources — each group under its own gate. `orderBy:
+	// support shadow sources, each group under its own gate. `orderBy:
 	// 'datetime'` (and 'rand') are added to the REST orderby enum only for
 	// event-date post types, so leaving them on a plain post/page/venue query
 	// makes the core endpoint reject the request (rest_invalid_param) and the
-	// Query Loop spins forever (#1756). The gatherpress_event_query /
-	// include_unfinished vars are harmless on those endpoints but meaningless
-	// there, so drop them too. The activity vars do not break or narrow a
-	// `post` query, but they silently reactivate activity filtering when the
-	// user later selects a shadow-source type again, so they go as well.
-	// Guarded on the vars still being present so this doesn't re-fire in a
-	// loop.
+	// Query Loop spins forever (#1756). The other vars are meaningless there,
+	// and the activity vars would silently turn the filter back on when a
+	// shadow-source type is selected again. Guarded on the vars still being
+	// present so this doesn't re-fire in a loop, and on the post type having
+	// loaded so an event loop isn't stripped on open (#2495).
 	useEffect( () => {
-		if ( queryPostTypeSupportsEvents && queryPostTypeSupportsShadowSource ) {
+		if (
+			! isQueryPostTypeLoaded ||
+			( queryPostTypeSupportsEvents && queryPostTypeSupportsShadowSource )
+		) {
 			return;
 		}
 
@@ -237,7 +317,7 @@ export const EventQueryControlsPanel = ( props ) => {
 		// check above while nothing is actually stripped; skip the write when
 		// the remaining query is unchanged so this doesn't re-fire in a loop.
 		const unchanged = Object.keys( remainingQuery ).every(
-			( key ) => remainingQuery[ key ] === query[ key ]
+			( key ) => remainingQuery[ key ] === query[ key ],
 		);
 		if (
 			unchanged &&
@@ -248,6 +328,7 @@ export const EventQueryControlsPanel = ( props ) => {
 
 		updateBlockAttributes( clientId, { query: remainingQuery } );
 	}, [
+		isQueryPostTypeLoaded,
 		queryPostTypeSupportsEvents,
 		queryPostTypeSupportsShadowSource,
 		props.attributes,
@@ -261,7 +342,7 @@ export const EventQueryControlsPanel = ( props ) => {
 	const singularLabel = usePostTypeLabel(
 		'singular_name',
 		queryPostType,
-		__( 'Event', 'gatherpress' )
+		__( 'Event', 'gatherpress' ),
 	);
 
 	// The panel stays open when the queried post type declares either
@@ -275,13 +356,11 @@ export const EventQueryControlsPanel = ( props ) => {
 
 	return (
 		<InspectorControls>
-			<PanelBody
-				title={ sprintf(
-					/* translators: %s: Singular post type label, e.g. "Event". */
-					__( '%s Query Settings', 'gatherpress' ),
-					singularLabel
-				) }
-			>
+			<PanelBody title={ sprintf(
+				/* translators: %s: Singular post type label, e.g. "Event". */
+				__( '%s Query Settings', 'gatherpress' ),
+				singularLabel,
+			) }>
 				{ false === props.attributes.query.inherit ? (
 					<EventQueryControls.Slot fillProps={ { ...props } } />
 				) : (

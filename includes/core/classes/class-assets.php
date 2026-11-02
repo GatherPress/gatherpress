@@ -30,6 +30,27 @@ final class Assets {
 	use Singleton;
 
 	/**
+	 * Public JavaScript surfaces, mapped to the script that publishes each one.
+	 *
+	 * The key is the handle a companion plugin depends on. It follows the
+	 * convention that `@gatherpress/<surface>` in an import resolves to
+	 * `window.gatherpress.<surface>` in camelCase, published by the
+	 * `gatherpress-<surface>` handle, so one webpack rule covers every surface
+	 * the way `@wordpress/*` does for core.
+	 *
+	 * The value is the script that actually writes the global. Registering
+	 * the public handle as an alias of it, the way core registers `jquery` over
+	 * `jquery-core`, keeps the promised name stable whichever bundle turns out
+	 * to do the publishing.
+	 *
+	 * @since 0.36.0
+	 * @var array<string, string>
+	 */
+	const PUBLIC_SCRIPT_HANDLES = array(
+		'gatherpress-query-controls' => 'gatherpress-query',
+	);
+
+	/**
 	 * An array used to cache data assets.
 	 *
 	 * This property stores data assets in an array for efficient access and management.
@@ -71,6 +92,14 @@ final class Assets {
 	protected array $block_variation_names = array();
 
 	/**
+	 * Flag indicating whether tooltip frontend assets have been enqueued.
+	 *
+	 * @since TBD
+	 * @var bool
+	 */
+	protected bool $tooltip_assets_enqueued = false;
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -97,6 +126,8 @@ final class Assets {
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_variation_assets' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_aql_integration' ) );
 		add_action( 'init', array( $this, 'register_variation_assets' ) );
+		// After the variations, since each public handle is an alias of one.
+		add_action( 'init', array( $this, 'register_public_script_handles' ), 11 );
 		add_action( 'wp_head', array( $this, 'add_interactivity_state' ) );
 		// Set priority to 11 to not conflict with media modal.
 		add_action( 'admin_footer', array( $this, 'event_communication_modal' ), 11 );
@@ -121,8 +152,8 @@ final class Assets {
 	 * "Moment Timezone has no data for UTC+0" console warnings from the
 	 * block editor's panels and any plugin using `@wordpress/date`.
 	 *
-	 * We can't reach into WP core, but we can append an inline script
-	 * after its `setSettings` call to re-call it with a valid zone.
+	 * We can't reach into WP core, but a script that depends on `wp-date`
+	 * runs after its `setSettings` call and can re-call it with a valid zone.
 	 *
 	 * In the admin, `wp-date` is registered on essentially every screen
 	 * (block editor panels use it), so we enqueue it ourselves and patch
@@ -143,6 +174,7 @@ final class Assets {
 	 * an IANA zone in Settings → General.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Enqueues the built shim instead of inlining a file from `includes/`.
 	 *
 	 * @return void
 	 */
@@ -161,31 +193,15 @@ final class Assets {
 			wp_enqueue_script( 'wp-date' );
 		}
 
-		$script_path = GATHERPRESS_CORE_PATH . '/includes/templates/admin/timezone-shim.js';
+		$asset = $this->get_asset_data( 'timezone_shim' );
 
-		// The shim file ships with the plugin; this guard is defensive in case
-		// someone strips template assets from a distribution.
-		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
-		// @codeCoverageIgnoreStart
-		if ( ! file_exists( $script_path ) ) {
-			return;
-		}
-		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
-		// @codeCoverageIgnoreEnd
-
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reading a plugin-local static file.
-		$script = file_get_contents( $script_path );
-
-		// file_exists() above does not rule out an unreadable file.
-		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
-		// @codeCoverageIgnoreStart
-		if ( false === $script ) {
-			return;
-		}
-		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
-		// @codeCoverageIgnoreEnd
-
-		wp_add_inline_script( 'wp-date', $script, 'after' );
+		wp_enqueue_script(
+			'gatherpress-timezone-shim',
+			$this->build . 'timezone_shim.js',
+			array_merge( $asset['dependencies'], array( 'wp-date' ) ),
+			$asset['version'],
+			true
+		);
 	}
 
 	/**
@@ -240,17 +256,18 @@ final class Assets {
 	}
 
 	/**
-	 * Register the shared utility stylesheet and enqueue it in the block editor.
+	 * Register the shared utility stylesheet and the new-tab notice script,
+	 * and enqueue the stylesheet in the block editor.
 	 *
 	 * Hooked on `enqueue_block_assets`, which fires in two contexts with
 	 * different responsibilities:
 	 *
-	 * - Frontend: registers the `gatherpress-utility-style` handle so other
-	 *   code paths can enqueue it by name. The actual frontend enqueue is
-	 *   delegated to `maybe_enqueue_styles()` on the `render_block` filter,
-	 *   which only fires the enqueue when a `gatherpress/*` block is being
-	 *   rendered — so frontends that don't use a gatherpress block don't
-	 *   load the CSS.
+	 * - Frontend: registers the `gatherpress-utility-style` and
+	 *   `gatherpress-new-tab-notice` handles so other code paths can enqueue
+	 *   them by name. The actual frontend enqueue is delegated to
+	 *   `maybe_enqueue_styles()` on the `render_block` filter, which only
+	 *   fires the enqueue when a `gatherpress/*` block is being rendered - so
+	 *   frontends that don't use a gatherpress block load neither.
 	 *
 	 * - Block editor: also enqueues unconditionally so the stylesheet lands
 	 *   inside the editor canvas iframe. `enqueue_block_assets` is the
@@ -260,18 +277,29 @@ final class Assets {
 	 *   iframe incorrectly" warning in newer WordPress (issue #1645).
 	 *
 	 * @since 0.34.0
+	 * @since 0.36.0 Also registers the new-tab notice script.
 	 *
 	 * @return void
 	 */
 	public function register_block_assets(): void {
-		$asset = $this->get_asset_data( 'utility_style' );
+		$style  = $this->get_asset_data( 'utility_style' );
+		$script = $this->get_asset_data( 'new_tab_notice' );
 
 		wp_register_style(
 			'gatherpress-utility-style',
 			$this->build . 'utility_style.css',
-			$asset['dependencies'],
-			$asset['version']
+			$style['dependencies'],
+			$style['version']
 		);
+
+		wp_register_script(
+			'gatherpress-new-tab-notice',
+			$this->build . 'new_tab_notice.js',
+			$script['dependencies'],
+			$script['version'],
+			true
+		);
+		wp_set_script_translations( 'gatherpress-new-tab-notice', 'gatherpress' );
 
 		if ( is_admin() ) {
 			wp_enqueue_style( 'gatherpress-utility-style' );
@@ -281,7 +309,12 @@ final class Assets {
 	/**
 	 * Conditionally enqueue utility styles if GatherPress blocks are rendered.
 	 *
+	 * The new-tab notice script rides along: PHP announces the links it
+	 * renders, and the script covers links a block creates or retargets
+	 * afterwards, so no block has to handle this itself.
+	 *
 	 * @since 0.33.0
+	 * @since 0.36.0 Also enqueues the new-tab notice script.
 	 *
 	 * @param string               $block_content The block content.
 	 * @param array<string, mixed> $block         The block settings.
@@ -312,6 +345,7 @@ final class Assets {
 		foreach ( $prefixes as $prefix ) {
 			if ( str_starts_with( $block['blockName'], (string) $prefix ) ) {
 				wp_enqueue_style( 'gatherpress-utility-style' );
+				wp_enqueue_script( 'gatherpress-new-tab-notice' );
 				break;
 			}
 		}
@@ -347,13 +381,11 @@ final class Assets {
 	 * @return void
 	 */
 	protected function enqueue_tooltip_assets(): void {
-		static $enqueued = false;
-
-		if ( $enqueued ) {
+		if ( $this->tooltip_assets_enqueued ) {
 			return;
 		}
 
-		$enqueued = true;
+		$this->tooltip_assets_enqueued = true;
 
 		// Enqueue utility styles which include tooltip styles.
 		wp_enqueue_style( 'gatherpress-utility-style' );
@@ -427,46 +459,11 @@ final class Assets {
 		);
 
 		if ( in_array( $hook, $setting_hooks, true ) ) {
-			// Need to load block styling for some dynamic fields.
-			wp_enqueue_style( 'wp-edit-blocks' );
-
-			// Shared utility classes (`gatherpress--is-hidden`, etc.) used by
-			// settings UI like the `show_if` row visibility toggle. The handle
-			// is registered on the frontend in `register_block_assets`; re-
-			// register here so it's available on admin settings pages too.
-			$utility_asset = $this->get_asset_data( 'utility_style' );
-
-			wp_register_style(
-				'gatherpress-utility-style',
-				$this->build . 'utility_style.css',
-				$utility_asset['dependencies'],
-				$utility_asset['version']
-			);
-			wp_enqueue_style( 'gatherpress-utility-style' );
-
-			$asset = $this->get_asset_data( 'settings_style' );
-
-			wp_enqueue_style(
-				'gatherpress-settings-style',
-				$this->build . 'style-settings_style.css',
-				$asset['dependencies'],
-				$asset['version']
-			);
-
-			$asset = $this->get_asset_data( 'settings' );
-
-			wp_enqueue_script(
-				'gatherpress-settings',
-				$this->build . 'settings.js',
-				$asset['dependencies'],
-				$asset['version'],
-				true
-			);
-
-			wp_set_script_translations( 'gatherpress-settings', 'gatherpress' );
+			$this->enqueue_settings_assets();
 		}
 
-		if ( 'profile.php' === $hook ) {
+		// The profile fields show on your own profile and on another user's.
+		if ( in_array( $hook, array( 'profile.php', 'user-edit.php' ), true ) ) {
 			$asset = $this->get_asset_data( 'profile' );
 
 			wp_enqueue_script(
@@ -478,7 +475,66 @@ final class Assets {
 			);
 
 			wp_set_script_translations( 'gatherpress-profile', 'gatherpress' );
+
+			$asset = $this->get_asset_data( 'profile_style' );
+
+			wp_enqueue_style(
+				'gatherpress-profile-style',
+				$this->build . 'style-profile_style.css',
+				$asset['dependencies'],
+				$asset['version']
+			);
 		}
+	}
+
+	/**
+	 * Enqueue the scripts and styles for the GatherPress settings tabs.
+	 *
+	 * Runs on every per-site settings tab, and from the network settings
+	 * page's `load-` action, since that page's hook isn't a settings tab's.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function enqueue_settings_assets(): void {
+		// Need to load block styling for some dynamic fields.
+		wp_enqueue_style( 'wp-edit-blocks' );
+
+		// Shared utility classes (`gatherpress--is-hidden`, etc.) used by
+		// settings UI like the `show_if` row visibility toggle. The handle
+		// is registered on the frontend in `register_block_assets`; re-
+		// register here so it's available on admin settings pages too.
+		$utility_asset = $this->get_asset_data( 'utility_style' );
+
+		wp_register_style(
+			'gatherpress-utility-style',
+			$this->build . 'utility_style.css',
+			$utility_asset['dependencies'],
+			$utility_asset['version']
+		);
+		wp_enqueue_style( 'gatherpress-utility-style' );
+
+		$asset = $this->get_asset_data( 'settings_style' );
+
+		wp_enqueue_style(
+			'gatherpress-settings-style',
+			$this->build . 'style-settings_style.css',
+			$asset['dependencies'],
+			$asset['version']
+		);
+
+		$asset = $this->get_asset_data( 'settings' );
+
+		wp_enqueue_script(
+			'gatherpress-settings',
+			$this->build . 'settings.js',
+			$asset['dependencies'],
+			$asset['version'],
+			true
+		);
+
+		wp_set_script_translations( 'gatherpress-settings', 'gatherpress' );
 	}
 
 	/**
@@ -607,6 +663,25 @@ final class Assets {
 	public function register_variation_assets(): void {
 		foreach ( $this->get_block_variations() as $variation ) {
 			$this->register_asset( $variation, 'variations/core/' );
+		}
+	}
+
+	/**
+	 * Register the handles companion plugins depend on for public surfaces.
+	 *
+	 * Each is an alias with no source of its own, so depending on it pulls in
+	 * the script that publishes the surface. A publisher missing from the build
+	 * leaves its alias unregistered rather than pointing at nothing.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return void
+	 */
+	public function register_public_script_handles(): void {
+		foreach ( self::PUBLIC_SCRIPT_HANDLES as $handle => $publisher ) {
+			if ( wp_script_is( $publisher, 'registered' ) ) {
+				wp_register_script( $handle, false, array( $publisher ), GATHERPRESS_VERSION, true );
+			}
 		}
 	}
 

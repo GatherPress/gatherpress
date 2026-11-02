@@ -23,9 +23,9 @@ if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 // Fall back to get_the_ID() for standalone usage outside venue.
 $gatherpress_current_post_id = ! empty( $block->context['postId'] )
 	? (int) $block->context['postId']
-	: get_the_ID();
+	: (int) get_the_ID();
 
-$gatherpress_current_post_type = get_post_type( $gatherpress_current_post_id );
+$gatherpress_is_event = post_type_supports( (string) get_post_type( $gatherpress_current_post_id ), Event::SUPPORT );
 
 // Get the link text from block attributes, default to "Online event".
 $gatherpress_link_text = $attributes['linkText'] ?? '';
@@ -38,7 +38,7 @@ $gatherpress_full_url          = '';
 $gatherpress_online_event_link = '';
 
 // Only events have online event links.
-if ( Event::POST_TYPE === $gatherpress_current_post_type ) {
+if ( $gatherpress_is_event ) {
 	$gatherpress_full_url          = get_post_meta( $gatherpress_current_post_id, 'gatherpress_online_event_link', true );
 	$gatherpress_event             = new Event( $gatherpress_current_post_id );
 	$gatherpress_online_event_link = $gatherpress_event->maybe_get_online_event_link();

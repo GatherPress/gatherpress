@@ -38,8 +38,17 @@ The settings screen is organized into tabs: **Events**, **Venues**, **RSVP**, **
 These settings choose the mapping platform and the defaults applied to newly added venue map blocks. Changing a default does not alter maps already placed in your content.
 
 - **Mapping Platform** selects **OpenStreetMap** (the default, no account needed) or **Google Maps**. Selecting Google Maps reveals a field for your Google Maps API key.
+- **Custom Tile Layer URL** and **Custom Attribution** point OpenStreetMap maps at a self-hosted or third-party XYZ tile server instead of the built-in CARTO tiles, and let you replace the credit line shown alongside the map. Leave both empty to use the defaults.
+- **CARTO API Key** is required for the default (unmodified) OpenStreetMap tiles; it's ignored once a custom tile layer URL is set.
 - **Default Render Mode** chooses between an interactive map and a static map image for new blocks.
-- **Default Zoom Level**, **Default Height**, **Default Width**, **Default Aspect Ratio**, and **Default Scale** set the initial appearance of new venue map blocks. Height and width can be left empty for automatic sizing derived from the aspect ratio.
+- **Default Map Type** (Google Maps only), **Default Zoom Level**, **Default Height**, **Default Aspect Ratio**, and **Default Scale** set the initial appearance of new venue map blocks. Height can be left empty for automatic sizing derived from the aspect ratio.
+
+### Geocoding
+
+These settings control the address lookup service used for venue autocomplete and geocoding.
+
+- **Geocoding API URL** points at a Photon-API-compatible geocoding service: a self-hosted [Photon](https://photon.komoot.io/) instance or compatible drop-in. Leave empty to use the public Photon service.
+- **Country Code Filter** restricts geocoding results to a comma-separated list of ISO 3166-1 alpha-2 country codes (e.g. `us,ca`). Leave empty for no restriction.
 
 ### Venue permalink
 
@@ -55,13 +64,21 @@ Default RSVP settings for new events; most can be overridden per event.
 
 - **RSVP Mode** controls how RSVP works across your site (see [RSVP system](user/rsvp-system.md#rsvp-mode)):
     - **All Events**: RSVP is enabled for every event.
-    - **Per event (default on)**: each event gets its own toggle in the editor; new events start with RSVP enabled.
-    - **Per event (default off)**: each event gets its own toggle; new events start with RSVP disabled.
+    - **Per Event (default enabled)**: each event gets its own toggle in the editor; new events start with RSVP enabled.
+    - **Per Event (default disabled)**: each event gets its own toggle; new events start with RSVP disabled.
     - **Disabled**: RSVP is turned off sitewide, and the RSVP blocks and admin screens are hidden.
 - **Open RSVP** allows visitors to RSVP without a site account, using email verification (see [Open RSVP](user/rsvp-system.md#open-rsvp-without-an-account)).
-- **Maximum Attendance Limit** caps the total number of people per event. Set to 0 for no limit.
+- **Capacity** caps the total number of people per event. Set to 0 for no limit.
 - **Maximum Number of Guests** sets how many additional guests each attendee may bring.
 - **Anonymous RSVP** allows users to RSVP without revealing their identity.
+
+### Notifications
+
+The emails GatherPress sends attendees on its own (see [Emails](user/emails.md)).
+
+- **Waiting List Emails** emails attendees when a spot opens up and they move off the waiting list. It is on by default.
+- **Reminder Emails** sends attendees a reminder before an event starts. It is on by default.
+- **Reminder Timing** has a checkbox for each time a reminder can go out: a day before (checked by default) and an hour before. Check both to remind attendees twice. The `gatherpress_event_reminder_timings` filter can add or remove timings.
 
 ### Cleanup
 

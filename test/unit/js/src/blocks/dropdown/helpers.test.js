@@ -44,7 +44,7 @@ describe( 'useIsBlockOrDescendantSelected', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useIsBlockOrDescendantSelected( testClientId )
+			useIsBlockOrDescendantSelected( testClientId ),
 		);
 
 		expect( result.current ).toBe( true );
@@ -67,7 +67,7 @@ describe( 'useIsBlockOrDescendantSelected', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useIsBlockOrDescendantSelected( testClientId )
+			useIsBlockOrDescendantSelected( testClientId ),
 		);
 
 		expect( result.current ).toBe( true );
@@ -90,7 +90,7 @@ describe( 'useIsBlockOrDescendantSelected', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useIsBlockOrDescendantSelected( testClientId )
+			useIsBlockOrDescendantSelected( testClientId ),
 		);
 
 		expect( result.current ).toBe( false );
@@ -111,7 +111,7 @@ describe( 'useIsBlockOrDescendantSelected', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useIsBlockOrDescendantSelected( testClientId )
+			useIsBlockOrDescendantSelected( testClientId ),
 		);
 
 		expect( result.current ).toBe( false );
@@ -134,7 +134,7 @@ describe( 'useIsBlockOrDescendantSelected', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useIsBlockOrDescendantSelected( testClientId )
+			useIsBlockOrDescendantSelected( testClientId ),
 		);
 
 		expect( result.current ).toBe( false );
@@ -162,7 +162,7 @@ describe( 'useIsBlockOrDescendantSelected', () => {
 		} );
 
 		const { result } = renderHook( () =>
-			useIsBlockOrDescendantSelected( testClientId )
+			useIsBlockOrDescendantSelected( testClientId ),
 		);
 
 		expect( result.current ).toBe( true );
@@ -177,25 +177,25 @@ describe( 'getSelectedItemReset', () => {
 
 	it( 'returns null when select mode is disabled', () => {
 		expect(
-			getSelectedItemReset( false, items( 3 ), 5, 'Dropdown' )
+			getSelectedItemReset( false, items( 3 ), 5, 'Dropdown' ),
 		).toBeNull();
 	} );
 
 	it( 'returns null when the selected index still points at a valid item', () => {
 		expect(
-			getSelectedItemReset( true, items( 3 ), 2, 'Dropdown' )
+			getSelectedItemReset( true, items( 3 ), 2, 'Dropdown' ),
 		).toBeNull();
 	} );
 
 	it( 'falls back to the first item when the selected item was removed but others remain', () => {
 		expect(
-			getSelectedItemReset( true, items( 3 ), 4, 'Dropdown' )
+			getSelectedItemReset( true, items( 3 ), 4, 'Dropdown' ),
 		).toEqual( { selectedIndex: 0 } );
 	} );
 
 	it( 'falls back to the first item when the selected index is negative', () => {
 		expect(
-			getSelectedItemReset( true, items( 3 ), -1, 'Dropdown' )
+			getSelectedItemReset( true, items( 3 ), -1, 'Dropdown' ),
 		).toEqual( { selectedIndex: 0 } );
 	} );
 
@@ -209,7 +209,7 @@ describe( 'getSelectedItemReset', () => {
 
 	it( 'treats a non-array innerBlocks value as an empty dropdown', () => {
 		expect(
-			getSelectedItemReset( true, undefined, 0, 'Dropdown' )
+			getSelectedItemReset( true, undefined, 0, 'Dropdown' ),
 		).toEqual( {
 			actAsSelect: false,
 			selectedIndex: 0,

@@ -1,4 +1,0 @@
-Significance: patch
-Type: changed
-
-Define class constants for post type supports across Event, Rsvp, Venue, and Shadow_Source, replacing string literals across internal call sites.

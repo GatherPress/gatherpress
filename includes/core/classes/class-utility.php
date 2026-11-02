@@ -23,6 +23,8 @@ use WP_HTML_Tag_Processor;
  * Essential utility functions for the GatherPress plugin.
  *
  * @since 0.27.0
+ *
+ * @phpstan-type FormatToken array{type: 'literal'|'char', value: string}
  */
 final class Utility {
 
@@ -300,7 +302,7 @@ final class Utility {
 		int $object_id,
 		int $user_id
 	): bool {
-		return user_can( $user_id, 'edit_post', $object_id );
+		return user_can( $user_id, Capability::EDIT_POST, $object_id );
 	}
 
 	/**
@@ -395,10 +397,36 @@ final class Utility {
 	}
 
 	/**
+	 * Tokenize a PHP date format into escaped text and format characters.
+	 *
+	 * A backslash escapes the character after it, so a run of escaped
+	 * characters, such as German '\U\h\r', is one literal token. Every other
+	 * character is a token of its own.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $format The PHP date format to tokenize.
+	 *
+	 * @return array<int, FormatToken> The tokens, in order.
+	 */
+	public static function tokenize_date_format( string $format ): array {
+		preg_match_all( '/(?:\\\\.?)+|./s', $format, $matches );
+
+		return array_map(
+			static fn ( string $value ): array => array(
+				'type'  => str_starts_with( $value, '\\' ) ? 'literal' : 'char',
+				'value' => $value,
+			),
+			$matches[0]
+		);
+	}
+
+	/**
 	 * Strip everything but the time out of a display format.
 	 *
-	 * The inverse of `remove_time_format_chars()`: 'F j, Y g:i a' keeps
-	 * 'g:i a'.
+	 * Leaves the time behind: 'F j, Y g:i a' keeps 'g:i a', and German
+	 * 'j. F Y, H:i \U\h\r' keeps 'H:i \U\h\r'. A format with no time keeps
+	 * nothing.
 	 *
 	 * @since 0.36.0
 	 *
@@ -407,16 +435,17 @@ final class Utility {
 	 * @return string The time-only format.
 	 */
 	public static function remove_non_time_format_chars( string $format ): string {
-		return trim( str_replace( self::non_time_format_chars(), '', $format ) );
+		return self::split_date_time_format( $format )['time'];
 	}
 
 	/**
 	 * Strip the time out of a display format.
 	 *
 	 * Leaves the date behind, along with whatever separated it from the
-	 * time: 'F j, Y g:i a' keeps 'F j, Y'. A format that was only ever a
-	 * time has nothing left to render, so it reports none rather than the
-	 * punctuation between the parts it lost.
+	 * time: 'F j, Y g:i a' keeps 'F j, Y', and Spanish 'j \d\e F \d\e Y, H:i'
+	 * keeps 'j \d\e F \d\e Y'. A format that was only ever a time has nothing
+	 * left to render, so it reports none rather than the punctuation between
+	 * the parts it lost.
 	 *
 	 * @since 0.36.0
 	 *
@@ -426,10 +455,209 @@ final class Utility {
 	 *                no date survives it.
 	 */
 	public static function remove_time_format_chars( string $format ): string {
-		return trim(
-			str_replace( self::time_format_chars(), '', $format ),
-			" \t\n\r\0\x0B:,-/."
+		return self::split_date_time_format( $format )['date'];
+	}
+
+	/**
+	 * Split a display format into its date part and its time part.
+	 *
+	 * The part that comes first ends where the other begins, so escaped text
+	 * stays with the part it sits in: German '\U\h\r' in 'j. F Y, H:i \U\h\r'
+	 * belongs to the time. Escaped words and spaces that lead from the date
+	 * into the time, such as German '\u\m' in 'j. F Y \u\m H:i', belong to
+	 * neither part. Timezone characters are left out of both.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $format A PHP date format.
+	 *
+	 * @return array{date: string, time: string} The date part and the time part.
+	 */
+	private static function split_date_time_format( string $format ): array {
+		$timezone_chars = array_intersect( self::time_format_chars(), self::non_time_format_chars() );
+		$date_chars     = array_diff( self::non_time_format_chars(), $timezone_chars, array( ',' ) );
+		$time_chars     = array_diff( self::time_format_chars(), $timezone_chars );
+		$tokens         = self::tokenize_date_format( $format );
+		$date_at        = self::find_format_char( $tokens, $date_chars );
+		$time_at        = self::find_format_char( $tokens, $time_chars );
+		$date           = null === $date_at ? array() : $tokens;
+		$time           = null === $time_at ? array() : $tokens;
+
+		// With both parts present, the one that comes first ends where the
+		// other one starts.
+		if ( null !== $date_at && null !== $time_at ) {
+			$boundary = max( $date_at, $time_at );
+			$first    = array_slice( $tokens, 0, $boundary );
+			$last     = array_slice( $tokens, $boundary );
+
+			list( $date, $time ) = $date_at < $time_at
+				? array( self::drop_lead_in( $first ), $last )
+				: array( $last, $first );
+		}
+
+		return array(
+			'date' => self::join_format_tokens( $date, $timezone_chars ),
+			'time' => self::join_format_tokens( $time, $timezone_chars ),
 		);
+	}
+
+	/**
+	 * Find the first token that is one of the given format characters.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<int, FormatToken> $tokens The format tokens.
+	 * @param string[]                $chars  The format characters to look for.
+	 *
+	 * @return int|null The token's index, or null when none of them is used.
+	 */
+	private static function find_format_char( array $tokens, array $chars ): ?int {
+		foreach ( $tokens as $index => $token ) {
+			if ( 'char' === $token['type'] && in_array( $token['value'], $chars, true ) ) {
+				return $index;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Drop the escaped words and spaces that end a date and lead into the time.
+	 *
+	 * Unescaped text stays, so the Japanese day suffix '日' in 'Y年n月j日 H:i'
+	 * is still part of the date.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<int, FormatToken> $tokens The date's tokens.
+	 *
+	 * @return array<int, FormatToken> The tokens without the lead-in.
+	 */
+	private static function drop_lead_in( array $tokens ): array {
+		$last = end( $tokens );
+
+		while ( $last && ( 'literal' === $last['type'] || '' === trim( $last['value'] ) ) ) {
+			array_pop( $tokens );
+			$last = end( $tokens );
+		}
+
+		return $tokens;
+	}
+
+	/**
+	 * Join format tokens back into a format, trimming the separators at its ends.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param array<int, FormatToken> $tokens     The format tokens.
+	 * @param string[]                $skip_chars Format characters to leave out.
+	 *
+	 * @return string The joined format.
+	 */
+	private static function join_format_tokens( array $tokens, array $skip_chars ): string {
+		$kept = array_filter(
+			$tokens,
+			static fn ( array $token ): bool => 'literal' === $token['type']
+				|| ! in_array( $token['value'], $skip_chars, true )
+		);
+
+		return trim( implode( '', array_column( $kept, 'value' ) ), " \t\n\r\0\x0B:,-/." );
+	}
+
+	/**
+	 * The date formats an organizer picks from, as examples.
+	 *
+	 * The same idea as the radio list on Settings > General: a format is
+	 * chosen by recognizing the date it produces, not by reading its PHP
+	 * format codes. The first entry leads with the weekday because an event
+	 * is a thing that happens on a day of the week, which is also why
+	 * GatherPress defaults to it while WordPress does not.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return array<int, array{format: string, example: string}> The choices.
+	 */
+	public static function date_format_choices(): array {
+		$formats = array(
+			/* translators: PHP date format for a date led by its weekday. Translate to the order your locale writes. */
+			__( 'l, F j, Y', 'gatherpress' ),
+			/* translators: PHP date format for a plain long date. Translate to the order your locale writes. */
+			__( 'F j, Y', 'gatherpress' ),
+			'Y-m-d',
+			'm/d/Y',
+			'd/m/Y',
+			'd.m.Y',
+		);
+
+		/**
+		 * Filters the date formats offered as examples in GatherPress.
+		 *
+		 * A format that is not on this list still saves and still renders;
+		 * it simply arrives through the Custom field rather than the list.
+		 *
+		 * @since 0.36.0
+		 *
+		 * @param string[] $formats PHP date formats.
+		 */
+		$formats = (array) apply_filters( 'gatherpress_date_formats', $formats );
+
+		return self::build_format_choices( $formats );
+	}
+
+	/**
+	 * The time formats an organizer picks from, as examples.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return array<int, array{format: string, example: string}> The choices.
+	 */
+	public static function time_format_choices(): array {
+		$formats = array(
+			/* translators: PHP time format for a 12-hour clock. Translate to the clock your locale reads. */
+			__( 'g:i a', 'gatherpress' ),
+			'g:i A',
+			'H:i',
+		);
+
+		/**
+		 * Filters the time formats offered as examples in GatherPress.
+		 *
+		 * @since 0.36.0
+		 *
+		 * @param string[] $formats PHP time formats.
+		 */
+		$formats = (array) apply_filters( 'gatherpress_time_formats', $formats );
+
+		return self::build_format_choices( $formats );
+	}
+
+	/**
+	 * Pair each format with the date it renders right now.
+	 *
+	 * Rendered through `wp_date()` so the example arrives in the site's
+	 * locale and zone, which is the whole point: the viewer recognizes
+	 * the result instead of decoding the format.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string[] $formats PHP date formats.
+	 *
+	 * @return array<int, array{format: string, example: string}> The choices.
+	 */
+	private static function build_format_choices( array $formats ): array {
+		$choices = array();
+
+		foreach ( array_unique( array_filter( array_map( 'strval', $formats ) ) ) as $format ) {
+			$choices[] = array(
+				'format'  => $format,
+				// `wp_date()` is typed as string|false, but only reports false
+				// for a timestamp it cannot read, and the one it defaults to is
+				// always readable. Cast rather than branch on what cannot happen.
+				'example' => (string) wp_date( $format ),
+			);
+		}
+
+		return $choices;
 	}
 
 	/**
@@ -773,11 +1001,18 @@ final class Utility {
 	 * This is particularly important after the introduction of dynamic nonce generation,
 	 * which changed how user authentication flows through the application.
 	 *
+	 * A request from another origin is left as core resolved it, so a REST
+	 * request that core treats as logged out stays logged out.
+	 *
 	 * @since 0.33.0
 	 *
 	 * @return int|false The user ID if authentication was successful, false otherwise.
 	 */
 	public static function ensure_user_authentication(): int|false {
+		if ( ! self::is_same_origin_request() ) {
+			return false;
+		}
+
 		// Force WordPress to authenticate the user.
 		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 		$user_id = apply_filters( 'determine_current_user', false );
@@ -787,6 +1022,65 @@ final class Utility {
 		}
 
 		return $user_id;
+	}
+
+	/**
+	 * Whether the request comes from this site rather than another origin.
+	 *
+	 * Browsers send an `Origin` header with every cross-origin request, so a
+	 * request without one, or with the exact origin of the site's home, site
+	 * or admin URL, is the site's own. Core's CORS allow-list is not used: it
+	 * drops the port and can be widened by filters.
+	 *
+	 * @since 0.35.4
+	 *
+	 * @return bool True when the request has no origin or the site's own.
+	 */
+	public static function is_same_origin_request(): bool {
+		$origin = get_http_origin();
+
+		if ( '' === $origin ) {
+			return true;
+		}
+
+		$origin       = self::get_url_origin( $origin );
+		$site_origins = array_map(
+			array( self::class, 'get_url_origin' ),
+			array( home_url(), site_url(), admin_url() )
+		);
+
+		return '' !== $origin && in_array( $origin, $site_origins, true );
+	}
+
+	/**
+	 * The normalized origin of a URL.
+	 *
+	 * Lowercases the scheme and host and keeps the port only when it is not the
+	 * scheme's default, so equal origins compare equal as strings.
+	 *
+	 * @since 0.35.4
+	 *
+	 * @param string $url The URL or origin.
+	 *
+	 * @return string The origin, or an empty string when the URL has no scheme or host.
+	 */
+	private static function get_url_origin( string $url ): string {
+		$parts = wp_parse_url( $url );
+
+		if ( ! is_array( $parts ) || empty( $parts['scheme'] ) || empty( $parts['host'] ) ) {
+			return '';
+		}
+
+		$scheme        = strtolower( $parts['scheme'] );
+		$default_ports = array(
+			'http'  => 80,
+			'https' => 443,
+		);
+		$port          = isset( $parts['port'] ) && ( $default_ports[ $scheme ] ?? null ) !== $parts['port']
+			? ':' . $parts['port']
+			: '';
+
+		return $scheme . '://' . strtolower( $parts['host'] ) . $port;
 	}
 
 	/**
@@ -877,12 +1171,34 @@ final class Utility {
 			$sanitizer = 'sanitize_text_field';
 		}
 
-		// For WordPress sanitizers, unslash first.
-		if ( in_array( $sanitizer, array( 'sanitize_text_field', 'sanitize_email' ), true ) ) {
-			$value = wp_unslash( $value );
+		// No wp_unslash() here: filter_input() reads the raw request, which
+		// WordPress never slashed, so unslashing would strip real backslashes.
+		return (string) call_user_func( $sanitizer, $value );
+	}
+
+	/**
+	 * Get request input from POST or GET, the way `$_REQUEST` merges them.
+	 *
+	 * There is no INPUT_REQUEST, so this reads POST first and falls back to GET.
+	 * That matches wp_magic_quotes(), which rebuilds `$_REQUEST` as
+	 * `array_merge( $_GET, $_POST )`, so POST wins over GET. One difference:
+	 * an empty POST value falls back to GET instead of winning.
+	 *
+	 * @since TBD
+	 *
+	 * @param string        $var_name  Variable name to retrieve.
+	 * @param callable|null $sanitizer Sanitization function to apply. Defaults to sanitize_text_field.
+	 *
+	 * @return string Sanitized input value or empty string if not found.
+	 */
+	public static function get_request_input( string $var_name, ?callable $sanitizer = null ): string {
+		$value = self::get_http_input( INPUT_POST, $var_name, $sanitizer );
+
+		if ( '' === $value ) {
+			$value = self::get_http_input( INPUT_GET, $var_name, $sanitizer );
 		}
 
-		return (string) call_user_func( $sanitizer, $value );
+		return $value;
 	}
 
 	/**
@@ -913,6 +1229,49 @@ final class Utility {
 		}
 
 		return wp_get_referer();
+	}
+
+	/**
+	 * Gets the absolute URL of the current request.
+	 *
+	 * The scheme and host come from the home URL, not the request headers,
+	 * so a forged `Host` header never reaches a link or a form. The path and
+	 * query are the request's own.
+	 *
+	 * @since TBD
+	 *
+	 * @param string[] $remove_query_args Query args to leave out of the URL.
+	 *
+	 * @return string The current URL.
+	 */
+	public static function get_current_url( array $remove_query_args = array() ): string {
+		// INPUT_SERVER is unreliable under FastCGI.
+		$request = isset( $_SERVER['REQUEST_URI'] )
+			? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) )
+			: '/';
+		$home    = (array) wp_parse_url( home_url() );
+		$origin  = sprintf(
+			'%s://%s%s',
+			$home['scheme'] ?? 'http',
+			$home['host'] ?? '',
+			isset( $home['port'] ) ? ':' . $home['port'] : ''
+		);
+
+		return remove_query_arg( $remove_query_args, $origin . $request );
+	}
+
+	/**
+	 * Whether the current request renders a front-end page.
+	 *
+	 * False for admin, REST, Ajax and feed requests, which have no page for
+	 * a visitor to click through.
+	 *
+	 * @since TBD
+	 *
+	 * @return bool True when the request renders a front-end page.
+	 */
+	public static function is_page_request(): bool {
+		return ! is_admin() && ! wp_is_serving_rest_request() && ! wp_doing_ajax() && ! is_feed();
 	}
 
 	/**
@@ -963,5 +1322,37 @@ final class Utility {
 		}
 
 		return $block_names;
+	}
+
+	/**
+	 * Finds the first block with a given name in a list of parsed blocks.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<mixed> $blocks     Parsed blocks.
+	 * @param string       $block_name Name of the block to find.
+	 * @param bool         $recursive  Whether to search the inner blocks too.
+	 *
+	 * @return array<string, mixed>|null The parsed block, or null when none has the name.
+	 */
+	public static function find_block( array $blocks, string $block_name, bool $recursive = false ): ?array {
+		foreach ( $blocks as $block ) {
+			if ( ! is_array( $block ) ) {
+				continue;
+			}
+
+			if ( ( $block['blockName'] ?? '' ) === $block_name ) {
+				return $block;
+			}
+
+			$inner_blocks = is_array( $block['innerBlocks'] ?? null ) ? $block['innerBlocks'] : array();
+			$found        = $recursive ? self::find_block( $inner_blocks, $block_name, true ) : null;
+
+			if ( null !== $found ) {
+				return $found;
+			}
+		}
+
+		return null;
 	}
 }

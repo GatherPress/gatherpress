@@ -106,13 +106,13 @@ class Test_Utility extends Base {
 	 * @return void
 	 */
 	public function test_locate_template_resolves_plugin_fallback(): void {
-		$expected = sprintf( '%s/includes/templates/calendar/ical-download.php', GATHERPRESS_CORE_PATH );
+		$expected = sprintf( '%s/includes/templates/calendar/external/ical-download.php', GATHERPRESS_CORE_PATH );
 
 		$this->assertSame(
 			$expected,
 			Utility::locate_template(
 				'gatherpress_ical-download.php',
-				sprintf( '%s/includes/templates/calendar', GATHERPRESS_CORE_PATH )
+				sprintf( '%s/includes/templates/calendar/external', GATHERPRESS_CORE_PATH )
 			),
 			'locate_template should return the bundled plugin template and strip the gatherpress_ prefix.'
 		);
@@ -218,7 +218,7 @@ class Test_Utility extends Base {
 	 * @return void
 	 */
 	public function test_resolve_fallback_template_path_strips_prefix(): void {
-		$fallback_dir = sprintf( '%s/includes/templates/calendar', GATHERPRESS_CORE_PATH );
+		$fallback_dir = sprintf( '%s/includes/templates/calendar/external', GATHERPRESS_CORE_PATH );
 		$expected     = sprintf( '%s/ical-download.php', $fallback_dir );
 
 		$this->assertSame(
@@ -476,7 +476,7 @@ class Test_Utility extends Base {
 	public function test_snake_to_camel(): void {
 		$this->assertSame( 'dateFormat', Utility::snake_to_camel( 'date_format' ) );
 		$this->assertSame( 'enableAnonymousRsvp', Utility::snake_to_camel( 'enable_anonymous_rsvp' ) );
-		$this->assertSame( 'postOrEventDate', Utility::snake_to_camel( 'post_or_event_date' ) );
+		$this->assertSame( 'useEventDateForPublish', Utility::snake_to_camel( 'use_event_date_for_publish' ) );
 		$this->assertSame( 'simple', Utility::snake_to_camel( 'simple' ) );
 	}
 
@@ -985,6 +985,196 @@ class Test_Utility extends Base {
 	}
 
 	/**
+	 * Coverage for ensure_user_authentication leaving a request from another
+	 * origin as core resolved it, and restoring the user for the site's own.
+	 *
+	 * @covers ::ensure_user_authentication
+	 *
+	 * @return void
+	 */
+	public function test_ensure_user_authentication_skips_other_origins(): void {
+		$user_id     = $this->factory()->user->create();
+		$cookie_user = static function () use ( $user_id ): int {
+			return $user_id;
+		};
+
+		add_filter( 'determine_current_user', $cookie_user, 100 );
+		wp_set_current_user( 0 );
+
+		$_SERVER['HTTP_ORIGIN'] = 'https://elsewhere.example';
+		$other_result           = Utility::ensure_user_authentication();
+		$other_user             = get_current_user_id();
+
+		$_SERVER['HTTP_ORIGIN'] = untrailingslashit( home_url() );
+		$own_result             = Utility::ensure_user_authentication();
+		$own_user               = get_current_user_id();
+
+		unset( $_SERVER['HTTP_ORIGIN'] );
+		remove_filter( 'determine_current_user', $cookie_user, 100 );
+		wp_set_current_user( 0 );
+
+		$this->assertFalse( $other_result, 'Failed to assert another origin is not authenticated.' );
+		$this->assertSame( 0, $other_user, 'Failed to assert another origin stays logged out.' );
+		$this->assertSame( $user_id, $own_result, 'Failed to assert the site\'s origin is authenticated.' );
+		$this->assertSame( $user_id, $own_user, 'Failed to assert the site\'s origin gets its user back.' );
+	}
+
+	/**
+	 * Coverage for ensure_user_authentication on a site served from a
+	 * non-default port.
+	 *
+	 * @covers ::ensure_user_authentication
+	 *
+	 * @return void
+	 */
+	public function test_ensure_user_authentication_on_a_non_default_port(): void {
+		$user_id     = $this->factory()->user->create();
+		$site_url    = static fn(): string => 'https://example.test:8443';
+		$cookie_user = static function () use ( $user_id ): int {
+			return $user_id;
+		};
+
+		add_filter( 'pre_option_home', $site_url );
+		add_filter( 'pre_option_siteurl', $site_url );
+		add_filter( 'determine_current_user', $cookie_user, 100 );
+		wp_set_current_user( 0 );
+
+		$_SERVER['HTTP_ORIGIN'] = 'https://example.test';
+		$without_port_result    = Utility::ensure_user_authentication();
+		$without_port_user      = get_current_user_id();
+
+		$_SERVER['HTTP_ORIGIN'] = 'https://example.test:8443';
+		$with_port_result       = Utility::ensure_user_authentication();
+		$with_port_user         = get_current_user_id();
+
+		unset( $_SERVER['HTTP_ORIGIN'] );
+		remove_filter( 'pre_option_home', $site_url );
+		remove_filter( 'pre_option_siteurl', $site_url );
+		remove_filter( 'determine_current_user', $cookie_user, 100 );
+		wp_set_current_user( 0 );
+
+		$this->assertFalse( $without_port_result, 'Failed to assert the host without the port is not authenticated.' );
+		$this->assertSame( 0, $without_port_user, 'Failed to assert the host without the port stays logged out.' );
+		$this->assertSame( $user_id, $with_port_result, 'Failed to assert the origin with the port is authenticated.' );
+		$this->assertSame( $user_id, $with_port_user, 'Failed to assert the origin with the port gets its user back.' );
+	}
+
+	/**
+	 * Coverage for is_same_origin_request.
+	 *
+	 * @covers ::is_same_origin_request
+	 *
+	 * @return void
+	 */
+	public function test_is_same_origin_request(): void {
+		$own          = untrailingslashit( home_url() );
+		$other_scheme = set_url_scheme( $own, str_starts_with( $own, 'https:' ) ? 'http' : 'https' );
+
+		unset( $_SERVER['HTTP_ORIGIN'] );
+		$without_origin = Utility::is_same_origin_request();
+
+		$_SERVER['HTTP_ORIGIN'] = $own;
+		$own_origin             = Utility::is_same_origin_request();
+
+		$_SERVER['HTTP_ORIGIN'] = strtoupper( $own );
+		$uppercase_origin       = Utility::is_same_origin_request();
+
+		$_SERVER['HTTP_ORIGIN'] = 'https://elsewhere.example';
+		$other_origin           = Utility::is_same_origin_request();
+
+		$_SERVER['HTTP_ORIGIN'] = $other_scheme;
+		$other_scheme_origin    = Utility::is_same_origin_request();
+
+		$_SERVER['HTTP_ORIGIN'] = 'null';
+		$opaque_origin          = Utility::is_same_origin_request();
+
+		unset( $_SERVER['HTTP_ORIGIN'] );
+
+		$this->assertTrue( $without_origin, 'Failed to assert a request without an origin is the site\'s own.' );
+		$this->assertTrue( $own_origin, 'Failed to assert the site\'s origin is its own.' );
+		$this->assertTrue( $uppercase_origin, 'Failed to assert the origin is compared without regard to case.' );
+		$this->assertFalse( $other_origin, 'Failed to assert another origin is not the site\'s own.' );
+		$this->assertFalse( $other_scheme_origin, 'Failed to assert another scheme is not the site\'s own.' );
+		$this->assertFalse( $opaque_origin, 'Failed to assert an opaque origin is not the site\'s own.' );
+	}
+
+	/**
+	 * Coverage for is_same_origin_request on a site served from a non-default
+	 * port: only the origin with that port is the site's own.
+	 *
+	 * @covers ::is_same_origin_request
+	 *
+	 * @return void
+	 */
+	public function test_is_same_origin_request_on_a_non_default_port(): void {
+		$site_url = static fn(): string => 'https://example.test:8443';
+
+		add_filter( 'pre_option_home', $site_url );
+		add_filter( 'pre_option_siteurl', $site_url );
+
+		$_SERVER['HTTP_ORIGIN'] = 'https://example.test:8443';
+		$with_port              = Utility::is_same_origin_request();
+
+		$_SERVER['HTTP_ORIGIN'] = 'https://example.test';
+		$without_port           = Utility::is_same_origin_request();
+
+		$_SERVER['HTTP_ORIGIN'] = 'https://example.test:9443';
+		$other_port             = Utility::is_same_origin_request();
+
+		unset( $_SERVER['HTTP_ORIGIN'] );
+		remove_filter( 'pre_option_home', $site_url );
+		remove_filter( 'pre_option_siteurl', $site_url );
+
+		$this->assertTrue( $with_port, 'Failed to assert the site\'s origin includes its port.' );
+		$this->assertFalse( $without_port, 'Failed to assert the same host without the port is another origin.' );
+		$this->assertFalse( $other_port, 'Failed to assert the same host on another port is another origin.' );
+	}
+
+	/**
+	 * Coverage for get_url_origin returning an empty string for a value with
+	 * no scheme or host.
+	 *
+	 * @covers ::get_url_origin
+	 *
+	 * @return void
+	 */
+	public function test_get_url_origin_without_a_host(): void {
+		foreach ( array( 'null', '/path', '' ) as $url ) {
+			$this->assertSame(
+				'',
+				PMC_Utility::invoke_hidden_static_method( Utility::class, 'get_url_origin', array( $url ) ),
+				sprintf( 'Failed to assert %s has no origin.', $url )
+			);
+		}
+	}
+
+	/**
+	 * Coverage for get_url_origin normalizing case and default ports.
+	 *
+	 * @covers ::get_url_origin
+	 *
+	 * @return void
+	 */
+	public function test_get_url_origin_normalizes(): void {
+		$origins = array(
+			'HTTPS://Example.TEST/path'   => 'https://example.test',
+			'http://example.test:80'      => 'http://example.test',
+			'https://example.test:443/'   => 'https://example.test',
+			'https://example.test:8443/a' => 'https://example.test:8443',
+			'http://example.test:443'     => 'http://example.test:443',
+			'ftp://example.test:21'       => 'ftp://example.test:21',
+		);
+
+		foreach ( $origins as $url => $expected ) {
+			$this->assertSame(
+				$expected,
+				PMC_Utility::invoke_hidden_static_method( Utility::class, 'get_url_origin', array( $url ) ),
+				sprintf( 'Failed to assert the origin of %s.', $url )
+			);
+		}
+	}
+
+	/**
 	 * Data provider for has_css_class test.
 	 *
 	 * @return array
@@ -1262,9 +1452,9 @@ class Test_Utility extends Base {
 		$result = Utility::get_http_input( INPUT_POST, 'quoted_field' );
 		$this->assertEquals( 'Test with "quotes" and \'apostrophes\'', $result );
 
-		// Test handling of slashes.
+		// Backslashes are kept, since filter_input() input was never slashed.
 		$result = Utility::get_http_input( INPUT_POST, 'slashed_field' );
-		$this->assertEquals( 'Test with backslashes and /forward/', $result );
+		$this->assertEquals( 'Test with \\backslashes\\ and /forward/', $result );
 
 		// Test handling of unicode.
 		$result = Utility::get_http_input( INPUT_POST, 'unicode_field' );
@@ -1276,6 +1466,51 @@ class Test_Utility extends Base {
 
 		// Clean up.
 		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
+
+	/**
+	 * Tests get_request_input reads POST first and falls back to GET.
+	 *
+	 * @since TBD
+	 * @covers ::get_request_input
+	 *
+	 * @return void
+	 */
+	public function test_get_request_input(): void {
+		$this->set_url_params(
+			array(
+				'both'     => 'from get',
+				'get_only' => 'from get',
+				'get_dash' => 'get-dash',
+			)
+		);
+		$this->set_post_params(
+			array(
+				'both'      => 'from post',
+				'post_only' => 'from post',
+				'post_dash' => 'post-dash',
+				'path'      => 'C:\\Users',
+			)
+		);
+
+		$this->assertSame( 'from post', Utility::get_request_input( 'both' ), 'Failed to assert POST wins.' );
+		$this->assertSame( 'from get', Utility::get_request_input( 'get_only' ), 'Failed to assert GET is read.' );
+		$this->assertSame( 'from post', Utility::get_request_input( 'post_only' ), 'Failed to assert POST is read.' );
+		$this->assertSame( '', Utility::get_request_input( 'missing' ), 'Failed to assert a missing key is empty.' );
+		$this->assertSame( 'C:\\Users', Utility::get_request_input( 'path' ), 'Failed to assert backslashes stay.' );
+
+		$sanitizer = static fn( string $value ): string => str_replace( '-', '_', $value );
+
+		$this->assertSame(
+			'post_dash',
+			Utility::get_request_input( 'post_dash', $sanitizer ),
+			'Failed to assert the sanitizer runs on POST.'
+		);
+		$this->assertSame(
+			'get_dash',
+			Utility::get_request_input( 'get_dash', $sanitizer ),
+			'Failed to assert the sanitizer runs on GET.'
+		);
 	}
 
 	/**
@@ -1561,14 +1796,23 @@ class Test_Utility extends Base {
 	 */
 	public function data_remove_time_format_chars(): array {
 		return array(
-			'a date and a time keeps the date' => array( 'F j, Y g:i a', 'F j, Y' ),
-			'only a time keeps nothing'        => array( 'g:i a', '' ),
-			'only a date is left alone'        => array( 'M j', 'M j' ),
-			'the timezone goes with the time'  => array( 'F j, Y T', 'F j, Y' ),
-			'an empty format stays empty'      => array( '', '' ),
-			'a dash separator is trimmed off'  => array( 'Y-m-d H:i', 'Y-m-d' ),
-			'a slash separator is trimmed off' => array( 'd/m/Y H:i', 'd/m/Y' ),
-			'punctuation alone keeps nothing'  => array( ':', '' ),
+			'a date and a time keeps the date'            => array( 'F j, Y g:i a', 'F j, Y' ),
+			'only a time keeps nothing'                   => array( 'g:i a', '' ),
+			'only a date is left alone'                   => array( 'M j', 'M j' ),
+			'the timezone goes with the time'             => array( 'F j, Y T', 'F j, Y' ),
+			'an empty format stays empty'                 => array( '', '' ),
+			'a dash separator is trimmed off'             => array( 'Y-m-d H:i', 'Y-m-d' ),
+			'a slash separator is trimmed off'            => array( 'd/m/Y H:i', 'd/m/Y' ),
+			'punctuation alone keeps nothing'             => array( ':', '' ),
+			'german datetime with escaped Uhr keeps date' => array( 'j. F Y, H:i \U\h\r', 'j. F Y' ),
+			'time with escaped Uhr keeps nothing'         => array( 'H:i \U\h\r', '' ),
+			'spanish date with escaped de keeps date'     => array( 'j \d\e F \d\e Y, H:i', 'j \d\e F \d\e Y' ),
+			'reversed order time before date keeps date'  => array( 'H:i, j. F Y', 'j. F Y' ),
+			'a date, time and timezone keep the date'     => array( 'D, M j, Y, g:i a T', 'D, M j, Y' ),
+			'german um between date and time is dropped'  => array( 'j. F Y \u\m H:i \U\h\r', 'j. F Y' ),
+			'german Uhr before the time is dropped'       => array( 'j F Y, \U\h\r H:i', 'j F Y' ),
+			'japanese datetime keeps day suffix'          => array( 'Y年n月j日 H:i', 'Y年n月j日' ),
+			'korean datetime keeps day suffix'            => array( 'Y년 n월 j일 H:i', 'Y년 n월 j일' ),
 		);
 	}
 
@@ -1603,10 +1847,488 @@ class Test_Utility extends Base {
 	 */
 	public function data_remove_non_time_format_chars(): array {
 		return array(
-			'a date and a time keeps the time' => array( 'F j, Y g:i a', 'g:i a' ),
-			'only a date keeps nothing'        => array( 'F j, Y', '' ),
-			'only a time is left alone'        => array( 'g:i a', 'g:i a' ),
-			'an empty format stays empty'      => array( '', '' ),
+			'a date and a time keeps the time'            => array( 'F j, Y g:i a', 'g:i a' ),
+			'only a date keeps nothing'                   => array( 'F j, Y', '' ),
+			'only a time is left alone'                   => array( 'g:i a', 'g:i a' ),
+			'an empty format stays empty'                 => array( '', '' ),
+			'german datetime with escaped Uhr keeps time' => array( 'j. F Y, H:i \U\h\r', 'H:i \U\h\r' ),
+			'time with escaped Uhr is left alone'         => array( 'H:i \U\h\r', 'H:i \U\h\r' ),
+			'spanish date with escaped de keeps time'     => array( 'j \d\e F \d\e Y, H:i', 'H:i' ),
+			'reversed order time before date keeps time'  => array( 'H:i \U\h\r, j. F Y', 'H:i \U\h\r' ),
+			'date and time with leading punctuation trim' => array( 'Y-m-d H:i:s', 'H:i:s' ),
+			'datetime with timezone drops timezone'       => array( 'D, M j, Y, g:i a T', 'g:i a' ),
+			'time only with timezone drops timezone'      => array( 'g:i a T', 'g:i a' ),
+			'german um between date and time is dropped'  => array( 'j. F Y \u\m H:i \U\h\r', 'H:i \U\h\r' ),
+			'german Uhr before the time is dropped'       => array( 'j F Y, \U\h\r H:i', 'H:i' ),
 		);
+	}
+
+	/**
+	 * Coverage for tokenize_date_format.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::tokenize_date_format
+	 *
+	 * @return void
+	 */
+	public function test_tokenize_date_format(): void {
+		$tokens = Utility::tokenize_date_format( 'j. F Y, H:i \U\h\r' );
+
+		$this->assertSame(
+			array(
+				array(
+					'type'  => 'char',
+					'value' => 'j',
+				),
+				array(
+					'type'  => 'char',
+					'value' => '.',
+				),
+				array(
+					'type'  => 'char',
+					'value' => ' ',
+				),
+				array(
+					'type'  => 'char',
+					'value' => 'F',
+				),
+				array(
+					'type'  => 'char',
+					'value' => ' ',
+				),
+				array(
+					'type'  => 'char',
+					'value' => 'Y',
+				),
+				array(
+					'type'  => 'char',
+					'value' => ',',
+				),
+				array(
+					'type'  => 'char',
+					'value' => ' ',
+				),
+				array(
+					'type'  => 'char',
+					'value' => 'H',
+				),
+				array(
+					'type'  => 'char',
+					'value' => ':',
+				),
+				array(
+					'type'  => 'char',
+					'value' => 'i',
+				),
+				array(
+					'type'  => 'char',
+					'value' => ' ',
+				),
+				array(
+					'type'  => 'literal',
+					'value' => '\U\h\r',
+				),
+			),
+			$tokens,
+			'tokenize_date_format should keep a run of escaped characters as one literal and others as characters.'
+		);
+
+		// Trailing backslash edge case.
+		$trailing = Utility::tokenize_date_format( 'H:i\\' );
+		$this->assertSame(
+			array(
+				array(
+					'type'  => 'char',
+					'value' => 'H',
+				),
+				array(
+					'type'  => 'char',
+					'value' => ':',
+				),
+				array(
+					'type'  => 'char',
+					'value' => 'i',
+				),
+				array(
+					'type'  => 'literal',
+					'value' => '\\',
+				),
+			),
+			$trailing,
+			'tokenize_date_format should handle a trailing backslash without error.'
+		);
+	}
+
+	/**
+	 * Splitting a format puts each piece with the date or the time.
+	 *
+	 * Called directly because the strip methods reach it through a same-class
+	 * delegation that xdebug does not trace.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::split_date_time_format
+	 *
+	 * @dataProvider data_split_date_time_format
+	 *
+	 * @param string $format   The format to split.
+	 * @param array  $expected The date part and the time part.
+	 *
+	 * @return void
+	 */
+	public function test_split_date_time_format( string $format, array $expected ): void {
+		$this->assertSame(
+			$expected,
+			PMC_Utility::invoke_hidden_method( new Utility(), 'split_date_time_format', array( $format ) ),
+			'Failed to assert the format was split into its date and time parts.'
+		);
+	}
+
+	/**
+	 * Data provider for split_date_time_format.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @return array[]
+	 */
+	public function data_split_date_time_format(): array {
+		return array(
+			'the date comes first' => array(
+				'j. F Y \u\m H:i \U\h\r',
+				array(
+					'date' => 'j. F Y',
+					'time' => 'H:i \U\h\r',
+				),
+			),
+			'the time comes first' => array(
+				'H:i \U\h\r, j. F Y',
+				array(
+					'date' => 'j. F Y',
+					'time' => 'H:i \U\h\r',
+				),
+			),
+			'only a date'          => array(
+				'Y年n月j日 T',
+				array(
+					'date' => 'Y年n月j日',
+					'time' => '',
+				),
+			),
+			'only a time'          => array(
+				'g:i a T',
+				array(
+					'date' => '',
+					'time' => 'g:i a',
+				),
+			),
+			'no format characters' => array(
+				'\a\t',
+				array(
+					'date' => '',
+					'time' => '',
+				),
+			),
+		);
+	}
+
+	/**
+	 * Finding a format character skips escaped text.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::find_format_char
+	 *
+	 * @return void
+	 */
+	public function test_find_format_char(): void {
+		$tokens = Utility::tokenize_date_format( '\H j H' );
+
+		$this->assertSame(
+			4,
+			PMC_Utility::invoke_hidden_method( new Utility(), 'find_format_char', array( $tokens, array( 'H' ) ) ),
+			'Failed to assert the escaped H was skipped for the format character.'
+		);
+		$this->assertNull(
+			PMC_Utility::invoke_hidden_method( new Utility(), 'find_format_char', array( $tokens, array( 'G' ) ) ),
+			'Failed to assert a character the format does not use is not found.'
+		);
+	}
+
+	/**
+	 * Dropping the lead-in removes the escaped words and spaces ending a date.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::drop_lead_in
+	 *
+	 * @return void
+	 */
+	public function test_drop_lead_in(): void {
+		$this->assertSame(
+			Utility::tokenize_date_format( 'j. F Y' ),
+			PMC_Utility::invoke_hidden_method(
+				new Utility(),
+				'drop_lead_in',
+				array( Utility::tokenize_date_format( 'j. F Y \u\m ' ) )
+			),
+			'Failed to assert the escaped word and spaces before the time were dropped.'
+		);
+		$this->assertSame(
+			array(),
+			PMC_Utility::invoke_hidden_method(
+				new Utility(),
+				'drop_lead_in',
+				array( Utility::tokenize_date_format( ' \u\m' ) )
+			),
+			'Failed to assert a lead-in with nothing before it leaves no tokens.'
+		);
+	}
+
+	/**
+	 * Joining tokens leaves out the skipped characters and trims the ends.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::join_format_tokens
+	 *
+	 * @return void
+	 */
+	public function test_join_format_tokens(): void {
+		$this->assertSame(
+			'g:i a \T',
+			PMC_Utility::invoke_hidden_method(
+				new Utility(),
+				'join_format_tokens',
+				array( Utility::tokenize_date_format( ' - g:i a \T T.' ), array( 'T' ) )
+			),
+			'Failed to assert the skipped character was left out, the escaped one kept, and the ends trimmed.'
+		);
+	}
+
+	/**
+	 * Coverage for date_format_choices.
+	 *
+	 * @covers ::date_format_choices
+	 * @covers ::build_format_choices
+	 *
+	 * @return void
+	 */
+	public function test_date_format_choices(): void {
+		$choices = Utility::date_format_choices();
+		$formats = array_column( $choices, 'format' );
+
+		$this->assertContains(
+			'l, F j, Y',
+			$formats,
+			'Failed to assert the weekday-led default is offered.'
+		);
+		$this->assertContains(
+			'Y-m-d',
+			$formats,
+			'Failed to assert the ISO format is offered.'
+		);
+		$this->assertSame(
+			wp_date( 'Y-m-d' ),
+			$choices[ array_search( 'Y-m-d', $formats, true ) ]['example'],
+			'Failed to assert each format is paired with the date it renders.'
+		);
+	}
+
+	/**
+	 * Coverage for time_format_choices.
+	 *
+	 * @covers ::time_format_choices
+	 *
+	 * @return void
+	 */
+	public function test_time_format_choices(): void {
+		$formats = array_column( Utility::time_format_choices(), 'format' );
+
+		$this->assertContains(
+			'H:i',
+			$formats,
+			'Failed to assert the 24-hour format is offered.'
+		);
+		$this->assertContains(
+			'g:i A',
+			$formats,
+			'Failed to assert the 12-hour format is offered.'
+		);
+	}
+
+	/**
+	 * Adding a format through the filter offers it with its example.
+	 *
+	 * @covers ::date_format_choices
+	 *
+	 * @return void
+	 */
+	public function test_date_format_choices_is_filterable(): void {
+		add_filter(
+			'gatherpress_date_formats',
+			static fn(): array => array( 'D, j M Y' )
+		);
+
+		$choices = Utility::date_format_choices();
+
+		remove_all_filters( 'gatherpress_date_formats' );
+
+		$this->assertSame(
+			array(
+				array(
+					'format'  => 'D, j M Y',
+					'example' => wp_date( 'D, j M Y' ),
+				),
+			),
+			$choices,
+			'Failed to assert the filtered list is the one offered.'
+		);
+	}
+
+	/**
+	 * Coverage for the time format filter.
+	 *
+	 * @covers ::time_format_choices
+	 *
+	 * @return void
+	 */
+	public function test_time_format_choices_is_filterable(): void {
+		add_filter(
+			'gatherpress_time_formats',
+			static fn(): array => array( 'H:i:s' )
+		);
+
+		$formats = array_column( Utility::time_format_choices(), 'format' );
+
+		remove_all_filters( 'gatherpress_time_formats' );
+
+		$this->assertSame(
+			array( 'H:i:s' ),
+			$formats,
+			'Failed to assert the filtered list is the one offered.'
+		);
+	}
+
+	/**
+	 * Empty and duplicate formats are dropped rather than offered twice.
+	 *
+	 * @covers ::build_format_choices
+	 *
+	 * @return void
+	 */
+	public function test_format_choices_drop_empty_and_duplicate_formats(): void {
+		add_filter(
+			'gatherpress_date_formats',
+			static fn(): array => array( 'Y-m-d', '', 'Y-m-d', 'd.m.Y' )
+		);
+
+		$formats = array_column( Utility::date_format_choices(), 'format' );
+
+		remove_all_filters( 'gatherpress_date_formats' );
+
+		$this->assertSame(
+			array( 'Y-m-d', 'd.m.Y' ),
+			$formats,
+			'Failed to assert empties and duplicates were dropped.'
+		);
+	}
+
+	/**
+	 * Coverage for find_block.
+	 *
+	 * @covers ::find_block
+	 *
+	 * @return void
+	 */
+	public function test_find_block(): void {
+		$calendar = array(
+			'blockName' => 'gatherpress/calendar',
+			'attrs'     => array( 'viewType' => 'week' ),
+		);
+		$blocks   = array(
+			'not a block',
+			array(
+				'blockName'   => 'core/paragraph',
+				'innerBlocks' => 'not blocks',
+			),
+			array(
+				'blockName'   => 'core/group',
+				'innerBlocks' => array( $calendar ),
+			),
+		);
+
+		$this->assertSame( $calendar, Utility::find_block( $blocks, 'gatherpress/calendar', true ) );
+		$this->assertNull(
+			Utility::find_block( $blocks, 'gatherpress/calendar' ),
+			'Failed to assert only the top level is searched by default.'
+		);
+		$this->assertSame( $blocks[1], Utility::find_block( $blocks, 'core/paragraph' ) );
+		$this->assertNull( Utility::find_block( $blocks, 'core/image', true ) );
+	}
+
+	/**
+	 * The current URL comes from the home URL's scheme, host and port, plus the request's path and query.
+	 *
+	 * @since TBD
+	 * @covers ::get_current_url
+	 *
+	 * @return void
+	 */
+	public function test_get_current_url(): void {
+		$set_home = static fn() => 'https://example.org:8443/site';
+
+		$_SERVER['REQUEST_URI'] = '/site/event/party/?a=1&gatherpress_modal=1-1&b=2';
+		add_filter( 'home_url', $set_home );
+
+		$this->assertSame(
+			'https://example.org:8443/site/event/party/?a=1&gatherpress_modal=1-1&b=2',
+			Utility::get_current_url(),
+			'The URL keeps the request path and query.'
+		);
+		$this->assertSame(
+			'https://example.org:8443/site/event/party/?a=1&b=2',
+			Utility::get_current_url( array( 'gatherpress_modal' ) ),
+			'Query args to remove are left out.'
+		);
+
+		remove_filter( 'home_url', $set_home );
+		unset( $_SERVER['REQUEST_URI'] );
+
+		$this->assertSame(
+			home_url( '/' ),
+			Utility::get_current_url(),
+			'Without a request URI, the URL is the home page.'
+		);
+	}
+
+	/**
+	 * Only a front-end page request counts as one.
+	 *
+	 * @since TBD
+	 * @covers ::is_page_request
+	 *
+	 * @return void
+	 */
+	public function test_is_page_request(): void {
+		$this->go_to( home_url( '/' ) );
+
+		$this->assertTrue( Utility::is_page_request(), 'A front-end page is a page request.' );
+
+		add_filter( 'wp_doing_ajax', '__return_true' );
+		$ajax = Utility::is_page_request();
+		remove_filter( 'wp_doing_ajax', '__return_true' );
+
+		$this->assertFalse( $ajax, 'An Ajax request is not.' );
+
+		$this->go_to( get_feed_link() );
+
+		$this->assertFalse( Utility::is_page_request(), 'A feed is not.' );
+
+		set_current_screen( 'dashboard' );
+		$admin = Utility::is_page_request();
+		set_current_screen( 'front' );
+
+		$this->assertFalse( $admin, 'The admin is not.' );
 	}
 }

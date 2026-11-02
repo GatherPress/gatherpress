@@ -7,6 +7,7 @@ import {
 	InspectorControls,
 } from '@wordpress/block-editor';
 import { PanelBody, RangeControl } from '@wordpress/components';
+import { __ } from '@wordpress/i18n';
 
 const Edit = ( { attributes, setAttributes } ) => {
 	const { style = {} } = attributes;
@@ -24,9 +25,10 @@ const Edit = ( { attributes, setAttributes } ) => {
 	return (
 		<>
 			<InspectorControls>
-				<PanelBody title="Width Settings">
+				<PanelBody title={ __( 'Width Settings', 'gatherpress' ) }>
 					<RangeControl
-						label="Max Width"
+						__next40pxDefaultSize
+						label={ __( 'Max Width', 'gatherpress' ) }
 						value={ maxWidth }
 						onChange={ ( value ) =>
 							setAttributes( {

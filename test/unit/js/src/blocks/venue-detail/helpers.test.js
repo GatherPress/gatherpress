@@ -16,19 +16,19 @@ describe( 'Venue Detail helpers', () => {
 	describe( 'VENUE_FIELDS', () => {
 		it( 'should pair the address fieldType with gatherpress_address', () => {
 			expect(
-				VENUE_FIELDS.find( ( f ) => 'address' === f.fieldType )?.metaKey
+				VENUE_FIELDS.find( ( f ) => 'address' === f.fieldType )?.metaKey,
 			).toBe( 'gatherpress_address' );
 		} );
 
 		it( 'should pair the phone fieldType with gatherpress_phone', () => {
 			expect(
-				VENUE_FIELDS.find( ( f ) => 'phone' === f.fieldType )?.metaKey
+				VENUE_FIELDS.find( ( f ) => 'phone' === f.fieldType )?.metaKey,
 			).toBe( 'gatherpress_phone' );
 		} );
 
 		it( 'should pair the url fieldType with gatherpress_website', () => {
 			expect(
-				VENUE_FIELDS.find( ( f ) => 'url' === f.fieldType )?.metaKey
+				VENUE_FIELDS.find( ( f ) => 'url' === f.fieldType )?.metaKey,
 			).toBe( 'gatherpress_website' );
 		} );
 	} );
@@ -48,43 +48,43 @@ describe( 'Venue Detail helpers', () => {
 
 		it( 'should remove https protocol', () => {
 			expect( cleanUrlForDisplay( 'https://example.com' ) ).toBe(
-				'example.com'
+				'example.com',
 			);
 		} );
 
 		it( 'should remove http protocol', () => {
 			expect( cleanUrlForDisplay( 'http://example.com' ) ).toBe(
-				'example.com'
+				'example.com',
 			);
 		} );
 
 		it( 'should remove www prefix', () => {
 			expect( cleanUrlForDisplay( 'https://www.example.com' ) ).toBe(
-				'example.com'
+				'example.com',
 			);
 		} );
 
 		it( 'should remove trailing slash', () => {
 			expect( cleanUrlForDisplay( 'https://example.com/' ) ).toBe(
-				'example.com'
+				'example.com',
 			);
 		} );
 
 		it( 'should handle url with path', () => {
 			expect(
-				cleanUrlForDisplay( 'https://www.example.com/page/' )
+				cleanUrlForDisplay( 'https://www.example.com/page/' ),
 			).toBe( 'example.com/page' );
 		} );
 
 		it( 'should handle url without protocol', () => {
 			expect( cleanUrlForDisplay( 'www.example.com/' ) ).toBe(
-				'example.com'
+				'example.com',
 			);
 		} );
 
 		it( 'should preserve internal path slashes', () => {
 			expect(
-				cleanUrlForDisplay( 'https://example.com/path/to/page' )
+				cleanUrlForDisplay( 'https://example.com/path/to/page' ),
 			).toBe( 'example.com/path/to/page' );
 		} );
 	} );
@@ -92,7 +92,7 @@ describe( 'Venue Detail helpers', () => {
 	describe( 'getMetaKey', () => {
 		it( 'should return gatherpress_address for address field type', () => {
 			expect( getMetaKey( 'address' ) ).toBe(
-				'gatherpress_address'
+				'gatherpress_address',
 			);
 		} );
 

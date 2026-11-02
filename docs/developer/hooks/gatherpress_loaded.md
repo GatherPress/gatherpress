@@ -24,7 +24,7 @@ add_action(
 
 ## Files
 
-- [gatherpress.php:77](https://github.com/GatherPress/gatherpress/blob/develop/gatherpress.php#L77)
+- [gatherpress.php:80](https://github.com/GatherPress/gatherpress/blob/develop/gatherpress.php#L80)
 ```php
 do_action( 'gatherpress_loaded' )
 ```

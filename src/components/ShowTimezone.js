@@ -28,7 +28,7 @@ const ShowTimezone = () => {
 		( select ) =>
 			select( 'core/editor' ).getEditedPostAttribute( 'meta' )
 				?.gatherpress_show_timezone || '',
-		[]
+		[],
 	);
 
 	const updatePreference = useCallback(
@@ -36,7 +36,7 @@ const ShowTimezone = () => {
 			editPost( { meta: { gatherpress_show_timezone: value } } );
 			unlockPostSaving();
 		},
-		[ editPost, unlockPostSaving ]
+		[ editPost, unlockPostSaving ],
 	);
 
 	return (
@@ -47,7 +47,7 @@ const ShowTimezone = () => {
 			onChange={ updatePreference }
 			help={ __(
 				'Overrides the Event Date block and the site setting for this event.',
-				'gatherpress'
+				'gatherpress',
 			) }
 			__nexthasnomarginbottom
 		>

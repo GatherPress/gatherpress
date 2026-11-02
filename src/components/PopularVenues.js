@@ -36,7 +36,7 @@ export default function PopularVenues( { onSelect, currentId, venuePostType } ) 
 	const pluralLabel = usePostTypeLabel(
 		'name',
 		venuePostType,
-		__( 'Venues', 'gatherpress' )
+		__( 'Venues', 'gatherpress' ),
 	);
 
 	// Don't render if there are no popular venues.
@@ -47,7 +47,7 @@ export default function PopularVenues( { onSelect, currentId, venuePostType } ) 
 	const popularVenuesLabel = sprintf(
 		/* translators: %s: Plural post type label, e.g. "Venues". */
 		__( 'Popular %s:', 'gatherpress' ),
-		pluralLabel
+		pluralLabel,
 	);
 
 	return (
@@ -57,7 +57,7 @@ export default function PopularVenues( { onSelect, currentId, venuePostType } ) 
 				{ popularVenues.map( ( venue ) => {
 					const isSelected = currentId === venue.id;
 					const venueName = decodeEntities(
-						getVenueTitle( venue, 'taxonomy' )
+						getVenueTitle( venue, 'taxonomy' ),
 					);
 					return (
 						<Button
@@ -80,14 +80,14 @@ export default function PopularVenues( { onSelect, currentId, venuePostType } ) 
 										/* translators: %s: venue name */
 										__(
 											'%s (currently selected)',
-											'gatherpress'
+											'gatherpress',
 										),
-										venueName
+										venueName,
 									)
 									: sprintf(
 										/* translators: %s: venue name */
 										__( 'Select %s', 'gatherpress' ),
-										venueName
+										venueName,
 									)
 							}
 							aria-current={ isSelected ? 'true' : undefined }

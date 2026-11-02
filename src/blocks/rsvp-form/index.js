@@ -51,7 +51,7 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
 					rsvpFormParentId: formParentId,
 				};
 			},
-			[ clientId ]
+			[ clientId ],
 		);
 
 		// Don't show controls if this IS the RSVP Form block itself.
@@ -86,6 +86,7 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
 		const currentVisibility = attributes?.metadata?.gatherpressRsvpFormVisibility || {};
 		const onSuccess = currentVisibility?.onSuccess || '';
 		const whenPast = currentVisibility?.whenPast || '';
+		const whenCanceled = currentVisibility?.whenCanceled || '';
 
 		const { updateBlockAttributes } = dispatch( 'core/block-editor' );
 
@@ -122,7 +123,7 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
 						label={ __( 'On Successful Submission', 'gatherpress' ) }
 						help={ __(
 							'Control visibility when the RSVP form is successfully submitted.',
-							'gatherpress'
+							'gatherpress',
 						) }
 						value={ onSuccess }
 						options={ [
@@ -146,7 +147,7 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
 						label={ __( 'When Event Has Passed', 'gatherpress' ) }
 						help={ __(
 							'Control visibility when the event end time has passed.',
-							'gatherpress'
+							'gatherpress',
 						) }
 						value={ whenPast }
 						options={ [
@@ -164,6 +165,30 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
 							},
 						] }
 						onChange={ ( value ) => updateVisibility( 'whenPast', value ) }
+					/>
+					<SelectControl
+						__next40pxDefaultSize
+						label={ __( 'When Event Is Canceled', 'gatherpress' ) }
+						help={ __(
+							'Control visibility when the event is canceled. Blocks left on the default are hidden if they change on submission or once the event has passed.',
+							'gatherpress',
+						) }
+						value={ whenCanceled }
+						options={ [
+							{
+								label: __( 'Default', 'gatherpress' ),
+								value: '',
+							},
+							{
+								label: __( 'Show', 'gatherpress' ),
+								value: 'show',
+							},
+							{
+								label: __( 'Hide', 'gatherpress' ),
+								value: 'hide',
+							},
+						] }
+						onChange={ ( value ) => updateVisibility( 'whenCanceled', value ) }
 					/>
 				</InspectorAdvancedControls>
 			</Fragment>
@@ -238,12 +263,12 @@ function preventNestedRsvpFormInsertion( canInsert, blockType, rootClientId ) {
 addFilter(
 	'editor.BlockEdit',
 	'gatherpress/form-visibility-controls',
-	withFormVisibilityControls
+	withFormVisibilityControls,
 );
 
 // Prevent RSVP Form from being inserted inside another RSVP Form.
 addFilter(
 	'blocks.canInsertBlockType',
 	'gatherpress/prevent-nested-rsvp-form',
-	preventNestedRsvpFormInsertion
+	preventNestedRsvpFormInsertion,
 );

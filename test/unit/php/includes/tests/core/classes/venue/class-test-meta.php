@@ -8,10 +8,13 @@
 
 namespace GatherPress\Tests\Core\Venue;
 
+use GatherPress\Core\Geo_Sync;
 use GatherPress\Core\Venue\Meta;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
+use WP_REST_Request;
+use WP_REST_Response;
 
 /**
  * Class Test_Meta.
@@ -37,6 +40,12 @@ class Test_Meta extends Base {
 				'name'     => 'registered_post_type',
 				'priority' => 10,
 				'callback' => array( $instance, 'register' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'wp_after_insert_post',
+				'priority' => 10,
+				'callback' => array( Geo_Sync::get_instance(), 'on_venue_saved' ),
 			),
 		);
 
@@ -65,7 +74,13 @@ class Test_Meta extends Base {
 			'gatherpress_static_map',
 		);
 
+		$geo_keys = array( 'geo_latitude', 'geo_longitude', 'geo_address', 'geo_public' );
+
 		foreach ( $venue_information_keys as $key ) {
+			unregister_post_meta( Venue::POST_TYPE, $key );
+		}
+
+		foreach ( $geo_keys as $key ) {
 			unregister_post_meta( Venue::POST_TYPE, $key );
 		}
 
@@ -74,6 +89,14 @@ class Test_Meta extends Base {
 		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
 
 		foreach ( $venue_information_keys as $key ) {
+			$this->assertArrayNotHasKey(
+				$key,
+				$meta,
+				sprintf( 'Failed to assert that %s is unregistered before re-registration.', $key )
+			);
+		}
+
+		foreach ( $geo_keys as $key ) {
 			$this->assertArrayNotHasKey(
 				$key,
 				$meta,
@@ -92,6 +115,14 @@ class Test_Meta extends Base {
 		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
 
 		foreach ( $venue_information_keys as $key ) {
+			$this->assertArrayHasKey(
+				$key,
+				$meta,
+				sprintf( 'Failed to assert that %s is registered for gatherpress-venue-information support.', $key )
+			);
+		}
+
+		foreach ( $geo_keys as $key ) {
 			$this->assertArrayHasKey(
 				$key,
 				$meta,
@@ -180,6 +211,8 @@ class Test_Meta extends Base {
 						'hash' => 'x',
 					),
 				),
+				'geo_latitude'           => '99.999',
+				'geo_public'             => 1,
 				'gatherpress_address'    => 'Real St',
 				'gatherpress_latitude'   => '12.345',
 			)
@@ -196,6 +229,16 @@ class Test_Meta extends Base {
 			'gatherpress_static_map',
 			$meta,
 			'gatherpress_static_map is server-generated and must not be writable via REST.'
+		);
+		$this->assertArrayNotHasKey(
+			'geo_latitude',
+			$meta,
+			'geo_latitude is derived from the venue\'s own fields and must not be writable via REST.'
+		);
+		$this->assertArrayNotHasKey(
+			'geo_public',
+			$meta,
+			'geo_public is derived from the venue\'s own publish status and must not be writable via REST.'
 		);
 		$this->assertArrayHasKey(
 			'gatherpress_address',
@@ -290,6 +333,7 @@ class Test_Meta extends Base {
 		foreach ( Meta::EDITOR_WRITABLE_FIELDS as $field ) {
 			unregister_post_meta( Venue::POST_TYPE, 'gatherpress_' . $field );
 		}
+		unregister_post_meta( Venue::POST_TYPE, Meta::MANUAL_COORDINATES_KEY );
 		unregister_post_meta( Venue::POST_TYPE, 'gatherpress_static_map' );
 		foreach ( Meta::STRUCTURED_ADDRESS_FIELDS as $field ) {
 			unregister_post_meta( Venue::POST_TYPE, 'gatherpress_' . $field );
@@ -310,6 +354,13 @@ class Test_Meta extends Base {
 				sprintf( 'Editor-writable key %s should be registered.', $field )
 			);
 		}
+		$this->assertSame( 'boolean', $meta[ Meta::MANUAL_COORDINATES_KEY ]['type'] );
+		$this->assertFalse( $meta[ Meta::MANUAL_COORDINATES_KEY ]['default'] );
+		$this->assertTrue( $meta[ Meta::MANUAL_COORDINATES_KEY ]['show_in_rest'] );
+		$this->assertTrue(
+			$meta[ Meta::MANUAL_COORDINATES_KEY ]['revisions_enabled'],
+			'Failed to assert the manual coordinates setting has revisions.'
+		);
 		$this->assertArrayHasKey( 'gatherpress_static_map', $meta );
 		foreach ( Meta::STRUCTURED_ADDRESS_FIELDS as $field ) {
 			$this->assertArrayHasKey(
@@ -363,7 +414,53 @@ class Test_Meta extends Base {
 			$this->assertArrayHasKey( 'gatherpress_' . $field, $meta );
 		}
 
+		$this->assertFalse(
+			$meta[ Meta::MANUAL_COORDINATES_KEY ]['revisions_enabled'],
+			'Failed to assert the manual coordinates setting has no revisions without revisions support.'
+		);
+
 		unregister_post_type( $test_pt );
+	}
+
+	/**
+	 * Direct coverage for `register_geo_meta()` — the Geodata standard
+	 * (`geo_*`) read-only band.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @covers ::register_geo_meta
+	 *
+	 * @return void
+	 */
+	public function test_register_geo_meta_direct(): void {
+		$instance = Meta::get_instance();
+		$geo_keys = array( 'geo_latitude', 'geo_longitude', 'geo_address', 'geo_public' );
+
+		foreach ( $geo_keys as $key ) {
+			unregister_post_meta( Venue::POST_TYPE, $key );
+		}
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'register_geo_meta',
+			array( Venue::POST_TYPE )
+		);
+
+		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
+
+		foreach ( $geo_keys as $key ) {
+			$this->assertArrayHasKey(
+				$key,
+				$meta,
+				sprintf( 'Failed to assert %s is registered.', $key )
+			);
+		}
+
+		$this->assertSame(
+			'integer',
+			$meta['geo_public']['type'],
+			'Failed to assert geo_public registers as an integer, matching Simple Location\'s own 0/1/2 semantics.'
+		);
 	}
 
 	/**
@@ -398,5 +495,86 @@ class Test_Meta extends Base {
 		foreach ( $map_keys as $key ) {
 			$this->assertArrayHasKey( $key, $meta );
 		}
+	}
+
+	/**
+	 * A password-protected venue's details are blank in REST for viewers who
+	 * can't see them, and kept for those who can.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::register_venue_information_meta
+	 * @covers ::hide_password_protected_details
+	 *
+	 * @return void
+	 */
+	public function test_hide_password_protected_details(): void {
+		$instance  = Meta::get_instance();
+		$protected = $this->factory->post->create(
+			array(
+				'post_type'     => Venue::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		);
+		$open      = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$meta      = array(
+			'gatherpress_address'    => '1 Main St',
+			'gatherpress_phone'      => '555-0100',
+			'gatherpress_city'       => 'Springfield',
+			'geo_latitude'           => '35.6762',
+			'geo_public'             => 0,
+			'gatherpress_static_map' => array( '15' => array( 'url' => 'https://example.test/map.png' ) ),
+			'gatherpress_map_show'   => true,
+		);
+		$hide      = static function ( int $post_id, string $password = '' ) use ( $instance, $meta ): array {
+			$request = new WP_REST_Request( 'GET', '/wp/v2/gatherpress_venues/' . $post_id );
+
+			if ( '' !== $password ) {
+				$request->set_param( 'password', $password );
+			}
+
+			return $instance->hide_password_protected_details(
+				new WP_REST_Response( array( 'meta' => $meta ) ),
+				get_post( $post_id ),
+				$request
+			)->data['meta'];
+		};
+
+		$instance->register( Venue::POST_TYPE );
+
+		$this->assertSame(
+			10,
+			has_filter( 'rest_prepare_' . Venue::POST_TYPE, array( $instance, 'hide_password_protected_details' ) ),
+			'The details filter should be wired on the venue post type.'
+		);
+
+		wp_set_current_user( 0 );
+
+		$hidden = $hide( $protected );
+
+		$this->assertSame( '', $hidden['gatherpress_address'], 'The address should be blank.' );
+		$this->assertSame( '', $hidden['gatherpress_phone'], 'The phone should be blank.' );
+		$this->assertSame( '', $hidden['gatherpress_city'], 'The structured address should be blank.' );
+		$this->assertSame( '', $hidden['geo_latitude'], 'The geo fields should be blank.' );
+		$this->assertSame( array(), $hidden['gatherpress_static_map'], 'The static map should be blank.' );
+		$this->assertSame( 0, $hidden['geo_public'], 'The public flag is left alone.' );
+		$this->assertTrue( $hidden['gatherpress_map_show'], 'Display settings are left alone.' );
+		$this->assertSame( $meta, $hide( $protected, 'secret' ), 'The REST password shows the details.' );
+		$this->assertSame( $meta, $hide( $open ), 'An open venue keeps its details.' );
+		$this->assertSame(
+			array( 'id' => 1 ),
+			$instance->hide_password_protected_details(
+				new WP_REST_Response( array( 'id' => 1 ) ),
+				get_post( $protected ),
+				new WP_REST_Request( 'GET', '/wp/v2/gatherpress_venues' )
+			)->data,
+			'A response without meta is left alone.'
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'editor' ) ) );
+
+		$this->assertSame( $meta, $hide( $protected ), 'An Editor sees the details.' );
+
+		wp_set_current_user( 0 );
 	}
 }

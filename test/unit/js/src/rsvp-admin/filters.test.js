@@ -17,7 +17,7 @@ describe( 'buildFilterUrl', () => {
 
 	it( 'carries the chosen responses as one parameter', () => {
 		expect(
-			buildFilterUrl( SCREEN, null, [ 'attending', 'waiting_list' ] )
+			buildFilterUrl( SCREEN, null, [ 'attending', 'waiting_list' ] ),
 		).toContain( 'response=attending%2Cwaiting_list' );
 	} );
 
@@ -40,16 +40,16 @@ describe( 'buildFilterUrl', () => {
 		const filtered = `${ SCREEN }&post_id=11&response=attending`;
 
 		expect( buildFilterUrl( filtered, null, [] ) ).not.toContain(
-			'post_id'
+			'post_id',
 		);
 		expect( buildFilterUrl( filtered, null, [] ) ).not.toContain(
-			'response'
+			'response',
 		);
 	} );
 
 	it( 'resets paging, which rarely survives a narrower result', () => {
 		expect( buildFilterUrl( `${ SCREEN }&paged=4`, 11, [] ) ).not.toContain(
-			'paged'
+			'paged',
 		);
 	} );
 
@@ -62,7 +62,7 @@ describe( 'buildFilterUrl', () => {
 
 	it( 'keeps an unrelated parameter such as the search term', () => {
 		expect( buildFilterUrl( `${ SCREEN }&s=ada`, 11, [] ) ).toContain(
-			's=ada'
+			's=ada',
 		);
 	} );
 } );

@@ -56,6 +56,7 @@ module.exports = [
 		entry: {
 			...defaultConfig[ 0 ].entry(),
 			admin_style: path.resolve( process.cwd(), 'src', 'admin.scss' ),
+			email: path.resolve( process.cwd(), 'src/email', 'index.js' ),
 			editor: path.resolve( process.cwd(), 'src', 'editor.js' ),
 			panels: path.resolve( process.cwd(), 'src/panels', 'index.js' ),
 			modals: path.resolve( process.cwd(), 'src/modals', 'index.js' ),
@@ -69,7 +70,7 @@ module.exports = [
 			rsvp_admin: path.resolve(
 				process.cwd(),
 				'src/rsvp-admin',
-				'index.js'
+				'index.js',
 			),
 			profile_style: path.resolve(
 				process.cwd(),
@@ -77,20 +78,30 @@ module.exports = [
 				'style.scss',
 			),
 			utility_style: path.resolve( process.cwd(), 'src', 'utility.scss' ),
+			timezone_shim: path.resolve(
+				process.cwd(),
+				'src/timezone-shim',
+				'index.js',
+			),
 			leaflet_style: path.resolve(
 				process.cwd(),
 				'src',
-				'leaflet-style.js'
+				'leaflet-style.js',
 			),
 			tooltip_view: path.resolve(
 				process.cwd(),
 				'src/formats/tooltip',
-				'view.js'
+				'view.js',
+			),
+			new_tab_notice: path.resolve(
+				process.cwd(),
+				'src/helpers',
+				'new-tab-notice.js',
 			),
 			'integrations/aql/index': path.resolve(
 				process.cwd(),
 				'src/integrations/aql',
-				'index.js'
+				'index.js',
 			),
 			...getVariationEntries(),
 		},

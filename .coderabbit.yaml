@@ -32,9 +32,12 @@ reviews:
         nonce and capability checks, and correct use of WordPress APIs;
         prefer core APIs over hand-rolled equivalents. User-facing strings
         need i18n with the 'gatherpress' text domain. New functions,
-        classes, and hooks need complete docblocks with an @since tag that
-        resolves to a released tag or the next planned release, never
-        1.0.0 or 'unreleased'. Flag new or changed code paths that lack
+        classes, and hooks need complete docblocks. A new symbol gets
+        '@since TBD', which npm run version:bump resolves at release time
+        on the branch doing the releasing; a literal version on an
+        unreleased symbol fails the '@since tags' workflow, so do not ask
+        for one. Any other @since must resolve to a tag that exists in
+        git tag. Flag new or changed code paths that lack
         PHPUnit coverage under test/unit/php. Skip style nits; PHPCS,
         PHPStan, and PHPMD already run in CI.
     - path: "src/**"

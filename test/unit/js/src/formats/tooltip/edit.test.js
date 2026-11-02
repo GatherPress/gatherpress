@@ -112,7 +112,7 @@ describe( 'TooltipEdit component', () => {
 		render( <TooltipEdit { ...defaultProps } /> );
 
 		expect( screen.getByTestId( 'tooltip-button' ).textContent ).toBe(
-			'Tooltip'
+			'Tooltip',
 		);
 	} );
 
@@ -120,7 +120,7 @@ describe( 'TooltipEdit component', () => {
 		render( <TooltipEdit { ...defaultProps } isActive={ false } /> );
 
 		expect(
-			screen.getByTestId( 'tooltip-button' ).getAttribute( 'data-active' )
+			screen.getByTestId( 'tooltip-button' ).getAttribute( 'data-active' ),
 		).toBe( 'false' );
 	} );
 
@@ -128,7 +128,7 @@ describe( 'TooltipEdit component', () => {
 		render( <TooltipEdit { ...defaultProps } isActive={ true } /> );
 
 		expect(
-			screen.getByTestId( 'tooltip-button' ).getAttribute( 'data-active' )
+			screen.getByTestId( 'tooltip-button' ).getAttribute( 'data-active' ),
 		).toBe( 'true' );
 	} );
 
@@ -261,7 +261,7 @@ describe( 'TooltipEdit component', () => {
 					attributes: expect.objectContaining( {
 						'data-gatherpress-tooltip': 'Test tooltip',
 					} ),
-				} )
+				} ),
 			);
 			expect( mockOnChange ).toHaveBeenCalled();
 		} );
@@ -278,7 +278,7 @@ describe( 'TooltipEdit component', () => {
 
 			expect( removeFormat ).toHaveBeenCalledWith(
 				defaultProps.value,
-				'gatherpress/tooltip'
+				'gatherpress/tooltip',
 			);
 			expect( mockOnChange ).toHaveBeenCalled();
 		} );
@@ -302,7 +302,7 @@ describe( 'TooltipEdit component', () => {
 
 			expect( removeFormat ).toHaveBeenCalledWith(
 				defaultProps.value,
-				'gatherpress/tooltip'
+				'gatherpress/tooltip',
 			);
 			expect( mockOnChange ).toHaveBeenCalled();
 		} );
@@ -377,7 +377,7 @@ describe( 'TooltipEdit component', () => {
 						'data-gatherpress-tooltip': 'Custom color tooltip',
 						'data-gatherpress-tooltip-text-color': '#ff0000',
 					} ),
-				} )
+				} ),
 			);
 		} );
 
@@ -417,7 +417,7 @@ describe( 'TooltipEdit component', () => {
 						'data-gatherpress-tooltip': 'Custom bg tooltip',
 						'data-gatherpress-tooltip-bg-color': '#00ff00',
 					} ),
-				} )
+				} ),
 			);
 		} );
 

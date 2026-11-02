@@ -2,10 +2,11 @@
 /**
  * Owns the venue post-meta surface.
  *
- * Registers the editor-writable, structured-address, and Map descriptor
- * post meta for any post type that declares `gatherpress-venue-information`
- * support, plus the matching map-display meta for `gatherpress-venue-map`.
- * Also owns the field-list constants and the REST readonly-strip filter.
+ * Registers the editor-writable, structured-address, Map descriptor, and
+ * Geodata-standard (`geo_*`) post meta for any post type that declares
+ * `gatherpress-venue-information` support, plus the matching map-display
+ * meta for `gatherpress-venue-map`. Also owns the field-list constants and
+ * the REST readonly-strip filter.
  *
  * Sibling singleton to `Venue\Setup` — `Setup` keeps post-type / taxonomy
  * registration and lifecycle hooks, `Meta` keeps everything that touches
@@ -20,13 +21,16 @@ namespace GatherPress\Core\Venue;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Geo_Sync;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
 use GatherPress\Core\Venue;
 use GatherPress\Core\Venue\Map;
 use stdClass;
+use WP_Post;
 use WP_REST_Request;
+use WP_REST_Response;
 
 /**
  * Class Meta.
@@ -99,6 +103,17 @@ final class Meta {
 	);
 
 	/**
+	 * Meta key that marks the coordinates of a venue as set by hand.
+	 *
+	 * While it is true, geocoding the address leaves `gatherpress_latitude`
+	 * and `gatherpress_longitude` alone, for venues without a street address.
+	 *
+	 * @since TBD
+	 * @var string
+	 */
+	public const MANUAL_COORDINATES_KEY = 'gatherpress_manual_coordinates';
+
+	/**
 	 * Class constructor.
 	 *
 	 * Wires the `registered_post_type` listener so any post type that
@@ -120,6 +135,7 @@ final class Meta {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'registered_post_type', array( $this, 'register' ) );
+		add_action( 'wp_after_insert_post', array( Geo_Sync::get_instance(), 'on_venue_saved' ), 10, 2 );
 	}
 
 	/**
@@ -146,7 +162,8 @@ final class Meta {
 	 *
 	 * - `gatherpress-venue-information` gets the editor-writable address /
 	 *   contact keys, the read-only structured-address keys, the static-
-	 *   map descriptor key, and the REST readonly-strip filter.
+	 *   map descriptor key, the REST readonly-strip filter, and the filter
+	 *   that keeps a password-protected venue's details out of REST.
 	 * - `gatherpress-venue-map` gets the map display-settings keys
 	 *   (show / zoom / height).
 	 *
@@ -159,6 +176,7 @@ final class Meta {
 	public function register( string $post_type ): void {
 		if ( post_type_supports( $post_type, Venue::SUPPORT ) ) {
 			$this->register_venue_information_meta( $post_type );
+			$this->register_geo_meta( $post_type );
 		}
 
 		if ( post_type_supports( $post_type, 'gatherpress-venue-map' ) ) {
@@ -168,9 +186,9 @@ final class Meta {
 
 	/**
 	 * Registers the editor-writable venue keys, the structured-address
-	 * keys, the static-map descriptor key, and the REST readonly-strip
-	 * filter for a post type that declares `gatherpress-venue-information`
-	 * support.
+	 * keys, the static-map descriptor key, the REST readonly-strip filter
+	 * and the protected-details filter for a post type that declares
+	 * `gatherpress-venue-information` support.
 	 *
 	 * @since 0.34.0
 	 *
@@ -241,6 +259,21 @@ final class Meta {
 			register_post_meta( $post_type, Utility::prefix_key( $field ), $args );
 		}
 
+		$manual_coordinates_args = array(
+			'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
+			'sanitize_callback' => 'rest_sanitize_boolean',
+			'show_in_rest'      => true,
+			'single'            => true,
+			'type'              => 'boolean',
+			'default'           => false,
+		);
+
+		if ( $supports_revisions ) {
+			$manual_coordinates_args['revisions_enabled'] = true;
+		}
+
+		register_post_meta( $post_type, self::MANUAL_COORDINATES_KEY, $manual_coordinates_args );
+
 		// Map descriptors register on their own — different shape (object
 		// schema, no sanitize_callback) and not editor-writable.
 		register_post_meta( $post_type, Map::META_KEY, $map_meta_args );
@@ -292,6 +325,25 @@ final class Meta {
 			10,
 			2
 		);
+		add_filter(
+			sprintf( 'rest_prepare_%s', $post_type ),
+			array( $this, 'hide_password_protected_details' ),
+			10,
+			3
+		);
+	}
+
+	/**
+	 * Registers the Geodata standard meta (`geo_*`) as read-only.
+	 *
+	 * @since 0.36.0
+	 *
+	 * @param string $post_type The post type to register against.
+	 *
+	 * @return void
+	 */
+	protected function register_geo_meta( string $post_type ): void {
+		Geo_Sync::register_meta( $post_type );
 	}
 
 	/**
@@ -362,6 +414,7 @@ final class Meta {
 		// editor-writable fields doesn't fail the whole request.
 		$readonly_keys = array_merge(
 			array( Map::META_KEY ),
+			Geo_Sync::FIELDS,
 			array_map(
 				array( Utility::class, 'prefix_key' ),
 				self::STRUCTURED_ADDRESS_FIELDS
@@ -379,5 +432,53 @@ final class Meta {
 		}
 
 		return $prepared_post;
+	}
+
+	/**
+	 * Blanks a password-protected venue's details in a REST response.
+	 *
+	 * The address, contact, structured-address, geo and static-map meta are
+	 * `show_in_rest`, so core hands them to anyone. They stay behind the
+	 * venue's password, as the Venue block keeps them: whoever can edit the
+	 * venue, or sends the password as a cookie or as the REST `password`
+	 * argument, sees them.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @param WP_REST_Response $response The response for the venue.
+	 * @param WP_Post          $post     The venue the response was prepared for.
+	 * @param WP_REST_Request  $request  The request the response answers.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
+	 *
+	 * @return WP_REST_Response The response, with the details blank for a viewer who can't see them.
+	 */
+	public function hide_password_protected_details(
+		WP_REST_Response $response,
+		WP_Post $post,
+		WP_REST_Request $request
+	): WP_REST_Response {
+		if ( ! Venue::is_hidden_by_password( $post, $request ) || ! is_array( $response->data['meta'] ?? null ) ) {
+			return $response;
+		}
+
+		$keys = array_merge(
+			array_map(
+				array( Utility::class, 'prefix_key' ),
+				array_merge( self::EDITOR_WRITABLE_FIELDS, self::STRUCTURED_ADDRESS_FIELDS )
+			),
+			array_diff( Geo_Sync::FIELDS, array( 'geo_public' ) )
+		);
+
+		foreach ( $keys as $key ) {
+			if ( array_key_exists( $key, $response->data['meta'] ) ) {
+				$response->data['meta'][ $key ] = '';
+			}
+		}
+
+		if ( array_key_exists( Map::META_KEY, $response->data['meta'] ) ) {
+			$response->data['meta'][ Map::META_KEY ] = array();
+		}
+
+		return $response;
 	}
 }

@@ -27,7 +27,7 @@ export function useBlockInsertion( clientId, insertBlocksAfter ) {
 	// Block position selectors.
 	const { getBlockRootClientId, getBlockIndex } = useSelect(
 		( selectEditor ) => selectEditor( blockEditorStore ),
-		[]
+		[],
 	);
 
 	/**
@@ -88,7 +88,7 @@ export function useBlockInsertion( clientId, insertBlocksAfter ) {
 			insertBlocks,
 			selectBlock,
 			insertBlocksAfter,
-		]
+		],
 	);
 
 	return {

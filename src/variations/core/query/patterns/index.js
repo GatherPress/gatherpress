@@ -50,8 +50,8 @@ function templateToBlocks( template ) {
 		createBlock(
 			name,
 			attributes,
-			templateToBlocks( innerBlocks || [] )
-		)
+			templateToBlocks( innerBlocks || [] ),
+		),
 	);
 }
 
@@ -74,7 +74,7 @@ function buildPattern( { name, title, description, template } ) {
 	const queryBlock = createBlock(
 		'core/query',
 		QUERY_ATTRIBUTES,
-		templateToBlocks( template )
+		templateToBlocks( template ),
 	);
 
 	return {
@@ -126,7 +126,7 @@ domReady( () => {
 			title: __( 'Event Card with RSVP', 'gatherpress' ),
 			description: __(
 				'Featured image, date, title, venue, online event link, RSVP responses, and RSVP button.',
-				'gatherpress'
+				'gatherpress',
 			),
 			template: EVENT_CARD_WITH_RSVP_TEMPLATE,
 		} ),
@@ -143,7 +143,7 @@ domReady( () => {
 				?.__experimentalBlockPatterns || [];
 		const presentNames = new Set( current.map( ( p ) => p.name ) );
 		const missing = patterns.filter(
-			( p ) => ! presentNames.has( p.name )
+			( p ) => ! presentNames.has( p.name ),
 		);
 
 		if ( missing.length ) {

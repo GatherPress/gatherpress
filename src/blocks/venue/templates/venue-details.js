@@ -1,4 +1,9 @@
 /**
+ * WordPress dependencies
+ */
+import { __ } from '@wordpress/i18n';
+
+/**
  * Default template for the venue block.
  */
 
@@ -48,7 +53,7 @@ const VENUE_DETAILS = [
 			[
 				'gatherpress/venue-detail',
 				{
-					placeholder: 'Venue address…',
+					placeholder: __( 'Venue address…', 'gatherpress' ),
 					fieldType: 'address',
 				},
 			],
@@ -99,7 +104,7 @@ const VENUE_DETAILS = [
 					[
 						'gatherpress/venue-detail',
 						{
-							placeholder: 'Venue phone…',
+							placeholder: __( 'Venue phone…', 'gatherpress' ),
 							fieldType: 'phone',
 						},
 					],
@@ -130,7 +135,7 @@ const VENUE_DETAILS = [
 					[
 						'gatherpress/venue-detail',
 						{
-							placeholder: 'Venue website URL…',
+							placeholder: __( 'Venue website URL…', 'gatherpress' ),
 							fieldType: 'url',
 						},
 					],

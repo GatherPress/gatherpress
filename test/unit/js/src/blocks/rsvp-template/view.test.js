@@ -26,7 +26,7 @@ jest.mock(
 			getContext: jest.fn(),
 		};
 	},
-	{ virtual: true }
+	{ virtual: true },
 );
 
 /**
@@ -38,6 +38,9 @@ import { store, getElement, getContext } from '@wordpress/interactivity';
  * Internal dependencies
  */
 import '@src/blocks/rsvp-template/view';
+
+// The store as this view leaves it when no other RSVP block has registered yet.
+const ownState = { ...store( 'gatherpress' ).state };
 
 describe( 'rsvp-template renderBlocks', () => {
 	let callbacks;
@@ -60,7 +63,7 @@ describe( 'rsvp-template renderBlocks', () => {
 		} );
 
 		global.fetch = jest.fn( () =>
-			Promise.resolve( { json: () => Promise.resolve( { success: false } ) } )
+			Promise.resolve( { json: () => Promise.resolve( { success: false } ) } ),
 		);
 	} );
 
@@ -77,6 +80,17 @@ describe( 'rsvp-template renderBlocks', () => {
 		expect( body.block_data ).toBe( '{"blockName":"gatherpress/rsvp-template"}' );
 		expect( body.block_signature ).toBe( 'a'.repeat( 64 ) );
 		expect( body.post_id ).toBe( 7 );
+		expect( body.status ).toBe( 'attending' );
+	} );
+
+	it( 'renders before another RSVP block has registered state.posts', async () => {
+		store( 'gatherpress' ).state.posts = ownState.posts;
+
+		expect( () => callbacks.renderBlocks() ).not.toThrow();
+		await Promise.resolve();
+
+		const body = JSON.parse( global.fetch.mock.calls[ 0 ][ 1 ].body );
+
 		expect( body.status ).toBe( 'attending' );
 	} );
 } );

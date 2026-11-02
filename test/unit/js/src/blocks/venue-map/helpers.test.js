@@ -84,16 +84,16 @@ describe( 'RegenerateMapButton', () => {
 	it( 'renders the default "Regenerate map" label', () => {
 		render( <RegenerateMapButton { ...defaultProps } /> );
 		expect(
-			screen.getByRole( 'button', { name: /regenerate map/i } )
+			screen.getByRole( 'button', { name: /regenerate map/i } ),
 		).toBeInTheDocument();
 	} );
 
 	it( 'renders a custom label when provided', () => {
 		render(
-			<RegenerateMapButton { ...defaultProps } label="Generate map" />
+			<RegenerateMapButton { ...defaultProps } label="Generate map" />,
 		);
 		expect(
-			screen.getByRole( 'button', { name: /generate map/i } )
+			screen.getByRole( 'button', { name: /generate map/i } ),
 		).toBeInTheDocument();
 	} );
 
@@ -111,7 +111,7 @@ describe( 'RegenerateMapButton', () => {
 				expect.objectContaining( {
 					path: '/gatherpress/v1/venue/42/regenerate-map',
 					method: 'POST',
-				} )
+				} ),
 			);
 		} );
 	} );
@@ -124,7 +124,7 @@ describe( 'RegenerateMapButton', () => {
 				width={ 0 }
 				height={ 295 }
 				aspectRatio="16/9"
-			/>
+			/>,
 		);
 		fireEvent.click( screen.getByRole( 'button' ) );
 
@@ -137,7 +137,7 @@ describe( 'RegenerateMapButton', () => {
 						height: 295,
 						aspect_ratio: '16/9',
 					},
-				} )
+				} ),
 			);
 		} );
 	} );
@@ -150,7 +150,7 @@ describe( 'RegenerateMapButton', () => {
 				width={ 600 }
 				height={ 300 }
 				mapType="hybrid"
-			/>
+			/>,
 		);
 		fireEvent.click( screen.getByRole( 'button' ) );
 
@@ -160,7 +160,7 @@ describe( 'RegenerateMapButton', () => {
 					data: expect.objectContaining( {
 						map_type: 'hybrid',
 					} ),
-				} )
+				} ),
 			);
 		} );
 	} );
@@ -172,7 +172,7 @@ describe( 'RegenerateMapButton', () => {
 		await waitFor( () => {
 			expect( mockInvalidateResolution ).toHaveBeenCalledWith(
 				'getEntityRecord',
-				[ 'postType', 'gatherpress_venue', 42 ]
+				[ 'postType', 'gatherpress_venue', 42 ],
 			);
 		} );
 	} );
@@ -203,7 +203,7 @@ describe( 'RegenerateMapButton', () => {
 		expect( name ).toBe( 'gatherpress_venue' );
 		expect( records[ 0 ].id ).toBe( 42 );
 		expect(
-			records[ 0 ].meta.gatherpress_static_map[ '18x300' ].url
+			records[ 0 ].meta.gatherpress_static_map[ '18x300' ].url,
 		).toBe( 'https://example.test/42-abc.png' );
 		// Existing meta fields must be preserved.
 		expect( records[ 0 ].meta.gatherpress_address ).toBe( '' );
@@ -230,7 +230,7 @@ describe( 'RegenerateMapButton', () => {
 
 	it( 'skips the store invalidation when no venuePostType is known', async () => {
 		render(
-			<RegenerateMapButton venuePostId={ 42 } venuePostType="" />
+			<RegenerateMapButton venuePostId={ 42 } venuePostType="" />,
 		);
 		fireEvent.click( screen.getByRole( 'button' ) );
 
@@ -244,7 +244,7 @@ describe( 'RegenerateMapButton', () => {
 	it( 'ignores repeat clicks while a request is in flight', async () => {
 		let resolveFetch;
 		mockApiFetch.mockImplementationOnce(
-			() => new Promise( ( resolve ) => ( resolveFetch = resolve ) )
+			() => new Promise( ( resolve ) => ( resolveFetch = resolve ) ),
 		);
 
 		render( <RegenerateMapButton { ...defaultProps } /> );
@@ -271,7 +271,7 @@ describe( 'RegenerateMapButton', () => {
 		await waitFor( () => {
 			expect( mockCreateErrorNotice ).toHaveBeenCalledWith(
 				'Network down',
-				{ type: 'snackbar' }
+				{ type: 'snackbar' },
 			);
 		} );
 
@@ -293,7 +293,7 @@ describe( 'RegenerateMapButton', () => {
 		await waitFor( () => {
 			expect( mockCreateErrorNotice ).toHaveBeenCalledWith(
 				expect.stringContaining( 'Could not regenerate' ),
-				{ type: 'snackbar' }
+				{ type: 'snackbar' },
 			);
 		} );
 	} );
@@ -361,7 +361,7 @@ describe( 'RegenerateMapButton', () => {
 		await waitFor( () => {
 			expect( mockCreateErrorNotice ).toHaveBeenCalledWith(
 				expect.stringContaining( 'could not render' ),
-				{ type: 'snackbar' }
+				{ type: 'snackbar' },
 			);
 		} );
 
@@ -414,7 +414,7 @@ describe( 'pickDescriptorForCombo', () => {
 		};
 
 		expect(
-			pickDescriptorForCombo( descriptors, '18x600x300xroadmap', 'google' )
+			pickDescriptorForCombo( descriptors, '18x600x300xroadmap', 'google' ),
 		).toBe( googleDescriptor );
 	} );
 
@@ -424,7 +424,7 @@ describe( 'pickDescriptorForCombo', () => {
 		};
 
 		expect(
-			pickDescriptorForCombo( descriptors, '18x600x300xroadmap', 'google' )
+			pickDescriptorForCombo( descriptors, '18x600x300xroadmap', 'google' ),
 		).toBe( osmDescriptor );
 	} );
 
@@ -434,16 +434,16 @@ describe( 'pickDescriptorForCombo', () => {
 		};
 
 		expect(
-			pickDescriptorForCombo( descriptors, '18x600x300xroadmap', 'osm' )
+			pickDescriptorForCombo( descriptors, '18x600x300xroadmap', 'osm' ),
 		).toBeUndefined();
 	} );
 
 	it( 'tolerates a missing or empty descriptor map', () => {
 		expect(
-			pickDescriptorForCombo( undefined, '18x600x300xroadmap', 'osm' )
+			pickDescriptorForCombo( undefined, '18x600x300xroadmap', 'osm' ),
 		).toBeUndefined();
 		expect(
-			pickDescriptorForCombo( {}, '18x600x300xroadmap', 'osm' )
+			pickDescriptorForCombo( {}, '18x600x300xroadmap', 'osm' ),
 		).toBeUndefined();
 	} );
 
@@ -454,7 +454,7 @@ describe( 'pickDescriptorForCombo', () => {
 		};
 
 		expect(
-			pickDescriptorForCombo( descriptors, '18x600x300xroadmap', 'google' )
+			pickDescriptorForCombo( descriptors, '18x600x300xroadmap', 'google' ),
 		).toBe( osmDescriptor );
 	} );
 
@@ -468,7 +468,7 @@ describe( 'pickDescriptorForCombo', () => {
 		};
 
 		expect(
-			pickDescriptorForCombo( descriptors, '18x600x300xroadmap', 'google' )
+			pickDescriptorForCombo( descriptors, '18x600x300xroadmap', 'google' ),
 		).toBe( osmDescriptor );
 	} );
 } );
@@ -483,7 +483,7 @@ describe( 'resolveDimensions', () => {
 				width: 800,
 				height: 400,
 				aspectRatio: '2/1',
-			} )
+			} ),
 		).toEqual( { width: 800, height: 400 } );
 	} );
 	it( 'derives width from height × ratio when width is auto', () => {
@@ -493,7 +493,7 @@ describe( 'resolveDimensions', () => {
 				width: 0,
 				height: 400,
 				aspectRatio: '2/1',
-			} )
+			} ),
 		).toEqual( { width: 800, height: 400 } );
 	} );
 	it( 'derives height from width ÷ ratio when height is auto', () => {
@@ -503,7 +503,7 @@ describe( 'resolveDimensions', () => {
 				width: 900,
 				height: 0,
 				aspectRatio: '3/2',
-			} )
+			} ),
 		).toEqual( { width: 900, height: 600 } );
 	} );
 	it( 'seeds from defaultHeight when both sides are auto', () => {
@@ -513,7 +513,7 @@ describe( 'resolveDimensions', () => {
 				width: 0,
 				height: 0,
 				aspectRatio: '2/1',
-			} )
+			} ),
 		).toEqual( { width: 600, height: 300 } );
 	} );
 	it( 'falls back to a 2:1 ratio when the aspect string is unparsable', () => {
@@ -523,7 +523,7 @@ describe( 'resolveDimensions', () => {
 				width: 0,
 				height: 400,
 				aspectRatio: 'garbage',
-			} )
+			} ),
 		).toEqual( { width: 800, height: 400 } );
 	} );
 } );
@@ -531,13 +531,13 @@ describe( 'resolveDimensions', () => {
 describe( 'buildComboKey', () => {
 	it( 'includes map type in the combo key', () => {
 		expect( buildComboKey( 16, 600, 300, 'hybrid' ) ).toBe(
-			'16x600x300xhybrid'
+			'16x600x300xhybrid',
 		);
 	} );
 
 	it( 'defaults to roadmap when map type is empty', () => {
 		expect( buildComboKey( 16, 600, 300, '' ) ).toBe(
-			'16x600x300xroadmap'
+			'16x600x300xroadmap',
 		);
 	} );
 
@@ -596,8 +596,8 @@ describe( 'getDimensionValue', () => {
 		expect(
 			getDimensionValue(
 				{ style: { dimensions: { width: '512px' } } },
-				'width'
-			)
+				'width',
+			),
 		).toBe( '512px' );
 	} );
 
@@ -605,8 +605,8 @@ describe( 'getDimensionValue', () => {
 		expect(
 			getDimensionValue(
 				{ style: { dimensions: { height: '' } } },
-				'height'
-			)
+				'height',
+			),
 		).toBeUndefined();
 	} );
 
@@ -682,7 +682,7 @@ describe( 'usePlaceholderPolling', () => {
 					aspectRatio: '2/1',
 					mapType: 'hybrid',
 				} }
-			/>
+			/>,
 		);
 
 		await waitFor( () => {
@@ -694,7 +694,7 @@ describe( 'usePlaceholderPolling', () => {
 						ensure_only: true,
 						map_type: 'hybrid',
 					} ),
-				} )
+				} ),
 			);
 		} );
 	} );
@@ -708,7 +708,7 @@ describe( 'usePlaceholderPolling', () => {
 		mockApiFetch.mockReturnValue(
 			new Promise( ( resolve ) => {
 				settleEnsure = resolve;
-			} )
+			} ),
 		);
 
 		const combo = {
@@ -721,7 +721,7 @@ describe( 'usePlaceholderPolling', () => {
 		};
 
 		const { unmount } = render(
-			<Harness { ...activeProps } combo={ combo } />
+			<Harness { ...activeProps } combo={ combo } />,
 		);
 
 		await waitFor( () => {
@@ -749,7 +749,7 @@ describe( 'usePlaceholderPolling', () => {
 		expect( mockInvalidateResolution ).toHaveBeenCalledTimes( 1 );
 		expect( mockInvalidateResolution ).toHaveBeenLastCalledWith(
 			'getEntityRecord',
-			[ 'postType', 'gatherpress_venue', 42 ]
+			[ 'postType', 'gatherpress_venue', 42 ],
 		);
 
 		jest.advanceTimersByTime( POLL_INTERVAL_MS );
@@ -794,7 +794,7 @@ describe( 'usePlaceholderPolling', () => {
 		// Run halfway to the MAX_POLLS cap against venue 42.
 		jest.advanceTimersByTime( POLL_INTERVAL_MS * ( MAX_POLLS / 2 ) );
 		expect( mockInvalidateResolution ).toHaveBeenCalledTimes(
-			MAX_POLLS / 2
+			MAX_POLLS / 2,
 		);
 
 		// Switch to a new venue — the interval should tear down and restart
@@ -806,11 +806,11 @@ describe( 'usePlaceholderPolling', () => {
 		// fire with the new ID and then cap out.
 		jest.advanceTimersByTime( POLL_INTERVAL_MS * ( MAX_POLLS + 2 ) );
 		expect( mockInvalidateResolution ).toHaveBeenCalledTimes(
-			( MAX_POLLS / 2 ) + MAX_POLLS
+			( MAX_POLLS / 2 ) + MAX_POLLS,
 		);
 		expect( mockInvalidateResolution ).toHaveBeenLastCalledWith(
 			'getEntityRecord',
-			[ 'postType', 'gatherpress_venue', 99 ]
+			[ 'postType', 'gatherpress_venue', 99 ],
 		);
 	} );
 } );

@@ -34,7 +34,7 @@ class Test_Map_Dimensions extends Base {
 	 * @return void
 	 */
 	public function tearDown(): void {
-		Settings::get_instance()->set( 'venue_map_default_height', '' );
+		Settings::get_instance()->set( 'venue_map_height', '' );
 
 		parent::tearDown();
 	}
@@ -269,7 +269,7 @@ class Test_Map_Dimensions extends Base {
 	 * @return void
 	 */
 	public function test_render_falls_back_to_site_default_height(): void {
-		Settings::get_instance()->set( 'venue_map_default_height', 400 );
+		Settings::get_instance()->set( 'venue_map_height', 400 );
 
 		$venue_id = $this->create_venue_without_coordinates();
 
@@ -295,7 +295,7 @@ class Test_Map_Dimensions extends Base {
 	 * @return void
 	 */
 	public function test_render_block_height_beats_site_default(): void {
-		Settings::get_instance()->set( 'venue_map_default_height', 400 );
+		Settings::get_instance()->set( 'venue_map_height', 400 );
 
 		$venue_id = $this->create_venue_without_coordinates();
 

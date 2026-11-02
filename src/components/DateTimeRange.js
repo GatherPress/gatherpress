@@ -60,7 +60,7 @@ const DateTimeRange = () => {
 				isCleanNewPost: select( 'core/editor' ).isCleanNewPost(),
 				isAllDay: Boolean(
 					select( 'core/editor' ).getEditedPostAttribute( 'meta' )
-						?.gatherpress_is_all_day
+						?.gatherpress_is_all_day,
 				),
 			} ),
 			[],

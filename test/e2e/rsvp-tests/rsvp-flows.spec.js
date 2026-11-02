@@ -32,7 +32,7 @@ const { test, expect } = require( '@playwright/test' );
  *
  * ### Option 1: WordPress Playground Blueprint Approach
  * - Use WXR import similar to `.github/scripts/playground-preview/index.js`
- * - Demo data available at: https://raw.githubusercontent.com/GatherPress/gatherpress-demo-data/main/GatherPress-demo-data-0.35.0.xml
+ * - Demo data available at: https://raw.githubusercontent.com/GatherPress/gatherpress-demo-data/main/GatherPress-demo-data-0.36.0.xml
  * - Contains "Christmas 2025" event with complete RSVP block
  * - Challenge: Docker volume mounting in wp-env makes file access difficult
  *
@@ -62,7 +62,7 @@ test.describe.skip( 'RSVP Flows', () => {
 				'1. Create a GatherPress event with an RSVP block via WordPress admin\n' +
 				'2. Set EVENT_URL to your event URL\n\n' +
 				'Example:\n' +
-				'  EVENT_URL=http://localhost:8889/event/test-event/ npm run test:e2e -- rsvp-tests/rsvp-flows.spec.js\n'
+				'  EVENT_URL=http://localhost:8889/event/test-event/ npm run test:e2e -- rsvp-tests/rsvp-flows.spec.js\n',
 			);
 		}
 

@@ -11,7 +11,7 @@ import { useCallback, useEffect, useState } from '@wordpress/element';
  */
 export function useAddressFieldAntiAutofill( value, inputRef ) {
 	const [ suppressNativeAutofill, setSuppressNativeAutofill ] = useState(
-		() => ! ( value && String( value ).trim() )
+		() => ! ( value && String( value ).trim() ),
 	);
 
 	useEffect( () => {

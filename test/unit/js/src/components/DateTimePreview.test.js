@@ -66,7 +66,7 @@ describe( 'DateTimePreview', () => {
 		render( <DateTimePreview { ...props } /> );
 
 		expect( document.querySelector ).toHaveBeenCalledWith(
-			'[name="test_input_name"]'
+			'[name="test_input_name"]',
 		);
 	} );
 
@@ -83,7 +83,7 @@ describe( 'DateTimePreview', () => {
 		expect( mockInput.addEventListener ).toHaveBeenCalledWith(
 			'input',
 			expect.any( Function ),
-			{ once: true }
+			{ once: true },
 		);
 	} );
 
@@ -190,7 +190,7 @@ describe( 'DateTimePreview', () => {
 		render( <DateTimePreview { ...props } /> );
 
 		expect( document.querySelector ).toHaveBeenCalledWith(
-			'[name="custom_name"]'
+			'[name="custom_name"]',
 		);
 		expect( format ).toHaveBeenCalledWith( 'Y-m-d' );
 	} );

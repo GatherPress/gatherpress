@@ -304,7 +304,7 @@ describe( 'getUrlParam', () => {
 
 	it( 'handles parameters with special characters', () => {
 		mockLocationSearch(
-			'?email=test%40example.com&path=%2Fhome%2Fuser'
+			'?email=test%40example.com&path=%2Fhome%2Fuser',
 		);
 
 		expect( getUrlParam( 'email' ) ).toBe( 'test@example.com' );

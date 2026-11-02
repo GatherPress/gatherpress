@@ -40,7 +40,7 @@ import {
 const AllDay = () => {
 	const { editPost, unlockPostSaving } = useDispatch( 'core/editor' );
 	const { setDateTimeStart, setDateTimeEnd } = useDispatch(
-		'gatherpress/datetime'
+		'gatherpress/datetime',
 	);
 
 	const { isAllDay, timezonePreference } = useSelect( ( select ) => {
@@ -57,7 +57,7 @@ const AllDay = () => {
 			dateTimeStart: select( 'gatherpress/datetime' ).getDateTimeStart(),
 			dateTimeEnd: select( 'gatherpress/datetime' ).getDateTimeEnd(),
 		} ),
-		[]
+		[],
 	);
 
 	// Seeded with what the post loaded holding, so the first toggle off has
@@ -107,7 +107,7 @@ const AllDay = () => {
 			dateTimeStart,
 			dateTimeEnd,
 			timezonePreference,
-		]
+		],
 	);
 
 	return (

@@ -7,11 +7,21 @@ jest.mock( '@src/helpers/event', () => ( {
 	findEventPostById: jest.fn(),
 } ) );
 
+jest.mock( '@src/blocks/event-date/viewer-time', () => ( {
+	getViewerTimeLabel: jest.fn( () => 'converted' ),
+} ) );
+
 /**
  * Internal dependencies
  */
 import { findEventPostById } from '@src/helpers/event';
-import { resolveEventDateData } from '@src/blocks/event-date/helpers';
+import { getViewerTimeLabel } from '@src/blocks/event-date/viewer-time';
+import {
+	getViewerTimeHelp,
+	getViewerTimePreview,
+	isTimezoneAppended,
+	resolveEventDateData,
+} from '@src/blocks/event-date/helpers';
 
 /**
  * Regression coverage for #1733 — event-date block uses the live datetime
@@ -79,7 +89,7 @@ describe( 'resolveEventDateData', () => {
 				'gatherpress_event',
 				undefined,
 				42,
-				false
+				false,
 			);
 
 			expect( mockDatetimeStore.getDateTimeStart ).toHaveBeenCalled();
@@ -96,7 +106,7 @@ describe( 'resolveEventDateData', () => {
 				'gatherpress_event',
 				undefined,
 				42,
-				false
+				false,
 			);
 
 			expect( mockDatetimeStore.getDateTimeStart ).toHaveBeenCalled();
@@ -111,7 +121,7 @@ describe( 'resolveEventDateData', () => {
 				'gatherpress_event',
 				0,
 				42,
-				false
+				false,
 			);
 
 			expect( mockDatetimeStore.getDateTimeStart ).not.toHaveBeenCalled();
@@ -125,7 +135,7 @@ describe( 'resolveEventDateData', () => {
 				'gatherpress_event',
 				1,
 				42,
-				false
+				false,
 			);
 
 			expect( mockDatetimeStore.getDateTimeStart ).not.toHaveBeenCalled();
@@ -147,7 +157,7 @@ describe( 'resolveEventDateData', () => {
 				'gatherpress_event',
 				0,
 				42,
-				false
+				false,
 			);
 
 			expect( result.isValidEvent ).toBe( false );
@@ -165,14 +175,14 @@ describe( 'resolveEventDateData', () => {
 				'gatherpress_production',
 				undefined,
 				777,
-				false
+				false,
 			);
 
 			expect( mockDatetimeStore.getDateTimeStart ).not.toHaveBeenCalled();
 			expect( mockCoreStore.getEntityRecord ).toHaveBeenCalledWith(
 				'postType',
 				'gatherpress_production',
-				777
+				777,
 			);
 			expect( result.dateTimeStart ).toBe( '2025-06-10 14:00:00' );
 			expect( result.timezone ).toBe( 'America/Chicago' );
@@ -188,7 +198,7 @@ describe( 'resolveEventDateData', () => {
 				'gatherpress_event',
 				undefined,
 				42,
-				false
+				false,
 			);
 
 			expect( mockDatetimeStore.getDateTimeStart ).toHaveBeenCalled();
@@ -203,7 +213,7 @@ describe( 'resolveEventDateData', () => {
 				'gatherpress_event',
 				undefined,
 				null,
-				false
+				false,
 			);
 
 			expect( result.isValidEvent ).toBe( false );
@@ -221,7 +231,7 @@ describe( 'resolveEventDateData', () => {
 				'post',
 				0,
 				42,
-				false
+				false,
 			);
 
 			expect( result.isValidEvent ).toBe( false );
@@ -236,7 +246,7 @@ describe( 'resolveEventDateData', () => {
 				'gatherpress_event',
 				1,
 				42,
-				false
+				false,
 			);
 
 			expect( result.isValidEvent ).toBe( false );
@@ -254,7 +264,7 @@ describe( 'resolveEventDateData', () => {
 				'gatherpress_event',
 				1,
 				42,
-				false
+				false,
 			);
 
 			expect( result ).toEqual( {
@@ -263,6 +273,7 @@ describe( 'resolveEventDateData', () => {
 				timezone: undefined,
 				isAllDay: false,
 				timezonePreference: '',
+				status: '',
 				isLoading: true,
 				isValidEvent: false,
 			} );
@@ -277,7 +288,7 @@ describe( 'resolveEventDateData', () => {
 				'page',
 				undefined,
 				99,
-				true
+				true,
 			);
 
 			expect( findEventPostById ).toHaveBeenCalledWith( mockSelect, 99 );
@@ -287,6 +298,7 @@ describe( 'resolveEventDateData', () => {
 				timezone: undefined,
 				isAllDay: false,
 				timezonePreference: '',
+				status: '',
 				isLoading: false,
 				isValidEvent: false,
 			} );
@@ -307,7 +319,7 @@ describe( 'resolveEventDateData', () => {
 				'page',
 				undefined,
 				99,
-				true
+				true,
 			);
 
 			expect( findEventPostById ).toHaveBeenCalledWith( mockSelect, 99 );
@@ -322,7 +334,7 @@ describe( 'resolveEventDateData', () => {
 				null,
 				undefined,
 				42,
-				false
+				false,
 			);
 
 			// Editor post type 'gatherpress_event' supports event-date, so
@@ -361,7 +373,7 @@ describe( 'resolveEventDateData', () => {
 				'gatherpress_event',
 				undefined,
 				42,
-				false
+				false,
 			);
 
 			expect( mockDatetimeStore.getDateTimeStart ).not.toHaveBeenCalled();
@@ -377,7 +389,7 @@ describe( 'resolveEventDateData', () => {
 
 			expect(
 				resolveEventDateData( mockSelect, 'gatherpress_event', undefined, 42, false )
-					.isAllDay
+					.isAllDay,
 			).toBe( true );
 		} );
 
@@ -393,7 +405,7 @@ describe( 'resolveEventDateData', () => {
 			} ) );
 
 			expect(
-				resolveEventDateData( mockSelect, 'gatherpress_event', 1, 99, false ).isAllDay
+				resolveEventDateData( mockSelect, 'gatherpress_event', 1, 99, false ).isAllDay,
 			).toBe( true );
 		} );
 
@@ -409,8 +421,53 @@ describe( 'resolveEventDateData', () => {
 			} );
 
 			expect(
-				resolveEventDateData( mockSelect, 'page', undefined, 99, true ).isAllDay
+				resolveEventDateData( mockSelect, 'page', undefined, 99, true ).isAllDay,
 			).toBe( true );
+		} );
+	} );
+
+	describe( 'status', () => {
+		it( 'reads the edited status while the event is being edited', () => {
+			const editorSelect = ( store ) =>
+				'core/editor' === store
+					? {
+						getCurrentPostType: () => 'gatherpress_event',
+						getCurrentPostId: () => 42,
+						getEditedPostAttribute: ( key ) =>
+							'gatherpress_status' === key ? 'canceled' : mockEditedMeta,
+					}
+					: mockSelect( store );
+
+			expect(
+				resolveEventDateData( editorSelect, 'gatherpress_event', undefined, 42, false ).status,
+			).toBe( 'canceled' );
+		} );
+
+		it( 'reads a queried event from its own record', () => {
+			mockCoreStore.getEntityRecord = jest.fn( () => ( {
+				status: 'publish',
+				gatherpress_status: 'postponed',
+				meta: {},
+			} ) );
+
+			expect(
+				resolveEventDateData( mockSelect, 'gatherpress_event', 1, 99, false ).status,
+			).toBe( 'postponed' );
+		} );
+
+		it( 'reads an override target from its own record', () => {
+			mockCoreStore.getPostType.mockReturnValue( { supports: {} } );
+			findEventPostById.mockReturnValue( { gatherpress_status: 'canceled', meta: {} } );
+
+			expect(
+				resolveEventDateData( mockSelect, 'page', undefined, 99, true ).status,
+			).toBe( 'canceled' );
+		} );
+
+		it( 'reports no status when the record has none', () => {
+			expect(
+				resolveEventDateData( mockSelect, 'gatherpress_event', 1, 99, false ).status,
+			).toBe( '' );
 		} );
 	} );
 
@@ -420,7 +477,7 @@ describe( 'resolveEventDateData', () => {
 
 			expect(
 				resolveEventDateData( mockSelect, 'gatherpress_event', undefined, 42, false )
-					.timezonePreference
+					.timezonePreference,
 			).toBe( 'always' );
 		} );
 
@@ -437,7 +494,7 @@ describe( 'resolveEventDateData', () => {
 
 			expect(
 				resolveEventDateData( mockSelect, 'gatherpress_event', 1, 99, false )
-					.timezonePreference
+					.timezonePreference,
 			).toBe( 'never' );
 		} );
 
@@ -454,8 +511,81 @@ describe( 'resolveEventDateData', () => {
 
 			expect(
 				resolveEventDateData( mockSelect, 'page', undefined, 99, true )
-					.timezonePreference
+					.timezonePreference,
 			).toBe( 'always' );
 		} );
+	} );
+} );
+
+describe( 'isTimezoneAppended', () => {
+	it( 'follows the event preference first', () => {
+		expect( isTimezoneAppended( 'always', 'no', false ) ).toBe( true );
+		expect( isTimezoneAppended( 'never', 'yes', true ) ).toBe( false );
+	} );
+
+	it( 'follows the block attribute, then the site setting', () => {
+		expect( isTimezoneAppended( '', 'yes', false ) ).toBe( true );
+		expect( isTimezoneAppended( '', 'no', true ) ).toBe( false );
+		expect( isTimezoneAppended( '', '', true ) ).toBe( true );
+		expect( isTimezoneAppended( '', '', undefined ) ).toBe( false );
+	} );
+} );
+
+describe( 'getViewerTimeHelp', () => {
+	it( 'explains why the toggle is disabled, or what it does', () => {
+		expect( getViewerTimeHelp( { isAllDay: true, isTimezoneAppended: true } ) ).toBe(
+			'All-day events do not show viewer local time.',
+		);
+		expect( getViewerTimeHelp( { isAllDay: false, isTimezoneAppended: false } ) ).toBe(
+			'Time zone must be appended to show viewer local time.',
+		);
+		expect( getViewerTimeHelp( { isAllDay: false, isTimezoneAppended: true } ) ).toContain(
+			'in a tooltip',
+		);
+	} );
+} );
+
+describe( 'getViewerTimePreview', () => {
+	const args = {
+		isEnabled: true,
+		start: '2030-06-15 18:00:00',
+		end: '2030-06-15 20:00:00',
+		timezone: 'America/New_York',
+		separator: '',
+		isAllDay: false,
+	};
+
+	beforeEach( () => {
+		getViewerTimeLabel.mockClear();
+	} );
+
+	it( 'is empty when the block shows no viewer time', () => {
+		expect( getViewerTimePreview( { ...args, isEnabled: false } ) ).toBe( '' );
+		expect( getViewerTimePreview( { ...args, isAllDay: true } ) ).toBe( '' );
+		expect( getViewerTimeLabel ).not.toHaveBeenCalled();
+	} );
+
+	it( 'converts the shown times to GMT for the label', () => {
+		expect( getViewerTimePreview( args ) ).toBe( 'converted' );
+		expect( getViewerTimeLabel ).toHaveBeenCalledWith(
+			expect.objectContaining( {
+				startGmt: '2030-06-15 22:00:00',
+				endGmt: '2030-06-16 00:00:00',
+				eventTimezone: 'America/New_York',
+				rangeFormat: '%1$s to %2$s your time',
+				singleFormat: '%s your time',
+			} ),
+		);
+	} );
+
+	it( 'leaves out a time the block does not show, and uses the block separator', () => {
+		getViewerTimePreview( { ...args, end: null, separator: 'until' } );
+
+		expect( getViewerTimeLabel ).toHaveBeenCalledWith(
+			expect.objectContaining( {
+				endGmt: '',
+				rangeFormat: '%1$s until %2$s your time',
+			} ),
+		);
 	} );
 } );
