@@ -115,9 +115,9 @@ class Test_Dashboard extends Base {
 				),
 				array(
 					'type'     => 'action',
-					'name'     => 'admin_head-index.php',
+					'name'     => 'admin_enqueue_scripts',
 					'priority' => 10,
-					'callback' => array( $instance, 'print_styles' ),
+					'callback' => array( $instance, 'add_inline_styles' ),
 				),
 				array(
 					'type'     => 'action',
@@ -271,13 +271,13 @@ class Test_Dashboard extends Base {
 	}
 
 	/**
-	 * Icons are printed for known menu icons, RSVPs and the spacer.
+	 * Icon styles are added on the dashboard for known menu icons, RSVPs and the spacer.
 	 *
-	 * @covers ::print_styles
+	 * @covers ::add_inline_styles
 	 *
 	 * @return void
 	 */
-	public function test_print_styles(): void {
+	public function test_add_inline_styles(): void {
 		register_post_type(
 			'gp_test_glance',
 			array(
@@ -286,8 +286,15 @@ class Test_Dashboard extends Base {
 			)
 		);
 
-		$output = Utility::buffer_and_return( array( Dashboard::get_instance(), 'print_styles' ) );
+		Dashboard::get_instance()->add_inline_styles( 'edit.php' );
 
+		$this->assertFalse( wp_styles()->get_data( 'dashboard', 'after' ), 'Other admin pages get no styles.' );
+
+		Dashboard::get_instance()->add_inline_styles( 'index.php' );
+
+		$output = implode( '', (array) wp_styles()->get_data( 'dashboard', 'after' ) );
+
+		unset( wp_styles()->registered['dashboard']->extra['after'] );
 		unregister_post_type( 'gp_test_glance' );
 
 		$this->assertStringContainsString( 'gatherpress_event:before{content:"\f484";content:"\f484" / ""}', $output );

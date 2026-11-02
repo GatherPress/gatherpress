@@ -94,7 +94,7 @@ final class Dashboard {
 	 */
 	protected function setup_hooks(): void {
 		add_filter( 'dashboard_glance_items', array( $this, 'add_glance_items' ) );
-		add_action( 'admin_head-index.php', array( $this, 'print_styles' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'add_inline_styles' ) );
 		add_action( 'clean_post_cache', array( $this, 'maybe_flush_for_post' ), 10, 2 );
 		add_action( 'set_object_terms', array( $this, 'maybe_flush_for_terms' ), 10, 4 );
 		add_action( 'transition_comment_status', array( $this, 'maybe_flush_for_comment' ), 10, 3 );
@@ -138,16 +138,22 @@ final class Dashboard {
 	}
 
 	/**
-	 * Print the icon for each item.
+	 * Add the icon for each item to the dashboard stylesheet.
 	 *
 	 * Core wraps filtered items in a bare `<li>`, so the icon rule targets
 	 * the class on the link or span inside it instead.
 	 *
 	 * @since TBD
 	 *
+	 * @param string $hook_suffix The current admin page.
+	 *
 	 * @return void
 	 */
-	public function print_styles(): void {
+	public function add_inline_styles( string $hook_suffix ): void {
+		if ( 'index.php' !== $hook_suffix ) {
+			return;
+		}
+
 		$rules = array(
 			'#dashboard_right_now .gatherpress-glance-spacer{visibility:hidden}',
 			'#dashboard_right_now .gatherpress-glance-rsvp:before{content:"\f101";content:"\f101" / ""}',
@@ -159,15 +165,13 @@ final class Dashboard {
 			if ( $icon ) {
 				$rules[] = sprintf(
 					'#dashboard_right_now .gatherpress-glance-%1$s:before{content:"%2$s";content:"%2$s" / ""}',
-					$post_type->name,
+					sanitize_key( $post_type->name ),
 					$icon
 				);
 			}
 		}
 
-		// Static rules and registered post type keys only, nothing to escape.
-		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		echo '<style>' . implode( '', $rules ) . "</style>\n";
+		wp_add_inline_style( 'dashboard', implode( '', $rules ) );
 	}
 
 	/**
