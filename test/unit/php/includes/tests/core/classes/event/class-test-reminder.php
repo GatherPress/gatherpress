@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core\Event;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Reminder;
 use GatherPress\Core\Event\Scheduler;
+use GatherPress\Core\Event\Status;
 use GatherPress\Core\Mailer;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Settings;
@@ -570,6 +571,33 @@ class Test_Reminder extends Base {
 		Reminder::get_instance()->queue_reminder( $post_id );
 		$this->run_mail_jobs();
 		$this->assertSame( array(), $this->sent, 'Nothing goes out while RSVP is off.' );
+	}
+
+	/**
+	 * Check that a canceled event is not reminded, whether it was canceled before or after queueing.
+	 *
+	 * @covers ::queue_reminder
+	 *
+	 * @return void
+	 */
+	public function test_canceled_event_is_not_reminded(): void {
+		$this->enable_reminders();
+
+		$canceled = $this->create_event();
+		$later    = $this->create_event();
+
+		( new Rsvp( $canceled ) )->save( 'guest@example.test', 'attending', 0, 0 );
+		( new Rsvp( $later ) )->save( 'guest@example.test', 'attending', 0, 0 );
+
+		( new Status( $canceled ) )->set( 'canceled' );
+		Reminder::get_instance()->queue_reminder( $canceled );
+		$this->assertSame( '', get_post_meta( $canceled, Reminder::SENT_META_KEY, true ) );
+
+		Reminder::get_instance()->queue_reminder( $later );
+		( new Status( $later ) )->set( 'canceled' );
+		$this->run_mail_jobs();
+
+		$this->assertSame( array(), $this->sent );
 	}
 
 	/**

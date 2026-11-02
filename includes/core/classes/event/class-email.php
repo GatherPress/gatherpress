@@ -273,8 +273,8 @@ final class Email {
 	 *
 	 * Looked up when each batch runs, so an RSVP changed after the reminder
 	 * was queued is respected. Nobody gets it once the event is no longer
-	 * published, once it has started, or once its start has moved, since the
-	 * new start gets its own reminder.
+	 * published, once it has been canceled, once it has started, or once its
+	 * start has moved, since the new start gets its own reminder.
 	 *
 	 * @since TBD
 	 *
@@ -289,6 +289,7 @@ final class Email {
 
 		if (
 			'publish' !== get_post_status( $post_id )
+			|| ( new Status( $post_id ) )->is_canceled()
 			|| (int) strtotime( $start ) <= time()
 			|| get_post_meta( $post_id, Scheduler::START_META_KEY, true ) !== $start
 		) {
