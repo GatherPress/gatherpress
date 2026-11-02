@@ -336,53 +336,7 @@ final class Query {
 			}
 		}
 
-		// When the "filter by event activity" toggle is on, restrict the query to
-		// shadow-source posts whose shadow terms sit on an upcoming or past event.
-		// Runs early so the resolved source IDs can still compose with the query
-		// loop's post_type, tax_query, and pagination.
-		if ( 1 === (int) $query->get( 'has_events_filter' ) ) {
-			$post_type = $query->get( 'post_type' );
-
-			if (
-				is_string( $post_type )
-				&& post_type_supports( $post_type, Shadow_Source::SUPPORT )
-			) {
-				// The block normally writes upcoming_events_only as an integer (0/1),
-				// but AQL can pass the literal strings 'upcoming' or 'past'. Default
-				// on when the attribute is absent.
-				$upcoming_value = $query->get( 'upcoming_events_only', 1 );
-				$upcoming       = 'upcoming' === $upcoming_value || 1 === (int) $upcoming_value;
-
-				$source_ids = Shadow_Source::get_instance()->get_source_post_ids_by_event_activity(
-					$post_type,
-					$upcoming
-				);
-
-				// Null means the source's shadow taxonomy is not wired onto any
-				// event post type, so the filter does not apply and the query
-				// keeps its own scope.
-				if ( null !== $source_ids ) {
-					// A post__in the query already carries is a narrower scope the
-					// caller asked for, so intersect rather than merge -- merging
-					// would widen the result set and make the filter add posts
-					// instead of removing them. WP_Query::get() returns '' for an
-					// unset var, so only treat an actual array as a prior scope.
-					$existing_post_in = $query->get( 'post__in' );
-					$existing_post_in = is_array( $existing_post_in )
-						? array_map( 'intval', $existing_post_in )
-						: array();
-
-					if ( ! empty( $existing_post_in ) ) {
-						$source_ids = array_values( array_intersect( $existing_post_in, $source_ids ) );
-					}
-
-					// An empty result means the filter ran and matched nothing,
-					// which is a valid answer rather than an open list; pin the
-					// query to an impossible ID so it returns empty.
-					$query->set( 'post__in', ! empty( $source_ids ) ? $source_ids : array( 0 ) );
-				}
-			}
-		}
+		$this->apply_event_activity_filter( $query );
 
 		if ( in_array( $events_query, array( 'upcoming', 'past' ), true ) ) {
 			/**
@@ -773,6 +727,51 @@ final class Query {
 		$pieces['join'] = $join;
 
 		return $pieces;
+	}
+
+	/**
+	 * Limit a shadow-source query to sources with upcoming or past events.
+	 *
+	 * Runs when the query's `has_events_filter` is on. A `post__in` the query
+	 * already has is intersected rather than replaced, so the filter only
+	 * narrows it, and a filter that matches nothing returns no posts.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_Query $query The query being prepared.
+	 *
+	 * @return void
+	 */
+	protected function apply_event_activity_filter( WP_Query $query ): void {
+		$post_type = $query->get( 'post_type' );
+
+		if (
+			1 !== (int) $query->get( 'has_events_filter' )
+			|| ! is_string( $post_type )
+			|| ! post_type_supports( $post_type, Shadow_Source::SUPPORT )
+		) {
+			return;
+		}
+
+		// Blocks store 0 or 1, while AQL can pass 'upcoming' or 'past'.
+		$upcoming   = $query->get( 'upcoming_events_only', 1 );
+		$source_ids = Shadow_Source::get_instance()->get_source_post_ids_by_event_activity(
+			$post_type,
+			'upcoming' === $upcoming || 1 === (int) $upcoming
+		);
+
+		// Null means the source's taxonomy is not on any event post type.
+		if ( null === $source_ids ) {
+			return;
+		}
+
+		$post_in = $query->get( 'post__in' );
+
+		if ( is_array( $post_in ) && ! empty( $post_in ) ) {
+			$source_ids = array_values( array_intersect( array_map( 'intval', $post_in ), $source_ids ) );
+		}
+
+		$query->set( 'post__in', ! empty( $source_ids ) ? $source_ids : array( 0 ) );
 	}
 
 	/**

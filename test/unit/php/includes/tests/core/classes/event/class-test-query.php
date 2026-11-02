@@ -634,6 +634,7 @@ class Test_Query extends Base {
 	 *
 	 * @since 0.36.0
 	 * @covers ::prepare_event_query_before_execution
+	 * @covers ::apply_event_activity_filter
 	 *
 	 * @return void
 	 */
@@ -711,6 +712,7 @@ class Test_Query extends Base {
 	 *
 	 * @since 0.36.0
 	 * @covers ::prepare_event_query_before_execution
+	 * @covers ::apply_event_activity_filter
 	 *
 	 * @return void
 	 */
@@ -786,6 +788,7 @@ class Test_Query extends Base {
 	 *
 	 * @since 0.36.0
 	 * @covers ::prepare_event_query_before_execution
+	 * @covers ::apply_event_activity_filter
 	 *
 	 * @return void
 	 */
@@ -832,6 +835,7 @@ class Test_Query extends Base {
 	 *
 	 * @since 0.36.0
 	 * @covers ::prepare_event_query_before_execution
+	 * @covers ::apply_event_activity_filter
 	 *
 	 * @return void
 	 */
@@ -881,6 +885,7 @@ class Test_Query extends Base {
 	 *
 	 * @since 0.36.0
 	 * @covers ::prepare_event_query_before_execution
+	 * @covers ::apply_event_activity_filter
 	 *
 	 * @return void
 	 */
@@ -917,6 +922,7 @@ class Test_Query extends Base {
 	 *
 	 * @since 0.36.0
 	 * @covers ::prepare_event_query_before_execution
+	 * @covers ::apply_event_activity_filter
 	 *
 	 * @return void
 	 */
@@ -963,6 +969,7 @@ class Test_Query extends Base {
 	 *
 	 * @since 0.36.0
 	 * @covers ::prepare_event_query_before_execution
+	 * @covers ::apply_event_activity_filter
 	 *
 	 * @return void
 	 */
@@ -989,6 +996,7 @@ class Test_Query extends Base {
 	 *
 	 * @since 0.36.0
 	 * @covers ::prepare_event_query_before_execution
+	 * @covers ::apply_event_activity_filter
 	 *
 	 * @return void
 	 */
@@ -2679,6 +2687,7 @@ class Test_Query extends Base {
 	 *
 	 * @since 0.36.0
 	 * @covers ::prepare_event_query_before_execution
+	 * @covers ::apply_event_activity_filter
 	 *
 	 * @return void
 	 */
@@ -3134,6 +3143,7 @@ class Test_Query extends Base {
 	 *
 	 * @since 0.36.0
 	 * @covers ::prepare_event_query_before_execution
+	 * @covers ::apply_event_activity_filter
 	 *
 	 * @return void
 	 */
