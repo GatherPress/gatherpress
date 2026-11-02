@@ -19,7 +19,6 @@ use GatherPress\Core\Rsvp\Query as Rsvp_Query;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue;
-use WP_Comment;
 use WP_Post;
 use WP_Post_Type;
 
@@ -54,13 +53,15 @@ final class Dashboard {
 	/**
 	 * Lifetime of the cached counts, in seconds.
 	 *
-	 * Also bounds how long an event that just ended keeps counting as upcoming.
+	 * RSVP changes do not flush the counts, since a busy site would rebuild
+	 * them on nearly every load, so this also bounds how long RSVP counts and
+	 * an event that just ended can lag.
 	 *
 	 * @since TBD
 	 *
 	 * @var int
 	 */
-	const CACHE_EXPIRATION = 5 * MINUTE_IN_SECONDS;
+	const CACHE_EXPIRATION = 15 * MINUTE_IN_SECONDS;
 
 	/**
 	 * Dashicon code points for the menu icons GatherPress registers.
@@ -96,8 +97,6 @@ final class Dashboard {
 		add_filter( 'dashboard_glance_items', array( $this, 'add_glance_items' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'add_inline_styles' ) );
 		add_action( 'clean_post_cache', array( $this, 'maybe_flush_for_post' ), 10, 2 );
-		add_action( 'set_object_terms', array( $this, 'maybe_flush_for_terms' ), 10, 4 );
-		add_action( 'transition_comment_status', array( $this, 'maybe_flush_for_comment' ), 10, 3 );
 	}
 
 	/**
@@ -191,45 +190,6 @@ final class Dashboard {
 	 */
 	public function maybe_flush_for_post( int $post_id, WP_Post $post ): void {
 		if ( post_type_supports( $post->post_type, Event::SUPPORT ) ) {
-			delete_transient( self::CACHE_KEY );
-		}
-	}
-
-	/**
-	 * Flush the counts when an RSVP response changes.
-	 *
-	 * @since TBD
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-	 *
-	 * @param int                    $object_id Object ID, required by the hook signature.
-	 * @param array<int, int|string> $terms     Terms, required by the hook signature.
-	 * @param array<int, int>        $tt_ids    Term taxonomy IDs, required by the hook signature.
-	 * @param string                 $taxonomy  Taxonomy slug.
-	 *
-	 * @return void
-	 */
-	public function maybe_flush_for_terms( int $object_id, array $terms, array $tt_ids, string $taxonomy ): void {
-		if ( Status::TAXONOMY === $taxonomy ) {
-			delete_transient( self::CACHE_KEY );
-		}
-	}
-
-	/**
-	 * Flush the counts when an RSVP is approved, held, trashed or deleted.
-	 *
-	 * @since TBD
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-	 *
-	 * @param string     $new_status New status, required by the hook signature.
-	 * @param string     $old_status Old status, required by the hook signature.
-	 * @param WP_Comment $comment    Comment object.
-	 *
-	 * @return void
-	 */
-	public function maybe_flush_for_comment( string $new_status, string $old_status, WP_Comment $comment ): void {
-		if ( Rsvp::COMMENT_TYPE === $comment->comment_type ) {
 			delete_transient( self::CACHE_KEY );
 		}
 	}

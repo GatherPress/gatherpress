@@ -16,7 +16,6 @@ use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
-use WP_Comment;
 
 /**
  * Class Test_Dashboard.
@@ -124,18 +123,6 @@ class Test_Dashboard extends Base {
 					'name'     => 'clean_post_cache',
 					'priority' => 10,
 					'callback' => array( $instance, 'maybe_flush_for_post' ),
-				),
-				array(
-					'type'     => 'action',
-					'name'     => 'set_object_terms',
-					'priority' => 10,
-					'callback' => array( $instance, 'maybe_flush_for_terms' ),
-				),
-				array(
-					'type'     => 'action',
-					'name'     => 'transition_comment_status',
-					'priority' => 10,
-					'callback' => array( $instance, 'maybe_flush_for_comment' ),
 				),
 			),
 			$instance
@@ -449,48 +436,6 @@ class Test_Dashboard extends Base {
 		$this->assertSame( array(), get_transient( Dashboard::CACHE_KEY ) );
 
 		$instance->maybe_flush_for_post( $event->ID, $event );
-
-		$this->assertFalse( get_transient( Dashboard::CACHE_KEY ) );
-	}
-
-	/**
-	 * Setting an RSVP response flushes the counts, other terms do not.
-	 *
-	 * @covers ::maybe_flush_for_terms
-	 *
-	 * @return void
-	 */
-	public function test_maybe_flush_for_terms(): void {
-		$instance = Dashboard::get_instance();
-
-		set_transient( Dashboard::CACHE_KEY, array() );
-		$instance->maybe_flush_for_terms( 1, array(), array(), 'category' );
-
-		$this->assertSame( array(), get_transient( Dashboard::CACHE_KEY ) );
-
-		$instance->maybe_flush_for_terms( 1, array(), array(), Status::TAXONOMY );
-
-		$this->assertFalse( get_transient( Dashboard::CACHE_KEY ) );
-	}
-
-	/**
-	 * An RSVP status change flushes the counts, other comments do not.
-	 *
-	 * @covers ::maybe_flush_for_comment
-	 *
-	 * @return void
-	 */
-	public function test_maybe_flush_for_comment(): void {
-		$instance = Dashboard::get_instance();
-		$comment  = new WP_Comment( (object) array( 'comment_type' => 'comment' ) );
-		$rsvp     = new WP_Comment( (object) array( 'comment_type' => Rsvp::COMMENT_TYPE ) );
-
-		set_transient( Dashboard::CACHE_KEY, array() );
-		$instance->maybe_flush_for_comment( 'approved', 'unapproved', $comment );
-
-		$this->assertSame( array(), get_transient( Dashboard::CACHE_KEY ) );
-
-		$instance->maybe_flush_for_comment( 'approved', 'unapproved', $rsvp );
 
 		$this->assertFalse( get_transient( Dashboard::CACHE_KEY ) );
 	}
