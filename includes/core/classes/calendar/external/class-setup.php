@@ -998,6 +998,7 @@ final class Setup {
 	 * @return bool True when a 304 is the correct answer.
 	 */
 	public function is_not_modified( string $etag, string $last_modified ): bool {
+		// INPUT_SERVER is unreliable under FastCGI.
 		$client_etag = isset( $_SERVER['HTTP_IF_NONE_MATCH'] )
 			? sanitize_text_field( wp_unslash( $_SERVER['HTTP_IF_NONE_MATCH'] ) )
 			: '';
@@ -1008,6 +1009,7 @@ final class Setup {
 			return in_array( $etag, $tags, true );
 		}
 
+		// INPUT_SERVER is unreliable under FastCGI.
 		$client_time = isset( $_SERVER['HTTP_IF_MODIFIED_SINCE'] )
 			? sanitize_text_field( wp_unslash( $_SERVER['HTTP_IF_MODIFIED_SINCE'] ) )
 			: '';
@@ -1138,6 +1140,7 @@ final class Setup {
 	 */
 	public function is_calendar_negotiated( ?string $accept_header = null ): bool {
 		if ( null === $accept_header ) {
+			// INPUT_SERVER is unreliable under FastCGI.
 			$accept_header = isset( $_SERVER['HTTP_ACCEPT'] ) && is_string( $_SERVER['HTTP_ACCEPT'] )
 				? sanitize_text_field( wp_unslash( $_SERVER['HTTP_ACCEPT'] ) )
 				: '';

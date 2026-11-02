@@ -13,6 +13,7 @@ use GatherPress\Core\Event\Status;
 use GatherPress\Core\Event\Admin_List;
 use GatherPress\Core\Event\Meta;
 use GatherPress\Core\Event\Query;
+use GatherPress\Core\Event\Reminder;
 use GatherPress\Core\Event\Rest_Api;
 use GatherPress\Core\Event\Scheduler;
 use GatherPress\Core\Event\Setup;
@@ -81,6 +82,10 @@ class Test_Setup extends Base {
 			Query::class      => array(
 				'pre_get_posts',
 				array( Query::get_instance(), 'prepare_event_query_before_execution' ),
+			),
+			Reminder::class   => array(
+				Reminder::SWEEP_ACTION,
+				array( Reminder::get_instance(), 'sweep' ),
 			),
 			Rest_Api::class   => array(
 				'rest_api_init',
@@ -2662,11 +2667,13 @@ class Test_Setup extends Base {
 		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 		$classes  = $setup->add_status_post_class( array( 'hentry' ), array(), $event_id );
 		$this->assertContains( 'gatherpress-event-status--is-scheduled', $classes );
+		$this->assertNotContains( 'gatherpress-event-status--is-struck', $classes );
 
 		// Cancelled event gets the status class.
 		( new Status( $event_id ) )->set( 'canceled' );
 		$classes = $setup->add_status_post_class( array( 'hentry' ), array(), $event_id );
 		$this->assertContains( 'gatherpress-event-status--is-canceled', $classes );
+		$this->assertContains( 'gatherpress-event-status--is-struck', $classes );
 	}
 
 	/**

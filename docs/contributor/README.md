@@ -54,6 +54,14 @@ The full picture, including how releases are cut, is in the [release process](re
 
 `AGENTS.md` in the repository root is the house style: US English, WordPress Coding Standards, `@since TBD` on anything new, which CSS unit belongs where, and a long list of other patterns this codebase has settled on. It is written for AI coding agents and is just as useful to people.
 
+Read request input through `Utility::get_http_input()` rather than `$_GET`, `$_POST` or `$_COOKIE`. It sanitizes the value with `sanitize_text_field()` unless you pass another sanitizer, and returns `''` when the value is missing or not a string:
+
+```php
+$tab = Utility::get_http_input( INPUT_GET, 'tab', 'sanitize_key' );
+```
+
+For a value that can come by GET or POST, which is what `$_REQUEST` covered, use `Utility::get_request_input( 'status' )`. It reads POST first, then GET. Read a superglobal directly only where the helper cannot work: `$_SERVER`, array values such as bulk-action IDs, and loops over every key. The [unit test guide](unit-tests/README.md#faking-request-input) covers faking input in tests.
+
 Run the linters before you push, because CI will:
 
 ```bash

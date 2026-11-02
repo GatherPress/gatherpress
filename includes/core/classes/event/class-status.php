@@ -51,6 +51,14 @@ final class Status {
 	const DEFAULT_ICAL = 'CONFIRMED';
 
 	/**
+	 * Operational status slug for canceled events.
+	 *
+	 * @since TBD
+	 * @var string
+	 */
+	const STATUS_CANCELED = 'canceled';
+
+	/**
 	 * The event post, or null when the post does not support events.
 	 *
 	 * @since TBD
@@ -91,7 +99,7 @@ final class Status {
 	 */
 	public static function all( string $post_type = '' ): array {
 		$statuses = array(
-			'scheduled'    => array(
+			'scheduled'           => array(
 				/* translators: Event operational status label. */
 				'label'       => _x( 'Scheduled', 'event status', 'gatherpress' ),
 				'description' => __( 'Event is planned and confirmed to take place.', 'gatherpress' ),
@@ -100,7 +108,7 @@ final class Status {
 				'ical'        => 'CONFIRMED',
 				'priority'    => 0,
 			),
-			'canceled'     => array(
+			self::STATUS_CANCELED => array(
 				/* translators: Event operational status label. */
 				'label'       => _x( 'Canceled', 'event status', 'gatherpress' ),
 				'description' => __(
@@ -111,8 +119,9 @@ final class Status {
 				'schema'      => 'EventCancelled',
 				'ical'        => 'CANCELLED',
 				'priority'    => 50,
+				'strike_date' => true,
 			),
-			'postponed'    => array(
+			'postponed'           => array(
 				/* translators: Event operational status label. */
 				'label'       => _x( 'Postponed', 'event status', 'gatherpress' ),
 				'description' => __( 'Event is delayed to a future unconfirmed date.', 'gatherpress' ),
@@ -120,8 +129,9 @@ final class Status {
 				'schema'      => 'EventPostponed',
 				'ical'        => 'TENTATIVE',
 				'priority'    => 40,
+				'strike_date' => true,
 			),
-			'rescheduled'  => array(
+			'rescheduled'         => array(
 				/* translators: Event operational status label. */
 				'label'       => _x( 'Rescheduled', 'event status', 'gatherpress' ),
 				'description' => __( 'Event date and time have been changed.', 'gatherpress' ),
@@ -130,7 +140,7 @@ final class Status {
 				'ical'        => 'TENTATIVE',
 				'priority'    => 30,
 			),
-			'moved-online' => array(
+			'moved-online'        => array(
 				/* translators: Event operational status label. */
 				'label'       => _x( 'Moved online', 'event status', 'gatherpress' ),
 				'description' => __(
@@ -144,7 +154,7 @@ final class Status {
 				// An event can only have moved online if it supports online events.
 				'supports'    => array( 'gatherpress-online-event' ),
 			),
-			'tentative'    => array(
+			'tentative'           => array(
 				/* translators: Event operational status label. */
 				'label'       => _x( 'Tentative', 'event status', 'gatherpress' ),
 				'description' => __(
@@ -186,7 +196,8 @@ final class Status {
 		 * holds the `label` and `description` people read, the `color` it is
 		 * shown in, the `priority` used to resolve precedence among multiple
 		 * statuses, and the `schema` (Schema.org EventStatusType) and `ical`
-		 * (RFC 5545 STATUS) values published for it. Anything omitted falls
+		 * (RFC 5545 STATUS) values published for it. Set `strike_date` to true
+		 * to cross out the event's date while it is in the status. Anything omitted falls
 		 * back to something that says the event is going ahead, so a status
 		 * never tells a calendar client something untrue.
 		 *
@@ -356,6 +367,19 @@ final class Status {
 	}
 
 	/**
+	 * Whether an event's date is crossed out while it is in a status.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $slug The status slug.
+	 *
+	 * @return bool True when the date is struck through.
+	 */
+	public static function strikes_date( string $slug ): bool {
+		return (bool) ( self::definition( $slug )['strike_date'] ?? false );
+	}
+
+	/**
 	 * Make sure a status has a term created.
 	 *
 	 * Creates a missing term for the status if it does not yet exist. Existing
@@ -424,6 +448,17 @@ final class Status {
 		);
 
 		return array_values( array_unique( $valid_statuses ) );
+	}
+
+	/**
+	 * Whether the event is canceled.
+	 *
+	 * @since TBD
+	 *
+	 * @return bool True when the event's statuses include canceled.
+	 */
+	public function is_canceled(): bool {
+		return in_array( self::STATUS_CANCELED, $this->get_all(), true );
 	}
 
 	/**

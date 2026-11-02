@@ -47,6 +47,8 @@ class Test_Status extends Base {
 			'Failed to assert the default statuses are offered in order.'
 		);
 
+		$this->assertSame( 'canceled', Status::STATUS_CANCELED );
+
 		foreach ( $statuses as $slug => $status ) {
 			$this->assertNotEmpty( $status['label'], sprintf( '%s should be named.', $slug ) );
 			$this->assertNotEmpty( $status['description'], sprintf( '%s should be explained.', $slug ) );
@@ -185,6 +187,40 @@ class Test_Status extends Base {
 		$this->assertSame( Status::DEFAULT_SCHEMA, Status::schema( 'provisional' ) );
 		$this->assertSame( Status::DEFAULT_ICAL, Status::ical( 'provisional' ) );
 		$this->assertSame( 0, Status::priority( 'provisional' ) );
+
+		remove_filter( 'gatherpress_event_statuses', $callback );
+	}
+
+	/**
+	 * Canceled and postponed cross out the date, and a registered status can too.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::strikes_date
+	 *
+	 * @return void
+	 */
+	public function test_strikes_date(): void {
+		$this->assertTrue( Status::strikes_date( 'canceled' ) );
+		$this->assertTrue( Status::strikes_date( 'postponed' ) );
+		$this->assertFalse( Status::strikes_date( 'scheduled' ) );
+		$this->assertFalse( Status::strikes_date( 'rescheduled' ) );
+
+		$callback = static function ( array $statuses ): array {
+			$statuses['suspended'] = array(
+				'label'       => 'Suspended',
+				'strike_date' => true,
+			);
+
+			return $statuses;
+		};
+
+		add_filter( 'gatherpress_event_statuses', $callback );
+
+		$this->assertTrue(
+			Status::strikes_date( 'suspended' ),
+			'Failed to assert a registered status can cross out the date.'
+		);
 
 		remove_filter( 'gatherpress_event_statuses', $callback );
 	}
@@ -532,6 +568,28 @@ class Test_Status extends Base {
 		);
 
 		Event_Setup::get_instance()->register_status_taxonomy();
+	}
+
+	/**
+	 * An event is canceled while canceled is among its statuses.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::is_canceled
+	 *
+	 * @return void
+	 */
+	public function test_is_canceled(): void {
+		$post   = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$status = new Status( $post->ID );
+
+		$this->assertFalse( $status->is_canceled() );
+
+		$status->set( 'canceled' );
+		$this->assertTrue( $status->is_canceled() );
+
+		$status->set( 'scheduled' );
+		$this->assertFalse( $status->is_canceled() );
 	}
 
 	/**

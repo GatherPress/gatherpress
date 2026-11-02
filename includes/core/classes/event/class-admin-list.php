@@ -172,11 +172,7 @@ final class Admin_List {
 
 		$post_type = $screen->post_type;
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$current_view = isset( $_GET[ Query::EVENT_QUERY_PARAM ] )
-			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			? sanitize_text_field( wp_unslash( $_GET[ Query::EVENT_QUERY_PARAM ] ) )
-			: '';
+		$current_view = Utility::get_http_input( INPUT_GET, Query::EVENT_QUERY_PARAM );
 
 		$counts    = $this->get_event_counts( $post_type );
 		$placement = 1;
@@ -413,11 +409,7 @@ final class Admin_List {
 		// The Upcoming and Past views travel in a query parameter core's filter
 		// form knows nothing about, so filtering by date from one of those views
 		// would otherwise drop the user back to All.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$current_view = isset( $_GET[ Query::EVENT_QUERY_PARAM ] )
-			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			? sanitize_text_field( wp_unslash( $_GET[ Query::EVENT_QUERY_PARAM ] ) )
-			: '';
+		$current_view = Utility::get_http_input( INPUT_GET, Query::EVENT_QUERY_PARAM );
 
 		if ( '' !== $current_view ) {
 			printf(
@@ -493,11 +485,7 @@ final class Admin_List {
 			? (string) $taxonomy_object->labels->filter_by_item
 			: (string) $taxonomy_object->labels->name;
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$selected = isset( $_GET[ $taxonomy ] ) && is_scalar( $_GET[ $taxonomy ] )
-			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			? sanitize_title( (string) wp_unslash( $_GET[ $taxonomy ] ) )
-			: '';
+		$selected = Utility::get_http_input( INPUT_GET, $taxonomy, 'sanitize_title' );
 
 		printf(
 			'<label class="screen-reader-text" for="%s">%s</label>',
@@ -558,8 +546,7 @@ final class Admin_List {
 			return;
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$selected = isset( $_GET[ $name ] ) ? (int) $_GET[ $name ] : 0;
+		$selected = (int) Utility::get_http_input( INPUT_GET, $name );
 
 		printf(
 			'<label for="%1$s" class="screen-reader-text">%2$s</label>'
@@ -693,8 +680,7 @@ final class Admin_List {
 	 * @return string SQL fragment to append to a months query's WHERE clause.
 	 */
 	private function get_months_status_clause(): string {
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$post_status = isset( $_GET['post_status'] ) ? sanitize_key( wp_unslash( $_GET['post_status'] ) ) : '';
+		$post_status = Utility::get_http_input( INPUT_GET, 'post_status', 'sanitize_key' );
 
 		if ( 'trash' === $post_status ) {
 			return " AND post_status = 'trash'";

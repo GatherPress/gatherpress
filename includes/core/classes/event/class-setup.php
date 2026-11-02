@@ -99,6 +99,7 @@ final class Setup {
 		Email::get_instance();
 		Meta::get_instance();
 		Query::get_instance();
+		Reminder::get_instance();
 		Rest_Api::get_instance();
 		Scheduler::get_instance();
 	}
@@ -208,6 +209,10 @@ final class Setup {
 
 		$status    = ( new Status( $post_id ) )->get();
 		$classes[] = sprintf( 'gatherpress-event-status--is-%s', sanitize_html_class( $status ) );
+
+		if ( Status::strikes_date( $status ) ) {
+			$classes[] = 'gatherpress-event-status--is-struck';
+		}
 
 		return $classes;
 	}

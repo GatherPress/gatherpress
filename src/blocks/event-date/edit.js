@@ -47,7 +47,7 @@ import {
 	DISABLED_FIELD_OPACITY,
 } from '../../helpers/event';
 import { isInFSETemplate } from '../../helpers/editor';
-import { getDefaultStatus } from '../../helpers/event-status';
+import { getDefaultStatus, strikesDate } from '../../helpers/event-status';
 import {
 	getViewerTimeHelp,
 	getViewerTimePreview,
@@ -285,13 +285,13 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		defaultShowTimezone,
 	);
 
-	// Matches the class the PHP renderer adds, so a canceled or postponed
-	// date is struck through in the editor the way it is on the frontend.
+	// Matches the classes the PHP renderer adds, so a struck-through date
+	// looks the same in the editor as on the frontend.
 	const blockProps = useBlockProps( {
-		className:
-			status && getDefaultStatus() !== status
-				? `gatherpress-event-date--is-${ status }`
-				: undefined,
+		className: [
+			status && getDefaultStatus() !== status && `gatherpress-event-date--is-${ status }`,
+			status && strikesDate( status ) && 'gatherpress-event-date--is-struck',
+		].filter( Boolean ).join( ' ' ) || undefined,
 		style: {
 			opacity: ( isInFSETemplate() || isValidEvent ) ? 1 : DISABLED_FIELD_OPACITY,
 		},

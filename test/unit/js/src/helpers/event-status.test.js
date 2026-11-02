@@ -17,6 +17,7 @@ import {
 	getDefaultStatus,
 	getStatusDescription,
 	getStatusOptions,
+	strikesDate,
 } from '@src/helpers/event-status';
 
 describe( 'event status helpers', () => {
@@ -70,5 +71,16 @@ describe( 'event status helpers', () => {
 		mockConfig = undefined;
 
 		expect( getDefaultStatus() ).toBe( 'scheduled' );
+	} );
+
+	it( 'crosses out the date only for a status that asks for it', () => {
+		mockConfig = {
+			scheduled: { label: 'Scheduled' },
+			canceled: { label: 'Canceled', strike_date: true },
+		};
+
+		expect( strikesDate( 'canceled' ) ).toBe( true );
+		expect( strikesDate( 'scheduled' ) ).toBe( false );
+		expect( strikesDate( 'not-a-status' ) ).toBe( false );
 	} );
 } );

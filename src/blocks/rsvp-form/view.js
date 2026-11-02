@@ -224,6 +224,7 @@ const { state } = store( 'gatherpress', {
 			const urlParams = new URLSearchParams( window.location.search );
 			const isSuccess = 'true' === urlParams.get( 'gatherpress_rsvp_success' );
 			const isPast = 'past' === form.dataset.gatherpressEventState;
+			const isCanceled = 'canceled' === form.dataset.gatherpressEventState;
 
 			// Set initial visibility for blocks based on their attributes and current state.
 			const blocksWithVisibility = form.querySelectorAll( '[data-gatherpress-rsvp-form-visibility]' );
@@ -240,12 +241,20 @@ const { state } = store( 'gatherpress', {
 					visibility = {};
 				}
 
-				const { onSuccess, whenPast } = visibility;
+				const { onSuccess, whenPast, whenCanceled } = visibility;
 
 				let shouldShow = null; // null = default (always visible)
 
-				// When event is past, check whenPast (takes precedence when past).
-				if ( isPast && whenPast ) {
+				if ( isCanceled ) {
+					// A canceled event takes no RSVPs, so blocks tied to the RSVP flow hide by default.
+					if ( whenCanceled ) {
+						shouldShow = 'show' === whenCanceled;
+					} else if ( onSuccess || whenPast ) {
+						shouldShow = false;
+					}
+				} else if ( 'show' === whenCanceled ) {
+					shouldShow = false;
+				} else if ( isPast && whenPast ) {
 					shouldShow = 'show' === whenPast;
 				} else if ( ! isPast && whenPast && ! onSuccess ) {
 					// When not past but block has ONLY whenPast setting (no onSuccess).

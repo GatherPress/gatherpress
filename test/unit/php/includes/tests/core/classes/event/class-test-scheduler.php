@@ -27,6 +27,7 @@ class Test_Scheduler extends Base {
 	 */
 	public function tear_down(): void {
 		wp_clear_scheduled_hook( Scheduler::CRON_ACTION );
+		wp_unschedule_hook( Scheduler::START_CRON_ACTION );
 		wp_clear_scheduled_hook( Scheduler::SWEEP_ACTION );
 		remove_all_filters( 'gatherpress_event_end_cache_keys' );
 		remove_all_filters( 'gatherpress_event_upcoming_tracking_enabled' );
@@ -73,19 +74,25 @@ class Test_Scheduler extends Base {
 				'type'     => 'action',
 				'name'     => 'added_post_meta',
 				'priority' => 10,
-				'callback' => array( $instance, 'handle_end_meta_change' ),
+				'callback' => array( $instance, 'handle_datetime_meta_change' ),
 			),
 			array(
 				'type'     => 'action',
 				'name'     => 'updated_postmeta',
 				'priority' => 10,
-				'callback' => array( $instance, 'handle_end_meta_change' ),
+				'callback' => array( $instance, 'handle_datetime_meta_change' ),
 			),
 			array(
 				'type'     => 'action',
 				'name'     => 'before_delete_post',
 				'priority' => 10,
 				'callback' => array( $instance, 'handle_before_delete_post' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => Scheduler::START_CRON_ACTION,
+				'priority' => 10,
+				'callback' => array( $instance, 'handle_start_run' ),
 			),
 			array(
 				'type'     => 'action',
@@ -261,40 +268,40 @@ class Test_Scheduler extends Base {
 	}
 
 	/**
-	 * Test handle_end_meta_change schedules future event and unschedules past event.
+	 * Test handle_datetime_meta_change schedules future event and unschedules past event.
 	 *
-	 * @covers ::handle_end_meta_change
+	 * @covers ::handle_datetime_meta_change
 	 * @covers ::sync_event
 	 *
 	 * @return void
 	 */
-	public function test_handle_end_meta_change(): void {
+	public function test_handle_datetime_meta_change(): void {
 		$instance = Scheduler::get_instance();
 
 		// Ignores other meta keys.
-		$instance->handle_end_meta_change( 1, 1, 'some_other_key' );
+		$instance->handle_datetime_meta_change( 1, 1, 'some_other_key' );
 
 		// Ignores non-existing or unsupported posts.
 		$post_id = $this->factory()->post->create( array( 'post_type' => 'post' ) );
-		$instance->handle_end_meta_change( 1, $post_id, Scheduler::POST_META_KEY );
+		$instance->handle_datetime_meta_change( 1, $post_id, Scheduler::POST_META_KEY );
 
 		// Ignores non-published events.
 		$draft_id = $this->create_test_event( array( 'post_status' => 'draft' ) );
-		$instance->handle_end_meta_change( 1, $draft_id, Scheduler::POST_META_KEY );
+		$instance->handle_datetime_meta_change( 1, $draft_id, Scheduler::POST_META_KEY );
 
 		// Published event with future end date schedules cron.
 		$event_id   = $this->create_test_event( array( 'post_status' => 'publish' ) );
 		$future_end = gmdate( 'Y-m-d H:i:s', time() + HOUR_IN_SECONDS );
 		update_post_meta( $event_id, Scheduler::POST_META_KEY, $future_end );
 
-		$instance->handle_end_meta_change( 1, $event_id, Scheduler::POST_META_KEY );
+		$instance->handle_datetime_meta_change( 1, $event_id, Scheduler::POST_META_KEY );
 		$this->assertNotEmpty( wp_next_scheduled( Scheduler::CRON_ACTION, array( $event_id ) ) );
 
 		// Published event updated with past end date clears schedule.
 		$past_end = gmdate( 'Y-m-d H:i:s', time() - HOUR_IN_SECONDS );
 		update_post_meta( $event_id, Scheduler::POST_META_KEY, $past_end );
 
-		$instance->handle_end_meta_change( 1, $event_id, Scheduler::POST_META_KEY );
+		$instance->handle_datetime_meta_change( 1, $event_id, Scheduler::POST_META_KEY );
 		$this->assertFalse( wp_next_scheduled( Scheduler::CRON_ACTION, array( $event_id ) ) );
 	}
 
@@ -689,5 +696,141 @@ class Test_Scheduler extends Base {
 		update_post_meta( $past_id, Scheduler::POST_META_KEY, gmdate( 'Y-m-d H:i:s', time() - HOUR_IN_SECONDS ) );
 		$this->assertFalse( $instance->is_valid_future_event( $past_id ) );
 		$this->assertTrue( $instance->is_valid_past_event( $past_id ) );
+	}
+
+	/**
+	 * Test handle_datetime_meta_change schedules the start run when the start changes.
+	 *
+	 * @covers ::handle_datetime_meta_change
+	 * @covers ::sync_event
+	 *
+	 * @return void
+	 */
+	public function test_handle_datetime_meta_change_schedules_start(): void {
+		$instance = Scheduler::get_instance();
+		$event_id = $this->create_test_event();
+		$start    = gmdate( 'Y-m-d H:i:s', time() + DAY_IN_SECONDS );
+
+		update_post_meta( $event_id, Scheduler::START_META_KEY, $start );
+		$instance->handle_datetime_meta_change( 1, $event_id, Scheduler::START_META_KEY );
+
+		$this->assertSame(
+			strtotime( $start ),
+			wp_next_scheduled( Scheduler::START_CRON_ACTION, array( $event_id ) )
+		);
+	}
+
+	/**
+	 * Test add_start_cron schedules the run at the start.
+	 *
+	 * @covers ::add_start_cron
+	 * @covers ::clear_start_cron
+	 *
+	 * @return void
+	 */
+	public function test_add_start_cron(): void {
+		$instance = Scheduler::get_instance();
+		$event_id = $this->create_test_event();
+		$start    = gmdate( 'Y-m-d H:i:s', time() + DAY_IN_SECONDS );
+
+		// No start date, nothing scheduled.
+		$instance->add_start_cron( $event_id );
+		$this->assertFalse( wp_next_scheduled( Scheduler::START_CRON_ACTION, array( $event_id ) ) );
+
+		update_post_meta( $event_id, Scheduler::START_META_KEY, $start );
+
+		$instance->add_start_cron( $event_id );
+		$this->assertSame(
+			strtotime( $start ),
+			wp_next_scheduled( Scheduler::START_CRON_ACTION, array( $event_id ) )
+		);
+
+		$instance->clear_start_cron( $event_id );
+		$this->assertFalse( wp_next_scheduled( Scheduler::START_CRON_ACTION, array( $event_id ) ) );
+	}
+
+	/**
+	 * Test add_start_cron clears the run once the start has passed.
+	 *
+	 * @covers ::add_start_cron
+	 *
+	 * @return void
+	 */
+	public function test_add_start_cron_clears_when_time_has_passed(): void {
+		$instance = Scheduler::get_instance();
+		$event_id = $this->create_test_event();
+
+		update_post_meta( $event_id, Scheduler::START_META_KEY, gmdate( 'Y-m-d H:i:s', time() + HOUR_IN_SECONDS ) );
+		$this->assertNotEmpty( wp_next_scheduled( Scheduler::START_CRON_ACTION, array( $event_id ) ) );
+
+		update_post_meta( $event_id, Scheduler::START_META_KEY, gmdate( 'Y-m-d H:i:s', time() - HOUR_IN_SECONDS ) );
+		$instance->add_start_cron( $event_id );
+
+		$this->assertFalse( wp_next_scheduled( Scheduler::START_CRON_ACTION, array( $event_id ) ) );
+	}
+
+	/**
+	 * Test unpublishing, deleting and trashing an event clear its start run.
+	 *
+	 * @covers ::sync_event
+	 * @covers ::handle_before_delete_post
+	 *
+	 * @return void
+	 */
+	public function test_unpublish_and_delete_clear_start_run(): void {
+		$instance = Scheduler::get_instance();
+		$event_id = $this->create_test_event();
+
+		update_post_meta( $event_id, Scheduler::START_META_KEY, gmdate( 'Y-m-d H:i:s', time() + DAY_IN_SECONDS ) );
+		$this->assertNotEmpty( wp_next_scheduled( Scheduler::START_CRON_ACTION, array( $event_id ) ) );
+
+		$post = get_post( $event_id );
+		$this->assertInstanceOf( WP_Post::class, $post );
+
+		$instance->handle_transition_post_status( 'draft', 'publish', $post );
+		$this->assertFalse(
+			wp_next_scheduled( Scheduler::START_CRON_ACTION, array( $event_id ) ),
+			'Unpublish clears.'
+		);
+
+		$instance->add_start_cron( $event_id );
+		$this->assertNotEmpty( wp_next_scheduled( Scheduler::START_CRON_ACTION, array( $event_id ) ) );
+
+		$instance->handle_before_delete_post( $event_id );
+		$this->assertFalse( wp_next_scheduled( Scheduler::START_CRON_ACTION, array( $event_id ) ), 'Delete clears.' );
+
+		// Trashing runs through transition_post_status like any unpublish.
+		$instance->add_start_cron( $event_id );
+		wp_trash_post( $event_id );
+		$this->assertFalse( wp_next_scheduled( Scheduler::START_CRON_ACTION, array( $event_id ) ), 'Trash clears.' );
+	}
+
+	/**
+	 * Test handle_start_run fires the starting action only for published upcoming events.
+	 *
+	 * @covers ::handle_start_run
+	 *
+	 * @return void
+	 */
+	public function test_handle_start_run(): void {
+		$instance = Scheduler::get_instance();
+		$fired    = array();
+		$listener = static function ( int $post_id ) use ( &$fired ): void {
+			$fired[] = $post_id;
+		};
+
+		add_action( Scheduler::STARTING_ACTION, $listener );
+
+		$upcoming = $this->create_test_event();
+		$draft    = $this->create_test_event( array( 'post_status' => 'draft' ) );
+		$post_id  = $this->factory()->post->create();
+
+		$instance->handle_start_run( $upcoming );
+		$instance->handle_start_run( $draft );
+		$instance->handle_start_run( $post_id );
+
+		remove_action( Scheduler::STARTING_ACTION, $listener );
+
+		$this->assertSame( array( $upcoming ), $fired );
 	}
 }
