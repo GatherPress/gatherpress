@@ -80,7 +80,10 @@ const DateTimeEnd = () => {
 			<Flex direction="column" gap="1">
 				<FlexItem>
 					<h3 style={ { marginBottom: 0 } }>
-						<label htmlFor="gatherpress-datetime-end">
+						<label
+							id="gatherpress-datetime-end-label"
+							htmlFor="gatherpress-datetime-end"
+						>
 							{ isAllDay
 								? __( 'Date end', 'gatherpress' )
 								: __( 'Date & time end', 'gatherpress' ) }
@@ -91,15 +94,20 @@ const DateTimeEnd = () => {
 					<Dropdown
 						popoverProps={ { placement: 'bottom-end' } }
 						renderToggle={ ( { isOpen, onToggle } ) => (
+							// The label alone would replace the date as the
+							// button's name; name it with the label and the date.
 							<Button
 								id="gatherpress-datetime-end"
+								aria-labelledby="gatherpress-datetime-end-label gatherpress-datetime-end-value"
 								onClick={ onToggle }
 								aria-expanded={ isOpen }
 								variant="link"
 							>
-								{ createMomentWithTimezone( dateTimeEnd, getTimezone() ).format(
-									isAllDay ? dateLabelFormat() : dateTimeLabelFormat(),
-								) }
+								<span id="gatherpress-datetime-end-value">
+									{ createMomentWithTimezone( dateTimeEnd, getTimezone() ).format(
+										isAllDay ? dateLabelFormat() : dateTimeLabelFormat(),
+									) }
+								</span>
 							</Button>
 						) }
 						renderContent={ () => (

@@ -538,6 +538,16 @@ class Test_Base extends Unit_Test_Base {
 			$output,
 			'Failed to assert the call to action links where it was told.'
 		);
+		$this->assertStringContainsString(
+			'class="gatherpress-notice-card__mark"',
+			$output,
+			'Failed to assert the mark keeps its class through wp_kses_post().'
+		);
+		$this->assertStringNotContainsString(
+			'style=',
+			$output,
+			'Failed to assert the card is styled from the admin stylesheet, not inline.'
+		);
 	}
 
 	/**

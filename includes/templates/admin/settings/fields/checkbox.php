@@ -21,7 +21,7 @@ if ( ! isset( $name, $label, $option, $value, $description ) ) {
 	return;
 }
 
-$gatherpress_disabled = ! empty( $disabled ) ? ' disabled' : '';
+$gatherpress_disabled = ! empty( $disabled );
 // Checkboxes can't use `readonly`. When disabled the field is omitted
 // from the POST, so the trailing hidden input's value is what lands in
 // `$_POST[$name]` — carry the current (possibly inherited) boolean so
@@ -39,7 +39,7 @@ $gatherpress_fallback = ! empty( $disabled ) && rest_sanitize_boolean( $value ) 
 // overrides the checkbox and the saved value is always the fallback.
 ?>
 <input type="hidden" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( $gatherpress_fallback ); ?>" />
-<input id="<?php echo esc_attr( $option ); ?>" type="checkbox" name="<?php echo esc_attr( $name ); ?>" value="1" <?php checked( 1, rest_sanitize_boolean( $value ), true ); ?><?php echo $gatherpress_disabled; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static value. ?> />
+<input id="<?php echo esc_attr( $option ); ?>" type="checkbox" name="<?php echo esc_attr( $name ); ?>" value="1" <?php checked( 1, rest_sanitize_boolean( $value ), true ); ?><?php disabled( $gatherpress_disabled ); ?> />
 <label for="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $label ); ?></label>
 
 <?php

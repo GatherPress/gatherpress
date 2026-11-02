@@ -15,6 +15,7 @@ use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
+use PasswordHash;
 use ReflectionClass;
 use WP_Block;
 use WP_Block_Type_Registry;
@@ -144,7 +145,7 @@ class Test_Rsvp_Template extends Base {
 	/**
 	 * Create a published event with one attending response.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @return array{0: int, 1: int} The event ID and the response's comment ID.
 	 */
@@ -174,7 +175,7 @@ class Test_Rsvp_Template extends Base {
 	 * `$available_context` reaches `$context`, and `postId` is never there to
 	 * read however it was passed in.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param array<string, mixed> $available_context Context offered by ancestors.
 	 *
@@ -193,7 +194,7 @@ class Test_Rsvp_Template extends Base {
 	 * The request is a 404, so there is no current post to answer instead: the
 	 * responses can only have come from `postId` in context.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::generate_rsvp_template_block
 	 *
 	 * @return void
@@ -226,7 +227,7 @@ class Test_Rsvp_Template extends Base {
 	 * missing key became post 0, and `get_post( 0 )` resolves to the global
 	 * post. This covers the explicit `get_the_ID()` arm that replaced it.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::generate_rsvp_template_block
 	 *
 	 * @return void
@@ -263,7 +264,7 @@ class Test_Rsvp_Template extends Base {
 	 * called regardless of error_reporting, which is what makes the warning
 	 * observable here.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @covers ::generate_rsvp_template_block
 	 *
 	 * @return void
@@ -329,6 +330,77 @@ class Test_Rsvp_Template extends Base {
 			$input_html,
 			$result,
 			'Failed to assert unpublished event returns original content.'
+		);
+	}
+
+	/**
+	 * Tests a password-protected event's roster stays behind its password.
+	 *
+	 * A block on another post can name the event through its postId context,
+	 * so the block has to ask for the password the event page would.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::generate_rsvp_template_block
+	 * @return void
+	 */
+	public function test_generate_rsvp_template_block_password_protected_event(): void {
+		$instance   = Rsvp_Template::get_instance();
+		$post_id    = $this->factory->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_status'   => 'publish',
+				'post_password' => 'secret',
+			)
+		);
+		$wp_block   = $this->rsvp_template_instance( array( 'postId' => $post_id ) );
+		$input_html = '<div>Original content</div>';
+
+		( new Rsvp( $post_id ) )->save( $this->factory->user->create(), 'attending', 0, 0 );
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'contributor' ) ) );
+
+		$this->assertSame(
+			$input_html,
+			$instance->generate_rsvp_template_block( $input_html, array(), $wp_block ),
+			'Failed to assert a password-protected event keeps its roster from a viewer without the password.'
+		);
+	}
+
+	/**
+	 * Tests a password-protected event's roster renders once the viewer has the password.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::generate_rsvp_template_block
+	 * @return void
+	 */
+	public function test_generate_rsvp_template_block_password_protected_event_with_the_password(): void {
+		$instance   = Rsvp_Template::get_instance();
+		$post_id    = $this->factory->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_status'   => 'publish',
+				'post_password' => 'secret',
+			)
+		);
+		$wp_block   = $this->rsvp_template_instance( array( 'postId' => $post_id ) );
+		$input_html = '<div>Original content</div>';
+
+		$record = ( new Rsvp( $post_id ) )->save( $this->factory->user->create(), 'attending', 0, 0 );
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'contributor' ) ) );
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+
+		// The cookie WordPress sets once a viewer enters the post password.
+		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'secret' );
+
+		$result = $instance->generate_rsvp_template_block( $input_html, array(), $wp_block );
+
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+
+		$this->assertStringContainsString(
+			'data-id="rsvp-' . $record['comment_id'] . '"',
+			$result,
+			'Failed to assert a password-protected event renders its roster for a viewer with the password.'
 		);
 	}
 

@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+The network settings page now loads the GatherPress settings scripts and styles, so fields that need them, such as autocomplete, the date and URL previews and fields shown only for certain values, work there too.

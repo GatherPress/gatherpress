@@ -256,7 +256,7 @@ Show a field only when one or more controlling fields hold a specific value, whi
 ),
 ```
 
-The negation form is what the RSVP settings page uses to hide the mode-dependent fields whenever RSVP Mode is `disabled`, rather than listing `all_on`, `per_event_on`, `per_event_off`, so the intent reads directly and a future mode doesn't silently fall out of the condition:
+The negation form is what the RSVP settings page uses to hide the mode-dependent fields whenever RSVP Mode is `disabled`, rather than listing `enabled`, `per_event_enabled`, `per_event_disabled`, so the intent reads directly and a future mode doesn't silently fall out of the condition:
 
 ```php
 'show_if' => array(

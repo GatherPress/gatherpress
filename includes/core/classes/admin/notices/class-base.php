@@ -242,6 +242,7 @@ abstract class Base {
 		// the current directory, so /wp-admin/edit.php became
 		// /wp-admin/wp-admin/edit.php and the dismissal never ran (#2233).
 		// Rebuild the current admin request as an absolute URL instead.
+		// INPUT_SERVER is unreliable under FastCGI.
 		$request = isset( $_SERVER['REQUEST_URI'] )
 			? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) )
 			: '';
@@ -369,9 +370,9 @@ abstract class Base {
 	/**
 	 * Build the card markup for a notice that has a headline.
 	 *
-	 * Styles are inline because this is one notice on screens that otherwise
-	 * have no reason to load a GatherPress stylesheet, and because inline
-	 * beats core's `div.notice a`, which underlines every link in a notice.
+	 * Styled in `src/admin.scss`, which loads on every admin screen. The
+	 * rules are scoped under the card so they outrank core's `.notice p`
+	 * margins and the underline `div.notice a` gives every link in a notice.
 	 *
 	 * @since 0.36.0
 	 *
@@ -385,7 +386,7 @@ abstract class Base {
 
 		if ( '' !== $this->get_action_url() && '' !== $this->get_action_label() ) {
 			$action = sprintf(
-				'<p style="margin:0;"><a href="%1$s" class="button button-primary">%2$s</a></p>',
+				'<p class="gatherpress-notice-card__action"><a href="%1$s" class="button button-primary">%2$s</a></p>',
 				esc_url( $this->get_action_url() ),
 				esc_html( $this->get_action_label() )
 			);
@@ -396,11 +397,7 @@ abstract class Base {
 			// dismiss. Core's script only binds to the button it injects into
 			// an `is-dismissible` notice, so this link is left alone.
 			$dismiss = sprintf(
-				// The offsets cancel the notice's own 8px/12px padding so the
-				// control sits where core's dismiss button does, and the 9px
-				// is core's own padding, which `div.notice a` resets away.
-				'<a href="%1$s" class="notice-dismiss"'
-				. ' style="text-decoration:none;padding:0.5625rem;top:-0.5rem;right:-0.75rem;">'
+				'<a href="%1$s" class="notice-dismiss gatherpress-notice-card__dismiss">'
 				. '<span class="screen-reader-text">%2$s</span></a>',
 				esc_url( $this->get_dismiss_url() ),
 				esc_html__( 'Dismiss this notice.', 'gatherpress' )
@@ -408,10 +405,9 @@ abstract class Base {
 		}
 
 		return sprintf(
-			'<div style="display:flex;align-items:flex-start;gap:1.25rem;position:relative;">%1$s<div>'
-			. '<p style="margin:0 0 0.375rem;font-size:0.875rem;font-weight:600;'
-			. 'color:var(--wp-admin-theme-color, #1769AA);">%2$s</p>'
-			. '<p style="margin:0 0 0.75rem;">%3$s</p>%4$s</div>%5$s</div>',
+			'<div class="gatherpress-notice-card">%1$s<div>'
+			. '<p class="gatherpress-notice-card__headline">%2$s</p>'
+			. '<p class="gatherpress-notice-card__message">%3$s</p>%4$s</div>%5$s</div>',
 			$this->get_mark(),
 			esc_html( $this->get_headline() ),
 			esc_html( $message ),
@@ -446,7 +442,7 @@ abstract class Base {
 			'height'      => true,
 			'aria-hidden' => true,
 			'focusable'   => true,
-			'style'       => true,
+			'class'       => true,
 		);
 		$tags['path'] = array(
 			'fill' => true,
@@ -469,8 +465,7 @@ abstract class Base {
 	 */
 	protected function get_mark(): string {
 		return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="60" height="60"'
-			. ' aria-hidden="true" focusable="false"'
-			. ' style="flex-shrink:0;color:var(--wp-admin-theme-color, #1769AA);">'
+			. ' aria-hidden="true" focusable="false" class="gatherpress-notice-card__mark">'
 			. '<path fill="currentColor" d="'
 			. 'M125.4,50.8V13.4c0-6.8-5.6-12.4-12.4-12.4H88.1c-6.8,0-12.4,5.6-'
 			. '12.4,12.4v37.3c0,6.8,5.6,12.4,12.4,12.4h24.9C119.8,63.2,125.4,57.6,125.4,50.8zM100.5,13.4c6.8,0'

@@ -10,7 +10,7 @@ The “Add to Calendar” block lets attendees add events to their calendars via
 
 - Google Calendar
 - Yahoo! Calendar
-- iCal (planned)
+- iCal and Outlook, which download an `.ics` file
 
 ## 🏆 Is there a PRO version?
 

@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Give radio form fields real fieldset group semantics, infer specific autocomplete tokens from the field type, and render the form-field help text with screen-reader association.

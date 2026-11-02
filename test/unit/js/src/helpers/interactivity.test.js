@@ -608,6 +608,25 @@ describe( 'setupCloseHandlers Escape with nested elements', () => {
 		expect( onModalClose ).not.toHaveBeenCalled();
 	} );
 
+	it( 'cancels Escape once it closes something, so a dialog around it stays open', () => {
+		const onMenuClose = jest.fn();
+		cleanups.push( setupCloseHandlers( '.menu', null, onMenuClose ) );
+
+		const handled = new KeyboardEvent( 'keydown', { key: 'Escape', bubbles: true, cancelable: true } );
+
+		document.dispatchEvent( handled );
+
+		expect( onMenuClose ).toHaveBeenCalledTimes( 1 );
+		expect( handled.defaultPrevented ).toBe( true );
+
+		const unhandled = new KeyboardEvent( 'keydown', { key: 'Escape', bubbles: true, cancelable: true } );
+
+		document.dispatchEvent( unhandled );
+
+		expect( onMenuClose ).toHaveBeenCalledTimes( 1 );
+		expect( unhandled.defaultPrevented ).toBe( false );
+	} );
+
 	it( 'stops handling Escape after cleanup, even when cleanup runs twice', () => {
 		const onClose = jest.fn();
 		const cleanup = setupCloseHandlers( '.modal', '.content', onClose );

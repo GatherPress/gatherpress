@@ -62,13 +62,16 @@ export function useAddressAutocomplete( {
 	debounceMs = 400,
 } ) {
 	const [ suggestions, setSuggestions ] = useState( [] );
-	const [ activeIndex, setActiveIndex ] = useState( 0 );
+	// -1 means no option is active. As in the ARIA combobox pattern, the first
+	// arrow key makes an option active, so ArrowDown + Enter picks the first
+	// suggestion (#2449).
+	const [ activeIndex, setActiveIndex ] = useState( -1 );
 	const [ isLoadingSuggestions, setIsLoadingSuggestions ] = useState( false );
 	const [ suggestionError, setSuggestionError ] = useState( '' );
 	const abortControllerRef = useRef( null );
 
 	useEffect( () => {
-		setActiveIndex( 0 );
+		setActiveIndex( -1 );
 	}, [ suggestions ] );
 
 	// Abort any in-flight suggestion request on unmount.
@@ -151,6 +154,10 @@ export function useAddressAutocomplete( {
 	);
 
 	const closeSuggestions = useCallback( () => {
+		// Drop a search that is still waiting for its debounce delay, too.
+		// Otherwise it runs after the list closes and opens it again.
+		loadSuggestions.cancel();
+
 		if ( abortControllerRef.current ) {
 			abortControllerRef.current.abort();
 			abortControllerRef.current = null;
@@ -158,7 +165,7 @@ export function useAddressAutocomplete( {
 		setSuggestions( [] );
 		setSuggestionError( '' );
 		setIsLoadingSuggestions( false );
-	}, [] );
+	}, [ loadSuggestions ] );
 
 	const selectSuggestion = useCallback(
 		( item ) => {
@@ -199,9 +206,12 @@ export function useAddressAutocomplete( {
 				if ( 'Enter' === event.key && ! event.shiftKey ) {
 					event.preventDefault();
 					event.stopPropagation();
-					const item = suggestions[ activeIndex ] ?? suggestions[ 0 ];
+					const item = suggestions[ activeIndex ];
 					if ( item ) {
 						selectSuggestion( item );
+					} else {
+						// No option is active: keep the typed address.
+						closeSuggestions();
 					}
 					return;
 				}

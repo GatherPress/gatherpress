@@ -1,0 +1,22 @@
+# Dependabot opens security update PRs for npm and Composer on its own. These
+# entries only label them: a limit of 0 keeps version update PRs off.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    labels:
+      - Dependencies
+      - JavaScript
+      - Skip Changelog
+  - package-ecosystem: composer
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    labels:
+      - Dependencies
+      - PHP
+      - Skip Changelog

@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Settings\Format_Field.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.36.0
  */
 
 namespace GatherPress\Tests\Core\Settings;

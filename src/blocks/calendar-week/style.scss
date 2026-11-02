@@ -1,0 +1,4 @@
+/* Keep week rows flowing cleanly in CSS Grid layout */
+.gatherpress-calendar__week {
+	display: contents;
+}

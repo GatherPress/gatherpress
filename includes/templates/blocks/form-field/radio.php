@@ -31,9 +31,21 @@ if ( ! isset(
 	// the legend (a legend permits flow content) so the label/required
 	// layout styling is preserved.
 	?>
+	<?php
+	// The fieldset carries a returned error for the group, as in form-errors.js.
+	$gatherpress_has_error    = '' !== (string) $attributes['error_message'];
+	$gatherpress_described_by = trim(
+		( '' !== (string) $attributes['help_text'] ? $attributes['input_id'] . '-help' : '' )
+		. ( $gatherpress_has_error ? ' ' . $attributes['input_id'] . '-error' : '' )
+	);
+	$gatherpress_autofocus    = ! empty( $attributes['autofocus'] );
+	?>
 	<fieldset class="gatherpress-fieldset"
-		<?php if ( '' !== (string) $attributes['help_text'] ) : ?>
-		aria-describedby="<?php echo esc_attr( $attributes['input_id'] . '-help' ); ?>"
+		<?php if ( '' !== $gatherpress_described_by ) : ?>
+		aria-describedby="<?php echo esc_attr( $gatherpress_described_by ); ?>"
+		<?php endif; ?>
+		<?php if ( $gatherpress_has_error ) : ?>
+		aria-invalid="true"
 		<?php endif; ?>
 	>
 		<legend<?php echo wp_kses_data( $label_styles ); ?>>
@@ -66,7 +78,9 @@ if ( ! isset(
 							id="<?php echo esc_attr( $gatherpress_option_id ); ?>"
 							value="<?php echo esc_attr( $gatherpress_option_value ); ?>"
 							<?php checked( $attributes['field_value'], $gatherpress_option_value ); ?>
+							<?php echo $gatherpress_autofocus ? 'autofocus' : ''; ?>
 						/>
+						<?php $gatherpress_autofocus = false; ?>
 						<label for="<?php echo esc_attr( $gatherpress_option_id ); ?>"
 							<?php echo wp_kses_data( $option_styles ); ?>>
 							<?php echo esc_html( $gatherpress_option['label'] ); ?>
@@ -84,4 +98,9 @@ if ( ! isset(
 			</p>
 		<?php endif; ?>
 	</fieldset>
+	<?php if ( $gatherpress_has_error ) : ?>
+		<p class="gatherpress-field-error" id="<?php echo esc_attr( $attributes['input_id'] . '-error' ); ?>">
+			<?php echo esc_html( $attributes['error_message'] ); ?>
+		</p>
+	<?php endif; ?>
 </div>

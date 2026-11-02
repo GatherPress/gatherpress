@@ -131,13 +131,10 @@ final class Rsvp_Template {
 			return $block_content;
 		}
 
-		// Only process if the post type supports RSVP. An unpublished event
-		// keeps its responses to viewers allowed to read it, so organizers see
-		// the roster on a draft or private event rather than an empty block.
-		if (
-			! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT ) ||
-			! Event::is_viewable( $post_id )
-		) {
+		// Only process if the post type supports RSVP and the viewer may read
+		// its roster: the same rule as the REST roster, so an organizer sees it
+		// on a draft or private event and a password still guards it.
+		if ( ! Event::can_read_rsvps( $post_id ) ) {
 			return $block_content;
 		}
 
@@ -193,7 +190,7 @@ final class Rsvp_Template {
 	 * The front end hands the template back to the REST endpoint verbatim, so
 	 * the endpoint only renders what this class wrote in the first place. The
 	 * key is the site's nonce salt: stable for the site, the same for every
-	 * visitor, and not derived from anything a request can influence.
+	 * viewer, and not derived from anything a request can influence.
 	 *
 	 * The signed message names this use, the site and the event along with the
 	 * template, so a signature is only good for the event it was emitted on.

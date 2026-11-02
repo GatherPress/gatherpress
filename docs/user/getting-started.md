@@ -35,9 +35,9 @@ Option: Selected Mapping Platform
 
 Override per event: No (this is a global display choice).
 
-### 3. Maximum attendance limit
+### 3. Capacity
 
-Option: Maximum Attendance Limit
+Option: Capacity
 
 * Sets the default maximum number of attendees for new events.  
 * This is the total number of people allowed at an event.  

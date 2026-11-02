@@ -1,0 +1,422 @@
+{
+	"description": "Two months, with an event that crosses from one into the next.",
+	"startOfWeek": 1,
+	"attributes": {
+		"viewType": "month",
+		"unitCount": 2,
+		"selectedDate": "2026-12-01",
+		"showWeekends": true
+	},
+	"events": [
+		{
+			"key": "new-year",
+			"start": "2026-12-30 20:00:00",
+			"end": "2027-01-02 02:00:00"
+		}
+	],
+	"expected": {
+		"range": {
+			"start": "2026-12-01",
+			"end": "2027-01-31",
+			"unitCount": 2
+		},
+		"units": [
+			{
+				"weeks": [
+					[
+						"empty",
+						{
+							"date": "2026-12-01",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-12-02",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-12-03",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-12-04",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-12-05",
+							"isWeekend": true,
+							"posts": []
+						},
+						{
+							"date": "2026-12-06",
+							"isWeekend": true,
+							"posts": []
+						}
+					],
+					[
+						{
+							"date": "2026-12-07",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-12-08",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-12-09",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-12-10",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-12-11",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-12-12",
+							"isWeekend": true,
+							"posts": []
+						},
+						{
+							"date": "2026-12-13",
+							"isWeekend": true,
+							"posts": []
+						}
+					],
+					[
+						{
+							"date": "2026-12-14",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-12-15",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-12-16",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-12-17",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-12-18",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-12-19",
+							"isWeekend": true,
+							"posts": []
+						},
+						{
+							"date": "2026-12-20",
+							"isWeekend": true,
+							"posts": []
+						}
+					],
+					[
+						{
+							"date": "2026-12-21",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-12-22",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-12-23",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-12-24",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-12-25",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-12-26",
+							"isWeekend": true,
+							"posts": []
+						},
+						{
+							"date": "2026-12-27",
+							"isWeekend": true,
+							"posts": []
+						}
+					],
+					[
+						{
+							"date": "2026-12-28",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-12-29",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-12-30",
+							"isWeekend": false,
+							"posts": [
+								{
+									"event": "new-year",
+									"span": "start",
+									"dayIndex": 1,
+									"totalDays": 4,
+									"slot": 0,
+									"allDay": false
+								}
+							]
+						},
+						{
+							"date": "2026-12-31",
+							"isWeekend": false,
+							"posts": [
+								{
+									"event": "new-year",
+									"span": "middle",
+									"dayIndex": 2,
+									"totalDays": 4,
+									"slot": 0,
+									"allDay": false
+								}
+							]
+						},
+						"empty",
+						"empty",
+						"empty"
+					]
+				],
+				"weekNumbers": [
+					49,
+					50,
+					51,
+					52,
+					53
+				]
+			},
+			{
+				"weeks": [
+					[
+						"empty",
+						"empty",
+						"empty",
+						"empty",
+						{
+							"date": "2027-01-01",
+							"isWeekend": false,
+							"posts": [
+								{
+									"event": "new-year",
+									"span": "middle",
+									"dayIndex": 3,
+									"totalDays": 4,
+									"slot": 0,
+									"allDay": false
+								}
+							]
+						},
+						{
+							"date": "2027-01-02",
+							"isWeekend": true,
+							"posts": [
+								{
+									"event": "new-year",
+									"span": "end",
+									"dayIndex": 4,
+									"totalDays": 4,
+									"slot": 0,
+									"allDay": false
+								}
+							]
+						},
+						{
+							"date": "2027-01-03",
+							"isWeekend": true,
+							"posts": []
+						}
+					],
+					[
+						{
+							"date": "2027-01-04",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2027-01-05",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2027-01-06",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2027-01-07",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2027-01-08",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2027-01-09",
+							"isWeekend": true,
+							"posts": []
+						},
+						{
+							"date": "2027-01-10",
+							"isWeekend": true,
+							"posts": []
+						}
+					],
+					[
+						{
+							"date": "2027-01-11",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2027-01-12",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2027-01-13",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2027-01-14",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2027-01-15",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2027-01-16",
+							"isWeekend": true,
+							"posts": []
+						},
+						{
+							"date": "2027-01-17",
+							"isWeekend": true,
+							"posts": []
+						}
+					],
+					[
+						{
+							"date": "2027-01-18",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2027-01-19",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2027-01-20",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2027-01-21",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2027-01-22",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2027-01-23",
+							"isWeekend": true,
+							"posts": []
+						},
+						{
+							"date": "2027-01-24",
+							"isWeekend": true,
+							"posts": []
+						}
+					],
+					[
+						{
+							"date": "2027-01-25",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2027-01-26",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2027-01-27",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2027-01-28",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2027-01-29",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2027-01-30",
+							"isWeekend": true,
+							"posts": []
+						},
+						{
+							"date": "2027-01-31",
+							"isWeekend": true,
+							"posts": []
+						}
+					]
+				],
+				"weekNumbers": [
+					53,
+					1,
+					2,
+					3,
+					4
+				]
+			}
+		]
+	}
+}

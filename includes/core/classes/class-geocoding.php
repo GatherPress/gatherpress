@@ -130,6 +130,16 @@ final class Geocoding {
 	private const COUNTRY_FILTER_SEARCH_LIMIT = 10;
 
 	/**
+	 * Number of Photon results requested for address suggestions.
+	 *
+	 * More than the 5 suggestions shown, so that rows left out by the country
+	 * filter or by a repeated label can be replaced.
+	 *
+	 * @since 0.36.1
+	 */
+	private const SEARCH_CANDIDATE_LIMIT = 10;
+
+	/**
 	 * Cron action fired to backfill structured-address venue meta after a
 	 * `gatherpress_address` value changes. Handler signature: `( int $post_id )`.
 	 *
@@ -349,7 +359,9 @@ final class Geocoding {
 	 * successful Photon response, also overwrites `gatherpress_latitude`
 	 * and `gatherpress_longitude` so freeform-typed addresses (which never
 	 * trigger the JS-side autocomplete that pre-fills coordinates) stay in
-	 * sync with the structured pieces derived from the same response.
+	 * sync with the structured pieces derived from the same response,
+	 * unless the venue sets its coordinates by hand
+	 * (`gatherpress_manual_coordinates`).
 	 *
 	 * Failure modes:
 	 * - Empty address (cleared by the user): all 8 structured keys are
@@ -426,8 +438,13 @@ final class Geocoding {
 		// Persist lat/long only when Photon returned coordinates. The
 		// "not found" payload returns empty strings — we leave any
 		// user-entered coordinates alone in that case (same rationale as
-		// the empty-address branch above).
-		if ( '' !== $result['latitude'] && '' !== $result['longitude'] ) {
+		// the empty-address branch above), and always when the venue sets
+		// its coordinates by hand.
+		if (
+			'' !== $result['latitude'] &&
+			'' !== $result['longitude'] &&
+			! get_post_meta( $post_id, Venue_Meta::MANUAL_COORDINATES_KEY, true )
+		) {
 			update_post_meta( $post_id, 'gatherpress_latitude', (string) $result['latitude'] );
 			update_post_meta( $post_id, 'gatherpress_longitude', (string) $result['longitude'] );
 		}
@@ -896,7 +913,7 @@ final class Geocoding {
 		$too_short = mb_strlen( $query ) < self::ADDRESS_SEARCH_MIN_QUERY_LENGTH;
 		$query     = Query::normalize( $query );
 
-		// The minimum length weighs what the visitor typed, since it is about
+		// The minimum length weighs what the user typed, since it is about
 		// whether they have entered enough to be worth a lookup. The empty
 		// check weighs what would be sent: a search that was nothing but a
 		// postal code normalizes away to nothing, and would otherwise reach
@@ -927,11 +944,12 @@ final class Geocoding {
 			);
 		}
 
-		// A country filter needs more candidates to still fill 5 suggestions.
+		// Ask for more than 5 candidates, so that rows left out by the country
+		// filter or by a repeated label can still fill 5 suggestions.
 		$url = add_query_arg(
 			array(
 				'q'     => $query,
-				'limit' => array() === $country_filter ? 5 : self::COUNTRY_FILTER_SEARCH_LIMIT,
+				'limit' => self::SEARCH_CANDIDATE_LIMIT,
 				'lang'  => $language,
 			),
 			$provider_url
@@ -989,6 +1007,7 @@ final class Geocoding {
 	 *
 	 * @since 0.34.0
 	 * @since 0.36.0 Added `$country_filter`.
+	 * @since 0.36.1 Skips a feature whose label repeats an earlier suggestion.
 	 *
 	 * @param mixed    $data           Decoded JSON body. Treated as "no results"
 	 *                                 when not an array or missing `features`.
@@ -1014,6 +1033,7 @@ final class Geocoding {
 		}
 
 		$suggestions = array();
+		$seen_labels = array();
 
 		foreach ( $data['features'] as $feature ) {
 			if ( count( $suggestions ) >= 5 ) {
@@ -1040,9 +1060,13 @@ final class Geocoding {
 
 			$label = $this->format_photon_feature_label( $properties );
 
-			if ( '' === $label ) {
+			// Photon can return several map features with the same address.
+			// Keep the first, so each address is suggested once.
+			if ( '' === $label || isset( $seen_labels[ $label ] ) ) {
 				continue;
 			}
+
+			$seen_labels[ $label ] = true;
 
 			$suggestions[] = array(
 				'label'     => $label,

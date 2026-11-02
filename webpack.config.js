@@ -56,6 +56,7 @@ module.exports = [
 		entry: {
 			...defaultConfig[ 0 ].entry(),
 			admin_style: path.resolve( process.cwd(), 'src', 'admin.scss' ),
+			email: path.resolve( process.cwd(), 'src/email', 'index.js' ),
 			editor: path.resolve( process.cwd(), 'src', 'editor.js' ),
 			panels: path.resolve( process.cwd(), 'src/panels', 'index.js' ),
 			modals: path.resolve( process.cwd(), 'src/modals', 'index.js' ),
@@ -77,6 +78,11 @@ module.exports = [
 				'style.scss',
 			),
 			utility_style: path.resolve( process.cwd(), 'src', 'utility.scss' ),
+			timezone_shim: path.resolve(
+				process.cwd(),
+				'src/timezone-shim',
+				'index.js',
+			),
 			leaflet_style: path.resolve(
 				process.cwd(),
 				'src',

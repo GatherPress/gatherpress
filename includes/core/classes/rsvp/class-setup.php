@@ -83,6 +83,7 @@ final class Setup {
 	protected function instantiate_classes(): void {
 		Abilities::get_instance();
 		Cleanup::get_instance();
+		Email::get_instance();
 		Flag_Setup::get_instance();
 		Form::get_instance();
 		Query::get_instance();
@@ -248,18 +249,21 @@ final class Setup {
 	/**
 	 * Get user identifier for RSVP operations.
 	 *
-	 * Returns the current user ID if logged in, or email address from
-	 * a valid RSVP token if accessing via magic link.
+	 * Returns the current user ID if logged in, or the email address from
+	 * the event's RSVP session cookie if the magic link was clicked.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Reads the session cookie for `$post_id` instead of the URL token.
+	 *
+	 * @param int $post_id The event's post ID. Defaults to the current post.
 	 *
 	 * @return string|int User ID if logged in, email address if via token, or 0 if neither.
 	 */
-	public function get_user_identifier(): string|int {
+	public function get_user_identifier( int $post_id = 0 ): string|int {
 		$user_identifier = get_current_user_id();
-		$rsvp_token      = Token::from_url_parameter();
+		$rsvp_token      = Token::from_cookie( $post_id ? $post_id : (int) get_the_ID() );
 
-		if ( $rsvp_token && ! empty( $rsvp_token->get_comment() ) ) {
+		if ( $rsvp_token ) {
 			$user_identifier = $rsvp_token->get_email();
 		}
 
@@ -465,7 +469,6 @@ final class Setup {
 	 * @return void
 	 */
 	public function render_rsvp_admin_page(): void {
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended
 		if ( ! current_user_can( Rsvp::CAPABILITY ) ) {
 			wp_die( esc_html__( 'Sorry, you are not allowed to manage RSVPs.', 'gatherpress' ), 403 );
 		}
@@ -474,8 +477,8 @@ final class Setup {
 		// current screen's post type; fall back to a default instance when
 		// called outside that flow (#1849).
 		$rsvp_table  = $this->list_table ?? new List_Table();
-		$search_term = isset( $_REQUEST['s'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['s'] ) ) : '';
-		$status      = isset( $_REQUEST['status'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['status'] ) ) : '';
+		$search_term = Utility::get_request_input( 's' );
+		$status      = Utility::get_request_input( 'status' );
 
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/rsvp/list-table.php', GATHERPRESS_CORE_PATH ),
@@ -488,7 +491,6 @@ final class Setup {
 			),
 			true
 		);
-		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
 	/**
@@ -529,8 +531,7 @@ final class Setup {
 	 * @return void
 	 */
 	public function add_rsvp_screen_options(): void {
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended
-		if ( ! isset( $_GET['page'] ) || Rsvp::COMMENT_TYPE !== $_GET['page'] ) {
+		if ( Rsvp::COMMENT_TYPE !== Utility::get_http_input( INPUT_GET, 'page' ) ) {
 			return;
 		}
 
@@ -548,7 +549,6 @@ final class Setup {
 		if ( $screen ) {
 			$screen->add_option( 'columns', array() );
 		}
-		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
 	/**
@@ -647,39 +647,46 @@ final class Setup {
 	}
 
 	/**
-	 * Handle RSVP token from URL and approve associated comment.
+	 * Turn a magic link into a browser session.
 	 *
-	 * Validates the RSVP token from the URL parameter and automatically
-	 * approves the corresponding comment if the token is valid.
+	 * A valid token in the URL approves its RSVP, moves into a session cookie
+	 * for that event, and comes off the URL with a redirect, so it isn't left
+	 * in the address bar or browser history.
 	 *
-	 * Whenever the `?gatherpress_rsvp_token=…` query var is present we
-	 * also queue `nocache_headers()` onto WP's `send_headers` action so
-	 * any host-level page cache (WP Rocket, W3TC, Nginx FastCGI,
-	 * Cloudflare when configured to honor origin Cache-Control) treats
-	 * the URL as per-user and never stores it. The token acts as a
-	 * magic link — the same URL keeps authenticating the same person on
-	 * every reload — so caching it shared would either leak one user's
-	 * authenticated view to another, or serve a stale render that
-	 * doesn't reflect their RSVP (see #1626). We deferred this to
-	 * `send_headers` rather than calling `nocache_headers()` inline so
-	 * the headers fire at the right moment in the response lifecycle
-	 * (when `headers_sent()` is still false), regardless of any output
-	 * the handler might have triggered. The deferral runs regardless of
-	 * whether the token actually validates, so an expired or wrong-hash
-	 * token also stays out of the page cache.
+	 * Any request carrying a session cookie also queues `nocache_headers()`
+	 * onto `send_headers`, since the page shows that person's RSVP (#1626).
 	 *
 	 * @since 0.34.0
+	 * @since TBD Starts a session cookie and redirects to the event without the token.
 	 *
 	 * @return void
 	 */
 	public function handle_rsvp_token(): void {
-		$rsvp_token = Token::from_url_parameter();
+		if ( Token::has_session_cookie() ) {
+			add_action( 'send_headers', 'nocache_headers' );
+		}
 
-		if ( ! $rsvp_token ) {
+		$rsvp_token = Token::from_url_parameter();
+		$post       = $rsvp_token?->get_post();
+
+		if ( ! $rsvp_token || ! $post ) {
 			return;
 		}
 
-		add_action( 'send_headers', 'nocache_headers' );
 		$rsvp_token->approve_comment();
+
+		// The cookie and redirect need headers, which the PHPUnit runner has
+		// always sent by now.
+		if ( headers_sent() ) {
+			return;
+		}
+
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation.
+		// @codeCoverageIgnoreStart
+		nocache_headers();
+		setcookie( Token::get_cookie_name( $post->ID ), $rsvp_token->get_token_string(), Token::get_cookie_options() );
+		wp_safe_redirect( (string) get_permalink( $post ) );
+		exit;
+		// @codeCoverageIgnoreEnd
 	}
 }

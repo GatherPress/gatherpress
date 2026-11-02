@@ -137,6 +137,11 @@ final class Abilities {
 						'idempotent'  => true,
 					),
 					'show_in_rest' => true,
+					'public'       => true,
+					'mcp'          => array(
+						'public' => true,
+						'type'   => 'tool',
+					),
 				),
 			)
 		);

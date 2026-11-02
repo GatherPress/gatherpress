@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Omit the RSVP Now call to action from event update emails when registration is closed.

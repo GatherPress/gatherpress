@@ -4,10 +4,11 @@
  *
  * The same shape as the Date Format control on Settings > General: a list of
  * formats shown as the date each one produces, plus a Custom field holding a
- * raw PHP format for anything the list does not cover.
+ * raw PHP format for anything the list does not cover. As there, the Custom
+ * field always holds the current format, and picking from the list fills it.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.36.0
  *
  * @param string $name         The name attribute for the input field.
  * @param string $label        The label text for the field.
@@ -30,7 +31,7 @@ if ( ! isset( $name, $label, $option, $value, $choices, $custom, $custom_name, $
 }
 
 $gatherpress_value    = (string) $value;
-$gatherpress_disabled = ! empty( $disabled ) ? ' disabled' : '';
+$gatherpress_disabled = ! empty( $disabled );
 $gatherpress_formats  = array_column( $choices, 'format' );
 
 // A saved format the list does not offer is a custom one, which is also how
@@ -45,7 +46,7 @@ $gatherpress_is_custom = ! in_array( $gatherpress_value, $gatherpress_formats, t
 // wins instead. Same contract as `fields/select.php`.
 $gatherpress_fallback = ! empty( $disabled ) ? $gatherpress_value : '';
 ?>
-<fieldset class="gatherpress-format-field">
+<fieldset class="gatherpress-format-field" data-gatherpress_component_name="format-field">
 	<legend><?php echo esc_html( $label ); ?></legend>
 	<input type="hidden" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( $gatherpress_fallback ); ?>" />
 	<?php
@@ -60,7 +61,7 @@ $gatherpress_fallback = ! empty( $disabled ) ? $gatherpress_value : '';
 					name="<?php echo esc_attr( $name ); ?>"
 					value="<?php echo esc_attr( $gatherpress_choice['format'] ); ?>"
 					<?php checked( $gatherpress_choice['format'], $gatherpress_value ); ?>
-					<?php echo $gatherpress_disabled; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static value. ?>
+					<?php disabled( $gatherpress_disabled ); ?>
 				/>
 				<span class="gatherpress-format-field__example"><?php echo esc_html( $gatherpress_choice['example'] ); ?></span>
 				<code class="gatherpress-format-field__code"><?php echo esc_html( $gatherpress_choice['format'] ); ?></code>
@@ -76,35 +77,35 @@ $gatherpress_fallback = ! empty( $disabled ) ? $gatherpress_value : '';
 		<label for="<?php echo esc_attr( $gatherpress_custom_radio_id ); ?>">
 			<input
 				id="<?php echo esc_attr( $gatherpress_custom_radio_id ); ?>"
+				class="gatherpress-format-field__custom-radio"
 				type="radio"
 				name="<?php echo esc_attr( $name ); ?>"
 				value="<?php echo esc_attr( $custom ); ?>"
 				<?php checked( $gatherpress_is_custom ); ?>
-				<?php echo $gatherpress_disabled; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static value. ?>
+				<?php disabled( $gatherpress_disabled ); ?>
 			/>
 			<?php esc_html_e( 'Custom:', 'gatherpress' ); ?>
 		</label>
 		<input
 			id="<?php echo esc_attr( $gatherpress_custom_input_id ); ?>"
 			type="text"
-			class="regular-text"
+			class="regular-text gatherpress-format-field__custom"
 			name="<?php echo esc_attr( $custom_name ); ?>"
-			value="<?php echo esc_attr( $gatherpress_is_custom ? $gatherpress_value : '' ); ?>"
+			value="<?php echo esc_attr( $gatherpress_value ); ?>"
 			aria-label="<?php esc_attr_e( 'Custom format', 'gatherpress' ); ?>"
-			<?php echo $gatherpress_disabled; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static value. ?>
+			<?php disabled( $gatherpress_disabled ); ?>
 		/>
 	</p>
 	<?php
-	// The list shows each format as the date it produces, so only the Custom
-	// field is left needing a preview — and it is the one place someone is
-	// still typing format codes.
+	// The preview follows the Custom field, which always holds the current
+	// format, so it shows whichever format is picked.
 	if ( ! empty( $preview['template'] ) ) {
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/settings/partials/%s.php', GATHERPRESS_CORE_PATH, $preview['template'] ),
 			array_merge(
 				array(
 					'name'  => $custom_name,
-					'value' => $gatherpress_is_custom ? $gatherpress_value : '',
+					'value' => $gatherpress_value,
 				),
 				$preview
 			),

@@ -72,7 +72,7 @@ final class Topic {
 	 * the ones registered afterwards, including any registered outside `init`
 	 * altogether.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param string $post_type The post type that was just registered.
 	 *
@@ -102,7 +102,7 @@ final class Topic {
 	 * an empty object-type list still leaves it registered.
 	 *
 	 * @since 0.29.0
-	 * @since TBD Attaches to every post type supporting `gatherpress-event-date`.
+	 * @since 0.36.0 Attaches to every post type supporting `gatherpress-event-date`.
 	 *
 	 * @return void
 	 */

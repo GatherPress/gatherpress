@@ -118,6 +118,7 @@ const { state } = store( 'gatherpress', {
 					// Handle blocks with form visibility attributes.
 					const blocksWithVisibility = form.querySelectorAll( '[data-gatherpress-rsvp-form-visibility]' );
 					const isPast = 'past' === form.dataset.gatherpressEventState;
+					let firstShown = null;
 
 					blocksWithVisibility.forEach( ( block ) => {
 						const visibilityAttr = block.dataset.gatherpressRsvpFormVisibility;
@@ -150,11 +151,19 @@ const { state } = store( 'gatherpress', {
 							block.setAttribute( 'aria-hidden', 'false' );
 							block.setAttribute( 'aria-live', 'polite' );
 							block.setAttribute( 'role', 'status' );
+							firstShown = firstShown || block;
 						} else if ( false === shouldShow ) {
 							block.style.display = 'none';
 							block.setAttribute( 'aria-hidden', 'true' );
 						}
 					} );
+
+					// The submit button is usually among the hidden blocks, so
+					// focus would fall to the page. Move it to the message.
+					if ( firstShown ) {
+						firstShown.setAttribute( 'tabindex', '-1' );
+						firstShown.focus();
+					}
 
 					// Update the responses data if available.
 					if ( result.responses ) {
@@ -215,6 +224,7 @@ const { state } = store( 'gatherpress', {
 			const urlParams = new URLSearchParams( window.location.search );
 			const isSuccess = 'true' === urlParams.get( 'gatherpress_rsvp_success' );
 			const isPast = 'past' === form.dataset.gatherpressEventState;
+			const isCanceled = 'canceled' === form.dataset.gatherpressEventState;
 
 			// Set initial visibility for blocks based on their attributes and current state.
 			const blocksWithVisibility = form.querySelectorAll( '[data-gatherpress-rsvp-form-visibility]' );
@@ -231,12 +241,20 @@ const { state } = store( 'gatherpress', {
 					visibility = {};
 				}
 
-				const { onSuccess, whenPast } = visibility;
+				const { onSuccess, whenPast, whenCanceled } = visibility;
 
 				let shouldShow = null; // null = default (always visible)
 
-				// When event is past, check whenPast (takes precedence when past).
-				if ( isPast && whenPast ) {
+				if ( isCanceled ) {
+					// A canceled event takes no RSVPs, so blocks tied to the RSVP flow hide by default.
+					if ( whenCanceled ) {
+						shouldShow = 'show' === whenCanceled;
+					} else if ( onSuccess || whenPast ) {
+						shouldShow = false;
+					}
+				} else if ( 'show' === whenCanceled ) {
+					shouldShow = false;
+				} else if ( isPast && whenPast ) {
 					shouldShow = 'show' === whenPast;
 				} else if ( ! isPast && whenPast && ! onSuccess ) {
 					// When not past but block has ONLY whenPast setting (no onSuccess).

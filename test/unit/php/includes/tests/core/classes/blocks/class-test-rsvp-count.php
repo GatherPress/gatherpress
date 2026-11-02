@@ -9,7 +9,9 @@
 namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp;
 use GatherPress\Tests\Base;
+use PasswordHash;
 
 /**
  * Class Test_Rsvp_Count.
@@ -66,7 +68,7 @@ class Test_Rsvp_Count extends Base {
 		$anonymous = $this->render_count( $event_id );
 
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
-		$reader = $this->render_count( $event_id );
+		$viewer = $this->render_count( $event_id );
 
 		wp_set_current_user( 0 );
 
@@ -77,8 +79,65 @@ class Test_Rsvp_Count extends Base {
 		);
 		$this->assertStringContainsString(
 			'gatherpress-rsvp-count__text',
-			$reader,
+			$viewer,
 			'Failed to assert a private event renders for a viewer who can read it.'
+		);
+	}
+
+	/**
+	 * A password-protected event renders nothing until the viewer has the password.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @return void
+	 */
+	public function test_renders_nothing_for_a_password_protected_event(): void {
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		);
+
+		wp_set_current_user( 0 );
+
+		$this->assertSame(
+			'',
+			trim( $this->render_count( $event_id ) ),
+			'Failed to assert a password-protected event renders nothing without the password.'
+		);
+	}
+
+	/**
+	 * A password-protected event renders its count once the viewer has the password.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @return void
+	 */
+	public function test_renders_for_a_password_protected_event_with_the_password(): void {
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		);
+
+		( new Rsvp( $event_id ) )->save( $this->factory->user->create(), 'attending', 0, 0 );
+		wp_set_current_user( 0 );
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+
+		// The cookie WordPress sets once a viewer enters the post password.
+		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'secret' );
+
+		$output = $this->render_count( $event_id );
+
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+
+		$this->assertStringContainsString(
+			'<span class="gatherpress-rsvp-count__text">1 attendee</span>',
+			$output,
+			'Failed to assert a password-protected event renders its count with the password.'
 		);
 	}
 

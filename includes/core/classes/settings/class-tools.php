@@ -17,6 +17,10 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
+use WP_Error;
+use WP_REST_Request;
+use WP_REST_Response;
+use WP_REST_Server;
 
 /**
  * Class Tools.
@@ -43,8 +47,7 @@ final class Tools extends Base {
 		parent::setup_hooks();
 
 		add_action( 'gatherpress_settings_section', array( $this, 'settings_section' ), 9 );
-		add_action( 'wp_ajax_gatherpress_export_settings', array( $this, 'ajax_export' ) );
-		add_action( 'wp_ajax_gatherpress_import_settings', array( $this, 'ajax_import' ) );
+		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
 	}
 
 	/**
@@ -105,42 +108,54 @@ final class Tools extends Base {
 	}
 
 	/**
-	 * AJAX handler for exporting settings.
+	 * Register the REST routes the Tools tab imports and exports through.
 	 *
-	 * Verifies permissions and nonce, then sends the settings export as JSON.
-	 *
-	 * @since 0.34.0
+	 * @since TBD
 	 *
 	 * @return void
 	 */
-	public function ajax_export(): void {
-		$scope = $this->resolve_scope();
+	public function register_endpoints(): void {
+		$scope      = array(
+			'type'    => 'string',
+			'enum'    => array( 'blog', 'network' ),
+			'default' => 'blog',
+		);
+		$permission = function ( WP_REST_Request $request ): bool {
+			return current_user_can( $this->capability_for_scope( (string) $request->get_param( 'scope' ) ) );
+		};
 
-		if ( ! current_user_can( $this->capability_for_scope( $scope ) ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'gatherpress' ) )
-			);
-		}
+		register_rest_route(
+			GATHERPRESS_REST_NAMESPACE,
+			'/settings/export',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'export' ),
+				'permission_callback' => $permission,
+				'args'                => array( 'scope' => $scope ),
+			)
+		);
 
-		check_ajax_referer( 'gatherpress_tools_nonce', 'nonce' );
-
-		$settings = Settings::get_instance();
-
-		wp_send_json_success( $settings->export_settings( $scope ) );
-	}
-
-	/**
-	 * Resolve the storage scope from the AJAX POST.
-	 *
-	 * @since 0.34.0
-	 *
-	 * @return string 'network' or 'blog'.
-	 */
-	protected function resolve_scope(): string {
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce checked elsewhere in the handler.
-		$raw = isset( $_POST['scope'] ) ? sanitize_key( wp_unslash( $_POST['scope'] ) ) : 'blog';
-
-		return 'network' === $raw ? 'network' : 'blog';
+		register_rest_route(
+			GATHERPRESS_REST_NAMESPACE,
+			'/settings/import',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'import' ),
+				'permission_callback' => $permission,
+				'args'                => array(
+					'scope'  => $scope,
+					'mode'   => array(
+						'type'    => 'string',
+						'enum'    => array( 'merge', 'replace' ),
+						'default' => 'merge',
+					),
+					'import' => array(
+						'required' => true,
+						'type'     => 'object',
+					),
+				),
+			)
+		);
 	}
 
 	/**
@@ -157,56 +172,49 @@ final class Tools extends Base {
 	}
 
 	/**
-	 * AJAX handler for importing settings.
+	 * Export the settings from a REST request.
 	 *
-	 * Verifies permissions and nonce, parses the uploaded JSON,
-	 * validates and imports the settings.
+	 * @since TBD
 	 *
-	 * @since 0.34.0
+	 * @param WP_REST_Request $request The REST request.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
-	 * @return void
+	 * @return WP_REST_Response The export, ready to save as a JSON file.
 	 */
-	public function ajax_import(): void {
-		$scope = $this->resolve_scope();
+	public function export( WP_REST_Request $request ): WP_REST_Response {
+		return new WP_REST_Response(
+			Settings::get_instance()->export_settings( (string) $request->get_param( 'scope' ) )
+		);
+	}
 
-		if ( ! current_user_can( $this->capability_for_scope( $scope ) ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'gatherpress' ) )
+	/**
+	 * Import settings from a REST request.
+	 *
+	 * Values are sanitized as they are imported, so the file only has to
+	 * decode to an object.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_REST_Request $request The REST request.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
+	 *
+	 * @return WP_REST_Response|WP_Error What was imported, or why nothing was.
+	 */
+	public function import( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+		$result = Settings::get_instance()->import_settings(
+			(array) $request->get_param( 'import' ),
+			(string) $request->get_param( 'mode' ),
+			(string) $request->get_param( 'scope' )
+		);
+
+		if ( ! $result['success'] ) {
+			return new WP_Error(
+				'gatherpress_settings_import_failed',
+				implode( ' ', $result['warnings'] ),
+				array( 'status' => 400 )
 			);
 		}
 
-		check_ajax_referer( 'gatherpress_tools_nonce', 'nonce' );
-
-		// Raw JSON string — validated by json_decode below, individual values sanitized during import.
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		$json = isset( $_POST['settings_json'] ) ? wp_unslash( $_POST['settings_json'] ) : '';
-		$mode = Utility::get_http_input( INPUT_POST, 'import_mode' );
-
-		if ( empty( $json ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'No settings data provided.', 'gatherpress' ) )
-			);
-		}
-
-		$data = json_decode( $json, true );
-
-		if ( ! is_array( $data ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Invalid JSON data.', 'gatherpress' ) )
-			);
-		}
-
-		if ( ! in_array( $mode, array( 'merge', 'replace' ), true ) ) {
-			$mode = 'merge';
-		}
-
-		$settings = Settings::get_instance();
-		$result   = $settings->import_settings( $data, $mode, $scope );
-
-		if ( $result['success'] ) {
-			wp_send_json_success( $result );
-		} else {
-			wp_send_json_error( $result );
-		}
+		return new WP_REST_Response( $result );
 	}
 }

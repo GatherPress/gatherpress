@@ -1,7 +1,12 @@
 # gatherpress_email_subject
 
 
-Filters the event update email subject.
+Filters the subject of an event email.
+
+Covers the update an editor sends from an event, the confirmation an
+attendee gets when they move off the waiting list, and the reminder
+attendees get before an event starts. Lets a site brand or reword the
+subject, for example with a site prefix.
 
 ## Auto-generated Example
 
@@ -25,9 +30,13 @@ add_filter(
 - *`string`* `$subject` Email subject line.
 - *`int`* `$post_id` Event post ID.
 
+## Returns
+
+`string` Email subject line.
+
 ## Files
 
-- [includes/core/classes/event/class-rest-api.php:598](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-rest-api.php#L598)
+- [includes/core/classes/event/class-email.php:456](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-email.php#L456)
 ```php
 apply_filters( 'gatherpress_email_subject', $subject, $post_id )
 ```

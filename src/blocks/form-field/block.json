@@ -48,7 +48,6 @@
 		},
 		"requiredText": {
 			"type": "string",
-			"default": "(required)",
 			"role": "content"
 		},
 		"minValue": {

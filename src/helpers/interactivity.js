@@ -244,7 +244,6 @@ export const getNonce = ( () => {
  * @param {string}      args.status            - The RSVP status (`attending`, `not_attending`, etc.).
  * @param {number}      [args.guests=0]        - The number of additional guests.
  * @param {boolean}     [args.anonymous=false] - Whether the RSVP is anonymous.
- * @param {string}      [args.rsvpToken]       - Optional RSVP token for anonymous users.
  * @param {Object}      [state=null]           - A state object to update with the API response data.
  * @param {Function}    [onSuccess=null]       - A callback function to execute on a successful API response.
  *                                             Receives the API response as its argument.
@@ -298,7 +297,6 @@ export async function sendRsvpApiRequest(
 					status: args.status,
 					guests: args.guests,
 					anonymous: args.anonymous,
-					rsvp_token: args.rsvpToken,
 				} ),
 			},
 		);
@@ -419,7 +417,7 @@ export function activateOnSpace( event, ref ) {
  * top-most one, and the modal under it must keep its trap.
  *
  * @since 0.33.0
- * @since TBD No longer removes itself on `Escape`.
+ * @since 0.36.0 No longer removes itself on `Escape`.
  *
  * @param {HTMLElement[]} focusableElements - An array of focusable elements.
  *                                          These elements will be used to define
@@ -493,7 +491,7 @@ export function manageFocusTrap( focusableElements ) {
  * Escape handling looks across all of them, so a dropdown open inside a modal
  * closes before the modal does.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @type {Map<string, number>}
  */
@@ -505,7 +503,7 @@ const activeCloseSelectors = new Map();
  * That is the innermost open element: the last one in document order that
  * holds no other open element. For nested modals, it is the top-most modal.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @return {HTMLElement|null} The element to close, or null when none is open.
  */
@@ -536,7 +534,9 @@ function getTopMostOpenElement() {
  * handlers are listening: with nested modals, one press closes the inner
  * modal and leaves the outer one open.
  *
- * @since TBD `Escape` closes only the top-most open element.
+ * @since 0.32.0
+ * @since 0.36.0 `Escape` closes only the top-most open element.
+ * @since TBD    `Escape` is cancelled once handled, so a modal `<dialog>` around the element stays open.
  *
  * @param {string}   elementSelector - Selector for the parent element (modal or dropdown).
  * @param {string}   contentSelector - Selector for the inner content element.
@@ -569,6 +569,8 @@ export function setupCloseHandlers( elementSelector, contentSelector, onClose ) 
 		}
 
 		event.gatherpressEscapeHandled = true;
+		// The key closed this element, so a modal <dialog> around it stays open.
+		event.preventDefault();
 		handleClose( topMost );
 	};
 

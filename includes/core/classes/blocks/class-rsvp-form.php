@@ -18,8 +18,12 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Blocks\Form_Field;
 use GatherPress\Core\Blocks\General_Block;
+use GatherPress\Core\Blocks\Rsvp_Form\Visibility;
+use GatherPress\Core\Capability;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status as Event_Status;
 use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_Comment;
@@ -43,6 +47,7 @@ use WP_HTML_Tag_Processor;
  *     input_id?: string
  * }
  * @phpstan-type FormSchema array{fields: array<string, FieldConfig>, hash: string}
+ * @phpstan-import-type ReturnedSubmission from Form
  */
 final class Rsvp_Form {
 
@@ -65,7 +70,7 @@ final class Rsvp_Form {
 	 * Also the key a schema failure is reported under, since that failure
 	 * belongs to the form rather than to any one field.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 * @var string
 	 */
 	const SCHEMA_ID_FIELD = 'gatherpress_form_schema_id';
@@ -85,6 +90,52 @@ final class Rsvp_Form {
 		'gatherpress_rsvp_form_anonymous',
 		'gatherpress_event_updates_opt_in',
 	);
+
+	/**
+	 * The rejected submission the RSVP Form being rendered came back with.
+	 *
+	 * Set before the form's fields render and cleared once the form itself
+	 * has, so its fields can read their values and errors from it.
+	 *
+	 * @since TBD
+	 * @var ReturnedSubmission|null
+	 */
+	private ?array $returned_form = null;
+
+	/**
+	 * Whether a form on this page has taken the rejected submission.
+	 *
+	 * Identical forms for one event share a schema, so only the first is
+	 * given the submission, rather than every copy showing its errors.
+	 *
+	 * @since TBD
+	 * @var bool
+	 */
+	private bool $returned_form_taken = false;
+
+	/**
+	 * Field names whose error a field of the returned form has shown.
+	 *
+	 * @since TBD
+	 * @var array<string, true>
+	 */
+	private array $shown_errors = array();
+
+	/**
+	 * Whether a field of the returned form has taken its autofocus.
+	 *
+	 * @since TBD
+	 * @var bool
+	 */
+	private bool $autofocus_claimed = false;
+
+	/**
+	 * Form ids given out on this page, so a repeated form gets its own.
+	 *
+	 * @since TBD
+	 * @var array<string, true>
+	 */
+	private array $form_ids = array();
 
 	/**
 	 * Class constructor.
@@ -109,7 +160,9 @@ final class Rsvp_Form {
 	protected function setup_hooks(): void {
 		$render_block_hook = sprintf( 'render_block_%s', self::BLOCK_NAME );
 
-		add_filter( $render_block_hook, array( $this, 'transform_block_content' ), 5, 2 );
+		add_filter( 'render_block_data', array( $this, 'begin_returned_form' ) );
+		// Builds the <form> before the field filters below adjust its fields.
+		add_filter( $render_block_hook, array( $this, 'transform_block_content' ), 9, 2 );
 		add_filter( 'render_block', array( $this, 'apply_visibility_attribute' ), 10, 2 );
 		add_action( 'save_post', array( $this, 'save_form_schema' ) );
 
@@ -139,35 +192,59 @@ final class Rsvp_Form {
 		$block_instance = Setup::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
+		// Its fields have rendered, so the next form starts clean whichever
+		// way this one returns.
+		$returned            = $this->returned_form;
+		$this->returned_form = null;
+
 		// Validate that the post type supports RSVP, that the post is published
-		// (unless previewing), and that RSVP is both enabled and open. A single
-		// Rsvp() so we don't construct it twice on the happy path.
-		$rsvp = new Rsvp( $post_id );
+		// (unless previewing) and its password entered, and that RSVP is both
+		// enabled and open. A single Rsvp() so we don't construct it twice on
+		// the happy path.
+		$rsvp  = new Rsvp( $post_id );
+		$event = new Event( $post_id );
 
 		if (
 			! post_type_supports( (string) get_post_type( $post_id ), Rsvp::SUPPORT )
 			|| ! Event::is_viewable( $post_id )
+			|| post_password_required( $post_id )
 			|| ! $rsvp->is_enabled()
 			|| ! $rsvp->allows_open_rsvp()
 		) {
 			return '';
 		}
 
-		$unique_form_id = $this->generate_form_id();
+		$is_canceled = ( new Event_Status( $post_id ) )->is_canceled();
+
 		$schema_form_id = $this->get_form_schema_id( $post_id, $block );
+		$unique_form_id = $this->generate_form_id( $post_id, $schema_form_id );
 
 		$block_content = trim( $block_content );
 		$block_content = (string) preg_replace( '/^<div\b/', '<form', $block_content );
-		$block_content = (string) preg_replace(
-			'/(<\/div>)$/',
-			'<input type="hidden" name="comment_post_ID" value="' . intval( $post_id ) . '">' .
+		$hidden_fields = '<input type="hidden" name="comment_post_ID" value="' . intval( $post_id ) . '">' .
 			'<input type="hidden" name="' . esc_attr( Rsvp::COMMENT_TYPE ) . '" value="1">' .
 			'<input type="hidden" name="gatherpress_rsvp_form_id" value="' . esc_attr( $unique_form_id ) . '">' .
 			'<input type="hidden" name="gatherpress_form_schema_id" value="' . esc_attr( $schema_form_id ) . '">' .
-			'</form>',
+			// Names the form's page for wp_get_referer(), which a Referer
+			// header cut to the origin by the Referrer-Policy cannot.
+			wp_referer_field( false );
+		$block_content = (string) preg_replace_callback(
+			'/<\/div>$/',
+			static fn() => $hidden_fields . '</form>',
 			$block_content
 		);
-		$tag           = new WP_HTML_Tag_Processor( $block_content );
+
+		// A form saved before canceled events had their own notice gets a default one.
+		if ( $is_canceled && ! Visibility::has_canceled_notice( (array) ( $block['innerBlocks'] ?? array() ) ) ) {
+			$notice        = $this->get_canceled_notice( $post_id );
+			$block_content = (string) preg_replace_callback(
+				'/^<form\b[^>]*>/',
+				static fn( array $matches ): string => $matches[0] . $notice,
+				$block_content
+			);
+		}
+
+		$tag = new WP_HTML_Tag_Processor( $block_content );
 
 		$tag->next_tag();
 		$tag->set_attribute( 'action', site_url( 'wp-comments-post.php' ) );
@@ -188,14 +265,18 @@ final class Rsvp_Form {
 			__( 'Sorry, there was an issue processing your RSVP. Please try again.', 'gatherpress' )
 		);
 
-		$event = new Event( $post_id );
-
-		// Add event state if the event has passed.
-		if ( $event->has_event_past() ) {
+		// Add the event state when the event is canceled or has passed.
+		if ( $is_canceled ) {
+			$tag->set_attribute( 'data-gatherpress-event-state', 'canceled' );
+		} elseif ( $event->has_event_past() ) {
 			$tag->set_attribute( 'data-gatherpress-event-state', 'past' );
 		}
 
 		$updated_html = $tag->get_updated_html();
+
+		if ( null !== $returned ) {
+			$updated_html = $this->add_returned_form_error( $updated_html, $returned );
+		}
 
 		// Check if this is a successful form submission redirect.
 		$success_param = Utility::get_http_input( INPUT_GET, 'gatherpress_rsvp_success' );
@@ -205,6 +286,119 @@ final class Rsvp_Form {
 		$updated_html = $this->handle_form_visibility( $updated_html, $is_success );
 
 		return $updated_html;
+	}
+
+	/**
+	 * Picks up a rejected submission for the RSVP Form about to render.
+	 *
+	 * Runs before the form's fields render, so each field can show its own
+	 * value and error. Only the form the submission came from matches: the
+	 * same event and the same form schema, and the first such form on the page.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $parsed_block The block about to render.
+	 *
+	 * @return array<string, mixed> The block, unchanged.
+	 */
+	public function begin_returned_form( array $parsed_block ): array {
+		if ( self::BLOCK_NAME !== ( $parsed_block['blockName'] ?? '' ) ) {
+			return $parsed_block;
+		}
+
+		$this->returned_form     = null;
+		$this->shown_errors      = array();
+		$this->autofocus_claimed = false;
+
+		$form       = Form::get_instance();
+		$submission = $form->get_returned_submission();
+		$post_id    = Setup::get_instance()->get_post_id( $parsed_block );
+
+		if (
+			! $this->returned_form_taken
+			&& null !== $submission
+			&& $submission['post_id'] === $post_id
+			&& $submission['form_schema_id'] === $this->get_form_schema_id( $post_id, $parsed_block )
+		) {
+			$this->returned_form       = $submission;
+			$this->returned_form_taken = true;
+			$form->consume_returned_submission();
+		}
+
+		return $parsed_block;
+	}
+
+	/**
+	 * Returns what a rejected submission left for one of the returned form's fields.
+	 *
+	 * The first field with an error also takes the form's autofocus, since
+	 * without JavaScript nothing else can move focus to it.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $field_name The field's name.
+	 *
+	 * @return array<string, mixed> The submitted value, null when none was kept, its error, and whether it takes focus.
+	 * @phpstan-return array{value: ?string, error: string, autofocus: bool}
+	 */
+	public function get_returned_field( string $field_name ): array {
+		$returned = array(
+			'value'     => $this->returned_form['values'][ $field_name ] ?? null,
+			'error'     => $this->returned_form['errors'][ $field_name ] ?? '',
+			'autofocus' => false,
+		);
+
+		if ( '' !== $returned['error'] ) {
+			$returned['autofocus']             = ! $this->autofocus_claimed;
+			$this->autofocus_claimed           = true;
+			$this->shown_errors[ $field_name ] = true;
+		}
+
+		return $returned;
+	}
+
+	/**
+	 * Adds a returned form's message to the top of the form.
+	 *
+	 * The message is the form's own, a duplicate RSVP for one, plus any field
+	 * error whose field the form no longer shows, so nothing is dropped. It
+	 * uses the markup form-errors.js gives the same message, and takes the
+	 * autofocus when no field did.
+	 *
+	 * @since TBD
+	 *
+	 * @param string               $html     The form's markup.
+	 * @param array<string, mixed> $returned The submission the form came back with.
+	 *
+	 * @return string The markup with the message, or unchanged when there is none.
+	 *
+	 * @phpstan-param ReturnedSubmission $returned
+	 */
+	private function add_returned_form_error( string $html, array $returned ): string {
+		$messages = array_filter(
+			array_merge(
+				array( $returned['form_error'] ),
+				array_values( array_diff_key( $returned['errors'], $this->shown_errors ) )
+			)
+		);
+
+		if ( empty( $messages ) ) {
+			return $html;
+		}
+
+		$message = sprintf(
+			'<div class="gatherpress-form-error" role="alert" tabindex="-1"%s>%s</div>',
+			$this->autofocus_claimed ? '' : ' autofocus',
+			esc_html( implode( ' ', $messages ) )
+		);
+
+		// The opening tag's attribute values are escaped, so its first ">" ends it.
+		return (string) preg_replace_callback(
+			'/^<form\b[^>]*>/',
+			static fn( array $matches ): string => $matches[0] . $message,
+			$html,
+			1
+		);
 	}
 
 	/**
@@ -230,12 +424,14 @@ final class Rsvp_Form {
 			return $block_content;
 		}
 
-		// Check if event has passed.
-		$is_past = false;
-		$post_id = $this->get_post_id_from_context( $block );
+		// Check if event is canceled or has passed.
+		$is_past     = false;
+		$is_canceled = false;
+		$post_id     = $this->get_post_id_from_context( $block );
 		if ( $post_id ) {
-			$event   = new Event( $post_id );
-			$is_past = $event->has_event_past();
+			$event       = new Event( $post_id );
+			$is_past     = $event->has_event_past();
+			$is_canceled = ( new Event_Status( $post_id ) )->is_canceled();
 		}
 
 		// Check if this is a success redirect (form was just submitted).
@@ -244,7 +440,7 @@ final class Rsvp_Form {
 		$visibility_json = (string) wp_json_encode( $visibility );
 
 		// Determine if block should be visible using centralized logic.
-		$should_show = $this->determine_visibility( $visibility_json, $is_success, $is_past );
+		$should_show = ( new Visibility( $is_success, $is_past, $is_canceled ) )->should_show( $visibility_json );
 
 		// Add the visibility data attribute(s) to the rendered block.
 		$tag = new WP_HTML_Tag_Processor( $block_content );
@@ -254,7 +450,9 @@ final class Rsvp_Form {
 			$tag->set_attribute( 'data-gatherpress-rsvp-form-visibility', $visibility_json );
 
 			// Add event state for frontend JavaScript.
-			if ( $is_past ) {
+			if ( $is_canceled ) {
+				$tag->set_attribute( 'data-gatherpress-event-state', 'canceled' );
+			} elseif ( $is_past ) {
 				$tag->set_attribute( 'data-gatherpress-event-state', 'past' );
 			}
 
@@ -322,12 +520,13 @@ final class Rsvp_Form {
 	private function handle_form_visibility( string $html, bool $is_success ): string {
 		$tag = new WP_HTML_Tag_Processor( $html );
 
-		// Check if event has passed by looking for the data attribute on the form element.
-		$is_past = false;
+		// Read the event state from the data attribute on the form element.
+		$event_state = null;
 		if ( $tag->next_tag( array( 'tag_name' => 'form' ) ) ) {
 			$event_state = $tag->get_attribute( 'data-gatherpress-event-state' );
-			$is_past     = 'past' === $event_state;
 		}
+		$is_past     = 'past' === $event_state;
+		$is_canceled = 'canceled' === $event_state;
 
 		// Reset to beginning and loop through all elements.
 		$tag = new WP_HTML_Tag_Processor( $html );
@@ -336,7 +535,7 @@ final class Rsvp_Form {
 
 			// A valueless attribute reads back as true.
 			if ( is_string( $visibility_attr ) && '' !== $visibility_attr ) {
-				$this->apply_visibility_rule( $tag, $visibility_attr, $is_success, $is_past );
+				$this->apply_visibility_rule( $tag, $visibility_attr, $is_success, $is_past, $is_canceled );
 			}
 		}
 
@@ -353,6 +552,7 @@ final class Rsvp_Form {
 	 * @param string                $visibility_rule The visibility rule as a JSON object.
 	 * @param bool                  $is_success      Whether the form was successfully submitted.
 	 * @param bool                  $is_past         Whether the event has passed.
+	 * @param bool                  $is_canceled     Whether the event is canceled.
 	 *
 	 * @return void
 	 */
@@ -360,13 +560,14 @@ final class Rsvp_Form {
 		WP_HTML_Tag_Processor $tag,
 		?string $visibility_rule,
 		bool $is_success,
-		bool $is_past
+		bool $is_past,
+		bool $is_canceled = false
 	): void {
 		if ( ! $visibility_rule ) {
 			return;
 		}
 
-		$should_show = $this->determine_visibility( $visibility_rule, $is_success, $is_past );
+		$should_show = ( new Visibility( $is_success, $is_past, $is_canceled ) )->should_show( $visibility_rule );
 
 		// Apply visibility if determined.
 		if ( false === $should_show ) {
@@ -388,43 +589,29 @@ final class Rsvp_Form {
 	}
 
 	/**
-	 * Determine if a block should be visible based on visibility rules and current state.
+	 * The default notice for a canceled event, rendered as a paragraph block.
 	 *
-	 * @since 0.33.0
+	 * @since TBD
 	 *
-	 * @param string $visibility_rule The visibility rule as a JSON object.
-	 * @param bool   $is_success      Whether the form was successfully submitted.
-	 * @param bool   $is_past         Whether the event has passed.
+	 * @param int $post_id The event post ID.
 	 *
-	 * @return bool|null True to show, false to hide, null for no change (always visible).
+	 * @return string The notice markup.
 	 */
-	private function determine_visibility( string $visibility_rule, bool $is_success, bool $is_past ): ?bool {
-		// Decode JSON object format.
-		$visibility = json_decode( $visibility_rule, true );
+	private function get_canceled_notice( int $post_id ): string {
+		$singular = strtolower( Utility::post_type_label( 'singular_name', (string) get_post_type( $post_id ) ) );
 
-		if ( ! is_array( $visibility ) ) {
-			return null;
-		}
-
-		// Object format with onSuccess and whenPast.
-		$on_success = $visibility['onSuccess'] ?? '';
-		$when_past  = $visibility['whenPast'] ?? '';
-
-		$result = null;
-
-		if ( $is_past && ! empty( $when_past ) ) {
-			// When event is past, whenPast takes precedence.
-			$result = 'show' === $when_past;
-		} elseif ( ! $is_past && ! empty( $when_past ) && empty( $on_success ) ) {
-			// Not past but block has ONLY whenPast: hide-if-set-to-show
-			// (it shouldn't appear yet).
-			$result = 'show' !== $when_past;
-		} elseif ( ! empty( $on_success ) ) {
-			// Success: show-if-set-to-show. Not success: hide-if-set-to-show.
-			$result = $is_success ? ( 'show' === $on_success ) : ( 'show' !== $on_success );
-		}
-
-		return $result;
+		return do_blocks(
+			sprintf(
+				'<!-- wp:paragraph --><p>%s</p><!-- /wp:paragraph -->',
+				esc_html(
+					sprintf(
+						/* translators: %1$s: Singular post type label, e.g. "event". */
+						__( 'Registration for this %1$s is closed because the %1$s has been canceled.', 'gatherpress' ),
+						$singular
+					)
+				)
+			)
+		);
 	}
 
 	/**
@@ -447,7 +634,7 @@ final class Rsvp_Form {
 		}
 
 		// Check if user has permission to edit the post.
-		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+		if ( ! current_user_can( Capability::EDIT_POST, $post_id ) ) {
 			return;
 		}
 
@@ -492,7 +679,7 @@ final class Rsvp_Form {
 		 *   );
 		 *   ```
 		 *
-		 * @since TBD
+		 * @since 0.36.0
 		 *
 		 * @param array<string, mixed> $schemas Schemas derived from the post's RSVP Form blocks, keyed by form id.
 		 * @param int                  $post_id The post being saved.
@@ -671,7 +858,7 @@ final class Rsvp_Form {
 	 * @param int                  $post_id The post ID.
 	 * @param array<string, mixed> $block   The current block being rendered.
 	 *
-	 * @return string The form schema ID (e.g., 'form_0', 'form_2').
+	 * @return string The form schema ID (e.g., 'form_0', 'form_2', '4_form_1' for a nested form).
 	 */
 	private function get_form_schema_id( int $post_id, array $block ): string {
 		$post = get_post( $post_id );
@@ -679,59 +866,61 @@ final class Rsvp_Form {
 			return 'form_0'; // Fallback.
 		}
 
-		$blocks     = array_values( parse_blocks( $post->post_content ) );
-		$form_index = $this->find_form_index_in_blocks( $blocks, $block );
+		$blocks = array_values( parse_blocks( $post->post_content ) );
 
-		return 'form_' . $form_index;
+		return $this->find_form_schema_id_in_blocks( $blocks, $block ) ?? 'form_0';
 	}
 
 	/**
-	 * Find the index of the current form block in the blocks array.
+	 * Find the schema ID of the current form block in the blocks array.
 	 *
 	 * Recursively searches through blocks to find the current RSVP Form
-	 * block and returns its position index.
+	 * block. The ID is built the same way extract_form_schemas_from_blocks()
+	 * builds it, so it names the schema stored for this form: `form_{index}`
+	 * at the top level, prefixed with `{parent index}_` for each nesting level.
 	 *
 	 * @since 0.33.0
+	 * @since 0.36.0 Renamed from find_form_index_in_blocks(), and returns the form schema ID rather than a block index.
 	 *
 	 * @param array<int, array<string, mixed>> $blocks       Array of parsed blocks.
 	 * @param array<string, mixed>             $target_block The block we're looking for.
-	 * @param int                              $base_index   Base index for nested blocks.
 	 *
-	 * @return int The index of the form block.
+	 * @return string|null The form schema ID, or null when the form is not in the blocks.
 	 */
-	private function find_form_index_in_blocks( array $blocks, array $target_block, int $base_index = 0 ): int {
+	private function find_form_schema_id_in_blocks( array $blocks, array $target_block ): ?string {
 		foreach ( $blocks as $index => $block ) {
 			if (
 				self::BLOCK_NAME === $block['blockName'] &&
 				$this->blocks_match( $block, $target_block )
 			) {
-				// Compare block content or attributes to identify the same block.
-				return $base_index + $index;
+				return 'form_' . $index;
 			}
 
-			// Check nested blocks.
 			if ( ! empty( $block['innerBlocks'] ) ) {
-				$nested_index = $this->find_form_index_in_blocks(
-					$block['innerBlocks'],
-					$target_block,
-					$base_index + $index * 100 // Use larger offset for nested blocks.
-				);
-				if ( -1 !== $nested_index ) {
-					return $nested_index;
+				$nested_id = $this->find_form_schema_id_in_blocks( $block['innerBlocks'], $target_block );
+
+				if ( null !== $nested_id ) {
+					return $index . '_' . $nested_id;
 				}
 			}
 		}
 
-		return 0; // Fallback to first form.
+		return null;
 	}
 
 	/**
 	 * Check if two blocks match based on their content.
 	 *
-	 * Compares blocks to determine if they are the same instance.
-	 * Uses inner HTML content as the primary comparison method.
+	 * Compares blocks to determine if they are the same instance: their own
+	 * markup, and the form fields their inner blocks hold. Forms with the same
+	 * fields store the same schema, so either one's id fits both. Other inner
+	 * blocks are left out, because Block Hooks can add them at render, and so
+	 * are the form's own attributes, which can be filtered at render.
 	 *
 	 * @since 0.33.0
+	 * @since 0.36.1 Also compares form fields. A block's innerHTML holds only its
+	 *            wrapper, so two forms with the same wrapper and number of
+	 *            fields matched each other.
 	 *
 	 * @param array<string, mixed> $block1 First block to compare.
 	 * @param array<string, mixed> $block2 Second block to compare.
@@ -739,25 +928,37 @@ final class Rsvp_Form {
 	 * @return bool True if blocks match.
 	 */
 	private function blocks_match( array $block1, array $block2 ): bool {
-		// Compare inner HTML content as a way to identify the same block.
-		$content1 = $block1['innerHTML'] ?? '';
-		$content2 = $block2['innerHTML'] ?? '';
-
-		return $content1 === $content2;
+		return ( $block1['innerHTML'] ?? '' ) === ( $block2['innerHTML'] ?? '' )
+			&& $this->extract_form_fields_from_inner_blocks( $block1['innerBlocks'] ?? array() )
+				=== $this->extract_form_fields_from_inner_blocks( $block2['innerBlocks'] ?? array() );
 	}
 
 	/**
 	 * Generate a unique form ID for RSVP redirect handling.
 	 *
-	 * Creates a unique identifier that can be used to track form submissions
-	 * and handle redirects back to the correct page location.
+	 * The success redirect's anchor points at this id, so it is the same on
+	 * every render of the page: built from the event and the form's schema
+	 * id, with a numbered suffix when the form repeats on the page.
 	 *
 	 * @since 0.33.0
+	 * @since TBD Built from the event and form schema id rather than uniqid().
+	 *
+	 * @param int    $post_id        The event post ID.
+	 * @param string $form_schema_id The form's schema id.
 	 *
 	 * @return string Unique form ID.
 	 */
-	private function generate_form_id(): string {
-		return uniqid( 'gatherpress_rsvp_' );
+	private function generate_form_id( int $post_id, string $form_schema_id ): string {
+		$base    = sprintf( 'gatherpress_rsvp_%d_%s', $post_id, $form_schema_id );
+		$form_id = $base;
+
+		for ( $copy = 2; isset( $this->form_ids[ $form_id ] ); $copy++ ) {
+			$form_id = $base . '-' . $copy;
+		}
+
+		$this->form_ids[ $form_id ] = true;
+
+		return $form_id;
 	}
 
 	/**
@@ -797,8 +998,9 @@ final class Rsvp_Form {
 
 			// Validate and sanitize the field value using the same logic as the Ajax handler.
 			$validated_value = $this->sanitize_custom_field_value( $field_value, $field_config );
+			// update_comment_meta() unslashes, so slash to keep backslashes.
 			if ( false !== $validated_value ) {
-				update_comment_meta( $comment_id, 'gatherpress_custom_' . $field_name, $validated_value );
+				update_comment_meta( $comment_id, 'gatherpress_custom_' . $field_name, wp_slash( $validated_value ) );
 			}
 		}
 	}
@@ -806,7 +1008,7 @@ final class Rsvp_Form {
 	/**
 	 * Get the custom field definitions for a stored form schema.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param int    $post_id        The event post ID the schema belongs to.
 	 * @param string $form_schema_id The submitted form-schema id.
@@ -852,7 +1054,7 @@ final class Rsvp_Form {
 	 * Runs before the RSVP comment is created, so a submission that fails
 	 * here is rejected outright rather than stored with answers missing.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param int                  $post_id        The event post ID the schema belongs to.
 	 * @param string               $form_schema_id The submitted form-schema id.
@@ -923,7 +1125,7 @@ final class Rsvp_Form {
 	/**
 	 * Get the message for a required field that was left unanswered.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param string               $field_name   The field's name in the schema.
 	 * @param array<string, mixed> $field_config The field configuration from the schema.
@@ -944,7 +1146,7 @@ final class Rsvp_Form {
 	 * Reads each value the same way the save path does, so validation and
 	 * storage always see the same input.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param int    $post_id        The event post ID the schema belongs to.
 	 * @param string $form_schema_id The submitted form-schema id.
@@ -964,7 +1166,7 @@ final class Rsvp_Form {
 	/**
 	 * Get a field's display label, falling back to its name.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param string               $field_name   The field's name in the schema.
 	 * @param array<string, mixed> $field_config The field configuration from the schema.
@@ -980,7 +1182,7 @@ final class Rsvp_Form {
 	/**
 	 * Get the message explaining why a submitted value was rejected.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @param string               $field_name   The field's name in the schema.
 	 * @param array<string, mixed> $field_config The field configuration from the schema.

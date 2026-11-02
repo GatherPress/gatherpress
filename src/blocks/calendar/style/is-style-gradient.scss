@@ -1,0 +1,90 @@
+/* ======================================================================
+    BLOCK STYLE: Gradient
+    Glassmorphic translucent surfaces that adapt to the calendar text color.
+    ====================================================================== */
+
+.wp-block-gatherpress-calendar.is-style-gradient {
+	background: linear-gradient(135deg, color-mix(in srgb, currentcolor 60%, transparent) 0%, color-mix(in srgb, currentcolor 10%, transparent) 100%);
+	border-radius: 16px;
+	padding: clamp(1rem, 4vw, 2rem);
+
+	// Adaptive glassmorphic tokens derived from currentColor
+	--gatherpress-calendar-column-gap: clamp(0.5rem, 1.5vw, 0.75rem);
+	--gatherpress-calendar-header-bg: color-mix(in srgb, currentcolor 15%, transparent);
+	--gatherpress-calendar-header-color: currentcolor;
+	--gatherpress-calendar-day-bg: color-mix(in srgb, currentcolor 10%, transparent);
+	--gatherpress-calendar-day-color: currentcolor;
+	--gatherpress-calendar-day-has-posts-border: color-mix(in srgb, currentcolor 30%, transparent);
+	--gatherpress-calendar-day-today-outline: transparent;
+	--gatherpress-calendar-day-today-color: currentcolor;
+	--gatherpress-calendar-time-color: color-mix(in srgb, currentcolor 85%, transparent);
+	--gatherpress-calendar-title-color: currentcolor;
+	--gatherpress-calendar-focus-outline-color: currentcolor;
+	--gatherpress-calendar-ribbon-color-intensity: 42%;
+	--gatherpress-calendar-ribbon-mix-target: currentcolor;
+
+	.gatherpress-calendar__table {
+		gap: var(--gatherpress-calendar-column-gap);
+		background: transparent;
+		border: none;
+		padding: clamp(0.5rem, 1.5vw, 0.75rem);
+
+		th {
+			backdrop-filter: blur(10px);
+			font-weight: 700;
+			text-transform: uppercase;
+			letter-spacing: 0.1em;
+			border-radius: 8px;
+			border: 1px solid color-mix(in srgb, currentcolor 20%, transparent);
+		}
+
+		td {
+			border: 1px solid color-mix(in srgb, currentcolor 20%, transparent);
+			border-radius: 8px;
+			transition: background-color 0.25s ease, border-color 0.25s ease;
+
+			&.gatherpress--is-empty {
+				background: color-mix(in srgb, currentcolor 5%, transparent);
+				opacity: 0.35;
+			}
+
+			&.gatherpress--has-posts {
+				background: color-mix(in srgb, currentcolor 20%, transparent);
+				border-color: var(--gatherpress-calendar-day-has-posts-border);
+			}
+
+			&.gatherpress--is-today {
+				background: linear-gradient(135deg, color-mix(in srgb, currentcolor 40%, transparent) 0%, color-mix(in srgb, currentcolor 20%, transparent) 100%);
+				border: 2px solid currentcolor;
+				box-shadow: 0 8px 24px rgb(0 0 0 / 25%), 0 0 0 3px color-mix(in srgb, currentcolor 25%, transparent);
+
+				.gatherpress-calendar__day-number {
+					font-weight: 900;
+					text-shadow: 0 2px 4px rgb(0 0 0 / 30%);
+				}
+			}
+		}
+	}
+
+	.gatherpress-calendar__day-number {
+		color: currentcolor;
+		font-weight: 700;
+		text-shadow: 0 1px 3px rgb(0 0 0 / 20%);
+	}
+
+	/* ======================================================================
+		BLOCK STYLE: Dots
+		====================================================================== */
+	.wp-block-gatherpress-calendar-entries.is-style-dots {
+		.gatherpress-modal--trigger-open:not(.wp-block-gatherpress-modal *) > * {
+			box-shadow: 0 2px 6px rgb(0 0 0 / 20%);
+			border: 2px solid color-mix(in srgb, currentcolor 50%, transparent);
+
+			&:hover {
+				background: currentcolor;
+				transform: scale(1.3);
+				box-shadow: 0 4px 12px rgb(0 0 0 / 30%);
+			}
+		}
+	}
+}

@@ -8,6 +8,8 @@
 
 namespace GatherPress\Tests\Core;
 
+use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\User;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -83,6 +85,9 @@ class Test_User extends Base {
 		$instance = User::get_instance();
 		$user     = $this->mock->user( true )->get();
 
+		// Keep the reminders checkbox off, so only the updates checkbox can be checked.
+		update_user_meta( $user->ID, 'gatherpress_event_reminders_opt_in', 0 );
+
 		// Test default checkbox state (should be checked).
 		delete_user_meta( $user->ID, 'gatherpress_event_updates_opt_in' );
 		$markup = Utility::buffer_and_return( array( $instance, 'profile_fields' ), array( $user ) );
@@ -90,6 +95,11 @@ class Test_User extends Base {
 			'checked=\'checked\'',
 			$markup,
 			'Failed to assert that checkbox is checked by default.'
+		);
+		$this->assertStringContainsString(
+			'updates and information about Events from the organizers.',
+			$markup,
+			'Failed to assert that the consent line names the RSVP post type.'
 		);
 
 		// Test with explicit opt-out.
@@ -142,13 +152,101 @@ class Test_User extends Base {
 			$markup,
 			"12-hour option was expected to be selected but wasn't"
 		);
+		$this->assertStringContainsString(
+			'class="gatherpress-profile__time-formatting"',
+			$markup,
+			'The profile time-formatting wrapper should be present.'
+		);
+	}
+
+	/**
+	 * Coverage for get_rsvp_post_type_plural.
+	 *
+	 * @covers ::get_rsvp_post_type_plural
+	 *
+	 * @return void
+	 */
+	public function test_get_rsvp_post_type_plural_defaults_to_event_post_type(): void {
+		$plural = User::get_instance()->get_rsvp_post_type_plural();
+
+		$this->assertSame( 'Events', $plural );
+	}
+
+	/**
+	 * Check that the plural label falls back when no post type takes RSVPs.
+	 *
+	 * @covers ::get_rsvp_post_type_plural
+	 *
+	 * @return void
+	 */
+	public function test_get_rsvp_post_type_plural_falls_back_without_rsvp_support(): void {
+		remove_post_type_support( Event::POST_TYPE, Rsvp::SUPPORT );
+
+		$plural = User::get_instance()->get_rsvp_post_type_plural();
+
+		add_post_type_support( Event::POST_TYPE, Rsvp::SUPPORT );
+
+		$this->assertSame( '', $plural );
+	}
+
+	/**
+	 * Check that every post type that takes RSVPs is named, not only the first.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_rsvp_post_type_plural
+	 *
+	 * @return void
+	 */
+	public function test_get_rsvp_post_type_plural_lists_every_rsvp_post_type(): void {
+		register_post_type(
+			'gp_test_session',
+			array(
+				'labels'   => array( 'name' => 'Sessions' ),
+				'supports' => array( Rsvp::SUPPORT ),
+			)
+		);
+
+		$plural = User::get_instance()->get_rsvp_post_type_plural();
+
+		unregister_post_type( 'gp_test_session' );
+
+		$this->assertSame( 'Events and Sessions', $plural );
+	}
+
+	/**
+	 * Check that a post type with an empty plural label is left out of the list.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_rsvp_post_type_plural
+	 *
+	 * @return void
+	 */
+	public function test_get_rsvp_post_type_plural_skips_an_empty_label(): void {
+		// Labels are resolved at registration, so blank the name before registering.
+		$blank_name = static function ( object $labels ): object {
+			$labels->name = '';
+
+			return $labels;
+		};
+
+		add_filter( 'post_type_labels_gp_test_blank', $blank_name );
+		register_post_type( 'gp_test_blank', array( 'supports' => array( Rsvp::SUPPORT ) ) );
+
+		$plural = User::get_instance()->get_rsvp_post_type_plural();
+
+		remove_filter( 'post_type_labels_gp_test_blank', $blank_name );
+		unregister_post_type( 'gp_test_blank' );
+
+		$this->assertSame( 'Events', $plural );
 	}
 
 	/**
 	 * A user who never set a timezone sees Default selected, not the site's
 	 * timezone, so saving the profile doesn't pin them to it.
 	 *
-	 * @since TBD
+	 * @since 0.36.0
 	 *
 	 * @covers ::profile_fields
 	 *
@@ -222,6 +320,7 @@ class Test_User extends Base {
 	 * Coverage for timezone getter
 	 *
 	 * @covers ::user_set_timezone
+	 * @covers ::get_saved_timezone
 	 *
 	 * @return void
 	 */
@@ -238,6 +337,29 @@ class Test_User extends Base {
 			'Hammer Time',
 			$instance->user_set_timezone( 'ET-or-whatever' )
 		);
+		$this->assertSame( 'Hammer Time', $instance->get_saved_timezone() );
+	}
+
+	/**
+	 * The saved timezone is empty when logged out and in the admin.
+	 *
+	 * @covers ::get_saved_timezone
+	 *
+	 * @return void
+	 */
+	public function test_get_saved_timezone_outside_the_frontend(): void {
+		$instance = User::get_instance();
+		$user     = $this->mock->user( true )->get();
+
+		update_user_meta( $user->ID, 'gatherpress_timezone', 'Europe/London' );
+		set_current_screen( 'dashboard' );
+
+		$this->assertSame( '', $instance->get_saved_timezone(), 'The admin has no saved timezone.' );
+
+		set_current_screen( 'front' );
+		wp_set_current_user( 0 );
+
+		$this->assertSame( '', $instance->get_saved_timezone(), 'A logged-out visitor has no saved timezone.' );
 	}
 
 	/**
@@ -273,6 +395,12 @@ class Test_User extends Base {
 
 		// Save profile fields.
 		$instance->save_profile_fields( $user_id );
+
+		$this->assertEquals(
+			'0',
+			get_user_meta( $user_id, 'gatherpress_event_reminders_opt_in', true ),
+			'An unchecked reminders box is saved as an opt-out.'
+		);
 
 		// Verify all three meta fields were saved.
 		$this->assertEquals(
@@ -533,5 +661,50 @@ class Test_User extends Base {
 
 		// Clean up.
 		remove_all_filters( 'gatherpress_event_updates_default_opt_in' );
+	}
+
+	/**
+	 * Coverage for the reminders opt-in default, filter and stored value.
+	 *
+	 * @covers ::has_event_reminders_opt_in
+	 *
+	 * @return void
+	 */
+	public function test_has_event_reminders_opt_in(): void {
+		$instance = User::get_instance();
+		$user_id  = $this->factory->user->create();
+
+		$this->assertTrue( $instance->has_event_reminders_opt_in( $user_id ), 'On by default.' );
+
+		add_filter( 'gatherpress_event_reminders_default_opt_in', static fn(): string => '0' );
+		$this->assertFalse( $instance->has_event_reminders_opt_in( $user_id ), 'The filter sets the default.' );
+		remove_all_filters( 'gatherpress_event_reminders_default_opt_in' );
+
+		update_user_meta( $user_id, 'gatherpress_event_reminders_opt_in', 0 );
+		$this->assertFalse( $instance->has_event_reminders_opt_in( $user_id ), 'A stored opt-out wins.' );
+
+		update_user_meta( $user_id, 'gatherpress_event_reminders_opt_in', 1 );
+		$this->assertTrue( $instance->has_event_reminders_opt_in( $user_id ) );
+	}
+
+	/**
+	 * Coverage for the reminders checkbox in the profile.
+	 *
+	 * @covers ::profile_fields
+	 *
+	 * @return void
+	 */
+	public function test_profile_fields_renders_reminders_checkbox(): void {
+		$instance = User::get_instance();
+		$user     = $this->mock->user( true )->get();
+
+		update_user_meta( $user->ID, 'gatherpress_event_updates_opt_in', 0 );
+		update_user_meta( $user->ID, 'gatherpress_event_reminders_opt_in', 1 );
+
+		$markup = Utility::buffer_and_return( array( $instance, 'profile_fields' ), array( $user ) );
+
+		$this->assertStringContainsString( 'name="gatherpress_event_reminders_opt_in"', $markup );
+		$this->assertStringContainsString( 'an email reminder before Events I am attending.', $markup );
+		$this->assertSame( 1, substr_count( $markup, "checked='checked'" ), 'Only the reminders box is checked.' );
 	}
 }

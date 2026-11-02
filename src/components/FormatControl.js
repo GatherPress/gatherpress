@@ -18,7 +18,7 @@ import { getFromConfig } from '../helpers/editor-settings';
  * Custom needs a value of its own rather than borrowing one that means
  * something else.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @type {string}
  */
@@ -31,7 +31,7 @@ export const FORMAT_CUSTOM = '__gatherpress_custom__';
  * a template puts the date on one line and the time under it. Which list an
  * entry came from does not need saying, since the rendered example says it.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @return {Array<{format: string, example: string}>} The choices.
  */
@@ -50,7 +50,7 @@ export function getFormatChoices() {
  * empty value kept as a first-class choice so a block can go back to
  * inheriting whatever the site settings say.
  *
- * @since TBD
+ * @since 0.36.0
  *
  * @param {Object}   props              - Component props.
  * @param {string}   props.label        - The control's label.
