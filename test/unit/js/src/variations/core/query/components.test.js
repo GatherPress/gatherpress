@@ -641,11 +641,10 @@ describe( 'HasEventsFilterControls', () => {
 	const upcomingLabel = 'Upcoming events only';
 	const pastLabel = 'Past events only';
 	const activityHelp =
-		'Only shows Events that have upcoming or past events attached.';
+		'Only shows Posts that have upcoming or past events attached.';
 	const upcomingHelp =
-		'Only shows source posts that have at least one upcoming event.';
-	const pastHelp =
-		'Only shows source posts that have at least one past event.';
+		'Only shows Posts that have at least one upcoming event.';
+	const pastHelp = 'Only shows Posts that have at least one past event.';
 
 	it( 'renders the activity toggle and hides the sub-filter when the filter is off', () => {
 		const setAttributes = jest.fn();
@@ -682,6 +681,11 @@ describe( 'HasEventsFilterControls', () => {
 		expect(
 			screen.getByText(
 				'Only shows Productions that have upcoming or past events attached.',
+			),
+		).toBeInTheDocument();
+		expect(
+			screen.getByText(
+				'Only shows Productions that have at least one upcoming event.',
 			),
 		).toBeInTheDocument();
 	} );

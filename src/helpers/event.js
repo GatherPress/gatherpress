@@ -44,7 +44,8 @@ export const DISABLED_FIELD_OPACITY = 0.3;
  * @return {boolean} True if the post type has the given support, false otherwise.
  */
 export function isPostTypeSupporting( support, postType = null ) {
-	const typeToCheck = postType ?? select( 'core/editor' )?.getCurrentPostType();
+	const typeToCheck =
+		postType ?? select( 'core/editor' )?.getCurrentPostType();
 
 	if ( ! typeToCheck ) {
 		return false;
@@ -82,9 +83,8 @@ export function usePostTypeSupports( support, postType = null ) {
 				return false;
 			}
 
-			return !! wpSelect( 'core' ).getPostType( typeToCheck )?.supports?.[
-				support
-			];
+			return !! wpSelect( 'core' ).getPostType( typeToCheck )
+				?.supports?.[ support ];
 		},
 		[ support, postType ],
 	);
@@ -140,17 +140,18 @@ export function isEventPostType( postType = null ) {
 }
 
 /**
- * Resolves whether a shadow-source post type's event-activity filter can
- * apply, using the given selector.
+ * Whether a shadow-source post type's event activity filter can apply.
  *
- * Shared four-step resolution used by both `hasEventActivityFilterSupport`
- * (synchronous) and `useHasEventActivityFilterSupport` (reactive).
+ * It applies when the post type declares `gatherpress-shadow-source` and its
+ * shadow taxonomy is on at least one post type declaring
+ * `gatherpress-event-date`.
  *
- * @param {Function} selectFn       Data store selector (select or wpSelect).
+ * @since TBD
+ *
+ * @param {Function} selectFn       Data store selector.
  * @param {string}   sourcePostType Shadow-source post type to check.
  *
- * @return {boolean} True if the source's shadow taxonomy attaches to an
- *                   event-supporting post type.
+ * @return {boolean} True if the filter can apply.
  */
 function resolveEventActivityFilterSupport( selectFn, sourcePostType ) {
 	const isShadowSource =
@@ -177,50 +178,16 @@ function resolveEventActivityFilterSupport( selectFn, sourcePostType ) {
 }
 
 /**
- * Checks whether a shadow-source post type's event-activity filter can apply.
+ * Hook for whether a shadow-source post type's event activity filter can apply.
  *
- * The filter keeps only source posts (venues, productions, etc.) whose
- * shadow terms sit on an upcoming or past event. It is meaningful only when
- * the source post type declares `gatherpress-shadow-source` support, its
- * shadow taxonomy (`_<postType>`) is registered, and that taxonomy is
- * attached to at least one post type declaring `gatherpress-event-date`
- * support; if any of those is missing, the resolving term lookup returns
- * nothing and the filter would always hide every source post. Callers use
- * this helper to gate activity-filter UI and defaults.
+ * Re-renders once the post type and taxonomy data load, since the first
+ * render often runs before they have.
  *
- * Reads post-type and taxonomy registries synchronously. In React
- * components whose output drives rendering, use
- * `useHasEventActivityFilterSupport` so the gate updates once the registry
- * data arrives.
- *
- * @since 0.36.0
+ * @since TBD
  *
  * @param {string} sourcePostType Shadow-source post type to check.
  *
- * @return {boolean} True if the source's shadow taxonomy attaches to an
- *                   event-supporting post type.
- */
-export function hasEventActivityFilterSupport( sourcePostType ) {
-	return resolveEventActivityFilterSupport( select, sourcePostType );
-}
-
-/**
- * Reactive variant of `hasEventActivityFilterSupport` for use in React
- * components.
- *
- * The non-reactive version reads `getPostType`, `getTaxonomy`, and
- * `getPostTypes` synchronously — on the first render the registry often
- * hasn't hydrated yet, so the gate resolves to `false` and the component
- * never re-renders once the data lands. This hook subscribes via
- * `useSelect` so consumers re-render the moment the wiring data becomes
- * known.
- *
- * @since 0.36.0
- *
- * @param {string} sourcePostType Shadow-source post type to check.
- *
- * @return {boolean} True if the source's shadow taxonomy attaches to an
- *                   event-supporting post type.
+ * @return {boolean} True if the filter can apply.
  */
 export function useHasEventActivityFilterSupport( sourcePostType ) {
 	return useSelect(
@@ -399,11 +366,7 @@ const verifyPostIdIsValidEvent = ( selectFunc, postId, postType ) => {
  *                                                  before making API calls.
  * @return {boolean} True if connected to a valid event, false otherwise.
  */
-export function hasValidEventId(
-	selectFuncOrPostId = null,
-	maybePostId = null,
-	maybePostType = null,
-) {
+export function hasValidEventId( selectFuncOrPostId = null, maybePostId = null, maybePostType = null ) {
 	// Back-compat shim: if the first argument isn't a function, assume the
 	// older `hasValidEventId( postId, postType )` shape and fall back to the
 	// non-reactive global `select`. Calls inside `useSelect` should pass that
@@ -454,7 +417,9 @@ export function hasEventPast() {
 		timezone,
 	);
 
-	return isEventPostType() && now.valueOf() > dateTimeEnd.valueOf();
+	return (
+		isEventPostType() && now.valueOf() > dateTimeEnd.valueOf()
+	);
 }
 
 /**
@@ -561,9 +526,7 @@ export function hasOnlineEventTerm( postId = null ) {
  * @return {boolean} True if the mode is per_event_enabled or per_event_disabled.
  */
 export function isPerEventRsvpMode( rsvpMode ) {
-	return (
-		'per_event_enabled' === rsvpMode || 'per_event_disabled' === rsvpMode
-	);
+	return 'per_event_enabled' === rsvpMode || 'per_event_disabled' === rsvpMode;
 }
 
 /**
@@ -579,7 +542,8 @@ export function isPerEventRsvpMode( rsvpMode ) {
  */
 export function isRsvpEnabledForEvent( rsvpMode, enableRsvp ) {
 	return (
-		'disabled' !== rsvpMode && ( ! isPerEventRsvpMode( rsvpMode ) || enableRsvp )
+		'disabled' !== rsvpMode &&
+		( ! isPerEventRsvpMode( rsvpMode ) || enableRsvp )
 	);
 }
 
@@ -628,9 +592,7 @@ export function getEventMeta( selectFunc, postId, attributes ) {
 		maxLimit = post?.meta?.gatherpress_guest_limit;
 		// Stored as integer (0/1); undefined means not yet set, default to enabled.
 		enableRsvp = 0 !== post?.meta?.gatherpress_enable_rsvp;
-		enableAnonymous = Boolean(
-			post?.meta?.gatherpress_enable_anonymous_rsvp,
-		);
+		enableAnonymous = Boolean( post?.meta?.gatherpress_enable_anonymous_rsvp );
 	} else {
 		// No override - check if current post is an event and use editor for live edits.
 		const currentPostType = selectFunc( 'core/editor' )?.getCurrentPostType();
@@ -651,3 +613,4 @@ export function getEventMeta( selectFunc, postId, attributes ) {
 		enableAnonymousRsvp: enableAnonymous ?? false,
 	};
 }
+

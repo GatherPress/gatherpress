@@ -54,7 +54,7 @@ export const EventCountControls = ( { attributes, setAttributes } ) => {
 		<RangeControl
 			__next40pxDefaultSize
 			label={ sprintf(
-				/* translators: %s: Plural post type label, e.g. "Events". */
+			/* translators: %s: Plural post type label, e.g. "Events". */
 				__( '%s Per Page', 'gatherpress' ),
 				pluralLabel,
 			) }
@@ -90,8 +90,7 @@ export const EventCountControls = ( { attributes, setAttributes } ) => {
  * @return {Element}                        ToggleControl to exclude current event.
  */
 export const EventExcludeControls = ( { attributes, setAttributes } ) => {
-	const { query: { postType, exclude_current: excludeCurrent } = {} } =
-		attributes;
+	const { query: { postType, exclude_current: excludeCurrent } = {} } = attributes;
 
 	const currentPost = useSelect( ( select ) => {
 		return select( 'core/editor' ).getCurrentPost();
@@ -163,10 +162,10 @@ export const EventIncludeUnfinishedControls = ( {
 	let effectiveValue;
 	if ( undefined === includeUnfinished ) {
 		// Not explicitly set, use defaults based on event type
-		effectiveValue = 'upcoming' === eventListType;
+		effectiveValue = ( 'upcoming' === eventListType );
 	} else {
 		// Explicitly set to 1 or 0 (integers)
-		effectiveValue = 1 === includeUnfinished;
+		effectiveValue = ( 1 === includeUnfinished );
 	}
 
 	// Read the plural label so the label reflects what the currently
@@ -226,10 +225,7 @@ export const EventIncludeUnfinishedControls = ( {
  */
 export const EventListTypeControls = ( { attributes, setAttributes } ) => {
 	const {
-		query: {
-			postType,
-			gatherpress_event_query: eventListType = 'upcoming',
-		} = {},
+		query: { postType, gatherpress_event_query: eventListType = 'upcoming' } = {},
 	} = attributes;
 
 	// Read the singular label so the label reflects what the currently
@@ -356,8 +352,7 @@ const useShadowSourceEditor = ( context ) => {
 const useShadowSourceSync = ( editor, attributes, setAttributes, enabled ) => {
 	const { editorPostId, editorPostType, editorIsShadowSource } = editor;
 	const queryShadowId = attributes.query?.gatherpress_shadow_source_post_id;
-	const queryShadowType =
-		attributes.query?.gatherpress_shadow_source_post_type;
+	const queryShadowType = attributes.query?.gatherpress_shadow_source_post_type;
 	const needsBackfill =
 		enabled &&
 		!! attributes.query?.shadow_filter &&
@@ -525,11 +520,10 @@ export const ShadowSourceFilterControls = ( {
 /**
  * HasEventsFilterControls component
  *
- * Lets a query loop that lists shadow-source posts (venues, productions, …)
- * filter that list by the posts' event activity. Toggle 1 turns the filter on;
- * Toggle 2 (visible only while Toggle 1 is on) switches between source posts
- * with upcoming events (default) and source posts that have at least one past
- * event.
+ * Filters a Query Loop of shadow-source posts, such as venues, to those with
+ * upcoming events, or with past events when the second toggle is off.
+ *
+ * @since TBD
  *
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
@@ -549,7 +543,7 @@ export const HasEventsFilterControls = ( { attributes, setAttributes } ) => {
 	const pluralLabel = usePostTypeLabel(
 		'name',
 		postType,
-		__( 'Events', 'gatherpress' ),
+		__( 'Posts', 'gatherpress' ),
 	);
 
 	// A stored 0 intentionally selects the past branch; only an attribute that
@@ -575,10 +569,7 @@ export const HasEventsFilterControls = ( { attributes, setAttributes } ) => {
 						query: {
 							...attributes.query,
 							has_events_filter: value ? 1 : 0,
-							// Preserve any stored sub-filter value so toggling the
-							// activity filter off and back on keeps the user's
-							// past/upcoming choice; only write the default 1 when
-							// nothing was stored yet.
+							// Keep a stored upcoming or past choice across toggles.
 							upcoming_events_only:
 								value && upcomingEventsOnly === undefined
 									? 1
@@ -596,13 +587,21 @@ export const HasEventsFilterControls = ( { attributes, setAttributes } ) => {
 					}
 					help={
 						showUpcoming
-							? __(
-								'Only shows source posts that have at least one upcoming event.',
-								'gatherpress',
+							? sprintf(
+								/* translators: %s: Plural post type label, e.g. "Venues". */
+								__(
+									'Only shows %s that have at least one upcoming event.',
+									'gatherpress',
+								),
+								pluralLabel,
 							)
-							: __(
-								'Only shows source posts that have at least one past event.',
-								'gatherpress',
+							: sprintf(
+								/* translators: %s: Plural post type label, e.g. "Venues". */
+								__(
+									'Only shows %s that have at least one past event.',
+									'gatherpress',
+								),
+								pluralLabel,
 							)
 					}
 					checked={ showUpcoming }

@@ -111,7 +111,6 @@ const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
 	}, [
 		supportsGatherPressQuery,
 		supportsEventDate,
-		supportsShadowSource,
 		namespace,
 		attributes,
 		setAttributes,
