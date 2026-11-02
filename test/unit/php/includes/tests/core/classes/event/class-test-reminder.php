@@ -576,6 +576,8 @@ class Test_Reminder extends Base {
 	/**
 	 * Check that a canceled event is not reminded, whether it was canceled before or after queuing.
 	 *
+	 * @since TBD
+	 *
 	 * @covers ::queue_reminder
 	 *
 	 * @return void
