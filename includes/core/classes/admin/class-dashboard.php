@@ -78,6 +78,17 @@ final class Dashboard {
 	);
 
 	/**
+	 * Dashicon code points for the RSVP items, which are comments rather than a post type.
+	 *
+	 * @since TBD
+	 *
+	 * @var array<string, string>
+	 */
+	const RSVP_ICONS = array(
+		'dashicons-groups' => '\f307',
+	);
+
+	/**
 	 * Class constructor.
 	 *
 	 * @since TBD
@@ -155,7 +166,10 @@ final class Dashboard {
 
 		$rules = array(
 			'#dashboard_right_now .gatherpress-glance-spacer{visibility:hidden}',
-			'#dashboard_right_now .gatherpress-glance-rsvp:before{content:"\f307";content:"\f307" / ""}',
+			sprintf(
+				'#dashboard_right_now .gatherpress-glance-rsvp:before{content:"%1$s";content:"%1$s" / ""}',
+				self::RSVP_ICONS['dashicons-groups']
+			),
 		);
 
 		foreach ( $this->get_post_types( Event::SUPPORT, Venue::SUPPORT ) as $post_type ) {
