@@ -164,6 +164,10 @@
 - [`gatherpress_shadow_taxonomy_object_types`](gatherpress_shadow_taxonomy_object_types.md) Filters which event post types the shadow taxonomy should be
 - [`the_title`](the_title.md)
 
+## class-status.php
+
+- [`gatherpress_event_statuses`](gatherpress_event_statuses.md) Filters the operational statuses an event can be in.
+
 ## class-storage.php
 
 - [`gatherpress_save_rsvp`](gatherpress_save_rsvp.md)
