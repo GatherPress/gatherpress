@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Rsvp;
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status as Event_Status;
 use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Response\Status;
@@ -1333,6 +1334,46 @@ class Test_Form extends Base {
 		);
 
 		$this->expectException( 'WPDieException' );
+		$instance->preprocess_rsvp_comment( $comment_data );
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
+
+	/**
+	 * Tests preprocess_rsvp_comment with canceled event.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::preprocess_rsvp_comment
+	 */
+	public function test_preprocess_rsvp_comment_canceled_event(): void {
+		$post    = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$post_id = $post->ID;
+		$this->assertTrue( ( new Event_Status( $post_id ) )->set( 'canceled' ) );
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			function ( $pre_value, $type, $var_name ) {
+				if ( INPUT_POST === $type && 'author' === $var_name ) {
+					return 'Test Author';
+				}
+				if ( INPUT_POST === $type && 'email' === $var_name ) {
+					return 'test@example.com';
+				}
+				return '';
+			},
+			10,
+			3
+		);
+
+		$instance = Form::get_instance();
+
+		$comment_data = array(
+			'comment_post_ID' => $post_id,
+		);
+
+		$this->expectException( 'WPDieException' );
+		$this->expectExceptionMessage( 'has been canceled' );
 		$instance->preprocess_rsvp_comment( $comment_data );
 
 		remove_all_filters( 'gatherpress_pre_get_http_input' );

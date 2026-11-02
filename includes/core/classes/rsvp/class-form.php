@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Blocks\Rsvp_Form;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status as Event_Status;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
@@ -232,8 +233,31 @@ final class Form {
 			);
 		}
 
-		// Check if event has passed - prevent RSVPs to past events.
 		$event = new Event( $post_id );
+
+		// Prevent RSVPs to canceled events.
+		if ( ( new Event_Status( $post_id ) )->is_canceled() ) {
+			$singular = Utility::post_type_label( 'singular_name', (string) get_post_type( $post_id ) );
+			wp_die(
+				esc_html(
+					sprintf(
+						/* translators: %1$s: Singular post type label, e.g. "event". */
+						__( 'Registration for this %1$s is closed because the %1$s has been canceled.', 'gatherpress' ),
+						strtolower( $singular )
+					)
+				),
+				esc_html(
+					sprintf(
+						/* translators: %s: Singular post type label, e.g. "Event". */
+						__( '%s Has Been Canceled', 'gatherpress' ),
+						$singular
+					)
+				),
+				400
+			);
+		}
+
+		// Check if event has passed - prevent RSVPs to past events.
 		if ( $event->has_event_past() ) {
 			$singular = Utility::post_type_label( 'singular_name', (string) get_post_type( $post_id ) );
 			wp_die(

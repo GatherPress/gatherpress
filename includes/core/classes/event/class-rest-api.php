@@ -636,6 +636,7 @@ final class Rest_Api {
 		// any membership.
 		if (
 			intval( $user_id )
+			&& ! ( new Event_Status( $post_id ) )->is_canceled()
 			&& ! is_user_member_of_blog( $user_id )
 			&& ( ! $is_managing_other || ( current_user_can( 'promote_users' ) && get_userdata( $user_id ) ) )
 		) {
@@ -655,13 +656,9 @@ final class Rest_Api {
 		// A magic-link token supplies an email address; every other path supplies a user ID,
 		// so each identifier is checked against the one thing it can be.
 		if (
-			$user_identifier &&
-			(
-				is_string( $user_identifier )
-					? is_email( $user_identifier )
-					: is_user_member_of_blog( $user_identifier )
-			) &&
-			! $event->has_event_past()
+			$this->is_valid_rsvp_identifier( $user_identifier )
+			&& ! ( new Event_Status( $post_id ) )->is_canceled()
+			&& ! $event->has_event_past()
 		) {
 			if ( 'attending' !== $status ) {
 				$guests = 0;
@@ -851,6 +848,18 @@ final class Rest_Api {
 			$bail = array( __( 'RSVP is disabled for this event.', 'gatherpress' ), 403 );
 		} elseif ( ! $rsvp->allows_open_rsvp() ) {
 			$bail = array( __( 'Open RSVP is disabled for this event.', 'gatherpress' ), 403 );
+		} elseif ( ( new Event_Status( (int) $data['post_id'] ) )->is_canceled() ) {
+			$singular = strtolower(
+				Utility::post_type_label( 'singular_name', (string) get_post_type( (int) $data['post_id'] ) )
+			);
+			$bail     = array(
+				sprintf(
+					/* translators: %1$s: Singular post type label, e.g. "event". */
+					__( 'Registration for this %1$s is closed because the %1$s has been canceled.', 'gatherpress' ),
+					$singular
+				),
+				400,
+			);
 		} elseif ( $event->has_event_past() ) {
 			$bail = array( __( 'Registration for this event is now closed.', 'gatherpress' ), 400 );
 		}
@@ -985,5 +994,29 @@ final class Rest_Api {
 		}
 
 		return $response;
+	}
+
+	/**
+	 * Determines if a given RSVP user identifier is valid.
+	 *
+	 * A magic-link token supplies an email address; every other path supplies a user ID,
+	 * so each identifier is checked against the one thing it can be.
+	 *
+	 * @since TBD
+	 *
+	 * @param string|int|null $identifier The user ID or email address.
+	 *
+	 * @return bool True if valid, false otherwise.
+	 */
+	private function is_valid_rsvp_identifier( string|int|null $identifier ): bool {
+		if ( ! $identifier ) {
+			return false;
+		}
+
+		if ( is_string( $identifier ) ) {
+			return (bool) is_email( $identifier );
+		}
+
+		return is_user_member_of_blog( $identifier );
 	}
 }

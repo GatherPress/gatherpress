@@ -256,7 +256,7 @@ final class Reminder {
 	 * event published an hour before it starts, one email covers them all.
 	 * The start each timing was sent for is stored, so the next sweep sends
 	 * nothing for the same start, while a moved start can send again. An
-	 * event that has already started gets nothing.
+	 * event that has already started, or has been canceled, gets nothing.
 	 *
 	 * @since TBD
 	 *
@@ -274,6 +274,7 @@ final class Reminder {
 			empty( $due )
 			|| ! $this->is_enabled()
 			|| ! ( new Rsvp( $post_id ) )->is_enabled()
+			|| ( new Status( $post_id ) )->is_canceled()
 		) {
 			return;
 		}

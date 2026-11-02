@@ -935,6 +935,42 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Coverage for handle_rsvp_form_submission with canceled event.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::handle_rsvp_form_submission
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_form_submission_canceled_event(): void {
+		$instance = Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		( new Event_Status( $post_id ) )->set( 'canceled' );
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'comment_post_ID', $post_id );
+		$request->set_param( 'author', 'Test Author' );
+		$request->set_param( 'email', 'test@example.com' );
+
+		$response = $instance->handle_rsvp_form_submission( $request );
+
+		$this->assertEquals( 400, $response->get_status() );
+
+		$data = $response->get_data();
+		$this->assertFalse( $data['success'] );
+		$this->assertSame(
+			'Registration for this event is closed because the event has been canceled.',
+			$data['message']
+		);
+	}
+
+	/**
 	 * Tests handle_rsvp_form_submission returns 403 when open RSVP is disabled sitewide.
 	 *
 	 * @covers ::handle_rsvp_form_submission
@@ -1612,6 +1648,38 @@ class Test_Rest_Api extends Base {
 				'timezone'       => 'America/New_York',
 			)
 		);
+
+		$user_id = $this->factory()->user->create();
+		wp_set_current_user( $user_id );
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'status', 'attending' );
+
+		$response = $instance->update_rsvp( $request );
+		$data     = $response->get_data();
+
+		$this->assertFalse( $data['success'] );
+	}
+
+	/**
+	 * Coverage for update_rsvp with canceled event.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::update_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_update_rsvp_canceled_event(): void {
+		$instance = Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		( new Event_Status( $post_id ) )->set( 'canceled' );
 
 		$user_id = $this->factory()->user->create();
 		wp_set_current_user( $user_id );
@@ -2859,6 +2927,44 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Tests update_rsvp leaves site membership alone for a canceled event in multisite.
+	 *
+	 * @since TBD
+	 *
+	 * @group multisite
+	 * @covers ::update_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_update_rsvp_canceled_event_adds_no_membership_multisite(): void {
+		$user_id   = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		$site_2_id = $this->factory->blog->create();
+
+		switch_to_blog( $site_2_id );
+		Utility::invoke_hidden_method( Setup::get_instance(), 'create_tables' );
+
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		( new Event_Status( $post_id ) )->set( 'canceled' );
+		wp_set_current_user( $user_id );
+
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'status', 'attending' );
+		$request->set_param( 'user_id', $user_id );
+
+		$response = Rest_Api::get_instance()->update_rsvp( $request );
+
+		$this->assertFalse( $response->get_data()['success'] );
+		$this->assertFalse(
+			is_user_member_of_blog( $user_id, $site_2_id ),
+			'A canceled event does not add the user to the site.'
+		);
+
+		restore_current_blog();
+	}
+
+	/**
 	 * Tests update_rsvp adds user to blog in multisite when not a member.
 	 *
 	 * Covers: add_user_to_blog when user RSVPs to event on different site.
@@ -3266,6 +3372,43 @@ class Test_Rest_Api extends Base {
 			'canceled',
 			$event->get(),
 			'Failed to assert a refused request leaves the stored status alone.'
+		);
+	}
+
+	/**
+	 * Tests RSVP identifier validation logic.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::is_valid_rsvp_identifier
+	 *
+	 * @return void
+	 */
+	public function test_is_valid_rsvp_identifier(): void {
+		$instance = Rest_Api::get_instance();
+
+		$this->assertFalse(
+			Utility::invoke_hidden_method( $instance, 'is_valid_rsvp_identifier', array( null ) )
+		);
+		$this->assertFalse(
+			Utility::invoke_hidden_method( $instance, 'is_valid_rsvp_identifier', array( 0 ) )
+		);
+		$this->assertFalse(
+			Utility::invoke_hidden_method( $instance, 'is_valid_rsvp_identifier', array( '' ) )
+		);
+		$this->assertTrue(
+			Utility::invoke_hidden_method( $instance, 'is_valid_rsvp_identifier', array( 'valid@example.com' ) )
+		);
+		$this->assertFalse(
+			Utility::invoke_hidden_method( $instance, 'is_valid_rsvp_identifier', array( 'invalid-email' ) )
+		);
+
+		$user_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		$this->assertTrue(
+			Utility::invoke_hidden_method( $instance, 'is_valid_rsvp_identifier', array( $user_id ) )
+		);
+		$this->assertFalse(
+			Utility::invoke_hidden_method( $instance, 'is_valid_rsvp_identifier', array( 999999 ) )
 		);
 	}
 }

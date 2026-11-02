@@ -47,6 +47,8 @@ class Test_Status extends Base {
 			'Failed to assert the default statuses are offered in order.'
 		);
 
+		$this->assertSame( 'canceled', Status::STATUS_CANCELED );
+
 		foreach ( $statuses as $slug => $status ) {
 			$this->assertNotEmpty( $status['label'], sprintf( '%s should be named.', $slug ) );
 			$this->assertNotEmpty( $status['description'], sprintf( '%s should be explained.', $slug ) );
@@ -531,6 +533,28 @@ class Test_Status extends Base {
 		);
 
 		Event_Setup::get_instance()->register_status_taxonomy();
+	}
+
+	/**
+	 * An event is canceled while canceled is among its statuses.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::is_canceled
+	 *
+	 * @return void
+	 */
+	public function test_is_canceled(): void {
+		$post   = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$status = new Status( $post->ID );
+
+		$this->assertFalse( $status->is_canceled() );
+
+		$status->set( 'canceled' );
+		$this->assertTrue( $status->is_canceled() );
+
+		$status->set( 'scheduled' );
+		$this->assertFalse( $status->is_canceled() );
 	}
 
 	/**
