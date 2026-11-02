@@ -53,7 +53,7 @@ final class Visibility {
 		}
 
 		if ( $this->is_canceled ) {
-			return $this->should_show_when_canceled( $visibility );
+			return self::should_show_when_canceled( $visibility );
 		}
 
 		// A block meant only for a canceled event stays hidden otherwise.
@@ -82,21 +82,27 @@ final class Visibility {
 	}
 
 	/**
-	 * Whether a form's blocks include one shown only for a canceled event.
+	 * Whether a form's blocks include a canceled notice that is shown.
+	 *
+	 * A notice inside a block hidden for a canceled event does not count.
 	 *
 	 * @since TBD
 	 *
-	 * @param array<int, array<string, mixed>> $blocks The parsed inner blocks.
+	 * @param array<int, array<string, mixed>> $blocks          The parsed inner blocks.
+	 * @param bool                             $ancestor_hidden Whether a parent block is hidden.
 	 *
-	 * @return bool True when a block has whenCanceled set to show.
+	 * @return bool True when a shown block has whenCanceled set to show.
 	 */
-	public static function has_canceled_notice( array $blocks ): bool {
+	public static function has_canceled_notice( array $blocks, bool $ancestor_hidden = false ): bool {
 		foreach ( $blocks as $block ) {
-			if ( 'show' === ( $block['attrs']['metadata']['gatherpressRsvpFormVisibility']['whenCanceled'] ?? '' ) ) {
+			$visibility = (array) ( $block['attrs']['metadata']['gatherpressRsvpFormVisibility'] ?? array() );
+			$hidden     = $ancestor_hidden || false === self::should_show_when_canceled( $visibility );
+
+			if ( ! $hidden && 'show' === ( $visibility['whenCanceled'] ?? '' ) ) {
 				return true;
 			}
 
-			if ( self::has_canceled_notice( (array) ( $block['innerBlocks'] ?? array() ) ) ) {
+			if ( self::has_canceled_notice( (array) ( $block['innerBlocks'] ?? array() ), $hidden ) ) {
 				return true;
 			}
 		}
@@ -117,7 +123,7 @@ final class Visibility {
 	 *
 	 * @return bool|null True to show, false to hide, null for no change (always visible).
 	 */
-	private function should_show_when_canceled( array $visibility ): ?bool {
+	private static function should_show_when_canceled( array $visibility ): ?bool {
 		$when_canceled = $visibility['whenCanceled'] ?? '';
 
 		if ( ! empty( $when_canceled ) ) {

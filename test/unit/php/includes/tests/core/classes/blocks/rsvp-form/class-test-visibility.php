@@ -113,11 +113,12 @@ class Test_Visibility extends Base {
 	}
 
 	/**
-	 * A canceled notice is found at any depth.
+	 * A canceled notice is found at any depth, unless a parent hides it.
 	 *
 	 * @since TBD
 	 *
 	 * @covers ::has_canceled_notice
+	 * @covers ::should_show_when_canceled
 	 *
 	 * @return void
 	 */
@@ -136,6 +137,20 @@ class Test_Visibility extends Base {
 		$this->assertTrue(
 			Visibility::has_canceled_notice( array( array( 'innerBlocks' => array( $notice ) ) ) ),
 			'A nested canceled notice is found.'
+		);
+
+		$hidden_group = array(
+			'attrs'       => array(
+				'metadata' => array(
+					'gatherpressRsvpFormVisibility' => array( 'whenPast' => 'hide' ),
+				),
+			),
+			'innerBlocks' => array( $notice ),
+		);
+
+		$this->assertFalse(
+			Visibility::has_canceled_notice( array( $hidden_group ) ),
+			'A notice inside a block hidden for a canceled event does not count.'
 		);
 	}
 }
