@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Rsvp;
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status as Event_Status;
 use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Response\Status;
@@ -174,6 +175,33 @@ class Test_Form extends Base {
 		$this->assertTrue( $result['success'] );
 		$this->assertStringContainsString( 'RSVP has been submitted successfully', $result['message'] );
 		$this->assertGreaterThan( 0, $result['comment_id'] );
+	}
+
+	/**
+	 * Tests process_rsvp keeps a backslash in the attendee name.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::process_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_process_rsvp_keeps_backslash_in_author(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$result = Form::get_instance()->process_rsvp(
+			array(
+				'post_id' => $post_id,
+				'author'  => 'D\\Angelo',
+				'email'   => 'dangelo@example.com',
+			)
+		);
+
+		$this->assertSame( 'D\\Angelo', get_comment( $result['comment_id'] )->comment_author );
 	}
 
 	/**
@@ -805,6 +833,39 @@ class Test_Form extends Base {
 	}
 
 	/**
+	 * Tests preprocess_rsvp_comment keeps a backslash in the attendee name.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::preprocess_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_preprocess_rsvp_comment_keeps_backslash_in_author(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$this->set_post_params(
+			array(
+				'author' => 'O\\Brien',
+				'email'  => 'obrien@example.com',
+			)
+		);
+
+		$result = Form::get_instance()->preprocess_rsvp_comment(
+			array( 'comment_post_ID' => $post_id )
+		);
+
+		$comment = get_comment( wp_insert_comment( $result ) );
+
+		$this->assertSame( 'O\\Brien', $comment->comment_author );
+		$this->assertSame( 'obrien@example.com', $comment->comment_author_email );
+	}
+
+	/**
 	 * Coverage for handle_rsvp_comment_post method.
 	 *
 	 * @covers ::handle_rsvp_comment_post
@@ -1288,9 +1349,7 @@ class Test_Form extends Base {
 	public function test_preprocess_rsvp_comment_canceled_event(): void {
 		$post    = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
 		$post_id = $post->ID;
-		$event   = new Event( $post_id );
-
-		$this->assertTrue( $event->set_status( 'canceled' ) );
+		$this->assertTrue( ( new Event_Status( $post_id ) )->set( 'canceled' ) );
 
 		add_filter(
 			'gatherpress_pre_get_http_input',
@@ -2928,7 +2987,7 @@ class Test_Form extends Base {
 
 		$data = array(
 			'gatherpress_form_schema_id' => $form_schema_id,
-			'custom_field_1'             => 'Test Value',
+			'custom_field_1'             => 'C:\\Test Value',
 			'custom_field_2'             => '42',
 		);
 
@@ -2943,7 +3002,7 @@ class Test_Form extends Base {
 		$custom_value_1 = get_comment_meta( $comment_id, 'gatherpress_custom_custom_field_1', true );
 		$custom_value_2 = get_comment_meta( $comment_id, 'gatherpress_custom_custom_field_2', true );
 
-		$this->assertEquals( 'Test Value', $custom_value_1, 'Custom field 1 should be saved' );
+		$this->assertSame( 'C:\\Test Value', $custom_value_1, 'Custom field 1 should keep its backslash' );
 		$this->assertEquals( '42', $custom_value_2, 'Custom field 2 should be saved' );
 	}
 

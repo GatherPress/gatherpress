@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\Rsvp_Form;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status as Event_Status;
 use GatherPress\Core\Event\Rest_Api;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Form;
@@ -2385,7 +2386,7 @@ class Test_Rsvp_Form extends Base {
 		// Mock POST data using the test filter.
 		$mock_post_data = array(
 			'gatherpress_form_schema_id' => 'form_0',
-			'custom_text_field'          => 'Test Value',
+			'custom_text_field'          => 'C:\\Test Value',
 			'custom_email_field'         => 'test@example.com',
 			'author'                     => 'Built-in field', // Should be ignored.
 		);
@@ -2403,8 +2404,8 @@ class Test_Rsvp_Form extends Base {
 		$instance->process_custom_fields_for_form( $comment_id );
 
 		// Check that custom fields were saved.
-		$this->assertEquals(
-			'Test Value',
+		$this->assertSame(
+			'C:\\Test Value',
 			get_comment_meta( $comment_id, 'gatherpress_custom_custom_text_field', true )
 		);
 		$this->assertEquals(
@@ -3156,8 +3157,7 @@ class Test_Rsvp_Form extends Base {
 				'post_status' => 'publish',
 			)
 		);
-		$event    = new Event( $post_id );
-		$event->set_status( 'canceled' );
+		( new Event_Status( $post_id ) )->set( 'canceled' );
 
 		$block_content = '<div class="wp-block-gatherpress-rsvp-form">RSVP Form Content</div>';
 		$block         = array(

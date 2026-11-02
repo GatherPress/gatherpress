@@ -20,6 +20,7 @@ use GatherPress\Core\Blocks\Form_Field;
 use GatherPress\Core\Blocks\General_Block;
 use GatherPress\Core\Capability;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status as Event_Status;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Traits\Singleton;
@@ -212,7 +213,7 @@ final class Rsvp_Form {
 			return '';
 		}
 
-		if ( $event->is_canceled() ) {
+		if ( ( new Event_Status( $post_id ) )->is_canceled() ) {
 			return sprintf(
 				'<div class="gatherpress-rsvp-form gatherpress-rsvp-form--canceled wp-block-group">'
 				. '<p class="gatherpress-rsvp-form__canceled-message">%s</p>'
@@ -1000,8 +1001,9 @@ final class Rsvp_Form {
 
 			// Validate and sanitize the field value using the same logic as the Ajax handler.
 			$validated_value = $this->sanitize_custom_field_value( $field_value, $field_config );
+			// update_comment_meta() unslashes, so slash to keep backslashes.
 			if ( false !== $validated_value ) {
-				update_comment_meta( $comment_id, 'gatherpress_custom_' . $field_name, $validated_value );
+				update_comment_meta( $comment_id, 'gatherpress_custom_' . $field_name, wp_slash( $validated_value ) );
 			}
 		}
 	}

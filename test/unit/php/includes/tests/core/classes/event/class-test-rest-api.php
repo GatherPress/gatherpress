@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core\Event;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Meta;
 use GatherPress\Core\Event\Rest_Api;
+use GatherPress\Core\Event\Setup as Event_Setup;
 use GatherPress\Core\Event\Status as Event_Status;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Mailer;
@@ -125,7 +126,7 @@ class Test_Rest_Api extends Base {
 
 		$field = $wp_rest_additional_fields[ Event::POST_TYPE ]['gatherpress_status'];
 		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
-		$event = new Event( $post->ID );
+		$event = new Event_Status( $post->ID );
 
 		$this->assertSame(
 			'scheduled',
@@ -140,13 +141,27 @@ class Test_Rest_Api extends Base {
 
 		$this->assertSame(
 			'canceled',
-			$event->get_status(),
+			$event->get(),
 			'Failed to assert the update callback stores the status.'
 		);
 		$this->assertSame(
 			'canceled',
 			call_user_func( $field['get_callback'], array( 'id' => $post->ID ) ),
 			'Failed to assert the get callback reads the stored status.'
+		);
+
+		// A write that does not stick is reported rather than passed off as saved.
+		unregister_taxonomy( Event::TAXONOMY_STATUS );
+
+		$unsaved = call_user_func( $field['update_callback'], 'postponed', $post );
+
+		Event_Setup::get_instance()->register_status_taxonomy();
+
+		$this->assertWPError( $unsaved, 'Failed to assert a failed write is reported.' );
+		$this->assertSame(
+			'gatherpress_status_not_saved',
+			$unsaved->get_error_code(),
+			'Failed to assert the error names the failed save.'
 		);
 
 		// A visitor with no editing rights may not.
@@ -165,7 +180,7 @@ class Test_Rest_Api extends Base {
 		);
 		$this->assertSame(
 			'canceled',
-			$event->get_status(),
+			$event->get(),
 			'Failed to assert a refused update leaves the status alone.'
 		);
 
@@ -936,8 +951,7 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		$event = new Event( $post_id );
-		$event->set_status( 'canceled' );
+		( new Event_Status( $post_id ) )->set( 'canceled' );
 
 		$request = new WP_REST_Request( 'POST' );
 		$request->set_param( 'comment_post_ID', $post_id );
@@ -1665,8 +1679,7 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		$event = new Event( $post_id );
-		$event->set_status( 'canceled' );
+		( new Event_Status( $post_id ) )->set( 'canceled' );
 
 		$user_id = $this->factory()->user->create();
 		wp_set_current_user( $user_id );
@@ -3271,7 +3284,7 @@ class Test_Rest_Api extends Base {
 		Rest_Api::get_instance()->register_status_field();
 
 		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
-		$event = new Event( $post->ID );
+		$event = new Event_Status( $post->ID );
 		// The post type publishes itself under a plural rest_base.
 		$route = sprintf(
 			'/wp/v2/%s/%d',
@@ -3301,7 +3314,7 @@ class Test_Rest_Api extends Base {
 		);
 		$this->assertSame(
 			'canceled',
-			$event->get_status(),
+			$event->get(),
 			'Failed to assert the route stored the status.'
 		);
 
@@ -3319,42 +3332,9 @@ class Test_Rest_Api extends Base {
 		);
 		$this->assertSame(
 			'canceled',
-			$event->get_status(),
+			$event->get(),
 			'Failed to assert a refused request leaves the stored status alone.'
 		);
-	}
-
-	/**
-	 * Creating an event with taxonomy terms without gatherpress_status should preserve the term.
-	 *
-	 * @covers ::register_status_field
-	 *
-	 * @return void
-	 */
-	public function test_create_event_preserves_taxonomy_status_without_field(): void {
-		Rest_Api::get_instance()->register_status_field();
-
-		$this->mock->user( 'admin' );
-
-		Event_Status::ensure_term( 'canceled' );
-		$term = get_term_by( 'slug', 'canceled', Event::TAXONOMY_STATUS );
-		$this->assertInstanceOf( \WP_Term::class, $term );
-
-		$route = sprintf(
-			'/wp/v2/%s',
-			get_post_type_object( Event::POST_TYPE )->rest_base
-		);
-
-		$create = new WP_REST_Request( 'POST', $route );
-		$create->set_param( 'title', 'Canceled Event via Taxonomy' );
-		$create->set_param( 'gatherpress_event_statuses', array( $term->term_id ) );
-
-		$response = rest_do_request( $create );
-		$this->assertSame( 201, $response->get_status() );
-
-		$event_id = (int) $response->get_data()['id'];
-		$event    = new Event( $event_id );
-		$this->assertSame( 'canceled', $event->get_status() );
 	}
 
 	/**

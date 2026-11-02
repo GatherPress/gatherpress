@@ -14,8 +14,10 @@ jest.mock( '@src/helpers/editor-settings', () => ( {
  * Internal dependencies
  */
 import {
+	getDefaultStatus,
 	getStatusDescription,
 	getStatusOptions,
+	strikesDate,
 } from '@src/helpers/event-status';
 
 describe( 'event status helpers', () => {
@@ -54,5 +56,31 @@ describe( 'event status helpers', () => {
 
 		expect( getStatusOptions() ).toEqual( [] );
 		expect( getStatusDescription( 'scheduled' ) ).toBe( '' );
+	} );
+
+	it( 'treats the first status PHP offers as the default', () => {
+		mockConfig = {
+			tentative: { label: 'Tentative' },
+			scheduled: { label: 'Scheduled' },
+		};
+
+		expect( getDefaultStatus() ).toBe( 'tentative' );
+	} );
+
+	it( 'falls back to scheduled as the default before the editor settings arrive', () => {
+		mockConfig = undefined;
+
+		expect( getDefaultStatus() ).toBe( 'scheduled' );
+	} );
+
+	it( 'crosses out the date only for a status that asks for it', () => {
+		mockConfig = {
+			scheduled: { label: 'Scheduled' },
+			canceled: { label: 'Canceled', strike_date: true },
+		};
+
+		expect( strikesDate( 'canceled' ) ).toBe( true );
+		expect( strikesDate( 'scheduled' ) ).toBe( false );
+		expect( strikesDate( 'not-a-status' ) ).toBe( false );
 	} );
 } );

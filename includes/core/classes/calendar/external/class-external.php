@@ -23,6 +23,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status;
 
 /**
  * Per-event calendar wrapper.
@@ -334,7 +335,7 @@ final class External {
 		$args = array(
 			'BEGIN:VEVENT',
 			sprintf( 'URL:%s', esc_url_raw( $permalink ) ),
-			sprintf( 'STATUS:%s', $this->event->get_ical_status() ),
+			sprintf( 'STATUS:%s', ( new Status( $post->ID ) )->get_ical() ),
 			$dtstart_line,
 			$dtend_line,
 			sprintf( 'DTSTAMP:%s', sanitize_text_field( $datetime_stamp ) ),

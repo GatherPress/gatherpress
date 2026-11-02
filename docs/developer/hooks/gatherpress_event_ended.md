@@ -21,12 +21,12 @@ add_action(
 
 ## Files
 
-- [includes/core/classes/event/class-scheduler.php:285](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-scheduler.php#L285)
+- [includes/core/classes/event/class-scheduler.php:396](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-scheduler.php#L396)
 ```php
 do_action( 'gatherpress_event_ended', $post_id )
 ```
 
-- [includes/core/classes/event/class-scheduler.php:594](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-scheduler.php#L594)
+- [includes/core/classes/event/class-scheduler.php:705](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-scheduler.php#L705)
 ```php
 do_action( 'gatherpress_event_ended', $post_id )
 ```

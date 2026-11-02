@@ -77,8 +77,7 @@ final class Uninstall extends Base {
 	 * @return void
 	 */
 	public function render_warning(): void {
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check.
-		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		$page = Utility::get_http_input( INPUT_GET, 'page', 'sanitize_key' );
 
 		if ( Utility::prefix_key( $this->slug ) !== $page ) {
 			return;

@@ -27,7 +27,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/event/class-scheduler.php:312](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-scheduler.php#L312)
+- [includes/core/classes/event/class-scheduler.php:423](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-scheduler.php#L423)
 ```php
 apply_filters(
 			'gatherpress_event_end_cache_keys',

@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\Rsvp;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status as Event_Status;
 use GatherPress\Core\Rsvp as Core_Rsvp;
 use GatherPress\Core\Event\Setup;
 use GatherPress\Core\Settings;
@@ -280,8 +281,7 @@ class Test_Rsvp extends Base {
 			)
 		)->get();
 
-		$event = new Event( $post->ID );
-		$event->set_status( 'canceled' );
+		( new Event_Status( $post->ID ) )->set( 'canceled' );
 
 		$block = array(
 			'blockName' => 'gatherpress/rsvp-v2',

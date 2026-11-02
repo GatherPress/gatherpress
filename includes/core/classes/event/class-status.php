@@ -18,14 +18,18 @@ use WP_Term;
  * Class Status.
  *
  * One place that says what statuses exist and what each one means, so PHP,
- * the editor, the stylesheet and the calendar all read the same list rather
- * than keeping their own copies in step.
+ * the editor and the calendar all read the same list rather than keeping
+ * their own copies in step.
  *
  * Nothing here is fixed. The list below is a starting point a site can add
  * to, take from, or replace outright through `gatherpress_event_statuses`,
  * so no status is named in code that would have to change alongside it.
  *
  * The starting point is the whole of Schema.org's EventStatusType vocabulary.
+ *
+ * An instance reads and writes one event's status. The static methods are
+ * the vocabulary itself, for callers that have no event to hand, such as
+ * the REST schema, the editor settings and the taxonomy's default term.
  *
  * @since TBD
  */
@@ -55,13 +59,33 @@ final class Status {
 	const STATUS_CANCELED = 'canceled';
 
 	/**
-	 * Every status an event can be in, keyed by the slug that is stored.
-	 *
-	 * Each entry carries the words people read, the color it is shown in and
-	 * the values the standards expect, so a status is one array entry rather
-	 * than an edit in four places.
+	 * The event post, or null when the post does not support events.
 	 *
 	 * @since TBD
+	 *
+	 * @var WP_Post|null
+	 */
+	protected ?WP_Post $post = null;
+
+	/**
+	 * Class constructor.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $post_id The event post ID.
+	 */
+	public function __construct( int $post_id ) {
+		if ( post_type_supports( (string) get_post_type( $post_id ), Event::SUPPORT ) ) {
+			$this->post = get_post( $post_id );
+		}
+	}
+
+	/**
+	 * Every status an event can be in, keyed by the slug that is stored.
+	 *
+	 * Each entry carries the words people read and the values the standards
+	 * expect, so a status is one array entry rather than an edit in several
+	 * places.
 	 *
 	 * A status can name the post type support it depends on, so one that only
 	 * makes sense for events that can be held online is not offered on a post
@@ -79,7 +103,6 @@ final class Status {
 				/* translators: Event operational status label. */
 				'label'       => _x( 'Scheduled', 'event status', 'gatherpress' ),
 				'description' => __( 'Event is planned and confirmed to take place.', 'gatherpress' ),
-				'color'       => '#137333',
 				'schema'      => 'EventScheduled',
 				'ical'        => 'CONFIRMED',
 				'priority'    => 0,
@@ -91,25 +114,24 @@ final class Status {
 					'Event will not take place. Calendar feeds will mark it as canceled.',
 					'gatherpress'
 				),
-				'color'       => '#c5221f',
 				'schema'      => 'EventCancelled',
 				'ical'        => 'CANCELLED',
 				'priority'    => 50,
+				'strike_date' => true,
 			),
 			'postponed'    => array(
 				/* translators: Event operational status label. */
 				'label'       => _x( 'Postponed', 'event status', 'gatherpress' ),
 				'description' => __( 'Event is delayed to a future unconfirmed date.', 'gatherpress' ),
-				'color'       => '#b06000',
 				'schema'      => 'EventPostponed',
 				'ical'        => 'TENTATIVE',
 				'priority'    => 40,
+				'strike_date' => true,
 			),
 			'rescheduled'  => array(
 				/* translators: Event operational status label. */
 				'label'       => _x( 'Rescheduled', 'event status', 'gatherpress' ),
 				'description' => __( 'Event date and time have been changed.', 'gatherpress' ),
-				'color'       => '#1a73e8',
 				'schema'      => 'EventRescheduled',
 				'ical'        => 'TENTATIVE',
 				'priority'    => 30,
@@ -121,7 +143,6 @@ final class Status {
 					'Event venue has changed to an online meeting.',
 					'gatherpress'
 				),
-				'color'       => '#7627bb',
 				'schema'      => 'EventMovedOnline',
 				'ical'        => 'CONFIRMED',
 				'priority'    => 20,
@@ -135,7 +156,6 @@ final class Status {
 					'Event is planned provisionally and awaiting confirmation.',
 					'gatherpress'
 				),
-				'color'       => '#ea8600',
 				'schema'      => 'EventScheduled',
 				'ical'        => 'TENTATIVE',
 				'priority'    => 10,
@@ -167,10 +187,10 @@ final class Status {
 		 * Filters the operational statuses an event can be in.
 		 *
 		 * Each status is keyed by the slug stored against the event. An entry
-		 * holds the `label` and `description` people read, the `color` it is
-		 * shown in, the `priority` used to resolve precedence among multiple
-		 * statuses, and the `schema` (Schema.org EventStatusType) and `ical`
-		 * (RFC 5545 STATUS) values published for it. Anything omitted falls
+		 * holds the `label` and `description` people read, the `priority` used
+		 * to resolve precedence among multiple statuses, and the `schema` (Schema.org EventStatusType) and `ical`
+		 * (RFC 5545 STATUS) values published for it. Set `strike_date` to true
+		 * to cross out the event's date while it is in the status. Anything omitted falls
 		 * back to something that says the event is going ahead, so a status
 		 * never tells a calendar client something untrue.
 		 *
@@ -247,7 +267,7 @@ final class Status {
 	 * @return string The label, or an empty string when none is known.
 	 */
 	public static function label( string $slug ): string {
-		return (string) ( self::get( $slug )['label'] ?? '' );
+		return (string) ( self::definition( $slug )['label'] ?? '' );
 	}
 
 	/**
@@ -260,37 +280,7 @@ final class Status {
 	 * @return string The description, or an empty string when none is known.
 	 */
 	public static function description( string $slug ): string {
-		return (string) ( self::get( $slug )['description'] ?? '' );
-	}
-
-	/**
-	 * The color a status is shown in.
-	 *
-	 * The badge derives its fill and border from this one value, so a status
-	 * a site registers looks like its own rather than borrowing the default's
-	 * color. Anything that is not a hex color or a CSS custom property is
-	 * refused, since the value reaches a style attribute.
-	 *
-	 * @since TBD
-	 *
-	 * @param string $slug The status slug.
-	 *
-	 * @return string The color, or an empty string when there is none to use.
-	 */
-	public static function color( string $slug ): string {
-		$color = (string) ( self::get( $slug )['color'] ?? '' );
-
-		$hex = sanitize_hex_color( $color );
-
-		if ( ! empty( $hex ) ) {
-			return $hex;
-		}
-
-		if ( preg_match( '/^var\(\s*--[\w-]+\s*(?:,[^;()]*)?\)$/', $color ) ) {
-			return $color;
-		}
-
-		return '';
+		return (string) ( self::definition( $slug )['description'] ?? '' );
 	}
 
 	/**
@@ -303,7 +293,7 @@ final class Status {
 	 * @return string The Schema.org value.
 	 */
 	public static function schema( string $slug ): string {
-		$schema = (string) ( self::get( $slug )['schema'] ?? '' );
+		$schema = (string) ( self::definition( $slug )['schema'] ?? '' );
 
 		return '' === $schema ? self::DEFAULT_SCHEMA : $schema;
 	}
@@ -318,7 +308,7 @@ final class Status {
 	 * @return string The iCalendar value.
 	 */
 	public static function ical( string $slug ): string {
-		$ical = (string) ( self::get( $slug )['ical'] ?? '' );
+		$ical = (string) ( self::definition( $slug )['ical'] ?? '' );
 
 		return '' === $ical ? self::DEFAULT_ICAL : $ical;
 	}
@@ -336,7 +326,20 @@ final class Status {
 	 * @return int The priority, defaulting to 0 when unspecified.
 	 */
 	public static function priority( string $slug ): int {
-		return (int) ( self::get( $slug )['priority'] ?? 0 );
+		return (int) ( self::definition( $slug )['priority'] ?? 0 );
+	}
+
+	/**
+	 * Whether an event's date is crossed out while it is in a status.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $slug The status slug.
+	 *
+	 * @return bool True when the date is struck through.
+	 */
+	public static function strikes_date( string $slug ): bool {
+		return (bool) ( self::definition( $slug )['strike_date'] ?? false );
 	}
 
 	/**
@@ -354,35 +357,33 @@ final class Status {
 	 * @return void
 	 */
 	public static function ensure_term( string $slug ): void {
-		$label = self::label( $slug );
-
-		if ( '' === $label ) {
+		if ( ! self::exists( $slug ) ) {
 			return;
 		}
 
 		$term = get_term_by( 'slug', $slug, Event::TAXONOMY_STATUS );
 
 		if ( ! $term instanceof WP_Term ) {
-			wp_insert_term( $label, Event::TAXONOMY_STATUS, array( 'slug' => $slug ) );
+			wp_insert_term( self::label( $slug ), Event::TAXONOMY_STATUS, array( 'slug' => $slug ) );
 		}
 	}
 
 	/**
-	 * Returns the sorted, deduplicated status slugs assigned to an event post.
+	 * Every status slug assigned to the event, highest priority first.
+	 *
+	 * Defaults to the default status when the event has none of its own.
 	 *
 	 * @since TBD
 	 *
-	 * @param WP_Post|null $post The event post object.
-	 *
 	 * @return string[] The status slugs assigned to the event.
 	 */
-	public static function get_event_statuses( ?WP_Post $post ): array {
-		if ( ! $post ) {
+	public function get_all(): array {
+		if ( ! $this->post ) {
 			return array( self::default_slug() );
 		}
 
-		$post_type = (string) $post->post_type;
-		$terms     = get_the_terms( $post->ID, Event::TAXONOMY_STATUS );
+		$post_type = (string) $this->post->post_type;
+		$terms     = get_the_terms( $this->post->ID, Event::TAXONOMY_STATUS );
 
 		if ( ! is_array( $terms ) || empty( $terms ) ) {
 			return array( self::default_slug( $post_type ) );
@@ -413,19 +414,43 @@ final class Status {
 	}
 
 	/**
-	 * Sets the operational status for an event post.
+	 * Whether the event is canceled.
 	 *
 	 * @since TBD
 	 *
-	 * @param WP_Post|null $post   The event post object.
-	 * @param string       $status One of the slugs Status::slugs() reports.
-	 * @param bool         $append Optional. When true, appends to existing terms
-	 *                             instead of replacing them. Default false.
+	 * @return bool True when the event's statuses include canceled.
+	 */
+	public function is_canceled(): bool {
+		return in_array( self::STATUS_CANCELED, $this->get_all(), true );
+	}
+
+	/**
+	 * The event's status.
+	 *
+	 * When an event holds several statuses, the one with the highest priority
+	 * wins for single-value consumers like iCalendar STATUS.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The status slug.
+	 */
+	public function get(): string {
+		return $this->get_all()[0] ?? self::default_slug();
+	}
+
+	/**
+	 * Store the event's status.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $status One of the slugs Status::slugs() reports.
+	 * @param bool   $append Optional. When true, appends to existing terms
+	 *                       instead of replacing them. Default false.
 	 *
 	 * @return bool True when the status was stored.
 	 */
-	public static function set_event_status( ?WP_Post $post, string $status, bool $append = false ): bool {
-		if ( ! $post || ! self::exists( $status, (string) $post->post_type ) ) {
+	public function set( string $status, bool $append = false ): bool {
+		if ( ! $this->post || ! self::exists( $status, (string) $this->post->post_type ) ) {
 			return false;
 		}
 
@@ -433,7 +458,7 @@ final class Status {
 
 		// A plain string replaces every term in the taxonomy by default, which is
 		// what enforces the statuses being mutually exclusive.
-		$result = wp_set_object_terms( $post->ID, $status, Event::TAXONOMY_STATUS, $append );
+		$result = wp_set_object_terms( $this->post->ID, $status, Event::TAXONOMY_STATUS, $append );
 
 		if ( is_wp_error( $result ) ) {
 			return false;
@@ -443,7 +468,40 @@ final class Status {
 		// reads `post_modified_gmt` for a VEVENT's `SEQUENCE`, and a client
 		// ignores an update whose sequence has not advanced. Touching the post
 		// is what tells a subscriber that a cancellation actually happened.
-		return ! is_wp_error( wp_update_post( array( 'ID' => $post->ID ), true ) );
+		return ! is_wp_error( wp_update_post( array( 'ID' => $this->post->ID ), true ) );
+	}
+
+	/**
+	 * The words shown for the event's status.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The status label.
+	 */
+	public function get_label(): string {
+		return self::label( $this->get() );
+	}
+
+	/**
+	 * The Schema.org EventStatusType for the event's status.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The Schema.org value, such as 'EventScheduled'.
+	 */
+	public function get_schema(): string {
+		return self::schema( $this->get() );
+	}
+
+	/**
+	 * The RFC 5545 STATUS for the event's status.
+	 *
+	 * @since TBD
+	 *
+	 * @return string 'CONFIRMED', 'CANCELLED' or 'TENTATIVE'.
+	 */
+	public function get_ical(): string {
+		return self::ical( $this->get() );
 	}
 
 	/**
@@ -455,7 +513,7 @@ final class Status {
 	 *
 	 * @return array<string, mixed> The definition, or empty when none exist.
 	 */
-	private static function get( string $slug ): array {
+	private static function definition( string $slug ): array {
 		$statuses = self::all();
 
 		return (array) ( $statuses[ $slug ] ?? $statuses[ self::default_slug() ] ?? array() );

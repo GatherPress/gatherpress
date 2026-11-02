@@ -15,6 +15,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Blocks\Form_Field;
 use GatherPress\Core\Blocks\General_Block;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status as Event_Status;
 use GatherPress\Core\Rsvp as Core_Rsvp;
 use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
 use GatherPress\Core\Traits\Singleton;
@@ -179,7 +180,7 @@ final class Rsvp {
 			);
 			$filtered_status = ! empty( $filtered_data['status'] ) ? $filtered_data['status'] : 'no_status';
 
-			if ( $event->is_canceled() ) {
+			if ( ( new Event_Status( $post_id ) )->is_canceled() ) {
 				$inner_blocks_markup = sprintf(
 					'<div class="wp-block-buttons is-content-justification-center gatherpress-rsvp--is-canceled">'
 					. '<div class="wp-block-button">'

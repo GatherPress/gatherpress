@@ -130,45 +130,55 @@ final class Rest_Api {
 	}
 
 	/**
-	 * Registers the event status as a REST field on the event post type.
+	 * Registers the event status as a REST field on every post type that supports events.
 	 *
 	 * The status lives in the _gatherpress_event_status taxonomy so events can
 	 * be filtered by it, but a taxonomy reaches the block editor as an array of
 	 * term ids. This field keeps the editor's contract a plain slug, so the
 	 * status panel stays a SelectControl and the taxonomy stays an
-	 * implementation detail with a single write path through Event::set_status().
+	 * implementation detail with a single write path through Event\Status::set().
 	 *
 	 * @since TBD
 	 *
 	 * @return void
 	 */
 	public function register_status_field(): void {
-		register_rest_field(
-			Event::POST_TYPE,
-			'gatherpress_status',
-			array(
-				'get_callback'    => static function ( array $post ): string {
-					return ( new Event( (int) $post['id'] ) )->get_status();
-				},
-				'update_callback' => static function ( $value, WP_Post $post ) {
-					if ( ! current_user_can( 'edit_post', $post->ID ) ) {
-						return new WP_Error(
-							'gatherpress_status_forbidden',
-							__( 'Sorry, you are not allowed to set the status of this event.', 'gatherpress' ),
-							array( 'status' => rest_authorization_required_code() )
-						);
-					}
+		foreach ( get_post_types_by_support( Event::SUPPORT ) as $post_type ) {
+			register_rest_field(
+				$post_type,
+				'gatherpress_status',
+				array(
+					'get_callback'    => static function ( array $post ): string {
+						return ( new Event_Status( (int) $post['id'] ) )->get();
+					},
+					'update_callback' => static function ( $value, WP_Post $post ) {
+						if ( ! current_user_can( 'edit_post', $post->ID ) ) {
+							return new WP_Error(
+								'gatherpress_status_forbidden',
+								__( 'Sorry, you are not allowed to set the status of this event.', 'gatherpress' ),
+								array( 'status' => rest_authorization_required_code() )
+							);
+						}
 
-					( new Event( $post->ID ) )->set_status( sanitize_key( (string) $value ) );
-				},
-				'schema'          => array(
-					'description' => __( 'The operational status of the event.', 'gatherpress' ),
-					'type'        => 'string',
-					'enum'        => Event_Status::slugs( Event::POST_TYPE ),
-					'context'     => array( 'view', 'edit' ),
-				),
-			)
-		);
+						if ( ! ( new Event_Status( $post->ID ) )->set( sanitize_key( (string) $value ) ) ) {
+							return new WP_Error(
+								'gatherpress_status_not_saved',
+								__( 'The status of this event could not be saved.', 'gatherpress' ),
+								array( 'status' => 500 )
+							);
+						}
+
+						return true;
+					},
+					'schema'          => array(
+						'description' => __( 'The operational status of the event.', 'gatherpress' ),
+						'type'        => 'string',
+						'enum'        => Event_Status::slugs( $post_type ),
+						'context'     => array( 'view', 'edit' ),
+					),
+				)
+			);
+		}
 	}
 
 	/**
@@ -646,7 +656,7 @@ final class Rest_Api {
 		// so each identifier is checked against the one thing it can be.
 		if (
 			$this->is_valid_rsvp_identifier( $user_identifier )
-			&& ! $event->is_canceled()
+			&& ! ( new Event_Status( $post_id ) )->is_canceled()
 			&& ! $event->has_event_past()
 		) {
 			if ( 'attending' !== $status ) {
@@ -837,7 +847,7 @@ final class Rest_Api {
 			$bail = array( __( 'RSVP is disabled for this event.', 'gatherpress' ), 403 );
 		} elseif ( ! $rsvp->allows_open_rsvp() ) {
 			$bail = array( __( 'Open RSVP is disabled for this event.', 'gatherpress' ), 403 );
-		} elseif ( $event->is_canceled() ) {
+		} elseif ( ( new Event_Status( (int) $data['post_id'] ) )->is_canceled() ) {
 			$bail = array(
 				__( 'Registration for this event is closed because the event has been canceled.', 'gatherpress' ),
 				400,

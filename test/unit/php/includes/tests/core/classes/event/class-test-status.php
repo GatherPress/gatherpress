@@ -12,6 +12,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Event\Setup as Event_Setup;
 use GatherPress\Core\Event\Status;
 use GatherPress\Tests\Base;
+use WP_Term;
 
 /**
  * Class Test_Status.
@@ -96,7 +97,6 @@ class Test_Status extends Base {
 		$this->assertStringContainsString( 'awaiting confirmation', Status::description( 'tentative' ) );
 		$this->assertSame( 'EventScheduled', Status::schema( 'tentative' ) );
 		$this->assertSame( 'TENTATIVE', Status::ical( 'tentative' ) );
-		$this->assertSame( '#ea8600', Status::color( 'tentative' ) );
 		$this->assertSame( 10, Status::priority( 'tentative' ) );
 	}
 
@@ -186,6 +186,40 @@ class Test_Status extends Base {
 		$this->assertSame( Status::DEFAULT_SCHEMA, Status::schema( 'provisional' ) );
 		$this->assertSame( Status::DEFAULT_ICAL, Status::ical( 'provisional' ) );
 		$this->assertSame( 0, Status::priority( 'provisional' ) );
+
+		remove_filter( 'gatherpress_event_statuses', $callback );
+	}
+
+	/**
+	 * Canceled and postponed cross out the date, and a registered status can too.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::strikes_date
+	 *
+	 * @return void
+	 */
+	public function test_strikes_date(): void {
+		$this->assertTrue( Status::strikes_date( 'canceled' ) );
+		$this->assertTrue( Status::strikes_date( 'postponed' ) );
+		$this->assertFalse( Status::strikes_date( 'scheduled' ) );
+		$this->assertFalse( Status::strikes_date( 'rescheduled' ) );
+
+		$callback = static function ( array $statuses ): array {
+			$statuses['suspended'] = array(
+				'label'       => 'Suspended',
+				'strike_date' => true,
+			);
+
+			return $statuses;
+		};
+
+		add_filter( 'gatherpress_event_statuses', $callback );
+
+		$this->assertTrue(
+			Status::strikes_date( 'suspended' ),
+			'Failed to assert a registered status can cross out the date.'
+		);
 
 		remove_filter( 'gatherpress_event_statuses', $callback );
 	}
@@ -310,40 +344,6 @@ class Test_Status extends Base {
 	}
 
 	/**
-	 * A status is shown in its own color, and anything that could break out
-	 * of a style attribute is refused.
-	 *
-	 * @since TBD
-	 *
-	 * @covers ::color
-	 *
-	 * @return void
-	 */
-	public function test_color_accepts_only_what_is_safe_to_render(): void {
-		$this->assertSame( '#c5221f', Status::color( 'canceled' ) );
-
-		$callback = static function ( array $statuses ): array {
-			$statuses['token']  = array( 'color' => 'var(--wp--preset--color--accent-1, #000)' );
-			$statuses['broken'] = array( 'color' => 'red;} body { display: none' );
-			$statuses['named']  = array( 'color' => 'rebeccapurple' );
-
-			return $statuses;
-		};
-
-		add_filter( 'gatherpress_event_statuses', $callback );
-
-		$this->assertSame(
-			'var(--wp--preset--color--accent-1, #000)',
-			Status::color( 'token' ),
-			'Failed to assert a custom property reference is allowed.'
-		);
-		$this->assertSame( '', Status::color( 'broken' ), 'Failed to assert an escape attempt is refused.' );
-		$this->assertSame( '', Status::color( 'named' ), 'Failed to assert an unrecognized form is refused.' );
-
-		remove_filter( 'gatherpress_event_statuses', $callback );
-	}
-
-	/**
 	 * A status gets a term named the way people read it.
 	 *
 	 * Without this a term is created from the slug, and an event would say
@@ -363,13 +363,16 @@ class Test_Status extends Base {
 
 		Status::ensure_term( 'canceled' );
 
-		$term = get_term_by( 'slug', 'canceled', Event::TAXONOMY_STATUS );
-
-		$this->assertSame( 'Canceled', $term->name, 'Failed to assert the term carries the label.' );
+		$this->assertSame(
+			'Canceled',
+			$this->get_stored_name( 'canceled' ),
+			'Failed to assert the term carries the label.'
+		);
 	}
 
 	/**
-	 * A term whose name has drifted from the vocabulary is put right.
+	 * A term that already exists keeps its stored name, so saving an event in
+	 * one locale never renames a status for everyone else.
 	 *
 	 * @since TBD
 	 *
@@ -377,7 +380,7 @@ class Test_Status extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_ensure_term_corrects_a_stale_name(): void {
+	public function test_ensure_term_leaves_an_existing_name_alone(): void {
 		Status::ensure_term( 'postponed' );
 
 		$term = get_term_by( 'slug', 'postponed', Event::TAXONOMY_STATUS );
@@ -387,9 +390,9 @@ class Test_Status extends Base {
 		Status::ensure_term( 'postponed' );
 
 		$this->assertSame(
-			'Postponed',
-			get_term_by( 'slug', 'postponed', Event::TAXONOMY_STATUS )->name,
-			'Failed to assert a drifted name is corrected.'
+			'Put off',
+			$this->get_stored_name( 'postponed' ),
+			'Failed to assert an existing term keeps its stored name.'
 		);
 	}
 
@@ -403,15 +406,7 @@ class Test_Status extends Base {
 	 * @return void
 	 */
 	public function test_ensure_term_ignores_an_unknown_status(): void {
-		$callback = static function (): array {
-			return array();
-		};
-
-		add_filter( 'gatherpress_event_statuses', $callback );
-
 		Status::ensure_term( 'nothing-at-all' );
-
-		remove_filter( 'gatherpress_event_statuses', $callback );
 
 		$this->assertFalse(
 			get_term_by( 'slug', 'nothing-at-all', Event::TAXONOMY_STATUS ),
@@ -420,81 +415,320 @@ class Test_Status extends Base {
 	}
 
 	/**
-	 * Tests get_event_statuses returns default when post is null or has no terms,
-	 * and returns sorted valid statuses otherwise.
+	 * Coverage for get.
 	 *
-	 * @since TBD
-	 *
-	 * @covers ::get_event_statuses
+	 * @covers ::get
 	 *
 	 * @return void
 	 */
-	public function test_get_event_statuses(): void {
-		$this->assertSame(
-			array( 'scheduled' ),
-			Status::get_event_statuses( null ),
-			'Failed to assert null post returns default status.'
-		);
+	public function test_get(): void {
+		$post   = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$status = new Status( $post->ID );
 
-		$post = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		// Default status is scheduled.
+		$this->assertSame( 'scheduled', $status->get() );
 
-		$this->assertSame(
-			array( 'scheduled' ),
-			Status::get_event_statuses( $post ),
-			'Failed to assert event with no terms returns default status.'
-		);
+		// Set canceled status.
+		$status->set( 'canceled' );
+		$this->assertSame( 'canceled', $status->get() );
 
-		wp_set_object_terms( $post->ID, array( 'postponed', 'canceled' ), Event::TAXONOMY_STATUS );
+		// Set postponed status.
+		$status->set( 'postponed' );
+		$this->assertSame( 'postponed', $status->get() );
 
-		$this->assertSame(
-			array( 'canceled', 'postponed' ),
-			Status::get_event_statuses( $post ),
-			'Failed to assert assigned statuses are sorted by priority.'
-		);
+		// Set tentative status.
+		$status->set( 'tentative' );
+		$this->assertSame( 'tentative', $status->get() );
 
+		// Invalid status falls back to scheduled.
 		wp_set_object_terms( $post->ID, 'invalid-status', Event::TAXONOMY_STATUS );
+		$this->assertSame( 'scheduled', $status->get() );
+
+		// An event with no status terms falls back to scheduled.
+		wp_delete_object_term_relationships( $post->ID, Event::TAXONOMY_STATUS );
+		$this->assertSame( 'scheduled', $status->get() );
+
+		// Non-existent event falls back to scheduled.
+		$non_event    = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+		$empty_status = new Status( $non_event->ID );
+		$this->assertSame( 'scheduled', $empty_status->get() );
+	}
+
+	/**
+	 * Coverage for set method.
+	 *
+	 * @covers ::set
+	 * @covers ::get
+	 *
+	 * @return void
+	 */
+	public function test_set(): void {
+		$post   = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$status = new Status( $post->ID );
+
+		$this->assertTrue(
+			$status->set( 'canceled' ),
+			'Failed to assert a valid status is stored.'
+		);
 		$this->assertSame(
-			array( 'scheduled' ),
-			Status::get_event_statuses( $post ),
-			'Failed to assert invalid status falls back to default.'
+			'canceled',
+			$status->get(),
+			'Failed to assert the stored status reads back.'
+		);
+
+		// A second status replaces the first rather than adding to it, which is
+		// what keeps the statuses mutually exclusive.
+		$status->set( 'postponed' );
+
+		$terms = wp_get_object_terms( $post->ID, Event::TAXONOMY_STATUS, array( 'fields' => 'slugs' ) );
+
+		$this->assertSame(
+			array( 'postponed' ),
+			$terms,
+			'Failed to assert a new status replaces the previous term.'
+		);
+
+		$this->assertFalse(
+			$status->set( 'not-a-status' ),
+			'Failed to assert an unknown status is refused.'
+		);
+		$this->assertSame(
+			'postponed',
+			$status->get(),
+			'Failed to assert a refused status leaves the stored one alone.'
+		);
+
+		// A post that is not an event never gets a post assigned in the
+		// constructor, so it has no status to set. Status( 0 ) would not do here:
+		// get_post_type( 0 ) falls back to the global post, which this test has.
+		$non_event = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+
+		$this->assertFalse(
+			( new Status( $non_event->ID ) )->set( 'canceled' ),
+			'Failed to assert a post that is not an event refuses a status.'
 		);
 	}
 
 	/**
-	 * Tests set_event_status sets operational status on event post.
+	 * A status that cannot be written is reported as not written.
+	 *
+	 * Unregistering the taxonomy is the reachable way to make the term write
+	 * fail, which is what a site would see if something removed it.
 	 *
 	 * @since TBD
 	 *
-	 * @covers ::set_event_status
+	 * @covers ::set
 	 *
 	 * @return void
 	 */
-	public function test_set_event_status(): void {
-		$this->assertFalse(
-			Status::set_event_status( null, 'canceled' ),
-			'Failed to assert null post returns false.'
-		);
-
-		$post = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
-
-		$this->assertTrue(
-			Status::set_event_status( $post, 'canceled' ),
-			'Failed to assert setting status on event succeeds.'
-		);
-
-		$this->assertSame(
-			array( 'canceled' ),
-			Status::get_event_statuses( $post ),
-			'Failed to assert stored status matches.'
-		);
+	public function test_set_reports_a_failed_write(): void {
+		$post   = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$status = new Status( $post->ID );
 
 		unregister_taxonomy( Event::TAXONOMY_STATUS );
 
 		$this->assertFalse(
-			Status::set_event_status( $post, 'canceled' ),
+			$status->set( 'canceled' ),
 			'Failed to assert an unwritable status is refused.'
 		);
 
 		Event_Setup::get_instance()->register_status_taxonomy();
+	}
+
+	/**
+	 * An event is canceled while canceled is among its statuses.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::is_canceled
+	 *
+	 * @return void
+	 */
+	public function test_is_canceled(): void {
+		$post   = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$status = new Status( $post->ID );
+
+		$this->assertFalse( $status->is_canceled() );
+
+		$status->set( 'canceled' );
+		$this->assertTrue( $status->is_canceled() );
+
+		$status->set( 'scheduled' );
+		$this->assertFalse( $status->is_canceled() );
+	}
+
+	/**
+	 * Coverage for get method with no backing post.
+	 *
+	 * @covers ::get
+	 *
+	 * @return void
+	 */
+	public function test_get_without_post(): void {
+		$non_event = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+		$status    = new Status( $non_event->ID );
+
+		$this->assertSame(
+			'scheduled',
+			$status->get(),
+			'Failed to assert an event with no post reports the scheduled status.'
+		);
+	}
+
+	/**
+	 * Coverage for get_all method and multi-status priority resolution.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_all
+	 * @covers ::get
+	 * @covers ::set
+	 *
+	 * @return void
+	 */
+	public function test_get_all_and_priority_resolution(): void {
+		$post   = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$status = new Status( $post->ID );
+
+		// Fresh event reports scheduled.
+		$this->assertSame( array( 'scheduled' ), $status->get_all() );
+
+		// Event without backing post reports scheduled.
+		$non_event    = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+		$empty_status = new Status( $non_event->ID );
+		$this->assertSame( array( 'scheduled' ), $empty_status->get_all() );
+
+		// Non-existent status term falls back to default.
+		wp_set_object_terms( $post->ID, 'invalid-status', Event::TAXONOMY_STATUS );
+		$this->assertSame( array( 'scheduled' ), $status->get_all() );
+
+		// Setting a status sets it as the single status.
+		$status->set( 'tentative' );
+		$this->assertSame( array( 'tentative' ), $status->get_all() );
+		$this->assertSame( 'tentative', $status->get() );
+
+		// Appending a higher priority status reorders by priority descending.
+		$status->set( 'moved-online', true );
+		$this->assertSame( array( 'moved-online', 'tentative' ), $status->get_all() );
+		$this->assertSame( 'moved-online', $status->get() );
+
+		// Appending canceled (priority 50) trumps both moved-online (20) and tentative (10).
+		$status->set( 'canceled', true );
+		$this->assertSame( array( 'canceled', 'moved-online', 'tentative' ), $status->get_all() );
+		$this->assertSame( 'canceled', $status->get() );
+		$this->assertSame( 'CANCELLED', $status->get_ical() );
+		$this->assertSame( 'EventCancelled', $status->get_schema() );
+	}
+
+	/**
+	 * Coverage for get_label method.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_label
+	 *
+	 * @return void
+	 */
+	public function test_get_label(): void {
+		$post   = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$status = new Status( $post->ID );
+
+		$this->assertSame( 'Scheduled', $status->get_label() );
+
+		$status->set( 'canceled' );
+		$this->assertSame( 'Canceled', $status->get_label() );
+
+		$status->set( 'postponed' );
+		$this->assertSame( 'Postponed', $status->get_label() );
+
+		$status->set( 'rescheduled' );
+		$this->assertSame( 'Rescheduled', $status->get_label() );
+
+		$status->set( 'moved-online' );
+		$this->assertSame( 'Moved online', $status->get_label() );
+
+		$status->set( 'tentative' );
+		$this->assertSame( 'Tentative', $status->get_label() );
+	}
+
+	/**
+	 * Coverage for get_schema method.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_schema
+	 *
+	 * @return void
+	 */
+	public function test_get_schema(): void {
+		$post   = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$status = new Status( $post->ID );
+
+		$this->assertSame( 'EventScheduled', $status->get_schema() );
+
+		$status->set( 'canceled' );
+		$this->assertSame( 'EventCancelled', $status->get_schema() );
+
+		$status->set( 'postponed' );
+		$this->assertSame( 'EventPostponed', $status->get_schema() );
+
+		$status->set( 'rescheduled' );
+		$this->assertSame( 'EventRescheduled', $status->get_schema() );
+
+		$status->set( 'moved-online' );
+		$this->assertSame( 'EventMovedOnline', $status->get_schema() );
+
+		$status->set( 'tentative' );
+		$this->assertSame( 'EventScheduled', $status->get_schema() );
+	}
+
+	/**
+	 * Coverage for get_ical method.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_ical
+	 *
+	 * @return void
+	 */
+	public function test_get_ical(): void {
+		$post   = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$status = new Status( $post->ID );
+
+		$this->assertSame( 'CONFIRMED', $status->get_ical() );
+
+		$status->set( 'canceled' );
+		$this->assertSame( 'CANCELLED', $status->get_ical() );
+
+		$status->set( 'postponed' );
+		$this->assertSame( 'TENTATIVE', $status->get_ical() );
+
+		$status->set( 'rescheduled' );
+		$this->assertSame( 'TENTATIVE', $status->get_ical() );
+
+		$status->set( 'moved-online' );
+		$this->assertSame( 'CONFIRMED', $status->get_ical() );
+
+		$status->set( 'tentative' );
+		$this->assertSame( 'TENTATIVE', $status->get_ical() );
+	}
+
+	/**
+	 * The term name as stored, rather than as the localizing filter reports it.
+	 *
+	 * @param string $slug The status slug.
+	 *
+	 * @return string The stored term name.
+	 */
+	private function get_stored_name( string $slug ): string {
+		$setup = Event_Setup::get_instance();
+
+		remove_filter( 'get_term', array( $setup, 'filter_event_status_term' ), 10 );
+
+		$term = get_term_by( 'slug', $slug, Event::TAXONOMY_STATUS );
+
+		add_filter( 'get_term', array( $setup, 'filter_event_status_term' ), 10, 2 );
+
+		return $term instanceof WP_Term ? $term->name : '';
 	}
 }

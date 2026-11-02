@@ -4,16 +4,7 @@
 import { getFromConfig } from './editor-settings';
 
 /**
- * Taxonomy the status is stored in, mirrored from Event::TAXONOMY_STATUS.
- *
- * @since TBD
- *
- * @type {string}
- */
-export const TAXONOMY_STATUS = '_gatherpress_event_status';
-
-/**
- * Slug reported for an event that has no status of its own.
+ * Slug reported for an event that has no status of its own, before settings load.
  *
  * @since TBD
  *
@@ -54,6 +45,19 @@ function getStatus( slug ) {
 }
 
 /**
+ * The status an event reports when it has none of its own.
+ *
+ * The first status PHP offers, matching `Status::default_slug()`.
+ *
+ * @since TBD
+ *
+ * @return {string} The default status slug.
+ */
+export function getDefaultStatus() {
+	return Object.keys( getStatuses() )[ 0 ] || DEFAULT_STATUS;
+}
+
+/**
  * The sentence explaining what a status means.
  *
  * @since TBD
@@ -80,3 +84,15 @@ export function getStatusOptions() {
 	} ) );
 }
 
+/**
+ * Whether an event's date is crossed out while it is in a status.
+ *
+ * @since TBD
+ *
+ * @param {string} slug The status slug.
+ *
+ * @return {boolean} True when the date is struck through.
+ */
+export function strikesDate( slug ) {
+	return true === getStatus( slug ).strike_date;
+}
