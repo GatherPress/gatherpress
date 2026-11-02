@@ -18,7 +18,7 @@ import { __ } from '@wordpress/i18n';
 import { applyFilters } from '@wordpress/hooks';
 import { useEffect, useCallback, useState } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
-import { createBlock, parse, serialize } from '@wordpress/blocks';
+import { serialize } from '@wordpress/blocks';
 
 /**
  * Internal dependencies
@@ -28,7 +28,7 @@ import PatternPicker, { PatternChooserModal } from '../../components/PatternPick
 import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, usePostTypeSupports, isRsvpEnabledForEvent } from '../../helpers/event';
 import { isInFSETemplate, getEditorDocument } from '../../helpers/editor';
 import { getFromSettings } from '../../helpers/editor-settings';
-import { parseSerializedInnerBlocks } from './helpers';
+import { getStatusInnerBlocks, parseSerializedInnerBlocks, templateToBlocks } from './helpers';
 
 /**
  * Starter patterns offered by the RSVP block's pattern picker.
@@ -104,23 +104,6 @@ const DEFAULT_STATUS_TEMPLATES = applyFilters(
 	'gatherpress.rsvpDefaultStatusTemplates',
 	RSVP_BUTTON_WITH_MODAL_TEMPLATES,
 );
-
-/**
- * Helper function to convert a template to blocks.
- *
- * @param {Array} template The block template structure.
- *
- * @return {Array} Array of blocks created from the template.
- */
-function templateToBlocks( template ) {
-	return template.map( ( [ name, attributes, innerBlocks ] ) => {
-		return createBlock(
-			name,
-			attributes,
-			templateToBlocks( innerBlocks || [] ),
-		);
-	} );
-}
 
 /**
  * Edit component for the GatherPress RSVP block.
@@ -320,13 +303,10 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	// Load inner blocks for a given state
 	const loadInnerBlocksForState = useCallback(
 		( state ) => {
-			const savedBlocks =
-				parseSerializedInnerBlocks( serializedInnerBlocks )[ state ];
-			if ( savedBlocks && 0 < savedBlocks.length ) {
-				replaceInnerBlocks( clientId, parse( savedBlocks, {} ) );
-			} else if ( DEFAULT_STATUS_TEMPLATES[ state ] ) {
-				// A block saved before this status existed starts from its default.
-				replaceInnerBlocks( clientId, templateToBlocks( DEFAULT_STATUS_TEMPLATES[ state ] ) );
+			const blocks = getStatusInnerBlocks( serializedInnerBlocks, state, DEFAULT_STATUS_TEMPLATES );
+
+			if ( blocks ) {
+				replaceInnerBlocks( clientId, blocks );
 			}
 		},
 		[ clientId, replaceInnerBlocks, serializedInnerBlocks ],
