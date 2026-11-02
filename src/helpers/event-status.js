@@ -84,3 +84,15 @@ export function getStatusOptions() {
 	} ) );
 }
 
+/**
+ * Whether an event's date is crossed out while it is in a status.
+ *
+ * @since TBD
+ *
+ * @param {string} slug The status slug.
+ *
+ * @return {boolean} True when the date is struck through.
+ */
+export function strikesDate( slug ) {
+	return true === getStatus( slug ).strike_date;
+}

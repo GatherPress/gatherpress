@@ -416,6 +416,11 @@ class Test_Event_Date extends Base {
 			'Failed to assert a canceled event marks its date.'
 		);
 		$this->assertStringContainsString(
+			'gatherpress-event-date--is-struck',
+			$output,
+			'Failed to assert a canceled event crosses out its date.'
+		);
+		$this->assertStringContainsString(
 			'screen-reader-text gatherpress--screen-reader-text',
 			$output,
 			'Failed to assert a canceled event adds screen reader status.'

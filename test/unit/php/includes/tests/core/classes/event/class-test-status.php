@@ -189,6 +189,40 @@ class Test_Status extends Base {
 	}
 
 	/**
+	 * Canceled and postponed cross out the date, and a registered status can too.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::strikes_date
+	 *
+	 * @return void
+	 */
+	public function test_strikes_date(): void {
+		$this->assertTrue( Status::strikes_date( 'canceled' ) );
+		$this->assertTrue( Status::strikes_date( 'postponed' ) );
+		$this->assertFalse( Status::strikes_date( 'scheduled' ) );
+		$this->assertFalse( Status::strikes_date( 'rescheduled' ) );
+
+		$callback = static function ( array $statuses ): array {
+			$statuses['suspended'] = array(
+				'label'       => 'Suspended',
+				'strike_date' => true,
+			);
+
+			return $statuses;
+		};
+
+		add_filter( 'gatherpress_event_statuses', $callback );
+
+		$this->assertTrue(
+			Status::strikes_date( 'suspended' ),
+			'Failed to assert a registered status can cross out the date.'
+		);
+
+		remove_filter( 'gatherpress_event_statuses', $callback );
+	}
+
+	/**
 	 * A status reports its priority for conflict resolution.
 	 *
 	 * @since TBD

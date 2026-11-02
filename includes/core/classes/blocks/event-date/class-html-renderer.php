@@ -86,6 +86,10 @@ final class Html_Renderer {
 			$status_label = $event_status->get_label();
 		}
 
+		if ( Status::strikes_date( $status ) ) {
+			$classes[] = 'gatherpress-event-date--is-struck';
+		}
+
 		$wrapper_attributes = empty( $classes )
 			? get_block_wrapper_attributes()
 			: get_block_wrapper_attributes( array( 'class' => implode( ' ', $classes ) ) );

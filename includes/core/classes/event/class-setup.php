@@ -201,6 +201,10 @@ final class Setup {
 		$status    = ( new Status( $post_id ) )->get();
 		$classes[] = sprintf( 'gatherpress-event-status--is-%s', sanitize_html_class( $status ) );
 
+		if ( Status::strikes_date( $status ) ) {
+			$classes[] = 'gatherpress-event-status--is-struck';
+		}
+
 		return $classes;
 	}
 

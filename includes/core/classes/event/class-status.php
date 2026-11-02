@@ -109,6 +109,7 @@ final class Status {
 				'schema'      => 'EventCancelled',
 				'ical'        => 'CANCELLED',
 				'priority'    => 50,
+				'strike_date' => true,
 			),
 			'postponed'    => array(
 				/* translators: Event operational status label. */
@@ -117,6 +118,7 @@ final class Status {
 				'schema'      => 'EventPostponed',
 				'ical'        => 'TENTATIVE',
 				'priority'    => 40,
+				'strike_date' => true,
 			),
 			'rescheduled'  => array(
 				/* translators: Event operational status label. */
@@ -179,7 +181,8 @@ final class Status {
 		 * Each status is keyed by the slug stored against the event. An entry
 		 * holds the `label` and `description` people read, the `priority` used
 		 * to resolve precedence among multiple statuses, and the `schema` (Schema.org EventStatusType) and `ical`
-		 * (RFC 5545 STATUS) values published for it. Anything omitted falls
+		 * (RFC 5545 STATUS) values published for it. Set `strike_date` to true
+		 * to cross out the event's date while it is in the status. Anything omitted falls
 		 * back to something that says the event is going ahead, so a status
 		 * never tells a calendar client something untrue.
 		 *
@@ -316,6 +319,19 @@ final class Status {
 	 */
 	public static function priority( string $slug ): int {
 		return (int) ( self::definition( $slug )['priority'] ?? 0 );
+	}
+
+	/**
+	 * Whether an event's date is crossed out while it is in a status.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $slug The status slug.
+	 *
+	 * @return bool True when the date is struck through.
+	 */
+	public static function strikes_date( string $slug ): bool {
+		return (bool) ( self::definition( $slug )['strike_date'] ?? false );
 	}
 
 	/**

@@ -2456,11 +2456,13 @@ class Test_Setup extends Base {
 		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 		$classes  = $setup->add_status_post_class( array( 'hentry' ), array(), $event_id );
 		$this->assertContains( 'gatherpress-event-status--is-scheduled', $classes );
+		$this->assertNotContains( 'gatherpress-event-status--is-struck', $classes );
 
 		// Cancelled event gets the status class.
 		( new Status( $event_id ) )->set( 'canceled' );
 		$classes = $setup->add_status_post_class( array( 'hentry' ), array(), $event_id );
 		$this->assertContains( 'gatherpress-event-status--is-canceled', $classes );
+		$this->assertContains( 'gatherpress-event-status--is-struck', $classes );
 	}
 
 	/**
