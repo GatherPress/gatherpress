@@ -36,7 +36,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/event/class-email.php:455](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-email.php#L455)
+- [includes/core/classes/event/class-email.php:456](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-email.php#L456)
 ```php
 apply_filters( 'gatherpress_email_subject', $subject, $post_id )
 ```

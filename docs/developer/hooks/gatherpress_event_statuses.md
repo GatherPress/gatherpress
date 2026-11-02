@@ -45,7 +45,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/event/class-status.php:204](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-status.php#L204)
+- [includes/core/classes/event/class-status.php:212](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-status.php#L212)
 ```php
 apply_filters( 'gatherpress_event_statuses', $statuses, $post_type )
 ```
