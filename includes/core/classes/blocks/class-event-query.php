@@ -282,7 +282,7 @@ final class Event_Query {
 		// Resolve the effective post type from the block context. Event-specific
 		// vars below only flow when the loop is unambiguously an event loop
 		// (supports event dates), and activity vars only when it lists
-		// shadow-source posts (venues, productions, …).
+		// shadow-source posts, such as venues.
 		$requested_post_type = ! empty( $block_query['postType'] )
 			? (string) $block_query['postType']
 			: '';
@@ -305,16 +305,14 @@ final class Event_Query {
 			?? $block_query['gatherpress_event_query']
 			?? 'upcoming';
 
-		// A sibling plain Query Loop — neither recorded as ours (no queryId in
+		// A sibling plain Query Loop, neither recorded as ours (no queryId in
 		// the map, no gatherpress_event_query attribute) nor listing
-		// shadow-source posts — stays untouched (#1806).
+		// shadow-source posts, stays untouched (#1806).
 		if ( ! $is_event_loop && ! $query_shadow_supports ) {
 			return $query;
 		}
 
-		// Generate a new custom query with all potential query vars. Each
-		// support-gated group is built by its own helper so the branches do
-		// not multiply into this method's NPath complexity.
+		// Generate a new custom query with all potential query vars.
 		$query_args = array();
 
 		if ( $query_event_supports ) {
@@ -356,7 +354,7 @@ final class Event_Query {
 	 * Also carries the editor-preview shadow-source context, because an event
 	 * loop can be scoped to the shadow-source post it was placed on.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param array<string, mixed> $block_query         Query attribute from the block context.
 	 * @param string               $requested_post_type Post type the block asked for, '' when unset.
@@ -418,7 +416,7 @@ final class Event_Query {
 	/**
 	 * Build the event-activity query vars for a shadow-source Query Loop.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param array<string, mixed> $block_query Query attribute from the block context.
 	 *
@@ -445,10 +443,7 @@ final class Event_Query {
 	/**
 	 * Build the editor-preview shadow-source context query vars.
 	 *
-	 * Shared by the event and shadow-source branches so the cast and the
-	 * empty() check have a single definition.
-	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 *
 	 * @param array<string, mixed> $block_query Query attribute from the block context.
 	 *
@@ -556,11 +551,7 @@ final class Event_Query {
 	/**
 	 * Filters collection parameters for the posts controller.
 	 *
-	 * Override the allowed items. The set of params added depends on the
-	 * post type whose `rest_$post_type_collection_params` filter is firing.
-	 * Event post types get the event query type, include_unfinished, the
-	 * custom orderby enum, the exclude_current event-side scope, the
-	 * shadow_filter toggle, and the editor-preview context.
+	 * Override the allowed items.
 	 *
 	 * @since 0.33.0
 	 *
@@ -571,98 +562,63 @@ final class Event_Query {
 	 * @return array<string, array<string, mixed>> JSON Schema-formatted collection parameters.
 	 */
 	public function rest_collection_params( array $query_params ): array {
-		$current_filter = current_filter();
-		$post_type      = '';
+		// Add GatherPress-specific orderby options.
+		$query_params['orderby']['enum'][] = 'rand';
+		$query_params['orderby']['enum'][] = 'datetime';
 
-		if ( is_string( $current_filter ) && str_starts_with( $current_filter, 'rest_' ) ) {
-			// rest_$post_type_collection_params → post_type sits between
-			// the leading "rest_" and trailing "_collection_params".
-			$post_type = substr(
-				$current_filter,
-				strlen( 'rest_' ),
-				-strlen( '_collection_params' )
-			);
-		}
+		// Add custom GatherPress query parameters.
+		$query_params['gatherpress_event_query'] = array(
+			'description' => __( 'Type of events to query: upcoming, past, or all', 'gatherpress' ),
+			'type'        => 'string',
+			'enum'        => array( 'upcoming', 'past', 'all' ),
+			'default'     => 'upcoming',
+		);
 
-		return $this->add_gatherpress_collection_params( $query_params, $post_type );
-	}
+		$query_params['include_unfinished'] = array(
+			'description' => __( 'Whether to include events that have started but not finished', 'gatherpress' ),
+			'type'        => 'integer',
+			'enum'        => array( 0, 1 ),
+		);
 
-	/**
-	 * Adds the GatherPress-specific collection params that apply to the given post type.
-	 *
-	 * Only post types that declare `gatherpress-event-date` support receive
-	 * params; shadow-source activity params are owned by `Shadow_Source`.
-	 * Extracted from `rest_collection_params` so tests can exercise the
-	 * support branch directly without setting up a `current_filter()` context.
-	 *
-	 * @since 0.36.0
-	 *
-	 * @param array<string, array<string, mixed>> $query_params JSON Schema-formatted collection parameters.
-	 * @param string                              $post_type   Post type slug whose schema is being filtered.
-	 *
-	 * @return array<string, array<string, mixed>> JSON Schema-formatted collection parameters, extended.
-	 */
-	public function add_gatherpress_collection_params( array $query_params, string $post_type ): array {
-		if ( post_type_supports( $post_type, Event::SUPPORT ) ) {
-			// Add GatherPress-specific orderby options.
-			$query_params['orderby']['enum'][] = 'rand';
-			$query_params['orderby']['enum'][] = 'datetime';
+		// exclude_current and gatherpress_shadow_source_post_id are post IDs,
+		// but inside a block template the editor preview sends the template
+		// identifier (e.g. "twentytwentyfive//single-gatherpress_event")
+		// because there is no concrete post providing numeric context. A bare
+		// `type => integer` rejects that with a 400, which leaves the Query
+		// Loop spinning forever in the template editor (#1753). Accept any
+		// value and coerce it to a non-negative int instead: a non-numeric
+		// template id collapses to 0, which downstream treats as "no context"
+		// and renders the query unfiltered rather than erroring.
+		$query_params['exclude_current'] = array(
+			'description'       => __( 'Post ID to exclude from results', 'gatherpress' ),
+			'type'              => 'integer',
+			'validate_callback' => '__return_true',
+			'sanitize_callback' => 'absint',
+		);
 
-			// Add custom GatherPress query parameters.
-			$query_params['gatherpress_event_query'] = array(
-				'description' => __( 'Type of events to query: upcoming, past, or all', 'gatherpress' ),
-				'type'        => 'string',
-				'enum'        => array( 'upcoming', 'past', 'all' ),
-				'default'     => 'upcoming',
-			);
+		$query_params['shadow_filter'] = array(
+			'description' => __( 'Whether to filter events by the current venue context', 'gatherpress' ),
+			'type'        => 'integer',
+			'enum'        => array( 0, 1 ),
+		);
 
-			$query_params['include_unfinished'] = array(
-				'description' => __( 'Whether to include events that have started but not finished', 'gatherpress' ),
-				'type'        => 'integer',
-				'enum'        => array( 0, 1 ),
-			);
+		$query_params['gatherpress_shadow_source_post_id'] = array(
+			'description'       => __(
+				'Editor-side post ID used to scope the venue contextual filter in the REST preview.',
+				'gatherpress'
+			),
+			'type'              => 'integer',
+			'validate_callback' => '__return_true',
+			'sanitize_callback' => 'absint',
+		);
 
-			// exclude_current is a post ID, but inside a block template the
-			// editor preview sends the template identifier (e.g.
-			// "twentytwentyfive//single-gatherpress_event") because there is
-			// no concrete post providing numeric context. A bare
-			// `type => integer` rejects that with a 400, which leaves the
-			// Query Loop spinning forever in the template editor (#1753).
-			// Accept any value and coerce it to a non-negative int instead:
-			// a non-numeric template id collapses to 0, which downstream
-			// treats as "no context" and renders the query unfiltered
-			// rather than erroring.
-			$query_params['exclude_current'] = array(
-				'description'       => __( 'Post ID to exclude from results', 'gatherpress' ),
-				'type'              => 'integer',
-				'validate_callback' => '__return_true',
-				'sanitize_callback' => 'absint',
-			);
-
-			$query_params['shadow_filter'] = array(
-				'description' => __( 'Whether to filter events by the current venue context', 'gatherpress' ),
-				'type'        => 'integer',
-				'enum'        => array( 0, 1 ),
-			);
-
-			$query_params['gatherpress_shadow_source_post_id'] = array(
-				'description'       => __(
-					'Editor-side post ID used to scope the venue contextual filter in the REST preview.',
-					'gatherpress'
-				),
-				'type'              => 'integer',
-				'validate_callback' => '__return_true',
-				'sanitize_callback' => 'absint',
-			);
-
-			$query_params['gatherpress_shadow_source_post_type'] = array(
-				'description' => __(
-					'Editor-side post type used to scope the venue contextual filter in the REST preview.',
-					'gatherpress'
-				),
-				'type'        => 'string',
-			);
-		}
+		$query_params['gatherpress_shadow_source_post_type'] = array(
+			'description' => __(
+				'Editor-side post type used to scope the venue contextual filter in the REST preview.',
+				'gatherpress'
+			),
+			'type'        => 'string',
+		);
 
 		return $query_params;
 	}
@@ -683,15 +639,7 @@ final class Event_Query {
 	 * @return array<string, mixed> Modified query arguments.
 	 */
 	public function aql_query_vars( array $query_args, array $block_query ): array {
-		// Only process if querying GatherPress events or shadow-source posts.
 		$post_type = $block_query['postType'] ?? '';
-
-		if (
-			! post_type_supports( $post_type, Event::SUPPORT )
-			&& ! post_type_supports( $post_type, Shadow_Source::SUPPORT )
-		) {
-			return $query_args;
-		}
 
 		if ( post_type_supports( $post_type, Event::SUPPORT ) ) {
 			// Pass through event query type (upcoming/past).

@@ -277,7 +277,7 @@ class Test_Event_Query extends Base {
 	 * params and exclude the shadow-source-only activity params.
 	 *
 	 * @since 0.33.0
-	 * @covers ::add_gatherpress_collection_params
+	 * @covers ::rest_collection_params
 	 *
 	 * @return void
 	 */
@@ -290,7 +290,7 @@ class Test_Event_Query extends Base {
 			),
 		);
 
-		$result = $instance->add_gatherpress_collection_params( $base_params, Event::POST_TYPE );
+		$result = $instance->rest_collection_params( $base_params );
 
 		// Verify include_unfinished parameter is registered.
 		$this->assertArrayHasKey( 'include_unfinished', $result );
@@ -337,95 +337,6 @@ class Test_Event_Query extends Base {
 			call_user_func( $result['exclude_current']['sanitize_callback'], $template_id ),
 			'exclude_current should coerce a non-numeric template identifier to 0 (no context).'
 		);
-	}
-
-	/**
-	 * Collection params for a shadow-source post type are returned unchanged.
-	 *
-	 * Shadow-source activity params (`has_events_filter`,
-	 * `upcoming_events_only`, context) are owned by `Shadow_Source`, not by
-	 * `Event_Query`, so its schema filter must not add them here.
-	 *
-	 * @since 0.36.0
-	 * @covers ::add_gatherpress_collection_params
-	 *
-	 * @return void
-	 */
-	public function test_rest_collection_params_for_shadow_source_post_type(): void {
-		$instance = Event_Query::get_instance();
-
-		$base_params = array(
-			'orderby' => array(
-				'enum' => array( 'date', 'title' ),
-			),
-		);
-
-		$result = $instance->add_gatherpress_collection_params( $base_params, 'gatherpress_venue' );
-
-		// Event-only params must not leak into a shadow-source schema.
-		$this->assertSame( $base_params, $result );
-		$this->assertArrayNotHasKey( 'include_unfinished', $result );
-		$this->assertArrayNotHasKey( 'gatherpress_event_query', $result );
-		$this->assertArrayNotHasKey( 'exclude_current', $result );
-		$this->assertArrayNotHasKey( 'shadow_filter', $result );
-		$this->assertNotContains( 'datetime', $result['orderby']['enum'] );
-		$this->assertNotContains( 'rand', $result['orderby']['enum'] );
-	}
-
-	/**
-	 * Collection params for an unrelated post type are returned unchanged.
-	 *
-	 * @since 0.36.0
-	 * @covers ::add_gatherpress_collection_params
-	 *
-	 * @return void
-	 */
-	public function test_rest_collection_params_for_unrelated_post_type(): void {
-		$instance = Event_Query::get_instance();
-
-		$base_params = array(
-			'orderby' => array(
-				'enum' => array( 'date', 'title' ),
-			),
-		);
-
-		$result = $instance->add_gatherpress_collection_params( $base_params, 'post' );
-
-		$this->assertSame( $base_params, $result );
-	}
-
-	/**
-	 * Test rest_collection_params derives the post type from the live WP filter name.
-	 *
-	 * Guards the dynamic callback path (current_filter()) which the
-	 * add_gatherpress_collection_params tests bypass — a future edit that
-	 * mistypes the substr offsets would strip every GatherPress param from
-	 * every registered post type's REST schema, and the unrelated test
-	 * alone would not catch it. Shadow-source post types no longer route
-	 * through this callback; their schema is owned by Shadow_Source.
-	 *
-	 * @since 0.36.0
-	 * @covers ::rest_collection_params
-	 *
-	 * @return void
-	 */
-	public function test_rest_collection_params_derives_post_type_from_current_filter(): void {
-		$instance = Event_Query::get_instance();
-
-		// Drive the WP filter directly so current_filter() resolves to
-		// 'rest_gatherpress_event_collection_params' inside the callback.
-		$event_result = apply_filters(
-			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- Test the exact REST hook name used by WordPress.
-			sprintf( 'rest_%s_collection_params', Event::POST_TYPE ),
-			array( 'orderby' => array( 'enum' => array( 'date' ) ) )
-		);
-
-		$this->assertContains( 'datetime', $event_result['orderby']['enum'] );
-		$this->assertContains( 'rand', $event_result['orderby']['enum'] );
-		$this->assertArrayHasKey( 'shadow_filter', $event_result );
-		$this->assertArrayHasKey( 'gatherpress_event_query', $event_result );
-		$this->assertArrayNotHasKey( 'has_events_filter', $event_result );
-		$this->assertArrayNotHasKey( 'upcoming_events_only', $event_result );
 	}
 
 	/**
@@ -1346,7 +1257,7 @@ class Test_Event_Query extends Base {
 	 * for event post types, but WordPress only validates registered collection
 	 * params, so reading them with get_param() is safe.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @covers ::rest_query
 	 *
 	 * @return void
@@ -1451,7 +1362,7 @@ class Test_Event_Query extends Base {
 	 * A venue-only fixture exercises the shadow branch instead, so this pins
 	 * the event-side copy with an event-supporting post type.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @covers ::query_loop_block_query_vars
 	 *
 	 * @return void
@@ -1496,7 +1407,7 @@ class Test_Event_Query extends Base {
 	 * gate reports 93.26% for this file (18 uncovered lines) even though the
 	 * code runs. Each helper therefore gets a direct invoke per return path.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @covers ::get_event_loop_query_args
 	 *
 	 * @return void
@@ -1543,7 +1454,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test get_event_loop_query_args falls back and omits unset optionals.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @covers ::get_event_loop_query_args
 	 *
 	 * @return void
@@ -1578,7 +1489,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test get_event_loop_query_args collects excluded post IDs.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @covers ::get_event_loop_query_args
 	 *
 	 * @return void
@@ -1603,7 +1514,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test get_shadow_loop_query_args builds activity vars plus context.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @covers ::get_shadow_loop_query_args
 	 *
 	 * @return void
@@ -1637,7 +1548,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test get_shadow_loop_query_args omits unset activity vars.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @covers ::get_shadow_loop_query_args
 	 *
 	 * @return void
@@ -1657,7 +1568,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test get_shadow_source_context_args casts and passes set values.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @covers ::get_shadow_source_context_args
 	 *
 	 * @return void
@@ -1691,7 +1602,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test get_shadow_source_context_args omits unset context values.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @covers ::get_shadow_source_context_args
 	 *
 	 * @return void
@@ -1834,7 +1745,7 @@ class Test_Event_Query extends Base {
 	 * and a shadow-source AQL loop should not receive event vars — the two
 	 * support groups own disjoint param sets.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @covers ::aql_query_vars
 	 *
 	 * @return void
@@ -1897,7 +1808,7 @@ class Test_Event_Query extends Base {
 	 * Shadow-source-only Query Loop context should propagate activity
 	 * params without pulling in event-only vars.
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @covers ::query_loop_block_query_vars
 	 *
 	 * @return void
@@ -1941,7 +1852,7 @@ class Test_Event_Query extends Base {
 	 * untouched (regression for #1806 / Playground "plain venue loop
 	 * returns zero results" report).
 	 *
-	 * @since 0.36.0
+	 * @since TBD
 	 * @covers ::query_loop_block_query_vars
 	 *
 	 * @return void
