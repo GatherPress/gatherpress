@@ -19,6 +19,7 @@ use GatherPress\Core\Blocks\Rsvp as Rsvp_Block;
 use GatherPress\Core\Blocks\Rsvp_Form;
 use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status as Event_Status;
 use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup;
@@ -27,6 +28,7 @@ use GatherPress\Core\Rsvp\Token;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
+use WP_Error;
 use WP_HTTP_Response;
 use WP_Post;
 use WP_REST_Request;
@@ -74,6 +76,7 @@ final class Rest_Api {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
+		add_action( 'rest_api_init', array( $this, 'register_status_field' ) );
 		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ), 10, 2 );
 		add_filter( 'rest_post_dispatch', array( $this, 'redirect_rsvp_form_submission' ), 10, 3 );
 	}
@@ -124,6 +127,58 @@ final class Rest_Api {
 		$response->header( 'Location', $redirect );
 
 		return $response;
+	}
+
+	/**
+	 * Registers the event status as a REST field on every post type that supports events.
+	 *
+	 * The status lives in the _gatherpress_event_status taxonomy so events can
+	 * be filtered by it, but a taxonomy reaches the block editor as an array of
+	 * term ids. This field keeps the editor's contract a plain slug, so the
+	 * status panel stays a SelectControl and the taxonomy stays an
+	 * implementation detail with a single write path through Event\Status::set().
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function register_status_field(): void {
+		foreach ( get_post_types_by_support( Event::SUPPORT ) as $post_type ) {
+			register_rest_field(
+				$post_type,
+				'gatherpress_status',
+				array(
+					'get_callback'    => static function ( array $post ): string {
+						return ( new Event_Status( (int) $post['id'] ) )->get();
+					},
+					'update_callback' => static function ( $value, WP_Post $post ) {
+						if ( ! current_user_can( 'edit_post', $post->ID ) ) {
+							return new WP_Error(
+								'gatherpress_status_forbidden',
+								__( 'Sorry, you are not allowed to set the status of this event.', 'gatherpress' ),
+								array( 'status' => rest_authorization_required_code() )
+							);
+						}
+
+						if ( ! ( new Event_Status( $post->ID ) )->set( sanitize_key( (string) $value ) ) ) {
+							return new WP_Error(
+								'gatherpress_status_not_saved',
+								__( 'The status of this event could not be saved.', 'gatherpress' ),
+								array( 'status' => 500 )
+							);
+						}
+
+						return true;
+					},
+					'schema'          => array(
+						'description' => __( 'The operational status of the event.', 'gatherpress' ),
+						'type'        => 'string',
+						'enum'        => Event_Status::slugs( $post_type ),
+						'context'     => array( 'view', 'edit' ),
+					),
+				)
+			);
+		}
 	}
 
 	/**

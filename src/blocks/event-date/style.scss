@@ -1,5 +1,17 @@
+.gatherpress-event-status--is-struck {
+	.wp-block-gatherpress-event-date {
+		text-decoration: line-through;
+		opacity: 0.7;
+	}
+}
+
 .wp-block-gatherpress-event-date {
 	// This block has customizable padding, border-box makes that more predictable.
 	box-sizing: border-box;
+
+	&.gatherpress-event-date--is-struck {
+		text-decoration: line-through;
+		opacity: 0.7;
+	}
 }
 

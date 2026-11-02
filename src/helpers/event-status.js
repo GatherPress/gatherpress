@@ -1,0 +1,98 @@
+/**
+ * Internal dependencies
+ */
+import { getFromConfig } from './editor-settings';
+
+/**
+ * Slug reported for an event that has no status of its own, before settings load.
+ *
+ * @since TBD
+ *
+ * @type {string}
+ */
+const DEFAULT_STATUS = 'scheduled';
+
+/**
+ * Every status an event can be in, as PHP published it.
+ *
+ * The vocabulary is stated once in `Event\Status` and travels to the editor
+ * through the block editor settings, so a site that registers its own status
+ * gets it here without touching JavaScript. Labels arrive translated.
+ *
+ * @since TBD
+ *
+ * @return {Object} Statuses keyed by slug, or an empty object before settings load.
+ */
+function getStatuses() {
+	const statuses = getFromConfig( 'eventStatuses' );
+
+	return statuses && 'object' === typeof statuses ? statuses : {};
+}
+
+/**
+ * One status's definition, falling back to the scheduled one.
+ *
+ * @since TBD
+ *
+ * @param {string} slug The status slug.
+ *
+ * @return {Object} The definition, or an empty object when none is known.
+ */
+function getStatus( slug ) {
+	const statuses = getStatuses();
+
+	return statuses[ slug ] || statuses[ DEFAULT_STATUS ] || {};
+}
+
+/**
+ * The status an event reports when it has none of its own.
+ *
+ * The first status PHP offers, matching `Status::default_slug()`.
+ *
+ * @since TBD
+ *
+ * @return {string} The default status slug.
+ */
+export function getDefaultStatus() {
+	return Object.keys( getStatuses() )[ 0 ] || DEFAULT_STATUS;
+}
+
+/**
+ * The sentence explaining what a status means.
+ *
+ * @since TBD
+ *
+ * @param {string} slug The status slug.
+ *
+ * @return {string} The description, or an empty string when none is known.
+ */
+export function getStatusDescription( slug ) {
+	return getStatus( slug ).description || '';
+}
+
+/**
+ * The statuses shaped for a SelectControl.
+ *
+ * @since TBD
+ *
+ * @return {Array} Options of label and value, in the order PHP offers them.
+ */
+export function getStatusOptions() {
+	return Object.entries( getStatuses() ).map( ( [ value, status ] ) => ( {
+		label: status?.label || value,
+		value,
+	} ) );
+}
+
+/**
+ * Whether an event's date is crossed out while it is in a status.
+ *
+ * @since TBD
+ *
+ * @param {string} slug The status slug.
+ *
+ * @return {boolean} True when the date is struck through.
+ */
+export function strikesDate( slug ) {
+	return true === getStatus( slug ).strike_date;
+}

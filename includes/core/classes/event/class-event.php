@@ -110,7 +110,17 @@ class Event {
 	 */
 	const TEMPLATE_PATTERN = 'gatherpress/event-template';
 
-
+	/**
+	 * Taxonomy that stores which status an event is in.
+	 *
+	 * Private to GatherPress: the leading underscore keeps it out of the
+	 * public taxonomy space, and a status is read and written through
+	 * Event\Status rather than as terms.
+	 *
+	 * @since TBD
+	 * @var string
+	 */
+	const TAXONOMY_STATUS = '_gatherpress_event_status';
 
 	/**
 	 * The event post.

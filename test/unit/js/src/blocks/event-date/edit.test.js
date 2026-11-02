@@ -9,6 +9,7 @@ import { render, fireEvent } from '@testing-library/react';
  * WordPress dependencies
  */
 import { useSelect } from '@wordpress/data';
+import { useBlockProps } from '@wordpress/block-editor';
 
 /**
  * Mocks
@@ -379,3 +380,57 @@ describe( 'Event Date Edit display rendering', () => {
 	} );
 } );
 
+describe( 'Event Date Edit status', () => {
+	const eventData = {
+		dateTimeStart: '2026-08-01 18:00:00',
+		dateTimeEnd: '2026-08-01 20:00:00',
+		timezone: 'UTC',
+		isLoading: false,
+		isValidEvent: true,
+	};
+
+	it( 'marks a canceled date the way the frontend does', () => {
+		mockConfig = {
+			eventStatuses: {
+				scheduled: { label: 'Scheduled' },
+				canceled: { label: 'Canceled', strike_date: true },
+			},
+		};
+		useSelect.mockReturnValueOnce( { ...eventData, status: 'canceled' } );
+
+		renderEdit();
+
+		expect( useBlockProps ).toHaveBeenLastCalledWith(
+			expect.objectContaining( {
+				className: 'gatherpress-event-date--is-canceled gatherpress-event-date--is-struck',
+			} ),
+		);
+	} );
+
+	it( 'leaves a date uncrossed when its status does not strike it', () => {
+		mockConfig = {
+			eventStatuses: {
+				scheduled: { label: 'Scheduled' },
+				tentative: { label: 'Tentative' },
+			},
+		};
+		useSelect.mockReturnValueOnce( { ...eventData, status: 'tentative' } );
+
+		renderEdit();
+
+		expect( useBlockProps ).toHaveBeenLastCalledWith(
+			expect.objectContaining( { className: 'gatherpress-event-date--is-tentative' } ),
+		);
+	} );
+
+	it( 'leaves a scheduled date unmarked', () => {
+		mockConfig = {};
+		useSelect.mockReturnValueOnce( { ...eventData, status: 'scheduled' } );
+
+		renderEdit();
+
+		expect( useBlockProps ).toHaveBeenLastCalledWith(
+			expect.objectContaining( { className: undefined } ),
+		);
+	} );
+} );

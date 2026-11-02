@@ -28,6 +28,7 @@ use stdClass;
 use WP_Block;
 use WP_Post;
 use WP_Query;
+use WP_Term;
 
 /**
  * Class Setup.
@@ -113,6 +114,8 @@ final class Setup {
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_post_type' ) );
 		// Priority 11 so post types registered at default priority 10 are available for get_post_types_by_support().
+		add_action( 'init', array( $this, 'register_status_taxonomy' ), 11 );
+		// Priority 11 so post types registered at default priority 10 are available for get_post_types_by_support().
 		add_action( 'init', array( $this, 'register_starter_pattern' ), 11 );
 		add_action( 'template_redirect', array( $this, 'handle_event_archive_redirect' ) );
 		add_action( 'delete_post', array( $this, 'delete_event' ) );
@@ -123,6 +126,87 @@ final class Setup {
 		add_filter( 'render_block_core/post-date', array( $this, 'render_event_post_date_block' ), 10, 3 );
 		add_filter( 'display_post_states', array( $this, 'set_event_archive_labels' ), 10, 2 );
 		add_filter( 'block_editor_settings_all', array( $this, 'add_editor_settings' ) );
+		add_filter( 'post_class', array( $this, 'add_status_post_class' ), 10, 3 );
+		add_filter( 'get_term', array( $this, 'filter_event_status_term' ), 10, 2 );
+	}
+
+	/**
+	 * Registers the taxonomy holding an event's operational status.
+	 *
+	 * Hidden the way the RSVP taxonomies are: there is no useful
+	 * /event-status/canceled/ archive, the taxonomy exists so events can be
+	 * filtered by status through tax_query the same way Event\Query already
+	 * filters by Topic and Venue. Kept out of REST on purpose: the editor writes
+	 * the status through the gatherpress_status REST field registered in
+	 * Event\Rest_Api, so there is exactly one write path and no term-id round
+	 * trip in the block editor.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function register_status_taxonomy(): void {
+		$default_slug = Status::default_slug();
+
+		register_taxonomy(
+			Event::TAXONOMY_STATUS,
+			get_post_types_by_support( Event::SUPPORT ),
+			array(
+				'labels'             => array(
+					'name'          => _x( 'Event Statuses', 'taxonomy general name', 'gatherpress' ),
+					'singular_name' => _x( 'Event Status', 'taxonomy singular name', 'gatherpress' ),
+				),
+				'hierarchical'       => false,
+				// Not `show_ui`, because the vocabulary comes from Event\Status
+				// rather than from people adding terms.
+				'public'             => false,
+				'show_ui'            => false,
+				'show_admin_column'  => false,
+				'query_var'          => false,
+				'publicly_queryable' => false,
+				'rewrite'            => false,
+				'show_in_rest'       => false,
+				// Every saved event carries a status term, so filtering for one is
+				// an IN query rather than a NOT EXISTS.
+				'default_term'       => array(
+					'name' => Status::label( $default_slug ),
+					'slug' => $default_slug,
+				),
+			)
+		);
+	}
+
+	/**
+	 * Adds the event status class to post classes.
+	 *
+	 * WordPress core automatically adds taxonomy terms to post classes for
+	 * public taxonomies, but gatherpress_event_status is non-public. Injecting
+	 * it here makes status classes available across query loops, archives,
+	 * and singular views.
+	 *
+	 * @since TBD
+	 *
+	 * @param string[] $classes     An array of post class names.
+	 * @param string[] $css_classes An array of additional class names added to the post.
+	 * @param int      $post_id     The post ID.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) - $css_classes is required by the post_class filter signature.
+	 *
+	 * @return string[] Filtered array of post class names.
+	 */
+	public function add_status_post_class( array $classes, array $css_classes, int $post_id ): array {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), Event::SUPPORT ) ) {
+			return $classes;
+		}
+
+		$status    = ( new Status( $post_id ) )->get();
+		$classes[] = sprintf( 'gatherpress-event-status--is-%s', sanitize_html_class( $status ) );
+
+		if ( Status::strikes_date( $status ) ) {
+			$classes[] = 'gatherpress-event-status--is-struck';
+		}
+
+		return $classes;
 	}
 
 	/**
@@ -149,6 +233,11 @@ final class Setup {
 		$settings['gatherpress']['config']['eventPostTypes'] = array_values(
 			get_post_types_by_support( Event::SUPPORT )
 		);
+
+		// The editor offers and labels the same statuses PHP publishes, so the
+		// list is stated once and a site that registers its own gets it in
+		// both places.
+		$settings['gatherpress']['config']['eventStatuses'] = Status::all( (string) get_post_type() );
 
 		// Lets the email modal hide the "All Members" option from users the
 		// email route would refuse it to.
@@ -758,6 +847,31 @@ final class Setup {
 		// A null return means PCRE gave up (e.g. the backtrack limit on very large
 		// markup), so the unmodified block content is served instead.
 		return $replaced ?? $block_content;
+	}
+
+	/**
+	 * Filters the term name for event status taxonomy to use the localized status label.
+	 *
+	 * Since term names in the database are shared site data, dynamically filtering
+	 * the term name at retrieval and render time ensures each visitor and editor reads
+	 * the label translated in their own locale without mutating database records.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_Term|mixed $term     The term object.
+	 * @param string        $taxonomy The taxonomy slug.
+	 *
+	 * @return WP_Term|mixed The term object with localized label.
+	 */
+	public function filter_event_status_term( $term, string $taxonomy ) {
+		if ( Event::TAXONOMY_STATUS === $taxonomy && $term instanceof WP_Term ) {
+			$label = Status::label( $term->slug );
+			if ( '' !== $label ) {
+				$term->name = $label;
+			}
+		}
+
+		return $term;
 	}
 
 	/**
