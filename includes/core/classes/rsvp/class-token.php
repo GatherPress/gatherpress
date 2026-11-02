@@ -458,6 +458,8 @@ final class Token {
 	 * @return bool True when at least one event's session cookie is present.
 	 */
 	public static function has_session_cookie(): bool {
+		// Cookie names carry the event ID, so this lists them all instead of
+		// reading one name through Utility::get_http_input().
 		return (bool) array_filter(
 			array_keys( $_COOKIE ),
 			static fn( $name ): bool => str_starts_with( (string) $name, self::COOKIE_PREFIX )

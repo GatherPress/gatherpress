@@ -47,6 +47,7 @@ The three RSVP taxonomies are on *comments*, not posts, because an RSVP is a com
 | `gatherpress_guest_limit` | Guests per RSVP. `0` means none |
 | `gatherpress_online_event_link` | The joining link, shown only to attendees |
 | `gatherpress_rsvp_form_schemas` | The RSVP form's custom field definitions, keyed by form id |
+| `gatherpress_event_reminder_sent` | For each reminder timing, the UTC start it was last queued for, so each timing reminds one start once |
 
 `gatherpress_datetime` is the canonical value the editor and REST write. The [events table](#the-events-table) is derived from it and is what queries read.
 
@@ -55,6 +56,8 @@ The two limit keys are enforced server-side on every write, including from WP-CL
 ### Venues
 
 Five keys are editor-writable, registered `show_in_rest` so they can be bound to blocks through `core/post-meta`: `gatherpress_address`, `gatherpress_latitude`, `gatherpress_longitude`, `gatherpress_phone`, `gatherpress_website`.
+
+`gatherpress_manual_coordinates` is an editor-writable boolean. While it is true, the coordinates are set by hand: neither the editor nor the geocode cron overwrites `gatherpress_latitude` and `gatherpress_longitude` from the address.
 
 Eight more hold the structured address the geocoder derives from `gatherpress_address`: `gatherpress_house_number`, `gatherpress_street`, `gatherpress_city`, `gatherpress_county`, `gatherpress_state`, `gatherpress_postcode`, `gatherpress_country`, `gatherpress_country_code`. These are readable over REST but **not writable**. REST writes are silently stripped, because the geocode cron owns them. Write `gatherpress_address` and let the cron fill the rest.
 
@@ -78,13 +81,14 @@ The status is **not** in comment meta. It is a term. Reading it with `get_commen
 
 ## User meta
 
-Three keys, all written from the user's own profile screen and all optional:
+Four keys, all written from the user's own profile screen and all optional:
 
 | Key | Notes |
 |---|---|
 | `gatherpress_timezone` | Overrides the site timezone when displaying dates to this person |
 | `gatherpress_time_format` | Overrides the site time format |
 | `gatherpress_event_updates_opt_in` | Whether this person receives event notification email |
+| `gatherpress_event_reminders_opt_in` | Whether this person receives reminder email before events they attend |
 
 GatherPress falls back to the site's own settings for any that are unset, so nothing needs to be seeded when a user is created.
 

@@ -901,7 +901,7 @@ class Test_List_Table extends Base {
 	public function test_process_bulk_action_empty_ids(): void {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
-		$_REQUEST['_wpnonce'] = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ) ) );
 		// Don't set any rsvp_ids - they'll be empty.
 
 		// Should not throw any errors.
@@ -1048,7 +1048,7 @@ class Test_List_Table extends Base {
 
 		$rsvp_id = (int) $this->rsvp['comment_ID'];
 
-		$_REQUEST['_wpnonce']            = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ) ) );
 		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
 
 		$expected = array(
@@ -1072,7 +1072,7 @@ class Test_List_Table extends Base {
 			);
 		}
 
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
+		unset( $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
 	}
 
 	/**
@@ -1094,8 +1094,8 @@ class Test_List_Table extends Base {
 
 		// Derive the bulk nonce the same way process_bulk_action() does, so the
 		// test stays honest if the list table's plural arg ever changes.
-		$plural                          = Utility::get_hidden_property( $this->list_table, '_args' )['plural'];
-		$_REQUEST['_wpnonce']            = wp_create_nonce( sprintf( 'bulk-%s', $plural ) );
+		$plural = Utility::get_hidden_property( $this->list_table, '_args' )['plural'];
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( sprintf( 'bulk-%s', $plural ) ) ) );
 		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
 		$_REQUEST['action']              = 'unapprove';
 
@@ -1107,7 +1107,7 @@ class Test_List_Table extends Base {
 			'Failed to assert the core bulk nonce authorizes a bulk action.'
 		);
 
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
+		unset( $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
 	}
 
 	/**
@@ -1124,7 +1124,7 @@ class Test_List_Table extends Base {
 
 		wp_set_comment_status( $rsvp_id, 'approve' );
 
-		$_REQUEST['_wpnonce']            = wp_create_nonce( 'something-else' );
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( 'something-else' ) ) );
 		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
 		$_REQUEST['action']              = 'unapprove';
 
@@ -1136,7 +1136,7 @@ class Test_List_Table extends Base {
 			'Failed to assert an unrelated nonce is refused.'
 		);
 
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
+		unset( $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
 	}
 
 	/**
@@ -1147,7 +1147,7 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_views(): void {
-		$_REQUEST['_wpnonce'] = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ) ) );
 
 		$views = $this->list_table->get_views();
 
@@ -1316,7 +1316,7 @@ class Test_List_Table extends Base {
 			)
 		);
 
-		$_REQUEST['_wpnonce']            = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ) ) );
 		$_REQUEST['action']              = 'approve';
 		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
 
@@ -1329,7 +1329,7 @@ class Test_List_Table extends Base {
 			'Failed to assert RSVP was approved.'
 		);
 
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+		unset( $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
 	}
 
 	/**
@@ -1350,7 +1350,7 @@ class Test_List_Table extends Base {
 			)
 		);
 
-		$_REQUEST['_wpnonce']            = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ) ) );
 		$_REQUEST['action']              = 'unapprove';
 		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
 
@@ -1363,7 +1363,7 @@ class Test_List_Table extends Base {
 			'Failed to assert RSVP was unapproved.'
 		);
 
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+		unset( $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
 	}
 
 	/**
@@ -1384,7 +1384,7 @@ class Test_List_Table extends Base {
 			)
 		);
 
-		$_REQUEST['_wpnonce']            = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ) ) );
 		$_REQUEST['action']              = 'spam';
 		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
 
@@ -1397,7 +1397,7 @@ class Test_List_Table extends Base {
 			'Failed to assert RSVP was marked as spam.'
 		);
 
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+		unset( $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
 	}
 
 	/**
@@ -1418,7 +1418,7 @@ class Test_List_Table extends Base {
 			)
 		);
 
-		$_REQUEST['_wpnonce']            = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ) ) );
 		$_REQUEST['action']              = 'unspam';
 		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
 
@@ -1431,7 +1431,7 @@ class Test_List_Table extends Base {
 			'Failed to assert RSVP was unmarked as spam.'
 		);
 
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+		unset( $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
 	}
 
 	/**
@@ -1452,7 +1452,7 @@ class Test_List_Table extends Base {
 			)
 		);
 
-		$_REQUEST['_wpnonce']            = wp_create_nonce( 'gatherpress_rsvp_action' );
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( 'gatherpress_rsvp_action' ) ) );
 		$_REQUEST['action']              = 'delete';
 		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
 
@@ -1464,7 +1464,7 @@ class Test_List_Table extends Base {
 			'Failed to assert RSVP was deleted.'
 		);
 
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+		unset( $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
 	}
 
 	/**
@@ -1485,7 +1485,7 @@ class Test_List_Table extends Base {
 			)
 		);
 
-		$_REQUEST['_wpnonce']            = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ) ) );
 		$_REQUEST['action']              = 'approve';
 		$_REQUEST['gatherpress_rsvp_id'] = $rsvp_id;
 
@@ -1498,7 +1498,7 @@ class Test_List_Table extends Base {
 			'Failed to assert single RSVP ID was processed.'
 		);
 
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+		unset( $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
 	}
 
 	/**
@@ -1519,7 +1519,7 @@ class Test_List_Table extends Base {
 			)
 		);
 
-		$_REQUEST['_wpnonce']            = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ) ) );
 		$_REQUEST['action']              = 'approve';
 		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
 
@@ -1532,7 +1532,7 @@ class Test_List_Table extends Base {
 			'Failed to assert RSVP was not processed without capability.'
 		);
 
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+		unset( $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
 	}
 
 	/**
@@ -1542,8 +1542,12 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_views_with_post_id(): void {
-		$_REQUEST['_wpnonce'] = wp_create_nonce( Rsvp::COMMENT_TYPE );
-		$_REQUEST['post_id']  = $this->post_id;
+		$this->set_url_params(
+			array(
+				'_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ),
+				'post_id'  => $this->post_id,
+			)
+		);
 
 		$views = $this->list_table->get_views();
 
@@ -1556,8 +1560,6 @@ class Test_List_Table extends Base {
 			$views,
 			'Failed to assert views contain all with post_id filter.'
 		);
-
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['post_id'] );
 	}
 
 	/**
@@ -1570,8 +1572,12 @@ class Test_List_Table extends Base {
 		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $user_id );
 
-		$_REQUEST['_wpnonce'] = wp_create_nonce( Rsvp::COMMENT_TYPE );
-		$_REQUEST['user_id']  = $user_id;
+		$this->set_url_params(
+			array(
+				'_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ),
+				'user_id'  => $user_id,
+			)
+		);
 
 		$views = $this->list_table->get_views();
 
@@ -1584,8 +1590,6 @@ class Test_List_Table extends Base {
 			$views,
 			'Failed to assert views contain all with user_id filter.'
 		);
-
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['user_id'] );
 	}
 
 	/**
@@ -1615,14 +1619,16 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_views_with_status_filter(): void {
-		$_REQUEST['_wpnonce'] = wp_create_nonce( Rsvp::COMMENT_TYPE );
-		$_REQUEST['status']   = 'attending';
+		$this->set_url_params(
+			array(
+				'_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ),
+				'status'   => 'attending',
+			)
+		);
 
 		$views = $this->list_table->get_views();
 
 		$this->assertIsArray( $views, 'Failed to assert get_views returns an array with status filter.' );
-
-		unset( $_REQUEST['status'] );
 	}
 
 	/**
@@ -1634,9 +1640,9 @@ class Test_List_Table extends Base {
 	public function test_process_bulk_action_delete_with_invalid_nonce(): void {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
+		$this->set_url_params( array( '_wpnonce' => 'invalid_nonce' ) );
 		$_REQUEST['gatherpress_rsvp_id'] = array( $this->rsvp['comment_ID'] );
 		$_REQUEST['action']              = 'delete';
-		$_REQUEST['_wpnonce']            = 'invalid_nonce';
 
 		$this->list_table->process_bulk_action();
 
@@ -1644,7 +1650,7 @@ class Test_List_Table extends Base {
 		$comment = get_comment( $this->rsvp['comment_ID'] );
 		$this->assertNotNull( $comment, 'Failed to assert comment still exists after delete with invalid nonce.' );
 
-		unset( $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'], $_REQUEST['_wpnonce'] );
+		unset( $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
 	}
 
 	/**
@@ -1658,7 +1664,7 @@ class Test_List_Table extends Base {
 		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
-		$_REQUEST['s'] = 'Test';
+		$this->set_url_params( array( 's' => 'Test' ) );
 
 		$this->list_table->prepare_items();
 
@@ -1666,8 +1672,6 @@ class Test_List_Table extends Base {
 			$this->list_table->items,
 			'Failed to assert items is an array after prepare_items with search.'
 		);
-
-		unset( $_REQUEST['s'] );
 	}
 
 	/**
@@ -1681,7 +1685,7 @@ class Test_List_Table extends Base {
 		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
-		$_REQUEST['s'] = '192.168.1.1';
+		$this->set_url_params( array( 's' => '192.168.1.1' ) );
 
 		$this->list_table->prepare_items();
 
@@ -1689,8 +1693,6 @@ class Test_List_Table extends Base {
 			$this->list_table->items,
 			'Failed to assert items is an array after prepare_items with IP search.'
 		);
-
-		unset( $_REQUEST['s'] );
 	}
 
 	/**
@@ -1705,7 +1707,7 @@ class Test_List_Table extends Base {
 		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $user_id );
 
-		$_REQUEST['user_id'] = $user_id;
+		$this->set_url_params( array( 'user_id' => $user_id ) );
 
 		$this->list_table->prepare_items();
 
@@ -1713,8 +1715,6 @@ class Test_List_Table extends Base {
 			$this->list_table->items,
 			'Failed to assert items is an array after prepare_items with user_id filter.'
 		);
-
-		unset( $_REQUEST['user_id'] );
 	}
 
 	/**
@@ -1728,7 +1728,7 @@ class Test_List_Table extends Base {
 		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
-		$_REQUEST['post_id'] = $this->event_id;
+		$this->set_url_params( array( 'post_id' => $this->event_id ) );
 
 		$this->list_table->prepare_items();
 
@@ -1736,8 +1736,6 @@ class Test_List_Table extends Base {
 			$this->list_table->items,
 			'Failed to assert items is an array after prepare_items with post_id filter.'
 		);
-
-		unset( $_REQUEST['post_id'] );
 	}
 
 	/**
@@ -1751,7 +1749,7 @@ class Test_List_Table extends Base {
 		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
-		$_REQUEST['status'] = 'approved';
+		$this->set_url_params( array( 'status' => 'approved' ) );
 
 		$this->list_table->prepare_items();
 
@@ -1759,8 +1757,6 @@ class Test_List_Table extends Base {
 			$this->list_table->items,
 			'Failed to assert items is an array after prepare_items with approved status filter.'
 		);
-
-		unset( $_REQUEST['status'] );
 	}
 
 	/**
@@ -1774,7 +1770,7 @@ class Test_List_Table extends Base {
 		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
-		$_REQUEST['status'] = 'pending';
+		$this->set_url_params( array( 'status' => 'pending' ) );
 
 		$this->list_table->prepare_items();
 
@@ -1782,8 +1778,6 @@ class Test_List_Table extends Base {
 			$this->list_table->items,
 			'Failed to assert items is an array after prepare_items with pending status filter.'
 		);
-
-		unset( $_REQUEST['status'] );
 	}
 
 	/**
@@ -1797,7 +1791,7 @@ class Test_List_Table extends Base {
 		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
-		$_REQUEST['status'] = 'spam';
+		$this->set_url_params( array( 'status' => 'spam' ) );
 
 		$this->list_table->prepare_items();
 
@@ -1805,8 +1799,6 @@ class Test_List_Table extends Base {
 			$this->list_table->items,
 			'Failed to assert items is an array after prepare_items with spam status filter.'
 		);
-
-		unset( $_REQUEST['status'] );
 	}
 
 	/**
@@ -1820,8 +1812,12 @@ class Test_List_Table extends Base {
 		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
-		$_REQUEST['orderby'] = 'comment_author';
-		$_REQUEST['order']   = 'ASC';
+		$this->set_url_params(
+			array(
+				'orderby' => 'comment_author',
+				'order'   => 'ASC',
+			)
+		);
 
 		$this->list_table->prepare_items();
 
@@ -1829,8 +1825,6 @@ class Test_List_Table extends Base {
 			$this->list_table->items,
 			'Failed to assert items is an array after prepare_items with custom order.'
 		);
-
-		unset( $_REQUEST['orderby'], $_REQUEST['order'] );
 	}
 
 	/**
@@ -1888,7 +1882,7 @@ class Test_List_Table extends Base {
 	public function test_get_rsvp_count_with_user_id_filter(): void {
 		$user_id = $this->factory->user->create();
 
-		$_REQUEST['user_id'] = $user_id;
+		$this->set_url_params( array( 'user_id' => $user_id ) );
 
 		$count = Utility::invoke_hidden_method(
 			$this->list_table,
@@ -1899,8 +1893,6 @@ class Test_List_Table extends Base {
 			$count,
 			'Failed to assert get_rsvp_count returns an integer with user_id filter.'
 		);
-
-		unset( $_REQUEST['user_id'] );
 	}
 
 	/**
@@ -1910,7 +1902,7 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_rsvp_count_with_search(): void {
-		$_REQUEST['s'] = 'test search';
+		$this->set_url_params( array( 's' => 'test search' ) );
 
 		$count = Utility::invoke_hidden_method(
 			$this->list_table,
@@ -1921,8 +1913,6 @@ class Test_List_Table extends Base {
 			$count,
 			'Failed to assert get_rsvp_count returns an integer with search.'
 		);
-
-		unset( $_REQUEST['s'] );
 	}
 
 	/**
@@ -1932,7 +1922,7 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_rsvp_count_with_post_id_filter(): void {
-		$_REQUEST['post_id'] = $this->event_id;
+		$this->set_url_params( array( 'post_id' => $this->event_id ) );
 
 		$count = Utility::invoke_hidden_method(
 			$this->list_table,
@@ -1943,8 +1933,6 @@ class Test_List_Table extends Base {
 			$count,
 			'Failed to assert get_rsvp_count returns an integer with post_id filter.'
 		);
-
-		unset( $_REQUEST['post_id'] );
 	}
 
 	/**
@@ -1954,7 +1942,7 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_rsvp_count_with_approved_status(): void {
-		$_REQUEST['status'] = 'approved';
+		$this->set_url_params( array( 'status' => 'approved' ) );
 
 		$count = Utility::invoke_hidden_method(
 			$this->list_table,
@@ -1965,8 +1953,6 @@ class Test_List_Table extends Base {
 			$count,
 			'Failed to assert get_rsvp_count returns an integer with approved status filter.'
 		);
-
-		unset( $_REQUEST['status'] );
 	}
 
 	/**
@@ -1976,7 +1962,7 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_rsvp_count_with_spam_status(): void {
-		$_REQUEST['status'] = 'spam';
+		$this->set_url_params( array( 'status' => 'spam' ) );
 
 		$count = Utility::invoke_hidden_method(
 			$this->list_table,
@@ -1987,8 +1973,6 @@ class Test_List_Table extends Base {
 			$count,
 			'Failed to assert get_rsvp_count returns an integer with spam status filter.'
 		);
-
-		unset( $_REQUEST['status'] );
 	}
 
 	/**
@@ -2000,7 +1984,7 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_rsvp_count_with_pending_status(): void {
-		$_REQUEST['status'] = 'pending';
+		$this->set_url_params( array( 'status' => 'pending' ) );
 
 		$count = Utility::invoke_hidden_method(
 			$this->list_table,
@@ -2011,8 +1995,6 @@ class Test_List_Table extends Base {
 			$count,
 			'Failed to assert get_rsvp_count returns an integer with pending status filter.'
 		);
-
-		unset( $_REQUEST['status'] );
 	}
 
 	/**
@@ -2024,8 +2006,12 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_views_with_valid_post_id_filter(): void {
-		$_REQUEST['_wpnonce'] = wp_create_nonce( Rsvp::COMMENT_TYPE );
-		$_REQUEST['post_id']  = $this->event_id;
+		$this->set_url_params(
+			array(
+				'_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ),
+				'post_id'  => $this->event_id,
+			)
+		);
 
 		$views = $this->list_table->get_views();
 
@@ -2040,8 +2026,6 @@ class Test_List_Table extends Base {
 			$views['all'],
 			'Failed to assert all view contains post_id parameter.'
 		);
-
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['post_id'] );
 	}
 
 	/**
@@ -2053,7 +2037,7 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_rsvps_with_pending_status(): void {
-		$_REQUEST['status'] = 'pending';
+		$this->set_url_params( array( 'status' => 'pending' ) );
 
 		$result = Utility::invoke_hidden_method(
 			$this->list_table,
@@ -2065,8 +2049,6 @@ class Test_List_Table extends Base {
 			$result,
 			'Failed to assert get_rsvps returns an array with pending status filter.'
 		);
-
-		unset( $_REQUEST['status'] );
 	}
 
 	/**
@@ -2295,15 +2277,13 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_filtered_post_id_reads_post_id(): void {
-		$_REQUEST['post_id'] = (string) $this->event_id;
+		$this->set_url_params( array( 'post_id' => (string) $this->event_id ) );
 
 		$this->assertSame(
 			$this->event_id,
 			Utility::invoke_hidden_method( $this->list_table, 'get_filtered_post_id' ),
 			'Failed to assert the requested event is read from post_id.'
 		);
-
-		unset( $_REQUEST['post_id'] );
 	}
 
 	/**
@@ -2333,16 +2313,14 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_filtered_responses_ignores_a_non_string(): void {
-		// `response[]=attending` arrives as an array, which explode() rejects.
-		$_REQUEST['response'] = array( Status::ATTENDING->value );
+		// `response[]=attending` arrives as an array, which filter_input() reads as false.
+		$this->set_url_params( array( 'response' => false ) );
 
 		$this->assertSame(
 			array(),
 			Utility::invoke_hidden_method( $this->list_table, 'get_filtered_responses' ),
 			'Failed to assert an array response parameter is ignored.'
 		);
-
-		unset( $_REQUEST['response'] );
 	}
 
 	/**
@@ -2355,10 +2333,14 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_filtered_responses_reads_a_list(): void {
-		$_REQUEST['response'] = sprintf(
-			'%s,%s',
-			Status::ATTENDING->value,
-			Status::WAITING_LIST->value
+		$this->set_url_params(
+			array(
+				'response' => sprintf(
+					'%s,%s',
+					Status::ATTENDING->value,
+					Status::WAITING_LIST->value
+				),
+			)
 		);
 
 		$this->assertSame(
@@ -2366,8 +2348,6 @@ class Test_List_Table extends Base {
 			Utility::invoke_hidden_method( $this->list_table, 'get_filtered_responses' ),
 			'Failed to assert every requested response is read.'
 		);
-
-		unset( $_REQUEST['response'] );
 	}
 
 	/**
@@ -2381,15 +2361,13 @@ class Test_List_Table extends Base {
 	 */
 	public function test_get_filtered_responses_drops_unknown_values(): void {
 		// Otherwise a hand-edited URL could widen the filter to any term.
-		$_REQUEST['response'] = sprintf( '%s,made-up', Status::ATTENDING->value );
+		$this->set_url_params( array( 'response' => sprintf( '%s,made-up', Status::ATTENDING->value ) ) );
 
 		$this->assertSame(
 			array( Status::ATTENDING->value ),
 			Utility::invoke_hidden_method( $this->list_table, 'get_filtered_responses' ),
 			'Failed to assert an unknown status is dropped.'
 		);
-
-		unset( $_REQUEST['response'] );
 	}
 
 	/**
@@ -2425,10 +2403,14 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_add_response_filter_adds_a_tax_query(): void {
-		$_REQUEST['response'] = sprintf(
-			'%s,%s',
-			Status::ATTENDING->value,
-			Status::WAITING_LIST->value
+		$this->set_url_params(
+			array(
+				'response' => sprintf(
+					'%s,%s',
+					Status::ATTENDING->value,
+					Status::WAITING_LIST->value
+				),
+			)
 		);
 
 		$args = Utility::invoke_hidden_method(
@@ -2454,8 +2436,6 @@ class Test_List_Table extends Base {
 			$args['number'],
 			'Failed to assert the existing arguments survive the filter.'
 		);
-
-		unset( $_REQUEST['response'] );
 	}
 
 	/**
@@ -2500,7 +2480,7 @@ class Test_List_Table extends Base {
 		);
 
 		$_REQUEST['check_in'] = Check_In_Registry::NOT_RECORDED;
-		$_REQUEST['response'] = Status::ATTENDING->value;
+		$this->set_url_params( array( 'response' => Status::ATTENDING->value ) );
 
 		$filtered = Check_In_Controls::filter_query(
 			Utility::invoke_hidden_method( $this->list_table, 'add_response_filter', array( $args ) )
@@ -2525,7 +2505,7 @@ class Test_List_Table extends Base {
 			'Failed to assert Not recorded excludes both flags and keeps the response filter.'
 		);
 
-		unset( $_REQUEST['check_in'], $_REQUEST['response'] );
+		unset( $_REQUEST['check_in'] );
 	}
 
 	/**
@@ -2754,8 +2734,12 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_extra_tablenav_carries_the_current_filters(): void {
-		$_REQUEST['post_id']  = (string) $this->event_id;
-		$_REQUEST['response'] = Status::ATTENDING->value;
+		$this->set_url_params(
+			array(
+				'post_id'  => (string) $this->event_id,
+				'response' => Status::ATTENDING->value,
+			)
+		);
 
 		$list_table = $this->list_table;
 		$output     = Utility::buffer_and_return(
@@ -2775,8 +2759,6 @@ class Test_List_Table extends Base {
 			$output,
 			'Failed to assert the filtered responses reach the mount.'
 		);
-
-		unset( $_REQUEST['post_id'], $_REQUEST['response'] );
 	}
 
 	/**
@@ -2789,7 +2771,7 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_views_preserves_the_response_filter(): void {
-		$_REQUEST['response'] = Status::ATTENDING->value;
+		$this->set_url_params( array( 'response' => Status::ATTENDING->value ) );
 
 		$views = $this->list_table->get_views();
 
@@ -2798,8 +2780,6 @@ class Test_List_Table extends Base {
 			implode( '', $views ),
 			'Failed to assert the view links carry the response filter.'
 		);
-
-		unset( $_REQUEST['response'] );
 	}
 
 	/**
@@ -2859,7 +2839,7 @@ class Test_List_Table extends Base {
 			)
 		);
 
-		$_REQUEST['post_id'] = (string) $this->event_id;
+		$this->set_url_params( array( 'post_id' => (string) $this->event_id ) );
 
 		$rsvps = Utility::invoke_hidden_method( $this->list_table, 'get_rsvps', array( 20, 1 ) );
 		$posts = array_unique( array_column( $rsvps, 'comment_post_ID' ) );
@@ -2875,8 +2855,6 @@ class Test_List_Table extends Base {
 			Utility::invoke_hidden_method( $this->list_table, 'get_rsvp_count' ),
 			'Failed to assert the count agrees with the filtered rows.'
 		);
-
-		unset( $_REQUEST['post_id'] );
 	}
 
 	/**
@@ -2901,7 +2879,7 @@ class Test_List_Table extends Base {
 		wp_set_object_terms( $attending, Status::ATTENDING->value, Status::TAXONOMY );
 		wp_set_object_terms( $declined, Status::NOT_ATTENDING->value, Status::TAXONOMY );
 
-		$_REQUEST['response'] = Status::ATTENDING->value;
+		$this->set_url_params( array( 'response' => Status::ATTENDING->value ) );
 
 		$rsvps = Utility::invoke_hidden_method( $this->list_table, 'get_rsvps', array( 20, 1 ) );
 		$ids   = array_map( 'intval', array_column( $rsvps, 'comment_ID' ) );
@@ -2923,8 +2901,6 @@ class Test_List_Table extends Base {
 			Utility::invoke_hidden_method( $this->list_table, 'get_rsvp_count' ),
 			'Failed to assert the count agrees with the filtered rows.'
 		);
-
-		unset( $_REQUEST['response'] );
 	}
 
 	/**
@@ -2948,10 +2924,14 @@ class Test_List_Table extends Base {
 		wp_set_object_terms( $attending, Status::ATTENDING->value, Status::TAXONOMY );
 		wp_set_object_terms( $waiting, Status::WAITING_LIST->value, Status::TAXONOMY );
 
-		$_REQUEST['response'] = sprintf(
-			'%s,%s',
-			Status::ATTENDING->value,
-			Status::WAITING_LIST->value
+		$this->set_url_params(
+			array(
+				'response' => sprintf(
+					'%s,%s',
+					Status::ATTENDING->value,
+					Status::WAITING_LIST->value
+				),
+			)
 		);
 
 		$rsvps = Utility::invoke_hidden_method( $this->list_table, 'get_rsvps', array( 20, 1 ) );
@@ -2959,8 +2939,6 @@ class Test_List_Table extends Base {
 
 		$this->assertContains( $attending, $ids, 'Failed to assert the first response is returned.' );
 		$this->assertContains( $waiting, $ids, 'Failed to assert the second response is returned.' );
-
-		unset( $_REQUEST['response'] );
 	}
 
 	/**
@@ -2973,17 +2951,15 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_filtered_post_id_ignores_a_non_scalar(): void {
-		// `post_id[]=9` casts to 1, which would filter the screen to whichever
-		// post holds that ID.
-		$_REQUEST['post_id'] = array( '9' );
+		// `post_id[]=9` would cast to 1 and filter the screen to whichever post
+		// holds that ID. filter_input() reads the array as false.
+		$this->set_url_params( array( 'post_id' => false ) );
 
 		$this->assertSame(
 			0,
 			$this->list_table->get_filtered_post_id(),
 			'Failed to assert an array event parameter is ignored.'
 		);
-
-		unset( $_REQUEST['post_id'] );
 	}
 
 	/**
@@ -2996,14 +2972,12 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_filtered_post_id_ignores_a_negative(): void {
-		$_REQUEST['post_id'] = '-5';
+		$this->set_url_params( array( 'post_id' => '-5' ) );
 
 		$this->assertSame(
 			5,
 			$this->list_table->get_filtered_post_id(),
 			'Failed to assert a negative event parameter is made absolute.'
 		);
-
-		unset( $_REQUEST['post_id'] );
 	}
 }

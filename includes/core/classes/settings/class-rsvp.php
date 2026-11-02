@@ -15,6 +15,7 @@ namespace GatherPress\Core\Settings;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Reminder;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
@@ -27,6 +28,7 @@ use GatherPress\Core\Utility;
  * @since 0.34.0
  *
  * @phpstan-import-type SettingsSection from Settings
+ * @phpstan-import-type SettingsOption from Settings
  */
 final class Rsvp extends Base {
 
@@ -77,7 +79,7 @@ final class Rsvp extends Base {
 	 */
 	protected function get_sections(): array {
 		return array(
-			'rsvp_defaults' => array(
+			'rsvp_defaults'      => array(
 				'name'        => __( 'RSVP Defaults', 'gatherpress' ),
 				'description' => sprintf(
 					// phpcs:ignore Generic.Files.LineLength.TooLong
@@ -218,7 +220,66 @@ final class Rsvp extends Base {
 					),
 				),
 			),
-			'rsvp_cleanup'  => array(
+			'rsvp_notifications' => array(
+				'name'        => __( 'Notifications', 'gatherpress' ),
+				'description' => __(
+					'Emails GatherPress sends attendees on its own, without an organizer sending them.',
+					'gatherpress'
+				),
+				'options'     => array_merge(
+					array(
+						'enable_waiting_list_emails' => array(
+							'labels'      => array(
+								'name' => __( 'Waiting List Emails', 'gatherpress' ),
+							),
+							'description' => __(
+								'Sent when a spot opens up and an RSVP moves off the waiting list.',
+								'gatherpress'
+							),
+							'field'       => array(
+								'label'   => __(
+									'Email attendees when they move off the waiting list.',
+									'gatherpress'
+								),
+								'type'    => 'checkbox',
+								'options' => array(
+									'default' => true,
+								),
+							),
+							'show_if'     => array(
+								'rsvp_mode' => array( 'not' => 'disabled' ),
+							),
+						),
+						'enable_event_reminders'     => array(
+							'labels'      => array(
+								'name' => __( 'Reminder Emails', 'gatherpress' ),
+							),
+							'description' => __(
+								// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string, kept whole.
+								'Users can turn reminders off in their profile. An RSVP without an account follows its email updates choice.',
+								// phpcs:enable Generic.Files.LineLength.TooLong
+								'gatherpress'
+							),
+							'field'       => array(
+								'label'   => sprintf(
+									/* translators: %s: Plural post type label, e.g. "Events". */
+									__( 'Send attendees a reminder email before %s start.', 'gatherpress' ),
+									Utility::post_type_label( 'name', Event::POST_TYPE )
+								),
+								'type'    => 'checkbox',
+								'options' => array(
+									'default' => true,
+								),
+							),
+							'show_if'     => array(
+								'rsvp_mode' => array( 'not' => 'disabled' ),
+							),
+						),
+					),
+					$this->get_reminder_timing_options()
+				),
+			),
+			'rsvp_cleanup'       => array(
 				'name'        => __( 'Cleanup', 'gatherpress' ),
 				'description' => __(
 					'Schedule automatic cleanup of unverified RSVPs.',
@@ -295,5 +356,45 @@ final class Rsvp extends Base {
 				),
 			),
 		);
+	}
+
+	/**
+	 * Get one checkbox for each reminder timing.
+	 *
+	 * Built from {@see Reminder::get_timings()}, so a timing added or removed
+	 * through its filter gets or loses its checkbox here.
+	 *
+	 * @since TBD
+	 *
+	 * @return array<string, SettingsOption> The checkbox options, keyed by setting.
+	 */
+	private function get_reminder_timing_options(): array {
+		$options = array();
+		$heading = __( 'Reminder Timing', 'gatherpress' );
+
+		foreach ( Reminder::get_instance()->get_timings() as $timing => $config ) {
+			$options[ Reminder::get_timing_setting( (string) $timing ) ] = array(
+				'labels'      => array(
+					'name' => $heading,
+				),
+				'description' => '',
+				'field'       => array(
+					'label'   => $config['label'],
+					'type'    => 'checkbox',
+					'options' => array(
+						'default' => ! empty( $config['default'] ),
+					),
+				),
+				'show_if'     => array(
+					'rsvp_mode'              => array( 'not' => 'disabled' ),
+					'enable_event_reminders' => '1',
+				),
+			);
+
+			// Only the first row is headed, so the checkboxes read as one group.
+			$heading = '';
+		}
+
+		return $options;
 	}
 }

@@ -2822,6 +2822,48 @@ class Test_Settings extends Base {
 	}
 
 	/**
+	 * Inherited fields render core's escaped `disabled` or `readonly` attribute.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::render_field
+	 *
+	 * @return void
+	 */
+	public function test_render_field_locks_inherited_fields(): void {
+		$instance = Settings::get_instance();
+		$fields   = array(
+			'text'     => "readonly='readonly'",
+			'password' => "readonly='readonly'",
+			'number'   => "readonly='readonly'",
+			'checkbox' => "disabled='disabled'",
+			'select'   => "disabled='disabled'",
+		);
+
+		add_filter( 'gatherpress_network_is_option_inherited', '__return_true' );
+
+		foreach ( $fields as $type => $attribute ) {
+			$html = Utility::buffer_and_return(
+				array( $instance, 'render_field' ),
+				array(
+					'option',
+					array(
+						'field' => array(
+							'type'    => $type,
+							'label'   => 'Unit test',
+							'options' => array( 'items' => array( 'a' => 'A' ) ),
+						),
+					),
+				)
+			);
+
+			$this->assertStringContainsString( $attribute, $html, sprintf( 'The %s field is locked.', $type ) );
+		}
+
+		remove_filter( 'gatherpress_network_is_option_inherited', '__return_true' );
+	}
+
+	/**
 	 * Coverage for read_stored_options — blog-scope branch reads from the
 	 * standard blog option.
 	 *

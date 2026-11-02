@@ -42,6 +42,27 @@ $gatherpress_plural = isset( $plural_label ) && '' !== $plural_label ? $plural_l
 				);
 				?>
 			</label>
+			<?php if ( isset( $event_reminders_opt_in ) ) : ?>
+				<br />
+				<label for="gatherpress-event-reminders-opt-in">
+					<input
+						name="gatherpress_event_reminders_opt_in"
+						type="checkbox"
+						id="gatherpress-event-reminders-opt-in"
+						value="1"
+						<?php checked( '1', $event_reminders_opt_in ); ?>
+					/>
+					<?php
+					echo esc_html(
+						sprintf(
+							/* translators: %s: Plural name of the content type users hear about. */
+							__( 'Yes, I want an email reminder before %s I am attending.', 'gatherpress' ),
+							$gatherpress_plural
+						)
+					);
+					?>
+				</label>
+			<?php endif; ?>
 		</td>
 	</tr>
 </table>

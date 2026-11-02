@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\Rsvp;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status as Event_Status;
 use GatherPress\Core\Rsvp as Core_Rsvp;
 use GatherPress\Core\Event\Setup;
 use GatherPress\Core\Settings;
@@ -258,6 +259,80 @@ class Test_Rsvp extends Base {
 			'The transform_block_content method should exclude content for other statuses, such as "attending", '
 			. 'when the event is in the past.'
 		);
+	}
+
+	/**
+	 * Tests the transform_block_content method for a canceled event.
+	 *
+	 * Verifies that a canceled event renders the block's canceled template, or
+	 * the default disabled button for a block saved without one, and excludes
+	 * interactivity attributes and the other statuses' inner blocks.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::transform_block_content
+	 * @covers ::get_default_canceled_template
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_canceled_event(): void {
+		$instance = Rsvp::get_instance();
+		$post     = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+
+		( new Event_Status( $post->ID ) )->set( 'canceled' );
+
+		$block = array(
+			'blockName' => 'gatherpress/rsvp-v2',
+			'attrs'     => array(
+				'postId'                => $post->ID,
+				'serializedInnerBlocks' => wp_json_encode(
+					array(
+						'past'      => '<!-- wp:paragraph --><p>Past content</p><!-- /wp:paragraph -->',
+						'attending' => '<!-- wp:paragraph --><p>Attending content</p><!-- /wp:paragraph -->',
+					)
+				),
+			),
+		);
+
+		$block_content = sprintf( '<div class="wp-block-gatherpress-rsvp" data-post-id="%d"></div>', $post->ID );
+		$result        = $instance->transform_block_content( $block_content, $block );
+
+		$this->assertStringContainsString(
+			'<button type="button" class="wp-block-button__link wp-element-button">Canceled</button>',
+			$result,
+			'A block saved without a canceled template shows the default disabled button.'
+		);
+		$this->assertStringContainsString( 'gatherpress--is-disabled', $result );
+		$this->assertStringNotContainsString(
+			'data-wp-interactive',
+			$result,
+			'The transform_block_content method should not include '
+			. 'the data-wp-interactive attribute for a canceled event.'
+		);
+		$this->assertStringNotContainsString(
+			'Attending content',
+			$result
+		);
+		$this->assertStringNotContainsString(
+			'Past content',
+			$result
+		);
+
+		$block['attrs']['serializedInnerBlocks'] = wp_json_encode(
+			array(
+				'canceled'  => '<!-- wp:paragraph --><p>Canceled content</p><!-- /wp:paragraph -->',
+				'attending' => '<!-- wp:paragraph --><p>Attending content</p><!-- /wp:paragraph -->',
+			)
+		);
+
+		$result = $instance->transform_block_content( $block_content, $block );
+
+		$this->assertStringContainsString( 'Canceled content', $result, 'The saved canceled template renders.' );
+		$this->assertStringNotContainsString( 'Attending content', $result );
 	}
 
 	/**
@@ -1265,7 +1340,9 @@ class Test_Rsvp extends Base {
 	}
 
 	/**
-	 * Logged-out visitors, past events and other requests get no form; an error shows only on its own event.
+	 * Logged-out visitors, past or canceled events and other requests get no form.
+	 *
+	 * An error shows only on its own event.
 	 *
 	 * @since TBD
 	 * @covers ::submit_rsvp_without_javascript
@@ -1322,6 +1399,15 @@ class Test_Rsvp extends Base {
 		);
 
 		wp_set_current_user( $this->factory()->user->create() );
+		( new Event_Status( $post_id ) )->set( 'canceled' );
+
+		$this->assertSame(
+			$markup,
+			$instance->submit_rsvp_without_javascript( $markup, $block ),
+			'A canceled event is left alone.'
+		);
+
+		( new Event_Status( $post_id ) )->set( 'scheduled' );
 		( new Event( $post_id ) )->save_datetimes(
 			array(
 				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '-1 week' ) ),

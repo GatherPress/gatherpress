@@ -59,6 +59,7 @@ final class Query {
 	protected function setup_hooks(): void {
 		add_action( 'pre_get_comments', array( $this, 'exclude_rsvp_from_comment_query' ) );
 		add_filter( 'comments_clauses', array( $this, 'taxonomy_query' ), 10, 2 );
+		add_action( 'pre_get_comments', array( $this, 'vary_cache_key_by_tax_query' ) );
 		add_filter( 'get_comment', array( $this, 'prepare_rsvp_comment' ) );
 		add_filter( 'rest_prepare_comment', array( $this, 'mask_anonymous_rsvp_rest_author' ), 10, 2 );
 	}
@@ -90,6 +91,29 @@ final class Query {
 	}
 
 	/**
+	 * Give each comment `tax_query` its own query cache key.
+	 *
+	 * Core builds the key from its own query vars only, so without this two
+	 * queries that differ only by `tax_query` share a cached result. The terms
+	 * salt drops the entry when a response changes without the comment.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_Comment_Query $query Current instance of WP_Comment_Query (passed by reference).
+	 *
+	 * @return void
+	 */
+	public function vary_cache_key_by_tax_query( WP_Comment_Query $query ): void {
+		if ( empty( $query->query_vars['tax_query'] ) ) {
+			return;
+		}
+
+		$query->query_vars['cache_domain'] .= ':gatherpress_' . md5(
+			wp_json_encode( $query->query_vars['tax_query'] ) . wp_cache_get_last_changed( 'terms' )
+		);
+	}
+
+	/**
 	 * Retrieve RSVP comments or count based on specified arguments.
 	 *
 	 * This method fetches RSVP comments by merging the provided arguments with default
@@ -111,13 +135,6 @@ final class Query {
 		// this down, like the per-post-type RSVPs admin pages do (#1849).
 		if ( empty( $args['post_type'] ) ) {
 			$args['post_type'] = array_values( get_post_types_by_support( Rsvp::SUPPORT ) );
-		}
-
-		// Core caches comment queries by its own query vars, which leave out the
-		// grafted tax_query. Its cache domain is one of them, so queries that
-		// differ only by taxonomy terms get their own cache entries.
-		if ( ! empty( $args['tax_query'] ) ) {
-			$args['cache_domain'] = 'gatherpress_rsvp_' . md5( (string) wp_json_encode( $args['tax_query'] ) );
 		}
 
 		remove_action( 'pre_get_comments', array( $this, 'exclude_rsvp_from_comment_query' ) );

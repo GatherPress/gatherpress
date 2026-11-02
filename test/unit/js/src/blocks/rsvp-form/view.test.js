@@ -202,3 +202,69 @@ describe( 'RSVP form submission success', () => {
 		expect( form.querySelector( '.success-second' ) ).not.toHaveAttribute( 'tabindex' );
 	} );
 } );
+
+describe( 'RSVP form initial visibility', () => {
+	let callbacks;
+
+	beforeEach( () => {
+		( { callbacks } = store( 'gatherpress' ) );
+	} );
+
+	afterEach( () => {
+		document.body.innerHTML = '';
+	} );
+
+	/**
+	 * Builds the form for an event in the given state, with a canceled notice.
+	 *
+	 * @param {string} eventState The form's data-gatherpress-event-state value.
+	 *
+	 * @return {HTMLFormElement} The form.
+	 */
+	const buildStateForm = ( eventState ) => {
+		const form = buildForm();
+		const notice = document.createElement( 'div' );
+
+		notice.className = 'canceled';
+		notice.dataset.gatherpressRsvpFormVisibility = '{"whenCanceled":"show"}';
+		form.prepend( notice );
+
+		if ( eventState ) {
+			form.dataset.gatherpressEventState = eventState;
+		}
+
+		getElement.mockReturnValue( { ref: form } );
+		getContext.mockReturnValue( { postId: 123 } );
+		callbacks.initRsvpForm();
+
+		return form;
+	};
+
+	it( 'shows only the canceled notice when the event is canceled', () => {
+		const form = buildStateForm( 'canceled' );
+
+		expect( form.querySelector( '.canceled' ) ).toBeVisible();
+		expect( form.querySelector( '.past' ) ).not.toBeVisible();
+		expect( form.querySelector( '.field' ) ).not.toBeVisible();
+		expect( form.querySelector( '.buttons' ) ).not.toBeVisible();
+	} );
+
+	it( 'hides the canceled notice when the event is not canceled', () => {
+		const form = buildStateForm( '' );
+
+		expect( form.querySelector( '.canceled' ) ).not.toBeVisible();
+		expect( form.querySelector( '.field' ) ).toBeVisible();
+	} );
+
+	it( 'follows whenCanceled set to hide on a canceled event', () => {
+		const form = buildForm();
+
+		form.querySelector( '.past' ).dataset.gatherpressRsvpFormVisibility = '{"whenCanceled":"hide"}';
+		form.dataset.gatherpressEventState = 'canceled';
+		getElement.mockReturnValue( { ref: form } );
+		getContext.mockReturnValue( { postId: 123 } );
+		callbacks.initRsvpForm();
+
+		expect( form.querySelector( '.past' ) ).not.toBeVisible();
+	} );
+} );
