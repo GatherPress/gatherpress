@@ -156,8 +156,7 @@ final class Dashboard {
 
 		$rules = array(
 			'#dashboard_right_now .gatherpress-glance-spacer{visibility:hidden}',
-			'#dashboard_right_now .gatherpress-glance-rsvp-attending:before{content:"\f307";content:"\f307" / ""}',
-			'#dashboard_right_now .gatherpress-glance-rsvp-waiting-list:before{content:"\f469";content:"\f469" / ""}',
+			'#dashboard_right_now .gatherpress-glance-rsvp:before{content:"\f307";content:"\f307" / ""}',
 		);
 
 		foreach ( $this->get_post_types( Event::SUPPORT, Venue::SUPPORT ) as $post_type ) {
@@ -375,7 +374,7 @@ final class Dashboard {
 					$post_type->labels->singular_name
 				),
 				$url ? add_query_arg( 'response', Status::ATTENDING->value, $url ) : '',
-				'gatherpress-glance-rsvp-attending'
+				'gatherpress-glance-rsvp'
 			),
 			$this->get_item(
 				sprintf(
@@ -385,7 +384,7 @@ final class Dashboard {
 					$post_type->labels->singular_name
 				),
 				$url ? add_query_arg( 'response', Status::WAITING_LIST->value, $url ) : '',
-				'gatherpress-glance-rsvp-waiting-list'
+				'gatherpress-glance-rsvp'
 			),
 		);
 	}
