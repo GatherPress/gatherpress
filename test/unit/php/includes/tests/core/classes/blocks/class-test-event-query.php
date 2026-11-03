@@ -242,7 +242,7 @@ class Test_Event_Query extends Base {
 
 		// Mock the apply_filters call.
 		add_filter(
-			'gatherpress_query_vars',
+			'gatherpress_query_loop_vars',
 			function ( $custom_args ) {
 				// Ensure the integer 0 value is preserved through the filter.
 				$this->assertArrayHasKey( 'include_unfinished', $custom_args );
@@ -269,7 +269,7 @@ class Test_Event_Query extends Base {
 		$this->assertSame( 'datetime', $result['orderby'] );
 
 		// Clean up filter.
-		remove_all_filters( 'gatherpress_query_vars' );
+		remove_all_filters( 'gatherpress_query_loop_vars' );
 	}
 
 	/**

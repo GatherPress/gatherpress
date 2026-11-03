@@ -187,23 +187,26 @@ final class Event_Query {
 			);
 
 			/**
-			 * Filter the query vars.
+			 * Filters the WP_Query arguments GatherPress builds for a Query Loop.
 			 *
-			 * Allows filtering query params when the query is being inherited.
+			 * Use it to change what an event, shadow-source or calendar Query
+			 * Loop lists, on the front end and in the editor preview.
 			 *
 			 * @since 0.33.0
-			 * @since TBD Also runs for Query Loops of shadow-source posts, such as
-			 *            venues, where `$query_args` can carry `has_events_filter`
-			 *            and `upcoming_events_only`.
+			 * @since TBD    Renamed from `gatherpress_query_vars`. Also runs for Query
+			 *               Loops of shadow-source posts, such as venues, where
+			 *               `$query_args` can carry `has_events_filter` and
+			 *               `upcoming_events_only`.
 			 *
-			 * @param array   $query_args  Arguments to be passed to WP_Query.
-			 * @param array   $block_query The query attribute retrieved from the block.
-			 * @param boolean $inherited   Whether the query is being inherited.
+			 * @param array<string, mixed> $query_args  Arguments to be passed to WP_Query.
+			 * @param array<string, mixed> $block_query The block's query attribute, or the
+			 *                                          REST request params in the editor.
+			 * @param bool                 $inherited   Whether the Query Loop inherits the main query.
 			 *
-			 * @return array $filtered_query_args Final arguments list.
+			 * @return array<string, mixed> Arguments to be passed to WP_Query.
 			 */
 			$filtered_query_args = apply_filters(
-				'gatherpress_query_vars',
+				'gatherpress_query_loop_vars',
 				$query_args,
 				$parsed_block['attrs']['query'],
 				true,
@@ -338,7 +341,7 @@ final class Event_Query {
 
 		/** This filter is documented in includes/core/classes/blocks/class-event-query.php */
 		$filtered_query_args = apply_filters(
-			'gatherpress_query_vars',
+			'gatherpress_query_loop_vars',
 			$query_args,
 			$block_query,
 			false
@@ -532,7 +535,7 @@ final class Event_Query {
 
 		/** This filter is documented in includes/core/classes/blocks/class-event-query.php */
 		$filtered_query_args = apply_filters(
-			'gatherpress_query_vars',
+			'gatherpress_query_loop_vars',
 			$custom_args,
 			$request->get_params(),
 			false,

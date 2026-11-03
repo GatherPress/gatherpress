@@ -1,0 +1,4 @@
+Significance: minor
+Type: changed
+
+The `gatherpress_query_vars` filter is now `gatherpress_query_loop_vars`. Code that hooks the old name needs to use the new one.
