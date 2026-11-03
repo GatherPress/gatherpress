@@ -720,7 +720,7 @@ final class List_Table extends WP_List_Table {
 				$output = $statuses[ $approved ] ?? '-';
 				break;
 			case 'checked_in':
-				$output = Check_In_Controls::render_cell( $item );
+				$output = Check_In_Controls::render_cell( $item, $this->get_attendee_name( $item ) );
 				break;
 			case 'date':
 				$output = sprintf(

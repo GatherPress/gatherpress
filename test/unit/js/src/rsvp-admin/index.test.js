@@ -61,6 +61,7 @@ const mountAll = async () => {
 	cell.className = 'gatherpress-rsvp-check-in';
 	cell.dataset.rsvpId = '7';
 	cell.dataset.state = 'no-show';
+	cell.dataset.attendee = 'Ada Lovelace';
 	document.body.appendChild( cell );
 	nodes.cell = cell;
 
@@ -116,7 +117,7 @@ describe( 'rsvp-admin entry point', () => {
 	it( 'turns a check-in cell into a dropdown', () => {
 		expect(
 			within( nodes.cell ).getByRole( 'button', {
-				name: 'Check-in: No-show',
+				name: 'Check-in for Ada Lovelace: No-show',
 			} ),
 		).toBeInTheDocument();
 	} );

@@ -145,11 +145,12 @@ final class Check_In_Controls {
 	 *
 	 * @since TBD
 	 *
-	 * @param array<string, mixed> $item The RSVP comment data.
+	 * @param array<string, mixed> $item     The RSVP comment data.
+	 * @param string               $attendee The attendee's name, for the dropdown's label.
 	 *
 	 * @return string The cell markup.
 	 */
-	public static function render_cell( array $item ): string {
+	public static function render_cell( array $item, string $attendee ): string {
 		$registry    = Check_In_Registry::get_instance();
 		$state       = $registry->get_state( (int) $item['comment_ID'] );
 		$is_approved = '1' === $item['comment_approved'];
@@ -164,9 +165,10 @@ final class Check_In_Controls {
 			'<div class="gatherpress-rsvp-check-in"%1$s>%2$s<span>%3$s</span></div>',
 			$is_approved
 				? sprintf(
-					' data-rsvp-id="%1$d" data-state="%2$s"',
+					' data-rsvp-id="%1$d" data-state="%2$s" data-attendee="%3$s"',
 					absint( $item['comment_ID'] ),
-					esc_attr( $option['value'] )
+					esc_attr( $option['value'] ),
+					esc_attr( $attendee )
 				)
 				: '',
 			$option['icon'],
@@ -198,6 +200,8 @@ final class Check_In_Controls {
 	/**
 	 * Sets the check-in state of an RSVP from a check-in action.
 	 *
+	 * As in the check-in route, an RSVP that is not approved is skipped.
+	 *
 	 * @since TBD
 	 *
 	 * @param int    $rsvp_id The RSVP comment ID.
@@ -206,6 +210,10 @@ final class Check_In_Controls {
 	 * @return void
 	 */
 	public static function apply_action( int $rsvp_id, string $action ): void {
+		if ( '1' !== get_comment( $rsvp_id )?->comment_approved ) {
+			return;
+		}
+
 		$state = self::CLEAR_ACTION === $action
 			? Check_In_Registry::NOT_RECORDED
 			: substr( $action, strlen( self::ACTION_PREFIX ) );

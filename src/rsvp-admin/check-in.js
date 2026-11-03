@@ -3,9 +3,20 @@
  */
 import apiFetch from '@wordpress/api-fetch';
 import { speak } from '@wordpress/a11y';
-import { Button, Dropdown, MenuGroup, MenuItem } from '@wordpress/components';
+import {
+	Button,
+	Dropdown,
+	MenuGroup,
+	MenuItem,
+	NavigableMenu,
+} from '@wordpress/components';
 import { useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
+
+/**
+ * Internal dependencies
+ */
+import { REST_NAMESPACE } from '../helpers/namespace';
 
 /**
  * Shows the SVG icon of a check-in state.
@@ -38,12 +49,13 @@ function StateIcon( { html } ) {
  *
  * @param {Object}   props              Component props.
  * @param {number}   props.rsvpId       The RSVP comment ID.
+ * @param {string}   props.attendee     The attendee's name.
  * @param {string}   props.initialState The state the page loaded with.
  * @param {Object[]} props.states       Every state, each `{ value, label, icon }`, not recorded last. Never empty.
  *
  * @return {JSX.Element} The dropdown.
  */
-export default function CheckIn( { rsvpId, initialState, states } ) {
+export default function CheckIn( { rsvpId, attendee, initialState, states } ) {
 	const [ state, setState ] = useState( initialState );
 	const [ isSaving, setIsSaving ] = useState( false );
 	const [ error, setError ] = useState( '' );
@@ -63,7 +75,7 @@ export default function CheckIn( { rsvpId, initialState, states } ) {
 
 		try {
 			const response = await apiFetch( {
-				path: `/gatherpress/v1/rsvp/${ rsvpId }/check-in`,
+				path: `/${ REST_NAMESPACE }/rsvp/${ rsvpId }/check-in`,
 				method: 'POST',
 				data: { state: value },
 			} );
@@ -105,8 +117,9 @@ export default function CheckIn( { rsvpId, initialState, states } ) {
 						onClick={ onToggle }
 						aria-expanded={ isOpen }
 						aria-label={ sprintf(
-							/* translators: %s: a check-in state, e.g. "Checked in". */
-							__( 'Check-in: %s', 'gatherpress' ),
+							/* translators: 1: Attendee name. 2: a check-in state, e.g. "Checked in". */
+							__( 'Check-in for %1$s: %2$s', 'gatherpress' ),
+							attendee,
 							current.label,
 						) }
 						isBusy={ isSaving }
@@ -117,33 +130,35 @@ export default function CheckIn( { rsvpId, initialState, states } ) {
 					</Button>
 				) }
 				renderContent={ ( { onClose } ) => (
-					<MenuGroup label={ __( 'Check-in', 'gatherpress' ) }>
-						{ states.map( ( option ) => (
-							<MenuItem
-								key={ option.value }
-								icon={ <StateIcon html={ option.icon } /> }
-								iconPosition="left"
-								role="menuitemradio"
-								isSelected={ option.value === state }
-								// The state icons fill the icon slot, so the
-								// current state shows by its weight.
-								className={
-									option.value === state
-										? 'is-selected'
-										: undefined
-								}
-								onClick={ () => {
-									onClose();
-
-									if ( option.value !== state ) {
-										save( option.value );
+					<NavigableMenu>
+						<MenuGroup label={ __( 'Check-in', 'gatherpress' ) }>
+							{ states.map( ( option ) => (
+								<MenuItem
+									key={ option.value }
+									icon={ <StateIcon html={ option.icon } /> }
+									iconPosition="left"
+									role="menuitemradio"
+									isSelected={ option.value === state }
+									// The state icons fill the icon slot, so the
+									// current state shows by its weight.
+									className={
+										option.value === state
+											? 'is-selected'
+											: undefined
 									}
-								} }
-							>
-								{ option.label }
-							</MenuItem>
-						) ) }
-					</MenuGroup>
+									onClick={ () => {
+										onClose();
+
+										if ( option.value !== state ) {
+											save( option.value );
+										}
+									} }
+								>
+									{ option.label }
+								</MenuItem>
+							) ) }
+						</MenuGroup>
+					</NavigableMenu>
 				) }
 			/>
 			{ error && (

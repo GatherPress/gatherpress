@@ -99,6 +99,7 @@ export function mountCheckIns() {
 			createRoot( cell ).render(
 				<CheckIn
 					rsvpId={ parseInt( cell.dataset.rsvpId, 10 ) }
+					attendee={ cell.dataset.attendee }
 					initialState={ cell.dataset.state }
 					states={ states }
 				/>,

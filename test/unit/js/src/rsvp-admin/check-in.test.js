@@ -49,7 +49,14 @@ const STATES = [
  */
 const renderCheckIn = async ( initialState ) => {
 	await act( async () => {
-		render( <CheckIn rsvpId={ 7 } initialState={ initialState } states={ STATES } /> );
+		render(
+			<CheckIn
+				rsvpId={ 7 }
+				attendee="Ada Lovelace"
+				initialState={ initialState }
+				states={ STATES }
+			/>,
+		);
 	} );
 };
 
@@ -75,10 +82,29 @@ describe( 'CheckIn', () => {
 	it( 'shows the current state with its icon', async () => {
 		await renderCheckIn( 'checked-in' );
 
-		const toggle = screen.getByRole( 'button', { name: 'Check-in: Checked in' } );
+		const toggle = screen.getByRole( 'button', { name: 'Check-in for Ada Lovelace: Checked in' } );
 
 		expect( toggle ).toHaveTextContent( 'Checked in' );
 		expect( toggle.querySelector( '[data-icon="check"]' ) ).toBeInTheDocument();
+	} );
+
+	it( 'puts the states in a menu the arrow keys move through', async () => {
+		await renderCheckIn( 'checked-in' );
+
+		const items = screen.getAllByRole( 'menuitemradio' );
+
+		expect( screen.getByRole( 'menu' ) ).toContainElement( items[ 0 ] );
+
+		// jsdom lays nothing out, so the menu would find no visible item.
+		const rects = jest
+			.spyOn( HTMLElement.prototype, 'getClientRects' )
+			.mockReturnValue( [ {} ] );
+
+		items[ 0 ].focus();
+		fireEvent.keyDown( items[ 0 ], { code: 'ArrowDown' } );
+		rects.mockRestore();
+
+		expect( items[ 1 ] ).toHaveFocus();
 	} );
 
 	it( 'marks the current state in the menu', async () => {
@@ -97,7 +123,7 @@ describe( 'CheckIn', () => {
 		await renderCheckIn( 'gone' );
 
 		expect(
-			screen.getByRole( 'button', { name: 'Check-in: Not recorded' } ),
+			screen.getByRole( 'button', { name: 'Check-in for Ada Lovelace: Not recorded' } ),
 		).toBeInTheDocument();
 	} );
 
@@ -112,7 +138,7 @@ describe( 'CheckIn', () => {
 		await pick( 'No-show' );
 
 		expect(
-			screen.getByRole( 'button', { name: 'Check-in: No-show' } ),
+			screen.getByRole( 'button', { name: 'Check-in for Ada Lovelace: No-show' } ),
 		).toBeInTheDocument();
 		expect( mockApiFetch ).toHaveBeenCalledWith( {
 			path: '/gatherpress/v1/rsvp/7/check-in',
@@ -139,7 +165,7 @@ describe( 'CheckIn', () => {
 			'Only an approved RSVP can be checked in.',
 		);
 		expect(
-			screen.getByRole( 'button', { name: 'Check-in: Checked in' } ),
+			screen.getByRole( 'button', { name: 'Check-in for Ada Lovelace: Checked in' } ),
 		).toBeInTheDocument();
 	} );
 

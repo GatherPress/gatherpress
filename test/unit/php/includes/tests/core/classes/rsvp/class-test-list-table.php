@@ -933,6 +933,11 @@ class Test_List_Table extends Base {
 		$this->assertStringContainsString( sprintf( 'data-rsvp-id="%d"', $rsvp_id ), $cell );
 		$this->assertStringContainsString( 'data-state="not-recorded"', $cell );
 		$this->assertStringContainsString(
+			sprintf( 'data-attendee="%s"', esc_attr( $this->rsvp['comment_author'] ) ),
+			$cell,
+			'Failed to assert the dropdown is named for the attendee.'
+		);
+		$this->assertStringContainsString(
 			'<path d="M5 11.25h14v1.5H5z"></path>',
 			$cell,
 			'Failed to assert the icon shows.'
@@ -1032,6 +1037,37 @@ class Test_List_Table extends Base {
 
 		$registry->clear( $rsvp_id );
 		Utility::set_and_get_hidden_property( $registry, 'states', $registered );
+	}
+
+	/**
+	 * The check-in bulk actions skip an RSVP that is not approved, as the route does.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::process_bulk_action
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::apply_action
+	 *
+	 * @return void
+	 */
+	public function test_process_bulk_action_skips_check_in_for_unapproved_rsvps(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$rsvp_id = (int) $this->rsvp['comment_ID'];
+
+		wp_set_comment_status( $rsvp_id, 'hold' );
+
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ) ) );
+		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
+		$_REQUEST['action']              = 'check_in-no-show';
+
+		$this->list_table->process_bulk_action();
+
+		$this->assertNull(
+			Check_In_Registry::get_instance()->get_state( $rsvp_id ),
+			'Failed to assert a pending RSVP is not marked as a no-show.'
+		);
+
+		unset( $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
 	}
 
 	/**
