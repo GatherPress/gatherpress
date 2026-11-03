@@ -490,6 +490,18 @@ class Test_Map extends Base {
 			'Hash should change when the map type changes.'
 		);
 
+		$this->assertNotSame(
+			$baseline,
+			$instance->hash_for( $info, 15, 800, 400, 'osm', 'roadmap', 'https://tiles.example.test/{z}/{x}/{y}.png' ),
+			'Hash should change when the image source changes.'
+		);
+
+		$this->assertSame(
+			md5( '1 Infinite Loop|37.3318|-122.0312|15|800|400|osm|roadmap' ),
+			$baseline,
+			'Hash without an image source should match the one saved before sources existed.'
+		);
+
 		// Same address + coords hash identically, regardless of post —
 		// filenames dedupe across venues at the same location.
 		$this->assertSame(

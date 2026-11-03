@@ -1322,7 +1322,7 @@ final class Map {
 
 		$slug    = $provider->get_slug();
 		$address = (string) ( $info['address'] ?? '' );
-		$hash    = $this->hash_for( $info, $zoom, $width, $height, $slug, $map_type );
+		$hash    = $this->hash_for( $info, $zoom, $width, $height, $slug, $map_type, $provider->get_cache_source() );
 		$key     = $this->combo_key( $zoom, $width, $height, $map_type );
 
 		$all      = $this->get_all_descriptors( $post_id );
@@ -1473,11 +1473,13 @@ final class Map {
 	/**
 	 * Compute a stable hash from the inputs that determine the rendered PNG.
 	 *
-	 * Any change to address, coords, zoom, width, height, or tile provider
-	 * invalidates the previous image. Unrelated venue edits (title, excerpt,
-	 * other meta) keep the same hash and skip regeneration.
+	 * Any change to address, coords, zoom, width, height, tile provider, or
+	 * where the provider's images come from invalidates the previous image.
+	 * Unrelated venue edits (title, excerpt, other meta) keep the same hash
+	 * and skip regeneration.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Takes the provider's image source.
 	 *
 	 * @param array<string, string> $info     Parsed venue information.
 	 * @param int                   $zoom     Map zoom level.
@@ -1485,6 +1487,7 @@ final class Map {
 	 * @param int                   $height   Output height.
 	 * @param string                $provider Provider slug (e.g. `osm`).
 	 * @param string                $map_type Map type slug.
+	 * @param string                $source   Where the provider's images come from, from `get_cache_source()`.
 	 *
 	 * @return string MD5 hex digest.
 	 */
@@ -1494,7 +1497,8 @@ final class Map {
 		int $width,
 		int $height,
 		string $provider,
-		string $map_type = self::DEFAULT_MAP_TYPE
+		string $map_type = self::DEFAULT_MAP_TYPE,
+		string $source = ''
 	): string {
 		$map_type = $this->normalize_map_type( $map_type );
 		// md5() here is a non-cryptographic cache-key discriminator, matching class-geocoding.php.
@@ -1502,21 +1506,23 @@ final class Map {
 		// cache key for every static-map PNG on disk. Reordering or changing a
 		// type (e.g. casting one of these to int) silently invalidates every
 		// existing image and forces a full regeneration on the next save.
-		return md5( // NOSONAR.
-			implode(
-				'|',
-				array(
-					(string) ( $info['address'] ?? '' ),
-					(string) ( $info['latitude'] ?? '' ),
-					(string) ( $info['longitude'] ?? '' ),
-					(string) $zoom,
-					(string) $width,
-					(string) $height,
-					$provider,
-					$map_type,
-				)
-			)
+		$parts = array(
+			(string) ( $info['address'] ?? '' ),
+			(string) ( $info['latitude'] ?? '' ),
+			(string) ( $info['longitude'] ?? '' ),
+			(string) $zoom,
+			(string) $width,
+			(string) $height,
+			$provider,
+			$map_type,
 		);
+
+		// Added only when set, so a provider without a source keeps its hashes.
+		if ( '' !== $source ) {
+			$parts[] = $source;
+		}
+
+		return md5( implode( '|', $parts ) ); // NOSONAR.
 	}
 
 	/**

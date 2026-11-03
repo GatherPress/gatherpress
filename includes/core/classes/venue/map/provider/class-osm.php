@@ -64,6 +64,27 @@ final class OSM extends Base {
 	const COMPOSITE_TIME_BUDGET = 10;
 
 	/**
+	 * Transient set when a render gets no tiles, which pauses rendering
+	 * for `TILES_FAILED_PAUSE` seconds.
+	 *
+	 * @since TBD
+	 * @var string
+	 */
+	const TILES_FAILED_TRANSIENT = 'gatherpress_static_map_tiles_failed';
+
+	/**
+	 * Seconds to pause rendering after a render gets no tiles.
+	 *
+	 * A map is rendered on page view when it has no saved image, so without
+	 * a pause a tile host that is down or rejecting the key would be asked
+	 * again on every page view.
+	 *
+	 * @since TBD
+	 * @var int
+	 */
+	const TILES_FAILED_PAUSE = 5 * MINUTE_IN_SECONDS;
+
+	/**
 	 * Provider slug used in post meta keys, filenames, and the
 	 * `map_platform` setting.
 	 *
@@ -90,10 +111,12 @@ final class OSM extends Base {
 	/**
 	 * Composite OSM tiles around the venue, stamp a marker at the canvas
 	 * center, and return the finished GD image. Returns null when GD is
-	 * unavailable, when the requested dimensions are not positive, or when
-	 * the retina variant would require a tile zoom past `Map::ZOOM_MAX`.
+	 * unavailable, when the requested dimensions are not positive, when
+	 * the retina variant would require a tile zoom past `Map::ZOOM_MAX`, or
+	 * when no tile loads.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Returns null when no tile loads, and for a pause after that.
 	 *
 	 * @param float  $latitude  Venue latitude in decimal degrees.
 	 * @param float  $longitude Venue longitude in decimal degrees.
@@ -120,7 +143,7 @@ final class OSM extends Base {
 			return null; // @codeCoverageIgnore
 		}
 
-		if ( $width < 1 || $height < 1 ) {
+		if ( $width < 1 || $height < 1 || false !== get_transient( self::TILES_FAILED_TRANSIENT ) ) {
 			return null;
 		}
 
@@ -177,6 +200,7 @@ final class OSM extends Base {
 			self::COMPOSITE_TIME_BUDGET
 		);
 		$deadline = microtime( true ) + $budget;
+		$painted  = 0;
 
 		for ( $tx = $left_tile; $tx <= $right_tile; $tx++ ) {
 			for ( $ty = $top_tile; $ty <= $bottom_tile; $ty++ ) {
@@ -184,8 +208,14 @@ final class OSM extends Base {
 					break 2;
 				}
 
-				$this->paint_tile( $canvas, $tx, $ty, $tile_zoom, $left_pixel, $top_pixel, $tiles );
+				$painted += (int) $this->paint_tile( $canvas, $tx, $ty, $tile_zoom, $left_pixel, $top_pixel, $tiles );
 			}
+		}
+
+		// A map with no tiles is only the gray background. It is not saved,
+		// so a later render tries again once the pause ends.
+		if ( 0 === $painted ) {
+			set_transient( self::TILES_FAILED_TRANSIENT, 1, self::TILES_FAILED_PAUSE );
 		}
 
 		$this->stamp_marker(
@@ -195,13 +225,13 @@ final class OSM extends Base {
 			(float) $density
 		);
 
-		return $canvas;
+		return 0 < $painted ? $canvas : null;
 	}
 
 	/**
 	 * Fetch one OSM tile and stamp it onto the in-flight canvas at its
-	 * world-pixel-aligned destination. Silently skips tiles that fail to
-	 * fetch or decode — the gray composite background shows through.
+	 * world-pixel-aligned destination. Skips tiles that fail to fetch or
+	 * decode, and the gray composite background shows through.
 	 *
 	 * Extracted from `render()` to keep that loop body shallow enough to
 	 * stay under SonarCloud's cognitive-complexity threshold.
@@ -216,7 +246,7 @@ final class OSM extends Base {
 	 * @param int     $top_pixel  World-pixel y-offset of the canvas top-left.
 	 * @param string  $tiles      URL template (`{z}/{x}/{y}` placeholders).
 	 *
-	 * @return void
+	 * @return bool True when the tile was painted.
 	 */
 	private function paint_tile(
 		$canvas,
@@ -226,17 +256,12 @@ final class OSM extends Base {
 		int $left_pixel,
 		int $top_pixel,
 		string $tiles
-	): void {
+	): bool {
 		$tile_png = $this->fetch_tile( $tile_zoom, $tx, $ty, $tiles );
-
-		if ( null === $tile_png ) {
-			return;
-		}
-
-		$tile = $this->decode_tile( $tile_png );
+		$tile     = null === $tile_png ? false : $this->decode_tile( $tile_png );
 
 		if ( false === $tile ) {
-			return;
+			return false;
 		}
 
 		$dst_x = $tx * self::TILE_SIZE - $left_pixel;
@@ -244,6 +269,8 @@ final class OSM extends Base {
 
 		imagecopy( $canvas, $tile, $dst_x, $dst_y, 0, 0, self::TILE_SIZE, self::TILE_SIZE );
 		unset( $tile );
+
+		return true;
 	}
 
 	/**
@@ -409,6 +436,21 @@ final class OSM extends Base {
 		}
 
 		return Settings::add_map_tile_key( $template );
+	}
+
+	/**
+	 * Where the tiles come from, for the static map cache.
+	 *
+	 * Saved maps render again when the tile URL changes, or when a CARTO
+	 * key is added or removed. The key's value is left out, so the cache
+	 * hash does not depend on it.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The tile URL template, without the key's value.
+	 */
+	public function get_cache_source(): string {
+		return (string) preg_replace( '/([?&]key=)[^&]*/', '$1', $this->get_tile_url_template() );
 	}
 
 	/**
