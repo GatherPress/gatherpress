@@ -308,6 +308,9 @@ final class Check_In_Registry {
 		 * } );
 		 * ```
 		 *
+		 * The full state contract and a worked example live in the
+		 * RSVP developer guide (`docs/developer/rsvp/README.md`).
+		 *
 		 * @since TBD
 		 *
 		 * @param Check_In_Registry $registry The check-in state registry.
