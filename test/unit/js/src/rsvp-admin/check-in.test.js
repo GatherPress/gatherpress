@@ -35,9 +35,9 @@ jest.mock( '@wordpress/components', () => ( {
 import CheckIn from '@src/rsvp-admin/check-in';
 
 const STATES = [
-	{ value: 'checked-in', label: 'Checked in', icon: '<svg data-icon="check"></svg>' },
-	{ value: 'no-show', label: 'No-show', icon: '<svg data-icon="close"></svg>' },
-	{ value: 'not-recorded', label: 'Not recorded', icon: '<svg data-icon="line"></svg>' },
+	{ value: 'checked-in', label: 'Checked in', icon: 'yes' },
+	{ value: 'no-show', label: 'No-show', icon: 'no-alt' },
+	{ value: 'not-recorded', label: 'Not recorded', icon: 'minus' },
 ];
 
 /**
@@ -85,7 +85,7 @@ describe( 'CheckIn', () => {
 		const toggle = screen.getByRole( 'button', { name: 'Check-in for Ada Lovelace: Checked in' } );
 
 		expect( toggle ).toHaveTextContent( 'Checked in' );
-		expect( toggle.querySelector( '[data-icon="check"]' ) ).toBeInTheDocument();
+		expect( toggle.querySelector( '.dashicons-yes' ) ).toBeInTheDocument();
 	} );
 
 	it( 'puts the states in a menu the arrow keys move through', async () => {
@@ -131,7 +131,7 @@ describe( 'CheckIn', () => {
 		mockApiFetch.mockResolvedValue( {
 			value: 'no-show',
 			label: 'No-show',
-			icon: '',
+			icon: 'no-alt',
 		} );
 
 		await renderCheckIn( 'not-recorded' );

@@ -178,7 +178,7 @@ class Test_Rest_Api extends Base_Unit_Test {
 		$this->assertSame( 200, $response->get_status() );
 		$this->assertSame( 'no-show', $response->get_data()['value'] );
 		$this->assertSame( 'No-show', $response->get_data()['label'] );
-		$this->assertStringContainsString( '<svg', $response->get_data()['icon'] );
+		$this->assertSame( 'no-alt', $response->get_data()['icon'] );
 		$this->assertInstanceOf( No_Show::class, Check_In_Registry::get_instance()->get_state( $rsvp_id ) );
 
 		$this->assertSame( 'not-recorded', $this->request( $rsvp_id, 'not-recorded' )->get_data()['value'] );

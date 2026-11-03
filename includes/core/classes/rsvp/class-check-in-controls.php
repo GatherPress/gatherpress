@@ -162,7 +162,8 @@ final class Check_In_Controls {
 		$option = $registry->describe( $state );
 
 		return sprintf(
-			'<div class="gatherpress-rsvp-check-in"%1$s>%2$s<span>%3$s</span></div>',
+			'<div class="gatherpress-rsvp-check-in"%1$s>' .
+			'<span class="dashicons dashicons-%2$s" aria-hidden="true"></span><span>%3$s</span></div>',
 			$is_approved
 				? sprintf(
 					' data-rsvp-id="%1$d" data-state="%2$s" data-attendee="%3$s"',
@@ -171,7 +172,7 @@ final class Check_In_Controls {
 					esc_attr( $attendee )
 				)
 				: '',
-			$option['icon'],
+			esc_attr( $option['icon'] ),
 			esc_html( $option['label'] )
 		);
 	}

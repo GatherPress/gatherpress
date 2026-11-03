@@ -19,27 +19,6 @@ import { __, sprintf } from '@wordpress/i18n';
 import { REST_NAMESPACE } from '../helpers/namespace';
 
 /**
- * Shows the SVG icon of a check-in state.
- *
- * The server escapes the markup with `Check_In_Registry::kses_icon()`.
- *
- * @since TBD
- *
- * @param {Object} props      Component props.
- * @param {string} props.html The icon's SVG markup.
- *
- * @return {JSX.Element} The icon.
- */
-function StateIcon( { html } ) {
-	return (
-		<span
-			className="gatherpress-rsvp-check-in__icon"
-			dangerouslySetInnerHTML={ { __html: html } }
-		/>
-	);
-}
-
-/**
  * The check-in dropdown of one RSVP on the RSVP screen.
  *
  * Shows the RSVP's check-in state and sets another one in place, through the
@@ -113,7 +92,7 @@ export default function CheckIn( { rsvpId, attendee, initialState, states } ) {
 					<Button
 						variant="tertiary"
 						size="compact"
-						icon={ <StateIcon html={ current.icon } /> }
+						icon={ current.icon }
 						onClick={ onToggle }
 						aria-expanded={ isOpen }
 						aria-label={ sprintf(
@@ -135,7 +114,7 @@ export default function CheckIn( { rsvpId, attendee, initialState, states } ) {
 							{ states.map( ( option ) => (
 								<MenuItem
 									key={ option.value }
-									icon={ <StateIcon html={ option.icon } /> }
+									icon={ option.icon }
 									iconPosition="left"
 									role="menuitemradio"
 									isSelected={ option.value === state }

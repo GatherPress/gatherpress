@@ -40,16 +40,13 @@ final class Check_In_Registry {
 	public const NOT_RECORDED = 'not-recorded';
 
 	/**
-	 * The icon of an RSVP without a check-in state: a dash, the `lineSolid` icon of `@wordpress/icons`.
+	 * The Dashicon of an RSVP without a check-in state: a dash.
 	 *
 	 * @since TBD
 	 *
 	 * @var string
 	 */
-	public const NOT_RECORDED_ICON =
-		'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"' .
-		' aria-hidden="true" focusable="false">' .
-		'<path d="M5 11.25h14v1.5H5z"></path></svg>';
+	public const NOT_RECORDED_ICON = 'minus';
 
 	/**
 	 * The registered state classes, keyed by flag slug.
@@ -186,21 +183,21 @@ final class Check_In_Registry {
 	 *
 	 * @param Check_In_State|null $state The state, or null for not recorded.
 	 *
-	 * @return array{value: string, label: string, icon: string} Its value, name and escaped icon.
+	 * @return array{value: string, label: string, icon: string} Its value, name and sanitized Dashicon name.
 	 */
 	public function describe( ?Check_In_State $state ): array {
 		if ( null === $state ) {
 			return array(
 				'value' => self::NOT_RECORDED,
 				'label' => __( 'Not recorded', 'gatherpress' ),
-				'icon'  => self::kses_icon( self::NOT_RECORDED_ICON ),
+				'icon'  => self::NOT_RECORDED_ICON,
 			);
 		}
 
 		return array(
 			'value' => $state::SLUG,
 			'label' => $state->label(),
-			'icon'  => self::kses_icon( $state->icon() ),
+			'icon'  => sanitize_html_class( $state->icon() ),
 		);
 	}
 
@@ -222,55 +219,6 @@ final class Check_In_Registry {
 		$state_class = $this->states[ $value ] ?? null;
 
 		return null !== $state_class && ( new $state_class( $rsvp_id ) )->add();
-	}
-
-	/**
-	 * Escapes the SVG markup of a check-in state's icon.
-	 *
-	 * @since TBD
-	 *
-	 * @param string $svg SVG markup.
-	 *
-	 * @return string The markup, with only the SVG elements and attributes an icon needs.
-	 */
-	public static function kses_icon( string $svg ): string {
-		$shape = array(
-			'class'     => true,
-			'clip-rule' => true,
-			'fill'      => true,
-			'fill-rule' => true,
-			'transform' => true,
-		);
-
-		return wp_kses(
-			$svg,
-			array(
-				'svg'    => array(
-					'aria-hidden' => true,
-					'class'       => true,
-					'fill'        => true,
-					'focusable'   => true,
-					'height'      => true,
-					'viewbox'     => true,
-					'width'       => true,
-					'xmlns'       => true,
-				),
-				'g'      => $shape,
-				'path'   => $shape + array( 'd' => true ),
-				'circle' => $shape + array(
-					'cx' => true,
-					'cy' => true,
-					'r'  => true,
-				),
-				'rect'   => $shape + array(
-					'height' => true,
-					'rx'     => true,
-					'width'  => true,
-					'x'      => true,
-					'y'      => true,
-				),
-			)
-		);
 	}
 
 	/**

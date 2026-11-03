@@ -12,9 +12,9 @@ const STATUSES = JSON.stringify( [
 ] );
 
 const CHECK_IN_STATES = JSON.stringify( [
-	{ value: 'checked-in', label: 'Checked in', icon: '<svg></svg>' },
-	{ value: 'no-show', label: 'No-show', icon: '<svg></svg>' },
-	{ value: 'not-recorded', label: 'Not recorded', icon: '<svg></svg>' },
+	{ value: 'checked-in', label: 'Checked in', icon: 'yes' },
+	{ value: 'no-show', label: 'No-show', icon: 'no-alt' },
+	{ value: 'not-recorded', label: 'Not recorded', icon: 'minus' },
 ] );
 
 const MOUNTS = {

@@ -167,7 +167,7 @@ class Test_Check_In_Registry extends Base_Unit_Test {
 			/**
 			 * Gets the icon of the state.
 			 *
-			 * @return string The SVG markup.
+			 * @return string The Dashicon name.
 			 */
 			public function icon(): string {
 				return '';
@@ -218,11 +218,10 @@ class Test_Check_In_Registry extends Base_Unit_Test {
 	}
 
 	/**
-	 * The choices are each state, then not recorded, with escaped icons.
+	 * The choices are each state, then not recorded, with sanitized icons.
 	 *
 	 * @covers ::get_options
 	 * @covers ::describe
-	 * @covers ::kses_icon
 	 *
 	 * @return void
 	 */
@@ -238,16 +237,12 @@ class Test_Check_In_Registry extends Base_Unit_Test {
 			wp_list_pluck( $options, 'value' )
 		);
 		$this->assertSame( 'Not recorded', $options[3]['label'] );
-		// wp_kses() lowercases attribute names; the HTML parser restores viewBox on an SVG element.
+		$this->assertSame( 'minus', $options[3]['icon'] );
+		$this->assertSame( 'yes', $options[0]['icon'], 'Core icons survive the sanitizing.' );
 		$this->assertSame(
-			str_replace( 'viewBox', 'viewbox', Check_In_Registry::NOT_RECORDED_ICON ),
-			$options[3]['icon'],
-			'Core icons survive the escaping.'
-		);
-		$this->assertSame(
-			'<svg viewbox="0 0 24 24">alert(1)<circle cx="12" cy="12" r="6"></circle></svg>',
+			'laptoponclickalert1',
 			$options[2]['icon'],
-			'A script and event handlers are removed from an icon.'
+			'Quotes and other characters a class cannot hold are removed from an icon.'
 		);
 	}
 

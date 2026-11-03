@@ -56,13 +56,11 @@ abstract class Check_In_State extends Base {
 	/**
 	 * Gets the icon of the state, shown with its name on the RSVP screen.
 	 *
-	 * SVG markup of a 24 by 24 icon, drawn like the `@wordpress/icons` set. It
-	 * goes through `Check_In_Registry::kses_icon()`, which keeps `svg`, `path`,
-	 * `g`, `circle` and `rect`.
+	 * A Dashicon name without its `dashicons-` prefix, for example `yes`.
 	 *
 	 * @since TBD
 	 *
-	 * @return string The SVG markup.
+	 * @return string The Dashicon name.
 	 */
 	abstract public function icon(): string;
 

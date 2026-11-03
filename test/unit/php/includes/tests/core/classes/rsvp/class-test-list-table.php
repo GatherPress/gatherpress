@@ -938,7 +938,7 @@ class Test_List_Table extends Base {
 			'Failed to assert the dropdown is named for the attendee.'
 		);
 		$this->assertStringContainsString(
-			'<path d="M5 11.25h14v1.5H5z"></path>',
+			'<span class="dashicons dashicons-minus" aria-hidden="true"></span>',
 			$cell,
 			'Failed to assert the icon shows.'
 		);
