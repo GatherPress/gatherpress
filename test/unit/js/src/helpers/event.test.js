@@ -382,6 +382,25 @@ describe( 'useHasEventActivityFilterSupport', () => {
 		);
 	} );
 
+	it( 'returns false while the post type list has not loaded', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getPostType: () => ( {
+						supports: { 'gatherpress-shadow-source': true },
+					} ),
+					getTaxonomy: () => ( { types: [ 'gatherpress_event' ] } ),
+					getPostTypes: () => undefined,
+				};
+			}
+			return {};
+		} );
+
+		expect( useHasEventActivityFilterSupport( 'gatherpress_venue' ) ).toBe(
+			false,
+		);
+	} );
+
 	it( 're-evaluates when the registry data arrives', () => {
 		// Behavioral check for the race the hook fixes: on the first render
 		// the wiring data isn't cached yet (the core selectors return
