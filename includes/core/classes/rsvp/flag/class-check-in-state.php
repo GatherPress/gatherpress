@@ -74,18 +74,15 @@ abstract class Check_In_State extends Base {
 	 * @return bool True when the RSVP has this state and no other.
 	 */
 	public function add(): bool {
-		if ( ! parent::add() ) {
-			return false;
-		}
-
 		$cleared = true;
 
+		// Cleared first, so listeners of the added action read this state.
 		foreach ( Check_In_Registry::get_instance()->get_all() as $state_class ) {
-			if ( static::class !== $state_class ) {
+			if ( static::SLUG !== $state_class::SLUG ) {
 				$cleared = ( new $state_class( $this->rsvp_id ) )->remove() && $cleared;
 			}
 		}
 
-		return $cleared;
+		return $cleared && parent::add();
 	}
 }

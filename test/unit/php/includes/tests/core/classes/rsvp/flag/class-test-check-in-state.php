@@ -99,6 +99,58 @@ class Test_Check_In_State extends Base_Unit_Test {
 	}
 
 	/**
+	 * Listeners of the added action read the new state, not the one it replaced.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::add
+	 *
+	 * @return void
+	 */
+	public function test_add_clears_the_other_states_before_announcing(): void {
+		$rsvp_id = $this->make_rsvp();
+		$seen    = '';
+
+		( new Check_In( $rsvp_id ) )->add();
+
+		add_action(
+			'gatherpress_rsvp_flag_added',
+			static function ( int $id ) use ( &$seen ): void {
+				$seen = Check_In_Registry::get_instance()->get_state( $id )::SLUG;
+			}
+		);
+
+		( new No_Show( $rsvp_id ) )->add();
+
+		$this->assertSame( No_Show::SLUG, $seen );
+	}
+
+	/**
+	 * A state registered by a differently written class name keeps its own flag.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::add
+	 *
+	 * @return void
+	 */
+	public function test_add_keeps_a_state_registered_with_a_leading_backslash(): void {
+		$registry = Check_In_Registry::get_instance();
+
+		Utility::set_and_get_hidden_property( $registry, 'states', $this->registered );
+		$this->assertTrue( $registry->register( '\\' . Test_Checked_In_Online::class ) );
+
+		$rsvp_id = $this->make_rsvp();
+
+		$this->assertTrue( ( new Test_Checked_In_Online( $rsvp_id ) )->add() );
+		$this->assertSame(
+			array( Test_Checked_In_Online::SLUG ),
+			Setup::get_instance()->get_flags( $rsvp_id ),
+			'The state should not remove the flag it just stored.'
+		);
+	}
+
+	/**
 	 * A state that cannot be written leaves the others alone.
 	 *
 	 * @covers ::add
