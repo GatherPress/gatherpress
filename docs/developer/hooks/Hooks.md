@@ -25,6 +25,10 @@
 
 - [`gatherpress_calendar_entry_render`](gatherpress_calendar_entry_render.md) Fires before the calendar renders the entry template of one event.
 
+## class-check-in-registry.php
+
+- [`gatherpress_register_rsvp_check_in_states`](gatherpress_register_rsvp_check_in_states.md) Fires so plugins can register check-in states.
+
 ## class-email.php
 
 - [`gatherpress_email_subject`](gatherpress_email_subject.md) Filters the subject of an event email.

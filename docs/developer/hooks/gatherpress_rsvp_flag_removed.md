@@ -6,7 +6,8 @@ Fires after a flag is removed from an RSVP that carried it.
 Every flag fires this, so code reacting to one flag compares `$flag`
 with that flag class's `SLUG`, for example `Check_In::SLUG` to act
 on a removed check-in. It does not fire on a repeat, a failed write,
-or when the RSVP itself is deleted.
+or when the RSVP itself is deleted. A check-in state being replaced
+fires it before the added action for the new state.
 
 ## Auto-generated Example
 
@@ -35,7 +36,7 @@ add_action(
 
 ## Files
 
-- [includes/core/classes/rsvp/flag/class-base.php:217](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/rsvp/flag/class-base.php#L217)
+- [includes/core/classes/rsvp/flag/class-base.php:219](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/rsvp/flag/class-base.php#L219)
 ```php
 do_action( 'gatherpress_rsvp_flag_removed', $this->rsvp_id, static::SLUG )
 ```
