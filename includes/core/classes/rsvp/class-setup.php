@@ -492,6 +492,7 @@ final class Setup {
 				'status'      => $status,
 				'post_id'     => $rsvp_table->get_filtered_post_id(),
 				'responses'   => $rsvp_table->get_filtered_responses(),
+				'check_in'    => Check_In_Controls::get_filtered(),
 			),
 			true
 		);

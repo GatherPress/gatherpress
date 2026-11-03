@@ -11,7 +11,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Utility;
 
-if ( ! isset( $rsvp_table, $search_term, $status, $post_id, $responses ) ) {
+if ( ! isset( $rsvp_table, $search_term, $status, $post_id, $responses, $check_in ) ) {
 	return;
 }
 
@@ -81,6 +81,10 @@ $rsvp_table->prepare_items();
 
 		<?php if ( ! empty( $responses ) ) : ?>
 			<input type="hidden" name="response" value="<?php echo esc_attr( implode( ',', $responses ) ); ?>" />
+		<?php endif; ?>
+
+		<?php if ( ! empty( $check_in ) ) : ?>
+			<input type="hidden" name="check_in" value="<?php echo esc_attr( $check_in ); ?>" />
 		<?php endif; ?>
 	</form>
 
