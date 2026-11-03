@@ -332,22 +332,33 @@ class Settings {
 			return $url;
 		}
 
-		// `{s}` stands in for a subdomain, so it is resolved before the host
-		// is read; a bare placeholder does not parse as one.
-		$host = (string) wp_parse_url( str_replace( '{s}', 'a', $url ), PHP_URL_HOST );
-
-		$is_carto = in_array( $host, self::CARTO_TILE_HOSTS, true )
-			|| str_ends_with( $host, '.basemaps.cartocdn.com' );
-
 		// Matched at a parameter boundary, so `api_key=` is not mistaken for
 		// a key that is already there.
-		if ( ! $is_carto || 1 === preg_match( '/[?&]key=/', $url ) ) {
+		if ( ! self::is_carto_tile_url( $url ) || 1 === preg_match( '/[?&]key=/', $url ) ) {
 			return $url;
 		}
 
 		// Concatenated rather than added with add_query_arg(), which cannot
 		// parse the `{s}` subdomain placeholder as a host.
 		return $url . ( str_contains( $url, '?' ) ? '&' : '?' ) . 'key=' . rawurlencode( $key );
+	}
+
+	/**
+	 * Whether a tile URL goes to one of CARTO's basemap hosts.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $url Tile URL or URL template.
+	 *
+	 * @return bool True when the host is CARTO's.
+	 */
+	public static function is_carto_tile_url( string $url ): bool {
+		// `{s}` stands in for a subdomain, so it is resolved before the host
+		// is read; a bare placeholder does not parse as one.
+		$host = (string) wp_parse_url( str_replace( '{s}', 'a', $url ), PHP_URL_HOST );
+
+		return in_array( $host, self::CARTO_TILE_HOSTS, true )
+			|| str_ends_with( $host, '.basemaps.cartocdn.com' );
 	}
 
 	/**

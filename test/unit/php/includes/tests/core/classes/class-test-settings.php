@@ -3504,7 +3504,11 @@ class Test_Settings extends Base {
 				'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
 				'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?key=abc123',
 			),
-			'the compositor host gets it too'    => array(
+			'the bare host gets it too'          => array(
+				'https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+				'https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?key=abc123',
+			),
+			'the old host gets it too'           => array(
 				'https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png',
 				'https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png?key=abc123',
 			),
@@ -3545,6 +3549,7 @@ class Test_Settings extends Base {
 	 * @since 0.36.0
 	 *
 	 * @covers ::add_map_tile_key
+	 * @covers ::is_carto_tile_url
 	 *
 	 * @dataProvider data_map_tile_keys
 	 *

@@ -142,6 +142,42 @@ class Test_OSM extends Base {
 	}
 
 	/**
+	 * A CARTO tile request names the site as its referer, so a key
+	 * restricted to the site's domain is accepted. Another host is not told.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::fetch_tile
+	 *
+	 * @return void
+	 */
+	public function test_fetch_tile_sends_the_site_as_referer_to_carto(): void {
+		$requests = array();
+		$capture  = static function ( $preempt, $args, $url ) use ( &$requests ) {
+			$requests[ $url ] = $args['headers']['Referer'] ?? null;
+
+			return $preempt;
+		};
+
+		add_filter( 'pre_http_request', $capture, 9, 3 );
+
+		( new OSM() )->fetch_tile( 1, 2, 3, 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?key=abc123' );
+		( new OSM() )->fetch_tile( 1, 2, 3, 'https://example.test/{z}/{x}/{y}.png' );
+
+		remove_filter( 'pre_http_request', $capture, 9 );
+
+		$this->assertSame(
+			home_url( '/' ),
+			$requests['https://a.basemaps.cartocdn.com/light_all/1/2/3.png?key=abc123'],
+			'Failed to assert a CARTO tile request names the site as its referer.'
+		);
+		$this->assertNull(
+			$requests['https://example.test/1/2/3.png'],
+			'Failed to assert another tile host is not sent a referer.'
+		);
+	}
+
+	/**
 	 * `fetch_tile()` returns null when the response code is non-200 — a
 	 * blank patch in the composite is preferable to aborting the whole
 	 * render.
@@ -713,7 +749,7 @@ class Test_OSM extends Base {
 		$settings->set( 'carto_api_key', 'abc123' );
 
 		$this->assertSame(
-			OSM::DEFAULT_TILE_URL . '?key=abc123',
+			'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?key=abc123',
 			Utility::invoke_hidden_method( new OSM(), 'get_tile_url_template' ),
 			'Failed to assert the compositor tile URL carries the key.'
 		);

@@ -26,8 +26,8 @@ use Throwable;
 /**
  * Class OSM.
  *
- * Tile-composite static map provider. Reads CartoDB's keyless OSM
- * basemap by default; the tile-URL template is filterable so a site can
+ * Tile-composite static map provider. Reads CARTO's OSM basemap by
+ * default; the tile-URL template is filterable so a site can
  * point at a different XYZ tile server (Stamen, Maptiler, self-hosted)
  * without changing code.
  *
@@ -36,13 +36,14 @@ use Throwable;
 final class OSM extends Base {
 
 	/**
-	 * Default XYZ tile URL template. CartoDB's "light_all" basemap —
-	 * keyless, fast CDN, fits the GatherPress aesthetic.
+	 * Default XYZ tile URL template: CARTO's "light_all" basemap, the same
+	 * one the interactive map uses.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Uses CARTO's `basemaps.cartocdn.com` host, as the interactive map does.
 	 * @var string
 	 */
-	const DEFAULT_TILE_URL = 'https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png';
+	const DEFAULT_TILE_URL = Settings::MAP_TILE_URL;
 
 	/**
 	 * Tile dimension in pixels (Web Mercator standard).
@@ -321,7 +322,15 @@ final class OSM extends Base {
 			)
 		);
 
-		$response = wp_safe_remote_get( $url, array( 'timeout' => 5 ) );
+		$args = array( 'timeout' => 5 );
+
+		// A CARTO key restricted to the site's domain is checked against the
+		// referer, which a server request does not send on its own.
+		if ( Settings::is_carto_tile_url( $url ) ) {
+			$args['headers'] = array( 'Referer' => home_url( '/' ) );
+		}
+
+		$response = wp_safe_remote_get( $url, $args );
 
 		if ( is_wp_error( $response ) ) {
 			return null;
