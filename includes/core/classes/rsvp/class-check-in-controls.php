@@ -140,8 +140,9 @@ final class Check_In_Controls {
 	/**
 	 * The check-in cell of an RSVP: the icon and name of its state.
 	 *
-	 * For an approved RSVP, script turns the cell into a dropdown that sets the
-	 * state in place. Another RSVP shows its state read-only, or a dash without one.
+	 * For an approved RSVP, the cell is the dropdown's toggle, which script
+	 * takes over to set the state in place, so nothing moves when it does.
+	 * Another RSVP shows its state read-only, or a dash without one.
 	 *
 	 * @since TBD
 	 *
@@ -160,19 +161,37 @@ final class Check_In_Controls {
 		}
 
 		$option = $registry->describe( $state );
+		$icon   = sprintf(
+			'<span class="dashicon dashicons dashicons-%s" aria-hidden="true"></span>',
+			esc_attr( $option['icon'] )
+		);
+
+		if ( ! $is_approved ) {
+			return sprintf(
+				'<div class="gatherpress-rsvp-check-in">%1$s<span>%2$s</span></div>',
+				$icon,
+				esc_html( $option['label'] )
+			);
+		}
 
 		return sprintf(
-			'<div class="gatherpress-rsvp-check-in"%1$s>' .
-			'<span class="dashicons dashicons-%2$s" aria-hidden="true"></span><span>%3$s</span></div>',
-			$is_approved
-				? sprintf(
-					' data-rsvp-id="%1$d" data-state="%2$s" data-attendee="%3$s"',
-					absint( $item['comment_ID'] ),
-					esc_attr( $option['value'] ),
-					esc_attr( $attendee )
+			'<div class="gatherpress-rsvp-check-in" data-rsvp-id="%1$d" data-state="%2$s" data-attendee="%3$s">' .
+			'<div class="components-dropdown gatherpress-rsvp-check-in__dropdown">' .
+			'<button type="button" aria-expanded="false" aria-label="%4$s"' .
+			' class="components-button is-compact is-tertiary has-text has-icon">%5$s%6$s</button>' .
+			'</div></div>',
+			absint( $item['comment_ID'] ),
+			esc_attr( $option['value'] ),
+			esc_attr( $attendee ),
+			esc_attr(
+				sprintf(
+					/* translators: 1: Attendee name. 2: a check-in state, e.g. "Checked in". */
+					__( 'Check-in for %1$s: %2$s', 'gatherpress' ),
+					$attendee,
+					$option['label']
 				)
-				: '',
-			esc_attr( $option['icon'] ),
+			),
+			$icon,
 			esc_html( $option['label'] )
 		);
 	}

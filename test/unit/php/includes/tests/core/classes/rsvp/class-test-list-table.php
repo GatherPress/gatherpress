@@ -915,8 +915,8 @@ class Test_List_Table extends Base {
 
 	/**
 	 * The check-in column shows the state's icon and name. An approved RSVP's
-	 * cell carries what the dropdown needs; another shows its state read-only,
-	 * or a dash without one.
+	 * cell is the dropdown's toggle and carries what the dropdown needs; another
+	 * shows its state read-only, or a dash without one.
 	 *
 	 * @covers ::column_default
 	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::render_cell
@@ -938,16 +938,21 @@ class Test_List_Table extends Base {
 			'Failed to assert the dropdown is named for the attendee.'
 		);
 		$this->assertStringContainsString(
-			'<span class="dashicons dashicons-minus" aria-hidden="true"></span>',
+			'class="components-button is-compact is-tertiary has-text has-icon">' .
+			'<span class="dashicon dashicons dashicons-minus" aria-hidden="true"></span>Not recorded</button>',
 			$cell,
-			'Failed to assert the icon shows.'
+			'Failed to assert the toggle shows the icon and name, as the dropdown renders it.'
 		);
-		$this->assertStringContainsString( '<span>Not recorded</span>', $cell );
+		$this->assertStringContainsString(
+			sprintf( 'aria-label="Check-in for %s: Not recorded"', esc_attr( $this->rsvp['comment_author'] ) ),
+			$cell,
+			'Failed to assert the toggle is named for the attendee.'
+		);
 
 		( new No_Show( $rsvp_id ) )->add();
 
 		$this->assertStringContainsString(
-			'<span>No-show</span>',
+			'No-show</button>',
 			$this->list_table->column_default( $this->rsvp, 'checked_in' ),
 			'Failed to assert the column shows No-show.'
 		);
@@ -957,10 +962,11 @@ class Test_List_Table extends Base {
 		$cell = $this->list_table->column_default( $this->rsvp, 'checked_in' );
 
 		$this->assertStringContainsString(
-			'<span>No-show</span>',
+			'<span class="dashicon dashicons dashicons-no-alt" aria-hidden="true"></span><span>No-show</span>',
 			$cell,
 			'Failed to assert a pending RSVP shows its state.'
 		);
+		$this->assertStringNotContainsString( '<button', $cell, 'Failed to assert a pending RSVP gets no toggle.' );
 		$this->assertStringNotContainsString(
 			'data-rsvp-id',
 			$cell,
@@ -1030,7 +1036,7 @@ class Test_List_Table extends Base {
 		Check_In_Controls::apply_action( $rsvp_id, 'check_in-checked-in-online' );
 
 		$this->assertStringContainsString(
-			'<span>Checked in online</span>',
+			'dashicons-laptoponclickalert1" aria-hidden="true"></span>Checked in online</button>',
 			$this->list_table->column_default( $this->rsvp, 'checked_in' ),
 			'Failed to assert the column shows the state.'
 		);
