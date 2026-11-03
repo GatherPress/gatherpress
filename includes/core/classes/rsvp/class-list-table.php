@@ -52,7 +52,6 @@ final class List_Table extends WP_List_Table {
 	 */
 	const STATUS_LINK_TEMPLATE = '<a href="%s"%s>%s <span class="count">(%s)</span></a>';
 
-
 	/**
 	 * Post type whose RSVPs this table lists.
 	 *
