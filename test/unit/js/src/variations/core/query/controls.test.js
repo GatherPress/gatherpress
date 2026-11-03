@@ -69,6 +69,7 @@ jest.mock( '@src/variations/core/query/slots/inherited-query-controls', () => {
 jest.mock( '@src/variations/core/query/components', () => ( {
 	EventQueryControlsSlotFill: () => null,
 	EventInheritedQueryControlsSlotFill: () => null,
+	useQueryControlVisibility: jest.fn( () => ( {} ) ),
 } ) );
 
 jest.mock( '@src/helpers/event', () => ( {
@@ -78,6 +79,7 @@ jest.mock( '@src/helpers/event', () => ( {
 
 jest.mock( '@src/helpers/editor', () => ( {
 	usePostTypeLabel: jest.fn( ( key, postType, fallback ) => fallback ),
+	isInFSETemplate: jest.fn( () => false ),
 } ) );
 
 const mockUpdateBlockAttributes = jest.fn();
@@ -95,6 +97,7 @@ jest.mock( '@wordpress/data', () => ( {
 import { addFilter } from '@wordpress/hooks';
 import { useIsPostTypeLoaded, usePostTypeSupports } from '@src/helpers/event';
 import { usePostTypeLabel } from '@src/helpers/editor';
+import { useQueryControlVisibility } from '@src/variations/core/query/components';
 
 /**
  * Internal dependencies
@@ -183,6 +186,42 @@ describe( 'EventQueryControlsPanel', () => {
 		expect(
 			screen.queryByTestId( 'query-controls-slot' ),
 		).not.toBeInTheDocument();
+	} );
+
+	it( 'returns null for a shadow-source query with no control to show', () => {
+		usePostTypeSupports.mockImplementation(
+			( support ) => 'gatherpress-shadow-source' === support,
+		);
+		useQueryControlVisibility.mockReturnValueOnce( {
+			showShadowSourceFilterControl: false,
+			showHasEventsFilterControl: false,
+		} );
+
+		const { container } = render(
+			<EventQueryControlsPanel
+				{ ...baseProps( { postType: 'gatherpress_venue' } ) }
+			/>,
+		);
+
+		expect( container.firstChild ).toBeNull();
+	} );
+
+	it.each( [
+		[ 'showHasEventsFilterControl' ],
+		[ 'showShadowSourceFilterControl' ],
+	] )( 'renders the panel for a shadow-source query when %s', ( flag ) => {
+		usePostTypeSupports.mockImplementation(
+			( support ) => 'gatherpress-shadow-source' === support,
+		);
+		useQueryControlVisibility.mockReturnValueOnce( { [ flag ]: true } );
+
+		render(
+			<EventQueryControlsPanel
+				{ ...baseProps( { postType: 'gatherpress_venue' } ) }
+			/>,
+		);
+
+		expect( screen.getByTestId( 'inspector-controls' ) ).toBeInTheDocument();
 	} );
 
 	it( 'gracefully handles a missing query.postType (treats it as unsupported)', () => {

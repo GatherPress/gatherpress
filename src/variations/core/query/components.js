@@ -810,18 +810,19 @@ const renderQueryControls = ( controls, fillProps ) =>
 	} );
 
 /**
- * Render the Event Query Loop controls from a component scope.
+ * Work out which conditional Event Query Loop controls apply to a block.
  *
- * The support checks are hooks, so they run here rather than inside the
- * SlotFill render-prop callback.
+ * Shared by the controls and the panel around them, so the panel only shows
+ * when it has something to render.
  *
- * @param {Object}  props                   Component props.
- * @param {Object}  props.blockProps        Block edit props handed down by the slot.
- * @param {boolean} props.inTemplateContext Whether the host editor is a template.
+ * @since TBD
  *
- * @return {Element} The filtered controls.
+ * @param {Object}  blockProps        Block edit props for the query block.
+ * @param {boolean} inTemplateContext Whether the host editor is a template.
+ *
+ * @return {Object} Which control groups apply.
  */
-const QueryControlsContent = ( { blockProps, inTemplateContext } ) => {
+export const useQueryControlVisibility = ( blockProps, inTemplateContext ) => {
 	const queryPostType = blockProps.attributes?.query?.postType;
 	const currentPostType = blockProps?.context?.postType;
 
@@ -843,18 +844,42 @@ const QueryControlsContent = ( { blockProps, inTemplateContext } ) => {
 	const queriedWiresEventActivity =
 		useHasEventActivityFilterSupport( queryPostType );
 
-	const showExcludeControl =
-		isEventQuery &&
-		!! currentPostType &&
-		currentPostType === queryPostType;
-	const showShadowSourceFilterControl =
-		inTemplateContext ||
-		( isShadowSourceContext &&
+	return {
+		isEventQuery,
+		showExcludeControl:
+			isEventQuery &&
 			!! currentPostType &&
-			!! queryPostType &&
-			currentPostType !== queryPostType );
-	const showHasEventsFilterControl =
-		!! queryPostType && queriedIsShadowSource && queriedWiresEventActivity;
+			currentPostType === queryPostType,
+		showShadowSourceFilterControl:
+			inTemplateContext ||
+			( isShadowSourceContext &&
+				!! currentPostType &&
+				!! queryPostType &&
+				currentPostType !== queryPostType ),
+		showHasEventsFilterControl:
+			!! queryPostType && queriedIsShadowSource && queriedWiresEventActivity,
+	};
+};
+
+/**
+ * Render the Event Query Loop controls from a component scope.
+ *
+ * The support checks are hooks, so they run here rather than inside the
+ * SlotFill render-prop callback.
+ *
+ * @param {Object}  props                   Component props.
+ * @param {Object}  props.blockProps        Block edit props handed down by the slot.
+ * @param {boolean} props.inTemplateContext Whether the host editor is a template.
+ *
+ * @return {Element} The filtered controls.
+ */
+const QueryControlsContent = ( { blockProps, inTemplateContext } ) => {
+	const {
+		isEventQuery,
+		showExcludeControl,
+		showShadowSourceFilterControl,
+		showHasEventsFilterControl,
+	} = useQueryControlVisibility( blockProps, inTemplateContext );
 
 	const controls = [
 		...( isEventQuery

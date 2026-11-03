@@ -18,9 +18,10 @@ import EventInheritedQueryControls from './slots/inherited-query-controls';
 import {
 	EventQueryControlsSlotFill,
 	EventInheritedQueryControlsSlotFill,
+	useQueryControlVisibility,
 } from './components';
 import { useIsPostTypeLoaded, usePostTypeSupports } from '../../../helpers/event';
-import { usePostTypeLabel } from '../../../helpers/editor';
+import { isInFSETemplate, usePostTypeLabel } from '../../../helpers/editor';
 
 /**
  * Builds the block name the event query panel gives an event query loop.
@@ -125,10 +126,10 @@ const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
  * has early-return paths for non-query blocks where we don't want to read
  * supports at all.
  *
- * Shows the panel whenever the queried post type declares
- * `gatherpress-event-date` or `gatherpress-shadow-source` support so the
- * activity-filter controls (visible on shadow-source loops) have a host.
- * For unrelated post types the panel collapses to nothing.
+ * Shows the panel when the queried post type declares
+ * `gatherpress-event-date` support, or declares `gatherpress-shadow-source`
+ * support and has a control to show. Otherwise the panel collapses to
+ * nothing.
  *
  * @param {Object} props - Block props passed through from the HOC.
  *
@@ -151,6 +152,10 @@ export const EventQueryControlsPanel = ( props ) => {
 		'gatherpress-shadow-source',
 		queryPostType,
 	);
+	const {
+		showShadowSourceFilterControl,
+		showHasEventsFilterControl,
+	} = useQueryControlVisibility( props, isInFSETemplate() );
 
 	// `usePostTypeSupports` is also false while the post type is still
 	// loading, so both effects below wait for the post type before they
@@ -344,12 +349,11 @@ export const EventQueryControlsPanel = ( props ) => {
 		__( 'Event', 'gatherpress' ),
 	);
 
-	// The panel stays open when the queried post type declares either
-	// event-date or shadow-source support. The inner SlotFill renders
-	// event-only controls only for event-date support, activity controls
-	// only for shadow-source support, and nothing otherwise. For unrelated
-	// post types the inner content is empty so we collapse the whole panel.
-	if ( ! queryPostTypeSupportsEvents && ! queryPostTypeSupportsShadowSource ) {
+	const hasShadowSourceControls =
+		queryPostTypeSupportsShadowSource &&
+		( showShadowSourceFilterControl || showHasEventsFilterControl );
+
+	if ( ! queryPostTypeSupportsEvents && ! hasShadowSourceControls ) {
 		return null;
 	}
 
