@@ -144,14 +144,14 @@ final class Shadow_Source {
 	 * @return array<string, mixed> Modified query arguments.
 	 */
 	public function rest_query( array $args, WP_REST_Request $request ): array {
-		$has_events_filter = $request->get_param( 'has_events_filter' );
-		if ( null !== $has_events_filter ) {
-			$args['has_events_filter'] = $has_events_filter;
+		$gatherpress_has_events_filter = $request->get_param( 'gatherpress_has_events_filter' );
+		if ( null !== $gatherpress_has_events_filter ) {
+			$args['gatherpress_has_events_filter'] = $gatherpress_has_events_filter;
 		}
 
-		$upcoming_events_only = $request->get_param( 'upcoming_events_only' );
-		if ( null !== $upcoming_events_only ) {
-			$args['upcoming_events_only'] = $upcoming_events_only;
+		$gatherpress_upcoming_events_only = $request->get_param( 'gatherpress_upcoming_events_only' );
+		if ( null !== $gatherpress_upcoming_events_only ) {
+			$args['gatherpress_upcoming_events_only'] = $gatherpress_upcoming_events_only;
 		}
 
 		$context_post_id = $request->get_param( 'gatherpress_shadow_source_post_id' );
@@ -177,13 +177,13 @@ final class Shadow_Source {
 	 * @return array<string, array<string, mixed>> Extended collection parameters.
 	 */
 	public function rest_collection_params( array $query_params ): array {
-		$query_params['has_events_filter'] = array(
+		$query_params['gatherpress_has_events_filter'] = array(
 			'description' => __( 'Whether to filter shadow-source posts by their event activity', 'gatherpress' ),
 			'type'        => 'integer',
 			'enum'        => array( 0, 1 ),
 		);
 
-		$query_params['upcoming_events_only'] = array(
+		$query_params['gatherpress_upcoming_events_only'] = array(
 			'description' => __( 'Whether to keep only source posts with upcoming events', 'gatherpress' ),
 			'type'        => 'integer',
 			'enum'        => array( 0, 1 ),
@@ -742,7 +742,7 @@ final class Shadow_Source {
 	 * @since TBD
 	 *
 	 * @param string $source_post_type    Shadow-source post type slug to resolve source posts for.
-	 * @param bool   $upcoming_events_only Whether to keep only source posts with upcoming events.
+	 * @param bool   $gatherpress_upcoming_events_only Whether to keep only source posts with upcoming events.
 	 *                                    When false, keeps source posts that have at
 	 *                                    least one past event.
 	 *
@@ -752,7 +752,7 @@ final class Shadow_Source {
 	 */
 	public function get_source_post_ids_by_event_activity(
 		string $source_post_type,
-		bool $upcoming_events_only
+		bool $gatherpress_upcoming_events_only
 	): ?array {
 		$taxonomy_slug = $this->get_taxonomy( $source_post_type );
 		$taxonomy      = get_taxonomy( $taxonomy_slug );
@@ -768,7 +768,7 @@ final class Shadow_Source {
 
 		$slugs = Event_Query::get_instance()->get_active_shadow_term_slugs(
 			$taxonomy->name,
-			$upcoming_events_only
+			$gatherpress_upcoming_events_only
 		);
 
 		if ( empty( $slugs ) ) {

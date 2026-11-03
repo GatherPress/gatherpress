@@ -195,8 +195,8 @@ final class Event_Query {
 			 * @since 0.33.0
 			 * @since TBD    Renamed from `gatherpress_query_vars`. Also runs for Query
 			 *               Loops of shadow-source posts, such as venues, where
-			 *               `$query_args` can carry `has_events_filter` and
-			 *               `upcoming_events_only`.
+			 *               `$query_args` can carry `gatherpress_has_events_filter` and
+			 *               `gatherpress_upcoming_events_only`.
 			 *
 			 * @param array<string, mixed> $query_args  Arguments to be passed to WP_Query.
 			 * @param array<string, mixed> $block_query The block's query attribute, or the
@@ -435,12 +435,12 @@ final class Event_Query {
 		// Only meaningful on a query loop listing shadow-source post
 		// types; the pre_get_posts handler in Event\Query gates on that
 		// support.
-		if ( ! empty( $block_query['has_events_filter'] ) ) {
-			$query_args['has_events_filter'] = $block_query['has_events_filter'];
+		if ( ! empty( $block_query['gatherpress_has_events_filter'] ) ) {
+			$query_args['gatherpress_has_events_filter'] = $block_query['gatherpress_has_events_filter'];
 		}
 
-		if ( isset( $block_query['upcoming_events_only'] ) ) {
-			$query_args['upcoming_events_only'] = $block_query['upcoming_events_only'];
+		if ( isset( $block_query['gatherpress_upcoming_events_only'] ) ) {
+			$query_args['gatherpress_upcoming_events_only'] = $block_query['gatherpress_upcoming_events_only'];
 		}
 
 		return array_merge( $query_args, $this->get_shadow_source_context_args( $block_query ) );
@@ -676,14 +676,14 @@ final class Event_Query {
 
 		if ( post_type_supports( $post_type, Shadow_Source::SUPPORT ) ) {
 			// Pass through source-post event activity filtering.
-			if ( ! empty( $block_query['has_events_filter'] ) ) {
-				$query_args['has_events_filter'] = $block_query['has_events_filter'];
+			if ( ! empty( $block_query['gatherpress_has_events_filter'] ) ) {
+				$query_args['gatherpress_has_events_filter'] = $block_query['gatherpress_has_events_filter'];
 			}
 
 			// Pass through the upcoming-only flag; only read when the activity
 			// filter is on, and it defaults to upcoming.
-			if ( isset( $block_query['upcoming_events_only'] ) ) {
-				$query_args['upcoming_events_only'] = $block_query['upcoming_events_only'];
+			if ( isset( $block_query['gatherpress_upcoming_events_only'] ) ) {
+				$query_args['gatherpress_upcoming_events_only'] = $block_query['gatherpress_upcoming_events_only'];
 			}
 		}
 

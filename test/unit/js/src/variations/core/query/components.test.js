@@ -672,7 +672,7 @@ describe( 'HasEventsFilterControls', () => {
 		render(
 			<HasEventsFilterControls
 				attributes={ {
-					query: { postType: 'production', has_events_filter: 1 },
+					query: { postType: 'production', gatherpress_has_events_filter: 1 },
 				} }
 				setAttributes={ jest.fn() }
 			/>,
@@ -690,7 +690,7 @@ describe( 'HasEventsFilterControls', () => {
 		).toBeInTheDocument();
 	} );
 
-	it( 'writes has_events_filter and defaults upcoming_events_only to on', () => {
+	it( 'writes gatherpress_has_events_filter and defaults gatherpress_upcoming_events_only to on', () => {
 		const setAttributes = jest.fn();
 		const query = {
 			postType: 'gatherpress_venue',
@@ -708,8 +708,8 @@ describe( 'HasEventsFilterControls', () => {
 		expect( setAttributes ).toHaveBeenCalledWith( {
 			query: {
 				postType: 'gatherpress_venue',
-				has_events_filter: 1,
-				upcoming_events_only: 1,
+				gatherpress_has_events_filter: 1,
+				gatherpress_upcoming_events_only: 1,
 			},
 		} );
 	} );
@@ -720,7 +720,7 @@ describe( 'HasEventsFilterControls', () => {
 				attributes={ {
 					query: {
 						postType: 'gatherpress_venue',
-						has_events_filter: 1,
+						gatherpress_has_events_filter: 1,
 					},
 				} }
 				setAttributes={ jest.fn() }
@@ -735,14 +735,14 @@ describe( 'HasEventsFilterControls', () => {
 		).toHaveAttribute( 'aria-pressed', 'true' );
 	} );
 
-	it( 'flips the sub-filter label to past events only when upcoming_events_only is off', () => {
+	it( 'flips the sub-filter label to past events only when gatherpress_upcoming_events_only is off', () => {
 		render(
 			<HasEventsFilterControls
 				attributes={ {
 					query: {
 						postType: 'gatherpress_venue',
-						has_events_filter: 1,
-						upcoming_events_only: 0,
+						gatherpress_has_events_filter: 1,
+						gatherpress_upcoming_events_only: 0,
 					},
 				} }
 				setAttributes={ jest.fn() }
@@ -758,7 +758,7 @@ describe( 'HasEventsFilterControls', () => {
 		);
 	} );
 
-	it( 'writes upcoming_events_only to 0 when the sub-filter is turned off', () => {
+	it( 'writes gatherpress_upcoming_events_only to 0 when the sub-filter is turned off', () => {
 		const setAttributes = jest.fn();
 
 		render(
@@ -766,8 +766,8 @@ describe( 'HasEventsFilterControls', () => {
 				attributes={ {
 					query: {
 						postType: 'gatherpress_venue',
-						has_events_filter: 1,
-						upcoming_events_only: 1,
+						gatherpress_has_events_filter: 1,
+						gatherpress_upcoming_events_only: 1,
 					},
 				} }
 				setAttributes={ setAttributes }
@@ -779,13 +779,13 @@ describe( 'HasEventsFilterControls', () => {
 		expect( setAttributes ).toHaveBeenCalledWith( {
 			query: {
 				postType: 'gatherpress_venue',
-				has_events_filter: 1,
-				upcoming_events_only: 0,
+				gatherpress_has_events_filter: 1,
+				gatherpress_upcoming_events_only: 0,
 			},
 		} );
 	} );
 
-	it( 'writes upcoming_events_only to 1 when the sub-filter is turned back on', () => {
+	it( 'writes gatherpress_upcoming_events_only to 1 when the sub-filter is turned back on', () => {
 		const setAttributes = jest.fn();
 
 		render(
@@ -793,8 +793,8 @@ describe( 'HasEventsFilterControls', () => {
 				attributes={ {
 					query: {
 						postType: 'gatherpress_venue',
-						has_events_filter: 1,
-						upcoming_events_only: 0,
+						gatherpress_has_events_filter: 1,
+						gatherpress_upcoming_events_only: 0,
 					},
 				} }
 				setAttributes={ setAttributes }
@@ -806,13 +806,13 @@ describe( 'HasEventsFilterControls', () => {
 		expect( setAttributes ).toHaveBeenCalledWith( {
 			query: {
 				postType: 'gatherpress_venue',
-				has_events_filter: 1,
-				upcoming_events_only: 1,
+				gatherpress_has_events_filter: 1,
+				gatherpress_upcoming_events_only: 1,
 			},
 		} );
 	} );
 
-	it( 'clears has_events_filter and keeps the stored upcoming_events_only when turned off', () => {
+	it( 'clears gatherpress_has_events_filter and keeps the stored gatherpress_upcoming_events_only when turned off', () => {
 		const setAttributes = jest.fn();
 
 		render(
@@ -820,8 +820,8 @@ describe( 'HasEventsFilterControls', () => {
 				attributes={ {
 					query: {
 						postType: 'gatherpress_venue',
-						has_events_filter: 1,
-						upcoming_events_only: 0,
+						gatherpress_has_events_filter: 1,
+						gatherpress_upcoming_events_only: 0,
 					},
 				} }
 				setAttributes={ setAttributes }
@@ -833,15 +833,15 @@ describe( 'HasEventsFilterControls', () => {
 		expect( setAttributes ).toHaveBeenCalledWith( {
 			query: {
 				postType: 'gatherpress_venue',
-				has_events_filter: 0,
-				upcoming_events_only: 0,
+				gatherpress_has_events_filter: 0,
+				gatherpress_upcoming_events_only: 0,
 			},
 		} );
 	} );
 
-	it( 'clears has_events_filter without writing a sub-filter value when none was stored', () => {
+	it( 'clears gatherpress_has_events_filter without writing a sub-filter value when none was stored', () => {
 		// Pins the other side of the ternary: with no stored
-		// upcoming_events_only, turning the primary filter off writes
+		// gatherpress_upcoming_events_only, turning the primary filter off writes
 		// `undefined` rather than the default 1.
 		const setAttributes = jest.fn();
 
@@ -850,7 +850,7 @@ describe( 'HasEventsFilterControls', () => {
 				attributes={ {
 					query: {
 						postType: 'gatherpress_venue',
-						has_events_filter: 1,
+						gatherpress_has_events_filter: 1,
 					},
 				} }
 				setAttributes={ setAttributes }
@@ -862,8 +862,8 @@ describe( 'HasEventsFilterControls', () => {
 		expect( setAttributes ).toHaveBeenCalledWith( {
 			query: {
 				postType: 'gatherpress_venue',
-				has_events_filter: 0,
-				upcoming_events_only: undefined,
+				gatherpress_has_events_filter: 0,
+				gatherpress_upcoming_events_only: undefined,
 			},
 		} );
 	} );

@@ -186,8 +186,8 @@ class Test_Shadow_Source extends Base {
 		$request->method( 'get_param' )
 			->willReturnMap(
 				array(
-					array( 'has_events_filter', 1 ),
-					array( 'upcoming_events_only', 0 ),
+					array( 'gatherpress_has_events_filter', 1 ),
+					array( 'gatherpress_upcoming_events_only', 0 ),
 					array( 'gatherpress_shadow_source_post_id', 42 ),
 					array( 'gatherpress_shadow_source_post_type', 'production' ),
 				)
@@ -195,8 +195,8 @@ class Test_Shadow_Source extends Base {
 
 		$result = $instance->rest_query( array( 'post_type' => 'gatherpress_venue' ), $request );
 
-		$this->assertSame( 1, $result['has_events_filter'], 'Should pass has_events_filter through.' );
-		$this->assertSame( 0, $result['upcoming_events_only'], 'Should pass upcoming_events_only through.' );
+		$this->assertSame( 1, $result['gatherpress_has_events_filter'], 'Should pass the events filter through.' );
+		$this->assertSame( 0, $result['gatherpress_upcoming_events_only'], 'Should pass upcoming-only through.' );
 		$this->assertSame( 42, $result['gatherpress_shadow_source_post_id'], 'Should int-cast the context post id.' );
 		$this->assertSame(
 			'production',
@@ -236,12 +236,12 @@ class Test_Shadow_Source extends Base {
 
 		$result = $instance->rest_collection_params( array( 'orderby' => array( 'enum' => array( 'date' ) ) ) );
 
-		$this->assertSame( 'integer', $result['has_events_filter']['type'] );
-		$this->assertSame( array( 0, 1 ), $result['has_events_filter']['enum'] );
+		$this->assertSame( 'integer', $result['gatherpress_has_events_filter']['type'] );
+		$this->assertSame( array( 0, 1 ), $result['gatherpress_has_events_filter']['enum'] );
 
-		$this->assertSame( 'integer', $result['upcoming_events_only']['type'] );
-		$this->assertSame( array( 0, 1 ), $result['upcoming_events_only']['enum'] );
-		$this->assertSame( 1, $result['upcoming_events_only']['default'], 'Upcoming-only should default to on.' );
+		$this->assertSame( 'integer', $result['gatherpress_upcoming_events_only']['type'] );
+		$this->assertSame( array( 0, 1 ), $result['gatherpress_upcoming_events_only']['enum'] );
+		$this->assertSame( 1, $result['gatherpress_upcoming_events_only']['default'], 'Should default to on.' );
 
 		$this->assertSame( 'integer', $result['gatherpress_shadow_source_post_id']['type'] );
 		$this->assertSame( '__return_true', $result['gatherpress_shadow_source_post_id']['validate_callback'] );

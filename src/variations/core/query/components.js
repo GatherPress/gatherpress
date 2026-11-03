@@ -535,8 +535,8 @@ export const HasEventsFilterControls = ( { attributes, setAttributes } ) => {
 	const {
 		query: {
 			postType,
-			has_events_filter: hasEventsFilter,
-			upcoming_events_only: upcomingEventsOnly,
+			gatherpress_has_events_filter: hasEventsFilter,
+			gatherpress_upcoming_events_only: upcomingEventsOnly,
 		} = {},
 	} = attributes;
 
@@ -568,9 +568,9 @@ export const HasEventsFilterControls = ( { attributes, setAttributes } ) => {
 					setAttributes( {
 						query: {
 							...attributes.query,
-							has_events_filter: value ? 1 : 0,
+							gatherpress_has_events_filter: value ? 1 : 0,
 							// Keep a stored upcoming or past choice across toggles.
-							upcoming_events_only:
+							gatherpress_upcoming_events_only:
 								value && upcomingEventsOnly === undefined
 									? 1
 									: upcomingEventsOnly,
@@ -609,7 +609,7 @@ export const HasEventsFilterControls = ( { attributes, setAttributes } ) => {
 						setAttributes( {
 							query: {
 								...attributes.query,
-								upcoming_events_only: value ? 1 : 0,
+								gatherpress_upcoming_events_only: value ? 1 : 0,
 							},
 						} );
 					} }

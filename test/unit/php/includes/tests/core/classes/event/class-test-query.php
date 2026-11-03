@@ -687,8 +687,8 @@ class Test_Query extends Base {
 
 		$query = new WP_Query();
 		$query->set( 'post_type', Venue::POST_TYPE );
-		$query->set( 'has_events_filter', 1 );
-		$query->set( 'upcoming_events_only', 1 );
+		$query->set( 'gatherpress_has_events_filter', 1 );
+		$query->set( 'gatherpress_upcoming_events_only', 1 );
 
 		$instance->prepare_event_query_before_execution( $query );
 
@@ -762,8 +762,8 @@ class Test_Query extends Base {
 
 		$query = new WP_Query();
 		$query->set( 'post_type', Venue::POST_TYPE );
-		$query->set( 'has_events_filter', 1 );
-		$query->set( 'upcoming_events_only', 'upcoming' );
+		$query->set( 'gatherpress_has_events_filter', 1 );
+		$query->set( 'gatherpress_upcoming_events_only', 'upcoming' );
 
 		$instance->prepare_event_query_before_execution( $query );
 
@@ -782,7 +782,7 @@ class Test_Query extends Base {
 	/**
 	 * Defaults to upcoming events when the upcoming-only flag is absent.
 	 *
-	 * The REST layer injects a default of 1 via the `upcoming_events_only`
+	 * The REST layer injects a default of 1 via the `gatherpress_upcoming_events_only`
 	 * schema entry, but the `pre_get_posts` branch reads the WP_Query var
 	 * directly and must fall back the same way when no value has been set.
 	 *
@@ -818,7 +818,7 @@ class Test_Query extends Base {
 
 		$query = new WP_Query();
 		$query->set( 'post_type', Venue::POST_TYPE );
-		$query->set( 'has_events_filter', 1 );
+		$query->set( 'gatherpress_has_events_filter', 1 );
 
 		$instance->prepare_event_query_before_execution( $query );
 
@@ -865,10 +865,10 @@ class Test_Query extends Base {
 
 		$query = new WP_Query();
 		$query->set( 'post_type', Venue::POST_TYPE );
-		$query->set( 'has_events_filter', 1 );
+		$query->set( 'gatherpress_has_events_filter', 1 );
 		// The string form covers the AQL path, which writes 'upcoming' as a
 		// literal; both gate forms must coerce to the same result.
-		$query->set( 'upcoming_events_only', 'past' );
+		$query->set( 'gatherpress_upcoming_events_only', 'past' );
 
 		$instance->prepare_event_query_before_execution( $query );
 
@@ -903,8 +903,8 @@ class Test_Query extends Base {
 
 		$query = new WP_Query();
 		$query->set( 'post_type', Venue::POST_TYPE );
-		$query->set( 'has_events_filter', 1 );
-		$query->set( 'upcoming_events_only', 1 );
+		$query->set( 'gatherpress_has_events_filter', 1 );
+		$query->set( 'gatherpress_upcoming_events_only', 1 );
 
 		$instance->prepare_event_query_before_execution( $query );
 
@@ -946,8 +946,8 @@ class Test_Query extends Base {
 
 			$query = new WP_Query();
 			$query->set( 'post_type', Venue::POST_TYPE );
-			$query->set( 'has_events_filter', 1 );
-			$query->set( 'upcoming_events_only', 1 );
+			$query->set( 'gatherpress_has_events_filter', 1 );
+			$query->set( 'gatherpress_upcoming_events_only', 1 );
 
 			$instance->prepare_event_query_before_execution( $query );
 
@@ -978,8 +978,8 @@ class Test_Query extends Base {
 
 		$query = new WP_Query();
 		$query->set( 'post_type', 'gatherpress_event' );
-		$query->set( 'has_events_filter', 1 );
-		$query->set( 'upcoming_events_only', 1 );
+		$query->set( 'gatherpress_has_events_filter', 1 );
+		$query->set( 'gatherpress_upcoming_events_only', 1 );
 
 		$instance->prepare_event_query_before_execution( $query );
 
@@ -1005,8 +1005,8 @@ class Test_Query extends Base {
 
 		$query = new WP_Query();
 		$query->set( 'post_type', Venue::POST_TYPE );
-		$query->set( 'has_events_filter', 0 );
-		$query->set( 'upcoming_events_only', 1 );
+		$query->set( 'gatherpress_has_events_filter', 0 );
+		$query->set( 'gatherpress_upcoming_events_only', 1 );
 
 		$instance->prepare_event_query_before_execution( $query );
 
@@ -2737,8 +2737,8 @@ class Test_Query extends Base {
 
 		$query = new WP_Query();
 		$query->set( 'post_type', Venue::POST_TYPE );
-		$query->set( 'has_events_filter', 1 );
-		$query->set( 'upcoming_events_only', 1 );
+		$query->set( 'gatherpress_has_events_filter', 1 );
+		$query->set( 'gatherpress_upcoming_events_only', 1 );
 		$query->set( 'post__in', array( $active_venue->ID, $other_venue->ID ) );
 
 		$instance->prepare_event_query_before_execution( $query );
@@ -3193,8 +3193,8 @@ class Test_Query extends Base {
 
 		$query = new WP_Query();
 		$query->set( 'post_type', Venue::POST_TYPE );
-		$query->set( 'has_events_filter', 1 );
-		$query->set( 'upcoming_events_only', 1 );
+		$query->set( 'gatherpress_has_events_filter', 1 );
+		$query->set( 'gatherpress_upcoming_events_only', 1 );
 		$query->set( 'post__in', array( $unrelated_venue->ID ) );
 
 		$instance->prepare_event_query_before_execution( $query );

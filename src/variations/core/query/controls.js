@@ -276,8 +276,8 @@ export const EventQueryControlsPanel = ( props ) => {
 		const hasEventOnlyVars =
 			undefined !== query.gatherpress_event_query ||
 			undefined !== query.include_unfinished ||
-			undefined !== query.has_events_filter ||
-			undefined !== query.upcoming_events_only ||
+			undefined !== query.gatherpress_has_events_filter ||
+			undefined !== query.gatherpress_upcoming_events_only ||
 			hasEventOnlyOrderBy;
 
 		if ( ! hasEventOnlyVars ) {
@@ -299,8 +299,8 @@ export const EventQueryControlsPanel = ( props ) => {
 		}
 
 		if ( ! queryPostTypeSupportsShadowSource ) {
-			delete remainingQuery.has_events_filter;
-			delete remainingQuery.upcoming_events_only;
+			delete remainingQuery.gatherpress_has_events_filter;
+			delete remainingQuery.gatherpress_upcoming_events_only;
 		}
 
 		// The context params stay on event queries: the REST-side preview

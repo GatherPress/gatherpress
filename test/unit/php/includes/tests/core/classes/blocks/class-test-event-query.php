@@ -308,8 +308,8 @@ class Test_Event_Query extends Base {
 
 		// Shadow-source activity params must not leak into an event schema
 		// because the matching REST query would 400 on them.
-		$this->assertArrayNotHasKey( 'has_events_filter', $result );
-		$this->assertArrayNotHasKey( 'upcoming_events_only', $result );
+		$this->assertArrayNotHasKey( 'gatherpress_has_events_filter', $result );
+		$this->assertArrayNotHasKey( 'gatherpress_upcoming_events_only', $result );
 
 		// Verify original orderby enum is preserved and extended.
 		$this->assertContains( 'date', $result['orderby']['enum'] );
@@ -1527,16 +1527,16 @@ class Test_Event_Query extends Base {
 			'get_shadow_loop_query_args',
 			array(
 				array(
-					'has_events_filter'                   => 1,
-					'upcoming_events_only'                => 0,
+					'gatherpress_has_events_filter'       => 1,
+					'gatherpress_upcoming_events_only'    => 0,
 					'gatherpress_shadow_source_post_id'   => 7,
 					'gatherpress_shadow_source_post_type' => 'production',
 				),
 			)
 		);
 
-		$this->assertSame( 1, $result['has_events_filter'], 'Should pass has_events_filter through.' );
-		$this->assertSame( 0, $result['upcoming_events_only'], 'Should preserve an explicit 0.' );
+		$this->assertSame( 1, $result['gatherpress_has_events_filter'], 'Should pass the events filter through.' );
+		$this->assertSame( 0, $result['gatherpress_upcoming_events_only'], 'Should preserve an explicit 0.' );
 		$this->assertSame( 7, $result['gatherpress_shadow_source_post_id'], 'Should cast the context post id.' );
 		$this->assertSame(
 			'production',
@@ -1757,22 +1757,22 @@ class Test_Event_Query extends Base {
 		$event_args = $instance->aql_query_vars(
 			array( 'posts_per_page' => 10 ),
 			array(
-				'postType'                => Event::POST_TYPE,
-				'gatherpress_event_query' => 'past',
-				'has_events_filter'       => 1,
-				'upcoming_events_only'    => 0,
+				'postType'                         => Event::POST_TYPE,
+				'gatherpress_event_query'          => 'past',
+				'gatherpress_has_events_filter'    => 1,
+				'gatherpress_upcoming_events_only' => 0,
 			),
 			false
 		);
 
 		$this->assertSame( 'past', $event_args['gatherpress_event_query'], 'Event query type should pass through.' );
 		$this->assertArrayNotHasKey(
-			'has_events_filter',
+			'gatherpress_has_events_filter',
 			$event_args,
 			'Activity params should not leak into an event-only AQL loop.'
 		);
 		$this->assertArrayNotHasKey(
-			'upcoming_events_only',
+			'gatherpress_upcoming_events_only',
 			$event_args,
 			'Activity params should not leak into an event-only AQL loop.'
 		);
@@ -1781,17 +1781,17 @@ class Test_Event_Query extends Base {
 		$shadow_args = $instance->aql_query_vars(
 			array( 'posts_per_page' => 10 ),
 			array(
-				'postType'                => 'gatherpress_venue',
-				'has_events_filter'       => 1,
-				'upcoming_events_only'    => 0,
-				'gatherpress_event_query' => 'past',
-				'shadow_filter'           => 1,
+				'postType'                         => 'gatherpress_venue',
+				'gatherpress_has_events_filter'    => 1,
+				'gatherpress_upcoming_events_only' => 0,
+				'gatherpress_event_query'          => 'past',
+				'shadow_filter'                    => 1,
 			),
 			false
 		);
 
-		$this->assertSame( 1, $shadow_args['has_events_filter'], 'Activity filter should pass through.' );
-		$this->assertSame( 0, $shadow_args['upcoming_events_only'], 'Upcoming-only should pass through.' );
+		$this->assertSame( 1, $shadow_args['gatherpress_has_events_filter'], 'Activity filter should pass through.' );
+		$this->assertSame( 0, $shadow_args['gatherpress_upcoming_events_only'], 'Upcoming-only should pass through.' );
 		$this->assertArrayNotHasKey(
 			'gatherpress_event_query',
 			$shadow_args,
@@ -1822,9 +1822,9 @@ class Test_Event_Query extends Base {
 		$block->context = array(
 			'queryId' => 99,
 			'query'   => array(
-				'postType'             => 'gatherpress_venue',
-				'has_events_filter'    => 1,
-				'upcoming_events_only' => 0,
+				'postType'                         => 'gatherpress_venue',
+				'gatherpress_has_events_filter'    => 1,
+				'gatherpress_upcoming_events_only' => 0,
 			),
 		);
 
@@ -1833,8 +1833,8 @@ class Test_Event_Query extends Base {
 
 		$result = $instance->query_loop_block_query_vars( $query, $block );
 
-		$this->assertSame( 1, $result['has_events_filter'], 'Activity filter should pass through.' );
-		$this->assertSame( 0, $result['upcoming_events_only'], 'Upcoming-only should pass through.' );
+		$this->assertSame( 1, $result['gatherpress_has_events_filter'], 'Activity filter should pass through.' );
+		$this->assertSame( 0, $result['gatherpress_upcoming_events_only'], 'Upcoming-only should pass through.' );
 		$this->assertArrayNotHasKey(
 			'gatherpress_event_query',
 			$result,

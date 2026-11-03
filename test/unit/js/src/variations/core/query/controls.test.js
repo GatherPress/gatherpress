@@ -365,7 +365,7 @@ describe( 'EventQueryControlsPanel query cleanup (#1756)', () => {
 
 	it( 'strips activity vars but keeps context params when the queried post type loses shadow-source support', () => {
 		// Reported by a tester: switching a venue query to `post` left
-		// has_events_filter / upcoming_events_only in the saved query, so
+		// gatherpress_has_events_filter / gatherpress_upcoming_events_only in the saved query, so
 		// selecting a shadow-source type later silently reactivated the
 		// filter. The panel must clear them once shadow-source support is
 		// gone, even when event-date support is still present. The context
@@ -382,8 +382,8 @@ describe( 'EventQueryControlsPanel query cleanup (#1756)', () => {
 					query: {
 						postType: 'gatherpress_event',
 						gatherpress_event_query: 'upcoming',
-						has_events_filter: 1,
-						upcoming_events_only: 0,
+						gatherpress_has_events_filter: 1,
+						gatherpress_upcoming_events_only: 0,
 						gatherpress_shadow_source_post_id: 42,
 						gatherpress_shadow_source_post_type:
 							'gatherpress_venue',
@@ -409,8 +409,8 @@ describe( 'EventQueryControlsPanel query cleanup (#1756)', () => {
 				attributes={ {
 					query: {
 						postType: 'post',
-						has_events_filter: 1,
-						upcoming_events_only: 1,
+						gatherpress_has_events_filter: 1,
+						gatherpress_upcoming_events_only: 1,
 						gatherpress_shadow_source_post_id: 7,
 						gatherpress_shadow_source_post_type:
 							'gatherpress_venue',
@@ -437,8 +437,8 @@ describe( 'EventQueryControlsPanel query cleanup (#1756)', () => {
 				attributes={ {
 					query: {
 						postType: 'gatherpress_venue',
-						has_events_filter: 1,
-						upcoming_events_only: 1,
+						gatherpress_has_events_filter: 1,
+						gatherpress_upcoming_events_only: 1,
 					},
 				} }
 			/>,
