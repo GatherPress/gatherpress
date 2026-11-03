@@ -1170,6 +1170,32 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * Searching from a check-in filtered screen keeps the filter.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::render_rsvp_admin_page
+	 *
+	 * @return void
+	 */
+	public function test_render_rsvp_admin_page_keeps_the_check_in_filter_in_search(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$_REQUEST['check_in'] = 'not-recorded';
+
+		ob_start();
+		Setup::get_instance()->render_rsvp_admin_page();
+		$output = ob_get_clean();
+
+		unset( $_REQUEST['check_in'] );
+
+		$this->assertStringContainsString(
+			'<input type="hidden" name="check_in" value="not-recorded" />',
+			$output
+		);
+	}
+
+	/**
 	 * Test render_rsvp_admin_page without capability.
 	 *
 	 * @covers ::render_rsvp_admin_page

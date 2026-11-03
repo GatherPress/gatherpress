@@ -46,7 +46,7 @@ Editors and administrators, or anyone else who can moderate comments, can:
 
 * View every RSVP on the Events > RSVPs screen  
 * Approve or unapprove RSVPs, and mark them as spam  
-* Check in attendees  
+* Check in attendees, or mark them as no-shows  
 * Delete RSVPs  
 * See the names and email addresses behind anonymous RSVPs
 

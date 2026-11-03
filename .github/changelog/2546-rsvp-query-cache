@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+RSVP lists filtered by response no longer show the results of a different filter on sites with a persistent object cache.
