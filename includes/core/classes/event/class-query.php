@@ -973,8 +973,8 @@ final class Query {
 	 * Answers "which shadow-source posts have event activity?" in a single
 	 * indexed query. The join runs from the term relationships straight into
 	 * the events table, so the result set is bounded by the number of source
-	 * posts that carry events rather than by the size of the event table --
-	 * no event rows are ever materialized in PHP.
+	 * posts that carry events rather than by the size of the event table.
+	 * No event rows are ever materialized in PHP.
 	 *
 	 * Sentinel terms are excluded in SQL: real shadow term slugs always carry
 	 * the leading underscore that {@see Shadow_Source::term_slug_from_post_name()}

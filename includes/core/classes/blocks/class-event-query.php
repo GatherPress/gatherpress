@@ -192,6 +192,9 @@ final class Event_Query {
 			 * Allows filtering query params when the query is being inherited.
 			 *
 			 * @since 0.33.0
+			 * @since TBD Also runs for Query Loops of shadow-source posts, such as
+			 *            venues, where `$query_args` can carry `has_events_filter`
+			 *            and `upcoming_events_only`.
 			 *
 			 * @param array   $query_args  Arguments to be passed to WP_Query.
 			 * @param array   $block_query The query attribute retrieved from the block.
@@ -333,7 +336,7 @@ final class Event_Query {
 			);
 		}
 
-		/** This filter is documented in includes/query-loop.php */
+		/** This filter is documented in includes/core/classes/blocks/class-event-query.php */
 		$filtered_query_args = apply_filters(
 			'gatherpress_query_vars',
 			$query_args,
@@ -527,7 +530,7 @@ final class Event_Query {
 			$custom_args['gatherpress_shadow_source_post_type'] = (string) $context_post_type;
 		}
 
-		/** This filter is documented in includes/query-loop.php */
+		/** This filter is documented in includes/core/classes/blocks/class-event-query.php */
 		$filtered_query_args = apply_filters(
 			'gatherpress_query_vars',
 			$custom_args,
