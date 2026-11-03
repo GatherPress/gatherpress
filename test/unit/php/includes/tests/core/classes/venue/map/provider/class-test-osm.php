@@ -19,6 +19,7 @@ use GatherPress\Core\Venue\Map\Provider\OSM;
 use GatherPress\Tests\Base;
 use GdImage;
 use PMC\Unit_Test\Utility;
+use WP_Error;
 
 /**
  * Class Test_OSM.
@@ -221,7 +222,7 @@ class Test_OSM extends Base {
 		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
 
 		$callback = function () {
-			return new \WP_Error( 'http_request_failed', 'boom' );
+			return new WP_Error( 'http_request_failed', 'boom' );
 		};
 
 		add_filter( 'pre_http_request', $callback );
@@ -485,7 +486,7 @@ class Test_OSM extends Base {
 		$fail    = function ( $preempt, $args, $url ) use ( &$fetches ) {
 			// Only the first tile fails.
 			return 1 === ++$fetches
-				? new \WP_Error( 'boom', 'tile fetch failed' )
+				? new WP_Error( 'boom', 'tile fetch failed' )
 				: $this->short_circuit_tile_requests( $preempt, $args, $url );
 		};
 
@@ -560,7 +561,7 @@ class Test_OSM extends Base {
 		$fail    = static function () use ( &$fetches ) {
 			++$fetches;
 
-			return new \WP_Error( 'boom', 'tile fetch failed' );
+			return new WP_Error( 'boom', 'tile fetch failed' );
 		};
 
 		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
@@ -732,7 +733,7 @@ class Test_OSM extends Base {
 
 		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
 		$fail = static function () {
-			return new \WP_Error( 'boom', 'tile fetch failed' );
+			return new WP_Error( 'boom', 'tile fetch failed' );
 		};
 		add_filter( 'pre_http_request', $fail, 10 );
 
