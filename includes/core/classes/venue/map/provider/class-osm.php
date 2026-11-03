@@ -216,6 +216,7 @@ final class OSM extends Base {
 		// so a later render tries again once the pause ends.
 		if ( 0 === $painted ) {
 			set_transient( self::TILES_FAILED_TRANSIENT, 1, self::TILES_FAILED_PAUSE );
+			return null;
 		}
 
 		$this->stamp_marker(
@@ -225,7 +226,7 @@ final class OSM extends Base {
 			(float) $density
 		);
 
-		return 0 < $painted ? $canvas : null;
+		return $canvas;
 	}
 
 	/**
