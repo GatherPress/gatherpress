@@ -3241,6 +3241,38 @@ class Test_Query extends Base {
 	}
 
 	/**
+	 * Matches a term only when it sits on an event of the requested kind.
+	 *
+	 * @since TBD
+	 * @covers ::has_event_with_term
+	 *
+	 * @return void
+	 */
+	public function test_has_event_with_term(): void {
+		$this->create_activity_event( '_term-check-venue', 'upcoming' );
+
+		$instance    = Query::get_instance();
+		$event_types = array( Event::POST_TYPE );
+
+		$this->assertTrue(
+			Utility::invoke_hidden_method(
+				$instance,
+				'has_event_with_term',
+				array( Venue::TAXONOMY, '_term-check-venue', true, $event_types )
+			),
+			'Should find the upcoming event on the term.'
+		);
+		$this->assertFalse(
+			Utility::invoke_hidden_method(
+				$instance,
+				'has_event_with_term',
+				array( Venue::TAXONOMY, '_term-check-venue', false, $event_types )
+			),
+			'Should not find a past event on a term that only has an upcoming one.'
+		);
+	}
+
+	/**
 	 * Events that start at the same moment can still reach each other.
 	 *
 	 * New events default to 6:00 PM the next day, so identical starts are
