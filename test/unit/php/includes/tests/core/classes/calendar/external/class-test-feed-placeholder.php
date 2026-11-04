@@ -15,6 +15,8 @@ use GatherPress\Core\Topic;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
+use ReflectionClass;
+use WP_HTML_Tag_Processor;
 
 /**
  * Class Test_Feed_Placeholder.
@@ -35,7 +37,7 @@ class Test_Feed_Placeholder extends Base {
 	 * @return void
 	 */
 	public function test_construct_builds_the_instance(): void {
-		$reflection = new \ReflectionClass( Feed_Placeholder::class );
+		$reflection = new ReflectionClass( Feed_Placeholder::class );
 		$property   = $reflection->getProperty( 'instance' );
 
 		$property->setAccessible( true );
@@ -88,7 +90,7 @@ class Test_Feed_Placeholder extends Base {
 			sprintf( '<p><a href="%s">Subscribe</a></p>', $href ),
 			$block
 		);
-		$tag   = new \WP_HTML_Tag_Processor( $html );
+		$tag   = new WP_HTML_Tag_Processor( $html );
 
 		$tag->next_tag( array( 'tag_name' => 'a' ) );
 
