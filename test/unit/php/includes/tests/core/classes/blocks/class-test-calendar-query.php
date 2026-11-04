@@ -699,11 +699,11 @@ class Test_Calendar_Query extends Base {
 
 			return array_merge( $query_args, array( 'extra' => 'value' ) );
 		};
-		add_filter( 'gatherpress_query_vars', $callback, 99, 2 );
+		add_filter( 'gatherpress_query_loop_vars', $callback, 99, 2 );
 
 		$result = $instance->query_loop_block_query_vars( $query, $block );
 
-		remove_filter( 'gatherpress_query_vars', $callback, 99 );
+		remove_filter( 'gatherpress_query_loop_vars', $callback, 99 );
 
 		$this->assertSame( 'post', $result['post_type'] );
 		$this->assertTrue( $result[ Query_Builder::CALENDAR_QUERY_PARAM ] );
@@ -713,12 +713,12 @@ class Test_Calendar_Query extends Base {
 		$broken = static function () {
 			return 'not an array';
 		};
-		add_filter( 'gatherpress_query_vars', $broken, 99 );
+		add_filter( 'gatherpress_query_loop_vars', $broken, 99 );
 
 		$no_query_block = $this->get_block( 'core/post-template', array( 'queryId' => 5 ) );
 		$result         = $instance->query_loop_block_query_vars( $query, $no_query_block );
 
-		remove_filter( 'gatherpress_query_vars', $broken, 99 );
+		remove_filter( 'gatherpress_query_loop_vars', $broken, 99 );
 
 		$this->assertSame(
 			array(

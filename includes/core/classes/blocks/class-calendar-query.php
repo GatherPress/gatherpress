@@ -488,7 +488,7 @@ final class Calendar_Query {
 		$query_args  = array( Query_Builder::CALENDAR_QUERY_PARAM => true );
 
 		/** This filter is documented in includes/core/classes/blocks/class-event-query.php */
-		$filtered_query_args = apply_filters( 'gatherpress_query_vars', $query_args, $block_query, false );
+		$filtered_query_args = apply_filters( 'gatherpress_query_loop_vars', $query_args, $block_query, false );
 
 		return array_merge( $query, is_array( $filtered_query_args ) ? $filtered_query_args : $query_args );
 	}

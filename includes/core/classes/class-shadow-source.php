@@ -25,10 +25,14 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event;
+use GatherPress\Core\Event\Query as Event_Query;
 use GatherPress\Core\Traits\Singleton;
 use WP_Post;
 use WP_Post_Type;
+use WP_REST_Request;
 use WP_Query;
+use WP_Taxonomy;
 use WP_Term;
 
 /**
@@ -116,6 +120,105 @@ final class Shadow_Source {
 			sprintf( 'delete_post_%s', $post_type ),
 			array( $this, 'delete_term' )
 		);
+		add_filter(
+			sprintf( 'rest_%s_query', $post_type ),
+			array( $this, 'rest_query' ),
+			10,
+			2
+		);
+		add_filter(
+			sprintf( 'rest_%s_collection_params', $post_type ),
+			array( $this, 'rest_collection_params' )
+		);
+	}
+
+	/**
+	 * Pass shadow-source activity parameters through REST queries.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $args    Query arguments.
+	 * @param WP_REST_Request      $request REST request.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
+	 *
+	 * @return array<string, mixed> Modified query arguments.
+	 */
+	public function rest_query( array $args, WP_REST_Request $request ): array {
+		$custom_args = array();
+
+		$has_events_filter = $request->get_param( 'gatherpress_has_events_filter' );
+		if ( null !== $has_events_filter ) {
+			$custom_args['gatherpress_has_events_filter'] = $has_events_filter;
+		}
+
+		$upcoming_events_only = $request->get_param( 'gatherpress_upcoming_events_only' );
+		if ( null !== $upcoming_events_only ) {
+			$custom_args['gatherpress_upcoming_events_only'] = $upcoming_events_only;
+		}
+
+		$context_post_id = $request->get_param( 'gatherpress_shadow_source_post_id' );
+		if ( null !== $context_post_id ) {
+			$custom_args['gatherpress_shadow_source_post_id'] = (int) $context_post_id;
+		}
+
+		$context_post_type = $request->get_param( 'gatherpress_shadow_source_post_type' );
+		if ( null !== $context_post_type ) {
+			$custom_args['gatherpress_shadow_source_post_type'] = (string) $context_post_type;
+		}
+
+		/** This filter is documented in includes/core/classes/blocks/class-event-query.php */
+		$filtered_query_args = apply_filters(
+			'gatherpress_query_loop_vars',
+			$custom_args,
+			$request->get_params(),
+			false
+		);
+
+		return array_merge( $args, $filtered_query_args );
+	}
+
+	/**
+	 * Add shadow-source activity parameters to a REST collection schema.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, array<string, mixed>> $query_params Collection parameters.
+	 *
+	 * @return array<string, array<string, mixed>> Extended collection parameters.
+	 */
+	public function rest_collection_params( array $query_params ): array {
+		$query_params['gatherpress_has_events_filter'] = array(
+			'description' => __( 'Whether to filter shadow-source posts by their event activity', 'gatherpress' ),
+			'type'        => 'integer',
+			'enum'        => array( 0, 1 ),
+		);
+
+		$query_params['gatherpress_upcoming_events_only'] = array(
+			'description' => __( 'Whether to keep only source posts with upcoming events', 'gatherpress' ),
+			'type'        => 'integer',
+			'enum'        => array( 0, 1 ),
+			'default'     => 1,
+		);
+
+		$query_params['gatherpress_shadow_source_post_id'] = array(
+			'description'       => __(
+				'Editor-side post ID used to scope the venue contextual filter in the REST preview.',
+				'gatherpress'
+			),
+			'type'              => 'integer',
+			'validate_callback' => '__return_true',
+			'sanitize_callback' => 'absint',
+		);
+
+		$query_params['gatherpress_shadow_source_post_type'] = array(
+			'description' => __(
+				'Editor-side post type used to scope the venue contextual filter in the REST preview.',
+				'gatherpress'
+			),
+			'type'        => 'string',
+		);
+
+		return $query_params;
 	}
 
 	/**
@@ -637,5 +740,71 @@ final class Shadow_Source {
 			'field'    => 'slug',
 			'terms'    => array( $this->term_slug_from_post_name( $source_post->post_name ) ),
 		);
+	}
+
+	/**
+	 * Get the source post IDs whose shadow terms are on an upcoming or past event.
+	 *
+	 * Returns null when the source's shadow taxonomy is not on any event post
+	 * type, so the filter does not apply. An empty array means it applied and
+	 * matched nothing.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $source_post_type     Shadow-source post type slug to resolve source posts for.
+	 * @param bool   $upcoming_events_only Whether to keep only source posts with upcoming events.
+	 *                                     When false, keeps source posts that have at
+	 *                                     least one past event.
+	 *
+	 * @return int[]|null Source post IDs matching the event activity, an empty
+	 *                    array when nothing matched, or null when the filter
+	 *                    does not apply to this source post type.
+	 */
+	public function get_source_post_ids_by_event_activity(
+		string $source_post_type,
+		bool $upcoming_events_only
+	): ?array {
+		$taxonomy_slug = $this->get_taxonomy( $source_post_type );
+		$taxonomy      = get_taxonomy( $taxonomy_slug );
+
+		$event_post_types = get_post_types_by_support( Event::SUPPORT );
+
+		if (
+			! $taxonomy instanceof WP_Taxonomy
+			|| empty( array_intersect( $event_post_types, $taxonomy->object_type ) )
+		) {
+			return null;
+		}
+
+		$slugs = Event_Query::get_instance()->get_active_shadow_term_slugs(
+			$taxonomy->name,
+			$upcoming_events_only
+		);
+
+		if ( empty( $slugs ) ) {
+			return array();
+		}
+
+		// Strip only the one leading underscore, since a post name can start with one too.
+		$post_names = array_map(
+			static function ( string $slug ): string {
+				return str_starts_with( $slug, '_' ) ? substr( $slug, 1 ) : $slug;
+			},
+			$slugs
+		);
+
+		$source_ids = get_posts(
+			array(
+				'post_type'              => $source_post_type,
+				'post_name__in'          => $post_names,
+				'fields'                 => 'ids',
+				'posts_per_page'         => count( $post_names ),
+				'no_found_rows'          => true,
+				'update_post_meta_cache' => false,
+				'update_post_term_cache' => false,
+			)
+		);
+
+		return array_map( 'intval', $source_ids );
 	}
 }
