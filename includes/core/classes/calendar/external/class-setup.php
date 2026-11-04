@@ -68,6 +68,7 @@ final class Setup {
 	 */
 	public function __construct() {
 		Cache::get_instance();
+		Feed_Placeholder::get_instance();
 
 		$this->setup_hooks();
 	}
