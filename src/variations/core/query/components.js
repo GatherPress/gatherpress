@@ -579,12 +579,8 @@ export const HasEventsFilterControls = ( { attributes, setAttributes } ) => {
 				} }
 			/>
 			{ !! hasEventsFilter && (
-				<ToggleControl
-					label={
-						showUpcoming
-							? __( 'Upcoming events only', 'gatherpress' )
-							: __( 'Past events only', 'gatherpress' )
-					}
+				<ToggleGroupControl
+					label={ __( 'Event activity', 'gatherpress' ) }
 					help={
 						showUpcoming
 							? sprintf(
@@ -604,16 +600,28 @@ export const HasEventsFilterControls = ( { attributes, setAttributes } ) => {
 								pluralLabel,
 							)
 					}
-					checked={ showUpcoming }
+					value={ showUpcoming ? 'upcoming' : 'past' }
+					isBlock
+					__next40pxDefaultSize
 					onChange={ ( value ) => {
 						setAttributes( {
 							query: {
 								...attributes.query,
-								gatherpress_upcoming_events_only: value ? 1 : 0,
+								gatherpress_upcoming_events_only:
+									'upcoming' === value ? 1 : 0,
 							},
 						} );
 					} }
-				/>
+				>
+					<ToggleGroupControlOption
+						value="upcoming"
+						label={ __( 'Upcoming', 'gatherpress' ) }
+					/>
+					<ToggleGroupControlOption
+						value="past"
+						label={ __( 'Past', 'gatherpress' ) }
+					/>
+				</ToggleGroupControl>
 			) }
 		</>
 	);

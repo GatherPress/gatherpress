@@ -57,7 +57,7 @@ The controls GatherPress registers, in render order:
 | `includeUnfinished` | Include events already under way. Only present when the query lists an event post type |
 | `exclude` | Exclude the current event. Only present when the query and its host are the same post type |
 | `shadowSourceFilter` | Filter by the current venue or other shadow source. Only present in a template, or on a shadow-source host querying a different post type |
-| `hasEventsFilter` | Filter by event activity, with Upcoming events only. Only present when the query lists a shadow-source post type, such as venues, whose taxonomy is on an event post type |
+| `hasEventsFilter` | Filter by event activity, with an Upcoming / Past choice. Only present when the query lists a shadow-source post type, such as venues, whose taxonomy is on an event post type |
 | `count` | Events per page. Only present when the query lists an event post type |
 | `offset` | Offset. Only present when the query lists an event post type |
 | `order` | Order and order by. Only present when the query lists an event post type |

@@ -29,14 +29,39 @@ jest.mock( '@wordpress/components', () => ( {
 			/>
 		</div>
 	),
-	__experimentalToggleGroupControl: ( { label, children } ) => (
-		<div data-testid="toggle-group-control">
+	__experimentalToggleGroupControl: ( {
+		label,
+		help,
+		value,
+		onChange,
+		children,
+	} ) => {
+		const { Children, cloneElement } = jest.requireActual( 'react' );
+
+		return (
+			<div data-testid="toggle-group-control">
+				{ label }
+				{ help && <span data-testid="toggle-group-help">{ help }</span> }
+				{ Children.map( children, ( child ) =>
+					cloneElement( child, { selected: value, onSelect: onChange } ),
+				) }
+			</div>
+		);
+	},
+	__experimentalToggleGroupControlOption: ( {
+		label,
+		value,
+		selected,
+		onSelect,
+	} ) => (
+		<button
+			type="button"
+			data-testid="toggle-group-option"
+			aria-pressed={ selected === value ? 'true' : 'false' }
+			onClick={ () => onSelect?.( value ) }
+		>
 			{ label }
-			{ children }
-		</div>
-	),
-	__experimentalToggleGroupControlOption: ( { label } ) => (
-		<div data-testid="toggle-group-option">{ label }</div>
+		</button>
 	),
 } ) );
 
@@ -418,9 +443,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 		expect(
 			screen.getByText( 'Filter by event activity' ),
 		).toBeInTheDocument();
-		expect(
-			screen.queryByText( 'Upcoming events only' ),
-		).not.toBeInTheDocument();
+		expect( screen.queryByText( 'Event activity' ) ).not.toBeInTheDocument();
 	} );
 
 	it( 'hides the event-activity filter when the queried type is not a shadow source', () => {
@@ -638,8 +661,7 @@ describe( 'HasEventsFilterControls', () => {
 	} );
 
 	const activityLabel = 'Filter by event activity';
-	const upcomingLabel = 'Upcoming events only';
-	const pastLabel = 'Past events only';
+	const activityTypeLabel = 'Event activity';
 	const activityHelp =
 		'Only shows Posts that have upcoming or past events attached.';
 	const upcomingHelp =
@@ -662,8 +684,9 @@ describe( 'HasEventsFilterControls', () => {
 
 		expect( screen.getByText( activityLabel ) ).toBeInTheDocument();
 		expect( screen.getByText( activityHelp ) ).toBeInTheDocument();
-		expect( screen.queryByText( upcomingLabel ) ).not.toBeInTheDocument();
-		expect( screen.queryByText( pastLabel ) ).not.toBeInTheDocument();
+		expect(
+			screen.queryByText( activityTypeLabel ),
+		).not.toBeInTheDocument();
 	} );
 
 	it( 'uses selected post type plural label in activity help', () => {
@@ -727,15 +750,18 @@ describe( 'HasEventsFilterControls', () => {
 			/>,
 		);
 
-		expect( screen.getByText( upcomingLabel ) ).toBeInTheDocument();
+		expect( screen.getByText( activityTypeLabel ) ).toBeInTheDocument();
 		expect( screen.getByText( upcomingHelp ) ).toBeInTheDocument();
-		expect( screen.queryByText( pastLabel ) ).not.toBeInTheDocument();
 		expect(
-			screen.getByRole( 'button', { name: upcomingLabel } ),
+			screen.getByRole( 'button', { name: 'Upcoming' } ),
 		).toHaveAttribute( 'aria-pressed', 'true' );
+		expect( screen.getByRole( 'button', { name: 'Past' } ) ).toHaveAttribute(
+			'aria-pressed',
+			'false',
+		);
 	} );
 
-	it( 'flips the sub-filter label to past events only when gatherpress_upcoming_events_only is off', () => {
+	it( 'selects Past when gatherpress_upcoming_events_only is off', () => {
 		render(
 			<HasEventsFilterControls
 				attributes={ {
@@ -749,16 +775,14 @@ describe( 'HasEventsFilterControls', () => {
 			/>,
 		);
 
-		expect( screen.getByText( pastLabel ) ).toBeInTheDocument();
 		expect( screen.getByText( pastHelp ) ).toBeInTheDocument();
-		expect( screen.queryByText( upcomingLabel ) ).not.toBeInTheDocument();
-		expect( screen.getByRole( 'button', { name: pastLabel } ) ).toHaveAttribute(
+		expect( screen.getByRole( 'button', { name: 'Past' } ) ).toHaveAttribute(
 			'aria-pressed',
-			'false',
+			'true',
 		);
 	} );
 
-	it( 'writes gatherpress_upcoming_events_only to 0 when the sub-filter is turned off', () => {
+	it( 'writes gatherpress_upcoming_events_only to 0 when Past is picked', () => {
 		const setAttributes = jest.fn();
 
 		render(
@@ -774,7 +798,7 @@ describe( 'HasEventsFilterControls', () => {
 			/>,
 		);
 
-		fireEvent.click( screen.getByRole( 'button', { name: upcomingLabel } ) );
+		fireEvent.click( screen.getByRole( 'button', { name: 'Past' } ) );
 
 		expect( setAttributes ).toHaveBeenCalledWith( {
 			query: {
@@ -785,7 +809,7 @@ describe( 'HasEventsFilterControls', () => {
 		} );
 	} );
 
-	it( 'writes gatherpress_upcoming_events_only to 1 when the sub-filter is turned back on', () => {
+	it( 'writes gatherpress_upcoming_events_only to 1 when Upcoming is picked', () => {
 		const setAttributes = jest.fn();
 
 		render(
@@ -801,7 +825,7 @@ describe( 'HasEventsFilterControls', () => {
 			/>,
 		);
 
-		fireEvent.click( screen.getByRole( 'button', { name: pastLabel } ) );
+		fireEvent.click( screen.getByRole( 'button', { name: 'Upcoming' } ) );
 
 		expect( setAttributes ).toHaveBeenCalledWith( {
 			query: {
