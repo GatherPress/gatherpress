@@ -144,27 +144,37 @@ final class Shadow_Source {
 	 * @return array<string, mixed> Modified query arguments.
 	 */
 	public function rest_query( array $args, WP_REST_Request $request ): array {
+		$custom_args = array();
+
 		$has_events_filter = $request->get_param( 'gatherpress_has_events_filter' );
 		if ( null !== $has_events_filter ) {
-			$args['gatherpress_has_events_filter'] = $has_events_filter;
+			$custom_args['gatherpress_has_events_filter'] = $has_events_filter;
 		}
 
 		$upcoming_events_only = $request->get_param( 'gatherpress_upcoming_events_only' );
 		if ( null !== $upcoming_events_only ) {
-			$args['gatherpress_upcoming_events_only'] = $upcoming_events_only;
+			$custom_args['gatherpress_upcoming_events_only'] = $upcoming_events_only;
 		}
 
 		$context_post_id = $request->get_param( 'gatherpress_shadow_source_post_id' );
 		if ( null !== $context_post_id ) {
-			$args['gatherpress_shadow_source_post_id'] = (int) $context_post_id;
+			$custom_args['gatherpress_shadow_source_post_id'] = (int) $context_post_id;
 		}
 
 		$context_post_type = $request->get_param( 'gatherpress_shadow_source_post_type' );
 		if ( null !== $context_post_type ) {
-			$args['gatherpress_shadow_source_post_type'] = (string) $context_post_type;
+			$custom_args['gatherpress_shadow_source_post_type'] = (string) $context_post_type;
 		}
 
-		return $args;
+		/** This filter is documented in includes/core/classes/blocks/class-event-query.php */
+		$filtered_query_args = apply_filters(
+			'gatherpress_query_loop_vars',
+			$custom_args,
+			$request->get_params(),
+			false
+		);
+
+		return array_merge( $args, $filtered_query_args );
 	}
 
 	/**

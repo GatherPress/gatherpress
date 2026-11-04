@@ -206,6 +206,47 @@ class Test_Shadow_Source extends Base {
 	}
 
 	/**
+	 * Runs the Query Loop vars filter, so the editor preview matches the front end.
+	 *
+	 * @since TBD
+	 * @covers ::rest_query
+	 *
+	 * @return void
+	 */
+	public function test_rest_query_applies_query_loop_vars_filter(): void {
+		$instance = Shadow_Source::get_instance();
+		$request  = $this->createMock( \WP_REST_Request::class );
+
+		$request->method( 'get_param' )->willReturn( null );
+		$request->method( 'get_params' )->willReturn( array( 'per_page' => 3 ) );
+
+		$callback = static function ( array $query_args, array $block_query, bool $inherited ): array {
+			$query_args['post__in']  = array( 7 );
+			$query_args['per_page']  = $block_query['per_page'];
+			$query_args['inherited'] = $inherited;
+
+			return $query_args;
+		};
+
+		add_filter( 'gatherpress_query_loop_vars', $callback, 10, 3 );
+
+		$result = $instance->rest_query( array( 'post_type' => 'gatherpress_venue' ), $request );
+
+		remove_filter( 'gatherpress_query_loop_vars', $callback );
+
+		$this->assertSame(
+			array(
+				'post_type' => 'gatherpress_venue',
+				'post__in'  => array( 7 ),
+				'per_page'  => 3,
+				'inherited' => false,
+			),
+			$result,
+			'Should merge the filtered query vars into the REST query args.'
+		);
+	}
+
+	/**
 	 * Leaves args untouched when the activity and context params are absent.
 	 *
 	 * @covers ::rest_query
