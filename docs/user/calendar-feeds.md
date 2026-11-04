@@ -56,7 +56,7 @@ You can turn any link or button into a subscribe link without typing out a feed 
 | `#gatherpress-calendar-feed-venue-{slug}-url` | The venue with that slug, for example `#gatherpress-calendar-feed-venue-city-library-url`. |
 | `#gatherpress-calendar-feed-topic-{slug}-url` | The topic with that slug, for example `#gatherpress-calendar-feed-topic-workshops-url`. |
 
-Every placeholder also has a `subscribe` form: replace `feed` with `subscribe`, as in `#gatherpress-calendar-subscribe-venue-url`. The `feed` form gives the regular `https://` address, which people can copy and paste into their calendar app. The `subscribe` form gives the same feed as a `webcal://` address, which most devices open straight in the calendar app and offer to subscribe to. Offering both covers everyone.
+Every placeholder also has a `subscribe` form: replace `feed` with `subscribe`, as in `#gatherpress-calendar-subscribe-venue-url`. The `feed` form gives the feed's regular web address, which starts with `https://` on a site served over HTTPS. People can copy and paste it into their calendar app. The `subscribe` form gives the same feed as a `webcal://` address, which most devices open straight in the calendar app and offer to subscribe to. Offering both covers everyone.
 
 The slug is the same one that appears in the venue's or topic's own web address. If you rename the slug later, update any placeholders that use it.
 

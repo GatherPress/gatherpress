@@ -38,6 +38,10 @@ use WP_Term;
  * which gives the same feed as a `webcal://` URL. A placeholder with no feed
  * to point to stays as it is.
  *
+ * Only the block whose own markup holds the link resolves it, so a block
+ * around it, rendered for another post, can't resolve a placeholder its
+ * inner block left as it is.
+ *
  * @since TBD
  */
 final class Feed_Placeholder {
@@ -86,6 +90,9 @@ final class Feed_Placeholder {
 	/**
 	 * Replaces calendar feed placeholder hrefs with feed URLs.
 	 *
+	 * A block with the placeholder only in its inner blocks is skipped: they
+	 * have already had their turn.
+	 *
 	 * @since TBD
 	 *
 	 * @param string               $block_content The block's HTML.
@@ -94,7 +101,7 @@ final class Feed_Placeholder {
 	 * @return string The block's HTML, with placeholders that have a feed replaced.
 	 */
 	public function replace_placeholders( string $block_content, array $block ): string {
-		if ( ! str_contains( $block_content, self::PREFIX ) ) {
+		if ( ! str_contains( $block_content, self::PREFIX ) || ! $this->has_own_placeholder( $block ) ) {
 			return $block_content;
 		}
 
@@ -109,6 +116,24 @@ final class Feed_Placeholder {
 		}
 
 		return $tag->get_updated_html();
+	}
+
+	/**
+	 * Checks whether a block's own markup or attributes hold a placeholder.
+	 *
+	 * Attributes count for blocks that render their link from one, such as
+	 * the Navigation Link block's `url`.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $block The parsed block data.
+	 *
+	 * @return bool True when the placeholder is the block's own.
+	 */
+	private function has_own_placeholder( array $block ): bool {
+		$own = (string) ( $block['innerHTML'] ?? '' ) . wp_json_encode( $block['attrs'] ?? array() );
+
+		return str_contains( $own, self::PREFIX );
 	}
 
 	/**
@@ -223,7 +248,8 @@ final class Feed_Placeholder {
 	/**
 	 * Gets a venue's feed.
 	 *
-	 * Only a published venue without a password has one.
+	 * Only a published venue without a password has one, and only when its
+	 * post type has venue feeds.
 	 *
 	 * @since TBD
 	 *
@@ -235,7 +261,8 @@ final class Feed_Placeholder {
 		if (
 			! $venue instanceof WP_Post ||
 			'publish' !== $venue->post_status ||
-			'' !== $venue->post_password
+			'' !== $venue->post_password ||
+			! Setup::get_instance()->is_tax_like_type_for_event_supporting_types( $venue->post_type )
 		) {
 			return '';
 		}
@@ -250,12 +277,13 @@ final class Feed_Placeholder {
 	 *
 	 * @param string $slug The topic's slug.
 	 *
-	 * @return string The feed URL, or an empty string when no topic has the slug.
+	 * @return string The feed URL, or an empty string when no topic has the slug
+	 *                or no event post type uses topics.
 	 */
 	private function get_topic_feed_url( string $slug ): string {
 		$term = get_term_by( 'slug', $slug, Topic::TAXONOMY );
 
-		if ( ! $term instanceof WP_Term ) {
+		if ( ! $term instanceof WP_Term || ! Setup::get_instance()->has_post_type_for_taxonomy( Topic::TAXONOMY ) ) {
 			return '';
 		}
 
@@ -263,17 +291,41 @@ final class Feed_Placeholder {
 	}
 
 	/**
-	 * Gets a venue by its slug, among the post types that act as venues.
+	 * Gets a venue with a feed by its slug.
+	 *
+	 * Only published venues without a password, of a post type with venue
+	 * feeds, are searched, so a draft or protected venue of another post type
+	 * with the same slug doesn't hide one that has a feed.
 	 *
 	 * @since TBD
 	 *
 	 * @param string $slug The venue's slug.
 	 *
-	 * @return WP_Post|null The venue post, or null when no venue has the slug.
+	 * @return WP_Post|null The venue post, or null when no venue with a feed has the slug.
 	 */
 	private function get_venue_by_slug( string $slug ): ?WP_Post {
-		$post_types = array_values( get_post_types_by_support( Venue::SUPPORT ) );
+		$post_types = array_values(
+			array_filter(
+				get_post_types_by_support( Venue::SUPPORT ),
+				array( Setup::get_instance(), 'is_tax_like_type_for_event_supporting_types' )
+			)
+		);
 
-		return array() === $post_types ? null : get_page_by_path( $slug, OBJECT, $post_types );
+		if ( array() === $post_types ) {
+			return null;
+		}
+
+		$venues = get_posts(
+			array(
+				'name'          => $slug,
+				'post_type'     => $post_types,
+				'post_status'   => 'publish',
+				'has_password'  => false,
+				'numberposts'   => 1,
+				'no_found_rows' => true,
+			)
+		);
+
+		return $venues[0] ?? null;
 	}
 }
