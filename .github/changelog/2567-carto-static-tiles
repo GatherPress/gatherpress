@@ -1,4 +1,4 @@
 Significance: patch
 Type: fixed
 
-Static venue maps no longer turn gray when a CARTO API key is set. Static maps now load tiles from the same CARTO host as interactive maps, and send the site's address with each tile request, so a key restricted to the site's domain is accepted. Maps already saved gray render again, and a map that gets no tiles is no longer saved, so it is retried instead of staying gray.
+Static venue maps no longer turn gray when a CARTO API key is set. Static maps now load tiles from the same CARTO host as interactive maps, and send the site's address with each tile request, so a key restricted to the site's domain is accepted. Tile URLs on CARTO's old `fastly.net` hosts are moved to `basemaps.cartocdn.com`, where CARTO accepts the key. Maps already saved gray render again, and a map that gets no tiles is no longer saved, so it is retried instead of staying gray.
