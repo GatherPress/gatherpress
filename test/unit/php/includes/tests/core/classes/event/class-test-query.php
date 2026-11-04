@@ -2420,7 +2420,7 @@ class Test_Query extends Base {
 
 	/**
 	 * Resolves the shadow term slug of a source post that carries an upcoming
-	 * event, using the single indexed join rather than a per-event walk.
+	 * event.
 	 *
 	 * @since TBD
 	 * @covers ::get_active_shadow_term_slugs
@@ -2487,8 +2487,8 @@ class Test_Query extends Base {
 	}
 
 	/**
-	 * Sentinel terms carry no leading underscore, so the SQL LIKE clause keeps
-	 * them out of the resolved slugs.
+	 * Sentinel terms carry no leading underscore, so they are kept out of the
+	 * resolved slugs.
 	 *
 	 * @since TBD
 	 * @covers ::get_active_shadow_term_slugs
@@ -2512,7 +2512,6 @@ class Test_Query extends Base {
 	 *
 	 * @since TBD
 	 * @covers ::get_active_shadow_term_slugs
-	 * @covers ::build_active_shadow_term_sql
 	 *
 	 * @return void
 	 */
@@ -2535,7 +2534,7 @@ class Test_Query extends Base {
 
 	/**
 	 * An event that is private resolves only for a user who can read private
-	 * posts, which is the status branch the query builds at runtime.
+	 * posts.
 	 *
 	 * @since TBD
 	 * @covers ::get_active_shadow_term_slugs
@@ -2668,8 +2667,8 @@ class Test_Query extends Base {
 	}
 
 	/**
-	 * With no post type declaring event-date support there is nothing to join
-	 * against, so the query bails before building an empty IN () list.
+	 * With no post type declaring event-date support there are no events to
+	 * read, so the method returns early.
 	 *
 	 * @since TBD
 	 * @covers ::get_active_shadow_term_slugs
@@ -3239,116 +3238,6 @@ class Test_Query extends Base {
 			$instance->get_active_shadow_term_slugs( Venue::TAXONOMY, false ),
 			'The past branch should match a source post with at least one past event.'
 		);
-	}
-
-	/**
-	 * Direct coverage for the protected SQL builder that the xdebug
-	 * same-class gap leaves untraced when it is only called from
-	 * get_active_shadow_term_slugs().
-	 *
-	 * Asserts the built statement keeps every predicate the behavioral
-	 * tests above exercise: taxonomy match, event post-type IN list,
-	 * readable-status clause, sentinel-excluding LIKE, and the inclusive
-	 * upcoming / exclusive past datetime comparison.
-	 *
-	 * @since TBD
-	 * @covers ::build_active_shadow_term_sql
-	 *
-	 * @return void
-	 */
-	public function test_build_active_shadow_term_sql_contains_all_predicates(): void {
-		$instance = Query::get_instance();
-
-		$sql = Utility::invoke_hidden_method(
-			$instance,
-			'build_active_shadow_term_sql',
-			array( Venue::TAXONOMY, true, array( 'gatherpress_event' ) )
-		);
-
-		$this->assertStringContainsString( 'SELECT DISTINCT t.slug', $sql, 'Should select distinct slugs.' );
-		$this->assertStringContainsString( 'tt.taxonomy = ', $sql, 'Should filter by taxonomy.' );
-		$this->assertStringContainsString( 'p.post_type IN (', $sql, 'Should filter by event post types.' );
-		$this->assertStringContainsString( 'p.post_status = ', $sql, 'Should restrict to readable statuses.' );
-		$this->assertStringContainsString( 'LIKE ', $sql, 'Should exclude sentinel terms via the underscore LIKE.' );
-		$this->assertStringContainsString( '>= ', $sql, 'Upcoming branch should compare inclusively.' );
-		$this->assertStringContainsString( 'INNER JOIN', $sql, 'Should join terms to the events table.' );
-
-		$past_sql = Utility::invoke_hidden_method(
-			$instance,
-			'build_active_shadow_term_sql',
-			array( Venue::TAXONOMY, false, array( 'gatherpress_event' ) )
-		);
-
-		$this->assertStringContainsString( '< ', $past_sql, 'Past branch should compare exclusively.' );
-	}
-
-	/**
-	 * Direct coverage for the readable-status clause builder. The clause is
-	 * publish-only for users without read_private_posts and gains the private
-	 * OR-branch for each event post type whose private cap the user holds.
-	 *
-	 * @since TBD
-	 * @covers ::prepare_readable_status_clause
-	 *
-	 * @return void
-	 */
-	public function test_prepare_readable_status_clause_branches_on_private_cap(): void {
-		$instance = Query::get_instance();
-
-		wp_set_current_user( 0 );
-
-		$clause = Utility::invoke_hidden_method(
-			$instance,
-			'prepare_readable_status_clause',
-			array( array( 'gatherpress_event' ) )
-		);
-
-		$this->assertStringStartsWith( '( ', $clause, 'Clause should be parenthesized.' );
-		$this->assertStringEndsWith( ' )', $clause, 'Clause should be parenthesized.' );
-		$this->assertStringContainsString( "p.post_status = 'publish'", $clause, 'Publish branch always present.' );
-		$this->assertStringNotContainsString(
-			'private',
-			$clause,
-			'No private branch for a user without read_private_posts.'
-		);
-
-		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
-
-		$private_clause = Utility::invoke_hidden_method(
-			$instance,
-			'prepare_readable_status_clause',
-			array( array( 'gatherpress_event' ) )
-		);
-
-		$this->assertStringContainsString(
-			'p.post_status = \'private\'',
-			$private_clause,
-			'Private branch appears for a user with read_private_posts.'
-		);
-		$this->assertStringContainsString( 'IN (', $private_clause, 'Private branch scopes by post type.' );
-
-		wp_set_current_user( 0 );
-	}
-
-	/**
-	 * Direct coverage for the IN-list builder used by the shadow-term and
-	 * status clauses.
-	 *
-	 * @since TBD
-	 * @covers ::prepare_in_list
-	 *
-	 * @return void
-	 */
-	public function test_prepare_in_list_builds_quoted_csv_fragment(): void {
-		$instance = Query::get_instance();
-
-		$fragment = Utility::invoke_hidden_method(
-			$instance,
-			'prepare_in_list',
-			array( array( 'gatherpress_event', 'production' ) )
-		);
-
-		$this->assertSame( "IN ('gatherpress_event', 'production')", $fragment );
 	}
 
 	/**
