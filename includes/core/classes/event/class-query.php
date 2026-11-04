@@ -970,15 +970,17 @@ final class Query {
 	/**
 	 * Return the shadow term slugs that sit on an upcoming or a past event.
 	 *
-	 * Uses the same upcoming and past rules, status checks and filters as any
-	 * other event list.
+	 * Checks each shadow term with a one-row event query, so the work grows
+	 * with the number of source posts rather than the number of events. The
+	 * event queries use the same upcoming and past rules, status checks and
+	 * filters as any other event list.
 	 *
 	 * @since TBD
 	 *
 	 * @param string $taxonomy Shadow taxonomy to read term slugs from.
 	 * @param bool   $upcoming Whether to match upcoming events rather than past ones.
 	 *
-	 * @return string[] Distinct shadow term slugs, empty when nothing matched.
+	 * @return string[] Shadow term slugs, empty when nothing matched.
 	 */
 	public function get_active_shadow_term_slugs( string $taxonomy, bool $upcoming ): array {
 		$event_post_types = get_post_types_by_support( Event::SUPPORT );
@@ -987,13 +989,50 @@ final class Query {
 			return array();
 		}
 
-		$event_query = new WP_Query(
+		// Term counts only include published posts, so empty terms stay in to
+		// catch sources whose only events are private.
+		$slugs = get_terms(
+			array(
+				'taxonomy'   => $taxonomy,
+				'hide_empty' => false,
+				'fields'     => 'slugs',
+			)
+		);
+
+		return array_values(
+			array_filter(
+				is_array( $slugs ) ? $slugs : array(),
+				fn( string $slug ): bool => str_starts_with( $slug, '_' )
+					&& $this->has_event_with_term( $taxonomy, $slug, $upcoming, $event_post_types )
+			)
+		);
+	}
+
+	/**
+	 * Whether a shadow term sits on at least one upcoming or past event.
+	 *
+	 * @since TBD
+	 *
+	 * @param string   $taxonomy         Shadow taxonomy.
+	 * @param string   $slug             Shadow term slug.
+	 * @param bool     $upcoming         Whether to match upcoming events rather than past ones.
+	 * @param string[] $event_post_types Event post type slugs.
+	 *
+	 * @return bool True when a matching event exists.
+	 */
+	protected function has_event_with_term(
+		string $taxonomy,
+		string $slug,
+		bool $upcoming,
+		array $event_post_types
+	): bool {
+		$query = new WP_Query(
 			array(
 				'post_type'              => $event_post_types,
 				self::EVENT_QUERY_PARAM  => $upcoming ? 'upcoming' : 'past',
 				'has_password'           => false,
 				'fields'                 => 'ids',
-				'posts_per_page'         => -1,
+				'posts_per_page'         => 1,
 				'no_found_rows'          => true,
 				'update_post_meta_cache' => false,
 				'update_post_term_cache' => false,
@@ -1001,27 +1040,14 @@ final class Query {
 				'tax_query'              => array(
 					array(
 						'taxonomy' => $taxonomy,
-						'operator' => 'EXISTS',
+						'field'    => 'slug',
+						'terms'    => $slug,
 					),
 				),
 			)
 		);
 
-		$event_ids = wp_parse_id_list( $event_query->posts );
-
-		if ( empty( $event_ids ) ) {
-			return array();
-		}
-
-		$slugs = wp_get_object_terms( $event_ids, $taxonomy, array( 'fields' => 'slugs' ) );
-
-		// Sentinel terms such as `online-event` have no leading underscore.
-		return array_values(
-			array_filter(
-				is_array( $slugs ) ? $slugs : array(),
-				static fn( string $slug ): bool => str_starts_with( $slug, '_' )
-			)
-		);
+		return ! empty( $query->posts );
 	}
 
 	/**
