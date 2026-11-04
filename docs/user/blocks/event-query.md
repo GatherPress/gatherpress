@@ -11,17 +11,18 @@ GatherPress includes a block-variation of the `core/query` block, called _Event 
 3. Allows editors to start with a minimal event scaffold via the **Start blank** button and the underlying [Block Variation Picker](https://github.com/WordPress/gutenberg/tree/trunk/packages/block-editor/src/components/block-variation-picker). Whichever scaffold the editor picks, the post template is seeded with `Event Date` + a linked post title rather than WordPress's generic post-date layout.
 4. Allows to query either **past or upcoming events**.
 5. Allows to select for the inclusion or exclusion of **started, but not yet finished, events**.
-6. If used within a `gatherpress_event` post, an editor can choose to **"Exclude** (the) **current Event"**
-7. Allows for **custom ordering** (`ORDER BY`) of the events by:
+6. Allows to limit the list to a **date range**: this month, next month, this year, last year, or a custom start and end date. Presets follow the current date, so "Next month" always means the month after today. The range works together with the upcoming or past choice, so **Upcoming** with **This year** shows the rest of this year, and **Past** with **Last year** shows all of last year's events. Pair it with the **Query Total** block for a line like "We had 123 events in 2025".
+7. If used within a `gatherpress_event` post, an editor can choose to **"Exclude** (the) **current Event"**
+8. Allows for **custom ordering** (`ORDER BY`) of the events by:
    - datetime (default)
    - random
    - title
    - post_id
    - last modified date
-8. ... in either ASC or DESC `ORDER`
-9. Allows to filter the queried events by Author, Keyword, Topic or Venue (and any other additionally registered taxonomies).
-10. **Filter by current venue** toggle: when placed on a venue page, the query is automatically scoped to that venue's events. The toggle is hidden on regular posts where there's no venue context to use. In templates or template parts, the toggle is shown with a note that the filter only takes effect when the template renders on a venue page.
-11. The variation is automatically loaded, when an editor chooses the „Event“ post type in a regular `core/query` block.
+9. ... in either ASC or DESC `ORDER`
+10. Allows to filter the queried events by Author, Keyword, Topic or Venue (and any other additionally registered taxonomies).
+11. **Filter by current venue** toggle: when placed on a venue page, the query is automatically scoped to that venue's events. The toggle is hidden on regular posts where there's no venue context to use. In templates or template parts, the toggle is shown with a note that the filter only takes effect when the template renders on a venue page.
+12. The variation is automatically loaded, when an editor chooses the „Event“ post type in a regular `core/query` block.
 
 ## Curated and mixed event lists with Advanced Query Loop
 

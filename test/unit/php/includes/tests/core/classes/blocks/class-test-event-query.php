@@ -1387,4 +1387,300 @@ class Test_Event_Query extends Base {
 
 		$this->assertSame( 1, $result['shadow_filter'], 'Should pass shadow_filter through to query args.' );
 	}
+
+	/**
+	 * Each date range preset resolves against the current date in the site timezone.
+	 *
+	 * @since TBD
+	 * @covers ::get_date_query
+	 *
+	 * @return void
+	 */
+	public function test_get_date_query_resolves_presets(): void {
+		$instance = Event_Query::get_instance();
+		$now      = current_datetime();
+		$next     = $now->modify( 'first day of next month' );
+		$expected = array(
+			'this_month' => array(
+				'year'     => (int) $now->format( 'Y' ),
+				'monthnum' => (int) $now->format( 'n' ),
+			),
+			'next_month' => array(
+				'year'     => (int) $next->format( 'Y' ),
+				'monthnum' => (int) $next->format( 'n' ),
+			),
+			'this_year'  => array( 'year' => (int) $now->format( 'Y' ) ),
+			'last_year'  => array( 'year' => (int) $now->format( 'Y' ) - 1 ),
+		);
+
+		foreach ( $expected as $range => $date_query ) {
+			$this->assertSame(
+				$date_query,
+				Utility::invoke_hidden_method(
+					$instance,
+					'get_date_query',
+					array( array( 'gatherpress_date_range' => $range ) )
+				),
+				sprintf( 'The %s preset should resolve from today.', $range )
+			);
+		}
+	}
+
+	/**
+	 * No range, an empty range and an unknown range all leave the query unfiltered.
+	 *
+	 * @since TBD
+	 * @covers ::get_date_query
+	 *
+	 * @return void
+	 */
+	public function test_get_date_query_without_a_range(): void {
+		$instance = Event_Query::get_instance();
+		$cases    = array(
+			array(),
+			array( 'gatherpress_date_range' => '' ),
+			array( 'gatherpress_date_range' => 'bogus' ),
+		);
+
+		foreach ( $cases as $params ) {
+			$this->assertSame(
+				array(),
+				Utility::invoke_hidden_method( $instance, 'get_date_query', array( $params ) )
+			);
+		}
+	}
+
+	/**
+	 * The custom range is passed to the custom date helper.
+	 *
+	 * @since TBD
+	 * @covers ::get_date_query
+	 * @covers ::get_custom_date_query
+	 *
+	 * @return void
+	 */
+	public function test_get_date_query_custom_range(): void {
+		$this->assertSame(
+			array(
+				'after'     => '2026-01-01',
+				'before'    => '2026-01-31',
+				'inclusive' => true,
+			),
+			Utility::invoke_hidden_method(
+				Event_Query::get_instance(),
+				'get_date_query',
+				array(
+					array(
+						'gatherpress_date_range'  => 'custom',
+						'gatherpress_date_after'  => '2026-01-01',
+						'gatherpress_date_before' => '2026-01-31',
+					),
+				)
+			)
+		);
+	}
+
+	/**
+	 * A custom range keeps each valid date and drops anything else.
+	 *
+	 * @since TBD
+	 * @covers ::get_custom_date_query
+	 *
+	 * @return void
+	 */
+	public function test_get_custom_date_query(): void {
+		$instance = Event_Query::get_instance();
+		$cases    = array(
+			'start only'      => array(
+				array( 'gatherpress_date_after' => '2026-03-01' ),
+				array(
+					'after'     => '2026-03-01',
+					'inclusive' => true,
+				),
+			),
+			'end only'        => array(
+				array( 'gatherpress_date_before' => '2026-03-31' ),
+				array(
+					'before'    => '2026-03-31',
+					'inclusive' => true,
+				),
+			),
+			'invalid end'     => array(
+				array(
+					'gatherpress_date_after'  => '2026-03-01',
+					'gatherpress_date_before' => '2026-02-31',
+				),
+				array(
+					'after'     => '2026-03-01',
+					'inclusive' => true,
+				),
+			),
+			'reversed'        => array(
+				array(
+					'gatherpress_date_after'  => '2026-03-31',
+					'gatherpress_date_before' => '2026-03-01',
+				),
+				array(
+					'after'     => '2026-03-01',
+					'before'    => '2026-03-31',
+					'inclusive' => true,
+				),
+			),
+			'no dates'        => array( array(), array() ),
+			'wrong format'    => array( array( 'gatherpress_date_after' => '03/01/2026' ), array() ),
+			'relative string' => array( array( 'gatherpress_date_after' => 'next month' ), array() ),
+			'not a string'    => array( array( 'gatherpress_date_after' => array( '2026-03-01' ) ), array() ),
+		);
+
+		foreach ( $cases as $label => list( $params, $expected ) ) {
+			$this->assertSame(
+				$expected,
+				Utility::invoke_hidden_method( $instance, 'get_custom_date_query', array( $params ) ),
+				sprintf( 'Unexpected date query for case: %s.', $label )
+			);
+		}
+	}
+
+	/**
+	 * The front-end query gets a date query only when the block sets a range.
+	 *
+	 * @since TBD
+	 * @covers ::query_loop_block_query_vars
+	 *
+	 * @return void
+	 */
+	public function test_query_loop_block_query_vars_adds_date_query(): void {
+		$instance = Event_Query::get_instance();
+		$block    = $this->createMock( \WP_Block::class );
+
+		$block->context = array(
+			'query' => array(
+				'gatherpress_event_query' => 'past',
+				'gatherpress_date_range'  => 'last_year',
+			),
+		);
+
+		$result = $instance->query_loop_block_query_vars( array(), $block );
+
+		$this->assertSame( array( 'year' => (int) current_datetime()->format( 'Y' ) - 1 ), $result['date_query'] );
+
+		$block->context = array(
+			'query' => array( 'gatherpress_event_query' => 'past' ),
+		);
+
+		$result = $instance->query_loop_block_query_vars( array(), $block );
+
+		$this->assertArrayNotHasKey( 'date_query', $result, 'No range should add no date query.' );
+
+		$block->context = array(
+			'query' => array(
+				'postType'                => 'post',
+				'gatherpress_event_query' => 'past',
+				'gatherpress_date_range'  => 'last_year',
+			),
+		);
+
+		$result = $instance->query_loop_block_query_vars( array(), $block );
+
+		$this->assertArrayNotHasKey(
+			'date_query',
+			$result,
+			'A plain post type should not get a range, which would filter by publish date.'
+		);
+	}
+
+	/**
+	 * The editor preview gets the same date query from the REST params.
+	 *
+	 * @since TBD
+	 * @covers ::rest_query
+	 *
+	 * @return void
+	 */
+	public function test_rest_query_adds_date_query(): void {
+		$request = new \WP_REST_Request( 'GET', '/wp/v2/gatherpress_events' );
+		$request->set_param( 'gatherpress_date_range', 'custom' );
+		$request->set_param( 'gatherpress_date_after', '2026-05-01' );
+
+		$result = Event_Query::get_instance()->rest_query( array(), $request );
+
+		$this->assertSame(
+			array(
+				'after'     => '2026-05-01',
+				'inclusive' => true,
+			),
+			$result['date_query']
+		);
+
+		$request = new \WP_REST_Request( 'GET', '/wp/v2/gatherpress_events' );
+		$result  = Event_Query::get_instance()->rest_query( array(), $request );
+
+		$this->assertArrayNotHasKey( 'date_query', $result, 'No range should add no date query.' );
+	}
+
+	/**
+	 * The date range REST params accept valid and empty values and reject the rest.
+	 *
+	 * @since TBD
+	 * @covers ::rest_collection_params
+	 *
+	 * @return void
+	 */
+	public function test_rest_collection_params_date_range(): void {
+		$result = Event_Query::get_instance()->rest_collection_params( array() );
+
+		$this->assertTrue( rest_validate_value_from_schema( 'next_month', $result['gatherpress_date_range'] ) );
+		$this->assertTrue( rest_validate_value_from_schema( '', $result['gatherpress_date_range'] ) );
+		$this->assertWPError( rest_validate_value_from_schema( 'tomorrow', $result['gatherpress_date_range'] ) );
+
+		foreach ( array( 'gatherpress_date_after', 'gatherpress_date_before' ) as $param ) {
+			$this->assertTrue( rest_validate_value_from_schema( '2026-01-31', $result[ $param ] ) );
+			$this->assertTrue( rest_validate_value_from_schema( '', $result[ $param ] ) );
+			$this->assertWPError( rest_validate_value_from_schema( 'next month', $result[ $param ] ) );
+		}
+	}
+
+	/**
+	 * A date range limits the events the block actually returns.
+	 *
+	 * @since TBD
+	 * @covers ::query_loop_block_query_vars
+	 * @covers ::get_date_query
+	 *
+	 * @return void
+	 */
+	public function test_date_range_limits_query_results(): void {
+		$year      = (int) current_datetime()->format( 'Y' );
+		$last_year = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$older     = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+
+		( new Event( $last_year->ID ) )->save_datetimes(
+			array(
+				'datetime_start' => sprintf( '%d-06-15 10:00:00', $year - 1 ),
+				'datetime_end'   => sprintf( '%d-06-15 12:00:00', $year - 1 ),
+				'timezone'       => 'UTC',
+			)
+		);
+		( new Event( $older->ID ) )->save_datetimes(
+			array(
+				'datetime_start' => sprintf( '%d-06-15 10:00:00', $year - 2 ),
+				'datetime_end'   => sprintf( '%d-06-15 12:00:00', $year - 2 ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		$block          = $this->createMock( \WP_Block::class );
+		$block->context = array(
+			'query' => array(
+				'gatherpress_event_query' => 'past',
+				'gatherpress_date_range'  => 'last_year',
+			),
+		);
+
+		$args  = Event_Query::get_instance()->query_loop_block_query_vars( array( 'fields' => 'ids' ), $block );
+		$posts = ( new \WP_Query( $args ) )->posts;
+
+		$this->assertContains( $last_year->ID, $posts );
+		$this->assertNotContains( $older->ID, $posts, 'An event from two years ago is not in last year.' );
+	}
 }
