@@ -24,7 +24,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-shadow-source.php:426](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-shadow-source.php#L426)
+- [includes/core/classes/class-shadow-source.php:529](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-shadow-source.php#L529)
 ```php
 apply_filters( 'the_title', $post->post_title, $post->ID )
 ```

@@ -35,10 +35,6 @@
 - [`gatherpress_site_message_active_days`](gatherpress_site_message_active_days.md) Filters the choices for how far back an active user's last RSVP can be.
 - [`gatherpress_site_message_subject`](gatherpress_site_message_subject.md) Filters the subject line of a site-wide message.
 
-## class-event-query.php
-
-- [`gatherpress_query_vars`](gatherpress_query_vars.md) This filter is documented in includes/core/classes/blocks/class-event-query.php
-
 ## class-event.php
 
 - [`gatherpress_date_format`](gatherpress_date_format.md)
@@ -164,6 +160,7 @@
 
 ## class-shadow-source.php
 
+- [`gatherpress_query_loop_vars`](gatherpress_query_loop_vars.md) This filter is documented in includes/core/classes/blocks/class-event-query.php
 - [`gatherpress_shadow_taxonomy_args`](gatherpress_shadow_taxonomy_args.md) Filters the taxonomy registration args for a shadow-source post type.
 - [`gatherpress_shadow_taxonomy_object_types`](gatherpress_shadow_taxonomy_object_types.md) Filters which event post types the shadow taxonomy should be
 - [`the_title`](the_title.md)
