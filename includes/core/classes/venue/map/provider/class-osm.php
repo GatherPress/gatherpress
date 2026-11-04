@@ -410,6 +410,7 @@ final class OSM extends Base {
 	 *
 	 * @since 0.34.0
 	 * @since 0.36.0 Layered under the `custom_map_tile_url` setting; resolves `{s}`.
+	 * @since TBD Moves URLs on CARTO's old `fastly.net` hosts to `basemaps.cartocdn.com`.
 	 *
 	 * @return string
 	 */
@@ -424,7 +425,9 @@ final class OSM extends Base {
 		 *
 		 * @param string $template Tile URL with `{z}`, `{x}`, `{y}` placeholders.
 		 */
-		$template = (string) apply_filters( 'gatherpress_static_map_tile_url', $default );
+		$template = Settings::use_carto_basemaps_host(
+			(string) apply_filters( 'gatherpress_static_map_tile_url', $default )
+		);
 
 		// Static compositor makes direct requests, so `{s}` needs resolving.
 		$template = str_replace( '{s}', 'a', $template );

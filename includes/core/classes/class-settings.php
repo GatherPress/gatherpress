@@ -107,15 +107,20 @@ class Settings {
 	 * its key to that host.
 	 *
 	 * @since 0.36.0
+	 * @since TBD Drops the old `fastly.net` hosts, which tile URLs are moved off.
 	 * @var string[]
 	 */
 	private const CARTO_TILE_HOSTS = array(
 		'basemaps.cartocdn.com',
-		'cartodb-basemaps-a.global.ssl.fastly.net',
-		'cartodb-basemaps-b.global.ssl.fastly.net',
-		'cartodb-basemaps-c.global.ssl.fastly.net',
-		'cartodb-basemaps-d.global.ssl.fastly.net',
 	);
+
+	/**
+	 * CARTO's old `fastly.net` tile hosts, with the subdomain letter captured.
+	 *
+	 * @since TBD
+	 * @var string
+	 */
+	private const LEGACY_CARTO_HOST_PATTERN = '#^https?://cartodb-basemaps-([a-d]|\{s\})\.global\.ssl\.fastly\.net/#i';
 
 	/**
 	 * URL used in the default map attribution credit to OpenStreetMap.
@@ -282,6 +287,7 @@ class Settings {
 	 *
 	 * @since 0.34.0
 	 * @since 0.36.0 Layered under the `custom_map_tile_url` setting.
+	 * @since TBD Moves URLs on CARTO's old `fastly.net` hosts to `basemaps.cartocdn.com`.
 	 *
 	 * @return string Leaflet-compatible tile URL template.
 	 */
@@ -296,7 +302,9 @@ class Settings {
 		 *
 		 * @param string $url Default tile URL template (CartoDB Positron).
 		 */
-		$filtered = (string) apply_filters( 'gatherpress_interactive_map_tile_url', $default );
+		$filtered = self::use_carto_basemaps_host(
+			(string) apply_filters( 'gatherpress_interactive_map_tile_url', $default )
+		);
 
 		if ( '' === $filtered ) {
 			return self::add_map_tile_key( self::MAP_TILE_URL );
@@ -341,6 +349,22 @@ class Settings {
 		// Concatenated rather than added with add_query_arg(), which cannot
 		// parse the `{s}` subdomain placeholder as a host.
 		return $url . ( str_contains( $url, '?' ) ? '&' : '?' ) . 'key=' . rawurlencode( $key );
+	}
+
+	/**
+	 * Move a tile URL on CARTO's old `fastly.net` hosts to `basemaps.cartocdn.com`.
+	 *
+	 * The old hosts reject some keys, and CARTO's key page puts the key on
+	 * `basemaps.cartocdn.com` URLs. The rest of the URL is kept as it is.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $url Tile URL or URL template.
+	 *
+	 * @return string The URL, on `basemaps.cartocdn.com` when it was on an old host.
+	 */
+	public static function use_carto_basemaps_host( string $url ): string {
+		return (string) preg_replace( self::LEGACY_CARTO_HOST_PATTERN, 'https://$1.basemaps.cartocdn.com/', $url );
 	}
 
 	/**
