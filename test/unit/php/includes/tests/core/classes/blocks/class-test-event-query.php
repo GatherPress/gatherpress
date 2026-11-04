@@ -323,20 +323,22 @@ class Test_Event_Query extends Base {
 		// "twentytwentyfive//single-gatherpress_event") for these, and a strict
 		// integer rejection 400s the request and leaves the Query Loop spinning.
 		$template_id = 'twentytwentyfive//single-gatherpress_event';
-		$this->assertSame(
-			'absint',
-			$result['exclude_current']['sanitize_callback'],
-			'exclude_current should sanitize to a non-negative int.'
-		);
-		$this->assertTrue(
-			call_user_func( $result['exclude_current']['validate_callback'], $template_id ),
-			'exclude_current should accept a non-numeric template identifier (no 400).'
-		);
-		$this->assertSame(
-			0,
-			call_user_func( $result['exclude_current']['sanitize_callback'], $template_id ),
-			'exclude_current should coerce a non-numeric template identifier to 0 (no context).'
-		);
+		foreach ( array( 'exclude_current', 'gatherpress_shadow_source_post_id' ) as $param ) {
+			$this->assertSame(
+				'absint',
+				$result[ $param ]['sanitize_callback'],
+				sprintf( '%s should sanitize to a non-negative int.', $param )
+			);
+			$this->assertTrue(
+				call_user_func( $result[ $param ]['validate_callback'], $template_id ),
+				sprintf( '%s should accept a non-numeric template identifier (no 400).', $param )
+			);
+			$this->assertSame(
+				0,
+				call_user_func( $result[ $param ]['sanitize_callback'], $template_id ),
+				sprintf( '%s should coerce a non-numeric template identifier to 0 (no context).', $param )
+			);
+		}
 	}
 
 	/**
@@ -1253,9 +1255,8 @@ class Test_Event_Query extends Base {
 	 *
 	 * An event listing with the contextual shadow filter on needs the context
 	 * post in REST, where `is_singular()` is false and the query would
-	 * otherwise stay unscoped. The two context params are not schema-declared
-	 * for event post types, but WordPress only validates registered collection
-	 * params, so reading them with get_param() is safe.
+	 * otherwise stay unscoped. `rest_collection_params()` declares both
+	 * context params for event post types.
 	 *
 	 * @since TBD
 	 * @covers ::rest_query

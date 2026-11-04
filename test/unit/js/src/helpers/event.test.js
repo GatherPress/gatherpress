@@ -382,6 +382,30 @@ describe( 'useHasEventActivityFilterSupport', () => {
 		);
 	} );
 
+	it( 'returns false when the shadow taxonomy is not on any event-date post type', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getPostType: () => ( {
+						supports: { 'gatherpress-shadow-source': true },
+					} ),
+					getTaxonomy: () => ( { types: [ 'post' ] } ),
+					getPostTypes: () => [
+						{
+							slug: 'gatherpress_event',
+							supports: { 'gatherpress-event-date': true },
+						},
+					],
+				};
+			}
+			return {};
+		} );
+
+		expect( useHasEventActivityFilterSupport( 'gatherpress_venue' ) ).toBe(
+			false,
+		);
+	} );
+
 	it( 'returns false while the post type list has not loaded', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
