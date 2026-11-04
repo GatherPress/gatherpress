@@ -88,13 +88,14 @@ class Test_Feed_Placeholder extends Base {
 	 * @return string The rendered href.
 	 */
 	private function render_href( string $href, int $post_id = 0 ): string {
-		$html  = sprintf( '<p><a href="%s">Subscribe</a></p>', $href );
 		$block = array(
 			'blockName' => 'core/paragraph',
 			'attrs'     => $post_id ? array( 'postId' => $post_id ) : array(),
-			'innerHTML' => $html,
 		);
-		$html  = Feed_Placeholder::get_instance()->replace_placeholders( $html, $block );
+		$html  = Feed_Placeholder::get_instance()->replace_placeholders(
+			sprintf( '<p><a href="%s">Subscribe</a></p>', $href ),
+			$block
+		);
 		$tag   = new WP_HTML_Tag_Processor( $html );
 
 		$tag->next_tag( array( 'tag_name' => 'a' ) );
@@ -531,14 +532,14 @@ class Test_Feed_Placeholder extends Base {
 	 */
 	public function test_replaces_every_placeholder_in_one_block(): void {
 		$url   = get_feed_link( Setup::ICAL_SLUG );
-		$html  = '<p><a href="#gatherpress-calendar-feed-site-url">Feed</a> '
+		$html  = '<p><a href="https://example.org/">Other</a> '
+			. '<a href="#gatherpress-calendar-feed-site-url">Feed</a> '
 			. '<a href="#gatherpress-calendar-subscribe-site-url">Subscribe</a></p>';
 		$html  = Feed_Placeholder::get_instance()->replace_placeholders(
 			$html,
 			array(
 				'blockName' => 'core/paragraph',
 				'attrs'     => array(),
-				'innerHTML' => $html,
 			)
 		);
 		$tag   = new WP_HTML_Tag_Processor( $html );
@@ -548,37 +549,55 @@ class Test_Feed_Placeholder extends Base {
 			$hrefs[] = (string) $tag->get_attribute( 'href' );
 		}
 
-		$this->assertSame( array( $url, $this->webcal( $url ) ), $hrefs );
+		$this->assertSame( array( 'https://example.org/', $url, $this->webcal( $url ) ), $hrefs );
 	}
 
 	/**
-	 * A block with the placeholder only in an inner block leaves it alone.
+	 * A block around an inner block's unresolved placeholder leaves it alone,
+	 * and still resolves its own.
 	 *
 	 * @since TBD
 	 *
 	 * @covers ::replace_placeholders
-	 * @covers ::has_own_placeholder
 	 *
 	 * @return void
 	 */
-	public function test_skips_placeholders_from_inner_blocks(): void {
+	public function test_ancestor_leaves_inner_unresolved_placeholder(): void {
 		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
-		$html     = '<div class="wp-block-group">'
-			. '<p><a href="#gatherpress-calendar-feed-archive-url">Feed</a></p>'
-			. '</div>';
+		$page_id  = $this->mock->post( array( 'post_type' => 'page' ) )->get()->ID;
+		$instance = Feed_Placeholder::get_instance();
+
+		// The inner block renders for a page, which has no events archive.
+		$child = $instance->replace_placeholders(
+			'<p><a href="#gatherpress-calendar-feed-archive-url">Child</a></p>',
+			array(
+				'blockName' => 'core/paragraph',
+				'attrs'     => array( 'postId' => $page_id ),
+			)
+		);
+		$html  = $instance->replace_placeholders(
+			'<div class="wp-block-group"><a href="#gatherpress-calendar-feed-archive-url">Own</a>' . $child . '</div>',
+			array(
+				'blockName' => 'core/group',
+				'attrs'     => array( 'postId' => $event_id ),
+			)
+		);
+		$tag   = new WP_HTML_Tag_Processor( $html );
+		$hrefs = array();
+
+		while ( $tag->next_tag( array( 'tag_name' => 'a' ) ) ) {
+			$hrefs[] = (string) $tag->get_attribute( 'href' );
+		}
 
 		$this->assertSame(
-			$html,
-			Feed_Placeholder::get_instance()->replace_placeholders(
-				$html,
-				array(
-					'blockName' => 'core/group',
-					'attrs'     => array( 'postId' => $event_id ),
-					'innerHTML' => '<div class="wp-block-group"></div>',
-				)
+			array(
+				get_post_type_archive_feed_link( Event::POST_TYPE, Setup::ICAL_SLUG ),
+				'#gatherpress-calendar-feed-archive-url',
 			),
-			'A placeholder an inner block left as it is should not be resolved by the block around it.'
+			$hrefs,
+			'The block around resolves its own link and leaves the inner block\'s unresolved one.'
 		);
+		$this->assertStringContainsString( Feed_Placeholder::UNRESOLVED_ATTRIBUTE, $html );
 	}
 
 	/**
@@ -586,7 +605,7 @@ class Test_Feed_Placeholder extends Base {
 	 *
 	 * @since TBD
 	 *
-	 * @covers ::has_own_placeholder
+	 * @covers ::replace_placeholders
 	 *
 	 * @return void
 	 */
@@ -596,7 +615,6 @@ class Test_Feed_Placeholder extends Base {
 			array(
 				'blockName' => 'core/navigation-link',
 				'attrs'     => array( 'url' => '#gatherpress-calendar-feed-site-url' ),
-				'innerHTML' => '',
 			)
 		);
 

@@ -38,9 +38,10 @@ use WP_Term;
  * which gives the same feed as a `webcal://` URL. A placeholder with no feed
  * to point to stays as it is.
  *
- * Only the block whose own markup holds the link resolves it, so a block
- * around it, rendered for another post, can't resolve a placeholder its
- * inner block left as it is.
+ * Inner blocks render first, so the innermost block with the link gets the
+ * first try. A placeholder it can't resolve is marked with
+ * `data-gatherpress-calendar-unresolved`, so a block around it, rendered for
+ * another post, can't resolve it with that post's venue or archive.
  *
  * @since TBD
  */
@@ -50,6 +51,14 @@ final class Feed_Placeholder {
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
+
+	/**
+	 * Attribute marking a placeholder a block could not resolve.
+	 *
+	 * @since TBD
+	 * @var string
+	 */
+	const UNRESOLVED_ATTRIBUTE = 'data-gatherpress-calendar-unresolved';
 
 	/**
 	 * Start of every calendar feed placeholder.
@@ -90,8 +99,8 @@ final class Feed_Placeholder {
 	/**
 	 * Replaces calendar feed placeholder hrefs with feed URLs.
 	 *
-	 * A block with the placeholder only in its inner blocks is skipped: they
-	 * have already had their turn.
+	 * A placeholder an inner block already tried and marked unresolved is
+	 * skipped.
 	 *
 	 * @since TBD
 	 *
@@ -101,39 +110,33 @@ final class Feed_Placeholder {
 	 * @return string The block's HTML, with placeholders that have a feed replaced.
 	 */
 	public function replace_placeholders( string $block_content, array $block ): string {
-		if ( ! str_contains( $block_content, self::PREFIX ) || ! $this->has_own_placeholder( $block ) ) {
+		if ( ! str_contains( $block_content, self::PREFIX ) ) {
 			return $block_content;
 		}
 
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
 		while ( $tag->next_tag( array( 'tag_name' => 'a' ) ) ) {
-			$url = $this->get_url( (string) $tag->get_attribute( 'href' ), $block );
+			$href = (string) $tag->get_attribute( 'href' );
 
-			if ( '' !== $url ) {
+			// Skip other links, and placeholders an inner block already tried.
+			if (
+				! str_starts_with( $href, self::PREFIX ) ||
+				null !== $tag->get_attribute( self::UNRESOLVED_ATTRIBUTE )
+			) {
+				continue;
+			}
+
+			$url = $this->get_url( $href, $block );
+
+			if ( '' === $url ) {
+				$tag->set_attribute( self::UNRESOLVED_ATTRIBUTE, true );
+			} else {
 				$tag->set_attribute( 'href', $url );
 			}
 		}
 
 		return $tag->get_updated_html();
-	}
-
-	/**
-	 * Checks whether a block's own markup or attributes hold a placeholder.
-	 *
-	 * Attributes count for blocks that render their link from one, such as
-	 * the Navigation Link block's `url`.
-	 *
-	 * @since TBD
-	 *
-	 * @param array<string, mixed> $block The parsed block data.
-	 *
-	 * @return bool True when the placeholder is the block's own.
-	 */
-	private function has_own_placeholder( array $block ): bool {
-		$own = (string) ( $block['innerHTML'] ?? '' ) . wp_json_encode( $block['attrs'] ?? array() );
-
-		return str_contains( $own, self::PREFIX );
 	}
 
 	/**
