@@ -31,7 +31,7 @@ For a calendar that stays current, point people at a feed instead. A feed is sub
 
 Both are worth offering. People add one event they are going to; regulars subscribe to the feed.
 
-To offer a feed right in this dropdown, add an item and set its link to a subscribe placeholder, such as `#gatherpress-calendar-subscribe-venue-url` for the event's venue or `#gatherpress-calendar-subscribe-site-url` for every event on the site. See [subscribe links](../calendar-feeds.md#subscribe-links) for the full list. This doesn't work when the dropdown's **Enable Select Mode** setting is on, because that turns every item into a button rather than a link.
+To offer a feed right in this dropdown, add an item and set its link to a subscribe placeholder, such as `#gatherpress-calendar-subscribe-venue-url` for the event's venue or `#gatherpress-calendar-subscribe-site-url` for every event on the site. When the block is set to show another event, the item uses that event's venue. See [subscribe links](../calendar-feeds.md#subscribe-links) for the full list. This doesn't work when the dropdown's **Enable Select Mode** setting is on, because that turns every item into a button rather than a link.
 
 ## See also
 

@@ -1,4 +1,4 @@
 Significance: minor
 Type: added
 
-Added subscribe link placeholders for calendar feeds. Set any link or button to a placeholder such as `#gatherpress-calendar-subscribe-venue-url` or `#gatherpress-calendar-feed-topic-workshops-url`, and it links to the matching feed for the page, the whole site, the events archive, a venue or a topic, as a `webcal://` or `https://` address.
+Added subscribe link placeholders for calendar feeds. Set any link or button to a placeholder such as `#gatherpress-calendar-subscribe-venue-url` or `#gatherpress-calendar-feed-topic-workshops-url`, and it links to the matching feed for the page, the whole site, the events archive, a venue or a topic, as a `webcal://` or `https://` address. A placeholder with no feed loses its address, so it is no longer a link that goes nowhere. In an Add to Calendar dropdown, a placeholder uses the event the block is set to.

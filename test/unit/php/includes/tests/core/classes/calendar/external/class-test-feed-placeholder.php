@@ -85,7 +85,7 @@ class Test_Feed_Placeholder extends Base {
 	 * @param string $href    The link's href.
 	 * @param int    $post_id Optional. The post the block renders for.
 	 *
-	 * @return string The rendered href.
+	 * @return string The rendered href, or an empty string when the link has none.
 	 */
 	private function render_href( string $href, int $post_id = 0 ): string {
 		$block = array(
@@ -136,7 +136,7 @@ class Test_Feed_Placeholder extends Base {
 	}
 
 	/**
-	 * An href that only looks like a placeholder stays as it is.
+	 * An href that only looks like a placeholder loses its href.
 	 *
 	 * @since TBD
 	 *
@@ -145,11 +145,11 @@ class Test_Feed_Placeholder extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_unknown_placeholder_stays(): void {
+	public function test_unknown_placeholder_loses_its_href(): void {
 		$this->assertSame(
-			'#gatherpress-calendar-feed-nope-url',
+			'',
 			$this->render_href( '#gatherpress-calendar-feed-nope-url' ),
-			'An unknown placeholder should stay as it is.'
+			'An unknown placeholder should lose its href.'
 		);
 	}
 
@@ -219,7 +219,7 @@ class Test_Feed_Placeholder extends Base {
 	}
 
 	/**
-	 * The page placeholder stays on a single event, which has no feed of its own.
+	 * The page placeholder has no feed on a single event, which has no feed of its own.
 	 *
 	 * @since TBD
 	 *
@@ -232,7 +232,7 @@ class Test_Feed_Placeholder extends Base {
 
 		$this->go_to( get_permalink( $event_id ) );
 
-		$this->assertSame( '#gatherpress-calendar-feed-url', $this->render_href( '#gatherpress-calendar-feed-url' ) );
+		$this->assertSame( '', $this->render_href( '#gatherpress-calendar-feed-url' ) );
 	}
 
 	/**
@@ -292,7 +292,7 @@ class Test_Feed_Placeholder extends Base {
 	}
 
 	/**
-	 * The archive placeholder stays outside an event or events archive.
+	 * The archive placeholder has no feed outside an event or events archive.
 	 *
 	 * @since TBD
 	 *
@@ -303,10 +303,7 @@ class Test_Feed_Placeholder extends Base {
 	public function test_archive_feed_stays_without_context(): void {
 		$page_id = $this->mock->post( array( 'post_type' => 'page' ) )->get()->ID;
 
-		$this->assertSame(
-			'#gatherpress-calendar-feed-archive-url',
-			$this->render_href( '#gatherpress-calendar-feed-archive-url', $page_id )
-		);
+		$this->assertSame( '', $this->render_href( '#gatherpress-calendar-feed-archive-url', $page_id ) );
 	}
 
 	/**
@@ -355,7 +352,7 @@ class Test_Feed_Placeholder extends Base {
 	}
 
 	/**
-	 * The venue placeholder stays when a password hides the event's venue.
+	 * The venue placeholder has no feed when a password hides the event's venue.
 	 *
 	 * @since TBD
 	 *
@@ -380,14 +377,11 @@ class Test_Feed_Placeholder extends Base {
 		wp_set_post_terms( $event_id, '_secret-hall', Venue::TAXONOMY );
 		wp_set_current_user( 0 );
 
-		$this->assertSame(
-			'#gatherpress-calendar-feed-venue-url',
-			$this->render_href( '#gatherpress-calendar-feed-venue-url', $event_id )
-		);
+		$this->assertSame( '', $this->render_href( '#gatherpress-calendar-feed-venue-url', $event_id ) );
 	}
 
 	/**
-	 * The venue placeholder stays without an event or venue in context.
+	 * The venue placeholder has no feed without an event or venue in context.
 	 *
 	 * @since TBD
 	 *
@@ -399,7 +393,7 @@ class Test_Feed_Placeholder extends Base {
 		$page_id = $this->mock->post( array( 'post_type' => 'page' ) )->get()->ID;
 
 		$this->assertSame(
-			'#gatherpress-calendar-feed-venue-url',
+			'',
 			$this->render_href( '#gatherpress-calendar-feed-venue-url', $page_id ),
 			'A page that is neither an event nor a venue has no venue.'
 		);
@@ -437,7 +431,7 @@ class Test_Feed_Placeholder extends Base {
 	}
 
 	/**
-	 * The venue slug placeholder stays for a missing, draft or protected venue.
+	 * The venue slug placeholder has no feed for a missing, draft or protected venue.
 	 *
 	 * @since TBD
 	 *
@@ -466,9 +460,9 @@ class Test_Feed_Placeholder extends Base {
 			$href = sprintf( '#gatherpress-calendar-feed-venue-%s-url', $slug );
 
 			$this->assertSame(
-				$href,
+				'',
 				$this->render_href( $href ),
-				sprintf( 'The %s placeholder should stay.', $slug )
+				sprintf( 'The %s placeholder should lose its href.', $slug )
 			);
 		}
 	}
@@ -493,7 +487,7 @@ class Test_Feed_Placeholder extends Base {
 	}
 
 	/**
-	 * The topic slug placeholder gives that topic's feed, and stays for a missing topic.
+	 * The topic slug placeholder gives that topic's feed, and none for a missing topic.
 	 *
 	 * @since TBD
 	 *
@@ -515,9 +509,9 @@ class Test_Feed_Placeholder extends Base {
 			$this->render_href( '#gatherpress-calendar-feed-topic-workshops-url' )
 		);
 		$this->assertSame(
-			'#gatherpress-calendar-feed-topic-missing-url',
+			'',
 			$this->render_href( '#gatherpress-calendar-feed-topic-missing-url' ),
-			'A missing topic should leave the placeholder as it is.'
+			'A missing topic should remove the href.'
 		);
 	}
 
@@ -592,7 +586,7 @@ class Test_Feed_Placeholder extends Base {
 		$this->assertSame(
 			array(
 				get_post_type_archive_feed_link( Event::POST_TYPE, Setup::ICAL_SLUG ),
-				'#gatherpress-calendar-feed-archive-url',
+				'',
 			),
 			$hrefs,
 			'The block around resolves its own link and leaves the inner block\'s unresolved one.'
@@ -651,7 +645,7 @@ class Test_Feed_Placeholder extends Base {
 
 		unregister_post_type( 'gatherpress_qa_hall' );
 
-		$this->assertSame( '#gatherpress-calendar-feed-venue-orphan-hall-url', $href );
+		$this->assertSame( '', $href );
 		$this->assertSame( '', $url );
 	}
 
@@ -697,7 +691,7 @@ class Test_Feed_Placeholder extends Base {
 	}
 
 	/**
-	 * The topic slug placeholder stays when no event post type uses topics.
+	 * The topic slug placeholder has no feed when no event post type uses topics.
 	 *
 	 * @since TBD
 	 *
@@ -718,6 +712,160 @@ class Test_Feed_Placeholder extends Base {
 
 		register_taxonomy_for_object_type( Topic::TAXONOMY, Event::POST_TYPE );
 
-		$this->assertSame( '#gatherpress-calendar-feed-topic-orphan-topic-url', $href );
+		$this->assertSame( '', $href );
+	}
+
+	/**
+	 * An unresolved link loses its href and is marked, so it is no longer a link.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::replace_placeholders
+	 *
+	 * @return void
+	 */
+	public function test_unresolved_placeholder_is_no_longer_a_link(): void {
+		$html = Feed_Placeholder::get_instance()->replace_placeholders(
+			'<p><a href="#gatherpress-calendar-feed-topic-missing-url">Subscribe</a></p>',
+			array(
+				'blockName' => 'core/paragraph',
+				'attrs'     => array(),
+			)
+		);
+		$tag  = new WP_HTML_Tag_Processor( $html );
+
+		$tag->next_tag( array( 'tag_name' => 'a' ) );
+
+		$this->assertNull( $tag->get_attribute( 'href' ) );
+		$this->assertTrue( $tag->get_attribute( Feed_Placeholder::UNRESOLVED_ATTRIBUTE ) );
+	}
+
+	/**
+	 * A dropdown item in Add to Calendar uses the event Add to Calendar is set to.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::replace_placeholders
+	 * @covers ::get_post_id
+	 *
+	 * @return void
+	 */
+	public function test_dropdown_item_uses_the_add_to_calendar_event(): void {
+		$venue_a  = $this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'hall-a',
+			)
+		)->get()->ID;
+		$event_a  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event_b  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$page_id  = $this->mock->post( array( 'post_type' => 'page' ) )->get()->ID;
+		$expected = $this->webcal( get_post_comments_feed_link( $venue_a, Setup::ICAL_SLUG ) );
+
+		$this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'hall-b',
+			)
+		);
+		wp_set_post_terms( $event_a, '_hall-a', Venue::TAXONOMY );
+		wp_set_post_terms( $event_b, '_hall-b', Venue::TAXONOMY );
+
+		$markup = sprintf(
+			'<!-- wp:gatherpress/add-to-calendar {"postId":%d} -->'
+			. '<div class="wp-block-gatherpress-add-to-calendar">'
+			. '<!-- wp:gatherpress/dropdown --><div class="wp-block-gatherpress-dropdown">'
+			. '<!-- wp:gatherpress/dropdown-item --><div class="wp-block-gatherpress-dropdown-item">'
+			. '<a href="#gatherpress-calendar-subscribe-venue-url">Subscribe</a>'
+			. '</div><!-- /wp:gatherpress/dropdown-item -->'
+			. '</div><!-- /wp:gatherpress/dropdown -->'
+			. '</div><!-- /wp:gatherpress/add-to-calendar -->',
+			$event_a
+		);
+
+		foreach ( array( $page_id, $event_b ) as $host_id ) {
+			$this->go_to( get_permalink( $host_id ) );
+			$GLOBALS['post'] = get_post( $host_id ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+			$tag = new WP_HTML_Tag_Processor( do_blocks( $markup ) );
+
+			$tag->next_tag( array( 'tag_name' => 'a' ) );
+
+			$this->assertSame(
+				$expected,
+				$tag->get_attribute( 'href' ),
+				sprintf( 'Failed to assert the venue of the Add to Calendar event on a %s.', get_post_type( $host_id ) )
+			);
+		}
+
+		unset( $GLOBALS['post'] );
+	}
+
+	/**
+	 * Outside the loop on a listing page, the first listed post is not used.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_post_id
+	 *
+	 * @return void
+	 */
+	public function test_listing_page_outside_the_loop_has_no_post(): void {
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$venue_id = $this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'listed-hall',
+			)
+		)->get()->ID;
+		$term_id  = $this->factory->term->create(
+			array(
+				'taxonomy' => Topic::TAXONOMY,
+				'slug'     => 'listed-topic',
+			)
+		);
+
+		wp_set_post_terms( $event_id, '_listed-hall', Venue::TAXONOMY );
+		wp_set_post_terms( $event_id, array( $term_id ), Topic::TAXONOMY );
+		$this->go_to( get_term_link( $term_id, Topic::TAXONOMY ) );
+		$GLOBALS['post'] = get_post( $event_id ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		$this->assertSame( '', $this->render_href( '#gatherpress-calendar-feed-venue-url' ) );
+		$this->assertSame( '', $this->render_href( '#gatherpress-calendar-feed-archive-url' ) );
+
+		$GLOBALS['wp_query']->in_the_loop = true;
+
+		$this->assertSame(
+			get_post_comments_feed_link( $venue_id, Setup::ICAL_SLUG ),
+			$this->render_href( '#gatherpress-calendar-feed-venue-url' ),
+			'In the loop, the current post is used.'
+		);
+
+		$GLOBALS['wp_query']->in_the_loop = false;
+		unset( $GLOBALS['post'] );
+	}
+
+	/**
+	 * The page placeholder has no feed on a password-protected venue page, as the venue placeholder.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_page_feed_url
+	 *
+	 * @return void
+	 */
+	public function test_page_feed_on_protected_venue_page(): void {
+		$venue_id = $this->mock->post(
+			array(
+				'post_type'     => Venue::POST_TYPE,
+				'post_name'     => 'locked-page-hall',
+				'post_password' => 'secret',
+			)
+		)->get()->ID;
+
+		$this->go_to( get_permalink( $venue_id ) );
+
+		$this->assertSame( '', $this->render_href( '#gatherpress-calendar-feed-url' ) );
+		$this->assertSame( '', $this->render_href( '#gatherpress-calendar-feed-venue-url', $venue_id ) );
 	}
 }

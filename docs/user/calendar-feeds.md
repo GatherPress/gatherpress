@@ -60,13 +60,16 @@ Every placeholder also has a `subscribe` form: replace `feed` with `subscribe`, 
 
 The slug is the same one that appears in the venue's or topic's own web address. If you rename the slug later, update any placeholders that use it.
 
-A placeholder that has no feed to point to stays as it is, so the link goes nowhere until there is one. That happens when:
+A placeholder that has no feed to point to loses its address, so it doesn't work as a link until there is a feed. It also gets a `data-gatherpress-calendar-unresolved` attribute, which a theme can use to hide it. That happens when:
 
 * no venue or topic has the slug;
 * the venue is a draft or has a password;
 * `#gatherpress-calendar-feed-url` is on a single event, which has a one-time download rather than a feed of its own. Use the venue, topic or site placeholder there instead;
-* `#gatherpress-calendar-feed-venue-url` is on an event without a venue, or on an event whose venue is hidden by a password;
+* `#gatherpress-calendar-feed-url` is on a page or post that is not a venue, a topic, the events archive or the front page;
+* `#gatherpress-calendar-feed-venue-url` is on an event without a venue, on an event whose venue is hidden by a password, or on a page that is not an event or a venue;
 * `#gatherpress-calendar-feed-archive-url` is on a page that is not an event or the events archive.
+
+On a page that lists posts, such as a topic page, a link outside the list doesn't take the venue or archive of a listed event.
 
 ## Automatic discovery
 
