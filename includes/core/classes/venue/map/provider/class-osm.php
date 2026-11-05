@@ -19,6 +19,7 @@ namespace GatherPress\Core\Venue\Map\Provider;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Settings;
+use GatherPress\Core\Venue\Map\Carto;
 use GatherPress\Core\Venue\Map;
 use GdImage;
 use Throwable;
@@ -64,13 +65,15 @@ final class OSM extends Base {
 	const COMPOSITE_TIME_BUDGET = 10;
 
 	/**
-	 * Transient set when a render gets no tiles, which pauses rendering
-	 * for `TILES_FAILED_PAUSE` seconds.
+	 * Prefix of the transient set when a render gets no tiles, which
+	 * pauses rendering for `TILES_FAILED_PAUSE` seconds. The rest of the
+	 * name is a hash of the tile URL, so a new key or tile server does not
+	 * wait for the pause.
 	 *
 	 * @since TBD
 	 * @var string
 	 */
-	const TILES_FAILED_TRANSIENT = 'gatherpress_static_map_tiles_failed';
+	const TILES_FAILED_TRANSIENT = 'gatherpress_static_map_tiles_failed_';
 
 	/**
 	 * Seconds to pause rendering after a render gets no tiles.
@@ -112,11 +115,12 @@ final class OSM extends Base {
 	 * Composite OSM tiles around the venue, stamp a marker at the canvas
 	 * center, and return the finished GD image. Returns null when GD is
 	 * unavailable, when the requested dimensions are not positive, when
-	 * the retina variant would require a tile zoom past `Map::ZOOM_MAX`, or
-	 * when no tile loads.
+	 * the retina variant would require a tile zoom past the highest one
+	 * the tiles are served at, or when no tile loads.
 	 *
 	 * @since 0.34.0
 	 * @since TBD Returns null when no tile loads, and for a pause after that.
+	 *            Renders CARTO tiles at `Carto::ZOOM_MAX` at most.
 	 *
 	 * @param float  $latitude  Venue latitude in decimal degrees.
 	 * @param float  $longitude Venue longitude in decimal degrees.
@@ -143,7 +147,10 @@ final class OSM extends Base {
 			return null; // @codeCoverageIgnore
 		}
 
-		if ( $width < 1 || $height < 1 || false !== get_transient( self::TILES_FAILED_TRANSIENT ) ) {
+		$tiles  = $this->get_tile_url_template();
+		$paused = self::TILES_FAILED_TRANSIENT . md5( $tiles );
+
+		if ( $width < 1 || $height < 1 || false !== get_transient( $paused ) ) {
 			return null;
 		}
 
@@ -154,13 +161,18 @@ final class OSM extends Base {
 			$density = 1;
 		}
 
+		// CARTO serves raster tiles only up to its own limit, so a CARTO map
+		// renders at that zoom at most, as the interactive map does.
+		$max_zoom = Carto::is_tile_url( $tiles ) ? Carto::ZOOM_MAX : Map::ZOOM_MAX;
+		$zoom     = min( $zoom, $max_zoom );
+
 		// Tile zoom climbs with density so the retina variant renders true
 		// zoom+1 detail. If that would exceed the provider's serveable
 		// zoom range, skip — orchestrator treats null as "no retina at
 		// this combo" and moves on with just the 1× image.
 		$tile_zoom = $zoom + (int) log( $density, 2 );
 
-		if ( $tile_zoom > Map::ZOOM_MAX ) {
+		if ( $tile_zoom > $max_zoom ) {
 			return null;
 		}
 
@@ -183,8 +195,6 @@ final class OSM extends Base {
 		// Background: neutral gray so missing tiles blend rather than glaring black.
 		$bg = (int) imagecolorallocate( $canvas, 238, 238, 238 );
 		imagefilledrectangle( $canvas, 0, 0, $canvas_width - 1, $canvas_height - 1, $bg );
-
-		$tiles = $this->get_tile_url_template();
 
 		/**
 		 * Filter the wall-clock budget (in seconds) for a single OSM
@@ -215,7 +225,7 @@ final class OSM extends Base {
 		// A map with no tiles is only the gray background. It is not saved,
 		// so a later render tries again once the pause ends.
 		if ( 0 === $painted ) {
-			set_transient( self::TILES_FAILED_TRANSIENT, 1, self::TILES_FAILED_PAUSE );
+			set_transient( $paused, 1, self::TILES_FAILED_PAUSE );
 			return null;
 		}
 
@@ -354,7 +364,7 @@ final class OSM extends Base {
 
 		// A CARTO key restricted to the site's domain is checked against the
 		// referer, which a server request does not send on its own.
-		if ( Settings::is_carto_tile_url( $url ) ) {
+		if ( Carto::is_tile_url( $url ) ) {
 			$args['headers'] = array( 'Referer' => home_url( '/' ) );
 		}
 
@@ -425,7 +435,7 @@ final class OSM extends Base {
 		 *
 		 * @param string $template Tile URL with `{z}`, `{x}`, `{y}` placeholders.
 		 */
-		$template = Settings::use_carto_basemaps_host(
+		$template = Carto::use_basemaps_host(
 			(string) apply_filters( 'gatherpress_static_map_tile_url', $default )
 		);
 
@@ -445,16 +455,20 @@ final class OSM extends Base {
 	/**
 	 * Where the tiles come from, for the static map cache.
 	 *
-	 * Saved maps render again when the tile URL changes, or when a CARTO
-	 * key is added or removed. The key's value is left out, so the cache
-	 * hash does not depend on it.
+	 * Saved maps render again when the tile URL or the CARTO key changes.
+	 * The key is replaced with a salted hash of it, so its value stays out
+	 * of the cache hash.
 	 *
 	 * @since TBD
 	 *
-	 * @return string The tile URL template, without the key's value.
+	 * @return string The tile URL template, with the key hashed.
 	 */
 	public function get_cache_source(): string {
-		return (string) preg_replace( '/([?&]key=)[^&]*/', '$1', $this->get_tile_url_template() );
+		return (string) preg_replace_callback(
+			'/([?&]key=)([^&]*)/',
+			static fn( array $matches ): string => $matches[1] . wp_hash( $matches[2] ),
+			$this->get_tile_url_template()
+		);
 	}
 
 	/**

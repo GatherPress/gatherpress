@@ -3549,7 +3549,6 @@ class Test_Settings extends Base {
 	 * @since 0.36.0
 	 *
 	 * @covers ::add_map_tile_key
-	 * @covers ::is_carto_tile_url
 	 *
 	 * @dataProvider data_map_tile_keys
 	 *
@@ -3670,64 +3669,6 @@ class Test_Settings extends Base {
 
 		$instance->set( 'carto_api_key', '' );
 		$instance->set( 'custom_map_tile_url', '' );
-	}
-
-	/**
-	 * Data provider for tile URLs handed to use_carto_basemaps_host.
-	 *
-	 * @since TBD
-	 *
-	 * @return array<string, array<int, string>>
-	 */
-	public function data_carto_basemaps_hosts(): array {
-		return array(
-			'an old host moves'              => array(
-				'https://cartodb-basemaps-c.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png?foo=bar',
-				'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png?foo=bar',
-			),
-			'the placeholder host moves too' => array(
-				'https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png',
-				'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-			),
-			'plain http moves to https'      => array(
-				'http://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png',
-				'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-			),
-			'the current host is left alone' => array(
-				Settings::MAP_TILE_URL,
-				Settings::MAP_TILE_URL,
-			),
-			'another host is left alone'     => array(
-				'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-				'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-			),
-			'a lookalike host is left alone' => array(
-				'https://cartodb-basemaps-a.global.ssl.fastly.net.evil.test/light_all/{z}/{x}/{y}.png',
-				'https://cartodb-basemaps-a.global.ssl.fastly.net.evil.test/light_all/{z}/{x}/{y}.png',
-			),
-		);
-	}
-
-	/**
-	 * Tile URLs on CARTO's old `fastly.net` hosts move to `basemaps.cartocdn.com`.
-	 *
-	 * @since TBD
-	 *
-	 * @covers ::use_carto_basemaps_host
-	 *
-	 * @dataProvider data_carto_basemaps_hosts
-	 *
-	 * @param string $url      Tile URL template.
-	 * @param string $expected Template after the host is moved.
-	 *
-	 * @return void
-	 */
-	public function test_use_carto_basemaps_host( string $url, string $expected ): void {
-		$this->assertSame(
-			$expected,
-			Settings::use_carto_basemaps_host( $url ),
-			'Failed to assert the tile URL is on the expected host.'
-		);
 	}
 
 	/**

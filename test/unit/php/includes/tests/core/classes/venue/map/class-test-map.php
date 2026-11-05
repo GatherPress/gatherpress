@@ -3327,6 +3327,73 @@ class Test_Map extends Base {
 	}
 
 	/**
+	 * When the render fails, a saved image for the same location is kept,
+	 * even with a stale hash, and one for another location is not.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::ensure_descriptor_for_combo
+	 *
+	 * @return void
+	 */
+	public function test_ensure_descriptor_for_combo_keeps_the_saved_image_when_render_returns_null(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$info     = array(
+			'address'   => '1 Infinite Loop',
+			'latitude'  => '37.3318',
+			'longitude' => '-122.0312',
+		);
+		$url      = Utility::invoke_hidden_method(
+			$instance,
+			'build_image_url',
+			array( '1 Infinite Loop', 37.3318, -122.0312, Map::DEFAULT_ZOOM, 800, 400, 'always-null' )
+		);
+		$key      = Utility::invoke_hidden_method(
+			$instance,
+			'combo_key',
+			array( Map::DEFAULT_ZOOM, 800, 400, 'roadmap' )
+		);
+		$saved    = array(
+			'url'    => $url,
+			'url_2x' => '',
+			'hash'   => 'stale',
+			'zoom'   => Map::DEFAULT_ZOOM,
+			'width'  => 800,
+			'height' => 400,
+		);
+
+		update_post_meta( $post_id, Map::META_KEY, array( 'always-null' => array( $key => $saved ) ) );
+
+		$manager = Manager::get_instance();
+		$manager->register( $this->make_null_provider( 'always-null' ) );
+		update_option( Settings::OPTION_NAME, array( 'map_platform' => 'always-null' ) );
+
+		try {
+			$kept = Utility::invoke_hidden_method(
+				$instance,
+				'ensure_descriptor_for_combo',
+				array( $post_id, $info, Map::DEFAULT_ZOOM, 800, 400 )
+			);
+
+			$saved['url'] = 'https://example.test/old-location.png';
+			update_post_meta( $post_id, Map::META_KEY, array( 'always-null' => array( $key => $saved ) ) );
+
+			$moved = Utility::invoke_hidden_method(
+				$instance,
+				'ensure_descriptor_for_combo',
+				array( $post_id, $info, Map::DEFAULT_ZOOM, 800, 400 )
+			);
+		} finally {
+			delete_option( Settings::OPTION_NAME );
+			$this->reset_manager_to_core_providers( $manager );
+		}
+
+		$this->assertSame( $url, $kept['url'] ?? null, 'Failed to assert the saved image is kept.' );
+		$this->assertNull( $moved, 'Failed to assert an image for another location is not used.' );
+	}
+
+	/**
 	 * Build a Map\Provider\Base subclass whose `render()` always returns
 	 * null. Used by the fallback-chain and null-render coverage tests so
 	 * each can swap in a deterministic non-OSM active provider.

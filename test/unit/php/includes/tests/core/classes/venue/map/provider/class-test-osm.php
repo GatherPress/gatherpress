@@ -15,6 +15,7 @@ namespace GatherPress\Tests\Core\Venue\Map\Provider;
 use ErrorException;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Venue\Map;
+use GatherPress\Core\Venue\Map\Carto;
 use GatherPress\Core\Venue\Map\Provider\OSM;
 use GatherPress\Tests\Base;
 use GdImage;
@@ -424,6 +425,68 @@ class Test_OSM extends Base {
 	}
 
 	/**
+	 * CARTO serves raster tiles up to zoom 18, so a CARTO map above that
+	 * renders from zoom 18 tiles, and its retina variant is skipped.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_render_caps_carto_zoom(): void {
+		$zooms  = array();
+		$record = function ( $preempt, $args, $url ) use ( &$zooms ) {
+			$zooms[] = (int) explode( '/', (string) wp_parse_url( $url, PHP_URL_PATH ) )[2];
+
+			return $this->short_circuit_tile_requests( $preempt, $args, $url );
+		};
+
+		add_filter( 'pre_http_request', $record, 9, 3 );
+
+		$this->assertInstanceOf( GdImage::class, ( new OSM() )->render( 40.7128, -74.0060, 20, 320, 240 ) );
+		$this->assertSame(
+			array( Carto::ZOOM_MAX ),
+			array_values( array_unique( $zooms ) ),
+			'Failed to assert zoom 18 tiles.'
+		);
+		$this->assertNull(
+			( new OSM() )->render( 40.7128, -74.0060, Carto::ZOOM_MAX, 320, 240, 2 ),
+			'Failed to assert the retina variant past zoom 18 is skipped.'
+		);
+
+		remove_filter( 'pre_http_request', $record, 9 );
+	}
+
+	/**
+	 * A tile server other than CARTO is not held to CARTO's zoom limit.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_render_does_not_cap_other_tile_servers(): void {
+		$zooms  = array();
+		$record = function ( $preempt, $args, $url ) use ( &$zooms ) {
+			$zooms[] = (int) explode( '/', (string) wp_parse_url( $url, PHP_URL_PATH ) )[1];
+
+			return $this->short_circuit_tile_requests( $preempt, $args, $url );
+		};
+		$tiles  = static fn(): string => 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+
+		add_filter( 'pre_http_request', $record, 9, 3 );
+		add_filter( 'gatherpress_static_map_tile_url', $tiles );
+
+		$this->assertInstanceOf( GdImage::class, ( new OSM() )->render( 40.7128, -74.0060, 19, 320, 240 ) );
+		$this->assertSame( array( 19 ), array_values( array_unique( $zooms ) ), 'Failed to assert zoom 19 tiles.' );
+
+		remove_filter( 'pre_http_request', $record, 9 );
+		remove_filter( 'gatherpress_static_map_tile_url', $tiles );
+	}
+
+	/**
 	 * When the wall-clock budget is exhausted between iterations, the
 	 * render loop breaks out with no tiles fetched, so there is no map to
 	 * return. Filter-driven so we don't have to wait COMPOSITE_TIME_BUDGET
@@ -571,7 +634,10 @@ class Test_OSM extends Base {
 			( new OSM() )->render( 37.3318, -122.0312, 15, 512, 256 ),
 			'Failed to assert a map with no tiles is not returned.'
 		);
-		$this->assertSame( 1, (int) get_transient( OSM::TILES_FAILED_TRANSIENT ), 'Failed to assert renders pause.' );
+		$tiles  = Utility::invoke_hidden_method( new OSM(), 'get_tile_url_template' );
+		$paused = OSM::TILES_FAILED_TRANSIENT . md5( $tiles );
+
+		$this->assertSame( 1, (int) get_transient( $paused ), 'Failed to assert renders pause.' );
 
 		$fetches = 0;
 
@@ -584,7 +650,16 @@ class Test_OSM extends Base {
 		);
 		$this->assertSame( 0, $fetches, 'Failed to assert no tile is requested during the pause.' );
 
-		delete_transient( OSM::TILES_FAILED_TRANSIENT );
+		Settings::get_instance()->set( 'carto_api_key', 'corrected' );
+
+		$this->assertInstanceOf(
+			GdImage::class,
+			( new OSM() )->render( 37.3318, -122.0312, 15, 512, 256 ),
+			'Failed to assert a new tile URL does not wait for the pause.'
+		);
+
+		Settings::get_instance()->set( 'carto_api_key', '' );
+		delete_transient( $paused );
 
 		$this->assertInstanceOf(
 			GdImage::class,
@@ -594,9 +669,9 @@ class Test_OSM extends Base {
 	}
 
 	/**
-	 * The cache source is the tile URL without the key's value, so adding
-	 * or removing a key renders saved maps again, and the hash never
-	 * depends on the key itself.
+	 * The cache source is the tile URL with a salted hash of the key, so
+	 * a new key renders saved maps again, and the key's value stays out
+	 * of the hash.
 	 *
 	 * @since TBD
 	 *
@@ -613,9 +688,9 @@ class Test_OSM extends Base {
 		$settings->set( 'carto_api_key', 'abc123' );
 
 		$this->assertSame(
-			'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?key=',
+			'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?key=' . wp_hash( 'abc123' ),
 			$osm->get_cache_source(),
-			'Failed to assert the key is noted without its value.'
+			'Failed to assert the key is noted as a hash.'
 		);
 
 		$settings->set( 'carto_api_key', '' );

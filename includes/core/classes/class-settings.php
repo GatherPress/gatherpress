@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Venue\Map\Carto;
 
 /**
  * Class Settings.
@@ -98,29 +99,6 @@ class Settings {
 	 * @since 0.34.0
 	 */
 	const MAP_TILE_URL = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
-
-	/**
-	 * Hosts the CARTO key may be sent to.
-	 *
-	 * The tile URL is filterable, so the key is only ever attached to hosts
-	 * known to be CARTO's. A site pointing its tiles elsewhere does not hand
-	 * its key to that host.
-	 *
-	 * @since 0.36.0
-	 * @since TBD Drops the old `fastly.net` hosts, which tile URLs are moved off.
-	 * @var string[]
-	 */
-	private const CARTO_TILE_HOSTS = array(
-		'basemaps.cartocdn.com',
-	);
-
-	/**
-	 * CARTO's old `fastly.net` tile hosts, with the subdomain letter captured.
-	 *
-	 * @since TBD
-	 * @var string
-	 */
-	private const LEGACY_CARTO_HOST_PATTERN = '#^https?://cartodb-basemaps-([a-d]|\{s\})\.global\.ssl\.fastly\.net/#i';
 
 	/**
 	 * URL used in the default map attribution credit to OpenStreetMap.
@@ -302,7 +280,7 @@ class Settings {
 		 *
 		 * @param string $url Default tile URL template (CartoDB Positron).
 		 */
-		$filtered = self::use_carto_basemaps_host(
+		$filtered = Carto::use_basemaps_host(
 			(string) apply_filters( 'gatherpress_interactive_map_tile_url', $default )
 		);
 
@@ -342,47 +320,13 @@ class Settings {
 
 		// Matched at a parameter boundary, so `api_key=` is not mistaken for
 		// a key that is already there.
-		if ( ! self::is_carto_tile_url( $url ) || 1 === preg_match( '/[?&]key=/', $url ) ) {
+		if ( ! Carto::is_tile_url( $url ) || 1 === preg_match( '/[?&]key=/', $url ) ) {
 			return $url;
 		}
 
 		// Concatenated rather than added with add_query_arg(), which cannot
 		// parse the `{s}` subdomain placeholder as a host.
 		return $url . ( str_contains( $url, '?' ) ? '&' : '?' ) . 'key=' . rawurlencode( $key );
-	}
-
-	/**
-	 * Move a tile URL on CARTO's old `fastly.net` hosts to `basemaps.cartocdn.com`.
-	 *
-	 * The old hosts reject some keys, and CARTO's key page puts the key on
-	 * `basemaps.cartocdn.com` URLs. The rest of the URL is kept as it is.
-	 *
-	 * @since TBD
-	 *
-	 * @param string $url Tile URL or URL template.
-	 *
-	 * @return string The URL, on `basemaps.cartocdn.com` when it was on an old host.
-	 */
-	public static function use_carto_basemaps_host( string $url ): string {
-		return (string) preg_replace( self::LEGACY_CARTO_HOST_PATTERN, 'https://$1.basemaps.cartocdn.com/', $url );
-	}
-
-	/**
-	 * Whether a tile URL goes to one of CARTO's basemap hosts.
-	 *
-	 * @since TBD
-	 *
-	 * @param string $url Tile URL or URL template.
-	 *
-	 * @return bool True when the host is CARTO's.
-	 */
-	public static function is_carto_tile_url( string $url ): bool {
-		// `{s}` stands in for a subdomain, so it is resolved before the host
-		// is read; a bare placeholder does not parse as one.
-		$host = (string) wp_parse_url( str_replace( '{s}', 'a', $url ), PHP_URL_HOST );
-
-		return in_array( $host, self::CARTO_TILE_HOSTS, true )
-			|| str_ends_with( $host, '.basemaps.cartocdn.com' );
 	}
 
 	/**

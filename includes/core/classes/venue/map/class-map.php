@@ -1279,9 +1279,11 @@ final class Map {
 	 * Hits the filesystem cache when the stored hash already matches the
 	 * current inputs and the PNG is still on disk; otherwise composites a
 	 * fresh image, saves it, updates the meta, and removes the old PNG for
-	 * that combo (if any).
+	 * that combo (if any). When the render fails, a saved image for the
+	 * same location is returned as it is.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Returns the saved image for the same location when the render fails.
 	 *
 	 * @param int                   $post_id  Venue post ID.
 	 * @param array<string, string> $info     Parsed venue information.
@@ -1361,10 +1363,10 @@ final class Map {
 			$image = $provider->render( $latitude, $longitude, $zoom, $width, $height, 1, $map_type );
 
 			// Provider returned null — GD missing, network failure, or the
-			// provider can't satisfy this combo. Surface as "no descriptor"
-			// rather than persisting a half-baked entry.
+			// provider can't satisfy this combo. Keep showing a saved image
+			// for the same location rather than persisting a half-baked entry.
 			if ( null === $image ) {
-				return null;
+				return null !== $existing && $existing['url'] === $expected_url ? $existing : null;
 			}
 
 			$url = $this->save_image(
