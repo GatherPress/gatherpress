@@ -3044,7 +3044,20 @@ class Test_Map extends Base {
 		// slug's entry is what proves the `continue` skip in the fallback
 		// walk fires; the google entry is what the walk should ultimately
 		// return.
-		$key = sprintf( '%dx%dx%dxroadmap', Map::DEFAULT_ZOOM, Map::DEFAULT_HEIGHT * 2, Map::DEFAULT_HEIGHT );
+		$key        = sprintf( '%dx%dx%dxroadmap', Map::DEFAULT_ZOOM, Map::DEFAULT_HEIGHT * 2, Map::DEFAULT_HEIGHT );
+		$google_url = Utility::invoke_hidden_method(
+			$instance,
+			'build_image_url',
+			array(
+				'1 Infinite Loop',
+				37.3318,
+				-122.0312,
+				Map::DEFAULT_ZOOM,
+				Map::DEFAULT_HEIGHT * 2,
+				Map::DEFAULT_HEIGHT,
+				'google',
+			)
+		);
 		update_post_meta(
 			$post_id,
 			Map::META_KEY,
@@ -3061,7 +3074,7 @@ class Test_Map extends Base {
 				),
 				'google'        => array(
 					$key => array(
-						'url'    => 'https://example.test/google.png',
+						'url'    => $google_url,
 						'url_2x' => '',
 						'hash'   => 'abc',
 						'zoom'   => Map::DEFAULT_ZOOM,
@@ -3085,7 +3098,85 @@ class Test_Map extends Base {
 		}
 
 		$this->assertIsArray( $descriptor );
-		$this->assertSame( 'https://example.test/google.png', $descriptor['url'] );
+		$this->assertSame( $google_url, $descriptor['url'] );
+	}
+
+	/**
+	 * The other-provider fallback skips an image saved before the venue
+	 * moved, so the page never shows the old location.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_descriptor_for_post
+	 *
+	 * @return void
+	 */
+	public function test_get_descriptor_for_post_skips_another_providers_image_of_an_old_location(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_latitude', '37.3400' );
+		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
+
+		// Seed two providers: the active slug AND `google`. The active
+		// slug's entry is what proves the `continue` skip in the fallback
+		// walk fires; the google entry is what the walk should ultimately
+		// return.
+		$key        = sprintf( '%dx%dx%dxroadmap', Map::DEFAULT_ZOOM, Map::DEFAULT_HEIGHT * 2, Map::DEFAULT_HEIGHT );
+		$google_url = Utility::invoke_hidden_method(
+			$instance,
+			'build_image_url',
+			array(
+				'1 Infinite Loop',
+				37.3318,
+				-122.0312,
+				Map::DEFAULT_ZOOM,
+				Map::DEFAULT_HEIGHT * 2,
+				Map::DEFAULT_HEIGHT,
+				'google',
+			)
+		);
+		update_post_meta(
+			$post_id,
+			Map::META_KEY,
+			array(
+				'fallback-stub' => array(
+					$key => array(
+						'url'    => 'https://example.test/active-but-unusable.png',
+						'url_2x' => '',
+						'hash'   => 'xyz',
+						'zoom'   => Map::DEFAULT_ZOOM,
+						'width'  => Map::DEFAULT_HEIGHT * 2,
+						'height' => Map::DEFAULT_HEIGHT,
+					),
+				),
+				'google'        => array(
+					$key => array(
+						'url'    => $google_url,
+						'url_2x' => '',
+						'hash'   => 'abc',
+						'zoom'   => Map::DEFAULT_ZOOM,
+						'width'  => Map::DEFAULT_HEIGHT * 2,
+						'height' => Map::DEFAULT_HEIGHT,
+					),
+				),
+			)
+		);
+
+		$null_provider = $this->make_null_provider( 'fallback-stub' );
+		$manager       = Manager::get_instance();
+		$manager->register( $null_provider );
+		update_option( Settings::OPTION_NAME, array( 'map_platform' => 'fallback-stub' ) );
+
+		try {
+			$descriptor = $instance->get_descriptor_for_post( $post_id, Venue::POST_TYPE );
+		} finally {
+			$this->reset_manager_to_core_providers( $manager );
+			delete_option( Settings::OPTION_NAME );
+		}
+
+		$this->assertNull( $descriptor, 'Failed to assert an image of the old location is not used.' );
 	}
 
 	/**

@@ -878,6 +878,7 @@ final class Map {
 	 * no coordinates, or generation failed.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Falls back to another provider's image only for the venue's current location.
 	 *
 	 * @param int      $post_id      Event or venue post ID.
 	 * @param string   $post_type    The post type of `$post_id`.
@@ -946,20 +947,37 @@ final class Map {
 		// unreachable, GD missing, brand-new provider not yet warmed). Walk
 		// other providers' stored entries for the same combo so a switch
 		// from OSM to Google still shows the OSM PNG until the new one
-		// lands. Take the first matching entry; ordering follows whatever
-		// post meta gives us (last-saved-wins by storage order).
-		$key         = $this->combo_key(
-			$this->clamp_zoom( $resolved_zoom ),
-			$this->clamp_width( $resolved['width'] ),
-			$this->clamp_height( $resolved['height'] ),
-			$map_type
-		);
+		// lands. Take the first matching entry for the venue's current
+		// location; ordering follows whatever post meta gives us
+		// (last-saved-wins by storage order).
+		$zoom        = $this->clamp_zoom( $resolved_zoom );
+		$width       = $this->clamp_width( $resolved['width'] );
+		$height      = $this->clamp_height( $resolved['height'] );
+		$key         = $this->combo_key( $zoom, $width, $height, $map_type );
 		$all         = $this->get_all_descriptors( $venue_post_id );
 		$active_slug = Manager::get_instance()->get_active_slug();
 		$fallback    = null;
 
 		foreach ( $all as $slug => $combos ) {
-			if ( $slug !== $active_slug && isset( $combos[ $key ] ) ) {
+			if ( $slug === $active_slug || ! isset( $combos[ $key ] ) ) {
+				continue;
+			}
+
+			// The file name carries the location, so an image saved before
+			// the venue moved does not match.
+			$expected_url = $this->build_image_url(
+				$info['address'],
+				(float) $info['latitude'],
+				(float) $info['longitude'],
+				$zoom,
+				$width,
+				$height,
+				$slug,
+				1,
+				$map_type
+			);
+
+			if ( $combos[ $key ]['url'] === $expected_url ) {
 				$fallback = $combos[ $key ];
 				break;
 			}
