@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Commands\Event_Cli;
 use GatherPress\Core\Commands\Settings_Cli;
+use GatherPress\Core\Commands\Venue_Map_Cli;
 use GatherPress\Core\Traits\Singleton;
 use WP_CLI;
 
@@ -45,6 +46,7 @@ final class Cli {
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
 			WP_CLI::add_command( 'gatherpress event', Event_Cli::class );
 			WP_CLI::add_command( 'gatherpress settings', Settings_Cli::class );
+			WP_CLI::add_command( 'gatherpress venue-map', Venue_Map_Cli::class );
 		}
 	}
 }
