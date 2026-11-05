@@ -46,7 +46,15 @@ use WP_Post;
  *
  * @since 0.34.0
  *
- * @phpstan-type Descriptor array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}
+ * @phpstan-type Descriptor array{
+ *     url: string,
+ *     url_2x: string,
+ *     hash: string,
+ *     location?: string,
+ *     zoom: int,
+ *     width: int,
+ *     height: int
+ * }
  * @phpstan-type DescriptorMap array<string, Descriptor>
  * @phpstan-type ProviderDescriptorMap array<string, DescriptorMap>
  * @phpstan-type ComboRequest array{
@@ -253,7 +261,7 @@ final class Map {
 	 *         '<provider_slug>' => [
 	 *             '<zoom>x<width>x<height>' => array{
 	 *                 url: string, url_2x: string, hash: string,
-	 *                 zoom: int, width: int, height: int,
+	 *                 location: string, zoom: int, width: int, height: int,
 	 *             },
 	 *             ...
 	 *         ],
@@ -264,9 +272,11 @@ final class Map {
 	 * fallbacks while a new Google provider's PNG files render in the
 	 * background after a `map_platform` switch. `url_2x` is empty string
 	 * when the retina variant failed or the provider can't produce one
-	 * for the given combo.
+	 * for the given combo. `location` identifies the address and
+	 * coordinates the image shows.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Entries carry `location`.
 	 * @var string
 	 */
 	const META_KEY = 'gatherpress_static_map';
@@ -735,6 +745,7 @@ final class Map {
 	 * straight back to the client without a second DB round-trip.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Keeps the saved image for a combo that fails to render.
 	 *
 	 * @param int               $post_id     The venue post ID.
 	 * @param ComboRequest|null $extra_combo Optional extra combo to include, in the
@@ -790,6 +801,10 @@ final class Map {
 		}
 		$combos = $unique;
 
+		// Kept so a combo that fails to render keeps its saved image.
+		$previous    = $this->get_all_descriptors( $post_id );
+		$active_slug = Manager::get_instance()->get_active_slug();
+
 		$this->delete_stored_image( $post_id );
 
 		if ( empty( $combos ) ) {
@@ -819,14 +834,26 @@ final class Map {
 		}
 
 		foreach ( $combos as $combo ) {
-			$this->ensure_descriptor_for_combo(
+			$combo_map_type = $this->normalize_map_type( (string) $combo['map_type'] );
+			$descriptor     = $this->ensure_descriptor_for_combo(
 				$post_id,
 				$info,
 				$combo['zoom'],
 				$combo['width'],
 				$combo['height'],
-				$this->normalize_map_type( (string) $combo['map_type'] )
+				$combo_map_type
 			);
+
+			if ( null === $descriptor ) {
+				$parts = array(
+					$this->clamp_zoom( (int) $combo['zoom'] ),
+					$this->clamp_width( (int) $combo['width'] ),
+					$this->clamp_height( (int) $combo['height'] ),
+					$combo_map_type,
+				);
+
+				Saved_Image::restore( $post_id, $previous, $info, $active_slug, $this->combo_key( ...$parts ), $parts );
+			}
 		}
 
 		return $this->get_all_descriptors( $post_id );
@@ -878,7 +905,8 @@ final class Map {
 	 * no coordinates, or generation failed.
 	 *
 	 * @since 0.34.0
-	 * @since TBD Falls back to another provider's image only for the venue's current location.
+	 * @since TBD Falls back to another provider's image only for the venue's current location,
+	 *            and only when its PNG exists.
 	 *
 	 * @param int      $post_id      Event or venue post ID.
 	 * @param string   $post_type    The post type of `$post_id`.
@@ -888,7 +916,7 @@ final class Map {
 	 * @param string   $aspect_ratio Aspect-ratio hint used to derive any auto dimension.
 	 * @param string   $map_type     Map type slug from the block attribute.
 	 *
-	 * @return array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}|null
+	 * @return Descriptor|null
 	 */
 	public function get_descriptor_for_post(
 		int $post_id,
@@ -953,7 +981,8 @@ final class Map {
 		$zoom        = $this->clamp_zoom( $resolved_zoom );
 		$width       = $this->clamp_width( $resolved['width'] );
 		$height      = $this->clamp_height( $resolved['height'] );
-		$key         = $this->combo_key( $zoom, $width, $height, $map_type );
+		$combo       = array( $zoom, $width, $height, $map_type );
+		$key         = $this->combo_key( ...$combo );
 		$all         = $this->get_all_descriptors( $venue_post_id );
 		$active_slug = Manager::get_instance()->get_active_slug();
 		$fallback    = null;
@@ -963,21 +992,7 @@ final class Map {
 				continue;
 			}
 
-			// The file name carries the location, so an image saved before
-			// the venue moved does not match.
-			$expected_url = $this->build_image_url(
-				$info['address'],
-				(float) $info['latitude'],
-				(float) $info['longitude'],
-				$zoom,
-				$width,
-				$height,
-				$slug,
-				1,
-				$map_type
-			);
-
-			if ( $combos[ $key ]['url'] === $expected_url ) {
+			if ( Saved_Image::is_usable( $combos[ $key ], $info, $slug, $combo ) ) {
 				$fallback = $combos[ $key ];
 				break;
 			}
@@ -1050,7 +1065,7 @@ final class Map {
 	 * @param string $aspect_ratio Aspect-ratio string (e.g. "16/9").
 	 * @param string $map_type     Map type slug (defaults to site setting).
 	 *
-	 * @return array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}|null
+	 * @return Descriptor|null
 	 */
 	public function warm(
 		int $post_id,
@@ -1100,7 +1115,7 @@ final class Map {
 	 *
 	 * @param int $post_id The venue post ID.
 	 *
-	 * @return array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}|null
+	 * @return Descriptor|null
 	 */
 	public function get_stored_descriptor( int $post_id ): ?array {
 		$all      = $this->get_all_descriptors( $post_id );
@@ -1169,12 +1184,13 @@ final class Map {
 				}
 
 				$descriptors[ $provider_slug ][ (string) $key ] = array(
-					'url'    => (string) $entry['url'],
-					'url_2x' => isset( $entry['url_2x'] ) ? (string) $entry['url_2x'] : '',
-					'hash'   => (string) $entry['hash'],
-					'zoom'   => $zoom,
-					'width'  => $width,
-					'height' => $height,
+					'url'      => (string) $entry['url'],
+					'url_2x'   => isset( $entry['url_2x'] ) ? (string) $entry['url_2x'] : '',
+					'hash'     => (string) $entry['hash'],
+					'location' => isset( $entry['location'] ) ? (string) $entry['location'] : '',
+					'zoom'     => $zoom,
+					'width'    => $width,
+					'height'   => $height,
 				);
 			}
 		}
@@ -1296,12 +1312,12 @@ final class Map {
 	 *
 	 * Hits the filesystem cache when the stored hash already matches the
 	 * current inputs and the PNG is still on disk; otherwise composites a
-	 * fresh image, saves it, updates the meta, and removes the old PNG for
-	 * that combo (if any). When the render fails, a saved image for the
-	 * same location is returned as it is.
+	 * fresh image, saves it, and updates the meta. When the render fails, a
+	 * saved image for the same location is returned as it is.
 	 *
 	 * @since 0.34.0
-	 * @since TBD Returns the saved image for the same location when the render fails.
+	 * @since TBD Returns the saved image for the same location when the render fails,
+	 *            and renders again when the saved PNG is missing.
 	 *
 	 * @param int                   $post_id  Venue post ID.
 	 * @param array<string, string> $info     Parsed venue information.
@@ -1310,7 +1326,7 @@ final class Map {
 	 * @param int                   $height   Pixel height of the PNG.
 	 * @param string                $map_type Map type slug for the render.
 	 *
-	 * @return array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}|null
+	 * @return Descriptor|null
 	 */
 	protected function ensure_descriptor_for_combo(
 		int $post_id,
@@ -1343,28 +1359,24 @@ final class Map {
 		$slug    = $provider->get_slug();
 		$address = (string) ( $info['address'] ?? '' );
 		$hash    = $this->hash_for( $info, $zoom, $width, $height, $slug, $map_type, $provider->get_cache_source() );
-		$key     = $this->combo_key( $zoom, $width, $height, $map_type );
+		$combo   = array( $zoom, $width, $height, $map_type );
+		$key     = $this->combo_key( ...$combo );
 
 		$all      = $this->get_all_descriptors( $post_id );
 		$existing = $all[ $slug ][ $key ] ?? null;
 
 		$retina_enabled = $this->should_generate_retina();
 
-		$expected_url = $this->build_image_url(
-			$address,
-			$latitude,
-			$longitude,
-			$zoom,
-			$width,
-			$height,
-			$slug,
-			1,
-			$map_type
+		$expected_url = Saved_Image::versioned(
+			$this->build_image_url( $address, $latitude, $longitude, $zoom, $width, $height, $slug, 1, $map_type ),
+			$hash
 		);
 		$has_valid_1x = null !== $existing
 			&& $existing['hash'] === $hash
-			&& $existing['url'] === $expected_url;
-		$needs_retina = $retina_enabled && ( null === $existing || '' === $existing['url_2x'] );
+			&& $expected_url === $existing['url']
+			&& Saved_Image::exists( $existing['url'] );
+		$needs_retina = $retina_enabled
+			&& ( null === $existing || '' === $existing['url_2x'] || ! Saved_Image::exists( $existing['url_2x'] ) );
 
 		if ( $has_valid_1x && ! $needs_retina ) {
 			return $existing;
@@ -1384,12 +1396,17 @@ final class Map {
 			// provider can't satisfy this combo. Keep showing a saved image
 			// for the same location rather than persisting a half-baked entry.
 			if ( null === $image ) {
-				return null !== $existing && $existing['url'] === $expected_url ? $existing : null;
+				$usable = null !== $existing && Saved_Image::is_usable( $existing, $info, $slug, $combo );
+
+				return $usable ? $existing : null;
 			}
 
 			$url = $this->save_image(
 				$image,
-				$this->filename_for( $address, $latitude, $longitude, $zoom, $width, $height, $slug, 1, $map_type )
+				Saved_Image::versioned(
+					$this->filename_for( $address, $latitude, $longitude, $zoom, $width, $height, $slug, 1, $map_type ),
+					$hash
+				)
 			);
 			unset( $image );
 
@@ -1416,16 +1433,19 @@ final class Map {
 			if ( null !== $image_2x ) {
 				$saved_2x = $this->save_image(
 					$image_2x,
-					$this->filename_for(
-						$address,
-						$latitude,
-						$longitude,
-						$zoom,
-						$width,
-						$height,
-						$slug,
-						self::RETINA_DENSITY,
-						$map_type
+					Saved_Image::versioned(
+						$this->filename_for(
+							$address,
+							$latitude,
+							$longitude,
+							$zoom,
+							$width,
+							$height,
+							$slug,
+							self::RETINA_DENSITY,
+							$map_type
+						),
+						$hash
 					)
 				);
 				unset( $image_2x );
@@ -1436,12 +1456,13 @@ final class Map {
 		}
 
 		$all[ $slug ][ $key ] = array(
-			'url'    => $url,
-			'url_2x' => $url_2x,
-			'hash'   => $hash,
-			'zoom'   => $zoom,
-			'width'  => $width,
-			'height' => $height,
+			'url'      => $url,
+			'url_2x'   => $url_2x,
+			'hash'     => $hash,
+			'location' => Saved_Image::location( $info ),
+			'zoom'     => $zoom,
+			'width'    => $width,
+			'height'   => $height,
 		);
 
 		update_post_meta( $post_id, self::META_KEY, $all );
@@ -1579,37 +1600,29 @@ final class Map {
 		int $density = 1,
 		string $map_type = self::DEFAULT_MAP_TYPE
 	): string {
-		$dirs     = wp_get_upload_dir();
-		$base_url = trailingslashit( $dirs['baseurl'] ) . self::UPLOADS_SUBDIR;
-		$filename = $this->filename_for(
-			$address,
-			$latitude,
-			$longitude,
-			$zoom,
-			$width,
-			$height,
-			$provider,
-			$density,
-			$map_type
+		return Saved_Image::url(
+			$this->filename_for(
+				$address,
+				$latitude,
+				$longitude,
+				$zoom,
+				$width,
+				$height,
+				$provider,
+				$density,
+				$map_type
+			)
 		);
-
-		return trailingslashit( $base_url ) . $filename;
 	}
+
 
 	/**
 	 * Compose a filesystem-safe filename from the address, coordinates and dimensions.
 	 *
-	 * The coordinates keep two venues at one address apart when their
-	 * coordinates differ, for example when one sets them by hand.
-	 *
-	 * Address gets slugified via `sanitize_title()` and capped at 150 chars
-	 * so the full filename stays comfortably under the 255-byte cap common
-	 * to most filesystems. An empty or all-special-character address falls
-	 * back to `venue` so there's always something before the dimension
-	 * suffix. `$density > 1` appends the `@{density}x` suffix used by the
-	 * retina variants, e.g. `venue-52.358000_4.881000-osm-roadmap-12-800-300@2x.png`.
+	 * See {@see Saved_Image::filename()}.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Moved to {@see Saved_Image::filename()}.
 	 *
 	 * @param string $address   Venue address.
 	 * @param float  $latitude  Venue latitude.
@@ -1635,36 +1648,19 @@ final class Map {
 		int $density = 1,
 		string $map_type = self::DEFAULT_MAP_TYPE
 	): string {
-		$map_type = $this->normalize_map_type( $map_type );
-		// `sanitize_title()` URL-slugifies; pass the result through
-		// `sanitize_file_name()` as defense-in-depth so any path-sensitive
-		// characters that slip past (or future changes to sanitize_title's
-		// allowed set) can't escape the filename segment.
-		$slug = sanitize_file_name( sanitize_title( $address ) );
-
-		if ( '' === $slug ) {
-			$slug = 'venue';
-		}
-
-		if ( 150 < strlen( $slug ) ) {
-			$slug = substr( $slug, 0, 150 );
-		}
-
-		$suffix = $density > 1 ? sprintf( '@%dx', $density ) : '';
-
-		return sprintf(
-			'%s-%.6F_%.6F-%s-%s-%d-%d-%d%s.png',
-			$slug,
+		return Saved_Image::filename(
+			$address,
 			$latitude,
 			$longitude,
-			$provider,
-			$map_type,
 			$zoom,
 			$width,
 			$height,
-			$suffix
+			$provider,
+			$density,
+			$this->normalize_map_type( $map_type )
 		);
 	}
+
 
 	/**
 	 * Save a finished GD image to the uploads directory and return its URL.

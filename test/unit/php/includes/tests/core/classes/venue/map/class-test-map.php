@@ -15,6 +15,7 @@ namespace GatherPress\Tests\Core\Venue\Map;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Venue\Map;
 use GatherPress\Core\Venue\Map\Manager;
+use GatherPress\Core\Venue\Map\Saved_Image;
 use GatherPress\Core\Venue\Setup;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
@@ -1674,7 +1675,7 @@ class Test_Map extends Base {
 		$this->assertSame( 800, $descriptor['width'] );
 		$this->assertSame( 400, $descriptor['height'] );
 		$this->assertStringEndsWith(
-			'1-infinite-loop-37.331800_-122.031200-osm-roadmap-15-800-400.png',
+			'-osm-roadmap-15-800-400-' . substr( $descriptor['hash'], 0, 8 ) . '.png',
 			$descriptor['url']
 		);
 	}
@@ -3058,6 +3059,7 @@ class Test_Map extends Base {
 				'google',
 			)
 		);
+		$google_png = $this->touch_image( $google_url );
 		update_post_meta(
 			$post_id,
 			Map::META_KEY,
@@ -3098,6 +3100,8 @@ class Test_Map extends Base {
 		}
 
 		$this->assertIsArray( $descriptor );
+		wp_delete_file( $google_png );
+
 		$this->assertSame( $google_url, $descriptor['url'] );
 	}
 
@@ -3137,6 +3141,7 @@ class Test_Map extends Base {
 				'google',
 			)
 		);
+		$google_png = $this->touch_image( $google_url );
 		update_post_meta(
 			$post_id,
 			Map::META_KEY,
@@ -3175,6 +3180,8 @@ class Test_Map extends Base {
 			$this->reset_manager_to_core_providers( $manager );
 			delete_option( Settings::OPTION_NAME );
 		}
+
+		wp_delete_file( $google_png );
 
 		$this->assertNull( $descriptor, 'Failed to assert an image of the old location is not used.' );
 	}
@@ -3496,6 +3503,7 @@ class Test_Map extends Base {
 			'build_image_url',
 			array( '1 Infinite Loop', 37.3318, -122.0312, Map::DEFAULT_ZOOM, 800, 400, 'always-null' )
 		);
+		$png      = $this->touch_image( $url );
 		$key      = Utility::invoke_hidden_method(
 			$instance,
 			'combo_key',
@@ -3531,6 +3539,28 @@ class Test_Map extends Base {
 				'ensure_descriptor_for_combo',
 				array( $post_id, $info, Map::DEFAULT_ZOOM, 800, 400 )
 			);
+
+			// A filter may move the URL; the stored location still matches.
+			$saved['url']      = 'https://cdn.example.test/moved.png';
+			$saved['location'] = Saved_Image::location( $info );
+			update_post_meta( $post_id, Map::META_KEY, array( 'always-null' => array( $key => $saved ) ) );
+
+			$rewritten = Utility::invoke_hidden_method(
+				$instance,
+				'ensure_descriptor_for_combo',
+				array( $post_id, $info, Map::DEFAULT_ZOOM, 800, 400 )
+			);
+
+			// A saved PNG that is gone is not shown.
+			$saved['url'] = $url;
+			update_post_meta( $post_id, Map::META_KEY, array( 'always-null' => array( $key => $saved ) ) );
+			wp_delete_file( $png );
+
+			$missing = Utility::invoke_hidden_method(
+				$instance,
+				'ensure_descriptor_for_combo',
+				array( $post_id, $info, Map::DEFAULT_ZOOM, 800, 400 )
+			);
 		} finally {
 			delete_option( Settings::OPTION_NAME );
 			$this->reset_manager_to_core_providers( $manager );
@@ -3538,6 +3568,126 @@ class Test_Map extends Base {
 
 		$this->assertSame( $url, $kept['url'] ?? null, 'Failed to assert the saved image is kept.' );
 		$this->assertNull( $moved, 'Failed to assert an image for another location is not used.' );
+		$this->assertSame(
+			'https://cdn.example.test/moved.png',
+			$rewritten['url'] ?? null,
+			'Failed to assert a moved URL with a matching location is kept.'
+		);
+		$this->assertNull( $missing, 'Failed to assert a missing PNG is not used.' );
+	}
+
+	/**
+	 * A saved map whose PNG is gone renders again, and a missing retina
+	 * PNG is rendered again too.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::ensure_descriptor_for_combo
+	 *
+	 * @return void
+	 */
+	public function test_ensure_descriptor_for_combo_renders_again_when_the_png_is_missing(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$info     = array(
+			'address'   => '1 Infinite Loop',
+			'latitude'  => '37.3318',
+			'longitude' => '-122.0312',
+		);
+		$args     = array( $post_id, $info, Map::DEFAULT_ZOOM, 800, 400 );
+		$saved    = Utility::invoke_hidden_method( $instance, 'ensure_descriptor_for_combo', $args );
+
+		$this->assertTrue( Saved_Image::exists( $saved['url'] ) );
+		$this->assertTrue( Saved_Image::exists( $saved['url_2x'] ) );
+
+		$dirs = wp_get_upload_dir();
+		$path = static fn( string $url ): string => str_replace( $dirs['baseurl'], $dirs['basedir'], $url );
+
+		wp_delete_file( $path( $saved['url_2x'] ) );
+
+		$this->assertFalse(
+			Saved_Image::exists( $saved['url_2x'] ),
+			'Failed to assert a missing PNG is reported.'
+		);
+
+		Utility::invoke_hidden_method( $instance, 'ensure_descriptor_for_combo', $args );
+
+		$this->assertFileExists( $path( $saved['url_2x'] ), 'Failed to assert the retina PNG renders again.' );
+
+		wp_delete_file( $path( $saved['url'] ) );
+
+		Utility::invoke_hidden_method( $instance, 'ensure_descriptor_for_combo', $args );
+
+		$this->assertFileExists( $path( $saved['url'] ), 'Failed to assert the PNG renders again.' );
+	}
+
+	/**
+	 * A failed regeneration keeps the saved image for the same location,
+	 * and drops one for another location.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::regenerate
+	 *
+	 * @return void
+	 */
+	public function test_regenerate_keeps_the_saved_image_when_the_render_fails(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
+		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
+
+		$info  = array(
+			'address'   => '1 Infinite Loop',
+			'latitude'  => '37.3318',
+			'longitude' => '-122.0312',
+		);
+		$key   = Utility::invoke_hidden_method( $instance, 'combo_key', array( 14, 800, 400, 'roadmap' ) );
+		$other = Utility::invoke_hidden_method( $instance, 'combo_key', array( 15, 800, 400, 'roadmap' ) );
+		$entry = array(
+			'url'      => 'https://example.test/saved.png',
+			'url_2x'   => '',
+			'hash'     => 'stale',
+			'location' => Saved_Image::location( $info ),
+			'zoom'     => 14,
+			'width'    => 800,
+			'height'   => 400,
+		);
+		$moved = array_merge(
+			$entry,
+			array(
+				'url'      => 'https://example.test/old-location.png',
+				'location' => 'elsewhere',
+				'zoom'     => 15,
+			)
+		);
+
+		update_post_meta(
+			$post_id,
+			Map::META_KEY,
+			array(
+				'always-null' => array(
+					$key   => $entry,
+					$other => $moved,
+				),
+			)
+		);
+
+		$manager = Manager::get_instance();
+		$manager->register( $this->make_null_provider( 'always-null' ) );
+		update_option( Settings::OPTION_NAME, array( 'map_platform' => 'always-null' ) );
+
+		try {
+			$result = $instance->regenerate( $post_id );
+		} finally {
+			delete_option( Settings::OPTION_NAME );
+			$this->reset_manager_to_core_providers( $manager );
+		}
+
+		$this->assertSame( 'https://example.test/saved.png', $result['always-null'][ $key ]['url'] ?? null );
+		$this->assertArrayNotHasKey( $other, $result['always-null'], 'Failed to assert another location is dropped.' );
 	}
 
 	/**
@@ -3610,6 +3760,24 @@ class Test_Map extends Base {
 				return null;
 			}
 		};
+	}
+
+	/**
+	 * Write an empty PNG file at a static map URL so the file check passes.
+	 *
+	 * @param string $url Static map URL.
+	 *
+	 * @return string Path of the file.
+	 */
+	private function touch_image( string $url ): string {
+		$dirs = wp_get_upload_dir();
+		$path = str_replace( $dirs['baseurl'], $dirs['basedir'], $url );
+
+		wp_mkdir_p( dirname( $path ) );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Empty stand-in PNG in uploads.
+		file_put_contents( $path, '' );
+
+		return $path;
 	}
 
 	/**
