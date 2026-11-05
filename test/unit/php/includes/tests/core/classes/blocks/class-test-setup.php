@@ -111,6 +111,7 @@ class Test_Setup extends Base {
 			'gatherpress/venue-map',
 		);
 		$block_type_registry = WP_Block_Type_Registry::get_instance();
+		$registered          = Utility::get_hidden_property( $block_type_registry, 'registered_block_types' );
 
 		// Clear out registered blocks.
 		Utility::set_and_get_hidden_property( $block_type_registry, 'registered_block_types', array() );
@@ -119,6 +120,9 @@ class Test_Setup extends Base {
 		$instance->register_blocks();
 
 		$expected = array_keys( Utility::get_hidden_property( $block_type_registry, 'registered_block_types' ) );
+
+		// Put the core blocks back, later tests rely on them.
+		Utility::set_and_get_hidden_property( $block_type_registry, 'registered_block_types', $registered );
 
 		$this->assertSame( $blocks, $expected );
 	}
