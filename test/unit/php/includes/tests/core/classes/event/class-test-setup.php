@@ -2838,15 +2838,16 @@ class Test_Setup extends Base {
 		$parent = '.wp-block-post-terms.gatherpress-event-status.is-style-gatherpress-test-pill';
 
 		$this->assertStringContainsString(
-			$parent . '{display:block}' . $parent . ' .wp-block-post-terms__separator{display:inline}',
+			$parent . '{display:block;font-size:inherit;font-weight:inherit;line-height:inherit;' .
+			'letter-spacing:inherit;}' . $parent . ' .wp-block-post-terms__separator{display:inline}',
 			$css,
-			'Failed to assert the terms are laid out as core does.'
+			'Failed to assert the terms are laid out as core does and the plugin typography is given up.'
 		);
 		$this->assertStringContainsString(
 			$parent . ' .gatherpress-event-status__term,' . $parent . ' > a[rel="tag"]' .
-			'{display:inline;background-color:transparent;border:0;border-radius:0;padding:0;',
+			'{display:inline;white-space:nowrap;background-color:transparent;border:0;border-radius:0;padding:0;',
 			$css,
-			'Failed to assert the rule targets the status and resets the Badge look.'
+			'Failed to assert the rule targets the status, keeps it on one line and resets the Badge look.'
 		);
 		$this->assertStringContainsString( 'border-radius:20px;', $css, 'Failed to assert the border radius.' );
 		$this->assertStringContainsString( 'line-height:2.8;', $css, 'Failed to assert the line height.' );
@@ -2859,8 +2860,8 @@ class Test_Setup extends Base {
 	}
 
 	/**
-	 * A Post Terms style without link style data adds no rule, so the status
-	 * keeps the Badge look.
+	 * A Post Terms style without link style data, or without a border or
+	 * padding in it, adds no rule, so the status keeps the Badge look.
 	 *
 	 * @since TBD
 	 *
@@ -2868,7 +2869,7 @@ class Test_Setup extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_add_theme_status_styles_skips_a_style_without_link_data(): void {
+	public function test_add_theme_status_styles_skips_a_style_without_a_shape(): void {
 		register_block_style(
 			'core/post-terms',
 			array(
@@ -2893,11 +2894,42 @@ class Test_Setup extends Base {
 				),
 			)
 		);
+		register_block_style(
+			'core/post-terms',
+			array(
+				'name'       => 'gatherpress-test-empty-border',
+				'label'      => 'Test empty border',
+				'style_data' => array(
+					'elements' => array(
+						'link' => array(
+							'border' => array( 'radius' => '' ),
+						),
+					),
+				),
+			)
+		);
+		register_block_style(
+			'core/post-terms',
+			array(
+				'name'       => 'gatherpress-test-link-color',
+				'label'      => 'Test link color',
+				'style_data' => array(
+					'elements' => array(
+						'link' => array(
+							'color'      => array( 'text' => '#b32d2e' ),
+							'typography' => array( 'lineHeight' => '2.8' ),
+						),
+					),
+				),
+			)
+		);
 
 		$css = $this->get_theme_status_styles();
 
 		unregister_block_style( 'core/post-terms', 'gatherpress-test-color' );
 		unregister_block_style( 'core/post-terms', 'gatherpress-test-hover' );
+		unregister_block_style( 'core/post-terms', 'gatherpress-test-link-color' );
+		unregister_block_style( 'core/post-terms', 'gatherpress-test-empty-border' );
 		WP_Theme_JSON_Resolver::clean_cached_data();
 
 		$this->assertStringNotContainsString(
@@ -2909,6 +2941,140 @@ class Test_Setup extends Base {
 			'is-style-gatherpress-test-hover',
 			$css,
 			'Failed to assert a style with only hover data adds no rule.'
+		);
+		$this->assertStringNotContainsString(
+			'is-style-gatherpress-test-link-color',
+			$css,
+			'Failed to assert a style with link data but no border or padding adds no rule.'
+		);
+		$this->assertStringNotContainsString(
+			'is-style-gatherpress-test-empty-border',
+			$css,
+			'Failed to assert a style with a border that has no declarations adds no rule.'
+		);
+	}
+
+	/**
+	 * Padding alone is enough shape for a Post Terms style to be printed for
+	 * the status.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::add_theme_status_styles
+	 *
+	 * @return void
+	 */
+	public function test_add_theme_status_styles_with_padding_only(): void {
+		register_block_style(
+			'core/post-terms',
+			array(
+				'name'       => 'gatherpress-test-padding',
+				'label'      => 'Test padding',
+				'style_data' => array(
+					'elements' => array(
+						'link' => array(
+							'spacing' => array(
+								'padding' => array(
+									'top'    => '5px',
+									'right'  => '10px',
+									'bottom' => '5px',
+									'left'   => '10px',
+								),
+							),
+						),
+					),
+				),
+			)
+		);
+
+		$css = $this->get_theme_status_styles();
+
+		unregister_block_style( 'core/post-terms', 'gatherpress-test-padding' );
+		WP_Theme_JSON_Resolver::clean_cached_data();
+
+		$this->assertStringContainsString(
+			'.wp-block-post-terms.gatherpress-event-status.is-style-gatherpress-test-padding',
+			$css,
+			'Failed to assert a style with padding only is printed.'
+		);
+		$this->assertStringContainsString(
+			'padding-top:5px;padding-right:10px;padding-bottom:5px;padding-left:10px;',
+			$css,
+			'Failed to assert the padding.'
+		);
+	}
+
+	/**
+	 * The typography of the theme for the block, and of the style over it,
+	 * is set again on the status after the plugin defaults are given up.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::add_theme_status_styles
+	 *
+	 * @return void
+	 */
+	public function test_add_theme_status_styles_restores_theme_typography(): void {
+		register_block_style(
+			'core/post-terms',
+			array(
+				'name'       => 'gatherpress-test-typography',
+				'label'      => 'Test typography',
+				'style_data' => array(
+					'typography' => array( 'fontSize' => '20px' ),
+					'elements'   => array(
+						'link' => array(
+							'border' => array(
+								'radius' => '20px',
+								'width'  => '1px',
+								'style'  => 'solid',
+							),
+						),
+					),
+				),
+			)
+		);
+
+		$callback = static function ( WP_Theme_JSON_Data $data ): WP_Theme_JSON_Data {
+			return $data->update_with(
+				array(
+					'version' => 3,
+					'styles'  => array(
+						'blocks' => array(
+							'core/post-terms' => array(
+								'typography' => array(
+									'fontSize'   => 'var:preset|font-size|small',
+									'fontWeight' => '600',
+								),
+							),
+						),
+					),
+				)
+			);
+		};
+
+		add_filter( 'wp_theme_json_data_theme', $callback );
+
+		$css = $this->get_theme_status_styles();
+
+		remove_filter( 'wp_theme_json_data_theme', $callback );
+		unregister_block_style( 'core/post-terms', 'gatherpress-test-typography' );
+		WP_Theme_JSON_Resolver::clean_cached_data();
+
+		$parent = '.wp-block-post-terms.gatherpress-event-status.is-style-gatherpress-test-typography';
+
+		$this->assertStringContainsString(
+			$parent . '{display:block;font-size:inherit;font-weight:inherit;line-height:inherit;' .
+			'letter-spacing:inherit;',
+			$css,
+			'Failed to assert the plugin typography is given up.'
+		);
+		$this->assertStringContainsString( 'font-weight:600;', $css, 'Failed to assert the block font weight.' );
+		$this->assertStringContainsString( 'font-size:20px;', $css, 'Failed to assert the style font size.' );
+		$this->assertStringNotContainsString(
+			'--wp--preset--font-size--small',
+			$css,
+			'Failed to assert the style font size wins over the block font size.'
 		);
 	}
 

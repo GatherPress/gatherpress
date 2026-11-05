@@ -356,9 +356,10 @@ final class Setup {
 	 * A theme style such as the Twenty Twenty-Five Pill shape styles the links
 	 * of the Post Terms block, and a status is text, so that CSS never reaches
 	 * it. This reads the style data, including changes made in the Site
-	 * Editor, and prints it again for the status. A style with no data, such
-	 * as one a theme adds only as CSS, keeps the Badge look from the
-	 * stylesheet. The hover state is left out, because a status is not a link.
+	 * Editor, and prints it again for the status. A style with no border or
+	 * padding in its link data, such as one a theme adds only as CSS or one
+	 * that only colors the link, keeps the Badge look from the stylesheet. The
+	 * hover state is left out, because a status is not a link.
 	 *
 	 * The rules come from saved data, so in the Site Editor a change to the
 	 * style shows on the status after the change is saved and the page reloads.
@@ -376,16 +377,20 @@ final class Setup {
 		$this->theme_status_styles_added = true;
 
 		// Read the full tree: for a missing path, wp_get_global_styles() returns every style.
-		$variations = wp_get_global_styles()['blocks']['core/post-terms']['variations'] ?? array();
+		$block      = wp_get_global_styles()['blocks']['core/post-terms'] ?? array();
+		$variations = $block['variations'] ?? array();
 		$rules      = '';
 
 		foreach ( (array) $variations as $gatherpress_slug => $variation ) {
 			$link = $variation['elements']['link'] ?? null;
 
 			// Badge and Dot are styled by the plugin stylesheet, even when customized.
+			// A style with no border or padding, such as one that only colors the link,
+			// has no shape, so the status keeps the Badge look instead of plain text.
 			if (
 				! is_array( $link )
 				|| in_array( $gatherpress_slug, array( 'gatherpress-badge', 'gatherpress-dot' ), true )
+				|| ( empty( $link['border'] ) && empty( $link['spacing']['padding'] ) )
 			) {
 				continue;
 			}
@@ -399,6 +404,21 @@ final class Setup {
 				continue;
 			}
 
+			// The plugin sets typography defaults on the block, which would hide the
+			// typography of the theme. Give them up and set the theme's own again, from
+			// the block and then from the style, as the cascade does for a Topic.
+			$typography = wp_style_engine_get_styles(
+				array(
+					'typography' => array_merge(
+						(array) ( $block['typography'] ?? array() ),
+						(array) ( $variation['typography'] ?? array() )
+					),
+				)
+			);
+
+			// Core drops the css key here too when the theme sets no typography.
+			$typography_css = empty( $typography['css'] ) ? '' : $typography['css'];
+
 			// The term is a span on the front end and a link in the editor.
 			$parent = sprintf(
 				'.wp-block-post-terms.gatherpress-event-status.is-style-%s',
@@ -407,13 +427,18 @@ final class Setup {
 
 			// Lay the terms out as core does, so the line height sizes the line
 			// and not the pill, then reset the Badge look and apply the theme style.
+			// The term stays on one line, as a theme keeps the link of a Topic whole.
 			$rules .= sprintf(
-				'%1$s{display:block}%1$s .wp-block-post-terms__separator{display:inline}' .
+				'%1$s{display:block;font-size:inherit;font-weight:inherit;' .
+				'line-height:inherit;letter-spacing:inherit;%3$s}' .
+				'%1$s .wp-block-post-terms__separator{display:inline}' .
 				'%1$s .gatherpress-event-status__term,%1$s > a[rel="tag"]' .
-				'{display:inline;background-color:transparent;border:0;border-radius:0;padding:0;%2$s}' .
+				'{display:inline;white-space:nowrap;background-color:transparent;' .
+				'border:0;border-radius:0;padding:0;%2$s}' .
 				'%1$s .gatherpress-event-status__term::before,%1$s > a[rel="tag"]::before{content:none}',
 				$parent,
-				$styles['css']
+				$styles['css'],
+				$typography_css
 			);
 		}
 
