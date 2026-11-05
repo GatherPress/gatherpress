@@ -31,6 +31,7 @@ class Test_Carto extends Base {
 			'the placeholder host'       => array( Settings::MAP_TILE_URL, true ),
 			'a lettered host'            => array( 'https://b.basemaps.cartocdn.com/light_all/1/2/3.png', true ),
 			'the bare host'              => array( 'https://basemaps.cartocdn.com/light_all/1/2/3.png', true ),
+			'an uppercase host'          => array( 'https://A.BASEMAPS.CARTOCDN.COM/light_all/1/2/3.png', true ),
 			'an old host'                => array( 'https://cartodb-basemaps-a.global.ssl.fastly.net/x.png', false ),
 			'another host'               => array( 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', false ),
 			'a lookalike host'           => array( 'https://basemaps.cartocdn.com.evil.test/1/2/3.png', false ),
@@ -72,6 +73,10 @@ class Test_Carto extends Base {
 			'the placeholder host moves too' => array(
 				'https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png',
 				'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+			),
+			'an explicit port moves too'     => array(
+				'https://cartodb-basemaps-a.global.ssl.fastly.net:443/light_all/{z}/{x}/{y}.png',
+				'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
 			),
 			'plain http moves to https'      => array(
 				'http://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png',

@@ -496,6 +496,12 @@ class Test_Map extends Base {
 			'Hash should change when the image source changes.'
 		);
 
+		$this->assertNotSame(
+			$instance->hash_for( $info, 15, 800, 400, 'osm', 'roadmap', 'https://tiles.example.test/{z}/{x}/{y}.png' ),
+			$instance->hash_for( $info, 15, 800, 400, 'osm', 'roadmap', 'https://a.basemaps.cartocdn.com/{z}.png' ),
+			'Hash should change between two image sources.'
+		);
+
 		$this->assertSame(
 			md5( '1 Infinite Loop|37.3318|-122.0312|15|800|400|osm|roadmap' ),
 			$baseline,
@@ -3324,6 +3330,56 @@ class Test_Map extends Base {
 		}
 
 		$this->assertNull( $result );
+	}
+
+	/**
+	 * A saved map renders again when the provider's image source changes,
+	 * here through a new CARTO key.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::ensure_descriptor_for_combo
+	 *
+	 * @return void
+	 */
+	public function test_ensure_descriptor_for_combo_renders_again_when_the_source_changes(): void {
+		$instance = Map::get_instance();
+		$settings = Settings::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$info     = array(
+			'address'   => '1 Infinite Loop',
+			'latitude'  => '37.3318',
+			'longitude' => '-122.0312',
+		);
+		$fetches  = 0;
+		$count    = static function ( $preempt ) use ( &$fetches ) {
+			++$fetches;
+
+			return $preempt;
+		};
+
+		add_filter( 'pre_http_request', $count, 11 );
+
+		$first   = Utility::invoke_hidden_method(
+			$instance,
+			'ensure_descriptor_for_combo',
+			array( $post_id, $info, Map::DEFAULT_ZOOM, 800, 400 )
+		);
+		$fetches = 0;
+
+		$settings->set( 'carto_api_key', 'abc123' );
+
+		$second = Utility::invoke_hidden_method(
+			$instance,
+			'ensure_descriptor_for_combo',
+			array( $post_id, $info, Map::DEFAULT_ZOOM, 800, 400 )
+		);
+
+		$settings->set( 'carto_api_key', '' );
+		remove_filter( 'pre_http_request', $count, 11 );
+
+		$this->assertNotSame( $first['hash'], $second['hash'], 'Failed to assert the hash follows the image source.' );
+		$this->assertGreaterThan( 0, $fetches, 'Failed to assert the map renders again.' );
 	}
 
 	/**

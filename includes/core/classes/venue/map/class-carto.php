@@ -48,7 +48,8 @@ final class Carto {
 	 * @since TBD
 	 * @var string
 	 */
-	private const LEGACY_HOST_PATTERN = '#^https?://cartodb-basemaps-([a-d]|\{s\})\.global\.ssl\.fastly\.net/#i';
+	private const LEGACY_HOST_PATTERN =
+		'#^https?://cartodb-basemaps-([a-d]|\{s\})\.global\.ssl\.fastly\.net(?::443)?/#i';
 
 	/**
 	 * Whether a tile URL goes to one of CARTO's basemap hosts.
@@ -62,7 +63,7 @@ final class Carto {
 	public static function is_tile_url( string $url ): bool {
 		// `{s}` stands in for a subdomain, so it is resolved before the host
 		// is read; a bare placeholder does not parse as one.
-		$host = (string) wp_parse_url( str_replace( '{s}', 'a', $url ), PHP_URL_HOST );
+		$host = strtolower( (string) wp_parse_url( str_replace( '{s}', 'a', $url ), PHP_URL_HOST ) );
 
 		return in_array( $host, self::TILE_HOSTS, true )
 			|| str_ends_with( $host, '.basemaps.cartocdn.com' );

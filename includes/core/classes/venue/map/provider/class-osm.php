@@ -67,8 +67,8 @@ final class OSM extends Base {
 	/**
 	 * Prefix of the transient set when a render gets no tiles, which
 	 * pauses rendering for `TILES_FAILED_PAUSE` seconds. The rest of the
-	 * name is a hash of the tile URL, so a new key or tile server does not
-	 * wait for the pause.
+	 * name is a hash of the tile URL and tile zoom, so a new key, a new tile
+	 * server, or a zoom the server does serve does not wait for the pause.
 	 *
 	 * @since TBD
 	 * @var string
@@ -147,10 +147,7 @@ final class OSM extends Base {
 			return null; // @codeCoverageIgnore
 		}
 
-		$tiles  = $this->get_tile_url_template();
-		$paused = self::TILES_FAILED_TRANSIENT . md5( $tiles );
-
-		if ( $width < 1 || $height < 1 || false !== get_transient( $paused ) ) {
+		if ( $width < 1 || $height < 1 ) {
 			return null;
 		}
 
@@ -160,6 +157,8 @@ final class OSM extends Base {
 		if ( ! in_array( $density, Map::SUPPORTED_DENSITIES, true ) ) {
 			$density = 1;
 		}
+
+		$tiles = $this->get_tile_url_template();
 
 		// CARTO serves raster tiles only up to its own limit, so a CARTO map
 		// renders at that zoom at most, as the interactive map does.
@@ -172,7 +171,10 @@ final class OSM extends Base {
 		// this combo" and moves on with just the 1× image.
 		$tile_zoom = $zoom + (int) log( $density, 2 );
 
-		if ( $tile_zoom > $max_zoom ) {
+		// md5() here only names the transient, matching class-map.php.
+		$paused = self::TILES_FAILED_TRANSIENT . md5( $tiles . '|' . $tile_zoom ); // NOSONAR.
+
+		if ( $tile_zoom > $max_zoom || false !== get_transient( $paused ) ) {
 			return null;
 		}
 
