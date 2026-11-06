@@ -43,15 +43,6 @@ final class Carto {
 	);
 
 	/**
-	 * CARTO's old `fastly.net` tile hosts, with the subdomain letter captured.
-	 *
-	 * @since TBD
-	 * @var string
-	 */
-	private const LEGACY_HOST_PATTERN =
-		'#^https?://cartodb-basemaps-([a-d]|\{s\})\.global\.ssl\.fastly\.net(?::443)?/#i';
-
-	/**
 	 * Whether a tile URL goes to one of CARTO's basemap hosts.
 	 *
 	 * @since TBD
@@ -67,21 +58,5 @@ final class Carto {
 
 		return in_array( $host, self::TILE_HOSTS, true )
 			|| str_ends_with( $host, '.basemaps.cartocdn.com' );
-	}
-
-	/**
-	 * Move a tile URL on CARTO's old `fastly.net` hosts to `basemaps.cartocdn.com`.
-	 *
-	 * The old hosts reject some keys, and CARTO's key page puts the key on
-	 * `basemaps.cartocdn.com` URLs. The rest of the URL is kept as it is.
-	 *
-	 * @since TBD
-	 *
-	 * @param string $url Tile URL or URL template.
-	 *
-	 * @return string The URL, on `basemaps.cartocdn.com` when it was on an old host.
-	 */
-	public static function use_basemaps_host( string $url ): string {
-		return (string) preg_replace( self::LEGACY_HOST_PATTERN, 'https://$1.basemaps.cartocdn.com/', $url );
 	}
 }

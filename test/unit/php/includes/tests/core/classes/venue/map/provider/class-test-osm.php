@@ -1060,32 +1060,4 @@ class Test_OSM extends Base {
 		$settings->set( 'carto_api_key', '' );
 		$settings->set( 'custom_map_tile_url', '' );
 	}
-
-	/**
-	 * The compositor tile URL moves off an old CARTO host before it gets the key.
-	 *
-	 * @since TBD
-	 *
-	 * @covers ::get_tile_url_template
-	 *
-	 * @return void
-	 */
-	public function test_get_tile_url_template_moves_an_old_host(): void {
-		$settings = Settings::get_instance();
-		$filter   = static function (): string {
-			return 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png';
-		};
-
-		$settings->set( 'carto_api_key', 'abc123' );
-		add_filter( 'gatherpress_static_map_tile_url', $filter );
-
-		$this->assertSame(
-			'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?key=abc123',
-			Utility::invoke_hidden_method( new OSM(), 'get_tile_url_template' ),
-			'Failed to assert a filtered old host moves to the current host and gets the key.'
-		);
-
-		remove_filter( 'gatherpress_static_map_tile_url', $filter );
-		$settings->set( 'carto_api_key', '' );
-	}
 }

@@ -3671,45 +3671,6 @@ class Test_Settings extends Base {
 		$instance->set( 'custom_map_tile_url', '' );
 	}
 
-	/**
-	 * The Leaflet basemap URL moves off an old host and then gets the key.
-	 *
-	 * @since TBD
-	 *
-	 * @covers ::get_map_tile_url
-	 *
-	 * @return void
-	 */
-	public function test_get_map_tile_url_moves_an_old_host(): void {
-		$instance = Settings::get_instance();
-		$filter   = static function (): string {
-			return 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png';
-		};
-
-		$instance->set( 'carto_api_key', 'abc123' );
-		add_filter( 'gatherpress_interactive_map_tile_url', $filter );
-
-		$this->assertSame(
-			Settings::MAP_TILE_URL . '?key=abc123',
-			Settings::get_map_tile_url(),
-			'Failed to assert a filtered old host moves to the current host and gets the key.'
-		);
-
-		remove_filter( 'gatherpress_interactive_map_tile_url', $filter );
-		$instance->set(
-			'custom_map_tile_url',
-			'https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png'
-		);
-
-		$this->assertSame(
-			'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-			Settings::get_map_tile_url(),
-			'Failed to assert a custom URL on an old host moves, without the key.'
-		);
-
-		$instance->set( 'carto_api_key', '' );
-		$instance->set( 'custom_map_tile_url', '' );
-	}
 
 	/**
 	 * Declare a page covering each combination of the travel flags.

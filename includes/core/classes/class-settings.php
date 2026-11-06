@@ -265,7 +265,6 @@ class Settings {
 	 *
 	 * @since 0.34.0
 	 * @since 0.36.0 Layered under the `custom_map_tile_url` setting.
-	 * @since TBD Moves URLs on CARTO's old `fastly.net` hosts to `basemaps.cartocdn.com`.
 	 *
 	 * @return string Leaflet-compatible tile URL template.
 	 */
@@ -280,9 +279,7 @@ class Settings {
 		 *
 		 * @param string $url Default tile URL template (CartoDB Positron).
 		 */
-		$filtered = Carto::use_basemaps_host(
-			(string) apply_filters( 'gatherpress_interactive_map_tile_url', $default )
-		);
+		$filtered = (string) apply_filters( 'gatherpress_interactive_map_tile_url', $default );
 
 		if ( '' === $filtered ) {
 			return self::add_map_tile_key( self::MAP_TILE_URL );
