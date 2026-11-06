@@ -3676,6 +3676,14 @@ class Test_Map extends Base {
 		$this->assertSame( $plain, $again['url'], 'Failed to assert the saved map is kept.' );
 		$this->assertFileDoesNotExist( $this->path_for_url( $saved['url'] ), 'Failed to assert nothing rendered.' );
 
+		$all['osm'][ $key ]['url'] = $plain . '?v=2';
+		update_post_meta( $post_id, Map::META_KEY, $all );
+
+		$again = Utility::invoke_hidden_method( $instance, 'ensure_descriptor_for_combo', $args );
+
+		$this->assertSame( $plain . '?v=2', $again['url'], 'Failed to assert a query string keeps the saved map.' );
+		$this->assertFileDoesNotExist( $this->path_for_url( $saved['url'] ), 'Failed to assert nothing rendered.' );
+
 		wp_delete_file( $this->path_for_url( $plain ) );
 		wp_delete_file( $this->path_for_url( $saved['url_2x'] ) );
 	}
@@ -3794,6 +3802,77 @@ class Test_Map extends Base {
 		$this->assertSame( array(), $result, 'Failed to assert a regenerate with no render reports a failure.' );
 		$this->assertSame( 'https://example.test/saved.png', $stored['always-null'][ $key ]['url'] ?? null );
 		$this->assertArrayNotHasKey( $other, $stored['always-null'], 'Failed to assert another location is dropped.' );
+	}
+
+	/**
+	 * A failed regeneration keeps a map saved before `location` was stored,
+	 * when a filter adds a query string to its URL.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::regenerate
+	 *
+	 * @return void
+	 */
+	public function test_regenerate_keeps_a_filtered_map_saved_without_its_location(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
+		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
+
+		$key    = Utility::invoke_hidden_method( $instance, 'combo_key', array( 14, 800, 400, 'roadmap' ) );
+		$url    = Saved_Image::url(
+			Saved_Image::filename( '1 Infinite Loop', 37.3318, -122.0312, 14, 800, 400, 'always-null', 1, 'roadmap' )
+		);
+		$filter = static function ( array $descriptors ): array {
+			foreach ( $descriptors as $slug => $combos ) {
+				foreach ( $combos as $combo => $entry ) {
+					$descriptors[ $slug ][ $combo ]['url'] = $entry['url'] . '?v=2';
+				}
+			}
+
+			return $descriptors;
+		};
+
+		$this->touch_image( $url );
+		update_post_meta(
+			$post_id,
+			Map::META_KEY,
+			array(
+				'always-null' => array(
+					$key => array(
+						'url'    => $url,
+						'url_2x' => '',
+						'hash'   => 'stale',
+						'zoom'   => 14,
+						'width'  => 800,
+						'height' => 400,
+					),
+				),
+			)
+		);
+
+		$manager = Manager::get_instance();
+		$manager->register( $this->make_null_provider( 'always-null' ) );
+		update_option( Settings::OPTION_NAME, array( 'map_platform' => 'always-null' ) );
+		add_filter( 'gatherpress_static_map_descriptors', $filter );
+
+		try {
+			$instance->regenerate( $post_id );
+		} finally {
+			remove_filter( 'gatherpress_static_map_descriptors', $filter );
+			delete_option( Settings::OPTION_NAME );
+			$this->reset_manager_to_core_providers( $manager );
+		}
+
+		$stored = get_post_meta( $post_id, Map::META_KEY, true );
+
+		$this->assertSame( $url . '?v=2', $stored['always-null'][ $key ]['url'] ?? null );
+		$this->assertFileExists( $this->path_for_url( $url ), 'Failed to assert the saved PNG is kept.' );
+
+		wp_delete_file( $this->path_for_url( $url ) );
 	}
 
 	/**

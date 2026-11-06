@@ -1388,7 +1388,11 @@ final class Map {
 		);
 		$has_valid_1x = null !== $existing
 			&& $existing['hash'] === $hash
-			&& in_array( $existing['url'], array( Saved_Image::versioned( $plain_url, $hash ), $plain_url ), true )
+			&& in_array(
+				Saved_Image::without_query( $existing['url'] ),
+				array( Saved_Image::versioned( $plain_url, $hash ), $plain_url ),
+				true
+			)
 			&& Saved_Image::exists( $existing['url'] );
 		$needs_retina = $retina_enabled
 			&& ( null === $existing || '' === $existing['url_2x'] || ! Saved_Image::exists( $existing['url_2x'] ) );

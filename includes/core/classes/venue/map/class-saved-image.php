@@ -140,9 +140,22 @@ final class Saved_Image {
 	 * @return bool False only when a PNG in the static maps folder is missing.
 	 */
 	public static function exists( string $url ): bool {
-		$path = self::path( (string) strtok( $url, '?' ) );
+		$path = self::path( self::without_query( $url ) );
 
 		return null === $path || is_file( $path );
+	}
+
+	/**
+	 * Drop a query string a filter added to a saved map URL.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $url Public URL of the PNG.
+	 *
+	 * @return string The URL without its query string.
+	 */
+	public static function without_query( string $url ): string {
+		return explode( '?', $url, 2 )[0];
 	}
 
 	/**
@@ -200,7 +213,7 @@ final class Saved_Image {
 		global $wpdb;
 
 		foreach ( array( $entry['url'] ?? '', $entry['url_2x'] ?? '' ) as $url ) {
-			$path = self::path( (string) strtok( (string) $url, '?' ) );
+			$path = self::path( self::without_query( (string) $url ) );
 
 			if ( null === $path || ! is_file( $path ) ) {
 				continue;
@@ -256,8 +269,9 @@ final class Saved_Image {
 	 *
 	 * It must show the venue's current location and its PNG must exist.
 	 * An entry saved before `location` was stored is matched on its URL,
-	 * which carries the location in the file name. A missing 2x PNG is
-	 * left out, so the page doesn't offer it in `srcset`.
+	 * which carries the location in the file name, ignoring a query string
+	 * a filter added. A missing 2x PNG is left out, so the page doesn't
+	 * offer it in `srcset`.
 	 *
 	 * @since TBD
 	 *
@@ -286,7 +300,7 @@ final class Saved_Image {
 					1,
 					$combo[3]
 				)
-			) === $url;
+			) === self::without_query( $url );
 
 		if ( ! $matches || ! self::exists( $url ) ) {
 			return null;

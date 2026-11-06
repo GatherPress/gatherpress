@@ -137,6 +137,7 @@ class Test_Saved_Image extends Base {
 	 *
 	 * @covers ::url
 	 * @covers ::exists
+	 * @covers ::without_query
 	 *
 	 * @return void
 	 */
@@ -198,6 +199,14 @@ class Test_Saved_Image extends Base {
 		$legacy = $this->entry( array( 'url' => $url ) );
 
 		$this->assertSame( $legacy, Saved_Image::usable( $legacy, self::INFO, 'osm', self::COMBO ) );
+
+		$queried = $this->entry( array( 'url' => $url . '?v=2' ) );
+
+		$this->assertSame(
+			$queried,
+			Saved_Image::usable( $queried, self::INFO, 'osm', self::COMBO ),
+			'Failed to assert a query string on the URL is ignored.'
+		);
 		$this->assertNull(
 			Saved_Image::usable( $legacy, $moved, 'osm', self::COMBO ),
 			'Failed to assert a URL for another location is not usable.'
