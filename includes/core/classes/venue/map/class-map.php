@@ -1674,7 +1674,6 @@ final class Map {
 		);
 	}
 
-
 	/**
 	 * Save a finished GD image to the uploads directory and return its URL.
 	 *
