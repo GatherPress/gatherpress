@@ -2364,6 +2364,47 @@ class Test_Map extends Base {
 	}
 
 	/**
+	 * Regenerating maps that render with the same file names keeps their
+	 * files without looking them up.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::regenerate
+	 *
+	 * @return void
+	 */
+	public function test_regenerate_skips_the_lookup_for_files_saved_again(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
+		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
+		$instance->maybe_generate( $post_id );
+
+		$before  = $instance->get_all_descriptors( $post_id );
+		$lookups = 0;
+		$count   = static function ( string $query ) use ( &$lookups ): string {
+			if ( str_contains( $query, 'meta_value LIKE' ) ) {
+				++$lookups;
+			}
+
+			return $query;
+		};
+
+		add_filter( 'query', $count );
+		$result = $instance->regenerate( $post_id );
+		remove_filter( 'query', $count );
+
+		$this->assertSame( $before['osm'], $result['osm'], 'Failed to assert the maps render with the same files.' );
+		$this->assertSame( 0, $lookups, 'Failed to assert no lookup runs for files saved again.' );
+
+		foreach ( $result['osm'] as $entry ) {
+			$this->assertFileExists( $this->path_for_url( $entry['url'] ) );
+		}
+	}
+
+	/**
 	 * Rebuilds each cached variant with its own map type, so a roadmap and
 	 * a hybrid entry at the same dimensions both survive the wipe-and-rebuild
 	 * rather than collapsing onto the requested type.

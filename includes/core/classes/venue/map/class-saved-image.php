@@ -88,15 +88,41 @@ final class Saved_Image {
 	 *
 	 * @param array<string, mixed> $descriptors Saved maps, by provider and combo.
 	 * @phpstan-param ProviderDescriptorMap $descriptors
+	 * @param string[]             $keep        URLs to keep without a lookup, such as the files a render saved again.
 	 *
 	 * @return void
 	 */
-	public static function delete_all_unused( array $descriptors ): void {
+	public static function delete_all_unused( array $descriptors, array $keep = array() ): void {
 		foreach ( $descriptors as $slug => $combos ) {
 			foreach ( $combos as $key => $entry ) {
-				( new self( $entry, (string) $slug, (string) $key ) )->delete_unused();
+				( new self( $entry, (string) $slug, (string) $key ) )->delete_unused( $keep );
 			}
 		}
+	}
+
+	/**
+	 * Get the PNG URLs a venue's stored maps point at.
+	 *
+	 * Reads the meta as stored, so a URL a filter rewrote is not included.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $post_id Venue post ID.
+	 *
+	 * @return string[] The 1x and 2x URLs.
+	 */
+	public static function stored_urls( int $post_id ): array {
+		$urls   = array();
+		$stored = get_post_meta( $post_id, Map::META_KEY, true );
+
+		foreach ( is_array( $stored ) ? $stored : array() as $combos ) {
+			foreach ( is_array( $combos ) ? $combos : array() as $entry ) {
+				$urls[] = (string) ( $entry['url'] ?? '' );
+				$urls[] = (string) ( $entry['url_2x'] ?? '' );
+			}
+		}
+
+		return array_values( array_filter( $urls ) );
 	}
 
 	/**
@@ -342,17 +368,20 @@ final class Saved_Image {
 	 *
 	 * @since TBD
 	 *
-	 * @param string[] $keep URLs to keep, such as the files a render saved again.
+	 * @param string[] $keep URLs to keep without a lookup, such as the files a render saved again.
 	 *
 	 * @return void
 	 */
 	public function delete_unused( array $keep = array() ): void {
 		global $wpdb;
 
-		foreach ( array_diff( array( $this->entry['url'], $this->entry['url_2x'] ), $keep ) as $url ) {
-			$path = self::path( self::without_query( (string) $url ) );
+		$keep = array_map( array( self::class, 'without_query' ), $keep );
 
-			if ( null === $path || ! is_file( $path ) ) {
+		foreach ( array( $this->entry['url'], $this->entry['url_2x'] ) as $url ) {
+			$url  = self::without_query( (string) $url );
+			$path = self::path( $url );
+
+			if ( null === $path || in_array( $url, $keep, true ) || ! is_file( $path ) ) {
 				continue;
 			}
 

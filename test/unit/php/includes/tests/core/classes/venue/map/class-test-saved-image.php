@@ -428,6 +428,48 @@ class Test_Saved_Image extends Base {
 		$delete( $used . '?v=2' );
 
 		$this->assertFileDoesNotExist( $paths[0], 'Failed to assert an unused PNG with a query string is deleted.' );
+
+		$this->touch_image( $used );
+		Saved_Image::delete_all_unused(
+			array( 'osm' => array( self::KEY => self::files( $used . '?v=2' ) ) ),
+			array( $used )
+		);
+
+		$this->assertFileExists( $paths[0], 'Failed to assert a PNG the caller keeps stays.' );
+
+		wp_delete_file( $paths[0] );
+	}
+
+	/**
+	 * The stored 1x and 2x URLs are listed as saved, without empty ones.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::stored_urls
+	 *
+	 * @return void
+	 */
+	public function test_stored_urls(): void {
+		$post_id = $this->factory->post->create();
+
+		$this->assertSame( array(), Saved_Image::stored_urls( $post_id ), 'Failed to assert no meta lists nothing.' );
+
+		update_post_meta(
+			$post_id,
+			Map::META_KEY,
+			array(
+				'osm'    => array(
+					self::KEY            => self::files( 'https://example.test/a.png', 'https://example.test/a@2x.png' ),
+					'14x800x400xroadmap' => array( 'url' => 'https://example.test/b.png' ),
+				),
+				'broken' => 'not an array',
+			)
+		);
+
+		$this->assertSame(
+			array( 'https://example.test/a.png', 'https://example.test/a@2x.png', 'https://example.test/b.png' ),
+			Saved_Image::stored_urls( $post_id )
+		);
 	}
 
 	/**

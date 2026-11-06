@@ -860,7 +860,8 @@ final class Map {
 			}
 		}
 
-		Saved_Image::delete_all_unused( $previous );
+		// Files rendered or put back again stay without a lookup.
+		Saved_Image::delete_all_unused( $previous, Saved_Image::stored_urls( $post_id ) );
 
 		// No combo rendered, so the REST handler reports `generation_failed`.
 		return $rendered ? $this->get_all_descriptors( $post_id ) : array();
