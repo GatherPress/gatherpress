@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Hide the Layout panel and alignment toolbar buttons when a Calendar Day block uses the Ribbon style, while keeping layout controls available for Classic calendar days.
