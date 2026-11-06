@@ -131,7 +131,7 @@ final class Saved_Image {
 	 *
 	 * A URL outside the static maps folder, for example one a filter moved
 	 * to a CDN, or one that leaves the folder with `..`, is not checked
-	 * here and counts as present.
+	 * here and counts as present. A query string a filter added is ignored.
 	 *
 	 * @since TBD
 	 *
@@ -140,7 +140,7 @@ final class Saved_Image {
 	 * @return bool False only when a PNG in the static maps folder is missing.
 	 */
 	public static function exists( string $url ): bool {
-		$path = self::path( $url );
+		$path = self::path( (string) strtok( $url, '?' ) );
 
 		return null === $path || is_file( $path );
 	}
@@ -187,7 +187,8 @@ final class Saved_Image {
 	 * Delete a saved entry's PNG files that no venue uses any longer.
 	 *
 	 * Venues at the same address and coordinates can share a file, so a
-	 * file is kept while any venue's saved maps still point at it.
+	 * file is kept while any venue's saved maps still point at it, with or
+	 * without a query string.
 	 *
 	 * @since TBD
 	 *
@@ -199,19 +200,23 @@ final class Saved_Image {
 		global $wpdb;
 
 		foreach ( array( $entry['url'] ?? '', $entry['url_2x'] ?? '' ) as $url ) {
-			$path = self::path( (string) $url );
+			$path = self::path( (string) strtok( (string) $url, '?' ) );
 
 			if ( null === $path || ! is_file( $path ) ) {
 				continue;
 			}
 
+			$file = $wpdb->esc_like( '/' . Map::UPLOADS_SUBDIR . '/' . wp_basename( $path ) );
+
 			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery
 			// phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching
 			$used = $wpdb->get_var(
 				$wpdb->prepare(
-					"SELECT meta_id FROM {$wpdb->postmeta} WHERE meta_key = %s AND meta_value LIKE %s LIMIT 1",
+					"SELECT meta_id FROM {$wpdb->postmeta}
+					WHERE meta_key = %s AND ( meta_value LIKE %s OR meta_value LIKE %s ) LIMIT 1",
 					Map::META_KEY,
-					'%' . $wpdb->esc_like( '/' . Map::UPLOADS_SUBDIR . '/' . wp_basename( $path ) ) . '"%'
+					'%' . $file . '"%',
+					'%' . $file . '?%'
 				)
 			);
 			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery

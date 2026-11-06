@@ -149,6 +149,7 @@ class Test_Saved_Image extends Base {
 		$path = $this->touch_image( $url );
 
 		$this->assertTrue( Saved_Image::exists( $url ), 'Failed to assert a saved PNG is found.' );
+		$this->assertTrue( Saved_Image::exists( $url . '?v=2' ), 'Failed to assert a query string is ignored.' );
 
 		wp_delete_file( $path );
 
@@ -317,6 +318,21 @@ class Test_Saved_Image extends Base {
 
 		$this->assertFileDoesNotExist( $paths[0], 'Failed to assert a longer name ending the same way keeps no PNG.' );
 		$this->assertFileDoesNotExist( $paths[2], 'Failed to assert a longer name with the same start keeps no PNG.' );
+
+		$this->touch_image( $used );
+		update_post_meta(
+			$venue_id,
+			Map::META_KEY,
+			array( 'osm' => array( '15x800x400xroadmap' => array( 'url' => $used . '?v=2' ) ) )
+		);
+		Saved_Image::delete_unused( array( 'url' => $used ) );
+
+		$this->assertFileExists( $paths[0], 'Failed to assert a PNG a venue uses with a query string is kept.' );
+
+		delete_post_meta( $venue_id, Map::META_KEY );
+		Saved_Image::delete_unused( array( 'url' => $used . '?v=2' ) );
+
+		$this->assertFileDoesNotExist( $paths[0], 'Failed to assert an unused PNG with a query string is deleted.' );
 	}
 
 	/**
