@@ -497,8 +497,8 @@ class Test_OSM extends Base {
 	/**
 	 * When the wall-clock budget is exhausted between iterations, the
 	 * render loop breaks out with no tiles fetched, so there is no map to
-	 * return. Filter-driven so we don't have to wait COMPOSITE_TIME_BUDGET
-	 * seconds.
+	 * return and renders pause. Filter-driven so we don't have to wait
+	 * COMPOSITE_TIME_BUDGET seconds.
 	 *
 	 * @covers ::render
 	 *
@@ -524,12 +524,18 @@ class Test_OSM extends Base {
 		// Negative budget puts the deadline in the past from the first
 		// iteration, forcing `break 2` before any fetch runs.
 		$budget = static fn() => -1;
+		$tiles  = Utility::invoke_hidden_method( new OSM(), 'get_tile_url_template' );
+		$paused = OSM::TILES_FAILED_TRANSIENT . md5( $tiles . '|15' );
 
+		delete_transient( $paused );
 		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
 		add_filter( 'pre_http_request', $counter, 10 );
 		add_filter( 'gatherpress_static_map_composite_time_budget', $budget );
 
 		$canvas = ( new OSM() )->render( 37.3318, -122.0312, 15, 512, 256 );
+		$pause  = get_transient( $paused );
+
+		delete_transient( $paused );
 
 		remove_filter( 'gatherpress_static_map_composite_time_budget', $budget );
 		remove_filter( 'pre_http_request', $counter, 10 );
@@ -537,6 +543,7 @@ class Test_OSM extends Base {
 
 		$this->assertNull( $canvas );
 		$this->assertSame( 0, $fetches, 'No tiles should be fetched when the deadline is already in the past.' );
+		$this->assertSame( 1, (int) $pause, 'Failed to assert a render with no tiles pauses renders.' );
 	}
 
 	/**
