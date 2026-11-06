@@ -3947,6 +3947,8 @@ class Test_Map extends Base {
 	/**
 	 * Write an empty PNG file at a static map URL so the file check passes.
 	 *
+	 * @since TBD
+	 *
 	 * @param string $url Static map URL.
 	 *
 	 * @return string Path of the file.

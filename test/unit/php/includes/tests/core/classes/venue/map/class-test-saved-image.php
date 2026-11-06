@@ -15,6 +15,8 @@ use GatherPress\Tests\Base;
 /**
  * Class Test_Saved_Image.
  *
+ * @since TBD
+ *
  * @coversDefaultClass \GatherPress\Core\Venue\Map\Saved_Image
  */
 class Test_Saved_Image extends Base {
@@ -22,6 +24,7 @@ class Test_Saved_Image extends Base {
 	/**
 	 * Venue information shared by the tests.
 	 *
+	 * @since TBD
 	 * @var array<string, string>
 	 */
 	private const INFO = array(
@@ -33,6 +36,7 @@ class Test_Saved_Image extends Base {
 	/**
 	 * Zoom, width, height and map type shared by the tests.
 	 *
+	 * @since TBD
 	 * @var array{0: int, 1: int, 2: int, 3: string}
 	 */
 	private const COMBO = array( 15, 800, 400, 'roadmap' );
@@ -40,12 +44,15 @@ class Test_Saved_Image extends Base {
 	/**
 	 * Combo key of the shared combo.
 	 *
+	 * @since TBD
 	 * @var string
 	 */
 	private const KEY = '15x800x400xroadmap';
 
 	/**
 	 * Write an empty PNG file at a static map URL.
+	 *
+	 * @since TBD
 	 *
 	 * @param string $url Static map URL.
 	 *
@@ -64,6 +71,8 @@ class Test_Saved_Image extends Base {
 
 	/**
 	 * A saved descriptor with the given fields.
+	 *
+	 * @since TBD
 	 *
 	 * @param array<string, string> $fields Fields to set.
 	 *
@@ -86,6 +95,8 @@ class Test_Saved_Image extends Base {
 	/**
 	 * A saved descriptor with the given PNG URLs.
 	 *
+	 * @since TBD
+	 *
 	 * @param string $url    URL of the 1x PNG.
 	 * @param string $url_2x URL of the 2x PNG.
 	 *
@@ -102,6 +113,8 @@ class Test_Saved_Image extends Base {
 
 	/**
 	 * URL of the shared combo without a hash.
+	 *
+	 * @since TBD
 	 *
 	 * @return string The URL.
 	 */
