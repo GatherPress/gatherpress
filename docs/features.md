@@ -14,7 +14,7 @@ GatherPress includes a growing list of features to help communities organize and
 - **Email notifications**: Send emails to all members, event attendees, non-attendees, or those on the waitlist.
 - **Event reminders**: Email attendees a reminder a day before an event starts, an hour before, or both. Users can opt out in their profile.
 - **Site-wide member email**: Send a message to every member of the site from a dedicated GatherPress settings page, without going through an event. Members who turned event updates off in their profile are skipped.
-- **Subscribable calendar feeds**: Attendees can subscribe to a live, auto-updating calendar feed for a venue, a topic, the events archive, or the whole site, distinct from the one-time "Add to Calendar" download. See [Calendar feeds](./user/calendar-feeds.md).
+- **Subscribable calendar feeds**: Attendees can subscribe to a live, auto-updating calendar feed for a venue, a topic, the events archive, or the whole site, distinct from the one-time "Add to Calendar" download. Any link or button can point at a feed through a [subscribe link](./user/calendar-feeds.md#subscribe-links) placeholder. See [Calendar feeds](./user/calendar-feeds.md).
 - **Event calendar**: Show events in a month, week or day calendar, with Previous and Next links and an optional time grid of hours. See [Event Calendar block](./user/blocks/event-calendar.md).
 - **Online and in-person events**: Add venues with maps or online meeting links.
 - **Mapping**: Supports OpenStreetMap (via Leaflet) and Google Maps, rendered as interactive maps or as static map images.
