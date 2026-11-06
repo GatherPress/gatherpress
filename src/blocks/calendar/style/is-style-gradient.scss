@@ -67,6 +67,8 @@
 			&.gatherpress--is-today {
 				--gatherpress-calendar-title-color: var(--wp--preset--color--base, #fff);
 				--gatherpress-calendar-time-color: var(--wp--preset--color--base, #fff);
+				// The cell is mostly contrast here, so a contrast dot border would vanish.
+				--gatherpress-calendar-dot-contrast-color: var(--wp--preset--color--base, #fff);
 
 				background: color-mix(in srgb, var(--wp--preset--color--contrast, #000) 85%, transparent);
 				border: 2px solid var(--wp--preset--color--contrast, #000);

@@ -1,6 +1,6 @@
 /* ======================================================================
     BLOCK STYLE: Circular
-    Giant bold theme-contrast numerals with entries floating above.
+    Giant bold theme-contrast numerals; days with entries show a small numeral above them.
     ====================================================================== */
 
 .wp-block-gatherpress-calendar.is-style-circular {
@@ -46,7 +46,7 @@
 			justify-content: center;
 			transition: background-color 0.2s ease, box-shadow 0.2s ease;
 
-			/* Giant bold theme-contrast day number filling the background */
+			/* Giant bold theme-contrast day number filling the background on days without entries */
 			.gatherpress-calendar__day-number {
 				position: absolute;
 				inset: 0;
@@ -65,7 +65,7 @@
 				user-select: none;
 			}
 
-			/* Entries float on top of the cutout numeral */
+			/* Entries sit above the background of the circle */
 			.wp-block-gatherpress-calendar-entries {
 				position: relative;
 				z-index: 1;
@@ -82,7 +82,7 @@
 					font-weight: 600;
 					font-size: clamp(0.6875rem, 1.2vw, 0.75rem);
 
-					/* A theme-base halo softens text over the day numeral. */
+					/* A theme-base halo keeps text readable over the day background. */
 					text-shadow:
 						0 0 4px var(--wp--preset--color--base, #fff),
 						0 1px 2px var(--wp--preset--color--base, #fff);
@@ -91,6 +91,19 @@
 						font-size: clamp(0.625rem, 1vw, 0.6875rem);
 					}
 				}
+			}
+
+			/*
+			 * On days with entries the numeral leaves the background and becomes a
+			 * small label above them, so entry text never crosses its strokes.
+			 */
+			&.gatherpress--has-posts .gatherpress-calendar__day-number {
+				position: static;
+				flex: none;
+				align-self: center;
+				margin-bottom: 0.125rem;
+				font-size: clamp(0.75rem, 2vw, 1.25rem) !important;
+				font-size: clamp(0.75rem, 2.5cqi, 1.25rem) !important;
 			}
 
 			&.gatherpress--is-empty {
@@ -123,7 +136,7 @@
 	}
 
 	/* ======================================================================
-		BLOCK STYLE: Dots (centered over the cutout number)
+		BLOCK STYLE: Dots (centered under the day number)
 		====================================================================== */
 	.wp-block-gatherpress-calendar-entries.is-style-dots {
 		justify-content: center;
