@@ -459,7 +459,7 @@ class Test_Saved_Image extends Base {
 			Map::META_KEY,
 			array(
 				'osm'    => array(
-					self::KEY            => self::files( 'https://example.test/a.png', 'https://example.test/a@2x.png' ),
+					self::KEY            => self::files( 'https://example.test/a.png', 'https://example.test/a2.png' ),
 					'14x800x400xroadmap' => array( 'url' => 'https://example.test/b.png' ),
 				),
 				'broken' => 'not an array',
@@ -467,7 +467,7 @@ class Test_Saved_Image extends Base {
 		);
 
 		$this->assertSame(
-			array( 'https://example.test/a.png', 'https://example.test/a@2x.png', 'https://example.test/b.png' ),
+			array( 'https://example.test/a.png', 'https://example.test/a2.png', 'https://example.test/b.png' ),
 			Saved_Image::stored_urls( $post_id )
 		);
 	}
