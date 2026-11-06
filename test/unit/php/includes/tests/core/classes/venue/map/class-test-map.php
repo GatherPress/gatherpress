@@ -3615,18 +3615,15 @@ class Test_Map extends Base {
 		$args     = array( $post_id, $info, Map::DEFAULT_ZOOM, 800, 400 );
 		$saved    = Utility::invoke_hidden_method( $instance, 'ensure_descriptor_for_combo', $args );
 
-		$this->assertTrue( Saved_Image::exists( $saved['url'] ) );
-		$this->assertTrue( Saved_Image::exists( $saved['url_2x'] ) );
+		$this->assertFileExists( $this->path_for_url( $saved['url'] ) );
+		$this->assertFileExists( $this->path_for_url( $saved['url_2x'] ) );
 
 		$dirs = wp_get_upload_dir();
 		$path = static fn( string $url ): string => str_replace( $dirs['baseurl'], $dirs['basedir'], $url );
 
 		wp_delete_file( $path( $saved['url_2x'] ) );
 
-		$this->assertFalse(
-			Saved_Image::exists( $saved['url_2x'] ),
-			'Failed to assert a missing PNG is reported.'
-		);
+		$this->assertFileDoesNotExist( $path( $saved['url_2x'] ), 'Failed to assert the 2x PNG is deleted.' );
 
 		Utility::invoke_hidden_method( $instance, 'ensure_descriptor_for_combo', $args );
 

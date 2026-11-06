@@ -14,8 +14,8 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 /**
  * Class Saved_Image.
  *
- * Stateless helpers for the file names, URLs and locations of saved
- * static map PNG files.
+ * A static map PNG saved in a venue's meta, with the helpers that name
+ * its files.
  *
  * @since TBD
  *
@@ -23,6 +23,81 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * @phpstan-import-type ProviderDescriptorMap from Map
  */
 final class Saved_Image {
+
+	/**
+	 * Saved descriptor.
+	 *
+	 * @since TBD
+	 * @var array<string, mixed>
+	 * @phpstan-var Descriptor
+	 */
+	private readonly array $entry;
+
+	/**
+	 * Provider slug the image was saved under.
+	 *
+	 * @since TBD
+	 * @var string
+	 */
+	private readonly string $slug;
+
+	/**
+	 * Combo key from `Map::combo_key()` the image was saved under.
+	 *
+	 * @since TBD
+	 * @var string
+	 */
+	private readonly string $key;
+
+	/**
+	 * Wrap a saved descriptor.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $entry Saved descriptor.
+	 * @phpstan-param Descriptor $entry
+	 * @param string               $slug  Provider slug the image was saved under.
+	 * @param string               $key   Combo key from `Map::combo_key()`.
+	 */
+	public function __construct( array $entry, string $slug, string $key ) {
+		$this->entry = $entry;
+		$this->slug  = $slug;
+		$this->key   = $key;
+	}
+
+	/**
+	 * Find the saved image for a provider and combo in a descriptor map.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $descriptors Saved maps, by provider and combo.
+	 * @phpstan-param ProviderDescriptorMap $descriptors
+	 * @param string               $slug        Provider slug.
+	 * @param string               $key         Combo key from `Map::combo_key()`.
+	 *
+	 * @return self|null The saved image, or null when there is none.
+	 */
+	public static function find( array $descriptors, string $slug, string $key ): ?self {
+		return isset( $descriptors[ $slug ][ $key ] ) ? new self( $descriptors[ $slug ][ $key ], $slug, $key ) : null;
+	}
+
+	/**
+	 * Delete the PNG files of saved maps that no venue uses any longer.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $descriptors Saved maps, by provider and combo.
+	 * @phpstan-param ProviderDescriptorMap $descriptors
+	 *
+	 * @return void
+	 */
+	public static function delete_all_unused( array $descriptors ): void {
+		foreach ( $descriptors as $slug => $combos ) {
+			foreach ( $combos as $key => $entry ) {
+				( new self( $entry, (string) $slug, (string) $key ) )->delete_unused();
+			}
+		}
+	}
 
 	/**
 	 * Compose a filesystem-safe filename from the address, coordinates and dimensions.
@@ -127,77 +202,139 @@ final class Saved_Image {
 	}
 
 	/**
-	 * Whether a saved PNG is still on disk.
-	 *
-	 * A URL outside the static maps folder, for example one a filter moved
-	 * to a CDN, or one that leaves the folder with `..`, is not checked
-	 * here and counts as present. A query string a filter added is ignored.
+	 * Identify the address and coordinates a static map shows.
 	 *
 	 * @since TBD
 	 *
-	 * @param string $url Public URL of the PNG.
+	 * @param array<string, string> $info Parsed venue information.
 	 *
-	 * @return bool False only when a PNG in the static maps folder is missing.
+	 * @return string MD5 hex digest.
 	 */
-	public static function exists( string $url ): bool {
-		$path = self::path( self::without_query( $url ) );
-
-		return null === $path || is_file( $path );
+	public static function location( array $info ): string {
+		// md5() here is a non-cryptographic key, matching Map::hash_for().
+		return md5( // NOSONAR.
+			implode(
+				'|',
+				array(
+					(string) ( $info['address'] ?? '' ),
+					(string) ( $info['latitude'] ?? '' ),
+					(string) ( $info['longitude'] ?? '' ),
+				)
+			)
+		);
 	}
 
 	/**
-	 * Drop a query string a filter added to a saved map URL.
+	 * Whether the image is the current render for a map hash.
+	 *
+	 * A map saved before file names carried the hash is matched on its
+	 * plain URL. A query string a filter added is ignored.
 	 *
 	 * @since TBD
 	 *
-	 * @param string $url Public URL of the PNG.
+	 * @param string $hash      Map hash.
+	 * @param string $plain_url URL of the 1x PNG without the hash.
 	 *
-	 * @return string The URL without its query string.
+	 * @return bool True when the hash and URL match and the 1x PNG exists.
 	 */
-	public static function without_query( string $url ): string {
-		return explode( '?', $url, 2 )[0];
+	public function is_current( string $hash, string $plain_url ): bool {
+		return $this->entry['hash'] === $hash
+			&& in_array(
+				self::without_query( $this->entry['url'] ),
+				array( self::versioned( $plain_url, $hash ), $plain_url ),
+				true
+			)
+			&& self::file_exists( $this->entry['url'] );
 	}
 
 	/**
-	 * Path on disk of a PNG in the static maps folder.
+	 * Whether the image has a 2x PNG on disk.
 	 *
 	 * @since TBD
 	 *
-	 * @param string $url Public URL of the PNG.
-	 *
-	 * @return string|null The path, or null when the URL is not a file directly in the static maps folder.
+	 * @return bool False when there is no 2x URL or its PNG is missing.
 	 */
-	private static function path( string $url ): ?string {
-		$dirs     = wp_get_upload_dir();
-		$base_url = trailingslashit( $dirs['baseurl'] ) . Map::UPLOADS_SUBDIR . '/';
-		$file     = substr( $url, strlen( $base_url ) );
+	public function has_2x(): bool {
+		return '' !== $this->entry['url_2x'] && self::file_exists( $this->entry['url_2x'] );
+	}
 
-		// A filtered URL with `..` or a subfolder must not point outside the folder.
-		if ( ! str_starts_with( $url, $base_url ) || wp_basename( $file ) !== $file || '..' === $file ) {
+	/**
+	 * Get the image when it can stand in for a map that could not render.
+	 *
+	 * It must show the venue's current location and its PNG must exist.
+	 * An entry saved before `location` was stored is matched on its URL,
+	 * which carries the location in the file name, ignoring a query string
+	 * a filter added. A missing 2x PNG is left out, so the page doesn't
+	 * offer it in `srcset`.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, string>                    $info  Parsed venue information.
+	 * @param array{0: int, 1: int, 2: int, 3: string} $combo Zoom, width, height and normalized map type.
+	 *
+	 * @return Descriptor|null The descriptor, or null when it can't be shown.
+	 */
+	public function usable( array $info, array $combo ): ?array {
+		$entry    = $this->entry;
+		$location = $entry['location'] ?? '';
+		$matches  = '' !== $location
+			? self::location( $info ) === $location
+			: self::url(
+				self::filename(
+					(string) ( $info['address'] ?? '' ),
+					(float) $info['latitude'],
+					(float) $info['longitude'],
+					$combo[0],
+					$combo[1],
+					$combo[2],
+					$this->slug,
+					1,
+					$combo[3]
+				)
+			) === self::without_query( $entry['url'] );
+
+		if ( ! $matches || ! self::file_exists( $entry['url'] ) ) {
 			return null;
 		}
 
-		return trailingslashit( $dirs['basedir'] ) . Map::UPLOADS_SUBDIR . '/' . $file;
+		if ( ! self::file_exists( $entry['url_2x'] ) ) {
+			$entry['url_2x'] = '';
+		}
+
+		return $entry;
 	}
 
 	/**
-	 * Delete the PNG files of saved maps that no venue uses any longer.
+	 * Put the image back into a venue's meta when it can still be shown.
+	 *
+	 * Used by {@see Map::regenerate()}, which clears the meta before it
+	 * renders, for a combo that failed to render again.
 	 *
 	 * @since TBD
 	 *
-	 * @param array<string, mixed> $descriptors Saved maps, by provider and combo.
-	 * @phpstan-param ProviderDescriptorMap $descriptors
+	 * @param int                                      $post_id Venue post ID.
+	 * @param array<string, string>                    $info    Parsed venue information.
+	 * @param array{0: int, 1: int, 2: int, 3: string} $combo   Zoom, width, height and normalized map type.
 	 *
 	 * @return void
 	 */
-	public static function delete_all_unused( array $descriptors ): void {
-		foreach ( $descriptors as $combos ) {
-			array_map( array( self::class, 'delete_unused' ), $combos );
+	public function restore( int $post_id, array $info, array $combo ): void {
+		$entry = $this->usable( $info, $combo );
+
+		if ( null === $entry ) {
+			return;
 		}
+
+		$stored = get_post_meta( $post_id, Map::META_KEY, true );
+		$stored = is_array( $stored ) ? $stored : array();
+
+		$stored[ $this->slug ][ $this->key ] = $entry;
+
+		update_post_meta( $post_id, Map::META_KEY, $stored );
 	}
 
 	/**
-	 * Delete a saved entry's PNG files that no venue uses any longer.
+	 * Delete the image's PNG files that no venue uses any longer.
 	 *
 	 * Venues at the same address and coordinates can share a file, so a
 	 * file is kept while any venue's saved maps still point at it, with or
@@ -205,14 +342,14 @@ final class Saved_Image {
 	 *
 	 * @since TBD
 	 *
-	 * @param array<string, mixed> $entry Saved descriptor whose files may be unused.
+	 * @param string[] $keep URLs to keep, such as the files a render saved again.
 	 *
 	 * @return void
 	 */
-	public static function delete_unused( array $entry ): void {
+	public function delete_unused( array $keep = array() ): void {
 		global $wpdb;
 
-		foreach ( array( $entry['url'] ?? '', $entry['url_2x'] ?? '' ) as $url ) {
+		foreach ( array_diff( array( $this->entry['url'], $this->entry['url_2x'] ), $keep ) as $url ) {
 			$path = self::path( self::without_query( (string) $url ) );
 
 			if ( null === $path || ! is_file( $path ) ) {
@@ -242,115 +379,56 @@ final class Saved_Image {
 	}
 
 	/**
-	 * Identify the address and coordinates a static map shows.
+	 * Whether a saved PNG is still on disk.
+	 *
+	 * A URL outside the static maps folder, for example one a filter moved
+	 * to a CDN, or one that leaves the folder with `..`, is not checked
+	 * here and counts as present. A query string a filter added is ignored.
 	 *
 	 * @since TBD
 	 *
-	 * @param array<string, string> $info Parsed venue information.
+	 * @param string $url Public URL of the PNG.
 	 *
-	 * @return string MD5 hex digest.
+	 * @return bool False only when a PNG in the static maps folder is missing.
 	 */
-	public static function location( array $info ): string {
-		// md5() here is a non-cryptographic key, matching Map::hash_for().
-		return md5( // NOSONAR.
-			implode(
-				'|',
-				array(
-					(string) ( $info['address'] ?? '' ),
-					(string) ( $info['latitude'] ?? '' ),
-					(string) ( $info['longitude'] ?? '' ),
-				)
-			)
-		);
+	private static function file_exists( string $url ): bool {
+		$path = self::path( self::without_query( $url ) );
+
+		return null === $path || is_file( $path );
 	}
 
 	/**
-	 * Get a saved image that can stand in for a map that could not render.
-	 *
-	 * It must show the venue's current location and its PNG must exist.
-	 * An entry saved before `location` was stored is matched on its URL,
-	 * which carries the location in the file name, ignoring a query string
-	 * a filter added. A missing 2x PNG is left out, so the page doesn't
-	 * offer it in `srcset`.
+	 * Drop a query string a filter added to a saved map URL.
 	 *
 	 * @since TBD
 	 *
-	 * @param array<string, mixed>                     $entry Saved descriptor.
-	 * @phpstan-param Descriptor $entry
-	 * @param array<string, string>                    $info  Parsed venue information.
-	 * @param string                                   $slug  Provider slug the entry was saved under.
-	 * @param array{0: int, 1: int, 2: int, 3: string} $combo Zoom, width, height and normalized map type.
+	 * @param string $url Public URL of the PNG.
 	 *
-	 * @return Descriptor|null The entry, or null when it can't be shown.
+	 * @return string The URL without its query string.
 	 */
-	public static function usable( array $entry, array $info, string $slug, array $combo ): ?array {
-		$url      = $entry['url'];
-		$location = $entry['location'] ?? '';
-		$matches  = '' !== $location
-			? self::location( $info ) === $location
-			: self::url(
-				self::filename(
-					(string) ( $info['address'] ?? '' ),
-					(float) $info['latitude'],
-					(float) $info['longitude'],
-					$combo[0],
-					$combo[1],
-					$combo[2],
-					$slug,
-					1,
-					$combo[3]
-				)
-			) === self::without_query( $url );
+	private static function without_query( string $url ): string {
+		return explode( '?', $url, 2 )[0];
+	}
 
-		if ( ! $matches || ! self::exists( $url ) ) {
+	/**
+	 * Path on disk of a PNG in the static maps folder.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $url Public URL of the PNG.
+	 *
+	 * @return string|null The path, or null when the URL is not a file directly in the static maps folder.
+	 */
+	private static function path( string $url ): ?string {
+		$dirs     = wp_get_upload_dir();
+		$base_url = trailingslashit( $dirs['baseurl'] ) . Map::UPLOADS_SUBDIR . '/';
+		$file     = substr( $url, strlen( $base_url ) );
+
+		// A filtered URL with `..` or a subfolder must not point outside the folder.
+		if ( ! str_starts_with( $url, $base_url ) || wp_basename( $file ) !== $file || '..' === $file ) {
 			return null;
 		}
 
-		if ( ! self::exists( $entry['url_2x'] ) ) {
-			$entry['url_2x'] = '';
-		}
-
-		return $entry;
-	}
-
-	/**
-	 * Put back a provider's saved image for a combo that failed to render again.
-	 *
-	 * Used by {@see Map::regenerate()}, which clears the meta before it
-	 * renders. The image is put back only when it can still be shown.
-	 *
-	 * @since TBD
-	 *
-	 * @param int                                      $post_id  Venue post ID.
-	 * @param array<string, mixed>                     $previous Descriptors from before the meta was cleared.
-	 * @param array<string, string>                    $info     Parsed venue information.
-	 * @param string                                   $slug     Provider slug.
-	 * @param string                                   $key      Combo key from `Map::combo_key()`.
-	 * @param array{0: int, 1: int, 2: int, 3: string} $combo    Zoom, width, height and normalized map type.
-	 * @phpstan-param ProviderDescriptorMap $previous
-	 *
-	 * @return void
-	 */
-	public static function restore(
-		int $post_id,
-		array $previous,
-		array $info,
-		string $slug,
-		string $key,
-		array $combo
-	): void {
-		$entry = $previous[ $slug ][ $key ] ?? null;
-		$entry = null === $entry ? null : self::usable( $entry, $info, $slug, $combo );
-
-		if ( null === $entry ) {
-			return;
-		}
-
-		$stored = get_post_meta( $post_id, Map::META_KEY, true );
-		$stored = is_array( $stored ) ? $stored : array();
-
-		$stored[ $slug ][ $key ] = $entry;
-
-		update_post_meta( $post_id, Map::META_KEY, $stored );
+		return trailingslashit( $dirs['basedir'] ) . Map::UPLOADS_SUBDIR . '/' . $file;
 	}
 }

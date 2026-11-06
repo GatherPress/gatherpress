@@ -855,7 +855,8 @@ final class Map {
 					$combo_map_type,
 				);
 
-				Saved_Image::restore( $post_id, $previous, $info, $active_slug, $this->combo_key( ...$parts ), $parts );
+				Saved_Image::find( $previous, $active_slug, $this->combo_key( ...$parts ) )
+					?->restore( $post_id, $info, $parts );
 			}
 		}
 
@@ -998,7 +999,7 @@ final class Map {
 				continue;
 			}
 
-			$fallback = Saved_Image::usable( $combos[ $key ], $info, $slug, $combo );
+			$fallback = ( new Saved_Image( $combos[ $key ], $slug, $key ) )->usable( $info, $combo );
 
 			if ( null !== $fallback ) {
 				break;
@@ -1371,6 +1372,7 @@ final class Map {
 
 		$all      = $this->get_all_descriptors( $post_id );
 		$existing = $all[ $slug ][ $key ] ?? null;
+		$saved    = Saved_Image::find( $all, $slug, $key );
 
 		$retina_enabled = $this->should_generate_retina();
 
@@ -1386,16 +1388,8 @@ final class Map {
 			1,
 			$map_type
 		);
-		$has_valid_1x = null !== $existing
-			&& $existing['hash'] === $hash
-			&& in_array(
-				Saved_Image::without_query( $existing['url'] ),
-				array( Saved_Image::versioned( $plain_url, $hash ), $plain_url ),
-				true
-			)
-			&& Saved_Image::exists( $existing['url'] );
-		$needs_retina = $retina_enabled
-			&& ( null === $existing || '' === $existing['url_2x'] || ! Saved_Image::exists( $existing['url_2x'] ) );
+		$has_valid_1x = null !== $existing && (bool) $saved?->is_current( $hash, $plain_url );
+		$needs_retina = $retina_enabled && ! $saved?->has_2x();
 
 		if ( $has_valid_1x && ! $needs_retina ) {
 			return $existing;
@@ -1415,7 +1409,7 @@ final class Map {
 			// provider can't satisfy this combo. Keep showing a saved image
 			// for the same location rather than persisting a half-baked entry.
 			if ( null === $image ) {
-				return null === $existing ? null : Saved_Image::usable( $existing, $info, $slug, $combo );
+				return $saved?->usable( $info, $combo );
 			}
 
 			$url = $this->save_image(
@@ -1499,7 +1493,7 @@ final class Map {
 		}
 
 		// Only the files this render replaced, so an unchanged map skips the lookup.
-		Saved_Image::delete_unused( array_diff( $existing ?? array(), array( $url, $url_2x ) ) );
+		$saved?->delete_unused( array( $url, $url_2x ) );
 
 		return $all[ $slug ][ $key ];
 	}
