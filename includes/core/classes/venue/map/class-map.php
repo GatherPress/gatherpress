@@ -1494,7 +1494,8 @@ final class Map {
 			return null;
 		}
 
-		Saved_Image::delete_unused( $existing ?? array() );
+		// Only the files this render replaced, so an unchanged map skips the lookup.
+		Saved_Image::delete_unused( array_diff( $existing ?? array(), array( $url, $url_2x ) ) );
 
 		return $all[ $slug ][ $key ];
 	}

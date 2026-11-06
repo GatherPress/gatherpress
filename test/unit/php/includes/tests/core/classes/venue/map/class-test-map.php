@@ -628,7 +628,10 @@ class Test_Map extends Base {
 	 * un-geocodable must have its stored PNG files purged so stale images
 	 * don't keep serving under the new (wrong) address.
 	 *
+	 * @since TBD Asserts the PNG files no venue uses are deleted.
+	 *
 	 * @covers ::maybe_generate
+	 * @covers ::delete_stored_image
 	 *
 	 * @return void
 	 */
@@ -657,10 +660,8 @@ class Test_Map extends Base {
 			$instance->get_stored_descriptor( $post_id ),
 			'Descriptor meta should be cleared when coordinates become un-geocodable.'
 		);
-		// PNG is intentionally left on disk — the file may be shared with
-		// another venue at the same address. A future GC pass sweeps truly
-		// orphaned files.
-		unset( $path );
+		$this->assertFileDoesNotExist( $path, 'Failed to assert a PNG no venue uses is deleted.' );
+		$this->assertFileDoesNotExist( $this->path_for_url( $descriptor['url_2x'] ) );
 	}
 
 	/**
@@ -957,9 +958,10 @@ class Test_Map extends Base {
 	}
 
 	/**
-	 * Clears the descriptor meta for the venue but leaves the PNG on disk
-	 * — the file may be shared with another venue at the same address, so
-	 * on-delete cleanup is deferred to a future GC pass.
+	 * Clears the descriptor meta for the venue and deletes the PNG files,
+	 * except a file another venue at the same address still uses.
+	 *
+	 * @since TBD Asserts the PNG files no venue uses are deleted, and a shared one stays.
 	 *
 	 * @covers ::delete_stored_image
 	 *
@@ -977,12 +979,26 @@ class Test_Map extends Base {
 		$descriptor = $instance->get_stored_descriptor( $post_id );
 		$this->assertNotNull( $descriptor, 'Precondition: venue has a descriptor.' );
 
+		$shared_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		update_post_meta(
+			$shared_id,
+			Map::META_KEY,
+			array( 'osm' => array( 'shared' => array( 'url' => $descriptor['url'] ) ) )
+		);
 		$instance->delete_stored_image( $post_id );
 
 		$this->assertNull(
 			$instance->get_stored_descriptor( $post_id ),
 			'Descriptor meta should be cleared after delete_stored_image.'
 		);
+		$this->assertFileExists( $this->path_for_url( $descriptor['url'] ), 'Failed to assert a shared PNG stays.' );
+		$this->assertFileDoesNotExist(
+			$this->path_for_url( $descriptor['url_2x'] ),
+			'Failed to assert a PNG no venue uses is deleted.'
+		);
+
+		wp_delete_file( $this->path_for_url( $descriptor['url'] ) );
 	}
 
 	/**

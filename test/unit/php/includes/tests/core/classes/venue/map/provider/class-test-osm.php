@@ -692,7 +692,7 @@ class Test_OSM extends Base {
 	}
 
 	/**
-	 * The cache source is the tile URL with a salted hash of the key, so
+	 * The cache source is the tile URL with a hash of the key, so
 	 * a new key renders saved maps again, and the key's value stays out
 	 * of the hash.
 	 *
@@ -710,11 +710,18 @@ class Test_OSM extends Base {
 
 		$settings->set( 'carto_api_key', 'abc123' );
 
+		$first = $osm->get_cache_source();
+
 		$this->assertSame(
 			'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?key=' . md5( 'abc123' ),
-			$osm->get_cache_source(),
+			$first,
 			'Failed to assert the key is noted as a hash.'
 		);
+		$this->assertStringNotContainsString( 'abc123', $first );
+
+		$settings->set( 'carto_api_key', 'different-key' );
+
+		$this->assertNotSame( $first, $osm->get_cache_source(), 'Failed to assert a new key changes the source.' );
 
 		$settings->set( 'carto_api_key', '' );
 	}

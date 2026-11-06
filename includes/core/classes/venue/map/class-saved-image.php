@@ -130,7 +130,8 @@ final class Saved_Image {
 	 * Whether a saved PNG is still on disk.
 	 *
 	 * A URL outside the static maps folder, for example one a filter moved
-	 * to a CDN, cannot be checked here and counts as present.
+	 * to a CDN, or one that leaves the folder with `..`, is not checked
+	 * here and counts as present.
 	 *
 	 * @since TBD
 	 *
@@ -151,17 +152,19 @@ final class Saved_Image {
 	 *
 	 * @param string $url Public URL of the PNG.
 	 *
-	 * @return string|null The path, or null when the URL is outside the static maps folder.
+	 * @return string|null The path, or null when the URL is not a file directly in the static maps folder.
 	 */
 	private static function path( string $url ): ?string {
 		$dirs     = wp_get_upload_dir();
 		$base_url = trailingslashit( $dirs['baseurl'] ) . Map::UPLOADS_SUBDIR . '/';
+		$file     = substr( $url, strlen( $base_url ) );
 
-		if ( ! str_starts_with( $url, $base_url ) ) {
+		// A filtered URL with `..` or a subfolder must not point outside the folder.
+		if ( ! str_starts_with( $url, $base_url ) || wp_basename( $file ) !== $file || '..' === $file ) {
 			return null;
 		}
 
-		return trailingslashit( $dirs['basedir'] ) . Map::UPLOADS_SUBDIR . '/' . substr( $url, strlen( $base_url ) );
+		return trailingslashit( $dirs['basedir'] ) . Map::UPLOADS_SUBDIR . '/' . $file;
 	}
 
 	/**

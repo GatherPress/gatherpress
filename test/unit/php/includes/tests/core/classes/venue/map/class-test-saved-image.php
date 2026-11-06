@@ -156,6 +156,10 @@ class Test_Saved_Image extends Base {
 			Saved_Image::exists( 'https://cdn.example.test/map.png' ),
 			'Failed to assert a CDN URL counts.'
 		);
+		$this->assertTrue(
+			Saved_Image::exists( Saved_Image::url( '../missing-outside.png' ) ),
+			'Failed to assert a URL that leaves the folder is not checked.'
+		);
 	}
 
 	/**
@@ -276,6 +280,18 @@ class Test_Saved_Image extends Base {
 		);
 		Saved_Image::delete_unused( array( 'url' => 'https://cdn.example.test/map.png' ) );
 		Saved_Image::delete_unused( array( 'url' => Saved_Image::url( 'qa-never-saved.png' ) ) );
+
+		$dirs    = wp_get_upload_dir();
+		$outside = trailingslashit( $dirs['basedir'] ) . 'gatherpress/qa-outside.png';
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Stand-in file outside the folder.
+		file_put_contents( $outside, '' );
+		Saved_Image::delete_unused( array( 'url' => Saved_Image::url( '../qa-outside.png' ) ) );
+		Saved_Image::delete_unused( array( 'url' => Saved_Image::url( '..' ) ) );
+
+		$this->assertFileExists( $outside, 'Failed to assert a URL that leaves the folder deletes nothing.' );
+
+		wp_delete_file( $outside );
 
 		$this->assertFileExists( $paths[0], 'Failed to assert a PNG a venue uses is kept.' );
 		$this->assertFileDoesNotExist( $paths[1], 'Failed to assert an unused PNG is deleted.' );
