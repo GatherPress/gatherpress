@@ -711,7 +711,7 @@ class Test_OSM extends Base {
 		$settings->set( 'carto_api_key', 'abc123' );
 
 		$this->assertSame(
-			'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?key=' . wp_hash( 'abc123' ),
+			'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?key=' . md5( 'abc123' ),
 			$osm->get_cache_source(),
 			'Failed to assert the key is noted as a hash.'
 		);

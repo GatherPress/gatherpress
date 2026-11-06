@@ -18,6 +18,9 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * static map PNG files.
  *
  * @since TBD
+ *
+ * @phpstan-import-type Descriptor from Map
+ * @phpstan-import-type ProviderDescriptorMap from Map
  */
 final class Saved_Image {
 
@@ -136,11 +139,85 @@ final class Saved_Image {
 	 * @return bool False only when a PNG in the static maps folder is missing.
 	 */
 	public static function exists( string $url ): bool {
+		$path = self::path( $url );
+
+		return null === $path || is_file( $path );
+	}
+
+	/**
+	 * Path on disk of a PNG in the static maps folder.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $url Public URL of the PNG.
+	 *
+	 * @return string|null The path, or null when the URL is outside the static maps folder.
+	 */
+	private static function path( string $url ): ?string {
 		$dirs     = wp_get_upload_dir();
 		$base_url = trailingslashit( $dirs['baseurl'] ) . Map::UPLOADS_SUBDIR . '/';
-		$base_dir = trailingslashit( $dirs['basedir'] ) . Map::UPLOADS_SUBDIR . '/';
 
-		return ! str_starts_with( $url, $base_url ) || is_file( $base_dir . substr( $url, strlen( $base_url ) ) );
+		if ( ! str_starts_with( $url, $base_url ) ) {
+			return null;
+		}
+
+		return trailingslashit( $dirs['basedir'] ) . Map::UPLOADS_SUBDIR . '/' . substr( $url, strlen( $base_url ) );
+	}
+
+	/**
+	 * Delete the PNG files of saved maps that no venue uses any longer.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $descriptors Saved maps, by provider and combo.
+	 * @phpstan-param ProviderDescriptorMap $descriptors
+	 *
+	 * @return void
+	 */
+	public static function delete_all_unused( array $descriptors ): void {
+		foreach ( $descriptors as $combos ) {
+			array_map( array( self::class, 'delete_unused' ), $combos );
+		}
+	}
+
+	/**
+	 * Delete a saved entry's PNG files that no venue uses any longer.
+	 *
+	 * Venues at the same address and coordinates can share a file, so a
+	 * file is kept while any venue's saved maps still point at it.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $entry Saved descriptor whose files may be unused.
+	 *
+	 * @return void
+	 */
+	public static function delete_unused( array $entry ): void {
+		global $wpdb;
+
+		foreach ( array( $entry['url'] ?? '', $entry['url_2x'] ?? '' ) as $url ) {
+			$path = self::path( (string) $url );
+
+			if ( null === $path || ! is_file( $path ) ) {
+				continue;
+			}
+
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching
+			$used = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT meta_id FROM {$wpdb->postmeta} WHERE meta_key = %s AND meta_value LIKE %s LIMIT 1",
+					Map::META_KEY,
+					'%' . $wpdb->esc_like( '/' . Map::UPLOADS_SUBDIR . '/' . wp_basename( $path ) ) . '"%'
+				)
+			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.NoCaching
+
+			if ( null === $used ) {
+				wp_delete_file( $path );
+			}
+		}
 	}
 
 	/**
@@ -167,24 +244,26 @@ final class Saved_Image {
 	}
 
 	/**
-	 * Whether a saved image can stand in for a map that could not render.
+	 * Get a saved image that can stand in for a map that could not render.
 	 *
 	 * It must show the venue's current location and its PNG must exist.
 	 * An entry saved before `location` was stored is matched on its URL,
-	 * which carries the location in the file name.
+	 * which carries the location in the file name. A missing 2x PNG is
+	 * left out, so the page doesn't offer it in `srcset`.
 	 *
 	 * @since TBD
 	 *
 	 * @param array<string, mixed>                     $entry Saved descriptor.
+	 * @phpstan-param Descriptor $entry
 	 * @param array<string, string>                    $info  Parsed venue information.
 	 * @param string                                   $slug  Provider slug the entry was saved under.
 	 * @param array{0: int, 1: int, 2: int, 3: string} $combo Zoom, width, height and normalized map type.
 	 *
-	 * @return bool True when the saved image can be shown.
+	 * @return Descriptor|null The entry, or null when it can't be shown.
 	 */
-	public static function is_usable( array $entry, array $info, string $slug, array $combo ): bool {
-		$url      = (string) ( $entry['url'] ?? '' );
-		$location = (string) ( $entry['location'] ?? '' );
+	public static function usable( array $entry, array $info, string $slug, array $combo ): ?array {
+		$url      = $entry['url'];
+		$location = $entry['location'] ?? '';
 		$matches  = '' !== $location
 			? self::location( $info ) === $location
 			: self::url(
@@ -201,7 +280,15 @@ final class Saved_Image {
 				)
 			) === $url;
 
-		return $matches && self::exists( $url );
+		if ( ! $matches || ! self::exists( $url ) ) {
+			return null;
+		}
+
+		if ( ! self::exists( $entry['url_2x'] ) ) {
+			$entry['url_2x'] = '';
+		}
+
+		return $entry;
 	}
 
 	/**
@@ -212,12 +299,13 @@ final class Saved_Image {
 	 *
 	 * @since TBD
 	 *
-	 * @param int                                                $post_id  Venue post ID.
-	 * @param array<string, array<string, array<string, mixed>>> $previous Descriptors from before the meta was cleared.
-	 * @param array<string, string>                              $info     Parsed venue information.
-	 * @param string                                             $slug     Provider slug.
-	 * @param string                                             $key      Combo key from `Map::combo_key()`.
-	 * @param array{0: int, 1: int, 2: int, 3: string}           $combo    Zoom, width, height and normalized map type.
+	 * @param int                                      $post_id  Venue post ID.
+	 * @param array<string, mixed>                     $previous Descriptors from before the meta was cleared.
+	 * @param array<string, string>                    $info     Parsed venue information.
+	 * @param string                                   $slug     Provider slug.
+	 * @param string                                   $key      Combo key from `Map::combo_key()`.
+	 * @param array{0: int, 1: int, 2: int, 3: string} $combo    Zoom, width, height and normalized map type.
+	 * @phpstan-param ProviderDescriptorMap $previous
 	 *
 	 * @return void
 	 */
@@ -230,8 +318,9 @@ final class Saved_Image {
 		array $combo
 	): void {
 		$entry = $previous[ $slug ][ $key ] ?? null;
+		$entry = null === $entry ? null : self::usable( $entry, $info, $slug, $combo );
 
-		if ( null === $entry || ! self::is_usable( $entry, $info, $slug, $combo ) ) {
+		if ( null === $entry ) {
 			return;
 		}
 

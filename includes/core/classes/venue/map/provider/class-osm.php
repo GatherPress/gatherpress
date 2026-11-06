@@ -458,8 +458,8 @@ final class OSM extends Base {
 	 * Where the tiles come from, for the static map cache.
 	 *
 	 * Saved maps render again when the tile URL or the CARTO key changes.
-	 * The key is replaced with a salted hash of it, so its value stays out
-	 * of the cache hash.
+	 * The key is replaced with a hash of it, so its value stays out of the
+	 * cache hash.
 	 *
 	 * @since TBD
 	 *
@@ -468,7 +468,8 @@ final class OSM extends Base {
 	public function get_cache_source(): string {
 		return (string) preg_replace_callback(
 			'/([?&]key=)([^&]*)/',
-			static fn( array $matches ): string => $matches[1] . wp_hash( $matches[2] ),
+			// md5() here only keeps the key out of the cache hash.
+			static fn( array $matches ): string => $matches[1] . md5( $matches[2] ), // NOSONAR.
 			$this->get_tile_url_template()
 		);
 	}

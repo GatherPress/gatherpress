@@ -56,6 +56,27 @@ class Test_Saved_Image extends Base {
 	}
 
 	/**
+	 * A saved descriptor with the given fields.
+	 *
+	 * @param array<string, string> $fields Fields to set.
+	 *
+	 * @return array{url: string, url_2x: string, hash: string, location?: string, zoom: int, width: int, height: int}
+	 */
+	private function entry( array $fields ): array {
+		return array_merge(
+			array(
+				'url'    => '',
+				'url_2x' => '',
+				'hash'   => 'saved',
+				'zoom'   => 15,
+				'width'  => 800,
+				'height' => 400,
+			),
+			$fields
+		);
+	}
+
+	/**
 	 * URL of the shared combo without a hash.
 	 *
 	 * @return string The URL.
@@ -155,42 +176,131 @@ class Test_Saved_Image extends Base {
 
 	/**
 	 * A saved image is usable for the same location when its PNG exists,
-	 * matched on `location` when stored and on the URL otherwise.
+	 * matched on `location` when stored and on the URL otherwise. A missing
+	 * 2x PNG is left out.
 	 *
 	 * @since TBD
 	 *
-	 * @covers ::is_usable
+	 * @covers ::usable
 	 *
 	 * @return void
 	 */
-	public function test_is_usable(): void {
+	public function test_usable(): void {
 		$url   = $this->legacy_url();
 		$path  = $this->touch_image( $url );
 		$moved = array_merge( self::INFO, array( 'latitude' => '37.3400' ) );
 
-		$this->assertTrue( Saved_Image::is_usable( array( 'url' => $url ), self::INFO, 'osm', self::COMBO ) );
-		$this->assertFalse(
-			Saved_Image::is_usable( array( 'url' => $url ), $moved, 'osm', self::COMBO ),
+		$legacy = $this->entry( array( 'url' => $url ) );
+
+		$this->assertSame( $legacy, Saved_Image::usable( $legacy, self::INFO, 'osm', self::COMBO ) );
+		$this->assertNull(
+			Saved_Image::usable( $legacy, $moved, 'osm', self::COMBO ),
 			'Failed to assert a URL for another location is not usable.'
 		);
 
-		$entry = array(
-			'url'      => 'https://cdn.example.test/map.png',
-			'location' => Saved_Image::location( self::INFO ),
+		$entry = $this->entry(
+			array(
+				'url'      => 'https://cdn.example.test/map.png',
+				'url_2x'   => 'https://cdn.example.test/map@2x.png',
+				'location' => Saved_Image::location( self::INFO ),
+			)
 		);
 
-		$this->assertTrue( Saved_Image::is_usable( $entry, self::INFO, 'osm', self::COMBO ) );
-		$this->assertFalse(
-			Saved_Image::is_usable( $entry, $moved, 'osm', self::COMBO ),
+		$this->assertSame( $entry, Saved_Image::usable( $entry, self::INFO, 'osm', self::COMBO ) );
+		$this->assertNull(
+			Saved_Image::usable( $entry, $moved, 'osm', self::COMBO ),
 			'Failed to assert a stored location for another place is not usable.'
+		);
+
+		$missing_2x = $this->entry(
+			array(
+				'url'    => $url,
+				'url_2x' => Saved_Image::url( 'qa-missing@2x.png' ),
+			)
+		);
+
+		$this->assertSame(
+			'',
+			Saved_Image::usable( $missing_2x, self::INFO, 'osm', self::COMBO )['url_2x'] ?? null,
+			'Failed to assert a missing 2x PNG is left out.'
 		);
 
 		wp_delete_file( $path );
 
-		$this->assertFalse(
-			Saved_Image::is_usable( array( 'url' => $url ), self::INFO, 'osm', self::COMBO ),
+		$this->assertNull(
+			Saved_Image::usable( $legacy, self::INFO, 'osm', self::COMBO ),
 			'Failed to assert a missing PNG is not usable.'
 		);
+	}
+
+	/**
+	 * A PNG no venue points at is deleted, and one a venue still uses is kept.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::delete_all_unused
+	 * @covers ::delete_unused
+	 * @covers ::path
+	 *
+	 * @return void
+	 */
+	public function test_delete_unused(): void {
+		$used     = Saved_Image::url( 'qa-used-map.png' );
+		$unused   = Saved_Image::url( 'qa-unused-map.png' );
+		$used_2x  = Saved_Image::url( 'qa-used-map@2x.png' );
+		$paths    = array( $this->touch_image( $used ), $this->touch_image( $unused ), $this->touch_image( $used_2x ) );
+		$venue_id = $this->factory->post->create();
+
+		update_post_meta(
+			$venue_id,
+			Map::META_KEY,
+			array(
+				'osm' => array(
+					'15x800x400xroadmap' => array(
+						'url'    => $used,
+						'url_2x' => $used_2x,
+					),
+				),
+			)
+		);
+
+		Saved_Image::delete_all_unused(
+			array(
+				'osm' => array(
+					'15x800x400xroadmap' => array(
+						'url'    => $used,
+						'url_2x' => $unused,
+					),
+				),
+			)
+		);
+		Saved_Image::delete_unused( array( 'url' => 'https://cdn.example.test/map.png' ) );
+		Saved_Image::delete_unused( array( 'url' => Saved_Image::url( 'qa-never-saved.png' ) ) );
+
+		$this->assertFileExists( $paths[0], 'Failed to assert a PNG a venue uses is kept.' );
+		$this->assertFileDoesNotExist( $paths[1], 'Failed to assert an unused PNG is deleted.' );
+
+		update_post_meta(
+			$venue_id,
+			Map::META_KEY,
+			array(
+				'osm' => array(
+					'15x800x400xroadmap' => array(
+						'url'    => Saved_Image::url( 'big-qa-used-map.png' ),
+						'url_2x' => Saved_Image::url( 'qa-used-map@2x.png.old' ),
+					),
+				),
+			)
+		);
+		Saved_Image::delete_unused(
+			array(
+				'url'    => $used,
+				'url_2x' => $used_2x,
+			)
+		);
+
+		$this->assertFileDoesNotExist( $paths[0], 'Failed to assert a longer name ending the same way keeps no PNG.' );
+		$this->assertFileDoesNotExist( $paths[2], 'Failed to assert a longer name with the same start keeps no PNG.' );
 	}
 
 	/**
@@ -206,9 +316,11 @@ class Test_Saved_Image extends Base {
 	public function test_restore(): void {
 		$post_id  = $this->factory->post->create();
 		$key      = '15x800x400xroadmap';
-		$entry    = array(
-			'url'      => 'https://cdn.example.test/map.png',
-			'location' => Saved_Image::location( self::INFO ),
+		$entry    = $this->entry(
+			array(
+				'url'      => 'https://cdn.example.test/map.png',
+				'location' => Saved_Image::location( self::INFO ),
+			)
 		);
 		$previous = array( 'osm' => array( $key => $entry ) );
 

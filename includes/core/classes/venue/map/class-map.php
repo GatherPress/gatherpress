@@ -324,7 +324,7 @@ final class Map {
 		// hook, but trailing the default batch is the cheapest guard
 		// against future ordering surprises.
 		add_action( 'wp_after_insert_post', array( $this, 'maybe_generate' ), 11 );
-		add_action( 'registered_post_type', array( $this, 'maybe_register_delete_hook' ) );
+		add_action( 'before_delete_post', array( $this, 'maybe_delete_stored_image' ), 10, 2 );
 		add_filter( 'block_type_metadata', array( $this, 'apply_block_attribute_defaults' ) );
 		// React to provider changes so a `map_platform` switch schedules
 		// the same prewarm pass that runs on theme switches.
@@ -456,26 +456,22 @@ final class Map {
 	}
 
 	/**
-	 * Wire `delete_post_{$type}` → `delete_stored_image` for venue post types.
+	 * Delete a venue's saved maps before the venue is deleted.
 	 *
-	 * Mirrors the registered_post_type pattern used elsewhere so companion
-	 * plugins declaring custom venue post types automatically get cleanup.
+	 * Runs on `before_delete_post`, while the venue still has its saved
+	 * maps: by `delete_post_{$post_type}`, core has deleted the post meta.
 	 *
-	 * @since 0.34.0
+	 * @since TBD
 	 *
-	 * @param string $post_type The post type that was just registered.
+	 * @param int     $post_id The post ID being deleted.
+	 * @param WP_Post $post    The post being deleted.
 	 *
 	 * @return void
 	 */
-	public function maybe_register_delete_hook( string $post_type ): void {
-		if ( ! post_type_supports( $post_type, Venue::SUPPORT ) ) {
-			return;
+	public function maybe_delete_stored_image( int $post_id, WP_Post $post ): void {
+		if ( post_type_supports( $post->post_type, Venue::SUPPORT ) ) {
+			$this->delete_stored_image( $post_id );
 		}
-
-		add_action(
-			sprintf( 'delete_post_%s', $post_type ),
-			array( $this, 'delete_stored_image' )
-		);
 	}
 
 	/**
@@ -714,17 +710,17 @@ final class Map {
 	 * Delete every stored static-map PNG (at any zoom) and clear the meta.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Deletes the PNG files no other venue uses.
 	 *
 	 * @param int $post_id The venue post ID.
 	 *
 	 * @return void
 	 */
 	public function delete_stored_image( int $post_id ): void {
-		// Filenames are derived from address + dims, so the same PNG on disk
-		// may be shared with other venues at the same address. Clearing the
-		// meta is enough — a follow-up GC pass can sweep truly orphaned
-		// files when no venue's descriptor points at them any longer.
+		$previous = $this->get_all_descriptors( $post_id );
+
 		delete_post_meta( $post_id, self::META_KEY );
+		Saved_Image::delete_all_unused( $previous );
 	}
 
 	/**
@@ -742,10 +738,12 @@ final class Map {
 	 *
 	 * Returns the fresh descriptor map so the caller — typically the block
 	 * editor's "Regenerate Map" REST endpoint — can hand the new URLs
-	 * straight back to the client without a second DB round-trip.
+	 * straight back to the client without a second DB round-trip. Returns
+	 * an empty array when no combo rendered.
 	 *
 	 * @since 0.34.0
-	 * @since TBD Keeps the saved image for a combo that fails to render.
+	 * @since TBD Keeps the saved image for a combo that fails to render, returns an empty
+	 *            array when no combo rendered, and deletes the PNG files no venue uses.
 	 *
 	 * @param int               $post_id     The venue post ID.
 	 * @param ComboRequest|null $extra_combo Optional extra combo to include, in the
@@ -756,8 +754,7 @@ final class Map {
 	 * @return ProviderDescriptorMap
 	 */
 	public function regenerate( int $post_id, ?array $extra_combo = null ): array {
-		// Cache the combos we want to rebuild before wiping meta —
-		// delete_stored_image() clears META_KEY, which is where
+		// Cache the combos we want to rebuild before wiping meta, which is where
 		// get_cached_combos() reads from.
 		$combos   = $this->get_cached_combos( $post_id );
 		$map_type = $this->normalize_map_type( (string) ( $extra_combo['map_type'] ?? '' ) );
@@ -804,8 +801,10 @@ final class Map {
 		// Kept so a combo that fails to render keeps its saved image.
 		$previous    = $this->get_all_descriptors( $post_id );
 		$active_slug = Manager::get_instance()->get_active_slug();
+		$rendered    = false;
 
-		$this->delete_stored_image( $post_id );
+		// The files stay until the end, for the combos that fail to render.
+		delete_post_meta( $post_id, self::META_KEY );
 
 		if ( empty( $combos ) ) {
 			// Seed the site-default combo so a never-rendered venue still
@@ -830,6 +829,8 @@ final class Map {
 
 		if ( null === $this->parse_coord( $info['latitude'] ) ||
 			null === $this->parse_coord( $info['longitude'] ) ) {
+			Saved_Image::delete_all_unused( $previous );
+
 			return array();
 		}
 
@@ -844,6 +845,8 @@ final class Map {
 				$combo_map_type
 			);
 
+			$rendered = $rendered || null !== $descriptor;
+
 			if ( null === $descriptor ) {
 				$parts = array(
 					$this->clamp_zoom( (int) $combo['zoom'] ),
@@ -856,7 +859,10 @@ final class Map {
 			}
 		}
 
-		return $this->get_all_descriptors( $post_id );
+		Saved_Image::delete_all_unused( $previous );
+
+		// No combo rendered, so the REST handler reports `generation_failed`.
+		return $rendered ? $this->get_all_descriptors( $post_id ) : array();
 	}
 
 	/**
@@ -992,8 +998,9 @@ final class Map {
 				continue;
 			}
 
-			if ( Saved_Image::is_usable( $combos[ $key ], $info, $slug, $combo ) ) {
-				$fallback = $combos[ $key ];
+			$fallback = Saved_Image::usable( $combos[ $key ], $info, $slug, $combo );
+
+			if ( null !== $fallback ) {
 				break;
 			}
 		}
@@ -1367,13 +1374,21 @@ final class Map {
 
 		$retina_enabled = $this->should_generate_retina();
 
-		$expected_url = Saved_Image::versioned(
-			$this->build_image_url( $address, $latitude, $longitude, $zoom, $width, $height, $slug, 1, $map_type ),
-			$hash
+		// A map saved before file names carried the hash keeps its URL.
+		$plain_url    = $this->build_image_url(
+			$address,
+			$latitude,
+			$longitude,
+			$zoom,
+			$width,
+			$height,
+			$slug,
+			1,
+			$map_type
 		);
 		$has_valid_1x = null !== $existing
 			&& $existing['hash'] === $hash
-			&& $expected_url === $existing['url']
+			&& in_array( $existing['url'], array( Saved_Image::versioned( $plain_url, $hash ), $plain_url ), true )
 			&& Saved_Image::exists( $existing['url'] );
 		$needs_retina = $retina_enabled
 			&& ( null === $existing || '' === $existing['url_2x'] || ! Saved_Image::exists( $existing['url_2x'] ) );
@@ -1396,9 +1411,7 @@ final class Map {
 			// provider can't satisfy this combo. Keep showing a saved image
 			// for the same location rather than persisting a half-baked entry.
 			if ( null === $image ) {
-				$usable = null !== $existing && Saved_Image::is_usable( $existing, $info, $slug, $combo );
-
-				return $usable ? $existing : null;
+				return null === $existing ? null : Saved_Image::usable( $existing, $info, $slug, $combo );
 			}
 
 			$url = $this->save_image(
@@ -1480,6 +1493,8 @@ final class Map {
 		) {
 			return null;
 		}
+
+		Saved_Image::delete_unused( $existing ?? array() );
 
 		return $all[ $slug ][ $key ];
 	}
