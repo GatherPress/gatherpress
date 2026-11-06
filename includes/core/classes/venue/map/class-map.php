@@ -1635,7 +1635,6 @@ final class Map {
 		);
 	}
 
-
 	/**
 	 * Compose a filesystem-safe filename from the address, coordinates and dimensions.
 	 *
