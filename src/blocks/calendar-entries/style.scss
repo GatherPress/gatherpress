@@ -7,6 +7,8 @@ $trigger: ".gatherpress-modal--trigger-open:not(.wp-block-gatherpress-modal *) >
 $time-grid-top: var(--gatherpress-calendar-time-grid-top);
 $start-time: ".wp-block-gatherpress-event-date:not(.gatherpress-modal--trigger-open):not(.wp-block-gatherpress-modal *)";
 $gap: var(--gatherpress-calendar-column-gap, 2px);
+// How far a span piece reaches into the next day: the gap, plus the padding of a Classic day.
+$reach: var(--gatherpress-calendar-span-reach, #{$gap});
 $modal-open-state: ".wp-block-gatherpress-modal.gatherpress--is-visible";
 $entry: ".wp-block-gatherpress-calendar-entries .gatherpress-calendar__entry";
 $wide-ribbon-entry: ".gatherpress-calendar__day.is-style-ribbon .wp-block-gatherpress-calendar-entries:not(.is-style-dots) .gatherpress-calendar__entry";
@@ -107,17 +109,18 @@ $wide-ribbon-entry: ".gatherpress-calendar__day.is-style-ribbon .wp-block-gather
 		border-end-start-radius: var(--gatherpress-entry-track-radius, 4px);
 		border-start-end-radius: 0;
 		border-end-end-radius: 0;
-		width: calc(100% + #{$gap});
-		margin-inline-end: calc(-1 * #{$gap});
-		padding-inline-end: #{$gap};
+		width: calc(100% + #{$reach});
+		max-width: calc(100% + #{$reach});
+		margin-inline-end: calc(-1 * #{$reach});
+		padding-inline-end: #{$reach};
 	}
 
 	&.gatherpress--is-span-middle {
 		border-radius: 0;
-		width: calc(100% + (2 * #{$gap}));
-		max-width: calc(100% + (2 * #{$gap}));
-		margin-inline: calc(-1 * #{$gap});
-		padding-inline: #{$gap};
+		width: calc(100% + (2 * #{$reach}));
+		max-width: calc(100% + (2 * #{$reach}));
+		margin-inline: calc(-1 * #{$reach});
+		padding-inline: #{$reach};
 	}
 
 	&.gatherpress--is-span-end {
@@ -125,15 +128,16 @@ $wide-ribbon-entry: ".gatherpress-calendar__day.is-style-ribbon .wp-block-gather
 		border-end-start-radius: 0;
 		border-start-end-radius: var(--gatherpress-entry-track-radius, 4px);
 		border-end-end-radius: var(--gatherpress-entry-track-radius, 4px);
-		width: calc(100% + #{$gap});
-		margin-inline-end: calc(-1 * #{$gap});
-		padding-inline-end: #{$gap};
+		width: calc(100% + #{$reach});
+		max-width: calc(100% + #{$reach});
+		margin-inline-start: calc(-1 * #{$reach});
+		padding-inline-start: #{$reach};
 	}
 
 	// The span goes on in the next week row: stop at the row's end with an arrow.
 	&.gatherpress--is-span-continues {
 		margin-inline-end: 0;
-		width: calc(100% + #{$gap});
+		width: calc(100% + #{$reach});
 		border-start-end-radius: 0;
 		border-end-end-radius: 0;
 		padding-inline-end: 0.625rem;
@@ -146,7 +150,7 @@ $wide-ribbon-entry: ".gatherpress-calendar__day.is-style-ribbon .wp-block-gather
 			width: 0;
 			height: 0;
 			border-block: var(--gatherpress-arrow-size, 3px) solid transparent;
-			border-inline-start: calc(var(--gatherpress-arrow-size, 3px) + 1px) solid currentcolor;
+			border-inline-start: calc(var(--gatherpress-arrow-size, 3px) + 1px) solid var(--gatherpress-calendar-ribbon-color, currentcolor);
 			pointer-events: none;
 		}
 	}
@@ -166,9 +170,23 @@ $wide-ribbon-entry: ".gatherpress-calendar__day.is-style-ribbon .wp-block-gather
 			width: 0;
 			height: 0;
 			border-block: var(--gatherpress-arrow-size, 3px) solid transparent;
-			border-inline-end: calc(var(--gatherpress-arrow-size, 3px) + 1px) solid currentcolor;
+			border-inline-end: calc(var(--gatherpress-arrow-size, 3px) + 1px) solid var(--gatherpress-calendar-ribbon-color, currentcolor);
 			pointer-events: none;
 		}
+	}
+
+	// A piece at a row's edge does not reach past it: only a middle piece still
+	// reaches the next day on its other side.
+	&.gatherpress--is-span-start.gatherpress--is-span-continues,
+	&.gatherpress--is-span-end.gatherpress--is-span-continued,
+	&.gatherpress--is-span-continues.gatherpress--is-span-continued {
+		width: 100%;
+		max-width: 100%;
+	}
+
+	&.gatherpress--is-span-middle.gatherpress--is-span-continued:not(.gatherpress--is-span-continues) {
+		width: calc(100% + #{$reach});
+		max-width: calc(100% + #{$reach});
 	}
 }
 
@@ -317,7 +335,7 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
 		#{$trigger} {
 			@include text-truncate;
 
-			color: inherit;
+			color: var(--gatherpress-calendar-ribbon-color);
 			padding-inline: 0.375rem;
 			display: block;
 			min-width: 0;
@@ -396,6 +414,18 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
 @mixin apply-compact-dots {
 	// The height of a dot or a track with its margins: the slot rows of a ribbon day.
 	--gatherpress-calendar-slot-row-height: 14px;
+
+	// A Classic day lays its dots and bars on the week's slot rows too, so a span
+	// stays on the same row in each of its days.
+	.gatherpress-calendar__day:not(.is-style-ribbon) & {
+		display: grid;
+		grid-auto-rows: minmax(var(--gatherpress-calendar-slot-row-height), auto);
+		align-content: start;
+
+		.gatherpress-calendar__entry {
+			grid-row-start: calc(var(--gatherpress-calendar-entry-slot, 0) + 1);
+		}
+	}
 
 	#{$start-time} {
 		@include visually-hidden;

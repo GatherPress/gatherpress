@@ -8,7 +8,8 @@
 	--gatherpress-calendar-header-color: var(--wp--preset--color--base, canvas);
 	--gatherpress-calendar-day-today-outline: transparent;
 	--gatherpress-calendar-day-today-color: var(--wp--preset--color--base, #fff);
-	--gatherpress-calendar-ribbon-mix-target: currentcolor;
+	--gatherpress-calendar-ribbon-color: var(--wp--preset--color--base, #fff);
+	--gatherpress-calendar-ribbon-mix-target: var(--wp--preset--color--contrast, #000);
 
 	.gatherpress-calendar__table {
 		gap: var(--gatherpress-calendar-column-gap);
@@ -57,7 +58,8 @@
 		BLOCK STYLE: Dots
 		====================================================================== */
 	.wp-block-gatherpress-calendar-entries.is-style-dots {
-		.gatherpress-modal--trigger-open:not(.wp-block-gatherpress-modal *) > * {
+		// A multi-day or all-day entry is a bar, so only a dot gets these.
+		.gatherpress-calendar__entry:not(.gatherpress--is-multi-day, .gatherpress--is-all-day) .gatherpress-modal--trigger-open:not(.wp-block-gatherpress-modal *) > * {
 			width: clamp(12px, 2.8vw, 16px);
 			height: clamp(12px, 2.8vw, 16px);
 			min-width: clamp(12px, 2.8vw, 16px);
