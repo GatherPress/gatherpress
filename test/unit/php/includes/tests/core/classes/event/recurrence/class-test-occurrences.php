@@ -241,7 +241,7 @@ class Test_Occurrences extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_sync_single_skips_an_unparseable_start(): void {
+	public function test_sync_single_skips_an_unparsable_start(): void {
 		$post_id = $this->create_event();
 
 		Occurrences::get_instance()->sync_single(
