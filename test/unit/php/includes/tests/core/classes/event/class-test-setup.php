@@ -3079,6 +3079,66 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * A theme font size is fluid when the theme turns fluid type on, as it is
+	 * for a Topic.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::add_theme_status_styles
+	 *
+	 * @return void
+	 */
+	public function test_add_theme_status_styles_makes_the_font_size_fluid(): void {
+		register_block_style(
+			'core/post-terms',
+			array(
+				'name'       => 'gatherpress-test-fluid',
+				'label'      => 'Test fluid',
+				'style_data' => array(
+					'typography' => array( 'fontSize' => '20px' ),
+					'elements'   => array(
+						'link' => array(
+							'border' => array(
+								'radius' => '20px',
+								'width'  => '1px',
+								'style'  => 'solid',
+							),
+						),
+					),
+				),
+			)
+		);
+
+		$callback = static function ( WP_Theme_JSON_Data $data ): WP_Theme_JSON_Data {
+			return $data->update_with(
+				array(
+					'version'  => 3,
+					'settings' => array( 'typography' => array( 'fluid' => true ) ),
+				)
+			);
+		};
+
+		add_filter( 'wp_theme_json_data_theme', $callback );
+
+		$css = $this->get_theme_status_styles();
+
+		remove_filter( 'wp_theme_json_data_theme', $callback );
+		unregister_block_style( 'core/post-terms', 'gatherpress-test-fluid' );
+		WP_Theme_JSON_Resolver::clean_cached_data();
+
+		$this->assertMatchesRegularExpression(
+			'/is-style-gatherpress-test-fluid\{[^}]*font-size:clamp\(/',
+			$css,
+			'Failed to assert the style font size is fluid.'
+		);
+		$this->assertStringNotContainsString(
+			'font-size:20px;',
+			$css,
+			'Failed to assert the fixed font size is replaced.'
+		);
+	}
+
+	/**
 	 * Badge and Dot keep the plugin look, even with style data from the
 	 * Site Editor.
 	 *

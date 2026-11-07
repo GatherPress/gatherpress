@@ -407,14 +407,20 @@ final class Setup {
 			// The plugin sets typography defaults on the block, which would hide the
 			// typography of the theme. Give them up and set the theme's own again, from
 			// the block and then from the style, as the cascade does for a Topic.
-			$typography = wp_style_engine_get_styles(
-				array(
-					'typography' => array_merge(
-						(array) ( $block['typography'] ?? array() ),
-						(array) ( $variation['typography'] ?? array() )
-					),
-				)
+			$typography_styles = array_merge(
+				(array) ( $block['typography'] ?? array() ),
+				(array) ( $variation['typography'] ?? array() )
 			);
+
+			// Core makes a theme font size fluid when the theme turns fluid type on, as
+			// it does for a Topic. A preset reference comes back unchanged.
+			if ( isset( $typography_styles['fontSize'] ) && is_string( $typography_styles['fontSize'] ) ) {
+				$typography_styles['fontSize'] = wp_get_typography_font_size_value(
+					array( 'size' => $typography_styles['fontSize'] )
+				);
+			}
+
+			$typography = wp_style_engine_get_styles( array( 'typography' => $typography_styles ) );
 
 			// Core drops the css key here too when the theme sets no typography.
 			$typography_css = empty( $typography['css'] ) ? '' : $typography['css'];
