@@ -28,6 +28,8 @@
  *   - SECURITY.md                 supported-versions table (core + alpha)
  *   - ../gatherpress-alpha/gatherpress-alpha.php  lockstep Version: header
  *                                 (skipped with a warning when not checked out)
+ *   - ../gatherpress-alpha/.github/changelog/sync-X-Y-Z  for a stable version,
+ *                                 when Alpha has no changelog entries
  *
  * @package GatherPress
  *
@@ -510,6 +512,51 @@ function patch_security_table( $file, $major_minor, $label ) {
 	);
 }
 
+/**
+ * Add GatherPress Alpha's sync changelog entry for a stable version.
+ *
+ * Alpha's release rolls up its changelog entries into the release notes, and
+ * fails when there are none. A core release with no Alpha changes leaves Alpha
+ * with no entries, so this adds the one entry that says Alpha tracks the
+ * release. A branch that already has entries is left alone, and so is a
+ * pre-release, which Alpha releases with whatever entries its develop has.
+ *
+ * @param string $alpha_dir Absolute path to the GatherPress Alpha checkout.
+ * @param string $version   The version being generated.
+ * @return void
+ */
+function add_alpha_sync_entry( $alpha_dir, $version ) {
+	if ( preg_match( '/-(alpha|beta)\./', $version ) ) {
+		return;
+	}
+
+	$changelog_dir = $alpha_dir . '/.github/changelog';
+
+	if ( ! is_dir( $changelog_dir ) ) {
+		warning( 'GatherPress Alpha has no .github/changelog directory; skipping its sync entry.' );
+
+		return;
+	}
+
+	// glob() skips dotfiles, so the directory's .gitkeep does not count.
+	if ( glob( $changelog_dir . '/*' ) ) {
+		success( 'GatherPress Alpha already has changelog entries; no sync entry needed.' );
+
+		return;
+	}
+
+	$kind = preg_match( '/^\d+\.\d+\.0$/', $version ) ? 'release' : 'patch release';
+	$file = $changelog_dir . '/sync-' . str_replace( '.', '-', $version );
+	$body = "Significance: patch\nType: changed\n\n"
+		. "Track the GatherPress {$version} {$kind}, which the plugin is version-locked to.\n";
+
+	if ( file_put_contents( $file, $body ) === false ) {
+		fail( "Could not write {$file}." );
+	}
+
+	success( 'Added the GatherPress Alpha sync changelog entry.' );
+}
+
 // ---------------------------------------------------------------------------
 // Main.
 // ---------------------------------------------------------------------------
@@ -583,6 +630,7 @@ if ( is_dir( $alpha_dir ) ) {
 		'GatherPress Alpha Version header'
 	);
 	patch_security_table( $alpha_dir . '/SECURITY.md', $major_minor, 'alpha' );
+	add_alpha_sync_entry( $alpha_dir, $version );
 } else {
 	warning(
 		'GatherPress Alpha plugin not found alongside core; skipping alpha version sync. '
