@@ -204,11 +204,3 @@ $span-width: calc(var(--gatherpress-calendar-row-span, 1) * 100% + (var(--gather
 #{$day}.gatherpress--is-inactive-empty-day .wp-block-gatherpress-calendar-entries {
 	display: none;
 }
-
-// A Ribbon day controls its own layout, so its layout controls are hidden.
-body:has(.gatherpress-calendar__day.is-style-ribbon.is-selected) .block-editor-block-inspector .components-panel__body:has(.block-editor-hooks__layout-controls),
-body:has(.gatherpress-calendar__day.is-style-ribbon.is-selected) .block-editor-block-toolbar .components-toolbar-group:has([aria-label*="Justification"]),
-body:has(.gatherpress-calendar__day.is-style-ribbon .is-selected) .block-editor-block-inspector .components-panel__body:has(.block-editor-hooks__layout-controls),
-body:has(.gatherpress-calendar__day.is-style-ribbon .is-selected) .block-editor-block-toolbar .components-toolbar-group:has([aria-label*="Justification"]) {
-	display: none !important;
-}
