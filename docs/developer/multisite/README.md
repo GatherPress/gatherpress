@@ -63,6 +63,7 @@ Resources no single site owns are handled separately by `applies_to_network()`: 
 |---|---|
 | Events, venues, topics, RSVPs | Per site |
 | The `gatherpress_events` table | Per site, one per site prefix |
+| The `gatherpress_event_occurrences` table | Per site, one per site prefix |
 | Post meta, comment meta, term meta | Per site |
 | Settings (`gatherpress_settings`) | Per site, unless the key is inherited |
 | Network settings (`gatherpress_network_settings`) | Network |
