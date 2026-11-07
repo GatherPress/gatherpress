@@ -147,6 +147,12 @@ class Test_Map extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'deleted_post',
+				'priority' => 10,
+				'callback' => array( $instance, 'maybe_delete_stored_image' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'update_option_gatherpress_settings',
 				'priority' => 10,
 				'callback' => array( $instance, 'maybe_handle_settings_change' ),
@@ -390,6 +396,209 @@ class Test_Map extends Base {
 		$this->assertSame( 18, $result['attributes']['zoom']['default'] );
 		$this->assertSame( 300, $result['attributes']['height']['default'] );
 		$this->assertSame( 'roadmap', $result['attributes']['type']['default'] );
+	}
+
+	/**
+	 * A venue deleted while its map renders, as when a prewarm job runs
+	 * during the delete, keeps no saved map or PNG files, whether the map
+	 * is written before or after core deletes the venue's meta. A file
+	 * another venue uses stays.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::ensure_descriptor_for_combo
+	 * @covers ::maybe_delete_stored_image
+	 *
+	 * @return void
+	 */
+	public function test_ensure_descriptor_for_combo_saves_nothing_for_a_venue_deleted_during_the_render(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$info     = array(
+			'address'   => '1 Infinite Loop',
+			'latitude'  => '37.3318',
+			'longitude' => '-122.0312',
+		);
+		$args     = array( $post_id, $info, Map::DEFAULT_ZOOM, 800, 400 );
+		$delete   = static function ( $preempt ) use ( $post_id ) {
+			$post = get_post( $post_id );
+
+			if ( null !== $post ) {
+				wp_delete_post( $post_id, true );
+				// Another request deleted it, so this request's cache still holds the venue.
+				wp_cache_set( $post_id, $post, 'posts' );
+			}
+
+			return $preempt;
+		};
+
+		add_filter( 'pre_http_request', $delete, 9 );
+		$result = Utility::invoke_hidden_method( $instance, 'ensure_descriptor_for_combo', $args );
+		remove_filter( 'pre_http_request', $delete, 9 );
+
+		$files = glob( wp_get_upload_dir()['basedir'] . '/' . Map::UPLOADS_SUBDIR . '/1-infinite-loop-*-800-400-*' );
+
+		$this->assertNull( $result, 'Failed to assert nothing is saved.' );
+		$this->assertSame( array(), get_post_meta( $post_id ), 'Failed to assert the deleted venue has no meta.' );
+		$this->assertSame( array(), $files, 'Failed to assert the PNG files are deleted.' );
+
+		// Deleted while the meta is written, after the render finished.
+		$late  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$write = static function ( $meta_id, int $object_id ) use ( $late ): void {
+			global $wpdb;
+
+			if ( $late === $object_id ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Stands in for a delete from another request.
+				$wpdb->delete( $wpdb->posts, array( 'ID' => $late ) );
+			}
+		};
+
+		add_action( 'added_post_meta', $write, 10, 2 );
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'ensure_descriptor_for_combo',
+			array( $late, $info, Map::DEFAULT_ZOOM, 800, 400 )
+		);
+		remove_action( 'added_post_meta', $write, 10 );
+
+		$this->assertNull( $result, 'Failed to assert nothing is saved for a venue deleted during the write.' );
+		$this->assertSame(
+			'',
+			get_post_meta( $late, Map::META_KEY, true ),
+			'Failed to assert the written map is removed.'
+		);
+		$this->assertSame(
+			array(),
+			glob( wp_get_upload_dir()['basedir'] . '/' . Map::UPLOADS_SUBDIR . '/1-infinite-loop-*-800-400-*' ),
+			'Failed to assert the PNG files are deleted after the write.'
+		);
+
+		// Written while the venue is deleted, after core read its meta, and
+		// checked before the post row is gone. The delete cleans it up.
+		$during = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$render = static function ( int $post_id ) use ( $instance, $during, $info ): void {
+			if ( $during === $post_id ) {
+				Utility::invoke_hidden_method(
+					$instance,
+					'ensure_descriptor_for_combo',
+					array( $during, $info, Map::DEFAULT_ZOOM, 800, 400 )
+				);
+			}
+		};
+
+		add_action( 'delete_post', $render );
+		wp_delete_post( $during, true );
+		remove_action( 'delete_post', $render );
+
+		$this->assertSame(
+			'',
+			get_post_meta( $during, Map::META_KEY, true ),
+			'Failed to assert a map written during the delete is removed.'
+		);
+		$this->assertSame(
+			array(),
+			glob( wp_get_upload_dir()['basedir'] . '/' . Map::UPLOADS_SUBDIR . '/1-infinite-loop-*-800-400-*' ),
+			'Failed to assert the PNG files written during the delete are deleted.'
+		);
+
+		// Written after the saved maps are cleaned up and before core deletes
+		// the meta. Core deletes the map, and its files go with it.
+		$before = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$render = static function ( int $post_id ) use ( $instance, $before, $info ): void {
+			if ( $before === $post_id ) {
+				Utility::invoke_hidden_method(
+					$instance,
+					'ensure_descriptor_for_combo',
+					array( $before, $info, Map::DEFAULT_ZOOM, 800, 400 )
+				);
+			}
+		};
+
+		add_action( 'before_delete_post', $render, 11 );
+		wp_delete_post( $before, true );
+		remove_action( 'before_delete_post', $render, 11 );
+
+		$this->assertSame(
+			array(),
+			glob( wp_get_upload_dir()['basedir'] . '/' . Map::UPLOADS_SUBDIR . '/1-infinite-loop-*-800-400-*' ),
+			'Failed to assert the PNG files of a map core deleted are deleted.'
+		);
+		$this->assertFalse(
+			has_action( 'deleted_post_meta', array( Saved_Image::class, 'delete_deleted' ) ),
+			'Failed to assert the meta listener is removed after the delete.'
+		);
+
+		// Written by another request after this one cached the venue's meta
+		// as empty. The `deleted_post` cleanup reads the stored map anyway.
+		$stale = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$png   = Saved_Image::url( 'qa-stale-cache-map.png' );
+		$path  = $this->touch_image( $png );
+		$write = static function ( int $post_id ) use ( $stale, $png ): void {
+			global $wpdb;
+
+			if ( $stale !== $post_id ) {
+				return;
+			}
+
+			get_post_meta( $stale );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Stands in for a write from another request.
+			$wpdb->insert(
+				$wpdb->postmeta,
+				array(
+					'post_id'    => $stale,
+					'meta_key'   => Map::META_KEY, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+					'meta_value' => maybe_serialize( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+						array(
+							'osm' => array(
+								'16x800x400xroadmap' => array(
+									'url'    => $png,
+									'url_2x' => '',
+									'hash'   => 'stale',
+									'zoom'   => 16,
+									'width'  => 800,
+									'height' => 400,
+								),
+							),
+						)
+					),
+				)
+			);
+		};
+
+		add_action( 'delete_post', $write );
+		wp_delete_post( $stale, true );
+		remove_action( 'delete_post', $write );
+
+		$this->assertFileDoesNotExist( $path, 'Failed to assert the files of a map written later are deleted.' );
+		$this->assertSame( '', get_post_meta( $stale, Map::META_KEY, true ), 'Failed to assert that map is removed.' );
+
+		$other  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$shared = Utility::invoke_hidden_method(
+			$instance,
+			'ensure_descriptor_for_combo',
+			array( $other, $info, Map::DEFAULT_ZOOM, 800, 400 )
+		);
+		$gone   = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$delete = static function ( $preempt ) use ( $gone ) {
+			wp_delete_post( $gone, true );
+
+			return $preempt;
+		};
+
+		add_filter( 'pre_http_request', $delete, 9 );
+		Utility::invoke_hidden_method(
+			$instance,
+			'ensure_descriptor_for_combo',
+			array( $gone, $info, Map::DEFAULT_ZOOM, 800, 400 )
+		);
+		remove_filter( 'pre_http_request', $delete, 9 );
+
+		$this->assertFileExists(
+			$this->path_for_url( $shared['url'] ),
+			'Failed to assert a file another venue uses stays.'
+		);
+
+		$instance->delete_stored_image( $other );
 	}
 
 	/**

@@ -112,17 +112,32 @@ final class Saved_Image {
 	 * @return string[] The 1x and 2x URLs.
 	 */
 	public static function stored_urls( int $post_id ): array {
-		$urls   = array();
-		$stored = get_post_meta( $post_id, Map::META_KEY, true );
+		return self::urls( get_post_meta( $post_id, Map::META_KEY, true ) );
+	}
 
-		foreach ( is_array( $stored ) ? $stored : array() as $combos ) {
-			foreach ( is_array( $combos ) ? $combos : array() as $entry ) {
-				$urls[] = (string) ( $entry['url'] ?? '' );
-				$urls[] = (string) ( $entry['url_2x'] ?? '' );
-			}
+	/**
+	 * Delete the PNG files of a venue's maps that core deleted with the venue.
+	 *
+	 * Hooked on `deleted_post_meta` only while a venue is deleted, for a map
+	 * another request, such as a prewarm job, wrote after the venue's saved
+	 * maps were cleaned up.
+	 *
+	 * @since TBD
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) -- $meta_ids and $post_id are required by
+	 *                                                    the deleted_post_meta signature.
+	 *
+	 * @param string[] $meta_ids   Deleted meta IDs.
+	 * @param int      $post_id    Venue post ID.
+	 * @param string   $meta_key   Meta key.
+	 * @param mixed    $meta_value Deleted meta value.
+	 *
+	 * @return void
+	 */
+	public static function delete_deleted( array $meta_ids, int $post_id, string $meta_key, mixed $meta_value ): void {
+		if ( Map::META_KEY === $meta_key ) {
+			self::delete_unused_files( self::urls( $meta_value ) );
 		}
-
-		return array_values( array_filter( $urls ) );
 	}
 
 	/**
@@ -353,11 +368,47 @@ final class Saved_Image {
 	 * @return void
 	 */
 	public function delete_unused( array $keep = array() ): void {
+		self::delete_unused_files( array( $this->entry['url'], $this->entry['url_2x'] ), $keep );
+	}
+
+	/**
+	 * Get the PNG URLs in a stored map value.
+	 *
+	 * @since TBD
+	 *
+	 * @param mixed $stored Stored map meta.
+	 *
+	 * @return string[] The 1x and 2x URLs.
+	 */
+	private static function urls( mixed $stored ): array {
+		$urls = array();
+
+		foreach ( is_array( $stored ) ? $stored : array() as $combos ) {
+			foreach ( is_array( $combos ) ? $combos : array() as $entry ) {
+				$urls[] = (string) ( $entry['url'] ?? '' );
+				$urls[] = (string) ( $entry['url_2x'] ?? '' );
+			}
+		}
+
+		return array_values( array_filter( $urls ) );
+	}
+
+	/**
+	 * Delete the PNG files at these URLs that no venue uses any longer.
+	 *
+	 * @since TBD
+	 *
+	 * @param string[] $urls PNG URLs.
+	 * @param string[] $keep URLs to keep without a lookup.
+	 *
+	 * @return void
+	 */
+	private static function delete_unused_files( array $urls, array $keep = array() ): void {
 		global $wpdb;
 
 		$keep = array_map( array( self::class, 'without_query' ), $keep );
 
-		foreach ( array( $this->entry['url'], $this->entry['url_2x'] ) as $url ) {
+		foreach ( $urls as $url ) {
 			$url  = self::without_query( (string) $url );
 			$path = self::path( $url );
 

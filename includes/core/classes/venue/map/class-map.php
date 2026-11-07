@@ -325,6 +325,7 @@ final class Map {
 		// against future ordering surprises.
 		add_action( 'wp_after_insert_post', array( $this, 'maybe_generate' ), 11 );
 		add_action( 'before_delete_post', array( $this, 'maybe_delete_stored_image' ), 10, 2 );
+		add_action( 'deleted_post', array( $this, 'maybe_delete_stored_image' ), 10, 2 );
 		add_filter( 'block_type_metadata', array( $this, 'apply_block_attribute_defaults' ) );
 		// React to provider changes so a `map_platform` switch schedules
 		// the same prewarm pass that runs on theme switches.
@@ -456,10 +457,14 @@ final class Map {
 	}
 
 	/**
-	 * Delete a venue's saved maps before the venue is deleted.
+	 * Delete a venue's saved maps when the venue is deleted.
 	 *
 	 * Runs on `before_delete_post`, while the venue still has its saved
 	 * maps: by `delete_post_{$post_type}`, core has deleted the post meta.
+	 * Runs again on `deleted_post`, for a map another request, such as a
+	 * prewarm job, wrote while the venue was being deleted. In between,
+	 * {@see Saved_Image::delete_deleted()} deletes the files of a map core
+	 * deletes with the venue's meta.
 	 *
 	 * @since TBD
 	 *
@@ -469,9 +474,21 @@ final class Map {
 	 * @return void
 	 */
 	public function maybe_delete_stored_image( int $post_id, WP_Post $post ): void {
-		if ( post_type_supports( $post->post_type, Venue::SUPPORT ) ) {
-			$this->delete_stored_image( $post_id );
+		if ( ! post_type_supports( $post->post_type, Venue::SUPPORT ) ) {
+			return;
 		}
+
+		// While core deletes the venue's meta, it also deletes the files of a
+		// map written after the cleanup below. By `deleted_post`, another
+		// request may have written a map since this one cached the meta.
+		if ( doing_action( 'before_delete_post' ) ) {
+			add_action( 'deleted_post_meta', array( Saved_Image::class, 'delete_deleted' ), 10, 4 );
+		} else {
+			remove_action( 'deleted_post_meta', array( Saved_Image::class, 'delete_deleted' ), 10 );
+			wp_cache_delete( $post_id, 'post_meta' );
+		}
+
+		$this->delete_stored_image( $post_id );
 	}
 
 	/**
@@ -1326,7 +1343,8 @@ final class Map {
 	 *
 	 * @since 0.34.0
 	 * @since TBD Returns the saved image for the same location when the render fails,
-	 *            and renders again when the saved PNG is missing.
+	 *            renders again when the saved PNG is missing, and saves nothing for
+	 *            a venue deleted during the render.
 	 *
 	 * @param int                   $post_id  Venue post ID.
 	 * @param array<string, string> $info     Parsed venue information.
@@ -1456,6 +1474,19 @@ final class Map {
 		);
 
 		update_post_meta( $post_id, self::META_KEY, $all );
+
+		// A venue deleted while it rendered, for example during a prewarm job,
+		// keeps no saved map. Checked after the write, so a delete that ends
+		// just before it is caught too. The cache is cleared first, because
+		// another request deleted it.
+		wp_cache_delete( $post_id, 'posts' );
+
+		if ( null === get_post( $post_id ) ) {
+			delete_post_meta( $post_id, self::META_KEY );
+			( new Saved_Image( $all[ $slug ][ $key ], $slug, $key ) )->delete_unused();
+
+			return null;
+		}
 
 		// Verify the write landed. update_post_meta() returns an ambiguous
 		// false ("not changed" vs. "write failed"), so read back and check
