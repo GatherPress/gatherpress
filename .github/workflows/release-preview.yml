@@ -1,0 +1,178 @@
+name: Release preview
+
+# On a release PR into main (`version-X.Y.Z`, for a stable release merge or a
+# patch), rehearse what the tag's rollup job will do and comment the result:
+# the rolled CHANGELOG.md section, and the @since tags carry-since.php will
+# carry back to develop or leave for a human. Nothing is written to any
+# branch. The commands match release.yml's rollup job, so a changelog the
+# tag would refuse fails here first.
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    name: Preview the release rollup
+    if: startsWith(github.head_ref, 'version-')
+    runs-on: ubuntu-latest
+    steps:
+      # The PR's merge ref is main with this branch merged, which is the tree
+      # the tag will point at.
+      - name: Checkout the merge result
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read the version
+        id: version
+        run: |
+          version="$(sed -n 's/^ \* Version:[[:space:]]*//p' gatherpress.php | head -n 1 | tr -d '[:space:]')"
+
+          if [[ ! "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::notice::'${version}' is not a stable version, so there is no release to preview."
+            echo "version=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup PHP
+        if: steps.version.outputs.version != ''
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer
+
+      - name: Composer install
+        if: steps.version.outputs.version != ''
+        env:
+          COMPOSER_PROCESS_TIMEOUT: 0
+          COMPOSER_NO_INTERACTION: 1
+          COMPOSER_NO_AUDIT: 1
+        run: composer install --optimize-autoloader --prefer-dist
+
+      - name: Roll up and carry
+        if: steps.version.outputs.version != ''
+        id: preview
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          # Same commands, in the same order, as release.yml's rollup job.
+          php .github/scripts/add-changelog-pr-nums.php
+          rollup_ok=true
+
+          if ! vendor/bin/changelogger write \
+            --use-version="${VERSION}" \
+            --release-date="$(date +%Y-%m-%d)" \
+            --deduplicate=-1 \
+            --yes > /tmp/changelogger.log 2>&1; then
+            rollup_ok=false
+          fi
+
+          php .github/scripts/link-changelog-prs.php || rollup_ok=false
+
+          section="$(awk -v ver="${VERSION}" '
+            $0 ~ "^## \\[" ver "\\]" { capture = 1; next }
+            /^## \[/ && capture { exit }
+            capture { print }
+          ' CHANGELOG.md)"
+
+          problems=""
+
+          if [[ "${rollup_ok}" != "true" ]]; then
+            problems+=$'- The rollup failed:\n\n```\n'"$(tail -n 20 /tmp/changelogger.log)"$'\n```\n'
+          fi
+
+          if ! grep -q "^## \[${VERSION}\]" CHANGELOG.md; then
+            problems+="- \`CHANGELOG.md\` has no \`## [${VERSION}]\` section."$'\n'
+          fi
+
+          if ! grep -q "^\[${VERSION}\]: " CHANGELOG.md; then
+            problems+="- \`CHANGELOG.md\` has no \`[${VERSION}]:\` link line. See \"Heading seems to have a linked version, but link was not found\" in \`docs/contributor/release-process.md\`."$'\n'
+          fi
+
+          # carry-since.php reads develop's copy of each file through origin/develop.
+          git fetch --quiet origin develop
+          php .github/scripts/release/carry-since.php --version="${VERSION}" > /tmp/carry-since.json
+
+          carried=$(jq '[.additions[].resolved] | add // 0' /tmp/carry-since.json)
+          files=$(jq '.additions | length' /tmp/carry-since.json)
+          unmatched=$(jq -r '.unmatched | length' /tmp/carry-since.json)
+
+          {
+            echo '<!-- gatherpress-release-preview -->'
+            echo "## Release preview for ${VERSION}"
+            echo
+            echo "What the \`${VERSION}\` tag's rollup will do, rehearsed on this PR merged into \`main\`. Nothing was written to any branch."
+            echo
+
+            if [[ -n "${problems}" ]]; then
+              echo '### :x: The tag would fail'
+              echo
+              printf '%s\n' "${problems}"
+            fi
+
+            echo '### Changelog section'
+            echo
+
+            if [[ -n "${section//[[:space:]]/}" ]]; then
+              # A comment holds 65,536 characters; keep the section well under.
+              printf '%s\n' "${section}" | head -c 50000
+            else
+              echo '_The rollup wrote no section._'
+            fi
+
+            echo
+            echo '### `@since` carry to develop'
+            echo
+
+            if [[ "${carried}" -gt 0 ]]; then
+              echo "${carried} \`@since ${VERSION}\` tag(s) in ${files} file(s) will be carried back to \`develop\` by the rollup PR."
+            else
+              echo "No \`@since\` tags to carry. A minor release resolves its own on \`develop\`."
+            fi
+
+            if [[ "${unmatched}" -gt 0 ]]; then
+              echo
+              echo "**${unmatched} file(s) need a look.** Their docblocks on \`develop\` are not identical to the released ones, so the rollup will leave them and will not auto-merge. Resolve them by hand after the tag:"
+              echo
+              jq -r '.unmatched[] | "- `" + . + "`"' /tmp/carry-since.json
+            fi
+          } > /tmp/release-preview.md
+
+          if [[ -n "${problems}" ]]; then
+            echo "failed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Comment the preview
+        if: steps.version.outputs.version != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          # One comment per PR, updated in place on each push.
+          comment_id=$(gh api --paginate "repos/${REPO}/issues/${PR}/comments" \
+            --jq '.[] | select(.body | startswith("<!-- gatherpress-release-preview -->")) | .id' | head -n 1)
+
+          if [[ -n "${comment_id}" ]]; then
+            gh api --method PATCH "repos/${REPO}/issues/comments/${comment_id}" -F body=@/tmp/release-preview.md > /dev/null
+          else
+            gh api --method POST "repos/${REPO}/issues/${PR}/comments" -F body=@/tmp/release-preview.md > /dev/null
+          fi
+
+      - name: Fail when the tag would fail
+        if: steps.preview.outputs.failed == 'true'
+        run: |
+          echo "::error::The ${{ steps.version.outputs.version }} rollup would fail at the tag. See the release preview comment."
+          exit 1
