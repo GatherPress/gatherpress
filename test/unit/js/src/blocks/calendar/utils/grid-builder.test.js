@@ -611,7 +611,21 @@ describe( 'calculateTimedEventTracks', () => {
 		).toBeNull();
 		expect(
 			calculateTimedEventTracks(
-				event( 3, '2026-10-16 09:00:00', '2026-10-16 10:00:00' ),
+				{
+					id: 4,
+					type: 'post',
+					meta: { gatherpress_datetime_start: '2026-10-16 09:00:00' },
+				},
+				{ enabled: true },
+				EVENT_TYPES,
+			),
+		).toBeNull();
+		expect(
+			calculateTimedEventTracks(
+				{
+					...event( 3, '2026-10-16 09:00:00', '2026-10-16 10:00:00' ),
+					date: '2026-10-16T09:00:00',
+				},
 				{ enabled: true },
 			),
 		).toBeNull();
