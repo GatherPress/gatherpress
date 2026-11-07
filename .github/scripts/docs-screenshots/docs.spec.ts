@@ -116,13 +116,32 @@ test.describe( 'Documentation screenshots', () => {
 		test.beforeAll( async ( { requestUtils } ) => {
 			// beforeAll runs again in a new worker after a failure, so skip events
 			// that are already there.
-			const existing = await requestUtils.rest( {
-				path: '/wp/v2/gatherpress_events',
-				params: { per_page: 100, status: 'publish', context: 'edit' },
-			} );
-			const keys = existing.map(
-				( post ) => `${ post.title.raw } ${ post.meta.gatherpress_datetime_start }`
-			);
+			const keys = [];
+
+			for ( let page = 1; ; page++ ) {
+				// A page past the last one is an error, which ends the list too.
+				const posts = await requestUtils
+					.rest( {
+						path: '/wp/v2/gatherpress_events',
+						params: { per_page: 100, page, status: 'publish', context: 'edit' },
+					} )
+					.catch( ( error ) => {
+						if ( 1 < page ) {
+							return [];
+						}
+						throw error;
+					} );
+
+				keys.push(
+					...posts.map(
+						( post ) => `${ post.title.raw } ${ post.meta.gatherpress_datetime_start }`
+					)
+				);
+
+				if ( posts.length < 100 ) {
+					break;
+				}
+			}
 
 			for ( const [ title, start, end, isAllDay = false ] of EVENTS ) {
 				if ( keys.includes( `${ title } ${ start }` ) ) {
@@ -150,21 +169,32 @@ test.describe( 'Documentation screenshots', () => {
 		} );
 
 		/**
-		 * Closes the editor's welcome guide, which opens for a new page.
+		 * Closes the editor's welcome guide and leaves fullscreen mode, so the
+		 * editor looks the same on every run.
+		 *
+		 * On a fresh site the saved preferences load after the editor opens and
+		 * undo the ones the test utilities set, so wait for them and set these
+		 * again.
 		 *
 		 * @param page The Playwright page of the editor.
 		 */
-		async function dismissWelcomeGuide( page ) {
+		async function settleEditor( page ) {
+			const guide = page.getByRole( 'dialog', { name: /welcome/i } );
+
+			await guide.waitFor( { state: 'visible', timeout: 5000 } ).catch( () => {} );
+
 			await page.evaluate( () => {
 				const preferences = window.wp.data.dispatch( 'core/preferences' );
 				preferences.set( 'core/edit-post', 'welcomeGuide', false );
-				preferences.set( 'core', 'welcomeGuide', false );
+				preferences.set( 'core/edit-post', 'fullscreenMode', false );
 			} );
-			const guide = page.getByRole( 'dialog', { name: /welcome/i } );
+
 			if ( await guide.isVisible() ) {
-				await page.keyboard.press( 'Escape' );
+				await guide.getByRole( 'button', { name: 'Close' } ).click();
 			}
+
 			await expect( guide ).toBeHidden();
+			await expect( page.locator( 'body.is-fullscreen-mode' ) ).toHaveCount( 0 );
 		}
 
 		/**
@@ -230,7 +260,7 @@ test.describe( 'Documentation screenshots', () => {
 
 		test( 'Event Calendar: a month in the editor', async ( { admin, editor, page } ) => {
 			await admin.createNewPost( { postType: 'page', title: 'Events' } );
-			await dismissWelcomeGuide( page );
+			await settleEditor( page );
 
 			const calendar = await insertCalendar(
 				editor,
@@ -246,6 +276,8 @@ test.describe( 'Documentation screenshots', () => {
 
 			await expect( page.getByRole( 'button', { name: 'Calendar Settings' } ) ).toBeVisible();
 
+			await settleEditor( page );
+
 			// The block toolbar floats over the Previous Month link.
 			await page.addStyleTag( {
 				content: '.block-editor-block-contextual-toolbar { visibility: hidden; }',
@@ -260,13 +292,15 @@ test.describe( 'Documentation screenshots', () => {
 			page,
 		} ) => {
 			await admin.createNewPost( { postType: 'page', title: 'This week' } );
-			await dismissWelcomeGuide( page );
+			await settleEditor( page );
 
 			await insertCalendar(
 				editor,
 				{ viewType: 'week', selectedDate: WEEK, enableTimeGrid: true },
 				{ unit: 'Week' }
 			);
+
+			await settleEditor( page );
 
 			const id = await editor.publishPost();
 
