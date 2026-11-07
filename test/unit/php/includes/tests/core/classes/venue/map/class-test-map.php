@@ -147,6 +147,12 @@ class Test_Map extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'deleted_post',
+				'priority' => 10,
+				'callback' => array( $instance, 'maybe_delete_stored_image' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'update_option_gatherpress_settings',
 				'priority' => 10,
 				'callback' => array( $instance, 'maybe_handle_settings_change' ),
@@ -394,12 +400,14 @@ class Test_Map extends Base {
 
 	/**
 	 * A venue deleted while its map renders, as when a prewarm job runs
-	 * during the delete, or while the map is written, keeps no saved map
-	 * or PNG files, and a file another venue uses stays.
+	 * during the delete, while the map is written, or after core read its
+	 * meta, keeps no saved map or PNG files, and a file another venue uses
+	 * stays.
 	 *
 	 * @since TBD
 	 *
 	 * @covers ::ensure_descriptor_for_combo
+	 * @covers ::maybe_delete_stored_image
 	 *
 	 * @return void
 	 */
@@ -463,6 +471,34 @@ class Test_Map extends Base {
 			array(),
 			glob( wp_get_upload_dir()['basedir'] . '/' . Map::UPLOADS_SUBDIR . '/1-infinite-loop-*-800-400-*' ),
 			'Failed to assert the PNG files are deleted after the write.'
+		);
+
+		// Written while the venue is deleted, after core read its meta, and
+		// checked before the post row is gone. The delete cleans it up.
+		$during = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$render = static function ( int $post_id ) use ( $instance, $during, $info ): void {
+			if ( $during === $post_id ) {
+				Utility::invoke_hidden_method(
+					$instance,
+					'ensure_descriptor_for_combo',
+					array( $during, $info, Map::DEFAULT_ZOOM, 800, 400 )
+				);
+			}
+		};
+
+		add_action( 'delete_post', $render );
+		wp_delete_post( $during, true );
+		remove_action( 'delete_post', $render );
+
+		$this->assertSame(
+			'',
+			get_post_meta( $during, Map::META_KEY, true ),
+			'Failed to assert a map written during the delete is removed.'
+		);
+		$this->assertSame(
+			array(),
+			glob( wp_get_upload_dir()['basedir'] . '/' . Map::UPLOADS_SUBDIR . '/1-infinite-loop-*-800-400-*' ),
+			'Failed to assert the PNG files written during the delete are deleted.'
 		);
 
 		$other  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );

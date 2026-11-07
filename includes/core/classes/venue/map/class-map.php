@@ -325,6 +325,7 @@ final class Map {
 		// against future ordering surprises.
 		add_action( 'wp_after_insert_post', array( $this, 'maybe_generate' ), 11 );
 		add_action( 'before_delete_post', array( $this, 'maybe_delete_stored_image' ), 10, 2 );
+		add_action( 'deleted_post', array( $this, 'maybe_delete_stored_image' ), 10, 2 );
 		add_filter( 'block_type_metadata', array( $this, 'apply_block_attribute_defaults' ) );
 		// React to provider changes so a `map_platform` switch schedules
 		// the same prewarm pass that runs on theme switches.
@@ -456,10 +457,12 @@ final class Map {
 	}
 
 	/**
-	 * Delete a venue's saved maps before the venue is deleted.
+	 * Delete a venue's saved maps when the venue is deleted.
 	 *
 	 * Runs on `before_delete_post`, while the venue still has its saved
 	 * maps: by `delete_post_{$post_type}`, core has deleted the post meta.
+	 * Runs again on `deleted_post`, for a map another request, such as a
+	 * prewarm job, wrote while the venue was being deleted.
 	 *
 	 * @since TBD
 	 *
