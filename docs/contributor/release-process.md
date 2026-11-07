@@ -125,7 +125,7 @@ A pre-release zip also carries `@since TBD` in the docblocks of anything new, an
 
 - [ ] All issues in the release's milestone are closed or moved.
 - [ ] Queued `.github/changelog/` entries read correctly (skim, fix anything off).
-- [ ] Rehearse the rollup in a throwaway tree so the tag run cannot fail on the changelog: `git worktree add /tmp/rollup main && cd /tmp/rollup && ../<repo>/vendor/bin/changelogger write --use-version=X.Y.Z --yes`, then check `CHANGELOG.md` has the new `## [X.Y.Z]` section and its `[X.Y.Z]:` link, and discard the worktree. This catches a missing link line under the previous version's heading, which the parser refuses (see Troubleshooting).
+- [ ] Read the **Release preview** comment on the `version-X.Y.Z` PR into main. The `release-preview.yml` check rehearses the tag's rollup on the PR merged into main, and comments the rolled `## [X.Y.Z]` section and the `@since` tags the rollup will carry back to develop or leave for a human. It fails when the tag would, for example on a missing link line under the previous version's heading, which the parser refuses (see Troubleshooting). It runs again on each push, so fix the branch and let it rerun.
 - [ ] Credits file for `X.Y.Z` added at `.github/scripts/release/credits/X.Y.Z.json`: by convention a copy of the latest pre-release file, roster corrections applied to the pre-release file first.
 - [ ] `npm run version:bump -- --version=X.Y.Z` (or the Version Bump workflow) + `npm i --package-lock-only`; version PRs opened and merged in order: credits file, alpha sync, core `version-X.Y.Z` → develop.
 
@@ -172,7 +172,7 @@ Every one of these is required; skipping any of them bites the next release:
 - [ ] **Confirm the wp.org release.** wp.org emails committers a release
   confirmation link; the new version is not live in the plugin directory
   until a committer clicks it.
-- [ ] **Confirm the `release/X.Y.Z` rollup PR auto-merged into develop.** The workflow creates its commit via the API (GitHub-signed) and enables auto-merge (squash), so it lands on its own once checks pass, this brings the rolled-up `CHANGELOG.md` to develop and removes the consumed entry files. If it's still open, see Troubleshooting.
+- [ ] **Confirm the `release/X.Y.Z` rollup PR auto-merged into develop.** The workflow creates its commit via the API (GitHub-signed) and enables auto-merge (squash), so it lands on its own once checks pass, this brings the rolled-up `CHANGELOG.md` to develop and removes the consumed entry files. It does not auto-merge when it lists `@since` tags needing a look (see the next steps). If it's still open for another reason, see Troubleshooting.
 
   Know what that PR is before you touch it: the workflow branches
   `release/X.Y.Z` **off `develop`** and commits only the rollup onto it:
@@ -203,7 +203,9 @@ Every one of these is required; skipping any of them bites the next release:
   on its own branch, so develop still says `TBD` for the same symbols. The
   rollup carries back every docblock that is byte-identical apart from the
   tag, and lists anything it could not match with certainty in the PR body.
-  Resolve those by hand before merging, or the next minor claims them.
+  The release preview comment listed the same ones before the tag. The PR
+  is not set to auto-merge when there are any: resolve them on its branch,
+  then merge it, or the next minor claims them.
 - [ ] **Check develop has the version's credits file** at
   `.github/scripts/release/credits/X.Y.Z.json`. A patch's file is written on
   the `version-X.Y.Z` branch, so it only reaches main; the rollup PR carries
