@@ -195,7 +195,7 @@ add_filter( 'gatherpress_venue_post_type', function( $post_type, $event_post_typ
 
 Mirroring the JavaScript testing strategy, separate pure domain/utility logic from WordPress-coupled execution:
 
-- **Pure logic → `test/unit/php-pure/`**: For self-contained validators, helpers, and domain classes that do not require WordPress runtime or database. These tests run in milliseconds without environment spin-up (`npm run test:unit:php:pure`).
+- **Pure logic → `test/unit/php-pure/`**: For self-contained validators, helpers, and domain classes that do not require WordPress runtime or database. These tests run in milliseconds without environment spin-up (`npm run test:unit:php:pure`). While pure test coverage is being incrementally connected to the PR coverage gate, tests guarding production logic covered by the gate must also retain their integration test entries in `test/unit/php/`.
 - **WordPress behavior → `test/unit/php/`**: For classes that interact with WordPress post types, taxonomies, options, hooks, or REST endpoints (`npm run test:unit:php`).
 
 ### Dependencies

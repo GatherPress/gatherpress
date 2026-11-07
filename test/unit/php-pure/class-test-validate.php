@@ -75,17 +75,18 @@ class Test_Validate extends TestCase {
 	 */
 	public function data_positive_number(): array {
 		return array(
-			'integer_1'          => array( 1, true ),
-			'integer_42'         => array( 42, true ),
-			'string_1'           => array( '1', true ),
-			'string_123'         => array( '123', true ),
-			'zero_integer'       => array( 0, false ),
-			'zero_string'        => array( '0', false ),
-			'negative_integer'   => array( -5, false ),
-			'negative_string'    => array( '-10', false ),
-			'non_numeric_string' => array( 'abc', false ),
-			'empty_string'       => array( '', false ),
-			'null_value'         => array( null, false ),
+			'integer_1'           => array( 1, true ),
+			'integer_42'          => array( 42, true ),
+			'string_1'            => array( '1', true ),
+			'string_123'          => array( '123', true ),
+			'zero_integer'        => array( 0, false ),
+			'zero_string'         => array( '0', false ),
+			'negative_integer'    => array( -5, false ),
+			'negative_string'     => array( '-10', false ),
+			'non_numeric_string'  => array( 'abc', false ),
+			'alphanumeric_string' => array( '12abc', false ),
+			'empty_string'        => array( '', false ),
+			'null_value'          => array( null, false ),
 		);
 	}
 
@@ -114,17 +115,18 @@ class Test_Validate extends TestCase {
 	 */
 	public function data_non_negative_number(): array {
 		return array(
-			'zero_integer'       => array( 0, true ),
-			'zero_string'        => array( '0', true ),
-			'integer_1'          => array( 1, true ),
-			'integer_42'         => array( 42, true ),
-			'string_123'         => array( '123', true ),
-			'negative_1'         => array( -1, false ),
-			'negative_42'        => array( -42, false ),
-			'negative_string'    => array( '-5', false ),
-			'non_numeric_string' => array( 'abc', false ),
-			'empty_string'       => array( '', false ),
-			'null_value'         => array( null, false ),
+			'zero_integer'        => array( 0, true ),
+			'zero_string'         => array( '0', true ),
+			'integer_1'           => array( 1, true ),
+			'integer_42'          => array( 42, true ),
+			'string_123'          => array( '123', true ),
+			'negative_1'          => array( -1, false ),
+			'negative_42'         => array( -42, false ),
+			'negative_string'     => array( '-5', false ),
+			'non_numeric_string'  => array( 'abc', false ),
+			'alphanumeric_string' => array( '12abc', false ),
+			'empty_string'        => array( '', false ),
+			'null_value'          => array( null, false ),
 		);
 	}
 
