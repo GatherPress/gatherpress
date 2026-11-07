@@ -133,7 +133,7 @@
 				}
 
 				// The cell is mostly contrast here, so a dot needs a base border to stand out.
-				.wp-block-gatherpress-calendar-entries.is-style-dots .gatherpress-modal--trigger-open:not(.wp-block-gatherpress-modal *) > * {
+				.wp-block-gatherpress-calendar-entries.is-style-dots .gatherpress-calendar__entry:not(.gatherpress--is-multi-day, .gatherpress--is-all-day) .gatherpress-modal--trigger-open:not(.wp-block-gatherpress-modal *) > * {
 					border: 2px solid var(--wp--preset--color--base, #fff);
 				}
 			}
@@ -148,7 +148,10 @@
 
 		.gatherpress-calendar__entry {
 			justify-content: center;
+		}
 
+		// A multi-day or all-day entry is a bar, so only a dot gets these.
+		.gatherpress-calendar__entry:not(.gatherpress--is-multi-day, .gatherpress--is-all-day) {
 			.gatherpress-modal--trigger-open:not(.wp-block-gatherpress-modal *) > * {
 				box-shadow: 0 2px 4px color-mix(in srgb, currentcolor 20%, transparent);
 
