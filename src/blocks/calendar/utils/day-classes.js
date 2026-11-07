@@ -43,3 +43,20 @@ export function getDayClassNames( day, today, { ribbon, grid } ) {
 		grid ? 'gatherpress--has-time-grid' : '',
 	].filter( Boolean );
 }
+
+/**
+ * Whether a day's class names include the Ribbon style, as a whole class name,
+ * as Calendar_Day::get_time_grid_classes() checks on the server.
+ *
+ * @since TBD
+ *
+ * @param {string} className Class names of the day block.
+ *
+ * @return {boolean} Whether the day uses the Ribbon style.
+ */
+export function hasRibbonStyle( className ) {
+	return (
+		'string' === typeof className &&
+		className.split( /\s+/ ).includes( 'is-style-ribbon' )
+	);
+}

@@ -22,7 +22,10 @@ import './editor.scss';
 
 import { findDayNumberBlock } from '../calendar/utils/day-number';
 import { getRibbonRowsStyle } from '../calendar/utils/ribbon-rows';
-import { getDayClassNames } from '../calendar/utils/day-classes';
+import {
+	getDayClassNames,
+	hasRibbonStyle,
+} from '../calendar/utils/day-classes';
 
 const EMPTY_ARRAY = [];
 
@@ -71,9 +74,7 @@ export default memo( function Edit( {
 	const rawPosts = context?.[ 'gatherpress/dayPosts' ];
 	const posts = useMemo( () => rawPosts ?? EMPTY_ARRAY, [ rawPosts ] );
 
-	const isRibbon = Boolean(
-		attributes?.className?.includes( 'is-style-ribbon' ),
-	);
+	const isRibbon = hasRibbonStyle( attributes?.className );
 
 	// block.json's own providesContext only re-exposes values stored in
 	// this block's *attributes*, which we never set (day number etc. are
