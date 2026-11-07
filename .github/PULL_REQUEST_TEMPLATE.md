@@ -10,6 +10,17 @@ Fixes #
 
 - [ ] Have you written new tests for your changes, if applicable?
 
+### AI assistance
+
+<!-- Optional. This is context for reviewers, not a judgment of the PR. -->
+<!-- See "Using AI tools" in docs/contributor/README.md. -->
+
+- [ ] An AI tool wrote a significant part of this change.
+
+<!-- If you ticked the box, say briefly what the tool wrote and how you checked it, -->
+<!-- including security: input sanitized, output escaped, capabilities and nonces checked, SQL prepared. -->
+
+
 ## Testing instructions:
 <!-- If you were reviewing this PR, how would you like the instructions to be presented? -->
 <!-- Please include detailed testing steps, explaining how to test your change. -->

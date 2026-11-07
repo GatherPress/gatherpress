@@ -77,10 +77,15 @@ Plenty of contributors use AI assistants. So do we, and we are not going to pret
 
 What matters is that **you are steering it**, and that what you open a pull request with represents the quality of code you would expect from yourself. An agent will happily produce something plausible that does not work, and it cannot tell you which of its guesses it is least sure about. You can.
 
-In practice that means two habits:
+In practice that means three habits:
 
 - **Review your own code before you ask anyone else to.** Read the whole diff as though somebody else wrote it. If there is a line you cannot explain, that line is not ready.
 - **Test that it does what it claims.** Run it. Click the thing. Check the case the change was supposed to fix, and the nearby case it might have broken.
+- **Check it is safe.** Generated code can look right and still trust input it should not. Make sure input is sanitized, output is escaped, capabilities and nonces are checked, and SQL goes through `$wpdb->prepare()`.
+
+The pull request template has an optional **AI assistance** section. If a tool wrote a significant part of your change, tick the box and say briefly what it wrote and how you checked it, including those security points. It gives reviewers context on where to look closer, and it is not a judgment of the pull request.
+
+If you use a coding agent, point it at [`AGENTS.md`](../../AGENTS.md), the house style written for agents. `CLAUDE.md` links to the same file, so Claude Code picks it up on its own.
 
 If you are new to coding, that is genuinely fine and you are welcome here. We like helping people level up on this project, and asking a question in Slack is never the wrong move. The reason we are direct about this is that people run real websites on GatherPress, [WordPress.org](https://wordpress.org/) among them, and a bug that ships is somebody's event page on the day of their event.
 
