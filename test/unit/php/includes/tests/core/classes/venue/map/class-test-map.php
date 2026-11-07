@@ -400,9 +400,9 @@ class Test_Map extends Base {
 
 	/**
 	 * A venue deleted while its map renders, as when a prewarm job runs
-	 * during the delete, while the map is written, or after core read its
-	 * meta, keeps no saved map or PNG files, and a file another venue uses
-	 * stays.
+	 * during the delete, keeps no saved map or PNG files, whether the map
+	 * is written before or after core deletes the venue's meta. A file
+	 * another venue uses stays.
 	 *
 	 * @since TBD
 	 *
@@ -499,6 +499,33 @@ class Test_Map extends Base {
 			array(),
 			glob( wp_get_upload_dir()['basedir'] . '/' . Map::UPLOADS_SUBDIR . '/1-infinite-loop-*-800-400-*' ),
 			'Failed to assert the PNG files written during the delete are deleted.'
+		);
+
+		// Written after the saved maps are cleaned up and before core deletes
+		// the meta. Core deletes the map, and its files go with it.
+		$before = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$render = static function ( int $post_id ) use ( $instance, $before, $info ): void {
+			if ( $before === $post_id ) {
+				Utility::invoke_hidden_method(
+					$instance,
+					'ensure_descriptor_for_combo',
+					array( $before, $info, Map::DEFAULT_ZOOM, 800, 400 )
+				);
+			}
+		};
+
+		add_action( 'before_delete_post', $render, 11 );
+		wp_delete_post( $before, true );
+		remove_action( 'before_delete_post', $render, 11 );
+
+		$this->assertSame(
+			array(),
+			glob( wp_get_upload_dir()['basedir'] . '/' . Map::UPLOADS_SUBDIR . '/1-infinite-loop-*-800-400-*' ),
+			'Failed to assert the PNG files of a map core deleted are deleted.'
+		);
+		$this->assertFalse(
+			has_action( 'deleted_post_meta', array( Saved_Image::class, 'delete_deleted' ) ),
+			'Failed to assert the meta listener is removed after the delete.'
 		);
 
 		$other  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );

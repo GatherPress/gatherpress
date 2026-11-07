@@ -355,6 +355,7 @@ class Test_Saved_Image extends Base {
 	 *
 	 * @covers ::delete_all_unused
 	 * @covers ::delete_unused
+	 * @covers ::delete_unused_files
 	 *
 	 * @return void
 	 */
@@ -446,6 +447,7 @@ class Test_Saved_Image extends Base {
 	 * @since TBD
 	 *
 	 * @covers ::stored_urls
+	 * @covers ::urls
 	 *
 	 * @return void
 	 */
@@ -470,6 +472,32 @@ class Test_Saved_Image extends Base {
 			array( 'https://example.test/a.png', 'https://example.test/a2.png', 'https://example.test/b.png' ),
 			Saved_Image::stored_urls( $post_id )
 		);
+	}
+
+	/**
+	 * The files of a deleted static map value are deleted, and another meta
+	 * key is ignored.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::delete_deleted
+	 * @covers ::urls
+	 * @covers ::delete_unused_files
+	 *
+	 * @return void
+	 */
+	public function test_delete_deleted(): void {
+		$url   = Saved_Image::url( 'qa-deleted-map.png' );
+		$path  = $this->touch_image( $url );
+		$value = array( 'osm' => array( self::KEY => self::files( $url ) ) );
+
+		Saved_Image::delete_deleted( array(), 1, 'other_key', $value );
+
+		$this->assertFileExists( $path, 'Failed to assert another meta key is ignored.' );
+
+		Saved_Image::delete_deleted( array(), 1, Map::META_KEY, $value );
+
+		$this->assertFileDoesNotExist( $path, 'Failed to assert the deleted map\'s file is deleted.' );
 	}
 
 	/**

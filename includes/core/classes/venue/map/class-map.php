@@ -462,7 +462,9 @@ final class Map {
 	 * Runs on `before_delete_post`, while the venue still has its saved
 	 * maps: by `delete_post_{$post_type}`, core has deleted the post meta.
 	 * Runs again on `deleted_post`, for a map another request, such as a
-	 * prewarm job, wrote while the venue was being deleted.
+	 * prewarm job, wrote while the venue was being deleted. In between,
+	 * {@see Saved_Image::delete_deleted()} deletes the files of a map core
+	 * deletes with the venue's meta.
 	 *
 	 * @since TBD
 	 *
@@ -472,8 +474,18 @@ final class Map {
 	 * @return void
 	 */
 	public function maybe_delete_stored_image( int $post_id, WP_Post $post ): void {
-		if ( post_type_supports( $post->post_type, Venue::SUPPORT ) ) {
-			$this->delete_stored_image( $post_id );
+		if ( ! post_type_supports( $post->post_type, Venue::SUPPORT ) ) {
+			return;
+		}
+
+		$this->delete_stored_image( $post_id );
+
+		// While core deletes the venue's meta, it also deletes the files of a
+		// map written after the cleanup above.
+		if ( doing_action( 'before_delete_post' ) ) {
+			add_action( 'deleted_post_meta', array( Saved_Image::class, 'delete_deleted' ), 10, 4 );
+		} else {
+			remove_action( 'deleted_post_meta', array( Saved_Image::class, 'delete_deleted' ), 10 );
 		}
 	}
 
