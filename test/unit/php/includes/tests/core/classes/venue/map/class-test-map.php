@@ -528,6 +528,50 @@ class Test_Map extends Base {
 			'Failed to assert the meta listener is removed after the delete.'
 		);
 
+		// Written by another request after this one cached the venue's meta
+		// as empty. The `deleted_post` cleanup reads the stored map anyway.
+		$stale = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$png   = Saved_Image::url( 'qa-stale-cache-map.png' );
+		$path  = $this->touch_image( $png );
+		$write = static function ( int $post_id ) use ( $stale, $png ): void {
+			global $wpdb;
+
+			if ( $stale !== $post_id ) {
+				return;
+			}
+
+			get_post_meta( $stale );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Stands in for a write from another request.
+			$wpdb->insert(
+				$wpdb->postmeta,
+				array(
+					'post_id'    => $stale,
+					'meta_key'   => Map::META_KEY, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+					'meta_value' => maybe_serialize( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+						array(
+							'osm' => array(
+								'16x800x400xroadmap' => array(
+									'url'    => $png,
+									'url_2x' => '',
+									'hash'   => 'stale',
+									'zoom'   => 16,
+									'width'  => 800,
+									'height' => 400,
+								),
+							),
+						)
+					),
+				)
+			);
+		};
+
+		add_action( 'delete_post', $write );
+		wp_delete_post( $stale, true );
+		remove_action( 'delete_post', $write );
+
+		$this->assertFileDoesNotExist( $path, 'Failed to assert the files of a map written later are deleted.' );
+		$this->assertSame( '', get_post_meta( $stale, Map::META_KEY, true ), 'Failed to assert that map is removed.' );
+
 		$other  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 		$shared = Utility::invoke_hidden_method(
 			$instance,

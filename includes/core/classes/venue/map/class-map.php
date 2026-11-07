@@ -478,15 +478,17 @@ final class Map {
 			return;
 		}
 
-		$this->delete_stored_image( $post_id );
-
 		// While core deletes the venue's meta, it also deletes the files of a
-		// map written after the cleanup above.
+		// map written after the cleanup below. By `deleted_post`, another
+		// request may have written a map since this one cached the meta.
 		if ( doing_action( 'before_delete_post' ) ) {
 			add_action( 'deleted_post_meta', array( Saved_Image::class, 'delete_deleted' ), 10, 4 );
 		} else {
 			remove_action( 'deleted_post_meta', array( Saved_Image::class, 'delete_deleted' ), 10 );
+			wp_cache_delete( $post_id, 'post_meta' );
 		}
+
+		$this->delete_stored_image( $post_id );
 	}
 
 	/**
