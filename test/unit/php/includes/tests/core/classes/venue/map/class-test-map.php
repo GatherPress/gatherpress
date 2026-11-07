@@ -15,6 +15,7 @@ namespace GatherPress\Tests\Core\Venue\Map;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Venue\Map;
 use GatherPress\Core\Venue\Map\Manager;
+use GatherPress\Core\Venue\Map\Saved_Image;
 use GatherPress\Core\Venue\Setup;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
@@ -140,9 +141,15 @@ class Test_Map extends Base {
 			),
 			array(
 				'type'     => 'action',
-				'name'     => 'registered_post_type',
+				'name'     => 'before_delete_post',
 				'priority' => 10,
-				'callback' => array( $instance, 'maybe_register_delete_hook' ),
+				'callback' => array( $instance, 'maybe_delete_stored_image' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'deleted_post',
+				'priority' => 10,
+				'callback' => array( $instance, 'maybe_delete_stored_image' ),
 			),
 			array(
 				'type'     => 'action',
@@ -392,45 +399,250 @@ class Test_Map extends Base {
 	}
 
 	/**
-	 * Coverage for maybe_register_delete_hook when the post type is a venue.
+	 * A venue deleted while its map renders, as when a prewarm job runs
+	 * during the delete, keeps no saved map or PNG files, whether the map
+	 * is written before or after core deletes the venue's meta. A file
+	 * another venue uses stays.
 	 *
-	 * @covers ::maybe_register_delete_hook
+	 * @since 0.36.2
+	 *
+	 * @covers ::ensure_descriptor_for_combo
+	 * @covers ::maybe_delete_stored_image
 	 *
 	 * @return void
 	 */
-	public function test_maybe_register_delete_hook(): void {
+	public function test_ensure_descriptor_for_combo_saves_nothing_for_a_venue_deleted_during_the_render(): void {
 		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$info     = array(
+			'address'   => '1 Infinite Loop',
+			'latitude'  => '37.3318',
+			'longitude' => '-122.0312',
+		);
+		$args     = array( $post_id, $info, Map::DEFAULT_ZOOM, 800, 400 );
+		$delete   = static function ( $preempt ) use ( $post_id ) {
+			$post = get_post( $post_id );
 
-		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $post_type ) {
-			$instance->maybe_register_delete_hook( $post_type );
+			if ( null !== $post ) {
+				wp_delete_post( $post_id, true );
+				// Another request deleted it, so this request's cache still holds the venue.
+				wp_cache_set( $post_id, $post, 'posts' );
+			}
 
-			$this->assertSame(
-				10,
-				has_action(
-					sprintf( 'delete_post_%s', $post_type ),
-					array( $instance, 'delete_stored_image' )
-				),
-				sprintf( 'delete_post_%s should be wired to delete_stored_image.', $post_type )
+			return $preempt;
+		};
+
+		add_filter( 'pre_http_request', $delete, 9 );
+		$result = Utility::invoke_hidden_method( $instance, 'ensure_descriptor_for_combo', $args );
+		remove_filter( 'pre_http_request', $delete, 9 );
+
+		$files = glob( wp_get_upload_dir()['basedir'] . '/' . Map::UPLOADS_SUBDIR . '/1-infinite-loop-*-800-400-*' );
+
+		$this->assertNull( $result, 'Failed to assert nothing is saved.' );
+		$this->assertSame( array(), get_post_meta( $post_id ), 'Failed to assert the deleted venue has no meta.' );
+		$this->assertSame( array(), $files, 'Failed to assert the PNG files are deleted.' );
+
+		// Deleted while the meta is written, after the render finished.
+		$late  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$write = static function ( $meta_id, int $object_id ) use ( $late ): void {
+			global $wpdb;
+
+			if ( $late === $object_id ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Stands in for a delete from another request.
+				$wpdb->delete( $wpdb->posts, array( 'ID' => $late ) );
+			}
+		};
+
+		add_action( 'added_post_meta', $write, 10, 2 );
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'ensure_descriptor_for_combo',
+			array( $late, $info, Map::DEFAULT_ZOOM, 800, 400 )
+		);
+		remove_action( 'added_post_meta', $write, 10 );
+
+		$this->assertNull( $result, 'Failed to assert nothing is saved for a venue deleted during the write.' );
+		$this->assertSame(
+			'',
+			get_post_meta( $late, Map::META_KEY, true ),
+			'Failed to assert the written map is removed.'
+		);
+		$this->assertSame(
+			array(),
+			glob( wp_get_upload_dir()['basedir'] . '/' . Map::UPLOADS_SUBDIR . '/1-infinite-loop-*-800-400-*' ),
+			'Failed to assert the PNG files are deleted after the write.'
+		);
+
+		// Written while the venue is deleted, after core read its meta, and
+		// checked before the post row is gone. The delete cleans it up.
+		$during = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$render = static function ( int $post_id ) use ( $instance, $during, $info ): void {
+			if ( $during === $post_id ) {
+				Utility::invoke_hidden_method(
+					$instance,
+					'ensure_descriptor_for_combo',
+					array( $during, $info, Map::DEFAULT_ZOOM, 800, 400 )
+				);
+			}
+		};
+
+		add_action( 'delete_post', $render );
+		wp_delete_post( $during, true );
+		remove_action( 'delete_post', $render );
+
+		$this->assertSame(
+			'',
+			get_post_meta( $during, Map::META_KEY, true ),
+			'Failed to assert a map written during the delete is removed.'
+		);
+		$this->assertSame(
+			array(),
+			glob( wp_get_upload_dir()['basedir'] . '/' . Map::UPLOADS_SUBDIR . '/1-infinite-loop-*-800-400-*' ),
+			'Failed to assert the PNG files written during the delete are deleted.'
+		);
+
+		// Written after the saved maps are cleaned up and before core deletes
+		// the meta. Core deletes the map, and its files go with it.
+		$before = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$render = static function ( int $post_id ) use ( $instance, $before, $info ): void {
+			if ( $before === $post_id ) {
+				Utility::invoke_hidden_method(
+					$instance,
+					'ensure_descriptor_for_combo',
+					array( $before, $info, Map::DEFAULT_ZOOM, 800, 400 )
+				);
+			}
+		};
+
+		add_action( 'before_delete_post', $render, 11 );
+		wp_delete_post( $before, true );
+		remove_action( 'before_delete_post', $render, 11 );
+
+		$this->assertSame(
+			array(),
+			glob( wp_get_upload_dir()['basedir'] . '/' . Map::UPLOADS_SUBDIR . '/1-infinite-loop-*-800-400-*' ),
+			'Failed to assert the PNG files of a map core deleted are deleted.'
+		);
+		$this->assertFalse(
+			has_action( 'deleted_post_meta', array( Saved_Image::class, 'delete_deleted' ) ),
+			'Failed to assert the meta listener is removed after the delete.'
+		);
+
+		// Written by another request after this one cached the venue's meta
+		// as empty. The `deleted_post` cleanup reads the stored map anyway.
+		$stale = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$png   = Saved_Image::url( 'qa-stale-cache-map.png' );
+		$path  = $this->touch_image( $png );
+		$write = static function ( int $post_id ) use ( $stale, $png ): void {
+			global $wpdb;
+
+			if ( $stale !== $post_id ) {
+				return;
+			}
+
+			get_post_meta( $stale );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Stands in for a write from another request.
+			$wpdb->insert(
+				$wpdb->postmeta,
+				array(
+					'post_id'    => $stale,
+					'meta_key'   => Map::META_KEY, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+					'meta_value' => maybe_serialize( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+						array(
+							'osm' => array(
+								'16x800x400xroadmap' => array(
+									'url'    => $png,
+									'url_2x' => '',
+									'hash'   => 'stale',
+									'zoom'   => 16,
+									'width'  => 800,
+									'height' => 400,
+								),
+							),
+						)
+					),
+				)
 			);
-		}
+		};
+
+		add_action( 'delete_post', $write );
+		wp_delete_post( $stale, true );
+		remove_action( 'delete_post', $write );
+
+		$this->assertFileDoesNotExist( $path, 'Failed to assert the files of a map written later are deleted.' );
+		$this->assertSame( '', get_post_meta( $stale, Map::META_KEY, true ), 'Failed to assert that map is removed.' );
+
+		$other  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$shared = Utility::invoke_hidden_method(
+			$instance,
+			'ensure_descriptor_for_combo',
+			array( $other, $info, Map::DEFAULT_ZOOM, 800, 400 )
+		);
+		$gone   = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$delete = static function ( $preempt ) use ( $gone ) {
+			wp_delete_post( $gone, true );
+
+			return $preempt;
+		};
+
+		add_filter( 'pre_http_request', $delete, 9 );
+		Utility::invoke_hidden_method(
+			$instance,
+			'ensure_descriptor_for_combo',
+			array( $gone, $info, Map::DEFAULT_ZOOM, 800, 400 )
+		);
+		remove_filter( 'pre_http_request', $delete, 9 );
+
+		$this->assertFileExists(
+			$this->path_for_url( $shared['url'] ),
+			'Failed to assert a file another venue uses stays.'
+		);
+
+		$instance->delete_stored_image( $other );
 	}
 
 	/**
-	 * Bails silently when the post type does not support venue information.
+	 * Deleting a venue deletes its saved maps, and deleting another post leaves them.
 	 *
-	 * @covers ::maybe_register_delete_hook
+	 * @since 0.36.2
+	 *
+	 * @covers ::maybe_delete_stored_image
 	 *
 	 * @return void
 	 */
-	public function test_maybe_register_delete_hook_skips_unsupported_post_type(): void {
+	public function test_maybe_delete_stored_image(): void {
 		$instance = Map::get_instance();
-
-		$instance->maybe_register_delete_hook( 'post' );
-
-		$this->assertFalse(
-			has_action( 'delete_post_post', array( $instance, 'delete_stored_image' ) ),
-			'Expected no delete-cleanup hook to be registered for a non-venue post type.'
+		$venue_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$saved    = Utility::invoke_hidden_method(
+			$instance,
+			'ensure_descriptor_for_combo',
+			array(
+				$venue_id,
+				array(
+					'address'   => '1 Infinite Loop',
+					'latitude'  => '37.3318',
+					'longitude' => '-122.0312',
+				),
+				Map::DEFAULT_ZOOM,
+				800,
+				400,
+			)
 		);
+		$post     = $this->factory->post->create_and_get();
+
+		update_post_meta( $post->ID, Map::META_KEY, $instance->get_all_descriptors( $venue_id ) );
+		$instance->maybe_delete_stored_image( $post->ID, $post );
+
+		$this->assertNotEmpty(
+			get_post_meta( $post->ID, Map::META_KEY, true ),
+			'Failed to assert another post is left alone.'
+		);
+
+		delete_post_meta( $post->ID, Map::META_KEY );
+		wp_delete_post( $venue_id, true );
+
+		$this->assertFileDoesNotExist( $this->path_for_url( $saved['url'] ), 'Failed to assert the PNG is deleted.' );
+		$this->assertFileDoesNotExist( $this->path_for_url( $saved['url_2x'] ) );
 	}
 
 	/**
@@ -488,6 +700,24 @@ class Test_Map extends Base {
 			$baseline,
 			$instance->hash_for( $info, 15, 800, 400, 'osm', 'hybrid' ),
 			'Hash should change when the map type changes.'
+		);
+
+		$this->assertNotSame(
+			$baseline,
+			$instance->hash_for( $info, 15, 800, 400, 'osm', 'roadmap', 'https://tiles.example.test/{z}/{x}/{y}.png' ),
+			'Hash should change when the image source changes.'
+		);
+
+		$this->assertNotSame(
+			$instance->hash_for( $info, 15, 800, 400, 'osm', 'roadmap', 'https://tiles.example.test/{z}/{x}/{y}.png' ),
+			$instance->hash_for( $info, 15, 800, 400, 'osm', 'roadmap', 'https://a.basemaps.cartocdn.com/{z}.png' ),
+			'Hash should change between two image sources.'
+		);
+
+		$this->assertSame(
+			md5( '1 Infinite Loop|37.3318|-122.0312|15|800|400|osm|roadmap' ),
+			$baseline,
+			'Hash without an image source should match the one saved before sources existed.'
 		);
 
 		// Same address + coords hash identically, regardless of post —
@@ -607,7 +837,10 @@ class Test_Map extends Base {
 	 * un-geocodable must have its stored PNG files purged so stale images
 	 * don't keep serving under the new (wrong) address.
 	 *
+	 * @since 0.36.2 Asserts the PNG files no venue uses are deleted.
+	 *
 	 * @covers ::maybe_generate
+	 * @covers ::delete_stored_image
 	 *
 	 * @return void
 	 */
@@ -636,10 +869,8 @@ class Test_Map extends Base {
 			$instance->get_stored_descriptor( $post_id ),
 			'Descriptor meta should be cleared when coordinates become un-geocodable.'
 		);
-		// PNG is intentionally left on disk — the file may be shared with
-		// another venue at the same address. A future GC pass sweeps truly
-		// orphaned files.
-		unset( $path );
+		$this->assertFileDoesNotExist( $path, 'Failed to assert a PNG no venue uses is deleted.' );
+		$this->assertFileDoesNotExist( $this->path_for_url( $descriptor['url_2x'] ) );
 	}
 
 	/**
@@ -936,9 +1167,10 @@ class Test_Map extends Base {
 	}
 
 	/**
-	 * Clears the descriptor meta for the venue but leaves the PNG on disk
-	 * — the file may be shared with another venue at the same address, so
-	 * on-delete cleanup is deferred to a future GC pass.
+	 * Clears the descriptor meta for the venue and deletes the PNG files,
+	 * except a file another venue at the same address still uses.
+	 *
+	 * @since 0.36.2 Asserts the PNG files no venue uses are deleted, and a shared one stays.
 	 *
 	 * @covers ::delete_stored_image
 	 *
@@ -956,12 +1188,26 @@ class Test_Map extends Base {
 		$descriptor = $instance->get_stored_descriptor( $post_id );
 		$this->assertNotNull( $descriptor, 'Precondition: venue has a descriptor.' );
 
+		$shared_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		update_post_meta(
+			$shared_id,
+			Map::META_KEY,
+			array( 'osm' => array( 'shared' => array( 'url' => $descriptor['url'] ) ) )
+		);
 		$instance->delete_stored_image( $post_id );
 
 		$this->assertNull(
 			$instance->get_stored_descriptor( $post_id ),
 			'Descriptor meta should be cleared after delete_stored_image.'
 		);
+		$this->assertFileExists( $this->path_for_url( $descriptor['url'] ), 'Failed to assert a shared PNG stays.' );
+		$this->assertFileDoesNotExist(
+			$this->path_for_url( $descriptor['url_2x'] ),
+			'Failed to assert a PNG no venue uses is deleted.'
+		);
+
+		wp_delete_file( $this->path_for_url( $descriptor['url'] ) );
 	}
 
 	/**
@@ -1655,7 +1901,10 @@ class Test_Map extends Base {
 		$this->assertSame( 15, $descriptor['zoom'] );
 		$this->assertSame( 800, $descriptor['width'] );
 		$this->assertSame( 400, $descriptor['height'] );
-		$this->assertStringEndsWith( '1-infinite-loop-osm-roadmap-15-800-400.png', $descriptor['url'] );
+		$this->assertStringEndsWith(
+			'1-infinite-loop-osm-roadmap-15-800-400-' . substr( $descriptor['hash'], 0, 8 ) . '.png',
+			$descriptor['url']
+		);
 	}
 
 	/**
@@ -2283,6 +2532,47 @@ class Test_Map extends Base {
 				filemtime( $path ),
 				sprintf( 'Post-regenerate PNG for %s should have been rewritten.', $combo_key )
 			);
+		}
+	}
+
+	/**
+	 * Regenerating maps that render with the same file names keeps their
+	 * files without looking them up.
+	 *
+	 * @since 0.36.2
+	 *
+	 * @covers ::regenerate
+	 *
+	 * @return void
+	 */
+	public function test_regenerate_skips_the_lookup_for_files_saved_again(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
+		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
+		$instance->maybe_generate( $post_id );
+
+		$before  = $instance->get_all_descriptors( $post_id );
+		$lookups = 0;
+		$count   = static function ( string $query ) use ( &$lookups ): string {
+			if ( str_contains( $query, 'meta_value LIKE' ) ) {
+				++$lookups;
+			}
+
+			return $query;
+		};
+
+		add_filter( 'query', $count );
+		$result = $instance->regenerate( $post_id );
+		remove_filter( 'query', $count );
+
+		$this->assertSame( $before['osm'], $result['osm'], 'Failed to assert the maps render with the same files.' );
+		$this->assertSame( 0, $lookups, 'Failed to assert no lookup runs for files saved again.' );
+
+		foreach ( $result['osm'] as $entry ) {
+			$this->assertFileExists( $this->path_for_url( $entry['url'] ) );
 		}
 	}
 
@@ -2986,7 +3276,19 @@ class Test_Map extends Base {
 		// slug's entry is what proves the `continue` skip in the fallback
 		// walk fires; the google entry is what the walk should ultimately
 		// return.
-		$key = sprintf( '%dx%dx%dxroadmap', Map::DEFAULT_ZOOM, Map::DEFAULT_HEIGHT * 2, Map::DEFAULT_HEIGHT );
+		$key        = sprintf( '%dx%dx%dxroadmap', Map::DEFAULT_ZOOM, Map::DEFAULT_HEIGHT * 2, Map::DEFAULT_HEIGHT );
+		$google_url = Utility::invoke_hidden_method(
+			$instance,
+			'build_image_url',
+			array(
+				'1 Infinite Loop',
+				Map::DEFAULT_ZOOM,
+				Map::DEFAULT_HEIGHT * 2,
+				Map::DEFAULT_HEIGHT,
+				'google',
+			)
+		);
+		$google_png = $this->touch_image( $google_url );
 		update_post_meta(
 			$post_id,
 			Map::META_KEY,
@@ -3003,7 +3305,7 @@ class Test_Map extends Base {
 				),
 				'google'        => array(
 					$key => array(
-						'url'    => 'https://example.test/google.png',
+						'url'    => $google_url,
 						'url_2x' => '',
 						'hash'   => 'abc',
 						'zoom'   => Map::DEFAULT_ZOOM,
@@ -3027,7 +3329,88 @@ class Test_Map extends Base {
 		}
 
 		$this->assertIsArray( $descriptor );
-		$this->assertSame( 'https://example.test/google.png', $descriptor['url'] );
+		wp_delete_file( $google_png );
+
+		$this->assertSame( $google_url, $descriptor['url'] );
+	}
+
+	/**
+	 * The other-provider fallback skips an image saved before the venue
+	 * moved, so the page never shows the old location.
+	 *
+	 * @since 0.36.2
+	 *
+	 * @covers ::get_descriptor_for_post
+	 *
+	 * @return void
+	 */
+	public function test_get_descriptor_for_post_skips_another_providers_image_of_an_old_location(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta( $post_id, 'gatherpress_address', '2 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
+		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
+
+		// Seed two providers: the active slug AND `google`. The active
+		// slug's entry is what proves the `continue` skip in the fallback
+		// walk fires; the google entry is what the walk should ultimately
+		// return.
+		$key        = sprintf( '%dx%dx%dxroadmap', Map::DEFAULT_ZOOM, Map::DEFAULT_HEIGHT * 2, Map::DEFAULT_HEIGHT );
+		$google_url = Utility::invoke_hidden_method(
+			$instance,
+			'build_image_url',
+			array(
+				'1 Infinite Loop',
+				Map::DEFAULT_ZOOM,
+				Map::DEFAULT_HEIGHT * 2,
+				Map::DEFAULT_HEIGHT,
+				'google',
+			)
+		);
+		$google_png = $this->touch_image( $google_url );
+		update_post_meta(
+			$post_id,
+			Map::META_KEY,
+			array(
+				'fallback-stub' => array(
+					$key => array(
+						'url'    => 'https://example.test/active-but-unusable.png',
+						'url_2x' => '',
+						'hash'   => 'xyz',
+						'zoom'   => Map::DEFAULT_ZOOM,
+						'width'  => Map::DEFAULT_HEIGHT * 2,
+						'height' => Map::DEFAULT_HEIGHT,
+					),
+				),
+				'google'        => array(
+					$key => array(
+						'url'    => $google_url,
+						'url_2x' => '',
+						'hash'   => 'abc',
+						'zoom'   => Map::DEFAULT_ZOOM,
+						'width'  => Map::DEFAULT_HEIGHT * 2,
+						'height' => Map::DEFAULT_HEIGHT,
+					),
+				),
+			)
+		);
+
+		$null_provider = $this->make_null_provider( 'fallback-stub' );
+		$manager       = Manager::get_instance();
+		$manager->register( $null_provider );
+		update_option( Settings::OPTION_NAME, array( 'map_platform' => 'fallback-stub' ) );
+
+		try {
+			$descriptor = $instance->get_descriptor_for_post( $post_id, Venue::POST_TYPE );
+		} finally {
+			$this->reset_manager_to_core_providers( $manager );
+			delete_option( Settings::OPTION_NAME );
+		}
+
+		wp_delete_file( $google_png );
+
+		$this->assertNull( $descriptor, 'Failed to assert an image of the old location is not used.' );
 	}
 
 	/**
@@ -3275,6 +3658,430 @@ class Test_Map extends Base {
 	}
 
 	/**
+	 * A saved map renders again when the provider's image source changes,
+	 * here through a new CARTO key.
+	 *
+	 * @since 0.36.2
+	 *
+	 * @covers ::ensure_descriptor_for_combo
+	 *
+	 * @return void
+	 */
+	public function test_ensure_descriptor_for_combo_renders_again_when_the_source_changes(): void {
+		$instance = Map::get_instance();
+		$settings = Settings::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$info     = array(
+			'address'   => '1 Infinite Loop',
+			'latitude'  => '37.3318',
+			'longitude' => '-122.0312',
+		);
+		$fetches  = 0;
+		$count    = static function ( $preempt ) use ( &$fetches ) {
+			++$fetches;
+
+			return $preempt;
+		};
+
+		add_filter( 'pre_http_request', $count, 11 );
+
+		$first   = Utility::invoke_hidden_method(
+			$instance,
+			'ensure_descriptor_for_combo',
+			array( $post_id, $info, Map::DEFAULT_ZOOM, 800, 400 )
+		);
+		$fetches = 0;
+
+		$settings->set( 'carto_api_key', 'abc123' );
+
+		$second = Utility::invoke_hidden_method(
+			$instance,
+			'ensure_descriptor_for_combo',
+			array( $post_id, $info, Map::DEFAULT_ZOOM, 800, 400 )
+		);
+
+		$settings->set( 'carto_api_key', '' );
+		remove_filter( 'pre_http_request', $count, 11 );
+
+		$this->assertNotSame( $first['hash'], $second['hash'], 'Failed to assert the hash follows the image source.' );
+		$this->assertGreaterThan( 0, $fetches, 'Failed to assert the map renders again.' );
+	}
+
+	/**
+	 * When the render fails, a saved image for the same location is kept,
+	 * even with a stale hash, and one for another location is not.
+	 *
+	 * @since 0.36.2
+	 *
+	 * @covers ::ensure_descriptor_for_combo
+	 *
+	 * @return void
+	 */
+	public function test_ensure_descriptor_for_combo_keeps_the_saved_image_when_render_returns_null(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$info     = array(
+			'address'   => '1 Infinite Loop',
+			'latitude'  => '37.3318',
+			'longitude' => '-122.0312',
+		);
+		$url      = Utility::invoke_hidden_method(
+			$instance,
+			'build_image_url',
+			array( '1 Infinite Loop', Map::DEFAULT_ZOOM, 800, 400, 'always-null' )
+		);
+		$png      = $this->touch_image( $url );
+		$key      = Utility::invoke_hidden_method(
+			$instance,
+			'combo_key',
+			array( Map::DEFAULT_ZOOM, 800, 400, 'roadmap' )
+		);
+		$saved    = array(
+			'url'    => $url,
+			'url_2x' => '',
+			'hash'   => 'stale',
+			'zoom'   => Map::DEFAULT_ZOOM,
+			'width'  => 800,
+			'height' => 400,
+		);
+
+		update_post_meta( $post_id, Map::META_KEY, array( 'always-null' => array( $key => $saved ) ) );
+
+		$manager = Manager::get_instance();
+		$manager->register( $this->make_null_provider( 'always-null' ) );
+		update_option( Settings::OPTION_NAME, array( 'map_platform' => 'always-null' ) );
+
+		try {
+			$kept = Utility::invoke_hidden_method(
+				$instance,
+				'ensure_descriptor_for_combo',
+				array( $post_id, $info, Map::DEFAULT_ZOOM, 800, 400 )
+			);
+
+			$saved['url'] = 'https://example.test/old-location.png';
+			update_post_meta( $post_id, Map::META_KEY, array( 'always-null' => array( $key => $saved ) ) );
+
+			$moved = Utility::invoke_hidden_method(
+				$instance,
+				'ensure_descriptor_for_combo',
+				array( $post_id, $info, Map::DEFAULT_ZOOM, 800, 400 )
+			);
+
+			// A filter may move the URL; the stored location still matches.
+			$saved['url']      = 'https://cdn.example.test/moved.png';
+			$saved['location'] = Saved_Image::location( $info );
+			update_post_meta( $post_id, Map::META_KEY, array( 'always-null' => array( $key => $saved ) ) );
+
+			$rewritten = Utility::invoke_hidden_method(
+				$instance,
+				'ensure_descriptor_for_combo',
+				array( $post_id, $info, Map::DEFAULT_ZOOM, 800, 400 )
+			);
+
+			// A saved PNG that is gone is not shown.
+			$saved['url'] = $url;
+			update_post_meta( $post_id, Map::META_KEY, array( 'always-null' => array( $key => $saved ) ) );
+			wp_delete_file( $png );
+
+			$missing = Utility::invoke_hidden_method(
+				$instance,
+				'ensure_descriptor_for_combo',
+				array( $post_id, $info, Map::DEFAULT_ZOOM, 800, 400 )
+			);
+		} finally {
+			delete_option( Settings::OPTION_NAME );
+			$this->reset_manager_to_core_providers( $manager );
+		}
+
+		$this->assertSame( $url, $kept['url'] ?? null, 'Failed to assert the saved image is kept.' );
+		$this->assertNull( $moved, 'Failed to assert an image for another location is not used.' );
+		$this->assertSame(
+			'https://cdn.example.test/moved.png',
+			$rewritten['url'] ?? null,
+			'Failed to assert a moved URL with a matching location is kept.'
+		);
+		$this->assertNull( $missing, 'Failed to assert a missing PNG is not used.' );
+	}
+
+	/**
+	 * A saved map whose PNG is gone renders again, and a missing retina
+	 * PNG is rendered again too.
+	 *
+	 * @since 0.36.2
+	 *
+	 * @covers ::ensure_descriptor_for_combo
+	 *
+	 * @return void
+	 */
+	public function test_ensure_descriptor_for_combo_renders_again_when_the_png_is_missing(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$info     = array(
+			'address'   => '1 Infinite Loop',
+			'latitude'  => '37.3318',
+			'longitude' => '-122.0312',
+		);
+		$args     = array( $post_id, $info, Map::DEFAULT_ZOOM, 800, 400 );
+		$saved    = Utility::invoke_hidden_method( $instance, 'ensure_descriptor_for_combo', $args );
+
+		$this->assertFileExists( $this->path_for_url( $saved['url'] ) );
+		$this->assertFileExists( $this->path_for_url( $saved['url_2x'] ) );
+
+		$dirs = wp_get_upload_dir();
+		$path = static fn( string $url ): string => str_replace( $dirs['baseurl'], $dirs['basedir'], $url );
+
+		wp_delete_file( $path( $saved['url_2x'] ) );
+
+		$this->assertFileDoesNotExist( $path( $saved['url_2x'] ), 'Failed to assert the 2x PNG is deleted.' );
+
+		Utility::invoke_hidden_method( $instance, 'ensure_descriptor_for_combo', $args );
+
+		$this->assertFileExists( $path( $saved['url_2x'] ), 'Failed to assert the retina PNG renders again.' );
+
+		wp_delete_file( $path( $saved['url'] ) );
+
+		Utility::invoke_hidden_method( $instance, 'ensure_descriptor_for_combo', $args );
+
+		$this->assertFileExists( $path( $saved['url'] ), 'Failed to assert the PNG renders again.' );
+	}
+
+	/**
+	 * A map saved before file names carried the hash is kept while its hash matches.
+	 *
+	 * @since 0.36.2
+	 *
+	 * @covers ::ensure_descriptor_for_combo
+	 *
+	 * @return void
+	 */
+	public function test_ensure_descriptor_for_combo_keeps_a_saved_map_without_the_hash_in_its_name(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$info     = array(
+			'address'   => '1 Infinite Loop',
+			'latitude'  => '37.3318',
+			'longitude' => '-122.0312',
+		);
+		$args     = array( $post_id, $info, Map::DEFAULT_ZOOM, 800, 400 );
+		$saved    = Utility::invoke_hidden_method( $instance, 'ensure_descriptor_for_combo', $args );
+		$plain    = Utility::invoke_hidden_method(
+			$instance,
+			'build_image_url',
+			array( '1 Infinite Loop', Map::DEFAULT_ZOOM, 800, 400, 'osm', 1, 'roadmap' )
+		);
+		$all      = $instance->get_all_descriptors( $post_id );
+		$key      = array_key_first( $all['osm'] );
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- Stand-in for a map saved before the hash.
+		rename( $this->path_for_url( $saved['url'] ), $this->path_for_url( $plain ) );
+		$all['osm'][ $key ]['url'] = $plain;
+		update_post_meta( $post_id, Map::META_KEY, $all );
+
+		$again = Utility::invoke_hidden_method( $instance, 'ensure_descriptor_for_combo', $args );
+
+		$this->assertSame( $plain, $again['url'], 'Failed to assert the saved map is kept.' );
+		$this->assertFileDoesNotExist( $this->path_for_url( $saved['url'] ), 'Failed to assert nothing rendered.' );
+
+		$all['osm'][ $key ]['url'] = $plain . '?v=2';
+		update_post_meta( $post_id, Map::META_KEY, $all );
+
+		$again = Utility::invoke_hidden_method( $instance, 'ensure_descriptor_for_combo', $args );
+
+		$this->assertSame( $plain . '?v=2', $again['url'], 'Failed to assert a query string keeps the saved map.' );
+		$this->assertFileDoesNotExist( $this->path_for_url( $saved['url'] ), 'Failed to assert nothing rendered.' );
+
+		wp_delete_file( $this->path_for_url( $plain ) );
+		wp_delete_file( $this->path_for_url( $saved['url_2x'] ) );
+	}
+
+	/**
+	 * A map that renders again deletes its old files, and keeps a file it saves again.
+	 *
+	 * @since 0.36.2
+	 *
+	 * @covers ::ensure_descriptor_for_combo
+	 * @covers ::delete_stored_image
+	 *
+	 * @return void
+	 */
+	public function test_ensure_descriptor_for_combo_deletes_the_old_files(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$info     = array(
+			'address'   => '1 Infinite Loop',
+			'latitude'  => '37.3318',
+			'longitude' => '-122.0312',
+		);
+		$args     = array( $post_id, $info, Map::DEFAULT_ZOOM, 800, 400 );
+		$saved    = Utility::invoke_hidden_method( $instance, 'ensure_descriptor_for_combo', $args );
+		$old      = Saved_Image::url( 'qa-old-map.png' );
+		$all      = $instance->get_all_descriptors( $post_id );
+		$key      = array_key_first( $all['osm'] );
+
+		$this->touch_image( $old );
+		$all['osm'][ $key ]['url']  = $old;
+		$all['osm'][ $key ]['hash'] = 'stale';
+		update_post_meta( $post_id, Map::META_KEY, $all );
+
+		$again = Utility::invoke_hidden_method( $instance, 'ensure_descriptor_for_combo', $args );
+
+		$this->assertSame( $saved['url'], $again['url'] );
+		$this->assertFileDoesNotExist( $this->path_for_url( $old ), 'Failed to assert the old PNG is deleted.' );
+		$this->assertFileExists( $this->path_for_url( $saved['url_2x'] ), 'Failed to assert a PNG saved again stays.' );
+
+		$instance->delete_stored_image( $post_id );
+
+		$this->assertFileDoesNotExist(
+			$this->path_for_url( $saved['url'] ),
+			'Failed to assert deleting the map deletes its PNG.'
+		);
+		$this->assertFileDoesNotExist( $this->path_for_url( $saved['url_2x'] ) );
+	}
+
+	/**
+	 * A failed regeneration keeps the saved image for the same location,
+	 * and drops one for another location.
+	 *
+	 * @since 0.36.2
+	 *
+	 * @covers ::regenerate
+	 *
+	 * @return void
+	 */
+	public function test_regenerate_keeps_the_saved_image_when_the_render_fails(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
+		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
+
+		$info  = array(
+			'address'   => '1 Infinite Loop',
+			'latitude'  => '37.3318',
+			'longitude' => '-122.0312',
+		);
+		$key   = Utility::invoke_hidden_method( $instance, 'combo_key', array( 14, 800, 400, 'roadmap' ) );
+		$other = Utility::invoke_hidden_method( $instance, 'combo_key', array( 15, 800, 400, 'roadmap' ) );
+		$entry = array(
+			'url'      => 'https://example.test/saved.png',
+			'url_2x'   => '',
+			'hash'     => 'stale',
+			'location' => Saved_Image::location( $info ),
+			'zoom'     => 14,
+			'width'    => 800,
+			'height'   => 400,
+		);
+		$moved = array_merge(
+			$entry,
+			array(
+				'url'      => 'https://example.test/old-location.png',
+				'location' => 'elsewhere',
+				'zoom'     => 15,
+			)
+		);
+
+		update_post_meta(
+			$post_id,
+			Map::META_KEY,
+			array(
+				'always-null' => array(
+					$key   => $entry,
+					$other => $moved,
+				),
+			)
+		);
+
+		$manager = Manager::get_instance();
+		$manager->register( $this->make_null_provider( 'always-null' ) );
+		update_option( Settings::OPTION_NAME, array( 'map_platform' => 'always-null' ) );
+
+		try {
+			$result = $instance->regenerate( $post_id );
+		} finally {
+			delete_option( Settings::OPTION_NAME );
+			$this->reset_manager_to_core_providers( $manager );
+		}
+
+		$stored = get_post_meta( $post_id, Map::META_KEY, true );
+
+		$this->assertSame( array(), $result, 'Failed to assert a regenerate with no render reports a failure.' );
+		$this->assertSame( 'https://example.test/saved.png', $stored['always-null'][ $key ]['url'] ?? null );
+		$this->assertArrayNotHasKey( $other, $stored['always-null'], 'Failed to assert another location is dropped.' );
+	}
+
+	/**
+	 * A failed regeneration keeps a map saved before `location` was stored,
+	 * when a filter adds a query string to its URL.
+	 *
+	 * @since 0.36.2
+	 *
+	 * @covers ::regenerate
+	 *
+	 * @return void
+	 */
+	public function test_regenerate_keeps_a_filtered_map_saved_without_its_location(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
+		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
+
+		$key    = Utility::invoke_hidden_method( $instance, 'combo_key', array( 14, 800, 400, 'roadmap' ) );
+		$url    = Saved_Image::url(
+			Saved_Image::filename( '1 Infinite Loop', 14, 800, 400, 'always-null', 1, 'roadmap' )
+		);
+		$filter = static function ( array $descriptors ): array {
+			foreach ( $descriptors as $slug => $combos ) {
+				foreach ( $combos as $combo => $entry ) {
+					$descriptors[ $slug ][ $combo ]['url'] = $entry['url'] . '?v=2';
+				}
+			}
+
+			return $descriptors;
+		};
+
+		$this->touch_image( $url );
+		update_post_meta(
+			$post_id,
+			Map::META_KEY,
+			array(
+				'always-null' => array(
+					$key => array(
+						'url'    => $url,
+						'url_2x' => '',
+						'hash'   => 'stale',
+						'zoom'   => 14,
+						'width'  => 800,
+						'height' => 400,
+					),
+				),
+			)
+		);
+
+		$manager = Manager::get_instance();
+		$manager->register( $this->make_null_provider( 'always-null' ) );
+		update_option( Settings::OPTION_NAME, array( 'map_platform' => 'always-null' ) );
+		add_filter( 'gatherpress_static_map_descriptors', $filter );
+
+		try {
+			$instance->regenerate( $post_id );
+		} finally {
+			remove_filter( 'gatherpress_static_map_descriptors', $filter );
+			delete_option( Settings::OPTION_NAME );
+			$this->reset_manager_to_core_providers( $manager );
+		}
+
+		$stored = get_post_meta( $post_id, Map::META_KEY, true );
+
+		$this->assertSame( $url . '?v=2', $stored['always-null'][ $key ]['url'] ?? null );
+		$this->assertFileExists( $this->path_for_url( $url ), 'Failed to assert the saved PNG is kept.' );
+
+		wp_delete_file( $this->path_for_url( $url ) );
+	}
+
+	/**
 	 * Build a Map\Provider\Base subclass whose `render()` always returns
 	 * null. Used by the fallback-chain and null-render coverage tests so
 	 * each can swap in a deterministic non-OSM active provider.
@@ -3344,6 +4151,26 @@ class Test_Map extends Base {
 				return null;
 			}
 		};
+	}
+
+	/**
+	 * Write an empty PNG file at a static map URL so the file check passes.
+	 *
+	 * @since 0.36.2
+	 *
+	 * @param string $url Static map URL.
+	 *
+	 * @return string Path of the file.
+	 */
+	private function touch_image( string $url ): string {
+		$dirs = wp_get_upload_dir();
+		$path = str_replace( $dirs['baseurl'], $dirs['basedir'], $url );
+
+		wp_mkdir_p( dirname( $path ) );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Empty stand-in PNG in uploads.
+		file_put_contents( $path, '' );
+
+		return $path;
 	}
 
 	/**

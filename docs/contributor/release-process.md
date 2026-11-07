@@ -173,13 +173,14 @@ Every one of these is required; skipping any of them bites the next release:
 - [ ] **Confirm the `release/X.Y.Z` rollup PR auto-merged into develop.** The workflow creates its commit via the API (GitHub-signed) and enables auto-merge (squash), so it lands on its own once checks pass, this brings the rolled-up `CHANGELOG.md` to develop and removes the consumed entry files. If it's still open, see Troubleshooting.
 
   Know what that PR is before you touch it: the workflow branches
-  `release/X.Y.Z` **off the tag commit on `main`**, so GitHub's diff view
-  shows everything `main` gained since the last release merge, often
-  dozens of commits and a hundred files. Almost all of it is
-  content-identical to what `develop` already has. The only real change is
-  the rollup commit itself: the new section, its link line, and the deleted
-  entry files. If the PR is `DIRTY`, do **not** resolve it by merging
-  `main`'s state into `develop`; see "The rollup PR is DIRTY" below.
+  `release/X.Y.Z` **off `develop`** and commits only the rollup onto it:
+  the new section and its link line, the deleted entry files, any `@since`
+  tags it carries back, and the credits file when develop lacks it. That
+  needs develop's `CHANGELOG.md` to match the tag's, which the previous
+  release's parity step keeps true. If it doesn't, the run warns and
+  branches off the tag instead, and the PR can go `DIRTY`. Do **not**
+  resolve that by merging `main`'s state into `develop`; see "The rollup PR
+  is DIRTY" below.
 - [ ] **Check `CHANGELOG.md` on both branches has exactly one `## [X.Y.Z]`
   heading and a matching `[X.Y.Z]:` link line**, and that `main` has no
   duplicate headings. A re-run of the tag after the entries were consumed
@@ -373,21 +374,51 @@ bypass setting works too but changes the standing policy.
 
 ### The rollup PR is DIRTY (or shows hundreds of files)
 
-`release/X.Y.Z` is branched off the tag commit, so it carries `main`'s whole
-state. That merged cleanly while `develop` had not moved past the release,
-but once the next cycle is open (`X.Y+1.0-alpha.0` on develop) the version
-strings conflict and the PR goes `DIRTY`, and auto-merge cannot fire.
+The workflow branches `release/X.Y.Z` off `develop`, but falls back to the
+tag commit, with a warning in the run, when develop's `CHANGELOG.md` differs
+from the tag's. A branch off the tag carries `main`'s whole state, so once
+`develop` has moved past the release (`X.Y+1.0-alpha.0`, or any develop-only
+change to a file the release touched), the PR goes `DIRTY` and auto-merge
+cannot fire. Before #2528 every rollup branched off the tag.
 
-Rebuild the branch as `develop` plus only the rollup commit, and let
-auto-merge take it from there:
+Rebuild the branch as `develop` plus the rollup's changes. Don't cherry-pick
+the rollup commit: the `@since` files it carries are develop's whole
+contents, so its diff is against `main` and conflicts throughout. Start from
+develop:
 
 ```bash
 git fetch origin
 git checkout -B release/X.Y.Z origin/develop
-git cherry-pick -x <rollup commit sha>   # "Roll up changelog for X.Y.Z" on release/X.Y.Z
-git diff --stat origin/develop..HEAD      # must be CHANGELOG.md + deleted entry files, nothing else
-git push --force-with-lease origin release/X.Y.Z
 ```
+
+Then apply the rollup by hand:
+
+1. Add the rollup commit's `## [X.Y.Z]` section and its `[X.Y.Z]:` link line
+   to develop's `CHANGELOG.md`.
+2. Delete the consumed entry files the rollup commit deletes.
+3. Carry the `@since` tags. In a separate checkout of the tag, with
+   develop fetched, run
+   `php .github/scripts/release/carry-since.php --version=X.Y.Z > carry.json`.
+   Base64-decode each `additions[].contents` and write it to its `path` in
+   the rebuilt branch's worktree, not in the tag checkout. Don't take these
+   from the rollup commit's diff: a file whose carried copy matches `main`'s
+   shows no change there, which is how 0.36.1 lost 94 tags (#2527).
+4. Copy `.github/scripts/release/credits/X.Y.Z.json` from `main` if develop
+   lacks it.
+
+Commit the result, and check that `git diff origin/develop` holds only those
+changes. Then confirm every carried file landed. Run this in the rebuilt
+branch's worktree; it should print nothing:
+
+```bash
+jq -r '.additions[].path' carry.json | while read -r file; do
+	jq -r --arg file "$file" '.additions[] | select(.path == $file) | .contents' carry.json \
+		| base64 --decode | cmp -s - "$file" || echo "not carried: $file"
+done
+```
+
+Then `git push --force-with-lease origin release/X.Y.Z`, and auto-merge
+takes it from there.
 
 Never resolve it by merging `main` into `develop` through this PR: that would
 carry the release's version strings, credits, and rollups onto `develop`.

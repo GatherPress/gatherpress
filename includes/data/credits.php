@@ -4,7 +4,7 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 return array (
-  'version' => '0.36.1',
+  'version' => '0.36.2',
   'leads' => 
   array (
     0 => 
@@ -185,7 +185,7 @@ return array (
     3 => 
     array (
       'id' => 12256569,
-      'name' => 'clk87',
+      'name' => 'Cheyne Klein',
       'link' => 'https://profiles.wordpress.org/clk87/',
       'slug' => 'clk87',
       'avatar_urls' => 
@@ -198,7 +198,7 @@ return array (
     4 => 
     array (
       'id' => 14505924,
-      'name' => 'dibyajyotikabi',
+      'name' => 'Dibyajyoti Kabi',
       'link' => 'https://profiles.wordpress.org/dibyajyotikabi/',
       'slug' => 'dibyajyotikabi',
       'avatar_urls' => 
