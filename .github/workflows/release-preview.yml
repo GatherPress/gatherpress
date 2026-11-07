@@ -123,7 +123,9 @@ jobs:
             unmatched=$(jq -r '.unmatched | length' /tmp/carry-since.json)
           fi
 
-          {
+          # Writes the preview, listing at most $1 unmatched files (0 for all).
+          write_preview() {
+            local limit="$1"
             echo '<!-- gatherpress-release-preview -->'
             echo "## Release preview for ${VERSION}"
             echo
@@ -161,20 +163,22 @@ jobs:
               echo
               echo "**${unmatched} file(s) need a look.** Their docblocks on \`develop\` are not identical to the released ones, so the rollup will leave them and will not auto-merge. Resolve them by hand after the tag:"
               echo
-              jq -r '.unmatched[:100][] | "- `" + . + "`"' /tmp/carry-since.json
-
-              if [[ "${unmatched}" -gt 100 ]]; then
-                echo "- _…and $(( unmatched - 100 )) more, listed in the [run summary](${RUN_URL})._"
+              if [[ "${limit}" -gt 0 && "${unmatched}" -gt "${limit}" ]]; then
+                jq -r --argjson n "${limit}" '.unmatched[:$n][] | "- `" + . + "`"' /tmp/carry-since.json
+                echo "- _…and $(( unmatched - limit )) more, listed in the [run summary](${RUN_URL})._"
+              else
+                jq -r '.unmatched[] | "- `" + . + "`"' /tmp/carry-since.json
               fi
             fi
-          } > /tmp/release-preview-full.md
+          }
 
           # The run summary keeps everything; the comment stays under GitHub's
           # 65,536-character limit.
-          cat /tmp/release-preview-full.md >> "$GITHUB_STEP_SUMMARY"
+          write_preview 0 >> "$GITHUB_STEP_SUMMARY"
+          write_preview 100 > /tmp/release-preview-comment.md
 
-          if [[ "$(wc -c < /tmp/release-preview-full.md)" -gt 60000 ]]; then
-            head -c 60000 /tmp/release-preview-full.md | sed '$d' > preview/comment.md
+          if [[ "$(wc -c < /tmp/release-preview-comment.md)" -gt 60000 ]]; then
+            head -c 60000 /tmp/release-preview-comment.md | sed '$d' > preview/comment.md
 
             # Close a code block the cut left open.
             if (( $(grep -c '^```' preview/comment.md) % 2 )); then
@@ -183,7 +187,7 @@ jobs:
 
             printf '\n_Truncated. The full preview is in the [run summary](%s)._\n' "${RUN_URL}" >> preview/comment.md
           else
-            cp /tmp/release-preview-full.md preview/comment.md
+            cp /tmp/release-preview-comment.md preview/comment.md
           fi
 
           if [[ -n "${problems}" ]]; then
