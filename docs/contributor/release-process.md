@@ -38,7 +38,8 @@ Version bumps are never hand-edited. The generator lives in-repo at
 old `wp gatherpress develop generate_version` WP-CLI command in the
 [gatherpress-develop](https://github.com/GatherPress/gatherpress-develop)
 plugin). Run it via the **Version Bump** workflow (Actions → Version Bump →
-enter the version), or locally:
+enter the version, and the branch: `develop`, or `version-X.Y.Z` for a
+patch), or locally:
 
 ```bash
 npm run version:bump -- --version=X.Y.Z
@@ -48,7 +49,8 @@ npm i --package-lock-only
 It reads the target version's credits file at
 `.github/scripts/release/credits/X.Y.Z.json` (hand-added first via a normal
 PR; new contributors accumulate in `credits/unreleased.json` and fold in
-automatically at bump time), then writes:
+automatically at bump time). A patch version with no file starts from the
+previous patch's file, so `X.Y.1` starts from `X.Y.0`. It then writes:
 
 - `gatherpress.php` `Version:` header, `package.json` version, `readme.txt`
   `Stable tag:`, the version badge in `README.md`, and the regenerated
@@ -279,14 +281,21 @@ on to the next minor.
     sweeps in anything untracked that happens to be in the working tree; an
     editor swap file rode into 0.35.3 that way and needed two PRs to take
     back out.
-3. **Version bump on the patch branch**: add the `X.Y.1` credits file (copy
-   the `X.Y.0` file forward, appending any new contributors) +
-   `npm run version:bump -- --version=X.Y.1` + lockfile refresh.
-   Run locally, the bump also rewrites the Version header in a sibling
-   `../gatherpress-alpha` checkout **on whichever branch it has checked
-   out**. For a patch that must be alpha's `main`; if alpha is on
-   `develop`, revert that file there and open alpha's `version-X.Y.1` PR
-   against `main` by hand (it is a one-line header change).
+3. **Version bump on the patch branch**: push `version-X.Y.1`, then run the
+   **Version Bump** workflow with version `X.Y.1` and branch
+   `version-X.Y.1`. It starts the `X.Y.1` credits file from `X.Y.0`'s when
+   there is none, folds in `credits/unreleased.json`, refreshes the lockfile,
+   commits the bump onto the branch, and opens the release PR to `main` if the
+   branch has none. Add any other contributors to the credits file first.
+   Its run summary is the reminder to open alpha's `version-X.Y.1` PR against
+   alpha's `main` by hand (it is a one-line header change); alpha's own
+   Version Bump workflow only targets its `develop`.
+
+   To bump locally instead, run `npm run version:bump -- --version=X.Y.1`
+   and `npm i --package-lock-only` on the patch branch. The local bump also
+   rewrites the Version header in a sibling `../gatherpress-alpha` checkout
+   **on whichever branch it has checked out**. For a patch that must be
+   alpha's `main`; if alpha is on `develop`, revert that file there.
 4. **PR `version-X.Y.1` → main, merge, tag `X.Y.1` on main.** The workflow
    ships it exactly like a stable release (it is one), and opens
    `release/X.Y.1` → develop.

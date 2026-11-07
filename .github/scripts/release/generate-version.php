@@ -14,7 +14,8 @@
  *
  * Requires a credits file for the target version at
  * .github/scripts/release/credits/<version>.json (add it there first — a
- * stable version's file is a copy of its latest pre-release file).
+ * stable version's file is a copy of its latest pre-release file). A patch
+ * version with no file starts from the previous patch's file.
  *
  * Unlike the old tooling, README.md and readme.txt are hand-edited files —
  * this script only patches the strings that change per release, in place:
@@ -218,6 +219,38 @@ function fold_unreleased_credits( $entry, $credits_file, $version ) {
 }
 
 /**
+ * Start a patch version's credits file from the version before it.
+ *
+ * A patch's file is a copy of the previous release's (X.Y.0 for X.Y.1),
+ * with contributors folded in from credits/unreleased.json as for any bump.
+ * Other versions still need their file added by hand.
+ *
+ * @since TBD
+ *
+ * @param string $version      The plugin version.
+ * @param string $credits_file Absolute path to the version's credits file.
+ * @return void
+ */
+function copy_previous_patch_credits( $version, $credits_file ) {
+	if ( ! preg_match( '/^(\d+\.\d+)\.(\d+)$/', $version, $matches ) || 0 === (int) $matches[2] ) {
+		return;
+	}
+
+	$previous      = $matches[1] . '.' . ( (int) $matches[2] - 1 );
+	$previous_file = SCRIPT_ROOT . "/credits/{$previous}.json";
+
+	if ( ! file_exists( $previous_file ) ) {
+		return;
+	}
+
+	if ( ! copy( $previous_file, $credits_file ) ) {
+		fail( "Failed to copy credits/{$previous}.json to credits/{$version}.json." );
+	}
+
+	success( "Started credits/{$version}.json from credits/{$previous}.json." );
+}
+
+/**
  * Generate includes/data/credits.php from the source credits entry.
  *
  * @param string $version The plugin version.
@@ -227,6 +260,10 @@ function generate_credits( $version ) {
 	$credits_file = SCRIPT_ROOT . "/credits/{$version}.json";
 	$latest       = REPO_ROOT . '/includes/data/credits.php';
 	$data         = array();
+
+	if ( ! file_exists( $credits_file ) ) {
+		copy_previous_patch_credits( $version, $credits_file );
+	}
 
 	if ( ! file_exists( $credits_file ) ) {
 		fail( "No credits file for {$version} — add .github/scripts/release/credits/{$version}.json first." );
