@@ -14,7 +14,7 @@ import {
 	ToolbarButton,
 	ToolbarGroup,
 } from '@wordpress/components';
-import { __ } from '@wordpress/i18n';
+import { __, _x } from '@wordpress/i18n';
 import { applyFilters } from '@wordpress/hooks';
 import { useEffect, useCallback, useState } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
@@ -476,7 +476,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 			<div { ...blockProps }>
 				{ showPatternPicker && (
 					<PatternPicker
-						label={ __( 'RSVP', 'gatherpress' ) }
+						label={ _x( 'RSVP', 'block title', 'gatherpress' ) }
 						icon="insert"
 						instructions={ __(
 							'Choose a pattern for the RSVP block.',
