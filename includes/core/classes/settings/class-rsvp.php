@@ -56,7 +56,7 @@ final class Rsvp extends Base {
 	 * @return string The localized name for the RSVP settings page.
 	 */
 	protected function get_name(): string {
-		return __( 'RSVP', 'gatherpress' );
+		return _x( 'RSVP', 'settings tab name', 'gatherpress' );
 	}
 
 	/**

@@ -48,6 +48,34 @@ class Test_Rsvp extends Base {
 	}
 
 	/**
+	 * The tab name has its own translation context, so languages that use
+	 * different words for the tab and for other uses of "RSVP" can translate
+	 * it on its own (#2583).
+	 *
+	 * @since TBD
+	 * @covers ::get_name
+	 *
+	 * @return void
+	 */
+	public function test_get_name_uses_its_own_context(): void {
+		$translate = static function ( string $translation, string $text, string $context, string $domain ): string {
+			if ( 'RSVP' === $text && 'settings tab name' === $context && 'gatherpress' === $domain ) {
+				return 'Réservations';
+			}
+
+			return $translation;
+		};
+
+		add_filter( 'gettext_with_context', $translate, 10, 4 );
+
+		$name = Utility::invoke_hidden_method( Rsvp::get_instance(), 'get_name' );
+
+		remove_filter( 'gettext_with_context', $translate, 10 );
+
+		$this->assertSame( 'Réservations', $name, 'Failed to assert the tab name uses the settings tab name context.' );
+	}
+
+	/**
 	 * Coverage for get_priority method.
 	 *
 	 * @covers ::get_priority

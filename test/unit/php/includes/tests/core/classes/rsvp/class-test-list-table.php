@@ -103,6 +103,36 @@ class Test_List_Table extends Base {
 	}
 
 	/**
+	 * The table's `plural` and `singular` arguments are untranslated slugs,
+	 * because `WP_List_Table` turns them into the table's CSS classes and the
+	 * bulk-action nonce: a translated "RSVPs" would lose the
+	 * `.wp-list-table.rsvps` admin styles in other languages (#2583).
+	 *
+	 * @since TBD
+	 * @covers ::__construct
+	 *
+	 * @return void
+	 */
+	public function test_construct_uses_untranslated_slugs(): void {
+		$translate = static function ( string $translation, string $text, string $domain ): string {
+			if ( 'gatherpress' === $domain && in_array( $text, array( 'RSVP', 'RSVPs' ), true ) ) {
+				return 'Réservations';
+			}
+
+			return $translation;
+		};
+
+		add_filter( 'gettext', $translate, 10, 3 );
+
+		$args = Utility::get_hidden_property( new List_Table(), '_args' );
+
+		remove_filter( 'gettext', $translate, 10 );
+
+		$this->assertSame( 'rsvps', $args['plural'], 'Failed to assert the plural argument is the rsvps slug.' );
+		$this->assertSame( 'rsvp', $args['singular'], 'Failed to assert the singular argument is the rsvp slug.' );
+	}
+
+	/**
 	 * The table defaults to the event post type and honors a `post_type`
 	 * constructor argument (#1849).
 	 *

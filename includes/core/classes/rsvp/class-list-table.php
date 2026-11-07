@@ -82,9 +82,13 @@ final class List_Table extends WP_List_Table {
 	public function __construct( $args = array() ) {
 		$this->post_type = ! empty( $args['post_type'] ) ? (string) $args['post_type'] : Event::POST_TYPE;
 
+		// WP_List_Table runs these through sanitize_key() and uses them for the
+		// table's CSS classes and the bulk-action nonce, so they stay untranslated
+		// slugs: a translated label (for example "Réservations") would become
+		// "rservations" and lose the `.wp-list-table.rsvps` admin styles.
 		$table_args = array(
-			'plural'   => __( 'RSVPs', 'gatherpress' ),
-			'singular' => __( 'RSVP', 'gatherpress' ),
+			'plural'   => 'rsvps',
+			'singular' => 'rsvp',
 			'ajax'     => false,
 		);
 
