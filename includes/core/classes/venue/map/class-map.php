@@ -46,7 +46,15 @@ use WP_Post;
  *
  * @since 0.34.0
  *
- * @phpstan-type Descriptor array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}
+ * @phpstan-type Descriptor array{
+ *     url: string,
+ *     url_2x: string,
+ *     hash: string,
+ *     location?: string,
+ *     zoom: int,
+ *     width: int,
+ *     height: int
+ * }
  * @phpstan-type DescriptorMap array<string, Descriptor>
  * @phpstan-type ProviderDescriptorMap array<string, DescriptorMap>
  * @phpstan-type ComboRequest array{
@@ -253,7 +261,7 @@ final class Map {
 	 *         '<provider_slug>' => [
 	 *             '<zoom>x<width>x<height>' => array{
 	 *                 url: string, url_2x: string, hash: string,
-	 *                 zoom: int, width: int, height: int,
+	 *                 location: string, zoom: int, width: int, height: int,
 	 *             },
 	 *             ...
 	 *         ],
@@ -264,9 +272,11 @@ final class Map {
 	 * fallbacks while a new Google provider's PNG files render in the
 	 * background after a `map_platform` switch. `url_2x` is empty string
 	 * when the retina variant failed or the provider can't produce one
-	 * for the given combo.
+	 * for the given combo. `location` identifies the address and
+	 * coordinates the image shows.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Entries carry `location`.
 	 * @var string
 	 */
 	const META_KEY = 'gatherpress_static_map';
@@ -314,7 +324,7 @@ final class Map {
 		// hook, but trailing the default batch is the cheapest guard
 		// against future ordering surprises.
 		add_action( 'wp_after_insert_post', array( $this, 'maybe_generate' ), 11 );
-		add_action( 'registered_post_type', array( $this, 'maybe_register_delete_hook' ) );
+		add_action( 'before_delete_post', array( $this, 'maybe_delete_stored_image' ), 10, 2 );
 		add_filter( 'block_type_metadata', array( $this, 'apply_block_attribute_defaults' ) );
 		// React to provider changes so a `map_platform` switch schedules
 		// the same prewarm pass that runs on theme switches.
@@ -446,26 +456,22 @@ final class Map {
 	}
 
 	/**
-	 * Wire `delete_post_{$type}` → `delete_stored_image` for venue post types.
+	 * Delete a venue's saved maps before the venue is deleted.
 	 *
-	 * Mirrors the registered_post_type pattern used elsewhere so companion
-	 * plugins declaring custom venue post types automatically get cleanup.
+	 * Runs on `before_delete_post`, while the venue still has its saved
+	 * maps: by `delete_post_{$post_type}`, core has deleted the post meta.
 	 *
-	 * @since 0.34.0
+	 * @since TBD
 	 *
-	 * @param string $post_type The post type that was just registered.
+	 * @param int     $post_id The post ID being deleted.
+	 * @param WP_Post $post    The post being deleted.
 	 *
 	 * @return void
 	 */
-	public function maybe_register_delete_hook( string $post_type ): void {
-		if ( ! post_type_supports( $post_type, Venue::SUPPORT ) ) {
-			return;
+	public function maybe_delete_stored_image( int $post_id, WP_Post $post ): void {
+		if ( post_type_supports( $post->post_type, Venue::SUPPORT ) ) {
+			$this->delete_stored_image( $post_id );
 		}
-
-		add_action(
-			sprintf( 'delete_post_%s', $post_type ),
-			array( $this, 'delete_stored_image' )
-		);
 	}
 
 	/**
@@ -704,17 +710,17 @@ final class Map {
 	 * Delete every stored static-map PNG (at any zoom) and clear the meta.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Deletes the PNG files no other venue uses.
 	 *
 	 * @param int $post_id The venue post ID.
 	 *
 	 * @return void
 	 */
 	public function delete_stored_image( int $post_id ): void {
-		// Filenames are derived from address + dims, so the same PNG on disk
-		// may be shared with other venues at the same address. Clearing the
-		// meta is enough — a follow-up GC pass can sweep truly orphaned
-		// files when no venue's descriptor points at them any longer.
+		$previous = $this->get_all_descriptors( $post_id );
+
 		delete_post_meta( $post_id, self::META_KEY );
+		Saved_Image::delete_all_unused( $previous );
 	}
 
 	/**
@@ -732,9 +738,12 @@ final class Map {
 	 *
 	 * Returns the fresh descriptor map so the caller — typically the block
 	 * editor's "Regenerate Map" REST endpoint — can hand the new URLs
-	 * straight back to the client without a second DB round-trip.
+	 * straight back to the client without a second DB round-trip. Returns
+	 * an empty array when no combo rendered.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Keeps the saved image for a combo that fails to render, returns an empty
+	 *            array when no combo rendered, and deletes the PNG files no venue uses.
 	 *
 	 * @param int               $post_id     The venue post ID.
 	 * @param ComboRequest|null $extra_combo Optional extra combo to include, in the
@@ -745,8 +754,7 @@ final class Map {
 	 * @return ProviderDescriptorMap
 	 */
 	public function regenerate( int $post_id, ?array $extra_combo = null ): array {
-		// Cache the combos we want to rebuild before wiping meta —
-		// delete_stored_image() clears META_KEY, which is where
+		// Cache the combos we want to rebuild before wiping meta, which is where
 		// get_cached_combos() reads from.
 		$combos   = $this->get_cached_combos( $post_id );
 		$map_type = $this->normalize_map_type( (string) ( $extra_combo['map_type'] ?? '' ) );
@@ -790,7 +798,13 @@ final class Map {
 		}
 		$combos = $unique;
 
-		$this->delete_stored_image( $post_id );
+		// Kept so a combo that fails to render keeps its saved image.
+		$previous    = $this->get_all_descriptors( $post_id );
+		$active_slug = Manager::get_instance()->get_active_slug();
+		$rendered    = false;
+
+		// The files stay until the end, for the combos that fail to render.
+		delete_post_meta( $post_id, self::META_KEY );
 
 		if ( empty( $combos ) ) {
 			// Seed the site-default combo so a never-rendered venue still
@@ -815,21 +829,42 @@ final class Map {
 
 		if ( null === $this->parse_coord( $info['latitude'] ) ||
 			null === $this->parse_coord( $info['longitude'] ) ) {
+			Saved_Image::delete_all_unused( $previous );
+
 			return array();
 		}
 
 		foreach ( $combos as $combo ) {
-			$this->ensure_descriptor_for_combo(
+			$combo_map_type = $this->normalize_map_type( (string) $combo['map_type'] );
+			$descriptor     = $this->ensure_descriptor_for_combo(
 				$post_id,
 				$info,
 				$combo['zoom'],
 				$combo['width'],
 				$combo['height'],
-				$this->normalize_map_type( (string) $combo['map_type'] )
+				$combo_map_type
 			);
+
+			$rendered = $rendered || null !== $descriptor;
+
+			if ( null === $descriptor ) {
+				$parts = array(
+					$this->clamp_zoom( (int) $combo['zoom'] ),
+					$this->clamp_width( (int) $combo['width'] ),
+					$this->clamp_height( (int) $combo['height'] ),
+					$combo_map_type,
+				);
+
+				Saved_Image::find( $previous, $active_slug, $this->combo_key( ...$parts ) )
+					?->restore( $post_id, $info, $parts );
+			}
 		}
 
-		return $this->get_all_descriptors( $post_id );
+		// Files rendered or put back again stay without a lookup.
+		Saved_Image::delete_all_unused( $previous, Saved_Image::stored_urls( $post_id ) );
+
+		// No combo rendered, so the REST handler reports `generation_failed`.
+		return $rendered ? $this->get_all_descriptors( $post_id ) : array();
 	}
 
 	/**
@@ -878,6 +913,8 @@ final class Map {
 	 * no coordinates, or generation failed.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Falls back to another provider's image only for the venue's current location,
+	 *            and only when its PNG exists.
 	 *
 	 * @param int      $post_id      Event or venue post ID.
 	 * @param string   $post_type    The post type of `$post_id`.
@@ -887,7 +924,7 @@ final class Map {
 	 * @param string   $aspect_ratio Aspect-ratio hint used to derive any auto dimension.
 	 * @param string   $map_type     Map type slug from the block attribute.
 	 *
-	 * @return array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}|null
+	 * @return Descriptor|null
 	 */
 	public function get_descriptor_for_post(
 		int $post_id,
@@ -946,21 +983,26 @@ final class Map {
 		// unreachable, GD missing, brand-new provider not yet warmed). Walk
 		// other providers' stored entries for the same combo so a switch
 		// from OSM to Google still shows the OSM PNG until the new one
-		// lands. Take the first matching entry; ordering follows whatever
-		// post meta gives us (last-saved-wins by storage order).
-		$key         = $this->combo_key(
-			$this->clamp_zoom( $resolved_zoom ),
-			$this->clamp_width( $resolved['width'] ),
-			$this->clamp_height( $resolved['height'] ),
-			$map_type
-		);
+		// lands. Take the first matching entry for the venue's current
+		// location; ordering follows whatever post meta gives us
+		// (last-saved-wins by storage order).
+		$zoom        = $this->clamp_zoom( $resolved_zoom );
+		$width       = $this->clamp_width( $resolved['width'] );
+		$height      = $this->clamp_height( $resolved['height'] );
+		$combo       = array( $zoom, $width, $height, $map_type );
+		$key         = $this->combo_key( ...$combo );
 		$all         = $this->get_all_descriptors( $venue_post_id );
 		$active_slug = Manager::get_instance()->get_active_slug();
 		$fallback    = null;
 
 		foreach ( $all as $slug => $combos ) {
-			if ( $slug !== $active_slug && isset( $combos[ $key ] ) ) {
-				$fallback = $combos[ $key ];
+			if ( $slug === $active_slug || ! isset( $combos[ $key ] ) ) {
+				continue;
+			}
+
+			$fallback = ( new Saved_Image( $combos[ $key ], $slug, $key ) )->usable( $info, $combo );
+
+			if ( null !== $fallback ) {
 				break;
 			}
 		}
@@ -1032,7 +1074,7 @@ final class Map {
 	 * @param string $aspect_ratio Aspect-ratio string (e.g. "16/9").
 	 * @param string $map_type     Map type slug (defaults to site setting).
 	 *
-	 * @return array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}|null
+	 * @return Descriptor|null
 	 */
 	public function warm(
 		int $post_id,
@@ -1082,7 +1124,7 @@ final class Map {
 	 *
 	 * @param int $post_id The venue post ID.
 	 *
-	 * @return array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}|null
+	 * @return Descriptor|null
 	 */
 	public function get_stored_descriptor( int $post_id ): ?array {
 		$all      = $this->get_all_descriptors( $post_id );
@@ -1151,12 +1193,13 @@ final class Map {
 				}
 
 				$descriptors[ $provider_slug ][ (string) $key ] = array(
-					'url'    => (string) $entry['url'],
-					'url_2x' => isset( $entry['url_2x'] ) ? (string) $entry['url_2x'] : '',
-					'hash'   => (string) $entry['hash'],
-					'zoom'   => $zoom,
-					'width'  => $width,
-					'height' => $height,
+					'url'      => (string) $entry['url'],
+					'url_2x'   => isset( $entry['url_2x'] ) ? (string) $entry['url_2x'] : '',
+					'hash'     => (string) $entry['hash'],
+					'location' => isset( $entry['location'] ) ? (string) $entry['location'] : '',
+					'zoom'     => $zoom,
+					'width'    => $width,
+					'height'   => $height,
 				);
 			}
 		}
@@ -1278,10 +1321,12 @@ final class Map {
 	 *
 	 * Hits the filesystem cache when the stored hash already matches the
 	 * current inputs and the PNG is still on disk; otherwise composites a
-	 * fresh image, saves it, updates the meta, and removes the old PNG for
-	 * that combo (if any).
+	 * fresh image, saves it, and updates the meta. When the render fails, a
+	 * saved image for the same location is returned as it is.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Returns the saved image for the same location when the render fails,
+	 *            and renders again when the saved PNG is missing.
 	 *
 	 * @param int                   $post_id  Venue post ID.
 	 * @param array<string, string> $info     Parsed venue information.
@@ -1290,7 +1335,7 @@ final class Map {
 	 * @param int                   $height   Pixel height of the PNG.
 	 * @param string                $map_type Map type slug for the render.
 	 *
-	 * @return array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}|null
+	 * @return Descriptor|null
 	 */
 	protected function ensure_descriptor_for_combo(
 		int $post_id,
@@ -1322,19 +1367,20 @@ final class Map {
 
 		$slug    = $provider->get_slug();
 		$address = (string) ( $info['address'] ?? '' );
-		$hash    = $this->hash_for( $info, $zoom, $width, $height, $slug, $map_type );
-		$key     = $this->combo_key( $zoom, $width, $height, $map_type );
+		$hash    = $this->hash_for( $info, $zoom, $width, $height, $slug, $map_type, $provider->get_cache_source() );
+		$combo   = array( $zoom, $width, $height, $map_type );
+		$key     = $this->combo_key( ...$combo );
 
 		$all      = $this->get_all_descriptors( $post_id );
 		$existing = $all[ $slug ][ $key ] ?? null;
+		$saved    = Saved_Image::find( $all, $slug, $key );
 
 		$retina_enabled = $this->should_generate_retina();
 
-		$expected_url = $this->build_image_url( $address, $zoom, $width, $height, $slug, 1, $map_type );
-		$has_valid_1x = null !== $existing
-			&& $existing['hash'] === $hash
-			&& $existing['url'] === $expected_url;
-		$needs_retina = $retina_enabled && ( null === $existing || '' === $existing['url_2x'] );
+		// A map saved before file names carried the hash keeps its URL.
+		$plain_url    = $this->build_image_url( $address, $zoom, $width, $height, $slug, 1, $map_type );
+		$has_valid_1x = null !== $existing && (bool) $saved?->is_current( $hash, $plain_url );
+		$needs_retina = $retina_enabled && ! $saved?->has_2x();
 
 		if ( $has_valid_1x && ! $needs_retina ) {
 			return $existing;
@@ -1351,13 +1397,13 @@ final class Map {
 			$image = $provider->render( $latitude, $longitude, $zoom, $width, $height, 1, $map_type );
 
 			// Provider returned null — GD missing, network failure, or the
-			// provider can't satisfy this combo. Surface as "no descriptor"
-			// rather than persisting a half-baked entry.
+			// provider can't satisfy this combo. Keep showing a saved image
+			// for the same location rather than persisting a half-baked entry.
 			if ( null === $image ) {
-				return null;
+				return $saved?->usable( $info, $combo );
 			}
 
-			$url = $this->save_image( $image, $address, $zoom, $width, $height, 1, $slug, $map_type );
+			$url = $this->save_image( $image, $address, $zoom, $width, $height, 1, $slug, $map_type, $hash );
 			unset( $image );
 
 			if ( null === $url ) {
@@ -1389,7 +1435,8 @@ final class Map {
 					$height,
 					self::RETINA_DENSITY,
 					$slug,
-					$map_type
+					$map_type,
+					$hash
 				);
 				unset( $image_2x );
 				if ( null !== $saved_2x ) {
@@ -1399,12 +1446,13 @@ final class Map {
 		}
 
 		$all[ $slug ][ $key ] = array(
-			'url'    => $url,
-			'url_2x' => $url_2x,
-			'hash'   => $hash,
-			'zoom'   => $zoom,
-			'width'  => $width,
-			'height' => $height,
+			'url'      => $url,
+			'url_2x'   => $url_2x,
+			'hash'     => $hash,
+			'location' => Saved_Image::location( $info ),
+			'zoom'     => $zoom,
+			'width'    => $width,
+			'height'   => $height,
 		);
 
 		update_post_meta( $post_id, self::META_KEY, $all );
@@ -1422,6 +1470,9 @@ final class Map {
 		) {
 			return null;
 		}
+
+		// Only the files this render replaced, so an unchanged map skips the lookup.
+		$saved?->delete_unused( array( $url, $url_2x ) );
 
 		return $all[ $slug ][ $key ];
 	}
@@ -1456,11 +1507,13 @@ final class Map {
 	/**
 	 * Compute a stable hash from the inputs that determine the rendered PNG.
 	 *
-	 * Any change to address, coords, zoom, width, height, or tile provider
-	 * invalidates the previous image. Unrelated venue edits (title, excerpt,
-	 * other meta) keep the same hash and skip regeneration.
+	 * Any change to address, coords, zoom, width, height, tile provider, or
+	 * where the provider's images come from invalidates the previous image.
+	 * Unrelated venue edits (title, excerpt, other meta) keep the same hash
+	 * and skip regeneration.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Takes the provider's image source.
 	 *
 	 * @param array<string, string> $info     Parsed venue information.
 	 * @param int                   $zoom     Map zoom level.
@@ -1468,6 +1521,7 @@ final class Map {
 	 * @param int                   $height   Output height.
 	 * @param string                $provider Provider slug (e.g. `osm`).
 	 * @param string                $map_type Map type slug.
+	 * @param string                $source   Where the provider's images come from, from `get_cache_source()`.
 	 *
 	 * @return string MD5 hex digest.
 	 */
@@ -1477,7 +1531,8 @@ final class Map {
 		int $width,
 		int $height,
 		string $provider,
-		string $map_type = self::DEFAULT_MAP_TYPE
+		string $map_type = self::DEFAULT_MAP_TYPE,
+		string $source = ''
 	): string {
 		$map_type = $this->normalize_map_type( $map_type );
 		// md5() here is a non-cryptographic cache-key discriminator, matching class-geocoding.php.
@@ -1485,21 +1540,23 @@ final class Map {
 		// cache key for every static-map PNG on disk. Reordering or changing a
 		// type (e.g. casting one of these to int) silently invalidates every
 		// existing image and forces a full regeneration on the next save.
-		return md5( // NOSONAR.
-			implode(
-				'|',
-				array(
-					(string) ( $info['address'] ?? '' ),
-					(string) ( $info['latitude'] ?? '' ),
-					(string) ( $info['longitude'] ?? '' ),
-					(string) $zoom,
-					(string) $width,
-					(string) $height,
-					$provider,
-					$map_type,
-				)
-			)
+		$parts = array(
+			(string) ( $info['address'] ?? '' ),
+			(string) ( $info['latitude'] ?? '' ),
+			(string) ( $info['longitude'] ?? '' ),
+			(string) $zoom,
+			(string) $width,
+			(string) $height,
+			$provider,
+			$map_type,
 		);
+
+		// Added only when set, so a provider without a source keeps its hashes.
+		if ( '' !== $source ) {
+			$parts[] = $source;
+		}
+
+		return md5( implode( '|', $parts ) ); // NOSONAR.
 	}
 
 	/**
@@ -1532,24 +1589,18 @@ final class Map {
 		int $density = 1,
 		string $map_type = self::DEFAULT_MAP_TYPE
 	): string {
-		$dirs     = wp_get_upload_dir();
-		$base_url = trailingslashit( $dirs['baseurl'] ) . self::UPLOADS_SUBDIR;
-		$filename = $this->filename_for( $address, $zoom, $width, $height, $provider, $density, $map_type );
-
-		return trailingslashit( $base_url ) . $filename;
+		return Saved_Image::url(
+			$this->filename_for( $address, $zoom, $width, $height, $provider, $density, $map_type )
+		);
 	}
 
 	/**
 	 * Compose a filesystem-safe filename from the address + dimensions.
 	 *
-	 * Address gets slugified via `sanitize_title()` and capped at 150 chars
-	 * so the full filename stays comfortably under the 255-byte cap common
-	 * to most filesystems. An empty or all-special-character address falls
-	 * back to `venue` so there's always something before the dimension
-	 * suffix. `$density > 1` appends the `@{density}x` suffix used by the
-	 * retina variants, e.g. `venue-12-800-300@2x.png`.
+	 * See {@see Saved_Image::filename()}.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Moved to {@see Saved_Image::filename()}.
 	 *
 	 * @param string $address  Venue address.
 	 * @param int    $zoom     Map zoom level.
@@ -1571,24 +1622,15 @@ final class Map {
 		int $density = 1,
 		string $map_type = self::DEFAULT_MAP_TYPE
 	): string {
-		$map_type = $this->normalize_map_type( $map_type );
-		// `sanitize_title()` URL-slugifies; pass the result through
-		// `sanitize_file_name()` as defense-in-depth so any path-sensitive
-		// characters that slip past (or future changes to sanitize_title's
-		// allowed set) can't escape the filename segment.
-		$slug = sanitize_file_name( sanitize_title( $address ) );
-
-		if ( '' === $slug ) {
-			$slug = 'venue';
-		}
-
-		if ( 150 < strlen( $slug ) ) {
-			$slug = substr( $slug, 0, 150 );
-		}
-
-		$suffix = $density > 1 ? sprintf( '@%dx', $density ) : '';
-
-		return sprintf( '%s-%s-%s-%d-%d-%d%s.png', $slug, $provider, $map_type, $zoom, $width, $height, $suffix );
+		return Saved_Image::filename(
+			$address,
+			$zoom,
+			$width,
+			$height,
+			$provider,
+			$density,
+			$this->normalize_map_type( $map_type )
+		);
 	}
 
 	/**
@@ -1601,6 +1643,7 @@ final class Map {
 	 * that'd change visible output also change the hash in the descriptor.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Takes the map hash, which {@see Saved_Image::versioned()} adds to the filename.
 	 *
 	 * @param GdImage $image    Finished image from a provider's `render()`.
 	 * @param string  $address  Venue address (slugified for the filename).
@@ -1610,6 +1653,7 @@ final class Map {
 	 * @param int     $density  Pixel-density multiplier. 1 = standard, 2 = retina.
 	 * @param string  $provider Provider slug.
 	 * @param string  $map_type Map type slug.
+	 * @param string  $hash     Map hash, or an empty string for a filename without it.
 	 *
 	 * @return string|null Public URL of the saved file, or null on failure.
 	 */
@@ -1621,7 +1665,8 @@ final class Map {
 		int $height,
 		int $density,
 		string $provider,
-		string $map_type = self::DEFAULT_MAP_TYPE
+		string $map_type = self::DEFAULT_MAP_TYPE,
+		string $hash = ''
 	): ?string {
 		$dirs = wp_get_upload_dir();
 
@@ -1632,6 +1677,7 @@ final class Map {
 		$base_dir = trailingslashit( $dirs['basedir'] ) . self::UPLOADS_SUBDIR;
 		$base_url = trailingslashit( $dirs['baseurl'] ) . self::UPLOADS_SUBDIR;
 		$filename = $this->filename_for( $address, $zoom, $width, $height, $provider, $density, $map_type );
+		$filename = '' === $hash ? $filename : Saved_Image::versioned( $filename, $hash );
 		$path     = trailingslashit( $base_dir ) . $filename;
 
 		// Filesystem failure modes — uploads/ not writable, disk full, or
