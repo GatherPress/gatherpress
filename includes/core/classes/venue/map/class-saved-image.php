@@ -3,7 +3,7 @@
  * Saved static map image helpers.
  *
  * @package GatherPress\Core\Venue\Map
- * @since TBD
+ * @since 0.36.2
  */
 
 namespace GatherPress\Core\Venue\Map;
@@ -17,7 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * A static map PNG saved in a venue's meta, with the helpers that name
  * its files.
  *
- * @since TBD
+ * @since 0.36.2
  *
  * @phpstan-import-type Descriptor from Map
  * @phpstan-import-type ProviderDescriptorMap from Map
@@ -27,7 +27,7 @@ final class Saved_Image {
 	/**
 	 * Saved descriptor.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 * @var array<string, mixed>
 	 * @phpstan-var Descriptor
 	 */
@@ -36,7 +36,7 @@ final class Saved_Image {
 	/**
 	 * Provider slug the image was saved under.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 * @var string
 	 */
 	private readonly string $slug;
@@ -44,7 +44,7 @@ final class Saved_Image {
 	/**
 	 * Combo key from `Map::combo_key()` the image was saved under.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 * @var string
 	 */
 	private readonly string $key;
@@ -52,7 +52,7 @@ final class Saved_Image {
 	/**
 	 * Wrap a saved descriptor.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @param array<string, mixed> $entry Saved descriptor.
 	 * @phpstan-param Descriptor $entry
@@ -68,7 +68,7 @@ final class Saved_Image {
 	/**
 	 * Find the saved image for a provider and combo in a descriptor map.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @param array<string, mixed> $descriptors Saved maps, by provider and combo.
 	 * @phpstan-param ProviderDescriptorMap $descriptors
@@ -84,7 +84,7 @@ final class Saved_Image {
 	/**
 	 * Delete the PNG files of saved maps that no venue uses any longer.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @param array<string, mixed> $descriptors Saved maps, by provider and combo.
 	 * @phpstan-param ProviderDescriptorMap $descriptors
@@ -105,7 +105,7 @@ final class Saved_Image {
 	 *
 	 * Reads the meta as stored, so a URL a filter rewrote is not included.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @param int $post_id Venue post ID.
 	 *
@@ -122,7 +122,7 @@ final class Saved_Image {
 	 * another request, such as a prewarm job, wrote after the venue's saved
 	 * maps were cleaned up.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) -- $meta_ids and $post_id are required by
 	 *                                                    the deleted_post_meta signature.
@@ -150,7 +150,7 @@ final class Saved_Image {
 	 * suffix. `$density > 1` appends the `@{density}x` suffix used by the
 	 * retina variants, e.g. `venue-osm-roadmap-12-800-300@2x.png`.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @param string $address  Venue address.
 	 * @param int    $zoom     Map zoom level.
@@ -198,7 +198,7 @@ final class Saved_Image {
 	 * not keep serving the old image. The hash goes before the retina
 	 * suffix, e.g. `...-800-300-1a2b3c4d@2x.png`.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @param string $file File name or URL from {@see self::filename()}.
 	 * @param string $hash Map hash.
@@ -212,7 +212,7 @@ final class Saved_Image {
 	/**
 	 * Public URL of a file in the static maps folder.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @param string $filename File name from {@see self::filename()}.
 	 *
@@ -227,7 +227,7 @@ final class Saved_Image {
 	/**
 	 * Identify the address and coordinates a static map shows.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @param array<string, string> $info Parsed venue information.
 	 *
@@ -253,7 +253,7 @@ final class Saved_Image {
 	 * A map saved before file names carried the hash is matched on its
 	 * plain URL. A query string a filter added is ignored.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @param string $hash      Map hash.
 	 * @param string $plain_url URL of the 1x PNG without the hash.
@@ -273,7 +273,7 @@ final class Saved_Image {
 	/**
 	 * Whether the image has a 2x PNG on disk.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @return bool False when there is no 2x URL or its PNG is missing.
 	 */
@@ -290,7 +290,7 @@ final class Saved_Image {
 	 * a filter added. A missing 2x PNG is left out, so the page doesn't
 	 * offer it in `srcset`.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @param array<string, string>                    $info  Parsed venue information.
 	 * @param array{0: int, 1: int, 2: int, 3: string} $combo Zoom, width, height and normalized map type.
@@ -331,7 +331,7 @@ final class Saved_Image {
 	 * Used by {@see Map::regenerate()}, which clears the meta before it
 	 * renders, for a combo that failed to render again.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @param int                                      $post_id Venue post ID.
 	 * @param array<string, string>                    $info    Parsed venue information.
@@ -361,7 +361,7 @@ final class Saved_Image {
 	 * file is kept while any venue's saved maps still point at it, with or
 	 * without a query string.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @param string[] $keep URLs to keep without a lookup, such as the files a render saved again.
 	 *
@@ -374,7 +374,7 @@ final class Saved_Image {
 	/**
 	 * Get the PNG URLs in a stored map value.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @param mixed $stored Stored map meta.
 	 *
@@ -396,7 +396,7 @@ final class Saved_Image {
 	/**
 	 * Delete the PNG files at these URLs that no venue uses any longer.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @param string[] $urls PNG URLs.
 	 * @param string[] $keep URLs to keep without a lookup.
@@ -445,7 +445,7 @@ final class Saved_Image {
 	 * to a CDN, or one that leaves the folder with `..`, is not checked
 	 * here and counts as present. A query string a filter added is ignored.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @param string $url Public URL of the PNG.
 	 *
@@ -460,7 +460,7 @@ final class Saved_Image {
 	/**
 	 * Drop a query string a filter added to a saved map URL.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @param string $url Public URL of the PNG.
 	 *
@@ -473,7 +473,7 @@ final class Saved_Image {
 	/**
 	 * Path on disk of a PNG in the static maps folder.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @param string $url Public URL of the PNG.
 	 *

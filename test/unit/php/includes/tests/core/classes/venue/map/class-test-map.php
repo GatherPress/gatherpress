@@ -404,7 +404,7 @@ class Test_Map extends Base {
 	 * is written before or after core deletes the venue's meta. A file
 	 * another venue uses stays.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::ensure_descriptor_for_combo
 	 * @covers ::maybe_delete_stored_image
@@ -604,7 +604,7 @@ class Test_Map extends Base {
 	/**
 	 * Deleting a venue deletes its saved maps, and deleting another post leaves them.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::maybe_delete_stored_image
 	 *
@@ -837,7 +837,7 @@ class Test_Map extends Base {
 	 * un-geocodable must have its stored PNG files purged so stale images
 	 * don't keep serving under the new (wrong) address.
 	 *
-	 * @since TBD Asserts the PNG files no venue uses are deleted.
+	 * @since 0.36.2 Asserts the PNG files no venue uses are deleted.
 	 *
 	 * @covers ::maybe_generate
 	 * @covers ::delete_stored_image
@@ -1170,7 +1170,7 @@ class Test_Map extends Base {
 	 * Clears the descriptor meta for the venue and deletes the PNG files,
 	 * except a file another venue at the same address still uses.
 	 *
-	 * @since TBD Asserts the PNG files no venue uses are deleted, and a shared one stays.
+	 * @since 0.36.2 Asserts the PNG files no venue uses are deleted, and a shared one stays.
 	 *
 	 * @covers ::delete_stored_image
 	 *
@@ -2539,7 +2539,7 @@ class Test_Map extends Base {
 	 * Regenerating maps that render with the same file names keeps their
 	 * files without looking them up.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::regenerate
 	 *
@@ -3338,7 +3338,7 @@ class Test_Map extends Base {
 	 * The other-provider fallback skips an image saved before the venue
 	 * moved, so the page never shows the old location.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::get_descriptor_for_post
 	 *
@@ -3661,7 +3661,7 @@ class Test_Map extends Base {
 	 * A saved map renders again when the provider's image source changes,
 	 * here through a new CARTO key.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::ensure_descriptor_for_combo
 	 *
@@ -3711,7 +3711,7 @@ class Test_Map extends Base {
 	 * When the render fails, a saved image for the same location is kept,
 	 * even with a stale hash, and one for another location is not.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::ensure_descriptor_for_combo
 	 *
@@ -3807,7 +3807,7 @@ class Test_Map extends Base {
 	 * A saved map whose PNG is gone renders again, and a missing retina
 	 * PNG is rendered again too.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::ensure_descriptor_for_combo
 	 *
@@ -3848,7 +3848,7 @@ class Test_Map extends Base {
 	/**
 	 * A map saved before file names carried the hash is kept while its hash matches.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::ensure_descriptor_for_combo
 	 *
@@ -3897,7 +3897,7 @@ class Test_Map extends Base {
 	/**
 	 * A map that renders again deletes its old files, and keeps a file it saves again.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::ensure_descriptor_for_combo
 	 * @covers ::delete_stored_image
@@ -3942,7 +3942,7 @@ class Test_Map extends Base {
 	 * A failed regeneration keeps the saved image for the same location,
 	 * and drops one for another location.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::regenerate
 	 *
@@ -4014,7 +4014,7 @@ class Test_Map extends Base {
 	 * A failed regeneration keeps a map saved before `location` was stored,
 	 * when a filter adds a query string to its URL.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::regenerate
 	 *
@@ -4156,7 +4156,7 @@ class Test_Map extends Base {
 	/**
 	 * Write an empty PNG file at a static map URL so the file check passes.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @param string $url Static map URL.
 	 *
