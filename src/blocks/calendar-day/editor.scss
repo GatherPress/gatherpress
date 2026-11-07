@@ -76,14 +76,16 @@ $span-width: calc(var(--gatherpress-calendar-row-span, 1) * 100% + (var(--gather
 		margin: 0 !important;
 		gap: 0 !important;
 
-		> .block-editor-block-list__block {
+		// The day number keeps the padding style.scss gives it, as on the front end.
+		> .block-editor-block-list__block:not(.gatherpress-calendar__day-number) {
 			margin: 0 !important;
 			padding: 0 !important;
 			width: 100% !important;
 			box-sizing: border-box;
 		}
 
-		// The day number stays at the top left.
+		// The day number stays at the top left. The paragraph is its own block wrapper.
+		> .block-editor-block-list__block.gatherpress-calendar__day-number,
 		> .block-editor-block-list__block:has(.gatherpress-calendar__day-number) {
 			width: auto !important;
 			align-self: flex-start !important;
@@ -146,6 +148,13 @@ $span-width: calc(var(--gatherpress-calendar-row-span, 1) * 100% + (var(--gather
 					overflow: hidden !important;
 				}
 
+				// Without this the inner blocks grow to the title, and the title never truncates.
+				.gatherpress-calendar__entry-template > .block-editor-block-list__block > .block-editor-inner-blocks,
+				.gatherpress-calendar__entry-template > .block-editor-block-list__block > .block-editor-inner-blocks > .block-editor-block-list__layout {
+					min-width: 0 !important;
+					max-width: 100% !important;
+				}
+
 				#{selector.nest(".gatherpress-calendar__entry-template", $titles)} {
 					max-width: 100% !important;
 					width: 100% !important;
@@ -164,7 +173,9 @@ $span-width: calc(var(--gatherpress-calendar-row-span, 1) * 100% + (var(--gather
 					overflow: visible !important;
 				}
 
+				// The wrapper is a flex item, so it would shrink to the cell without flex: none.
 				.gatherpress-calendar__entry-template > .block-editor-block-list__block {
+					flex: none !important;
 					margin: 0 !important;
 					padding: 0 !important;
 					max-width: $span-width !important;
@@ -173,10 +184,19 @@ $span-width: calc(var(--gatherpress-calendar-row-span, 1) * 100% + (var(--gather
 					overflow: hidden !important;
 				}
 
+				.gatherpress-calendar__entry-template > .block-editor-block-list__block > .block-editor-inner-blocks,
+				.gatherpress-calendar__entry-template > .block-editor-block-list__block > .block-editor-inner-blocks > .block-editor-block-list__layout {
+					min-width: 0 !important;
+					max-width: 100% !important;
+				}
+
+				// The wrapper already spans the days, so a title is at most its width.
 				#{selector.nest(".gatherpress-calendar__entry-template > .block-editor-block-list__block", $titles)} {
-					max-width: $span-width !important;
+					max-width: 100% !important;
 					width: max-content !important;
 					white-space: nowrap !important;
+					overflow: hidden !important;
+					text-overflow: ellipsis !important;
 				}
 			}
 
