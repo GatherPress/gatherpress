@@ -262,18 +262,15 @@ export function resolvePostDateSpan( post, range = null, eventPostTypes = [] ) {
  * @param {Object}        gridConfig     Time grid configuration.
  * @param {Array<string>} eventPostTypes Slugs of the post types that support gatherpress-event-date.
  *
- * @return {Object|null} { timeRowStart, timeRowEnd }, or null when the grid is off or the post has no start.
+ * @return {Object|null} { timeRowStart, timeRowEnd }, or null when the grid is off, the post is not an event or it has no start.
  */
 export function calculateTimedEventTracks( post, gridConfig, eventPostTypes = [] ) {
-	if ( ! gridConfig?.enabled ) {
+	if ( ! gridConfig?.enabled || ! eventPostTypes.includes( post.type ) ) {
 		return null;
 	}
 
-	const isEvent = eventPostTypes.includes( post.type );
-	const startTimeStr = isEvent
-		? post.meta?.gatherpress_datetime_start
-		: post.date;
-	const endTimeStr = isEvent ? post.meta?.gatherpress_datetime_end : null;
+	const startTimeStr = post.meta?.gatherpress_datetime_start;
+	const endTimeStr = post.meta?.gatherpress_datetime_end;
 
 	if ( ! startTimeStr ) {
 		return null;
