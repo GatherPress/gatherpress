@@ -23,6 +23,8 @@ The settings of the Query Loop block apply to the calendar, for example the post
 
 Select the Calendar block. The block sidebar shows the **Calendar Settings** panel.
 
+![Screenshot of the Event Calendar in the editor, showing April 2027 with timed events, an all-day event and two events of more than one day as bars, next to the Calendar Settings panel with the Month view and April 2027 selected.](../user-doc-media/event-calendar-editor-month.png)
+
 ### Date Range Source
 
 The Date Range Source sets the dates that the calendar shows.
@@ -62,6 +64,8 @@ When you select a date, the Date Offset changes to 0.
 ### Show Time Grid
 
 **Show Time Grid** shows timed events on a timeline of hours. This setting shows only in the Week and Day views, and only when the Query Loop orders the events by event date. The Event Calendar orders by event date when you add it.
+
+![Screenshot of a Week view with the time grid on the front end. Timed events sit at their hours on a grid from 08:00 to 20:00, and an event of three days and an all-day event show as bars above the hours.](../user-doc-media/event-calendar-week-time-grid.png)
 
 When the time grid is on:
 
