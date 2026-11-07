@@ -153,7 +153,7 @@ final class Saved_Image {
 	 * suffix. `$density > 1` appends the `@{density}x` suffix used by the
 	 * retina variants, e.g. `venue-52.358000_4.881000-osm-roadmap-12-800-300@2x.png`.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @param string $address   Venue address.
 	 * @param float  $latitude  Venue latitude.
@@ -308,7 +308,7 @@ final class Saved_Image {
 	 * a filter added. A missing 2x PNG is left out, so the page doesn't
 	 * offer it in `srcset`.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @param array<string, string>                    $info  Parsed venue information.
 	 * @param array{0: int, 1: int, 2: int, 3: string} $combo Zoom, width, height and normalized map type.

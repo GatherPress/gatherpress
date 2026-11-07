@@ -127,7 +127,7 @@ class Test_Saved_Image extends Base {
 	/**
 	 * The file name carries the address, coordinates, provider and size.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::filename
 	 *
