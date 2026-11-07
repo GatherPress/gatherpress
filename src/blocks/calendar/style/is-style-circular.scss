@@ -33,6 +33,9 @@
 		}
 
 		td {
+			// A circle clips its content, so a span shows as a pill in each day.
+			--gatherpress-calendar-span-reach: 0px;
+
 			position: relative;
 			overflow: hidden;
 			align-self: center;
@@ -106,6 +109,17 @@
 				font-size: clamp(0.75rem, 2.5cqi, 1.25rem) !important;
 			}
 
+			// The dots style lets a day's spans out (see the day styles); a circle keeps them in.
+			&:has(.wp-block-gatherpress-calendar-entries.is-style-dots) {
+				--gatherpress-calendar-span-reach: 0px;
+
+				overflow: hidden;
+			}
+
+			.gatherpress-calendar__entry:is(.gatherpress--is-multi-day, .gatherpress--is-all-day) {
+				border-radius: var(--gatherpress-entry-track-radius, 4px);
+			}
+
 			&.gatherpress--is-empty {
 				background: transparent;
 				opacity: 0;
@@ -137,6 +151,26 @@
 					border: 2px solid var(--wp--preset--color--base, #fff);
 				}
 			}
+		}
+	}
+
+	// Dots leave room for the number, so every day of a dots calendar shows it at
+	// one size, centered in the circle with its dots below.
+	&:has(.wp-block-gatherpress-calendar-entries.is-style-dots) .gatherpress-calendar__table td {
+		justify-content: center;
+
+		.wp-block-gatherpress-calendar-entries {
+			flex: none;
+			margin-block-start: 0.25rem;
+		}
+
+		.gatherpress-calendar__day-number {
+			position: static;
+			flex: none;
+			align-self: center;
+			margin-bottom: 0.125rem;
+			font-size: clamp(1rem, 3.5vw, 2rem) !important;
+			font-size: clamp(1rem, 4.5cqi, 2rem) !important;
 		}
 	}
 

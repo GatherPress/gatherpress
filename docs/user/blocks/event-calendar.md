@@ -113,8 +113,8 @@ Select a block, then select a style in the **Styles** panel.
 - **Classic**: the default style.
 - **Minimal**: no background, with thin lines between the rows.
 - **Bold**: thick borders and heavy text. Today has the primary color of the theme.
-- **Circular**: round days, with large day numbers behind the events.
-- **Gradient**: translucent surfaces on a gradient. The colors come from the text color.
+- **Circular**: round days with large day numbers. A day with events shows a smaller number above them. A circle has little room for event names, so this style suits the **Colored Dots** style of the Calendar Entries block, which shows every day's number at one size.
+- **Gradient**: light days on a dark panel, in the base and contrast colors of the theme.
 
 ### Styles of the Calendar Day block
 
@@ -124,7 +124,7 @@ Select a block, then select a style in the **Styles** panel.
 ### Styles of the Calendar Entries block
 
 - **Classic**: the time and the title of each event.
-- **Colored Dots**: a colored dot for each event, and a colored bar for an event of more than one day. Select a dot or a bar to open the event.
+- **Colored Dots**: a colored dot for each event, and a colored bar for an event of more than one day. The bar joins up across its days and stays on the same row on each day. Select a dot or a bar to open the event. Dots fit a small calendar, or one with many events, better than event names do.
 
 The blocks also have the usual design tools, for example colors, borders and spacing.
 

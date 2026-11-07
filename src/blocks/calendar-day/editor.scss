@@ -88,7 +88,7 @@ $span-width: calc(var(--gatherpress-calendar-row-span, 1) * 100% + (var(--gather
 			width: auto !important;
 			align-self: flex-start !important;
 			flex: 0 0 auto !important;
-			margin: 0.3rem 0.45rem 0.15rem !important;
+			margin: 0 !important;
 
 			.gatherpress-calendar__day-number {
 				margin: 0 !important;

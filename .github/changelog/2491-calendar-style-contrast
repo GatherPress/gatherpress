@@ -1,4 +1,4 @@
 Significance: patch
 Type: fixed
 
-Improve color contrast in the Bold, Gradient, Circular and Minimal calendar styles.
+Improve color contrast in the Bold, Gradient, Circular and Minimal calendar styles, and keep an event's bar joined up and on the same row across its days, including in the Colored Dots style.

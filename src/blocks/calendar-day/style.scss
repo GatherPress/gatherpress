@@ -26,12 +26,22 @@ $gap: var(--gatherpress-calendar-column-gap, 2px);
 	   DEFAULT (CLASSIC) STYLE: Vertical flow, auto-growing, clean containment
 	   ------------------------------------------------------------------------ */
 	&:not(.is-style-ribbon) {
+		--gatherpress-calendar-day-padding: 0.35rem;
+
 		display: flex;
 		flex-direction: column;
 		align-items: stretch;
 		justify-content: flex-start;
-		padding: 0.35rem;
+		padding: var(--gatherpress-calendar-day-padding);
 		overflow: hidden;
+
+		// Dots show no text to contain, so a span's pieces can reach past the
+		// padding and across the gap to join up, as on a Ribbon day.
+		&:has(.wp-block-gatherpress-calendar-entries.is-style-dots) {
+			--gatherpress-calendar-span-reach: calc(#{$gap} + var(--gatherpress-calendar-day-padding));
+
+			overflow: visible;
+		}
 
 		.gatherpress-calendar__day-number {
 			align-self: flex-start;
@@ -79,9 +89,10 @@ $gap: var(--gatherpress-calendar-column-gap, 2px);
 		padding: 0;
 		overflow: visible; /* Allows ribbon text to float across columns */
 
+		// Padding, not margin: the day number's template sets its margin inline.
 		.gatherpress-calendar__day-number {
 			align-self: flex-start;
-			margin: 0.3rem 0.45rem 0.15rem;
+			padding: 0.3rem 0.45rem 0.15rem;
 			display: block;
 			line-height: 1.1;
 		}
@@ -110,14 +121,25 @@ $gap: var(--gatherpress-calendar-column-gap, 2px);
 	}
 }
 
+// At 600px or less the events show as dots and bars (see the entries styles),
+// so the same applies, except on a day view that keeps the event names.
+@container calendar (width <= 600px) {
+	.gatherpress-calendar__day:not(.is-style-ribbon):where(:not(.wp-block-gatherpress-calendar.gatherpress--is-view-day:not(.gatherpress--has-multiple-units) *)) {
+		--gatherpress-calendar-span-reach: calc(#{$gap} + var(--gatherpress-calendar-day-padding));
+
+		overflow: visible;
+	}
+}
+
 /* Day View adjustments */
 .wp-block-gatherpress-calendar.gatherpress--is-view-day {
 	/* Classic / Default style days get generous padding and height */
 	.gatherpress-calendar__day:not(.is-style-ribbon) {
+		--gatherpress-calendar-day-padding: 1rem;
+
 		aspect-ratio: auto;
 		min-height: 8.75rem;
 		align-items: flex-start;
-		padding: 1rem;
 	}
 
 	/* Ribbon style days maintain edge-to-edge padding to permit gap bridging */
