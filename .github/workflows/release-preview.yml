@@ -6,6 +6,9 @@ name: Release preview
 # carry back to develop or leave for a human. Nothing is written to any
 # branch. The commands match release.yml's rollup job, so a changelog the
 # tag would refuse fails here first.
+#
+# The rehearsal runs the PR's code with a read-only token. Only the comment
+# job can write, and it never checks out the PR.
 
 on:
   pull_request:
@@ -14,7 +17,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
@@ -25,6 +27,10 @@ jobs:
     name: Preview the release rollup
     if: startsWith(github.head_ref, 'version-')
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       # The PR's merge ref is main with this branch merged, which is the tree
       # the tag will point at.
@@ -32,6 +38,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Read the version
         id: version
@@ -66,32 +73,30 @@ jobs:
         id: preview
         env:
           VERSION: ${{ steps.version.outputs.version }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          # Same commands, in the same order, as release.yml's rollup job.
-          php .github/scripts/add-changelog-pr-nums.php
-          rollup_ok=true
+          mkdir -p preview
+          problems=""
 
-          if ! vendor/bin/changelogger write \
+          # Each command's failure goes in the comment, and the job fails at the end.
+          run_logged() {
+            local title="$1"
+            shift
+
+            if ! "$@" > /tmp/step.log 2>&1; then
+              problems+="- ${title} failed:"$'\n\n```\n'"$(tail -n 20 /tmp/step.log)"$'\n```\n'
+              return 1
+            fi
+          }
+
+          # Same commands, in the same order, as release.yml's rollup job.
+          run_logged '`add-changelog-pr-nums.php`' php .github/scripts/add-changelog-pr-nums.php || true
+          run_logged 'The rollup (`changelogger write`)' vendor/bin/changelogger write \
             --use-version="${VERSION}" \
             --release-date="$(date +%Y-%m-%d)" \
             --deduplicate=-1 \
-            --yes > /tmp/changelogger.log 2>&1; then
-            rollup_ok=false
-          fi
-
-          php .github/scripts/link-changelog-prs.php || rollup_ok=false
-
-          section="$(awk -v ver="${VERSION}" '
-            $0 ~ "^## \\[" ver "\\]" { capture = 1; next }
-            /^## \[/ && capture { exit }
-            capture { print }
-          ' CHANGELOG.md)"
-
-          problems=""
-
-          if [[ "${rollup_ok}" != "true" ]]; then
-            problems+=$'- The rollup failed:\n\n```\n'"$(tail -n 20 /tmp/changelogger.log)"$'\n```\n'
-          fi
+            --yes || true
+          run_logged '`link-changelog-prs.php`' php .github/scripts/link-changelog-prs.php || true
 
           if ! grep -q "^## \[${VERSION}\]" CHANGELOG.md; then
             problems+="- \`CHANGELOG.md\` has no \`## [${VERSION}]\` section."$'\n'
@@ -101,13 +106,22 @@ jobs:
             problems+="- \`CHANGELOG.md\` has no \`[${VERSION}]:\` link line. See \"Heading seems to have a linked version, but link was not found\" in \`docs/contributor/release-process.md\`."$'\n'
           fi
 
-          # carry-since.php reads develop's copy of each file through origin/develop.
-          git fetch --quiet origin develop
-          php .github/scripts/release/carry-since.php --version="${VERSION}" > /tmp/carry-since.json
+          section="$(awk -v ver="${VERSION}" '
+            $0 ~ "^## \\[" ver "\\]" { capture = 1; next }
+            /^## \[/ && capture { exit }
+            capture { print }
+          ' CHANGELOG.md)"
 
-          carried=$(jq '[.additions[].resolved] | add // 0' /tmp/carry-since.json)
-          files=$(jq '.additions | length' /tmp/carry-since.json)
-          unmatched=$(jq -r '.unmatched | length' /tmp/carry-since.json)
+          # carry-since.php reads develop's copy of each file through origin/develop.
+          carry_ok=false
+
+          if run_logged 'Fetching `develop`' git fetch --quiet origin develop \
+            && run_logged '`carry-since.php`' sh -c 'php .github/scripts/release/carry-since.php --version="$1" > /tmp/carry-since.json' sh "${VERSION}"; then
+            carry_ok=true
+            carried=$(jq '[.additions[].resolved] | add // 0' /tmp/carry-since.json)
+            files=$(jq '.additions | length' /tmp/carry-since.json)
+            unmatched=$(jq -r '.unmatched | length' /tmp/carry-since.json)
+          fi
 
           {
             echo '<!-- gatherpress-release-preview -->'
@@ -126,8 +140,7 @@ jobs:
             echo
 
             if [[ -n "${section//[[:space:]]/}" ]]; then
-              # A comment holds 65,536 characters; keep the section well under.
-              printf '%s\n' "${section}" | head -c 50000
+              printf '%s\n' "${section}"
             else
               echo '_The rollup wrote no section._'
             fi
@@ -136,43 +149,105 @@ jobs:
             echo '### `@since` carry to develop'
             echo
 
-            if [[ "${carried}" -gt 0 ]]; then
+            if [[ "${carry_ok}" != "true" ]]; then
+              echo '_The carry could not run; see above._'
+            elif [[ "${carried}" -gt 0 ]]; then
               echo "${carried} \`@since ${VERSION}\` tag(s) in ${files} file(s) will be carried back to \`develop\` by the rollup PR."
             else
               echo "No \`@since\` tags to carry. A minor release resolves its own on \`develop\`."
             fi
 
-            if [[ "${unmatched}" -gt 0 ]]; then
+            if [[ "${carry_ok}" == "true" && "${unmatched}" -gt 0 ]]; then
               echo
               echo "**${unmatched} file(s) need a look.** Their docblocks on \`develop\` are not identical to the released ones, so the rollup will leave them and will not auto-merge. Resolve them by hand after the tag:"
               echo
-              jq -r '.unmatched[] | "- `" + . + "`"' /tmp/carry-since.json
+              jq -r '.unmatched[:100][] | "- `" + . + "`"' /tmp/carry-since.json
+
+              if [[ "${unmatched}" -gt 100 ]]; then
+                echo "- _…and $(( unmatched - 100 )) more, listed in the [run summary](${RUN_URL})._"
+              fi
             fi
-          } > /tmp/release-preview.md
+          } > /tmp/release-preview-full.md
+
+          # The run summary keeps everything; the comment stays under GitHub's
+          # 65,536-character limit.
+          cat /tmp/release-preview-full.md >> "$GITHUB_STEP_SUMMARY"
+
+          if [[ "$(wc -c < /tmp/release-preview-full.md)" -gt 60000 ]]; then
+            head -c 60000 /tmp/release-preview-full.md | sed '$d' > preview/comment.md
+
+            # Close a code block the cut left open.
+            if (( $(grep -c '^```' preview/comment.md) % 2 )); then
+              echo '```' >> preview/comment.md
+            fi
+
+            printf '\n_Truncated. The full preview is in the [run summary](%s)._\n' "${RUN_URL}" >> preview/comment.md
+          else
+            cp /tmp/release-preview-full.md preview/comment.md
+          fi
 
           if [[ -n "${problems}" ]]; then
             echo "failed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Comment the preview
-        if: steps.version.outputs.version != ''
+      - name: Hand the comment to the comment job
+        if: always() && steps.version.outputs.version != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-preview
+          path: preview/comment.md
+          if-no-files-found: ignore
+          retention-days: 1
+
+      - name: Fail when the tag would fail
+        if: steps.preview.outputs.failed == 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          echo "::error::The ${VERSION} rollup would fail at the tag. See the release preview comment."
+          exit 1
+
+  # Posts the preview. It never checks out the PR, so the PR's code never runs
+  # with this job's write token.
+  comment:
+    name: Comment the release preview
+    needs: preview
+    if: always() && needs.preview.outputs.version != ''
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Get the comment
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: release-preview
+          path: preview
+
+      - name: Post or update the comment
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           PR: ${{ github.event.pull_request.number }}
+          VERSION: ${{ needs.preview.outputs.version }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
+          if [[ ! -s preview/comment.md ]]; then
+            mkdir -p preview
+            printf '%s\n' \
+              '<!-- gatherpress-release-preview -->' \
+              "## Release preview for ${VERSION}" \
+              '' \
+              ":x: The preview stopped before it could write a result. See the [run](${RUN_URL})." \
+              > preview/comment.md
+          fi
+
           # One comment per PR, updated in place on each push.
           comment_id=$(gh api --paginate "repos/${REPO}/issues/${PR}/comments" \
             --jq '.[] | select(.body | startswith("<!-- gatherpress-release-preview -->")) | .id' | head -n 1)
 
           if [[ -n "${comment_id}" ]]; then
-            gh api --method PATCH "repos/${REPO}/issues/comments/${comment_id}" -F body=@/tmp/release-preview.md > /dev/null
+            gh api --method PATCH "repos/${REPO}/issues/comments/${comment_id}" -F body=@preview/comment.md > /dev/null
           else
-            gh api --method POST "repos/${REPO}/issues/${PR}/comments" -F body=@/tmp/release-preview.md > /dev/null
+            gh api --method POST "repos/${REPO}/issues/${PR}/comments" -F body=@preview/comment.md > /dev/null
           fi
-
-      - name: Fail when the tag would fail
-        if: steps.preview.outputs.failed == 'true'
-        run: |
-          echo "::error::The ${{ steps.version.outputs.version }} rollup would fail at the tag. See the release preview comment."
-          exit 1
