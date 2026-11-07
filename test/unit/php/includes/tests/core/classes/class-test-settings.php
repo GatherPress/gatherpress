@@ -3504,9 +3504,13 @@ class Test_Settings extends Base {
 				'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
 				'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?key=abc123',
 			),
-			'the compositor host gets it too'    => array(
+			'the bare host gets it too'          => array(
+				'https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+				'https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?key=abc123',
+			),
+			'the old host gets no key'           => array(
 				'https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png',
-				'https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png?key=abc123',
+				'https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png',
 			),
 			'an existing key is left alone'      => array(
 				'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?key=existing',
@@ -3666,6 +3670,7 @@ class Test_Settings extends Base {
 		$instance->set( 'carto_api_key', '' );
 		$instance->set( 'custom_map_tile_url', '' );
 	}
+
 
 	/**
 	 * Declare a page covering each combination of the travel flags.
