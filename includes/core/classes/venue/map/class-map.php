@@ -1326,7 +1326,8 @@ final class Map {
 	 *
 	 * @since 0.34.0
 	 * @since TBD Returns the saved image for the same location when the render fails,
-	 *            and renders again when the saved PNG is missing.
+	 *            renders again when the saved PNG is missing, and saves nothing for
+	 *            a venue deleted during the render.
 	 *
 	 * @param int                   $post_id  Venue post ID.
 	 * @param array<string, string> $info     Parsed venue information.
@@ -1476,6 +1477,17 @@ final class Map {
 			'width'    => $width,
 			'height'   => $height,
 		);
+
+		// A venue deleted while it rendered, for example during a prewarm job,
+		// keeps no saved map. The cache is cleared first, because another
+		// request deleted it.
+		wp_cache_delete( $post_id, 'posts' );
+
+		if ( null === get_post( $post_id ) ) {
+			( new Saved_Image( $all[ $slug ][ $key ], $slug, $key ) )->delete_unused();
+
+			return null;
+		}
 
 		update_post_meta( $post_id, self::META_KEY, $all );
 

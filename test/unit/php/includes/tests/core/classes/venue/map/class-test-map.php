@@ -393,6 +393,77 @@ class Test_Map extends Base {
 	}
 
 	/**
+	 * A venue deleted while its map renders, as when a prewarm job runs
+	 * during the delete, keeps no saved map or PNG files, and a file
+	 * another venue uses stays.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::ensure_descriptor_for_combo
+	 *
+	 * @return void
+	 */
+	public function test_ensure_descriptor_for_combo_saves_nothing_for_a_venue_deleted_during_the_render(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$info     = array(
+			'address'   => '1 Infinite Loop',
+			'latitude'  => '37.3318',
+			'longitude' => '-122.0312',
+		);
+		$args     = array( $post_id, $info, Map::DEFAULT_ZOOM, 800, 400 );
+		$delete   = static function ( $preempt ) use ( $post_id ) {
+			$post = get_post( $post_id );
+
+			if ( null !== $post ) {
+				wp_delete_post( $post_id, true );
+				// Another request deleted it, so this request's cache still holds the venue.
+				wp_cache_set( $post_id, $post, 'posts' );
+			}
+
+			return $preempt;
+		};
+
+		add_filter( 'pre_http_request', $delete, 9 );
+		$result = Utility::invoke_hidden_method( $instance, 'ensure_descriptor_for_combo', $args );
+		remove_filter( 'pre_http_request', $delete, 9 );
+
+		$files = glob( wp_get_upload_dir()['basedir'] . '/' . Map::UPLOADS_SUBDIR . '/1-infinite-loop-*-800-400-*' );
+
+		$this->assertNull( $result, 'Failed to assert nothing is saved.' );
+		$this->assertSame( array(), get_post_meta( $post_id ), 'Failed to assert the deleted venue has no meta.' );
+		$this->assertSame( array(), $files, 'Failed to assert the PNG files are deleted.' );
+
+		$other  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$shared = Utility::invoke_hidden_method(
+			$instance,
+			'ensure_descriptor_for_combo',
+			array( $other, $info, Map::DEFAULT_ZOOM, 800, 400 )
+		);
+		$gone   = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$delete = static function ( $preempt ) use ( $gone ) {
+			wp_delete_post( $gone, true );
+
+			return $preempt;
+		};
+
+		add_filter( 'pre_http_request', $delete, 9 );
+		Utility::invoke_hidden_method(
+			$instance,
+			'ensure_descriptor_for_combo',
+			array( $gone, $info, Map::DEFAULT_ZOOM, 800, 400 )
+		);
+		remove_filter( 'pre_http_request', $delete, 9 );
+
+		$this->assertFileExists(
+			$this->path_for_url( $shared['url'] ),
+			'Failed to assert a file another venue uses stays.'
+		);
+
+		$instance->delete_stored_image( $other );
+	}
+
+	/**
 	 * Deleting a venue deletes its saved maps, and deleting another post leaves them.
 	 *
 	 * @since TBD
