@@ -146,7 +146,7 @@ $wide-ribbon-entry: ".gatherpress-calendar__day.is-style-ribbon .wp-block-gather
 			width: 0;
 			height: 0;
 			border-block: var(--gatherpress-arrow-size, 3px) solid transparent;
-			border-inline-start: calc(var(--gatherpress-arrow-size, 3px) + 1px) solid currentcolor;
+			border-inline-start: calc(var(--gatherpress-arrow-size, 3px) + 1px) solid var(--gatherpress-calendar-ribbon-color, currentcolor);
 			pointer-events: none;
 		}
 	}
@@ -166,7 +166,7 @@ $wide-ribbon-entry: ".gatherpress-calendar__day.is-style-ribbon .wp-block-gather
 			width: 0;
 			height: 0;
 			border-block: var(--gatherpress-arrow-size, 3px) solid transparent;
-			border-inline-end: calc(var(--gatherpress-arrow-size, 3px) + 1px) solid currentcolor;
+			border-inline-end: calc(var(--gatherpress-arrow-size, 3px) + 1px) solid var(--gatherpress-calendar-ribbon-color, currentcolor);
 			pointer-events: none;
 		}
 	}
