@@ -276,7 +276,7 @@ final class Map {
 	 * coordinates the image shows.
 	 *
 	 * @since 0.34.0
-	 * @since TBD Entries carry `location`.
+	 * @since 0.36.2 Entries carry `location`.
 	 * @var string
 	 */
 	const META_KEY = 'gatherpress_static_map';
@@ -466,7 +466,7 @@ final class Map {
 	 * {@see Saved_Image::delete_deleted()} deletes the files of a map core
 	 * deletes with the venue's meta.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @param int     $post_id The post ID being deleted.
 	 * @param WP_Post $post    The post being deleted.
@@ -727,7 +727,7 @@ final class Map {
 	 * Delete every stored static-map PNG (at any zoom) and clear the meta.
 	 *
 	 * @since 0.34.0
-	 * @since TBD Deletes the PNG files no other venue uses.
+	 * @since 0.36.2 Deletes the PNG files no other venue uses.
 	 *
 	 * @param int $post_id The venue post ID.
 	 *
@@ -759,7 +759,7 @@ final class Map {
 	 * an empty array when no combo rendered.
 	 *
 	 * @since 0.34.0
-	 * @since TBD Keeps the saved image for a combo that fails to render, returns an empty
+	 * @since 0.36.2 Keeps the saved image for a combo that fails to render, returns an empty
 	 *            array when no combo rendered, and deletes the PNG files no venue uses.
 	 *
 	 * @param int               $post_id     The venue post ID.
@@ -930,7 +930,7 @@ final class Map {
 	 * no coordinates, or generation failed.
 	 *
 	 * @since 0.34.0
-	 * @since TBD Falls back to another provider's image only for the venue's current location,
+	 * @since 0.36.2 Falls back to another provider's image only for the venue's current location,
 	 *            and only when its PNG exists.
 	 *
 	 * @param int      $post_id      Event or venue post ID.
@@ -1342,7 +1342,7 @@ final class Map {
 	 * saved image for the same location is returned as it is.
 	 *
 	 * @since 0.34.0
-	 * @since TBD Returns the saved image for the same location when the render fails,
+	 * @since 0.36.2 Returns the saved image for the same location when the render fails,
 	 *            renders again when the saved PNG is missing, and saves nothing for
 	 *            a venue deleted during the render.
 	 *
@@ -1566,7 +1566,7 @@ final class Map {
 	 * and skip regeneration.
 	 *
 	 * @since 0.34.0
-	 * @since TBD Takes the provider's image source.
+	 * @since 0.36.2 Takes the provider's image source.
 	 *
 	 * @param array<string, string> $info     Parsed venue information.
 	 * @param int                   $zoom     Map zoom level.

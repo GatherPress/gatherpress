@@ -3,7 +3,7 @@
  * Unit tests for the CARTO basemap host helpers.
  *
  * @package GatherPress\Core\Venue\Map
- * @since TBD
+ * @since 0.36.2
  */
 
 namespace GatherPress\Tests\Core\Venue\Map;
@@ -15,7 +15,7 @@ use GatherPress\Tests\Base;
 /**
  * Class Test_Carto.
  *
- * @since TBD
+ * @since 0.36.2
  *
  * @coversDefaultClass \GatherPress\Core\Venue\Map\Carto
  */
@@ -24,7 +24,7 @@ class Test_Carto extends Base {
 	/**
 	 * Data provider for tile URLs handed to is_tile_url.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @return array<string, array{0: string, 1: bool}>
 	 */
@@ -44,7 +44,7 @@ class Test_Carto extends Base {
 	/**
 	 * Only CARTO's basemap hosts count as CARTO tile URLs.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::is_tile_url
 	 *

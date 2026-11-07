@@ -41,7 +41,7 @@ final class OSM extends Base {
 	 * one the interactive map uses.
 	 *
 	 * @since 0.34.0
-	 * @since TBD Uses CARTO's `basemaps.cartocdn.com` host, as the interactive map does.
+	 * @since 0.36.2 Uses CARTO's `basemaps.cartocdn.com` host, as the interactive map does.
 	 * @var string
 	 */
 	const DEFAULT_TILE_URL = Settings::MAP_TILE_URL;
@@ -70,7 +70,7 @@ final class OSM extends Base {
 	 * name is a hash of the tile URL and tile zoom, so a new key, a new tile
 	 * server, or a zoom the server does serve does not wait for the pause.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 * @var string
 	 */
 	const TILES_FAILED_TRANSIENT = 'gatherpress_static_map_tiles_failed_';
@@ -82,7 +82,7 @@ final class OSM extends Base {
 	 * a pause a tile host that is down or rejecting the key would be asked
 	 * again on every page view.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 * @var int
 	 */
 	const TILES_FAILED_PAUSE = 5 * MINUTE_IN_SECONDS;
@@ -119,7 +119,7 @@ final class OSM extends Base {
 	 * the tiles are served at, or when no tile loads.
 	 *
 	 * @since 0.34.0
-	 * @since TBD Returns null when no tile loads, and for a pause after that.
+	 * @since 0.36.2 Returns null when no tile loads, and for a pause after that.
 	 *            Renders CARTO tiles at `Carto::ZOOM_MAX` at most.
 	 *
 	 * @param float  $latitude  Venue latitude in decimal degrees.
@@ -458,7 +458,7 @@ final class OSM extends Base {
 	 * The key is replaced with a hash of it, so its value stays out of the
 	 * cache hash.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @return string The tile URL template, with the key hashed.
 	 */

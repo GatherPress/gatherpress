@@ -3,7 +3,7 @@
  * Unit tests for the saved static map image helpers.
  *
  * @package GatherPress\Core\Venue\Map
- * @since TBD
+ * @since 0.36.2
  */
 
 namespace GatherPress\Tests\Core\Venue\Map;
@@ -15,7 +15,7 @@ use GatherPress\Tests\Base;
 /**
  * Class Test_Saved_Image.
  *
- * @since TBD
+ * @since 0.36.2
  *
  * @coversDefaultClass \GatherPress\Core\Venue\Map\Saved_Image
  */
@@ -24,7 +24,7 @@ class Test_Saved_Image extends Base {
 	/**
 	 * Venue information shared by the tests.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 * @var array<string, string>
 	 */
 	private const INFO = array(
@@ -36,7 +36,7 @@ class Test_Saved_Image extends Base {
 	/**
 	 * Zoom, width, height and map type shared by the tests.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 * @var array{0: int, 1: int, 2: int, 3: string}
 	 */
 	private const COMBO = array( 15, 800, 400, 'roadmap' );
@@ -44,7 +44,7 @@ class Test_Saved_Image extends Base {
 	/**
 	 * Combo key of the shared combo.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 * @var string
 	 */
 	private const KEY = '15x800x400xroadmap';
@@ -52,7 +52,7 @@ class Test_Saved_Image extends Base {
 	/**
 	 * Write an empty PNG file at a static map URL.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @param string $url Static map URL.
 	 *
@@ -72,7 +72,7 @@ class Test_Saved_Image extends Base {
 	/**
 	 * A saved descriptor with the given fields.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @param array<string, string> $fields Fields to set.
 	 *
@@ -95,7 +95,7 @@ class Test_Saved_Image extends Base {
 	/**
 	 * A saved descriptor with the given PNG URLs.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @param string $url    URL of the 1x PNG.
 	 * @param string $url_2x URL of the 2x PNG.
@@ -114,7 +114,7 @@ class Test_Saved_Image extends Base {
 	/**
 	 * URL of the shared combo without a hash.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @return string The URL.
 	 */
@@ -153,7 +153,7 @@ class Test_Saved_Image extends Base {
 	/**
 	 * The hash goes before the retina suffix.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::versioned
 	 *
@@ -169,7 +169,7 @@ class Test_Saved_Image extends Base {
 	/**
 	 * A saved image is found by provider and combo.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::__construct
 	 * @covers ::find
@@ -193,7 +193,7 @@ class Test_Saved_Image extends Base {
 	 * The 2x PNG counts when its URL is set and the file is there, or the
 	 * URL is outside the static maps folder.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::has_2x
 	 * @covers ::file_exists
@@ -231,7 +231,7 @@ class Test_Saved_Image extends Base {
 	 * The image is current when the hash matches, the URL is the hashed or
 	 * plain one, and the 1x PNG exists.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::is_current
 	 *
@@ -274,7 +274,7 @@ class Test_Saved_Image extends Base {
 	/**
 	 * The location changes with the address or coordinates.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::location
 	 *
@@ -292,7 +292,7 @@ class Test_Saved_Image extends Base {
 	 * matched on `location` when stored and on the URL otherwise. A missing
 	 * 2x PNG is left out.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::usable
 	 *
@@ -351,7 +351,7 @@ class Test_Saved_Image extends Base {
 	 * A PNG no venue points at is deleted, and one a venue still uses, or
 	 * the caller keeps, stays.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::delete_all_unused
 	 * @covers ::delete_unused
@@ -444,7 +444,7 @@ class Test_Saved_Image extends Base {
 	/**
 	 * The stored 1x and 2x URLs are listed as saved, without empty ones.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::stored_urls
 	 * @covers ::urls
@@ -478,7 +478,7 @@ class Test_Saved_Image extends Base {
 	 * The files of a deleted static map value are deleted, and another meta
 	 * key is ignored.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::delete_deleted
 	 * @covers ::urls
@@ -504,7 +504,7 @@ class Test_Saved_Image extends Base {
 	 * A usable saved image is put back into the meta, next to what is
 	 * there, and one for another location is left out.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::restore
 	 *

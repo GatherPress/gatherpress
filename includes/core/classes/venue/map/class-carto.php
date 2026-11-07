@@ -3,7 +3,7 @@
  * CARTO basemap host helpers.
  *
  * @package GatherPress\Core\Venue\Map
- * @since TBD
+ * @since 0.36.2
  */
 
 namespace GatherPress\Core\Venue\Map;
@@ -16,14 +16,14 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  *
  * Stateless helpers for tile URLs on CARTO's basemap hosts.
  *
- * @since TBD
+ * @since 0.36.2
  */
 final class Carto {
 
 	/**
 	 * Highest zoom CARTO serves raster tiles at.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 * @var int
 	 */
 	const ZOOM_MAX = 18;
@@ -35,7 +35,7 @@ final class Carto {
 	 * known to be CARTO's. A site pointing its tiles elsewhere does not hand
 	 * its key to that host.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 * @var string[]
 	 */
 	private const TILE_HOSTS = array(
@@ -45,7 +45,7 @@ final class Carto {
 	/**
 	 * Whether a tile URL goes to one of CARTO's basemap hosts.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @param string $url Tile URL or URL template.
 	 *
