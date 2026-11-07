@@ -1478,18 +1478,20 @@ final class Map {
 			'height'   => $height,
 		);
 
+		update_post_meta( $post_id, self::META_KEY, $all );
+
 		// A venue deleted while it rendered, for example during a prewarm job,
-		// keeps no saved map. The cache is cleared first, because another
-		// request deleted it.
+		// keeps no saved map. Checked after the write, so a delete that ends
+		// just before it is caught too. The cache is cleared first, because
+		// another request deleted it.
 		wp_cache_delete( $post_id, 'posts' );
 
 		if ( null === get_post( $post_id ) ) {
+			delete_post_meta( $post_id, self::META_KEY );
 			( new Saved_Image( $all[ $slug ][ $key ], $slug, $key ) )->delete_unused();
 
 			return null;
 		}
-
-		update_post_meta( $post_id, self::META_KEY, $all );
 
 		// Verify the write landed. update_post_meta() returns an ambiguous
 		// false ("not changed" vs. "write failed"), so read back and check

@@ -394,8 +394,8 @@ class Test_Map extends Base {
 
 	/**
 	 * A venue deleted while its map renders, as when a prewarm job runs
-	 * during the delete, keeps no saved map or PNG files, and a file
-	 * another venue uses stays.
+	 * during the delete, or while the map is written, keeps no saved map
+	 * or PNG files, and a file another venue uses stays.
 	 *
 	 * @since TBD
 	 *
@@ -433,6 +433,37 @@ class Test_Map extends Base {
 		$this->assertNull( $result, 'Failed to assert nothing is saved.' );
 		$this->assertSame( array(), get_post_meta( $post_id ), 'Failed to assert the deleted venue has no meta.' );
 		$this->assertSame( array(), $files, 'Failed to assert the PNG files are deleted.' );
+
+		// Deleted while the meta is written, after the render finished.
+		$late  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$write = static function ( $meta_id, int $object_id ) use ( $late ): void {
+			global $wpdb;
+
+			if ( $late === $object_id ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Stands in for a delete from another request.
+				$wpdb->delete( $wpdb->posts, array( 'ID' => $late ) );
+			}
+		};
+
+		add_action( 'added_post_meta', $write, 10, 2 );
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'ensure_descriptor_for_combo',
+			array( $late, $info, Map::DEFAULT_ZOOM, 800, 400 )
+		);
+		remove_action( 'added_post_meta', $write, 10 );
+
+		$this->assertNull( $result, 'Failed to assert nothing is saved for a venue deleted during the write.' );
+		$this->assertSame(
+			'',
+			get_post_meta( $late, Map::META_KEY, true ),
+			'Failed to assert the written map is removed.'
+		);
+		$this->assertSame(
+			array(),
+			glob( wp_get_upload_dir()['basedir'] . '/' . Map::UPLOADS_SUBDIR . '/1-infinite-loop-*-800-400-*' ),
+			'Failed to assert the PNG files are deleted after the write.'
+		);
 
 		$other  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 		$shared = Utility::invoke_hidden_method(
