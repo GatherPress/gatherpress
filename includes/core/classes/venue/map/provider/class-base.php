@@ -139,7 +139,7 @@ abstract class Base {
 	 * Saved static maps render again when it changes. Empty for a provider
 	 * whose images depend only on the map's own settings.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @return string The image source, or an empty string.
 	 */

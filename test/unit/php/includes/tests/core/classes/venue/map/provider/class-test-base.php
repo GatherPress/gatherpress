@@ -42,7 +42,7 @@ class Test_Base extends GatherPress_Test_Base {
 	 * Default `get_cache_source()` is empty, so a provider that doesn't
 	 * override it keeps its saved maps.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::get_cache_source
 	 *

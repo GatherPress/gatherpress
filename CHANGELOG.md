@@ -9,6 +9,11 @@ Pending entries for the next release live as individual files under
 [`.github/changelog/`](.github/changelog/) and get rolled up into a new
 version section by `composer changelog:write` at release time.
 
+## [0.36.2] - 2026-11-07
+### Fixed
+- A venue deleted while its static map renders, for example while a background prewarm job runs, no longer leaves a saved map or its PNG files behind. [#2581](https://github.com/GatherPress/gatherpress/pull/2581)
+- Static venue maps no longer turn gray when a CARTO API key is set. Static maps now load tiles from the same CARTO host as interactive maps, and send the site's address with each tile request, so a key restricted to the site's domain is accepted. Maps already saved gray render again, and a map that gets no tiles is no longer saved, so it is retried instead of staying gray. Static maps on CARTO zoomed in past 18 use zoom 18 tiles, the highest CARTO serves, as interactive maps do. Changing the CARTO key renders saved maps again. A map that renders again gets a new file name, so a browser or CDN does not keep showing the gray image. A saved map whose file is missing renders again, and when a render fails, a saved map is kept only if it shows the venue's current location, without a missing retina image. A Regenerate Map that renders nothing reports the failure again. Old map images that no venue uses are deleted when a map renders again or a venue is deleted. Google maps saved before this update are not rendered again. [#2569](https://github.com/GatherPress/gatherpress/pull/2569)
+
 ## [0.36.1] - 2026-10-24
 ### Changed
 - Compare RSVP tokens with hash_equals(). [#2475](https://github.com/GatherPress/gatherpress/pull/2475)
@@ -667,6 +672,7 @@ Initial public release. Represents 18+ months of pre-1.0 development and ships t
 - Initial unit test suite with code coverage via SonarCloud.
 - Multilingual screenshots and i18n scaffolding.
 
+[0.36.2]: https://github.com/GatherPress/gatherpress/compare/0.36.1...0.36.2
 [0.36.1]: https://github.com/GatherPress/gatherpress/compare/0.36.0...0.36.1
 [0.36.0]: https://github.com/GatherPress/gatherpress/compare/0.35.4...0.36.0
 [0.35.4]: https://github.com/GatherPress/gatherpress/compare/0.35.3...0.35.4

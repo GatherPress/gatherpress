@@ -147,7 +147,7 @@ class Test_OSM extends Base {
 	 * A CARTO tile request names the site as its referer, so a key
 	 * restricted to the site's domain is accepted. Another host is not told.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::fetch_tile
 	 *
@@ -428,7 +428,7 @@ class Test_OSM extends Base {
 	 * CARTO serves raster tiles up to zoom 18, so a CARTO map above that
 	 * renders from zoom 18 tiles, and its retina variant is skipped.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::render
 	 *
@@ -465,7 +465,7 @@ class Test_OSM extends Base {
 	/**
 	 * A tile server other than CARTO is not held to CARTO's zoom limit.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::render
 	 *
@@ -624,7 +624,7 @@ class Test_OSM extends Base {
 	 * A render that gets no tiles returns null, so the gray background is
 	 * not saved, and renders pause before asking the tile host again.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::render
 	 *
@@ -703,7 +703,7 @@ class Test_OSM extends Base {
 	 * a new key renders saved maps again, and the key's value stays out
 	 * of the hash.
 	 *
-	 * @since TBD
+	 * @since 0.36.2
 	 *
 	 * @covers ::get_cache_source
 	 *
