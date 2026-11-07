@@ -119,14 +119,16 @@ test.describe( 'Documentation screenshots', () => {
 			const keys = [];
 
 			for ( let page = 1; ; page++ ) {
-				// A page past the last one is an error, which ends the list too.
+				// RequestUtils.rest() does not expose X-WP-TotalPages. A page past the
+				// last one is WordPress's out-of-range error, which ends the list;
+				// any other error is rethrown.
 				const posts = await requestUtils
 					.rest( {
 						path: '/wp/v2/gatherpress_events',
 						params: { per_page: 100, page, status: 'publish', context: 'edit' },
 					} )
 					.catch( ( error ) => {
-						if ( 1 < page ) {
+						if ( 'rest_post_invalid_page_number' === error?.code ) {
 							return [];
 						}
 						throw error;
