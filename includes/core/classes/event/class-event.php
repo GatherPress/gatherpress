@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use DateTimeZone;
 use Exception;
 use GatherPress\Core\Calendar\External;
+use GatherPress\Core\Event\Recurrence\Occurrences;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
 use GatherPress\Core\Setup as Core_Setup;
@@ -1222,6 +1223,10 @@ class Event {
 
 		// Clear cache after insert or update.
 		$this->datetime_cache = null;
+
+		if ( false !== $value ) {
+			Occurrences::get_instance()->sync_single( $fields );
+		}
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.NoCaching
 

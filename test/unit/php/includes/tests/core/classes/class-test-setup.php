@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Assets;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Recurrence\Occurrences;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Setup;
 use GatherPress\Core\Shadow_Source;
@@ -504,6 +505,11 @@ class Test_Setup extends Base {
 			'Failed to assert that the GatherPress events table is included in tables to delete.'
 		);
 		$this->assertContains(
+			Occurrences::table(),
+			$result,
+			'Failed to assert that the occurrence table is included in tables to delete.'
+		);
+		$this->assertContains(
 			$wpdb->prefix . 'posts',
 			$result,
 			'Failed to assert that original tables are preserved.'
@@ -578,6 +584,9 @@ class Test_Setup extends Base {
 		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table creation.
 		$wpdb->query( "DROP TABLE IF EXISTS {$table}" );
+		$occurrences = Occurrences::table();
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table creation.
+		$wpdb->query( "DROP TABLE IF EXISTS {$occurrences}" );
 
 		// Activate plugin in single site mode.
 		$instance->activate_gatherpress_plugin( false );
@@ -590,6 +599,12 @@ class Test_Setup extends Base {
 			$table,
 			$table_exists,
 			'Failed to assert that events table was created during activation.'
+		);
+		$this->assertEquals(
+			$occurrences,
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table creation.
+			$wpdb->get_var( "SHOW TABLES LIKE '{$occurrences}'" ),
+			'Failed to assert that the occurrence table was created during activation.'
 		);
 
 		// Verify online event term was added.
@@ -629,9 +644,10 @@ class Test_Setup extends Base {
 		// Drop tables from both sites if they exist.
 		foreach ( array( get_current_blog_id(), $site_id_2 ) as $site_id ) {
 			switch_to_blog( $site_id );
-			$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table creation.
-			$wpdb->query( "DROP TABLE IF EXISTS {$table}" );
+			foreach ( array( sprintf( Event::TABLE_FORMAT, $wpdb->prefix ), Occurrences::table() ) as $table ) {
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table creation.
+				$wpdb->query( "DROP TABLE IF EXISTS {$table}" );
+			}
 			restore_current_blog();
 		}
 
@@ -650,6 +666,14 @@ class Test_Setup extends Base {
 				$table,
 				$table_exists,
 				sprintf( 'Events table not created on site %d during network activation.', $site_id )
+			);
+
+			$occurrences = Occurrences::table();
+			$this->assertEquals(
+				$occurrences,
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table creation.
+				$wpdb->get_var( "SHOW TABLES LIKE '{$occurrences}'" ),
+				sprintf( 'Occurrence table not created on site %d during network activation.', $site_id )
 			);
 
 			// Verify online event term was added on each site.

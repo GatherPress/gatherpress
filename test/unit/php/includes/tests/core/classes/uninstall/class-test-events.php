@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Uninstall;
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Recurrence\Occurrences;
 use GatherPress\Core\Uninstall\Events;
 use GatherPress\Core\Uninstall\Preferences;
 use GatherPress\Core\Venue;
@@ -102,6 +103,7 @@ class Test_Events extends Base {
 	 * The drop statements among a set of captured queries.
 	 *
 	 * @since 0.36.0
+	 * @since TBD Also matches the occurrence table's drop.
 	 *
 	 * @param string[] $queries The captured queries.
 	 *
@@ -110,13 +112,23 @@ class Test_Events extends Base {
 	protected function drop_statements( array $queries ): array {
 		global $wpdb;
 
-		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$tables = array( sprintf( Event::TABLE_FORMAT, $wpdb->prefix ), Occurrences::table() );
 
 		return array_values(
 			array_filter(
 				$queries,
-				static function ( string $query ) use ( $table ): bool {
-					return str_contains( $query, 'DROP TABLE' ) && str_contains( $query, $table );
+				static function ( string $query ) use ( $tables ): bool {
+					if ( ! str_contains( $query, 'DROP TABLE' ) ) {
+						return false;
+					}
+
+					foreach ( $tables as $table ) {
+						if ( str_contains( $query, $table ) ) {
+							return true;
+						}
+					}
+
+					return false;
 				}
 			)
 		);
@@ -306,7 +318,9 @@ class Test_Events extends Base {
 	}
 
 	/**
-	 * The event date table is dropped with the events.
+	 * The event date and occurrence tables are dropped with the events.
+	 *
+	 * @since TBD Covers the occurrence table.
 	 *
 	 * @covers ::uninstall_site
 	 * @covers ::drop_table
@@ -320,7 +334,7 @@ class Test_Events extends Base {
 
 		$drops = $this->drop_statements( $this->capture_run() );
 
-		$this->assertCount( 1, $drops, 'Exactly one drop is issued for the event table.' );
+		$this->assertCount( 2, $drops, 'One drop is issued for each table.' );
 		$this->assertStringContainsString(
 			'IF EXISTS',
 			$drops[0],
@@ -330,6 +344,11 @@ class Test_Events extends Base {
 			sprintf( Event::TABLE_FORMAT, $wpdb->prefix ),
 			$drops[0],
 			'The drop names the event table for this site, not another one.'
+		);
+		$this->assertStringContainsString(
+			Occurrences::table(),
+			$drops[1],
+			'The second drop names the occurrence table for this site.'
 		);
 	}
 

@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use DateTimeImmutable;
 use Exception;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Recurrence\Occurrences;
 use GatherPress\Core\Feed;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Settings;
@@ -96,6 +97,7 @@ final class Setup {
 		Admin_List::get_instance();
 		Email::get_instance();
 		Meta::get_instance();
+		Occurrences::get_instance();
 		Query::get_instance();
 		Reminder::get_instance();
 		Rest_Api::get_instance();
