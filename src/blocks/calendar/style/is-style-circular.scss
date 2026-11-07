@@ -131,6 +131,11 @@
 						color: var(--wp--preset--color--base, #fff);
 					}
 				}
+
+				// The cell is mostly contrast here, so a dot needs a base border to stand out.
+				.wp-block-gatherpress-calendar-entries.is-style-dots .gatherpress-modal--trigger-open:not(.wp-block-gatherpress-modal *) > * {
+					border: 2px solid var(--wp--preset--color--base, #fff);
+				}
 			}
 		}
 	}

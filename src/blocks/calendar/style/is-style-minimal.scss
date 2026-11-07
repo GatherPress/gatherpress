@@ -61,12 +61,16 @@
 			min-width: clamp(6px, 2vw, 8px);
 			min-height: clamp(6px, 2vw, 8px);
 			background: color-mix(in srgb, var(--gatherpress-slot-color) 75%, transparent);
-			border: 2px solid var(--gatherpress-calendar-dot-contrast-color);
 
 			&:hover {
 				background: var(--gatherpress-slot-color);
 				transform: scale(1.4);
 			}
+		}
+
+		// A multi-day or all-day entry is a bar, so only a dot gets the border.
+		.gatherpress-calendar__entry:not(.gatherpress--is-multi-day, .gatherpress--is-all-day) .gatherpress-modal--trigger-open:not(.wp-block-gatherpress-modal *) > * {
+			border: 2px solid var(--gatherpress-calendar-dot-contrast-color);
 		}
 	}
 }
