@@ -42,7 +42,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/venue/map/class-map.php:646](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/map/class-map.php#L646)
+- [includes/core/classes/venue/map/class-map.php:652](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/map/class-map.php#L652)
 ```php
 apply_filters(
 			'gatherpress_static_map_generate_pre_enqueue_job',
